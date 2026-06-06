@@ -148,8 +148,8 @@
       if (loggedIn) {
         loadUserEmail();
         checkScheduledEmails();
-        // 로그인 시 클라우드 설정 + 이력 자동 불러오기
-        Promise.all([loadSettingsFromCloud(true), loadHistoryFromCloud(true)]).then(function () {
+        // 로그인 시 설정 불러오기 + 이력 병합 동기화
+        Promise.all([loadSettingsFromCloud(true), syncHistoryOnLogin()]).then(function () {
           // 로그인 시마다 Google 서버 색상 자동 동기화 (기기 간 색상 일치)
           loadAndSyncCalendars().then(function () {
             renderMyCalendarsList();
@@ -190,7 +190,10 @@
   }
 
   /* ═══════════════════════════════════════════════════════════
-     클라우드 설정 동기화 (Google Drive appDataFolder)
+     클라우드 동기화 (Google Drive appDataFolder)
+     - asea-settings.json : API 키·웹훅·수신자·부서
+     - asea-history.json  : 추출이력·공유이력
+     로그인 시 자동 병합(로컬 + 클라우드), 변경 시 자동 업로드(디바운스 2s)
   ═══════════════════════════════════════════════════════════ */
   var CLOUD_SETTINGS_FILE = 'asea-settings.json';
   var CLOUD_HISTORY_FILE  = 'asea-history.json';
@@ -198,138 +201,139 @@
     'anthropicApiKey', 'geminiApiKey', 'githubToken', 'makeWebhookUrl',
     'recipients', 'departments',
   ];
+  var _historyUploadTimer = null;
 
-  async function driveRequest(method, path, opts) {
-    var token = Auth.getToken();
-    var res = await fetch('https://www.googleapis.com' + path, Object.assign({
-      method: method,
-      headers: Object.assign({ 'Authorization': 'Bearer ' + token }, opts && opts.headers),
-    }, opts && opts.body !== undefined ? { body: opts.body } : {}));
-    return res;
-  }
-
-  async function findCloudSettingsFileId() {
-    var res = await driveRequest('GET',
-      '/drive/v3/files?spaces=appDataFolder&q=name%3D%27' + CLOUD_SETTINGS_FILE + '%27&fields=files(id)');
-    if (!res.ok) return null;
-    var data = await res.json();
-    return (data.files && data.files[0]) ? data.files[0].id : null;
-  }
-
-  async function driveUpsertFile(fileName, content, token) {
-    var res = await fetch(
-      'https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=name%3D%27' + fileName + '%27&fields=files(id)',
-      { headers: { 'Authorization': 'Bearer ' + token } }
-    );
-    var data = res.ok ? await res.json() : { files: [] };
-    var fileId = (data.files && data.files[0]) ? data.files[0].id : null;
-
-    if (fileId) {
-      return fetch('https://www.googleapis.com/upload/drive/v3/files/' + fileId + '?uploadType=media', {
-        method: 'PATCH',
-        headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
-        body: content,
-      });
-    } else {
-      var boundary = '-------asea_b';
-      var meta = JSON.stringify({ name: fileName, parents: ['appDataFolder'] });
-      var body = '--' + boundary + '\r\nContent-Type: application/json\r\n\r\n' + meta +
-                 '\r\n--' + boundary + '\r\nContent-Type: application/json\r\n\r\n' + content +
-                 '\r\n--' + boundary + '--';
-      return fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
-        method: 'POST',
-        headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'multipart/related; boundary=' + boundary },
-        body: body,
-      });
-    }
-  }
-
-  async function driveReadFile(fileName, token) {
-    var res = await fetch(
-      'https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=name%3D%27' + fileName + '%27&fields=files(id)',
-      { headers: { 'Authorization': 'Bearer ' + token } }
-    );
-    if (!res.ok) return null;
-    var data = await res.json();
-    var fileId = (data.files && data.files[0]) ? data.files[0].id : null;
-    if (!fileId) return null;
-    var r = await fetch('https://www.googleapis.com/drive/v3/files/' + fileId + '?alt=media',
-      { headers: { 'Authorization': 'Bearer ' + token } });
-    if (!r.ok) return null;
-    return r.json();
-  }
-
-  async function saveHistoryToCloud(silent) {
+  // Drive appDataFolder 파일 upsert (생성 또는 덮어쓰기)
+  async function driveUpsert(fileName, jsonStr) {
     var token = Auth.getToken();
     if (!token) return;
+    // 파일 ID 조회
+    var qRes = await fetch(
+      'https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=name%3D%27' +
+        encodeURIComponent(fileName) + '%27&fields=files(id)',
+      { headers: { Authorization: 'Bearer ' + token } }
+    );
+    var qData = qRes.ok ? await qRes.json() : { files: [] };
+    var fileId = qData.files && qData.files[0] ? qData.files[0].id : null;
+
+    if (fileId) {
+      // 덮어쓰기
+      await fetch('https://www.googleapis.com/upload/drive/v3/files/' + fileId + '?uploadType=media', {
+        method: 'PATCH',
+        headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
+        body: jsonStr,
+      });
+    } else {
+      // 신규 생성 (multipart)
+      var b = '---aseab';
+      var meta = JSON.stringify({ name: fileName, parents: ['appDataFolder'] });
+      await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+        method: 'POST',
+        headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'multipart/related; boundary=' + b },
+        body: '--' + b + '\r\nContent-Type: application/json\r\n\r\n' + meta +
+              '\r\n--' + b + '\r\nContent-Type: application/json\r\n\r\n' + jsonStr +
+              '\r\n--' + b + '--',
+      });
+    }
+  }
+
+  // Drive appDataFolder 파일 읽기 (없으면 null)
+  async function driveRead(fileName) {
+    var token = Auth.getToken();
+    if (!token) return null;
+    var qRes = await fetch(
+      'https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=name%3D%27' +
+        encodeURIComponent(fileName) + '%27&fields=files(id)',
+      { headers: { Authorization: 'Bearer ' + token } }
+    );
+    if (!qRes.ok) return null;
+    var qData = await qRes.json();
+    var fileId = qData.files && qData.files[0] ? qData.files[0].id : null;
+    if (!fileId) return null;
+    var r = await fetch('https://www.googleapis.com/drive/v3/files/' + fileId + '?alt=media',
+      { headers: { Authorization: 'Bearer ' + token } });
+    return r.ok ? r.json() : null;
+  }
+
+  // ID 기준 두 배열 병합 (중복 제거, 최신순 정렬)
+  function mergeById(arrA, arrB, dateKey) {
+    var map = {};
+    (arrA || []).forEach(function (h) { if (h.id) map[h.id] = h; });
+    (arrB || []).forEach(function (h) { if (h.id) map[h.id] = h; });
+    return Object.values(map).sort(function (a, b) {
+      return new Date(b[dateKey] || 0) - new Date(a[dateKey] || 0);
+    });
+  }
+
+  // 이력 클라우드 즉시 업로드
+  async function pushHistoryToCloud() {
     try {
-      var payload = {
+      await driveUpsert(CLOUD_HISTORY_FILE, JSON.stringify({
         extractHistory: CONFIG.extractHistory,
         shareHistory:   CONFIG.shareHistory,
-      };
-      var res = await driveUpsertFile(CLOUD_HISTORY_FILE, JSON.stringify(payload), token);
-      if (res && !res.ok) throw new Error('HTTP ' + res.status);
-      if (!silent) toast('☁️ 이력이 클라우드에 저장되었습니다.', 'success');
-    } catch (e) {
-      if (!silent) toast('이력 클라우드 저장 실패: ' + (e.message || e), 'error');
-    }
+      }));
+      updateCloudSyncStatus();
+    } catch (e) {}
   }
 
-  async function loadHistoryFromCloud(silent) {
-    var token = Auth.getToken();
-    if (!token) return false;
+  // 이력 변경 시 호출 — 2초 디바운스
+  function scheduleHistoryUpload() {
+    clearTimeout(_historyUploadTimer);
+    _historyUploadTimer = setTimeout(pushHistoryToCloud, 2000);
+  }
+
+  // 로그인 직후: 클라우드 이력과 로컬 이력을 병합 후 업로드
+  async function syncHistoryOnLogin() {
     try {
-      var payload = await driveReadFile(CLOUD_HISTORY_FILE, token);
-      if (!payload) { if (!silent) toast('클라우드에 저장된 이력이 없습니다.', 'error'); return false; }
-      if (payload.extractHistory) {
-        CONFIG.extractHistory = payload.extractHistory;
-        try { localStorage.setItem(CONFIG.storageKeys.extractHistory, JSON.stringify(payload.extractHistory)); } catch (e) {}
-      }
-      if (payload.shareHistory) {
-        CONFIG.shareHistory = payload.shareHistory;
-        try { localStorage.setItem(CONFIG.storageKeys.shareHistory, JSON.stringify(payload.shareHistory)); } catch (e) {}
-      }
-      if (!silent) {
-        toast('☁️ 이력을 불러왔습니다.', 'success');
-        renderExtractHistory();
-        renderShareHistory();
-      }
-      return true;
-    } catch (e) {
-      if (!silent) toast('이력 불러오기 실패: ' + (e.message || e), 'error');
-      return false;
-    }
+      var cloud = await driveRead(CLOUD_HISTORY_FILE);
+      var localExt   = CONFIG.extractHistory || [];
+      var localShare = CONFIG.shareHistory   || [];
+      var cloudExt   = (cloud && cloud.extractHistory) || [];
+      var cloudShare = (cloud && cloud.shareHistory)   || [];
+
+      var mergedExt   = mergeById(localExt,   cloudExt,   'extractedAt');
+      var mergedShare = mergeById(localShare,  cloudShare, 'sharedAt');
+
+      var changed = mergedExt.length !== cloudExt.length || mergedShare.length !== cloudShare.length;
+
+      CONFIG.extractHistory = mergedExt;
+      CONFIG.shareHistory   = mergedShare;
+      try {
+        localStorage.setItem(CONFIG.storageKeys.extractHistory, JSON.stringify(mergedExt));
+        localStorage.setItem(CONFIG.storageKeys.shareHistory,   JSON.stringify(mergedShare));
+      } catch (e) {}
+
+      // 로컬에 클라우드에 없던 항목이 있으면 즉시 업로드
+      if (changed) await pushHistoryToCloud();
+
+      updateCloudSyncStatus();
+    } catch (e) {}
   }
 
+  // 설정 저장/불러오기
   async function saveSettingsToCloud(silent) {
     var token = Auth.getToken();
     if (!token) { if (!silent) toast('로그인이 필요합니다.', 'error'); return; }
     try {
       var payload = {};
       CLOUD_SETTINGS_KEYS.forEach(function (k) { payload[k] = CONFIG[k]; });
-      var res = await driveUpsertFile(CLOUD_SETTINGS_FILE, JSON.stringify(payload), token);
-      if (!res.ok) throw new Error('HTTP ' + res.status);
-      if (!silent) toast('☁️ 설정이 클라우드에 저장되었습니다.', 'success');
+      await driveUpsert(CLOUD_SETTINGS_FILE, JSON.stringify(payload));
+      if (!silent) toast('☁️ 설정이 동기화되었습니다.', 'success');
+      updateCloudSyncStatus();
     } catch (e) {
-      if (!silent) toast('클라우드 저장 실패: ' + (e.message || e), 'error');
+      if (!silent) toast('설정 동기화 실패: ' + (e.message || e), 'error');
     }
   }
 
   async function loadSettingsFromCloud(silent) {
     var token = Auth.getToken();
-    if (!token) { if (!silent) toast('로그인이 필요합니다.', 'error'); return false; }
-
+    if (!token) return false;
     try {
-      var payload = await driveReadFile(CLOUD_SETTINGS_FILE, token);
-      if (!payload) {
-        if (!silent) toast('클라우드에 저장된 설정이 없습니다.', 'error');
-        return false;
-      }
-
+      var payload = await driveRead(CLOUD_SETTINGS_FILE);
+      if (!payload) return false;
       CLOUD_SETTINGS_KEYS.forEach(function (k) {
         if (payload[k] !== undefined) CONFIG[k] = payload[k];
       });
-
       var s = CONFIG.storageKeys;
       try {
         if (payload.anthropicApiKey) localStorage.setItem(s.anthropicApiKey, payload.anthropicApiKey);
@@ -339,16 +343,18 @@
         if (payload.recipients)      localStorage.setItem(s.recipients,      JSON.stringify(payload.recipients));
         if (payload.departments)     localStorage.setItem(s.departments,     JSON.stringify(payload.departments));
       } catch (e) {}
-
-      if (!silent) {
-        toast('☁️ 클라우드 설정을 불러왔습니다.', 'success');
-        renderSettingsTab();
-      }
+      if (!silent) { toast('☁️ 설정을 불러왔습니다.', 'success'); renderSettingsTab(); }
       return true;
-    } catch (e) {
-      if (!silent) toast('클라우드 불러오기 실패: ' + (e.message || e), 'error');
-      return false;
-    }
+    } catch (e) { return false; }
+  }
+
+  function updateCloudSyncStatus() {
+    var el = $('cloud-sync-status');
+    if (!el) return;
+    var now = new Date();
+    var p = function (n) { return String(n).padStart(2, '0'); };
+    el.textContent = '마지막 동기화: ' + now.getFullYear() + '-' + p(now.getMonth() + 1) + '-' + p(now.getDate()) +
+      ' ' + p(now.getHours()) + ':' + p(now.getMinutes()) + ':' + p(now.getSeconds());
   }
 
   /* ═══════════════════════════════════════════════════════════
@@ -2225,12 +2231,12 @@
 
   function persistExtractHistory() {
     try { localStorage.setItem(CONFIG.storageKeys.extractHistory, JSON.stringify(CONFIG.extractHistory)); } catch (e) {}
-    saveHistoryToCloud(true);
+    scheduleHistoryUpload();
   }
 
   function persistShareHistory() {
     try { localStorage.setItem(CONFIG.storageKeys.shareHistory, JSON.stringify(CONFIG.shareHistory)); } catch (e) {}
-    saveHistoryToCloud(true);
+    scheduleHistoryUpload();
   }
 
   async function generateShareUrl() {
@@ -2898,25 +2904,14 @@
       btn.disabled = false; btn.textContent = '☁️ 클라우드에 저장';
     });
 
-    $('cloud-load-settings-btn').addEventListener('click', async function () {
-      var btn = $('cloud-load-settings-btn');
-      btn.disabled = true; btn.textContent = '불러오는 중...';
-      await loadSettingsFromCloud(false);
-      btn.disabled = false; btn.textContent = '⬇️ 설정 불러오기';
-    });
-
-    $('cloud-save-history-btn').addEventListener('click', async function () {
-      var btn = $('cloud-save-history-btn');
-      btn.disabled = true; btn.textContent = '저장 중...';
-      await saveHistoryToCloud(false);
-      btn.disabled = false; btn.textContent = '☁️ 이력 저장';
-    });
-
-    $('cloud-load-history-btn').addEventListener('click', async function () {
-      var btn = $('cloud-load-history-btn');
-      btn.disabled = true; btn.textContent = '불러오는 중...';
-      await loadHistoryFromCloud(false);
-      btn.disabled = false; btn.textContent = '⬇️ 이력 불러오기';
+    $('cloud-sync-now-btn').addEventListener('click', async function () {
+      var btn = $('cloud-sync-now-btn');
+      btn.disabled = true; btn.textContent = '동기화 중...';
+      await syncHistoryOnLogin();
+      renderExtractHistory();
+      renderShareHistory();
+      toast('☁️ 이력 동기화 완료', 'success');
+      btn.disabled = false; btn.textContent = '🔄 이력 지금 동기화';
     });
 
     $('save-github-token-btn').addEventListener('click', async function () {

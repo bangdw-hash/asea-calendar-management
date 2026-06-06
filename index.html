@@ -384,16 +384,12 @@
         <!-- 클라우드 설정 동기화 -->
         <div class="settings-card">
           <h3 class="settings-section-title">☁️ 설정 클라우드 동기화</h3>
-          <p class="form-hint" style="margin-bottom:12px">API 키·웹훅 URL·수신자/부서 목록 및 추출/공유 이력을 Google 계정과 연동하여 PC ↔ 모바일 간 자동 공유합니다. 로그인 시 자동으로 불러옵니다.</p>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
-            <button id="cloud-save-settings-btn" class="btn btn-primary btn-sm">☁️ 설정 저장</button>
-            <button id="cloud-load-settings-btn" class="btn btn-ghost btn-sm">⬇️ 설정 불러오기</button>
+          <p class="form-hint" style="margin-bottom:12px">API 키·웹훅 URL·수신자/부서 목록 및 추출/공유 이력이 Google Drive에 자동 저장됩니다. 로그인하면 어느 기기에서나 동일한 이력과 설정이 자동으로 불러와집니다.</p>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+            <button id="cloud-save-settings-btn" class="btn btn-primary btn-sm">☁️ 설정 지금 동기화</button>
+            <button id="cloud-sync-now-btn" class="btn btn-ghost btn-sm">🔄 이력 지금 동기화</button>
           </div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap">
-            <button id="cloud-save-history-btn" class="btn btn-primary btn-sm">☁️ 이력 저장</button>
-            <button id="cloud-load-history-btn" class="btn btn-ghost btn-sm">⬇️ 이력 불러오기</button>
-          </div>
-          <p id="cloud-sync-status" class="form-hint" style="margin-top:8px"></p>
+          <p id="cloud-sync-status" class="form-hint" style="margin-top:8px;color:#4285F4"></p>
         </div>
 
         <!-- Claude API 키 -->
