@@ -901,11 +901,23 @@ a        { color: var(--color-accent); text-decoration: none; }
   flex-shrink: 0;
 }
 
+.modal-footer-left {
+  display: flex;
+  gap: var(--sp-2);
+}
+
 .modal-footer-right {
   display: flex;
   gap: var(--sp-2);
   margin-left: auto;
 }
+
+.btn-danger {
+  background: #d32f2f;
+  color: #fff;
+  border-color: #d32f2f;
+}
+.btn-danger:hover { background: #b71c1c; border-color: #b71c1c; }
 
 /* ── 15. 토스트 ───────────────────────────────────────────────── */
 .toast-container {

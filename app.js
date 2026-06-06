@@ -1598,6 +1598,17 @@
       });
     });
 
+    $('extract-delete-selected-btn').addEventListener('click', function () {
+      var checked = Array.from(document.querySelectorAll('.extract-event-check input:checked'));
+      if (!checked.length) { toast('삭제할 일정을 선택하세요.', 'error'); return; }
+      if (!confirm(checked.length + '개 일정을 삭제하시겠습니까?')) return;
+      var indices = checked.map(function (cb) { return parseInt(cb.dataset.idx); });
+      indices.sort(function (a, b) { return b - a; }); // 뒤에서부터 삭제
+      indices.forEach(function (i) { S.extractedEvents.splice(i, 1); });
+      renderExtractedEvents(null);
+      toast(indices.length + '개 일정이 삭제되었습니다.', 'success');
+    });
+
     $('extract-split-btn').addEventListener('click', splitSelectedEvents);
     $('extract-check-conflict-btn').addEventListener('click', checkExtractConflicts);
     $('extract-save-state-btn').addEventListener('click', saveExtractState);
@@ -1916,6 +1927,21 @@
       // 충돌 확인 상태 초기화 후 목록 다시 그리기
       renderExtractedEvents(null);
       toast('수정되었습니다.', 'success');
+    });
+
+    $('extract-edit-delete-btn').addEventListener('click', function () {
+      var idx = parseInt($('extract-edit-index').value);
+      var ev = S.extractedEvents[idx];
+      if (!ev) return;
+      if (!confirm('"' + ev.title + '"\n\n이 일정을 삭제하시겠습니까?')) return;
+      S.extractedEvents.splice(idx, 1);
+      // 체크 인덱스 재정렬 (삭제된 항목 이후 번호를 1씩 감소)
+      S.checkedExtractIndices = (S.checkedExtractIndices || [])
+        .filter(function (i) { return i !== idx; })
+        .map(function (i) { return i > idx ? i - 1 : i; });
+      closeModal('extract-edit-modal');
+      renderExtractedEvents(null);
+      toast('일정이 삭제되었습니다.', 'success');
     });
   }
 
