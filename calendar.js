@@ -149,14 +149,31 @@
 
     /**
      * 캘린더 목록 조회
-     * @returns {Promise<{id: string, summary: string, primary: boolean}[]>}
+     * @returns {Promise<{id: string, summary: string, primary: boolean, colorId: string, backgroundColor: string}[]>}
      */
     listCalendars: async function () {
       var data = await apiFetch('GET', '/users/me/calendarList');
       if (!data || !data.items) return [];
       return data.items.map(function (c) {
-        return { id: c.id, summary: c.summary, primary: !!c.primary };
+        return {
+          id:              c.id,
+          summary:         c.summary,
+          primary:         !!c.primary,
+          colorId:         c.colorId || '',
+          backgroundColor: c.backgroundColor || '',
+        };
       });
+    },
+
+    /**
+     * 캘린더 색상 변경 (Google 서버에 반영)
+     * @param {string} calendarId
+     * @param {string} colorId  — Google colorId (1~11)
+     * @returns {Promise<void>}
+     */
+    patchCalendarColor: async function (calendarId, colorId) {
+      var id = calId(calendarId);
+      await apiFetch('PATCH', '/users/me/calendarList/' + encodeURIComponent(id), { colorId: colorId });
     },
   };
 })();

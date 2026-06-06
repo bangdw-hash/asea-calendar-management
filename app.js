@@ -1806,6 +1806,21 @@
   }
 
   /* ── 내 캘린더 표시 설정 ─── */
+  // Google Calendar 공식 11색 팔레트 (colorId: hex)
+  var GCal_PALETTE = [
+    { id: '1',  hex: '#D50000', name: '토마토'   },
+    { id: '2',  hex: '#E67C73', name: '플라밍고' },
+    { id: '3',  hex: '#F4511E', name: '탄제린'   },
+    { id: '4',  hex: '#F6BF26', name: '바나나'   },
+    { id: '5',  hex: '#33B679', name: '세이지'   },
+    { id: '6',  hex: '#0B8043', name: '바질'     },
+    { id: '7',  hex: '#039BE5', name: '피콕'     },
+    { id: '8',  hex: '#3F51B5', name: '블루베리' },
+    { id: '9',  hex: '#7986CB', name: '라벤더'   },
+    { id: '10', hex: '#8E24AA', name: '포도'     },
+    { id: '11', hex: '#616161', name: '그래파이트'},
+  ];
+
   function renderMyCalendarsList() {
     var el = $('my-calendars-list');
     if (CONFIG.selectedCalendars.length === 0) {
@@ -1816,22 +1831,68 @@
     CONFIG.selectedCalendars.forEach(function (cal, i) {
       var item = document.createElement('div');
       item.className = 'my-cal-item';
+
+      // 현재 colorId 또는 hex 색상으로 일치 팔레트 항목 찾기
+      var currentId = cal.colorId || '';
+      var currentHex = (cal.color || '#4285F4').toLowerCase();
+      var matchedEntry = GCal_PALETTE.find(function (p) {
+        return p.id === currentId || p.hex.toLowerCase() === currentHex;
+      });
+      var activeId = matchedEntry ? matchedEntry.id : '';
+
+      // 팔레트 스와치 HTML
+      var swatchesHtml = GCal_PALETTE.map(function (p) {
+        var isActive = p.id === activeId;
+        return '<button class="gcal-swatch' + (isActive ? ' active' : '') + '"' +
+               ' data-color-id="' + p.id + '"' +
+               ' data-hex="' + p.hex + '"' +
+               ' title="' + p.name + '"' +
+               ' style="background:' + p.hex + '">' +
+               (isActive ? '✓' : '') +
+               '</button>';
+      }).join('');
+
       item.innerHTML =
-        '<label>' +
+        '<label class="my-cal-label">' +
           '<input type="checkbox"' + (cal.enabled !== false ? ' checked' : '') + '>' +
-          '<span>' + cal.name + '</span>' +
+          '<span class="my-cal-name">' + cal.name + '</span>' +
         '</label>' +
-        '<input type="color" class="my-cal-color-input" value="' + (cal.color || '#4285F4') + '" title="색상 변경">';
-      var cb    = item.querySelector('input[type="checkbox"]');
-      var color = item.querySelector('input[type="color"]');
+        '<div class="gcal-palette">' + swatchesHtml + '</div>';
+
+      var cb = item.querySelector('input[type="checkbox"]');
       cb.addEventListener('change', function () {
         CONFIG.selectedCalendars[i].enabled = cb.checked;
         persistSelectedCalendars();
       });
-      color.addEventListener('change', function () {
-        CONFIG.selectedCalendars[i].color = color.value;
-        persistSelectedCalendars();
+
+      item.querySelectorAll('.gcal-swatch').forEach(function (btn) {
+        btn.addEventListener('click', async function () {
+          var colorId = btn.dataset.colorId;
+          var hex     = btn.dataset.hex;
+
+          // UI 즉시 반영
+          item.querySelectorAll('.gcal-swatch').forEach(function (b) {
+            b.classList.remove('active');
+            b.textContent = '';
+          });
+          btn.classList.add('active');
+          btn.textContent = '✓';
+
+          // 로컬 저장
+          CONFIG.selectedCalendars[i].color   = hex;
+          CONFIG.selectedCalendars[i].colorId = colorId;
+          persistSelectedCalendars();
+
+          // Google 서버에 반영
+          try {
+            await CalendarModule.patchCalendarColor(cal.id, colorId);
+            toast(cal.name + ' 색상이 구글 캘린더에 반영되었습니다.', 'success');
+          } catch (e) {
+            toast('구글 캘린더 색상 동기화 실패: ' + e.message, 'error');
+          }
+        });
       });
+
       el.appendChild(item);
     });
   }
