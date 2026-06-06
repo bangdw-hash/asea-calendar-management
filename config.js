@@ -46,11 +46,15 @@ const CONFIG = {
     '기타':   '11',  // Tomato
   },
 
+  // ── 공유 캘린더 소스 목록 (URL 직접 등록) ─────────────────────
+  sharedCalendars: [],
+
   // ── localStorage 키 ──────────────────────────────────────────
   storageKeys: {
-    recipients:      'asea_recipients',
-    driveFolderId:   'asea_drive_folder_id',
+    recipients:       'asea_recipients',
+    driveFolderId:    'asea_drive_folder_id',
     departmentColors: 'asea_dept_colors',
+    sharedCalendars:  'asea_shared_calendars',
   },
 };
 
@@ -68,6 +72,10 @@ const CONFIG = {
     const storedColors = localStorage.getItem(CONFIG.storageKeys.departmentColors);
     if (storedColors) {
       CONFIG.departmentColors = JSON.parse(storedColors);
+    }
+    const storedShared = localStorage.getItem(CONFIG.storageKeys.sharedCalendars);
+    if (storedShared) {
+      CONFIG.sharedCalendars = JSON.parse(storedShared);
     }
   } catch (e) {
     // localStorage 접근 실패 시 기본값 유지

@@ -10,15 +10,18 @@
      앱 상태
   ═══════════════════════════════════════════════════════════ */
   var S = {
-    tab:          'calendar',
-    calView:      'month',      // 'month' | 'week'
-    viewDate:     new Date(),
-    events:       [],
-    editEventId:  null,
-    reportFiles:  [],
-    selReport:    null,
-    userEmail:    '',
-    dupTimer:     null,
+    tab:            'calendar',
+    calView:        'month',      // 'month' | 'week'
+    viewDate:       new Date(),
+    events:         [],
+    sharedEvents:   [],
+    editEventId:    null,
+    reportFiles:    [],
+    selReport:      null,
+    userEmail:      '',
+    dupTimer:       null,
+    userCalendars:  [],
+    csvRows:        [],
   };
 
   /* ═══════════════════════════════════════════════════════════
@@ -181,11 +184,9 @@
     var timeMin, timeMax;
 
     if (S.calView === 'month') {
-      // 현재 월 전체 + 앞뒤 여유 (7일)
       timeMin = new Date(d.getFullYear(), d.getMonth(), -6).toISOString();
       timeMax = new Date(d.getFullYear(), d.getMonth() + 1, 8).toISOString();
     } else {
-      // 현재 주 일요일 ~ 토요일
       var day  = d.getDay();
       var sun  = new Date(d.getFullYear(), d.getMonth(), d.getDate() - day);
       timeMin  = sun.toISOString();
@@ -198,6 +199,32 @@
       toast('일정 로드 실패: ' + e.message, 'error');
       S.events = [];
     }
+
+    // 공유 캘린더 이벤트 로드 (Google Calendar API 조회)
+    S.sharedEvents = [];
+    var tMin = new Date(timeMin);
+    var tMax = new Date(timeMax);
+    for (var i = 0; i < CONFIG.sharedCalendars.length; i++) {
+      var sc = CONFIG.sharedCalendars[i];
+      var calId = extractCalendarId(sc.url);
+      if (!calId) continue;
+      try {
+        var evts = await CalendarModule.listEvents(calId, timeMin, timeMax);
+        evts.forEach(function (ev) { ev._sharedCalName = sc.name; });
+        S.sharedEvents = S.sharedEvents.concat(evts);
+      } catch (e) { /* 권한 없는 캘린더는 조용히 무시 */ }
+    }
+  }
+
+  // ICS URL에서 캘린더 ID 추출
+  // 형식: .../ical/CALID/public/basic.ics 또는 직접 calendarId
+  function extractCalendarId(url) {
+    if (!url) return null;
+    var m = /\/ical\/([^\/]+)\//.exec(url);
+    if (m) return decodeURIComponent(m[1]);
+    // URL이 아닌 경우 그대로 캘린더 ID로 사용
+    if (url.indexOf('@') !== -1 || url.indexOf('group.') !== -1) return url;
+    return null;
   }
 
   /* ═══════════════════════════════════════════════════════════
@@ -206,6 +233,8 @@
   async function renderCalendar() {
     if (!Auth.isLoggedIn()) return;
     await loadEvents();
+    // 공유 캘린더 이벤트를 기본 이벤트 목록에 합산
+    S.events = S.events.concat(S.sharedEvents);
     updateCalendarTitle();
     if (S.calView === 'month') renderMonth();
     else renderWeek();
@@ -369,6 +398,7 @@
     $('event-title').value              = '';
     $('event-description').value        = '';
     $('event-dept').value               = '기타';
+    populateCalendarDropdown('event-calendar');
 
     if (event) {
       S.editEventId = event.id;
@@ -423,14 +453,15 @@
         colorId: colorId,
       };
 
+      var targetCalId = $('event-calendar').value || CONFIG.calendarId;
       var btn = $('save-event-btn');
       btn.disabled = true;
       try {
         if (S.editEventId) {
-          await CalendarModule.updateEvent(CONFIG.calendarId, S.editEventId, eventData);
+          await CalendarModule.updateEvent(targetCalId, S.editEventId, eventData);
           toast('일정이 수정되었습니다.', 'success');
         } else {
-          await CalendarModule.createEvent(CONFIG.calendarId, eventData);
+          await CalendarModule.createEvent(targetCalId, eventData);
           toast('일정이 추가되었습니다.', 'success');
         }
         closeModal('event-modal');
@@ -722,6 +753,7 @@
       ? CONFIG.driveReportFolderId : '';
     renderSettingsRecipients();
     renderDeptColors();
+    renderSharedCalendars();
   }
 
   function renderSettingsRecipients() {
@@ -805,7 +837,252 @@
         if (e.key === 'Enter') $('add-recipient-btn').click();
       });
     });
+
+    // 공유 캘린더 추가 버튼
+    $('add-shared-cal-btn').addEventListener('click', function () {
+      $('shared-cal-name').value = '';
+      $('shared-cal-url').value  = '';
+      openModal('add-shared-cal-modal');
+    });
+
+    // 공유 캘린더 저장
+    $('save-shared-cal-btn').addEventListener('click', function () {
+      var name = $('shared-cal-name').value.trim();
+      var url  = $('shared-cal-url').value.trim();
+      if (!name) { toast('캘린더 이름을 입력하세요.', 'error'); return; }
+      if (!url)  { toast('공유 URL을 입력하세요.', 'error'); return; }
+      CONFIG.sharedCalendars.push({ name: name, url: url });
+      persistSharedCalendars();
+      renderSharedCalendars();
+      closeModal('add-shared-cal-modal');
+      toast(name + ' 캘린더가 등록되었습니다.', 'success');
+    });
   }
+
+  function renderSharedCalendars() {
+    var el = $('shared-calendars-list');
+    if (!el) return;
+    if (CONFIG.sharedCalendars.length === 0) {
+      el.innerHTML = '<p class="empty-state" style="padding:8px">등록된 공유 캘린더가 없습니다.</p>';
+      return;
+    }
+    el.innerHTML = '';
+    CONFIG.sharedCalendars.forEach(function (sc, i) {
+      var item = document.createElement('div');
+      item.className = 'shared-cal-item';
+      var shortUrl = sc.url.length > 60 ? sc.url.substring(0, 57) + '...' : sc.url;
+      item.innerHTML =
+        '<div class="shared-cal-info">' +
+          '<span class="shared-cal-name">' + sc.name + '</span>' +
+          '<span class="shared-cal-url">' + shortUrl + '</span>' +
+        '</div>' +
+        '<button class="btn btn-ghost btn-sm" data-del-sc="' + i + '">삭제</button>';
+      el.appendChild(item);
+    });
+    el.querySelectorAll('[data-del-sc]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var idx = parseInt(btn.dataset.delSc, 10);
+        CONFIG.sharedCalendars.splice(idx, 1);
+        persistSharedCalendars();
+        renderSharedCalendars();
+        toast('캘린더가 삭제되었습니다.', 'info');
+      });
+    });
+  }
+
+  function persistSharedCalendars() {
+    try { localStorage.setItem(CONFIG.storageKeys.sharedCalendars, JSON.stringify(CONFIG.sharedCalendars)); } catch (e) {}
+  }
+
+  // 캘린더 드롭다운 채우기 (listCalendars 활용)
+  async function populateCalendarDropdown(selectId) {
+    var sel = $(selectId);
+    if (!sel) return;
+    sel.innerHTML = '<option value="primary">기본 캘린더</option>';
+    if (!Auth.isLoggedIn()) return;
+    if (S.userCalendars.length === 0) {
+      try {
+        S.userCalendars = await CalendarModule.listCalendars();
+      } catch (e) { return; }
+    }
+    S.userCalendars.forEach(function (cal) {
+      if (cal.id === 'primary') return;
+      var opt = document.createElement('option');
+      opt.value = cal.id;
+      opt.textContent = cal.summary + (cal.primary ? ' (기본)' : '');
+      sel.appendChild(opt);
+    });
+  }
+
+  /* ═══════════════════════════════════════════════════════════
+     CSV 일괄 등록
+  ═══════════════════════════════════════════════════════════ */
+  function initCsvModal() {
+    $('csv-import-btn').addEventListener('click', function () {
+      S.csvRows = [];
+      $('csv-preview-area').hidden = true;
+      $('csv-import-submit-btn').disabled = true;
+      $('csv-file-input').value = '';
+      populateCalendarDropdown('csv-calendar-select');
+      openModal('csv-modal');
+    });
+
+    var dropzone = $('csv-dropzone');
+    var fileInput = $('csv-file-input');
+
+    dropzone.addEventListener('click', function () { fileInput.click(); });
+    dropzone.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' || e.key === ' ') fileInput.click();
+    });
+
+    dropzone.addEventListener('dragover', function (e) {
+      e.preventDefault();
+      dropzone.classList.add('drag-over');
+    });
+    dropzone.addEventListener('dragleave', function () {
+      dropzone.classList.remove('drag-over');
+    });
+    dropzone.addEventListener('drop', function (e) {
+      e.preventDefault();
+      dropzone.classList.remove('drag-over');
+      var file = e.dataTransfer.files[0];
+      if (file) readCsvFile(file);
+    });
+
+    fileInput.addEventListener('change', function () {
+      if (this.files[0]) readCsvFile(this.files[0]);
+    });
+
+    $('csv-import-submit-btn').addEventListener('click', async function () {
+      var calId = $('csv-calendar-select').value || CONFIG.calendarId;
+      var valid = S.csvRows.filter(function (r) { return r.valid; });
+      if (!valid.length) { toast('유효한 행이 없습니다.', 'error'); return; }
+
+      var btn = $('csv-import-submit-btn');
+      btn.disabled = true;
+      btn.textContent = '등록 중...';
+
+      var ok = 0, fail = 0;
+      var tz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'Asia/Seoul';
+      for (var i = 0; i < valid.length; i++) {
+        var r = valid[i];
+        var dept = r.부서 || '기타';
+        var colorId = CONFIG.departmentColorIds[dept] || '11';
+        var desc = (r.설명 || '') + (r.설명 ? '\n' : '') + '[부서:' + dept + ']';
+        try {
+          await CalendarModule.createEvent(calId, {
+            summary:     r.제목,
+            description: desc,
+            start: { dateTime: new Date(r.시작일시).toISOString(), timeZone: tz },
+            end:   { dateTime: new Date(r.종료일시).toISOString(), timeZone: tz },
+            colorId: colorId,
+          });
+          ok++;
+        } catch (e) { fail++; }
+      }
+
+      btn.disabled = false;
+      btn.textContent = '전체 등록';
+      closeModal('csv-modal');
+      toast('등록 완료: ' + ok + '건 성공' + (fail ? ', ' + fail + '건 실패' : ''), ok ? 'success' : 'error');
+      if (ok > 0) renderCalendar();
+    });
+  }
+
+  function readCsvFile(file) {
+    var reader = new FileReader();
+    reader.onload = function (e) {
+      var text = e.target.result;
+      S.csvRows = parseCsv(text);
+      renderCsvPreview();
+    };
+    reader.readAsText(file, 'utf-8');
+  }
+
+  function parseCsv(text) {
+    var lines = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
+    if (lines.length < 2) return [];
+    // 헤더 제거
+    var rows = [];
+    for (var i = 1; i < lines.length; i++) {
+      var line = lines[i].trim();
+      if (!line) continue;
+      var cols = splitCsvLine(line);
+      var row = {
+        제목:   (cols[0] || '').trim(),
+        시작일시: (cols[1] || '').trim(),
+        종료일시: (cols[2] || '').trim(),
+        부서:   (cols[3] || '').trim() || '기타',
+        설명:   (cols[4] || '').trim(),
+        valid:  false,
+        error:  '',
+      };
+      row.valid = validateCsvRow(row);
+      rows.push(row);
+    }
+    return rows;
+  }
+
+  function splitCsvLine(line) {
+    var result = [];
+    var cur = '';
+    var inQ = false;
+    for (var i = 0; i < line.length; i++) {
+      var c = line[i];
+      if (c === '"') { inQ = !inQ; }
+      else if (c === ',' && !inQ) { result.push(cur); cur = ''; }
+      else { cur += c; }
+    }
+    result.push(cur);
+    return result;
+  }
+
+  function validateCsvRow(row) {
+    if (!row.제목) { row.error = '제목 없음'; return false; }
+    if (!row.시작일시 || isNaN(Date.parse(row.시작일시.replace(' ', 'T')))) {
+      row.error = '시작일시 오류'; return false;
+    }
+    if (!row.종료일시 || isNaN(Date.parse(row.종료일시.replace(' ', 'T')))) {
+      row.error = '종료일시 오류'; return false;
+    }
+    // 날짜 값을 ISO 형식으로 정규화
+    row.시작일시 = row.시작일시.replace(' ', 'T');
+    row.종료일시 = row.종료일시.replace(' ', 'T');
+    if (new Date(row.시작일시) >= new Date(row.종료일시)) {
+      row.error = '종료가 시작보다 이전'; return false;
+    }
+    return true;
+  }
+
+  function renderCsvPreview() {
+    var area = $('csv-preview-area');
+    var tbody = $('csv-table-body');
+    var countEl = $('csv-preview-count');
+    var submitBtn = $('csv-import-submit-btn');
+
+    tbody.innerHTML = '';
+    var validCount = 0;
+    S.csvRows.forEach(function (r, i) {
+      if (r.valid) validCount++;
+      var tr = document.createElement('tr');
+      tr.className = r.valid ? 'csv-row-valid' : 'csv-row-invalid';
+      tr.innerHTML =
+        '<td>' + (i + 1) + '</td>' +
+        '<td>' + r.제목 + '</td>' +
+        '<td>' + r.시작일시 + '</td>' +
+        '<td>' + r.종료일시 + '</td>' +
+        '<td>' + r.부서 + '</td>' +
+        '<td>' + r.설명 + '</td>' +
+        '<td>' + (r.valid ? '✅' : '❌ ' + r.error) + '</td>';
+      tbody.appendChild(tr);
+    });
+
+    countEl.textContent = '총 ' + S.csvRows.length + '행 중 유효 ' + validCount + '행';
+    area.hidden = false;
+    submitBtn.disabled = validCount === 0;
+    submitBtn.textContent = '전체 등록 (' + validCount + '건)';
+  }
+
 
   /* ═══════════════════════════════════════════════════════════
      부트스트랩
@@ -818,6 +1095,7 @@
     initWeeklyHub();
     initEmailTab();
     initSettings();
+    initCsvModal();
     initModalHandlers();
   }
 

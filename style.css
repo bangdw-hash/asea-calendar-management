@@ -1063,3 +1063,128 @@ a        { color: var(--color-accent); text-decoration: none; }
   .tab-panel { padding: var(--sp-6); }
   .calendar-day { min-height: 120px; }
 }
+
+/* ── 21. 신규: 설정 카드 헤더 (공유 캘린더) ─────────────────── */
+.settings-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--sp-4);
+  padding-bottom: var(--sp-2);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.settings-card-header .settings-section-title {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.settings-hint {
+  font-size: var(--font-sm);
+  color: var(--color-text-secondary);
+  margin-bottom: var(--sp-3);
+}
+
+.shared-calendars-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.shared-cal-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--sp-2) var(--sp-3);
+  background: var(--color-bg);
+  border-radius: var(--r-md);
+  border: 1px solid var(--color-border);
+}
+
+.shared-cal-info { display: flex; flex-direction: column; gap: 2px; }
+.shared-cal-name { font-size: var(--font-base); font-weight: 500; }
+.shared-cal-url  { font-size: var(--font-xs); color: var(--color-text-secondary); word-break: break-all; }
+
+/* ── 22. 신규: CSV 모달 ──────────────────────────────────────── */
+.csv-format-guide {
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--r-md);
+  padding: var(--sp-3) var(--sp-4);
+  font-size: var(--font-sm);
+  font-family: 'Courier New', monospace;
+  white-space: pre;
+  overflow-x: auto;
+  color: var(--color-text);
+  margin: 0;
+}
+
+.csv-dropzone {
+  border: 2px dashed var(--color-border);
+  border-radius: var(--r-lg);
+  padding: var(--sp-8) var(--sp-4);
+  text-align: center;
+  cursor: pointer;
+  transition: border-color var(--trans), background var(--trans);
+  color: var(--color-text-secondary);
+}
+
+.csv-dropzone:hover,
+.csv-dropzone.drag-over {
+  border-color: var(--color-accent);
+  background: var(--color-accent-light);
+  color: var(--color-accent);
+}
+
+.csv-dropzone-icon { font-size: 32px; display: block; margin-bottom: var(--sp-2); }
+
+.csv-preview-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: var(--sp-4) 0 var(--sp-2);
+  font-size: var(--font-sm);
+  color: var(--color-text-secondary);
+}
+
+.csv-table-wrap {
+  max-height: 280px;
+  overflow-y: auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--r-md);
+}
+
+.csv-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-sm);
+}
+
+.csv-table th {
+  background: var(--color-bg);
+  padding: var(--sp-2) var(--sp-3);
+  text-align: left;
+  font-weight: 600;
+  border-bottom: 1px solid var(--color-border);
+  position: sticky;
+  top: 0;
+  white-space: nowrap;
+}
+
+.csv-table td {
+  padding: var(--sp-2) var(--sp-3);
+  border-bottom: 1px solid var(--color-border);
+  white-space: nowrap;
+}
+
+.csv-table tr:last-child td { border-bottom: none; }
+
+.csv-row-valid   { background: var(--color-success-light); }
+.csv-row-invalid { background: var(--color-error-light); color: var(--color-error); }
+
+.form-hint {
+  font-size: var(--font-xs);
+  color: var(--color-text-secondary);
+  margin-top: var(--sp-1);
+}
