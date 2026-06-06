@@ -253,17 +253,44 @@
   function renderLegend() {
     var el = $('calendar-legend');
     el.innerHTML = '';
-    var seen = {};
-    S.events.forEach(function (ev) {
-      if (ev._calName && !seen[ev._calName]) {
-        seen[ev._calName] = true;
-        var item = document.createElement('div');
-        item.className = 'legend-item';
-        item.innerHTML =
-          '<div class="legend-dot" style="background:' + ev._calColor + '"></div>' +
-          '<span>' + ev._calName + '</span>';
-        el.appendChild(item);
-      }
+
+    // 선택된 캘린더 기준으로 렌더 (이벤트 없어도 표시)
+    var cals = CONFIG.selectedCalendars.length
+      ? CONFIG.selectedCalendars
+      : (function () {
+          var seen = {};
+          var list = [];
+          S.events.forEach(function (ev) {
+            if (ev._calName && !seen[ev._calName]) {
+              seen[ev._calName] = true;
+              list.push({ id: ev._calId || ev._calName, name: ev._calName, color: ev._calColor, enabled: true });
+            }
+          });
+          return list;
+        })();
+
+    cals.forEach(function (cal, i) {
+      var enabled = cal.enabled !== false;
+      var item = document.createElement('div');
+      item.className = 'legend-item' + (enabled ? '' : ' legend-item--off');
+      item.title = enabled ? '클릭하여 숨기기' : '클릭하여 표시';
+      item.innerHTML =
+        '<div class="legend-dot" style="background:' + (enabled ? cal.color : '#ccc') + '"></div>' +
+        '<span class="legend-name">' + cal.name + '</span>' +
+        (!enabled ? '<span class="legend-off-badge">OFF</span>' : '');
+
+      item.addEventListener('click', function () {
+        // CONFIG.selectedCalendars에서 해당 캘린더 찾아 토글
+        var target = CONFIG.selectedCalendars.find(function (c) { return c.id === cal.id || c.name === cal.name; });
+        if (target) {
+          target.enabled = !target.enabled;
+          persistSelectedCalendars();
+          renderLegend();
+          renderCalendar();
+        }
+      });
+
+      el.appendChild(item);
     });
   }
 
