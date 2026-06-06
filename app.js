@@ -2037,9 +2037,13 @@
       ];
     }
 
+    var modeEl = document.querySelector('input[name="extract-mode"]:checked');
+    var splitMode = modeEl && modeEl.value === 'split';
+
     var toCreate = [];
     selected.forEach(function (ev) {
-      splitIfMultiDay(ev).forEach(function (e) { toCreate.push(e); });
+      var items = splitMode ? splitIfMultiDay(ev) : [ev];
+      items.forEach(function (e) { toCreate.push(e); });
     });
 
     var ok = 0, fail = 0;

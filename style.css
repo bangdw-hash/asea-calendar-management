@@ -1670,6 +1670,30 @@ a        { color: var(--color-accent); text-decoration: none; }
 .badge-conflict { background: var(--color-error-light); color: var(--color-error); }
 .extract-conflict-btn { color: var(--color-error); }
 
+/* ── 등록 방식 선택 라디오 ─────────────────────────────────── */
+.extract-register-mode {
+  display: flex;
+  gap: var(--sp-4);
+  align-items: center;
+  padding: var(--sp-2) var(--sp-1);
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+.extract-mode-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  user-select: none;
+}
+.extract-mode-label input[type="radio"] {
+  accent-color: var(--color-accent);
+  width: 15px;
+  height: 15px;
+  cursor: pointer;
+}
+.extract-mode-label span { line-height: 1; }
+
 /* ── 추출 텍스트 출력 ────────────────────────────────────────── */
 .extract-text-section-header {
   display: flex;
