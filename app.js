@@ -146,7 +146,9 @@
     $('login-btn').addEventListener('click', function () {
       $('login-btn').disabled = true;
       Auth.login()
-        .catch(function () {})
+        .catch(function (e) {
+          if (e && e.message) toast(e.message, 'error');
+        })
         .finally(function () { $('login-btn').disabled = false; });
     });
 

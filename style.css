@@ -92,6 +92,9 @@ select,
 textarea { font-family: inherit; font-size: inherit; color: inherit; }
 a        { color: var(--color-accent); text-decoration: none; }
 
+/* author stylesheet이 user-agent [hidden]을 덮어쓰는 문제 방지 */
+[hidden] { display: none !important; }
+
 /* ── 3. 로그인 오버레이 ───────────────────────────────────────── */
 .login-overlay {
   position: fixed;
