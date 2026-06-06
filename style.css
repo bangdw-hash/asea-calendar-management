@@ -1497,7 +1497,17 @@ a        { color: var(--color-accent); text-decoration: none; }
   border: 1px solid var(--color-border);
   border-radius: var(--r-md);
   padding: var(--sp-3) var(--sp-4);
+  position: relative;
 }
+.history-item--expanded {
+  border-color: var(--color-primary);
+}
+
+.history-item-main {
+  cursor: pointer;
+  padding-right: 28px; /* X 버튼 공간 */
+}
+.history-item-main:hover .history-item-subject { color: var(--color-primary); }
 
 .history-item-header {
   display: flex;
@@ -1525,6 +1535,50 @@ a        { color: var(--color-accent); text-decoration: none; }
   display: flex;
   gap: var(--sp-4);
   flex-wrap: wrap;
+}
+
+/* 개별 삭제 버튼 */
+.hist-delete-btn {
+  position: absolute;
+  top: var(--sp-3);
+  right: var(--sp-3);
+  background: none;
+  border: none;
+  color: #bbb;
+  font-size: 14px;
+  cursor: pointer;
+  line-height: 1;
+  padding: 2px 4px;
+  border-radius: var(--r-sm);
+  transition: color 0.15s, background 0.15s;
+}
+.hist-delete-btn:hover { color: var(--color-error); background: var(--color-error-light); }
+
+/* 본문 펼침 영역 */
+.history-item-body {
+  margin-top: var(--sp-3);
+  border-top: 1px solid var(--color-border);
+  padding-top: var(--sp-3);
+}
+.history-body-label {
+  font-size: var(--font-xs);
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  margin-bottom: var(--sp-2);
+}
+.history-body-content {
+  font-family: 'Malgun Gothic', sans-serif;
+  font-size: var(--font-sm);
+  white-space: pre-wrap;
+  word-break: break-word;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--r-sm);
+  padding: var(--sp-3);
+  margin: 0;
+  max-height: 300px;
+  overflow-y: auto;
+  line-height: 1.7;
 }
 
 /* ── 일정발췌 탭 ─────────────────────────────────────────────── */

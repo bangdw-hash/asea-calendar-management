@@ -1036,11 +1036,13 @@
       var result = await GmailModule.sendEmail({ to: recipients, subject: subject, body: body, driveLink: driveLink });
       if (result.success) {
         var histEntry = {
-          id:       genId(),
-          to:       recipients.map(function (r) { return r.name + ' <' + r.email + '>'; }).join(', '),
-          subject:  subject,
-          sentAt:   new Date().toISOString(),
-          status:   'sent',
+          id:        genId(),
+          to:        recipients.map(function (r) { return r.name + ' <' + r.email + '>'; }).join(', '),
+          subject:   subject,
+          body:      body,
+          driveLink: driveLink,
+          sentAt:    new Date().toISOString(),
+          status:    'sent',
         };
         CONFIG.emailHistory.unshift(histEntry);
         persistEmailHistory();
@@ -1051,8 +1053,9 @@
     } catch (e) {
       var failEntry = {
         id:      genId(),
-        to:      recipients.map(function (r) { return r.email; }).join(', '),
+        to:      recipients.map(function (r) { return r.name + ' <' + r.email + '>'; }).join(', '),
         subject: subject,
+        body:    body,
         sentAt:  new Date().toISOString(),
         status:  'failed',
       };
@@ -1079,29 +1082,74 @@
     }
     listEl.innerHTML = '';
     all.forEach(function (h) {
+      var isScheduled = h.status === 'scheduled' || h.status === 'scheduled_server';
+      var badge = h.status === 'sent'
+        ? '<span class="history-badge badge-sent">발송완료</span>'
+        : isScheduled
+          ? '<span class="history-badge badge-scheduled">예약중</span>'
+          : '<span class="history-badge badge-failed">실패</span>';
+      var dateLabel = h.sentAt
+        ? '발송: ' + formatDate(h.sentAt)
+        : h.scheduledAt ? '예약: ' + formatDate(h.scheduledAt) : '';
+
+      // to 필드: 이전 버그로 객체 배열일 수도 있어 안전 처리
+      var toStr = Array.isArray(h.to)
+        ? h.to.map(function (r) { return typeof r === 'object' ? (r.name + ' <' + r.email + '>') : r; }).join(', ')
+        : (h.to || '');
+
       var item = document.createElement('div');
       item.className = 'history-item';
-      var badge = h.status === 'sent'      ? '<span class="history-badge badge-sent">발송완료</span>' :
-                  h.status === 'scheduled' ? '<span class="history-badge badge-scheduled">예약중</span>' :
-                                             '<span class="history-badge badge-failed">실패</span>';
-      var dateLabel = h.sentAt ? '발송: ' + formatDate(h.sentAt) :
-                     h.scheduledAt ? '예약: ' + formatDate(h.scheduledAt) : '';
+
       item.innerHTML =
-        '<div class="history-item-header">' +
-          '<span class="history-item-subject">' + (h.subject || '(제목없음)') + '</span>' +
-          badge +
+        '<div class="history-item-main">' +
+          '<div class="history-item-header">' +
+            '<span class="history-item-subject">' + (h.subject || '(제목없음)') + '</span>' +
+            badge +
+          '</div>' +
+          '<div class="history-item-meta">' +
+            '<span>받는이: ' + toStr + '</span>' +
+            '<span>' + dateLabel + '</span>' +
+          '</div>' +
         '</div>' +
-        '<div class="history-item-meta">' +
-          '<span>받는이: ' + (h.to || '') + '</span>' +
-          '<span>' + dateLabel + '</span>' +
-        '</div>';
-      // 예약 취소 버튼
-      if (h.status === 'scheduled') {
+        '<button class="hist-delete-btn" title="삭제">✕</button>';
+
+      // 내용 펼치기/접기
+      var bodySection = document.createElement('div');
+      bodySection.className = 'history-item-body';
+      bodySection.hidden = true;
+      var bodyText = h.body || '(본문 없음)';
+      var drivePart = h.driveLink ? '\n\n📎 첨부 링크: ' + h.driveLink : '';
+      bodySection.innerHTML =
+        '<div class="history-body-label">📧 메일 본문</div>' +
+        '<pre class="history-body-content">' + bodyText.replace(/</g, '&lt;') + drivePart + '</pre>';
+      item.appendChild(bodySection);
+
+      // 헤더 클릭 → 본문 토글
+      item.querySelector('.history-item-main').addEventListener('click', function () {
+        bodySection.hidden = !bodySection.hidden;
+        item.classList.toggle('history-item--expanded', !bodySection.hidden);
+      });
+
+      // X 버튼 → 개별 삭제
+      item.querySelector('.hist-delete-btn').addEventListener('click', function (e) {
+        e.stopPropagation();
+        if (!confirm('이 이력을 삭제하시겠습니까?\n\n제목: ' + (h.subject || '(제목없음)'))) return;
+        CONFIG.emailHistory    = CONFIG.emailHistory.filter(function (x) { return x.id !== h.id; });
+        CONFIG.scheduledEmails = CONFIG.scheduledEmails.filter(function (x) { return x.id !== h.id; });
+        persistEmailHistory();
+        renderEmailHistory();
+        toast('삭제되었습니다.', 'info');
+      });
+
+      // 예약 취소 버튼 (예약중인 경우 추가)
+      if (isScheduled) {
         var cancelBtn = document.createElement('button');
         cancelBtn.className = 'btn btn-ghost btn-sm';
-        cancelBtn.style.marginTop = '8px';
+        cancelBtn.style.cssText = 'margin-top:8px;font-size:12px';
         cancelBtn.textContent = '예약 취소';
-        cancelBtn.addEventListener('click', function () {
+        cancelBtn.addEventListener('click', function (e) {
+          e.stopPropagation();
+          if (!confirm('예약을 취소하시겠습니까?')) return;
           CONFIG.scheduledEmails = CONFIG.scheduledEmails.filter(function (s) { return s.id !== h.id; });
           persistEmailHistory();
           renderEmailHistory();
@@ -1109,6 +1157,7 @@
         });
         item.appendChild(cancelBtn);
       }
+
       listEl.appendChild(item);
     });
   }
