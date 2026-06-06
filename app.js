@@ -2019,9 +2019,32 @@
     btn.disabled = true;
     btn.textContent = '등록 중...';
 
+    // 다일 일정을 시작/종료 2개로 분리
+    function splitIfMultiDay(ev) {
+      var s = new Date(ev.startDateTime);
+      var e = new Date(ev.endDateTime);
+      if (s.toDateString() === e.toDateString()) return [ev];
+
+      var startDayEnd = new Date(s);
+      startDayEnd.setHours(23, 59, 0, 0);
+
+      var endDayStart = new Date(e);
+      endDayStart.setHours(0, 0, 0, 0);
+
+      return [
+        Object.assign({}, ev, { title: ev.title + ' (시작)', endDateTime: startDayEnd.toISOString() }),
+        Object.assign({}, ev, { title: ev.title + ' (종료)', startDateTime: endDayStart.toISOString() }),
+      ];
+    }
+
+    var toCreate = [];
+    selected.forEach(function (ev) {
+      splitIfMultiDay(ev).forEach(function (e) { toCreate.push(e); });
+    });
+
     var ok = 0, fail = 0;
-    for (var i = 0; i < selected.length; i++) {
-      var ev = selected[i];
+    for (var i = 0; i < toCreate.length; i++) {
+      var ev = toCreate[i];
       var dept = ev.department || '기타';
       var dIdx = CONFIG.departments.findIndex(function (d) { return d.name === dept; });
       var palette = ['1','2','3','4','5','6','7','8','9','10','11'];
@@ -2040,7 +2063,8 @@
 
     btn.disabled = false;
     btn.textContent = '선택 항목 등록';
-    toast('등록 완료: ' + ok + '건 성공' + (fail ? ', ' + fail + '건 실패' : ''), ok ? 'success' : 'error');
+    var splitNote = toCreate.length > selected.length ? ' (다일 일정 분리 포함)' : '';
+    toast('등록 완료: ' + ok + '건 성공' + (fail ? ', ' + fail + '건 실패' : '') + splitNote, ok ? 'success' : 'error');
     if (ok > 0 && S.tab === 'calendar') renderCalendar();
   }
 
