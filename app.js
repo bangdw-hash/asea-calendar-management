@@ -1579,6 +1579,7 @@
     });
 
     $('extract-check-conflict-btn').addEventListener('click', checkExtractConflicts);
+    $('extract-save-state-btn').addEventListener('click', saveExtractState);
     $('extract-text-btn').addEventListener('click', buildExtractText);
     $('extract-text-copy').addEventListener('click', function () {
       var el = $('extract-text-output');
@@ -1962,6 +1963,49 @@
     try { localStorage.setItem(CONFIG.storageKeys.extractHistory, JSON.stringify(CONFIG.extractHistory)); } catch (e) {}
   }
 
+  function saveExtractState() {
+    if (!S.extractedEvents || S.extractedEvents.length === 0) {
+      toast('저장할 일정이 없습니다.', 'error'); return;
+    }
+
+    // 현재 선택된 항목 인덱스 수집
+    var checkedIndices = [];
+    document.querySelectorAll('.extract-event-check input').forEach(function (cb, i) {
+      if (cb.checked) checkedIndices.push(i);
+    });
+
+    // 현재 캘린더명
+    var calSel = $('extract-target-calendar');
+    var calendarId   = calSel ? calSel.value : '';
+    var calendarName = calSel && calSel.selectedOptions[0] ? calSel.selectedOptions[0].text : '';
+
+    // 현재 등록 방식
+    var modeEl = document.querySelector('input[name="extract-mode"]:checked');
+    var registerMode = modeEl ? modeEl.value : 'continuous';
+
+    // 파일명: 이전 AI 추출 이력에서 가져오거나 기본값
+    var lastHist = CONFIG.extractHistory.find(function (h) { return h.events === S.extractedEvents; });
+    var filename = (lastHist && lastHist.filename) || (S_pdfFile ? S_pdfFile.name : '수동 저장');
+
+    var entry = {
+      id:           genId(),
+      filename:     filename,
+      extractedAt:  new Date().toISOString(),
+      count:        S.extractedEvents.length,
+      events:       JSON.parse(JSON.stringify(S.extractedEvents)), // 깊은 복사
+      checkedIndices: checkedIndices,
+      calendarId:   calendarId,
+      calendarName: calendarName,
+      registerMode: registerMode,
+      savedManually: true,
+    };
+
+    CONFIG.extractHistory.unshift(entry);
+    if (CONFIG.extractHistory.length > 50) CONFIG.extractHistory = CONFIG.extractHistory.slice(0, 50);
+    persistExtractHistory();
+    toast('현재 상태가 추출 이력에 저장되었습니다.', 'success');
+  }
+
   function renderExtractHistory() {
     var listEl = $('extract-history-list');
     if (!CONFIG.extractHistory.length) {
@@ -1972,11 +2016,19 @@
     CONFIG.extractHistory.forEach(function (h) {
       var item = document.createElement('div');
       item.className = 'extract-history-item';
+      var modeBadge = h.registerMode === 'split'
+        ? '<span class="hist-badge">✂️ 분리</span>'
+        : (h.registerMode === 'continuous' ? '<span class="hist-badge">📅 연속</span>' : '');
+      var calBadge = h.calendarName
+        ? '<span class="hist-badge">🗓 ' + h.calendarName + '</span>' : '';
+      var savedBadge = h.savedManually
+        ? '<span class="hist-badge hist-badge-saved">💾 수동저장</span>' : '';
+
       item.innerHTML =
         '<div class="extract-history-info">' +
-          '<div class="extract-history-filename">📄 ' + h.filename + '</div>' +
+          '<div class="extract-history-filename">📄 ' + h.filename + ' ' + savedBadge + '</div>' +
           '<div class="extract-history-meta">' +
-            formatDate(h.extractedAt) + ' · ' + h.count + '개 일정' +
+            formatDate(h.extractedAt) + ' · ' + h.count + '개 일정 ' + calBadge + ' ' + modeBadge +
           '</div>' +
         '</div>' +
         '<div class="extract-history-actions">' +
@@ -1985,13 +2037,40 @@
         '</div>';
 
       item.querySelector('.hist-load-btn').addEventListener('click', function () {
-        S.extractedEvents = h.events;
+        S.extractedEvents = JSON.parse(JSON.stringify(h.events));
+
         // 추출 탭(메인)으로 전환
         document.querySelectorAll('#tab-extract .email-subtab').forEach(function (b) { b.classList.remove('active'); });
         document.querySelector('#tab-extract [data-etab="extract-main"]').classList.add('active');
         document.querySelectorAll('#tab-extract .email-subpanel').forEach(function (p) { p.hidden = true; });
         $('etab-extract-main').hidden = false;
-        renderExtractedEvents();
+
+        renderExtractedEvents(null);
+
+        // 캘린더 복원
+        if (h.calendarId) {
+          var calSel = $('extract-target-calendar');
+          if (calSel) {
+            var opt = Array.from(calSel.options).find(function (o) { return o.value === h.calendarId; });
+            if (opt) calSel.value = h.calendarId;
+          }
+        }
+
+        // 등록 방식 복원
+        if (h.registerMode) {
+          var modeEl = document.querySelector('input[name="extract-mode"][value="' + h.registerMode + '"]');
+          if (modeEl) modeEl.checked = true;
+        }
+
+        // 선택 상태 복원
+        if (h.checkedIndices) {
+          document.querySelectorAll('.extract-event-check input').forEach(function (cb, i) {
+            var checked = h.checkedIndices.indexOf(i) !== -1;
+            cb.checked = checked;
+            cb.closest('.extract-event-card').classList.toggle('selected', checked);
+          });
+        }
+
         toast(h.count + '개 일정을 불러왔습니다.', 'success');
       });
       item.querySelector('.hist-del-btn').addEventListener('click', function () {
