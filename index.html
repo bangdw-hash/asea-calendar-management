@@ -12,6 +12,7 @@
   <script src="https://accounts.google.com/gsi/client" async></script>
   <!-- SheetJS for Excel support -->
   <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 </head>
 <body>
 
@@ -295,7 +296,7 @@
               <div id="pdf-file-info" class="pdf-file-info" hidden></div>
 
               <div class="form-group" style="margin-top:16px">
-                <label class="form-label">Claude API 키</label>
+                <label class="form-label">Gemini API 키</label>
                 <input id="extract-api-key" type="password" class="form-input"
                   placeholder="설정 탭에서 입력하거나 여기서 직접 입력">
                 <p class="form-hint">⚠️ API 키는 localStorage에만 저장됩니다. GitHub에 올라가지 않습니다.</p>
@@ -367,13 +368,13 @@
           </div>
         </div>
 
-        <!-- Claude API 키 -->
+        <!-- Gemini API 키 -->
         <div class="settings-card">
-          <h3 class="settings-section-title">Claude API 키 (일정발췌 기능)</h3>
+          <h3 class="settings-section-title">Gemini API 키 (일정발췌 기능)</h3>
           <div class="form-group">
             <input id="setting-api-key" type="password" class="form-input"
-              placeholder="sk-ant-api03-...">
-            <p class="form-hint">⚠️ API 키는 브라우저 localStorage에만 저장되며 외부로 전송되지 않습니다.</p>
+              placeholder="AIza...">
+            <p class="form-hint">⚠️ API 키는 브라우저 localStorage에만 저장되며 외부로 전송되지 않습니다. Google AI Studio에서 무료 발급.</p>
           </div>
           <button id="save-api-key-btn" class="btn btn-primary btn-sm">저장</button>
         </div>

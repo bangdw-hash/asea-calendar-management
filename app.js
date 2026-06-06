@@ -1515,7 +1515,7 @@
      일정발췌 탭 (PDF + Claude API)
   ═══════════════════════════════════════════════════════════ */
   function renderExtractTab() {
-    var apiKey = CONFIG.anthropicApiKey;
+    var apiKey = CONFIG.geminiApiKey || CONFIG.anthropicApiKey;
     if (apiKey) $('extract-api-key').value = apiKey;
     populateCalendarDropdown('extract-target-calendar');
   }
@@ -1599,27 +1599,45 @@
     $('run-extract-btn').disabled = false;
   }
 
+  // PDF.js로 텍스트 추출 (base64 전송 대비 토큰 60~80% 절감)
+  async function extractTextFromPdf(file) {
+    if (!window.pdfjsLib) throw new Error('PDF.js 로드 실패');
+    pdfjsLib.GlobalWorkerOptions.workerSrc =
+      'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    var arrayBuffer = await file.arrayBuffer();
+    var pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    var texts = [];
+    for (var i = 1; i <= pdf.numPages; i++) {
+      var page = await pdf.getPage(i);
+      var content = await page.getTextContent();
+      texts.push(content.items.map(function (it) { return it.str; }).join(' '));
+    }
+    return texts.join('\n');
+  }
+
   async function runExtract() {
-    var apiKey = $('extract-api-key').value.trim() || CONFIG.anthropicApiKey;
-    if (!apiKey) { toast('Claude API 키를 입력하세요.', 'error'); return; }
+    var apiKey = $('extract-api-key').value.trim() || CONFIG.geminiApiKey;
+    if (!apiKey) { toast('Gemini API 키를 입력하세요.', 'error'); return; }
     if (!S_pdfFile) { toast('PDF 파일을 먼저 선택하세요.', 'error'); return; }
 
     // API 키 저장
-    CONFIG.anthropicApiKey = apiKey;
-    try { localStorage.setItem(CONFIG.storageKeys.anthropicApiKey, apiKey); } catch (e) {}
+    CONFIG.geminiApiKey = apiKey;
+    try { localStorage.setItem(CONFIG.storageKeys.geminiApiKey, apiKey); } catch (e) {}
 
     var btn = $('run-extract-btn');
     btn.disabled = true;
     btn.textContent = '🤖 AI 분석 중...';
 
     try {
-      // PDF를 base64로 변환
-      var base64 = await fileToBase64(S_pdfFile);
-      var mediaType = 'application/pdf';
+      // PDF 텍스트 추출 (base64 전송 안 함 → 토큰 절감)
+      btn.textContent = '📄 PDF 텍스트 추출 중...';
+      var pdfText = await extractTextFromPdf(S_pdfFile);
+      if (!pdfText || pdfText.trim().length < 10) throw new Error('PDF에서 텍스트를 추출할 수 없습니다. 스캔된 이미지 PDF는 지원되지 않습니다.');
 
-      // Claude API 호출
-      var prompt = '이 PDF 문서에서 모든 일정(행사, 회의, 업무 등)을 추출해 주세요.\n\n' +
-        '각 일정에 대해 다음 JSON 배열 형식으로 반환해 주세요:\n' +
+      btn.textContent = '🤖 AI 분석 중...';
+
+      var prompt = '아래는 업무 보고서 PDF에서 추출한 텍스트입니다. 모든 일정(행사, 회의, 업무 등)을 추출해 주세요.\n\n' +
+        '반드시 아래 JSON 배열 형식으로만 반환하고, 다른 텍스트나 설명은 포함하지 마세요:\n' +
         '[\n' +
         '  {\n' +
         '    "title": "[부서명] 행사/업무 내용",\n' +
@@ -1629,54 +1647,44 @@
         '    "description": "세부사항"\n' +
         '  }\n' +
         ']\n\n' +
-        '날짜가 불명확한 경우 최대한 추론하세요. 반드시 JSON 배열만 반환하고 다른 텍스트는 포함하지 마세요.';
+        '날짜가 불명확한 경우 최대한 추론하세요.\n\n--- PDF 텍스트 ---\n' + pdfText;
 
-      var response = await fetch('https://api.anthropic.com/v1/messages', {
+      // Gemini Flash API 호출
+      var geminiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + apiKey;
+      var response = await fetch(geminiUrl, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': apiKey,
-          'anthropic-version': '2023-06-01',
-          'anthropic-dangerous-direct-browser-access': 'true',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          model: 'claude-opus-4-8',
-          max_tokens: 8192,
-          messages: [{
-            role: 'user',
-            content: [
-              { type: 'document', source: { type: 'base64', media_type: mediaType, data: base64 } },
-              { type: 'text', text: prompt },
-            ],
-          }],
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: { maxOutputTokens: 8192, temperature: 0.1 },
         }),
       });
 
       if (!response.ok) {
         var errData = await response.json();
-        throw new Error((errData.error && errData.error.message) || 'API 오류 ' + response.status);
+        var errMsg = (errData.error && errData.error.message) || 'API 오류 ' + response.status;
+        throw new Error(errMsg);
       }
 
       var data = await response.json();
-      var text = data.content && data.content[0] && data.content[0].text;
+      var text = data.candidates && data.candidates[0] &&
+                 data.candidates[0].content && data.candidates[0].content.parts &&
+                 data.candidates[0].content.parts[0] && data.candidates[0].content.parts[0].text;
       if (!text) throw new Error('AI 응답이 비어 있습니다.');
 
-      // JSON 파싱 — 응답이 잘린 경우 완성된 항목만 복구
-      var jsonMatch = text.match(/\[[\s\S]*/);
+      // JSON 파싱 — 응답에서 JSON 배열만 추출
+      var jsonMatch = text.match(/\[[\s\S]*\]/);
       if (!jsonMatch) throw new Error('일정 데이터를 파싱할 수 없습니다.');
-      var rawJson = jsonMatch[0];
       var parsed;
       try {
-        // 완전한 JSON이면 그대로 파싱
-        parsed = JSON.parse(rawJson.match(/\[[\s\S]*\]/)[0]);
+        parsed = JSON.parse(jsonMatch[0]);
       } catch (parseErr) {
-        // 잘린 경우: 마지막으로 완성된 객체 직후까지만 잘라서 복구
+        var rawJson = jsonMatch[0];
         var lastComplete = rawJson.lastIndexOf('},');
         if (lastComplete === -1) lastComplete = rawJson.lastIndexOf('}');
-        if (lastComplete === -1) throw new Error('응답이 너무 짧게 잘렸습니다. 더 작은 PDF로 시도하세요.');
-        var recovered = rawJson.slice(0, lastComplete + 1) + ']';
-        parsed = JSON.parse(recovered);
-        toast('응답이 일부 잘렸습니다. ' + parsed.length + '개 항목 복구됨.', 'info');
+        if (lastComplete === -1) throw new Error('응답 파싱 실패. 다시 시도하세요.');
+        parsed = JSON.parse(rawJson.slice(0, lastComplete + 1) + ']');
+        toast('응답 일부 복구됨. ' + parsed.length + '개 항목.', 'info');
       }
       S.extractedEvents = parsed;
 
@@ -1931,7 +1939,7 @@
     $('settings-user-email').textContent = S.userEmail || CONFIG.senderEmail;
     $('setting-folder-id').value = CONFIG.driveReportFolderId !== 'YOUR_FOLDER_ID'
       ? CONFIG.driveReportFolderId : '';
-    var storedKey = CONFIG.anthropicApiKey;
+    var storedKey = CONFIG.geminiApiKey || CONFIG.anthropicApiKey;
     if (storedKey) $('setting-api-key').value = storedKey;
     if (CONFIG.makeWebhookUrl) $('setting-make-webhook').value = CONFIG.makeWebhookUrl;
     renderSettingsRecipients();
@@ -2204,9 +2212,9 @@
     $('save-api-key-btn').addEventListener('click', function () {
       var key = $('setting-api-key').value.trim();
       if (!key) { toast('API 키를 입력하세요.', 'error'); return; }
-      CONFIG.anthropicApiKey = key;
-      try { localStorage.setItem(CONFIG.storageKeys.anthropicApiKey, key); } catch (e) {}
-      toast('API 키가 저장되었습니다.', 'success');
+      CONFIG.geminiApiKey = key;
+      try { localStorage.setItem(CONFIG.storageKeys.geminiApiKey, key); } catch (e) {}
+      toast('Gemini API 키가 저장되었습니다.', 'success');
     });
 
     $('save-make-webhook-btn').addEventListener('click', function () {

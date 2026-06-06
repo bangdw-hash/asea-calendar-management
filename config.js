@@ -21,7 +21,10 @@ const CONFIG = {
     'profile',
   ],
 
-  // ── Anthropic API (localStorage에만 저장, 코드에 포함 안 함) ─
+  // ── Gemini API (localStorage에만 저장, 코드에 포함 안 함) ─
+  geminiApiKey: '',
+
+  // ── Anthropic API (더 이상 일정발췌에 사용 안 함) ─
   anthropicApiKey: '',
 
   // ── Make.com 웹훅 URL (이메일 예약 서버 발송) ─────────────
@@ -91,6 +94,7 @@ const CONFIG = {
     departments:       'asea_departments',
     selectedCalendars: 'asea_selected_calendars',
     sharedCalendars:   'asea_shared_calendars',
+    geminiApiKey:      'asea_gemini_api_key',
     anthropicApiKey:   'asea_anthropic_api_key',
     emailHistory:      'asea_email_history',
     scheduledEmails:   'asea_scheduled_emails',
@@ -118,6 +122,9 @@ const CONFIG = {
 
     var storedShared = localStorage.getItem(s.sharedCalendars);
     if (storedShared) CONFIG.sharedCalendars = JSON.parse(storedShared);
+
+    var storedGeminiKey = localStorage.getItem(s.geminiApiKey);
+    if (storedGeminiKey) CONFIG.geminiApiKey = storedGeminiKey;
 
     var storedApiKey = localStorage.getItem(s.anthropicApiKey);
     if (storedApiKey) CONFIG.anthropicApiKey = storedApiKey;
