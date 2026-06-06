@@ -391,6 +391,17 @@
           <button id="save-api-key-btn" class="btn btn-primary btn-sm">저장</button>
         </div>
 
+        <!-- GitHub PAT (일정 공유 페이지 자동 생성) -->
+        <div class="settings-card">
+          <h3 class="settings-section-title">GitHub Token (일정 공유 페이지 자동 생성)</h3>
+          <div class="form-group">
+            <input id="setting-github-token" type="password" class="form-input"
+              placeholder="ghp_xxxxxxxxxxxxxxxxxxxx">
+            <p class="form-hint">⚠️ localStorage에만 저장됩니다. GitHub → Settings → Developer settings → Personal access tokens → Fine-grained tokens에서 발급. <strong>Contents: Read and write</strong> 권한 필요.</p>
+          </div>
+          <button id="save-github-token-btn" class="btn btn-primary btn-sm">저장</button>
+        </div>
+
         <!-- Make.com 웹훅 URL -->
         <div class="settings-card">
           <h3 class="settings-section-title">Make.com 웹훅 URL (이메일 예약 서버 발송)</h3>

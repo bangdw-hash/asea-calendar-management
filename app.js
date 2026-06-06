@@ -2040,11 +2040,14 @@
     try { localStorage.setItem(CONFIG.storageKeys.shareHistory, JSON.stringify(CONFIG.shareHistory)); } catch (e) {}
   }
 
-  function generateShareUrl() {
+  async function generateShareUrl() {
     if (!S.extractedEvents || S.extractedEvents.length === 0) {
       toast('공유할 일정이 없습니다.', 'error'); return;
     }
-    // 선택된 항목만
+    if (!CONFIG.githubToken) {
+      toast('설정 탭에서 GitHub Token을 먼저 저장하세요.', 'error'); return;
+    }
+
     var selected = [];
     document.querySelectorAll('.extract-event-check input:checked').forEach(function (cb) {
       var idx = parseInt(cb.closest('.extract-event-card').dataset.index, 10);
@@ -2052,47 +2055,152 @@
     });
     if (selected.length === 0) { toast('선택된 일정이 없습니다.', 'error'); return; }
 
-    var calSel = $('extract-target-calendar');
-    var title = (S_pdfFile ? S_pdfFile.name.replace(/\.pdf$/i, '') : '공유 일정');
-    var payload = {
-      title:    title,
-      sharedAt: new Date().toISOString(),
-      events:   selected,
+    var btn = $('extract-gen-share-url-btn');
+    btn.disabled = true;
+    btn.textContent = '⏳ 생성 중...';
+
+    var title    = S_pdfFile ? S_pdfFile.name.replace(/\.pdf$/i, '') : '공유 일정';
+    var now      = new Date();
+    var pad      = function (n) { return String(n).padStart(2, '0'); };
+    var stamp    = now.getFullYear() + pad(now.getMonth()+1) + pad(now.getDate()) +
+                   '_' + pad(now.getHours()) + pad(now.getMinutes()) + pad(now.getSeconds());
+    var filename = 'shares/share_' + stamp + '.html';
+    var pageUrl  = CONFIG.baseUrl.replace(/\/$/, '') + '/' + filename;
+
+    try {
+      var html = buildSharePageHtml(selected, title, now.toISOString());
+      var encoded = btoa(unescape(encodeURIComponent(html)));
+
+      var apiUrl = 'https://api.github.com/repos/' + CONFIG.githubOwner + '/' +
+                   CONFIG.githubRepo + '/contents/' + filename;
+
+      var res = await fetch(apiUrl, {
+        method: 'PUT',
+        headers: {
+          'Authorization': 'Bearer ' + CONFIG.githubToken,
+          'Content-Type': 'application/json',
+          'Accept': 'application/vnd.github+json',
+        },
+        body: JSON.stringify({
+          message: 'share: ' + title + ' (' + selected.length + '개 일정)',
+          content: encoded,
+        }),
+      });
+
+      if (!res.ok) {
+        var err = await res.json();
+        throw new Error((err.message || 'GitHub API 오류 ' + res.status));
+      }
+
+      $('share-url-warning').hidden = true;
+      $('share-url-modal-input').value  = pageUrl;
+      $('share-url-open-btn').href      = pageUrl;
+      $('share-url-event-count').textContent =
+        selected.length + '개 일정 포함 · GitHub Pages 반영까지 약 1~2분 소요';
+
+      openModal('share-url-modal');
+
+      var entry = {
+        id:       genId(),
+        title:    title,
+        sharedAt: now.toISOString(),
+        count:    selected.length,
+        url:      pageUrl,
+        filename: filename,
+      };
+      CONFIG.shareHistory.unshift(entry);
+      if (CONFIG.shareHistory.length > 100) CONFIG.shareHistory = CONFIG.shareHistory.slice(0, 100);
+      persistShareHistory();
+
+    } catch (e) {
+      toast('공유 페이지 생성 실패: ' + e.message, 'error');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = '📤 선택 일정 공유';
+    }
+  }
+
+  function buildSharePageHtml(events, title, sharedAt) {
+    var DEPT_COLORS = {
+      '임원':'#1A237E','기획처':'#4285F4','행정관리처':'#0288D1','교육지원처':'#00897B',
+      '입학처':'#558B2F','항공정비계열':'#F57F17','스마트안전진단계열':'#E65100',
+      '항공관광계열':'#AD1457','항공보안계열':'#6A1B9A','국방경찰계열':'#283593',
+      '기종교육원':'#00695C','무인항공교육원':'#2E7D32','비행교육원':'#37474F',
+      '온라인평생교육원':'#5D4037','기타':'#EA4335'
     };
 
-    var encoded;
-    try { encoded = btoa(unescape(encodeURIComponent(JSON.stringify(payload)))); }
-    catch (e) { toast('URL 생성 실패: ' + e.message, 'error'); return; }
-
-    var base = CONFIG.baseUrl.replace(/\/$/, '');
-    var url  = base + '/share.html#' + encoded;
-
-    // URL 길이 경고
-    var warn = $('share-url-warning');
-    if (url.length > 8000) {
-      warn.textContent = '⚠ URL이 너무 깁니다 (' + url.length + '자). 선택 항목을 줄여주세요.';
-      warn.hidden = false;
-    } else {
-      warn.hidden = true;
+    function toGCalUrl(ev) {
+      var s = new Date(ev.startDateTime).toISOString().replace(/[-:]/g,'').replace(/\.\d{3}/,'');
+      var e = new Date(ev.endDateTime).toISOString().replace(/[-:]/g,'').replace(/\.\d{3}/,'');
+      var details = [ev.description || '', ev.department ? '[부서: ' + ev.department + ']' : ''].filter(Boolean).join('\n');
+      return 'https://calendar.google.com/calendar/render?action=TEMPLATE' +
+        '&text=' + encodeURIComponent(ev.title) +
+        '&dates=' + s + '/' + e +
+        '&details=' + encodeURIComponent(details);
     }
 
-    $('share-url-modal-input').value   = url;
-    $('share-url-open-btn').href       = url;
-    $('share-url-event-count').textContent = '선택된 일정 ' + selected.length + '개 포함';
+    function fmtDt(iso) {
+      var d = new Date(iso);
+      var days = ['일','월','화','수','목','금','토'];
+      var p = function(n){return String(n).padStart(2,'0');};
+      return d.getFullYear() + '.' + p(d.getMonth()+1) + '.' + p(d.getDate()) +
+             '(' + days[d.getDay()] + ') ' + p(d.getHours()) + ':' + p(d.getMinutes());
+    }
 
-    openModal('share-url-modal');
+    var rows = events.map(function(ev) {
+      var color = DEPT_COLORS[ev.department] || DEPT_COLORS['기타'];
+      var gcalUrl = toGCalUrl(ev);
+      return '<tr>' +
+        '<td style="padding:12px 8px;border-bottom:1px solid #eee;vertical-align:middle">' +
+          '<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:' + color + ';margin-right:8px;vertical-align:middle"></span>' +
+          '<a href="' + gcalUrl + '" target="_blank" rel="noopener" ' +
+             'style="color:#1a73e8;font-weight:600;text-decoration:none;font-size:14px">' +
+            ev.title +
+          '</a>' +
+        '</td>' +
+        '<td style="padding:12px 8px;border-bottom:1px solid #eee;font-size:13px;color:#555;white-space:nowrap">' +
+          fmtDt(ev.startDateTime) +
+        '</td>' +
+        '<td style="padding:12px 8px;border-bottom:1px solid #eee;font-size:13px;color:#555;white-space:nowrap">' +
+          fmtDt(ev.endDateTime) +
+        '</td>' +
+        '<td style="padding:12px 8px;border-bottom:1px solid #eee;font-size:13px;color:#777">' +
+          (ev.department || '기타') +
+        '</td>' +
+        '<td style="padding:12px 8px;border-bottom:1px solid #eee;text-align:center">' +
+          '<a href="' + gcalUrl + '" target="_blank" rel="noopener" ' +
+             'style="display:inline-block;padding:6px 12px;background:#1a73e8;color:#fff;border-radius:6px;font-size:12px;font-weight:600;text-decoration:none">+ 캘린더 추가</a>' +
+        '</td>' +
+      '</tr>';
+    }).join('');
 
-    // 공유 이력 저장
-    var entry = {
-      id:       genId(),
-      title:    title,
-      sharedAt: payload.sharedAt,
-      count:    selected.length,
-      url:      url,
-    };
-    CONFIG.shareHistory.unshift(entry);
-    if (CONFIG.shareHistory.length > 100) CONFIG.shareHistory = CONFIG.shareHistory.slice(0, 100);
-    persistShareHistory();
+    var d = new Date(sharedAt);
+    var sharedLabel = d.getFullYear() + '.' + String(d.getMonth()+1).padStart(2,'0') + '.' + String(d.getDate()).padStart(2,'0');
+
+    return '<!DOCTYPE html>\n<html lang="ko">\n<head>\n' +
+      '<meta charset="UTF-8">\n' +
+      '<meta name="viewport" content="width=device-width,initial-scale=1.0">\n' +
+      '<title>ASEA 일정 공유 — ' + title + '</title>\n' +
+      '<style>\n' +
+      '*{box-sizing:border-box;margin:0;padding:0}\n' +
+      'body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#f5f7fa;color:#1a1a2e;min-height:100vh}\n' +
+      'header{background:#fff;border-bottom:1px solid #e0e4ef;padding:16px 24px;display:flex;align-items:center;gap:12px;box-shadow:0 1px 4px rgba(0,0,0,.06)}\n' +
+      'header h1{font-size:18px;font-weight:700}\n' +
+      '.container{max-width:900px;margin:0 auto;padding:24px 16px 60px}\n' +
+      '.info{font-size:13px;color:#666;margin-bottom:20px;padding:12px 16px;background:#fff;border-radius:8px;border:1px solid #e0e4ef}\n' +
+      'table{width:100%;border-collapse:collapse;background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.06)}\n' +
+      'thead tr{background:#f8f9fa}\n' +
+      'thead th{padding:12px 8px;font-size:12px;color:#666;font-weight:600;text-align:left;border-bottom:2px solid #e0e4ef}\n' +
+      '@media(max-width:600px){thead th:nth-child(4){display:none}tbody td:nth-child(4){display:none}}\n' +
+      '</style>\n' +
+      '</head>\n<body>\n' +
+      '<header><span style="font-size:22px">📅</span><h1>ASEA 일정 공유 — ' + title + '</h1>' +
+      '<span style="margin-left:auto;font-size:13px;color:#999">' + sharedLabel + ' 공유 · ' + events.length + '개 일정</span></header>\n' +
+      '<div class="container">\n' +
+      '<p class="info">📌 일정 이름 또는 <strong>+ 캘린더 추가</strong> 버튼을 클릭하면 자신의 구글 캘린더에 해당 일정을 추가할 수 있습니다.</p>\n' +
+      '<table>\n<thead><tr>' +
+        '<th>일정명</th><th>시작</th><th>종료</th><th>부서</th><th style="text-align:center">추가</th>' +
+      '</tr></thead>\n<tbody>\n' + rows + '\n</tbody>\n</table>\n</div>\n</body>\n</html>';
   }
 
   function renderShareHistory() {
@@ -2304,6 +2412,7 @@
     var storedKey = CONFIG.anthropicApiKey;
     if (storedKey) $('setting-api-key').value = storedKey;
     if (CONFIG.makeWebhookUrl) $('setting-make-webhook').value = CONFIG.makeWebhookUrl;
+    if (CONFIG.githubToken) $('setting-github-token').value = CONFIG.githubToken;
     renderSettingsRecipients();
     renderDeptList();
     renderMyCalendarsList();
@@ -2577,6 +2686,13 @@
       CONFIG.anthropicApiKey = key;
       try { localStorage.setItem(CONFIG.storageKeys.anthropicApiKey, key); } catch (e) {}
       toast('Claude API 키가 저장되었습니다.', 'success');
+    });
+
+    $('save-github-token-btn').addEventListener('click', function () {
+      var token = $('setting-github-token').value.trim();
+      CONFIG.githubToken = token;
+      try { localStorage.setItem(CONFIG.storageKeys.githubToken, token); } catch (e) {}
+      toast(token ? 'GitHub Token이 저장되었습니다.' : 'GitHub Token이 삭제되었습니다.', 'success');
     });
 
     $('save-make-webhook-btn').addEventListener('click', function () {

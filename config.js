@@ -30,6 +30,11 @@ const CONFIG = {
   // ── Make.com 웹훅 URL (이메일 예약 서버 발송) ─────────────
   makeWebhookUrl: '',
 
+  // ── GitHub PAT (공유 페이지 자동 생성, localStorage에만 저장) ─
+  githubToken: '',
+  githubOwner: 'bangdw-hash',
+  githubRepo:  'asea-calendar-management',
+
   // ── 수신자 목록 ──────────────────────────────────────────────
   recipients: [
     { name: '수신자1', email: 'recipient1@example.com' },
@@ -102,6 +107,7 @@ const CONFIG = {
     emailHistory:      'asea_email_history',
     scheduledEmails:   'asea_scheduled_emails',
     makeWebhookUrl:    'asea_make_webhook_url',
+    githubToken:       'asea_github_token',
     extractHistory:    'asea_extract_history',
     shareHistory:      'asea_share_history',
   },
@@ -135,6 +141,9 @@ const CONFIG = {
 
     var storedWebhook = localStorage.getItem(s.makeWebhookUrl);
     if (storedWebhook) CONFIG.makeWebhookUrl = storedWebhook;
+
+    var storedGithubToken = localStorage.getItem(s.githubToken);
+    if (storedGithubToken) CONFIG.githubToken = storedGithubToken;
 
     var storedExtHist = localStorage.getItem(s.extractHistory);
     if (storedExtHist) CONFIG.extractHistory = JSON.parse(storedExtHist);
