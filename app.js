@@ -477,6 +477,18 @@
       $('calendar-filter-panel').hidden = true;
     });
 
+    $('sync-filter-calendars-btn').addEventListener('click', async function () {
+      this.textContent = '⏳ 동기화 중...';
+      this.disabled = true;
+      await loadAndSyncCalendars();
+      renderFilterPanel();
+      renderLegend();
+      renderExtractTab();
+      this.textContent = '🔄 동기화';
+      this.disabled = false;
+      toast('구글 캘린더와 동기화됐습니다.', 'success');
+    });
+
     // 헤더 캘린더 불러오기
     $('sync-calendars-btn').addEventListener('click', async function () {
       await loadAndSyncCalendars();
@@ -489,7 +501,14 @@
     if (!Auth.isLoggedIn()) return;
     try {
       S.userCalendars = await CalendarModule.listCalendars();
-      // Google 서버 색상으로 항상 동기화 (기기 간 색상 일치)
+      var googleIds = S.userCalendars.map(function (c) { return c.id; });
+
+      // 구글에서 삭제된 캘린더는 로컬에서도 제거
+      CONFIG.selectedCalendars = CONFIG.selectedCalendars.filter(function (c) {
+        return googleIds.indexOf(c.id) !== -1;
+      });
+
+      // 색상·이름 동기화 + 신규 추가
       S.userCalendars.forEach(function (cal) {
         var googleColor   = cal.backgroundColor || '#4285F4';
         var googleColorId = cal.colorId || '';
@@ -1579,6 +1598,7 @@
       });
     });
 
+    $('extract-split-btn').addEventListener('click', splitSelectedEvents);
     $('extract-check-conflict-btn').addEventListener('click', checkExtractConflicts);
     $('extract-save-state-btn').addEventListener('click', saveExtractState);
     $('extract-gen-share-url-btn').addEventListener('click', generateShareUrl);
@@ -1798,6 +1818,41 @@
       countEl.textContent = '총 ' + S.extractedEvents.length + '개 (충돌 확인 전)';
       $('extract-deselect-conflict').disabled = true;
     }
+  }
+
+  function splitSelectedEvents() {
+    if (!S.extractedEvents || S.extractedEvents.length === 0) { toast('추출된 일정이 없습니다.', 'error'); return; }
+
+    // 선택된 인덱스 수집 (내림차순 — splice 시 앞 인덱스 밀림 방지)
+    var checkedIndices = [];
+    document.querySelectorAll('.extract-event-check input:checked').forEach(function (cb) {
+      var idx = parseInt(cb.closest('.extract-event-card').dataset.index, 10);
+      if (!isNaN(idx)) checkedIndices.push(idx);
+    });
+    if (checkedIndices.length === 0) { toast('선택된 일정이 없습니다.', 'error'); return; }
+
+    checkedIndices.sort(function (a, b) { return b - a; });
+
+    var splitCount = 0;
+    checkedIndices.forEach(function (idx) {
+      var ev = S.extractedEvents[idx];
+      var s  = new Date(ev.startDateTime);
+      var e  = new Date(ev.endDateTime);
+      if (s.toDateString() === e.toDateString()) return; // 당일 일정은 분리 불필요
+
+      var startDayEnd  = new Date(s); startDayEnd.setHours(23, 59, 0, 0);
+      var endDayStart  = new Date(e); endDayStart.setHours(0,  0,  0, 0);
+
+      var startEv = Object.assign({}, ev, { title: ev.title + ' (시작)', endDateTime:   startDayEnd.toISOString() });
+      var endEv   = Object.assign({}, ev, { title: ev.title + ' (종료)', startDateTime: endDayStart.toISOString() });
+
+      S.extractedEvents.splice(idx, 1, startEv, endEv);
+      splitCount++;
+    });
+
+    if (splitCount === 0) { toast('선택 항목 중 다일 일정이 없습니다. (당일 일정은 분리되지 않습니다)', 'info'); return; }
+    renderExtractedEvents(null);
+    toast(splitCount + '개 일정이 시작/종료로 분리됐습니다.', 'success');
   }
 
   function toDatetimeLocal(isoStr) {
@@ -2212,32 +2267,7 @@
     btn.disabled = true;
     btn.textContent = '등록 중...';
 
-    // 다일 일정을 시작/종료 2개로 분리
-    function splitIfMultiDay(ev) {
-      var s = new Date(ev.startDateTime);
-      var e = new Date(ev.endDateTime);
-      if (s.toDateString() === e.toDateString()) return [ev];
-
-      var startDayEnd = new Date(s);
-      startDayEnd.setHours(23, 59, 0, 0);
-
-      var endDayStart = new Date(e);
-      endDayStart.setHours(0, 0, 0, 0);
-
-      return [
-        Object.assign({}, ev, { title: ev.title + ' (시작)', endDateTime: startDayEnd.toISOString() }),
-        Object.assign({}, ev, { title: ev.title + ' (종료)', startDateTime: endDayStart.toISOString() }),
-      ];
-    }
-
-    var modeEl = document.querySelector('input[name="extract-mode"]:checked');
-    var splitMode = modeEl && modeEl.value === 'split';
-
-    var toCreate = [];
-    selected.forEach(function (ev) {
-      var items = splitMode ? splitIfMultiDay(ev) : [ev];
-      items.forEach(function (e) { toCreate.push(e); });
-    });
+    var toCreate = selected;
 
     var ok = 0, fail = 0;
     for (var i = 0; i < toCreate.length; i++) {
@@ -2260,8 +2290,7 @@
 
     btn.disabled = false;
     btn.textContent = '선택 항목 등록';
-    var splitNote = toCreate.length > selected.length ? ' (다일 일정 분리 포함)' : '';
-    toast('등록 완료: ' + ok + '건 성공' + (fail ? ', ' + fail + '건 실패' : '') + splitNote, ok ? 'success' : 'error');
+    toast('등록 완료: ' + ok + '건 성공' + (fail ? ', ' + fail + '건 실패' : ''), ok ? 'success' : 'error');
     if (ok > 0 && S.tab === 'calendar') renderCalendar();
   }
 

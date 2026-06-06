@@ -113,6 +113,7 @@
         <div id="calendar-filter-panel" class="calendar-filter-panel" hidden>
           <div class="filter-panel-header">
             <span class="filter-panel-title">표시할 캘린더 선택</span>
+            <button id="sync-filter-calendars-btn" class="btn btn-ghost btn-sm" title="구글 캘린더와 목록 동기화">🔄 동기화</button>
             <button id="close-filter-panel" class="btn btn-ghost btn-sm">✕</button>
           </div>
           <div id="calendar-filter-list" class="calendar-filter-list"></div>
@@ -311,25 +312,15 @@
                   <button id="extract-select-all" class="btn btn-ghost btn-sm">전체 선택</button>
                   <button id="extract-deselect-all" class="btn btn-ghost btn-sm">전체 취소</button>
                   <button id="extract-deselect-conflict" class="btn btn-ghost btn-sm extract-conflict-btn" disabled>⚠ 충돌 취소</button>
+                  <button id="extract-split-btn" class="btn btn-ghost btn-sm" title="선택된 다일 일정을 시작·종료 2개로 분리">✂️ 시작/종료 분리</button>
                   <select id="extract-target-calendar" class="form-select" style="width:auto;min-width:160px">
                     <option value="">캘린더 불러오는 중...</option>
                   </select>
                   <button id="extract-check-conflict-btn" class="btn btn-secondary btn-sm">🔍 충돌 확인</button>
                   <button id="extract-save-state-btn" class="btn btn-ghost btn-sm">💾 현재 상태 저장</button>
-                  <button id="extract-gen-share-url-btn" class="btn btn-ghost btn-sm">🔗 URL 생성</button>
+                  <button id="extract-gen-share-url-btn" class="btn btn-secondary btn-sm">📤 선택 일정 공유</button>
                   <button id="extract-add-selected" class="btn btn-primary btn-sm">선택 항목 등록</button>
                   <button id="extract-text-btn" class="btn btn-secondary btn-sm">📋 텍스트 보기</button>
-                </div>
-                <!-- 등록 방식 선택 -->
-                <div class="extract-register-mode">
-                  <label class="extract-mode-label">
-                    <input type="radio" name="extract-mode" value="continuous" checked>
-                    <span>📅 연속 일정 (1개)</span>
-                  </label>
-                  <label class="extract-mode-label">
-                    <input type="radio" name="extract-mode" value="split">
-                    <span>✂️ 시작/종료 분리 (2개)</span>
-                  </label>
                 </div>
               </div>
               <div id="extract-events-list" class="extract-events-list"></div>
