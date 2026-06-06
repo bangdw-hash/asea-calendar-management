@@ -1469,7 +1469,7 @@
         },
         body: JSON.stringify({
           model: 'claude-opus-4-8',
-          max_tokens: 4096,
+          max_tokens: 8192,
           messages: [{
             role: 'user',
             content: [
@@ -1489,10 +1489,24 @@
       var text = data.content && data.content[0] && data.content[0].text;
       if (!text) throw new Error('AI 응답이 비어 있습니다.');
 
-      // JSON 파싱
-      var jsonMatch = text.match(/\[[\s\S]*\]/);
+      // JSON 파싱 — 응답이 잘린 경우 완성된 항목만 복구
+      var jsonMatch = text.match(/\[[\s\S]*/);
       if (!jsonMatch) throw new Error('일정 데이터를 파싱할 수 없습니다.');
-      S.extractedEvents = JSON.parse(jsonMatch[0]);
+      var rawJson = jsonMatch[0];
+      var parsed;
+      try {
+        // 완전한 JSON이면 그대로 파싱
+        parsed = JSON.parse(rawJson.match(/\[[\s\S]*\]/)[0]);
+      } catch (parseErr) {
+        // 잘린 경우: 마지막으로 완성된 객체 직후까지만 잘라서 복구
+        var lastComplete = rawJson.lastIndexOf('},');
+        if (lastComplete === -1) lastComplete = rawJson.lastIndexOf('}');
+        if (lastComplete === -1) throw new Error('응답이 너무 짧게 잘렸습니다. 더 작은 PDF로 시도하세요.');
+        var recovered = rawJson.slice(0, lastComplete + 1) + ']';
+        parsed = JSON.parse(recovered);
+        toast('응답이 일부 잘렸습니다. ' + parsed.length + '개 항목 복구됨.', 'info');
+      }
+      S.extractedEvents = parsed;
 
       renderExtractedEvents();
       toast(S.extractedEvents.length + '개 일정이 추출되었습니다.', 'success');
