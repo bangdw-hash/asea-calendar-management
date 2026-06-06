@@ -1,11 +1,11 @@
 # 작업 현황 — ASEA Calendar Management
-최종 업데이트: 2026-06-06 11:30 KST | 업데이트 주체: Claude Code
+최종 업데이트: 2026-06-06 KST | 업데이트 주체: Claude Code
 
 ---
 
-## 현재 단계: PHASE 4 — SIMULATE (4 / 6)
+## 현재 단계: PHASE 6 완료 ✅ (6 / 6)
 
-> PHASE 3 BUILD 완료. 전체 모듈 구현 완료. 시뮬레이션 단계 시작.
+> PHASE 4 시뮬레이션(정적 코드 분석 + 버그 수정) → PHASE 5 통합 → PHASE 6 배포 완료.
 
 | 모듈 | 담당 | 상태 | 완료 |
 |------|------|------|------|
@@ -21,58 +21,49 @@
 
 ---
 
-## 다음 단계: 시뮬레이션 체크리스트
+## PHASE 4 시뮬레이션 결과 (정적 코드 분석)
 
-```
-공통 (전 모듈):
-□ 브라우저 콘솔 오류 없음
-□ window.Auth / window.CalendarModule / window.DriveModule / window.GmailModule / window.ReportModule 노출 확인
-□ Auth.getToken() === null 시 각 모듈 오류 처리 확인
-□ 빈 배열/null 응답 처리 확인
+### 수정된 버그
 
-calendar.js:
-□ 이벤트 생성 → 목록 확인
-□ 중복 감지 로직 동작 확인
+| # | 파일 | 위치 | 문제 | 수정 |
+|---|------|------|------|------|
+| 1 | `app.js` | `openEventModal()` L381 | ISO 문자열 `.slice(0,16)` — UTC 형식 dateTime 시 9시간 오차 | `toLocalDateTime(new Date(...))` 로 변경 |
+| 2 | `style.css` | L497–501 | CSS4 전용 `:not(.today .day-number)` complex selector | 캐스케이드 순서로 대체 (today 규칙을 마지막에 배치) |
 
-drive.js:
-□ 파일명 연도·주차 파싱 확인
-□ 빈 폴더 처리 확인
+### 확인된 정상 동작
 
-gmail.js:
-□ 수신자 없을 때 발송 차단 확인
-□ 한글 제목 인코딩 확인
-
-report.js:
-□ 카카오 문구 생성 패턴 확인
-□ 클립보드 복사 후 토스트 표시 확인
-
-app.js (통합):
-□ 탭 전환 시 각 모듈 정상 초기화
-□ 로그인 → 로그아웃 → 재로그인 사이클
-□ 모바일 375px 레이아웃 확인
-□ 이벤트 CRUD 전체 플로우
-```
+- ✅ 모든 `window.*` 모듈 노출 (Config → Auth → Calendar/Drive → Gmail/Report → App 순 로드)
+- ✅ 미인증 시 모든 API 호출에서 `requireToken()` 예외 발생
+- ✅ DELETE 204 No Content 처리 (`apiFetch` status 체크)
+- ✅ 이메일 RFC 2822 + UTF-8 MIME Encoded-Word 인코딩 로직
+- ✅ 중복 감지 자기 제외 (수정 모드 `editEventId` 필터링)
+- ✅ localStorage 수신자·폴더 ID 영속성
 
 ---
 
-## 배포 전 필수 작업
+## PHASE 6 배포 현황
 
-1. **Google Cloud Console** → OAuth 2.0 클라이언트 ID 발급 후 `config.js`의 `YOUR_GOOGLE_CLIENT_ID` 교체
-2. **Google Drive** → 보고서 폴더 ID 확인 후 `YOUR_FOLDER_ID` 교체 또는 앱 설정 탭에서 입력
-3. **OAuth 동의 화면** → 테스트 사용자에 `bangdw@gmail.com` 추가
-4. **Authorized redirect URIs** → GitHub Pages URL 등록
+| 항목 | 상태 |
+|------|------|
+| GitHub Pages | ✅ 활성화 (HTTP 200 확인) |
+| 배포 URL | https://bangdw-hash.github.io/asea-calendar-management/ |
+| 최신 커밋 | `c8eb15f` — Fix datetime timezone + CSS cascade |
 
 ---
 
-## 승인란
+## 미결 사항 (코드 문제 아님 — Google Cloud Console 설정)
 
-```
-## 승인
-[ ] PHASE 1-3 완료 확인 — PHASE 4 시뮬레이션 진행 승인
-날짜:
-승인자:
-특이사항:
-```
+아래 항목은 **Google Cloud Console에서 수동 설정**이 필요합니다.  
+코드 수정으로 해결 불가.
+
+1. **Authorized JavaScript origins** 추가  
+   `https://console.cloud.google.com/apis/credentials` → OAuth 2.0 Client ID 수정  
+   → `https://bangdw-hash.github.io` 추가
+
+2. **OAuth 동의 화면 → 테스트 사용자**  
+   `bangdw@gmail.com` 추가 (앱이 게시 전이라면 필수)
+
+이 설정이 없으면 Google 로그인 팝업에서 `origin_mismatch` 또는 `403` 오류 발생.
 
 ---
 
