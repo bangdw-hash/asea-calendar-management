@@ -1770,13 +1770,20 @@
             '🏢 ' + (ev.department || '기타') +
             (ev.description ? '<br>📝 ' + ev.description : '') +
           '</div>' +
-        '</div>';
+        '</div>' +
+        '<button class="btn btn-ghost btn-sm extract-edit-btn" data-idx="' + i + '" style="margin-left:auto;flex-shrink:0">✏️ 수정</button>';
 
       var cb = card.querySelector('input[type="checkbox"]');
       cb.addEventListener('change', function () {
         card.classList.toggle('selected', cb.checked);
       });
       card.classList.toggle('selected', true);
+
+      card.querySelector('.extract-edit-btn').addEventListener('click', function (e) {
+        e.stopPropagation();
+        openExtractEditModal(parseInt(this.dataset.idx));
+      });
+
       listEl.appendChild(card);
     });
 
@@ -1788,6 +1795,54 @@
       countEl.textContent = '총 ' + S.extractedEvents.length + '개 (충돌 확인 전)';
       $('extract-deselect-conflict').disabled = true;
     }
+  }
+
+  function toDatetimeLocal(isoStr) {
+    if (!isoStr) return '';
+    var d = new Date(isoStr);
+    var pad = function (n) { return String(n).padStart(2, '0'); };
+    return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) +
+           'T' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+  }
+
+  function openExtractEditModal(idx) {
+    var ev = S.extractedEvents[idx];
+    if (!ev) return;
+    $('extract-edit-index').value  = idx;
+    $('extract-edit-title').value  = ev.title || '';
+    $('extract-edit-dept').value   = ev.department || '';
+    $('extract-edit-start').value  = toDatetimeLocal(ev.startDateTime);
+    $('extract-edit-end').value    = toDatetimeLocal(ev.endDateTime);
+    $('extract-edit-desc').value   = ev.description || '';
+    openModal('extract-edit-modal');
+  }
+
+  function initExtractEditModal() {
+    $('extract-edit-modal').querySelectorAll('[data-close-modal]').forEach(function (el) {
+      el.addEventListener('click', function () { closeModal('extract-edit-modal'); });
+    });
+
+    $('extract-edit-save-btn').addEventListener('click', function () {
+      var idx   = parseInt($('extract-edit-index').value);
+      var title = $('extract-edit-title').value.trim();
+      var start = $('extract-edit-start').value;
+      var end   = $('extract-edit-end').value;
+      if (!title || !start || !end) { toast('제목, 시작/종료 일시는 필수입니다.', 'error'); return; }
+      if (new Date(start) >= new Date(end)) { toast('종료 일시가 시작 일시보다 늦어야 합니다.', 'error'); return; }
+
+      S.extractedEvents[idx] = {
+        title:         title,
+        department:    $('extract-edit-dept').value.trim() || '기타',
+        startDateTime: new Date(start).toISOString(),
+        endDateTime:   new Date(end).toISOString(),
+        description:   $('extract-edit-desc').value.trim(),
+      };
+
+      closeModal('extract-edit-modal');
+      // 충돌 확인 상태 초기화 후 목록 다시 그리기
+      renderExtractedEvents(null);
+      toast('수정되었습니다.', 'success');
+    });
   }
 
   async function checkExtractConflicts() {
@@ -2341,6 +2396,7 @@
     initEmailTab();
     initCsvModal();
     initExtractTab();
+    initExtractEditModal();
     initDeptModal();
     initSettings();
     initModalHandlers();
