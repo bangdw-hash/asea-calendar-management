@@ -2147,31 +2147,16 @@
              '(' + days[d.getDay()] + ') ' + p(d.getHours()) + ':' + p(d.getMinutes());
     }
 
-    var rows = events.map(function(ev) {
+    var items = events.map(function(ev) {
       var color = DEPT_COLORS[ev.department] || DEPT_COLORS['기타'];
       var gcalUrl = toGCalUrl(ev);
-      return '<tr>' +
-        '<td style="padding:12px 8px;border-bottom:1px solid #eee;vertical-align:middle">' +
-          '<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:' + color + ';margin-right:8px;vertical-align:middle"></span>' +
-          '<a href="' + gcalUrl + '" target="_blank" rel="noopener" ' +
-             'style="color:#1a73e8;font-weight:600;text-decoration:none;font-size:14px">' +
-            ev.title +
-          '</a>' +
-        '</td>' +
-        '<td style="padding:12px 8px;border-bottom:1px solid #eee;font-size:13px;color:#555;white-space:nowrap">' +
-          fmtDt(ev.startDateTime) +
-        '</td>' +
-        '<td style="padding:12px 8px;border-bottom:1px solid #eee;font-size:13px;color:#555;white-space:nowrap">' +
-          fmtDt(ev.endDateTime) +
-        '</td>' +
-        '<td style="padding:12px 8px;border-bottom:1px solid #eee;font-size:13px;color:#777">' +
-          (ev.department || '기타') +
-        '</td>' +
-        '<td style="padding:12px 8px;border-bottom:1px solid #eee;text-align:center">' +
-          '<a href="' + gcalUrl + '" target="_blank" rel="noopener" ' +
-             'style="display:inline-block;padding:6px 12px;background:#1a73e8;color:#fff;border-radius:6px;font-size:12px;font-weight:600;text-decoration:none">+ 캘린더 추가</a>' +
-        '</td>' +
-      '</tr>';
+      return '<a href="' + gcalUrl + '" target="_blank" rel="noopener" class="ev-item">' +
+        '<span class="ev-dot" style="background:' + color + '"></span>' +
+        '<span class="ev-body">' +
+          '<span class="ev-title">' + ev.title + '</span>' +
+          '<span class="ev-time">' + fmtDt(ev.startDateTime) + ' ~ ' + fmtDt(ev.endDateTime) + '</span>' +
+        '</span>' +
+      '</a>';
     }).join('');
 
     var d = new Date(sharedAt);
@@ -2184,23 +2169,25 @@
       '<style>\n' +
       '*{box-sizing:border-box;margin:0;padding:0}\n' +
       'body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#f5f7fa;color:#1a1a2e;min-height:100vh}\n' +
-      'header{background:#fff;border-bottom:1px solid #e0e4ef;padding:16px 24px;display:flex;align-items:center;gap:12px;box-shadow:0 1px 4px rgba(0,0,0,.06)}\n' +
-      'header h1{font-size:18px;font-weight:700}\n' +
-      '.container{max-width:900px;margin:0 auto;padding:24px 16px 60px}\n' +
-      '.info{font-size:13px;color:#666;margin-bottom:20px;padding:12px 16px;background:#fff;border-radius:8px;border:1px solid #e0e4ef}\n' +
-      'table{width:100%;border-collapse:collapse;background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.06)}\n' +
-      'thead tr{background:#f8f9fa}\n' +
-      'thead th{padding:12px 8px;font-size:12px;color:#666;font-weight:600;text-align:left;border-bottom:2px solid #e0e4ef}\n' +
-      '@media(max-width:600px){thead th:nth-child(4){display:none}tbody td:nth-child(4){display:none}}\n' +
+      'header{background:#fff;border-bottom:1px solid #e0e4ef;padding:14px 20px;display:flex;align-items:center;gap:10px;box-shadow:0 1px 4px rgba(0,0,0,.06)}\n' +
+      'header h1{font-size:16px;font-weight:700;line-height:1.3}\n' +
+      '.meta{margin-left:auto;font-size:12px;color:#999;white-space:nowrap}\n' +
+      '.container{max-width:640px;margin:0 auto;padding:20px 16px 60px}\n' +
+      '.guide{font-size:14px;color:#444;line-height:1.7;margin-bottom:20px;padding:14px 16px;background:#fff;border-radius:10px;border:1px solid #e0e4ef}\n' +
+      '.ev-item{display:flex;align-items:flex-start;gap:12px;padding:14px 16px;background:#fff;border-radius:10px;border:1px solid #e0e4ef;margin-bottom:10px;text-decoration:none;color:inherit;transition:background 150ms}\n' +
+      '.ev-item:active{background:#f0f4ff}\n' +
+      '.ev-dot{width:12px;height:12px;border-radius:50%;flex-shrink:0;margin-top:3px}\n' +
+      '.ev-body{display:flex;flex-direction:column;gap:4px}\n' +
+      '.ev-title{font-size:15px;font-weight:600;color:#1a73e8;line-height:1.4}\n' +
+      '.ev-time{font-size:13px;color:#666}\n' +
       '</style>\n' +
       '</head>\n<body>\n' +
-      '<header><span style="font-size:22px">📅</span><h1>ASEA 일정 공유 — ' + title + '</h1>' +
-      '<span style="margin-left:auto;font-size:13px;color:#999">' + sharedLabel + ' 공유 · ' + events.length + '개 일정</span></header>\n' +
+      '<header><span style="font-size:20px">📅</span>' +
+      '<h1>ASEA 일정 공유<br><span style="font-weight:400;font-size:13px;color:#666">' + title + '</span></h1>' +
+      '<span class="meta">' + sharedLabel + ' · ' + events.length + '개</span></header>\n' +
       '<div class="container">\n' +
-      '<p class="info">📌 일정 이름 또는 <strong>+ 캘린더 추가</strong> 버튼을 클릭하면 자신의 구글 캘린더에 해당 일정을 추가할 수 있습니다.</p>\n' +
-      '<table>\n<thead><tr>' +
-        '<th>일정명</th><th>시작</th><th>종료</th><th>부서</th><th style="text-align:center">추가</th>' +
-      '</tr></thead>\n<tbody>\n' + rows + '\n</tbody>\n</table>\n</div>\n</body>\n</html>';
+      '<div class="guide">아래 일정에서 원하시는 일정을 개별적으로 선택하실 수 있습니다.<br>일정을 선택하시면 구글 캘린더에 개별적으로 추가할 수 있습니다.</div>\n' +
+      items + '\n</div>\n</body>\n</html>';
   }
 
   function renderShareHistory() {
