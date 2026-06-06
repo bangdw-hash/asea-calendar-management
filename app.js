@@ -215,9 +215,9 @@
     return (data.files && data.files[0]) ? data.files[0].id : null;
   }
 
-  async function saveSettingsToCloud() {
+  async function saveSettingsToCloud(silent) {
     var token = Auth.getToken();
-    if (!token) { toast('로그인이 필요합니다.', 'error'); return; }
+    if (!token) { if (!silent) toast('로그인이 필요합니다.', 'error'); return; }
 
     var payload = {};
     CLOUD_SETTINGS_KEYS.forEach(function (k) { payload[k] = CONFIG[k]; });
@@ -253,9 +253,9 @@
         });
       }
       if (!res.ok) throw new Error('HTTP ' + res.status);
-      toast('☁️ 설정이 클라우드에 저장되었습니다.', 'success');
+      if (!silent) toast('☁️ 설정이 클라우드에 저장되었습니다.', 'success');
     } catch (e) {
-      toast('클라우드 저장 실패: ' + (e.message || e), 'error');
+      if (!silent) toast('클라우드 저장 실패: ' + (e.message || e), 'error');
     }
   }
 
@@ -2828,12 +2828,13 @@
       toast('저장되었습니다.', 'success');
     });
 
-    $('save-api-key-btn').addEventListener('click', function () {
+    $('save-api-key-btn').addEventListener('click', async function () {
       var key = $('setting-api-key').value.trim();
       if (!key) { toast('API 키를 입력하세요.', 'error'); return; }
       CONFIG.anthropicApiKey = key;
       try { localStorage.setItem(CONFIG.storageKeys.anthropicApiKey, key); } catch (e) {}
       toast('Claude API 키가 저장되었습니다.', 'success');
+      saveSettingsToCloud(true);
     });
 
     $('cloud-save-settings-btn').addEventListener('click', async function () {
@@ -2850,14 +2851,15 @@
       btn.disabled = false; btn.textContent = '⬇️ 클라우드에서 불러오기';
     });
 
-    $('save-github-token-btn').addEventListener('click', function () {
+    $('save-github-token-btn').addEventListener('click', async function () {
       var token = $('setting-github-token').value.trim();
       CONFIG.githubToken = token;
       try { localStorage.setItem(CONFIG.storageKeys.githubToken, token); } catch (e) {}
       toast(token ? 'GitHub Token이 저장되었습니다.' : 'GitHub Token이 삭제되었습니다.', 'success');
+      saveSettingsToCloud(true);
     });
 
-    $('save-make-webhook-btn').addEventListener('click', function () {
+    $('save-make-webhook-btn').addEventListener('click', async function () {
       var url = $('setting-make-webhook').value.trim();
       if (url && !url.startsWith('https://hook.')) {
         toast('올바른 Make.com 웹훅 URL을 입력하세요.', 'error'); return;
@@ -2865,6 +2867,7 @@
       CONFIG.makeWebhookUrl = url;
       try { localStorage.setItem(CONFIG.storageKeys.makeWebhookUrl, url); } catch (e) {}
       toast(url ? 'Make.com 웹훅 URL이 저장되었습니다.' : '웹훅 URL이 삭제되었습니다.', 'success');
+      saveSettingsToCloud(true);
     });
 
     $('load-my-calendars-btn').addEventListener('click', async function () {
