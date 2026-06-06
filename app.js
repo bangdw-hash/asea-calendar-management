@@ -483,14 +483,21 @@
     if (!Auth.isLoggedIn()) return;
     try {
       S.userCalendars = await CalendarModule.listCalendars();
-      // selectedCalendars에 없는 캘린더 추가 (기본 enabled: true)
+      // Google 서버 색상으로 항상 동기화 (기기 간 색상 일치)
       S.userCalendars.forEach(function (cal) {
+        var googleColor   = cal.backgroundColor || '#4285F4';
+        var googleColorId = cal.colorId || '';
         var exists = CONFIG.selectedCalendars.find(function (c) { return c.id === cal.id; });
-        if (!exists) {
+        if (exists) {
+          exists.name    = cal.summary;
+          exists.color   = googleColor;
+          exists.colorId = googleColorId;
+        } else {
           CONFIG.selectedCalendars.push({
             id:      cal.id,
             name:    cal.summary,
-            color:   cal.backgroundColor || '#4285F4',
+            color:   googleColor,
+            colorId: googleColorId,
             enabled: true,
           });
         }
