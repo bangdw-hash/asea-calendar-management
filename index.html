@@ -381,6 +381,17 @@
           </div>
         </div>
 
+        <!-- 클라우드 설정 동기화 -->
+        <div class="settings-card">
+          <h3 class="settings-section-title">☁️ 설정 클라우드 동기화</h3>
+          <p class="form-hint" style="margin-bottom:12px">API 키, 웹훅 URL, 수신자/부서 목록을 Google 계정과 연동하여 PC ↔ 모바일 간 자동 공유합니다. 로그인 시 자동으로 불러옵니다.</p>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button id="cloud-save-settings-btn" class="btn btn-primary btn-sm">☁️ 클라우드에 저장</button>
+            <button id="cloud-load-settings-btn" class="btn btn-ghost btn-sm">⬇️ 클라우드에서 불러오기</button>
+          </div>
+          <p id="cloud-sync-status" class="form-hint" style="margin-top:8px"></p>
+        </div>
+
         <!-- Claude API 키 -->
         <div class="settings-card">
           <h3 class="settings-section-title">Claude API 키 (일정발췌 기능)</h3>
