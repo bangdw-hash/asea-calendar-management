@@ -1,5 +1,18 @@
 # 작업 현황 — ASEA Calendar Management
-최종 업데이트: 2026-06-06 KST | 업데이트 주체: Claude Code
+최종 업데이트: 2026-06-06 KST (신규 기능 추가) | 업데이트 주체: Claude Code
+
+---
+
+## 현재 단계: PHASE 7 완료 ✅ — 신규 기능 추가
+
+### 추가된 기능 (커밋 `4b49794`)
+
+| 기능 | 파일 | 상태 |
+|------|------|------|
+| 공유 캘린더 URL 등록 (설정 탭) | config.js, index.html, app.js | ✅ |
+| 일정 추가 시 대상 캘린더 선택 | index.html, app.js | ✅ |
+| CSV 일괄 등록 (드롭존, 미리보기, 등록) | index.html, style.css, app.js | ✅ |
+| 공유 캘린더 이벤트 캘린더 통합 표시 | app.js | ✅ |
 
 ---
 

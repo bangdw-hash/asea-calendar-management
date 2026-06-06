@@ -10,11 +10,13 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
   <script src="https://accounts.google.com/gsi/client" async></script>
+  <!-- SheetJS for Excel support -->
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
 </head>
 <body>
 
   <!-- ═══════════════════════════════════════════════════════════
-       로그인 오버레이 — 미인증 시 표시
+       로그인 오버레이
        ═══════════════════════════════════════════════════════════ -->
   <div id="login-overlay" class="login-overlay">
     <div class="login-card">
@@ -37,7 +39,7 @@
   </div>
 
   <!-- ═══════════════════════════════════════════════════════════
-       메인 앱 — 인증 후 표시
+       메인 앱
        ═══════════════════════════════════════════════════════════ -->
   <div id="app" class="app" hidden>
 
@@ -47,6 +49,11 @@
         <span class="header-icon" aria-hidden="true">📅</span>
         <span class="header-title">ASEA 캘린더 관리</span>
       </div>
+      <div class="header-actions">
+        <button id="sync-calendars-btn" class="btn btn-secondary btn-sm" title="내 캘린더 목록 불러오기">
+          🔄 캘린더 불러오기
+        </button>
+      </div>
       <div class="header-user">
         <span id="user-email" class="user-email"></span>
         <button id="logout-btn" class="btn btn-ghost btn-sm">로그아웃</button>
@@ -55,23 +62,23 @@
 
     <!-- ── 탭 네비게이션 ────────────────────────────────────────── -->
     <nav class="tab-nav" role="tablist" aria-label="메인 네비게이션">
-      <button class="tab-btn active" data-tab="calendar"
-              role="tab" aria-selected="true" aria-controls="tab-calendar">
+      <button class="tab-btn active" data-tab="calendar" role="tab" aria-selected="true">
         <span class="tab-icon" aria-hidden="true">📅</span>
         <span class="tab-label">캘린더</span>
       </button>
-      <button class="tab-btn" data-tab="weekly-hub"
-              role="tab" aria-selected="false" aria-controls="tab-weekly-hub">
+      <button class="tab-btn" data-tab="weekly-hub" role="tab" aria-selected="false">
         <span class="tab-icon" aria-hidden="true">📋</span>
         <span class="tab-label">주간허브</span>
       </button>
-      <button class="tab-btn" data-tab="email"
-              role="tab" aria-selected="false" aria-controls="tab-email">
+      <button class="tab-btn" data-tab="email" role="tab" aria-selected="false">
         <span class="tab-icon" aria-hidden="true">✉️</span>
         <span class="tab-label">이메일</span>
       </button>
-      <button class="tab-btn" data-tab="settings"
-              role="tab" aria-selected="false" aria-controls="tab-settings">
+      <button class="tab-btn" data-tab="extract" role="tab" aria-selected="false">
+        <span class="tab-icon" aria-hidden="true">📄</span>
+        <span class="tab-label">일정발췌</span>
+      </button>
+      <button class="tab-btn" data-tab="settings" role="tab" aria-selected="false">
         <span class="tab-icon" aria-hidden="true">⚙️</span>
         <span class="tab-label">설정</span>
       </button>
@@ -84,7 +91,6 @@
            📅 캘린더 탭
            ════════════════════════════════════════════════════ -->
       <section id="tab-calendar" class="tab-panel active" role="tabpanel">
-        <!-- 툴바: 월/주 이동 + 뷰 전환 + 일정 추가 -->
         <div class="calendar-toolbar">
           <div class="calendar-nav">
             <button id="prev-period" class="btn btn-icon" aria-label="이전">&#8249;</button>
@@ -96,9 +102,19 @@
               <button class="view-btn active" data-view="month">월간</button>
               <button class="view-btn" data-view="week">주간</button>
             </div>
+            <button id="calendar-filter-btn" class="btn btn-ghost btn-sm">🗂 캘린더 필터</button>
             <button id="csv-import-btn" class="btn btn-secondary btn-sm">CSV 일괄 등록</button>
             <button id="add-event-btn" class="btn btn-primary btn-sm">+ 일정 추가</button>
           </div>
+        </div>
+
+        <!-- 캘린더 필터 패널 -->
+        <div id="calendar-filter-panel" class="calendar-filter-panel" hidden>
+          <div class="filter-panel-header">
+            <span class="filter-panel-title">표시할 캘린더 선택</span>
+            <button id="close-filter-panel" class="btn btn-ghost btn-sm">✕</button>
+          </div>
+          <div id="calendar-filter-list" class="calendar-filter-list"></div>
         </div>
 
         <!-- 중복 경고 배너 -->
@@ -107,6 +123,9 @@
           <span id="duplicate-banner-text"></span>
           <button class="alert-close" id="close-duplicate-banner" aria-label="닫기">✕</button>
         </div>
+
+        <!-- 캘린더 범례 -->
+        <div id="calendar-legend" class="calendar-legend"></div>
 
         <!-- 캘린더 그리드 -->
         <div id="calendar-container" class="calendar-container">
@@ -129,15 +148,16 @@
       <section id="tab-weekly-hub" class="tab-panel" role="tabpanel" hidden>
         <div class="hub-header">
           <h2 class="section-title">주간 업무보고 허브</h2>
-          <button id="load-reports-btn" class="btn btn-primary btn-sm">
-            Drive에서 불러오기
-          </button>
+          <button id="load-reports-btn" class="btn btn-primary btn-sm">Drive에서 불러오기</button>
         </div>
 
-        <!-- 파일 목록 -->
+        <!-- 파일 목록 (다중 선택) -->
         <div id="report-file-list" class="report-file-list">
           <p class="empty-state">Drive에서 파일을 불러오세요.</p>
         </div>
+
+        <!-- 선택된 파일 칩 -->
+        <div id="selected-files-chips" class="selected-files-chips" hidden></div>
 
         <!-- 파일 선택 후 표시되는 허브 메인 -->
         <div id="hub-main" class="hub-main" hidden>
@@ -173,42 +193,125 @@
            ✉️ 이메일 탭
            ════════════════════════════════════════════════════ -->
       <section id="tab-email" class="tab-panel" role="tabpanel" hidden>
-        <div class="email-form">
-          <h2 class="section-title">이메일 발송</h2>
+        <!-- 이메일 내부 탭 -->
+        <div class="email-subtabs">
+          <button class="email-subtab active" data-etab="compose">✉️ 메일 작성</button>
+          <button class="email-subtab" data-etab="history">📜 발송 이력</button>
+        </div>
 
-          <div class="form-group">
-            <label class="form-label" for="email-file-select">보고서 선택</label>
-            <select id="email-file-select" class="form-select">
-              <option value="">파일을 선택하세요</option>
-            </select>
-          </div>
-
-          <div class="form-group">
-            <label class="form-label">수신자</label>
-            <div class="recipients-header">
-              <label class="checkbox-label">
-                <input type="checkbox" id="select-all-recipients">
-                <span>전체 선택</span>
-              </label>
+        <!-- 메일 작성 -->
+        <div id="etab-compose" class="email-subpanel active">
+          <div class="email-form">
+            <div class="form-group">
+              <label class="form-label" for="email-file-select">보고서 선택</label>
+              <select id="email-file-select" class="form-select">
+                <option value="">파일을 선택하세요</option>
+              </select>
             </div>
-            <div id="recipients-list" class="recipients-list">
-              <p class="empty-state" style="padding: 12px;">수신자가 없습니다. 설정에서 추가하세요.</p>
+
+            <!-- 수신자 섹션 -->
+            <div class="form-group">
+              <div class="recipients-header">
+                <label class="form-label">수신자</label>
+                <div class="recipients-header-actions">
+                  <label class="checkbox-label">
+                    <input type="checkbox" id="select-all-recipients">
+                    <span>전체 선택</span>
+                  </label>
+                  <button id="import-recipients-btn" class="btn btn-ghost btn-sm">📁 파일로 일괄 등록</button>
+                </div>
+              </div>
+              <div id="recipients-list" class="recipients-list">
+                <p class="empty-state" style="padding: 12px;">수신자가 없습니다. 설정에서 추가하세요.</p>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="email-subject">제목</label>
+              <input id="email-subject" type="text" class="form-input" placeholder="이메일 제목">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="email-body">본문</label>
+              <textarea id="email-body" class="form-textarea" rows="10" placeholder="이메일 본문"></textarea>
+            </div>
+
+            <!-- 예약 발송 -->
+            <div class="form-group">
+              <label class="form-label">발송 시점</label>
+              <div class="schedule-row">
+                <label class="radio-label">
+                  <input type="radio" name="send-timing" value="now" checked> 지금 바로 발송
+                </label>
+                <label class="radio-label">
+                  <input type="radio" name="send-timing" value="schedule"> 예약 발송
+                </label>
+                <input id="schedule-datetime" type="datetime-local" class="form-input schedule-dt" style="display:none">
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button id="preview-email-btn" class="btn btn-secondary">미리보기</button>
+              <button id="send-email-btn" class="btn btn-primary">지금 발송</button>
             </div>
           </div>
+        </div>
 
-          <div class="form-group">
-            <label class="form-label" for="email-subject">제목</label>
-            <input id="email-subject" type="text" class="form-input" placeholder="이메일 제목">
+        <!-- 발송 이력 -->
+        <div id="etab-history" class="email-subpanel" hidden>
+          <div class="history-header">
+            <h3 class="section-title" style="font-size:16px">발송 이력</h3>
+            <button id="clear-history-btn" class="btn btn-ghost btn-sm">전체 삭제</button>
+          </div>
+          <div id="email-history-list" class="email-history-list">
+            <p class="empty-state">발송 이력이 없습니다.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ════════════════════════════════════════════════════
+           📄 일정발췌 탭
+           ════════════════════════════════════════════════════ -->
+      <section id="tab-extract" class="tab-panel" role="tabpanel" hidden>
+        <h2 class="section-title">일정발췌 (PDF → 캘린더)</h2>
+        <p class="settings-hint">PDF 파일을 업로드하면 Claude AI가 일정을 자동 추출합니다.</p>
+
+        <div class="extract-layout">
+          <!-- 좌: 업로드 -->
+          <div class="extract-upload-area">
+            <div id="pdf-dropzone" class="csv-dropzone" role="button" tabindex="0">
+              <span class="csv-dropzone-icon">📄</span>
+              <p>PDF 파일을 드래그하거나 클릭하여 업로드</p>
+              <input id="pdf-file-input" type="file" accept=".pdf,application/pdf" style="display:none">
+            </div>
+            <div id="pdf-file-info" class="pdf-file-info" hidden></div>
+
+            <div class="form-group" style="margin-top:16px">
+              <label class="form-label">Claude API 키</label>
+              <input id="extract-api-key" type="password" class="form-input"
+                placeholder="설정 탭에서 입력하거나 여기서 직접 입력">
+              <p class="form-hint">⚠️ API 키는 localStorage에만 저장됩니다. GitHub에 올라가지 않습니다.</p>
+            </div>
+
+            <button id="run-extract-btn" class="btn btn-primary" style="width:100%;margin-top:8px" disabled>
+              🤖 AI로 일정 추출
+            </button>
           </div>
 
-          <div class="form-group">
-            <label class="form-label" for="email-body">본문</label>
-            <textarea id="email-body" class="form-textarea" rows="10" placeholder="이메일 본문"></textarea>
-          </div>
-
-          <div class="form-actions">
-            <button id="preview-email-btn" class="btn btn-secondary">미리보기</button>
-            <button id="send-email-btn" class="btn btn-primary">발송</button>
+          <!-- 우: 추출 결과 -->
+          <div class="extract-result-area" id="extract-result-area" hidden>
+            <div class="extract-result-header">
+              <span id="extract-result-count"></span>
+              <div class="extract-result-actions">
+                <button id="extract-select-all" class="btn btn-ghost btn-sm">전체 선택</button>
+                <button id="extract-deselect-all" class="btn btn-ghost btn-sm">전체 취소</button>
+                <select id="extract-target-calendar" class="form-select" style="width:auto;min-width:160px">
+                  <option value="primary">기본 캘린더</option>
+                </select>
+                <button id="extract-add-selected" class="btn btn-primary btn-sm">선택 항목 등록</button>
+              </div>
+            </div>
+            <div id="extract-events-list" class="extract-events-list"></div>
           </div>
         </div>
       </section>
@@ -228,6 +331,29 @@
           </div>
         </div>
 
+        <!-- Claude API 키 -->
+        <div class="settings-card">
+          <h3 class="settings-section-title">Claude API 키 (일정발췌 기능)</h3>
+          <div class="form-group">
+            <input id="setting-api-key" type="password" class="form-input"
+              placeholder="sk-ant-api03-...">
+            <p class="form-hint">⚠️ API 키는 브라우저 localStorage에만 저장되며 외부로 전송되지 않습니다.</p>
+          </div>
+          <button id="save-api-key-btn" class="btn btn-primary btn-sm">저장</button>
+        </div>
+
+        <!-- 캘린더 선택 -->
+        <div class="settings-card">
+          <div class="settings-card-header">
+            <h3 class="settings-section-title">내 캘린더 표시 설정</h3>
+            <button id="load-my-calendars-btn" class="btn btn-secondary btn-sm">🔄 캘린더 목록 새로고침</button>
+          </div>
+          <p class="settings-hint">표시할 캘린더를 선택하고 색상을 지정하세요. 여러 캘린더가 색상별로 구분 표시됩니다.</p>
+          <div id="my-calendars-list" class="my-calendars-list">
+            <p class="empty-state" style="padding:8px">캘린더 목록을 불러오세요.</p>
+          </div>
+        </div>
+
         <!-- Drive 설정 -->
         <div class="settings-card">
           <h3 class="settings-section-title">Drive 설정</h3>
@@ -237,6 +363,25 @@
               placeholder="Google Drive 폴더 ID를 입력하세요">
           </div>
           <button id="save-folder-btn" class="btn btn-primary btn-sm">저장</button>
+        </div>
+
+        <!-- 부서 관리 -->
+        <div class="settings-card">
+          <div class="settings-card-header">
+            <h3 class="settings-section-title">부서 관리</h3>
+            <button id="add-dept-btn" class="btn btn-secondary btn-sm">+ 부서 추가</button>
+          </div>
+          <div id="dept-list" class="dept-list"></div>
+        </div>
+
+        <!-- 공유 캘린더 소스 -->
+        <div class="settings-card">
+          <div class="settings-card-header">
+            <h3 class="settings-section-title">공유 캘린더 소스</h3>
+            <button id="add-shared-cal-btn" class="btn btn-secondary btn-sm">+ 캘린더 추가</button>
+          </div>
+          <p class="settings-hint">Google 캘린더 공유 URL(ICS)을 등록하면 일정이 통합 표시됩니다.</p>
+          <div id="shared-calendars-list" class="shared-calendars-list"></div>
         </div>
 
         <!-- 수신자 목록 -->
@@ -250,21 +395,6 @@
           </div>
         </div>
 
-        <!-- 캘린더 소스 관리 -->
-        <div class="settings-card">
-          <div class="settings-card-header">
-            <h3 class="settings-section-title">캘린더 소스 관리</h3>
-            <button id="add-shared-cal-btn" class="btn btn-secondary btn-sm">+ 캘린더 추가</button>
-          </div>
-          <p class="settings-hint">Google 캘린더 공유 URL을 등록하면 해당 일정이 캘린더에 통합 표시됩니다.</p>
-          <div id="shared-calendars-list" class="shared-calendars-list"></div>
-        </div>
-
-        <!-- 부서 색상 -->
-        <div class="settings-card">
-          <h3 class="settings-section-title">부서 색상</h3>
-          <div id="dept-colors-list" class="dept-colors-list"></div>
-        </div>
       </section>
 
     </main>
@@ -284,23 +414,17 @@
         <input type="hidden" id="event-id">
 
         <div class="form-group">
-          <label class="form-label" for="event-title">
-            제목 <span class="required" aria-hidden="true">*</span>
-          </label>
+          <label class="form-label" for="event-title">제목 <span class="required">*</span></label>
           <input id="event-title" type="text" class="form-input" placeholder="일정 제목을 입력하세요">
         </div>
 
         <div class="form-row">
           <div class="form-group">
-            <label class="form-label" for="event-start">
-              시작 <span class="required" aria-hidden="true">*</span>
-            </label>
+            <label class="form-label" for="event-start">시작 <span class="required">*</span></label>
             <input id="event-start" type="datetime-local" class="form-input">
           </div>
           <div class="form-group">
-            <label class="form-label" for="event-end">
-              종료 <span class="required" aria-hidden="true">*</span>
-            </label>
+            <label class="form-label" for="event-end">종료 <span class="required">*</span></label>
             <input id="event-end" type="datetime-local" class="form-input">
           </div>
         </div>
@@ -314,12 +438,7 @@
 
         <div class="form-group">
           <label class="form-label" for="event-dept">부서</label>
-          <select id="event-dept" class="form-select">
-            <option value="기획처">기획처</option>
-            <option value="교학처">교학처</option>
-            <option value="행정처">행정처</option>
-            <option value="기타" selected>기타</option>
-          </select>
+          <select id="event-dept" class="form-select"></select>
         </div>
 
         <div class="form-group">
@@ -328,7 +447,6 @@
             placeholder="일정 설명 (선택사항)"></textarea>
         </div>
 
-        <!-- 중복 경고 -->
         <div id="duplicate-alert" class="alert alert-warning" hidden role="alert">
           <span class="alert-icon" aria-hidden="true">⚠</span>
           <div>
@@ -348,14 +466,37 @@
   </div>
 
   <!-- ═══════════════════════════════════════════════════════════
+       이메일 미리보기 모달
+       ═══════════════════════════════════════════════════════════ -->
+  <div id="email-preview-modal" class="modal" hidden aria-modal="true" role="dialog">
+    <div class="modal-backdrop" data-close-modal></div>
+    <div class="modal-dialog modal-lg">
+      <div class="modal-header">
+        <h3 class="modal-title">이메일 미리보기</h3>
+        <button class="modal-close" data-close-modal aria-label="닫기">✕</button>
+      </div>
+      <div class="modal-body">
+        <div id="email-preview-meta" class="email-preview-meta"></div>
+        <div id="email-preview-content" class="email-preview-content"></div>
+      </div>
+      <div class="modal-footer">
+        <div class="modal-footer-right">
+          <button class="btn btn-ghost" data-close-modal>닫기</button>
+          <button id="confirm-send-btn" class="btn btn-primary">발송 확인</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════
        공유 캘린더 추가 모달
        ═══════════════════════════════════════════════════════════ -->
-  <div id="add-shared-cal-modal" class="modal" hidden aria-modal="true" role="dialog" aria-labelledby="add-shared-cal-title">
+  <div id="add-shared-cal-modal" class="modal" hidden aria-modal="true" role="dialog">
     <div class="modal-backdrop" data-close-modal></div>
     <div class="modal-dialog">
       <div class="modal-header">
-        <h3 id="add-shared-cal-title" class="modal-title">공유 캘린더 추가</h3>
-        <button class="modal-close" data-close-modal aria-label="모달 닫기">✕</button>
+        <h3 class="modal-title">공유 캘린더 추가</h3>
+        <button class="modal-close" data-close-modal aria-label="닫기">✕</button>
       </div>
       <div class="modal-body">
         <div class="form-group">
@@ -366,7 +507,7 @@
           <label class="form-label" for="shared-cal-url">공유 URL <span class="required">*</span></label>
           <input id="shared-cal-url" type="url" class="form-input"
             placeholder="https://calendar.google.com/calendar/ical/.../public/basic.ics">
-          <p class="form-hint">Google 캘린더 → 설정 → 캘린더 공개 → ICS 링크 복사</p>
+          <p class="form-hint">Google 캘린더 → 설정 → ICS 링크 복사</p>
         </div>
       </div>
       <div class="modal-footer">
@@ -381,12 +522,12 @@
   <!-- ═══════════════════════════════════════════════════════════
        CSV 일괄 등록 모달
        ═══════════════════════════════════════════════════════════ -->
-  <div id="csv-modal" class="modal" hidden aria-modal="true" role="dialog" aria-labelledby="csv-modal-title">
+  <div id="csv-modal" class="modal" hidden aria-modal="true" role="dialog">
     <div class="modal-backdrop" data-close-modal></div>
     <div class="modal-dialog modal-lg">
       <div class="modal-header">
-        <h3 id="csv-modal-title" class="modal-title">CSV 일괄 등록</h3>
-        <button class="modal-close" data-close-modal aria-label="모달 닫기">✕</button>
+        <h3 class="modal-title">CSV 일괄 등록</h3>
+        <button class="modal-close" data-close-modal aria-label="닫기">✕</button>
       </div>
       <div class="modal-body">
         <div class="form-group">
@@ -395,20 +536,16 @@
             <option value="primary">기본 캘린더</option>
           </select>
         </div>
-
         <div class="form-group">
           <label class="form-label">CSV 형식 안내</label>
           <pre class="csv-format-guide">제목,시작일시,종료일시,부서,설명
-회의,2026-06-10 09:00,2026-06-10 10:00,기획처,주간회의
-행사,2026-06-15 14:00,2026-06-15 16:00,교학처,세미나</pre>
+회의,2026-06-10 09:00,2026-06-10 10:00,기획처,주간회의</pre>
         </div>
-
-        <div id="csv-dropzone" class="csv-dropzone" role="button" tabindex="0" aria-label="CSV 파일 업로드 영역">
+        <div id="csv-dropzone" class="csv-dropzone" role="button" tabindex="0">
           <span class="csv-dropzone-icon">📂</span>
           <p>CSV 파일을 드래그하거나 클릭하여 업로드</p>
           <input id="csv-file-input" type="file" accept=".csv,text/csv" style="display:none">
         </div>
-
         <div id="csv-preview-area" hidden>
           <div class="csv-preview-header">
             <span id="csv-preview-count"></span>
@@ -416,9 +553,7 @@
           <div class="csv-table-wrap">
             <table id="csv-preview-table" class="csv-table">
               <thead>
-                <tr>
-                  <th>#</th><th>제목</th><th>시작일시</th><th>종료일시</th><th>부서</th><th>설명</th><th>상태</th>
-                </tr>
+                <tr><th>#</th><th>제목</th><th>시작일시</th><th>종료일시</th><th>부서</th><th>설명</th><th>상태</th></tr>
               </thead>
               <tbody id="csv-table-body"></tbody>
             </table>
@@ -435,23 +570,91 @@
   </div>
 
   <!-- ═══════════════════════════════════════════════════════════
-       이메일 미리보기 모달
+       부서 추가/수정 모달
        ═══════════════════════════════════════════════════════════ -->
-  <div id="email-preview-modal" class="modal" hidden aria-modal="true" role="dialog" aria-label="이메일 미리보기">
+  <div id="dept-modal" class="modal" hidden aria-modal="true" role="dialog">
     <div class="modal-backdrop" data-close-modal></div>
-    <div class="modal-dialog modal-lg">
+    <div class="modal-dialog" style="max-width:400px">
       <div class="modal-header">
-        <h3 class="modal-title">이메일 미리보기</h3>
-        <button class="modal-close" data-close-modal aria-label="모달 닫기">✕</button>
+        <h3 id="dept-modal-title" class="modal-title">부서 추가</h3>
+        <button class="modal-close" data-close-modal aria-label="닫기">✕</button>
       </div>
       <div class="modal-body">
-        <div id="email-preview-meta" class="email-preview-meta"></div>
-        <div id="email-preview-content" class="email-preview-content"></div>
+        <input type="hidden" id="dept-edit-index" value="-1">
+        <div class="form-group">
+          <label class="form-label" for="dept-name-input">부서명 <span class="required">*</span></label>
+          <input id="dept-name-input" type="text" class="form-input" placeholder="예: 기획처">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="dept-color-input">색상</label>
+          <div class="color-picker-row">
+            <input id="dept-color-input" type="color" class="color-picker-input" value="#4285F4">
+            <span id="dept-color-preview" class="color-preview-text">#4285F4</span>
+          </div>
+          <div class="color-presets">
+            <button class="color-preset" style="background:#1A237E" data-color="#1A237E"></button>
+            <button class="color-preset" style="background:#4285F4" data-color="#4285F4"></button>
+            <button class="color-preset" style="background:#0288D1" data-color="#0288D1"></button>
+            <button class="color-preset" style="background:#00897B" data-color="#00897B"></button>
+            <button class="color-preset" style="background:#34A853" data-color="#34A853"></button>
+            <button class="color-preset" style="background:#F57F17" data-color="#F57F17"></button>
+            <button class="color-preset" style="background:#E65100" data-color="#E65100"></button>
+            <button class="color-preset" style="background:#AD1457" data-color="#AD1457"></button>
+            <button class="color-preset" style="background:#6A1B9A" data-color="#6A1B9A"></button>
+            <button class="color-preset" style="background:#EA4335" data-color="#EA4335"></button>
+            <button class="color-preset" style="background:#FBBC05" data-color="#FBBC05"></button>
+            <button class="color-preset" style="background:#37474F" data-color="#37474F"></button>
+          </div>
+        </div>
       </div>
       <div class="modal-footer">
         <div class="modal-footer-right">
-          <button class="btn btn-ghost" data-close-modal>닫기</button>
-          <button id="confirm-send-btn" class="btn btn-primary">발송 확인</button>
+          <button class="btn btn-ghost" data-close-modal>취소</button>
+          <button id="save-dept-btn" class="btn btn-primary">저장</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       수신자 파일 일괄 등록 모달
+       ═══════════════════════════════════════════════════════════ -->
+  <div id="import-recipients-modal" class="modal" hidden aria-modal="true" role="dialog">
+    <div class="modal-backdrop" data-close-modal></div>
+    <div class="modal-dialog modal-lg">
+      <div class="modal-header">
+        <h3 class="modal-title">수신자 일괄 등록</h3>
+        <button class="modal-close" data-close-modal aria-label="닫기">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">파일 형식 안내 (xlsx / csv / txt)</label>
+          <pre class="csv-format-guide">이름,이메일
+홍길동,hong@example.com
+김철수,kim@example.com</pre>
+          <p class="form-hint">첫 줄은 헤더(이름,이메일)이며 생략 가능합니다.</p>
+        </div>
+        <div id="recipients-dropzone" class="csv-dropzone" role="button" tabindex="0">
+          <span class="csv-dropzone-icon">📋</span>
+          <p>xlsx / csv / txt 파일을 드래그하거나 클릭</p>
+          <input id="recipients-file-input" type="file" accept=".xlsx,.xls,.csv,.txt" style="display:none">
+        </div>
+        <div id="recipients-import-preview" hidden>
+          <div class="csv-preview-header">
+            <span id="recipients-import-count"></span>
+          </div>
+          <div class="csv-table-wrap" style="max-height:200px">
+            <table class="csv-table">
+              <thead><tr><th>#</th><th>이름</th><th>이메일</th><th>상태</th></tr></thead>
+              <tbody id="recipients-import-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <div class="modal-footer-right">
+          <button class="btn btn-ghost" data-close-modal>취소</button>
+          <button id="confirm-import-recipients-btn" class="btn btn-primary" disabled>등록</button>
         </div>
       </div>
     </div>
