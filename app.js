@@ -378,8 +378,12 @@
       $('event-description').value = rawDesc.replace(/\n?\[부서:[^\]]+\]/g, '').trim();
       $('event-dept').value = colorIdToDept(event.colorId);
 
-      var sdt = (event.start.dateTime || event.start.date + 'T09:00').slice(0, 16);
-      var edt = (event.end.dateTime   || event.end.date   + 'T10:00').slice(0, 16);
+      var sdt = event.start.dateTime
+        ? toLocalDateTime(new Date(event.start.dateTime))
+        : event.start.date + 'T09:00';
+      var edt = event.end.dateTime
+        ? toLocalDateTime(new Date(event.end.dateTime))
+        : event.end.date + 'T10:00';
       $('event-start').value = sdt;
       $('event-end').value   = edt;
     } else {

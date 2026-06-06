@@ -488,17 +488,15 @@ a        { color: var(--color-accent); text-decoration: none; }
 .calendar-day.other-month { background: var(--color-bg); }
 .calendar-day.other-month .day-number { color: #ccc; }
 
+.calendar-day.sunday   .day-number { color: var(--color-error); }
+.calendar-day.saturday .day-number { color: var(--color-accent); }
+
+/* today는 마지막에 정의해 sunday/saturday 색상을 덮어씀 */
 .calendar-day.today .day-number {
   background: var(--color-accent);
   color: #fff;
   border-radius: var(--r-full);
 }
-
-.calendar-day.sunday  .day-number:not(.today .day-number) { color: var(--color-error); }
-.calendar-day.saturday .day-number:not(.today .day-number) { color: var(--color-accent); }
-
-/* today 클래스 내부 day-number는 항상 흰색 */
-.calendar-day.today .day-number { color: #fff; }
 
 .day-number {
   font-size: var(--font-sm);
