@@ -172,8 +172,7 @@
      * @returns {Promise<void>}
      */
     patchCalendarColor: async function (calendarId, colorId) {
-      var id = calId(calendarId);
-      await apiFetch('PATCH', '/users/me/calendarList/' + encodeURIComponent(id), { colorId: colorId });
+      await apiFetch('PATCH', '/users/me/calendarList/' + encodeURIComponent(calendarId), { colorId: colorId });
     },
   };
 })();
