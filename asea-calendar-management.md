@@ -252,8 +252,8 @@ window.ReportModule = {
 
 ```javascript
 const CONFIG = {
-  googleClientId: 'YOUR_GOOGLE_CLIENT_ID',  // ← 발급 후 교체 필수
-  driveReportFolderId: 'YOUR_FOLDER_ID',    // ← Drive 폴더 ID 교체 필수
+  googleClientId: '89094526186-ngj72p8cbqrvai06e2uhdiq0n5brrc2b.apps.googleusercontent.com',
+  driveReportFolderId: '1CF1nlAWL2GZwLJ5jgHOxS4QKz5u1cBP0',
   senderEmail: 'bangdw@gmail.com',
   calendarId: 'primary',
   baseUrl: 'https://bangdw-hash.github.io/asea-calendar-management/',
