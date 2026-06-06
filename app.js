@@ -1386,9 +1386,21 @@
   }
 
   function initExtractTab() {
+    // 서브탭 전환
+    document.querySelectorAll('[data-etab]').forEach(function (btn) {
+      if (!btn.closest('#tab-extract')) return;
+      btn.addEventListener('click', function () {
+        var target = btn.dataset.etab;
+        document.querySelectorAll('#tab-extract .email-subtab').forEach(function (b) { b.classList.remove('active'); });
+        btn.classList.add('active');
+        document.querySelectorAll('#tab-extract .email-subpanel').forEach(function (p) { p.hidden = true; });
+        $('etab-' + target).hidden = false;
+        if (target === 'extract-history') renderExtractHistory();
+      });
+    });
+
     var pdfDropzone = $('pdf-dropzone');
     var pdfInput    = $('pdf-file-input');
-
     pdfDropzone.addEventListener('click', function () { pdfInput.click(); });
     pdfDropzone.addEventListener('dragover', function (e) {
       e.preventDefault(); pdfDropzone.classList.add('drag-over');
@@ -1408,13 +1420,38 @@
       document.querySelectorAll('.extract-event-check input').forEach(function (cb) { cb.checked = true; });
       document.querySelectorAll('.extract-event-card').forEach(function (c) { c.classList.add('selected'); });
     });
-
     $('extract-deselect-all').addEventListener('click', function () {
       document.querySelectorAll('.extract-event-check input').forEach(function (cb) { cb.checked = false; });
       document.querySelectorAll('.extract-event-card').forEach(function (c) { c.classList.remove('selected'); });
     });
+    $('extract-deselect-conflict').addEventListener('click', function () {
+      document.querySelectorAll('.extract-event-card.is-conflict').forEach(function (c) {
+        var cb = c.querySelector('input[type="checkbox"]');
+        if (cb) cb.checked = false;
+        c.classList.remove('selected');
+      });
+    });
+
+    $('extract-text-btn').addEventListener('click', buildExtractText);
+    $('extract-text-copy').addEventListener('click', function () {
+      var el = $('extract-text-output');
+      el.select(); el.setSelectionRange(0, 99999);
+      navigator.clipboard.writeText(el.value).then(function () { toast('복사되었습니다.', 'success'); });
+    });
+    $('extract-weekly-copy').addEventListener('click', function () {
+      var el = $('extract-weekly-output');
+      el.select(); el.setSelectionRange(0, 99999);
+      navigator.clipboard.writeText(el.value).then(function () { toast('복사되었습니다.', 'success'); });
+    });
 
     $('extract-add-selected').addEventListener('click', addExtractedToCalendar);
+
+    $('clear-extract-history-btn').addEventListener('click', function () {
+      if (!confirm('추출 이력을 모두 삭제하시겠습니까?')) return;
+      CONFIG.extractHistory = [];
+      persistExtractHistory();
+      renderExtractHistory();
+    });
   }
 
   var S_pdfFile = null;
@@ -1508,6 +1545,18 @@
       }
       S.extractedEvents = parsed;
 
+      // 추출 이력 저장
+      var histEntry = {
+        id:          genId(),
+        filename:    S_pdfFile ? S_pdfFile.name : 'unknown.pdf',
+        extractedAt: new Date().toISOString(),
+        count:       parsed.length,
+        events:      parsed,
+      };
+      CONFIG.extractHistory.unshift(histEntry);
+      if (CONFIG.extractHistory.length > 50) CONFIG.extractHistory = CONFIG.extractHistory.slice(0, 50);
+      persistExtractHistory();
+
       renderExtractedEvents();
       toast(S.extractedEvents.length + '개 일정이 추출되었습니다.', 'success');
     } catch (e) {
@@ -1592,6 +1641,112 @@
     });
 
     countEl.textContent = '총 ' + S.extractedEvents.length + '개 (신규 ' + newCount + '개 / 충돌 ' + conflictCount + '개)';
+  }
+
+  var DAY_KR = ['일', '월', '화', '수', '목', '금', '토'];
+
+  function fmtEvLine(ev) {
+    var s = new Date(ev.startDateTime);
+    var e = new Date(ev.endDateTime);
+    var dateStr = s.getFullYear() + '.' + pad(s.getMonth() + 1) + '.' + pad(s.getDate()) +
+                  '(' + DAY_KR[s.getDay()] + ')';
+    var timeStr = pad(s.getHours()) + ':' + pad(s.getMinutes()) +
+                  '~' + pad(e.getHours()) + ':' + pad(e.getMinutes());
+    return dateStr + ' ' + timeStr + ' ' + ev.title + (ev.department ? ' (' + ev.department + ')' : '');
+  }
+
+  function buildExtractText() {
+    if (!S.extractedEvents.length) { toast('추출된 일정이 없습니다.', 'error'); return; }
+
+    // 선택된 일정
+    var selectedLines = [];
+    document.querySelectorAll('.extract-event-card').forEach(function (c) {
+      var cb = c.querySelector('input[type="checkbox"]');
+      if (cb && cb.checked) {
+        var idx = parseInt(c.dataset.index, 10);
+        var ev = S.extractedEvents[idx];
+        if (ev) selectedLines.push(fmtEvLine(ev));
+      }
+    });
+
+    // 전체 일정 요일순 정렬 (날짜 오름차순)
+    var sorted = S.extractedEvents.slice().sort(function (a, b) {
+      return new Date(a.startDateTime) - new Date(b.startDateTime);
+    });
+
+    // 날짜별 그룹핑
+    var groups = {};
+    sorted.forEach(function (ev) {
+      var s = new Date(ev.startDateTime);
+      var key = s.getFullYear() + '.' + pad(s.getMonth() + 1) + '.' + pad(s.getDate()) +
+                '(' + DAY_KR[s.getDay()] + ')';
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(ev);
+    });
+
+    var weeklyLines = [];
+    Object.keys(groups).forEach(function (dateKey) {
+      weeklyLines.push('▶ ' + dateKey);
+      groups[dateKey].forEach(function (ev) {
+        var s = new Date(ev.startDateTime);
+        var e = new Date(ev.endDateTime);
+        var timeStr = pad(s.getHours()) + ':' + pad(s.getMinutes()) +
+                      '~' + pad(e.getHours()) + ':' + pad(e.getMinutes());
+        weeklyLines.push('  ' + timeStr + ' ' + ev.title + (ev.department ? ' (' + ev.department + ')' : ''));
+      });
+      weeklyLines.push('');
+    });
+
+    $('extract-text-output').value  = selectedLines.join('\n');
+    $('extract-weekly-output').value = weeklyLines.join('\n').trimEnd();
+    $('extract-text-area').hidden   = false;
+    $('extract-text-area').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function persistExtractHistory() {
+    try { localStorage.setItem(CONFIG.storageKeys.extractHistory, JSON.stringify(CONFIG.extractHistory)); } catch (e) {}
+  }
+
+  function renderExtractHistory() {
+    var listEl = $('extract-history-list');
+    if (!CONFIG.extractHistory.length) {
+      listEl.innerHTML = '<p class="empty-state">추출 이력이 없습니다.</p>';
+      return;
+    }
+    listEl.innerHTML = '';
+    CONFIG.extractHistory.forEach(function (h) {
+      var item = document.createElement('div');
+      item.className = 'extract-history-item';
+      item.innerHTML =
+        '<div class="extract-history-info">' +
+          '<div class="extract-history-filename">📄 ' + h.filename + '</div>' +
+          '<div class="extract-history-meta">' +
+            formatDate(h.extractedAt) + ' · ' + h.count + '개 일정' +
+          '</div>' +
+        '</div>' +
+        '<div class="extract-history-actions">' +
+          '<button class="btn btn-secondary btn-sm hist-load-btn">불러오기</button>' +
+          '<button class="btn btn-ghost btn-sm hist-del-btn" style="color:#c0392b">삭제</button>' +
+        '</div>';
+
+      item.querySelector('.hist-load-btn').addEventListener('click', function () {
+        S.extractedEvents = h.events;
+        // 추출 탭(메인)으로 전환
+        document.querySelectorAll('#tab-extract .email-subtab').forEach(function (b) { b.classList.remove('active'); });
+        document.querySelector('#tab-extract [data-etab="extract-main"]').classList.add('active');
+        document.querySelectorAll('#tab-extract .email-subpanel').forEach(function (p) { p.hidden = true; });
+        $('etab-extract-main').hidden = false;
+        renderExtractedEvents();
+        toast(h.count + '개 일정을 불러왔습니다.', 'success');
+      });
+      item.querySelector('.hist-del-btn').addEventListener('click', function () {
+        CONFIG.extractHistory = CONFIG.extractHistory.filter(function (x) { return x.id !== h.id; });
+        persistExtractHistory();
+        renderExtractHistory();
+      });
+
+      listEl.appendChild(item);
+    });
   }
 
   async function addExtractedToCalendar() {

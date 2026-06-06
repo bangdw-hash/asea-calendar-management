@@ -274,44 +274,80 @@
            ════════════════════════════════════════════════════ -->
       <section id="tab-extract" class="tab-panel" role="tabpanel" hidden>
         <h2 class="section-title">일정발췌 (PDF → 캘린더)</h2>
-        <p class="settings-hint">PDF 파일을 업로드하면 Claude AI가 일정을 자동 추출합니다.</p>
 
-        <div class="extract-layout">
-          <!-- 좌: 업로드 -->
-          <div class="extract-upload-area">
-            <div id="pdf-dropzone" class="csv-dropzone" role="button" tabindex="0">
-              <span class="csv-dropzone-icon">📄</span>
-              <p>PDF 파일을 드래그하거나 클릭하여 업로드</p>
-              <input id="pdf-file-input" type="file" accept=".pdf,application/pdf" style="display:none">
+        <!-- 서브탭 -->
+        <div class="email-subtabs" role="tablist">
+          <button class="email-subtab active" data-etab="extract-main" role="tab">📄 추출</button>
+          <button class="email-subtab" data-etab="extract-history" role="tab">🗂 추출 이력</button>
+        </div>
+
+        <!-- 추출 패널 -->
+        <div id="etab-extract-main" class="email-subpanel">
+          <p class="settings-hint" style="margin-bottom:12px">PDF 파일을 업로드하면 Claude AI가 일정을 자동 추출합니다.</p>
+          <div class="extract-layout">
+            <!-- 좌: 업로드 -->
+            <div class="extract-upload-area">
+              <div id="pdf-dropzone" class="csv-dropzone" role="button" tabindex="0">
+                <span class="csv-dropzone-icon">📄</span>
+                <p>PDF 파일을 드래그하거나 클릭하여 업로드</p>
+                <input id="pdf-file-input" type="file" accept=".pdf,application/pdf" style="display:none">
+              </div>
+              <div id="pdf-file-info" class="pdf-file-info" hidden></div>
+
+              <div class="form-group" style="margin-top:16px">
+                <label class="form-label">Claude API 키</label>
+                <input id="extract-api-key" type="password" class="form-input"
+                  placeholder="설정 탭에서 입력하거나 여기서 직접 입력">
+                <p class="form-hint">⚠️ API 키는 localStorage에만 저장됩니다. GitHub에 올라가지 않습니다.</p>
+              </div>
+
+              <button id="run-extract-btn" class="btn btn-primary" style="width:100%;margin-top:8px" disabled>
+                🤖 AI로 일정 추출
+              </button>
             </div>
-            <div id="pdf-file-info" class="pdf-file-info" hidden></div>
 
-            <div class="form-group" style="margin-top:16px">
-              <label class="form-label">Claude API 키</label>
-              <input id="extract-api-key" type="password" class="form-input"
-                placeholder="설정 탭에서 입력하거나 여기서 직접 입력">
-              <p class="form-hint">⚠️ API 키는 localStorage에만 저장됩니다. GitHub에 올라가지 않습니다.</p>
-            </div>
+            <!-- 우: 추출 결과 -->
+            <div class="extract-result-area" id="extract-result-area" hidden>
+              <div class="extract-result-header">
+                <span id="extract-result-count"></span>
+                <div class="extract-result-actions">
+                  <button id="extract-select-all" class="btn btn-ghost btn-sm">전체 선택</button>
+                  <button id="extract-deselect-all" class="btn btn-ghost btn-sm">전체 취소</button>
+                  <button id="extract-deselect-conflict" class="btn btn-ghost btn-sm extract-conflict-btn">⚠ 충돌 취소</button>
+                  <select id="extract-target-calendar" class="form-select" style="width:auto;min-width:140px">
+                    <option value="primary">기본 캘린더</option>
+                  </select>
+                  <button id="extract-add-selected" class="btn btn-primary btn-sm">캘린더 등록</button>
+                  <button id="extract-text-btn" class="btn btn-secondary btn-sm">📋 텍스트 보기</button>
+                </div>
+              </div>
+              <div id="extract-events-list" class="extract-events-list"></div>
 
-            <button id="run-extract-btn" class="btn btn-primary" style="width:100%;margin-top:8px" disabled>
-              🤖 AI로 일정 추출
-            </button>
-          </div>
-
-          <!-- 우: 추출 결과 -->
-          <div class="extract-result-area" id="extract-result-area" hidden>
-            <div class="extract-result-header">
-              <span id="extract-result-count"></span>
-              <div class="extract-result-actions">
-                <button id="extract-select-all" class="btn btn-ghost btn-sm">전체 선택</button>
-                <button id="extract-deselect-all" class="btn btn-ghost btn-sm">전체 취소</button>
-                <select id="extract-target-calendar" class="form-select" style="width:auto;min-width:160px">
-                  <option value="primary">기본 캘린더</option>
-                </select>
-                <button id="extract-add-selected" class="btn btn-primary btn-sm">선택 항목 등록</button>
+              <!-- 텍스트 출력 영역 -->
+              <div id="extract-text-area" hidden style="margin-top:16px">
+                <div class="extract-text-section-header">
+                  <strong>📋 선택 일정 텍스트</strong>
+                  <button id="extract-text-copy" class="btn btn-ghost btn-sm">복사</button>
+                </div>
+                <textarea id="extract-text-output" class="form-input extract-textarea" rows="8" readonly></textarea>
+                <div class="extract-text-section-header" style="margin-top:12px">
+                  <strong>📅 주간 전체 일정 (요일순)</strong>
+                  <button id="extract-weekly-copy" class="btn btn-ghost btn-sm">복사</button>
+                </div>
+                <textarea id="extract-weekly-output" class="form-input extract-textarea" rows="12" readonly></textarea>
               </div>
             </div>
-            <div id="extract-events-list" class="extract-events-list"></div>
+          </div>
+        </div>
+
+        <!-- 추출 이력 패널 -->
+        <div id="etab-extract-history" class="email-subpanel" hidden>
+          <div class="history-header">
+            <h3 class="section-title" style="font-size:16px">추출 이력</h3>
+            <button id="clear-extract-history-btn" class="btn btn-ghost btn-sm">전체 삭제</button>
+          </div>
+          <div id="extract-history-list" class="extract-history-list">
+            <p class="empty-state">추출 이력이 없습니다.</p>
           </div>
         </div>
       </section>

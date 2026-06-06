@@ -81,6 +81,9 @@ const CONFIG = {
   // ── 예약 이메일 목록 [{id, to, subject, body, driveLink, scheduledAt, status}]
   scheduledEmails: [],
 
+  // ── 일정발췌 이력 [{id, filename, extractedAt, count, events}]
+  extractHistory: [],
+
   // ── localStorage 키 ──────────────────────────────────────────
   storageKeys: {
     recipients:        'asea_recipients',
@@ -92,6 +95,7 @@ const CONFIG = {
     emailHistory:      'asea_email_history',
     scheduledEmails:   'asea_scheduled_emails',
     makeWebhookUrl:    'asea_make_webhook_url',
+    extractHistory:    'asea_extract_history',
   },
 };
 
@@ -120,6 +124,9 @@ const CONFIG = {
 
     var storedWebhook = localStorage.getItem(s.makeWebhookUrl);
     if (storedWebhook) CONFIG.makeWebhookUrl = storedWebhook;
+
+    var storedExtHist = localStorage.getItem(s.extractHistory);
+    if (storedExtHist) CONFIG.extractHistory = JSON.parse(storedExtHist);
 
     var storedHistory = localStorage.getItem(s.emailHistory);
     if (storedHistory) CONFIG.emailHistory = JSON.parse(storedHistory);

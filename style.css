@@ -1056,6 +1056,18 @@ a        { color: var(--color-accent); text-decoration: none; }
     align-items: flex-start;
     gap: var(--sp-2);
   }
+
+  /* 일정발췌 모바일 */
+  .extract-layout { flex-direction: column; }
+  .extract-upload-area { width: 100%; }
+  .extract-result-area { width: 100%; }
+  .extract-result-header { flex-direction: column; align-items: flex-start; }
+  .extract-result-actions { margin-left: 0; width: 100%; }
+  .extract-result-actions .btn,
+  .extract-result-actions .form-select { flex: 1 1 calc(50% - 4px); min-width: 0; font-size: 12px; }
+  .extract-history-item { flex-direction: column; align-items: flex-start; }
+  .extract-history-actions { width: 100%; }
+  .extract-history-actions .btn { flex: 1; }
 }
 
 /* ── 20. 반응형 — 데스크톱 (≥ 1024px) ─────────────────────── */
@@ -1563,6 +1575,51 @@ a        { color: var(--color-accent); text-decoration: none; }
 }
 .badge-new      { background: var(--color-success-light); color: #1e7e34; }
 .badge-conflict { background: var(--color-error-light); color: var(--color-error); }
+.extract-conflict-btn { color: var(--color-error); }
+
+/* ── 추출 텍스트 출력 ────────────────────────────────────────── */
+.extract-text-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+.extract-textarea {
+  font-family: 'Malgun Gothic', monospace;
+  font-size: 13px;
+  resize: vertical;
+  white-space: pre;
+  line-height: 1.7;
+}
+
+/* ── 추출 이력 ───────────────────────────────────────────────── */
+.extract-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  margin-top: var(--sp-3);
+}
+.extract-history-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--r-md);
+  background: var(--color-surface);
+  flex-wrap: wrap;
+}
+.extract-history-info { flex: 1; min-width: 0; }
+.extract-history-filename {
+  font-weight: 600;
+  font-size: var(--font-sm);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.extract-history-meta { font-size: var(--font-xs); color: var(--color-text-secondary); margin-top: 2px; }
+.extract-history-actions { display: flex; gap: var(--sp-2); flex-shrink: 0; }
 
 /* ── Drive 다중 선택 ─────────────────────────────────────────── */
 .report-file-item {
