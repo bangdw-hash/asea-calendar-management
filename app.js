@@ -1514,10 +1514,27 @@
   /* ═══════════════════════════════════════════════════════════
      일정발췌 탭 (PDF + Claude API)
   ═══════════════════════════════════════════════════════════ */
-  function renderExtractTab() {
-    var apiKey = CONFIG.anthropicApiKey;
-    if (apiKey) $('extract-api-key').value = apiKey;
-    populateCalendarDropdown('extract-target-calendar');
+  async function renderExtractTab() {
+    // 구글 계정 캘린더 목록 강제 재로드
+    var sel = $('extract-target-calendar');
+    sel.innerHTML = '<option value="">불러오는 중...</option>';
+    if (Auth.isLoggedIn()) {
+      try {
+        var cals = await CalendarModule.listCalendars();
+        sel.innerHTML = '';
+        cals.forEach(function (cal) {
+          var opt = document.createElement('option');
+          opt.value = cal.id;
+          opt.textContent = cal.summary + (cal.primary ? ' (기본)' : '');
+          if (cal.primary) opt.selected = true;
+          sel.appendChild(opt);
+        });
+      } catch (e) {
+        sel.innerHTML = '<option value="primary">기본 캘린더</option>';
+      }
+    } else {
+      sel.innerHTML = '<option value="primary">기본 캘린더</option>';
+    }
   }
 
   function initExtractTab() {
@@ -1567,6 +1584,7 @@
       });
     });
 
+    $('extract-check-conflict-btn').addEventListener('click', checkExtractConflicts);
     $('extract-text-btn').addEventListener('click', buildExtractText);
     $('extract-text-copy').addEventListener('click', function () {
       var el = $('extract-text-output');
@@ -1720,32 +1738,20 @@
     });
   }
 
-  async function renderExtractedEvents() {
+  function renderExtractedEvents(conflictSet) {
+    // conflictSet: Set<index> — 충돌 확인 후 전달됨. 없으면 전부 신규로 표시
     var area    = $('extract-result-area');
     var listEl  = $('extract-events-list');
     var countEl = $('extract-result-count');
 
     area.hidden = false;
-
-    // 기존 캘린더 이벤트와 충돌 확인
-    if (S.events.length === 0) await loadEvents();
-
-    var newCount = 0, conflictCount = 0;
     listEl.innerHTML = '';
 
-    S.extractedEvents.forEach(function (ev, i) {
-      // 충돌 확인 (시간 겹침)
-      var evStart = new Date(ev.startDateTime);
-      var evEnd   = new Date(ev.endDateTime);
-      var isConflict = S.events.some(function (existing) {
-        var exStart = evtStart(existing);
-        var exEnd   = existing.end && (existing.end.dateTime || existing.end.date)
-          ? new Date(existing.end.dateTime || existing.end.date) : null;
-        if (!exEnd) return false;
-        return evStart < exEnd && evEnd > exStart;
-      });
+    var conflictCount = 0;
 
-      if (isConflict) conflictCount++; else newCount++;
+    S.extractedEvents.forEach(function (ev, i) {
+      var isConflict = conflictSet ? conflictSet.has(i) : false;
+      if (isConflict) conflictCount++;
 
       var card = document.createElement('div');
       card.className = 'extract-event-card ' + (isConflict ? 'is-conflict' : 'is-new');
@@ -1777,11 +1783,70 @@
         card.classList.toggle('selected', cb.checked);
       });
       card.classList.toggle('selected', true);
-
       listEl.appendChild(card);
     });
 
-    countEl.textContent = '총 ' + S.extractedEvents.length + '개 (신규 ' + newCount + '개 / 충돌 ' + conflictCount + '개)';
+    var newCount = S.extractedEvents.length - conflictCount;
+    if (conflictSet) {
+      countEl.textContent = '총 ' + S.extractedEvents.length + '개 (신규 ' + newCount + '개 / 충돌 ' + conflictCount + '개)';
+      $('extract-deselect-conflict').disabled = conflictCount === 0;
+    } else {
+      countEl.textContent = '총 ' + S.extractedEvents.length + '개 (충돌 확인 전)';
+      $('extract-deselect-conflict').disabled = true;
+    }
+  }
+
+  async function checkExtractConflicts() {
+    var calendarId = $('extract-target-calendar').value;
+    if (!calendarId) { toast('캘린더를 선택하세요.', 'error'); return; }
+    if (!S.extractedEvents || S.extractedEvents.length === 0) { toast('먼저 일정을 추출하세요.', 'error'); return; }
+
+    var btn = $('extract-check-conflict-btn');
+    btn.disabled = true;
+    btn.textContent = '🔍 확인 중...';
+
+    try {
+      // 추출된 일정의 전체 날짜 범위 계산
+      var dates = S.extractedEvents.map(function (ev) {
+        return [new Date(ev.startDateTime).getTime(), new Date(ev.endDateTime).getTime()];
+      }).flat();
+      var minDate = new Date(Math.min.apply(null, dates));
+      var maxDate = new Date(Math.max.apply(null, dates));
+      minDate.setDate(minDate.getDate() - 1);
+      maxDate.setDate(maxDate.getDate() + 1);
+
+      // 선택된 캘린더에서 해당 기간 이벤트 조회
+      var calEvents = await CalendarModule.listEvents(calendarId, minDate.toISOString(), maxDate.toISOString());
+
+      // 충돌 판단: 시간 겹침 OR 제목 유사 (공백 제거 후 포함 여부)
+      var conflictSet = new Set();
+      S.extractedEvents.forEach(function (ev, i) {
+        var evStart = new Date(ev.startDateTime);
+        var evEnd   = new Date(ev.endDateTime);
+        var evTitle = ev.title.replace(/\s/g, '').toLowerCase();
+
+        var hit = calEvents.some(function (existing) {
+          var exStart = new Date(existing.start.dateTime || existing.start.date);
+          var exEnd   = new Date(existing.end.dateTime   || existing.end.date);
+          var timeOverlap = evStart < exEnd && evEnd > exStart;
+          var existingTitle = (existing.summary || '').replace(/\s/g, '').toLowerCase();
+          var titleSimilar = existingTitle.length > 0 && (
+            evTitle.includes(existingTitle) || existingTitle.includes(evTitle)
+          );
+          return timeOverlap || titleSimilar;
+        });
+
+        if (hit) conflictSet.add(i);
+      });
+
+      renderExtractedEvents(conflictSet);
+      toast('충돌 확인 완료 — ' + conflictSet.size + '개 충돌', conflictSet.size > 0 ? 'info' : 'success');
+    } catch (e) {
+      toast('충돌 확인 실패: ' + e.message, 'error');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = '🔍 충돌 확인';
+    }
   }
 
   var DAY_KR = ['일', '월', '화', '수', '목', '금', '토'];

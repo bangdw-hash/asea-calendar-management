@@ -309,10 +309,11 @@
                 <div class="extract-result-actions">
                   <button id="extract-select-all" class="btn btn-ghost btn-sm">전체 선택</button>
                   <button id="extract-deselect-all" class="btn btn-ghost btn-sm">전체 취소</button>
-                  <button id="extract-deselect-conflict" class="btn btn-ghost btn-sm extract-conflict-btn">⚠ 충돌 취소</button>
-                  <select id="extract-target-calendar" class="form-select" style="width:auto;min-width:140px">
-                    <option value="primary">기본 캘린더</option>
+                  <button id="extract-deselect-conflict" class="btn btn-ghost btn-sm extract-conflict-btn" disabled>⚠ 충돌 취소</button>
+                  <select id="extract-target-calendar" class="form-select" style="width:auto;min-width:160px">
+                    <option value="">캘린더 불러오는 중...</option>
                   </select>
+                  <button id="extract-check-conflict-btn" class="btn btn-secondary btn-sm">🔍 충돌 확인</button>
                   <button id="extract-add-selected" class="btn btn-primary btn-sm">캘린더 등록</button>
                   <button id="extract-text-btn" class="btn btn-secondary btn-sm">📋 텍스트 보기</button>
                 </div>
