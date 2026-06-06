@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ASEA 일정 공유</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f5f7fa;
+      color: #1a1a2e;
+      min-height: 100vh;
+    }
+    header {
+      background: #fff;
+      border-bottom: 1px solid #e0e4ef;
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      box-shadow: 0 1px 4px rgba(0,0,0,.06);
+    }
+    header h1 { font-size: 18px; font-weight: 700; color: #1a1a2e; }
+    header .meta { font-size: 13px; color: #666; margin-left: auto; }
+    main { max-width: 760px; margin: 0 auto; padding: 24px 16px 60px; }
+    .page-title { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
+    .page-subtitle { font-size: 13px; color: #666; margin-bottom: 20px; }
+    .event-card {
+      background: #fff;
+      border-radius: 10px;
+      border: 1px solid #e0e4ef;
+      padding: 16px 20px;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      transition: box-shadow 150ms;
+    }
+    .event-card:hover { box-shadow: 0 2px 10px rgba(0,0,0,.08); }
+    .event-dot {
+      width: 12px; height: 12px; border-radius: 50%;
+      flex-shrink: 0; margin-top: 4px;
+    }
+    .event-info { flex: 1; min-width: 0; }
+    .event-title { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
+    .event-meta { font-size: 13px; color: #555; line-height: 1.7; }
+    .event-meta span { display: inline-block; margin-right: 12px; }
+    .event-desc { font-size: 12px; color: #888; margin-top: 4px; }
+    .add-btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 7px 14px; border-radius: 8px;
+      background: #4285F4; color: #fff;
+      font-size: 13px; font-weight: 600;
+      text-decoration: none; white-space: nowrap;
+      flex-shrink: 0;
+      transition: background 150ms;
+    }
+    .add-btn:hover { background: #2b6de8; }
+    .empty { text-align: center; padding: 80px 20px; color: #999; }
+    .empty h2 { font-size: 18px; margin-bottom: 8px; }
+    .select-all-bar {
+      display: flex; align-items: center; gap: 10px;
+      margin-bottom: 14px; padding: 10px 14px;
+      background: #fff; border-radius: 8px; border: 1px solid #e0e4ef;
+      font-size: 13px; color: #444;
+    }
+    .select-all-bar strong { margin-left: auto; color: #4285F4; }
+    @media (max-width: 600px) {
+      .event-card { flex-wrap: wrap; }
+      .add-btn { width: 100%; justify-content: center; margin-top: 8px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <span style="font-size:22px">📅</span>
+    <h1>ASEA 일정 공유</h1>
+    <span class="meta" id="header-meta"></span>
+  </header>
+  <main>
+    <div class="page-title" id="page-title">공유된 일정 목록</div>
+    <div class="page-subtitle">원하는 일정의 <strong>구글 캘린더에 추가</strong> 버튼을 누르면 자신의 캘린더에 추가됩니다.</div>
+    <div id="events-container"></div>
+  </main>
+
+  <script>
+    function decodeData(encoded) {
+      try { return JSON.parse(decodeURIComponent(escape(atob(encoded)))); } catch (e) { return null; }
+    }
+
+    function toGCalUrl(ev) {
+      function fmt(d) { return d.toISOString().replace(/[-:]/g,'').replace(/\.\d{3}/,''); }
+      var s = fmt(new Date(ev.startDateTime));
+      var e = fmt(new Date(ev.endDateTime));
+      var details = [ev.description || '', ev.department ? '[부서: ' + ev.department + ']' : ''].filter(Boolean).join('\n');
+      var p = new URLSearchParams({ action: 'TEMPLATE', text: ev.title, dates: s + '/' + e, details: details });
+      return 'https://calendar.google.com/calendar/render?' + p.toString();
+    }
+
+    function formatDt(iso) {
+      var d = new Date(iso);
+      var days = ['일','월','화','수','목','금','토'];
+      var pad = function(n) { return String(n).padStart(2,'0'); };
+      return d.getFullYear() + '.' + pad(d.getMonth()+1) + '.' + pad(d.getDate()) +
+             '(' + days[d.getDay()] + ') ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+    }
+
+    var DEPT_COLORS = {
+      '임원':'#1A237E','기획처':'#4285F4','행정관리처':'#0288D1','교육지원처':'#00897B',
+      '입학처':'#558B2F','항공정비계열':'#F57F17','스마트안전진단계열':'#E65100',
+      '항공관광계열':'#AD1457','항공보안계열':'#6A1B9A','국방경찰계열':'#283593',
+      '기종교육원':'#00695C','무인항공교육원':'#2E7D32','비행교육원':'#37474F',
+      '온라인평생교육원':'#5D4037','기타':'#EA4335'
+    };
+
+    var hash = location.hash.slice(1);
+    var container = document.getElementById('events-container');
+
+    if (!hash) {
+      container.innerHTML = '<div class="empty"><h2>❌ 잘못된 URL</h2><p>공유 URL이 올바르지 않습니다.</p></div>';
+    } else {
+      var data = decodeData(hash);
+      if (!data || !data.events || !data.events.length) {
+        container.innerHTML = '<div class="empty"><h2>❌ 데이터 없음</h2><p>일정 데이터를 불러올 수 없습니다.</p></div>';
+      } else {
+        var events = data.events;
+        document.getElementById('page-title').textContent = (data.title || '공유된 일정') + ' (' + events.length + '개)';
+        document.getElementById('header-meta').textContent = data.sharedAt ? '공유일: ' + data.sharedAt.slice(0,10) : '';
+
+        events.forEach(function(ev) {
+          var color = DEPT_COLORS[ev.department] || DEPT_COLORS['기타'];
+          var card = document.createElement('div');
+          card.className = 'event-card';
+          card.innerHTML =
+            '<div class="event-dot" style="background:' + color + '"></div>' +
+            '<div class="event-info">' +
+              '<div class="event-title">' + (ev.title || '(제목 없음)') + '</div>' +
+              '<div class="event-meta">' +
+                '<span>📅 ' + formatDt(ev.startDateTime) + ' ~ ' + formatDt(ev.endDateTime) + '</span>' +
+                '<span>🏢 ' + (ev.department || '기타') + '</span>' +
+              '</div>' +
+              (ev.description ? '<div class="event-desc">📝 ' + ev.description + '</div>' : '') +
+            '</div>' +
+            '<a class="add-btn" href="' + toGCalUrl(ev) + '" target="_blank" rel="noopener">' +
+              '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19 4h-1V2h-2v2H8V2H6v2H5C3.9 4 3 4.9 3 6v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11zM7 11h5v5H7z"/></svg>' +
+              '구글 캘린더에 추가' +
+            '</a>';
+          container.appendChild(card);
+        });
+      }
+    }
+  </script>
+</body>
+</html>

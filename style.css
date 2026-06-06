@@ -1682,6 +1682,11 @@ a        { color: var(--color-accent); text-decoration: none; }
   vertical-align: middle;
 }
 .hist-badge-saved { background: #e8f5e9; color: #2e7d32; }
+.share-hist-url {
+  font-size: 11px; color: #aaa;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  max-width: 400px; margin-top: 2px;
+}
 
 /* ── 등록 방식 선택 라디오 ─────────────────────────────────── */
 .extract-register-mode {

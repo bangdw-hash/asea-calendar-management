@@ -1542,6 +1542,7 @@
         document.querySelectorAll('#tab-extract .email-subpanel').forEach(function (p) { p.hidden = true; });
         $('etab-' + target).hidden = false;
         if (target === 'extract-history') renderExtractHistory();
+        if (target === 'share-history') renderShareHistory();
       });
     });
 
@@ -1580,6 +1581,7 @@
 
     $('extract-check-conflict-btn').addEventListener('click', checkExtractConflicts);
     $('extract-save-state-btn').addEventListener('click', saveExtractState);
+    $('extract-gen-share-url-btn').addEventListener('click', generateShareUrl);
     $('extract-text-btn').addEventListener('click', buildExtractText);
     $('extract-text-copy').addEventListener('click', function () {
       var el = $('extract-text-output');
@@ -1818,6 +1820,22 @@
     openModal('extract-edit-modal');
   }
 
+  function initShareUrlModal() {
+    $('share-url-modal').querySelectorAll('[data-close-modal]').forEach(function (el) {
+      el.addEventListener('click', function () { closeModal('share-url-modal'); });
+    });
+    $('share-url-modal-copy').addEventListener('click', function () {
+      var val = $('share-url-modal-input').value;
+      navigator.clipboard.writeText(val).then(function () { toast('URL이 복사됐습니다.', 'success'); });
+    });
+    $('clear-share-history-btn').addEventListener('click', function () {
+      if (!confirm('공유 이력을 모두 삭제하시겠습니까?')) return;
+      CONFIG.shareHistory = [];
+      persistShareHistory();
+      renderShareHistory();
+    });
+  }
+
   function initExtractEditModal() {
     $('extract-edit-modal').querySelectorAll('[data-close-modal]').forEach(function (el) {
       el.addEventListener('click', function () { closeModal('extract-edit-modal'); });
@@ -1961,6 +1979,102 @@
 
   function persistExtractHistory() {
     try { localStorage.setItem(CONFIG.storageKeys.extractHistory, JSON.stringify(CONFIG.extractHistory)); } catch (e) {}
+  }
+
+  function persistShareHistory() {
+    try { localStorage.setItem(CONFIG.storageKeys.shareHistory, JSON.stringify(CONFIG.shareHistory)); } catch (e) {}
+  }
+
+  function generateShareUrl() {
+    if (!S.extractedEvents || S.extractedEvents.length === 0) {
+      toast('공유할 일정이 없습니다.', 'error'); return;
+    }
+    // 선택된 항목만
+    var selected = [];
+    document.querySelectorAll('.extract-event-check input:checked').forEach(function (cb) {
+      var idx = parseInt(cb.closest('.extract-event-card').dataset.index, 10);
+      if (!isNaN(idx) && S.extractedEvents[idx]) selected.push(S.extractedEvents[idx]);
+    });
+    if (selected.length === 0) { toast('선택된 일정이 없습니다.', 'error'); return; }
+
+    var calSel = $('extract-target-calendar');
+    var title = (S_pdfFile ? S_pdfFile.name.replace(/\.pdf$/i, '') : '공유 일정');
+    var payload = {
+      title:    title,
+      sharedAt: new Date().toISOString(),
+      events:   selected,
+    };
+
+    var encoded;
+    try { encoded = btoa(unescape(encodeURIComponent(JSON.stringify(payload)))); }
+    catch (e) { toast('URL 생성 실패: ' + e.message, 'error'); return; }
+
+    var base = CONFIG.baseUrl.replace(/\/$/, '');
+    var url  = base + '/share.html#' + encoded;
+
+    // URL 길이 경고
+    var warn = $('share-url-warning');
+    if (url.length > 8000) {
+      warn.textContent = '⚠ URL이 너무 깁니다 (' + url.length + '자). 선택 항목을 줄여주세요.';
+      warn.hidden = false;
+    } else {
+      warn.hidden = true;
+    }
+
+    $('share-url-modal-input').value   = url;
+    $('share-url-open-btn').href       = url;
+    $('share-url-event-count').textContent = '선택된 일정 ' + selected.length + '개 포함';
+
+    openModal('share-url-modal');
+
+    // 공유 이력 저장
+    var entry = {
+      id:       genId(),
+      title:    title,
+      sharedAt: payload.sharedAt,
+      count:    selected.length,
+      url:      url,
+    };
+    CONFIG.shareHistory.unshift(entry);
+    if (CONFIG.shareHistory.length > 100) CONFIG.shareHistory = CONFIG.shareHistory.slice(0, 100);
+    persistShareHistory();
+  }
+
+  function renderShareHistory() {
+    var listEl = $('share-history-list');
+    if (!CONFIG.shareHistory.length) {
+      listEl.innerHTML = '<p class="empty-state">공유 이력이 없습니다.</p>';
+      return;
+    }
+    listEl.innerHTML = '';
+    CONFIG.shareHistory.forEach(function (h) {
+      var item = document.createElement('div');
+      item.className = 'extract-history-item';
+      item.innerHTML =
+        '<div class="extract-history-info">' +
+          '<div class="extract-history-filename">🔗 ' + h.title + '</div>' +
+          '<div class="extract-history-meta">' +
+            formatDate(h.sharedAt) + ' · ' + h.count + '개 일정' +
+          '</div>' +
+          '<div class="share-hist-url">' + h.url + '</div>' +
+        '</div>' +
+        '<div class="extract-history-actions">' +
+          '<button class="btn btn-secondary btn-sm sh-copy-btn">복사</button>' +
+          '<a class="btn btn-ghost btn-sm" href="' + h.url + '" target="_blank">열기</a>' +
+          '<button class="btn btn-ghost btn-sm sh-del-btn" style="color:#c0392b">삭제</button>' +
+        '</div>';
+
+      item.querySelector('.sh-copy-btn').addEventListener('click', function () {
+        navigator.clipboard.writeText(h.url).then(function () { toast('URL이 복사됐습니다.', 'success'); });
+      });
+      item.querySelector('.sh-del-btn').addEventListener('click', function () {
+        CONFIG.shareHistory = CONFIG.shareHistory.filter(function (x) { return x.id !== h.id; });
+        persistShareHistory();
+        renderShareHistory();
+      });
+
+      listEl.appendChild(item);
+    });
   }
 
   function saveExtractState() {
@@ -2504,6 +2618,7 @@
     initCsvModal();
     initExtractTab();
     initExtractEditModal();
+    initShareUrlModal();
     initDeptModal();
     initSettings();
     initModalHandlers();

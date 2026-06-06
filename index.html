@@ -280,6 +280,7 @@
         <div class="email-subtabs" role="tablist">
           <button class="email-subtab active" data-etab="extract-main" role="tab">📄 추출</button>
           <button class="email-subtab" data-etab="extract-history" role="tab">🗂 추출 이력</button>
+          <button class="email-subtab" data-etab="share-history" role="tab">🔗 공유 이력</button>
         </div>
 
         <!-- 추출 패널 -->
@@ -315,6 +316,7 @@
                   </select>
                   <button id="extract-check-conflict-btn" class="btn btn-secondary btn-sm">🔍 충돌 확인</button>
                   <button id="extract-save-state-btn" class="btn btn-ghost btn-sm">💾 현재 상태 저장</button>
+                  <button id="extract-gen-share-url-btn" class="btn btn-ghost btn-sm">🔗 URL 생성</button>
                   <button id="extract-add-selected" class="btn btn-primary btn-sm">선택 항목 등록</button>
                   <button id="extract-text-btn" class="btn btn-secondary btn-sm">📋 텍스트 보기</button>
                 </div>
@@ -346,6 +348,17 @@
                 <textarea id="extract-weekly-output" class="form-input extract-textarea" rows="12" readonly></textarea>
               </div>
             </div>
+          </div>
+        </div>
+
+        <!-- 공유 이력 패널 -->
+        <div id="etab-share-history" class="email-subpanel" hidden>
+          <div class="history-header">
+            <h3 class="section-title" style="font-size:16px">공유 URL 이력</h3>
+            <button id="clear-share-history-btn" class="btn btn-ghost btn-sm">전체 삭제</button>
+          </div>
+          <div id="share-history-list" class="extract-history-list">
+            <p class="empty-state">공유 이력이 없습니다.</p>
           </div>
         </div>
 
@@ -730,6 +743,36 @@
        토스트 컨테이너
        ═══════════════════════════════════════════════════════════ -->
   <div id="toast-container" class="toast-container" aria-live="polite" aria-atomic="false"></div>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       공유 URL 생성 모달
+       ═══════════════════════════════════════════════════════════ -->
+  <div id="share-url-modal" class="modal" hidden aria-modal="true" role="dialog">
+    <div class="modal-backdrop" data-close-modal></div>
+    <div class="modal-dialog" style="max-width:560px">
+      <div class="modal-header">
+        <h3 class="modal-title">🔗 일정 공유 URL 생성</h3>
+        <button class="modal-close" data-close-modal aria-label="닫기">✕</button>
+      </div>
+      <div class="modal-body">
+        <p class="form-hint" style="margin-bottom:12px">이 URL을 받은 사람은 로그인 없이 일정 목록을 확인하고, 원하는 일정만 골라 자신의 구글 캘린더에 추가할 수 있습니다.</p>
+        <div class="share-url-row">
+          <input id="share-url-modal-input" class="form-input share-url-input" type="text" readonly>
+          <button id="share-url-modal-copy" class="btn btn-secondary btn-sm">복사</button>
+        </div>
+        <p id="share-url-warning" class="form-hint" style="color:var(--color-error);margin-top:8px" hidden></p>
+        <div style="margin-top:12px">
+          <span id="share-url-event-count" class="form-hint"></span>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <div class="modal-footer-right">
+          <a id="share-url-open-btn" href="#" target="_blank" class="btn btn-ghost btn-sm">새 탭에서 열기</a>
+          <button class="btn btn-primary" data-close-modal>확인</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- ═══════════════════════════════════════════════════════════
        일정발췌 항목 수정 모달

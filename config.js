@@ -87,6 +87,9 @@ const CONFIG = {
   // ── 일정발췌 이력 [{id, filename, extractedAt, count, events}]
   extractHistory: [],
 
+  // ── 공유 URL 이력 [{id, title, sharedAt, count, url}]
+  shareHistory: [],
+
   // ── localStorage 키 ──────────────────────────────────────────
   storageKeys: {
     recipients:        'asea_recipients',
@@ -100,6 +103,7 @@ const CONFIG = {
     scheduledEmails:   'asea_scheduled_emails',
     makeWebhookUrl:    'asea_make_webhook_url',
     extractHistory:    'asea_extract_history',
+    shareHistory:      'asea_share_history',
   },
 };
 
@@ -134,6 +138,9 @@ const CONFIG = {
 
     var storedExtHist = localStorage.getItem(s.extractHistory);
     if (storedExtHist) CONFIG.extractHistory = JSON.parse(storedExtHist);
+
+    var storedShareHist = localStorage.getItem(s.shareHistory);
+    if (storedShareHist) CONFIG.shareHistory = JSON.parse(storedShareHist);
 
     var storedHistory = localStorage.getItem(s.emailHistory);
     if (storedHistory) CONFIG.emailHistory = JSON.parse(storedHistory);
