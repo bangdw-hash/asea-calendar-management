@@ -2147,11 +2147,14 @@
              '(' + days[d.getDay()] + ') ' + p(d.getHours()) + ':' + p(d.getMinutes());
     }
 
-    var items = events.map(function(ev) {
+    var items = events.map(function(ev, idx) {
       var color = DEPT_COLORS[ev.department] || DEPT_COLORS['기타'];
-      var gcalUrl = toGCalUrl(ev);
+      var s = new Date(ev.startDateTime).toISOString().replace(/[-:]/g,'').replace(/\.\d{3}/,'');
+      var e2 = new Date(ev.endDateTime).toISOString().replace(/[-:]/g,'').replace(/\.\d{3}/,'');
+      var details = [ev.description || '', ev.department ? '[부서: ' + ev.department + ']' : ''].filter(Boolean).join('\\n');
       var timeStr = fmtDt(ev.startDateTime) + ' ~ ' + fmtDt(ev.endDateTime);
-      return '<a href="' + gcalUrl + '" target="_blank" rel="noopener" class="ev-item">' +
+      var dataAttrs = ' data-s="' + s + '" data-e="' + e2 + '" data-title="' + ev.title.replace(/"/g,'&quot;') + '" data-details="' + details.replace(/"/g,'&quot;') + '"';
+      return '<a href="#" class="ev-item" onclick="openGcal(this,event)"' + dataAttrs + '>' +
         '<span class="ev-dot" style="background:' + color + '"></span>' +
         '<span class="ev-body">' +
           '<span class="ev-title">' + ev.title + '</span>' +
@@ -2182,6 +2185,24 @@
       '.ev-title{font-size:14px;font-weight:600;color:#1a73e8;word-break:keep-all;line-height:1.4}\n' +
       '.ev-time{font-size:12px;color:#888}\n' +
       '</style>\n' +
+      '<script>\n' +
+      'function openGcal(el,e){e.preventDefault();' +
+        'var s=el.dataset.s,en=el.dataset.e,t=el.dataset.title,d=el.dataset.details;' +
+        'var q="action=TEMPLATE&text="+encodeURIComponent(t)+"&dates="+s+"/"+en+"&details="+encodeURIComponent(d);' +
+        'var isMobile=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent);' +
+        'if(isMobile){' +
+          'var isAndroid=/Android/i.test(navigator.userAgent);' +
+          'if(isAndroid){' +
+            'var intentUrl="intent://calendar.google.com/calendar/r/eventedit?"+q+"#Intent;scheme=https;package=com.google.android.calendar;S.browser_fallback_url="+encodeURIComponent("https://calendar.google.com/calendar/r/eventedit?"+q)+";end";' +
+            'location.href=intentUrl;' +
+          '}else{' +
+            'location.href="https://calendar.google.com/calendar/r/eventedit?"+q;' +
+          '}' +
+        '}else{' +
+          'window.open("https://calendar.google.com/calendar/render?"+q,"_blank");' +
+        '}' +
+      '}\n' +
+      '</script>\n' +
       '</head>\n<body>\n' +
       '<header><span style="font-size:20px">📅</span>' +
       '<h1>ASEA 일정 공유<br><span style="font-weight:400;font-size:13px;color:#666">' + title + '</span></h1>' +
