@@ -578,6 +578,9 @@
     S.editEventId = null;
     $('event-modal-title').textContent = event ? '일정 수정' : '일정 추가';
     $('delete-event-btn').hidden        = !event;
+    $('share-event-btn').hidden         = !event;
+    $('event-share-area').hidden        = true;
+    $('event-share-url').value          = '';
     $('duplicate-alert').hidden         = true;
     $('event-id').value                 = '';
     $('event-title').value              = '';
@@ -616,7 +619,50 @@
     openModal('event-modal');
   }
 
+  function toGCalDateStr(isoStr) {
+    // ISO → YYYYMMDDTHHMMSSZ (UTC, Google Calendar URL 형식)
+    return new Date(isoStr).toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+  }
+
   function initEventModal() {
+    // 공유하기 버튼
+    $('share-event-btn').addEventListener('click', function () {
+      var title = $('event-title').value.trim();
+      var start = $('event-start').value;
+      var end   = $('event-end').value;
+      var desc  = $('event-description').value.trim();
+
+      if (!title || !start || !end) {
+        toast('제목과 시간을 먼저 입력하세요.', 'error'); return;
+      }
+
+      var startStr = toGCalDateStr(start);
+      var endStr   = toGCalDateStr(end);
+      var params   = new URLSearchParams({
+        action:  'TEMPLATE',
+        text:    title,
+        dates:   startStr + '/' + endStr,
+        details: desc || '',
+      });
+      var shareUrl = 'https://calendar.google.com/calendar/render?' + params.toString();
+
+      $('event-share-url').value   = shareUrl;
+      $('event-share-area').hidden = false;
+      $('event-share-area').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    });
+
+    $('event-share-copy').addEventListener('click', function () {
+      var url = $('event-share-url').value;
+      if (!url) return;
+      navigator.clipboard.writeText(url)
+        .then(function () { toast('공유 URL이 복사되었습니다. 카톡·문자로 전송하세요.', 'success'); })
+        .catch(function () {
+          $('event-share-url').select();
+          document.execCommand('copy');
+          toast('복사되었습니다.', 'success');
+        });
+    });
+
     $('save-event-btn').addEventListener('click', async function () {
       var title = $('event-title').value.trim();
       var start = $('event-start').value;

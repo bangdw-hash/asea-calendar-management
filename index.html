@@ -501,10 +501,20 @@
             <div id="duplicate-details" class="duplicate-details"></div>
           </div>
         </div>
+
+        <!-- 공유 URL 영역 (공유 버튼 클릭 시 표시) -->
+        <div id="event-share-area" hidden style="margin-top:12px">
+          <div class="share-area-label">🔗 공유 URL — 링크를 받은 사람이 누르면 자신의 구글 캘린더에 일정이 추가됩니다</div>
+          <div class="share-url-row">
+            <input id="event-share-url" class="form-input share-url-input" type="text" readonly>
+            <button id="event-share-copy" class="btn btn-secondary btn-sm">복사</button>
+          </div>
+        </div>
       </div>
       <div class="modal-footer">
         <button id="delete-event-btn" class="btn btn-danger btn-sm" hidden>삭제</button>
         <div class="modal-footer-right">
+          <button id="share-event-btn" class="btn btn-ghost btn-sm" hidden>🔗 공유하기</button>
           <button class="btn btn-ghost" data-close-modal>취소</button>
           <button id="save-event-btn" class="btn btn-primary">저장</button>
         </div>
