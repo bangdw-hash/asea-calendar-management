@@ -24,6 +24,9 @@ const CONFIG = {
   // ── Anthropic API (localStorage에만 저장, 코드에 포함 안 함) ─
   anthropicApiKey: '',
 
+  // ── Make.com 웹훅 URL (이메일 예약 서버 발송) ─────────────
+  makeWebhookUrl: '',
+
   // ── 수신자 목록 ──────────────────────────────────────────────
   recipients: [
     { name: '수신자1', email: 'recipient1@example.com' },
@@ -88,6 +91,7 @@ const CONFIG = {
     anthropicApiKey:   'asea_anthropic_api_key',
     emailHistory:      'asea_email_history',
     scheduledEmails:   'asea_scheduled_emails',
+    makeWebhookUrl:    'asea_make_webhook_url',
   },
 };
 
@@ -113,6 +117,9 @@ const CONFIG = {
 
     var storedApiKey = localStorage.getItem(s.anthropicApiKey);
     if (storedApiKey) CONFIG.anthropicApiKey = storedApiKey;
+
+    var storedWebhook = localStorage.getItem(s.makeWebhookUrl);
+    if (storedWebhook) CONFIG.makeWebhookUrl = storedWebhook;
 
     var storedHistory = localStorage.getItem(s.emailHistory);
     if (storedHistory) CONFIG.emailHistory = JSON.parse(storedHistory);

@@ -950,18 +950,49 @@
     if (isSchedule) {
       var schedDt = $('schedule-datetime').value;
       if (!schedDt) { toast('예약 일시를 선택하세요.', 'error'); return; }
+
+      var driveShareLink = '';
+      if (fileId) {
+        try { driveShareLink = await DriveModule.getShareLink(fileId); } catch (e) {}
+      }
+
       var schedEntry = {
         id:          genId(),
         to:          recipients,
         subject:     subject,
         body:        body,
-        driveFileId: fileId,
+        driveLink:   driveShareLink,
         scheduledAt: new Date(schedDt).toISOString(),
         status:      'scheduled',
       };
+
+      // Make.com 웹훅으로 서버 예약 등록
+      if (CONFIG.makeWebhookUrl) {
+        try {
+          var payload = {
+            id:          schedEntry.id,
+            to:          recipients.map(function (r) { return r.email; }).join(','),
+            subject:     subject,
+            body:        body,
+            driveLink:   driveShareLink,
+            scheduledAt: schedEntry.scheduledAt,
+          };
+          await fetch(CONFIG.makeWebhookUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          });
+          schedEntry.status = 'scheduled_server';
+          toast('서버 예약 등록 완료: ' + formatDate(schedDt), 'success');
+        } catch (e) {
+          toast('서버 예약 실패 (로컬 예약으로 전환): ' + e.message, 'error');
+        }
+      } else {
+        toast('예약 등록되었습니다 (브라우저 열릴 때 발송): ' + formatDate(schedDt), 'success');
+      }
+
       CONFIG.scheduledEmails.push(schedEntry);
       persistEmailHistory();
-      toast('예약 등록되었습니다: ' + formatDate(schedDt), 'success');
       renderEmailHistory();
       return;
     }
@@ -1598,6 +1629,7 @@
       ? CONFIG.driveReportFolderId : '';
     var storedKey = CONFIG.anthropicApiKey;
     if (storedKey) $('setting-api-key').value = storedKey;
+    if (CONFIG.makeWebhookUrl) $('setting-make-webhook').value = CONFIG.makeWebhookUrl;
     renderSettingsRecipients();
     renderDeptList();
     renderMyCalendarsList();
@@ -1806,6 +1838,16 @@
       CONFIG.anthropicApiKey = key;
       try { localStorage.setItem(CONFIG.storageKeys.anthropicApiKey, key); } catch (e) {}
       toast('API 키가 저장되었습니다.', 'success');
+    });
+
+    $('save-make-webhook-btn').addEventListener('click', function () {
+      var url = $('setting-make-webhook').value.trim();
+      if (url && !url.startsWith('https://hook.')) {
+        toast('올바른 Make.com 웹훅 URL을 입력하세요.', 'error'); return;
+      }
+      CONFIG.makeWebhookUrl = url;
+      try { localStorage.setItem(CONFIG.storageKeys.makeWebhookUrl, url); } catch (e) {}
+      toast(url ? 'Make.com 웹훅 URL이 저장되었습니다.' : '웹훅 URL이 삭제되었습니다.', 'success');
     });
 
     $('load-my-calendars-btn').addEventListener('click', async function () {
