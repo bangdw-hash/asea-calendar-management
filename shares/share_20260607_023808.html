@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>ASEA 일정 공유 — 공유 일정</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#f5f7fa;color:#1a1a2e;min-height:100vh}
+header{background:#fff;border-bottom:1px solid #e0e4ef;padding:14px 20px;display:flex;align-items:center;gap:10px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+header h1{font-size:16px;font-weight:700;line-height:1.3}
+.meta{margin-left:auto;font-size:12px;color:#999;white-space:nowrap}
+.container{max-width:640px;margin:0 auto;padding:20px 16px 60px}
+.guide{font-size:14px;color:#444;line-height:1.7;margin-bottom:20px;padding:14px 16px;background:#fff;border-radius:10px;border:1px solid #e0e4ef}
+.ev-item{display:flex;align-items:flex-start;gap:10px;padding:12px 14px;background:#fff;border-radius:8px;border:1px solid #e0e4ef;margin-bottom:8px;text-decoration:none;color:inherit;transition:background 150ms}
+.ev-item:active{background:#eef3ff}
+.ev-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;margin-top:5px}
+.ev-body{display:flex;flex-direction:column;gap:3px;flex:1;min-width:0}
+.ev-title{font-size:14px;font-weight:600;color:#1a73e8;word-break:keep-all;line-height:1.4}
+.ev-time{font-size:12px;color:#888}
+</style>
+<script>
+function openGcal(el,e){e.preventDefault();var s=el.dataset.s,en=el.dataset.e,t=el.dataset.title,d=el.dataset.details;var q="action=TEMPLATE&text="+encodeURIComponent(t)+"&dates="+s+"/"+en+"&details="+encodeURIComponent(d);var isMobile=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent);if(isMobile){var isAndroid=/Android/i.test(navigator.userAgent);if(isAndroid){var intentUrl="intent://calendar.google.com/calendar/r/eventedit?"+q+"#Intent;scheme=https;package=com.google.android.calendar;S.browser_fallback_url="+encodeURIComponent("https://calendar.google.com/calendar/r/eventedit?"+q)+";end";location.href=intentUrl;}else{location.href="https://calendar.google.com/calendar/r/eventedit?"+q;}}else{window.open("https://calendar.google.com/calendar/render?"+q,"_blank");}}
+</script>
+</head>
+<body>
+<header><span style="font-size:20px">📅</span><h1>ASEA 일정 공유<br><span style="font-weight:400;font-size:13px;color:#666">공유 일정</span></h1><span class="meta">2026.06.07 · 8개</span></header>
+<div class="container">
+<div class="guide">아래 일정에서 원하시는 일정을 개별적으로 선택하실 수 있습니다.<br>일정을 선택하시면 구글 캘린더에 개별적으로 추가할 수 있습니다.</div>
+<a href="#" class="ev-item" onclick="openGcal(this,event)" data-s="20260701T000000Z" data-e="20260831T080000Z" data-title="[입학처] 가을학기 입학 상담" data-details="2학기 입학상담, 군복무제대예정자 대학중퇴자 등\n[부서: 입학처]"><span class="ev-dot" style="background:#558B2F"></span><span class="ev-body"><span class="ev-title">[입학처] 가을학기 입학 상담</span><span class="ev-time">2026.07.01(수) 09:00 ~ 2026.08.31(월) 17:00</span></span></a><a href="#" class="ev-item" onclick="openGcal(this,event)" data-s="20260725T000000Z" data-e="20260725T080000Z" data-title="[입학처] 상반기 진로체험 기획" data-details="토 예정, 계열별 과정별 프로그램 논의\n[부서: 입학처]"><span class="ev-dot" style="background:#558B2F"></span><span class="ev-body"><span class="ev-title">[입학처] 상반기 진로체험 기획</span><span class="ev-time">2026.07.25(토) 09:00 ~ 2026.07.25(토) 17:00</span></span></a><a href="#" class="ev-item" onclick="openGcal(this,event)" data-s="20260512T080000Z" data-e="20260512T090000Z" data-title="[항공관광계열] 영등포 청년센터 이루영 커뮤니티 1차 모임" data-details="5월 12일 5시\n[부서: 항공관광계열]"><span class="ev-dot" style="background:#AD1457"></span><span class="ev-body"><span class="ev-title">[항공관광계열] 영등포 청년센터 이루영 커뮤니티 1차 모임</span><span class="ev-time">2026.05.12(화) 17:00 ~ 2026.05.12(화) 18:00</span></span></a><a href="#" class="ev-item" onclick="openGcal(this,event)" data-s="20260626T000000Z" data-e="20260626T080000Z" data-title="[항공관광계열] 대구 전통주 칵테일경진대회" data-details="6월 26일, 5명 출전 예정\n[부서: 항공관광계열]"><span class="ev-dot" style="background:#AD1457"></span><span class="ev-body"><span class="ev-title">[항공관광계열] 대구 전통주 칵테일경진대회</span><span class="ev-time">2026.06.26(금) 09:00 ~ 2026.06.26(금) 17:00</span></span></a><a href="#" class="ev-item" onclick="openGcal(this,event)" data-s="20260413T010000Z" data-e="20260413T020000Z" data-title="[국방경찰계열] 금연캠페인 교수 순찰" data-details="4월 13일 월, 김찬준 교수\n[부서: 국방경찰계열]"><span class="ev-dot" style="background:#283593"></span><span class="ev-body"><span class="ev-title">[국방경찰계열] 금연캠페인 교수 순찰</span><span class="ev-time">2026.04.13(월) 10:00 ~ 2026.04.13(월) 11:00</span></span></a><a href="#" class="ev-item" onclick="openGcal(this,event)" data-s="20260428T010000Z" data-e="20260428T020000Z" data-title="[국방경찰계열] 금연캠페인 교수 순찰 2차" data-details="4월 28일 화, 김찬준 교수\n[부서: 국방경찰계열]"><span class="ev-dot" style="background:#283593"></span><span class="ev-body"><span class="ev-title">[국방경찰계열] 금연캠페인 교수 순찰 2차</span><span class="ev-time">2026.04.28(화) 10:00 ~ 2026.04.28(화) 11:00</span></span></a><a href="#" class="ev-item" onclick="openGcal(this,event)" data-s="20260612T010000Z" data-e="20260612T020000Z" data-title="[국방경찰계열] 금연캠페인 교수 순찰 5차" data-details="6월 12일 금, 김남원 학부장\n[부서: 국방경찰계열]"><span class="ev-dot" style="background:#283593"></span><span class="ev-body"><span class="ev-title">[국방경찰계열] 금연캠페인 교수 순찰 5차</span><span class="ev-time">2026.06.12(금) 10:00 ~ 2026.06.12(금) 11:00</span></span></a><a href="#" class="ev-item" onclick="openGcal(this,event)" data-s="20260316T000000Z" data-e="20260417T080000Z" data-title="[군사교육단] 공군부사관 제 256기 지원" data-details="3월 16일~4월 17일, 접수 완료, 4명 기준(5.13)\n[부서: 군사교육단]"><span class="ev-dot" style="background:#EA4335"></span><span class="ev-body"><span class="ev-title">[군사교육단] 공군부사관 제 256기 지원</span><span class="ev-time">2026.03.16(월) 09:00 ~ 2026.04.17(금) 17:00</span></span></a>
+</div>
+</body>
+</html>
