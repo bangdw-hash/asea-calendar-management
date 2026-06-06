@@ -2153,8 +2153,10 @@
       var timeStr = fmtDt(ev.startDateTime) + ' ~ ' + fmtDt(ev.endDateTime);
       return '<a href="' + gcalUrl + '" target="_blank" rel="noopener" class="ev-item">' +
         '<span class="ev-dot" style="background:' + color + '"></span>' +
-        '<span class="ev-title">' + ev.title + '</span>' +
-        '<span class="ev-time">' + timeStr + '</span>' +
+        '<span class="ev-body">' +
+          '<span class="ev-title">' + ev.title + '</span>' +
+          '<span class="ev-time">' + timeStr + '</span>' +
+        '</span>' +
       '</a>';
     }).join('');
 
@@ -2173,11 +2175,12 @@
       '.meta{margin-left:auto;font-size:12px;color:#999;white-space:nowrap}\n' +
       '.container{max-width:640px;margin:0 auto;padding:20px 16px 60px}\n' +
       '.guide{font-size:14px;color:#444;line-height:1.7;margin-bottom:20px;padding:14px 16px;background:#fff;border-radius:10px;border:1px solid #e0e4ef}\n' +
-      '.ev-item{display:flex;align-items:center;gap:8px;padding:10px 12px;background:#fff;border-radius:8px;border:1px solid #e0e4ef;margin-bottom:6px;text-decoration:none;color:inherit;transition:background 150ms;overflow:hidden}\n' +
+      '.ev-item{display:flex;align-items:flex-start;gap:10px;padding:12px 14px;background:#fff;border-radius:8px;border:1px solid #e0e4ef;margin-bottom:8px;text-decoration:none;color:inherit;transition:background 150ms}\n' +
       '.ev-item:active{background:#eef3ff}\n' +
-      '.ev-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}\n' +
-      '.ev-title{font-size:14px;font-weight:600;color:#1a73e8;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}\n' +
-      '.ev-time{font-size:12px;color:#888;flex-shrink:0;white-space:nowrap;margin-left:8px}\n' +
+      '.ev-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;margin-top:5px}\n' +
+      '.ev-body{display:flex;flex-direction:column;gap:3px;flex:1;min-width:0}\n' +
+      '.ev-title{font-size:14px;font-weight:600;color:#1a73e8;word-break:keep-all;line-height:1.4}\n' +
+      '.ev-time{font-size:12px;color:#888}\n' +
       '</style>\n' +
       '</head>\n<body>\n' +
       '<header><span style="font-size:20px">📅</span>' +
