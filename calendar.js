@@ -171,8 +171,17 @@
      * @param {string} colorId  — Google colorId (1~11)
      * @returns {Promise<void>}
      */
-    patchCalendarColor: async function (calendarId, colorId) {
-      await apiFetch('PATCH', '/users/me/calendarList/' + encodeURIComponent(calendarId), { colorId: colorId });
+    /**
+     * 캘린더 색상 변경 (hex 직접 전송 — Google 서버에 정확히 반영)
+     * @param {string} calendarId
+     * @param {string} hex  — '#RRGGBB'
+     */
+    patchCalendarColor: async function (calendarId, hex) {
+      // 밝기 기준으로 전경색 결정
+      var r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
+      var fg = (r*299 + g*587 + b*114) / 1000 > 128 ? '#000000' : '#ffffff';
+      var path = '/users/me/calendarList/' + encodeURIComponent(calendarId) + '?colorRgbFormat=true';
+      await apiFetch('PATCH', path, { backgroundColor: hex, foregroundColor: fg });
     },
   };
 })();

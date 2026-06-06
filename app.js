@@ -148,6 +148,12 @@
       if (loggedIn) {
         loadUserEmail();
         checkScheduledEmails();
+        // 로그인 시마다 Google 서버 색상 자동 동기화 (기기 간 색상 일치)
+        loadAndSyncCalendars().then(function () {
+          renderMyCalendarsList();
+          if (S.tab === 'calendar') renderCalendar();
+          if (S.tab === 'settings') renderSettingsTab();
+        });
         if (S.tab === 'calendar') renderCalendar();
         if (S.tab === 'settings') renderSettingsTab();
       }
@@ -1966,9 +1972,13 @@
           CONFIG.selectedCalendars[i].colorId = colorId;
           persistSelectedCalendars();
 
-          // Google 서버에 반영
+          // Google 서버에 hex 직접 반영
           try {
-            await CalendarModule.patchCalendarColor(cal.id, colorId);
+            await CalendarModule.patchCalendarColor(cal.id, hex);
+            // Google 서버에서 실제 저장된 색상을 다시 읽어와 동기화
+            await loadAndSyncCalendars();
+            renderMyCalendarsList();
+            renderCalendar();
             toast(cal.name + ' 색상이 구글 캘린더에 반영되었습니다.', 'success');
           } catch (e) {
             toast('구글 캘린더 색상 동기화 실패: ' + e.message, 'error');
