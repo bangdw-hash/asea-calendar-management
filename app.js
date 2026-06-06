@@ -1514,27 +1514,21 @@
   /* ═══════════════════════════════════════════════════════════
      일정발췌 탭 (PDF + Claude API)
   ═══════════════════════════════════════════════════════════ */
-  async function renderExtractTab() {
-    // 구글 계정 캘린더 목록 강제 재로드
+  function renderExtractTab() {
     var sel = $('extract-target-calendar');
-    sel.innerHTML = '<option value="">불러오는 중...</option>';
-    if (Auth.isLoggedIn()) {
-      try {
-        var cals = await CalendarModule.listCalendars();
-        sel.innerHTML = '';
-        cals.forEach(function (cal) {
-          var opt = document.createElement('option');
-          opt.value = cal.id;
-          opt.textContent = cal.summary + (cal.primary ? ' (기본)' : '');
-          if (cal.primary) opt.selected = true;
-          sel.appendChild(opt);
-        });
-      } catch (e) {
-        sel.innerHTML = '<option value="primary">기본 캘린더</option>';
-      }
-    } else {
+    var cals = S.userCalendars;
+    if (!cals || cals.length === 0) {
       sel.innerHTML = '<option value="primary">기본 캘린더</option>';
+      return;
     }
+    sel.innerHTML = '';
+    cals.forEach(function (cal) {
+      var opt = document.createElement('option');
+      opt.value = cal.id;
+      opt.textContent = cal.summary + (cal.primary ? ' (기본)' : '');
+      if (cal.primary) opt.selected = true;
+      sel.appendChild(opt);
+    });
   }
 
   function initExtractTab() {
