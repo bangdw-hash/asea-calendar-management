@@ -1515,7 +1515,7 @@
      일정발췌 탭 (PDF + Claude API)
   ═══════════════════════════════════════════════════════════ */
   function renderExtractTab() {
-    var apiKey = CONFIG.geminiApiKey || CONFIG.anthropicApiKey;
+    var apiKey = CONFIG.anthropicApiKey;
     if (apiKey) $('extract-api-key').value = apiKey;
     populateCalendarDropdown('extract-target-calendar');
   }
@@ -1616,13 +1616,9 @@
   }
 
   async function runExtract() {
-    var apiKey = $('extract-api-key').value.trim() || CONFIG.geminiApiKey;
-    if (!apiKey) { toast('Gemini API 키를 입력하세요.', 'error'); return; }
+    var apiKey = CONFIG.anthropicApiKey;
+    if (!apiKey) { toast('설정 탭에서 Claude API 키를 먼저 저장하세요.', 'error'); return; }
     if (!S_pdfFile) { toast('PDF 파일을 먼저 선택하세요.', 'error'); return; }
-
-    // API 키 저장
-    CONFIG.geminiApiKey = apiKey;
-    try { localStorage.setItem(CONFIG.storageKeys.geminiApiKey, apiKey); } catch (e) {}
 
     var btn = $('run-extract-btn');
     btn.disabled = true;
@@ -1649,27 +1645,29 @@
         ']\n\n' +
         '날짜가 불명확한 경우 최대한 추론하세요.\n\n--- PDF 텍스트 ---\n' + pdfText;
 
-      // Gemini Flash API 호출
-      var geminiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + apiKey;
-      var response = await fetch(geminiUrl, {
+      // Claude Haiku API 호출 (가장 저렴한 Claude 모델)
+      var response = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true',
+        },
         body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { maxOutputTokens: 8192, temperature: 0.1 },
+          model: 'claude-haiku-4-5-20251001',
+          max_tokens: 8192,
+          messages: [{ role: 'user', content: prompt }],
         }),
       });
 
       if (!response.ok) {
         var errData = await response.json();
-        var errMsg = (errData.error && errData.error.message) || 'API 오류 ' + response.status;
-        throw new Error(errMsg);
+        throw new Error((errData.error && errData.error.message) || 'API 오류 ' + response.status);
       }
 
       var data = await response.json();
-      var text = data.candidates && data.candidates[0] &&
-                 data.candidates[0].content && data.candidates[0].content.parts &&
-                 data.candidates[0].content.parts[0] && data.candidates[0].content.parts[0].text;
+      var text = data.content && data.content[0] && data.content[0].text;
       if (!text) throw new Error('AI 응답이 비어 있습니다.');
 
       // JSON 파싱 — 응답에서 JSON 배열만 추출
@@ -1939,7 +1937,7 @@
     $('settings-user-email').textContent = S.userEmail || CONFIG.senderEmail;
     $('setting-folder-id').value = CONFIG.driveReportFolderId !== 'YOUR_FOLDER_ID'
       ? CONFIG.driveReportFolderId : '';
-    var storedKey = CONFIG.geminiApiKey || CONFIG.anthropicApiKey;
+    var storedKey = CONFIG.anthropicApiKey;
     if (storedKey) $('setting-api-key').value = storedKey;
     if (CONFIG.makeWebhookUrl) $('setting-make-webhook').value = CONFIG.makeWebhookUrl;
     renderSettingsRecipients();
@@ -2212,9 +2210,9 @@
     $('save-api-key-btn').addEventListener('click', function () {
       var key = $('setting-api-key').value.trim();
       if (!key) { toast('API 키를 입력하세요.', 'error'); return; }
-      CONFIG.geminiApiKey = key;
-      try { localStorage.setItem(CONFIG.storageKeys.geminiApiKey, key); } catch (e) {}
-      toast('Gemini API 키가 저장되었습니다.', 'success');
+      CONFIG.anthropicApiKey = key;
+      try { localStorage.setItem(CONFIG.storageKeys.anthropicApiKey, key); } catch (e) {}
+      toast('Claude API 키가 저장되었습니다.', 'success');
     });
 
     $('save-make-webhook-btn').addEventListener('click', function () {
