@@ -128,6 +128,10 @@
       var active = btn.dataset.tab === name;
       btn.classList.toggle('active', active);
       btn.setAttribute('aria-selected', active ? 'true' : 'false');
+      /* 모바일: 활성 탭이 가로 스크롤 화면에 보이도록 */
+      if (active && btn.scrollIntoView) {
+        btn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+      }
     });
     document.querySelectorAll('.tab-panel').forEach(function (p) {
       var active = p.id === 'tab-' + name;
@@ -605,7 +609,8 @@
     var evWrap = document.createElement('div');
     evWrap.className = 'day-events';
 
-    dayEvents.slice(0, 3).forEach(function (ev) {
+    var maxChips = window.innerWidth <= 600 ? 1 : 3;
+    dayEvents.slice(0, maxChips).forEach(function (ev) {
       var chip = document.createElement('div');
       chip.className = 'event-chip ' + deptClass(ev.description);
       // 다중 캘린더 색상 우선 적용
@@ -623,10 +628,10 @@
       evWrap.appendChild(chip);
     });
 
-    if (dayEvents.length > 3) {
+    if (dayEvents.length > maxChips) {
       var more = document.createElement('div');
       more.className = 'day-more';
-      more.textContent = '+' + (dayEvents.length - 3) + '개';
+      more.textContent = '+' + (dayEvents.length - maxChips) + '개';
       evWrap.appendChild(more);
     }
 

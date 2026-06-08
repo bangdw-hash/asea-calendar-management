@@ -204,13 +204,16 @@ a        { color: var(--color-accent); text-decoration: none; }
   background: var(--color-card);
   border-bottom: 1px solid var(--color-border);
   display: flex;
-  min-height: var(--tab-h);   /* 고정 높이 → 최소 높이: 탭이 줄 바꿈 가능 */
-  flex-wrap: wrap;             /* 창이 좁으면 자동으로 2줄 이상 래핑 */
-  overflow-x: hidden;
+  height: var(--tab-h);
+  flex-wrap: nowrap;           /* 단일 행 유지 */
+  overflow-x: auto;
+  overflow-y: hidden;
   scrollbar-width: none;
   flex-shrink: 0;
   -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
 }
+.tab-nav::-webkit-scrollbar { display: none; }
 
 .tab-nav::-webkit-scrollbar { display: none; }
 
@@ -1292,49 +1295,200 @@ a        { color: var(--color-accent); text-decoration: none; }
 }
 
 /* ── 19. 반응형 — 모바일 (< 600px) ──────────────────────────── */
+/* ══════════════════════════════════════════════════════════════
+   ── 모바일 반응형 (≤ 600px)
+   ══════════════════════════════════════════════════════════════ */
 @media (max-width: 600px) {
   :root {
-    --header-h: 48px;
-    --tab-h:    44px;
+    --header-h: 52px;
+    --tab-h:    52px;
   }
 
-  .header-title { font-size: var(--font-base); }
+  /* ── 헤더: 한 줄 유지 ──────────────────────────────────────── */
+  .app-header {
+    padding: 0 10px;
+    gap: 0;
+  }
+  .header-brand { gap: 6px; min-width: 0; flex-shrink: 1; }
+  .header-icon  { font-size: 18px; flex-shrink: 0; }
+  .header-title {
+    font-size: 13px;
+    font-weight: 700;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 90px;
+  }
+  /* 헤더 액션: 모바일에서 아이콘만 */
+  .header-actions {
+    margin-right: 4px;
+    flex-shrink: 0;
+  }
+  .header-actions .btn-secondary {
+    padding: 0;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    font-size: 16px;
+    justify-content: center;
+    /* 텍스트 숨기고 아이콘(이모지)만 남김 */
+    overflow: hidden;
+    white-space: nowrap;
+    text-indent: 0;
+  }
+  /* 헤더 액션 버튼 텍스트 숨기기 */
+  #sync-calendars-btn { font-size: 0; padding: 0; width: 36px; height: 36px; border-radius: 50%; justify-content: center; }
+  #sync-calendars-btn::before { content: '🔄'; font-size: 16px; }
   .user-email   { display: none; }
+  #logout-btn { font-size: 11px; padding: 4px 8px; }
 
-  .tab-btn { padding: 0 var(--sp-4); }
+  /* ── 탭 네비게이션: 가로 스크롤 1줄 ───────────────────────── */
+  .tab-nav {
+    flex-wrap: nowrap;           /* ★ 줄바꿈 금지 */
+    overflow-x: auto;
+    overflow-y: hidden;
+    min-height: var(--tab-h);
+    height: var(--tab-h);
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    padding: 0;
+    align-items: stretch;
+    /* 부드러운 스크롤 스냅 */
+    scroll-behavior: smooth;
+  }
+  .tab-nav::-webkit-scrollbar { display: none; }
+
+  .tab-btn {
+    flex-shrink: 0;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    min-width: 50px;
+    width: 50px;
+    height: 100%;
+    padding: 6px 0 4px;
+    gap: 0;
+    position: relative;
+    border-bottom: none;           /* 기존 border-bottom 제거 */
+    border-radius: 0;
+  }
+  /* 활성 탭: 하단 파란 바 */
+  .tab-btn.active::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 6px;
+    right: 6px;
+    height: 3px;
+    border-radius: 3px 3px 0 0;
+    background: var(--color-accent);
+  }
+  /* 뱃지 위치 조정 */
+  .tab-badge {
+    position: absolute;
+    top: 4px;
+    right: 6px;
+    min-width: 16px;
+    height: 16px;
+    font-size: 9px;
+    padding: 0 3px;
+    line-height: 16px;
+  }
   .tab-label { display: none; }
-  .tab-icon  { font-size: 20px; }
+  .tab-icon  { font-size: 22px; line-height: 1; }
 
-  .calendar-title { font-size: var(--font-lg); min-width: 120px; }
+  /* ── 캘린더 툴바 ──────────────────────────────────────────── */
+  .calendar-toolbar {
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+  .calendar-nav {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .calendar-title { font-size: var(--font-lg); min-width: 0; flex: 1; text-align: center; }
+  .calendar-actions {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+  }
+  .calendar-actions .view-toggle { flex-shrink: 0; }
+  .calendar-actions .btn { flex-shrink: 0; font-size: 11px; padding: 5px 8px; white-space: nowrap; }
+  #add-event-btn { margin-left: auto; }
 
-  .calendar-day { min-height: 60px; }
+  /* ── 캘린더 범례: 가로 스크롤 1줄 ────────────────────────── */
+  .calendar-legend {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding: 4px 0 6px;
+    gap: 2px;
+    -webkit-overflow-scrolling: touch;
+  }
+  .calendar-legend::-webkit-scrollbar { display: none; }
+  .legend-item {
+    flex-shrink: 0;
+    font-size: 10px;
+    padding: 2px 6px;
+    white-space: nowrap;
+  }
 
-  /* 모바일: 이벤트 칩 첫 번째만 노출 */
-  .event-chip + .event-chip { display: none; }
+  /* ── 달력 셀: 모바일 최적화 ───────────────────────────────── */
+  .calendar-container { border-radius: var(--r-md); }
+  .weekday { font-size: 10px; padding: 4px 0; font-weight: 700; }
+  .calendar-day {
+    min-height: 56px;
+    padding: 2px 2px 2px 2px;
+  }
+  .day-number {
+    width: 20px;
+    height: 20px;
+    font-size: 10px;
+    font-weight: 600;
+    margin-bottom: 1px;
+  }
+  /* 모바일: 이벤트 칩을 매우 컴팩트하게 */
+  .event-chip {
+    font-size: 9px;
+    padding: 1px 3px;
+    border-left-width: 2px;
+    border-radius: 2px;
+    line-height: 1.4;
+    margin-bottom: 1px;
+  }
+  /* JS에서 maxChips=1 처리 → CSS 추가 숨김 불필요 */
+  .day-more {
+    font-size: 9px;
+    color: var(--color-accent);
+    font-weight: 600;
+    padding: 0 2px;
+  }
 
+  /* ── 예약 캘린더 셀 (차량/대관/강의실) ───────────────────── */
+  .res-cal-cell { min-height: 52px; }
+
+  /* ── 폼 ─────────────────────────────────────────────────── */
   .form-row { grid-template-columns: 1fr; }
-
-  .email-form { padding: var(--sp-4); }
-
+  .email-form { padding: var(--sp-3); }
   .settings-add-row { flex-wrap: wrap; }
+  .tab-panel { padding: 10px; }
 
-  /* 모바일 모달: 하단 시트 */
+  /* ── 모달: 하단 시트 ────────────────────────────────────── */
   .modal {
     align-items: flex-end;
     padding: 0;
   }
-
   .modal-dialog {
     width: 100%;
-    border-radius: var(--r-xl) var(--r-xl) 0 0;
+    border-radius: 20px 20px 0 0;
     max-height: 92vh;
   }
 
-  .calendar-toolbar {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
+  /* ── 허브/이메일 헤더 ───────────────────────────────────── */
   .hub-header,
   .kakao-box-header {
     flex-direction: column;
@@ -1342,17 +1496,49 @@ a        { color: var(--color-accent); text-decoration: none; }
     gap: var(--sp-2);
   }
 
-  /* 일정발췌 모바일 */
+  /* ── 일정발췌 모바일 ────────────────────────────────────── */
   .extract-layout { flex-direction: column; }
   .extract-upload-area { width: 100%; }
   .extract-result-area { width: 100%; }
   .extract-result-header { flex-direction: column; align-items: flex-start; }
   .extract-result-actions { margin-left: 0; width: 100%; }
   .extract-result-actions .btn,
-  .extract-result-actions .form-select { flex: 1 1 calc(50% - 4px); min-width: 0; font-size: 12px; }
+  .extract-result-actions .form-select { flex: 1 1 calc(50% - 4px); min-width: 0; font-size: 11px; }
   .extract-history-item { flex-direction: column; align-items: flex-start; }
   .extract-history-actions { width: 100%; }
   .extract-history-actions .btn { flex: 1; }
+
+  /* ── 선택 안내 바 (차량/대관) ───────────────────────────── */
+  .sel-hint-bar {
+    flex-wrap: wrap;
+    gap: 4px;
+    padding: 6px 8px;
+    font-size: 11px;
+  }
+  .sel-hint-guide { font-size: 10px; }
+
+  /* ── 서브탭 바 ──────────────────────────────────────────── */
+  .facility-subtab-bar,
+  .email-subtabs,
+  .extract-subtabs,
+  .sms-subtab-bar {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    scrollbar-width: none;
+  }
+  .subtab-btn,
+  .email-subtab,
+  .extract-subtab-btn,
+  .sms-subtab-btn {
+    flex-shrink: 0;
+    font-size: 12px;
+    padding: 6px 12px;
+    white-space: nowrap;
+  }
+
+  /* ── 섹션 타이틀 ────────────────────────────────────────── */
+  .section-title { font-size: 15px; }
+  h2.section-title { font-size: 16px; }
 }
 
 /* ── 20. 반응형 — 데스크톱 (≥ 1024px) ─────────────────────── */
