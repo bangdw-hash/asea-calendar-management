@@ -3381,7 +3381,10 @@
           '<div>' +
             '<div style="font-size:16px;font-weight:700">📊 ' + _esc(roomName) + ' 입출입 현황</div>' +
           '</div>' +
-          '<button id="ci-logs-close" style="font-size:20px;background:none;border:none;cursor:pointer;color:#888">✕</button>' +
+          '<div style="display:flex;align-items:center;gap:8px">' +
+            '<button id="ci-logs-excel-btn" class="btn btn-secondary btn-sm" style="font-size:12px" disabled>⬇️ 엑셀 다운로드</button>' +
+            '<button id="ci-logs-close" style="font-size:20px;background:none;border:none;cursor:pointer;color:#888">✕</button>' +
+          '</div>' +
         '</div>' +
         /* 날짜 선택 + 달력 미니 */
         '<div style="padding:14px 20px;border-bottom:1px solid #f0f2f5;flex-shrink:0">' +
@@ -3411,6 +3414,7 @@
     document.getElementById('ci-logs-close').onclick    = _ciCloseLogsModal;
     document.getElementById('ci-logs-backdrop').onclick = _ciCloseLogsModal;
     document.getElementById('ci-logs-load').onclick     = _ciLoadSpaceLogs;
+    document.getElementById('ci-logs-excel-btn').onclick = _ciDownloadLogsExcel;
     document.getElementById('ci-logs-today').onclick    = function () {
       document.getElementById('ci-logs-date').value = new Date().toISOString().slice(0,10);
       _ciLoadSpaceLogs();
@@ -3435,6 +3439,61 @@
 
   function _ciCloseLogsModal() {
     if (_ciLogsModal) { _ciLogsModal.remove(); _ciLogsModal = null; }
+  }
+
+  /* ── 입출입 현황 엑셀(CSV) 다운로드 ── */
+  function _ciDownloadLogsExcel() {
+    var logs = _ciLogsData;
+    if (!logs || !logs.length) return;
+
+    var dateEl = document.getElementById('ci-logs-date');
+    var date   = dateEl ? dateEl.value : new Date().toISOString().slice(0,10);
+
+    // 파일명: 시설명_조회일시_v1
+    var now = new Date();
+    var ts  = now.getFullYear() + '' +
+              String(now.getMonth()+1).padStart(2,'0') +
+              String(now.getDate()).padStart(2,'0') + '_' +
+              String(now.getHours()).padStart(2,'0') +
+              String(now.getMinutes()).padStart(2,'0');
+    var safeName = (_ciLogsRoomName || '').replace(/[\\/:*?"<>|]/g, '_');
+    var filename = safeName + '_' + ts + '_v1.csv';
+
+    // CSV 헤더 + 행
+    var BOM = '﻿';  // Excel UTF-8 BOM
+    var header = ['날짜','시각','구분','공간','이름','소속','전화번호','기기ID'];
+    var rows = logs.map(function (l) {
+      var d = l.timestamp ? new Date(l.timestamp) : null;
+      var dateStr = d ? (d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0')) : date;
+      var timeStr = d ? (String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0') + ':' + String(d.getSeconds()).padStart(2,'0')) : '';
+      return [
+        dateStr,
+        timeStr,
+        l.checkType  || '',
+        l.roomName   || l.roomId || '',
+        l.userName   || '',
+        l.affiliation|| '',
+        l.phone      || '',
+        l.deviceId   || '',
+      ].map(function (v) {
+        // 쉼표·따옴표 포함 셀 처리
+        var s = String(v);
+        if (s.includes(',') || s.includes('"') || s.includes('\n')) {
+          return '"' + s.replace(/"/g, '""') + '"';
+        }
+        return s;
+      });
+    });
+
+    var csv = BOM + [header].concat(rows).map(function (r) { return r.join(','); }).join('\r\n');
+
+    var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    var url  = URL.createObjectURL(blob);
+    var a    = document.createElement('a');
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click();
+    document.body.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
   }
 
   function _ciRenderWeekCal(selectedDate) {
@@ -3511,6 +3570,10 @@
         '<div class="ci-summary-card" style="background:#fce4ec"><div class="ci-summary-label" style="color:#c62828">🚪 퇴실</div><div class="ci-summary-value" style="color:#c62828">' + outCnt + '건</div></div>' +
         '<div class="ci-summary-card" style="background:#e3f2fd"><div class="ci-summary-label" style="color:#1565c0">👤 인원</div><div class="ci-summary-value" style="color:#1565c0">' + users.size + '명</div></div>';
     }
+
+    // 엑셀 버튼 활성/비활성
+    var excelBtn = document.getElementById('ci-logs-excel-btn');
+    if (excelBtn) excelBtn.disabled = !logs.length;
 
     if (!logs.length) {
       bodyEl.innerHTML = '<p class="empty-state" style="margin-top:20px">📭 ' + date + ' 입출입 기록이 없습니다.</p>';
