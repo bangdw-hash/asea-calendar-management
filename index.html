@@ -79,6 +79,11 @@
         <span class="tab-icon" aria-hidden="true">📄</span>
         <span class="tab-label">일정발췌</span>
       </button>
+      <button class="tab-btn" data-tab="work" role="tab" aria-selected="false">
+        <span class="tab-icon" aria-hidden="true">📋</span>
+        <span class="tab-label">업무관리</span>
+        <span id="work-badge" class="tab-badge" hidden>0</span>
+      </button>
       <button class="tab-btn" data-tab="settings" role="tab" aria-selected="false">
         <span class="tab-icon" aria-hidden="true">⚙️</span>
         <span class="tab-label">설정</span>
@@ -367,18 +372,200 @@
       </section>
 
       <!-- ════════════════════════════════════════════════════
+           📋 업무관리 탭
+           ════════════════════════════════════════════════════ -->
+      <section id="tab-work" class="tab-panel" role="tabpanel" hidden>
+        <h2 class="section-title">업무관리</h2>
+
+        <!-- 서브탭 -->
+        <div class="extract-subtabs" style="margin-bottom:16px">
+          <button class="extract-subtab-btn active" data-wtab="send">📤 업무발송</button>
+          <button class="extract-subtab-btn" data-wtab="my">📥 내 업무현황</button>
+          <button class="extract-subtab-btn" data-wtab="dept">📊 부서현황</button>
+        </div>
+
+        <!-- 업무발송 -->
+        <div id="wtab-send" class="email-subpanel">
+          <div class="settings-card">
+            <h3 class="settings-section-title">새 업무 발송</h3>
+            <div class="form-group">
+              <label class="form-label">제목 <span class="required">*</span></label>
+              <input id="work-title" type="text" class="form-input" placeholder="업무 제목을 입력하세요">
+            </div>
+            <div style="display:flex;gap:12px;flex-wrap:wrap">
+              <div class="form-group" style="flex:1;min-width:140px">
+                <label class="form-label">유형</label>
+                <select id="work-type" class="form-select">
+                  <option value="지시">📢 지시</option>
+                  <option value="협조">🤝 협조</option>
+                  <option value="공람">👁 공람</option>
+                </select>
+              </div>
+              <div class="form-group" style="flex:1;min-width:140px">
+                <label class="form-label">공유 범위</label>
+                <select id="work-scope" class="form-select">
+                  <option value="수신자만">수신자만</option>
+                  <option value="부서내">부서 내 공개</option>
+                  <option value="전체">전체 공개</option>
+                </select>
+              </div>
+              <div class="form-group" style="flex:1;min-width:160px">
+                <label class="form-label">마감일</label>
+                <input id="work-due" type="date" class="form-input">
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">수신자 <span class="required">*</span></label>
+              <div style="display:flex;gap:8px;margin-bottom:8px">
+                <input id="work-recipient-search" type="text" class="form-input" placeholder="이름 또는 부서 검색...">
+                <button id="work-recipient-search-btn" class="btn btn-ghost btn-sm">🔍</button>
+              </div>
+              <div id="work-recipient-results" class="work-recipient-results" hidden></div>
+              <div id="work-recipients-selected" class="work-recipients-chips"></div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">업무 내용 <span class="required">*</span></label>
+              <div class="work-editor-toolbar">
+                <button type="button" class="work-editor-btn" data-cmd="bold" title="굵게"><b>B</b></button>
+                <button type="button" class="work-editor-btn" data-cmd="italic" title="기울임"><i>I</i></button>
+                <button type="button" class="work-editor-btn" data-cmd="underline" title="밑줄"><u>U</u></button>
+                <span class="work-editor-sep"></span>
+                <button type="button" class="work-editor-btn" data-cmd="insertUnorderedList" title="목록">≡</button>
+                <button type="button" class="work-editor-btn" data-cmd="insertOrderedList" title="번호목록">①</button>
+              </div>
+              <div id="work-content-editor" class="work-content-editor" contenteditable="true" placeholder="업무 내용을 입력하세요..."></div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">첨부파일</label>
+              <div class="work-attach-area">
+                <label class="btn btn-ghost btn-sm" style="cursor:pointer">
+                  📎 파일 선택
+                  <input id="work-attach-input" type="file" multiple hidden>
+                </label>
+                <div id="work-attach-list" class="work-attach-list"></div>
+              </div>
+            </div>
+            <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">
+              <button id="work-send-btn" class="btn btn-primary">📤 발송하기</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 내 업무현황 -->
+        <div id="wtab-my" class="email-subpanel" hidden>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+            <div class="work-status-tabs">
+              <button class="work-status-tab active" data-status="미접수">미접수 <span id="cnt-미접수" class="work-cnt">0</span></button>
+              <button class="work-status-tab" data-status="처리중">처리중 <span id="cnt-처리중" class="work-cnt">0</span></button>
+              <button class="work-status-tab" data-status="완료">완료 <span id="cnt-완료" class="work-cnt">0</span></button>
+              <button class="work-status-tab" data-status="발송">발송함 <span id="cnt-발송" class="work-cnt">0</span></button>
+            </div>
+            <button id="work-refresh-btn" class="btn btn-ghost btn-sm">🔄 새로고침</button>
+          </div>
+          <div id="work-my-list" class="work-list">
+            <p class="empty-state">업무 내역을 불러오는 중...</p>
+          </div>
+        </div>
+
+        <!-- 부서현황 -->
+        <div id="wtab-dept" class="email-subpanel" hidden>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+            <h3 class="settings-section-title" style="margin:0" id="work-dept-title">부서 업무현황</h3>
+            <button id="work-dept-refresh-btn" class="btn btn-ghost btn-sm">🔄 새로고침</button>
+          </div>
+          <div id="work-dept-list" class="work-list">
+            <p class="empty-state">부서 업무 내역을 불러오는 중...</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ════════════════════════════════════════════════════
            ⚙️ 설정 탭
            ════════════════════════════════════════════════════ -->
       <section id="tab-settings" class="tab-panel" role="tabpanel" hidden>
         <h2 class="section-title">설정</h2>
 
-        <!-- Google 계정 -->
+        <!-- Google 계정 + 내 프로필 -->
         <div class="settings-card">
           <h3 class="settings-section-title">Google 계정</h3>
           <div class="settings-account">
             <span id="settings-user-email" class="settings-email">로그인 필요</span>
             <button id="settings-logout-btn" class="btn btn-danger btn-sm">로그아웃</button>
           </div>
+          <div id="my-profile-card" class="my-profile-card" hidden>
+            <div class="my-profile-info">
+              <span id="my-profile-name" class="my-profile-name"></span>
+              <span id="my-profile-dept" class="my-profile-badge"></span>
+              <span id="my-profile-rank" class="my-profile-badge"></span>
+              <span id="my-profile-role" class="my-profile-role"></span>
+            </div>
+          </div>
+          <p id="my-profile-unregistered" class="form-hint" style="color:#e53935;margin-top:8px" hidden>
+            ⚠️ 직원 목록에 등록되지 않은 계정입니다. 관리자에게 문의하세요.
+          </p>
+        </div>
+
+        <!-- 직원관리 (admin 전용) -->
+        <div class="settings-card" id="hr-management-card" hidden>
+          <h3 class="settings-section-title">👥 직원관리 <span class="badge-admin">관리자</span></h3>
+
+          <!-- CSV 일괄등록 -->
+          <div style="margin-bottom:16px">
+            <p class="form-hint" style="margin-bottom:8px">
+              CSV 형식: <code>이름,부서,직급,구글이메일,입사일,전화번호,권한(admin/manager/staff)</code>
+            </p>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+              <label class="btn btn-ghost btn-sm" style="cursor:pointer">
+                📂 CSV 파일 선택
+                <input id="hr-csv-input" type="file" accept=".csv" hidden>
+              </label>
+              <button id="hr-csv-upload-btn" class="btn btn-primary btn-sm" disabled>⬆️ 일괄 등록</button>
+              <button id="hr-csv-template-btn" class="btn btn-ghost btn-sm">📥 양식 다운로드</button>
+            </div>
+            <div id="hr-csv-preview" class="hr-csv-preview" hidden></div>
+          </div>
+
+          <!-- 수동 추가 -->
+          <div style="border-top:1px solid var(--color-border);padding-top:14px;margin-bottom:14px">
+            <h4 style="font-size:14px;font-weight:600;margin-bottom:10px">수동 추가</h4>
+            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px">
+              <input id="hr-add-name" type="text" class="form-input" placeholder="이름 *">
+              <select id="hr-add-dept" class="form-select">
+                <option value="">부서 선택</option>
+              </select>
+              <input id="hr-add-rank" type="text" class="form-input" placeholder="직급 (예: 대리)">
+              <input id="hr-add-email" type="email" class="form-input" placeholder="구글 이메일 *">
+              <input id="hr-add-hire" type="date" class="form-input" title="입사일">
+              <input id="hr-add-phone" type="tel" class="form-input" placeholder="전화번호">
+              <select id="hr-add-role" class="form-select">
+                <option value="staff">일반직원</option>
+                <option value="manager">부서장</option>
+                <option value="admin">관리자</option>
+              </select>
+            </div>
+            <button id="hr-add-btn" class="btn btn-primary btn-sm" style="margin-top:8px">➕ 직원 추가</button>
+          </div>
+
+          <!-- 직원 목록 -->
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <span style="font-size:13px;color:#666" id="hr-list-count">직원 0명</span>
+            <div style="display:flex;gap:6px">
+              <input id="hr-search" type="text" class="form-input" style="width:160px" placeholder="이름·부서 검색">
+              <button id="hr-refresh-btn" class="btn btn-ghost btn-sm">🔄</button>
+            </div>
+          </div>
+          <div id="hr-employee-list" class="hr-employee-list">
+            <p class="empty-state">직원 목록을 불러오는 중...</p>
+          </div>
+        </div>
+
+        <!-- DB 초기화 (admin 전용) -->
+        <div class="settings-card" id="hr-init-card" hidden>
+          <h3 class="settings-section-title">🗄️ Sheets DB 초기화 <span class="badge-admin">관리자</span></h3>
+          <p class="form-hint" style="margin-bottom:10px">Google Sheets에 필요한 시트(직원·업무·업무수신·알림로그)와 헤더를 자동으로 생성합니다. 최초 1회만 실행하면 됩니다.</p>
+          <button id="hr-init-sheets-btn" class="btn btn-primary btn-sm">🗄️ 시트 초기화 실행</button>
+          <p id="hr-init-status" class="form-hint" style="margin-top:8px"></p>
+        </div>
         </div>
 
         <!-- 클라우드 설정 동기화 -->
@@ -833,8 +1020,59 @@
     </div>
   </div>
 
+  <!-- 업무 상세 모달 -->
+  <div id="work-detail-modal" class="modal" hidden aria-modal="true" role="dialog">
+    <div class="modal-backdrop" data-close-modal></div>
+    <div class="modal-dialog" style="max-width:560px">
+      <div class="modal-header">
+        <h3 class="modal-title" id="work-detail-type-badge">업무 상세</h3>
+        <button class="modal-close" data-close-modal aria-label="닫기">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="work-detail-meta">
+          <div class="work-detail-row"><span class="work-detail-label">발신</span><span id="work-detail-from"></span></div>
+          <div class="work-detail-row"><span class="work-detail-label">수신</span><span id="work-detail-to"></span></div>
+          <div class="work-detail-row"><span class="work-detail-label">마감</span><span id="work-detail-due"></span></div>
+          <div class="work-detail-row"><span class="work-detail-label">공유</span><span id="work-detail-scope"></span></div>
+          <div class="work-detail-row"><span class="work-detail-label">상태</span><span id="work-detail-status"></span></div>
+        </div>
+        <div class="work-detail-content" id="work-detail-content"></div>
+        <div id="work-detail-attach" class="work-detail-attach" hidden></div>
+
+        <!-- 수신자: 접수/완료 처리 영역 -->
+        <div id="work-detail-action-area" class="work-detail-action-area" hidden>
+          <div class="form-group">
+            <label class="form-label">코멘트</label>
+            <textarea id="work-detail-comment" class="form-input" rows="2" placeholder="처리 내용을 입력하세요 (선택)"></textarea>
+          </div>
+          <!-- 캘린더 등록 옵션 -->
+          <div id="work-cal-register-area" class="work-cal-register-area" hidden>
+            <label class="form-label">📅 캘린더 일정 등록</label>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:6px">
+              <label><input type="radio" name="work-cal-mode" value="allday" checked> 마감일 하루종일</label>
+              <label><input type="radio" name="work-cal-mode" value="custom"> 직접 설정</label>
+            </div>
+            <div id="work-cal-custom-time" style="display:none;margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
+              <input id="work-cal-start" type="datetime-local" class="form-input" style="flex:1">
+              <input id="work-cal-end" type="datetime-local" class="form-input" style="flex:1">
+            </div>
+            <div style="margin-top:8px">
+              <label><input type="checkbox" id="work-cal-personal" checked> ASEA-개인업무 캘린더에 등록</label><br>
+              <label id="work-cal-dept-label"><input type="checkbox" id="work-cal-dept"> ASEA-부서업무 캘린더에 등록</label>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <div class="modal-footer-left" id="work-detail-left-btns"></div>
+        <div class="modal-footer-right" id="work-detail-right-btns"></div>
+      </div>
+    </div>
+  </div>
+
   <!-- ═══════════════════════════════════════════════════════════
        스크립트 (로드 순서 중요)
+       기존 모듈은 절대 수정하지 않음 — 새 모듈만 추가
        ═══════════════════════════════════════════════════════════ -->
   <script src="config.js"></script>
   <script src="auth.js"></script>
@@ -842,6 +1080,8 @@
   <script src="drive.js"></script>
   <script src="gmail.js"></script>
   <script src="report.js"></script>
+  <script src="sheets.js"></script>
+  <script src="work.js"></script>
   <script src="app.js"></script>
 
 </body>

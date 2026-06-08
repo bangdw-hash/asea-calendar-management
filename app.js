@@ -88,6 +88,9 @@
     }, 3200);
   }
 
+  // work.js에서 토스트 사용
+  window.aseaToast = toast;
+
   /* ═══════════════════════════════════════════════════════════
      모달
   ═══════════════════════════════════════════════════════════ */
@@ -146,7 +149,9 @@
       $('login-overlay').hidden = loggedIn;
       $('app').hidden = !loggedIn;
       if (loggedIn) {
-        loadUserEmail();
+        loadUserEmail().then(function () {
+          if (typeof WorkModule !== 'undefined') WorkModule.onLogin(S.userEmail);
+        });
         checkScheduledEmails();
         // 로그인 시 설정 불러오기 + 이력 병합 동기화
         Promise.all([loadSettingsFromCloud(true), syncHistoryOnLogin()]).then(function () {
@@ -2995,6 +3000,7 @@
     initDeptModal();
     initSettings();
     initModalHandlers();
+    if (typeof WorkModule !== 'undefined') WorkModule.initWorkModule();
   }
 
   if (document.readyState === 'loading') {

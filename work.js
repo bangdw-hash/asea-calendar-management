@@ -1,0 +1,1065 @@
+'use strict';
+
+/**
+ * work.js — 업무관리 모듈 (기존 코드와 완전 분리)
+ *
+ * 의존: config.js, auth.js, sheets.js, calendar.js(CalendarModule)
+ * app.js는 수정하지 않음 — initWorkModule()만 app.js의 init()에서 호출
+ */
+
+var WorkModule = (function () {
+
+  /* ──────────────────────────────────────────────────
+     상태
+  ────────────────────────────────────────────────── */
+  var W = {
+    me: null,             // 현재 로그인한 직원 객체 {id,name,department,rank,role,...}
+    employees: [],        // 전체 직원 목록 (캐시)
+    empCacheAt: 0,
+    myTasks: [],          // 내 수신 업무
+    sentTasks: [],        // 내 발신 업무
+    allTasks: [],         // 전체 업무 (관리자용)
+    currentStatus: '미접수',  // 현황판 필터
+    detailTask: null,         // 상세 모달에 열린 업무
+    detailReceived: null,     // 상세 모달에 열린 수신 행
+    selectedRecipients: [],   // 발송 폼 선택된 수신자
+    attachFiles: [],          // 발송 폼 첨부파일
+    pollTimer: null,
+    wtab: 'send',
+    asea개인CalId: null,
+    asea부서CalId: null,
+    asea지시CalId: null,
+  };
+
+  /* ──────────────────────────────────────────────────
+     유틸
+  ────────────────────────────────────────────────── */
+  function $w(id) { return document.getElementById(id); }
+
+  function toast(msg, type) {
+    // app.js의 toast 재사용 (전역)
+    if (typeof window.aseaToast === 'function') window.aseaToast(msg, type);
+    else console.log('[WORK]', msg);
+  }
+
+  function openModal(id) {
+    var el = $w(id); if (!el) return;
+    el.hidden = false; el.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+  function closeModal(id) {
+    var el = $w(id); if (!el) return;
+    el.hidden = true; el.classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  function formatDate(iso) {
+    if (!iso) return '-';
+    var d = new Date(iso);
+    var days = ['일','월','화','수','목','금','토'];
+    return d.getFullYear() + '.' + String(d.getMonth()+1).padStart(2,'0') + '.' +
+           String(d.getDate()).padStart(2,'0') + '(' + days[d.getDay()] + ')';
+  }
+
+  function statusBadge(status) {
+    var map = { '미접수':'🔴','처리중':'🟡','완료':'🟢','반려':'⚫' };
+    return (map[status] || '⚪') + ' ' + status;
+  }
+
+  function typeColor(type) {
+    return type === '지시' ? '#d32f2f' : type === '협조' ? '#1565c0' : '#558b2f';
+  }
+
+  /* ──────────────────────────────────────────────────
+     직원 캐시
+  ────────────────────────────────────────────────── */
+  async function getEmployeesCached() {
+    var now = Date.now();
+    if (W.employees.length && now - W.empCacheAt < 60 * 60 * 1000) return W.employees;
+    W.employees = await SheetsModule.getEmployees();
+    W.empCacheAt = now;
+    return W.employees;
+  }
+
+  /* ──────────────────────────────────────────────────
+     로그인 연동: 이메일 → 직원 매칭
+  ────────────────────────────────────────────────── */
+  async function matchEmployee(googleEmail) {
+    if (!googleEmail) return null;
+    try {
+      var emp = await SheetsModule.getEmployeeByEmail(googleEmail);
+      if (emp && emp.status === 'active') return emp;
+    } catch (e) {}
+    return null;
+  }
+
+  async function onLogin(googleEmail) {
+    W.me = await matchEmployee(googleEmail);
+    renderProfileCard();
+
+    if (W.me) {
+      // 권한별 UI 노출
+      var isAdmin = W.me.role === 'admin';
+      if ($w('hr-management-card')) $w('hr-management-card').hidden = !isAdmin;
+      if ($w('hr-init-card'))       $w('hr-init-card').hidden       = !isAdmin;
+
+      // 배지 업데이트
+      await refreshUnreadBadge();
+
+      // 폴링 시작
+      startPolling();
+
+      // 내 업무현황 자동 로드
+      await loadMyTasks();
+    }
+  }
+
+  function renderProfileCard() {
+    var card = $w('my-profile-card');
+    var warn = $w('my-profile-unregistered');
+    if (!card) return;
+
+    if (W.me) {
+      card.hidden = false;
+      if (warn) warn.hidden = true;
+      $w('my-profile-name').textContent = W.me.name;
+      $w('my-profile-dept').textContent = W.me.department;
+      $w('my-profile-rank').textContent = W.me.rank;
+      var roleMap = { admin:'관리자', manager:'부서장', staff:'일반직원' };
+      $w('my-profile-role').textContent = roleMap[W.me.role] || W.me.role;
+    } else {
+      card.hidden = true;
+      if (warn) warn.hidden = false;
+    }
+  }
+
+  /* ──────────────────────────────────────────────────
+     탭 배지 (미접수 건수)
+  ────────────────────────────────────────────────── */
+  async function refreshUnreadBadge() {
+    if (!W.me) return;
+    try {
+      var my = await SheetsModule.getMyTasks(W.me.id);
+      var cnt = my.filter(function (r) { return r.status === '미접수'; }).length;
+      var badge = $w('work-badge');
+      if (badge) {
+        badge.hidden = cnt === 0;
+        badge.textContent = cnt;
+      }
+    } catch (e) {}
+  }
+
+  /* ──────────────────────────────────────────────────
+     폴링 (30초 간격, Visibility API로 백그라운드 시 5분)
+  ────────────────────────────────────────────────── */
+  function startPolling() {
+    if (W.pollTimer) clearInterval(W.pollTimer);
+
+    function getInterval() {
+      return document.hidden ? 5 * 60 * 1000 : 30 * 1000;
+    }
+
+    W.pollTimer = setInterval(async function () {
+      if (!W.me || !Auth.isLoggedIn()) return;
+      await SheetsModule.pollNewTasks(W.me.id, onNewTasksArrived);
+      await refreshUnreadBadge();
+    }, getInterval());
+
+    document.addEventListener('visibilitychange', function () {
+      clearInterval(W.pollTimer);
+      W.pollTimer = setInterval(async function () {
+        if (!W.me || !Auth.isLoggedIn()) return;
+        await SheetsModule.pollNewTasks(W.me.id, onNewTasksArrived);
+        await refreshUnreadBadge();
+      }, getInterval());
+    });
+  }
+
+  function onNewTasksArrived(tasks) {
+    tasks.forEach(function (task) {
+      // 앱 내 토스트
+      toast('📋 새 업무: ' + task.title + ' (' + task.fromName + ')', 'info');
+
+      // 브라우저 푸시 알림
+      if ('Notification' in window && Notification.permission === 'granted') {
+        new Notification('ASEA — 새 업무 도착', {
+          body: '[' + task.type + '] ' + task.title + '\n발신: ' + task.fromName,
+          icon: '/favicon.ico',
+          tag: task.id,
+        });
+      }
+    });
+
+    // 현황판이 열려있으면 자동 갱신
+    if (W.wtab === 'my') loadMyTasks();
+  }
+
+  /* ──────────────────────────────────────────────────
+     푸시 알림 권한 요청
+  ────────────────────────────────────────────────── */
+  function requestNotificationPermission() {
+    if (!('Notification' in window)) return;
+    if (Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+  }
+
+  /* ──────────────────────────────────────────────────
+     ASEA 전용 캘린더 확보 (없으면 자동 생성)
+  ────────────────────────────────────────────────── */
+  async function ensureAseaCalendars() {
+    try {
+      var token = Auth.getToken();
+      var res = await fetch('https://www.googleapis.com/calendar/v3/users/me/calendarList', {
+        headers: { 'Authorization': 'Bearer ' + token }
+      });
+      var data = await res.json();
+      var list = data.items || [];
+
+      var names = ['ASEA-개인업무', 'ASEA-부서업무', 'ASEA-지시업무'];
+      var colors = ['9', '6', '11']; // 파랑, 초록, 빨강
+
+      for (var i = 0; i < names.length; i++) {
+        var name = names[i];
+        var found = list.find(function (c) { return c.summary === name; });
+        if (!found) {
+          var cr = await fetch('https://www.googleapis.com/calendar/v3/calendars', {
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ summary: name }),
+          });
+          var newCal = await cr.json();
+          // 색상 설정
+          await fetch('https://www.googleapis.com/calendar/v3/users/me/calendarList/' + encodeURIComponent(newCal.id), {
+            method: 'PATCH',
+            headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ colorId: colors[i] }),
+          });
+          found = newCal;
+        }
+        if (name === 'ASEA-개인업무') W.asea개인CalId = found.id;
+        if (name === 'ASEA-부서업무') W.asea부서CalId = found.id;
+        if (name === 'ASEA-지시업무') W.asea지시CalId = found.id;
+      }
+    } catch (e) {
+      console.warn('ASEA 캘린더 생성 실패:', e);
+    }
+  }
+
+  /* ──────────────────────────────────────────────────
+     캘린더 이벤트 등록
+  ────────────────────────────────────────────────── */
+  async function registerTaskCalEvent(task, calendarId, allDay, startDt, endDt) {
+    var token = Auth.getToken();
+    var prefix = task.type === '지시' ? '[지시]' : task.type === '협조' ? '[협조]' : '[공람]';
+    var title = prefix + ' ' + task.title;
+
+    var eventBody;
+    if (allDay) {
+      var due = task.dueDate || new Date().toISOString().slice(0,10);
+      eventBody = {
+        summary: title,
+        start: { date: due },
+        end: { date: due },
+        description: buildEventDesc(task),
+      };
+    } else {
+      eventBody = {
+        summary: title,
+        start: { dateTime: new Date(startDt).toISOString() },
+        end:   { dateTime: new Date(endDt).toISOString() },
+        description: buildEventDesc(task),
+      };
+    }
+
+    var res = await fetch('https://www.googleapis.com/calendar/v3/calendars/' +
+      encodeURIComponent(calendarId) + '/events', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+      body: JSON.stringify(eventBody),
+    });
+    var ev = await res.json();
+    return ev.id;
+  }
+
+  async function updateTaskCalEventStatus(calendarId, eventId, status) {
+    if (!calendarId || !eventId) return;
+    var token = Auth.getToken();
+    var iconMap = { '완료':'✅', '반려':'❌', '처리중':'🟡', '미접수':'🔴' };
+    // 현재 이벤트 조회
+    var res = await fetch('https://www.googleapis.com/calendar/v3/calendars/' +
+      encodeURIComponent(calendarId) + '/events/' + eventId,
+      { headers: { 'Authorization': 'Bearer ' + token } });
+    if (!res.ok) return;
+    var ev = await res.json();
+    var title = ev.summary || '';
+    // 기존 상태 아이콘 제거 후 새 아이콘 앞에 붙이기
+    title = title.replace(/^[✅❌🟡🔴]\s*/, '');
+    var icon = iconMap[status] || '';
+    await fetch('https://www.googleapis.com/calendar/v3/calendars/' +
+      encodeURIComponent(calendarId) + '/events/' + eventId, {
+      method: 'PATCH',
+      headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ summary: icon + ' ' + title }),
+    });
+  }
+
+  function buildEventDesc(task) {
+    return [
+      '📋 업무 ID: ' + task.id,
+      '👤 발신: ' + task.fromName + ' (' + (task.fromDept || '') + ')',
+      '📌 상태: 처리중',
+      '─────────────',
+      (task.content || '').replace(/<[^>]+>/g, ''),
+    ].join('\n');
+  }
+
+  /* ──────────────────────────────────────────────────
+     업무 발송
+  ────────────────────────────────────────────────── */
+  async function sendTask() {
+    if (!W.me) { toast('로그인 후 이용하세요.', 'error'); return; }
+
+    var title   = ($w('work-title').value || '').trim();
+    var type    = $w('work-type').value;
+    var scope   = $w('work-scope').value;
+    var due     = $w('work-due').value;
+    var content = $w('work-content-editor').innerHTML;
+
+    if (!title) { toast('제목을 입력하세요.', 'error'); return; }
+    if (W.selectedRecipients.length === 0) { toast('수신자를 선택하세요.', 'error'); return; }
+    if (!content || content === '<br>') { toast('업무 내용을 입력하세요.', 'error'); return; }
+
+    var btn = $w('work-send-btn');
+    btn.disabled = true; btn.textContent = '발송 중...';
+
+    try {
+      var taskId = await SheetsModule.createTask({
+        title:     title,
+        content:   content,
+        type:      type,
+        fromId:    W.me.id,
+        fromName:  W.me.name + ' (' + W.me.department + ')',
+        toIds:     W.selectedRecipients.map(function (r) { return r.id; }),
+        toNames:   W.selectedRecipients.map(function (r) { return r.name; }),
+        shareScope: scope,
+        dueDate:   due,
+      });
+
+      // 수신자별 수신 행 생성
+      await SheetsModule.createReceived(taskId, W.selectedRecipients.map(function (r) {
+        return { userId: r.id, userName: r.name };
+      }));
+
+      // 발송자 캘린더(ASEA-지시업무)에 자동 등록
+      await ensureAseaCalendars();
+      if (W.asea지시CalId && due) {
+        var calId = await registerTaskCalEvent(
+          { id: taskId, title: title, type: type, dueDate: due, content: content,
+            fromName: W.me.name, fromDept: W.me.department },
+          W.asea지시CalId, true
+        );
+        await SheetsModule.updateTaskCalEvent(taskId, calId);
+      }
+
+      // 발송 완료 후 폼 초기화
+      $w('work-title').value = '';
+      $w('work-content-editor').innerHTML = '';
+      $w('work-due').value = '';
+      W.selectedRecipients = [];
+      W.attachFiles = [];
+      renderRecipientChips();
+
+      toast('✅ 업무가 발송되었습니다.', 'success');
+
+      // 내 업무 탭으로 이동
+      switchWTab('my');
+      await loadMyTasks();
+    } catch (e) {
+      toast('발송 실패: ' + (e.message || e), 'error');
+    } finally {
+      btn.disabled = false; btn.textContent = '📤 발송하기';
+    }
+  }
+
+  /* ──────────────────────────────────────────────────
+     내 업무현황 로드 및 렌더
+  ────────────────────────────────────────────────── */
+  async function loadMyTasks() {
+    if (!W.me) return;
+    var listEl = $w('work-my-list');
+    if (!listEl) return;
+    listEl.innerHTML = '<p class="empty-state">불러오는 중...</p>';
+
+    try {
+      var [received, allTasks] = await Promise.all([
+        SheetsModule.getMyTasks(W.me.id),
+        SheetsModule.getTasks(),
+      ]);
+
+      // 발송한 업무
+      W.sentTasks = allTasks.filter(function (t) { return t.fromId === W.me.id; });
+      W.myTasks = received;
+      W.allTasks = allTasks;
+
+      updateStatusCounts(received);
+      renderMyList(received, allTasks);
+    } catch (e) {
+      listEl.innerHTML = '<p class="empty-state" style="color:#e53935">로드 실패: ' + (e.message||e) + '</p>';
+    }
+  }
+
+  function updateStatusCounts(received) {
+    var counts = { '미접수':0, '처리중':0, '완료':0 };
+    received.forEach(function (r) { if (counts[r.status] !== undefined) counts[r.status]++; });
+    ['미접수','처리중','완료'].forEach(function (s) {
+      var el = $w('cnt-' + s);
+      if (el) el.textContent = counts[s];
+    });
+    var sentEl = $w('cnt-발송');
+    if (sentEl) sentEl.textContent = W.sentTasks.length;
+  }
+
+  function renderMyList(received, allTasks) {
+    var listEl = $w('work-my-list');
+    if (!listEl) return;
+
+    var filtered;
+    if (W.currentStatus === '발송') {
+      filtered = W.sentTasks;
+      renderSentList(filtered, listEl);
+      return;
+    } else {
+      filtered = received.filter(function (r) { return r.status === W.currentStatus; });
+    }
+
+    if (filtered.length === 0) {
+      listEl.innerHTML = '<p class="empty-state">' + W.currentStatus + ' 업무가 없습니다.</p>';
+      return;
+    }
+
+    listEl.innerHTML = '';
+    filtered.forEach(function (r) {
+      var task = allTasks.find(function (t) { return t.id === r.taskId; }) || {};
+      var card = document.createElement('div');
+      card.className = 'work-card';
+      card.innerHTML =
+        '<div class="work-card-header">' +
+          '<span class="work-type-badge" style="background:' + typeColor(task.type) + '">' + (task.type||'') + '</span>' +
+          '<span class="work-card-title">' + (task.title||'(제목없음)') + '</span>' +
+          '<span class="work-card-due">' + (task.dueDate ? '📅 ' + task.dueDate : '') + '</span>' +
+        '</div>' +
+        '<div class="work-card-meta">' +
+          '<span>발신: ' + (task.fromName||'') + '</span>' +
+          '<span class="work-status-label">' + statusBadge(r.status) + '</span>' +
+        '</div>' +
+        (r.status === '미접수'
+          ? '<button class="btn btn-primary btn-sm work-accept-btn" style="margin-top:8px">접수하기</button>'
+          : '<button class="btn btn-ghost btn-sm work-detail-btn" style="margin-top:8px">상세보기</button>');
+
+      var acceptBtn = card.querySelector('.work-accept-btn');
+      if (acceptBtn) acceptBtn.addEventListener('click', function () { openDetailModal(task, r, 'accept'); });
+
+      var detailBtn = card.querySelector('.work-detail-btn');
+      if (detailBtn) detailBtn.addEventListener('click', function () { openDetailModal(task, r, 'view'); });
+
+      listEl.appendChild(card);
+    });
+  }
+
+  function renderSentList(tasks, listEl) {
+    if (tasks.length === 0) {
+      listEl.innerHTML = '<p class="empty-state">발송한 업무가 없습니다.</p>';
+      return;
+    }
+    listEl.innerHTML = '';
+    tasks.forEach(function (task) {
+      var card = document.createElement('div');
+      card.className = 'work-card';
+      card.innerHTML =
+        '<div class="work-card-header">' +
+          '<span class="work-type-badge" style="background:' + typeColor(task.type) + '">' + task.type + '</span>' +
+          '<span class="work-card-title">' + (task.title||'') + '</span>' +
+          '<span class="work-card-due">' + (task.dueDate ? '📅 ' + task.dueDate : '') + '</span>' +
+        '</div>' +
+        '<div class="work-card-meta">' +
+          '<span>수신: ' + (task.toNames||'') + '</span>' +
+          '<span style="font-size:12px;color:#888">' + formatDate(task.createdAt) + '</span>' +
+        '</div>' +
+        '<button class="btn btn-ghost btn-sm" style="margin-top:8px">발송 현황 보기</button>';
+
+      card.querySelector('button').addEventListener('click', function () {
+        openDetailModal(task, null, 'sent');
+      });
+      listEl.appendChild(card);
+    });
+  }
+
+  /* ──────────────────────────────────────────────────
+     부서 현황
+  ────────────────────────────────────────────────── */
+  async function loadDeptTasks() {
+    if (!W.me) return;
+    var listEl = $w('work-dept-list');
+    if (!listEl) return;
+    listEl.innerHTML = '<p class="empty-state">불러오는 중...</p>';
+
+    try {
+      var [allTasks, allReceived, employees] = await Promise.all([
+        SheetsModule.getTasks(),
+        SheetsModule.getReceived(),
+        getEmployeesCached(),
+      ]);
+
+      var myDept = W.me.department;
+      var titleEl = $w('work-dept-title');
+      if (titleEl) titleEl.textContent = myDept + ' 업무현황';
+
+      // 부서 직원 ID 목록
+      var deptEmpIds = employees
+        .filter(function (e) { return e.department === myDept && e.status === 'active'; })
+        .map(function (e) { return e.id; });
+
+      // 부서원이 수신한 업무
+      var deptReceived = allReceived.filter(function (r) { return deptEmpIds.includes(r.userId); });
+
+      if (deptReceived.length === 0) {
+        listEl.innerHTML = '<p class="empty-state">부서 업무 내역이 없습니다.</p>';
+        return;
+      }
+
+      // 직원별 집계
+      var summary = {};
+      deptEmpIds.forEach(function (id) {
+        var emp = employees.find(function (e) { return e.id === id; });
+        summary[id] = { name: emp ? emp.name : id, rank: emp ? emp.rank : '', 미접수:0, 처리중:0, 완료:0, 지연:0 };
+      });
+
+      var today = new Date();
+      deptReceived.forEach(function (r) {
+        if (!summary[r.userId]) return;
+        var s = summary[r.userId];
+        if (r.status === '미접수') s['미접수']++;
+        else if (r.status === '처리중') s['처리중']++;
+        else if (r.status === '완료') s['완료']++;
+
+        // 지연 체크
+        var task = allTasks.find(function (t) { return t.id === r.taskId; });
+        if (task && task.dueDate && r.status !== '완료') {
+          if (new Date(task.dueDate) < today) s['지연']++;
+        }
+      });
+
+      listEl.innerHTML = '';
+      var table = document.createElement('div');
+      table.className = 'work-dept-table';
+      table.innerHTML =
+        '<div class="work-dept-row work-dept-header">' +
+          '<span>이름</span><span>직급</span>' +
+          '<span>미접수</span><span>처리중</span><span>완료</span><span>지연</span>' +
+        '</div>' +
+        Object.values(summary).map(function (s) {
+          return '<div class="work-dept-row">' +
+            '<span>' + s.name + '</span>' +
+            '<span>' + s.rank + '</span>' +
+            '<span class="' + (s['미접수'] ? 'work-cnt-red' : '') + '">' + s['미접수'] + '</span>' +
+            '<span class="' + (s['처리중'] ? 'work-cnt-yellow' : '') + '">' + s['처리중'] + '</span>' +
+            '<span class="' + (s['완료'] ? 'work-cnt-green' : '') + '">' + s['완료'] + '</span>' +
+            '<span class="' + (s['지연'] ? 'work-cnt-red' : '') + '">' + (s['지연'] ? '⚠️' + s['지연'] : '0') + '</span>' +
+          '</div>';
+        }).join('');
+
+      listEl.appendChild(table);
+    } catch (e) {
+      listEl.innerHTML = '<p class="empty-state" style="color:#e53935">로드 실패: ' + (e.message||e) + '</p>';
+    }
+  }
+
+  /* ──────────────────────────────────────────────────
+     업무 상세 모달
+  ────────────────────────────────────────────────── */
+  function openDetailModal(task, received, mode) {
+    W.detailTask = task;
+    W.detailReceived = received;
+
+    $w('work-detail-type-badge').textContent = '[' + (task.type||'업무') + '] ' + (task.title||'');
+    $w('work-detail-from').textContent = task.fromName || '-';
+    $w('work-detail-to').textContent = task.toNames || '-';
+    $w('work-detail-due').textContent = task.dueDate ? formatDate(task.dueDate) : '-';
+    $w('work-detail-scope').textContent = task.shareScope || '-';
+    $w('work-detail-status').textContent = received ? statusBadge(received.status) : '발송됨';
+    $w('work-detail-content').innerHTML = task.content || '';
+    $w('work-detail-comment').value = '';
+
+    var actionArea = $w('work-detail-action-area');
+    var leftBtns   = $w('work-detail-left-btns');
+    var rightBtns  = $w('work-detail-right-btns');
+
+    actionArea.hidden = true;
+    leftBtns.innerHTML = '';
+    rightBtns.innerHTML = '';
+
+    if (mode === 'accept') {
+      // 접수하기 화면
+      actionArea.hidden = false;
+      var calArea = $w('work-cal-register-area');
+      calArea.hidden = false;
+
+      // 라디오 변경 시 커스텀 시간 표시
+      document.querySelectorAll('input[name="work-cal-mode"]').forEach(function (r) {
+        r.onchange = function () {
+          $w('work-cal-custom-time').style.display = this.value === 'custom' ? 'flex' : 'none';
+        };
+      });
+
+      rightBtns.innerHTML =
+        '<button id="wd-accept-btn" class="btn btn-primary">✅ 접수 + 캘린더 등록</button>' +
+        '<button id="wd-accept-only-btn" class="btn btn-ghost">접수만</button>';
+
+      $w('wd-accept-btn').onclick = function () { acceptTask(true); };
+      $w('wd-accept-only-btn').onclick = function () { acceptTask(false); };
+
+    } else if (mode === 'view') {
+      // 처리중/완료 화면
+      actionArea.hidden = false;
+      $w('work-cal-register-area').hidden = true;
+
+      if (received && received.status === '처리중') {
+        rightBtns.innerHTML =
+          '<button id="wd-complete-btn" class="btn btn-primary">🟢 완료처리</button>' +
+          '<button id="wd-reject-btn" class="btn btn-ghost btn-danger" style="color:#d32f2f">반려</button>';
+        $w('wd-complete-btn').onclick = function () { updateStatus('완료'); };
+        $w('wd-reject-btn').onclick   = function () { updateStatus('반려'); };
+      }
+    }
+
+    openModal('work-detail-modal');
+  }
+
+  async function acceptTask(withCal) {
+    if (!W.detailTask || !W.detailReceived) return;
+    var btn = $w('wd-accept-btn') || $w('wd-accept-only-btn');
+    if (btn) { btn.disabled = true; btn.textContent = '처리 중...'; }
+
+    try {
+      await ensureAseaCalendars();
+      var calEventId = '';
+
+      if (withCal) {
+        var mode = document.querySelector('input[name="work-cal-mode"]:checked');
+        var allDay = !mode || mode.value === 'allday';
+        var startDt = $w('work-cal-start') ? $w('work-cal-start').value : '';
+        var endDt   = $w('work-cal-end')   ? $w('work-cal-end').value   : '';
+        var doPersonal = $w('work-cal-personal') && $w('work-cal-personal').checked;
+        var doDept     = $w('work-cal-dept')     && $w('work-cal-dept').checked;
+
+        if (doPersonal && W.asea개인CalId) {
+          calEventId = await registerTaskCalEvent(W.detailTask, W.asea개인CalId, allDay, startDt, endDt);
+        }
+        if (doDept && W.asea부서CalId) {
+          await registerTaskCalEvent(W.detailTask, W.asea부서CalId, allDay, startDt, endDt);
+        }
+      }
+
+      var comment = $w('work-detail-comment').value.trim();
+      await SheetsModule.updateReceivedStatus(W.detailReceived._row, '처리중', comment, calEventId);
+
+      closeModal('work-detail-modal');
+      toast('✅ 업무를 접수했습니다.', 'success');
+      await loadMyTasks();
+      await refreshUnreadBadge();
+    } catch (e) {
+      toast('접수 실패: ' + (e.message||e), 'error');
+    }
+  }
+
+  async function updateStatus(status) {
+    if (!W.detailReceived) return;
+    var comment = $w('work-detail-comment').value.trim();
+
+    try {
+      await SheetsModule.updateReceivedStatus(W.detailReceived._row, status, comment, W.detailReceived.calEventId);
+
+      // 캘린더 이벤트 상태 업데이트
+      if (W.detailReceived.calEventId && W.asea개인CalId) {
+        await updateTaskCalEventStatus(W.asea개인CalId, W.detailReceived.calEventId, status);
+      }
+
+      closeModal('work-detail-modal');
+      toast(status === '완료' ? '🟢 완료 처리했습니다.' : '업무 상태가 변경되었습니다.', 'success');
+      await loadMyTasks();
+    } catch (e) {
+      toast('상태 변경 실패: ' + (e.message||e), 'error');
+    }
+  }
+
+  /* ──────────────────────────────────────────────────
+     수신자 검색 및 선택
+  ────────────────────────────────────────────────── */
+  async function searchRecipients(query) {
+    var emps = await getEmployeesCached();
+    var q = query.toLowerCase();
+    return emps.filter(function (e) {
+      return e.status === 'active' && e.id !== (W.me && W.me.id) &&
+        (e.name.includes(q) || e.department.toLowerCase().includes(q) || e.rank.includes(q));
+    }).slice(0, 10);
+  }
+
+  function renderRecipientResults(results) {
+    var el = $w('work-recipient-results');
+    if (!el) return;
+    if (results.length === 0) { el.hidden = true; return; }
+    el.hidden = false;
+    el.innerHTML = '';
+    results.forEach(function (emp) {
+      var item = document.createElement('div');
+      item.className = 'work-recipient-item';
+      item.textContent = emp.name + ' · ' + emp.department + ' · ' + emp.rank;
+      item.onclick = function () {
+        if (!W.selectedRecipients.find(function (r) { return r.id === emp.id; })) {
+          W.selectedRecipients.push({ id: emp.id, name: emp.name, department: emp.department });
+          renderRecipientChips();
+        }
+        el.hidden = true;
+        $w('work-recipient-search').value = '';
+      };
+      el.appendChild(item);
+    });
+  }
+
+  function renderRecipientChips() {
+    var el = $w('work-recipients-selected');
+    if (!el) return;
+    el.innerHTML = '';
+    W.selectedRecipients.forEach(function (r) {
+      var chip = document.createElement('span');
+      chip.className = 'work-recipient-chip';
+      chip.innerHTML = '👤 ' + r.name + ' <button class="work-chip-remove" data-id="' + r.id + '">×</button>';
+      chip.querySelector('.work-chip-remove').onclick = function () {
+        W.selectedRecipients = W.selectedRecipients.filter(function (x) { return x.id !== r.id; });
+        renderRecipientChips();
+      };
+      el.appendChild(chip);
+    });
+  }
+
+  /* ──────────────────────────────────────────────────
+     직원관리 (관리자)
+  ────────────────────────────────────────────────── */
+  async function loadHrList() {
+    var listEl = $w('hr-employee-list');
+    var cntEl  = $w('hr-list-count');
+    if (!listEl) return;
+    listEl.innerHTML = '<p class="empty-state">불러오는 중...</p>';
+
+    try {
+      var emps = await SheetsModule.getEmployees();
+      W.employees = emps;
+      W.empCacheAt = Date.now();
+
+      var active = emps.filter(function (e) { return e.status !== 'inactive'; });
+      if (cntEl) cntEl.textContent = '직원 ' + active.length + '명';
+
+      var q = ($w('hr-search') && $w('hr-search').value || '').toLowerCase();
+      var filtered = q ? active.filter(function (e) {
+        return e.name.includes(q) || e.department.toLowerCase().includes(q);
+      }) : active;
+
+      if (filtered.length === 0) {
+        listEl.innerHTML = '<p class="empty-state">직원이 없습니다.</p>';
+        return;
+      }
+
+      listEl.innerHTML = '';
+      filtered.forEach(function (emp) {
+        var row = document.createElement('div');
+        row.className = 'hr-emp-row';
+        var roleLabel = { admin:'관리자', manager:'부서장', staff:'직원' };
+        row.innerHTML =
+          '<span class="hr-emp-name">' + emp.name + '</span>' +
+          '<span class="hr-emp-dept">' + emp.department + '</span>' +
+          '<span class="hr-emp-rank">' + emp.rank + '</span>' +
+          '<span class="hr-emp-role">' + (roleLabel[emp.role]||emp.role) + '</span>' +
+          '<span class="hr-emp-email" style="font-size:11px;color:#888">' + emp.googleEmail + '</span>' +
+          '<button class="btn btn-ghost btn-sm hr-emp-del" data-row="' + emp._row + '" data-name="' + emp.name + '">삭제</button>';
+
+        row.querySelector('.hr-emp-del').onclick = async function () {
+          if (!confirm(this.dataset.name + '을(를) 비활성화 처리하시겠습니까?')) return;
+          await SheetsModule.deleteEmployee(parseInt(this.dataset.row));
+          toast(this.dataset.name + ' 비활성화 완료', 'success');
+          loadHrList();
+        };
+        listEl.appendChild(row);
+      });
+    } catch (e) {
+      listEl.innerHTML = '<p class="empty-state" style="color:#e53935">로드 실패: ' + e.message + '</p>';
+    }
+  }
+
+  async function addEmployeeManual() {
+    var name  = ($w('hr-add-name').value || '').trim();
+    var dept  = $w('hr-add-dept').value;
+    var rank  = ($w('hr-add-rank').value || '').trim();
+    var email = ($w('hr-add-email').value || '').trim();
+    var hire  = $w('hr-add-hire').value;
+    var phone = ($w('hr-add-phone').value || '').trim();
+    var role  = $w('hr-add-role').value;
+
+    if (!name)  { toast('이름을 입력하세요.', 'error'); return; }
+    if (!email) { toast('구글 이메일을 입력하세요.', 'error'); return; }
+
+    var btn = $w('hr-add-btn');
+    btn.disabled = true;
+    try {
+      await SheetsModule.addEmployee({ name, department: dept, rank, googleEmail: email, hireDate: hire, phone, role });
+      toast(name + ' 추가 완료!', 'success');
+      ['hr-add-name','hr-add-rank','hr-add-email','hr-add-hire','hr-add-phone'].forEach(function (id) {
+        if ($w(id)) $w(id).value = '';
+      });
+      await loadHrList();
+    } catch (e) {
+      toast('추가 실패: ' + e.message, 'error');
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  function handleCsvFile(file) {
+    var reader = new FileReader();
+    reader.onload = function (e) {
+      var lines = e.target.result.split('\n').filter(function (l) { return l.trim(); });
+      var preview = $w('hr-csv-preview');
+      var uploadBtn = $w('hr-csv-upload-btn');
+
+      // 헤더 행 건너뜀
+      var data = lines.slice(1).map(function (line) {
+        var cols = line.split(',').map(function (c) { return c.trim().replace(/^"|"$/g,''); });
+        return { name: cols[0], department: cols[1], rank: cols[2], googleEmail: cols[3],
+                 hireDate: cols[4], phone: cols[5], role: cols[6] || 'staff' };
+      }).filter(function (r) { return r.name && r.googleEmail; });
+
+      if (preview) {
+        preview.hidden = false;
+        preview.innerHTML = '<strong>' + data.length + '명 확인됨</strong><br>' +
+          data.slice(0,5).map(function (r) {
+            return '• ' + r.name + ' / ' + r.department + ' / ' + r.rank;
+          }).join('<br>') + (data.length > 5 ? '<br>...' : '');
+      }
+
+      if (uploadBtn) {
+        uploadBtn.disabled = false;
+        uploadBtn._data = data;
+      }
+    };
+    reader.readAsText(file, 'UTF-8');
+  }
+
+  function downloadCsvTemplate() {
+    var header = '이름,부서,직급,구글이메일,입사일,전화번호,권한';
+    var sample = '홍길동,기획처,대리,hong@gmail.com,2023-03-01,010-1234-5678,staff';
+    var blob = new Blob(['﻿' + header + '\n' + sample], { type: 'text/csv;charset=utf-8;' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'ASEA_직원_양식.csv';
+    a.click();
+  }
+
+  /* ──────────────────────────────────────────────────
+     서브탭 전환
+  ────────────────────────────────────────────────── */
+  function switchWTab(tab) {
+    W.wtab = tab;
+    ['send','my','dept'].forEach(function (t) {
+      var panel = $w('wtab-' + t);
+      if (panel) panel.hidden = (t !== tab);
+    });
+    document.querySelectorAll('.extract-subtab-btn[data-wtab]').forEach(function (btn) {
+      btn.classList.toggle('active', btn.dataset.wtab === tab);
+    });
+  }
+
+  /* ──────────────────────────────────────────────────
+     부서 셀렉트 채우기
+  ────────────────────────────────────────────────── */
+  function populateDeptSelects() {
+    var sel = $w('hr-add-dept');
+    if (!sel) return;
+    sel.innerHTML = '<option value="">부서 선택</option>';
+    CONFIG.departments.forEach(function (d) {
+      var opt = document.createElement('option');
+      opt.value = d.name; opt.textContent = d.name;
+      sel.appendChild(opt);
+    });
+  }
+
+  /* ──────────────────────────────────────────────────
+     초기화 진입점 (app.js의 init()에서 호출)
+  ────────────────────────────────────────────────── */
+  function initWorkModule() {
+
+    // 서브탭
+    document.querySelectorAll('.extract-subtab-btn[data-wtab]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        switchWTab(this.dataset.wtab);
+        if (this.dataset.wtab === 'my')   loadMyTasks();
+        if (this.dataset.wtab === 'dept') loadDeptTasks();
+      });
+    });
+
+    // 업무 발송 버튼
+    var sendBtn = $w('work-send-btn');
+    if (sendBtn) sendBtn.addEventListener('click', sendTask);
+
+    // 새로고침
+    var refBtn = $w('work-refresh-btn');
+    if (refBtn) refBtn.addEventListener('click', loadMyTasks);
+    var deptRefBtn = $w('work-dept-refresh-btn');
+    if (deptRefBtn) deptRefBtn.addEventListener('click', loadDeptTasks);
+
+    // 상태 탭 필터
+    document.querySelectorAll('.work-status-tab').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        document.querySelectorAll('.work-status-tab').forEach(function (b) { b.classList.remove('active'); });
+        this.classList.add('active');
+        W.currentStatus = this.dataset.status;
+        renderMyList(W.myTasks, W.allTasks);
+      });
+    });
+
+    // 수신자 검색
+    var searchInput = $w('work-recipient-search');
+    if (searchInput) {
+      var searchTimer;
+      searchInput.addEventListener('input', function () {
+        clearTimeout(searchTimer);
+        var q = this.value.trim();
+        if (!q) { var r = $w('work-recipient-results'); if (r) r.hidden = true; return; }
+        searchTimer = setTimeout(async function () {
+          var results = await searchRecipients(q);
+          renderRecipientResults(results);
+        }, 300);
+      });
+    }
+    var searchBtn = $w('work-recipient-search-btn');
+    if (searchBtn) searchBtn.addEventListener('click', async function () {
+      var q = ($w('work-recipient-search').value || '').trim();
+      if (!q) return;
+      renderRecipientResults(await searchRecipients(q));
+    });
+
+    // 에디터 툴바
+    document.querySelectorAll('.work-editor-btn[data-cmd]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        document.execCommand(this.dataset.cmd, false, null);
+        $w('work-content-editor').focus();
+      });
+    });
+
+    // 첨부파일
+    var attachInput = $w('work-attach-input');
+    if (attachInput) {
+      attachInput.addEventListener('change', function () {
+        Array.from(this.files).forEach(function (f) { W.attachFiles.push(f); });
+        var listEl = $w('work-attach-list');
+        if (listEl) {
+          listEl.innerHTML = '';
+          W.attachFiles.forEach(function (f, i) {
+            var tag = document.createElement('span');
+            tag.className = 'work-attach-chip';
+            tag.innerHTML = '📎 ' + f.name + ' <button data-i="' + i + '">×</button>';
+            tag.querySelector('button').onclick = function () {
+              W.attachFiles.splice(parseInt(this.dataset.i), 1);
+              listEl.removeChild(tag);
+            };
+            listEl.appendChild(tag);
+          });
+        }
+        this.value = '';
+      });
+    }
+
+    // 직원관리 버튼들
+    var hrAddBtn = $w('hr-add-btn');
+    if (hrAddBtn) hrAddBtn.addEventListener('click', addEmployeeManual);
+
+    var hrCsvInput = $w('hr-csv-input');
+    if (hrCsvInput) hrCsvInput.addEventListener('change', function () {
+      if (this.files[0]) handleCsvFile(this.files[0]);
+    });
+
+    var hrCsvUpload = $w('hr-csv-upload-btn');
+    if (hrCsvUpload) hrCsvUpload.addEventListener('click', async function () {
+      if (!this._data || !this._data.length) return;
+      this.disabled = true; this.textContent = '등록 중...';
+      try {
+        var cnt = await SheetsModule.bulkAddEmployees(this._data);
+        toast(cnt + '명 등록 완료!', 'success');
+        $w('hr-csv-preview').hidden = true;
+        this._data = null;
+        await loadHrList();
+      } catch (e) {
+        toast('등록 실패: ' + e.message, 'error');
+      } finally {
+        this.disabled = true; this.textContent = '⬆️ 일괄 등록';
+      }
+    });
+
+    var hrCsvTmpl = $w('hr-csv-template-btn');
+    if (hrCsvTmpl) hrCsvTmpl.addEventListener('click', downloadCsvTemplate);
+
+    var hrRefresh = $w('hr-refresh-btn');
+    if (hrRefresh) hrRefresh.addEventListener('click', loadHrList);
+
+    var hrSearch = $w('hr-search');
+    if (hrSearch) {
+      var searchHrTimer;
+      hrSearch.addEventListener('input', function () {
+        clearTimeout(searchHrTimer);
+        searchHrTimer = setTimeout(loadHrList, 400);
+      });
+    }
+
+    // DB 초기화 버튼
+    var initBtn = $w('hr-init-sheets-btn');
+    if (initBtn) initBtn.addEventListener('click', async function () {
+      this.disabled = true; this.textContent = '초기화 중...';
+      var statusEl = $w('hr-init-status');
+      try {
+        await SheetsModule.initSheets();
+        if (statusEl) statusEl.textContent = '✅ 시트 초기화 완료! (직원·업무·업무수신·알림로그)';
+        toast('✅ Google Sheets 초기화 완료!', 'success');
+        await loadHrList();
+      } catch (e) {
+        if (statusEl) statusEl.textContent = '❌ 실패: ' + e.message;
+        toast('초기화 실패: ' + e.message, 'error');
+      } finally {
+        this.disabled = false; this.textContent = '🗄️ 시트 초기화 실행';
+      }
+    });
+
+    // 모달 닫기
+    document.querySelectorAll('#work-detail-modal [data-close-modal]').forEach(function (el) {
+      el.addEventListener('click', function () { closeModal('work-detail-modal'); });
+    });
+
+    // 부서 셀렉트 채우기
+    populateDeptSelects();
+
+    // 푸시 알림 권한 요청
+    requestNotificationPermission();
+  }
+
+  /* 공개 API */
+  return {
+    initWorkModule: initWorkModule,
+    onLogin:        onLogin,
+    loadHrList:     loadHrList,
+  };
+
+})();
+
+// app.js의 toast를 work.js에서 사용할 수 있도록 브릿지
+// (app.js의 toast 함수가 전역이 아닐 경우 대비)
+window.aseaToast = window.aseaToast || function (msg, type) {
+  console.log('[ASEA Toast]', type, msg);
+};

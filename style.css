@@ -1842,3 +1842,368 @@ a        { color: var(--color-accent); text-decoration: none; }
   background: var(--color-bg);
   cursor: text;
 }
+
+/* ================================================================
+   업무관리 탭
+   ================================================================ */
+
+/* 탭 뱃지 */
+.tab-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  background: var(--color-error);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  border-radius: 8px;
+  margin-left: 4px;
+  line-height: 1;
+}
+.tab-badge:empty { display: none; }
+
+/* 업무 서브탭 */
+.work-subtab-bar {
+  display: flex;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-4);
+  border-bottom: 1px solid var(--color-border);
+}
+.work-subtab {
+  padding: var(--sp-2) var(--sp-4);
+  font-size: var(--font-sm);
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  border: none;
+  background: none;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  transition: color .15s, border-color .15s;
+}
+.work-subtab.active {
+  color: var(--color-accent);
+  border-bottom-color: var(--color-accent);
+}
+
+/* 업무 카드 */
+.work-card {
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--r-md);
+  margin-bottom: var(--sp-3);
+  overflow: hidden;
+  transition: box-shadow .15s;
+}
+.work-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,.08); }
+.work-card-header {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-3) var(--sp-4);
+  cursor: pointer;
+  user-select: none;
+}
+.work-card-title {
+  flex: 1;
+  font-size: var(--font-base);
+  font-weight: 600;
+  color: var(--color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.work-card-meta {
+  font-size: var(--font-xs);
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+
+/* 업무 유형 뱃지 */
+.work-type-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: var(--font-xs);
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.work-type-지시  { background: #E3F2FD; color: #1565C0; }
+.work-type-보고  { background: #E8F5E9; color: #2E7D32; }
+.work-type-공지  { background: #FFF3E0; color: #E65100; }
+.work-type-요청  { background: #F3E5F5; color: #6A1B9A; }
+
+/* 업무 상태 라벨 */
+.work-status-label {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: var(--font-xs);
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.work-status-미접수  { background: #ECEFF1; color: #546E7A; }
+.work-status-처리중  { background: #E3F2FD; color: #1565C0; }
+.work-status-완료    { background: var(--color-success-light); color: #2E7D32; }
+.work-status-반려    { background: var(--color-error-light); color: #B71C1C; }
+
+/* 수신자 칩 */
+.work-recipient-chip-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-1);
+  min-height: 32px;
+  padding: var(--sp-1);
+  border: 1px solid var(--color-border);
+  border-radius: var(--r-md);
+  background: var(--color-bg);
+  cursor: text;
+}
+.work-recipient-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px 2px 10px;
+  background: var(--color-accent-light);
+  color: var(--color-accent);
+  border-radius: 12px;
+  font-size: var(--font-xs);
+  font-weight: 600;
+}
+.work-recipient-chip button {
+  background: none; border: none; cursor: pointer;
+  color: var(--color-accent); font-size: 14px; line-height: 1;
+  padding: 0; margin-left: 2px;
+}
+.work-recipient-input {
+  flex: 1;
+  min-width: 120px;
+  border: none;
+  background: transparent;
+  font-size: var(--font-sm);
+  outline: none;
+  padding: 2px 4px;
+}
+
+/* 수신자 검색 드롭다운 */
+.work-recipient-results {
+  position: absolute;
+  z-index: 300;
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--r-md);
+  box-shadow: 0 4px 16px rgba(0,0,0,.12);
+  max-height: 200px;
+  overflow-y: auto;
+  min-width: 240px;
+}
+.work-recipient-item {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-2) var(--sp-3);
+  cursor: pointer;
+  font-size: var(--font-sm);
+  transition: background .1s;
+}
+.work-recipient-item:hover { background: var(--color-bg); }
+.work-recipient-item .ri-name { font-weight: 600; }
+.work-recipient-item .ri-dept { font-size: var(--font-xs); color: var(--color-text-secondary); }
+
+/* 콘텐츠 에디터 */
+.work-content-editor {
+  width: 100%;
+  min-height: 120px;
+  padding: var(--sp-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--r-md);
+  font-size: var(--font-sm);
+  font-family: var(--font-family);
+  resize: vertical;
+  background: var(--color-bg);
+  box-sizing: border-box;
+}
+
+/* 부서 현황 테이블 */
+.work-dept-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-sm);
+}
+.work-dept-table th,
+.work-dept-table td {
+  padding: var(--sp-2) var(--sp-3);
+  text-align: left;
+  border-bottom: 1px solid var(--color-border);
+}
+.work-dept-table th {
+  font-weight: 700;
+  color: var(--color-text-secondary);
+  font-size: var(--font-xs);
+  background: var(--color-bg);
+}
+.work-dept-table td:nth-child(n+3) { text-align: center; }
+.work-dept-table tr:hover td { background: var(--color-accent-light); }
+
+/* 직원 목록 */
+.hr-employee-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  max-height: 400px;
+  overflow-y: auto;
+}
+.hr-emp-row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-2) var(--sp-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--r-md);
+  background: var(--color-bg);
+  font-size: var(--font-sm);
+}
+.hr-emp-row .emp-name  { font-weight: 600; flex: 1; }
+.hr-emp-row .emp-dept  { color: var(--color-text-secondary); font-size: var(--font-xs); }
+.hr-emp-row .emp-email { color: var(--color-text-secondary); font-size: var(--font-xs); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* CSV 미리보기 */
+.hr-csv-preview {
+  max-height: 200px;
+  overflow-y: auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--r-md);
+  margin-top: var(--sp-2);
+}
+.hr-csv-preview table { width: 100%; border-collapse: collapse; font-size: var(--font-xs); }
+.hr-csv-preview th, .hr-csv-preview td {
+  padding: 4px 8px;
+  border-bottom: 1px solid var(--color-border);
+}
+.hr-csv-preview th { background: var(--color-bg); font-weight: 700; }
+
+/* 내 프로필 카드 */
+.my-profile-card {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+  padding: var(--sp-4);
+  background: var(--color-accent-light);
+  border-radius: var(--r-md);
+  margin-bottom: var(--sp-4);
+}
+.my-profile-avatar {
+  width: 48px; height: 48px;
+  border-radius: 50%;
+  background: var(--color-accent);
+  color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-size: var(--font-xl);
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.my-profile-info { flex: 1; }
+.my-profile-name { font-size: var(--font-md); font-weight: 700; }
+.my-profile-dept { font-size: var(--font-sm); color: var(--color-text-secondary); }
+.badge-admin {
+  display: inline-block;
+  padding: 1px 8px;
+  background: #D32F2F;
+  color: #fff;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 700;
+  margin-left: 6px;
+}
+
+/* 업무 상세 모달 */
+.work-detail-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-3);
+  font-size: var(--font-xs);
+  color: var(--color-text-secondary);
+}
+.work-detail-meta strong { color: var(--color-text); }
+.work-detail-content {
+  padding: var(--sp-3);
+  background: var(--color-bg);
+  border-radius: var(--r-md);
+  font-size: var(--font-sm);
+  white-space: pre-wrap;
+  line-height: 1.7;
+  margin-bottom: var(--sp-3);
+  min-height: 80px;
+}
+
+/* 캘린더 등록 영역 */
+.work-cal-register-area {
+  padding: var(--sp-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--r-md);
+  background: var(--color-bg);
+  margin-bottom: var(--sp-3);
+}
+.work-cal-register-area label {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-size: var(--font-sm);
+  margin-bottom: var(--sp-2);
+  cursor: pointer;
+}
+.work-cal-register-area .cal-date-row {
+  display: flex;
+  gap: var(--sp-2);
+  margin-top: var(--sp-2);
+  flex-wrap: wrap;
+}
+.work-cal-register-area input[type="datetime-local"],
+.work-cal-register-area input[type="date"] {
+  flex: 1;
+  min-width: 140px;
+}
+
+/* 상태 탭 (내 업무현황 필터) */
+.work-status-tab-bar {
+  display: flex;
+  gap: var(--sp-1);
+  flex-wrap: wrap;
+  margin-bottom: var(--sp-3);
+}
+.work-status-tab {
+  padding: 4px 12px;
+  border-radius: 14px;
+  font-size: var(--font-xs);
+  font-weight: 600;
+  border: 1px solid var(--color-border);
+  background: none;
+  cursor: pointer;
+  color: var(--color-text-secondary);
+  transition: background .12s, color .12s;
+}
+.work-status-tab.active {
+  background: var(--color-accent);
+  color: #fff;
+  border-color: var(--color-accent);
+}
+
+/* 빈 상태 메시지 */
+.work-empty {
+  text-align: center;
+  padding: var(--sp-8);
+  color: var(--color-text-secondary);
+  font-size: var(--font-sm);
+}
+
+/* 반응형: 모바일 */
+@media (max-width: 600px) {
+  .work-dept-table th:nth-child(n+4),
+  .work-dept-table td:nth-child(n+4) { display: none; }
+  .hr-emp-row .emp-email { display: none; }
+  .work-cal-register-area .cal-date-row { flex-direction: column; }
+}

@@ -18,9 +18,13 @@ const CONFIG = {
     'https://www.googleapis.com/auth/drive.readonly',
     'https://www.googleapis.com/auth/drive.appdata',
     'https://www.googleapis.com/auth/gmail.send',
+    'https://www.googleapis.com/auth/spreadsheets',
     'email',
     'profile',
   ],
+
+  // ── Google Sheets DB ────────────────────────────────────────
+  sheetsDbId: '1flrGzAuzs-HvSEYbswj3KTMKWmFf4YVy_wwKXSLfH6E',
 
   // ── Gemini API (localStorage에만 저장, 코드에 포함 안 함) ─
   geminiApiKey: '',
