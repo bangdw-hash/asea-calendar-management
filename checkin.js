@@ -141,7 +141,6 @@
 
     // 수정 폼 닫기
     hide('edit-info-form');
-    show('ci-user-block');
 
     text('ci-user-name', _user.name + ' 님');
     text('ci-user-sub', _user.affiliation + ' · ' + _user.phone);
@@ -286,44 +285,47 @@
 
   /* ─── 정보 수정 UX ─── */
   $('btn-edit-info-open') && $('btn-edit-info-open').addEventListener('click', function () {
-    // 현재 정보 폼에 미리 채움
-    $('edit-name').value  = _user.name  || '';
-    $('edit-phone').value = _user.phone || '';
-    $('edit-affil').value = _user.affiliation || '';
+    $('edit-name').value  = _user.name         || '';
+    $('edit-phone').value = _user.phone        || '';
+    $('edit-affil').value = _user.affiliation  || '';
     var errEl = $('edit-error-msg');
     if (errEl) errEl.className = 'error-msg';
-
-    hide('ci-user-block');
+    hide('edit-success-msg');
     show('edit-info-form');
     $('edit-name').focus();
+    // 수정 폼으로 부드럽게 스크롤
+    $('edit-info-form').scrollIntoView({ behavior: 'smooth', block: 'start' });
   });
 
   $('btn-edit-cancel') && $('btn-edit-cancel').addEventListener('click', function () {
     hide('edit-info-form');
-    show('ci-user-block');
   });
 
   $('btn-edit-save') && $('btn-edit-save').addEventListener('click', async function () {
-    var errEl = $('edit-error-msg');
-    if (errEl) errEl.className = 'error-msg';
+    var errEl     = $('edit-error-msg');
+    var successEl = $('edit-success-msg');
+    if (errEl)     errEl.className = 'error-msg';
+    if (successEl) successEl.hidden = true;
 
     var name  = ($('edit-name').value  || '').trim();
     var phone = ($('edit-phone').value || '').trim();
     var affil = ($('edit-affil').value || '').trim();
 
-    if (!name)  { if(errEl){errEl.textContent='이름을 입력해 주세요.';errEl.className='error-msg show';} return; }
-    if (!phone) { if(errEl){errEl.textContent='전화번호를 입력해 주세요.';errEl.className='error-msg show';} return; }
-    if (!affil) { if(errEl){errEl.textContent='소속을 입력해 주세요.';errEl.className='error-msg show';} return; }
-    if (!/^[0-9\-+\s]{7,15}$/.test(phone)) {
-      if(errEl){errEl.textContent='올바른 전화번호를 입력해 주세요.';errEl.className='error-msg show';} return;
+    function _setErr(msg) {
+      if (errEl) { errEl.textContent = msg; errEl.className = 'error-msg show'; }
     }
+    if (!name)  { _setErr('이름을 입력해 주세요.'); return; }
+    if (!phone) { _setErr('전화번호를 입력해 주세요.'); return; }
+    if (!affil) { _setErr('소속을 입력해 주세요.'); return; }
+    if (!/^[0-9\-+\s]{7,15}$/.test(phone)) { _setErr('올바른 전화번호를 입력해 주세요.'); return; }
 
     this.disabled = true; this.textContent = '저장 중...';
 
+    var updatedLogs = 0;
     try {
-      // 프록시를 통해 사용자 정보 업데이트 (addUser로 재등록 — GAS에서 deviceId 기준 upsert)
-      await _postToProxy({
-        action: 'addUser',
+      // updateUser: 기존 입출입기록까지 일괄 수정
+      var result = await _postToProxy({
+        action: 'updateUser',
         name: name,
         phone: phone,
         affiliation: affil,
@@ -331,15 +333,30 @@
         consentTimestamp: _user.consentAt || new Date().toISOString(),
         consentTextVersion: CONSENT_VERSION,
       });
+      updatedLogs = result.updatedLogs || 0;
     } catch (e) {
-      // 프록시 실패해도 로컬은 업데이트 (오프라인 허용)
+      // 프록시 실패해도 로컬은 업데이트 (오프라인 환경 허용)
     }
 
+    // 로컬 저장
     _user = Object.assign({}, _user, { name: name, phone: phone, affiliation: affil });
     localStorage.setItem(USER_KEY, JSON.stringify(_user));
 
-    this.disabled = false; this.textContent = '저장';
-    _renderCheckinScreen();
+    // 화면의 내 정보 카드 즉시 갱신
+    text('ci-user-name', _user.name + ' 님');
+    text('ci-user-sub', _user.affiliation + ' · ' + _user.phone);
+
+    this.disabled = false; this.textContent = '저장하기';
+
+    // 성공 메시지 표시 (로그 수정 건수 포함)
+    if (successEl) {
+      successEl.textContent = '✅ 정보가 수정되었습니다.' +
+        (updatedLogs > 0 ? ' 이전 기록 ' + updatedLogs + '건도 함께 업데이트되었습니다.' : '');
+      successEl.hidden = false;
+    }
+
+    // 3초 후 폼 자동 닫기
+    setTimeout(function () { hide('edit-info-form'); }, 3000);
   });
 
   /* ─── 입실/퇴실 버튼 ─── */
