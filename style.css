@@ -2992,39 +2992,67 @@ a        { color: var(--color-accent); text-decoration: none; }
 .hr-emp-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 13px;
-  min-width: 600px;
+  font-size: 11px;
+  min-width: 0;
+  table-layout: fixed;
 }
 .hr-emp-table thead tr {
   background: #f0f4f8;
   border-bottom: 2px solid var(--color-border, #e0e4ea);
 }
 .hr-emp-table th {
-  padding: 10px 12px;
+  padding: 7px 6px;
   text-align: left;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
   color: var(--color-text-secondary, #5f6368);
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .hr-emp-table td {
-  padding: 9px 12px;
+  padding: 6px 6px;
   border-bottom: 1px solid #f0f2f5;
   vertical-align: middle;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .hr-emp-table tbody tr:hover { background: #fafbff; }
+.hr-emp-table tbody tr.hr-row-selected { background: #e8f0fe; }
 .hr-emp-table tbody tr:last-child td { border-bottom: none; }
-.hr-emp-name-cell { font-weight: 600; white-space: nowrap; }
-.hr-email-cell { font-size: 12px; color: #888; max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hr-emp-name-cell { font-weight: 600; }
+.hr-email-cell { font-size: 10px; color: #888; }
 .hr-role-badge {
   display: inline-block;
   color: #fff;
-  border-radius: 4px;
-  font-size: 11px;
+  border-radius: 3px;
+  font-size: 10px;
   font-weight: 600;
-  padding: 2px 8px;
+  padding: 1px 5px;
   white-space: nowrap;
 }
+/* 체크박스 열 */
+.hr-emp-table .col-chk  { width: 28px; text-align: center; }
+.hr-emp-table .col-name { width: 13%; }
+.hr-emp-table .col-dept { width: 18%; }
+.hr-emp-table .col-rank { width: 10%; }
+.hr-emp-table .col-role { width: 9%; }
+.hr-emp-table .col-email{ width: 22%; }
+.hr-emp-table .col-phone{ width: 15%; }
+.hr-emp-table .col-mgmt { width: 80px; text-align: center; }
+/* 일괄 작업 툴바 */
+.hr-bulk-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  background: #e8f0fe;
+  border-radius: 6px;
+  margin-bottom: 8px;
+  font-size: 12px;
+}
+.hr-bulk-bar .hr-sel-count { flex: 1; color: #1a73e8; font-weight: 600; }
 
 /* ── 작업지시 카드 ───────────────────────────────── */
 .wo-card {

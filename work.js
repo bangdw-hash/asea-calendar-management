@@ -1189,6 +1189,7 @@ var WorkModule = (function () {
   ────────────────────────────────────────────────── */
   var _hrSortKey = 'name';   // name | department | rank | role
   var _hrSortAsc = true;
+  var _hrSelected = new Set();   // 선택된 행 _row 집합
 
   async function loadHrList() {
     var listEl = $w('hr-employee-list');
@@ -1238,28 +1239,44 @@ var WorkModule = (function () {
       return;
     }
 
-      // ── 테이블 헤더
+    // ── 테이블 헤더
     var roleLabel = { admin:'관리자', manager:'부서장', staff:'직원' };
     var roleColor = { admin:'#1a73e8', manager:'#0b8043', staff:'#5f6368' };
 
-    function _thSort(label, key) {
+    function _thSort(label, key, cls) {
       var arrow = _hrSortKey === key ? (_hrSortAsc ? ' ▲' : ' ▼') : ' ⇅';
-      return '<th class="hr-th-sort" data-sort="' + key + '" style="cursor:pointer;user-select:none;white-space:nowrap">' + label + '<span style="opacity:.5;font-size:10px">' + arrow + '</span></th>';
+      return '<th class="hr-th-sort ' + (cls||'') + '" data-sort="' + key + '" style="cursor:pointer;user-select:none">' +
+        label + '<span style="opacity:.5;font-size:9px">' + arrow + '</span></th>';
     }
 
     listEl.innerHTML = '';
+
+    // ── 일괄 작업 툴바
+    var bulkBar = document.createElement('div');
+    bulkBar.id = 'hr-bulk-bar';
+    bulkBar.className = 'hr-bulk-bar';
+    bulkBar.style.display = 'none';
+    bulkBar.innerHTML =
+      '<span class="hr-sel-count" id="hr-sel-count"></span>' +
+      '<button class="btn btn-secondary btn-xs" id="hr-sel-all-btn">전체 선택</button>' +
+      '<button class="btn btn-ghost btn-xs" id="hr-desel-all-btn">전체 해제</button>' +
+      '<button class="btn btn-xs" id="hr-bulk-del-btn" style="background:#e53935;color:#fff;margin-left:4px">선택 삭제</button>' +
+      '<button class="btn btn-primary btn-xs" id="hr-apply-btn" style="margin-left:auto">✅ 적용</button>';
+    listEl.appendChild(bulkBar);
+
     var wrapper = document.createElement('div');
     wrapper.style.cssText = 'overflow-x:auto';
     wrapper.innerHTML =
       '<table class="hr-emp-table">' +
       '<thead><tr>' +
-        _thSort('이름', 'name') +
-        _thSort('소속 부서', 'department') +
-        _thSort('직급', 'rank') +
-        _thSort('권한', 'role') +
-        '<th>이메일</th>' +
-        '<th>전화번호</th>' +
-        '<th style="text-align:center;min-width:110px">관리</th>' +
+        '<th class="col-chk"><input type="checkbox" id="hr-chk-all" title="전체선택"></th>' +
+        _thSort('이름', 'name', 'col-name') +
+        _thSort('부서', 'department', 'col-dept') +
+        _thSort('직급', 'rank', 'col-rank') +
+        _thSort('권한', 'role', 'col-role') +
+        '<th class="col-email">이메일</th>' +
+        '<th class="col-phone">전화번호</th>' +
+        '<th class="col-mgmt">관리</th>' +
       '</tr></thead>' +
       '<tbody id="hr-emp-tbody"></tbody>' +
       '</table>';
@@ -1275,29 +1292,117 @@ var WorkModule = (function () {
       };
     });
 
+    function _updateBulkBar() {
+      var cnt = _hrSelected.size;
+      bulkBar.style.display = cnt > 0 ? 'flex' : 'none';
+      var cntEl = document.getElementById('hr-sel-count');
+      if (cntEl) cntEl.textContent = cnt + '명 선택됨';
+      var chkAll = document.getElementById('hr-chk-all');
+      if (chkAll) chkAll.indeterminate = cnt > 0 && cnt < filtered.length;
+      if (chkAll) chkAll.checked = cnt === filtered.length && filtered.length > 0;
+    }
+
+    // 전체선택 체크박스
+    document.getElementById('hr-chk-all').onchange = function () {
+      if (this.checked) {
+        filtered.forEach(function (e) { _hrSelected.add(String(e._row)); });
+      } else {
+        _hrSelected.clear();
+      }
+      wrapper.querySelectorAll('.hr-row-chk').forEach(function (chk) {
+        chk.checked = _hrSelected.has(chk.dataset.row);
+        var tr = chk.closest('tr');
+        if (tr) tr.classList.toggle('hr-row-selected', chk.checked);
+      });
+      _updateBulkBar();
+    };
+
+    // 전체선택 버튼
+    document.getElementById('hr-sel-all-btn').onclick = function () {
+      filtered.forEach(function (e) { _hrSelected.add(String(e._row)); });
+      wrapper.querySelectorAll('.hr-row-chk').forEach(function (chk) {
+        chk.checked = true;
+        var tr = chk.closest('tr');
+        if (tr) tr.classList.add('hr-row-selected');
+      });
+      _updateBulkBar();
+    };
+
+    // 전체해제 버튼
+    document.getElementById('hr-desel-all-btn').onclick = function () {
+      _hrSelected.clear();
+      wrapper.querySelectorAll('.hr-row-chk').forEach(function (chk) {
+        chk.checked = false;
+        var tr = chk.closest('tr');
+        if (tr) tr.classList.remove('hr-row-selected');
+      });
+      _updateBulkBar();
+    };
+
+    // 일괄 삭제
+    document.getElementById('hr-bulk-del-btn').onclick = async function () {
+      var cnt = _hrSelected.size;
+      if (!cnt) return;
+      if (!confirm(cnt + '명을 비활성화 처리하시겠습니까?')) return;
+      this.disabled = true; this.textContent = '처리 중...';
+      var rows = Array.from(_hrSelected);
+      var failed = 0;
+      for (var i = 0; i < rows.length; i++) {
+        try { await SheetsModule.deleteEmployee(parseInt(rows[i])); }
+        catch(e) { failed++; }
+      }
+      _hrSelected.clear();
+      W.employees = [];
+      toast((cnt - failed) + '명 비활성화 완료' + (failed ? ' (' + failed + '건 실패)' : ''), 'success');
+      loadHrList();
+    };
+
+    // 적용 (Sheets 즉시 동기화 — 캐시 초기화 후 재로드)
+    document.getElementById('hr-apply-btn').onclick = async function () {
+      this.disabled = true; this.textContent = '동기화 중...';
+      W.employees = [];
+      W.empCacheAt = 0;
+      try { await loadHrList(); toast('✅ 직원 목록이 전산에 동기화되었습니다.', 'success'); }
+      catch(e) { toast('동기화 실패: ' + e.message, 'error'); }
+      this.disabled = false; this.textContent = '✅ 적용';
+    };
+
     var tbody = document.getElementById('hr-emp-tbody');
     filtered.forEach(function (emp) {
       var tr = document.createElement('tr');
       var rl = roleLabel[emp.role] || emp.role;
       var rc = roleColor[emp.role] || '#888';
+      var rowKey = String(emp._row);
+      var isChecked = _hrSelected.has(rowKey);
+      if (isChecked) tr.classList.add('hr-row-selected');
+
       var phoneDisplay = emp.phone
-        ? '<a href="tel:' + _escHr(emp.phone) + '" style="color:#1a73e8;text-decoration:none">' + _escHr(emp.phone) + '</a>'
+        ? '<a href="tel:' + _escHr(emp.phone) + '" style="color:#1a73e8;text-decoration:none;font-size:11px">' + _escHr(emp.phone) + '</a>'
         : '<span style="color:#ccc">-</span>';
       tr.innerHTML =
-        '<td class="hr-emp-name-cell"><strong>' + _escHr(emp.name) + '</strong></td>' +
-        '<td>' + _escHr(emp.department) + '</td>' +
-        '<td>' + _escHr(emp.rank) + '</td>' +
-        '<td><span class="hr-role-badge" style="background:' + rc + '">' + rl + '</span></td>' +
-        '<td class="hr-email-cell">' + _escHr(emp.googleEmail||'') + '</td>' +
-        '<td style="white-space:nowrap">' + phoneDisplay + '</td>' +
-        '<td style="text-align:center;white-space:nowrap">' +
-          '<button class="btn btn-secondary btn-xs hr-emp-edit" style="margin-right:4px">✏️ 수정</button>' +
-          '<button class="btn btn-ghost btn-xs hr-emp-del" style="color:#e53935">삭제</button>' +
+        '<td class="col-chk"><input type="checkbox" class="hr-row-chk" data-row="' + rowKey + '"' + (isChecked?' checked':'') + '></td>' +
+        '<td class="hr-emp-name-cell col-name">' + _escHr(emp.name) + '</td>' +
+        '<td class="col-dept" title="' + _escHr(emp.department) + '">' + _escHr(emp.department) + '</td>' +
+        '<td class="col-rank" title="' + _escHr(emp.rank) + '">' + _escHr(emp.rank) + '</td>' +
+        '<td class="col-role"><span class="hr-role-badge" style="background:' + rc + '">' + rl + '</span></td>' +
+        '<td class="hr-email-cell col-email" title="' + _escHr(emp.googleEmail||'') + '">' + _escHr(emp.googleEmail||'') + '</td>' +
+        '<td class="col-phone">' + phoneDisplay + '</td>' +
+        '<td class="col-mgmt">' +
+          '<button class="btn btn-secondary btn-xs hr-emp-edit" style="padding:2px 5px;font-size:10px;margin-right:2px">수정</button>' +
+          '<button class="btn btn-ghost btn-xs hr-emp-del" style="padding:2px 5px;font-size:10px;color:#e53935">삭제</button>' +
         '</td>';
+
+      tr.querySelector('.hr-row-chk').onchange = function () {
+        if (this.checked) { _hrSelected.add(rowKey); tr.classList.add('hr-row-selected'); }
+        else { _hrSelected.delete(rowKey); tr.classList.remove('hr-row-selected'); }
+        _updateBulkBar();
+      };
 
       tr.querySelector('.hr-emp-del').onclick = async function () {
         if (!confirm(emp.name + '을(를) 비활성화 처리하시겠습니까?')) return;
         await SheetsModule.deleteEmployee(parseInt(emp._row));
+        _hrSelected.delete(rowKey);
+        W.employees = [];
         toast(emp.name + ' 비활성화 완료', 'success');
         loadHrList();
       };
@@ -1305,6 +1410,9 @@ var WorkModule = (function () {
 
       tbody.appendChild(tr);
     });
+
+    // 초기 툴바 상태 동기화
+    _updateBulkBar();
   }
 
   /* ── XSS 방어 ── */
