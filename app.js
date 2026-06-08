@@ -14,6 +14,8 @@
     viewDate:        new Date(),
     events:          [],         // 현재 뷰의 모든 이벤트 (다중 캘린더 합산)
     editEventId:     null,
+    editCalId:       null,   // 수정 대상 이벤트의 원래 캘린더 ID
+    editCalendars:   [],     // 수정 시 선택된 캘린더 목록 [{id,name,color}]
     reportFiles:     [],         // Drive 파일 전체 목록
     selectedFiles:   [],         // Drive 다중 선택된 파일
     selReport:       null,
@@ -792,9 +794,95 @@
     });
   }
 
+  /* 일정 모달용 다중 캘린더 칩 렌더 */
+  function renderEventCalChips() {
+    var wrap = $('event-cal-chip-list');
+    if (!wrap) return;
+    if (!S.editCalendars || S.editCalendars.length === 0) {
+      wrap.innerHTML = '<span style="font-size:12px;color:#aaa">+ 캘린더 추가 버튼으로 선택하세요</span>';
+      return;
+    }
+    wrap.innerHTML = S.editCalendars.map(function (cal, i) {
+      return '<span class="qt-cal-chip">' +
+        '<span style="width:9px;height:9px;border-radius:50%;background:' + (cal.color || '#4285F4') + ';display:inline-block;flex-shrink:0"></span>' +
+        '<span style="font-size:12px">' + (cal.name || cal.summary || cal.id) + '</span>' +
+        '<button type="button" class="qt-cal-chip-del" data-i="' + i + '" title="제거">×</button>' +
+      '</span>';
+    }).join('');
+    wrap.querySelectorAll('.qt-cal-chip-del').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        S.editCalendars.splice(parseInt(this.dataset.i), 1);
+        renderEventCalChips();
+      });
+    });
+  }
+
+  /* 캘린더 피커 팝업 → editCalendars에 추가 */
+  function openEventCalPicker() {
+    if (!Auth.isLoggedIn()) { toast('먼저 로그인하세요.', 'error'); return; }
+    // S.userCalendars로 간이 선택 UI 표시
+    var cals = S.userCalendars.length > 0 ? S.userCalendars : [];
+    if (cals.length === 0) {
+      CalendarModule.listCalendars().then(function (list) {
+        S.userCalendars = list;
+        _showCalPickerMenu(list);
+      }).catch(function () { toast('캘린더 목록을 불러오지 못했습니다.', 'error'); });
+    } else {
+      _showCalPickerMenu(cals);
+    }
+  }
+
+  function _showCalPickerMenu(cals) {
+    // 기존 피커 제거
+    var old = document.getElementById('_ev-cal-picker');
+    if (old) old.remove();
+
+    var menu = document.createElement('div');
+    menu.id = '_ev-cal-picker';
+    menu.style.cssText =
+      'position:fixed;z-index:10010;background:#fff;border:1px solid #ddd;border-radius:8px;' +
+      'box-shadow:0 4px 20px rgba(0,0,0,.15);padding:8px 0;min-width:220px;max-height:300px;overflow-y:auto;' +
+      'top:50%;left:50%;transform:translate(-50%,-50%)';
+
+    var header = document.createElement('div');
+    header.style.cssText = 'padding:8px 16px 6px;font-size:12px;font-weight:700;color:#666;border-bottom:1px solid #eee;margin-bottom:4px';
+    header.textContent = '캘린더 선택';
+    menu.appendChild(header);
+
+    cals.forEach(function (cal) {
+      var already = S.editCalendars.some(function (c) { return c.id === cal.id; });
+      var row = document.createElement('div');
+      row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:7px 16px;cursor:pointer;' +
+        (already ? 'opacity:.4;pointer-events:none;' : 'hover:background:#f5f5f5;');
+      row.innerHTML =
+        '<span style="width:10px;height:10px;border-radius:50%;background:' + (cal.backgroundColor || '#4285F4') + ';flex-shrink:0"></span>' +
+        '<span style="font-size:13px">' + (cal.summary || cal.id) + (already ? ' ✓' : '') + '</span>';
+      row.addEventListener('mouseenter', function () { if (!already) this.style.background = '#f5f5f5'; });
+      row.addEventListener('mouseleave', function () { this.style.background = ''; });
+      row.addEventListener('click', function () {
+        S.editCalendars.push({ id: cal.id, name: cal.summary || cal.id, color: cal.backgroundColor || '#4285F4' });
+        renderEventCalChips();
+        menu.remove();
+        document.removeEventListener('click', _pickerOutside);
+      });
+      menu.appendChild(row);
+    });
+
+    document.body.appendChild(menu);
+
+    function _pickerOutside(e) {
+      if (!menu.contains(e.target) && e.target.id !== 'event-cal-add-btn') {
+        menu.remove();
+        document.removeEventListener('click', _pickerOutside);
+      }
+    }
+    setTimeout(function () { document.addEventListener('click', _pickerOutside); }, 100);
+  }
+
   function openEventModal(event, date) {
     S.editEventId  = null;
-    S.editCalId    = null;  // 수정 대상 이벤트의 실제 캘린더 ID
+    S.editCalId    = null;
+    S.editCalendars = [];
     $('event-modal-title').textContent = event ? '일정 수정' : '일정 추가';
     $('delete-event-btn').hidden        = !event;
     $('share-event-btn').hidden         = !event;
@@ -811,7 +899,13 @@
 
     if (event) {
       S.editEventId = event.id;
-      S.editCalId   = event._calId || null;  // 이벤트가 속한 캘린더
+      S.editCalId   = event._calId || null;
+      // 이벤트가 속한 캘린더를 칩 목록 초기값으로 설정
+      if (event._calId) {
+        var calName  = event._calName || event._calId;
+        var calColor = event._calColor || '#4285F4';
+        S.editCalendars = [{ id: event._calId, name: calName, color: calColor }];
+      }
       $('event-id').value    = event.id;
       $('event-title').value = event.summary || '';
       var rawDesc = event.description || '';
@@ -836,6 +930,7 @@
       $('event-end').value   = prefix + 'T10:00';
     }
 
+    renderEventCalChips();
     openModal('event-modal');
   }
 
@@ -845,6 +940,18 @@
   }
 
   function initEventModal() {
+    // 캘린더 추가 버튼
+    var evCalAddBtn = $('event-cal-add-btn');
+    if (evCalAddBtn) evCalAddBtn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      openEventCalPicker();
+    });
+    var evCalClearBtn = $('event-cal-clear-btn');
+    if (evCalClearBtn) evCalClearBtn.addEventListener('click', function () {
+      S.editCalendars = [];
+      renderEventCalChips();
+    });
+
     // 공유하기 버튼
     $('share-event-btn').addEventListener('click', async function () {
       var title = $('event-title').value.trim();
@@ -914,10 +1021,12 @@
       var tz        = Intl.DateTimeFormat().resolvedOptions().timeZone || 'Asia/Seoul';
       var deptColor = getDeptColor(dept);
       var fullDesc  = desc + (desc ? '\n' : '') + '[부서:' + dept + ']';
-      // 수정 시: 이벤트 원래 캘린더 우선, 없으면 드롭다운, 없으면 기본
-      var targetCal = S.editEventId
-        ? (S.editCalId || $('event-calendar').value || CONFIG.calendarId)
-        : ($('event-calendar').value || CONFIG.calendarId);
+      // 등록/수정 대상 캘린더 목록 결정
+      // editCalendars 칩 목록 우선, 없으면 기본 캘린더
+      var targetCals = (S.editCalendars && S.editCalendars.length > 0)
+        ? S.editCalendars.map(function (c) { return c.id; })
+        : [CONFIG.calendarId];
+      var targetCal = targetCals[0]; // 단일 API 호환용 (첫 번째)
 
       // colorId 결정 (부서 인덱스 기반)
       var dIdx = CONFIG.departments.findIndex(function (d) { return d.name === dept; });
@@ -936,11 +1045,19 @@
       btn.disabled = true;
       try {
         if (S.editEventId) {
+          // 수정: 원래 캘린더에서 수정, 추가된 다른 캘린더엔 새로 생성
           await CalendarModule.updateEvent(targetCal, S.editEventId, eventData);
-          toast('일정이 수정되었습니다.', 'success');
+          // 첫 번째 외 나머지 캘린더엔 신규 등록
+          for (var ci = 1; ci < targetCals.length; ci++) {
+            try { await CalendarModule.createEvent(targetCals[ci], eventData); } catch (e2) {}
+          }
+          toast('일정이 수정되었습니다.' + (targetCals.length > 1 ? ' (' + targetCals.length + '개 캘린더)' : ''), 'success');
         } else {
-          await CalendarModule.createEvent(targetCal, eventData);
-          toast('일정이 추가되었습니다.', 'success');
+          // 신규: 선택된 모든 캘린더에 등록
+          for (var ci2 = 0; ci2 < targetCals.length; ci2++) {
+            try { await CalendarModule.createEvent(targetCals[ci2], eventData); } catch (e3) {}
+          }
+          toast('일정이 추가되었습니다.' + (targetCals.length > 1 ? ' (' + targetCals.length + '개 캘린더)' : ''), 'success');
         }
         closeModal('event-modal');
         await renderCalendar();
