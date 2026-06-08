@@ -3392,7 +3392,7 @@
           '<button class="btn btn-primary btn-sm" onclick="_ciShowQr(\'' + sp.id + '\')">🔲 QR</button>' +
           '<button class="btn btn-secondary btn-sm" onclick="_ciOpenSpaceLogs(\'' + sp.id + '\',\'' + _esc(sp.name) + '\')">📊 현황</button>' +
           '<button class="btn btn-ghost btn-sm" onclick="_ciEditSpace(' + i + ')">✏️ 수정</button>' +
-          '<button class="btn btn-ghost btn-sm" onclick="_ciDeleteSpace(' + (i + 2) + ',\'' + _esc(sp.name) + '\')" style="color:#e53935">삭제</button>' +
+          '<button class="btn btn-ghost btn-sm" onclick="_ciDeleteSpace(' + sp._row + ',\'' + _esc(sp.name) + '\')" style="color:#e53935">삭제</button>' +
         '</div>' +
       '</div>';
     }).join('');
