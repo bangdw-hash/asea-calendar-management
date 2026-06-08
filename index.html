@@ -84,6 +84,14 @@
         <span class="tab-label">업무관리</span>
         <span id="work-badge" class="tab-badge" hidden>0</span>
       </button>
+      <button class="tab-btn" data-tab="facility" role="tab" aria-selected="false">
+        <span class="tab-icon" aria-hidden="true">🏢</span>
+        <span class="tab-label">대관업무</span>
+      </button>
+      <button class="tab-btn" data-tab="vehicle" role="tab" aria-selected="false">
+        <span class="tab-icon" aria-hidden="true">🚗</span>
+        <span class="tab-label">차량관리</span>
+      </button>
       <button class="tab-btn" data-tab="settings" role="tab" aria-selected="false">
         <span class="tab-icon" aria-hidden="true">⚙️</span>
         <span class="tab-label">설정</span>
@@ -394,11 +402,22 @@
             </div>
             <div style="display:flex;gap:12px;flex-wrap:wrap">
               <div class="form-group" style="flex:1;min-width:140px">
-                <label class="form-label">유형</label>
+                <label class="form-label">업무 카테고리</label>
+                <select id="work-category" class="form-select">
+                  <option value="일반업무">📌 일반업무</option>
+                  <option value="교육일정">🎓 교육일정</option>
+                  <option value="행사">🎉 행사</option>
+                  <option value="대관">🏢 대관업무</option>
+                  <option value="차량">🚗 차량관리</option>
+                </select>
+              </div>
+              <div class="form-group" style="flex:1;min-width:140px">
+                <label class="form-label">소통 유형</label>
                 <select id="work-type" class="form-select">
                   <option value="지시">📢 지시</option>
                   <option value="협조">🤝 협조</option>
                   <option value="공람">👁 공람</option>
+                  <option value="알림">🔔 알림</option>
                 </select>
               </div>
               <div class="form-group" style="flex:1;min-width:140px">
@@ -475,6 +494,88 @@
           </div>
           <div id="work-dept-list" class="work-list">
             <p class="empty-state">부서 업무 내역을 불러오는 중...</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ════════════════════════════════════════════════════
+           🏢 대관업무 탭
+           ════════════════════════════════════════════════════ -->
+      <section id="tab-facility" class="tab-panel" role="tabpanel" hidden>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px">
+          <h2 class="section-title" style="margin:0">🏢 대관업무 예약</h2>
+          <div style="display:flex;gap:8px;align-items:center">
+            <span id="fac-admin-link" style="display:none">
+              <a href="#" onclick="document.querySelector('[data-tab=settings]').click();document.getElementById('fac-admin-section').scrollIntoView({behavior:'smooth'});return false" class="btn btn-ghost btn-sm">⚙️ 시설 관리</a>
+            </span>
+          </div>
+        </div>
+
+        <!-- 필터 + 월 네비 -->
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
+          <button id="fac-cal-prev" class="btn btn-ghost btn-sm">‹</button>
+          <strong id="fac-cal-title" style="min-width:100px;text-align:center"></strong>
+          <button id="fac-cal-next" class="btn btn-ghost btn-sm">›</button>
+          <select id="fac-building-filter" class="form-select" style="max-width:160px"></select>
+          <select id="fac-room-filter" class="form-select" style="max-width:140px"></select>
+          <button class="btn btn-primary btn-sm" onclick="document.getElementById('fac-resv-modal').dispatchEvent(new Event('open-new'))">+ 예약하기</button>
+        </div>
+
+        <!-- 달력 -->
+        <div id="fac-calendar" class="res-calendar-wrap">
+          <p class="empty-state">로딩 중...</p>
+        </div>
+
+        <!-- 관리자: 시설 관리 섹션 (설정 탭으로 이전, 여기서는 링크만) -->
+        <div id="fac-admin-section" class="settings-card" style="margin-top:24px" hidden>
+          <h3 class="settings-section-title">🏢 시설(건물/호실) 관리 <span class="badge-admin">관리자</span></h3>
+          <div style="display:flex;gap:8px;margin-bottom:12px">
+            <button id="fac-add-building-btn" class="btn btn-primary btn-sm">+ 건물 추가</button>
+          </div>
+          <div id="fac-admin-building-list">
+            <p class="empty-state">등록된 건물이 없습니다.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ════════════════════════════════════════════════════
+           🚗 차량관리 탭
+           ════════════════════════════════════════════════════ -->
+      <section id="tab-vehicle" class="tab-panel" role="tabpanel" hidden>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px">
+          <h2 class="section-title" style="margin:0">🚗 차량 예약 관리</h2>
+          <div style="display:flex;gap:8px;align-items:center">
+            <span id="veh-admin-link" style="display:none">
+              <a href="#" onclick="document.querySelector('[data-tab=settings]').click();document.getElementById('veh-admin-section').scrollIntoView({behavior:'smooth'});return false" class="btn btn-ghost btn-sm">⚙️ 차량 관리</a>
+            </span>
+          </div>
+        </div>
+
+        <!-- 필터 + 월 네비 -->
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
+          <button id="veh-cal-prev" class="btn btn-ghost btn-sm">‹</button>
+          <strong id="veh-cal-title" style="min-width:100px;text-align:center"></strong>
+          <button id="veh-cal-next" class="btn btn-ghost btn-sm">›</button>
+          <select id="veh-vehicle-filter" class="form-select" style="max-width:200px"></select>
+          <button class="btn btn-primary btn-sm" onclick="document.getElementById('veh-resv-modal').dispatchEvent(new Event('open-new'))">+ 예약하기</button>
+        </div>
+
+        <!-- 달력 -->
+        <div id="veh-calendar" class="res-calendar-wrap">
+          <p class="empty-state">로딩 중...</p>
+        </div>
+
+        <!-- 관리자: 차량 관리 섹션 -->
+        <div id="veh-admin-section" class="settings-card" style="margin-top:24px" hidden>
+          <h3 class="settings-section-title">🚗 차량 관리 <span class="badge-admin">관리자</span></h3>
+          <div style="margin-bottom:8px">
+            <p class="form-hint" style="margin-bottom:8px">
+              차량 유형 색상: <span style="color:#4285F4">■승용</span> <span style="color:#0F9D58">■승합</span> <span style="color:#F4B400">■버스</span> <span style="color:#DB4437">■화물</span>
+            </p>
+            <button id="veh-add-vehicle-btn" class="btn btn-primary btn-sm">+ 차량 추가</button>
+          </div>
+          <div id="veh-admin-list">
+            <p class="empty-state">등록된 차량이 없습니다.</p>
           </div>
         </div>
       </section>
@@ -562,9 +663,23 @@
         <!-- DB 초기화 (admin 전용) -->
         <div class="settings-card" id="hr-init-card" hidden>
           <h3 class="settings-section-title">🗄️ Sheets DB 초기화 <span class="badge-admin">관리자</span></h3>
-          <p class="form-hint" style="margin-bottom:10px">Google Sheets에 필요한 시트(직원·업무·업무수신·알림로그)와 헤더를 자동으로 생성합니다. 최초 1회만 실행하면 됩니다.</p>
+          <p class="form-hint" style="margin-bottom:10px">Google Sheets에 필요한 모든 시트(직원·업무·업무수신·알림로그·시설·대관예약·차량·차량예약)와 헤더를 자동으로 생성합니다. 최초 1회만 실행하면 됩니다.</p>
           <button id="hr-init-sheets-btn" class="btn btn-primary btn-sm">🗄️ 시트 초기화 실행</button>
           <p id="hr-init-status" class="form-hint" style="margin-top:8px"></p>
+        </div>
+
+        <!-- 시설(건물/호실) 관리 (admin 전용) -->
+        <div class="settings-card" id="settings-fac-card" hidden>
+          <h3 class="settings-section-title">🏢 시설(건물/호실) 관리 <span class="badge-admin">관리자</span></h3>
+          <p class="form-hint" style="margin-bottom:10px">대관 가능한 건물과 호실을 등록/수정합니다. 등록 후 대관업무 탭에서 예약할 수 있습니다.</p>
+          <button id="settings-fac-add-btn" class="btn btn-primary btn-sm" onclick="document.querySelector('[data-tab=facility]').click()">🏢 대관업무 탭에서 관리</button>
+        </div>
+
+        <!-- 차량 관리 (admin 전용) -->
+        <div class="settings-card" id="settings-veh-card" hidden>
+          <h3 class="settings-section-title">🚗 차량 관리 <span class="badge-admin">관리자</span></h3>
+          <p class="form-hint" style="margin-bottom:10px">차량을 등록/수정합니다. 등록 후 차량관리 탭에서 예약할 수 있습니다.</p>
+          <button id="settings-veh-go-btn" class="btn btn-primary btn-sm" onclick="document.querySelector('[data-tab=vehicle]').click()">🚗 차량관리 탭에서 관리</button>
         </div>
         </div>
 
@@ -1070,10 +1185,203 @@
     </div>
   </div>
 
-  <!-- ═══════════════════════════════════════════════════════════
+  <!-- ═══════════════════════════════════════════════════════
+       대관업무 예약 모달
+       ═══════════════════════════════════════════════════════ -->
+  <div id="fac-resv-modal" class="modal" hidden aria-modal="true" role="dialog">
+    <div class="modal-backdrop" onclick="this.parentElement.hidden=true"></div>
+    <div class="modal-dialog" style="max-width:480px">
+      <div class="modal-header">
+        <h3 id="fac-modal-title" class="modal-title">대관 예약</h3>
+        <button id="fac-resv-close-btn" class="modal-close">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">건물 <span class="required">*</span></label>
+          <select id="fac-resv-building" class="form-select"></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">호실 <span class="required">*</span></label>
+          <select id="fac-resv-room" class="form-select"></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">예약 제목 <span class="required">*</span></label>
+          <input id="fac-resv-title" type="text" class="form-input" placeholder="예: 2학기 OT 행사">
+        </div>
+        <div style="display:flex;gap:8px">
+          <div class="form-group" style="flex:1">
+            <label class="form-label">시작 <span class="required">*</span></label>
+            <input id="fac-resv-start" type="datetime-local" class="form-input">
+          </div>
+          <div class="form-group" style="flex:1">
+            <label class="form-label">종료 <span class="required">*</span></label>
+            <input id="fac-resv-end" type="datetime-local" class="form-input">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">사용 목적</label>
+          <input id="fac-resv-purpose" type="text" class="form-input" placeholder="행사, 강의, 회의 등">
+        </div>
+        <div class="form-group">
+          <label class="form-label">참석 인원</label>
+          <input id="fac-resv-attendees" type="text" class="form-input" placeholder="예: 30명">
+        </div>
+        <div id="fac-resv-status-row" class="form-group" style="display:none">
+          <label class="form-label">예약 상태</label>
+          <select id="fac-resv-status" class="form-select">
+            <option value="확정">확정</option>
+            <option value="검토중">검토중</option>
+            <option value="취소">취소</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <div class="modal-footer-left">
+          <button id="fac-resv-delete-btn" class="btn btn-danger btn-sm" style="display:none">🗑 취소</button>
+        </div>
+        <button id="fac-resv-save-btn" class="btn btn-primary">저장</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════
+       건물/호실 관리 모달
+       ═══════════════════════════════════════════════════════ -->
+  <div id="fac-building-modal" class="modal" hidden aria-modal="true" role="dialog">
+    <div class="modal-backdrop" onclick="this.parentElement.hidden=true"></div>
+    <div class="modal-dialog" style="max-width:440px">
+      <div class="modal-header">
+        <h3 id="fac-bm-title" class="modal-title">건물 추가</h3>
+        <button id="fac-bm-cancel-btn" class="modal-close">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">건물명 <span class="required">*</span></label>
+          <input id="fac-bm-name" type="text" class="form-input" placeholder="예: 본관">
+        </div>
+        <div class="form-group">
+          <label class="form-label">색상 (달력 표시)</label>
+          <input id="fac-bm-color" type="color" value="#4285F4" style="width:60px;height:36px;padding:2px;border:1px solid #ddd;border-radius:6px;cursor:pointer">
+        </div>
+        <div class="form-group">
+          <label class="form-label">호실 목록</label>
+          <div id="fac-bm-rooms" style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px"></div>
+          <button id="fac-bm-add-room-btn" type="button" class="btn btn-ghost btn-sm">+ 호실 추가</button>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="fac-bm-cancel-btn2" class="btn btn-ghost" onclick="document.getElementById('fac-building-modal').hidden=true">취소</button>
+        <button id="fac-bm-save-btn" class="btn btn-primary">저장</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════
+       차량 예약 모달
+       ═══════════════════════════════════════════════════════ -->
+  <div id="veh-resv-modal" class="modal" hidden aria-modal="true" role="dialog">
+    <div class="modal-backdrop" onclick="this.parentElement.hidden=true"></div>
+    <div class="modal-dialog" style="max-width:460px">
+      <div class="modal-header">
+        <h3 id="veh-modal-title" class="modal-title">차량 예약</h3>
+        <button id="veh-resv-close-btn" class="modal-close">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">차량 선택 <span class="required">*</span></label>
+          <select id="veh-resv-vehicle" class="form-select"></select>
+        </div>
+        <div style="display:flex;gap:8px">
+          <div class="form-group" style="flex:1">
+            <label class="form-label">출발 <span class="required">*</span></label>
+            <input id="veh-resv-start" type="datetime-local" class="form-input">
+          </div>
+          <div class="form-group" style="flex:1">
+            <label class="form-label">반납 예정 <span class="required">*</span></label>
+            <input id="veh-resv-end" type="datetime-local" class="form-input">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">행선지 <span class="required">*</span></label>
+          <input id="veh-resv-destination" type="text" class="form-input" placeholder="예: 인천공항">
+        </div>
+        <div class="form-group">
+          <label class="form-label">사용 목적</label>
+          <input id="veh-resv-purpose" type="text" class="form-input" placeholder="출장, 행사 지원 등">
+        </div>
+        <div class="form-group">
+          <label class="form-label">탑승 인원</label>
+          <input id="veh-resv-passengers" type="number" class="form-input" value="1" min="1" style="max-width:100px">
+        </div>
+        <div id="veh-resv-status-row" class="form-group" style="display:none">
+          <label class="form-label">예약 상태</label>
+          <select id="veh-resv-status" class="form-select">
+            <option value="확정">확정</option>
+            <option value="검토중">검토중</option>
+            <option value="취소">취소</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <div class="modal-footer-left">
+          <button id="veh-resv-delete-btn" class="btn btn-danger btn-sm" style="display:none">🗑 취소</button>
+        </div>
+        <button id="veh-resv-save-btn" class="btn btn-primary">저장</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════
+       차량 등록/수정 모달
+       ═══════════════════════════════════════════════════════ -->
+  <div id="veh-vehicle-modal" class="modal" hidden aria-modal="true" role="dialog">
+    <div class="modal-backdrop" onclick="this.parentElement.hidden=true"></div>
+    <div class="modal-dialog" style="max-width:400px">
+      <div class="modal-header">
+        <h3 id="veh-vm-title" class="modal-title">차량 추가</h3>
+        <button id="veh-vm-cancel-btn" class="modal-close">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">차량명 <span class="required">*</span></label>
+          <input id="veh-vm-name" type="text" class="form-input" placeholder="예: 쏘렌토">
+        </div>
+        <div class="form-group">
+          <label class="form-label">차량번호</label>
+          <input id="veh-vm-num" type="text" class="form-input" placeholder="예: 12가 3456">
+        </div>
+        <div style="display:flex;gap:8px">
+          <div class="form-group" style="flex:1">
+            <label class="form-label">차량 유형</label>
+            <select id="veh-vm-type" class="form-select">
+              <option value="승용">승용</option>
+              <option value="승합">승합</option>
+              <option value="버스">버스</option>
+              <option value="화물">화물</option>
+              <option value="기타">기타</option>
+            </select>
+          </div>
+          <div class="form-group" style="flex:1">
+            <label class="form-label">탑승 정원</label>
+            <input id="veh-vm-capacity" type="number" class="form-input" value="4" min="1" max="60">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">비고</label>
+          <input id="veh-vm-note" type="text" class="form-input" placeholder="특이사항 등">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button onclick="document.getElementById('veh-vehicle-modal').hidden=true" class="btn btn-ghost">취소</button>
+        <button id="veh-vm-save-btn" class="btn btn-primary">저장</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════
        스크립트 (로드 순서 중요)
        기존 모듈은 절대 수정하지 않음 — 새 모듈만 추가
-       ═══════════════════════════════════════════════════════════ -->
+       ═══════════════════════════════════════════════════════ -->
   <script src="config.js"></script>
   <script src="auth.js"></script>
   <script src="calendar.js"></script>
@@ -1081,6 +1389,8 @@
   <script src="gmail.js"></script>
   <script src="report.js"></script>
   <script src="sheets.js"></script>
+  <script src="facility.js"></script>
+  <script src="vehicle.js"></script>
   <script src="work.js"></script>
   <script src="app.js"></script>
 

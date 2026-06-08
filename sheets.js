@@ -19,9 +19,13 @@ var SheetsModule = (function () {
   // 시트별 헤더 정의
   var SCHEMAS = {
     '직원':     ['id','name','department','rank','googleEmail','hireDate','phone','role','status','createdAt'],
-    '업무':     ['id','title','content','type','fromId','fromName','toIds','toNames','shareScope','dueDate','createdAt','calEventId'],
+    '업무':     ['id','title','content','category','type','fromId','fromName','toIds','toNames','shareScope','dueDate','createdAt','calEventId'],
     '업무수신': ['taskId','userId','userName','status','receivedAt','completedAt','comment','calEventId'],
     '알림로그': ['id','userId','taskId','type','message','isRead','createdAt'],
+    '시설':     ['id','buildingName','rooms','color','status','createdAt'],
+    '대관예약': ['id','buildingId','buildingName','roomId','roomName','title','fromId','fromName','department','startAt','endAt','purpose','attendees','status','calEventId','createdAt'],
+    '차량':     ['id','vehicleName','vehicleNum','vehicleType','capacity','status','note','createdAt'],
+    '차량예약': ['id','vehicleId','vehicleName','fromId','fromName','department','startAt','endAt','destination','purpose','passengers','status','calEventId','createdAt'],
   };
 
   function getToken() { return Auth.getToken(); }
@@ -209,6 +213,7 @@ var SheetsModule = (function () {
       id,
       task.title || '',
       task.content || '',
+      task.category || '일반업무',
       task.type || '지시',
       task.fromId || '',
       task.fromName || '',
@@ -318,6 +323,138 @@ var SheetsModule = (function () {
     } catch (e) {}
   }
 
+  /* ──────────────────────────────────────────────────
+     시설 (대관) 관리
+  ────────────────────────────────────────────────── */
+  async function getFacilities() {
+    var data = await readSheet('시설');
+    return data.filter(function(f){ return f.status !== 'inactive'; });
+  }
+
+  async function addFacility(f) {
+    var list = await readSheet('시설');
+    var id = 'FAC' + String(list.length + 1).padStart(3,'0');
+    await apiAppend('시설', [[
+      id, f.buildingName || '',
+      JSON.stringify(f.rooms || []),
+      f.color || '#4285F4',
+      'active',
+      new Date().toISOString()
+    ]]);
+    return id;
+  }
+
+  async function updateFacility(rowNum, f) {
+    await apiUpdate('시설!A' + rowNum + ':F' + rowNum, [[
+      f.id, f.buildingName,
+      JSON.stringify(f.rooms || []),
+      f.color || '#4285F4',
+      f.status || 'active',
+      f.createdAt || new Date().toISOString()
+    ]]);
+  }
+
+  async function deleteFacility(rowNum) {
+    await apiUpdate('시설!E' + rowNum, [['inactive']]);
+  }
+
+  async function getFacilityReservations(startDate, endDate) {
+    var data = await readSheet('대관예약');
+    if (!startDate && !endDate) return data;
+    return data.filter(function(r) {
+      var s = r.startAt || '';
+      return (!startDate || s >= startDate) && (!endDate || s <= endDate);
+    });
+  }
+
+  async function createFacilityReservation(res) {
+    var list = await readSheet('대관예약');
+    var id = 'FAR' + String(list.length + 1).padStart(5,'0') + '_' + Date.now().toString(36).slice(-4);
+    await apiAppend('대관예약', [[
+      id, res.buildingId||'', res.buildingName||'', res.roomId||'', res.roomName||'',
+      res.title||'', res.fromId||'', res.fromName||'', res.department||'',
+      res.startAt||'', res.endAt||'', res.purpose||'', res.attendees||'',
+      res.status||'확정', '', new Date().toISOString()
+    ]]);
+    return id;
+  }
+
+  async function updateFacilityReservation(rowNum, res) {
+    await apiUpdate('대관예약!A' + rowNum + ':P' + rowNum, [[
+      res.id, res.buildingId, res.buildingName, res.roomId, res.roomName,
+      res.title, res.fromId, res.fromName, res.department,
+      res.startAt, res.endAt, res.purpose, res.attendees,
+      res.status, res.calEventId || '', res.createdAt
+    ]]);
+  }
+
+  async function deleteFacilityReservation(rowNum) {
+    await apiUpdate('대관예약!N' + rowNum, [['취소']]);
+  }
+
+  /* ──────────────────────────────────────────────────
+     차량 관리
+  ────────────────────────────────────────────────── */
+  async function getVehicles() {
+    var data = await readSheet('차량');
+    return data.filter(function(v){ return v.status !== 'inactive'; });
+  }
+
+  async function addVehicle(v) {
+    var list = await readSheet('차량');
+    var id = 'VEH' + String(list.length + 1).padStart(3,'0');
+    await apiAppend('차량', [[
+      id, v.vehicleName||'', v.vehicleNum||'', v.vehicleType||'승용',
+      v.capacity||'4', v.status||'active', v.note||'',
+      new Date().toISOString()
+    ]]);
+    return id;
+  }
+
+  async function updateVehicle(rowNum, v) {
+    await apiUpdate('차량!A' + rowNum + ':H' + rowNum, [[
+      v.id, v.vehicleName, v.vehicleNum, v.vehicleType,
+      v.capacity, v.status, v.note||'', v.createdAt
+    ]]);
+  }
+
+  async function deleteVehicle(rowNum) {
+    await apiUpdate('차량!F' + rowNum, [['inactive']]);
+  }
+
+  async function getVehicleReservations(startDate, endDate) {
+    var data = await readSheet('차량예약');
+    if (!startDate && !endDate) return data;
+    return data.filter(function(r) {
+      var s = r.startAt || '';
+      return (!startDate || s >= startDate) && (!endDate || s <= endDate);
+    });
+  }
+
+  async function createVehicleReservation(res) {
+    var list = await readSheet('차량예약');
+    var id = 'VER' + String(list.length + 1).padStart(5,'0') + '_' + Date.now().toString(36).slice(-4);
+    await apiAppend('차량예약', [[
+      id, res.vehicleId||'', res.vehicleName||'', res.fromId||'', res.fromName||'',
+      res.department||'', res.startAt||'', res.endAt||'', res.destination||'',
+      res.purpose||'', res.passengers||'1', res.status||'확정', '',
+      new Date().toISOString()
+    ]]);
+    return id;
+  }
+
+  async function updateVehicleReservation(rowNum, res) {
+    await apiUpdate('차량예약!A' + rowNum + ':N' + rowNum, [[
+      res.id, res.vehicleId, res.vehicleName, res.fromId, res.fromName,
+      res.department, res.startAt, res.endAt, res.destination,
+      res.purpose, res.passengers, res.status, res.calEventId||'', res.createdAt
+    ]]);
+  }
+
+  async function deleteVehicleReservation(rowNum) {
+    await apiUpdate('차량예약!L' + rowNum, [['취소']]);
+  }
+
   /* 공개 API */
   return {
     initSheets:            initSheets,
@@ -339,6 +476,24 @@ var SheetsModule = (function () {
     addNotification:       addNotification,
     markNotificationsRead: markNotificationsRead,
     pollNewTasks:          pollNewTasks,
+    // 시설
+    getFacilities:              getFacilities,
+    addFacility:                addFacility,
+    updateFacility:             updateFacility,
+    deleteFacility:             deleteFacility,
+    getFacilityReservations:    getFacilityReservations,
+    createFacilityReservation:  createFacilityReservation,
+    updateFacilityReservation:  updateFacilityReservation,
+    deleteFacilityReservation:  deleteFacilityReservation,
+    // 차량
+    getVehicles:               getVehicles,
+    addVehicle:                addVehicle,
+    updateVehicle:             updateVehicle,
+    deleteVehicle:             deleteVehicle,
+    getVehicleReservations:    getVehicleReservations,
+    createVehicleReservation:  createVehicleReservation,
+    updateVehicleReservation:  updateVehicleReservation,
+    deleteVehicleReservation:  deleteVehicleReservation,
   };
 
 })();

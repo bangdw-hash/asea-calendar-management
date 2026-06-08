@@ -93,24 +93,117 @@ var WorkModule = (function () {
     return null;
   }
 
+  /* ──────────────────────────────────────────────────
+     부트스트랩: 미등록 계정 자기 등록 UI
+  ────────────────────────────────────────────────── */
+  function showBootstrapUI(googleEmail, isSuperAdmin) {
+    var card = $w('my-profile-unregistered');
+    if (!card) return;
+
+    var existingForm = $w('bootstrap-self-register-form');
+    if (existingForm) existingForm.remove();
+
+    var hint = isSuperAdmin
+      ? '<p style="color:#F57F17;font-size:12px;margin-bottom:10px">⚡ 최초 관리자 또는 운영자 계정입니다. 직원 정보를 등록하면 업무관리 기능을 사용할 수 있습니다.</p>'
+      : '<p style="color:#5F6368;font-size:12px;margin-bottom:10px">직원 목록에 등록되지 않은 계정입니다. 아래에서 자기 등록을 요청하거나 관리자에게 문의하세요.</p>';
+
+    var form = document.createElement('div');
+    form.id = 'bootstrap-self-register-form';
+    form.style.cssText = 'margin-top:12px;padding:12px;background:#fff;border:1px solid #e0e0e0;border-radius:8px';
+    form.innerHTML = hint +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">' +
+        '<input id="bs-name" type="text" class="form-input" placeholder="이름 *">' +
+        '<select id="bs-dept" class="form-select"><option value="">부서 선택 *</option>' +
+          CONFIG.departments.map(function(d){ return '<option value="'+d.name+'">'+d.name+'</option>'; }).join('') +
+        '</select>' +
+        '<input id="bs-rank" type="text" class="form-input" placeholder="직급 (예: 담당)">' +
+        '<input id="bs-phone" type="tel" class="form-input" placeholder="전화번호">' +
+      '</div>' +
+      '<div style="display:flex;gap:8px;align-items:center">' +
+        (isSuperAdmin
+          ? '<select id="bs-role" class="form-select" style="flex:1"><option value="admin">관리자 (admin)</option><option value="manager">부서장</option><option value="staff">일반직원</option></select>'
+          : '<input type="hidden" id="bs-role" value="staff">') +
+        '<button id="bs-register-btn" class="btn btn-primary btn-sm">'+(isSuperAdmin?'🔑 관리자로 등록':'📝 등록 요청')+'</button>' +
+      '</div>';
+
+    card.innerHTML = '';
+    card.appendChild(form);
+    card.hidden = false;
+
+    var btn = $w('bs-register-btn');
+    if (btn) btn.addEventListener('click', async function() {
+      var name  = ($w('bs-name').value||'').trim();
+      var dept  = $w('bs-dept').value;
+      var rank  = ($w('bs-rank').value||'').trim();
+      var phone = ($w('bs-phone').value||'').trim();
+      var role  = $w('bs-role').value || 'staff';
+
+      if (!name) { toast('이름을 입력하세요.','error'); return; }
+      if (!dept) { toast('부서를 선택하세요.','error'); return; }
+
+      btn.disabled = true; btn.textContent = '등록 중...';
+      try {
+        await SheetsModule.addEmployee({
+          name: name, department: dept, rank: rank||'담당',
+          googleEmail: googleEmail, phone: phone, role: role,
+          status: 'active',
+        });
+        toast('✅ 등록 완료! 다시 로그인하거나 페이지를 새로고침하세요.','success');
+        form.innerHTML = '<p style="color:#34A853;font-size:13px">✅ 등록 완료되었습니다. 페이지를 새로고침하세요.</p>' +
+          '<button onclick="location.reload()" class="btn btn-primary btn-sm" style="margin-top:8px">🔄 새로고침</button>';
+      } catch(e) {
+        toast('등록 실패: '+(e.message||e),'error');
+        btn.disabled = false; btn.textContent = isSuperAdmin?'🔑 관리자로 등록':'📝 등록 요청';
+      }
+    });
+  }
+
   async function onLogin(googleEmail) {
     W.me = await matchEmployee(googleEmail);
+
+    if (!W.me) {
+      // 부트스트랩: CONFIG.senderEmail은 항상 최초 관리자 가능
+      var isSuperAdmin = (googleEmail === CONFIG.senderEmail);
+      var emps = [];
+      try { emps = await SheetsModule.getEmployees(); } catch(e) {}
+
+      if (isSuperAdmin || emps.length === 0) {
+        // 임시 관리자 접근 허용 (UI만, DB 미등록 상태)
+        W.me = {
+          id: 'BOOTSTRAP_' + Date.now(),
+          name: googleEmail.split('@')[0],
+          department: '관리자',
+          rank: '관리자',
+          googleEmail: googleEmail,
+          role: 'admin',
+          status: 'active',
+          _bootstrap: true,
+        };
+        showBootstrapUI(googleEmail, true);
+      } else {
+        showBootstrapUI(googleEmail, false);
+      }
+    }
+
+    // 전역 공개 (facility/vehicle 모듈에서 참조)
+    window._workMe = W.me;
+
     renderProfileCard();
 
     if (W.me) {
-      // 권한별 UI 노출
       var isAdmin = W.me.role === 'admin';
       if ($w('hr-management-card')) $w('hr-management-card').hidden = !isAdmin;
       if ($w('hr-init-card'))       $w('hr-init-card').hidden       = !isAdmin;
 
-      // 배지 업데이트
-      await refreshUnreadBadge();
+      // 대관/차량 관리자 섹션
+      if (typeof FacilityModule !== 'undefined') FacilityModule.initFacilityModule(isAdmin);
+      if (typeof VehicleModule  !== 'undefined') VehicleModule.initVehicleModule(isAdmin);
 
-      // 폴링 시작
-      startPolling();
-
-      // 내 업무현황 자동 로드
-      await loadMyTasks();
+      if (!W.me._bootstrap) {
+        await refreshUnreadBadge();
+        startPolling();
+        await loadMyTasks();
+      }
     }
   }
 
@@ -320,11 +413,12 @@ var WorkModule = (function () {
   async function sendTask() {
     if (!W.me) { toast('로그인 후 이용하세요.', 'error'); return; }
 
-    var title   = ($w('work-title').value || '').trim();
-    var type    = $w('work-type').value;
-    var scope   = $w('work-scope').value;
-    var due     = $w('work-due').value;
-    var content = $w('work-content-editor').innerHTML;
+    var title    = ($w('work-title').value || '').trim();
+    var category = $w('work-category') ? $w('work-category').value : '일반업무';
+    var type     = $w('work-type').value;
+    var scope    = $w('work-scope').value;
+    var due      = $w('work-due').value;
+    var content  = $w('work-content-editor').innerHTML;
 
     if (!title) { toast('제목을 입력하세요.', 'error'); return; }
     if (W.selectedRecipients.length === 0) { toast('수신자를 선택하세요.', 'error'); return; }
@@ -337,6 +431,7 @@ var WorkModule = (function () {
       var taskId = await SheetsModule.createTask({
         title:     title,
         content:   content,
+        category:  category,
         type:      type,
         fromId:    W.me.id,
         fromName:  W.me.name + ' (' + W.me.department + ')',
@@ -1047,6 +1142,21 @@ var WorkModule = (function () {
 
     // 푸시 알림 권한 요청
     requestNotificationPermission();
+
+    // 대관예약 모달: '+예약하기' 버튼 열기 이벤트
+    var facModal = document.getElementById('fac-resv-modal');
+    if (facModal) facModal.addEventListener('open-new', function() {
+      if (typeof FacilityModule !== 'undefined') {
+        // facility.js에서 직접 모달 열기
+        facModal.dispatchEvent(new CustomEvent('open-new-internal'));
+      }
+    });
+    var vehModal = document.getElementById('veh-resv-modal');
+    if (vehModal) vehModal.addEventListener('open-new', function() {
+      if (typeof VehicleModule !== 'undefined') {
+        vehModal.dispatchEvent(new CustomEvent('open-new-internal'));
+      }
+    });
   }
 
   /* 공개 API */
