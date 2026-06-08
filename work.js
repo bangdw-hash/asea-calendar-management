@@ -209,13 +209,13 @@ var WorkModule = (function () {
         await refreshUnreadBadge();
         startPolling();
         await loadMyTasks();
-        // 직원 목록 백그라운드 프리페치 (직원관리 탭 진입 즉시 렌더 가능하도록)
-        if (!W.employees.length) {
-          SheetsModule.getEmployees().then(function (emps) {
-            W.employees = emps;
-            W.empCacheAt = Date.now();
-          }).catch(function () {});
-        }
+      }
+      // 직원 목록 백그라운드 프리페치 (bootstrap 포함 — 탭 진입 즉시 렌더 가능하도록)
+      if (!W.employees.length) {
+        SheetsModule.getEmployees().then(function (emps) {
+          W.employees = emps;
+          W.empCacheAt = Date.now();
+        }).catch(function () {});
       }
     }
   }

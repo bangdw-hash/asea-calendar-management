@@ -32,6 +32,9 @@ const CONFIG = {
   // ── Anthropic API (더 이상 일정발췌에 사용 안 함) ─
   anthropicApiKey: '',
 
+  // ── 체크인 GAS 프록시 URL ─────────────────────────────────
+  checkinProxyUrl: 'https://script.google.com/macros/s/AKfycbykrA15jAfPDU0gRk6bOA2M0tbCcW97CzLg-9WxWlG9o8VCZY0EiwoaXYShklWCyFs3mg/exec',
+
   // ── Make.com 웹훅 URL (이메일 예약 서버 발송) ─────────────
   makeWebhookUrl: '',
 

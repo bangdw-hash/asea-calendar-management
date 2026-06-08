@@ -142,6 +142,7 @@
     if (name === 'extract')    renderExtractTab();
     if (name === 'workorder')    initWorkOrderTab();
     if (name === 'checkinmgmt')  initCheckinMgmtTab();
+    if (name === 'work' && typeof WorkModule !== 'undefined') WorkModule.loadHrList();
   }
 
   function initTabs() {

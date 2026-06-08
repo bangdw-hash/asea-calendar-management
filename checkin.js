@@ -53,7 +53,12 @@
            fmtHMS(d);
   }
 
-  function proxyUrl() { return localStorage.getItem(PROXY_URL_KEY) || ''; }
+  function proxyUrl() {
+    // config.js 에 직접 등록된 URL 우선, 없으면 localStorage fallback
+    return (typeof CONFIG !== 'undefined' && CONFIG.checkinProxyUrl)
+      ? CONFIG.checkinProxyUrl
+      : (localStorage.getItem(PROXY_URL_KEY) || '');
+  }
 
   function getOrCreateDeviceId() {
     var id = localStorage.getItem(DEVICE_KEY);
