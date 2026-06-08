@@ -20,6 +20,28 @@
   var _authCallbacks    = [];
   var _pendingResolve   = null;
 
+  /* ── 토큰 영속성 키 ──────────────────────────────────────────── */
+  var _STORE_TOKEN   = 'asea_gtoken';
+  var _STORE_EXPIRES = 'asea_gtoken_exp';
+
+  function _saveToken(token, expiresAt) {
+    try {
+      sessionStorage.setItem(_STORE_TOKEN,   token);
+      sessionStorage.setItem(_STORE_EXPIRES, String(expiresAt));
+      localStorage.setItem(_STORE_TOKEN,     token);
+      localStorage.setItem(_STORE_EXPIRES,   String(expiresAt));
+    } catch (e) {}
+  }
+
+  function _deleteStoredToken() {
+    try {
+      sessionStorage.removeItem(_STORE_TOKEN);
+      sessionStorage.removeItem(_STORE_EXPIRES);
+      localStorage.removeItem(_STORE_TOKEN);
+      localStorage.removeItem(_STORE_EXPIRES);
+    } catch (e) {}
+  }
+
   /* ── 내부 헬퍼 ──────────────────────────────────────────────── */
 
   function _clearToken() {
@@ -28,6 +50,7 @@
       clearTimeout(_expireTimer);
       _expireTimer = null;
     }
+    _deleteStoredToken();
   }
 
   function _notifyChange() {
@@ -49,7 +72,9 @@
     _accessToken = tokenResponse.access_token;
 
     // 만료 1분 전 자동 토큰 초기화 (기본 3600초)
-    var expiresIn = ((tokenResponse.expires_in || 3600) - 60) * 1000;
+    var expiresIn   = ((tokenResponse.expires_in || 3600) - 60) * 1000;
+    var expiresAt   = Date.now() + expiresIn;
+    _saveToken(_accessToken, expiresAt);
     _expireTimer = setTimeout(function () {
       _clearToken();
       _notifyChange();
@@ -129,6 +154,31 @@
       if (typeof callback === 'function') {
         _authCallbacks.push(callback);
       }
+    },
+
+    /**
+     * F5 새로고침 또는 브라우저 재시작 후 저장된 토큰 복원.
+     * 유효한 토큰이 있으면 즉시 로그인 상태로 복원하고 true 반환.
+     * @returns {boolean}
+     */
+    tryRestoreSession: function () {
+      try {
+        var token   = sessionStorage.getItem(_STORE_TOKEN) || localStorage.getItem(_STORE_TOKEN);
+        var expires = parseInt(sessionStorage.getItem(_STORE_EXPIRES) || localStorage.getItem(_STORE_EXPIRES) || '0', 10);
+        if (token && expires > Date.now()) {
+          _accessToken = token;
+          var remaining = expires - Date.now();
+          _expireTimer = setTimeout(function () {
+            _clearToken();
+            _notifyChange();
+          }, remaining);
+          _notifyChange();
+          return true;
+        }
+      } catch (e) {}
+      // 만료되었거나 없으면 저장소 정리
+      _deleteStoredToken();
+      return false;
     },
   };
 

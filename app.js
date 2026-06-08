@@ -2635,6 +2635,7 @@
       ? CONFIG.driveReportFolderId : '';
     var storedKey = CONFIG.anthropicApiKey;
     if (storedKey) $('setting-api-key').value = storedKey;
+    if (CONFIG.geminiApiKey) $('setting-gemini-key').value = CONFIG.geminiApiKey;
     if (CONFIG.makeWebhookUrl) $('setting-make-webhook').value = CONFIG.makeWebhookUrl;
     if (CONFIG.githubToken) $('setting-github-token').value = CONFIG.githubToken;
     renderSettingsRecipients();
@@ -2913,6 +2914,14 @@
       saveSettingsToCloud(true);
     });
 
+    $('save-gemini-key-btn').addEventListener('click', async function () {
+      var key = $('setting-gemini-key').value.trim();
+      CONFIG.geminiApiKey = key;
+      try { localStorage.setItem(CONFIG.storageKeys.geminiApiKey, key || ''); } catch (e) {}
+      toast(key ? 'Gemini API 키가 저장되었습니다.' : 'Gemini API 키가 삭제되었습니다.', 'success');
+      saveSettingsToCloud(true);
+    });
+
     $('cloud-save-settings-btn').addEventListener('click', async function () {
       var btn = $('cloud-save-settings-btn');
       btn.disabled = true; btn.textContent = '저장 중...';
@@ -3035,10 +3044,14 @@
   }
 
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', function () { init(); tryAutoLogin(); });
+    document.addEventListener('DOMContentLoaded', function () {
+      init();
+      // 저장된 토큰 먼저 복원 시도 → 실패 시 silent GIS 요청
+      if (!Auth.tryRestoreSession()) tryAutoLogin();
+    });
   } else {
     init();
-    tryAutoLogin();
+    if (!Auth.tryRestoreSession()) tryAutoLogin();
   }
 
 })();

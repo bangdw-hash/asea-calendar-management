@@ -111,13 +111,99 @@ var QuickTaskModule = (function () {
   }
 
   /* ────────────────────────────────────────────────────────────
-     Claude API 호출 — 업무 목록 추출
+     AI API 호출 헬퍼 — Gemini (우선) / Anthropic (대체)
+  ──────────────────────────────────────────────────────────── */
+  function _buildPrompt(text, today) {
+    return '오늘 날짜: ' + today + '\n' +
+      '아래 내용에서 업무/일정 항목들을 추출해 JSON 배열만 반환하세요. 다른 설명 없이 JSON 배열만 반환합니다.\n' +
+      '각 항목 형식: {"title":"업무 제목","content":"상세 내용","dueDate":"YYYY-MM-DD 또는 빈문자열","category":"일반업무|교육일정|행사|대관|차량|기타"}\n' +
+      '날짜가 명시되지 않은 경우 dueDate는 빈문자열("")로 두세요.\n\n' +
+      (text || '(이미지 참조)');
+  }
+
+  async function _callGemini(apiKey, text, imageB64) {
+    var today  = todayStr();
+    var prompt = _buildPrompt(text, today);
+    var parts  = [];
+
+    if (imageB64) {
+      var b64data  = imageB64.replace(/^data:[^;]+;base64,/, '');
+      var mimeType = (imageB64.match(/^data:([^;]+);/) || [])[1] || 'image/png';
+      parts.push({ inlineData: { mimeType: mimeType, data: b64data } });
+      parts.push({ text: prompt });
+    } else {
+      parts.push({ text: prompt });
+    }
+
+    var resp = await fetch(
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=' + encodeURIComponent(apiKey),
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contents: [{ parts: parts }] }),
+      }
+    );
+    var data = await resp.json();
+    if (!resp.ok) {
+      var msg = (data.error && data.error.message) || 'Gemini 분석 실패';
+      if (resp.status === 400 && msg.indexOf('API_KEY') !== -1) throw new Error('Gemini API 키가 올바르지 않습니다. 설정에서 확인해주세요.');
+      throw new Error(msg);
+    }
+    return (data.candidates && data.candidates[0] &&
+            data.candidates[0].content && data.candidates[0].content.parts &&
+            data.candidates[0].content.parts[0].text) || '';
+  }
+
+  async function _callAnthropic(apiKey, text, imageB64) {
+    var today        = todayStr();
+    var systemPrompt =
+      '당신은 업무 일정 추출 AI입니다. 사용자가 붙여넣은 내용에서 업무/일정 항목들을 추출해 ' +
+      'JSON 배열로만 반환하세요. 다른 설명 없이 JSON만 반환합니다.\n' +
+      '각 항목 형식: {"title":"업무 제목","content":"상세 내용","dueDate":"YYYY-MM-DD 또는 빈문자열","category":"일반업무|교육일정|행사|대관|차량|기타"}\n' +
+      '오늘 날짜: ' + today + '\n' +
+      '날짜가 명시되지 않은 경우 dueDate는 빈문자열("")로 두세요.';
+    var messages;
+    if (imageB64) {
+      var base64data = imageB64.replace(/^data:[^;]+;base64,/, '');
+      var mediaType  = (imageB64.match(/^data:([^;]+);/) || [])[1] || 'image/png';
+      messages = [{ role: 'user', content: [
+        { type: 'image', source: { type: 'base64', media_type: mediaType, data: base64data } },
+        { type: 'text', text: '위 이미지에서 업무/일정 항목들을 추출해 JSON 배열로 반환하세요.' }
+      ]}];
+    } else {
+      messages = [{ role: 'user', content: '다음 내용에서 업무/일정 항목들을 추출해 JSON 배열로 반환하세요:\n\n' + text }];
+    }
+    var resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'content-type': 'application/json',
+        'anthropic-dangerous-direct-browser-access': 'true',
+      },
+      body: JSON.stringify({ model: 'claude-3-5-haiku-20241022', max_tokens: 1024, system: systemPrompt, messages: messages }),
+    });
+    var data = await resp.json();
+    if (!resp.ok) {
+      var errMsg = (data.error && data.error.message) || '분석 실패';
+      if (resp.status === 401) throw new Error('Claude API Key가 올바르지 않습니다. 설정에서 확인해주세요.');
+      if (resp.status === 400) throw new Error('요청 오류: ' + errMsg);
+      throw new Error(errMsg);
+    }
+    return (data.content && data.content[0] && data.content[0].text) || '';
+  }
+
+  /* ────────────────────────────────────────────────────────────
+     업무 목록 추출 (Gemini 우선 → Anthropic 대체)
   ──────────────────────────────────────────────────────────── */
   async function analyzeContent() {
     if (Q.isAnalyzing) return;
-    var apiKey = CONFIG.anthropicApiKey || localStorage.getItem('asea_anthropic_api_key') || '';
-    if (!apiKey) {
-      toast('설정 → Anthropic API Key를 먼저 등록해주세요.', 'error');
+
+    var geminiKey    = CONFIG.geminiApiKey    || localStorage.getItem('asea_gemini_api_key')    || '';
+    var anthropicKey = CONFIG.anthropicApiKey || localStorage.getItem('asea_anthropic_api_key') || '';
+
+    if (!geminiKey && !anthropicKey) {
+      toast('설정 → Gemini 또는 Claude API Key를 먼저 등록해주세요.', 'error');
       return;
     }
 
@@ -132,61 +218,16 @@ var QuickTaskModule = (function () {
     if (analyzeBtn) { analyzeBtn.disabled = true; analyzeBtn.textContent = '분석 중...'; }
 
     try {
-      var today = todayStr();
-      var systemPrompt =
-        '당신은 업무 일정 추출 AI입니다. 사용자가 붙여넣은 내용에서 업무/일정 항목들을 추출해 ' +
-        'JSON 배열로만 반환하세요. 다른 설명 없이 JSON만 반환합니다.\n' +
-        '각 항목 형식: {"title":"업무 제목","content":"상세 내용","dueDate":"YYYY-MM-DD 또는 빈문자열","category":"일반업무|교육일정|행사|대관|차량|기타"}\n' +
-        '오늘 날짜: ' + today + '\n' +
-        '날짜가 명시되지 않은 경우 dueDate는 빈문자열("")로 두세요.';
+      var rawText;
 
-      var messages = [];
-
-      if (Q.pasteImageB64) {
-        // 이미지 비전 분석
-        var base64data = Q.pasteImageB64.replace(/^data:[^;]+;base64,/, '');
-        var mediaType  = (Q.pasteImageB64.match(/^data:([^;]+);/) || [])[1] || 'image/png';
-        messages = [{
-          role: 'user',
-          content: [
-            { type: 'image', source: { type: 'base64', media_type: mediaType, data: base64data } },
-            { type: 'text', text: '위 이미지에서 업무/일정 항목들을 추출해 JSON 배열로 반환하세요.' }
-          ]
-        }];
+      if (geminiKey) {
+        // Gemini 우선 (브라우저 네이티브 CORS 지원)
+        rawText = await _callGemini(geminiKey, text, Q.pasteImageB64);
       } else {
-        messages = [{
-          role: 'user',
-          content: '다음 내용에서 업무/일정 항목들을 추출해 JSON 배열로 반환하세요:\n\n' + text
-        }];
+        // Anthropic 대체 (일부 환경에서 CORS 제한 가능)
+        rawText = await _callAnthropic(anthropicKey, text, Q.pasteImageB64);
       }
 
-      var resp = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'x-api-key':                              apiKey,
-          'anthropic-version':                      '2023-06-01',
-          'content-type':                           'application/json',
-          // 브라우저에서 직접 호출 시 필수 (CORS 허용)
-          'anthropic-dangerous-direct-browser-access': 'true',
-        },
-        body: JSON.stringify({
-          model:      'claude-3-5-haiku-20241022',
-          max_tokens: 1024,
-          system:     systemPrompt,
-          messages:   messages,
-        }),
-      });
-
-      var data = await resp.json();
-      if (!resp.ok) {
-        var errMsg = (data.error && data.error.message) || '분석 실패';
-        // API 키 오류 안내
-        if (resp.status === 401) throw new Error('API Key가 올바르지 않습니다. 설정에서 확인해주세요.');
-        if (resp.status === 400) throw new Error('요청 오류: ' + errMsg);
-        throw new Error(errMsg);
-      }
-
-      var rawText = (data.content && data.content[0] && data.content[0].text) || '';
       var parsed  = extractJsonArray(rawText);
 
       if (!parsed || parsed.length === 0) {
