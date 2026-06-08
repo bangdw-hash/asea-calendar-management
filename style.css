@@ -2988,6 +2988,44 @@ a        { color: var(--color-accent); text-decoration: none; }
 .ci-check-badge.in  { background: #e8f5e9; color: #2e7d32; }
 .ci-check-badge.out { background: #fce4ec; color: #c62828; }
 
+/* ── 직원 목록 테이블 ────────────────────────────── */
+.hr-emp-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  min-width: 600px;
+}
+.hr-emp-table thead tr {
+  background: #f0f4f8;
+  border-bottom: 2px solid var(--color-border, #e0e4ea);
+}
+.hr-emp-table th {
+  padding: 10px 12px;
+  text-align: left;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-text-secondary, #5f6368);
+  white-space: nowrap;
+}
+.hr-emp-table td {
+  padding: 9px 12px;
+  border-bottom: 1px solid #f0f2f5;
+  vertical-align: middle;
+}
+.hr-emp-table tbody tr:hover { background: #fafbff; }
+.hr-emp-table tbody tr:last-child td { border-bottom: none; }
+.hr-emp-name-cell { font-weight: 600; white-space: nowrap; }
+.hr-email-cell { font-size: 12px; color: #888; max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hr-role-badge {
+  display: inline-block;
+  color: #fff;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  white-space: nowrap;
+}
+
 /* ── 작업지시 카드 ───────────────────────────────── */
 .wo-card {
   background: var(--color-card);

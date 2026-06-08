@@ -220,15 +220,104 @@ var WorkModule = (function () {
     if (W.me) {
       card.hidden = false;
       if (warn) warn.hidden = true;
-      $w('my-profile-name').textContent = W.me.name;
-      $w('my-profile-dept').textContent = W.me.department;
-      $w('my-profile-rank').textContent = W.me.rank;
       var roleMap = { admin:'관리자', manager:'부서장', staff:'일반직원' };
-      $w('my-profile-role').textContent = roleMap[W.me.role] || W.me.role;
+      var roleLabel = roleMap[W.me.role] || W.me.role;
+
+      // 이름
+      $w('my-profile-name').textContent = W.me.name || '';
+
+      // 부서: roleLabel과 중복이면 숨김
+      var deptEl = $w('my-profile-dept');
+      if (deptEl) {
+        var deptVal = (W.me.department || '').trim();
+        deptEl.textContent = deptVal;
+        deptEl.hidden = (!deptVal || deptVal === roleLabel);
+      }
+
+      // 직급: 부서·roleLabel과 중복이면 숨김
+      var rankEl = $w('my-profile-rank');
+      if (rankEl) {
+        var rankVal = (W.me.rank || '').trim();
+        var deptVal2 = (W.me.department || '').trim();
+        rankEl.textContent = rankVal;
+        rankEl.hidden = (!rankVal || rankVal === roleLabel || rankVal === deptVal2);
+      }
+
+      // 역할 뱃지
+      var roleColors = { admin:'#1a73e8', manager:'#0b8043', staff:'#5f6368' };
+      var roleEl = $w('my-profile-role');
+      if (roleEl) {
+        roleEl.textContent = roleLabel;
+        roleEl.style.background = (roleColors[W.me.role] || '#888');
+        roleEl.style.color = '#fff';
+        roleEl.style.borderRadius = '4px';
+        roleEl.style.padding = '2px 8px';
+        roleEl.style.fontSize = '11px';
+        roleEl.style.fontWeight = '600';
+      }
+
+      // 내 정보 수정 버튼 (없으면 생성)
+      if (!$w('my-profile-edit-btn')) {
+        var editBtn = document.createElement('button');
+        editBtn.id = 'my-profile-edit-btn';
+        editBtn.className = 'btn btn-ghost btn-sm';
+        editBtn.style.cssText = 'margin-left:8px;font-size:12px';
+        editBtn.textContent = '✏️ 내 정보 수정';
+        editBtn.onclick = function () { _openMyProfileEdit(); };
+        card.querySelector('.my-profile-info').appendChild(editBtn);
+      }
     } else {
       card.hidden = true;
       if (warn) warn.hidden = false;
     }
+  }
+
+  function _openMyProfileEdit() {
+    if (!W.me) return;
+    // 간단한 인라인 편집 폼 토글
+    var existing = $w('my-profile-edit-form');
+    if (existing) { existing.remove(); return; }
+
+    var form = document.createElement('div');
+    form.id = 'my-profile-edit-form';
+    form.style.cssText = 'margin-top:12px;display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px';
+    form.innerHTML =
+      '<input id="mpe-name"  type="text"  class="form-input" placeholder="이름 *"   value="' + (W.me.name||'') + '">' +
+      '<input id="mpe-dept"  type="text"  class="form-input" placeholder="부서"     value="' + (W.me.department||'') + '">' +
+      '<input id="mpe-rank"  type="text"  class="form-input" placeholder="직급"     value="' + (W.me.rank||'') + '">' +
+      '<input id="mpe-phone" type="tel"   class="form-input" placeholder="전화번호" value="' + (W.me.phone||'') + '">' +
+      '<div style="grid-column:1/-1;display:flex;gap:8px">' +
+        '<button id="mpe-save" class="btn btn-primary btn-sm">저장</button>' +
+        '<button id="mpe-cancel" class="btn btn-ghost btn-sm">취소</button>' +
+      '</div>';
+
+    $w('my-profile-card').appendChild(form);
+
+    $w('mpe-cancel').onclick = function () { form.remove(); };
+    $w('mpe-save').onclick = async function () {
+      var name = ($w('mpe-name').value||'').trim();
+      if (!name) { toast('이름을 입력하세요.','error'); return; }
+      this.disabled = true;
+      try {
+        var updated = Object.assign({}, W.me, {
+          name: name,
+          department: ($w('mpe-dept').value||'').trim(),
+          rank: ($w('mpe-rank').value||'').trim(),
+          phone: ($w('mpe-phone').value||'').trim(),
+        });
+        var headers = ['id','name','department','rank','googleEmail','hireDate','phone','role','status','createdAt'];
+        var row = headers.map(function(h){ return updated[h]||''; });
+        await SheetsModule.updateEmployee(W.me._row, updated);
+        W.me = updated;
+        W.employees = [];  // 캐시 초기화
+        toast('✅ 내 정보를 수정했습니다.', 'success');
+        form.remove();
+        renderProfileCard();
+      } catch(e) {
+        toast('수정 실패: '+e.message, 'error');
+        this.disabled = false;
+      }
+    };
   }
 
   /* ──────────────────────────────────────────────────
@@ -1115,30 +1204,148 @@ var WorkModule = (function () {
         return;
       }
 
-      listEl.innerHTML = '';
-      filtered.forEach(function (emp) {
-        var row = document.createElement('div');
-        row.className = 'hr-emp-row';
-        var roleLabel = { admin:'관리자', manager:'부서장', staff:'직원' };
-        row.innerHTML =
-          '<span class="hr-emp-name">' + emp.name + '</span>' +
-          '<span class="hr-emp-dept">' + emp.department + '</span>' +
-          '<span class="hr-emp-rank">' + emp.rank + '</span>' +
-          '<span class="hr-emp-role">' + (roleLabel[emp.role]||emp.role) + '</span>' +
-          '<span class="hr-emp-email" style="font-size:11px;color:#888">' + emp.googleEmail + '</span>' +
-          '<button class="btn btn-ghost btn-sm hr-emp-del" data-row="' + emp._row + '" data-name="' + emp.name + '">삭제</button>';
+      // ── 테이블 헤더
+      var roleLabel = { admin:'관리자', manager:'부서장', staff:'직원' };
+      var roleColor = { admin:'#1a73e8', manager:'#0b8043', staff:'#5f6368' };
+      var table = document.createElement('div');
+      table.style.cssText = 'overflow-x:auto';
+      table.innerHTML =
+        '<table class="hr-emp-table">' +
+        '<thead><tr>' +
+          '<th>이름</th>' +
+          '<th>소속 부서</th>' +
+          '<th>직급</th>' +
+          '<th>권한</th>' +
+          '<th>이메일</th>' +
+          '<th>전화번호</th>' +
+          '<th style="text-align:center;min-width:100px">관리</th>' +
+        '</tr></thead>' +
+        '<tbody id="hr-emp-tbody"></tbody>' +
+        '</table>';
+      listEl.appendChild(table);
 
-        row.querySelector('.hr-emp-del').onclick = async function () {
-          if (!confirm(this.dataset.name + '을(를) 비활성화 처리하시겠습니까?')) return;
-          await SheetsModule.deleteEmployee(parseInt(this.dataset.row));
-          toast(this.dataset.name + ' 비활성화 완료', 'success');
+      var tbody = $w('hr-emp-tbody');
+      filtered.forEach(function (emp) {
+        var tr = document.createElement('tr');
+        var rl = roleLabel[emp.role] || emp.role;
+        var rc = roleColor[emp.role] || '#888';
+        tr.innerHTML =
+          '<td class="hr-emp-name-cell"><strong>' + _escHr(emp.name) + '</strong></td>' +
+          '<td>' + _escHr(emp.department) + '</td>' +
+          '<td>' + _escHr(emp.rank) + '</td>' +
+          '<td><span class="hr-role-badge" style="background:' + rc + '">' + rl + '</span></td>' +
+          '<td class="hr-email-cell">' + _escHr(emp.googleEmail) + '</td>' +
+          '<td>' + _escHr(emp.phone||'') + '</td>' +
+          '<td style="text-align:center;white-space:nowrap">' +
+            '<button class="btn btn-secondary btn-xs hr-emp-edit" style="margin-right:4px">✏️ 수정</button>' +
+            '<button class="btn btn-ghost btn-xs hr-emp-del" style="color:#e53935">삭제</button>' +
+          '</td>';
+
+        tr.querySelector('.hr-emp-del').onclick = async function () {
+          if (!confirm(emp.name + '을(를) 비활성화 처리하시겠습니까?')) return;
+          await SheetsModule.deleteEmployee(parseInt(emp._row));
+          toast(emp.name + ' 비활성화 완료', 'success');
           loadHrList();
         };
-        listEl.appendChild(row);
+
+        tr.querySelector('.hr-emp-edit').onclick = function () {
+          _openHrEditModal(emp);
+        };
+
+        tbody.appendChild(tr);
       });
     } catch (e) {
       listEl.innerHTML = '<p class="empty-state" style="color:#e53935">로드 실패: ' + e.message + '</p>';
     }
+  }
+
+  /* ── XSS 방어 ── */
+  function _escHr(s) {
+    return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  /* ── 직원 수정 모달 ── */
+  function _openHrEditModal(emp) {
+    // 기존 모달 제거
+    var old = document.getElementById('hr-edit-modal');
+    if (old) old.remove();
+
+    var deptOptions = CONFIG.departments.map(function (d) {
+      return '<option value="' + _escHr(d.name) + '"' + (d.name === emp.department ? ' selected' : '') + '>' + _escHr(d.name) + '</option>';
+    }).join('');
+
+    var modal = document.createElement('div');
+    modal.id = 'hr-edit-modal';
+    modal.style.cssText = 'position:fixed;inset:0;z-index:9000;display:flex;align-items:center;justify-content:center';
+    modal.innerHTML =
+      '<div style="position:absolute;inset:0;background:rgba(0,0,0,.35)" id="hr-edit-backdrop"></div>' +
+      '<div style="position:relative;background:#fff;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,.2);width:min(500px,96vw);max-height:90vh;overflow:auto">' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid #e0e4ea">' +
+          '<h3 style="font-size:16px;font-weight:700;margin:0">✏️ 직원 정보 수정</h3>' +
+          '<button id="hr-edit-close" style="font-size:18px;color:#888;background:none;border:none;cursor:pointer">✕</button>' +
+        '</div>' +
+        '<div style="padding:20px;display:flex;flex-direction:column;gap:12px">' +
+          '<div><label style="font-size:12px;font-weight:600;color:#5f6368;display:block;margin-bottom:4px">이름 *</label>' +
+            '<input id="hre-name" type="text" class="form-input" value="' + _escHr(emp.name) + '"></div>' +
+          '<div><label style="font-size:12px;font-weight:600;color:#5f6368;display:block;margin-bottom:4px">소속 부서</label>' +
+            '<select id="hre-dept" class="form-select"><option value="">부서 선택</option>' + deptOptions + '</select></div>' +
+          '<div><label style="font-size:12px;font-weight:600;color:#5f6368;display:block;margin-bottom:4px">직급</label>' +
+            '<input id="hre-rank" type="text" class="form-input" value="' + _escHr(emp.rank||'') + '" placeholder="예: 대리, 과장"></div>' +
+          '<div><label style="font-size:12px;font-weight:600;color:#5f6368;display:block;margin-bottom:4px">구글 이메일</label>' +
+            '<input id="hre-email" type="email" class="form-input" value="' + _escHr(emp.googleEmail||'') + '"></div>' +
+          '<div><label style="font-size:12px;font-weight:600;color:#5f6368;display:block;margin-bottom:4px">전화번호</label>' +
+            '<input id="hre-phone" type="tel" class="form-input" value="' + _escHr(emp.phone||'') + '"></div>' +
+          '<div><label style="font-size:12px;font-weight:600;color:#5f6368;display:block;margin-bottom:4px">입사일</label>' +
+            '<input id="hre-hire" type="date" class="form-input" value="' + _escHr(emp.hireDate||'') + '"></div>' +
+          '<div><label style="font-size:12px;font-weight:600;color:#5f6368;display:block;margin-bottom:4px">권한</label>' +
+            '<select id="hre-role" class="form-select">' +
+              '<option value="staff"' + (emp.role==='staff'?' selected':'') + '>일반직원</option>' +
+              '<option value="manager"' + (emp.role==='manager'?' selected':'') + '>부서장</option>' +
+              '<option value="admin"' + (emp.role==='admin'?' selected':'') + '>관리자</option>' +
+            '</select></div>' +
+        '</div>' +
+        '<div style="display:flex;justify-content:flex-end;gap:8px;padding:14px 20px;border-top:1px solid #e0e4ea">' +
+          '<button id="hre-cancel" class="btn btn-ghost">취소</button>' +
+          '<button id="hre-save" class="btn btn-primary">저장</button>' +
+        '</div>' +
+      '</div>';
+
+    document.body.appendChild(modal);
+
+    function _close() { modal.remove(); }
+    document.getElementById('hr-edit-close').onclick = _close;
+    document.getElementById('hre-cancel').onclick = _close;
+    document.getElementById('hr-edit-backdrop').onclick = _close;
+
+    document.getElementById('hre-save').onclick = async function () {
+      var name = (document.getElementById('hre-name').value||'').trim();
+      if (!name) { toast('이름을 입력하세요.','error'); return; }
+      this.disabled = true; this.textContent = '저장 중...';
+      try {
+        var updated = Object.assign({}, emp, {
+          name:        name,
+          department:  document.getElementById('hre-dept').value,
+          rank:        document.getElementById('hre-rank').value,
+          googleEmail: document.getElementById('hre-email').value,
+          phone:       document.getElementById('hre-phone').value,
+          hireDate:    document.getElementById('hre-hire').value,
+          role:        document.getElementById('hre-role').value,
+        });
+        await SheetsModule.updateEmployee(emp._row, updated);
+        // 내 정보인 경우 W.me도 갱신
+        if (W.me && W.me._row === emp._row) {
+          W.me = Object.assign(W.me, updated);
+          renderProfileCard();
+        }
+        W.employees = []; // 캐시 초기화
+        toast('✅ ' + name + ' 정보를 수정했습니다.', 'success');
+        _close();
+        loadHrList();
+      } catch(e) {
+        toast('수정 실패: ' + e.message, 'error');
+        this.disabled = false; this.textContent = '저장';
+      }
+    };
   }
 
   async function addEmployeeManual() {
