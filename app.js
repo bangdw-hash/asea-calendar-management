@@ -169,6 +169,12 @@
           }
         });
         checkScheduledEmails();
+        // 로그인 시 누락된 시트 자동 생성 (시설·차량·강의실·기관 등)
+        if (typeof SheetsModule !== 'undefined' && SheetsModule.initSheets) {
+          SheetsModule.initSheets().catch(function (e) {
+            console.warn('[ASEA] initSheets 자동 실행 실패:', e);
+          });
+        }
         // 로그인 시 설정 불러오기 + 이력 병합 동기화
         Promise.all([loadSettingsFromCloud(true), syncHistoryOnLogin()]).then(function () {
           // 로그인 시마다 Google 서버 색상 자동 동기화 (기기 간 색상 일치)
