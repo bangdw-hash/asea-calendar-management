@@ -197,6 +197,7 @@ var WorkModule = (function () {
       var isAdmin = W.me.role === 'admin';
       if ($w('hr-management-card')) $w('hr-management-card').hidden = !isAdmin;
       if ($w('hr-init-card'))       $w('hr-init-card').hidden       = !isAdmin;
+      if ($w('hr-clear-card'))      $w('hr-clear-card').hidden      = !isAdmin;
       if ($w('mgr-staff-card'))     $w('mgr-staff-card').hidden     = !isAdmin;
 
       // 대관/차량 관리자 섹션
@@ -1772,6 +1773,27 @@ var WorkModule = (function () {
         }
       });
     }
+
+    // 직원 전체 초기화 버튼
+    var clearAllBtn = $w('hr-clear-all-btn');
+    if (clearAllBtn) clearAllBtn.addEventListener('click', async function () {
+      var statusEl = $w('hr-clear-status');
+      if (!confirm('⚠️ 직원 시트의 모든 데이터를 완전 삭제합니다.\n\n이 작업은 되돌릴 수 없습니다.\n계속하시겠습니까?')) return;
+      this.disabled = true; this.textContent = '초기화 중...';
+      if (statusEl) statusEl.textContent = '';
+      try {
+        await SheetsModule.clearEmployees();
+        W.employees = [];
+        W.empCacheAt = 0;
+        if (statusEl) statusEl.textContent = '✅ 직원 데이터가 모두 삭제되었습니다. CSV를 다시 업로드하세요.';
+        toast('✅ 직원 시트 초기화 완료', 'success');
+        loadHrList();
+      } catch(e) {
+        if (statusEl) statusEl.textContent = '❌ 실패: ' + e.message;
+        toast('초기화 실패: ' + e.message, 'error');
+      }
+      this.disabled = false; this.textContent = '🗑️ 직원 전체 초기화';
+    });
 
     // DB 초기화 버튼
     var initBtn = $w('hr-init-sheets-btn');

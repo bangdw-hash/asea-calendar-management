@@ -278,6 +278,20 @@ var SheetsModule = (function () {
     await batchUpdate(requests);
   }
 
+  // 직원 시트 전체 데이터 초기화 (헤더 1행 유지, 2행~끝 clear)
+  async function clearEmployees() {
+    var res = await fetch(
+      BASE + '/values/' + encodeURIComponent('직원!A2:Z') + ':clear',
+      {
+        method: 'POST',
+        headers: Object.assign({ 'Content-Type': 'application/json' }, authHeader()),
+        body: JSON.stringify({}),
+      }
+    );
+    if (!res.ok) throw new Error('직원 초기화 실패: ' + res.status);
+    return res.json();
+  }
+
   async function bulkAddEmployees(empList) {
     var existing = await getEmployees();
     var startNum = existing.length + 1;
@@ -932,6 +946,7 @@ var SheetsModule = (function () {
     updateEmployee:        updateEmployee,
     deleteEmployee:        deleteEmployee,
     bulkDeleteEmployees:   bulkDeleteEmployees,
+    clearEmployees:        clearEmployees,
     bulkAddEmployees:      bulkAddEmployees,
     getTasks:              getTasks,
     createTask:            createTask,

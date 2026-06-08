@@ -1002,6 +1002,14 @@
           <p id="checkin-proxy-status" class="form-hint" style="margin-top:8px"></p>
         </div>
 
+        <!-- 직원 데이터 전체 초기화 (admin 전용) -->
+        <div class="settings-card" id="hr-clear-card" hidden>
+          <h3 class="settings-section-title">🗑️ 직원 데이터 초기화 <span class="badge-admin">관리자</span></h3>
+          <p class="form-hint" style="margin-bottom:10px">직원 시트의 <strong>모든 데이터를 완전 삭제</strong>합니다. 헤더(1행)는 유지됩니다. 중복 업로드 등으로 데이터가 오염된 경우 초기화 후 CSV를 1회 재업로드 하세요.</p>
+          <button id="hr-clear-all-btn" class="btn btn-sm" style="background:#e53935;color:#fff">🗑️ 직원 전체 초기화</button>
+          <p id="hr-clear-status" class="form-hint" style="margin-top:8px"></p>
+        </div>
+
         <!-- DB 초기화 (admin 전용) -->
         <div class="settings-card" id="hr-init-card" hidden>
           <h3 class="settings-section-title">🗄️ Sheets DB 초기화 <span class="badge-admin">관리자</span></h3>
@@ -1995,12 +2003,12 @@
   <script src="drive.js?v=20260608s"></script>
   <script src="gmail.js?v=20260608s"></script>
   <script src="report.js?v=20260608s"></script>
-  <script src="sheets.js?v=20260608v"></script>
+  <script src="sheets.js?v=20260608w"></script>
   <script src="resutil.js?v=20260608s"></script>
   <script src="facility.js?v=20260608s"></script>
   <script src="vehicle.js?v=20260608s"></script>
   <script src="classroom.js?v=20260608s"></script>
-  <script src="work.js?v=20260608v"></script>
+  <script src="work.js?v=20260608w"></script>
   <script src="workorder.js?v=20260608s"></script>
   <script src="quicktask.js?v=20260608s"></script>
   <script src="app.js?v=20260608s"></script>
