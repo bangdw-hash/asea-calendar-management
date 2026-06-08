@@ -2139,8 +2139,9 @@
         ']\n\n' +
         '날짜가 불명확한 경우 최대한 추론하세요.\n\n--- PDF 텍스트 ---\n' + pdfText;
 
-      // Claude Haiku API 호출 (가장 저렴한 Claude 모델)
-      var response = await fetch('https://api.anthropic.com/v1/messages', {
+      // Claude Haiku API 호출 (프록시 Base URL 지원)
+      var _anthropicOrigin = (CONFIG.anthropicBaseUrl || 'https://api.anthropic.com').replace(/\/$/, '');
+      var response = await fetch(_anthropicOrigin + '/v1/messages', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -3251,6 +3252,7 @@
       ? CONFIG.driveReportFolderId : '';
     var storedKey = CONFIG.anthropicApiKey;
     if (storedKey) $('setting-api-key').value = storedKey;
+    if (CONFIG.anthropicBaseUrl) $('setting-api-base-url').value = CONFIG.anthropicBaseUrl;
     if (CONFIG.geminiApiKey) $('setting-gemini-key').value = CONFIG.geminiApiKey;
     if (CONFIG.makeWebhookUrl) $('setting-make-webhook').value = CONFIG.makeWebhookUrl;
     if (CONFIG.githubToken) $('setting-github-token').value = CONFIG.githubToken;
@@ -4287,11 +4289,17 @@
     });
 
     $('save-api-key-btn').addEventListener('click', async function () {
-      var key = $('setting-api-key').value.trim();
+      var key     = $('setting-api-key').value.trim();
+      var baseUrl = $('setting-api-base-url').value.trim().replace(/\/$/, '');  // 끝 슬래시 제거
       if (!key) { toast('API 키를 입력하세요.', 'error'); return; }
-      CONFIG.anthropicApiKey = key;
-      try { localStorage.setItem(CONFIG.storageKeys.anthropicApiKey, key); } catch (e) {}
-      toast('Claude API 키가 저장되었습니다.', 'success');
+      CONFIG.anthropicApiKey  = key;
+      CONFIG.anthropicBaseUrl = baseUrl;
+      try { localStorage.setItem(CONFIG.storageKeys.anthropicApiKey,  key);     } catch (e) {}
+      try { localStorage.setItem(CONFIG.storageKeys.anthropicBaseUrl, baseUrl); } catch (e) {}
+      var msg = baseUrl
+        ? 'Claude API 키 + Base URL이 저장되었습니다. (' + baseUrl + ')'
+        : 'Claude API 키가 저장되었습니다.';
+      toast(msg, 'success');
       saveSettingsToCloud(true);
     });
 

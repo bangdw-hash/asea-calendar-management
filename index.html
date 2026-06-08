@@ -1219,9 +1219,22 @@
         <div class="settings-card">
           <h3 class="settings-section-title">Claude API 키 (일정발췌 · 빠른 업무 등록 AI 분석)</h3>
           <div class="form-group">
+            <label class="form-label" style="font-size:13px;color:#555;margin-bottom:4px;display:block">API 키</label>
             <input id="setting-api-key" type="password" class="form-input"
               placeholder="sk-ant-api03-...">
-            <p class="form-hint">⚠️ API 키는 브라우저 localStorage에만 저장되며 외부로 전송되지 않습니다. <a href="https://console.anthropic.com/" target="_blank">console.anthropic.com</a>에서 발급하세요.</p>
+          </div>
+          <div class="form-group" style="margin-top:10px">
+            <label class="form-label" style="font-size:13px;color:#555;margin-bottom:4px;display:block">
+              Base URL
+              <span style="font-weight:400;color:#888;margin-left:6px">프록시 사용 시 입력 (기본: https://api.anthropic.com)</span>
+            </label>
+            <input id="setting-api-base-url" type="url" class="form-input"
+              placeholder="https://aiapiflow.com">
+            <p class="form-hint" style="margin-top:6px">
+              ⚠️ API 키와 Base URL은 브라우저 localStorage에만 저장됩니다.
+              공식 API: <a href="https://console.anthropic.com/" target="_blank">console.anthropic.com</a> /
+              프록시 사용 시 해당 서비스의 Base URL을 입력하세요.
+            </p>
           </div>
           <button id="save-api-key-btn" class="btn btn-primary btn-sm">저장</button>
         </div>

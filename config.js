@@ -29,8 +29,9 @@ const CONFIG = {
   // ── Gemini API (localStorage에만 저장, 코드에 포함 안 함) ─
   geminiApiKey: '',
 
-  // ── Anthropic API (더 이상 일정발췌에 사용 안 함) ─
-  anthropicApiKey: '',
+  // ── Anthropic / Proxy API ────────────────────────────────────
+  anthropicApiKey:  '',
+  anthropicBaseUrl: '',   // 비워두면 기본값 https://api.anthropic.com 사용
 
   // ── 체크인 GAS 프록시 URL ─────────────────────────────────
   checkinProxyUrl: 'https://script.google.com/macros/s/AKfycbykrA15jAfPDU0gRk6bOA2M0tbCcW97CzLg-9WxWlG9o8VCZY0EiwoaXYShklWCyFs3mg/exec',
@@ -112,6 +113,7 @@ const CONFIG = {
     sharedCalendars:   'asea_shared_calendars',
     geminiApiKey:      'asea_gemini_api_key',
     anthropicApiKey:   'asea_anthropic_api_key',
+    anthropicBaseUrl:  'asea_anthropic_base_url',
     emailHistory:      'asea_email_history',
     scheduledEmails:   'asea_scheduled_emails',
     makeWebhookUrl:    'asea_make_webhook_url',
@@ -146,6 +148,9 @@ const CONFIG = {
 
     var storedApiKey = localStorage.getItem(s.anthropicApiKey);
     if (storedApiKey) CONFIG.anthropicApiKey = storedApiKey;
+
+    var storedBaseUrl = localStorage.getItem(s.anthropicBaseUrl);
+    if (storedBaseUrl) CONFIG.anthropicBaseUrl = storedBaseUrl;
 
     var storedWebhook = localStorage.getItem(s.makeWebhookUrl);
     if (storedWebhook) CONFIG.makeWebhookUrl = storedWebhook;
