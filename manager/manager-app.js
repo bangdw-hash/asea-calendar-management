@@ -45,28 +45,57 @@
   }
 
   /* ── Auth + 초기화 ── */
-  Auth.onLogin(function (user) {
-    ME.email = user.email;
-    ME.name  = user.name || user.email;
+  async function _onLoggedIn() {
+    // Google userinfo API로 이메일·이름 조회
+    try {
+      var resp = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+        headers: { 'Authorization': 'Bearer ' + Auth.getToken() }
+      });
+      if (resp.ok) {
+        var info = await resp.json();
+        ME.email = info.email || '';
+        ME.name  = info.name  || info.email || '';
+      }
+    } catch (e) {}
 
-    $('user-email').textContent = user.email;
+    $('user-email').textContent = ME.email || '로그인됨';
     $('login-overlay').style.display = 'none';
     $('app').hidden = false;
 
     // 관리실 인원 조회 후 내 정보 세팅
     SheetsModule.getManagerStaff().then(function (list) {
       _staff = list || [];
-      var me = _staff.find(function (s) { return s.googleEmail && s.googleEmail.toLowerCase() === ME.email.toLowerCase(); });
+      var me = _staff.find(function (s) { return s.googleEmail && s.googleEmail.toLowerCase() === (ME.email || '').toLowerCase(); });
       if (me) { ME.id = me.id; ME.name = me.name; ME.role = me.role; ME.shift = me.shift; }
       renderStaff();
     }).catch(function () { _staff = []; });
 
     loadOrders();
     loadCalendar();
+  }
+
+  // onAuthChange: loggedIn(boolean) 콜백
+  Auth.onAuthChange(function (loggedIn) {
+    if (loggedIn) {
+      _onLoggedIn();
+    } else {
+      $('login-overlay').style.display = 'flex';
+      $('app').hidden = true;
+    }
   });
 
-  $('login-btn').addEventListener('click', function () { Auth.login(); });
+  $('login-btn').addEventListener('click', function () {
+    $('login-btn').disabled = true;
+    Auth.login()
+      .catch(function () {})
+      .finally(function () { $('login-btn').disabled = false; });
+  });
   $('logout-btn').addEventListener('click', function () { Auth.logout(); location.reload(); });
+
+  // 페이지 로드 시 저장된 토큰 복원 시도
+  if (typeof Auth.tryRestoreSession === 'function') {
+    Auth.tryRestoreSession();
+  }
 
   /* ── 탭 전환 ── */
   document.querySelectorAll('.tab-btn').forEach(function (btn) {
