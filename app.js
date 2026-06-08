@@ -150,7 +150,8 @@
     });
     S.tab = name;
     if (name === 'calendar')   renderCalendar();
-    if (name === 'weekly-hub') syncWeeklyHubFiles();
+    if (name === 'weekly-hub') { syncWeeklyHubFiles(); }
+    if (name === 'report') { if (typeof ReportModule !== 'undefined' && ReportModule.init) ReportModule.init(); }
     if (name === 'email')      renderEmailTab();
     if (name === 'settings')   renderSettingsTab();
     if (name === 'extract')    renderExtractTab();

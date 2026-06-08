@@ -8,6 +8,7 @@
   <link rel="preload" as="style" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
   <link rel="stylesheet" href="style.css?v=20260609h6">
+  <link rel="stylesheet" href="report.css?v=20260609">
   <script src="https://accounts.google.com/gsi/client" async></script>
   <!-- SheetJS for Excel support -->
   <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
@@ -76,6 +77,13 @@
       <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
     </svg>
     <span class="tab-label">주간허브</span>
+  </button>
+
+  <button class="tab-btn" data-tab="report" role="tab" aria-selected="false">
+    <svg class="tab-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+    </svg>
+    <span class="tab-label">보고</span>
   </button>
 
   <button class="tab-btn" data-tab="email" role="tab" aria-selected="false">
@@ -257,6 +265,14 @@
             </button>
           </div>
         </div>
+
+      </section>
+
+      <!-- ════════════════════════════════════════════════════
+           📋 보고 탭 (주간업무보고서)
+           ════════════════════════════════════════════════════ -->
+      <section id="tab-report" class="tab-panel" role="tabpanel" hidden>
+        <div id="rpt-root"></div>
       </section>
 
       <!-- ════════════════════════════════════════════════════
@@ -2177,6 +2193,14 @@
           <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
         </svg>
         <span class="bnav-label">주간허브</span>
+      </button>
+
+      <!-- 📋 보고 -->
+      <button class="bnav-btn" data-tab="report">
+        <svg class="bnav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+        </svg>
+        <span class="bnav-label">보고</span>
       </button>
 
       <!-- ✉️ 이메일 -->
