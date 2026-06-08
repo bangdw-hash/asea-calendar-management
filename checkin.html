@@ -5,31 +5,26 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="theme-color" content="#1a73e8">
   <title>입출입 체크인 — ASEA</title>
-  <link rel="stylesheet" href="checkin.css?v=20260608z2">
+  <link rel="stylesheet" href="checkin.css?v=20260608z3">
 </head>
 <body>
 
-  <!-- 오프라인 알림 -->
   <div id="offline-notice" class="offline-notice">
     📶 네트워크 연결이 끊겼습니다. 인터넷 연결 후 다시 시도해 주세요.
   </div>
 
-  <!-- 페이지 헤더 -->
   <header class="page-header">
     <div class="page-logo">🏫 ASEA 입출입 관리</div>
     <div id="room-name" class="room-name">로딩 중...</div>
     <div id="room-location" class="room-location"></div>
   </header>
 
-  <!-- ── 로딩 ── -->
+  <!-- 로딩 -->
   <div id="screen-loading">
-    <div class="card loading">
-      <div class="spinner"></div>
-      공간 정보를 불러오는 중입니다...
-    </div>
+    <div class="card loading"><div class="spinner"></div>공간 정보를 불러오는 중입니다...</div>
   </div>
 
-  <!-- ── 공간 오류 ── -->
+  <!-- 오류 -->
   <div id="screen-error-room" hidden>
     <div class="card" style="text-align:center;padding:32px 20px">
       <div style="font-size:48px;margin-bottom:12px">⚠️</div>
@@ -38,33 +33,21 @@
     </div>
   </div>
 
-  <!-- ── 동의 + 정보입력 ── -->
+  <!-- 동의 + 정보입력 -->
   <div id="screen-consent" hidden>
-
-    <!-- 동의 섹션 -->
     <div id="consent-section" class="card">
       <div style="font-size:20px;font-weight:700;margin-bottom:4px">👤 개인정보 수집 동의</div>
-      <div style="font-size:13px;color:#5f6368;margin-bottom:14px">
-        입출입 기록을 위해 개인정보 수집에 동의해 주세요.
-      </div>
+      <div style="font-size:13px;color:#5f6368;margin-bottom:14px">입출입 기록을 위해 개인정보 수집에 동의해 주세요.</div>
       <div class="consent-box" id="consent-text" style="white-space:pre-line"></div>
       <label class="consent-check-row">
         <input type="checkbox" id="consent-check">
-        <span class="consent-check-label">
-          위 개인정보 수집·이용에 <strong>동의합니다</strong> (필수)
-        </span>
+        <span class="consent-check-label">위 개인정보 수집·이용에 <strong>동의합니다</strong> (필수)</span>
       </label>
-      <button id="btn-consent-next" class="btn btn-primary" disabled>
-        동의하고 계속 →
-      </button>
+      <button id="btn-consent-next" class="btn btn-primary" disabled>동의하고 계속 →</button>
     </div>
-
-    <!-- 정보 입력 섹션 (동의 후 표시) -->
     <div id="info-section" class="card" hidden>
       <div style="font-size:18px;font-weight:700;margin-bottom:4px">✏️ 정보 입력</div>
-      <div style="font-size:13px;color:#5f6368;margin-bottom:18px">
-        이 기기에 1회만 입력합니다. 이후에는 자동으로 인식됩니다.
-      </div>
+      <div style="font-size:13px;color:#5f6368;margin-bottom:18px">이 기기에 1회만 입력합니다. 이후에는 자동으로 인식됩니다.</div>
       <div id="error-msg" class="error-msg"></div>
       <div class="form-group">
         <label class="form-label" for="input-name">이름 <span class="req">*</span></label>
@@ -80,23 +63,20 @@
       </div>
       <button id="btn-info-submit" class="btn btn-primary">입력 완료 →</button>
     </div>
-
   </div>
 
-  <!-- ── 입실/퇴실 ── -->
+  <!-- 입실/퇴실 메인 화면 -->
   <div id="screen-checkin" hidden>
 
-    <!-- ▶ 내 정보 카드 (항상 노출, 수정 진입점) -->
+    <!-- 내 정보 카드 -->
     <div class="my-info-card" id="my-info-card">
       <div class="my-info-label">👤 내 정보</div>
       <div class="my-info-name" id="ci-user-name"></div>
       <div class="my-info-detail" id="ci-user-sub"></div>
-      <button id="btn-edit-info-open" class="btn-edit-trigger">
-        ✏️ 정보가 잘못됐나요? 지금 수정하기
-      </button>
+      <button id="btn-edit-info-open" class="btn-edit-trigger">✏️ 정보가 잘못됐나요? 지금 수정하기</button>
     </div>
 
-    <!-- ▶ 정보 수정 인라인 폼 -->
+    <!-- 정보 수정 폼 -->
     <div id="edit-info-form" class="card edit-info-card" hidden>
       <div class="edit-info-title">✏️ 내 정보 수정</div>
       <div class="edit-info-desc">수정하면 이전에 기록된 입출입 내역도 함께 업데이트됩니다.</div>
@@ -117,50 +97,53 @@
         <button id="btn-edit-cancel" class="btn btn-ghost">취소</button>
         <button id="btn-edit-save"   class="btn btn-primary">저장하기</button>
       </div>
-      <div id="edit-success-msg" class="edit-success-msg" hidden>
-        ✅ 정보가 수정되었습니다. 이전 기록도 모두 업데이트되었습니다.
+      <div id="edit-success-msg" class="edit-success-msg" hidden></div>
+    </div>
+
+    <!-- 현재 상태 표시 -->
+    <div id="ci-status-box" class="ci-status-box ready">
+      <span class="ci-status-icon">🔵</span>
+      <div>
+        <div class="ci-status-title">입실 준비</div>
+        <div class="ci-status-time">오늘 방문 기록 없음</div>
       </div>
     </div>
 
-    <!-- ▶ 체크인 카드 -->
-    <div class="card">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px;flex-wrap:wrap">
-        <span id="ci-last-status" class="status-badge none">-</span>
-        <span id="ci-last-time" style="font-size:13px;color:#5f6368"></span>
-      </div>
-      <div id="error-checkin-msg" class="error-msg"></div>
-      <button id="btn-checkin"  class="btn btn-checkin">✅ 입실</button>
-      <button id="btn-checkout" class="btn btn-checkout" hidden>🚪 퇴실</button>
+    <!-- 에러 -->
+    <div id="error-checkin-msg" class="error-msg" style="margin:0 0 8px"></div>
 
-      <button id="btn-change-user" class="btn btn-ghost"
-        style="margin-top:14px;font-size:12px;color:#bdbdbd;border-color:#eeeeee">
-        다른 사람으로 변경 (기기 초기화)
-      </button>
-    </div>
+    <!-- 메인 스캔 버튼 (1개) -->
+    <button id="btn-scan" class="btn btn-scan-main">✅ 입실 등록</button>
 
+    <button id="btn-change-user" class="btn btn-ghost"
+      style="margin-top:12px;font-size:12px;color:#bdbdbd;border-color:#eeeeee">
+      다른 사람으로 변경 (기기 초기화)
+    </button>
   </div>
 
-  <!-- ── 완료 결과 ── -->
+  <!-- 결과 화면 -->
   <div id="screen-result" hidden>
-    <div class="card" style="text-align:center;padding:32px 20px">
+    <div class="card result-card">
       <div id="res-icon" class="result-icon"></div>
       <div id="res-title" class="result-title"></div>
-      <div class="result-time" id="res-time"></div>
-      <div class="result-sub">
+
+      <!-- 상세 정보 박스 -->
+      <div id="res-info-box" class="res-info-box" hidden></div>
+
+      <div class="result-sub" style="margin-top:16px">
         <strong id="res-room"></strong><br>
-        <span id="res-user"></span>
+        <span id="res-user" style="font-size:13px;color:#5f6368"></span>
       </div>
-      <div style="margin-top:20px;font-size:13px;color:#bdbdbd">잠시 후 자동으로 이동합니다...</div>
+      <div style="margin-top:16px;font-size:12px;color:#bdbdbd">잠시 후 자동으로 이동합니다...</div>
     </div>
   </div>
 
-  <!-- 푸터 -->
   <footer class="page-footer">
     개인정보 처리방침 적용 중 · 수집 목적 외 사용 금지<br>
     문의: 개발자 방시원 <a href="mailto:bangsw@asea.or.kr" style="color:inherit">bangsw@asea.or.kr</a>
   </footer>
 
   <script src="config.js?v=20260608s"></script>
-  <script src="checkin.js?v=20260608z2"></script>
+  <script src="checkin.js?v=20260608z3"></script>
 </body>
 </html>

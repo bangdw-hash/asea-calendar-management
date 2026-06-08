@@ -3344,12 +3344,236 @@
           '<div class="ci-space-card-url">' + checkinUrl + '</div>' +
         '</div>' +
         '<div class="ci-space-card-actions">' +
-          '<button class="btn btn-primary btn-sm" onclick="_ciShowQr(\'' + sp.id + '\')">🔲 QR 보기</button>' +
-          '<button class="btn btn-secondary btn-sm" onclick="_ciDeleteSpace(' + (i + 2) + ',\'' + _esc(sp.name) + '\')">삭제</button>' +
+          '<button class="btn btn-primary btn-sm" onclick="_ciShowQr(\'' + sp.id + '\')">🔲 QR</button>' +
+          '<button class="btn btn-secondary btn-sm" onclick="_ciOpenSpaceLogs(\'' + sp.id + '\',\'' + _esc(sp.name) + '\')">📊 현황</button>' +
+          '<button class="btn btn-ghost btn-sm" onclick="_ciDeleteSpace(' + (i + 2) + ',\'' + _esc(sp.name) + '\')" style="color:#e53935">삭제</button>' +
         '</div>' +
       '</div>';
     }).join('');
     _ciRefreshRoomFilter();
+  }
+
+  /* ── 공간별 입출입 현황 모달 ── */
+  var _ciLogsModal = null;
+  var _ciLogsRoomId = '';
+  var _ciLogsRoomName = '';
+  var _ciLogsData = [];
+
+  function _ciOpenSpaceLogs(roomId, roomName) {
+    _ciLogsRoomId   = roomId;
+    _ciLogsRoomName = roomName;
+
+    // 기존 모달 제거
+    var old = document.getElementById('ci-logs-modal');
+    if (old) old.remove();
+
+    var today = new Date().toISOString().slice(0, 10);
+
+    var modal = document.createElement('div');
+    modal.id = 'ci-logs-modal';
+    modal.style.cssText = 'position:fixed;inset:0;z-index:9500;display:flex;align-items:center;justify-content:center';
+    modal.innerHTML =
+      '<div id="ci-logs-backdrop" style="position:absolute;inset:0;background:rgba(0,0,0,.4)"></div>' +
+      '<div style="position:relative;background:#fff;border-radius:14px;box-shadow:0 8px 40px rgba(0,0,0,.25);width:min(720px,96vw);max-height:90vh;display:flex;flex-direction:column">' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid #e0e4ea;flex-shrink:0">' +
+          '<div>' +
+            '<div style="font-size:16px;font-weight:700">📊 ' + _esc(roomName) + ' 입출입 현황</div>' +
+          '</div>' +
+          '<button id="ci-logs-close" style="font-size:20px;background:none;border:none;cursor:pointer;color:#888">✕</button>' +
+        '</div>' +
+        /* 날짜 선택 + 달력 미니 */
+        '<div style="padding:14px 20px;border-bottom:1px solid #f0f2f5;flex-shrink:0">' +
+          '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">' +
+            '<label style="font-size:13px;font-weight:600;color:#5f6368">날짜 선택</label>' +
+            '<input type="date" id="ci-logs-date" value="' + today + '" style="border:1.5px solid #dadce0;border-radius:7px;padding:6px 10px;font-size:14px;font-weight:600">' +
+            '<button id="ci-logs-prev" class="btn btn-ghost btn-xs">◀ 전날</button>' +
+            '<button id="ci-logs-today" class="btn btn-secondary btn-xs">오늘</button>' +
+            '<button id="ci-logs-next" class="btn btn-ghost btn-xs">다음날 ▶</button>' +
+            '<button id="ci-logs-load" class="btn btn-primary btn-sm" style="margin-left:auto">조회</button>' +
+          '</div>' +
+          /* 달력 미니 (주간) */
+          '<div id="ci-logs-week-cal" style="display:flex;gap:4px;margin-top:10px;overflow-x:auto"></div>' +
+        '</div>' +
+        /* 요약 카드 */
+        '<div id="ci-logs-summary" style="display:flex;gap:8px;padding:12px 20px;flex-shrink:0;flex-wrap:wrap"></div>' +
+        /* 로그 목록 */
+        '<div id="ci-logs-body" style="overflow-y:auto;padding:0 20px 16px;flex:1">' +
+          '<p class="empty-state">날짜를 선택하고 조회 버튼을 누르세요.</p>' +
+        '</div>' +
+      '</div>';
+
+    document.body.appendChild(modal);
+    _ciLogsModal = modal;
+
+    // 이벤트
+    document.getElementById('ci-logs-close').onclick    = _ciCloseLogsModal;
+    document.getElementById('ci-logs-backdrop').onclick = _ciCloseLogsModal;
+    document.getElementById('ci-logs-load').onclick     = _ciLoadSpaceLogs;
+    document.getElementById('ci-logs-today').onclick    = function () {
+      document.getElementById('ci-logs-date').value = new Date().toISOString().slice(0,10);
+      _ciLoadSpaceLogs();
+    };
+    document.getElementById('ci-logs-prev').onclick = function () {
+      var d = new Date(document.getElementById('ci-logs-date').value);
+      d.setDate(d.getDate() - 1);
+      document.getElementById('ci-logs-date').value = d.toISOString().slice(0,10);
+      _ciLoadSpaceLogs();
+    };
+    document.getElementById('ci-logs-next').onclick = function () {
+      var d = new Date(document.getElementById('ci-logs-date').value);
+      d.setDate(d.getDate() + 1);
+      document.getElementById('ci-logs-date').value = d.toISOString().slice(0,10);
+      _ciLoadSpaceLogs();
+    };
+    document.getElementById('ci-logs-date').onchange = _ciLoadSpaceLogs;
+
+    _ciRenderWeekCal(today);
+    _ciLoadSpaceLogs();
+  }
+
+  function _ciCloseLogsModal() {
+    if (_ciLogsModal) { _ciLogsModal.remove(); _ciLogsModal = null; }
+  }
+
+  function _ciRenderWeekCal(selectedDate) {
+    var calEl = document.getElementById('ci-logs-week-cal');
+    if (!calEl) return;
+    var sel = new Date(selectedDate);
+    // 이번 주 월요일부터 일요일
+    var day = sel.getDay();
+    var mon = new Date(sel);
+    mon.setDate(sel.getDate() - (day === 0 ? 6 : day - 1));
+
+    var days = ['월','화','수','목','금','토','일'];
+    var html = '';
+    for (var i = 0; i < 7; i++) {
+      var d = new Date(mon);
+      d.setDate(mon.getDate() + i);
+      var ds = d.toISOString().slice(0,10);
+      var isToday = ds === new Date().toISOString().slice(0,10);
+      var isSel   = ds === selectedDate;
+      html += '<button class="ci-week-day-btn' +
+        (isSel ? ' selected' : '') + (isToday ? ' today' : '') + '" ' +
+        'data-date="' + ds + '" style="' +
+        'flex:1;min-width:36px;padding:6px 4px;border-radius:8px;border:1.5px solid ' +
+        (isSel ? '#1a73e8' : '#e0e4ea') + ';background:' +
+        (isSel ? '#1a73e8' : isToday ? '#e8f0fe' : '#f8f9fa') +
+        ';color:' + (isSel ? '#fff' : '#202124') + ';cursor:pointer;font-size:11px;text-align:center">' +
+        '<div style="font-weight:700">' + days[i] + '</div>' +
+        '<div>' + d.getDate() + '</div>' +
+        '</button>';
+    }
+    calEl.innerHTML = html;
+
+    calEl.querySelectorAll('.ci-week-day-btn').forEach(function (btn) {
+      btn.onclick = function () {
+        document.getElementById('ci-logs-date').value = btn.dataset.date;
+        _ciLoadSpaceLogs();
+      };
+    });
+  }
+
+  async function _ciLoadSpaceLogs() {
+    var bodyEl = document.getElementById('ci-logs-body');
+    var sumEl  = document.getElementById('ci-logs-summary');
+    var date   = document.getElementById('ci-logs-date').value || new Date().toISOString().slice(0,10);
+    if (!bodyEl) return;
+
+    _ciRenderWeekCal(date);
+
+    bodyEl.innerHTML = '<p class="empty-state">불러오는 중...</p>';
+    if (sumEl) sumEl.innerHTML = '';
+    try {
+      var allLogs = await SheetsModule.getCheckinLogs(null, date, date);
+      _ciLogsData = allLogs.filter(function (l) { return l.roomId === _ciLogsRoomId; })
+        .sort(function (a, b) { return (a.timestamp||'').localeCompare(b.timestamp||''); });
+      _ciRenderSpaceLogs(date);
+    } catch (e) {
+      bodyEl.innerHTML = '<p class="empty-state" style="color:#e53935">로드 실패: ' + e.message + '</p>';
+    }
+  }
+
+  function _ciRenderSpaceLogs(date) {
+    var bodyEl = document.getElementById('ci-logs-body');
+    var sumEl  = document.getElementById('ci-logs-summary');
+    if (!bodyEl) return;
+
+    var logs = _ciLogsData;
+    var inCnt  = logs.filter(function(l){ return l.checkType==='입실'; }).length;
+    var outCnt = logs.filter(function(l){ return l.checkType==='퇴실'; }).length;
+    var users  = new Set(logs.map(function(l){ return l.deviceId||l.userName; }));
+
+    if (sumEl) {
+      sumEl.innerHTML =
+        '<div class="ci-summary-card" style="background:#e8f5e9"><div class="ci-summary-label" style="color:#2e7d32">✅ 입실</div><div class="ci-summary-value" style="color:#2e7d32">' + inCnt + '건</div></div>' +
+        '<div class="ci-summary-card" style="background:#fce4ec"><div class="ci-summary-label" style="color:#c62828">🚪 퇴실</div><div class="ci-summary-value" style="color:#c62828">' + outCnt + '건</div></div>' +
+        '<div class="ci-summary-card" style="background:#e3f2fd"><div class="ci-summary-label" style="color:#1565c0">👤 인원</div><div class="ci-summary-value" style="color:#1565c0">' + users.size + '명</div></div>';
+    }
+
+    if (!logs.length) {
+      bodyEl.innerHTML = '<p class="empty-state" style="margin-top:20px">📭 ' + date + ' 입출입 기록이 없습니다.</p>';
+      return;
+    }
+
+    // 사용자별 그룹핑 (deviceId or userName 기준)
+    var userMap = {};
+    logs.forEach(function (l) {
+      var key = l.deviceId || l.userName;
+      if (!userMap[key]) userMap[key] = { name: l.userName, affil: l.affiliation, phone: l.phone, logs: [] };
+      userMap[key].logs.push(l);
+    });
+
+    var rows = Object.values(userMap).map(function (u) {
+      var inLog  = u.logs.filter(function(l){ return l.checkType==='입실'; });
+      var outLog = u.logs.filter(function(l){ return l.checkType==='퇴실'; });
+      var lastIn  = inLog.sort(function(a,b){ return b.timestamp.localeCompare(a.timestamp); })[0];
+      var lastOut = outLog.sort(function(a,b){ return b.timestamp.localeCompare(a.timestamp); })[0];
+
+      function _ts(iso) {
+        if (!iso) return '-';
+        var d = new Date(iso);
+        return String(d.getHours()).padStart(2,'0') + ':' +
+               String(d.getMinutes()).padStart(2,'0') + ':' +
+               String(d.getSeconds()).padStart(2,'0');
+      }
+
+      var duration = '';
+      if (lastIn && lastOut) {
+        var diff = Math.floor((new Date(lastOut.timestamp) - new Date(lastIn.timestamp)) / 60000);
+        duration = diff >= 60
+          ? Math.floor(diff/60) + '시간 ' + (diff%60) + '분'
+          : diff + '분';
+      }
+
+      var statusBadge = lastOut
+        ? '<span style="background:#fce4ec;color:#c62828;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:700">퇴실완료</span>'
+        : lastIn
+          ? '<span style="background:#e8f5e9;color:#2e7d32;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:700">입실중</span>'
+          : '';
+
+      return '<div class="ci-log-user-row">' +
+        '<div class="ci-log-user-info">' +
+          '<span class="ci-log-user-name">' + _esc(u.name) + '</span>' +
+          '<span class="ci-log-user-affil">' + _esc(u.affil) + '</span>' +
+          statusBadge +
+        '</div>' +
+        '<div class="ci-log-times">' +
+          '<div class="ci-log-time-item in">' +
+            '<span class="ci-log-time-label">입실</span>' +
+            '<span class="ci-log-time-val">' + _ts(lastIn && lastIn.timestamp) + '</span>' +
+          '</div>' +
+          '<div class="ci-log-time-item out">' +
+            '<span class="ci-log-time-label">퇴실</span>' +
+            '<span class="ci-log-time-val">' + _ts(lastOut && lastOut.timestamp) + '</span>' +
+          '</div>' +
+          (duration ? '<div class="ci-log-duration">⏱ ' + duration + '</div>' : '') +
+        '</div>' +
+      '</div>';
+    });
+
+    bodyEl.innerHTML =
+      '<div style="font-size:12px;color:#888;margin:8px 0 10px">' + date + ' · 총 ' + logs.length + '건 · ' + users.size + '명</div>' +
+      '<div class="ci-log-user-list">' + rows.join('') + '</div>';
   }
 
   function _ciOpenSpaceModal() {
@@ -3528,8 +3752,9 @@
   }
 
   // 전역 노출 (HTML onclick 속성)
-  window._ciShowQr      = _ciShowQr;
-  window._ciDeleteSpace = _ciDeleteSpace;
+  window._ciShowQr          = _ciShowQr;
+  window._ciDeleteSpace     = _ciDeleteSpace;
+  window._ciOpenSpaceLogs   = _ciOpenSpaceLogs;
 
   /* ── 내 캘린더 표시 설정 ─── */
   // Google Calendar 공식 11색 팔레트 (colorId: hex)

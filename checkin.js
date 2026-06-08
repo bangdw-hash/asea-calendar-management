@@ -1,18 +1,15 @@
 'use strict';
 
 /**
- * checkin.js — QR 입출입 체크인 로직
+ * checkin.js — QR 입출입 자동 체크인 로직
  *
- * 흐름:
- *  1. URL ?room=SPC001 파싱 → 공간 정보 로드 (Sheets API Key read)
- *  2. localStorage 기기 ID 확인
- *  3. 미등록 → 개인정보 동의 + 정보 입력 화면
- *  4. 등록됨 → 최근 기록 확인 → 입실/퇴실 버튼
- *  5. 기록 저장 → GAS 프록시 POST
+ * 스캔 자동 판정:
+ *  - 오늘 입실 기록 없음 or 마지막이 퇴실 → 입실 등록
+ *  - 마지막 입실 후 30분 이내 재스캔 → "이미 등록" (중복, 저장 안 함)
+ *  - 마지막 입실 후 30분 초과 → 퇴실 등록
  */
 (function () {
 
-  /* ─── 개인정보 동의 텍스트 v1 (법적 근거용, 버전 관리) ─── */
   var CONSENT_VERSION = 'v1';
   var CONSENT_TEXT =
     '수집 항목: 이름, 전화번호, 소속\n' +
@@ -22,68 +19,53 @@
     '위 개인정보 수집·이용에 동의하지 않을 권리가 있으나, ' +
     '동의 거부 시 본 시설 입출입 기록이 등록되지 않습니다.';
 
-  /* ─── 상태 ─── */
+  var DUPLICATE_MINUTES = 30;   // 분 이내 재스캔 → 중복 처리
+
   var _roomId   = '';
   var _roomName = '';
   var _roomInfo = null;
-  var _user     = null;   // { id, name, phone, affiliation }
-  var _lastLog  = null;   // 마지막 입출입 기록
+  var _user     = null;
+  var _lastLog  = null;
   var _deviceId = '';
 
-  /* ─── 설정 ─── */
   var PROXY_URL_KEY = 'asea_checkin_proxy_url';
   var USER_KEY      = 'asea_checkin_user';
   var DEVICE_KEY    = 'asea_checkin_device';
 
-  /* ─── 유틸 ─── */
   function $(id) { return document.getElementById(id); }
   function show(id) { var el = $(id); if (el) el.hidden = false; }
   function hide(id) { var el = $(id); if (el) el.hidden = true; }
   function text(id, v) { var el = $(id); if (el) el.textContent = v; }
 
-  function fmtTime(iso) {
+  /* 시:분:초 포맷 */
+  function fmtHMS(d) {
+    return String(d.getHours()).padStart(2,'0') + ':' +
+           String(d.getMinutes()).padStart(2,'0') + ':' +
+           String(d.getSeconds()).padStart(2,'0');
+  }
+  /* 날짜 + 시:분:초 포맷 */
+  function fmtFull(iso) {
     if (!iso) return '';
     var d = new Date(iso);
-    return d.toLocaleDateString('ko-KR') + ' ' +
-           String(d.getHours()).padStart(2,'0') + ':' +
-           String(d.getMinutes()).padStart(2,'0');
+    return d.getFullYear() + '년 ' +
+           (d.getMonth()+1) + '월 ' +
+           d.getDate() + '일 ' +
+           fmtHMS(d);
   }
 
-  function proxyUrl() {
-    return localStorage.getItem(PROXY_URL_KEY) || '';
-  }
+  function proxyUrl() { return localStorage.getItem(PROXY_URL_KEY) || ''; }
 
   function getOrCreateDeviceId() {
     var id = localStorage.getItem(DEVICE_KEY);
     if (!id) {
-      id = 'DEV_' + Date.now().toString(36).toUpperCase() + '_' + Math.random().toString(36).slice(2,6).toUpperCase();
+      id = 'DEV_' + Date.now().toString(36).toUpperCase() + '_' +
+           Math.random().toString(36).slice(2,6).toUpperCase();
       localStorage.setItem(DEVICE_KEY, id);
     }
     return id;
   }
 
-  function showError(msg) {
-    var el = $('error-msg');
-    if (!el) return;
-    el.textContent = msg;
-    el.className = 'error-msg show';
-  }
-  function clearError() {
-    var el = $('error-msg');
-    if (el) el.className = 'error-msg';
-  }
-  function showCheckinError(msg) {
-    var el = $('error-checkin-msg');
-    if (!el) return;
-    el.textContent = msg;
-    el.className = 'error-msg show';
-  }
-  function clearCheckinError() {
-    var el = $('error-checkin-msg');
-    if (el) el.className = 'error-msg';
-  }
-
-  /* ─── API 호출 (읽기: Sheets API Key) ─── */
+  /* ── API (Sheets 읽기) ── */
   var SHEETS_BASE = 'https://sheets.googleapis.com/v4/spreadsheets/' + CONFIG.sheetsDbId;
   var _apiKey = '';
 
@@ -111,7 +93,7 @@
     });
   }
 
-  /* ─── GAS 프록시 POST (쓰기) ─── */
+  /* ── GAS 프록시 POST ── */
   async function _postToProxy(payload) {
     var url = proxyUrl();
     if (!url) throw new Error('체크인 서버가 설정되지 않았습니다. 관리자에게 문의하세요.');
@@ -122,55 +104,182 @@
     });
     if (!res.ok) {
       var body = await res.text();
-      throw new Error('서버 오류: ' + res.status + ' ' + body.slice(0, 80));
+      throw new Error('서버 오류: ' + res.status + ' ' + body.slice(0,80));
     }
     var json = await res.json();
     if (!json.ok) throw new Error(json.error || '저장 실패');
     return json;
   }
 
-  /* ─── 화면 렌더링 ─── */
+  /* ── 화면 전환 ── */
   function _showScreen(name) {
     ['screen-loading','screen-consent','screen-checkin','screen-result','screen-error-room']
       .forEach(function (id) { hide(id); });
     show('screen-' + name);
   }
 
-  function _renderCheckinScreen() {
-    _showScreen('checkin');
+  /* ── 자동 입실/퇴실 판정 ─────────────────────────────
+   *  반환: { action: '입실'|'퇴실'|'중복', lastLog }
+   *  - 오늘 날짜 기준 마지막 로그 확인
+   *  - 중복: 마지막 입실로부터 DUPLICATE_MINUTES 이내 재스캔
+   */
+  function _judge() {
+    var now = new Date();
+    var todayStr = now.toISOString().slice(0, 10);
 
-    // 수정 폼 닫기
-    hide('edit-info-form');
+    // 오늘의 로그만 필터
+    var todayLogs = (_lastLog ? [_lastLog] : []).concat(
+      (window._allLogs || []).filter(function (l) {
+        return l.deviceId === _deviceId &&
+               l.roomId   === _roomId   &&
+               (l.timestamp || '').slice(0, 10) === todayStr;
+      })
+    ).filter(function (l, i, arr) {
+      // 중복 제거 (timestamp 기준 최신 1개)
+      return arr.findIndex(function(x){ return x.timestamp === l.timestamp; }) === i;
+    }).sort(function (a, b) {
+      return (b.timestamp || '').localeCompare(a.timestamp || '');
+    });
 
-    text('ci-user-name', _user.name + ' 님');
-    text('ci-user-sub', _user.affiliation + ' · ' + _user.phone);
+    var latest = todayLogs[0] || null;
 
-    if (_lastLog && _lastLog.checkType === '입실') {
-      text('ci-last-status', '현재 입실 중');
-      $('ci-last-status').className = 'status-badge in';
-      text('ci-last-time', '입실 시각: ' + fmtTime(_lastLog.timestamp));
-      $('btn-checkin').hidden  = true;
-      $('btn-checkout').hidden = false;
+    if (!latest) {
+      return { action: '입실', lastLog: null };
+    }
+
+    var latestTime = new Date(latest.timestamp);
+    var diffMin    = (now - latestTime) / 60000;
+
+    if (latest.checkType === '퇴실') {
+      // 마지막이 퇴실 → 재입실
+      return { action: '입실', lastLog: latest };
+    }
+
+    // 마지막이 입실
+    if (diffMin < DUPLICATE_MINUTES) {
+      return { action: '중복', lastLog: latest };
     } else {
-      text('ci-last-status', _lastLog ? '이전 퇴실 완료' : '첫 방문');
-      $('ci-last-status').className = 'status-badge ' + (_lastLog ? 'out' : 'none');
-      text('ci-last-time', _lastLog ? '퇴실 시각: ' + fmtTime(_lastLog.timestamp) : '');
-      $('btn-checkin').hidden  = false;
-      $('btn-checkout').hidden = true;
+      return { action: '퇴실', lastLog: latest };
     }
   }
 
-  function _renderResult(checkType, ts) {
+  /* ── 결과 화면 렌더 ── */
+  function _renderResult(type, ts, dupLog) {
     _showScreen('result');
-    $('res-icon').textContent = checkType === '입실' ? '✅' : '🚪';
-    text('res-title', checkType === '입실' ? '입실 완료' : '퇴실 완료');
+    var d = new Date(ts);
+
+    if (type === '중복') {
+      var origD = new Date(dupLog.timestamp);
+      var diffMin = Math.floor((d - origD) / 60000);
+      $('res-icon').textContent    = 'ℹ️';
+      $('res-icon').style.color    = '#f57c00';
+      text('res-title', '입실이 이미 등록되어 있습니다');
+      text('res-desc', '');
+
+      var infoEl = $('res-info-box');
+      if (infoEl) {
+        infoEl.hidden = false;
+        infoEl.innerHTML =
+          '<div class="res-info-row">' +
+            '<span class="res-info-label">입실 등록 시각</span>' +
+            '<span class="res-info-val">' + fmtFull(dupLog.timestamp) + '</span>' +
+          '</div>' +
+          '<div class="res-info-row">' +
+            '<span class="res-info-label">경과 시간</span>' +
+            '<span class="res-info-val">' + diffMin + '분 전 (' + DUPLICATE_MINUTES + '분 이내 중복)</span>' +
+          '</div>' +
+          '<div class="res-info-hint">퇴실하려면 ' +
+            (DUPLICATE_MINUTES - diffMin) + '분 후 다시 스캔해 주세요.</div>';
+      }
+    } else {
+      var isIn = (type === '입실');
+      $('res-icon').textContent = isIn ? '✅' : '🚪';
+      $('res-icon').style.color = '';
+      text('res-title', isIn ? '입실이 등록되었습니다' : '퇴실이 등록되었습니다');
+
+      var infoEl = $('res-info-box');
+      if (infoEl) {
+        infoEl.hidden = false;
+        var rows = '';
+        rows +=
+          '<div class="res-info-row">' +
+            '<span class="res-info-label">' + type + ' 시각</span>' +
+            '<span class="res-info-val res-time-big">' + fmtFull(ts) + '</span>' +
+          '</div>';
+        if (!isIn && dupLog) {
+          rows +=
+            '<div class="res-info-row">' +
+              '<span class="res-info-label">입실 시각</span>' +
+              '<span class="res-info-val">' + fmtFull(dupLog.timestamp) + '</span>' +
+            '</div>' +
+            '<div class="res-info-row">' +
+              '<span class="res-info-label">체류 시간</span>' +
+              '<span class="res-info-val">' +
+                Math.floor((new Date(ts) - new Date(dupLog.timestamp)) / 60000) + '분' +
+              '</span>' +
+            '</div>';
+        }
+        infoEl.innerHTML = rows;
+      }
+    }
+
     text('res-room', _roomName);
-    text('res-time', fmtTime(ts));
-    text('res-user', _user.name + ' (' + _user.affiliation + ')');
+    text('res-user', _user.name + ' · ' + _user.affiliation);
+
+    // 4초 후 체크인 화면 복귀
     setTimeout(function () { _renderCheckinScreen(); }, 4000);
   }
 
-  /* ─── 초기화 ─── */
+  /* ── 입실/퇴실 화면 렌더 ── */
+  function _renderCheckinScreen() {
+    _showScreen('checkin');
+    hide('edit-info-form');
+    text('ci-user-name', _user.name + ' 님');
+    text('ci-user-sub', _user.affiliation + ' · ' + _user.phone);
+
+    // 판정 결과로 상태 표시
+    var judge = _judge();
+    var statusEl = $('ci-status-box');
+    if (statusEl) {
+      if (judge.action === '중복' && judge.lastLog) {
+        statusEl.className = 'ci-status-box in';
+        statusEl.innerHTML =
+          '<span class="ci-status-icon">✅</span>' +
+          '<div>' +
+            '<div class="ci-status-title">현재 입실 중</div>' +
+            '<div class="ci-status-time">입실: ' + fmtFull(judge.lastLog.timestamp) + '</div>' +
+          '</div>';
+      } else if (judge.action === '퇴실' && judge.lastLog) {
+        statusEl.className = 'ci-status-box standby';
+        statusEl.innerHTML =
+          '<span class="ci-status-icon">🕐</span>' +
+          '<div>' +
+            '<div class="ci-status-title">퇴실 스캔 대기 중</div>' +
+            '<div class="ci-status-time">입실: ' + fmtFull(judge.lastLog.timestamp) + '</div>' +
+          '</div>';
+      } else {
+        statusEl.className = 'ci-status-box ready';
+        statusEl.innerHTML =
+          '<span class="ci-status-icon">🔵</span>' +
+          '<div>' +
+            '<div class="ci-status-title">입실 준비</div>' +
+            '<div class="ci-status-time">' +
+              (judge.lastLog ? '최근 퇴실: ' + fmtFull(judge.lastLog.timestamp) : '오늘 방문 기록 없음') +
+            '</div>' +
+          '</div>';
+      }
+    }
+
+    // 버튼 텍스트
+    var btn = $('btn-scan');
+    if (btn) {
+      if (judge.action === '입실')   btn.textContent = '✅ 입실 등록';
+      else if (judge.action === '퇴실') btn.textContent = '🚪 퇴실 등록';
+      else btn.textContent = '📋 상태 확인';
+    }
+  }
+
+  /* ── 초기화 ── */
   async function _init() {
     _showScreen('loading');
     _deviceId = getOrCreateDeviceId();
@@ -184,39 +293,38 @@
       return;
     }
 
-    // 공간 정보 조회 (API Key 있을 때만)
+    // 공간 정보 로드
     try {
       var spaces = await _readSheet('공간관리');
       _roomInfo = spaces.find(function (s) { return s.id === _roomId && s.status !== 'inactive'; });
     } catch (e) { _roomInfo = null; }
 
-    // 공간명 결정: DB에 이름 있으면 사용, 없으면 URL 파라미터 그대로
-    if (_roomInfo && _roomInfo.name) {
-      _roomName = _roomInfo.name;
-    } else {
-      // URL ?name= 파라미터도 확인 (QR 생성 시 포함 가능)
-      _roomName = params.get('name') ? decodeURIComponent(params.get('name')) : _roomId;
-    }
+    _roomName = (_roomInfo && _roomInfo.name)
+      ? _roomInfo.name
+      : (params.get('name') ? decodeURIComponent(params.get('name')) : _roomId);
 
     text('room-name', _roomName);
     text('room-location', _roomInfo ? (_roomInfo.location || '') : '');
 
-    // 기기 저장 사용자 확인
+    // 사용자 확인
     try {
       var stored = localStorage.getItem(USER_KEY);
       if (stored) _user = JSON.parse(stored);
     } catch (e) { _user = null; }
 
     if (_user && _user.name) {
+      // 오늘 입출입 로그 로드 (판정에 사용)
       try {
+        var todayStr = new Date().toISOString().slice(0, 10);
         var logs = await _readSheet('입출입기록');
+        window._allLogs = logs;
         var myLogs = logs.filter(function (l) {
           return l.deviceId === _deviceId && l.roomId === _roomId;
         }).sort(function (a, b) {
           return (b.timestamp || '').localeCompare(a.timestamp || '');
         });
         _lastLog = myLogs[0] || null;
-      } catch (e) { _lastLog = null; }
+      } catch (e) { _lastLog = null; window._allLogs = []; }
 
       _renderCheckinScreen();
     } else {
@@ -224,7 +332,7 @@
     }
   }
 
-  /* ─── 동의 화면 ─── */
+  /* ── 동의 화면 ── */
   function _showConsentScreen() {
     _showScreen('consent');
     text('consent-text', CONSENT_TEXT);
@@ -235,138 +343,58 @@
   $('consent-check') && $('consent-check').addEventListener('change', function () {
     $('btn-consent-next').disabled = !this.checked;
   });
-
   $('btn-consent-next') && $('btn-consent-next').addEventListener('click', function () {
     if (!$('consent-check').checked) return;
     hide('consent-section');
     show('info-section');
   });
 
-  /* ─── 정보 입력 제출 ─── */
+  /* ── 정보 입력 제출 ── */
   $('btn-info-submit') && $('btn-info-submit').addEventListener('click', async function () {
-    clearError();
-    var name  = ($('input-name').value || '').trim();
+    var errEl = $('error-msg');
+    if (errEl) errEl.className = 'error-msg';
+    var name  = ($('input-name').value  || '').trim();
     var phone = ($('input-phone').value || '').trim();
     var affil = ($('input-affil').value || '').trim();
 
-    if (!name)  { showError('이름을 입력해 주세요.'); return; }
-    if (!phone) { showError('전화번호를 입력해 주세요.'); return; }
-    if (!affil) { showError('소속을 입력해 주세요.'); return; }
-
+    if (!name)  { if(errEl){errEl.textContent='이름을 입력해 주세요.';errEl.className='error-msg show';} return; }
+    if (!phone) { if(errEl){errEl.textContent='전화번호를 입력해 주세요.';errEl.className='error-msg show';} return; }
+    if (!affil) { if(errEl){errEl.textContent='소속을 입력해 주세요.';errEl.className='error-msg show';} return; }
     if (!/^[0-9\-+\s]{7,15}$/.test(phone)) {
-      showError('올바른 전화번호를 입력해 주세요.'); return;
+      if(errEl){errEl.textContent='올바른 전화번호를 입력해 주세요.';errEl.className='error-msg show';} return;
     }
-
-    this.disabled = true;
-    this.textContent = '저장 중...';
-    var consentTs = new Date().toISOString();
-
-    try {
-      await _postToProxy({
-        action: 'addUser',
-        name: name,
-        phone: phone,
-        affiliation: affil,
-        deviceId: _deviceId,
-        consentTimestamp: consentTs,
-        consentTextVersion: CONSENT_VERSION,
-      });
-
-      _user = { name: name, phone: phone, affiliation: affil, consentAt: consentTs };
-      localStorage.setItem(USER_KEY, JSON.stringify(_user));
-      _lastLog = null;
-      _renderCheckinScreen();
-    } catch (e) {
-      showError(e.message || '저장에 실패했습니다.');
-      this.disabled = false;
-      this.textContent = '입력 완료 →';
-    }
-  });
-
-  /* ─── 정보 수정 UX ─── */
-  $('btn-edit-info-open') && $('btn-edit-info-open').addEventListener('click', function () {
-    $('edit-name').value  = _user.name         || '';
-    $('edit-phone').value = _user.phone        || '';
-    $('edit-affil').value = _user.affiliation  || '';
-    var errEl = $('edit-error-msg');
-    if (errEl) errEl.className = 'error-msg';
-    hide('edit-success-msg');
-    show('edit-info-form');
-    $('edit-name').focus();
-    // 수정 폼으로 부드럽게 스크롤
-    $('edit-info-form').scrollIntoView({ behavior: 'smooth', block: 'start' });
-  });
-
-  $('btn-edit-cancel') && $('btn-edit-cancel').addEventListener('click', function () {
-    hide('edit-info-form');
-  });
-
-  $('btn-edit-save') && $('btn-edit-save').addEventListener('click', async function () {
-    var errEl     = $('edit-error-msg');
-    var successEl = $('edit-success-msg');
-    if (errEl)     errEl.className = 'error-msg';
-    if (successEl) successEl.hidden = true;
-
-    var name  = ($('edit-name').value  || '').trim();
-    var phone = ($('edit-phone').value || '').trim();
-    var affil = ($('edit-affil').value || '').trim();
-
-    function _setErr(msg) {
-      if (errEl) { errEl.textContent = msg; errEl.className = 'error-msg show'; }
-    }
-    if (!name)  { _setErr('이름을 입력해 주세요.'); return; }
-    if (!phone) { _setErr('전화번호를 입력해 주세요.'); return; }
-    if (!affil) { _setErr('소속을 입력해 주세요.'); return; }
-    if (!/^[0-9\-+\s]{7,15}$/.test(phone)) { _setErr('올바른 전화번호를 입력해 주세요.'); return; }
 
     this.disabled = true; this.textContent = '저장 중...';
-
-    var updatedLogs = 0;
+    var consentTs = new Date().toISOString();
     try {
-      // updateUser: 기존 입출입기록까지 일괄 수정
-      var result = await _postToProxy({
-        action: 'updateUser',
-        name: name,
-        phone: phone,
-        affiliation: affil,
-        deviceId: _deviceId,
-        consentTimestamp: _user.consentAt || new Date().toISOString(),
-        consentTextVersion: CONSENT_VERSION,
-      });
-      updatedLogs = result.updatedLogs || 0;
+      await _postToProxy({ action:'addUser', name, phone, affiliation:affil, deviceId:_deviceId,
+        consentTimestamp:consentTs, consentTextVersion:CONSENT_VERSION });
+      _user = { name, phone, affiliation:affil, consentAt:consentTs };
+      localStorage.setItem(USER_KEY, JSON.stringify(_user));
+      _lastLog = null; window._allLogs = [];
+      _renderCheckinScreen();
     } catch (e) {
-      // 프록시 실패해도 로컬은 업데이트 (오프라인 환경 허용)
+      if(errEl){errEl.textContent=e.message||'저장에 실패했습니다.';errEl.className='error-msg show';}
+      this.disabled = false; this.textContent = '입력 완료 →';
     }
-
-    // 로컬 저장
-    _user = Object.assign({}, _user, { name: name, phone: phone, affiliation: affil });
-    localStorage.setItem(USER_KEY, JSON.stringify(_user));
-
-    // 화면의 내 정보 카드 즉시 갱신
-    text('ci-user-name', _user.name + ' 님');
-    text('ci-user-sub', _user.affiliation + ' · ' + _user.phone);
-
-    this.disabled = false; this.textContent = '저장하기';
-
-    // 성공 메시지 표시 (로그 수정 건수 포함)
-    if (successEl) {
-      successEl.textContent = '✅ 정보가 수정되었습니다.' +
-        (updatedLogs > 0 ? ' 이전 기록 ' + updatedLogs + '건도 함께 업데이트되었습니다.' : '');
-      successEl.hidden = false;
-    }
-
-    // 3초 후 폼 자동 닫기
-    setTimeout(function () { hide('edit-info-form'); }, 3000);
   });
 
-  /* ─── 입실/퇴실 버튼 ─── */
-  async function _doCheckin(checkType) {
-    var btn = checkType === '입실' ? $('btn-checkin') : $('btn-checkout');
-    btn.disabled = true;
-    btn.textContent = '기록 중...';
-    clearCheckinError();
+  /* ── 메인 스캔 버튼 ── */
+  $('btn-scan') && $('btn-scan').addEventListener('click', async function () {
+    var judge = _judge();
+    this.disabled = true;
+    this.textContent = '처리 중...';
 
     var ts = new Date().toISOString();
+
+    if (judge.action === '중복') {
+      // 중복 — 저장 안 하고 안내만
+      _renderResult('중복', ts, judge.lastLog);
+      this.disabled = false;
+      this.textContent = judge.action === '입실' ? '✅ 입실 등록' : '🚪 퇴실 등록';
+      return;
+    }
+
     try {
       await _postToProxy({
         action: 'addLog',
@@ -375,34 +403,92 @@
         userName: _user.name,
         phone: _user.phone,
         affiliation: _user.affiliation,
-        checkType: checkType,
+        checkType: judge.action,
         timestamp: ts,
         deviceId: _deviceId,
         consentTimestamp: _user.consentAt || ts,
         consentTextVersion: CONSENT_VERSION,
       });
-      _lastLog = { checkType: checkType, timestamp: ts };
-      _renderResult(checkType, ts);
+
+      // 로컬 로그 캐시 업데이트
+      var newLog = { checkType:judge.action, timestamp:ts, deviceId:_deviceId, roomId:_roomId };
+      _lastLog = newLog;
+      if (window._allLogs) window._allLogs.unshift(newLog);
+
+      _renderResult(judge.action, ts, judge.lastLog);
     } catch (e) {
-      showCheckinError(e.message || '저장에 실패했습니다. 잠시 후 다시 시도해 주세요.');
+      var errEl = $('error-checkin-msg');
+      if (errEl) { errEl.textContent = e.message || '저장 실패'; errEl.className = 'error-msg show'; }
     } finally {
-      btn.disabled = false;
-      btn.textContent = checkType === '입실' ? '✅ 입실' : '🚪 퇴실';
+      this.disabled = false;
+      this.textContent = judge.action === '입실' ? '✅ 입실 등록' : '🚪 퇴실 등록';
     }
-  }
+  });
 
-  $('btn-checkin')  && $('btn-checkin').addEventListener('click',  function () { _doCheckin('입실'); });
-  $('btn-checkout') && $('btn-checkout').addEventListener('click', function () { _doCheckin('퇴실'); });
+  /* ── 정보 수정 UX ── */
+  $('btn-edit-info-open') && $('btn-edit-info-open').addEventListener('click', function () {
+    $('edit-name').value  = _user.name        || '';
+    $('edit-phone').value = _user.phone       || '';
+    $('edit-affil').value = _user.affiliation || '';
+    var errEl = $('edit-error-msg');
+    if (errEl) errEl.className = 'error-msg';
+    hide('edit-success-msg');
+    show('edit-info-form');
+    $('edit-name').focus();
+    $('edit-info-form').scrollIntoView({ behavior:'smooth', block:'start' });
+  });
 
-  /* ─── 다른 사람으로 변경 (기기 초기화) ─── */
+  $('btn-edit-cancel') && $('btn-edit-cancel').addEventListener('click', function () {
+    hide('edit-info-form');
+  });
+
+  $('btn-edit-save') && $('btn-edit-save').addEventListener('click', async function () {
+    var errEl = $('edit-error-msg'), successEl = $('edit-success-msg');
+    if (errEl) errEl.className = 'error-msg';
+    if (successEl) successEl.hidden = true;
+
+    var name  = ($('edit-name').value  || '').trim();
+    var phone = ($('edit-phone').value || '').trim();
+    var affil = ($('edit-affil').value || '').trim();
+
+    function _e(msg) { if(errEl){errEl.textContent=msg;errEl.className='error-msg show';} }
+    if (!name)  { _e('이름을 입력해 주세요.'); return; }
+    if (!phone) { _e('전화번호를 입력해 주세요.'); return; }
+    if (!affil) { _e('소속을 입력해 주세요.'); return; }
+    if (!/^[0-9\-+\s]{7,15}$/.test(phone)) { _e('올바른 전화번호를 입력해 주세요.'); return; }
+
+    this.disabled = true; this.textContent = '저장 중...';
+    var updatedLogs = 0;
+    try {
+      var r = await _postToProxy({ action:'updateUser', name, phone, affiliation:affil,
+        deviceId:_deviceId, consentTimestamp:_user.consentAt||new Date().toISOString(),
+        consentTextVersion:CONSENT_VERSION });
+      updatedLogs = r.updatedLogs || 0;
+    } catch(e) {}
+
+    _user = Object.assign({}, _user, { name, phone, affiliation:affil });
+    localStorage.setItem(USER_KEY, JSON.stringify(_user));
+    text('ci-user-name', _user.name + ' 님');
+    text('ci-user-sub',  _user.affiliation + ' · ' + _user.phone);
+    this.disabled = false; this.textContent = '저장하기';
+
+    if (successEl) {
+      successEl.textContent = '✅ 정보가 수정되었습니다.' +
+        (updatedLogs > 0 ? ' 이전 기록 ' + updatedLogs + '건도 업데이트되었습니다.' : '');
+      successEl.hidden = false;
+    }
+    setTimeout(function () { hide('edit-info-form'); }, 3000);
+  });
+
+  /* ── 다른 사람으로 변경 ── */
   $('btn-change-user') && $('btn-change-user').addEventListener('click', function () {
-    if (!confirm('기기에 저장된 사용자 정보를 완전히 초기화하시겠습니까?\n\n새로운 사용자가 처음부터 입력하게 됩니다.')) return;
+    if (!confirm('기기에 저장된 사용자 정보를 완전히 초기화하시겠습니까?')) return;
     localStorage.removeItem(USER_KEY);
     _user = null;
     _showConsentScreen();
   });
 
-  /* ─── 오프라인 감지 ─── */
+  /* ── 오프라인 감지 ── */
   function _checkOnline() {
     var el = $('offline-notice');
     if (!el) return;
@@ -412,7 +498,6 @@
   window.addEventListener('offline', _checkOnline);
   _checkOnline();
 
-  /* ─── 시작 ─── */
   _init();
 
 })();

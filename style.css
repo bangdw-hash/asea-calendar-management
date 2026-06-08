@@ -2990,6 +2990,38 @@ a        { color: var(--color-accent); text-decoration: none; }
 .ci-check-badge.in  { background: #e8f5e9; color: #2e7d32; }
 .ci-check-badge.out { background: #fce4ec; color: #c62828; }
 
+/* ── 공간별 현황 모달 사용자 로그 ───────────────────── */
+.ci-log-user-list { display: flex; flex-direction: column; gap: 8px; }
+.ci-log-user-row {
+  background: #fafbff;
+  border: 1px solid #e8ecf4;
+  border-radius: 10px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.ci-log-user-info { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.ci-log-user-name { font-weight: 700; font-size: 14px; }
+.ci-log-user-affil { font-size: 12px; color: #888; }
+.ci-log-times { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.ci-log-time-item {
+  display: flex; flex-direction: column; align-items: center;
+  background: #fff; border-radius: 8px; padding: 6px 10px;
+  border: 1px solid #e0e4ea; min-width: 72px;
+}
+.ci-log-time-item.in  { border-color: #a5d6a7; }
+.ci-log-time-item.out { border-color: #ef9a9a; }
+.ci-log-time-label {
+  font-size: 10px; font-weight: 700; margin-bottom: 2px;
+}
+.ci-log-time-item.in  .ci-log-time-label { color: #2e7d32; }
+.ci-log-time-item.out .ci-log-time-label { color: #c62828; }
+.ci-log-time-val { font-size: 14px; font-weight: 800; font-family: monospace; color: #202124; }
+.ci-log-duration { font-size: 12px; color: #1a73e8; font-weight: 600; }
+
 /* ── 직원 목록 테이블 ────────────────────────────── */
 .hr-emp-table {
   width: 100%;
