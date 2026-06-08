@@ -28,6 +28,8 @@ var SheetsModule = (function () {
     '차량예약': ['id','vehicleId','vehicleName','fromId','fromName','department','startAt','endAt','destination','purpose','passengers','status','calEventId','createdAt'],
     '강의실예약':['id','buildingId','buildingName','roomId','roomName','title','fromId','fromName','department','startDate','endDate','startPeriod','endPeriod','weekdays','reservationType','semester','status','calEventId','createdAt'],
     '기관':     ['id','institutionName','shortName','domain','adminEmail','primaryColor','timezone','plan','status','createdAt'],
+    '작업지시': ['id','title','content','requesterId','requesterName','assigneeId','assigneeName','department','priority','status','dueDate','completedAt','calEventId','note','createdAt'],
+    '관리실인원':['id','name','googleEmail','phone','shift','role','status','createdAt'],
   };
 
   function getToken() { return Auth.getToken(); }
@@ -697,6 +699,85 @@ var SheetsModule = (function () {
     return toAdd.length + toUpdate.length;
   }
 
+  /* ──────────────────────────────────────────────────
+     작업지시 (Work Order) 관리
+  ────────────────────────────────────────────────── */
+  async function getWorkOrders() {
+    return readSheet('작업지시');
+  }
+
+  async function createWorkOrder(wo) {
+    var list = await readSheet('작업지시');
+    var id = 'WO' + String(list.length + 1).padStart(5, '0');
+    var row = [
+      id,
+      wo.title || '',
+      wo.content || '',
+      wo.requesterId || '',
+      wo.requesterName || '',
+      wo.assigneeId || '',
+      wo.assigneeName || '',
+      wo.department || '',
+      wo.priority || '보통',
+      wo.status || '대기',
+      wo.dueDate || '',
+      '',  // completedAt
+      wo.calEventId || '',
+      wo.note || '',
+      new Date().toISOString(),
+    ];
+    await apiAppend('작업지시', [row]);
+    return id;
+  }
+
+  async function updateWorkOrderStatus(rowNum, status, completedAt) {
+    await apiUpdate('작업지시!J' + rowNum + ':L' + rowNum, [[status, completedAt || '', '']]);
+  }
+
+  async function updateWorkOrder(rowNum, wo) {
+    var headers = SCHEMAS['작업지시'];
+    var row = headers.map(function (h) { return wo[h] !== undefined ? wo[h] : ''; });
+    await apiUpdate('작업지시!A' + rowNum + ':O' + rowNum, [row]);
+  }
+
+  async function deleteWorkOrder(rowNum) {
+    await apiUpdate('작업지시!J' + rowNum, [['취소']]);
+  }
+
+  /* ──────────────────────────────────────────────────
+     관리실 인원 관리
+  ────────────────────────────────────────────────── */
+  async function getManagerStaff() {
+    return readSheet('관리실인원');
+  }
+
+  async function addManagerStaff(staff) {
+    var list = await readSheet('관리실인원');
+    var id = 'MGR' + String(list.length + 1).padStart(3, '0');
+    var row = [
+      id,
+      staff.name || '',
+      staff.googleEmail || '',
+      staff.phone || '',
+      staff.shift || '',
+      staff.role || 'staff',
+      staff.status || 'active',
+      new Date().toISOString(),
+    ];
+    await apiAppend('관리실인원', [row]);
+    return id;
+  }
+
+  async function updateManagerStaff(rowNum, staff) {
+    var headers = SCHEMAS['관리실인원'];
+    var row = headers.map(function (h) { return staff[h] !== undefined ? staff[h] : ''; });
+    await apiUpdate('관리실인원!A' + rowNum + ':H' + rowNum, [row]);
+  }
+
+  async function deleteManagerStaff(rowNum) {
+    await apiUpdate('관리실인원!G' + rowNum, [['inactive']]);
+  }
+
   /* 공개 API */
   return {
     initSheets:            initSheets,
@@ -746,6 +827,17 @@ var SheetsModule = (function () {
     updateClassroomReservation:     updateClassroomReservation,
     deleteClassroomReservation:     deleteClassroomReservation,
     bulkCreateClassroomReservations: bulkCreateClassroomReservations,
+    // 작업지시
+    getWorkOrders:          getWorkOrders,
+    createWorkOrder:        createWorkOrder,
+    updateWorkOrderStatus:  updateWorkOrderStatus,
+    updateWorkOrder:        updateWorkOrder,
+    deleteWorkOrder:        deleteWorkOrder,
+    // 관리실 인원
+    getManagerStaff:        getManagerStaff,
+    addManagerStaff:        addManagerStaff,
+    updateManagerStaff:     updateManagerStaff,
+    deleteManagerStaff:     deleteManagerStaff,
   };
 
 })();

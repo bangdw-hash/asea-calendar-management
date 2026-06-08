@@ -140,6 +140,7 @@
     if (name === 'email')      renderEmailTab();
     if (name === 'settings')   renderSettingsTab();
     if (name === 'extract')    renderExtractTab();
+    if (name === 'workorder')  initWorkOrderTab();
   }
 
   function initTabs() {
@@ -2798,8 +2799,363 @@
   }
 
   /* ═══════════════════════════════════════════════════════════
+     작업지시 탭
+  ═══════════════════════════════════════════════════════════ */
+  var _woLoaded = false;
+  var _woOrders = [];
+  var _woStaff = [];
+  var _woEditOrder = null;
+  var _woFilterStatus = 'all';
+  var _woFilterPriority = 'all';
+
+  function initWorkOrderTab() {
+    if (!_woLoaded) {
+      _woLoaded = true;
+      _bindWorkOrderUI();
+    }
+    _loadWorkOrders();
+    _loadManagerStaff();
+  }
+
+  function _bindWorkOrderUI() {
+    var addBtn = $('wo-main-add-btn');
+    if (addBtn) addBtn.addEventListener('click', function () { _openWoModal(null); });
+
+    var refreshBtn = $('wo-main-refresh-btn');
+    if (refreshBtn) refreshBtn.addEventListener('click', function () { _loadWorkOrders(); _loadManagerStaff(); });
+
+    var closeBtn = $('wo-main-modal-close');
+    if (closeBtn) closeBtn.addEventListener('click', _closeWoModal);
+
+    var cancelBtn = $('wo-main-modal-cancel');
+    if (cancelBtn) cancelBtn.addEventListener('click', _closeWoModal);
+
+    var backdrop = $('wo-main-modal-backdrop');
+    if (backdrop) backdrop.addEventListener('click', _closeWoModal);
+
+    var saveBtn = $('wo-main-save-btn');
+    if (saveBtn) saveBtn.addEventListener('click', _saveWoOrder);
+
+    var deleteBtn = $('wo-main-delete-btn');
+    if (deleteBtn) deleteBtn.addEventListener('click', _deleteWoOrder);
+
+    var statusFilter = $('wo-main-filter-status');
+    if (statusFilter) statusFilter.addEventListener('change', function () { _woFilterStatus = this.value; _renderWorkOrders(); });
+
+    var priorityFilter = $('wo-main-filter-priority');
+    if (priorityFilter) priorityFilter.addEventListener('change', function () { _woFilterPriority = this.value; _renderWorkOrders(); });
+  }
+
+  async function _loadWorkOrders() {
+    var listEl = $('wo-main-list');
+    if (!listEl) return;
+    listEl.innerHTML = '<p class="empty-state">불러오는 중...</p>';
+    try {
+      _woOrders = (await SheetsModule.getWorkOrders()) || [];
+      _renderWorkOrders();
+      _updateWoBadge();
+    } catch (e) {
+      listEl.innerHTML = '<p class="empty-state" style="color:#e53935">불러오기 실패: ' + e.message + '</p>';
+    }
+  }
+
+  async function _loadManagerStaff() {
+    try { _woStaff = (await SheetsModule.getManagerStaff()) || []; } catch (e) { _woStaff = []; }
+  }
+
+  function _updateWoBadge() {
+    var badge = $('workorder-badge');
+    if (!badge) return;
+    var cnt = _woOrders.filter(function (o) { return o.status === '대기' || o.status === '진행중'; }).length;
+    if (cnt > 0) { badge.textContent = cnt; badge.hidden = false; }
+    else badge.hidden = true;
+  }
+
+  function _renderWorkOrders() {
+    var listEl = $('wo-main-list');
+    if (!listEl) return;
+
+    var filtered = _woOrders.filter(function (o) {
+      if (_woFilterStatus !== 'all' && o.status !== _woFilterStatus) return false;
+      if (_woFilterPriority !== 'all' && o.priority !== _woFilterPriority) return false;
+      return true;
+    }).sort(function (a, b) {
+      var po = { '긴급': 0, '높음': 1, '보통': 2, '낮음': 3 };
+      var diff = (po[a.priority] || 2) - (po[b.priority] || 2);
+      if (diff !== 0) return diff;
+      return (b.createdAt || '').localeCompare(a.createdAt || '');
+    });
+
+    if (!filtered.length) {
+      listEl.innerHTML = '<p class="empty-state">작업지시 내역이 없습니다.</p>';
+      return;
+    }
+
+    var pColor = { '긴급': '#EA4335', '높음': '#F57C00', '보통': '#4285F4', '낮음': '#9AA0A6' };
+    var sColor = { '대기': '#9AA0A6', '진행중': '#1A73E8', '완료': '#34A853', '취소': '#EA4335' };
+
+    listEl.innerHTML = filtered.map(function (o) {
+      var pc = pColor[o.priority] || '#9AA0A6';
+      var sc = sColor[o.status] || '#9AA0A6';
+      var due = o.dueDate ? ' | 기한: ' + o.dueDate : '';
+      var stBtns = '';
+      if (o.status === '대기')    stBtns += '<button class="btn btn-secondary btn-xs wo-main-status-btn" data-id="' + o.id + '" data-row="' + o._row + '" data-status="진행중">▶ 진행 시작</button>';
+      if (o.status === '진행중')  stBtns += '<button class="btn btn-secondary btn-xs wo-main-status-btn" data-id="' + o.id + '" data-row="' + o._row + '" data-status="완료">✅ 완료</button>';
+      if (o.status !== '취소' && o.status !== '완료') stBtns += '<button class="btn btn-ghost btn-xs wo-main-status-btn" style="color:#EA4335" data-id="' + o.id + '" data-row="' + o._row + '" data-status="취소">취소</button>';
+      stBtns += '<button class="btn btn-ghost btn-xs wo-main-edit-btn" data-id="' + o.id + '">✏️ 수정</button>';
+
+      return '<div class="wo-card" data-priority="' + _esc(o.priority) + '">' +
+        '<div class="wo-card-header">' +
+          '<span class="wo-badge" style="background:' + pc + '">' + _esc(o.priority||'보통') + '</span>' +
+          '<span class="wo-badge" style="background:' + sc + '">' + _esc(o.status||'대기') + '</span>' +
+          (o.department ? '<span class="wo-dept">' + _esc(o.department) + '</span>' : '') +
+          '<span class="wo-date">' + _woFmtDate(o.createdAt) + due + '</span>' +
+        '</div>' +
+        '<div class="wo-card-title">' + _esc(o.title) + '</div>' +
+        '<div class="wo-card-meta">요청: ' + _esc(o.requesterName||o.requesterId||'') +
+          (o.assigneeName ? ' → 담당: ' + _esc(o.assigneeName) : '') +
+        '</div>' +
+        (o.content ? '<div class="wo-card-content">' + _esc(o.content) + '</div>' : '') +
+        '<div class="wo-card-actions">' + stBtns + '</div>' +
+      '</div>';
+    }).join('');
+
+    listEl.querySelectorAll('.wo-main-status-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () { _changeWoStatus(btn.dataset.id, parseInt(btn.dataset.row), btn.dataset.status); });
+    });
+    listEl.querySelectorAll('.wo-main-edit-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var o = _woOrders.find(function (x) { return x.id === btn.dataset.id; });
+        if (o) _openWoModal(o);
+      });
+    });
+  }
+
+  async function _changeWoStatus(id, rowNum, status) {
+    try {
+      var completedAt = (status === '완료') ? new Date().toISOString() : '';
+      await SheetsModule.updateWorkOrderStatus(rowNum, status, completedAt);
+      var o = _woOrders.find(function (x) { return x.id === id; });
+      if (o) { o.status = status; if (completedAt) o.completedAt = completedAt; }
+      _renderWorkOrders();
+      _updateWoBadge();
+      toast(status + ' 처리 완료', 'success');
+    } catch (e) {
+      toast('상태 변경 실패: ' + e.message, 'error');
+    }
+  }
+
+  function _openWoModal(order) {
+    _woEditOrder = order || null;
+    $('wo-main-modal-title').textContent = order ? '작업지시 수정' : '작업지시 등록';
+    $('wo-main-title').value    = order ? (order.title    || '') : '';
+    $('wo-main-content').value  = order ? (order.content  || '') : '';
+    $('wo-main-priority').value = order ? (order.priority || '보통') : '보통';
+    $('wo-main-due').value      = order ? (order.dueDate  || '') : '';
+    $('wo-main-dept').value     = order ? (order.department || '') : '';
+    $('wo-main-note').value     = order ? (order.note     || '') : '';
+
+    var assigneeEl = $('wo-main-assignee');
+    if (assigneeEl) {
+      assigneeEl.innerHTML = '<option value="">담당자 선택</option>';
+      _woStaff.filter(function (s) { return s.status !== 'inactive'; }).forEach(function (s) {
+        var opt = document.createElement('option');
+        opt.value = s.id;
+        opt.textContent = s.name + (s.shift ? ' (' + s.shift + ')' : '');
+        if (order && order.assigneeId === s.id) opt.selected = true;
+        assigneeEl.appendChild(opt);
+      });
+    }
+
+    var deleteBtn = $('wo-main-delete-btn');
+    if (deleteBtn) deleteBtn.hidden = !order;
+
+    $('wo-main-modal').hidden = false;
+  }
+
+  function _closeWoModal() {
+    $('wo-main-modal').hidden = true;
+    _woEditOrder = null;
+  }
+
+  async function _saveWoOrder() {
+    var title = ($('wo-main-title').value || '').trim();
+    if (!title) { toast('제목을 입력하세요.', 'warning'); return; }
+
+    var assigneeEl = $('wo-main-assignee');
+    var assigneeId   = assigneeEl ? assigneeEl.value : '';
+    var assigneeName = '';
+    if (assigneeId) {
+      var found = _woStaff.find(function (s) { return s.id === assigneeId; });
+      if (found) assigneeName = found.name;
+    }
+
+    var wo = {
+      title: title,
+      content: $('wo-main-content').value || '',
+      requesterId: S.userEmail || '',
+      requesterName: S.userEmail || '',
+      assigneeId: assigneeId,
+      assigneeName: assigneeName,
+      department: $('wo-main-dept').value || '',
+      priority: $('wo-main-priority').value || '보통',
+      dueDate: $('wo-main-due').value || '',
+      note: $('wo-main-note').value || '',
+    };
+
+    var saveBtn = $('wo-main-save-btn');
+    if (saveBtn) saveBtn.disabled = true;
+
+    try {
+      if (_woEditOrder) {
+        wo.id = _woEditOrder.id;
+        wo.status = _woEditOrder.status;
+        wo.createdAt = _woEditOrder.createdAt;
+        wo.completedAt = _woEditOrder.completedAt || '';
+        wo.calEventId = _woEditOrder.calEventId || '';
+        await SheetsModule.updateWorkOrder(_woEditOrder._row, wo);
+        Object.assign(_woEditOrder, wo);
+        toast('수정 완료', 'success');
+      } else {
+        wo.status = '대기';
+        var newId = await SheetsModule.createWorkOrder(wo);
+        wo.id = newId;
+        if (wo.dueDate) {
+          try {
+            var evt = await CalendarModule.createEvent('primary', {
+              summary: '[작업지시] ' + wo.title,
+              description: wo.content + (wo.assigneeName ? '\n담당: ' + wo.assigneeName : ''),
+              start: { date: wo.dueDate },
+              end: { date: wo.dueDate },
+              colorId: '11',
+            });
+            wo.calEventId = (evt && evt.id) ? evt.id : '';
+          } catch (ce) { wo.calEventId = ''; }
+        }
+        _woOrders.unshift(wo);
+        toast('등록 완료', 'success');
+      }
+      _closeWoModal();
+      _renderWorkOrders();
+      _updateWoBadge();
+    } catch (e) {
+      toast('저장 실패: ' + e.message, 'error');
+    } finally {
+      if (saveBtn) saveBtn.disabled = false;
+    }
+  }
+
+  async function _deleteWoOrder() {
+    if (!_woEditOrder) return;
+    if (!confirm('이 작업지시를 취소 처리하시겠습니까?')) return;
+    try {
+      await SheetsModule.deleteWorkOrder(_woEditOrder._row);
+      _woEditOrder.status = '취소';
+      _closeWoModal();
+      _renderWorkOrders();
+      _updateWoBadge();
+      toast('취소 처리 완료', 'success');
+    } catch (e) {
+      toast('삭제 실패: ' + e.message, 'error');
+    }
+  }
+
+  function _esc(s) {
+    return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  function _woFmtDate(iso) {
+    if (!iso) return '';
+    try {
+      var d = new Date(iso);
+      return d.getFullYear() + '.' + String(d.getMonth()+1).padStart(2,'0') + '.' + String(d.getDate()).padStart(2,'0');
+    } catch (e) { return String(iso).slice(0, 10); }
+  }
+
+  /* ═══════════════════════════════════════════════════════════
+     설정 탭 아코디언 + 관리실 인원
+  ═══════════════════════════════════════════════════════════ */
+  function _initSettingsAccordion() {
+    document.querySelectorAll('.settings-cat-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var catId = btn.dataset.cat;
+        var body = document.getElementById(catId);
+        if (!body) return;
+        var isOpen = body.classList.contains('open');
+        body.classList.toggle('open', !isOpen);
+        btn.classList.toggle('active', !isOpen);
+        var arrow = btn.querySelector('.settings-cat-arrow');
+        if (arrow) arrow.textContent = !isOpen ? '▲' : '▼';
+      });
+    });
+  }
+
+  var _mgrStaffLoaded = false;
+  function _initMgrStaff() {
+    if (_mgrStaffLoaded) return;
+    _mgrStaffLoaded = true;
+
+    var addBtn = $('mgr-add-btn');
+    if (addBtn) addBtn.addEventListener('click', async function () {
+      var name  = ($('mgr-add-name').value || '').trim();
+      var email = ($('mgr-add-email').value || '').trim();
+      var phone = ($('mgr-add-phone').value || '').trim();
+      var shift = $('mgr-add-shift').value;
+      if (!name) { toast('이름을 입력하세요.', 'warning'); return; }
+      try {
+        await SheetsModule.addManagerStaff({ name: name, googleEmail: email, phone: phone, shift: shift });
+        $('mgr-add-name').value = '';
+        $('mgr-add-email').value = '';
+        $('mgr-add-phone').value = '';
+        $('mgr-add-shift').value = '';
+        _renderMgrStaff();
+        toast('등록 완료', 'success');
+      } catch (e) {
+        toast('등록 실패: ' + e.message, 'error');
+      }
+    });
+
+    _renderMgrStaff();
+  }
+
+  async function _renderMgrStaff() {
+    var listEl = $('mgr-staff-list');
+    if (!listEl) return;
+    try {
+      var staff = (await SheetsModule.getManagerStaff()) || [];
+      var active = staff.filter(function (s) { return s.status !== 'inactive'; });
+      if (!active.length) { listEl.innerHTML = '<p class="empty-state" style="padding:8px">등록된 인원이 없습니다.</p>'; return; }
+      var shiftColor = { '주간': '#1A73E8', '야간': '#5C6BC0', '비번': '#9AA0A6', '': '#9AA0A6' };
+      listEl.innerHTML = active.map(function (s) {
+        var sc = shiftColor[s.shift] || '#9AA0A6';
+        return '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--color-border)">' +
+          '<span style="font-size:18px">👤</span>' +
+          '<div style="flex:1"><div style="font-weight:600">' + _esc(s.name) + '</div>' +
+          '<div style="font-size:11px;color:var(--color-text-secondary)">' + _esc(s.googleEmail||'') + (s.phone ? ' · ' + _esc(s.phone) : '') + '</div></div>' +
+          (s.shift ? '<span style="background:' + sc + ';color:#fff;border-radius:4px;padding:2px 8px;font-size:11px">' + _esc(s.shift) + '</span>' : '') +
+          '<button class="btn btn-ghost btn-xs mgr-del-btn" data-row="' + s._row + '">삭제</button>' +
+        '</div>';
+      }).join('');
+
+      listEl.querySelectorAll('.mgr-del-btn').forEach(function (btn) {
+        btn.addEventListener('click', async function () {
+          if (!confirm('삭제하시겠습니까?')) return;
+          try {
+            await SheetsModule.deleteManagerStaff(parseInt(btn.dataset.row));
+            _renderMgrStaff();
+            toast('삭제 완료', 'success');
+          } catch (e) { toast('삭제 실패: ' + e.message, 'error'); }
+        });
+      });
+    } catch (e) {
+      listEl.innerHTML = '<p class="empty-state" style="padding:8px;color:#e53935">불러오기 실패: ' + e.message + '</p>';
+    }
+  }
+
+  /* ═══════════════════════════════════════════════════════════
      설정 탭
   ═══════════════════════════════════════════════════════════ */
+  var _settingsAccordionInited = false;
   function renderSettingsTab() {
     $('settings-user-email').textContent = S.userEmail || CONFIG.senderEmail;
     $('setting-folder-id').value = CONFIG.driveReportFolderId !== 'YOUR_FOLDER_ID'
@@ -2813,6 +3169,11 @@
     renderDeptList();
     renderMyCalendarsList();
     renderSharedCalendars();
+    if (!_settingsAccordionInited) {
+      _settingsAccordionInited = true;
+      _initSettingsAccordion();
+    }
+    _initMgrStaff();
   }
 
   /* ── 내 캘린더 표시 설정 ─── */

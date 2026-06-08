@@ -197,6 +197,7 @@ var WorkModule = (function () {
       var isAdmin = W.me.role === 'admin';
       if ($w('hr-management-card')) $w('hr-management-card').hidden = !isAdmin;
       if ($w('hr-init-card'))       $w('hr-init-card').hidden       = !isAdmin;
+      if ($w('mgr-staff-card'))     $w('mgr-staff-card').hidden     = !isAdmin;
 
       // 대관/차량 관리자 섹션
       if (typeof FacilityModule  !== 'undefined') FacilityModule.initFacilityModule(isAdmin);
