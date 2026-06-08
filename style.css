@@ -257,6 +257,15 @@ a        { color: var(--color-accent); text-decoration: none; }
   -webkit-overflow-scrolling: touch;
 }
 
+/* 탭 내부: 넓은 고정폭 블록이 viewport보다 좁아지지 않도록 */
+.tab-panel > * { min-width: 0; }
+
+/* 가로 스크롤 필요 구역 공통 래퍼 */
+.scroll-x {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
 .tab-panel[hidden] { display: none; }
 .tab-panel.active  { display: block; }
 
@@ -2973,7 +2982,7 @@ a        { color: var(--color-accent); text-decoration: none; }
 .ci-summary-value { font-size: 26px; font-weight: 700; }
 
 /* ── 입출입 현황 테이블 ──────────────────────────── */
-.ci-log-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.ci-log-table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 560px; }
 .ci-log-table th {
   padding: 8px 10px; text-align: left;
   background: #f8f9fb; border-bottom: 1.5px solid var(--color-border);
@@ -3027,7 +3036,7 @@ a        { color: var(--color-accent); text-decoration: none; }
   width: 100%;
   border-collapse: collapse;
   font-size: 11px;
-  min-width: 0;
+  min-width: 680px;   /* 좁은 화면에서 overflow → 가로 스크롤 */
   table-layout: fixed;
 }
 .hr-emp-table thead tr {
