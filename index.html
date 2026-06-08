@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-  <meta name="description" content="ASEA 캘린??관�???주간?�무보고 배포 ?�동??>
-  <title>ASEA 캘린??관�?/title>
+  <meta name="description" content="ASEA 캘린더 관리 — 주간업무보고 배포 자동화">
+  <title>ASEA 캘린더 관리</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
@@ -16,16 +16,16 @@
 </head>
 <body>
 
-  <!-- ?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═??
-       로그???�버?�이
-       ?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═??-->
+  <!-- ═══════════════════════════════════════════════════════════
+       로그인 오버레이
+       ═══════════════════════════════════════════════════════════ -->
   <div id="login-overlay" class="login-overlay">
     <div class="login-card">
       <div class="login-logo">
-        <span class="login-logo-icon">?��</span>
-        <h1 class="login-title">ASEA 캘린??관�?/h1>
+        <span class="login-logo-icon">📅</span>
+        <h1 class="login-title">ASEA 캘린더 관리</h1>
       </div>
-      <p class="login-subtitle">주간?�무보고 배포 ?�동???�스??/p>
+      <p class="login-subtitle">주간업무보고 배포 자동화 시스템</p>
       <button id="login-btn" class="btn btn-primary btn-login">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
           <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -33,242 +33,242 @@
           <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
           <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
         </svg>
-        Google�?로그??
+        Google로 로그인
       </button>
-      <p class="login-notice">?�요 권한: 캘린???�기/?�기, Drive ?�기, Gmail 발송</p>
+      <p class="login-notice">필요 권한: 캘린더 읽기/쓰기, Drive 읽기, Gmail 발송</p>
     </div>
   </div>
 
-  <!-- ?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═??
-       메인 ??
-       ?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═??-->
+  <!-- ═══════════════════════════════════════════════════════════
+       메인 앱
+       ═══════════════════════════════════════════════════════════ -->
   <div id="app" class="app" hidden>
 
-    <!-- ?�?� ?�더 ?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?� -->
+    <!-- ── 헤더 ────────────────────────────────────────────────── -->
     <header class="app-header">
       <div class="header-brand">
-        <span class="header-icon" aria-hidden="true">?��</span>
-        <span class="header-title">ASEA 캘린??관�?/span>
+        <span class="header-icon" aria-hidden="true">📅</span>
+        <span class="header-title">ASEA 캘린더 관리</span>
       </div>
       <div class="header-actions">
-        <button id="sync-calendars-btn" class="btn btn-secondary btn-sm" title="??캘린??목록 불러?�기">
-          ?�� 캘린??불러?�기
+        <button id="sync-calendars-btn" class="btn btn-secondary btn-sm" title="내 캘린더 목록 불러오기">
+          🔄 캘린더 불러오기
         </button>
       </div>
       <div class="header-user">
         <span id="user-email" class="user-email"></span>
-        <button id="logout-btn" class="btn btn-ghost btn-sm">로그?�웃</button>
+        <button id="logout-btn" class="btn btn-ghost btn-sm">로그아웃</button>
       </div>
     </header>
 
-    <!-- ?�?� ???�비게이???�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?� -->
-    <nav class="tab-nav" role="tablist" aria-label="메인 ?�비게이??>
+    <!-- ── 탭 네비게이션 ────────────────────────────────────────── -->
+    <nav class="tab-nav" role="tablist" aria-label="메인 네비게이션">
       <button class="tab-btn active" data-tab="calendar" role="tab" aria-selected="true">
-        <span class="tab-icon" aria-hidden="true">?��</span>
-        <span class="tab-label">캘린??/span>
+        <span class="tab-icon" aria-hidden="true">📅</span>
+        <span class="tab-label">캘린더</span>
       </button>
       <button class="tab-btn" data-tab="weekly-hub" role="tab" aria-selected="false">
-        <span class="tab-icon" aria-hidden="true">?��</span>
-        <span class="tab-label">주간?�브</span>
+        <span class="tab-icon" aria-hidden="true">📋</span>
+        <span class="tab-label">주간허브</span>
       </button>
       <button class="tab-btn" data-tab="email" role="tab" aria-selected="false">
-        <span class="tab-icon" aria-hidden="true">?�️</span>
-        <span class="tab-label">?�메??/span>
+        <span class="tab-icon" aria-hidden="true">✉️</span>
+        <span class="tab-label">이메일</span>
       </button>
       <button class="tab-btn" data-tab="extract" role="tab" aria-selected="false">
-        <span class="tab-icon" aria-hidden="true">?��</span>
-        <span class="tab-label">?�정발췌</span>
+        <span class="tab-icon" aria-hidden="true">📄</span>
+        <span class="tab-label">일정발췌</span>
       </button>
       <button class="tab-btn" data-tab="work" role="tab" aria-selected="false">
-        <span class="tab-icon" aria-hidden="true">?��</span>
-        <span class="tab-label">?�무관�?/span>
+        <span class="tab-icon" aria-hidden="true">📋</span>
+        <span class="tab-label">업무관리</span>
         <span id="work-badge" class="tab-badge" hidden>0</span>
       </button>
       <button class="tab-btn" data-tab="facility" role="tab" aria-selected="false">
-        <span class="tab-icon" aria-hidden="true">?��</span>
-        <span class="tab-label">?�관?�무</span>
+        <span class="tab-icon" aria-hidden="true">🏢</span>
+        <span class="tab-label">대관업무</span>
       </button>
       <button class="tab-btn" data-tab="vehicle" role="tab" aria-selected="false">
-        <span class="tab-icon" aria-hidden="true">?��</span>
-        <span class="tab-label">차량관�?/span>
+        <span class="tab-icon" aria-hidden="true">🚗</span>
+        <span class="tab-label">차량관리</span>
       </button>
       <button class="tab-btn" data-tab="classroom" role="tab" aria-selected="false">
-        <span class="tab-icon" aria-hidden="true">?��</span>
-        <span class="tab-label">강의?�현??/span>
+        <span class="tab-icon" aria-hidden="true">🏫</span>
+        <span class="tab-label">강의실현황</span>
       </button>
       <button class="tab-btn" data-tab="workorder" role="tab" aria-selected="false">
-        <span class="tab-icon" aria-hidden="true">?��</span>
-        <span class="tab-label">?�업지??/span>
+        <span class="tab-icon" aria-hidden="true">🔧</span>
+        <span class="tab-label">작업지시</span>
         <span id="workorder-badge" class="tab-badge" hidden>0</span>
       </button>
       <button class="tab-btn" data-tab="settings" role="tab" aria-selected="false">
-        <span class="tab-icon" aria-hidden="true">?�️</span>
-        <span class="tab-label">?�정</span>
+        <span class="tab-icon" aria-hidden="true">⚙️</span>
+        <span class="tab-label">설정</span>
       </button>
     </nav>
 
-    <!-- ?�?� ??콘텐�??�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?� -->
+    <!-- ── 탭 콘텐츠 ────────────────────────────────────────────── -->
     <main class="tab-content">
 
-      <!-- ?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═
-           ?�� 캘린????
-           ?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═ -->
+      <!-- ════════════════════════════════════════════════════
+           📅 캘린더 탭
+           ════════════════════════════════════════════════════ -->
       <section id="tab-calendar" class="tab-panel active" role="tabpanel">
         <div class="calendar-toolbar">
           <div class="calendar-nav">
-            <button id="prev-period" class="btn btn-icon" aria-label="?�전">&#8249;</button>
+            <button id="prev-period" class="btn btn-icon" aria-label="이전">&#8249;</button>
             <h2 id="calendar-title" class="calendar-title"></h2>
-            <button id="next-period" class="btn btn-icon" aria-label="?�음">&#8250;</button>
+            <button id="next-period" class="btn btn-icon" aria-label="다음">&#8250;</button>
           </div>
           <div class="calendar-actions">
-            <div class="view-toggle" role="group" aria-label="보기 ?�환">
-              <button class="view-btn active" data-view="month">?�간</button>
+            <div class="view-toggle" role="group" aria-label="보기 전환">
+              <button class="view-btn active" data-view="month">월간</button>
               <button class="view-btn" data-view="week">주간</button>
             </div>
-            <button id="calendar-filter-btn" class="btn btn-ghost btn-sm">?�� 캘린???�터</button>
-            <button id="csv-import-btn" class="btn btn-secondary btn-sm">CSV ?�괄 ?�록</button>
-            <button id="add-event-btn" class="btn btn-primary btn-sm">+ ?�정 추�?</button>
+            <button id="calendar-filter-btn" class="btn btn-ghost btn-sm">🗂 캘린더 필터</button>
+            <button id="csv-import-btn" class="btn btn-secondary btn-sm">CSV 일괄 등록</button>
+            <button id="add-event-btn" class="btn btn-primary btn-sm">+ 일정 추가</button>
           </div>
         </div>
 
-        <!-- 캘린???�터 ?�널 -->
+        <!-- 캘린더 필터 패널 -->
         <div id="calendar-filter-panel" class="calendar-filter-panel" hidden>
           <div class="filter-panel-header">
-            <span class="filter-panel-title">?�시??캘린???�택</span>
-            <button id="sync-filter-calendars-btn" class="btn btn-ghost btn-sm" title="구�? 캘린?��? 목록 ?�기??>?�� ?�기??/button>
-            <button id="close-filter-panel" class="btn btn-ghost btn-sm">??/button>
+            <span class="filter-panel-title">표시할 캘린더 선택</span>
+            <button id="sync-filter-calendars-btn" class="btn btn-ghost btn-sm" title="구글 캘린더와 목록 동기화">🔄 동기화</button>
+            <button id="close-filter-panel" class="btn btn-ghost btn-sm">✕</button>
           </div>
           <div id="calendar-filter-list" class="calendar-filter-list"></div>
         </div>
 
         <!-- 중복 경고 배너 -->
         <div id="duplicate-banner" class="alert alert-warning" hidden role="alert">
-          <span class="alert-icon" aria-hidden="true">??/span>
+          <span class="alert-icon" aria-hidden="true">⚠</span>
           <span id="duplicate-banner-text"></span>
-          <button class="alert-close" id="close-duplicate-banner" aria-label="?�기">??/button>
+          <button class="alert-close" id="close-duplicate-banner" aria-label="닫기">✕</button>
         </div>
 
-        <!-- 캘린??범�? -->
+        <!-- 캘린더 범례 -->
         <div id="calendar-legend" class="calendar-legend"></div>
 
-        <!-- 캘린??그리??-->
+        <!-- 캘린더 그리드 -->
         <div id="calendar-container" class="calendar-container">
           <div class="calendar-weekdays" aria-hidden="true">
-            <div class="weekday sunday">??/div>
-            <div class="weekday">??/div>
-            <div class="weekday">??/div>
-            <div class="weekday">??/div>
-            <div class="weekday">�?/div>
-            <div class="weekday">�?/div>
-            <div class="weekday saturday">??/div>
+            <div class="weekday sunday">일</div>
+            <div class="weekday">월</div>
+            <div class="weekday">화</div>
+            <div class="weekday">수</div>
+            <div class="weekday">목</div>
+            <div class="weekday">금</div>
+            <div class="weekday saturday">토</div>
           </div>
-          <div id="calendar-grid" class="calendar-grid" role="grid" aria-label="캘린??></div>
+          <div id="calendar-grid" class="calendar-grid" role="grid" aria-label="캘린더"></div>
         </div>
       </section>
 
-      <!-- ?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═
-           ?�� 주간?�브 ??
-           ?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═ -->
+      <!-- ════════════════════════════════════════════════════
+           📋 주간허브 탭
+           ════════════════════════════════════════════════════ -->
       <section id="tab-weekly-hub" class="tab-panel" role="tabpanel" hidden>
         <div class="hub-header">
-          <h2 class="section-title">주간 ?�무보고 ?�브</h2>
-          <button id="load-reports-btn" class="btn btn-primary btn-sm">Drive?�서 불러?�기</button>
+          <h2 class="section-title">주간 업무보고 허브</h2>
+          <button id="load-reports-btn" class="btn btn-primary btn-sm">Drive에서 불러오기</button>
         </div>
 
-        <!-- ?�일 목록 (?�중 ?�택) -->
+        <!-- 파일 목록 (다중 선택) -->
         <div id="report-file-list" class="report-file-list">
-          <p class="empty-state">Drive?�서 ?�일??불러?�세??</p>
+          <p class="empty-state">Drive에서 파일을 불러오세요.</p>
         </div>
 
-        <!-- ?�택???�일 �?-->
+        <!-- 선택된 파일 칩 -->
         <div id="selected-files-chips" class="selected-files-chips" hidden></div>
 
-        <!-- ?�일 ?�택 ???�시?�는 ?�브 메인 -->
+        <!-- 파일 선택 후 표시되는 허브 메인 -->
         <div id="hub-main" class="hub-main" hidden>
           <div id="selected-report-info" class="selected-report-info"></div>
 
           <div class="hub-section">
-            <h3 class="hub-section-title">?�규 ?�정 ?�보</h3>
+            <h3 class="hub-section-title">신규 일정 후보</h3>
             <div id="event-candidates" class="event-cards">
-              <p class="empty-state">PDF?�서 ?�정???�동 추출?????�습?�다.<br>?�래 Drive 링크�??�인?�세??</p>
+              <p class="empty-state">PDF에서 일정을 자동 추출할 수 없습니다.<br>아래 Drive 링크를 확인하세요.</p>
             </div>
           </div>
 
           <div class="hub-section">
             <div class="kakao-box">
               <div class="kakao-box-header">
-                <h3 class="hub-section-title">카카?�톡 문구</h3>
-                <button id="copy-kakao-btn" class="btn btn-secondary btn-sm">?�립보드 복사</button>
+                <h3 class="hub-section-title">카카오톡 문구</h3>
+                <button id="copy-kakao-btn" class="btn btn-secondary btn-sm">클립보드 복사</button>
               </div>
               <textarea id="kakao-text" class="kakao-textarea form-textarea"
-                        rows="7" readonly placeholder="?�일???�택?�면 ?�동 ?�성?�니??"></textarea>
+                        rows="7" readonly placeholder="파일을 선택하면 자동 생성됩니다."></textarea>
             </div>
           </div>
 
           <div class="hub-actions">
             <button id="bulk-approve-btn" class="btn btn-success" disabled>
-              ???�체 ?�인 ??캘린???�록
+              ✅ 전체 승인 → 캘린더 등록
             </button>
           </div>
         </div>
       </section>
 
-      <!-- ?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═
-           ?�️ ?�메????
-           ?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═ -->
+      <!-- ════════════════════════════════════════════════════
+           ✉️ 이메일 탭
+           ════════════════════════════════════════════════════ -->
       <section id="tab-email" class="tab-panel" role="tabpanel" hidden>
-        <!-- ?�메???��? ??-->
+        <!-- 이메일 내부 탭 -->
         <div class="email-subtabs">
-          <button class="email-subtab active" data-etab="compose">?�️ 메일 ?�성</button>
-          <button class="email-subtab" data-etab="history">?�� 발송 ?�력</button>
+          <button class="email-subtab active" data-etab="compose">✉️ 메일 작성</button>
+          <button class="email-subtab" data-etab="history">📜 발송 이력</button>
         </div>
 
-        <!-- 메일 ?�성 -->
+        <!-- 메일 작성 -->
         <div id="etab-compose" class="email-subpanel active">
           <div class="email-form">
             <div class="form-group">
-              <label class="form-label" for="email-file-select">보고???�택</label>
+              <label class="form-label" for="email-file-select">보고서 선택</label>
               <select id="email-file-select" class="form-select">
-                <option value="">?�일???�택?�세??/option>
+                <option value="">파일을 선택하세요</option>
               </select>
             </div>
 
-            <!-- ?�신???�션 -->
+            <!-- 수신자 섹션 -->
             <div class="form-group">
               <div class="recipients-header">
-                <label class="form-label">?�신??/label>
+                <label class="form-label">수신자</label>
                 <div class="recipients-header-actions">
                   <label class="checkbox-label">
                     <input type="checkbox" id="select-all-recipients">
-                    <span>?�체 ?�택</span>
+                    <span>전체 선택</span>
                   </label>
-                  <button id="import-recipients-btn" class="btn btn-ghost btn-sm">?�� ?�일�??�괄 ?�록</button>
+                  <button id="import-recipients-btn" class="btn btn-ghost btn-sm">📁 파일로 일괄 등록</button>
                 </div>
               </div>
               <div id="recipients-list" class="recipients-list">
-                <p class="empty-state" style="padding: 12px;">?�신?��? ?�습?�다. ?�정?�서 추�??�세??</p>
+                <p class="empty-state" style="padding: 12px;">수신자가 없습니다. 설정에서 추가하세요.</p>
               </div>
             </div>
 
             <div class="form-group">
-              <label class="form-label" for="email-subject">?�목</label>
-              <input id="email-subject" type="text" class="form-input" placeholder="?�메???�목">
+              <label class="form-label" for="email-subject">제목</label>
+              <input id="email-subject" type="text" class="form-input" placeholder="이메일 제목">
             </div>
 
             <div class="form-group">
               <label class="form-label" for="email-body">본문</label>
-              <textarea id="email-body" class="form-textarea" rows="10" placeholder="?�메??본문"></textarea>
+              <textarea id="email-body" class="form-textarea" rows="10" placeholder="이메일 본문"></textarea>
             </div>
 
-            <!-- ?�약 발송 -->
+            <!-- 예약 발송 -->
             <div class="form-group">
-              <label class="form-label">발송 ?�점</label>
+              <label class="form-label">발송 시점</label>
               <div class="schedule-row">
                 <label class="radio-label">
-                  <input type="radio" name="send-timing" value="now" checked> 지�?바로 발송
+                  <input type="radio" name="send-timing" value="now" checked> 지금 바로 발송
                 </label>
                 <label class="radio-label">
-                  <input type="radio" name="send-timing" value="schedule"> ?�약 발송
+                  <input type="radio" name="send-timing" value="schedule"> 예약 발송
                 </label>
                 <input id="schedule-datetime" type="datetime-local" class="form-input schedule-dt" style="display:none">
               </div>
@@ -276,87 +276,87 @@
 
             <div class="form-actions">
               <button id="preview-email-btn" class="btn btn-secondary">미리보기</button>
-              <button id="send-email-btn" class="btn btn-primary">지�?발송</button>
+              <button id="send-email-btn" class="btn btn-primary">지금 발송</button>
             </div>
           </div>
         </div>
 
-        <!-- 발송 ?�력 -->
+        <!-- 발송 이력 -->
         <div id="etab-history" class="email-subpanel" hidden>
           <div class="history-header">
-            <h3 class="section-title" style="font-size:16px">발송 ?�력</h3>
-            <button id="clear-history-btn" class="btn btn-ghost btn-sm">?�체 ??��</button>
+            <h3 class="section-title" style="font-size:16px">발송 이력</h3>
+            <button id="clear-history-btn" class="btn btn-ghost btn-sm">전체 삭제</button>
           </div>
           <div id="email-history-list" class="email-history-list">
-            <p class="empty-state">발송 ?�력???�습?�다.</p>
+            <p class="empty-state">발송 이력이 없습니다.</p>
           </div>
         </div>
       </section>
 
-      <!-- ?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═
-           ?�� ?�정발췌 ??
-           ?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═ -->
+      <!-- ════════════════════════════════════════════════════
+           📄 일정발췌 탭
+           ════════════════════════════════════════════════════ -->
       <section id="tab-extract" class="tab-panel" role="tabpanel" hidden>
-        <h2 class="section-title">?�정발췌 (PDF ??캘린??</h2>
+        <h2 class="section-title">일정발췌 (PDF → 캘린더)</h2>
 
-        <!-- ?�브??-->
+        <!-- 서브탭 -->
         <div class="email-subtabs" role="tablist">
-          <button class="email-subtab active" data-etab="extract-main" role="tab">?�� 추출</button>
-          <button class="email-subtab" data-etab="extract-history" role="tab">?�� 추출 ?�력</button>
-          <button class="email-subtab" data-etab="share-history" role="tab">?�� 공유 ?�력</button>
+          <button class="email-subtab active" data-etab="extract-main" role="tab">📄 추출</button>
+          <button class="email-subtab" data-etab="extract-history" role="tab">🗂 추출 이력</button>
+          <button class="email-subtab" data-etab="share-history" role="tab">🔗 공유 이력</button>
         </div>
 
-        <!-- 추출 ?�널 -->
+        <!-- 추출 패널 -->
         <div id="etab-extract-main" class="email-subpanel">
-          <p class="settings-hint" style="margin-bottom:12px">PDF ?�일???�로?�하�?Claude AI가 ?�정???�동 추출?�니??</p>
+          <p class="settings-hint" style="margin-bottom:12px">PDF 파일을 업로드하면 Claude AI가 일정을 자동 추출합니다.</p>
           <div class="extract-layout">
-            <!-- �? ?�로??-->
+            <!-- 좌: 업로드 -->
             <div class="extract-upload-area">
               <div id="pdf-dropzone" class="csv-dropzone" role="button" tabindex="0">
-                <span class="csv-dropzone-icon">?��</span>
-                <p>PDF ?�일???�래그하거나 ?�릭?�여 ?�로??/p>
+                <span class="csv-dropzone-icon">📄</span>
+                <p>PDF 파일을 드래그하거나 클릭하여 업로드</p>
                 <input id="pdf-file-input" type="file" accept=".pdf,application/pdf" style="display:none">
               </div>
               <div id="pdf-file-info" class="pdf-file-info" hidden></div>
 
-              <p class="form-hint" style="margin-top:12px">?�� API ?�는 <strong>?�정 ??/strong>?�서 ?�?�하?�요.</p>
+              <p class="form-hint" style="margin-top:12px">💡 API 키는 <strong>설정 탭</strong>에서 저장하세요.</p>
 
               <button id="run-extract-btn" class="btn btn-primary" style="width:100%;margin-top:8px" disabled>
-                ?�� AI�??�정 추출
+                🤖 AI로 일정 추출
               </button>
             </div>
 
-            <!-- ?? 추출 결과 -->
+            <!-- 우: 추출 결과 -->
             <div class="extract-result-area" id="extract-result-area" hidden>
               <div class="extract-result-header">
                 <span id="extract-result-count"></span>
                 <div class="extract-result-actions">
-                  <button id="extract-select-all" class="btn btn-ghost btn-sm">?�체 ?�택</button>
-                  <button id="extract-deselect-all" class="btn btn-ghost btn-sm">?�체 취소</button>
-                  <button id="extract-deselect-conflict" class="btn btn-ghost btn-sm extract-conflict-btn" disabled>??충돌 취소</button>
-                  <button id="extract-delete-selected-btn" class="btn btn-ghost btn-sm" style="color:#d32f2f">?���??�택 ??��</button>
-                  <button id="extract-split-btn" class="btn btn-ghost btn-sm" title="?�택???�일 ?�정???�작·종료 2개로 분리">?�️ ?�작/종료 분리</button>
+                  <button id="extract-select-all" class="btn btn-ghost btn-sm">전체 선택</button>
+                  <button id="extract-deselect-all" class="btn btn-ghost btn-sm">전체 취소</button>
+                  <button id="extract-deselect-conflict" class="btn btn-ghost btn-sm extract-conflict-btn" disabled>⚠ 충돌 취소</button>
+                  <button id="extract-delete-selected-btn" class="btn btn-ghost btn-sm" style="color:#d32f2f">🗑️ 선택 삭제</button>
+                  <button id="extract-split-btn" class="btn btn-ghost btn-sm" title="선택된 다일 일정을 시작·종료 2개로 분리">✂️ 시작/종료 분리</button>
                   <select id="extract-target-calendar" class="form-select" style="width:auto;min-width:160px">
-                    <option value="">캘린??불러?�는 �?..</option>
+                    <option value="">캘린더 불러오는 중...</option>
                   </select>
-                  <button id="extract-check-conflict-btn" class="btn btn-secondary btn-sm">?�� 충돌 ?�인</button>
-                  <button id="extract-save-state-btn" class="btn btn-ghost btn-sm">?�� ?�재 ?�태 ?�??/button>
-                  <button id="extract-gen-share-url-btn" class="btn btn-secondary btn-sm">?�� ?�택 ?�정 공유</button>
-                  <button id="extract-add-selected" class="btn btn-primary btn-sm">?�택 ??�� ?�록</button>
-                  <button id="extract-text-btn" class="btn btn-secondary btn-sm">?�� ?�스??보기</button>
+                  <button id="extract-check-conflict-btn" class="btn btn-secondary btn-sm">🔍 충돌 확인</button>
+                  <button id="extract-save-state-btn" class="btn btn-ghost btn-sm">💾 현재 상태 저장</button>
+                  <button id="extract-gen-share-url-btn" class="btn btn-secondary btn-sm">📤 선택 일정 공유</button>
+                  <button id="extract-add-selected" class="btn btn-primary btn-sm">선택 항목 등록</button>
+                  <button id="extract-text-btn" class="btn btn-secondary btn-sm">📋 텍스트 보기</button>
                 </div>
               </div>
               <div id="extract-events-list" class="extract-events-list"></div>
 
-              <!-- ?�스??출력 ?�역 -->
+              <!-- 텍스트 출력 영역 -->
               <div id="extract-text-area" hidden style="margin-top:16px">
                 <div class="extract-text-section-header">
-                  <strong>?�� ?�택 ?�정 ?�스??/strong>
+                  <strong>📋 선택 일정 텍스트</strong>
                   <button id="extract-text-copy" class="btn btn-ghost btn-sm">복사</button>
                 </div>
                 <textarea id="extract-text-output" class="form-input extract-textarea" rows="8" readonly></textarea>
                 <div class="extract-text-section-header" style="margin-top:12px">
-                  <strong>?�� 주간 ?�체 ?�정 (?�일??</strong>
+                  <strong>📅 주간 전체 일정 (요일순)</strong>
                   <button id="extract-weekly-copy" class="btn btn-ghost btn-sm">복사</button>
                 </div>
                 <textarea id="extract-weekly-output" class="form-input extract-textarea" rows="12" readonly></textarea>
@@ -365,390 +365,380 @@
           </div>
         </div>
 
-        <!-- 공유 ?�력 ?�널 -->
+        <!-- 공유 이력 패널 -->
         <div id="etab-share-history" class="email-subpanel" hidden>
           <div class="history-header">
-            <h3 class="section-title" style="font-size:16px">공유 URL ?�력</h3>
-            <button id="clear-share-history-btn" class="btn btn-ghost btn-sm">?�체 ??��</button>
+            <h3 class="section-title" style="font-size:16px">공유 URL 이력</h3>
+            <button id="clear-share-history-btn" class="btn btn-ghost btn-sm">전체 삭제</button>
           </div>
           <div id="share-history-list" class="extract-history-list">
-            <p class="empty-state">공유 ?�력???�습?�다.</p>
+            <p class="empty-state">공유 이력이 없습니다.</p>
           </div>
         </div>
 
-        <!-- 추출 ?�력 ?�널 -->
+        <!-- 추출 이력 패널 -->
         <div id="etab-extract-history" class="email-subpanel" hidden>
           <div class="history-header">
-            <h3 class="section-title" style="font-size:16px">추출 ?�력</h3>
-            <button id="clear-extract-history-btn" class="btn btn-ghost btn-sm">?�체 ??��</button>
+            <h3 class="section-title" style="font-size:16px">추출 이력</h3>
+            <button id="clear-extract-history-btn" class="btn btn-ghost btn-sm">전체 삭제</button>
           </div>
           <div id="extract-history-list" class="extract-history-list">
-            <p class="empty-state">추출 ?�력???�습?�다.</p>
+            <p class="empty-state">추출 이력이 없습니다.</p>
           </div>
         </div>
       </section>
 
-      <!-- ?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═
-           ?�� ?�무관�???
-           ?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═ -->
+      <!-- ════════════════════════════════════════════════════
+           📋 업무관리 탭
+           ════════════════════════════════════════════════════ -->
       <section id="tab-work" class="tab-panel" role="tabpanel" hidden>
-        <h2 class="section-title">?�무관�?/h2>
+        <h2 class="section-title">업무관리</h2>
 
-        <!-- ?�단 ?�션 -->
+        <!-- 상단 액션 -->
         <div style="display:flex;justify-content:flex-end;margin-bottom:8px">
-          <button id="work-cal-import-btn" class="btn btn-secondary btn-sm" title="구독 캘린?�에???�무 가?�오�?>
-            ?�� 캘린??구독 가?�오�?
+          <button id="work-cal-import-btn" class="btn btn-secondary btn-sm" title="구독 캘린더에서 업무 가져오기">
+            📥 캘린더 구독 가져오기
           </button>
         </div>
 
-        <!-- ?�브??-->
+        <!-- 서브탭 -->
         <div class="extract-subtabs" style="margin-bottom:16px">
-          <button class="extract-subtab-btn active" data-wtab="send">?�� ?�무발송</button>
-          <button class="extract-subtab-btn" data-wtab="my">?�� ???�무?�황</button>
-          <button class="extract-subtab-btn" data-wtab="dept">?�� 부?�현??/button>
+          <button class="extract-subtab-btn active" data-wtab="send">📤 업무발송</button>
+          <button class="extract-subtab-btn" data-wtab="my">📥 내 업무현황</button>
+          <button class="extract-subtab-btn" data-wtab="dept">📊 부서현황</button>
         </div>
 
-        <!-- ?�무발송 -->
+        <!-- 업무발송 -->
         <div id="wtab-send" class="email-subpanel">
           <div class="settings-card">
-            <h3 class="settings-section-title">???�무 발송</h3>
+            <h3 class="settings-section-title">새 업무 발송</h3>
             <div class="form-group">
-              <label class="form-label">?�목 <span class="required">*</span></label>
-              <input id="work-title" type="text" class="form-input" placeholder="?�무 ?�목???�력?�세??>
+              <label class="form-label">제목 <span class="required">*</span></label>
+              <input id="work-title" type="text" class="form-input" placeholder="업무 제목을 입력하세요">
             </div>
             <div style="display:flex;gap:12px;flex-wrap:wrap">
               <div class="form-group" style="flex:1;min-width:140px">
-                <label class="form-label">?�무 카테고리</label>
+                <label class="form-label">업무 카테고리</label>
                 <select id="work-category" class="form-select">
-                  <option value="?�반?�무">?�� ?�반?�무</option>
-                  <option value="교육?�정">?�� 교육?�정</option>
-                  <option value="?�사">?�� ?�사</option>
-                  <option value="?�관">?�� ?�관?�무</option>
-                  <option value="차량">?�� 차량관�?/option>
+                  <option value="일반업무">📌 일반업무</option>
+                  <option value="교육일정">🎓 교육일정</option>
+                  <option value="행사">🎉 행사</option>
+                  <option value="대관">🏢 대관업무</option>
+                  <option value="차량">🚗 차량관리</option>
                 </select>
               </div>
               <div class="form-group" style="flex:1;min-width:140px">
-                <label class="form-label">?�통 ?�형</label>
+                <label class="form-label">소통 유형</label>
                 <select id="work-type" class="form-select">
-                  <option value="지??>?�� 지??/option>
-                  <option value="?�조">?�� ?�조</option>
-                  <option value="공람">?�� 공람</option>
-                  <option value="?�림">?�� ?�림</option>
+                  <option value="지시">📢 지시</option>
+                  <option value="협조">🤝 협조</option>
+                  <option value="공람">👁 공람</option>
+                  <option value="알림">🔔 알림</option>
                 </select>
               </div>
               <div class="form-group" style="flex:1;min-width:140px">
                 <label class="form-label">공유 범위</label>
                 <select id="work-scope" class="form-select">
-                  <option value="?�신?�만">?�신?�만</option>
-                  <option value="부?�내">부????공개</option>
-                  <option value="?�체">?�체 공개</option>
+                  <option value="수신자만">수신자만</option>
+                  <option value="부서내">부서 내 공개</option>
+                  <option value="전체">전체 공개</option>
                 </select>
               </div>
               <div class="form-group" style="flex:1;min-width:160px">
-                <label class="form-label">마감??/label>
+                <label class="form-label">마감일</label>
                 <input id="work-due" type="date" class="form-input">
               </div>
             </div>
             <div class="form-group">
-              <label class="form-label">?�신??<span class="required">*</span></label>
+              <label class="form-label">수신자 <span class="required">*</span></label>
               <div style="display:flex;gap:8px;margin-bottom:8px">
-                <input id="work-recipient-search" type="text" class="form-input" placeholder="?�름 ?�는 부??검??..">
-                <button id="work-recipient-search-btn" class="btn btn-ghost btn-sm">?��</button>
+                <input id="work-recipient-search" type="text" class="form-input" placeholder="이름 또는 부서 검색...">
+                <button id="work-recipient-search-btn" class="btn btn-ghost btn-sm">🔍</button>
               </div>
               <div id="work-recipient-results" class="work-recipient-results" hidden></div>
               <div id="work-recipients-selected" class="work-recipients-chips"></div>
             </div>
             <div class="form-group">
-              <label class="form-label">?�무 ?�용 <span class="required">*</span></label>
+              <label class="form-label">업무 내용 <span class="required">*</span></label>
               <div class="work-editor-toolbar">
                 <button type="button" class="work-editor-btn" data-cmd="bold" title="굵게"><b>B</b></button>
-                <button type="button" class="work-editor-btn" data-cmd="italic" title="기울??><i>I</i></button>
+                <button type="button" class="work-editor-btn" data-cmd="italic" title="기울임"><i>I</i></button>
                 <button type="button" class="work-editor-btn" data-cmd="underline" title="밑줄"><u>U</u></button>
                 <span class="work-editor-sep"></span>
-                <button type="button" class="work-editor-btn" data-cmd="insertUnorderedList" title="목록">??/button>
-                <button type="button" class="work-editor-btn" data-cmd="insertOrderedList" title="번호목록">??/button>
+                <button type="button" class="work-editor-btn" data-cmd="insertUnorderedList" title="목록">≡</button>
+                <button type="button" class="work-editor-btn" data-cmd="insertOrderedList" title="번호목록">①</button>
               </div>
-              <div id="work-content-editor" class="work-content-editor" contenteditable="true" placeholder="?�무 ?�용???�력?�세??.."></div>
+              <div id="work-content-editor" class="work-content-editor" contenteditable="true" placeholder="업무 내용을 입력하세요..."></div>
             </div>
             <div class="form-group">
-              <label class="form-label">첨�??�일</label>
+              <label class="form-label">첨부파일</label>
               <div class="work-attach-area">
                 <label class="btn btn-ghost btn-sm" style="cursor:pointer">
-                  ?�� ?�일 ?�택
+                  📎 파일 선택
                   <input id="work-attach-input" type="file" multiple hidden>
                 </label>
                 <div id="work-attach-list" class="work-attach-list"></div>
               </div>
             </div>
             <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">
-              <button id="work-send-btn" class="btn btn-primary">?�� 발송?�기</button>
+              <button id="work-send-btn" class="btn btn-primary">📤 발송하기</button>
             </div>
           </div>
         </div>
 
-        <!-- ???�무?�황 -->
+        <!-- 내 업무현황 -->
         <div id="wtab-my" class="email-subpanel" hidden>
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
             <div class="work-status-tabs">
-              <button class="work-status-tab active" data-status="미접??>미접??<span id="cnt-미접?? class="work-cnt">0</span></button>
-              <button class="work-status-tab" data-status="처리�?>처리�?<span id="cnt-처리�? class="work-cnt">0</span></button>
-              <button class="work-status-tab" data-status="?�료">?�료 <span id="cnt-?�료" class="work-cnt">0</span></button>
-              <button class="work-status-tab" data-status="발송">발송??<span id="cnt-발송" class="work-cnt">0</span></button>
-              <button class="work-status-tab work-status-tab-personal" data-status="개인">?�� 개인?�록 <span id="cnt-개인" class="work-cnt">0</span></button>
+              <button class="work-status-tab active" data-status="미접수">미접수 <span id="cnt-미접수" class="work-cnt">0</span></button>
+              <button class="work-status-tab" data-status="처리중">처리중 <span id="cnt-처리중" class="work-cnt">0</span></button>
+              <button class="work-status-tab" data-status="완료">완료 <span id="cnt-완료" class="work-cnt">0</span></button>
+              <button class="work-status-tab" data-status="발송">발송함 <span id="cnt-발송" class="work-cnt">0</span></button>
+              <button class="work-status-tab work-status-tab-personal" data-status="개인">📝 개인등록 <span id="cnt-개인" class="work-cnt">0</span></button>
             </div>
-            <button id="work-refresh-btn" class="btn btn-ghost btn-sm">?�� ?�로고침</button>
+            <button id="work-refresh-btn" class="btn btn-ghost btn-sm">🔄 새로고침</button>
           </div>
           <div id="work-my-list" class="work-list">
-            <p class="empty-state">?�무 ?�역??불러?�는 �?..</p>
+            <p class="empty-state">업무 내역을 불러오는 중...</p>
           </div>
         </div>
 
-        <!-- 부?�현??-->
+        <!-- 부서현황 -->
         <div id="wtab-dept" class="email-subpanel" hidden>
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-            <h3 class="settings-section-title" style="margin:0" id="work-dept-title">부???�무?�황</h3>
-            <button id="work-dept-refresh-btn" class="btn btn-ghost btn-sm">?�� ?�로고침</button>
+            <h3 class="settings-section-title" style="margin:0" id="work-dept-title">부서 업무현황</h3>
+            <button id="work-dept-refresh-btn" class="btn btn-ghost btn-sm">🔄 새로고침</button>
           </div>
           <div id="work-dept-list" class="work-list">
-            <p class="empty-state">부???�무 ?�역??불러?�는 �?..</p>
+            <p class="empty-state">부서 업무 내역을 불러오는 중...</p>
           </div>
         </div>
       </section>
 
-      <!-- ?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═
-           ?�� ?�관?�무 ??
-           ?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═ -->
+      <!-- ════════════════════════════════════════════════════
+           🏢 대관업무 탭
+           ════════════════════════════════════════════════════ -->
       <section id="tab-facility" class="tab-panel" role="tabpanel" hidden>
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px">
-          <h2 class="section-title" style="margin:0">?�� ?�관?�무 ?�약</h2>
+          <h2 class="section-title" style="margin:0">🏢 대관업무 예약</h2>
           <div style="display:flex;gap:8px;align-items:center">
             <span id="fac-admin-link" style="display:none">
-              <a href="#" onclick="document.querySelector('[data-tab=settings]').click();document.getElementById('fac-admin-section').scrollIntoView({behavior:'smooth'});return false" class="btn btn-ghost btn-sm">?�️ ?�설 관�?/a>
+              <a href="#" onclick="document.querySelector('[data-tab=settings]').click();document.getElementById('fac-admin-section').scrollIntoView({behavior:'smooth'});return false" class="btn btn-ghost btn-sm">⚙️ 시설 관리</a>
             </span>
           </div>
         </div>
 
-        <!-- ?�터 + ???�비 -->
+        <!-- 필터 + 월 네비 -->
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
-          <button id="fac-cal-prev" class="btn btn-ghost btn-sm">??/button>
+          <button id="fac-cal-prev" class="btn btn-ghost btn-sm">‹</button>
           <strong id="fac-cal-title" style="min-width:100px;text-align:center"></strong>
-          <button id="fac-cal-next" class="btn btn-ghost btn-sm">??/button>
+          <button id="fac-cal-next" class="btn btn-ghost btn-sm">›</button>
           <select id="fac-building-filter" class="form-select" style="max-width:160px"></select>
           <select id="fac-room-filter" class="form-select" style="max-width:140px"></select>
-          <button class="btn btn-primary btn-sm" onclick="document.getElementById('fac-resv-modal').dispatchEvent(new Event('open-new'))">+ ?�약?�기</button>
+          <button class="btn btn-primary btn-sm" onclick="document.getElementById('fac-resv-modal').dispatchEvent(new Event('open-new'))">+ 예약하기</button>
         </div>
 
-        <!-- ?�력 -->
+        <!-- 달력 -->
         <div id="fac-calendar" class="res-calendar-wrap">
-          <p class="empty-state">로딩 �?..</p>
+          <p class="empty-state">로딩 중...</p>
         </div>
 
-        <!-- 관리자: ?�설 관�??�션 (?�정 ??���??�전, ?�기?�는 링크�? -->
+        <!-- 관리자: 시설 관리 섹션 (설정 탭으로 이전, 여기서는 링크만) -->
         <div id="fac-admin-section" class="settings-card" style="margin-top:24px" hidden>
-          <h3 class="settings-section-title">?�� ?�설(건물/?�실) 관�?<span class="badge-admin">관리자</span></h3>
+          <h3 class="settings-section-title">🏢 시설(건물/호실) 관리 <span class="badge-admin">관리자</span></h3>
           <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">
-            <button id="fac-add-building-btn" class="btn btn-primary btn-sm">+ 건물 추�?</button>
-            <button id="fac-csv-download-btn" class="btn btn-secondary btn-sm">�??�식 ?�운로드</button>
+            <button id="fac-add-building-btn" class="btn btn-primary btn-sm">+ 건물 추가</button>
+            <button id="fac-csv-download-btn" class="btn btn-secondary btn-sm">⬇ 양식 다운로드</button>
             <label class="btn btn-secondary btn-sm" style="cursor:pointer;margin:0">
-              �??�괄 ?�로??
+              ⬆ 일괄 업로드
               <input id="fac-csv-upload-input" type="file" accept=".csv" style="display:none">
             </label>
-            <button id="fac-share-cal-btn" class="btn btn-ghost btn-sm">?�� 캘린??공유</button>
+            <button id="fac-share-cal-btn" class="btn btn-ghost btn-sm">📅 캘린더 공유</button>
           </div>
           <div id="fac-csv-preview" class="csv-preview-box" hidden></div>
           <div id="fac-admin-building-list">
-            <p class="empty-state">?�록??건물???�습?�다.</p>
+            <p class="empty-state">등록된 건물이 없습니다.</p>
           </div>
         </div>
       </section>
 
-      <!-- ?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═
-           ?�� 차량관�???
-           ?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═ -->
+      <!-- ════════════════════════════════════════════════════
+           🚗 차량관리 탭
+           ════════════════════════════════════════════════════ -->
       <section id="tab-vehicle" class="tab-panel" role="tabpanel" hidden>
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px">
-          <h2 class="section-title" style="margin:0">?�� 차량 ?�약 관�?/h2>
+          <h2 class="section-title" style="margin:0">🚗 차량 예약 관리</h2>
           <div style="display:flex;gap:8px;align-items:center">
             <span id="veh-admin-link" style="display:none">
-              <a href="#" onclick="document.querySelector('[data-tab=settings]').click();document.getElementById('veh-admin-section').scrollIntoView({behavior:'smooth'});return false" class="btn btn-ghost btn-sm">?�️ 차량 관�?/a>
+              <a href="#" onclick="document.querySelector('[data-tab=settings]').click();document.getElementById('veh-admin-section').scrollIntoView({behavior:'smooth'});return false" class="btn btn-ghost btn-sm">⚙️ 차량 관리</a>
             </span>
           </div>
         </div>
 
-        <!-- ?�터 + ???�비 -->
+        <!-- 필터 + 월 네비 -->
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
-          <button id="veh-cal-prev" class="btn btn-ghost btn-sm">??/button>
+          <button id="veh-cal-prev" class="btn btn-ghost btn-sm">‹</button>
           <strong id="veh-cal-title" style="min-width:100px;text-align:center"></strong>
-          <button id="veh-cal-next" class="btn btn-ghost btn-sm">??/button>
+          <button id="veh-cal-next" class="btn btn-ghost btn-sm">›</button>
           <select id="veh-vehicle-filter" class="form-select" style="max-width:200px"></select>
-          <button class="btn btn-primary btn-sm" onclick="document.getElementById('veh-resv-modal').dispatchEvent(new Event('open-new'))">+ ?�약?�기</button>
+          <button class="btn btn-primary btn-sm" onclick="document.getElementById('veh-resv-modal').dispatchEvent(new Event('open-new'))">+ 예약하기</button>
         </div>
 
-        <!-- ?�력 -->
+        <!-- 달력 -->
         <div id="veh-calendar" class="res-calendar-wrap">
-          <p class="empty-state">로딩 �?..</p>
+          <p class="empty-state">로딩 중...</p>
         </div>
 
-        <!-- 관리자: 차량 관�??�션 -->
+        <!-- 관리자: 차량 관리 섹션 -->
         <div id="veh-admin-section" class="settings-card" style="margin-top:24px" hidden>
-          <h3 class="settings-section-title">?�� 차량 관�?<span class="badge-admin">관리자</span></h3>
+          <h3 class="settings-section-title">🚗 차량 관리 <span class="badge-admin">관리자</span></h3>
           <div style="margin-bottom:8px">
             <p class="form-hint" style="margin-bottom:8px">
-              차량 ?�형 ?�상: <span style="color:#4285F4">?�승??/span> <span style="color:#0F9D58">?�승??/span> <span style="color:#F4B400">?�버??/span> <span style="color:#DB4437">?�화�?/span>
+              차량 유형 색상: <span style="color:#4285F4">■승용</span> <span style="color:#0F9D58">■승합</span> <span style="color:#F4B400">■버스</span> <span style="color:#DB4437">■화물</span>
             </p>
-            <button id="veh-add-vehicle-btn" class="btn btn-primary btn-sm">+ 차량 추�?</button>
+            <button id="veh-add-vehicle-btn" class="btn btn-primary btn-sm">+ 차량 추가</button>
           </div>
           <div style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0">
-            <button id="veh-csv-download-btn" class="btn btn-secondary btn-sm">�??�식 ?�운로드</button>
+            <button id="veh-csv-download-btn" class="btn btn-secondary btn-sm">⬇ 양식 다운로드</button>
             <label class="btn btn-secondary btn-sm" style="cursor:pointer;margin:0">
-              �??�괄 ?�로??
+              ⬆ 일괄 업로드
               <input id="veh-csv-upload-input" type="file" accept=".csv" style="display:none">
             </label>
-            <button id="veh-share-cal-btn" class="btn btn-ghost btn-sm">?�� 캘린??공유</button>
+            <button id="veh-share-cal-btn" class="btn btn-ghost btn-sm">📅 캘린더 공유</button>
           </div>
           <div id="veh-csv-preview" class="csv-preview-box" hidden></div>
           <div id="veh-admin-list">
-            <p class="empty-state">?�록??차량???�습?�다.</p>
+            <p class="empty-state">등록된 차량이 없습니다.</p>
           </div>
         </div>
       </section>
 
-      <!-- ?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═
-           ?�� 강의?�현????
-           ?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═ -->
+      <!-- ════════════════════════════════════════════════════
+           🏫 강의실현황 탭
+           ════════════════════════════════════════════════════ -->
       <section id="tab-classroom" class="tab-panel" role="tabpanel" hidden>
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px">
-          <h2 class="section-title" style="margin:0">?�� 강의???�약 ?�황</h2>
+          <h2 class="section-title" style="margin:0">🏫 강의실 예약 현황</h2>
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-            <button id="cls-view-timetable-btn" class="btn btn-secondary btn-sm active-view">?�간??/button>
-            <button id="cls-view-month-btn" class="btn btn-ghost btn-sm">?�간</button>
+            <button id="cls-view-timetable-btn" class="btn btn-secondary btn-sm active-view">시간표</button>
+            <button id="cls-view-month-btn" class="btn btn-ghost btn-sm">월간</button>
             <span id="cls-admin-link" style="display:none">
-              <button id="cls-admin-toggle-btn" class="btn btn-ghost btn-sm">?�️ 강의??관�?/button>
+              <button id="cls-admin-toggle-btn" class="btn btn-ghost btn-sm">⚙️ 강의실 관리</button>
             </span>
           </div>
         </div>
 
-        <!-- 주간 ?�간??�?-->
+        <!-- 주간 시간표 뷰 -->
         <div id="cls-timetable-view">
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
-            <button id="cls-week-prev" class="btn btn-ghost btn-sm">??/button>
+            <button id="cls-week-prev" class="btn btn-ghost btn-sm">‹</button>
             <strong id="cls-week-title" style="min-width:130px;text-align:center"></strong>
-            <button id="cls-week-next" class="btn btn-ghost btn-sm">??/button>
+            <button id="cls-week-next" class="btn btn-ghost btn-sm">›</button>
             <select id="cls-building-filter" class="form-select" style="max-width:150px"></select>
             <select id="cls-room-filter" class="form-select" style="max-width:140px"></select>
-            <button class="btn btn-primary btn-sm" id="cls-add-resv-btn">+ ?�약 ?�록</button>
+            <button class="btn btn-primary btn-sm" id="cls-add-resv-btn">+ 예약 등록</button>
           </div>
-          <!-- ?�약 ?�형 범�? -->
+          <!-- 예약 유형 범례 -->
           <div class="cls-legend">
-            <span class="cls-legend-item"><span class="cls-legend-dot" style="background:#1565C0"></span>?�점?�?�제</span>
-            <span class="cls-legend-item"><span class="cls-legend-dot" style="background:#E65100"></span>?�강</span>
-            <span class="cls-legend-item"><span class="cls-legend-dot" style="background:#2E7D32"></span>?�관</span>
-            <span class="cls-legend-item"><span class="cls-legend-dot" style="background:#546E7A"></span>기�?</span>
+            <span class="cls-legend-item"><span class="cls-legend-dot" style="background:#1565C0"></span>학점은행제</span>
+            <span class="cls-legend-item"><span class="cls-legend-dot" style="background:#E65100"></span>특강</span>
+            <span class="cls-legend-item"><span class="cls-legend-dot" style="background:#2E7D32"></span>대관</span>
+            <span class="cls-legend-item"><span class="cls-legend-dot" style="background:#546E7A"></span>기타</span>
           </div>
           <div class="cls-timetable-scroll">
             <div id="cls-timetable-wrap">
-              <p class="empty-state">로딩 �?..</p>
+              <p class="empty-state">로딩 중...</p>
             </div>
           </div>
         </div>
 
-        <!-- ?�간 ?�력 �?(hidden by default) -->
+        <!-- 월간 달력 뷰 (hidden by default) -->
         <div id="cls-month-view" hidden>
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
-            <button id="cls-cal-prev" class="btn btn-ghost btn-sm">??/button>
+            <button id="cls-cal-prev" class="btn btn-ghost btn-sm">‹</button>
             <strong id="cls-cal-title" style="min-width:100px;text-align:center"></strong>
-            <button id="cls-cal-next" class="btn btn-ghost btn-sm">??/button>
+            <button id="cls-cal-next" class="btn btn-ghost btn-sm">›</button>
             <select id="cls-m-building-filter" class="form-select" style="max-width:150px"></select>
             <select id="cls-m-room-filter" class="form-select" style="max-width:140px"></select>
           </div>
           <div id="cls-month-calendar" class="res-calendar-wrap">
-            <p class="empty-state">로딩 �?..</p>
+            <p class="empty-state">로딩 중...</p>
           </div>
         </div>
 
-        <!-- 관리자 ?�션 -->
+        <!-- 관리자 섹션 -->
         <div id="cls-admin-section" class="settings-card" style="margin-top:24px" hidden>
-          <h3 class="settings-section-title">?�� 강의???�약 관�?<span class="badge-admin">관리자</span></h3>
+          <h3 class="settings-section-title">🏫 강의실 예약 관리 <span class="badge-admin">관리자</span></h3>
           <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
-            <button id="cls-add-btn" class="btn btn-primary btn-sm">+ 개별 ?�록</button>
-            <button id="cls-csv-download-btn" class="btn btn-secondary btn-sm">�??�식 ?�운로드</button>
+            <button id="cls-add-btn" class="btn btn-primary btn-sm">+ 개별 등록</button>
+            <button id="cls-csv-download-btn" class="btn btn-secondary btn-sm">⬇ 양식 다운로드</button>
             <label class="btn btn-secondary btn-sm" style="cursor:pointer;margin:0">
-              �??�괄 ?�로??
+              ⬆ 일괄 업로드
               <input id="cls-csv-upload-input" type="file" accept=".csv" style="display:none">
             </label>
-            <button id="cls-share-cal-btn" class="btn btn-ghost btn-sm">?�� 캘린??공유</button>
+            <button id="cls-share-cal-btn" class="btn btn-ghost btn-sm">📅 캘린더 공유</button>
           </div>
           <div id="cls-csv-preview" class="csv-preview-box" hidden></div>
           <div id="cls-admin-list">
-            <p class="empty-state">?�록???�약???�습?�다.</p>
+            <p class="empty-state">등록된 예약이 없습니다.</p>
           </div>
         </div>
       </section>
 
-      <!-- ?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═
-           ?�️ ?�정 ??
-           ?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═ -->
-      <!-- ?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═
-           ?�� ?�업지????
-           ?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═ -->
+      <!-- ════════════════════════════════════════════════════
+           ⚙️ 설정 탭
+           ════════════════════════════════════════════════════ -->
+      <!-- 🔧 작업지시 탭 -->
       <section id="tab-workorder" class="tab-panel" role="tabpanel" hidden>
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:18px">
-          <h2 class="section-title" style="margin-bottom:0">?�� ?�업지??/h2>
+          <h2 class="section-title" style="margin-bottom:0">🔧 작업지시</h2>
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-            <a href="manager/" target="_blank" class="btn btn-ghost btn-sm" style="text-decoration:none">?�� 관리실 ?�털 ?�기</a>
-            <button id="wo-main-add-btn" class="btn btn-primary btn-sm">+ ?�업지???�록</button>
-            <button id="wo-main-refresh-btn" class="btn btn-secondary btn-sm">?�� ?�로고침</button>
+            <a href="manager/" target="_blank" class="btn btn-ghost btn-sm" style="text-decoration:none">🏢 관리실 포털 열기</a>
+            <button id="wo-main-add-btn" class="btn btn-primary btn-sm">+ 작업지시 등록</button>
+            <button id="wo-main-refresh-btn" class="btn btn-secondary btn-sm">🔄 새로고침</button>
           </div>
         </div>
-
-        <!-- ?�터 ?�바 -->
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px">
           <select id="wo-main-filter-status" class="form-select" style="width:120px">
-            <option value="all">?�체 ?�태</option>
-            <option value="?��?>?��?/option>
-            <option value="진행�?>진행�?/option>
-            <option value="?�료">?�료</option>
+            <option value="all">전체 상태</option>
+            <option value="대기">대기</option>
+            <option value="진행중">진행중</option>
+            <option value="완료">완료</option>
             <option value="취소">취소</option>
           </select>
           <select id="wo-main-filter-priority" class="form-select" style="width:130px">
-            <option value="all">?�체 ?�선?�위</option>
+            <option value="all">전체 우선순위</option>
             <option value="긴급">긴급</option>
-            <option value="?�음">?�음</option>
+            <option value="높음">높음</option>
             <option value="보통">보통</option>
-            <option value="??��">??��</option>
+            <option value="낙음">낙음</option>
           </select>
         </div>
-
-        <!-- ?�업지??목록 -->
-        <div id="wo-main-list">
-          <p class="empty-state">로그????불러?�니??</p>
-        </div>
-
-        <!-- ?�업지???�록/?�정 모달 -->
+        <div id="wo-main-list"><p class="empty-state">로그인 후 불러옵니다.</p></div>
         <div id="wo-main-modal" class="modal" hidden aria-modal="true" role="dialog">
           <div class="modal-backdrop" id="wo-main-modal-backdrop"></div>
           <div class="modal-dialog">
             <div class="modal-header">
-              <h3 id="wo-main-modal-title" class="modal-title">?�업지???�록</h3>
-              <button class="modal-close" id="wo-main-modal-close" aria-label="?�기">??/button>
+              <h3 id="wo-main-modal-title" class="modal-title">작업지시 등록</h3>
+              <button class="modal-close" id="wo-main-modal-close" aria-label="닫기">✕</button>
             </div>
             <div class="modal-body">
               <div class="form-group">
-                <label class="form-label">?�목 <span class="required">*</span></label>
-                <input id="wo-main-title" type="text" class="form-input" placeholder="?�업 ?�목">
+                <label class="form-label">제목 <span class="required">*</span></label>
+                <input id="wo-main-title" type="text" class="form-input" placeholder="작업 제목">
               </div>
               <div class="form-group">
-                <label class="form-label">?�용</label>
-                <textarea id="wo-main-content" class="form-textarea" rows="3" placeholder="?�세 ?�용"></textarea>
+                <label class="form-label">내용</label>
+                <textarea id="wo-main-content" class="form-textarea" rows="3" placeholder="상세 내용"></textarea>
               </div>
               <div class="form-row">
                 <div class="form-group">
-                  <label class="form-label">?�선?�위</label>
+                  <label class="form-label">우선순위</label>
                   <select id="wo-main-priority" class="form-select">
                     <option value="보통">보통</option>
                     <option value="긴급">긴급</option>
-                    <option value="?�음">?�음</option>
-                    <option value="??��">??��</option>
+                    <option value="높음">높음</option>
+                    <option value="낙음">낙음</option>
                   </select>
                 </div>
                 <div class="form-group">
@@ -758,341 +748,302 @@
               </div>
               <div class="form-row">
                 <div class="form-group">
-                  <label class="form-label">부???�치</label>
-                  <input id="wo-main-dept" type="text" class="form-input" placeholder="?? 기숙??3??>
+                  <label class="form-label">부서/위치</label>
+                  <input id="wo-main-dept" type="text" class="form-input" placeholder="예: 기숙사 3동">
                 </div>
                 <div class="form-group">
-                  <label class="form-label">?�당??/label>
+                  <label class="form-label">담당자</label>
                   <select id="wo-main-assignee" class="form-select">
-                    <option value="">?�당???�택</option>
+                    <option value="">담당자 선택</option>
                   </select>
                 </div>
               </div>
               <div class="form-group">
                 <label class="form-label">비고</label>
-                <input id="wo-main-note" type="text" class="form-input" placeholder="추�? 메모">
+                <input id="wo-main-note" type="text" class="form-input" placeholder="추가 메모">
               </div>
             </div>
             <div class="modal-footer">
-              <button id="wo-main-delete-btn" class="btn btn-danger btn-sm" hidden>??��</button>
+              <button id="wo-main-delete-btn" class="btn btn-danger btn-sm" hidden>취소처리</button>
               <div class="modal-footer-right">
-                <button class="btn btn-ghost" id="wo-main-modal-cancel">취소</button>
-                <button id="wo-main-save-btn" class="btn btn-primary">?�??/button>
+                <button class="btn btn-ghost" id="wo-main-modal-cancel">닫기</button>
+                <button id="wo-main-save-btn" class="btn btn-primary">저장</button>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      <!-- ?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═
-           ?�️ ?�정 ??
-           ?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═ -->
       <section id="tab-settings" class="tab-panel" role="tabpanel" hidden>
-        <h2 class="section-title">?�정</h2>
+        <h2 class="section-title">설정</h2>
 
-        <!-- ?�?� ?�정 카테고리 ?�코?�언 ?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?�?� -->
-
-        <!-- ?�═ 카테고리 1: ?�사·조직 ?�═ -->
-        <div class="settings-category">
-          <button class="settings-cat-btn active" data-cat="cat-hr">
-            <span>?�� ?�사·조직</span><span class="settings-cat-arrow">??/span>
-          </button>
-          <div id="cat-hr" class="settings-cat-body open">
-
-            <!-- Google 계정 + ???�로??-->
-            <div class="settings-card">
-              <h3 class="settings-section-title">Google 계정</h3>
-              <div class="settings-account">
-                <span id="settings-user-email" class="settings-email">로그???�요</span>
-                <button id="settings-logout-btn" class="btn btn-danger btn-sm">로그?�웃</button>
-              </div>
-              <div id="my-profile-card" class="my-profile-card" hidden>
-                <div class="my-profile-info">
-                  <span id="my-profile-name" class="my-profile-name"></span>
-                  <span id="my-profile-dept" class="my-profile-badge"></span>
-                  <span id="my-profile-rank" class="my-profile-badge"></span>
-                  <span id="my-profile-role" class="my-profile-role"></span>
-                </div>
-              </div>
-              <p id="my-profile-unregistered" class="form-hint" style="color:#e53935;margin-top:8px" hidden>
-                ?�️ 직원 목록???�록?��? ?��? 계정?�니?? 관리자?�게 문의?�세??
-              </p>
+        <!-- Google 계정 + 내 프로필 -->
+        <div class="settings-card">
+          <h3 class="settings-section-title">Google 계정</h3>
+          <div class="settings-account">
+            <span id="settings-user-email" class="settings-email">로그인 필요</span>
+            <button id="settings-logout-btn" class="btn btn-danger btn-sm">로그아웃</button>
+          </div>
+          <div id="my-profile-card" class="my-profile-card" hidden>
+            <div class="my-profile-info">
+              <span id="my-profile-name" class="my-profile-name"></span>
+              <span id="my-profile-dept" class="my-profile-badge"></span>
+              <span id="my-profile-rank" class="my-profile-badge"></span>
+              <span id="my-profile-role" class="my-profile-role"></span>
             </div>
+          </div>
+          <p id="my-profile-unregistered" class="form-hint" style="color:#e53935;margin-top:8px" hidden>
+            ⚠️ 직원 목록에 등록되지 않은 계정입니다. 관리자에게 문의하세요.
+          </p>
+        </div>
 
-            <!-- 직원관�?(admin ?�용) -->
-            <div class="settings-card" id="hr-management-card" hidden>
-              <h3 class="settings-section-title">?�� 직원관�?<span class="badge-admin">관리자</span></h3>
-              <div style="margin-bottom:16px">
-                <p class="form-hint" style="margin-bottom:8px">
-                  CSV ?�식: <code>?�름,부??직급,구�??�메???�사???�화번호,권한(admin/manager/staff)</code>
-                </p>
-                <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-                  <label class="btn btn-ghost btn-sm" style="cursor:pointer">
-                    ?�� CSV ?�일 ?�택
-                    <input id="hr-csv-input" type="file" accept=".csv" hidden>
-                  </label>
-                  <button id="hr-csv-upload-btn" class="btn btn-primary btn-sm" disabled>⬆️ ?�괄 ?�록</button>
-                  <button id="hr-csv-template-btn" class="btn btn-ghost btn-sm">?�� ?�식 ?�운로드</button>
-                </div>
-                <div id="hr-csv-preview" class="hr-csv-preview" hidden></div>
-              </div>
-              <div style="border-top:1px solid var(--color-border);padding-top:14px;margin-bottom:14px">
-                <h4 style="font-size:14px;font-weight:600;margin-bottom:10px">?�동 추�?</h4>
-                <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px">
-                  <input id="hr-add-name" type="text" class="form-input" placeholder="?�름 *">
-                  <select id="hr-add-dept" class="form-select"><option value="">부???�택</option></select>
-                  <input id="hr-add-rank" type="text" class="form-input" placeholder="직급 (?? ?��?">
-                  <input id="hr-add-email" type="email" class="form-input" placeholder="구�? ?�메??*">
-                  <input id="hr-add-hire" type="date" class="form-input" title="?�사??>
-                  <input id="hr-add-phone" type="tel" class="form-input" placeholder="?�화번호">
-                  <select id="hr-add-role" class="form-select">
-                    <option value="staff">?�반직원</option>
-                    <option value="manager">부?�장</option>
-                    <option value="admin">관리자</option>
-                  </select>
-                </div>
-                <button id="hr-add-btn" class="btn btn-primary btn-sm" style="margin-top:8px">??직원 추�?</button>
-              </div>
-              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-                <span style="font-size:13px;color:#666" id="hr-list-count">직원 0�?/span>
-                <div style="display:flex;gap:6px">
-                  <input id="hr-search" type="text" class="form-input" style="width:160px" placeholder="?�름·부??검??>
-                  <button id="hr-refresh-btn" class="btn btn-ghost btn-sm">?��</button>
-                </div>
-              </div>
-              <div id="hr-employee-list" class="hr-employee-list">
-                <p class="empty-state">직원 목록??불러?�는 �?..</p>
-              </div>
+        <!-- 직원관리 (admin 전용) -->
+        <div class="settings-card" id="hr-management-card" hidden>
+          <h3 class="settings-section-title">👥 직원관리 <span class="badge-admin">관리자</span></h3>
+
+          <!-- CSV 일괄등록 -->
+          <div style="margin-bottom:16px">
+            <p class="form-hint" style="margin-bottom:8px">
+              CSV 형식: <code>이름,부서,직급,구글이메일,입사일,전화번호,권한(admin/manager/staff)</code>
+            </p>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+              <label class="btn btn-ghost btn-sm" style="cursor:pointer">
+                📂 CSV 파일 선택
+                <input id="hr-csv-input" type="file" accept=".csv" hidden>
+              </label>
+              <button id="hr-csv-upload-btn" class="btn btn-primary btn-sm" disabled>⬆️ 일괄 등록</button>
+              <button id="hr-csv-template-btn" class="btn btn-ghost btn-sm">📥 양식 다운로드</button>
             </div>
+            <div id="hr-csv-preview" class="hr-csv-preview" hidden></div>
+          </div>
 
-            <!-- 관리실 ?�원 ?�록 (admin ?�용) -->
-            <div class="settings-card" id="mgr-staff-card" hidden>
-              <h3 class="settings-section-title">?�� 관리실 ?�원 ?�록 <span class="badge-admin">관리자</span></h3>
-              <p class="form-hint" style="margin-bottom:10px">관리실 ?�직 ?�원???�록?�면 관리실 ?�털?�서 ?�인·배정??가?�합?�다.</p>
-              <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px;margin-bottom:10px">
-                <input id="mgr-add-name" type="text" class="form-input" placeholder="?�름 *">
-                <input id="mgr-add-email" type="email" class="form-input" placeholder="Google ?�메??>
-                <input id="mgr-add-phone" type="tel" class="form-input" placeholder="?�화번호">
-                <select id="mgr-add-shift" class="form-select">
-                  <option value="">?�직 구분</option>
-                  <option value="주간">주간</option>
-                  <option value="?�간">?�간</option>
-                  <option value="비번">비번</option>
-                </select>
-              </div>
-              <button id="mgr-add-btn" class="btn btn-primary btn-sm">??관리실 ?�원 추�?</button>
-              <div id="mgr-staff-list" style="margin-top:14px"></div>
+          <!-- 수동 추가 -->
+          <div style="border-top:1px solid var(--color-border);padding-top:14px;margin-bottom:14px">
+            <h4 style="font-size:14px;font-weight:600;margin-bottom:10px">수동 추가</h4>
+            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px">
+              <input id="hr-add-name" type="text" class="form-input" placeholder="이름 *">
+              <select id="hr-add-dept" class="form-select">
+                <option value="">부서 선택</option>
+              </select>
+              <input id="hr-add-rank" type="text" class="form-input" placeholder="직급 (예: 대리)">
+              <input id="hr-add-email" type="email" class="form-input" placeholder="구글 이메일 *">
+              <input id="hr-add-hire" type="date" class="form-input" title="입사일">
+              <input id="hr-add-phone" type="tel" class="form-input" placeholder="전화번호">
+              <select id="hr-add-role" class="form-select">
+                <option value="staff">일반직원</option>
+                <option value="manager">부서장</option>
+                <option value="admin">관리자</option>
+              </select>
             </div>
+            <button id="hr-add-btn" class="btn btn-primary btn-sm" style="margin-top:8px">➕ 직원 추가</button>
+          </div>
 
-            <!-- 부??관�?-->
-            <div class="settings-card">
-              <div class="settings-card-header">
-                <h3 class="settings-section-title">부??관�?/h3>
-                <button id="add-dept-btn" class="btn btn-secondary btn-sm">+ 부??추�?</button>
-              </div>
-              <div id="dept-list" class="dept-list"></div>
+          <!-- 직원 목록 -->
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <span style="font-size:13px;color:#666" id="hr-list-count">직원 0명</span>
+            <div style="display:flex;gap:6px">
+              <input id="hr-search" type="text" class="form-input" style="width:160px" placeholder="이름·부서 검색">
+              <button id="hr-refresh-btn" class="btn btn-ghost btn-sm">🔄</button>
             </div>
+          </div>
+          <div id="hr-employee-list" class="hr-employee-list">
+            <p class="empty-state">직원 목록을 불러오는 중...</p>
+          </div>
+        </div>
 
-            <!-- ?�신??목록 -->
-            <div class="settings-card">
-              <h3 class="settings-section-title">?�신??목록</h3>
-              <div id="settings-recipients" class="settings-recipients"></div>
-              <div class="settings-add-row">
-                <input id="new-recipient-name" type="text" class="form-input" placeholder="?�름">
-                <input id="new-recipient-email" type="email" class="form-input" placeholder="?�메??주소">
-                <button id="add-recipient-btn" class="btn btn-secondary btn-sm">추�?</button>
-              </div>
-            </div>
 
-          </div><!-- /cat-hr -->
-        </div><!-- /settings-category -->
+        <!-- 관리실 인원 등록 (admin 전용) -->
+        <div class="settings-card" id="mgr-staff-card" hidden>
+          <h3 class="settings-section-title">🏢 관리실 인원 등록 <span class="badge-admin">관리자</span></h3>
+          <p class="form-hint" style="margin-bottom:10px">관리실 당직 인원을 등록합니다. 관리실 포털에서 확인·배정됩니다.</p>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin-bottom:10px">
+            <input id="mgr-add-name" type="text" class="form-input" placeholder="이름 *">
+            <input id="mgr-add-email" type="email" class="form-input" placeholder="Google 이메일">
+            <input id="mgr-add-phone" type="tel" class="form-input" placeholder="전화번호">
+            <select id="mgr-add-shift" class="form-select">
+              <option value="">당직 구분</option>
+              <option value="주간">주간</option>
+              <option value="야간">야간</option>
+              <option value="비번">비번</option>
+            </select>
+          </div>
+          <button id="mgr-add-btn" class="btn btn-primary btn-sm">➕ 관리실 인원 추가</button>
+          <div id="mgr-staff-list" style="margin-top:14px"></div>
+        </div>
+        <!-- DB 초기화 (admin 전용) -->
+        <div class="settings-card" id="hr-init-card" hidden>
+          <h3 class="settings-section-title">🗄️ Sheets DB 초기화 <span class="badge-admin">관리자</span></h3>
+          <p class="form-hint" style="margin-bottom:10px">Google Sheets에 필요한 모든 시트(직원·업무·업무수신·알림로그·시설·대관예약·차량·차량예약)와 헤더를 자동으로 생성합니다. 최초 1회만 실행하면 됩니다.</p>
+          <button id="hr-init-sheets-btn" class="btn btn-primary btn-sm">🗄️ 시트 초기화 실행</button>
+          <p id="hr-init-status" class="form-hint" style="margin-top:8px"></p>
+        </div>
 
-        <!-- ?�═ 카테고리 2: ?�스?�·API ?�═ -->
-        <div class="settings-category">
-          <button class="settings-cat-btn" data-cat="cat-api">
-            <span>?�️ ?�스?�·API</span><span class="settings-cat-arrow">??/span>
-          </button>
-          <div id="cat-api" class="settings-cat-body">
+        <!-- 시설(건물/호실) 관리 (admin 전용) -->
+        <div class="settings-card" id="settings-fac-card" hidden>
+          <h3 class="settings-section-title">🏢 시설(건물/호실) 관리 <span class="badge-admin">관리자</span></h3>
+          <p class="form-hint" style="margin-bottom:10px">대관 가능한 건물과 호실을 등록/수정합니다. 등록 후 대관업무 탭에서 예약할 수 있습니다.</p>
+          <button id="settings-fac-add-btn" class="btn btn-primary btn-sm" onclick="document.querySelector('[data-tab=facility]').click()">🏢 대관업무 탭에서 관리</button>
+        </div>
 
-            <!-- DB 초기??(admin ?�용) -->
-            <div class="settings-card" id="hr-init-card" hidden>
-              <h3 class="settings-section-title">?���?Sheets DB 초기??<span class="badge-admin">관리자</span></h3>
-              <p class="form-hint" style="margin-bottom:10px">Google Sheets???�요??모든 ?�트?� ?�더�??�동?�로 ?�성?�니?? 최초 1?�만 ?�행?�면 ?�니??</p>
-              <button id="hr-init-sheets-btn" class="btn btn-primary btn-sm">?���??�트 초기???�행</button>
-              <p id="hr-init-status" class="form-hint" style="margin-top:8px"></p>
-            </div>
+        <!-- 차량 관리 (admin 전용) -->
+        <div class="settings-card" id="settings-veh-card" hidden>
+          <h3 class="settings-section-title">🚗 차량 관리 <span class="badge-admin">관리자</span></h3>
+          <p class="form-hint" style="margin-bottom:10px">차량을 등록/수정합니다. 등록 후 차량관리 탭에서 예약할 수 있습니다.</p>
+          <button id="settings-veh-go-btn" class="btn btn-primary btn-sm" onclick="document.querySelector('[data-tab=vehicle]').click()">🚗 차량관리 탭에서 관리</button>
+        </div>
+        </div>
 
-            <!-- ?�라?�드 ?�정 ?�기??-->
-            <div class="settings-card">
-              <h3 class="settings-section-title">?�️ ?�정 ?�라?�드 ?�기??/h3>
-              <p class="form-hint" style="margin-bottom:12px">API ?�·웹??URL·?�신??부??목록 �?추출/공유 ?�력??Google Drive???�동 ?�?�됩?�다.</p>
-              <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-                <button id="cloud-save-settings-btn" class="btn btn-primary btn-sm">?�️ ?�정 지�??�기??/button>
-                <button id="cloud-sync-now-btn" class="btn btn-ghost btn-sm">?�� ?�력 지�??�기??/button>
-              </div>
-              <p id="cloud-sync-status" class="form-hint" style="margin-top:8px;color:#4285F4"></p>
-            </div>
+        <!-- 클라우드 설정 동기화 -->
+        <div class="settings-card">
+          <h3 class="settings-section-title">☁️ 설정 클라우드 동기화</h3>
+          <p class="form-hint" style="margin-bottom:12px">API 키·웹훅 URL·수신자/부서 목록 및 추출/공유 이력이 Google Drive에 자동 저장됩니다. 로그인하면 어느 기기에서나 동일한 이력과 설정이 자동으로 불러와집니다.</p>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+            <button id="cloud-save-settings-btn" class="btn btn-primary btn-sm">☁️ 설정 지금 동기화</button>
+            <button id="cloud-sync-now-btn" class="btn btn-ghost btn-sm">🔄 이력 지금 동기화</button>
+          </div>
+          <p id="cloud-sync-status" class="form-hint" style="margin-top:8px;color:#4285F4"></p>
+        </div>
 
-            <!-- Claude API ??-->
-            <div class="settings-card">
-              <h3 class="settings-section-title">Claude API ??(?�정발췌 · 빠른 ?�무 ?�록 AI 분석)</h3>
-              <div class="form-group">
-                <input id="setting-api-key" type="password" class="form-input" placeholder="sk-ant-api03-...">
-                <p class="form-hint">?�️ localStorage?�만 ?�?�됩?�다. <a href="https://console.anthropic.com/" target="_blank">console.anthropic.com</a>?�서 발급?�세??</p>
-              </div>
-              <button id="save-api-key-btn" class="btn btn-primary btn-sm">?�??/button>
-            </div>
+        <!-- Claude API 키 -->
+        <div class="settings-card">
+          <h3 class="settings-section-title">Claude API 키 (일정발췌 · 빠른 업무 등록 AI 분석)</h3>
+          <div class="form-group">
+            <input id="setting-api-key" type="password" class="form-input"
+              placeholder="sk-ant-api03-...">
+            <p class="form-hint">⚠️ API 키는 브라우저 localStorage에만 저장되며 외부로 전송되지 않습니다. <a href="https://console.anthropic.com/" target="_blank">console.anthropic.com</a>에서 발급하세요.</p>
+          </div>
+          <button id="save-api-key-btn" class="btn btn-primary btn-sm">저장</button>
+        </div>
 
-            <!-- Gemini API ??(?�비?? -->
-            <div class="settings-card" style="display:none">
-              <h3 class="settings-section-title">Gemini API ??/h3>
-              <div class="form-group">
-                <input id="setting-gemini-key" type="password" class="form-input" placeholder="AIza...">
-              </div>
-              <button id="save-gemini-key-btn" class="btn btn-primary btn-sm">?�??/button>
-            </div>
+        <!-- Gemini API 키 (예비용, 현재 미사용) -->
+        <div class="settings-card" style="display:none">
+          <h3 class="settings-section-title">Gemini API 키</h3>
+          <div class="form-group">
+            <input id="setting-gemini-key" type="password" class="form-input" placeholder="AIza...">
+          </div>
+          <button id="save-gemini-key-btn" class="btn btn-primary btn-sm">저장</button>
+        </div>
 
-            <!-- GitHub PAT -->
-            <div class="settings-card">
-              <h3 class="settings-section-title">GitHub Token (?�정 공유 ?�이지 ?�동 ?�성)</h3>
-              <div class="form-group">
-                <input id="setting-github-token" type="password" class="form-input" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx">
-                <p class="form-hint">?�️ localStorage?�만 ?�?�됩?�다. Fine-grained tokens ??<strong>Contents: Read and write</strong> 권한 ?�요.</p>
-              </div>
-              <button id="save-github-token-btn" class="btn btn-primary btn-sm">?�??/button>
-            </div>
+        <!-- GitHub PAT (일정 공유 페이지 자동 생성) -->
+        <div class="settings-card">
+          <h3 class="settings-section-title">GitHub Token (일정 공유 페이지 자동 생성)</h3>
+          <div class="form-group">
+            <input id="setting-github-token" type="password" class="form-input"
+              placeholder="ghp_xxxxxxxxxxxxxxxxxxxx">
+            <p class="form-hint">⚠️ localStorage에만 저장됩니다. GitHub → Settings → Developer settings → Personal access tokens → Fine-grained tokens에서 발급. <strong>Contents: Read and write</strong> 권한 필요.</p>
+          </div>
+          <button id="save-github-token-btn" class="btn btn-primary btn-sm">저장</button>
+        </div>
 
-            <!-- Make.com ?�훅 URL -->
-            <div class="settings-card">
-              <h3 class="settings-section-title">Make.com ?�훅 URL (?�메???�약 ?�버 발송)</h3>
-              <div class="form-group">
-                <input id="setting-make-webhook" type="url" class="form-input" placeholder="https://hook.us2.make.com/...">
-                <p class="form-hint">?�메???�약 ??브라?��?가 ?��????�동 발송?�니??</p>
-              </div>
-              <button id="save-make-webhook-btn" class="btn btn-primary btn-sm">?�??/button>
-            </div>
+        <!-- Make.com 웹훅 URL -->
+        <div class="settings-card">
+          <h3 class="settings-section-title">Make.com 웹훅 URL (이메일 예약 서버 발송)</h3>
+          <div class="form-group">
+            <input id="setting-make-webhook" type="url" class="form-input"
+              placeholder="https://hook.us2.make.com/...">
+            <p class="form-hint">Make.com 시나리오 1의 CustomWebHook 모듈 URL을 입력하세요. 이메일 예약 시 브라우저가 닫혀도 자동 발송됩니다.</p>
+          </div>
+          <button id="save-make-webhook-btn" class="btn btn-primary btn-sm">저장</button>
+        </div>
 
-          </div><!-- /cat-api -->
-        </div><!-- /settings-category -->
+        <!-- 캘린더 선택 -->
+        <div class="settings-card">
+          <div class="settings-card-header">
+            <h3 class="settings-section-title">내 캘린더 표시 설정</h3>
+            <button id="load-my-calendars-btn" class="btn btn-secondary btn-sm">🔄 캘린더 목록 새로고침</button>
+          </div>
+          <p class="settings-hint">표시할 캘린더를 선택하고 색상을 지정하세요. 여러 캘린더가 색상별로 구분 표시됩니다.</p>
+          <div id="my-calendars-list" class="my-calendars-list">
+            <p class="empty-state" style="padding:8px">캘린더 목록을 불러오세요.</p>
+          </div>
+        </div>
 
-        <!-- ?�═ 카테고리 3: ?�설·차량 ?�═ -->
-        <div class="settings-category">
-          <button class="settings-cat-btn" data-cat="cat-facility">
-            <span>?�� ?�설·차량</span><span class="settings-cat-arrow">??/span>
-          </button>
-          <div id="cat-facility" class="settings-cat-body">
+        <!-- Drive 설정 -->
+        <div class="settings-card">
+          <h3 class="settings-section-title">Drive 설정</h3>
+          <div class="form-group">
+            <label class="form-label" for="setting-folder-id">보고서 폴더 ID</label>
+            <input id="setting-folder-id" type="text" class="form-input"
+              placeholder="Google Drive 폴더 ID를 입력하세요">
+          </div>
+          <button id="save-folder-btn" class="btn btn-primary btn-sm">저장</button>
+        </div>
 
-            <!-- ??캘린???�시 ?�정 -->
-            <div class="settings-card">
-              <div class="settings-card-header">
-                <h3 class="settings-section-title">??캘린???�시 ?�정</h3>
-                <button id="load-my-calendars-btn" class="btn btn-secondary btn-sm">?�� 캘린??목록 ?�로고침</button>
-              </div>
-              <p class="settings-hint">?�시??캘린?��? ?�택?�고 ?�상??지?�하?�요.</p>
-              <div id="my-calendars-list" class="my-calendars-list">
-                <p class="empty-state" style="padding:8px">캘린??목록??불러?�세??</p>
-              </div>
-            </div>
+        <!-- 부서 관리 -->
+        <div class="settings-card">
+          <div class="settings-card-header">
+            <h3 class="settings-section-title">부서 관리</h3>
+            <button id="add-dept-btn" class="btn btn-secondary btn-sm">+ 부서 추가</button>
+          </div>
+          <div id="dept-list" class="dept-list"></div>
+        </div>
 
-            <!-- Drive ?�정 -->
-            <div class="settings-card">
-              <h3 class="settings-section-title">Drive ?�정</h3>
-              <div class="form-group">
-                <label class="form-label" for="setting-folder-id">보고???�더 ID</label>
-                <input id="setting-folder-id" type="text" class="form-input" placeholder="Google Drive ?�더 ID�??�력?�세??>
-              </div>
-              <button id="save-folder-btn" class="btn btn-primary btn-sm">?�??/button>
-            </div>
+        <!-- 공유 캘린더 소스 -->
+        <div class="settings-card">
+          <div class="settings-card-header">
+            <h3 class="settings-section-title">공유 캘린더 소스</h3>
+            <button id="add-shared-cal-btn" class="btn btn-secondary btn-sm">+ 캘린더 추가</button>
+          </div>
+          <p class="settings-hint">Google 캘린더 공유 URL(ICS)을 등록하면 일정이 통합 표시됩니다.</p>
+          <div id="shared-calendars-list" class="shared-calendars-list"></div>
+        </div>
 
-            <!-- ?�설(건물/?�실) 관�?(admin ?�용) -->
-            <div class="settings-card" id="settings-fac-card" hidden>
-              <h3 class="settings-section-title">?�� ?�설(건물/?�실) 관�?<span class="badge-admin">관리자</span></h3>
-              <p class="form-hint" style="margin-bottom:10px">?�관 가?�한 건물�??�실???�록/?�정?�니??</p>
-              <button id="settings-fac-add-btn" class="btn btn-primary btn-sm" onclick="document.querySelector('[data-tab=facility]').click()">?�� ?�관?�무 ??��??관�?/button>
-            </div>
+        <!-- 개인 업무 캘린더 구독 -->
+        <div class="settings-card">
+          <div class="settings-card-header">
+            <h3 class="settings-section-title">📥 개인 업무 캘린더 구독</h3>
+            <button id="calsub-fetch-btn" class="btn btn-secondary btn-sm">지금 가져오기</button>
+          </div>
+          <p class="settings-hint">Google 캘린더 공개 ICS URL 또는 Google Calendar ID를 등록하면, <strong>업무관리 탭</strong>에서 해당 캘린더의 일정을 업무로 일괄 등록할 수 있습니다.</p>
+          <div id="calsub-list" class="calsub-list"></div>
+          <div class="calsub-add-row">
+            <input id="calsub-label-input" type="text" class="form-input" placeholder="이름 (예: 팀 캘린더)" style="max-width:160px">
+            <input id="calsub-url-input" type="text" class="form-input" placeholder="ICS URL 또는 Google Calendar ID" style="flex:1">
+            <button id="calsub-add-btn" class="btn btn-secondary btn-sm">추가</button>
+          </div>
+          <p class="form-hint" style="margin-top:6px">
+            💡 Google 캘린더 ICS URL: 구글 캘린더 → 설정 → 해당 캘린더 → "비공개 주소(ICS)" 복사<br>
+            💡 Google Calendar ID: 예) <code>primary</code> 또는 <code>xxx@group.calendar.google.com</code>
+          </p>
+        </div>
 
-            <!-- 차량 관�?(admin ?�용) -->
-            <div class="settings-card" id="settings-veh-card" hidden>
-              <h3 class="settings-section-title">?�� 차량 관�?<span class="badge-admin">관리자</span></h3>
-              <p class="form-hint" style="margin-bottom:10px">차량???�록/?�정?�니??</p>
-              <button id="settings-veh-go-btn" class="btn btn-primary btn-sm" onclick="document.querySelector('[data-tab=vehicle]').click()">?�� 차량관�???��??관�?/button>
-            </div>
-
-          </div><!-- /cat-facility -->
-        </div><!-- /settings-category -->
-
-        <!-- ?�═ 카테고리 4: ?�림·?�동 ?�═ -->
-        <div class="settings-category">
-          <button class="settings-cat-btn" data-cat="cat-notify">
-            <span>?�� ?�림·?�동</span><span class="settings-cat-arrow">??/span>
-          </button>
-          <div id="cat-notify" class="settings-cat-body">
-
-            <!-- 공유 캘린???�스 -->
-            <div class="settings-card">
-              <div class="settings-card-header">
-                <h3 class="settings-section-title">공유 캘린???�스</h3>
-                <button id="add-shared-cal-btn" class="btn btn-secondary btn-sm">+ 캘린??추�?</button>
-              </div>
-              <p class="settings-hint">Google 캘린??공유 URL(ICS)???�록?�면 ?�정???�합 ?�시?�니??</p>
-              <div id="shared-calendars-list" class="shared-calendars-list"></div>
-            </div>
-
-            <!-- 개인 ?�무 캘린??구독 -->
-            <div class="settings-card">
-              <div class="settings-card-header">
-                <h3 class="settings-section-title">?�� 개인 ?�무 캘린??구독</h3>
-                <button id="calsub-fetch-btn" class="btn btn-secondary btn-sm">지�?가?�오�?/button>
-              </div>
-              <p class="settings-hint">Google 캘린??공개 ICS URL ?�는 Google Calendar ID�??�록?�면, <strong>?�무관�???/strong>?�서 ?�당 캘린?�의 ?�정???�무�??�괄 ?�록?????�습?�다.</p>
-              <div id="calsub-list" class="calsub-list"></div>
-              <div class="calsub-add-row">
-                <input id="calsub-label-input" type="text" class="form-input" placeholder="?�름 (?? ?� 캘린??" style="max-width:160px">
-                <input id="calsub-url-input" type="text" class="form-input" placeholder="ICS URL ?�는 Google Calendar ID" style="flex:1">
-                <button id="calsub-add-btn" class="btn btn-secondary btn-sm">추�?</button>
-              </div>
-              <p class="form-hint" style="margin-top:6px">
-                ?�� Google 캘린??ICS URL: 구�? 캘린?????�정 ???�당 캘린????"비공�?주소(ICS)" 복사<br>
-                ?�� Google Calendar ID: ?? <code>primary</code> ?�는 <code>xxx@group.calendar.google.com</code>
-              </p>
-            </div>
-
-            <!-- 관리실 ?�털 링크 -->
-            <div class="settings-card">
-              <h3 class="settings-section-title">?�� 관리실 ?�털</h3>
-              <p class="form-hint" style="margin-bottom:10px">관리실 ?�용 URL�??�직 ?�원??별도 로그?�하???�업지?��? ?�인·처리?�니??</p>
-              <a href="manager/" target="_blank" class="btn btn-secondary btn-sm" style="text-decoration:none;display:inline-flex">?�� 관리실 ?�털 ?�기</a>
-            </div>
-
-          </div><!-- /cat-notify -->
-        </div><!-- /settings-category -->
+        <!-- 수신자 목록 -->
+        <div class="settings-card">
+          <h3 class="settings-section-title">수신자 목록</h3>
+          <div id="settings-recipients" class="settings-recipients"></div>
+          <div class="settings-add-row">
+            <input id="new-recipient-name" type="text" class="form-input" placeholder="이름">
+            <input id="new-recipient-email" type="email" class="form-input" placeholder="이메일 주소">
+            <button id="add-recipient-btn" class="btn btn-secondary btn-sm">추가</button>
+          </div>
+        </div>
 
       </section>
 
     </main>
   </div>
 
-  <!-- ?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═??
-       ?�정 추�?/?�정 모달
-       ?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═??-->
+  <!-- ═══════════════════════════════════════════════════════════
+       일정 추가/수정 모달
+       ═══════════════════════════════════════════════════════════ -->
   <div id="event-modal" class="modal" hidden aria-modal="true" role="dialog" aria-labelledby="event-modal-title">
     <div class="modal-backdrop" data-close-modal></div>
     <div class="modal-dialog">
       <div class="modal-header">
-        <h3 id="event-modal-title" class="modal-title">?�정 추�?</h3>
-        <button class="modal-close" data-close-modal aria-label="모달 ?�기">??/button>
+        <h3 id="event-modal-title" class="modal-title">일정 추가</h3>
+        <button class="modal-close" data-close-modal aria-label="모달 닫기">✕</button>
       </div>
       <div class="modal-body">
         <input type="hidden" id="event-id">
 
         <div class="form-group">
-          <label class="form-label" for="event-title">?�목 <span class="required">*</span></label>
-          <input id="event-title" type="text" class="form-input" placeholder="?�정 ?�목???�력?�세??>
+          <label class="form-label" for="event-title">제목 <span class="required">*</span></label>
+          <input id="event-title" type="text" class="form-input" placeholder="일정 제목을 입력하세요">
         </div>
 
         <div class="form-row">
           <div class="form-group">
-            <label class="form-label" for="event-start">?�작 <span class="required">*</span></label>
+            <label class="form-label" for="event-start">시작 <span class="required">*</span></label>
             <input id="event-start" type="datetime-local" class="form-input">
           </div>
           <div class="form-group">
@@ -1102,40 +1053,40 @@
         </div>
 
         <div class="form-group">
-          <label class="form-label">?�록??캘린??/label>
+          <label class="form-label">등록할 캘린더</label>
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:6px">
-            <button type="button" id="event-cal-add-btn" class="btn btn-secondary btn-sm">+ 캘린??추�?</button>
-            <button type="button" id="event-cal-clear-btn" class="btn btn-ghost btn-sm" style="font-size:11px">?�체 ?�제</button>
+            <button type="button" id="event-cal-add-btn" class="btn btn-secondary btn-sm">+ 캘린더 추가</button>
+            <button type="button" id="event-cal-clear-btn" class="btn btn-ghost btn-sm" style="font-size:11px">전체 해제</button>
           </div>
           <div id="event-cal-chip-list" class="qt-cal-chip-list" style="min-height:28px"></div>
-          <!-- ?�위 ?�환: 기존 코드가 참조?�는 ?��? select -->
+          <!-- 하위 호환: 기존 코드가 참조하는 숨김 select -->
           <select id="event-calendar" class="form-select" style="display:none">
-            <option value="primary">기본 캘린??/option>
+            <option value="primary">기본 캘린더</option>
           </select>
         </div>
 
         <div class="form-group">
-          <label class="form-label" for="event-dept">부??/label>
+          <label class="form-label" for="event-dept">부서</label>
           <select id="event-dept" class="form-select"></select>
         </div>
 
         <div class="form-group">
-          <label class="form-label" for="event-description">?�명</label>
+          <label class="form-label" for="event-description">설명</label>
           <textarea id="event-description" class="form-textarea" rows="3"
-            placeholder="?�정 ?�명 (?�택?�항)"></textarea>
+            placeholder="일정 설명 (선택사항)"></textarea>
         </div>
 
         <div id="duplicate-alert" class="alert alert-warning" hidden role="alert">
-          <span class="alert-icon" aria-hidden="true">??/span>
+          <span class="alert-icon" aria-hidden="true">⚠</span>
           <div>
-            <strong>중복 ?�정??감�??�었?�니??/strong>
+            <strong>중복 일정이 감지되었습니다</strong>
             <div id="duplicate-details" class="duplicate-details"></div>
           </div>
         </div>
 
-        <!-- 공유 URL ?�역 (공유 버튼 ?�릭 ???�시) -->
+        <!-- 공유 URL 영역 (공유 버튼 클릭 시 표시) -->
         <div id="event-share-area" hidden style="margin-top:12px">
-          <div class="share-area-label">?�� 공유 URL ??링크�?받�? ?�람???�르�??�신??구�? 캘린?�에 ?�정??추�??�니??/div>
+          <div class="share-area-label">🔗 공유 URL — 링크를 받은 사람이 누르면 자신의 구글 캘린더에 일정이 추가됩니다</div>
           <div class="share-url-row">
             <input id="event-share-url" class="form-input share-url-input" type="text" readonly>
             <button id="event-share-copy" class="btn btn-secondary btn-sm">복사</button>
@@ -1143,25 +1094,25 @@
         </div>
       </div>
       <div class="modal-footer">
-        <button id="delete-event-btn" class="btn btn-danger btn-sm" hidden>??��</button>
+        <button id="delete-event-btn" class="btn btn-danger btn-sm" hidden>삭제</button>
         <div class="modal-footer-right">
-          <button id="share-event-btn" class="btn btn-ghost btn-sm" hidden>?�� 공유?�기</button>
+          <button id="share-event-btn" class="btn btn-ghost btn-sm" hidden>🔗 공유하기</button>
           <button class="btn btn-ghost" data-close-modal>취소</button>
-          <button id="save-event-btn" class="btn btn-primary">?�??/button>
+          <button id="save-event-btn" class="btn btn-primary">저장</button>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- ?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═??
-       ?�메??미리보기 모달
-       ?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═??-->
+  <!-- ═══════════════════════════════════════════════════════════
+       이메일 미리보기 모달
+       ═══════════════════════════════════════════════════════════ -->
   <div id="email-preview-modal" class="modal" hidden aria-modal="true" role="dialog">
     <div class="modal-backdrop" data-close-modal></div>
     <div class="modal-dialog modal-lg">
       <div class="modal-header">
-        <h3 class="modal-title">?�메??미리보기</h3>
-        <button class="modal-close" data-close-modal aria-label="?�기">??/button>
+        <h3 class="modal-title">이메일 미리보기</h3>
+        <button class="modal-close" data-close-modal aria-label="닫기">✕</button>
       </div>
       <div class="modal-body">
         <div id="email-preview-meta" class="email-preview-meta"></div>
@@ -1169,69 +1120,69 @@
       </div>
       <div class="modal-footer">
         <div class="modal-footer-right">
-          <button class="btn btn-ghost" data-close-modal>?�기</button>
-          <button id="confirm-send-btn" class="btn btn-primary">발송 ?�인</button>
+          <button class="btn btn-ghost" data-close-modal>닫기</button>
+          <button id="confirm-send-btn" class="btn btn-primary">발송 확인</button>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- ?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═??
-       공유 캘린??추�? 모달
-       ?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═??-->
+  <!-- ═══════════════════════════════════════════════════════════
+       공유 캘린더 추가 모달
+       ═══════════════════════════════════════════════════════════ -->
   <div id="add-shared-cal-modal" class="modal" hidden aria-modal="true" role="dialog">
     <div class="modal-backdrop" data-close-modal></div>
     <div class="modal-dialog">
       <div class="modal-header">
-        <h3 class="modal-title">공유 캘린??추�?</h3>
-        <button class="modal-close" data-close-modal aria-label="?�기">??/button>
+        <h3 class="modal-title">공유 캘린더 추가</h3>
+        <button class="modal-close" data-close-modal aria-label="닫기">✕</button>
       </div>
       <div class="modal-body">
         <div class="form-group">
-          <label class="form-label" for="shared-cal-name">캘린???�름 <span class="required">*</span></label>
-          <input id="shared-cal-name" type="text" class="form-input" placeholder="?? 부??공유 캘린??>
+          <label class="form-label" for="shared-cal-name">캘린더 이름 <span class="required">*</span></label>
+          <input id="shared-cal-name" type="text" class="form-input" placeholder="예: 부서 공유 캘린더">
         </div>
         <div class="form-group">
           <label class="form-label" for="shared-cal-url">공유 URL <span class="required">*</span></label>
           <input id="shared-cal-url" type="url" class="form-input"
             placeholder="https://calendar.google.com/calendar/ical/.../public/basic.ics">
-          <p class="form-hint">Google 캘린?????�정 ??ICS 링크 복사</p>
+          <p class="form-hint">Google 캘린더 → 설정 → ICS 링크 복사</p>
         </div>
       </div>
       <div class="modal-footer">
         <div class="modal-footer-right">
           <button class="btn btn-ghost" data-close-modal>취소</button>
-          <button id="save-shared-cal-btn" class="btn btn-primary">?�록</button>
+          <button id="save-shared-cal-btn" class="btn btn-primary">등록</button>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- ?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═??
-       CSV ?�괄 ?�록 모달
-       ?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═??-->
+  <!-- ═══════════════════════════════════════════════════════════
+       CSV 일괄 등록 모달
+       ═══════════════════════════════════════════════════════════ -->
   <div id="csv-modal" class="modal" hidden aria-modal="true" role="dialog">
     <div class="modal-backdrop" data-close-modal></div>
     <div class="modal-dialog modal-lg">
       <div class="modal-header">
-        <h3 class="modal-title">CSV ?�괄 ?�록</h3>
-        <button class="modal-close" data-close-modal aria-label="?�기">??/button>
+        <h3 class="modal-title">CSV 일괄 등록</h3>
+        <button class="modal-close" data-close-modal aria-label="닫기">✕</button>
       </div>
       <div class="modal-body">
         <div class="form-group">
-          <label class="form-label" for="csv-calendar-select">?�록??캘린??/label>
+          <label class="form-label" for="csv-calendar-select">등록할 캘린더</label>
           <select id="csv-calendar-select" class="form-select">
-            <option value="primary">기본 캘린??/option>
+            <option value="primary">기본 캘린더</option>
           </select>
         </div>
         <div class="form-group">
-          <label class="form-label">CSV ?�식 ?�내</label>
-          <pre class="csv-format-guide">?�목,?�작?�시,종료?�시,부???�명
-?�의,2026-06-10 09:00,2026-06-10 10:00,기획�?주간?�의</pre>
+          <label class="form-label">CSV 형식 안내</label>
+          <pre class="csv-format-guide">제목,시작일시,종료일시,부서,설명
+회의,2026-06-10 09:00,2026-06-10 10:00,기획처,주간회의</pre>
         </div>
         <div id="csv-dropzone" class="csv-dropzone" role="button" tabindex="0">
-          <span class="csv-dropzone-icon">?��</span>
-          <p>CSV ?�일???�래그하거나 ?�릭?�여 ?�로??/p>
+          <span class="csv-dropzone-icon">📂</span>
+          <p>CSV 파일을 드래그하거나 클릭하여 업로드</p>
           <input id="csv-file-input" type="file" accept=".csv,text/csv" style="display:none">
         </div>
         <div id="csv-preview-area" hidden>
@@ -1241,7 +1192,7 @@
           <div class="csv-table-wrap">
             <table id="csv-preview-table" class="csv-table">
               <thead>
-                <tr><th>#</th><th>?�목</th><th>?�작?�시</th><th>종료?�시</th><th>부??/th><th>?�명</th><th>?�태</th></tr>
+                <tr><th>#</th><th>제목</th><th>시작일시</th><th>종료일시</th><th>부서</th><th>설명</th><th>상태</th></tr>
               </thead>
               <tbody id="csv-table-body"></tbody>
             </table>
@@ -1250,31 +1201,31 @@
       </div>
       <div class="modal-footer">
         <div class="modal-footer-right">
-          <button class="btn btn-ghost" data-close-modal>?�기</button>
-          <button id="csv-import-submit-btn" class="btn btn-primary" disabled>?�체 ?�록</button>
+          <button class="btn btn-ghost" data-close-modal>닫기</button>
+          <button id="csv-import-submit-btn" class="btn btn-primary" disabled>전체 등록</button>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- ?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═??
-       부??추�?/?�정 모달
-       ?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═??-->
+  <!-- ═══════════════════════════════════════════════════════════
+       부서 추가/수정 모달
+       ═══════════════════════════════════════════════════════════ -->
   <div id="dept-modal" class="modal" hidden aria-modal="true" role="dialog">
     <div class="modal-backdrop" data-close-modal></div>
     <div class="modal-dialog" style="max-width:400px">
       <div class="modal-header">
-        <h3 id="dept-modal-title" class="modal-title">부??추�?</h3>
-        <button class="modal-close" data-close-modal aria-label="?�기">??/button>
+        <h3 id="dept-modal-title" class="modal-title">부서 추가</h3>
+        <button class="modal-close" data-close-modal aria-label="닫기">✕</button>
       </div>
       <div class="modal-body">
         <input type="hidden" id="dept-edit-index" value="-1">
         <div class="form-group">
-          <label class="form-label" for="dept-name-input">부?�명 <span class="required">*</span></label>
-          <input id="dept-name-input" type="text" class="form-input" placeholder="?? 기획�?>
+          <label class="form-label" for="dept-name-input">부서명 <span class="required">*</span></label>
+          <input id="dept-name-input" type="text" class="form-input" placeholder="예: 기획처">
         </div>
         <div class="form-group">
-          <label class="form-label" for="dept-color-input">?�상</label>
+          <label class="form-label" for="dept-color-input">색상</label>
           <div class="color-picker-row">
             <input id="dept-color-input" type="color" class="color-picker-input" value="#4285F4">
             <span id="dept-color-preview" class="color-preview-text">#4285F4</span>
@@ -1298,33 +1249,33 @@
       <div class="modal-footer">
         <div class="modal-footer-right">
           <button class="btn btn-ghost" data-close-modal>취소</button>
-          <button id="save-dept-btn" class="btn btn-primary">?�??/button>
+          <button id="save-dept-btn" class="btn btn-primary">저장</button>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- ?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═??
-       ?�신???�일 ?�괄 ?�록 모달
-       ?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═??-->
+  <!-- ═══════════════════════════════════════════════════════════
+       수신자 파일 일괄 등록 모달
+       ═══════════════════════════════════════════════════════════ -->
   <div id="import-recipients-modal" class="modal" hidden aria-modal="true" role="dialog">
     <div class="modal-backdrop" data-close-modal></div>
     <div class="modal-dialog modal-lg">
       <div class="modal-header">
-        <h3 class="modal-title">?�신???�괄 ?�록</h3>
-        <button class="modal-close" data-close-modal aria-label="?�기">??/button>
+        <h3 class="modal-title">수신자 일괄 등록</h3>
+        <button class="modal-close" data-close-modal aria-label="닫기">✕</button>
       </div>
       <div class="modal-body">
         <div class="form-group">
-          <label class="form-label">?�일 ?�식 ?�내 (xlsx / csv / txt)</label>
-          <pre class="csv-format-guide">?�름,?�메??
-?�길??hong@example.com
+          <label class="form-label">파일 형식 안내 (xlsx / csv / txt)</label>
+          <pre class="csv-format-guide">이름,이메일
+홍길동,hong@example.com
 김철수,kim@example.com</pre>
-          <p class="form-hint">�?줄�? ?�더(?�름,?�메???�며 ?�략 가?�합?�다.</p>
+          <p class="form-hint">첫 줄은 헤더(이름,이메일)이며 생략 가능합니다.</p>
         </div>
         <div id="recipients-dropzone" class="csv-dropzone" role="button" tabindex="0">
-          <span class="csv-dropzone-icon">?��</span>
-          <p>xlsx / csv / txt ?�일???�래그하거나 ?�릭</p>
+          <span class="csv-dropzone-icon">📋</span>
+          <p>xlsx / csv / txt 파일을 드래그하거나 클릭</p>
           <input id="recipients-file-input" type="file" accept=".xlsx,.xls,.csv,.txt" style="display:none">
         </div>
         <div id="recipients-import-preview" hidden>
@@ -1333,7 +1284,7 @@
           </div>
           <div class="csv-table-wrap" style="max-height:200px">
             <table class="csv-table">
-              <thead><tr><th>#</th><th>?�름</th><th>?�메??/th><th>?�태</th></tr></thead>
+              <thead><tr><th>#</th><th>이름</th><th>이메일</th><th>상태</th></tr></thead>
               <tbody id="recipients-import-body"></tbody>
             </table>
           </div>
@@ -1342,29 +1293,29 @@
       <div class="modal-footer">
         <div class="modal-footer-right">
           <button class="btn btn-ghost" data-close-modal>취소</button>
-          <button id="confirm-import-recipients-btn" class="btn btn-primary" disabled>?�록</button>
+          <button id="confirm-import-recipients-btn" class="btn btn-primary" disabled>등록</button>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- ?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═??
-       ?�스??컨테?�너
-       ?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═??-->
+  <!-- ═══════════════════════════════════════════════════════════
+       토스트 컨테이너
+       ═══════════════════════════════════════════════════════════ -->
   <div id="toast-container" class="toast-container" aria-live="polite" aria-atomic="false"></div>
 
-  <!-- ?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═??
-       공유 URL ?�성 모달
-       ?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═??-->
+  <!-- ═══════════════════════════════════════════════════════════
+       공유 URL 생성 모달
+       ═══════════════════════════════════════════════════════════ -->
   <div id="share-url-modal" class="modal" hidden aria-modal="true" role="dialog">
     <div class="modal-backdrop" data-close-modal></div>
     <div class="modal-dialog" style="max-width:560px">
       <div class="modal-header">
-        <h3 class="modal-title">?�� ?�정 공유 URL ?�성</h3>
-        <button class="modal-close" data-close-modal aria-label="?�기">??/button>
+        <h3 class="modal-title">🔗 일정 공유 URL 생성</h3>
+        <button class="modal-close" data-close-modal aria-label="닫기">✕</button>
       </div>
       <div class="modal-body">
-        <p class="form-hint" style="margin-bottom:12px">??URL??받�? ?�람?� 로그???�이 ?�정 목록???�인?�고, ?�하???�정�?골라 ?�신??구�? 캘린?�에 추�??????�습?�다.</p>
+        <p class="form-hint" style="margin-bottom:12px">이 URL을 받은 사람은 로그인 없이 일정 목록을 확인하고, 원하는 일정만 골라 자신의 구글 캘린더에 추가할 수 있습니다.</p>
         <div class="share-url-row">
           <input id="share-url-modal-input" class="form-input share-url-input" type="text" readonly>
           <button id="share-url-modal-copy" class="btn btn-secondary btn-sm">복사</button>
@@ -1376,97 +1327,97 @@
       </div>
       <div class="modal-footer">
         <div class="modal-footer-right">
-          <a id="share-url-open-btn" href="#" target="_blank" class="btn btn-ghost btn-sm">????��???�기</a>
-          <button class="btn btn-primary" data-close-modal>?�인</button>
+          <a id="share-url-open-btn" href="#" target="_blank" class="btn btn-ghost btn-sm">새 탭에서 열기</a>
+          <button class="btn btn-primary" data-close-modal>확인</button>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- ?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═??
-       ?�정발췌 ??�� ?�정 모달
-       ?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═??-->
+  <!-- ═══════════════════════════════════════════════════════════
+       일정발췌 항목 수정 모달
+       ═══════════════════════════════════════════════════════════ -->
   <div id="extract-edit-modal" class="modal" hidden aria-modal="true" role="dialog">
     <div class="modal-backdrop" data-close-modal></div>
     <div class="modal-dialog" style="max-width:480px">
       <div class="modal-header">
-        <h3 class="modal-title">추출 ?�정 ?�정</h3>
-        <button class="modal-close" data-close-modal aria-label="?�기">??/button>
+        <h3 class="modal-title">추출 일정 수정</h3>
+        <button class="modal-close" data-close-modal aria-label="닫기">✕</button>
       </div>
       <div class="modal-body">
         <input type="hidden" id="extract-edit-index">
         <div class="form-group">
-          <label class="form-label">?�목 <span class="required">*</span></label>
+          <label class="form-label">제목 <span class="required">*</span></label>
           <input id="extract-edit-title" type="text" class="form-input">
         </div>
         <div class="form-group">
-          <label class="form-label">부??/label>
-          <input id="extract-edit-dept" type="text" class="form-input" placeholder="?? 기획�?>
+          <label class="form-label">부서</label>
+          <input id="extract-edit-dept" type="text" class="form-input" placeholder="예: 기획처">
         </div>
         <div class="form-group">
-          <label class="form-label">?�작 ?�시 <span class="required">*</span></label>
+          <label class="form-label">시작 일시 <span class="required">*</span></label>
           <input id="extract-edit-start" type="datetime-local" class="form-input">
         </div>
         <div class="form-group">
-          <label class="form-label">종료 ?�시 <span class="required">*</span></label>
+          <label class="form-label">종료 일시 <span class="required">*</span></label>
           <input id="extract-edit-end" type="datetime-local" class="form-input">
         </div>
         <div class="form-group">
-          <label class="form-label">?��??�항</label>
+          <label class="form-label">세부사항</label>
           <textarea id="extract-edit-desc" class="form-input" rows="3" style="resize:vertical"></textarea>
         </div>
       </div>
       <div class="modal-footer">
         <div class="modal-footer-left">
-          <button id="extract-edit-delete-btn" class="btn btn-danger">?���???��</button>
+          <button id="extract-edit-delete-btn" class="btn btn-danger">🗑️ 삭제</button>
         </div>
         <div class="modal-footer-right">
           <button class="btn btn-ghost" data-close-modal>취소</button>
-          <button id="extract-edit-save-btn" class="btn btn-primary">?�??/button>
+          <button id="extract-edit-save-btn" class="btn btn-primary">저장</button>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- ?�무 ?�세 모달 -->
+  <!-- 업무 상세 모달 -->
   <div id="work-detail-modal" class="modal" hidden aria-modal="true" role="dialog">
     <div class="modal-backdrop" data-close-modal></div>
     <div class="modal-dialog" style="max-width:560px">
       <div class="modal-header">
-        <h3 class="modal-title" id="work-detail-type-badge">?�무 ?�세</h3>
-        <button class="modal-close" data-close-modal aria-label="?�기">??/button>
+        <h3 class="modal-title" id="work-detail-type-badge">업무 상세</h3>
+        <button class="modal-close" data-close-modal aria-label="닫기">✕</button>
       </div>
       <div class="modal-body">
         <div class="work-detail-meta">
           <div class="work-detail-row"><span class="work-detail-label">발신</span><span id="work-detail-from"></span></div>
-          <div class="work-detail-row"><span class="work-detail-label">?�신</span><span id="work-detail-to"></span></div>
+          <div class="work-detail-row"><span class="work-detail-label">수신</span><span id="work-detail-to"></span></div>
           <div class="work-detail-row"><span class="work-detail-label">마감</span><span id="work-detail-due"></span></div>
           <div class="work-detail-row"><span class="work-detail-label">공유</span><span id="work-detail-scope"></span></div>
-          <div class="work-detail-row"><span class="work-detail-label">?�태</span><span id="work-detail-status"></span></div>
+          <div class="work-detail-row"><span class="work-detail-label">상태</span><span id="work-detail-status"></span></div>
         </div>
         <div class="work-detail-content" id="work-detail-content"></div>
         <div id="work-detail-attach" class="work-detail-attach" hidden></div>
 
-        <!-- ?�신?? ?�수/?�료 처리 ?�역 -->
+        <!-- 수신자: 접수/완료 처리 영역 -->
         <div id="work-detail-action-area" class="work-detail-action-area" hidden>
           <div class="form-group">
-            <label class="form-label">코멘??/label>
-            <textarea id="work-detail-comment" class="form-input" rows="2" placeholder="처리 ?�용???�력?�세??(?�택)"></textarea>
+            <label class="form-label">코멘트</label>
+            <textarea id="work-detail-comment" class="form-input" rows="2" placeholder="처리 내용을 입력하세요 (선택)"></textarea>
           </div>
-          <!-- 캘린???�록 ?�션 -->
+          <!-- 캘린더 등록 옵션 -->
           <div id="work-cal-register-area" class="work-cal-register-area" hidden>
-            <label class="form-label">?�� 캘린???�정 ?�록</label>
+            <label class="form-label">📅 캘린더 일정 등록</label>
             <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:6px">
-              <label><input type="radio" name="work-cal-mode" value="allday" checked> 마감???�루종일</label>
-              <label><input type="radio" name="work-cal-mode" value="custom"> 직접 ?�정</label>
+              <label><input type="radio" name="work-cal-mode" value="allday" checked> 마감일 하루종일</label>
+              <label><input type="radio" name="work-cal-mode" value="custom"> 직접 설정</label>
             </div>
             <div id="work-cal-custom-time" style="display:none;margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
               <input id="work-cal-start" type="datetime-local" class="form-input" style="flex:1">
               <input id="work-cal-end" type="datetime-local" class="form-input" style="flex:1">
             </div>
             <div style="margin-top:8px">
-              <label><input type="checkbox" id="work-cal-personal" checked> ASEA-개인?�무 캘린?�에 ?�록</label><br>
-              <label id="work-cal-dept-label"><input type="checkbox" id="work-cal-dept"> ASEA-부?�업�?캘린?�에 ?�록</label>
+              <label><input type="checkbox" id="work-cal-personal" checked> ASEA-개인업무 캘린더에 등록</label><br>
+              <label id="work-cal-dept-label"><input type="checkbox" id="work-cal-dept"> ASEA-부서업무 캘린더에 등록</label>
             </div>
           </div>
         </div>
@@ -1478,15 +1429,15 @@
     </div>
   </div>
 
-  <!-- ?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═??
-       ?�관?�무 ?�약 모달
-       ?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═??-->
+  <!-- ═══════════════════════════════════════════════════════
+       대관업무 예약 모달
+       ═══════════════════════════════════════════════════════ -->
   <div id="fac-resv-modal" class="modal" hidden aria-modal="true" role="dialog">
     <div class="modal-backdrop" onclick="this.parentElement.hidden=true"></div>
     <div class="modal-dialog" style="max-width:480px">
       <div class="modal-header">
-        <h3 id="fac-modal-title" class="modal-title">?�관 ?�약</h3>
-        <button id="fac-resv-close-btn" class="modal-close">??/button>
+        <h3 id="fac-modal-title" class="modal-title">대관 예약</h3>
+        <button id="fac-resv-close-btn" class="modal-close">✕</button>
       </div>
       <div class="modal-body">
         <div class="form-group">
@@ -1494,16 +1445,16 @@
           <select id="fac-resv-building" class="form-select"></select>
         </div>
         <div class="form-group">
-          <label class="form-label">?�실 <span class="required">*</span></label>
+          <label class="form-label">호실 <span class="required">*</span></label>
           <select id="fac-resv-room" class="form-select"></select>
         </div>
         <div class="form-group">
-          <label class="form-label">?�약 ?�목 <span class="required">*</span></label>
-          <input id="fac-resv-title" type="text" class="form-input" placeholder="?? 2?�기 OT ?�사">
+          <label class="form-label">예약 제목 <span class="required">*</span></label>
+          <input id="fac-resv-title" type="text" class="form-input" placeholder="예: 2학기 OT 행사">
         </div>
         <div style="display:flex;gap:8px">
           <div class="form-group" style="flex:1">
-            <label class="form-label">?�작 <span class="required">*</span></label>
+            <label class="form-label">시작 <span class="required">*</span></label>
             <input id="fac-resv-start" type="datetime-local" class="form-input">
           </div>
           <div class="form-group" style="flex:1">
@@ -1512,76 +1463,76 @@
           </div>
         </div>
         <div class="form-group">
-          <label class="form-label">?�용 목적</label>
-          <input id="fac-resv-purpose" type="text" class="form-input" placeholder="?�사, 강의, ?�의 ??>
+          <label class="form-label">사용 목적</label>
+          <input id="fac-resv-purpose" type="text" class="form-input" placeholder="행사, 강의, 회의 등">
         </div>
         <div class="form-group">
-          <label class="form-label">참석 ?�원</label>
-          <input id="fac-resv-attendees" type="text" class="form-input" placeholder="?? 30�?>
+          <label class="form-label">참석 인원</label>
+          <input id="fac-resv-attendees" type="text" class="form-input" placeholder="예: 30명">
         </div>
         <div id="fac-resv-status-row" class="form-group" style="display:none">
-          <label class="form-label">?�약 ?�태</label>
+          <label class="form-label">예약 상태</label>
           <select id="fac-resv-status" class="form-select">
-            <option value="?�정">?�정</option>
-            <option value="검?�중">검?�중</option>
+            <option value="확정">확정</option>
+            <option value="검토중">검토중</option>
             <option value="취소">취소</option>
           </select>
         </div>
       </div>
       <div class="modal-footer">
         <div class="modal-footer-left">
-          <button id="fac-resv-delete-btn" class="btn btn-danger btn-sm" style="display:none">?�� 취소</button>
+          <button id="fac-resv-delete-btn" class="btn btn-danger btn-sm" style="display:none">🗑 취소</button>
         </div>
-        <button id="fac-resv-save-btn" class="btn btn-primary">?�??/button>
+        <button id="fac-resv-save-btn" class="btn btn-primary">저장</button>
       </div>
     </div>
   </div>
 
-  <!-- ?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═??
-       건물/?�실 관�?모달
-       ?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═??-->
+  <!-- ═══════════════════════════════════════════════════════
+       건물/호실 관리 모달
+       ═══════════════════════════════════════════════════════ -->
   <div id="fac-building-modal" class="modal" hidden aria-modal="true" role="dialog">
     <div class="modal-backdrop" onclick="this.parentElement.hidden=true"></div>
     <div class="modal-dialog" style="max-width:440px">
       <div class="modal-header">
-        <h3 id="fac-bm-title" class="modal-title">건물 추�?</h3>
-        <button id="fac-bm-cancel-btn" class="modal-close">??/button>
+        <h3 id="fac-bm-title" class="modal-title">건물 추가</h3>
+        <button id="fac-bm-cancel-btn" class="modal-close">✕</button>
       </div>
       <div class="modal-body">
         <div class="form-group">
-          <label class="form-label">건물�?<span class="required">*</span></label>
-          <input id="fac-bm-name" type="text" class="form-input" placeholder="?? 본�?">
+          <label class="form-label">건물명 <span class="required">*</span></label>
+          <input id="fac-bm-name" type="text" class="form-input" placeholder="예: 본관">
         </div>
         <div class="form-group">
-          <label class="form-label">?�상 (?�력 ?�시)</label>
+          <label class="form-label">색상 (달력 표시)</label>
           <input id="fac-bm-color" type="color" value="#4285F4" style="width:60px;height:36px;padding:2px;border:1px solid #ddd;border-radius:6px;cursor:pointer">
         </div>
         <div class="form-group">
-          <label class="form-label">?�실 목록</label>
+          <label class="form-label">호실 목록</label>
           <div id="fac-bm-rooms" style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px"></div>
-          <button id="fac-bm-add-room-btn" type="button" class="btn btn-ghost btn-sm">+ ?�실 추�?</button>
+          <button id="fac-bm-add-room-btn" type="button" class="btn btn-ghost btn-sm">+ 호실 추가</button>
         </div>
       </div>
       <div class="modal-footer">
         <button id="fac-bm-cancel-btn2" class="btn btn-ghost" onclick="document.getElementById('fac-building-modal').hidden=true">취소</button>
-        <button id="fac-bm-save-btn" class="btn btn-primary">?�??/button>
+        <button id="fac-bm-save-btn" class="btn btn-primary">저장</button>
       </div>
     </div>
   </div>
 
-  <!-- ?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═??
-       차량 ?�약 모달
-       ?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═??-->
+  <!-- ═══════════════════════════════════════════════════════
+       차량 예약 모달
+       ═══════════════════════════════════════════════════════ -->
   <div id="veh-resv-modal" class="modal" hidden aria-modal="true" role="dialog">
     <div class="modal-backdrop" onclick="this.parentElement.hidden=true"></div>
     <div class="modal-dialog" style="max-width:460px">
       <div class="modal-header">
-        <h3 id="veh-modal-title" class="modal-title">차량 ?�약</h3>
-        <button id="veh-resv-close-btn" class="modal-close">??/button>
+        <h3 id="veh-modal-title" class="modal-title">차량 예약</h3>
+        <button id="veh-resv-close-btn" class="modal-close">✕</button>
       </div>
       <div class="modal-body">
         <div class="form-group">
-          <label class="form-label">차량 ?�택 <span class="required">*</span></label>
+          <label class="form-label">차량 선택 <span class="required">*</span></label>
           <select id="veh-resv-vehicle" class="form-select"></select>
         </div>
         <div style="display:flex;gap:8px">
@@ -1590,223 +1541,223 @@
             <input id="veh-resv-start" type="datetime-local" class="form-input">
           </div>
           <div class="form-group" style="flex:1">
-            <label class="form-label">반납 ?�정 <span class="required">*</span></label>
+            <label class="form-label">반납 예정 <span class="required">*</span></label>
             <input id="veh-resv-end" type="datetime-local" class="form-input">
           </div>
         </div>
         <div class="form-group">
-          <label class="form-label">?�선지 <span class="required">*</span></label>
-          <input id="veh-resv-destination" type="text" class="form-input" placeholder="?? ?�천공항">
+          <label class="form-label">행선지 <span class="required">*</span></label>
+          <input id="veh-resv-destination" type="text" class="form-input" placeholder="예: 인천공항">
         </div>
         <div class="form-group">
-          <label class="form-label">?�용 목적</label>
-          <input id="veh-resv-purpose" type="text" class="form-input" placeholder="출장, ?�사 지????>
+          <label class="form-label">사용 목적</label>
+          <input id="veh-resv-purpose" type="text" class="form-input" placeholder="출장, 행사 지원 등">
         </div>
         <div class="form-group">
-          <label class="form-label">?�승 ?�원</label>
+          <label class="form-label">탑승 인원</label>
           <input id="veh-resv-passengers" type="number" class="form-input" value="1" min="1" style="max-width:100px">
         </div>
         <div id="veh-resv-status-row" class="form-group" style="display:none">
-          <label class="form-label">?�약 ?�태</label>
+          <label class="form-label">예약 상태</label>
           <select id="veh-resv-status" class="form-select">
-            <option value="?�정">?�정</option>
-            <option value="검?�중">검?�중</option>
+            <option value="확정">확정</option>
+            <option value="검토중">검토중</option>
             <option value="취소">취소</option>
           </select>
         </div>
       </div>
       <div class="modal-footer">
         <div class="modal-footer-left">
-          <button id="veh-resv-delete-btn" class="btn btn-danger btn-sm" style="display:none">?�� 취소</button>
+          <button id="veh-resv-delete-btn" class="btn btn-danger btn-sm" style="display:none">🗑 취소</button>
         </div>
-        <button id="veh-resv-save-btn" class="btn btn-primary">?�??/button>
+        <button id="veh-resv-save-btn" class="btn btn-primary">저장</button>
       </div>
     </div>
   </div>
 
-  <!-- ?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═??
-       차량 ?�록/?�정 모달
-       ?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═??-->
+  <!-- ═══════════════════════════════════════════════════════
+       차량 등록/수정 모달
+       ═══════════════════════════════════════════════════════ -->
   <div id="veh-vehicle-modal" class="modal" hidden aria-modal="true" role="dialog">
     <div class="modal-backdrop" onclick="this.parentElement.hidden=true"></div>
     <div class="modal-dialog" style="max-width:400px">
       <div class="modal-header">
-        <h3 id="veh-vm-title" class="modal-title">차량 추�?</h3>
-        <button id="veh-vm-cancel-btn" class="modal-close">??/button>
+        <h3 id="veh-vm-title" class="modal-title">차량 추가</h3>
+        <button id="veh-vm-cancel-btn" class="modal-close">✕</button>
       </div>
       <div class="modal-body">
         <div class="form-group">
-          <label class="form-label">차량�?<span class="required">*</span></label>
-          <input id="veh-vm-name" type="text" class="form-input" placeholder="?? ?�렌??>
+          <label class="form-label">차량명 <span class="required">*</span></label>
+          <input id="veh-vm-name" type="text" class="form-input" placeholder="예: 쏘렌토">
         </div>
         <div class="form-group">
           <label class="form-label">차량번호</label>
-          <input id="veh-vm-num" type="text" class="form-input" placeholder="?? 12가 3456">
+          <input id="veh-vm-num" type="text" class="form-input" placeholder="예: 12가 3456">
         </div>
         <div style="display:flex;gap:8px">
           <div class="form-group" style="flex:1">
-            <label class="form-label">차량 ?�형</label>
+            <label class="form-label">차량 유형</label>
             <select id="veh-vm-type" class="form-select">
-              <option value="?�용">?�용</option>
-              <option value="?�합">?�합</option>
+              <option value="승용">승용</option>
+              <option value="승합">승합</option>
               <option value="버스">버스</option>
-              <option value="?�물">?�물</option>
-              <option value="기�?">기�?</option>
+              <option value="화물">화물</option>
+              <option value="기타">기타</option>
             </select>
           </div>
           <div class="form-group" style="flex:1">
-            <label class="form-label">?�승 ?�원</label>
+            <label class="form-label">탑승 정원</label>
             <input id="veh-vm-capacity" type="number" class="form-input" value="4" min="1" max="60">
           </div>
         </div>
         <div class="form-group">
           <label class="form-label">비고</label>
-          <input id="veh-vm-note" type="text" class="form-input" placeholder="?�이?�항 ??>
+          <input id="veh-vm-note" type="text" class="form-input" placeholder="특이사항 등">
         </div>
       </div>
       <div class="modal-footer">
         <button onclick="document.getElementById('veh-vehicle-modal').hidden=true" class="btn btn-ghost">취소</button>
-        <button id="veh-vm-save-btn" class="btn btn-primary">?�??/button>
+        <button id="veh-vm-save-btn" class="btn btn-primary">저장</button>
       </div>
     </div>
   </div>
 
-  <!-- ?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═??
-       ?�� 캘린??구독 가?�오�?모달
-       ?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═??-->
+  <!-- ═══════════════════════════════════════════════════════════
+       📥 캘린더 구독 가져오기 모달
+       ═══════════════════════════════════════════════════════════ -->
   <div id="calsub-modal" class="modal" hidden aria-modal="true" role="dialog">
     <div class="modal-backdrop" onclick="document.getElementById('calsub-modal').hidden=true"></div>
     <div class="modal-dialog" style="max-width:680px;max-height:90vh;display:flex;flex-direction:column">
       <div class="modal-header">
         <div>
-          <h3 class="modal-title">?�� 캘린??구독 ???�무 가?�오�?/h3>
-          <small style="color:#888;font-size:11px">구독 캘린?�에???�정??불러?� ?�무�??�록?�니??/small>
+          <h3 class="modal-title">📥 캘린더 구독 — 업무 가져오기</h3>
+          <small style="color:#888;font-size:11px">구독 캘린더에서 일정을 불러와 업무로 등록합니다</small>
         </div>
-        <button id="calsub-modal-close" class="modal-close">??/button>
+        <button id="calsub-modal-close" class="modal-close">✕</button>
       </div>
       <div class="modal-body" style="overflow-y:auto;flex:1">
 
-        <!-- 기간 + 캘린???�택 -->
+        <!-- 기간 + 캘린더 선택 -->
         <div style="padding:14px 20px;border-bottom:1px solid var(--color-border)">
           <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
             <div class="form-group" style="margin:0;flex:0 0 auto">
-              <label class="form-label" style="font-size:12px">구독 캘린??/label>
+              <label class="form-label" style="font-size:12px">구독 캘린더</label>
               <select id="calsub-source-sel" class="form-select" style="max-width:220px">
-                <option value="">캘린???�택...</option>
+                <option value="">캘린더 선택...</option>
               </select>
             </div>
             <div class="form-group" style="margin:0">
-              <label class="form-label" style="font-size:12px">?�작??/label>
+              <label class="form-label" style="font-size:12px">시작일</label>
               <input id="calsub-from-date" type="date" class="form-input" style="width:140px">
             </div>
             <div class="form-group" style="margin:0">
-              <label class="form-label" style="font-size:12px">종료??/label>
+              <label class="form-label" style="font-size:12px">종료일</label>
               <input id="calsub-to-date" type="date" class="form-input" style="width:140px">
             </div>
-            <button id="calsub-load-btn" class="btn btn-primary btn-sm" style="align-self:flex-end">불러?�기</button>
+            <button id="calsub-load-btn" class="btn btn-primary btn-sm" style="align-self:flex-end">불러오기</button>
           </div>
         </div>
 
-        <!-- 가?�온 ?�정 목록 -->
+        <!-- 가져온 일정 목록 -->
         <div style="padding:14px 20px">
           <div id="calsub-event-list">
-            <p class="empty-state" style="padding:16px 0">캘린?��? ?�택?�고 불러?�기�??�러주세??</p>
+            <p class="empty-state" style="padding:16px 0">캘린더를 선택하고 불러오기를 눌러주세요.</p>
           </div>
         </div>
 
       </div>
       <div class="modal-footer">
-        <span id="calsub-selected-count" style="font-size:12px;color:#888">0�??�택??/span>
+        <span id="calsub-selected-count" style="font-size:12px;color:#888">0건 선택됨</span>
         <div style="flex:1"></div>
-        <!-- ?�록??캘린??-->
+        <!-- 등록할 캘린더 -->
         <div style="display:flex;align-items:center;gap:6px;font-size:12px">
-          <span style="color:#888">???�록 캘린??</span>
-          <span id="calsub-target-badge" class="qt-cal-badge">미선??/span>
-          <button id="calsub-select-target-btn" class="btn btn-ghost btn-sm" style="font-size:11px">?�택</button>
+          <span style="color:#888">→ 등록 캘린더:</span>
+          <span id="calsub-target-badge" class="qt-cal-badge">미선택</span>
+          <button id="calsub-select-target-btn" class="btn btn-ghost btn-sm" style="font-size:11px">선택</button>
         </div>
-        <button onclick="document.getElementById('calsub-modal').hidden=true" class="btn btn-ghost">?�기</button>
-        <button id="calsub-register-btn" class="btn btn-primary" disabled>???�무 ?�록</button>
+        <button onclick="document.getElementById('calsub-modal').hidden=true" class="btn btn-ghost">닫기</button>
+        <button id="calsub-register-btn" class="btn btn-primary" disabled>✅ 업무 등록</button>
       </div>
     </div>
   </div>
 
-  <!-- ?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═??
-       ??빠른 ?�무 ?�록 모달 (Ctrl+Alt+R)
-       ?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═??-->
+  <!-- ═══════════════════════════════════════════════════════════
+       ⚡ 빠른 업무 등록 모달 (Ctrl+Alt+R)
+       ═══════════════════════════════════════════════════════════ -->
   <div id="qt-modal" class="modal" hidden aria-modal="true" role="dialog" aria-labelledby="qt-modal-title">
     <div id="qt-backdrop" class="modal-backdrop"></div>
     <div class="modal-dialog qt-modal-dialog">
       <div class="modal-header">
         <div>
-          <h3 id="qt-modal-title" class="modal-title">??빠른 ?�무 ?�록</h3>
-          <small style="color:#888;font-size:11px">?�스?�·이미�?�?붙여?�으�?AI가 ?�무 ??��??추출?�니??/small>
+          <h3 id="qt-modal-title" class="modal-title">⚡ 빠른 업무 등록</h3>
+          <small style="color:#888;font-size:11px">텍스트·이미지를 붙여넣으면 AI가 업무 항목을 추출합니다</small>
         </div>
-        <button id="qt-close-btn" class="modal-close">??/button>
+        <button id="qt-close-btn" class="modal-close">✕</button>
       </div>
       <div class="modal-body" style="padding:0">
 
-        <!-- ?�?� ?�력 ?�역 ?�?� -->
+        <!-- ── 입력 영역 ── -->
         <div class="qt-input-section">
-          <div class="qt-section-label">?�� ?�용 붙여?�기</div>
+          <div class="qt-section-label">📋 내용 붙여넣기</div>
 
-          <!-- ?�롭�?+ ?�스??-->
+          <!-- 드롭존 + 텍스트 -->
           <div id="qt-drop-zone" class="qt-drop-zone">
             <textarea id="qt-paste-text" class="qt-paste-textarea"
-              placeholder="?�기???�스?��? 붙여?�거??(Ctrl+V), ?��?지�??�래�??�롭 ?�세??&#10;&#10;?�시:&#10;??6??10???�후 2??부???�의&#10;??6/15까�? 보고???�출&#10;???�음�??�요???�입???�리?�테?�션 ?�사"></textarea>
+              placeholder="여기에 텍스트를 붙여넣거나 (Ctrl+V), 이미지를 드래그&드롭 하세요.&#10;&#10;예시:&#10;• 6월 10일 오후 2시 부서 회의&#10;• 6/15까지 보고서 제출&#10;• 다음주 월요일 신입생 오리엔테이션 행사"></textarea>
           </div>
 
-          <!-- ?��?지 ?�로??+ 미리보기 -->
+          <!-- 이미지 업로드 + 미리보기 -->
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px">
             <label class="btn btn-ghost btn-sm" style="cursor:pointer;margin:0">
-              ?�� ?��?지 ?�택
+              🖼 이미지 선택
               <input id="qt-img-input" type="file" accept="image/*" style="display:none">
             </label>
-            <span style="font-size:11px;color:#888">?�는 ?��?지�??�래�??�롭</span>
+            <span style="font-size:11px;color:#888">또는 이미지를 드래그&드롭</span>
           </div>
           <div id="qt-paste-preview"></div>
 
           <!-- AI 분석 버튼 -->
           <div style="margin-top:10px;display:flex;gap:8px;align-items:center">
-            <button id="qt-analyze-btn" class="btn btn-primary btn-sm">?�� AI 분석</button>
-            <span style="font-size:11px;color:#888">Anthropic API Key ?�요 (?�정?�서 ?�록)</span>
+            <button id="qt-analyze-btn" class="btn btn-primary btn-sm">🤖 AI 분석</button>
+            <span style="font-size:11px;color:#888">Anthropic API Key 필요 (설정에서 등록)</span>
           </div>
         </div>
 
-        <!-- ?�?� 캘린???�택 ?�?� -->
+        <!-- ── 캘린더 선택 ── -->
         <div class="qt-cal-section">
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap">
-            <div class="qt-section-label" style="margin-bottom:0">?�� ?�록??Google 캘린??/div>
-            <button id="qt-select-cal-btn" class="btn btn-secondary btn-sm">+ 캘린??추�?</button>
-            <button id="qt-clear-cal-btn" class="btn btn-ghost btn-sm" style="font-size:11px">?�체 ?�제</button>
+            <div class="qt-section-label" style="margin-bottom:0">📅 등록할 Google 캘린더</div>
+            <button id="qt-select-cal-btn" class="btn btn-secondary btn-sm">+ 캘린더 추가</button>
+            <button id="qt-clear-cal-btn" class="btn btn-ghost btn-sm" style="font-size:11px">전체 해제</button>
           </div>
           <div id="qt-cal-list" class="qt-cal-chip-list"></div>
         </div>
 
-        <!-- ?�?� 추출???�무 목록 ?�?� -->
+        <!-- ── 추출된 업무 목록 ── -->
         <div class="qt-list-section">
-          <div class="qt-section-label">??추출???�무 목록</div>
+          <div class="qt-section-label">✅ 추출된 업무 목록</div>
           <div id="qt-task-list"></div>
         </div>
 
       </div>
       <div class="modal-footer">
-        <span id="qt-selected-count" style="font-size:12px;color:#888">0�??�택??/span>
+        <span id="qt-selected-count" style="font-size:12px;color:#888">0건 선택됨</span>
         <div style="flex:1"></div>
-        <button onclick="document.getElementById('qt-modal').hidden=true" class="btn btn-ghost">?�기</button>
-        <button id="qt-register-btn" class="btn btn-primary" disabled>???�록?�기</button>
+        <button onclick="document.getElementById('qt-modal').hidden=true" class="btn btn-ghost">닫기</button>
+        <button id="qt-register-btn" class="btn btn-primary" disabled>✅ 등록하기</button>
       </div>
     </div>
   </div>
 
-  <!-- ?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═??
-       강의???�약 모달
-       ?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═??-->
+  <!-- ═══════════════════════════════════════════════════════════
+       강의실 예약 모달
+       ═══════════════════════════════════════════════════════════ -->
   <div id="cls-resv-modal" class="modal" hidden aria-modal="true" role="dialog">
     <div class="modal-backdrop" onclick="document.getElementById('cls-resv-modal').hidden=true"></div>
     <div class="modal-dialog" style="max-width:540px">
       <div class="modal-header">
-        <h3 id="cls-resv-title" class="modal-title">강의???�약 ?�록</h3>
-        <button id="cls-resv-close-btn" class="modal-close">??/button>
+        <h3 id="cls-resv-title" class="modal-title">강의실 예약 등록</h3>
+        <button id="cls-resv-close-btn" class="modal-close">✕</button>
       </div>
       <div class="modal-body">
         <div style="display:flex;gap:8px">
@@ -1815,27 +1766,27 @@
             <select id="cls-resv-building" class="form-select"></select>
           </div>
           <div class="form-group" style="flex:1">
-            <label class="form-label">강의??<span class="required">*</span></label>
+            <label class="form-label">강의실 <span class="required">*</span></label>
             <select id="cls-resv-room" class="form-select"></select>
           </div>
         </div>
         <div class="form-group">
-          <label class="form-label">?�목 <span class="required">*</span></label>
-          <input id="cls-resv-title-input" type="text" class="form-input" placeholder="?? ?�보처리기능???�론">
+          <label class="form-label">제목 <span class="required">*</span></label>
+          <input id="cls-resv-title-input" type="text" class="form-input" placeholder="예: 정보처리기능사 이론">
         </div>
         <div style="display:flex;gap:8px">
           <div class="form-group" style="flex:1">
-            <label class="form-label">?�작??/label>
+            <label class="form-label">시작일</label>
             <input id="cls-resv-start-date" type="date" class="form-input">
           </div>
           <div class="form-group" style="flex:1">
-            <label class="form-label">종료??/label>
+            <label class="form-label">종료일</label>
             <input id="cls-resv-end-date" type="date" class="form-input">
           </div>
         </div>
         <div style="display:flex;gap:8px">
           <div class="form-group" style="flex:1">
-            <label class="form-label">?�작 교시</label>
+            <label class="form-label">시작 교시</label>
             <select id="cls-resv-start-period" class="form-select">
               <option value="1">1교시 09:00</option>
               <option value="2">2교시 10:00</option>
@@ -1846,8 +1797,8 @@
               <option value="7">7교시 15:00</option>
               <option value="8">8교시 16:00</option>
               <option value="9">9교시 17:00</option>
-              <option value="10">10교시(?�간1) 18:00</option>
-              <option value="11">11교시(?�간2) 19:00</option>
+              <option value="10">10교시(야간1) 18:00</option>
+              <option value="11">11교시(야간2) 19:00</option>
             </select>
           </div>
           <div class="form-group" style="flex:1">
@@ -1862,50 +1813,50 @@
               <option value="7">7교시 15:50</option>
               <option value="8">8교시 16:50</option>
               <option value="9">9교시 17:50</option>
-              <option value="10">10교시(?�간1) 18:50</option>
-              <option value="11">11교시(?�간2) 19:50</option>
+              <option value="10">10교시(야간1) 18:50</option>
+              <option value="11">11교시(야간2) 19:50</option>
             </select>
           </div>
         </div>
         <div class="form-group">
-          <label class="form-label">?�업 ?�일</label>
+          <label class="form-label">수업 요일</label>
           <div class="weekday-checkboxes">
-            <label class="weekday-check"><input type="checkbox" name="cls-weekday" value="??> ??/label>
-            <label class="weekday-check"><input type="checkbox" name="cls-weekday" value="??> ??/label>
-            <label class="weekday-check"><input type="checkbox" name="cls-weekday" value="??> ??/label>
-            <label class="weekday-check"><input type="checkbox" name="cls-weekday" value="�?> �?/label>
-            <label class="weekday-check"><input type="checkbox" name="cls-weekday" value="�?> �?/label>
-            <label class="weekday-check"><input type="checkbox" name="cls-weekday" value="??> ??/label>
+            <label class="weekday-check"><input type="checkbox" name="cls-weekday" value="월"> 월</label>
+            <label class="weekday-check"><input type="checkbox" name="cls-weekday" value="화"> 화</label>
+            <label class="weekday-check"><input type="checkbox" name="cls-weekday" value="수"> 수</label>
+            <label class="weekday-check"><input type="checkbox" name="cls-weekday" value="목"> 목</label>
+            <label class="weekday-check"><input type="checkbox" name="cls-weekday" value="금"> 금</label>
+            <label class="weekday-check"><input type="checkbox" name="cls-weekday" value="토"> 토</label>
           </div>
         </div>
         <div style="display:flex;gap:8px">
           <div class="form-group" style="flex:1">
-            <label class="form-label">?�약 ?�형</label>
+            <label class="form-label">예약 유형</label>
             <select id="cls-resv-type" class="form-select">
-              <option value="?�점?�?�제">?�점?�?�제</option>
-              <option value="?�강">?�강</option>
-              <option value="?�관">?�관</option>
-              <option value="기�?">기�?</option>
+              <option value="학점은행제">학점은행제</option>
+              <option value="특강">특강</option>
+              <option value="대관">대관</option>
+              <option value="기타">기타</option>
             </select>
           </div>
           <div class="form-group" style="flex:1">
-            <label class="form-label">?�기</label>
-            <input id="cls-resv-semester" type="text" class="form-input" placeholder="?? 2026-1?�기">
+            <label class="form-label">학기</label>
+            <input id="cls-resv-semester" type="text" class="form-input" placeholder="예: 2026-1학기">
           </div>
         </div>
       </div>
       <div class="modal-footer">
-        <button id="cls-resv-delete-btn" class="btn btn-danger" hidden>??��</button>
+        <button id="cls-resv-delete-btn" class="btn btn-danger" hidden>삭제</button>
         <button onclick="document.getElementById('cls-resv-modal').hidden=true" class="btn btn-ghost">취소</button>
-        <button id="cls-resv-save-btn" class="btn btn-primary">?�??/button>
+        <button id="cls-resv-save-btn" class="btn btn-primary">저장</button>
       </div>
     </div>
   </div>
 
-  <!-- ?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═??
-       ?�크립트 (로드 ?�서 중요)
-       기존 모듈?� ?��? ?�정?��? ?�음 ????모듈�?추�?
-       ?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═?�═??-->
+  <!-- ═══════════════════════════════════════════════════════
+       스크립트 (로드 순서 중요)
+       기존 모듈은 절대 수정하지 않음 — 새 모듈만 추가
+       ═══════════════════════════════════════════════════════ -->
   <script src="config.js?v=20260608s"></script>
   <script src="auth.js?v=20260608s"></script>
   <script src="calendar.js?v=20260608s"></script>
@@ -1922,7 +1873,7 @@
   <script src="quicktask.js?v=20260608s"></script>
   <script src="app.js?v=20260608s"></script>
   <script>
-    // 빠른 ?�무 ?�록 초기??(DOM 준�???
+    // 빠른 업무 등록 초기화 (DOM 준비 후)
     document.addEventListener('DOMContentLoaded', function () {
       if (typeof QuickTaskModule !== 'undefined') QuickTaskModule.init();
     });
