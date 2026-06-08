@@ -1609,12 +1609,12 @@
 
         <!-- ── 캘린더 선택 ── -->
         <div class="qt-cal-section">
-          <div class="qt-section-label">📅 등록할 Google 캘린더</div>
-          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-            <span id="qt-cal-badge" class="qt-cal-badge">미선택 (Google 캘린더에 등록하지 않음)</span>
-            <button id="qt-select-cal-btn" class="btn btn-secondary btn-sm">캘린더 선택</button>
-            <button id="qt-clear-cal-btn" class="btn btn-ghost btn-sm">해제</button>
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap">
+            <div class="qt-section-label" style="margin-bottom:0">📅 등록할 Google 캘린더</div>
+            <button id="qt-select-cal-btn" class="btn btn-secondary btn-sm">+ 캘린더 추가</button>
+            <button id="qt-clear-cal-btn" class="btn btn-ghost btn-sm" style="font-size:11px">전체 해제</button>
           </div>
+          <div id="qt-cal-list" class="qt-cal-chip-list"></div>
         </div>
 
         <!-- ── 추출된 업무 목록 ── -->
@@ -1741,20 +1741,20 @@
        스크립트 (로드 순서 중요)
        기존 모듈은 절대 수정하지 않음 — 새 모듈만 추가
        ═══════════════════════════════════════════════════════ -->
-  <script src="config.js?v=20260608m"></script>
-  <script src="auth.js?v=20260608m"></script>
-  <script src="calendar.js?v=20260608m"></script>
-  <script src="drive.js?v=20260608m"></script>
-  <script src="gmail.js?v=20260608m"></script>
-  <script src="report.js?v=20260608m"></script>
-  <script src="sheets.js?v=20260608m"></script>
-  <script src="resutil.js?v=20260608m"></script>
-  <script src="facility.js?v=20260608m"></script>
-  <script src="vehicle.js?v=20260608m"></script>
-  <script src="classroom.js?v=20260608m"></script>
-  <script src="work.js?v=20260608m"></script>
-  <script src="quicktask.js?v=20260608m"></script>
-  <script src="app.js?v=20260608m"></script>
+  <script src="config.js?v=20260608n"></script>
+  <script src="auth.js?v=20260608n"></script>
+  <script src="calendar.js?v=20260608n"></script>
+  <script src="drive.js?v=20260608n"></script>
+  <script src="gmail.js?v=20260608n"></script>
+  <script src="report.js?v=20260608n"></script>
+  <script src="sheets.js?v=20260608n"></script>
+  <script src="resutil.js?v=20260608n"></script>
+  <script src="facility.js?v=20260608n"></script>
+  <script src="vehicle.js?v=20260608n"></script>
+  <script src="classroom.js?v=20260608n"></script>
+  <script src="work.js?v=20260608n"></script>
+  <script src="quicktask.js?v=20260608n"></script>
+  <script src="app.js?v=20260608n"></script>
   <script>
     // 빠른 업무 등록 초기화 (DOM 준비 후)
     document.addEventListener('DOMContentLoaded', function () {

@@ -15,28 +15,29 @@ var QuickTaskModule = (function () {
   /* ────────────────────────────────────────────────────────────
      상태
   ──────────────────────────────────────────────────────────── */
-  var _SAVED_CAL_KEY = 'asea_qt_last_calendar'; // localStorage 키
+  var _SAVED_CALS_KEY = 'asea_qt_calendars'; // localStorage 키 (배열)
 
-  function _loadSavedCalendar() {
+  function _loadSavedCalendars() {
     try {
-      var v = localStorage.getItem(_SAVED_CAL_KEY);
-      return v ? JSON.parse(v) : null;
-    } catch (e) { return null; }
+      var v = localStorage.getItem(_SAVED_CALS_KEY);
+      if (v) return JSON.parse(v);
+      // 구버전 단일 키 마이그레이션
+      var old = localStorage.getItem('asea_qt_last_calendar');
+      if (old) { var c = JSON.parse(old); return c ? [c] : []; }
+      return [];
+    } catch (e) { return []; }
   }
 
-  function _saveCalendar(cal) {
-    try {
-      if (cal) localStorage.setItem(_SAVED_CAL_KEY, JSON.stringify(cal));
-      else localStorage.removeItem(_SAVED_CAL_KEY);
-    } catch (e) {}
+  function _saveCalendars(list) {
+    try { localStorage.setItem(_SAVED_CALS_KEY, JSON.stringify(list || [])); } catch (e) {}
   }
 
   var Q = {
-    extractedTasks: [],   // [{title, content, dueDate, category, checked}]
-    pasteImageB64:  null, // 붙여넣기된 이미지 base64 (data:image/...;base64,xxx)
-    pasteText:      '',   // 붙여넣기된 텍스트
-    targetCalendar: _loadSavedCalendar(), // {id, name, color} — 마지막 선택 복원
-    isAnalyzing:    false,
+    extractedTasks:  [],   // [{title, content, dueDate, dueTime, endTime, category, checked}]
+    pasteImageB64:   null, // 붙여넣기된 이미지 base64
+    pasteText:       '',   // 붙여넣기된 텍스트
+    targetCalendars: _loadSavedCalendars(), // [{id, name, color}] 다중 선택 목록
+    isAnalyzing:     false,
   };
 
   /* ────────────────────────────────────────────────────────────
@@ -155,18 +156,20 @@ var QuickTaskModule = (function () {
       var todayDow = dayNames[new Date().getDay()];
 
       var systemPrompt =
-        '당신은 업무 일정 추출 AI입니다. 사용자가 붙여넣은 내용에서 업무/일정 항목들을 추출해 ' +
+        '당신은 한국어 업무 일정 추출 전문 AI입니다. 이미지 또는 텍스트에서 업무/일정 항목들을 추출해 ' +
         'JSON 배열로만 반환하세요. 다른 설명 없이 JSON만 반환합니다.\n\n' +
+        '★ 한글 OCR 지침: 이미지에 한국어 텍스트가 포함된 경우, 흐릿하거나 작은 글씨도 최대한 정확하게 인식하세요. ' +
+        '받침·자모·조사를 주의 깊게 읽고, 맥락상 올바른 한국어 단어로 보정하세요. ' +
+        '이름·전화번호·날짜·시간을 특히 주의해서 추출하세요.\n\n' +
         '오늘 날짜: ' + today + ' (' + todayDow + '요일)\n\n' +
         '각 항목 형식:\n' +
         '{"title":"업무 제목","content":"상세 내용(담당자·협조사항 등 포함)","dueDate":"YYYY-MM-DD 또는 빈문자열","dueTime":"HH:MM 또는 빈문자열","endTime":"HH:MM 또는 빈문자열","category":"일반업무|교육일정|행사|대관|차량|기타"}\n\n' +
         '날짜·시간 처리 규칙:\n' +
         '- "이번 주 목요일", "다음 주 수요일" 등 상대적 표현 → 실제 날짜(YYYY-MM-DD)로 변환\n' +
         '- "내일", "모레", "다음달 15일" 등도 실제 날짜로 변환\n' +
-        '- "11:00~13:00", "오전 10시~오후 1시" 처럼 범위가 있으면 dueTime=시작, endTime=종료\n' +
+        '- "11:00~13:00", "오전 10시~오후 1시" 처럼 범위 → dueTime=시작, endTime=종료\n' +
         '- "3시", "오후 2시" 처럼 시작 시간만 있으면 dueTime에만 기록, endTime은 빈문자열\n' +
-        '- 날짜가 전혀 없으면 dueDate는 빈문자열("")\n' +
-        '- 시간이 없으면 dueTime, endTime 모두 빈문자열("")';
+        '- 날짜가 전혀 없으면 dueDate는 빈문자열(""), 시간이 없으면 dueTime·endTime 모두 빈문자열';
 
       var messages;
       if (Q.pasteImageB64) {
@@ -174,7 +177,11 @@ var QuickTaskModule = (function () {
         var mediaType  = (Q.pasteImageB64.match(/^data:([^;]+);/) || [])[1] || 'image/png';
         messages = [{ role: 'user', content: [
           { type: 'image', source: { type: 'base64', media_type: mediaType, data: base64data } },
-          { type: 'text', text: '위 이미지에서 업무/일정 항목들을 추출해 JSON 배열로 반환하세요.' }
+          { type: 'text', text:
+            '위 이미지는 한국어 텍스트가 포함된 화면입니다. ' +
+            '한글 OCR에 최대한 집중하여 업무/일정 항목들을 정확히 추출해 JSON 배열로 반환하세요. ' +
+            '이름, 날짜, 시간, 전화번호를 빠짐없이 추출하고 content에 모든 세부 내용을 포함하세요.'
+          }
         ]}];
       } else {
         messages = [{ role: 'user', content: '다음 내용에서 업무/일정 항목들을 추출해 JSON 배열로 반환하세요:\n\n' + text }];
@@ -285,12 +292,12 @@ var QuickTaskModule = (function () {
               '<span class="qt-cat-badge" style="background:' + catColor + '">' + escapeHtml(task.category) + '</span>' +
               '<input class="qt-task-title-input form-input" style="flex:1;min-width:140px;padding:4px 8px;font-size:13px" data-idx="' + idx + '" value="' + escapeHtml(task.title) + '">' +
             '</div>' +
-            '<div style="display:flex;gap:6px;margin-top:4px;align-items:center;flex-wrap:wrap">' +
-              '<input type="date" class="qt-task-date-input form-input" style="width:130px;padding:3px 8px;font-size:12px" data-idx="' + idx + '" value="' + escapeHtml(task.dueDate) + '">' +
-              '<input type="time" class="qt-task-time-input form-input" style="width:88px;padding:3px 8px;font-size:12px" data-idx="' + idx + '" value="' + escapeHtml(task.dueTime || '') + '" title="시작 시간">' +
-              '<span style="font-size:11px;color:#888">~</span>' +
-              '<input type="time" class="qt-task-endtime-input form-input" style="width:88px;padding:3px 8px;font-size:12px" data-idx="' + idx + '" value="' + escapeHtml(task.endTime || '') + '" title="종료 시간">' +
-              '<select class="qt-task-cat-sel form-select" style="width:100px;padding:3px 6px;font-size:12px" data-idx="' + idx + '">' +
+            '<div class="qt-time-row">' +
+              '<input type="date" class="qt-task-date-input form-input" style="padding:3px 8px;font-size:12px" data-idx="' + idx + '" value="' + escapeHtml(task.dueDate) + '">' +
+              '<input type="time" class="qt-task-time-input form-input" style="padding:3px 6px;font-size:12px" data-idx="' + idx + '" value="' + escapeHtml(task.dueTime || '') + '" title="시작 시간">' +
+              '<span class="qt-time-sep">~</span>' +
+              '<input type="time" class="qt-task-endtime-input form-input" style="padding:3px 6px;font-size:12px" data-idx="' + idx + '" value="' + escapeHtml(task.endTime || '') + '" title="종료 시간">' +
+              '<select class="qt-task-cat-sel form-select" style="width:96px;padding:3px 6px;font-size:12px" data-idx="' + idx + '">' +
                 ['일반업무','교육일정','행사','대관','차량','기타'].map(function(c){
                   return '<option value="'+c+'"'+(c===task.category?' selected':'')+'>'+c+'</option>';
                 }).join('') +
@@ -387,17 +394,27 @@ var QuickTaskModule = (function () {
      캘린더 배지
   ──────────────────────────────────────────────────────────── */
   function renderCalendarBadge() {
-    var badge = $q('qt-cal-badge');
-    if (!badge) return;
-    if (Q.targetCalendar) {
-      badge.innerHTML =
-        '<span style="display:inline-flex;align-items:center;gap:5px">' +
-          '<span style="width:10px;height:10px;border-radius:50%;background:' + Q.targetCalendar.color + '"></span>' +
-          escapeHtml(Q.targetCalendar.name) +
-        '</span>';
-    } else {
-      badge.textContent = '미선택 (Google 캘린더에 등록하지 않음)';
+    var wrap = $q('qt-cal-list');
+    if (!wrap) return;
+    if (!Q.targetCalendars || Q.targetCalendars.length === 0) {
+      wrap.innerHTML = '<span style="font-size:12px;color:#aaa">미선택 — 캘린더 추가 버튼으로 선택하세요</span>';
+      return;
     }
+    wrap.innerHTML = Q.targetCalendars.map(function (cal, i) {
+      return '<span class="qt-cal-chip">' +
+        '<span style="width:9px;height:9px;border-radius:50%;background:' + (cal.color || '#4285F4') + ';display:inline-block;flex-shrink:0"></span>' +
+        '<span style="font-size:12px">' + escapeHtml(cal.name) + '</span>' +
+        '<button class="qt-cal-chip-del" data-i="' + i + '" title="제거">×</button>' +
+      '</span>';
+    }).join('');
+    wrap.querySelectorAll('.qt-cal-chip-del').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var idx = parseInt(this.dataset.i);
+        Q.targetCalendars.splice(idx, 1);
+        _saveCalendars(Q.targetCalendars);
+        renderCalendarBadge();
+      });
+    });
   }
 
   /* ────────────────────────────────────────────────────────────
@@ -434,73 +451,77 @@ var QuickTaskModule = (function () {
           status:      t.status || '예정',  // 예정 | 완료
         };
 
-        // 2. Google 캘린더에도 등록
-        // 캘린더 미선택이면 ASEA-개인업무 캘린더 자동 사용
-        var calTarget = Q.targetCalendar;
-        if (!calTarget && window._workW && window._workW.asea개인CalId) {
-          calTarget = { id: window._workW.asea개인CalId, name: 'ASEA-개인업무', color: '#4285F4' };
+        // 2. Google 캘린더에 등록 (다중 캘린더 지원)
+        var calTargets = (Q.targetCalendars && Q.targetCalendars.length > 0)
+          ? Q.targetCalendars.slice()
+          : [];
+        // 하나도 없으면 ASEA-개인업무 자동 사용
+        if (calTargets.length === 0 && window._workW && window._workW.asea개인CalId) {
+          calTargets = [{ id: window._workW.asea개인CalId, name: 'ASEA-개인업무', color: '#4285F4' }];
         }
-        if (calTarget && t.dueDate) {
-          try {
-            var token = Auth.getToken();
-            var eventBody;
-            if (t.dueTime) {
-              // 시작 시간 있음 → dateTime 이벤트
-              var startDt = t.dueDate + 'T' + t.dueTime + ':00';
-              var endDt;
-              if (t.endTime) {
-                // 종료 시간이 명시된 경우 그대로 사용
-                endDt = t.dueDate + 'T' + t.endTime + ':00';
-                // 종료시간이 시작보다 작으면 다음날로 처리 (ex: 23:00~01:00)
-                if (endDt <= startDt) {
-                  var nextDay = new Date(t.dueDate);
-                  nextDay.setDate(nextDay.getDate() + 1);
-                  var nd = nextDay.getFullYear() + '-' +
-                    String(nextDay.getMonth()+1).padStart(2,'0') + '-' +
-                    String(nextDay.getDate()).padStart(2,'0');
-                  endDt = nd + 'T' + t.endTime + ':00';
-                }
-              } else {
-                // 종료 시간 없으면 +1시간 기본값
-                var endDate = new Date(startDt);
-                endDate.setHours(endDate.getHours() + 1);
-                endDt = endDate.getFullYear() + '-' +
-                  String(endDate.getMonth()+1).padStart(2,'0') + '-' +
-                  String(endDate.getDate()).padStart(2,'0') + 'T' +
-                  String(endDate.getHours()).padStart(2,'0') + ':' +
-                  String(endDate.getMinutes()).padStart(2,'0') + ':00';
+
+        if (calTargets.length > 0 && t.dueDate) {
+          // 이벤트 바디 한 번만 만들고 여러 캘린더에 등록
+          var eventBody;
+          if (t.dueTime) {
+            var startDt = t.dueDate + 'T' + t.dueTime + ':00';
+            var endDt;
+            if (t.endTime) {
+              endDt = t.dueDate + 'T' + t.endTime + ':00';
+              if (endDt <= startDt) {
+                var nextDay = new Date(t.dueDate);
+                nextDay.setDate(nextDay.getDate() + 1);
+                var nd = nextDay.getFullYear() + '-' +
+                  String(nextDay.getMonth()+1).padStart(2,'0') + '-' +
+                  String(nextDay.getDate()).padStart(2,'0');
+                endDt = nd + 'T' + t.endTime + ':00';
               }
-              eventBody = {
-                summary:     '[업무] ' + t.title,
-                description: t.content || '',
-                start: { dateTime: startDt, timeZone: 'Asia/Seoul' },
-                end:   { dateTime: endDt,   timeZone: 'Asia/Seoul' },
-                colorId: '1',
-              };
             } else {
-              // 날짜만 있으면 종일 이벤트
-              eventBody = {
-                summary:     '[업무] ' + t.title,
-                description: t.content || '',
-                start: { date: t.dueDate },
-                end:   { date: t.dueDate },
-                colorId: '1',
-              };
+              var endDateObj = new Date(startDt);
+              endDateObj.setHours(endDateObj.getHours() + 1);
+              endDt = endDateObj.getFullYear() + '-' +
+                String(endDateObj.getMonth()+1).padStart(2,'0') + '-' +
+                String(endDateObj.getDate()).padStart(2,'0') + 'T' +
+                String(endDateObj.getHours()).padStart(2,'0') + ':' +
+                String(endDateObj.getMinutes()).padStart(2,'0') + ':00';
             }
-            var calResp = await fetch(
-              'https://www.googleapis.com/calendar/v3/calendars/' +
-              encodeURIComponent(calTarget.id) + '/events',
-              {
-                method:  'POST',
-                headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
-                body:    JSON.stringify(eventBody),
+            eventBody = {
+              summary:     '[업무] ' + t.title,
+              description: t.content || '',
+              start: { dateTime: startDt, timeZone: 'Asia/Seoul' },
+              end:   { dateTime: endDt,   timeZone: 'Asia/Seoul' },
+              colorId: '1',
+            };
+          } else {
+            eventBody = {
+              summary:     '[업무] ' + t.title,
+              description: t.content || '',
+              start: { date: t.dueDate },
+              end:   { date: t.dueDate },
+              colorId: '1',
+            };
+          }
+
+          var firstCalEventId = '';
+          for (var ci = 0; ci < calTargets.length; ci++) {
+            try {
+              var token = Auth.getToken();
+              var calResp = await fetch(
+                'https://www.googleapis.com/calendar/v3/calendars/' +
+                encodeURIComponent(calTargets[ci].id) + '/events',
+                {
+                  method:  'POST',
+                  headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+                  body:    JSON.stringify(eventBody),
+                }
+              );
+              if (calResp.ok) {
+                var calData = await calResp.json();
+                if (!firstCalEventId) firstCalEventId = calData.id || '';
               }
-            );
-            if (calResp.ok) {
-              var calData = await calResp.json();
-              taskData.calEventId = calData.id || '';
-            }
-          } catch (calErr) { /* 캘린더 실패해도 시트 등록은 진행 */ }
+            } catch (calErr) { console.warn('[ASEA] 캘린더 등록 실패:', calTargets[ci].name, calErr); }
+          }
+          taskData.calEventId = firstCalEventId;
         }
 
         // Sheets 등록 (SheetsModule이 있으면 — 실패해도 캘린더 등록은 유지)
@@ -689,26 +710,30 @@ var QuickTaskModule = (function () {
     var analyzeBtn = $q('qt-analyze-btn');
     if (analyzeBtn) analyzeBtn.addEventListener('click', analyzeContent);
 
-    // 캘린더 선택 버튼
+    // 캘린더 추가 버튼
     var calBtn = $q('qt-select-cal-btn');
     if (calBtn) calBtn.addEventListener('click', function () {
       if (typeof ReservationUtil !== 'undefined') {
         ReservationUtil.showCalendarPicker(function (cal) {
-          Q.targetCalendar = cal;
-          _saveCalendar(cal);
+          if (!Q.targetCalendars) Q.targetCalendars = [];
+          // 중복 방지
+          var already = Q.targetCalendars.some(function (c) { return c.id === cal.id; });
+          if (already) { toast(cal.name + '은(는) 이미 추가되어 있습니다.', 'info'); return; }
+          Q.targetCalendars.push(cal);
+          _saveCalendars(Q.targetCalendars);
           renderCalendarBadge();
-          toast(cal.name + '이(가) 선택되었습니다.', 'success');
+          toast('✅ ' + cal.name + ' 추가되었습니다.', 'success');
         });
       } else {
         toast('ReservationUtil이 로드되지 않았습니다.', 'error');
       }
     });
 
-    // 캘린더 선택 해제 버튼
+    // 전체 해제 버튼
     var calClearBtn = $q('qt-clear-cal-btn');
     if (calClearBtn) calClearBtn.addEventListener('click', function () {
-      Q.targetCalendar = null;
-      _saveCalendar(null);
+      Q.targetCalendars = [];
+      _saveCalendars([]);
       renderCalendarBadge();
     });
 
