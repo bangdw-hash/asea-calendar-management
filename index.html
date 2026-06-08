@@ -106,6 +106,10 @@
         <span class="tab-label">입출입관리</span>
         <span id="checkinmgmt-badge" class="tab-badge" hidden>●</span>
       </button>
+      <button class="tab-btn" data-tab="sms" role="tab" aria-selected="false">
+        <span class="tab-icon" aria-hidden="true">📱</span>
+        <span class="tab-label">문자발송</span>
+      </button>
       <button class="tab-btn" data-tab="settings" role="tab" aria-selected="false">
         <span class="tab-icon" aria-hidden="true">⚙️</span>
         <span class="tab-label">설정</span>
@@ -911,6 +915,29 @@
           </div>
         </div>
 
+      </section>
+
+      <!-- ════════════════════════════════════════════════════
+           📱 문자발송 탭
+           ════════════════════════════════════════════════════ -->
+      <section id="tab-sms" class="tab-panel" role="tabpanel" hidden>
+        <h2 class="section-title">📱 문자 발송</h2>
+
+        <!-- 서브탭 -->
+        <div class="sms-subtab-bar">
+          <button id="sms-subtab-compose"  class="sms-subtab-btn active">✏️ 문자 작성</button>
+          <button id="sms-subtab-history"  class="sms-subtab-btn">📋 발송 내역</button>
+          <button id="sms-subtab-settings" class="sms-subtab-btn">⚙️ 설정</button>
+        </div>
+
+        <!-- 작성 패널 -->
+        <div id="sms-panel-compose"  class="sms-panel"></div>
+
+        <!-- 내역 패널 -->
+        <div id="sms-panel-history"  class="sms-panel" hidden></div>
+
+        <!-- 설정 패널 -->
+        <div id="sms-panel-settings" class="sms-panel" hidden></div>
       </section>
 
       <section id="tab-settings" class="tab-panel" role="tabpanel" hidden>
@@ -2049,7 +2076,8 @@
   <script src="work.js?v=20260608y"></script>
   <script src="workorder.js?v=20260608s"></script>
   <script src="quicktask.js?v=20260608s"></script>
-  <script src="app.js?v=20260608z3"></script>
+  <script src="sms.js?v=20260608a1"></script>
+  <script src="app.js?v=20260608z4"></script>
   <script>
     // 빠른 업무 등록 초기화 (DOM 준비 후)
     document.addEventListener('DOMContentLoaded', function () {

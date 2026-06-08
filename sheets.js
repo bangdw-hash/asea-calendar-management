@@ -33,6 +33,7 @@ var SheetsModule = (function () {
     '공간관리':  ['id','name','location','description','qrCode','status','createdAt','lat','lng','geoRadius'],
     '입출입기록':['id','roomId','roomName','userName','phone','affiliation','checkType','timestamp','consentGiven','consentTimestamp','consentTextVersion','deviceId'],
     '입출입사용자':['id','name','phone','affiliation','firstConsentAt','consentTextVersion','lastVisit','visitCount'],
+    '문자발송내역':['id','sentAt','sender','message','msgType','receiverCount','receivers','resultCode','successCnt','errorCnt','sentBy'],
   };
 
   function getToken() { return Auth.getToken(); }
