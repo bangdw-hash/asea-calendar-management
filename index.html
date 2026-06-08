@@ -101,6 +101,11 @@
         <span class="tab-label">작업지시</span>
         <span id="workorder-badge" class="tab-badge" hidden>0</span>
       </button>
+      <button class="tab-btn" data-tab="checkinmgmt" role="tab" aria-selected="false">
+        <span class="tab-icon" aria-hidden="true">🚪</span>
+        <span class="tab-label">입출입관리</span>
+        <span id="checkinmgmt-badge" class="tab-badge" hidden>●</span>
+      </button>
       <button class="tab-btn" data-tab="settings" role="tab" aria-selected="false">
         <span class="tab-icon" aria-hidden="true">⚙️</span>
         <span class="tab-label">설정</span>
@@ -772,6 +777,102 @@
             </div>
           </div>
         </div>
+      </section>
+
+      <!-- 🚪 강의실 입출입 관리 탭 -->
+      <section id="tab-checkinmgmt" class="tab-panel" role="tabpanel" hidden>
+
+        <!-- ── 상단 헤더 ── -->
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:18px">
+          <h2 class="section-title" style="margin-bottom:0">🚪 강의실 입출입 관리</h2>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button id="ci-tab-btn" class="tab-sub-btn active" data-ci-tab="spaces">📍 공간 관리</button>
+            <button id="ci-log-btn" class="tab-sub-btn" data-ci-tab="logs">📊 입출입 현황</button>
+          </div>
+        </div>
+
+        <!-- ── 공간 관리 섹션 ── -->
+        <div id="ci-section-spaces">
+          <div style="display:flex;gap:8px;align-items:center;margin-bottom:16px;flex-wrap:wrap">
+            <button id="ci-add-space-btn" class="btn btn-primary btn-sm">+ 공간 등록</button>
+            <button id="ci-refresh-spaces-btn" class="btn btn-secondary btn-sm">🔄 새로고침</button>
+            <span style="font-size:12px;color:#888;margin-left:4px">공간 등록 후 QR 코드를 출력해 해당 공간에 부착하세요.</span>
+          </div>
+          <div id="ci-spaces-list"><p class="empty-state">로그인 후 불러옵니다.</p></div>
+        </div>
+
+        <!-- ── 입출입 현황 섹션 ── -->
+        <div id="ci-section-logs" hidden>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px">
+            <select id="ci-log-filter-room" class="form-select" style="min-width:140px">
+              <option value="all">전체 공간</option>
+            </select>
+            <select id="ci-log-filter-type" class="form-select" style="min-width:100px">
+              <option value="all">전체</option>
+              <option value="입실">입실</option>
+              <option value="퇴실">퇴실</option>
+            </select>
+            <input id="ci-log-filter-date" type="date" class="form-select" style="min-width:140px">
+            <button id="ci-log-load-btn" class="btn btn-primary btn-sm">🔍 조회</button>
+          </div>
+          <div id="ci-log-summary" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-bottom:16px"></div>
+          <div id="ci-log-list"><p class="empty-state">위 조건을 설정하고 조회 버튼을 누르세요.</p></div>
+        </div>
+
+        <!-- ── 공간 등록 모달 ── -->
+        <div id="ci-space-modal" class="modal" hidden aria-modal="true" role="dialog">
+          <div class="modal-backdrop" id="ci-space-modal-backdrop"></div>
+          <div class="modal-dialog">
+            <div class="modal-header">
+              <h3 id="ci-space-modal-title" class="modal-title">공간 등록</h3>
+              <button class="modal-close" id="ci-space-modal-close" aria-label="닫기">✕</button>
+            </div>
+            <div class="modal-body">
+              <div class="form-group">
+                <label class="form-label">공간 이름 <span class="required">*</span></label>
+                <input id="ci-space-name" type="text" class="form-input" placeholder="예: A320 시뮬레이터실">
+              </div>
+              <div class="form-group">
+                <label class="form-label">위치</label>
+                <input id="ci-space-location" type="text" class="form-input" placeholder="예: 항공관 3층 302호">
+              </div>
+              <div class="form-group">
+                <label class="form-label">설명</label>
+                <input id="ci-space-desc" type="text" class="form-input" placeholder="용도, 주의사항 등">
+              </div>
+            </div>
+            <div class="modal-footer">
+              <div class="modal-footer-right">
+                <button class="btn btn-ghost" id="ci-space-modal-cancel">취소</button>
+                <button id="ci-space-save-btn" class="btn btn-primary">등록</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── QR 코드 모달 ── -->
+        <div id="ci-qr-modal" class="modal" hidden aria-modal="true" role="dialog">
+          <div class="modal-backdrop" id="ci-qr-modal-backdrop"></div>
+          <div class="modal-dialog" style="max-width:400px">
+            <div class="modal-header">
+              <h3 id="ci-qr-modal-title" class="modal-title">QR 코드</h3>
+              <button class="modal-close" id="ci-qr-modal-close" aria-label="닫기">✕</button>
+            </div>
+            <div class="modal-body" style="align-items:center;text-align:center;gap:14px">
+              <div style="background:#fff;border:8px solid #f0f0f0;border-radius:12px;display:inline-block;padding:8px">
+                <img id="ci-qr-img" src="" alt="QR Code" style="width:260px;height:260px;display:block">
+              </div>
+              <div id="ci-qr-room-name" style="font-size:17px;font-weight:700;margin-top:4px"></div>
+              <div id="ci-qr-room-location" style="font-size:13px;color:#888"></div>
+              <div id="ci-qr-url" style="font-size:11px;color:#aaa;word-break:break-all;padding:0 8px"></div>
+              <div style="display:flex;gap:8px;margin-top:8px;justify-content:center;flex-wrap:wrap">
+                <button id="ci-qr-download-btn" class="btn btn-primary btn-sm">⬇️ PNG 다운로드</button>
+                <button id="ci-qr-print-btn" class="btn btn-secondary btn-sm">🖨️ 인쇄</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
       </section>
 
       <section id="tab-settings" class="tab-panel" role="tabpanel" hidden>

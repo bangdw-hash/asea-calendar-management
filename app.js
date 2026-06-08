@@ -140,7 +140,8 @@
     if (name === 'email')      renderEmailTab();
     if (name === 'settings')   renderSettingsTab();
     if (name === 'extract')    renderExtractTab();
-    if (name === 'workorder')  initWorkOrderTab();
+    if (name === 'workorder')    initWorkOrderTab();
+    if (name === 'checkinmgmt')  initCheckinMgmtTab();
   }
 
   function initTabs() {
@@ -3248,6 +3249,287 @@
       }
     });
   }
+
+  /* ═══════════════════════════════════════════════════════════
+     🚪 강의실 입출입 관리 탭
+  ═══════════════════════════════════════════════════════════ */
+  var _ciMgmtInited   = false;
+  var _ciSpaces       = [];
+  var _ciLogs         = [];
+  var _ciActiveSubTab = 'spaces';
+
+  function initCheckinMgmtTab() {
+    if (_ciMgmtInited) { _ciLoadSpaces(); return; }
+    _ciMgmtInited = true;
+
+    // 서브탭 전환
+    document.querySelectorAll('.tab-sub-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        _ciActiveSubTab = btn.dataset.ciTab;
+        document.querySelectorAll('.tab-sub-btn').forEach(function (b) { b.classList.remove('active'); });
+        btn.classList.add('active');
+        $('ci-section-spaces').hidden = (_ciActiveSubTab !== 'spaces');
+        $('ci-section-logs').hidden   = (_ciActiveSubTab !== 'logs');
+        if (_ciActiveSubTab === 'logs') _ciRefreshRoomFilter();
+      });
+    });
+
+    // 공간 관리 버튼
+    $('ci-add-space-btn').addEventListener('click', function () { _ciOpenSpaceModal(); });
+    $('ci-refresh-spaces-btn').addEventListener('click', _ciLoadSpaces);
+    $('ci-space-modal-close').addEventListener('click', _ciCloseSpaceModal);
+    $('ci-space-modal-cancel').addEventListener('click', _ciCloseSpaceModal);
+    $('ci-space-modal-backdrop').addEventListener('click', _ciCloseSpaceModal);
+    $('ci-space-save-btn').addEventListener('click', _ciSaveSpace);
+
+    // QR 모달
+    $('ci-qr-modal-close').addEventListener('click', function () { $('ci-qr-modal').hidden = true; });
+    $('ci-qr-modal-backdrop').addEventListener('click', function () { $('ci-qr-modal').hidden = true; });
+    $('ci-qr-download-btn').addEventListener('click', _ciDownloadQr);
+    $('ci-qr-print-btn').addEventListener('click', function () {
+      var img = $('ci-qr-img');
+      var name = $('ci-qr-room-name').textContent;
+      var w = window.open('');
+      w.document.write('<html><head><title>' + name + ' QR</title></head><body style="text-align:center;padding:40px">' +
+        '<img src="' + img.src + '" style="width:300px;height:300px"><br>' +
+        '<h2 style="font-family:sans-serif;margin-top:16px">' + name + '</h2>' +
+        '<p style="font-family:sans-serif;color:#888">' + $('ci-qr-room-location').textContent + '</p>' +
+        '<script>window.onload=function(){window.print();window.close();}<\/script>' +
+        '</body></html>');
+      w.document.close();
+    });
+
+    // 로그 조회
+    $('ci-log-load-btn').addEventListener('click', _ciLoadLogs);
+    $('ci-log-filter-room').addEventListener('change', _ciRenderLogs);
+    $('ci-log-filter-type').addEventListener('change', _ciRenderLogs);
+
+    // 오늘 날짜 기본값
+    $('ci-log-filter-date').value = new Date().toISOString().slice(0, 10);
+
+    _ciLoadSpaces();
+  }
+
+  /* ── 공간 관리 ── */
+  async function _ciLoadSpaces() {
+    $('ci-spaces-list').innerHTML = '<p class="empty-state">불러오는 중...</p>';
+    try {
+      _ciSpaces = (await SheetsModule.getSpaces()) || [];
+      _ciRenderSpaces();
+    } catch (e) {
+      $('ci-spaces-list').innerHTML = '<p class="empty-state" style="color:#e53935">불러오기 실패: ' + e.message + '</p>';
+    }
+  }
+
+  function _ciRenderSpaces() {
+    if (!_ciSpaces.length) {
+      $('ci-spaces-list').innerHTML =
+        '<div class="empty-state">' +
+        '<div style="font-size:40px;margin-bottom:10px">🚪</div>' +
+        '<div>등록된 공간이 없습니다.</div>' +
+        '<div style="font-size:13px;margin-top:6px">+ 공간 등록 버튼을 눌러 추가하세요.</div>' +
+        '</div>';
+      return;
+    }
+    var baseUrl = CONFIG.baseUrl || 'https://bangdw-hash.github.io/asea-calendar-management/';
+    $('ci-spaces-list').innerHTML = _ciSpaces.map(function (sp, i) {
+      var checkinUrl = baseUrl + 'checkin.html?room=' + encodeURIComponent(sp.id);
+      return '<div class="ci-space-card">' +
+        '<div>' +
+          '<div class="ci-space-card-name">🚪 ' + _esc(sp.name) + '</div>' +
+          '<div class="ci-space-card-meta">' +
+            (sp.location ? '📍 ' + _esc(sp.location) : '') +
+            (sp.description ? (sp.location ? '&nbsp;·&nbsp;' : '') + _esc(sp.description) : '') +
+          '</div>' +
+          '<div class="ci-space-card-url">' + checkinUrl + '</div>' +
+        '</div>' +
+        '<div class="ci-space-card-actions">' +
+          '<button class="btn btn-primary btn-sm" onclick="_ciShowQr(\'' + sp.id + '\')">🔲 QR 보기</button>' +
+          '<button class="btn btn-secondary btn-sm" onclick="_ciDeleteSpace(' + (i + 2) + ',\'' + _esc(sp.name) + '\')">삭제</button>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+    _ciRefreshRoomFilter();
+  }
+
+  function _ciOpenSpaceModal() {
+    $('ci-space-name').value = '';
+    $('ci-space-location').value = '';
+    $('ci-space-desc').value = '';
+    $('ci-space-modal').hidden = false;
+    setTimeout(function () { $('ci-space-name').focus(); }, 100);
+  }
+
+  function _ciCloseSpaceModal() { $('ci-space-modal').hidden = true; }
+
+  async function _ciSaveSpace() {
+    var name = ($('ci-space-name').value || '').trim();
+    if (!name) { toast('공간 이름을 입력하세요.', 'error'); return; }
+    var btn = $('ci-space-save-btn');
+    btn.disabled = true;
+    btn.textContent = '등록 중...';
+    try {
+      var result = await SheetsModule.addSpace({
+        name: name,
+        location: ($('ci-space-location').value || '').trim(),
+        description: ($('ci-space-desc').value || '').trim(),
+      });
+      toast('✅ "' + name + '" 공간이 등록되었습니다.', 'success');
+      _ciCloseSpaceModal();
+      await _ciLoadSpaces();
+      // 등록 직후 QR 바로 표시
+      if (result && result.id) _ciShowQr(result.id);
+    } catch (e) {
+      toast('등록 실패: ' + e.message, 'error');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = '등록';
+    }
+  }
+
+  async function _ciDeleteSpace(rowNum, name) {
+    if (!confirm('"' + name + '"을(를) 삭제하시겠습니까?\n부착된 QR 코드도 함께 무효화됩니다.')) return;
+    try {
+      await SheetsModule.deleteSpace(rowNum);
+      toast('삭제했습니다.', 'success');
+      _ciLoadSpaces();
+    } catch (e) { toast('삭제 실패: ' + e.message, 'error'); }
+  }
+
+  /* ── QR 코드 ── */
+  var _ciQrCurrentUrl = '';
+
+  function _ciShowQr(roomId) {
+    var sp = _ciSpaces.find(function (s) { return s.id === roomId; });
+    if (!sp) return;
+    var baseUrl = CONFIG.baseUrl || 'https://bangdw-hash.github.io/asea-calendar-management/';
+    var checkinUrl = baseUrl + 'checkin.html?room=' + encodeURIComponent(sp.id);
+    var qrSrc = 'https://api.qrserver.com/v1/create-qr-code/?data=' +
+                encodeURIComponent(checkinUrl) + '&size=400x400&margin=10&color=000000&bgcolor=ffffff';
+    _ciQrCurrentUrl = qrSrc;
+    $('ci-qr-img').src = qrSrc;
+    $('ci-qr-img').alt = sp.name + ' QR';
+    $('ci-qr-modal-title').textContent = sp.name + ' QR 코드';
+    $('ci-qr-room-name').textContent = sp.name;
+    $('ci-qr-room-location').textContent = sp.location || '';
+    $('ci-qr-url').textContent = checkinUrl;
+    $('ci-qr-modal').hidden = false;
+  }
+
+  async function _ciDownloadQr() {
+    var name = $('ci-qr-room-name').textContent || 'qr';
+    var btn = $('ci-qr-download-btn');
+    btn.disabled = true;
+    btn.textContent = '⏳ 준비 중...';
+    try {
+      var res = await fetch(_ciQrCurrentUrl);
+      var blob = await res.blob();
+      var url  = URL.createObjectURL(blob);
+      var a    = document.createElement('a');
+      a.href     = url;
+      a.download = name + '_QR.png';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast('✅ QR 코드가 다운로드됩니다.', 'success');
+    } catch (e) {
+      toast('다운로드 실패: ' + e.message, 'error');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = '⬇️ PNG 다운로드';
+    }
+  }
+
+  /* ── 입출입 현황 ── */
+  function _ciRefreshRoomFilter() {
+    var sel = $('ci-log-filter-room');
+    if (!sel) return;
+    var cur = sel.value;
+    sel.innerHTML = '<option value="all">전체 공간</option>';
+    _ciSpaces.forEach(function (sp) {
+      var opt = document.createElement('option');
+      opt.value = sp.id;
+      opt.textContent = sp.name;
+      sel.appendChild(opt);
+    });
+    if (cur) sel.value = cur;
+  }
+
+  async function _ciLoadLogs() {
+    $('ci-log-list').innerHTML = '<p class="empty-state">불러오는 중...</p>';
+    $('ci-log-summary').innerHTML = '';
+    var date = $('ci-log-filter-date').value || new Date().toISOString().slice(0, 10);
+    try {
+      _ciLogs = (await SheetsModule.getCheckinLogs(null, date, date)) || [];
+      _ciRenderLogs();
+    } catch (e) {
+      $('ci-log-list').innerHTML = '<p class="empty-state" style="color:#e53935">불러오기 실패: ' + e.message + '</p>';
+    }
+  }
+
+  function _ciRenderLogs() {
+    var roomFilter = ($('ci-log-filter-room').value || 'all');
+    var typeFilter = ($('ci-log-filter-type').value || 'all');
+
+    var filtered = _ciLogs.filter(function (l) {
+      if (roomFilter !== 'all' && l.roomId !== roomFilter) return false;
+      if (typeFilter !== 'all' && l.checkType !== typeFilter) return false;
+      return true;
+    }).sort(function (a, b) {
+      return (b.timestamp || '').localeCompare(a.timestamp || '');
+    });
+
+    // 요약
+    var inCount  = filtered.filter(function (l) { return l.checkType === '입실'; }).length;
+    var outCount = filtered.filter(function (l) { return l.checkType === '퇴실'; }).length;
+    var unames   = new Set(filtered.map(function (l) { return l.userName; }));
+    $('ci-log-summary').innerHTML =
+      '<div class="ci-summary-card" style="background:#e8f5e9">' +
+        '<div class="ci-summary-label" style="color:#2e7d32">✅ 입실</div>' +
+        '<div class="ci-summary-value" style="color:#2e7d32">' + inCount + '</div>' +
+      '</div>' +
+      '<div class="ci-summary-card" style="background:#fce4ec">' +
+        '<div class="ci-summary-label" style="color:#c62828">🚪 퇴실</div>' +
+        '<div class="ci-summary-value" style="color:#c62828">' + outCount + '</div>' +
+      '</div>' +
+      '<div class="ci-summary-card" style="background:#e3f2fd">' +
+        '<div class="ci-summary-label" style="color:#1565c0">👤 인원</div>' +
+        '<div class="ci-summary-value" style="color:#1565c0">' + unames.size + '명</div>' +
+      '</div>';
+
+    if (!filtered.length) {
+      $('ci-log-list').innerHTML = '<p class="empty-state">해당 조건의 기록이 없습니다.</p>';
+      return;
+    }
+
+    $('ci-log-list').innerHTML =
+      '<div style="overflow-x:auto">' +
+      '<table class="ci-log-table">' +
+      '<thead><tr>' +
+        '<th>시각</th><th>구분</th><th>공간</th><th>이름</th><th>소속</th><th>전화번호</th>' +
+      '</tr></thead><tbody>' +
+      filtered.map(function (l) {
+        var ts = l.timestamp ? new Date(l.timestamp) : null;
+        var tStr = ts
+          ? String(ts.getHours()).padStart(2,'0') + ':' + String(ts.getMinutes()).padStart(2,'0')
+          : '';
+        var isIn = l.checkType === '입실';
+        return '<tr>' +
+          '<td style="color:#888;white-space:nowrap">' + _esc(tStr) + '</td>' +
+          '<td><span class="ci-check-badge ' + (isIn ? 'in' : 'out') + '">' + _esc(l.checkType) + '</span></td>' +
+          '<td>' + _esc(l.roomName || l.roomId) + '</td>' +
+          '<td style="font-weight:600">' + _esc(l.userName) + '</td>' +
+          '<td style="color:#888">' + _esc(l.affiliation) + '</td>' +
+          '<td style="color:#888">' + _esc(l.phone) + '</td>' +
+        '</tr>';
+      }).join('') +
+      '</tbody></table></div>';
+  }
+
+  // 전역 노출 (HTML onclick 속성)
+  window._ciShowQr      = _ciShowQr;
+  window._ciDeleteSpace = _ciDeleteSpace;
 
   /* ── 내 캘린더 표시 설정 ─── */
   // Google Calendar 공식 11색 팔레트 (colorId: hex)
