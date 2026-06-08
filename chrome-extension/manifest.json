@@ -1,0 +1,52 @@
+{
+  "manifest_version": 3,
+  "name": "ASEA 빠른 업무 등록",
+  "version": "1.0.0",
+  "description": "Ctrl+Shift+R로 ASEA 캘린더 관리 시스템에 빠르게 업무를 등록합니다. Chrome이 실행 중이면 다른 앱 사용 중에도 단축키가 작동합니다.",
+
+  "permissions": [
+    "tabs",
+    "scripting",
+    "storage",
+    "windows",
+    "notifications"
+  ],
+
+  "host_permissions": [
+    "https://bangdw-hash.github.io/*"
+  ],
+
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "ASEA 빠른 업무 등록",
+    "default_icon": {
+      "16":  "icons/icon16.png",
+      "48":  "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+
+  "commands": {
+    "open-quick-task": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+R",
+        "windows": "Ctrl+Shift+R",
+        "linux":   "Ctrl+Shift+R",
+        "mac":     "Command+Shift+R"
+      },
+      "description": "ASEA 빠른 업무 등록 열기",
+      "global": true
+    }
+  },
+
+  "icons": {
+    "16":  "icons/icon16.png",
+    "48":  "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}

@@ -151,6 +151,17 @@
       if (loggedIn) {
         loadUserEmail().then(function () {
           if (typeof WorkModule !== 'undefined') WorkModule.onLogin(S.userEmail);
+
+          // Chrome 확장 또는 #quick-task URL hash로 인한 자동 모달 오픈
+          var autoOpen = window.__aseaAutoOpenQuickTask ||
+                         window.location.hash === '#quick-task';
+          if (autoOpen) {
+            window.__aseaAutoOpenQuickTask = false;
+            window.location.hash = '';
+            setTimeout(function () {
+              if (typeof QuickTaskModule !== 'undefined') QuickTaskModule.open();
+            }, 400);
+          }
         });
         checkScheduledEmails();
         // 로그인 시 설정 불러오기 + 이력 병합 동기화

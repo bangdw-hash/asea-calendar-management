@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ASEA 빠른 업무 등록</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', 'Noto Sans KR', sans-serif;
+      width: 280px;
+      background: #fff;
+      color: #202124;
+    }
+
+    .popup-header {
+      background: linear-gradient(135deg, #1A73E8 0%, #0d47a1 100%);
+      color: #fff;
+      padding: 14px 16px 10px;
+    }
+    .popup-title {
+      font-size: 15px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .popup-sub {
+      font-size: 11px;
+      opacity: .8;
+      margin-top: 3px;
+    }
+
+    .popup-body {
+      padding: 14px 16px;
+    }
+
+    .shortcut-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: #E8F0FE;
+      color: #1A73E8;
+      border-radius: 6px;
+      padding: 4px 10px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-bottom: 12px;
+    }
+    .shortcut-badge kbd {
+      background: #fff;
+      border: 1px solid #c5cae9;
+      border-radius: 3px;
+      padding: 1px 5px;
+      font-family: monospace;
+      font-size: 11px;
+    }
+
+    .status-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 10px;
+      border-radius: 8px;
+      font-size: 12px;
+      margin-bottom: 10px;
+    }
+    .status-row.logged-in  { background: #E6F4EA; color: #2E7D32; }
+    .status-row.logged-out { background: #FFF8E1; color: #F57F17; }
+    .status-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .dot-on  { background: #34A853; }
+    .dot-off { background: #FBBC05; }
+
+    .btn {
+      display: block;
+      width: 100%;
+      padding: 9px 0;
+      border: none;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      text-align: center;
+      transition: opacity .15s;
+    }
+    .btn:hover { opacity: .88; }
+    .btn-primary { background: #1A73E8; color: #fff; margin-bottom: 6px; }
+    .btn-ghost   { background: #f1f3f4; color: #5F6368; font-size: 12px; }
+
+    .hint {
+      font-size: 10px;
+      color: #9e9e9e;
+      text-align: center;
+      margin-top: 10px;
+      line-height: 1.5;
+    }
+    .hint a { color: #1A73E8; text-decoration: none; }
+  </style>
+</head>
+<body>
+  <div class="popup-header">
+    <div class="popup-title">⚡ ASEA 빠른 업무 등록</div>
+    <div class="popup-sub">어느 앱에서든 단축키로 업무를 등록하세요</div>
+  </div>
+
+  <div class="popup-body">
+    <!-- 단축키 표시 -->
+    <div class="shortcut-badge">
+      전역 단축키: <kbd>Ctrl+Shift+R</kbd>
+    </div>
+
+    <!-- 로그인 상태 -->
+    <div id="status-row" class="status-row logged-out">
+      <span class="status-dot dot-off" id="status-dot"></span>
+      <span id="status-text">ASEA 연결 확인 중...</span>
+    </div>
+
+    <!-- 버튼 -->
+    <button class="btn btn-primary" id="open-btn">📋 빠른 업무 등록 열기</button>
+    <button class="btn btn-ghost"   id="settings-btn">⚙️ 단축키 설정 변경</button>
+
+    <p class="hint">
+      단축키가 작동하지 않으면<br>
+      <a href="#" id="shortcut-link">chrome://extensions/shortcuts</a>에서 직접 설정하세요.
+    </p>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

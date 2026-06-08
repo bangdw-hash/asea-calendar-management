@@ -450,14 +450,11 @@ var QuickTaskModule = (function () {
     var modal = $q('qt-modal');
     if (!modal || modal.hidden) return;
 
-    // textarea에 포커스 있으면 기본 동작 유지
     var active = document.activeElement;
-    if (active && (active.id === 'qt-paste-text')) return;
-
-    var items = (e.clipboardData || e.originalEvent && e.originalEvent.clipboardData);
+    var items  = e.clipboardData || (e.originalEvent && e.originalEvent.clipboardData);
     if (!items) return;
 
-    // 이미지 확인
+    /* ── 이미지 우선 확인 (포커스 위치 무관하게 항상 가로챔) ── */
     var imageFile = null;
     for (var i = 0; i < items.items.length; i++) {
       var item = items.items[i];
@@ -468,29 +465,33 @@ var QuickTaskModule = (function () {
     }
 
     if (imageFile) {
+      // textarea에 포커스 있어도 이미지면 기본 동작 막고 캡처
       e.preventDefault();
       var reader = new FileReader();
       reader.onload = function (ev) {
         Q.pasteImageB64 = ev.target.result;
-        Q.pasteText = '';
+        Q.pasteText     = '';
         var ta = $q('qt-paste-text');
         if (ta) ta.value = '';
         renderPasteZone();
-        toast('이미지가 붙여넣기 되었습니다. AI 분석 버튼을 눌러주세요.', 'info');
+        toast('📷 이미지가 붙여넣기 되었습니다. AI 분석 버튼을 눌러주세요.', 'info');
       };
       reader.readAsDataURL(imageFile);
-    } else {
-      // 텍스트
-      var txt = items.getData ? items.getData('text/plain') : '';
-      if (txt && active && active.id !== 'qt-paste-text') {
-        e.preventDefault();
-        Q.pasteText = txt;
-        Q.pasteImageB64 = null;
-        var ta2 = $q('qt-paste-text');
-        if (ta2) ta2.value = txt;
-        renderPasteZone();
-        toast('텍스트가 붙여넣기 되었습니다. AI 분석 버튼을 눌러주세요.', 'info');
-      }
+      return;
+    }
+
+    /* ── 텍스트 — textarea 외부에서만 가로챔 (textarea 자체 동작 유지) ── */
+    if (active && active.id === 'qt-paste-text') return;
+
+    var txt = items.getData ? items.getData('text/plain') : '';
+    if (txt) {
+      e.preventDefault();
+      Q.pasteText     = txt;
+      Q.pasteImageB64 = null;
+      var ta2 = $q('qt-paste-text');
+      if (ta2) ta2.value = txt;
+      renderPasteZone();
+      toast('텍스트가 붙여넣기 되었습니다. AI 분석 버튼을 눌러주세요.', 'info');
     }
   }
 
