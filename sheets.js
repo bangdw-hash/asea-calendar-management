@@ -37,22 +37,49 @@ var SheetsModule = (function () {
   /* ──────────────────────────────────────────────────
      기본 API 헬퍼
   ────────────────────────────────────────────────── */
-  var _403shown = false; // 세션당 1회만 안내
+  var _403shown = false;
   function _handle403(status) {
     if (status !== 403) return;
-    // Auth.forceReauth()로 조용한 재인증 시도
-    if (typeof Auth !== 'undefined' && Auth.forceReauth) {
-      Auth.forceReauth();
-    }
-    // 토스트는 1회만
-    if (!_403shown) {
-      _403shown = true;
-      if (typeof window.aseaToast === 'function') {
-        window.aseaToast('인증을 갱신하고 있습니다. 잠시 후 자동으로 재시도됩니다.', 'info');
-      }
-      // 2초 후 플래그 해제 (다음 진입 허용)
-      setTimeout(function () { _403shown = false; }, 5000);
-    }
+    if (_403shown) return;
+    _403shown = true;
+    setTimeout(function () { _403shown = false; }, 10000);
+
+    // 현재 로그인 이메일 파악
+    var emailEl = document.getElementById('user-email');
+    var email   = emailEl ? emailEl.textContent.trim() : '';
+
+    // 스프레드시트 직접 링크
+    var sheetUrl = 'https://docs.google.com/spreadsheets/d/' + SPREADSHEET_ID;
+
+    // 앱 UI에 안내 배너 표시 (토스트 대신)
+    var existing = document.getElementById('sheets-403-banner');
+    if (existing) return;
+
+    var banner = document.createElement('div');
+    banner.id = 'sheets-403-banner';
+    banner.style.cssText =
+      'position:fixed;bottom:0;left:0;right:0;z-index:9999;' +
+      'background:#B71C1C;color:#fff;padding:14px 20px;font-size:13px;' +
+      'display:flex;align-items:center;gap:12px;flex-wrap:wrap;';
+    banner.innerHTML =
+      '<span style="flex:1">⚠️ <strong>스프레드시트 접근 오류(403)</strong> — ' +
+      (email ? '"' + email + '" 계정으로 ' : '') +
+      '<a href="' + sheetUrl + '" target="_blank" style="color:#FFCDD2;text-decoration:underline">이 스프레드시트</a>에 ' +
+      '편집 권한이 없습니다. 로그아웃 후 스프레드시트 소유자 계정으로 다시 로그인하거나, ' +
+      '설정 탭 → HR관리 → <strong>DB 초기화</strong>를 먼저 실행해주세요.</span>' +
+      '<button id="sheets-403-logout-btn" style="background:#fff;color:#B71C1C;border:none;' +
+      'border-radius:6px;padding:6px 14px;font-weight:700;cursor:pointer;white-space:nowrap">🔄 재로그인</button>' +
+      '<button id="sheets-403-close-btn" style="background:none;border:none;color:#fff;' +
+      'font-size:18px;cursor:pointer;padding:0 4px">×</button>';
+    document.body.appendChild(banner);
+
+    document.getElementById('sheets-403-logout-btn').addEventListener('click', function () {
+      if (typeof Auth !== 'undefined') Auth.logout();
+      banner.remove();
+    });
+    document.getElementById('sheets-403-close-btn').addEventListener('click', function () {
+      banner.remove();
+    });
   }
 
   async function apiGet(range) {
