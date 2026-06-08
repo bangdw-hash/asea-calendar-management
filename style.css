@@ -2463,3 +2463,153 @@ a        { color: var(--color-accent); text-decoration: none; }
   .fac-building-row { flex-direction: column; align-items: flex-start; }
   .veh-admin-row .veh-note { display: none; }
 }
+
+/* ── ⚡ 빠른 업무 등록 모달 ─────────────────────────────── */
+.qt-modal-dialog {
+  max-width: 660px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+}
+.qt-modal-dialog .modal-body {
+  overflow-y: auto;
+  flex: 1;
+}
+
+/* 섹션 구분 */
+.qt-input-section,
+.qt-cal-section,
+.qt-list-section {
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--color-border);
+}
+.qt-section-label {
+  font-size: var(--font-sm);
+  font-weight: 600;
+  color: var(--color-text);
+  margin-bottom: 8px;
+}
+
+/* 드롭존 */
+.qt-drop-zone {
+  border: 2px dashed var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-subtle);
+  transition: border-color .15s, background .15s;
+  min-height: 100px;
+}
+.qt-drop-zone.qt-drag-over {
+  border-color: var(--color-accent);
+  background: var(--color-accent-light);
+}
+.qt-paste-textarea {
+  width: 100%;
+  min-height: 100px;
+  max-height: 160px;
+  padding: 10px 12px;
+  border: none;
+  background: transparent;
+  resize: vertical;
+  font-size: var(--font-sm);
+  font-family: var(--font-family);
+  color: var(--color-text);
+  outline: none;
+  box-sizing: border-box;
+}
+.qt-paste-textarea::placeholder { color: #aaa; font-size: 12px; }
+
+/* 이미지/텍스트 미리보기 */
+.qt-img-preview,
+.qt-text-preview {
+  padding: 10px 12px;
+  position: relative;
+}
+.qt-clear-btn {
+  display: inline-block;
+  margin-top: 6px;
+  padding: 2px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 20px;
+  background: var(--color-bg-card);
+  font-size: 11px;
+  cursor: pointer;
+  color: var(--color-text-secondary);
+}
+.qt-clear-btn:hover { background: var(--color-error-light); color: var(--color-error); }
+
+/* 캘린더 배지 */
+.qt-cal-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 12px;
+  background: var(--color-bg-subtle);
+  border: 1px solid var(--color-border);
+  border-radius: 20px;
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
+/* 업무 목록 헤더 */
+.qt-task-list-header {
+  display: flex;
+  align-items: center;
+  padding: 6px 0 8px;
+  border-bottom: 1px solid var(--color-border);
+  margin-bottom: 6px;
+}
+.qt-check-all {
+  display: flex; align-items: center; gap: 6px;
+  cursor: pointer; font-size: var(--font-sm); font-weight: 600;
+  user-select: none;
+}
+
+/* 업무 아이템 */
+.qt-task-items { display: flex; flex-direction: column; gap: 6px; }
+.qt-task-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-card);
+  transition: opacity .15s;
+}
+.qt-task-item.qt-task-unchecked { opacity: .45; }
+.qt-task-check { display: flex; align-items: flex-start; padding-top: 4px; }
+.qt-task-body { flex: 1; min-width: 0; }
+.qt-cat-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 12px;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+.qt-task-title-input {
+  height: 28px;
+}
+.qt-task-content {
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--color-text-secondary);
+  line-height: 1.4;
+}
+
+/* 헤더 단축키 힌트 */
+#qt-shortcut-hint kbd {
+  display: inline-block;
+  padding: 1px 5px;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  font-size: 10px;
+  background: #f9f9f9;
+  font-family: monospace;
+}
+
+@media (max-width: 600px) {
+  .qt-modal-dialog { max-width: 100%; max-height: 100vh; border-radius: 0; }
+  .qt-task-item { flex-direction: column; gap: 6px; }
+}

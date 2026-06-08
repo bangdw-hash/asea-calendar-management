@@ -1471,6 +1471,74 @@
   </div>
 
   <!-- ═══════════════════════════════════════════════════════════
+       ⚡ 빠른 업무 등록 모달 (Ctrl+Shift+R)
+       ═══════════════════════════════════════════════════════════ -->
+  <div id="qt-modal" class="modal" hidden aria-modal="true" role="dialog" aria-labelledby="qt-modal-title">
+    <div id="qt-backdrop" class="modal-backdrop"></div>
+    <div class="modal-dialog qt-modal-dialog">
+      <div class="modal-header">
+        <div>
+          <h3 id="qt-modal-title" class="modal-title">⚡ 빠른 업무 등록</h3>
+          <small style="color:#888;font-size:11px">텍스트·이미지를 붙여넣으면 AI가 업무 항목을 추출합니다</small>
+        </div>
+        <button id="qt-close-btn" class="modal-close">✕</button>
+      </div>
+      <div class="modal-body" style="padding:0">
+
+        <!-- ── 입력 영역 ── -->
+        <div class="qt-input-section">
+          <div class="qt-section-label">📋 내용 붙여넣기</div>
+
+          <!-- 드롭존 + 텍스트 -->
+          <div id="qt-drop-zone" class="qt-drop-zone">
+            <textarea id="qt-paste-text" class="qt-paste-textarea"
+              placeholder="여기에 텍스트를 붙여넣거나 (Ctrl+V), 이미지를 드래그&드롭 하세요.&#10;&#10;예시:&#10;• 6월 10일 오후 2시 부서 회의&#10;• 6/15까지 보고서 제출&#10;• 다음주 월요일 신입생 오리엔테이션 행사"></textarea>
+          </div>
+
+          <!-- 이미지 업로드 + 미리보기 -->
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px">
+            <label class="btn btn-ghost btn-sm" style="cursor:pointer;margin:0">
+              🖼 이미지 선택
+              <input id="qt-img-input" type="file" accept="image/*" style="display:none">
+            </label>
+            <span style="font-size:11px;color:#888">또는 이미지를 드래그&드롭</span>
+          </div>
+          <div id="qt-paste-preview"></div>
+
+          <!-- AI 분석 버튼 -->
+          <div style="margin-top:10px;display:flex;gap:8px;align-items:center">
+            <button id="qt-analyze-btn" class="btn btn-primary btn-sm">🤖 AI 분석</button>
+            <span style="font-size:11px;color:#888">Anthropic API Key 필요 (설정에서 등록)</span>
+          </div>
+        </div>
+
+        <!-- ── 캘린더 선택 ── -->
+        <div class="qt-cal-section">
+          <div class="qt-section-label">📅 등록할 Google 캘린더</div>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <span id="qt-cal-badge" class="qt-cal-badge">미선택 (Google 캘린더에 등록하지 않음)</span>
+            <button id="qt-select-cal-btn" class="btn btn-secondary btn-sm">캘린더 선택</button>
+            <button id="qt-clear-cal-btn" class="btn btn-ghost btn-sm">해제</button>
+          </div>
+        </div>
+
+        <!-- ── 추출된 업무 목록 ── -->
+        <div class="qt-list-section">
+          <div class="qt-section-label">✅ 추출된 업무 목록</div>
+          <div id="qt-task-list"></div>
+        </div>
+
+      </div>
+      <div class="modal-footer">
+        <span id="qt-selected-count" style="font-size:12px;color:#888">0건 선택됨</span>
+        <div style="flex:1"></div>
+        <button onclick="document.getElementById('qt-modal').hidden=true" class="btn btn-ghost">닫기</button>
+        <button id="qt-register-btn" class="btn btn-primary" disabled>✅ 등록하기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════
        강의실 예약 모달
        ═══════════════════════════════════════════════════════════ -->
   <div id="cls-resv-modal" class="modal" hidden aria-modal="true" role="dialog">
@@ -1590,7 +1658,14 @@
   <script src="vehicle.js"></script>
   <script src="classroom.js"></script>
   <script src="work.js"></script>
+  <script src="quicktask.js"></script>
   <script src="app.js"></script>
+  <script>
+    // 빠른 업무 등록 초기화 (DOM 준비 후)
+    document.addEventListener('DOMContentLoaded', function () {
+      if (typeof QuickTaskModule !== 'undefined') QuickTaskModule.init();
+    });
+  </script>
 
 </body>
 </html>

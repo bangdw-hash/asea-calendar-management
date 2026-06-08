@@ -3003,10 +3003,31 @@
     if (typeof WorkModule !== 'undefined') WorkModule.initWorkModule();
   }
 
+  /* ═══════════════════════════════════════════════════════════
+     자동 로그인 시도 (Google GIS silent token request)
+     — 브라우저에 활성 Google 세션이 있으면 클릭 없이 자동 로그인
+  ═══════════════════════════════════════════════════════════ */
+  function tryAutoLogin() {
+    // Google GIS 스크립트 로드 후 1.5초 내 silent request 시도
+    var MAX_WAIT = 1500;
+    var started  = Date.now();
+    var interval = setInterval(function () {
+      if (typeof Auth !== 'undefined' && Auth.isLoggedIn && !Auth.isLoggedIn()) {
+        try {
+          Auth.login(); // prompt:'' → 이미 로그인 세션 있으면 팝업 없이 토큰 반환
+        } catch (e) {}
+        clearInterval(interval);
+      } else if (Date.now() - started > MAX_WAIT || (typeof Auth !== 'undefined' && Auth.isLoggedIn && Auth.isLoggedIn())) {
+        clearInterval(interval);
+      }
+    }, 300);
+  }
+
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
+    document.addEventListener('DOMContentLoaded', function () { init(); tryAutoLogin(); });
   } else {
     init();
+    tryAutoLogin();
   }
 
 })();
