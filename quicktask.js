@@ -629,13 +629,492 @@ var QuickTaskModule = (function () {
     headerActions.prepend(hint);
   }
 
+  /* ═══════════════════════════════════════════════════════════
+     캘린더 구독 — 설정 관리 + 모달
+  ═══════════════════════════════════════════════════════════ */
+
+  var CS_KEY = 'asea_cal_subscriptions'; // localStorage 키
+
+  /* 저장된 구독 목록 [{id, label, url}] */
+  function loadSubs() {
+    try { return JSON.parse(localStorage.getItem(CS_KEY) || '[]'); } catch (e) { return []; }
+  }
+  function saveSubs(subs) {
+    localStorage.setItem(CS_KEY, JSON.stringify(subs));
+  }
+
+  /* ── 설정 탭 렌더링 ──────────────────────────────────────── */
+  function renderCalSubSettings() {
+    var list = $q('calsub-list');
+    if (!list) return;
+    var subs = loadSubs();
+    if (subs.length === 0) {
+      list.innerHTML = '<p class="empty-state" style="padding:6px 0;font-size:12px">등록된 구독 캘린더가 없습니다.</p>';
+      return;
+    }
+    list.innerHTML = subs.map(function (s, i) {
+      return '<div class="calsub-row">' +
+        '<span class="calsub-label">' + escapeHtml(s.label || s.url) + '</span>' +
+        '<span class="calsub-url-text" title="' + escapeHtml(s.url) + '">' + escapeHtml(s.url.length > 50 ? s.url.slice(0, 50) + '...' : s.url) + '</span>' +
+        '<button class="btn btn-ghost btn-sm calsub-del-btn" data-idx="' + i + '" title="삭제">✕</button>' +
+      '</div>';
+    }).join('');
+
+    list.querySelectorAll('.calsub-del-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var subs2 = loadSubs();
+        subs2.splice(parseInt(this.dataset.idx), 1);
+        saveSubs(subs2);
+        renderCalSubSettings();
+        populateCalSubSourceSel();
+      });
+    });
+  }
+
+  /* ── 구독 추가 ────────────────────────────────────────────── */
+  function addCalSub() {
+    var labelEl = $q('calsub-label-input');
+    var urlEl   = $q('calsub-url-input');
+    var label   = (labelEl && labelEl.value.trim()) || '';
+    var url     = (urlEl   && urlEl.value.trim())   || '';
+    if (!url) { toast('URL 또는 Calendar ID를 입력해주세요.', 'warning'); return; }
+    var subs = loadSubs();
+    if (subs.find(function (s) { return s.url === url; })) {
+      toast('이미 등록된 주소입니다.', 'warning'); return;
+    }
+    subs.push({ id: genId(), label: label || url, url: url });
+    saveSubs(subs);
+    if (labelEl) labelEl.value = '';
+    if (urlEl)   urlEl.value   = '';
+    renderCalSubSettings();
+    populateCalSubSourceSel();
+    toast('구독 캘린더가 추가되었습니다.', 'success');
+  }
+
+  /* ── 모달 열기 ────────────────────────────────────────────── */
+  var CS = {
+    events:         [],
+    targetCalendar: null,
+  };
+
+  function openCalSubModal() {
+    var modal = $q('calsub-modal');
+    if (!modal) return;
+    CS.events = [];
+    CS.targetCalendar = null;
+
+    // 기간 기본값: 오늘 ~ +30일
+    var now  = new Date();
+    var from = $q('calsub-from-date');
+    var to   = $q('calsub-to-date');
+    if (from) from.value = dateStrFromDate(now);
+    if (to) {
+      var end = new Date(now);
+      end.setDate(end.getDate() + 30);
+      to.value = dateStrFromDate(end);
+    }
+
+    populateCalSubSourceSel();
+    renderCalSubEventList();
+    renderCalSubTargetBadge();
+    modal.hidden = false;
+  }
+
+  function dateStrFromDate(d) {
+    return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+  }
+
+  function populateCalSubSourceSel() {
+    var sel = $q('calsub-source-sel');
+    if (!sel) return;
+    var subs = loadSubs();
+    var curVal = sel.value;
+    sel.innerHTML = '<option value="">캘린더 선택...</option>';
+    subs.forEach(function (s) {
+      var opt = document.createElement('option');
+      opt.value = s.url; opt.textContent = s.label || s.url;
+      if (s.url === curVal) opt.selected = true;
+      sel.appendChild(opt);
+    });
+    // Google Calendar 내 캘린더도 추가
+    var myCals = (typeof CalendarModule !== 'undefined' && CalendarModule.getCachedCalendars)
+      ? CalendarModule.getCachedCalendars()
+      : (CONFIG.selectedCalendars || []);
+    myCals.forEach(function (c) {
+      if (!c.id) return;
+      var opt = document.createElement('option');
+      opt.value = '__gcal__' + c.id;
+      opt.textContent = '🗓 ' + (c.name || c.id);
+      sel.appendChild(opt);
+    });
+  }
+
+  /* ── 이벤트 불러오기 ─────────────────────────────────────── */
+  async function loadCalSubEvents() {
+    var sel  = $q('calsub-source-sel');
+    var from = $q('calsub-from-date');
+    var to   = $q('calsub-to-date');
+    var url  = sel  && sel.value.trim();
+    var f    = from && from.value;
+    var t    = to   && to.value;
+
+    if (!url) { toast('캘린더를 선택해주세요.', 'warning'); return; }
+    if (!f || !t) { toast('기간을 입력해주세요.', 'warning'); return; }
+
+    var btn = $q('calsub-load-btn');
+    if (btn) { btn.disabled = true; btn.textContent = '불러오는 중...'; }
+
+    CS.events = [];
+
+    try {
+      if (url.startsWith('__gcal__')) {
+        // Google Calendar API 호출
+        var calId = url.replace('__gcal__', '');
+        CS.events = await fetchGCalEvents(calId, f, t);
+      } else if (url.match(/\.ics(\?.*)?$/) || url.indexOf('ical') !== -1 || url.startsWith('webcal')) {
+        // ICS 파싱
+        CS.events = await fetchICSEvents(url, f, t);
+      } else {
+        // Google Calendar ID로 간주
+        CS.events = await fetchGCalEvents(url, f, t);
+      }
+
+      if (CS.events.length === 0) {
+        toast('해당 기간에 일정이 없습니다.', 'info');
+      } else {
+        toast(CS.events.length + '개 일정을 불러왔습니다.', 'success');
+      }
+    } catch (err) {
+      toast('불러오기 실패: ' + err.message, 'error');
+    } finally {
+      if (btn) { btn.disabled = false; btn.textContent = '불러오기'; }
+    }
+
+    renderCalSubEventList();
+  }
+
+  /* ── Google Calendar API 이벤트 조회 ──────────────────────── */
+  async function fetchGCalEvents(calId, fromDate, toDate) {
+    var token = Auth.getToken();
+    if (!token) throw new Error('로그인이 필요합니다.');
+    var url = 'https://www.googleapis.com/calendar/v3/calendars/' +
+      encodeURIComponent(calId) + '/events?' +
+      'timeMin=' + encodeURIComponent(fromDate + 'T00:00:00+09:00') +
+      '&timeMax=' + encodeURIComponent(toDate + 'T23:59:59+09:00') +
+      '&singleEvents=true&orderBy=startTime&maxResults=100';
+    var res  = await fetch(url, { headers: { 'Authorization': 'Bearer ' + token } });
+    var data = await res.json();
+    if (!res.ok) throw new Error((data.error && data.error.message) || '캘린더 조회 실패');
+    return (data.items || []).map(function (ev) {
+      var start = ev.start.date || ev.start.dateTime || '';
+      return {
+        id:       ev.id || genId(),
+        title:    ev.summary || '(제목 없음)',
+        content:  ev.description || '',
+        dueDate:  start ? start.slice(0, 10) : '',
+        category: guessCategoryFromTitle(ev.summary || ''),
+        location: ev.location || '',
+        checked:  true,
+      };
+    });
+  }
+
+  /* ── ICS 파싱 ────────────────────────────────────────────── */
+  async function fetchICSEvents(icsUrl, fromDate, toDate) {
+    // webcal → https
+    var fetchUrl = icsUrl.replace(/^webcal:\/\//i, 'https://');
+    // CORS 우회: 직접 fetch 시도 (공개 ICS만 가능)
+    var res  = await fetch(fetchUrl);
+    if (!res.ok) throw new Error('ICS URL 접근 실패 (' + res.status + '). 공개 ICS URL인지 확인하세요.');
+    var text = await res.text();
+    return parseICS(text, fromDate, toDate);
+  }
+
+  function parseICS(text, fromDate, toDate) {
+    var events = [];
+    var lines  = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+    // 줄 접기(folding) 해제
+    lines = lines.replace(/\n[ \t]/g, '');
+    var blocks = lines.split('BEGIN:VEVENT');
+    for (var b = 1; b < blocks.length; b++) {
+      var block = blocks[b];
+      var get   = function (key) {
+        var m = block.match(new RegExp(key + '[^:]*:([^\n]+)'));
+        return m ? m[1].trim() : '';
+      };
+      var summary  = decodeICSText(get('SUMMARY'));
+      var dtstart  = get('DTSTART');
+      var desc     = decodeICSText(get('DESCRIPTION'));
+      var location = decodeICSText(get('LOCATION'));
+      var dateStr  = icsDateToYMD(dtstart);
+      if (!summary) continue;
+      if (fromDate && dateStr && dateStr < fromDate) continue;
+      if (toDate   && dateStr && dateStr > toDate)   continue;
+      events.push({
+        id:       genId(),
+        title:    summary,
+        content:  desc || '',
+        dueDate:  dateStr,
+        category: guessCategoryFromTitle(summary),
+        location: location,
+        checked:  true,
+      });
+    }
+    return events;
+  }
+
+  function icsDateToYMD(dtstart) {
+    if (!dtstart) return '';
+    var digits = dtstart.replace(/[^0-9]/g, '');
+    if (digits.length >= 8) {
+      return digits.slice(0,4) + '-' + digits.slice(4,6) + '-' + digits.slice(6,8);
+    }
+    return '';
+  }
+
+  function decodeICSText(str) {
+    if (!str) return '';
+    return str.replace(/\\n/g, '\n').replace(/\\,/g, ',').replace(/\\;/g, ';').replace(/\\\\/g, '\\');
+  }
+
+  function guessCategoryFromTitle(title) {
+    if (!title) return '일반업무';
+    var t = title;
+    if (/교육|강의|수업|학점|특강|오리엔테이션/.test(t)) return '교육일정';
+    if (/행사|축제|기념|졸업|입학|시상/.test(t))          return '행사';
+    if (/대관|예약|강당|회의실/.test(t))                   return '대관';
+    if (/차량|출장|이동|운행/.test(t))                     return '차량';
+    return '일반업무';
+  }
+
+  /* ── 이벤트 목록 렌더링 ────────────────────────────────────── */
+  function renderCalSubEventList() {
+    var wrap = $q('calsub-event-list');
+    if (!wrap) return;
+    if (CS.events.length === 0) {
+      wrap.innerHTML = '<p class="empty-state" style="padding:12px 0">불러온 일정이 없습니다.</p>';
+      updateCalSubRegBtn();
+      return;
+    }
+
+    var allChecked = CS.events.every(function (e) { return e.checked; });
+    var html =
+      '<div class="qt-task-list-header">' +
+        '<label class="qt-check-all">' +
+          '<input type="checkbox" id="calsub-check-all" ' + (allChecked ? 'checked' : '') + '> ' +
+          '전체 선택 (' + CS.events.filter(function(e){return e.checked;}).length + '/' + CS.events.length + ')' +
+        '</label>' +
+      '</div>' +
+      '<div class="qt-task-items">';
+
+    var CAT_COLORS = { '일반업무':'#4285F4','교육일정':'#0F9D58','행사':'#F4B400','대관':'#2E7D32','차량':'#DB4437','기타':'#9E9E9E' };
+    CS.events.forEach(function (ev, idx) {
+      var catColor = CAT_COLORS[ev.category] || '#9E9E9E';
+      html +=
+        '<div class="qt-task-item ' + (ev.checked ? '' : 'qt-task-unchecked') + '">' +
+          '<label class="qt-task-check"><input type="checkbox" class="calsub-item-cb" data-idx="' + idx + '" ' + (ev.checked ? 'checked' : '') + '></label>' +
+          '<div class="qt-task-body">' +
+            '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">' +
+              '<span class="qt-cat-badge" style="background:' + catColor + '">' + escapeHtml(ev.category) + '</span>' +
+              '<input class="calsub-title-input form-input" style="flex:1;min-width:140px;padding:4px 8px;font-size:13px;height:28px" data-idx="' + idx + '" value="' + escapeHtml(ev.title) + '">' +
+            '</div>' +
+            '<div style="display:flex;gap:6px;margin-top:4px;align-items:center;flex-wrap:wrap">' +
+              '<input type="date" class="calsub-date-input form-input" style="width:140px;padding:3px 8px;font-size:12px" data-idx="' + idx + '" value="' + escapeHtml(ev.dueDate) + '">' +
+              '<select class="calsub-cat-sel form-select" style="width:100px;padding:3px 6px;font-size:12px" data-idx="' + idx + '">' +
+                ['일반업무','교육일정','행사','대관','차량','기타'].map(function(c){
+                  return '<option value="'+c+'"'+(c===ev.category?' selected':'')+'>'+c+'</option>';
+                }).join('') +
+              '</select>' +
+              (ev.location ? '<span style="font-size:11px;color:#888">📍 '+escapeHtml(ev.location)+'</span>' : '') +
+            '</div>' +
+            (ev.content ? '<div class="qt-task-content">' + escapeHtml(ev.content.slice(0,100)) + (ev.content.length > 100 ? '...' : '') + '</div>' : '') +
+          '</div>' +
+        '</div>';
+    });
+
+    html += '</div>';
+    wrap.innerHTML = html;
+
+    var checkAll = $q('calsub-check-all');
+    if (checkAll) checkAll.addEventListener('change', function () {
+      CS.events.forEach(function (e) { e.checked = checkAll.checked; });
+      renderCalSubEventList();
+    });
+
+    wrap.querySelectorAll('.calsub-item-cb').forEach(function (cb) {
+      cb.addEventListener('change', function () {
+        CS.events[parseInt(this.dataset.idx)].checked = this.checked;
+        this.closest('.qt-task-item').classList.toggle('qt-task-unchecked', !this.checked);
+        updateCalSubCheckAll();
+        updateCalSubRegBtn();
+      });
+    });
+
+    wrap.querySelectorAll('.calsub-title-input').forEach(function (inp) {
+      inp.addEventListener('input', function () { CS.events[parseInt(this.dataset.idx)].title = this.value; });
+    });
+    wrap.querySelectorAll('.calsub-date-input').forEach(function (inp) {
+      inp.addEventListener('change', function () { CS.events[parseInt(this.dataset.idx)].dueDate = this.value; });
+    });
+    wrap.querySelectorAll('.calsub-cat-sel').forEach(function (sel) {
+      sel.addEventListener('change', function () {
+        CS.events[parseInt(this.dataset.idx)].category = this.value;
+        renderCalSubEventList();
+      });
+    });
+
+    updateCalSubRegBtn();
+  }
+
+  function updateCalSubCheckAll() {
+    var cb = $q('calsub-check-all');
+    if (!cb) return;
+    var n = CS.events.filter(function (e) { return e.checked; }).length;
+    cb.checked = (n === CS.events.length && n > 0);
+    cb.indeterminate = (n > 0 && n < CS.events.length);
+  }
+
+  function updateCalSubRegBtn() {
+    var cnt = CS.events.filter(function (e) { return e.checked; }).length;
+    var btn = $q('calsub-register-btn');
+    var lbl = $q('calsub-selected-count');
+    if (btn) btn.disabled = (cnt === 0);
+    if (lbl) lbl.textContent = cnt + '건 선택됨';
+  }
+
+  function renderCalSubTargetBadge() {
+    var badge = $q('calsub-target-badge');
+    if (!badge) return;
+    if (CS.targetCalendar) {
+      badge.innerHTML =
+        '<span style="display:inline-flex;align-items:center;gap:4px">' +
+          '<span style="width:9px;height:9px;border-radius:50%;background:' + CS.targetCalendar.color + '"></span>' +
+          escapeHtml(CS.targetCalendar.name) +
+        '</span>';
+    } else {
+      badge.textContent = '미선택';
+    }
+  }
+
+  /* ── 구독 업무 등록 ─────────────────────────────────────── */
+  async function registerCalSubTasks() {
+    var tasks = CS.events.filter(function (e) { return e.checked && e.title; });
+    if (tasks.length === 0) { toast('등록할 항목을 선택하세요.', 'warning'); return; }
+
+    var me  = window._workMe || {};
+    var btn = $q('calsub-register-btn');
+    if (btn) { btn.disabled = true; btn.textContent = '등록 중...'; }
+
+    var success = 0, fail = 0;
+    for (var i = 0; i < tasks.length; i++) {
+      var t = tasks[i];
+      try {
+        var taskData = {
+          id: genId(), title: t.title, content: t.content || '',
+          category: t.category, type: '알림',
+          fromId: me.id||'', fromName: me.name||me.googleEmail||'',
+          toIds: me.id||'', toNames: me.name||'',
+          shareScope: '개인', dueDate: t.dueDate||'',
+          createdAt: new Date().toISOString(), calEventId: '',
+        };
+
+        if (CS.targetCalendar && t.dueDate) {
+          try {
+            var token = Auth.getToken();
+            var calResp = await fetch(
+              'https://www.googleapis.com/calendar/v3/calendars/' +
+              encodeURIComponent(CS.targetCalendar.id) + '/events',
+              {
+                method: 'POST',
+                headers: { 'Authorization': 'Bearer '+token, 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  summary: '[업무] '+t.title, description: t.content||'',
+                  start: { date: t.dueDate }, end: { date: t.dueDate },
+                }),
+              }
+            );
+            if (calResp.ok) { var calData = await calResp.json(); taskData.calEventId = calData.id||''; }
+          } catch (e2) {}
+        }
+
+        if (typeof SheetsModule !== 'undefined' && SheetsModule.createTask) {
+          await SheetsModule.createTask(taskData);
+        }
+        if (typeof SheetsModule !== 'undefined' && SheetsModule.createReceived && me.id) {
+          await SheetsModule.createReceived(taskData.id, [{ userId: me.id, userName: me.name||'' }]);
+        }
+        success++;
+      } catch (err) {
+        fail++;
+        console.warn('calsub register err', err);
+      }
+    }
+
+    if (btn) { btn.disabled = false; btn.textContent = '✅ 업무 등록'; }
+    if (success > 0) {
+      toast('✅ '+success+'건 등록 완료!'+(fail?' ('+fail+'건 실패)':''), 'success');
+      CS.events = CS.events.filter(function (e) { return !e.checked; });
+      renderCalSubEventList();
+      if (typeof WorkModule !== 'undefined' && WorkModule.refreshInbox) WorkModule.refreshInbox();
+    } else {
+      toast('등록 실패. 로그인 상태를 확인하세요.', 'error');
+    }
+  }
+
+  /* ── 설정/모달 이벤트 바인딩 (init에서 호출) ──────────────── */
+  function initCalSub() {
+    // 설정 탭
+    renderCalSubSettings();
+
+    var addBtn = $q('calsub-add-btn');
+    if (addBtn) addBtn.addEventListener('click', addCalSub);
+
+    var urlInput = $q('calsub-url-input');
+    if (urlInput) urlInput.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') addCalSub();
+    });
+
+    var settingsFetchBtn = $q('calsub-fetch-btn');
+    if (settingsFetchBtn) settingsFetchBtn.addEventListener('click', openCalSubModal);
+
+    // 업무 탭 버튼
+    var workImportBtn = $q('work-cal-import-btn');
+    if (workImportBtn) workImportBtn.addEventListener('click', openCalSubModal);
+
+    // 모달 닫기
+    var closeBtn = $q('calsub-modal-close');
+    if (closeBtn) closeBtn.addEventListener('click', function () { $q('calsub-modal').hidden = true; });
+
+    // 불러오기
+    var loadBtn = $q('calsub-load-btn');
+    if (loadBtn) loadBtn.addEventListener('click', loadCalSubEvents);
+
+    // 등록할 캘린더 선택
+    var targetBtn = $q('calsub-select-target-btn');
+    if (targetBtn) targetBtn.addEventListener('click', function () {
+      if (typeof ReservationUtil !== 'undefined') {
+        ReservationUtil.showCalendarPicker(function (cal) {
+          CS.targetCalendar = cal;
+          renderCalSubTargetBadge();
+          toast(cal.name + '이(가) 선택되었습니다.', 'success');
+        });
+      }
+    });
+
+    // 등록
+    var regBtn = $q('calsub-register-btn');
+    if (regBtn) regBtn.addEventListener('click', registerCalSubTasks);
+  }
+
   /* ────────────────────────────────────────────────────────────
      공개 인터페이스
   ──────────────────────────────────────────────────────────── */
   return {
-    init: init,
+    init: function () { init(); initCalSub(); },
     open: open,
     close: close,
+    openCalSubModal: openCalSubModal,
+    renderCalSubSettings: renderCalSubSettings,
   };
 
 })();
