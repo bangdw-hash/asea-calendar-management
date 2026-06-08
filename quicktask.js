@@ -159,13 +159,14 @@ var QuickTaskModule = (function () {
         'JSON 배열로만 반환하세요. 다른 설명 없이 JSON만 반환합니다.\n\n' +
         '오늘 날짜: ' + today + ' (' + todayDow + '요일)\n\n' +
         '각 항목 형식:\n' +
-        '{"title":"업무 제목","content":"상세 내용(담당자·협조사항 등 포함)","dueDate":"날짜(아래 형식)","dueTime":"HH:MM 또는 빈문자열","category":"일반업무|교육일정|행사|대관|차량|기타"}\n\n' +
-        '날짜 처리 규칙:\n' +
+        '{"title":"업무 제목","content":"상세 내용(담당자·협조사항 등 포함)","dueDate":"YYYY-MM-DD 또는 빈문자열","dueTime":"HH:MM 또는 빈문자열","endTime":"HH:MM 또는 빈문자열","category":"일반업무|교육일정|행사|대관|차량|기타"}\n\n' +
+        '날짜·시간 처리 규칙:\n' +
         '- "이번 주 목요일", "다음 주 수요일" 등 상대적 표현 → 실제 날짜(YYYY-MM-DD)로 변환\n' +
         '- "내일", "모레", "다음달 15일" 등도 실제 날짜로 변환\n' +
-        '- "3시", "오후 2시", "11:00" 등 시간 표현 → dueTime에 24시간 형식(HH:MM)으로 기록\n' +
+        '- "11:00~13:00", "오전 10시~오후 1시" 처럼 범위가 있으면 dueTime=시작, endTime=종료\n' +
+        '- "3시", "오후 2시" 처럼 시작 시간만 있으면 dueTime에만 기록, endTime은 빈문자열\n' +
         '- 날짜가 전혀 없으면 dueDate는 빈문자열("")\n' +
-        '- 시간이 없으면 dueTime은 빈문자열("")';
+        '- 시간이 없으면 dueTime, endTime 모두 빈문자열("")';
 
       var messages;
       if (Q.pasteImageB64) {
@@ -214,12 +215,14 @@ var QuickTaskModule = (function () {
       Q.extractedTasks = parsed.map(function (t) {
         var dueDate = (t.dueDate || '').trim();
         var dueTime = (t.dueTime || '').trim();
+        var endTime = (t.endTime || '').trim();
         return {
           id:       genId(),
           title:    (t.title || '').trim(),
           content:  (t.content || '').trim(),
           dueDate:  dueDate,
           dueTime:  dueTime,
+          endTime:  endTime,
           category: t.category || '일반업무',
           status:   '예정',
           checked:  true,
@@ -284,7 +287,9 @@ var QuickTaskModule = (function () {
             '</div>' +
             '<div style="display:flex;gap:6px;margin-top:4px;align-items:center;flex-wrap:wrap">' +
               '<input type="date" class="qt-task-date-input form-input" style="width:130px;padding:3px 8px;font-size:12px" data-idx="' + idx + '" value="' + escapeHtml(task.dueDate) + '">' +
-              '<input type="time" class="qt-task-time-input form-input" style="width:90px;padding:3px 8px;font-size:12px" data-idx="' + idx + '" value="' + escapeHtml(task.dueTime || '') + '" placeholder="시간">' +
+              '<input type="time" class="qt-task-time-input form-input" style="width:88px;padding:3px 8px;font-size:12px" data-idx="' + idx + '" value="' + escapeHtml(task.dueTime || '') + '" title="시작 시간">' +
+              '<span style="font-size:11px;color:#888">~</span>' +
+              '<input type="time" class="qt-task-endtime-input form-input" style="width:88px;padding:3px 8px;font-size:12px" data-idx="' + idx + '" value="' + escapeHtml(task.endTime || '') + '" title="종료 시간">' +
               '<select class="qt-task-cat-sel form-select" style="width:100px;padding:3px 6px;font-size:12px" data-idx="' + idx + '">' +
                 ['일반업무','교육일정','행사','대관','차량','기타'].map(function(c){
                   return '<option value="'+c+'"'+(c===task.category?' selected':'')+'>'+c+'</option>';
@@ -334,6 +339,12 @@ var QuickTaskModule = (function () {
     wrap.querySelectorAll('.qt-task-time-input').forEach(function (inp) {
       inp.addEventListener('change', function () {
         Q.extractedTasks[parseInt(this.dataset.idx)].dueTime = this.value;
+      });
+    });
+
+    wrap.querySelectorAll('.qt-task-endtime-input').forEach(function (inp) {
+      inp.addEventListener('change', function () {
+        Q.extractedTasks[parseInt(this.dataset.idx)].endTime = this.value;
       });
     });
 
@@ -434,15 +445,31 @@ var QuickTaskModule = (function () {
             var token = Auth.getToken();
             var eventBody;
             if (t.dueTime) {
-              // 시간이 있으면 dateTime 이벤트 (1시간짜리)
+              // 시작 시간 있음 → dateTime 이벤트
               var startDt = t.dueDate + 'T' + t.dueTime + ':00';
-              var endDate = new Date(startDt);
-              endDate.setHours(endDate.getHours() + 1);
-              var endDt = endDate.getFullYear() + '-' +
-                String(endDate.getMonth()+1).padStart(2,'0') + '-' +
-                String(endDate.getDate()).padStart(2,'0') + 'T' +
-                String(endDate.getHours()).padStart(2,'0') + ':' +
-                String(endDate.getMinutes()).padStart(2,'0') + ':00';
+              var endDt;
+              if (t.endTime) {
+                // 종료 시간이 명시된 경우 그대로 사용
+                endDt = t.dueDate + 'T' + t.endTime + ':00';
+                // 종료시간이 시작보다 작으면 다음날로 처리 (ex: 23:00~01:00)
+                if (endDt <= startDt) {
+                  var nextDay = new Date(t.dueDate);
+                  nextDay.setDate(nextDay.getDate() + 1);
+                  var nd = nextDay.getFullYear() + '-' +
+                    String(nextDay.getMonth()+1).padStart(2,'0') + '-' +
+                    String(nextDay.getDate()).padStart(2,'0');
+                  endDt = nd + 'T' + t.endTime + ':00';
+                }
+              } else {
+                // 종료 시간 없으면 +1시간 기본값
+                var endDate = new Date(startDt);
+                endDate.setHours(endDate.getHours() + 1);
+                endDt = endDate.getFullYear() + '-' +
+                  String(endDate.getMonth()+1).padStart(2,'0') + '-' +
+                  String(endDate.getDate()).padStart(2,'0') + 'T' +
+                  String(endDate.getHours()).padStart(2,'0') + ':' +
+                  String(endDate.getMinutes()).padStart(2,'0') + ':00';
+              }
               eventBody = {
                 summary:     '[업무] ' + t.title,
                 description: t.content || '',
