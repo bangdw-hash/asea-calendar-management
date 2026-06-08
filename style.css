@@ -2465,20 +2465,69 @@ a        { color: var(--color-accent); text-decoration: none; }
 }
 
 /* ── ⚡ 빠른 업무 등록 모달 ─────────────────────────────── */
+/* ── 빠른 업무 등록 모달 — 리사이즈 + 드래그 이동 ── */
+#qt-modal {
+  align-items: flex-start;   /* 중앙 고정 해제 → 위치 자유 */
+  justify-content: flex-start;
+  pointer-events: none;      /* 배경 클릭은 backdrop이 처리 */
+}
+#qt-modal > * { pointer-events: auto; }
+
 .qt-modal-dialog {
-  width: min(700px, 96vw);
-  max-height: 92vh;
+  position: absolute;
+  top: 5vh;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(700px, 94vw);
+  height: min(82vh, 720px);
+  min-width: 360px;
+  min-height: 420px;
+  max-width: 98vw;
+  max-height: 96vh;
   display: flex;
   flex-direction: column;
-  resize: both;           /* 사용자가 크기 조절 가능 */
+  resize: both;
   overflow: hidden;
-  min-width: 340px;
-  min-height: 400px;
+  /* 리사이즈 핸들 강조 */
+  box-sizing: border-box;
+}
+/* 리사이즈 핸들 크기 시각화 */
+.qt-modal-dialog::after {
+  content: '';
+  position: absolute;
+  right: 0; bottom: 0;
+  width: 18px; height: 18px;
+  background: linear-gradient(135deg, transparent 50%, var(--color-border) 50%);
+  cursor: se-resize;
+  pointer-events: none;
+  border-radius: 0 0 var(--r-xl) 0;
+}
+/* 헤더 드래그 커서 */
+.qt-modal-dialog .modal-header {
+  cursor: move;
+  user-select: none;
 }
 .qt-modal-dialog .modal-body {
   overflow-y: auto;
   flex: 1;
+  min-height: 0;   /* flex 자식이 overflow 되도록 */
 }
+/* 본문 섹션들이 폭에 맞게 유동 */
+.qt-input-section,
+.qt-cal-section,
+.qt-list-section {
+  box-sizing: border-box;
+  width: 100%;
+}
+.qt-paste-textarea {
+  max-height: none;   /* 모달 크기 따라 늘어나도록 */
+}
+/* 좁을 때(360~500px) 내부 요소 축소 */
+@container qt-body (max-width: 460px) {
+  .qt-time-row input[type="date"] { width: 110px; }
+  .qt-time-row input[type="time"] { width: 80px; }
+}
+
 
 /* 섹션 구분 */
 .qt-input-section,

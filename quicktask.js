@@ -59,6 +59,53 @@ var QuickTaskModule = (function () {
   /* ────────────────────────────────────────────────────────────
      모달 열기 / 닫기
   ──────────────────────────────────────────────────────────── */
+  /* ── 드래그 이동 초기화 (헤더 잡고 모달 이동) ── */
+  var _dragState = null;
+  function _initDrag(dialog) {
+    var header = dialog.querySelector('.modal-header');
+    if (!header || header._dragBound) return;
+    header._dragBound = true;
+
+    header.addEventListener('mousedown', function (e) {
+      // 버튼 클릭은 무시
+      if (e.target.closest('button')) return;
+      e.preventDefault();
+
+      // 현재 위치 계산 (transform → absolute 전환)
+      var rect = dialog.getBoundingClientRect();
+      dialog.style.transform = 'none';
+      dialog.style.left = rect.left + 'px';
+      dialog.style.top  = rect.top  + 'px';
+
+      _dragState = {
+        startX: e.clientX,
+        startY: e.clientY,
+        origLeft: rect.left,
+        origTop:  rect.top,
+      };
+
+      function onMove(ev) {
+        if (!_dragState) return;
+        var dx = ev.clientX - _dragState.startX;
+        var dy = ev.clientY - _dragState.startY;
+        var newLeft = _dragState.origLeft + dx;
+        var newTop  = _dragState.origTop  + dy;
+        // 화면 밖으로 나가지 않도록 제한
+        newLeft = Math.max(0, Math.min(newLeft, window.innerWidth  - dialog.offsetWidth));
+        newTop  = Math.max(0, Math.min(newTop,  window.innerHeight - dialog.offsetHeight));
+        dialog.style.left = newLeft + 'px';
+        dialog.style.top  = newTop  + 'px';
+      }
+      function onUp() {
+        _dragState = null;
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup',   onUp);
+      }
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup',   onUp);
+    });
+  }
+
   function open() {
     var modal = $q('qt-modal');
     if (!modal) return;
@@ -73,6 +120,16 @@ var QuickTaskModule = (function () {
     renderTaskList();
     renderCalendarBadge();
     modal.hidden = false;
+
+    // 드래그 이동 + 리사이즈 초기화
+    var dialog = modal.querySelector('.qt-modal-dialog');
+    if (dialog) {
+      // 열릴 때마다 중앙 위치로 리셋
+      dialog.style.transform = 'translateX(-50%)';
+      dialog.style.left = '50%';
+      dialog.style.top  = '5vh';
+      _initDrag(dialog);
+    }
 
     // 페이스트 존 포커스
     setTimeout(function () {
