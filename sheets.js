@@ -30,6 +30,9 @@ var SheetsModule = (function () {
     '기관':     ['id','institutionName','shortName','domain','adminEmail','primaryColor','timezone','plan','status','createdAt'],
     '작업지시': ['id','title','content','requesterId','requesterName','assigneeId','assigneeName','department','priority','status','dueDate','completedAt','calEventId','note','createdAt'],
     '관리실인원':['id','name','googleEmail','phone','shift','role','status','createdAt'],
+    '공간관리':  ['id','name','location','description','qrCode','status','createdAt'],
+    '입출입기록':['id','roomId','roomName','userName','phone','affiliation','checkType','timestamp','consentGiven','consentTimestamp','consentTextVersion','deviceId'],
+    '입출입사용자':['id','name','phone','affiliation','firstConsentAt','consentTextVersion','lastVisit','visitCount'],
   };
 
   function getToken() { return Auth.getToken(); }
@@ -778,6 +781,103 @@ var SheetsModule = (function () {
     await apiUpdate('관리실인원!G' + rowNum, [['inactive']]);
   }
 
+  /* ──────────────────────────────────────────────────
+     공간관리 (QR 입출입 공간)
+  ────────────────────────────────────────────────── */
+  async function getSpaces() {
+    var data = await readSheet('공간관리');
+    return data.filter(function (s) { return s.status !== 'inactive'; });
+  }
+
+  async function addSpace(space) {
+    var list = await readSheet('공간관리');
+    var id = 'SPC' + String(list.length + 1).padStart(3, '0');
+    var checkinUrl = (CONFIG.baseUrl || '') + 'checkin.html?room=' + id;
+    var qrCode = 'https://api.qrserver.com/v1/create-qr-code/?data=' + encodeURIComponent(checkinUrl) + '&size=300x300';
+    var row = [
+      id,
+      space.name || '',
+      space.location || '',
+      space.description || '',
+      qrCode,
+      'active',
+      new Date().toISOString(),
+    ];
+    await apiAppend('공간관리', [row]);
+    return { id: id, qrCode: qrCode, checkinUrl: checkinUrl };
+  }
+
+  async function updateSpace(rowNum, space) {
+    var headers = SCHEMAS['공간관리'];
+    var row = headers.map(function (h) { return space[h] !== undefined ? space[h] : ''; });
+    await apiUpdate('공간관리!A' + rowNum + ':G' + rowNum, [row]);
+  }
+
+  async function deleteSpace(rowNum) {
+    await apiUpdate('공간관리!F' + rowNum, [['inactive']]);
+  }
+
+  /* ──────────────────────────────────────────────────
+     입출입기록
+  ────────────────────────────────────────────────── */
+  async function getCheckinLogs(roomId, dateFrom, dateTo) {
+    var data = await readSheet('입출입기록');
+    return data.filter(function (r) {
+      if (roomId && r.roomId !== roomId) return false;
+      if (dateFrom && (r.timestamp || '') < dateFrom) return false;
+      if (dateTo && (r.timestamp || '') > dateTo + 'T99') return false;
+      return true;
+    });
+  }
+
+  async function addCheckinLog(log) {
+    var list = await readSheet('입출입기록');
+    var id = 'CHK' + String(list.length + 1).padStart(6, '0');
+    var row = [
+      id,
+      log.roomId || '',
+      log.roomName || '',
+      log.userName || '',
+      log.phone || '',
+      log.affiliation || '',
+      log.checkType || '입실',
+      log.timestamp || new Date().toISOString(),
+      'TRUE',
+      log.consentTimestamp || new Date().toISOString(),
+      log.consentTextVersion || 'v1',
+      log.deviceId || '',
+    ];
+    await apiAppend('입출입기록', [row]);
+    return id;
+  }
+
+  /* ──────────────────────────────────────────────────
+     입출입사용자 (기기 등록 사용자 풀)
+  ────────────────────────────────────────────────── */
+  async function getCheckinUsers() {
+    return readSheet('입출입사용자');
+  }
+
+  async function addCheckinUser(user) {
+    var id = 'USR' + Date.now().toString(36).toUpperCase();
+    var row = [
+      id,
+      user.name || '',
+      user.phone || '',
+      user.affiliation || '',
+      user.firstConsentAt || new Date().toISOString(),
+      user.consentTextVersion || 'v1',
+      new Date().toISOString(),
+      '1',
+    ];
+    await apiAppend('입출입사용자', [row]);
+    return id;
+  }
+
+  async function updateCheckinUserVisit(rowNum, lastVisit, visitCount) {
+    await apiUpdate('입출입사용자!G' + rowNum + ':H' + rowNum, [[lastVisit, String(visitCount)]]);
+  }
+
   /* 공개 API */
   return {
     initSheets:            initSheets,
@@ -838,6 +938,18 @@ var SheetsModule = (function () {
     addManagerStaff:        addManagerStaff,
     updateManagerStaff:     updateManagerStaff,
     deleteManagerStaff:     deleteManagerStaff,
+    // 공간관리
+    getSpaces:              getSpaces,
+    addSpace:               addSpace,
+    updateSpace:            updateSpace,
+    deleteSpace:            deleteSpace,
+    // 입출입기록
+    getCheckinLogs:         getCheckinLogs,
+    addCheckinLog:          addCheckinLog,
+    // 입출입사용자
+    getCheckinUsers:        getCheckinUsers,
+    addCheckinUser:         addCheckinUser,
+    updateCheckinUserVisit: updateCheckinUserVisit,
   };
 
 })();

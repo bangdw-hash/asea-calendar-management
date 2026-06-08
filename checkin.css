@@ -1,0 +1,264 @@
+/* checkin.css — QR 입출입 모바일 페이지 전용 스타일 */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --primary: #1a73e8;
+  --primary-dark: #1557b0;
+  --danger: #e53935;
+  --success: #43a047;
+  --warn: #fb8c00;
+  --bg: #f8f9fa;
+  --card: #ffffff;
+  --text: #202124;
+  --text2: #5f6368;
+  --border: #dadce0;
+  --radius: 14px;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Noto Sans KR', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 16px;
+}
+
+.page-header {
+  width: 100%;
+  max-width: 480px;
+  text-align: center;
+  padding: 24px 0 16px;
+}
+
+.page-logo {
+  font-size: 13px;
+  color: var(--text2);
+  margin-bottom: 6px;
+  letter-spacing: 0.5px;
+}
+
+.room-name {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.room-location {
+  font-size: 14px;
+  color: var(--text2);
+  margin-top: 4px;
+}
+
+.card {
+  width: 100%;
+  max-width: 480px;
+  background: var(--card);
+  border-radius: var(--radius);
+  box-shadow: 0 1px 8px rgba(0,0,0,.10);
+  padding: 22px 20px;
+  margin-bottom: 16px;
+}
+
+/* ── 상태 뱃지 ── */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 24px;
+  font-size: 14px;
+  font-weight: 600;
+}
+.status-badge.in  { background: #e8f5e9; color: #2e7d32; }
+.status-badge.out { background: #fce4ec; color: #c62828; }
+.status-badge.none { background: #f1f3f4; color: var(--text2); }
+
+/* ── 사용자 카드 ── */
+.user-greeting {
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+.user-sub {
+  font-size: 13px;
+  color: var(--text2);
+  margin-bottom: 18px;
+}
+
+/* ── 폼 ── */
+.form-group {
+  margin-bottom: 14px;
+}
+.form-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text2);
+  margin-bottom: 5px;
+}
+.form-label .req { color: var(--danger); }
+.form-input {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  font-size: 16px;
+  color: var(--text);
+  outline: none;
+  transition: border-color 0.15s;
+  background: #fff;
+}
+.form-input:focus { border-color: var(--primary); }
+.form-input::placeholder { color: #bdbdbd; }
+
+/* ── 동의 박스 ── */
+.consent-box {
+  background: #f8f9fa;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px;
+  font-size: 12px;
+  color: var(--text2);
+  line-height: 1.7;
+  max-height: 140px;
+  overflow-y: auto;
+  margin-bottom: 12px;
+}
+.consent-box strong { color: var(--text); }
+
+.consent-check-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  cursor: pointer;
+  margin-bottom: 14px;
+}
+.consent-check-row input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  cursor: pointer;
+  accent-color: var(--primary);
+  margin-top: 1px;
+}
+.consent-check-label {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+/* ── 버튼 ── */
+.btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 15px;
+  border: none;
+  border-radius: 12px;
+  font-size: 17px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s;
+  letter-spacing: 0.3px;
+}
+.btn:active { transform: scale(.97); }
+.btn:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+
+.btn-primary { background: var(--primary); color: #fff; }
+.btn-primary:not(:disabled):hover { background: var(--primary-dark); }
+
+.btn-checkin  { background: #1b5e20; color: #fff; font-size: 20px; padding: 18px; }
+.btn-checkin:not(:disabled):hover { background: #145214; }
+
+.btn-checkout { background: #b71c1c; color: #fff; font-size: 20px; padding: 18px; }
+.btn-checkout:not(:disabled):hover { background: #8b0000; }
+
+.btn-ghost {
+  background: transparent;
+  color: var(--text2);
+  border: 1.5px solid var(--border);
+  font-size: 14px;
+  padding: 10px;
+  margin-top: 8px;
+}
+
+/* ── 결과 화면 ── */
+.result-icon { font-size: 64px; text-align: center; margin: 8px 0 14px; }
+.result-title {
+  font-size: 22px;
+  font-weight: 700;
+  text-align: center;
+  margin-bottom: 6px;
+}
+.result-sub {
+  font-size: 14px;
+  color: var(--text2);
+  text-align: center;
+  line-height: 1.5;
+}
+.result-time {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--primary);
+  text-align: center;
+  margin: 12px 0;
+}
+
+/* ── 로딩 ── */
+.loading {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--text2);
+  font-size: 15px;
+}
+.spinner {
+  width: 36px; height: 36px;
+  border: 3px solid var(--border);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin .7s linear infinite;
+  margin: 0 auto 14px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── 에러 ── */
+.error-msg {
+  background: #ffebee;
+  border: 1px solid #ef9a9a;
+  border-radius: 10px;
+  padding: 12px 14px;
+  color: #c62828;
+  font-size: 13px;
+  margin-bottom: 14px;
+  display: none;
+}
+.error-msg.show { display: block; }
+
+/* ── 푸터 ── */
+.page-footer {
+  width: 100%;
+  max-width: 480px;
+  text-align: center;
+  font-size: 11px;
+  color: #bdbdbd;
+  padding: 12px 0 24px;
+}
+.page-footer a { color: #bdbdbd; text-decoration: underline; }
+
+/* ── 다크 비지 상태 ── */
+.offline-notice {
+  background: #fff3e0;
+  border: 1px solid #ffb74d;
+  border-radius: 10px;
+  padding: 12px 14px;
+  color: #e65100;
+  font-size: 13px;
+  margin-bottom: 14px;
+  display: none;
+}
+.offline-notice.show { display: block; }

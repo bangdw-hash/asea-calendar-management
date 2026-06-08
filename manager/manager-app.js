@@ -406,6 +406,226 @@
     }).join('');
   }
 
+  /* ══════════════════════════════════════════
+     공간관리 탭
+  ══════════════════════════════════════════ */
+  var _spaces = [];
+  var _spEditRow = null;
+
+  $('sp-add-btn').addEventListener('click', function () { _openSpModal(null); });
+  $('sp-refresh-btn').addEventListener('click', loadSpaces);
+  $('sp-modal-close').addEventListener('click', _closeSpModal);
+  $('sp-modal-cancel').addEventListener('click', _closeSpModal);
+  $('sp-modal-backdrop').addEventListener('click', _closeSpModal);
+  $('sp-modal-save').addEventListener('click', _saveSp);
+  $('qr-modal-close').addEventListener('click', function () { $('qr-modal').hidden = true; });
+  $('qr-modal-backdrop').addEventListener('click', function () { $('qr-modal').hidden = true; });
+  $('qr-print-btn').addEventListener('click', function () { window.print(); });
+
+  async function loadSpaces() {
+    $('sp-list').innerHTML = '<p class="empty-state">불러오는 중...</p>';
+    try {
+      _spaces = (await SheetsModule.getSpaces()) || [];
+      _renderSpaces();
+      _refreshCheckinRoomFilter();
+    } catch (e) {
+      $('sp-list').innerHTML = '<p class="empty-state" style="color:#e53935">불러오기 실패: ' + e.message + '</p>';
+    }
+  }
+
+  function _renderSpaces() {
+    if (!_spaces.length) {
+      $('sp-list').innerHTML = '<p class="empty-state">등록된 공간이 없습니다. + 공간 등록 버튼을 눌러 추가하세요.</p>';
+      return;
+    }
+    $('sp-list').innerHTML = _spaces.map(function (sp, i) {
+      var checkinUrl = (CONFIG.baseUrl || '') + 'checkin.html?room=' + sp.id;
+      return '<div class="card" style="display:grid;grid-template-columns:1fr auto;gap:12px;align-items:start">' +
+        '<div>' +
+          '<div style="font-size:16px;font-weight:700;margin-bottom:2px">🚪 ' + esc(sp.name) + '</div>' +
+          '<div style="font-size:12px;color:var(--color-text-secondary);margin-bottom:6px">' +
+            esc(sp.location || '') + (sp.description ? ' · ' + esc(sp.description) : '') +
+          '</div>' +
+          '<div style="font-size:11px;color:#aaa;word-break:break-all">' + checkinUrl + '</div>' +
+        '</div>' +
+        '<div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">' +
+          '<button class="btn btn-primary btn-sm" onclick="_showQrModal(\'' + sp.id + '\')">🔲 QR 보기</button>' +
+          '<button class="btn btn-secondary btn-sm" onclick="_deleteSpace(' + (i+2) + ',\'' + esc(sp.name) + '\')">삭제</button>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+  }
+
+  function _openSpModal(rowNum) {
+    _spEditRow = rowNum;
+    $('sp-modal-title').textContent = '공간 등록';
+    $('sp-name-input').value = '';
+    $('sp-location-input').value = '';
+    $('sp-desc-input').value = '';
+    $('sp-modal').hidden = false;
+  }
+
+  function _closeSpModal() { $('sp-modal').hidden = true; }
+
+  async function _saveSp() {
+    var name = ($('sp-name-input').value || '').trim();
+    if (!name) { toast('공간 이름을 입력하세요.', 'error'); return; }
+    var btn = $('sp-modal-save');
+    btn.disabled = true;
+    try {
+      var result = await SheetsModule.addSpace({
+        name: name,
+        location: ($('sp-location-input').value || '').trim(),
+        description: ($('sp-desc-input').value || '').trim(),
+      });
+      toast('공간 "' + name + '"이 등록되었습니다.', 'success');
+      _closeSpModal();
+      await loadSpaces();
+      // 방금 만든 공간의 QR 바로 보여주기
+      if (result && result.id) _showQrModal(result.id);
+    } catch (e) {
+      toast('등록 실패: ' + e.message, 'error');
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  async function _deleteSpace(rowNum, name) {
+    if (!confirm('"' + name + '"을(를) 삭제하시겠습니까?')) return;
+    try {
+      await SheetsModule.deleteSpace(rowNum);
+      toast('삭제했습니다.', 'success');
+      loadSpaces();
+    } catch (e) {
+      toast('삭제 실패: ' + e.message, 'error');
+    }
+  }
+
+  function _showQrModal(roomId) {
+    var sp = _spaces.find(function (s) { return s.id === roomId; });
+    if (!sp) return;
+    var checkinUrl = (CONFIG.baseUrl || '') + 'checkin.html?room=' + sp.id;
+    var qrSrc = 'https://api.qrserver.com/v1/create-qr-code/?data=' + encodeURIComponent(checkinUrl) + '&size=300x300&margin=10';
+    $('qr-img').src = qrSrc;
+    $('qr-room-name').textContent = sp.name;
+    $('qr-room-location').textContent = sp.location || '';
+    $('qr-checkin-link').textContent = checkinUrl;
+    $('qr-checkin-link').href = checkinUrl;
+    $('qr-modal-title').textContent = sp.name + ' QR';
+    $('qr-modal').hidden = false;
+  }
+
+  // 전역 노출 (onclick에서 사용)
+  window._showQrModal = _showQrModal;
+  window._deleteSpace = _deleteSpace;
+
+  /* ══════════════════════════════════════════
+     입출입현황 탭
+  ══════════════════════════════════════════ */
+  var _ciLogs = [];
+  var _ciFilterRoom = 'all';
+  var _ciFilterType = 'all';
+
+  $('ci-refresh-btn').addEventListener('click', loadCheckinLogs);
+  $('ci-filter-room').addEventListener('change', function () { _ciFilterRoom = this.value; _renderCiLogs(); });
+  $('ci-filter-type').addEventListener('change', function () { _ciFilterType = this.value; _renderCiLogs(); });
+  $('ci-filter-date').addEventListener('change', loadCheckinLogs);
+
+  // 오늘 날짜 기본값
+  $('ci-filter-date').value = new Date().toISOString().slice(0, 10);
+
+  async function loadCheckinLogs() {
+    $('ci-list').innerHTML = '<p class="empty-state">불러오는 중...</p>';
+    var date = $('ci-filter-date').value || new Date().toISOString().slice(0, 10);
+    try {
+      _ciLogs = (await SheetsModule.getCheckinLogs(null, date, date)) || [];
+      _renderCiLogs();
+    } catch (e) {
+      $('ci-list').innerHTML = '<p class="empty-state" style="color:#e53935">불러오기 실패: ' + e.message + '</p>';
+    }
+  }
+
+  function _refreshCheckinRoomFilter() {
+    var sel = $('ci-filter-room');
+    var cur = sel.value;
+    sel.innerHTML = '<option value="all">전체 공간</option>';
+    _spaces.forEach(function (sp) {
+      var opt = document.createElement('option');
+      opt.value = sp.id;
+      opt.textContent = sp.name;
+      sel.appendChild(opt);
+    });
+    sel.value = cur;
+  }
+
+  function _renderCiLogs() {
+    var filtered = _ciLogs.filter(function (l) {
+      if (_ciFilterRoom !== 'all' && l.roomId !== _ciFilterRoom) return false;
+      if (_ciFilterType !== 'all' && l.checkType !== _ciFilterType) return false;
+      return true;
+    }).sort(function (a, b) {
+      return (b.timestamp || '').localeCompare(a.timestamp || '');
+    });
+
+    // 요약 카드
+    var inCount  = filtered.filter(function (l) { return l.checkType === '입실'; }).length;
+    var outCount = filtered.filter(function (l) { return l.checkType === '퇴실'; }).length;
+    var unames   = new Set(filtered.map(function (l) { return l.userName; }));
+    $('ci-summary').innerHTML =
+      _ciSummaryCard('✅ 입실', inCount, '#e8f5e9', '#2e7d32') +
+      _ciSummaryCard('🚪 퇴실', outCount, '#fce4ec', '#c62828') +
+      _ciSummaryCard('👤 인원', unames.size + '명', '#e3f2fd', '#1565c0');
+
+    if (!filtered.length) {
+      $('ci-list').innerHTML = '<p class="empty-state">기록이 없습니다.</p>';
+      return;
+    }
+
+    $('ci-list').innerHTML =
+      '<table style="width:100%;border-collapse:collapse;font-size:13px">' +
+      '<thead><tr style="background:#f8f9fb;font-weight:600">' +
+        '<th style="padding:8px;text-align:left;border-bottom:1px solid #e0e4ea">시각</th>' +
+        '<th style="padding:8px;text-align:left;border-bottom:1px solid #e0e4ea">구분</th>' +
+        '<th style="padding:8px;text-align:left;border-bottom:1px solid #e0e4ea">공간</th>' +
+        '<th style="padding:8px;text-align:left;border-bottom:1px solid #e0e4ea">이름</th>' +
+        '<th style="padding:8px;text-align:left;border-bottom:1px solid #e0e4ea">소속</th>' +
+        '<th style="padding:8px;text-align:left;border-bottom:1px solid #e0e4ea">전화</th>' +
+      '</tr></thead>' +
+      '<tbody>' +
+      filtered.map(function (l) {
+        var isIn = l.checkType === '입실';
+        var ts = l.timestamp ? new Date(l.timestamp) : null;
+        var tStr = ts ? (String(ts.getHours()).padStart(2,'0') + ':' + String(ts.getMinutes()).padStart(2,'0')) : '';
+        return '<tr style="border-bottom:1px solid #f0f2f5">' +
+          '<td style="padding:8px;color:#5f6368">' + esc(tStr) + '</td>' +
+          '<td style="padding:8px"><span style="background:' + (isIn?'#e8f5e9':'#fce4ec') + ';color:' + (isIn?'#2e7d32':'#c62828') + ';border-radius:4px;padding:2px 8px;font-size:12px;font-weight:600">' + esc(l.checkType) + '</span></td>' +
+          '<td style="padding:8px">' + esc(l.roomName || l.roomId) + '</td>' +
+          '<td style="padding:8px;font-weight:600">' + esc(l.userName) + '</td>' +
+          '<td style="padding:8px;color:#5f6368">' + esc(l.affiliation) + '</td>' +
+          '<td style="padding:8px;color:#5f6368">' + esc(l.phone) + '</td>' +
+        '</tr>';
+      }).join('') +
+      '</tbody></table>';
+  }
+
+  function _ciSummaryCard(label, value, bg, color) {
+    return '<div style="background:' + bg + ';border-radius:10px;padding:14px 18px">' +
+      '<div style="font-size:12px;color:' + color + ';font-weight:600">' + label + '</div>' +
+      '<div style="font-size:26px;font-weight:700;color:' + color + '">' + value + '</div>' +
+    '</div>';
+  }
+
+  /* ── 탭 전환 시 공간/입출입 로드 ── */
+  var _spacesLoaded = false;
+  var _origTabClick = document.querySelectorAll('.tab-btn');
+  document.querySelectorAll('.tab-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var tab = btn.dataset.tab;
+      if (tab === 'spaces' && !_spacesLoaded) { _spacesLoaded = true; loadSpaces(); }
+      if (tab === 'checkin') { loadCheckinLogs(); if (!_spacesLoaded) { _spacesLoaded = true; loadSpaces(); } }
+    });
+  });
+
   /* ── 초기 렌더 (로그인 전이라도 캘린더 뷰 타이틀 세팅) ── */
   renderCalendar();
 

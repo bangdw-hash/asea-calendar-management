@@ -3174,6 +3174,40 @@
       _initSettingsAccordion();
     }
     _initMgrStaff();
+    _initCheckinProxy();
+  }
+
+  var _checkinProxyInited = false;
+  function _initCheckinProxy() {
+    if (_checkinProxyInited) return;
+    _checkinProxyInited = true;
+    var input = $('checkin-proxy-url-input');
+    var status = $('checkin-proxy-status');
+    if (!input) return;
+    // 저장된 값 로드
+    input.value = localStorage.getItem('asea_checkin_proxy_url') || '';
+    $('checkin-proxy-save-btn') && $('checkin-proxy-save-btn').addEventListener('click', function () {
+      var url = (input.value || '').trim();
+      localStorage.setItem('asea_checkin_proxy_url', url);
+      status.textContent = '✅ 저장했습니다.';
+      setTimeout(function () { status.textContent = ''; }, 2000);
+    });
+    $('checkin-proxy-test-btn') && $('checkin-proxy-test-btn').addEventListener('click', async function () {
+      var url = (input.value || '').trim();
+      if (!url) { status.textContent = '❌ URL을 먼저 입력하세요.'; return; }
+      status.textContent = '🔄 테스트 중...';
+      try {
+        var res = await fetch(url, { method: 'GET' });
+        var json = await res.json();
+        if (json.ok) {
+          status.textContent = '✅ 연결 성공! 서비스: ' + (json.service || 'ok');
+        } else {
+          status.textContent = '⚠️ 응답 이상: ' + JSON.stringify(json);
+        }
+      } catch (e) {
+        status.textContent = '❌ 연결 실패: ' + e.message;
+      }
+    });
   }
 
   /* ── 내 캘린더 표시 설정 ─── */

@@ -870,10 +870,25 @@
           <button id="mgr-add-btn" class="btn btn-primary btn-sm">➕ 관리실 인원 추가</button>
           <div id="mgr-staff-list" style="margin-top:14px"></div>
         </div>
+        <!-- QR 체크인 서버 URL 설정 -->
+        <div class="settings-card" id="checkin-proxy-card">
+          <h3 class="settings-section-title">🔗 QR 체크인 서버 URL</h3>
+          <p class="form-hint" style="margin-bottom:10px">
+            QR 입출입 기록을 저장하려면 Google Apps Script 프록시 URL을 입력하세요.
+            <strong>gas_checkin_proxy.gs</strong> 파일을 GAS에 배포 후 웹앱 URL을 붙여넣습니다.
+          </p>
+          <div style="display:flex;gap:8px;align-items:center">
+            <input id="checkin-proxy-url-input" type="url" class="form-input" style="flex:1" placeholder="https://script.google.com/macros/s/.../exec">
+            <button id="checkin-proxy-save-btn" class="btn btn-primary btn-sm">저장</button>
+            <button id="checkin-proxy-test-btn" class="btn btn-secondary btn-sm">테스트</button>
+          </div>
+          <p id="checkin-proxy-status" class="form-hint" style="margin-top:8px"></p>
+        </div>
+
         <!-- DB 초기화 (admin 전용) -->
         <div class="settings-card" id="hr-init-card" hidden>
           <h3 class="settings-section-title">🗄️ Sheets DB 초기화 <span class="badge-admin">관리자</span></h3>
-          <p class="form-hint" style="margin-bottom:10px">Google Sheets에 필요한 모든 시트(직원·업무·업무수신·알림로그·시설·대관예약·차량·차량예약)와 헤더를 자동으로 생성합니다. 최초 1회만 실행하면 됩니다.</p>
+          <p class="form-hint" style="margin-bottom:10px">Google Sheets에 필요한 모든 시트(직원·업무·업무수신·알림로그·시설·대관예약·차량·차량예약·작업지시·관리실인원·공간관리·입출입기록·입출입사용자)와 헤더를 자동으로 생성합니다. 최초 1회만 실행하면 됩니다.</p>
           <button id="hr-init-sheets-btn" class="btn btn-primary btn-sm">🗄️ 시트 초기화 실행</button>
           <p id="hr-init-status" class="form-hint" style="margin-top:8px"></p>
         </div>
