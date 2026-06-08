@@ -37,16 +37,21 @@ var SheetsModule = (function () {
   /* ──────────────────────────────────────────────────
      기본 API 헬퍼
   ────────────────────────────────────────────────── */
+  var _403shown = false; // 세션당 1회만 안내
   function _handle403(status) {
-    if (status === 403) {
-      // 저장된 토큰이 스코프 부족이거나 만료됐을 가능성 → 삭제 후 재로그인 유도
-      try {
-        sessionStorage.removeItem('asea_gtoken'); sessionStorage.removeItem('asea_gtoken_exp');
-        localStorage.removeItem('asea_gtoken');  localStorage.removeItem('asea_gtoken_exp');
-      } catch(e) {}
+    if (status !== 403) return;
+    // Auth.forceReauth()로 조용한 재인증 시도
+    if (typeof Auth !== 'undefined' && Auth.forceReauth) {
+      Auth.forceReauth();
+    }
+    // 토스트는 1회만
+    if (!_403shown) {
+      _403shown = true;
       if (typeof window.aseaToast === 'function') {
-        window.aseaToast('Google 인증이 만료되었습니다. 로그아웃 후 다시 로그인해주세요.', 'error');
+        window.aseaToast('인증을 갱신하고 있습니다. 잠시 후 자동으로 재시도됩니다.', 'info');
       }
+      // 2초 후 플래그 해제 (다음 진입 허용)
+      setTimeout(function () { _403shown = false; }, 5000);
     }
   }
 
