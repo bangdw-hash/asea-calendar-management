@@ -72,6 +72,16 @@
     var el = $('error-msg');
     if (el) el.className = 'error-msg';
   }
+  function showCheckinError(msg) {
+    var el = $('error-checkin-msg');
+    if (!el) return;
+    el.textContent = msg;
+    el.className = 'error-msg show';
+  }
+  function clearCheckinError() {
+    var el = $('error-checkin-msg');
+    if (el) el.className = 'error-msg';
+  }
 
   /* ─── API 호출 (읽기: Sheets API Key) ─── */
   var SHEETS_BASE = 'https://sheets.googleapis.com/v4/spreadsheets/' + CONFIG.sheetsDbId;
@@ -79,7 +89,6 @@
 
   function _getApiKey() {
     if (_apiKey) return _apiKey;
-    // config에 apiKey 필드가 있으면 사용, 없으면 localStorage에서
     _apiKey = (typeof CONFIG.sheetsApiKey === 'string' ? CONFIG.sheetsApiKey : '') ||
               localStorage.getItem('asea_sheets_api_key') || '';
     return _apiKey;
@@ -129,18 +138,21 @@
 
   function _renderCheckinScreen() {
     _showScreen('checkin');
+
+    // 수정 폼 닫기
+    hide('edit-info-form');
+    show('ci-user-block');
+
     text('ci-user-name', _user.name + ' 님');
     text('ci-user-sub', _user.affiliation + ' · ' + _user.phone);
 
     if (_lastLog && _lastLog.checkType === '입실') {
-      // 마지막이 입실 → 퇴실 버튼 활성
       text('ci-last-status', '현재 입실 중');
       $('ci-last-status').className = 'status-badge in';
       text('ci-last-time', '입실 시각: ' + fmtTime(_lastLog.timestamp));
       $('btn-checkin').hidden  = true;
       $('btn-checkout').hidden = false;
     } else {
-      // 마지막이 퇴실 or 기록 없음 → 입실 버튼 활성
       text('ci-last-status', _lastLog ? '이전 퇴실 완료' : '첫 방문');
       $('ci-last-status').className = 'status-badge ' + (_lastLog ? 'out' : 'none');
       text('ci-last-time', _lastLog ? '퇴실 시각: ' + fmtTime(_lastLog.timestamp) : '');
@@ -156,8 +168,6 @@
     text('res-room', _roomName);
     text('res-time', fmtTime(ts));
     text('res-user', _user.name + ' (' + _user.affiliation + ')');
-
-    // 3초 후 체크인 화면 복귀
     setTimeout(function () { _renderCheckinScreen(); }, 4000);
   }
 
@@ -166,7 +176,6 @@
     _showScreen('loading');
     _deviceId = getOrCreateDeviceId();
 
-    // URL 파라미터
     var params = new URLSearchParams(location.search);
     _roomId = params.get('room') || '';
 
@@ -176,20 +185,20 @@
       return;
     }
 
-    // 공간 정보 조회
+    // 공간 정보 조회 (API Key 있을 때만)
     try {
       var spaces = await _readSheet('공간관리');
       _roomInfo = spaces.find(function (s) { return s.id === _roomId && s.status !== 'inactive'; });
     } catch (e) { _roomInfo = null; }
 
-    if (!_roomInfo) {
-      // API Key 없거나 공간 없음 — 공간명을 roomId로 표시하고 계속
-      _roomName = _roomId;
+    // 공간명 결정: DB에 이름 있으면 사용, 없으면 URL 파라미터 그대로
+    if (_roomInfo && _roomInfo.name) {
+      _roomName = _roomInfo.name;
     } else {
-      _roomName = _roomInfo.name || _roomId;
+      // URL ?name= 파라미터도 확인 (QR 생성 시 포함 가능)
+      _roomName = params.get('name') ? decodeURIComponent(params.get('name')) : _roomId;
     }
 
-    // 헤더 표시
     text('room-name', _roomName);
     text('room-location', _roomInfo ? (_roomInfo.location || '') : '');
 
@@ -200,7 +209,6 @@
     } catch (e) { _user = null; }
 
     if (_user && _user.name) {
-      // 마지막 입출입 기록 조회
       try {
         var logs = await _readSheet('입출입기록');
         var myLogs = logs.filter(function (l) {
@@ -231,7 +239,6 @@
 
   $('btn-consent-next') && $('btn-consent-next').addEventListener('click', function () {
     if (!$('consent-check').checked) return;
-    // 동의 화면에서 정보 입력 카드 보이기
     hide('consent-section');
     show('info-section');
   });
@@ -247,18 +254,15 @@
     if (!phone) { showError('전화번호를 입력해 주세요.'); return; }
     if (!affil) { showError('소속을 입력해 주세요.'); return; }
 
-    // 전화번호 간단 검증
     if (!/^[0-9\-+\s]{7,15}$/.test(phone)) {
       showError('올바른 전화번호를 입력해 주세요.'); return;
     }
 
     this.disabled = true;
     this.textContent = '저장 중...';
-
     var consentTs = new Date().toISOString();
 
     try {
-      // GAS 프록시를 통해 사용자 등록
       await _postToProxy({
         action: 'addUser',
         name: name,
@@ -271,7 +275,6 @@
 
       _user = { name: name, phone: phone, affiliation: affil, consentAt: consentTs };
       localStorage.setItem(USER_KEY, JSON.stringify(_user));
-
       _lastLog = null;
       _renderCheckinScreen();
     } catch (e) {
@@ -281,12 +284,70 @@
     }
   });
 
+  /* ─── 정보 수정 UX ─── */
+  $('btn-edit-info-open') && $('btn-edit-info-open').addEventListener('click', function () {
+    // 현재 정보 폼에 미리 채움
+    $('edit-name').value  = _user.name  || '';
+    $('edit-phone').value = _user.phone || '';
+    $('edit-affil').value = _user.affiliation || '';
+    var errEl = $('edit-error-msg');
+    if (errEl) errEl.className = 'error-msg';
+
+    hide('ci-user-block');
+    show('edit-info-form');
+    $('edit-name').focus();
+  });
+
+  $('btn-edit-cancel') && $('btn-edit-cancel').addEventListener('click', function () {
+    hide('edit-info-form');
+    show('ci-user-block');
+  });
+
+  $('btn-edit-save') && $('btn-edit-save').addEventListener('click', async function () {
+    var errEl = $('edit-error-msg');
+    if (errEl) errEl.className = 'error-msg';
+
+    var name  = ($('edit-name').value  || '').trim();
+    var phone = ($('edit-phone').value || '').trim();
+    var affil = ($('edit-affil').value || '').trim();
+
+    if (!name)  { if(errEl){errEl.textContent='이름을 입력해 주세요.';errEl.className='error-msg show';} return; }
+    if (!phone) { if(errEl){errEl.textContent='전화번호를 입력해 주세요.';errEl.className='error-msg show';} return; }
+    if (!affil) { if(errEl){errEl.textContent='소속을 입력해 주세요.';errEl.className='error-msg show';} return; }
+    if (!/^[0-9\-+\s]{7,15}$/.test(phone)) {
+      if(errEl){errEl.textContent='올바른 전화번호를 입력해 주세요.';errEl.className='error-msg show';} return;
+    }
+
+    this.disabled = true; this.textContent = '저장 중...';
+
+    try {
+      // 프록시를 통해 사용자 정보 업데이트 (addUser로 재등록 — GAS에서 deviceId 기준 upsert)
+      await _postToProxy({
+        action: 'addUser',
+        name: name,
+        phone: phone,
+        affiliation: affil,
+        deviceId: _deviceId,
+        consentTimestamp: _user.consentAt || new Date().toISOString(),
+        consentTextVersion: CONSENT_VERSION,
+      });
+    } catch (e) {
+      // 프록시 실패해도 로컬은 업데이트 (오프라인 허용)
+    }
+
+    _user = Object.assign({}, _user, { name: name, phone: phone, affiliation: affil });
+    localStorage.setItem(USER_KEY, JSON.stringify(_user));
+
+    this.disabled = false; this.textContent = '저장';
+    _renderCheckinScreen();
+  });
+
   /* ─── 입실/퇴실 버튼 ─── */
   async function _doCheckin(checkType) {
     var btn = checkType === '입실' ? $('btn-checkin') : $('btn-checkout');
     btn.disabled = true;
     btn.textContent = '기록 중...';
-    clearError();
+    clearCheckinError();
 
     var ts = new Date().toISOString();
     try {
@@ -306,7 +367,7 @@
       _lastLog = { checkType: checkType, timestamp: ts };
       _renderResult(checkType, ts);
     } catch (e) {
-      showError(e.message || '저장에 실패했습니다. 잠시 후 다시 시도해 주세요.');
+      showCheckinError(e.message || '저장에 실패했습니다. 잠시 후 다시 시도해 주세요.');
     } finally {
       btn.disabled = false;
       btn.textContent = checkType === '입실' ? '✅ 입실' : '🚪 퇴실';
@@ -316,9 +377,9 @@
   $('btn-checkin')  && $('btn-checkin').addEventListener('click',  function () { _doCheckin('입실'); });
   $('btn-checkout') && $('btn-checkout').addEventListener('click', function () { _doCheckin('퇴실'); });
 
-  /* ─── 다른 사람으로 변경 ─── */
+  /* ─── 다른 사람으로 변경 (기기 초기화) ─── */
   $('btn-change-user') && $('btn-change-user').addEventListener('click', function () {
-    if (!confirm('다른 사람으로 변경하시겠습니까? 현재 기기의 사용자 정보가 초기화됩니다.')) return;
+    if (!confirm('기기에 저장된 사용자 정보를 완전히 초기화하시겠습니까?\n\n새로운 사용자가 처음부터 입력하게 됩니다.')) return;
     localStorage.removeItem(USER_KEY);
     _user = null;
     _showConsentScreen();

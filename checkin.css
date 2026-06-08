@@ -85,7 +85,31 @@ body {
 .user-sub {
   font-size: 13px;
   color: var(--text2);
-  margin-bottom: 18px;
+  margin-bottom: 6px;
+}
+
+/* ── 내 정보 수정 링크 버튼 ── */
+.btn-edit-info-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  border: none;
+  color: #1a73e8;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px 0 14px;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.btn-edit-info-link:hover { opacity: 0.75; }
+
+/* ── 정보 수정 인라인 폼 구분선 ── */
+#edit-info-form {
+  border-top: 1.5px solid var(--border);
+  padding-top: 14px;
+  margin-bottom: 4px;
 }
 
 /* ── 폼 ── */
