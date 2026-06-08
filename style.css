@@ -78,12 +78,13 @@ html {
 body {
   font-family: var(--font-family);
   font-size: var(--font-base);
+  overflow-x: auto !important;
   color: var(--color-text);
   background: var(--color-bg);
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   min-height: 100vh;
-  overflow-x: hidden;
+  /* overflow-x: hidden 제거 — 탭 패널 내 가로 스크롤 허용 */
 }
 
 button   { font-family: inherit; cursor: pointer; border: none; background: none; }
@@ -243,7 +244,7 @@ a        { color: var(--color-accent); text-decoration: none; }
 /* ── 7. 탭 콘텐츠 ─────────────────────────────────────────────── */
 .tab-content {
   flex: 1;
-  overflow: hidden;
+  overflow: hidden;   /* 세로: 패널이 담당 / 가로: 패널 내부 스크롤 */
   position: relative;
 }
 
@@ -251,6 +252,7 @@ a        { color: var(--color-accent); text-decoration: none; }
   position: absolute;
   inset: 0;
   overflow-y: auto;
+  overflow-x: auto;
   padding: var(--sp-4);
   -webkit-overflow-scrolling: touch;
 }
