@@ -30,6 +30,12 @@ var FacilityModule = (function () {
   var _fIsDragging = false;
   var _fDragCtrl   = false;
 
+  // ── 모바일 터치 전용 상태 ──────────────────────────────────
+  var _fTouchTimer  = null;
+  var _fIsLongPress = false;
+  var _fTouchMoved  = false;
+  var _fTouchStartCell = null;
+
   // 알림 프록시 URL
   function _getProxyUrl() { return localStorage.getItem('asea_facility_proxy_url') || ''; }
 
@@ -82,6 +88,8 @@ var FacilityModule = (function () {
     return new Set(_fGetDateRange(_fDragStart, _fDragCur));
   }
 
+  function _fIsMobile() { return window.innerWidth <= 600; }
+
   function _fUpdateHighlight() {
     var cal = $f('fac-calendar');
     if (!cal) return;
@@ -91,17 +99,83 @@ var FacilityModule = (function () {
       cell.classList.toggle('res-cal-sel',  _fSelDates.has(d) || dragRange.has(d));
       cell.classList.toggle('res-cal-drag', dragRange.has(d) && !_fSelDates.has(d));
     });
-    var hint = $f('fac-sel-hint');
-    if (hint) {
-      var allDates = new Set(Array.from(_fSelDates));
-      dragRange.forEach(function(d){ allDates.add(d); });
-      if (allDates.size > 0) {
-        hint.textContent = '📅 '+allDates.size+'일 선택됨 — 마우스를 떼면 예약창이 열립니다';
-        hint.style.display = '';
-      } else {
-        hint.textContent = ''; hint.style.display = 'none';
+    if (_fIsMobile()) {
+      _fUpdateFloatingBar();
+    } else {
+      var hint = $f('fac-sel-hint');
+      if (hint) {
+        var allDates = new Set(Array.from(_fSelDates));
+        dragRange.forEach(function(d){ allDates.add(d); });
+        if (allDates.size > 0) {
+          hint.textContent = '📅 '+allDates.size+'일 선택됨 — 마우스를 떼면 예약창이 열립니다';
+          hint.style.display = '';
+        } else {
+          hint.textContent = ''; hint.style.display = 'none';
+        }
       }
     }
+  }
+
+  /* ── 모바일 플로팅 예약 바 ─────────────────────────────────── */
+  function _fGetOrCreateFloatingBar() {
+    var bar = document.getElementById('fac-float-bar');
+    if (!bar) {
+      bar = document.createElement('div');
+      bar.id = 'fac-float-bar';
+      bar.className = 'mob-float-bar';
+      bar.innerHTML =
+        '<div class="mob-float-info">' +
+          '<span class="mob-float-count"></span>' +
+          '<span class="mob-float-hint"></span>' +
+        '</div>' +
+        '<button class="mob-float-clear btn btn-ghost btn-sm">초기화</button>' +
+        '<button class="mob-float-book btn btn-primary">📅 예약하기</button>';
+      document.body.appendChild(bar);
+      bar.querySelector('.mob-float-clear').addEventListener('click', function() {
+        _fSelDates.clear();
+        _fUpdateHighlight();
+        _fUpdateFloatingBar();
+      });
+      bar.querySelector('.mob-float-book').addEventListener('click', function() {
+        openResvModal(null, null);
+      });
+    }
+    return bar;
+  }
+
+  function _fUpdateFloatingBar() {
+    if (!_fIsMobile()) return;
+    var bar = _fGetOrCreateFloatingBar();
+    var count = _fSelDates.size;
+    if (count > 0) {
+      var ranges = _fGroupRanges(_fSelDates);
+      bar.querySelector('.mob-float-count').textContent = '📅 ' + count + '일 선택';
+      bar.querySelector('.mob-float-hint').textContent =
+        ranges.length > 1 ? ranges.length + '개 구간' : '1개 구간';
+      bar.classList.add('visible');
+    } else {
+      bar.classList.remove('visible');
+    }
+  }
+
+  /* ── 롱프레스 추가 모드 토스트 ─────────────────────────────── */
+  function _fShowAddModeToast() {
+    var t = document.getElementById('mob-addmode-toast');
+    if (!t) {
+      t = document.createElement('div');
+      t.id = 'mob-addmode-toast';
+      t.className = 'mob-addmode-toast';
+      t.textContent = '➕ 추가 선택 모드';
+      document.body.appendChild(t);
+    }
+    t.classList.add('show');
+    if (_fTouchStartCell) _fTouchStartCell.classList.add('lp-anchor');
+    if (navigator.vibrate) navigator.vibrate([40]);
+    clearTimeout(t._hideTimer);
+    t._hideTimer = setTimeout(function() {
+      t.classList.remove('show');
+      if (_fTouchStartCell) _fTouchStartCell.classList.remove('lp-anchor');
+    }, 1200);
   }
 
   /* ─────────────────────────────────────────────────────────
@@ -762,9 +836,59 @@ var FacilityModule = (function () {
           if (resv) openResvModal(resv, null);
         }
       });
+
+      /* ── 모바일 터치 이벤트 (A안) ──────────────────────────── */
+
+      cal.addEventListener('touchstart', function(e) {
+        var touch = e.touches[0];
+        var el    = document.elementFromPoint(touch.clientX, touch.clientY);
+        var cell  = el && el.closest('.res-cal-cell[data-date]');
+        if (!cell) return;
+        if (el.closest('.res-cal-item')) return;
+
+        e.preventDefault();
+
+        _fTouchMoved      = false;
+        _fIsLongPress     = false;
+        _fDragCtrl        = false;
+        _fTouchStartCell  = cell;
+        _fDragStart       = cell.dataset.date;
+        _fDragCur         = cell.dataset.date;
+        _fIsDragging      = true;
+
+        clearTimeout(_fTouchTimer);
+        _fTouchTimer = setTimeout(function() {
+          _fIsLongPress = true;
+          _fDragCtrl    = true;
+          _fShowAddModeToast();
+          _fUpdateHighlight();
+        }, 600);
+
+      }, { passive: false });
+
+      cal.addEventListener('touchmove', function(e) {
+        if (!_fIsDragging) return;
+        var touch = e.touches[0];
+        var el    = document.elementFromPoint(touch.clientX, touch.clientY);
+        var cell  = el && el.closest('.res-cal-cell[data-date]');
+
+        if (!_fTouchMoved) {
+          _fTouchMoved = true;
+          if (!_fIsLongPress) {
+            clearTimeout(_fTouchTimer);
+            _fTouchTimer = null;
+            _fSelDates.clear();
+          }
+        }
+
+        if (!cell || cell.dataset.date === _fDragCur) return;
+        e.preventDefault();
+        _fDragCur = cell.dataset.date;
+        _fUpdateHighlight();
+      }, { passive: false });
     }
 
-    // mouseup (document-level)
+    // mouseup (document-level) — 데스크톱
     document.addEventListener('mouseup', function(e) {
       if (!_fIsDragging) return;
       var dragRange = _fCurDragRange();
@@ -775,6 +899,38 @@ var FacilityModule = (function () {
         openResvModal(null, null);
       }
     });
+
+    // touchend (document-level) — 모바일
+    document.addEventListener('touchend', function(e) {
+      if (!_fIsDragging) return;
+
+      clearTimeout(_fTouchTimer);
+      _fTouchTimer = null;
+
+      var dragRange = _fCurDragRange();
+
+      if (!_fTouchMoved) {
+        // 순수 탭: 단일 날짜 토글
+        var d = _fDragStart;
+        if (d) {
+          if (_fSelDates.has(d)) { _fSelDates.delete(d); }
+          else                   { _fSelDates.add(d); }
+        }
+      } else {
+        // 드래그 or 롱프레스+드래그: 범위 추가
+        dragRange.forEach(function(d){ _fSelDates.add(d); });
+      }
+
+      _fIsDragging     = false;
+      _fDragStart      = null;
+      _fDragCur        = null;
+      _fIsLongPress    = false;
+      _fDragCtrl       = false;
+      _fTouchMoved     = false;
+      _fTouchStartCell = null;
+
+      _fUpdateHighlight();
+    }, { passive: true });
 
     // 선택 초기화
     var clearSelBtn = $f('fac-clear-sel-btn');

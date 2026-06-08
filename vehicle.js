@@ -25,6 +25,12 @@ var VehicleModule = (function () {
   var _vIsDragging = false;
   var _vDragCtrl   = false;       // Ctrl 누른 드래그
 
+  // ── 모바일 터치 전용 상태 ──────────────────────────────────
+  var _vTouchTimer  = null;   // 롱프레스 타이머
+  var _vIsLongPress = false;  // 롱프레스 확정 여부 (추가 선택 모드)
+  var _vTouchMoved  = false;  // 터치가 이동했는지 (드래그 감지)
+  var _vTouchStartCell = null; // 터치 시작 셀
+
   function $v(id) { return document.getElementById(id); }
   function toast(msg, type) { if (typeof window.aseaToast === 'function') window.aseaToast(msg, type); }
   function pad(n) { return String(n).padStart(2,'0'); }
@@ -80,6 +86,8 @@ var VehicleModule = (function () {
     return new Set(_vGetDateRange(_vDragStart, _vDragCur));
   }
 
+  function _vIsMobile() { return window.innerWidth <= 600; }
+
   function _vUpdateHighlight() {
     var cal = $v('veh-calendar');
     if (!cal) return;
@@ -91,18 +99,88 @@ var VehicleModule = (function () {
       cell.classList.toggle('res-cal-sel',  inSel || inDrag);
       cell.classList.toggle('res-cal-drag', inDrag && !inSel);
     });
-    var hint = $v('veh-sel-hint');
-    if (hint) {
-      var allDates = new Set(Array.from(_vSelDates));
-      dragRange.forEach(function(d){ allDates.add(d); });
-      if (allDates.size > 0) {
-        hint.textContent = '📅 '+allDates.size+'일 선택됨 — 마우스를 떼면 예약창이 열립니다';
-        hint.style.display = '';
-      } else {
-        hint.textContent = '';
-        hint.style.display = 'none';
+    // 모바일: 플로팅 바 업데이트 / 데스크톱: 힌트 텍스트
+    if (_vIsMobile()) {
+      _vUpdateFloatingBar();
+    } else {
+      var hint = $v('veh-sel-hint');
+      if (hint) {
+        var allDates = new Set(Array.from(_vSelDates));
+        dragRange.forEach(function(d){ allDates.add(d); });
+        if (allDates.size > 0) {
+          hint.textContent = '📅 '+allDates.size+'일 선택됨 — 마우스를 떼면 예약창이 열립니다';
+          hint.style.display = '';
+        } else {
+          hint.textContent = '';
+          hint.style.display = 'none';
+        }
       }
     }
+  }
+
+  /* ── 모바일 플로팅 예약 바 ─────────────────────────────────── */
+  function _vGetOrCreateFloatingBar() {
+    var bar = document.getElementById('veh-float-bar');
+    if (!bar) {
+      bar = document.createElement('div');
+      bar.id = 'veh-float-bar';
+      bar.className = 'mob-float-bar';
+      bar.innerHTML =
+        '<div class="mob-float-info">' +
+          '<span class="mob-float-count"></span>' +
+          '<span class="mob-float-hint"></span>' +
+        '</div>' +
+        '<button class="mob-float-clear btn btn-ghost btn-sm">초기화</button>' +
+        '<button class="mob-float-book btn btn-primary">📅 예약하기</button>';
+      document.body.appendChild(bar);
+      bar.querySelector('.mob-float-clear').addEventListener('click', function() {
+        _vSelDates.clear();
+        _vUpdateHighlight();
+        _vUpdateFloatingBar();
+      });
+      bar.querySelector('.mob-float-book').addEventListener('click', function() {
+        openResvModal(null, null);
+      });
+    }
+    return bar;
+  }
+
+  function _vUpdateFloatingBar() {
+    if (!_vIsMobile()) return;
+    var bar = _vGetOrCreateFloatingBar();
+    var count = _vSelDates.size;
+    if (count > 0) {
+      var ranges = _vGroupRanges(_vSelDates);
+      bar.querySelector('.mob-float-count').textContent = '📅 ' + count + '일 선택';
+      bar.querySelector('.mob-float-hint').textContent =
+        ranges.length > 1 ? ranges.length + '개 구간' : '1개 구간';
+      bar.classList.add('visible');
+    } else {
+      bar.classList.remove('visible');
+    }
+  }
+
+  /* ── 롱프레스 추가 모드 토스트 ─────────────────────────────── */
+  function _vShowAddModeToast() {
+    var t = document.getElementById('mob-addmode-toast');
+    if (!t) {
+      t = document.createElement('div');
+      t.id = 'mob-addmode-toast';
+      t.className = 'mob-addmode-toast';
+      t.textContent = '➕ 추가 선택 모드';
+      document.body.appendChild(t);
+    }
+    t.classList.add('show');
+    // 앵커 셀 링 효과
+    if (_vTouchStartCell) _vTouchStartCell.classList.add('lp-anchor');
+    // 진동 피드백
+    if (navigator.vibrate) navigator.vibrate([40]);
+    // 1.2초 후 자동 숨김
+    clearTimeout(t._hideTimer);
+    t._hideTimer = setTimeout(function() {
+      t.classList.remove('show');
+      if (_vTouchStartCell) _vTouchStartCell.classList.remove('lp-anchor');
+    }, 1200);
   }
 
   /* ─────────────────────────────────────────────────────────
@@ -526,9 +604,64 @@ var VehicleModule = (function () {
           if (resv) openResvModal(resv, null);
         }
       });
+
+      /* ── 모바일 터치 이벤트 (A안) ──────────────────────────── */
+
+      // touchstart: 롱프레스 타이머 시작, 드래그 앵커 설정
+      cal.addEventListener('touchstart', function(e) {
+        var touch = e.touches[0];
+        var el    = document.elementFromPoint(touch.clientX, touch.clientY);
+        var cell  = el && el.closest('.res-cal-cell[data-date]');
+        if (!cell) return;
+        if (el.closest('.res-cal-item')) return; // 예약 아이템 탭은 click에서 처리
+
+        e.preventDefault(); // 스크롤 방지 + 합성 마우스 이벤트 차단
+
+        _vTouchMoved      = false;
+        _vIsLongPress     = false;
+        _vDragCtrl        = false;
+        _vTouchStartCell  = cell;
+        _vDragStart       = cell.dataset.date;
+        _vDragCur         = cell.dataset.date;
+        _vIsDragging      = true;
+
+        // 롱프레스 타이머 (600ms → 추가 선택 모드)
+        clearTimeout(_vTouchTimer);
+        _vTouchTimer = setTimeout(function() {
+          _vIsLongPress = true;
+          _vDragCtrl    = true;
+          _vShowAddModeToast();
+          _vUpdateHighlight();
+        }, 600);
+
+      }, { passive: false });
+
+      // touchmove: 드래그 범위 업데이트
+      cal.addEventListener('touchmove', function(e) {
+        if (!_vIsDragging) return;
+        var touch = e.touches[0];
+        var el    = document.elementFromPoint(touch.clientX, touch.clientY);
+        var cell  = el && el.closest('.res-cal-cell[data-date]');
+
+        if (!_vTouchMoved) {
+          _vTouchMoved = true;
+          if (!_vIsLongPress) {
+            // 일반 드래그: 타이머 취소 + 기존 선택 초기화
+            clearTimeout(_vTouchTimer);
+            _vTouchTimer = null;
+            _vSelDates.clear();
+          }
+          // 롱프레스 확정 후 드래그: 기존 선택 유지 (이미 _vDragCtrl=true)
+        }
+
+        if (!cell || cell.dataset.date === _vDragCur) return;
+        e.preventDefault(); // 스크롤 막기
+        _vDragCur = cell.dataset.date;
+        _vUpdateHighlight();
+      }, { passive: false });
     }
 
-    // mouseup: 드래그 종료 (document-level — 캘린더 밖에서 놓아도 처리)
+    // mouseup: 드래그 종료 (desktop — 캘린더 밖에서 놓아도 처리)
     document.addEventListener('mouseup', function(e) {
       if (!_vIsDragging) return;
       var dragRange = _vCurDragRange();
@@ -537,11 +670,43 @@ var VehicleModule = (function () {
       _vDragStart  = null;
       _vDragCur    = null;
       _vUpdateHighlight();
-      // 선택된 날짜가 있고 예약 아이템 클릭이 아닌 경우 모달 오픈
+      // 데스크톱: 즉시 모달 오픈
       if (_vSelDates.size > 0 && !e.target.closest('.res-cal-item')) {
         openResvModal(null, null);
       }
     });
+
+    // touchend: 탭·드래그·롱프레스 최종 처리 (document-level)
+    document.addEventListener('touchend', function(e) {
+      if (!_vIsDragging) return;
+
+      clearTimeout(_vTouchTimer);
+      _vTouchTimer = null;
+
+      var dragRange = _vCurDragRange();
+
+      if (!_vTouchMoved) {
+        // ── 순수 탭: 단일 날짜 토글 ────────────────────────────
+        var d = _vDragStart;
+        if (d) {
+          if (_vSelDates.has(d)) { _vSelDates.delete(d); }
+          else                   { _vSelDates.add(d); }
+        }
+      } else {
+        // ── 드래그 또는 롱프레스+드래그: 범위 추가 ────────────
+        dragRange.forEach(function(d){ _vSelDates.add(d); });
+      }
+
+      _vIsDragging     = false;
+      _vDragStart      = null;
+      _vDragCur        = null;
+      _vIsLongPress    = false;
+      _vDragCtrl       = false;
+      _vTouchMoved     = false;
+      _vTouchStartCell = null;
+
+      _vUpdateHighlight(); // 플로팅 바 자동 업데이트 포함
+    }, { passive: true });
 
     // 선택 초기화 버튼
     var clearSelBtn = $v('veh-clear-sel-btn');
@@ -565,6 +730,9 @@ var VehicleModule = (function () {
     var resvClose = $v('veh-resv-close-btn');
     if (resvClose) resvClose.addEventListener('click', function() {
       $v('veh-resv-modal').hidden = true;
+      // 모달 닫힐 때 선택 초기화 + 플로팅 바 숨김
+      _vSelDates.clear();
+      _vUpdateHighlight();
     });
 
     // '예약하기' 버튼
