@@ -37,12 +37,25 @@ var SheetsModule = (function () {
   /* ──────────────────────────────────────────────────
      기본 API 헬퍼
   ────────────────────────────────────────────────── */
+  function _handle403(status) {
+    if (status === 403) {
+      // 저장된 토큰이 스코프 부족이거나 만료됐을 가능성 → 삭제 후 재로그인 유도
+      try {
+        sessionStorage.removeItem('asea_gtoken'); sessionStorage.removeItem('asea_gtoken_exp');
+        localStorage.removeItem('asea_gtoken');  localStorage.removeItem('asea_gtoken_exp');
+      } catch(e) {}
+      if (typeof window.aseaToast === 'function') {
+        window.aseaToast('Google 인증이 만료되었습니다. 로그아웃 후 다시 로그인해주세요.', 'error');
+      }
+    }
+  }
+
   async function apiGet(range) {
     var res = await fetch(
       BASE + '/values/' + encodeURIComponent(range) + '?valueRenderOption=UNFORMATTED_VALUE',
       { headers: authHeader() }
     );
-    if (!res.ok) throw new Error('Sheets GET 실패: ' + res.status);
+    if (!res.ok) { _handle403(res.status); throw new Error('Sheets GET 실패: ' + res.status); }
     return res.json();
   }
 

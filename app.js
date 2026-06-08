@@ -91,6 +91,11 @@
   // work.js에서 토스트 사용
   window.aseaToast = toast;
 
+  // quicktask 등록 후 캘린더 새로고침용 전역 함수
+  window.aseaRefreshCalendar = function () {
+    if (S.tab === 'calendar') renderCalendar();
+  };
+
   /* ═══════════════════════════════════════════════════════════
      모달
   ═══════════════════════════════════════════════════════════ */

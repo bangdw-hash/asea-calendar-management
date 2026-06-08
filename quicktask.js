@@ -134,12 +134,22 @@ var QuickTaskModule = (function () {
 
     try {
       var today = todayStr();
+      // 오늘 요일 계산 (자연어 날짜 파싱에 필요)
+      var dayNames = ['일','월','화','수','목','금','토'];
+      var todayDow = dayNames[new Date().getDay()];
+
       var systemPrompt =
         '당신은 업무 일정 추출 AI입니다. 사용자가 붙여넣은 내용에서 업무/일정 항목들을 추출해 ' +
-        'JSON 배열로만 반환하세요. 다른 설명 없이 JSON만 반환합니다.\n' +
-        '각 항목 형식: {"title":"업무 제목","content":"상세 내용","dueDate":"YYYY-MM-DD 또는 빈문자열","category":"일반업무|교육일정|행사|대관|차량|기타"}\n' +
-        '오늘 날짜: ' + today + '\n' +
-        '날짜가 명시되지 않은 경우 dueDate는 빈문자열("")로 두세요.';
+        'JSON 배열로만 반환하세요. 다른 설명 없이 JSON만 반환합니다.\n\n' +
+        '오늘 날짜: ' + today + ' (' + todayDow + '요일)\n\n' +
+        '각 항목 형식:\n' +
+        '{"title":"업무 제목","content":"상세 내용(담당자·협조사항 등 포함)","dueDate":"날짜(아래 형식)","dueTime":"HH:MM 또는 빈문자열","category":"일반업무|교육일정|행사|대관|차량|기타"}\n\n' +
+        '날짜 처리 규칙:\n' +
+        '- "이번 주 목요일", "다음 주 수요일" 등 상대적 표현 → 실제 날짜(YYYY-MM-DD)로 변환\n' +
+        '- "내일", "모레", "다음달 15일" 등도 실제 날짜로 변환\n' +
+        '- "3시", "오후 2시", "11:00" 등 시간 표현 → dueTime에 24시간 형식(HH:MM)으로 기록\n' +
+        '- 날짜가 전혀 없으면 dueDate는 빈문자열("")\n' +
+        '- 시간이 없으면 dueTime은 빈문자열("")';
 
       var messages;
       if (Q.pasteImageB64) {
@@ -186,13 +196,16 @@ var QuickTaskModule = (function () {
       }
 
       Q.extractedTasks = parsed.map(function (t) {
+        var dueDate = (t.dueDate || '').trim();
+        var dueTime = (t.dueTime || '').trim();
         return {
           id:       genId(),
           title:    (t.title || '').trim(),
           content:  (t.content || '').trim(),
-          dueDate:  (t.dueDate || '').trim(),
+          dueDate:  dueDate,
+          dueTime:  dueTime,
           category: t.category || '일반업무',
-          status:   '예정',  // 기본값: 예정
+          status:   '예정',
           checked:  true,
         };
       }).filter(function (t) { return t.title; });
@@ -254,7 +267,8 @@ var QuickTaskModule = (function () {
               '<input class="qt-task-title-input form-input" style="flex:1;min-width:140px;padding:4px 8px;font-size:13px" data-idx="' + idx + '" value="' + escapeHtml(task.title) + '">' +
             '</div>' +
             '<div style="display:flex;gap:6px;margin-top:4px;align-items:center;flex-wrap:wrap">' +
-              '<input type="date" class="qt-task-date-input form-input" style="width:140px;padding:3px 8px;font-size:12px" data-idx="' + idx + '" value="' + escapeHtml(task.dueDate) + '">' +
+              '<input type="date" class="qt-task-date-input form-input" style="width:130px;padding:3px 8px;font-size:12px" data-idx="' + idx + '" value="' + escapeHtml(task.dueDate) + '">' +
+              '<input type="time" class="qt-task-time-input form-input" style="width:90px;padding:3px 8px;font-size:12px" data-idx="' + idx + '" value="' + escapeHtml(task.dueTime || '') + '" placeholder="시간">' +
               '<select class="qt-task-cat-sel form-select" style="width:100px;padding:3px 6px;font-size:12px" data-idx="' + idx + '">' +
                 ['일반업무','교육일정','행사','대관','차량','기타'].map(function(c){
                   return '<option value="'+c+'"'+(c===task.category?' selected':'')+'>'+c+'</option>';
@@ -298,6 +312,12 @@ var QuickTaskModule = (function () {
     wrap.querySelectorAll('.qt-task-date-input').forEach(function (inp) {
       inp.addEventListener('change', function () {
         Q.extractedTasks[parseInt(this.dataset.idx)].dueDate = this.value;
+      });
+    });
+
+    wrap.querySelectorAll('.qt-task-time-input').forEach(function (inp) {
+      inp.addEventListener('change', function () {
+        Q.extractedTasks[parseInt(this.dataset.idx)].dueTime = this.value;
       });
     });
 
@@ -387,22 +407,46 @@ var QuickTaskModule = (function () {
           status:      t.status || '예정',  // 예정 | 완료
         };
 
-        // 2. Google 캘린더에도 등록 (캘린더가 선택된 경우)
-        if (Q.targetCalendar && t.dueDate) {
+        // 2. Google 캘린더에도 등록
+        // 캘린더 미선택이면 ASEA-개인업무 캘린더 자동 사용
+        var calTarget = Q.targetCalendar;
+        if (!calTarget && window._workW && window._workW.asea개인CalId) {
+          calTarget = { id: window._workW.asea개인CalId, name: 'ASEA-개인업무', color: '#4285F4' };
+        }
+        if (calTarget && t.dueDate) {
           try {
             var token = Auth.getToken();
-            var start = t.dueDate;
-            var end   = t.dueDate;
-            var eventBody = {
-              summary:     '[업무] ' + t.title,
-              description: t.content || '',
-              start: { date: start },
-              end:   { date: end   },
-              colorId: '1',
-            };
+            var eventBody;
+            if (t.dueTime) {
+              // 시간이 있으면 dateTime 이벤트 (1시간짜리)
+              var startDt = t.dueDate + 'T' + t.dueTime + ':00';
+              var endDate = new Date(startDt);
+              endDate.setHours(endDate.getHours() + 1);
+              var endDt = endDate.getFullYear() + '-' +
+                String(endDate.getMonth()+1).padStart(2,'0') + '-' +
+                String(endDate.getDate()).padStart(2,'0') + 'T' +
+                String(endDate.getHours()).padStart(2,'0') + ':' +
+                String(endDate.getMinutes()).padStart(2,'0') + ':00';
+              eventBody = {
+                summary:     '[업무] ' + t.title,
+                description: t.content || '',
+                start: { dateTime: startDt, timeZone: 'Asia/Seoul' },
+                end:   { dateTime: endDt,   timeZone: 'Asia/Seoul' },
+                colorId: '1',
+              };
+            } else {
+              // 날짜만 있으면 종일 이벤트
+              eventBody = {
+                summary:     '[업무] ' + t.title,
+                description: t.content || '',
+                start: { date: t.dueDate },
+                end:   { date: t.dueDate },
+                colorId: '1',
+              };
+            }
             var calResp = await fetch(
               'https://www.googleapis.com/calendar/v3/calendars/' +
-              encodeURIComponent(Q.targetCalendar.id) + '/events',
+              encodeURIComponent(calTarget.id) + '/events',
               {
                 method:  'POST',
                 headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
@@ -449,6 +493,10 @@ var QuickTaskModule = (function () {
       // 업무관리 탭 새로고침
       if (typeof WorkModule !== 'undefined' && WorkModule.refreshInbox) {
         WorkModule.refreshInbox();
+      }
+      // 캘린더 탭 새로고침 (앱 전역 함수가 있으면)
+      if (typeof window.aseaRefreshCalendar === 'function') {
+        window.aseaRefreshCalendar();
       }
     } else {
       toast('등록에 실패했습니다. 로그인 상태를 확인하세요.', 'error');

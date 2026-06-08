@@ -187,8 +187,9 @@ var WorkModule = (function () {
       }
     }
 
-    // 전역 공개 (facility/vehicle 모듈에서 참조)
+    // 전역 공개 (facility/vehicle/quicktask 모듈에서 참조)
     window._workMe = W.me;
+    window._workW  = W;   // quicktask에서 ASEA-개인업무 캘린더 ID 참조용
 
     renderProfileCard();
 
@@ -1421,6 +1422,10 @@ var WorkModule = (function () {
     initWorkModule: initWorkModule,
     onLogin:        onLogin,
     loadHrList:     loadHrList,
+    // quicktask.js 등록 후 호출 — 현재 탭에 따라 목록 새로고침
+    refreshInbox: function () {
+      if (W.wtab === 'my') loadMyTasks();
+    },
   };
 
 })();
