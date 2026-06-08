@@ -1766,12 +1766,17 @@ var WorkModule = (function () {
       var searchHrTimer;
       hrSearch.addEventListener('input', function () {
         clearTimeout(searchHrTimer);
-        // 캐시된 데이터로 즉시 필터링 (네트워크 없이)
         if (W.employees.length) {
-          clearTimeout(searchHrTimer);
           searchHrTimer = setTimeout(function () { _renderHrTable(); }, 200);
         } else {
           searchHrTimer = setTimeout(loadHrList, 400);
+        }
+      });
+      hrSearch.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') {
+          clearTimeout(searchHrTimer);
+          if (W.employees.length) { _renderHrTable(); }
+          else { loadHrList(); }
         }
       });
     }
