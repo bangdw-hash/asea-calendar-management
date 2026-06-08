@@ -2652,3 +2652,139 @@ a        { color: var(--color-accent); text-decoration: none; }
   .calsub-add-row { flex-direction: column; }
   .calsub-add-row .form-input { max-width: 100% !important; }
 }
+
+/* ═══════════════════════════════════════════════════════════
+   개인 등록 업무 (예정/완료 상태 관리)
+═══════════════════════════════════════════════════════════ */
+
+/* 개인등록 탭 강조 */
+.work-status-tab-personal {
+  border-color: #0F9D58 !important;
+  color: #0F9D58 !important;
+}
+.work-status-tab-personal.active {
+  background: #0F9D58 !important;
+  color: #fff !important;
+  border-color: #0F9D58 !important;
+}
+
+/* 필터 바 */
+.personal-filter-bar {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+.personal-filter-btn {
+  padding: 4px 12px;
+  border-radius: 14px;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid #e0e0e0;
+  background: none;
+  cursor: pointer;
+  color: #5F6368;
+  transition: background .12s, color .12s;
+}
+.personal-filter-btn.active {
+  background: #1A73E8;
+  color: #fff;
+  border-color: #1A73E8;
+}
+
+/* 개인 업무 카드 */
+.personal-task-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.personal-task-card {
+  background: #fff;
+  border: 1px solid #e8eaf6;
+  border-left: 4px solid #1A73E8;
+  border-radius: 8px;
+  padding: 12px 14px;
+  transition: box-shadow .12s;
+}
+.personal-task-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,.08); }
+.personal-task-card.personal-task-done {
+  border-left-color: #0F9D58;
+  background: #F8FFF8;
+  opacity: .85;
+}
+.personal-task-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 4px;
+}
+.personal-task-title {
+  flex: 1;
+  font-weight: 600;
+  font-size: 14px;
+  color: #202124;
+}
+.personal-task-done .personal-task-title {
+  text-decoration: line-through;
+  color: #9e9e9e;
+}
+.personal-task-status {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+.pst-pending {
+  background: #FFF3E0;
+  color: #E65100;
+}
+.pst-done {
+  background: #E8F5E9;
+  color: #2E7D32;
+}
+.personal-task-due {
+  font-size: 12px;
+  color: #5F6368;
+  margin-bottom: 4px;
+}
+.personal-task-content {
+  font-size: 12px;
+  color: #666;
+  margin-bottom: 8px;
+  line-height: 1.4;
+}
+.personal-task-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+/* 빠른 등록 모달 — 상태 토글 버튼 */
+.qt-status-toggle {
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  border: 1px solid;
+  cursor: pointer;
+  transition: background .12s, color .12s;
+  white-space: nowrap;
+}
+.qt-status-pending {
+  background: #FFF3E0;
+  color: #E65100;
+  border-color: #FFCC80;
+}
+.qt-status-pending:hover {
+  background: #FFE0B2;
+}
+.qt-status-done {
+  background: #E8F5E9;
+  color: #2E7D32;
+  border-color: #A5D6A7;
+}
+.qt-status-done:hover {
+  background: #C8E6C9;
+}

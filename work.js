@@ -19,6 +19,8 @@ var WorkModule = (function () {
     myTasks: [],          // 내 수신 업무
     sentTasks: [],        // 내 발신 업무
     allTasks: [],         // 전체 업무 (관리자용)
+    personalTasks: [],    // 내 개인 등록 업무 (shareScope='개인')
+    personalStatusFilter: '전체', // 개인업무 필터: 전체|예정|완료
     currentStatus: '미접수',  // 현황판 필터
     detailTask: null,         // 상세 모달에 열린 업무
     detailReceived: null,     // 상세 모달에 열린 수신 행
@@ -606,8 +608,18 @@ var WorkModule = (function () {
       W.myTasks = received;
       W.allTasks = allTasks;
 
+      // 개인 등록 업무 (빠른 등록 또는 직접 등록한 개인 업무)
+      W.personalTasks = allTasks.filter(function (t) {
+        return t.fromId === W.me.id && t.shareScope === '개인';
+      });
+
       updateStatusCounts(received);
-      renderMyList(received, allTasks);
+
+      if (W.currentStatus === '개인') {
+        renderPersonalList();
+      } else {
+        renderMyList(received, allTasks);
+      }
     } catch (e) {
       listEl.innerHTML = '<p class="empty-state" style="color:#e53935">로드 실패: ' + (e.message||e) + '</p>';
     }
@@ -622,11 +634,138 @@ var WorkModule = (function () {
     });
     var sentEl = $w('cnt-발송');
     if (sentEl) sentEl.textContent = W.sentTasks.length;
+    var perEl = $w('cnt-개인');
+    if (perEl) perEl.textContent = W.personalTasks.length;
+  }
+
+  /* ──────────────────────────────────────────────────
+     개인 등록 업무 렌더링
+  ────────────────────────────────────────────────── */
+  function renderPersonalList() {
+    var listEl = $w('work-my-list');
+    if (!listEl) return;
+
+    var tasks = W.personalTasks;
+    if (W.personalStatusFilter !== '전체') {
+      tasks = tasks.filter(function (t) {
+        var st = t.status || '예정';
+        return st === W.personalStatusFilter;
+      });
+    }
+
+    // 필터 바
+    var filterBar =
+      '<div class="personal-filter-bar">' +
+        ['전체','예정','완료'].map(function (f) {
+          return '<button class="personal-filter-btn ' + (W.personalStatusFilter === f ? 'active' : '') + '" data-filter="' + f + '">' +
+            (f === '예정' ? '🕐 예정' : f === '완료' ? '✅ 완료' : '📋 전체') +
+            ' <span class="work-cnt">' + (f === '전체' ? W.personalTasks.length :
+              W.personalTasks.filter(function(t){ return (t.status||'예정') === f; }).length) + '</span>' +
+          '</button>';
+        }).join('') +
+        '<a href="#" id="personal-quick-add-link" style="margin-left:auto;font-size:12px;color:#1A73E8;text-decoration:none;align-self:center">+ 빠른 등록</a>' +
+      '</div>';
+
+    if (tasks.length === 0) {
+      listEl.innerHTML = filterBar + '<p class="empty-state" style="margin-top:12px">' +
+        (W.personalStatusFilter === '전체' ? '등록된 개인 업무가 없습니다.<br><small>빠른 업무 등록(Ctrl+Shift+R)으로 추가해보세요.</small>'
+         : W.personalStatusFilter + ' 상태의 개인 업무가 없습니다.') + '</p>';
+      _bindPersonalFilterBtns();
+      return;
+    }
+
+    var html = filterBar + '<div class="personal-task-list">';
+
+    // 예정 먼저, 완료 나중 정렬
+    var sorted = tasks.slice().sort(function (a, b) {
+      var sa = a.status || '예정', sb = b.status || '예정';
+      if (sa === sb) {
+        return (a.dueDate || '').localeCompare(b.dueDate || '');
+      }
+      return sa === '예정' ? -1 : 1;
+    });
+
+    var catColor = { '일반업무':'#4285F4','교육일정':'#0F9D58','행사':'#F4B400','대관':'#2E7D32','차량':'#DB4437','기타':'#9E9E9E' };
+
+    sorted.forEach(function (task) {
+      var st = task.status || '예정';
+      var isDone = st === '완료';
+      html +=
+        '<div class="personal-task-card ' + (isDone ? 'personal-task-done' : '') + '" data-task-id="' + task.id + '">' +
+          '<div class="personal-task-header">' +
+            '<span class="qt-cat-badge" style="background:' + (catColor[task.category] || '#9E9E9E') + '">' + (task.category || '일반업무') + '</span>' +
+            '<span class="personal-task-title">' + escapeHtml(task.title) + '</span>' +
+            '<span class="personal-task-status ' + (isDone ? 'pst-done' : 'pst-pending') + '">' +
+              (isDone ? '✅ 완료' : '🕐 예정') +
+            '</span>' +
+          '</div>' +
+          (task.dueDate ? '<div class="personal-task-due">📅 ' + task.dueDate + '</div>' : '') +
+          (task.content ? '<div class="personal-task-content">' + escapeHtml(task.content.slice(0,100)) + (task.content.length>100?'…':'') + '</div>' : '') +
+          '<div class="personal-task-actions">' +
+            '<button class="btn btn-sm ' + (isDone ? 'btn-ghost personal-toggle-pending' : 'btn-primary personal-toggle-done') + '" data-task-id="' + task.id + '" data-status="' + st + '">' +
+              (isDone ? '↩ 예정으로 되돌리기' : '✅ 완료 처리') +
+            '</button>' +
+          '</div>' +
+        '</div>';
+    });
+
+    html += '</div>';
+    listEl.innerHTML = html;
+    _bindPersonalFilterBtns();
+
+    // 완료/예정 토글 버튼
+    listEl.querySelectorAll('[data-status]').forEach(function (btn) {
+      btn.addEventListener('click', async function () {
+        var taskId    = this.dataset.taskId;
+        var curStatus = this.dataset.status;
+        var newStatus = curStatus === '완료' ? '예정' : '완료';
+        btn.disabled = true; btn.textContent = '처리 중...';
+        try {
+          await SheetsModule.updateTaskStatus(taskId, newStatus);
+          // 로컬 캐시 업데이트
+          var t = W.personalTasks.find(function(x){ return x.id === taskId; });
+          if (t) t.status = newStatus;
+          var t2 = W.allTasks.find(function(x){ return x.id === taskId; });
+          if (t2) t2.status = newStatus;
+          updateStatusCounts(W.myTasks);
+          renderPersonalList();
+          toast(newStatus === '완료' ? '✅ 완료 처리되었습니다.' : '↩ 예정으로 변경되었습니다.', 'success');
+        } catch (e) {
+          toast('상태 변경 실패: ' + (e.message||e), 'error');
+          btn.disabled = false;
+        }
+      });
+    });
+
+    // 빠른 등록 링크
+    var quickLink = $w('personal-quick-add-link');
+    if (quickLink) quickLink.addEventListener('click', function (e) {
+      e.preventDefault();
+      if (typeof QuickTaskModule !== 'undefined') QuickTaskModule.open();
+    });
+  }
+
+  function _bindPersonalFilterBtns() {
+    document.querySelectorAll('.personal-filter-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        W.personalStatusFilter = this.dataset.filter;
+        renderPersonalList();
+      });
+    });
+  }
+
+  function escapeHtml(str) {
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   }
 
   function renderMyList(received, allTasks) {
     var listEl = $w('work-my-list');
     if (!listEl) return;
+
+    if (W.currentStatus === '개인') {
+      renderPersonalList();
+      return;
+    }
 
     var filtered;
     if (W.currentStatus === '발송') {
@@ -1126,7 +1265,16 @@ var WorkModule = (function () {
         document.querySelectorAll('.work-status-tab').forEach(function (b) { b.classList.remove('active'); });
         this.classList.add('active');
         W.currentStatus = this.dataset.status;
-        renderMyList(W.myTasks, W.allTasks);
+        if (W.currentStatus === '개인') {
+          // 개인 업무 탭: 로드 후 렌더
+          if (W.personalTasks.length === 0 && W.me) {
+            loadMyTasks();
+          } else {
+            renderPersonalList();
+          }
+        } else {
+          renderMyList(W.myTasks, W.allTasks);
+        }
       });
     });
 

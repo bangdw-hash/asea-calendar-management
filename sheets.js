@@ -19,7 +19,7 @@ var SheetsModule = (function () {
   // 시트별 헤더 정의
   var SCHEMAS = {
     '직원':     ['id','name','department','rank','googleEmail','hireDate','phone','role','status','createdAt'],
-    '업무':     ['id','title','content','category','type','fromId','fromName','toIds','toNames','shareScope','dueDate','createdAt','calEventId'],
+    '업무':     ['id','title','content','category','type','fromId','fromName','toIds','toNames','shareScope','dueDate','createdAt','calEventId','status'],
     '업무수신': ['taskId','userId','userName','status','receivedAt','completedAt','comment','calEventId'],
     '알림로그': ['id','userId','taskId','type','message','isRead','createdAt'],
     '시설':     ['id','buildingName','buildingCode','rooms','color','status','createdAt'],
@@ -204,7 +204,28 @@ var SheetsModule = (function () {
   /* ──────────────────────────────────────────────────
      업무 관리
   ────────────────────────────────────────────────── */
+
+  // 기존 '업무' 시트 헤더에 'status' 컬럼이 없으면 자동 추가 (1회 마이그레이션)
+  var _taskSchemaChecked = false;
+  async function _ensureTaskStatusColumn() {
+    if (_taskSchemaChecked) return;
+    _taskSchemaChecked = true;
+    try {
+      var data = await apiGet('업무!A1:Z1');
+      var headers = (data.values && data.values[0]) || [];
+      if (headers.indexOf('status') === -1) {
+        // 기존 헤더 다음 빈 열에 'status' 추가
+        var nextCol = headers.length + 1; // 1-based
+        var letter  = nextCol <= 26
+          ? String.fromCharCode(64 + nextCol)
+          : 'A' + String.fromCharCode(64 + nextCol - 26);
+        await apiUpdate('업무!' + letter + '1', [['status']]);
+      }
+    } catch (e) { /* 실패 시 무시 — 기존 기능 유지 */ }
+  }
+
   async function getTasks() {
+    await _ensureTaskStatusColumn();
     return readSheet('업무');
   }
 
@@ -225,6 +246,7 @@ var SheetsModule = (function () {
       task.dueDate || '',
       new Date().toISOString(),
       '', // calEventId (나중에 업데이트)
+      task.status || '예정', // 예정 | 완료
     ];
     await apiAppend('업무', [row]);
     return id;
@@ -235,6 +257,22 @@ var SheetsModule = (function () {
     var task = list.find(function (t) { return t.id === taskId; });
     if (!task) return;
     await apiUpdate('업무!L' + task._row, [[calEventId]]);
+  }
+
+  // 업무 상태 변경 (예정 ↔ 완료)
+  async function updateTaskStatus(taskId, status) {
+    var list = await getTasks();
+    var task = list.find(function (t) { return t.id === taskId; });
+    if (!task) throw new Error('업무를 찾을 수 없습니다: ' + taskId);
+    // status 컬럼 인덱스 = headers에서 'status' 위치
+    var data = await apiGet('업무!A1:Z1');
+    var headers = (data.values && data.values[0]) || [];
+    var colIdx  = headers.indexOf('status'); // 0-based
+    if (colIdx === -1) throw new Error('status 컬럼이 없습니다.');
+    var letter  = colIdx + 1 <= 26
+      ? String.fromCharCode(64 + colIdx + 1)
+      : 'A' + String.fromCharCode(64 + colIdx + 1 - 26);
+    await apiUpdate('업무!' + letter + task._row, [[status]]);
   }
 
   /* ──────────────────────────────────────────────────
@@ -622,6 +660,7 @@ var SheetsModule = (function () {
     getTasks:              getTasks,
     createTask:            createTask,
     updateTaskCalEvent:    updateTaskCalEvent,
+    updateTaskStatus:      updateTaskStatus,
     getReceived:           getReceived,
     getMyTasks:            getMyTasks,
     createReceived:        createReceived,

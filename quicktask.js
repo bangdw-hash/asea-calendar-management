@@ -242,6 +242,7 @@ var QuickTaskModule = (function () {
           content:  (t.content || '').trim(),
           dueDate:  (t.dueDate || '').trim(),
           category: t.category || '일반업무',
+          status:   '예정',  // 기본값: 예정
           checked:  true,
         };
       }).filter(function (t) { return t.title; });
@@ -309,6 +310,9 @@ var QuickTaskModule = (function () {
                   return '<option value="'+c+'"'+(c===task.category?' selected':'')+'>'+c+'</option>';
                 }).join('') +
               '</select>' +
+              '<button class="qt-status-toggle ' + (task.status === '완료' ? 'qt-status-done' : 'qt-status-pending') + '" data-idx="' + idx + '" title="클릭하여 상태 변경">' +
+                (task.status === '완료' ? '✅ 완료' : '🕐 예정') +
+              '</button>' +
             '</div>' +
             (task.content ? '<div class="qt-task-content">' + escapeHtml(task.content.slice(0,120)) + (task.content.length > 120 ? '...' : '') + '</div>' : '') +
           '</div>' +
@@ -351,6 +355,14 @@ var QuickTaskModule = (function () {
       sel.addEventListener('change', function () {
         Q.extractedTasks[parseInt(this.dataset.idx)].category = this.value;
         renderTaskList(); // 배지 색 업데이트
+      });
+    });
+
+    wrap.querySelectorAll('.qt-status-toggle').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var idx = parseInt(this.dataset.idx);
+        Q.extractedTasks[idx].status = Q.extractedTasks[idx].status === '완료' ? '예정' : '완료';
+        renderTaskList();
       });
     });
 
@@ -422,6 +434,7 @@ var QuickTaskModule = (function () {
           dueDate:     t.dueDate || '',
           createdAt:   new Date().toISOString(),
           calEventId:  '',
+          status:      t.status || '예정',  // 예정 | 완료
         };
 
         // 2. Google 캘린더에도 등록 (캘린더가 선택된 경우)
