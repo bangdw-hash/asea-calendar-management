@@ -4424,12 +4424,14 @@ h3.settings-section-title {
    ██  모바일 하단 내비게이션 — 가로 스크롤 전체 탭  ██
    ══════════════════════════════════════════════════════════════════ */
 
-/* 데스크톱: 하단 내비 숨김 */
+/* 데스크톱: 하단 내비 항상 숨김
+   — (hover:none)+(pointer:coarse) = 실제 터치 모바일 기기에서만 표시
+   — PC 브라우저 창을 좁혀도 상단 탭은 유지됨 */
 .mobile-bottom-nav { display: none; }
 
-@media (max-width: 600px) {
+@media (max-width: 600px) and (hover: none) and (pointer: coarse) {
 
-  /* 상단 탭 숨김 — 하단 탭으로 대체 */
+  /* 실제 모바일에서만 상단 탭 숨기고 하단 탭으로 대체 */
   .desktop-tab-nav { display: none !important; }
 
   /* 탭 콘텐츠 하단 여백 (하단 탭 높이만큼) */
@@ -4638,9 +4640,8 @@ h3.settings-section-title {
   }
 }
 
-/* ─── [BUG-5] 드래그 안내 텍스트: 모바일에서 PC 전용 안내 숨김 ─── */
-@media (max-width: 600px) {
-  /* PC 전용 드래그/Ctrl 안내 → 모바일에서 숨김 */
+/* ─── [BUG-5] 드래그 안내 텍스트: 실제 터치 기기에서 PC 전용 안내 숨김 ─── */
+@media (hover: none) and (pointer: coarse) {
   .res-cal-drag-hint { display: none !important; }
 }
 
@@ -4653,5 +4654,23 @@ h3.settings-section-title {
     overflow-x: auto !important;
     -webkit-overflow-scrolling: touch !important;
   }
+}
+/* ─── [BUG-6] PC 좁은 창: 상단 탭 라벨 축소 → 더 많이 표시 ─── */
+/* 터치 기기가 아닌데 창이 좁을 때: 탭 간격·폰트 축소로 모두 표시 */
+@media (max-width: 700px) and (hover: hover) {
+  .tab-btn {
+    padding: 0 8px !important;
+    gap: 4px !important;
+    font-size: 11px !important;
+  }
+  .tab-svg {
+    width: 14px !important;
+    height: 14px !important;
+  }
+}
+@media (max-width: 500px) and (hover: hover) {
+  .tab-label { display: none !important; }   /* 아이콘만 표시 */
+  .tab-btn   { padding: 0 10px !important; min-width: 40px !important; }
+  .tab-svg   { width: 18px !important; height: 18px !important; }
 }
 /* ══ END BUG FIXES ══ */
