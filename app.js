@@ -420,6 +420,7 @@
         evts.forEach(function (ev) {
           ev._calColor = cal.color;
           ev._calName  = cal.name;
+          ev._calId    = cal.id;   // 수정/삭제 시 올바른 캘린더 지정에 필요
         });
         allEvents = allEvents.concat(evts);
       } catch (e) { /* 권한 없는 캘린더 무시 */ }
@@ -792,7 +793,8 @@
   }
 
   function openEventModal(event, date) {
-    S.editEventId = null;
+    S.editEventId  = null;
+    S.editCalId    = null;  // 수정 대상 이벤트의 실제 캘린더 ID
     $('event-modal-title').textContent = event ? '일정 수정' : '일정 추가';
     $('delete-event-btn').hidden        = !event;
     $('share-event-btn').hidden         = !event;
@@ -809,6 +811,7 @@
 
     if (event) {
       S.editEventId = event.id;
+      S.editCalId   = event._calId || null;  // 이벤트가 속한 캘린더
       $('event-id').value    = event.id;
       $('event-title').value = event.summary || '';
       var rawDesc = event.description || '';
@@ -843,7 +846,7 @@
 
   function initEventModal() {
     // 공유하기 버튼
-    $('share-event-btn').addEventListener('click', function () {
+    $('share-event-btn').addEventListener('click', async function () {
       var title = $('event-title').value.trim();
       var start = $('event-start').value;
       var end   = $('event-end').value;
@@ -861,10 +864,27 @@
         dates:   startStr + '/' + endStr,
         details: desc || '',
       });
-      var shareUrl = 'https://calendar.google.com/calendar/render?' + params.toString();
+      var longUrl = 'https://calendar.google.com/calendar/render?' + params.toString();
 
-      $('event-share-url').value   = shareUrl;
+      // TinyURL API로 단축 URL 생성 시도
+      var shareUrl = longUrl;
+      var urlEl = $('event-share-url');
+      urlEl.value   = '단축 URL 생성 중...';
+      urlEl.disabled = true;
       $('event-share-area').hidden = false;
+
+      try {
+        var resp = await fetch(
+          'https://tinyurl.com/api-create.php?url=' + encodeURIComponent(longUrl)
+        );
+        if (resp.ok) {
+          var short = (await resp.text()).trim();
+          if (short && short.startsWith('http')) shareUrl = short;
+        }
+      } catch (e) { /* 단축 실패 시 원본 URL 사용 */ }
+
+      urlEl.value    = shareUrl;
+      urlEl.disabled = false;
       $('event-share-area').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     });
 
@@ -894,7 +914,10 @@
       var tz        = Intl.DateTimeFormat().resolvedOptions().timeZone || 'Asia/Seoul';
       var deptColor = getDeptColor(dept);
       var fullDesc  = desc + (desc ? '\n' : '') + '[부서:' + dept + ']';
-      var targetCal = $('event-calendar').value || CONFIG.calendarId;
+      // 수정 시: 이벤트 원래 캘린더 우선, 없으면 드롭다운, 없으면 기본
+      var targetCal = S.editEventId
+        ? (S.editCalId || $('event-calendar').value || CONFIG.calendarId)
+        : ($('event-calendar').value || CONFIG.calendarId);
 
       // colorId 결정 (부서 인덱스 기반)
       var dIdx = CONFIG.departments.findIndex(function (d) { return d.name === dept; });
@@ -931,7 +954,8 @@
     $('delete-event-btn').addEventListener('click', async function () {
       if (!S.editEventId || !confirm('이 일정을 삭제하시겠습니까?')) return;
       try {
-        var ok = await CalendarModule.deleteEvent(CONFIG.calendarId, S.editEventId);
+        var delCal = S.editCalId || CONFIG.calendarId;
+        var ok = await CalendarModule.deleteEvent(delCal, S.editEventId);
         if (ok) {
           toast('일정이 삭제되었습니다.', 'success');
           closeModal('event-modal');
