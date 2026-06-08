@@ -173,6 +173,67 @@
         switchTab(btn.dataset.tab);
       });
     });
+
+    // PC 탭 내비 마우스 드래그 스크롤
+    initNavDrag(document.querySelector('.desktop-tab-nav'));
+  }
+
+  /* ─────────────────────────────────────────────────────────────
+     PC 탭 내비 — 마우스 드래그 스크롤
+     · mousedown → 드래그 시작, mousemove → scrollLeft 이동
+     · 드래그 거리가 짧으면(< 6px) 클릭으로 처리 (탭 전환)
+     · cursor: grab / grabbing 시각 피드백
+  ──────────────────────────────────────────────────────────────── */
+  function initNavDrag(nav) {
+    if (!nav) return;
+    var isDown    = false;
+    var startX    = 0;
+    var scrollStart = 0;
+    var dragged   = false;     // 실제 드래그가 발생했는지
+
+    nav.style.cursor = 'grab';
+
+    nav.addEventListener('mousedown', function (e) {
+      // 버튼 자체의 좌클릭만 처리
+      if (e.button !== 0) return;
+      isDown      = true;
+      dragged     = false;
+      startX      = e.pageX - nav.offsetLeft;
+      scrollStart = nav.scrollLeft;
+      nav.style.cursor = 'grabbing';
+      nav.style.userSelect = 'none';
+    });
+
+    document.addEventListener('mousemove', function (e) {
+      if (!isDown) return;
+      var x    = e.pageX - nav.offsetLeft;
+      var walk = x - startX;           // 이동 거리
+      if (Math.abs(walk) > 4) dragged = true;
+      nav.scrollLeft = scrollStart - walk;
+    });
+
+    document.addEventListener('mouseup', function () {
+      if (!isDown) return;
+      isDown = false;
+      nav.style.cursor    = 'grab';
+      nav.style.userSelect = '';
+    });
+
+    // 드래그 중이면 클릭 이벤트 억제 (탭 전환 방지)
+    nav.addEventListener('click', function (e) {
+      if (dragged) {
+        e.stopImmediatePropagation();
+        dragged = false;
+      }
+    }, true);   // capture 단계에서 가로채야 tab-btn click 전에 처리
+
+    // 휠로도 가로 스크롤 (Shift 없이도)
+    nav.addEventListener('wheel', function (e) {
+      if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+        e.preventDefault();
+        nav.scrollLeft += e.deltaY * 0.8;
+      }
+    }, { passive: false });
   }
 
   /* ═══════════════════════════════════════════════════════════
