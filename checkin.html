@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta name="theme-color" content="#1a73e8">
   <title>입출입 체크인 — ASEA</title>
-  <link rel="stylesheet" href="checkin.css?v=20260608z3">
+  <link rel="stylesheet" href="checkin.css?v=20260608z4">
 </head>
 <body>
 
@@ -62,6 +62,35 @@
         <input id="input-affil" type="text" class="form-input" placeholder="예: 항공정비계열 2학년" autocomplete="organization">
       </div>
       <button id="btn-info-submit" class="btn btn-primary">입력 완료 →</button>
+    </div>
+  </div>
+
+  <!-- 정보 확인 화면 (최초 입력 후) -->
+  <div id="screen-confirm" hidden>
+    <div class="card confirm-card">
+      <div class="confirm-title">📋 입력하신 정보가 맞나요?</div>
+      <div class="confirm-desc">아래 정보로 입출입이 기록됩니다. 틀린 내용이 있으면 다시 입력해 주세요.</div>
+      <div class="confirm-info-box">
+        <div class="confirm-row">
+          <span class="confirm-label">이름</span>
+          <span class="confirm-val" id="confirm-name"></span>
+        </div>
+        <div class="confirm-row">
+          <span class="confirm-label">전화번호</span>
+          <span class="confirm-val" id="confirm-phone"></span>
+        </div>
+        <div class="confirm-row">
+          <span class="confirm-label">소속</span>
+          <span class="confirm-val" id="confirm-affil"></span>
+        </div>
+      </div>
+      <div id="confirm-error" class="error-msg"></div>
+      <button id="btn-confirm-ok" class="btn btn-primary" style="font-size:17px;padding:16px">
+        ✅ 맞습니다 — 등록 완료
+      </button>
+      <button id="btn-confirm-back" class="btn btn-ghost" style="margin-top:10px">
+        ✏️ 다시 입력하기
+      </button>
     </div>
   </div>
 
@@ -144,6 +173,6 @@
   </footer>
 
   <script src="config.js?v=20260608s"></script>
-  <script src="checkin.js?v=20260608z3"></script>
+  <script src="checkin.js?v=20260608z4"></script>
 </body>
 </html>

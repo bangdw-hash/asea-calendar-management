@@ -113,7 +113,7 @@
 
   /* ── 화면 전환 ── */
   function _showScreen(name) {
-    ['screen-loading','screen-consent','screen-checkin','screen-result','screen-error-room']
+    ['screen-loading','screen-consent','screen-confirm','screen-checkin','screen-result','screen-error-room']
       .forEach(function (id) { hide(id); });
     show('screen-' + name);
   }
@@ -349,34 +349,75 @@
     show('info-section');
   });
 
-  /* ── 정보 입력 제출 ── */
-  $('btn-info-submit') && $('btn-info-submit').addEventListener('click', async function () {
+  /* ── 임시 저장 (확인 전) ── */
+  var _pendingUser = null;
+
+  /* ── 정보 입력 제출 → 확인 화면으로 ── */
+  $('btn-info-submit') && $('btn-info-submit').addEventListener('click', function () {
     var errEl = $('error-msg');
     if (errEl) errEl.className = 'error-msg';
     var name  = ($('input-name').value  || '').trim();
     var phone = ($('input-phone').value || '').trim();
     var affil = ($('input-affil').value || '').trim();
 
-    if (!name)  { if(errEl){errEl.textContent='이름을 입력해 주세요.';errEl.className='error-msg show';} return; }
-    if (!phone) { if(errEl){errEl.textContent='전화번호를 입력해 주세요.';errEl.className='error-msg show';} return; }
-    if (!affil) { if(errEl){errEl.textContent='소속을 입력해 주세요.';errEl.className='error-msg show';} return; }
-    if (!/^[0-9\-+\s]{7,15}$/.test(phone)) {
-      if(errEl){errEl.textContent='올바른 전화번호를 입력해 주세요.';errEl.className='error-msg show';} return;
-    }
+    function _e(msg) { if(errEl){errEl.textContent=msg;errEl.className='error-msg show';} }
+    if (!name)  { _e('이름을 입력해 주세요.'); return; }
+    if (!phone) { _e('전화번호를 입력해 주세요.'); return; }
+    if (!affil) { _e('소속을 입력해 주세요.'); return; }
+    if (!/^[0-9\-+\s]{7,15}$/.test(phone)) { _e('올바른 전화번호를 입력해 주세요.'); return; }
 
-    this.disabled = true; this.textContent = '저장 중...';
+    // 임시 보관 후 확인 화면으로
+    _pendingUser = { name: name, phone: phone, affiliation: affil };
+    text('confirm-name',  name);
+    text('confirm-phone', phone);
+    text('confirm-affil', affil);
+    var confErr = $('confirm-error');
+    if (confErr) confErr.className = 'error-msg';
+    _showScreen('confirm');
+  });
+
+  /* ── 확인 화면: 맞습니다 → 실제 저장 ── */
+  $('btn-confirm-ok') && $('btn-confirm-ok').addEventListener('click', async function () {
+    if (!_pendingUser) return;
+    var confErr = $('confirm-error');
+    if (confErr) confErr.className = 'error-msg';
+    this.disabled = true; this.textContent = '등록 중...';
+
     var consentTs = new Date().toISOString();
     try {
-      await _postToProxy({ action:'addUser', name, phone, affiliation:affil, deviceId:_deviceId,
-        consentTimestamp:consentTs, consentTextVersion:CONSENT_VERSION });
-      _user = { name, phone, affiliation:affil, consentAt:consentTs };
+      await _postToProxy({
+        action: 'addUser',
+        name: _pendingUser.name,
+        phone: _pendingUser.phone,
+        affiliation: _pendingUser.affiliation,
+        deviceId: _deviceId,
+        consentTimestamp: consentTs,
+        consentTextVersion: CONSENT_VERSION,
+      });
+      _user = { name: _pendingUser.name, phone: _pendingUser.phone,
+                affiliation: _pendingUser.affiliation, consentAt: consentTs };
       localStorage.setItem(USER_KEY, JSON.stringify(_user));
+      _pendingUser = null;
       _lastLog = null; window._allLogs = [];
       _renderCheckinScreen();
     } catch (e) {
-      if(errEl){errEl.textContent=e.message||'저장에 실패했습니다.';errEl.className='error-msg show';}
-      this.disabled = false; this.textContent = '입력 완료 →';
+      if (confErr) { confErr.textContent = e.message || '등록에 실패했습니다.'; confErr.className = 'error-msg show'; }
+      this.disabled = false; this.textContent = '✅ 맞습니다 — 등록 완료';
     }
+  });
+
+  /* ── 확인 화면: 다시 입력 → 입력 폼으로 복귀 ── */
+  $('btn-confirm-back') && $('btn-confirm-back').addEventListener('click', function () {
+    // 폼에 기존 입력값 유지
+    if (_pendingUser) {
+      $('input-name').value  = _pendingUser.name;
+      $('input-phone').value = _pendingUser.phone;
+      $('input-affil').value = _pendingUser.affiliation;
+    }
+    _showScreen('consent');
+    hide('consent-section');
+    show('info-section');
+    setTimeout(function () { $('input-name').focus(); }, 100);
   });
 
   /* ── 메인 스캔 버튼 ── */
