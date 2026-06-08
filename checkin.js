@@ -293,15 +293,24 @@
       return;
     }
 
-    // 공간 정보 로드
-    try {
-      var spaces = await _readSheet('공간관리');
-      _roomInfo = spaces.find(function (s) { return s.id === _roomId && s.status !== 'inactive'; });
-    } catch (e) { _roomInfo = null; }
+    // 공간 정보 로드 — ① 프록시 (API 키 불필요) ② Sheets 직독 ③ URL name 파라미터 ④ roomId
+    if (proxyUrl()) {
+      try {
+        var gr = await _postToProxy({ action: 'getRoom', roomId: _roomId });
+        if (gr && gr.room && gr.room.name) _roomInfo = gr.room;
+      } catch (e) {}
+    }
+    if (!_roomInfo) {
+      try {
+        var spaces = await _readSheet('공간관리');
+        _roomInfo = spaces.find(function (s) { return s.id === _roomId && s.status !== 'inactive'; });
+      } catch (e) {}
+    }
 
+    var nameFromUrl = params.get('name') ? decodeURIComponent(params.get('name')) : '';
     _roomName = (_roomInfo && _roomInfo.name)
       ? _roomInfo.name
-      : (params.get('name') ? decodeURIComponent(params.get('name')) : _roomId);
+      : (nameFromUrl || _roomId);
 
     text('room-name', _roomName);
     text('room-location', _roomInfo ? (_roomInfo.location || '') : '');

@@ -52,6 +52,9 @@ function doPost(e) {
       // 사용자 정보 수정: 입출입사용자 + 기존 입출입기록 일괄 업데이트
       var updated = _updateCheckinUser(body);
       result.updatedLogs = updated;
+    } else if (action === 'getRoom') {
+      // 공간 정보 조회 (API 키 없이 공간명·위치 가져오기)
+      result.room = _getRoom(body.roomId || '');
     } else {
       throw new Error('Unknown action: ' + action);
     }
@@ -71,6 +74,33 @@ function doGet(e) {
   return ContentService
     .createTextOutput(JSON.stringify({ ok: true, service: 'asea-checkin-proxy' }))
     .setMimeType(ContentService.MimeType.JSON);
+}
+
+/* ── 공간 정보 조회 ── */
+function _getRoom(roomId) {
+  if (!roomId) return null;
+  var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  var sheet = ss.getSheetByName('공간관리');
+  if (!sheet) return null;
+  var rows = sheet.getDataRange().getValues();
+  if (rows.length < 2) return null;
+  var h = rows[0];
+  var idIdx       = h.indexOf('id');
+  var nameIdx     = h.indexOf('name');
+  var locationIdx = h.indexOf('location');
+  var statusIdx   = h.indexOf('status');
+  if (idIdx < 0 || nameIdx < 0) return null;
+  for (var i = 1; i < rows.length; i++) {
+    if (rows[i][idIdx] === roomId &&
+        (statusIdx < 0 || rows[i][statusIdx] !== 'inactive')) {
+      return {
+        id:       roomId,
+        name:     rows[i][nameIdx]     || '',
+        location: locationIdx >= 0 ? (rows[i][locationIdx] || '') : '',
+      };
+    }
+  }
+  return null;
 }
 
 /* ── 입출입 기록 추가 ── */

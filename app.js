@@ -3333,7 +3333,8 @@
     }
     var baseUrl = CONFIG.baseUrl || 'https://bangdw-hash.github.io/asea-calendar-management/';
     $('ci-spaces-list').innerHTML = _ciSpaces.map(function (sp, i) {
-      var checkinUrl = baseUrl + 'checkin.html?room=' + encodeURIComponent(sp.id);
+      var checkinUrl = baseUrl + 'checkin.html?room=' + encodeURIComponent(sp.id) +
+        (sp.name ? '&name=' + encodeURIComponent(sp.name) : '');
       return '<div class="ci-space-card">' +
         '<div>' +
           '<div class="ci-space-card-name">🚪 ' + _esc(sp.name) + '</div>' +
@@ -3627,7 +3628,8 @@
     var sp = _ciSpaces.find(function (s) { return s.id === roomId; });
     if (!sp) return;
     var baseUrl = CONFIG.baseUrl || 'https://bangdw-hash.github.io/asea-calendar-management/';
-    var checkinUrl = baseUrl + 'checkin.html?room=' + encodeURIComponent(sp.id);
+    var checkinUrl = baseUrl + 'checkin.html?room=' + encodeURIComponent(sp.id) +
+      (sp.name ? '&name=' + encodeURIComponent(sp.name) : '');
     var qrSrc = 'https://api.qrserver.com/v1/create-qr-code/?data=' +
                 encodeURIComponent(checkinUrl) + '&size=400x400&margin=10&color=000000&bgcolor=ffffff';
     _ciQrCurrentUrl = qrSrc;
