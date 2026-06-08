@@ -2,24 +2,39 @@
 
 /**
  * facility.js — 대관업무 모듈
- * 의존: config.js, auth.js, sheets.js
+ * 의존: config.js, auth.js, sheets.js, resutil.js
+ *
+ * v2 변경:
+ *   - 달력 드래그 복수 날짜 선택 + 복수 구간 예약
+ *   - 예약 모달: Google Calendar 선택기 추가
+ *   - 서브탭: 📅 예약 캘린더 / 📋 신청 관리 (관리자)
+ *   - 대관신청 승인/반려 (GAS 알림 프록시)
  */
 var FacilityModule = (function () {
 
   var F = {
-    facilities: [],       // [{id, buildingName, rooms:[{id,name,capacity}], color}]
-    reservations: [],     // 이번 달 예약 목록
+    facilities: [],
+    reservations: [],
     viewYear: 0,
-    viewMonth: 0,         // 0-based
+    viewMonth: 0,
     selectedBuilding: null,
     selectedRoom: null,
-    editResv: null,       // 현재 수정 중인 예약
+    editResv: null,
     isAdmin: false,
   };
 
+  // ── 날짜 복수 선택 상태 (월 이동 후에도 유지) ──────────────
+  var _fSelDates   = new Set();
+  var _fDragStart  = null;
+  var _fDragCur    = null;
+  var _fIsDragging = false;
+  var _fDragCtrl   = false;
+
+  // 알림 프록시 URL
+  function _getProxyUrl() { return localStorage.getItem('asea_facility_proxy_url') || ''; }
+
   function $f(id) { return document.getElementById(id); }
   function toast(msg, type) { if (typeof window.aseaToast === 'function') window.aseaToast(msg, type); }
-
   function pad(n) { return String(n).padStart(2,'0'); }
 
   function toLocalDT(d) {
@@ -33,7 +48,65 @@ var FacilityModule = (function () {
     return d.getFullYear()+'.'+pad(d.getMonth()+1)+'.'+pad(d.getDate())+'('+days[d.getDay()]+') '+pad(d.getHours())+':'+pad(d.getMinutes());
   }
 
-  /* ── 데이터 로드 ──────────────────────────────────────── */
+  /* ─────────────────────────────────────────────────────────
+     날짜 선택 헬퍼
+  ───────────────────────────────────────────────────────── */
+  function _fGetDateRange(d1, d2) {
+    var a = d1 <= d2 ? d1 : d2;
+    var b = d1 <= d2 ? d2 : d1;
+    var result = [];
+    var cur = new Date(a + 'T12:00');
+    var end = new Date(b + 'T12:00');
+    while (cur <= end) {
+      result.push(cur.getFullYear()+'-'+pad(cur.getMonth()+1)+'-'+pad(cur.getDate()));
+      cur.setDate(cur.getDate()+1);
+    }
+    return result;
+  }
+
+  function _fGroupRanges(dates) {
+    var sorted = Array.from(dates).sort();
+    if (!sorted.length) return [];
+    var groups = [], cs = sorted[0], ce = sorted[0];
+    for (var i = 1; i < sorted.length; i++) {
+      var diff = (new Date(sorted[i]+'T12:00') - new Date(sorted[i-1]+'T12:00')) / 86400000;
+      if (diff <= 1) { ce = sorted[i]; }
+      else { groups.push({startDate:cs, endDate:ce}); cs = sorted[i]; ce = sorted[i]; }
+    }
+    groups.push({startDate:cs, endDate:ce});
+    return groups;
+  }
+
+  function _fCurDragRange() {
+    if (!_fIsDragging || !_fDragStart || !_fDragCur) return new Set();
+    return new Set(_fGetDateRange(_fDragStart, _fDragCur));
+  }
+
+  function _fUpdateHighlight() {
+    var cal = $f('fac-calendar');
+    if (!cal) return;
+    var dragRange = _fCurDragRange();
+    cal.querySelectorAll('.res-cal-cell[data-date]').forEach(function(cell) {
+      var d = cell.dataset.date;
+      cell.classList.toggle('res-cal-sel',  _fSelDates.has(d) || dragRange.has(d));
+      cell.classList.toggle('res-cal-drag', dragRange.has(d) && !_fSelDates.has(d));
+    });
+    var hint = $f('fac-sel-hint');
+    if (hint) {
+      var allDates = new Set(Array.from(_fSelDates));
+      dragRange.forEach(function(d){ allDates.add(d); });
+      if (allDates.size > 0) {
+        hint.textContent = '📅 '+allDates.size+'일 선택됨 — 마우스를 떼면 예약창이 열립니다';
+        hint.style.display = '';
+      } else {
+        hint.textContent = ''; hint.style.display = 'none';
+      }
+    }
+  }
+
+  /* ─────────────────────────────────────────────────────────
+     데이터 로드
+  ───────────────────────────────────────────────────────── */
   async function loadData() {
     try {
       F.facilities = await SheetsModule.getFacilities();
@@ -44,15 +117,15 @@ var FacilityModule = (function () {
       });
       var y = F.viewYear, m = F.viewMonth;
       var start = y+'-'+pad(m+1)+'-01';
-      var last = new Date(y, m+1, 0).getDate();
-      var end = y+'-'+pad(m+1)+'-'+pad(last)+'T23:59';
+      var last  = new Date(y, m+1, 0).getDate();
+      var end   = y+'-'+pad(m+1)+'-'+pad(last)+'T23:59';
       F.reservations = await SheetsModule.getFacilityReservations(start, end);
-    } catch(e) {
-      console.warn('facility load error', e);
-    }
+    } catch(e) { console.warn('facility load error', e); }
   }
 
-  /* ── 필터 드롭다운 렌더 ──────────────────────────────── */
+  /* ─────────────────────────────────────────────────────────
+     필터 드롭다운
+  ───────────────────────────────────────────────────────── */
   function renderBuildingFilter() {
     var sel = $f('fac-building-filter');
     if (!sel) return;
@@ -75,13 +148,15 @@ var FacilityModule = (function () {
     if (fac && fac.rooms) {
       fac.rooms.forEach(function(r) {
         var opt = document.createElement('option');
-        opt.value = r.id; opt.textContent = r.name + (r.capacity ? ' ('+r.capacity+'인)':'');
+        opt.value = r.id; opt.textContent = r.name + (r.capacity?' ('+r.capacity+'인)':'');
         rSel.appendChild(opt);
       });
     }
   }
 
-  /* ── 달력 렌더 ────────────────────────────────────────── */
+  /* ─────────────────────────────────────────────────────────
+     달력 렌더
+  ───────────────────────────────────────────────────────── */
   function renderCalendar() {
     var cal = $f('fac-calendar');
     if (!cal) return;
@@ -98,7 +173,6 @@ var FacilityModule = (function () {
       return true;
     });
 
-    // 날짜별 그룹
     var byDay = {};
     filtered.forEach(function(r) {
       var day = (r.startAt||'').slice(0,10);
@@ -108,23 +182,22 @@ var FacilityModule = (function () {
 
     var firstDay = new Date(y, m, 1).getDay();
     var lastDate = new Date(y, m+1, 0).getDate();
-    var today = new Date();
+    var today    = new Date();
     var todayStr = today.getFullYear()+'-'+pad(today.getMonth()+1)+'-'+pad(today.getDate());
 
     var html = '<div class="res-cal-grid">';
     ['일','월','화','수','목','금','토'].forEach(function(d) {
       html += '<div class="res-cal-dow">'+d+'</div>';
     });
-
     for (var i = 0; i < firstDay; i++) html += '<div class="res-cal-cell res-cal-empty"></div>';
-
     for (var d = 1; d <= lastDate; d++) {
       var dateStr = y+'-'+pad(m+1)+'-'+pad(d);
-      var isToday = (dateStr === todayStr);
-      var isPast  = (dateStr < todayStr);
+      var cls = 'res-cal-cell';
+      if (dateStr === todayStr)    cls += ' res-cal-today';
+      if (dateStr < todayStr)      cls += ' res-cal-past';
+      if (_fSelDates.has(dateStr)) cls += ' res-cal-sel';
       var dayResv = byDay[dateStr] || [];
-
-      html += '<div class="res-cal-cell'+(isToday?' res-cal-today':'')+(isPast?' res-cal-past':'')+'" data-date="'+dateStr+'">';
+      html += '<div class="'+cls+'" data-date="'+dateStr+'">';
       html += '<div class="res-cal-date">'+d+'</div>';
       dayResv.slice(0,3).forEach(function(r) {
         var fac = F.facilities.find(function(f){ return f.id === r.buildingId; });
@@ -134,40 +207,77 @@ var FacilityModule = (function () {
           '<span class="res-cal-item-time">'+(r.startAt||'').slice(11,16)+'</span> '+
           r.roomName+': '+r.title+'</div>';
       });
-      if (dayResv.length > 3) {
-        html += '<div class="res-cal-more">+' + (dayResv.length-3) + '건 더보기</div>';
-      }
+      if (dayResv.length > 3) html += '<div class="res-cal-more">+'+(dayResv.length-3)+'건 더보기</div>';
       html += '</div>';
     }
     html += '</div>';
     cal.innerHTML = html;
+    _fUpdateHighlight();
+  }
 
-    // 날짜 클릭 → 예약 생성
-    cal.querySelectorAll('.res-cal-cell[data-date]').forEach(function(cell) {
-      cell.addEventListener('click', function(e) {
-        if (e.target.classList.contains('res-cal-item')) return; // 예약 클릭은 별도 처리
-        openResvModal(null, cell.dataset.date);
+  /* ─────────────────────────────────────────────────────────
+     예약 모달 — 다중 시간 구간 렌더
+  ───────────────────────────────────────────────────────── */
+  function _fRenderTimeRanges(container, ranges) {
+    container.innerHTML = '';
+    if (!ranges.length) {
+      container.innerHTML = '<p class="empty-state" style="font-size:13px">선택된 날짜가 없습니다.</p>';
+      return;
+    }
+    ranges.forEach(function(range, i) {
+      var label = range.startDate === range.endDate ? range.startDate : range.startDate+' ~ '+range.endDate;
+      var row = document.createElement('div');
+      row.className = 'time-range-row';
+      row.innerHTML =
+        '<div class="time-range-label">구간 '+(i+1)+
+        ' <span class="time-range-dates">('+label+')</span>'+
+        '<button type="button" class="btn btn-ghost btn-sm time-range-del" title="이 구간 제거">×</button></div>'+
+        '<div style="display:flex;gap:8px">'+
+          '<div class="form-group" style="flex:1"><label class="form-label">시작 <span class="required">*</span></label>'+
+          '<input type="datetime-local" class="form-input fac-range-start" value="'+range.startDate+'T09:00"></div>'+
+          '<div class="form-group" style="flex:1"><label class="form-label">종료 <span class="required">*</span></label>'+
+          '<input type="datetime-local" class="form-input fac-range-end" value="'+range.endDate+'T18:00"></div>'+
+        '</div>';
+      row.querySelector('.time-range-del').addEventListener('click', function() {
+        _fGetDateRange(range.startDate, range.endDate).forEach(function(d){ _fSelDates.delete(d); });
+        row.remove();
+        _fUpdateHighlight();
+        container.querySelectorAll('.time-range-row').forEach(function(r, j) {
+          var lbl = r.querySelector('.time-range-label');
+          if (lbl) lbl.firstChild.textContent = '구간 '+(j+1)+' ';
+        });
       });
-    });
-
-    // 예약 클릭 → 상세/수정
-    cal.querySelectorAll('.res-cal-item').forEach(function(item) {
-      item.addEventListener('click', function(e) {
-        e.stopPropagation();
-        var resv = F.reservations.find(function(r){ return r.id === item.dataset.id; });
-        if (resv) openResvModal(resv, null);
-      });
+      container.appendChild(row);
     });
   }
 
-  /* ── 예약 모달 ────────────────────────────────────────── */
+  /* ─────────────────────────────────────────────────────────
+     Google Calendar 선택기 (모달 내 셀렉트 채우기)
+  ───────────────────────────────────────────────────────── */
+  async function _loadGcalSelect() {
+    var sel = $f('fac-resv-gcal');
+    if (!sel) return;
+    sel.innerHTML = '<option value="">(캘린더 선택 안 함)</option>';
+    try {
+      if (typeof ReservationUtil === 'undefined') return;
+      var cals = await ReservationUtil.getUserCalendars();
+      cals.forEach(function(cal) {
+        var opt = document.createElement('option');
+        opt.value = cal.id;
+        opt.textContent = cal.name;
+        opt.dataset.color = cal.color || '#4285F4';
+        sel.appendChild(opt);
+      });
+    } catch(e) { /* 캘린더 로드 실패 시 무시 */ }
+  }
+
+  /* ─────────────────────────────────────────────────────────
+     예약 모달 열기
+  ───────────────────────────────────────────────────────── */
   function openResvModal(resv, defaultDate) {
     F.editResv = resv;
-
-    // 제목
     $f('fac-modal-title').textContent = resv ? '예약 상세/수정' : '새 예약';
 
-    // 건물 셀렉트 채우기
     var bSel = $f('fac-resv-building');
     bSel.innerHTML = '<option value="">건물 선택</option>';
     F.facilities.forEach(function(f) {
@@ -179,30 +289,40 @@ var FacilityModule = (function () {
     updateRoomSelect(resv ? resv.buildingId : '');
     if (resv) $f('fac-resv-room').value = resv.roomId;
 
-    $f('fac-resv-title').value = resv ? (resv.title||'') : '';
-    $f('fac-resv-purpose').value = resv ? (resv.purpose||'') : '';
+    $f('fac-resv-title').value     = resv ? (resv.title||'') : '';
+    $f('fac-resv-purpose').value   = resv ? (resv.purpose||'') : '';
     $f('fac-resv-attendees').value = resv ? (resv.attendees||'') : '';
+
+    var staticRow     = $f('fac-resv-static-time-row');
+    var timeRangesDiv = $f('fac-time-ranges');
+    var useMulti      = !resv && _fSelDates.size > 0;
+
+    if (staticRow)     staticRow.style.display    = useMulti ? 'none' : '';
+    if (timeRangesDiv) timeRangesDiv.style.display = useMulti ? '' : 'none';
 
     if (resv) {
       $f('fac-resv-start').value = (resv.startAt||'').slice(0,16);
       $f('fac-resv-end').value   = (resv.endAt||'').slice(0,16);
-    } else if (defaultDate) {
-      $f('fac-resv-start').value = defaultDate + 'T09:00';
-      $f('fac-resv-end').value   = defaultDate + 'T10:00';
+    } else if (useMulti) {
+      if (timeRangesDiv) _fRenderTimeRanges(timeRangesDiv, _fGroupRanges(_fSelDates));
     } else {
       var now = new Date();
-      $f('fac-resv-start').value = toLocalDT(now);
-      $f('fac-resv-end').value   = toLocalDT(new Date(now.getTime()+60*60*1000));
+      if (defaultDate) {
+        $f('fac-resv-start').value = defaultDate+'T09:00';
+        $f('fac-resv-end').value   = defaultDate+'T10:00';
+      } else {
+        $f('fac-resv-start').value = toLocalDT(now);
+        $f('fac-resv-end').value   = toLocalDT(new Date(now.getTime()+60*60*1000));
+      }
     }
 
     var statusRow = $f('fac-resv-status-row');
     if (statusRow) statusRow.style.display = resv ? '' : 'none';
     if (resv && $f('fac-resv-status')) $f('fac-resv-status').value = resv.status||'확정';
 
-    var deleteBtn = $f('fac-resv-delete-btn');
-    if (deleteBtn) deleteBtn.style.display = resv ? '' : 'none';
+    var delBtn = $f('fac-resv-delete-btn');
+    if (delBtn) delBtn.style.display = resv ? '' : 'none';
 
-    // 관리자 아닌 경우, 본인 예약만 수정 가능
     var canEdit = F.isAdmin || !resv || (resv.fromId && window._workMe && resv.fromId === window._workMe.id);
     ['fac-resv-title','fac-resv-building','fac-resv-room','fac-resv-start','fac-resv-end','fac-resv-purpose','fac-resv-attendees'].forEach(function(id) {
       var el = $f(id); if (el) el.disabled = !canEdit;
@@ -211,6 +331,9 @@ var FacilityModule = (function () {
     if (saveBtn) saveBtn.style.display = canEdit ? '' : 'none';
 
     $f('fac-resv-modal').hidden = false;
+
+    // Google Calendar 목록 비동기 로드
+    _loadGcalSelect();
   }
 
   function updateRoomSelect(buildingId) {
@@ -227,55 +350,102 @@ var FacilityModule = (function () {
     }
   }
 
+  /* ─────────────────────────────────────────────────────────
+     예약 모달 저장
+  ───────────────────────────────────────────────────────── */
   async function saveResvModal() {
     var bSel = $f('fac-resv-building');
     var rSel = $f('fac-resv-room');
-    var bId = bSel.value, rId = rSel.value;
-    var fac = F.facilities.find(function(f){ return f.id === bId; });
+    var bId  = bSel.value, rId = rSel.value;
+    var fac  = F.facilities.find(function(f){ return f.id === bId; });
     var room = fac && fac.rooms ? fac.rooms.find(function(r){ return r.id === rId; }) : null;
     var title = ($f('fac-resv-title').value||'').trim();
-    var startAt = $f('fac-resv-start').value;
-    var endAt   = $f('fac-resv-end').value;
 
-    if (!bId) { toast('건물을 선택하세요.','error'); return; }
-    if (!rId) { toast('호실을 선택하세요.','error'); return; }
+    if (!bId)   { toast('건물을 선택하세요.','error'); return; }
+    if (!rId)   { toast('호실을 선택하세요.','error'); return; }
     if (!title) { toast('제목을 입력하세요.','error'); return; }
-    if (!startAt || !endAt) { toast('시간을 입력하세요.','error'); return; }
-    if (endAt <= startAt) { toast('종료 시간이 시작 시간보다 늦어야 합니다.','error'); return; }
 
-    // 충돌 검사
-    var conflict = F.reservations.find(function(r) {
-      if (F.editResv && r.id === F.editResv.id) return false;
-      if (r.status === '취소') return false;
-      if (r.buildingId !== bId || r.roomId !== rId) return false;
-      return r.startAt < endAt && r.endAt > startAt;
-    });
-    if (conflict) {
-      toast('⚠️ '+conflict.roomName+'은(는) '+formatDT(conflict.startAt)+' ~ '+formatDT(conflict.endAt)+' 이미 예약되어 있습니다.','error');
-      return;
+    // 시간 구간 수집
+    var ranges = [];
+    var timeRangesDiv = $f('fac-time-ranges');
+    var isMulti = !F.editResv && timeRangesDiv && timeRangesDiv.style.display !== 'none' &&
+                  timeRangesDiv.querySelectorAll('.fac-range-start').length > 0;
+
+    if (isMulti) {
+      var sInputs = timeRangesDiv.querySelectorAll('.fac-range-start');
+      var eInputs = timeRangesDiv.querySelectorAll('.fac-range-end');
+      for (var i = 0; i < sInputs.length; i++) {
+        ranges.push({ startAt: sInputs[i].value, endAt: eInputs[i].value });
+      }
+    } else {
+      ranges.push({ startAt: $f('fac-resv-start').value, endAt: $f('fac-resv-end').value });
     }
 
-    var me = window._workMe || {};
-    var data = {
-      buildingId: bId, buildingName: fac ? fac.buildingName : '',
-      roomId: rId, roomName: room ? room.name : rId,
-      title: title, fromId: me.id||'', fromName: me.name||'',
-      department: me.department||'',
-      startAt: startAt, endAt: endAt,
-      purpose: ($f('fac-resv-purpose').value||'').trim(),
-      attendees: ($f('fac-resv-attendees').value||'').trim(),
-      status: F.editResv ? ($f('fac-resv-status').value||'확정') : '확정',
-    };
+    if (!ranges.length) { toast('예약 구간이 없습니다.','error'); return; }
 
+    for (var i = 0; i < ranges.length; i++) {
+      if (!ranges[i].startAt || !ranges[i].endAt) {
+        toast('구간 '+(i+1)+': 시간을 입력하세요.','error'); return;
+      }
+      if (ranges[i].endAt <= ranges[i].startAt) {
+        toast('구간 '+(i+1)+': 종료 시간이 시작 시간보다 늦어야 합니다.','error'); return;
+      }
+      var rc = ranges[i];
+      var conflict = F.reservations.find(function(r) {
+        if (F.editResv && r.id === F.editResv.id) return false;
+        if (r.status === '취소') return false;
+        if (r.buildingId !== bId || r.roomId !== rId) return false;
+        return r.startAt < rc.endAt && r.endAt > rc.startAt;
+      });
+      if (conflict) {
+        toast('⚠️ 구간 '+(i+1)+': '+conflict.roomName+' '+formatDT(conflict.startAt)+' ~ '+formatDT(conflict.endAt)+' 이미 예약됨','error');
+        return;
+      }
+    }
+
+    var me      = window._workMe || {};
+    var gcalId  = ($f('fac-resv-gcal')||{}).value || '';
     var saveBtn = $f('fac-resv-save-btn');
     if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = '저장 중...'; }
 
     try {
+      var savedIds = [];
       if (F.editResv) {
+        var data = {
+          buildingId: bId, buildingName: fac ? fac.buildingName : '',
+          roomId: rId, roomName: room ? room.name : rId, title: title,
+          fromId: me.id||'', fromName: me.name||'', department: me.department||'',
+          startAt: ranges[0].startAt, endAt: ranges[0].endAt,
+          purpose: ($f('fac-resv-purpose').value||'').trim(),
+          attendees: ($f('fac-resv-attendees').value||'').trim(),
+          status: ($f('fac-resv-status')||{}).value || '확정',
+        };
         await SheetsModule.updateFacilityReservation(F.editResv._row, Object.assign({}, F.editResv, data));
+        savedIds.push(Object.assign({}, F.editResv, data));
       } else {
-        await SheetsModule.createFacilityReservation(data);
+        for (var i = 0; i < ranges.length; i++) {
+          var d = {
+            buildingId: bId, buildingName: fac ? fac.buildingName : '',
+            roomId: rId, roomName: room ? room.name : rId, title: title,
+            fromId: me.id||'', fromName: me.name||'', department: me.department||'',
+            startAt: ranges[i].startAt, endAt: ranges[i].endAt,
+            purpose: ($f('fac-resv-purpose').value||'').trim(),
+            attendees: ($f('fac-resv-attendees').value||'').trim(),
+            status: '확정',
+          };
+          await SheetsModule.createFacilityReservation(d);
+          savedIds.push(d);
+        }
       }
+
+      // Google Calendar 등록 (선택된 경우)
+      if (gcalId && typeof ReservationUtil !== 'undefined') {
+        for (var i = 0; i < savedIds.length; i++) {
+          try { await ReservationUtil.shareFacilityResvToCalendar(savedIds[i], gcalId); } catch(e) {}
+        }
+      }
+
+      _fSelDates.clear(); _fUpdateHighlight();
       toast('✅ 예약이 저장되었습니다.','success');
       $f('fac-resv-modal').hidden = true;
       await refresh();
@@ -294,33 +464,150 @@ var FacilityModule = (function () {
       toast('예약이 취소되었습니다.','info');
       $f('fac-resv-modal').hidden = true;
       await refresh();
+    } catch(e) { toast('취소 실패: '+(e.message||e),'error'); }
+  }
+
+  /* ─────────────────────────────────────────────────────────
+     대관신청 관리 서브탭
+  ───────────────────────────────────────────────────────── */
+  async function loadAndRenderRequests(status) {
+    var el = $f('fac-requests-list');
+    if (!el) return;
+    el.innerHTML = '<p class="empty-state">불러오는 중...</p>';
+    try {
+      var list = await SheetsModule.getFacilityRequests(status||'');
+      if (!list.length) { el.innerHTML = '<p class="empty-state">신청 내역이 없습니다.</p>'; return; }
+      renderRequestList(el, list);
+    } catch(e) { el.innerHTML = '<p class="empty-state" style="color:var(--danger)">불러오기 실패: '+(e.message||e)+'</p>'; }
+  }
+
+  function renderRequestList(el, list) {
+    el.innerHTML = '';
+    var statusColors = { '신청':'#1976D2', '검토중':'#F57C00', '승인':'#388E3C', '반려':'#D32F2F' };
+    list.slice().reverse().forEach(function(req) {
+      var card = document.createElement('div');
+      card.className = 'fac-req-card';
+      var sc = statusColors[req.status] || '#888';
+      card.innerHTML =
+        '<div class="fac-req-header">' +
+          '<span class="fac-req-status-badge" style="background:'+sc+'">'+req.status+'</span>' +
+          '<span class="fac-req-title">'+req.buildingName+' '+req.roomName+' — '+req.title+'</span>' +
+          '<span class="fac-req-date">'+req.createdAt.slice(0,10)+'</span>' +
+        '</div>' +
+        '<div class="fac-req-meta">' +
+          formatDT(req.startAt)+' ~ '+formatDT(req.endAt) +
+          ' | '+req.applicantName+' ('+req.applicantOrg+') '+req.applicantPhone +
+          (req.applicantEmail ? ' · '+req.applicantEmail : '') +
+        '</div>' +
+        (req.purpose ? '<div class="fac-req-purpose">목적: '+req.purpose+'</div>' : '') +
+        (req.reviewNote ? '<div class="fac-req-note">검토: '+req.reviewNote+'</div>' : '') +
+        (req.status === '신청' || req.status === '검토중' ? '<div class="fac-req-actions" data-id="'+req.id+'" data-row="'+(req._row||'')+'"></div>' : '');
+      var actionsDiv = card.querySelector('.fac-req-actions');
+      if (actionsDiv) {
+        var approveBtn = document.createElement('button');
+        approveBtn.className = 'btn btn-primary btn-sm';
+        approveBtn.textContent = '✅ 승인';
+        approveBtn.onclick = function(){ reviewRequest(req, '승인'); };
+        var rejectBtn = document.createElement('button');
+        rejectBtn.className = 'btn btn-danger btn-sm';
+        rejectBtn.textContent = '❌ 반려';
+        rejectBtn.onclick = function(){ reviewRequest(req, '반려'); };
+        actionsDiv.appendChild(approveBtn);
+        actionsDiv.appendChild(rejectBtn);
+      }
+      el.appendChild(card);
+    });
+  }
+
+  async function reviewRequest(req, statusValue) {
+    var note = prompt((statusValue === '승인' ? '승인' : '반려')+'하시겠습니까?\n검토 의견을 입력하세요 (선택사항):') ;
+    if (note === null) return; // 취소
+
+    var me = window._workMe || {};
+    var proxyUrl = _getProxyUrl();
+
+    try {
+      if (proxyUrl) {
+        // GAS 알림 프록시 경유: 이메일 알림 포함
+        var res = await fetch(proxyUrl, {
+          method: 'POST',
+          body: JSON.stringify({
+            action: statusValue === '승인' ? 'approveFacilityRequest' : 'rejectFacilityRequest',
+            id: req.id,
+            reviewNote: note,
+            reviewedBy: me.name || me.email || '관리자',
+          })
+        });
+        var data = await res.json();
+        if (!data.ok) throw new Error(data.error || '프록시 오류');
+      } else {
+        // 프록시 없으면 Sheets 직접 업데이트 (이메일 알림 없음)
+        if (!req._row) throw new Error('행 번호 없음');
+        await SheetsModule.updateFacilityRequest(req._row, {
+          status: statusValue,
+          reviewNote: note,
+          reviewedBy: me.name || me.email || '관리자',
+          reviewedAt: new Date().toISOString(),
+        });
+      }
+      toast(statusValue === '승인' ? '✅ 승인되었습니다.' : '❌ 반려되었습니다.', 'info');
+      await loadAndRenderRequests();
     } catch(e) {
-      toast('취소 실패: '+(e.message||e),'error');
+      toast('처리 실패: '+(e.message||e),'error');
     }
   }
 
-  /* ── 관리자: 시설 관리 ───────────────────────────────── */
+  /* ─────────────────────────────────────────────────────────
+     알림 프록시 설정 저장/로드
+  ───────────────────────────────────────────────────────── */
+  function _initProxySettings() {
+    var inp  = $f('fac-proxy-url-input');
+    var save = $f('fac-proxy-url-save');
+    if (!inp) return;
+    inp.value = _getProxyUrl();
+    _updatePublicLink();
+    if (save) save.addEventListener('click', function() {
+      var url = inp.value.trim();
+      localStorage.setItem('asea_facility_proxy_url', url);
+      toast('프록시 URL이 저장되었습니다.','success');
+      _updatePublicLink();
+    });
+  }
+
+  function _updatePublicLink() {
+    var link = $f('fac-public-req-link');
+    if (!link) return;
+    var proxyUrl = _getProxyUrl();
+    var base = (typeof CONFIG !== 'undefined' && CONFIG.baseUrl) ? CONFIG.baseUrl : location.href.replace(/\/[^\/]*$/, '/');
+    var href = base + 'facility-request.html' + (proxyUrl ? '?proxy=' + encodeURIComponent(proxyUrl) : '');
+    link.href = href;
+    link.textContent = proxyUrl ? '🔗 공개 신청 링크 복사' : 'facility-request.html (프록시 미설정)';
+    link.onclick = proxyUrl ? function(e) {
+      e.preventDefault();
+      navigator.clipboard.writeText(href).then(function() {
+        toast('공개 URL이 복사되었습니다.','success');
+      }).catch(function() { window.open(href,'_blank'); });
+    } : null;
+  }
+
+  /* ─────────────────────────────────────────────────────────
+     관리자: 시설 관리
+  ───────────────────────────────────────────────────────── */
   function renderFacilityAdmin() {
     var el = $f('fac-admin-building-list');
     if (!el) return;
-    if (F.facilities.length === 0) {
-      el.innerHTML = '<p class="empty-state">등록된 건물이 없습니다.</p>';
-      return;
-    }
+    if (F.facilities.length === 0) { el.innerHTML = '<p class="empty-state">등록된 건물이 없습니다.</p>'; return; }
     el.innerHTML = '';
     F.facilities.forEach(function(fac) {
       var div = document.createElement('div');
       div.className = 'fac-building-row';
       div.innerHTML =
         '<div class="fac-building-name"><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:'+fac.color+';margin-right:6px"></span>'+fac.buildingName+'</div>' +
-        '<div class="fac-room-chips">' +
-          (fac.rooms||[]).map(function(r){ return '<span class="fac-room-chip">'+r.name+(r.capacity?' ('+r.capacity+'인)':'')+'</span>'; }).join('') +
-        '</div>' +
-        '<div class="fac-building-actions">' +
-          '<button class="btn btn-ghost btn-sm fac-edit-building-btn" data-id="'+fac.id+'">수정</button>' +
-          '<button class="btn btn-ghost btn-sm btn-danger fac-del-building-btn" data-row="'+fac._row+'">삭제</button>' +
+        '<div class="fac-room-chips">'+(fac.rooms||[]).map(function(r){ return '<span class="fac-room-chip">'+r.name+(r.capacity?' ('+r.capacity+'인)':'')+'</span>'; }).join('')+'</div>' +
+        '<div class="fac-building-actions">'+
+          '<button class="btn btn-ghost btn-sm fac-edit-building-btn" data-id="'+fac.id+'">수정</button>'+
+          '<button class="btn btn-ghost btn-sm btn-danger fac-del-building-btn" data-row="'+fac._row+'">삭제</button>'+
         '</div>';
-
       div.querySelector('.fac-edit-building-btn').onclick = function() { openBuildingModal(fac); };
       div.querySelector('.fac-del-building-btn').onclick = async function() {
         if (!confirm(fac.buildingName+' 건물을 삭제하시겠습니까?')) return;
@@ -334,13 +621,9 @@ var FacilityModule = (function () {
   function openBuildingModal(fac) {
     var modal = $f('fac-building-modal');
     $f('fac-bm-title').textContent = fac ? '건물 수정' : '건물 추가';
-    $f('fac-bm-name').value = fac ? fac.buildingName : '';
+    $f('fac-bm-name').value  = fac ? fac.buildingName : '';
     $f('fac-bm-color').value = fac ? (fac.color||'#4285F4') : '#4285F4';
-
-    // 호실 목록
-    var roomsData = (fac && fac.rooms) ? fac.rooms : [];
-    renderRoomEditor(roomsData);
-
+    renderRoomEditor((fac && fac.rooms) ? fac.rooms : []);
     modal._fac = fac || null;
     modal.hidden = false;
   }
@@ -349,7 +632,7 @@ var FacilityModule = (function () {
     var el = $f('fac-bm-rooms');
     if (!el) return;
     el.innerHTML = '';
-    rooms.forEach(function(r, i) {
+    rooms.forEach(function(r) {
       var row = document.createElement('div');
       row.className = 'fac-room-edit-row';
       row.innerHTML =
@@ -366,33 +649,30 @@ var FacilityModule = (function () {
     var name  = ($f('fac-bm-name').value||'').trim();
     var color = $f('fac-bm-color').value;
     if (!name) { toast('건물명을 입력하세요.','error'); return; }
-
     var rooms = [];
     $f('fac-bm-rooms').querySelectorAll('.fac-room-edit-row').forEach(function(row, i) {
       var n = row.querySelector('.room-name-input').value.trim();
       var c = row.querySelector('.room-cap-input').value.trim();
       if (n) rooms.push({ id: 'R'+String(i+1).padStart(3,'0'), name: n, capacity: c });
     });
-
     var btn = $f('fac-bm-save-btn');
     btn.disabled = true; btn.textContent = '저장 중...';
     try {
       if (modal._fac) {
-        await SheetsModule.updateFacility(modal._fac._row, Object.assign({}, modal._fac, { buildingName: name, rooms: rooms, color: color }));
+        await SheetsModule.updateFacility(modal._fac._row, Object.assign({}, modal._fac, { buildingName:name, rooms:rooms, color:color }));
       } else {
-        await SheetsModule.addFacility({ buildingName: name, rooms: rooms, color: color });
+        await SheetsModule.addFacility({ buildingName:name, rooms:rooms, color:color });
       }
       toast('✅ 시설 정보가 저장되었습니다.','success');
       modal.hidden = true;
       await refresh();
-    } catch(e) {
-      toast('저장 실패: '+(e.message||e),'error');
-    } finally {
-      btn.disabled = false; btn.textContent = '저장';
-    }
+    } catch(e) { toast('저장 실패: '+(e.message||e),'error');
+    } finally { btn.disabled = false; btn.textContent = '저장'; }
   }
 
-  /* ── 전체 갱신 ────────────────────────────────────────── */
+  /* ─────────────────────────────────────────────────────────
+     전체 갱신
+  ───────────────────────────────────────────────────────── */
   async function refresh() {
     await loadData();
     renderBuildingFilter();
@@ -400,7 +680,9 @@ var FacilityModule = (function () {
     renderFacilityAdmin();
   }
 
-  /* ── 초기화 ───────────────────────────────────────────── */
+  /* ─────────────────────────────────────────────────────────
+     초기화
+  ───────────────────────────────────────────────────────── */
   function initFacilityModule(isAdmin) {
     F.isAdmin = !!isAdmin;
     var now = new Date();
@@ -411,73 +693,136 @@ var FacilityModule = (function () {
     var prevBtn = $f('fac-cal-prev');
     var nextBtn = $f('fac-cal-next');
     if (prevBtn) prevBtn.addEventListener('click', async function() {
-      F.viewMonth--;
-      if (F.viewMonth < 0) { F.viewMonth = 11; F.viewYear--; }
+      F.viewMonth--; if (F.viewMonth < 0) { F.viewMonth = 11; F.viewYear--; }
       await refresh();
     });
     if (nextBtn) nextBtn.addEventListener('click', async function() {
-      F.viewMonth++;
-      if (F.viewMonth > 11) { F.viewMonth = 0; F.viewYear++; }
+      F.viewMonth++; if (F.viewMonth > 11) { F.viewMonth = 0; F.viewYear++; }
       await refresh();
     });
 
     // 필터
     var bFilter = $f('fac-building-filter');
-    if (bFilter) bFilter.addEventListener('change', function() {
-      renderRoomFilter(); renderCalendar();
-    });
+    if (bFilter) bFilter.addEventListener('change', function() { renderRoomFilter(); renderCalendar(); });
     var rFilter = $f('fac-room-filter');
     if (rFilter) rFilter.addEventListener('change', function() { renderCalendar(); });
 
-    // 건물 추가 버튼 (관리자)
+    // ── 서브탭 ──────────────────────────────────────────────
+    var subtabBtns = document.querySelectorAll('#fac-subtab-bar .subtab-btn');
+    subtabBtns.forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        subtabBtns.forEach(function(b){ b.classList.remove('active'); });
+        btn.classList.add('active');
+        var target = btn.dataset.subtab;
+        var calPanel = $f('fac-subtab-calendar');
+        var reqPanel = $f('fac-subtab-requests');
+        if (calPanel) calPanel.hidden = (target !== 'calendar');
+        if (reqPanel) reqPanel.hidden = (target !== 'requests');
+        if (target === 'requests') loadAndRenderRequests();
+      });
+    });
+    // 관리자 아닌 경우 신청 관리 탭 숨김
+    var reqTabBtn = $f('fac-subtab-requests-btn');
+    if (reqTabBtn) reqTabBtn.style.display = isAdmin ? '' : 'none';
+
+    // 신청 관리 - 필터
+    var reqFilterSel = $f('fac-req-status-filter');
+    if (reqFilterSel) reqFilterSel.addEventListener('change', function() {
+      loadAndRenderRequests(this.value);
+    });
+
+    // ── 드래그 복수 선택 이벤트 ─────────────────────────────
+    var cal = $f('fac-calendar');
+    if (cal) {
+      cal.addEventListener('mousedown', function(e) {
+        if (e.target.closest('.res-cal-item')) return;
+        var cell = e.target.closest('.res-cal-cell[data-date]');
+        if (!cell) return;
+        e.preventDefault();
+        _fDragCtrl  = e.ctrlKey || e.metaKey;
+        _fDragStart = cell.dataset.date;
+        _fDragCur   = cell.dataset.date;
+        _fIsDragging = true;
+        if (!_fDragCtrl) _fSelDates.clear();
+        _fUpdateHighlight();
+      });
+
+      cal.addEventListener('mousemove', function(e) {
+        if (!_fIsDragging) return;
+        var cell = e.target.closest('.res-cal-cell[data-date]');
+        if (!cell || cell.dataset.date === _fDragCur) return;
+        _fDragCur = cell.dataset.date;
+        _fUpdateHighlight();
+      });
+
+      cal.addEventListener('click', function(e) {
+        var item = e.target.closest('.res-cal-item');
+        if (item) {
+          var resv = F.reservations.find(function(r){ return r.id === item.dataset.id; });
+          if (resv) openResvModal(resv, null);
+        }
+      });
+    }
+
+    // mouseup (document-level)
+    document.addEventListener('mouseup', function(e) {
+      if (!_fIsDragging) return;
+      var dragRange = _fCurDragRange();
+      dragRange.forEach(function(d){ _fSelDates.add(d); });
+      _fIsDragging = false; _fDragStart = null; _fDragCur = null;
+      _fUpdateHighlight();
+      if (_fSelDates.size > 0 && !e.target.closest('.res-cal-item')) {
+        openResvModal(null, null);
+      }
+    });
+
+    // 선택 초기화
+    var clearSelBtn = $f('fac-clear-sel-btn');
+    if (clearSelBtn) clearSelBtn.addEventListener('click', function() { _fSelDates.clear(); _fUpdateHighlight(); });
+
+    // 건물 추가
     var addBldBtn = $f('fac-add-building-btn');
     if (addBldBtn) addBldBtn.addEventListener('click', function() { openBuildingModal(null); });
 
-    // 건물 모달 - 호실 추가
+    // 건물 모달 호실 추가
     var addRoomBtn = $f('fac-bm-add-room-btn');
     if (addRoomBtn) addRoomBtn.addEventListener('click', function() {
-      var el = $f('fac-bm-rooms');
-      var rows = el.querySelectorAll('.fac-room-edit-row');
-      var mock = [{ id:'', name:'', capacity:'' }];
-      renderRoomEditor(Array.from(rows).map(function(row) {
-        return { name: row.querySelector('.room-name-input').value,
-                 capacity: row.querySelector('.room-cap-input').value };
-      }).concat(mock));
+      var el2 = $f('fac-bm-rooms');
+      var existing = Array.from(el2.querySelectorAll('.fac-room-edit-row')).map(function(row) {
+        return { name: row.querySelector('.room-name-input').value, capacity: row.querySelector('.room-cap-input').value };
+      });
+      renderRoomEditor(existing.concat([{id:'', name:'', capacity:''}]));
     });
 
-    // 건물 모달 저장/취소
-    var bmSave = $f('fac-bm-save-btn');
-    if (bmSave) bmSave.addEventListener('click', saveBuildingModal);
+    var bmSave   = $f('fac-bm-save-btn');
+    if (bmSave)   bmSave.addEventListener('click', saveBuildingModal);
     var bmCancel = $f('fac-bm-cancel-btn');
     if (bmCancel) bmCancel.addEventListener('click', function() { $f('fac-building-modal').hidden = true; });
 
     // 예약 모달
-    var resvSave = $f('fac-resv-save-btn');
-    if (resvSave) resvSave.addEventListener('click', saveResvModal);
-    var resvDel = $f('fac-resv-delete-btn');
-    if (resvDel) resvDel.addEventListener('click', deleteResv);
+    var resvSave  = $f('fac-resv-save-btn');
+    if (resvSave)  resvSave.addEventListener('click', saveResvModal);
+    var resvDel   = $f('fac-resv-delete-btn');
+    if (resvDel)   resvDel.addEventListener('click', deleteResv);
     var resvClose = $f('fac-resv-close-btn');
     if (resvClose) resvClose.addEventListener('click', function() { $f('fac-resv-modal').hidden = true; });
 
-    // 건물 호실 선택 → 호실 드롭다운 연동
     var resvBuilding = $f('fac-resv-building');
-    if (resvBuilding) resvBuilding.addEventListener('change', function() {
-      updateRoomSelect(this.value);
-    });
+    if (resvBuilding) resvBuilding.addEventListener('change', function() { updateRoomSelect(this.value); });
 
-    // '예약하기' 버튼 이벤트
     var facModal = document.getElementById('fac-resv-modal');
     if (facModal) facModal.addEventListener('open-new-internal', function() { openResvModal(null, null); });
 
-    // 관리자 어드민 링크 표시
-    var adminLink = $f('fac-admin-link');
-    if (adminLink) adminLink.style.display = isAdmin ? '' : 'none';
+    // 관리자 표시
+    var adminLink    = $f('fac-admin-link');
+    if (adminLink)    adminLink.style.display = isAdmin ? '' : 'none';
     var adminSection = $f('fac-admin-section');
     if (adminSection) adminSection.hidden = !isAdmin;
-
-    // 설정 탭 관리자 카드 표시
     var settingsFacCard = document.getElementById('settings-fac-card');
     if (settingsFacCard) settingsFacCard.hidden = !isAdmin;
+
+    // 프록시 URL 설정
+    _initProxySettings();
 
     // CSV 양식 다운로드
     var csvDl = $f('fac-csv-download-btn');
@@ -494,7 +839,6 @@ var FacilityModule = (function () {
       var rows = ReservationUtil.parseFacilityCSV(text);
       var preview = $f('fac-csv-preview');
       if (rows.length === 0) { preview.hidden = true; toast('파싱된 데이터가 없습니다.', 'error'); return; }
-      // 미리보기 테이블
       preview.hidden = false;
       var heads = ['건물명','건물코드','호실','색상'];
       var html = '<strong>미리보기 ('+rows.length+'개 건물)</strong><br><table><tr>'+heads.map(function(h){return '<th>'+h+'</th>';}).join('')+'</tr>';
@@ -508,8 +852,7 @@ var FacilityModule = (function () {
         try {
           await SheetsModule.bulkUpsertFacilities(rows);
           toast('시설 '+rows.length+'개 등록 완료!', 'success');
-          preview.hidden = true;
-          csvInput.value = '';
+          preview.hidden = true; csvInput.value = '';
           await refresh();
         } catch(err) { toast('업로드 실패: '+err.message, 'error'); }
       });
@@ -524,8 +867,7 @@ var FacilityModule = (function () {
           toast('캘린더 공유 중...', 'info');
           var count = 0;
           for (var i = 0; i < F.reservations.length; i++) {
-            var r = F.reservations[i];
-            try { await ReservationUtil.shareFacilityResvToCalendar(r, cal.id); count++; } catch(e) {}
+            try { await ReservationUtil.shareFacilityResvToCalendar(F.reservations[i], cal.id); count++; } catch(e) {}
           }
           toast(cal.name+'에 '+count+'개 일정 공유 완료!', 'success');
         });

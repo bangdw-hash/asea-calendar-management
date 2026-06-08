@@ -34,6 +34,7 @@ var SheetsModule = (function () {
     '입출입기록':['id','roomId','roomName','userName','phone','affiliation','checkType','timestamp','consentGiven','consentTimestamp','consentTextVersion','deviceId'],
     '입출입사용자':['id','name','phone','affiliation','firstConsentAt','consentTextVersion','lastVisit','visitCount'],
     '문자발송내역':['id','sentAt','sender','message','msgType','receiverCount','receivers','resultCode','successCnt','errorCnt','sentBy'],
+    '대관신청':    ['id','buildingId','buildingName','roomId','roomName','title','applicantName','applicantOrg','applicantPhone','applicantEmail','startAt','endAt','purpose','attendees','status','reviewNote','reviewedBy','reviewedAt','createdAt'],
   };
 
   function getToken() { return Auth.getToken(); }
@@ -954,6 +955,38 @@ var SheetsModule = (function () {
     await apiUpdate('입출입사용자!G' + rowNum + ':H' + rowNum, [[lastVisit, String(visitCount)]]);
   }
 
+  /* ──────────────────────────────────────────────────
+     대관신청 (공개 신청 / 관리자 승인/반려)
+  ────────────────────────────────────────────────── */
+  async function getFacilityRequests(status) {
+    var data = await readSheet('대관신청');
+    if (status) return data.filter(function(r){ return r.status === status; });
+    return data;
+  }
+
+  async function createFacilityRequest(req) {
+    var list = await readSheet('대관신청');
+    var id = 'FREQ' + String(list.length + 1).padStart(5, '0');
+    var headers = SCHEMAS['대관신청'];
+    var obj = Object.assign({ id: id, status: '신청', createdAt: new Date().toISOString(), reviewNote: '', reviewedBy: '', reviewedAt: '' }, req);
+    var row = headers.map(function(h){ return obj[h] !== undefined ? obj[h] : ''; });
+    await apiAppend('대관신청', [row]);
+    return id;
+  }
+
+  async function updateFacilityRequest(rowNum, updates) {
+    // updates는 부분 업데이트 객체: {status, reviewNote, reviewedBy, reviewedAt}
+    // 먼저 현재 행을 읽어 병합
+    var data = await readSheet('대관신청');
+    var cur = data.find(function(r){ return r._row === rowNum; });
+    if (!cur) throw new Error('대관신청 행을 찾을 수 없습니다: row '+rowNum);
+    var merged = Object.assign({}, cur, updates);
+    var headers = SCHEMAS['대관신청'];
+    var row = headers.map(function(h){ return merged[h] !== undefined ? merged[h] : ''; });
+    var lastCol = String.fromCharCode(64 + headers.length); // A=65, S=83 → 19 cols
+    await apiUpdate('대관신청!A' + rowNum + ':' + lastCol + rowNum, [row]);
+  }
+
   /* 공개 API */
   return {
     initSheets:            initSheets,
@@ -1029,6 +1062,10 @@ var SheetsModule = (function () {
     getCheckinUsers:        getCheckinUsers,
     addCheckinUser:         addCheckinUser,
     updateCheckinUserVisit: updateCheckinUserVisit,
+    // 대관신청
+    getFacilityRequests:    getFacilityRequests,
+    createFacilityRequest:  createFacilityRequest,
+    updateFacilityRequest:  updateFacilityRequest,
   };
 
 })();

@@ -537,19 +537,65 @@
           </div>
         </div>
 
-        <!-- 필터 + 월 네비 -->
-        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
-          <button id="fac-cal-prev" class="btn btn-ghost btn-sm">‹</button>
-          <strong id="fac-cal-title" style="min-width:100px;text-align:center"></strong>
-          <button id="fac-cal-next" class="btn btn-ghost btn-sm">›</button>
-          <select id="fac-building-filter" class="form-select" style="max-width:160px"></select>
-          <select id="fac-room-filter" class="form-select" style="max-width:140px"></select>
-          <button class="btn btn-primary btn-sm" onclick="document.getElementById('fac-resv-modal').dispatchEvent(new Event('open-new'))">+ 예약하기</button>
+        <!-- 서브탭 -->
+        <div id="fac-subtab-bar" class="facility-subtab-bar" style="margin-bottom:16px">
+          <button class="subtab-btn active" data-subtab="calendar">📅 예약 캘린더</button>
+          <button class="subtab-btn" data-subtab="requests" id="fac-subtab-requests-btn" style="display:none">📋 신청 관리</button>
         </div>
 
-        <!-- 달력 -->
-        <div id="fac-calendar" class="res-calendar-wrap">
-          <p class="empty-state">로딩 중...</p>
+        <!-- ── 서브탭: 예약 캘린더 ── -->
+        <div id="fac-subtab-calendar">
+          <!-- 선택 안내 바 -->
+          <div class="sel-hint-bar">
+            <span class="sel-hint-guide">💡 <strong>드래그</strong>: 날짜 범위 선택 &nbsp;|&nbsp; <strong>Ctrl + 드래그</strong>: 비연속 날짜 추가</span>
+            <span id="fac-sel-hint" style="display:none;color:var(--primary);font-weight:600"></span>
+            <button id="fac-clear-sel-btn" class="btn btn-ghost btn-sm" style="display:none;padding:2px 8px" onclick="document.getElementById('fac-sel-hint').textContent&&(this.style.display='')">선택 초기화</button>
+          </div>
+
+          <!-- 필터 + 월 네비 -->
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
+            <button id="fac-cal-prev" class="btn btn-ghost btn-sm">‹</button>
+            <strong id="fac-cal-title" style="min-width:100px;text-align:center"></strong>
+            <button id="fac-cal-next" class="btn btn-ghost btn-sm">›</button>
+            <select id="fac-building-filter" class="form-select" style="max-width:160px"></select>
+            <select id="fac-room-filter" class="form-select" style="max-width:140px"></select>
+            <button class="btn btn-primary btn-sm" onclick="document.getElementById('fac-resv-modal').dispatchEvent(new Event('open-new'))">+ 예약하기</button>
+          </div>
+
+          <!-- 달력 -->
+          <div id="fac-calendar" class="res-calendar-wrap">
+            <p class="empty-state">로딩 중...</p>
+          </div>
+        </div>
+
+        <!-- ── 서브탭: 신청 관리 ── -->
+        <div id="fac-subtab-requests" hidden>
+          <div style="display:flex;gap:8px;align-items:center;margin-bottom:16px;flex-wrap:wrap">
+            <h3 style="margin:0;font-size:15px;font-weight:700">📋 대관신청 목록</h3>
+            <select id="fac-req-status-filter" class="form-select" style="max-width:120px">
+              <option value="">전체</option>
+              <option value="신청">신청</option>
+              <option value="검토중">검토중</option>
+              <option value="승인">승인</option>
+              <option value="반려">반려</option>
+            </select>
+            <button class="btn btn-ghost btn-sm" onclick="FacilityModule&&typeof FacilityModule==='object'">새로고침</button>
+            <div style="margin-left:auto;font-size:12px;color:#888">
+              공개 신청 URL: <a id="fac-public-req-link" href="facility-request.html" target="_blank" class="text-link">facility-request.html</a>
+            </div>
+          </div>
+          <!-- 프록시 설정 -->
+          <div class="settings-card" style="margin-bottom:16px;padding:12px 16px">
+            <div style="font-size:13px;font-weight:600;margin-bottom:6px">🔗 알림 프록시 URL (GAS 배포 URL)</div>
+            <div style="display:flex;gap:8px">
+              <input id="fac-proxy-url-input" type="url" class="form-input" placeholder="https://script.google.com/macros/s/.../exec" style="flex:1;font-size:12px">
+              <button id="fac-proxy-url-save" class="btn btn-primary btn-sm">저장</button>
+            </div>
+            <div style="font-size:11px;color:#888;margin-top:4px">설정하면 승인/반려 시 신청자에게 이메일 + 텔레그램 알림이 발송됩니다.</div>
+          </div>
+          <div id="fac-requests-list">
+            <p class="empty-state">불러오는 중...</p>
+          </div>
         </div>
 
         <!-- 관리자: 시설 관리 섹션 (설정 탭으로 이전, 여기서는 링크만) -->
@@ -582,6 +628,13 @@
               <a href="#" onclick="document.querySelector('[data-tab=settings]').click();document.getElementById('veh-admin-section').scrollIntoView({behavior:'smooth'});return false" class="btn btn-ghost btn-sm">⚙️ 차량 관리</a>
             </span>
           </div>
+        </div>
+
+        <!-- 선택 안내 바 -->
+        <div class="sel-hint-bar">
+          <span class="sel-hint-guide">💡 <strong>드래그</strong>: 날짜 범위 선택 &nbsp;|&nbsp; <strong>Ctrl + 드래그</strong>: 비연속 날짜 추가 선택</span>
+          <span id="veh-sel-hint" style="display:none;color:var(--primary);font-weight:600"></span>
+          <button id="veh-clear-sel-btn" class="btn btn-ghost btn-sm" style="padding:2px 8px">선택 초기화</button>
         </div>
 
         <!-- 필터 + 월 네비 -->
@@ -1657,7 +1710,10 @@
           <label class="form-label">예약 제목 <span class="required">*</span></label>
           <input id="fac-resv-title" type="text" class="form-input" placeholder="예: 2학기 OT 행사">
         </div>
-        <div style="display:flex;gap:8px">
+        <!-- 복수 날짜 선택 시 동적 구간 표시 -->
+        <div id="fac-time-ranges" class="time-ranges-container" style="display:none"></div>
+        <!-- 단일 날짜 / 수정 시 기본 입력 -->
+        <div id="fac-resv-static-time-row" style="display:flex;gap:8px">
           <div class="form-group" style="flex:1">
             <label class="form-label">시작 <span class="required">*</span></label>
             <input id="fac-resv-start" type="datetime-local" class="form-input">
@@ -1674,6 +1730,12 @@
         <div class="form-group">
           <label class="form-label">참석 인원</label>
           <input id="fac-resv-attendees" type="text" class="form-input" placeholder="예: 30명">
+        </div>
+        <div class="form-group">
+          <label class="form-label">📅 Google Calendar에 추가 <span style="font-size:11px;color:#888">(선택사항)</span></label>
+          <select id="fac-resv-gcal" class="form-select">
+            <option value="">(캘린더 선택 안 함)</option>
+          </select>
         </div>
         <div id="fac-resv-status-row" class="form-group" style="display:none">
           <label class="form-label">예약 상태</label>
@@ -1740,7 +1802,10 @@
           <label class="form-label">차량 선택 <span class="required">*</span></label>
           <select id="veh-resv-vehicle" class="form-select"></select>
         </div>
-        <div style="display:flex;gap:8px">
+        <!-- 복수 날짜 선택 시 동적 구간 표시 -->
+        <div id="veh-time-ranges" class="time-ranges-container" style="display:none"></div>
+        <!-- 단일 날짜 / 수정 시 기본 입력 -->
+        <div id="veh-resv-static-time-row" style="display:flex;gap:8px">
           <div class="form-group" style="flex:1">
             <label class="form-label">출발 <span class="required">*</span></label>
             <input id="veh-resv-start" type="datetime-local" class="form-input">
@@ -2070,8 +2135,8 @@
   <script src="report.js?v=20260608s"></script>
   <script src="sheets.js?v=20260608w"></script>
   <script src="resutil.js?v=20260608s"></script>
-  <script src="facility.js?v=20260608s"></script>
-  <script src="vehicle.js?v=20260608s"></script>
+  <script src="facility.js?v=20260609a1"></script>
+  <script src="vehicle.js?v=20260609a1"></script>
   <script src="classroom.js?v=20260608s"></script>
   <script src="work.js?v=20260608y"></script>
   <script src="workorder.js?v=20260608s"></script>

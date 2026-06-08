@@ -3,6 +3,8 @@
 /**
  * vehicle.js — 차량관리 모듈
  * 의존: config.js, auth.js, sheets.js
+ *
+ * v2 변경: 달력 드래그 복수 날짜 선택 + 복수 구간 예약 지원
  */
 var VehicleModule = (function () {
 
@@ -15,6 +17,13 @@ var VehicleModule = (function () {
     editResv: null,
     isAdmin: false,
   };
+
+  // ── 날짜 복수 선택 상태 (월 이동 후에도 유지) ──────────────
+  var _vSelDates   = new Set();   // Set<'YYYY-MM-DD'>
+  var _vDragStart  = null;        // 드래그 앵커
+  var _vDragCur    = null;        // 드래그 현재 위치
+  var _vIsDragging = false;
+  var _vDragCtrl   = false;       // Ctrl 누른 드래그
 
   function $v(id) { return document.getElementById(id); }
   function toast(msg, type) { if (typeof window.aseaToast === 'function') window.aseaToast(msg, type); }
@@ -35,21 +44,84 @@ var VehicleModule = (function () {
     '승용':'#4285F4','승합':'#0F9D58','버스':'#F4B400','화물':'#DB4437','기타':'#9E9E9E'
   };
 
-  /* ── 데이터 로드 ──────────────────────────────────────── */
+  /* ─────────────────────────────────────────────────────────
+     날짜 선택 헬퍼
+  ───────────────────────────────────────────────────────── */
+  function _vGetDateRange(d1, d2) {
+    var a = d1 <= d2 ? d1 : d2;
+    var b = d1 <= d2 ? d2 : d1;
+    var result = [];
+    // T12:00 사용 — DST 경계에서 날짜 계산 오류 방지
+    var cur = new Date(a + 'T12:00');
+    var end = new Date(b + 'T12:00');
+    while (cur <= end) {
+      result.push(cur.getFullYear()+'-'+pad(cur.getMonth()+1)+'-'+pad(cur.getDate()));
+      cur.setDate(cur.getDate()+1);
+    }
+    return result;
+  }
+
+  // 날짜 Set → 연속 구간 배열 [{startDate, endDate}]
+  function _vGroupRanges(dates) {
+    var sorted = Array.from(dates).sort();
+    if (!sorted.length) return [];
+    var groups = [], cs = sorted[0], ce = sorted[0];
+    for (var i = 1; i < sorted.length; i++) {
+      var diff = (new Date(sorted[i]+'T12:00') - new Date(sorted[i-1]+'T12:00')) / 86400000;
+      if (diff <= 1) { ce = sorted[i]; }
+      else { groups.push({startDate:cs, endDate:ce}); cs = sorted[i]; ce = sorted[i]; }
+    }
+    groups.push({startDate:cs, endDate:ce});
+    return groups;
+  }
+
+  function _vCurDragRange() {
+    if (!_vIsDragging || !_vDragStart || !_vDragCur) return new Set();
+    return new Set(_vGetDateRange(_vDragStart, _vDragCur));
+  }
+
+  function _vUpdateHighlight() {
+    var cal = $v('veh-calendar');
+    if (!cal) return;
+    var dragRange = _vCurDragRange();
+    cal.querySelectorAll('.res-cal-cell[data-date]').forEach(function(cell) {
+      var d = cell.dataset.date;
+      var inSel  = _vSelDates.has(d);
+      var inDrag = dragRange.has(d);
+      cell.classList.toggle('res-cal-sel',  inSel || inDrag);
+      cell.classList.toggle('res-cal-drag', inDrag && !inSel);
+    });
+    var hint = $v('veh-sel-hint');
+    if (hint) {
+      var allDates = new Set(Array.from(_vSelDates));
+      dragRange.forEach(function(d){ allDates.add(d); });
+      if (allDates.size > 0) {
+        hint.textContent = '📅 '+allDates.size+'일 선택됨 — 마우스를 떼면 예약창이 열립니다';
+        hint.style.display = '';
+      } else {
+        hint.textContent = '';
+        hint.style.display = 'none';
+      }
+    }
+  }
+
+  /* ─────────────────────────────────────────────────────────
+     데이터 로드
+  ───────────────────────────────────────────────────────── */
   async function loadData() {
     try {
       V.vehicles = await SheetsModule.getVehicles();
       var y = V.viewYear, m = V.viewMonth;
       var start = y+'-'+pad(m+1)+'-01';
-      var last = new Date(y, m+1, 0).getDate();
-      var end = y+'-'+pad(m+1)+'-'+pad(last)+'T23:59';
+      var last  = new Date(y, m+1, 0).getDate();
+      var end   = y+'-'+pad(m+1)+'-'+pad(last)+'T23:59';
       V.reservations = await SheetsModule.getVehicleReservations(start, end);
-    } catch(e) {
-      console.warn('vehicle load error', e);
-    }
+    } catch(e) { console.warn('vehicle load error', e); }
   }
 
-  /* ── 차량 필터 드롭다운 ─────────────────────────────── */
+  /* ─────────────────────────────────────────────────────────
+     차량 필터 드롭다운
+  ───────────────────────────────────────────────────────── */
   function renderVehicleFilter() {
     var sel = $v('veh-vehicle-filter');
     if (!sel) return;
@@ -62,7 +134,9 @@ var VehicleModule = (function () {
     });
   }
 
-  /* ── 달력 렌더 ────────────────────────────────────────── */
+  /* ─────────────────────────────────────────────────────────
+     달력 렌더  (드래그 선택 이벤트는 initVehicleModule에서 등록)
+  ───────────────────────────────────────────────────────── */
   function renderCalendar() {
     var cal = $v('veh-calendar');
     if (!cal) return;
@@ -70,7 +144,6 @@ var VehicleModule = (function () {
     $v('veh-cal-title').textContent = y+'년 '+(m+1)+'월';
 
     var vId = ($v('veh-vehicle-filter')||{}).value || '';
-
     var filtered = V.reservations.filter(function(r) {
       if (r.status === '취소') return false;
       if (vId && r.vehicleId !== vId) return false;
@@ -86,25 +159,23 @@ var VehicleModule = (function () {
 
     var firstDay = new Date(y, m, 1).getDay();
     var lastDate = new Date(y, m+1, 0).getDate();
-    var today = new Date();
+    var today    = new Date();
     var todayStr = today.getFullYear()+'-'+pad(today.getMonth()+1)+'-'+pad(today.getDate());
 
     var html = '<div class="res-cal-grid">';
     ['일','월','화','수','목','금','토'].forEach(function(d) {
       html += '<div class="res-cal-dow">'+d+'</div>';
     });
-
     for (var i = 0; i < firstDay; i++) html += '<div class="res-cal-cell res-cal-empty"></div>';
-
     for (var d = 1; d <= lastDate; d++) {
       var dateStr = y+'-'+pad(m+1)+'-'+pad(d);
-      var isToday = (dateStr === todayStr);
-      var isPast  = (dateStr < todayStr);
+      var cls = 'res-cal-cell';
+      if (dateStr === todayStr)       cls += ' res-cal-today';
+      if (dateStr < todayStr)         cls += ' res-cal-past';
+      if (_vSelDates.has(dateStr))    cls += ' res-cal-sel';
       var dayResv = byDay[dateStr] || [];
-
-      html += '<div class="res-cal-cell'+(isToday?' res-cal-today':'')+(isPast?' res-cal-past':'')+'" data-date="'+dateStr+'">';
+      html += '<div class="'+cls+'" data-date="'+dateStr+'">';
       html += '<div class="res-cal-date">'+d+'</div>';
-
       dayResv.slice(0,3).forEach(function(r) {
         var veh = V.vehicles.find(function(v){ return v.id === r.vehicleId; });
         var color = TYPE_COLORS[(veh&&veh.vehicleType)||'기타'] || '#9E9E9E';
@@ -113,34 +184,61 @@ var VehicleModule = (function () {
           '<span class="res-cal-item-time">'+(r.startAt||'').slice(11,16)+'</span> '+
           r.vehicleName+': '+r.destination+'</div>';
       });
-      if (dayResv.length > 3) {
-        html += '<div class="res-cal-more">+' + (dayResv.length-3) + '건 더보기</div>';
-      }
+      if (dayResv.length > 3) html += '<div class="res-cal-more">+'+(dayResv.length-3)+'건 더보기</div>';
       html += '</div>';
     }
     html += '</div>';
     cal.innerHTML = html;
+    _vUpdateHighlight(); // 기존 선택 반영
+  }
 
-    cal.querySelectorAll('.res-cal-cell[data-date]').forEach(function(cell) {
-      cell.addEventListener('click', function(e) {
-        if (e.target.classList.contains('res-cal-item')) return;
-        openResvModal(null, cell.dataset.date);
+  /* ─────────────────────────────────────────────────────────
+     예약 모달 — 다중 시간 구간 렌더
+  ───────────────────────────────────────────────────────── */
+  function _vRenderTimeRanges(container, ranges) {
+    container.innerHTML = '';
+    if (!ranges.length) {
+      container.innerHTML = '<p class="empty-state" style="font-size:13px">선택된 날짜가 없습니다.</p>';
+      return;
+    }
+    ranges.forEach(function(range, i) {
+      var label = range.startDate === range.endDate
+        ? range.startDate
+        : range.startDate + ' ~ ' + range.endDate;
+      var row = document.createElement('div');
+      row.className = 'time-range-row';
+      row.innerHTML =
+        '<div class="time-range-label">구간 '+(i+1)+
+        ' <span class="time-range-dates">('+label+')</span>'+
+        '<button type="button" class="btn btn-ghost btn-sm time-range-del" title="이 구간 제거">×</button></div>'+
+        '<div style="display:flex;gap:8px">'+
+          '<div class="form-group" style="flex:1"><label class="form-label">출발 <span class="required">*</span></label>'+
+          '<input type="datetime-local" class="form-input veh-range-start" value="'+range.startDate+'T09:00"></div>'+
+          '<div class="form-group" style="flex:1"><label class="form-label">반납 예정 <span class="required">*</span></label>'+
+          '<input type="datetime-local" class="form-input veh-range-end" value="'+range.endDate+'T18:00"></div>'+
+        '</div>';
+      row.querySelector('.time-range-del').addEventListener('click', function() {
+        _vGetDateRange(range.startDate, range.endDate).forEach(function(d){ _vSelDates.delete(d); });
+        row.remove();
+        _vUpdateHighlight();
+        // 남은 구간 번호 재정렬
+        container.querySelectorAll('.time-range-row').forEach(function(r, j) {
+          var lbl = r.querySelector('.time-range-label');
+          if (lbl) lbl.firstChild.textContent = '구간 '+(j+1)+' ';
+        });
       });
-    });
-    cal.querySelectorAll('.res-cal-item').forEach(function(item) {
-      item.addEventListener('click', function(e) {
-        e.stopPropagation();
-        var resv = V.reservations.find(function(r){ return r.id === item.dataset.id; });
-        if (resv) openResvModal(resv, null);
-      });
+      container.appendChild(row);
     });
   }
 
-  /* ── 예약 모달 ────────────────────────────────────────── */
+  /* ─────────────────────────────────────────────────────────
+     예약 모달 열기
+  ───────────────────────────────────────────────────────── */
   function openResvModal(resv, defaultDate) {
     V.editResv = resv;
     $v('veh-modal-title').textContent = resv ? '차량 예약 상세/수정' : '차량 예약';
 
+    // 차량 셀렉트
     var vSel = $v('veh-resv-vehicle');
     vSel.innerHTML = '<option value="">차량 선택</option>';
     V.vehicles.forEach(function(v) {
@@ -152,27 +250,38 @@ var VehicleModule = (function () {
     });
 
     $v('veh-resv-destination').value = resv ? (resv.destination||'') : '';
-    $v('veh-resv-purpose').value = resv ? (resv.purpose||'') : '';
-    $v('veh-resv-passengers').value = resv ? (resv.passengers||'1') : '1';
+    $v('veh-resv-purpose').value     = resv ? (resv.purpose||'') : '';
+    $v('veh-resv-passengers').value  = resv ? (resv.passengers||'1') : '1';
+
+    var staticRow     = $v('veh-resv-static-time-row');
+    var timeRangesDiv = $v('veh-time-ranges');
+    var useMulti      = !resv && _vSelDates.size > 0;
+
+    if (staticRow)     staticRow.style.display    = useMulti ? 'none' : '';
+    if (timeRangesDiv) timeRangesDiv.style.display = useMulti ? '' : 'none';
 
     if (resv) {
       $v('veh-resv-start').value = (resv.startAt||'').slice(0,16);
       $v('veh-resv-end').value   = (resv.endAt||'').slice(0,16);
-    } else if (defaultDate) {
-      $v('veh-resv-start').value = defaultDate + 'T09:00';
-      $v('veh-resv-end').value   = defaultDate + 'T18:00';
+    } else if (useMulti) {
+      if (timeRangesDiv) _vRenderTimeRanges(timeRangesDiv, _vGroupRanges(_vSelDates));
     } else {
       var now = new Date();
-      $v('veh-resv-start').value = toLocalDT(now);
-      $v('veh-resv-end').value   = toLocalDT(new Date(now.getTime()+8*60*60*1000));
+      if (defaultDate) {
+        $v('veh-resv-start').value = defaultDate + 'T09:00';
+        $v('veh-resv-end').value   = defaultDate + 'T18:00';
+      } else {
+        $v('veh-resv-start').value = toLocalDT(now);
+        $v('veh-resv-end').value   = toLocalDT(new Date(now.getTime()+8*60*60*1000));
+      }
     }
 
     var statusRow = $v('veh-resv-status-row');
     if (statusRow) statusRow.style.display = resv ? '' : 'none';
     if (resv && $v('veh-resv-status')) $v('veh-resv-status').value = resv.status||'확정';
 
-    var deleteBtn = $v('veh-resv-delete-btn');
-    if (deleteBtn) deleteBtn.style.display = resv ? '' : 'none';
+    var delBtn = $v('veh-resv-delete-btn');
+    if (delBtn) delBtn.style.display = resv ? '' : 'none';
 
     var canEdit = V.isAdmin || !resv || (resv.fromId && window._workMe && resv.fromId === window._workMe.id);
     ['veh-resv-vehicle','veh-resv-start','veh-resv-end','veh-resv-destination','veh-resv-purpose','veh-resv-passengers'].forEach(function(id) {
@@ -184,49 +293,82 @@ var VehicleModule = (function () {
     $v('veh-resv-modal').hidden = false;
   }
 
+  /* ─────────────────────────────────────────────────────────
+     예약 모달 저장
+  ───────────────────────────────────────────────────────── */
   async function saveResvModal() {
-    var vId = $v('veh-resv-vehicle').value;
-    var veh = V.vehicles.find(function(v){ return v.id === vId; });
-    var destination = ($v('veh-resv-destination').value||'').trim();
-    var startAt = $v('veh-resv-start').value;
-    var endAt   = $v('veh-resv-end').value;
+    var vId  = $v('veh-resv-vehicle').value;
+    var veh  = V.vehicles.find(function(v){ return v.id === vId; });
+    var dest = ($v('veh-resv-destination').value||'').trim();
+    var purp = ($v('veh-resv-purpose').value||'').trim();
+    var pass = $v('veh-resv-passengers').value || '1';
 
-    if (!vId) { toast('차량을 선택하세요.','error'); return; }
-    if (!destination) { toast('행선지를 입력하세요.','error'); return; }
-    if (!startAt || !endAt) { toast('시간을 입력하세요.','error'); return; }
-    if (endAt <= startAt) { toast('종료 시간이 시작 시간보다 늦어야 합니다.','error'); return; }
+    if (!vId)  { toast('차량을 선택하세요.','error'); return; }
+    if (!dest) { toast('행선지를 입력하세요.','error'); return; }
 
-    // 충돌 검사
-    var conflict = V.reservations.find(function(r) {
-      if (V.editResv && r.id === V.editResv.id) return false;
-      if (r.status === '취소') return false;
-      if (r.vehicleId !== vId) return false;
-      return r.startAt < endAt && r.endAt > startAt;
-    });
-    if (conflict) {
-      toast('⚠️ 해당 차량은 '+formatDT(conflict.startAt)+' ~ '+formatDT(conflict.endAt)+' 이미 예약되어 있습니다.','error');
-      return;
+    // 시간 구간 수집
+    var ranges = [];
+    var timeRangesDiv = $v('veh-time-ranges');
+    var isMulti = !V.editResv && timeRangesDiv && timeRangesDiv.style.display !== 'none' &&
+                  timeRangesDiv.querySelectorAll('.veh-range-start').length > 0;
+
+    if (isMulti) {
+      var sInputs = timeRangesDiv.querySelectorAll('.veh-range-start');
+      var eInputs = timeRangesDiv.querySelectorAll('.veh-range-end');
+      for (var i = 0; i < sInputs.length; i++) {
+        ranges.push({ startAt: sInputs[i].value, endAt: eInputs[i].value });
+      }
+    } else {
+      ranges.push({ startAt: $v('veh-resv-start').value, endAt: $v('veh-resv-end').value });
     }
 
-    var me = window._workMe || {};
-    var data = {
-      vehicleId: vId, vehicleName: veh ? veh.vehicleName : vId,
-      fromId: me.id||'', fromName: me.name||'', department: me.department||'',
-      startAt: startAt, endAt: endAt,
-      destination: destination,
-      purpose: ($v('veh-resv-purpose').value||'').trim(),
-      passengers: $v('veh-resv-passengers').value||'1',
-      status: V.editResv ? ($v('veh-resv-status').value||'확정') : '확정',
-    };
+    if (!ranges.length) { toast('예약 구간이 없습니다.','error'); return; }
 
+    for (var i = 0; i < ranges.length; i++) {
+      if (!ranges[i].startAt || !ranges[i].endAt) {
+        toast('구간 '+(i+1)+': 시간을 입력하세요.','error'); return;
+      }
+      if (ranges[i].endAt <= ranges[i].startAt) {
+        toast('구간 '+(i+1)+': 종료 시간이 시작 시간보다 늦어야 합니다.','error'); return;
+      }
+      var rc = ranges[i];
+      var conflict = V.reservations.find(function(r) {
+        if (V.editResv && r.id === V.editResv.id) return false;
+        if (r.status === '취소') return false;
+        if (r.vehicleId !== vId) return false;
+        return r.startAt < rc.endAt && r.endAt > rc.startAt;
+      });
+      if (conflict) {
+        toast('⚠️ 구간 '+(i+1)+': '+formatDT(conflict.startAt)+' ~ '+formatDT(conflict.endAt)+' 이미 예약됨','error');
+        return;
+      }
+    }
+
+    var me      = window._workMe || {};
     var saveBtn = $v('veh-resv-save-btn');
     if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = '저장 중...'; }
+
     try {
       if (V.editResv) {
+        var data = {
+          vehicleId: vId, vehicleName: veh ? veh.vehicleName : vId,
+          fromId: me.id||'', fromName: me.name||'', department: me.department||'',
+          startAt: ranges[0].startAt, endAt: ranges[0].endAt,
+          destination: dest, purpose: purp, passengers: pass,
+          status: ($v('veh-resv-status')||{}).value || '확정',
+        };
         await SheetsModule.updateVehicleReservation(V.editResv._row, Object.assign({}, V.editResv, data));
       } else {
-        await SheetsModule.createVehicleReservation(data);
+        for (var i = 0; i < ranges.length; i++) {
+          await SheetsModule.createVehicleReservation({
+            vehicleId: vId, vehicleName: veh ? veh.vehicleName : vId,
+            fromId: me.id||'', fromName: me.name||'', department: me.department||'',
+            startAt: ranges[i].startAt, endAt: ranges[i].endAt,
+            destination: dest, purpose: purp, passengers: pass, status: '확정',
+          });
+        }
       }
+      _vSelDates.clear(); _vUpdateHighlight();
       toast('✅ 차량 예약이 저장되었습니다.','success');
       $v('veh-resv-modal').hidden = true;
       await refresh();
@@ -245,12 +387,12 @@ var VehicleModule = (function () {
       toast('예약이 취소되었습니다.','info');
       $v('veh-resv-modal').hidden = true;
       await refresh();
-    } catch(e) {
-      toast('취소 실패: '+(e.message||e),'error');
-    }
+    } catch(e) { toast('취소 실패: '+(e.message||e),'error'); }
   }
 
-  /* ── 관리자: 차량 관리 ────────────────────────────────── */
+  /* ─────────────────────────────────────────────────────────
+     관리자: 차량 관리
+  ───────────────────────────────────────────────────────── */
   function renderVehicleAdmin() {
     var el = $v('veh-admin-list');
     if (!el) return;
@@ -272,7 +414,6 @@ var VehicleModule = (function () {
         '<span class="veh-note">'+v.note+'</span>' +
         '<button class="btn btn-ghost btn-sm veh-edit-btn" data-id="'+v.id+'">수정</button>' +
         '<button class="btn btn-ghost btn-sm btn-danger veh-del-btn" data-row="'+v._row+'">삭제</button>';
-
       row.querySelector('.veh-edit-btn').onclick = function() { openVehicleModal(v); };
       row.querySelector('.veh-del-btn').onclick = async function() {
         if (!confirm(v.vehicleName+'을(를) 삭제하시겠습니까?')) return;
@@ -286,24 +427,23 @@ var VehicleModule = (function () {
   function openVehicleModal(veh) {
     var modal = $v('veh-vehicle-modal');
     $v('veh-vm-title').textContent = veh ? '차량 수정' : '차량 추가';
-    $v('veh-vm-name').value = veh ? veh.vehicleName : '';
-    $v('veh-vm-num').value = veh ? veh.vehicleNum : '';
-    $v('veh-vm-type').value = veh ? veh.vehicleType : '승용';
-    $v('veh-vm-capacity').value = veh ? veh.capacity : '4';
-    $v('veh-vm-note').value = veh ? veh.note : '';
+    $v('veh-vm-name').value     = veh ? veh.vehicleName : '';
+    $v('veh-vm-num').value      = veh ? veh.vehicleNum  : '';
+    $v('veh-vm-type').value     = veh ? veh.vehicleType : '승용';
+    $v('veh-vm-capacity').value = veh ? veh.capacity    : '4';
+    $v('veh-vm-note').value     = veh ? veh.note        : '';
     modal._veh = veh || null;
     modal.hidden = false;
   }
 
   async function saveVehicleModal() {
     var modal = $v('veh-vehicle-modal');
-    var name = ($v('veh-vm-name').value||'').trim();
-    var num  = ($v('veh-vm-num').value||'').trim();
-    var type = $v('veh-vm-type').value;
-    var cap  = $v('veh-vm-capacity').value;
-    var note = ($v('veh-vm-note').value||'').trim();
+    var name  = ($v('veh-vm-name').value||'').trim();
+    var num   = ($v('veh-vm-num').value||'').trim();
+    var type  = $v('veh-vm-type').value;
+    var cap   = $v('veh-vm-capacity').value;
+    var note  = ($v('veh-vm-note').value||'').trim();
     if (!name) { toast('차량명을 입력하세요.','error'); return; }
-
     var btn = $v('veh-vm-save-btn');
     btn.disabled = true; btn.textContent = '저장 중...';
     try {
@@ -315,14 +455,13 @@ var VehicleModule = (function () {
       toast('✅ 차량 정보가 저장되었습니다.','success');
       modal.hidden = true;
       await refresh();
-    } catch(e) {
-      toast('저장 실패: '+(e.message||e),'error');
-    } finally {
-      btn.disabled = false; btn.textContent = '저장';
-    }
+    } catch(e) { toast('저장 실패: '+(e.message||e),'error');
+    } finally { btn.disabled = false; btn.textContent = '저장'; }
   }
 
-  /* ── 전체 갱신 ────────────────────────────────────────── */
+  /* ─────────────────────────────────────────────────────────
+     전체 갱신
+  ───────────────────────────────────────────────────────── */
   async function refresh() {
     await loadData();
     renderVehicleFilter();
@@ -330,7 +469,9 @@ var VehicleModule = (function () {
     renderVehicleAdmin();
   }
 
-  /* ── 초기화 ───────────────────────────────────────────── */
+  /* ─────────────────────────────────────────────────────────
+     초기화
+  ───────────────────────────────────────────────────────── */
   function initVehicleModule(isAdmin) {
     V.isAdmin = !!isAdmin;
     var now = new Date();
@@ -340,44 +481,101 @@ var VehicleModule = (function () {
     var prevBtn = $v('veh-cal-prev');
     var nextBtn = $v('veh-cal-next');
     if (prevBtn) prevBtn.addEventListener('click', async function() {
-      V.viewMonth--;
-      if (V.viewMonth < 0) { V.viewMonth = 11; V.viewYear--; }
+      V.viewMonth--; if (V.viewMonth < 0) { V.viewMonth = 11; V.viewYear--; }
       await refresh();
     });
     if (nextBtn) nextBtn.addEventListener('click', async function() {
-      V.viewMonth++;
-      if (V.viewMonth > 11) { V.viewMonth = 0; V.viewYear++; }
+      V.viewMonth++; if (V.viewMonth > 11) { V.viewMonth = 0; V.viewYear++; }
       await refresh();
     });
 
     var vFilter = $v('veh-vehicle-filter');
     if (vFilter) vFilter.addEventListener('change', function() { renderCalendar(); });
 
+    // ── 드래그 복수 선택 이벤트 (컨테이너에 등록 — re-render 후에도 유지) ──
+    var cal = $v('veh-calendar');
+    if (cal) {
+      // mousedown: 선택 시작
+      cal.addEventListener('mousedown', function(e) {
+        if (e.target.closest('.res-cal-item')) return; // 예약 클릭은 click 이벤트로
+        var cell = e.target.closest('.res-cal-cell[data-date]');
+        if (!cell) return;
+        e.preventDefault(); // 텍스트 선택 방지
+        _vDragCtrl  = e.ctrlKey || e.metaKey;
+        _vDragStart = cell.dataset.date;
+        _vDragCur   = cell.dataset.date;
+        _vIsDragging = true;
+        if (!_vDragCtrl) _vSelDates.clear(); // Ctrl 없으면 새 선택 시작
+        _vUpdateHighlight();
+      });
+
+      // mousemove: 드래그 범위 업데이트
+      cal.addEventListener('mousemove', function(e) {
+        if (!_vIsDragging) return;
+        var cell = e.target.closest('.res-cal-cell[data-date]');
+        if (!cell || cell.dataset.date === _vDragCur) return;
+        _vDragCur = cell.dataset.date;
+        _vUpdateHighlight();
+      });
+
+      // click: 예약 아이템 클릭 (상세/수정)
+      cal.addEventListener('click', function(e) {
+        var item = e.target.closest('.res-cal-item');
+        if (item) {
+          var resv = V.reservations.find(function(r){ return r.id === item.dataset.id; });
+          if (resv) openResvModal(resv, null);
+        }
+      });
+    }
+
+    // mouseup: 드래그 종료 (document-level — 캘린더 밖에서 놓아도 처리)
+    document.addEventListener('mouseup', function(e) {
+      if (!_vIsDragging) return;
+      var dragRange = _vCurDragRange();
+      dragRange.forEach(function(d){ _vSelDates.add(d); });
+      _vIsDragging = false;
+      _vDragStart  = null;
+      _vDragCur    = null;
+      _vUpdateHighlight();
+      // 선택된 날짜가 있고 예약 아이템 클릭이 아닌 경우 모달 오픈
+      if (_vSelDates.size > 0 && !e.target.closest('.res-cal-item')) {
+        openResvModal(null, null);
+      }
+    });
+
+    // 선택 초기화 버튼
+    var clearSelBtn = $v('veh-clear-sel-btn');
+    if (clearSelBtn) clearSelBtn.addEventListener('click', function() {
+      _vSelDates.clear(); _vUpdateHighlight();
+    });
+
+    // 차량 관리자 버튼
     var addVehBtn = $v('veh-add-vehicle-btn');
     if (addVehBtn) addVehBtn.addEventListener('click', function() { openVehicleModal(null); });
 
-    var vmSave = $v('veh-vm-save-btn');
-    if (vmSave) vmSave.addEventListener('click', saveVehicleModal);
+    var vmSave   = $v('veh-vm-save-btn');
+    if (vmSave)   vmSave.addEventListener('click', saveVehicleModal);
     var vmCancel = $v('veh-vm-cancel-btn');
     if (vmCancel) vmCancel.addEventListener('click', function() { $v('veh-vehicle-modal').hidden = true; });
 
-    var resvSave = $v('veh-resv-save-btn');
-    if (resvSave) resvSave.addEventListener('click', saveResvModal);
-    var resvDel = $v('veh-resv-delete-btn');
-    if (resvDel) resvDel.addEventListener('click', deleteResv);
+    var resvSave  = $v('veh-resv-save-btn');
+    if (resvSave)  resvSave.addEventListener('click', saveResvModal);
+    var resvDel   = $v('veh-resv-delete-btn');
+    if (resvDel)   resvDel.addEventListener('click', deleteResv);
     var resvClose = $v('veh-resv-close-btn');
-    if (resvClose) resvClose.addEventListener('click', function() { $v('veh-resv-modal').hidden = true; });
+    if (resvClose) resvClose.addEventListener('click', function() {
+      $v('veh-resv-modal').hidden = true;
+    });
 
-    // '예약하기' 버튼 이벤트
+    // '예약하기' 버튼
     var vehModal = document.getElementById('veh-resv-modal');
     if (vehModal) vehModal.addEventListener('open-new-internal', function() { openResvModal(null, null); });
 
-    var adminLink = $v('veh-admin-link');
-    if (adminLink) adminLink.style.display = isAdmin ? '' : 'none';
+    var adminLink    = $v('veh-admin-link');
+    if (adminLink)    adminLink.style.display = isAdmin ? '' : 'none';
     var adminSection = $v('veh-admin-section');
     if (adminSection) adminSection.hidden = !isAdmin;
 
-    // 설정 탭 관리자 카드
     var settingsVehCard = document.getElementById('settings-veh-card');
     if (settingsVehCard) settingsVehCard.hidden = !isAdmin;
 
@@ -409,8 +607,7 @@ var VehicleModule = (function () {
         try {
           await SheetsModule.bulkUpsertVehicles(rows);
           toast('차량 '+rows.length+'개 등록 완료!', 'success');
-          preview.hidden = true;
-          csvInput.value = '';
+          preview.hidden = true; csvInput.value = '';
           await refresh();
         } catch(err) { toast('업로드 실패: '+err.message, 'error'); }
       });
@@ -425,8 +622,7 @@ var VehicleModule = (function () {
           toast('캘린더 공유 중...', 'info');
           var count = 0;
           for (var i = 0; i < V.reservations.length; i++) {
-            var r = V.reservations[i];
-            try { await ReservationUtil.shareVehicleResvToCalendar(r, cal.id); count++; } catch(e) {}
+            try { await ReservationUtil.shareVehicleResvToCalendar(V.reservations[i], cal.id); count++; } catch(e) {}
           }
           toast(cal.name+'에 '+count+'개 일정 공유 완료!', 'success');
         });
