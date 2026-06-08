@@ -1045,19 +1045,38 @@
       btn.disabled = true;
       try {
         if (S.editEventId) {
-          // 수정: 원래 캘린더에서 수정, 추가된 다른 캘린더엔 새로 생성
-          await CalendarModule.updateEvent(targetCal, S.editEventId, eventData);
-          // 첫 번째 외 나머지 캘린더엔 신규 등록
-          for (var ci = 1; ci < targetCals.length; ci++) {
-            try { await CalendarModule.createEvent(targetCals[ci], eventData); } catch (e2) {}
+          // ── 수정 모드 ──────────────────────────────────────────
+          var origCalId = S.editCalId || CONFIG.calendarId;
+          var newCalIds = targetCals; // 사용자가 선택한 칩 목록
+
+          var origInNew = newCalIds.indexOf(origCalId) !== -1;
+
+          if (origInNew) {
+            // 원래 캘린더 유지: 원래 캘린더에서 내용 수정
+            await CalendarModule.updateEvent(origCalId, S.editEventId, eventData);
+            // 추가된 나머지 캘린더에는 새로 생성
+            for (var ci = 0; ci < newCalIds.length; ci++) {
+              if (newCalIds[ci] !== origCalId) {
+                try { await CalendarModule.createEvent(newCalIds[ci], eventData); } catch (e2) {}
+              }
+            }
+          } else {
+            // 원래 캘린더 제거됨 → 이동: 원래에서 삭제 + 새 캘린더들에 생성
+            try { await CalendarModule.deleteEvent(origCalId, S.editEventId); } catch (eDel) {}
+            for (var ci3 = 0; ci3 < newCalIds.length; ci3++) {
+              try { await CalendarModule.createEvent(newCalIds[ci3], eventData); } catch (e4) {}
+            }
           }
-          toast('일정이 수정되었습니다.' + (targetCals.length > 1 ? ' (' + targetCals.length + '개 캘린더)' : ''), 'success');
+          var calCount = newCalIds.length;
+          toast('일정이 수정되었습니다.' + (calCount > 1 ? ' (' + calCount + '개 캘린더)' : ''), 'success');
+
         } else {
-          // 신규: 선택된 모든 캘린더에 등록
-          for (var ci2 = 0; ci2 < targetCals.length; ci2++) {
-            try { await CalendarModule.createEvent(targetCals[ci2], eventData); } catch (e3) {}
+          // ── 신규 등록: 선택된 모든 캘린더에 생성 ──────────────
+          var createCals = targetCals.length > 0 ? targetCals : [CONFIG.calendarId];
+          for (var ci2 = 0; ci2 < createCals.length; ci2++) {
+            try { await CalendarModule.createEvent(createCals[ci2], eventData); } catch (e3) {}
           }
-          toast('일정이 추가되었습니다.' + (targetCals.length > 1 ? ' (' + targetCals.length + '개 캘린더)' : ''), 'success');
+          toast('일정이 추가되었습니다.' + (createCals.length > 1 ? ' (' + createCals.length + '개 캘린더)' : ''), 'success');
         }
         closeModal('event-modal');
         await renderCalendar();
