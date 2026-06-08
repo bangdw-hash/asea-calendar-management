@@ -4,7 +4,7 @@
  * quicktask.js — 빠른 업무 등록 모듈
  *
  * 기능:
- *  1. Ctrl+Shift+R → 빠른 업무 등록 모달 오픈
+ *  1. Ctrl+Alt+R → 빠른 업무 등록 모달 오픈
  *  2. 텍스트/이미지 붙여넣기 → Claude AI가 업무 목록 추출
  *  3. 추출된 업무를 개별 또는 일괄로 Google Calendar + Sheets에 등록
  *
@@ -559,9 +559,9 @@ var QuickTaskModule = (function () {
      초기화
   ──────────────────────────────────────────────────────────── */
   function init() {
-    // ── Ctrl+Shift+R 단축키 ────────────────────────────────────
+    // ── Ctrl+Alt+R 단축키 ────────────────────────────────────
     document.addEventListener('keydown', function (e) {
-      if (e.ctrlKey && e.shiftKey && (e.key === 'R' || e.key === 'r')) {
+      if (e.ctrlKey && e.altKey && (e.key === 'R' || e.key === 'r')) {
         // 로그인 되어 있을 때만
         if (typeof Auth !== 'undefined' && Auth.isLoggedIn && Auth.isLoggedIn()) {
           e.preventDefault();
@@ -680,8 +680,8 @@ var QuickTaskModule = (function () {
     var hint = document.createElement('button');
     hint.id = 'qt-shortcut-hint';
     hint.className = 'btn btn-ghost btn-sm';
-    hint.title = '빠른 업무 등록 (Ctrl+Shift+R)';
-    hint.innerHTML = '⚡ 빠른 등록 <kbd>Ctrl+Shift+R</kbd>';
+    hint.title = '빠른 업무 등록 (Ctrl+Alt+R)';
+    hint.innerHTML = '⚡ 빠른 등록 <kbd>Ctrl+Alt+R</kbd>';
     hint.style.cssText = 'font-size:11px;';
     hint.addEventListener('click', function () {
       if (typeof Auth !== 'undefined' && Auth.isLoggedIn && Auth.isLoggedIn()) open();

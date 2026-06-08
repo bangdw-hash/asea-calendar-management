@@ -669,7 +669,7 @@ var WorkModule = (function () {
 
     if (tasks.length === 0) {
       listEl.innerHTML = filterBar + '<p class="empty-state" style="margin-top:12px">' +
-        (W.personalStatusFilter === '전체' ? '등록된 개인 업무가 없습니다.<br><small>빠른 업무 등록(Ctrl+Shift+R)으로 추가해보세요.</small>'
+        (W.personalStatusFilter === '전체' ? '등록된 개인 업무가 없습니다.<br><small>빠른 업무 등록(Ctrl+Alt+R)으로 추가해보세요.</small>'
          : W.personalStatusFilter + ' 상태의 개인 업무가 없습니다.') + '</p>';
       _bindPersonalFilterBtns();
       return;

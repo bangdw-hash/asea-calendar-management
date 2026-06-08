@@ -1,7 +1,7 @@
 /**
  * background.js — ASEA 빠른 업무 등록 확장 서비스 워커
  *
- * Ctrl+Shift+R (전역) 단축키 → ASEA 탭을 찾아 빠른 업무 등록 모달 오픈
+ * Ctrl+Alt+R (전역) 단축키 → ASEA 탭을 찾아 빠른 업무 등록 모달 오픈
  * ASEA 탭이 없으면 새 탭으로 열고 로그인 유도
  */
 
