@@ -208,6 +208,13 @@ var WorkModule = (function () {
         await refreshUnreadBadge();
         startPolling();
         await loadMyTasks();
+        // 직원 목록 백그라운드 프리페치 (직원관리 탭 진입 즉시 렌더 가능하도록)
+        if (!W.employees.length) {
+          SheetsModule.getEmployees().then(function (emps) {
+            W.employees = emps;
+            W.empCacheAt = Date.now();
+          }).catch(function () {});
+        }
       }
     }
   }
@@ -1195,7 +1202,22 @@ var WorkModule = (function () {
     var listEl = $w('hr-employee-list');
     var cntEl  = $w('hr-list-count');
     if (!listEl) return;
-    listEl.innerHTML = '<p class="empty-state">불러오는 중...</p>';
+
+    var CACHE_TTL = 5 * 60 * 1000; // 5분 캐시
+    var now = Date.now();
+
+    // 캐시가 있으면 즉시 렌더 (화면 먼저)
+    if (W.employees.length && (now - W.empCacheAt) < CACHE_TTL) {
+      _renderHrTable(W.employees);
+      return;
+    }
+
+    // 구 캐시가 있으면 일단 보여주고 백그라운드 갱신
+    if (W.employees.length) {
+      _renderHrTable(W.employees);
+    } else {
+      listEl.innerHTML = '<p class="empty-state">불러오는 중...</p>';
+    }
 
     try {
       var emps = await SheetsModule.getEmployees();
@@ -1203,7 +1225,9 @@ var WorkModule = (function () {
       W.empCacheAt = Date.now();
       _renderHrTable(emps);
     } catch (e) {
-      listEl.innerHTML = '<p class="empty-state" style="color:#e53935">로드 실패: ' + e.message + '</p>';
+      if (!W.employees.length) {
+        listEl.innerHTML = '<p class="empty-state" style="color:#e53935">로드 실패: ' + e.message + '</p>';
+      }
     }
   }
 
