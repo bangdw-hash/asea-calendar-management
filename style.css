@@ -204,8 +204,9 @@ a        { color: var(--color-accent); text-decoration: none; }
   background: var(--color-card);
   border-bottom: 1px solid var(--color-border);
   display: flex;
-  height: var(--tab-h);
-  overflow-x: auto;
+  min-height: var(--tab-h);   /* 고정 높이 → 최소 높이: 탭이 줄 바꿈 가능 */
+  flex-wrap: wrap;             /* 창이 좁으면 자동으로 2줄 이상 래핑 */
+  overflow-x: hidden;
   scrollbar-width: none;
   flex-shrink: 0;
   -webkit-overflow-scrolling: touch;

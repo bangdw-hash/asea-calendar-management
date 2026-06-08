@@ -142,7 +142,8 @@
     if (name === 'extract')    renderExtractTab();
     if (name === 'workorder')    initWorkOrderTab();
     if (name === 'checkinmgmt')  initCheckinMgmtTab();
-    if (name === 'work' && typeof WorkModule !== 'undefined') WorkModule.loadHrList();
+    // 직원관리 탭: 캐시가 있으면 즉시 렌더, 없으면 placeholder (수동 불러오기 버튼 안내)
+    if (name === 'work' && typeof WorkModule !== 'undefined') WorkModule.showHrPlaceholderOrCache();
   }
 
   function initTabs() {
@@ -3891,7 +3892,7 @@
       '<div style="overflow-x:auto">' +
       '<table class="ci-log-table">' +
       '<thead><tr>' +
-        '<th>시각</th><th>구분</th><th>공간</th><th>이름</th><th>소속</th><th>전화번호</th>' +
+        '<th>시각</th><th>구분</th><th>공간</th><th>이름</th><th>소속</th><th>전화번호</th><th style="width:54px"></th>' +
       '</tr></thead><tbody>' +
       filtered.map(function (l) {
         var ts = l.timestamp ? new Date(l.timestamp) : null;
@@ -3899,16 +3900,37 @@
           ? String(ts.getHours()).padStart(2,'0') + ':' + String(ts.getMinutes()).padStart(2,'0')
           : '';
         var isIn = l.checkType === '입실';
-        return '<tr>' +
+        return '<tr data-row="' + (l._row || '') + '">' +
           '<td style="color:#888;white-space:nowrap">' + _esc(tStr) + '</td>' +
           '<td><span class="ci-check-badge ' + (isIn ? 'in' : 'out') + '">' + _esc(l.checkType) + '</span></td>' +
           '<td>' + _esc(l.roomName || l.roomId) + '</td>' +
           '<td style="font-weight:600">' + _esc(l.userName) + '</td>' +
           '<td style="color:#888">' + _esc(l.affiliation) + '</td>' +
           '<td style="color:#888">' + _esc(l.phone) + '</td>' +
+          '<td><button class="ci-log-del-btn" data-row="' + (l._row || '') + '" title="삭제" style="background:none;border:none;cursor:pointer;color:#e53935;font-size:15px;padding:2px 6px">🗑</button></td>' +
         '</tr>';
       }).join('') +
       '</tbody></table></div>';
+
+    // 삭제 버튼 이벤트 (이벤트 위임)
+    var tbl = $('ci-log-list');
+    tbl && tbl.addEventListener('click', function (e) {
+      var btn = e.target.closest('.ci-log-del-btn');
+      if (!btn) return;
+      var rowNum = parseInt(btn.dataset.row);
+      if (!rowNum || !confirm('이 기록을 삭제하시겠습니까?\n삭제 후 복구할 수 없습니다.')) return;
+      btn.disabled = true; btn.textContent = '⏳';
+      SheetsModule.deleteCheckinLog(rowNum).then(function () {
+        var tr = btn.closest('tr');
+        if (tr) tr.remove();
+        toast('기록이 삭제됐습니다.', 'success');
+        // 캐시 갱신
+        _ciLogs = _ciLogs.filter(function (l) { return l._row !== rowNum; });
+      }).catch(function (e) {
+        btn.disabled = false; btn.textContent = '🗑';
+        toast('삭제 실패: ' + e.message, 'error');
+      });
+    }, { once: true });
   }
 
   // 전역 노출 (HTML onclick 속성)

@@ -894,6 +894,17 @@ var SheetsModule = (function () {
     });
   }
 
+  async function deleteCheckinLog(rowNum) {
+    // 해당 행을 완전 삭제 (batchUpdate deleteDimension)
+    var sheetId = await getSheetId('입출입기록');
+    await batchUpdate([{
+      deleteDimension: {
+        range: { sheetId: sheetId, dimension: 'ROWS',
+                 startIndex: rowNum - 1, endIndex: rowNum }
+      }
+    }]);
+  }
+
   async function addCheckinLog(log) {
     var list = await readSheet('입출입기록');
     var id = 'CHK' + String(list.length + 1).padStart(6, '0');
@@ -1012,6 +1023,7 @@ var SheetsModule = (function () {
     // 입출입기록
     getCheckinLogs:         getCheckinLogs,
     addCheckinLog:          addCheckinLog,
+    deleteCheckinLog:       deleteCheckinLog,
     // 입출입사용자
     getCheckinUsers:        getCheckinUsers,
     addCheckinUser:         addCheckinUser,

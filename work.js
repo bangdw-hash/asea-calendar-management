@@ -210,13 +210,7 @@ var WorkModule = (function () {
         startPolling();
         await loadMyTasks();
       }
-      // 직원 목록 백그라운드 프리페치 (bootstrap 포함 — 탭 진입 즉시 렌더 가능하도록)
-      if (!W.employees.length) {
-        SheetsModule.getEmployees().then(function (emps) {
-          W.employees = emps;
-          W.empCacheAt = Date.now();
-        }).catch(function () {});
-      }
+      // 직원 목록 자동 불러오기 제거 — 탭 진입 시 버튼 클릭으로만 로드
     }
   }
 
@@ -1199,6 +1193,23 @@ var WorkModule = (function () {
   var _hrSortAsc = true;
   var _hrSelected = new Set();   // 선택된 행 _row 집합
 
+  // 탭 진입 시 호출: 캐시 있으면 렌더, 없으면 안내 문구만 표시 (자동 DB 조회 없음)
+  function showHrPlaceholderOrCache() {
+    var listEl = $w('hr-employee-list');
+    if (!listEl) return;
+    if (W.employees.length) {
+      _renderHrTable(W.employees);
+    } else {
+      listEl.innerHTML =
+        '<p class="empty-state" style="color:#888;line-height:1.7">' +
+        '직원 목록이 아직 불러와지지 않았습니다.<br>' +
+        '위 <strong>🔄 새로고침</strong> 버튼을 눌러 목록을 불러오세요.' +
+        '</p>';
+      var cntEl = $w('hr-list-count');
+      if (cntEl) cntEl.textContent = '';
+    }
+  }
+
   async function loadHrList() {
     var listEl = $w('hr-employee-list');
     var cntEl  = $w('hr-list-count');
@@ -1207,7 +1218,7 @@ var WorkModule = (function () {
     var CACHE_TTL = 5 * 60 * 1000; // 5분 캐시
     var now = Date.now();
 
-    // 캐시가 있으면 즉시 렌더 (화면 먼저)
+    // 캐시가 유효하면 즉시 렌더 후 종료 (DB 재조회 없음)
     if (W.employees.length && (now - W.empCacheAt) < CACHE_TTL) {
       _renderHrTable(W.employees);
       return;
@@ -1851,7 +1862,8 @@ var WorkModule = (function () {
   return {
     initWorkModule: initWorkModule,
     onLogin:        onLogin,
-    loadHrList:     loadHrList,
+    loadHrList:             loadHrList,
+    showHrPlaceholderOrCache: showHrPlaceholderOrCache,
     // quicktask.js 등록 후 호출 — 현재 탭에 따라 목록 새로고침
     refreshInbox: function () {
       if (W.wtab === 'my') loadMyTasks();
