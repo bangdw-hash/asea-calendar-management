@@ -5,10 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
   <meta name="description" content="ASEA 캘린더 관리 — 주간업무보고 배포 자동화">
   <title>ASEA 캘린더 관리</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=20260609m2">
+  <link rel="preload" as="style" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+  <link rel="stylesheet" href="style.css?v=20260609h1">
   <script src="https://accounts.google.com/gsi/client" async></script>
   <!-- SheetJS for Excel support -->
   <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
@@ -62,59 +61,60 @@
     </header>
 
     <!-- ── 탭 네비게이션 ────────────────────────────────────────── -->
-    <nav class="tab-nav" role="tablist" aria-label="메인 네비게이션">
-      <button class="tab-btn active" data-tab="calendar" role="tab" aria-selected="true">
-        <span class="tab-icon" aria-hidden="true">📅</span>
-        <span class="tab-label">캘린더</span>
-      </button>
-      <button class="tab-btn" data-tab="weekly-hub" role="tab" aria-selected="false">
-        <span class="tab-icon" aria-hidden="true">📋</span>
-        <span class="tab-label">주간허브</span>
-      </button>
-      <button class="tab-btn" data-tab="email" role="tab" aria-selected="false">
-        <span class="tab-icon" aria-hidden="true">✉️</span>
-        <span class="tab-label">이메일</span>
-      </button>
-      <button class="tab-btn" data-tab="extract" role="tab" aria-selected="false">
-        <span class="tab-icon" aria-hidden="true">📄</span>
-        <span class="tab-label">일정발췌</span>
-      </button>
-      <button class="tab-btn" data-tab="work" role="tab" aria-selected="false">
-        <span class="tab-icon" aria-hidden="true">📋</span>
-        <span class="tab-label">업무관리</span>
-        <span id="work-badge" class="tab-badge" hidden>0</span>
-      </button>
-      <button class="tab-btn" data-tab="facility" role="tab" aria-selected="false">
-        <span class="tab-icon" aria-hidden="true">🏢</span>
-        <span class="tab-label">대관업무</span>
-      </button>
-      <button class="tab-btn" data-tab="vehicle" role="tab" aria-selected="false">
-        <span class="tab-icon" aria-hidden="true">🚗</span>
-        <span class="tab-label">차량관리</span>
-      </button>
-      <button class="tab-btn" data-tab="classroom" role="tab" aria-selected="false">
-        <span class="tab-icon" aria-hidden="true">🏫</span>
-        <span class="tab-label">강의실현황</span>
-      </button>
-      <button class="tab-btn" data-tab="workorder" role="tab" aria-selected="false">
-        <span class="tab-icon" aria-hidden="true">🔧</span>
-        <span class="tab-label">작업지시</span>
-        <span id="workorder-badge" class="tab-badge" hidden>0</span>
-      </button>
-      <button class="tab-btn" data-tab="checkinmgmt" role="tab" aria-selected="false">
-        <span class="tab-icon" aria-hidden="true">🚪</span>
-        <span class="tab-label">입출입관리</span>
-        <span id="checkinmgmt-badge" class="tab-badge" hidden>●</span>
-      </button>
-      <button class="tab-btn" data-tab="sms" role="tab" aria-selected="false">
-        <span class="tab-icon" aria-hidden="true">📱</span>
-        <span class="tab-label">문자발송</span>
-      </button>
-      <button class="tab-btn" data-tab="settings" role="tab" aria-selected="false">
-        <span class="tab-icon" aria-hidden="true">⚙️</span>
-        <span class="tab-label">설정</span>
-      </button>
-    </nav>
+<!-- 상단 탭 (데스크톱용 — 모바일에서는 bottom-nav가 대신함) -->
+<nav class="tab-nav desktop-tab-nav" role="tablist" aria-label="메인 네비게이션">
+  <button class="tab-btn active" data-tab="calendar" role="tab" aria-selected="true">
+    <span class="tab-icon" aria-hidden="true">📅</span>
+    <span class="tab-label">캘린더</span>
+  </button>
+  <button class="tab-btn" data-tab="weekly-hub" role="tab" aria-selected="false">
+    <span class="tab-icon" aria-hidden="true">📋</span>
+    <span class="tab-label">주간허브</span>
+  </button>
+  <button class="tab-btn" data-tab="email" role="tab" aria-selected="false">
+    <span class="tab-icon" aria-hidden="true">✉️</span>
+    <span class="tab-label">이메일</span>
+  </button>
+  <button class="tab-btn" data-tab="extract" role="tab" aria-selected="false">
+    <span class="tab-icon" aria-hidden="true">📄</span>
+    <span class="tab-label">일정발췌</span>
+  </button>
+  <button class="tab-btn" data-tab="work" role="tab" aria-selected="false">
+    <span class="tab-icon" aria-hidden="true">📋</span>
+    <span class="tab-label">업무관리</span>
+    <span id="work-badge" class="tab-badge" hidden>0</span>
+  </button>
+  <button class="tab-btn" data-tab="facility" role="tab" aria-selected="false">
+    <span class="tab-icon" aria-hidden="true">🏢</span>
+    <span class="tab-label">대관업무</span>
+  </button>
+  <button class="tab-btn" data-tab="vehicle" role="tab" aria-selected="false">
+    <span class="tab-icon" aria-hidden="true">🚗</span>
+    <span class="tab-label">차량관리</span>
+  </button>
+  <button class="tab-btn" data-tab="classroom" role="tab" aria-selected="false">
+    <span class="tab-icon" aria-hidden="true">🏫</span>
+    <span class="tab-label">강의실현황</span>
+  </button>
+  <button class="tab-btn" data-tab="workorder" role="tab" aria-selected="false">
+    <span class="tab-icon" aria-hidden="true">🔧</span>
+    <span class="tab-label">작업지시</span>
+    <span id="workorder-badge" class="tab-badge" hidden>0</span>
+  </button>
+  <button class="tab-btn" data-tab="checkinmgmt" role="tab" aria-selected="false">
+    <span class="tab-icon" aria-hidden="true">🚪</span>
+    <span class="tab-label">입출입관리</span>
+    <span id="checkinmgmt-badge" class="tab-badge" hidden>●</span>
+  </button>
+  <button class="tab-btn" data-tab="sms" role="tab" aria-selected="false">
+    <span class="tab-icon" aria-hidden="true">📱</span>
+    <span class="tab-label">문자발송</span>
+  </button>
+  <button class="tab-btn" data-tab="settings" role="tab" aria-selected="false">
+    <span class="tab-icon" aria-hidden="true">⚙️</span>
+    <span class="tab-label">설정</span>
+  </button>
+</nav>
 
     <!-- ── 탭 콘텐츠 ────────────────────────────────────────────── -->
     <main class="tab-content">
@@ -2123,6 +2123,67 @@
     </div>
   </div>
 
+    <!-- ── 모바일 하단 탭 내비게이션 ── -->
+    <nav class="mobile-bottom-nav" id="mobile-bottom-nav" aria-label="하단 내비게이션">
+      <button class="bnav-btn active" data-tab="calendar">
+        <span class="bnav-icon">📅</span>
+        <span class="bnav-label">캘린더</span>
+      </button>
+      <button class="bnav-btn" data-tab="work">
+        <span class="bnav-icon">📋</span>
+        <span class="bnav-label">업무</span>
+        <span class="bnav-badge" id="bnav-work-badge" hidden></span>
+      </button>
+      <button class="bnav-btn" data-tab="vehicle">
+        <span class="bnav-icon">🚗</span>
+        <span class="bnav-label">차량</span>
+      </button>
+      <button class="bnav-btn" data-tab="facility">
+        <span class="bnav-icon">🏢</span>
+        <span class="bnav-label">대관</span>
+      </button>
+      <button class="bnav-btn" id="bnav-more-btn">
+        <span class="bnav-icon">☰</span>
+        <span class="bnav-label">더보기</span>
+      </button>
+    </nav>
+
+    <!-- ── 더보기 드로어 ── -->
+    <div id="more-drawer" class="more-drawer" hidden>
+      <div class="more-drawer-backdrop" id="more-drawer-backdrop"></div>
+      <div class="more-drawer-sheet">
+        <div class="more-drawer-handle"></div>
+        <h3 class="more-drawer-title">전체 메뉴</h3>
+        <div class="more-drawer-grid">
+          <button class="more-drawer-item" data-tab="weekly-hub">
+            <span class="mdi-icon">📋</span><span>주간허브</span>
+          </button>
+          <button class="more-drawer-item" data-tab="email">
+            <span class="mdi-icon">✉️</span><span>이메일</span>
+          </button>
+          <button class="more-drawer-item" data-tab="extract">
+            <span class="mdi-icon">📄</span><span>일정발췌</span>
+          </button>
+          <button class="more-drawer-item" data-tab="classroom">
+            <span class="mdi-icon">🏫</span><span>강의실</span>
+          </button>
+          <button class="more-drawer-item" data-tab="workorder">
+            <span class="mdi-icon">🔧</span><span>작업지시</span>
+            <span class="mdi-badge" id="mdi-workorder-badge" hidden></span>
+          </button>
+          <button class="more-drawer-item" data-tab="checkinmgmt">
+            <span class="mdi-icon">🚪</span><span>입출입</span>
+          </button>
+          <button class="more-drawer-item" data-tab="sms">
+            <span class="mdi-icon">📱</span><span>문자발송</span>
+          </button>
+          <button class="more-drawer-item" data-tab="settings">
+            <span class="mdi-icon">⚙️</span><span>설정</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
   <!-- ═══════════════════════════════════════════════════════
        스크립트 (로드 순서 중요)
        기존 모듈은 절대 수정하지 않음 — 새 모듈만 추가
@@ -2142,7 +2203,7 @@
   <script src="workorder.js?v=20260608s"></script>
   <script src="quicktask.js?v=20260608s"></script>
   <script src="sms.js?v=20260608a1"></script>
-  <script src="app.js?v=20260609m1"></script>
+  <script src="app.js?v=20260609h1"></script>
   <script>
     // 빠른 업무 등록 초기화 (DOM 준비 후)
     document.addEventListener('DOMContentLoaded', function () {

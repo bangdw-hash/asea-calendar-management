@@ -3915,3 +3915,686 @@ a        { color: var(--color-accent); text-decoration: none; }
     padding-bottom: 70px; /* 플로팅 바 높이만큼 */
   }
 }
+
+
+/* ══════════════════════════════════════════════════════════════════
+   ██  HEALTH APP REDESIGN  ██  건강 관리 앱 스타일 전면 오버라이드
+   ══════════════════════════════════════════════════════════════════ */
+
+/* ── 1. 디자인 토큰 재정의 ──────────────────────────────────────── */
+:root {
+  --font-family:          'Pretendard Variable', 'Pretendard', 'Noto Sans KR', -apple-system, sans-serif;
+
+  /* 색상 */
+  --color-bg:             #F0F4FA;
+  --color-card:           #FFFFFF;
+  --color-border:         #E4EAF4;
+  --color-accent:         #4A8FE7;
+  --color-accent-hover:   #3A7BD5;
+  --color-accent-light:   #EBF3FD;
+  --color-text:           #1A1E2E;
+  --color-text-secondary: #6B7280;
+  --color-success:        #22C55E;
+  --color-success-light:  #DCFCE7;
+  --color-warning:        #F59E0B;
+  --color-warning-light:  #FEF3C7;
+  --color-error:          #EF4444;
+  --color-error-light:    #FEE2E2;
+
+  /* 헬스앱 추가 팔레트 */
+  --ha-gradient:          linear-gradient(135deg, #4A8FE7 0%, #7C6FF7 100%);
+  --ha-gradient-warm:     linear-gradient(135deg, #F472B6 0%, #F97316 100%);
+  --ha-gradient-green:    linear-gradient(135deg, #34D399 0%, #059669 100%);
+  --ha-purple:            #7C6FF7;
+  --ha-pink:              #F472B6;
+  --ha-teal:              #2DD4BF;
+
+  /* 타이포 — 더 큰 스케일 */
+  --font-xs:   11px;
+  --font-sm:   13px;
+  --font-base: 15px;
+  --font-md:   16px;
+  --font-lg:   18px;
+  --font-xl:   22px;
+  --font-2xl:  26px;
+
+  /* 간격 */
+  --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px;
+  --sp-5: 20px; --sp-6: 24px; --sp-8: 32px;
+
+  /* 모서리 — 더 둥글게 */
+  --r-sm: 8px; --r-md: 12px; --r-lg: 16px; --r-xl: 20px;
+  --r-2xl: 24px; --r-full: 9999px;
+
+  /* 그림자 */
+  --shadow-sm:   0 2px 8px rgba(74,143,231,.07);
+  --shadow-md:   0 4px 16px rgba(74,143,231,.11);
+  --shadow-lg:   0 8px 32px rgba(74,143,231,.15);
+  --shadow-card: 0 2px 16px rgba(0,0,0,.06), 0 1px 4px rgba(0,0,0,.04);
+
+  /* 레이아웃 */
+  --header-h:     60px;
+  --tab-h:        52px;
+  --bottom-nav-h: 72px;
+}
+
+/* ── 2. 베이스 ──────────────────────────────────────────────────── */
+body {
+  font-family: var(--font-family);
+  background: var(--color-bg);
+  font-size: var(--font-base);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── 3. 헤더 — 그라디언트 ──────────────────────────────────────── */
+.app-header {
+  background: var(--ha-gradient) !important;
+  border-bottom: none !important;
+  box-shadow: 0 2px 16px rgba(74,143,231,.25) !important;
+  height: var(--header-h);
+}
+.header-title {
+  color: #fff !important;
+  font-size: 17px !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.02em;
+}
+.header-icon { filter: brightness(10); }
+.header-user .btn { color: rgba(255,255,255,.85) !important; border-color: rgba(255,255,255,.3) !important; }
+.header-user .btn:hover { background: rgba(255,255,255,.15) !important; }
+.user-email { color: rgba(255,255,255,.75) !important; }
+#sync-calendars-btn {
+  background: rgba(255,255,255,.18) !important;
+  border: 1px solid rgba(255,255,255,.3) !important;
+  color: #fff !important;
+  border-radius: var(--r-full) !important;
+}
+#sync-calendars-btn:hover { background: rgba(255,255,255,.28) !important; }
+@media (max-width:600px) {
+  #sync-calendars-btn::before { font-size: 15px; }
+}
+
+/* ── 4. 데스크톱 탭 내비 ─────────────────────────────────────────── */
+.tab-nav {
+  background: #fff !important;
+  border-bottom: 1px solid var(--color-border) !important;
+  box-shadow: 0 1px 0 var(--color-border);
+  padding: 0 8px;
+}
+.tab-btn {
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  color: var(--color-text-secondary) !important;
+  border-bottom: 3px solid transparent !important;
+  padding: 0 14px !important;
+  gap: 6px !important;
+  border-radius: 0 !important;
+  transition: color .15s, border-color .15s !important;
+}
+.tab-btn.active {
+  color: var(--color-accent) !important;
+  border-bottom-color: var(--color-accent) !important;
+  font-weight: 700 !important;
+}
+.tab-btn:hover:not(.active) {
+  color: var(--color-accent) !important;
+  background: var(--color-accent-light) !important;
+}
+.tab-icon { font-size: 15px !important; }
+
+/* ── 5. 탭 콘텐츠 패딩 ──────────────────────────────────────────── */
+.tab-panel {
+  background: var(--color-bg);
+  padding: 20px 16px !important;
+}
+@media (min-width: 1024px) {
+  .tab-panel { padding: 28px 32px !important; }
+}
+
+/* ── 6. 섹션 타이틀 ─────────────────────────────────────────────── */
+.section-title {
+  font-size: 20px !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.03em;
+  color: var(--color-text) !important;
+}
+h3.settings-section-title {
+  font-size: 15px !important;
+  font-weight: 700 !important;
+  color: var(--color-text) !important;
+}
+
+/* ── 7. 카드 ─────────────────────────────────────────────────────── */
+.settings-card {
+  background: #fff !important;
+  border-radius: var(--r-xl) !important;
+  box-shadow: var(--shadow-card) !important;
+  border: none !important;
+  padding: 20px !important;
+  margin-bottom: 14px !important;
+}
+
+/* ── 8. 버튼 — 알약형 ─────────────────────────────────────────────── */
+.btn {
+  border-radius: var(--r-full) !important;
+  font-weight: 600 !important;
+  transition: all .18s ease !important;
+  font-family: var(--font-family) !important;
+}
+.btn-primary {
+  background: var(--ha-gradient) !important;
+  border: none !important;
+  color: #fff !important;
+  box-shadow: 0 3px 12px rgba(74,143,231,.35) !important;
+}
+.btn-primary:hover:not(:disabled) {
+  transform: translateY(-1px) !important;
+  box-shadow: 0 5px 18px rgba(74,143,231,.45) !important;
+}
+.btn-primary:active:not(:disabled) { transform: translateY(0) !important; }
+.btn-secondary {
+  background: #fff !important;
+  border: 1.5px solid var(--color-border) !important;
+  color: var(--color-accent) !important;
+}
+.btn-secondary:hover:not(:disabled) {
+  background: var(--color-accent-light) !important;
+  border-color: var(--color-accent) !important;
+}
+.btn-ghost {
+  color: var(--color-text-secondary) !important;
+  border-radius: var(--r-full) !important;
+}
+.btn-ghost:hover {
+  background: var(--color-accent-light) !important;
+  color: var(--color-accent) !important;
+}
+.btn-sm { font-size: 12px !important; padding: 6px 14px !important; }
+.btn-danger {
+  background: var(--color-error) !important;
+  border: none !important;
+  color: #fff !important;
+  box-shadow: 0 2px 8px rgba(239,68,68,.3) !important;
+}
+
+/* ── 9. 폼 요소 ──────────────────────────────────────────────────── */
+.form-input, .form-select, .form-textarea {
+  border-radius: var(--r-md) !important;
+  border: 1.5px solid var(--color-border) !important;
+  font-family: var(--font-family) !important;
+  font-size: var(--font-base) !important;
+  background: #FAFBFE !important;
+  transition: border-color .15s, box-shadow .15s !important;
+}
+.form-input:focus, .form-select:focus, .form-textarea:focus {
+  border-color: var(--color-accent) !important;
+  box-shadow: 0 0 0 3px rgba(74,143,231,.15) !important;
+  background: #fff !important;
+}
+.form-label {
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  color: var(--color-text) !important;
+  letter-spacing: -0.01em;
+}
+
+/* ── 10. 달력 컨테이너 ──────────────────────────────────────────── */
+.calendar-container {
+  background: #fff !important;
+  border-radius: var(--r-xl) !important;
+  box-shadow: var(--shadow-card) !important;
+  border: none !important;
+  overflow: hidden !important;
+}
+.calendar-weekdays {
+  background: linear-gradient(135deg, #4A8FE7 0%, #7C6FF7 100%) !important;
+  border-bottom: none !important;
+}
+.weekday {
+  color: rgba(255,255,255,.85) !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.04em;
+  padding: 10px 0 !important;
+  text-transform: uppercase;
+}
+.weekday.sunday   { color: rgba(255,200,200,.95) !important; }
+.weekday.saturday { color: rgba(200,220,255,.95) !important; }
+
+/* 달력 날짜 셀 */
+.calendar-day {
+  min-height: 88px !important;
+  padding: 6px 4px !important;
+  border-right: 1px solid #F0F4FA !important;
+  border-bottom: 1px solid #F0F4FA !important;
+  transition: background .12s !important;
+}
+.calendar-day:hover { background: #F5F8FE !important; }
+.calendar-day.other-month { background: #FAFBFE !important; }
+.calendar-day.other-month .day-number { color: #D1D8E8 !important; }
+.calendar-day.sunday   .day-number { color: #EF4444 !important; }
+.calendar-day.saturday .day-number { color: #4A8FE7 !important; }
+
+/* 날짜 숫자 — 더 크게 */
+.day-number {
+  font-size: 15px !important;
+  font-weight: 700 !important;
+  width: 30px !important;
+  height: 30px !important;
+  margin-bottom: 2px !important;
+}
+/* 오늘 날짜 — 그라디언트 서클 */
+.calendar-day.today .day-number {
+  background: var(--ha-gradient) !important;
+  color: #fff !important;
+  border-radius: 50% !important;
+  box-shadow: 0 2px 8px rgba(74,143,231,.4) !important;
+}
+
+/* 이벤트 칩 */
+.event-chip {
+  font-size: 10px !important;
+  padding: 2px 6px !important;
+  border-left: 3px solid currentColor !important;
+  border-radius: 4px !important;
+  font-weight: 600 !important;
+  line-height: 1.4 !important;
+}
+
+/* 달력 툴바 */
+.calendar-toolbar { margin-bottom: 16px !important; }
+.calendar-title {
+  font-size: 20px !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.03em !important;
+  color: var(--color-text) !important;
+}
+
+/* 달력 범례 */
+.calendar-legend {
+  background: #fff;
+  border-radius: var(--r-lg);
+  padding: 8px 12px !important;
+  margin-bottom: 12px;
+  box-shadow: var(--shadow-sm);
+}
+.legend-item { font-size: 12px !important; font-weight: 600 !important; }
+
+/* 보기 전환 버튼 */
+.view-toggle { border-radius: var(--r-full) !important; overflow: hidden; }
+.view-btn.active {
+  background: var(--ha-gradient) !important;
+  color: #fff !important;
+}
+
+/* ── 11. 예약 캘린더 (차량/대관) ─────────────────────────────────── */
+.res-calendar-wrap { border-radius: var(--r-xl) !important; overflow: hidden; }
+.res-cal-cell {
+  border-radius: 0 !important;
+  transition: background .12s !important;
+}
+.res-cal-cell.res-cal-today .res-cal-date {
+  background: var(--ha-gradient) !important;
+  color: #fff !important;
+  border-radius: 50% !important;
+  box-shadow: 0 2px 8px rgba(74,143,231,.4) !important;
+}
+.res-cal-header-row {
+  background: var(--ha-gradient) !important;
+  color: #fff !important;
+}
+
+/* ── 12. 모달 ────────────────────────────────────────────────────── */
+.modal-dialog {
+  border-radius: var(--r-2xl) !important;
+  box-shadow: 0 20px 60px rgba(0,0,0,.18) !important;
+  border: none !important;
+}
+.modal-header {
+  background: var(--ha-gradient) !important;
+  border-radius: var(--r-2xl) var(--r-2xl) 0 0 !important;
+  border-bottom: none !important;
+  padding: 18px 20px !important;
+}
+.modal-title { color: #fff !important; font-size: 17px !important; font-weight: 800 !important; }
+.modal-close { color: rgba(255,255,255,.8) !important; }
+.modal-close:hover { color: #fff !important; background: rgba(255,255,255,.15) !important; }
+@media (max-width: 600px) {
+  .modal-dialog { border-radius: 24px 24px 0 0 !important; }
+  .modal-header { border-radius: 24px 24px 0 0 !important; }
+}
+
+/* ── 13. 이메일 서브탭 ──────────────────────────────────────────── */
+.email-subtabs, .extract-subtabs, .sms-subtab-bar {
+  background: #fff !important;
+  border-radius: var(--r-full) !important;
+  padding: 4px !important;
+  box-shadow: var(--shadow-sm) !important;
+  border: none !important;
+  margin-bottom: 16px !important;
+  width: fit-content;
+  overflow: hidden;
+}
+.email-subtab, .extract-subtab-btn, .sms-subtab-btn {
+  border-radius: var(--r-full) !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  padding: 7px 16px !important;
+  color: var(--color-text-secondary) !important;
+  border: none !important;
+  background: transparent !important;
+}
+.email-subtab.active, .extract-subtab-btn.active, .sms-subtab-btn.active {
+  background: var(--ha-gradient) !important;
+  color: #fff !important;
+  box-shadow: 0 2px 8px rgba(74,143,231,.3) !important;
+}
+
+/* ── 14. 토스트 ─────────────────────────────────────────────────── */
+.toast {
+  border-radius: var(--r-xl) !important;
+  font-weight: 600 !important;
+  box-shadow: 0 8px 24px rgba(0,0,0,.15) !important;
+}
+
+/* ── 15. 알림 배너 ──────────────────────────────────────────────── */
+.alert {
+  border-radius: var(--r-lg) !important;
+  border: none !important;
+}
+.alert-warning {
+  background: linear-gradient(135deg, #FEF3C7, #FDE68A) !important;
+  color: #92400E !important;
+}
+
+/* ── 16. 뱃지 ───────────────────────────────────────────────────── */
+.tab-badge {
+  background: var(--ha-gradient-warm) !important;
+  border: none !important;
+  box-shadow: 0 1px 4px rgba(249,115,22,.4) !important;
+}
+.badge-admin {
+  background: var(--ha-gradient) !important;
+  color: #fff !important;
+  border-radius: var(--r-full) !important;
+  font-size: 10px !important;
+  padding: 2px 8px !important;
+}
+
+/* ── 17. 빈 상태 ─────────────────────────────────────────────────── */
+.empty-state {
+  color: var(--color-text-secondary) !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+}
+
+/* ── 18. 서브탭 바 (대관/시설) ──────────────────────────────────── */
+.facility-subtab-bar {
+  background: #fff !important;
+  border-radius: var(--r-full) !important;
+  padding: 4px !important;
+  box-shadow: var(--shadow-sm) !important;
+  border: none !important;
+  display: inline-flex !important;
+  margin-bottom: 16px !important;
+}
+.subtab-btn {
+  border-radius: var(--r-full) !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  padding: 7px 18px !important;
+  color: var(--color-text-secondary) !important;
+  border: none !important;
+  background: transparent !important;
+}
+.subtab-btn.active {
+  background: var(--ha-gradient) !important;
+  color: #fff !important;
+  box-shadow: 0 2px 8px rgba(74,143,231,.3) !important;
+}
+
+/* ── 19. 선택 안내 바 ───────────────────────────────────────────── */
+.sel-hint-bar {
+  background: var(--color-accent-light) !important;
+  border-radius: var(--r-lg) !important;
+  border: 1.5px solid rgba(74,143,231,.25) !important;
+  padding: 8px 14px !important;
+  margin-bottom: 12px !important;
+}
+
+/* ── 20. 로그인 카드 ─────────────────────────────────────────────── */
+.login-card {
+  border-radius: var(--r-2xl) !important;
+  box-shadow: 0 20px 60px rgba(74,143,231,.18) !important;
+  border: none !important;
+  padding: 40px 32px !important;
+}
+.login-overlay {
+  background: linear-gradient(160deg, #EBF3FD 0%, #E8EFFE 50%, #F3EBFE 100%) !important;
+}
+.login-title { font-size: 24px !important; font-weight: 800 !important; letter-spacing: -0.03em !important; }
+.btn-login {
+  background: var(--ha-gradient) !important;
+  border: none !important;
+  color: #fff !important;
+  width: 100% !important;
+  padding: 14px 24px !important;
+  font-size: 15px !important;
+  font-weight: 700 !important;
+  box-shadow: 0 4px 16px rgba(74,143,231,.35) !important;
+}
+.btn-login:hover { transform: translateY(-2px) !important; box-shadow: 0 6px 24px rgba(74,143,231,.45) !important; }
+
+/* ── 21. 달력 필터 패널 ─────────────────────────────────────────── */
+.calendar-filter-panel {
+  background: #fff !important;
+  border-radius: var(--r-xl) !important;
+  box-shadow: var(--shadow-lg) !important;
+  border: none !important;
+}
+
+/* ── 22. 업무 카드 / 이력 카드 ──────────────────────────────────── */
+.work-item, .email-history-item, .extract-history-item {
+  background: #fff !important;
+  border-radius: var(--r-lg) !important;
+  box-shadow: var(--shadow-sm) !important;
+  border: none !important;
+  border-left: none !important;
+}
+
+/* ── 23. 예약 아이템 ─────────────────────────────────────────────── */
+.res-cal-item {
+  border-radius: 5px !important;
+  font-weight: 600 !important;
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   ██  모바일 하단 내비게이션  ██
+   ══════════════════════════════════════════════════════════════════ */
+
+/* 데스크톱: 하단 내비 숨김 */
+.mobile-bottom-nav { display: none; }
+.more-drawer { display: none; }
+
+@media (max-width: 600px) {
+
+  /* 상단 탭 숨김 — 하단 탭으로 대체 */
+  .desktop-tab-nav { display: none !important; }
+
+  /* 탭 콘텐츠 하단 여백 (하단 탭 높이만큼) */
+  .tab-panel { padding-bottom: calc(var(--bottom-nav-h) + 16px) !important; }
+
+  /* ── 하단 내비 ── */
+  .mobile-bottom-nav {
+    display: flex !important;
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    height: var(--bottom-nav-h);
+    background: rgba(255,255,255,.97);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-top: 1px solid rgba(0,0,0,.06);
+    box-shadow: 0 -4px 20px rgba(0,0,0,.07);
+    z-index: 500;
+    align-items: stretch;
+    padding: 0 4px;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .bnav-btn {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    padding: 8px 2px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    position: relative;
+    border-radius: 14px;
+    margin: 6px 2px;
+    transition: background .15s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .bnav-btn:active { background: var(--color-accent-light); }
+
+  .bnav-icon {
+    font-size: 22px;
+    line-height: 1;
+    transition: transform .2s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  .bnav-label {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+    line-height: 1;
+    letter-spacing: -0.01em;
+  }
+  .bnav-btn.active .bnav-icon {
+    transform: scale(1.15) translateY(-1px);
+  }
+  .bnav-btn.active .bnav-label {
+    color: var(--color-accent);
+    font-weight: 700;
+  }
+  /* 활성 탭: 상단 dot indicator */
+  .bnav-btn.active::before {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 20px;
+    height: 3px;
+    border-radius: 0 0 3px 3px;
+    background: var(--ha-gradient);
+  }
+
+  .bnav-badge {
+    position: absolute;
+    top: 4px; right: calc(50% - 16px);
+    min-width: 16px; height: 16px;
+    background: var(--ha-gradient-warm);
+    color: #fff;
+    border-radius: var(--r-full);
+    font-size: 9px; font-weight: 700;
+    line-height: 16px; text-align: center;
+    padding: 0 4px;
+  }
+
+  /* ── 더보기 드로어 ── */
+  .more-drawer {
+    display: block !important;
+    position: fixed;
+    inset: 0;
+    z-index: 800;
+    pointer-events: none;
+  }
+  .more-drawer[hidden] { visibility: hidden; }
+  .more-drawer:not([hidden]) { pointer-events: all; }
+
+  .more-drawer-backdrop {
+    position: absolute; inset: 0;
+    background: rgba(0,0,0,.35);
+    backdrop-filter: blur(3px);
+    opacity: 0;
+    transition: opacity .25s;
+  }
+  .more-drawer:not([hidden]) .more-drawer-backdrop { opacity: 1; }
+
+  .more-drawer-sheet {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    background: #fff;
+    border-radius: 24px 24px 0 0;
+    padding: 0 16px 24px;
+    padding-bottom: calc(24px + env(safe-area-inset-bottom));
+    transform: translateY(100%);
+    transition: transform .3s cubic-bezier(0.32, 0.72, 0, 1);
+    box-shadow: 0 -8px 40px rgba(0,0,0,.12);
+  }
+  .more-drawer:not([hidden]) .more-drawer-sheet { transform: translateY(0); }
+
+  .more-drawer-handle {
+    width: 36px; height: 4px;
+    background: #E0E5EF;
+    border-radius: var(--r-full);
+    margin: 12px auto 16px;
+  }
+  .more-drawer-title {
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--color-text);
+    margin-bottom: 16px;
+    letter-spacing: -0.02em;
+  }
+  .more-drawer-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+  }
+  .more-drawer-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 14px 4px;
+    border: none;
+    background: var(--color-bg);
+    border-radius: var(--r-lg);
+    cursor: pointer;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--color-text);
+    position: relative;
+    transition: background .15s, transform .15s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .more-drawer-item:active { transform: scale(.95); background: var(--color-accent-light); }
+  .more-drawer-item.active { background: var(--color-accent-light); color: var(--color-accent); }
+  .mdi-icon { font-size: 24px; line-height: 1; }
+  .mdi-badge {
+    position: absolute; top: 6px; right: 8px;
+    width: 8px; height: 8px;
+    background: #EF4444;
+    border-radius: 50%;
+  }
+
+  /* 모바일: 달력 개선 */
+  .calendar-day { min-height: 60px !important; padding: 4px 2px !important; }
+  .day-number { font-size: 13px !important; width: 26px !important; height: 26px !important; }
+  .event-chip { font-size: 9px !important; padding: 1px 4px !important; }
+
+  /* 모바일: 달력 툴바 */
+  .calendar-title { font-size: 17px !important; }
+  .calendar-nav .btn { width: 36px !important; height: 36px !important; border-radius: 50% !important; padding: 0 !important; justify-content: center !important; }
+
+  /* 모바일: 버튼 크기 조정 */
+  .btn-sm { font-size: 11px !important; padding: 6px 12px !important; }
+
+  /* 모바일: 탭 패딩 */
+  .tab-panel { padding: 14px 12px !important; padding-bottom: calc(var(--bottom-nav-h) + 20px) !important; }
+}
+/* ══ END HEALTH APP REDESIGN ══ */
