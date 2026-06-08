@@ -228,9 +228,54 @@ var SheetsModule = (function () {
     await apiUpdate('직원!A' + rowNum + ':J' + rowNum, [row]);
   }
 
+  // ── sheetId 캐시 (시트명 → 숫자 ID) ──────────────
+  var _sheetIdCache = {};
+  async function getSheetId(sheetName) {
+    if (_sheetIdCache[sheetName] !== undefined) return _sheetIdCache[sheetName];
+    var res = await fetch(BASE + '?fields=sheets.properties', { headers: authHeader() });
+    if (!res.ok) throw new Error('메타 조회 실패: ' + res.status);
+    var meta = await res.json();
+    (meta.sheets || []).forEach(function (s) {
+      _sheetIdCache[s.properties.title] = s.properties.sheetId;
+    });
+    if (_sheetIdCache[sheetName] === undefined) throw new Error('시트를 찾을 수 없습니다: ' + sheetName);
+    return _sheetIdCache[sheetName];
+  }
+
+  // 단일 행 물리 삭제 (_row: 1-indexed, 헤더 포함)
   async function deleteEmployee(rowNum) {
-    // 상태를 inactive로 변경 (물리 삭제 안 함)
-    await apiUpdate('직원!I' + rowNum, [['inactive']]);
+    var sheetId = await getSheetId('직원');
+    await batchUpdate([{
+      deleteDimension: {
+        range: {
+          sheetId: sheetId,
+          dimension: 'ROWS',
+          startIndex: rowNum - 1,  // 0-indexed
+          endIndex:   rowNum,
+        }
+      }
+    }]);
+  }
+
+  // 여러 행 일괄 물리 삭제 (rowNums: 1-indexed 배열, 내부에서 내림차순 정렬)
+  async function bulkDeleteEmployees(rowNums) {
+    if (!rowNums || !rowNums.length) return;
+    var sheetId = await getSheetId('직원');
+    // 아래 행부터 삭제해야 위 행 번호가 안 밀림
+    var sorted = rowNums.slice().sort(function (a, b) { return b - a; });
+    var requests = sorted.map(function (rowNum) {
+      return {
+        deleteDimension: {
+          range: {
+            sheetId: sheetId,
+            dimension: 'ROWS',
+            startIndex: rowNum - 1,
+            endIndex:   rowNum,
+          }
+        }
+      };
+    });
+    await batchUpdate(requests);
   }
 
   async function bulkAddEmployees(empList) {
@@ -886,6 +931,7 @@ var SheetsModule = (function () {
     addEmployee:           addEmployee,
     updateEmployee:        updateEmployee,
     deleteEmployee:        deleteEmployee,
+    bulkDeleteEmployees:   bulkDeleteEmployees,
     bulkAddEmployees:      bulkAddEmployees,
     getTasks:              getTasks,
     createTask:            createTask,

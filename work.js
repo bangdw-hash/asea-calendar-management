@@ -1367,18 +1367,20 @@ var WorkModule = (function () {
     document.getElementById('hr-bulk-del-btn').onclick = async function () {
       var cnt = _hrSelected.size;
       if (!cnt) return;
-      if (!confirm(cnt + '명을 비활성화 처리하시겠습니까?')) return;
-      this.disabled = true; this.textContent = '처리 중...';
-      var rows = Array.from(_hrSelected);
-      var failed = 0;
-      for (var i = 0; i < rows.length; i++) {
-        try { await SheetsModule.deleteEmployee(parseInt(rows[i])); }
-        catch(e) { failed++; }
+      if (!confirm(cnt + '명을 완전 삭제 처리하시겠습니까?\n이 작업은 DB에서 영구 삭제되며 되돌릴 수 없습니다.')) return;
+      this.disabled = true; this.textContent = '삭제 중...';
+      try {
+        var rows = Array.from(_hrSelected).map(function (r) { return parseInt(r); });
+        await SheetsModule.bulkDeleteEmployees(rows);
+        _hrSelected.clear();
+        W.employees = [];
+        W.empCacheAt = 0;
+        toast(cnt + '명 완전 삭제 완료', 'success');
+        loadHrList();
+      } catch(e) {
+        toast('삭제 실패: ' + e.message, 'error');
+        this.disabled = false; this.textContent = '선택 삭제';
       }
-      _hrSelected.clear();
-      W.employees = [];
-      toast((cnt - failed) + '명 비활성화 완료' + (failed ? ' (' + failed + '건 실패)' : ''), 'success');
-      loadHrList();
     };
 
     // 적용 (Sheets 즉시 동기화 — 캐시 초기화 후 재로드)
@@ -1423,12 +1425,17 @@ var WorkModule = (function () {
       };
 
       tr.querySelector('.hr-emp-del').onclick = async function () {
-        if (!confirm(emp.name + '을(를) 비활성화 처리하시겠습니까?')) return;
-        await SheetsModule.deleteEmployee(parseInt(emp._row));
-        _hrSelected.delete(rowKey);
-        W.employees = [];
-        toast(emp.name + ' 비활성화 완료', 'success');
-        loadHrList();
+        if (!confirm(emp.name + '을(를) DB에서 완전 삭제하시겠습니까?')) return;
+        try {
+          await SheetsModule.deleteEmployee(parseInt(emp._row));
+          _hrSelected.delete(rowKey);
+          W.employees = [];
+          W.empCacheAt = 0;
+          toast(emp.name + ' 삭제 완료', 'success');
+          loadHrList();
+        } catch(e) {
+          toast('삭제 실패: ' + e.message, 'error');
+        }
       };
       tr.querySelector('.hr-emp-edit').onclick = function () { _openHrEditModal(emp); };
 
