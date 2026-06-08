@@ -6,7 +6,7 @@
 
 body {
   font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  background: #F0F2F5;
+  background: #EDF4FB;   /* Win11 하늘빛 배경 */
   color: #202124;
   min-height: 100vh;
   padding: 20px 16px 40px;
@@ -20,14 +20,14 @@ body {
 /* ── 헤더 ── */
 .fr-header {
   text-align: center;
-  padding: 28px 20px 20px;
-  background: #fff;
+  padding: 32px 20px 24px;
+  background: linear-gradient(135deg, #0078D4 0%, #1565C0 100%);
   border-radius: 16px 16px 0 0;
-  border-bottom: 1px solid #E8EAED;
+  border-bottom: none;
 }
-.fr-logo  { font-size: 40px; margin-bottom: 8px; }
-.fr-title { font-size: 22px; font-weight: 800; color: #1A73E8; margin-bottom: 8px; }
-.fr-subtitle { font-size: 14px; color: #5F6368; line-height: 1.6; }
+.fr-logo  { font-size: 40px; margin-bottom: 8px; filter: drop-shadow(0 2px 6px rgba(0,0,0,.2)); }
+.fr-title { font-size: 22px; font-weight: 800; color: #fff; margin-bottom: 8px; text-shadow: 0 1px 4px rgba(0,0,0,.15); }
+.fr-subtitle { font-size: 14px; color: rgba(255,255,255,.85); line-height: 1.6; }
 
 /* ── 알림 ── */
 .fr-alert {
@@ -55,7 +55,7 @@ body {
 .fr-legend {
   font-size: 14px;
   font-weight: 700;
-  color: #1A73E8;
+  color: #0078D4;
   padding: 0 8px;
 }
 
@@ -90,7 +90,7 @@ body {
 .fr-input:focus,
 .fr-select:focus {
   outline: none;
-  border-color: #1A73E8;
+  border-color: #0078D4;
   box-shadow: 0 0 0 3px rgba(26,115,232,.15);
 }
 .fr-select {
@@ -165,7 +165,7 @@ body {
   padding: 4px 0 6px;
 }
 .fr-cal-dow:first-child { color: #EA4335; }
-.fr-cal-dow:last-child  { color: #1A73E8; }
+.fr-cal-dow:last-child  { color: #0078D4; }
 
 .fr-cal-cell {
   aspect-ratio: 1;
@@ -191,7 +191,7 @@ body {
 
 /* 오늘 */
 .fr-cal-cell.fr-cal-today .fr-cal-dn {
-  background: #1A73E8;
+  background: #0078D4;
   color: #fff;
   border-radius: 50%;
   width: 26px;
@@ -203,15 +203,15 @@ body {
 
 /* 선택됨 */
 .fr-cal-cell.fr-cal-sel {
-  background: #E8F0FE;
-  border-color: #1A73E8;
+  background: #E5F2FB;
+  border-color: #0078D4;
 }
-.fr-cal-cell.fr-cal-sel .fr-cal-dn { color: #1A73E8; font-weight: 700; }
+.fr-cal-cell.fr-cal-sel .fr-cal-dn { color: #0078D4; font-weight: 700; }
 
 /* 드래그 중 */
 .fr-cal-cell.fr-cal-drag {
-  background: #D2E3FC;
-  border-color: #1A73E8;
+  background: #C7E0F4;
+  border-color: #0078D4;
   border-style: dashed;
 }
 
@@ -223,7 +223,7 @@ body {
 .fr-cal-cell:nth-child(7n+1):not(.fr-cal-empty):not(.fr-cal-past) { color: #E53935; }
 .fr-cal-cell:nth-child(7n):not(.fr-cal-empty):not(.fr-cal-past)   { color: #1E88E5; }
 .fr-cal-cell.fr-cal-sel:nth-child(7n+1) .fr-cal-dn,
-.fr-cal-cell.fr-cal-sel:nth-child(7n)   .fr-cal-dn { color: #1A73E8; }
+.fr-cal-cell.fr-cal-sel:nth-child(7n)   .fr-cal-dn { color: #0078D4; }
 
 .fr-cal-dn {
   font-size: 13px;
@@ -234,7 +234,7 @@ body {
 .fr-sel-status {
   margin-top: 8px;
   font-size: 13px;
-  color: #1A73E8;
+  color: #0078D4;
   font-weight: 600;
   text-align: center;
 }
@@ -271,7 +271,7 @@ body {
 .fr-time-range-label {
   font-size: 13px;
   font-weight: 700;
-  color: #1A73E8;
+  color: #0078D4;
   margin-bottom: 8px;
   display: flex;
   align-items: center;
@@ -320,14 +320,14 @@ body {
 .fr-checkbox-label input[type="checkbox"] {
   width: 18px; height: 18px;
   flex-shrink: 0; margin-top: 2px;
-  accent-color: #1A73E8; cursor: pointer;
+  accent-color: #0078D4; cursor: pointer;
 }
 
 /* ── 제출 버튼 ── */
 .fr-submit-btn {
   width: 100%;
   padding: 14px;
-  background: #1A73E8;
+  background: linear-gradient(135deg, #0078D4 0%, #1565C0 100%);
   color: #fff;
   border: none;
   border-radius: 10px;
@@ -337,7 +337,7 @@ body {
   transition: background .15s, transform .1s;
   letter-spacing: .3px;
 }
-.fr-submit-btn:hover:not(:disabled) { background: #1557B0; }
+.fr-submit-btn:hover:not(:disabled) { background: #005A9E; }
 .fr-submit-btn:active:not(:disabled) { transform: scale(.98); }
 .fr-submit-btn:disabled { background: #BDBDBD; cursor: not-allowed; }
 
@@ -354,15 +354,15 @@ body {
 .fr-again-btn {
   margin-top: 24px;
   padding: 10px 28px;
-  background: #E8F0FE;
-  color: #1A73E8;
+  background: #E5F2FB;
+  color: #0078D4;
   border: none;
   border-radius: 8px;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
 }
-.fr-again-btn:hover { background: #D2E3FC; }
+.fr-again-btn:hover { background: #C7E0F4; }
 
 /* ── 푸터 ── */
 .fr-footer {
@@ -446,12 +446,12 @@ body {
 
 /* 활성 단계 */
 .fr-step.active .fr-step-icon {
-  background: #E8F0FE;
-  border-color: #1A73E8;
+  background: #E5F2FB;
+  border-color: #0078D4;
   transform: scale(1.08);
 }
-.fr-step.active .fr-step-icon svg { color: #1A73E8; }
-.fr-step.active .fr-step-label { color: #1A73E8; font-weight: 700; }
+.fr-step.active .fr-step-icon svg { color: #0078D4; }
+.fr-step.active .fr-step-label { color: #0078D4; font-weight: 700; }
 
 /* 완료 단계 */
 .fr-step.done .fr-step-icon {
@@ -514,7 +514,7 @@ body {
 }
 .fr-share-prog-fill {
   height: 100%;
-  background: linear-gradient(90deg, #1A73E8 0%, #34A853 100%);
+  background: linear-gradient(90deg, #0078D4 0%, #34A853 100%);
   border-radius: 2px;
   width: 25%;
   transition: width .4s cubic-bezier(0.34,1.56,0.64,1);
@@ -532,7 +532,7 @@ body {
   align-items: center;
   gap: 6px;
   padding: 8px 16px;
-  background: #1A73E8;
+  background: #0078D4;
   color: #fff;
   border: none;
   border-radius: 20px;
@@ -543,7 +543,7 @@ body {
   transition: background .15s, transform .1s;
   -webkit-tap-highlight-color: transparent;
 }
-.fr-share-btn:hover { background: #1557B0; }
+.fr-share-btn:hover { background: #005A9E; }
 .fr-share-btn:active { transform: scale(.96); }
 .fr-share-btn svg {
   width: 16px;

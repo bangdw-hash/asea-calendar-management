@@ -1,4 +1,4 @@
-/* ================================================================
+﻿/* ================================================================
    ASEA Calendar Management — Design System
    ================================================================ */
 
@@ -3931,33 +3931,36 @@ a        { color: var(--color-accent); text-decoration: none; }
    ██  HEALTH APP REDESIGN  ██  건강 관리 앱 스타일 전면 오버라이드
    ══════════════════════════════════════════════════════════════════ */
 
-/* ── 1. 디자인 토큰 재정의 ──────────────────────────────────────── */
+/* ── 1. 디자인 토큰 재정의 — Windows 11 Fluent Sky Blue 테마 ──── */
 :root {
   --font-family:          'Pretendard Variable', 'Pretendard', 'Noto Sans KR', -apple-system, sans-serif;
 
-  /* 색상 */
-  --color-bg:             #F0F4FA;
-  --color-card:           #FFFFFF;
-  --color-border:         #E4EAF4;
-  --color-accent:         #4A8FE7;
-  --color-accent-hover:   #3A7BD5;
-  --color-accent-light:   #EBF3FD;
-  --color-text:           #1A1E2E;
-  --color-text-secondary: #6B7280;
-  --color-success:        #22C55E;
-  --color-success-light:  #DCFCE7;
-  --color-warning:        #F59E0B;
-  --color-warning-light:  #FEF3C7;
-  --color-error:          #EF4444;
-  --color-error-light:    #FEE2E2;
+  /* ── Windows 11 Fluent 팔레트 ──
+     배경: 은은한 하늘색 (Win11 배경과 동일 계열)
+     액센트: Win11 블루 #0078D4 */
+  --color-bg:             #EDF4FB;   /* 연한 하늘빛 배경 */
+  --color-card:           #FAFCFF;   /* 카드: 순백+아주 살짝 파란 틴트 */
+  --color-border:         #D6E4F0;   /* 테두리: 하늘빛 회색 */
+  --color-accent:         #0078D4;   /* Win11 블루 */
+  --color-accent-hover:   #005A9E;   /* 호버: 더 진한 블루 */
+  --color-accent-light:   #E5F2FB;   /* 액센트 연한 배경 */
+  --color-text:           #1B1F2E;   /* 텍스트: 거의 검정 */
+  --color-text-secondary: #57677F;   /* 보조 텍스트: 회청색 */
+  --color-success:        #107C10;   /* Win11 그린 */
+  --color-success-light:  #DFF6DD;
+  --color-warning:        #CA5010;   /* Win11 오렌지 */
+  --color-warning-light:  #FEF0E6;
+  --color-error:          #C42B1C;   /* Win11 레드 */
+  --color-error-light:    #FDE7E9;
 
-  /* 헬스앱 추가 팔레트 */
-  --ha-gradient:          linear-gradient(135deg, #4A8FE7 0%, #7C6FF7 100%);
-  --ha-gradient-warm:     linear-gradient(135deg, #F472B6 0%, #F97316 100%);
-  --ha-gradient-green:    linear-gradient(135deg, #34D399 0%, #059669 100%);
-  --ha-purple:            #7C6FF7;
-  --ha-pink:              #F472B6;
-  --ha-teal:              #2DD4BF;
+  /* ── Win11 Fluent 그라디언트 팔레트 ──
+     헤더/주요 CTA: 하늘 → 코발트 (Win11 액센트 방향) */
+  --ha-gradient:          linear-gradient(135deg, #0078D4 0%, #1565C0 100%);
+  --ha-gradient-warm:     linear-gradient(135deg, #0091EA 0%, #0078D4 100%);
+  --ha-gradient-green:    linear-gradient(135deg, #00B7C3 0%, #107C10 100%);
+  --ha-purple:            #5C2D91;   /* Win11 퍼플 */
+  --ha-pink:              #E3008C;   /* Win11 핫핑크 */
+  --ha-teal:              #00B7C3;   /* Win11 틸 */
 
   /* 타이포 — 더 큰 스케일 */
   --font-xs:   11px;
@@ -3977,9 +3980,9 @@ a        { color: var(--color-accent); text-decoration: none; }
   --r-2xl: 24px; --r-full: 9999px;
 
   /* 그림자 */
-  --shadow-sm:   0 2px 8px rgba(74,143,231,.07);
-  --shadow-md:   0 4px 16px rgba(74,143,231,.11);
-  --shadow-lg:   0 8px 32px rgba(74,143,231,.15);
+  --shadow-sm:   0 2px 8px rgba(0,120,212,.07);
+  --shadow-md:   0 4px 16px rgba(0,120,212,.11);
+  --shadow-lg:   0 8px 32px rgba(0,120,212,.15);
   --shadow-card: 0 2px 16px rgba(0,0,0,.06), 0 1px 4px rgba(0,0,0,.04);
 
   /* 레이아웃 */
@@ -4000,7 +4003,7 @@ body {
 .app-header {
   background: var(--ha-gradient) !important;
   border-bottom: none !important;
-  box-shadow: 0 2px 16px rgba(74,143,231,.25) !important;
+  box-shadow: 0 2px 16px rgba(0,120,212,.25) !important;
   height: var(--header-h);
 }
 .header-title {
@@ -4096,11 +4099,11 @@ h3.settings-section-title {
   background: var(--ha-gradient) !important;
   border: none !important;
   color: #fff !important;
-  box-shadow: 0 3px 12px rgba(74,143,231,.35) !important;
+  box-shadow: 0 3px 12px rgba(0,120,212,.35) !important;
 }
 .btn-primary:hover:not(:disabled) {
   transform: translateY(-1px) !important;
-  box-shadow: 0 5px 18px rgba(74,143,231,.45) !important;
+  box-shadow: 0 5px 18px rgba(0,120,212,.45) !important;
 }
 .btn-primary:active:not(:disabled) { transform: translateY(0) !important; }
 .btn-secondary {
@@ -4139,7 +4142,7 @@ h3.settings-section-title {
 }
 .form-input:focus, .form-select:focus, .form-textarea:focus {
   border-color: var(--color-accent) !important;
-  box-shadow: 0 0 0 3px rgba(74,143,231,.15) !important;
+  box-shadow: 0 0 0 3px rgba(0,120,212,.15) !important;
   background: #fff !important;
 }
 .form-label {
@@ -4158,7 +4161,7 @@ h3.settings-section-title {
   overflow: hidden !important;
 }
 .calendar-weekdays {
-  background: linear-gradient(135deg, #4A8FE7 0%, #7C6FF7 100%) !important;
+  background: var(--ha-gradient) !important;
   border-bottom: none !important;
 }
 .weekday {
@@ -4176,15 +4179,15 @@ h3.settings-section-title {
 .calendar-day {
   min-height: 88px !important;
   padding: 6px 4px !important;
-  border-right: 1px solid #F0F4FA !important;
-  border-bottom: 1px solid #F0F4FA !important;
+  border-right: 1px solid var(--color-bg) !important;
+  border-bottom: 1px solid var(--color-bg) !important;
   transition: background .12s !important;
 }
 .calendar-day:hover { background: #F5F8FE !important; }
 .calendar-day.other-month { background: #FAFBFE !important; }
 .calendar-day.other-month .day-number { color: #D1D8E8 !important; }
 .calendar-day.sunday   .day-number { color: #EF4444 !important; }
-.calendar-day.saturday .day-number { color: #4A8FE7 !important; }
+.calendar-day.saturday .day-number { color: var(--color-accent) !important; }
 
 /* 날짜 숫자 — 더 크게 */
 .day-number {
@@ -4199,7 +4202,7 @@ h3.settings-section-title {
   background: var(--ha-gradient) !important;
   color: #fff !important;
   border-radius: 50% !important;
-  box-shadow: 0 2px 8px rgba(74,143,231,.4) !important;
+  box-shadow: 0 2px 8px rgba(0,120,212,.4) !important;
 }
 
 /* 이벤트 칩 */
@@ -4249,7 +4252,7 @@ h3.settings-section-title {
   background: var(--ha-gradient) !important;
   color: #fff !important;
   border-radius: 50% !important;
-  box-shadow: 0 2px 8px rgba(74,143,231,.4) !important;
+  box-shadow: 0 2px 8px rgba(0,120,212,.4) !important;
 }
 .res-cal-header-row {
   background: var(--ha-gradient) !important;
@@ -4299,7 +4302,7 @@ h3.settings-section-title {
 .email-subtab.active, .extract-subtab-btn.active, .sms-subtab-btn.active {
   background: var(--ha-gradient) !important;
   color: #fff !important;
-  box-shadow: 0 2px 8px rgba(74,143,231,.3) !important;
+  box-shadow: 0 2px 8px rgba(0,120,212,.3) !important;
 }
 
 /* ── 14. 토스트 ─────────────────────────────────────────────────── */
@@ -4362,14 +4365,14 @@ h3.settings-section-title {
 .subtab-btn.active {
   background: var(--ha-gradient) !important;
   color: #fff !important;
-  box-shadow: 0 2px 8px rgba(74,143,231,.3) !important;
+  box-shadow: 0 2px 8px rgba(0,120,212,.3) !important;
 }
 
 /* ── 19. 선택 안내 바 ───────────────────────────────────────────── */
 .sel-hint-bar {
   background: var(--color-accent-light) !important;
   border-radius: var(--r-lg) !important;
-  border: 1.5px solid rgba(74,143,231,.25) !important;
+  border: 1.5px solid rgba(0,120,212,.25) !important;
   padding: 8px 14px !important;
   margin-bottom: 12px !important;
 }
@@ -4377,7 +4380,7 @@ h3.settings-section-title {
 /* ── 20. 로그인 카드 ─────────────────────────────────────────────── */
 .login-card {
   border-radius: var(--r-2xl) !important;
-  box-shadow: 0 20px 60px rgba(74,143,231,.18) !important;
+  box-shadow: 0 20px 60px rgba(0,120,212,.18) !important;
   border: none !important;
   padding: 40px 32px !important;
 }
@@ -4393,9 +4396,9 @@ h3.settings-section-title {
   padding: 14px 24px !important;
   font-size: 15px !important;
   font-weight: 700 !important;
-  box-shadow: 0 4px 16px rgba(74,143,231,.35) !important;
+  box-shadow: 0 4px 16px rgba(0,120,212,.35) !important;
 }
-.btn-login:hover { transform: translateY(-2px) !important; box-shadow: 0 6px 24px rgba(74,143,231,.45) !important; }
+.btn-login:hover { transform: translateY(-2px) !important; box-shadow: 0 6px 24px rgba(0,120,212,.45) !important; }
 
 /* ── 21. 달력 필터 패널 ─────────────────────────────────────────── */
 .calendar-filter-panel {
