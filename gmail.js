@@ -71,8 +71,12 @@
     // 본문을 Base64 인코딩 후 76자 줄바꿈
     var bodyBase64 = wrapBase64(utf8ToBase64(fullBody));
 
+    var fromHeader = params.fromDisplay
+      ? mimeEncode(params.fromDisplay) + ' <' + CONFIG.senderEmail + '>'
+      : CONFIG.senderEmail;
+
     var lines = [
-      'From: '    + CONFIG.senderEmail,
+      'From: '    + fromHeader,
       'To: '      + toHeader,
       'Subject: ' + mimeEncode(params.subject),
       'MIME-Version: 1.0',
@@ -83,6 +87,37 @@
     ];
 
     // 전체 메시지를 Base64url 인코딩 (Gmail API raw 필드 규격)
+    return utf8ToBase64Url(lines.join('\r\n'));
+  }
+
+  /* ── HTML 이메일 RFC 2822 메시지 생성 ───────────────────────── */
+  function buildHtmlRaw(params) {
+    // params: { to:[{name,email}], subject, htmlBody, fromDisplay, replyTo }
+    var toHeader = params.to.map(function (r) {
+      var safeName = r.name.replace(/"/g, "'");
+      return (/[^\x00-\x7F]/.test(safeName) ? mimeEncode(safeName) : '"' + safeName + '"') + ' <' + r.email + '>';
+    }).join(', ');
+
+    var fromHeader = params.fromDisplay
+      ? mimeEncode(params.fromDisplay) + ' <' + CONFIG.senderEmail + '>'
+      : CONFIG.senderEmail;
+
+    var htmlBase64 = wrapBase64(utf8ToBase64(params.htmlBody || ''));
+
+    var lines = [
+      'From: '    + fromHeader,
+      'To: '      + toHeader,
+      'Subject: ' + mimeEncode(params.subject),
+    ];
+    if (params.replyTo) lines.push('Reply-To: ' + params.replyTo);
+    lines = lines.concat([
+      'MIME-Version: 1.0',
+      'Content-Type: text/html; charset=UTF-8',
+      'Content-Transfer-Encoding: base64',
+      '',
+      htmlBase64,
+    ]);
+
     return utf8ToBase64Url(lines.join('\r\n'));
   }
 
@@ -130,6 +165,26 @@
         throw new Error(msg);
       }
 
+      return { success: true, messageId: data.id || '' };
+    },
+
+    /**
+     * HTML 이메일 발송 (업무 알림 전용)
+     * @param {{to: {name,email}[], subject: string, htmlBody: string, fromDisplay: string, replyTo: string}} params
+     */
+    sendHtmlEmail: async function (params) {
+      if (!params.to || params.to.length === 0) throw new Error('수신자가 없습니다');
+      var token = Auth.getToken();
+      if (!token) throw new Error('인증이 필요합니다');
+
+      var raw = buildHtmlRaw(params);
+      var res = await fetch(GMAIL_BASE + '/users/me/messages/send', {
+        method:  'POST',
+        headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ raw: raw }),
+      });
+      var data = await res.json();
+      if (!res.ok) throw new Error((data.error && data.error.message) || ('Gmail API 오류: ' + res.status));
       return { success: true, messageId: data.id || '' };
     },
 

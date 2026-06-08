@@ -397,6 +397,99 @@ var WorkModule = (function () {
     });
   }
 
+  /* ──────────────────────────────────────────────────
+     이메일 HTML 템플릿 빌더
+  ────────────────────────────────────────────────── */
+  function buildTaskEmailHtml(task, recipientName) {
+    var typeColorMap = { '지시':'#D32F2F','협조':'#1565C0','공람':'#2E7D32','알림':'#E65100' };
+    var catIconMap   = { '일반업무':'📌','교육일정':'🎓','행사':'🎉','대관':'🏢','차량':'🚗' };
+    var typeColor = typeColorMap[task.type] || '#424242';
+    var catIcon   = catIconMap[task.category] || '📋';
+    var appUrl    = CONFIG.baseUrl || 'https://bangdw-hash.github.io/asea-calendar-management/';
+    var contentText = (task.content || '').replace(/<[^>]+>/g, '').replace(/&nbsp;/g,' ').trim().slice(0,300);
+    var dueStr = task.dueDate ? '마감: ' + task.dueDate : '';
+
+    return [
+      '<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8">',
+      '<meta name="viewport" content="width=device-width,initial-scale=1">',
+      '<style>',
+      'body{margin:0;padding:0;background:#f5f5f5;font-family:\'Noto Sans KR\',Apple SD Gothic Neo,sans-serif}',
+      '.wrap{max-width:600px;margin:24px auto;background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.1)}',
+      '.header{background:'+typeColor+';padding:20px 28px;color:#fff}',
+      '.header-badge{display:inline-block;background:rgba(255,255,255,.25);border-radius:20px;padding:3px 14px;font-size:13px;font-weight:700;margin-bottom:10px}',
+      '.header-title{font-size:20px;font-weight:700;line-height:1.4;margin:0}',
+      '.body{padding:24px 28px}',
+      '.meta-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}',
+      '.meta-chip{background:#f0f0f0;border-radius:6px;padding:4px 12px;font-size:12px;color:#555}',
+      '.section-label{font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}',
+      '.content-box{background:#f8f9fa;border-left:4px solid '+typeColor+';border-radius:0 6px 6px 0;padding:14px 16px;font-size:14px;color:#333;line-height:1.7;white-space:pre-wrap;margin-bottom:18px}',
+      '.action-btn{display:block;width:fit-content;margin:0 auto 8px;background:'+typeColor+';color:#fff;text-decoration:none;padding:12px 32px;border-radius:8px;font-size:14px;font-weight:700;text-align:center}',
+      '.footer{background:#f5f5f5;padding:14px 28px;font-size:11px;color:#888;text-align:center;border-top:1px solid #e0e0e0}',
+      '.divider{height:1px;background:#eee;margin:16px 0}',
+      '</style></head><body>',
+      '<div class="wrap">',
+      '  <div class="header">',
+      '    <div class="header-badge">'+catIcon+' '+task.category+' · '+task.type+'</div>',
+      '    <div class="header-title">'+escHtml(task.title)+'</div>',
+      '  </div>',
+      '  <div class="body">',
+      '    <p style="font-size:15px;color:#333;margin-top:0">안녕하세요, <strong>'+escHtml(recipientName)+'</strong>님.</p>',
+      '    <p style="font-size:14px;color:#555;margin-top:-8px">새 업무 알림이 도착했습니다.</p>',
+      '    <div class="divider"></div>',
+      '    <div class="meta-row">',
+      '      <span class="meta-chip">👤 발신: '+escHtml(task.fromName)+'</span>',
+      '      <span class="meta-chip">📅 발송일: '+new Date().toLocaleDateString('ko-KR')+'</span>',
+      (dueStr ? '      <span class="meta-chip" style="background:#fff3e0;color:#e65100">⏰ '+escHtml(dueStr)+'</span>' : ''),
+      '    </div>',
+      '    <div class="section-label">업무 내용</div>',
+      '    <div class="content-box">'+escHtml(contentText)+(contentText.length === 300 ? '...' : '')+'</div>',
+      '    <a href="'+appUrl+'" class="action-btn">📱 ASEA 시스템에서 확인하기</a>',
+      '    <p style="text-align:center;font-size:12px;color:#aaa;margin-top:4px">위 버튼을 클릭하여 업무를 접수하고 캘린더에 등록하세요.</p>',
+      '  </div>',
+      '  <div class="footer">',
+      '    본 메일은 ASEA 업무관리 시스템에서 자동 발송된 알림입니다.<br>',
+      '    발신: '+escHtml(task.fromName)+' | '+new Date().toLocaleString('ko-KR'),
+      '  </div>',
+      '</div>',
+      '</body></html>',
+    ].join('\n');
+  }
+
+  function escHtml(s) {
+    return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  /* ──────────────────────────────────────────────────
+     업무 이메일 발송 (수신자별 개별 발송)
+  ────────────────────────────────────────────────── */
+  async function sendTaskEmails(task, recipients, employees) {
+    if (!window.GmailModule) return;
+    var me = W.me || {};
+    var senderDisplay = me.name ? me.name + ' (' + me.department + ')' : me.googleEmail;
+
+    var failCount = 0;
+    for (var i = 0; i < recipients.length; i++) {
+      var r = recipients[i];
+      // DB에서 이메일 주소 조회
+      var emp = employees.find(function(e){ return e.id === r.id; });
+      if (!emp || !emp.googleEmail) continue;
+
+      try {
+        await window.GmailModule.sendHtmlEmail({
+          to:          [{ name: r.name, email: emp.googleEmail }],
+          subject:     '[ASEA ' + (task.type||'업무') + '] ' + task.title,
+          htmlBody:    buildTaskEmailHtml(task, r.name),
+          fromDisplay: senderDisplay,
+          replyTo:     me.googleEmail || CONFIG.senderEmail,
+        });
+      } catch(e) {
+        console.warn('업무 메일 발송 실패 (' + r.name + '):', e.message);
+        failCount++;
+      }
+    }
+    return failCount;
+  }
+
   function buildEventDesc(task) {
     return [
       '📋 업무 ID: ' + task.id,
@@ -456,6 +549,21 @@ var WorkModule = (function () {
         );
         await SheetsModule.updateTaskCalEvent(taskId, calId);
       }
+
+      // 이메일 알림 발송 (백그라운드, 실패해도 업무 등록은 완료)
+      var emailRecipients = W.selectedRecipients.slice();
+      var taskForEmail = {
+        id: taskId, title: title, content: content,
+        category: category, type: type,
+        fromName: W.me.name + ' (' + W.me.department + ')',
+        dueDate: due,
+      };
+      getEmployeesCached().then(function(employees) {
+        sendTaskEmails(taskForEmail, emailRecipients, employees).then(function(failCount) {
+          if (failCount > 0) toast('⚠️ ' + failCount + '명 이메일 발송 실패 (업무 등록은 완료)', 'warning');
+          else toast('📧 이메일 알림 발송 완료', 'info');
+        });
+      });
 
       // 발송 완료 후 폼 초기화
       $w('work-title').value = '';
