@@ -163,9 +163,11 @@ var QuickTaskModule = (function () {
       var resp = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: {
-          'x-api-key':         apiKey,
-          'anthropic-version': '2023-06-01',
-          'content-type':      'application/json',
+          'x-api-key':                              apiKey,
+          'anthropic-version':                      '2023-06-01',
+          'content-type':                           'application/json',
+          // 브라우저에서 직접 호출 시 필수 (CORS 허용)
+          'anthropic-dangerous-direct-browser-access': 'true',
         },
         body: JSON.stringify({
           model:      'claude-3-5-haiku-20241022',
@@ -176,7 +178,13 @@ var QuickTaskModule = (function () {
       });
 
       var data = await resp.json();
-      if (!resp.ok) throw new Error((data.error && data.error.message) || '분석 실패');
+      if (!resp.ok) {
+        var errMsg = (data.error && data.error.message) || '분석 실패';
+        // API 키 오류 안내
+        if (resp.status === 401) throw new Error('API Key가 올바르지 않습니다. 설정에서 확인해주세요.');
+        if (resp.status === 400) throw new Error('요청 오류: ' + errMsg);
+        throw new Error(errMsg);
+      }
 
       var rawText = (data.content && data.content[0] && data.content[0].text) || '';
       var parsed  = extractJsonArray(rawText);
