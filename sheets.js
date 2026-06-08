@@ -131,9 +131,13 @@ var SheetsModule = (function () {
      시트 초기화 (최초 1회)
   ────────────────────────────────────────────────── */
   async function initSheets() {
-    // 현재 시트 목록 조회
-    var res = await fetch(BASE + '?fields=sheets.properties.title', { headers: authHeader() });
-    if (!res.ok) throw new Error('스프레드시트 조회 실패');
+    // 현재 시트 목록 조회 (fields 파라미터 없이 전체 메타 조회)
+    var res = await fetch(BASE, { headers: authHeader() });
+    if (!res.ok) {
+      var errBody = '';
+      try { errBody = await res.text(); } catch (e) {}
+      throw new Error('스프레드시트 조회 실패 (' + res.status + ')' + (errBody ? ': ' + errBody.slice(0, 200) : ''));
+    }
     var meta = await res.json();
     var existing = (meta.sheets || []).map(function (s) { return s.properties.title; });
 
@@ -141,7 +145,7 @@ var SheetsModule = (function () {
     var sheetNames = Object.keys(SCHEMAS);
 
     sheetNames.forEach(function (name, idx) {
-      if (!existing.includes(name)) {
+      if (existing.indexOf(name) === -1) {
         addRequests.push({ addSheet: { properties: { title: name, index: idx } } });
       }
     });
@@ -159,7 +163,7 @@ var SheetsModule = (function () {
           await apiUpdate(name + '!A1', [SCHEMAS[name]]);
         }
       } catch (e) {
-        await apiUpdate(name + '!A1', [SCHEMAS[name]]);
+        try { await apiUpdate(name + '!A1', [SCHEMAS[name]]); } catch (e2) {}
       }
     }
   }
