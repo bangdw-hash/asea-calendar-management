@@ -4409,12 +4409,11 @@ h3.settings-section-title {
 }
 
 /* ══════════════════════════════════════════════════════════════════
-   ██  모바일 하단 내비게이션  ██
+   ██  모바일 하단 내비게이션 — 가로 스크롤 전체 탭  ██
    ══════════════════════════════════════════════════════════════════ */
 
 /* 데스크톱: 하단 내비 숨김 */
 .mobile-bottom-nav { display: none; }
-.more-drawer { display: none; }
 
 @media (max-width: 600px) {
 
@@ -4422,9 +4421,9 @@ h3.settings-section-title {
   .desktop-tab-nav { display: none !important; }
 
   /* 탭 콘텐츠 하단 여백 (하단 탭 높이만큼) */
-  .tab-panel { padding-bottom: calc(var(--bottom-nav-h) + 16px) !important; }
+  .tab-panel { padding: 14px 12px !important; padding-bottom: calc(var(--bottom-nav-h) + 20px) !important; }
 
-  /* ── 하단 내비 ── */
+  /* ── 하단 내비 (가로 스크롤) ── */
   .mobile-bottom-nav {
     display: flex !important;
     position: fixed;
@@ -4434,67 +4433,92 @@ h3.settings-section-title {
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     border-top: 1px solid rgba(0,0,0,.06);
-    box-shadow: 0 -4px 20px rgba(0,0,0,.07);
+    box-shadow: 0 -4px 20px rgba(0,0,0,.08);
     z-index: 500;
     align-items: stretch;
-    padding: 0 4px;
+    /* 가로 스크롤 핵심 */
+    overflow-x: auto;
+    overflow-y: hidden;
+    flex-wrap: nowrap;
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+    scrollbar-width: none;          /* Firefox */
+    padding: 0;
     padding-bottom: env(safe-area-inset-bottom);
+    /* 스크롤 snap */
+    scroll-snap-type: x proximity;
   }
+  .mobile-bottom-nav::-webkit-scrollbar { display: none; }
 
+  /* ── 탭 버튼 ── */
   .bnav-btn {
-    flex: 1;
+    flex: 0 0 auto;                 /* shrink 금지 */
+    min-width: 60px;
+    width: 64px;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     gap: 3px;
-    padding: 8px 2px;
+    padding: 8px 4px 6px;
     border: none;
     background: transparent;
     cursor: pointer;
     position: relative;
     border-radius: 14px;
-    margin: 6px 2px;
+    margin: 4px 2px;
     transition: background .15s;
     -webkit-tap-highlight-color: transparent;
+    scroll-snap-align: start;
   }
   .bnav-btn:active { background: var(--color-accent-light); }
 
-  .bnav-icon {
-    font-size: 22px;
-    line-height: 1;
-    transition: transform .2s cubic-bezier(0.34,1.56,0.64,1);
+  /* ── SVG 아이콘 ── */
+  .bnav-svg {
+    width: 24px;
+    height: 24px;
+    color: var(--color-text-secondary);
+    transition: color .2s, transform .2s cubic-bezier(0.34,1.56,0.64,1);
+    flex-shrink: 0;
   }
+
+  /* ── 라벨 ── */
   .bnav-label {
     font-size: 10px;
     font-weight: 600;
     color: var(--color-text-secondary);
     line-height: 1;
     letter-spacing: -0.01em;
+    white-space: nowrap;
+    transition: color .2s;
   }
-  .bnav-btn.active .bnav-icon {
+
+  /* ── 활성 상태 ── */
+  .bnav-btn.active .bnav-svg {
+    color: var(--color-accent);
     transform: scale(1.15) translateY(-1px);
   }
   .bnav-btn.active .bnav-label {
     color: var(--color-accent);
     font-weight: 700;
   }
-  /* 활성 탭: 상단 dot indicator */
+  /* 활성 탭: 상단 라인 indicator */
   .bnav-btn.active::before {
     content: '';
     position: absolute;
-    top: 2px;
+    top: 0;
     left: 50%;
     transform: translateX(-50%);
-    width: 20px;
+    width: 28px;
     height: 3px;
-    border-radius: 0 0 3px 3px;
+    border-radius: 0 0 4px 4px;
     background: var(--ha-gradient);
   }
 
+  /* ── 배지 ── */
   .bnav-badge {
     position: absolute;
-    top: 4px; right: calc(50% - 16px);
+    top: 4px; right: 8px;
     min-width: 16px; height: 16px;
     background: var(--ha-gradient-warm);
     color: #fff;
@@ -4502,84 +4526,6 @@ h3.settings-section-title {
     font-size: 9px; font-weight: 700;
     line-height: 16px; text-align: center;
     padding: 0 4px;
-  }
-
-  /* ── 더보기 드로어 ── */
-  .more-drawer {
-    display: block !important;
-    position: fixed;
-    inset: 0;
-    z-index: 800;
-    pointer-events: none;
-  }
-  .more-drawer[hidden] { visibility: hidden; }
-  .more-drawer:not([hidden]) { pointer-events: all; }
-
-  .more-drawer-backdrop {
-    position: absolute; inset: 0;
-    background: rgba(0,0,0,.35);
-    backdrop-filter: blur(3px);
-    opacity: 0;
-    transition: opacity .25s;
-  }
-  .more-drawer:not([hidden]) .more-drawer-backdrop { opacity: 1; }
-
-  .more-drawer-sheet {
-    position: absolute;
-    bottom: 0; left: 0; right: 0;
-    background: #fff;
-    border-radius: 24px 24px 0 0;
-    padding: 0 16px 24px;
-    padding-bottom: calc(24px + env(safe-area-inset-bottom));
-    transform: translateY(100%);
-    transition: transform .3s cubic-bezier(0.32, 0.72, 0, 1);
-    box-shadow: 0 -8px 40px rgba(0,0,0,.12);
-  }
-  .more-drawer:not([hidden]) .more-drawer-sheet { transform: translateY(0); }
-
-  .more-drawer-handle {
-    width: 36px; height: 4px;
-    background: #E0E5EF;
-    border-radius: var(--r-full);
-    margin: 12px auto 16px;
-  }
-  .more-drawer-title {
-    font-size: 16px;
-    font-weight: 800;
-    color: var(--color-text);
-    margin-bottom: 16px;
-    letter-spacing: -0.02em;
-  }
-  .more-drawer-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 8px;
-  }
-  .more-drawer-item {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 6px;
-    padding: 14px 4px;
-    border: none;
-    background: var(--color-bg);
-    border-radius: var(--r-lg);
-    cursor: pointer;
-    font-size: 11px;
-    font-weight: 700;
-    color: var(--color-text);
-    position: relative;
-    transition: background .15s, transform .15s;
-    -webkit-tap-highlight-color: transparent;
-  }
-  .more-drawer-item:active { transform: scale(.95); background: var(--color-accent-light); }
-  .more-drawer-item.active { background: var(--color-accent-light); color: var(--color-accent); }
-  .mdi-icon { font-size: 24px; line-height: 1; }
-  .mdi-badge {
-    position: absolute; top: 6px; right: 8px;
-    width: 8px; height: 8px;
-    background: #EF4444;
-    border-radius: 50%;
   }
 
   /* 모바일: 달력 개선 */
@@ -4593,8 +4539,5 @@ h3.settings-section-title {
 
   /* 모바일: 버튼 크기 조정 */
   .btn-sm { font-size: 11px !important; padding: 6px 12px !important; }
-
-  /* 모바일: 탭 패딩 */
-  .tab-panel { padding: 14px 12px !important; padding-bottom: calc(var(--bottom-nav-h) + 20px) !important; }
 }
 /* ══ END HEALTH APP REDESIGN ══ */

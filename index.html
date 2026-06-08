@@ -7,7 +7,7 @@
   <title>ASEA 캘린더 관리</title>
   <link rel="preload" as="style" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
-  <link rel="stylesheet" href="style.css?v=20260609h1">
+  <link rel="stylesheet" href="style.css?v=20260609h2">
   <script src="https://accounts.google.com/gsi/client" async></script>
   <!-- SheetJS for Excel support -->
   <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
@@ -2123,66 +2123,109 @@
     </div>
   </div>
 
-    <!-- ── 모바일 하단 탭 내비게이션 ── -->
+    <!-- ── 모바일 하단 탭 내비게이션 (가로 스크롤 전체 탭) ── -->
     <nav class="mobile-bottom-nav" id="mobile-bottom-nav" aria-label="하단 내비게이션">
+
+      <!-- 📅 캘린더 -->
       <button class="bnav-btn active" data-tab="calendar">
-        <span class="bnav-icon">📅</span>
+        <svg class="bnav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="4" width="18" height="18" rx="3"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+        </svg>
         <span class="bnav-label">캘린더</span>
       </button>
+
+      <!-- 📋 주간허브 -->
+      <button class="bnav-btn" data-tab="weekly-hub">
+        <svg class="bnav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
+        </svg>
+        <span class="bnav-label">주간허브</span>
+      </button>
+
+      <!-- ✉️ 이메일 -->
+      <button class="bnav-btn" data-tab="email">
+        <svg class="bnav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/>
+        </svg>
+        <span class="bnav-label">이메일</span>
+      </button>
+
+      <!-- 📄 일정발췌 -->
+      <button class="bnav-btn" data-tab="extract">
+        <svg class="bnav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="7"/><path d="m21 21-3.5-3.5"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/>
+        </svg>
+        <span class="bnav-label">일정발췌</span>
+      </button>
+
+      <!-- 업무관리 -->
       <button class="bnav-btn" data-tab="work">
-        <span class="bnav-icon">📋</span>
+        <svg class="bnav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/>
+        </svg>
         <span class="bnav-label">업무</span>
         <span class="bnav-badge" id="bnav-work-badge" hidden></span>
       </button>
-      <button class="bnav-btn" data-tab="vehicle">
-        <span class="bnav-icon">🚗</span>
-        <span class="bnav-label">차량</span>
-      </button>
+
+      <!-- 🏢 대관업무 -->
       <button class="bnav-btn" data-tab="facility">
-        <span class="bnav-icon">🏢</span>
+        <svg class="bnav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 21h18M3 10h18M5 6l7-3 7 3M4 10v11M20 10v11M8 14v3M12 14v3M16 14v3"/>
+        </svg>
         <span class="bnav-label">대관</span>
       </button>
-      <button class="bnav-btn" id="bnav-more-btn">
-        <span class="bnav-icon">☰</span>
-        <span class="bnav-label">더보기</span>
-      </button>
-    </nav>
 
-    <!-- ── 더보기 드로어 ── -->
-    <div id="more-drawer" class="more-drawer" hidden>
-      <div class="more-drawer-backdrop" id="more-drawer-backdrop"></div>
-      <div class="more-drawer-sheet">
-        <div class="more-drawer-handle"></div>
-        <h3 class="more-drawer-title">전체 메뉴</h3>
-        <div class="more-drawer-grid">
-          <button class="more-drawer-item" data-tab="weekly-hub">
-            <span class="mdi-icon">📋</span><span>주간허브</span>
-          </button>
-          <button class="more-drawer-item" data-tab="email">
-            <span class="mdi-icon">✉️</span><span>이메일</span>
-          </button>
-          <button class="more-drawer-item" data-tab="extract">
-            <span class="mdi-icon">📄</span><span>일정발췌</span>
-          </button>
-          <button class="more-drawer-item" data-tab="classroom">
-            <span class="mdi-icon">🏫</span><span>강의실</span>
-          </button>
-          <button class="more-drawer-item" data-tab="workorder">
-            <span class="mdi-icon">🔧</span><span>작업지시</span>
-            <span class="mdi-badge" id="mdi-workorder-badge" hidden></span>
-          </button>
-          <button class="more-drawer-item" data-tab="checkinmgmt">
-            <span class="mdi-icon">🚪</span><span>입출입</span>
-          </button>
-          <button class="more-drawer-item" data-tab="sms">
-            <span class="mdi-icon">📱</span><span>문자발송</span>
-          </button>
-          <button class="more-drawer-item" data-tab="settings">
-            <span class="mdi-icon">⚙️</span><span>설정</span>
-          </button>
-        </div>
-      </div>
-    </div>
+      <!-- 🚗 차량관리 -->
+      <button class="bnav-btn" data-tab="vehicle">
+        <svg class="bnav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M5 17H3v-4l2.5-5h11L19 13v4h-2"/><circle cx="7.5" cy="17.5" r="1.5"/><circle cx="16.5" cy="17.5" r="1.5"/><path d="M5 13h14"/>
+        </svg>
+        <span class="bnav-label">차량</span>
+      </button>
+
+      <!-- 🏫 강의실 -->
+      <button class="bnav-btn" data-tab="classroom">
+        <svg class="bnav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M2 20h20M4 20V9l8-5 8 5v11"/><rect x="9" y="14" width="6" height="6"/><path d="M9 9h.01M15 9h.01"/>
+        </svg>
+        <span class="bnav-label">강의실</span>
+      </button>
+
+      <!-- 🔧 작업지시 -->
+      <button class="bnav-btn" data-tab="workorder">
+        <svg class="bnav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
+        </svg>
+        <span class="bnav-label">작업지시</span>
+        <span class="bnav-badge" id="bnav-workorder-badge" hidden></span>
+      </button>
+
+      <!-- 🚪 입출입관리 -->
+      <button class="bnav-btn" data-tab="checkinmgmt">
+        <svg class="bnav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/>
+        </svg>
+        <span class="bnav-label">입출입</span>
+        <span class="bnav-badge" id="bnav-checkin-badge" hidden></span>
+      </button>
+
+      <!-- 📱 문자발송 -->
+      <button class="bnav-btn" data-tab="sms">
+        <svg class="bnav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+        </svg>
+        <span class="bnav-label">문자</span>
+      </button>
+
+      <!-- ⚙️ 설정 -->
+      <button class="bnav-btn" data-tab="settings">
+        <svg class="bnav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </svg>
+        <span class="bnav-label">설정</span>
+      </button>
+
+    </nav>
 
   <!-- ═══════════════════════════════════════════════════════
        스크립트 (로드 순서 중요)
@@ -2203,7 +2246,7 @@
   <script src="workorder.js?v=20260608s"></script>
   <script src="quicktask.js?v=20260608s"></script>
   <script src="sms.js?v=20260608a1"></script>
-  <script src="app.js?v=20260609h1"></script>
+  <script src="app.js?v=20260609h2"></script>
   <script>
     // 빠른 업무 등록 초기화 (DOM 준비 후)
     document.addEventListener('DOMContentLoaded', function () {

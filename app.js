@@ -133,18 +133,15 @@
         btn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
       }
     });
-    // 하단 탭 활성화 동기화
-    var bnavTabs   = ['calendar','work','vehicle','facility'];
-    var moreTabs   = ['weekly-hub','email','extract','classroom','workorder','checkinmgmt','sms','settings'];
+    // 하단 탭 활성화 동기화 (가로 스크롤 12탭)
     document.querySelectorAll('.bnav-btn[data-tab]').forEach(function (btn) {
-      btn.classList.toggle('active', btn.dataset.tab === name);
+      var isActive = btn.dataset.tab === name;
+      btn.classList.toggle('active', isActive);
+      // 활성 탭을 뷰 중앙으로 스크롤
+      if (isActive && btn.scrollIntoView) {
+        btn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+      }
     });
-    document.querySelectorAll('.more-drawer-item[data-tab]').forEach(function (btn) {
-      btn.classList.toggle('active', btn.dataset.tab === name);
-    });
-    // 더보기 탭이 활성이면 more 버튼에 active 표시
-    var moreBtn = document.getElementById('bnav-more-btn');
-    if (moreBtn) moreBtn.classList.toggle('active', moreTabs.indexOf(name) >= 0);
 
     document.querySelectorAll('.tab-panel').forEach(function (p) {
       var active = p.id === 'tab-' + name;
@@ -170,45 +167,12 @@
       btn.addEventListener('click', function () { switchTab(btn.dataset.tab); });
     });
 
-    // 하단 탭 (모바일)
+    // 하단 탭 (모바일 가로 스크롤 12탭)
     document.querySelectorAll('.bnav-btn[data-tab]').forEach(function (btn) {
       btn.addEventListener('click', function () {
         switchTab(btn.dataset.tab);
-        closeMoreDrawer();
       });
     });
-
-    // 더보기 버튼
-    var moreBtn = document.getElementById('bnav-more-btn');
-    if (moreBtn) moreBtn.addEventListener('click', toggleMoreDrawer);
-
-    // 더보기 드로어 아이템
-    document.querySelectorAll('.more-drawer-item[data-tab]').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        switchTab(btn.dataset.tab);
-        closeMoreDrawer();
-      });
-    });
-
-    // 드로어 배경 클릭 = 닫기
-    var backdrop = document.getElementById('more-drawer-backdrop');
-    if (backdrop) backdrop.addEventListener('click', closeMoreDrawer);
-  }
-
-  function toggleMoreDrawer() {
-    var drawer = document.getElementById('more-drawer');
-    if (!drawer) return;
-    if (drawer.hidden) {
-      drawer.hidden = false;
-      requestAnimationFrame(function() { drawer.hidden = false; }); // CSS transition trigger
-    } else {
-      closeMoreDrawer();
-    }
-  }
-
-  function closeMoreDrawer() {
-    var drawer = document.getElementById('more-drawer');
-    if (drawer) drawer.hidden = true;
   }
 
   /* ═══════════════════════════════════════════════════════════
