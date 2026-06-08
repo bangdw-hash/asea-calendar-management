@@ -2176,16 +2176,19 @@
         ']\n\n' +
         '날짜가 불명확한 경우 최대한 추론하세요.\n\n--- PDF 텍스트 ---\n' + pdfText;
 
-      // Claude Haiku API 호출 (프록시 Base URL 지원)
+      // Claude API 호출 — 프록시(Base URL 설정 시) 또는 공식 Anthropic API
       var _anthropicOrigin = (CONFIG.anthropicBaseUrl || 'https://api.anthropic.com').replace(/\/$/, '');
+      var _isOfficialApi   = _anthropicOrigin === 'https://api.anthropic.com';
+      var _reqHeaders = {
+        'Content-Type':    'application/json',
+        'x-api-key':       apiKey,
+        'anthropic-version': '2023-06-01',
+      };
+      // 공식 Anthropic API 직접 호출 시에만 CORS 우회 헤더 추가 (프록시는 불필요)
+      if (_isOfficialApi) _reqHeaders['anthropic-dangerous-direct-browser-access'] = 'true';
       var response = await fetch(_anthropicOrigin + '/v1/messages', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': apiKey,
-          'anthropic-version': '2023-06-01',
-          'anthropic-dangerous-direct-browser-access': 'true',
-        },
+        headers: _reqHeaders,
         body: JSON.stringify({
           model: 'claude-haiku-4-5-20251001',
           max_tokens: 8192,

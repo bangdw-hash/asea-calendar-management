@@ -386,7 +386,7 @@
                 <div style="font-size:12px;font-weight:600;color:var(--color-accent,#0078D4);margin-bottom:8px">🔑 Claude API 설정</div>
                 <div style="display:flex;flex-direction:column;gap:6px">
                   <input id="extract-api-key" type="password" class="form-input"
-                    placeholder="API 키  (sk-ant-... 또는 프록시 키)"
+                    placeholder="발급받은 API 키 (공식 또는 프록시)"
                     style="font-size:12px;padding:6px 10px">
                   <input id="extract-api-base-url" type="url" class="form-input"
                     placeholder="Base URL  (프록시 사용 시 — 예: https://aiapiflow.com)"
@@ -1236,7 +1236,7 @@
           <div class="form-group">
             <label class="form-label" style="font-size:13px;color:#555;margin-bottom:4px;display:block">API 키</label>
             <input id="setting-api-key" type="password" class="form-input"
-              placeholder="sk-ant-api03-...">
+              placeholder="발급받은 API 키 입력 (공식: sk-ant-api03-... / 프록시: 별도 형식)">
           </div>
           <div class="form-group" style="margin-top:10px">
             <label class="form-label" style="font-size:13px;color:#555;margin-bottom:4px;display:block">
@@ -2335,7 +2335,7 @@
   <script src="workorder.js?v=20260608s"></script>
   <script src="quicktask.js?v=20260608s"></script>
   <script src="sms.js?v=20260608a1"></script>
-  <script src="app.js?v=20260609p2"></script>
+  <script src="app.js?v=20260609p3"></script>
   <script>
     // 빠른 업무 등록 초기화 (DOM 준비 후)
     document.addEventListener('DOMContentLoaded', function () {
