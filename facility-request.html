@@ -6,7 +6,7 @@
   <title>대관 신청</title>
   <link rel="stylesheet" href="facility-request.css">
 </head>
-<body>
+<body class="has-share-bar">
 
 <div class="fr-wrap">
   <!-- 헤더 -->
@@ -19,10 +19,61 @@
   <!-- 오류/성공 메시지 -->
   <div id="fr-alert" class="fr-alert" style="display:none"></div>
 
+  <!-- ── 스텝 프로그레스 바 ── -->
+  <div class="fr-steps" id="fr-steps">
+    <div class="fr-step" id="fr-step-1" data-step="1">
+      <div class="fr-step-icon">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M2 17h16M3 9l7-5 7 5v8H3V9z"/><rect x="8" y="12" width="4" height="5"/>
+        </svg>
+      </div>
+      <span class="fr-step-label">시설 선택</span>
+      <svg class="fr-step-check" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="3 8 7 12 13 4"/>
+      </svg>
+    </div>
+    <div class="fr-step-line"></div>
+    <div class="fr-step" id="fr-step-2" data-step="2">
+      <div class="fr-step-icon">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2" y="3" width="16" height="16" rx="3"/><line x1="14" y1="1" x2="14" y2="5"/><line x1="6" y1="1" x2="6" y2="5"/><line x1="2" y1="9" x2="18" y2="9"/>
+        </svg>
+      </div>
+      <span class="fr-step-label">일시 선택</span>
+      <svg class="fr-step-check" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="3 8 7 12 13 4"/>
+      </svg>
+    </div>
+    <div class="fr-step-line"></div>
+    <div class="fr-step" id="fr-step-3" data-step="3">
+      <div class="fr-step-icon">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M7 4H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-2"/><rect x="7" y="2" width="6" height="4" rx="1"/><line x1="7" y1="10" x2="13" y2="10"/><line x1="7" y1="13" x2="11" y2="13"/>
+        </svg>
+      </div>
+      <span class="fr-step-label">신청 내용</span>
+      <svg class="fr-step-check" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="3 8 7 12 13 4"/>
+      </svg>
+    </div>
+    <div class="fr-step-line"></div>
+    <div class="fr-step" id="fr-step-4" data-step="4">
+      <div class="fr-step-icon">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M10 10a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm0 0c-4.4 0-8 2-8 4v1h16v-1c0-2-3.6-4-8-4z"/>
+        </svg>
+      </div>
+      <span class="fr-step-label">신청자 정보</span>
+      <svg class="fr-step-check" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="3 8 7 12 13 4"/>
+      </svg>
+    </div>
+  </div>
+
   <!-- 신청 폼 -->
   <form id="fr-form" class="fr-form" novalidate>
 
-    <fieldset class="fr-fieldset">
+    <fieldset class="fr-fieldset" id="fr-section-1">
       <legend class="fr-legend">📍 시설 선택</legend>
       <div class="fr-field">
         <label class="fr-label">건물 <span class="fr-req">*</span></label>
@@ -38,21 +89,45 @@
       </div>
     </fieldset>
 
-    <fieldset class="fr-fieldset">
+    <!-- 달력 날짜 선택 -->
+    <fieldset class="fr-fieldset" id="fr-section-2">
       <legend class="fr-legend">📅 이용 일시</legend>
-      <div class="fr-row">
-        <div class="fr-field">
-          <label class="fr-label">시작 일시 <span class="fr-req">*</span></label>
-          <input id="fr-start" type="datetime-local" class="fr-input" required>
+
+      <!-- 안내 -->
+      <div class="fr-cal-guide">
+        <div class="fr-cal-guide-desktop">
+          🖱️ <strong>드래그</strong>: 날짜 범위 선택 &nbsp;·&nbsp;
+          <strong>Ctrl + 드래그</strong>: 비연속 날짜 추가
         </div>
-        <div class="fr-field">
-          <label class="fr-label">종료 일시 <span class="fr-req">*</span></label>
-          <input id="fr-end" type="datetime-local" class="fr-input" required>
+        <div class="fr-cal-guide-mobile">
+          👆 날짜를 <strong>탭</strong>하여 선택 &nbsp;·&nbsp;
+          두 날짜를 탭하면 그 사이 범위가 선택됩니다
         </div>
+      </div>
+
+      <!-- 월 네비게이션 -->
+      <div class="fr-cal-nav">
+        <button type="button" id="fr-cal-prev" class="fr-cal-nav-btn">‹</button>
+        <strong id="fr-cal-title" class="fr-cal-title"></strong>
+        <button type="button" id="fr-cal-next" class="fr-cal-nav-btn">›</button>
+      </div>
+
+      <!-- 달력 그리드 -->
+      <div id="fr-calendar" class="fr-calendar"></div>
+
+      <!-- 선택 상태 표시 -->
+      <div id="fr-sel-status" class="fr-sel-status" style="display:none"></div>
+      <button type="button" id="fr-clear-sel" class="fr-clear-btn" style="display:none">✕ 선택 초기화</button>
+
+      <!-- 구간별 시간 입력 (선택 후 자동 생성) -->
+      <div id="fr-time-ranges" class="fr-time-ranges"></div>
+
+      <div id="fr-no-date-msg" class="fr-no-date-msg">
+        달력에서 날짜를 선택해 주세요.
       </div>
     </fieldset>
 
-    <fieldset class="fr-fieldset">
+    <fieldset class="fr-fieldset" id="fr-section-3">
       <legend class="fr-legend">📝 신청 내용</legend>
       <div class="fr-field">
         <label class="fr-label">행사(신청) 제목 <span class="fr-req">*</span></label>
@@ -68,7 +143,7 @@
       </div>
     </fieldset>
 
-    <fieldset class="fr-fieldset">
+    <fieldset class="fr-fieldset" id="fr-section-4">
       <legend class="fr-legend">👤 신청자 정보</legend>
       <div class="fr-row">
         <div class="fr-field">
@@ -100,6 +175,23 @@
 
     <button type="submit" id="fr-submit-btn" class="fr-submit-btn">신청하기</button>
   </form>
+
+  <!-- ── 하단 고정 공유 바 ── -->
+  <div class="fr-share-bar" id="fr-share-bar">
+    <div class="fr-share-progress">
+      <div class="fr-share-prog-track">
+        <div class="fr-share-prog-fill" id="fr-share-prog-fill"></div>
+      </div>
+      <span class="fr-share-step-text" id="fr-share-step-text">단계 1 / 4</span>
+    </div>
+    <button class="fr-share-btn" id="fr-share-copy-btn" title="현재 입력 상태를 URL로 복사">
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M13 3H7a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h6"/><path d="M13 3l4 4-4 4"/><line x1="17" y1="7" x2="9" y2="7"/>
+      </svg>
+      <span>공유</span>
+    </button>
+    <div class="fr-share-toast" id="fr-share-toast">링크 복사됨!</div>
+  </div>
 
   <!-- 완료 화면 -->
   <div id="fr-success" class="fr-success" style="display:none">
