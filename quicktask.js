@@ -15,11 +15,27 @@ var QuickTaskModule = (function () {
   /* ────────────────────────────────────────────────────────────
      상태
   ──────────────────────────────────────────────────────────── */
+  var _SAVED_CAL_KEY = 'asea_qt_last_calendar'; // localStorage 키
+
+  function _loadSavedCalendar() {
+    try {
+      var v = localStorage.getItem(_SAVED_CAL_KEY);
+      return v ? JSON.parse(v) : null;
+    } catch (e) { return null; }
+  }
+
+  function _saveCalendar(cal) {
+    try {
+      if (cal) localStorage.setItem(_SAVED_CAL_KEY, JSON.stringify(cal));
+      else localStorage.removeItem(_SAVED_CAL_KEY);
+    } catch (e) {}
+  }
+
   var Q = {
     extractedTasks: [],   // [{title, content, dueDate, category, checked}]
     pasteImageB64:  null, // 붙여넣기된 이미지 base64 (data:image/...;base64,xxx)
     pasteText:      '',   // 붙여넣기된 텍스트
-    targetCalendar: null, // {id, name, color} 선택된 Google 캘린더
+    targetCalendar: _loadSavedCalendar(), // {id, name, color} — 마지막 선택 복원
     isAnalyzing:    false,
   };
 
@@ -460,16 +476,19 @@ var QuickTaskModule = (function () {
           } catch (calErr) { /* 캘린더 실패해도 시트 등록은 진행 */ }
         }
 
-        // Sheets 등록 (SheetsModule이 있으면)
+        // Sheets 등록 (SheetsModule이 있으면 — 실패해도 캘린더 등록은 유지)
         if (typeof SheetsModule !== 'undefined' && SheetsModule.createTask) {
-          await SheetsModule.createTask(taskData);
-        }
-
-        // 수신함에 자기 자신에게도 등록 (개인 업무)
-        if (typeof SheetsModule !== 'undefined' && SheetsModule.createReceived && me.id) {
-          await SheetsModule.createReceived(taskData.id, [{
-            userId: me.id, userName: me.name||'',
-          }]);
+          try {
+            await SheetsModule.createTask(taskData);
+            // 수신함에 자기 자신에게도 등록 (개인 업무)
+            if (SheetsModule.createReceived && me.id) {
+              await SheetsModule.createReceived(taskData.id, [{
+                userId: me.id, userName: me.name || '',
+              }]);
+            }
+          } catch (sheetsErr) {
+            console.warn('[ASEA] Sheets 등록 실패 (캘린더 등록은 완료):', sheetsErr);
+          }
         }
 
         success++;
@@ -649,6 +668,7 @@ var QuickTaskModule = (function () {
       if (typeof ReservationUtil !== 'undefined') {
         ReservationUtil.showCalendarPicker(function (cal) {
           Q.targetCalendar = cal;
+          _saveCalendar(cal);
           renderCalendarBadge();
           toast(cal.name + '이(가) 선택되었습니다.', 'success');
         });
@@ -661,6 +681,7 @@ var QuickTaskModule = (function () {
     var calClearBtn = $q('qt-clear-cal-btn');
     if (calClearBtn) calClearBtn.addEventListener('click', function () {
       Q.targetCalendar = null;
+      _saveCalendar(null);
       renderCalendarBadge();
     });
 
