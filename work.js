@@ -1299,6 +1299,7 @@ var WorkModule = (function () {
         _thSort('부서', 'department', 'col-dept') +
         _thSort('직급', 'rank', 'col-rank') +
         _thSort('권한', 'role', 'col-role') +
+        _thSort('입사일', 'hireDate', 'col-hire') +
         '<th class="col-email">이메일</th>' +
         '<th class="col-phone">전화번호</th>' +
         '<th class="col-mgmt">관리</th>' +
@@ -1412,6 +1413,7 @@ var WorkModule = (function () {
         '<td class="col-dept" title="' + _escHr(emp.department) + '">' + _escHr(emp.department) + '</td>' +
         '<td class="col-rank" title="' + _escHr(emp.rank) + '">' + _escHr(emp.rank) + '</td>' +
         '<td class="col-role"><span class="hr-role-badge" style="background:' + rc + '">' + rl + '</span></td>' +
+        '<td class="col-hire" style="color:#5f6368">' + _escHr(emp.hireDate||'') + '</td>' +
         '<td class="hr-email-cell col-email" title="' + _escHr(emp.googleEmail||'') + '">' + _escHr(emp.googleEmail||'') + '</td>' +
         '<td class="col-phone">' + phoneDisplay + '</td>' +
         '<td class="col-mgmt">' +

@@ -3036,12 +3036,13 @@ a        { color: var(--color-accent); text-decoration: none; }
 }
 /* 체크박스 열 */
 .hr-emp-table .col-chk  { width: 28px; text-align: center; }
-.hr-emp-table .col-name { width: 13%; }
-.hr-emp-table .col-dept { width: 18%; }
-.hr-emp-table .col-rank { width: 10%; }
-.hr-emp-table .col-role { width: 9%; }
-.hr-emp-table .col-email{ width: 22%; }
-.hr-emp-table .col-phone{ width: 15%; }
+.hr-emp-table .col-name { width: 10%; }
+.hr-emp-table .col-dept { width: 15%; }
+.hr-emp-table .col-rank { width: 9%; }
+.hr-emp-table .col-role { width: 8%; }
+.hr-emp-table .col-hire { width: 10%; }
+.hr-emp-table .col-email{ width: 20%; }
+.hr-emp-table .col-phone{ width: 13%; }
 .hr-emp-table .col-mgmt { width: 80px; text-align: center; }
 /* 일괄 작업 툴바 */
 .hr-bulk-bar {
