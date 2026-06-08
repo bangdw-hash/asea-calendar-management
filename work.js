@@ -196,8 +196,9 @@ var WorkModule = (function () {
       if ($w('hr-init-card'))       $w('hr-init-card').hidden       = !isAdmin;
 
       // 대관/차량 관리자 섹션
-      if (typeof FacilityModule !== 'undefined') FacilityModule.initFacilityModule(isAdmin);
-      if (typeof VehicleModule  !== 'undefined') VehicleModule.initVehicleModule(isAdmin);
+      if (typeof FacilityModule  !== 'undefined') FacilityModule.initFacilityModule(isAdmin);
+      if (typeof VehicleModule   !== 'undefined') VehicleModule.initVehicleModule(isAdmin);
+      if (typeof ClassroomModule !== 'undefined') ClassroomModule.initClassroomModule(isAdmin);
 
       if (!W.me._bootstrap) {
         await refreshUnreadBadge();

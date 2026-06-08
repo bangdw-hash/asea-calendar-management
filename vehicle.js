@@ -381,6 +381,58 @@ var VehicleModule = (function () {
     var settingsVehCard = document.getElementById('settings-veh-card');
     if (settingsVehCard) settingsVehCard.hidden = !isAdmin;
 
+    // CSV 양식 다운로드
+    var csvDl = $v('veh-csv-download-btn');
+    if (csvDl) csvDl.addEventListener('click', function() {
+      if (typeof ReservationUtil !== 'undefined') ReservationUtil.downloadVehicleTemplate();
+    });
+
+    // CSV 업로드
+    var csvInput = $v('veh-csv-upload-input');
+    if (csvInput) csvInput.addEventListener('change', async function(e) {
+      var file = e.target.files[0];
+      if (!file) return;
+      var text = await file.text();
+      var rows = ReservationUtil.parseVehicleCSV(text);
+      var preview = $v('veh-csv-preview');
+      if (rows.length === 0) { preview.hidden = true; toast('파싱된 데이터가 없습니다.', 'error'); return; }
+      preview.hidden = false;
+      var heads = ['차량명','차량번호','유형','정원','비고'];
+      var html = '<strong>미리보기 ('+rows.length+'개)</strong><br><table><tr>'+heads.map(function(h){return '<th>'+h+'</th>';}).join('')+'</tr>';
+      rows.slice(0,5).forEach(function(r) {
+        html += '<tr><td>'+r.vehicleName+'</td><td>'+r.vehicleNum+'</td><td>'+r.vehicleType+'</td><td>'+r.capacity+'</td><td>'+(r.note||'')+'</td></tr>';
+      });
+      if (rows.length > 5) html += '<tr><td colspan="5" style="text-align:center">...외 '+(rows.length-5)+'개</td></tr>';
+      html += '</table><div style="margin-top:8px;display:flex;gap:8px"><button id="veh-csv-confirm-btn" class="btn btn-primary btn-sm">업로드 확인</button><button id="veh-csv-cancel-btn" class="btn btn-ghost btn-sm">취소</button></div>';
+      preview.innerHTML = html;
+      document.getElementById('veh-csv-confirm-btn').addEventListener('click', async function() {
+        try {
+          await SheetsModule.bulkUpsertVehicles(rows);
+          toast('차량 '+rows.length+'개 등록 완료!', 'success');
+          preview.hidden = true;
+          csvInput.value = '';
+          await refresh();
+        } catch(err) { toast('업로드 실패: '+err.message, 'error'); }
+      });
+      document.getElementById('veh-csv-cancel-btn').addEventListener('click', function() { preview.hidden = true; csvInput.value = ''; });
+    });
+
+    // 캘린더 공유
+    var shareCalBtn = $v('veh-share-cal-btn');
+    if (shareCalBtn) shareCalBtn.addEventListener('click', function() {
+      if (typeof ReservationUtil !== 'undefined') {
+        ReservationUtil.showCalendarPicker(async function(cal) {
+          toast('캘린더 공유 중...', 'info');
+          var count = 0;
+          for (var i = 0; i < V.reservations.length; i++) {
+            var r = V.reservations[i];
+            try { await ReservationUtil.shareVehicleResvToCalendar(r, cal.id); count++; } catch(e) {}
+          }
+          toast(cal.name+'에 '+count+'개 일정 공유 완료!', 'success');
+        });
+      }
+    });
+
     refresh();
   }
 

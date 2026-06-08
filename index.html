@@ -92,6 +92,10 @@
         <span class="tab-icon" aria-hidden="true">🚗</span>
         <span class="tab-label">차량관리</span>
       </button>
+      <button class="tab-btn" data-tab="classroom" role="tab" aria-selected="false">
+        <span class="tab-icon" aria-hidden="true">🏫</span>
+        <span class="tab-label">강의실현황</span>
+      </button>
       <button class="tab-btn" data-tab="settings" role="tab" aria-selected="false">
         <span class="tab-icon" aria-hidden="true">⚙️</span>
         <span class="tab-label">설정</span>
@@ -529,9 +533,16 @@
         <!-- 관리자: 시설 관리 섹션 (설정 탭으로 이전, 여기서는 링크만) -->
         <div id="fac-admin-section" class="settings-card" style="margin-top:24px" hidden>
           <h3 class="settings-section-title">🏢 시설(건물/호실) 관리 <span class="badge-admin">관리자</span></h3>
-          <div style="display:flex;gap:8px;margin-bottom:12px">
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">
             <button id="fac-add-building-btn" class="btn btn-primary btn-sm">+ 건물 추가</button>
+            <button id="fac-csv-download-btn" class="btn btn-secondary btn-sm">⬇ 양식 다운로드</button>
+            <label class="btn btn-secondary btn-sm" style="cursor:pointer;margin:0">
+              ⬆ 일괄 업로드
+              <input id="fac-csv-upload-input" type="file" accept=".csv" style="display:none">
+            </label>
+            <button id="fac-share-cal-btn" class="btn btn-ghost btn-sm">📅 캘린더 공유</button>
           </div>
+          <div id="fac-csv-preview" class="csv-preview-box" hidden></div>
           <div id="fac-admin-building-list">
             <p class="empty-state">등록된 건물이 없습니다.</p>
           </div>
@@ -574,8 +585,89 @@
             </p>
             <button id="veh-add-vehicle-btn" class="btn btn-primary btn-sm">+ 차량 추가</button>
           </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0">
+            <button id="veh-csv-download-btn" class="btn btn-secondary btn-sm">⬇ 양식 다운로드</button>
+            <label class="btn btn-secondary btn-sm" style="cursor:pointer;margin:0">
+              ⬆ 일괄 업로드
+              <input id="veh-csv-upload-input" type="file" accept=".csv" style="display:none">
+            </label>
+            <button id="veh-share-cal-btn" class="btn btn-ghost btn-sm">📅 캘린더 공유</button>
+          </div>
+          <div id="veh-csv-preview" class="csv-preview-box" hidden></div>
           <div id="veh-admin-list">
             <p class="empty-state">등록된 차량이 없습니다.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ════════════════════════════════════════════════════
+           🏫 강의실현황 탭
+           ════════════════════════════════════════════════════ -->
+      <section id="tab-classroom" class="tab-panel" role="tabpanel" hidden>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px">
+          <h2 class="section-title" style="margin:0">🏫 강의실 예약 현황</h2>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <button id="cls-view-timetable-btn" class="btn btn-secondary btn-sm active-view">시간표</button>
+            <button id="cls-view-month-btn" class="btn btn-ghost btn-sm">월간</button>
+            <span id="cls-admin-link" style="display:none">
+              <button id="cls-admin-toggle-btn" class="btn btn-ghost btn-sm">⚙️ 강의실 관리</button>
+            </span>
+          </div>
+        </div>
+
+        <!-- 주간 시간표 뷰 -->
+        <div id="cls-timetable-view">
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
+            <button id="cls-week-prev" class="btn btn-ghost btn-sm">‹</button>
+            <strong id="cls-week-title" style="min-width:130px;text-align:center"></strong>
+            <button id="cls-week-next" class="btn btn-ghost btn-sm">›</button>
+            <select id="cls-building-filter" class="form-select" style="max-width:150px"></select>
+            <select id="cls-room-filter" class="form-select" style="max-width:140px"></select>
+            <button class="btn btn-primary btn-sm" id="cls-add-resv-btn">+ 예약 등록</button>
+          </div>
+          <!-- 예약 유형 범례 -->
+          <div class="cls-legend">
+            <span class="cls-legend-item"><span class="cls-legend-dot" style="background:#1565C0"></span>학점은행제</span>
+            <span class="cls-legend-item"><span class="cls-legend-dot" style="background:#E65100"></span>특강</span>
+            <span class="cls-legend-item"><span class="cls-legend-dot" style="background:#2E7D32"></span>대관</span>
+            <span class="cls-legend-item"><span class="cls-legend-dot" style="background:#546E7A"></span>기타</span>
+          </div>
+          <div class="cls-timetable-scroll">
+            <div id="cls-timetable-wrap">
+              <p class="empty-state">로딩 중...</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- 월간 달력 뷰 (hidden by default) -->
+        <div id="cls-month-view" hidden>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
+            <button id="cls-cal-prev" class="btn btn-ghost btn-sm">‹</button>
+            <strong id="cls-cal-title" style="min-width:100px;text-align:center"></strong>
+            <button id="cls-cal-next" class="btn btn-ghost btn-sm">›</button>
+            <select id="cls-m-building-filter" class="form-select" style="max-width:150px"></select>
+            <select id="cls-m-room-filter" class="form-select" style="max-width:140px"></select>
+          </div>
+          <div id="cls-month-calendar" class="res-calendar-wrap">
+            <p class="empty-state">로딩 중...</p>
+          </div>
+        </div>
+
+        <!-- 관리자 섹션 -->
+        <div id="cls-admin-section" class="settings-card" style="margin-top:24px" hidden>
+          <h3 class="settings-section-title">🏫 강의실 예약 관리 <span class="badge-admin">관리자</span></h3>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+            <button id="cls-add-btn" class="btn btn-primary btn-sm">+ 개별 등록</button>
+            <button id="cls-csv-download-btn" class="btn btn-secondary btn-sm">⬇ 양식 다운로드</button>
+            <label class="btn btn-secondary btn-sm" style="cursor:pointer;margin:0">
+              ⬆ 일괄 업로드
+              <input id="cls-csv-upload-input" type="file" accept=".csv" style="display:none">
+            </label>
+            <button id="cls-share-cal-btn" class="btn btn-ghost btn-sm">📅 캘린더 공유</button>
+          </div>
+          <div id="cls-csv-preview" class="csv-preview-box" hidden></div>
+          <div id="cls-admin-list">
+            <p class="empty-state">등록된 예약이 없습니다.</p>
           </div>
         </div>
       </section>
@@ -1378,6 +1470,110 @@
     </div>
   </div>
 
+  <!-- ═══════════════════════════════════════════════════════════
+       강의실 예약 모달
+       ═══════════════════════════════════════════════════════════ -->
+  <div id="cls-resv-modal" class="modal" hidden aria-modal="true" role="dialog">
+    <div class="modal-backdrop" onclick="document.getElementById('cls-resv-modal').hidden=true"></div>
+    <div class="modal-dialog" style="max-width:540px">
+      <div class="modal-header">
+        <h3 id="cls-resv-title" class="modal-title">강의실 예약 등록</h3>
+        <button id="cls-resv-close-btn" class="modal-close">✕</button>
+      </div>
+      <div class="modal-body">
+        <div style="display:flex;gap:8px">
+          <div class="form-group" style="flex:1">
+            <label class="form-label">건물 <span class="required">*</span></label>
+            <select id="cls-resv-building" class="form-select"></select>
+          </div>
+          <div class="form-group" style="flex:1">
+            <label class="form-label">강의실 <span class="required">*</span></label>
+            <select id="cls-resv-room" class="form-select"></select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">제목 <span class="required">*</span></label>
+          <input id="cls-resv-title-input" type="text" class="form-input" placeholder="예: 정보처리기능사 이론">
+        </div>
+        <div style="display:flex;gap:8px">
+          <div class="form-group" style="flex:1">
+            <label class="form-label">시작일</label>
+            <input id="cls-resv-start-date" type="date" class="form-input">
+          </div>
+          <div class="form-group" style="flex:1">
+            <label class="form-label">종료일</label>
+            <input id="cls-resv-end-date" type="date" class="form-input">
+          </div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <div class="form-group" style="flex:1">
+            <label class="form-label">시작 교시</label>
+            <select id="cls-resv-start-period" class="form-select">
+              <option value="1">1교시 09:00</option>
+              <option value="2">2교시 10:00</option>
+              <option value="3">3교시 11:00</option>
+              <option value="4">4교시 12:00</option>
+              <option value="5">5교시 13:00</option>
+              <option value="6">6교시 14:00</option>
+              <option value="7">7교시 15:00</option>
+              <option value="8">8교시 16:00</option>
+              <option value="9">9교시 17:00</option>
+              <option value="10">10교시(야간1) 18:00</option>
+              <option value="11">11교시(야간2) 19:00</option>
+            </select>
+          </div>
+          <div class="form-group" style="flex:1">
+            <label class="form-label">종료 교시</label>
+            <select id="cls-resv-end-period" class="form-select">
+              <option value="1">1교시 09:50</option>
+              <option value="2">2교시 10:50</option>
+              <option value="3">3교시 11:50</option>
+              <option value="4">4교시 12:50</option>
+              <option value="5">5교시 13:50</option>
+              <option value="6">6교시 14:50</option>
+              <option value="7">7교시 15:50</option>
+              <option value="8">8교시 16:50</option>
+              <option value="9">9교시 17:50</option>
+              <option value="10">10교시(야간1) 18:50</option>
+              <option value="11">11교시(야간2) 19:50</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">수업 요일</label>
+          <div class="weekday-checkboxes">
+            <label class="weekday-check"><input type="checkbox" name="cls-weekday" value="월"> 월</label>
+            <label class="weekday-check"><input type="checkbox" name="cls-weekday" value="화"> 화</label>
+            <label class="weekday-check"><input type="checkbox" name="cls-weekday" value="수"> 수</label>
+            <label class="weekday-check"><input type="checkbox" name="cls-weekday" value="목"> 목</label>
+            <label class="weekday-check"><input type="checkbox" name="cls-weekday" value="금"> 금</label>
+            <label class="weekday-check"><input type="checkbox" name="cls-weekday" value="토"> 토</label>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <div class="form-group" style="flex:1">
+            <label class="form-label">예약 유형</label>
+            <select id="cls-resv-type" class="form-select">
+              <option value="학점은행제">학점은행제</option>
+              <option value="특강">특강</option>
+              <option value="대관">대관</option>
+              <option value="기타">기타</option>
+            </select>
+          </div>
+          <div class="form-group" style="flex:1">
+            <label class="form-label">학기</label>
+            <input id="cls-resv-semester" type="text" class="form-input" placeholder="예: 2026-1학기">
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="cls-resv-delete-btn" class="btn btn-danger" hidden>삭제</button>
+        <button onclick="document.getElementById('cls-resv-modal').hidden=true" class="btn btn-ghost">취소</button>
+        <button id="cls-resv-save-btn" class="btn btn-primary">저장</button>
+      </div>
+    </div>
+  </div>
+
   <!-- ═══════════════════════════════════════════════════════
        스크립트 (로드 순서 중요)
        기존 모듈은 절대 수정하지 않음 — 새 모듈만 추가
@@ -1389,8 +1585,10 @@
   <script src="gmail.js"></script>
   <script src="report.js"></script>
   <script src="sheets.js"></script>
+  <script src="resutil.js"></script>
   <script src="facility.js"></script>
   <script src="vehicle.js"></script>
+  <script src="classroom.js"></script>
   <script src="work.js"></script>
   <script src="app.js"></script>
 

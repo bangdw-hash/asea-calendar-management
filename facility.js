@@ -479,6 +479,59 @@ var FacilityModule = (function () {
     var settingsFacCard = document.getElementById('settings-fac-card');
     if (settingsFacCard) settingsFacCard.hidden = !isAdmin;
 
+    // CSV 양식 다운로드
+    var csvDl = $f('fac-csv-download-btn');
+    if (csvDl) csvDl.addEventListener('click', function() {
+      if (typeof ReservationUtil !== 'undefined') ReservationUtil.downloadFacilityTemplate();
+    });
+
+    // CSV 업로드
+    var csvInput = $f('fac-csv-upload-input');
+    if (csvInput) csvInput.addEventListener('change', async function(e) {
+      var file = e.target.files[0];
+      if (!file) return;
+      var text = await file.text();
+      var rows = ReservationUtil.parseFacilityCSV(text);
+      var preview = $f('fac-csv-preview');
+      if (rows.length === 0) { preview.hidden = true; toast('파싱된 데이터가 없습니다.', 'error'); return; }
+      // 미리보기 테이블
+      preview.hidden = false;
+      var heads = ['건물명','건물코드','호실','색상'];
+      var html = '<strong>미리보기 ('+rows.length+'개 건물)</strong><br><table><tr>'+heads.map(function(h){return '<th>'+h+'</th>';}).join('')+'</tr>';
+      rows.slice(0,5).forEach(function(r) {
+        html += '<tr><td>'+r.buildingName+'</td><td>'+r.buildingCode+'</td><td>'+(r.rooms||[]).length+'개</td><td><span style="background:'+r.color+';padding:2px 8px;border-radius:3px;color:#fff">'+r.color+'</span></td></tr>';
+      });
+      if (rows.length > 5) html += '<tr><td colspan="4" style="text-align:center">...외 '+(rows.length-5)+'개</td></tr>';
+      html += '</table><div style="margin-top:8px;display:flex;gap:8px"><button id="fac-csv-confirm-btn" class="btn btn-primary btn-sm">업로드 확인</button><button id="fac-csv-cancel-btn" class="btn btn-ghost btn-sm">취소</button></div>';
+      preview.innerHTML = html;
+      document.getElementById('fac-csv-confirm-btn').addEventListener('click', async function() {
+        try {
+          await SheetsModule.bulkUpsertFacilities(rows);
+          toast('시설 '+rows.length+'개 등록 완료!', 'success');
+          preview.hidden = true;
+          csvInput.value = '';
+          await refresh();
+        } catch(err) { toast('업로드 실패: '+err.message, 'error'); }
+      });
+      document.getElementById('fac-csv-cancel-btn').addEventListener('click', function() { preview.hidden = true; csvInput.value = ''; });
+    });
+
+    // 캘린더 공유
+    var shareCalBtn = $f('fac-share-cal-btn');
+    if (shareCalBtn) shareCalBtn.addEventListener('click', function() {
+      if (typeof ReservationUtil !== 'undefined') {
+        ReservationUtil.showCalendarPicker(async function(cal) {
+          toast('캘린더 공유 중...', 'info');
+          var count = 0;
+          for (var i = 0; i < F.reservations.length; i++) {
+            var r = F.reservations[i];
+            try { await ReservationUtil.shareFacilityResvToCalendar(r, cal.id); count++; } catch(e) {}
+          }
+          toast(cal.name+'에 '+count+'개 일정 공유 완료!', 'success');
+        });
+      }
+    });
+
     // 최초 로드
     refresh();
   }

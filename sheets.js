@@ -22,10 +22,12 @@ var SheetsModule = (function () {
     '업무':     ['id','title','content','category','type','fromId','fromName','toIds','toNames','shareScope','dueDate','createdAt','calEventId'],
     '업무수신': ['taskId','userId','userName','status','receivedAt','completedAt','comment','calEventId'],
     '알림로그': ['id','userId','taskId','type','message','isRead','createdAt'],
-    '시설':     ['id','buildingName','rooms','color','status','createdAt'],
+    '시설':     ['id','buildingName','buildingCode','rooms','color','status','createdAt'],
     '대관예약': ['id','buildingId','buildingName','roomId','roomName','title','fromId','fromName','department','startAt','endAt','purpose','attendees','status','calEventId','createdAt'],
     '차량':     ['id','vehicleName','vehicleNum','vehicleType','capacity','status','note','createdAt'],
     '차량예약': ['id','vehicleId','vehicleName','fromId','fromName','department','startAt','endAt','destination','purpose','passengers','status','calEventId','createdAt'],
+    '강의실예약':['id','buildingId','buildingName','roomId','roomName','title','fromId','fromName','department','startDate','endDate','startPeriod','endPeriod','weekdays','reservationType','semester','status','calEventId','createdAt'],
+    '기관':     ['id','institutionName','shortName','domain','adminEmail','primaryColor','timezone','plan','status','createdAt'],
   };
 
   function getToken() { return Auth.getToken(); }
@@ -455,6 +457,159 @@ var SheetsModule = (function () {
     await apiUpdate('차량예약!L' + rowNum, [['취소']]);
   }
 
+  /* ──────────────────────────────────────────────────
+     강의실 예약 관리
+  ────────────────────────────────────────────────── */
+  async function getClassroomReservations(startDate, endDate) {
+    var data = await readSheet('강의실예약');
+    if (!startDate && !endDate) return data;
+    return data.filter(function(r) {
+      if (r.status === '취소') return false;
+      var s = r.startDate || '';
+      var e = r.endDate || s;
+      return (!startDate || e >= startDate) && (!endDate || s <= endDate);
+    });
+  }
+
+  async function createClassroomReservation(res) {
+    var list = await readSheet('강의실예약');
+    var id = 'CLR' + String(list.length + 1).padStart(5,'0') + '_' + Date.now().toString(36).slice(-4);
+    await apiAppend('강의실예약', [[
+      id, res.buildingId||'', res.buildingName||'', res.roomId||'', res.roomName||'',
+      res.title||'', res.fromId||'', res.fromName||'', res.department||'',
+      res.startDate||'', res.endDate||res.startDate||'',
+      res.startPeriod||'1', res.endPeriod||'1',
+      (res.weekdays||[]).join(','), res.reservationType||'기타',
+      res.semester||'', res.status||'확정', '',
+      new Date().toISOString()
+    ]]);
+    return id;
+  }
+
+  async function updateClassroomReservation(rowNum, res) {
+    await apiUpdate('강의실예약!A' + rowNum + ':S' + rowNum, [[
+      res.id, res.buildingId, res.buildingName, res.roomId, res.roomName,
+      res.title, res.fromId, res.fromName, res.department,
+      res.startDate, res.endDate, res.startPeriod, res.endPeriod,
+      Array.isArray(res.weekdays) ? res.weekdays.join(',') : (res.weekdays||''),
+      res.reservationType, res.semester||'', res.status, res.calEventId||'', res.createdAt
+    ]]);
+  }
+
+  async function deleteClassroomReservation(rowNum) {
+    await apiUpdate('강의실예약!R' + rowNum, [['취소']]);
+  }
+
+  async function bulkCreateClassroomReservations(rows) {
+    var existing = await readSheet('강의실예약');
+    var startNum = existing.length + 1;
+    var data = rows.map(function(res, i) {
+      var id = 'CLR' + String(startNum + i).padStart(5,'0');
+      return [
+        id, res.buildingId||'', res.buildingName||'', res.roomId||'', res.roomName||'',
+        res.title||'', res.fromId||'', res.fromName||'', res.department||'',
+        res.startDate||'', res.endDate||res.startDate||'',
+        res.startPeriod||'1', res.endPeriod||'1',
+        (res.weekdays||[]).join(','), res.reservationType||'기타',
+        res.semester||'', res.status||'확정', '',
+        new Date().toISOString()
+      ];
+    });
+    if (data.length > 0) await apiAppend('강의실예약', data);
+    return data.length;
+  }
+
+  /* ──────────────────────────────────────────────────
+     시설 일괄 등록 (건물+호실)
+  ────────────────────────────────────────────────── */
+  async function bulkUpsertFacilities(rows) {
+    // rows: [{buildingName, buildingCode, rooms:[{name,capacity}], color}]
+    // 건물명이 같으면 호실을 merge, 없으면 신규 추가
+    var existing = await readSheet('시설');
+    existing.forEach(function(f) {
+      if (typeof f.rooms === 'string') {
+        try { f.rooms = JSON.parse(f.rooms); } catch(e) { f.rooms = []; }
+      }
+    });
+
+    var toAdd = [], toUpdate = [];
+    rows.forEach(function(r) {
+      var found = existing.find(function(e){ return e.buildingName === r.buildingName; });
+      if (found) {
+        // merge rooms
+        var existingRooms = found.rooms || [];
+        var newRooms = r.rooms || [];
+        newRooms.forEach(function(nr) {
+          if (!existingRooms.find(function(er){ return er.name === nr.name; })) {
+            existingRooms.push(nr);
+          }
+        });
+        toUpdate.push({ row: found._row, data: Object.assign({}, found, { rooms: existingRooms, buildingCode: r.buildingCode||found.buildingCode||'' }) });
+      } else {
+        toAdd.push(r);
+      }
+    });
+
+    // 업데이트
+    for (var i = 0; i < toUpdate.length; i++) {
+      var u = toUpdate[i];
+      await apiUpdate('시설!A' + u.row + ':G' + u.row, [[
+        u.data.id, u.data.buildingName, u.data.buildingCode||'',
+        JSON.stringify(u.data.rooms), u.data.color||'#4285F4', u.data.status||'active', u.data.createdAt
+      ]]);
+    }
+
+    // 신규 추가
+    if (toAdd.length > 0) {
+      var startNum = existing.length + toUpdate.length + 1;
+      var addRows = toAdd.map(function(r, i) {
+        return [
+          'FAC' + String(startNum + i).padStart(3,'0'),
+          r.buildingName, r.buildingCode||'',
+          JSON.stringify(r.rooms || []),
+          r.color || '#4285F4', 'active', new Date().toISOString()
+        ];
+      });
+      await apiAppend('시설', addRows);
+    }
+    return toAdd.length + toUpdate.length;
+  }
+
+  /* ──────────────────────────────────────────────────
+     차량 일괄 등록
+  ────────────────────────────────────────────────── */
+  async function bulkUpsertVehicles(rows) {
+    var existing = await readSheet('차량');
+    var toAdd = [], toUpdate = [];
+    rows.forEach(function(r) {
+      var found = existing.find(function(e){ return e.vehicleNum === r.vehicleNum && r.vehicleNum; });
+      if (found) {
+        toUpdate.push({ row: found._row, data: Object.assign({}, found, r) });
+      } else {
+        toAdd.push(r);
+      }
+    });
+    for (var i = 0; i < toUpdate.length; i++) {
+      var u = toUpdate[i];
+      await apiUpdate('차량!A' + u.row + ':H' + u.row, [[
+        u.data.id, u.data.vehicleName, u.data.vehicleNum, u.data.vehicleType,
+        u.data.capacity, u.data.status||'active', u.data.note||'', u.data.createdAt
+      ]]);
+    }
+    if (toAdd.length > 0) {
+      var startNum2 = existing.length + toUpdate.length + 1;
+      var addRows2 = toAdd.map(function(r, i) {
+        return [
+          'VEH' + String(startNum2 + i).padStart(3,'0'),
+          r.vehicleName||'', r.vehicleNum||'', r.vehicleType||'승용',
+          r.capacity||'4', 'active', r.note||'', new Date().toISOString()
+        ];
+      });
+      await apiAppend('차량', addRows2);
+    }
+    return toAdd.length + toUpdate.length;
+  }
+
   /* 공개 API */
   return {
     initSheets:            initSheets,
@@ -494,6 +649,15 @@ var SheetsModule = (function () {
     createVehicleReservation:  createVehicleReservation,
     updateVehicleReservation:  updateVehicleReservation,
     deleteVehicleReservation:  deleteVehicleReservation,
+    bulkUpsertVehicles:        bulkUpsertVehicles,
+    // 시설 일괄
+    bulkUpsertFacilities:      bulkUpsertFacilities,
+    // 강의실예약
+    getClassroomReservations:       getClassroomReservations,
+    createClassroomReservation:     createClassroomReservation,
+    updateClassroomReservation:     updateClassroomReservation,
+    deleteClassroomReservation:     deleteClassroomReservation,
+    bulkCreateClassroomReservations: bulkCreateClassroomReservations,
   };
 
 })();
