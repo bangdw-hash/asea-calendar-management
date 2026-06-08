@@ -381,9 +381,24 @@
               </div>
               <div id="pdf-file-info" class="pdf-file-info" hidden></div>
 
-              <p class="form-hint" style="margin-top:12px">💡 API 키는 <strong>설정 탭</strong>에서 저장하세요.</p>
+              <!-- API 키 / Base URL 인라인 입력 (설정 탭과 공유) -->
+              <div id="extract-api-box" style="margin-top:14px;padding:12px 14px;background:var(--color-accent-light,#E5F2FB);border:1px solid var(--color-border,#D6E4F0);border-radius:10px">
+                <div style="font-size:12px;font-weight:600;color:var(--color-accent,#0078D4);margin-bottom:8px">🔑 Claude API 설정</div>
+                <div style="display:flex;flex-direction:column;gap:6px">
+                  <input id="extract-api-key" type="password" class="form-input"
+                    placeholder="API 키  (sk-ant-... 또는 프록시 키)"
+                    style="font-size:12px;padding:6px 10px">
+                  <input id="extract-api-base-url" type="url" class="form-input"
+                    placeholder="Base URL  (프록시 사용 시 — 예: https://aiapiflow.com)"
+                    style="font-size:12px;padding:6px 10px">
+                  <div style="display:flex;gap:6px;align-items:center">
+                    <button id="extract-save-api-btn" class="btn btn-primary btn-sm" style="font-size:12px;padding:5px 14px">저장</button>
+                    <span id="extract-api-saved-msg" style="font-size:11px;color:#2e7d32;display:none">✔ 저장됨</span>
+                  </div>
+                </div>
+              </div>
 
-              <button id="run-extract-btn" class="btn btn-primary" style="width:100%;margin-top:8px" disabled>
+              <button id="run-extract-btn" class="btn btn-primary" style="width:100%;margin-top:12px" disabled>
                 🤖 AI로 일정 추출
               </button>
             </div>
@@ -2320,7 +2335,7 @@
   <script src="workorder.js?v=20260608s"></script>
   <script src="quicktask.js?v=20260608s"></script>
   <script src="sms.js?v=20260608a1"></script>
-  <script src="app.js?v=20260609p1"></script>
+  <script src="app.js?v=20260609p2"></script>
   <script>
     // 빠른 업무 등록 초기화 (DOM 준비 후)
     document.addEventListener('DOMContentLoaded', function () {

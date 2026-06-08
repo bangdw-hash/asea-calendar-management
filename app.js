@@ -1986,15 +1986,50 @@
     var cals = S.userCalendars;
     if (!cals || cals.length === 0) {
       sel.innerHTML = '<option value="primary">기본 캘린더</option>';
-      return;
+    } else {
+      sel.innerHTML = '';
+      cals.forEach(function (cal) {
+        var opt = document.createElement('option');
+        opt.value = cal.id;
+        opt.textContent = cal.summary + (cal.primary ? ' (기본)' : '');
+        if (cal.primary) opt.selected = true;
+        sel.appendChild(opt);
+      });
     }
-    sel.innerHTML = '';
-    cals.forEach(function (cal) {
-      var opt = document.createElement('option');
-      opt.value = cal.id;
-      opt.textContent = cal.summary + (cal.primary ? ' (기본)' : '');
-      if (cal.primary) opt.selected = true;
-      sel.appendChild(opt);
+    // API 박스 값 동기화 (설정 탭과 동일 CONFIG 사용)
+    _syncExtractApiBox();
+  }
+
+  // 일정발췃 탭 API 키/Base URL 박스 ↔ CONFIG/localStorage 동기화
+  function _syncExtractApiBox() {
+    var keyEl     = $('extract-api-key');
+    var baseEl    = $('extract-api-base-url');
+    if (!keyEl || !baseEl) return;
+    if (CONFIG.anthropicApiKey)  keyEl.value  = CONFIG.anthropicApiKey;
+    if (CONFIG.anthropicBaseUrl) baseEl.value = CONFIG.anthropicBaseUrl;
+  }
+
+  function _initExtractApiBox() {
+    var btn = $('extract-save-api-btn');
+    if (!btn || btn._bound) return;
+    btn._bound = true;
+    btn.addEventListener('click', function () {
+      var key     = $('extract-api-key').value.trim();
+      var baseUrl = $('extract-api-base-url').value.trim().replace(/\/$/, '');
+      if (!key) { toast('API 키를 입력하세요.', 'error'); return; }
+      // CONFIG 및 localStorage 저장 (설정 탭과 동일 키)
+      CONFIG.anthropicApiKey  = key;
+      CONFIG.anthropicBaseUrl = baseUrl;
+      try { localStorage.setItem(CONFIG.storageKeys.anthropicApiKey,  key);     } catch (e) {}
+      try { localStorage.setItem(CONFIG.storageKeys.anthropicBaseUrl, baseUrl); } catch (e) {}
+      // 설정 탭 입력란도 동기화
+      if ($('setting-api-key'))      $('setting-api-key').value      = key;
+      if ($('setting-api-base-url')) $('setting-api-base-url').value = baseUrl;
+      // 저장 메시지 표시
+      var msg = $('extract-api-saved-msg');
+      if (msg) { msg.style.display = 'inline'; setTimeout(function () { msg.style.display = 'none'; }, 2500); }
+      var label = baseUrl ? 'Claude API 키 + Base URL 저장 (' + baseUrl + ')' : 'Claude API 키 저장됨';
+      toast(label, 'success');
     });
   }
 
@@ -2012,6 +2047,8 @@
         if (target === 'share-history') renderShareHistory();
       });
     });
+
+    _initExtractApiBox();   // API 키/Base URL 저장 버튼 초기화
 
     var pdfDropzone = $('pdf-dropzone');
     var pdfInput    = $('pdf-file-input');
@@ -4296,6 +4333,9 @@
       CONFIG.anthropicBaseUrl = baseUrl;
       try { localStorage.setItem(CONFIG.storageKeys.anthropicApiKey,  key);     } catch (e) {}
       try { localStorage.setItem(CONFIG.storageKeys.anthropicBaseUrl, baseUrl); } catch (e) {}
+      // 일정발췃 탭 입력란도 동기화
+      if ($('extract-api-key'))      $('extract-api-key').value      = key;
+      if ($('extract-api-base-url')) $('extract-api-base-url').value = baseUrl;
       var msg = baseUrl
         ? 'Claude API 키 + Base URL이 저장되었습니다. (' + baseUrl + ')'
         : 'Claude API 키가 저장되었습니다.';
