@@ -3283,6 +3283,43 @@
     $('ci-space-modal-backdrop').addEventListener('click', _ciCloseSpaceModal);
     $('ci-space-save-btn').addEventListener('click', _ciSaveSpace);
 
+    // GPS 토글
+    $('ci-gps-toggle') && $('ci-gps-toggle').addEventListener('change', function () {
+      var on = this.checked;
+      $('ci-gps-fields').hidden = !on;
+      $('ci-gps-toggle-label').textContent = on ? 'ON — GPS 제한 활성' : 'OFF — GPS 자유';
+    });
+    // 반경 슬라이더 실시간 표시
+    $('ci-space-radius') && $('ci-space-radius').addEventListener('input', function () {
+      $('ci-space-radius-val').textContent = this.value + 'm';
+    });
+    // 현재 위치 자동 입력
+    $('ci-gps-locate-btn') && $('ci-gps-locate-btn').addEventListener('click', function () {
+      var statusEl = $('ci-gps-locate-status');
+      if (!navigator.geolocation) {
+        statusEl.textContent = '⚠️ 이 브라우저는 GPS를 지원하지 않습니다.'; return;
+      }
+      this.disabled = true; this.textContent = '📡 위치 가져오는 중...';
+      statusEl.textContent = '';
+      var self = this;
+      navigator.geolocation.getCurrentPosition(
+        function (pos) {
+          $('ci-space-lat').value = pos.coords.latitude.toFixed(6);
+          $('ci-space-lng').value = pos.coords.longitude.toFixed(6);
+          statusEl.textContent = '✅ 현재 위치 입력 완료 (정확도 ±' + Math.round(pos.coords.accuracy) + 'm)';
+          self.disabled = false; self.textContent = '📡 현재 위치로 자동 입력';
+        },
+        function (err) {
+          var msg = err.code === 1 ? '위치 권한이 거부됐습니다. 브라우저 설정에서 허용해 주세요.'
+                  : err.code === 2 ? '위치를 가져올 수 없습니다. 잠시 후 다시 시도하세요.'
+                  : '위치 요청 시간이 초과됐습니다.';
+          statusEl.textContent = '❌ ' + msg;
+          self.disabled = false; self.textContent = '📡 현재 위치로 자동 입력';
+        },
+        { timeout: 10000, enableHighAccuracy: true }
+      );
+    });
+
     // QR 모달
     $('ci-qr-modal-close').addEventListener('click', function () { $('ci-qr-modal').hidden = true; });
     $('ci-qr-modal-backdrop').addEventListener('click', function () { $('ci-qr-modal').hidden = true; });
@@ -3336,9 +3373,13 @@
     $('ci-spaces-list').innerHTML = _ciSpaces.map(function (sp, i) {
       var checkinUrl = baseUrl + 'checkin.html?room=' + encodeURIComponent(sp.id) +
         (sp.name ? '&name=' + encodeURIComponent(sp.name) : '');
+      var hasGps = sp.lat && sp.lng;
+      var gpsBadge = hasGps
+        ? '<span style="display:inline-flex;align-items:center;gap:3px;background:#e3f2fd;color:#1565c0;border-radius:20px;padding:2px 8px;font-size:11px;font-weight:700;margin-left:6px">📍 GPS 제한 ' + (sp.geoRadius || 100) + 'm</span>'
+        : '<span style="display:inline-flex;align-items:center;gap:3px;background:#f1f3f4;color:#888;border-radius:20px;padding:2px 8px;font-size:11px;margin-left:6px">🆓 GPS 자유</span>';
       return '<div class="ci-space-card">' +
         '<div>' +
-          '<div class="ci-space-card-name">🚪 ' + _esc(sp.name) + '</div>' +
+          '<div class="ci-space-card-name" style="display:flex;align-items:center;flex-wrap:wrap;gap:2px">🚪 ' + _esc(sp.name) + gpsBadge + '</div>' +
           '<div class="ci-space-card-meta">' +
             (sp.location ? '📍 ' + _esc(sp.location) : '') +
             (sp.description ? (sp.location ? '&nbsp;·&nbsp;' : '') + _esc(sp.description) : '') +
@@ -3348,6 +3389,7 @@
         '<div class="ci-space-card-actions">' +
           '<button class="btn btn-primary btn-sm" onclick="_ciShowQr(\'' + sp.id + '\')">🔲 QR</button>' +
           '<button class="btn btn-secondary btn-sm" onclick="_ciOpenSpaceLogs(\'' + sp.id + '\',\'' + _esc(sp.name) + '\')">📊 현황</button>' +
+          '<button class="btn btn-ghost btn-sm" onclick="_ciEditSpace(' + i + ')">✏️ 수정</button>' +
           '<button class="btn btn-ghost btn-sm" onclick="_ciDeleteSpace(' + (i + 2) + ',\'' + _esc(sp.name) + '\')" style="color:#e53935">삭제</button>' +
         '</div>' +
       '</div>';
@@ -3641,38 +3683,90 @@
       '<div class="ci-log-user-list">' + rows.join('') + '</div>';
   }
 
-  function _ciOpenSpaceModal() {
-    $('ci-space-name').value = '';
-    $('ci-space-location').value = '';
-    $('ci-space-desc').value = '';
+  function _ciOpenSpaceModal(sp) {
+    // sp 가 있으면 수정 모드
+    $('ci-space-name').value     = sp ? (sp.name        || '') : '';
+    $('ci-space-location').value = sp ? (sp.location    || '') : '';
+    $('ci-space-desc').value     = sp ? (sp.description || '') : '';
+
+    var hasGps = sp && (sp.lat || sp.lng);
+    var gpsToggle  = $('ci-gps-toggle');
+    var gpsFields  = $('ci-gps-fields');
+    var gpsLabel   = $('ci-gps-toggle-label');
+    if (gpsToggle) {
+      gpsToggle.checked = !!hasGps;
+      gpsFields.hidden  = !hasGps;
+      gpsLabel.textContent = hasGps ? 'ON — GPS 제한 활성' : 'OFF — GPS 자유';
+    }
+    $('ci-space-lat')    && ($('ci-space-lat').value    = sp ? (sp.lat       || '') : '');
+    $('ci-space-lng')    && ($('ci-space-lng').value    = sp ? (sp.lng       || '') : '');
+    var radius = sp ? (sp.geoRadius || 100) : 100;
+    $('ci-space-radius') && ($('ci-space-radius').value = radius);
+    $('ci-space-radius-val') && ($('ci-space-radius-val').textContent = radius + 'm');
+    $('ci-gps-locate-status') && ($('ci-gps-locate-status').textContent = '');
+
+    $('ci-space-modal-title').textContent = sp ? '공간 수정' : '공간 등록';
+    $('ci-space-save-btn').textContent    = sp ? '저장' : '등록';
+    $('ci-space-modal')._editSp = sp || null;
     $('ci-space-modal').hidden = false;
     setTimeout(function () { $('ci-space-name').focus(); }, 100);
   }
 
   function _ciCloseSpaceModal() { $('ci-space-modal').hidden = true; }
 
+  function _ciEditSpace(idx) {
+    var sp = _ciSpaces[idx];
+    if (!sp) return;
+    _ciOpenSpaceModal(sp);
+  }
+
   async function _ciSaveSpace() {
     var name = ($('ci-space-name').value || '').trim();
     if (!name) { toast('공간 이름을 입력하세요.', 'error'); return; }
-    var btn = $('ci-space-save-btn');
+
+    var useGps = $('ci-gps-toggle') && $('ci-gps-toggle').checked;
+    var lat = useGps ? (($('ci-space-lat').value || '').trim()) : '';
+    var lng = useGps ? (($('ci-space-lng').value || '').trim()) : '';
+    var radius = useGps ? ($('ci-space-radius').value || '100') : '';
+
+    if (useGps && (!lat || !lng)) {
+      toast('GPS 제한을 켰으면 위도·경도를 입력해 주세요.', 'error'); return;
+    }
+
+    var spaceData = {
+      name:        name,
+      location:    ($('ci-space-location').value || '').trim(),
+      description: ($('ci-space-desc').value || '').trim(),
+      lat:         lat,
+      lng:         lng,
+      geoRadius:   radius,
+    };
+
+    var btn     = $('ci-space-save-btn');
+    var editSp  = $('ci-space-modal')._editSp;
     btn.disabled = true;
-    btn.textContent = '등록 중...';
+    btn.textContent = editSp ? '저장 중...' : '등록 중...';
     try {
-      var result = await SheetsModule.addSpace({
-        name: name,
-        location: ($('ci-space-location').value || '').trim(),
-        description: ($('ci-space-desc').value || '').trim(),
-      });
-      toast('✅ "' + name + '" 공간이 등록되었습니다.', 'success');
-      _ciCloseSpaceModal();
-      await _ciLoadSpaces();
-      // 등록 직후 QR 바로 표시
-      if (result && result.id) _ciShowQr(result.id);
+      if (editSp) {
+        // 수정 모드
+        var updData = Object.assign({}, editSp, spaceData);
+        await SheetsModule.updateSpace(editSp._row, updData);
+        toast('✅ "' + name + '" 공간이 수정되었습니다.', 'success');
+        _ciCloseSpaceModal();
+        await _ciLoadSpaces();
+      } else {
+        // 신규 등록
+        var result = await SheetsModule.addSpace(spaceData);
+        toast('✅ "' + name + '" 공간이 등록되었습니다.', 'success');
+        _ciCloseSpaceModal();
+        await _ciLoadSpaces();
+        if (result && result.id) _ciShowQr(result.id);
+      }
     } catch (e) {
-      toast('등록 실패: ' + e.message, 'error');
+      toast((editSp ? '수정' : '등록') + ' 실패: ' + e.message, 'error');
     } finally {
       btn.disabled = false;
-      btn.textContent = '등록';
+      btn.textContent = editSp ? '저장' : '등록';
     }
   }
 
@@ -3820,6 +3914,7 @@
   // 전역 노출 (HTML onclick 속성)
   window._ciShowQr          = _ciShowQr;
   window._ciDeleteSpace     = _ciDeleteSpace;
+  window._ciEditSpace       = _ciEditSpace;
   window._ciOpenSpaceLogs   = _ciOpenSpaceLogs;
 
   /* ── 내 캘린더 표시 설정 ─── */

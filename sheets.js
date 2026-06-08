@@ -30,7 +30,7 @@ var SheetsModule = (function () {
     '기관':     ['id','institutionName','shortName','domain','adminEmail','primaryColor','timezone','plan','status','createdAt'],
     '작업지시': ['id','title','content','requesterId','requesterName','assigneeId','assigneeName','department','priority','status','dueDate','completedAt','calEventId','note','createdAt'],
     '관리실인원':['id','name','googleEmail','phone','shift','role','status','createdAt'],
-    '공간관리':  ['id','name','location','description','qrCode','status','createdAt'],
+    '공간관리':  ['id','name','location','description','qrCode','status','createdAt','lat','lng','geoRadius'],
     '입출입기록':['id','roomId','roomName','userName','phone','affiliation','checkType','timestamp','consentGiven','consentTimestamp','consentTextVersion','deviceId'],
     '입출입사용자':['id','name','phone','affiliation','firstConsentAt','consentTextVersion','lastVisit','visitCount'],
   };
@@ -851,16 +851,20 @@ var SheetsModule = (function () {
   async function addSpace(space) {
     var list = await readSheet('공간관리');
     var id = 'SPC' + String(list.length + 1).padStart(3, '0');
-    var checkinUrl = (CONFIG.baseUrl || '') + 'checkin.html?room=' + id;
+    var checkinUrl = (CONFIG.baseUrl || '') + 'checkin.html?room=' + encodeURIComponent(id) +
+      (space.name ? '&name=' + encodeURIComponent(space.name) : '');
     var qrCode = 'https://api.qrserver.com/v1/create-qr-code/?data=' + encodeURIComponent(checkinUrl) + '&size=300x300';
     var row = [
       id,
-      space.name || '',
-      space.location || '',
+      space.name        || '',
+      space.location    || '',
       space.description || '',
       qrCode,
       'active',
       new Date().toISOString(),
+      space.lat       || '',
+      space.lng       || '',
+      space.geoRadius || '',
     ];
     await apiAppend('공간관리', [row]);
     return { id: id, qrCode: qrCode, checkinUrl: checkinUrl };
@@ -869,7 +873,8 @@ var SheetsModule = (function () {
   async function updateSpace(rowNum, space) {
     var headers = SCHEMAS['공간관리'];
     var row = headers.map(function (h) { return space[h] !== undefined ? space[h] : ''; });
-    await apiUpdate('공간관리!A' + rowNum + ':G' + rowNum, [row]);
+    // A~J (10 cols)
+    await apiUpdate('공간관리!A' + rowNum + ':J' + rowNum, [row]);
   }
 
   async function deleteSpace(rowNum) {
