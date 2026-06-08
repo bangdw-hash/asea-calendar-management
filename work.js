@@ -1148,10 +1148,13 @@ var WorkModule = (function () {
     results.forEach(function (emp) {
       var item = document.createElement('div');
       item.className = 'work-recipient-item';
-      item.textContent = emp.name + ' · ' + emp.department + ' · ' + emp.rank;
+      item.innerHTML =
+        '<span style="font-weight:600">' + _escHr(emp.name) + '</span>' +
+        '<span style="color:#5f6368;font-size:12px;margin-left:6px">' + _escHr(emp.department) + ' · ' + _escHr(emp.rank) + '</span>' +
+        (emp.phone ? '<span style="color:#1a73e8;font-size:12px;margin-left:8px">📞 ' + _escHr(emp.phone) + '</span>' : '');
       item.onclick = function () {
         if (!W.selectedRecipients.find(function (r) { return r.id === emp.id; })) {
-          W.selectedRecipients.push({ id: emp.id, name: emp.name, department: emp.department });
+          W.selectedRecipients.push({ id: emp.id, name: emp.name, department: emp.department, phone: emp.phone || '' });
           renderRecipientChips();
         }
         el.hidden = true;
@@ -1168,7 +1171,11 @@ var WorkModule = (function () {
     W.selectedRecipients.forEach(function (r) {
       var chip = document.createElement('span');
       chip.className = 'work-recipient-chip';
-      chip.innerHTML = '👤 ' + r.name + ' <button class="work-chip-remove" data-id="' + r.id + '">×</button>';
+      chip.title = r.phone ? '📞 ' + r.phone : '';
+      chip.innerHTML =
+        '👤 <strong>' + _escHr(r.name) + '</strong>' +
+        (r.phone ? ' <span style="font-size:11px;opacity:.8">' + _escHr(r.phone) + '</span>' : '') +
+        ' <button class="work-chip-remove" data-id="' + r.id + '">×</button>';
       chip.querySelector('.work-chip-remove').onclick = function () {
         W.selectedRecipients = W.selectedRecipients.filter(function (x) { return x.id !== r.id; });
         renderRecipientChips();
@@ -1180,6 +1187,9 @@ var WorkModule = (function () {
   /* ──────────────────────────────────────────────────
      직원관리 (관리자)
   ────────────────────────────────────────────────── */
+  var _hrSortKey = 'name';   // name | department | rank | role
+  var _hrSortAsc = true;
+
   async function loadHrList() {
     var listEl = $w('hr-employee-list');
     var cntEl  = $w('hr-list-count');
@@ -1190,73 +1200,111 @@ var WorkModule = (function () {
       var emps = await SheetsModule.getEmployees();
       W.employees = emps;
       W.empCacheAt = Date.now();
-
-      var active = emps.filter(function (e) { return e.status !== 'inactive'; });
-      if (cntEl) cntEl.textContent = '직원 ' + active.length + '명';
-
-      var q = ($w('hr-search') && $w('hr-search').value || '').toLowerCase();
-      var filtered = q ? active.filter(function (e) {
-        return e.name.includes(q) || e.department.toLowerCase().includes(q);
-      }) : active;
-
-      if (filtered.length === 0) {
-        listEl.innerHTML = '<p class="empty-state">직원이 없습니다.</p>';
-        return;
-      }
-
-      // ── 테이블 헤더
-      var roleLabel = { admin:'관리자', manager:'부서장', staff:'직원' };
-      var roleColor = { admin:'#1a73e8', manager:'#0b8043', staff:'#5f6368' };
-      var table = document.createElement('div');
-      table.style.cssText = 'overflow-x:auto';
-      table.innerHTML =
-        '<table class="hr-emp-table">' +
-        '<thead><tr>' +
-          '<th>이름</th>' +
-          '<th>소속 부서</th>' +
-          '<th>직급</th>' +
-          '<th>권한</th>' +
-          '<th>이메일</th>' +
-          '<th>전화번호</th>' +
-          '<th style="text-align:center;min-width:100px">관리</th>' +
-        '</tr></thead>' +
-        '<tbody id="hr-emp-tbody"></tbody>' +
-        '</table>';
-      listEl.appendChild(table);
-
-      var tbody = $w('hr-emp-tbody');
-      filtered.forEach(function (emp) {
-        var tr = document.createElement('tr');
-        var rl = roleLabel[emp.role] || emp.role;
-        var rc = roleColor[emp.role] || '#888';
-        tr.innerHTML =
-          '<td class="hr-emp-name-cell"><strong>' + _escHr(emp.name) + '</strong></td>' +
-          '<td>' + _escHr(emp.department) + '</td>' +
-          '<td>' + _escHr(emp.rank) + '</td>' +
-          '<td><span class="hr-role-badge" style="background:' + rc + '">' + rl + '</span></td>' +
-          '<td class="hr-email-cell">' + _escHr(emp.googleEmail) + '</td>' +
-          '<td>' + _escHr(emp.phone||'') + '</td>' +
-          '<td style="text-align:center;white-space:nowrap">' +
-            '<button class="btn btn-secondary btn-xs hr-emp-edit" style="margin-right:4px">✏️ 수정</button>' +
-            '<button class="btn btn-ghost btn-xs hr-emp-del" style="color:#e53935">삭제</button>' +
-          '</td>';
-
-        tr.querySelector('.hr-emp-del').onclick = async function () {
-          if (!confirm(emp.name + '을(를) 비활성화 처리하시겠습니까?')) return;
-          await SheetsModule.deleteEmployee(parseInt(emp._row));
-          toast(emp.name + ' 비활성화 완료', 'success');
-          loadHrList();
-        };
-
-        tr.querySelector('.hr-emp-edit').onclick = function () {
-          _openHrEditModal(emp);
-        };
-
-        tbody.appendChild(tr);
-      });
+      _renderHrTable(emps);
     } catch (e) {
       listEl.innerHTML = '<p class="empty-state" style="color:#e53935">로드 실패: ' + e.message + '</p>';
     }
+  }
+
+  function _renderHrTable(emps) {
+    var listEl = $w('hr-employee-list');
+    var cntEl  = $w('hr-list-count');
+    if (!listEl) return;
+
+    var active = (emps || W.employees || []).filter(function (e) { return e.status !== 'inactive'; });
+    if (cntEl) cntEl.textContent = '직원 ' + active.length + '명';
+
+    // 검색 필터
+    var q = ($w('hr-search') && $w('hr-search').value || '').toLowerCase().trim();
+    var filtered = q ? active.filter(function (e) {
+      return (e.name||'').toLowerCase().includes(q) ||
+             (e.department||'').toLowerCase().includes(q) ||
+             (e.rank||'').toLowerCase().includes(q) ||
+             (e.phone||'').includes(q);
+    }) : active;
+
+    // 정렬
+    filtered = filtered.slice().sort(function (a, b) {
+      var av = (a[_hrSortKey] || '').toLowerCase();
+      var bv = (b[_hrSortKey] || '').toLowerCase();
+      var roleOrder = { admin: 0, manager: 1, staff: 2 };
+      if (_hrSortKey === 'role') { av = roleOrder[a.role] !== undefined ? roleOrder[a.role] : 9; bv = roleOrder[b.role] !== undefined ? roleOrder[b.role] : 9; }
+      var cmp = typeof av === 'number' ? av - bv : av.localeCompare(bv, 'ko');
+      return _hrSortAsc ? cmp : -cmp;
+    });
+
+    if (filtered.length === 0) {
+      listEl.innerHTML = '<p class="empty-state">' + (q ? '"' + q + '" 검색 결과가 없습니다.' : '직원이 없습니다.') + '</p>';
+      return;
+    }
+
+      // ── 테이블 헤더
+    var roleLabel = { admin:'관리자', manager:'부서장', staff:'직원' };
+    var roleColor = { admin:'#1a73e8', manager:'#0b8043', staff:'#5f6368' };
+
+    function _thSort(label, key) {
+      var arrow = _hrSortKey === key ? (_hrSortAsc ? ' ▲' : ' ▼') : ' ⇅';
+      return '<th class="hr-th-sort" data-sort="' + key + '" style="cursor:pointer;user-select:none;white-space:nowrap">' + label + '<span style="opacity:.5;font-size:10px">' + arrow + '</span></th>';
+    }
+
+    listEl.innerHTML = '';
+    var wrapper = document.createElement('div');
+    wrapper.style.cssText = 'overflow-x:auto';
+    wrapper.innerHTML =
+      '<table class="hr-emp-table">' +
+      '<thead><tr>' +
+        _thSort('이름', 'name') +
+        _thSort('소속 부서', 'department') +
+        _thSort('직급', 'rank') +
+        _thSort('권한', 'role') +
+        '<th>이메일</th>' +
+        '<th>전화번호</th>' +
+        '<th style="text-align:center;min-width:110px">관리</th>' +
+      '</tr></thead>' +
+      '<tbody id="hr-emp-tbody"></tbody>' +
+      '</table>';
+    listEl.appendChild(wrapper);
+
+    // 헤더 정렬 클릭
+    wrapper.querySelectorAll('.hr-th-sort').forEach(function (th) {
+      th.onclick = function () {
+        var key = th.dataset.sort;
+        if (_hrSortKey === key) { _hrSortAsc = !_hrSortAsc; }
+        else { _hrSortKey = key; _hrSortAsc = true; }
+        _renderHrTable();
+      };
+    });
+
+    var tbody = document.getElementById('hr-emp-tbody');
+    filtered.forEach(function (emp) {
+      var tr = document.createElement('tr');
+      var rl = roleLabel[emp.role] || emp.role;
+      var rc = roleColor[emp.role] || '#888';
+      var phoneDisplay = emp.phone
+        ? '<a href="tel:' + _escHr(emp.phone) + '" style="color:#1a73e8;text-decoration:none">' + _escHr(emp.phone) + '</a>'
+        : '<span style="color:#ccc">-</span>';
+      tr.innerHTML =
+        '<td class="hr-emp-name-cell"><strong>' + _escHr(emp.name) + '</strong></td>' +
+        '<td>' + _escHr(emp.department) + '</td>' +
+        '<td>' + _escHr(emp.rank) + '</td>' +
+        '<td><span class="hr-role-badge" style="background:' + rc + '">' + rl + '</span></td>' +
+        '<td class="hr-email-cell">' + _escHr(emp.googleEmail||'') + '</td>' +
+        '<td style="white-space:nowrap">' + phoneDisplay + '</td>' +
+        '<td style="text-align:center;white-space:nowrap">' +
+          '<button class="btn btn-secondary btn-xs hr-emp-edit" style="margin-right:4px">✏️ 수정</button>' +
+          '<button class="btn btn-ghost btn-xs hr-emp-del" style="color:#e53935">삭제</button>' +
+        '</td>';
+
+      tr.querySelector('.hr-emp-del').onclick = async function () {
+        if (!confirm(emp.name + '을(를) 비활성화 처리하시겠습니까?')) return;
+        await SheetsModule.deleteEmployee(parseInt(emp._row));
+        toast(emp.name + ' 비활성화 완료', 'success');
+        loadHrList();
+      };
+      tr.querySelector('.hr-emp-edit').onclick = function () { _openHrEditModal(emp); };
+
+      tbody.appendChild(tr);
+    });
   }
 
   /* ── XSS 방어 ── */
@@ -1576,7 +1624,13 @@ var WorkModule = (function () {
       var searchHrTimer;
       hrSearch.addEventListener('input', function () {
         clearTimeout(searchHrTimer);
-        searchHrTimer = setTimeout(loadHrList, 400);
+        // 캐시된 데이터로 즉시 필터링 (네트워크 없이)
+        if (W.employees.length) {
+          clearTimeout(searchHrTimer);
+          searchHrTimer = setTimeout(function () { _renderHrTable(); }, 200);
+        } else {
+          searchHrTimer = setTimeout(loadHrList, 400);
+        }
       });
     }
 
