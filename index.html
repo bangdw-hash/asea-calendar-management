@@ -870,6 +870,22 @@
           <button id="mgr-add-btn" class="btn btn-primary btn-sm">➕ 관리실 인원 추가</button>
           <div id="mgr-staff-list" style="margin-top:14px"></div>
         </div>
+        <!-- 앱 기본 URL (커스텀 도메인) 설정 -->
+        <div class="settings-card">
+          <h3 class="settings-section-title">🌐 앱 기본 URL (커스텀 도메인)</h3>
+          <p class="form-hint" style="margin-bottom:10px">
+            커스텀 도메인을 연결한 경우 여기서 URL을 변경하면 QR 코드 링크 등에 자동 반영됩니다.<br>
+            끝에 <code>/</code>를 포함해야 합니다. 예: <code>https://simmanager.asea.or.kr/</code>
+          </p>
+          <div style="display:flex;gap:8px;align-items:center">
+            <input id="setting-base-url" type="url" class="form-input" style="flex:1"
+              placeholder="https://bangdw-hash.github.io/asea-calendar-management/">
+            <button id="setting-base-url-save" class="btn btn-primary btn-sm">저장</button>
+            <button id="setting-base-url-reset" class="btn btn-secondary btn-sm">기본값</button>
+          </div>
+          <p id="setting-base-url-status" class="form-hint" style="margin-top:8px"></p>
+        </div>
+
         <!-- QR 체크인 서버 URL 설정 -->
         <div class="settings-card" id="checkin-proxy-card">
           <h3 class="settings-section-title">🔗 QR 체크인 서버 URL</h3>

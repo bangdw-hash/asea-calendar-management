@@ -3174,7 +3174,46 @@
       _initSettingsAccordion();
     }
     _initMgrStaff();
+    _initBaseUrl();
     _initCheckinProxy();
+  }
+
+  /* ── 기본 URL 설정 ── */
+  var BASE_URL_KEY = 'asea_base_url';
+  var DEFAULT_BASE_URL = 'https://bangdw-hash.github.io/asea-calendar-management/';
+
+  (function _applyStoredBaseUrl() {
+    var stored = localStorage.getItem(BASE_URL_KEY);
+    if (stored) CONFIG.baseUrl = stored;
+  })();
+
+  var _baseUrlInited = false;
+  function _initBaseUrl() {
+    if (_baseUrlInited) return;
+    _baseUrlInited = true;
+    var input  = $('setting-base-url');
+    var status = $('setting-base-url-status');
+    if (!input) return;
+    input.value = CONFIG.baseUrl || DEFAULT_BASE_URL;
+
+    $('setting-base-url-save') && $('setting-base-url-save').addEventListener('click', function () {
+      var url = (input.value || '').trim();
+      if (!url) { status.textContent = '❌ URL을 입력하세요.'; return; }
+      if (!url.endsWith('/')) url += '/';
+      localStorage.setItem(BASE_URL_KEY, url);
+      CONFIG.baseUrl = url;
+      input.value = url;
+      status.textContent = '✅ 저장했습니다. QR 코드 링크에 즉시 반영됩니다.';
+      setTimeout(function () { status.textContent = ''; }, 3000);
+    });
+
+    $('setting-base-url-reset') && $('setting-base-url-reset').addEventListener('click', function () {
+      localStorage.removeItem(BASE_URL_KEY);
+      CONFIG.baseUrl = DEFAULT_BASE_URL;
+      input.value = DEFAULT_BASE_URL;
+      status.textContent = '↩️ 기본값으로 되돌렸습니다.';
+      setTimeout(function () { status.textContent = ''; }, 2000);
+    });
   }
 
   var _checkinProxyInited = false;
