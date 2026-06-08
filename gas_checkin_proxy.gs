@@ -93,10 +93,16 @@ function _getRoom(roomId) {
   for (var i = 1; i < rows.length; i++) {
     if (rows[i][idIdx] === roomId &&
         (statusIdx < 0 || rows[i][statusIdx] !== 'inactive')) {
+      var latIdx    = h.indexOf('lat');
+      var lngIdx    = h.indexOf('lng');
+      var radiusIdx = h.indexOf('geoRadius');
       return {
-        id:       roomId,
-        name:     rows[i][nameIdx]     || '',
-        location: locationIdx >= 0 ? (rows[i][locationIdx] || '') : '',
+        id:        roomId,
+        name:      rows[i][nameIdx]     || '',
+        location:  locationIdx >= 0 ? (rows[i][locationIdx] || '') : '',
+        lat:       latIdx    >= 0 ? (rows[i][latIdx]    || '') : '',
+        lng:       lngIdx    >= 0 ? (rows[i][lngIdx]    || '') : '',
+        geoRadius: radiusIdx >= 0 ? (rows[i][radiusIdx] || '') : '',
       };
     }
   }

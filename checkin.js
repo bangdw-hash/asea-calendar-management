@@ -21,6 +21,103 @@
 
   var DUPLICATE_MINUTES = 30;   // 분 이내 재스캔 → 중복 처리
 
+  /* GPS 반경 체크 (미터 단위 Haversine) */
+  function _gpsDistance(lat1, lng1, lat2, lng2) {
+    var R = 6371000; // 지구 반지름 m
+    var dLat = (lat2 - lat1) * Math.PI / 180;
+    var dLng = (lng2 - lng1) * Math.PI / 180;
+    var a = Math.sin(dLat/2)*Math.sin(dLat/2) +
+            Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*
+            Math.sin(dLng/2)*Math.sin(dLng/2);
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  }
+
+  /* 위치 권한 거부 안내 팝업 */
+  function _showGpsBlockedPopup(reason) {
+    var existing = document.getElementById('gps-blocked-popup');
+    if (existing) existing.remove();
+
+    var isAndroid = /Android/i.test(navigator.userAgent);
+    var isIOS     = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+    var guideHtml = isIOS
+      ? '<ol style="font-size:13px;line-height:2;padding-left:18px;margin:0">' +
+          '<li><b>설정</b> 앱 열기</li>' +
+          '<li><b>개인 정보 보호 및 보안</b> → <b>위치 서비스</b></li>' +
+          '<li><b>Safari</b> 또는 사용 중인 브라우저 선택</li>' +
+          '<li><b>"앱을 사용하는 동안"</b> 으로 변경</li>' +
+          '<li>이 페이지로 돌아와 다시 시도해 주세요.</li>' +
+        '</ol>'
+      : '<ol style="font-size:13px;line-height:2;padding-left:18px;margin:0">' +
+          '<li>브라우저 주소창 왼쪽 <b>🔒 자물쇠</b> 아이콘 탭</li>' +
+          '<li><b>위치</b> 항목 → <b>허용</b> 으로 변경</li>' +
+          '<li>또는: <b>설정 → 앱 → 브라우저 → 권한 → 위치</b></li>' +
+          '<li>페이지를 새로고침한 뒤 다시 시도해 주세요.</li>' +
+        '</ol>';
+
+    var popup = document.createElement('div');
+    popup.id = 'gps-blocked-popup';
+    popup.style.cssText = 'position:fixed;inset:0;z-index:9999;display:flex;align-items:flex-end;justify-content:center;background:rgba(0,0,0,.5)';
+    popup.innerHTML =
+      '<div style="background:#fff;border-radius:20px 20px 0 0;padding:28px 24px 36px;width:100%;max-width:480px;box-shadow:0 -4px 30px rgba(0,0,0,.15)">' +
+        '<div style="text-align:center;margin-bottom:16px">' +
+          '<div style="font-size:40px;margin-bottom:8px">📍</div>' +
+          '<div style="font-size:17px;font-weight:700;margin-bottom:6px">위치 접근 권한이 필요합니다</div>' +
+          '<div style="font-size:13px;color:#5f6368;margin-bottom:4px">' +
+            (reason === 'denied'
+              ? '위치 권한이 <b style="color:#e53935">거부</b>되어 있습니다.<br>아래 방법으로 권한을 허용해 주세요.'
+              : '이 공간은 <b>지정 구역 내 스캔</b>만 허용합니다.<br>위치 확인을 위해 권한을 허용해 주세요.') +
+          '</div>' +
+        '</div>' +
+        '<div style="background:#f8f9fa;border-radius:12px;padding:16px 18px;margin-bottom:20px">' +
+          guideHtml +
+        '</div>' +
+        '<button id="gps-popup-reload" class="btn btn-primary" style="width:100%;padding:14px;font-size:15px">🔄 새로고침 후 다시 시도</button>' +
+        '<button id="gps-popup-close" class="btn btn-ghost" style="width:100%;margin-top:10px;font-size:13px;color:#888">취소</button>' +
+      '</div>';
+
+    document.body.appendChild(popup);
+    document.getElementById('gps-popup-reload').onclick = function () { location.reload(); };
+    document.getElementById('gps-popup-close').onclick  = function () { popup.remove(); };
+  }
+
+  /* GPS 위치 확인 후 콜백 실행 */
+  function _checkGeoThenDo(onPass, onFail) {
+    var lat = _roomInfo && parseFloat(_roomInfo.lat);
+    var lng = _roomInfo && parseFloat(_roomInfo.lng);
+    var radius = _roomInfo && parseFloat(_roomInfo.geoRadius || 100);
+
+    // 공간에 좌표 미등록 → GPS 체크 없이 통과
+    if (!lat || !lng) { onPass(); return; }
+
+    if (!navigator.geolocation) {
+      // 브라우저가 GPS 미지원 → 통과 (구형 기기 배려)
+      onPass(); return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      function (pos) {
+        var dist = _gpsDistance(pos.coords.latitude, pos.coords.longitude, lat, lng);
+        if (dist <= radius) {
+          onPass();
+        } else {
+          onFail('out_of_range', Math.round(dist));
+        }
+      },
+      function (err) {
+        if (err.code === 1) {           // PERMISSION_DENIED
+          _showGpsBlockedPopup('denied');
+        } else if (err.code === 2) {    // POSITION_UNAVAILABLE
+          // 실내 GPS 불가 등 → 통과 (엄격하게 차단하지 않음)
+          onPass();
+        } else {                        // TIMEOUT
+          onPass();
+        }
+      },
+      { timeout: 10000, maximumAge: 30000, enableHighAccuracy: true }
+    );
+  }
+
   var _roomId   = '';
   var _roomName = '';
   var _roomInfo = null;
@@ -435,18 +532,36 @@
   });
 
   /* ── 메인 스캔 버튼 ── */
-  $('btn-scan') && $('btn-scan').addEventListener('click', async function () {
-    var judge = _judge();
-    this.disabled = true;
-    this.textContent = '처리 중...';
+  $('btn-scan') && $('btn-scan').addEventListener('click', function () {
+    var self = this;
+    self.disabled = true;
+    self.textContent = '위치 확인 중...';
 
+    _checkGeoThenDo(
+      /* GPS 통과 → 실제 처리 */
+      function () { _doCheckin(self); },
+      /* GPS 범위 밖 */
+      function (reason, dist) {
+        var errEl = $('error-checkin-msg');
+        if (errEl) {
+          errEl.textContent = '📍 현재 위치(' + dist + 'm)가 이 공간의 허용 구역(' + ((_roomInfo && _roomInfo.geoRadius) || 100) + 'm) 밖입니다.';
+          errEl.className = 'error-msg show';
+        }
+        self.disabled = false;
+        var judge = _judge();
+        self.textContent = judge.action === '입실' ? '✅ 입실 등록' : '🚪 퇴실 등록';
+      }
+    );
+  });
+
+  async function _doCheckin(btn) {
+    var judge = _judge();
     var ts = new Date().toISOString();
 
     if (judge.action === '중복') {
-      // 중복 — 저장 안 하고 안내만
       _renderResult('중복', ts, judge.lastLog);
-      this.disabled = false;
-      this.textContent = judge.action === '입실' ? '✅ 입실 등록' : '🚪 퇴실 등록';
+      btn.disabled = false;
+      btn.textContent = '📋 상태 확인';
       return;
     }
 
@@ -475,10 +590,10 @@
       var errEl = $('error-checkin-msg');
       if (errEl) { errEl.textContent = e.message || '저장 실패'; errEl.className = 'error-msg show'; }
     } finally {
-      this.disabled = false;
-      this.textContent = judge.action === '입실' ? '✅ 입실 등록' : '🚪 퇴실 등록';
+      btn.disabled = false;
+      btn.textContent = judge.action === '입실' ? '✅ 입실 등록' : '🚪 퇴실 등록';
     }
-  });
+  }
 
   /* ── 정보 수정 UX ── */
   $('btn-edit-info-open') && $('btn-edit-info-open').addEventListener('click', function () {
