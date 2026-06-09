@@ -7,7 +7,7 @@
   <title>ASEA 캘린더 관리</title>
   <link rel="preload" as="style" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
-  <link rel="stylesheet" href="style.css?v=20260609r4">
+  <link rel="stylesheet" href="style.css?v=20260609p2">
   <link rel="stylesheet" href="report.css?v=20260609">
   <link rel="stylesheet" href="promo.css?v=20260609e1">
   <link rel="stylesheet" href="help.css?v=20260609a1">
@@ -1587,6 +1587,100 @@
   </div>
 
   <!-- ═══════════════════════════════════════════════════════════
+       반복 일정 삭제 선택 모달
+       ═══════════════════════════════════════════════════════════ -->
+  <div id="recur-delete-modal" class="modal" hidden aria-modal="true" role="dialog">
+    <div class="modal-backdrop"></div>
+    <div class="modal-dialog recur-del-dialog">
+      <div class="modal-header">
+        <h3 class="modal-title">🔁 반복 일정 삭제</h3>
+        <button class="modal-close" id="recur-del-close">✕</button>
+      </div>
+      <div class="modal-body">
+        <p class="recur-del-desc">삭제 범위를 선택하세요.</p>
+        <div class="recur-del-options">
+          <label class="recur-del-opt">
+            <input type="radio" name="recur-del-scope" value="this" checked>
+            <div class="recur-del-opt-body">
+              <span class="recur-del-opt-title">이번 일정만 삭제</span>
+              <span class="recur-del-opt-desc">선택한 날짜의 일정만 삭제되고, 나머지 반복 일정은 유지됩니다.</span>
+            </div>
+          </label>
+          <label class="recur-del-opt">
+            <input type="radio" name="recur-del-scope" value="all">
+            <div class="recur-del-opt-body">
+              <span class="recur-del-opt-title">모든 반복 일정 삭제</span>
+              <span class="recur-del-opt-desc">이 반복 시리즈의 모든 일정이 삭제됩니다. 되돌릴 수 없습니다.</span>
+            </div>
+          </label>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <div class="modal-footer-right">
+          <button id="recur-del-cancel" class="btn btn-ghost">취소</button>
+          <button id="recur-del-confirm" class="btn btn-danger">삭제</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       달력 구간 인쇄 설정 모달
+       ═══════════════════════════════════════════════════════════ -->
+  <div id="print-range-modal" class="modal" hidden aria-modal="true" role="dialog">
+    <div class="modal-backdrop"></div>
+    <div class="modal-dialog print-range-dialog">
+      <div class="modal-header">
+        <h3 class="modal-title">🖨 달력 인쇄 설정</h3>
+        <button class="modal-close" id="print-range-close">✕</button>
+      </div>
+      <div class="modal-body">
+
+        <div class="form-group">
+          <label class="form-label">인쇄 구간</label>
+          <div class="print-range-row">
+            <div class="print-range-field">
+              <label class="print-range-lbl">시작</label>
+              <input id="print-start-year"  type="number" class="cal-jump-inp" min="2000" max="2100" placeholder="년">
+              <span class="recur-custom-txt">년</span>
+              <input id="print-start-month" type="number" class="cal-jump-inp cal-jump-month-inp" min="1" max="12" placeholder="월">
+              <span class="recur-custom-txt">월</span>
+            </div>
+            <span class="print-range-sep">~</span>
+            <div class="print-range-field">
+              <label class="print-range-lbl">종료</label>
+              <input id="print-end-year"  type="number" class="cal-jump-inp" min="2000" max="2100" placeholder="년">
+              <span class="recur-custom-txt">년</span>
+              <input id="print-end-month" type="number" class="cal-jump-inp cal-jump-month-inp" min="1" max="12" placeholder="월">
+              <span class="recur-custom-txt">월</span>
+            </div>
+          </div>
+          <div class="print-range-quick">
+            <button class="cal-jump-qbtn" data-print-preset="1">이번 달</button>
+            <button class="cal-jump-qbtn" data-print-preset="3">3개월</button>
+            <button class="cal-jump-qbtn" data-print-preset="6">6개월</button>
+            <button class="cal-jump-qbtn" data-print-preset="12">올해 전체</button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">표시할 캘린더</label>
+          <div id="print-cal-checkboxes" class="print-cal-checks"></div>
+        </div>
+
+        <div id="print-range-preview" class="print-range-preview"></div>
+
+      </div>
+      <div class="modal-footer">
+        <div class="modal-footer-right">
+          <button id="print-range-cancel" class="btn btn-ghost">취소</button>
+          <button id="print-range-go" class="btn btn-primary">🖨 인쇄 / PDF 저장</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════
        이메일 미리보기 모달
        ═══════════════════════════════════════════════════════════ -->
   <div id="email-preview-modal" class="modal" hidden aria-modal="true" role="dialog">
@@ -2496,7 +2590,7 @@
   <script src="workorder.js?v=20260608s"></script>
   <script src="quicktask.js?v=20260609r1"></script>
   <script src="sms.js?v=20260608a1"></script>
-  <script src="app.js?v=20260609p1"></script>
+  <script src="app.js?v=20260609p2"></script>
   <script>
     // 빠른 업무 등록 초기화 (DOM 준비 후)
     document.addEventListener('DOMContentLoaded', function () {

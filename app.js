@@ -748,7 +748,7 @@
     });
 
     $('print-cal-btn').addEventListener('click', function () {
-      printCalendar();
+      openPrintRangeModal();
     });
 
     // ── 년/월 직접 이동 팝업 ─────────────────────────────────────
@@ -983,14 +983,16 @@
     $('event-id').value                 = '';
     $('event-title').value              = '';
     $('event-description').value        = '';
+    S.editEventObj = null;
 
     populateDeptSelect('event-dept');
     $('event-dept').value = '기타';
     populateCalendarDropdown('event-calendar');
 
     if (event) {
-      S.editEventId = event.id;
-      S.editCalId   = event._calId || null;
+      S.editEventId  = event.id;
+      S.editCalId    = event._calId || null;
+      S.editEventObj = event;  // 반복 여부 판별용
       // 이벤트가 속한 캘린더를 칩 목록 초기값으로 설정
       if (event._calId) {
         var calName  = event._calName || event._calId;
@@ -1219,20 +1221,15 @@
       }
     });
 
-    $('delete-event-btn').addEventListener('click', async function () {
-      if (!S.editEventId || !confirm('이 일정을 삭제하시겠습니까?')) return;
-      try {
-        var delCal = S.editCalId || CONFIG.calendarId;
-        var ok = await CalendarModule.deleteEvent(delCal, S.editEventId);
-        if (ok) {
-          toast('일정이 삭제되었습니다.', 'success');
-          closeModal('event-modal');
-          await renderCalendar();
-        } else {
-          toast('삭제에 실패했습니다.', 'error');
-        }
-      } catch (e) {
-        toast('삭제 실패: ' + e.message, 'error');
+    $('delete-event-btn').addEventListener('click', function () {
+      if (!S.editEventId) return;
+      // 반복 이벤트인지 확인 — recurrence 또는 recurringEventId 속성 존재 시
+      var isRecurring = !!(S.editEventObj &&
+        (S.editEventObj.recurrence || S.editEventObj.recurringEventId));
+      if (isRecurring) {
+        openRecurDeleteModal();
+      } else {
+        confirmDeleteEvent('this');
       }
     });
 
@@ -1463,6 +1460,177 @@
   }
 
   /* ────────────────────────────────────────────────────────────────
+     반복 일정 삭제 모달
+  ──────────────────────────────────────────────────────────────── */
+  function openRecurDeleteModal() {
+    // 라디오 초기화
+    var radios = document.querySelectorAll('input[name="recur-del-scope"]');
+    radios.forEach(function (r) { r.checked = r.value === 'this'; });
+    $('recur-delete-modal').hidden = false;
+  }
+
+  function initRecurDeleteModal() {
+    var modal   = $('recur-delete-modal');
+    var confirm = $('recur-del-confirm');
+    var cancel  = $('recur-del-cancel');
+    var close   = $('recur-del-close');
+    if (!modal) return;
+
+    function closeModal() { modal.hidden = true; }
+
+    [cancel, close].forEach(function (el) {
+      if (el) el.addEventListener('click', closeModal);
+    });
+
+    modal.querySelector('.modal-backdrop').addEventListener('click', closeModal);
+
+    confirm.addEventListener('click', async function () {
+      var scope = document.querySelector('input[name="recur-del-scope"]:checked');
+      closeModal();
+      await confirmDeleteEvent(scope ? scope.value : 'this');
+    });
+  }
+
+  async function confirmDeleteEvent(scope) {
+    // scope: 'this' | 'all'
+    if (!S.editEventId) return;
+    var delCal  = S.editCalId || CONFIG.calendarId;
+    var eventId = S.editEventId;
+
+    // 'all': recurringEventId(시리즈 ID)가 있으면 그것으로 삭제, 없으면 현재 ID
+    if (scope === 'all') {
+      var baseId = (S.editEventObj && S.editEventObj.recurringEventId) || eventId;
+      eventId = baseId;
+    }
+
+    try {
+      var ok = await CalendarModule.deleteEvent(delCal, eventId);
+      if (ok) {
+        toast(scope === 'all' ? '모든 반복 일정이 삭제됐습니다.' : '이번 일정이 삭제됐습니다.', 'success');
+        closeModal('event-modal');
+        await renderCalendar();
+      } else {
+        toast('삭제에 실패했습니다.', 'error');
+      }
+    } catch (e) {
+      toast('삭제 실패: ' + e.message, 'error');
+    }
+  }
+
+  /* ────────────────────────────────────────────────────────────────
+     달력 구간 인쇄 모달
+  ──────────────────────────────────────────────────────────────── */
+  function openPrintRangeModal() {
+    var d = S.viewDate;
+    $('print-start-year').value  = d.getFullYear();
+    $('print-start-month').value = d.getMonth() + 1;
+    $('print-end-year').value    = d.getFullYear();
+    $('print-end-month').value   = d.getMonth() + 1;
+
+    // 캘린더 체크박스 렌더
+    var wrap = $('print-cal-checkboxes');
+    wrap.innerHTML = '';
+    var cals = CONFIG.selectedCalendars.length ? CONFIG.selectedCalendars
+      : [{ id: 'primary', name: '기본 캘린더', color: '#4285F4', enabled: true }];
+    cals.forEach(function (cal) {
+      var lbl = document.createElement('label');
+      lbl.className = 'print-cal-check';
+      var cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.value = cal.id;
+      cb.checked = cal.enabled !== false;
+      cb.addEventListener('change', updatePrintPreview);
+      var dot = document.createElement('span');
+      dot.className = 'print-cal-dot';
+      dot.style.background = cal.color || '#4285F4';
+      lbl.appendChild(cb);
+      lbl.appendChild(dot);
+      lbl.appendChild(document.createTextNode(cal.name));
+      wrap.appendChild(lbl);
+    });
+
+    updatePrintPreview();
+    $('print-range-modal').hidden = false;
+  }
+
+  function updatePrintPreview() {
+    var sy = parseInt($('print-start-year').value)  || 0;
+    var sm = parseInt($('print-start-month').value) || 1;
+    var ey = parseInt($('print-end-year').value)    || 0;
+    var em = parseInt($('print-end-month').value)   || 1;
+    var prev = $('print-range-preview');
+    if (!prev) return;
+    var months = (ey - sy) * 12 + (em - sm) + 1;
+    var checked = document.querySelectorAll('#print-cal-checkboxes input:checked').length;
+    if (months < 1 || months > 24) {
+      prev.textContent = months < 1 ? '⚠ 종료가 시작보다 앞설 수 없습니다.' : '⚠ 최대 24개월까지 선택 가능합니다.';
+      prev.style.color = '#b3261e';
+    } else {
+      prev.textContent = '📄 총 ' + months + '장 인쇄 · ' + checked + '개 캘린더 표시';
+      prev.style.color = '';
+    }
+  }
+
+  function initPrintRangeModal() {
+    var modal  = $('print-range-modal');
+    if (!modal) return;
+    var closeEl = $('print-range-close');
+    var cancel  = $('print-range-cancel');
+    var goBtn   = $('print-range-go');
+
+    function closeModal() { modal.hidden = true; }
+    [closeEl, cancel].forEach(function (el) {
+      if (el) el.addEventListener('click', closeModal);
+    });
+    modal.querySelector('.modal-backdrop').addEventListener('click', closeModal);
+
+    // 입력 변경 시 미리보기 갱신
+    ['print-start-year','print-start-month','print-end-year','print-end-month'].forEach(function (id) {
+      var el = $(id);
+      if (el) el.addEventListener('input', updatePrintPreview);
+    });
+
+    // 빠른 선택 버튼
+    modal.querySelectorAll('[data-print-preset]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var n  = parseInt(btn.dataset.printPreset);
+        var d  = S.viewDate;
+        var sy = d.getFullYear();
+        var sm = d.getMonth() + 1;
+        var ey, em;
+        if (n === 12) {
+          // 올해 전체
+          sy = d.getFullYear(); sm = 1;
+          ey = d.getFullYear(); em = 12;
+        } else {
+          ey = sy; em = sm + n - 1;
+          if (em > 12) { ey += Math.floor((em - 1) / 12); em = ((em - 1) % 12) + 1; }
+        }
+        $('print-start-year').value  = sy;
+        $('print-start-month').value = sm;
+        $('print-end-year').value    = ey;
+        $('print-end-month').value   = em;
+        updatePrintPreview();
+      });
+    });
+
+    goBtn.addEventListener('click', function () {
+      var sy = parseInt($('print-start-year').value);
+      var sm = parseInt($('print-start-month').value);
+      var ey = parseInt($('print-end-year').value);
+      var em = parseInt($('print-end-month').value);
+      if (isNaN(sy)||isNaN(sm)||isNaN(ey)||isNaN(em)) { toast('날짜를 올바르게 입력하세요.','error'); return; }
+      var months = (ey - sy) * 12 + (em - sm) + 1;
+      if (months < 1) { toast('종료월이 시작월보다 앞설 수 없습니다.','error'); return; }
+      if (months > 24) { toast('최대 24개월까지 선택 가능합니다.','error'); return; }
+      var checkedCals = Array.from(document.querySelectorAll('#print-cal-checkboxes input:checked'))
+        .map(function (cb) { return cb.value; });
+      closeModal();
+      printCalendarRange(sy, sm, ey, em, checkedCals);
+    });
+  }
+
+  /* ────────────────────────────────────────────────────────────────
      달력 인쇄 / PDF 저장
   ──────────────────────────────────────────────────────────────── */
   function printCalendar() {
@@ -1644,6 +1812,186 @@
     win.onload = function () {
       setTimeout(function () { win.focus(); }, 200);
     };
+  }
+
+  /* ────────────────────────────────────────────────────────────────
+     구간 인쇄 — 월별 1장씩 페이지 분리
+  ──────────────────────────────────────────────────────────────── */
+  function printCalendarRange(startYear, startMonth, endYear, endMonth, allowedCalIds) {
+    var today  = new Date();
+    var events = S.events || [];
+
+    // 허용된 캘린더 필터링
+    var filteredEvents = allowedCalIds && allowedCalIds.length
+      ? events.filter(function (ev) { return allowedCalIds.indexOf(ev._calId) !== -1; })
+      : events;
+
+    // 전체 evMap
+    var evMap = {};
+    filteredEvents.forEach(function (ev) {
+      var dt  = new Date(ev.start.dateTime || ev.start.date);
+      var key = dt.getFullYear() + '-' + (dt.getMonth() + 1) + '-' + dt.getDate();
+      (evMap[key] || (evMap[key] = [])).push(ev);
+    });
+
+    // 캘린더 범례 (선택된 것만)
+    var allCals = CONFIG.selectedCalendars.length ? CONFIG.selectedCalendars : [];
+    var cals    = allowedCalIds && allowedCalIds.length
+      ? allCals.filter(function (c) { return allowedCalIds.indexOf(c.id) !== -1; })
+      : allCals;
+
+    var DEPT_COLORS = {
+      '기획처': { bg: '#e8f0fe', text: '#1a5fbf', border: '#4285F4' },
+      '교학처': { bg: '#e6f4ea', text: '#1e7e34', border: '#34A853' },
+      '행정처': { bg: '#fef7e0', text: '#856404', border: '#FBBC04' },
+      '기타':   { bg: '#fce8e6', text: '#b3261e', border: '#EA4335' },
+    };
+
+    function getDeptColors(description, calColor) {
+      if (calColor) return { bg: calColor + '22', text: calColor, border: calColor };
+      if (!description) return DEPT_COLORS['기타'];
+      var m = /\[부서:([^\]]+)\]/.exec(description);
+      return DEPT_COLORS[(m ? m[1] : '기타')] || DEPT_COLORS['기타'];
+    }
+
+    function buildCell(cellDate, month) {
+      var isOther = cellDate.getMonth() !== month;
+      var isToday = cellDate.getFullYear() === today.getFullYear() &&
+                    cellDate.getMonth()    === today.getMonth()    &&
+                    cellDate.getDate()     === today.getDate();
+      var isSun   = cellDate.getDay() === 0;
+      var isSat   = cellDate.getDay() === 6;
+      var key     = cellDate.getFullYear() + '-' + (cellDate.getMonth() + 1) + '-' + cellDate.getDate();
+      var dayEvts = evMap[key] || [];
+      var numColor = isOther ? '#bbb' : isSun ? '#e53935' : isSat ? '#1565C0' : '#1a1a2e';
+      var cellBg   = isOther ? '#f8f9fa' : '#fff';
+      var numStyle = isToday
+        ? 'background:#1A73E8;color:#fff;border-radius:50%;width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;'
+        : 'font-size:13px;font-weight:' + (isOther ? '400' : '700') + ';color:' + numColor + ';';
+
+      var chipsHtml = dayEvts.map(function (ev) {
+        var c   = getDeptColors(ev.description, ev._calColor);
+        var txt = (ev.summary || '(제목 없음)').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        var timeStr = '';
+        if (ev.start.dateTime) {
+          var st = new Date(ev.start.dateTime);
+          timeStr = '<span style="opacity:.7;font-size:9px;margin-right:3px;">' +
+            pad(st.getHours()) + ':' + pad(st.getMinutes()) + '</span>';
+        }
+        return '<div style="background:' + c.bg + ';color:' + c.text + ';border-left:3px solid ' + c.border + ';' +
+          'border-radius:3px;padding:2px 5px;margin-bottom:2px;font-size:10px;line-height:1.4;font-weight:600;' +
+          'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + timeStr + txt + '</div>';
+      }).join('');
+
+      return '<td style="background:' + cellBg + ';vertical-align:top;padding:6px 5px 4px;' +
+        'border:1px solid #e0e4ef;width:14.28%;">' +
+        '<div style="' + numStyle + 'margin-bottom:4px;">' + cellDate.getDate() + '</div>' +
+        (chipsHtml ? '<div>' + chipsHtml + '</div>' : '') +
+        '</td>';
+    }
+
+    function buildMonthPage(year, month, isLast) {
+      var first = new Date(year, month, 1);
+      var start = new Date(first);
+      start.setDate(start.getDate() - start.getDay());
+      var MONTH_KO = year + '년 ' + (month + 1) + '월';
+      var DAY_NAMES = ['일', '월', '화', '수', '목', '금', '토'];
+
+      var headerCols = DAY_NAMES.map(function (n, i) {
+        var col = i === 0 ? '#e53935' : i === 6 ? '#1565C0' : '#3c4152';
+        var bg  = i === 0 ? '#fff5f5' : i === 6 ? '#f0f4ff' : '#f4f6fb';
+        return '<th style="background:' + bg + ';color:' + col + ';font-weight:700;font-size:12px;' +
+          'padding:7px 0;text-align:center;border:1px solid #e0e4ef;">' + n + '</th>';
+      }).join('');
+
+      var rows = '';
+      for (var w = 0; w < 6; w++) {
+        rows += '<tr>';
+        for (var wd = 0; wd < 7; wd++) {
+          var cellDate = new Date(start.getFullYear(), start.getMonth(), start.getDate() + w * 7 + wd);
+          rows += buildCell(cellDate, month);
+        }
+        rows += '</tr>';
+      }
+
+      var legendHtml = cals.map(function (c) {
+        return '<span style="display:inline-flex;align-items:center;gap:4px;margin-right:12px;">' +
+          '<span style="width:9px;height:9px;border-radius:50%;background:' + c.color + ';flex-shrink:0;"></span>' +
+          '<span style="font-size:10px;color:#555;">' + c.name + '</span></span>';
+      }).join('');
+
+      var pageBreak = isLast ? '' : 'page-break-after:always;';
+      return '<div style="' + pageBreak + 'padding:16px 20px 12px;">' +
+        // 헤더
+        '<div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:12px;">' +
+        '  <div>' +
+        '    <div style="font-size:10px;color:#888;font-weight:600;margin-bottom:3px;">ASEA 일정 관리</div>' +
+        '    <div style="font-size:26px;font-weight:900;color:#1a1a2e;letter-spacing:-.03em;">' + MONTH_KO + '</div>' +
+        '  </div>' +
+        '  <div style="font-size:10px;color:#aaa;text-align:right;line-height:1.8;">' +
+        '    출력일: ' + today.getFullYear() + '.' + pad(today.getMonth()+1) + '.' + pad(today.getDate()) + '<br>' +
+        '    bangdw-hash.github.io/asea-calendar-management' +
+        '  </div>' +
+        '</div>' +
+        // 범례
+        (legendHtml ? '<div style="margin-bottom:8px;display:flex;flex-wrap:wrap;">' + legendHtml + '</div>' : '') +
+        // 테이블
+        '<table style="width:100%;border-collapse:collapse;table-layout:fixed;">' +
+        '<thead><tr>' + headerCols + '</tr></thead>' +
+        '<tbody>' + rows + '</tbody>' +
+        '</table>' +
+        '</div>';
+    }
+
+    // 모든 월 페이지 생성
+    var pagesHtml = '';
+    var cur = { y: startYear, m: startMonth - 1 }; // JS month 0-based
+    var end = { y: endYear,   m: endMonth - 1 };
+    var count = 0;
+    while (cur.y < end.y || (cur.y === end.y && cur.m <= end.m)) {
+      var isLast = (cur.y === end.y && cur.m === end.m);
+      pagesHtml += buildMonthPage(cur.y, cur.m, isLast);
+      cur.m++;
+      if (cur.m > 11) { cur.m = 0; cur.y++; }
+      count++;
+      if (count > 24) break; // 안전장치
+    }
+
+    var rangeLabel = startYear + '년 ' + startMonth + '월' +
+      (count > 1 ? ' ~ ' + endYear + '년 ' + endMonth + '월' : '');
+
+    var html = '<!DOCTYPE html><html lang="ko"><head>' +
+      '<meta charset="UTF-8">' +
+      '<title>ASEA 달력 — ' + rangeLabel + '</title>' +
+      '<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600;700;900&display=swap" rel="stylesheet">' +
+      '<style>' +
+      '* { box-sizing:border-box; margin:0; padding:0; }' +
+      'body { font-family:"Noto Sans KR",sans-serif; background:#fff;' +
+      '  -webkit-print-color-adjust:exact; print-color-adjust:exact; }' +
+      'td { word-break:break-all; }' +
+      '@page { size:A4 landscape; margin:8mm 8mm; }' +
+      '@media print {' +
+      '  .no-print { display:none !important; }' +
+      '  body { -webkit-print-color-adjust:exact; print-color-adjust:exact; }' +
+      '}' +
+      '.btn-bar { text-align:center; padding:14px 0 8px; display:flex; gap:12px; justify-content:center; }' +
+      '.pbtn { padding:9px 28px; border:none; border-radius:8px; font-size:14px; font-weight:700; cursor:pointer; font-family:inherit; }' +
+      '.pbtn-print { background:#1A73E8; color:#fff; }' +
+      '.pbtn-close  { background:#f1f3f4; color:#3c4152; }' +
+      '</style></head><body>' +
+      '<div class="btn-bar no-print">' +
+      '  <button class="pbtn pbtn-print" onclick="window.print()">🖨 인쇄 / PDF 저장</button>' +
+      '  <button class="pbtn pbtn-close" onclick="window.close()">✕ 닫기</button>' +
+      '</div>' +
+      pagesHtml +
+      '</body></html>';
+
+    var win = window.open('', '_blank', 'width=1100,height=820,scrollbars=yes');
+    if (!win) { toast('팝업이 차단됐습니다. 브라우저 팝업 허용 후 다시 시도하세요.', 'error'); return; }
+    win.document.open();
+    win.document.write(html);
+    win.document.close();
+    win.onload = function () { setTimeout(function () { win.focus(); }, 200); };
   }
 
   /* ────────────────────────────────────────────────────────────────
@@ -5075,6 +5423,8 @@
     initTabs();
     initCalendarNav();
     initEventModal();
+    initRecurDeleteModal();
+    initPrintRangeModal();
     initWeeklyHub();
     initEmailTab();
     initCsvModal();

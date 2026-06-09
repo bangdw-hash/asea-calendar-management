@@ -2492,6 +2492,134 @@ a        { color: var(--color-accent); text-decoration: none; }
   border-left: 3px solid var(--color-primary);
 }
 
+/* ── 반복 일정 삭제 선택 모달 ──────────────────────────────── */
+.recur-del-dialog {
+  max-width: 400px;
+}
+.recur-del-desc {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  margin-bottom: 14px;
+}
+.recur-del-options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.recur-del-opt {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1.5px solid var(--color-border);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: border-color .13s, background .13s;
+}
+.recur-del-opt:hover {
+  background: var(--color-bg-hover, #f0f4ff);
+  border-color: var(--color-primary);
+}
+.recur-del-opt input[type="radio"] {
+  margin-top: 3px;
+  flex-shrink: 0;
+  accent-color: var(--color-primary);
+  width: 16px;
+  height: 16px;
+}
+.recur-del-opt:has(input:checked) {
+  border-color: var(--color-primary);
+  background: #f0f4ff;
+}
+.recur-del-opt-body {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.recur-del-opt-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--color-text);
+}
+.recur-del-opt-desc {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+}
+
+/* ── 달력 구간 인쇄 모달 ───────────────────────────────────── */
+.print-range-dialog {
+  max-width: 480px;
+}
+.print-range-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+.print-range-field {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.print-range-lbl {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  min-width: 28px;
+}
+.print-range-sep {
+  font-size: 18px;
+  color: var(--color-text-secondary);
+  font-weight: 300;
+}
+.print-range-quick {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+.print-cal-checks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+.print-cal-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border: 1.5px solid var(--color-border);
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  transition: border-color .12s, background .12s;
+  user-select: none;
+}
+.print-cal-check input[type="checkbox"] { display: none; }
+.print-cal-check:has(input:checked) {
+  border-color: var(--color-primary);
+  background: var(--color-bg-hover, #f0f4ff);
+}
+.print-cal-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.print-range-preview {
+  font-size: 12px;
+  color: var(--color-primary);
+  padding: 7px 12px;
+  background: var(--color-bg-hover, #f0f4ff);
+  border-radius: 8px;
+  border-left: 3px solid var(--color-primary);
+  margin-top: 4px;
+}
+
 /* ================================================================
    업무관리 탭
    ================================================================ */
