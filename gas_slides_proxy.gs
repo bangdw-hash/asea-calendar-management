@@ -74,11 +74,17 @@ function doGet(e) {
     var key = 'LAST_UPDATED_' + t.toUpperCase().replace('-','_');
     status[t] = {
       configured:  !!ids[t],
-      id:          ids[t] ? ids[t].slice(0,8)+'...' : '미설정',
-      lastUpdated: props.getProperty(key) || '0',  // kiosk 폴링용 타임스탬프
+      id:          ids[t] || '',
+      lastUpdated: props.getProperty(key) || '0',
     };
   });
-  return jsonOut({ version: '3.0', status: status, accessTokenRequired: !!getAccessToken() });
+  // 현재 송출 중인 타입 정보 (kiosk 자동 전환용)
+  var active = {
+    type:   props.getProperty('ACTIVE_TYPE')    || 'general',
+    presId: props.getProperty('ACTIVE_PRES_ID') || ids['general'] || '',
+    ts:     props.getProperty('ACTIVE_TS')      || '0',
+  };
+  return jsonOut({ version: '3.0', status: status, active: active, accessTokenRequired: !!getAccessToken() });
 }
 
 // ── POST — 슬라이드 추가 ─────────────────────────────────────────
@@ -112,9 +118,14 @@ function doPost(e) {
       body.insertImages || []
     );
 
-    // 마지막 업데이트 타임스탬프 저장 (kiosk 폴링용)
+    // 마지막 업데이트 타임스탬프 + 현재 송출 타입 저장 (kiosk 폴링용)
     var ts = new Date().getTime().toString();
-    PropertiesService.getScriptProperties().setProperty('LAST_UPDATED_' + presType.toUpperCase().replace('-','_'), ts);
+    var sp = PropertiesService.getScriptProperties();
+    sp.setProperty('LAST_UPDATED_' + presType.toUpperCase().replace('-','_'), ts);
+    // 현재 송출 중인 타입과 ID를 저장 → kiosk가 자동으로 해당 타입으로 전환
+    sp.setProperty('ACTIVE_TYPE',   presType);
+    sp.setProperty('ACTIVE_PRES_ID', presId);
+    sp.setProperty('ACTIVE_TS',     ts);
 
     // 키오스크 URL 함께 반환
     var cfg = TYPE_CONFIG[presType] || TYPE_CONFIG['general'];
