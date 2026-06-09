@@ -415,6 +415,9 @@ a        { color: var(--color-accent); text-decoration: none; }
   margin-bottom: var(--sp-4);
   flex-wrap: wrap;
   gap: var(--sp-3);
+  min-height: 56px;
+  padding-top: 10px;
+  padding-bottom: 10px;
 }
 
 .calendar-nav {

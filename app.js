@@ -1205,21 +1205,8 @@
     if (addRecurBtn) addRecurBtn.hidden = !isExistingNonRecur;
     if (recurHint)   recurHint.hidden   = !isExistingNonRecur;
 
-    // 반복 유형 변경 시 버튼 활성화 상태 동기화
-    if (isExistingNonRecur && recurTypeEl) {
-      recurTypeEl.addEventListener('change', function syncBtn() {
-        var hasRecur = recurTypeEl.value !== 'none';
-        if (addRecurBtn) addRecurBtn.hidden = false;
-        // 반복 미설정이면 회색으로
-        if (addRecurBtn) addRecurBtn.disabled = !hasRecur;
-        if (addRecurBtn) addRecurBtn.style.opacity = hasRecur ? '' : '0.45';
-      });
-      // 초기값 반영
-      if (addRecurBtn) {
-        addRecurBtn.disabled    = true;
-        addRecurBtn.style.opacity = '0.45';
-      }
-    } else if (!isExistingNonRecur && addRecurBtn) {
+    // 반복으로 추가 등록 버튼 — 항상 활성화 (클릭 시 반복 미설정이면 안내 토스트)
+    if (addRecurBtn) {
       addRecurBtn.disabled    = false;
       addRecurBtn.style.opacity = '';
     }
@@ -2252,7 +2239,16 @@
 
       var recurrence = buildRecurrence();
       if (!recurrence.length) {
-        toast('반복 조건을 먼저 설정해주세요.', 'error'); return;
+        // 반복 드롭다운으로 스크롤 후 포커스
+        var recurTypeEl2 = $('event-recur-type');
+        if (recurTypeEl2) {
+          recurTypeEl2.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          recurTypeEl2.focus();
+          recurTypeEl2.style.outline = '2px solid #e53935';
+          setTimeout(function() { recurTypeEl2.style.outline = ''; }, 1800);
+        }
+        toast('⬆ 반복 유형을 먼저 선택해주세요 (반복 없음 → 매일/매주 등)', 'warning');
+        return;
       }
 
       var tz        = Intl.DateTimeFormat().resolvedOptions().timeZone || 'Asia/Seoul';
