@@ -273,6 +273,8 @@ a        { color: var(--color-accent); text-decoration: none; }
   max-width: 1100px;
   margin: 0 auto;
   padding: 20px 20px 40px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 /* 캘린더 탭은 full-width 유지 */

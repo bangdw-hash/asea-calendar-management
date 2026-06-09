@@ -148,6 +148,9 @@
       p.classList.toggle('active', active);
       p.hidden = !active;
     });
+    // 탭 전환 시 스크롤 TOP 리셋
+    var activePanel = document.getElementById('tab-' + name);
+    if (activePanel) activePanel.scrollTop = 0;
     S.tab = name;
     if (name === 'calendar')   renderCalendar();
     if (name === 'weekly-hub') { syncWeeklyHubFiles(); }
