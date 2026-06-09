@@ -552,6 +552,10 @@ var FacilityModule = (function () {
       var list = await SheetsModule.getFacilityRequests(status||'');
       if (!list.length) { el.innerHTML = '<p class="empty-state">신청 내역이 없습니다.</p>'; return; }
       renderRequestList(el, list);
+      // 대기 건수 배지
+      var pending = list.filter(function(r){ return r.status === '신청' || r.status === '검토중'; }).length;
+      var btn = $f('fac-subtab-requests-btn');
+      if (btn) btn.textContent = pending > 0 ? '📋 신청 관리 ('+pending+')' : '📋 신청 관리';
     } catch(e) { el.innerHTML = '<p class="empty-state" style="color:var(--danger)">불러오기 실패: '+(e.message||e)+'</p>'; }
   }
 
@@ -581,11 +585,18 @@ var FacilityModule = (function () {
         var approveBtn = document.createElement('button');
         approveBtn.className = 'btn btn-primary btn-sm';
         approveBtn.textContent = '✅ 승인';
-        approveBtn.onclick = function(){ reviewRequest(req, '승인'); };
+        approveBtn.onclick = function(){ _openFacReviewModal(req, '승인'); };
         var rejectBtn = document.createElement('button');
         rejectBtn.className = 'btn btn-danger btn-sm';
         rejectBtn.textContent = '❌ 반려';
-        rejectBtn.onclick = function(){ reviewRequest(req, '반려'); };
+        rejectBtn.onclick = function(){ _openFacReviewModal(req, '반려'); };
+        if (req.status === '신청') {
+          var midBtn = document.createElement('button');
+          midBtn.className = 'btn btn-ghost btn-sm';
+          midBtn.textContent = '🔍 검토중으로 변경';
+          midBtn.onclick = function(){ _setRequestStatus(req, '검토중'); };
+          actionsDiv.appendChild(midBtn);
+        }
         actionsDiv.appendChild(approveBtn);
         actionsDiv.appendChild(rejectBtn);
       }
@@ -593,16 +604,42 @@ var FacilityModule = (function () {
     });
   }
 
-  async function reviewRequest(req, statusValue) {
-    var note = prompt((statusValue === '승인' ? '승인' : '반려')+'하시겠습니까?\n검토 의견을 입력하세요 (선택사항):') ;
-    if (note === null) return; // 취소
+  function _openFacReviewModal(req, statusValue) {
+    var modal = $f('fac-review-modal');
+    if (!modal) {
+      // fallback to old prompt if modal not in DOM
+      var note = prompt((statusValue === '승인' ? '승인' : '반려')+'하시겠습니까?\n검토 의견을 입력하세요 (선택사항):');
+      if (note === null) return;
+      _confirmFacReview(req, statusValue, note, false);
+      return;
+    }
+    $f('fac-rm-action-title').textContent = statusValue === '승인' ? '✅ 신청 승인' : '❌ 신청 반려';
+    $f('fac-rm-info').innerHTML =
+      '<strong>' + req.buildingName + ' ' + req.roomName + '</strong> — ' + req.title + '<br>' +
+      formatDT(req.startAt) + ' ~ ' + formatDT(req.endAt) + '<br>' +
+      '신청자: ' + req.applicantName + ' (' + req.applicantOrg + ')' +
+      (req.applicantEmail ? ' · ' + req.applicantEmail : '');
+    var noteEl = $f('fac-rm-note');
+    if (noteEl) noteEl.value = '';
+    var autoWrap = $f('fac-rm-auto-resv-wrap');
+    if (autoWrap) autoWrap.style.display = statusValue === '승인' ? '' : 'none';
+    var autoChk = $f('fac-rm-auto-resv');
+    if (autoChk) autoChk.checked = true;
+    var confirmBtn = $f('fac-rm-confirm-btn');
+    confirmBtn.onclick = function() {
+      var note = ($f('fac-rm-note').value || '').trim();
+      var autoResv = statusValue === '승인' && $f('fac-rm-auto-resv') && $f('fac-rm-auto-resv').checked;
+      modal.hidden = true;
+      _confirmFacReview(req, statusValue, note, autoResv);
+    };
+    modal.hidden = false;
+  }
 
+  async function _confirmFacReview(req, statusValue, note, autoResv) {
     var me = window._workMe || {};
     var proxyUrl = _getProxyUrl();
-
     try {
       if (proxyUrl) {
-        // GAS 알림 프록시 경유: 이메일 알림 포함
         var res = await fetch(proxyUrl, {
           method: 'POST',
           body: JSON.stringify({
@@ -615,7 +652,6 @@ var FacilityModule = (function () {
         var data = await res.json();
         if (!data.ok) throw new Error(data.error || '프록시 오류');
       } else {
-        // 프록시 없으면 Sheets 직접 업데이트 (이메일 알림 없음)
         if (!req._row) throw new Error('행 번호 없음');
         await SheetsModule.updateFacilityRequest(req._row, {
           status: statusValue,
@@ -624,10 +660,50 @@ var FacilityModule = (function () {
           reviewedAt: new Date().toISOString(),
         });
       }
+      if (statusValue === '승인' && autoResv && typeof SheetsModule !== 'undefined' && SheetsModule.addFacilityReservation) {
+        try {
+          await SheetsModule.addFacilityReservation({
+            buildingId: req.buildingId,
+            buildingName: req.buildingName,
+            roomId: req.roomId,
+            roomName: req.roomName,
+            title: req.title,
+            startAt: req.startAt,
+            endAt: req.endAt,
+            bookedBy: req.applicantName + ' (' + req.applicantOrg + ')',
+            purpose: req.purpose || '',
+            attendees: req.attendees || '',
+            status: '승인',
+            note: note || ''
+          });
+          await refresh();
+        } catch(e2) { toast('예약 자동 등록 실패: '+(e2.message||e2),'error'); }
+      }
       toast(statusValue === '승인' ? '✅ 승인되었습니다.' : '❌ 반려되었습니다.', 'info');
       await loadAndRenderRequests();
     } catch(e) {
       toast('처리 실패: '+(e.message||e),'error');
+    }
+  }
+
+  async function _setRequestStatus(req, newStatus) {
+    var proxyUrl = _getProxyUrl();
+    try {
+      if (proxyUrl) {
+        var res = await fetch(proxyUrl, {
+          method: 'POST',
+          body: JSON.stringify({ action: 'updateFacilityRequestStatus', id: req.id, status: newStatus })
+        });
+        var data = await res.json();
+        if (!data.ok) throw new Error(data.error || '프록시 오류');
+      } else {
+        if (!req._row) throw new Error('행 번호 없음');
+        await SheetsModule.updateFacilityRequest(req._row, { status: newStatus });
+      }
+      toast('상태가 "'+newStatus+'"(으)로 변경되었습니다.', 'info');
+      await loadAndRenderRequests();
+    } catch(e) {
+      toast('상태 변경 실패: '+(e.message||e),'error');
     }
   }
 
@@ -649,19 +725,32 @@ var FacilityModule = (function () {
   }
 
   function _updatePublicLink() {
-    var link = $f('fac-public-req-link');
-    if (!link) return;
     var proxyUrl = _getProxyUrl();
     var base = (typeof CONFIG !== 'undefined' && CONFIG.baseUrl) ? CONFIG.baseUrl : location.href.replace(/\/[^\/]*$/, '/');
     var href = base + 'facility-request.html' + (proxyUrl ? '?proxy=' + encodeURIComponent(proxyUrl) : '');
-    link.href = href;
-    link.textContent = proxyUrl ? '🔗 공개 신청 링크 복사' : 'facility-request.html (프록시 미설정)';
-    link.onclick = proxyUrl ? function(e) {
-      e.preventDefault();
-      navigator.clipboard.writeText(href).then(function() {
-        toast('공개 URL이 복사되었습니다.','success');
-      }).catch(function() { window.open(href,'_blank'); });
-    } : null;
+
+    // legacy link (if still present)
+    var link = $f('fac-public-req-link');
+    if (link) {
+      link.href = href;
+      link.textContent = proxyUrl ? '🔗 공개 신청 링크 복사' : 'facility-request.html (프록시 미설정)';
+      link.onclick = proxyUrl ? function(e) {
+        e.preventDefault();
+        navigator.clipboard.writeText(href).then(function() {
+          toast('공개 URL이 복사되었습니다.','success');
+        }).catch(function() { window.open(href,'_blank'); });
+      } : null;
+    }
+
+    // QR panel
+    var qrImg = $f('fac-qr-img');
+    if (qrImg && proxyUrl) {
+      qrImg.src = 'https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=' + encodeURIComponent(href);
+    }
+    var qrUrl = $f('fac-qr-url');
+    if (qrUrl) qrUrl.textContent = href;
+    var qrOpen = $f('fac-qr-open-btn');
+    if (qrOpen) qrOpen.href = href;
   }
 
   /* ─────────────────────────────────────────────────────────
@@ -804,6 +893,27 @@ var FacilityModule = (function () {
     if (reqFilterSel) reqFilterSel.addEventListener('change', function() {
       loadAndRenderRequests(this.value);
     });
+
+    // QR 공개 링크 버튼
+    var qrBtn = $f('fac-public-qr-btn');
+    if (qrBtn) {
+      qrBtn.addEventListener('click', function() {
+        var panel = $f('fac-qr-panel');
+        if (panel) panel.hidden = !panel.hidden;
+      });
+    }
+    var qrCopyBtn = $f('fac-qr-copy-btn');
+    if (qrCopyBtn) {
+      qrCopyBtn.addEventListener('click', function() {
+        var urlEl = $f('fac-qr-url');
+        var url = urlEl ? urlEl.textContent : '';
+        if (url) {
+          navigator.clipboard.writeText(url).then(function() {
+            toast('공개 URL이 복사되었습니다.','success');
+          }).catch(function() { toast('복사 실패','error'); });
+        }
+      });
+    }
 
     // ── 드래그 복수 선택 이벤트 ─────────────────────────────
     var cal = $f('fac-calendar');

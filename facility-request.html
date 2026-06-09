@@ -202,6 +202,19 @@
     <button class="fr-again-btn" onclick="location.reload()">다시 신청하기</button>
   </div>
 
+  <!-- 신청 상태 조회 -->
+  <div class="fr-status-check" id="fr-status-section">
+    <hr style="border:none;border-top:1px solid #e0e0e0;margin:32px 0 24px">
+    <h3 style="font-size:15px;font-weight:700;margin-bottom:12px;color:#444">📬 신청 상태 조회</h3>
+    <p style="font-size:13px;color:#888;margin-bottom:12px">이메일 주소로 이전 신청 결과를 확인할 수 있습니다.</p>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">
+      <input id="fr-status-email" type="email" class="fr-input" placeholder="신청 시 입력한 이메일" style="flex:1;min-width:180px">
+      <input id="fr-status-phone" type="tel" class="fr-input" placeholder="연락처 (선택)" style="max-width:150px">
+      <button id="fr-status-check-btn" type="button" class="fr-submit-btn" style="padding:10px 20px;font-size:14px">조회</button>
+    </div>
+    <div id="fr-status-result" style="display:none;margin-top:12px"></div>
+  </div>
+
   <div class="fr-footer">
     신청 관련 문의: 담당 부서로 연락해 주세요.
   </div>

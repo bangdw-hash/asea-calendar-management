@@ -52,8 +52,10 @@ function doPost(e) {
     else if (action === 'getFacilityBuildings')   result = { ok: true, list: _getBuildings() };
     else if (action === 'submitFacilityRequest')  result = _submitRequest(body);
     else if (action === 'getFacilityRequests')    result = { ok: true, list: _getRequests(body.status || '') };
-    else if (action === 'approveFacilityRequest') result = _reviewRequest(body, '승인');
-    else if (action === 'rejectFacilityRequest')  result = _reviewRequest(body, '반려');
+    else if (action === 'approveFacilityRequest')       result = _reviewRequest(body, '승인');
+    else if (action === 'rejectFacilityRequest')        result = _reviewRequest(body, '반려');
+    else if (action === 'updateFacilityRequestStatus')  result = _updateRequestStatus(body);
+    else if (action === 'getRequestStatus')             result = _getRequestStatusPublic(body);
     else throw new Error('Unknown action: ' + action);
 
     return ContentService
@@ -278,4 +280,75 @@ function _getOrCreateSheet(ss, name, headers) {
     sheet.getRange(1, 1, 1, headers.length).setFontWeight('bold');
   }
   return sheet;
+}
+
+// ─────────────────────────────────────────────────────────────
+// 신청 상태 업데이트 (관리자: 검토중 등)
+// ─────────────────────────────────────────────────────────────
+function _updateRequestStatus(body) {
+  var props = PropertiesService.getScriptProperties();
+  var ssId  = props.getProperty('SPREADSHEET_ID');
+  if (!ssId) throw new Error('SPREADSHEET_ID 미설정');
+  var id = body.id || '';
+  var newStatus = body.status || '';
+  if (!id || !newStatus) throw new Error('id, status 필요');
+
+  var ss    = SpreadsheetApp.openById(ssId);
+  var sheet = ss.getSheetByName(FAC_SHEET);
+  if (!sheet) throw new Error('대관신청 시트 없음');
+
+  var data = sheet.getDataRange().getValues();
+  var rowIdx = -1;
+  for (var i = 1; i < data.length; i++) {
+    if (data[i][0] === id) { rowIdx = i + 1; break; }
+  }
+  if (rowIdx < 0) throw new Error('신청 ID를 찾을 수 없습니다: ' + id);
+
+  // status column is index 14 (col 15)
+  sheet.getRange(rowIdx, 15).setValue(newStatus);
+  return { ok: true, status: newStatus };
+}
+
+// ─────────────────────────────────────────────────────────────
+// 신청 상태 공개 조회 (신청자 본인 확인)
+// ─────────────────────────────────────────────────────────────
+function _getRequestStatusPublic(body) {
+  var id    = (body.id    || '').trim();
+  var email = (body.email || '').trim().toLowerCase();
+  var phone = (body.phone || '').trim();
+  if (!id && !email) throw new Error('id 또는 email이 필요합니다');
+
+  var props = PropertiesService.getScriptProperties();
+  var ssId  = props.getProperty('SPREADSHEET_ID');
+  if (!ssId) return { ok: false, error: 'SPREADSHEET_ID 미설정' };
+  var ss    = SpreadsheetApp.openById(ssId);
+  var sheet = ss.getSheetByName(FAC_SHEET);
+  if (!sheet) return { ok: false, error: '대관신청 시트 없음' };
+
+  var data = sheet.getDataRange().getValues();
+  if (data.length < 2) return { ok: true, requests: [] };
+
+  var results = data.slice(1).filter(function(r) {
+    if (id) return r[0] === id;
+    var rowEmail = (r[9] || '').toLowerCase();
+    var rowPhone = (r[8] || '').replace(/[^0-9]/g,'');
+    var matchEmail = rowEmail === email;
+    var matchPhone = phone ? rowPhone === phone.replace(/[^0-9]/g,'') : true;
+    return matchEmail && matchPhone;
+  }).map(function(r) {
+    var obj = {};
+    FAC_HEADERS.forEach(function(h, i){ obj[h] = r[i]; });
+    return {
+      id: obj.id,
+      buildingName: obj.buildingName,
+      roomName: obj.roomName,
+      title: obj.title,
+      startAt: obj.startAt,
+      endAt: obj.endAt,
+      status: obj.status,
+      reviewNote: obj.reviewNote,
+      createdAt: obj.createdAt
+    };
+  });
+  return { ok: true, requests: results };
 }

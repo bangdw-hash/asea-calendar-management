@@ -99,6 +99,19 @@
     },
 
     /**
+     * 이벤트 부분 수정 (PATCH — 반복 인스턴스 단일 이동에 사용)
+     * 지정한 필드만 업데이트하며, 나머지 필드는 그대로 유지됩니다.
+     * @param {string} calendarId
+     * @param {string} eventId
+     * @param {object} partialData  — 변경할 필드만
+     * @returns {Promise<Event>}
+     */
+    patchEvent: async function (calendarId, eventId, partialData) {
+      var path = '/calendars/' + calId(calendarId) + '/events/' + encodeURIComponent(eventId);
+      return apiFetch('PATCH', path, partialData);
+    },
+
+    /**
      * 이벤트 삭제
      * @param {string} calendarId
      * @param {string} eventId

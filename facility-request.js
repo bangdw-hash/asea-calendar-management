@@ -636,6 +636,55 @@
     initStepClicks();
     initShareBar();
     restoreFromHash();
+    initStatusCheck();
+  }
+
+  // 상태 조회
+  function initStatusCheck() {
+    var btn = $('fr-status-check-btn');
+    if (!btn) return;
+    btn.addEventListener('click', async function() {
+      var email = ($('fr-status-email').value || '').trim();
+      var phone = ($('fr-status-phone').value || '').trim();
+      if (!email) { alert('이메일을 입력하세요.'); return; }
+      var result = $('fr-status-result');
+      result.style.display = '';
+      result.innerHTML = '<p style="color:#888;font-size:13px">조회 중...</p>';
+      try {
+        var res = await fetch(PROXY_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'getRequestStatus', email: email, phone: phone })
+        });
+        var data = await res.json();
+        if (!data.ok) throw new Error(data.error || '조회 실패');
+        if (!data.requests || data.requests.length === 0) {
+          result.innerHTML = '<p style="color:#888;font-size:13px">해당 이메일로 접수된 신청이 없습니다.</p>';
+          return;
+        }
+        var statusColors = { '신청':'#1976D2','검토중':'#F57C00','승인':'#388E3C','반려':'#D32F2F' };
+        var days = ['일','월','화','수','목','금','토'];
+        function formatDT(iso) {
+          if (!iso) return '-';
+          var d = new Date(iso);
+          return d.getFullYear() + '.' + pad(d.getMonth()+1) + '.' + pad(d.getDate()) + '(' + days[d.getDay()] + ') ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+        }
+        result.innerHTML = data.requests.slice().reverse().map(function(r) {
+          var sc = statusColors[r.status] || '#888';
+          return '<div style="border:1px solid #e0e0e0;border-radius:10px;padding:12px 14px;margin-bottom:10px">' +
+            '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">' +
+              '<span style="background:' + sc + ';color:#fff;border-radius:20px;padding:2px 10px;font-size:12px;font-weight:600">' + r.status + '</span>' +
+              '<strong style="font-size:13px">' + r.buildingName + ' ' + r.roomName + ' — ' + r.title + '</strong>' +
+            '</div>' +
+            '<div style="font-size:12px;color:#666">' + formatDT(r.startAt) + ' ~ ' + formatDT(r.endAt) + '</div>' +
+            (r.reviewNote ? '<div style="font-size:12px;color:#555;margin-top:4px;background:#f5f5f5;border-radius:6px;padding:6px 8px">💬 ' + r.reviewNote + '</div>' : '') +
+            '<div style="font-size:11px;color:#aaa;margin-top:4px">접수: ' + (r.createdAt || '').slice(0,10) + ' · 신청번호: ' + r.id + '</div>' +
+          '</div>';
+        }).join('');
+      } catch(e) {
+        result.innerHTML = '<p style="color:#e53935;font-size:13px">오류: ' + e.message + '</p>';
+      }
+    });
   }
 
   if (document.readyState === 'loading') {

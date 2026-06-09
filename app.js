@@ -311,6 +311,50 @@
     var doLogout = function () { Auth.logout(); };
     $('logout-btn').addEventListener('click', doLogout);
     $('settings-logout-btn').addEventListener('click', doLogout);
+
+    // 관리자 최초 등록 버튼
+    var bootstrapBtn = document.getElementById('admin-bootstrap-btn');
+    if (bootstrapBtn) {
+      bootstrapBtn.addEventListener('click', function () {
+        var email = S.userEmail || localStorage.getItem('asea_user_email') || '';
+        if (!email) { toast('로그인된 계정 이메일을 찾을 수 없습니다.', 'error'); return; }
+        try {
+          var roles = JSON.parse(localStorage.getItem('asea_user_roles') || '{}');
+          roles[email.toLowerCase()] = 'admin';
+          localStorage.setItem('asea_user_roles', JSON.stringify(roles));
+          document.getElementById('admin-bootstrap-card').hidden = true;
+          if (window.AdminModule) {
+            AdminModule.applyMenuVisibility();
+            AdminModule.applyFeatVisibility();
+          }
+          document.getElementById('admin-bootstrap-status').textContent = '✅ 관리자로 등록되었습니다. 페이지를 새로고침하면 관리자 탭이 표시됩니다.';
+          toast('관리자로 등록되었습니다!', 'success');
+        } catch (e) { toast('등록 실패: ' + e.message, 'error'); }
+      });
+    }
+  }
+
+  function _checkAdminBootstrap() {
+    var card = document.getElementById('admin-bootstrap-card');
+    if (!card) return;
+    try {
+      var email = (S.userEmail || localStorage.getItem('asea_user_email') || '').toLowerCase();
+      var roles  = JSON.parse(localStorage.getItem('asea_user_roles') || '{}');
+      var myRole = email ? roles[email] : null;
+      // 현재 사용자가 이미 관리자면 카드 숨김
+      if (myRole === 'admin') { card.hidden = true; return; }
+      // 현재 사용자가 관리자가 아니면 항상 표시
+      card.hidden = false;
+      var emailEl  = document.getElementById('bootstrap-email-display');
+      var hintEl   = document.getElementById('admin-bootstrap-hint');
+      if (emailEl) emailEl.textContent = email || '알 수 없음';
+      if (hintEl) {
+        var hasOtherAdmin = Object.values(roles).some(function (r) { return r === 'admin'; });
+        hintEl.textContent = hasOtherAdmin
+          ? '⚠️ 이미 다른 관리자가 등록되어 있습니다. 아래 버튼으로 내 계정도 관리자로 추가할 수 있습니다.'
+          : '현재 시스템에 등록된 관리자가 없습니다. 아래 버튼으로 첫 번째 관리자로 등록하세요.';
+      }
+    } catch (e) { card.hidden = false; }
   }
 
   async function loadUserEmail() {
@@ -323,8 +367,10 @@
       if (!res.ok) return;
       var data = await res.json();
       S.userEmail = data.email || '';
+      if (S.userEmail) localStorage.setItem('asea_user_email', S.userEmail);
       $('user-email').textContent = S.userEmail;
       $('settings-user-email').textContent = S.userEmail || CONFIG.senderEmail;
+      _checkAdminBootstrap();
     } catch (e) {}
   }
 
@@ -787,94 +833,171 @@
       newEndField   = { dateTime: newEnd.toISOString(),   timeZone: 'Asia/Seoul' };
     }
 
-    var calId   = info.calId || CONFIG.calendarId;
-    var eventId = info.eventId;
+    var calId_str = info.calId || CONFIG.calendarId;
+    var eventId   = info.eventId;
 
     if (typeof toast === 'function') toast('📅 일정 이동 중…', 'info');
 
+    /* ── scope: 'this' ── 이번 일정만 이동 ─────────────────────
+       반복 인스턴스 단일 수정은 PUT 전체교체 대신 PATCH를 사용해야 합니다.
+       PUT은 body의 누락 필드를 clear하려다 400 Bad Request를 유발합니다.
+       PATCH는 지정한 필드(start, end, summary)만 덮어쓰므로
+       Google Calendar가 해당 인스턴스만 예외(override)로 처리합니다.
+    ─────────────────────────────────────────────────────────── */
     if (scope === 'this') {
-      var eventData = {
-        summary:     (existingEv && existingEv.summary)     || info.summary || '',
-        description: (existingEv && existingEv.description) || '',
-        colorId:     (existingEv && existingEv.colorId)     || undefined,
-        start: newStartField,
-        end:   newEndField
-      };
-      Object.keys(eventData).forEach(function(k) { if (eventData[k] === undefined) delete eventData[k]; });
-      CalendarModule.updateEvent(calId, eventId, eventData)
-        .then(function() {
-          if (typeof toast === 'function') toast('✅ 이번 일정이 이동됐습니다.', 'success');
-          if (existingEv) { existingEv.start = newStartField; existingEv.end = newEndField; }
-          renderCalendar();
-        })
-        .catch(function(err) { if (typeof toast === 'function') toast('❌ 이동 실패: ' + (err.message || err), 'error'); });
+      // 반복 인스턴스인지 확인 (recurringEventId 있으면 인스턴스)
+      var isInstance = !!(existingEv && existingEv.recurringEventId);
 
-    } else if (scope === 'all' || scope === 'single') {
+      if (isInstance) {
+        // ✅ 올바른 방법: PATCH로 인스턴스 단일 수정
+        var patchData = {
+          summary: (existingEv && existingEv.summary) || info.summary || '',
+          start:   newStartField,
+          end:     newEndField
+        };
+        if (existingEv && existingEv.description) patchData.description = existingEv.description;
+        if (existingEv && existingEv.colorId)     patchData.colorId     = existingEv.colorId;
+
+        CalendarModule.patchEvent(calId_str, eventId, patchData)
+          .then(function() {
+            if (typeof toast === 'function') toast('✅ 이번 일정만 이동됐습니다.', 'success');
+            // 로컬 캐시도 업데이트
+            if (existingEv) { existingEv.start = newStartField; existingEv.end = newEndField; }
+            renderCalendar();
+          })
+          .catch(function(err) {
+            if (typeof toast === 'function') toast('❌ 이동 실패: ' + (err.message || err), 'error');
+          });
+
+      } else {
+        // 루트 반복 이벤트를 직접 드래그한 경우 (드물지만 대비)
+        // PUT 사용 시 recurrence 필드 반드시 포함
+        var eventDataThis = {
+          summary:    (existingEv && existingEv.summary)    || info.summary || '',
+          description:(existingEv && existingEv.description)|| '',
+          colorId:    (existingEv && existingEv.colorId)    || undefined,
+          recurrence: (existingEv && existingEv.recurrence) || undefined,
+          start: newStartField,
+          end:   newEndField
+        };
+        Object.keys(eventDataThis).forEach(function(k) { if (eventDataThis[k] === undefined) delete eventDataThis[k]; });
+        CalendarModule.updateEvent(calId_str, eventId, eventDataThis)
+          .then(function() {
+            if (typeof toast === 'function') toast('✅ 일정이 이동됐습니다.', 'success');
+            if (existingEv) { existingEv.start = newStartField; existingEv.end = newEndField; }
+            renderCalendar();
+          })
+          .catch(function(err) {
+            if (typeof toast === 'function') toast('❌ 이동 실패: ' + (err.message || err), 'error');
+          });
+      }
+
+    /* ── scope: 'all' ── 전체 반복 일정 이동 ──────────────────── */
+    } else if (scope === 'all') {
+      // 루트 이벤트 ID 사용 (인스턴스의 recurringEventId, 없으면 eventId 자체)
       var rootId = (existingEv && existingEv.recurringEventId) || eventId;
+      var rootEv = S.events.find(function(e) { return e.id === rootId; }) || existingEv;
       var eventDataAll = {
-        summary:     (existingEv && existingEv.summary)     || info.summary || '',
-        description: (existingEv && existingEv.description) || '',
-        colorId:     (existingEv && existingEv.colorId)     || undefined,
-        recurrence:  (existingEv && existingEv.recurrence)  || undefined,
+        summary:    (rootEv && rootEv.summary)    || (existingEv && existingEv.summary)    || info.summary || '',
+        description:(rootEv && rootEv.description)|| (existingEv && existingEv.description)|| '',
+        colorId:    (rootEv && rootEv.colorId)    || (existingEv && existingEv.colorId)    || undefined,
+        recurrence: (rootEv && rootEv.recurrence) || (existingEv && existingEv.recurrence) || undefined,
         start: newStartField,
         end:   newEndField
       };
       Object.keys(eventDataAll).forEach(function(k) { if (eventDataAll[k] === undefined) delete eventDataAll[k]; });
-      CalendarModule.updateEvent(calId, rootId, eventDataAll)
+      CalendarModule.updateEvent(calId_str, rootId, eventDataAll)
         .then(function() {
           if (typeof toast === 'function') toast('✅ 전체 반복 일정이 이동됐습니다.', 'success');
           renderCalendar();
         })
-        .catch(function(err) { if (typeof toast === 'function') toast('❌ 이동 실패: ' + (err.message || err), 'error'); });
+        .catch(function(err) {
+          if (typeof toast === 'function') toast('❌ 이동 실패: ' + (err.message || err), 'error');
+        });
 
+    /* ── scope: 'single' ── 반복 없는 단순 이벤트 이동 ────────── */
+    } else if (scope === 'single') {
+      var eventDataSingle = {
+        summary:    (existingEv && existingEv.summary)    || info.summary || '',
+        description:(existingEv && existingEv.description)|| '',
+        colorId:    (existingEv && existingEv.colorId)    || undefined,
+        start: newStartField,
+        end:   newEndField
+      };
+      Object.keys(eventDataSingle).forEach(function(k) { if (eventDataSingle[k] === undefined) delete eventDataSingle[k]; });
+      CalendarModule.updateEvent(calId_str, eventId, eventDataSingle)
+        .then(function() {
+          if (typeof toast === 'function') toast('✅ 일정이 이동됐습니다.', 'success');
+          if (existingEv) { existingEv.start = newStartField; existingEv.end = newEndField; }
+          renderCalendar();
+        })
+        .catch(function(err) {
+          if (typeof toast === 'function') toast('❌ 이동 실패: ' + (err.message || err), 'error');
+        });
+
+    /* ── scope: 'following' ── 이 일정 이후 모두 이동 ─────────── */
     } else if (scope === 'following') {
-      var yesterday = new Date(targetDate.getTime() - 86400000);
-      var untilStr = yesterday.getFullYear() +
-        pad(yesterday.getMonth() + 1) +
-        pad(yesterday.getDate()) + 'T235959Z';
+      // ⚠️ UNTIL은 targetDate(새 위치)가 아닌 원본 인스턴스 날짜 기준이어야 함
+      var origDate  = new Date(
+        (existingEv && (existingEv.start.dateTime || existingEv.start.date)) || info.startTime
+      );
+      var dayBefore = new Date(origDate.getTime() - 86400000);
+      var untilStr  = dayBefore.getFullYear() +
+        pad(dayBefore.getMonth() + 1) +
+        pad(dayBefore.getDate()) + 'T235959Z';
 
-      var origRecurrence = (existingEv && existingEv.recurrence) || [];
-      var newRecurrenceOld = origRecurrence.map(function(r) {
+      // 루트 이벤트의 recurrence 가져오기
+      var rootId3   = (existingEv && existingEv.recurringEventId) || eventId;
+      var rootEv3   = S.events.find(function(e) { return e.id === rootId3; }) || existingEv;
+      var origRecurrence = (rootEv3 && rootEv3.recurrence) ||
+                           (existingEv && existingEv.recurrence) || [];
+
+      // 기존 시리즈: UNTIL을 원본 날짜 전날로 잘라냄
+      var truncatedRecurrence = origRecurrence.map(function(r) {
         if (r.indexOf('RRULE:') === 0) {
-          var cleaned = r.replace(/;?UNTIL=[^;]*/g, '').replace(/;?COUNT=[^;]*/g, '');
-          return cleaned + ';UNTIL=' + untilStr;
+          return r.replace(/;?UNTIL=[^;]*/g, '').replace(/;?COUNT=[^;]*/g, '') + ';UNTIL=' + untilStr;
         }
         return r;
       });
 
-      var rootId2 = (existingEv && existingEv.recurringEventId) || eventId;
+      var origRrule   = origRecurrence.find(function(r) { return r.indexOf('RRULE:') === 0; }) || 'RRULE:FREQ=WEEKLY';
+      var cleanRrule  = origRrule.replace(/;?UNTIL=[^;]*/g, '').replace(/;?COUNT=[^;]*/g, '');
+
+      // 루트 이벤트 원본 start/end (인스턴스의 start/end가 아닌 루트 기준)
+      var rootStart = (rootEv3 && rootEv3.start) || (existingEv && existingEv.start);
+      var rootEnd   = (rootEv3 && rootEv3.end)   || (existingEv && existingEv.end);
+
       var oldEventData = {
-        summary:     (existingEv && existingEv.summary)     || info.summary || '',
-        description: (existingEv && existingEv.description) || '',
-        colorId:     (existingEv && existingEv.colorId)     || undefined,
-        recurrence:  newRecurrenceOld.length ? newRecurrenceOld : undefined,
-        start:       (existingEv && existingEv.start) || newStartField,
-        end:         (existingEv && existingEv.end)   || newEndField
+        summary:    (rootEv3 && rootEv3.summary)    || (existingEv && existingEv.summary)    || info.summary || '',
+        description:(rootEv3 && rootEv3.description)|| (existingEv && existingEv.description)|| '',
+        colorId:    (rootEv3 && rootEv3.colorId)    || (existingEv && existingEv.colorId)    || undefined,
+        recurrence: truncatedRecurrence.length ? truncatedRecurrence : undefined,
+        start: rootStart,
+        end:   rootEnd
       };
       Object.keys(oldEventData).forEach(function(k) { if (oldEventData[k] === undefined) delete oldEventData[k]; });
 
-      var origRrule = origRecurrence.find(function(r) { return r.indexOf('RRULE:') === 0; }) || 'RRULE:FREQ=WEEKLY';
-      var cleanRrule = origRrule.replace(/;?UNTIL=[^;]*/g, '').replace(/;?COUNT=[^;]*/g, '');
-
       var newEventData = {
-        summary:     (existingEv && existingEv.summary)     || info.summary || '',
-        description: (existingEv && existingEv.description) || '',
-        colorId:     (existingEv && existingEv.colorId)     || undefined,
-        recurrence:  [cleanRrule],
+        summary:    (existingEv && existingEv.summary)    || info.summary || '',
+        description:(existingEv && existingEv.description)|| '',
+        colorId:    (existingEv && existingEv.colorId)    || undefined,
+        recurrence: [cleanRrule],
         start: newStartField,
         end:   newEndField
       };
       Object.keys(newEventData).forEach(function(k) { if (newEventData[k] === undefined) delete newEventData[k]; });
 
-      CalendarModule.updateEvent(calId, rootId2, oldEventData)
+      CalendarModule.updateEvent(calId_str, rootId3, oldEventData)
         .then(function() {
-          return CalendarModule.createEvent(calId, newEventData);
+          return CalendarModule.createEvent(calId_str, newEventData);
         })
         .then(function() {
           if (typeof toast === 'function') toast('✅ 이 일정 이후 모두 이동됐습니다.', 'success');
           renderCalendar();
         })
-        .catch(function(err) { if (typeof toast === 'function') toast('❌ 이동 실패: ' + (err.message || err), 'error'); });
+        .catch(function(err) {
+          if (typeof toast === 'function') toast('❌ 이동 실패: ' + (err.message || err), 'error');
+        });
     }
   }
 
@@ -5703,9 +5826,72 @@
   /* ═══════════════════════════════════════════════════════════
      부트스트랩
   ═══════════════════════════════════════════════════════════ */
+  /* ── 탭 네비게이션 마우스 엣지 자동 스크롤 (PC 전용) ──────────
+     마우스가 탭 네비의 수직 영역(±8px) 내에 있으면서
+     뷰포트 우측/좌측 끝에 가까워질 때 숨겨진 탭이 자동으로 드러남.
+     이동이 "아주 조금"이 아니라 실제로 가장자리 쪽으로 의도적으로
+     이동했을 때(EDGE_THRESHOLD 이내)만 반응 → 클릭 의도와 구분.
+     모바일(터치 기기)에서는 동작하지 않음.
+  ─────────────────────────────────────────────────────────────── */
+  function _initTabNavEdgeScroll() {
+    // 터치 기기면 건너뜀
+    if ('ontouchstart' in window || navigator.maxTouchPoints > 0) return;
+
+    var nav = document.querySelector('.tab-nav.desktop-tab-nav');
+    if (!nav) return;
+
+    var EDGE_THRESHOLD = 80;   // 뷰포트 끝에서 이 픽셀 이내면 스크롤 시작
+    var BASE_SPEED     = 3;    // 기본 스크롤 속도 px/frame
+    var rafId          = null;
+    var scrollDir      = 0;    // -1: 왼쪽, +1: 오른쪽, 0: 정지
+    var lastMouseX     = -1;   // 마우스 X 위치 (비율 계산용)
+
+    function _stopScroll() {
+      scrollDir = 0;
+      if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+    }
+
+    function _doScroll() {
+      if (!scrollDir) return;
+      // 자동 정지: 스크롤 끝에 도달
+      if (scrollDir > 0 && nav.scrollLeft >= nav.scrollWidth - nav.clientWidth - 1) { _stopScroll(); return; }
+      if (scrollDir < 0 && nav.scrollLeft <= 1) { _stopScroll(); return; }
+      // 마우스 위치 기준으로 속도 가속 (가장자리에 가까울수록 빠름)
+      var dist  = scrollDir > 0 ? (window.innerWidth - lastMouseX) : lastMouseX;
+      var ratio = Math.max(0, 1 - dist / EDGE_THRESHOLD);
+      nav.scrollLeft += scrollDir * (BASE_SPEED + ratio * 10);
+      rafId = requestAnimationFrame(_doScroll);
+    }
+
+    document.addEventListener('mousemove', function(e) {
+      lastMouseX = e.clientX;
+      var navRect  = nav.getBoundingClientRect();
+      var inNavRow = e.clientY >= navRect.top - 8 && e.clientY <= navRect.bottom + 8;
+
+      if (!inNavRow) { _stopScroll(); return; }
+
+      var fromRight = window.innerWidth - e.clientX;
+      var fromLeft  = e.clientX;
+
+      if (fromRight < EDGE_THRESHOLD && nav.scrollLeft < nav.scrollWidth - nav.clientWidth - 1) {
+        // 오른쪽 끝 접근 + 숨겨진 탭 존재
+        if (scrollDir !== 1) { scrollDir = 1; if (rafId) { cancelAnimationFrame(rafId); rafId = null; } _doScroll(); }
+      } else if (fromLeft < EDGE_THRESHOLD && nav.scrollLeft > 1) {
+        // 왼쪽 끝 접근 + 숨겨진 탭 존재
+        if (scrollDir !== -1) { scrollDir = -1; if (rafId) { cancelAnimationFrame(rafId); rafId = null; } _doScroll(); }
+      } else {
+        _stopScroll();
+      }
+    }, { passive: true });
+
+    // 창이 포커스를 잃으면 중지 (마우스가 뷰포트 경계 밖으로 나간 후 복귀 없을 때)
+    window.addEventListener('blur', _stopScroll);
+  }
+
   function init() {
     initAuth();
     initTabs();
+    _initTabNavEdgeScroll();
     initCalendarNav();
     initEventModal();
     initRecurDeleteModal();

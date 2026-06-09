@@ -579,7 +579,7 @@ a        { color: var(--color-accent); text-decoration: none; }
 
 .calendar-weekdays {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  grid-template-columns: repeat(7, minmax(0, 1fr));
   background: var(--color-bg);
   border-bottom: 1px solid var(--color-border);
   border-radius: var(--r-xl) var(--r-xl) 0 0;  /* 위 둥글게, 아래 직각 */
@@ -599,7 +599,9 @@ a        { color: var(--color-accent); text-decoration: none; }
 
 .calendar-grid {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  grid-template-columns: repeat(7, minmax(0, 1fr)); /* minmax(0,1fr): 내용이 셀을 밀어서 넓히는 현상 방지 */
+  width: 100%;
+  table-layout: fixed; /* 폴백 */
 }
 
 /* 주간 뷰: 1열 × 7행 */
@@ -634,6 +636,9 @@ a        { color: var(--color-accent); text-decoration: none; }
   cursor: pointer;
   transition: background var(--trans);
   position: relative;
+  min-width: 0;      /* grid cell이 내용 때문에 넓어지는 것 방지 */
+  overflow: hidden;  /* 이벤트 chip이 셀 밖으로 넘치지 않도록 */
+  box-sizing: border-box;
 }
 
 .calendar-day:nth-child(7n) { border-right: none; }
@@ -727,7 +732,16 @@ a        { color: var(--color-accent); text-decoration: none; }
   margin-bottom: var(--sp-4);
 }
 
-.section-title { font-size: var(--font-xl); font-weight: 700; }
+.section-title { font-size: var(--font-xl); font-weight: 700; display: flex; align-items: center; gap: 8px; }
+.section-title .section-icon { width: 22px; height: 22px; flex-shrink: 0; }
+
+/* ── 캘린더 툴바 고정 (내부 스크롤 시 가려지지 않음) ── */
+#tab-calendar .calendar-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: var(--color-bg, #f0f2f5);
+}
 
 .report-file-list {
   background: var(--color-card);
@@ -929,13 +943,24 @@ a        { color: var(--color-accent); text-decoration: none; }
 }
 
 /* ── 13. 설정 탭 ─────────────────────────────────────────────── */
+.settings-group-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-primary, #4285F4);
+  padding: 6px 2px 4px;
+  border-bottom: 2px solid var(--color-primary, #4285F4);
+  margin: 28px 0 12px;
+  opacity: 0.75;
+}
+.settings-group-label:first-child { margin-top: 0; }
 .settings-card {
   background: var(--color-card);
   border: 1px solid var(--color-border);
   border-radius: var(--r-lg);
   padding: var(--sp-5);
   margin-bottom: var(--sp-4);
-  max-width: 700px;
   box-shadow: var(--shadow-sm);
 }
 
@@ -5399,7 +5424,7 @@ h3.settings-section-title {
   background: transparent;
   border: 1px solid rgba(255,255,255,0.3);
   border-radius: 20px;
-  padding: 4px 12px;
+  padding: 6px 12px;
   display: inline-flex;
   align-items: center;
   gap: 6px;

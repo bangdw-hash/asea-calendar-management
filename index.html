@@ -280,7 +280,7 @@
       <section id="tab-weekly-hub" class="tab-panel" role="tabpanel" hidden>
         <div class="tab-body">
         <div class="hub-header">
-          <h2 class="section-title">주간 업무보고 허브</h2>
+          <h2 class="section-title"><svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>주간 업무보고 허브</h2>
           <button id="load-reports-btn" class="btn btn-primary btn-sm">Drive에서 불러오기</button>
         </div>
 
@@ -343,6 +343,7 @@
            ════════════════════════════════════════════════════ -->
       <section id="tab-email" class="tab-panel" role="tabpanel" hidden>
         <div class="tab-body">
+        <h2 class="section-title"><svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>이메일 발송</h2>
         <!-- 이메일 내부 탭 -->
         <div class="email-subtabs">
           <button class="email-subtab active" data-etab="compose">✉️ 메일 작성</button>
@@ -425,7 +426,7 @@
            ════════════════════════════════════════════════════ -->
       <section id="tab-extract" class="tab-panel" role="tabpanel" hidden>
         <div class="tab-body">
-        <h2 class="section-title">일정발췌 (PDF → 캘린더)</h2>
+        <h2 class="section-title"><svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-3.5-3.5"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>일정발췌 (PDF → 캘린더)</h2>
 
         <!-- 서브탭 -->
         <div class="email-subtabs" role="tablist">
@@ -537,7 +538,7 @@
            ════════════════════════════════════════════════════ -->
       <section id="tab-work" class="tab-panel" role="tabpanel" hidden>
         <div class="tab-body">
-        <h2 class="section-title">업무관리</h2>
+        <h2 class="section-title"><svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg>업무관리</h2>
 
         <!-- 상단 액션 -->
         <div style="display:flex;justify-content:flex-end;margin-bottom:8px">
@@ -667,7 +668,7 @@
       <section id="tab-facility" class="tab-panel" role="tabpanel" hidden>
         <div class="tab-body">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px">
-          <h2 class="section-title" style="margin:0">🏢 대관업무 예약</h2>
+          <h2 class="section-title" style="margin:0"><svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21h18M3 10h18M5 6l7-3 7 3M4 10v11M20 10v11M8 14v3M12 14v3M16 14v3"/></svg>대관업무 예약</h2>
           <div style="display:flex;gap:8px;align-items:center">
             <span id="fac-admin-link" style="display:none">
               <a href="#" onclick="document.querySelector('[data-tab=admin]').click();return false" class="btn btn-ghost btn-sm">🛡 관리자 패널</a>
@@ -718,10 +719,24 @@
               <option value="반려">반려</option>
             </select>
             <button class="btn btn-ghost btn-sm" onclick="FacilityModule&&typeof FacilityModule==='object'">새로고침</button>
-            <div style="margin-left:auto;font-size:12px;color:#888">
-              공개 신청 URL: <a id="fac-public-req-link" href="facility-request.html" target="_blank" class="text-link">facility-request.html</a>
+            <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
+              <button id="fac-public-qr-btn" class="btn btn-ghost btn-sm" title="QR 코드 보기">🔗 공개 신청 링크</button>
             </div>
           </div>
+          <!-- QR 공개 링크 패널 -->
+          <div id="fac-qr-panel" hidden style="background:var(--color-bg-secondary);border-radius:12px;padding:16px;margin-bottom:16px;display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap">
+            <img id="fac-qr-img" src="" alt="QR Code" style="width:120px;height:120px;border-radius:8px;border:1px solid var(--color-border)">
+            <div style="flex:1;min-width:200px">
+              <div style="font-size:13px;font-weight:600;margin-bottom:6px">📋 외부 대관신청 공개 링크</div>
+              <div id="fac-qr-url" style="font-size:11px;word-break:break-all;color:#888;margin-bottom:8px;background:#fff;padding:6px 8px;border-radius:6px;border:1px solid var(--color-border)"></div>
+              <div style="display:flex;gap:6px;flex-wrap:wrap">
+                <button id="fac-qr-copy-btn" class="btn btn-primary btn-sm">📋 URL 복사</button>
+                <a id="fac-qr-open-btn" href="#" target="_blank" class="btn btn-secondary btn-sm">↗ 열어보기</a>
+              </div>
+              <p style="font-size:11px;color:#aaa;margin-top:8px">외부 사용자가 이 URL에 접속하여 신청서를 작성합니다. 신청 후 관리자에게 알림이 발송됩니다.</p>
+            </div>
+          </div>
+
           <!-- 프록시 설정 -->
           <div class="settings-card" style="margin-bottom:16px;padding:12px 16px">
             <div style="font-size:13px;font-weight:600;margin-bottom:6px">🔗 알림 프록시 URL (GAS 배포 URL)</div>
@@ -754,6 +769,34 @@
           </div>
         </div>
         </div><!-- /.tab-body -->
+
+        <!-- 대관신청 검토 모달 -->
+        <div id="fac-review-modal" class="modal" hidden aria-modal="true">
+          <div class="modal-backdrop" onclick="document.getElementById('fac-review-modal').hidden=true"></div>
+          <div class="modal-dialog" style="max-width:520px">
+            <div class="modal-header">
+              <h3 id="fac-rm-action-title" class="modal-title">신청 검토</h3>
+              <button class="modal-close" onclick="document.getElementById('fac-review-modal').hidden=true">✕</button>
+            </div>
+            <div class="modal-body">
+              <div id="fac-rm-info" class="fac-rm-info" style="background:var(--color-bg-secondary);border-radius:8px;padding:12px;margin-bottom:16px;font-size:13px;line-height:1.8"></div>
+              <div class="form-group">
+                <label class="form-label">검토 의견 <span style="color:#888;font-weight:400">(선택)</span></label>
+                <textarea id="fac-rm-note" class="form-input" rows="3" placeholder="승인/반려 사유나 안내 메시지를 입력하세요..."></textarea>
+              </div>
+              <div id="fac-rm-auto-resv-wrap" style="display:none">
+                <label class="checkbox-label" style="font-size:13px">
+                  <input type="checkbox" id="fac-rm-auto-resv" checked>
+                  <span>승인과 동시에 예약 달력에 자동 등록</span>
+                </label>
+              </div>
+            </div>
+            <div class="modal-footer" style="display:flex;gap:8px;justify-content:flex-end">
+              <button class="btn btn-ghost" onclick="document.getElementById('fac-review-modal').hidden=true">취소</button>
+              <button id="fac-rm-confirm-btn" class="btn btn-primary">확인</button>
+            </div>
+          </div>
+        </div>
       </section>
 
       <!-- ════════════════════════════════════════════════════
@@ -762,7 +805,7 @@
       <section id="tab-vehicle" class="tab-panel" role="tabpanel" hidden>
         <div class="tab-body">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px">
-          <h2 class="section-title" style="margin:0">🚗 차량 예약 관리</h2>
+          <h2 class="section-title" style="margin:0"><svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 17H3v-4l2.5-5h11L19 13v4h-2"/><circle cx="7.5" cy="17.5" r="1.5"/><circle cx="16.5" cy="17.5" r="1.5"/><path d="M5 13h14"/></svg>차량 예약 관리</h2>
           <div style="display:flex;gap:8px;align-items:center">
             <span id="veh-admin-link" style="display:none">
               <a href="#" onclick="document.querySelector('[data-tab=admin]').click();return false" class="btn btn-ghost btn-sm">🛡 관리자 패널</a>
@@ -822,7 +865,7 @@
       <section id="tab-classroom" class="tab-panel" role="tabpanel" hidden>
         <div class="tab-body">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px">
-          <h2 class="section-title" style="margin:0">🏫 강의실 예약 현황</h2>
+          <h2 class="section-title" style="margin:0"><svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 20h20M4 20V9l8-5 8 5v11"/><rect x="9" y="14" width="6" height="6"/><path d="M9 9h.01M15 9h.01"/></svg>강의실 예약 현황</h2>
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
             <button id="cls-view-timetable-btn" class="btn btn-secondary btn-sm active-view">시간표</button>
             <button id="cls-view-month-btn" class="btn btn-ghost btn-sm">월간</button>
@@ -897,7 +940,7 @@
       <section id="tab-workorder" class="tab-panel" role="tabpanel" hidden>
         <div class="tab-body">
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:18px">
-          <h2 class="section-title" style="margin-bottom:0">🔧 작업지시</h2>
+          <h2 class="section-title" style="margin-bottom:0"><svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>작업지시</h2>
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
             <a href="manager/" target="_blank" class="btn btn-ghost btn-sm" style="text-decoration:none">🏢 관리실 포털 열기</a>
             <button id="wo-main-add-btn" class="btn btn-primary btn-sm">+ 작업지시 등록</button>
@@ -987,7 +1030,7 @@
 
         <!-- ── 상단 헤더 ── -->
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:18px">
-          <h2 class="section-title" style="margin-bottom:0">🚪 강의실 입출입 관리</h2>
+          <h2 class="section-title" style="margin-bottom:0"><svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>강의실 입출입 관리</h2>
           <div style="display:flex;gap:8px;flex-wrap:wrap">
             <button id="ci-tab-btn" class="tab-sub-btn active" data-ci-tab="spaces">📍 공간 관리</button>
             <button id="ci-log-btn" class="tab-sub-btn" data-ci-tab="logs">📊 입출입 현황</button>
@@ -1122,7 +1165,7 @@
            ════════════════════════════════════════════════════ -->
       <section id="tab-sms" class="tab-panel" role="tabpanel" hidden>
         <div class="tab-body">
-        <h2 class="section-title">📱 문자 발송</h2>
+        <h2 class="section-title"><svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>문자 발송</h2>
 
         <!-- 서브탭 -->
         <div class="sms-subtab-bar">
@@ -1144,7 +1187,10 @@
 
       <section id="tab-settings" class="tab-panel" role="tabpanel" hidden>
         <div class="tab-body">
-        <h2 class="section-title">설정</h2>
+        <h2 class="section-title"><svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>설정</h2>
+
+        <!-- ── 내 계정 ─────────────────────────────────────── -->
+        <div class="settings-group-label">내 계정</div>
 
         <!-- Google 계정 + 내 프로필 -->
         <div class="settings-card">
@@ -1165,6 +1211,22 @@
             ⚠️ 직원 목록에 등록되지 않은 계정입니다. 관리자에게 문의하세요.
           </p>
         </div>
+
+        <!-- 관리자 등록 — 현재 사용자가 관리자가 아닐 때 항상 표시 -->
+        <div class="settings-card" id="admin-bootstrap-card" hidden
+             style="border:2px solid #f59e0b;background:var(--color-card)">
+          <h3 class="settings-section-title">🔑 관리자 등록</h3>
+          <p id="admin-bootstrap-hint" class="form-hint" style="margin-bottom:8px"></p>
+          <p class="form-hint" style="margin-bottom:12px">
+            로그인 계정: <strong id="bootstrap-email-display"></strong><br>
+            등록 후 관리자 탭 → 👥 사용자 권한 관리에서 다른 사용자 권한도 변경할 수 있습니다.
+          </p>
+          <button id="admin-bootstrap-btn" class="btn btn-primary btn-sm">✅ 내 계정을 관리자로 등록</button>
+          <p id="admin-bootstrap-status" class="form-hint" style="margin-top:8px;color:#4285F4"></p>
+        </div>
+
+        <!-- ── 인사 / 조직 관리 ────────────────────────────── -->
+        <div class="settings-group-label">인사 / 조직 관리</div>
 
         <!-- 직원관리 (admin 전용) -->
         <div class="settings-card" id="hr-management-card" hidden>
@@ -1220,7 +1282,6 @@
           </div>
         </div>
 
-
         <!-- 관리실 인원 등록 (admin 전용) -->
         <div class="settings-card" id="mgr-staff-card" hidden>
           <h3 class="settings-section-title">🏢 관리실 인원 등록 <span class="badge-admin">관리자</span></h3>
@@ -1239,35 +1300,25 @@
           <button id="mgr-add-btn" class="btn btn-primary btn-sm">➕ 관리실 인원 추가</button>
           <div id="mgr-staff-list" style="margin-top:14px"></div>
         </div>
-        <!-- 앱 기본 URL (커스텀 도메인) 설정 -->
+
+        <!-- 부서 관리 -->
         <div class="settings-card">
-          <h3 class="settings-section-title">🌐 앱 기본 URL (커스텀 도메인)</h3>
-          <p class="form-hint" style="margin-bottom:10px">
-            커스텀 도메인을 연결한 경우 여기서 URL을 변경하면 QR 코드 링크 등에 자동 반영됩니다.<br>
-            끝에 <code>/</code>를 포함해야 합니다. 예: <code>https://simmanager.asea.or.kr/</code>
-          </p>
-          <div style="display:flex;gap:8px;align-items:center">
-            <input id="setting-base-url" type="url" class="form-input" style="flex:1"
-              placeholder="https://bangdw-hash.github.io/asea-calendar-management/">
-            <button id="setting-base-url-save" class="btn btn-primary btn-sm">저장</button>
-            <button id="setting-base-url-reset" class="btn btn-secondary btn-sm">기본값</button>
+          <div class="settings-card-header">
+            <h3 class="settings-section-title">부서 관리</h3>
+            <button id="add-dept-btn" class="btn btn-secondary btn-sm">+ 부서 추가</button>
           </div>
-          <p id="setting-base-url-status" class="form-hint" style="margin-top:8px"></p>
+          <div id="dept-list" class="dept-list"></div>
         </div>
 
-        <!-- QR 체크인 서버 URL 설정 -->
-        <div class="settings-card" id="checkin-proxy-card">
-          <h3 class="settings-section-title">🔗 QR 체크인 서버 URL</h3>
-          <p class="form-hint" style="margin-bottom:10px">
-            QR 입출입 기록을 저장하려면 Google Apps Script 프록시 URL을 입력하세요.
-            <strong>gas_checkin_proxy.gs</strong> 파일을 GAS에 배포 후 웹앱 URL을 붙여넣습니다.
-          </p>
-          <div style="display:flex;gap:8px;align-items:center">
-            <input id="checkin-proxy-url-input" type="url" class="form-input" style="flex:1" placeholder="https://script.google.com/macros/s/.../exec">
-            <button id="checkin-proxy-save-btn" class="btn btn-primary btn-sm">저장</button>
-            <button id="checkin-proxy-test-btn" class="btn btn-secondary btn-sm">테스트</button>
+        <!-- 수신자 목록 -->
+        <div class="settings-card">
+          <h3 class="settings-section-title">수신자 목록</h3>
+          <div id="settings-recipients" class="settings-recipients"></div>
+          <div class="settings-add-row">
+            <input id="new-recipient-name" type="text" class="form-input" placeholder="이름">
+            <input id="new-recipient-email" type="email" class="form-input" placeholder="이메일 주소">
+            <button id="add-recipient-btn" class="btn btn-secondary btn-sm">추가</button>
           </div>
-          <p id="checkin-proxy-status" class="form-hint" style="margin-top:8px"></p>
         </div>
 
         <!-- 직원 데이터 전체 초기화 (admin 전용) -->
@@ -1286,100 +1337,8 @@
           <p id="hr-init-status" class="form-hint" style="margin-top:8px"></p>
         </div>
 
-        <!-- 시설(건물/호실) 관리 (admin 전용) -->
-        <div class="settings-card" id="settings-fac-card" hidden>
-          <h3 class="settings-section-title">🏢 시설(건물/호실) 관리 <span class="badge-admin">관리자</span></h3>
-          <p class="form-hint" style="margin-bottom:10px">대관 가능한 건물과 호실을 등록/수정합니다. 등록 후 대관업무 탭에서 예약할 수 있습니다.</p>
-          <button id="settings-fac-add-btn" class="btn btn-primary btn-sm" onclick="document.querySelector('[data-tab=facility]').click()">🏢 대관업무 탭에서 관리</button>
-        </div>
-
-        <!-- 차량 관리 (admin 전용) -->
-        <div class="settings-card" id="settings-veh-card" hidden>
-          <h3 class="settings-section-title">🚗 차량 관리 <span class="badge-admin">관리자</span></h3>
-          <p class="form-hint" style="margin-bottom:10px">차량을 등록/수정합니다. 등록 후 차량관리 탭에서 예약할 수 있습니다.</p>
-          <button id="settings-veh-go-btn" class="btn btn-primary btn-sm" onclick="document.querySelector('[data-tab=vehicle]').click()">🚗 차량관리 탭에서 관리</button>
-        </div>
-        </div>
-
-        <!-- 클라우드 설정 동기화 -->
-        <div class="settings-card">
-          <h3 class="settings-section-title">☁️ 설정 클라우드 동기화</h3>
-          <p class="form-hint" style="margin-bottom:12px">API 키·웹훅 URL·수신자/부서 목록 및 추출/공유 이력이 Google Drive에 자동 저장됩니다. 로그인하면 어느 기기에서나 동일한 이력과 설정이 자동으로 불러와집니다.</p>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-            <button id="cloud-save-settings-btn" class="btn btn-primary btn-sm">☁️ 설정 지금 동기화</button>
-            <button id="cloud-sync-now-btn" class="btn btn-ghost btn-sm">🔄 이력 지금 동기화</button>
-          </div>
-          <p id="cloud-sync-status" class="form-hint" style="margin-top:8px;color:#4285F4"></p>
-        </div>
-
-        <!-- Claude API 키 -->
-        <div class="settings-card">
-          <h3 class="settings-section-title">Claude API 키 (일정발췃 · AI 분석)</h3>
-          <div class="form-group">
-            <input id="setting-api-key" type="password" class="form-input"
-              placeholder="API 키 입력">
-            <p class="form-hint" style="margin-top:6px">
-              ⚠️ API 키는 브라우저 localStorage에만 저장됩니다.<br>
-              키 형식에 따라 엔드포인트가 자동 결정됩니다 —
-              <strong>sk-ant-api03-...</strong> → 공식 Anthropic API /
-              <strong>sk-9bbf...</strong> (hex 64자) → aiapiflow 프록시 자동 사용
-            </p>
-          </div>
-          <!-- Base URL 입력란 제거 — 키 형식으로 자동 판별 -->
-          <input id="setting-api-base-url" type="hidden" value="">
-          <button id="save-api-key-btn" class="btn btn-primary btn-sm">저장</button>
-        </div>
-
-        <!-- Gemini API 키 (예비용, 현재 미사용) -->
-        <div class="settings-card" style="display:none">
-          <h3 class="settings-section-title">Gemini API 키</h3>
-          <div class="form-group">
-            <input id="setting-gemini-key" type="password" class="form-input" placeholder="AIza...">
-          </div>
-          <button id="save-gemini-key-btn" class="btn btn-primary btn-sm">저장</button>
-        </div>
-
-        <!-- GitHub PAT (일정 공유 페이지 자동 생성) -->
-        <div class="settings-card">
-          <h3 class="settings-section-title">GitHub Token (일정 공유 페이지 자동 생성)</h3>
-          <div class="form-group">
-            <input id="setting-github-token" type="password" class="form-input"
-              placeholder="ghp_xxxxxxxxxxxxxxxxxxxx">
-            <p class="form-hint">⚠️ localStorage에만 저장됩니다. GitHub → Settings → Developer settings → Personal access tokens → Fine-grained tokens에서 발급. <strong>Contents: Read and write</strong> 권한 필요.</p>
-          </div>
-          <button id="save-github-token-btn" class="btn btn-primary btn-sm">저장</button>
-        </div>
-
-        <!-- 홍보슬라이드 설정 -->
-        <div class="settings-card">
-          <h3 class="settings-section-title">📣 홍보슬라이드 설정</h3>
-          <div class="form-group">
-            <label class="form-label" for="setting-promo-gas-url">GAS 프록시 URL</label>
-            <input id="setting-promo-gas-url" type="url" class="form-input"
-              placeholder="https://script.google.com/macros/s/.../exec">
-            <p class="form-hint">gas_slides_proxy.gs를 Google Apps Script에 배포한 후 발급된 URL을 입력하세요.<br>
-            자세한 내용은 <strong>REMOTE_SETUP.md</strong>를 참고하세요.</p>
-          </div>
-          <button id="save-promo-gas-btn" class="btn btn-primary btn-sm">저장</button>
-          <div class="form-group" style="margin-top:12px">
-            <label class="form-label" for="setting-promo-token">접근 토큰 (선택)</label>
-            <input id="setting-promo-token" type="text" class="form-input"
-              placeholder="영문·숫자 조합 임의 문자열 (예: asea2026promo)">
-            <p class="form-hint">설정 시 공개 URL을 통한 등록에 이 토큰이 있어야 합니다. GAS 스크립트 속성 <code>ACCESS_TOKEN</code>에도 동일한 값을 입력하세요.<br>비워두면 URL을 아는 누구나 슬라이드를 등록할 수 있습니다.</p>
-          </div>
-          <button id="save-promo-token-btn" class="btn btn-secondary btn-sm">접근 토큰 저장</button>
-        </div>
-
-        <!-- Make.com 웹훅 URL -->
-        <div class="settings-card">
-          <h3 class="settings-section-title">Make.com 웹훅 URL (이메일 예약 서버 발송)</h3>
-          <div class="form-group">
-            <input id="setting-make-webhook" type="url" class="form-input"
-              placeholder="https://hook.us2.make.com/...">
-            <p class="form-hint">Make.com 시나리오 1의 CustomWebHook 모듈 URL을 입력하세요. 이메일 예약 시 브라우저가 닫혀도 자동 발송됩니다.</p>
-          </div>
-          <button id="save-make-webhook-btn" class="btn btn-primary btn-sm">저장</button>
-        </div>
+        <!-- ── 캘린더 설정 ──────────────────────────────────── -->
+        <div class="settings-group-label">캘린더 설정</div>
 
         <!-- 캘린더 선택 -->
         <div class="settings-card">
@@ -1391,26 +1350,6 @@
           <div id="my-calendars-list" class="my-calendars-list">
             <p class="empty-state" style="padding:8px">캘린더 목록을 불러오세요.</p>
           </div>
-        </div>
-
-        <!-- Drive 설정 -->
-        <div class="settings-card">
-          <h3 class="settings-section-title">Drive 설정</h3>
-          <div class="form-group">
-            <label class="form-label" for="setting-folder-id">보고서 폴더 ID</label>
-            <input id="setting-folder-id" type="text" class="form-input"
-              placeholder="Google Drive 폴더 ID를 입력하세요">
-          </div>
-          <button id="save-folder-btn" class="btn btn-primary btn-sm">저장</button>
-        </div>
-
-        <!-- 부서 관리 -->
-        <div class="settings-card">
-          <div class="settings-card-header">
-            <h3 class="settings-section-title">부서 관리</h3>
-            <button id="add-dept-btn" class="btn btn-secondary btn-sm">+ 부서 추가</button>
-          </div>
-          <div id="dept-list" class="dept-list"></div>
         </div>
 
         <!-- 공유 캘린더 소스 -->
@@ -1449,16 +1388,151 @@
           <div id="user-color-settings"></div>
         </div>
 
-        <!-- 수신자 목록 -->
-        <div class="settings-card">
-          <h3 class="settings-section-title">수신자 목록</h3>
-          <div id="settings-recipients" class="settings-recipients"></div>
-          <div class="settings-add-row">
-            <input id="new-recipient-name" type="text" class="form-input" placeholder="이름">
-            <input id="new-recipient-email" type="email" class="form-input" placeholder="이메일 주소">
-            <button id="add-recipient-btn" class="btn btn-secondary btn-sm">추가</button>
-          </div>
+        <!-- ── 시설 · 자원 관리 ────────────────────────────── -->
+        <div class="settings-group-label">시설 · 자원 관리</div>
+
+        <!-- 시설(건물/호실) 관리 (admin 전용) -->
+        <div class="settings-card" id="settings-fac-card" hidden>
+          <h3 class="settings-section-title">🏢 시설(건물/호실) 관리 <span class="badge-admin">관리자</span></h3>
+          <p class="form-hint" style="margin-bottom:10px">대관 가능한 건물과 호실을 등록/수정합니다. 등록 후 대관업무 탭에서 예약할 수 있습니다.<br>
+          대관료 설정도 여기서 건물/호실별로 관리합니다.</p>
+          <button id="settings-fac-add-btn" class="btn btn-primary btn-sm" onclick="document.querySelector('[data-tab=facility]').click()">🏢 대관업무 탭에서 관리</button>
         </div>
+
+        <!-- 차량 관리 (admin 전용) -->
+        <div class="settings-card" id="settings-veh-card" hidden>
+          <h3 class="settings-section-title">🚗 차량 관리 <span class="badge-admin">관리자</span></h3>
+          <p class="form-hint" style="margin-bottom:10px">차량을 등록/수정합니다. 등록 후 차량관리 탭에서 예약할 수 있습니다.</p>
+          <button id="settings-veh-go-btn" class="btn btn-primary btn-sm" onclick="document.querySelector('[data-tab=vehicle]').click()">🚗 차량관리 탭에서 관리</button>
+        </div>
+
+        <!-- ── 연동 / API 설정 ──────────────────────────────── -->
+        <div class="settings-group-label">연동 / API 설정</div>
+
+        <!-- 클라우드 설정 동기화 -->
+        <div class="settings-card">
+          <h3 class="settings-section-title">☁️ 설정 클라우드 동기화</h3>
+          <p class="form-hint" style="margin-bottom:12px">API 키·웹훅 URL·수신자/부서 목록 및 추출/공유 이력이 Google Drive에 자동 저장됩니다. 로그인하면 어느 기기에서나 동일한 이력과 설정이 자동으로 불러와집니다.</p>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+            <button id="cloud-save-settings-btn" class="btn btn-primary btn-sm">☁️ 설정 지금 동기화</button>
+            <button id="cloud-sync-now-btn" class="btn btn-ghost btn-sm">🔄 이력 지금 동기화</button>
+          </div>
+          <p id="cloud-sync-status" class="form-hint" style="margin-top:8px;color:#4285F4"></p>
+        </div>
+
+        <!-- Claude API 키 -->
+        <div class="settings-card">
+          <h3 class="settings-section-title">Claude API 키 (일정발췃 · AI 분석)</h3>
+          <div class="form-group">
+            <input id="setting-api-key" type="password" class="form-input"
+              placeholder="API 키 입력">
+            <p class="form-hint" style="margin-top:6px">
+              ⚠️ API 키는 브라우저 localStorage에만 저장됩니다.<br>
+              키 형식에 따라 엔드포인트가 자동 결정됩니다 —
+              <strong>sk-ant-api03-...</strong> → 공식 Anthropic API /
+              <strong>sk-9bbf...</strong> (hex 64자) → aiapiflow 프록시 자동 사용
+            </p>
+          </div>
+          <input id="setting-api-base-url" type="hidden" value="">
+          <button id="save-api-key-btn" class="btn btn-primary btn-sm">저장</button>
+        </div>
+
+        <!-- Gemini API 키 (예비용, 현재 미사용) -->
+        <div class="settings-card" style="display:none">
+          <h3 class="settings-section-title">Gemini API 키</h3>
+          <div class="form-group">
+            <input id="setting-gemini-key" type="password" class="form-input" placeholder="AIza...">
+          </div>
+          <button id="save-gemini-key-btn" class="btn btn-primary btn-sm">저장</button>
+        </div>
+
+        <!-- GitHub PAT (일정 공유 페이지 자동 생성) -->
+        <div class="settings-card">
+          <h3 class="settings-section-title">GitHub Token (일정 공유 페이지 자동 생성)</h3>
+          <div class="form-group">
+            <input id="setting-github-token" type="password" class="form-input"
+              placeholder="ghp_xxxxxxxxxxxxxxxxxxxx">
+            <p class="form-hint">⚠️ localStorage에만 저장됩니다. GitHub → Settings → Developer settings → Personal access tokens → Fine-grained tokens에서 발급. <strong>Contents: Read and write</strong> 권한 필요.</p>
+          </div>
+          <button id="save-github-token-btn" class="btn btn-primary btn-sm">저장</button>
+        </div>
+
+        <!-- Make.com 웹훅 URL -->
+        <div class="settings-card">
+          <h3 class="settings-section-title">Make.com 웹훅 URL (이메일 예약 서버 발송)</h3>
+          <div class="form-group">
+            <input id="setting-make-webhook" type="url" class="form-input"
+              placeholder="https://hook.us2.make.com/...">
+            <p class="form-hint">Make.com 시나리오 1의 CustomWebHook 모듈 URL을 입력하세요. 이메일 예약 시 브라우저가 닫혀도 자동 발송됩니다.</p>
+          </div>
+          <button id="save-make-webhook-btn" class="btn btn-primary btn-sm">저장</button>
+        </div>
+
+        <!-- 홍보슬라이드 설정 -->
+        <div class="settings-card">
+          <h3 class="settings-section-title">📣 홍보슬라이드 설정</h3>
+          <div class="form-group">
+            <label class="form-label" for="setting-promo-gas-url">GAS 프록시 URL</label>
+            <input id="setting-promo-gas-url" type="url" class="form-input"
+              placeholder="https://script.google.com/macros/s/.../exec">
+            <p class="form-hint">gas_slides_proxy.gs를 Google Apps Script에 배포한 후 발급된 URL을 입력하세요.<br>
+            자세한 내용은 <strong>REMOTE_SETUP.md</strong>를 참고하세요.</p>
+          </div>
+          <button id="save-promo-gas-btn" class="btn btn-primary btn-sm">저장</button>
+          <div class="form-group" style="margin-top:12px">
+            <label class="form-label" for="setting-promo-token">접근 토큰 (선택)</label>
+            <input id="setting-promo-token" type="text" class="form-input"
+              placeholder="영문·숫자 조합 임의 문자열 (예: asea2026promo)">
+            <p class="form-hint">설정 시 공개 URL을 통한 등록에 이 토큰이 있어야 합니다. GAS 스크립트 속성 <code>ACCESS_TOKEN</code>에도 동일한 값을 입력하세요.<br>비워두면 URL을 아는 누구나 슬라이드를 등록할 수 있습니다.</p>
+          </div>
+          <button id="save-promo-token-btn" class="btn btn-secondary btn-sm">접근 토큰 저장</button>
+        </div>
+
+        <!-- Drive 설정 -->
+        <div class="settings-card">
+          <h3 class="settings-section-title">Drive 설정</h3>
+          <div class="form-group">
+            <label class="form-label" for="setting-folder-id">보고서 폴더 ID</label>
+            <input id="setting-folder-id" type="text" class="form-input"
+              placeholder="Google Drive 폴더 ID를 입력하세요">
+          </div>
+          <button id="save-folder-btn" class="btn btn-primary btn-sm">저장</button>
+        </div>
+
+        <!-- ── 기타 설정 ────────────────────────────────────── -->
+        <div class="settings-group-label">기타 설정</div>
+
+        <!-- 앱 기본 URL (커스텀 도메인) 설정 -->
+        <div class="settings-card">
+          <h3 class="settings-section-title">🌐 앱 기본 URL (커스텀 도메인)</h3>
+          <p class="form-hint" style="margin-bottom:10px">
+            커스텀 도메인을 연결한 경우 여기서 URL을 변경하면 QR 코드 링크 등에 자동 반영됩니다.<br>
+            끝에 <code>/</code>를 포함해야 합니다. 예: <code>https://simmanager.asea.or.kr/</code>
+          </p>
+          <div style="display:flex;gap:8px;align-items:center">
+            <input id="setting-base-url" type="url" class="form-input" style="flex:1"
+              placeholder="https://bangdw-hash.github.io/asea-calendar-management/">
+            <button id="setting-base-url-save" class="btn btn-primary btn-sm">저장</button>
+            <button id="setting-base-url-reset" class="btn btn-secondary btn-sm">기본값</button>
+          </div>
+          <p id="setting-base-url-status" class="form-hint" style="margin-top:8px"></p>
+        </div>
+
+        <!-- QR 체크인 서버 URL 설정 -->
+        <div class="settings-card" id="checkin-proxy-card">
+          <h3 class="settings-section-title">🔗 QR 체크인 서버 URL</h3>
+          <p class="form-hint" style="margin-bottom:10px">
+            QR 입출입 기록을 저장하려면 Google Apps Script 프록시 URL을 입력하세요.
+            <strong>gas_checkin_proxy.gs</strong> 파일을 GAS에 배포 후 웹앱 URL을 붙여넣습니다.
+          </p>
+          <div style="display:flex;gap:8px;align-items:center">
+            <input id="checkin-proxy-url-input" type="url" class="form-input" style="flex:1" placeholder="https://script.google.com/macros/s/.../exec">
+            <button id="checkin-proxy-save-btn" class="btn btn-primary btn-sm">저장</button>
+            <button id="checkin-proxy-test-btn" class="btn btn-secondary btn-sm">테스트</button>
+          </div>
+          <p id="checkin-proxy-status" class="form-hint" style="margin-top:8px"></p>
+        </div>
+
         </div><!-- /.tab-body -->
 
       </section>
@@ -1472,7 +1546,7 @@
         <div class="tab-body">
         <div class="board-container">
           <div class="board-header">
-            <h2 class="section-title">게시판</h2>
+            <h2 class="section-title"><svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><line x1="9" y1="10" x2="15" y2="10"/><line x1="9" y1="14" x2="13" y2="14"/></svg>게시판</h2>
           </div>
           <div id="board-content" class="board-content">
             <div class="board-empty"><div class="board-empty-icon">📭</div><p>로딩 중...</p></div>
@@ -1488,7 +1562,7 @@
         <div class="tab-body">
         <div class="admin-container">
           <div class="admin-header">
-            <h2 class="section-title">🛡 관리자 패널</h2>
+            <h2 class="section-title"><svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>관리자 패널</h2>
             <span class="badge-admin">ADMIN</span>
           </div>
           <div id="admin-content" class="admin-content">
@@ -2757,7 +2831,7 @@
   <script src="help.js?v=20260609a1"></script>
   <script src="sheets.js?v=20260608w"></script>
   <script src="resutil.js?v=20260608s"></script>
-  <script src="facility.js?v=20260609m2"></script>
+  <script src="facility.js?v=20260610m1"></script>
   <script src="vehicle.js?v=20260609m2"></script>
   <script src="classroom.js?v=20260608s"></script>
   <script src="work.js?v=20260608y"></script>
@@ -2768,7 +2842,7 @@
   <script src="admin.js?v=20260610a1"></script>
   <script src="board.js?v=20260610b2"></script>
   <script src="usersettings.js?v=20260610u1"></script>
-  <script src="app.js?v=20260610s6"></script>
+  <script src="app.js?v=20260610s11"></script>
   <script>
     // 빠른 업무 등록 초기화 (DOM 준비 후)
     document.addEventListener('DOMContentLoaded', function () {
