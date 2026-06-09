@@ -659,7 +659,32 @@ a        { color: var(--color-accent); text-decoration: none; }
   background: var(--color-accent-light);
 }
 
-.event-chip:hover { filter: brightness(0.9); }
+.event-chip:hover { filter: brightness(0.93); }
+
+.chip-time {
+  font-size: 9px;
+  font-weight: 700;
+  opacity: .75;
+  margin-right: 3px;
+  flex-shrink: 0;
+  letter-spacing: -.02em;
+}
+.chip-allday {
+  font-size: 7px;
+  margin-right: 3px;
+  flex-shrink: 0;
+  opacity: .6;
+}
+.chip-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+.event-chip {
+  display: flex;
+  align-items: center;
+}
 
 .event-chip.dept-기획처 { border-left-color: var(--color-dept-1); background: #e8f0fe; color: #1a5fbf; }
 .event-chip.dept-교학처 { border-left-color: var(--color-dept-2); background: #e6f4ea; color: #1e7e34; }

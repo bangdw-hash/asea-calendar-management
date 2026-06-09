@@ -623,6 +623,23 @@
     }
   }
 
+  /* 이벤트 정렬: ① 하루종일 먼저 ② 시작 시간 오름차순 ③ 동시간 가나다순 */
+  function sortEvents(arr) {
+    return arr.slice().sort(function (a, b) {
+      var aAllDay = !!a.start.date && !a.start.dateTime;
+      var bAllDay = !!b.start.date && !b.start.dateTime;
+      if (aAllDay !== bAllDay) return aAllDay ? -1 : 1;
+      if (!aAllDay && !bAllDay) {
+        var tA = new Date(a.start.dateTime).getTime();
+        var tB = new Date(b.start.dateTime).getTime();
+        if (tA !== tB) return tA - tB;
+      }
+      var sA = (a.summary || '').toLowerCase();
+      var sB = (b.summary || '').toLowerCase();
+      return sA < sB ? -1 : sA > sB ? 1 : 0;
+    });
+  }
+
   function eventsGroupedByDate(events) {
     var map = {};
     events.forEach(function (ev) {
@@ -630,6 +647,7 @@
       var key = dt.getFullYear() + '-' + (dt.getMonth() + 1) + '-' + dt.getDate();
       (map[key] || (map[key] = [])).push(ev);
     });
+    Object.keys(map).forEach(function (key) { map[key] = sortEvents(map[key]); });
     return map;
   }
 
@@ -701,7 +719,29 @@
         chip.style.color = ev._calColor;
       }
       chip.title = ev.summary || '';
-      chip.textContent = ev.summary || '(제목 없음)';
+      // 시간 있는 이벤트는 시작 시간 앞에 표시
+      if (ev.start.dateTime) {
+        var st = new Date(ev.start.dateTime);
+        var timeStr = pad(st.getHours()) + ':' + pad(st.getMinutes());
+        var timeSpan = document.createElement('span');
+        timeSpan.className = 'chip-time';
+        timeSpan.textContent = timeStr;
+        chip.appendChild(timeSpan);
+        var titleSpan = document.createElement('span');
+        titleSpan.className = 'chip-title';
+        titleSpan.textContent = ev.summary || '(제목 없음)';
+        chip.appendChild(titleSpan);
+      } else {
+        // 하루종일: 아이콘 + 제목
+        var allDaySpan = document.createElement('span');
+        allDaySpan.className = 'chip-allday';
+        allDaySpan.textContent = '●';
+        chip.appendChild(allDaySpan);
+        var titleSpan2 = document.createElement('span');
+        titleSpan2.className = 'chip-title';
+        titleSpan2.textContent = ev.summary || '(제목 없음)';
+        chip.appendChild(titleSpan2);
+      }
       chip.addEventListener('click', function (e) {
         e.stopPropagation();
         openEventModal(ev);
@@ -1651,6 +1691,7 @@
       var key = dt.getFullYear() + '-' + (dt.getMonth() + 1) + '-' + dt.getDate();
       (evMap[key] || (evMap[key] = [])).push(ev);
     });
+    Object.keys(evMap).forEach(function (k) { evMap[k] = sortEvents(evMap[k]); });
 
     var DAY_NAMES = ['일', '월', '화', '수', '목', '금', '토'];
     var MONTH_KO  = year + '년 ' + (month + 1) + '월';
@@ -1833,6 +1874,7 @@
       var key = dt.getFullYear() + '-' + (dt.getMonth() + 1) + '-' + dt.getDate();
       (evMap[key] || (evMap[key] = [])).push(ev);
     });
+    Object.keys(evMap).forEach(function (k) { evMap[k] = sortEvents(evMap[k]); });
 
     // 캘린더 범례 (선택된 것만)
     var allCals = CONFIG.selectedCalendars.length ? CONFIG.selectedCalendars : [];
