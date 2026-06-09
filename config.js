@@ -36,6 +36,9 @@ const CONFIG = {
   // ── 체크인 GAS 프록시 URL ─────────────────────────────────
   checkinProxyUrl: 'https://script.google.com/macros/s/AKfycbykrA15jAfPDU0gRk6bOA2M0tbCcW97CzLg-9WxWlG9o8VCZY0EiwoaXYShklWCyFs3mg/exec',
 
+  // ── 홍보슬라이드 GAS 프록시 URL ───────────────────────────
+  promoGasUrl: '',   // 설정탭에서 등록, localStorage 'asea_promo_gas_url'에 저장
+
   // ── Make.com 웹훅 URL (이메일 예약 서버 발송) ─────────────
   makeWebhookUrl: '',
 
@@ -118,6 +121,7 @@ const CONFIG = {
     scheduledEmails:   'asea_scheduled_emails',
     makeWebhookUrl:    'asea_make_webhook_url',
     githubToken:       'asea_github_token',
+    promoGasUrl:       'asea_promo_gas_url',
     extractHistory:    'asea_extract_history',
     shareHistory:      'asea_share_history',
   },
@@ -157,6 +161,9 @@ const CONFIG = {
 
     var storedGithubToken = localStorage.getItem(s.githubToken);
     if (storedGithubToken) CONFIG.githubToken = storedGithubToken;
+
+    var storedPromoGas = localStorage.getItem(s.promoGasUrl);
+    if (storedPromoGas) CONFIG.promoGasUrl = storedPromoGas;
 
     var storedExtHist = localStorage.getItem(s.extractHistory);
     if (storedExtHist) CONFIG.extractHistory = JSON.parse(storedExtHist);

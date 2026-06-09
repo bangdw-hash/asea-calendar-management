@@ -152,6 +152,7 @@
     if (name === 'calendar')   renderCalendar();
     if (name === 'weekly-hub') { syncWeeklyHubFiles(); }
     if (name === 'report') { if (typeof ReportModule !== 'undefined' && ReportModule.init) ReportModule.init(); }
+    if (name === 'promo')  { if (typeof PromoModule  !== 'undefined' && PromoModule.init)  PromoModule.init();  }
     if (name === 'email')      renderEmailTab();
     if (name === 'settings')   renderSettingsTab();
     if (name === 'extract')    renderExtractTab();
@@ -4428,6 +4429,20 @@
       toast(url ? 'Make.com 웹훅 URL이 저장되었습니다.' : '웹훅 URL이 삭제되었습니다.', 'success');
       saveSettingsToCloud(true);
     });
+
+    var _promoGasBtn = $('save-promo-gas-btn');
+    if (_promoGasBtn) {
+      var _pgsv = localStorage.getItem('asea_promo_gas_url') || '';
+      var _pgInp = $('setting-promo-gas-url');
+      if (_pgInp) _pgInp.value = _pgsv;
+      _promoGasBtn.addEventListener('click', function () {
+        var gasUrl = ($('setting-promo-gas-url') || {}).value || '';
+        gasUrl = gasUrl.trim();
+        localStorage.setItem('asea_promo_gas_url', gasUrl);
+        if (typeof CONFIG !== 'undefined') CONFIG.promoGasUrl = gasUrl;
+        toast(gasUrl ? 'GAS URL 저장됨' : 'GAS URL 삭제됨', 'success');
+      });
+    }
 
     $('load-my-calendars-btn').addEventListener('click', async function () {
       await loadAndSyncCalendars();
