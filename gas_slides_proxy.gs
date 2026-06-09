@@ -92,21 +92,30 @@ function doPost(e) {
   try {
     var body = JSON.parse(e.postData.contents);
 
-    // 접근 토큰 검증 (ACCESS_TOKEN 속성이 설정된 경우)
+    // 접근 토큰 검증
     var requiredToken = getAccessToken();
     if (requiredToken && body.accessToken !== requiredToken) {
-      return jsonOut({ error: '접근 권한이 없습니다. 올바른 접근 토큰을 확인하세요.' });
+      return jsonOut({ error: '접근 권한이 없습니다.' });
     }
 
+    var sp       = PropertiesService.getScriptProperties();
     var presType = body.presentationType || 'general';
     var ids      = getPresIds();
     var presId   = ids[presType];
+    var ts       = new Date().getTime().toString();
 
+    // ── 타입 전환만 (슬라이드 추가 없음) ──────────────────────
+    if (body.action === 'switch') {
+      if (!presId) return jsonOut({ error: '[' + presType + '] 프레젠테이션 ID 미설정' });
+      sp.setProperty('ACTIVE_TYPE',    presType);
+      sp.setProperty('ACTIVE_PRES_ID', presId);
+      sp.setProperty('ACTIVE_TS',      ts);
+      return jsonOut({ success: true, switched: presType, ts: ts });
+    }
+
+    // ── 슬라이드 추가 ─────────────────────────────────────────
     if (!presId) {
-      return jsonOut({
-        error: '[' + presType + '] 프레젠테이션 ID가 설정되지 않았습니다.\n' +
-               'GAS 스크립트 속성에 PRES_' + presType.toUpperCase().replace('-','_') + ' 를 등록하세요.'
-      });
+      return jsonOut({ error: '[' + presType + '] 프레젠테이션 ID가 설정되지 않았습니다.' });
     }
 
     var result = appendSlide(
@@ -118,25 +127,25 @@ function doPost(e) {
       body.insertImages || []
     );
 
-    // 마지막 업데이트 타임스탬프 + 현재 송출 타입 저장 (kiosk 폴링용)
-    var ts = new Date().getTime().toString();
-    var sp = PropertiesService.getScriptProperties();
+    // 타입별 마지막 업데이트 타임스탬프 저장
     sp.setProperty('LAST_UPDATED_' + presType.toUpperCase().replace('-','_'), ts);
-    // 현재 송출 중인 타입과 ID를 저장 → kiosk가 자동으로 해당 타입으로 전환
-    sp.setProperty('ACTIVE_TYPE',   presType);
-    sp.setProperty('ACTIVE_PRES_ID', presId);
-    sp.setProperty('ACTIVE_TS',     ts);
 
-    // 키오스크 URL 함께 반환
+    // switchNow: true 일 때만 활성 타입 변경 (기본값 false)
+    if (body.switchNow === true) {
+      sp.setProperty('ACTIVE_TYPE',    presType);
+      sp.setProperty('ACTIVE_PRES_ID', presId);
+      sp.setProperty('ACTIVE_TS',      ts);
+    }
+
     var cfg = TYPE_CONFIG[presType] || TYPE_CONFIG['general'];
-    result.kioskUrl = buildKioskUrl(presId, cfg);
+    result.kioskUrl        = buildKioskUrl(presId, cfg);
     result.presentationUrl = 'https://docs.google.com/presentation/d/' + presId + '/edit';
-    result.lastUpdated = ts;
+    result.lastUpdated     = ts;
 
     return jsonOut(result);
 
   } catch(err) {
-    return jsonOut({ error: err.message + '\n' + (err.stack||'') });
+    return jsonOut({ error: err.message });
   }
 }
 
