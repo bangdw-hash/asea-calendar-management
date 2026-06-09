@@ -713,6 +713,56 @@
     }
   }
 
+  function _moveEventToDate(info, targetDate) {
+    var y = targetDate.getFullYear();
+    var m = pad(targetDate.getMonth() + 1);
+    var d = pad(targetDate.getDate());
+
+    var eventData;
+    if (info.isAllDay) {
+      var endDate = new Date(targetDate.getTime() + Number(info.duration));
+      var ey = endDate.getFullYear();
+      var em = pad(endDate.getMonth() + 1);
+      var ed = pad(endDate.getDate());
+      eventData = {
+        start: { date: y + '-' + m + '-' + d },
+        end:   { date: ey + '-' + em + '-' + ed }
+      };
+    } else {
+      var origStart = new Date(info.startTime);
+      var newStart = new Date(
+        y + '-' + m + '-' + d + 'T' +
+        pad(origStart.getHours()) + ':' + pad(origStart.getMinutes()) + ':00'
+      );
+      var newEnd = new Date(newStart.getTime() + Number(info.duration));
+      eventData = {
+        start: { dateTime: newStart.toISOString(), timeZone: 'Asia/Seoul' },
+        end:   { dateTime: newEnd.toISOString(),   timeZone: 'Asia/Seoul' }
+      };
+    }
+
+    if (typeof toast === 'function') toast('📅 일정 이동 중…', 'info');
+
+    CalendarModule.updateEvent(info.calId, info.eventId, eventData)
+      .then(function () {
+        if (typeof toast === 'function') toast('✅ 이동 완료: ' + (info.summary || '일정'), 'success');
+        var ev = S.events.find(function (e) { return e.id === info.eventId; });
+        if (ev) {
+          if (info.isAllDay) {
+            ev.start = { date: y + '-' + m + '-' + d };
+            ev.end   = eventData.end;
+          } else {
+            ev.start = eventData.start;
+            ev.end   = eventData.end;
+          }
+        }
+        renderCalendar();
+      })
+      .catch(function (err) {
+        if (typeof toast === 'function') toast('❌ 이동 실패: ' + (err.message || err), 'error');
+      });
+  }
+
   function buildDayCell(cellDate, viewDate, today, evMap) {
     var el = document.createElement('div');
     el.className = 'calendar-day';
@@ -764,6 +814,36 @@
         titleSpan2.textContent = ev.summary || '(제목 없음)';
         chip.appendChild(titleSpan2);
       }
+      // 드래그앤드롭 설정
+      chip.draggable = true;
+      chip.dataset.eventId = ev.id;
+      chip.dataset.calId = ev._calId || '';
+      chip.dataset.isAllDay = ev.start.date ? '1' : '0';
+      chip.dataset.startTime = ev.start.dateTime || '';
+      chip.dataset.duration = ev.start.dateTime
+        ? String(new Date(ev.end.dateTime) - new Date(ev.start.dateTime))
+        : '86400000';
+      chip.addEventListener('dragstart', function (e) {
+        e.dataTransfer.setData('text/plain', JSON.stringify({
+          eventId: ev.id,
+          calId: ev._calId || '',
+          isAllDay: !!ev.start.date,
+          startTime: ev.start.dateTime || '',
+          duration: ev.start.dateTime
+            ? (new Date(ev.end.dateTime) - new Date(ev.start.dateTime))
+            : 86400000,
+          summary: ev.summary
+        }));
+        e.dataTransfer.effectAllowed = 'move';
+        chip.classList.add('dragging');
+        e.stopPropagation();
+      });
+      chip.addEventListener('dragend', function () {
+        chip.classList.remove('dragging');
+        document.querySelectorAll('.calendar-day.drag-over').forEach(function (c) {
+          c.classList.remove('drag-over');
+        });
+      });
       chip.addEventListener('click', function (e) {
         e.stopPropagation();
         openEventModal(ev);
@@ -772,6 +852,28 @@
     });
 
     el.appendChild(evWrap);
+
+    // 드롭 타겟 설정
+    el.addEventListener('dragover', function (e) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      el.classList.add('drag-over');
+    });
+    el.addEventListener('dragleave', function (e) {
+      if (!el.contains(e.relatedTarget)) el.classList.remove('drag-over');
+    });
+    el.addEventListener('drop', function (e) {
+      e.preventDefault();
+      el.classList.remove('drag-over');
+      var raw = e.dataTransfer.getData('text/plain');
+      if (!raw) return;
+      try {
+        var info = JSON.parse(raw);
+        _moveEventToDate(info, cellDate);
+      } catch (err) { console.error(err); }
+      e.stopPropagation();
+    });
+
     el.addEventListener('click', function () { openEventModal(null, cellDate); });
     return el;
   }

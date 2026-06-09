@@ -4383,6 +4383,9 @@ body {
   border-bottom: 1px solid var(--color-border) !important;
   box-shadow: 0 1px 0 var(--color-border);
   padding: 0 8px;
+  position: sticky !important;
+  top: var(--header-h) !important;
+  z-index: 90 !important;
 }
 .tab-btn {
   font-size: 13px !important;
@@ -5375,4 +5378,46 @@ h3.settings-section-title {
   border-color: var(--uc-accent, var(--color-accent));
   color: var(--uc-accent, var(--color-accent));
   background: var(--uc-chip-light-bg, var(--color-accent-light));
+}
+
+/* ── 빠른 등록 단축키 배지 ────────────────────────────────────────── */
+#qt-shortcut-hint {
+  font-size: 12px;
+  font-family: inherit;
+  letter-spacing: 0;
+  color: rgba(255,255,255,0.9);
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.3);
+  border-radius: 20px;
+  padding: 4px 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s;
+  cursor: pointer;
+}
+#qt-shortcut-hint:hover {
+  background: rgba(255,255,255,0.15);
+  border-color: rgba(255,255,255,0.6);
+}
+#qt-shortcut-hint kbd {
+  font-family: inherit;
+  font-size: 11px;
+  background: rgba(255,255,255,0.15);
+  border: none;
+  border-radius: 4px;
+  padding: 1px 6px;
+  color: rgba(255,255,255,0.85);
+  box-shadow: none;
+  letter-spacing: 0.5px;
+}
+
+/* ── 캘린더 드래그앤드롭 ──────────────────────────────────────────── */
+.event-chip[draggable="true"] { cursor: grab; }
+.event-chip[draggable="true"]:active { cursor: grabbing; }
+.event-chip.dragging { opacity: 0.4; transform: scale(0.95); }
+.calendar-day.drag-over {
+  background: var(--uc-chip-light-bg, #e8f0fe) !important;
+  outline: 2px dashed var(--uc-accent, #1a73e8);
+  outline-offset: -2px;
 }

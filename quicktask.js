@@ -813,10 +813,10 @@ var QuickTaskModule = (function () {
     if (document.getElementById('qt-shortcut-hint')) return;
     var hint = document.createElement('button');
     hint.id = 'qt-shortcut-hint';
-    hint.className = 'btn btn-ghost btn-sm';
+    hint.className = '';
     hint.title = '빠른 업무 등록 (Ctrl+Alt+R)';
     hint.innerHTML = '⚡ 빠른 등록 <kbd>Ctrl+Alt+R</kbd>';
-    hint.style.cssText = 'font-size:11px;';
+    hint.style.cssText = '';
     hint.addEventListener('click', function () {
       if (typeof Auth !== 'undefined' && Auth.isLoggedIn && Auth.isLoggedIn()) open();
       else toast('먼저 로그인이 필요합니다.', 'warning');
