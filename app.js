@@ -718,43 +718,47 @@
     var m = pad(targetDate.getMonth() + 1);
     var d = pad(targetDate.getDate());
 
-    var eventData;
+    // 기존 이벤트 전체 데이터 가져오기 (PUT이므로 모든 필드 유지 필요)
+    var existingEv = S.events.find(function (e) { return e.id === info.eventId; });
+
+    // 새 날짜 계산
+    var newStart, newEnd, newStartField, newEndField;
     if (info.isAllDay) {
       var endDate = new Date(targetDate.getTime() + Number(info.duration));
-      var ey = endDate.getFullYear();
-      var em = pad(endDate.getMonth() + 1);
-      var ed = pad(endDate.getDate());
-      eventData = {
-        start: { date: y + '-' + m + '-' + d },
-        end:   { date: ey + '-' + em + '-' + ed }
-      };
+      newStartField = { date: y + '-' + m + '-' + d };
+      newEndField   = { date: endDate.getFullYear() + '-' + pad(endDate.getMonth() + 1) + '-' + pad(endDate.getDate()) };
     } else {
       var origStart = new Date(info.startTime);
-      var newStart = new Date(
-        y + '-' + m + '-' + d + 'T' +
-        pad(origStart.getHours()) + ':' + pad(origStart.getMinutes()) + ':00'
-      );
-      var newEnd = new Date(newStart.getTime() + Number(info.duration));
-      eventData = {
-        start: { dateTime: newStart.toISOString(), timeZone: 'Asia/Seoul' },
-        end:   { dateTime: newEnd.toISOString(),   timeZone: 'Asia/Seoul' }
-      };
+      newStart = new Date(y + '-' + m + '-' + d + 'T' +
+        pad(origStart.getHours()) + ':' + pad(origStart.getMinutes()) + ':00');
+      newEnd   = new Date(newStart.getTime() + Number(info.duration));
+      newStartField = { dateTime: newStart.toISOString(), timeZone: 'Asia/Seoul' };
+      newEndField   = { dateTime: newEnd.toISOString(),   timeZone: 'Asia/Seoul' };
     }
+
+    // PUT: 기존 필드 유지 + start/end만 교체
+    var eventData = {
+      summary:     (existingEv && existingEv.summary)     || info.summary || '',
+      description: (existingEv && existingEv.description) || '',
+      colorId:     (existingEv && existingEv.colorId)     || undefined,
+      recurrence:  (existingEv && existingEv.recurrence)  || undefined,
+      start: newStartField,
+      end:   newEndField
+    };
+    // undefined 필드 제거 (API가 null로 처리하는 것 방지)
+    Object.keys(eventData).forEach(function(k) {
+      if (eventData[k] === undefined) delete eventData[k];
+    });
 
     if (typeof toast === 'function') toast('📅 일정 이동 중…', 'info');
 
     CalendarModule.updateEvent(info.calId, info.eventId, eventData)
       .then(function () {
         if (typeof toast === 'function') toast('✅ 이동 완료: ' + (info.summary || '일정'), 'success');
-        var ev = S.events.find(function (e) { return e.id === info.eventId; });
-        if (ev) {
-          if (info.isAllDay) {
-            ev.start = { date: y + '-' + m + '-' + d };
-            ev.end   = eventData.end;
-          } else {
-            ev.start = eventData.start;
-            ev.end   = eventData.end;
-          }
+        // 로컬 S.events 즉시 업데이트 (renderCalendar가 Google 재호출 전에 반영)
+        if (existingEv) {
+          existingEv.start = newStartField;
+          existingEv.end   = newEndField;
         }
         renderCalendar();
       })
