@@ -645,6 +645,11 @@ window.PromoModule = (function () {
                status:'success',slideLink:result.presentationUrl||null,createdAt:new Date().toISOString()};
       saveHistory(rec);
       toast('슬라이드가 성공적으로 추가되었습니다! 🎉','success');
+
+      /* 키오스크 안내 박스 표시 */
+      var kioskUrl = buildKioskPageUrl(_cfg.presType, result.kioskUrl||'');
+      showKioskGuide(kioskUrl);
+
       _generated=null; _insImages=[];
       ['prm-tag','prm-title','prm-body','prm-ai-input'].forEach(function(id){ var e=$p(id); if(e) e.value=''; });
       renderPreview(); renderHistory(); renderInsertImages();
@@ -671,6 +676,50 @@ window.PromoModule = (function () {
       'general':      '<strong>📌 일반용</strong> — 기타 일반 안내용. 슬라이드가 <em>누적</em>되며 8초마다 전환·무한루프합니다. 여유 있게 읽을 수 있어 안내문 표시에 적합합니다.',
     };
     return TYPE_DETAILS[typeId] || '';
+  }
+
+  /* ── 키오스크 페이지 URL 생성 ── */
+  function buildKioskPageUrl(presType, kioskUrl) {
+    /* kioskUrl 예: https://docs.google.com/presentation/d/[ID]/pub?... */
+    var presId = '';
+    var m = kioskUrl && kioskUrl.match(/\/presentation\/d\/([^/]+)/);
+    if (m) presId = m[1];
+    var gasUrl  = getGasUrl();
+    var baseUrl = window.location.origin + window.location.pathname.replace(/\/[^/]*$/, '') + '/kiosk.html';
+    var p = new URLSearchParams();
+    if (gasUrl)  p.set('gas', gasUrl);
+    if (presType) p.set('type', presType);
+    if (presId)  p.set('presid', presId);
+    return baseUrl + '?' + p.toString();
+  }
+
+  /* ── 키오스크 안내 박스 ── */
+  function showKioskGuide(kioskUrl) {
+    var existing = $p('prm-kiosk-guide');
+    if (existing) existing.remove();
+    var previewArea = $p('prm-preview-area');
+    if (!previewArea) return;
+    var box = document.createElement('div');
+    box.id = 'prm-kiosk-guide';
+    box.className = 'prm-kiosk-guide';
+    box.innerHTML =
+      '<div class="prm-kiosk-title">📺 키오스크 화면 업데이트 안내</div>'+
+      '<div class="prm-kiosk-desc">슬라이드가 등록됐습니다.<br>'+
+      '원격 PC 키오스크 화면에서 <strong>🔄 새 슬라이드 불러오기</strong> 버튼을 누르면<br>'+
+      '<strong>60초 후</strong> 새 슬라이드가 자동으로 화면에 반영됩니다.</div>'+
+      '<div class="prm-kiosk-url-row">'+
+      '<span class="prm-kiosk-url-lbl">키오스크 URL</span>'+
+      '<span class="prm-kiosk-url-txt" id="prm-kiosk-url-txt">'+escHtml(kioskUrl)+'</span>'+
+      '<button class="prm-btn prm-btn-ghost prm-btn-sm" id="prm-kiosk-copy">📋 복사</button>'+
+      '</div>';
+    previewArea.insertAdjacentElement('afterend', box);
+
+    var copyBtn = $p('prm-kiosk-copy');
+    if (copyBtn) copyBtn.addEventListener('click', function(){
+      navigator.clipboard.writeText(kioskUrl).then(function(){
+        toast('키오스크 URL 복사됨', 'success');
+      }).catch(function(){ window.prompt('URL:', kioskUrl); });
+    });
   }
 
   /* ── 공개 URL 생성 ── */

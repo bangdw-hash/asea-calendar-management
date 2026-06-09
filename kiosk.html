@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>ASEA 홍보슬라이드 키오스크</title>
+
+  <!--
+    ╔══════════════════════════════════════════════════════════════╗
+    ║  kiosk.html — ASEA 홍보슬라이드 키오스크 화면               ║
+    ╚══════════════════════════════════════════════════════════════╝
+
+    [URL 파라미터]
+    ?gas=<GAS_URL>   — GAS 프록시 URL (필수)
+    ?type=<TYPE>     — 슬라이드 타입 (external/event-single/internal/general)
+
+    [원격 PC 설정 방법]
+    1. ASEA 앱 → 홍보슬라이드 탭 → 해당 타입 선택 → 키오스크 URL 복사
+    2. 원격 PC에서 Chrome 키오스크 모드로 실행:
+       chrome.exe --kiosk "붙여넣은URL" --noerrdialogs --disable-infobars
+
+    [불러오기 버튼 동작]
+    - 클릭 → 60초 카운트다운 → iframe 새로고침 → 종료
+    - 새 슬라이드 등록 후 1회만 누르면 됨
+  -->
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      width: 100%; height: 100%;
+      background: #000;
+      font-family: 'Noto Sans KR', 'Malgun Gothic', sans-serif;
+      overflow: hidden;
+    }
+
+    /* ── 슬라이드 iframe ── */
+    #slide-frame {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      border: none;
+      background: #000;
+    }
+
+    /* ── 컨트롤 오버레이 ── */
+    #ctrl {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      z-index: 100;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 8px;
+    }
+
+    /* 불러오기 버튼 */
+    #load-btn {
+      padding: 10px 20px;
+      background: rgba(0, 48, 135, 0.85);
+      color: #fff;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      backdrop-filter: blur(6px);
+      transition: background .15s;
+      font-family: inherit;
+      white-space: nowrap;
+    }
+    #load-btn:hover { background: rgba(0, 85, 204, 0.9); }
+    #load-btn:disabled { background: rgba(80,80,80,0.7); cursor: default; }
+
+    /* 카운트다운 표시 */
+    #countdown-box {
+      background: rgba(0,0,0,0.75);
+      color: #fff;
+      border-radius: 10px;
+      padding: 8px 16px;
+      font-size: 13px;
+      backdrop-filter: blur(6px);
+      text-align: center;
+      display: none;
+      min-width: 180px;
+    }
+    #countdown-num {
+      font-size: 28px;
+      font-weight: 900;
+      color: #4fc3f7;
+      display: block;
+      line-height: 1.2;
+    }
+
+    /* 완료 플래시 */
+    #done-flash {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 120, 212, 0.18);
+      z-index: 200;
+      display: none;
+      pointer-events: none;
+    }
+
+    /* 설정 오류 */
+    #setup-err {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: #111;
+      color: #fff;
+      flex-direction: column;
+      gap: 16px;
+      text-align: center;
+      padding: 40px;
+    }
+    #setup-err h1 { font-size: 22px; color: #ff9800; }
+    #setup-err p  { font-size: 14px; color: #aaa; line-height: 1.8; }
+    #setup-err code { background: #333; padding: 2px 8px; border-radius: 4px; font-size: 12px; }
+
+    /* 타입 뱃지 (우상단) */
+    #type-badge {
+      position: fixed;
+      top: 14px;
+      right: 16px;
+      z-index: 100;
+      background: rgba(0,0,0,0.55);
+      color: #fff;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 12px;
+      border-radius: 20px;
+      backdrop-filter: blur(4px);
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+
+<!-- 슬라이드 표시 영역 -->
+<iframe id="slide-frame" allowfullscreen></iframe>
+
+<!-- 타입 뱃지 -->
+<div id="type-badge"></div>
+
+<!-- 컨트롤 -->
+<div id="ctrl">
+  <div id="countdown-box">
+    <span id="countdown-num">60</span>
+    <span style="font-size:11px;color:#aaa">초 후 새로고침</span>
+  </div>
+  <button id="load-btn">🔄 새 슬라이드 불러오기</button>
+</div>
+
+<!-- 완료 플래시 -->
+<div id="done-flash"></div>
+
+<!-- 설정 오류 -->
+<div id="setup-err">
+  <h1>⚠️ 설정 오류</h1>
+  <p id="setup-err-msg"></p>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  var params   = new URLSearchParams(window.location.search);
+  var GAS_URL  = params.get('gas')  || '';
+  var PRES_TYPE = params.get('type') || 'general';
+
+  var TYPE_META = {
+    'external':     { label:'대외형',     delayms:5000,    loop:true  },
+    'event-single': { label:'행사단일용', delayms:9999999, loop:false },
+    'internal':     { label:'내부행사용', delayms:3000,    loop:true  },
+    'general':      { label:'일반용',     delayms:8000,    loop:true  },
+  };
+
+  var frame       = document.getElementById('slide-frame');
+  var loadBtn     = document.getElementById('load-btn');
+  var cntBox      = document.getElementById('countdown-box');
+  var cntNum      = document.getElementById('countdown-num');
+  var doneFlash   = document.getElementById('done-flash');
+  var typeBadge   = document.getElementById('type-badge');
+  var setupErr    = document.getElementById('setup-err');
+  var setupErrMsg = document.getElementById('setup-err-msg');
+
+  var _timer     = null;
+  var _counting  = false;
+  var _presId    = '';
+
+  /* ── 설정 오류 표시 ── */
+  function showErr(msg) {
+    setupErr.style.display = 'flex';
+    setupErrMsg.innerHTML  = msg;
+  }
+
+  /* ── Presentation ID → 게시 URL ── */
+  function buildSlidesUrl(presId) {
+    var tm = TYPE_META[PRES_TYPE] || TYPE_META['general'];
+    return 'https://docs.google.com/presentation/d/' + presId +
+      '/pub?start=' + tm.loop + '&loop=' + tm.loop + '&delayms=' + tm.delayms;
+  }
+
+  /* ── GAS에서 Presentation ID 조회 ── */
+  async function fetchPresId() {
+    try {
+      var resp = await fetch(GAS_URL);
+      var data = await resp.json();
+      var st   = data.status && data.status[PRES_TYPE];
+      if (!st || !st.configured) {
+        showErr('GAS 스크립트 속성에 <code>PRES_' +
+          PRES_TYPE.toUpperCase().replace('-','_') +
+          '</code> 가 등록되지 않았습니다.<br>GAS 설정을 확인하세요.');
+        return '';
+      }
+      /* ID 앞 8자만 반환되므로 — URL 파라미터 presid로 직접 받기 */
+      return params.get('presid') || '';
+    } catch(e) {
+      return '';
+    }
+  }
+
+  /* ── iframe 로드 ── */
+  function loadSlide(presId) {
+    if (!presId) return;
+    var url = buildSlidesUrl(presId);
+    /* src 재할당으로 강제 새로고침 */
+    frame.src = '';
+    setTimeout(function () { frame.src = url; }, 100);
+  }
+
+  /* ── 완료 플래시 ── */
+  function flashDone() {
+    doneFlash.style.display = 'block';
+    setTimeout(function () { doneFlash.style.display = 'none'; }, 600);
+  }
+
+  /* ── 카운트다운 시작 ── */
+  function startCountdown() {
+    if (_counting) return;
+    _counting = true;
+    loadBtn.disabled = true;
+    cntBox.style.display = 'block';
+
+    var sec = 60;
+    cntNum.textContent = sec;
+
+    _timer = setInterval(function () {
+      sec--;
+      cntNum.textContent = sec;
+      if (sec <= 0) {
+        clearInterval(_timer);
+        _timer    = null;
+        _counting = false;
+        cntBox.style.display = 'none';
+        loadBtn.disabled = false;
+
+        /* 슬라이드 새로고침 */
+        loadSlide(_presId);
+        flashDone();
+      }
+    }, 1000);
+  }
+
+  /* ── 초기화 ── */
+  function init() {
+    if (!GAS_URL) {
+      showErr('URL 파라미터에 <code>gas=</code> 값이 없습니다.<br>ASEA 앱 → 홍보슬라이드 탭에서 키오스크 URL을 다시 복사하세요.');
+      return;
+    }
+
+    /* presid 파라미터로 직접 ID 받음 */
+    _presId = params.get('presid') || '';
+    if (!_presId) {
+      showErr('URL 파라미터에 <code>presid=</code> 값이 없습니다.<br>ASEA 앱 → 홍보슬라이드 탭에서 키오스크 URL을 다시 복사하세요.');
+      return;
+    }
+
+    /* 타입 뱃지 */
+    var tm = TYPE_META[PRES_TYPE] || TYPE_META['general'];
+    typeBadge.textContent = tm.label;
+
+    /* 최초 로드 */
+    loadSlide(_presId);
+
+    /* 버튼 이벤트 */
+    loadBtn.addEventListener('click', startCountdown);
+  }
+
+  init();
+})();
+</script>
+</body>
+</html>

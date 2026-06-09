@@ -264,6 +264,34 @@
 .prm-pub-url-txt { display:block; margin-bottom:6px; color:#cdd6f4; }
 .prm-pub-url-hint { font-size:11px; color:#888; margin-top:6px; line-height:1.6; font-family:inherit; }
 
+/* ══════════════════════════════════════════════════════════
+   키오스크 안내 박스 (슬라이드 등록 성공 후 표시)
+══════════════════════════════════════════════════════════ */
+.prm-kiosk-guide {
+  background: #e8f5e9; border: 2px solid #43a047;
+  border-radius: var(--prm-radius); padding: 16px 18px;
+  margin-bottom: 14px; max-width: 900px; margin-left: auto; margin-right: auto;
+}
+.prm-kiosk-title {
+  font-size: 14px; font-weight: 800; color: #2e7d32; margin-bottom: 8px;
+}
+.prm-kiosk-desc {
+  font-size: 13px; color: #333; line-height: 1.8; margin-bottom: 12px;
+}
+.prm-kiosk-url-row {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  background: #fff; border: 1px solid #a5d6a7; border-radius: 8px;
+  padding: 8px 12px;
+}
+.prm-kiosk-url-lbl {
+  font-size: 11px; font-weight: 700; color: #2e7d32;
+  white-space: nowrap; flex-shrink: 0;
+}
+.prm-kiosk-url-txt {
+  font-size: 11px; font-family: monospace; color: #1a237e;
+  word-break: break-all; flex: 1;
+}
+
 /* ── 반응형 ── */
 @media (max-width: 640px) {
   .prm-wrap { padding:12px 10px 40px; }
