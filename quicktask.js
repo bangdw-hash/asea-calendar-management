@@ -664,8 +664,12 @@ var QuickTaskModule = (function () {
       return;
     }
 
-    /* ── 텍스트 — textarea 외부에서만 가로챔 (textarea 자체 동작 유지) ── */
-    if (active && active.id === 'qt-paste-text') return;
+    /* ── 텍스트 — 편집 가능 요소(input/textarea/contenteditable)에 포커스된 경우 기본 동작 유지 ── */
+    if (active && (
+      active.tagName === 'INPUT' ||
+      active.tagName === 'TEXTAREA' ||
+      active.isContentEditable
+    )) return;
 
     var txt = items.getData ? items.getData('text/plain') : '';
     if (txt) {

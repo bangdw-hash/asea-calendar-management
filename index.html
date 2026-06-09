@@ -7,7 +7,7 @@
   <title>ASEA 캘린더 관리</title>
   <link rel="preload" as="style" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
-  <link rel="stylesheet" href="style.css?v=20260609h6">
+  <link rel="stylesheet" href="style.css?v=20260609r1">
   <link rel="stylesheet" href="report.css?v=20260609">
   <link rel="stylesheet" href="promo.css?v=20260609e1">
   <link rel="stylesheet" href="help.css?v=20260609a1">
@@ -1459,6 +1459,78 @@
             placeholder="일정 설명 (선택사항)"></textarea>
         </div>
 
+        <!-- ── 반복 일정 ─────────────────────────────────────── -->
+        <div class="form-group" id="recur-section">
+          <label class="form-label">반복</label>
+          <select id="event-recur-type" class="form-select">
+            <option value="none">반복 없음</option>
+            <option value="daily">매일</option>
+            <option value="weekly">매주 (요일 선택)</option>
+            <option value="monthly">매달 (같은 날짜)</option>
+            <option value="yearly">매년 (같은 날짜)</option>
+            <option value="weekdays">평일마다 (월~금)</option>
+            <option value="custom">사용자 설정...</option>
+          </select>
+
+          <!-- 매주: 요일 선택 -->
+          <div id="recur-weekly-days" class="recur-extra" hidden>
+            <div class="recur-days-row">
+              <label class="recur-day-lbl"><input type="checkbox" class="recur-day-cb" value="SU">일</label>
+              <label class="recur-day-lbl"><input type="checkbox" class="recur-day-cb" value="MO">월</label>
+              <label class="recur-day-lbl"><input type="checkbox" class="recur-day-cb" value="TU">화</label>
+              <label class="recur-day-lbl"><input type="checkbox" class="recur-day-cb" value="WE">수</label>
+              <label class="recur-day-lbl"><input type="checkbox" class="recur-day-cb" value="TH">목</label>
+              <label class="recur-day-lbl"><input type="checkbox" class="recur-day-cb" value="FR">금</label>
+              <label class="recur-day-lbl"><input type="checkbox" class="recur-day-cb" value="SA">토</label>
+            </div>
+          </div>
+
+          <!-- 사용자 설정: 간격 + 빈도 -->
+          <div id="recur-custom" class="recur-extra" hidden>
+            <div class="recur-custom-row">
+              <span class="recur-custom-txt">매</span>
+              <input id="recur-interval" type="number" min="1" max="99" value="1" class="recur-interval-inp">
+              <select id="recur-freq" class="recur-freq-sel">
+                <option value="DAILY">일</option>
+                <option value="WEEKLY">주</option>
+                <option value="MONTHLY">달</option>
+                <option value="YEARLY">년</option>
+              </select>
+              <span class="recur-custom-txt">마다</span>
+            </div>
+            <!-- 사용자 설정 → 주 선택 시 요일 추가 -->
+            <div id="recur-custom-days" class="recur-days-row" hidden>
+              <label class="recur-day-lbl"><input type="checkbox" class="recur-cday-cb" value="SU">일</label>
+              <label class="recur-day-lbl"><input type="checkbox" class="recur-cday-cb" value="MO">월</label>
+              <label class="recur-day-lbl"><input type="checkbox" class="recur-cday-cb" value="TU">화</label>
+              <label class="recur-day-lbl"><input type="checkbox" class="recur-cday-cb" value="WE">수</label>
+              <label class="recur-day-lbl"><input type="checkbox" class="recur-cday-cb" value="TH">목</label>
+              <label class="recur-day-lbl"><input type="checkbox" class="recur-cday-cb" value="FR">금</label>
+              <label class="recur-day-lbl"><input type="checkbox" class="recur-cday-cb" value="SA">토</label>
+            </div>
+          </div>
+
+          <!-- 종료 조건 (반복이 설정된 경우) -->
+          <div id="recur-end-section" class="recur-extra" hidden>
+            <div class="recur-end-row">
+              <span class="recur-custom-txt">종료:</span>
+              <select id="recur-end-type" class="recur-end-sel">
+                <option value="never">종료일 없음</option>
+                <option value="date">날짜 지정</option>
+                <option value="count">횟수 지정</option>
+              </select>
+              <input id="recur-end-date" type="date" class="form-input recur-end-date-inp" hidden>
+              <div id="recur-count-row" class="recur-count-row" hidden>
+                <input id="recur-count" type="number" min="1" max="999" value="10" class="recur-interval-inp">
+                <span class="recur-custom-txt">회 후 종료</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- RRULE 미리보기 -->
+          <div id="recur-preview" class="recur-preview" hidden></div>
+        </div>
+
         <div id="duplicate-alert" class="alert alert-warning" hidden role="alert">
           <span class="alert-icon" aria-hidden="true">⚠</span>
           <div>
@@ -2395,9 +2467,9 @@
   <script src="classroom.js?v=20260608s"></script>
   <script src="work.js?v=20260608y"></script>
   <script src="workorder.js?v=20260608s"></script>
-  <script src="quicktask.js?v=20260608s"></script>
+  <script src="quicktask.js?v=20260609r1"></script>
   <script src="sms.js?v=20260608a1"></script>
-  <script src="app.js?v=20260609p4"></script>
+  <script src="app.js?v=20260609r1"></script>
   <script>
     // 빠른 업무 등록 초기화 (DOM 준비 후)
     document.addEventListener('DOMContentLoaded', function () {

@@ -1022,6 +1022,16 @@
       $('event-end').value   = prefix + 'T10:00';
     }
 
+    // 반복 UI 초기화/복원
+    var recurTypeEl = $('event-recur-type');
+    if (recurTypeEl) recurTypeEl.value = 'none';
+    if (event && event.recurrence && event.recurrence.length) {
+      restoreRecurUI(event.recurrence);
+    } else {
+      // UI 상태 초기화 (숨김 갱신)
+      refreshRecurVisibility();
+    }
+
     renderEventCalChips();
     openModal('event-modal');
   }
@@ -1057,12 +1067,14 @@
 
       var startStr = toGCalDateStr(start);
       var endStr   = toGCalDateStr(end);
+      var shareRecur = buildRecurrence();
       var params   = new URLSearchParams({
         action:  'TEMPLATE',
         text:    title,
         dates:   startStr + '/' + endStr,
         details: desc || '',
       });
+      if (shareRecur.length) params.set('recur', shareRecur[0]);
       var longUrl = 'https://calendar.google.com/calendar/render?' + params.toString();
 
       // TinyURL API로 단축 URL 생성 시도
@@ -1125,6 +1137,7 @@
       var palette = ['1','2','3','4','5','6','7','8','9','10','11'];
       var colorId = palette[dIdx >= 0 ? dIdx % palette.length : 10];
 
+      var recurrence = buildRecurrence();
       var eventData = {
         summary:     title,
         description: fullDesc,
@@ -1132,6 +1145,7 @@
         end:   { dateTime: new Date(end).toISOString(),   timeZone: tz },
         colorId: colorId,
       };
+      if (recurrence.length) eventData.recurrence = recurrence;
 
       var btn = $('save-event-btn');
       btn.disabled = true;
@@ -1202,6 +1216,221 @@
         S.dupTimer = setTimeout(runDupCheck, 600);
       });
     });
+
+    // ── 반복 일정 UI 이벤트 ─────────────────────────────────────
+    initRecurUI();
+  }
+
+  /* ────────────────────────────────────────────────────────────────
+     반복 일정 — UI 제어 및 RRULE 생성
+  ──────────────────────────────────────────────────────────────── */
+  function initRecurUI() {
+    var typeEl  = $('event-recur-type');
+    var freqEl  = $('recur-freq');
+    var endType = $('recur-end-type');
+    if (!typeEl) return;
+
+    typeEl.addEventListener('change', refreshRecurVisibility);
+    if (freqEl) freqEl.addEventListener('change', refreshRecurVisibility);
+    if (endType) endType.addEventListener('change', refreshRecurVisibility);
+
+    ['recur-weekly-days', 'recur-custom-days'].forEach(function (id) {
+      var el2 = $(id);
+      if (el2) el2.addEventListener('change', updateRecurPreview);
+    });
+    [$('recur-interval'), $('recur-end-date'), $('recur-count')].forEach(function (el3) {
+      if (el3) el3.addEventListener('input', updateRecurPreview);
+    });
+
+    refreshRecurVisibility();
+  }
+
+  function refreshRecurVisibility() {
+    var typeEl  = $('event-recur-type');
+    var freqEl  = $('recur-freq');
+    var endType = $('recur-end-type');
+    if (!typeEl) return;
+
+    var v = typeEl.value;
+    $('recur-weekly-days').hidden = (v !== 'weekly');
+    $('recur-custom').hidden      = (v !== 'custom');
+    $('recur-end-section').hidden = (v === 'none');
+    if (freqEl) $('recur-custom-days').hidden = (freqEl.value !== 'WEEKLY');
+    if (endType) {
+      var et = endType.value;
+      $('recur-end-date').hidden  = (et !== 'date');
+      $('recur-count-row').hidden = (et !== 'count');
+    }
+    updateRecurPreview();
+  }
+
+  /* 현재 폼 상태에서 RRULE 문자열 배열 생성 (Google Calendar API recurrence 필드용) */
+  function buildRecurrence() {
+    var typeEl = $('event-recur-type');
+    if (!typeEl || typeEl.value === 'none') return [];
+
+    var freq, byday = '';
+    var v = typeEl.value;
+
+    if (v === 'daily')    { freq = 'DAILY'; }
+    else if (v === 'weekly') {
+      freq  = 'WEEKLY';
+      byday = getCheckedDays('recur-day-cb');
+      if (!byday) {
+        // 기본: 이벤트 시작일의 요일
+        var startVal = $('event-start').value;
+        if (startVal) {
+          var DOW = ['SU','MO','TU','WE','TH','FR','SA'];
+          byday = DOW[new Date(startVal).getDay()];
+        }
+      }
+    }
+    else if (v === 'monthly')  { freq = 'MONTHLY'; }
+    else if (v === 'yearly')   { freq = 'YEARLY';  }
+    else if (v === 'weekdays') { freq = 'WEEKLY'; byday = 'MO,TU,WE,TH,FR'; }
+    else if (v === 'custom') {
+      freq  = $('recur-freq').value || 'DAILY';
+      if (freq === 'WEEKLY') {
+        byday = getCheckedDays('recur-cday-cb');
+        if (!byday) {
+          var startVal2 = $('event-start').value;
+          if (startVal2) {
+            var DOW2 = ['SU','MO','TU','WE','TH','FR','SA'];
+            byday = DOW2[new Date(startVal2).getDay()];
+          }
+        }
+      }
+    }
+
+    var interval = parseInt(($('recur-interval') || {}).value) || 1;
+    var endTyp   = ($('recur-end-type') || {}).value || 'never';
+
+    var rule = 'RRULE:FREQ=' + freq;
+    if (v === 'custom' && interval > 1) rule += ';INTERVAL=' + interval;
+    if (byday) rule += ';BYDAY=' + byday;
+
+    if (endTyp === 'date') {
+      var ed = ($('recur-end-date') || {}).value;
+      if (ed) rule += ';UNTIL=' + ed.replace(/-/g, '') + 'T235959Z';
+    } else if (endTyp === 'count') {
+      var cnt = parseInt(($('recur-count') || {}).value) || 10;
+      rule += ';COUNT=' + cnt;
+    }
+
+    return [rule];
+  }
+
+  function getCheckedDays(cls) {
+    return Array.from(document.querySelectorAll('.' + cls + ':checked'))
+      .map(function (cb) { return cb.value; }).join(',');
+  }
+
+  /* 반복 설정 한국어 요약 */
+  function updateRecurPreview() {
+    var prevEl = $('recur-preview');
+    if (!prevEl) return;
+    var r = buildRecurrence();
+    if (!r.length) { prevEl.hidden = true; return; }
+    prevEl.hidden = false;
+    prevEl.textContent = '🔁 ' + describeRRule(r[0]);
+  }
+
+  function describeRRule(rule) {
+    if (!rule) return '';
+    var freqM  = rule.match(/FREQ=([^;]+)/);
+    var byDayM = rule.match(/BYDAY=([^;]+)/);
+    var untilM = rule.match(/UNTIL=(\d{8})/);
+    var countM = rule.match(/COUNT=(\d+)/);
+    var intM   = rule.match(/INTERVAL=(\d+)/);
+    var freq   = freqM ? freqM[1] : '';
+    var dayMap = {SU:'일',MO:'월',TU:'화',WE:'수',TH:'목',FR:'금',SA:'토'};
+    var freqNames = {DAILY:'매일',WEEKLY:'매주',MONTHLY:'매달',YEARLY:'매년'};
+    var txt = freqNames[freq] || freq;
+    if (intM && intM[1] !== '1') {
+      var fSuffix = {DAILY:'일',WEEKLY:'주',MONTHLY:'달',YEARLY:'년'};
+      txt = '매 ' + intM[1] + (fSuffix[freq] || '') + '마다';
+    }
+    if (byDayM) {
+      var days = byDayM[1].split(',').map(function(d){ return dayMap[d]||d; }).join(', ');
+      if (byDayM[1] === 'MO,TU,WE,TH,FR') txt += ' (평일)';
+      else txt += ' (' + days + '요일)';
+    }
+    if (untilM) {
+      var u = untilM[1];
+      txt += ' — ' + u.slice(0,4) + '.' + u.slice(4,6) + '.' + u.slice(6,8) + '까지';
+    } else if (countM) {
+      txt += ' — ' + countM[1] + '회 반복';
+    }
+    return txt;
+  }
+
+  /* 기존 이벤트의 recurrence 배열에서 UI 복원 */
+  function restoreRecurUI(recurrenceArr) {
+    var typeEl = $('event-recur-type');
+    if (!typeEl) return;
+    // 초기화
+    typeEl.value = 'none';
+    if (!recurrenceArr || !recurrenceArr.length) { refreshRecurVisibility(); return; }
+
+    var rule   = recurrenceArr[0] || '';
+    var freqM  = rule.match(/FREQ=([^;]+)/);
+    var byDayM = rule.match(/BYDAY=([^;]+)/);
+    var intM   = rule.match(/INTERVAL=(\d+)/);
+    var untilM = rule.match(/UNTIL=(\d{8})/);
+    var countM = rule.match(/COUNT=(\d+)/);
+    var freq   = freqM ? freqM[1] : '';
+
+    // 타입 결정
+    if (byDayM && byDayM[1] === 'MO,TU,WE,TH,FR') {
+      typeEl.value = 'weekdays';
+    } else if (freq === 'DAILY' && !intM) {
+      typeEl.value = 'daily';
+    } else if (freq === 'WEEKLY' && !intM) {
+      typeEl.value = 'weekly';
+      // 요일 체크
+      if (byDayM) {
+        var days = byDayM[1].split(',');
+        document.querySelectorAll('.recur-day-cb').forEach(function (cb) {
+          cb.checked = days.indexOf(cb.value) !== -1;
+        });
+      }
+    } else if (freq === 'MONTHLY' && !intM) {
+      typeEl.value = 'monthly';
+    } else if (freq === 'YEARLY' && !intM) {
+      typeEl.value = 'yearly';
+    } else {
+      typeEl.value = 'custom';
+      var freqEl = $('recur-freq');
+      if (freqEl) freqEl.value = freq;
+      var intEl = $('recur-interval');
+      if (intEl) intEl.value = intM ? intM[1] : '1';
+      if (freq === 'WEEKLY' && byDayM) {
+        var cdays = byDayM[1].split(',');
+        document.querySelectorAll('.recur-cday-cb').forEach(function (cb) {
+          cb.checked = cdays.indexOf(cb.value) !== -1;
+        });
+      }
+    }
+
+    // 종료 조건
+    var endTypeEl = $('recur-end-type');
+    if (endTypeEl) {
+      if (untilM) {
+        endTypeEl.value = 'date';
+        var u = untilM[1];
+        var endDEl = $('recur-end-date');
+        if (endDEl) endDEl.value = u.slice(0,4) + '-' + u.slice(4,6) + '-' + u.slice(6,8);
+      } else if (countM) {
+        endTypeEl.value = 'count';
+        var cntEl = $('recur-count');
+        if (cntEl) cntEl.value = countM[1];
+      } else {
+        endTypeEl.value = 'never';
+      }
+    }
+
+    // UI 상태 갱신
+    refreshRecurVisibility();
   }
 
   async function runDupCheck() {

@@ -2311,6 +2311,92 @@ a        { color: var(--color-accent); text-decoration: none; }
   cursor: text;
 }
 
+/* ── 반복 일정 UI ─────────────────────────────────────────────── */
+.recur-extra {
+  margin-top: 8px;
+}
+.recur-days-row {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+}
+.recur-day-lbl {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border: 1.5px solid var(--color-border);
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  transition: background .12s, border-color .12s;
+  user-select: none;
+}
+.recur-day-lbl:hover {
+  background: var(--color-bg-hover, #f0f4ff);
+  border-color: var(--color-primary);
+}
+.recur-day-lbl input[type="checkbox"] {
+  display: none;
+}
+.recur-day-lbl:has(input:checked) {
+  background: var(--color-primary);
+  color: #fff;
+  border-color: var(--color-primary);
+}
+.recur-custom-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.recur-custom-txt {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+.recur-interval-inp {
+  width: 56px;
+  padding: 5px 8px;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  text-align: center;
+}
+.recur-freq-sel,
+.recur-end-sel {
+  padding: 5px 8px;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  background: var(--color-bg);
+}
+.recur-end-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.recur-end-date-inp {
+  padding: 5px 8px;
+  font-size: 13px;
+}
+.recur-count-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.recur-preview {
+  margin-top: 8px;
+  padding: 6px 12px;
+  background: var(--color-bg-hover, #f0f4ff);
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  color: var(--color-primary);
+  border-left: 3px solid var(--color-primary);
+}
+
 /* ================================================================
    업무관리 탭
    ================================================================ */
