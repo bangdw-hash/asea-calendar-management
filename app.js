@@ -153,6 +153,7 @@
     if (name === 'weekly-hub') { syncWeeklyHubFiles(); }
     if (name === 'report') { if (typeof ReportModule !== 'undefined' && ReportModule.init) ReportModule.init(); }
     if (name === 'promo')  { if (typeof PromoModule  !== 'undefined' && PromoModule.init)  PromoModule.init();  }
+    if (name === 'help')   { if (typeof HelpModule   !== 'undefined' && HelpModule.init)   HelpModule.init();   }
     if (name === 'email')      renderEmailTab();
     if (name === 'settings')   renderSettingsTab();
     if (name === 'extract')    renderExtractTab();

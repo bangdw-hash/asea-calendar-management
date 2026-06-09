@@ -1,0 +1,146 @@
+/* ================================================================
+   help.css — 사용 설명서 모듈
+   .hlp- 접두사
+   ================================================================ */
+
+.hlp-wrap { max-width: 860px; margin: 0 auto; padding: 20px 16px 60px; }
+
+/* ── 헤더 ── */
+.hlp-header { background: linear-gradient(135deg,#003087,#0078D4);
+  border-radius: 14px; padding: 28px 28px 24px; margin-bottom: 20px; color: #fff; }
+.hlp-header-title { font-size: 24px; font-weight: 900; margin-bottom: 6px; }
+.hlp-header-sub   { font-size: 14px; opacity: .85; }
+
+/* ── 처음 시작 박스 ── */
+.hlp-start-box { background: #fffde7; border: 1.5px solid #f9a825;
+  border-radius: 12px; padding: 18px 20px; margin-bottom: 20px; }
+.hlp-start-title { font-size: 15px; font-weight: 800; color: #e65100; margin-bottom: 10px; }
+.hlp-start-ol { margin: 0; padding-left: 22px; }
+.hlp-start-ol li { font-size: 13px; line-height: 2; color: #333; }
+
+/* ── 섹션 제목 ── */
+.hlp-section-title { font-size: 17px; font-weight: 800; color: #1565C0;
+  margin: 24px 0 12px; padding-bottom: 6px; border-bottom: 2px solid #D0E4F5; }
+
+/* ── 아코디언 카드 ── */
+.hlp-cards { display: flex; flex-direction: column; gap: 8px; margin-bottom: 32px; }
+
+.hlp-card { border: 1.5px solid #D0E4F5; border-radius: 12px;
+  background: #fff; overflow: hidden;
+  box-shadow: 0 1px 4px rgba(0,0,0,.05); }
+
+.hlp-card-hd { display: flex; align-items: center; gap: 10px; padding: 14px 18px;
+  cursor: pointer; user-select: none; transition: background .15s; }
+.hlp-card-hd:hover { background: #f0f7ff; }
+.hlp-card-hd.hlp-open { background: #e8f2fc; }
+
+.hlp-card-icon { font-size: 22px; flex-shrink: 0; }
+.hlp-card-ttl  { font-size: 15px; font-weight: 800; color: #003087;
+  min-width: 90px; flex-shrink: 0; }
+.hlp-tag { font-size: 12px; color: #5f6368; flex: 1;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hlp-arrow { font-size: 12px; color: #0078D4; margin-left: 8px; flex-shrink: 0;
+  transition: transform .2s; }
+
+.hlp-card-body { padding: 0 18px 18px; border-top: 1px solid #D0E4F5;
+  background: #fafcff; }
+
+/* ── 카드 내용 ── */
+.hlp-desc { font-size: 13px; color: #555; margin: 12px 0 10px;
+  padding: 8px 12px; background: #e8f4fd; border-radius: 6px;
+  border-left: 3px solid #0078D4; }
+
+.hlp-steps { margin: 0; padding: 0; list-style: none; }
+.hlp-step  { display: flex; gap: 10px; align-items: flex-start;
+  padding: 7px 0; border-bottom: 1px dashed #e0e8f0; font-size: 13px; line-height: 1.6; }
+.hlp-step:last-child { border-bottom: none; }
+.hlp-step-num { display: inline-flex; align-items: center; justify-content: center;
+  min-width: 22px; height: 22px; border-radius: 50%;
+  background: #0078D4; color: #fff; font-size: 11px; font-weight: 800;
+  flex-shrink: 0; margin-top: 1px; }
+
+/* ── 팁 박스 ── */
+.hlp-tips { background: #f0fdf4; border: 1px solid #86efac;
+  border-radius: 8px; padding: 10px 14px; margin-top: 10px; }
+.hlp-tips-title { font-size: 12px; font-weight: 800; color: #15803d; margin-bottom: 6px; }
+.hlp-tips ul { margin: 0; padding-left: 18px; }
+.hlp-tips li  { font-size: 12px; color: #166534; line-height: 1.8; }
+
+/* ── 버튼들 ── */
+.hlp-extra-btn, .hlp-shortcut-btn {
+  display: inline-block; margin-top: 12px; padding: 7px 16px;
+  border-radius: 8px; border: none; font-size: 12px; font-weight: 700;
+  cursor: pointer; transition: .15s; }
+.hlp-extra-btn { background: #003087; color: #fff; margin-right: 8px; }
+.hlp-extra-btn:hover { background: #0055cc; }
+.hlp-shortcut-btn { background: transparent; border: 1.5px solid #0078D4;
+  color: #0078D4; }
+.hlp-shortcut-btn:hover { background: #e8f2fc; }
+
+/* ══════════════════════════════════════════════════════════
+   GAS 설정 가이드
+══════════════════════════════════════════════════════════ */
+.hlp-gas-guide { background: #fff; border: 2px solid #003087;
+  border-radius: 14px; padding: 24px; margin-bottom: 24px; }
+
+.hlp-gas-hd { margin-bottom: 20px; }
+.hlp-gas-main-ttl { font-size: 18px; font-weight: 900; color: #003087; margin-bottom: 6px; }
+.hlp-gas-main-sub { font-size: 13px; color: #5f6368; }
+
+/* 흐름도 */
+.hlp-gas-flow { display: flex; align-items: center; flex-wrap: wrap;
+  gap: 8px; background: #f0f7ff; border-radius: 10px;
+  padding: 14px 16px; margin-bottom: 20px; }
+.hlp-flow-box  { background: #0078D4; color: #fff; padding: 8px 14px;
+  border-radius: 8px; font-size: 12px; font-weight: 700; text-align: center;
+  line-height: 1.4; }
+.hlp-flow-mid  { background: #e65100; }
+.hlp-flow-arrow { font-size: 20px; color: #003087; font-weight: 900; }
+
+/* STEP 카드 */
+.hlp-gas-step { border: 1.5px solid #D0E4F5; border-radius: 10px;
+  margin-bottom: 12px; overflow: hidden; }
+.hlp-gas-num  { background: #003087; color: #fff;
+  font-size: 12px; font-weight: 800; padding: 5px 14px;
+  letter-spacing: .05em; display: inline-block; }
+.hlp-gas-ttl  { font-size: 15px; font-weight: 800; color: #003087;
+  padding: 10px 14px 6px; }
+.hlp-ul { margin: 0; padding: 0 14px 12px 14px; list-style: none; }
+.hlp-li { font-size: 13px; line-height: 1.9; color: #333;
+  padding: 2px 0; border-bottom: 1px dashed #e8eef5; display: flex;
+  gap: 8px; align-items: flex-start; }
+.hlp-li:last-child { border-bottom: none; }
+.hlp-li::before { content: '▸'; color: #0078D4; font-size: 11px;
+  flex-shrink: 0; margin-top: 4px; }
+
+/* 코드 블록 */
+.hlp-code { display: inline-block; background: #1e1e2e; color: #a6e3a1;
+  font-family: 'Consolas','Courier New',monospace; font-size: 11px;
+  padding: 6px 12px; border-radius: 6px; margin-top: 4px;
+  line-height: 1.7; white-space: pre; }
+
+/* kbd */
+kbd { background: #f1f3f4; border: 1px solid #ccc; border-radius: 4px;
+  padding: 1px 6px; font-size: 11px; font-family: inherit; }
+
+/* 링크 */
+.hlp-link { color: #0078D4; font-weight: 700; }
+
+/* ── 문의 ── */
+.hlp-contact { text-align: center; padding: 18px;
+  background: #f0f7ff; border-radius: 12px; font-size: 14px; color: #333; }
+.hlp-tel { color: #003087; font-weight: 900; font-size: 16px;
+  text-decoration: none; margin-left: 8px; }
+.hlp-tel:hover { text-decoration: underline; }
+
+/* ── 반응형 ── */
+@media (max-width: 640px) {
+  .hlp-wrap { padding: 12px 10px 40px; }
+  .hlp-header { padding: 20px 16px; }
+  .hlp-header-title { font-size: 20px; }
+  .hlp-card-hd { padding: 12px 14px; gap: 8px; }
+  .hlp-card-ttl { min-width: 70px; font-size: 14px; }
+  .hlp-tag { display: none; }
+  .hlp-gas-flow { flex-direction: column; align-items: flex-start; }
+  .hlp-flow-arrow { transform: rotate(90deg); }
+}

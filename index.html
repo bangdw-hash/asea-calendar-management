@@ -10,6 +10,7 @@
   <link rel="stylesheet" href="style.css?v=20260609h6">
   <link rel="stylesheet" href="report.css?v=20260609">
   <link rel="stylesheet" href="promo.css?v=20260609a1">
+  <link rel="stylesheet" href="help.css?v=20260609a1">
   <script src="https://accounts.google.com/gsi/client" async></script>
   <!-- SheetJS for Excel support -->
   <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
@@ -165,6 +166,13 @@
       <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
     </svg>
     <span class="tab-label">설정</span>
+  </button>
+
+  <button class="tab-btn" data-tab="help" role="tab" aria-selected="false">
+    <svg class="tab-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+    </svg>
+    <span class="tab-label">도움말</span>
   </button>
 
 </nav>
@@ -1381,6 +1389,13 @@
 
       </section>
 
+      <!-- ════════════════════════════════════════════════════
+           ❓ 도움말 탭
+           ════════════════════════════════════════════════════ -->
+      <section id="tab-help" class="tab-panel" role="tabpanel" hidden>
+        <div id="help-root"></div>
+      </section>
+
     </main>
   </div>
 
@@ -2344,6 +2359,14 @@
         <span class="bnav-label">설정</span>
       </button>
 
+      <!-- ❓ 도움말 -->
+      <button class="bnav-btn" data-tab="help">
+        <svg class="bnav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+        </svg>
+        <span class="bnav-label">도움말</span>
+      </button>
+
     </nav>
 
   <!-- ═══════════════════════════════════════════════════════
@@ -2357,6 +2380,7 @@
   <script src="gmail.js?v=20260608s"></script>
   <script src="report.js?v=20260608s"></script>
   <script src="promo.js?v=20260609a1"></script>
+  <script src="help.js?v=20260609a1"></script>
   <script src="sheets.js?v=20260608w"></script>
   <script src="resutil.js?v=20260608s"></script>
   <script src="facility.js?v=20260609m2"></script>
