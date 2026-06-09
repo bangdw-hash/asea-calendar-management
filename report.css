@@ -689,3 +689,214 @@
   .rpt-filters { gap: 6px; }
   .rpt-select { min-width: 80px; font-size: 12px; }
 }
+
+/* ══════════════════════════════════════════════════════════
+   NEW MODULE STYLES (v2 rewrite)
+══════════════════════════════════════════════════════════ */
+
+/* ── 래퍼 & 레이아웃 ─────────────────────────────────────── */
+.rpt-wrap { max-width: 900px; margin: 0 auto; padding: 16px; }
+.rpt-bar  { display: flex; align-items: center; gap: 8px; margin-bottom: 16px;
+            border-bottom: 2px solid var(--rpt-border); padding-bottom: 12px; }
+.rpt-bar-title { font-size: 18px; font-weight: 700; color: var(--rpt-text); flex: 1; }
+.rpt-bar-right { display: flex; gap: 8px; }
+
+/* ── 버튼 ────────────────────────────────────────────────── */
+.rpt-btn { display: inline-flex; align-items: center; gap: 4px;
+           padding: 6px 14px; border-radius: 6px; border: none;
+           font-size: 13px; font-weight: 600; cursor: pointer; transition: .15s; }
+.rpt-btn.rpt-primary { background: var(--rpt-accent); color: #fff; }
+.rpt-btn.rpt-primary:hover { background: var(--rpt-accent2); }
+.rpt-btn.rpt-outline  { background: transparent; border: 1.5px solid var(--rpt-accent); color: var(--rpt-accent); }
+.rpt-btn.rpt-outline:hover { background: #e8f2fc; }
+.rpt-btn.rpt-ghost    { background: transparent; color: var(--rpt-muted); border: 1.5px solid #ccc; }
+.rpt-btn.rpt-ghost:hover { background: #f1f3f4; }
+.rpt-btn.rpt-danger   { background: #d93025; color: #fff; }
+.rpt-btn.rpt-danger:hover { background: #b31412; }
+.rpt-btn.rpt-sm       { padding: 4px 10px; font-size: 12px; }
+
+/* ── 칩 (상태) ───────────────────────────────────────────── */
+.rpt-chip         { font-size: 11px; font-weight: 700; padding: 2px 8px;
+                    border-radius: 20px; display: inline-block; }
+.rpt-s-draft      { background: #f1f3f4; color: #5f6368; }
+.rpt-s-review     { background: #fce8b2; color: #b06000; }
+.rpt-s-done       { background: #e6f4ea; color: #137333; }
+
+/* ── 카드 목록 ───────────────────────────────────────────── */
+.rpt-cards    { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
+.rpt-card     { background: var(--rpt-surface); border-radius: var(--rpt-radius);
+                border: 1px solid var(--rpt-border); padding: 14px; }
+.rpt-card-top { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.rpt-card-dept { font-size: 15px; font-weight: 700; color: var(--rpt-accent2); flex: 1; }
+.rpt-card-week { font-size: 12px; color: var(--rpt-muted); margin-bottom: 4px; }
+.rpt-card-meta { font-size: 12px; color: #888; margin-bottom: 10px; }
+.rpt-card-btns { display: flex; gap: 6px; }
+.rpt-filters   { display: flex; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
+.rpt-sel       { padding: 6px 10px; border-radius: 6px; border: 1.5px solid var(--rpt-border);
+                 font-size: 13px; background: #fff; color: var(--rpt-text); }
+.rpt-empty     { text-align: center; padding: 40px; color: #aaa; font-size: 14px; line-height: 1.8; }
+
+/* ── 섹션 & 폼 ───────────────────────────────────────────── */
+.rpt-sec      { background: var(--rpt-surface); border: 1px solid var(--rpt-border);
+                border-radius: var(--rpt-radius); padding: 16px; margin-bottom: 14px; }
+.rpt-sec-ttl  { font-size: 15px; font-weight: 700; color: var(--rpt-accent2);
+                margin-bottom: 12px; border-bottom: 1px solid var(--rpt-border); padding-bottom: 8px; }
+.rpt-fgrid    { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.rpt-frow     { display: flex; align-items: center; gap: 10px; }
+.rpt-frow label { min-width: 90px; font-size: 13px; font-weight: 600; color: var(--rpt-muted); }
+.rpt-inp      { flex: 1; padding: 7px 10px; border-radius: 6px; border: 1.5px solid var(--rpt-border);
+                font-size: 13px; color: var(--rpt-text); }
+.rpt-inp:focus { outline: none; border-color: var(--rpt-accent); }
+.rpt-req      { color: #d93025; }
+.rpt-editor   { padding-bottom: 40px; }
+
+/* ── 근태 테이블 ─────────────────────────────────────────── */
+.rpt-att-t    { width: 100%; border-collapse: collapse; font-size: 13px; }
+.rpt-att-t th, .rpt-att-t td { border: 1px solid var(--rpt-border); padding: 6px 8px;
+                                 text-align: center; }
+.rpt-att-t th { background: #e8f2fc; font-weight: 700; }
+.rpt-att-lbl  { font-weight: 600; text-align: left !important; padding-left: 10px !important; }
+.rpt-att-c    { width: 100%; border: none; text-align: center; font-size: 13px;
+                background: transparent; outline: none; }
+
+/* ── 근로자현황 ───────────────────────────────────────────── */
+.rpt-wgrid    { display: grid; grid-template-columns: repeat(auto-fill, minmax(70px,1fr)); gap: 6px; }
+.rpt-wc       { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+.rpt-wc label { font-size: 11px; color: var(--rpt-muted); font-weight: 600; }
+.rpt-wi       { width: 56px; padding: 4px; border-radius: 5px; border: 1.5px solid var(--rpt-border);
+                text-align: center; font-size: 13px; }
+
+/* ── 훈련생 테이블 ───────────────────────────────────────── */
+.rpt-trainee  { width: 100%; border-collapse: collapse; font-size: 13px; }
+.rpt-trainee th, .rpt-trainee td { border: 1px solid var(--rpt-border); padding: 5px 6px; }
+.rpt-trainee th { background: #e8f2fc; font-weight: 700; text-align: center; }
+.rpt-ti       { width: 100%; border: none; padding: 2px 4px; font-size: 12px;
+                background: transparent; outline: none; }
+
+/* ── 업무보고 섹션 ───────────────────────────────────────── */
+.rpt-tsec     { margin-bottom: 12px; }
+.rpt-tsec-lbl { font-size: 13px; font-weight: 700; color: var(--rpt-muted); margin-bottom: 5px; }
+.rpt-ta       { width: 100%; min-height: 80px; padding: 8px; border-radius: 6px;
+                border: 1.5px solid var(--rpt-border); font-size: 13px; resize: vertical;
+                font-family: inherit; box-sizing: border-box; }
+.rpt-ta:focus { outline: none; border-color: var(--rpt-accent); }
+
+/* ── 붙여넣기 존 ─────────────────────────────────────────── */
+.rpt-paste-z  { min-height: 36px; border: 1.5px dashed #b0c8e8; border-radius: 6px;
+                padding: 8px 12px; margin-top: 6px; font-size: 12px; color: #90a0b0;
+                cursor: text; line-height: 1.5; }
+.rpt-paste-z:focus { outline: none; border-color: var(--rpt-accent); background: #f0f7ff; }
+.rpt-thumbs   { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.rpt-thumb    { position: relative; width: 70px; height: 70px; border-radius: 6px;
+                overflow: hidden; border: 1.5px solid var(--rpt-border); }
+.rpt-timg     { width: 100%; height: 100%; object-fit: cover; display: block; }
+.rpt-tdel     { position: absolute; top: 2px; right: 2px; background: rgba(0,0,0,.55);
+                color: #fff; border: none; border-radius: 50%; width: 18px; height: 18px;
+                font-size: 11px; cursor: pointer; display: flex; align-items: center;
+                justify-content: center; padding: 0; }
+
+/* ── 첨부파일 드롭존 ─────────────────────────────────────── */
+.rpt-drop         { border: 2px dashed var(--rpt-accent); border-radius: var(--rpt-radius);
+                    padding: 24px; text-align: center; cursor: pointer; transition: .15s;
+                    background: #f7fbff; }
+.rpt-drop:hover, .rpt-drop-over { background: #e8f2fc; }
+.rpt-drop-inner   { font-size: 13px; color: var(--rpt-muted); }
+.rpt-alist        { margin-top: 10px; display: flex; flex-direction: column; gap: 6px; }
+.rpt-at-item      { display: flex; align-items: center; gap: 10px; background: #f7fbff;
+                    border: 1px solid var(--rpt-border); border-radius: 6px; padding: 6px 10px; }
+.rpt-at-img       { width: 36px; height: 36px; object-fit: cover; border-radius: 4px; }
+.rpt-at-icon      { font-size: 28px; }
+.rpt-at-info      { flex: 1; }
+.rpt-at-name      { font-size: 13px; font-weight: 600; }
+.rpt-at-lbl       { font-size: 11px; color: #888; }
+
+/* ── 주차 관리 테이블 ────────────────────────────────────── */
+.rpt-week-tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
+.rpt-week-tbl th, .rpt-week-tbl td { border: 1px solid var(--rpt-border); padding: 7px 10px; }
+.rpt-week-tbl th { background: #e8f2fc; font-weight: 700; text-align: center; }
+.rpt-dorder   { display: flex; flex-wrap: wrap; gap: 6px; }
+.rpt-dchk     { display: inline-flex; align-items: center; gap: 4px; font-size: 12px;
+                padding: 4px 8px; border: 1px solid var(--rpt-border); border-radius: 6px;
+                cursor: pointer; background: #f7fbff; }
+.rpt-dchk:hover { background: #e8f2fc; }
+
+/* ══════════════════════════════════════════════════════════
+   PREVIEW (A4 미리보기)
+══════════════════════════════════════════════════════════ */
+.rpt-pv-wrap  { background: #e8e8e8; padding: 16px 0; }
+.rpt-pv-bar   { background: #fff; margin: 0 auto 16px; max-width: 900px;
+                padding: 10px 16px; border-radius: 8px; }
+.rpt-pages    { display: flex; flex-direction: column; align-items: center; gap: 24px; }
+
+/* A4 페이지 */
+.rpt-a4       { width: 210mm; min-height: 297mm; background: #fff;
+                padding: 15mm 18mm; box-sizing: border-box;
+                box-shadow: 0 2px 12px rgba(0,0,0,.18); border-radius: 2px;
+                font-family: 'Malgun Gothic', 'AppleGothic', sans-serif;
+                font-size: 10pt; color: #000; line-height: 1.5; }
+
+/* 문서 헤더 */
+.rpt-pv-hd        { display: flex; justify-content: space-between; align-items: flex-end;
+                    margin-bottom: 12px; border-bottom: 2px solid #003087; padding-bottom: 8px; }
+.rpt-pv-bigtitle  { font-size: 20pt; font-weight: 800; letter-spacing: .15em; color: #003087; }
+.rpt-pv-subttl    { font-size: 11pt; color: #555; margin-top: 4px; }
+.rpt-pv-badge     { font-size: 9pt; padding: 3px 10px; border-radius: 12px;
+                    background: #e6f4ea; color: #137333; font-weight: 700; }
+
+/* 메타 테이블 */
+.rpt-pv-meta  { width: 100%; border-collapse: collapse; margin-bottom: 10px; font-size: 9.5pt; }
+.rpt-pv-meta td { border: 1px solid #888; padding: 5px 8px; }
+.rpt-pv-ml    { background: #dce8f5; font-weight: 700; width: 80px; white-space: nowrap; }
+.rpt-pv-mv    { min-width: 100px; }
+
+/* 섹션 타이틀 */
+.rpt-pv-sec   { margin-top: 10px; }
+.rpt-pv-st    { background: #003087; color: #fff; font-size: 10pt; font-weight: 700;
+                padding: 4px 10px; margin-bottom: 0; }
+
+/* 공통 테이블 */
+.rpt-pv-tbl   { width: 100%; border-collapse: collapse; font-size: 9.5pt; }
+.rpt-pv-tbl th, .rpt-pv-tbl td { border: 1px solid #888; padding: 4px 6px; }
+.rpt-pv-tbl th { background: #dce8f5; font-weight: 700; text-align: center; }
+.rpt-pv-rl    { background: #f0f4fa; font-weight: 600; white-space: nowrap; }
+
+/* 근로자현황 */
+.rpt-pv-wt td { text-align: center; font-size: 9pt; }
+
+/* 업무보고 테이블 */
+.rpt-pv-task  { margin-top: 0; }
+.rpt-pv-tl    { background: #dce8f5; font-weight: 700; text-align: center; font-size: 9pt;
+                vertical-align: top; width: 110px; }
+.rpt-pv-td    { vertical-align: top; padding: 6px 8px; white-space: pre-wrap; }
+.rpt-pv-img   { max-width: 100%; max-height: 160px; display: block; margin: 6px 0; border-radius: 3px; }
+
+/* 첨부 페이지 */
+.rpt-attach-page    { display: flex; flex-direction: column; align-items: center; }
+.rpt-pv-att-title   { font-size: 11pt; font-weight: 700; color: #003087; margin-bottom: 10px; }
+.rpt-pv-att-img     { max-width: 100%; max-height: 220mm; object-fit: contain; }
+
+/* 페이지 구분 */
+.rpt-page-break { page-break-before: always; }
+
+/* ══════════════════════════════════════════════════════════
+   PRINT STYLES
+══════════════════════════════════════════════════════════ */
+@media print {
+  body * { visibility: hidden; }
+  .rpt-pages, .rpt-pages * { visibility: visible; }
+  .rpt-pages { position: absolute; top: 0; left: 0; width: 100%; }
+  .no-print { display: none !important; }
+  .rpt-a4   { box-shadow: none; margin: 0; page-break-after: always; }
+  .rpt-a4:last-child { page-break-after: auto; }
+  @page { size: A4; margin: 10mm; }
+}
+
+/* ── 반응형 (모바일) ─────────────────────────────────────── */
+@media (max-width: 650px) {
+  .rpt-wrap  { padding: 10px; }
+  .rpt-fgrid { grid-template-columns: 1fr; }
+  .rpt-a4    { width: 100%; padding: 8mm 6mm; min-height: unset; }
+  .rpt-cards { grid-template-columns: 1fr; }
+  .rpt-bar   { flex-wrap: wrap; }
+  .rpt-bar-right { flex-wrap: wrap; }
+}
