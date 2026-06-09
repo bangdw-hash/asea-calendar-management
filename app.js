@@ -162,6 +162,12 @@
     if (name === 'sms' && typeof SmsModule !== 'undefined') SmsModule.initSmsTab();
     // 직원관리 탭: 캐시가 있으면 즉시 렌더, 없으면 placeholder (수동 불러오기 버튼 안내)
     if (name === 'work' && typeof WorkModule !== 'undefined') WorkModule.showHrPlaceholderOrCache();
+    // 게시판
+    if (name === 'board' && typeof BoardModule !== 'undefined') BoardModule.onTabOpen();
+    // 관리자 패널
+    if (name === 'admin' && typeof AdminModule !== 'undefined') AdminModule.onTabOpen();
+    // 사용자 색상 설정 탭 열릴 때 재렌더
+    if (name === 'settings' && typeof UserSettingsModule !== 'undefined') UserSettingsModule.renderColorSettings();
   }
 
   function initTabs() {
@@ -248,7 +254,15 @@
       $('app').hidden = !loggedIn;
       if (loggedIn) {
         loadUserEmail().then(function () {
-          if (typeof WorkModule !== 'undefined') WorkModule.onLogin(S.userEmail);
+          if (typeof WorkModule    !== 'undefined') WorkModule.onLogin(S.userEmail);
+          // 관리자 모듈 — 메뉴/기능 가시성 적용
+          if (typeof AdminModule   !== 'undefined') AdminModule.onLogin();
+          // 게시판 — 미읽은 전사알림 팝업 표시 (1.2초 후)
+          if (typeof BoardModule   !== 'undefined') BoardModule.checkAndShowNotices(S.userEmail);
+          // 브라우저 알림 권한 요청 (게시판 전사알림용)
+          if (typeof BoardModule   !== 'undefined') BoardModule.requestNotifPerm(function(){});
+          // 사용자 색상 설정 적용
+          if (typeof UserSettingsModule !== 'undefined') UserSettingsModule.apply();
 
           // Chrome 확장 또는 #quick-task URL hash로 인한 자동 모달 오픈
           var autoOpen = window.__aseaAutoOpenQuickTask ||
@@ -5482,7 +5496,11 @@
     initDeptModal();
     initSettings();
     initModalHandlers();
-    if (typeof WorkModule !== 'undefined') WorkModule.initWorkModule();
+    if (typeof WorkModule         !== 'undefined') WorkModule.initWorkModule();
+    // 신규 모듈 초기화
+    if (typeof AdminModule        !== 'undefined') AdminModule.init();
+    if (typeof BoardModule        !== 'undefined') BoardModule.init();
+    if (typeof UserSettingsModule !== 'undefined') UserSettingsModule.init();
   }
 
   /* ═══════════════════════════════════════════════════════════

@@ -161,11 +161,29 @@
     <span class="tab-label">문자발송</span>
   </button>
 
+  <!-- 📌 게시판 -->
+  <button class="tab-btn" data-tab="board" role="tab" aria-selected="false">
+    <svg class="tab-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+      <line x1="9" y1="10" x2="15" y2="10"/><line x1="9" y1="14" x2="13" y2="14"/>
+    </svg>
+    <span class="tab-label">게시판</span>
+    <span id="board-tab-badge" class="tab-badge" hidden>0</span>
+  </button>
+
   <button class="tab-btn" data-tab="settings" role="tab" aria-selected="false">
     <svg class="tab-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
       <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
     </svg>
     <span class="tab-label">설정</span>
+  </button>
+
+  <!-- 🛡 관리자 (admin만 표시) -->
+  <button class="tab-btn" data-tab="admin" role="tab" aria-selected="false" style="display:none">
+    <svg class="tab-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+    </svg>
+    <span class="tab-label">관리자</span>
   </button>
 
   <button class="tab-btn" data-tab="help" role="tab" aria-selected="false">
@@ -1403,6 +1421,13 @@
           </p>
         </div>
 
+        <!-- 🎨 캘린더 색상 사용자 설정 -->
+        <div class="settings-card">
+          <h3 class="settings-section-title">🎨 캘린더 색상 설정 <span class="badge-personal">개인 설정</span></h3>
+          <p class="form-hint" style="margin-bottom:12px">내 브라우저에만 적용되는 개인 색상 설정입니다. 프리셋을 선택하거나 직접 조합하세요.</p>
+          <div id="user-color-settings"></div>
+        </div>
+
         <!-- 수신자 목록 -->
         <div class="settings-card">
           <h3 class="settings-section-title">수신자 목록</h3>
@@ -1414,6 +1439,37 @@
           </div>
         </div>
 
+      </section>
+
+      <!-- ════════════════════════════════════════════════════
+           📌 게시판 탭
+           ════════════════════════════════════════════════════ -->
+      <section id="tab-board" class="tab-panel" role="tabpanel" hidden>
+        <!-- Quill CSS -->
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css">
+        <div class="board-container">
+          <div class="board-header">
+            <h2 class="section-title">게시판</h2>
+          </div>
+          <div id="board-content" class="board-content">
+            <div class="board-empty"><div class="board-empty-icon">📭</div><p>로딩 중...</p></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ════════════════════════════════════════════════════
+           🛡 관리자 탭
+           ════════════════════════════════════════════════════ -->
+      <section id="tab-admin" class="tab-panel" role="tabpanel" hidden>
+        <div class="admin-container">
+          <div class="admin-header">
+            <h2 class="section-title">🛡 관리자 패널</h2>
+            <span class="badge-admin">ADMIN</span>
+          </div>
+          <div id="admin-content" class="admin-content">
+            <div class="loading-state">로딩 중...</div>
+          </div>
+        </div>
       </section>
 
       <!-- ════════════════════════════════════════════════════
@@ -2556,12 +2612,30 @@
         <span class="bnav-label">문자</span>
       </button>
 
+      <!-- 📌 게시판 -->
+      <button class="bnav-btn" data-tab="board">
+        <svg class="bnav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+          <line x1="9" y1="10" x2="15" y2="10"/><line x1="9" y1="14" x2="13" y2="14"/>
+        </svg>
+        <span class="bnav-label">게시판</span>
+        <span class="bnav-badge" id="bnav-board-badge" hidden></span>
+      </button>
+
       <!-- ⚙️ 설정 -->
       <button class="bnav-btn" data-tab="settings">
         <svg class="bnav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
         </svg>
         <span class="bnav-label">설정</span>
+      </button>
+
+      <!-- 🛡 관리자 (admin) -->
+      <button class="bnav-btn" data-tab="admin" style="display:none">
+        <svg class="bnav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+        </svg>
+        <span class="bnav-label">관리자</span>
       </button>
 
       <!-- ❓ 도움말 -->
@@ -2574,10 +2648,36 @@
 
     </nav>
 
+  <!-- ═══════════════════════════════════════════════
+       전사알림 팝업 (로그인 직후 자동 표시)
+       ═══════════════════════════════════════════════ -->
+  <div id="board-notice-popup" class="notice-popup-overlay" hidden>
+    <div class="notice-popup-card">
+      <div class="notice-popup-header">
+        <span class="notice-popup-icon">📢</span>
+        <span class="notice-popup-label">전사 알림</span>
+        <span id="bnp-remain" class="notice-popup-remain"></span>
+        <button id="bnp-close" class="notice-popup-close" aria-label="닫기">✕</button>
+      </div>
+      <div class="notice-popup-body">
+        <h3 id="bnp-title" class="notice-popup-title"></h3>
+        <p  id="bnp-meta"  class="notice-popup-meta"></p>
+        <div id="bnp-content" class="notice-popup-content ql-content"></div>
+      </div>
+      <div class="notice-popup-footer">
+        <button id="bnp-view-btn"    class="btn btn-primary btn-sm">게시판에서 보기</button>
+        <button id="bnp-allread-btn" class="btn btn-ghost   btn-sm">모두 읽음 처리</button>
+      </div>
+    </div>
+  </div>
+
   <!-- ═══════════════════════════════════════════════════════
        스크립트 (로드 순서 중요)
        기존 모듈은 절대 수정하지 않음 — 새 모듈만 추가
        ═══════════════════════════════════════════════════════ -->
+  <!-- Quill.js 워드프로세서 -->
+  <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script>
+
   <script src="config.js?v=20260609p1"></script>
   <script src="auth.js?v=20260608s"></script>
   <script src="calendar.js?v=20260608s"></script>
@@ -2595,7 +2695,11 @@
   <script src="workorder.js?v=20260608s"></script>
   <script src="quicktask.js?v=20260609r1"></script>
   <script src="sms.js?v=20260608a1"></script>
-  <script src="app.js?v=20260609s2"></script>
+  <!-- 신규 모듈 (admin → board → usersettings → app 순서) -->
+  <script src="admin.js?v=20260610a1"></script>
+  <script src="board.js?v=20260610b1"></script>
+  <script src="usersettings.js?v=20260610u1"></script>
+  <script src="app.js?v=20260610s1"></script>
   <script>
     // 빠른 업무 등록 초기화 (DOM 준비 후)
     document.addEventListener('DOMContentLoaded', function () {
