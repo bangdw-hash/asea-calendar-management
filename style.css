@@ -415,9 +415,10 @@ a        { color: var(--color-accent); text-decoration: none; }
   margin-bottom: var(--sp-4);
   flex-wrap: wrap;
   gap: var(--sp-3);
-  min-height: 56px;
-  padding-top: 10px;
-  padding-bottom: 10px;
+  min-height: 60px;
+  padding-top: 14px;
+  padding-bottom: 14px;
+  box-sizing: border-box;
 }
 
 .calendar-nav {
@@ -5416,11 +5417,17 @@ h3.settings-section-title {
 }
 
 /* ── 캘린더 드래그앤드롭 ──────────────────────────────────────────── */
-.event-chip[draggable="true"] { cursor: grab; }
+.event-chip[draggable="true"] { cursor: grab; user-select: none; }
 .event-chip[draggable="true"]:active { cursor: grabbing; }
-.event-chip.dragging { opacity: 0.4; transform: scale(0.95); }
+.event-chip.dragging { opacity: 0.35; transform: scale(0.93); box-shadow: 0 4px 16px rgba(0,0,0,0.18); }
+
+/* 드래그 중: 모든 chip과 day-events가 마우스 이벤트 차단 → drop이 calendar-day에 정확히 전달 */
+body.is-dragging-event .event-chip,
+body.is-dragging-event .day-events { pointer-events: none !important; }
+
 .calendar-day.drag-over {
   background: var(--uc-chip-light-bg, #e8f0fe) !important;
-  outline: 2px dashed var(--uc-accent, #1a73e8);
-  outline-offset: -2px;
+  outline: 2.5px dashed var(--uc-accent, #1a73e8);
+  outline-offset: -3px;
+  transition: background 0.1s;
 }

@@ -836,10 +836,12 @@
         }));
         e.dataTransfer.effectAllowed = 'move';
         chip.classList.add('dragging');
-        e.stopPropagation();
+        // 드래그 중 chip/evWrap의 pointer-events 차단 → drop이 calendar-day에 정확히 전달
+        setTimeout(function() { document.body.classList.add('is-dragging-event'); }, 0);
       });
       chip.addEventListener('dragend', function () {
         chip.classList.remove('dragging');
+        document.body.classList.remove('is-dragging-event');
         document.querySelectorAll('.calendar-day.drag-over').forEach(function (c) {
           c.classList.remove('drag-over');
         });
