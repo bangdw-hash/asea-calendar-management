@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
   <link rel="stylesheet" href="style.css?v=20260609h6">
   <link rel="stylesheet" href="report.css?v=20260609">
-  <link rel="stylesheet" href="promo.css?v=20260609b1">
+  <link rel="stylesheet" href="promo.css?v=20260609c1">
   <link rel="stylesheet" href="help.css?v=20260609a1">
   <script src="https://accounts.google.com/gsi/client" async></script>
   <!-- SheetJS for Excel support -->
@@ -1302,6 +1302,13 @@
             자세한 내용은 <strong>REMOTE_SETUP.md</strong>를 참고하세요.</p>
           </div>
           <button id="save-promo-gas-btn" class="btn btn-primary btn-sm">저장</button>
+          <div class="form-group" style="margin-top:12px">
+            <label class="form-label" for="setting-promo-token">접근 토큰 (선택)</label>
+            <input id="setting-promo-token" type="text" class="form-input"
+              placeholder="영문·숫자 조합 임의 문자열 (예: asea2026promo)">
+            <p class="form-hint">설정 시 공개 URL을 통한 등록에 이 토큰이 있어야 합니다. GAS 스크립트 속성 <code>ACCESS_TOKEN</code>에도 동일한 값을 입력하세요.<br>비워두면 URL을 아는 누구나 슬라이드를 등록할 수 있습니다.</p>
+          </div>
+          <button id="save-promo-token-btn" class="btn btn-secondary btn-sm">접근 토큰 저장</button>
         </div>
 
         <!-- Make.com 웹훅 URL -->
@@ -2379,7 +2386,7 @@
   <script src="drive.js?v=20260608s"></script>
   <script src="gmail.js?v=20260608s"></script>
   <script src="report.js?v=20260608s"></script>
-  <script src="promo.js?v=20260609b1"></script>
+  <script src="promo.js?v=20260609c1"></script>
   <script src="help.js?v=20260609a1"></script>
   <script src="sheets.js?v=20260608w"></script>
   <script src="resutil.js?v=20260608s"></script>

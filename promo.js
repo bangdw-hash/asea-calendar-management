@@ -1,6 +1,30 @@
 'use strict';
 window.PromoModule = (function () {
 
+  /* ── 프레젠테이션 타입 ──────────────────────────────────────
+   * 각 타입은 Google Slides 프레젠테이션 1개씩을 사용합니다.
+   * GAS 스크립트 속성(PRES_EXTERNAL 등)에 각각 ID를 등록하세요.
+   *
+   * external     — 대외형:      5초 전환, 슬라이드 누적, 루프
+   * event-single — 행사단일용:  자동전환 없음, 항상 1장 교체
+   * internal     — 내부행사용:  3초 빠른전환, 슬라이드 누적, 루프
+   * general      — 일반용:      8초 전환, 슬라이드 누적, 루프
+   */
+  var PRES_TYPES = [
+    { id: 'external',     label: '대외형',       icon: '🌐',
+      desc: '로비·외부 모니터. 슬라이드 누적 / 5초 전환',
+      badge: '5초·루프', badgeCls: 'prm-type-external' },
+    { id: 'event-single', label: '행사단일용',   icon: '🎯',
+      desc: '특정 행사 전용. 기존 슬라이드 교체 / 정지화면',
+      badge: '단독·교체', badgeCls: 'prm-type-event' },
+    { id: 'internal',     label: '내부행사용',   icon: '📋',
+      desc: '내부 행사 공지. 슬라이드 누적 / 3초 빠른전환',
+      badge: '3초·루프', badgeCls: 'prm-type-internal' },
+    { id: 'general',      label: '일반용',       icon: '📌',
+      desc: '일반 안내용. 슬라이드 누적 / 8초 전환',
+      badge: '8초·루프', badgeCls: 'prm-type-general' },
+  ];
+
   /* ── 레이아웃 템플릿 ── */
   var LAYOUTS = [
     { id: 'full-top',   label: '상단 배경',   desc: '상단 2/3 색상 + 하단 흰색' },
@@ -30,7 +54,7 @@ window.PromoModule = (function () {
     { id: '사용자', label: '🎨 직접', bg: '#444444' },
   ];
 
-  var SK_HISTORY = 'asea_promo_history';
+  var SK_HISTORY  = 'asea_promo_history';
   var SK_SETTINGS = 'asea_promo_settings';
 
   /* ── 상태 ── */
@@ -47,6 +71,7 @@ window.PromoModule = (function () {
     layout:   'full-top',
     theme:    '홍보',
     customBg: '#C8185A',
+    presType: 'general',    // 선택된 프레젠테이션 타입
   };
 
   /* ── 유틸 ── */
@@ -55,11 +80,15 @@ window.PromoModule = (function () {
     try {
       var s = JSON.parse(localStorage.getItem(SK_SETTINGS));
       if (s) { _cfg.font = s.font||_cfg.font; _cfg.layout = s.layout||_cfg.layout;
-               _cfg.theme = s.theme||_cfg.theme; _cfg.customBg = s.customBg||_cfg.customBg; }
+               _cfg.theme = s.theme||_cfg.theme; _cfg.customBg = s.customBg||_cfg.customBg;
+               _cfg.presType = s.presType||_cfg.presType; }
     } catch(e) {}
   }
   function saveCfg() {
     try { localStorage.setItem(SK_SETTINGS, JSON.stringify(_cfg)); } catch(e) {}
+  }
+  function getAccessToken() {
+    return localStorage.getItem('asea_promo_access_token') || '';
   }
   function saveHistory(rec) {
     _history.unshift(rec);
@@ -150,10 +179,37 @@ window.PromoModule = (function () {
         '<span class="prm-theme-chip">'+t.label+'</span></label>';
     }).join('');
 
+    /* 프레젠테이션 타입 카드 */
+    var typeCards = PRES_TYPES.map(function(t){
+      var sel = (_cfg.presType === t.id);
+      return '<label class="prm-type-card'+(sel?' prm-type-sel':'')+'" title="'+t.desc+'">'+
+        '<input type="radio" name="prm-pres-type" value="'+t.id+'"'+(sel?' checked':'')+' hidden>'+
+        '<div class="prm-type-icon">'+t.icon+'</div>'+
+        '<div class="prm-type-label">'+t.label+'</div>'+
+        '<div class="prm-type-badge '+t.badgeCls+'">'+t.badge+'</div>'+
+        '</label>';
+    }).join('');
+
     return '<div class="prm-wrap">'+
       '<div class="prm-page-title">📣 홍보 슬라이드 생성</div>'+
 
-      /* ① 서식 설정 */
+      /* ① 프레젠테이션 타입 선택 */
+      '<div class="prm-card">'+
+      '<div class="prm-card-title">📺 슬라이드 용도 선택 <span class="prm-card-hint">등록할 슬라이드쇼 종류를 선택하세요</span></div>'+
+      '<div class="prm-type-row">'+typeCards+'</div>'+
+      '<div id="prm-type-desc" class="prm-type-desc-box">'+getTypeDesc(_cfg.presType)+'</div>'+
+      /* 공개 URL 생성기 */
+      '<div class="prm-public-url-row">'+
+      '<div class="prm-public-url-label">🔗 외부 입력 공개 URL <span class="prm-card-hint">로그인 없이 슬라이드 추가 가능한 링크</span></div>'+
+      '<div class="prm-public-url-ctrl">'+
+      '<button id="prm-gen-public-url" class="prm-btn prm-btn-ghost prm-btn-sm">🔗 현재 타입 공개 URL 생성</button>'+
+      '<button id="prm-copy-public-url" class="prm-btn prm-btn-ghost prm-btn-sm" hidden>📋 복사</button>'+
+      '</div>'+
+      '<div id="prm-public-url-box" class="prm-public-url-box" hidden></div>'+
+      '</div>'+
+      '</div>'+ /* card 끝 */
+
+      /* ② 서식 설정 */
       '<div class="prm-card">'+
       '<div class="prm-card-title">🎨 서식 설정</div>'+
       '<div class="prm-format-grid">'+
@@ -361,6 +417,46 @@ window.PromoModule = (function () {
      이벤트 바인딩
   ══════════════════════════════════════════════ */
   function bindEvents() {
+    /* 프레젠테이션 타입 선택 */
+    document.querySelectorAll('input[name="prm-pres-type"]').forEach(function(r){
+      r.addEventListener('change', function(){
+        _cfg.presType = r.value; saveCfg();
+        document.querySelectorAll('.prm-type-card').forEach(function(c){ c.classList.remove('prm-type-sel'); });
+        r.closest('.prm-type-card').classList.add('prm-type-sel');
+        var descBox = $p('prm-type-desc'); if(descBox) descBox.innerHTML = getTypeDesc(r.value);
+        /* 공개 URL 박스 숨기기 */
+        var urlBox = $p('prm-public-url-box'), copyBtn = $p('prm-copy-public-url');
+        if(urlBox) urlBox.hidden = true; if(copyBtn) copyBtn.hidden = true;
+      });
+    });
+
+    /* 공개 URL 생성 버튼 */
+    var genPubBtn = $p('prm-gen-public-url');
+    if(genPubBtn) genPubBtn.addEventListener('click', function(){
+      var gasUrl = getGasUrl();
+      if(!gasUrl){ toast('먼저 설정 탭에서 GAS URL을 등록하세요.', 'error'); return; }
+      var url = buildPublicUrl(_cfg.presType);
+      var urlBox = $p('prm-public-url-box'), copyBtn = $p('prm-copy-public-url');
+      if(urlBox){ urlBox.hidden = false; urlBox.innerHTML =
+        '<span class="prm-pub-url-txt">'+escHtml(url)+'</span>'+
+        '<div class="prm-pub-url-hint">위 URL을 직원에게 공유하면 로그인 없이 바로 슬라이드를 추가할 수 있습니다.<br>'+
+        '타입: <strong>'+(_cfg.presType)+'</strong>'+(getAccessToken()?'  /  접근 토큰 포함':'  /  ⚠️ 토큰 미설정 — 누구나 접근 가능')+'</div>';
+      }
+      if(copyBtn){ copyBtn.hidden = false; copyBtn.dataset.url = url; }
+    });
+
+    /* 공개 URL 복사 버튼 */
+    var copyPubBtn = $p('prm-copy-public-url');
+    if(copyPubBtn) copyPubBtn.addEventListener('click', function(){
+      var url = copyPubBtn.dataset.url || '';
+      if(!url) return;
+      navigator.clipboard.writeText(url).then(function(){
+        toast('URL이 클립보드에 복사되었습니다!', 'success');
+      }).catch(function(){
+        window.prompt('아래 URL을 복사하세요:', url);
+      });
+    });
+
     /* 실시간 미리보기 — 텍스트 입력 */
     ['prm-tag','prm-title','prm-body'].forEach(function(id){
       var el=$p(id); if(el) el.addEventListener('input', renderPreview);
@@ -536,6 +632,8 @@ window.PromoModule = (function () {
         title:title, body:body, tag:tag,
         theme:_cfg.theme, bg:getCurrentBg(),
         font:_cfg.font, layout:_cfg.layout,
+        presentationType: _cfg.presType,
+        accessToken: getAccessToken(),
         bgImage: (_cfg.layout==='img-bg'&&_bgImageB64) ? _bgImageB64 : null,
         insertImages: _insImages.map(function(i){ return {b64:i.b64,name:i.name}; }),
       };
@@ -563,6 +661,29 @@ window.PromoModule = (function () {
 
   function showErr(m){ var e=$p('prm-err'); if(e){ e.textContent=m; e.hidden=false; } }
   function hideErr(){ var e=$p('prm-err'); if(e) e.hidden=true; }
+
+  /* ── 타입 설명 ── */
+  function getTypeDesc(typeId) {
+    var TYPE_DETAILS = {
+      'external':     '<strong>🌐 대외형</strong> — 로비·학교 외부 모니터용. 슬라이드가 <em>누적</em>되며 5초마다 자동전환·무한루프합니다. 여러 행사·공지를 동시에 순환 표시할 때 사용하세요.',
+      'event-single': '<strong>🎯 행사단일용</strong> — 특정 행사나 중요 안내를 단독 화면으로 표시. 등록 시 <em>기존 슬라이드를 모두 교체</em>하여 항상 1장만 유지됩니다. 자동전환 없이 정지화면으로 사용합니다.',
+      'internal':     '<strong>📋 내부행사용</strong> — 내부 공지·행사 안내용. 슬라이드가 <em>누적</em>되며 3초마다 빠른전환·무한루프합니다. 강당 등 내부 디스플레이에 적합합니다.',
+      'general':      '<strong>📌 일반용</strong> — 기타 일반 안내용. 슬라이드가 <em>누적</em>되며 8초마다 전환·무한루프합니다. 여유 있게 읽을 수 있어 안내문 표시에 적합합니다.',
+    };
+    return TYPE_DETAILS[typeId] || '';
+  }
+
+  /* ── 공개 URL 생성 ── */
+  function buildPublicUrl(presType) {
+    var gasUrl   = getGasUrl();
+    var token    = getAccessToken();
+    var baseUrl  = window.location.origin + window.location.pathname.replace(/\/[^/]*$/, '') + '/promo-public.html';
+    var params   = new URLSearchParams();
+    if (gasUrl)  params.set('gas', gasUrl);
+    if (presType) params.set('type', presType);
+    if (token)   params.set('token', token);
+    return baseUrl + '?' + params.toString();
+  }
 
   return { init: init };
 })();

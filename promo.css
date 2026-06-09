@@ -223,6 +223,47 @@
 .prm-link { color:var(--prm-accent); text-decoration:none; font-size:12px; }
 .prm-link:hover { text-decoration:underline; }
 
+/* ══════════════════════════════════════════════════════════
+   프레젠테이션 타입 선택 카드
+══════════════════════════════════════════════════════════ */
+.prm-type-row { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:12px; }
+.prm-type-card {
+  cursor:pointer; border:2px solid var(--prm-border); border-radius:10px;
+  padding:12px 14px; display:flex; flex-direction:column; align-items:center;
+  gap:5px; transition:.15s; min-width:90px; flex:1; max-width:150px;
+  text-align:center; user-select:none;
+}
+.prm-type-card:hover { border-color:var(--prm-accent); background:#f0f7ff; }
+.prm-type-sel { border-color:var(--prm-accent) !important; background:#e8f2fc !important; }
+.prm-type-icon  { font-size:22px; }
+.prm-type-label { font-size:13px; font-weight:800; color:var(--prm-text); }
+.prm-type-badge {
+  font-size:10px; font-weight:700; padding:2px 8px; border-radius:20px;
+  margin-top:2px;
+}
+.prm-type-external { background:#e3f2fd; color:#1565C0; }
+.prm-type-event    { background:#fce4ec; color:#880e4f; }
+.prm-type-internal { background:#e8f5e9; color:#2e7d32; }
+.prm-type-general  { background:#fff3e0; color:#e65100; }
+
+/* 타입 설명 박스 */
+.prm-type-desc-box {
+  background:#f8faff; border:1px solid var(--prm-border); border-radius:8px;
+  padding:10px 14px; font-size:12px; color:#444; line-height:1.7;
+  margin-bottom:14px;
+}
+
+/* 공개 URL 영역 */
+.prm-public-url-row { border-top:1px solid var(--prm-border); padding-top:12px; }
+.prm-public-url-label { font-size:13px; font-weight:700; color:var(--prm-accent2); margin-bottom:8px; }
+.prm-public-url-ctrl { display:flex; gap:8px; margin-bottom:8px; flex-wrap:wrap; }
+.prm-public-url-box {
+  background:#1e1e2e; color:#a6e3a1; font-size:11px; font-family:monospace;
+  padding:10px 14px; border-radius:8px; word-break:break-all;
+}
+.prm-pub-url-txt { display:block; margin-bottom:6px; color:#cdd6f4; }
+.prm-pub-url-hint { font-size:11px; color:#888; margin-top:6px; line-height:1.6; font-family:inherit; }
+
 /* ── 반응형 ── */
 @media (max-width: 640px) {
   .prm-wrap { padding:12px 10px 40px; }
@@ -230,4 +271,6 @@
   .prm-ai-row { flex-direction:column; }
   .prm-ai-row .prm-ai-input-wrap { width:100%; }
   .prm-field-badge { min-width:52px; font-size:10px; }
+  .prm-type-card { min-width:70px; padding:10px 8px; }
+  .prm-type-label { font-size:11px; }
 }

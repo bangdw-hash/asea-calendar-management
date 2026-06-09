@@ -4445,6 +4445,18 @@
       });
     }
 
+    /* 홍보슬라이드 접근 토큰 저장 */
+    var _promoTokenBtn = $('save-promo-token-btn');
+    if (_promoTokenBtn) {
+      var _ptInp = $('setting-promo-token');
+      if (_ptInp) _ptInp.value = localStorage.getItem('asea_promo_access_token') || '';
+      _promoTokenBtn.addEventListener('click', function () {
+        var tok = (($('setting-promo-token') || {}).value || '').trim();
+        localStorage.setItem('asea_promo_access_token', tok);
+        toast(tok ? '접근 토큰 저장됨' : '접근 토큰 삭제됨', 'success');
+      });
+    }
+
     $('load-my-calendars-btn').addEventListener('click', async function () {
       await loadAndSyncCalendars();
       renderMyCalendarsList();

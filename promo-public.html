@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>ASEA 홍보슬라이드 등록</title>
+
+  <!--
+    ╔══════════════════════════════════════════════════════════════╗
+    ║  promo-public.html                                           ║
+    ║  로그인 없이 홍보슬라이드를 등록하는 공개 페이지             ║
+    ╚══════════════════════════════════════════════════════════════╝
+
+    [URL 파라미터]
+    ?gas=<GAS_URL>   — Google Apps Script 프록시 URL (필수)
+    ?type=<TYPE>     — 슬라이드 타입 (external/event-single/internal/general)
+    ?token=<TOKEN>   — 접근 토큰 (GAS에 ACCESS_TOKEN 설정 시 필요)
+
+    [공유 방법]
+    1. ASEA 앱 → 홍보슬라이드 탭 → 용도 선택 → "공개 URL 생성" 버튼 클릭
+    2. 생성된 URL을 직원에게 카카오톡/이메일로 전송
+    3. 받은 사람은 로그인 없이 바로 슬라이드 작성·등록 가능
+
+    [주의사항]
+    - ACCESS_TOKEN을 설정하지 않으면 누구나 슬라이드를 등록할 수 있습니다.
+    - GAS 배포 시 "액세스 권한: 모든 사용자"로 설정해야 합니다.
+    - 배경/삽입 이미지는 base64로 전송되어 GAS에서 처리됩니다.
+  -->
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&family=Nanum+Gothic:wght@400;700;800&family=Nanum+Myeongjo:wght@400;700&family=Black+Han+Sans&family=Jua&family=Gugi&family=Do+Hyeon&family=Gowun+Dodum&display=swap" rel="stylesheet">
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --accent:  #003087;
+      --accent2: #0078D4;
+      --bg:      #EDF4FB;
+      --surface: #fff;
+      --border:  #C8D8EF;
+      --text:    #202124;
+      --muted:   #5f6368;
+      --radius:  10px;
+    }
+
+    body {
+      font-family: 'Noto Sans KR', sans-serif;
+      background: var(--bg); color: var(--text);
+      min-height: 100vh; padding: 24px 16px 60px;
+    }
+
+    /* ── 헤더 ── */
+    .pub-header {
+      background: linear-gradient(135deg, #003087, #0078D4);
+      border-radius: 14px; padding: 24px 24px 20px;
+      margin: 0 auto 20px; max-width: 680px; color: #fff;
+    }
+    .pub-logo { font-size: 13px; opacity: .85; margin-bottom: 8px; }
+    .pub-title { font-size: 22px; font-weight: 900; margin-bottom: 4px; }
+    .pub-sub   { font-size: 13px; opacity: .85; }
+
+    /* ── 타입 뱃지 ── */
+    .pub-type-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 700;
+      margin: 14px 0 0;
+    }
+    .type-external     { background: #e3f2fd; color: #1565C0; }
+    .type-event-single { background: #fce4ec; color: #880e4f; }
+    .type-internal     { background: #e8f5e9; color: #2e7d32; }
+    .type-general      { background: #fff3e0; color: #e65100; }
+
+    /* ── 메인 카드 ── */
+    .pub-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 20px;
+      margin: 0 auto 14px; max-width: 680px;
+      box-shadow: 0 1px 4px rgba(0,0,0,.06);
+    }
+    .pub-card-title {
+      font-size: 14px; font-weight: 700; color: var(--accent);
+      margin-bottom: 14px; padding-bottom: 8px; border-bottom: 1px solid var(--border);
+    }
+
+    /* ── 필드 ── */
+    .pub-field { margin-bottom: 12px; }
+    .pub-field-label {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 12px; font-weight: 700; color: var(--muted);
+      margin-bottom: 5px; text-transform: uppercase; letter-spacing: .04em;
+    }
+    .pub-badge {
+      font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 12px;
+    }
+    .badge-tag   { background: #fef3c7; color: #92400e; }
+    .badge-title { background: #ede9fe; color: #4c1d95; }
+    .badge-body  { background: #dcfce7; color: #14532d; }
+    .badge-font  { background: #e0f2fe; color: #0c4a6e; }
+    .badge-bg    { background: #fef2f2; color: #991b1b; }
+
+    input[type=text], textarea, select {
+      width: 100%; padding: 9px 12px;
+      border: 1.5px solid var(--border); border-radius: 8px;
+      font-size: 14px; font-family: inherit; color: var(--text);
+      background: #fff; outline: none; transition: border .15s;
+    }
+    input[type=text]:focus, textarea:focus, select:focus {
+      border-color: var(--accent2);
+    }
+    textarea { resize: vertical; }
+
+    /* ── 폰트 선택 ── */
+    .pub-font-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+    .pub-font-sample {
+      font-size: 14px; padding: 6px 10px;
+      background: #f8faff; border-radius: 6px; border: 1px solid var(--border);
+    }
+
+    /* ── 이미지 드롭 ── */
+    .pub-drop {
+      border: 2px dashed var(--border); border-radius: 8px;
+      padding: 18px; text-align: center; cursor: pointer;
+      transition: .15s; font-size: 13px; color: var(--muted);
+    }
+    .pub-drop:hover, .pub-drop-over { border-color: var(--accent2); background: #f0f7ff; }
+    .pub-img-preview { margin-top: 8px; }
+    .pub-img-preview img { max-height: 60px; max-width: 100%; border-radius: 6px; border: 1px solid var(--border); }
+    .pub-ins-list { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+    .pub-ins-item { display: flex; align-items: center; gap: 6px;
+      background: #f0f7ff; border-radius: 6px; padding: 4px 8px; font-size: 12px; }
+    .pub-ins-item img { height: 32px; border-radius: 4px; }
+    .pub-ins-del { background: none; border: none; color: #c00; cursor: pointer; font-size: 14px; }
+
+    /* ── 미리보기 ── */
+    .pub-preview-slide {
+      position: relative; width: 100%; padding-bottom: 56.25%;
+      border-radius: 8px; overflow: hidden; font-size: 14px;
+      box-shadow: 0 2px 8px rgba(0,0,0,.12); margin-top: 4px;
+    }
+    .pub-preview-inner { position: absolute; inset: 0; }
+    .pub-pv-top-band { position: absolute; left:0;right:0;top:0; height:65%;
+      display:flex; flex-direction:column; justify-content:center; padding: 8% 8% 4%; }
+    .pub-pv-bottom-band { position: absolute; left:0;right:0;bottom:0; height:35%;
+      display:flex; align-items:center; justify-content:center; padding: 4% 8%; }
+    .pub-pv-tag   { font-size: .7em; opacity: .9; margin-bottom: .4em; }
+    .pub-pv-title { font-size: 1.4em; font-weight: 900; line-height: 1.25; }
+    .pub-pv-body  { font-size: .75em; opacity: .9; line-height: 1.5; text-align:center; }
+    .pub-pv-ph    { opacity: .4; }
+    .pub-pv-full  { position: absolute; inset: 0; display: flex; flex-direction: column;
+      justify-content: center; padding: 8%; }
+    .pub-pv-dark-left { position: absolute; inset: 0; display: flex; }
+    .pub-pv-left-strip { width: 12%; display: flex; align-items: center; justify-content: center; }
+    .pub-pv-left-txt { font-size: .55em; font-weight: 900; color: #fff; writing-mode: vertical-rl; }
+    .pub-pv-right { flex: 1; display: flex; flex-direction: column; justify-content: center; padding: 6% 8%; }
+
+    /* ── 버튼 ── */
+    .pub-btn-row { display: flex; gap: 10px; justify-content: flex-end; margin-top: 16px; flex-wrap: wrap; }
+    .pub-btn {
+      padding: 10px 20px; border-radius: 8px; border: none;
+      font-size: 14px; font-weight: 700; cursor: pointer; transition: .15s;
+      font-family: inherit;
+    }
+    .pub-btn-primary { background: #003087; color: #fff; }
+    .pub-btn-primary:hover { background: #0055cc; }
+    .pub-btn-primary:disabled { background: #aaa; cursor: default; }
+    .pub-btn-ghost { background: transparent; border: 1.5px solid #0078D4; color: #0078D4; }
+    .pub-btn-ghost:hover { background: #e8f2fc; }
+
+    /* ── 스피너 ── */
+    .pub-spin {
+      display: inline-block; width: 14px; height: 14px;
+      border: 2px solid rgba(255,255,255,.4); border-top-color: #fff;
+      border-radius: 50%; animation: pub-spin .7s linear infinite;
+      vertical-align: middle; margin-right: 6px;
+    }
+    @keyframes pub-spin { to { transform: rotate(360deg); } }
+
+    /* ── 결과 배너 ── */
+    .pub-result { border-radius: 10px; padding: 14px 18px; margin: 0 auto 14px; max-width: 680px;
+      font-size: 14px; display: none; }
+    .pub-result-ok   { background: #dcfce7; color: #14532d; border: 1px solid #86efac; }
+    .pub-result-err  { background: #fce8e6; color: #b31412; border: 1px solid #fca5a5; }
+    .pub-result a    { color: inherit; font-weight: 700; }
+
+    /* ── 설정 오류 ── */
+    .pub-setup-err {
+      background: #fff3e0; border: 1.5px solid #fb8c00;
+      border-radius: 12px; padding: 20px 24px;
+      margin: 0 auto; max-width: 680px; font-size: 14px; color: #333;
+    }
+    .pub-setup-err h2 { color: #e65100; font-size: 17px; margin-bottom: 10px; }
+    .pub-setup-err ol { padding-left: 20px; line-height: 2.2; }
+    .pub-setup-err code { background: #f5f5f5; padding: 1px 6px; border-radius: 4px; font-size: 12px; }
+
+    /* ── 테마 선택 ── */
+    .pub-theme-row { display: flex; gap: 8px; flex-wrap: wrap; }
+    .pub-theme-label { cursor: pointer; }
+    .pub-theme-chip {
+      display: inline-block; padding: 6px 14px; border-radius: 20px;
+      font-size: 12px; font-weight: 700; border: 2px solid transparent;
+      transition: .15s;
+    }
+    input[type=radio][name=pub-theme]:checked + .pub-theme-chip {
+      border-color: currentColor; box-shadow: 0 0 0 2px var(--accent2);
+    }
+    .pub-color-row { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+    input[type=color] { width: 36px; height: 28px; border: 1px solid var(--border);
+      border-radius: 4px; padding: 2px; cursor: pointer; }
+
+    @media (max-width: 480px) {
+      body { padding: 12px 10px 40px; }
+      .pub-header { padding: 18px 16px; }
+      .pub-title { font-size: 18px; }
+      .pub-type-badge { font-size: 11px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── 헤더 ── -->
+<div class="pub-header">
+  <div class="pub-logo">아세아항공직업전문학교 캘린더 관리 시스템</div>
+  <div class="pub-title">📣 홍보슬라이드 등록</div>
+  <div class="pub-sub">로그인 없이 바로 슬라이드를 작성·등록할 수 있습니다</div>
+  <div id="pub-type-badge-wrap"></div>
+</div>
+
+<!-- ── 결과 배너 ── -->
+<div id="pub-result" class="pub-result"></div>
+
+<!-- ── 설정 오류 ── -->
+<div id="pub-setup-err" class="pub-setup-err" style="display:none">
+  <h2>⚠️ GAS URL이 설정되지 않았습니다</h2>
+  <p style="margin-bottom:12px">이 페이지는 올바른 URL 파라미터가 있어야 작동합니다. 관리자에게 올바른 링크를 요청하세요.</p>
+  <ol>
+    <li>관리자가 ASEA 앱 → 홍보슬라이드 탭에서 <strong>"공개 URL 생성"</strong> 버튼을 클릭</li>
+    <li>생성된 URL을 복사하여 직원에게 전달</li>
+    <li>받은 URL로 이 페이지에 접속</li>
+  </ol>
+  <p style="margin-top:12px;font-size:12px;color:#888">
+    개발자 문의: <a href="tel:02-714-9710" style="color:#003087;font-weight:700">02-714-9710</a>
+  </p>
+</div>
+
+<!-- ── 폼 영역 ── -->
+<div id="pub-form-area">
+
+  <!-- 텍스트 입력 -->
+  <div class="pub-card">
+    <div class="pub-card-title">✍️ 슬라이드 내용 입력</div>
+
+    <div class="pub-field">
+      <div class="pub-field-label"><span class="pub-badge badge-tag">상단 태그</span></div>
+      <input type="text" id="pub-tag" placeholder="#태그1 #태그2  예) #신입생모집 #행사안내" maxlength="60">
+    </div>
+
+    <div class="pub-field">
+      <div class="pub-field-label"><span class="pub-badge badge-title">메인 제목</span></div>
+      <input type="text" id="pub-title" placeholder="20자 이내 핵심 제목  예) 2026년 신입생 모집" maxlength="40">
+    </div>
+
+    <div class="pub-field">
+      <div class="pub-field-label"><span class="pub-badge badge-body">본문 내용</span></div>
+      <textarea id="pub-body" rows="3" placeholder="80자 이내 본문&#10;예) 항공정비·관광·보안 계열&#10;원서접수 6/1~7/31 / 문의 02-714-9710"></textarea>
+    </div>
+  </div>
+
+  <!-- 서식 설정 -->
+  <div class="pub-card">
+    <div class="pub-card-title">🎨 서식 설정</div>
+
+    <!-- 테마 색상 -->
+    <div class="pub-field">
+      <div class="pub-field-label"><span class="pub-badge badge-bg">배경 색상</span></div>
+      <div class="pub-theme-row" id="pub-theme-row"></div>
+      <div class="pub-color-row" id="pub-custom-color-row" style="display:none">
+        <input type="color" id="pub-custom-color" value="#444444">
+        <span style="font-size:12px;color:#666">직접 색상 선택</span>
+      </div>
+    </div>
+
+    <!-- 폰트 -->
+    <div class="pub-field">
+      <div class="pub-field-label"><span class="pub-badge badge-font">서체</span></div>
+      <div class="pub-font-row">
+        <select id="pub-font-sel" style="max-width:260px"></select>
+        <div class="pub-font-sample" id="pub-font-sample">가나다라 ASEA 홍보</div>
+      </div>
+    </div>
+
+    <!-- 레이아웃 -->
+    <div class="pub-field">
+      <div class="pub-field-label" style="margin-bottom:6px">레이아웃</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap" id="pub-layout-row"></div>
+    </div>
+  </div>
+
+  <!-- 이미지 -->
+  <div class="pub-card">
+    <div class="pub-card-title">🖼️ 이미지 (선택)</div>
+
+    <div class="pub-field">
+      <div class="pub-field-label">배경 이미지 <span style="font-size:10px;color:#888;font-weight:400">(이미지 배경 레이아웃에서 사용)</span></div>
+      <div class="pub-drop" id="pub-bg-drop">
+        <input type="file" id="pub-bg-file" accept="image/*" hidden>
+        📷 클릭하거나 이미지를 드래그하세요
+        <div class="pub-img-preview" id="pub-bg-preview"></div>
+      </div>
+      <button id="pub-bg-clear" class="pub-btn pub-btn-ghost" style="margin-top:6px;padding:4px 12px;font-size:12px;display:none">× 배경 이미지 제거</button>
+    </div>
+
+    <div class="pub-field">
+      <div class="pub-field-label">삽입 이미지 <span style="font-size:10px;color:#888;font-weight:400">(여러 장 가능)</span></div>
+      <div class="pub-drop" id="pub-ins-drop">
+        <input type="file" id="pub-ins-file" accept="image/*" multiple hidden>
+        📎 클릭하거나 이미지를 드래그하세요
+      </div>
+      <div class="pub-ins-list" id="pub-ins-list"></div>
+    </div>
+  </div>
+
+  <!-- 미리보기 + 등록 -->
+  <div class="pub-card">
+    <div class="pub-card-title">👁️ 미리보기</div>
+    <div class="pub-preview-slide">
+      <div class="pub-preview-inner" id="pub-preview-box"></div>
+    </div>
+    <div class="pub-btn-row">
+      <button id="pub-reset-btn" class="pub-btn pub-btn-ghost">↺ 초기화</button>
+      <button id="pub-submit-btn" class="pub-btn pub-btn-primary">📺 슬라이드 등록</button>
+    </div>
+  </div>
+
+</div><!-- /#pub-form-area -->
+
+<div style="text-align:center;font-size:12px;color:#aaa;margin-top:20px">
+  아세아항공직업전문학교 · 문의 <a href="tel:02-714-9710" style="color:#003087;font-weight:700">02-714-9710</a>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ── 파라미터 파싱 ── */
+  var params  = new URLSearchParams(window.location.search);
+  var GAS_URL = params.get('gas')   || '';
+  var PRES_TYPE = params.get('type') || 'general';
+  var ACCESS_TOKEN = params.get('token') || '';
+
+  /* ── 타입 메타 ── */
+  var TYPE_META = {
+    'external':     { label:'대외형',     icon:'🌐', badge:'5초 자동전환', cls:'type-external',     desc:'로비·외부 모니터용. 슬라이드 누적, 5초 전환' },
+    'event-single': { label:'행사단일용', icon:'🎯', badge:'단독 교체',     cls:'type-event-single', desc:'특정 행사 전용. 기존 슬라이드 교체 후 정지화면' },
+    'internal':     { label:'내부행사용', icon:'📋', badge:'3초 빠른전환', cls:'type-internal',     desc:'내부 공지용. 슬라이드 누적, 3초 전환' },
+    'general':      { label:'일반용',     icon:'📌', badge:'8초 전환',     cls:'type-general',      desc:'기타 안내용. 슬라이드 누적, 8초 전환' },
+  };
+  var FONTS = [
+    {id:'Noto Sans KR',label:'Noto Sans KR (기본)'},
+    {id:'Nanum Gothic',label:'나눔 고딕'},
+    {id:'Nanum Myeongjo',label:'나눔 명조'},
+    {id:'Black Han Sans',label:'블랙 한산스'},
+    {id:'Jua',label:'주아'},
+    {id:'Gugi',label:'구기'},
+    {id:'Do Hyeon',label:'도현'},
+    {id:'Gowun Dodum',label:'고운 돋음'},
+  ];
+  var THEMES = [
+    {id:'홍보', label:'📢 홍보', bg:'#C8185A'},
+    {id:'안내', label:'📋 안내', bg:'#1565C0'},
+    {id:'행사', label:'🎉 행사', bg:'#2E7D32'},
+    {id:'경고', label:'⚠️ 경고', bg:'#E65100'},
+    {id:'사용자', label:'🎨 직접', bg:'#444444'},
+  ];
+  var LAYOUTS = [
+    {id:'full-top',   label:'상단 배경'},
+    {id:'full-color', label:'전체 색상'},
+    {id:'dark-left',  label:'좌측 강조'},
+    {id:'img-bg',     label:'이미지 배경'},
+  ];
+
+  /* ── 상태 ── */
+  var _theme    = '홍보';
+  var _font     = 'Noto Sans KR';
+  var _layout   = 'full-top';
+  var _customBg = '#C8185A';
+  var _bgB64    = null;
+  var _insImgs  = [];
+
+  /* ── DOM 헬퍼 ── */
+  function $(id) { return document.getElementById(id); }
+  function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  function getBg() {
+    if (_theme === '사용자') return _customBg;
+    var t = THEMES.find(function(x){return x.id===_theme;}); return t?t.bg:'#C8185A';
+  }
+
+  /* ── 초기화 ── */
+  function init() {
+    /* GAS URL 검사 */
+    if (!GAS_URL) {
+      $('pub-setup-err').style.display = 'block';
+      $('pub-form-area').style.display = 'none';
+      return;
+    }
+
+    /* 타입 뱃지 */
+    var tm = TYPE_META[PRES_TYPE] || TYPE_META['general'];
+    $('pub-type-badge-wrap').innerHTML =
+      '<div class="pub-type-badge '+tm.cls+'">'+tm.icon+' '+tm.label+' — '+tm.desc+'</div>';
+
+    /* 테마 라디오 */
+    $('pub-theme-row').innerHTML = THEMES.map(function(t){
+      return '<label class="pub-theme-label" style="--tc:'+t.bg+'">'+
+        '<input type="radio" name="pub-theme" value="'+t.id+'"'+
+          (t.id===_theme?' checked':'')+' hidden>'+
+        '<span class="pub-theme-chip" style="background:'+t.bg+'22;color:'+t.bg+'">'+t.label+'</span>'+
+        '</label>';
+    }).join('');
+
+    /* 폰트 셀렉트 */
+    $('pub-font-sel').innerHTML = FONTS.map(function(f){
+      return '<option value="'+f.id+'"'+(_font===f.id?' selected':'')+'>'+f.label+'</option>';
+    }).join('');
+
+    /* 레이아웃 버튼 */
+    $('pub-layout-row').innerHTML = LAYOUTS.map(function(l){
+      return '<label style="cursor:pointer">'+
+        '<input type="radio" name="pub-layout" value="'+l.id+'"'+
+          (l.id===_layout?' checked':'')+' hidden>'+
+        '<span id="pub-lt-'+l.id+'" style="display:inline-block;padding:6px 14px;border-radius:8px;font-size:12px;font-weight:700;border:2px solid #C8D8EF;transition:.15s;"'+
+          (l.id===_layout?' class="pub-lt-sel"':'')+'>'+l.label+'</span>'+
+        '</label>';
+    }).join('');
+    updateLayoutSel();
+
+    bindEvents();
+    renderPreview();
+  }
+
+  function updateLayoutSel() {
+    LAYOUTS.forEach(function(l){
+      var el = $('pub-lt-'+l.id); if(!el) return;
+      if (l.id === _layout) { el.style.borderColor='#0078D4'; el.style.background='#e8f2fc'; }
+      else { el.style.borderColor='#C8D8EF'; el.style.background=''; }
+    });
+  }
+
+  /* ── 미리보기 ── */
+  function renderPreview() {
+    var box = $('pub-preview-box'); if(!box) return;
+    var tag   = ($('pub-tag')  ||{}).value || '';
+    var title = ($('pub-title')||{}).value || '';
+    var body  = ($('pub-body') ||{}).value || '';
+    var bg = getBg();
+    var font = _font;
+    var tagH   = tag   ? '<div class="pub-pv-tag">'+esc(tag)+'</div>' : '';
+    var titleH = title ? '<div class="pub-pv-title">'+esc(title)+'</div>'
+                       : '<div class="pub-pv-title pub-pv-ph">메인 제목</div>';
+    var bodyH  = body  ? '<div class="pub-pv-body">'+esc(body).replace(/\n/g,'<br>')+'</div>' : '';
+    var ff = "'"+font+"',sans-serif";
+    var html = '';
+
+    if (_layout === 'full-top') {
+      html = '<div style="position:absolute;inset:0;font-family:'+ff+'">'+
+        '<div class="pub-pv-top-band" style="background:'+bg+';color:#fff">'+tagH+titleH+'</div>'+
+        '<div class="pub-pv-bottom-band" style="background:#fff">'+bodyH+'</div></div>';
+    } else if (_layout === 'full-color') {
+      html = '<div class="pub-pv-full" style="background:'+bg+';color:#fff;font-family:'+ff+'">'+tagH+titleH+bodyH+'</div>';
+    } else if (_layout === 'dark-left') {
+      html = '<div class="pub-pv-dark-left" style="background:#fff;font-family:'+ff+'">'+
+        '<div class="pub-pv-left-strip" style="background:'+bg+'">'+
+        '<span class="pub-pv-left-txt">'+esc(tag||'ASEA')+'</span></div>'+
+        '<div class="pub-pv-right">'+titleH+bodyH+'</div></div>';
+    } else if (_layout === 'img-bg') {
+      var bgS = _bgB64 ? 'background-image:url('+_bgB64+');background-size:cover;background-position:center;' : 'background:'+bg+';';
+      html = '<div style="position:absolute;inset:0;'+bgS+'font-family:'+ff+'">'+
+        '<div style="position:absolute;inset:0;background:'+bg+'55;display:flex;flex-direction:column;justify-content:center;padding:8%;color:#fff">'+
+        tagH+titleH+bodyH+'</div></div>';
+    }
+    box.innerHTML = html;
+    /* 폰트 샘플 */
+    var fs = $('pub-font-sample'); if(fs) fs.style.fontFamily = ff;
+  }
+
+  /* ── 이벤트 ── */
+  function bindEvents() {
+    /* 텍스트 입력 → 미리보기 */
+    ['pub-tag','pub-title','pub-body'].forEach(function(id){
+      var el=$p(id); if(el) el.addEventListener('input', renderPreview);
+    });
+    function $p(id){ return document.getElementById(id); }
+
+    /* 테마 */
+    document.querySelectorAll('input[name="pub-theme"]').forEach(function(r){
+      r.addEventListener('change', function(){
+        _theme = r.value;
+        $('pub-custom-color-row').style.display = (_theme==='사용자')?'flex':'none';
+        renderPreview();
+      });
+    });
+    $('pub-custom-color').addEventListener('input', function(){ _customBg=this.value; renderPreview(); });
+
+    /* 폰트 */
+    $('pub-font-sel').addEventListener('change', function(){ _font=this.value; renderPreview(); });
+
+    /* 레이아웃 */
+    document.querySelectorAll('input[name="pub-layout"]').forEach(function(r){
+      r.addEventListener('change', function(){ _layout=r.value; updateLayoutSel(); renderPreview(); });
+    });
+
+    /* 배경 이미지 */
+    var bgDrop=$('pub-bg-drop'), bgFile=$('pub-bg-file');
+    bgDrop.addEventListener('click',function(e){ if(e.target===bgDrop||e.target.className==='pub-img-preview'||!e.target.src) bgFile.click(); });
+    bgDrop.addEventListener('dragover',function(e){e.preventDefault();bgDrop.classList.add('pub-drop-over');});
+    bgDrop.addEventListener('dragleave',function(){bgDrop.classList.remove('pub-drop-over');});
+    bgDrop.addEventListener('drop',function(e){e.preventDefault();bgDrop.classList.remove('pub-drop-over');var f=e.dataTransfer.files[0];if(f&&f.type.startsWith('image/')) loadBgImg(f);});
+    bgFile.addEventListener('change',function(){if(bgFile.files[0]) loadBgImg(bgFile.files[0]); bgFile.value='';});
+    $('pub-bg-clear').addEventListener('click',function(){
+      _bgB64=null; $('pub-bg-clear').style.display='none';
+      $('pub-bg-preview').innerHTML=''; renderPreview();
+    });
+
+    /* 삽입 이미지 */
+    var insDrop=$('pub-ins-drop'), insFile=$('pub-ins-file');
+    insDrop.addEventListener('click',function(){ insFile.click(); });
+    insDrop.addEventListener('dragover',function(e){e.preventDefault();insDrop.classList.add('pub-drop-over');});
+    insDrop.addEventListener('dragleave',function(){insDrop.classList.remove('pub-drop-over');});
+    insDrop.addEventListener('drop',function(e){e.preventDefault();insDrop.classList.remove('pub-drop-over');Array.from(e.dataTransfer.files).forEach(function(f){if(f.type.startsWith('image/'))loadInsImg(f);});});
+    insFile.addEventListener('change',function(){Array.from(insFile.files).forEach(function(f){loadInsImg(f);}); insFile.value='';});
+
+    /* 초기화 */
+    $('pub-reset-btn').addEventListener('click',function(){
+      _bgB64=null; _insImgs=[];
+      ['pub-tag','pub-title','pub-body'].forEach(function(id){var e=document.getElementById(id);if(e)e.value='';});
+      $('pub-bg-clear').style.display='none'; $('pub-bg-preview').innerHTML='';
+      renderInsList(); renderPreview();
+      $('pub-result').style.display='none';
+    });
+
+    /* 등록 */
+    $('pub-submit-btn').addEventListener('click', onSubmit);
+  }
+
+  function loadBgImg(file) {
+    var r=new FileReader();
+    r.onload=function(e){
+      _bgB64=e.target.result;
+      $('pub-bg-preview').innerHTML='<img src="'+_bgB64+'" alt="배경">';
+      $('pub-bg-clear').style.display='';
+      /* 자동으로 이미지 배경 레이아웃 전환 */
+      _layout='img-bg'; updateLayoutSel();
+      var lr=document.querySelector('input[name="pub-layout"][value="img-bg"]');
+      if(lr) lr.checked=true;
+      renderPreview();
+    };
+    r.readAsDataURL(file);
+  }
+  function loadInsImg(file) {
+    var r=new FileReader();
+    r.onload=function(e){ _insImgs.push({b64:e.target.result,name:file.name}); renderInsList(); renderPreview(); };
+    r.readAsDataURL(file);
+  }
+  function renderInsList() {
+    var el=$('pub-ins-list'); if(!el) return;
+    el.innerHTML=_insImgs.map(function(img,i){
+      return '<div class="pub-ins-item"><img src="'+img.b64+'" alt="">'+
+        '<span style="font-size:11px">'+esc(img.name)+'</span>'+
+        '<button class="pub-ins-del" data-i="'+i+'">×</button></div>';
+    }).join('');
+    el.querySelectorAll('.pub-ins-del').forEach(function(btn){
+      btn.addEventListener('click',function(){
+        _insImgs.splice(parseInt(btn.dataset.i),1); renderInsList(); renderPreview();
+      });
+    });
+  }
+
+  /* ── 등록 ── */
+  async function onSubmit() {
+    var title = ($('pub-title')||{}).value||'';
+    var body  = ($('pub-body') ||{}).value||'';
+    var tag   = ($('pub-tag')  ||{}).value||'';
+    if(!title&&!body){ alert('제목 또는 본문을 입력하세요.'); return; }
+
+    var btn = $('pub-submit-btn');
+    btn.disabled=true; btn.innerHTML='<span class="pub-spin"></span>등록 중...';
+    $('pub-result').style.display='none';
+
+    var payload = {
+      title: title, body: body, tag: tag,
+      presentationType: PRES_TYPE,
+      accessToken: ACCESS_TOKEN,
+      bg: getBg(), font: _font, layout: _layout,
+      bgImage: (_layout==='img-bg'&&_bgB64) ? _bgB64 : null,
+      insertImages: _insImgs.map(function(i){return{b64:i.b64,name:i.name};}),
+    };
+
+    try {
+      var resp = await fetch(GAS_URL, {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify(payload),
+      });
+      var result = await resp.json();
+      if(!resp.ok||result.error) throw new Error(result.error||'서버 오류 '+resp.status);
+
+      var resEl = $('pub-result');
+      resEl.className = 'pub-result pub-result-ok';
+      resEl.innerHTML = '✅ 슬라이드가 성공적으로 등록되었습니다!'+
+        (result.presentationUrl ? '  <a href="'+result.presentationUrl+'" target="_blank">슬라이드 확인 →</a>' : '');
+      resEl.style.display='block';
+
+      /* 입력 초기화 */
+      ['pub-tag','pub-title','pub-body'].forEach(function(id){var e=document.getElementById(id);if(e)e.value='';});
+      _bgB64=null; _insImgs=[];
+      $('pub-bg-clear').style.display='none'; $('pub-bg-preview').innerHTML='';
+      renderInsList(); renderPreview();
+
+    } catch(err) {
+      var resEl = $('pub-result');
+      resEl.className = 'pub-result pub-result-err';
+      resEl.innerHTML = '❌ 등록 실패: '+esc(err.message);
+      resEl.style.display='block';
+    } finally {
+      btn.disabled=false; btn.innerHTML='📺 슬라이드 등록';
+      window.scrollTo({top:0,behavior:'smooth'});
+    }
+  }
+
+  /* 실행 */
+  init();
+})();
+</script>
+</body>
+</html>

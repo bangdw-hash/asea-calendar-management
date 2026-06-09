@@ -1,235 +1,268 @@
 /**
- * gas_slides_proxy.gs  v2
- * Google Apps Script — 홍보슬라이드 프록시 (폰트·레이아웃·이미지 지원)
+ * ╔══════════════════════════════════════════════════════════════╗
+ * ║  gas_slides_proxy.gs  v3                                     ║
+ * ║  ASEA 홍보슬라이드 — Google Apps Script 프록시               ║
+ * ╚══════════════════════════════════════════════════════════════╝
  *
- * [배포 방법]
- * 1. https://script.google.com → 새 프로젝트
- * 2. 이 코드 전체 붙여넣기
- * 3. PRESENTATION_ID 상수를 실제 Google Slides ID로 수정
- * 4. 배포 → 새 배포 → 웹 앱
- *    - 다음 사용자로 실행: 나 (본인 계정)
- *    - 액세스 권한: 모든 사용자
- * 5. 배포 URL을 ASEA 앱 설정탭 → 홍보슬라이드 설정에 입력
+ * ────────────────────────────────────────────────────────────────
+ * [최초 1회 설정 — GAS 스크립트 속성 등록]
+ *
+ * GAS 편집기 → 왼쪽 ⚙️ 프로젝트 설정 → 스크립트 속성 → 속성 추가
+ *
+ * 속성 이름                  설명
+ * ─────────────────────────────────────────────────────────────────
+ * PRES_EXTERNAL             대외형 Slides 프레젠테이션 ID
+ * PRES_EVENT_SINGLE         행사단일용 Slides 프레젠테이션 ID
+ * PRES_INTERNAL             내부행사용 Slides 프레젠테이션 ID
+ * PRES_GENERAL              일반용 Slides 프레젠테이션 ID
+ * ACCESS_TOKEN              (선택) 공개 URL 접근 토큰 — 설정 시 요청에 포함 필요
+ *
+ * ※ 프레젠테이션 ID = Google Slides URL 중간의 긴 문자열
+ *   https://docs.google.com/presentation/d/ [여기] /edit
+ *
+ * [4가지 프레젠테이션 타입 및 키오스크 특성]
+ * ─────────────────────────────────────────────────────────────────
+ * 대외형 (external)         로비·외부 모니터용. 슬라이드 누적, 5초 자동전환
+ * 행사단일용 (event-single) 특정 행사 단독화면. 항상 1장만 유지(기존 교체)
+ * 내부행사용 (internal)     내부 공지용. 슬라이드 누적, 3초 빠른전환
+ * 일반용 (general)          일반 안내용. 슬라이드 누적, 8초 전환
+ *
+ * [웹 앱 배포 방법]
+ * ─────────────────────────────────────────────────────────────────
+ * 배포 → 새 배포 → 웹 앱
+ *   - 다음 사용자로 실행: 나 (본인 계정)
+ *   - 액세스 권한: 모든 사용자
+ * → 발급된 URL을 ASEA 앱 설정 탭 → 홍보슬라이드 설정에 입력
  */
 
-// ── 필수 설정 ──────────────────────────────────────────────────────
-var PRESENTATION_ID = '여기에_Google_Slides_프레젠테이션_ID_입력';
+// ── 스크립트 속성에서 프레젠테이션 ID 로드 ──────────────────────
+function getPresIds() {
+  var p = PropertiesService.getScriptProperties();
+  return {
+    'external':     p.getProperty('PRES_EXTERNAL')     || '',
+    'event-single': p.getProperty('PRES_EVENT_SINGLE') || '',
+    'internal':     p.getProperty('PRES_INTERNAL')     || '',
+    'general':      p.getProperty('PRES_GENERAL')      || '',
+  };
+}
 
-// ── CORS 헤더 ─────────────────────────────────────────────────────
+function getAccessToken() {
+  return PropertiesService.getScriptProperties().getProperty('ACCESS_TOKEN') || '';
+}
+
+// ── CORS ─────────────────────────────────────────────────────────
 function setCors(output) {
   return output
     .setHeader('Access-Control-Allow-Origin',  '*')
     .setHeader('Access-Control-Allow-Methods', 'POST, GET, OPTIONS')
-    .setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    .setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Access-Token');
 }
-
-function doOptions() {
-  return setCors(ContentService.createTextOutput(''));
-}
-
-function doGet() {
+function jsonOut(obj) {
   return setCors(ContentService
-    .createTextOutput(JSON.stringify({ status:'ok', version:'2.0', message:'ASEA 홍보슬라이드 GAS v2 동작 중' }))
+    .createTextOutput(JSON.stringify(obj))
     .setMimeType(ContentService.MimeType.JSON));
 }
+function doOptions() { return setCors(ContentService.createTextOutput('')); }
 
-// ── POST 진입점 ───────────────────────────────────────────────────
+// ── GET — 상태 확인 + 설정 정보 반환 ────────────────────────────
+function doGet(e) {
+  var ids = getPresIds();
+  var status = {};
+  var TYPES = ['external','event-single','internal','general'];
+  TYPES.forEach(function(t) {
+    status[t] = { configured: !!ids[t], id: ids[t] ? ids[t].slice(0,8)+'...' : '미설정' };
+  });
+  return jsonOut({ version: '3.0', status: status, accessTokenRequired: !!getAccessToken() });
+}
+
+// ── POST — 슬라이드 추가 ─────────────────────────────────────────
 function doPost(e) {
   try {
     var body = JSON.parse(e.postData.contents);
 
-    var title        = body.title        || '';
-    var bodyText     = body.body         || '';
-    var tag          = body.tag          || '';
-    var bg           = body.bg           || '#C8185A';
-    var fontFamily   = body.font         || 'Noto Sans KR';
-    var layout       = body.layout       || 'full-top';
-    var bgImageB64   = body.bgImage      || null;   // base64 data URL
-    var insertImages = body.insertImages || [];      // [{b64, name}]
+    // 접근 토큰 검증 (ACCESS_TOKEN 속성이 설정된 경우)
+    var requiredToken = getAccessToken();
+    if (requiredToken && body.accessToken !== requiredToken) {
+      return jsonOut({ error: '접근 권한이 없습니다. 올바른 접근 토큰을 확인하세요.' });
+    }
 
-    var result = appendSlide(title, bodyText, tag, bg, fontFamily, layout, bgImageB64, insertImages);
+    var presType = body.presentationType || 'general';
+    var ids      = getPresIds();
+    var presId   = ids[presType];
 
-    return setCors(ContentService
-      .createTextOutput(JSON.stringify(result))
-      .setMimeType(ContentService.MimeType.JSON));
+    if (!presId) {
+      return jsonOut({
+        error: '[' + presType + '] 프레젠테이션 ID가 설정되지 않았습니다.\n' +
+               'GAS 스크립트 속성에 PRES_' + presType.toUpperCase().replace('-','_') + ' 를 등록하세요.'
+      });
+    }
+
+    var result = appendSlide(
+      presId, presType,
+      body.title || '', body.body || '', body.tag || '',
+      body.bg || '#C8185A', body.font || 'Noto Sans KR',
+      body.layout || 'full-top',
+      body.bgImage || null,
+      body.insertImages || []
+    );
+
+    // 키오스크 URL 함께 반환
+    var cfg = TYPE_CONFIG[presType] || TYPE_CONFIG['general'];
+    result.kioskUrl = buildKioskUrl(presId, cfg);
+    result.presentationUrl = 'https://docs.google.com/presentation/d/' + presId + '/edit';
+
+    return jsonOut(result);
 
   } catch(err) {
-    return setCors(ContentService
-      .createTextOutput(JSON.stringify({ error: err.message + '\n' + err.stack }))
-      .setMimeType(ContentService.MimeType.JSON));
+    return jsonOut({ error: err.message + '\n' + (err.stack||'') });
   }
 }
 
-// ── 슬라이드 추가 메인 함수 ────────────────────────────────────────
-function appendSlide(title, bodyText, tag, bg, fontFamily, layout, bgImageB64, insertImages) {
-  var pres   = SlidesApp.openById(PRESENTATION_ID);
-  var idx    = pres.getSlides().length;
-  var slide  = pres.insertSlide(idx, SlidesApp.PredefinedLayout.BLANK);
+// ── 타입별 설정 ───────────────────────────────────────────────────
+var TYPE_CONFIG = {
+  'external':     { slideMode:'append',  delayms: 5000,      loop: true  },
+  'event-single': { slideMode:'replace', delayms: 9999999,   loop: false },
+  'internal':     { slideMode:'append',  delayms: 3000,      loop: true  },
+  'general':      { slideMode:'append',  delayms: 8000,      loop: true  },
+};
 
+function buildKioskUrl(presId, cfg) {
+  return 'https://docs.google.com/presentation/d/' + presId +
+    '/pub?start=' + cfg.loop + '&loop=' + cfg.loop + '&delayms=' + cfg.delayms;
+}
+
+// ── 슬라이드 추가 메인 ────────────────────────────────────────────
+function appendSlide(presId, presType, title, bodyText, tag, bg, fontFamily, layout, bgImageB64, insertImages) {
+  var pres = SlidesApp.openById(presId);
+  var cfg  = TYPE_CONFIG[presType] || TYPE_CONFIG['general'];
+
+  // 행사단일용: 기존 슬라이드 모두 삭제 후 새로 추가
+  if (cfg.slideMode === 'replace') {
+    var existing = pres.getSlides();
+    // 슬라이드가 1개 이상일 때만 삭제 (최소 1장은 남겨야 함)
+    for (var d = existing.length - 1; d >= 0; d--) {
+      if (existing.length - d > 1 || d === 0) {
+        try { existing[d].remove(); } catch(e) { /* 마지막 슬라이드 삭제 불가 — 무시 */ }
+      }
+    }
+    // 남은 슬라이드 초기화 (비워서 재사용)
+    pres = SlidesApp.openById(presId); // 재로드
+  }
+
+  var slideIdx = pres.getSlides().length;
+  var slide    = pres.insertSlide(slideIdx, SlidesApp.PredefinedLayout.BLANK);
   var W = pres.getPageWidth();
   var H = pres.getPageHeight();
 
-  // ── 배경 처리 ────────────────────────────────────────────────────
+  // ── 배경 ────────────────────────────────────────────────────
   if (layout === 'img-bg' && bgImageB64) {
-    // base64 data URL → Blob → 배경 이미지 삽입
     try {
-      var blob = dataUrlToBlob(bgImageB64, 'background.jpg');
-      var bgImg = slide.insertImage(blob, 0, 0, W, H);
+      var bgBlob = dataUrlToBlob(bgImageB64, 'bg.jpg');
+      var bgImg  = slide.insertImage(bgBlob, 0, 0, W, H);
       bgImg.sendToBack();
-      // 반투명 오버레이
-      var overlay = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, 0, 0, W, H);
-      overlay.getFill().setSolidFill(bg);
-      overlay.getFill().getSolidFill().getColor();
-      // 투명도 설정 (Google Apps Script에서 직접 alpha 설정은 지원 안 함 — 별도 처리)
-      overlay.getBorder().setTransparent();
-      // 오버레이를 조금 투명하게 (GAS 한계: 완전한 투명도 API 없음)
-      overlay.sendToBack();
-      bgImg.sendToBack();
-    } catch(imgErr) {
-      Logger.log('배경 이미지 오류: ' + imgErr.message);
+      var ov = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, 0, 0, W, H);
+      ov.getFill().setSolidFill(bg);
+      ov.getBorder().setTransparent();
+      ov.sendToBack(); bgImg.sendToBack();
+    } catch(e) {
       slide.getBackground().setSolidFill(bg);
     }
   } else if (layout === 'dark-left') {
-    // 흰 배경 + 왼쪽 색상 띠
     slide.getBackground().setSolidFill('#FFFFFF');
-    var leftBand = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, 0, 0, W * 0.12, H);
-    leftBand.getFill().setSolidFill(bg);
-    leftBand.getBorder().setTransparent();
+    var lb = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, 0, 0, W * 0.12, H);
+    lb.getFill().setSolidFill(bg); lb.getBorder().setTransparent();
   } else if (layout === 'full-top') {
-    // 흰 배경 + 상단 색상 밴드
     slide.getBackground().setSolidFill('#FFFFFF');
-    var topBand = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, 0, 0, W, H * 0.65);
-    topBand.getFill().setSolidFill(bg);
-    topBand.getBorder().setTransparent();
+    var tb = slide.insertShape(SlidesApp.ShapeType.RECTANGLE, 0, 0, W, H * 0.65);
+    tb.getFill().setSolidFill(bg); tb.getBorder().setTransparent();
   } else {
-    // full-color
     slide.getBackground().setSolidFill(bg);
   }
 
-  // ── 텍스트 배치 (레이아웃별 위치 계산) ───────────────────────────
-  var positions = calcPositions(layout, W, H);
+  // ── 텍스트 ────────────────────────────────────────────────────
+  var pos = calcPositions(layout, W, H);
+  if (tag)      placeText(slide, tag,      fontFamily, pos.tag,   true);
+  if (title)    placeText(slide, title,    fontFamily, pos.title, true);
+  if (bodyText) placeText(slide, bodyText, fontFamily, pos.body,  false);
 
-  // 태그 (상단 작은 텍스트)
-  if (tag) {
-    var tagBox = slide.insertTextBox(tag,
-      positions.tag.x, positions.tag.y, positions.tag.w, positions.tag.h);
-    styleBox(tagBox, fontFamily, positions.tag.size,
-      positions.tag.color, true, positions.tag.align);
-  }
-
-  // 제목
-  if (title) {
-    var titleBox = slide.insertTextBox(title,
-      positions.title.x, positions.title.y, positions.title.w, positions.title.h);
-    styleBox(titleBox, fontFamily, positions.title.size,
-      positions.title.color, true, positions.title.align);
-  }
-
-  // 본문
-  if (bodyText) {
-    var bodyBox = slide.insertTextBox(bodyText,
-      positions.body.x, positions.body.y, positions.body.w, positions.body.h);
-    styleBox(bodyBox, fontFamily, positions.body.size,
-      positions.body.color, false, positions.body.align);
-  }
-
-  // ── 삽입 이미지 처리 ─────────────────────────────────────────────
-  for (var i = 0; i < insertImages.length; i++) {
+  // ── 삽입 이미지 ───────────────────────────────────────────────
+  for (var i = 0; i < Math.min(insertImages.length, 4); i++) {
     try {
-      var imgData = insertImages[i];
-      if (!imgData.b64) continue;
-      var imgBlob = dataUrlToBlob(imgData.b64, imgData.name || 'image_' + i + '.jpg');
-      // 이미지 배치: 슬라이드 오른쪽 하단 영역에 자동 배치
-      var imgW = W * 0.35;
-      var imgH = H * 0.35;
-      var imgX = W - imgW - W * 0.04 - (i * (imgW + 10));
-      var imgY = H * 0.6;
-      if (imgX < 0) imgX = W * 0.04;
-      slide.insertImage(imgBlob, imgX, imgY, imgW, imgH);
-    } catch(e) {
-      Logger.log('삽입 이미지 오류 ' + i + ': ' + e.message);
-    }
+      var imgBlob = dataUrlToBlob(insertImages[i].b64, insertImages[i].name || 'img'+i+'.jpg');
+      var iW = W * 0.35, iH = H * 0.35;
+      var iX = W * 0.58 - i * (iW * 0.5);
+      var iY = H * 0.60;
+      if (iX < W*0.04) iX = W*0.04;
+      slide.insertImage(imgBlob, iX, iY, iW, iH);
+    } catch(e) { Logger.log('삽입이미지 오류: '+e.message); }
   }
 
+  return { success: true, slideIndex: slideIdx, type: presType };
+}
+
+// ── 텍스트 배치 ───────────────────────────────────────────────────
+function placeText(slide, text, font, p, bold) {
+  var box = slide.insertTextBox(text, p.x, p.y, p.w, p.h);
+  box.getBorder().setTransparent();
+  box.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
+  var s = box.getText().getTextStyle();
+  s.setFontSize(p.size);
+  s.setBold(bold);
+  s.setForegroundColor(p.color);
+  try { s.setFontFamily(font); } catch(e) { s.setFontFamily('Noto Sans KR'); }
+  var ps = box.getText().getParagraphStyle();
+  ps.setParagraphAlignment(p.align === 'CENTER'
+    ? SlidesApp.ParagraphAlignment.CENTER
+    : p.align === 'RIGHT'
+      ? SlidesApp.ParagraphAlignment.END
+      : SlidesApp.ParagraphAlignment.START);
+  ps.setLineSpacing(130);
+}
+
+function calcPositions(layout, W, H) {
+  var WHITE='#FFFFFF', DARK='#1A1A2E';
+  if (layout==='full-top')
+    return {
+      tag:  {x:W*.06,y:H*.06,w:W*.88,h:H*.10,size:16,color:WHITE,align:'LEFT'},
+      title:{x:W*.06,y:H*.17,w:W*.88,h:H*.38,size:38,color:WHITE,align:'CENTER'},
+      body: {x:W*.08,y:H*.68,w:W*.84,h:H*.26,size:20,color:DARK, align:'CENTER'},
+    };
+  if (layout==='full-color')
+    return {
+      tag:  {x:W*.06,y:H*.07,w:W*.88,h:H*.10,size:16,color:WHITE,align:'LEFT'},
+      title:{x:W*.06,y:H*.22,w:W*.88,h:H*.35,size:38,color:WHITE,align:'CENTER'},
+      body: {x:W*.06,y:H*.62,w:W*.88,h:H*.26,size:20,color:WHITE,align:'CENTER'},
+    };
+  if (layout==='dark-left')
+    return {
+      tag:  {x:W*.16,y:H*.08,w:W*.80,h:H*.10,size:14,color:DARK, align:'LEFT'},
+      title:{x:W*.16,y:H*.22,w:W*.80,h:H*.40,size:34,color:DARK, align:'LEFT'},
+      body: {x:W*.16,y:H*.64,w:W*.80,h:H*.28,size:18,color:DARK, align:'LEFT'},
+    };
+  // img-bg / default
   return {
-    success: true,
-    slideIndex: idx,
-    presentationUrl: 'https://docs.google.com/presentation/d/' + PRESENTATION_ID + '/edit',
+    tag:  {x:W*.06,y:H*.07,w:W*.88,h:H*.10,size:16,color:WHITE,align:'LEFT'},
+    title:{x:W*.06,y:H*.22,w:W*.88,h:H*.35,size:38,color:WHITE,align:'CENTER'},
+    body: {x:W*.06,y:H*.62,w:W*.88,h:H*.26,size:20,color:WHITE,align:'CENTER'},
   };
 }
 
-// ── 레이아웃별 텍스트 위치 계산 ──────────────────────────────────
-function calcPositions(layout, W, H) {
-  var WHITE  = '#FFFFFF';
-  var DARK   = '#1A1A2E';
-
-  if (layout === 'full-top') {
-    return {
-      tag:   { x:W*0.06, y:H*0.06, w:W*0.88, h:H*0.10, size:16, color:WHITE, align:'LEFT' },
-      title: { x:W*0.06, y:H*0.17, w:W*0.88, h:H*0.38, size:38, color:WHITE, align:'CENTER' },
-      body:  { x:W*0.08, y:H*0.68, w:W*0.84, h:H*0.26, size:20, color:DARK,  align:'CENTER' },
-    };
-  } else if (layout === 'full-color') {
-    return {
-      tag:   { x:W*0.06, y:H*0.07, w:W*0.88, h:H*0.10, size:16, color:WHITE, align:'LEFT' },
-      title: { x:W*0.06, y:H*0.22, w:W*0.88, h:H*0.35, size:38, color:WHITE, align:'CENTER' },
-      body:  { x:W*0.06, y:H*0.62, w:W*0.88, h:H*0.26, size:20, color:WHITE, align:'CENTER' },
-    };
-  } else if (layout === 'dark-left') {
-    return {
-      tag:   { x:W*0.16, y:H*0.08, w:W*0.80, h:H*0.10, size:14, color:DARK,  align:'LEFT' },
-      title: { x:W*0.16, y:H*0.22, w:W*0.80, h:H*0.40, size:34, color:DARK,  align:'LEFT' },
-      body:  { x:W*0.16, y:H*0.64, w:W*0.80, h:H*0.28, size:18, color:DARK,  align:'LEFT' },
-    };
-  } else {
-    // img-bg
-    return {
-      tag:   { x:W*0.06, y:H*0.07, w:W*0.88, h:H*0.10, size:16, color:WHITE, align:'LEFT' },
-      title: { x:W*0.06, y:H*0.22, w:W*0.88, h:H*0.35, size:38, color:WHITE, align:'CENTER' },
-      body:  { x:W*0.06, y:H*0.62, w:W*0.88, h:H*0.26, size:20, color:WHITE, align:'CENTER' },
-    };
-  }
-}
-
-// ── 텍스트박스 스타일 적용 ────────────────────────────────────────
-function styleBox(textBox, fontFamily, fontSize, colorHex, bold, align) {
-  textBox.getBorder().setTransparent();
-  textBox.setContentAlignment(SlidesApp.ContentAlignment.MIDDLE);
-
-  var range = textBox.getText();
-  var style = range.getTextStyle();
-
-  style.setFontSize(fontSize);
-  style.setBold(bold);
-  style.setForegroundColor(colorHex);
-
-  // 폰트 패밀리 설정 (Google Fonts 이름 그대로 사용)
-  try { style.setFontFamily(fontFamily); } catch(e) { style.setFontFamily('Noto Sans KR'); }
-
-  // 단락 정렬
-  var paraStyle = range.getParagraphStyle();
-  if (align === 'CENTER') {
-    paraStyle.setParagraphAlignment(SlidesApp.ParagraphAlignment.CENTER);
-  } else if (align === 'RIGHT') {
-    paraStyle.setParagraphAlignment(SlidesApp.ParagraphAlignment.END);
-  } else {
-    paraStyle.setParagraphAlignment(SlidesApp.ParagraphAlignment.START);
-  }
-
-  // 줄간격
-  paraStyle.setLineSpacing(130);
-}
-
-// ── base64 data URL → Blob 변환 ──────────────────────────────────
 function dataUrlToBlob(dataUrl, filename) {
-  // data:image/jpeg;base64,xxxx 형식 처리
-  var parts   = dataUrl.split(',');
-  var meta    = parts[0];                        // "data:image/jpeg;base64"
-  var b64data = parts[1];
+  var parts = dataUrl.split(',');
+  var mime  = (parts[0].match(/data:([^;]+)/) || ['','image/jpeg'])[1];
+  return Utilities.newBlob(Utilities.base64Decode(parts[1]), mime, filename);
+}
 
-  var mimeMatch = meta.match(/data:([^;]+)/);
-  var mimeType  = mimeMatch ? mimeMatch[1] : 'image/jpeg';
-
-  var decoded = Utilities.base64Decode(b64data, Utilities.Charset.UTF_8);
-  return Utilities.newBlob(decoded, mimeType, filename);
+// ── 초기 설정 확인용 함수 (GAS 편집기에서 직접 실행 가능) ────────
+function checkSetup() {
+  var ids = getPresIds();
+  var log = '=== ASEA 홍보슬라이드 GAS 설정 확인 ===\n';
+  ['external','event-single','internal','general'].forEach(function(t){
+    log += t + ': ' + (ids[t] ? '✅ ' + ids[t] : '❌ 미설정');
+    if (!ids[t]) log += '  ← GAS 스크립트 속성에 PRES_' + t.toUpperCase().replace('-','_') + ' 등록 필요';
+    log += '\n';
+  });
+  log += 'ACCESS_TOKEN: ' + (getAccessToken() ? '설정됨' : '없음 (누구나 접근 가능)');
+  Logger.log(log);
+  return log;
 }
