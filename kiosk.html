@@ -11,17 +11,20 @@
     ╚══════════════════════════════════════════════════════════════╝
 
     [URL 파라미터]
-    ?gas=<GAS_URL>   — GAS 프록시 URL (필수)
-    ?type=<TYPE>     — 슬라이드 타입 (external/event-single/internal/general)
+    ?gas=<GAS_URL>     — GAS 프록시 URL (필수)
+    ?type=<TYPE>       — 슬라이드 타입 (external/event-single/internal/general)
+    ?presid=<PRES_ID>  — Google Slides 프레젠테이션 ID (필수)
+
+    [자동 감지 동작]
+    - 30초마다 GAS에 폴링 → 새 슬라이드 등록 감지
+    - 감지 시 60초 카운트다운 자동 시작 → iframe 새로고침
+    - 수동 불러오기 버튼도 동시 제공
 
     [원격 PC 설정 방법]
     1. ASEA 앱 → 홍보슬라이드 탭 → 해당 타입 선택 → 키오스크 URL 복사
     2. 원격 PC에서 Chrome 키오스크 모드로 실행:
        chrome.exe --kiosk "붙여넣은URL" --noerrdialogs --disable-infobars
-
-    [불러오기 버튼 동작]
-    - 클릭 → 60초 카운트다운 → iframe 새로고침 → 종료
-    - 새 슬라이드 등록 후 1회만 누르면 됨
+       (bat 파일로 저장해두면 PC 켤 때 자동 실행)
   -->
 
   <style>
@@ -44,7 +47,7 @@
       background: #000;
     }
 
-    /* ── 컨트롤 오버레이 ── */
+    /* ── 컨트롤 오버레이 (우하단) ── */
     #ctrl {
       position: fixed;
       bottom: 20px;
@@ -56,14 +59,63 @@
       gap: 8px;
     }
 
+    /* 상태 표시 */
+    #status-box {
+      background: rgba(0,0,0,0.65);
+      color: #aaa;
+      border-radius: 8px;
+      padding: 5px 12px;
+      font-size: 11px;
+      backdrop-filter: blur(4px);
+      text-align: right;
+    }
+    #status-dot {
+      display: inline-block;
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: #4caf50;
+      margin-right: 5px;
+      vertical-align: middle;
+    }
+    #status-dot.polling { background: #4caf50; }
+    #status-dot.detected { background: #ff9800; animation: blink .5s infinite; }
+    #status-dot.error { background: #f44336; }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.2} }
+
+    /* 카운트다운 */
+    #countdown-box {
+      background: rgba(0,0,0,0.80);
+      color: #fff;
+      border-radius: 10px;
+      padding: 10px 18px;
+      font-size: 12px;
+      backdrop-filter: blur(6px);
+      text-align: center;
+      display: none;
+      min-width: 190px;
+      border: 1px solid rgba(255,152,0,0.5);
+    }
+    #countdown-label {
+      font-size: 11px; color: #ff9800; font-weight: 700;
+      margin-bottom: 4px; display: block;
+    }
+    #countdown-num {
+      font-size: 36px;
+      font-weight: 900;
+      color: #4fc3f7;
+      display: block;
+      line-height: 1.1;
+    }
+    #countdown-sub { font-size: 11px; color: #aaa; }
+
     /* 불러오기 버튼 */
     #load-btn {
-      padding: 10px 20px;
+      padding: 9px 18px;
       background: rgba(0, 48, 135, 0.85);
       color: #fff;
-      border: 2px solid rgba(255,255,255,0.3);
+      border: 1.5px solid rgba(255,255,255,0.25);
       border-radius: 10px;
-      font-size: 14px;
+      font-size: 13px;
       font-weight: 700;
       cursor: pointer;
       backdrop-filter: blur(6px);
@@ -71,36 +123,32 @@
       font-family: inherit;
       white-space: nowrap;
     }
-    #load-btn:hover { background: rgba(0, 85, 204, 0.9); }
-    #load-btn:disabled { background: rgba(80,80,80,0.7); cursor: default; }
-
-    /* 카운트다운 표시 */
-    #countdown-box {
-      background: rgba(0,0,0,0.75);
-      color: #fff;
-      border-radius: 10px;
-      padding: 8px 16px;
-      font-size: 13px;
-      backdrop-filter: blur(6px);
-      text-align: center;
-      display: none;
-      min-width: 180px;
-    }
-    #countdown-num {
-      font-size: 28px;
-      font-weight: 900;
-      color: #4fc3f7;
-      display: block;
-      line-height: 1.2;
-    }
+    #load-btn:hover  { background: rgba(0, 85, 204, 0.9); }
+    #load-btn:disabled { background: rgba(60,60,60,0.7); cursor: default; color: #888; }
 
     /* 완료 플래시 */
     #done-flash {
       position: fixed;
       inset: 0;
-      background: rgba(0, 120, 212, 0.18);
+      background: rgba(0, 180, 100, 0.15);
       z-index: 200;
       display: none;
+      pointer-events: none;
+    }
+
+    /* 타입 뱃지 (우상단) */
+    #type-badge {
+      position: fixed;
+      top: 14px;
+      right: 16px;
+      z-index: 100;
+      background: rgba(0,0,0,0.55);
+      color: #fff;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 12px;
+      border-radius: 20px;
+      backdrop-filter: blur(4px);
       pointer-events: none;
     }
 
@@ -119,47 +167,35 @@
       padding: 40px;
     }
     #setup-err h1 { font-size: 22px; color: #ff9800; }
-    #setup-err p  { font-size: 14px; color: #aaa; line-height: 1.8; }
+    #setup-err p  { font-size: 14px; color: #aaa; line-height: 1.9; }
     #setup-err code { background: #333; padding: 2px 8px; border-radius: 4px; font-size: 12px; }
-
-    /* 타입 뱃지 (우상단) */
-    #type-badge {
-      position: fixed;
-      top: 14px;
-      right: 16px;
-      z-index: 100;
-      background: rgba(0,0,0,0.55);
-      color: #fff;
-      font-size: 11px;
-      font-weight: 700;
-      padding: 4px 12px;
-      border-radius: 20px;
-      backdrop-filter: blur(4px);
-      pointer-events: none;
-    }
   </style>
 </head>
 <body>
 
-<!-- 슬라이드 표시 영역 -->
 <iframe id="slide-frame" allowfullscreen></iframe>
-
-<!-- 타입 뱃지 -->
 <div id="type-badge"></div>
 
-<!-- 컨트롤 -->
 <div id="ctrl">
-  <div id="countdown-box">
-    <span id="countdown-num">60</span>
-    <span style="font-size:11px;color:#aaa">초 후 새로고침</span>
+  <!-- 자동감지 상태 -->
+  <div id="status-box">
+    <span id="status-dot" class="polling"></span>
+    <span id="status-txt">새 슬라이드 감지 중...</span>
   </div>
-  <button id="load-btn">🔄 새 슬라이드 불러오기</button>
+
+  <!-- 카운트다운 -->
+  <div id="countdown-box">
+    <span id="countdown-label">🔔 새 슬라이드 감지됨</span>
+    <span id="countdown-num">60</span>
+    <span id="countdown-sub">초 후 화면 갱신</span>
+  </div>
+
+  <!-- 수동 버튼 -->
+  <button id="load-btn">🔄 지금 바로 불러오기</button>
 </div>
 
-<!-- 완료 플래시 -->
 <div id="done-flash"></div>
 
-<!-- 설정 오류 -->
 <div id="setup-err">
   <h1>⚠️ 설정 오류</h1>
   <p id="setup-err-msg"></p>
@@ -169,9 +205,13 @@
 (function () {
   'use strict';
 
-  var params   = new URLSearchParams(window.location.search);
-  var GAS_URL  = params.get('gas')  || '';
-  var PRES_TYPE = params.get('type') || 'general';
+  var params    = new URLSearchParams(window.location.search);
+  var GAS_URL   = params.get('gas')    || '';
+  var PRES_TYPE = params.get('type')   || 'general';
+  var PRES_ID   = params.get('presid') || '';
+
+  /* 폴링 간격: 30초 */
+  var POLL_INTERVAL = 30 * 1000;
 
   var TYPE_META = {
     'external':     { label:'대외형',     delayms:5000,    loop:true  },
@@ -180,104 +220,126 @@
     'general':      { label:'일반용',     delayms:8000,    loop:true  },
   };
 
-  var frame       = document.getElementById('slide-frame');
-  var loadBtn     = document.getElementById('load-btn');
-  var cntBox      = document.getElementById('countdown-box');
-  var cntNum      = document.getElementById('countdown-num');
-  var doneFlash   = document.getElementById('done-flash');
-  var typeBadge   = document.getElementById('type-badge');
-  var setupErr    = document.getElementById('setup-err');
-  var setupErrMsg = document.getElementById('setup-err-msg');
+  var frame        = document.getElementById('slide-frame');
+  var loadBtn      = document.getElementById('load-btn');
+  var cntBox       = document.getElementById('countdown-box');
+  var cntNum       = document.getElementById('countdown-num');
+  var cntLabel     = document.getElementById('countdown-label');
+  var doneFlash    = document.getElementById('done-flash');
+  var typeBadge    = document.getElementById('type-badge');
+  var statusDot    = document.getElementById('status-dot');
+  var statusTxt    = document.getElementById('status-txt');
+  var setupErr     = document.getElementById('setup-err');
+  var setupErrMsg  = document.getElementById('setup-err-msg');
 
-  var _timer     = null;
-  var _counting  = false;
-  var _presId    = '';
+  var _countTimer  = null;
+  var _pollTimer   = null;
+  var _counting    = false;
+  var _lastUpdated = '0';   // 마지막으로 확인한 타임스탬프
 
-  /* ── 설정 오류 표시 ── */
+  /* ── 오류 표시 ── */
   function showErr(msg) {
     setupErr.style.display = 'flex';
     setupErrMsg.innerHTML  = msg;
   }
 
-  /* ── Presentation ID → 게시 URL ── */
-  function buildSlidesUrl(presId) {
+  /* ── 상태 표시 업데이트 ── */
+  function setStatus(cls, msg) {
+    statusDot.className = cls;
+    statusTxt.textContent = msg;
+  }
+
+  /* ── Slides 게시 URL ── */
+  function buildSlidesUrl() {
     var tm = TYPE_META[PRES_TYPE] || TYPE_META['general'];
-    return 'https://docs.google.com/presentation/d/' + presId +
+    return 'https://docs.google.com/presentation/d/' + PRES_ID +
       '/pub?start=' + tm.loop + '&loop=' + tm.loop + '&delayms=' + tm.delayms;
   }
 
-  /* ── GAS에서 Presentation ID 조회 ── */
-  async function fetchPresId() {
-    try {
-      var resp = await fetch(GAS_URL);
-      var data = await resp.json();
-      var st   = data.status && data.status[PRES_TYPE];
-      if (!st || !st.configured) {
-        showErr('GAS 스크립트 속성에 <code>PRES_' +
-          PRES_TYPE.toUpperCase().replace('-','_') +
-          '</code> 가 등록되지 않았습니다.<br>GAS 설정을 확인하세요.');
-        return '';
-      }
-      /* ID 앞 8자만 반환되므로 — URL 파라미터 presid로 직접 받기 */
-      return params.get('presid') || '';
-    } catch(e) {
-      return '';
-    }
-  }
-
-  /* ── iframe 로드 ── */
-  function loadSlide(presId) {
-    if (!presId) return;
-    var url = buildSlidesUrl(presId);
-    /* src 재할당으로 강제 새로고침 */
+  /* ── iframe 새로고침 ── */
+  function reloadSlide() {
     frame.src = '';
-    setTimeout(function () { frame.src = url; }, 100);
+    setTimeout(function () { frame.src = buildSlidesUrl(); }, 150);
   }
 
   /* ── 완료 플래시 ── */
   function flashDone() {
     doneFlash.style.display = 'block';
-    setTimeout(function () { doneFlash.style.display = 'none'; }, 600);
+    setTimeout(function () { doneFlash.style.display = 'none'; }, 800);
   }
 
   /* ── 카운트다운 시작 ── */
-  function startCountdown() {
+  function startCountdown(label) {
     if (_counting) return;
     _counting = true;
     loadBtn.disabled = true;
+    cntLabel.textContent = label || '🔔 새 슬라이드 감지됨';
     cntBox.style.display = 'block';
 
     var sec = 60;
     cntNum.textContent = sec;
 
-    _timer = setInterval(function () {
+    _countTimer = setInterval(function () {
       sec--;
       cntNum.textContent = sec;
       if (sec <= 0) {
-        clearInterval(_timer);
-        _timer    = null;
-        _counting = false;
-        cntBox.style.display = 'none';
-        loadBtn.disabled = false;
-
-        /* 슬라이드 새로고침 */
-        loadSlide(_presId);
+        clearInterval(_countTimer);
+        _countTimer = null;
+        _counting   = false;
+        cntBox.style.display  = 'none';
+        loadBtn.disabled      = false;
+        reloadSlide();
         flashDone();
+        setStatus('polling', '새 슬라이드 감지 중...');
       }
     }, 1000);
+  }
+
+  /* ── GAS 폴링 ── */
+  async function poll() {
+    if (!GAS_URL) return;
+    try {
+      var resp = await fetch(GAS_URL + '?_t=' + Date.now()); // 캐시 방지
+      var data = await resp.json();
+      var st   = data.status && data.status[PRES_TYPE];
+      if (!st) return;
+
+      var ts = st.lastUpdated || '0';
+
+      /* 최초 폴링: 현재 타임스탬프를 기준으로 저장만 */
+      if (_lastUpdated === '0') {
+        _lastUpdated = ts;
+        setStatus('polling', '감지 대기 중 (30초마다 확인)');
+        return;
+      }
+
+      /* 타임스탬프 변경 감지 → 자동 카운트다운 */
+      if (ts !== '0' && ts !== _lastUpdated) {
+        _lastUpdated = ts;
+        setStatus('detected', '새 슬라이드 감지! 갱신 준비 중...');
+        startCountdown('🔔 새 슬라이드 자동 감지됨');
+      } else {
+        setStatus('polling', '감지 대기 중 (30초마다 확인)');
+      }
+    } catch(e) {
+      setStatus('error', '연결 오류 — 재시도 중...');
+    }
+  }
+
+  /* ── 폴링 시작 ── */
+  function startPolling() {
+    poll(); // 즉시 1회
+    _pollTimer = setInterval(poll, POLL_INTERVAL);
   }
 
   /* ── 초기화 ── */
   function init() {
     if (!GAS_URL) {
-      showErr('URL 파라미터에 <code>gas=</code> 값이 없습니다.<br>ASEA 앱 → 홍보슬라이드 탭에서 키오스크 URL을 다시 복사하세요.');
+      showErr('URL에 <code>gas=</code> 파라미터가 없습니다.<br>ASEA 앱 → 홍보슬라이드 탭에서 키오스크 URL을 복사하세요.');
       return;
     }
-
-    /* presid 파라미터로 직접 ID 받음 */
-    _presId = params.get('presid') || '';
-    if (!_presId) {
-      showErr('URL 파라미터에 <code>presid=</code> 값이 없습니다.<br>ASEA 앱 → 홍보슬라이드 탭에서 키오스크 URL을 다시 복사하세요.');
+    if (!PRES_ID) {
+      showErr('URL에 <code>presid=</code> 파라미터가 없습니다.<br>ASEA 앱 → 홍보슬라이드 탭에서 키오스크 URL을 다시 복사하세요.');
       return;
     }
 
@@ -285,11 +347,16 @@
     var tm = TYPE_META[PRES_TYPE] || TYPE_META['general'];
     typeBadge.textContent = tm.label;
 
-    /* 최초 로드 */
-    loadSlide(_presId);
+    /* 최초 슬라이드 로드 */
+    reloadSlide();
 
-    /* 버튼 이벤트 */
-    loadBtn.addEventListener('click', startCountdown);
+    /* 수동 버튼 */
+    loadBtn.addEventListener('click', function () {
+      startCountdown('🖱️ 수동 불러오기');
+    });
+
+    /* 자동 감지 폴링 시작 */
+    startPolling();
   }
 
   init();

@@ -66,11 +66,17 @@ function doOptions() { return setCors(ContentService.createTextOutput('')); }
 
 // ── GET — 상태 확인 + 설정 정보 반환 ────────────────────────────
 function doGet(e) {
-  var ids = getPresIds();
+  var ids   = getPresIds();
+  var props = PropertiesService.getScriptProperties();
   var status = {};
   var TYPES = ['external','event-single','internal','general'];
   TYPES.forEach(function(t) {
-    status[t] = { configured: !!ids[t], id: ids[t] ? ids[t].slice(0,8)+'...' : '미설정' };
+    var key = 'LAST_UPDATED_' + t.toUpperCase().replace('-','_');
+    status[t] = {
+      configured:  !!ids[t],
+      id:          ids[t] ? ids[t].slice(0,8)+'...' : '미설정',
+      lastUpdated: props.getProperty(key) || '0',  // kiosk 폴링용 타임스탬프
+    };
   });
   return jsonOut({ version: '3.0', status: status, accessTokenRequired: !!getAccessToken() });
 }
@@ -106,10 +112,15 @@ function doPost(e) {
       body.insertImages || []
     );
 
+    // 마지막 업데이트 타임스탬프 저장 (kiosk 폴링용)
+    var ts = new Date().getTime().toString();
+    PropertiesService.getScriptProperties().setProperty('LAST_UPDATED_' + presType.toUpperCase().replace('-','_'), ts);
+
     // 키오스크 URL 함께 반환
     var cfg = TYPE_CONFIG[presType] || TYPE_CONFIG['general'];
     result.kioskUrl = buildKioskUrl(presId, cfg);
     result.presentationUrl = 'https://docs.google.com/presentation/d/' + presId + '/edit';
+    result.lastUpdated = ts;
 
     return jsonOut(result);
 
