@@ -5437,3 +5437,103 @@ body.is-dragging-event .day-events { pointer-events: none !important; }
   outline-offset: -3px;
   transition: background 0.1s;
 }
+
+/* ── Quill 확장 에디터 스타일 ───────────────────────── */
+
+/* 자간/행간 picker 레이블 */
+.ql-snow .ql-picker.ql-letterSpacing .ql-picker-label::before { content: '자간'; }
+.ql-snow .ql-picker.ql-lineHeight    .ql-picker-label::before { content: '행간'; }
+.ql-snow .ql-picker.ql-letterSpacing,
+.ql-snow .ql-picker.ql-lineHeight    { width: 60px; }
+
+/* 자간 CSS 클래스 */
+.ql-editor .ql-ls-tight  { letter-spacing: -0.05em; }
+.ql-editor .ql-ls-normal { letter-spacing: 0em; }
+.ql-editor .ql-ls-wide   { letter-spacing: 0.05em; }
+.ql-editor .ql-ls-wider  { letter-spacing: 0.1em; }
+.ql-editor .ql-ls-widest { letter-spacing: 0.2em; }
+
+/* 행간 CSS 클래스 */
+.ql-editor .ql-lh-1   { line-height: 1 !important; }
+.ql-editor .ql-lh-1-2 { line-height: 1.2 !important; }
+.ql-editor .ql-lh-1-5 { line-height: 1.5 !important; }
+.ql-editor .ql-lh-1-8 { line-height: 1.8 !important; }
+.ql-editor .ql-lh-2   { line-height: 2 !important; }
+.ql-editor .ql-lh-2-5 { line-height: 2.5 !important; }
+
+/* letter-spacing (에디터 외부 적용용) */
+.ql-ls-tight  { letter-spacing: -0.05em; }
+.ql-ls-normal { letter-spacing: 0; }
+.ql-ls-wide   { letter-spacing: 0.05em; }
+.ql-ls-wider  { letter-spacing: 0.1em; }
+.ql-ls-widest { letter-spacing: 0.2em; }
+
+/* line-height (에디터 외부 적용용) */
+.ql-lh-1   { line-height: 1 !important; }
+.ql-lh-1-2 { line-height: 1.2 !important; }
+.ql-lh-1-5 { line-height: 1.5 !important; }
+.ql-lh-1-8 { line-height: 1.8 !important; }
+.ql-lh-2   { line-height: 2 !important; }
+.ql-lh-2-5 { line-height: 2.5 !important; }
+
+/* 표 드래그 핸들 */
+.ql-table-drag-handle {
+  position: absolute;
+  display: none;
+  align-items: center;
+  gap: 4px;
+  background: #1a73e8;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 4px;
+  cursor: grab;
+  z-index: 200;
+  user-select: none;
+  box-shadow: 0 2px 8px rgba(26,115,232,0.4);
+  transition: background 0.15s;
+  pointer-events: all;
+}
+.ql-table-drag-handle:hover { background: #1557b0; }
+.ql-table-drag-handle.dragging { cursor: grabbing; background: #c62828; }
+
+/* 드롭 위치 마커 */
+.ql-drop-marker {
+  position: absolute;
+  display: none;
+  height: 3px;
+  background: #1a73e8;
+  border-radius: 2px;
+  pointer-events: none;
+  z-index: 199;
+}
+.ql-drop-marker::before {
+  content: '';
+  position: absolute;
+  left: -4px; top: -4px;
+  width: 10px; height: 10px;
+  background: #1a73e8;
+  border-radius: 50%;
+}
+
+/* 이동 중인 표 스타일 */
+.ql-editor table.ql-table-moving {
+  opacity: 0.5;
+  outline: 2px dashed #1a73e8;
+}
+
+/* 에디터 내 표 기본 스타일 */
+.ql-editor table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 8px 0;
+}
+.ql-editor table td,
+.ql-editor table th {
+  border: 1px solid #ccc;
+  padding: 6px 10px;
+  min-width: 60px;
+}
+.ql-editor table th { background: #f5f5f5; font-weight: 700; }
+.ql-editor table tr:hover td { background: #f9f9ff; }

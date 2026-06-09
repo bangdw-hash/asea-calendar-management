@@ -690,24 +690,189 @@
     editorEl.id = 'bw-quill-editor';
     wrap.appendChild(editorEl);
 
+    // letter-spacing 커스텀 포맷 등록
+    try {
+      var Parchment = Quill.import('parchment');
+      var LetterSpacingClass = new Parchment.ClassAttributor('letterSpacing', 'ql-ls', {
+        scope: Parchment.Scope.INLINE,
+        whitelist: ['tight', 'normal', 'wide', 'wider', 'widest']
+      });
+      Quill.register(LetterSpacingClass, true);
+    } catch(e) {}
+
+    // line-height 커스텀 포맷 등록
+    try {
+      var Parchment2 = Quill.import('parchment');
+      var LineHeightClass = new Parchment2.ClassAttributor('lineHeight', 'ql-lh', {
+        scope: Parchment2.Scope.BLOCK,
+        whitelist: ['1', '1.2', '1.5', '1.8', '2', '2.5']
+      });
+      Quill.register(LineHeightClass, true);
+    } catch(e) {}
+
     try {
       S.quill = new Quill('#bw-quill-editor', {
         theme: 'snow',
         modules: {
-          toolbar: [
-            [{ font: [] }, { size: [] }],
-            ['bold', 'italic', 'underline', 'strike'],
-            [{ color: [] }, { background: [] }],
-            [{ align: [] }],
-            [{ list: 'ordered' }, { list: 'bullet' }],
-            [{ indent: '-1' }, { indent: '+1' }],
-            ['blockquote', 'link'],
-            ['clean']
-          ]
+          toolbar: {
+            container: [
+              [{ 'font': [] }, { 'size': ['small', false, 'large', 'huge'] }],
+              ['bold', 'italic', 'underline', 'strike'],
+              [{ 'color': [] }, { 'background': [] }],
+              [{ 'align': [] }],
+              [{ 'list': 'ordered' }, { 'list': 'bullet' }, { 'list': 'check' }],
+              [{ 'indent': '-1' }, { 'indent': '+1' }],
+              ['blockquote', 'code-block'],
+              [{ 'letterSpacing': ['tight', 'normal', 'wide', 'wider', 'widest'] }],
+              [{ 'lineHeight': ['1', '1.2', '1.5', '1.8', '2', '2.5'] }],
+              ['link', 'image'],
+              ['clean']
+            ],
+            handlers: {
+              'image': function() {
+                var input = document.createElement('input');
+                input.setAttribute('type', 'file');
+                input.setAttribute('accept', 'image/*');
+                input.click();
+                input.onchange = function() {
+                  var file = input.files[0];
+                  if (!file) return;
+                  var reader = new FileReader();
+                  reader.onload = function(e) {
+                    var range = S.quill.getSelection(true);
+                    S.quill.insertEmbed(range.index, 'image', e.target.result);
+                  };
+                  reader.readAsDataURL(file);
+                };
+              }
+            }
+          }
         }
       });
       if (content) S.quill.clipboard.dangerouslyPasteHTML(content);
+      _initTableDrag(editorEl, S.quill);
+
+      // 커스텀 picker 레이블 처리
+      setTimeout(function() {
+        var lsPicker = wrap.querySelector('.ql-letterSpacing .ql-picker-label');
+        if (lsPicker) lsPicker.dataset.label = '자간';
+        var lhPicker = wrap.querySelector('.ql-lineHeight .ql-picker-label');
+        if (lhPicker) lhPicker.dataset.label = '행간';
+
+        var lsItems = wrap.querySelectorAll('.ql-letterSpacing .ql-picker-item');
+        var lsLabels = ['좁게(-5%)', '기본', '넓게(+5%)', '더넓게(+10%)', '최넓게(+20%)'];
+        lsItems.forEach(function(item, i) { if (lsLabels[i]) item.textContent = lsLabels[i]; });
+
+        var lhItems = wrap.querySelectorAll('.ql-lineHeight .ql-picker-item');
+        var lhLabels = ['1.0', '1.2', '1.5', '1.8', '2.0', '2.5'];
+        lhItems.forEach(function(item, i) { if (lhLabels[i]) item.textContent = lhLabels[i]; });
+      }, 100);
     } catch(e) { S.quill = null; }
+  }
+
+  function _initTableDrag(editorEl, quillInst) {
+    if (!editorEl || !quillInst) return;
+
+    var _dragTable  = null;
+    var _dragHandle = null;
+    var _dropMarker = null;
+    var _isDragging = false;
+
+    // 드래그 핸들 요소 (에디터 컨테이너 기준 절대 위치)
+    _dragHandle = document.createElement('div');
+    _dragHandle.className = 'ql-table-drag-handle';
+    _dragHandle.innerHTML = '⠿ 표 이동';
+    _dragHandle.title = '드래그하여 표 위치 이동';
+    editorEl.parentElement.style.position = 'relative';
+    editorEl.parentElement.appendChild(_dragHandle);
+
+    // 드롭 위치 표시 마커
+    _dropMarker = document.createElement('div');
+    _dropMarker.className = 'ql-drop-marker';
+    editorEl.parentElement.appendChild(_dropMarker);
+
+    // 표 위에 마우스 올리면 핸들 표시
+    editorEl.addEventListener('mouseover', function(e) {
+      if (_isDragging) return;
+      var tbl = e.target.closest('table');
+      if (tbl && editorEl.contains(tbl)) {
+        _dragTable = tbl;
+        var edRect = editorEl.getBoundingClientRect();
+        var tblRect = tbl.getBoundingClientRect();
+        var relTop  = tblRect.top  - edRect.top  + editorEl.parentElement.offsetTop;
+        var relLeft = tblRect.left - edRect.left + editorEl.parentElement.offsetLeft;
+        _dragHandle.style.top  = (relTop - 4)  + 'px';
+        _dragHandle.style.left = (relLeft + 4) + 'px';
+        _dragHandle.style.display = 'flex';
+      }
+    });
+
+    editorEl.addEventListener('mouseleave', function() {
+      if (!_isDragging) { _dragHandle.style.display = 'none'; _dragTable = null; }
+    });
+    _dragHandle.addEventListener('mouseleave', function() {
+      if (!_isDragging) { _dragHandle.style.display = 'none'; _dragTable = null; }
+    });
+
+    // 드래그 시작
+    _dragHandle.addEventListener('mousedown', function(e) {
+      if (!_dragTable) return;
+      _isDragging = true;
+      _dragHandle.classList.add('dragging');
+      _dragTable.classList.add('ql-table-moving');
+      _dropMarker.style.display = 'block';
+      e.preventDefault();
+
+      function onMouseMove(ev) {
+        var qlRoot = quillInst.root;
+        var children = Array.from(qlRoot.childNodes);
+        var closest = null, closestDist = Infinity;
+
+        children.forEach(function(child) {
+          if (child === _dragTable || !child.getBoundingClientRect) return;
+          var r = child.getBoundingClientRect();
+          var midY = r.top + r.height / 2;
+          var dist = Math.abs(ev.clientY - midY);
+          if (dist < closestDist) { closestDist = dist; closest = { node: child, midY: midY, isAfter: ev.clientY > midY }; }
+        });
+
+        if (closest) {
+          var pRect  = editorEl.parentElement.getBoundingClientRect();
+          var cRect  = closest.node.getBoundingClientRect();
+          var markerY = (closest.isAfter ? cRect.bottom : cRect.top) - pRect.top;
+          _dropMarker.style.top  = markerY + 'px';
+          _dropMarker.style.left = (cRect.left - pRect.left) + 'px';
+          _dropMarker.style.width = cRect.width + 'px';
+          _dropMarker._closest = closest;
+        }
+      }
+
+      function onMouseUp() {
+        document.removeEventListener('mousemove', onMouseMove);
+        document.removeEventListener('mouseup', onMouseUp);
+        _isDragging = false;
+        _dragHandle.classList.remove('dragging');
+        if (_dragTable) _dragTable.classList.remove('ql-table-moving');
+        _dropMarker.style.display = 'none';
+        _dragHandle.style.display = 'none';
+
+        // 표를 새 위치에 삽입
+        if (_dropMarker._closest && _dragTable) {
+          var ref = _dropMarker._closest;
+          var qlRoot = quillInst.root;
+          if (ref.isAfter) {
+            qlRoot.insertBefore(_dragTable, ref.node.nextSibling);
+          } else {
+            qlRoot.insertBefore(_dragTable, ref.node);
+          }
+          quillInst.update('user');
+        }
+        _dropMarker._closest = null;
+      }
+
+      document.addEventListener('mousemove', onMouseMove);
+      document.addEventListener('mouseup', onMouseUp);
+    });
   }
 
   function _getWriteContent() {
