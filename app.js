@@ -747,6 +747,10 @@
       openEventModal(null, new Date());
     });
 
+    $('print-cal-btn').addEventListener('click', function () {
+      printCalendar();
+    });
+
     // ── 년/월 직접 이동 팝업 ─────────────────────────────────────
     initCalJumpPopup();
 
@@ -1456,6 +1460,190 @@
 
     // UI 상태 갱신
     refreshRecurVisibility();
+  }
+
+  /* ────────────────────────────────────────────────────────────────
+     달력 인쇄 / PDF 저장
+  ──────────────────────────────────────────────────────────────── */
+  function printCalendar() {
+    var d      = S.viewDate;
+    var year   = d.getFullYear();
+    var month  = d.getMonth();
+    var today  = new Date();
+    var events = S.events || [];
+
+    // ── 이번 달 6주 그리드 생성 ────────────────────────────────
+    var first = new Date(year, month, 1);
+    var start = new Date(first);
+    start.setDate(start.getDate() - start.getDay());
+
+    var evMap = {};
+    events.forEach(function (ev) {
+      var dt  = new Date(ev.start.dateTime || ev.start.date);
+      var key = dt.getFullYear() + '-' + (dt.getMonth() + 1) + '-' + dt.getDate();
+      (evMap[key] || (evMap[key] = [])).push(ev);
+    });
+
+    var DAY_NAMES = ['일', '월', '화', '수', '목', '금', '토'];
+    var MONTH_KO  = year + '년 ' + (month + 1) + '월';
+
+    // ── 캘린더 범례 데이터 ──────────────────────────────────────
+    var cals = CONFIG.selectedCalendars.filter(function (c) { return c.enabled !== false; });
+
+    // ── 색상 팔레트 (부서별) ───────────────────────────────────
+    var DEPT_COLORS = {
+      '기획처': { bg: '#e8f0fe', text: '#1a5fbf', border: '#4285F4' },
+      '교학처': { bg: '#e6f4ea', text: '#1e7e34', border: '#34A853' },
+      '행정처': { bg: '#fef7e0', text: '#856404', border: '#FBBC04' },
+      '기타':   { bg: '#fce8e6', text: '#b3261e', border: '#EA4335' },
+    };
+
+    function getDeptColors(description, calColor) {
+      if (calColor) return { bg: calColor + '22', text: calColor, border: calColor };
+      if (!description) return DEPT_COLORS['기타'];
+      var m = /\[부서:([^\]]+)\]/.exec(description);
+      var deptName = m ? m[1] : '기타';
+      return DEPT_COLORS[deptName] || DEPT_COLORS['기타'];
+    }
+
+    // ── 셀 HTML 빌더 ──────────────────────────────────────────
+    function buildCell(cellDate) {
+      var isOther   = cellDate.getMonth() !== month;
+      var isToday   = cellDate.getFullYear() === today.getFullYear() &&
+                      cellDate.getMonth()    === today.getMonth()    &&
+                      cellDate.getDate()     === today.getDate();
+      var isSun     = cellDate.getDay() === 0;
+      var isSat     = cellDate.getDay() === 6;
+      var key       = cellDate.getFullYear() + '-' + (cellDate.getMonth() + 1) + '-' + cellDate.getDate();
+      var dayEvts   = evMap[key] || [];
+
+      var numColor  = isOther ? '#bbb' : isSun ? '#e53935' : isSat ? '#1565C0' : '#1a1a2e';
+      var cellBg    = isOther ? '#f8f9fa' : '#fff';
+      var numBadge  = isToday
+        ? 'background:#1A73E8;color:#fff;border-radius:50%;width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;'
+        : 'font-size:13px;font-weight:' + (isOther ? '400' : '700') + ';color:' + numColor + ';';
+
+      var chipsHtml = dayEvts.map(function (ev) {
+        var c   = getDeptColors(ev.description, ev._calColor);
+        var txt = (ev.summary || '(제목 없음)').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        var time = '';
+        if (ev.start.dateTime) {
+          var st = new Date(ev.start.dateTime);
+          time = '<span style="opacity:.7;margin-right:3px;font-size:9px;">' +
+            pad(st.getHours()) + ':' + pad(st.getMinutes()) + '</span>';
+        }
+        return '<div style="' +
+          'background:' + c.bg + ';' +
+          'color:' + c.text + ';' +
+          'border-left:3px solid ' + c.border + ';' +
+          'border-radius:3px;padding:2px 5px;margin-bottom:2px;' +
+          'font-size:10px;line-height:1.4;font-weight:600;' +
+          'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;' +
+          '">' + time + txt + '</div>';
+      }).join('');
+
+      return '<td style="background:' + cellBg + ';vertical-align:top;padding:6px 5px 4px;' +
+        'border:1px solid #e0e4ef;width:14.28%;">' +
+        '<div style="' + numBadge + 'margin-bottom:4px;">' + cellDate.getDate() + '</div>' +
+        (chipsHtml ? '<div>' + chipsHtml + '</div>' : '') +
+        '</td>';
+    }
+
+    // ── 6주 테이블 행 빌더 ─────────────────────────────────────
+    var rows = '';
+    for (var w = 0; w < 6; w++) {
+      rows += '<tr>';
+      for (var wd = 0; wd < 7; wd++) {
+        var cellDate = new Date(start.getFullYear(), start.getMonth(), start.getDate() + w * 7 + wd);
+        rows += buildCell(cellDate);
+      }
+      rows += '</tr>';
+    }
+
+    // ── 요일 헤더 ──────────────────────────────────────────────
+    var headerCols = DAY_NAMES.map(function (n, i) {
+      var col  = i === 0 ? '#e53935' : i === 6 ? '#1565C0' : '#3c4152';
+      var bg   = i === 0 ? '#fff5f5' : i === 6 ? '#f0f4ff' : '#f4f6fb';
+      return '<th style="background:' + bg + ';color:' + col + ';font-weight:700;' +
+        'font-size:12px;padding:8px 0;text-align:center;border:1px solid #e0e4ef;">' + n + '</th>';
+    }).join('');
+
+    // ── 범례 HTML ──────────────────────────────────────────────
+    var legendHtml = cals.length ? cals.map(function (c) {
+      return '<span style="display:inline-flex;align-items:center;gap:5px;margin-right:14px;">' +
+        '<span style="width:10px;height:10px;border-radius:50%;background:' + c.color + ';flex-shrink:0;"></span>' +
+        '<span style="font-size:10px;color:#555;">' + c.name + '</span>' +
+        '</span>';
+    }).join('') : '';
+
+    // ── 전체 HTML ─────────────────────────────────────────────
+    var html = '<!DOCTYPE html><html lang="ko"><head>' +
+      '<meta charset="UTF-8">' +
+      '<title>ASEA 캘린더 — ' + MONTH_KO + '</title>' +
+      '<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600;700;900&display=swap" rel="stylesheet">' +
+      '<style>' +
+      '  * { box-sizing:border-box; margin:0; padding:0; }' +
+      '  body { font-family:"Noto Sans KR",sans-serif; background:#fff; -webkit-print-color-adjust:exact; print-color-adjust:exact; }' +
+      '  .print-wrap { width:100%; padding:20px 24px 16px; }' +
+      '  .print-header { display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:16px; }' +
+      '  .print-title { font-size:28px; font-weight:900; color:#1a1a2e; letter-spacing:-.03em; }' +
+      '  .print-sub { font-size:11px; color:#888; text-align:right; line-height:1.7; }' +
+      '  .legend-row { margin-bottom:10px; display:flex; flex-wrap:wrap; align-items:center; gap:2px; }' +
+      '  table { width:100%; border-collapse:collapse; table-layout:fixed; }' +
+      '  td { word-break:break-all; }' +
+      '  @page { size:A4 landscape; margin:12mm 10mm; }' +
+      '  @media print {' +
+      '    body { -webkit-print-color-adjust:exact; print-color-adjust:exact; }' +
+      '    .no-print { display:none !important; }' +
+      '    table { page-break-inside:avoid; }' +
+      '  }' +
+      '  .print-btn-bar { text-align:center; padding:12px 0 8px; display:flex; gap:12px; justify-content:center; }' +
+      '  .pbtn { padding:9px 28px; border:none; border-radius:8px; font-size:14px; font-weight:700; cursor:pointer; font-family:inherit; }' +
+      '  .pbtn-print { background:#1A73E8; color:#fff; }' +
+      '  .pbtn-close { background:#f1f3f4; color:#3c4152; }' +
+      '</style>' +
+      '</head><body>' +
+      '<div class="print-wrap">' +
+
+      // 버튼바 (인쇄 시 숨김)
+      '<div class="print-btn-bar no-print">' +
+      '  <button class="pbtn pbtn-print" onclick="window.print()">🖨 인쇄 / PDF 저장</button>' +
+      '  <button class="pbtn pbtn-close" onclick="window.close()">✕ 닫기</button>' +
+      '</div>' +
+
+      // 헤더
+      '<div class="print-header">' +
+      '  <div>' +
+      '    <div style="font-size:11px;color:#888;font-weight:600;margin-bottom:4px;">ASEA 일정 관리</div>' +
+      '    <div class="print-title">' + MONTH_KO + '</div>' +
+      '  </div>' +
+      '  <div class="print-sub">' +
+      '    출력일: ' + today.getFullYear() + '.' + pad(today.getMonth() + 1) + '.' + pad(today.getDate()) + '<br>' +
+      '    bangdw-hash.github.io/asea-calendar-management' +
+      '  </div>' +
+      '</div>' +
+
+      // 범례
+      (legendHtml ? '<div class="legend-row">' + legendHtml + '</div>' : '') +
+
+      // 달력 테이블
+      '<table>' +
+      '  <thead><tr>' + headerCols + '</tr></thead>' +
+      '  <tbody>' + rows + '</tbody>' +
+      '</table>' +
+
+      '</div>' +
+      '</body></html>';
+
+    var win = window.open('', '_blank', 'width=1100,height=800,scrollbars=yes');
+    if (!win) { toast('팝업이 차단됐습니다. 브라우저 팝업 허용 후 다시 시도하세요.', 'error'); return; }
+    win.document.open();
+    win.document.write(html);
+    win.document.close();
+    // 폰트 로드 후 인쇄 다이얼로그 열기
+    win.onload = function () {
+      setTimeout(function () { win.focus(); }, 200);
+    };
   }
 
   /* ────────────────────────────────────────────────────────────────
