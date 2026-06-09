@@ -667,10 +667,7 @@ a        { color: var(--color-accent); text-decoration: none; }
 .event-chip.dept-기타   { border-left-color: var(--color-dept-4); background: #fce8e6; color: #b3261e; }
 
 .day-more {
-  font-size: var(--font-xs);
-  color: var(--color-text-secondary);
-  padding: 1px var(--sp-1);
-  cursor: pointer;
+  display: none !important;  /* 더보기 완전 숨김 — 모든 이벤트 직접 표시 */
 }
 
 /* ── 11. 주간허브 ─────────────────────────────────────────────── */
@@ -1573,12 +1570,7 @@ a        { color: var(--color-accent); text-decoration: none; }
     margin-bottom: 1px;
   }
   /* JS에서 maxChips=1 처리 → CSS 추가 숨김 불필요 */
-  .day-more {
-    font-size: 9px;
-    color: var(--color-accent);
-    font-weight: 600;
-    padding: 0 2px;
-  }
+  .day-more { display: none !important; }
 
   /* ── 예약 캘린더 셀 (차량/대관/강의실) ───────────────────── */
   .res-cal-cell { min-height: 52px; }
