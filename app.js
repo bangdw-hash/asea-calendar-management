@@ -2146,6 +2146,17 @@
     return texts.join('\n');
   }
 
+  // API 키 형식으로 공식 Anthropic vs 프록시(aiapiflow/amplifuse) 자동 판별
+  // 공식 키: sk-ant-api03-... (Anthropic 공식 형식)
+  // 프록시 키: sk- + 64자리 hex (예: sk-9bbf3bf6cc178caee...)
+  function resolveClaudeEndpoint(key) {
+    var isOfficial = /^sk-ant-/.test(key);
+    var url = isOfficial
+      ? 'https://api.anthropic.com/v1/messages'
+      : 'https://api.amplifuse.io/v1/messages';   // aiapiflow 프록시 엔드포인트
+    return { url: url, isOfficial: isOfficial };
+  }
+
   async function runExtract() {
     var apiKey = CONFIG.anthropicApiKey;
     if (!apiKey) { toast('설정 탭에서 Claude API 키를 먼저 저장하세요.', 'error'); return; }
@@ -2176,17 +2187,15 @@
         ']\n\n' +
         '날짜가 불명확한 경우 최대한 추론하세요.\n\n--- PDF 텍스트 ---\n' + pdfText;
 
-      // Claude API 호출 — 프록시(Base URL 설정 시) 또는 공식 Anthropic API
-      var _anthropicOrigin = (CONFIG.anthropicBaseUrl || 'https://api.anthropic.com').replace(/\/$/, '');
-      var _isOfficialApi   = _anthropicOrigin === 'https://api.anthropic.com';
+      // Claude API 호출 — 키 형식으로 공식/프록시 자동 판별
+      var _claudeEndpoint = resolveClaudeEndpoint(apiKey);
       var _reqHeaders = {
         'Content-Type':    'application/json',
         'x-api-key':       apiKey,
         'anthropic-version': '2023-06-01',
       };
-      // 공식 Anthropic API 직접 호출 시에만 CORS 우회 헤더 추가 (프록시는 불필요)
-      if (_isOfficialApi) _reqHeaders['anthropic-dangerous-direct-browser-access'] = 'true';
-      var response = await fetch(_anthropicOrigin + '/v1/messages', {
+      if (_claudeEndpoint.isOfficial) _reqHeaders['anthropic-dangerous-direct-browser-access'] = 'true';
+      var response = await fetch(_claudeEndpoint.url, {
         method: 'POST',
         headers: _reqHeaders,
         body: JSON.stringify({
@@ -2911,13 +2920,43 @@
       var palette = ['1','2','3','4','5','6','7','8','9','10','11'];
       var colorId = palette[dIdx >= 0 ? dIdx % palette.length : 10];
       try {
-        await CalendarModule.createEvent(calId, {
-          summary:     ev.title,
-          description: (ev.description || '') + '\n[부서:' + dept + ']',
-          start: { dateTime: new Date(ev.startDateTime).toISOString(), timeZone: tz },
-          end:   { dateTime: new Date(ev.endDateTime).toISOString(),   timeZone: tz },
-          colorId: colorId,
-        });
+        // 시간 정보 유무 판별: "T00:00:00" 이거나 시간 부분이 없으면 종일 이벤트
+        var _hasTime = function (dt) {
+          if (!dt) return false;
+          var t = dt.split('T')[1];
+          return t && t !== '00:00:00' && t !== '00:00';
+        };
+        var startHasTime = _hasTime(ev.startDateTime);
+        var endHasTime   = _hasTime(ev.endDateTime);
+        var isAllDay     = !startHasTime && !endHasTime;
+
+        var eventBody;
+        if (isAllDay) {
+          // 종일 이벤트: date 형식(YYYY-MM-DD), end는 다음날로 설정
+          var startDate = (ev.startDateTime || '').split('T')[0];
+          var endDate   = (ev.endDateTime   || '').split('T')[0];
+          if (!endDate || endDate === startDate) {
+            // 종료일이 없거나 시작과 같으면 다음날
+            var d = new Date(startDate); d.setDate(d.getDate() + 1);
+            endDate = d.toISOString().split('T')[0];
+          }
+          eventBody = {
+            summary:     ev.title,
+            description: (ev.description || '') + '\n[부서:' + dept + ']',
+            start: { date: startDate },
+            end:   { date: endDate },
+            colorId: colorId,
+          };
+        } else {
+          eventBody = {
+            summary:     ev.title,
+            description: (ev.description || '') + '\n[부서:' + dept + ']',
+            start: { dateTime: new Date(ev.startDateTime).toISOString(), timeZone: tz },
+            end:   { dateTime: new Date(ev.endDateTime).toISOString(),   timeZone: tz },
+            colorId: colorId,
+          };
+        }
+        await CalendarModule.createEvent(calId, eventBody);
         ok++;
       } catch (e) { fail++; }
     }
