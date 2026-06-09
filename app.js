@@ -755,6 +755,9 @@
       openEventModal(null, new Date());
     });
 
+    // ── 년/월 직접 이동 팝업 ─────────────────────────────────────
+    initCalJumpPopup();
+
     $('close-duplicate-banner').addEventListener('click', function () {
       $('duplicate-banner').hidden = true;
     });
@@ -1025,11 +1028,38 @@
     // 반복 UI 초기화/복원
     var recurTypeEl = $('event-recur-type');
     if (recurTypeEl) recurTypeEl.value = 'none';
-    if (event && event.recurrence && event.recurrence.length) {
+    var isExistingNonRecur = !!(event && (!event.recurrence || !event.recurrence.length));
+    var isExistingRecur    = !!(event && event.recurrence && event.recurrence.length);
+
+    if (isExistingRecur) {
       restoreRecurUI(event.recurrence);
     } else {
-      // UI 상태 초기화 (숨김 갱신)
       refreshRecurVisibility();
+    }
+
+    // "반복으로 추가 등록" 버튼 & 힌트 — 반복 없는 기존 이벤트에만 표시
+    var addRecurBtn  = $('add-recur-btn');
+    var recurHint    = $('recur-add-hint');
+    if (addRecurBtn) addRecurBtn.hidden = !isExistingNonRecur;
+    if (recurHint)   recurHint.hidden   = !isExistingNonRecur;
+
+    // 반복 유형 변경 시 버튼 활성화 상태 동기화
+    if (isExistingNonRecur && recurTypeEl) {
+      recurTypeEl.addEventListener('change', function syncBtn() {
+        var hasRecur = recurTypeEl.value !== 'none';
+        if (addRecurBtn) addRecurBtn.hidden = false;
+        // 반복 미설정이면 회색으로
+        if (addRecurBtn) addRecurBtn.disabled = !hasRecur;
+        if (addRecurBtn) addRecurBtn.style.opacity = hasRecur ? '' : '0.45';
+      });
+      // 초기값 반영
+      if (addRecurBtn) {
+        addRecurBtn.disabled    = true;
+        addRecurBtn.style.opacity = '0.45';
+      }
+    } else if (!isExistingNonRecur && addRecurBtn) {
+      addRecurBtn.disabled    = false;
+      addRecurBtn.style.opacity = '';
     }
 
     renderEventCalChips();
@@ -1219,6 +1249,9 @@
 
     // ── 반복 일정 UI 이벤트 ─────────────────────────────────────
     initRecurUI();
+
+    // ── 반복으로 추가 등록 버튼 ──────────────────────────────────
+    initAddRecurBtn();
   }
 
   /* ────────────────────────────────────────────────────────────────
@@ -1431,6 +1464,129 @@
 
     // UI 상태 갱신
     refreshRecurVisibility();
+  }
+
+  /* ────────────────────────────────────────────────────────────────
+     년/월 직접 이동 팝업
+  ──────────────────────────────────────────────────────────────── */
+  function initCalJumpPopup() {
+    var titleEl = $('calendar-title');
+    var popup   = $('cal-jump-popup');
+    var yearInp = $('cal-jump-year');
+    var monInp  = $('cal-jump-month');
+    var goBtn   = $('cal-jump-go');
+    if (!titleEl || !popup) return;
+
+    function openPopup() {
+      var d = S.viewDate;
+      yearInp.value = d.getFullYear();
+      monInp.value  = d.getMonth() + 1;
+      popup.hidden  = false;
+      yearInp.select();
+    }
+    function closePopup() { popup.hidden = true; }
+
+    function jumpTo(year, month) {
+      if (isNaN(year) || isNaN(month)) return;
+      month = Math.max(1, Math.min(12, month));
+      S.viewDate = new Date(year, month - 1, 1);
+      closePopup();
+      renderCalendar();
+    }
+
+    titleEl.addEventListener('click', function (e) {
+      e.stopPropagation();
+      if (popup.hidden) openPopup(); else closePopup();
+    });
+
+    goBtn.addEventListener('click', function () {
+      jumpTo(parseInt(yearInp.value), parseInt(monInp.value));
+    });
+
+    [yearInp, monInp].forEach(function (inp) {
+      inp.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') jumpTo(parseInt(yearInp.value), parseInt(monInp.value));
+        if (e.key === 'Escape') closePopup();
+      });
+    });
+
+    // 빠른 이동 버튼
+    popup.querySelectorAll('.cal-jump-qbtn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var offset = parseInt(btn.dataset.offset);
+        if (offset === 0) {
+          S.viewDate = new Date();
+        } else {
+          var d = S.viewDate;
+          S.viewDate = new Date(d.getFullYear(), d.getMonth() + offset, 1);
+        }
+        closePopup();
+        renderCalendar();
+      });
+    });
+
+    // 팝업 외부 클릭 시 닫기
+    document.addEventListener('click', function (e) {
+      if (!popup.hidden && !popup.contains(e.target) && e.target !== titleEl) {
+        closePopup();
+      }
+    });
+  }
+
+  /* ────────────────────────────────────────────────────────────────
+     이벤트 모달 — 반복으로 추가 등록 버튼
+  ──────────────────────────────────────────────────────────────── */
+  function initAddRecurBtn() {
+    var btn = $('add-recur-btn');
+    if (!btn) return;
+    btn.addEventListener('click', async function () {
+      var title = $('event-title').value.trim();
+      var start = $('event-start').value;
+      var end   = $('event-end').value;
+      var dept  = $('event-dept').value;
+      var desc  = $('event-description').value.trim();
+
+      if (!title)                           { toast('제목을 입력하세요.', 'error'); return; }
+      if (!start || !end)                   { toast('시작·종료 시간을 입력하세요.', 'error'); return; }
+      if (new Date(start) >= new Date(end)) { toast('종료는 시작 이후여야 합니다.', 'error'); return; }
+
+      var recurrence = buildRecurrence();
+      if (!recurrence.length) {
+        toast('반복 조건을 먼저 설정해주세요.', 'error'); return;
+      }
+
+      var tz        = Intl.DateTimeFormat().resolvedOptions().timeZone || 'Asia/Seoul';
+      var fullDesc  = desc + (desc ? '\n' : '') + '[부서:' + dept + ']';
+      var dIdx      = CONFIG.departments.findIndex(function (d) { return d.name === dept; });
+      var palette   = ['1','2','3','4','5','6','7','8','9','10','11'];
+      var colorId   = palette[dIdx >= 0 ? dIdx % palette.length : 10];
+      var targetCals = (S.editCalendars && S.editCalendars.length > 0)
+        ? S.editCalendars.map(function (c) { return c.id; })
+        : [CONFIG.calendarId];
+
+      var eventData = {
+        summary:     title,
+        description: fullDesc,
+        start: { dateTime: new Date(start).toISOString(), timeZone: tz },
+        end:   { dateTime: new Date(end).toISOString(),   timeZone: tz },
+        colorId: colorId,
+        recurrence: recurrence,
+      };
+
+      btn.disabled = true;
+      try {
+        for (var i = 0; i < targetCals.length; i++) {
+          await CalendarModule.createEvent(targetCals[i], eventData);
+        }
+        toast('🔁 반복 일정이 추가되었습니다. (기존 일정은 유지됩니다)', 'success');
+        closeModal('event-modal');
+        await renderCalendar();
+      } catch (e) {
+        toast('추가 실패: ' + e.message, 'error');
+      } finally {
+        btn.disabled = false;
+      }
+    });
   }
 
   async function runDupCheck() {

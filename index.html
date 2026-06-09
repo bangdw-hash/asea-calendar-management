@@ -7,7 +7,7 @@
   <title>ASEA 캘린더 관리</title>
   <link rel="preload" as="style" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
-  <link rel="stylesheet" href="style.css?v=20260609r1">
+  <link rel="stylesheet" href="style.css?v=20260609r2">
   <link rel="stylesheet" href="report.css?v=20260609">
   <link rel="stylesheet" href="promo.css?v=20260609e1">
   <link rel="stylesheet" href="help.css?v=20260609a1">
@@ -187,7 +187,26 @@
         <div class="calendar-toolbar">
           <div class="calendar-nav">
             <button id="prev-period" class="btn btn-icon" aria-label="이전">&#8249;</button>
-            <h2 id="calendar-title" class="calendar-title"></h2>
+            <div class="cal-title-wrap">
+              <h2 id="calendar-title" class="calendar-title" title="클릭하여 날짜 이동"></h2>
+              <!-- 년/월 직접 입력 팝업 -->
+              <div id="cal-jump-popup" class="cal-jump-popup" hidden>
+                <div class="cal-jump-row">
+                  <input id="cal-jump-year"  type="number" class="cal-jump-inp" min="1900" max="2100" placeholder="년도">
+                  <span class="cal-jump-sep">년</span>
+                  <input id="cal-jump-month" type="number" class="cal-jump-inp cal-jump-month-inp" min="1" max="12" placeholder="월">
+                  <span class="cal-jump-sep">월</span>
+                  <button id="cal-jump-go" class="btn btn-primary btn-sm">이동</button>
+                </div>
+                <div class="cal-jump-quick">
+                  <button class="cal-jump-qbtn" data-offset="-12">1년 전</button>
+                  <button class="cal-jump-qbtn" data-offset="-6">6개월 전</button>
+                  <button class="cal-jump-qbtn" data-offset="0">오늘</button>
+                  <button class="cal-jump-qbtn" data-offset="6">6개월 후</button>
+                  <button class="cal-jump-qbtn" data-offset="12">1년 후</button>
+                </div>
+              </div>
+            </div>
             <button id="next-period" class="btn btn-icon" aria-label="다음">&#8250;</button>
           </div>
           <div class="calendar-actions">
@@ -1531,6 +1550,12 @@
           <div id="recur-preview" class="recur-preview" hidden></div>
         </div>
 
+        <!-- 반복 일정으로 추가 등록 안내 (비반복 기존 이벤트 수정 시 표시) -->
+        <div id="recur-add-hint" class="recur-add-hint" hidden>
+          <span class="recur-hint-icon">🔁</span>
+          <span class="recur-hint-txt">반복 조건을 설정하면 <strong>현재 일정은 유지</strong>되고 반복 일정이 <strong>새로 추가</strong>됩니다.</span>
+        </div>
+
         <div id="duplicate-alert" class="alert alert-warning" hidden role="alert">
           <span class="alert-icon" aria-hidden="true">⚠</span>
           <div>
@@ -1552,6 +1577,7 @@
         <button id="delete-event-btn" class="btn btn-danger btn-sm" hidden>삭제</button>
         <div class="modal-footer-right">
           <button id="share-event-btn" class="btn btn-ghost btn-sm" hidden>🔗 공유하기</button>
+          <button id="add-recur-btn" class="btn btn-secondary btn-sm" hidden title="반복 조건을 적용하여 새 반복 일정을 추가합니다 (기존 일정 유지)">🔁 반복으로 추가 등록</button>
           <button class="btn btn-ghost" data-close-modal>취소</button>
           <button id="save-event-btn" class="btn btn-primary">저장</button>
         </div>
@@ -2469,7 +2495,7 @@
   <script src="workorder.js?v=20260608s"></script>
   <script src="quicktask.js?v=20260609r1"></script>
   <script src="sms.js?v=20260608a1"></script>
-  <script src="app.js?v=20260609r1"></script>
+  <script src="app.js?v=20260609r2"></script>
   <script>
     // 빠른 업무 등록 초기화 (DOM 준비 후)
     document.addEventListener('DOMContentLoaded', function () {
