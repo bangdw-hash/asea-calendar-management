@@ -277,11 +277,13 @@ a        { color: var(--color-accent); text-decoration: none; }
 
 /* 캘린더 탭은 full-width 유지 */
 #tab-calendar { padding: 0; }
+/* 툴바·범례·필터·배너는 내부 패딩으로 여백 */
 #tab-calendar .calendar-toolbar,
 #tab-calendar .calendar-legend,
-#tab-calendar .calendar-container,
 #tab-calendar .calendar-filter-panel,
 #tab-calendar #duplicate-banner { padding-left: 16px; padding-right: 16px; }
+/* 캘린더 컨테이너는 margin으로 여백 — 이렇게 해야 border-radius(둥근 모서리)가 살아남 */
+#tab-calendar .calendar-container { margin-left: 16px; margin-right: 16px; }
 
 /* 탭 내부: 넓은 고정폭 블록이 viewport보다 좁아지지 않도록 */
 .tab-panel > * { min-width: 0; }
@@ -578,6 +580,8 @@ a        { color: var(--color-accent); text-decoration: none; }
   grid-template-columns: repeat(7, 1fr);
   background: var(--color-bg);
   border-bottom: 1px solid var(--color-border);
+  border-radius: var(--r-xl) var(--r-xl) 0 0;  /* 위 둥글게, 아래 직각 */
+  overflow: hidden;
 }
 
 .weekday {
