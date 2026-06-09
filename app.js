@@ -714,57 +714,165 @@
   }
 
   function _moveEventToDate(info, targetDate) {
+    var existingEv = S.events.find(function (e) { return e.id === info.eventId; });
+    var isRecurring = !!(existingEv && (
+      (existingEv.recurrence && existingEv.recurrence.length) ||
+      existingEv.recurringEventId
+    ));
+
+    if (isRecurring) {
+      _openRecurMoveModal(info, targetDate, existingEv);
+    } else {
+      _executeMoveEvent(info, targetDate, existingEv, 'single');
+    }
+  }
+
+  var _recurMoveState = null; // { info, targetDate, existingEv }
+
+  function _openRecurMoveModal(info, targetDate, existingEv) {
+    _recurMoveState = { info: info, targetDate: targetDate, existingEv: existingEv };
+    var radios = document.querySelectorAll('input[name="recur-move-scope"]');
+    radios.forEach(function(r) { r.checked = r.value === 'this'; });
+    var descEl = document.getElementById('recur-move-desc');
+    if (descEl) descEl.textContent = '"' + (info.summary || '일정') + '" 이동 범위를 선택하세요.';
+    document.getElementById('recur-move-modal').hidden = false;
+  }
+
+  function initRecurMoveModal() {
+    var modal   = document.getElementById('recur-move-modal');
+    var confirm = document.getElementById('recur-move-confirm');
+    var cancel  = document.getElementById('recur-move-cancel');
+    var close   = document.getElementById('recur-move-close');
+    if (!modal) return;
+
+    function closeModal() { modal.hidden = true; _recurMoveState = null; }
+    [cancel, close].forEach(function(el) { if (el) el.addEventListener('click', closeModal); });
+    modal.querySelector('.modal-backdrop').addEventListener('click', closeModal);
+
+    confirm.addEventListener('click', function() {
+      var scopeEl = document.querySelector('input[name="recur-move-scope"]:checked');
+      var scope = scopeEl ? scopeEl.value : 'this';
+      modal.hidden = true;
+      if (_recurMoveState) {
+        _executeMoveEvent(
+          _recurMoveState.info,
+          _recurMoveState.targetDate,
+          _recurMoveState.existingEv,
+          scope
+        );
+        _recurMoveState = null;
+      }
+    });
+  }
+
+  function _executeMoveEvent(info, targetDate, existingEv, scope) {
     var y = targetDate.getFullYear();
     var m = pad(targetDate.getMonth() + 1);
     var d = pad(targetDate.getDate());
 
-    // 기존 이벤트 전체 데이터 가져오기 (PUT이므로 모든 필드 유지 필요)
-    var existingEv = S.events.find(function (e) { return e.id === info.eventId; });
-
-    // 새 날짜 계산
-    var newStart, newEnd, newStartField, newEndField;
+    var newStartField, newEndField;
     if (info.isAllDay) {
       var endDate = new Date(targetDate.getTime() + Number(info.duration));
       newStartField = { date: y + '-' + m + '-' + d };
       newEndField   = { date: endDate.getFullYear() + '-' + pad(endDate.getMonth() + 1) + '-' + pad(endDate.getDate()) };
     } else {
       var origStart = new Date(info.startTime);
-      newStart = new Date(y + '-' + m + '-' + d + 'T' +
+      var newStart  = new Date(y + '-' + m + '-' + d + 'T' +
         pad(origStart.getHours()) + ':' + pad(origStart.getMinutes()) + ':00');
-      newEnd   = new Date(newStart.getTime() + Number(info.duration));
+      var newEnd    = new Date(newStart.getTime() + Number(info.duration));
       newStartField = { dateTime: newStart.toISOString(), timeZone: 'Asia/Seoul' };
       newEndField   = { dateTime: newEnd.toISOString(),   timeZone: 'Asia/Seoul' };
     }
 
-    // PUT: 기존 필드 유지 + start/end만 교체
-    var eventData = {
-      summary:     (existingEv && existingEv.summary)     || info.summary || '',
-      description: (existingEv && existingEv.description) || '',
-      colorId:     (existingEv && existingEv.colorId)     || undefined,
-      recurrence:  (existingEv && existingEv.recurrence)  || undefined,
-      start: newStartField,
-      end:   newEndField
-    };
-    // undefined 필드 제거 (API가 null로 처리하는 것 방지)
-    Object.keys(eventData).forEach(function(k) {
-      if (eventData[k] === undefined) delete eventData[k];
-    });
+    var calId   = info.calId || CONFIG.calendarId;
+    var eventId = info.eventId;
 
     if (typeof toast === 'function') toast('📅 일정 이동 중…', 'info');
 
-    CalendarModule.updateEvent(info.calId, info.eventId, eventData)
-      .then(function () {
-        if (typeof toast === 'function') toast('✅ 이동 완료: ' + (info.summary || '일정'), 'success');
-        // 로컬 S.events 즉시 업데이트 (renderCalendar가 Google 재호출 전에 반영)
-        if (existingEv) {
-          existingEv.start = newStartField;
-          existingEv.end   = newEndField;
+    if (scope === 'this') {
+      var eventData = {
+        summary:     (existingEv && existingEv.summary)     || info.summary || '',
+        description: (existingEv && existingEv.description) || '',
+        colorId:     (existingEv && existingEv.colorId)     || undefined,
+        start: newStartField,
+        end:   newEndField
+      };
+      Object.keys(eventData).forEach(function(k) { if (eventData[k] === undefined) delete eventData[k]; });
+      CalendarModule.updateEvent(calId, eventId, eventData)
+        .then(function() {
+          if (typeof toast === 'function') toast('✅ 이번 일정이 이동됐습니다.', 'success');
+          if (existingEv) { existingEv.start = newStartField; existingEv.end = newEndField; }
+          renderCalendar();
+        })
+        .catch(function(err) { if (typeof toast === 'function') toast('❌ 이동 실패: ' + (err.message || err), 'error'); });
+
+    } else if (scope === 'all' || scope === 'single') {
+      var rootId = (existingEv && existingEv.recurringEventId) || eventId;
+      var eventDataAll = {
+        summary:     (existingEv && existingEv.summary)     || info.summary || '',
+        description: (existingEv && existingEv.description) || '',
+        colorId:     (existingEv && existingEv.colorId)     || undefined,
+        recurrence:  (existingEv && existingEv.recurrence)  || undefined,
+        start: newStartField,
+        end:   newEndField
+      };
+      Object.keys(eventDataAll).forEach(function(k) { if (eventDataAll[k] === undefined) delete eventDataAll[k]; });
+      CalendarModule.updateEvent(calId, rootId, eventDataAll)
+        .then(function() {
+          if (typeof toast === 'function') toast('✅ 전체 반복 일정이 이동됐습니다.', 'success');
+          renderCalendar();
+        })
+        .catch(function(err) { if (typeof toast === 'function') toast('❌ 이동 실패: ' + (err.message || err), 'error'); });
+
+    } else if (scope === 'following') {
+      var yesterday = new Date(targetDate.getTime() - 86400000);
+      var untilStr = yesterday.getFullYear() +
+        pad(yesterday.getMonth() + 1) +
+        pad(yesterday.getDate()) + 'T235959Z';
+
+      var origRecurrence = (existingEv && existingEv.recurrence) || [];
+      var newRecurrenceOld = origRecurrence.map(function(r) {
+        if (r.indexOf('RRULE:') === 0) {
+          var cleaned = r.replace(/;?UNTIL=[^;]*/g, '').replace(/;?COUNT=[^;]*/g, '');
+          return cleaned + ';UNTIL=' + untilStr;
         }
-        renderCalendar();
-      })
-      .catch(function (err) {
-        if (typeof toast === 'function') toast('❌ 이동 실패: ' + (err.message || err), 'error');
+        return r;
       });
+
+      var rootId2 = (existingEv && existingEv.recurringEventId) || eventId;
+      var oldEventData = {
+        summary:     (existingEv && existingEv.summary)     || info.summary || '',
+        description: (existingEv && existingEv.description) || '',
+        colorId:     (existingEv && existingEv.colorId)     || undefined,
+        recurrence:  newRecurrenceOld.length ? newRecurrenceOld : undefined,
+        start:       (existingEv && existingEv.start) || newStartField,
+        end:         (existingEv && existingEv.end)   || newEndField
+      };
+      Object.keys(oldEventData).forEach(function(k) { if (oldEventData[k] === undefined) delete oldEventData[k]; });
+
+      var origRrule = origRecurrence.find(function(r) { return r.indexOf('RRULE:') === 0; }) || 'RRULE:FREQ=WEEKLY';
+      var cleanRrule = origRrule.replace(/;?UNTIL=[^;]*/g, '').replace(/;?COUNT=[^;]*/g, '');
+
+      var newEventData = {
+        summary:     (existingEv && existingEv.summary)     || info.summary || '',
+        description: (existingEv && existingEv.description) || '',
+        colorId:     (existingEv && existingEv.colorId)     || undefined,
+        recurrence:  [cleanRrule],
+        start: newStartField,
+        end:   newEndField
+      };
+      Object.keys(newEventData).forEach(function(k) { if (newEventData[k] === undefined) delete newEventData[k]; });
+
+      CalendarModule.updateEvent(calId, rootId2, oldEventData)
+        .then(function() {
+          return CalendarModule.createEvent(calId, newEventData);
+        })
+        .then(function() {
+          if (typeof toast === 'function') toast('✅ 이 일정 이후 모두 이동됐습니다.', 'success');
+          renderCalendar();
+        })
+        .catch(function(err) { if (typeof toast === 'function') toast('❌ 이동 실패: ' + (err.message || err), 'error'); });
+    }
   }
 
   function buildDayCell(cellDate, viewDate, today, evMap) {
@@ -5598,6 +5706,7 @@
     initCalendarNav();
     initEventModal();
     initRecurDeleteModal();
+    initRecurMoveModal();
     initPrintRangeModal();
     initWeeklyHub();
     initEmailTab();
