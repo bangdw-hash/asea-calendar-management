@@ -257,8 +257,10 @@
           if (typeof WorkModule    !== 'undefined') WorkModule.onLogin(S.userEmail);
           // 관리자 모듈 — 메뉴/기능 가시성 적용
           if (typeof AdminModule   !== 'undefined') AdminModule.onLogin();
-          // 게시판 — 미읽은 전사알림 팝업 표시 (1.2초 후)
-          if (typeof BoardModule   !== 'undefined') BoardModule.checkAndShowNotices(S.userEmail);
+          // 게시판 — 클라우드 동기화 후 미읽은 전사알림 팝업 표시
+          if (typeof BoardModule   !== 'undefined') BoardModule.syncFromCloud().then(function() {
+            BoardModule.checkAndShowNotices(S.userEmail);
+          });
           // 브라우저 알림 권한 요청 (게시판 전사알림용)
           if (typeof BoardModule   !== 'undefined') BoardModule.requestNotifPerm(function(){});
           // 사용자 색상 설정 적용
@@ -388,6 +390,12 @@
       { headers: { Authorization: 'Bearer ' + token } });
     return r.ok ? r.json() : null;
   }
+
+  // ── 다른 모듈에서도 Drive 동기화를 쓸 수 있도록 공개 ──────────
+  window.AppDriveSync = {
+    upsert: driveUpsert,
+    read:   driveRead
+  };
 
   // ID 기준 두 배열 병합 (중복 제거, 최신순 정렬)
   function mergeById(arrA, arrB, dateKey) {

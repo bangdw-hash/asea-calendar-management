@@ -1,4 +1,4 @@
-// board.js — 게시판 모듈 v1.0 (2026-06-10)
+// board.js — 게시판 모듈 v1.1 (2026-06-10, Google Drive 동기화 추가)
 (function () {
   'use strict';
 
@@ -6,13 +6,134 @@
   var SK_COMMENTS = 'asea_board_comments';
   var SK_READS    = 'asea_board_notice_reads';
 
-  /* ── 스토리지 헬퍼 ─────────────────────────────────────── */
+  /* Drive 파일명 */
+  var CF_POSTS    = 'asea-board-posts.json';
+  var CF_COMMENTS = 'asea-board-comments.json';
+  var CF_READS    = 'asea-board-reads.json';
+
+  /* ── 스토리지 헬퍼 (localStorage) ─────────────────────── */
   function loadPosts()    { try { return JSON.parse(localStorage.getItem(SK_POSTS)    || '[]'); } catch(e) { return []; } }
-  function savePosts(d)   { try { localStorage.setItem(SK_POSTS,    JSON.stringify(d)); } catch(e) {} }
+  function savePosts(d)   { try { localStorage.setItem(SK_POSTS,    JSON.stringify(d)); _scheduleCloudSync(); } catch(e) {} }
   function loadComments() { try { return JSON.parse(localStorage.getItem(SK_COMMENTS) || '[]'); } catch(e) { return []; } }
-  function saveComments(d){ try { localStorage.setItem(SK_COMMENTS, JSON.stringify(d)); } catch(e) {} }
+  function saveComments(d){ try { localStorage.setItem(SK_COMMENTS, JSON.stringify(d)); _scheduleCloudSync(); } catch(e) {} }
   function loadReads()    { try { return JSON.parse(localStorage.getItem(SK_READS)    || '{}'); } catch(e) { return {}; } }
-  function saveReads(d)   { try { localStorage.setItem(SK_READS,    JSON.stringify(d)); } catch(e) {} }
+  function saveReads(d)   { try { localStorage.setItem(SK_READS,    JSON.stringify(d)); _scheduleCloudSync(); } catch(e) {} }
+
+  /* ══════════════════════════════════════════════════════
+     ☁️ Google Drive 동기화
+  ══════════════════════════════════════════════════════ */
+  var _syncTimer  = null;
+  var _syncStatus = 'idle'; // 'idle' | 'syncing' | 'ok' | 'error'
+
+  /* 저장 후 2초 디바운스로 Drive에 업로드 */
+  function _scheduleCloudSync() {
+    clearTimeout(_syncTimer);
+    _syncTimer = setTimeout(_pushToCloud, 2000);
+  }
+
+  /* Drive → localStorage 병합 (로그인 직후 호출) */
+  async function syncFromCloud() {
+    var ds = window.AppDriveSync;
+    if (!ds) return;
+    _syncStatus = 'syncing';
+    _updateSyncUI();
+    try {
+      var cPosts    = await ds.read(CF_POSTS);
+      var cComments = await ds.read(CF_COMMENTS);
+      var cReads    = await ds.read(CF_READS);
+
+      if (cPosts    && Array.isArray(cPosts)) {
+        var merged = _mergePosts(loadPosts(), cPosts);
+        try { localStorage.setItem(SK_POSTS, JSON.stringify(merged)); } catch(e) {}
+      }
+      if (cComments && Array.isArray(cComments)) {
+        var mergedC = _mergeComments(loadComments(), cComments);
+        try { localStorage.setItem(SK_COMMENTS, JSON.stringify(mergedC)); } catch(e) {}
+      }
+      if (cReads && typeof cReads === 'object') {
+        var mergedR = _mergeReads(loadReads(), cReads);
+        try { localStorage.setItem(SK_READS, JSON.stringify(mergedR)); } catch(e) {}
+      }
+
+      _syncStatus = 'ok';
+      _updateSyncUI();
+    } catch(e) {
+      console.warn('[Board] syncFromCloud 실패:', e);
+      _syncStatus = 'error';
+      _updateSyncUI();
+    }
+  }
+
+  /* localStorage → Drive 업로드 */
+  async function _pushToCloud() {
+    var ds = window.AppDriveSync;
+    if (!ds) return;
+    _syncStatus = 'syncing';
+    _updateSyncUI();
+    try {
+      await ds.upsert(CF_POSTS,    JSON.stringify(loadPosts()));
+      await ds.upsert(CF_COMMENTS, JSON.stringify(loadComments()));
+      await ds.upsert(CF_READS,    JSON.stringify(loadReads()));
+      _syncStatus = 'ok';
+    } catch(e) {
+      console.warn('[Board] pushToCloud 실패:', e);
+      _syncStatus = 'error';
+    }
+    _updateSyncUI();
+  }
+
+  /* 동기화 상태 아이콘 갱신 */
+  function _updateSyncUI() {
+    var el = document.getElementById('board-sync-status');
+    if (!el) return;
+    var map = { idle: '', syncing: '☁️ 동기화 중...', ok: '✅ Drive 동기화됨', error: '⚠️ 동기화 실패' };
+    el.textContent = map[_syncStatus] || '';
+    el.className   = 'board-sync-status ' + _syncStatus;
+  }
+
+  /* ── 배열 병합 헬퍼 ──────────────────────────────────── */
+  /* 게시글: 같은 id면 updatedAt이 더 최신인 것 채택 */
+  function _mergePosts(local, cloud) {
+    var map = {};
+    (local || []).forEach(function(p) { if (p.id) map[p.id] = p; });
+    (cloud || []).forEach(function(p) {
+      if (!p.id) return;
+      if (!map[p.id]) {
+        map[p.id] = p;
+      } else {
+        var tL = new Date(map[p.id].updatedAt || map[p.id].createdAt || 0).getTime();
+        var tC = new Date(p.updatedAt          || p.createdAt          || 0).getTime();
+        if (tC > tL) map[p.id] = p;
+      }
+    });
+    return Object.values(map).sort(function(a,b) {
+      return new Date(b.createdAt||0) - new Date(a.createdAt||0);
+    });
+  }
+
+  /* 댓글: id 기준 합집합 */
+  function _mergeComments(local, cloud) {
+    var map = {};
+    (local || []).forEach(function(c) { if (c.id) map[c.id] = c; });
+    (cloud || []).forEach(function(c) { if (c.id && !map[c.id]) map[c.id] = c; });
+    return Object.values(map).sort(function(a,b) {
+      return new Date(a.createdAt||0) - new Date(b.createdAt||0);
+    });
+  }
+
+  /* 읽음 목록: 이메일별 배열 합집합 */
+  function _mergeReads(local, cloud) {
+    var result = {};
+    var allKeys = Object.keys(local).concat(Object.keys(cloud));
+    allKeys.forEach(function(email) {
+      var a = local[email] || [];
+      var b = cloud[email] || [];
+      var set = {};
+      a.concat(b).forEach(function(id) { set[id] = true; });
+      result[email] = Object.keys(set);
+    });
+    return result;
+  }
 
   function genId() {
     return Date.now().toString(36) + Math.random().toString(36).substr(2, 8);
@@ -174,7 +295,10 @@
 
     var canWrite = true; // 모든 사용자 글쓰기 가능
 
-    var html = '<div class="board-toolbar">' +
+    var html = '<div id="board-sync-status" class="board-sync-status ' + _syncStatus + '">' +
+      (window.AppDriveSync ? (_syncStatus === 'ok' ? '✅ Drive 동기화됨' : _syncStatus === 'syncing' ? '☁️ 동기화 중...' : _syncStatus === 'error' ? '⚠️ 동기화 실패' : '') : '⚠️ 로그아웃 상태 — 로컬 저장만 됩니다') +
+    '</div>' +
+    '<div class="board-toolbar">' +
       '<div class="board-filter-row">' +
         '<button class="board-filter-btn' + (S.filter==='all'?' active':'') + '" data-filter="all">전체</button>' +
         '<button class="board-filter-btn' + (S.filter==='notice'?' active':'') + '" data-filter="notice">📢 전사알림</button>' +
@@ -716,6 +840,8 @@
     checkAndShowNotices: checkAndShowNotices,
     requestNotifPerm: requestNotifPerm,
     updateBadge: updateBadge,
-    getUnreadNotices: getUnreadNotices
+    getUnreadNotices: getUnreadNotices,
+    syncFromCloud: syncFromCloud,
+    pushToCloud: _pushToCloud
   };
 })();

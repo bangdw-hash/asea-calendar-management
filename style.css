@@ -5041,6 +5041,18 @@ h3.settings-section-title {
 .board-header     { margin-bottom: 12px; }
 .board-content    { }
 
+/* ── 동기화 상태 바 ───────────────────────────────── */
+.board-sync-status {
+  font-size: 12px; padding: 5px 12px; border-radius: 6px;
+  margin-bottom: 10px; font-weight: 500; min-height: 26px;
+  display: flex; align-items: center;
+}
+.board-sync-status:empty { display: none; }
+.board-sync-status.ok      { background: #e8f5e9; color: #2e7d32; }
+.board-sync-status.syncing { background: #e3f2fd; color: #1565c0; }
+.board-sync-status.error   { background: #fff3e0; color: #e65100; }
+.board-sync-status.idle    { display: none; }
+
 /* ── 툴바 ──────────────────────────────────────────── */
 .board-toolbar    { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
 .board-filter-row { display: flex; gap: 6px; flex-wrap: wrap; }
