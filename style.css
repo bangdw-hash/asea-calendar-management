@@ -643,7 +643,6 @@ a        { color: var(--color-accent); text-decoration: none; }
   display: flex;
   flex-direction: column;
   gap: 2px;
-  overflow: hidden;
 }
 
 .event-chip {

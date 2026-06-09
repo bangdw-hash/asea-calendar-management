@@ -691,8 +691,7 @@
     var evWrap = document.createElement('div');
     evWrap.className = 'day-events';
 
-    var maxChips = window.innerWidth <= 600 ? 1 : 3;
-    dayEvents.slice(0, maxChips).forEach(function (ev) {
+    dayEvents.forEach(function (ev) {
       var chip = document.createElement('div');
       chip.className = 'event-chip ' + deptClass(ev.description);
       // 다중 캘린더 색상 우선 적용
@@ -709,13 +708,6 @@
       });
       evWrap.appendChild(chip);
     });
-
-    if (dayEvents.length > maxChips) {
-      var more = document.createElement('div');
-      more.className = 'day-more';
-      more.textContent = '+' + (dayEvents.length - maxChips) + '개';
-      evWrap.appendChild(more);
-    }
 
     el.appendChild(evWrap);
     el.addEventListener('click', function () { openEventModal(null, cellDate); });
