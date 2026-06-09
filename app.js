@@ -1665,8 +1665,9 @@
       if (months > 24) { toast('최대 24개월까지 선택 가능합니다.','error'); return; }
       var checkedCals = Array.from(document.querySelectorAll('#print-cal-checkboxes input:checked'))
         .map(function (cb) { return cb.value; });
+      var docTitle = ($('print-doc-title').value || '').trim();
       closeModal();
-      printCalendarRange(sy, sm, ey, em, checkedCals);
+      printCalendarRange(sy, sm, ey, em, checkedCals, docTitle);
     });
   }
 
@@ -1746,8 +1747,8 @@
           'color:' + c.text + ';' +
           'border-left:3px solid ' + c.border + ';' +
           'border-radius:3px;padding:2px 5px;margin-bottom:2px;' +
-          'font-size:10px;line-height:1.4;font-weight:600;' +
-          'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;' +
+          'font-size:9.5px;line-height:1.45;font-weight:600;' +
+          'word-break:keep-all;overflow-wrap:break-word;white-space:normal;' +
           '">' + time + txt + '</div>';
       }).join('');
 
@@ -1820,15 +1821,11 @@
       '  <button class="pbtn pbtn-close" onclick="window.close()">✕ 닫기</button>' +
       '</div>' +
 
-      // 헤더
+      // 헤더 (출력일/경로 제거)
       '<div class="print-header">' +
       '  <div>' +
       '    <div style="font-size:11px;color:#888;font-weight:600;margin-bottom:4px;">ASEA 일정 관리</div>' +
       '    <div class="print-title">' + MONTH_KO + '</div>' +
-      '  </div>' +
-      '  <div class="print-sub">' +
-      '    출력일: ' + today.getFullYear() + '.' + pad(today.getMonth() + 1) + '.' + pad(today.getDate()) + '<br>' +
-      '    bangdw-hash.github.io/asea-calendar-management' +
       '  </div>' +
       '</div>' +
 
@@ -1858,7 +1855,7 @@
   /* ────────────────────────────────────────────────────────────────
      구간 인쇄 — 월별 1장씩 페이지 분리
   ──────────────────────────────────────────────────────────────── */
-  function printCalendarRange(startYear, startMonth, endYear, endMonth, allowedCalIds) {
+  function printCalendarRange(startYear, startMonth, endYear, endMonth, allowedCalIds, docTitle) {
     var today  = new Date();
     var events = S.events || [];
 
@@ -1921,18 +1918,18 @@
             pad(st.getHours()) + ':' + pad(st.getMinutes()) + '</span>';
         }
         return '<div style="background:' + c.bg + ';color:' + c.text + ';border-left:3px solid ' + c.border + ';' +
-          'border-radius:3px;padding:2px 5px;margin-bottom:2px;font-size:10px;line-height:1.4;font-weight:600;' +
-          'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + timeStr + txt + '</div>';
+          'border-radius:3px;padding:2px 5px;margin-bottom:2px;font-size:9.5px;line-height:1.45;font-weight:600;' +
+          'word-break:keep-all;overflow-wrap:break-word;white-space:normal;">' + timeStr + txt + '</div>';
       }).join('');
 
-      return '<td style="background:' + cellBg + ';vertical-align:top;padding:6px 5px 4px;' +
+      return '<td style="background:' + cellBg + ';vertical-align:top;padding:5px 4px 4px;' +
         'border:1px solid #e0e4ef;width:14.28%;">' +
         '<div style="' + numStyle + 'margin-bottom:4px;">' + cellDate.getDate() + '</div>' +
         (chipsHtml ? '<div>' + chipsHtml + '</div>' : '') +
         '</td>';
     }
 
-    function buildMonthPage(year, month, isLast) {
+    function buildMonthPage(year, month, isLast, customTitle) {
       var first = new Date(year, month, 1);
       var start = new Date(first);
       start.setDate(start.getDate() - start.getDay());
@@ -1948,7 +1945,7 @@
 
       var rows = '';
       for (var w = 0; w < 6; w++) {
-        rows += '<tr>';
+        rows += '<tr style="break-inside:avoid;page-break-inside:avoid;">';
         for (var wd = 0; wd < 7; wd++) {
           var cellDate = new Date(start.getFullYear(), start.getMonth(), start.getDate() + w * 7 + wd);
           rows += buildCell(cellDate, month);
@@ -1962,23 +1959,25 @@
           '<span style="font-size:10px;color:#555;">' + c.name + '</span></span>';
       }).join('');
 
-      var pageBreak = isLast ? '' : 'page-break-after:always;';
-      return '<div style="' + pageBreak + 'padding:16px 20px 12px;">' +
-        // 헤더
-        '<div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:12px;">' +
+      // 표지 제목: 커스텀 제목이 있으면 사용, 없으면 월/년
+      var displayTitle = customTitle || MONTH_KO;
+      var subTitle     = customTitle ? MONTH_KO : '';
+
+      // 달력 전체가 페이지 중간에 잘리지 않도록 break-inside:avoid
+      var pageBreak = isLast ? '' : 'page-break-after:always;break-after:page;';
+      return '<div style="' + pageBreak + 'padding:14px 18px 10px;break-inside:avoid;page-break-inside:avoid;">' +
+        // 헤더 (출력일/경로 제거)
+        '<div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:10px;">' +
         '  <div>' +
-        '    <div style="font-size:10px;color:#888;font-weight:600;margin-bottom:3px;">ASEA 일정 관리</div>' +
-        '    <div style="font-size:26px;font-weight:900;color:#1a1a2e;letter-spacing:-.03em;">' + MONTH_KO + '</div>' +
-        '  </div>' +
-        '  <div style="font-size:10px;color:#aaa;text-align:right;line-height:1.8;">' +
-        '    출력일: ' + today.getFullYear() + '.' + pad(today.getMonth()+1) + '.' + pad(today.getDate()) + '<br>' +
-        '    bangdw-hash.github.io/asea-calendar-management' +
+        '    <div style="font-size:10px;color:#888;font-weight:600;margin-bottom:2px;">ASEA 일정 관리</div>' +
+        '    <div style="font-size:24px;font-weight:900;color:#1a1a2e;letter-spacing:-.03em;">' + displayTitle + '</div>' +
+        (subTitle ? '<div style="font-size:13px;color:#888;margin-top:2px;">' + subTitle + '</div>' : '') +
         '  </div>' +
         '</div>' +
         // 범례
         (legendHtml ? '<div style="margin-bottom:8px;display:flex;flex-wrap:wrap;">' + legendHtml + '</div>' : '') +
-        // 테이블
-        '<table style="width:100%;border-collapse:collapse;table-layout:fixed;">' +
+        // 테이블 — 전체도 잘림 방지
+        '<table style="width:100%;border-collapse:collapse;table-layout:fixed;break-inside:avoid;page-break-inside:avoid;">' +
         '<thead><tr>' + headerCols + '</tr></thead>' +
         '<tbody>' + rows + '</tbody>' +
         '</table>' +
@@ -1992,7 +1991,7 @@
     var count = 0;
     while (cur.y < end.y || (cur.y === end.y && cur.m <= end.m)) {
       var isLast = (cur.y === end.y && cur.m === end.m);
-      pagesHtml += buildMonthPage(cur.y, cur.m, isLast);
+      pagesHtml += buildMonthPage(cur.y, cur.m, isLast, docTitle);
       cur.m++;
       if (cur.m > 11) { cur.m = 0; cur.y++; }
       count++;
@@ -2010,11 +2009,18 @@
       '* { box-sizing:border-box; margin:0; padding:0; }' +
       'body { font-family:"Noto Sans KR",sans-serif; background:#fff;' +
       '  -webkit-print-color-adjust:exact; print-color-adjust:exact; }' +
-      'td { word-break:break-all; }' +
-      '@page { size:A4 landscape; margin:8mm 8mm; }' +
+      'td { word-break:keep-all; overflow-wrap:break-word; vertical-align:top; }' +
+      /* 페이지 잘림 방지 핵심 규칙 */
+      'table { border-collapse:collapse; table-layout:fixed; }' +
+      'tr { break-inside:avoid; page-break-inside:avoid; }' +
+      'td { break-inside:avoid; page-break-inside:avoid; }' +
+      '@page { size:A4 landscape; margin:10mm 10mm; }' +
       '@media print {' +
       '  .no-print { display:none !important; }' +
       '  body { -webkit-print-color-adjust:exact; print-color-adjust:exact; }' +
+      '  .month-block { break-inside:avoid; page-break-inside:avoid; }' +
+      '  tr { break-inside:avoid; page-break-inside:avoid; }' +
+      '  td { break-inside:avoid; page-break-inside:avoid; }' +
       '}' +
       '.btn-bar { text-align:center; padding:14px 0 8px; display:flex; gap:12px; justify-content:center; }' +
       '.pbtn { padding:9px 28px; border:none; border-radius:8px; font-size:14px; font-weight:700; cursor:pointer; font-family:inherit; }' +
