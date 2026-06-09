@@ -282,6 +282,7 @@
           '<button class="admin-nav-btn" data-sec="permissions">👥 권한 관리</button>' +
           '<button class="admin-nav-btn" data-sec="menu-ctrl">📂 메뉴 제어</button>' +
           '<button class="admin-nav-btn" data-sec="feat-ctrl">⚙️ 기능 제어</button>' +
+          '<button class="admin-nav-btn" data-sec="tab-admin">🔗 탭별 관리</button>' +
         '</nav>' +
         '<div id="admin-sec-body" class="admin-sec-body"></div>' +
       '</div>';
@@ -307,6 +308,7 @@
     if (sec === 'permissions') { body.innerHTML = _htmlPermissions(); _bindPermEvents(); }
     if (sec === 'menu-ctrl')   { body.innerHTML = _htmlMenuCtrl();    _bindMenuCtrlEvents(); }
     if (sec === 'feat-ctrl')   { body.innerHTML = _htmlFeatCtrl();    _bindFeatCtrlEvents(); }
+    if (sec === 'tab-admin')   { body.innerHTML = _htmlTabAdmin();    _bindTabAdminEvents(); }
 
     /* 버전 추가 버튼 */
     if (sec === 'changelog') {
@@ -525,6 +527,40 @@
       cb.addEventListener('change', function () {
         setFeatVisible(this.dataset.feat, this.dataset.role, this.checked);
         applyFeatVisibility();
+      });
+    });
+  }
+
+  /* ── 탭별 관리 기능 ──────────────────────────────────── */
+  function _htmlTabAdmin() {
+    return '<div class="admin-section">' +
+      '<h3 class="admin-sec-title">🔗 탭별 관리 기능</h3>' +
+      '<p class="form-hint" style="margin-bottom:16px">각 탭의 관리자 설정을 여기서 열 수 있습니다. 일반 탭에는 표시되지 않습니다.</p>' +
+      '<div class="tab-admin-links">' +
+        '<button class="tab-admin-btn" data-open="facility" data-section="fac-admin-section">🏢 시설 관리 설정</button>' +
+        '<button class="tab-admin-btn" data-open="vehicle"  data-section="veh-admin-section">🚗 차량 관리 설정</button>' +
+        '<button class="tab-admin-btn" data-open="classroom" data-section="cls-admin-section">🏫 강의실 관리 설정</button>' +
+        '<button class="tab-admin-btn" data-open="settings" data-section="hr-management-card">👥 직원 관리</button>' +
+        '<button class="tab-admin-btn" data-open="settings" data-section="mgr-staff-card">🏢 관리실 인원</button>' +
+        '<button class="tab-admin-btn" data-open="settings" data-section="hr-clear-card">🗑 데이터 초기화</button>' +
+      '</div>' +
+    '</div>';
+  }
+
+  function _bindTabAdminEvents() {
+    document.querySelectorAll('.tab-admin-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var tabId = this.dataset.open;
+        var secId = this.dataset.section;
+        var tabBtn = document.querySelector('.tab-btn[data-tab="' + tabId + '"]');
+        if (tabBtn) tabBtn.click();
+        setTimeout(function() {
+          var sec = document.getElementById(secId);
+          if (sec) {
+            sec.hidden = false;
+            sec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        }, 300);
       });
     });
   }

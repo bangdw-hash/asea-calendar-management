@@ -278,6 +278,7 @@
            📋 주간허브 탭
            ════════════════════════════════════════════════════ -->
       <section id="tab-weekly-hub" class="tab-panel" role="tabpanel" hidden>
+        <div class="tab-body">
         <div class="hub-header">
           <h2 class="section-title">주간 업무보고 허브</h2>
           <button id="load-reports-btn" class="btn btn-primary btn-sm">Drive에서 불러오기</button>
@@ -319,6 +320,7 @@
             </button>
           </div>
         </div>
+        </div><!-- /.tab-body -->
 
       </section>
 
@@ -340,6 +342,7 @@
            ✉️ 이메일 탭
            ════════════════════════════════════════════════════ -->
       <section id="tab-email" class="tab-panel" role="tabpanel" hidden>
+        <div class="tab-body">
         <!-- 이메일 내부 탭 -->
         <div class="email-subtabs">
           <button class="email-subtab active" data-etab="compose">✉️ 메일 작성</button>
@@ -414,12 +417,14 @@
             <p class="empty-state">발송 이력이 없습니다.</p>
           </div>
         </div>
+        </div><!-- /.tab-body -->
       </section>
 
       <!-- ════════════════════════════════════════════════════
            📄 일정발췌 탭
            ════════════════════════════════════════════════════ -->
       <section id="tab-extract" class="tab-panel" role="tabpanel" hidden>
+        <div class="tab-body">
         <h2 class="section-title">일정발췌 (PDF → 캘린더)</h2>
 
         <!-- 서브탭 -->
@@ -524,12 +529,14 @@
             <p class="empty-state">추출 이력이 없습니다.</p>
           </div>
         </div>
+        </div><!-- /.tab-body -->
       </section>
 
       <!-- ════════════════════════════════════════════════════
            📋 업무관리 탭
            ════════════════════════════════════════════════════ -->
       <section id="tab-work" class="tab-panel" role="tabpanel" hidden>
+        <div class="tab-body">
         <h2 class="section-title">업무관리</h2>
 
         <!-- 상단 액션 -->
@@ -651,17 +658,19 @@
             <p class="empty-state">부서 업무 내역을 불러오는 중...</p>
           </div>
         </div>
+        </div><!-- /.tab-body -->
       </section>
 
       <!-- ════════════════════════════════════════════════════
            🏢 대관업무 탭
            ════════════════════════════════════════════════════ -->
       <section id="tab-facility" class="tab-panel" role="tabpanel" hidden>
+        <div class="tab-body">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px">
           <h2 class="section-title" style="margin:0">🏢 대관업무 예약</h2>
           <div style="display:flex;gap:8px;align-items:center">
             <span id="fac-admin-link" style="display:none">
-              <a href="#" onclick="document.querySelector('[data-tab=settings]').click();document.getElementById('fac-admin-section').scrollIntoView({behavior:'smooth'});return false" class="btn btn-ghost btn-sm">⚙️ 시설 관리</a>
+              <a href="#" onclick="document.querySelector('[data-tab=admin]').click();return false" class="btn btn-ghost btn-sm">🛡 관리자 패널</a>
             </span>
           </div>
         </div>
@@ -744,17 +753,19 @@
             <p class="empty-state">등록된 건물이 없습니다.</p>
           </div>
         </div>
+        </div><!-- /.tab-body -->
       </section>
 
       <!-- ════════════════════════════════════════════════════
            🚗 차량관리 탭
            ════════════════════════════════════════════════════ -->
       <section id="tab-vehicle" class="tab-panel" role="tabpanel" hidden>
+        <div class="tab-body">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px">
           <h2 class="section-title" style="margin:0">🚗 차량 예약 관리</h2>
           <div style="display:flex;gap:8px;align-items:center">
             <span id="veh-admin-link" style="display:none">
-              <a href="#" onclick="document.querySelector('[data-tab=settings]').click();document.getElementById('veh-admin-section').scrollIntoView({behavior:'smooth'});return false" class="btn btn-ghost btn-sm">⚙️ 차량 관리</a>
+              <a href="#" onclick="document.querySelector('[data-tab=admin]').click();return false" class="btn btn-ghost btn-sm">🛡 관리자 패널</a>
             </span>
           </div>
         </div>
@@ -802,19 +813,21 @@
             <p class="empty-state">등록된 차량이 없습니다.</p>
           </div>
         </div>
+        </div><!-- /.tab-body -->
       </section>
 
       <!-- ════════════════════════════════════════════════════
            🏫 강의실현황 탭
            ════════════════════════════════════════════════════ -->
       <section id="tab-classroom" class="tab-panel" role="tabpanel" hidden>
+        <div class="tab-body">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px">
           <h2 class="section-title" style="margin:0">🏫 강의실 예약 현황</h2>
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
             <button id="cls-view-timetable-btn" class="btn btn-secondary btn-sm active-view">시간표</button>
             <button id="cls-view-month-btn" class="btn btn-ghost btn-sm">월간</button>
             <span id="cls-admin-link" style="display:none">
-              <button id="cls-admin-toggle-btn" class="btn btn-ghost btn-sm">⚙️ 강의실 관리</button>
+              <a href="#" onclick="document.querySelector('[data-tab=admin]').click();return false" class="btn btn-ghost btn-sm">🛡 관리자 패널</a>
             </span>
           </div>
         </div>
@@ -874,6 +887,7 @@
             <p class="empty-state">등록된 예약이 없습니다.</p>
           </div>
         </div>
+        </div><!-- /.tab-body -->
       </section>
 
       <!-- ════════════════════════════════════════════════════
@@ -881,6 +895,7 @@
            ════════════════════════════════════════════════════ -->
       <!-- 🔧 작업지시 탭 -->
       <section id="tab-workorder" class="tab-panel" role="tabpanel" hidden>
+        <div class="tab-body">
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:18px">
           <h2 class="section-title" style="margin-bottom:0">🔧 작업지시</h2>
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
@@ -963,10 +978,12 @@
             </div>
           </div>
         </div>
+        </div><!-- /.tab-body -->
       </section>
 
       <!-- 🚪 강의실 입출입 관리 탭 -->
       <section id="tab-checkinmgmt" class="tab-panel" role="tabpanel" hidden>
+        <div class="tab-body">
 
         <!-- ── 상단 헤더 ── -->
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:18px">
@@ -1004,6 +1021,7 @@
           <div id="ci-log-summary" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-bottom:16px"></div>
           <div id="ci-log-list"><p class="empty-state">위 조건을 설정하고 조회 버튼을 누르세요.</p></div>
         </div>
+        </div><!-- /.tab-body -->
 
         <!-- ── 공간 등록 모달 ── -->
         <div id="ci-space-modal" class="modal" hidden aria-modal="true" role="dialog">
@@ -1103,6 +1121,7 @@
            📱 문자발송 탭
            ════════════════════════════════════════════════════ -->
       <section id="tab-sms" class="tab-panel" role="tabpanel" hidden>
+        <div class="tab-body">
         <h2 class="section-title">📱 문자 발송</h2>
 
         <!-- 서브탭 -->
@@ -1120,9 +1139,11 @@
 
         <!-- 설정 패널 -->
         <div id="sms-panel-settings" class="sms-panel" hidden></div>
+        </div><!-- /.tab-body -->
       </section>
 
       <section id="tab-settings" class="tab-panel" role="tabpanel" hidden>
+        <div class="tab-body">
         <h2 class="section-title">설정</h2>
 
         <!-- Google 계정 + 내 프로필 -->
@@ -1438,6 +1459,7 @@
             <button id="add-recipient-btn" class="btn btn-secondary btn-sm">추가</button>
           </div>
         </div>
+        </div><!-- /.tab-body -->
 
       </section>
 
@@ -1447,6 +1469,7 @@
       <section id="tab-board" class="tab-panel" role="tabpanel" hidden>
         <!-- Quill CSS -->
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css">
+        <div class="tab-body">
         <div class="board-container">
           <div class="board-header">
             <h2 class="section-title">게시판</h2>
@@ -1455,12 +1478,14 @@
             <div class="board-empty"><div class="board-empty-icon">📭</div><p>로딩 중...</p></div>
           </div>
         </div>
+        </div><!-- /.tab-body -->
       </section>
 
       <!-- ════════════════════════════════════════════════════
            🛡 관리자 탭
            ════════════════════════════════════════════════════ -->
       <section id="tab-admin" class="tab-panel" role="tabpanel" hidden>
+        <div class="tab-body">
         <div class="admin-container">
           <div class="admin-header">
             <h2 class="section-title">🛡 관리자 패널</h2>
@@ -1470,6 +1495,7 @@
             <div class="loading-state">로딩 중...</div>
           </div>
         </div>
+        </div><!-- /.tab-body -->
       </section>
 
       <!-- ════════════════════════════════════════════════════

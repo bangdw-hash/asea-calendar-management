@@ -195,10 +195,10 @@ var WorkModule = (function () {
 
     if (W.me) {
       var isAdmin = W.me.role === 'admin';
-      if ($w('hr-management-card')) $w('hr-management-card').hidden = !isAdmin;
-      if ($w('hr-init-card'))       $w('hr-init-card').hidden       = !isAdmin;
-      if ($w('hr-clear-card'))      $w('hr-clear-card').hidden      = !isAdmin;
-      if ($w('mgr-staff-card'))     $w('mgr-staff-card').hidden     = !isAdmin;
+      if ($w('hr-management-card')) $w('hr-management-card').hidden = true;
+      if ($w('hr-init-card'))       $w('hr-init-card').hidden       = true;
+      if ($w('hr-clear-card'))      $w('hr-clear-card').hidden      = true;
+      if ($w('mgr-staff-card'))     $w('mgr-staff-card').hidden     = true;
 
       // 대관/차량 관리자 섹션
       if (typeof FacilityModule  !== 'undefined') FacilityModule.initFacilityModule(isAdmin);

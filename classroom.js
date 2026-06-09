@@ -633,11 +633,12 @@ var ClassroomModule = (function () {
     var adminLink = $c('cls-admin-link');
     if (adminLink) adminLink.style.display = isAdmin ? '' : 'none';
     var adminSec = $c('cls-admin-section');
-    if (adminSec) adminSec.hidden = !isAdmin;
+    if (adminSec) adminSec.hidden = true;
 
-    // 관리자 토글 버튼
+    // 관리자 토글 버튼 (일반 탭에서는 숨김)
     var toggleBtn = $c('cls-admin-toggle-btn');
-    if (toggleBtn && isAdmin) {
+    if (toggleBtn) toggleBtn.style.display = 'none';
+    if (false && toggleBtn && isAdmin) {
       toggleBtn.addEventListener('click', function() {
         if (adminSec) adminSec.hidden = !adminSec.hidden;
       });

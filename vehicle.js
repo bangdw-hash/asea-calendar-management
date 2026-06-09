@@ -742,7 +742,7 @@ var VehicleModule = (function () {
     var adminLink    = $v('veh-admin-link');
     if (adminLink)    adminLink.style.display = isAdmin ? '' : 'none';
     var adminSection = $v('veh-admin-section');
-    if (adminSection) adminSection.hidden = !isAdmin;
+    if (adminSection) adminSection.hidden = true;
 
     var settingsVehCard = document.getElementById('settings-veh-card');
     if (settingsVehCard) settingsVehCard.hidden = !isAdmin;

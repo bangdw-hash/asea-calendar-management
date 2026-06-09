@@ -973,7 +973,7 @@ var FacilityModule = (function () {
     var adminLink    = $f('fac-admin-link');
     if (adminLink)    adminLink.style.display = isAdmin ? '' : 'none';
     var adminSection = $f('fac-admin-section');
-    if (adminSection) adminSection.hidden = !isAdmin;
+    if (adminSection) adminSection.hidden = true;
     var settingsFacCard = document.getElementById('settings-fac-card');
     if (settingsFacCard) settingsFacCard.hidden = !isAdmin;
 

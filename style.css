@@ -264,10 +264,24 @@ a        { color: var(--color-accent); text-decoration: none; }
   position: absolute;
   inset: 0;
   overflow-y: auto;
-  overflow-x: auto;
-  padding: var(--sp-4);
+  overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
 }
+
+/* ── tab-body: 각 탭 내부 콘텐츠 래퍼 ── */
+.tab-body {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 20px 20px 40px;
+}
+
+/* 캘린더 탭은 full-width 유지 */
+#tab-calendar { padding: 0; }
+#tab-calendar .calendar-toolbar,
+#tab-calendar .calendar-legend,
+#tab-calendar .calendar-container,
+#tab-calendar .calendar-filter-panel,
+#tab-calendar #duplicate-banner { padding-left: 16px; padding-right: 16px; }
 
 /* 탭 내부: 넓은 고정폭 블록이 viewport보다 좁아지지 않도록 */
 .tab-panel > * { min-width: 0; }
@@ -1604,7 +1618,8 @@ a        { color: var(--color-accent); text-decoration: none; }
   .form-row { grid-template-columns: 1fr; }
   .email-form { padding: var(--sp-3); }
   .settings-add-row { flex-wrap: wrap; }
-  .tab-panel { padding: 10px; }
+  .tab-panel { padding: 0; }
+  .tab-body { padding: 12px 12px 32px; }
 
   /* ── 모달: 하단 시트 ────────────────────────────────────── */
   .modal {
@@ -1672,7 +1687,8 @@ a        { color: var(--color-accent); text-decoration: none; }
 
 /* ── 20. 반응형 — 데스크톱 (≥ 1024px) ─────────────────────── */
 @media (min-width: 1024px) {
-  .tab-panel { padding: var(--sp-6); }
+  .tab-panel { padding: 0; }
+  .tab-body { padding: 24px 32px 48px; }
   .calendar-day { min-height: 120px; }
 }
 
@@ -4393,10 +4409,10 @@ body {
 /* ── 5. 탭 콘텐츠 패딩 ──────────────────────────────────────────── */
 .tab-panel {
   background: var(--color-bg);
-  padding: 20px 16px !important;
+  padding: 0 !important;
 }
 @media (min-width: 1024px) {
-  .tab-panel { padding: 28px 32px !important; }
+  .tab-panel { padding: 0 !important; }
 }
 
 /* ── 6. 섹션 타이틀 ─────────────────────────────────────────────── */
@@ -4772,7 +4788,8 @@ h3.settings-section-title {
   .desktop-tab-nav { display: none !important; }
 
   /* 탭 콘텐츠 하단 여백 (하단 탭 높이만큼) */
-  .tab-panel { padding: 14px 12px !important; padding-bottom: calc(var(--bottom-nav-h) + 20px) !important; }
+  .tab-panel { padding: 0 !important; }
+  .tab-body { padding: 14px 12px !important; padding-bottom: calc(var(--bottom-nav-h) + 20px) !important; }
 
   /* ── 하단 내비 (가로 스크롤) ── */
   .mobile-bottom-nav {
@@ -5037,7 +5054,7 @@ h3.settings-section-title {
 /* ════════════════════════════════════════════════════════════════
    📌 게시판 스타일
    ════════════════════════════════════════════════════════════════ */
-.board-container  { max-width: 1000px; margin: 0 auto; padding: 16px; }
+.board-container  { max-width: 100%; margin: 0; padding: 0; }
 .board-header     { margin-bottom: 12px; }
 .board-content    { }
 
@@ -5056,8 +5073,8 @@ h3.settings-section-title {
 /* ── 툴바 ──────────────────────────────────────────── */
 .board-toolbar    { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
 .board-filter-row { display: flex; gap: 6px; flex-wrap: wrap; }
-.board-search-row { display: flex; gap: 8px; align-items: center; }
-.board-search-inp { flex: 1; min-width: 0; }
+.board-search-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.board-search-inp { flex: 1; min-width: 180px; }
 
 .board-filter-btn {
   padding: 5px 14px; border: 1.5px solid var(--color-border, #e0e0e0);
@@ -5224,7 +5241,7 @@ h3.settings-section-title {
 /* ════════════════════════════════════════════════════════════════
    🛡 관리자 패널 스타일
    ════════════════════════════════════════════════════════════════ */
-.admin-container { max-width: 1100px; margin: 0 auto; padding: 16px; }
+.admin-container { max-width: 100%; margin: 0; padding: 0; }
 .admin-header    { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
 .admin-content   { }
 
@@ -5332,4 +5349,30 @@ h3.settings-section-title {
   .notice-popup-card  { width: 96vw; max-height: 88vh; }
   .uc-field-row { flex-wrap: wrap; }
   .uc-hex-inp   { width: 70px !important; }
+}
+
+/* ════════════════════════════════════════════════════════════════
+   🔗 탭별 관리 기능 (admin.js tab-admin section)
+   ════════════════════════════════════════════════════════════════ */
+.tab-admin-links {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 10px;
+}
+.tab-admin-btn {
+  padding: 16px;
+  border: 1.5px solid var(--color-border);
+  border-radius: 10px;
+  background: #fff;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+  transition: all 0.15s;
+  text-align: left;
+}
+.tab-admin-btn:hover {
+  border-color: var(--uc-accent, var(--color-accent));
+  color: var(--uc-accent, var(--color-accent));
+  background: var(--uc-chip-light-bg, var(--color-accent-light));
 }
