@@ -16,6 +16,7 @@
   <link rel="stylesheet" href="promo.css?v=20260610p1">
   <link rel="stylesheet" href="help.css?v=20260610h1">
   <link rel="stylesheet" href="meet.css?v=20260610mt1">
+  <link rel="stylesheet" href="hr.css?v=20260611hr1">
   <script src="https://accounts.google.com/gsi/client" async></script>
   <!-- SheetJS for Excel support -->
   <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
@@ -174,6 +175,13 @@
     </svg>
     <span class="tab-label">게시판</span>
     <span id="board-tab-badge" class="tab-badge" hidden>0</span>
+  </button>
+
+  <button class="tab-btn" data-tab="hr" role="tab" aria-selected="false">
+    <svg class="tab-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+    </svg>
+    <span class="tab-label">인사관리</span>
   </button>
 
   <button class="tab-btn" data-tab="zoom" role="tab" aria-selected="false">
@@ -1582,6 +1590,13 @@
       <!-- ════════════════════════════════════════════════════
            📹 Zoom 회의 탭
            ════════════════════════════════════════════════════ -->
+      <!-- ════════════════════════════════════════════════════
+           👥 인사관리 탭
+           ════════════════════════════════════════════════════ -->
+      <section id="tab-hr" class="tab-panel" role="tabpanel" hidden>
+        <div id="hr-root"></div>
+      </section>
+
       <section id="tab-zoom" class="tab-panel" role="tabpanel" hidden>
         <div id="zoom-root"></div>
       </section>
@@ -2844,6 +2859,7 @@
   <script src="monthly-report.js?v=20260610m1"></script>
   <script src="promo.js?v=20260610p1"></script>
   <script src="meet.js?v=20260610mt1"></script>
+  <script src="hr.js?v=20260611hr1"></script>
   <script src="help.js?v=20260609a1"></script>
   <script src="sheets.js?v=20260608w"></script>
   <script src="resutil.js?v=20260608s"></script>

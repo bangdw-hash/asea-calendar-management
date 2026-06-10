@@ -1,0 +1,443 @@
+/* =============================================================================
+   hr.css — 인사관리 모듈  .hr- 접두사
+   ============================================================================= */
+
+/* ── KoPubWorld Dotum 폰트 ── */
+@font-face {
+  font-family: 'KoPubWorldDotum';
+  font-weight: 300;
+  font-style: normal;
+  src: url('fonts/KoPubWorld-Dotum-Light.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'KoPubWorldDotum';
+  font-weight: 500;
+  font-style: normal;
+  src: url('fonts/KoPubWorld-Dotum-Medium.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'KoPubWorldDotum';
+  font-weight: 700;
+  font-style: normal;
+  src: url('fonts/KoPubWorld-Dotum-Bold.ttf') format('truetype');
+}
+
+/* ── 전체 래퍼 ── */
+.hr-wrap { max-width: 1100px; margin: 0 auto; padding: 20px 16px 60px; font-family: 'Pretendard', sans-serif; }
+
+/* ── HR 서브탭 ── */
+.hr-nav {
+  display: flex; gap: 4px; margin-bottom: 22px;
+  border-bottom: 2px solid #E5E7EB;
+}
+.hr-nav-btn {
+  padding: 9px 20px; background: none; border: none; border-bottom: 3px solid transparent;
+  margin-bottom: -2px; font-size: 13px; font-weight: 600; color: #6B7280; cursor: pointer;
+  transition: color .15s, border-color .15s; white-space: nowrap;
+}
+.hr-nav-btn:hover { color: #374151; }
+.hr-nav-btn.active { color: #1a3a5c; border-bottom-color: #1a3a5c; }
+.hr-nav-badge {
+  display: inline-block; margin-left: 5px; padding: 1px 6px;
+  background: #DC2626; color: #fff; border-radius: 10px; font-size: 10px;
+}
+
+/* ── 상태 카드 ── */
+.hr-stat-row { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+.hr-stat-card {
+  flex: 1; min-width: 120px; background: #fff; border: 1px solid #E5E7EB;
+  border-radius: 10px; padding: 14px 16px; text-align: center;
+  box-shadow: 0 1px 3px rgba(0,0,0,.04);
+}
+.hr-stat-num { font-size: 26px; font-weight: 700; color: #1a3a5c; }
+.hr-stat-label { font-size: 11px; color: #6B7280; margin-top: 2px; }
+
+/* ── 역할 선택 화면 ── */
+.hr-role-screen {
+  display: flex; flex-direction: column; align-items: center;
+  padding: 40px 20px;
+}
+.hr-role-title { font-size: 20px; font-weight: 700; color: #1a3a5c; margin-bottom: 8px; }
+.hr-role-desc  { font-size: 13px; color: #6B7280; margin-bottom: 28px; text-align: center; }
+.hr-role-cards { display: flex; gap: 16px; flex-wrap: wrap; justify-content: center; max-width: 700px; }
+.hr-role-card {
+  background: #fff; border: 2px solid #E5E7EB; border-radius: 14px;
+  padding: 24px 28px; cursor: pointer; width: 190px; text-align: center;
+  transition: border-color .2s, box-shadow .2s;
+}
+.hr-role-card:hover { border-color: #1a3a5c; box-shadow: 0 4px 16px rgba(26,58,92,.12); }
+.hr-role-icon  { font-size: 36px; margin-bottom: 10px; }
+.hr-role-name  { font-size: 14px; font-weight: 700; color: #1a3a5c; margin-bottom: 4px; }
+.hr-role-hint  { font-size: 11px; color: #9CA3AF; line-height: 1.5; }
+
+/* ── 코드/패스워드 입력 ── */
+.hr-auth-box {
+  background: #fff; border: 1px solid #D0E4F5; border-radius: 12px;
+  padding: 32px; max-width: 420px; margin: 0 auto; text-align: center;
+  box-shadow: 0 2px 12px rgba(0,0,0,.06);
+}
+.hr-auth-icon  { font-size: 42px; margin-bottom: 12px; }
+.hr-auth-title { font-size: 18px; font-weight: 700; color: #1a3a5c; margin-bottom: 6px; }
+.hr-auth-desc  { font-size: 13px; color: #6B7280; margin-bottom: 20px; line-height: 1.6; }
+.hr-auth-input {
+  width: 100%; padding: 10px 14px; border: 1.5px solid #D1D5DB; border-radius: 8px;
+  font-size: 15px; text-align: center; letter-spacing: 4px; box-sizing: border-box;
+  margin-bottom: 12px; font-family: 'Pretendard', monospace;
+}
+.hr-auth-input:focus { outline: none; border-color: #1a3a5c; box-shadow: 0 0 0 3px rgba(26,58,92,.1); }
+.hr-auth-err { color: #DC2626; font-size: 12px; margin-bottom: 10px; min-height: 16px; }
+
+/* ── 공통 버튼 ── */
+.hr-btn {
+  padding: 9px 20px; border-radius: 8px; font-size: 13px; font-weight: 600;
+  cursor: pointer; border: none; transition: background .15s, opacity .15s;
+  font-family: 'Pretendard', sans-serif;
+}
+.hr-btn-primary { background: #1a3a5c; color: #fff; }
+.hr-btn-primary:hover { background: #122840; }
+.hr-btn-secondary { background: #E5E7EB; color: #374151; }
+.hr-btn-secondary:hover { background: #D1D5DB; }
+.hr-btn-ghost { background: transparent; color: #6B7280; border: 1px solid #D1D5DB; }
+.hr-btn-ghost:hover { background: #F9FAFB; }
+.hr-btn-danger { background: #FEE2E2; color: #DC2626; border: 1px solid #FECACA; }
+.hr-btn-danger:hover { background: #FECACA; }
+.hr-btn-success { background: #16A34A; color: #fff; }
+.hr-btn-success:hover { background: #15803D; }
+.hr-btn-sm { padding: 5px 12px; font-size: 12px; }
+.hr-btn:disabled { opacity: .5; cursor: not-allowed; }
+.hr-btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* ── 진행 단계 표시 ── */
+.hr-steps {
+  display: flex; align-items: center; gap: 0; margin-bottom: 28px;
+  overflow-x: auto; padding-bottom: 4px;
+}
+.hr-step {
+  display: flex; align-items: center; flex-shrink: 0;
+}
+.hr-step-dot {
+  width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center;
+  justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0;
+  background: #E5E7EB; color: #9CA3AF; border: 2px solid #E5E7EB;
+}
+.hr-step.done   .hr-step-dot { background: #16A34A; border-color: #16A34A; color: #fff; }
+.hr-step.active .hr-step-dot { background: #1a3a5c; border-color: #1a3a5c; color: #fff; }
+.hr-step-label  { font-size: 11px; color: #9CA3AF; margin: 0 6px; white-space: nowrap; }
+.hr-step.done   .hr-step-label  { color: #16A34A; font-weight: 600; }
+.hr-step.active .hr-step-label  { color: #1a3a5c; font-weight: 700; }
+.hr-step-line   { width: 24px; height: 2px; background: #E5E7EB; flex-shrink: 0; }
+.hr-step.done + .hr-step .hr-step-line { background: #16A34A; }
+
+/* ── 섹션 카드 ── */
+.hr-card {
+  background: #fff; border: 1px solid #E5E7EB; border-radius: 12px;
+  margin-bottom: 18px; box-shadow: 0 1px 4px rgba(0,0,0,.04); overflow: hidden;
+}
+.hr-card-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 20px; cursor: pointer; background: #F8FAFF;
+  border-bottom: 1px solid #E5E7EB;
+}
+.hr-card-head:hover { background: #EEF4FF; }
+.hr-card-title {
+  font-size: 14px; font-weight: 700; color: #1a3a5c;
+  display: flex; align-items: center; gap: 8px;
+}
+.hr-card-title .hr-badge-ok  { background: #DCFCE7; color: #15803D; font-size: 10px; padding: 2px 7px; border-radius: 10px; font-weight: 600; }
+.hr-card-title .hr-badge-req { background: #FEF9C3; color: #A16207; font-size: 10px; padding: 2px 7px; border-radius: 10px; font-weight: 600; }
+.hr-card-toggle { color: #9CA3AF; font-size: 18px; }
+.hr-card-body   { padding: 20px; }
+
+/* ── 채용지원서 폼 ── */
+.hr-app-form { font-size: 13px; }
+.hr-photo-row { display: flex; gap: 20px; margin-bottom: 16px; }
+.hr-photo-box {
+  width: 100px; height: 130px; border: 2px dashed #D1D5DB; border-radius: 6px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  cursor: pointer; flex-shrink: 0; overflow: hidden; background: #F9FAFB;
+  transition: border-color .15s;
+}
+.hr-photo-box:hover { border-color: #1a3a5c; }
+.hr-photo-box img { width: 100%; height: 100%; object-fit: cover; }
+.hr-photo-hint { font-size: 10px; color: #9CA3AF; text-align: center; padding: 4px; }
+.hr-photo-label { font-size: 10px; color: #6B7280; margin-top: 4px; }
+
+.hr-form-section { margin-bottom: 16px; }
+.hr-section-title {
+  font-size: 12px; font-weight: 700; color: #1a3a5c;
+  background: #F0F4FF; padding: 6px 10px; border-radius: 6px; margin-bottom: 10px;
+}
+.hr-row { display: flex; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
+.hr-field { display: flex; flex-direction: column; gap: 3px; }
+.hr-field label { font-size: 11px; font-weight: 600; color: #374151; }
+.hr-field input, .hr-field select, .hr-field textarea {
+  padding: 7px 10px; border: 1px solid #D1D5DB; border-radius: 6px;
+  font-size: 12px; font-family: 'Pretendard', sans-serif; box-sizing: border-box;
+}
+.hr-field input:focus, .hr-field select:focus, .hr-field textarea:focus {
+  outline: none; border-color: #1a3a5c; box-shadow: 0 0 0 2px rgba(26,58,92,.1);
+}
+.hr-field textarea { resize: vertical; min-height: 52px; }
+.hr-field.flex1 { flex: 1; min-width: 80px; }
+.hr-field.flex2 { flex: 2; min-width: 120px; }
+.hr-field.flex3 { flex: 3; min-width: 160px; }
+.hr-field.w80  { width: 80px; flex-shrink: 0; }
+.hr-field.w100 { width: 100px; flex-shrink: 0; }
+.hr-field.w120 { width: 120px; flex-shrink: 0; }
+.hr-field.w140 { width: 140px; flex-shrink: 0; }
+.hr-field.w200 { width: 200px; flex-shrink: 0; }
+.hr-field.full { width: 100%; }
+
+.hr-cb-row { display: flex; gap: 14px; flex-wrap: wrap; align-items: center; padding: 4px 0; }
+.hr-cb-item { display: flex; align-items: center; gap: 4px; cursor: pointer; font-size: 12px; color: #374151; }
+.hr-cb-item input[type=checkbox], .hr-cb-item input[type=radio] { width: 14px; height: 14px; cursor: pointer; accent-color: #1a3a5c; }
+
+/* 표 형식 섹션 (학력, 경력, 가족 등) */
+.hr-table-wrap { overflow-x: auto; margin-bottom: 10px; }
+.hr-table {
+  width: 100%; border-collapse: collapse; font-size: 11.5px;
+}
+.hr-table th {
+  background: #F0F4FF; color: #1a3a5c; font-weight: 700;
+  padding: 6px 8px; border: 1px solid #D1D5DB; text-align: center;
+  white-space: nowrap;
+}
+.hr-table td {
+  padding: 4px 6px; border: 1px solid #E5E7EB; vertical-align: middle;
+}
+.hr-table td input, .hr-table td select {
+  width: 100%; padding: 5px 6px; border: 1px solid #E5E7EB; border-radius: 4px;
+  font-size: 11px; font-family: 'Pretendard', sans-serif; box-sizing: border-box; background: transparent;
+}
+.hr-table td input:focus, .hr-table td select:focus {
+  outline: none; border-color: #1a3a5c;
+}
+.hr-table tr:hover td { background: #F8FAFF; }
+
+/* ── 서명 패드 ── */
+.hr-sig-wrap { text-align: left; }
+.hr-sig-label { font-size: 12px; font-weight: 600; color: #374151; margin-bottom: 6px; }
+.hr-sig-canvas {
+  border: 1.5px solid #D1D5DB; border-radius: 8px; cursor: crosshair;
+  background: #FAFAFA; display: block; touch-action: none;
+}
+.hr-sig-actions { display: flex; gap: 6px; margin-top: 6px; align-items: center; }
+.hr-sig-hint { font-size: 11px; color: #9CA3AF; }
+
+/* ── 파일 업로드 ── */
+.hr-upload-section { margin-bottom: 18px; }
+.hr-upload-title {
+  font-size: 13px; font-weight: 700; color: #1a3a5c;
+  margin-bottom: 8px; display: flex; align-items: center; gap: 6px;
+}
+.hr-upload-num {
+  width: 20px; height: 20px; border-radius: 50%; background: #1a3a5c;
+  color: #fff; font-size: 10px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.hr-upload-zone {
+  border: 2px dashed #CBD5E1; border-radius: 10px; padding: 20px;
+  text-align: center; cursor: pointer; background: #F8FAFF;
+  transition: border-color .2s, background .2s;
+}
+.hr-upload-zone:hover, .hr-upload-zone.dragover {
+  border-color: #1a3a5c; background: #EEF4FF;
+}
+.hr-upload-zone-icon { font-size: 28px; margin-bottom: 6px; }
+.hr-upload-zone-text { font-size: 12px; color: #6B7280; }
+.hr-uploaded-list { margin-top: 10px; display: flex; flex-direction: column; gap: 6px; }
+.hr-uploaded-item {
+  display: flex; align-items: center; gap: 10px;
+  background: #F0FDF4; border: 1px solid #BBF7D0; border-radius: 8px;
+  padding: 8px 12px; font-size: 12px;
+}
+.hr-uploaded-item.pdf-file  { background: #FFF7ED; border-color: #FED7AA; }
+.hr-uploaded-item.img-file  { background: #F0F9FF; border-color: #BAE6FD; }
+.hr-uploaded-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #1a3a5c; font-weight: 500; }
+.hr-uploaded-size { color: #9CA3AF; font-size: 11px; flex-shrink: 0; }
+.hr-uploaded-del  { flex-shrink: 0; background: none; border: none; cursor: pointer; color: #DC2626; font-size: 14px; padding: 0 2px; }
+
+/* ── 퇴직연금 서류 안내 ── */
+.hr-pension-banner {
+  background: linear-gradient(135deg, #1a3a5c 0%, #2563EB 100%);
+  color: #fff; border-radius: 12px; padding: 20px 24px; margin-bottom: 18px;
+}
+.hr-pension-banner h3 { font-size: 16px; font-weight: 700; margin-bottom: 6px; }
+.hr-pension-banner p  { font-size: 13px; opacity: .9; line-height: 1.6; }
+.hr-pension-files { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }
+.hr-pension-file {
+  flex: 1; min-width: 200px; background: #fff; border: 1px solid #E5E7EB;
+  border-radius: 10px; padding: 16px; display: flex; flex-direction: column; gap: 8px;
+  box-shadow: 0 1px 4px rgba(0,0,0,.04);
+}
+.hr-pension-file-icon { font-size: 28px; }
+.hr-pension-file-name { font-size: 13px; font-weight: 700; color: #1a3a5c; }
+.hr-pension-file-desc { font-size: 11px; color: #6B7280; line-height: 1.5; }
+.hr-pension-notice {
+  background: #FEF9C3; border: 1px solid #FDE68A; border-radius: 10px;
+  padding: 16px 20px; margin-bottom: 12px;
+}
+.hr-pension-notice-title { font-size: 13px; font-weight: 700; color: #92400E; margin-bottom: 8px; }
+.hr-pension-notice p { font-size: 12px; color: #78350F; line-height: 1.7; margin: 0; }
+
+/* ── 관리자 목록 ── */
+.hr-mgr-toolbar {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 14px; flex-wrap: wrap; gap: 10px;
+}
+.hr-mgr-search {
+  padding: 8px 12px; border: 1px solid #D1D5DB; border-radius: 8px;
+  font-size: 13px; width: 240px; font-family: 'Pretendard', sans-serif;
+}
+.hr-applicant-card {
+  background: #fff; border: 1px solid #E5E7EB; border-radius: 10px;
+  padding: 14px 18px; margin-bottom: 10px; cursor: pointer;
+  transition: box-shadow .15s, border-color .15s;
+  display: flex; align-items: center; gap: 16px;
+}
+.hr-applicant-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,.08); border-color: #BFDBFE; }
+.hr-applicant-num {
+  width: 36px; height: 36px; border-radius: 50%; background: #EEF4FF;
+  color: #1a3a5c; font-size: 13px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.hr-applicant-info { flex: 1; min-width: 0; }
+.hr-applicant-name { font-size: 14px; font-weight: 700; color: #111827; }
+.hr-applicant-meta { font-size: 11px; color: #6B7280; margin-top: 3px; }
+.hr-status-badge {
+  display: inline-block; padding: 3px 10px; border-radius: 12px;
+  font-size: 11px; font-weight: 700; flex-shrink: 0;
+}
+.hr-status-pending   { background: #FEF9C3; color: #A16207; }
+.hr-status-partial   { background: #DBEAFE; color: #1D4ED8; }
+.hr-status-submitted { background: #DCFCE7; color: #15803D; }
+.hr-status-approved  { background: #F3E8FF; color: #7E22CE; }
+
+/* ── 관리자 코드 생성 ── */
+.hr-code-card {
+  background: #fff; border: 1px solid #E5E7EB; border-radius: 10px;
+  padding: 16px 18px; margin-bottom: 10px; display: flex;
+  align-items: center; gap: 14px;
+}
+.hr-code-val {
+  font-size: 18px; font-weight: 700; color: #1a3a5c; letter-spacing: 3px;
+  font-family: 'Pretendard', monospace; flex-shrink: 0;
+}
+.hr-code-meta { flex: 1; font-size: 11px; color: #6B7280; line-height: 1.6; }
+
+/* ── 출력 완료 화면 ── */
+.hr-done-screen {
+  text-align: center; padding: 48px 20px;
+}
+.hr-done-icon { font-size: 56px; margin-bottom: 16px; }
+.hr-done-title { font-size: 20px; font-weight: 700; color: #16A34A; margin-bottom: 8px; }
+.hr-done-desc  { font-size: 14px; color: #6B7280; line-height: 1.7; margin-bottom: 24px; }
+
+/* ── 빈 상태 ── */
+.hr-empty { text-align: center; padding: 48px 20px; color: #9CA3AF; font-size: 14px; line-height: 1.8; }
+.hr-empty-icon { font-size: 40px; display: block; margin-bottom: 8px; }
+
+/* ── 토스트 ── */
+.hr-toast {
+  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+  padding: 10px 22px; border-radius: 8px; font-size: 13px; z-index: 9999;
+  animation: hr-fadein .2s ease; pointer-events: none; color: #fff; white-space: nowrap;
+  background: #1a3a5c;
+}
+@keyframes hr-fadein {
+  from { opacity: 0; transform: translateX(-50%) translateY(8px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+/* ── 모달 ── */
+.hr-modal-bd {
+  position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 8000;
+  display: flex; align-items: center; justify-content: center; padding: 20px;
+}
+.hr-modal {
+  background: #fff; border-radius: 14px; width: min(700px, 96vw);
+  max-height: 90vh; overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0,0,0,.25); padding: 0;
+}
+.hr-modal-head {
+  padding: 18px 24px; border-bottom: 1px solid #E5E7EB;
+  display: flex; align-items: center; justify-content: space-between;
+  position: sticky; top: 0; background: #fff; z-index: 1;
+}
+.hr-modal-title { font-size: 16px; font-weight: 700; color: #1a3a5c; }
+.hr-modal-close {
+  background: none; border: none; cursor: pointer; font-size: 18px; color: #6B7280;
+  padding: 4px; border-radius: 4px;
+}
+.hr-modal-close:hover { background: #F3F4F6; }
+.hr-modal-body { padding: 24px; }
+.hr-modal-foot {
+  padding: 14px 24px; border-top: 1px solid #E5E7EB;
+  display: flex; justify-content: flex-end; gap: 8px;
+  position: sticky; bottom: 0; background: #fff;
+}
+
+/* ── 뷰 상세 (관리자 지원자 상세보기) ── */
+.hr-view-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 20px; margin-bottom: 14px; }
+.hr-view-item { }
+.hr-view-label { font-size: 11px; color: #9CA3AF; font-weight: 600; text-transform: uppercase; margin-bottom: 2px; }
+.hr-view-value { font-size: 13px; color: #111827; font-weight: 500; }
+.hr-view-section-title {
+  font-size: 12px; font-weight: 700; background: #F0F4FF;
+  padding: 5px 10px; border-radius: 5px; margin: 12px 0 8px; color: #1a3a5c;
+}
+.hr-file-link {
+  display: inline-flex; align-items: center; gap: 5px; padding: 5px 10px;
+  background: #F0F4FF; border: 1px solid #BFDBFE; border-radius: 6px;
+  color: #1D4ED8; font-size: 12px; text-decoration: none; cursor: pointer;
+  margin: 3px; transition: background .15s;
+}
+.hr-file-link:hover { background: #DBEAFE; }
+
+/* ── 구분선 ── */
+.hr-divider { border: none; border-top: 1px solid #E5E7EB; margin: 18px 0; }
+
+/* ── 인쇄 영역 ── */
+@media print {
+  body > *:not(#hr-print-area) { display: none !important; }
+  #hr-print-area { display: block !important; font-family: 'KoPubWorldDotum', '맑은 고딕', sans-serif; }
+  .hr-print-page {
+    width: 210mm; min-height: 297mm; padding: 12mm 14mm;
+    font-size: 9.5pt; line-height: 1.5; color: #000;
+    box-sizing: border-box; page-break-after: always;
+  }
+  .hr-print-title {
+    text-align: center; font-size: 15pt; font-weight: 700;
+    margin-bottom: 6mm; letter-spacing: 2px;
+  }
+  .hr-print-subtitle { text-align: center; font-size: 11pt; font-weight: 500; margin-bottom: 8mm; }
+  .hr-print-section-head {
+    background: #eee; font-weight: 700; padding: 2mm 3mm;
+    font-size: 9pt; margin: 4mm 0 2mm;
+  }
+  .hr-print-grid { display: grid; grid-template-columns: auto 1fr auto 1fr; gap: 0; border: 1px solid #000; }
+  .hr-print-grid > * { padding: 2mm 3mm; border-right: 1px solid #888; border-bottom: 1px solid #888; font-size: 9pt; }
+  .hr-print-lbl { background: #f0f0f0; font-weight: 700; white-space: nowrap; }
+  .hr-print-val { word-break: break-word; }
+  .hr-print-table { width: 100%; border-collapse: collapse; font-size: 8.5pt; margin-bottom: 3mm; }
+  .hr-print-table th { background: #f0f0f0; font-weight: 700; padding: 2mm; border: 1px solid #000; text-align: center; }
+  .hr-print-table td { padding: 2mm; border: 1px solid #888; }
+  .hr-print-sig-row { display: flex; justify-content: flex-end; margin-top: 6mm; align-items: center; gap: 8mm; }
+  .hr-print-sig-box { text-align: center; }
+  .hr-print-sig-img { width: 35mm; height: 20mm; border-bottom: 1px solid #000; display: block; margin: 0 auto; object-fit: contain; }
+  .hr-print-date { font-size: 10pt; }
+  .hr-print-footnote { font-size: 7.5pt; color: #555; margin-top: 4mm; border-top: 1px solid #ccc; padding-top: 2mm; }
+  .hr-print-photo { float: right; width: 25mm; height: 32mm; border: 1px solid #000; margin-left: 4mm; }
+}
+
+/* 화면상 인쇄 미리보기 */
+#hr-print-area { display: none; }
+
+/* ── 반응형 ── */
+@media (max-width: 640px) {
+  .hr-role-cards { flex-direction: column; align-items: center; }
+  .hr-role-card  { width: 100%; max-width: 320px; }
+  .hr-view-grid  { grid-template-columns: 1fr; }
+  .hr-stat-row   { gap: 8px; }
+  .hr-form-grid-2 { grid-template-columns: 1fr !important; }
+}
