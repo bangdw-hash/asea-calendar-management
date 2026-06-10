@@ -4513,9 +4513,9 @@ h3.settings-section-title {
   padding: 20px !important;
   margin-bottom: 14px !important;
 }
-/* 설정 탭: 중앙 정렬 — 너무 넓어지지 않도록 제한 */
+/* 설정 탭: 표준 폭과 동일하게 */
 #tab-settings .tab-body {
-  max-width: 840px !important;
+  max-width: 1100px;
 }
 
 /* ── 8. 버튼 — 알약형 ─────────────────────────────────────────────── */

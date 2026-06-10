@@ -3,7 +3,7 @@
    .hlp- 접두사
    ================================================================ */
 
-.hlp-wrap { max-width: 860px; margin: 0 auto; padding: 20px 16px 60px; }
+.hlp-wrap { max-width: 1100px; margin: 0 auto; padding: 20px 16px 60px; }
 
 /* ── 헤더 ── */
 .hlp-header { background: linear-gradient(135deg,#003087,#0078D4);

@@ -109,7 +109,7 @@ window.ReportModule = (function () {
 
   function htmlSubTabNav() {
     var tabs = [
-      { id: 'weekly',      label: '주간업무보고서' },
+      { id: 'weekly',      label: '주간업무보고' },
       { id: 'monthly',     label: '월간업무보고' },
       { id: 'annual',      label: '연간 운영계획보고' },
       { id: 'semiannual',  label: '하반기 운영계획보고' },
@@ -150,7 +150,7 @@ window.ReportModule = (function () {
 
     return '<div class="rpt-wrap">'+
       '<div class="rpt-bar">'+
-      '<span class="rpt-bar-title">📋 주간업무보고서</span>'+
+      '<span class="rpt-bar-title">📋 주간업무보고</span>'+
       '<div class="rpt-bar-right">'+
       (isAdmin()?'<button class="rpt-btn rpt-outline rpt-sm" id="_admin">⚙️ 주차관리</button>':'')+
       (isAdmin()?'<button class="rpt-btn rpt-outline rpt-sm" id="_compile">📦 취합 PDF</button>':'')+
@@ -769,11 +769,24 @@ window.ReportModule = (function () {
   /* ══════════════════════════════════════════════
      연간 운영계획보고
   ══════════════════════════════════════════════ */
+  var _annualYear = new Date().getFullYear();
+
   function htmlAnnual() {
-    var year = new Date().getFullYear();
+    var year = _annualYear;
+    var yearOpts = '';
+    for (var y = year - 2; y <= year + 3; y++) {
+      yearOpts += '<option value="'+y+'"'+(y===year?' selected':'')+'>'+y+'년</option>';
+    }
+    var previewBtn = '<button class="rpt-btn rpt-primary rpt-sm" id="annual-preview-btn-top">👁️ 미리보기</button>';
+    var previewBtnBottom = '<button class="rpt-btn rpt-primary rpt-sm" id="annual-preview-btn-bot" style="margin-top:16px">👁️ 미리보기</button>';
     return '<div class="rpt-wrap rpt-annual-wrap">'+
-      '<div class="rpt-bar"><span class="rpt-bar-title">📅 '+year+'학년도 연간 운영계획보고</span>'+
-      '<button class="rpt-btn rpt-outline rpt-sm" onclick="window.print()">🖨️ 인쇄</button></div>'+
+      '<div class="rpt-period-header">'+
+        '<span class="rpt-period-label">보고 연도</span>'+
+        '<select id="annual-year-sel" class="rpt-period-sel">'+yearOpts+'</select>'+
+        '<span class="rpt-period-hint">연간 운영계획보고</span>'+
+        '<div style="flex:1"></div>'+
+        previewBtn+
+      '</div>'+
       '<div class="rpt-annual-body">'+
       '<p class="rpt-annual-notice">※ 연간 운영계획보고는 학교 전체 방향성 및 부서별 연간 목표를 공유하는 자리입니다.</p>'+
       htmlAnnualSection('학교 비전 및 연간 경영 목표', [
@@ -795,7 +808,9 @@ window.ReportModule = (function () {
         { name: '예상 리스크', ph: '등록 감소 / 경쟁 심화 / 규제 변화 등' },
         { name: '대응 전략', ph: '각 리스크별 완화 방안' },
       ])+
-      '</div></div>';
+      '</div>'+
+      '<div style="display:flex;justify-content:flex-end">'+previewBtnBottom+'</div>'+
+      '</div>';
   }
 
   function htmlAnnualSection(title, items) {
@@ -968,8 +983,14 @@ window.ReportModule = (function () {
     { name: '건의사항 (공통-2)',         textarea: true },
   ];
 
+  var _semiYear = new Date().getFullYear();
+
   function htmlSemiAnnual() {
-    var year = new Date().getFullYear();
+    var year = _semiYear;
+    var yearOpts = '';
+    for (var y = year - 2; y <= year + 3; y++) {
+      yearOpts += '<option value="'+y+'"'+(y===year?' selected':'')+'>'+y+'년</option>';
+    }
     var deptOpts = '<option value="">-- 부서를 선택하세요 --</option>'+
       SEMI_DEPTS.map(function(d){
         return '<option value="'+d.id+'"'+(d.id===_semiDeptId?' selected':'')+'>'+d.label+'</option>';
@@ -981,6 +1002,9 @@ window.ReportModule = (function () {
       var schema = dept ? SEMI_SCHEMA[dept.group] : null;
       if (schema) {
         formHtml = '<div class="rpt-semi-form">'+
+          '<div style="display:flex;justify-content:flex-end;margin-bottom:8px">'+
+          '<button class="rpt-btn rpt-primary rpt-sm" id="semi-preview-btn-top">👁️ 미리보기</button>'+
+          '</div>'+
           '<div class="rpt-semi-principles">'+
           '<span class="rpt-semi-pill">수치 우선</span>'+
           '<span class="rpt-semi-pill">전년 비교</span>'+
@@ -993,14 +1017,18 @@ window.ReportModule = (function () {
           '<div class="rpt-semi-actions">'+
           '<button class="rpt-btn rpt-primary" id="_semi-save">💾 작성 내용 저장</button>'+
           '<button class="rpt-btn rpt-outline" onclick="window.print()">🖨️ 인쇄 / PDF</button>'+
+          '<button class="rpt-btn rpt-primary" id="semi-preview-btn-bot">👁️ 미리보기</button>'+
           '</div>'+
           '</div>';
       }
     }
 
     return '<div class="rpt-wrap rpt-semi-wrap">'+
-      '<div class="rpt-bar">'+
-      '<span class="rpt-bar-title">📊 '+year+'학년도 하반기 부서업무보고 운영계획 실행안</span>'+
+      '<div class="rpt-period-header">'+
+        '<span class="rpt-period-label">보고 연도</span>'+
+        '<select id="semi-year-sel" class="rpt-period-sel">'+yearOpts+'</select>'+
+        '<span class="rpt-period-hint">하반기 운영계획보고</span>'+
+        '<div style="flex:1"></div>'+
       '</div>'+
       '<div class="rpt-semi-dept-row">'+
       '<label class="rpt-semi-dept-label">보고 부서</label>'+
@@ -1075,6 +1103,37 @@ window.ReportModule = (function () {
         render();
       });
     }
+    // 연간 연도 선택
+    var annualYearSel = $q('#annual-year-sel');
+    if (annualYearSel) {
+      annualYearSel.addEventListener('change', function(){
+        _annualYear = parseInt(annualYearSel.value);
+        render();
+      });
+    }
+    // 연간 미리보기
+    [$q('#annual-preview-btn-top'), $q('#annual-preview-btn-bot')].forEach(function(btn){
+      if (!btn) return;
+      btn.addEventListener('click', function(){
+        _showAnnualPreview();
+      });
+    });
+    // 하반기 연도 선택
+    var semiYearSel = $q('#semi-year-sel');
+    if (semiYearSel) {
+      semiYearSel.addEventListener('change', function(){
+        _semiYear = parseInt(semiYearSel.value);
+        render();
+      });
+    }
+    // 하반기 미리보기
+    [$q('#semi-preview-btn-top'), $q('#semi-preview-btn-bot')].forEach(function(btn){
+      if (!btn) return;
+      btn.addEventListener('click', function(){
+        _showSemiPreview();
+      });
+    });
+
     var semiSave = $q('#_semi-save');
     if (semiSave) {
       semiSave.addEventListener('click', function(){
@@ -1097,6 +1156,92 @@ window.ReportModule = (function () {
         });
       }catch(e){}
     }
+  }
+
+  /* ── 연간 운영계획보고 미리보기 ── */
+  function _showAnnualPreview() {
+    var year = _annualYear;
+    var sections = [];
+    $qa('.rpt-annual-sec').forEach(function(sec){
+      var title = sec.querySelector('.rpt-annual-sec-title');
+      var items = [];
+      sec.querySelectorAll('.rpt-annual-item').forEach(function(item){
+        var label = item.querySelector('.rpt-annual-label');
+        var ta = item.querySelector('.rpt-annual-ta');
+        items.push({ name: label ? label.textContent : '', val: ta ? ta.value : '' });
+      });
+      sections.push({ title: title ? title.textContent : '', items: items });
+    });
+    var bodyHtml = sections.map(function(s){
+      return '<div style="margin-bottom:20px">'+
+        '<div style="font-size:14px;font-weight:700;color:#1a3a5c;border-bottom:2px solid #3B82F6;padding-bottom:4px;margin-bottom:8px">'+_esc(s.title)+'</div>'+
+        s.items.map(function(it){
+          return '<div style="margin-bottom:8px">'+
+            '<div style="font-size:12px;font-weight:600;color:#374151;margin-bottom:2px">'+_esc(it.name)+'</div>'+
+            '<div style="font-size:12px;color:#4b5563;white-space:pre-wrap;padding:6px 8px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:4px;min-height:32px">'+_esc(it.val||'(미입력)')+'</div>'+
+            '</div>';
+        }).join('')+
+        '</div>';
+    }).join('');
+    _openPreviewPopup(year+'학년도 연간 운영계획보고', bodyHtml);
+  }
+
+  /* ── 하반기 운영계획보고 미리보기 ── */
+  function _showSemiPreview() {
+    var year = _semiYear;
+    var dept = SEMI_DEPTS.find(function(d){ return d.id===_semiDeptId; });
+    var deptName = dept ? dept.label : '부서 미선택';
+    var rows = [];
+    $qa('[data-key]').forEach(function(el){
+      rows.push({ key: el.dataset.key, val: el.tagName==='TEXTAREA'?el.value:el.value });
+    });
+    var secs = [];
+    $qa('.rpt-semi-sec').forEach(function(sec){
+      var titleEl = sec.querySelector('.rpt-semi-sec-title');
+      var items = [];
+      sec.querySelectorAll('.rpt-semi-item').forEach(function(item){
+        var t = item.querySelector('.rpt-semi-item-title');
+        var ta = item.querySelector('.rpt-semi-ta');
+        items.push({ name: t?t.textContent:'', val: ta?ta.value:'' });
+      });
+      secs.push({ title: titleEl?titleEl.textContent:'', items: items });
+    });
+    var bodyHtml = secs.map(function(s){
+      return '<div style="margin-bottom:20px">'+
+        '<div style="font-size:14px;font-weight:700;color:#1a3a5c;border-bottom:2px solid #7C3AED;padding-bottom:4px;margin-bottom:8px">'+_esc(s.title)+'</div>'+
+        s.items.map(function(it){
+          return '<div style="margin-bottom:8px">'+
+            '<div style="font-size:12px;font-weight:600;color:#374151;margin-bottom:2px">'+_esc(it.name)+'</div>'+
+            '<div style="font-size:12px;color:#4b5563;white-space:pre-wrap;padding:6px 8px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:4px;min-height:32px">'+_esc(it.val||'(미입력)')+'</div>'+
+            '</div>';
+        }).join('')+
+        '</div>';
+    }).join('');
+    _openPreviewPopup(year+'학년도 하반기 운영계획보고 — '+deptName, bodyHtml);
+  }
+
+  function _esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+  function _openPreviewPopup(title, bodyHtml) {
+    var existing = document.getElementById('rpt-preview-popup');
+    if (existing) existing.remove();
+    var popup = document.createElement('div');
+    popup.id = 'rpt-preview-popup';
+    popup.style.cssText = 'position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.45)';
+    popup.innerHTML =
+      '<div style="background:#fff;border-radius:12px;width:min(760px,96vw);max-height:90vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,0.3)">'+
+        '<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid #e5e7eb">'+
+          '<span style="font-weight:700;font-size:15px;color:#111827">'+_esc(title)+'</span>'+
+          '<div style="display:flex;gap:8px">'+
+            '<button onclick="window.print()" style="padding:6px 12px;border-radius:6px;border:1px solid #d1d5db;background:#fff;cursor:pointer;font-size:12px">🖨️ 인쇄</button>'+
+            '<button id="rpt-preview-close" style="padding:6px 12px;border-radius:6px;border:none;background:#ef4444;color:#fff;cursor:pointer;font-size:12px">✕ 닫기</button>'+
+          '</div>'+
+        '</div>'+
+        '<div style="padding:20px;overflow-y:auto;flex:1">'+bodyHtml+'</div>'+
+      '</div>';
+    document.body.appendChild(popup);
+    popup.querySelector('#rpt-preview-close').addEventListener('click', function(){ popup.remove(); });
+    popup.addEventListener('click', function(e){ if(e.target===popup) popup.remove(); });
   }
 
   /* ══════════════════════════════════════════════
