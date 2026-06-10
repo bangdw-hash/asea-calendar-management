@@ -104,7 +104,7 @@ window.HRModule = (function () {
         signDate: '', photoB64: '', signB64: ''
       },
       form2: {            // 개인정보 동의서
-        agreeInfo: false, agreeId: false,
+        agreeInfo: false, agreeId: false, agreePromo: false,
         signDate: '', signB64: '', nameConfirm: ''
       },
       files: {            // 서류 업로드
@@ -528,8 +528,8 @@ window.HRModule = (function () {
       f.education.map(function(e, i) {
         return [
           _tdFixed(e.type),
-          _tdInput(e.from, function(v){ f.education[i].from=v; _saveApplicant(app); }, 'YYYY.MM', 70),
-          _tdInput(e.to,   function(v){ f.education[i].to=v;   _saveApplicant(app); }, 'YYYY.MM', 70),
+          _tdMonthInput(e.from, function(v){ f.education[i].from=v; _saveApplicant(app); }, 90),
+          _tdMonthInput(e.to,   function(v){ f.education[i].to=v;   _saveApplicant(app); }, 90),
           _tdInput(e.country, function(v){ f.education[i].country=v; _saveApplicant(app); }, '', 60),
           _tdInput(e.school,  function(v){ f.education[i].school=v;  _saveApplicant(app); }, '', 140),
           _tdInput(e.major,   function(v){ f.education[i].major=v;   _saveApplicant(app); }, '', 100),
@@ -567,12 +567,12 @@ window.HRModule = (function () {
     // ── 경력사항 ──
     form.appendChild(_sectionTitle('4. 경력사항 (교육경력 포함) ※ 경력 또는 재직증명서 첨부 가능 내용만 기재'));
     var carTable = _buildTable(
-      ['기간(시작)','기간(종료)','근무년월','근무기관','최종직위','담당업무(담당과목)','주당담당시간수'],
+      ['기간(시작)','기간(종료)','근무년월(자동)','근무기관','최종직위','담당업무(담당과목)','주당담당시간수'],
       f.career.map(function(c, i) {
         return [
-          _tdInput(c.from,   function(v){ f.career[i].from=v;   _saveApplicant(app); }, 'YYYY.MM', 70),
-          _tdInput(c.to,     function(v){ f.career[i].to=v;     _saveApplicant(app); }, 'YYYY.MM', 70),
-          _tdInput(c.months, function(v){ f.career[i].months=v; _saveApplicant(app); }, '년 월', 60),
+          _tdMonthInput(c.from,   function(v){ f.career[i].from=v; f.career[i].months=_calcMonths(v, f.career[i].to); _saveApplicant(app); _render(); }, 100),
+          _tdMonthInput(c.to,     function(v){ f.career[i].to=v;   f.career[i].months=_calcMonths(f.career[i].from, v); _saveApplicant(app); _render(); }, 100),
+          _tdInput(c.months, function(v){ f.career[i].months=v; _saveApplicant(app); }, '', 80),
           _tdInput(c.org,    function(v){ f.career[i].org=v;    _saveApplicant(app); }, '', 110),
           _tdInput(c.rank,   function(v){ f.career[i].rank=v;   _saveApplicant(app); }, '', 80),
           _tdInput(c.duties, function(v){ f.career[i].duties=v; _saveApplicant(app); }, '', 140),
@@ -582,8 +582,33 @@ window.HRModule = (function () {
     );
     form.appendChild(carTable);
 
+    // ── 자격취득사항 ──
+    form.appendChild(_sectionTitle('5. 자격취득사항 (상위 3개) / 전공분야 수상내역'));
+    var cr = el('div'); cr.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:12px';
+
+    var certTable = _buildTable(['취득일자','종류','발행기관'],
+      f.certs.map(function(c, i) {
+        return [
+          _tdInput(c.date,   function(v){ f.certs[i].date=v;   _saveApplicant(app); }, 'YYYY.MM', 80),
+          _tdInput(c.type,   function(v){ f.certs[i].type=v;   _saveApplicant(app); }, '', 120),
+          _tdInput(c.issuer, function(v){ f.certs[i].issuer=v; _saveApplicant(app); }, '', 100),
+        ];
+      })
+    );
+    var awardTable = _buildTable(['수상일','종류','수여기관'],
+      f.awards.map(function(a, i) {
+        return [
+          _tdInput(a.date, function(v){ f.awards[i].date=v; _saveApplicant(app); }, 'YYYY.MM', 80),
+          _tdInput(a.type, function(v){ f.awards[i].type=v; _saveApplicant(app); }, '', 120),
+          _tdInput(a.org,  function(v){ f.awards[i].org=v;  _saveApplicant(app); }, '', 100),
+        ];
+      })
+    );
+    cr.appendChild(certTable); cr.appendChild(awardTable);
+    form.appendChild(cr);
+
     // ── 외국어/전산/AI툴 ──
-    form.appendChild(_sectionTitle('5. 외국어, 전산 및 AI툴 활용 능력'));
+    form.appendChild(_sectionTitle('6. 외국어, 전산 및 AI툴 활용 능력'));
     form.appendChild(_row([
       _field('토익', 'text', f.langToeic, function(v){ f.langToeic=v; _saveApplicant(app); }, 'w80'),
       _field('텝스', 'text', f.langTeps,  function(v){ f.langTeps=v;  _saveApplicant(app); }, 'w80'),
@@ -610,33 +635,8 @@ window.HRModule = (function () {
     });
     form.appendChild(addAiBtn);
 
-    // ── 자격취득사항 ──
-    form.appendChild(_sectionTitle('자격취득사항 (상위 3개) / 전공분야 수상내역'));
-    var cr = el('div'); cr.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;gap:12px';
-
-    var certTable = _buildTable(['취득일자','종류','발행기관'],
-      f.certs.map(function(c, i) {
-        return [
-          _tdInput(c.date,   function(v){ f.certs[i].date=v;   _saveApplicant(app); }, 'YYYY.MM', 80),
-          _tdInput(c.type,   function(v){ f.certs[i].type=v;   _saveApplicant(app); }, '', 120),
-          _tdInput(c.issuer, function(v){ f.certs[i].issuer=v; _saveApplicant(app); }, '', 100),
-        ];
-      })
-    );
-    var awardTable = _buildTable(['수상일','종류','수여기관'],
-      f.awards.map(function(a, i) {
-        return [
-          _tdInput(a.date, function(v){ f.awards[i].date=v; _saveApplicant(app); }, 'YYYY.MM', 80),
-          _tdInput(a.type, function(v){ f.awards[i].type=v; _saveApplicant(app); }, '', 120),
-          _tdInput(a.org,  function(v){ f.awards[i].org=v;  _saveApplicant(app); }, '', 100),
-        ];
-      })
-    );
-    cr.appendChild(certTable); cr.appendChild(awardTable);
-    form.appendChild(cr);
-
     // ── 학위논문 ──
-    form.appendChild(_sectionTitle('6. 학위논문'));
+    form.appendChild(_sectionTitle('7. 학위논문'));
     var thTable = _buildTable(['구분','제목','발표년월일','취득학교','내용 요지'],
       f.thesis.map(function(t, i) {
         return [
@@ -658,7 +658,7 @@ window.HRModule = (function () {
     form.appendChild(notice);
 
     var sigRow = el('div'); sigRow.style.cssText = 'display:flex;gap:20px;flex-wrap:wrap;align-items:flex-start';
-    var dateField = _field('작성일', 'text', f.signDate, function(v){ f.signDate=v; _saveApplicant(app); }, 'w140', null, 'YYYY년 MM월 DD일');
+    var dateField = _field('작성일', 'date', f.signDate, function(v){ f.signDate=v; _saveApplicant(app); }, 'w160', null, '');
     sigRow.appendChild(dateField);
     sigRow.appendChild(_buildSigPad('hr-sig-app', f.signB64, function(b64) { f.signB64=b64; _saveApplicant(app); }));
     form.appendChild(sigRow);
@@ -666,6 +666,12 @@ window.HRModule = (function () {
     body.appendChild(form);
     card.appendChild(body);
     wrap.appendChild(card);
+
+    // 채용지원서 미리보기 버튼
+    var pvBtn1 = el('button', 'hr-btn hr-btn-primary', '👁️ 채용지원서 미리보기');
+    pvBtn1.style.cssText = 'margin-bottom:10px;width:100%';
+    pvBtn1.addEventListener('click', function() { _printApplicationForm(app); });
+    wrap.appendChild(pvBtn1);
 
     // 하단 버튼
     wrap.appendChild(_buildNavButtons(null, function() {
@@ -694,7 +700,14 @@ window.HRModule = (function () {
       '<strong>[ 고유식별정보 처리에 대한 동의 ]</strong><br>' +
       '<strong>수집 항목:</strong> 주민(사업자)등록번호<br>' +
       '<strong>이용 목적:</strong> 응모에 따른 서류심사 및 위촉<br>' +
-      '<strong>보유 기간:</strong> 응모원서 제출 후 준영구 또는 지원서 삭제 신청 시까지';
+      '<strong>보유 기간:</strong> 응모원서 제출 후 준영구 또는 지원서 삭제 신청 시까지<br><br>' +
+      '<strong style="color:#1a3a5c;font-size:13px">[ 홍보 목적 초상권·영상·음성 이용에 대한 동의 ]</strong><br><br>' +
+      '<strong>수집 항목:</strong> 재직 기간 중 교내·외에서 촬영된 사진, 동영상, 인터뷰 내용 및 음성<br>' +
+      '<strong>이용 목적:</strong> 학교 홍보물(리플렛, 홈페이지, SNS, 홍보영상, 입시 홍보물 등) 및 기관 평가 자료 등 공식 홍보 목적에 한정<br>' +
+      '<strong>보유 기간:</strong> 재직 기간 및 퇴직 후 3년까지 (이후 요청 시 파기)<br>' +
+      '<strong>법적 근거:</strong> 「개인정보 보호법」 제15조 제1항 제1호(정보주체의 동의), 민법상 초상권·성명권 관련 판례<br><br>' +
+      '※ 본 동의는 거부할 수 있으며, 거부 시 채용 결정에 불이익이 없습니다.<br>' +
+      '※ 이미 제작·배포된 홍보물의 경우, 동의 철회 시 이후 사용은 중단하되 기배포본의 전량 회수는 불가할 수 있습니다.';
     body.appendChild(infoBox);
 
     // 동의 체크박스
@@ -717,13 +730,21 @@ window.HRModule = (function () {
     lbl2.appendChild(cb2); lbl2.appendChild(document.createTextNode('고유식별정보 수집 및 이용에 동의합니다'));
     cbSection.appendChild(lbl2);
 
+    var lbl3 = el('label', 'hr-cb-item');
+    lbl3.style.cssText = 'font-size:13px;font-weight:600;color:#1a3a5c';
+    var cb3 = document.createElement('input'); cb3.type = 'checkbox'; cb3.id = 'hr-agree-promo';
+    if (f.agreePromo) cb3.checked = true;
+    cb3.addEventListener('change', function() { f.agreePromo = this.checked; _saveApplicant(app); });
+    lbl3.appendChild(cb3); lbl3.appendChild(document.createTextNode('홍보 목적 초상권·영상·음성 수집 및 이용에 동의합니다'));
+    cbSection.appendChild(lbl3);
+
     body.appendChild(cbSection);
 
     // 서명
     var sigSection = el('div');
     var sigRow = el('div'); sigRow.style.cssText = 'display:flex;gap:20px;flex-wrap:wrap;align-items:flex-start';
     var nameField = _field('이름 확인', 'text', f.nameConfirm, function(v){ f.nameConfirm=v; _saveApplicant(app); }, 'w120', null, '성명 입력');
-    var dateField = _field('작성일', 'text', f.signDate, function(v){ f.signDate=v; _saveApplicant(app); }, 'w140', null, 'YYYY년 MM월 DD일');
+    var dateField = _field('작성일', 'date', f.signDate, function(v){ f.signDate=v; _saveApplicant(app); }, 'w160', null, '');
     sigRow.appendChild(nameField);
     sigRow.appendChild(dateField);
     sigRow.appendChild(_buildSigPad('hr-sig-privacy', f.signB64, function(b64){ f.signB64=b64; _saveApplicant(app); }));
@@ -732,10 +753,15 @@ window.HRModule = (function () {
 
     card.appendChild(body);
     wrap.appendChild(card);
+    var pvBtn2 = el('button', 'hr-btn hr-btn-primary', '👁️ 개인정보동의서 미리보기');
+    pvBtn2.style.cssText = 'margin-bottom:10px;width:100%';
+    pvBtn2.addEventListener('click', function() { _printPrivacyForm(app); });
+    wrap.appendChild(pvBtn2);
+
     wrap.appendChild(_buildNavButtons(
       function(){ _st.appStep=0; _render(); },
       function(){
-        if (!f.agreeInfo || !f.agreeId) { toast('두 항목 모두 동의가 필요합니다.', '#DC2626'); return; }
+        if (!f.agreeInfo || !f.agreeId || !f.agreePromo) { toast('세 항목 모두 동의가 필요합니다.', '#DC2626'); return; }
         _st.appStep=2; _render();
       }, '다음: 서류 업로드 →'
     ));
@@ -755,7 +781,7 @@ window.HRModule = (function () {
       { key:'certs',  num:4, title:'분야별 관련 자격증 사본 각 1부', hint:'자격증 스캔 또는 사진 파일' },
       { key:'edu',    num:5, title:'졸업 및 성적증명서 각 1부', hint:'졸업증명서, 성적증명서 각 1부' },
       { key:'reg',    num:6, title:'주민등록등본 및 가족관계증명서 각 1부', hint:'최근 3개월 이내 발급본' },
-      { key:'bank',   num:7, title:'급여통장 사본 1부 (NH농협 계좌)', hint:'NH농협 통장 사본' },
+      { key:'bank',   num:7, title:'급여통장 사본 1부', hint:'통장 사본' },
     ];
 
     categories.forEach(function(cat) {
@@ -942,7 +968,7 @@ window.HRModule = (function () {
     var checks = [
       { ok: !!(app.form1.nameKr && app.form1.mobile), label: '채용지원서 기본정보' },
       { ok: !!(app.form1.signB64), label: '채용지원서 서명' },
-      { ok: !!(app.form2.agreeInfo && app.form2.agreeId), label: '개인정보 동의서 동의' },
+      { ok: !!(app.form2.agreeInfo && app.form2.agreeId && app.form2.agreePromo), label: '개인정보 동의서 동의 (3항목)' },
       { ok: !!(app.form2.signB64), label: '개인정보 동의서 서명' },
       { ok: app.files.career.length > 0, label: '경력/재직증명서 업로드' },
       { ok: app.files.bank.length > 0, label: '급여통장 사본 업로드' },
@@ -1400,7 +1426,7 @@ window.HRModule = (function () {
       '<div class="hr-print-section-head">2. 학력사항</div>' +
       '<table class="hr-print-table"><tr><th>구분</th><th>기간</th><th>국가명</th><th>학교명</th><th>학과(전공)</th><th>학위명</th><th>평점평균</th></tr>' +
       f.education.map(function(e) {
-        return '<tr><td>' + _esc(e.type) + '</td><td>' + _esc(e.from) + '~' + _esc(e.to) + '</td>' +
+        return '<tr><td>' + _esc(e.type) + '</td><td>' + _fmtM(e.from) + '~' + _fmtM(e.to) + '</td>' +
           '<td>' + _esc(e.country||'') + '</td><td>' + _esc(e.school||'') + '</td>' +
           '<td>' + _esc(e.major||'') + '</td><td>' + _esc(e.degree||'') + '</td><td>' + _esc(e.gpa||'') + '</td></tr>';
       }).join('') + '</table>' +
@@ -1418,16 +1444,16 @@ window.HRModule = (function () {
       '<div class="hr-print-section-head">4. 경력사항</div>' +
       '<table class="hr-print-table"><tr><th>기간</th><th>근무년월</th><th>근무기관</th><th>최종직위</th><th>담당업무</th><th>주당담당시간수</th></tr>' +
       f.career.map(function(c) {
-        return '<tr><td>' + _esc(c.from||'') + '~' + _esc(c.to||'') + '</td><td>' + _esc(c.months||'') + '</td>' +
+        return '<tr><td>' + _fmtM(c.from||'') + '~' + _fmtM(c.to||'') + '</td><td>' + _esc(c.months||'') + '</td>' +
           '<td>' + _esc(c.org||'') + '</td><td>' + _esc(c.rank||'') + '</td><td>' + _esc(c.duties||'') + '</td><td>' + _esc(c.hours||'') + '</td></tr>';
       }).join('') + '</table>' +
-      '<div class="hr-print-section-head">5. 외국어/전산/AI툴 활용능력</div>' +
+      '<div class="hr-print-section-head">6. 외국어/전산/AI툴 활용능력</div>' +
       '<table class="hr-print-table"><tr><th>토익</th><td>' + _esc(f.langToeic||'') + '</td><th>텝스</th><td>' + _esc(f.langTeps||'') + '</td><th>기타</th><td>' + _esc(f.langOther||'') + '</td><th>전산수준</th><td>' + _esc(f.pcLevel||'') + '</td></tr></table>' +
       '<table class="hr-print-table" style="margin-top:2mm"><tr><th>AI툴</th><th>활용 목적 및 사례</th><th>숙련도</th></tr>' +
       (f.aiTools||[]).map(function(ai) {
         return '<tr><td>' + _esc(ai.tool||'') + '</td><td>' + _esc(ai.purpose||'') + '</td><td>' + _esc(ai.level||'') + '</td></tr>';
       }).join('') + '</table>' +
-      '<div class="hr-print-section-head">자격취득사항 / 수상내역</div>' +
+      '<div class="hr-print-section-head">5. 자격취득사항 / 수상내역</div>' +
       '<table style="width:100%;border-collapse:collapse"><tr><td style="width:50%;vertical-align:top"><table class="hr-print-table"><tr><th>취득일자</th><th>종류</th><th>발행기관</th></tr>' +
       f.certs.map(function(c) { return '<tr><td>' + _esc(c.date||'') + '</td><td>' + _esc(c.type||'') + '</td><td>' + _esc(c.issuer||'') + '</td></tr>'; }).join('') +
       '</table></td><td style="width:50%;vertical-align:top"><table class="hr-print-table"><tr><th>수상일</th><th>종류</th><th>수여기관</th></tr>' +
@@ -1479,6 +1505,18 @@ window.HRModule = (function () {
       '<td><strong>' + (f2.agreeId ? '■' : '□') + ' 고유식별정보 수집 및 이용에 동의함</strong></td>' +
       '<td>' + (f2.agreeId ? '□' : '■') + ' 고유식별정보 수집 및 이용에 동의하지 않음</td>' +
       '</tr></table>' +
+      '<div class="hr-print-section-head" style="margin-top:4mm">[ 홍보 목적 초상권·영상·음성 이용에 대한 동의 ]</div>' +
+      '<table class="hr-print-table" style="margin-bottom:3mm">' +
+      '<tr><th>수집 항목</th><td>재직 기간 중 교내외에서 촬영된 사진, 동영상, 인터뷰 내용 및 음성</td></tr>' +
+      '<tr><th>이용 목적</th><td>학교 홍보물(리플렛, 홈페이지, SNS, 홍보영상, 입시 홍보물 등) 및 공식 홍보 목적에 한정</td></tr>' +
+      '<tr><th>보유 기간</th><td>재직 기간 및 퇴직 후 3년까지 (이후 요청 시 파기)</td></tr>' +
+      '<tr><th>법적 근거</th><td>「개인정보 보호법」제15조 제1항 제1호, 민법상 초상권·성명권 관련 판례</td></tr>' +
+      '</table>' +
+      '<p style="font-size:8pt">※ 동의 거부 시 채용 결정에 불이익이 없으나 홍보 활동에는 포함되지 않습니다.<br>※ 기배포본 전량 회수는 불가할 수 있으나 이후 사용은 즉시 중단합니다.</p>' +
+      '<table class="hr-print-table" style="margin:3mm 0"><tr>' +
+      '<td><strong>' + ((f2.agreePromo) ? '■' : '□') + ' 홍보 목적 초상권·영상·음성 수집 및 이용에 동의함</strong></td>' +
+      '<td>' + ((f2.agreePromo) ? '□' : '■') + ' 동의하지 않음</td>' +
+      '</tr></table>' +
       '<p style="font-size:8pt;margin-top:4mm">「개인정보보호법」등 관련 법규에 의거하여 본인은 위와 같이 개인정보 수집 및 활용에 동의함.</p>' +
       '<div class="hr-print-sig-row">' +
       '<span class="hr-print-date">' + _esc(f2.signDate || fmtDate(Date.now())) + '&nbsp;&nbsp;성명 : ' + _esc(app.form1.nameKr || '') + '</span>' +
@@ -1496,18 +1534,27 @@ window.HRModule = (function () {
   }
 
   function _doPrint(html) {
-    var area = document.getElementById('hr-print-area');
-    if (!area) {
-      area = document.createElement('div');
-      area.id = 'hr-print-area';
-      document.body.appendChild(area);
-    }
-    area.innerHTML = html;
-    area.style.display = 'block';
-    setTimeout(function() {
-      window.print();
-      setTimeout(function() { area.style.display = 'none'; }, 1000);
-    }, 200);
+    var printCSS = [
+      "body{font-family:'맑은 고딕',sans-serif;margin:0;padding:0;}",
+      ".hr-print-page{width:210mm;min-height:297mm;padding:12mm 14mm;font-size:9.5pt;line-height:1.5;color:#000;box-sizing:border-box;page-break-after:always;}",
+      ".hr-print-title{text-align:center;font-size:15pt;font-weight:700;margin-bottom:6mm;letter-spacing:2px;}",
+      ".hr-print-subtitle{text-align:center;font-size:11pt;font-weight:500;margin-bottom:8mm;}",
+      ".hr-print-section-head{background:#eee;font-weight:700;padding:2mm 3mm;font-size:9pt;margin:4mm 0 2mm;}",
+      ".hr-print-table{width:100%;border-collapse:collapse;font-size:8.5pt;margin-bottom:3mm;}",
+      ".hr-print-table th{background:#f0f0f0;font-weight:700;padding:2mm;border:1px solid #000;text-align:center;}",
+      ".hr-print-table td{padding:2mm;border:1px solid #888;}",
+      ".hr-print-sig-row{display:flex;justify-content:flex-end;margin-top:6mm;align-items:center;gap:8mm;}",
+      ".hr-print-sig-box{text-align:center;}",
+      ".hr-print-sig-img{width:35mm;height:20mm;border-bottom:1px solid #000;display:block;margin:0 auto;object-fit:contain;}",
+      ".hr-print-date{font-size:10pt;}",
+      ".hr-print-footnote{font-size:7.5pt;color:#555;margin-top:4mm;border-top:1px solid #ccc;padding-top:2mm;}",
+      ".hr-print-photo{float:right;width:25mm;height:32mm;border:1px solid #000;margin-left:4mm;}",
+      "@media print{@page{size:A4;margin:0;}.hr-print-page{page-break-after:always;}}",
+    ].join('');
+    var win = window.open('', '_blank', 'width=900,height=700,scrollbars=yes');
+    if (!win) { alert('팝업이 차단되었습니다. 이 사이트의 팝업을 허용한 후 다시 시도하세요.'); return; }
+    win.document.write('<!DOCTYPE html><html><head><meta charset="utf-8"><title>미리보기 / 출력</title><style>' + printCSS + '</style></head><body>' + html + '<div style="text-align:center;padding:16px;font-size:13px;color:#666"><button onclick="window.print()" style="padding:10px 28px;font-size:14px;background:#1a3a5c;color:#fff;border:none;border-radius:6px;cursor:pointer">🖨️ 인쇄</button>&nbsp;<button onclick="window.close()" style="padding:10px 20px;font-size:14px;background:#6B7280;color:#fff;border:none;border-radius:6px;cursor:pointer">닫기</button></div></body></html>');
+    win.document.close();
   }
 
   /* ══════════════════════════════════════════════
@@ -1661,6 +1708,28 @@ window.HRModule = (function () {
     inp.addEventListener('input', function() { onChange(this.value); });
     return inp;
   }
+
+  function _tdMonthInput(val, onChange, minW) {
+    var td = document.createElement('td');
+    var inp = document.createElement('input');
+    inp.type = 'month';
+    inp.value = val || '';
+    inp.style.cssText = 'width:' + (minW||100) + 'px;padding:3px 5px;border:1px solid #D1D5DB;border-radius:4px;font-size:12px;box-sizing:border-box';
+    inp.addEventListener('change', function() { onChange(this.value); });
+    td.appendChild(inp);
+    return td;
+  }
+
+  function _calcMonths(from, to) {
+    if (!from || !to) return '';
+    var a = from.split('-'), b = to.split('-');
+    if (a.length < 2 || b.length < 2) return '';
+    var total = (parseInt(b[0]) - parseInt(a[0])) * 12 + (parseInt(b[1]) - parseInt(a[1]));
+    if (total <= 0) return '';
+    var y = Math.floor(total / 12), m = total % 12;
+    return (y > 0 ? y + '년 ' : '') + (m > 0 ? m + '개월' : '');
+  }
+  function _fmtM(v) { return (v || '').replace('-', '.'); }
 
   function _tdFixed(text) {
     var span = document.createElement('span');
