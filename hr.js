@@ -15,15 +15,17 @@ window.HRModule = (function () {
 
   /* ── 상태 ── */
   var _st = {
-    hrTab:      'onboard',   // onboard | resign | leave | other
-    view:       'home',      // home | portal | manager | admin
-    applicant:  null,        // 현재 편집 중인 지원자 객체
-    appStep:    0,           // 지원자 폼 단계 (0~4)
-    mgrAuth:    false,       // 관리자 인증 여부
-    admAuth:    false,       // 최고관리자 인증 여부
-    viewTarget: null,        // 관리자가 조회 중인 지원자 ID
-    editCode:   null,        // 어드민 코드 편집 대상
-    isDemo:     false,       // 체험 모드 여부
+    hrTab:        'onboard',   // onboard | resign | leave | other
+    view:         'home',      // home | portal | manager | admin
+    applicant:    null,        // 현재 편집 중인 지원자 객체
+    appStep:      0,           // 지원자 폼 단계 (0~4)
+    mgrAuth:      false,       // 관리자 인증 여부
+    admAuth:      false,       // 최고관리자 인증 여부
+    viewTarget:   null,        // 관리자가 조회 중인 지원자 ID
+    editCode:     null,        // 어드민 코드 편집 대상
+    isDemo:       false,       // 체험 모드 여부
+    _pendingCode: null,        // PIN 설정/입력 대기 중인 코드
+    _pendingMode: null,        // 'new' | 'edit'
   };
 
   /* ── 유틸 ── */
@@ -76,7 +78,7 @@ window.HRModule = (function () {
   /* ── 빈 지원자 객체 ── */
   function blankApp(code) {
     return {
-      id: uid(), code: code, type: 'onboard',
+      id: uid(), code: code, pin: '', type: 'onboard',
       status: 'pending',  // pending | partial | submitted | approved
       createdAt: Date.now(), submittedAt: null, printedAt: null,
       form1: {            // 채용지원서
@@ -248,6 +250,16 @@ window.HRModule = (function () {
   }
 
   function _renderCodeEntry(wrap) {
+    // PIN 설정/입력 화면 분기
+    if (_st._pendingCode && _st._pendingMode === 'new') {
+      _renderPinSetup(wrap);
+      return;
+    }
+    if (_st._pendingCode && _st._pendingMode === 'edit') {
+      _renderPinEntry(wrap);
+      return;
+    }
+
     var box = el('div', 'hr-auth-box');
     box.innerHTML =
       '<div class="hr-auth-icon">📋</div>' +
@@ -274,6 +286,79 @@ window.HRModule = (function () {
     document.getElementById('hr-demo-btn').addEventListener('click', _startDemo);
   }
 
+  function _renderPinSetup(wrap) {
+    var box = el('div', 'hr-auth-box');
+    box.innerHTML =
+      '<div class="hr-auth-icon">🔐</div>' +
+      '<div class="hr-auth-title">비밀번호 설정</div>' +
+      '<div class="hr-auth-desc">중간 수정 시 사용할<br><strong>비밀번호(4~8자리)</strong>를 설정하세요.</div>' +
+      '<input class="hr-auth-input" id="hr-pin-inp" type="password" maxlength="8" placeholder="비밀번호 (숫자 권장)">' +
+      '<input class="hr-auth-input" id="hr-pin-conf" type="password" maxlength="8" placeholder="비밀번호 확인" style="margin-top:8px">' +
+      '<div class="hr-auth-err" id="hr-pin-err"></div>' +
+      '<button class="hr-btn hr-btn-primary" id="hr-pin-btn" style="width:100%;margin-bottom:10px">설정 완료 → 서류 작성 시작</button>' +
+      '<button class="hr-btn hr-btn-ghost" id="hr-pin-back" style="width:100%">← 코드 다시 입력</button>';
+    wrap.appendChild(box);
+
+    document.getElementById('hr-pin-btn').addEventListener('click', function() {
+      var pin  = document.getElementById('hr-pin-inp').value.trim();
+      var pinC = document.getElementById('hr-pin-conf').value.trim();
+      var err  = document.getElementById('hr-pin-err');
+      if (!pin || pin.length < 4) { err.textContent = '비밀번호는 4자리 이상 입력해 주세요.'; return; }
+      if (pin !== pinC) { err.textContent = '비밀번호가 일치하지 않습니다.'; return; }
+
+      var code    = _st._pendingCode;
+      var codes   = loadCodes();
+      var codeObj = codes.find(function(c){ return c.code === code; });
+      var apps    = loadApps();
+      var newApp  = blankApp(code);
+      newApp.pin  = pin;
+      if (codeObj) { newApp.form1.nameKr = codeObj.name || ''; }
+      apps.push(newApp);
+      saveApps(apps);
+      _st.applicant    = newApp;
+      _st.appStep      = 0;
+      _st._pendingCode = null;
+      _st._pendingMode = null;
+      _render();
+    });
+    document.getElementById('hr-pin-back').addEventListener('click', function() {
+      _st._pendingCode = null; _st._pendingMode = null; _render();
+    });
+  }
+
+  function _renderPinEntry(wrap) {
+    var box = el('div', 'hr-auth-box');
+    box.innerHTML =
+      '<div class="hr-auth-icon">🔐</div>' +
+      '<div class="hr-auth-title">비밀번호 입력</div>' +
+      '<div class="hr-auth-desc">이전에 설정한<br><strong>비밀번호</strong>를 입력하세요.</div>' +
+      '<input class="hr-auth-input" id="hr-pin-inp" type="password" maxlength="8" placeholder="비밀번호">' +
+      '<div class="hr-auth-err" id="hr-pin-err"></div>' +
+      '<button class="hr-btn hr-btn-primary" id="hr-pin-btn" style="width:100%;margin-bottom:10px">확인</button>' +
+      '<button class="hr-btn hr-btn-ghost" id="hr-pin-back" style="width:100%">← 코드 다시 입력</button>';
+    wrap.appendChild(box);
+
+    document.getElementById('hr-pin-btn').addEventListener('click', function() {
+      var pin  = document.getElementById('hr-pin-inp').value.trim();
+      var err  = document.getElementById('hr-pin-err');
+      var code = _st._pendingCode;
+      var apps = loadApps();
+      var app  = apps.find(function(a){ return a.code === code; });
+      if (!app || app.pin !== pin) { err.textContent = '비밀번호가 올바르지 않습니다.'; return; }
+      _st.applicant    = app;
+      _st.appStep      = 0;
+      _st._pendingCode = null;
+      _st._pendingMode = null;
+      _render();
+    });
+    document.getElementById('hr-pin-inp').addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') document.getElementById('hr-pin-btn').click();
+    });
+    document.getElementById('hr-pin-back').addEventListener('click', function() {
+      _st._pendingCode = null; _st._pendingMode = null; _render();
+    });
+  }
+
   function _startDemo() {
     // 기존 체험 데이터 제거 후 새로 생성
     var apps = loadApps();
@@ -290,29 +375,32 @@ window.HRModule = (function () {
   }
 
   function _submitCode() {
-    var inp = document.getElementById('hr-code-inp');
-    var err = document.getElementById('hr-code-err');
+    var inp  = document.getElementById('hr-code-inp');
+    var err  = document.getElementById('hr-code-err');
     var code = (inp ? inp.value.trim().toUpperCase() : '');
     if (!code || code.length < 4) { err.textContent = '접수 코드를 입력해주세요.'; return; }
 
-    var codes = loadCodes();
+    var codes   = loadCodes();
     var codeObj = codes.find(function(c) { return c.code === code && c.active; });
     if (!codeObj) { err.textContent = '유효하지 않은 접수 코드입니다.'; return; }
 
-    // 이미 작성 중인 데이터 불러오기
-    var apps = loadApps();
+    var apps     = loadApps();
     var existing = apps.find(function(a) { return a.code === code; });
-    if (existing) {
-      _st.applicant = existing;
+
+    if (existing && existing.pin) {
+      // 재방문: PIN 입력 화면으로
+      _st._pendingCode = code;
+      _st._pendingMode = 'edit';
+      _render();
+    } else if (existing && !existing.pin) {
+      // 구버전 앱 (pin 없음): 그냥 로드
+      _st.applicant = existing; _st.appStep = 0; _render();
     } else {
-      var newApp = blankApp(code);
-      newApp.form1.nameKr = codeObj.name || '';
-      apps.push(newApp);
-      saveApps(apps);
-      _st.applicant = newApp;
+      // 최초: PIN 설정 화면
+      _st._pendingCode = code;
+      _st._pendingMode = 'new';
+      _render();
     }
-    _st.appStep = 0;
-    _render();
   }
 
   /* ── 지원자 폼 ── */
@@ -1308,13 +1396,19 @@ window.HRModule = (function () {
     if (!codes.length) {
       codeBody.innerHTML += '<div class="hr-empty" style="padding:24px"><span class="hr-empty-icon">📭</span>발급된 접수코드가 없습니다.</div>';
     } else {
+      var allApps = loadApps();
       codes.slice().reverse().forEach(function(c) {
+        var appForCode  = allApps.find(function(a){ return a.code === c.code; });
+        var pinDisplay  = appForCode && appForCode.pin
+          ? '비밀번호(복구): <strong>' + _esc(appForCode.pin) + '</strong>'
+          : '비밀번호: 미설정';
         var card = el('div', 'hr-code-card');
         card.innerHTML =
           '<div class="hr-code-val">' + c.code + '</div>' +
           '<div class="hr-code-meta">' +
             '<strong>' + _esc(c.name || '(이름없음)') + '</strong><br>' +
             '발급: ' + fmtDT(c.createdAt) + '<br>' +
+            pinDisplay + '<br>' +
             '상태: <span style="color:' + (c.active ? '#16A34A' : '#9CA3AF') + '">' + (c.active ? '사용가능' : '비활성화') + '</span>' +
           '</div>';
         var toggleBtn = el('button', 'hr-btn hr-btn-sm ' + (c.active ? 'hr-btn-danger' : 'hr-btn-success'), c.active ? '비활성화' : '활성화');

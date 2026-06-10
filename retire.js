@@ -1,19 +1,25 @@
 /* ════════════════════════════════════════════════════
-   퇴직자 관리 모듈 — retire.js  v=20260611rt1
+   퇴직자 관리 모듈 — retire.js  v=20260611rt2
+   코드+PIN 접수 시스템
    ════════════════════════════════════════════════════ */
 window.RetireModule = (function () {
   'use strict';
 
   var ADMIN_PW  = 'asea2024hr';
-  var STORE_KEY = 'asea_retire_apps';
+  var CODES_KEY = 'asea_retire_codes';  // [{id, code, name, dept, empNo, note, createdAt, used}]
+  var APPS_KEY  = 'asea_retire_apps';   // [{id, code, pin, form:{...}, irp:{...}, status, createdAt, submittedAt}]
 
-  var _st = { view: 'home', isAdmin: false, app: null, step: 0 };
+  var _st = { view: 'home', step: 0, app: null, isAdmin: false, mgrTab: 'codes' };
 
   /* ── 스토리지 ── */
-  function loadApps() {
-    try { return JSON.parse(localStorage.getItem(STORE_KEY) || '[]'); } catch (e) { return []; }
+  function loadCodes() {
+    try { return JSON.parse(localStorage.getItem(CODES_KEY) || '[]'); } catch (e) { return []; }
   }
-  function saveApps(a) { localStorage.setItem(STORE_KEY, JSON.stringify(a)); }
+  function saveCodes(a) { localStorage.setItem(CODES_KEY, JSON.stringify(a)); }
+  function loadApps() {
+    try { return JSON.parse(localStorage.getItem(APPS_KEY) || '[]'); } catch (e) { return []; }
+  }
+  function saveApps(a) { localStorage.setItem(APPS_KEY, JSON.stringify(a)); }
   function saveApp(app) {
     var apps = loadApps();
     var i = apps.findIndex(function (a) { return a.id === app.id; });
@@ -21,10 +27,20 @@ window.RetireModule = (function () {
     saveApps(apps);
   }
 
-  /* ── 빈 데이터 ── */
-  function blankApp() {
+  /* ── 코드 생성 ── */
+  function genCode() {
+    var chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    var r = 'RT';
+    for (var i = 0; i < 6; i++) r += chars[Math.floor(Math.random() * chars.length)];
+    return r;
+  }
+
+  /* ── 빈 앱 데이터 ── */
+  function blankApp(code) {
     return {
-      id: 'RT' + Date.now(),
+      id: 'RT' + Date.now() + Math.random().toString(36).slice(2,5),
+      code: code,
+      pin: '',
       createdAt: Date.now(),
       submittedAt: null,
       status: 'draft',
@@ -128,53 +144,188 @@ window.RetireModule = (function () {
     return wrap;
   }
 
-  /* ════════ RENDER ════════ */
+  /* ════ RENDER ════ */
   function _render() {
     var root = document.getElementById('retire-root');
     if (!root) return;
     while (root.firstChild) root.removeChild(root.firstChild);
-    if (_st.view === 'home')    _renderHome(root);
-    else if (_st.view === 'form')    _renderForm(root);
-    else if (_st.view === 'manager') _renderManager(root);
+    if      (_st.view === 'home')      _renderHome(root);
+    else if (_st.view === 'new-entry') _renderNewEntry(root);
+    else if (_st.view === 'edit-entry') _renderEditEntry(root);
+    else if (_st.view === 'form')      _renderForm(root);
+    else if (_st.view === 'manager')   _renderManager(root);
   }
 
   /* ── 홈 ── */
   function _renderHome(root) {
-    var wrap = el('div', 'rt-home-wrap');
+    var wrap  = el('div', 'rt-home-wrap');
     var title = el('div', 'rt-home-title', '퇴직자 관리');
     var sub   = el('div', 'rt-home-sub',   '사직서 온라인 제출 및 퇴직 절차 안내 시스템');
     wrap.appendChild(title); wrap.appendChild(sub);
 
     var cards = el('div', 'rt-role-cards');
 
-    /* 퇴직 예정자 */
+    /* ✍️ 최초 작성 */
     var c1 = el('div', 'rt-role-card');
     c1.innerHTML =
-      '<div class="rt-role-icon">📋</div>' +
-      '<div class="rt-role-title">퇴직 예정자</div>' +
-      '<div class="rt-role-desc">사직서 온라인 작성 및 제출<br>퇴직 절차 안내</div>';
+      '<div class="rt-role-icon">✍️</div>' +
+      '<div class="rt-role-title">최초 작성</div>' +
+      '<div class="rt-role-desc">인사담당자로부터 받은 접수 코드로<br>사직서 작성</div>';
     c1.addEventListener('click', function () {
-      _st.app  = blankApp();
+      _st.view = 'new-entry'; _render();
+    });
+
+    /* ✏️ 중간 수정 */
+    var c2 = el('div', 'rt-role-card');
+    c2.innerHTML =
+      '<div class="rt-role-icon">✏️</div>' +
+      '<div class="rt-role-title">중간 수정</div>' +
+      '<div class="rt-role-desc">코드 + 비밀번호로<br>작성 중인 사직서 수정</div>';
+    c2.addEventListener('click', function () {
+      _st.view = 'edit-entry'; _render();
+    });
+
+    /* 👔 인사관리자 */
+    var c3 = el('div', 'rt-role-card');
+    c3.innerHTML =
+      '<div class="rt-role-icon">👔</div>' +
+      '<div class="rt-role-title">인사관리자</div>' +
+      '<div class="rt-role-desc">제출된 사직서 조회<br>코드 발급 및 관리</div>';
+    c3.addEventListener('click', function () {
+      _renderAdminAuth(c3);
+    });
+
+    cards.appendChild(c1); cards.appendChild(c2); cards.appendChild(c3);
+    wrap.appendChild(cards);
+    root.appendChild(wrap);
+  }
+
+  function _renderAdminAuth(triggerEl) {
+    /* 홈 화면에서 인사관리자 카드 클릭 시 — 간단 인라인 비밀번호 */
+    var pw = prompt('인사관리자 비밀번호를 입력하세요.');
+    if (pw === ADMIN_PW) { _st.isAdmin = true; _st.view = 'manager'; _st.mgrTab = 'codes'; _render(); }
+    else if (pw !== null) toast('비밀번호가 올바르지 않습니다.', '#DC2626');
+  }
+
+  /* ── 최초 작성 (코드 + PIN 설정) ── */
+  function _renderNewEntry(root) {
+    var wrap = el('div', 'rt-auth-wrap');
+    var box  = el('div', 'rt-auth-box');
+    box.innerHTML =
+      '<div class="rt-auth-icon">✍️</div>' +
+      '<div class="rt-auth-title">최초 작성</div>' +
+      '<div class="rt-auth-desc">인사담당자로부터 받은 <strong>접수 코드</strong>를 입력하고<br>본인만 알 수 있는 <strong>비밀번호</strong>를 설정하세요.</div>' +
+      '<label class="rt-auth-label">접수 코드</label>' +
+      '<input class="rt-auth-input" id="rt-ne-code" type="text" maxlength="10" placeholder="RT-XXXXXX" autocomplete="off" style="text-transform:uppercase">' +
+      '<label class="rt-auth-label" style="margin-top:10px">비밀번호 설정 (4~8자리)</label>' +
+      '<input class="rt-auth-input" id="rt-ne-pin" type="password" maxlength="8" placeholder="숫자 4~8자리">' +
+      '<label class="rt-auth-label" style="margin-top:8px">비밀번호 확인</label>' +
+      '<input class="rt-auth-input" id="rt-ne-pinc" type="password" maxlength="8" placeholder="비밀번호 재입력">' +
+      '<div class="rt-auth-err" id="rt-ne-err"></div>' +
+      '<button class="rt-btn rt-btn-primary" id="rt-ne-btn" style="width:100%;margin-top:14px;margin-bottom:10px">확인 → 사직서 작성 시작</button>' +
+      '<button class="rt-btn rt-btn-ghost" id="rt-ne-back" style="width:100%">← 돌아가기</button>';
+    wrap.appendChild(box);
+    root.appendChild(wrap);
+
+    /* 코드 자동 대문자 */
+    document.getElementById('rt-ne-code').addEventListener('input', function() {
+      var v = this.value.toUpperCase(); this.value = v;
+    });
+
+    document.getElementById('rt-ne-btn').addEventListener('click', function() {
+      var code = document.getElementById('rt-ne-code').value.trim().toUpperCase();
+      var pin  = document.getElementById('rt-ne-pin').value.trim();
+      var pinC = document.getElementById('rt-ne-pinc').value.trim();
+      var err  = document.getElementById('rt-ne-err');
+      err.textContent = '';
+
+      if (!code) { err.textContent = '접수 코드를 입력해 주세요.'; return; }
+      var codes = loadCodes();
+      var slot  = codes.find(function(c){ return c.code === code; });
+      if (!slot) { err.textContent = '유효하지 않은 접수 코드입니다.'; return; }
+
+      if (!pin || pin.length < 4) { err.textContent = '비밀번호는 4자리 이상 입력해 주세요.'; return; }
+      if (pin !== pinC) { err.textContent = '비밀번호가 일치하지 않습니다.'; return; }
+
+      var apps = loadApps();
+      var existing = apps.find(function(a){ return a.code === code; });
+      if (existing) {
+        toast('이미 작성 중인 사직서가 있습니다. 중간 수정 메뉴를 이용하세요.', '#D97706');
+        return;
+      }
+
+      var app = blankApp(code);
+      app.pin = pin;
+      app.form.name  = slot.name  || '';
+      app.form.dept  = slot.dept  || '';
+      app.form.empNo = slot.empNo || '';
+      apps.push(app);
+      saveApps(apps);
+
+      /* 코드 사용됨 표시 */
+      var ci = codes.findIndex(function(c){ return c.code === code; });
+      if (ci > -1) { codes[ci].used = true; saveCodes(codes); }
+
+      _st.app  = app;
       _st.step = 0;
       _st.view = 'form';
       _render();
     });
+    document.getElementById('rt-ne-back').addEventListener('click', function() {
+      _st.view = 'home'; _render();
+    });
+  }
 
-    /* 인사관리자 */
-    var c2 = el('div', 'rt-role-card');
-    c2.innerHTML =
-      '<div class="rt-role-icon">👔</div>' +
-      '<div class="rt-role-title">인사관리자</div>' +
-      '<div class="rt-role-desc">제출된 사직서 조회<br>처리 현황 관리</div>';
-    c2.addEventListener('click', function () {
-      var pw = prompt('인사관리자 인증번호를 입력하세요.');
-      if (pw === ADMIN_PW) { _st.isAdmin = true; _st.view = 'manager'; _render(); }
-      else if (pw !== null) toast('인증번호가 올바르지 않습니다.', '#DC2626');
+  /* ── 중간 수정 (코드 + PIN 입력) ── */
+  function _renderEditEntry(root) {
+    var wrap = el('div', 'rt-auth-wrap');
+    var box  = el('div', 'rt-auth-box');
+    box.innerHTML =
+      '<div class="rt-auth-icon">✏️</div>' +
+      '<div class="rt-auth-title">중간 수정</div>' +
+      '<div class="rt-auth-desc">접수 코드와 설정한 <strong>비밀번호</strong>를 입력하세요.</div>' +
+      '<label class="rt-auth-label">접수 코드</label>' +
+      '<input class="rt-auth-input" id="rt-ee-code" type="text" maxlength="10" placeholder="RT-XXXXXX" autocomplete="off" style="text-transform:uppercase">' +
+      '<label class="rt-auth-label" style="margin-top:10px">비밀번호</label>' +
+      '<input class="rt-auth-input" id="rt-ee-pin" type="password" maxlength="8" placeholder="비밀번호">' +
+      '<div class="rt-auth-err" id="rt-ee-err"></div>' +
+      '<button class="rt-btn rt-btn-primary" id="rt-ee-btn" style="width:100%;margin-top:14px;margin-bottom:10px">확인</button>' +
+      '<button class="rt-btn rt-btn-ghost" id="rt-ee-back" style="width:100%">← 돌아가기</button>';
+    wrap.appendChild(box);
+    root.appendChild(wrap);
+
+    document.getElementById('rt-ee-code').addEventListener('input', function() {
+      this.value = this.value.toUpperCase();
     });
 
-    cards.appendChild(c1); cards.appendChild(c2);
-    wrap.appendChild(cards);
-    root.appendChild(wrap);
+    document.getElementById('rt-ee-btn').addEventListener('click', function() {
+      var code = document.getElementById('rt-ee-code').value.trim().toUpperCase();
+      var pin  = document.getElementById('rt-ee-pin').value.trim();
+      var err  = document.getElementById('rt-ee-err');
+      err.textContent = '';
+
+      if (!code) { err.textContent = '접수 코드를 입력해 주세요.'; return; }
+      if (!pin)  { err.textContent = '비밀번호를 입력해 주세요.'; return; }
+
+      var apps = loadApps();
+      var app  = apps.find(function(a){ return a.code === code; });
+      if (!app) { err.textContent = '해당 코드로 작성된 사직서가 없습니다. 최초 작성을 이용해 주세요.'; return; }
+      if (app.pin !== pin) { err.textContent = '비밀번호가 올바르지 않습니다.'; return; }
+      if (app.status === 'submitted') {
+        toast('이미 최종 제출된 사직서입니다.', '#D97706'); return;
+      }
+
+      _st.app  = app;
+      _st.step = 0;
+      _st.view = 'form';
+      _render();
+    });
+    document.getElementById('rt-ee-pin').addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') document.getElementById('rt-ee-btn').click();
+    });
+    document.getElementById('rt-ee-back').addEventListener('click', function() {
+      _st.view = 'home'; _render();
+    });
   }
 
   /* ── 폼 래퍼 ── */
@@ -294,7 +445,7 @@ window.RetireModule = (function () {
 
     var backBtn = el('button', 'rt-btn rt-btn-ghost', '← 처음으로');
     backBtn.style.cssText = 'width:100%';
-    backBtn.addEventListener('click', function () { _st.view = 'home'; _render(); });
+    backBtn.addEventListener('click', function () { _st.view = 'home'; _st.app = null; _render(); });
     wrap.appendChild(backBtn);
   }
 
@@ -444,13 +595,12 @@ window.RetireModule = (function () {
 
   /* ════ 관리자 ════ */
   function _renderManager(root) {
-    var apps = loadApps();
     var wrap = el('div', 'rt-wrap');
 
     /* 상단 바 */
     var topBar = el('div', 'rt-mgr-topbar');
     var titleEl = el('strong'); titleEl.style.cssText = 'font-size:16px;color:#1a3a5c';
-    titleEl.textContent = '퇴직자 관리 — 제출 목록 (' + apps.filter(function(a){return a.status!=='draft';}).length + '건)';
+    titleEl.textContent = '퇴직자 관리 — 인사관리자';
     topBar.appendChild(titleEl);
     var backBtn = el('button', 'rt-btn rt-btn-ghost rt-btn-sm', '← 나가기');
     backBtn.style.marginLeft = 'auto';
@@ -458,20 +608,168 @@ window.RetireModule = (function () {
     topBar.appendChild(backBtn);
     wrap.appendChild(topBar);
 
-    var submitted = apps.filter(function (a) { return a.status !== 'draft'; });
-    if (!submitted.length) {
-      var empty = el('div');
-      empty.style.cssText = 'text-align:center;padding:40px;color:#9CA3AF;font-size:14px';
-      empty.textContent = '제출된 사직서가 없습니다.';
-      wrap.appendChild(empty);
-      root.appendChild(wrap);
+    /* 탭 */
+    var tabBar = el('div', 'rt-mgr-tabs');
+    var tabs = [
+      { key: 'codes', label: '🔑 코드 관리' },
+      { key: 'apps',  label: '📋 제출 목록' },
+    ];
+    tabs.forEach(function(t) {
+      var btn = el('button', 'rt-mgr-tab' + (_st.mgrTab === t.key ? ' active' : ''), t.label);
+      btn.addEventListener('click', function() { _st.mgrTab = t.key; _render(); });
+      tabBar.appendChild(btn);
+    });
+    wrap.appendChild(tabBar);
+
+    if (_st.mgrTab === 'codes') _renderMgrCodes(wrap);
+    else                         _renderMgrApps(wrap);
+
+    root.appendChild(wrap);
+  }
+
+  /* ── 코드 관리 탭 ── */
+  function _renderMgrCodes(wrap) {
+    var section = el('div', 'rt-mgr-section');
+
+    /* 신규 코드 발급 폼 */
+    var genCard = el('div', 'rt-card');
+    var genHead = el('div', 'rt-card-head');
+    genHead.innerHTML = '<div class="rt-card-title">신규 코드 발급</div>';
+    genCard.appendChild(genHead);
+    var genBody = el('div', 'rt-card-body');
+
+    var genRow = el('div'); genRow.style.cssText = 'display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;margin-bottom:12px';
+
+    var nameWrap = el('div', 'rt-field flex1');
+    nameWrap.appendChild(el('label', 'rt-label', '대상자 성명 (필수)'));
+    var nameInp = document.createElement('input'); nameInp.className = 'rt-input'; nameInp.id = 'rt-mgr-name'; nameInp.placeholder = '홍길동';
+    nameWrap.appendChild(nameInp);
+
+    var deptWrap = el('div', 'rt-field flex1');
+    deptWrap.appendChild(el('label', 'rt-label', '부서'));
+    var deptInp = document.createElement('input'); deptInp.className = 'rt-input'; deptInp.id = 'rt-mgr-dept'; deptInp.placeholder = '기획처';
+    deptWrap.appendChild(deptInp);
+
+    var empWrap = el('div', 'rt-field w120');
+    empWrap.appendChild(el('label', 'rt-label', '사원번호'));
+    var empInp = document.createElement('input'); empInp.className = 'rt-input'; empInp.id = 'rt-mgr-emp'; empInp.placeholder = '';
+    empWrap.appendChild(empInp);
+
+    var noteWrap = el('div', 'rt-field flex1');
+    noteWrap.appendChild(el('label', 'rt-label', '비고'));
+    var noteInp = document.createElement('input'); noteInp.className = 'rt-input'; noteInp.id = 'rt-mgr-note'; noteInp.placeholder = '';
+    noteWrap.appendChild(noteInp);
+
+    var genBtn = el('button', 'rt-btn rt-btn-primary', '코드 생성');
+    genBtn.style.cssText = 'margin-top:auto;flex-shrink:0';
+    genBtn.addEventListener('click', function() {
+      var name = document.getElementById('rt-mgr-name').value.trim();
+      if (!name) { toast('대상자 성명을 입력해 주세요.', '#DC2626'); return; }
+      var dept  = document.getElementById('rt-mgr-dept').value.trim();
+      var emp   = document.getElementById('rt-mgr-emp').value.trim();
+      var note  = document.getElementById('rt-mgr-note').value.trim();
+      var codes = loadCodes();
+      var code;
+      /* 중복 방지 */
+      do { code = genCode(); } while (codes.find(function(c){ return c.code === code; }));
+      codes.push({ id: 'C' + Date.now(), code: code, name: name, dept: dept, empNo: emp, note: note, createdAt: Date.now(), used: false });
+      saveCodes(codes);
+      toast('코드 발급: ' + code);
+      _render();
+    });
+
+    genRow.appendChild(nameWrap); genRow.appendChild(deptWrap);
+    genRow.appendChild(empWrap);  genRow.appendChild(noteWrap);
+    genRow.appendChild(genBtn);
+    genBody.appendChild(genRow);
+    genCard.appendChild(genBody);
+    section.appendChild(genCard);
+
+    /* 기존 코드 목록 */
+    var codes = loadCodes();
+    var apps  = loadApps();
+
+    if (!codes.length) {
+      var empty = el('div', 'rt-empty'); empty.textContent = '발급된 코드가 없습니다.';
+      section.appendChild(empty);
+    } else {
+      var statusLabel = { submitted: '제출완료', processing: '처리중', completed: '완료', draft: '작성중' };
+      codes.slice().reverse().forEach(function(c) {
+        var appForCode = apps.find(function(a){ return a.code === c.code; });
+        var pinDisplay = appForCode && appForCode.pin
+          ? '비밀번호: ●●●● (복구: <strong>' + _esc(appForCode.pin) + '</strong>)'
+          : '비밀번호: 미설정';
+
+        var statusText = !appForCode ? '미사용' : (appForCode.status === 'submitted' || appForCode.status === 'processing' || appForCode.status === 'completed') ? statusLabel[appForCode.status] || '제출완료' : '작성중';
+        var statusColor = !appForCode ? '#9CA3AF' : (appForCode.status === 'submitted' || appForCode.status === 'completed') ? '#16A34A' : '#A16207';
+
+        var codeCard = el('div', 'rt-code-card');
+
+        var codeMeta = el('div', 'rt-code-meta');
+        codeMeta.innerHTML =
+          '<div class="rt-code-val">' + _esc(c.code) + '</div>' +
+          '<div class="rt-code-info">' +
+            '<strong>' + _esc(c.name || '(이름없음)') + '</strong>' +
+            (c.dept ? ' · ' + _esc(c.dept) : '') +
+            (c.empNo ? ' · ' + _esc(c.empNo) : '') + '<br>' +
+            '발급: ' + _fmtDT(c.createdAt) + '<br>' +
+            pinDisplay + '<br>' +
+            '상태: <span style="color:' + statusColor + ';font-weight:600">' + statusText + '</span>' +
+          '</div>';
+
+        var btnWrap = el('div'); btnWrap.style.cssText = 'display:flex;gap:6px;flex-wrap:wrap;flex-shrink:0;margin-top:8px';
+
+        var copyBtn = el('button', 'rt-btn rt-btn-outline rt-btn-sm', '📋 코드 복사');
+        copyBtn.addEventListener('click', function() {
+          var msg =
+            '[퇴직 사직서 접수 코드]\n' +
+            '코드: ' + c.code + '\n' +
+            '작성 방법: ASEA 캘린더 관리 → 인사관리 탭 → 퇴직관리 → 최초 작성\n' +
+            '위 코드를 입력하고 본인 비밀번호를 설정하여 작성을 시작하세요.\n' +
+            '담당: 방시원 차장 (내선 288, bangsw@asea.or.kr)';
+          if (navigator.clipboard) {
+            navigator.clipboard.writeText(msg).then(function(){ toast('안내 메시지가 복사되었습니다.'); });
+          } else {
+            prompt('아래 내용을 복사하세요.', msg);
+          }
+        });
+
+        var delBtn = el('button', 'rt-btn rt-btn-danger rt-btn-sm', '삭제');
+        delBtn.addEventListener('click', function() {
+          if (!confirm(c.name + '(' + c.code + ') 코드 및 사직서 데이터를 삭제하시겠습니까?')) return;
+          var cs = loadCodes().filter(function(x){ return x.code !== c.code; });
+          var as = loadApps().filter(function(x){ return x.code !== c.code; });
+          saveCodes(cs); saveApps(as);
+          toast('삭제되었습니다.'); _render();
+        });
+
+        btnWrap.appendChild(copyBtn);
+        btnWrap.appendChild(delBtn);
+        codeCard.appendChild(codeMeta);
+        codeCard.appendChild(btnWrap);
+        section.appendChild(codeCard);
+      });
+    }
+
+    wrap.appendChild(section);
+  }
+
+  /* ── 제출 목록 탭 ── */
+  function _renderMgrApps(wrap) {
+    var section = el('div', 'rt-mgr-section');
+    var apps = loadApps().filter(function(a){ return a.status !== 'draft' || (a.form && a.form.name); });
+
+    if (!apps.length) {
+      var empty = el('div', 'rt-empty'); empty.textContent = '제출된 사직서가 없습니다.';
+      section.appendChild(empty);
+      wrap.appendChild(section);
       return;
     }
 
-    var statusLabel = { submitted: '접수', processing: '처리중', completed: '완료' };
-    var statusBadge = { submitted: 'rt-badge rt-badge-submitted', processing: 'rt-badge rt-badge-processing', completed: 'rt-badge rt-badge-completed' };
+    var statusLabel = { draft: '작성중', submitted: '접수', processing: '처리중', completed: '완료' };
+    var statusBadge = { draft: 'rt-badge rt-badge-draft', submitted: 'rt-badge rt-badge-submitted', processing: 'rt-badge rt-badge-processing', completed: 'rt-badge rt-badge-completed' };
 
-    submitted.slice().reverse().forEach(function (app) {
+    apps.slice().reverse().forEach(function (app) {
       var f = app.form;
       var r = el('div', 'rt-mgr-row');
 
@@ -495,7 +793,7 @@ window.RetireModule = (function () {
 
       var stSel = document.createElement('select'); stSel.className = 'rt-input';
       stSel.style.cssText = 'font-size:12px;padding:4px 6px;width:auto';
-      Object.keys(statusLabel).forEach(function (s) {
+      ['submitted','processing','completed'].forEach(function (s) {
         var o = document.createElement('option'); o.value = s; o.textContent = statusLabel[s];
         if (s === app.status) o.selected = true;
         stSel.appendChild(o);
@@ -504,10 +802,10 @@ window.RetireModule = (function () {
 
       btnWrap.appendChild(pvBtn); btnWrap.appendChild(stSel);
       r.appendChild(info); r.appendChild(badge); r.appendChild(btnWrap);
-      wrap.appendChild(r);
+      section.appendChild(r);
     });
 
-    root.appendChild(wrap);
+    wrap.appendChild(section);
   }
 
   /* ════ 인쇄 ════ */
@@ -607,7 +905,7 @@ window.RetireModule = (function () {
       '</p>' +
       '</div>';
 
-    var win = window.open('', '_blank', 'width=920,height=780,scrollbars=yes');
+    var win = window.open('', '_blank', 'width:920,height:780,scrollbars=yes');
     if (!win) { alert('팝업이 차단되었습니다. 팝업을 허용한 후 다시 시도하세요.'); return; }
     win.document.write(
       '<!DOCTYPE html><html><head><meta charset="utf-8"><title>사직서 — ' + _esc(f.name) + '</title>' +
@@ -631,13 +929,21 @@ window.RetireModule = (function () {
     if (p.length === 3) return p[0] + '년 ' + parseInt(p[1]) + '월 ' + parseInt(p[2]) + '일';
     return v;
   }
+  function _fmtDT(ts) {
+    if (!ts) return '-';
+    var d = new Date(ts);
+    return d.getFullYear() + '.' + String(d.getMonth()+1).padStart(2,'0') + '.' + String(d.getDate()).padStart(2,'0') +
+           ' ' + String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+  }
+
+  /* ── CSS 클래스 추가 (rt-auth-wrap 등 없으면 기존 스타일 활용) ── */
 
   /* ── 초기화 ── */
   function init() {
     var root = document.getElementById('retire-root');
     if (!root) return;
     while (root.firstChild) root.removeChild(root.firstChild);
-    _st = { view: 'home', isAdmin: false, app: null, step: 0 };
+    _st = { view: 'home', isAdmin: false, app: null, step: 0, mgrTab: 'codes' };
     _render();
   }
 

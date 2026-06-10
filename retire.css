@@ -1,11 +1,11 @@
 /* ── 퇴직자 관리 (retire.css) ── */
 
 /* 홈 화면 */
-.rt-home-wrap { max-width: 540px; margin: 0 auto; padding: 24px 16px; }
+.rt-home-wrap { max-width: 600px; margin: 0 auto; padding: 24px 16px; }
 .rt-home-title { font-size: 22px; font-weight: 700; color: #1a3a5c; margin-bottom: 4px; }
 .rt-home-sub   { font-size: 13px; color: #6B7280; margin-bottom: 24px; }
 
-.rt-role-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 20px; }
+.rt-role-cards { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin-bottom: 20px; }
 .rt-role-card  {
   background: #fff; border: 1.5px solid #E5E7EB; border-radius: 12px;
   padding: 20px 14px; text-align: center; cursor: pointer;
@@ -152,8 +152,58 @@ textarea.rt-input { resize: vertical; min-height: 80px; }
 .rt-complete-title { font-size: 20px; font-weight: 700; color: #1a3a5c; margin-bottom: 8px; }
 .rt-complete-desc { font-size: 13px; color: #6B7280; line-height: 1.8; margin-bottom: 20px; }
 
-@media (max-width: 480px) {
+/* 인증 화면 (최초작성/중간수정) */
+.rt-auth-wrap { max-width: 440px; margin: 0 auto; padding: 24px 16px; }
+.rt-auth-box  {
+  background: #fff; border: 1.5px solid #E5E7EB; border-radius: 14px;
+  padding: 28px 24px; text-align: center;
+}
+.rt-auth-icon  { font-size: 40px; margin-bottom: 10px; }
+.rt-auth-title { font-size: 18px; font-weight: 700; color: #1a3a5c; margin-bottom: 6px; }
+.rt-auth-desc  { font-size: 13px; color: #6B7280; line-height: 1.6; margin-bottom: 16px; }
+.rt-auth-label { display: block; font-size: 12px; font-weight: 600; color: #374151; text-align: left; margin-bottom: 4px; }
+.rt-auth-input {
+  display: block; width: 100%; box-sizing: border-box;
+  padding: 9px 12px; border: 1.5px solid #D1D5DB; border-radius: 8px;
+  font-size: 14px; color: #111; margin-bottom: 4px;
+}
+.rt-auth-input:focus { outline: none; border-color: #1a3a5c; }
+.rt-auth-err { min-height: 18px; font-size: 12px; color: #DC2626; text-align: left; margin: 4px 0 8px; }
+
+/* 코드 카드 (관리자 코드 목록) */
+.rt-code-card {
+  background: #fff; border: 1.5px solid #E5E7EB; border-radius: 10px;
+  padding: 14px 16px; margin-bottom: 10px;
+}
+.rt-code-meta  { display: flex; gap: 12px; align-items: flex-start; }
+.rt-code-val   { font-size: 18px; font-weight: 800; color: #1a3a5c; letter-spacing: 2px; flex-shrink: 0; min-width: 110px; }
+.rt-code-info  { flex: 1; font-size: 12px; color: #4B5563; line-height: 1.8; }
+
+/* 관리자 탭 */
+.rt-mgr-tabs { display: flex; gap: 4px; margin-bottom: 14px; }
+.rt-mgr-tab {
+  padding: 8px 18px; font-size: 13px; font-weight: 600; border: none;
+  border-radius: 8px; cursor: pointer; background: #F3F4F6; color: #6B7280;
+  transition: background .15s, color .15s;
+}
+.rt-mgr-tab.active { background: #1a3a5c; color: #fff; }
+.rt-mgr-tab:hover:not(.active) { background: #E5E7EB; }
+
+/* 관리자 섹션 */
+.rt-mgr-section { margin-top: 4px; }
+
+/* 빈 상태 */
+.rt-empty {
+  text-align: center; padding: 32px; color: #9CA3AF;
+  font-size: 14px; background: #F9FAFB; border-radius: 10px; margin-top: 8px;
+}
+
+/* 추가 필드 너비 */
+.rt-field.w120 { width: 120px; flex: none; }
+
+@media (max-width: 600px) {
   .rt-role-cards { grid-template-columns: 1fr; }
   .rt-row { flex-direction: column; }
-  .rt-field.w100, .rt-field.w140, .rt-field.w160, .rt-field.w200 { width: 100%; }
+  .rt-field.w100, .rt-field.w120, .rt-field.w140, .rt-field.w160, .rt-field.w200 { width: 100%; }
+  .rt-code-meta { flex-direction: column; }
 }
