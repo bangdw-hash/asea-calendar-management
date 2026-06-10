@@ -598,15 +598,23 @@ a        { color: var(--color-accent); text-decoration: none; }
 .weekday.saturday { color: var(--color-accent); }
 
 .calendar-grid {
-  display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr)); /* minmax(0,1fr): 내용이 셀을 밀어서 넓히는 현상 방지 */
+  display: flex;
+  flex-direction: column;
   width: 100%;
-  table-layout: fixed; /* 폴백 */
 }
 
-/* 주간 뷰: 1열 × 7행 */
+/* ── 주간 행 (월별 뷰) ────────────────────────────────────────── */
+.calendar-week-row {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  position: relative;      /* 멀티데이 바 절대 위치 기준 */
+  border-bottom: 1px solid var(--color-border);
+}
+.calendar-week-row:last-child { border-bottom: none; }
+
+/* 주간 뷰: 단순 flex-column (각 day가 한 행) */
 .calendar-grid.week-view {
-  grid-template-columns: 1fr;
+  /* flex-direction: column 은 부모에서 상속 */
 }
 
 .calendar-grid.week-view .calendar-day {
@@ -632,16 +640,16 @@ a        { color: var(--color-accent); text-decoration: none; }
   min-height: 96px;
   padding: var(--sp-1);
   border-right: 1px solid var(--color-border);
-  border-bottom: 1px solid var(--color-border);
+  border-bottom: none;           /* 행 하단 보더는 .calendar-week-row에서 처리 */
   cursor: pointer;
   transition: background var(--trans);
   position: relative;
-  min-width: 0;      /* grid cell이 내용 때문에 넓어지는 것 방지 */
-  overflow: hidden;  /* 이벤트 chip이 셀 밖으로 넘치지 않도록 */
+  min-width: 0;
+  overflow: hidden;
   box-sizing: border-box;
 }
 
-.calendar-day:nth-child(7n) { border-right: none; }
+.calendar-week-row .calendar-day:nth-child(7n) { border-right: none; }
 .calendar-day:hover { background: var(--color-accent-light); }
 
 .calendar-day.other-month { background: var(--color-bg); }
@@ -672,7 +680,37 @@ a        { color: var(--color-accent); text-decoration: none; }
   display: flex;
   flex-direction: column;
   gap: 2px;
+  /* 멀티데이 바 트랙 수만큼 상단 여백 확보 (CSS 변수: calendar-week-row에서 설정) */
+  padding-top: calc(var(--num-tracks, 0) * 22px);
 }
+
+/* ── 멀티데이 이벤트 스팬 바 ─────────────────────────────────── */
+.multiday-bar {
+  position: absolute;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  padding: 0 6px 0 8px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  overflow: hidden;
+  white-space: nowrap;
+  z-index: 2;
+  color: #fff;
+  background: var(--color-accent);
+  user-select: none;
+  pointer-events: all;
+  transition: filter 0.15s;
+  border-radius: 4px;
+}
+.multiday-bar span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+.multiday-bar:hover { filter: brightness(1.15); }
 
 .event-chip {
   font-size: var(--font-xs);
@@ -4567,13 +4605,28 @@ h3.settings-section-title {
 .weekday.sunday   { color: rgba(255,200,200,.95) !important; }
 .weekday.saturday { color: rgba(200,220,255,.95) !important; }
 
+/* 달력 주간 행 */
+.calendar-week-row {
+  border-bottom: 1px solid var(--color-bg) !important;
+}
+.calendar-week-row:last-child { border-bottom: none !important; }
+
 /* 달력 날짜 셀 */
 .calendar-day {
-  min-height: 88px !important;
+  min-height: calc(88px + var(--num-tracks, 0) * 22px) !important;
   padding: 6px 4px !important;
   border-right: 1px solid var(--color-bg) !important;
-  border-bottom: 1px solid var(--color-bg) !important;
+  border-bottom: none !important;
   transition: background .12s !important;
+}
+
+/* 멀티데이 바 (데스크톱 테마) */
+.multiday-bar {
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  height: 20px !important;
+  border-radius: 5px !important;
+  box-shadow: 0 1px 4px rgba(0,0,0,.15) !important;
 }
 .calendar-day:hover { background: #F5F8FE !important; }
 .calendar-day.other-month { background: #FAFBFE !important; }

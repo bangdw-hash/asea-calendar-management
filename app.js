@@ -722,6 +722,50 @@
     return map;
   }
 
+  /* ── 멀티데이 이벤트 헬퍼 ─────────────────────────────────────── */
+  function _evStartDay(ev) {
+    if (ev.start.date) return new Date(ev.start.date + 'T00:00:00');
+    var d = new Date(ev.start.dateTime);
+    return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  }
+  function _evEndDay(ev) {
+    /* Google API: end.date는 exclusive (end.date="2026-06-09"이면 08일까지)
+       end.dateTime: 자정(00:00:00)이면 그 날 시작 전으로 처리, 아니면 다음날 자정 */
+    if (ev.end.date) return new Date(ev.end.date + 'T00:00:00');
+    var d = new Date(ev.end.dateTime);
+    var midnight = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    if (d.getTime() === midnight.getTime()) return midnight;
+    return new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1);
+  }
+  function _isMultiDay(ev) {
+    /* 2일 이상 걸치는 이벤트 */
+    return _evEndDay(ev).getTime() - _evStartDay(ev).getTime() > 86400000;
+  }
+  function _buildMultiDayTracks(events, weekStart) {
+    /* 각 이벤트에 startCol(0-6), endCol(1-7, exclusive), track 할당 */
+    var weekT = weekStart.getTime();
+    var items = events.map(function (ev) {
+      var sT = _evStartDay(ev).getTime();
+      var eT = _evEndDay(ev).getTime();
+      return {
+        ev:       ev,
+        startCol: Math.max(0, Math.round((sT - weekT) / 86400000)),
+        endCol:   Math.min(7, Math.round((eT - weekT) / 86400000))
+      };
+    }).filter(function (x) { return x.endCol > x.startCol; })
+      .sort(function (a, b) {
+        if (a.startCol !== b.startCol) return a.startCol - b.startCol;
+        return (b.endCol - b.startCol) - (a.endCol - a.startCol);
+      });
+    var trackEnds = [];
+    return items.map(function (item) {
+      var t = 0;
+      while (trackEnds[t] !== undefined && trackEnds[t] > item.startCol) t++;
+      trackEnds[t] = item.endCol;
+      return { ev: item.ev, startCol: item.startCol, endCol: item.endCol, track: t };
+    });
+  }
+
   function renderMonth() {
     var d     = S.viewDate;
     var today = new Date();
@@ -733,11 +777,78 @@
     var start = new Date(first);
     start.setDate(start.getDate() - start.getDay());
 
-    var evMap = eventsGroupedByDate(S.events);
+    /* 단일일 이벤트만 evMap에 넣어 buildDayCell에 전달 */
+    var multiDay  = S.events.filter(function (ev) { return _isMultiDay(ev); });
+    var singleDay = S.events.filter(function (ev) { return !_isMultiDay(ev); });
+    var evMap = eventsGroupedByDate(singleDay);
 
-    for (var i = 0; i < 42; i++) {
-      var cell = new Date(start.getFullYear(), start.getMonth(), start.getDate() + i);
-      grid.appendChild(buildDayCell(cell, d, today, evMap));
+    var TRACK_H   = 22; /* 트랙당 픽셀 높이 */
+    var DAY_NUM_H = 30; /* 날짜 숫자 영역 근사 높이 */
+    var W7 = 100 / 7;  /* 7분의 1 너비(%) */
+
+    for (var w = 0; w < 6; w++) {
+      var wOff      = w * 7;
+      var weekStart = new Date(start.getFullYear(), start.getMonth(), start.getDate() + wOff);
+      var weekEnd   = new Date(start.getFullYear(), start.getMonth(), start.getDate() + wOff + 7);
+
+      /* 이 주에 걸치는 멀티데이 이벤트 트랙 계산 */
+      var weekMulti = multiDay.filter(function (ev) {
+        return _evStartDay(ev).getTime() < weekEnd.getTime() &&
+               _evEndDay(ev).getTime()   > weekStart.getTime();
+      });
+      var tracked   = _buildMultiDayTracks(weekMulti, weekStart);
+      var numTracks = tracked.length ? tracked.reduce(function (m, t) { return Math.max(m, t.track); }, 0) + 1 : 0;
+
+      /* 주간 행 컨테이너 생성 (7열 그리드 + 절대위치 바용 기준) */
+      var weekRow = document.createElement('div');
+      weekRow.className = 'calendar-week-row';
+      weekRow.style.setProperty('--num-tracks', String(numTracks));
+
+      /* 7개 날짜 셀 추가 */
+      for (var i = 0; i < 7; i++) {
+        var cellDate = new Date(start.getFullYear(), start.getMonth(), start.getDate() + wOff + i);
+        weekRow.appendChild(buildDayCell(cellDate, d, today, evMap));
+      }
+
+      /* 멀티데이 바 렌더 */
+      tracked.forEach(function (item) {
+        var ev      = item.ev;
+        var leftPct = item.startCol * W7;
+        var wPct    = (item.endCol - item.startCol) * W7;
+        var topPx   = DAY_NUM_H + item.track * TRACK_H + 2;
+
+        /* 이 주 내에서 이벤트 시작/끝 여부 (모서리 둥글기용) */
+        var evST    = _evStartDay(ev).getTime();
+        var evET    = _evEndDay(ev).getTime();
+        var isStart = evST >= weekStart.getTime();
+        var isEnd   = evET <= weekEnd.getTime();
+
+        var bar = document.createElement('div');
+        bar.className = 'multiday-bar';
+        bar.style.left   = leftPct.toFixed(3) + '%';
+        bar.style.width  = 'calc(' + wPct.toFixed(3) + '% - 4px)';
+        bar.style.top    = topPx + 'px';
+        bar.style.borderRadius = (isStart ? '5px' : '0') + ' ' +
+                                 (isEnd   ? '5px' : '0') + ' ' +
+                                 (isEnd   ? '5px' : '0') + ' ' +
+                                 (isStart ? '5px' : '0');
+        if (ev._calColor) {
+          bar.style.background = ev._calColor;
+          /* 밝기 체크: 어두운 색상이면 흰색 텍스트 유지 */
+        }
+
+        var label = document.createElement('span');
+        label.textContent = ev.summary || '(제목 없음)';
+        bar.appendChild(label);
+
+        bar.addEventListener('click', function (e) {
+          e.stopPropagation();
+          openEventModal(ev);
+        });
+        weekRow.appendChild(bar);
+      });
+
+      grid.appendChild(weekRow);
     }
   }
 
