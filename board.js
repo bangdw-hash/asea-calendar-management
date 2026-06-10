@@ -762,6 +762,7 @@
       if (content) S.quill.clipboard.dangerouslyPasteHTML(content);
       _initTableDrag(editorEl, S.quill);
       _initEditorContextMenu(editorEl, S.quill);
+      _initAutoLink(S.quill);
 
       // 커스텀 picker 레이블 처리
       setTimeout(function() {
@@ -923,6 +924,35 @@
   }
   function _ctxLhBtn(val, label, current) {
     return '<button class="bw-ectx-fmt bw-ectx-lh'+(current===val?' active':'')+'" data-fmt="lineHeight" data-val="'+val+'">'+label+'</button>';
+  }
+
+  function _initAutoLink(quillInst) {
+    if (!quillInst) return;
+    var URL_RE = /^(https?:\/\/)?(www\.)[a-zA-Z0-9][a-zA-Z0-9-]*(\.[a-zA-Z0-9-]+)+([/?#][^\s]*)?$|^https?:\/\/[a-zA-Z0-9][a-zA-Z0-9-]*(\.[a-zA-Z0-9-]+)+([/?#][^\s]*)?$/;
+    quillInst.on('text-change', function(delta, oldDelta, source) {
+      if (source !== 'user') return;
+      var lastOp = delta.ops[delta.ops.length - 1];
+      if (!lastOp || typeof lastOp.insert !== 'string') return;
+      var insertedChar = lastOp.insert;
+      if (insertedChar !== ' ' && insertedChar !== '\n') return;
+      var range = quillInst.getSelection();
+      if (!range) return;
+      var cursorPos = range.index;
+      if (cursorPos < 2) return;
+      var textBeforeSpace = quillInst.getText(0, cursorPos - 1);
+      var lastWs = Math.max(
+        textBeforeSpace.lastIndexOf(' '),
+        textBeforeSpace.lastIndexOf('\n'),
+        textBeforeSpace.lastIndexOf('\t')
+      );
+      var wordStart = lastWs + 1;
+      var word = textBeforeSpace.slice(wordStart);
+      if (!word || !URL_RE.test(word)) return;
+      var existingFmt = quillInst.getFormat(wordStart, word.length);
+      if (existingFmt.link) return;
+      var href = /^https?:\/\//i.test(word) ? word : 'https://' + word;
+      quillInst.formatText(wordStart, word.length, 'link', href, 'user');
+    });
   }
 
   function _initTableDrag(editorEl, quillInst) {
