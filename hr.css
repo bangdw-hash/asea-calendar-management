@@ -103,7 +103,24 @@
 .hr-btn-danger:hover { background: #FECACA; }
 .hr-btn-success { background: #16A34A; color: #fff; }
 .hr-btn-success:hover { background: #15803D; }
+.hr-btn-demo { background: linear-gradient(135deg, #7C3AED, #A855F7); color: #fff; }
+.hr-btn-demo:hover { background: linear-gradient(135deg, #6D28D9, #9333EA); }
 .hr-btn-sm { padding: 5px 12px; font-size: 12px; }
+
+/* ── 체험 모드 배너 ── */
+.hr-demo-banner {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: linear-gradient(135deg, #EDE9FE, #F5F3FF);
+  border: 1.5px solid #A78BFA;
+  border-radius: 10px;
+  padding: 10px 16px;
+  margin-bottom: 14px;
+  font-size: 13px;
+  color: #5B21B6;
+  flex-wrap: wrap;
+}
 .hr-btn:disabled { opacity: .5; cursor: not-allowed; }
 .hr-btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
 

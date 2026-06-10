@@ -23,6 +23,7 @@ window.HRModule = (function () {
     admAuth:    false,       // 최고관리자 인증 여부
     viewTarget: null,        // 관리자가 조회 중인 지원자 ID
     editCode:   null,        // 어드민 코드 편집 대상
+    isDemo:     false,       // 체험 모드 여부
   };
 
   /* ── 유틸 ── */
@@ -255,7 +256,11 @@ window.HRModule = (function () {
       '<input class="hr-auth-input" id="hr-code-inp" maxlength="6" placeholder="접수코드" autocomplete="off">' +
       '<div class="hr-auth-err" id="hr-code-err"></div>' +
       '<button class="hr-btn hr-btn-primary" id="hr-code-btn" style="width:100%;margin-bottom:10px">입력하기</button>' +
-      '<button class="hr-btn hr-btn-ghost" id="hr-code-back" style="width:100%">← 돌아가기</button>';
+      '<button class="hr-btn hr-btn-ghost" id="hr-code-back" style="width:100%;margin-bottom:16px">← 돌아가기</button>' +
+      '<div style="border-top:1px solid #E5E7EB;padding-top:16px;text-align:center">' +
+        '<div style="font-size:12px;color:#6B7280;margin-bottom:10px">접수 코드가 없으신가요? 아래에서 작성 화면을 미리 체험해보세요.</div>' +
+        '<button class="hr-btn hr-btn-demo" id="hr-demo-btn" style="width:100%">✨ 입사 예정자 작성 체험해보기</button>' +
+      '</div>';
 
     wrap.appendChild(box);
 
@@ -266,6 +271,22 @@ window.HRModule = (function () {
     document.getElementById('hr-code-back').addEventListener('click', function() {
       _st.view = 'home'; _render();
     });
+    document.getElementById('hr-demo-btn').addEventListener('click', _startDemo);
+  }
+
+  function _startDemo() {
+    // 기존 체험 데이터 제거 후 새로 생성
+    var apps = loadApps();
+    apps = apps.filter(function(a) { return a.code !== 'DEMO'; });
+    var demoApp = blankApp('DEMO');
+    demoApp.isDemo = true;
+    demoApp.form1.nameKr = '홍길동 (체험)';
+    apps.push(demoApp);
+    saveApps(apps);
+    _st.applicant = demoApp;
+    _st.appStep = 0;
+    _st.isDemo = true;
+    _render();
   }
 
   function _submitCode() {
@@ -300,15 +321,25 @@ window.HRModule = (function () {
   function _renderApplicantForm(wrap) {
     var app = _st.applicant;
 
+    // 체험 모드 배너
+    if (_st.isDemo) {
+      var demoBanner = el('div', 'hr-demo-banner');
+      demoBanner.innerHTML =
+        '<span style="font-size:16px">✨</span>' +
+        '<span style="font-weight:700;margin:0 6px">체험 모드</span>' +
+        '<span style="font-size:12px">실제 데이터는 저장되지 않습니다 — 각 단계를 자유롭게 작성하고 미리보기를 확인하세요.</span>';
+      wrap.appendChild(demoBanner);
+    }
+
     // 상단: 이름 + 단계 + 나가기
     var header = el('div');
     header.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:8px';
     var title = el('div');
     title.style.cssText = 'font-size:14px;font-weight:700;color:#1a3a5c';
-    title.textContent = (app.form1.nameKr || '지원자') + '님의 서류 제출';
-    var backBtn = el('button', 'hr-btn hr-btn-ghost hr-btn-sm', '← 로그아웃');
+    title.textContent = _st.isDemo ? '입사 예정자 작성 체험' : (app.form1.nameKr || '지원자') + '님의 서류 제출';
+    var backBtn = el('button', 'hr-btn hr-btn-ghost hr-btn-sm', _st.isDemo ? '✕ 체험 종료' : '← 로그아웃');
     backBtn.addEventListener('click', function() {
-      _st.applicant = null; _st.appStep = 0; _render();
+      _st.applicant = null; _st.appStep = 0; _st.isDemo = false; _render();
     });
     header.appendChild(title);
     header.appendChild(backBtn);
@@ -927,21 +958,51 @@ window.HRModule = (function () {
     });
     body.appendChild(summary);
 
-    var submitBtn = el('button', 'hr-btn hr-btn-success', '📨  최종 제출하기');
-    submitBtn.style.cssText = 'width:100%;padding:14px;font-size:15px;margin-bottom:8px';
-    submitBtn.addEventListener('click', function() {
-      app.status = 'submitted';
-      app.submittedAt = Date.now();
-      _saveApplicant(app);
-      toast('서류가 성공적으로 제출되었습니다!', '#16A34A');
-      _render();
-    });
-    body.appendChild(submitBtn);
+    if (_st.isDemo) {
+      // 체험 모드: 미리보기 버튼만 제공
+      var demoNotice = el('div');
+      demoNotice.style.cssText = 'background:#FEF3C7;border:1px solid #FCD34D;border-radius:8px;padding:12px 16px;margin-bottom:14px;font-size:13px;color:#92400E;text-align:center';
+      demoNotice.innerHTML = '✨ <strong>체험 모드</strong>입니다 — 아래에서 작성한 내용을 미리보기로 확인하세요.';
+      body.appendChild(demoNotice);
 
-    var backBtn = el('button', 'hr-btn hr-btn-ghost', '← 돌아가서 수정');
-    backBtn.style.width = '100%';
-    backBtn.addEventListener('click', function() { _st.appStep=0; _render(); });
-    body.appendChild(backBtn);
+      var pvForm1Btn = el('button', 'hr-btn hr-btn-primary', '👁️  채용지원서 미리보기');
+      pvForm1Btn.style.cssText = 'width:100%;padding:12px;font-size:14px;margin-bottom:8px';
+      pvForm1Btn.addEventListener('click', function() { _printApplicationForm(app); });
+      body.appendChild(pvForm1Btn);
+
+      var pvForm2Btn = el('button', 'hr-btn hr-btn-primary', '👁️  개인정보 동의서 미리보기');
+      pvForm2Btn.style.cssText = 'width:100%;padding:12px;font-size:14px;margin-bottom:8px';
+      pvForm2Btn.addEventListener('click', function() { _printPrivacyForm(app); });
+      body.appendChild(pvForm2Btn);
+
+      var endDemoBtn = el('button', 'hr-btn hr-btn-ghost', '✕ 체험 종료');
+      endDemoBtn.style.cssText = 'width:100%;margin-bottom:8px';
+      endDemoBtn.addEventListener('click', function() {
+        _st.applicant = null; _st.appStep = 0; _st.isDemo = false; _render();
+      });
+      body.appendChild(endDemoBtn);
+
+      var restartDemoBtn = el('button', 'hr-btn hr-btn-demo', '🔄 처음부터 다시 체험');
+      restartDemoBtn.style.width = '100%';
+      restartDemoBtn.addEventListener('click', function() { _startDemo(); });
+      body.appendChild(restartDemoBtn);
+    } else {
+      var submitBtn = el('button', 'hr-btn hr-btn-success', '📨  최종 제출하기');
+      submitBtn.style.cssText = 'width:100%;padding:14px;font-size:15px;margin-bottom:8px';
+      submitBtn.addEventListener('click', function() {
+        app.status = 'submitted';
+        app.submittedAt = Date.now();
+        _saveApplicant(app);
+        toast('서류가 성공적으로 제출되었습니다!', '#16A34A');
+        _render();
+      });
+      body.appendChild(submitBtn);
+
+      var backBtn = el('button', 'hr-btn hr-btn-ghost', '← 돌아가서 수정');
+      backBtn.style.width = '100%';
+      backBtn.addEventListener('click', function() { _st.appStep=0; _render(); });
+      body.appendChild(backBtn);
+    }
 
     card.appendChild(body);
     wrap.appendChild(_buildNavButtons(function(){ _st.appStep=3; _render(); }, null, ''));
