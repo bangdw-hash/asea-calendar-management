@@ -22,6 +22,22 @@
   <!-- SheetJS for Excel support -->
   <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+
+  <style>
+    .hr-subtab-bar {
+      display: flex; gap: 0; border-bottom: 2px solid #E5E7EB;
+      background: #fff; padding: 0 16px;
+      position: sticky; top: 0; z-index: 10;
+    }
+    .hr-subtab-btn {
+      padding: 11px 22px; font-size: 14px; font-weight: 600;
+      border: none; background: transparent; cursor: pointer;
+      color: #6B7280; border-bottom: 3px solid transparent;
+      margin-bottom: -2px; transition: color .15s, border-color .15s;
+    }
+    .hr-subtab-btn.active { color: #1a3a5c; border-bottom-color: #1a3a5c; }
+    .hr-subtab-btn:hover:not(.active) { color: #374151; background: #F9FAFB; }
+  </style>
 </head>
 <body>
 
@@ -184,13 +200,6 @@
     </svg>
     <span class="tab-label">인사관리</span>
   </button>
-  <button class="tab-btn" data-tab="retire" role="tab" aria-selected="false">
-    <svg class="tab-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
-    </svg>
-    <span class="tab-label">퇴직관리</span>
-  </button>
-
   <button class="tab-btn" data-tab="zoom" role="tab" aria-selected="false">
     <svg class="tab-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
       <path d="M15 10l4.553-2.069A1 1 0 0 1 21 8.87v6.26a1 1 0 0 1-1.447.94L15 14M3 8a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8z"/>
@@ -1601,11 +1610,17 @@
            👥 인사관리 탭
            ════════════════════════════════════════════════════ -->
       <section id="tab-hr" class="tab-panel" role="tabpanel" hidden>
-        <div id="hr-root"></div>
-      </section>
-
-      <section id="tab-retire" class="tab-panel" role="tabpanel" hidden>
-        <div id="retire-root"></div>
+        <!-- 인사관리 서브탭 -->
+        <div class="hr-subtab-bar" id="hr-subtab-bar">
+          <button class="hr-subtab-btn active" id="hr-subtab-entry" onclick="HRSubTab.show('entry')">👥 입사관리</button>
+          <button class="hr-subtab-btn" id="hr-subtab-retire" onclick="HRSubTab.show('retire')">🚪 퇴직관리</button>
+        </div>
+        <div id="hr-entry-panel">
+          <div id="hr-root"></div>
+        </div>
+        <div id="hr-retire-panel" style="display:none">
+          <div id="retire-root"></div>
+        </div>
       </section>
 
       <section id="tab-zoom" class="tab-panel" role="tabpanel" hidden>
@@ -2786,14 +2801,6 @@
         <span class="bnav-label">인사관리</span>
       </button>
 
-      <!-- 🚪 퇴직관리 -->
-      <button class="bnav-btn" data-tab="retire">
-        <svg class="bnav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
-        </svg>
-        <span class="bnav-label">퇴직관리</span>
-      </button>
-
       <!-- 🚪 입출입관리 -->
       <button class="bnav-btn" data-tab="checkinmgmt">
         <svg class="bnav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -2928,5 +2935,30 @@
     </button>
   </div>
 
+
+  <script>
+    var HRSubTab = {
+      show: function(which) {
+        var entryPanel  = document.getElementById('hr-entry-panel');
+        var retirePanel = document.getElementById('hr-retire-panel');
+        var btnEntry    = document.getElementById('hr-subtab-entry');
+        var btnRetire   = document.getElementById('hr-subtab-retire');
+        if (!entryPanel || !retirePanel) return;
+        if (which === 'entry') {
+          entryPanel.style.display  = '';
+          retirePanel.style.display = 'none';
+          btnEntry.classList.add('active');
+          btnRetire.classList.remove('active');
+          if (typeof HRModule !== 'undefined' && HRModule.init) HRModule.init();
+        } else {
+          entryPanel.style.display  = 'none';
+          retirePanel.style.display = '';
+          btnEntry.classList.remove('active');
+          btnRetire.classList.add('active');
+          if (typeof RetireModule !== 'undefined' && RetireModule.init) RetireModule.init();
+        }
+      }
+    };
+  </script>
 </body>
 </html>

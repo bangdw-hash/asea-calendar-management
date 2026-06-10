@@ -158,8 +158,7 @@
     if (name === 'weekly-hub') { syncWeeklyHubFiles(); }
     if (name === 'report') { if (typeof ReportModule !== 'undefined' && ReportModule.init) ReportModule.init(); }
     if (name === 'promo')  { if (typeof PromoModule  !== 'undefined' && PromoModule.init)  PromoModule.init();  }
-    if (name === 'hr')     { if (typeof HRModule     !== 'undefined' && HRModule.init)     HRModule.init();     }
-    if (name === 'retire') { if (typeof RetireModule !== 'undefined' && RetireModule.init) RetireModule.init(); }
+    if (name === 'hr')     { if (typeof HRModule !== 'undefined' && HRModule.init) { HRModule.init(); } if (typeof HRSubTab !== 'undefined') HRSubTab.show('entry'); }
     if (name === 'zoom')   { if (typeof MeetModule   !== 'undefined' && MeetModule.init)   MeetModule.init();   }
     if (name === 'help')   { if (typeof HelpModule   !== 'undefined' && HelpModule.init)   HelpModule.init();   }
     if (name === 'email')      renderEmailTab();
