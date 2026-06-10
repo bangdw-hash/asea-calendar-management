@@ -475,7 +475,8 @@ window.HRModule = (function () {
     var cbRow2 = el('div', 'hr-cb-row');
     cbRow2.style.flexDirection = 'column'; cbRow2.style.gap = '4px';
 
-    [depts1, depts2, depts3].forEach(function(group) {
+    var allDeptGroups = [depts1, depts2, depts3];
+    allDeptGroups.forEach(function(group) {
       var r = el('div', 'hr-cb-row');
       group.forEach(function(d) {
         var lbl = el('label', 'hr-cb-item');
@@ -492,6 +493,20 @@ window.HRModule = (function () {
       });
       cbRow2.appendChild(r);
     });
+    // 미정 체크박스
+    var rMijeong = el('div', 'hr-cb-row');
+    var lblMj = el('label', 'hr-cb-item'); lblMj.style.cssText = 'color:#D97706;font-weight:600';
+    var inpMj = document.createElement('input'); inpMj.type = 'checkbox'; inpMj.value = '미정';
+    if ((f.deptCheckboxes || []).includes('미정')) inpMj.checked = true;
+    inpMj.addEventListener('change', function() {
+      if (!f.deptCheckboxes) f.deptCheckboxes = [];
+      if (this.checked) { if (!f.deptCheckboxes.includes('미정')) f.deptCheckboxes.push('미정'); }
+      else f.deptCheckboxes = f.deptCheckboxes.filter(function(x){ return x !== '미정'; });
+      _saveApplicant(app);
+    });
+    lblMj.appendChild(inpMj); lblMj.appendChild(document.createTextNode('미정'));
+    rMijeong.appendChild(lblMj);
+    cbRow2.appendChild(rMijeong);
     sec2.appendChild(cbRow2);
     rightBox.appendChild(sec2);
 
@@ -504,7 +519,7 @@ window.HRModule = (function () {
       _field('성명(한글)', 'text', f.nameKr, function(v){ f.nameKr=v; _saveApplicant(app); }, 'flex2'),
       _field('성명(한자)', 'text', f.nameHj, function(v){ f.nameHj=v; _saveApplicant(app); }, 'flex2'),
       _field('성별', 'select', f.gender, function(v){ f.gender=v; _saveApplicant(app); }, 'w80', ['','남','여']),
-      _field('생년월일', 'text', f.birth, function(v){ f.birth=v; _saveApplicant(app); }, 'w120', null, 'YYYY.MM.DD'),
+      _field('생년월일', 'date', f.birth, function(v){ f.birth=v; _saveApplicant(app); }, 'w140', null, ''),
     ]));
     form.appendChild(_row([
       _field('주소', 'text', f.address, function(v){ f.address=v; _saveApplicant(app); }, 'flex3'),
@@ -548,7 +563,7 @@ window.HRModule = (function () {
         return [
           _tdInput(fm.rel,   function(v){ f.family[i].rel=v;   _saveApplicant(app); }, '', 60),
           _tdInput(fm.name,  function(v){ f.family[i].name=v;  _saveApplicant(app); }, '', 80),
-          _tdInput(fm.birth, function(v){ f.family[i].birth=v; _saveApplicant(app); }, 'YYYY.MM.DD', 90),
+          _tdDateInput(fm.birth, function(v){ f.family[i].birth=v; _saveApplicant(app); }, 110),
           _tdInput(fm.job,   function(v){ f.family[i].job=v;   _saveApplicant(app); }, '', 80),
           _tdInput(fm.age,   function(v){ f.family[i].age=v;   _saveApplicant(app); }, '', 50),
         ];
@@ -589,7 +604,7 @@ window.HRModule = (function () {
     var certTable = _buildTable(['취득일자','종류','발행기관'],
       f.certs.map(function(c, i) {
         return [
-          _tdInput(c.date,   function(v){ f.certs[i].date=v;   _saveApplicant(app); }, 'YYYY.MM', 80),
+          _tdMonthInput(c.date, function(v){ f.certs[i].date=v; _saveApplicant(app); }, 110),
           _tdInput(c.type,   function(v){ f.certs[i].type=v;   _saveApplicant(app); }, '', 120),
           _tdInput(c.issuer, function(v){ f.certs[i].issuer=v; _saveApplicant(app); }, '', 100),
         ];
@@ -598,7 +613,7 @@ window.HRModule = (function () {
     var awardTable = _buildTable(['수상일','종류','수여기관'],
       f.awards.map(function(a, i) {
         return [
-          _tdInput(a.date, function(v){ f.awards[i].date=v; _saveApplicant(app); }, 'YYYY.MM', 80),
+          _tdMonthInput(a.date, function(v){ f.awards[i].date=v; _saveApplicant(app); }, 110),
           _tdInput(a.type, function(v){ f.awards[i].type=v; _saveApplicant(app); }, '', 120),
           _tdInput(a.org,  function(v){ f.awards[i].org=v;  _saveApplicant(app); }, '', 100),
         ];
@@ -642,7 +657,7 @@ window.HRModule = (function () {
         return [
           _tdFixed(t.type),
           _tdInput(t.title,  function(v){ f.thesis[i].title=v;  _saveApplicant(app); }, '', 160),
-          _tdInput(t.date,   function(v){ f.thesis[i].date=v;   _saveApplicant(app); }, 'YYYY.MM.DD', 90),
+          _tdDateInput(t.date, function(v){ f.thesis[i].date=v; _saveApplicant(app); }, 120),
           _tdInput(t.school, function(v){ f.thesis[i].school=v; _saveApplicant(app); }, '', 100),
           _tdInput(t.summary,function(v){ f.thesis[i].summary=v;_saveApplicant(app); }, '', 160),
         ];
@@ -1447,19 +1462,22 @@ window.HRModule = (function () {
         return '<tr><td>' + _fmtM(c.from||'') + '~' + _fmtM(c.to||'') + '</td><td>' + _esc(c.months||'') + '</td>' +
           '<td>' + _esc(c.org||'') + '</td><td>' + _esc(c.rank||'') + '</td><td>' + _esc(c.duties||'') + '</td><td>' + _esc(c.hours||'') + '</td></tr>';
       }).join('') + '</table>' +
+      '<div class="hr-print-section-head">5. 자격취득사항 / 수상내역</div>' +
+      '<table style="width:100%;border-collapse:collapse"><tr><td style="width:50%;vertical-align:top"><table class="hr-print-table"><tr><th>취득일자</th><th>종류</th><th>발행기관</th></tr>' +
+      f.certs.map(function(c) { return '<tr><td>' + _fmtM(c.date||'') + '</td><td>' + _esc(c.type||'') + '</td><td>' + _esc(c.issuer||'') + '</td></tr>'; }).join('') +
+      '</table></td><td style="width:50%;vertical-align:top"><table class="hr-print-table"><tr><th>수상일</th><th>종류</th><th>수여기관</th></tr>' +
+      f.awards.map(function(a) { return '<tr><td>' + _fmtM(a.date||'') + '</td><td>' + _esc(a.type||'') + '</td><td>' + _esc(a.org||'') + '</td></tr>'; }).join('') +
+      '</table></td></tr></table>' +
       '<div class="hr-print-section-head">6. 외국어/전산/AI툴 활용능력</div>' +
       '<table class="hr-print-table"><tr><th>토익</th><td>' + _esc(f.langToeic||'') + '</td><th>텝스</th><td>' + _esc(f.langTeps||'') + '</td><th>기타</th><td>' + _esc(f.langOther||'') + '</td><th>전산수준</th><td>' + _esc(f.pcLevel||'') + '</td></tr></table>' +
-      '<table class="hr-print-table" style="margin-top:2mm"><tr><th>AI툴</th><th>활용 목적 및 사례</th><th>숙련도</th></tr>' +
+      '<table class="hr-print-table" style="margin-top:1mm"><tr><th>AI툴</th><th>활용 목적 및 사례</th><th>숙련도</th></tr>' +
       (f.aiTools||[]).map(function(ai) {
         return '<tr><td>' + _esc(ai.tool||'') + '</td><td>' + _esc(ai.purpose||'') + '</td><td>' + _esc(ai.level||'') + '</td></tr>';
       }).join('') + '</table>' +
-      '<div class="hr-print-section-head">5. 자격취득사항 / 수상내역</div>' +
-      '<table style="width:100%;border-collapse:collapse"><tr><td style="width:50%;vertical-align:top"><table class="hr-print-table"><tr><th>취득일자</th><th>종류</th><th>발행기관</th></tr>' +
-      f.certs.map(function(c) { return '<tr><td>' + _esc(c.date||'') + '</td><td>' + _esc(c.type||'') + '</td><td>' + _esc(c.issuer||'') + '</td></tr>'; }).join('') +
-      '</table></td><td style="width:50%;vertical-align:top"><table class="hr-print-table"><tr><th>수상일</th><th>종류</th><th>수여기관</th></tr>' +
-      f.awards.map(function(a) { return '<tr><td>' + _esc(a.date||'') + '</td><td>' + _esc(a.type||'') + '</td><td>' + _esc(a.org||'') + '</td></tr>'; }).join('') +
-      '</table></td></tr></table>' +
-      '<div style="margin-top:5mm;font-size:8pt">위 기재한 사항은 모두 사실이며, 허위 기재 또는 중요 사항 누락 시 채용 취소·임용 해지 등 학교의 인사 조치에 이의가 없음을 확인합니다.</div>' +
+      '<div class="hr-print-section-head">7. 학위논문</div>' +
+      '<table class="hr-print-table"><tr><th>구분</th><th>제목</th><th>발표년월일</th><th>취득학교</th><th>내용 요지</th></tr>' +
+      (f.thesis||[]).map(function(t) { return '<tr><td>' + _esc(t.type||'') + '</td><td>' + _esc(t.title||'') + '</td><td>' + _esc(t.date||'') + '</td><td>' + _esc(t.school||'') + '</td><td>' + _esc(t.summary||'') + '</td></tr>'; }).join('') + '</table>' +
+      '<div style="margin-top:3mm;font-size:7.5pt">위 기재한 사항은 모두 사실이며, 허위 기재 또는 중요 사항 누락 시 채용 취소·임용 해지 등 학교의 인사 조치에 이의가 없음을 확인합니다.</div>' +
       '<div class="hr-print-sig-row">' +
       '<span class="hr-print-date">' + _esc(f.signDate || fmtDate(Date.now())) + '&nbsp;&nbsp;지원자 :</span>' +
       (f.signB64 ? '<div class="hr-print-sig-box"><img class="hr-print-sig-img" src="' + f.signB64 + '" alt="서명"></div>' : '<div class="hr-print-sig-box"><div class="hr-print-sig-img"></div></div>') +
@@ -1536,19 +1554,19 @@ window.HRModule = (function () {
   function _doPrint(html) {
     var printCSS = [
       "body{font-family:'맑은 고딕',sans-serif;margin:0;padding:0;}",
-      ".hr-print-page{width:210mm;min-height:297mm;padding:12mm 14mm;font-size:9.5pt;line-height:1.5;color:#000;box-sizing:border-box;page-break-after:always;}",
-      ".hr-print-title{text-align:center;font-size:15pt;font-weight:700;margin-bottom:6mm;letter-spacing:2px;}",
-      ".hr-print-subtitle{text-align:center;font-size:11pt;font-weight:500;margin-bottom:8mm;}",
-      ".hr-print-section-head{background:#eee;font-weight:700;padding:2mm 3mm;font-size:9pt;margin:4mm 0 2mm;}",
-      ".hr-print-table{width:100%;border-collapse:collapse;font-size:8.5pt;margin-bottom:3mm;}",
-      ".hr-print-table th{background:#f0f0f0;font-weight:700;padding:2mm;border:1px solid #000;text-align:center;}",
-      ".hr-print-table td{padding:2mm;border:1px solid #888;}",
-      ".hr-print-sig-row{display:flex;justify-content:flex-end;margin-top:6mm;align-items:center;gap:8mm;}",
+      ".hr-print-page{width:210mm;padding:7mm 10mm;font-size:8pt;line-height:1.35;color:#000;box-sizing:border-box;page-break-after:always;}",
+      ".hr-print-title{font-size:13pt;font-weight:700;margin-bottom:2mm;letter-spacing:1px;}",
+      ".hr-print-subtitle{font-size:9pt;font-weight:500;margin-bottom:2mm;}",
+      ".hr-print-section-head{background:#eee;font-weight:700;padding:1mm 2mm;font-size:8pt;margin:2mm 0 1mm;}",
+      ".hr-print-table{width:100%;border-collapse:collapse;font-size:7.5pt;margin-bottom:1.5mm;}",
+      ".hr-print-table th{background:#f0f0f0;font-weight:700;padding:1mm 1.5mm;border:1px solid #000;text-align:center;white-space:nowrap;}",
+      ".hr-print-table td{padding:1mm 1.5mm;border:1px solid #888;}",
+      ".hr-print-sig-row{display:flex;justify-content:flex-end;margin-top:3mm;align-items:center;gap:6mm;}",
       ".hr-print-sig-box{text-align:center;}",
-      ".hr-print-sig-img{width:35mm;height:20mm;border-bottom:1px solid #000;display:block;margin:0 auto;object-fit:contain;}",
-      ".hr-print-date{font-size:10pt;}",
-      ".hr-print-footnote{font-size:7.5pt;color:#555;margin-top:4mm;border-top:1px solid #ccc;padding-top:2mm;}",
-      ".hr-print-photo{float:right;width:25mm;height:32mm;border:1px solid #000;margin-left:4mm;}",
+      ".hr-print-sig-img{width:30mm;height:15mm;border-bottom:1px solid #000;display:block;margin:0 auto;object-fit:contain;}",
+      ".hr-print-date{font-size:9pt;}",
+      ".hr-print-footnote{font-size:7pt;color:#555;margin-top:2mm;border-top:1px solid #ccc;padding-top:1mm;}",
+      ".hr-print-photo{float:right;width:22mm;height:28mm;border:1px solid #000;margin-left:3mm;}",
       "@media print{@page{size:A4;margin:0;}.hr-print-page{page-break-after:always;}}",
     ].join('');
     var win = window.open('', '_blank', 'width=900,height=700,scrollbars=yes');
@@ -1709,6 +1727,16 @@ window.HRModule = (function () {
     return inp;
   }
 
+  function _tdDateInput(val, onChange, minW) {
+    var td = document.createElement('td');
+    var inp = document.createElement('input');
+    inp.type = 'date';
+    inp.value = val || '';
+    inp.style.cssText = 'width:' + (minW||120) + 'px;padding:3px 5px;border:1px solid #D1D5DB;border-radius:4px;font-size:12px;box-sizing:border-box';
+    inp.addEventListener('change', function() { onChange(this.value); });
+    td.appendChild(inp);
+    return td;
+  }
   function _tdMonthInput(val, onChange, minW) {
     var td = document.createElement('td');
     var inp = document.createElement('input');
