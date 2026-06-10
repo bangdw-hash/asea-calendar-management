@@ -96,6 +96,8 @@ window.ReportModule = (function () {
       else if (_view==='edit')    bodyHtml = htmlEditor(_editing);
       else if (_view==='preview') bodyHtml = htmlPreview(_pvReport);
       else if (_view==='admin')   bodyHtml = htmlAdmin();
+    } else if (_subTab === 'monthly') {
+      bodyHtml = '<div id="mrpt-container" class="mrpt-host"></div>';
     } else if (_subTab === 'annual') {
       bodyHtml = htmlAnnual();
     } else if (_subTab === 'semiannual') {
@@ -108,6 +110,7 @@ window.ReportModule = (function () {
   function htmlSubTabNav() {
     var tabs = [
       { id: 'weekly',      label: '주간업무보고서' },
+      { id: 'monthly',     label: '월간업무보고' },
       { id: 'annual',      label: '연간 운영계획보고' },
       { id: 'semiannual',  label: '하반기 운영계획보고' },
     ];
@@ -1052,8 +1055,19 @@ window.ReportModule = (function () {
         _subTab = btn.dataset.subtab;
         if (_subTab === 'weekly') _view = 'list';
         render();
+        if (_subTab === 'monthly') {
+          var c = document.getElementById('mrpt-container');
+          if (c && typeof MonthlyReportModule !== 'undefined') MonthlyReportModule.init(c);
+        }
       });
     });
+    // 초기 렌더 후 월간 탭이 활성화 돼 있으면 바로 init
+    if (_subTab === 'monthly') {
+      setTimeout(function(){
+        var c = document.getElementById('mrpt-container');
+        if (c && typeof MonthlyReportModule !== 'undefined') MonthlyReportModule.init(c);
+      }, 0);
+    }
     var deptSel = $q('#_semi-dept');
     if (deptSel) {
       deptSel.addEventListener('change', function(){
