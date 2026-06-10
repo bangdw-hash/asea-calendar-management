@@ -1,0 +1,159 @@
+/* ── 퇴직자 관리 (retire.css) ── */
+
+/* 홈 화면 */
+.rt-home-wrap { max-width: 540px; margin: 0 auto; padding: 24px 16px; }
+.rt-home-title { font-size: 22px; font-weight: 700; color: #1a3a5c; margin-bottom: 4px; }
+.rt-home-sub   { font-size: 13px; color: #6B7280; margin-bottom: 24px; }
+
+.rt-role-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 20px; }
+.rt-role-card  {
+  background: #fff; border: 1.5px solid #E5E7EB; border-radius: 12px;
+  padding: 20px 14px; text-align: center; cursor: pointer;
+  transition: border-color .2s, box-shadow .2s;
+}
+.rt-role-card:hover { border-color: #1a3a5c; box-shadow: 0 2px 12px rgba(26,58,92,.12); }
+.rt-role-icon  { font-size: 28px; margin-bottom: 8px; }
+.rt-role-title { font-size: 14px; font-weight: 700; color: #1a3a5c; margin-bottom: 4px; }
+.rt-role-desc  { font-size: 12px; color: #6B7280; }
+
+/* 공통 래퍼 */
+.rt-wrap { max-width: 620px; margin: 0 auto; padding: 16px 12px; }
+
+/* 스텝바 */
+.rt-step-bar { display: flex; gap: 6px; margin-bottom: 18px; }
+.rt-step-item {
+  flex: 1; text-align: center; padding: 8px 4px; font-size: 12px;
+  background: #F3F4F6; border-radius: 6px; color: #9CA3AF; font-weight: 500;
+}
+.rt-step-item.active { background: #1a3a5c; color: #fff; font-weight: 700; }
+.rt-step-item.done   { background: #DCFCE7; color: #16A34A; }
+
+/* 카드 */
+.rt-card { background: #fff; border: 1.5px solid #E5E7EB; border-radius: 12px; margin-bottom: 14px; overflow: hidden; }
+.rt-card-head { background: linear-gradient(135deg,#1a3a5c,#2a5298); padding: 14px 18px; }
+.rt-card-title { font-size: 18px; font-weight: 700; color: #fff; letter-spacing: 4px; }
+.rt-card-subtitle { font-size: 12px; color: rgba(255,255,255,.8); margin-top: 2px; }
+.rt-card-body { padding: 16px 18px; }
+
+/* 섹션 타이틀 */
+.rt-section-title {
+  font-size: 13px; font-weight: 700; color: #1a3a5c;
+  background: #EFF6FF; border-left: 3px solid #1a3a5c;
+  padding: 6px 10px; margin: 14px 0 8px; border-radius: 0 4px 4px 0;
+}
+
+/* 폼 행/필드 — hr.css 재사용 가능하나 접두사 변경 */
+.rt-row  { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 8px; }
+.rt-field { display: flex; flex-direction: column; gap: 3px; min-width: 100px; }
+.rt-field.flex1 { flex: 1; }
+.rt-field.flex2 { flex: 2; }
+.rt-field.w100  { width: 100px; flex: none; }
+.rt-field.w140  { width: 140px; flex: none; }
+.rt-field.w160  { width: 160px; flex: none; }
+.rt-field.w200  { width: 200px; flex: none; }
+
+.rt-label { font-size: 12px; font-weight: 600; color: #374151; }
+.rt-input {
+  padding: 7px 10px; border: 1.5px solid #D1D5DB; border-radius: 6px;
+  font-size: 13px; color: #111; background: #fff; transition: border-color .15s;
+  width: 100%; box-sizing: border-box;
+}
+.rt-input:focus { outline: none; border-color: #1a3a5c; }
+.rt-input[readonly] { background: #F9FAFB; color: #6B7280; }
+textarea.rt-input { resize: vertical; min-height: 80px; }
+
+/* 버튼 */
+.rt-btn {
+  padding: 9px 16px; font-size: 13px; font-weight: 600; border: none;
+  border-radius: 8px; cursor: pointer; transition: opacity .15s;
+}
+.rt-btn:hover { opacity: .87; }
+.rt-btn-primary { background: #1a3a5c; color: #fff; }
+.rt-btn-ghost   { background: transparent; color: #6B7280; border: 1.5px solid #D1D5DB; }
+.rt-btn-outline { background: #fff; color: #1a3a5c; border: 1.5px solid #1a3a5c; }
+.rt-btn-danger  { background: #DC2626; color: #fff; }
+.rt-btn-sm { padding: 5px 10px; font-size: 12px; }
+
+/* 안내 박스 */
+.rt-info-box {
+  background: #EFF6FF; border: 1px solid #BFDBFE; border-radius: 8px;
+  padding: 14px; font-size: 12px; line-height: 1.8; margin-bottom: 14px;
+}
+.rt-warn-box {
+  background: #FEF3C7; border: 1px solid #FCD34D; border-radius: 6px;
+  padding: 10px 12px; font-size: 12px; color: #92400E; margin: 8px 0;
+}
+.rt-success-box {
+  background: #DCFCE7; border: 1px solid #86EFAC; border-radius: 8px;
+  padding: 16px; font-size: 13px; color: #15803D; margin-bottom: 14px; line-height: 1.8;
+}
+
+/* 체크박스 항목 */
+.rt-cb-item {
+  display: flex; align-items: flex-start; gap: 8px;
+  font-size: 13px; font-weight: 500; color: #1a3a5c;
+  padding: 8px 0; border-bottom: 1px solid #F3F4F6; cursor: pointer;
+}
+.rt-cb-item input[type="checkbox"] { margin-top: 2px; flex-shrink: 0; width: 16px; height: 16px; }
+
+/* 서명 패드 */
+.rt-sig-wrap { display: flex; flex-direction: column; gap: 4px; }
+.rt-sig-canvas {
+  border: 1.5px solid #D1D5DB; border-radius: 8px;
+  background: #fff; cursor: crosshair; touch-action: none;
+}
+.rt-sig-hint { font-size: 11px; color: #9CA3AF; }
+
+/* 관리자 목록 */
+.rt-mgr-topbar {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 0; margin-bottom: 12px;
+  border-bottom: 2px solid #E5E7EB;
+}
+.rt-mgr-row {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  background: #fff; border: 1.5px solid #E5E7EB; border-radius: 10px;
+  padding: 12px 14px; margin-bottom: 8px;
+}
+.rt-mgr-row:hover { border-color: #CBD5E1; }
+.rt-mgr-info { flex: 1; min-width: 0; }
+.rt-badge {
+  font-size: 11px; padding: 3px 10px; border-radius: 12px;
+  font-weight: 700; flex-shrink: 0; white-space: nowrap;
+}
+.rt-badge-submitted  { background: #FEF9EC; color: #D97706; }
+.rt-badge-processing { background: #EFF6FF; color: #2563EB; }
+.rt-badge-completed  { background: #DCFCE7; color: #16A34A; }
+.rt-badge-draft      { background: #F3F4F6; color: #9CA3AF; }
+
+/* 반납 체크리스트 박스 */
+.rt-return-box {
+  background: #FEF9EC; border: 1px solid #FCD34D; border-radius: 8px;
+  padding: 12px 14px; font-size: 12px; color: #92400E; margin-top: 14px;
+}
+
+/* 퇴직급여 안내 단계 */
+.rt-irp-step {
+  display: flex; gap: 12px; align-items: flex-start;
+  padding: 12px 0; border-bottom: 1px solid #F3F4F6;
+}
+.rt-irp-step-num {
+  width: 28px; height: 28px; border-radius: 50%;
+  background: #1a3a5c; color: #fff; font-size: 13px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.rt-irp-step-body { flex: 1; }
+.rt-irp-step-title { font-size: 14px; font-weight: 700; color: #1a3a5c; margin-bottom: 4px; }
+.rt-irp-step-desc  { font-size: 12px; color: #6B7280; line-height: 1.7; }
+
+/* 완료 화면 */
+.rt-complete-wrap { text-align: center; padding: 20px 0; }
+.rt-complete-icon { font-size: 56px; margin-bottom: 12px; }
+.rt-complete-title { font-size: 20px; font-weight: 700; color: #1a3a5c; margin-bottom: 8px; }
+.rt-complete-desc { font-size: 13px; color: #6B7280; line-height: 1.8; margin-bottom: 20px; }
+
+@media (max-width: 480px) {
+  .rt-role-cards { grid-template-columns: 1fr; }
+  .rt-row { flex-direction: column; }
+  .rt-field.w100, .rt-field.w140, .rt-field.w160, .rt-field.w200 { width: 100%; }
+}
