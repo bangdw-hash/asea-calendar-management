@@ -763,6 +763,7 @@
       _initTableDrag(editorEl, S.quill);
       _initEditorContextMenu(editorEl, S.quill);
       _initAutoLink(S.quill);
+      _initFontPersist(S.quill);
 
       // 커스텀 picker 레이블 처리
       setTimeout(function() {
@@ -924,6 +925,27 @@
   }
   function _ctxLhBtn(val, label, current) {
     return '<button class="bw-ectx-fmt bw-ectx-lh'+(current===val?' active':'')+'" data-fmt="lineHeight" data-val="'+val+'">'+label+'</button>';
+  }
+
+  function _initFontPersist(quillInst) {
+    if (!quillInst) return;
+    quillInst.on('text-change', function(delta, oldDelta, source) {
+      if (source !== 'user') return;
+      var lastOp = delta.ops[delta.ops.length - 1];
+      if (!lastOp || lastOp.insert !== '\n') return;
+      setTimeout(function() {
+        var range = quillInst.getSelection();
+        if (!range || range.length > 0) return;
+        var pos = range.index;
+        if (pos < 1) return;
+        var prevFmt = quillInst.getFormat(pos - 1, 1);
+        if (!prevFmt.font) return;
+        var currFmt = quillInst.getFormat(pos, 0);
+        if (!currFmt.font) {
+          quillInst.format('font', prevFmt.font, 'silent');
+        }
+      }, 0);
+    });
   }
 
   function _initAutoLink(quillInst) {
