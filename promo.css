@@ -249,9 +249,13 @@ input[type=radio][name=prm-theme]:checked + .prm-theme-chip {
   position: absolute; left:0;right:0;bottom:0; height:35%;
   display: flex; align-items: center; justify-content: center; padding: 2% 8%;
 }
-.prm-pv-full-color,
-.prm-pv-img-bg { position: absolute !important; inset: 0;
-  display: flex; flex-direction: column; justify-content: center; padding: 8%; }
+.prm-pv-full-color {
+  display: flex; flex-direction: column; justify-content: center; padding: 8%;
+  position: relative;
+}
+.prm-pv-img-bg {
+  /* background-image set inline; overlay child handles content positioning */
+}
 .prm-pv-img-overlay { position: absolute; inset: 0; display: flex;
   flex-direction: column; justify-content: center; padding: 8%; }
 .prm-pv-left-band {

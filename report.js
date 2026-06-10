@@ -149,13 +149,13 @@ window.ReportModule = (function () {
     }).join('') : '<div class="rpt-empty">작성된 보고서가 없습니다.<br>＋ 보고서 작성 버튼으로 시작하세요.</div>';
 
     return '<div class="rpt-wrap">'+
-      '<div class="rpt-bar">'+
-      '<span class="rpt-bar-title">📋 주간업무보고</span>'+
-      '<div class="rpt-bar-right">'+
+      '<div class="rpt-period-header">'+
+      '<span class="rpt-period-hint">주간업무보고</span>'+
+      '<div style="flex:1"></div>'+
       (isAdmin()?'<button class="rpt-btn rpt-outline rpt-sm" id="_admin">⚙️ 주차관리</button>':'')+
       (isAdmin()?'<button class="rpt-btn rpt-outline rpt-sm" id="_compile">📦 취합 PDF</button>':'')+
       '<button class="rpt-btn rpt-primary" id="_new">+ 보고서 작성</button>'+
-      '</div></div>'+
+      '</div>'+
       '<div class="rpt-filters">'+
       '<select class="rpt-sel" id="_fw">'+weekOpts+'</select>'+
       '<select class="rpt-sel" id="_fd">'+deptOpts+'</select>'+
@@ -1027,12 +1027,11 @@ window.ReportModule = (function () {
       '<div class="rpt-period-header">'+
         '<span class="rpt-period-label">보고 연도</span>'+
         '<select id="semi-year-sel" class="rpt-period-sel">'+yearOpts+'</select>'+
+        '<span class="rpt-period-label">보고 부서</span>'+
+        '<select class="rpt-period-sel" id="_semi-dept">'+deptOpts+'</select>'+
         '<span class="rpt-period-hint">하반기 운영계획보고</span>'+
         '<div style="flex:1"></div>'+
-      '</div>'+
-      '<div class="rpt-semi-dept-row">'+
-      '<label class="rpt-semi-dept-label">보고 부서</label>'+
-      '<select class="rpt-sel rpt-semi-dept-sel" id="_semi-dept">'+deptOpts+'</select>'+
+        (_semiDeptId ? '<button class="rpt-btn rpt-primary rpt-sm" id="semi-preview-btn-header">👁️ 미리보기</button>' : '')+
       '</div>'+
       formHtml+
       '</div>';
@@ -1127,7 +1126,7 @@ window.ReportModule = (function () {
       });
     }
     // 하반기 미리보기
-    [$q('#semi-preview-btn-top'), $q('#semi-preview-btn-bot')].forEach(function(btn){
+    [$q('#semi-preview-btn-header'), $q('#semi-preview-btn-top'), $q('#semi-preview-btn-bot')].forEach(function(btn){
       if (!btn) return;
       btn.addEventListener('click', function(){
         _showSemiPreview();

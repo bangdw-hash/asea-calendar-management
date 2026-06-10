@@ -180,29 +180,19 @@ window.MonthlyReportModule = (function () {
       : '<div class="mrpt-empty-hint">↑ 부서를 선택하고 <strong>+ 부서 추가</strong>를 눌러 시작하세요.</div>';
 
     return '<div class="mrpt-wrap">'+
-      /* 헤더 */
-      '<div class="mrpt-header">'+
-      '<div class="mrpt-header-title">'+
-      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="mrpt-icon"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>'+
-      '<h2 class="mrpt-title">월 간 업 무 보 고</h2>'+
+      /* 헤더 — 연간 운영계획보고와 동일한 rpt-period-header 형식 */
+      '<div class="rpt-period-header">'+
+      '<span class="rpt-period-label">보고 연도</span>'+
+      '<select class="rpt-period-sel" id="mrpt-year">'+_yearOpts()+'</select>'+
+      '<span class="rpt-period-label">보고 월</span>'+
+      '<select class="rpt-period-sel" id="mrpt-month">'+_monthOpts()+'</select>'+
+      '<span class="rpt-period-hint">월간업무보고</span>'+
+      '<div style="flex:1"></div>'+
+      '<button class="rpt-btn rpt-primary rpt-sm mrpt-preview-btn" id="mrpt-preview-btn">👁️ 미리보기</button>'+
+      '<button class="rpt-btn rpt-outline rpt-sm mrpt-save-btn" id="mrpt-save-btn">💾 저장</button>'+
       '</div>'+
-      '<div class="mrpt-header-actions">'+
-      '<button class="rpt-btn rpt-primary mrpt-preview-btn" id="mrpt-preview-btn">'+
-      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>'+
-      '&nbsp;미리보기</button>'+
-      '<button class="rpt-btn rpt-outline mrpt-save-btn" id="mrpt-save-btn">💾 저장</button>'+
-      '</div>'+
-      '</div>'+
-      /* 메타 정보 */
+      /* 부가 메타 (보고 일시 / 장소 / 이전 보고) */
       '<div class="mrpt-meta-bar">'+
-      '<div class="mrpt-meta-group">'+
-      '<label class="mrpt-meta-label">보고 연도</label>'+
-      '<select class="rpt-sel mrpt-sel-sm" id="mrpt-year">'+_yearOpts()+'</select>'+
-      '</div>'+
-      '<div class="mrpt-meta-group">'+
-      '<label class="mrpt-meta-label">보고 월</label>'+
-      '<select class="rpt-sel mrpt-sel-sm" id="mrpt-month">'+_monthOpts()+'</select>'+
-      '</div>'+
       '<div class="mrpt-meta-group">'+
       '<label class="mrpt-meta-label">보고 일시</label>'+
       '<input type="text" class="mrpt-meta-input" id="mrpt-date" placeholder="예) 2026.05.26.(화)" value="'+(_date||'')+'">'+
