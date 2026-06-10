@@ -690,7 +690,17 @@
     editorEl.id = 'bw-quill-editor';
     wrap.appendChild(editorEl);
 
-    // letter-spacing 커스텀 포맷 등록
+    // ── 폰트 등록 (9종) ──────────────────────────────────
+    try {
+      var Font = Quill.import('formats/font');
+      Font.whitelist = [
+        'pretendard', 'noto-sans-kr', 'nanum-gothic', 'nanum-myeongjo',
+        'gowun-dodum', 'black-han-sans', 'ibm-plex-sans', 'serif', 'monospace'
+      ];
+      Quill.register(Font, true);
+    } catch(e) {}
+
+    // ── letter-spacing 커스텀 포맷 등록 ─────────────────
     try {
       var Parchment = Quill.import('parchment');
       var LetterSpacingClass = new Parchment.ClassAttributor('letterSpacing', 'ql-ls', {
@@ -700,7 +710,7 @@
       Quill.register(LetterSpacingClass, true);
     } catch(e) {}
 
-    // line-height 커스텀 포맷 등록
+    // ── line-height 커스텀 포맷 등록 ────────────────────
     try {
       var Parchment2 = Quill.import('parchment');
       var LineHeightClass = new Parchment2.ClassAttributor('lineHeight', 'ql-lh', {
@@ -751,6 +761,7 @@
       });
       if (content) S.quill.clipboard.dangerouslyPasteHTML(content);
       _initTableDrag(editorEl, S.quill);
+      _initEditorContextMenu(editorEl, S.quill);
 
       // 커스텀 picker 레이블 처리
       setTimeout(function() {
@@ -766,8 +777,152 @@
         var lhItems = wrap.querySelectorAll('.ql-lineHeight .ql-picker-item');
         var lhLabels = ['1.0', '1.2', '1.5', '1.8', '2.0', '2.5'];
         lhItems.forEach(function(item, i) { if (lhLabels[i]) item.textContent = lhLabels[i]; });
+
+        // 폰트 picker 레이블 처리
+        var fontLabels = [
+          { cls: 'pretendard',    label: 'Pretendard',    ff: "'Pretendard Variable', sans-serif" },
+          { cls: 'noto-sans-kr',  label: 'Noto Sans KR',  ff: "'Noto Sans KR', sans-serif" },
+          { cls: 'nanum-gothic',  label: '나눔고딕',      ff: "'Nanum Gothic', sans-serif" },
+          { cls: 'nanum-myeongjo',label: '나눔명조',      ff: "'Nanum Myeongjo', serif" },
+          { cls: 'gowun-dodum',   label: '고운돋움',      ff: "'Gowun Dodum', sans-serif" },
+          { cls: 'black-han-sans',label: '블랙한산스',    ff: "'Black Han Sans', sans-serif" },
+          { cls: 'ibm-plex-sans', label: 'IBM Plex KR',   ff: "'IBM Plex Sans KR', sans-serif" },
+          { cls: 'serif',         label: '명조체',        ff: "Georgia, serif" },
+          { cls: 'monospace',     label: '고정폭',        ff: "'Courier New', monospace" },
+        ];
+        var fontItems = wrap.querySelectorAll('.ql-font .ql-picker-item');
+        fontItems.forEach(function(item) {
+          var val = item.dataset.value || '';
+          if (!val) { item.textContent = '기본 (Sans Serif)'; return; }
+          var fl = fontLabels.find(function(f){ return f.cls===val; });
+          if (fl) {
+            item.textContent = fl.label;
+            item.style.fontFamily = fl.ff;
+          }
+        });
       }, 100);
     } catch(e) { S.quill = null; }
+  }
+
+  /* ────────────────────────────────────────────────────────────────
+     에디터 우클릭 컨텍스트 메뉴 (서식 빠른 적용)
+  ──────────────────────────────────────────────────────────────── */
+  function _initEditorContextMenu(editorEl, quillInst) {
+    if (!editorEl || !quillInst) return;
+
+    // 기존 메뉴 제거 후 새로 생성
+    var old = document.getElementById('bw-editor-ctx');
+    if (old) old.remove();
+    var menu = document.createElement('div');
+    menu.id = 'bw-editor-ctx';
+    menu.className = 'bw-ectx';
+    menu.hidden = true;
+    document.body.appendChild(menu);
+
+    function closeMenu() { menu.hidden = true; }
+
+    editorEl.addEventListener('contextmenu', function(e) {
+      e.preventDefault();
+      var range = quillInst.getSelection();
+      var hasSelection = range && range.length > 0;
+      var fmt = hasSelection ? quillInst.getFormat(range) : {};
+
+      var selSection = hasSelection ? (
+        '<div class="bw-ectx-group">'+
+        '<div class="bw-ectx-label">선택 텍스트 서식</div>'+
+        '<div class="bw-ectx-row">'+
+        _ctxBtn('bold',      fmt.bold      ? '★굵게 해제':'굵게',       'bw-ectx-fmt'+(fmt.bold?      ' active':''))+
+        _ctxBtn('italic',    fmt.italic    ? '★기울임 해제':'기울임',    'bw-ectx-fmt'+(fmt.italic?    ' active':''))+
+        _ctxBtn('underline', fmt.underline ? '★밑줄 해제':'밑줄',       'bw-ectx-fmt'+(fmt.underline? ' active':''))+
+        _ctxBtn('strike',    fmt.strike    ? '★취소선 해제':'취소선',    'bw-ectx-fmt'+(fmt.strike?    ' active':''))+
+        '</div></div>'+
+        '<div class="bw-ectx-sep"></div>'+
+        '<div class="bw-ectx-group">'+
+        '<div class="bw-ectx-label">자간 (Letter-spacing)</div>'+
+        '<div class="bw-ectx-row">'+
+        _ctxLsBtn('tight',   '좁게',  fmt.letterSpacing)+
+        _ctxLsBtn('normal',  '기본',  fmt.letterSpacing)+
+        _ctxLsBtn('wide',    '넓게',  fmt.letterSpacing)+
+        _ctxLsBtn('wider',   '더넓',  fmt.letterSpacing)+
+        _ctxLsBtn('widest',  '최넓',  fmt.letterSpacing)+
+        '</div></div>'
+      ) : '';
+
+      var lhCurrent = range ? quillInst.getFormat(range).lineHeight : null;
+      var lhSection =
+        '<div class="bw-ectx-group">'+
+        '<div class="bw-ectx-label">행간 (Line-height)</div>'+
+        '<div class="bw-ectx-row">'+
+        ['1','1.2','1.5','1.8','2','2.5'].map(function(v){
+          return _ctxLhBtn(v, v, lhCurrent);
+        }).join('')+
+        '</div></div>';
+
+      menu.innerHTML =
+        selSection +
+        lhSection +
+        '<div class="bw-ectx-sep"></div>'+
+        '<div class="bw-ectx-group">'+
+        '<div class="bw-ectx-row bw-ectx-row-wide">'+
+        '<button class="bw-ectx-action" data-action="copy">📋 복사</button>'+
+        '<button class="bw-ectx-action" data-action="paste">📌 붙여넣기</button>'+
+        '<button class="bw-ectx-action" data-action="selectall">전체 선택</button>'+
+        '</div></div>';
+
+      // 위치 설정
+      var W = window.innerWidth, H = window.innerHeight;
+      menu.style.left = '0px'; menu.style.top = '0px'; menu.hidden = false;
+      var mW = menu.offsetWidth || 240, mH = menu.offsetHeight || 200;
+      menu.style.left = Math.min(e.clientX, W - mW - 8) + 'px';
+      menu.style.top  = Math.min(e.clientY, H - mH - 8) + 'px';
+
+      // 이벤트 바인딩
+      menu.querySelectorAll('[data-fmt]').forEach(function(btn) {
+        btn.addEventListener('mousedown', function(ev) {
+          ev.preventDefault();
+          var fmtName = btn.dataset.fmt;
+          var fmtVal  = btn.dataset.val;
+          var r = quillInst.getSelection();
+          if (!r) return;
+          if (fmtName === 'letterSpacing') {
+            quillInst.formatText(r.index, r.length, 'letterSpacing', fmtVal === fmt.letterSpacing ? false : fmtVal, 'user');
+          } else if (fmtName === 'lineHeight') {
+            quillInst.formatLine(r.index, r.length, 'lineHeight', fmtVal === lhCurrent ? false : fmtVal, 'user');
+          } else {
+            quillInst.format(fmtName, !fmt[fmtName], 'user');
+          }
+          closeMenu();
+        });
+      });
+
+      menu.querySelectorAll('[data-action]').forEach(function(btn) {
+        btn.addEventListener('mousedown', function(ev) {
+          ev.preventDefault();
+          var act = btn.dataset.action;
+          if (act === 'copy') { document.execCommand('copy'); }
+          else if (act === 'paste') { document.execCommand('paste'); }
+          else if (act === 'selectall') { quillInst.setSelection(0, quillInst.getLength()); }
+          closeMenu();
+        });
+      });
+    });
+
+    document.addEventListener('mousedown', function(e) {
+      if (!menu.hidden && !menu.contains(e.target)) closeMenu();
+    });
+    document.addEventListener('keydown', function(e) {
+      if (!menu.hidden && e.key === 'Escape') closeMenu();
+    });
+  }
+
+  function _ctxBtn(fmt, label, cls) {
+    return '<button class="'+cls+'" data-fmt="'+fmt+'" data-val="true">'+label+'</button>';
+  }
+  function _ctxLsBtn(val, label, current) {
+    return '<button class="bw-ectx-fmt bw-ectx-ls'+(current===val?' active':'')+'" data-fmt="letterSpacing" data-val="'+val+'">'+label+'</button>';
+  }
+  function _ctxLhBtn(val, label, current) {
+    return '<button class="bw-ectx-fmt bw-ectx-lh'+(current===val?' active':'')+'" data-fmt="lineHeight" data-val="'+val+'">'+label+'</button>';
   }
 
   function _initTableDrag(editorEl, quillInst) {

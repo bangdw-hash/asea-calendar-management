@@ -5247,7 +5247,17 @@ h3.settings-section-title {
 .req { color: #e53935; }
 
 /* Quill 에디터 높이 */
-#bw-quill-editor .ql-editor { min-height: 220px; font-size: 14px; line-height: 1.7; }
+/* 에디터 세로 스크롤 — 기준 높이(500px) 초과 시 자체 스크롤 */
+#bw-quill-editor .ql-editor {
+  min-height: 220px;
+  max-height: 520px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  font-size: 14px;
+  line-height: 1.7;
+  scroll-behavior: smooth;
+}
+#bw-quill-wrap { position: relative; }
 
 /* ── 댓글 ──────────────────────────────────────────── */
 .board-comments       { margin-top: 32px; border-top: 2px solid #f0f0f0; padding-top: 20px; }
@@ -5935,3 +5945,91 @@ body.is-dragging-event .day-events { pointer-events: none !important; }
 .mrpt-print-th-dept { background: #1a1a1a; color: #fff; padding: 9px 14px; font-size: 14px; font-weight: 800; letter-spacing: .04em; text-align: left; }
 .mrpt-print-td-label { background: #f3f4f6; font-size: 12px; font-weight: 700; color: #444; padding: 10px 12px; vertical-align: top; border: 1px solid #d1d5db; white-space: pre-line; text-align: center; line-height: 1.5; }
 .mrpt-print-td-content { padding: 10px 14px; vertical-align: top; border: 1px solid #d1d5db; color: #111; white-space: pre-wrap; }
+
+/* === 게시판 에디터 추가 폰트 === */
+.ql-font-pretendard     { font-family: 'Pretendard Variable', Pretendard, -apple-system, sans-serif !important; }
+.ql-font-noto-sans-kr   { font-family: 'Noto Sans KR', sans-serif !important; }
+.ql-font-nanum-gothic   { font-family: 'Nanum Gothic', sans-serif !important; }
+.ql-font-nanum-myeongjo { font-family: 'Nanum Myeongjo', serif !important; }
+.ql-font-gowun-dodum    { font-family: 'Gowun Dodum', sans-serif !important; }
+.ql-font-black-han-sans { font-family: 'Black Han Sans', sans-serif !important; }
+.ql-font-ibm-plex-sans  { font-family: 'IBM Plex Sans KR', sans-serif !important; }
+.ql-font-serif          { font-family: Georgia, '바탕', serif !important; }
+.ql-font-monospace      { font-family: 'Courier New', monospace !important; }
+
+/* 폰트 picker 드롭다운 폰트 미리보기 적용 */
+.ql-font .ql-picker-item[data-value='pretendard']     { font-family: 'Pretendard Variable', sans-serif; }
+.ql-font .ql-picker-item[data-value='noto-sans-kr']   { font-family: 'Noto Sans KR', sans-serif; }
+.ql-font .ql-picker-item[data-value='nanum-gothic']   { font-family: 'Nanum Gothic', sans-serif; }
+.ql-font .ql-picker-item[data-value='nanum-myeongjo'] { font-family: 'Nanum Myeongjo', serif; }
+.ql-font .ql-picker-item[data-value='gowun-dodum']    { font-family: 'Gowun Dodum', sans-serif; }
+.ql-font .ql-picker-item[data-value='black-han-sans'] { font-family: 'Black Han Sans', sans-serif; }
+.ql-font .ql-picker-item[data-value='ibm-plex-sans']  { font-family: 'IBM Plex Sans KR', sans-serif; }
+.ql-font .ql-picker-item[data-value='serif']          { font-family: Georgia, serif; }
+.ql-font .ql-picker-item[data-value='monospace']      { font-family: 'Courier New', monospace; }
+
+/* 선택된 폰트 레이블도 미리보기 */
+.ql-font .ql-picker-label[data-value='pretendard']     { font-family: 'Pretendard Variable', sans-serif; }
+.ql-font .ql-picker-label[data-value='noto-sans-kr']   { font-family: 'Noto Sans KR', sans-serif; }
+.ql-font .ql-picker-label[data-value='nanum-gothic']   { font-family: 'Nanum Gothic', sans-serif; }
+.ql-font .ql-picker-label[data-value='nanum-myeongjo'] { font-family: 'Nanum Myeongjo', serif; }
+.ql-font .ql-picker-label[data-value='gowun-dodum']    { font-family: 'Gowun Dodum', sans-serif; }
+.ql-font .ql-picker-label[data-value='black-han-sans'] { font-family: 'Black Han Sans', sans-serif; }
+.ql-font .ql-picker-label[data-value='ibm-plex-sans']  { font-family: 'IBM Plex Sans KR', sans-serif; }
+
+/* === 게시판 에디터 우클릭 컨텍스트 메뉴 === */
+.bw-ectx {
+  position: fixed;
+  z-index: 99999;
+  background: var(--color-bg-card, #fff);
+  border: 1px solid var(--color-border, #e0e0e0);
+  border-radius: 10px;
+  box-shadow: 0 8px 30px rgba(0,0,0,.18), 0 2px 8px rgba(0,0,0,.1);
+  padding: 8px 0;
+  min-width: 220px;
+  max-width: 280px;
+  animation: bw-ectx-in .1s ease;
+}
+@keyframes bw-ectx-in { from{opacity:0;transform:scale(.95) translateY(-4px)} to{opacity:1;transform:scale(1) translateY(0)} }
+.bw-ectx-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--color-text-secondary, #999);
+  padding: 2px 12px 4px;
+}
+.bw-ectx-group { padding: 4px 8px; }
+.bw-ectx-sep { height: 1px; background: var(--color-border, #eee); margin: 4px 0; }
+.bw-ectx-row { display: flex; flex-wrap: wrap; gap: 4px; }
+.bw-ectx-row-wide { gap: 6px; }
+.bw-ectx-fmt {
+  padding: 4px 9px;
+  border: 1px solid var(--color-border, #ddd);
+  border-radius: 5px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  background: var(--color-bg-card, #fff);
+  color: var(--color-text, #333);
+  transition: all .1s;
+  white-space: nowrap;
+  user-select: none;
+}
+.bw-ectx-fmt:hover { background: var(--color-hover, rgba(0,0,0,.06)); border-color: var(--color-accent, #1a73e8); color: var(--color-accent, #1a73e8); }
+.bw-ectx-fmt.active { background: var(--color-accent, #1a73e8); color: #fff; border-color: var(--color-accent, #1a73e8); }
+.bw-ectx-action {
+  flex: 1;
+  padding: 6px 8px;
+  border: 1px solid var(--color-border, #ddd);
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  background: var(--color-bg, #f5f6fa);
+  color: var(--color-text, #333);
+  text-align: center;
+  transition: background .1s;
+  user-select: none;
+}
+.bw-ectx-action:hover { background: var(--color-hover, rgba(0,0,0,.08)); }
