@@ -28,6 +28,8 @@
     deptEditIndex:   -1,
   };
 
+  var _ctxEv = null; // 우클릭 대상 이벤트
+
   /* ═══════════════════════════════════════════════════════════
      유틸
   ═══════════════════════════════════════════════════════════ */
@@ -845,6 +847,11 @@
           e.stopPropagation();
           openEventModal(ev);
         });
+        bar.addEventListener('contextmenu', function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+          showEventContextMenu(ev, e.clientX, e.clientY);
+        });
         weekRow.appendChild(bar);
       });
 
@@ -1198,6 +1205,11 @@
       chip.addEventListener('click', function (e) {
         e.stopPropagation();
         openEventModal(ev);
+      });
+      chip.addEventListener('contextmenu', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        showEventContextMenu(ev, e.clientX, e.clientY);
       });
       evWrap.appendChild(chip);
     });
@@ -1569,6 +1581,77 @@
   function toGCalDateStr(isoStr) {
     // ISO → YYYYMMDDTHHMMSSZ (UTC, Google Calendar URL 형식)
     return new Date(isoStr).toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+  }
+
+  /* ────────────────────────────────────────────────────────────────
+     이벤트 우클릭 컨텍스트 메뉴
+  ──────────────────────────────────────────────────────────────── */
+  function _setupEditCtx(ev) {
+    S.editEventId   = ev.id;
+    S.editCalId     = ev._calId || null;
+    S.editEventObj  = ev;
+    S.editCalendars = ev._calId
+      ? [{ id: ev._calId, name: ev._calName || ev._calId, color: ev._calColor || '#4285F4' }]
+      : [];
+  }
+
+  function showEventContextMenu(ev, x, y) {
+    _ctxEv = ev;
+    var menu = $('ev-ctx-menu');
+    if (!menu) return;
+    menu.hidden = false;
+    var W = window.innerWidth, H = window.innerHeight;
+    var mW = 160, mH = 116;
+    menu.style.left = Math.min(x, W - mW - 8) + 'px';
+    menu.style.top  = Math.min(y, H - mH - 8) + 'px';
+  }
+
+  function hideEventContextMenu() {
+    var menu = $('ev-ctx-menu');
+    if (menu) menu.hidden = true;
+    _ctxEv = null;
+  }
+
+  function initEventContextMenu() {
+    var menu = $('ev-ctx-menu');
+    if (!menu) return;
+
+    document.addEventListener('click', function () { hideEventContextMenu(); });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') hideEventContextMenu(); });
+
+    $('ev-ctx-delete').addEventListener('click', function (e) {
+      e.stopPropagation();
+      var ev = _ctxEv;
+      hideEventContextMenu();
+      if (!ev) return;
+      _setupEditCtx(ev);
+      var isRecurring = !!(ev.recurrence || ev.recurringEventId);
+      if (isRecurring) {
+        openRecurDeleteModal();
+      } else {
+        confirmDeleteEvent('this');
+      }
+    });
+
+    $('ev-ctx-repeat').addEventListener('click', function (e) {
+      e.stopPropagation();
+      var ev = _ctxEv;
+      hideEventContextMenu();
+      if (!ev) return;
+      openEventModal(ev);
+    });
+
+    $('ev-ctx-share').addEventListener('click', function (e) {
+      e.stopPropagation();
+      var ev = _ctxEv;
+      hideEventContextMenu();
+      if (!ev) return;
+      openEventModal(ev);
+      setTimeout(function () {
+        var shareBtn = $('share-event-btn');
+        if (shareBtn && !shareBtn.hidden) shareBtn.click();
+      }, 200);
+    });
   }
 
   function initEventModal() {
@@ -6006,6 +6089,7 @@
     _initTabNavEdgeScroll();
     initCalendarNav();
     initEventModal();
+    initEventContextMenu();
     initRecurDeleteModal();
     initRecurMoveModal();
     initPrintRangeModal();

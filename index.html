@@ -2822,7 +2822,7 @@
   <script src="calendar.js?v=20260608s"></script>
   <script src="drive.js?v=20260608s"></script>
   <script src="gmail.js?v=20260608s"></script>
-  <script src="report.js?v=20260608s"></script>
+  <script src="report.js?v=20260610r1"></script>
   <script src="promo.js?v=20260609e1"></script>
   <script src="help.js?v=20260609a1"></script>
   <script src="sheets.js?v=20260608w"></script>
@@ -2838,13 +2838,31 @@
   <script src="admin.js?v=20260610a1"></script>
   <script src="board.js?v=20260610b2"></script>
   <script src="usersettings.js?v=20260610u1"></script>
-  <script src="app.js?v=20260610s13"></script>
+  <script src="app.js?v=20260610s14"></script>
   <script>
     // 빠른 업무 등록 초기화 (DOM 준비 후)
     document.addEventListener('DOMContentLoaded', function () {
       if (typeof QuickTaskModule !== 'undefined') QuickTaskModule.init();
     });
   </script>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       캘린더 이벤트 우클릭 컨텍스트 메뉴
+       ═══════════════════════════════════════════════════════════ -->
+  <div id="ev-ctx-menu" hidden role="menu" aria-label="일정 빠른 메뉴">
+    <button id="ev-ctx-delete" class="ev-ctx-item ev-ctx-danger" role="menuitem">
+      <svg class="ev-ctx-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6m4-6v6"/><path d="M9 6V4h6v2"/></svg>
+      삭제
+    </button>
+    <button id="ev-ctx-repeat" class="ev-ctx-item" role="menuitem">
+      <svg class="ev-ctx-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+      반복 설정
+    </button>
+    <button id="ev-ctx-share" class="ev-ctx-item" role="menuitem">
+      <svg class="ev-ctx-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+      공유하기
+    </button>
+  </div>
 
 </body>
 </html>

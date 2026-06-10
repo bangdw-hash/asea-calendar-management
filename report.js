@@ -30,6 +30,8 @@ window.ReportModule = (function () {
   var _pvReport = null;
   var _attaches = [];
   var _inited  = false;
+  var _subTab  = 'weekly'; // weekly | annual | semiannual
+  var _semiDeptId = '';    // 하반기 운영계획보고 선택 부서
 
   /* ── 관리자 판별 ── */
   function isAdmin() {
@@ -87,11 +89,33 @@ window.ReportModule = (function () {
   ══════════════════════════════════════════════ */
   function render() {
     var el = $r(); if (!el) return;
-    if      (_view==='list')    el.innerHTML = htmlList();
-    else if (_view==='edit')    el.innerHTML = htmlEditor(_editing);
-    else if (_view==='preview') el.innerHTML = htmlPreview(_pvReport);
-    else if (_view==='admin')   el.innerHTML = htmlAdmin();
+    var navHtml = htmlSubTabNav();
+    var bodyHtml = '';
+    if (_subTab === 'weekly') {
+      if      (_view==='list')    bodyHtml = htmlList();
+      else if (_view==='edit')    bodyHtml = htmlEditor(_editing);
+      else if (_view==='preview') bodyHtml = htmlPreview(_pvReport);
+      else if (_view==='admin')   bodyHtml = htmlAdmin();
+    } else if (_subTab === 'annual') {
+      bodyHtml = htmlAnnual();
+    } else if (_subTab === 'semiannual') {
+      bodyHtml = htmlSemiAnnual();
+    }
+    el.innerHTML = navHtml + bodyHtml;
     bindAll();
+  }
+
+  function htmlSubTabNav() {
+    var tabs = [
+      { id: 'weekly',      label: '주간업무보고서' },
+      { id: 'annual',      label: '연간 운영계획보고' },
+      { id: 'semiannual',  label: '하반기 운영계획보고' },
+    ];
+    return '<div class="rpt-subtab-nav">' +
+      tabs.map(function(t) {
+        return '<button class="rpt-subtab-btn' + (t.id===_subTab?' rpt-subtab-active':'') + '" data-subtab="'+t.id+'">'+t.label+'</button>';
+      }).join('') +
+      '</div>';
   }
 
   /* ══════════════════════════════════════════════
@@ -441,12 +465,15 @@ window.ReportModule = (function () {
      이벤트 바인딩
   ══════════════════════════════════════════════ */
   function bindAll() {
+    bindSubTabs();
     var bb = $q('#_back');
     if (bb) bb.addEventListener('click', function(){ _view='list'; render(); });
-    if (_view==='list')    bindList();
-    else if (_view==='edit')    bindEditor();
-    else if (_view==='preview') bindPreview();
-    else if (_view==='admin')   bindAdmin();
+    if (_subTab==='weekly') {
+      if (_view==='list')    bindList();
+      else if (_view==='edit')    bindEditor();
+      else if (_view==='preview') bindPreview();
+      else if (_view==='admin')   bindAdmin();
+    }
   }
 
   function bindList() {
@@ -734,6 +761,328 @@ window.ReportModule = (function () {
       '</div>'+
       '<div class="rpt-pages">'+pages+'</div></div>';
     el.querySelector('#_backc').addEventListener('click', function(){ _view='list'; render(); });
+  }
+
+  /* ══════════════════════════════════════════════
+     연간 운영계획보고
+  ══════════════════════════════════════════════ */
+  function htmlAnnual() {
+    var year = new Date().getFullYear();
+    return '<div class="rpt-wrap rpt-annual-wrap">'+
+      '<div class="rpt-bar"><span class="rpt-bar-title">📅 '+year+'학년도 연간 운영계획보고</span>'+
+      '<button class="rpt-btn rpt-outline rpt-sm" onclick="window.print()">🖨️ 인쇄</button></div>'+
+      '<div class="rpt-annual-body">'+
+      '<p class="rpt-annual-notice">※ 연간 운영계획보고는 학교 전체 방향성 및 부서별 연간 목표를 공유하는 자리입니다.</p>'+
+      htmlAnnualSection('학교 비전 및 연간 경영 목표', [
+        { name: '학교 비전 선언', ph: '예) 항공·안전 분야 최고의 직업전문학교' },
+        { name: '연간 핵심 목표 (KPI)', ph: '예) 등록률 95%, 취업률 80%, 매출 목표 ○○억' },
+        { name: '중점 추진 과제', ph: '연도별 3~5개 과제를 기술' },
+      ])+
+      htmlAnnualSection('부서별 연간 계획 개요', [
+        { name: '기획처', ph: '예산·조직·기획 과제 주요 계획' },
+        { name: '교육지원처', ph: '등록·취업·교육품질 계획' },
+        { name: '입학처', ph: '모집 목표 및 홍보 전략' },
+        { name: '계열/교육원', ph: '계열별·교육원별 주요 운영 계획' },
+      ])+
+      htmlAnnualSection('예산 총괄', [
+        { name: '연간 총 예산', ph: '예) 총 ○○억원 / 전년 대비 ○% 증감' },
+        { name: '부문별 배분 계획', ph: '인건비 / 교육운영비 / 마케팅비 / 기타' },
+      ])+
+      htmlAnnualSection('리스크 및 대응 전략', [
+        { name: '예상 리스크', ph: '등록 감소 / 경쟁 심화 / 규제 변화 등' },
+        { name: '대응 전략', ph: '각 리스크별 완화 방안' },
+      ])+
+      '</div></div>';
+  }
+
+  function htmlAnnualSection(title, items) {
+    return '<div class="rpt-annual-sec">'+
+      '<h3 class="rpt-annual-sec-title">'+title+'</h3>'+
+      items.map(function(item){
+        return '<div class="rpt-annual-item">'+
+          '<label class="rpt-annual-label">'+item.name+'</label>'+
+          '<textarea class="rpt-annual-ta" rows="3" placeholder="'+item.ph+'"></textarea>'+
+          '</div>';
+      }).join('')+
+      '</div>';
+  }
+
+  /* ══════════════════════════════════════════════
+     하반기 운영계획보고 — 부서 선택 + 동적 폼
+  ══════════════════════════════════════════════ */
+  var SEMI_DEPTS = [
+    { id: 'p01', label: '기획처',             group: 'planning' },
+    { id: 'p02', label: '교육지원처',          group: 'edu' },
+    { id: 'p03', label: '입학처',              group: 'admissions' },
+    { id: 'p04', label: '항공정비 계열',       group: 'dept' },
+    { id: 'p05', label: '스마트안전진단 계열', group: 'dept' },
+    { id: 'p06', label: '항공관광 계열',       group: 'dept' },
+    { id: 'p07', label: '항공보안 계열',       group: 'dept' },
+    { id: 'p08', label: '국방경찰 계열',       group: 'dept' },
+    { id: 'p09', label: '기종교육원',          group: 'center' },
+    { id: 'p10', label: '무인항공교육원',      group: 'center' },
+    { id: 'p11', label: '비행교육원',          group: 'center' },
+    { id: 'p12', label: '용산캠퍼스',          group: 'campus' },
+    { id: 'p13', label: '부설기관',            group: 'affiliate' },
+  ];
+
+  var SEMI_SCHEMA = {
+    planning: {
+      upper: {
+        title: '상반기 결산',
+        items: [
+          { name: '학교전체 등록현황',   cols: ['목표(명)', '실적(명)', '달성률(%)'] },
+          { name: '국비지원과정',        cols: ['목표(명)', '실적(명)', '달성률(%)'] },
+          { name: '예산 집행',           cols: ['예산(천원)', '집행액(천원)', '집행률(%)'] },
+          { name: '계약·협약 현황',     cols: ['건수', '금액(백만원)'] },
+          { name: '주요 기획과제 추진 현황', textarea: true },
+        ]
+      },
+      lower: {
+        title: '하반기 계획',
+        items: [
+          { name: '하반기 중점 추진과제', textarea: true },
+          { name: '하반기 예산 운용 계획', cols: ['예산총액(천원)', '주요 집행계획'] },
+          { name: '개편 조직 운영 계획',  textarea: true },
+        ]
+      }
+    },
+    edu: {
+      upper: {
+        title: '상반기 결산',
+        items: [
+          { name: '전체 등록현황',       cols: ['목표(명)', '실적(명)', '달성률(%)'] },
+          { name: '중도 탈락 현황',      cols: ['발생건수', '전년비교(명)'] },
+          { name: '취업 현황',           cols: ['취업자(명)', '취업률(%)', '전년비교'] },
+          { name: '미취업자 관리 현황',  textarea: true },
+          { name: '강의 만족도',         cols: ['평점(5점)', '전년비교', '불만족 주요 사유'] },
+        ]
+      },
+      lower: {
+        title: '하반기 계획',
+        items: [
+          { name: '하반기 등록 목표',    cols: ['목표(명)', '계열별 배분 계획'] },
+          { name: '취업 연계 강화 계획', textarea: true },
+          { name: '개편 조직 기반 운영', textarea: true },
+        ]
+      }
+    },
+    admissions: {
+      upper: {
+        title: '상반기 결산',
+        items: [
+          { name: '계열별 모집 현황',   cols: ['목표(명)', '실적(명)', '달성률(%)'] },
+          { name: '유입 채널 분석',     textarea: true },
+          { name: '홍보 활동 실적',     cols: ['집행예산(천원)', '주요채널 효과'] },
+          { name: '경쟁 환경 분석',     textarea: true },
+        ]
+      },
+      lower: {
+        title: '하반기 계획',
+        items: [
+          { name: '계열별 목표 인원',    cols: ['계열', '목표(명)', '전년비교'] },
+          { name: '수시 모집 일정',      textarea: true },
+          { name: '채널별 홍보 전략',    textarea: true },
+        ]
+      }
+    },
+    dept: {
+      upper: {
+        title: '상반기 결산',
+        items: [
+          { name: '인원 현황',           cols: ['재학생(명)', '전년비교(명)'] },
+          { name: '취업 현황',           cols: ['취업자(명)', '취업률(%)', '전년비교'] },
+          { name: '목표 대비 달성 현황', cols: ['등록목표(명)', '실적(명)', '달성률(%)'] },
+          { name: '교육과정 품질',       cols: ['강의만족도(점)', '불만족 원인'] },
+        ]
+      },
+      lower: {
+        title: '하반기 계획',
+        items: [
+          { name: '예상 등록 인원',       cols: ['예상(명)', '목표(명)', '전년비교'] },
+          { name: '주요 업무 추진 계획',  textarea: true },
+          { name: '취업 연계 강화 방안',  textarea: true },
+        ]
+      }
+    },
+    center: {
+      upper: {
+        title: '상반기 결산',
+        items: [
+          { name: '교육 운영 현황',      cols: ['교육과정 수', '수료인원(명)', '수료율(%)'] },
+          { name: '매출 실적',           cols: ['목표(백만원)', '실적(백만원)', '달성률(%)'] },
+          { name: '주요 계약 현황',      textarea: true },
+          { name: '자격·취업 연계',      cols: ['자격취득(명)', '취업연계(명)'] },
+        ]
+      },
+      lower: {
+        title: '하반기 계획',
+        items: [
+          { name: '확정 사업·계약 현황', textarea: true },
+          { name: '추진 예정 사항',       textarea: true },
+          { name: '하반기 매출 목표',     cols: ['목표(백만원)', '주요 계약 출처'] },
+        ]
+      }
+    },
+    campus: {
+      upper: {
+        title: '현황 총괄',
+        items: [
+          { name: '재학생 현황',          cols: ['재학생(명)', '졸업예정(명)'] },
+          { name: '시설 현황',            textarea: true },
+        ]
+      },
+      lower: {
+        title: '하반기 처리 계획',
+        items: [
+          { name: '재학생 학적 처리',     textarea: true },
+          { name: '시설·자산 처리',       textarea: true },
+          { name: '행정 절차 진행',       textarea: true },
+          { name: '미결 사항·리스크',     textarea: true },
+        ]
+      }
+    },
+    affiliate: {
+      upper: {
+        title: '상반기 사업 운영 실적',
+        items: [
+          { name: '주요 사업 현황',       cols: ['사업명', '목표(백만원)', '실적(백만원)', '달성률(%)'] },
+          { name: '특이 사항',            textarea: true },
+        ]
+      },
+      lower: {
+        title: '하반기 계획',
+        items: [
+          { name: '확정된 하반기 사업 계획', textarea: true },
+          { name: '운영 개선 계획',          textarea: true },
+        ]
+      }
+    },
+  };
+
+  var SEMI_COMMON_ITEMS = [
+    { name: '운영 저해 요인 (공통-1)', textarea: true },
+    { name: '건의사항 (공통-2)',         textarea: true },
+  ];
+
+  function htmlSemiAnnual() {
+    var year = new Date().getFullYear();
+    var deptOpts = '<option value="">-- 부서를 선택하세요 --</option>'+
+      SEMI_DEPTS.map(function(d){
+        return '<option value="'+d.id+'"'+(d.id===_semiDeptId?' selected':'')+'>'+d.label+'</option>';
+      }).join('');
+
+    var formHtml = '';
+    if (_semiDeptId) {
+      var dept = SEMI_DEPTS.find(function(d){ return d.id===_semiDeptId; });
+      var schema = dept ? SEMI_SCHEMA[dept.group] : null;
+      if (schema) {
+        formHtml = '<div class="rpt-semi-form">'+
+          '<div class="rpt-semi-principles">'+
+          '<span class="rpt-semi-pill">수치 우선</span>'+
+          '<span class="rpt-semi-pill">전년 비교</span>'+
+          '<span class="rpt-semi-pill">원인 분석</span>'+
+          '<span class="rpt-semi-pill">실행 계획</span>'+
+          '</div>'+
+          htmlSemiSection(schema.upper, dept.label)+
+          htmlSemiSection(schema.lower, dept.label)+
+          htmlSemiCommon()+
+          '<div class="rpt-semi-actions">'+
+          '<button class="rpt-btn rpt-primary" id="_semi-save">💾 작성 내용 저장</button>'+
+          '<button class="rpt-btn rpt-outline" onclick="window.print()">🖨️ 인쇄 / PDF</button>'+
+          '</div>'+
+          '</div>';
+      }
+    }
+
+    return '<div class="rpt-wrap rpt-semi-wrap">'+
+      '<div class="rpt-bar">'+
+      '<span class="rpt-bar-title">📊 '+year+'학년도 하반기 부서업무보고 운영계획 실행안</span>'+
+      '</div>'+
+      '<div class="rpt-semi-dept-row">'+
+      '<label class="rpt-semi-dept-label">보고 부서</label>'+
+      '<select class="rpt-sel rpt-semi-dept-sel" id="_semi-dept">'+deptOpts+'</select>'+
+      '</div>'+
+      formHtml+
+      '</div>';
+  }
+
+  function htmlSemiSection(sec, deptLabel) {
+    return '<div class="rpt-semi-sec">'+
+      '<h3 class="rpt-semi-sec-title"><span class="rpt-semi-sec-badge">'+sec.title+'</span> — '+deptLabel+'</h3>'+
+      sec.items.map(function(item, idx){
+        var key = 'semi_'+_semiDeptId+'_'+idx;
+        if (item.textarea) {
+          return '<div class="rpt-semi-item">'+
+            '<div class="rpt-semi-item-title">'+item.name+'</div>'+
+            '<textarea class="rpt-semi-ta" rows="4" data-key="'+key+'_ta" placeholder="수치 우선 | 전년 비교 | 원인 분석 | 실행 계획 순으로 작성"></textarea>'+
+            '</div>';
+        }
+        var colInputs = item.cols.map(function(col, ci){
+          return '<label class="rpt-semi-col-label">'+col+
+            '<input type="text" class="rpt-semi-col-input" data-key="'+key+'_c'+ci+'" placeholder="-">'+
+            '</label>';
+        }).join('');
+        return '<div class="rpt-semi-item">'+
+          '<div class="rpt-semi-item-title">'+item.name+'</div>'+
+          '<div class="rpt-semi-cols">'+colInputs+'</div>'+
+          '<textarea class="rpt-semi-ta rpt-semi-ta-sm" rows="2" data-key="'+key+'_an" placeholder="전년 비교 및 원인 분석 / 실행 계획"></textarea>'+
+          '</div>';
+      }).join('')+
+      '</div>';
+  }
+
+  function htmlSemiCommon() {
+    return '<div class="rpt-semi-sec rpt-semi-common">'+
+      '<h3 class="rpt-semi-sec-title"><span class="rpt-semi-sec-badge rpt-badge-common">전 부서 공통</span></h3>'+
+      SEMI_COMMON_ITEMS.map(function(item, idx){
+        var key = 'semi_common_'+idx;
+        return '<div class="rpt-semi-item">'+
+          '<div class="rpt-semi-item-title">'+item.name+'</div>'+
+          '<textarea class="rpt-semi-ta" rows="4" data-key="'+key+'" placeholder="구체적으로 기술해주세요"></textarea>'+
+          '</div>';
+      }).join('')+
+      '</div>';
+  }
+
+  /* ── bindAll에 서브탭 바인딩 추가 ── */
+  function bindSubTabs() {
+    $qa('.rpt-subtab-btn').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        _subTab = btn.dataset.subtab;
+        if (_subTab === 'weekly') _view = 'list';
+        render();
+      });
+    });
+    var deptSel = $q('#_semi-dept');
+    if (deptSel) {
+      deptSel.addEventListener('change', function(){
+        _semiDeptId = deptSel.value;
+        render();
+      });
+    }
+    var semiSave = $q('#_semi-save');
+    if (semiSave) {
+      semiSave.addEventListener('click', function(){
+        var data = {};
+        $qa('[data-key]').forEach(function(el){
+          data[el.dataset.key] = el.tagName==='TEXTAREA' ? el.value : el.value;
+        });
+        var sk = 'asea_semi_'+_semiDeptId;
+        try{ localStorage.setItem(sk, JSON.stringify(data)); } catch(e){}
+        if (typeof showToast === 'function') showToast('저장됐습니다.','success');
+        else if (typeof window.toast === 'function') window.toast('저장됐습니다.','success');
+      });
+      // 저장된 값 복원
+      var sk = 'asea_semi_'+_semiDeptId;
+      try{
+        var saved = JSON.parse(localStorage.getItem(sk)||'{}');
+        Object.keys(saved).forEach(function(k){
+          var el = $q('[data-key="'+k+'"]');
+          if (el) el.value = saved[k];
+        });
+      }catch(e){}
+    }
   }
 
   /* ══════════════════════════════════════════════
