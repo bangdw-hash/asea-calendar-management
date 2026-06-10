@@ -158,7 +158,7 @@ window.PromoModule = (function () {
   ══════════════════════════════════════════════════════════════ */
   function render() {
     var el = $p('tab-promo'); if (!el) return;
-    el.innerHTML = '<div class="tab-body">' + buildPage() + '</div>';
+    el.innerHTML = buildPage();
     bindEvents();
     renderPreview();
     renderHistory();
@@ -168,8 +168,7 @@ window.PromoModule = (function () {
 
   /* ── 전체 페이지 ── */
   function buildPage() {
-    return '<h2 class="section-title"><svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="5 3 19 12 5 21 5 3"/></svg>홍보슬라이드</h2>' +
-      '<div class="prm-wrap">' +
+    return '<div class="prm-wrap">' +
 
       /* ① 송출 현황 패널 */
       '<div class="prm-status-panel" id="prm-status-panel">' +
