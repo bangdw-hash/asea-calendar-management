@@ -5834,8 +5834,9 @@
      모바일(터치 기기)에서는 동작하지 않음.
   ─────────────────────────────────────────────────────────────── */
   function _initTabNavEdgeScroll() {
-    // 터치 기기면 건너뜀
-    if ('ontouchstart' in window || navigator.maxTouchPoints > 0) return;
+    // 실제 터치 전용 기기(마우스 없는 태블릿/스마트폰)면 건너뜀
+    // Windows 11은 maxTouchPoints > 0 이지만 마우스가 있으므로 제외
+    if (window.matchMedia('(hover: none) and (pointer: coarse)').matches) return;
 
     var nav = document.querySelector('.tab-nav.desktop-tab-nav');
     if (!nav) return;
