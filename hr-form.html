@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>입사 서류 제출 — 아세아항공직업전문학교</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="hr.css">
+  <style>
+    body { background: #F3F4F6; min-height: 100vh; }
+    .hr-standalone-wrap { max-width: 860px; margin: 0 auto; padding: 16px; }
+    .hr-standalone-header {
+      background: #1a3a5c; color: #fff;
+      padding: 18px 24px; border-radius: 12px 12px 0 0;
+      display: flex; align-items: center; gap: 12px;
+      margin-bottom: 0;
+    }
+    .hr-standalone-header .logo { font-size: 28px; }
+    .hr-standalone-header .info h1 { margin: 0; font-size: 18px; font-weight: 700; }
+    .hr-standalone-header .info p  { margin: 2px 0 0; font-size: 12px; opacity: .75; }
+    #hr-root { background: #fff; border-radius: 0 0 12px 12px; padding: 16px; min-height: 400px; box-shadow: 0 4px 24px rgba(0,0,0,.08); }
+    .hr-standalone-footer { text-align: center; font-size: 11px; color: #9CA3AF; padding: 16px 0; }
+  </style>
+</head>
+<body>
+<div class="hr-standalone-wrap">
+  <div class="hr-standalone-header">
+    <div class="logo">🏢</div>
+    <div class="info">
+      <h1>입사 예정자 서류 제출</h1>
+      <p>아세아항공직업전문학교 인사관리 시스템</p>
+    </div>
+  </div>
+  <div id="hr-root"></div>
+  <div class="hr-standalone-footer">
+    담당: 기획처 인사담당자 · 문의는 담당 부서로 연락해 주세요.
+  </div>
+</div>
+
+<script>window.HR_STANDALONE = true;</script>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+<script src="hr.js?v=20260611sa1"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    if (window.HRModule && window.HRModule.init) window.HRModule.init();
+  });
+</script>
+</body>
+</html>

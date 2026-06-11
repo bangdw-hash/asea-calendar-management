@@ -807,11 +807,90 @@
 
         <!-- ── 서브탭: 요금 관리 ── -->
         <div id="fac-subtab-fees" hidden>
-          <div class="settings-card" style="margin-bottom:16px">
-            <h3 class="settings-section-title">💰 호실별 요금 설정 <span class="badge-admin">관리자</span></h3>
+          <!-- 툴바 -->
+          <div class="settings-card" style="margin-bottom:14px">
+            <h3 class="settings-section-title" style="margin-bottom:10px">💰 호실별 요금 설정 <span class="badge-admin">관리자</span></h3>
             <p style="font-size:12px;color:#888;margin-bottom:12px">호실별 평상/할증 시간대와 요금 산식을 등록합니다. 대관신청 폼에서 자동으로 견적을 계산합니다.</p>
-            <button id="fac-fee-add-btn" class="btn btn-primary btn-sm">+ 요금 설정 추가</button>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+              <button id="fac-fee-add-btn" class="btn btn-primary btn-sm">+ 요금 설정 추가</button>
+              <button id="fac-fee-tmpl-btn" class="btn btn-secondary btn-sm">📥 xlsx 양식 다운로드</button>
+              <label class="btn btn-secondary btn-sm" style="cursor:pointer;margin:0">
+                📤 xlsx 일괄 업로드
+                <input id="fac-fee-xlsx-input" type="file" accept=".xlsx,.xls" style="display:none">
+              </label>
+              <button id="fac-fee-adjust-toggle-btn" class="btn btn-ghost btn-sm">📊 일괄 조정</button>
+            </div>
           </div>
+
+          <!-- 일괄 조정 패널 -->
+          <div id="fac-fee-adjust-panel" hidden style="background:#fff;border:1.5px solid #E5E7EB;border-radius:12px;padding:18px;margin-bottom:14px">
+            <div style="font-size:14px;font-weight:700;color:#1a3a5c;margin-bottom:14px">📊 요금 일괄 조정</div>
+
+            <!-- 종합표 -->
+            <div style="font-size:12px;font-weight:700;color:#374151;margin-bottom:6px">현재 요금 종합표</div>
+            <div style="overflow-x:auto;margin-bottom:16px">
+              <table id="fac-fee-summary-table" style="width:100%;border-collapse:collapse;font-size:12px;min-width:640px">
+                <thead>
+                  <tr style="background:#EFF6FF;color:#1a3a5c">
+                    <th style="padding:7px 10px;border:1px solid #BFDBFE;text-align:left">건물</th>
+                    <th style="padding:7px 10px;border:1px solid #BFDBFE">호실</th>
+                    <th style="padding:7px 10px;border:1px solid #BFDBFE">평상(원/h)</th>
+                    <th style="padding:7px 10px;border:1px solid #BFDBFE">할증1(원/h)</th>
+                    <th style="padding:7px 10px;border:1px solid #BFDBFE">할증2(원/h)</th>
+                    <th style="padding:7px 10px;border:1px solid #BFDBFE">냉난방(원/h)</th>
+                    <th style="padding:7px 10px;border:1px solid #BFDBFE">보증금</th>
+                    <th style="padding:7px 10px;border:1px solid #BFDBFE">청소비</th>
+                  </tr>
+                </thead>
+                <tbody id="fac-fee-summary-body">
+                  <tr><td colspan="8" style="padding:12px;text-align:center;color:#9CA3AF">요금 설정 없음</td></tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- 조정 컨트롤 -->
+            <div style="background:#F9FAFB;border-radius:8px;padding:14px;border:1px solid #E5E7EB">
+              <div style="font-size:12px;font-weight:700;color:#374151;margin-bottom:10px">조정 설정</div>
+              <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end">
+                <div class="form-group" style="margin:0;min-width:140px">
+                  <label class="form-label">조정 대상</label>
+                  <select id="fac-adj-target" class="form-select" style="font-size:12px">
+                    <option value="normalRate">평상 단가</option>
+                    <option value="surchargeAll">할증 단가 (전체)</option>
+                    <option value="hvacRate">냉난방비 단가</option>
+                    <option value="deposit">보증금</option>
+                    <option value="cleaningFee">청소비</option>
+                    <option value="timeExtras">시간비례 항목 단가</option>
+                    <option value="flatExtras">일괄 항목 금액</option>
+                    <option value="all">전체 금액 항목</option>
+                  </select>
+                </div>
+                <div class="form-group" style="margin:0;min-width:120px">
+                  <label class="form-label">조정 방법</label>
+                  <select id="fac-adj-method" class="form-select" style="font-size:12px">
+                    <option value="pct">비율 (%)</option>
+                    <option value="fixed">고정값 (원)</option>
+                    <option value="set">일괄 지정 (원)</option>
+                  </select>
+                </div>
+                <div class="form-group" style="margin:0;min-width:100px">
+                  <label class="form-label">방향</label>
+                  <select id="fac-adj-dir" class="form-select" style="font-size:12px">
+                    <option value="1">인상 (+)</option>
+                    <option value="-1">인하 (−)</option>
+                  </select>
+                </div>
+                <div class="form-group" style="margin:0;min-width:100px">
+                  <label class="form-label" id="fac-adj-val-label">조정값 (%)</label>
+                  <input id="fac-adj-val" type="number" class="form-input" value="10" min="0" style="font-size:12px">
+                </div>
+                <button id="fac-adj-preview-btn" class="btn btn-outline btn-sm">미리보기</button>
+                <button id="fac-adj-apply-btn" class="btn btn-primary btn-sm">적용하기</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 요금 목록 -->
           <div id="fac-fee-list">
             <p class="empty-state">등록된 요금 설정이 없습니다.</p>
           </div>
@@ -3030,12 +3109,12 @@
   <script src="promo.js?v=20260611p2"></script>
   <script src="meet.js?v=20260610mt1"></script>
   <script src="facility-fee.js?v=20260611ff3"></script>
-  <script src="hr.js?v=20260611hr4"></script>
-  <script src="retire.js?v=20260611rt2"></script>
+  <script src="hr.js?v=20260611sa1"></script>
+  <script src="retire.js?v=20260611rt3"></script>
   <script src="help.js?v=20260609a1"></script>
   <script src="sheets.js?v=20260608w"></script>
   <script src="resutil.js?v=20260608s"></script>
-  <script src="facility.js?v=20260610m1"></script>
+  <script src="facility.js?v=20260611fx1"></script>
   <script src="vehicle.js?v=20260609m2"></script>
   <script src="classroom.js?v=20260608s"></script>
   <script src="work.js?v=20260608y"></script>

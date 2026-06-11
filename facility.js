@@ -1164,6 +1164,7 @@ var FacilityModule = (function () {
       addBtn._wired = true;
       addBtn.addEventListener('click', function() { openFeeModal(null); });
     }
+    _initFeeXlsxButtons();
 
     if (!fees.length) {
       el.innerHTML = '<p class="empty-state">등록된 요금 설정이 없습니다.</p>';
@@ -1423,9 +1424,314 @@ var FacilityModule = (function () {
     renderFeeAdmin();
   }
 
+  // ── xlsx 양식 다운로드 ─────────────────────────────────────────────
+  function downloadFeeTemplate() {
+    if (!window.XLSX) { toast('SheetJS 라이브러리가 로드되지 않았습니다.', 'error'); return; }
+    var fees = window.FacilityFeeModule ? FacilityFeeModule.loadFees() : [];
+    var headers = [
+      '건물명','호실명',
+      '평상_시작(HH:MM)','평상_종료(HH:MM)','평상_단가(원/시간)',
+      '할증1_구분명','할증1_시작','할증1_종료','할증1_단가(원/시간)',
+      '할증2_구분명','할증2_시작','할증2_종료','할증2_단가(원/시간)',
+      '할증3_구분명','할증3_시작','할증3_종료','할증3_단가(원/시간)',
+      '최소이용시간(시)','보증금(원)','청소비(원)',
+      '시간비례1_항목명','시간비례1_단가(원/시간)',
+      '시간비례2_항목명','시간비례2_단가(원/시간)',
+      '시간비례3_항목명','시간비례3_단가(원/시간)',
+      '일괄1_항목명','일괄1_금액(원)',
+      '일괄2_항목명','일괄2_금액(원)',
+      '일괄3_항목명','일괄3_금액(원)',
+      '냉난방_적용(O/X)','냉난방_단가(원/시간)','냉난방_적용월(콤마구분)','비고'
+    ];
+    var rows = [headers];
+    if (fees.length > 0) {
+      fees.forEach(function(f) {
+        var nf = FacilityFeeModule.normalize(f);
+        var ss = nf.surchargeSlots || [];
+        var te = nf.timeExtras || [];
+        var fe = nf.flatExtras || [];
+        var hvac = nf.seasonalFee || {};
+        rows.push([
+          nf.buildingName, nf.roomName,
+          nf.normalStart||'', nf.normalEnd||'', nf.normalRate||0,
+          (ss[0]&&ss[0].label)||'', (ss[0]&&ss[0].start)||'', (ss[0]&&ss[0].end)||'', (ss[0]&&ss[0].rate)||'',
+          (ss[1]&&ss[1].label)||'', (ss[1]&&ss[1].start)||'', (ss[1]&&ss[1].end)||'', (ss[1]&&ss[1].rate)||'',
+          (ss[2]&&ss[2].label)||'', (ss[2]&&ss[2].start)||'', (ss[2]&&ss[2].end)||'', (ss[2]&&ss[2].rate)||'',
+          nf.minHours||0, nf.deposit||0, nf.cleaningFee||0,
+          (te[0]&&te[0].name)||'', (te[0]&&te[0].unitRate)||'',
+          (te[1]&&te[1].name)||'', (te[1]&&te[1].unitRate)||'',
+          (te[2]&&te[2].name)||'', (te[2]&&te[2].unitRate)||'',
+          (fe[0]&&fe[0].name)||'', (fe[0]&&fe[0].amount)||'',
+          (fe[1]&&fe[1].name)||'', (fe[1]&&fe[1].amount)||'',
+          (fe[2]&&fe[2].name)||'', (fe[2]&&fe[2].amount)||'',
+          hvac.enabled ? 'O' : 'X', hvac.rate||10000,
+          (hvac.months||[]).join(',') || '1,2,3,5,6,7,8,9,11,12',
+          nf.notes||''
+        ]);
+      });
+    } else {
+      rows.push([
+        'A동','101호','09:00','18:00',10000,
+        '야간','18:00','22:00',15000,
+        '','','','','','','','',
+        2,50000,30000,
+        '냉방비',2000,'','','','',
+        '','','','','','',
+        'O',10000,'1,2,3,5,6,7,8,9,11,12','예시 행입니다. 삭제 후 입력'
+      ]);
+    }
+    var ws = XLSX.utils.aoa_to_sheet(rows);
+    ws['!cols'] = headers.map(function(h) { return {wch: Math.max(12, h.length * 1.5)}; });
+    var wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, '요금설정');
+    XLSX.writeFile(wb, 'fee_template.xlsx');
+    toast('📥 양식이 다운로드되었습니다.', 'success');
+  }
+
+  // ── xlsx 일괄 업로드 ─────────────────────────────────────────────
+  function uploadFeeXlsx(file) {
+    if (!window.XLSX) { toast('SheetJS 라이브러리가 로드되지 않았습니다.', 'error'); return; }
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      try {
+        var wb = XLSX.read(e.target.result, {type:'array'});
+        var ws = wb.Sheets[wb.SheetNames[0]];
+        var rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:''});
+        if (rows.length < 2) { toast('데이터 행이 없습니다.', 'error'); return; }
+        var dataRows = rows.slice(1);
+        var imported = 0, skipped = 0;
+        dataRows.forEach(function(r) {
+          var building = (r[0]+'').trim();
+          var room     = (r[1]+'').trim();
+          if (!building || !room) { skipped++; return; }
+          var surchargeSlots = [];
+          [[5,6,7,8],[9,10,11,12],[13,14,15,16]].forEach(function(idx) {
+            var label = (r[idx[0]]+'').trim();
+            var s  = (r[idx[1]]+'').trim();
+            var en = (r[idx[2]]+'').trim();
+            var rt = parseFloat(r[idx[3]])||0;
+            if (s && en && rt) surchargeSlots.push({label:label||'할증', start:s, end:en, rate:rt});
+          });
+          var timeExtras = [];
+          [[20,21],[22,23],[24,25]].forEach(function(idx) {
+            var nm = (r[idx[0]]+'').trim();
+            var ur = parseFloat(r[idx[1]])||0;
+            if (nm) timeExtras.push({name:nm, unitRate:ur});
+          });
+          var flatExtras = [];
+          [[26,27],[28,29],[30,31]].forEach(function(idx) {
+            var nm = (r[idx[0]]+'').trim();
+            var am = parseFloat(r[idx[1]])||0;
+            if (nm) flatExtras.push({name:nm, amount:am});
+          });
+          var hvacStr = (r[32]+'').trim().toUpperCase();
+          var hvacMonStr = (r[34]+'').trim();
+          var hvacMonths = hvacMonStr.split(',').map(function(v){return parseInt(v.trim(),10);}).filter(function(n){return n>=1&&n<=12;});
+          if (!hvacMonths.length) hvacMonths = [1,2,3,5,6,7,8,9,11,12];
+          var feeData = {
+            buildingName: building, roomName: room,
+            normalStart: (r[2]+'').trim(), normalEnd: (r[3]+'').trim(),
+            normalRate: parseFloat(r[4])||0,
+            surchargeSlots: surchargeSlots,
+            minHours: parseFloat(r[17])||0,
+            deposit:  parseFloat(r[18])||0,
+            cleaningFee: parseFloat(r[19])||0,
+            timeExtras: timeExtras, flatExtras: flatExtras,
+            seasonalFee: { enabled: hvacStr==='O', rate: parseFloat(r[33])||10000, months: hvacMonths },
+            notes: (r[35]+'').trim()
+          };
+          var existingFees = FacilityFeeModule.loadFees();
+          var existing = existingFees.find(function(f){ return f.buildingName===building && f.roomName===room; });
+          if (existing) {
+            FacilityFeeModule.updateFee(existing.id, feeData);
+          } else {
+            FacilityFeeModule.addFee(feeData);
+          }
+          imported++;
+        });
+        toast('✅ ' + imported + '개 항목 업로드 완료' + (skipped?' ('+skipped+'개 건너뜀)':''), 'success');
+        renderFeeAdmin();
+        renderFeeSummaryTable();
+      } catch(err) {
+        toast('파일 파싱 오류: ' + err.message, 'error');
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  }
+
+  // ── 일괄 조정 패널 토글 ─────────────────────────────────────────
+  function toggleAdjustPanel() {
+    var panel = $f('fac-fee-adjust-panel');
+    if (!panel) return;
+    panel.hidden = !panel.hidden;
+    if (!panel.hidden) {
+      renderFeeSummaryTable();
+      var methodEl = $f('fac-adj-method');
+      var dirEl    = $f('fac-adj-dir');
+      var valLabel = $f('fac-adj-val-label');
+      if (methodEl && valLabel) {
+        methodEl.onchange = function() {
+          var m = methodEl.value;
+          valLabel.textContent = m==='pct' ? '조정값 (%)' : m==='fixed' ? '조정값 (원)' : '지정값 (원)';
+          if (dirEl) dirEl.disabled = m==='set';
+        };
+      }
+    }
+  }
+
+  // ── 현재 요금 종합표 렌더링 ─────────────────────────────────────
+  function renderFeeSummaryTable() {
+    var tbody = $f('fac-fee-summary-body');
+    if (!tbody) return;
+    var fees = window.FacilityFeeModule ? FacilityFeeModule.loadFees() : [];
+    if (!fees.length) {
+      tbody.innerHTML = '<tr><td colspan="8" style="padding:12px;text-align:center;color:#9CA3AF">등록된 요금 설정 없음</td></tr>';
+      return;
+    }
+    tbody.innerHTML = fees.map(function(f) {
+      var nf = FacilityFeeModule.normalize(f);
+      var ss = nf.surchargeSlots||[];
+      var hvac = nf.seasonalFee||{};
+      return '<tr>' +
+        '<td style="padding:6px 10px;border:1px solid #E5E7EB">' + _esc(nf.buildingName) + '</td>' +
+        '<td style="padding:6px 10px;border:1px solid #E5E7EB;text-align:center">' + _esc(nf.roomName) + '</td>' +
+        '<td style="padding:6px 10px;border:1px solid #E5E7EB;text-align:right">' + FacilityFeeModule.comma(nf.normalRate) + '</td>' +
+        '<td style="padding:6px 10px;border:1px solid #E5E7EB;text-align:right">' + (ss[0]?FacilityFeeModule.comma(ss[0].rate):'-') + '</td>' +
+        '<td style="padding:6px 10px;border:1px solid #E5E7EB;text-align:right">' + (ss[1]?FacilityFeeModule.comma(ss[1].rate):'-') + '</td>' +
+        '<td style="padding:6px 10px;border:1px solid #E5E7EB;text-align:right">' + (hvac.enabled?FacilityFeeModule.comma(hvac.rate):'-') + '</td>' +
+        '<td style="padding:6px 10px;border:1px solid #E5E7EB;text-align:right">' + FacilityFeeModule.comma(nf.deposit||0) + '</td>' +
+        '<td style="padding:6px 10px;border:1px solid #E5E7EB;text-align:right">' + FacilityFeeModule.comma(nf.cleaningFee||0) + '</td>' +
+      '</tr>';
+    }).join('');
+  }
+
+  // ── 일괄 조정 적용 ─────────────────────────────────────────────
+  function applyFeeAdjust(preview) {
+    if (!window.FacilityFeeModule) return;
+    var target = ($f('fac-adj-target')||{}).value || 'normalRate';
+    var method = ($f('fac-adj-method')||{}).value || 'pct';
+    var dir    = parseInt(($f('fac-adj-dir')||{}).value)||1;
+    var val    = parseFloat(($f('fac-adj-val')||{}).value)||0;
+    if (val <= 0) { toast('조정값을 입력하세요.', 'error'); return; }
+
+    function calc(original) {
+      var v = parseFloat(original)||0;
+      if (method === 'set')   return Math.round(val);
+      if (method === 'pct')   return Math.round(v * (1 + dir * val / 100));
+      return Math.round(v + dir * val);
+    }
+
+    var fees = FacilityFeeModule.loadFees();
+    var previewLines = [];
+
+    fees.forEach(function(f) {
+      var nf = FacilityFeeModule.normalize(f);
+      var changed = {};
+      var before = [], after = [];
+
+      function applyField(key, label) {
+        if (target===key || target==='all') {
+          var old = nf[key]||0;
+          var nv = calc(old);
+          changed[key] = nv;
+          before.push(label+': '+FacilityFeeModule.comma(old));
+          after.push(label+': '+FacilityFeeModule.comma(nv));
+        }
+      }
+      applyField('normalRate','평상');
+      applyField('deposit','보증금');
+      applyField('cleaningFee','청소비');
+
+      if (target==='surchargeAll' || target==='all') {
+        var ss = (nf.surchargeSlots||[]).map(function(s) {
+          var nv = calc(s.rate);
+          before.push((s.label||'할증')+': '+FacilityFeeModule.comma(s.rate));
+          after.push((s.label||'할증')+': '+FacilityFeeModule.comma(nv));
+          return Object.assign({}, s, {rate: nv});
+        });
+        if (ss.length) changed.surchargeSlots = ss;
+      }
+      if (target==='hvacRate' || target==='all') {
+        var hvac = nf.seasonalFee || {};
+        if (hvac.enabled) {
+          var nv2 = calc(hvac.rate||0);
+          before.push('냉난방: '+FacilityFeeModule.comma(hvac.rate||0));
+          after.push('냉난방: '+FacilityFeeModule.comma(nv2));
+          changed.seasonalFee = Object.assign({}, hvac, {rate: nv2});
+        }
+      }
+      if (target==='timeExtras' || target==='all') {
+        var te = (nf.timeExtras||[]).map(function(ex) {
+          var nv3 = calc(ex.unitRate);
+          before.push(ex.name+': '+FacilityFeeModule.comma(ex.unitRate));
+          after.push(ex.name+': '+FacilityFeeModule.comma(nv3));
+          return Object.assign({}, ex, {unitRate: nv3});
+        });
+        if (te.length) changed.timeExtras = te;
+      }
+      if (target==='flatExtras' || target==='all') {
+        var fe = (nf.flatExtras||[]).map(function(ex2) {
+          var nv4 = calc(ex2.amount);
+          before.push(ex2.name+': '+FacilityFeeModule.comma(ex2.amount));
+          after.push(ex2.name+': '+FacilityFeeModule.comma(nv4));
+          return Object.assign({}, ex2, {amount: nv4});
+        });
+        if (fe.length) changed.flatExtras = fe;
+      }
+
+      if (before.length) {
+        previewLines.push(nf.buildingName + ' ' + nf.roomName + ': ' + before.join(', ') + ' → ' + after.join(', '));
+      }
+      if (!preview && Object.keys(changed).length) {
+        FacilityFeeModule.updateFee(f.id, Object.assign({}, nf, changed));
+      }
+    });
+
+    if (preview) {
+      if (!previewLines.length) { toast('조정될 항목이 없습니다.', 'error'); return; }
+      var msg = '【미리보기】\n' + previewLines.slice(0,10).join('\n') + (previewLines.length>10?'\n...외 '+(previewLines.length-10)+'건':'');
+      alert(msg);
+    } else {
+      toast('✅ ' + previewLines.length + '개 항목 조정 완료', 'success');
+      renderFeeAdmin();
+      renderFeeSummaryTable();
+    }
+  }
+
+  // ── xlsx/조정 버튼 이벤트 연결 ─────────────────────────────────
+  var _feeXlsxInited = false;
+  function _initFeeXlsxButtons() {
+    if (_feeXlsxInited) return;
+    _feeXlsxInited = true;
+
+    var tmplBtn = $f('fac-fee-tmpl-btn');
+    if (tmplBtn) tmplBtn.onclick = downloadFeeTemplate;
+
+    var xlsxInput = $f('fac-fee-xlsx-input');
+    if (xlsxInput) xlsxInput.onchange = function() {
+      if (this.files && this.files[0]) {
+        uploadFeeXlsx(this.files[0]);
+        this.value = '';
+      }
+    };
+
+    var adjToggleBtn = $f('fac-fee-adjust-toggle-btn');
+    if (adjToggleBtn) adjToggleBtn.onclick = toggleAdjustPanel;
+
+    var previewBtn = $f('fac-adj-preview-btn');
+    if (previewBtn) previewBtn.onclick = function() { applyFeeAdjust(true); };
+
+    var applyBtn = $f('fac-adj-apply-btn');
+    if (applyBtn) applyBtn.onclick = function() {
+      if (confirm('조정을 적용하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) applyFeeAdjust(false);
+    };
+  }
+
   return {
     initFacilityModule: initFacilityModule,
     refresh: refresh,
+    _initFeeXlsxButtons: _initFeeXlsxButtons,
   };
 
 })();

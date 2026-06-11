@@ -6,26 +6,27 @@
 window.HRModule = (function () {
 
   /* ── 상수 ── */
+  var STANDALONE = !!window.HR_STANDALONE;  // hr-form.html에서 설정됨
   var ROOT_ID  = 'hr-root';
-  var LS_APPS  = 'asea_hr_applicants';   // 지원자 목록
-  var LS_CODES = 'asea_hr_codes';        // 접수코드 목록
-  var LS_CFG   = 'asea_hr_config';       // 관리자 설정
-  var MGR_PW   = 'asea2024hr';           // 인사관리자 기본 비밀번호
-  var ADM_PW   = 'asea2024admin';        // 최고관리자 기본 비밀번호
+  var LS_APPS  = 'asea_hr_applicants';
+  var LS_CODES = 'asea_hr_codes';
+  var LS_CFG   = 'asea_hr_config';
+  var MGR_PW   = 'asea2024hr';
+  var ADM_PW   = 'asea2024admin';
 
   /* ── 상태 ── */
   var _st = {
-    hrTab:        'onboard',   // onboard | resign | leave | other
+    hrTab:        'onboard',
     view:         'home',      // home | portal | manager | admin
-    applicant:    null,        // 현재 편집 중인 지원자 객체
-    appStep:      0,           // 지원자 폼 단계 (0~4)
-    mgrAuth:      false,       // 관리자 인증 여부
-    admAuth:      false,       // 최고관리자 인증 여부
-    viewTarget:   null,        // 관리자가 조회 중인 지원자 ID
-    editCode:     null,        // 어드민 코드 편집 대상
-    isDemo:       false,       // 체험 모드 여부
-    _pendingCode: null,        // PIN 설정/입력 대기 중인 코드
-    _pendingMode: null,        // 'new' | 'edit'
+    applicant:    null,
+    appStep:      0,
+    mgrAuth:      false,
+    admAuth:      false,
+    viewTarget:   null,
+    editCode:     null,
+    isDemo:       false,
+    _pendingCode: null,
+    _pendingMode: null,
   };
 
   /* ── 유틸 ── */
@@ -78,7 +79,7 @@ window.HRModule = (function () {
   /* ── 빈 지원자 객체 ── */
   function blankApp(code) {
     return {
-      id: uid(), code: code, pin: '', type: 'onboard',
+      id: uid(), code: code || '', pin: '', resumeCode: '', type: 'onboard',
       status: 'pending',  // pending | partial | submitted | approved
       createdAt: Date.now(), submittedAt: null, printedAt: null,
       form1: {            // 채용지원서
@@ -128,13 +129,18 @@ window.HRModule = (function () {
     var wrap = el('div', 'hr-wrap');
     root.appendChild(wrap);
 
-    // HR 서브탭 네비
-    wrap.appendChild(_buildNav());
+    if (STANDALONE) {
+      // 공개 링크 모드: 서브탭 없이 입사 신청 폼만
+      var content = el('div', 'hr-content');
+      wrap.appendChild(content);
+      _renderOnboard(content);
+      return;
+    }
 
-    // 내용 영역
+    // 관리자 모드: 서브탭 네비 포함
+    wrap.appendChild(_buildNav());
     var content = el('div', 'hr-content');
     wrap.appendChild(content);
-
     if (_st.hrTab === 'onboard') {
       _renderOnboard(content);
     } else {
@@ -193,60 +199,236 @@ window.HRModule = (function () {
 
     var icon = el('div'); icon.textContent = '🏢'; icon.style.cssText = 'font-size:48px;margin-bottom:12px';
     var title = el('div', 'hr-role-title', '입사자 관리 시스템');
-    var desc  = el('div', 'hr-role-desc', '아세아항공직업전문학교 인사관리 — 입사 예정자 서류 제출 및 관리');
 
-    var cards = el('div', 'hr-role-cards');
+    if (STANDALONE) {
+      /* ── 공개 링크 진입: 새로 작성 / 이어서 작성 ── */
+      var desc = el('div', 'hr-role-desc', '아세아항공직업전문학교 입사 예정자 서류 제출 시스템');
+      var cards = el('div', 'hr-role-cards');
 
-    var roles = [
-      { icon: '📝', name: '입사 예정자', hint: '접수 코드를 받으신 분\n서류를 작성·제출합니다', view: 'portal' },
-      { icon: '👀', name: '인사관리자', hint: '제출된 서류를 조회하고\n출력합니다', view: 'manager' },
-      { icon: '⚙️', name: '시스템 관리자', hint: '접수코드 발급 및\n시스템 설정을 합니다', view: 'admin' },
-    ];
-    roles.forEach(function(r) {
-      var card = el('div', 'hr-role-card');
-      card.innerHTML = '<div class="hr-role-icon">' + r.icon + '</div>' +
-        '<div class="hr-role-name">' + r.name + '</div>' +
-        '<div class="hr-role-hint">' + r.hint.replace('\n','<br>') + '</div>';
-      card.addEventListener('click', function() {
-        _st.view = r.view; _render();
+      var c1 = el('div', 'hr-role-card');
+      c1.innerHTML = '<div class="hr-role-icon">✍️</div>' +
+        '<div class="hr-role-name">새로 작성하기</div>' +
+        '<div class="hr-role-hint">처음 서류를 작성하시는 분<br>이름을 입력하고 바로 시작하세요</div>';
+      c1.addEventListener('click', function() { _st.view = 'portal'; _st._portalMode = 'new'; _render(); });
+
+      var c2 = el('div', 'hr-role-card');
+      c2.innerHTML = '<div class="hr-role-icon">🔄</div>' +
+        '<div class="hr-role-name">이어서 작성하기</div>' +
+        '<div class="hr-role-hint">이전에 저장한 코드가 있는 분<br>저장 코드 + 이름으로 이어쓰세요</div>';
+      c2.addEventListener('click', function() { _st.view = 'portal'; _st._portalMode = 'resume'; _render(); });
+
+      screen.appendChild(icon); screen.appendChild(title); screen.appendChild(desc);
+      screen.appendChild(cards);
+      cards.appendChild(c1); cards.appendChild(c2);
+    } else {
+      /* ── 관리자 모드 홈 ── */
+      var desc2 = el('div', 'hr-role-desc', '아세아항공직업전문학교 인사관리 — 입사 예정자 서류 제출 및 관리');
+      var cards2 = el('div', 'hr-role-cards');
+
+      var apps = loadApps();
+      var pendingCount = apps.filter(function(a){ return a.status==='submitted'; }).length;
+      var draftCount   = apps.filter(function(a){ return a.status==='pending'; }).length;
+
+      var roles = [
+        {
+          icon: '📋', name: '신청 링크 복사',
+          hint: '입사 예정자에게 보낼\n작성 링크를 복사합니다',
+          action: function() {
+            var url = _getHRFormUrl();
+            if (navigator.clipboard) {
+              navigator.clipboard.writeText(url).then(function(){ toast('링크가 복사되었습니다.', '#16A34A'); });
+            } else { prompt('아래 링크를 복사하세요.', url); }
+          }
+        },
+        { icon: '👀', name: '인사관리자', hint: '제출된 서류를 조회하고\n출력합니다\n(제출 ' + pendingCount + '건)', view: 'manager' },
+        { icon: '⚙️', name: '시스템 관리자', hint: '코드/설정 관리\n(작성중 ' + draftCount + '건)', view: 'admin' },
+      ];
+      roles.forEach(function(r) {
+        var card = el('div', 'hr-role-card');
+        card.innerHTML = '<div class="hr-role-icon">' + r.icon + '</div>' +
+          '<div class="hr-role-name">' + r.name + '</div>' +
+          '<div class="hr-role-hint">' + r.hint.replace(/\n/g,'<br>') + '</div>';
+        if (r.action) {
+          card.addEventListener('click', r.action);
+        } else {
+          card.addEventListener('click', function() { _st.view = r.view; _render(); });
+        }
+        cards2.appendChild(card);
       });
-      cards.appendChild(card);
-    });
 
-    screen.appendChild(icon);
-    screen.appendChild(title);
-    screen.appendChild(desc);
-    screen.appendChild(cards);
+      screen.appendChild(icon); screen.appendChild(title); screen.appendChild(desc2);
+      screen.appendChild(cards2);
 
-    // 통계 바
-    var apps = loadApps();
-    var statRow = el('div', 'hr-stat-row');
-    statRow.style.cssText = 'margin-top:28px;justify-content:center;max-width:480px;width:100%';
-    var stats = [
-      { num: apps.length, label: '전체 지원자' },
-      { num: apps.filter(function(a){ return a.status==='submitted'||a.status==='approved'; }).length, label: '제출 완료' },
-      { num: apps.filter(function(a){ return a.status==='approved'; }).length, label: '승인 완료' },
-    ];
-    stats.forEach(function(s) {
-      var c = el('div', 'hr-stat-card');
-      c.innerHTML = '<div class="hr-stat-num">' + s.num + '</div><div class="hr-stat-label">' + s.label + '</div>';
-      statRow.appendChild(c);
-    });
-    screen.appendChild(statRow);
+      // 통계 바
+      var statRow = el('div', 'hr-stat-row');
+      statRow.style.cssText = 'margin-top:28px;justify-content:center;max-width:480px;width:100%';
+      var stats = [
+        { num: apps.length, label: '전체 지원자' },
+        { num: apps.filter(function(a){ return a.status==='submitted'||a.status==='approved'; }).length, label: '제출 완료' },
+        { num: apps.filter(function(a){ return a.status==='approved'; }).length, label: '승인 완료' },
+      ];
+      stats.forEach(function(s) {
+        var c = el('div', 'hr-stat-card');
+        c.innerHTML = '<div class="hr-stat-num">' + s.num + '</div><div class="hr-stat-label">' + s.label + '</div>';
+        statRow.appendChild(c);
+      });
+      screen.appendChild(statRow);
+    }
 
     wrap.appendChild(screen);
+  }
+
+  function _getHRFormUrl() {
+    var base = window.location.href.replace(/[^/]*$/, '');
+    return base + 'hr-form.html';
   }
 
   /* ══════════════════════════════════════════════
      입사 예정자 포털
   ══════════════════════════════════════════════ */
   function _renderApplicantPortal(wrap) {
-    // 코드 입력 또는 폼 표시
     if (!_st.applicant) {
-      _renderCodeEntry(wrap);
+      if (STANDALONE && _st._portalMode === 'new') {
+        _renderStandaloneNew(wrap);
+      } else if (STANDALONE && _st._portalMode === 'resume') {
+        _renderStandaloneResume(wrap);
+      } else {
+        _renderCodeEntry(wrap);
+      }
     } else {
       _renderApplicantForm(wrap);
     }
+  }
+
+  /* ── STANDALONE: 새로 작성하기 ── */
+  function _renderStandaloneNew(wrap) {
+    var box = el('div', 'hr-auth-box');
+    box.innerHTML =
+      '<div class="hr-auth-icon">✍️</div>' +
+      '<div class="hr-auth-title">새로 작성하기</div>' +
+      '<div class="hr-auth-desc">성명을 입력하면 바로 서류 작성이 시작됩니다.<br>' +
+      '<span style="font-size:11px;color:#6B7280">작성 중에 <strong>💾 중간 저장</strong> 버튼을 누르면<br>저장 코드가 발급되어 나중에 이어쓸 수 있습니다.</span></div>' +
+      '<input class="hr-auth-input" id="hr-sa-name" type="text" placeholder="성명 (실명)" autocomplete="off">' +
+      '<div class="hr-auth-err" id="hr-sa-err"></div>' +
+      '<button class="hr-btn hr-btn-primary" id="hr-sa-btn" style="width:100%;margin-bottom:10px">작성 시작 →</button>' +
+      '<button class="hr-btn hr-btn-ghost" id="hr-sa-back" style="width:100%">← 돌아가기</button>';
+    wrap.appendChild(box);
+
+    var nameInp = document.getElementById('hr-sa-name');
+    nameInp.focus();
+    nameInp.addEventListener('keydown', function(e) { if (e.key==='Enter') document.getElementById('hr-sa-btn').click(); });
+
+    document.getElementById('hr-sa-btn').addEventListener('click', function() {
+      var name = document.getElementById('hr-sa-name').value.trim();
+      var err  = document.getElementById('hr-sa-err');
+      if (!name) { err.textContent = '성명을 입력해 주세요.'; return; }
+      var app = blankApp();
+      app.form1.nameKr = name;
+      var apps = loadApps(); apps.push(app); saveApps(apps);
+      _st.applicant = app; _st.appStep = 0;
+      _render();
+    });
+    document.getElementById('hr-sa-back').addEventListener('click', function() {
+      _st.view = 'home'; _st._portalMode = null; _render();
+    });
+  }
+
+  /* ── STANDALONE: 이어서 작성하기 ── */
+  function _renderStandaloneResume(wrap) {
+    var box = el('div', 'hr-auth-box');
+    box.innerHTML =
+      '<div class="hr-auth-icon">🔄</div>' +
+      '<div class="hr-auth-title">이어서 작성하기</div>' +
+      '<div class="hr-auth-desc">중간 저장 시 발급된 <strong>저장 코드</strong>와<br>본인 <strong>이름</strong>을 입력하세요.</div>' +
+      '<input class="hr-auth-input" id="hr-sr-code" maxlength="8" placeholder="XXXXXX" autocomplete="off" style="text-transform:uppercase;letter-spacing:4px;font-size:18px;text-align:center">' +
+      '<input class="hr-auth-input" id="hr-sr-name" type="text" placeholder="성명" autocomplete="off" style="margin-top:8px">' +
+      '<div class="hr-auth-err" id="hr-sr-err"></div>' +
+      '<button class="hr-btn hr-btn-primary" id="hr-sr-btn" style="width:100%;margin-bottom:10px">이어서 작성하기</button>' +
+      '<button class="hr-btn hr-btn-ghost" id="hr-sr-back" style="width:100%">← 돌아가기</button>';
+    wrap.appendChild(box);
+
+    document.getElementById('hr-sr-code').addEventListener('input', function() {
+      this.value = this.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+    });
+
+    var doResume = function() {
+      var code = document.getElementById('hr-sr-code').value.trim().toUpperCase();
+      var name = document.getElementById('hr-sr-name').value.trim();
+      var err  = document.getElementById('hr-sr-err');
+      err.textContent = '';
+      if (!code || code.length < 6) { err.textContent = '저장 코드 6자리를 입력해 주세요.'; return; }
+      if (!name) { err.textContent = '성명을 입력해 주세요.'; return; }
+      var apps = loadApps();
+      var app  = apps.find(function(a) {
+        return a.resumeCode === code && (a.form1.nameKr || '').trim() === name;
+      });
+      if (!app) { err.textContent = '저장 코드 또는 이름이 일치하지 않습니다.'; return; }
+      if (app.status === 'submitted' || app.status === 'approved') {
+        err.textContent = '이미 최종 제출된 서류입니다.'; return;
+      }
+      _st.applicant = app; _st.appStep = 0;
+      _render();
+    };
+    document.getElementById('hr-sr-btn').addEventListener('click', doResume);
+    document.getElementById('hr-sr-name').addEventListener('keydown', function(e) { if (e.key==='Enter') doResume(); });
+    document.getElementById('hr-sr-back').addEventListener('click', function() {
+      _st.view = 'home'; _st._portalMode = null; _render();
+    });
+  }
+
+  /* ── 중간 저장 (공통) ── */
+  function _hrMidSave() {
+    var app = _st.applicant;
+    if (!app) return;
+    if (!app.resumeCode) {
+      var existing = loadApps().map(function(a){ return a.resumeCode; });
+      var chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+      var c;
+      do {
+        c = '';
+        for (var i = 0; i < 6; i++) c += chars[Math.floor(Math.random() * chars.length)];
+      } while (existing.indexOf(c) > -1);
+      app.resumeCode = c;
+    }
+    app.status = 'pending';
+    var apps = loadApps();
+    var idx = apps.findIndex(function(a){ return a.id === app.id; });
+    if (idx > -1) apps[idx] = app; else apps.push(app);
+    saveApps(apps);
+    _hrShowSaveOverlay(app);
+  }
+
+  function _hrShowSaveOverlay(app) {
+    var overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9990;display:flex;align-items:center;justify-content:center;padding:16px';
+    var box = document.createElement('div');
+    box.style.cssText = 'background:#fff;border-radius:16px;padding:28px 24px;max-width:360px;width:100%;text-align:center;box-shadow:0 8px 40px rgba(0,0,0,.3)';
+    box.innerHTML =
+      '<div style="font-size:36px;margin-bottom:8px">✅</div>' +
+      '<div style="font-size:18px;font-weight:700;color:#1a3a5c;margin-bottom:6px">중간 저장 완료</div>' +
+      '<div style="font-size:12px;color:#6B7280;line-height:1.7;margin-bottom:18px">아래 저장 코드를 반드시 메모해 두세요.<br>같은 링크에서 <strong>이어서 작성하기</strong> → 코드+이름 입력으로<br>언제든 이어서 작성할 수 있습니다.</div>' +
+      '<div style="background:#EFF6FF;border:2px solid #2563EB;border-radius:10px;padding:16px;margin-bottom:16px">' +
+        '<div style="font-size:11px;color:#6B7280;margin-bottom:6px;font-weight:600">저장 코드</div>' +
+        '<div style="font-size:30px;font-weight:900;letter-spacing:8px;color:#1D4ED8;font-family:monospace">' + _esc(app.resumeCode) + '</div>' +
+        '<div style="font-size:12px;color:#374151;margin-top:8px">이름: <strong>' + _esc(app.form1.nameKr) + '</strong></div>' +
+      '</div>' +
+      '<button id="hr-ov-copy" style="display:block;width:100%;padding:10px;background:#1a3a5c;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:8px">📋 코드 복사</button>' +
+      '<button id="hr-ov-close" style="display:block;width:100%;padding:10px;background:#F3F4F6;color:#374151;border:none;border-radius:8px;font-size:14px;cursor:pointer">계속 작성하기</button>';
+    overlay.appendChild(box);
+    document.body.appendChild(overlay);
+
+    box.querySelector('#hr-ov-copy').addEventListener('click', function() {
+      var msg = '[입사 서류 저장 코드]\n저장 코드: ' + app.resumeCode + '\n이름: ' + app.form1.nameKr + '\n\n이 코드와 이름으로 동일한 링크에서 이어서 작성할 수 있습니다.';
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(msg).then(function(){ toast('복사되었습니다.', '#16A34A'); });
+      } else { prompt('아래 내용을 복사하세요.', msg); }
+    });
+    box.querySelector('#hr-ov-close').addEventListener('click', function() {
+      if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
+    });
+    overlay.addEventListener('click', function(e) {
+      if (e.target === overlay && overlay.parentNode) overlay.parentNode.removeChild(overlay);
+    });
   }
 
   function _renderCodeEntry(wrap) {
@@ -1342,7 +1524,8 @@ window.HRModule = (function () {
     var tsBox = el('div');
     tsBox.style.cssText = 'margin-top:14px;font-size:11px;color:#9CA3AF;background:#F9FAFB;padding:10px;border-radius:6px';
     tsBox.innerHTML =
-      '접수코드: <strong>' + app.code + '</strong> | ' +
+      (app.code ? '접수코드: <strong>' + app.code + '</strong> | ' : '') +
+      (app.resumeCode ? '저장코드: <strong style="color:#2563EB">' + app.resumeCode + '</strong> | ' : '') +
       '작성 시작: <strong>' + fmtDT(app.createdAt) + '</strong> | ' +
       '제출 완료: <strong>' + (app.submittedAt ? fmtDT(app.submittedAt) : '미제출') + '</strong>' +
       (app.printedAt ? ' | 마지막 출력: <strong>' + fmtDT(app.printedAt) + '</strong>' : '');
@@ -1873,11 +2056,13 @@ window.HRModule = (function () {
 
     var right = el('div', 'hr-btn-row');
     if (nextFn && nextLabel) {
-      var saveBtn = el('button', 'hr-btn hr-btn-ghost hr-btn-sm', '💾 임시 저장');
+      var saveBtnLabel = STANDALONE ? '💾 중간 저장 (저장 코드 발급)' : '💾 임시 저장';
+      var saveBtn = el('button', 'hr-btn hr-btn-ghost hr-btn-sm', saveBtnLabel);
       saveBtn.addEventListener('click', function() {
         var app = _st.applicant;
-        if (app) _saveApplicant(app);
-        toast('임시 저장되었습니다.');
+        if (!app) return;
+        _saveApplicant(app);
+        if (STANDALONE) { _hrMidSave(); } else { toast('임시 저장되었습니다.'); }
       });
       var nextBtn = el('button', 'hr-btn hr-btn-primary', nextLabel);
       nextBtn.addEventListener('click', nextFn);

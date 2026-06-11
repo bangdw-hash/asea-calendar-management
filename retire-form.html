@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>퇴직 사직서 작성 — 아세아항공직업전문학교</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="retire.css">
+  <style>
+    body { background: #F3F4F6; min-height: 100vh; }
+    .rt-standalone-wrap { max-width: 860px; margin: 0 auto; padding: 16px; }
+    .rt-standalone-header {
+      background: #1a3a5c; color: #fff;
+      padding: 18px 24px; border-radius: 12px 12px 0 0;
+      display: flex; align-items: center; gap: 12px;
+    }
+    .rt-standalone-header .logo { font-size: 28px; }
+    .rt-standalone-header .info h1 { margin: 0; font-size: 18px; font-weight: 700; }
+    .rt-standalone-header .info p  { margin: 2px 0 0; font-size: 12px; opacity: .75; }
+    #retire-root { background: #fff; border-radius: 0 0 12px 12px; padding: 16px; min-height: 400px; box-shadow: 0 4px 24px rgba(0,0,0,.08); }
+    .rt-standalone-footer { text-align: center; font-size: 11px; color: #9CA3AF; padding: 16px 0; }
+  </style>
+</head>
+<body>
+<div class="rt-standalone-wrap">
+  <div class="rt-standalone-header">
+    <div class="logo">📋</div>
+    <div class="info">
+      <h1>퇴직 사직서 작성</h1>
+      <p>아세아항공직업전문학교 퇴직자 관리 시스템</p>
+    </div>
+  </div>
+  <div id="retire-root"></div>
+  <div class="rt-standalone-footer">
+    담당: 기획처 방시원 차장 · 내선 288 · 010-2055-5883 · bangsw@asea.or.kr
+  </div>
+</div>
+
+<script>window.RETIRE_STANDALONE = true;</script>
+<script src="retire.js?v=20260611rt3"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    if (window.RetireModule && window.RetireModule.init) window.RetireModule.init();
+  });
+</script>
+</body>
+</html>
