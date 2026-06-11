@@ -690,6 +690,10 @@
   function _htmlStaffShare() {
     var cfg = loadStaffMenus();
     var checked = (cfg && cfg.menus) ? cfg.menus : ['calendar'];   // 기본: 캘린더만
+    if (window.CONFIG && !CONFIG.githubToken) {
+      var _t = localStorage.getItem(CONFIG.storageKeys ? CONFIG.storageKeys.githubToken : 'asea_github_token');
+      if (_t) CONFIG.githubToken = _t;
+    }
     var hasToken = !!(window.CONFIG && CONFIG.githubToken);
 
     var html = '<div class="admin-section">' +
