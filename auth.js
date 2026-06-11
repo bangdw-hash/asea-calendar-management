@@ -70,12 +70,12 @@
       // ★ 메인 로그인 흐름이 아닌 경우(자동 재인증 시도 실패)는
       //   현재 세션을 건드리지 않는다 — 캘린더/UI 상태 보존
       if (!_isMainLogin) {
-        if (_pendingResolve) { _pendingResolve(); _pendingResolve = null; }
+        if (_pendingResolve) { _pendingResolve(false); _pendingResolve = null; }
         return;
       }
       // 메인 로그인 실패 → 토큰 초기화
       _clearToken();
-      if (_pendingResolve) { _pendingResolve(); _pendingResolve = null; }
+      if (_pendingResolve) { _pendingResolve(false); _pendingResolve = null; }
       _notifyChange();
       return;
     }
@@ -91,7 +91,7 @@
       _notifyChange();
     }, expiresIn);
 
-    if (_pendingResolve) { _pendingResolve(); _pendingResolve = null; }
+    if (_pendingResolve) { _pendingResolve(true); _pendingResolve = null; }
     _isMainLogin = false;
     _notifyChange();
   }
@@ -117,6 +117,21 @@
         _isMainLogin    = true;
         _pendingResolve = resolve;
         _tokenClient.requestAccessToken({ prompt: '' });
+      });
+    },
+
+    /**
+     * 무음 재인증 — 만료/무효 토큰을 팝업 없이 새로 발급 시도.
+     * 성공 시 새 토큰(string), 실패 시 null 반환 (UI/세션은 건드리지 않음).
+     */
+    reauth: function () {
+      if (!_tokenClient) _initTokenClient();
+      if (!_tokenClient) return Promise.resolve(null);
+      return new Promise(function (resolve) {
+        _isMainLogin    = false;
+        _pendingResolve = function (ok) { resolve(ok ? _accessToken : null); };
+        try { _tokenClient.requestAccessToken({ prompt: '' }); }
+        catch (e) { _pendingResolve = null; resolve(null); }
       });
     },
 

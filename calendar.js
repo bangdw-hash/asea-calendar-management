@@ -18,18 +18,26 @@
 
   async function apiFetch(method, path, body) {
     var token = requireToken();
-    var options = {
-      method: method,
-      headers: {
-        'Authorization': 'Bearer ' + token,
-        'Content-Type': 'application/json',
-      },
-    };
-    if (body !== undefined) {
-      options.body = JSON.stringify(body);
+
+    async function _send(tok) {
+      var options = {
+        method: method,
+        headers: {
+          'Authorization': 'Bearer ' + tok,
+          'Content-Type': 'application/json',
+        },
+      };
+      if (body !== undefined) options.body = JSON.stringify(body);
+      return fetch(BASE + path, options);
     }
 
-    var res = await fetch(BASE + path, options);
+    var res = await _send(token);
+
+    // 401(토큰 만료/무효) → 무음 재인증 후 1회 재시도
+    if (res.status === 401 && window.Auth && Auth.reauth) {
+      var fresh = await Auth.reauth();
+      if (fresh) res = await _send(fresh);
+    }
 
     // DELETE 성공은 204 No Content
     if (res.status === 204) return null;
