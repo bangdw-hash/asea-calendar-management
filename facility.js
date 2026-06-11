@@ -544,12 +544,49 @@ var FacilityModule = (function () {
   /* ─────────────────────────────────────────────────────────
      대관신청 관리 서브탭
   ───────────────────────────────────────────────────────── */
+  function _initLinkTab() {
+    var base = (typeof CONFIG !== 'undefined' && CONFIG.baseUrl) || (location.origin + location.pathname.replace(/\/[^/]*$/, '/'));
+    var proxyUrl = _getProxyUrl();
+    var href = base + 'facility-request.html' + (proxyUrl ? '?proxy=' + encodeURIComponent(proxyUrl) : '');
+    var disp = $f('fac-link-url-display');
+    if (disp) disp.textContent = href;
+    var copyBtn = $f('fac-link-copy-btn');
+    if (copyBtn) {
+      copyBtn.onclick = function() {
+        navigator.clipboard.writeText(href).then(function() {
+          toast('링크가 복사되었습니다.', 'success');
+        }).catch(function() {
+          var ta = document.createElement('textarea');
+          ta.value = href; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
+          toast('링크가 복사되었습니다.', 'success');
+        });
+      };
+    }
+    var openBtn = $f('fac-link-open-btn');
+    if (openBtn) openBtn.href = href;
+    var qrImg = $f('fac-link-qr-img');
+    if (qrImg) {
+      qrImg.src = 'https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=' + encodeURIComponent(href);
+    }
+  }
+
   async function loadAndRenderRequests(status) {
     var el = $f('fac-requests-list');
     if (!el) return;
     el.innerHTML = '<p class="empty-state">불러오는 중...</p>';
     try {
-      var list = await SheetsModule.getFacilityRequests(status||'');
+      var sheetsData = [];
+      try { sheetsData = await SheetsModule.getFacilityRequests(status||''); } catch(e2) { /* ignore sheets error */ }
+      // also read from localStorage (submitted via public form)
+      var lsData = [];
+      try {
+        var raw = JSON.parse(localStorage.getItem('asea_facility_requests') || '[]');
+        lsData = raw.filter(function(r) { return !status || r.status === status; });
+      } catch(e3) {}
+      // merge: lsData items not already in sheetsData (by id)
+      var sheetIds = new Set(sheetsData.map(function(r){ return r.id; }));
+      var merged = sheetsData.concat(lsData.filter(function(r){ return !sheetIds.has(r.id); }));
+      var list = merged;
       if (!list.length) { el.innerHTML = '<p class="empty-state">신청 내역이 없습니다.</p>'; return; }
       renderRequestList(el, list);
       // 대기 건수 배지
@@ -880,11 +917,14 @@ var FacilityModule = (function () {
         var calPanel = $f('fac-subtab-calendar');
         var reqPanel = $f('fac-subtab-requests');
         var feePanel = $f('fac-subtab-fees');
+        var linkPanel = $f('fac-subtab-link');
         if (calPanel) calPanel.hidden = (target !== 'calendar');
         if (reqPanel) reqPanel.hidden = (target !== 'requests');
         if (feePanel) feePanel.hidden = (target !== 'fees');
+        if (linkPanel) linkPanel.hidden = (target !== 'link');
         if (target === 'requests') loadAndRenderRequests();
         if (target === 'fees') renderFeeAdmin();
+        if (target === 'link') _initLinkTab();
       });
     });
     // 관리자 아닌 경우 신청 관리 탭 숨김

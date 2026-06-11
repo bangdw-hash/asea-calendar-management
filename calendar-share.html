@@ -584,7 +584,7 @@
         수집 항목: 이름, 소속/직위, 이메일 주소<br>
         수집 목적: 업무캘린더 공유 처리 및 관리<br>
         보유 기간: 수집일로부터 <strong>1년</strong> (개인정보 보호법 준수)<br>
-        문의: <strong>bangdw@gmail.com</strong>
+        문의: <strong id="pipa-contact">방시원 차장</strong>
       </div>
       <div class="checkbox-row">
         <input type="checkbox" id="f-privacy">
@@ -680,7 +680,7 @@
 
   /* ── Contact footer ── */
   function renderContact() {
-    let info = { name: '방시원', title: '차장', phone: '' };
+    let info = { name: '방시원', title: '차장', phone: '010-2055-5883' };
     try {
       const stored = JSON.parse(localStorage.getItem(CONTACT_KEY) || 'null');
       if (stored) info = Object.assign(info, stored);
@@ -688,14 +688,17 @@
     const footer = document.getElementById('contact-footer');
     let html = `문의: <span>${esc(info.name)} ${esc(info.title)}</span>`;
     if (info.phone) {
-      html += ` &nbsp;|&nbsp; <a href="tel:${esc(info.phone)}">${esc(info.phone)}</a>`;
+      html += ` &nbsp;<a href="tel:${esc(info.phone)}">${esc(info.phone)}</a>`;
     }
     footer.innerHTML = html;
+    // PIPA notice contact
+    const pipaEl = document.getElementById('pipa-contact');
+    if (pipaEl) pipaEl.textContent = info.name + ' ' + info.title + (info.phone ? ' ' + info.phone : '');
   }
 
   /* ── Category toggle ── */
   window.setCategory = function(btn) {
-    document.querySelectorAll('#request-form .toggle-btn').forEach(b => b.classList.remove('active'));
+    btn.closest('.toggle-group').querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     selectedCategory = btn.dataset.cat;
   };

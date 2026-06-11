@@ -169,10 +169,18 @@
 
   <footer class="page-footer">
     개인정보 처리방침 적용 중 · 수집 목적 외 사용 금지<br>
-    문의: 관리자 방시원 <a href="tel:02-714-9710" style="color:inherit">02-714-9710</a>
+    문의: <span id="checkin-contact">방시원 차장 <a href="tel:010-2055-5883" style="color:inherit">010-2055-5883</a></span>
   </footer>
 
   <script src="config.js?v=20260608s"></script>
   <script src="checkin.js?v=20260608z7"></script>
+  <script>
+    (function() {
+      var info = { name: '방시원', title: '차장', phone: '010-2055-5883' };
+      try { var s = JSON.parse(localStorage.getItem('asea_contact_info') || 'null'); if (s) Object.assign(info, s); } catch(e) {}
+      var el = document.getElementById('checkin-contact');
+      if (el) el.innerHTML = info.name + ' ' + info.title + (info.phone ? ' <a href="tel:' + info.phone + '" style="color:inherit">' + info.phone + '</a>' : '');
+    })();
+  </script>
 </body>
 </html>

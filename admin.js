@@ -570,7 +570,7 @@
   /* ── 연락처/공지 정보 관리 ──────────────────────────── */
   function _htmlContactInfo() {
     var SK_CONTACT = 'asea_contact_info';
-    var info = { name: '방시원', title: '차장', phone: '' };
+    var info = { name: '방시원', title: '차장', phone: '010-2055-5883' };
     try {
       var stored = JSON.parse(localStorage.getItem(SK_CONTACT) || 'null');
       if (stored) info = stored;

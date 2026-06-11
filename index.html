@@ -18,12 +18,28 @@
   <link rel="stylesheet" href="meet.css?v=20260610mt1">
   <link rel="stylesheet" href="hr.css?v=20260611hr3">
   <link rel="stylesheet" href="retire.css?v=20260611rt1">
+  <script>
+    (function() {
+      if (new URLSearchParams(location.search).get('staff') === '1') {
+        document.documentElement.classList.add('staff-mode');
+        document.addEventListener('DOMContentLoaded', function() {
+          document.body.classList.add('staff-mode');
+        });
+      }
+    })();
+  </script>
   <script src="https://accounts.google.com/gsi/client" async></script>
   <!-- SheetJS for Excel support -->
   <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 
   <style>
+    html.staff-mode .desktop-tab-nav,
+    html.staff-mode .mobile-bottom-nav,
+    body.staff-mode .desktop-tab-nav,
+    body.staff-mode .mobile-bottom-nav {
+      display: none !important;
+    }
     .hr-subtab-bar {
       display: flex; gap: 0; border-bottom: 2px solid #E5E7EB;
       background: #fff; padding: 0 16px;
@@ -721,6 +737,7 @@
           <button class="subtab-btn active" data-subtab="calendar">📅 예약 캘린더</button>
           <button class="subtab-btn" data-subtab="requests" id="fac-subtab-requests-btn" style="display:none">📋 신청 관리</button>
           <button class="subtab-btn" data-subtab="fees" id="fac-subtab-fees-btn" style="display:none">💰 요금 관리</button>
+          <button class="subtab-btn" data-subtab="link" id="fac-subtab-link-btn">🔗 신청 링크</button>
         </div>
 
         <!-- ── 서브탭: 예약 캘린더 ── -->
@@ -789,6 +806,26 @@
           </div>
           <div id="fac-requests-list">
             <p class="empty-state">불러오는 중...</p>
+          </div>
+        </div>
+
+        <!-- ── 서브탭: 신청 링크 공유 ── -->
+        <div id="fac-subtab-link" hidden>
+          <div style="max-width:640px;margin:0 auto">
+            <div class="settings-card" style="margin-bottom:16px">
+              <h3 style="margin:0 0 12px;font-size:15px;font-weight:700">🔗 외부 대관신청 링크 공유</h3>
+              <p style="font-size:13px;color:#666;margin-bottom:16px">아래 URL을 대관 희망자에게 공유하면, 요금을 조회하고 신청서를 작성할 수 있습니다. 접수된 신청은 <strong>신청 관리</strong> 탭에서 확인할 수 있습니다.</p>
+              <div style="background:#f8f9fa;border-radius:8px;padding:12px 16px;font-size:12px;word-break:break-all;color:#374151;border:1px solid #e5e7eb;margin-bottom:12px" id="fac-link-url-display">로딩 중...</div>
+              <div style="display:flex;gap:8px;flex-wrap:wrap">
+                <button id="fac-link-copy-btn" class="btn btn-primary btn-sm">📋 링크 복사</button>
+                <a id="fac-link-open-btn" href="#" target="_blank" class="btn btn-secondary btn-sm">↗ 미리보기</a>
+              </div>
+            </div>
+            <div class="settings-card">
+              <h4 style="margin:0 0 8px;font-size:14px;font-weight:600">📱 QR 코드</h4>
+              <p style="font-size:12px;color:#888;margin-bottom:8px">모바일 사용자를 위한 QR 코드입니다.</p>
+              <img id="fac-link-qr-img" src="" alt="QR Code" style="width:140px;height:140px;border-radius:8px;border:1px solid #e5e7eb;display:block">
+            </div>
           </div>
         </div>
 

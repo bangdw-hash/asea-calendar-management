@@ -234,7 +234,7 @@
   </div>
 
   <div class="fr-footer">
-    신청 관련 문의: 담당 부서로 연락해 주세요.
+    신청 관련 문의: <span id="fr-contact-name">방시원 차장</span> <a id="fr-contact-tel" href="tel:010-2055-5883" style="color:inherit">010-2055-5883</a>
   </div>
 </div>
 
@@ -255,5 +255,16 @@
 
 <script src="facility-fee.js"></script>
 <script src="facility-request.js"></script>
+<script>
+  (function() {
+    var info = { name: '방시원', title: '차장', phone: '010-2055-5883' };
+    try { var s = JSON.parse(localStorage.getItem('asea_contact_info') || 'null'); if (s) Object.assign(info, s); } catch(e) {}
+    var nameEl = document.getElementById('fr-contact-name');
+    var telEl  = document.getElementById('fr-contact-tel');
+    if (nameEl) nameEl.textContent = info.name + ' ' + info.title;
+    if (telEl && info.phone) { telEl.href = 'tel:' + info.phone; telEl.textContent = info.phone; }
+    else if (telEl && !info.phone) { telEl.style.display = 'none'; }
+  })();
+</script>
 </body>
 </html>
