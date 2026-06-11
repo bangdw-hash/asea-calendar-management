@@ -8,6 +8,7 @@
   var SK_MENU_ORDER = 'asea_menu_order';      // 메뉴 표시 순서 (id 배열)
   var SK_MENU_HIDDEN= 'asea_menu_hidden';     // 전역 숨김 메뉴 (id 배열)
   var SK_LOGO       = 'asea_logo';            // 로고 이미지 (dataURL)
+  var SK_STAFF_MENUS= 'asea_staff_menus';     // 직원 공유 메뉴 (GitHub 중앙 게시 캐시)
 
   /* ══════════════════════════════════════════════════════
      버전 히스토리 (최신순)
@@ -213,6 +214,64 @@
   function saveLogo(d)  { try { localStorage.setItem(SK_LOGO, d); return true; } catch(e) { return false; } }
   function removeLogo() { try { localStorage.removeItem(SK_LOGO); } catch(e) {} }
 
+  /* ── 직원 공유 메뉴 (GitHub 중앙 게시) ──────────────────
+     관리자가 고른 메뉴를 staff-menus.json으로 repo에 커밋(공개) →
+     모든 직원 클라이언트가 공개 URL로 읽어 비관리자 메뉴를 제한 */
+  function loadStaffMenus() {
+    try { var v = localStorage.getItem(SK_STAFF_MENUS); return v ? JSON.parse(v) : null; } catch(e) { return null; }
+  }
+  function saveStaffMenus(cfg) {
+    try { localStorage.setItem(SK_STAFF_MENUS, JSON.stringify(cfg)); } catch(e) {}
+  }
+  function _staffMenusUrl() {
+    var base = '';
+    try { if (window.CONFIG && CONFIG.baseUrl) base = CONFIG.baseUrl.replace(/\/$/, ''); } catch(e) {}
+    return base + '/staff-menus.json?t=' + Date.now();
+  }
+  /* 공개 JSON 가져와 캐시 (실패 시 캐시 유지) */
+  function fetchStaffMenus() {
+    try {
+      return fetch(_staffMenusUrl(), { cache: 'no-store' })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (cfg) {
+          if (cfg && Array.isArray(cfg.menus)) { saveStaffMenus(cfg); return cfg; }
+          return loadStaffMenus();
+        })
+        .catch(function () { return loadStaffMenus(); });
+    } catch(e) { return Promise.resolve(loadStaffMenus()); }
+  }
+  /* GitHub에 staff-menus.json 게시 (관리자 PAT 필요) */
+  function publishStaffMenus(menuIds) {
+    if (!window.CONFIG || !CONFIG.githubToken) {
+      return Promise.reject(new Error('설정 탭에서 GitHub Token을 먼저 저장하세요.'));
+    }
+    var apiUrl = 'https://api.github.com/repos/' + CONFIG.githubOwner + '/' +
+                 CONFIG.githubRepo + '/contents/staff-menus.json';
+    var hdr = {
+      'Authorization': 'Bearer ' + CONFIG.githubToken,
+      'Accept': 'application/vnd.github+json'
+    };
+    // 기존 파일 sha 조회(있으면 갱신)
+    return fetch(apiUrl + '?t=' + Date.now(), { headers: hdr, cache: 'no-store' })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .catch(function () { return null; })
+      .then(function (existing) {
+        var payload = { menus: menuIds, updatedAt: new Date().toISOString(), version: Date.now() };
+        var content = btoa(unescape(encodeURIComponent(JSON.stringify(payload, null, 2))));
+        var body = { message: '직원 공유 메뉴 업데이트 (' + menuIds.length + '개)', content: content };
+        if (existing && existing.sha) body.sha = existing.sha;
+        return fetch(apiUrl, {
+          method: 'PUT',
+          headers: { 'Authorization': 'Bearer ' + CONFIG.githubToken, 'Content-Type': 'application/json', 'Accept': 'application/vnd.github+json' },
+          body: JSON.stringify(body)
+        }).then(function (res) {
+          if (!res.ok) return res.json().then(function (e) { throw new Error(e.message || ('GitHub ' + res.status)); });
+          saveStaffMenus(payload);   // 관리자 본인도 즉시 캐시
+          return payload;
+        });
+      });
+  }
+
   /* 현재 적용 순서(전체 메뉴 id 배열) — 저장값 + 누락분 보정 */
   function effectiveOrder() {
     var ids   = NAV_MENUS.map(function (m) { return m.id; });
@@ -300,6 +359,8 @@
     var role   = getUserRole(curEmail());
     var order  = effectiveOrder();
     var hidden = loadMenuHidden();
+    var isAdm  = (role === 'admin');
+    var staff  = isAdm ? null : loadStaffMenus();   // 비관리자만 직원 공유목록 적용
 
     [['.desktop-tab-nav', '.tab-btn'], ['.mobile-bottom-nav', '.bnav-btn']].forEach(function (pair) {
       var nav = document.querySelector(pair[0]);
@@ -318,7 +379,13 @@
       btns.forEach(function (b) {
         var id = _btnId(b);
         if (!id || id === 'admin') return;            // 관리자 탭은 아래에서 처리
-        var visible = (hidden.indexOf(id) === -1) && isMenuVisible(id, role);
+        var visible;
+        if (staff && staff.menus) {
+          // 직원: 관리자가 게시한 공유 메뉴만 표시 (화이트리스트가 유일 기준)
+          visible = staff.menus.indexOf(id) !== -1;
+        } else {
+          visible = (hidden.indexOf(id) === -1) && isMenuVisible(id, role);
+        }
         b.style.display = visible ? '' : 'none';
       });
     });
@@ -379,6 +446,7 @@
         '<nav class="admin-sidenav">' +
           '<button class="admin-nav-btn active" data-sec="changelog">📋 버전 관리</button>' +
           '<button class="admin-nav-btn" data-sec="permissions">👥 권한 관리</button>' +
+          '<button class="admin-nav-btn" data-sec="staff-share">📢 직원 공유 메뉴</button>' +
           '<button class="admin-nav-btn" data-sec="menu-manage">🧭 메뉴 관리</button>' +
           '<button class="admin-nav-btn" data-sec="logo">🖼 로고 관리</button>' +
           '<button class="admin-nav-btn" data-sec="menu-ctrl">📂 메뉴 제어</button>' +
@@ -408,6 +476,7 @@
     if (!body) return;
     if (sec === 'changelog')   body.innerHTML = _htmlChangelog();
     if (sec === 'permissions') { body.innerHTML = _htmlPermissions(); _bindPermEvents(); }
+    if (sec === 'staff-share') { body.innerHTML = _htmlStaffShare(); _bindStaffShareEvents(); }
     if (sec === 'menu-manage') { body.innerHTML = _htmlMenuManage(); _bindMenuManageEvents(); }
     if (sec === 'logo')        { body.innerHTML = _htmlLogo();       _bindLogoEvents(); }
     if (sec === 'menu-ctrl')   { body.innerHTML = _htmlMenuCtrl();    _bindMenuCtrlEvents(); }
@@ -594,6 +663,78 @@
         saveRoles(roles);
         _renderSection('permissions');
       });
+    });
+  }
+
+  /* ══════════════════════════════════════════════════════
+     직원 공유 메뉴 — 비관리자에게 보일 메뉴를 중앙 게시
+  ══════════════════════════════════════════════════════ */
+  function _htmlStaffShare() {
+    var cfg = loadStaffMenus();
+    var checked = (cfg && cfg.menus) ? cfg.menus : ['calendar'];   // 기본: 캘린더만
+    var hasToken = !!(window.CONFIG && CONFIG.githubToken);
+
+    var html = '<div class="admin-section">' +
+      '<h3 class="admin-sec-title">📢 직원 공유 메뉴</h3>' +
+      '<p class="form-hint" style="margin-bottom:10px">직원(비관리자)이 로그인하면 <b>여기서 체크한 메뉴만</b> 상단에 보입니다. ' +
+      '게시하면 <b>모든 직원의 기기에 공통 적용</b>됩니다 (GitHub Pages 반영까지 약 1~2분).<br>' +
+      '<span style="color:#999">※ 관리자 본인은 항상 전체 메뉴가 보입니다.</span></p>';
+
+    if (!hasToken) {
+      html += '<div style="background:#fff8e7;border:1px solid #f3d27a;border-radius:8px;padding:10px 12px;margin-bottom:12px;font-size:13px;color:#8a6406">' +
+        '⚠️ 게시하려면 <b>설정 탭 → GitHub Token</b>을 먼저 저장하세요. (관리자 1회 설정)</div>';
+    }
+
+    html += '<div class="menu-manage-list" id="staff-share-list">';
+    NAV_MENUS.forEach(function (m) {
+      var on = checked.indexOf(m.id) !== -1;
+      html += '<label class="mm-row" style="cursor:pointer">' +
+        '<input type="checkbox" class="ss-cb" data-id="' + esc(m.id) + '"' + (on ? ' checked' : '') + ' style="width:16px;height:16px;margin-right:10px;flex-shrink:0">' +
+        '<span class="mm-label">' + (m.label || esc(m.id)) + '</span>' +
+      '</label>';
+    });
+    html += '</div>';
+
+    html += '<div style="margin-top:14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">' +
+        '<button id="ss-publish-btn" class="btn btn-primary btn-sm"' + (hasToken ? '' : ' disabled') + '>📢 직원에게 게시</button>' +
+        '<button id="ss-refresh-btn" class="btn btn-ghost btn-sm">↻ 현재 게시값 새로고침</button>' +
+        '<span id="ss-status" style="font-size:12px;font-weight:600"></span>' +
+      '</div>';
+    if (cfg && cfg.updatedAt) {
+      html += '<div class="form-hint" style="margin-top:8px">최근 게시: ' + esc(new Date(cfg.updatedAt).toLocaleString('ko-KR')) +
+        ' · ' + (cfg.menus ? cfg.menus.length : 0) + '개 메뉴</div>';
+    }
+    html += '</div>';
+    return html;
+  }
+
+  function _bindStaffShareEvents() {
+    var btn = document.getElementById('ss-publish-btn');
+    if (btn) btn.addEventListener('click', function () {
+      var ids = [];
+      document.querySelectorAll('#staff-share-list .ss-cb:checked').forEach(function (cb) { ids.push(cb.dataset.id); });
+      if (!ids.length && !confirm('선택된 메뉴가 없습니다. 직원이 아무 메뉴도 못 보게 됩니다. 계속할까요?')) return;
+      var status = document.getElementById('ss-status');
+      var orig = btn.textContent;
+      btn.disabled = true; btn.textContent = '⏳ 게시 중...';
+      if (status) { status.style.color = '#15803d'; status.textContent = ''; }
+      publishStaffMenus(ids).then(function () {
+        if (status) status.textContent = '✅ 게시 완료 — 약 1~2분 후 직원에게 반영';
+        applyMenuVisibility();
+        if (window.toast) toast('직원 공유 메뉴가 게시되었습니다.', 'success');
+        btn.disabled = false; btn.textContent = orig;
+        _renderSection('staff-share');
+      }).catch(function (err) {
+        if (status) { status.style.color = '#dc2626'; status.textContent = '⚠️ ' + (err.message || '게시 실패'); }
+        if (window.toast) toast('게시 실패: ' + (err.message || ''), 'error');
+        btn.disabled = false; btn.textContent = orig;
+      });
+    });
+
+    var refresh = document.getElementById('ss-refresh-btn');
+    if (refresh) refresh.addEventListener('click', function () {
+      refresh.disabled = true;
+      fetchStaffMenus().then(function () { _renderSection('staff-share'); });
     });
   }
 
@@ -922,6 +1063,8 @@
     applyMenuVisibility();
     applyFeatVisibility();
     applyLogo();
+    // 직원 공유 메뉴를 중앙(GitHub)에서 가져와 재적용 (비관리자 메뉴 제한)
+    fetchStaffMenus().then(function () { applyMenuVisibility(); });
   }
 
   /* 페이지 로드 즉시 — 로그인 화면 로고 + 메뉴 순서를 미리 적용 */
