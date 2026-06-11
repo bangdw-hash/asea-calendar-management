@@ -51,11 +51,11 @@ window.HelpModule = (function () {
       ],
     },
     {
-      id: 'promo', icon: '📣', title: '홍보슬라이드',
+      id: 'promo', icon: '📣', title: '홍보화면',
       desc: '홍보 내용을 입력하면 AI가 슬라이드용 문구를 자동 생성하고 Google Slides에 등록합니다.',
       steps: [
         '【사전 설정】 설정 탭 → Claude API 키 등록 (필수)',
-        '【사전 설정】 설정 탭 → 홍보슬라이드 설정 → GAS 프록시 URL 등록 (슬라이드 자동 추가 시 필수)',
+        '【사전 설정】 설정 탭 → 홍보화면 설정 → GAS 프록시 URL 등록 (슬라이드 자동 추가 시 필수)',
         '테마 선택 — 📢 홍보 / 📋 안내 / 🎉 행사 (배경색 자동 변경)',
         '홍보할 내용 자유 입력 (예: 2026년 항공정비과 신입생 모집, 지원기간 6/1~7/31)',
         '🤖 문구 생성 클릭 → AI가 제목·본문·태그 자동 생성',
@@ -64,8 +64,8 @@ window.HelpModule = (function () {
         '최근 등록 이력 테이블에서 성공/실패 상태 확인',
       ],
       tips: [
-        'GAS 프록시 URL 등록 방법은 도움말 → 홍보슬라이드 GAS 설정 가이드를 참고하세요.',
-        '원격 PC 모니터 자동 롤링 설정은 아래 \'홍보슬라이드 GAS 설정 가이드\' 섹션을 확인하세요.',
+        'GAS 프록시 URL 등록 방법은 도움말 → 홍보화면 GAS 설정 가이드를 참고하세요.',
+        '원격 PC 모니터 자동 롤링 설정은 아래 \'홍보화면 GAS 설정 가이드\' 섹션을 확인하세요.',
       ],
       extra: 'promo-gas',
     },
@@ -186,9 +186,9 @@ window.HelpModule = (function () {
       steps: [
         'Google 계정 — 로그인 상태 및 로그아웃 버튼',
         '직원관리(관리자) — CSV 파일로 직원 일괄 등록 (형식: 이름,부서,직급,구글이메일,입사일,전화번호,권한)',
-        'Claude API 키 — 일정발췃·홍보슬라이드에 사용. 키 형식에 따라 엔드포인트 자동 결정',
+        'Claude API 키 — 일정발췃·홍보화면에 사용. 키 형식에 따라 엔드포인트 자동 결정',
         'GitHub Token — 일정 공유 페이지 자동 생성 시 필요. GitHub → Fine-grained tokens에서 발급',
-        '홍보슬라이드 설정 — GAS 프록시 URL 입력 (도움말 → GAS 설정 가이드 참고)',
+        '홍보화면 설정 — GAS 프록시 URL 입력 (도움말 → GAS 설정 가이드 참고)',
         'Make.com 웹훅 URL — 이메일 예약 자동 발송에 필요',
         '내 캘린더 표시 설정 — 표시할 Google Calendar 선택',
         'Drive 설정 — 보고서 저장 폴더 ID 입력',
@@ -201,14 +201,14 @@ window.HelpModule = (function () {
 
   /* ── GAS 설정 가이드 데이터 ── */
   var GAS_GUIDE = {
-    title: '📣 홍보슬라이드 GAS 설정 가이드 (최초 1회)',
+    title: '📣 홍보화면 GAS 설정 가이드 (최초 1회)',
     subtitle: '앱에서 Google Slides에 슬라이드를 자동 추가하려면 중간 연결 프로그램(GAS)을 한 번 설정해야 합니다.',
     steps: [
       {
         num: 1, title: 'Google Slides 파일 만들기',
         items: [
           '<a href="https://slides.google.com" target="_blank" class="hlp-link">slides.google.com</a> 접속 → + 새 프레젠테이션 클릭',
-          '제목: <strong>ASEA 홍보슬라이드</strong> 입력',
+          '제목: <strong>ASEA 홍보화면</strong> 입력',
           '주소창 URL에서 ID 복사<br><code class="hlp-code">https://docs.google.com/presentation/d/<strong>[여기가 ID]</strong>/edit</code>',
           '복사한 ID를 메모장에 붙여넣어 보관',
         ],
@@ -218,7 +218,7 @@ window.HelpModule = (function () {
         items: [
           '<a href="https://script.google.com" target="_blank" class="hlp-link">script.google.com</a> 접속',
           '왼쪽 상단 <strong>+ 새 프로젝트</strong> 클릭',
-          '상단 프로젝트 이름 클릭 → <strong>ASEA 홍보슬라이드 Proxy</strong> 입력',
+          '상단 프로젝트 이름 클릭 → <strong>ASEA 홍보화면 Proxy</strong> 입력',
         ],
       },
       {
@@ -240,7 +240,7 @@ window.HelpModule = (function () {
           '<strong>다음 사용자로 실행</strong>: 나 (본인 이메일) 선택',
           '<strong>액세스 권한</strong>: 모든 사용자 선택',
           '<strong>배포</strong> 클릭',
-          '권한 승인 팝업 → 본인 계정 선택 → <em>고급</em> 클릭 → <em>ASEA 홍보슬라이드 Proxy(으)로 이동</em> 클릭 → <strong>허용</strong>',
+          '권한 승인 팝업 → 본인 계정 선택 → <em>고급</em> 클릭 → <em>ASEA 홍보화면 Proxy(으)로 이동</em> 클릭 → <strong>허용</strong>',
           '표시되는 <strong>웹 앱 URL</strong> 전체 복사 (메모장에 보관)',
         ],
       },
@@ -248,7 +248,7 @@ window.HelpModule = (function () {
         num: 5, title: 'ASEA 앱에 URL 등록',
         items: [
           'ASEA 앱 → <strong>설정 탭</strong> 이동',
-          '<strong>📣 홍보슬라이드 설정</strong> 카드에서 GAS 프록시 URL 입력란에 STEP 4 URL 붙여넣기',
+          '<strong>📣 홍보화면 설정</strong> 카드에서 GAS 프록시 URL 입력란에 STEP 4 URL 붙여넣기',
           '<strong>저장</strong> 클릭',
         ],
       },
