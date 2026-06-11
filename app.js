@@ -112,6 +112,11 @@
         var modal = e.target.closest('.modal');
         if (modal) modal.hidden = true;
       }
+      // 모달 배경 클릭 시 닫기 (event-modal만)
+      var evModal = $('event-modal');
+      if (evModal && !evModal.hidden && e.target === evModal) {
+        evModal.hidden = true;
+      }
     });
     document.addEventListener('keydown', function (e) {
       if (e.key === 'Escape') {
@@ -120,6 +125,45 @@
         });
       }
     });
+
+    // 모바일 이벤트 모달 스와이프 내비게이션
+    (function () {
+      var swipeStartX = 0, swipeStartY = 0, swipeMoved = false;
+      var evModal = null;
+      document.addEventListener('touchstart', function (e) {
+        evModal = $('event-modal');
+        if (!evModal || evModal.hidden) return;
+        var inner = evModal.querySelector('.modal-content') || evModal.querySelector('.modal-box');
+        if (!inner || !inner.contains(e.target)) return;
+        swipeStartX = e.touches[0].clientX;
+        swipeStartY = e.touches[0].clientY;
+        swipeMoved = false;
+      }, { passive: true });
+      document.addEventListener('touchmove', function (e) {
+        if (!evModal || evModal.hidden) return;
+        swipeMoved = true;
+      }, { passive: true });
+      document.addEventListener('touchend', function (e) {
+        if (!evModal || evModal.hidden || !swipeMoved) return;
+        var dx = e.changedTouches[0].clientX - swipeStartX;
+        var dy = e.changedTouches[0].clientY - swipeStartY;
+        if (Math.abs(dx) < 60 || Math.abs(dy) > Math.abs(dx)) return;
+        // 현재 편집 중인 이벤트 ID
+        var curId = S.editEventId;
+        if (!curId) return;
+        // 화면에 보이는 이벤트를 날짜/시간순 정렬
+        var sorted = (S.events || []).slice().sort(function (a, b) {
+          var ta = a.start.dateTime ? new Date(a.start.dateTime).getTime() : new Date(a.start.date).getTime();
+          var tb = b.start.dateTime ? new Date(b.start.dateTime).getTime() : new Date(b.start.date).getTime();
+          return ta - tb;
+        });
+        var idx = sorted.findIndex(function (ev) { return ev.id === curId; });
+        if (idx === -1) return;
+        var nextIdx = dx < 0 ? idx + 1 : idx - 1; // 왼쪽=다음, 오른쪽=이전
+        if (nextIdx < 0 || nextIdx >= sorted.length) return;
+        openEventModal(sorted[nextIdx]);
+      }, { passive: true });
+    })();
   }
 
   /* ═══════════════════════════════════════════════════════════
@@ -1345,6 +1389,11 @@
     });
 
     $('add-event-btn').addEventListener('click', function () {
+      openEventModal(null, new Date());
+    });
+
+    var _qeb = $('quick-event-btn');
+    if (_qeb) _qeb.addEventListener('click', function () {
       openEventModal(null, new Date());
     });
 
