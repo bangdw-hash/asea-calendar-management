@@ -376,10 +376,17 @@
 
     var lines = [];
     if (calc.normalHours > 0) lines.push('평상 ' + calc.normalHours.toFixed(1) + '시간 × ' + FacilityFeeModule.comma(_feeConfig.normalRate) + '원 = ' + FacilityFeeModule.comma(calc.normalFee) + '원');
-    if (calc.surchargeHours > 0) lines.push('할증 ' + calc.surchargeHours.toFixed(1) + '시간 × ' + FacilityFeeModule.comma(_feeConfig.surchargeRate) + '원 = ' + FacilityFeeModule.comma(calc.surchargeFee) + '원');
+    (calc.surchargeSlots||[]).forEach(function(s) {
+      if (s.hours > 0) lines.push(s.label + '할증 ' + s.hours.toFixed(1) + '시간 × ' + FacilityFeeModule.comma(s.rate) + '원 = ' + FacilityFeeModule.comma(s.fee) + '원');
+    });
+    (calc.timeExtras||[]).forEach(function(ex) {
+      if (ex.amount > 0) lines.push(ex.name + ' ' + ex.hours.toFixed(1) + '시간 × ' + FacilityFeeModule.comma(ex.unitRate) + '원 = ' + FacilityFeeModule.comma(ex.amount) + '원');
+    });
+    (calc.flatExtras||[]).forEach(function(ex) {
+      lines.push(ex.name + ' (일괄) ' + FacilityFeeModule.comma(ex.amount) + '원');
+    });
     if (calc.deposit > 0) lines.push('보증금 ' + FacilityFeeModule.comma(calc.deposit) + '원');
     if (calc.cleaningFee > 0) lines.push('청소비 ' + FacilityFeeModule.comma(calc.cleaningFee) + '원');
-    (calc.extraItems||[]).forEach(function(ex){ lines.push(ex.name + ' ' + FacilityFeeModule.comma(ex.amount) + '원'); });
 
     estEl.innerHTML =
       '<div class="fr-estimate-box">' +

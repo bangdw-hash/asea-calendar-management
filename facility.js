@@ -1179,9 +1179,14 @@ var FacilityModule = (function () {
         '<div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px">' +
           '<div>' +
             '<div style="font-size:15px;font-weight:700;color:#1a3a5c;margin-bottom:6px">🏢 ' + _esc(fee.buildingName) + ' · ' + _esc(fee.roomName) + '</div>' +
-            '<div style="font-size:12px;color:#374151;display:flex;gap:12px;flex-wrap:wrap">' +
+            '<div style="font-size:12px;color:#374151;display:flex;gap:8px;flex-wrap:wrap">' +
               '<span style="background:#EFF6FF;border:1px solid #BFDBFE;border-radius:5px;padding:3px 8px">평상 ' + (fee.normalStart||'--') + '~' + (fee.normalEnd||'--') + ' · ' + FacilityFeeModule.comma(fee.normalRate||0) + '원/h</span>' +
-              '<span style="background:#FEF9EC;border:1px solid #FCD34D;border-radius:5px;padding:3px 8px;color:#92400E">할증 ' + (fee.surchargeStart||'--') + '~' + (fee.surchargeEnd||'--') + ' · ' + FacilityFeeModule.comma(fee.surchargeRate||0) + '원/h</span>' +
+              (FacilityFeeModule.normalize(fee).surchargeSlots||[]).map(function(s){
+                return '<span style="background:#FEF9EC;border:1px solid #FCD34D;border-radius:5px;padding:3px 8px;color:#92400E">' +
+                  (s.label||'할증') + ' ' + (s.start||'--') + '~' + (s.end||'--') + ' · ' + FacilityFeeModule.comma(s.rate||0) + '원/h</span>';
+              }).join('') +
+              ((fee.timeExtras||[]).length ? '<span style="background:#F0FDF4;border:1px solid #86EFAC;border-radius:5px;padding:3px 8px;color:#15803D">시간비례 ' + (fee.timeExtras||[]).length + '종</span>' : '') +
+              ((fee.flatExtras||[]).length ? '<span style="background:#F3F4F6;border:1px solid #D1D5DB;border-radius:5px;padding:3px 8px">일괄 ' + (fee.flatExtras||[]).length + '종</span>' : '') +
               (fee.deposit ? '<span>보증금 ' + FacilityFeeModule.comma(fee.deposit) + '원</span>' : '') +
               (fee.cleaningFee ? '<span>청소비 ' + FacilityFeeModule.comma(fee.cleaningFee) + '원</span>' : '') +
             '</div>' +
@@ -1208,21 +1213,22 @@ var FacilityModule = (function () {
   function openFeeModal(fee) {
     var modal = $f('fac-fee-modal');
     if (!modal) return;
-    $f('fac-fee-modal-title').textContent = fee ? '요금 설정 수정' : '요금 설정 추가';
-    $f('fac-fee-building').value  = fee ? (fee.buildingName||'')         : '';
-    $f('fac-fee-room').value      = fee ? (fee.roomName||'')             : '';
-    $f('fac-fee-norm-s').value    = fee ? (fee.normalStart||'09:00')     : '09:00';
-    $f('fac-fee-norm-e').value    = fee ? (fee.normalEnd||'18:00')       : '18:00';
-    $f('fac-fee-norm-r').value    = fee ? (fee.normalRate||'')           : '';
-    $f('fac-fee-sur-s').value     = fee ? (fee.surchargeStart||'18:00')  : '18:00';
-    $f('fac-fee-sur-e').value     = fee ? (fee.surchargeEnd||'22:00')    : '22:00';
-    $f('fac-fee-sur-r').value     = fee ? (fee.surchargeRate||'')        : '';
-    $f('fac-fee-minh').value      = fee ? (fee.minHours||'')             : '';
-    $f('fac-fee-dep').value       = fee ? (fee.deposit||'')              : '';
-    $f('fac-fee-clean').value     = fee ? (fee.cleaningFee||'')          : '';
-    $f('fac-fee-notes').value     = fee ? (fee.notes||'')                : '';
+    if (window.FacilityFeeModule && fee) fee = FacilityFeeModule.normalize(Object.assign({}, fee));
 
-    renderFeeExtras(fee ? (fee.extraItems||[]) : []);
+    $f('fac-fee-modal-title').textContent = fee ? '요금 설정 수정' : '요금 설정 추가';
+    $f('fac-fee-building').value = fee ? (fee.buildingName||'') : '';
+    $f('fac-fee-room').value     = fee ? (fee.roomName||'')     : '';
+    $f('fac-fee-norm-s').value   = fee ? (fee.normalStart||'09:00') : '09:00';
+    $f('fac-fee-norm-e').value   = fee ? (fee.normalEnd||'18:00')   : '18:00';
+    $f('fac-fee-norm-r').value   = fee ? (fee.normalRate||'')       : '';
+    $f('fac-fee-minh').value     = fee ? (fee.minHours||'')     : '';
+    $f('fac-fee-dep').value      = fee ? (fee.deposit||'')      : '';
+    $f('fac-fee-clean').value    = fee ? (fee.cleaningFee||'')  : '';
+    $f('fac-fee-notes').value    = fee ? (fee.notes||'')        : '';
+
+    _renderSurSlots(fee ? (fee.surchargeSlots||[]) : []);
+    _renderTimeExtras(fee ? (fee.timeExtras||[]) : []);
+    _renderFlatExtras(fee ? (fee.flatExtras||[]) : []);
 
     modal._fee = fee || null;
     modal.hidden = false;
@@ -1230,34 +1236,109 @@ var FacilityModule = (function () {
     var saveBtn = $f('fac-fee-save-btn');
     if (saveBtn) saveBtn.onclick = function() { saveFeeModal(); };
 
-    var extraAddBtn = $f('fac-fee-extra-add-btn');
-    if (extraAddBtn && !extraAddBtn._wired) {
-      extraAddBtn._wired = true;
-      extraAddBtn.addEventListener('click', function() {
-        var cont = $f('fac-fee-extras');
-        var row = document.createElement('div');
-        row.style.cssText = 'display:flex;gap:6px;margin-bottom:6px';
-        row.innerHTML = '<input type="text" class="form-input fee-extra-name" placeholder="항목명" style="flex:2">' +
-          '<input type="number" class="form-input fee-extra-amt" placeholder="금액(원)" min="0" style="flex:1">' +
-          '<button type="button" class="btn btn-ghost btn-sm" onclick="this.parentNode.remove()">×</button>';
-        cont.appendChild(row);
-      });
-    }
+    // 할증 구간 추가
+    var surAddBtn = $f('fac-fee-sur-add-btn');
+    if (surAddBtn) { surAddBtn.onclick = function() { _addSurSlotRow(); }; }
+
+    // 시간비례 항목 추가
+    var timeAddBtn = $f('fac-fee-time-add-btn');
+    if (timeAddBtn) { timeAddBtn.onclick = function() { _addTimeExtraRow(); }; }
+
+    // 일괄 항목 추가
+    var flatAddBtn = $f('fac-fee-flat-add-btn');
+    if (flatAddBtn) { flatAddBtn.onclick = function() { _addFlatExtraRow(); }; }
   }
 
-  function renderFeeExtras(items) {
-    var cont = $f('fac-fee-extras');
+  /* ── 할증 슬롯 렌더링 ── */
+  function _renderSurSlots(slots) {
+    var cont  = $f('fac-fee-sur-slots');
+    var empty = $f('fac-fee-sur-empty');
     if (!cont) return;
     cont.innerHTML = '';
-    items.forEach(function(item) {
-      var row = document.createElement('div');
-      row.style.cssText = 'display:flex;gap:6px;margin-bottom:6px';
-      row.innerHTML = '<input type="text" class="form-input fee-extra-name" placeholder="항목명" style="flex:2" value="' + _esc(item.name||'') + '">' +
-        '<input type="number" class="form-input fee-extra-amt" placeholder="금액(원)" min="0" style="flex:1" value="' + (item.amount||'') + '">' +
-        '<button type="button" class="btn btn-ghost btn-sm" onclick="this.parentNode.remove()">×</button>';
-      cont.appendChild(row);
-    });
+    slots.forEach(function(s) { _addSurSlotRow(s); });
+    _updateSurEmpty();
   }
+  function _addSurSlotRow(s) {
+    var cont  = $f('fac-fee-sur-slots');
+    var empty = $f('fac-fee-sur-empty');
+    if (!cont) return;
+    var row = document.createElement('div');
+    row.className = 'fee-sur-row';
+    row.style.cssText = 'display:grid;grid-template-columns:1.2fr 1fr 1fr 1.6fr auto;gap:6px;align-items:end;margin-bottom:8px';
+    row.innerHTML =
+      '<div class="form-group" style="margin:0"><label class="form-label" style="font-size:11px">구분명</label>' +
+        '<input type="text" class="form-input fee-sur-label" placeholder="예:야간" value="' + _esc((s&&s.label)||'') + '"></div>' +
+      '<div class="form-group" style="margin:0"><label class="form-label" style="font-size:11px">시작</label>' +
+        '<input type="time" class="form-input fee-sur-s" value="' + ((s&&s.start)||'18:00') + '"></div>' +
+      '<div class="form-group" style="margin:0"><label class="form-label" style="font-size:11px">종료</label>' +
+        '<input type="time" class="form-input fee-sur-e" value="' + ((s&&s.end)||'22:00') + '"></div>' +
+      '<div class="form-group" style="margin:0"><label class="form-label" style="font-size:11px">요금(원/시간)</label>' +
+        '<input type="number" class="form-input fee-sur-r" placeholder="75000" min="0" value="' + ((s&&s.rate)||'') + '"></div>' +
+      '<button type="button" class="btn btn-ghost btn-sm" style="margin-bottom:0;align-self:end" onclick="this.parentNode.remove();_updateSurEmpty&&_updateSurEmpty()">×</button>';
+    cont.appendChild(row);
+    _updateSurEmpty();
+  }
+  function _updateSurEmpty() {
+    var cont  = $f('fac-fee-sur-slots');
+    var empty = $f('fac-fee-sur-empty');
+    if (empty) empty.style.display = (cont && cont.children.length > 0) ? 'none' : '';
+  }
+  // 전역 접근 허용 (onclick에서 사용)
+  window._updateSurEmpty = _updateSurEmpty;
+
+  /* ── 시간비례 추가항목 렌더링 ── */
+  function _renderTimeExtras(items) {
+    var cont = $f('fac-fee-time-extras');
+    if (!cont) return;
+    cont.innerHTML = '';
+    items.forEach(function(e) { _addTimeExtraRow(e); });
+    _updateTimeEmpty();
+  }
+  function _addTimeExtraRow(e) {
+    var cont = $f('fac-fee-time-extras');
+    if (!cont) return;
+    var row = document.createElement('div');
+    row.style.cssText = 'display:grid;grid-template-columns:2fr 1.5fr 0.5fr;gap:6px;margin-bottom:6px;align-items:center';
+    row.innerHTML =
+      '<input type="text" class="form-input fee-time-name" placeholder="항목명 (예: 음향장비)" value="' + _esc((e&&e.name)||'') + '">' +
+      '<input type="number" class="form-input fee-time-rate" placeholder="원/시간" min="0" value="' + ((e&&e.unitRate)||'') + '">' +
+      '<button type="button" class="btn btn-ghost btn-sm" onclick="this.parentNode.remove();_updateTimeEmpty&&_updateTimeEmpty()">×</button>';
+    cont.appendChild(row);
+    _updateTimeEmpty();
+  }
+  function _updateTimeEmpty() {
+    var cont  = $f('fac-fee-time-extras');
+    var empty = $f('fac-fee-time-empty');
+    if (empty) empty.style.display = (cont && cont.children.length > 0) ? 'none' : '';
+  }
+  window._updateTimeEmpty = _updateTimeEmpty;
+
+  /* ── 일괄 추가항목 렌더링 ── */
+  function _renderFlatExtras(items) {
+    var cont = $f('fac-fee-flat-extras');
+    if (!cont) return;
+    cont.innerHTML = '';
+    items.forEach(function(e) { _addFlatExtraRow(e); });
+    _updateFlatEmpty();
+  }
+  function _addFlatExtraRow(e) {
+    var cont = $f('fac-fee-flat-extras');
+    if (!cont) return;
+    var row = document.createElement('div');
+    row.style.cssText = 'display:grid;grid-template-columns:2fr 1.5fr 0.5fr;gap:6px;margin-bottom:6px;align-items:center';
+    row.innerHTML =
+      '<input type="text" class="form-input fee-flat-name" placeholder="항목명 (예: 주차비)" value="' + _esc((e&&e.name)||'') + '">' +
+      '<input type="number" class="form-input fee-flat-amt" placeholder="원/회" min="0" value="' + ((e&&e.amount)||'') + '">' +
+      '<button type="button" class="btn btn-ghost btn-sm" onclick="this.parentNode.remove();_updateFlatEmpty&&_updateFlatEmpty()">×</button>';
+    cont.appendChild(row);
+    _updateFlatEmpty();
+  }
+  function _updateFlatEmpty() {
+    var cont  = $f('fac-fee-flat-extras');
+    var empty = $f('fac-fee-flat-empty');
+    if (empty) empty.style.display = (cont && cont.children.length > 0) ? 'none' : '';
+  }
+  window._updateFlatEmpty = _updateFlatEmpty;
 
   function saveFeeModal() {
     if (!window.FacilityFeeModule) return;
@@ -1266,25 +1347,47 @@ var FacilityModule = (function () {
     var roomName     = ($f('fac-fee-room').value||'').trim();
     if (!buildingName || !roomName) { toast('건물명과 호실명을 입력하세요.', 'error'); return; }
 
-    var extras = [];
-    $f('fac-fee-extras').querySelectorAll('div').forEach(function(row) {
-      var n = row.querySelector('.fee-extra-name');
-      var a = row.querySelector('.fee-extra-amt');
-      if (n && a && n.value.trim()) extras.push({ name: n.value.trim(), amount: parseFloat(a.value)||0 });
+    // 할증 슬롯 수집
+    var surchargeSlots = [];
+    $f('fac-fee-sur-slots').querySelectorAll('.fee-sur-row').forEach(function(row) {
+      var label = row.querySelector('.fee-sur-label');
+      var s     = row.querySelector('.fee-sur-s');
+      var e     = row.querySelector('.fee-sur-e');
+      var r     = row.querySelector('.fee-sur-r');
+      if (s && e && r) surchargeSlots.push({
+        label: (label&&label.value.trim()) || '할증',
+        start: s.value, end: e.value,
+        rate:  parseFloat(r.value)||0
+      });
+    });
+
+    // 시간비례 항목
+    var timeExtras = [];
+    $f('fac-fee-time-extras').querySelectorAll('div').forEach(function(row) {
+      var n = row.querySelector('.fee-time-name');
+      var r = row.querySelector('.fee-time-rate');
+      if (n && r && n.value.trim()) timeExtras.push({ name: n.value.trim(), unitRate: parseFloat(r.value)||0 });
+    });
+
+    // 일괄 항목
+    var flatExtras = [];
+    $f('fac-fee-flat-extras').querySelectorAll('div').forEach(function(row) {
+      var n = row.querySelector('.fee-flat-name');
+      var a = row.querySelector('.fee-flat-amt');
+      if (n && a && n.value.trim()) flatExtras.push({ name: n.value.trim(), amount: parseFloat(a.value)||0 });
     });
 
     var data = {
       buildingName: buildingName, roomName: roomName,
-      normalStart:    $f('fac-fee-norm-s').value,
-      normalEnd:      $f('fac-fee-norm-e').value,
-      normalRate:     parseFloat($f('fac-fee-norm-r').value)||0,
-      surchargeStart: $f('fac-fee-sur-s').value,
-      surchargeEnd:   $f('fac-fee-sur-e').value,
-      surchargeRate:  parseFloat($f('fac-fee-sur-r').value)||0,
-      minHours:       parseFloat($f('fac-fee-minh').value)||0,
-      deposit:        parseFloat($f('fac-fee-dep').value)||0,
-      cleaningFee:    parseFloat($f('fac-fee-clean').value)||0,
-      extraItems: extras,
+      normalStart: $f('fac-fee-norm-s').value,
+      normalEnd:   $f('fac-fee-norm-e').value,
+      normalRate:  parseFloat($f('fac-fee-norm-r').value)||0,
+      surchargeSlots: surchargeSlots,
+      minHours:    parseFloat($f('fac-fee-minh').value)||0,
+      deposit:     parseFloat($f('fac-fee-dep').value)||0,
+      cleaningFee: parseFloat($f('fac-fee-clean').value)||0,
+      timeExtras:  timeExtras,
+      flatExtras:  flatExtras,
       notes: ($f('fac-fee-notes').value||'').trim()
     };
 

@@ -2381,49 +2381,91 @@
   <!-- 요금 설정 모달 -->
   <div id="fac-fee-modal" class="modal" hidden aria-modal="true" role="dialog">
     <div class="modal-backdrop" onclick="document.getElementById('fac-fee-modal').hidden=true"></div>
-    <div class="modal-dialog" style="max-width:560px">
+    <div class="modal-dialog" style="max-width:600px;max-height:90vh;display:flex;flex-direction:column">
       <div class="modal-header">
         <h3 id="fac-fee-modal-title" class="modal-title">요금 설정 추가</h3>
         <button class="modal-close" onclick="document.getElementById('fac-fee-modal').hidden=true">✕</button>
       </div>
-      <div class="modal-body">
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+      <div class="modal-body" style="overflow-y:auto;flex:1">
+        <!-- 건물/호실 -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
           <div class="form-group"><label class="form-label">건물명 *</label><input id="fac-fee-building" type="text" class="form-input" placeholder="예: 본관"></div>
           <div class="form-group"><label class="form-label">호실명 *</label><input id="fac-fee-room" type="text" class="form-input" placeholder="예: 대강당"></div>
         </div>
-        <div style="background:#EFF6FF;border-radius:8px;padding:12px;margin-bottom:12px">
+
+        <!-- 평상 시간대 -->
+        <div style="background:#EFF6FF;border-radius:8px;padding:12px;margin-bottom:10px">
           <div style="font-size:12px;font-weight:700;color:#1a3a5c;margin-bottom:8px">⏰ 평상 시간대</div>
           <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
             <div class="form-group"><label class="form-label">시작</label><input id="fac-fee-norm-s" type="time" class="form-input" value="09:00"></div>
             <div class="form-group"><label class="form-label">종료</label><input id="fac-fee-norm-e" type="time" class="form-input" value="18:00"></div>
-            <div class="form-group"><label class="form-label">요금(원/시간)</label><input id="fac-fee-norm-r" type="number" class="form-input" placeholder="50000" min="0"></div>
+            <div class="form-group"><label class="form-label">요금 (원/시간)</label><input id="fac-fee-norm-r" type="number" class="form-input" placeholder="50000" min="0"></div>
           </div>
         </div>
-        <div style="background:#FEF9EC;border-radius:8px;padding:12px;margin-bottom:12px">
-          <div style="font-size:12px;font-weight:700;color:#D97706;margin-bottom:8px">⏰ 할증 시간대</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
-            <div class="form-group"><label class="form-label">시작</label><input id="fac-fee-sur-s" type="time" class="form-input" value="18:00"></div>
-            <div class="form-group"><label class="form-label">종료</label><input id="fac-fee-sur-e" type="time" class="form-input" value="22:00"></div>
-            <div class="form-group"><label class="form-label">요금(원/시간)</label><input id="fac-fee-sur-r" type="number" class="form-input" placeholder="75000" min="0"></div>
+
+        <!-- 할증 시간대 (복수) -->
+        <div style="background:#FEF9EC;border-radius:8px;padding:12px;margin-bottom:10px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <div style="font-size:12px;font-weight:700;color:#D97706">⚡ 할증 시간대 <span style="font-weight:400;color:#888;font-size:11px">(여러 구간 추가 가능)</span></div>
+            <button type="button" id="fac-fee-sur-add-btn" class="btn btn-sm" style="background:#D97706;color:#fff;padding:4px 10px;font-size:11px">+ 할증 구간 추가</button>
           </div>
+          <div id="fac-fee-sur-slots">
+            <!-- JS로 렌더링 -->
+          </div>
+          <div id="fac-fee-sur-empty" style="font-size:12px;color:#9CA3AF;text-align:center;padding:8px 0">할증 시간대 없음 (+ 버튼으로 추가)</div>
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:12px">
+
+        <!-- 최소이용/보증금/청소비 -->
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px">
           <div class="form-group"><label class="form-label">최소 이용시간(시)</label><input id="fac-fee-minh" type="number" class="form-input" placeholder="2" min="0" step="0.5"></div>
           <div class="form-group"><label class="form-label">보증금(원)</label><input id="fac-fee-dep" type="number" class="form-input" placeholder="0" min="0"></div>
           <div class="form-group"><label class="form-label">청소비(원)</label><input id="fac-fee-clean" type="number" class="form-input" placeholder="0" min="0"></div>
         </div>
-        <div class="form-group" style="margin-bottom:12px">
-          <label class="form-label">추가 항목 <span style="font-weight:400;color:#888;font-size:11px">(음향장비, 냉난방비 등)</span></label>
-          <div id="fac-fee-extras"></div>
-          <button type="button" id="fac-fee-extra-add-btn" class="btn btn-ghost btn-sm" style="margin-top:6px">+ 항목 추가</button>
+
+        <!-- 시간비례 추가항목 -->
+        <div style="border:1.5px solid #E5E7EB;border-radius:8px;padding:12px;margin-bottom:10px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <div>
+              <span style="font-size:12px;font-weight:700;color:#1a3a5c">📐 시간비례 추가항목</span>
+              <span style="font-size:11px;color:#6B7280;margin-left:6px">이용 시간 × 단가 자동 계산</span>
+            </div>
+            <button type="button" id="fac-fee-time-add-btn" class="btn btn-ghost btn-sm" style="font-size:11px">+ 항목 추가</button>
+          </div>
+          <div style="display:grid;grid-template-columns:2fr 1.5fr 0.5fr;gap:6px;margin-bottom:4px">
+            <div style="font-size:11px;font-weight:600;color:#6B7280">항목명</div>
+            <div style="font-size:11px;font-weight:600;color:#6B7280">단가 (원/시간)</div>
+            <div></div>
+          </div>
+          <div id="fac-fee-time-extras"></div>
+          <div id="fac-fee-time-empty" style="font-size:12px;color:#9CA3AF;text-align:center;padding:6px 0">시간비례 항목 없음</div>
         </div>
+
+        <!-- 일괄 추가항목 -->
+        <div style="border:1.5px solid #E5E7EB;border-radius:8px;padding:12px;margin-bottom:14px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <div>
+              <span style="font-size:12px;font-weight:700;color:#1a3a5c">📦 일괄 추가항목</span>
+              <span style="font-size:11px;color:#6B7280;margin-left:6px">시간과 무관한 회당 고정 금액</span>
+            </div>
+            <button type="button" id="fac-fee-flat-add-btn" class="btn btn-ghost btn-sm" style="font-size:11px">+ 항목 추가</button>
+          </div>
+          <div style="display:grid;grid-template-columns:2fr 1.5fr 0.5fr;gap:6px;margin-bottom:4px">
+            <div style="font-size:11px;font-weight:600;color:#6B7280">항목명</div>
+            <div style="font-size:11px;font-weight:600;color:#6B7280">금액 (원/회)</div>
+            <div></div>
+          </div>
+          <div id="fac-fee-flat-extras"></div>
+          <div id="fac-fee-flat-empty" style="font-size:12px;color:#9CA3AF;text-align:center;padding:6px 0">일괄 항목 없음</div>
+        </div>
+
+        <!-- 비고 -->
         <div class="form-group">
           <label class="form-label">비고/산식 설명</label>
           <textarea id="fac-fee-notes" class="form-input" rows="2" placeholder="예: 1시간 단위, 최소 2시간, VAT 별도"></textarea>
         </div>
       </div>
       <div class="modal-footer">
-        <button id="fac-fee-cancel-btn" class="btn btn-ghost" onclick="document.getElementById('fac-fee-modal').hidden=true">취소</button>
+        <button class="btn btn-ghost" onclick="document.getElementById('fac-fee-modal').hidden=true">취소</button>
         <button id="fac-fee-save-btn" class="btn btn-primary">저장</button>
       </div>
     </div>
@@ -2958,7 +3000,7 @@
   <script src="monthly-report.js?v=20260611m2"></script>
   <script src="promo.js?v=20260611p2"></script>
   <script src="meet.js?v=20260610mt1"></script>
-  <script src="facility-fee.js?v=20260611ff1"></script>
+  <script src="facility-fee.js?v=20260611ff2"></script>
   <script src="hr.js?v=20260611hr4"></script>
   <script src="retire.js?v=20260611rt2"></script>
   <script src="help.js?v=20260609a1"></script>
