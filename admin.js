@@ -481,6 +481,16 @@
         '<b>manager</b> — 부서장 권한 (기능 제어에서 세부 설정)<br>' +
         '<b>staff</b> — 일반 사용자 (기본값)' +
       '</p>' +
+      '<div style="background:#eff4fb;border:1px solid #cfe0f3;border-radius:8px;padding:10px 12px;margin-bottom:12px">' +
+        '<div style="font-size:13px;font-weight:700;color:#1a3a5c;margin-bottom:4px">🔑 구글 테스트 사용자 등록용 이메일</div>' +
+        '<div class="form-hint" style="margin:0 0 8px">직원 이메일을 한 번에 복사 → <b>Google Cloud Console → 대상 → 테스트 사용자</b>에 붙여넣으면 등록 끝.</div>' +
+        '<button id="perm-copy-emails-btn" class="btn btn-secondary btn-sm">📋 직원 이메일 전체 복사 (' +
+          (function () {
+            var m = employees.map(function (e) { return (e.email || '').trim(); }).filter(function (e) { return e.indexOf('@') > 0; });
+            return m.filter(function (e, i) { return m.indexOf(e) === i; }).length;
+          })() + '명)</button>' +
+        '<span id="perm-copy-result" style="margin-left:8px;font-size:12px;color:#15803d;font-weight:600"></span>' +
+      '</div>' +
       '<div class="perm-add-row">' +
         '<input id="perm-email" type="email" class="form-input" placeholder="이메일 직접 입력" style="flex:2">' +
         '<select id="perm-role" class="form-select" style="width:140px">' +
@@ -528,6 +538,33 @@
   }
 
   function _bindPermEvents() {
+    var copyBtn = document.getElementById('perm-copy-emails-btn');
+    if (copyBtn) copyBtn.addEventListener('click', function () {
+      var employees = [];
+      try { employees = JSON.parse(localStorage.getItem('asea_employees') || '[]'); } catch (e) {}
+      var emails = employees
+        .map(function (e) { return (e.email || '').trim(); })
+        .filter(function (e) { return e.indexOf('@') > 0; });
+      emails = emails.filter(function (e, i) { return emails.indexOf(e) === i; }); // 중복 제거
+      if (!emails.length) { alert('등록된 직원 이메일이 없습니다. 인사관리에서 직원을 먼저 등록하세요.'); return; }
+      var text = emails.join('\n');
+      function _done() {
+        var r = document.getElementById('perm-copy-result');
+        if (r) r.textContent = '✓ ' + emails.length + '개 복사됨';
+        if (window.toast) toast(emails.length + '개 이메일 복사 완료 — 콘솔에 붙여넣으세요.', 'success');
+      }
+      function _fallback() {
+        var ta = document.createElement('textarea');
+        ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+        document.body.appendChild(ta); ta.select();
+        try { document.execCommand('copy'); } catch (e) {}
+        document.body.removeChild(ta);
+      }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(_done, function () { _fallback(); _done(); });
+      } else { _fallback(); _done(); }
+    });
+
     var saveBtn = document.getElementById('perm-save-btn');
     if (saveBtn) saveBtn.addEventListener('click', function () {
       var email = (document.getElementById('perm-email').value || '').trim().toLowerCase();
