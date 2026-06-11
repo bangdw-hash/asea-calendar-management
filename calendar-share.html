@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>업무캘린더 공유 신청 — 아세아항공직업전문학교</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --primary: #1D4ED8;
+    --primary-dark: #1e40af;
+    --primary-light: #dbeafe;
+    --success: #16a34a;
+    --success-light: #dcfce7;
+    --warning: #ea580c;
+    --warning-light: #ffedd5;
+    --danger: #dc2626;
+    --danger-light: #fee2e2;
+    --gray-50: #f9fafb;
+    --gray-100: #f3f4f6;
+    --gray-200: #e5e7eb;
+    --gray-300: #d1d5db;
+    --gray-400: #9ca3af;
+    --gray-500: #6b7280;
+    --gray-700: #374151;
+    --gray-900: #111827;
+    --radius: 8px;
+    --shadow: 0 1px 3px rgba(0,0,0,.12), 0 1px 2px rgba(0,0,0,.08);
+    --shadow-md: 0 4px 6px rgba(0,0,0,.07), 0 2px 4px rgba(0,0,0,.06);
+    --shadow-lg: 0 10px 15px rgba(0,0,0,.1), 0 4px 6px rgba(0,0,0,.05);
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR', sans-serif;
+    background: var(--gray-50);
+    color: var(--gray-900);
+    min-height: 100vh;
+    padding-bottom: 80px;
+  }
+
+  /* Header */
+  .site-header {
+    background: var(--primary);
+    color: #fff;
+    padding: 20px 24px;
+    text-align: center;
+    box-shadow: var(--shadow-md);
+  }
+  .site-header h1 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    letter-spacing: -.3px;
+  }
+  .site-header p {
+    font-size: .85rem;
+    opacity: .85;
+    margin-top: 4px;
+  }
+
+  /* Layout */
+  .container {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 24px 16px;
+  }
+
+  /* Card */
+  .card {
+    background: #fff;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 24px;
+    margin-bottom: 24px;
+  }
+  .card-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--primary);
+    margin-bottom: 16px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid var(--primary-light);
+  }
+
+  /* Category Toggle */
+  .toggle-group {
+    display: flex;
+    border: 2px solid var(--primary);
+    border-radius: var(--radius);
+    overflow: hidden;
+    margin-bottom: 20px;
+  }
+  .toggle-btn {
+    flex: 1;
+    padding: 10px 8px;
+    background: #fff;
+    border: none;
+    cursor: pointer;
+    font-size: .9rem;
+    font-weight: 600;
+    color: var(--primary);
+    transition: background .2s, color .2s;
+  }
+  .toggle-btn.active {
+    background: var(--primary);
+    color: #fff;
+  }
+  .toggle-btn:not(.active):hover {
+    background: var(--primary-light);
+  }
+
+  /* Form */
+  .form-group {
+    margin-bottom: 16px;
+  }
+  label {
+    display: block;
+    font-size: .875rem;
+    font-weight: 600;
+    color: var(--gray-700);
+    margin-bottom: 6px;
+  }
+  label .req {
+    color: var(--danger);
+    margin-left: 2px;
+  }
+  input[type="text"],
+  input[type="email"] {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1.5px solid var(--gray-300);
+    border-radius: var(--radius);
+    font-size: .9rem;
+    color: var(--gray-900);
+    transition: border-color .2s, box-shadow .2s;
+    background: #fff;
+  }
+  input:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(29,78,216,.15);
+  }
+  input.error-field {
+    border-color: var(--danger);
+  }
+  .email-wrap {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .email-wrap input {
+    flex: 1;
+    min-width: 0;
+  }
+  .email-suffix {
+    font-size: .9rem;
+    color: var(--gray-500);
+    white-space: nowrap;
+    font-weight: 500;
+  }
+
+  /* Privacy */
+  .privacy-box {
+    background: var(--gray-50);
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius);
+    padding: 14px;
+    font-size: .8rem;
+    color: var(--gray-500);
+    line-height: 1.6;
+    margin-bottom: 12px;
+  }
+  .privacy-box strong {
+    color: var(--gray-700);
+  }
+  .checkbox-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .checkbox-row input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--primary);
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .checkbox-row label {
+    margin: 0;
+    font-size: .875rem;
+    font-weight: 500;
+    color: var(--gray-700);
+    cursor: pointer;
+  }
+
+  /* Buttons */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 10px 18px;
+    border-radius: var(--radius);
+    font-size: .875rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: opacity .15s, transform .1s;
+    text-decoration: none;
+  }
+  .btn:active { transform: scale(.97); }
+  .btn:disabled { opacity: .5; cursor: not-allowed; }
+  .btn-primary { background: var(--primary); color: #fff; }
+  .btn-primary:hover:not(:disabled) { background: var(--primary-dark); }
+  .btn-success { background: var(--success); color: #fff; font-size: .8rem; padding: 6px 12px; }
+  .btn-warning { background: var(--warning); color: #fff; font-size: .8rem; padding: 6px 12px; }
+  .btn-danger  { background: var(--danger); color: #fff; font-size: .8rem; padding: 6px 12px; }
+  .btn-ghost   { background: var(--gray-100); color: var(--gray-700); font-size: .8rem; padding: 6px 12px; }
+  .btn-ghost:hover { background: var(--gray-200); }
+  .btn-full { width: 100%; }
+
+  /* Error msg */
+  .err-msg {
+    font-size: .8rem;
+    color: var(--danger);
+    margin-top: 4px;
+  }
+
+  /* Toast */
+  #toast {
+    position: fixed;
+    bottom: 90px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--gray-900);
+    color: #fff;
+    padding: 10px 20px;
+    border-radius: 999px;
+    font-size: .875rem;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .3s, transform .3s;
+    z-index: 9999;
+    white-space: nowrap;
+  }
+  #toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  /* List section */
+  .list-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+  .list-header h2 {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--gray-900);
+  }
+  .count-badge {
+    background: var(--primary-light);
+    color: var(--primary);
+    border-radius: 999px;
+    padding: 2px 10px;
+    font-size: .8rem;
+    font-weight: 700;
+  }
+
+  /* Entry card */
+  .entry-card {
+    background: #fff;
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius);
+    padding: 16px;
+    margin-bottom: 12px;
+    box-shadow: var(--shadow);
+    transition: box-shadow .2s;
+  }
+  .entry-card:hover { box-shadow: var(--shadow-md); }
+  .entry-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .entry-info { flex: 1; min-width: 0; }
+  .entry-name {
+    font-weight: 700;
+    font-size: .95rem;
+    color: var(--gray-900);
+  }
+  .entry-meta {
+    font-size: .8rem;
+    color: var(--gray-500);
+    margin-top: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .entry-sub {
+    font-size: .8rem;
+    color: var(--gray-400);
+    margin-top: 4px;
+  }
+  .status-badge {
+    flex-shrink: 0;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: .75rem;
+    font-weight: 700;
+  }
+  .status-pending  { background: var(--warning-light); color: var(--warning); }
+  .status-done     { background: var(--success-light); color: var(--success); }
+  .entry-actions {
+    margin-top: 12px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .cat-tag {
+    display: inline-block;
+    font-size: .72rem;
+    padding: 2px 8px;
+    border-radius: 4px;
+    background: var(--primary-light);
+    color: var(--primary);
+    font-weight: 600;
+    margin-top: 4px;
+  }
+
+  /* Inline edit */
+  .edit-form {
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid var(--gray-200);
+    display: none;
+  }
+  .edit-form.open { display: block; }
+  .edit-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+  @media (max-width: 480px) {
+    .edit-row { grid-template-columns: 1fr; }
+    .email-wrap { flex-wrap: wrap; }
+    .email-suffix { font-size: .8rem; }
+  }
+  .edit-form .form-group { margin-bottom: 10px; }
+  .edit-form label { font-size: .8rem; }
+  .edit-form input { font-size: .85rem; padding: 8px 10px; }
+  .edit-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 10px; }
+
+  /* Empty state */
+  .empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--gray-400);
+    font-size: .9rem;
+  }
+
+  /* Admin fab */
+  #admin-fab {
+    position: fixed;
+    bottom: 24px;
+    right: 20px;
+    background: var(--gray-700);
+    color: #fff;
+    border: none;
+    border-radius: 999px;
+    padding: 10px 16px;
+    font-size: .8rem;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: var(--shadow-lg);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    z-index: 1000;
+    transition: background .2s;
+  }
+  #admin-fab:hover { background: var(--gray-900); }
+  #admin-fab.logged-in { background: var(--primary); }
+
+  /* Modal overlay */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+    padding: 16px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .2s;
+  }
+  .modal-overlay.open {
+    opacity: 1;
+    pointer-events: all;
+  }
+  .modal {
+    background: #fff;
+    border-radius: 12px;
+    padding: 28px 24px;
+    width: 100%;
+    max-width: 360px;
+    box-shadow: var(--shadow-lg);
+    transform: translateY(12px);
+    transition: transform .2s;
+  }
+  .modal-overlay.open .modal { transform: translateY(0); }
+  .modal h3 {
+    font-size: 1.05rem;
+    font-weight: 700;
+    margin-bottom: 16px;
+    color: var(--gray-900);
+  }
+  .modal-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 20px;
+    justify-content: flex-end;
+  }
+  .modal-err { font-size: .8rem; color: var(--danger); margin-top: 6px; min-height: 18px; }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <h1>업무캘린더 공유 신청</h1>
+  <p>아세아항공직업전문학교 Google 업무캘린더</p>
+</header>
+
+<div class="container">
+
+  <!-- Submit form -->
+  <div class="card">
+    <div class="card-title">신청서 작성</div>
+
+    <!-- Category toggle -->
+    <div class="toggle-group" role="group" aria-label="부서 구분">
+      <button class="toggle-btn active" data-cat="행정지원부서" onclick="setCategory(this)">행정지원부서</button>
+      <button class="toggle-btn" data-cat="교육부서" onclick="setCategory(this)">교육부서</button>
+    </div>
+
+    <form id="request-form" novalidate>
+      <div class="form-group">
+        <label for="f-name">이름 <span class="req">*</span></label>
+        <input type="text" id="f-name" placeholder="홍길동" autocomplete="name">
+        <div class="err-msg" id="err-name"></div>
+      </div>
+
+      <div class="form-group">
+        <label for="f-dept">소속 / 직위 <span class="req">*</span></label>
+        <input type="text" id="f-dept" placeholder="예) 교학처 / 교수">
+        <div class="err-msg" id="err-dept"></div>
+      </div>
+
+      <div class="form-group">
+        <label for="f-email">Google 이메일 <span class="req">*</span></label>
+        <div class="email-wrap">
+          <input type="text" id="f-email" placeholder="example" autocomplete="email" spellcheck="false">
+          <span class="email-suffix">@gmail.com</span>
+        </div>
+        <div class="err-msg" id="err-email"></div>
+      </div>
+
+      <!-- Privacy -->
+      <div class="privacy-box">
+        <strong>[개인정보 수집·이용 동의 안내]</strong><br>
+        수집 항목: 이름, 소속/직위, 이메일 주소<br>
+        수집 목적: 업무캘린더 공유 처리 및 관리<br>
+        보유 기간: 수집일로부터 <strong>1년</strong> (개인정보 보호법 준수)<br>
+        문의: <strong>bangdw@gmail.com</strong>
+      </div>
+      <div class="checkbox-row">
+        <input type="checkbox" id="f-privacy">
+        <label for="f-privacy">위 개인정보 수집·이용에 동의합니다. <span class="req">*</span></label>
+      </div>
+      <div class="err-msg" id="err-privacy" style="margin-top:-10px;margin-bottom:12px;"></div>
+
+      <button type="submit" class="btn btn-primary btn-full">신청하기</button>
+    </form>
+  </div>
+
+  <!-- List -->
+  <div id="list-section">
+    <div class="list-header">
+      <h2>신청 현황</h2>
+      <span class="count-badge" id="count-badge">0</span>
+    </div>
+    <div id="entries-container">
+      <div class="empty-state">아직 신청 내역이 없습니다.</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Admin FAB -->
+<button id="admin-fab" onclick="handleAdminFab()">🔒 관리자</button>
+
+<!-- Admin login modal -->
+<div class="modal-overlay" id="login-modal">
+  <div class="modal">
+    <h3>🔒 관리자 로그인</h3>
+    <div class="form-group">
+      <label for="admin-pw">비밀번호</label>
+      <input type="password" id="admin-pw" placeholder="비밀번호 입력" onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <div class="modal-err" id="login-err"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('login-modal')">취소</button>
+      <button class="btn btn-primary" onclick="doLogin()">로그인</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<script>
+(function() {
+  'use strict';
+
+  const STORAGE_KEY = 'asea_calendar_share_requests';
+  const SESSION_KEY = 'asea_share_adm';
+  const ADMIN_PW   = 'asea2024admin';
+
+  let selectedCategory = '행정지원부서';
+
+  /* ── Helpers ── */
+  function load() {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); }
+    catch { return []; }
+  }
+  function save(data) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  }
+  function isAdmin() {
+    return sessionStorage.getItem(SESSION_KEY) === '1';
+  }
+  function uuid() {
+    return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  }
+  function fmtDate(iso) {
+    if (!iso) return '';
+    const d = new Date(iso);
+    return d.toLocaleDateString('ko-KR', { year:'numeric', month:'2-digit', day:'2-digit' })
+      + ' ' + d.toLocaleTimeString('ko-KR', { hour:'2-digit', minute:'2-digit' });
+  }
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(t._timer);
+    t._timer = setTimeout(() => t.classList.remove('show'), 2500);
+  }
+
+  /* ── Category toggle ── */
+  window.setCategory = function(btn) {
+    document.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    selectedCategory = btn.dataset.cat;
+  };
+
+  /* ── Form submit ── */
+  document.getElementById('request-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const name      = document.getElementById('f-name').value.trim();
+    const dept      = document.getElementById('f-dept').value.trim();
+    const emailPfx  = document.getElementById('f-email').value.trim().replace(/@.*/, '');
+    const privacy   = document.getElementById('f-privacy').checked;
+
+    let valid = true;
+    function setErr(id, msg) {
+      document.getElementById(id).textContent = msg;
+      if (msg) { valid = false; }
+    }
+    function clearErrs() {
+      ['err-name','err-dept','err-email','err-privacy'].forEach(id => {
+        document.getElementById(id).textContent = '';
+      });
+      ['f-name','f-dept','f-email'].forEach(id => {
+        document.getElementById(id).classList.remove('error-field');
+      });
+    }
+
+    clearErrs();
+    if (!name)     { setErr('err-name','이름을 입력해 주세요.'); document.getElementById('f-name').classList.add('error-field'); }
+    if (!dept)     { setErr('err-dept','소속/직위를 입력해 주세요.'); document.getElementById('f-dept').classList.add('error-field'); }
+    if (!emailPfx || !/^[a-zA-Z0-9._+-]+$/.test(emailPfx)) {
+      setErr('err-email','유효한 Gmail 계정명을 입력해 주세요.');
+      document.getElementById('f-email').classList.add('error-field');
+    }
+    if (!privacy)  { setErr('err-privacy','개인정보 수집·이용에 동의해 주세요.'); }
+
+    if (!valid) return;
+
+    const data = load();
+    const entry = {
+      id: uuid(),
+      submittedAt: new Date().toISOString(),
+      category: selectedCategory,
+      name,
+      dept,
+      emailPrefix: emailPfx,
+      status: '미등록',
+      registeredAt: null
+    };
+    data.unshift(entry);
+    save(data);
+
+    document.getElementById('request-form').reset();
+    document.getElementById('f-privacy').checked = false;
+    document.querySelectorAll('.toggle-btn').forEach((b,i) => b.classList.toggle('active', i===0));
+    selectedCategory = '행정지원부서';
+
+    showToast('신청이 완료되었습니다.');
+    renderList();
+  });
+
+  /* ── Render list ── */
+  function renderList() {
+    const data  = load();
+    const admin = isAdmin();
+    const container = document.getElementById('entries-container');
+    document.getElementById('count-badge').textContent = data.length;
+
+    if (!data.length) {
+      container.innerHTML = '<div class="empty-state">아직 신청 내역이 없습니다.</div>';
+      return;
+    }
+
+    container.innerHTML = data.map(entry => {
+      const statusClass = entry.status === '등록완료' ? 'status-done' : 'status-pending';
+      const regInfo = entry.status === '등록완료' && entry.registeredAt
+        ? `<div class="entry-sub">등록: ${fmtDate(entry.registeredAt)}</div>` : '';
+
+      let adminBtns = '';
+      if (admin) {
+        if (entry.status === '미등록') {
+          adminBtns += `<button class="btn btn-success" onclick="markDone('${entry.id}')">등록완료</button>`;
+        } else {
+          adminBtns += `<button class="btn btn-warning" onclick="markPending('${entry.id}')">미등록</button>`;
+        }
+        adminBtns += `<button class="btn btn-danger" onclick="deleteEntry('${entry.id}')">삭제</button>`;
+      }
+
+      return `
+<div class="entry-card" id="card-${entry.id}">
+  <div class="entry-top">
+    <div class="entry-info">
+      <div class="entry-name">${esc(entry.name)}</div>
+      <div class="entry-meta">${esc(entry.dept)} &nbsp;·&nbsp; ${esc(entry.emailPrefix)}@gmail.com</div>
+      <span class="cat-tag">${esc(entry.category)}</span>
+      <div class="entry-sub">신청: ${fmtDate(entry.submittedAt)}</div>
+      ${regInfo}
+    </div>
+    <span class="status-badge ${statusClass}">${esc(entry.status)}</span>
+  </div>
+  <div class="entry-actions">
+    <button class="btn btn-ghost" onclick="toggleEdit('${entry.id}')">수정</button>
+    ${adminBtns}
+  </div>
+  <div class="edit-form" id="edit-${entry.id}">
+    <div class="edit-row">
+      <div class="form-group">
+        <label>이름</label>
+        <input type="text" id="edit-name-${entry.id}" value="${esc(entry.name)}">
+      </div>
+      <div class="form-group">
+        <label>소속/직위</label>
+        <input type="text" id="edit-dept-${entry.id}" value="${esc(entry.dept)}">
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Gmail 계정명</label>
+      <div class="email-wrap">
+        <input type="text" id="edit-email-${entry.id}" value="${esc(entry.emailPrefix)}">
+        <span class="email-suffix">@gmail.com</span>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>카테고리</label>
+      <div class="toggle-group" style="margin-bottom:0">
+        <button class="toggle-btn${entry.category==='행정지원부서'?' active':''}"
+          onclick="setEditCat(this,'${entry.id}','행정지원부서')">행정지원부서</button>
+        <button class="toggle-btn${entry.category==='교육부서'?' active':''}"
+          onclick="setEditCat(this,'${entry.id}','교육부서')">교육부서</button>
+      </div>
+    </div>
+    <div class="edit-actions">
+      <button class="btn btn-ghost" onclick="toggleEdit('${entry.id}')">취소</button>
+      <button class="btn btn-primary" onclick="saveEdit('${entry.id}')">저장</button>
+    </div>
+  </div>
+</div>`;
+    }).join('');
+  }
+
+  function esc(str) {
+    return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  /* ── Edit ── */
+  window.toggleEdit = function(id) {
+    const el = document.getElementById('edit-' + id);
+    el.classList.toggle('open');
+  };
+
+  window.setEditCat = function(btn, id, cat) {
+    const form = document.getElementById('edit-' + id);
+    form.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    btn._cat = cat; // we'll read from aria or dataset below
+    btn.dataset.selectedcat = cat;
+  };
+
+  window.saveEdit = function(id) {
+    const newName  = document.getElementById('edit-name-' + id).value.trim();
+    const newDept  = document.getElementById('edit-dept-' + id).value.trim();
+    const newEmail = document.getElementById('edit-email-' + id).value.trim().replace(/@.*/, '');
+    const form     = document.getElementById('edit-' + id);
+    const activeCat = form.querySelector('.toggle-btn.active');
+    const newCat   = activeCat ? activeCat.dataset.cat || activeCat.dataset.selectedcat || activeCat.textContent.trim() : null;
+
+    if (!newName || !newDept || !newEmail) {
+      showToast('모든 필드를 입력해 주세요.'); return;
+    }
+
+    const data = load();
+    const idx  = data.findIndex(e => e.id === id);
+    if (idx < 0) return;
+    data[idx].name        = newName;
+    data[idx].dept        = newDept;
+    data[idx].emailPrefix = newEmail;
+    if (newCat) data[idx].category = newCat;
+    save(data);
+    showToast('수정되었습니다.');
+    renderList();
+  };
+
+  /* ── Admin actions ── */
+  window.markDone = function(id) {
+    const data = load();
+    const idx  = data.findIndex(e => e.id === id);
+    if (idx < 0) return;
+    data[idx].status = '등록완료';
+    data[idx].registeredAt = new Date().toISOString();
+    save(data);
+    showToast('등록완료 처리되었습니다.');
+    renderList();
+  };
+
+  window.markPending = function(id) {
+    const data = load();
+    const idx  = data.findIndex(e => e.id === id);
+    if (idx < 0) return;
+    data[idx].status = '미등록';
+    data[idx].registeredAt = null;
+    save(data);
+    showToast('미등록으로 변경되었습니다.');
+    renderList();
+  };
+
+  window.deleteEntry = function(id) {
+    if (!confirm('이 항목을 삭제하시겠습니까?')) return;
+    const data = load().filter(e => e.id !== id);
+    save(data);
+    showToast('삭제되었습니다.');
+    renderList();
+  };
+
+  /* ── Admin FAB ── */
+  window.handleAdminFab = function() {
+    if (isAdmin()) {
+      sessionStorage.removeItem(SESSION_KEY);
+      document.getElementById('admin-fab').classList.remove('logged-in');
+      document.getElementById('admin-fab').textContent = '🔒 관리자';
+      showToast('관리자 로그아웃되었습니다.');
+      renderList();
+    } else {
+      openModal('login-modal');
+      setTimeout(() => document.getElementById('admin-pw').focus(), 100);
+    }
+  };
+
+  /* ── Modal ── */
+  window.openModal = function(id) {
+    document.getElementById(id).classList.add('open');
+  };
+  window.closeModal = function(id) {
+    document.getElementById(id).classList.remove('open');
+    if (id === 'login-modal') {
+      document.getElementById('admin-pw').value = '';
+      document.getElementById('login-err').textContent = '';
+    }
+  };
+
+  window.doLogin = function() {
+    const pw = document.getElementById('admin-pw').value;
+    if (pw === ADMIN_PW) {
+      sessionStorage.setItem(SESSION_KEY, '1');
+      closeModal('login-modal');
+      const fab = document.getElementById('admin-fab');
+      fab.classList.add('logged-in');
+      fab.innerHTML = '🔓 관리자 (로그아웃)';
+      showToast('관리자로 로그인되었습니다.');
+      renderList();
+    } else {
+      document.getElementById('login-err').textContent = '비밀번호가 올바르지 않습니다.';
+      document.getElementById('admin-pw').value = '';
+      document.getElementById('admin-pw').focus();
+    }
+  };
+
+  /* Close modal on overlay click */
+  document.getElementById('login-modal').addEventListener('click', function(e) {
+    if (e.target === this) closeModal('login-modal');
+  });
+
+  /* ── Init ── */
+  if (isAdmin()) {
+    const fab = document.getElementById('admin-fab');
+    fab.classList.add('logged-in');
+    fab.innerHTML = '🔓 관리자 (로그아웃)';
+  }
+  renderList();
+})();
+</script>
+</body>
+</html>

@@ -91,6 +91,15 @@
       <div id="fr-fee-info" style="display:none;margin-top:12px"></div>
     </fieldset>
 
+    <!-- 추가 장소 블록들 -->
+    <div id="fr-extra-venues"></div>
+
+    <!-- 장소 추가 + 상단 견적서 버튼 -->
+    <div style="display:flex;gap:10px;margin:12px 0;flex-wrap:wrap">
+      <button type="button" id="fr-add-venue-btn" style="flex:1;min-width:160px;padding:10px 16px;background:#e8f4fd;color:#1565C0;border:1px dashed #90CAF9;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer">➕ 장소 추가하기</button>
+      <button type="button" id="fr-top-quote-btn" style="flex:1;min-width:160px;padding:10px 16px;background:#fff8e1;color:#F57F17;border:1px solid #FFE082;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer">📄 견적서 미리보기 ▲</button>
+    </div>
+
     <!-- 달력 날짜 선택 -->
     <fieldset class="fr-fieldset" id="fr-section-2">
       <legend class="fr-legend">📅 이용 일시</legend>
@@ -129,6 +138,11 @@
       </div>
       <!-- 예상 요금 -->
       <div id="fr-fee-estimate" style="display:none;margin-top:12px"></div>
+
+      <!-- 하단 견적서 버튼 -->
+      <div style="margin-top:12px">
+        <button type="button" id="fr-bot-quote-btn" style="width:100%;padding:10px 16px;background:#fff8e1;color:#F57F17;border:1px solid #FFE082;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer">📄 견적서 미리보기 ▼</button>
+      </div>
     </fieldset>
 
     <fieldset class="fr-fieldset" id="fr-section-3">

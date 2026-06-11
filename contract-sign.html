@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>근로계약서 전자서명 — 아세아항공직업전문학교</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: 'Malgun Gothic', '맑은 고딕', sans-serif;
+      background: #f3f4f6;
+      color: #111;
+    }
+
+    /* ── 헤더 ── */
+    .cs-header {
+      background: #1e3a5f;
+      color: #fff;
+      padding: 14px 24px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .cs-header-logo {
+      font-size: 15px;
+      font-weight: bold;
+      letter-spacing: 0.3px;
+    }
+    .cs-header-sub {
+      font-size: 12px;
+      opacity: 0.75;
+    }
+
+    /* ── 메인 컨테이너 ── */
+    #cs-root {
+      max-width: 860px;
+      margin: 28px auto;
+      padding: 0 16px 60px;
+    }
+
+    /* ── 오류/로딩 ── */
+    .cs-error-box {
+      background: #fff;
+      border: 1px solid #fca5a5;
+      border-radius: 8px;
+      padding: 32px 28px;
+      text-align: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    .cs-error-box h2 { color: #dc2626; margin: 0 0 10px; font-size: 18px; }
+    .cs-error-box p  { color: #6b7280; margin: 0; font-size: 14px; }
+
+    /* ── 계약서 미리보기 영역 ── */
+    .cs-contract-preview {
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.09);
+      padding: 20px;
+      margin-bottom: 24px;
+    }
+    .cs-contract-preview h3 {
+      margin: 0 0 14px;
+      font-size: 15px;
+      color: #1e3a5f;
+      border-bottom: 2px solid #2563eb;
+      padding-bottom: 8px;
+    }
+    .cs-contract-preview iframe {
+      width: 100%;
+      min-height: 480px;
+      border: 1px solid #e5e7eb;
+      border-radius: 4px;
+    }
+
+    /* ── 서명 패드 영역 ── */
+    .cs-sign-section {
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.09);
+      padding: 24px;
+      margin-bottom: 24px;
+    }
+    .cs-sign-section h3 {
+      margin: 0 0 8px;
+      font-size: 15px;
+      color: #1e3a5f;
+    }
+    .cs-sign-desc {
+      font-size: 13px;
+      color: #6b7280;
+      margin: 0 0 16px;
+      line-height: 1.6;
+    }
+
+    .cs-canvas-wrap {
+      position: relative;
+      border: 2px solid #2563eb;
+      border-radius: 6px;
+      background: #fafafa;
+      overflow: hidden;
+      cursor: crosshair;
+      touch-action: none;
+      width: 100%;
+      max-width: 600px;
+    }
+    #sign-canvas {
+      display: block;
+      width: 100%;
+      height: 200px;
+    }
+    .cs-canvas-hint {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 13px;
+      color: #d1d5db;
+      pointer-events: none;
+      user-select: none;
+      transition: opacity 0.2s;
+    }
+
+    .cs-sign-btns {
+      display: flex;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    /* ── 버튼 ── */
+    .cs-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 9px 18px;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      font-family: inherit;
+      cursor: pointer;
+      transition: opacity 0.15s;
+      white-space: nowrap;
+    }
+    .cs-btn:hover { opacity: 0.85; }
+    .cs-btn-primary { background: #2563eb; color: #fff; }
+    .cs-btn-secondary { background: #6b7280; color: #fff; }
+    .cs-btn-outline { background: #fff; color: #2563eb; border: 1px solid #2563eb; }
+    .cs-btn-lg { padding: 12px 28px; font-size: 15px; }
+
+    /* ── 동의 체크박스 ── */
+    .cs-agree-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      font-size: 13px;
+      color: #374151;
+      margin-bottom: 16px;
+      line-height: 1.5;
+    }
+    .cs-agree-row input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      margin-top: 2px;
+      flex-shrink: 0;
+      accent-color: #2563eb;
+      cursor: pointer;
+    }
+
+    /* ── 완료 화면 ── */
+    .cs-done-box {
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.09);
+      padding: 40px 28px;
+      text-align: center;
+    }
+    .cs-done-icon {
+      font-size: 52px;
+      margin-bottom: 12px;
+    }
+    .cs-done-box h2 {
+      font-size: 20px;
+      color: #16a34a;
+      margin: 0 0 10px;
+    }
+    .cs-done-box p {
+      font-size: 14px;
+      color: #374151;
+      margin: 0 0 8px;
+      line-height: 1.7;
+    }
+    .cs-done-actions {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      margin-top: 24px;
+      flex-wrap: wrap;
+    }
+
+    /* ── 반응형 ── */
+    @media (max-width: 540px) {
+      .cs-sign-btns { flex-direction: column; }
+      .cs-btn-lg { width: 100%; justify-content: center; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="cs-header">
+  <div>
+    <div class="cs-header-logo">아세아항공직업전문학교</div>
+    <div class="cs-header-sub">근로계약서 전자서명 시스템</div>
+  </div>
+</div>
+
+<div id="cs-root">
+  <p style="text-align:center;color:#9ca3af;font-size:13px;">계약서를 불러오는 중입니다...</p>
+</div>
+
+<!-- labor-contract.js 로드 -->
+<script src="labor-contract.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  var root = document.getElementById('cs-root');
+
+  /* ── URL 파라미터에서 token 추출 ── */
+  function getParam(name) {
+    var params = new URLSearchParams(window.location.search);
+    return params.get(name) || '';
+  }
+
+  var token = getParam('token');
+
+  /* ── 오류 표시 ── */
+  function showError(title, msg) {
+    root.innerHTML =
+      '<div class="cs-error-box">' +
+      '<h2>' + title + '</h2>' +
+      '<p>' + msg + '</p>' +
+      '</div>';
+  }
+
+  /* ── esc ── */
+  function esc(str) {
+    if (!str) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  /* ── 모듈 확인 ── */
+  if (!window.LaborContractModule) {
+    showError('모듈 로드 오류', 'labor-contract.js 파일을 불러오지 못했습니다. 관리자에게 문의해 주세요.');
+    return;
+  }
+
+  if (!token) {
+    showError('유효하지 않은 링크', '서명 링크에 토큰이 없습니다. 전달받은 링크를 다시 확인해 주세요.');
+    return;
+  }
+
+  var contract = LaborContractModule.getContractByToken(token);
+
+  if (!contract) {
+    showError('계약서를 찾을 수 없습니다', '토큰이 유효하지 않거나 만료된 링크입니다.<br>담당자에게 문의해 주세요.');
+    return;
+  }
+
+  /* ── 이미 서명된 경우 ── */
+  if (contract.status === 'signed' || contract.status === 'completed') {
+    showDoneScreen(contract, true);
+    return;
+  }
+
+  /* ── 계약서 표시 + 서명 패드 렌더 ── */
+  var typeLabel = contract.type === 'shortterm' ? '단기근로계약서' : '표준근로계약서';
+  var eeName = (contract.employee && contract.employee.name) || '';
+
+  /* 계약서 HTML 빌드 (내부 함수에 접근 불가 → 미리보기 iframe에 srcdoc 사용) */
+  root.innerHTML =
+    '<div class="cs-contract-preview">' +
+    '<h3>' + typeLabel + ' — 서명 전 계약서 내용을 확인해 주세요</h3>' +
+    '<iframe id="cs-contract-iframe" title="계약서 내용"></iframe>' +
+    '</div>' +
+
+    '<div class="cs-sign-section">' +
+    '<h3>전자서명</h3>' +
+    '<p class="cs-sign-desc">' +
+    '아래 서명란에 본인의 서명을 직접 작성해 주세요.<br>' +
+    '마우스(PC) 또는 손가락(모바일)으로 서명하신 후 <strong>[서명 완료 및 계약 체결]</strong> 버튼을 누르시면 계약이 체결됩니다.' +
+    '</p>' +
+    '<div class="cs-canvas-wrap">' +
+    '<canvas id="sign-canvas" width="600" height="200"></canvas>' +
+    '<div class="cs-canvas-hint" id="cs-canvas-hint">이 곳에 서명하세요</div>' +
+    '</div>' +
+    '<div class="cs-sign-btns">' +
+    '<button class="cs-btn cs-btn-outline" id="cs-clear-btn">서명 지우기</button>' +
+    '</div>' +
+    '</div>' +
+
+    '<div class="cs-sign-section" style="padding-top:16px;">' +
+    '<div class="cs-agree-row">' +
+    '<input type="checkbox" id="cs-agree">' +
+    '<label for="cs-agree">본인은 위 근로계약서의 내용을 충분히 확인하였으며, 이에 동의하여 전자서명으로 계약을 체결합니다. 본 전자서명은 자필서명과 동일한 법적 효력을 가집니다.</label>' +
+    '</div>' +
+    '<button class="cs-btn cs-btn-primary cs-btn-lg" id="cs-submit-btn">서명 완료 및 계약 체결</button>' +
+    '</div>';
+
+  /* ── 계약서 iframe srcdoc 주입 ── */
+  /* LaborContractModule._buildContractHTML 은 private이므로 내부 로직 재사용을 위해
+     동일 페이지에서 localStorage의 원본 계약서를 재구성한 HTML을 srcdoc으로 주입합니다.
+     단, 내부 함수가 노출되어 있지 않으므로 script을 통해 print 용 HTML을 생성하는 편의 함수를 호출합니다. */
+  var iframe = document.getElementById('cs-contract-iframe');
+
+  /* 이 페이지에서 _buildContractHTML에 직접 접근할 수 없으므로
+     window.open을 사용하지 않고 srcdoc 조립 방식으로 계약서를 표시합니다.
+     labor-contract.js의 공개 API에는 HTML 빌더가 없으므로,
+     계약 데이터를 기반으로 읽기전용 뷰를 이 페이지에서 직접 조립합니다. */
+  iframe.srcdoc = buildReadonlyHTML(contract);
+
+  /* ── Canvas 서명 패드 ── */
+  var canvas = document.getElementById('sign-canvas');
+  var ctx = canvas.getContext('2d');
+  ctx.strokeStyle = '#000';
+  ctx.lineWidth = 2;
+  ctx.lineJoin = 'round';
+  ctx.lineCap = 'round';
+
+  var drawing = false;
+  var hasSigned = false;
+  var hint = document.getElementById('cs-canvas-hint');
+
+  /* 픽셀 좌표 계산 (canvas 실제 크기 vs 표시 크기 보정) */
+  function getPos(e) {
+    var rect = canvas.getBoundingClientRect();
+    var scaleX = canvas.width / rect.width;
+    var scaleY = canvas.height / rect.height;
+    if (e.touches) {
+      return {
+        x: (e.touches[0].clientX - rect.left) * scaleX,
+        y: (e.touches[0].clientY - rect.top) * scaleY
+      };
+    }
+    return {
+      x: (e.clientX - rect.left) * scaleX,
+      y: (e.clientY - rect.top) * scaleY
+    };
+  }
+
+  function startDraw(e) {
+    e.preventDefault();
+    drawing = true;
+    var p = getPos(e);
+    ctx.beginPath();
+    ctx.moveTo(p.x, p.y);
+    if (!hasSigned) {
+      hasSigned = true;
+      hint.style.opacity = '0';
+    }
+  }
+
+  function moveDraw(e) {
+    e.preventDefault();
+    if (!drawing) return;
+    var p = getPos(e);
+    ctx.lineTo(p.x, p.y);
+    ctx.stroke();
+  }
+
+  function endDraw(e) {
+    e.preventDefault();
+    drawing = false;
+  }
+
+  canvas.addEventListener('mousedown', startDraw);
+  canvas.addEventListener('mousemove', moveDraw);
+  canvas.addEventListener('mouseup', endDraw);
+  canvas.addEventListener('mouseleave', endDraw);
+
+  canvas.addEventListener('touchstart', startDraw, { passive: false });
+  canvas.addEventListener('touchmove', moveDraw, { passive: false });
+  canvas.addEventListener('touchend', endDraw, { passive: false });
+
+  /* ── 서명 지우기 ── */
+  document.getElementById('cs-clear-btn').onclick = function () {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    hasSigned = false;
+    hint.style.opacity = '1';
+  };
+
+  /* ── 서명 완료 ── */
+  document.getElementById('cs-submit-btn').onclick = function () {
+    if (!hasSigned) {
+      alert('서명란에 서명을 먼저 작성해 주세요.');
+      return;
+    }
+    if (!document.getElementById('cs-agree').checked) {
+      alert('계약 내용에 동의하셔야 전자서명이 완료됩니다.');
+      return;
+    }
+
+    var signData = canvas.toDataURL('image/png');
+    var ok = LaborContractModule.saveEmployeeSign(token, signData);
+
+    if (!ok) {
+      alert('서명 저장에 실패했습니다. 다시 시도해 주세요.');
+      return;
+    }
+
+    /* 갱신된 계약 조회 */
+    var updated = LaborContractModule.getContractByToken(token);
+    showDoneScreen(updated, false);
+  };
+
+  /* ── 완료 화면 ── */
+  function showDoneScreen(c, alreadySigned) {
+    var eeName2 = (c.employee && c.employee.name) || '';
+    root.innerHTML =
+      '<div class="cs-done-box">' +
+      '<div class="cs-done-icon">✅</div>' +
+      '<h2>계약이 체결되었습니다</h2>' +
+      '<p>' + (alreadySigned ? '이미 서명이 완료된 계약서입니다.' : '<b>' + esc(eeName2) + '</b>님의 전자서명이 성공적으로 등록되었습니다.') + '</p>' +
+      '<p style="color:#6b7280;font-size:13px;">이 페이지를 저장하거나 인쇄하여 보관하실 수 있습니다.<br>계약서 원본은 아세아항공직업전문학교 담당자에게 문의하세요.</p>' +
+      '<div class="cs-done-actions">' +
+      '<button class="cs-btn cs-btn-primary cs-btn-lg" id="cs-print-done-btn">계약서 인쇄 / 저장</button>' +
+      '</div>' +
+      '</div>';
+
+    document.getElementById('cs-print-done-btn').onclick = function () {
+      printSigned(c);
+    };
+  }
+
+  /* ── 서명 포함 계약서 인쇄 ── */
+  function printSigned(c) {
+    var html = buildReadonlyHTML(c);
+    var w = window.open('', '_blank');
+    if (!w) { alert('팝업이 차단되었습니다. 팝업을 허용해 주세요.'); return; }
+    w.document.open();
+    w.document.write(html);
+    w.document.close();
+    w.focus();
+    setTimeout(function () { w.print(); }, 600);
+  }
+
+  /* ── 읽기전용 계약서 HTML 조립 ── */
+  function buildReadonlyHTML(c) {
+    var cfg = loadEmployerCfg();
+    var sealB64 = localStorage.getItem('asea_seal_b64') || '';
+    var emp = c.employer || cfg;
+    var ee = c.employee || {};
+    var ct = c.contract || {};
+    var ins = ct.insurance || {};
+    var today = new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' });
+
+    function e(s) {
+      if (!s) return '';
+      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    function checkbox(checked) {
+      return checked
+        ? '<span style="display:inline-block;width:4mm;height:4mm;border:1px solid #000;text-align:center;font-size:8pt;vertical-align:middle;">&#10003;</span>'
+        : '<span style="display:inline-block;width:4mm;height:4mm;border:1px solid #000;vertical-align:middle;"></span>';
+    }
+
+    var sealHtml = sealB64
+      ? '<img src="' + sealB64 + '" style="width:24mm;height:24mm;object-fit:contain;opacity:0.85;vertical-align:middle;" alt="인감">'
+      : '<span style="display:inline-block;width:24mm;height:24mm;border:2px solid #aaa;vertical-align:middle;text-align:center;font-size:8pt;line-height:24mm;color:#aaa;">[인감]</span>';
+
+    var eSignHtml = c.employeeSignData
+      ? '<img src="' + c.employeeSignData + '" style="height:20mm;max-width:60mm;vertical-align:middle;" alt="서명">'
+      : '<span style="display:inline-block;width:50mm;border-bottom:1px solid #000;">&nbsp;</span>';
+
+    var ganjinHtml = sealB64
+      ? '<div style="position:relative;height:0;overflow:visible;text-align:right;">' +
+        '<img src="' + sealB64 + '" style="position:absolute;right:0;top:-12mm;width:24mm;height:24mm;opacity:0.65;transform:rotate(-20deg);" alt="간인"></div>'
+      : '';
+
+    var wageLine = '';
+    if (ct.wageType === 'daily') wageLine = '일급 금 ' + e(ct.wageAmount) + ' 원';
+    else if (ct.wageType === 'hourly') wageLine = '시급 금 ' + e(ct.wageAmount) + ' 원';
+    else wageLine = '월급 금 ' + e(ct.wageAmount) + ' 원';
+
+    var payMethod = ct.payMethod === 'direct' ? '직접지급' : '계좌이체';
+
+    var style = '@page{size:A4;margin:15mm 20mm;}' +
+      'body{font-family:"Malgun Gothic","맑은 고딕",sans-serif;font-size:10pt;margin:0;color:#000;}' +
+      '.cw{width:170mm;margin:0 auto;position:relative;}' +
+      '.ct{text-align:center;font-size:16pt;font-weight:bold;margin-bottom:8mm;letter-spacing:2px;}' +
+      '.cs2{text-align:center;font-size:11pt;margin-bottom:6mm;}' +
+      '.intro{margin-bottom:5mm;line-height:1.8;}' +
+      '.sec{margin-bottom:3mm;padding-left:2mm;}' +
+      '.sn{font-weight:bold;display:inline-block;width:8mm;}' +
+      '.sign-section{margin-top:8mm;border-top:2px solid #000;padding-top:5mm;}' +
+      '.sr{display:flex;justify-content:space-between;margin-bottom:3mm;}' +
+      '.sp{width:48%;}' +
+      '.spt{font-weight:bold;font-size:11pt;margin-bottom:3mm;border-bottom:1px solid #000;padding-bottom:1mm;}' +
+      '.sf{margin-bottom:2mm;font-size:9.5pt;}' +
+      '.dl{text-align:center;margin:6mm 0;font-size:11pt;}' +
+      '.box{border:1px solid #000;padding:3mm 4mm;margin-top:2mm;line-height:1.8;}' +
+      '@media print{body{margin:0;}}';
+
+    var body = '';
+
+    if (c.type === 'shortterm') {
+      body =
+        '<div class="ct">단기근로계약서</div>' +
+        '<div class="intro"><b>' + e(emp.name) + '</b>(이하 "갑"이라 함)과(와) <b>' + e(ee.name) + '</b>(이하 "을"이라 함)은 다음과 같은 조건으로 단기 근로계약을 체결한다.</div>' +
+        '<div class="sec"><b>1. 계약기간 :</b> ' + e(ct.startDate) + ' ~ ' + e(ct.endDate) + '</div>' +
+        '<div class="sec"><b>2. 기본급여액 :</b> ' + wageLine + ' (고용보험 별도)<br>&nbsp;&nbsp;지급일: 매월 ' + e(ct.payDay) + '일, 지급방법: ' + payMethod + '</div>' +
+        '<div class="sec"><b>3. 근무내용 :</b> ' + e(ct.jobDescription) + '</div>' +
+        '<div class="sec"><b>4. 근로시간 :</b> ' + (ct.workStart||'09:00') + ' ~ ' + (ct.workEnd||'18:00') + ', 휴게 ' + (ct.breakStart||'12:00') + '~' + (ct.breakEnd||'13:00') + ' (1시간), 주 40시간</div>' +
+        '<div class="sec"><b>5. 근무장소 :</b> ' + e(ct.workplace) + '</div>' +
+        ganjinHtml +
+        '<div class="sec"><b>6. 근로원칙</b><div class="box">① "을"은 "갑"의 지시 및 지휘·감독에 따라 성실히 근무하여야 한다.<br>② "을"은 재직 중 및 퇴직 후에도 업무상 취득한 비밀을 외부에 누설하여서는 아니 된다.<br>③ "을"이 고의 또는 과실로 "갑"에게 손해를 입힌 경우 이에 대한 배상책임을 진다.</div></div>' +
+        '<div class="sec"><b>7. 기타 :</b> 본 계약서에 명시되지 않은 사항은 근로기준법령, 취업규칙 및 기타 규정에 따른다.</div>' +
+        '<div class="dl">' + today + '</div>' +
+        '<div class="sign-section"><div class="sr">' +
+        '<div class="sp"><div class="spt">갑 (사업주)</div>' +
+        '<div class="sf">기관명: ' + e(emp.name) + '</div>' +
+        '<div class="sf">주&nbsp;&nbsp;소: ' + e(emp.address) + '</div>' +
+        '<div class="sf">이사장: ' + e(emp.rep) + ' &nbsp;' + sealHtml + '</div>' +
+        '</div>' +
+        '<div class="sp"><div class="spt">을 (근로자)</div>' +
+        '<div class="sf">성&nbsp;&nbsp;명: ' + e(ee.name) + '</div>' +
+        '<div class="sf">주&nbsp;&nbsp;소: ' + e(ee.address) + '</div>' +
+        '<div class="sf">연락처: ' + e(ee.phone) + '</div>' +
+        '<div class="sf">서&nbsp;&nbsp;명: ' + eSignHtml + '</div>' +
+        '</div></div></div>';
+    } else {
+      var insHtml = '<div style="margin-top:1mm;">' +
+        checkbox(ins.employment) + ' 고용보험&nbsp;&nbsp;' +
+        checkbox(ins.industrial) + ' 산재보험&nbsp;&nbsp;' +
+        checkbox(ins.pension) + ' 국민연금&nbsp;&nbsp;' +
+        checkbox(ins.health) + ' 건강보험</div>';
+
+      body =
+        '<div class="ct">표준근로계약서</div>' +
+        '<div class="cs2">(기간의 정함이 있는 경우)</div>' +
+        '<div class="intro"><b>' + e(emp.name) + '</b>(이하 "갑"이라 함)과(와) <b>' + e(ee.name) + '</b>(이하 "을"이라 함)은 다음과 같이 근로계약을 체결한다.</div>' +
+        '<div class="sec"><span class="sn">제1조</span> <b>근로계약기간 :</b> ' + e(ct.startDate) + ' ~ ' + e(ct.endDate) + '</div>' +
+        '<div class="sec"><span class="sn">제2조</span> <b>근무 장소 :</b> ' + e(ct.workplace) + '</div>' +
+        '<div class="sec"><span class="sn">제3조</span> <b>업무의 내용 :</b> ' + e(ct.jobDescription) + '</div>' +
+        '<div class="sec"><span class="sn">제4조</span> <b>근로시간 :</b> ' + e(ct.workStart) + ' ~ ' + e(ct.workEnd) + ' (휴게시간: ' + e(ct.breakStart) + ' ~ ' + e(ct.breakEnd) + ')</div>' +
+        '<div class="sec"><span class="sn">제5조</span> <b>근무일/휴일 :</b> ' + e(ct.workDays) + ', 주휴일 ' + e(ct.holiday) + '</div>' +
+        '<div class="sec"><span class="sn">제6조</span> <b>임금</b><br>&nbsp;&nbsp;· ' + wageLine + '<br>&nbsp;&nbsp;· 상여금: ' + (ct.bonusYn ? '있음 — ' + e(ct.bonusAmount) + '원' : '없음') + '<br>&nbsp;&nbsp;· 기타급여: ' + (ct.otherPayYn ? e(ct.otherPayDetails) : '없음') + '<br>&nbsp;&nbsp;· 지급일: 매월 ' + e(ct.payDay) + '일<br>&nbsp;&nbsp;· 지급방법: ' + payMethod + '</div>' +
+        '<div class="sec"><span class="sn">제7조</span> <b>연차유급휴가 :</b> 근로기준법에 따름</div>' +
+        '<div class="sec"><span class="sn">제8조</span> <b>사회보험 적용여부(해당란에 체크)</b>' + insHtml + '</div>' +
+        ganjinHtml +
+        '<div class="sec"><span class="sn">제9조</span> <b>근로계약서 교부 :</b> "갑"은 근로계약을 체결함과 동시에 본 계약서를 사본하여 "을"의 교부요구와 관계없이 "을"에게 교부함(근로기준법 제17조 이행)</div>' +
+        '<div class="sec"><span class="sn">제10조</span> <b>근로계약, 취업규칙 등의 성실한 이행의무 :</b> "갑"과 "을"은 각자가 근로계약, 취업규칙, 단체협약을 지키고 성실하게 이행하여야 한다.</div>' +
+        '<div class="sec"><span class="sn">제11조</span> <b>기타 :</b> 이 계약에 정함이 없는 사항은 근로기준법령에 의함</div>' +
+        '<div class="dl">' + today + '</div>' +
+        '<div class="sign-section"><div class="sr">' +
+        '<div class="sp"><div class="spt">갑 (사업주)</div>' +
+        '<div class="sf">사업체명: ' + e(emp.name) + '</div>' +
+        '<div class="sf">주&nbsp;&nbsp;&nbsp;&nbsp;소: ' + e(emp.address) + '</div>' +
+        '<div class="sf">대표자: ' + e(emp.rep) + ' &nbsp;' + sealHtml + '</div>' +
+        '<div class="sf">전&nbsp;&nbsp;&nbsp;&nbsp;화: ' + e(emp.phone) + '</div>' +
+        '</div>' +
+        '<div class="sp"><div class="spt">을 (근로자)</div>' +
+        '<div class="sf">성&nbsp;&nbsp;&nbsp;&nbsp;명: ' + e(ee.name) + '</div>' +
+        '<div class="sf">주&nbsp;&nbsp;&nbsp;&nbsp;소: ' + e(ee.address) + '</div>' +
+        '<div class="sf">연락처: ' + e(ee.phone) + '</div>' +
+        '<div class="sf">이메일: ' + e(ee.email) + '</div>' +
+        '<div class="sf">서&nbsp;&nbsp;&nbsp;&nbsp;명: ' + eSignHtml + '</div>' +
+        '</div></div></div>';
+    }
+
+    return '<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><style>' + style + '</style></head><body><div class="cw">' + body + '</div></body></html>';
+  }
+
+  function loadEmployerCfg() {
+    try {
+      var c = JSON.parse(localStorage.getItem('asea_lc_cfg') || '{}');
+      var def = { name: '(재)아세아항공직업전문학교', rep: '전 영 숙', address: '서울시 용산구 원효로97길 25', phone: '02-714-9710' };
+      return Object.assign({}, def, c);
+    } catch (e2) {
+      return { name: '(재)아세아항공직업전문학교', rep: '전 영 숙', address: '서울시 용산구 원효로97길 25', phone: '02-714-9710' };
+    }
+  }
+
+})();
+</script>
+</body>
+</html>

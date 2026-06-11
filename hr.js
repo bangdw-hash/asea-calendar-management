@@ -137,17 +137,9 @@ window.HRModule = (function () {
       return;
     }
 
-    // 관리자 모드: 서브탭 네비 포함
-    wrap.appendChild(_buildNav());
     var content = el('div', 'hr-content');
     wrap.appendChild(content);
-    if (_st.hrTab === 'onboard') {
-      _renderOnboard(content);
-    } else {
-      _renderComingSoon(content, {
-        resign: '퇴사자 관리', leave: '휴직자 관리', other: '기타 관리'
-      }[_st.hrTab]);
-    }
+    _renderOnboard(content);
   }
 
   function _buildNav() {
@@ -187,10 +179,38 @@ window.HRModule = (function () {
      입사자 관리
   ══════════════════════════════════════════════ */
   function _renderOnboard(wrap) {
-    if (_st.view === 'home')    { _renderOnboardHome(wrap); return; }
-    if (_st.view === 'portal')  { _renderApplicantPortal(wrap); return; }
-    if (_st.view === 'manager') { _renderManagerView(wrap); return; }
-    if (_st.view === 'admin')   { _renderAdminView(wrap); return; }
+    if (_st.view === 'home')     { _renderOnboardHome(wrap); return; }
+    if (_st.view === 'portal')   { _renderApplicantPortal(wrap); return; }
+    if (_st.view === 'manager')  { _renderManagerView(wrap); return; }
+    if (_st.view === 'admin')    { _renderAdminView(wrap); return; }
+    if (_st.view === 'contract') { _renderContractView(wrap); return; }
+  }
+
+  function _renderContractView(wrap) {
+    var div = el('div', 'hr-wrap');
+    var topBar = el('div', 'hr-mgr-topbar');
+    var titleEl = el('strong'); titleEl.style.cssText = 'font-size:16px;color:#1a3a5c';
+    titleEl.textContent = '근로계약서 관리';
+    topBar.appendChild(titleEl);
+    var backBtn = el('button', 'hr-btn hr-btn-ghost hr-btn-sm', '← 돌아가기');
+    backBtn.style.marginLeft = 'auto';
+    backBtn.addEventListener('click', function() { _st.view = 'home'; _render(); });
+    topBar.appendChild(backBtn);
+    div.appendChild(topBar);
+
+    var rootDiv = el('div'); rootDiv.id = 'lc-embed-root';
+    rootDiv.style.cssText = 'padding:16px 0';
+    div.appendChild(rootDiv);
+    wrap.appendChild(div);
+
+    // LaborContractModule 초기화 (비동기로 DOM 생성 후)
+    setTimeout(function() {
+      if (window.LaborContractModule && window.LaborContractModule.init) {
+        LaborContractModule.init('lc-embed-root');
+      } else {
+        rootDiv.innerHTML = '<p style="color:#e53935">근로계약서 모듈을 불러올 수 없습니다. 페이지를 새로고침 해주세요.</p>';
+      }
+    }, 50);
   }
 
   /* ── 홈: 역할 선택 ── */
@@ -222,46 +242,56 @@ window.HRModule = (function () {
       cards.appendChild(c1); cards.appendChild(c2);
     } else {
       /* ── 관리자 모드 홈 ── */
-      var desc2 = el('div', 'hr-role-desc', '아세아항공직업전문학교 인사관리 — 입사 예정자 서류 제출 및 관리');
-      var cards2 = el('div', 'hr-role-cards');
-
       var apps = loadApps();
       var pendingCount = apps.filter(function(a){ return a.status==='submitted'; }).length;
       var draftCount   = apps.filter(function(a){ return a.status==='pending'; }).length;
+      var formUrl = _getHRFormUrl();
 
+      // ── 신청자 링크 박스 (항상 상단에 노출) ──
+      var linkBox = document.createElement('div');
+      linkBox.style.cssText = 'width:100%;max-width:540px;background:#EFF6FF;border:1.5px solid #93C5FD;border-radius:12px;padding:16px 18px;margin-bottom:20px;text-align:left';
+      linkBox.innerHTML =
+        '<div style="font-size:12px;font-weight:700;color:#1D4ED8;margin-bottom:6px;letter-spacing:.4px">📎 입사 신청자 공유 링크</div>' +
+        '<div style="font-size:12px;color:#374151;word-break:break-all;background:#fff;border:1px solid #BFDBFE;border-radius:6px;padding:8px 10px;margin-bottom:10px;font-family:monospace">' + formUrl + '</div>' +
+        '<div style="display:flex;gap:8px">' +
+          '<button id="hr-home-copy-link" style="flex:1;padding:8px 0;background:#2563EB;color:#fff;border:none;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer">📋 링크 복사</button>' +
+          '<button id="hr-home-copy-msg"  style="flex:1;padding:8px 0;background:#fff;color:#2563EB;border:1.5px solid #93C5FD;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer">✉️ 안내 메시지 복사</button>' +
+        '</div>';
+      screen.appendChild(icon); screen.appendChild(title); screen.appendChild(linkBox);
+
+      // 버튼 이벤트
+      linkBox.querySelector('#hr-home-copy-link').addEventListener('click', function() {
+        if (navigator.clipboard) {
+          navigator.clipboard.writeText(formUrl).then(function(){ toast('링크가 복사되었습니다.', '#16A34A'); });
+        } else { prompt('아래 링크를 복사하세요.', formUrl); }
+      });
+      linkBox.querySelector('#hr-home-copy-msg').addEventListener('click', function() {
+        var msg = '[입사 서류 제출 안내]\n\n아세아항공직업전문학교 입사 예정자 서류 제출 링크를 안내드립니다.\n\n▶ 서류 제출 링크:\n' + formUrl + '\n\n링크 접속 후 본인 이름을 입력하고 서류를 작성해 주세요.\n작성 중단 시 "💾 중간 저장" 버튼을 누르면 저장 코드가 발급됩니다.\n이후 같은 링크에서 저장 코드 + 이름으로 이어 작성하실 수 있습니다.';
+        if (navigator.clipboard) {
+          navigator.clipboard.writeText(msg).then(function(){ toast('안내 메시지가 복사되었습니다.', '#16A34A'); });
+        } else { prompt('아래 메시지를 복사하세요.', msg); }
+      });
+
+      // ── 관리 버튼 ──
+      var cards2 = el('div', 'hr-role-cards');
       var roles = [
-        {
-          icon: '📋', name: '신청 링크 복사',
-          hint: '입사 예정자에게 보낼\n작성 링크를 복사합니다',
-          action: function() {
-            var url = _getHRFormUrl();
-            if (navigator.clipboard) {
-              navigator.clipboard.writeText(url).then(function(){ toast('링크가 복사되었습니다.', '#16A34A'); });
-            } else { prompt('아래 링크를 복사하세요.', url); }
-          }
-        },
-        { icon: '👀', name: '인사관리자', hint: '제출된 서류를 조회하고\n출력합니다\n(제출 ' + pendingCount + '건)', view: 'manager' },
-        { icon: '⚙️', name: '시스템 관리자', hint: '코드/설정 관리\n(작성중 ' + draftCount + '건)', view: 'admin' },
+        { icon: '👀', name: '인사관리자', hint: '제출된 서류 조회 · 출력\n제출 ' + pendingCount + '건', view: 'manager' },
+        { icon: '📄', name: '근로계약서', hint: '계약서 작성 · 전자계약\n온라인 서명 링크 발송', view: 'contract' },
+        { icon: '⚙️', name: '시스템 관리자', hint: '설정 관리\n작성중 ' + draftCount + '건', view: 'admin' },
       ];
       roles.forEach(function(r) {
         var card = el('div', 'hr-role-card');
         card.innerHTML = '<div class="hr-role-icon">' + r.icon + '</div>' +
           '<div class="hr-role-name">' + r.name + '</div>' +
           '<div class="hr-role-hint">' + r.hint.replace(/\n/g,'<br>') + '</div>';
-        if (r.action) {
-          card.addEventListener('click', r.action);
-        } else {
-          card.addEventListener('click', function() { _st.view = r.view; _render(); });
-        }
+        card.addEventListener('click', function() { _st.view = r.view; _render(); });
         cards2.appendChild(card);
       });
-
-      screen.appendChild(icon); screen.appendChild(title); screen.appendChild(desc2);
       screen.appendChild(cards2);
 
       // 통계 바
       var statRow = el('div', 'hr-stat-row');
-      statRow.style.cssText = 'margin-top:28px;justify-content:center;max-width:480px;width:100%';
+      statRow.style.cssText = 'margin-top:20px;justify-content:center;max-width:480px;width:100%';
       var stats = [
         { num: apps.length, label: '전체 지원자' },
         { num: apps.filter(function(a){ return a.status==='submitted'||a.status==='approved'; }).length, label: '제출 완료' },
@@ -1352,10 +1382,23 @@ window.HRModule = (function () {
     toolbar.appendChild(srch);
 
     var btnRow = el('div', 'hr-btn-row');
+    var linkBtn = el('button', 'hr-btn hr-btn-primary hr-btn-sm', '🔗 신청 링크 복사');
+    linkBtn.addEventListener('click', function() {
+      var url = _getHRFormUrl();
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(url).then(function() { alert('✅ 입사 신청 링크가 복사되었습니다.\n\n' + url); });
+      } else {
+        var ta = document.createElement('textarea');
+        ta.value = url; ta.style.cssText = 'position:fixed;opacity:0';
+        document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
+        alert('✅ 입사 신청 링크가 복사되었습니다.\n\n' + url);
+      }
+    });
     var excelBtn = el('button', 'hr-btn hr-btn-secondary hr-btn-sm', '⬇ 목록 다운로드');
     excelBtn.addEventListener('click', function() { _downloadCSV(apps); });
     var backBtn = el('button', 'hr-btn hr-btn-ghost hr-btn-sm', '← 돌아가기');
     backBtn.addEventListener('click', function() { _st.view='home'; _st.mgrAuth=false; _render(); });
+    btnRow.appendChild(linkBtn);
     btnRow.appendChild(excelBtn);
     btnRow.appendChild(backBtn);
     toolbar.appendChild(btnRow);

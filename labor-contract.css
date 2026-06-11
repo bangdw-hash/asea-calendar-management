@@ -1,0 +1,495 @@
+/* labor-contract.css — 아세아항공직업전문학교 근로계약서 모듈 스타일 */
+
+/* ===================== 전체 래퍼 ===================== */
+.lc-wrap {
+  padding: 16px;
+  font-family: 'Malgun Gothic', '맑은 고딕', sans-serif;
+  color: #222;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.lc-wrap h2 {
+  font-size: 20px;
+  font-weight: bold;
+  margin: 0 0 16px 0;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #2563eb;
+  color: #1e3a5f;
+}
+
+.lc-section-title {
+  font-size: 16px;
+  font-weight: bold;
+  color: #1e3a5f;
+  margin: 20px 0 10px 0;
+  padding: 6px 10px;
+  background: #f0f4ff;
+  border-left: 4px solid #2563eb;
+  border-radius: 2px;
+}
+
+/* ===================== 상단 액션 바 ===================== */
+.lc-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.lc-toolbar-left {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.lc-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 14px;
+  border: none;
+  border-radius: 5px;
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s, opacity 0.15s;
+  white-space: nowrap;
+}
+
+.lc-btn:hover { opacity: 0.85; }
+
+.lc-btn-primary {
+  background: #2563eb;
+  color: #fff;
+}
+
+.lc-btn-secondary {
+  background: #6b7280;
+  color: #fff;
+}
+
+.lc-btn-success {
+  background: #16a34a;
+  color: #fff;
+}
+
+.lc-btn-danger {
+  background: #dc2626;
+  color: #fff;
+}
+
+.lc-btn-outline {
+  background: #fff;
+  color: #2563eb;
+  border: 1px solid #2563eb;
+}
+
+.lc-btn-sm {
+  padding: 4px 10px;
+  font-size: 12px;
+}
+
+/* ===================== 목록 테이블 ===================== */
+.lc-list-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  background: #fff;
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+}
+
+.lc-list-table thead {
+  background: #1e3a5f;
+  color: #fff;
+}
+
+.lc-list-table thead th {
+  padding: 10px 12px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 12px;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+}
+
+.lc-list-table tbody tr {
+  border-bottom: 1px solid #e5e7eb;
+  transition: background 0.1s;
+}
+
+.lc-list-table tbody tr:hover {
+  background: #f8faff;
+}
+
+.lc-list-table tbody td {
+  padding: 9px 12px;
+  vertical-align: middle;
+}
+
+.lc-empty-row td {
+  text-align: center;
+  color: #9ca3af;
+  padding: 32px 12px;
+}
+
+/* ===================== 상태 배지 ===================== */
+.lc-badge {
+  display: inline-block;
+  padding: 2px 9px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.lc-badge-draft {
+  background: #e5e7eb;
+  color: #374151;
+}
+
+.lc-badge-sent {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.lc-badge-signed {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.lc-badge-completed {
+  background: #14532d;
+  color: #fff;
+}
+
+/* ===================== 폼 스타일 ===================== */
+.lc-form {
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.09);
+  padding: 24px;
+  max-width: 820px;
+}
+
+.lc-form-section {
+  margin-bottom: 22px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.lc-form-section:last-of-type {
+  border-bottom: none;
+}
+
+.lc-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px 18px;
+}
+
+.lc-form-grid-3 {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 12px 18px;
+}
+
+.lc-form-full {
+  grid-column: 1 / -1;
+}
+
+.lc-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.lc-field label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.lc-field input,
+.lc-field select,
+.lc-field textarea {
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  padding: 6px 9px;
+  font-size: 13px;
+  font-family: inherit;
+  color: #111;
+  transition: border-color 0.15s;
+  background: #fff;
+}
+
+.lc-field input:focus,
+.lc-field select:focus,
+.lc-field textarea:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37,99,235,0.12);
+}
+
+.lc-field textarea {
+  resize: vertical;
+  min-height: 60px;
+}
+
+/* 라디오/체크박스 그룹 */
+.lc-radio-group,
+.lc-check-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 18px;
+  padding-top: 4px;
+}
+
+.lc-radio-group label,
+.lc-check-group label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 13px;
+  font-weight: normal;
+  cursor: pointer;
+  color: #222;
+}
+
+.lc-radio-group input[type="radio"],
+.lc-check-group input[type="checkbox"] {
+  width: 15px;
+  height: 15px;
+  cursor: pointer;
+  accent-color: #2563eb;
+}
+
+/* 폼 하단 버튼 */
+.lc-form-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid #e5e7eb;
+}
+
+/* ===================== 미리보기 모달 ===================== */
+.lc-preview-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.65);
+  z-index: 9000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.lc-preview-inner {
+  background: #fff;
+  border-radius: 8px;
+  width: min(95vw, 800px);
+  max-height: 92vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.35);
+}
+
+.lc-preview-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 18px;
+  border-bottom: 1px solid #e5e7eb;
+  background: #f8f9fa;
+  border-radius: 8px 8px 0 0;
+}
+
+.lc-preview-header h3 {
+  margin: 0;
+  font-size: 15px;
+  color: #1e3a5f;
+}
+
+.lc-preview-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.lc-preview-close {
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  color: #6b7280;
+  line-height: 1;
+  padding: 0 4px;
+}
+
+.lc-preview-close:hover { color: #dc2626; }
+
+.lc-preview-frame {
+  flex: 1;
+  overflow: hidden;
+  border-radius: 0 0 8px 8px;
+}
+
+.lc-preview-frame iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+  min-height: 500px;
+}
+
+/* ===================== 전자계약 링크 박스 ===================== */
+.lc-sign-link-box {
+  background: #f0f9ff;
+  border: 1px solid #bae6fd;
+  border-radius: 6px;
+  padding: 14px 16px;
+  margin-top: 14px;
+}
+
+.lc-sign-link-box .lc-sign-url {
+  font-family: monospace;
+  font-size: 12px;
+  color: #0369a1;
+  word-break: break-all;
+  margin: 6px 0;
+  padding: 6px 8px;
+  background: #fff;
+  border: 1px solid #e0f2fe;
+  border-radius: 3px;
+  display: block;
+}
+
+.lc-sign-link-box p {
+  margin: 0 0 6px 0;
+  font-size: 12px;
+  color: #0c4a6e;
+  font-weight: 600;
+}
+
+/* ===================== 설정 패널 ===================== */
+.lc-settings {
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.09);
+  padding: 22px;
+  max-width: 600px;
+}
+
+.lc-seal-preview {
+  display: inline-block;
+  width: 80px;
+  height: 80px;
+  border: 2px dashed #d1d5db;
+  border-radius: 4px;
+  overflow: hidden;
+  vertical-align: middle;
+  background: #f9fafb;
+}
+
+.lc-seal-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.lc-seal-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  font-size: 11px;
+  color: #9ca3af;
+  text-align: center;
+}
+
+/* ===================== A4 용지 컨테이너 (미리보기) ===================== */
+.lc-a4 {
+  background: #fff;
+  width: 210mm;
+  min-height: 297mm;
+  padding: 15mm 20mm;
+  margin: 0 auto;
+  box-sizing: border-box;
+  font-family: 'Malgun Gothic', '맑은 고딕', sans-serif;
+  font-size: 10pt;
+  color: #000;
+  position: relative;
+}
+
+/* ===================== 탭 네비게이션 ===================== */
+.lc-tabs {
+  display: flex;
+  border-bottom: 2px solid #e5e7eb;
+  margin-bottom: 18px;
+  gap: 0;
+}
+
+.lc-tab {
+  padding: 9px 20px;
+  border: none;
+  background: none;
+  font-size: 13px;
+  font-family: inherit;
+  color: #6b7280;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.lc-tab:hover { color: #2563eb; }
+.lc-tab.active {
+  color: #2563eb;
+  border-bottom-color: #2563eb;
+  font-weight: 600;
+}
+
+/* ===================== 알림 토스트 ===================== */
+.lc-toast {
+  position: fixed;
+  bottom: 28px;
+  right: 24px;
+  background: #1e3a5f;
+  color: #fff;
+  padding: 10px 18px;
+  border-radius: 6px;
+  font-size: 13px;
+  z-index: 99999;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+  animation: lcFadeIn 0.2s ease;
+}
+
+.lc-toast.success { background: #16a34a; }
+.lc-toast.error { background: #dc2626; }
+
+@keyframes lcFadeIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ===================== 반응형 ===================== */
+@media (max-width: 640px) {
+  .lc-form-grid,
+  .lc-form-grid-3 {
+    grid-template-columns: 1fr;
+  }
+  .lc-form-full {
+    grid-column: 1;
+  }
+  .lc-a4 {
+    width: 100%;
+    padding: 8mm;
+  }
+  .lc-list-table { font-size: 11px; }
+  .lc-list-table thead th,
+  .lc-list-table tbody td { padding: 7px 7px; }
+}

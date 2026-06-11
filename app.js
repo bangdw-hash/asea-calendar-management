@@ -884,6 +884,19 @@
 
   function _moveEventToDate(info, targetDate) {
     var existingEv = S.events.find(function (e) { return e.id === info.eventId; });
+
+    // Same-day guard: do nothing if the event is already on targetDate
+    if (existingEv) {
+      var rawStart = existingEv.start && (existingEv.start.date || (existingEv.start.dateTime && existingEv.start.dateTime.slice(0, 10)));
+      if (rawStart) {
+        var td = new Date(targetDate);
+        var targetStr = td.getFullYear() + '-' +
+          String(td.getMonth() + 1).padStart(2, '0') + '-' +
+          String(td.getDate()).padStart(2, '0');
+        if (rawStart === targetStr) return;
+      }
+    }
+
     var isRecurring = !!(existingEv && (
       (existingEv.recurrence && existingEv.recurrence.length) ||
       existingEv.recurringEventId
@@ -1121,9 +1134,14 @@
     }
   }
 
+  // 모바일 터치 드래그 상태
+  var _tcDI = null, _tcTmr = null, _tcChip = null, _tcGhost = null;
+
   function buildDayCell(cellDate, viewDate, today, evMap) {
     var el = document.createElement('div');
     el.className = 'calendar-day';
+    var _yy = cellDate.getFullYear(), _mm = String(cellDate.getMonth()+1).padStart(2,'0'), _dd = String(cellDate.getDate()).padStart(2,'0');
+    el.dataset.date = _yy + '-' + _mm + '-' + _dd;
     if (cellDate.getMonth() !== viewDate.getMonth()) el.classList.add('other-month');
     if (isSameDay(cellDate, today))  el.classList.add('today');
     if (cellDate.getDay() === 0)     el.classList.add('sunday');
@@ -1204,6 +1222,60 @@
           c.classList.remove('drag-over');
         });
       });
+      // ── 모바일 long-press 드래그 ──
+      (function(ev) {
+        chip.addEventListener('touchstart', function(te) {
+          var tx = te.touches[0];
+          _tcTmr = setTimeout(function() {
+            _tcDI = { eventId: ev.id, calId: ev._calId || '', isAllDay: !!ev.start.date,
+              startTime: ev.start.dateTime || '', summary: ev.summary,
+              duration: ev.start.dateTime ? (new Date(ev.end.dateTime) - new Date(ev.start.dateTime)) : 86400000 };
+            _tcChip = chip;
+            _tcGhost = chip.cloneNode(true);
+            _tcGhost.style.cssText = 'position:fixed;opacity:.75;pointer-events:none;z-index:9999;width:' + chip.offsetWidth + 'px;left:' + (tx.clientX - chip.offsetWidth / 2) + 'px;top:' + (tx.clientY - 20) + 'px;border-radius:6px;';
+            document.body.appendChild(_tcGhost);
+            chip.style.opacity = '.3';
+            document.body.classList.add('is-dragging-event');
+            if (navigator.vibrate) navigator.vibrate(50);
+          }, 500);
+        }, { passive: true });
+        chip.addEventListener('touchmove', function(te) {
+          clearTimeout(_tcTmr); _tcTmr = null;
+          if (!_tcDI) return;
+          te.preventDefault();
+          var tx = te.touches[0];
+          if (_tcGhost) { _tcGhost.style.left = (tx.clientX - _tcGhost.offsetWidth / 2) + 'px'; _tcGhost.style.top = (tx.clientY - 20) + 'px'; }
+          document.querySelectorAll('.calendar-day.drag-over').forEach(function(c) { c.classList.remove('drag-over'); });
+          var el2 = document.elementFromPoint(tx.clientX, tx.clientY);
+          var dy = el2 ? el2.closest('.calendar-day') : null;
+          if (dy) dy.classList.add('drag-over');
+        }, { passive: false });
+        chip.addEventListener('touchend', function(te) {
+          clearTimeout(_tcTmr); _tcTmr = null;
+          if (!_tcDI) return;
+          var tx = te.changedTouches[0];
+          if (_tcGhost) { try { document.body.removeChild(_tcGhost); } catch(e) {} _tcGhost = null; }
+          if (_tcChip) { _tcChip.style.opacity = ''; _tcChip = null; }
+          document.body.classList.remove('is-dragging-event');
+          document.querySelectorAll('.calendar-day.drag-over').forEach(function(c) { c.classList.remove('drag-over'); });
+          var el2 = document.elementFromPoint(tx.clientX, tx.clientY);
+          var dy = el2 ? el2.closest('.calendar-day') : null;
+          if (dy && dy.dataset.date) {
+            var pts = dy.dataset.date.split('-');
+            var dropDate = new Date(parseInt(pts[0]), parseInt(pts[1]) - 1, parseInt(pts[2]));
+            var ev2 = S.events ? S.events.find(function(e2) { return e2.id === _tcDI.eventId; }) : null;
+            _moveEventToDate(_tcDI, dropDate, ev2);
+          }
+          _tcDI = null;
+        });
+        chip.addEventListener('touchcancel', function() {
+          clearTimeout(_tcTmr); _tcTmr = null;
+          if (_tcGhost) { try { document.body.removeChild(_tcGhost); } catch(e) {} _tcGhost = null; }
+          if (_tcChip) { _tcChip.style.opacity = ''; _tcChip = null; }
+          document.body.classList.remove('is-dragging-event');
+          _tcDI = null;
+        });
+      })(ev);
       chip.addEventListener('click', function (e) {
         e.stopPropagation();
         openEventModal(ev);

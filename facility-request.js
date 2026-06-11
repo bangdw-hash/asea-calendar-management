@@ -29,8 +29,9 @@
   // 모바일 탭 — 첫 탭 앵커
   var _tapAnchor  = null;
 
-  var _buildings  = [];
-  var _feeConfig  = null;  // 현재 선택 호실의 요금 설정
+  var _buildings   = [];
+  var _feeConfig   = null;  // 현재 선택 호실의 요금 설정
+  var _extraVenues = [];    // 추가 장소 블록 [{idx, feeConfig, calc}]
 
   /* ─────────────────────────────────────────────────
      유틸
@@ -290,68 +291,86 @@
   }
 
   /* ─────────────────────────────────────────────────
-     건물 목록 로드
+     건물 목록 로드 (요금관리 탭 localStorage에서 읽기)
   ───────────────────────────────────────────────── */
-  async function loadBuildings() {
+  function loadBuildings() {
     var bSel = $('fr-building');
-    bSel.innerHTML = '<option value="">불러오는 중...</option>';
-    bSel.disabled = true;
-    try {
-      var res  = await fetch(PROXY_URL, {
-        method: 'POST',
-        body: JSON.stringify({ action: 'getFacilityBuildings' })
-      });
-      var data = await res.json();
-      if (!data.ok) throw new Error(data.error || '건물 목록 로드 실패');
-      _buildings = data.list || [];
-      bSel.innerHTML = '<option value="">건물을 선택하세요</option>';
-      _buildings.forEach(function (b) {
-        var opt = document.createElement('option');
-        opt.value = b.id;
-        opt.textContent = b.buildingName;
-        bSel.appendChild(opt);
-      });
-      bSel.disabled = false;
-    } catch (e) {
-      bSel.innerHTML = '<option value="">건물 목록을 불러올 수 없습니다</option>';
-      showAlert('건물 목록 로드 오류: ' + e.message, 'error');
-    }
-  }
+    if (!bSel) return;
+    _buildings = [];
+    bSel.innerHTML = '<option value="">건물을 선택하세요</option>';
+    bSel.disabled  = false;
 
-  function onRoomChange() {
-    var bId = $('fr-building').value;
-    var rId = $('fr-room').value;
-    var bld  = _buildings.find(function(b){ return b.id === bId; }) || {};
-    var room = (bld.rooms||[]).find(function(r){ return r.id === rId; }) || {};
-
-    _feeConfig = null;
-    var feeEl = $('fr-fee-info');
-    if (!feeEl) return;
-
-    if (!rId || !window.FacilityFeeModule) { feeEl.style.display = 'none'; return; }
-
-    _feeConfig = FacilityFeeModule.getFeeForRoom(bld.buildingName || '', room.name || '');
-    if (!_feeConfig) {
-      feeEl.style.display = 'none';
+    if (!window.FacilityFeeModule) {
+      bSel.innerHTML = '<option value="">시설 데이터를 불러올 수 없습니다</option>';
       return;
     }
 
-    // 요금 안내 카드 표시
-    var nm = _feeConfig.normalStart + '~' + _feeConfig.normalEnd;
-    var nr = FacilityFeeModule.comma(_feeConfig.normalRate || 0) + '원/시간';
-    var sm = _feeConfig.surchargeStart + '~' + _feeConfig.surchargeEnd;
-    var sr = FacilityFeeModule.comma(_feeConfig.surchargeRate || 0) + '원/시간';
+    var fees = FacilityFeeModule.loadFees();
+    if (!fees.length) {
+      bSel.innerHTML = '<option value="">등록된 시설이 없습니다 (관리자: 요금 관리 탭에서 등록)</option>';
+      return;
+    }
+
+    var seenBuildings = {};
+    fees.forEach(function(fee) {
+      var bn = (fee.buildingName || '기타').trim();
+      if (!seenBuildings[bn]) {
+        seenBuildings[bn] = { id: bn, buildingName: bn, rooms: [] };
+        _buildings.push(seenBuildings[bn]);
+      }
+      seenBuildings[bn].rooms.push({
+        id:       fee.id,
+        name:     fee.roomName || '',
+        capacity: fee.capacity || 0
+      });
+    });
+
+    _buildings.forEach(function(b) {
+      var opt = document.createElement('option');
+      opt.value       = b.id;
+      opt.textContent = b.buildingName;
+      bSel.appendChild(opt);
+    });
+  }
+
+  function onRoomChange() {
+    var bId  = $('fr-building').value;
+    var rId  = $('fr-room').value;
+    var bld  = _buildings.find(function(b){ return b.id === bId; }) || {};
+
+    _feeConfig = null;
+    var feeEl  = $('fr-fee-info');
+    if (!feeEl) return;
+
+    if (!rId || !window.FacilityFeeModule) { feeEl.style.display = 'none'; updateFeeEstimate(); return; }
+
+    var fees = FacilityFeeModule.loadFees();
+    var fee  = fees.find(function(f){ return f.id === rId; });
+    _feeConfig = fee ? FacilityFeeModule.normalize(fee) : null;
+
+    if (!_feeConfig) { feeEl.style.display = 'none'; updateFeeEstimate(); return; }
+
+    var bn  = _feeConfig.buildingName || bld.buildingName || '';
+    var rn  = _feeConfig.roomName     || '';
+    var nm  = (_feeConfig.normalStart||'') + '~' + (_feeConfig.normalEnd||'');
+    var nr  = FacilityFeeModule.comma(_feeConfig.normalRate || 0) + '원/시간';
+
+    var surchargeHtml = (_feeConfig.surchargeSlots||[]).map(function(slot) {
+      var sm = (slot.startTime||'') + '~' + (slot.endTime||'');
+      var sr = FacilityFeeModule.comma(slot.rate||0) + '원/시간';
+      return '<div class="fr-fee-rate-item fr-fee-surge"><span class="fr-fee-tag fr-fee-tag-surge">할증</span>' + sm + ' · ' + sr + '</div>';
+    }).join('');
 
     feeEl.innerHTML =
       '<div class="fr-fee-card">' +
-        '<div class="fr-fee-card-title">💰 ' + (bld.buildingName||'') + ' ' + (room.name||'') + ' 이용 요금 안내</div>' +
+        '<div class="fr-fee-card-title">💰 ' + bn + ' ' + rn + ' 이용 요금 안내</div>' +
         '<div class="fr-fee-rates">' +
           '<div class="fr-fee-rate-item fr-fee-normal"><span class="fr-fee-tag">평상</span>' + nm + ' · ' + nr + '</div>' +
-          '<div class="fr-fee-rate-item fr-fee-surge"><span class="fr-fee-tag fr-fee-tag-surge">할증</span>' + sm + ' · ' + sr + '</div>' +
+          surchargeHtml +
         '</div>' +
-        (_feeConfig.deposit ? '<div class="fr-fee-extra">보증금 ' + FacilityFeeModule.comma(_feeConfig.deposit) + '원 별도</div>' : '') +
-        (_feeConfig.cleaningFee ? '<div class="fr-fee-extra">청소비 ' + FacilityFeeModule.comma(_feeConfig.cleaningFee) + '원 별도</div>' : '') +
-        (_feeConfig.notes ? '<div class="fr-fee-note">📌 ' + _feeConfig.notes + '</div>' : '') +
+        (_feeConfig.deposit     ? '<div class="fr-fee-extra">보증금 '  + FacilityFeeModule.comma(_feeConfig.deposit)     + '원 별도</div>' : '') +
+        (_feeConfig.cleaningFee ? '<div class="fr-fee-extra">청소비 '  + FacilityFeeModule.comma(_feeConfig.cleaningFee) + '원 별도</div>' : '') +
+        (_feeConfig.notes       ? '<div class="fr-fee-note">📌 '       + _feeConfig.notes + '</div>' : '') +
       '</div>';
     feeEl.style.display = '';
 
@@ -401,7 +420,7 @@
     estEl.style.display = '';
 
     var qBtn = $('fr-quote-btn');
-    if (qBtn) qBtn.addEventListener('click', function() { openQuoteModal(calc); });
+    if (qBtn) qBtn.addEventListener('click', openCombinedQuoteModal);
   }
 
   function openQuoteModal(calc) {
@@ -522,36 +541,48 @@
 
     var btn = $('fr-submit-btn');
     btn.disabled    = true;
-    btn.textContent = '신청 중... (0/' + ranges.length + ')';
+    btn.textContent = '신청 처리 중...';
 
     try {
-      // 구간별로 각각 신청 접수
-      for (var i = 0; i < ranges.length; i++) {
-        btn.textContent = '신청 중... (' + (i + 1) + '/' + ranges.length + ')';
-        var res = await fetch(PROXY_URL, {
-          method: 'POST',
-          body: JSON.stringify({
-            action         : 'submitFacilityRequest',
-            buildingId     : bId,
-            buildingName   : bld.buildingName || bId,
-            roomId         : rId,
-            roomName       : room.name || rId,
-            title          : title + (ranges.length > 1 ? ' (' + (i + 1) + '/' + ranges.length + ')' : ''),
-            startAt        : ranges[i].startAt,
-            endAt          : ranges[i].endAt,
-            purpose        : purpose,
-            attendees      : attendees,
-            applicantName  : name,
-            applicantOrg   : org,
-            applicantPhone : phone,
-            applicantEmail : email,
-          })
-        });
-        var data = await res.json();
-        if (!data.ok) throw new Error('구간 ' + (i + 1) + ' 신청 실패: ' + (data.error || ''));
-      }
+      var allVenues = [{ buildingName: bld.buildingName || bId, roomName: room.name || rId, ranges: ranges }];
 
-      // 완료
+      // 추가 장소 수집
+      _extraVenues.forEach(function(ev) {
+        if (!ev || !ev.feeConfig) return;
+        var block    = $('fr-ev-block-' + ev.idx);
+        if (!block) return;
+        var startEl  = block.querySelector('.fr-ev-start');
+        var endEl    = block.querySelector('.fr-ev-end');
+        var evRanges = [];
+        if (startEl && endEl && startEl.value && endEl.value) {
+          evRanges.push({ startAt: startEl.value, endAt: endEl.value });
+        }
+        allVenues.push({ buildingName: ev.feeConfig.buildingName||'', roomName: ev.feeConfig.roomName||'', ranges: evRanges });
+      });
+
+      var reqKey = 'asea_facility_requests';
+      var reqs   = JSON.parse(localStorage.getItem(reqKey) || '[]');
+      var reqId  = 'FR-' + Date.now().toString(36).toUpperCase();
+
+      reqs.push({
+        id:             reqId,
+        status:         '신청',
+        createdAt:      new Date().toISOString(),
+        venues:         allVenues,
+        buildingName:   allVenues[0].buildingName,
+        roomName:       allVenues[0].roomName,
+        startAt:        (ranges[0]||{}).startAt || '',
+        endAt:          (ranges[ranges.length-1]||{}).endAt || '',
+        title:          title,
+        purpose:        purpose,
+        attendees:      attendees,
+        applicantName:  name,
+        applicantOrg:   org,
+        applicantPhone: phone,
+        applicantEmail: email
+      });
+      localStorage.setItem(reqKey, JSON.stringify(reqs));
+
       $('fr-form').style.display    = 'none';
       $('fr-success').style.display = '';
       $('fr-success-email').textContent = email;
@@ -716,14 +747,6 @@
      초기화
   ───────────────────────────────────────────────── */
   function init() {
-    // 프록시 미설정
-    if (!PROXY_URL) {
-      showAlert('대관신청 서비스가 아직 설정되지 않았습니다. 담당자에게 문의하세요.', 'error');
-      var form = $('fr-form');
-      if (form) form.style.display = 'none';
-      return;
-    }
-
     // 소속 기본값
     if (INST_DEFAULT) {
       var orgEl = $('fr-org');
@@ -757,7 +780,7 @@
       renderTimeRanges();
     });
 
-    // 건물 로드
+    // 건물 로드 (localStorage 연동)
     loadBuildings();
     $('fr-building').addEventListener('change', function () {
       onBuildingChange();
@@ -767,6 +790,16 @@
       onRoomChange();
       updateSteps(_currentStep);
     });
+
+    // 장소 추가하기
+    var addVenueBtn = $('fr-add-venue-btn');
+    if (addVenueBtn) addVenueBtn.addEventListener('click', addExtraVenueBlock);
+
+    // 상단/하단 견적서 버튼
+    var topQuoteBtn = $('fr-top-quote-btn');
+    if (topQuoteBtn) topQuoteBtn.addEventListener('click', openCombinedQuoteModal);
+    var botQuoteBtn = $('fr-bot-quote-btn');
+    if (botQuoteBtn) botQuoteBtn.addEventListener('click', openCombinedQuoteModal);
 
     // 시간 입력 변화 감지 → 실시간 요금 계산
     $('fr-time-ranges').addEventListener('change', function(e) {
@@ -796,51 +829,297 @@
     initStatusCheck();
   }
 
+  /* ─────────────────────────────────────────────────
+     다중 장소 (추가 장소 블록)
+  ───────────────────────────────────────────────── */
+  function addExtraVenueBlock() {
+    var idx = _extraVenues.length;
+    _extraVenues.push({ idx: idx, feeConfig: null, calc: null });
+
+    var container = $('fr-extra-venues');
+    if (!container) return;
+
+    var block = document.createElement('fieldset');
+    block.className = 'fr-fieldset fr-ev-block';
+    block.id = 'fr-ev-block-' + idx;
+
+    var bOpts = '<option value="">건물 선택</option>';
+    _buildings.forEach(function(b) {
+      bOpts += '<option value="' + b.id + '">' + b.buildingName + '</option>';
+    });
+
+    block.innerHTML =
+      '<legend class="fr-legend">➕ 추가 장소 ' + (idx + 1) + '</legend>' +
+      '<div style="display:flex;justify-content:flex-end;margin-bottom:8px">' +
+        '<button type="button" class="fr-ev-remove-btn" style="background:none;border:1px solid #e0e0e0;border-radius:6px;padding:4px 10px;font-size:12px;color:#888;cursor:pointer">✕ 이 장소 제거</button>' +
+      '</div>' +
+      '<div class="fr-field">' +
+        '<label class="fr-label">건물</label>' +
+        '<select class="fr-select fr-ev-building"><option value="">건물 선택</option>' + bOpts + '</select>' +
+      '</div>' +
+      '<div class="fr-field">' +
+        '<label class="fr-label">호실</label>' +
+        '<select class="fr-select fr-ev-room"><option value="">건물을 먼저 선택하세요</option></select>' +
+      '</div>' +
+      '<div id="fr-ev-fee-info-' + idx + '" style="display:none;margin-top:8px"></div>' +
+      '<div class="fr-time-row" style="margin-top:10px">' +
+        '<div class="fr-field">' +
+          '<label class="fr-label">시작 일시 <span class="fr-req">*</span></label>' +
+          '<input type="datetime-local" class="fr-input fr-ev-start">' +
+        '</div>' +
+        '<div class="fr-field">' +
+          '<label class="fr-label">종료 일시 <span class="fr-req">*</span></label>' +
+          '<input type="datetime-local" class="fr-input fr-ev-end">' +
+        '</div>' +
+      '</div>' +
+      '<div id="fr-ev-est-' + idx + '" style="display:none;margin-top:8px"></div>';
+
+    block.querySelector('.fr-ev-remove-btn').addEventListener('click', function() {
+      block.remove();
+      _extraVenues[idx] = null;
+    });
+
+    var bSel = block.querySelector('.fr-ev-building');
+    var rSel = block.querySelector('.fr-ev-room');
+
+    bSel.addEventListener('change', function() {
+      var bId = bSel.value;
+      var bld = _buildings.find(function(b){ return b.id === bId; }) || {};
+      rSel.innerHTML = '<option value="">호실 선택</option>';
+      (bld.rooms||[]).forEach(function(r) {
+        var opt = document.createElement('option');
+        opt.value = r.id;
+        opt.textContent = r.name + (r.capacity ? ' (' + r.capacity + '인)' : '');
+        rSel.appendChild(opt);
+      });
+      _extraVenues[idx] = { idx: idx, feeConfig: null, calc: null };
+      $('fr-ev-fee-info-' + idx).style.display = 'none';
+      $('fr-ev-est-'      + idx).style.display = 'none';
+    });
+
+    rSel.addEventListener('change', function() {
+      var rId = rSel.value;
+      var bId = bSel.value;
+      var bld = _buildings.find(function(b){ return b.id === bId; }) || {};
+
+      if (!rId || !window.FacilityFeeModule) {
+        if (_extraVenues[idx]) _extraVenues[idx].feeConfig = null;
+        $('fr-ev-fee-info-' + idx).style.display = 'none';
+        return;
+      }
+
+      var fees = FacilityFeeModule.loadFees();
+      var fee  = fees.find(function(f){ return f.id === rId; });
+      var fc   = fee ? FacilityFeeModule.normalize(fee) : null;
+      if (_extraVenues[idx]) _extraVenues[idx].feeConfig = fc;
+
+      var infoEl = $('fr-ev-fee-info-' + idx);
+      if (fc) {
+        var nm = (fc.normalStart||'') + '~' + (fc.normalEnd||'');
+        var nr = FacilityFeeModule.comma(fc.normalRate||0) + '원/시간';
+        infoEl.innerHTML =
+          '<div class="fr-fee-card" style="font-size:13px">' +
+            '<div class="fr-fee-card-title">💰 ' + (fc.buildingName||bld.buildingName||'') + ' ' + (fc.roomName||'') + '</div>' +
+            '<div class="fr-fee-rate-item fr-fee-normal"><span class="fr-fee-tag">평상</span>' + nm + ' · ' + nr + '</div>' +
+          '</div>';
+        infoEl.style.display = '';
+      } else {
+        infoEl.style.display = 'none';
+      }
+
+      _updateExtraVenueEst(idx, block);
+    });
+
+    block.querySelector('.fr-ev-start').addEventListener('change', function() { _updateExtraVenueEst(idx, block); });
+    block.querySelector('.fr-ev-end').addEventListener('change',   function() { _updateExtraVenueEst(idx, block); });
+
+    container.appendChild(block);
+  }
+
+  function _updateExtraVenueEst(idx, block) {
+    var ev = _extraVenues[idx];
+    if (!ev) return;
+    var estEl = $('fr-ev-est-' + idx);
+    if (!estEl) return;
+
+    if (!ev.feeConfig || !window.FacilityFeeModule) { estEl.style.display = 'none'; return; }
+
+    var startVal = block.querySelector('.fr-ev-start').value;
+    var endVal   = block.querySelector('.fr-ev-end').value;
+    if (!startVal || !endVal || endVal <= startVal) { estEl.style.display = 'none'; return; }
+
+    var calc = FacilityFeeModule.calcFee(ev.feeConfig, [{ startAt: startVal, endAt: endVal }]);
+    ev.calc  = calc;
+    if (!calc) { estEl.style.display = 'none'; return; }
+
+    estEl.innerHTML =
+      '<div class="fr-estimate-box" style="font-size:13px">' +
+        '<div class="fr-estimate-title">📊 추가 장소 예상 요금</div>' +
+        '<div class="fr-estimate-total">합계: <strong>' + FacilityFeeModule.comma(calc.total) + '원</strong></div>' +
+      '</div>';
+    estEl.style.display = '';
+  }
+
+  /* ─────────────────────────────────────────────────
+     통합 견적서 모달 (상단/하단 버튼 공통)
+  ───────────────────────────────────────────────── */
+  function openCombinedQuoteModal() {
+    if (!window.FacilityFeeModule) return;
+
+    var bId  = $('fr-building').value;
+    var rId  = $('fr-room').value;
+    var bld  = _buildings.find(function(b){ return b.id === bId; }) || {};
+    var room = (bld.rooms||[]).find(function(r){ return r.id === rId; }) || {};
+
+    // 메인 장소 구간
+    var mainRanges = [];
+    $('fr-time-ranges').querySelectorAll('.fr-time-range-row').forEach(function(row) {
+      var s = row.querySelector('.fr-range-start');
+      var e = row.querySelector('.fr-range-end');
+      if (s && e && s.value && e.value) mainRanges.push({ startAt: s.value, endAt: e.value });
+    });
+
+    var venueInfos = [];
+    if (_feeConfig && mainRanges.length) {
+      var calc = FacilityFeeModule.calcFee(_feeConfig, mainRanges);
+      venueInfos.push({
+        buildingName: _feeConfig.buildingName || bld.buildingName || '',
+        roomName:     _feeConfig.roomName     || room.name || '',
+        ranges:       mainRanges,
+        calc:         calc,
+        feeConfig:    _feeConfig
+      });
+    }
+
+    // 추가 장소
+    _extraVenues.forEach(function(ev) {
+      if (!ev || !ev.feeConfig) return;
+      var evBlock  = $('fr-ev-block-' + ev.idx);
+      if (!evBlock) return;
+      var startEl  = evBlock.querySelector('.fr-ev-start');
+      var endEl    = evBlock.querySelector('.fr-ev-end');
+      if (!startEl || !endEl || !startEl.value || !endEl.value) return;
+      var evRanges = [{ startAt: startEl.value, endAt: endEl.value }];
+      var evCalc   = ev.calc || FacilityFeeModule.calcFee(ev.feeConfig, evRanges);
+      venueInfos.push({
+        buildingName: ev.feeConfig.buildingName || '',
+        roomName:     ev.feeConfig.roomName     || '',
+        ranges:       evRanges,
+        calc:         evCalc,
+        feeConfig:    ev.feeConfig
+      });
+    });
+
+    if (!venueInfos.length) {
+      alert('시설과 이용 일시를 먼저 선택해 주세요.');
+      return;
+    }
+
+    var applicant = {
+      name:  ($('fr-name')  && $('fr-name').value)  || '',
+      org:   ($('fr-org')   && $('fr-org').value)   || '',
+      phone: ($('fr-phone') && $('fr-phone').value) || '',
+      email: ($('fr-email') && $('fr-email').value) || ''
+    };
+    var title   = ($('fr-title')   && $('fr-title').value)   || '';
+    var purpose = ($('fr-purpose') && $('fr-purpose').value) || '';
+    var attd    = ($('fr-attendees') && $('fr-attendees').value) || '';
+
+    var modal = $('fr-quote-modal');
+    if (!modal) return;
+
+    var previewEl = $('fr-quote-preview');
+    if (previewEl) {
+      if (venueInfos.length === 1) {
+        // 단일 장소 — 기존 buildQuoteHTML 사용
+        var info = {
+          buildingName: venueInfos[0].buildingName,
+          roomName:     venueInfos[0].roomName,
+          ranges:       venueInfos[0].ranges,
+          applicant:    applicant,
+          title:        title,
+          purpose:      purpose,
+          attendees:    attd,
+          calc:         venueInfos[0].calc,
+          feeConfig:    venueInfos[0].feeConfig
+        };
+        previewEl.innerHTML = '<iframe id="fr-quote-iframe" style="width:100%;height:500px;border:none"></iframe>';
+        var iframe = document.getElementById('fr-quote-iframe');
+        var doc = iframe.contentDocument || iframe.contentWindow.document;
+        doc.open(); doc.write(FacilityFeeModule.buildQuoteHTML(info)); doc.close();
+        modal._quoteInfo = info;
+      } else {
+        // 다중 장소 — 여러 블록을 스택으로 표시
+        var grandTotal = venueInfos.reduce(function(sum, v) { return sum + (v.calc ? v.calc.total : 0); }, 0);
+        var blocksHtml = venueInfos.map(function(v, i) {
+          var info = {
+            buildingName: v.buildingName, roomName: v.roomName,
+            ranges: v.ranges, applicant: applicant,
+            title: title + (venueInfos.length > 1 ? ' (' + (i+1) + '/' + venueInfos.length + ')' : ''),
+            purpose: purpose, attendees: attd, calc: v.calc, feeConfig: v.feeConfig
+          };
+          return FacilityFeeModule.buildQuoteHTML(info);
+        }).join('');
+        previewEl.innerHTML = '<iframe id="fr-quote-iframe" style="width:100%;height:500px;border:none"></iframe>';
+        var iframe2 = document.getElementById('fr-quote-iframe');
+        var doc2 = iframe2.contentDocument || iframe2.contentWindow.document;
+        var combinedHtml = '<html><body style="margin:0;padding:0">' + blocksHtml +
+          '<div style="text-align:right;font-size:15px;font-weight:700;padding:12px 24px;border-top:2px solid #1a3a5c">합산 견적: ' +
+          FacilityFeeModule.comma(grandTotal) + '원</div></body></html>';
+        doc2.open(); doc2.write(combinedHtml); doc2.close();
+        modal._quoteInfo = { venues: venueInfos, applicant: applicant };
+      }
+    }
+
+    modal.hidden = false;
+  }
+
   // 상태 조회
   function initStatusCheck() {
     var btn = $('fr-status-check-btn');
     if (!btn) return;
-    btn.addEventListener('click', async function() {
-      var email = ($('fr-status-email').value || '').trim();
+    btn.addEventListener('click', function() {
+      var email = ($('fr-status-email').value || '').trim().toLowerCase();
       var phone = ($('fr-status-phone').value || '').trim();
       if (!email) { alert('이메일을 입력하세요.'); return; }
       var result = $('fr-status-result');
       result.style.display = '';
-      result.innerHTML = '<p style="color:#888;font-size:13px">조회 중...</p>';
-      try {
-        var res = await fetch(PROXY_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'getRequestStatus', email: email, phone: phone })
-        });
-        var data = await res.json();
-        if (!data.ok) throw new Error(data.error || '조회 실패');
-        if (!data.requests || data.requests.length === 0) {
-          result.innerHTML = '<p style="color:#888;font-size:13px">해당 이메일로 접수된 신청이 없습니다.</p>';
-          return;
-        }
-        var statusColors = { '신청':'#1976D2','검토중':'#F57C00','승인':'#388E3C','반려':'#D32F2F' };
-        var days = ['일','월','화','수','목','금','토'];
-        function formatDT(iso) {
-          if (!iso) return '-';
-          var d = new Date(iso);
-          return d.getFullYear() + '.' + pad(d.getMonth()+1) + '.' + pad(d.getDate()) + '(' + days[d.getDay()] + ') ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
-        }
-        result.innerHTML = data.requests.slice().reverse().map(function(r) {
-          var sc = statusColors[r.status] || '#888';
-          return '<div style="border:1px solid #e0e0e0;border-radius:10px;padding:12px 14px;margin-bottom:10px">' +
-            '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">' +
-              '<span style="background:' + sc + ';color:#fff;border-radius:20px;padding:2px 10px;font-size:12px;font-weight:600">' + r.status + '</span>' +
-              '<strong style="font-size:13px">' + r.buildingName + ' ' + r.roomName + ' — ' + r.title + '</strong>' +
-            '</div>' +
-            '<div style="font-size:12px;color:#666">' + formatDT(r.startAt) + ' ~ ' + formatDT(r.endAt) + '</div>' +
-            (r.reviewNote ? '<div style="font-size:12px;color:#555;margin-top:4px;background:#f5f5f5;border-radius:6px;padding:6px 8px">💬 ' + r.reviewNote + '</div>' : '') +
-            '<div style="font-size:11px;color:#aaa;margin-top:4px">접수: ' + (r.createdAt || '').slice(0,10) + ' · 신청번호: ' + r.id + '</div>' +
-          '</div>';
-        }).join('');
-      } catch(e) {
-        result.innerHTML = '<p style="color:#e53935;font-size:13px">오류: ' + e.message + '</p>';
+
+      var reqs = JSON.parse(localStorage.getItem('asea_facility_requests') || '[]');
+      var matched = reqs.filter(function(r) {
+        var emailMatch = (r.applicantEmail||'').toLowerCase() === email;
+        var phoneMatch = !phone || (r.applicantPhone||'').replace(/-/g,'').indexOf(phone.replace(/-/g,'')) >= 0;
+        return emailMatch && phoneMatch;
+      });
+
+      if (!matched.length) {
+        result.innerHTML = '<p style="color:#888;font-size:13px">해당 이메일로 접수된 신청이 없습니다.</p>';
+        return;
       }
+
+      var statusColors = { '신청':'#1976D2','검토중':'#F57C00','승인':'#388E3C','반려':'#D32F2F' };
+      var days = ['일','월','화','수','목','금','토'];
+      function formatDT(iso) {
+        if (!iso) return '-';
+        var d = new Date(iso);
+        return d.getFullYear() + '.' + pad(d.getMonth()+1) + '.' + pad(d.getDate()) + '(' + days[d.getDay()] + ') ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+      }
+
+      result.innerHTML = matched.slice().reverse().map(function(r) {
+        var sc = statusColors[r.status] || '#888';
+        var venueStr = (r.venues && r.venues.length > 1)
+          ? r.venues.map(function(v){ return v.buildingName + ' ' + v.roomName; }).join(', ')
+          : (r.buildingName || '') + ' ' + (r.roomName || '');
+        return '<div style="border:1px solid #e0e0e0;border-radius:10px;padding:12px 14px;margin-bottom:10px">' +
+          '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">' +
+            '<span style="background:' + sc + ';color:#fff;border-radius:20px;padding:2px 10px;font-size:12px;font-weight:600">' + r.status + '</span>' +
+            '<strong style="font-size:13px">' + venueStr + ' — ' + (r.title||'') + '</strong>' +
+          '</div>' +
+          '<div style="font-size:12px;color:#666">' + formatDT(r.startAt) + ' ~ ' + formatDT(r.endAt) + '</div>' +
+          (r.reviewNote ? '<div style="font-size:12px;color:#555;margin-top:4px;background:#f5f5f5;border-radius:6px;padding:6px 8px">💬 ' + r.reviewNote + '</div>' : '') +
+          '<div style="font-size:11px;color:#aaa;margin-top:4px">접수: ' + (r.createdAt||'').slice(0,10) + ' · 신청번호: ' + r.id + '</div>' +
+        '</div>';
+      }).join('');
     });
   }
 
