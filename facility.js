@@ -1759,6 +1759,16 @@ var FacilityModule = (function () {
     var adjToggleBtn = $f('fac-fee-adjust-toggle-btn');
     if (adjToggleBtn) adjToggleBtn.onclick = toggleAdjustPanel;
 
+    var defBtn = $f('fac-fee-default-btn');
+    if (defBtn) defBtn.onclick = function() {
+      if (!window.FacilityFeeModule || !FacilityFeeModule.applyDefaults) return;
+      if (!confirm('아세아 표준 대관료 기준표(15개 시설)를 적용합니다.\n동일 건물·호실의 기존 요금은 표준값으로 덮어쓰고, 없는 시설은 추가됩니다.\n계속할까요?')) return;
+      var n = FacilityFeeModule.applyDefaults();
+      renderFeeAdmin();
+      renderFeeSummaryTable();
+      toast('✅ 표준 기준표 ' + n + '개 시설 적용 완료', 'success');
+    };
+
     var previewBtn = $f('fac-adj-preview-btn');
     if (previewBtn) previewBtn.onclick = function() { applyFeeAdjust(true); };
 

@@ -45,6 +45,65 @@ window.FacilityFeeModule = (function() {
     return fee;
   }
 
+  /* ══════════════════════════════════════════════════════
+     아세아 표준 대관료 기준표 (2026) — 앱 기본값
+     ※ 냉난방은 여름·겨울(1·2·7·8·12월)에만 자동 부과
+     ※ 부가세 면세(학교법인) — 공급가 기준
+  ══════════════════════════════════════════════════════ */
+  function _sur(base) {
+    var r = Math.round(base * 1.5);
+    return [
+      { label: '조조', start: '07:00', end: '09:00', rate: r },
+      { label: '야간', start: '18:00', end: '22:00', rate: r }
+    ];
+  }
+  var _TAX = '부가세 면세(공급가 기준).';
+  var _DEFAULT_FEES_RAW = [
+    { buildingName:'항공기술교육관', roomName:'드림에듀아트센터(다목적홀) 60평', normalRate:60000, surchargeSlots:_sur(60000), minHours:2, deposit:100000, cleaningFee:50000, flatExtras:[{name:'행사 음향·조명 운영비', amount:100000}], notes:'수용인원·행사규모별 협의(소규모 비영리 감면 가능). '+_TAX },
+    { buildingName:'항공기술교육관', roomName:'회의실 8평', normalRate:40000, surchargeSlots:_sur(40000), minHours:2, notes:'단시간 정액 관리비 폐지, 시간단가 일원화. '+_TAX },
+    { buildingName:'항공기술교육관', roomName:'8인 사무실 12평', normalRate:60000, surchargeSlots:_sur(60000), minHours:2, notes:_TAX },
+    { buildingName:'항공기술교육관', roomName:'강의실(3층) 20평', normalRate:40000, surchargeSlots:_sur(40000), minHours:2, notes:_TAX },
+    { buildingName:'항공기술교육관', roomName:'강의실(4층) 20평', normalRate:40000, surchargeSlots:_sur(40000), minHours:2, notes:_TAX },
+    { buildingName:'영등포 캠퍼스', roomName:'시뮬레이터실 A320 12평', normalRate:150000, surchargeSlots:_sur(150000), minHours:4, deposit:100000, cleaningFee:50000, flatExtras:[{name:'대관 기술·운영 인건비', amount:400000},{name:'훈련 교관비', amount:80000}], notes:'A320 풀플라이트형. 상업·촬영 목적 별도 프리미엄 협의. '+_TAX },
+    { buildingName:'영등포 캠퍼스', roomName:'시뮬레이터실 B737 12평', normalRate:150000, surchargeSlots:_sur(150000), minHours:4, deposit:100000, cleaningFee:50000, flatExtras:[{name:'대관 기술·운영 인건비', amount:400000},{name:'훈련 교관비', amount:80000}], notes:'B737 풀플라이트형. 상업·촬영 목적 별도 프리미엄 협의. '+_TAX },
+    { buildingName:'영등포 캠퍼스', roomName:'시뮬레이터실 C172(세스나) 8평', normalRate:80000, surchargeSlots:_sur(80000), minHours:4, deposit:100000, cleaningFee:50000, flatExtras:[{name:'대관 기술·운영 인건비', amount:200000},{name:'훈련 교관비', amount:80000}], notes:'세스나 C172. '+_TAX },
+    { buildingName:'영등포 캠퍼스', roomName:'비행기내모형(목업) 15평', normalRate:150000, surchargeSlots:_sur(150000), minHours:2, deposit:100000, cleaningFee:50000, flatExtras:[{name:'관리·운영 인건비(상주)', amount:100000}], notes:'관리인원 상주. 광고·방송 촬영은 별도 프리미엄(일 단위) 협의 권장. '+_TAX },
+    { buildingName:'영등포 캠퍼스', roomName:'무도연습장 25평(지하1층)', normalRate:50000, surchargeSlots:[], minHours:2, flatExtras:[{name:'안전관리 인건비(상주)', amount:100000}], notes:'안전관리자 상주 필수 · 별도협의 가능. '+_TAX },
+    { buildingName:'영등포 캠퍼스', roomName:'체력단련장 20평(지하1층)', normalRate:50000, surchargeSlots:[], minHours:2, flatExtras:[{name:'안전관리 인건비(상주)', amount:100000}], notes:'안전관리자 상주 필수 · 별도협의 가능. '+_TAX },
+    { buildingName:'영등포 캠퍼스', roomName:'전자사격장 15평(지하1층)', normalRate:80000, surchargeSlots:[], minHours:2, deposit:50000, flatExtras:[{name:'안전관리·사선통제 인건비(상주)', amount:100000}], notes:'안전관리관 상주 필수 · 특수시설 별도협의. '+_TAX },
+    { buildingName:'영등포 캠퍼스', roomName:'식음료 실습실 20평(4층)', normalRate:80000, surchargeSlots:_sur(80000), minHours:2, deposit:50000, cleaningFee:50000, flatExtras:[{name:'관리·운영 인건비(상주)', amount:100000}], notes:'관리인원 상주 · 식자재 별도. '+_TAX },
+    { buildingName:'영등포 캠퍼스', roomName:'강의실(외) 20평', normalRate:40000, surchargeSlots:_sur(40000), minHours:2, notes:_TAX },
+    { buildingName:'영등포 캠퍼스', roomName:'실습실(외, 계열·전산실 등) 개별상이', normalRate:70000, surchargeSlots:_sur(70000), minHours:2, cleaningFee:30000, notes:'시설별 6~8만원 범위 내 협의. '+_TAX }
+  ];
+  // 공통 기본값 채우기 (평상시간/냉난방/빈 배열)
+  function _defaultFees() {
+    return _DEFAULT_FEES_RAW.map(function(f) {
+      return Object.assign({
+        normalStart:'09:00', normalEnd:'18:00',
+        surchargeSlots:[], minHours:2, deposit:0, cleaningFee:0,
+        timeExtras:[], flatExtras:[],
+        seasonalFee:{ enabled:true, rate:10000, months:[1,2,7,8,12] },
+        notes:''
+      }, f);
+    });
+  }
+
+  /* 표준 기준표 적용 — 동일 건물·호실은 덮어쓰고, 없으면 추가 */
+  function applyDefaults() {
+    var fees = loadFees();
+    _defaultFees().forEach(function(d) {
+      var ex = fees.find(function(f){ return f.buildingName===d.buildingName && f.roomName===d.roomName; });
+      if (ex) { Object.assign(ex, d); }
+      else { d.id = genId(); d.createdAt = Date.now(); fees.push(d); }
+    });
+    saveFees(fees);
+    return _DEFAULT_FEES_RAW.length;
+  }
+  /* 비어있을 때만 표준 기준표 시드 (신규 사용자 기본값) */
+  function seedIfEmpty() {
+    try { if (loadFees().length === 0) applyDefaults(); } catch(e) {}
+  }
+
   function addFee(fee) {
     var fees = loadFees();
     fee.id = genId(); fee.createdAt = Date.now();
@@ -303,12 +362,17 @@ window.FacilityFeeModule = (function() {
     });
   }
 
+  // 신규 사용자/빈 상태 — 표준 기준표 자동 시드
+  seedIfEmpty();
+
   return {
     loadFees: loadFees, saveFees: saveFees,
     addFee: addFee, updateFee: updateFee, deleteFee: deleteFee,
     getFeeForRoom: getFeeForRoom,
     calcFee: calcFee, normalize: normalize,
     buildQuoteHTML: buildQuoteHTML, printQuote: printQuote,
+    applyDefaults: applyDefaults, seedIfEmpty: seedIfEmpty,
+    DEFAULT_FEES: _DEFAULT_FEES_RAW,
     comma: comma, fmtDT: fmtDT
   };
 })();
