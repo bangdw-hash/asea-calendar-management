@@ -198,8 +198,11 @@ window.LaborContractModule = (function () {
       : '';
 
     var commonStyle = [
-      '@page { size: A4; margin: 15mm 20mm; }',
-      'body { font-family: "Malgun Gothic", "맑은 고딕", sans-serif; font-size: 10pt; margin: 0; color: #000; }',
+      "@font-face{font-family:'KoPubWorld Dotum';font-weight:300;src:url('fonts/KoPubWorld-Dotum-Light.ttf') format('truetype');}",
+      "@font-face{font-family:'KoPubWorld Dotum';font-weight:400;src:url('fonts/KoPubWorld-Dotum-Medium.ttf') format('truetype');}",
+      "@font-face{font-family:'KoPubWorld Dotum';font-weight:700;src:url('fonts/KoPubWorld-Dotum-Bold.ttf') format('truetype');}",
+      '@page { size: A4; margin: 12mm 16mm; }',
+      "body { font-family: 'KoPubWorld Dotum', 'Malgun Gothic', '맑은 고딕', sans-serif; font-size: 9.5pt; margin: 0; color: #000; line-height: 1.5; }",
       '.contract-wrap { width: 170mm; margin: 0 auto; position: relative; }',
       '.contract-title { text-align: center; font-size: 16pt; font-weight: bold; margin-bottom: 8mm; letter-spacing: 2px; }',
       '.contract-subtitle { text-align: center; font-size: 11pt; margin-bottom: 6mm; }',
@@ -246,7 +249,7 @@ window.LaborContractModule = (function () {
   function _buildStandardHTML(contract, emp, ee, ct, sealImg, eSignImg, ganjinHtml, commonStyle, wageLine, insuranceHtml, payMethodText) {
     var today = new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' });
 
-    return '<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><title>표준근로계약서</title><style>' + commonStyle + '</style></head><body>' +
+    return '<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><base href="' + location.href + '"><title>표준근로계약서</title><style>' + commonStyle + '</style></head><body>' +
       '<div class="contract-wrap">' +
       _lcLetterhead() +
       '<div class="contract-title">표준근로계약서</div>' +
@@ -331,7 +334,7 @@ window.LaborContractModule = (function () {
   function _buildShorttermHTML(contract, emp, ee, ct, sealImg, eSignImg, ganjinHtml, commonStyle, wageLine, payMethodText) {
     var today = new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' });
 
-    return '<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><title>단기근로계약서</title><style>' + commonStyle + '</style></head><body>' +
+    return '<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><base href="' + location.href + '"><title>단기근로계약서</title><style>' + commonStyle + '</style></head><body>' +
       '<div class="contract-wrap">' +
       _lcLetterhead() +
       '<div class="contract-title">단기근로계약서</div>' +

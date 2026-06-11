@@ -1886,7 +1886,10 @@ window.HRModule = (function () {
 
   function _doPrint(html) {
     var printCSS = [
-      "body{font-family:'맑은 고딕',sans-serif;margin:0;padding:0;}",
+      "@font-face{font-family:'KoPubWorld Dotum';font-weight:300;src:url('fonts/KoPubWorld-Dotum-Light.ttf') format('truetype');}",
+      "@font-face{font-family:'KoPubWorld Dotum';font-weight:400;src:url('fonts/KoPubWorld-Dotum-Medium.ttf') format('truetype');}",
+      "@font-face{font-family:'KoPubWorld Dotum';font-weight:700;src:url('fonts/KoPubWorld-Dotum-Bold.ttf') format('truetype');}",
+      "body{font-family:'KoPubWorld Dotum','Malgun Gothic','맑은 고딕',sans-serif;margin:0;padding:0;}",
       ".hr-print-page{width:210mm;padding:7mm 10mm;font-size:8pt;line-height:1.35;color:#000;box-sizing:border-box;page-break-after:always;}",
       ".hr-letterhead{display:flex;align-items:center;gap:8px;padding-bottom:4px;margin-bottom:3mm;border-bottom:2px solid #1a3a5c;}",
       ".hr-lh-logo{height:22px;width:auto;max-width:130px;object-fit:contain;}",
@@ -1908,7 +1911,7 @@ window.HRModule = (function () {
     ].join('');
     var win = window.open('', '_blank', 'width=900,height=700,scrollbars=yes');
     if (!win) { alert('팝업이 차단되었습니다. 이 사이트의 팝업을 허용한 후 다시 시도하세요.'); return; }
-    win.document.write('<!DOCTYPE html><html><head><meta charset="utf-8"><title>미리보기 / 출력</title><style>' + printCSS + '</style></head><body>' + html + '<div style="text-align:center;padding:16px;font-size:13px;color:#666"><button onclick="window.print()" style="padding:10px 28px;font-size:14px;background:#1a3a5c;color:#fff;border:none;border-radius:6px;cursor:pointer">🖨️ 인쇄</button>&nbsp;<button onclick="window.close()" style="padding:10px 20px;font-size:14px;background:#6B7280;color:#fff;border:none;border-radius:6px;cursor:pointer">닫기</button></div></body></html>');
+    win.document.write('<!DOCTYPE html><html><head><meta charset="utf-8"><base href="' + location.href + '"><title>미리보기 / 출력</title><style>' + printCSS + '</style></head><body>' + html + '<div style="text-align:center;padding:16px;font-size:13px;color:#666"><button onclick="window.print()" style="padding:10px 28px;font-size:14px;background:#1a3a5c;color:#fff;border:none;border-radius:6px;cursor:pointer">🖨️ 인쇄</button>&nbsp;<button onclick="window.close()" style="padding:10px 20px;font-size:14px;background:#6B7280;color:#fff;border:none;border-radius:6px;cursor:pointer">닫기</button></div></body></html>');
     win.document.close();
   }
 

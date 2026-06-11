@@ -392,6 +392,18 @@ window.RetireModule = (function () {
 
     var body = el('div', 'rt-card-body');
 
+    /* 직군 구분 — 결재라인 결정 */
+    body.appendChild(sectionTitle('■ 직군 구분'));
+    body.appendChild(row([
+      field('직군 (결재라인 결정)', 'select', f.jobType || '행정직', function (v) { f.jobType = v; saveApp(app); _render(); }, 'w200', ['행정직', '교무직']),
+    ]));
+    var _jobHint = el('div');
+    _jobHint.style.cssText = 'font-size:12px;color:#6B7280;margin:-4px 0 6px;padding:0 2px';
+    _jobHint.innerHTML = (f.jobType === '교무직')
+      ? '교무직 결재라인: <b>부서장 · 교육지원처장 · 학장</b>'
+      : '행정직 결재라인: <b>기획처장 · 총괄이사 · 이사장</b> (인사부서)';
+    body.appendChild(_jobHint);
+
     /* 인적 사항 */
     body.appendChild(sectionTitle('■ 인적 사항'));
     body.appendChild(row([
@@ -781,15 +793,21 @@ window.RetireModule = (function () {
   function _printResignation(app) {
     var f = app.form;
 
-    var body =
-      /* 결재란 (우측 상단) */
+    /* 직군별 결재란 — 우측 상단 정렬 */
+    var isFaculty = (f.jobType === '교무직');
+    var apLabel = isFaculty ? '결재<br>라인' : '인사<br>부서';
+    var apCols  = isFaculty ? ['부서장', '교육지원처장', '학장'] : ['기획처장', '총괄이사', '이 사 장'];
+    var approval =
       '<table class="pf-table" style="width:auto;margin-left:auto;font-size:9pt;margin-bottom:6mm">' +
         '<tr>' +
-          '<td class="pf-th-label" rowspan="2" style="padding:2mm 4mm">인사<br>부서</td>' +
-          '<th style="width:24mm">기획처장</th><th style="width:24mm">총괄이사</th><th style="width:24mm">이 사 장</th>' +
+          '<td class="pf-th-label" rowspan="2" style="padding:2mm 4mm">' + apLabel + '</td>' +
+          apCols.map(function (c) { return '<th style="width:24mm">' + c + '</th>'; }).join('') +
         '</tr>' +
-        '<tr><td style="height:14mm">&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>' +
-      '</table>' +
+        '<tr>' + apCols.map(function () { return '<td style="height:14mm">&nbsp;</td>'; }).join('') + '</tr>' +
+      '</table>';
+
+    var body =
+      approval +
 
       /* 인적사항 */
       '<table class="pf-table">' +
@@ -820,13 +838,11 @@ window.RetireModule = (function () {
       /* 선언문 */
       '<p style="margin:0 0 4mm">상기본인은 위와 같은 사유로 퇴직하고자 하오니, 이를 승인하여 주시기 바랍니다.</p>' +
 
-      /* 날짜 + 서명 */
+      /* 날짜 + 서명 (우측 정렬, 가로줄 없음) */
       '<div class="pf-signrow">' +
         '<span style="font-size:11pt">' + _fmtKo(f.signDate) + '</span>' +
         '<span style="font-size:11pt">상기본인&nbsp;&nbsp;' + _esc(f.name) + '&nbsp;&nbsp;(인)</span>' +
-        (f.signB64
-          ? '<img src="' + f.signB64 + '" style="height:20mm;width:36mm;object-fit:contain;border-bottom:1px solid #333">'
-          : '<span class="pf-signline" style="min-width:36mm"></span>') +
+        (f.signB64 ? '<img src="' + f.signB64 + '" style="height:18mm;width:32mm;object-fit:contain">' : '') +
       '</div>' +
 
       '<p class="pf-center" style="font-size:12.5pt;font-weight:800;margin:5mm 0 6mm">(재) 아세아항공직업전문학교 이사장 귀하</p>' +
@@ -849,8 +865,7 @@ window.RetireModule = (function () {
         '<tr><td class="pf-center">3</td><td>서 류 (&nbsp;&nbsp;&nbsp;)</td></tr>' +
         '<tr><td class="pf-center">4</td><td>유니폼 (&nbsp;&nbsp;&nbsp;)</td></tr>' +
         '<tr><td class="pf-center">5</td><td>기 타 (&nbsp;&nbsp;&nbsp;)</td></tr>' +
-        '<tr><td colspan="3">직위:&nbsp;&nbsp;&nbsp;&nbsp; 성명:&nbsp;&nbsp;&nbsp;&nbsp; (비고란)</td>' +
-          '<td></td><td></td></tr>' +
+        '<tr><td colspan="4">직위:&nbsp;&nbsp;&nbsp;&nbsp; 성명:&nbsp;&nbsp;&nbsp;&nbsp; (비고란)</td></tr>' +
       '</table>';
 
     var footerLeft = '작성일시: ' + new Date(app.createdAt).toLocaleString('ko-KR') +

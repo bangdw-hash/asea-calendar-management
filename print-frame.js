@@ -62,22 +62,26 @@
     return [
       '*{box-sizing:border-box;}',
       'html,body{margin:0;padding:0;}',
+      /* 앱 표준 인쇄 서체 — KoPubWorld 돋움 */
+      "@font-face{font-family:'KoPubWorld Dotum';font-weight:300;font-style:normal;src:url('fonts/KoPubWorld-Dotum-Light.ttf') format('truetype');}",
+      "@font-face{font-family:'KoPubWorld Dotum';font-weight:400;font-style:normal;src:url('fonts/KoPubWorld-Dotum-Medium.ttf') format('truetype');}",
+      "@font-face{font-family:'KoPubWorld Dotum';font-weight:700;font-style:normal;src:url('fonts/KoPubWorld-Dotum-Bold.ttf') format('truetype');}",
       'body{',
-      "  font-family:'Malgun Gothic','맑은 고딕','Apple SD Gothic Neo','Noto Sans KR',sans-serif;",
+      "  font-family:'KoPubWorld Dotum','Malgun Gothic','맑은 고딕','Apple SD Gothic Neo','Noto Sans KR',sans-serif;",
       '  color:#1f2937;background:#eceff3;-webkit-font-smoothing:antialiased;',
       '}',
 
       /* 화면 미리보기 — 회색 배경 위 흰 종이 */
       '.pf-page{',
-      '  width:190mm;min-height:277mm;margin:14mm auto;background:#fff;',
-      '  padding:16mm 15mm 14mm;position:relative;',
+      '  width:190mm;min-height:273mm;margin:10mm auto;background:#fff;',
+      '  padding:11mm 14mm 9mm;position:relative;',
       '  box-shadow:0 6px 30px rgba(15,23,42,.16);border-radius:2px;',
       '}',
-      "@media print{ @page{ size:" + size + "; margin:14mm 15mm; } }",
+      "@media print{ @page{ size:" + size + "; margin:11mm 14mm; } }",
 
       /* 레터헤드 */
       '.pf-letterhead{display:flex;align-items:center;gap:12px;',
-      '  padding-bottom:8px;margin-bottom:14px;border-bottom:2.4px solid #1a3a5c;}',
+      '  padding-bottom:6px;margin-bottom:10px;border-bottom:2.4px solid #1a3a5c;}',
       '.pf-lh-logo{height:30px;width:auto;max-width:160px;object-fit:contain;flex-shrink:0;}',
       '.pf-lh-logo-emoji{font-size:26px;line-height:1;flex-shrink:0;}',
       '.pf-lh-text{display:flex;flex-direction:column;gap:1px;min-width:0;}',
@@ -87,19 +91,19 @@
       '  border-radius:999px;padding:2px 10px;white-space:nowrap;align-self:center;}',
 
       /* 문서 제목 */
-      '.pf-doctitle{text-align:center;font-size:24pt;font-weight:900;letter-spacing:10px;',
-      '  color:#111827;margin:6px 0 2px;padding-bottom:0;}',
-      '.pf-subtitle{text-align:center;font-size:10.5pt;color:#4b5563;margin:0 0 10px;}',
-      '.pf-titlewrap{margin-bottom:14px;}',
-      '.pf-titlewrap::after{content:"";display:block;width:46mm;height:2.5px;background:#1a3a5c;',
-      '  margin:8px auto 0;border-radius:2px;}',
+      '.pf-doctitle{text-align:center;font-size:22pt;font-weight:900;letter-spacing:9px;',
+      '  color:#111827;margin:2px 0 2px;padding-bottom:0;}',
+      '.pf-subtitle{text-align:center;font-size:10.5pt;color:#4b5563;margin:0 0 8px;}',
+      '.pf-titlewrap{margin-bottom:10px;}',
+      '.pf-titlewrap::after{content:"";display:block;width:44mm;height:2.5px;background:#1a3a5c;',
+      '  margin:6px auto 0;border-radius:2px;}',
 
       /* 본문 */
-      '.pf-body{font-size:10pt;line-height:1.65;}',
+      '.pf-body{font-size:10pt;line-height:1.5;}',
 
       /* 통일 표 */
-      '.pf-table{width:100%;border-collapse:collapse;margin:0 0 4mm;font-size:9.5pt;}',
-      '.pf-table th,.pf-table td{border:1px solid #3a4452;padding:2.4mm 3mm;vertical-align:middle;}',
+      '.pf-table{width:100%;border-collapse:collapse;margin:0 0 3mm;font-size:9.5pt;}',
+      '.pf-table th,.pf-table td{border:1px solid #3a4452;padding:2mm 2.6mm;vertical-align:middle;}',
       '.pf-table th{background:#eef2f7;color:#1a3a5c;font-weight:700;text-align:center;}',
       '.pf-table .pf-th-label{background:#f4f6f9;color:#243447;font-weight:700;white-space:nowrap;}',
 
@@ -119,7 +123,7 @@
       '.pf-right{text-align:right;}',
 
       /* 푸터 */
-      '.pf-footer{margin-top:10mm;padding-top:3mm;border-top:1px solid #d7dde5;',
+      '.pf-footer{margin-top:7mm;padding-top:2.5mm;border-top:1px solid #d7dde5;',
       '  display:flex;justify-content:space-between;gap:12px;align-items:flex-end;',
       '  font-size:8pt;color:#94a0ae;}',
       '.pf-foot-right{text-align:right;white-space:nowrap;}',
@@ -149,9 +153,8 @@
   function letterheadHTML(opts) {
     opts = opts || {};
     var logo = _logo();
-    var mark = logo
-      ? '<img class="pf-lh-logo" src="' + logo + '" alt="logo">'
-      : '<span class="pf-lh-logo-emoji">📅</span>';
+    // 로고가 등록된 경우에만 표시 (미등록 시 아이콘 없음)
+    var mark = logo ? '<img class="pf-lh-logo" src="' + logo + '" alt="logo">' : '';
     return '<header class="pf-letterhead">' +
       mark +
       '<div class="pf-lh-text">' +
@@ -165,11 +168,8 @@
   /* ── 푸터 조각 ──────────────────────────────────────────────── */
   function footerHTML(opts) {
     opts = opts || {};
-    var c = _contact();
-    var right = opts.footerRight != null
-      ? opts.footerRight
-      : ('문의: ' + _esc(c.name) + ' ' + _esc(c.title) + (c.phone ? ' · ' + _esc(c.phone) : '') +
-         '<br><span class="pf-foot-org">' + _esc(opts.orgName || ORG) + '</span>');
+    // 담당자/연락처는 표시하지 않음 (필요 시 footerRight로 직접 지정)
+    var right = opts.footerRight != null ? opts.footerRight : '';
     var left = opts.footerLeft != null ? opts.footerLeft : '';
     return '<footer class="pf-footer">' +
       '<div class="pf-foot-left">' + left + '</div>' +
