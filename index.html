@@ -2458,6 +2458,35 @@
           <div id="fac-fee-flat-empty" style="font-size:12px;color:#9CA3AF;text-align:center;padding:6px 0">일괄 항목 없음</div>
         </div>
 
+        <!-- 냉난방비 -->
+        <div style="border:1.5px solid #BAE6FD;border-radius:8px;padding:12px;margin-bottom:14px;background:#F0F9FF">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+            <div>
+              <span style="font-size:12px;font-weight:700;color:#0369A1">🌡️ 냉난방비</span>
+              <span style="font-size:11px;color:#6B7280;margin-left:6px">대관 날짜의 월 기준 자동 적용</span>
+            </div>
+            <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:12px;font-weight:600;color:#0369A1">
+              <input type="checkbox" id="fac-fee-hvac-on" onchange="document.getElementById('fac-fee-hvac-body').style.display=this.checked?'':'none'">
+              적용
+            </label>
+          </div>
+          <div id="fac-fee-hvac-body" style="display:none;margin-top:10px">
+            <div style="display:grid;grid-template-columns:1fr 2fr;gap:10px;margin-bottom:8px">
+              <div class="form-group">
+                <label class="form-label">단가 (원/시간)</label>
+                <input id="fac-fee-hvac-rate" type="number" class="form-input" value="10000" min="0">
+              </div>
+              <div class="form-group">
+                <label class="form-label">적용 월 <span style="font-weight:400;color:#888">(쉼표 구분)</span></label>
+                <input id="fac-fee-hvac-months" type="text" class="form-input" value="1,2,3,5,6,7,8,9,11,12" placeholder="1,2,3,5,6,7,8,9,11,12">
+              </div>
+            </div>
+            <div style="font-size:11px;color:#0369A1;background:#E0F2FE;border-radius:6px;padding:7px 10px;line-height:1.6">
+              💡 <strong>4월·10월 제외</strong> — 예약 날짜의 월이 위 목록에 포함되면 <strong>총 이용 시간 × 단가</strong>로 자동 산정됩니다.
+            </div>
+          </div>
+        </div>
+
         <!-- 비고 -->
         <div class="form-group">
           <label class="form-label">비고/산식 설명</label>
@@ -3000,7 +3029,7 @@
   <script src="monthly-report.js?v=20260611m2"></script>
   <script src="promo.js?v=20260611p2"></script>
   <script src="meet.js?v=20260610mt1"></script>
-  <script src="facility-fee.js?v=20260611ff2"></script>
+  <script src="facility-fee.js?v=20260611ff3"></script>
   <script src="hr.js?v=20260611hr4"></script>
   <script src="retire.js?v=20260611rt2"></script>
   <script src="help.js?v=20260609a1"></script>

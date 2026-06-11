@@ -385,6 +385,7 @@
     (calc.flatExtras||[]).forEach(function(ex) {
       lines.push(ex.name + ' (일괄) ' + FacilityFeeModule.comma(ex.amount) + '원');
     });
+    if (calc.hvac && calc.hvac.amount > 0) lines.push('🌡️ 냉난방비 ' + calc.hvac.hours.toFixed(1) + '시간 × ' + FacilityFeeModule.comma(calc.hvac.rate) + '원 = ' + FacilityFeeModule.comma(calc.hvac.amount) + '원 (' + (calc.hvac.months||[]).join('·') + '월)');
     if (calc.deposit > 0) lines.push('보증금 ' + FacilityFeeModule.comma(calc.deposit) + '원');
     if (calc.cleaningFee > 0) lines.push('청소비 ' + FacilityFeeModule.comma(calc.cleaningFee) + '원');
 

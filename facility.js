@@ -1187,6 +1187,7 @@ var FacilityModule = (function () {
               }).join('') +
               ((fee.timeExtras||[]).length ? '<span style="background:#F0FDF4;border:1px solid #86EFAC;border-radius:5px;padding:3px 8px;color:#15803D">시간비례 ' + (fee.timeExtras||[]).length + '종</span>' : '') +
               ((fee.flatExtras||[]).length ? '<span style="background:#F3F4F6;border:1px solid #D1D5DB;border-radius:5px;padding:3px 8px">일괄 ' + (fee.flatExtras||[]).length + '종</span>' : '') +
+              ((fee.seasonalFee&&fee.seasonalFee.enabled) ? '<span style="background:#E0F2FE;border:1px solid #BAE6FD;border-radius:5px;padding:3px 8px;color:#0369A1">🌡️냉난방 ' + FacilityFeeModule.comma(fee.seasonalFee.rate||10000) + '원/h</span>' : '') +
               (fee.deposit ? '<span>보증금 ' + FacilityFeeModule.comma(fee.deposit) + '원</span>' : '') +
               (fee.cleaningFee ? '<span>청소비 ' + FacilityFeeModule.comma(fee.cleaningFee) + '원</span>' : '') +
             '</div>' +
@@ -1229,6 +1230,19 @@ var FacilityModule = (function () {
     _renderSurSlots(fee ? (fee.surchargeSlots||[]) : []);
     _renderTimeExtras(fee ? (fee.timeExtras||[]) : []);
     _renderFlatExtras(fee ? (fee.flatExtras||[]) : []);
+
+    // 냉난방비
+    var hvac = (fee && fee.seasonalFee) || {};
+    var hvacOn   = $f('fac-fee-hvac-on');
+    var hvacBody = $f('fac-fee-hvac-body');
+    var hvacRate = $f('fac-fee-hvac-rate');
+    var hvacMons = $f('fac-fee-hvac-months');
+    if (hvacOn) {
+      hvacOn.checked = !!hvac.enabled;
+      if (hvacBody) hvacBody.style.display = hvac.enabled ? '' : 'none';
+    }
+    if (hvacRate) hvacRate.value = (hvac.rate != null) ? hvac.rate : 10000;
+    if (hvacMons) hvacMons.value = hvac.months ? hvac.months.join(',') : '1,2,3,5,6,7,8,9,11,12';
 
     modal._fee = fee || null;
     modal.hidden = false;
@@ -1377,6 +1391,12 @@ var FacilityModule = (function () {
       if (n && a && n.value.trim()) flatExtras.push({ name: n.value.trim(), amount: parseFloat(a.value)||0 });
     });
 
+    // 냉난방비 수집
+    var hvacEnabled = $f('fac-fee-hvac-on') && $f('fac-fee-hvac-on').checked;
+    var hvacRate    = parseFloat(($f('fac-fee-hvac-rate') && $f('fac-fee-hvac-rate').value)||'10000') || 10000;
+    var hvacMonStr  = ($f('fac-fee-hvac-months') && $f('fac-fee-hvac-months').value) || '1,2,3,5,6,7,8,9,11,12';
+    var hvacMonths  = hvacMonStr.split(',').map(function(v){ return parseInt(v.trim(),10); }).filter(function(n){ return n>=1&&n<=12; });
+
     var data = {
       buildingName: buildingName, roomName: roomName,
       normalStart: $f('fac-fee-norm-s').value,
@@ -1388,6 +1408,7 @@ var FacilityModule = (function () {
       cleaningFee: parseFloat($f('fac-fee-clean').value)||0,
       timeExtras:  timeExtras,
       flatExtras:  flatExtras,
+      seasonalFee: { enabled: !!hvacEnabled, rate: hvacRate, months: hvacMonths },
       notes: ($f('fac-fee-notes').value||'').trim()
     };
 

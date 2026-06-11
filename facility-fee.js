@@ -148,7 +148,37 @@ window.FacilityFeeModule = (function() {
     });
     var flatExtraTotal = flatExtraResults.reduce(function(acc,e){ return acc+e.amount; }, 0);
 
-    var subtotal = normalFee + totalSurchargeFee + deposit + cleanFee + timeExtraTotal + flatExtraTotal;
+    // ── 냉난방비: 대관 날짜 월 기준, 적용월에만 시간당 단가 적용 ──
+    var hvac = fee.seasonalFee || {};
+    var hvacResult = null;
+    if (hvac.enabled) {
+      var hvacRate   = hvac.rate || 10000;
+      var hvacMonths = hvac.months || [1,2,3,5,6,7,8,9,11,12];
+      var hvacMins   = 0;
+      var hvacMonthsApplied = [];
+      ranges.forEach(function(r) {
+        if (!r.startAt || !r.endAt) return;
+        var sd = new Date(r.startAt), ed = new Date(r.endAt);
+        if (isNaN(sd) || isNaN(ed) || ed <= sd) return;
+        var mon = sd.getMonth() + 1;  // 1~12
+        if (hvacMonths.indexOf(mon) > -1) {
+          hvacMins += (ed - sd) / 60000;
+          if (hvacMonthsApplied.indexOf(mon) < 0) hvacMonthsApplied.push(mon);
+        }
+      });
+      if (hvacMins > 0) {
+        var hvacHours = hvacMins / 60;
+        hvacResult = {
+          hours: hvacHours,
+          rate: hvacRate,
+          amount: Math.ceil(hvacHours) * hvacRate,
+          months: hvacMonthsApplied
+        };
+      }
+    }
+    var hvacTotal = hvacResult ? hvacResult.amount : 0;
+
+    var subtotal = normalFee + totalSurchargeFee + deposit + cleanFee + timeExtraTotal + flatExtraTotal + hvacTotal;
 
     return {
       normalHours: normalHours, normalFee: normalFee,
@@ -158,6 +188,7 @@ window.FacilityFeeModule = (function() {
       deposit: deposit, cleaningFee: cleanFee,
       timeExtras: timeExtraResults, flatExtras: flatExtraResults,
       timeExtraTotal: timeExtraTotal, flatExtraTotal: flatExtraTotal,
+      hvac: hvacResult,
       subtotal: subtotal, total: subtotal,
       underMin: underMin, minHours: minH,
       breakdown: breakdown
@@ -214,6 +245,12 @@ window.FacilityFeeModule = (function() {
       (calc.flatExtras||[]).forEach(function(ex) {
         breakdownRows += '<tr><td>' + ex.name + ' (일괄)</td><td>1회</td><td>-</td><td>' + comma(ex.amount) + '원</td></tr>';
       });
+      if (calc.hvac && calc.hvac.amount > 0) {
+        breakdownRows += '<tr><td>냉난방비 (' + (calc.hvac.months||[]).join('·') + '월 적용)</td>' +
+          '<td>' + calc.hvac.hours.toFixed(1) + '시간</td>' +
+          '<td>' + comma(calc.hvac.rate) + '원/시간</td>' +
+          '<td>' + comma(calc.hvac.amount) + '원</td></tr>';
+      }
       if (calc.deposit > 0) breakdownRows += '<tr><td>보증금</td><td>-</td><td>-</td><td>' + comma(calc.deposit) + '원</td></tr>';
       if (calc.cleaningFee > 0) breakdownRows += '<tr><td>청소비</td><td>-</td><td>-</td><td>' + comma(calc.cleaningFee) + '원</td></tr>';
     }
