@@ -283,6 +283,7 @@
           '<button class="admin-nav-btn" data-sec="menu-ctrl">📂 메뉴 제어</button>' +
           '<button class="admin-nav-btn" data-sec="feat-ctrl">⚙️ 기능 제어</button>' +
           '<button class="admin-nav-btn" data-sec="tab-admin">🔗 탭별 관리</button>' +
+          '<button class="admin-nav-btn" data-sec="contact-info">📞 연락처 관리</button>' +
         '</nav>' +
         '<div id="admin-sec-body" class="admin-sec-body"></div>' +
       '</div>';
@@ -308,7 +309,8 @@
     if (sec === 'permissions') { body.innerHTML = _htmlPermissions(); _bindPermEvents(); }
     if (sec === 'menu-ctrl')   { body.innerHTML = _htmlMenuCtrl();    _bindMenuCtrlEvents(); }
     if (sec === 'feat-ctrl')   { body.innerHTML = _htmlFeatCtrl();    _bindFeatCtrlEvents(); }
-    if (sec === 'tab-admin')   { body.innerHTML = _htmlTabAdmin();    _bindTabAdminEvents(); }
+    if (sec === 'tab-admin')     { body.innerHTML = _htmlTabAdmin();      _bindTabAdminEvents(); }
+    if (sec === 'contact-info')  { body.innerHTML = _htmlContactInfo();  _bindContactInfoEvents(); }
 
     /* 버전 추가 버튼 */
     if (sec === 'changelog') {
@@ -562,6 +564,74 @@
           }
         }, 300);
       });
+    });
+  }
+
+  /* ── 연락처/공지 정보 관리 ──────────────────────────── */
+  function _htmlContactInfo() {
+    var SK_CONTACT = 'asea_contact_info';
+    var info = { name: '방시원', title: '차장', phone: '' };
+    try {
+      var stored = JSON.parse(localStorage.getItem(SK_CONTACT) || 'null');
+      if (stored) info = stored;
+    } catch(e) {}
+
+    return '<div class="admin-section">' +
+      '<h3 class="admin-sec-title">📞 연락처/공지 정보 관리</h3>' +
+      '<p class="form-hint" style="margin-bottom:14px">' +
+        '이 정보는 캘린더 공유 신청 페이지와 직원용 캘린더 페이지 하단에 표시됩니다.' +
+      '</p>' +
+      '<div class="av-row" style="flex-wrap:wrap;gap:8px;margin-bottom:12px">' +
+        '<label style="display:flex;flex-direction:column;gap:4px;font-size:13px;color:#555">' +
+          '담당자명' +
+          '<input id="ci-name" class="form-input" value="' + esc(info.name) + '" placeholder="방시원" style="width:130px">' +
+        '</label>' +
+        '<label style="display:flex;flex-direction:column;gap:4px;font-size:13px;color:#555">' +
+          '직위' +
+          '<input id="ci-title" class="form-input" value="' + esc(info.title) + '" placeholder="차장" style="width:110px">' +
+        '</label>' +
+        '<label style="display:flex;flex-direction:column;gap:4px;font-size:13px;color:#555">' +
+          '전화번호' +
+          '<input id="ci-phone" class="form-input" value="' + esc(info.phone) + '" placeholder="02-0000-0000" style="width:160px">' +
+        '</label>' +
+        '<div style="display:flex;align-items:flex-end">' +
+          '<button id="ci-save-btn" class="btn btn-primary btn-sm">저장</button>' +
+        '</div>' +
+      '</div>' +
+      '<div id="ci-preview" class="form-hint" style="margin-top:6px;padding:10px 14px;background:#f5f7fa;border-radius:6px;font-size:13px">' +
+        '현재 표시: 문의: ' + esc(info.name) + ' ' + esc(info.title) + (info.phone ? ' ' + esc(info.phone) : '') +
+      '</div>' +
+    '</div>';
+  }
+
+  function _bindContactInfoEvents() {
+    var SK_CONTACT = 'asea_contact_info';
+
+    function _updatePreview() {
+      var name  = (document.getElementById('ci-name')  || {}).value || '';
+      var title = (document.getElementById('ci-title') || {}).value || '';
+      var phone = (document.getElementById('ci-phone') || {}).value || '';
+      var preview = document.getElementById('ci-preview');
+      if (preview) {
+        preview.textContent = '현재 표시: 문의: ' + name + ' ' + title + (phone ? ' ' + phone : '');
+      }
+    }
+
+    ['ci-name', 'ci-title', 'ci-phone'].forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) el.addEventListener('input', _updatePreview);
+    });
+
+    var saveBtn = document.getElementById('ci-save-btn');
+    if (saveBtn) saveBtn.addEventListener('click', function() {
+      var name  = ((document.getElementById('ci-name')  || {}).value || '').trim();
+      var title = ((document.getElementById('ci-title') || {}).value || '').trim();
+      var phone = ((document.getElementById('ci-phone') || {}).value || '').trim();
+      try {
+        localStorage.setItem(SK_CONTACT, JSON.stringify({ name: name, title: title, phone: phone }));
+      } catch(e) {}
+      _updatePreview();
+      if (window.toast) toast('연락처 정보가 저장되었습니다.', 'success');
     });
   }
 

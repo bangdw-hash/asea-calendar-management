@@ -58,9 +58,40 @@
     margin-top: 4px;
   }
 
+  /* Notice + calendar link bar */
+  .notice-bar {
+    background: #eff6ff;
+    border-bottom: 1px solid #bfdbfe;
+    padding: 12px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .notice-bar p {
+    font-size: .85rem;
+    color: #1e40af;
+  }
+  .btn-calendar-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    background: var(--primary);
+    color: #fff;
+    border-radius: var(--radius);
+    font-size: .82rem;
+    font-weight: 600;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: background .2s;
+  }
+  .btn-calendar-link:hover { background: var(--primary-dark); }
+
   /* Layout */
   .container {
-    max-width: 720px;
+    max-width: 1100px;
     margin: 0 auto;
     padding: 24px 16px;
   }
@@ -125,7 +156,8 @@
     margin-left: 2px;
   }
   input[type="text"],
-  input[type="email"] {
+  input[type="email"],
+  input[type="password"] {
     width: 100%;
     padding: 10px 12px;
     border: 1.5px solid var(--gray-300);
@@ -213,10 +245,10 @@
   .btn:disabled { opacity: .5; cursor: not-allowed; }
   .btn-primary { background: var(--primary); color: #fff; }
   .btn-primary:hover:not(:disabled) { background: var(--primary-dark); }
-  .btn-success { background: var(--success); color: #fff; font-size: .8rem; padding: 6px 12px; }
-  .btn-warning { background: var(--warning); color: #fff; font-size: .8rem; padding: 6px 12px; }
-  .btn-danger  { background: var(--danger); color: #fff; font-size: .8rem; padding: 6px 12px; }
-  .btn-ghost   { background: var(--gray-100); color: var(--gray-700); font-size: .8rem; padding: 6px 12px; }
+  .btn-success { background: var(--success); color: #fff; font-size: .75rem; padding: 4px 10px; }
+  .btn-warning { background: var(--warning); color: #fff; font-size: .75rem; padding: 4px 10px; }
+  .btn-danger  { background: var(--danger); color: #fff; font-size: .75rem; padding: 4px 10px; }
+  .btn-ghost   { background: var(--gray-100); color: var(--gray-700); font-size: .75rem; padding: 4px 10px; }
   .btn-ghost:hover { background: var(--gray-200); }
   .btn-full { width: 100%; }
 
@@ -254,7 +286,7 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 16px;
+    margin-bottom: 12px;
   }
   .list-header h2 {
     font-size: 1rem;
@@ -270,91 +302,132 @@
     font-weight: 700;
   }
 
-  /* Entry card */
-  .entry-card {
+  /* TABLE */
+  .table-wrap {
     background: #fff;
-    border: 1px solid var(--gray-200);
     border-radius: var(--radius);
-    padding: 16px;
-    margin-bottom: 12px;
     box-shadow: var(--shadow);
-    transition: box-shadow .2s;
+    overflow-x: auto;
   }
-  .entry-card:hover { box-shadow: var(--shadow-md); }
-  .entry-top {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 8px;
+  table.entries-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: .82rem;
   }
-  .entry-info { flex: 1; min-width: 0; }
-  .entry-name {
+  .entries-table thead tr {
+    background: var(--gray-100);
+    border-bottom: 2px solid var(--gray-200);
+  }
+  .entries-table th {
+    padding: 9px 10px;
+    text-align: left;
     font-weight: 700;
-    font-size: .95rem;
-    color: var(--gray-900);
-  }
-  .entry-meta {
-    font-size: .8rem;
-    color: var(--gray-500);
-    margin-top: 2px;
+    color: var(--gray-700);
     white-space: nowrap;
+  }
+  .entries-table th.center,
+  .entries-table td.center { text-align: center; }
+  .entries-table tbody tr {
+    border-bottom: 1px solid var(--gray-200);
+    transition: background .15s;
+  }
+  .entries-table tbody tr:last-child { border-bottom: none; }
+  .entries-table tbody tr:hover { background: var(--gray-50); }
+  .entries-table td {
+    padding: 8px 10px;
+    vertical-align: middle;
+    white-space: nowrap;
+  }
+  .entries-table td.email-cell {
+    max-width: 180px;
     overflow: hidden;
     text-overflow: ellipsis;
   }
-  .entry-sub {
-    font-size: .8rem;
-    color: var(--gray-400);
-    margin-top: 4px;
-  }
-  .status-badge {
-    flex-shrink: 0;
-    padding: 3px 10px;
+
+  /* Status toggle button */
+  .status-toggle {
+    border: none;
     border-radius: 999px;
+    padding: 4px 12px;
     font-size: .75rem;
     font-weight: 700;
+    cursor: default;
+    white-space: nowrap;
   }
-  .status-pending  { background: var(--warning-light); color: var(--warning); }
-  .status-done     { background: var(--success-light); color: var(--success); }
-  .entry-actions {
-    margin-top: 12px;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
+  .status-toggle.pending {
+    background: var(--warning-light);
+    color: var(--warning);
   }
+  .status-toggle.done {
+    background: var(--success-light);
+    color: var(--success);
+  }
+  .status-toggle.clickable {
+    cursor: pointer;
+    transition: opacity .15s;
+  }
+  .status-toggle.clickable:hover { opacity: .8; }
+
   .cat-tag {
     display: inline-block;
-    font-size: .72rem;
-    padding: 2px 8px;
+    font-size: .7rem;
+    padding: 2px 7px;
     border-radius: 4px;
     background: var(--primary-light);
     color: var(--primary);
     font-weight: 600;
-    margin-top: 4px;
+  }
+  .reg-date {
+    font-size: .75rem;
+    color: var(--gray-500);
   }
 
-  /* Inline edit */
-  .edit-form {
-    margin-top: 14px;
-    padding-top: 14px;
-    border-top: 1px solid var(--gray-200);
-    display: none;
+  /* Inline edit row */
+  .edit-row-tr td {
+    background: #f0f7ff;
+    padding: 12px 10px;
   }
-  .edit-form.open { display: block; }
-  .edit-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-    margin-bottom: 10px;
+  .edit-inline-form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: flex-end;
   }
-  @media (max-width: 480px) {
-    .edit-row { grid-template-columns: 1fr; }
-    .email-wrap { flex-wrap: wrap; }
-    .email-suffix { font-size: .8rem; }
+  .edit-inline-form .ef {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
   }
-  .edit-form .form-group { margin-bottom: 10px; }
-  .edit-form label { font-size: .8rem; }
-  .edit-form input { font-size: .85rem; padding: 8px 10px; }
-  .edit-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 10px; }
+  .edit-inline-form .ef label {
+    font-size: .75rem;
+    font-weight: 600;
+    color: var(--gray-500);
+    margin-bottom: 0;
+  }
+  .edit-inline-form input[type="text"] {
+    padding: 6px 8px;
+    font-size: .82rem;
+    width: auto;
+    min-width: 80px;
+  }
+  .edit-inline-form .email-wrap input {
+    min-width: 100px;
+  }
+  .edit-inline-form .toggle-group {
+    margin-bottom: 0;
+    font-size: .75rem;
+    border-width: 1.5px;
+  }
+  .edit-inline-form .toggle-btn {
+    padding: 5px 10px;
+    font-size: .75rem;
+  }
+  .edit-inline-actions {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    margin-top: 2px;
+  }
 
   /* Empty state */
   .empty-state {
@@ -363,6 +436,28 @@
     color: var(--gray-400);
     font-size: .9rem;
   }
+
+  /* Contact footer */
+  .contact-footer {
+    margin-top: 24px;
+    padding: 14px 18px;
+    background: #fff;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    font-size: .85rem;
+    color: var(--gray-500);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .contact-footer span { font-weight: 600; color: var(--gray-700); }
+  .contact-footer a {
+    color: var(--primary);
+    text-decoration: none;
+    font-weight: 600;
+  }
+  .contact-footer a:hover { text-decoration: underline; }
 
   /* Admin fab */
   #admin-fab {
@@ -429,6 +524,12 @@
     justify-content: flex-end;
   }
   .modal-err { font-size: .8rem; color: var(--danger); margin-top: 6px; min-height: 18px; }
+
+  @media (max-width: 600px) {
+    .notice-bar { flex-direction: column; align-items: flex-start; }
+    .entries-table th, .entries-table td { padding: 7px 7px; font-size: .78rem; }
+    .edit-inline-form { gap: 6px; }
+  }
 </style>
 </head>
 <body>
@@ -437,6 +538,11 @@
   <h1>업무캘린더 공유 신청</h1>
   <p>아세아항공직업전문학교 Google 업무캘린더</p>
 </header>
+
+<div class="notice-bar">
+  <p>구글 업무캘린더 공유 신청 페이지입니다. 신청 후 관리자가 등록 처리합니다.</p>
+  <a href="staff-calendar.html" target="_blank" class="btn-calendar-link">📅 직원 캘린더 바로가기</a>
+</div>
 
 <div class="container">
 
@@ -501,6 +607,9 @@
     </div>
   </div>
 
+  <!-- Contact footer -->
+  <div class="contact-footer" id="contact-footer"></div>
+
 </div>
 
 <!-- Admin FAB -->
@@ -529,11 +638,14 @@
 (function() {
   'use strict';
 
-  const STORAGE_KEY = 'asea_calendar_share_requests';
-  const SESSION_KEY = 'asea_share_adm';
-  const ADMIN_PW   = 'asea2024admin';
+  const STORAGE_KEY   = 'asea_calendar_share_requests';
+  const SESSION_KEY   = 'asea_share_adm';
+  const ADMIN_PW      = 'asea2024admin';
+  const CONTACT_KEY   = 'asea_contact_info';
 
   let selectedCategory = '행정지원부서';
+  // track which row is being edited
+  let editingId = null;
 
   /* ── Helpers ── */
   function load() {
@@ -562,10 +674,28 @@
     clearTimeout(t._timer);
     t._timer = setTimeout(() => t.classList.remove('show'), 2500);
   }
+  function esc(str) {
+    return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  /* ── Contact footer ── */
+  function renderContact() {
+    let info = { name: '방시원', title: '차장', phone: '' };
+    try {
+      const stored = JSON.parse(localStorage.getItem(CONTACT_KEY) || 'null');
+      if (stored) info = Object.assign(info, stored);
+    } catch {}
+    const footer = document.getElementById('contact-footer');
+    let html = `문의: <span>${esc(info.name)} ${esc(info.title)}</span>`;
+    if (info.phone) {
+      html += ` &nbsp;|&nbsp; <a href="tel:${esc(info.phone)}">${esc(info.phone)}</a>`;
+    }
+    footer.innerHTML = html;
+  }
 
   /* ── Category toggle ── */
   window.setCategory = function(btn) {
-    document.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('#request-form .toggle-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     selectedCategory = btn.dataset.cat;
   };
@@ -619,17 +749,18 @@
 
     document.getElementById('request-form').reset();
     document.getElementById('f-privacy').checked = false;
-    document.querySelectorAll('.toggle-btn').forEach((b,i) => b.classList.toggle('active', i===0));
+    document.querySelectorAll('#request-form .toggle-btn').forEach((b,i) => b.classList.toggle('active', i===0));
     selectedCategory = '행정지원부서';
 
     showToast('신청이 완료되었습니다.');
+    editingId = null;
     renderList();
   });
 
-  /* ── Render list ── */
+  /* ── Render list (table) ── */
   function renderList() {
-    const data  = load();
-    const admin = isAdmin();
+    const data    = load();
+    const admin   = isAdmin();
     const container = document.getElementById('entries-container');
     document.getElementById('count-badge').textContent = data.length;
 
@@ -638,98 +769,121 @@
       return;
     }
 
-    container.innerHTML = data.map(entry => {
-      const statusClass = entry.status === '등록완료' ? 'status-done' : 'status-pending';
-      const regInfo = entry.status === '등록완료' && entry.registeredAt
-        ? `<div class="entry-sub">등록: ${fmtDate(entry.registeredAt)}</div>` : '';
+    let rows = '';
+    data.forEach((entry, idx) => {
+      const isPending = entry.status !== '등록완료';
+      const statusCls = isPending ? 'pending' : 'done';
+      const statusLabel = isPending ? '미등록' : '등록완료';
+      const clickable   = admin ? ' clickable' : '';
+      const toggleAttr  = admin
+        ? `onclick="${isPending ? "markDone" : "markPending"}('${entry.id}')" title="${isPending ? '클릭하여 등록완료 처리' : '클릭하여 미등록으로 변경'}"` : '';
 
-      let adminBtns = '';
-      if (admin) {
-        if (entry.status === '미등록') {
-          adminBtns += `<button class="btn btn-success" onclick="markDone('${entry.id}')">등록완료</button>`;
-        } else {
-          adminBtns += `<button class="btn btn-warning" onclick="markPending('${entry.id}')">미등록</button>`;
-        }
-        adminBtns += `<button class="btn btn-danger" onclick="deleteEntry('${entry.id}')">삭제</button>`;
-      }
+      const regDateHtml = entry.registeredAt
+        ? `<span class="reg-date">${fmtDate(entry.registeredAt)}</span>` : '';
 
-      return `
-<div class="entry-card" id="card-${entry.id}">
-  <div class="entry-top">
-    <div class="entry-info">
-      <div class="entry-name">${esc(entry.name)}</div>
-      <div class="entry-meta">${esc(entry.dept)} &nbsp;·&nbsp; ${esc(entry.emailPrefix)}@gmail.com</div>
-      <span class="cat-tag">${esc(entry.category)}</span>
-      <div class="entry-sub">신청: ${fmtDate(entry.submittedAt)}</div>
-      ${regInfo}
-    </div>
-    <span class="status-badge ${statusClass}">${esc(entry.status)}</span>
-  </div>
-  <div class="entry-actions">
-    <button class="btn btn-ghost" onclick="toggleEdit('${entry.id}')">수정</button>
-    ${adminBtns}
-  </div>
-  <div class="edit-form" id="edit-${entry.id}">
-    <div class="edit-row">
-      <div class="form-group">
+      const editBtn    = `<button class="btn btn-ghost" onclick="startEdit('${entry.id}')">수정</button>`;
+      const deleteBtn  = admin ? ` <button class="btn btn-danger" onclick="deleteEntry('${entry.id}')">삭제</button>` : '';
+
+      // Normal data row
+      rows += `<tr id="row-${entry.id}">
+  <td class="center" style="color:var(--gray-400);font-size:.75rem;">${idx + 1}</td>
+  <td><span class="cat-tag">${esc(entry.category)}</span></td>
+  <td style="font-weight:600;">${esc(entry.name)}</td>
+  <td style="color:var(--gray-600);">${esc(entry.dept)}</td>
+  <td class="email-cell">${esc(entry.emailPrefix)}@gmail.com</td>
+  <td style="color:var(--gray-500);font-size:.75rem;">${fmtDate(entry.submittedAt)}</td>
+  <td class="center"><button class="status-toggle ${statusCls}${clickable}" ${toggleAttr}>${statusLabel}</button></td>
+  <td>${regDateHtml}</td>
+  <td style="white-space:nowrap;">${editBtn}${deleteBtn}</td>
+</tr>`;
+
+      // Inline edit row (conditionally shown)
+      if (editingId === entry.id) {
+        rows += `<tr class="edit-row-tr" id="editrow-${entry.id}">
+  <td colspan="9">
+    <div class="edit-inline-form">
+      <div class="ef">
         <label>이름</label>
-        <input type="text" id="edit-name-${entry.id}" value="${esc(entry.name)}">
+        <input type="text" id="ei-name-${entry.id}" value="${esc(entry.name)}" style="width:100px;">
       </div>
-      <div class="form-group">
+      <div class="ef">
         <label>소속/직위</label>
-        <input type="text" id="edit-dept-${entry.id}" value="${esc(entry.dept)}">
+        <input type="text" id="ei-dept-${entry.id}" value="${esc(entry.dept)}" style="width:130px;">
+      </div>
+      <div class="ef">
+        <label>Gmail 계정명</label>
+        <div class="email-wrap">
+          <input type="text" id="ei-email-${entry.id}" value="${esc(entry.emailPrefix)}" style="width:120px;">
+          <span class="email-suffix">@gmail.com</span>
+        </div>
+      </div>
+      <div class="ef">
+        <label>카테고리</label>
+        <div class="toggle-group" id="ei-cat-grp-${entry.id}" style="margin-bottom:0;">
+          <button class="toggle-btn${entry.category==='행정지원부서'?' active':''}" data-cat="행정지원부서"
+            onclick="setEditCat(this,'${entry.id}')">행정지원부서</button>
+          <button class="toggle-btn${entry.category==='교육부서'?' active':''}" data-cat="교육부서"
+            onclick="setEditCat(this,'${entry.id}')">교육부서</button>
+        </div>
+      </div>
+      <div class="edit-inline-actions">
+        <button class="btn btn-ghost" onclick="cancelEdit()">취소</button>
+        <button class="btn btn-primary" onclick="saveEdit('${entry.id}')">저장</button>
       </div>
     </div>
-    <div class="form-group">
-      <label>Gmail 계정명</label>
-      <div class="email-wrap">
-        <input type="text" id="edit-email-${entry.id}" value="${esc(entry.emailPrefix)}">
-        <span class="email-suffix">@gmail.com</span>
-      </div>
-    </div>
-    <div class="form-group">
-      <label>카테고리</label>
-      <div class="toggle-group" style="margin-bottom:0">
-        <button class="toggle-btn${entry.category==='행정지원부서'?' active':''}"
-          onclick="setEditCat(this,'${entry.id}','행정지원부서')">행정지원부서</button>
-        <button class="toggle-btn${entry.category==='교육부서'?' active':''}"
-          onclick="setEditCat(this,'${entry.id}','교육부서')">교육부서</button>
-      </div>
-    </div>
-    <div class="edit-actions">
-      <button class="btn btn-ghost" onclick="toggleEdit('${entry.id}')">취소</button>
-      <button class="btn btn-primary" onclick="saveEdit('${entry.id}')">저장</button>
-    </div>
-  </div>
-</div>`;
-    }).join('');
-  }
+  </td>
+</tr>`;
+      }
+    });
 
-  function esc(str) {
-    return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    container.innerHTML = `
+<div class="table-wrap">
+  <table class="entries-table">
+    <thead>
+      <tr>
+        <th class="center">#</th>
+        <th>부서</th>
+        <th>이름</th>
+        <th>소속/직위</th>
+        <th>이메일(@gmail.com)</th>
+        <th>신청일시</th>
+        <th class="center">상태</th>
+        <th>등록일시</th>
+        <th>수정</th>
+      </tr>
+    </thead>
+    <tbody>${rows}</tbody>
+  </table>
+</div>`;
   }
 
   /* ── Edit ── */
-  window.toggleEdit = function(id) {
-    const el = document.getElementById('edit-' + id);
-    el.classList.toggle('open');
+  window.startEdit = function(id) {
+    editingId = id;
+    renderList();
+    // focus first field
+    const el = document.getElementById('ei-name-' + id);
+    if (el) el.focus();
   };
 
-  window.setEditCat = function(btn, id, cat) {
-    const form = document.getElementById('edit-' + id);
-    form.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
+  window.cancelEdit = function() {
+    editingId = null;
+    renderList();
+  };
+
+  window.setEditCat = function(btn, id) {
+    const grp = document.getElementById('ei-cat-grp-' + id);
+    if (grp) grp.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
-    btn._cat = cat; // we'll read from aria or dataset below
-    btn.dataset.selectedcat = cat;
   };
 
   window.saveEdit = function(id) {
-    const newName  = document.getElementById('edit-name-' + id).value.trim();
-    const newDept  = document.getElementById('edit-dept-' + id).value.trim();
-    const newEmail = document.getElementById('edit-email-' + id).value.trim().replace(/@.*/, '');
-    const form     = document.getElementById('edit-' + id);
-    const activeCat = form.querySelector('.toggle-btn.active');
-    const newCat   = activeCat ? activeCat.dataset.cat || activeCat.dataset.selectedcat || activeCat.textContent.trim() : null;
+    const newName  = (document.getElementById('ei-name-' + id) || {}).value?.trim();
+    const newDept  = (document.getElementById('ei-dept-' + id) || {}).value?.trim();
+    const newEmail = (document.getElementById('ei-email-' + id) || {}).value?.trim().replace(/@.*/, '');
+    const grp      = document.getElementById('ei-cat-grp-' + id);
+    const activeCat = grp ? grp.querySelector('.toggle-btn.active') : null;
+    const newCat   = activeCat ? activeCat.dataset.cat : null;
 
     if (!newName || !newDept || !newEmail) {
       showToast('모든 필드를 입력해 주세요.'); return;
@@ -743,12 +897,14 @@
     data[idx].emailPrefix = newEmail;
     if (newCat) data[idx].category = newCat;
     save(data);
+    editingId = null;
     showToast('수정되었습니다.');
     renderList();
   };
 
   /* ── Admin actions ── */
   window.markDone = function(id) {
+    if (!isAdmin()) return;
     const data = load();
     const idx  = data.findIndex(e => e.id === id);
     if (idx < 0) return;
@@ -760,6 +916,7 @@
   };
 
   window.markPending = function(id) {
+    if (!isAdmin()) return;
     const data = load();
     const idx  = data.findIndex(e => e.id === id);
     if (idx < 0) return;
@@ -771,9 +928,11 @@
   };
 
   window.deleteEntry = function(id) {
+    if (!isAdmin()) return;
     if (!confirm('이 항목을 삭제하시겠습니까?')) return;
     const data = load().filter(e => e.id !== id);
     save(data);
+    if (editingId === id) editingId = null;
     showToast('삭제되었습니다.');
     renderList();
   };
@@ -832,6 +991,7 @@
     fab.classList.add('logged-in');
     fab.innerHTML = '🔓 관리자 (로그아웃)';
   }
+  renderContact();
   renderList();
 })();
 </script>
