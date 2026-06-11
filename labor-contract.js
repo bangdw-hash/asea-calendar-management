@@ -219,7 +219,11 @@ window.LaborContractModule = (function () {
       '.ganjin-seal { position: absolute; right: 0; top: -12mm; width: 24mm; height: 24mm; opacity: 0.65; transform: rotate(-20deg); }',
       '.date-line { text-align: center; margin: 6mm 0; font-size: 11pt; }',
       '.box { border: 1px solid #000; padding: 3mm 4mm; margin-top: 2mm; line-height: 1.8; }',
-      '@media print { body { margin: 0; } .no-print { display: none !important; } }'
+      '.lc-letterhead { display:flex; align-items:center; gap:10px; padding-bottom:6px; margin-bottom:7mm; border-bottom:2.2px solid #1a3a5c; }',
+      '.lc-lh-logo { height:26px; width:auto; max-width:150px; object-fit:contain; }',
+      '.lc-lh-emoji { font-size:22px; line-height:1; }',
+      '.lc-lh-org { font-size:12pt; font-weight:800; color:#1a3a5c; letter-spacing:.3px; }',
+      '@media print { body { margin: 0; } .no-print { display: none !important; } * { -webkit-print-color-adjust:exact; print-color-adjust:exact; } }'
     ].join('\n');
 
     if (contract.type === 'shortterm') {
@@ -228,11 +232,23 @@ window.LaborContractModule = (function () {
     return _buildStandardHTML(contract, emp, ee, ct, sealImg, eSignImg, ganjinHtml, commonStyle, wageLine, insuranceHtml, payMethodText);
   }
 
+  /* 통일 레터헤드 밴드 (관리자 로고 + 기관명) */
+  function _lcLetterhead() {
+    var logo = '';
+    try { logo = localStorage.getItem('asea_logo') || ''; } catch (e) {}
+    var mark = logo
+      ? '<img class="lc-lh-logo" src="' + logo + '" alt="logo">'
+      : '<span class="lc-lh-emoji">📅</span>';
+    return '<div class="lc-letterhead">' + mark +
+      '<span class="lc-lh-org">(재) 아세아항공직업전문학교</span></div>';
+  }
+
   function _buildStandardHTML(contract, emp, ee, ct, sealImg, eSignImg, ganjinHtml, commonStyle, wageLine, insuranceHtml, payMethodText) {
     var today = new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' });
 
     return '<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><title>표준근로계약서</title><style>' + commonStyle + '</style></head><body>' +
       '<div class="contract-wrap">' +
+      _lcLetterhead() +
       '<div class="contract-title">표준근로계약서</div>' +
       '<div class="contract-subtitle">(기간의 정함이 있는 경우)</div>' +
 
@@ -317,6 +333,7 @@ window.LaborContractModule = (function () {
 
     return '<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><title>단기근로계약서</title><style>' + commonStyle + '</style></head><body>' +
       '<div class="contract-wrap">' +
+      _lcLetterhead() +
       '<div class="contract-title">단기근로계약서</div>' +
 
       '<div class="intro">' +

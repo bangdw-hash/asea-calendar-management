@@ -412,7 +412,7 @@ window.RetireModule = (function () {
     ]));
 
     /* 퇴직 사유 */
-    body.appendChild(sectionTitle('■ 퇴직 사유 (9번)'));
+    body.appendChild(sectionTitle('■ 퇴직 사유'));
     var reasonOpts = ['선택하세요', '일신상의 사유', '권고사직', '계약기간 만료', '직접 입력'];
     body.appendChild(row([
       field('사유 유형', 'select', f.reasonType || '선택하세요', function (v) {
@@ -781,111 +781,89 @@ window.RetireModule = (function () {
   function _printResignation(app) {
     var f = app.form;
 
-    var html =
-      '<div style="width:185mm;margin:0 auto;font-family:\'맑은 고딕\',sans-serif;font-size:10pt;line-height:1.6;color:#000">' +
+    var body =
+      /* 결재란 (우측 상단) */
+      '<table class="pf-table" style="width:auto;margin-left:auto;font-size:9pt;margin-bottom:6mm">' +
+        '<tr>' +
+          '<td class="pf-th-label" rowspan="2" style="padding:2mm 4mm">인사<br>부서</td>' +
+          '<th style="width:24mm">기획처장</th><th style="width:24mm">총괄이사</th><th style="width:24mm">이 사 장</th>' +
+        '</tr>' +
+        '<tr><td style="height:14mm">&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>' +
+      '</table>' +
 
-      /* 타이틀 + 결재란 */
-      '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:5mm">' +
-      '<h1 style="font-size:28pt;letter-spacing:12px;font-weight:900;margin:0;border-bottom:2px solid #000;padding-bottom:2mm">사 직 서</h1>' +
-      '<table style="border-collapse:collapse;font-size:9pt;flex-shrink:0">' +
-      '<tr><td rowspan="2" style="border:1px solid #000;padding:2mm 4mm;text-align:center;vertical-align:middle;font-size:9pt">인사<br>부서</td>' +
-      '<td style="border:1px solid #000;padding:1mm 6mm;text-align:center;background:#f5f5f5">기획처장</td>' +
-      '<td style="border:1px solid #000;padding:1mm 6mm;text-align:center;background:#f5f5f5">총괄이사</td>' +
-      '<td style="border:1px solid #000;padding:1mm 6mm;text-align:center;background:#f5f5f5">이 사 장</td></tr>' +
-      '<tr><td style="border:1px solid #000;padding:5mm 8mm">&nbsp;</td>' +
-      '<td style="border:1px solid #000;padding:5mm 8mm">&nbsp;</td>' +
-      '<td style="border:1px solid #000;padding:4mm 8mm;text-align:right;vertical-align:bottom;font-size:11pt">ㅣ</td></tr>' +
-      '</table></div>' +
+      /* 인적사항 */
+      '<table class="pf-table">' +
+        '<tr>' +
+          '<td class="pf-th-label" style="width:13%">1. 소 속</td><td style="width:32%">' + _esc(f.dept) + '</td>' +
+          '<td class="pf-th-label" style="width:16%">5. 사원번호</td><td>' + _esc(f.empNo) + '</td>' +
+        '</tr>' +
+        '<tr>' +
+          '<td class="pf-th-label">2. 직 위</td><td>' + _esc(f.rank) + '</td>' +
+          '<td class="pf-th-label">6. 주민등록번호</td><td>' + _esc(f.regNo) + '</td>' +
+        '</tr>' +
+        '<tr>' +
+          '<td class="pf-th-label">3. 직 무</td><td>' + _esc(f.duty) + '</td>' +
+          '<td class="pf-th-label">7. 입 사 일</td><td>' + _fmtKo(f.hireDate) + '</td>' +
+        '</tr>' +
+        '<tr>' +
+          '<td class="pf-th-label">4. 성 명</td><td>' + _esc(f.name) + '</td>' +
+          '<td class="pf-th-label">8. 퇴 사 일</td><td style="font-weight:700;color:#c0392b">' + _fmtKo(f.retireDate) + '</td>' +
+        '</tr>' +
+      '</table>' +
 
-      /* 인적사항 테이블 */
-      '<table style="width:100%;border-collapse:collapse;margin-bottom:4mm">' +
-      '<tr>' +
-      '<td style="border:1px solid #000;padding:2mm;width:12%;background:#f5f5f5;font-weight:700">1. 소 속</td>' +
-      '<td style="border:1px solid #000;padding:2mm;width:30%">' + _esc(f.dept) + '</td>' +
-      '<td style="border:1px solid #000;padding:2mm;width:15%;background:#f5f5f5;font-weight:700">5. 사원번호</td>' +
-      '<td style="border:1px solid #000;padding:2mm">' + _esc(f.empNo) + '</td>' +
-      '</tr><tr>' +
-      '<td style="border:1px solid #000;padding:2mm;background:#f5f5f5;font-weight:700">2. 직 위</td>' +
-      '<td style="border:1px solid #000;padding:2mm">' + _esc(f.rank) + '</td>' +
-      '<td style="border:1px solid #000;padding:2mm;background:#f5f5f5;font-weight:700">6. 주민등록번호</td>' +
-      '<td style="border:1px solid #000;padding:2mm">' + _esc(f.regNo) + '</td>' +
-      '</tr><tr>' +
-      '<td style="border:1px solid #000;padding:2mm;background:#f5f5f5;font-weight:700">3. 직 무</td>' +
-      '<td style="border:1px solid #000;padding:2mm">' + _esc(f.duty) + '</td>' +
-      '<td style="border:1px solid #000;padding:2mm;background:#f5f5f5;font-weight:700">7. 입 사 일</td>' +
-      '<td style="border:1px solid #000;padding:2mm">' + _fmtKo(f.hireDate) + '</td>' +
-      '</tr><tr>' +
-      '<td style="border:1px solid #000;padding:2mm;background:#f5f5f5;font-weight:700">4. 성 명</td>' +
-      '<td style="border:1px solid #000;padding:2mm">' + _esc(f.name) + '</td>' +
-      '<td style="border:1px solid #000;padding:2mm;background:#f5f5f5;font-weight:700">8. 퇴 사 일</td>' +
-      '<td style="border:1px solid #000;padding:2mm;font-weight:700;color:#c00">' + _fmtKo(f.retireDate) + '</td>' +
-      '</tr></table>' +
-
-      /* 퇴직사유 */
-      '<div style="font-weight:700;font-size:10pt;margin-bottom:2mm">9. 퇴사 사유</div>' +
-      '<div style="border:1px solid #000;padding:4mm;min-height:20mm;font-size:10pt;color:#222">' +
+      /* 퇴직 사유 */
+      '<div class="pf-sec">9. 퇴직 사유</div>' +
+      '<div style="border:1px solid #3a4452;border-radius:4px;padding:4mm;min-height:22mm;font-size:10pt;margin-bottom:5mm">' +
         _esc(f.reasonDetail || f.reasonType || '') +
       '</div>' +
 
       /* 선언문 */
-      '<p style="margin:5mm 0 3mm;font-size:10pt">상기본인은 위와 같은 사유로 퇴직하고자 하오니, 이를 승인하여 주시기 바랍니다.</p>' +
+      '<p style="margin:0 0 4mm">상기본인은 위와 같은 사유로 퇴직하고자 하오니, 이를 승인하여 주시기 바랍니다.</p>' +
 
       /* 날짜 + 서명 */
-      '<div style="display:flex;justify-content:flex-end;align-items:center;gap:8mm;margin:4mm 0">' +
-      '<span style="font-size:11pt">' + _fmtKo(f.signDate) + '</span>' +
-      '<span style="font-size:11pt">&nbsp;&nbsp;상기본인&nbsp;&nbsp;' + _esc(f.name) + '&nbsp;&nbsp;(인)</span>' +
-      (f.signB64
-        ? '<img src="' + f.signB64 + '" style="height:22mm;width:38mm;object-fit:contain;border-bottom:1px solid #000">'
-        : '<div style="width:38mm;height:22mm;border-bottom:1px solid #000"></div>') +
+      '<div class="pf-signrow">' +
+        '<span style="font-size:11pt">' + _fmtKo(f.signDate) + '</span>' +
+        '<span style="font-size:11pt">상기본인&nbsp;&nbsp;' + _esc(f.name) + '&nbsp;&nbsp;(인)</span>' +
+        (f.signB64
+          ? '<img src="' + f.signB64 + '" style="height:20mm;width:36mm;object-fit:contain;border-bottom:1px solid #333">'
+          : '<span class="pf-signline" style="min-width:36mm"></span>') +
       '</div>' +
 
-      '<p style="text-align:center;font-size:12pt;font-weight:700;margin:4mm 0">(재) 아세아항공직업전문학교 이사장 귀하</p>' +
+      '<p class="pf-center" style="font-size:12.5pt;font-weight:800;margin:5mm 0 6mm">(재) 아세아항공직업전문학교 이사장 귀하</p>' +
 
-      /* 반납 테이블 */
-      '<table style="width:100%;border-collapse:collapse;margin-top:5mm;font-size:9pt">' +
-      '<tr>' +
-      '<th style="border:1px solid #000;padding:2mm;background:#eee;width:20%">부서장 면담 소견</th>' +
-      '<th style="border:1px solid #000;padding:2mm;background:#eee;width:50%" colspan="2">반납하여야할 비품 및 서류</th>' +
-      '<th style="border:1px solid #000;padding:2mm;background:#eee" colspan="2">부서장 확인</th>' +
-      '</tr>' +
-      '<tr>' +
-      '<td rowspan="6" style="border:1px solid #000;padding:2mm;vertical-align:top"></td>' +
-      '<td style="border:1px solid #000;padding:2mm;text-align:center">1</td>' +
-      '<td style="border:1px solid #000;padding:2mm">의료보험 카드(&nbsp;&nbsp;&nbsp;&nbsp;)</td>' +
-      '<td style="border:1px solid #000;padding:1mm;text-align:center;background:#f5f5f5">직위</td>' +
-      '<td style="border:1px solid #000;padding:1mm;text-align:center;background:#f5f5f5">성명</td>' +
-      '</tr>' +
-      '<tr><td style="border:1px solid #000;padding:2mm;text-align:center">2</td>' +
-      '<td style="border:1px solid #000;padding:2mm">물품 및 비품(&nbsp;&nbsp;&nbsp;&nbsp;)</td>' +
-      '<td rowspan="4" style="border:1px solid #000;padding:2mm"></td><td rowspan="4" style="border:1px solid #000;padding:2mm"></td></tr>' +
-      '<tr><td style="border:1px solid #000;padding:2mm;text-align:center">3</td>' +
-      '<td style="border:1px solid #000;padding:2mm">서&nbsp;&nbsp;류(&nbsp;&nbsp;&nbsp;&nbsp;)</td></tr>' +
-      '<tr><td style="border:1px solid #000;padding:2mm;text-align:center">4</td>' +
-      '<td style="border:1px solid #000;padding:2mm">유니폼(&nbsp;&nbsp;&nbsp;&nbsp;)</td></tr>' +
-      '<tr><td style="border:1px solid #000;padding:2mm;text-align:center">5</td>' +
-      '<td style="border:1px solid #000;padding:2mm">기&nbsp;&nbsp;타(&nbsp;&nbsp;&nbsp;&nbsp;)</td></tr>' +
-      '<tr><td style="border:1px solid #000;padding:2mm" colspan="3">직위:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 성명:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; (비고란)</td>' +
-      '<td style="border:1px solid #000;padding:2mm"></td><td style="border:1px solid #000;padding:2mm"></td></tr>' +
-      '</table>' +
+      /* 반납 / 부서장 면담 */
+      '<div class="pf-sec">반납 및 부서장 면담 확인</div>' +
+      '<table class="pf-table" style="font-size:9pt">' +
+        '<tr>' +
+          '<th style="width:20%">부서장 면담 소견</th>' +
+          '<th colspan="2" style="width:50%">반납하여야 할 비품 및 서류</th>' +
+          '<th colspan="2">부서장 확인</th>' +
+        '</tr>' +
+        '<tr>' +
+          '<td rowspan="6" style="vertical-align:top"></td>' +
+          '<td class="pf-center" style="width:8%">1</td><td>의료보험 카드 (&nbsp;&nbsp;&nbsp;)</td>' +
+          '<td class="pf-th-label" style="width:11%">직위</td><td class="pf-th-label" style="width:11%">성명</td>' +
+        '</tr>' +
+        '<tr><td class="pf-center">2</td><td>물품 및 비품 (&nbsp;&nbsp;&nbsp;)</td>' +
+          '<td rowspan="4"></td><td rowspan="4"></td></tr>' +
+        '<tr><td class="pf-center">3</td><td>서 류 (&nbsp;&nbsp;&nbsp;)</td></tr>' +
+        '<tr><td class="pf-center">4</td><td>유니폼 (&nbsp;&nbsp;&nbsp;)</td></tr>' +
+        '<tr><td class="pf-center">5</td><td>기 타 (&nbsp;&nbsp;&nbsp;)</td></tr>' +
+        '<tr><td colspan="3">직위:&nbsp;&nbsp;&nbsp;&nbsp; 성명:&nbsp;&nbsp;&nbsp;&nbsp; (비고란)</td>' +
+          '<td></td><td></td></tr>' +
+      '</table>';
 
-      '<p style="font-size:8pt;color:#888;margin-top:6mm;border-top:1px solid #ddd;padding-top:2mm">' +
-      '작성일시: ' + new Date(app.createdAt).toLocaleString('ko-KR') +
-      (app.submittedAt ? ' &nbsp;|&nbsp; 제출일시: ' + new Date(app.submittedAt).toLocaleString('ko-KR') : '') +
-      '</p>' +
-      '</div>';
+    var footerLeft = '작성일시: ' + new Date(app.createdAt).toLocaleString('ko-KR') +
+      (app.submittedAt ? '<br>제출일시: ' + new Date(app.submittedAt).toLocaleString('ko-KR') : '');
 
-    var win = window.open('', '_blank', 'width:920,height:780,scrollbars=yes');
-    if (!win) { alert('팝업이 차단되었습니다. 팝업을 허용한 후 다시 시도하세요.'); return; }
-    win.document.write(
-      '<!DOCTYPE html><html><head><meta charset="utf-8"><title>사직서 — ' + _esc(f.name) + '</title>' +
-      '<style>body{margin:0;padding:12mm;background:#fff}@media print{@page{size:A4;margin:0}body{padding:0}}</style>' +
-      '</head><body>' + html +
-      '<div style="text-align:center;padding:16px;margin-top:8mm">' +
-      '<button onclick="window.print()" style="padding:10px 28px;font-size:14px;background:#1a3a5c;color:#fff;border:none;border-radius:6px;cursor:pointer">🖨️ 인쇄</button>' +
-      '&nbsp;<button onclick="window.close()" style="padding:10px 20px;font-size:14px;background:#6B7280;color:#fff;border:none;border-radius:6px;cursor:pointer">닫기</button>' +
-      '</div></body></html>'
-    );
-    win.document.close();
+    if (!window.PrintFrame) { alert('출력 모듈을 불러오지 못했습니다. 페이지를 새로고침해 주세요.'); return; }
+    PrintFrame.open({
+      title: '사직서 — ' + f.name,
+      docTitle: '사 직 서',
+      category: '인사 서식',
+      bodyHTML: body,
+      footerLeft: footerLeft
+    });
   }
 
   /* ── 유틸 ── */

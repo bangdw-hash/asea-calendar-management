@@ -259,62 +259,48 @@ window.FacilityFeeModule = (function() {
     var pad = function(n){ return String(n).padStart(2,'0'); };
     var todayStr = today.getFullYear()+'년 '+pad(today.getMonth()+1)+'월 '+pad(today.getDate())+'일';
 
-    return '<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8">\n' +
-'<title>시설 대관 견적서</title>\n' +
-'<style>\n' +
-'@page{size:A4;margin:15mm 18mm;}\n' +
-'*{box-sizing:border-box;margin:0;padding:0;}\n' +
-'body{font-family:\'맑은 고딕\',\'Malgun Gothic\',sans-serif;font-size:9pt;color:#111;background:#fff;}\n' +
-'.quote-header{text-align:center;margin-bottom:16px;padding-bottom:12px;border-bottom:2.5px solid #1a3a5c;}\n' +
-'.quote-title{font-size:20pt;font-weight:800;color:#1a3a5c;letter-spacing:4px;margin-bottom:4px;}\n' +
-'.quote-subtitle{font-size:10pt;color:#555;}\n' +
-'.section{margin-bottom:12px;}\n' +
-'.section-title{font-size:9pt;font-weight:700;color:#1a3a5c;background:#EFF6FF;border-left:3px solid #1a3a5c;padding:4px 8px;margin-bottom:6px;}\n' +
-'table{width:100%;border-collapse:collapse;}\n' +
-'th,td{border:1px solid #ccc;padding:5px 8px;font-size:8.5pt;vertical-align:middle;}\n' +
-'th{background:#f0f4f8;font-weight:700;color:#1a3a5c;text-align:center;}\n' +
-'td:last-child{text-align:right;}\n' +
-'.total-row td{font-weight:800;font-size:10pt;color:#1a3a5c;background:#EFF6FF;}\n' +
-'.note-box{background:#FEF9EC;border:1px solid #FCD34D;border-radius:6px;padding:8px 10px;font-size:8pt;color:#92400E;margin-top:8px;}\n' +
-'.footer-line{margin-top:20px;padding-top:10px;border-top:1px solid #ddd;font-size:8pt;color:#888;text-align:right;}\n' +
-'.sig-area{display:flex;justify-content:flex-end;gap:32px;margin-top:20px;}\n' +
-'.sig-box{text-align:center;font-size:9pt;}\n' +
-'.sig-line{width:120px;height:40px;border-bottom:1px solid #aaa;margin:0 auto 4px;}\n' +
-'</style></head><body>\n' +
-'<div class="quote-wrap">\n' +
-'  <div class="quote-header"><div class="quote-title">시 설 대 관 견 적 서</div>' +
-'<div class="quote-subtitle">견적일: '+todayStr+' &nbsp;|&nbsp; 담당: 시설 관리 담당자</div></div>\n' +
-'  <div class="section"><div class="section-title">■ 신청 정보</div><table>\n' +
-'    <tr><th style="width:20%">신청자</th><td>'+(info.applicant&&info.applicant.name||'-')+'</td><th style="width:20%">소속/기관</th><td>'+(info.applicant&&info.applicant.org||'-')+'</td></tr>\n' +
-'    <tr><th>연락처</th><td>'+(info.applicant&&info.applicant.phone||'-')+'</td><th>이메일</th><td>'+(info.applicant&&info.applicant.email||'-')+'</td></tr>\n' +
-'    <tr><th>행사명</th><td colspan="3">'+(info.title||'-')+'</td></tr>\n' +
-'    <tr><th>사용 목적</th><td>'+(info.purpose||'-')+'</td><th>참석 인원</th><td>'+(info.attendees||'-')+'</td></tr>\n' +
-'  </table></div>\n' +
-'  <div class="section"><div class="section-title">■ 시설 및 이용 일시</div>\n' +
-'    <table><tr><th style="width:20%">건물</th><td>'+(info.buildingName||'-')+'</td><th style="width:20%">호실</th><td>'+(info.roomName||'-')+'</td></tr></table>\n' +
-'    <table style="margin-top:6px"><tr><th>이용 시작</th><th>이용 종료</th></tr>'+rangeRows+'</table>\n' +
-'  </div>\n' +
-'  <div class="section"><div class="section-title">■ 요금 산출 내역</div>\n' +
-'    <table><tr><th style="width:40%">항목</th><th>시간/수량</th><th>단가</th><th>금액</th></tr>\n' +
-    (breakdownRows||'<tr><td colspan="4" style="text-align:center;color:#888">요금 정보 없음</td></tr>') + '\n' +
-    (calc ? '    <tr class="total-row"><td colspan="3">합 계</td><td>'+comma(calc.total)+'원</td></tr>\n' : '') +
-'    </table>\n' +
-    (fee.notes ? '    <div class="note-box">📌 '+fee.notes+'</div>\n' : '') +
-    (calc&&calc.underMin ? '    <div class="note-box" style="margin-top:4px">⚠️ 최소 이용 시간: '+calc.minHours+'시간</div>\n' : '') +
-'  </div>\n' +
-'  <div class="sig-area"><div class="sig-box"><div class="sig-line"></div><div>신청자 (서명)</div></div>' +
-'<div class="sig-box"><div class="sig-line"></div><div>담당자 확인</div></div></div>\n' +
-'  <div class="footer-line">본 견적서는 담당자 최종 확인 후 확정되며, 최종 요금은 변경될 수 있습니다. | ASEA 항공학원</div>\n' +
-'</div></body></html>';
+    return '' +
+      '<table class="pf-table" style="width:auto;margin:0 0 5mm auto;font-size:9pt">' +
+        '<tr><td class="pf-th-label">견 적 일</td><td style="min-width:34mm;text-align:center">'+todayStr+'</td></tr>' +
+      '</table>' +
+      '<div class="pf-sec">■ 신청 정보</div>' +
+      '<table class="pf-table">' +
+        '<tr><td class="pf-th-label" style="width:20%">신청자</td><td>'+(info.applicant&&info.applicant.name||'-')+'</td>' +
+            '<td class="pf-th-label" style="width:20%">소속/기관</td><td>'+(info.applicant&&info.applicant.org||'-')+'</td></tr>' +
+        '<tr><td class="pf-th-label">연락처</td><td>'+(info.applicant&&info.applicant.phone||'-')+'</td>' +
+            '<td class="pf-th-label">이메일</td><td>'+(info.applicant&&info.applicant.email||'-')+'</td></tr>' +
+        '<tr><td class="pf-th-label">행사명</td><td colspan="3">'+(info.title||'-')+'</td></tr>' +
+        '<tr><td class="pf-th-label">사용 목적</td><td>'+(info.purpose||'-')+'</td>' +
+            '<td class="pf-th-label">참석 인원</td><td>'+(info.attendees||'-')+'</td></tr>' +
+      '</table>' +
+      '<div class="pf-sec">■ 시설 및 이용 일시</div>' +
+      '<table class="pf-table"><tr><td class="pf-th-label" style="width:20%">건물</td><td>'+(info.buildingName||'-')+'</td>' +
+        '<td class="pf-th-label" style="width:20%">호실</td><td>'+(info.roomName||'-')+'</td></tr></table>' +
+      '<table class="pf-table" style="margin-top:6px"><tr><th>이용 시작</th><th>이용 종료</th></tr>'+rangeRows+'</table>' +
+      '<div class="pf-sec">■ 요금 산출 내역</div>' +
+      '<table class="pf-table ff-fee"><tr><th style="width:40%">항목</th><th>시간/수량</th><th>단가</th><th>금액</th></tr>' +
+        (breakdownRows||'<tr><td colspan="4" class="pf-center pf-muted">요금 정보 없음</td></tr>') +
+        (calc ? '<tr class="ff-total"><td colspan="3" class="pf-center">합 계</td><td>'+comma(calc.total)+'원</td></tr>' : '') +
+      '</table>' +
+      (fee.notes ? '<div class="pf-note">📌 '+fee.notes+'</div>' : '') +
+      (calc&&calc.underMin ? '<div class="pf-note" style="margin-top:4px">⚠️ 최소 이용 시간: '+calc.minHours+'시간</div>' : '') +
+      '<div style="display:flex;justify-content:flex-end;gap:24mm;margin-top:12mm;text-align:center;font-size:9.5pt">' +
+        '<div><div style="width:34mm;height:11mm;border-bottom:1px solid #aaa;margin-bottom:3px"></div>신청자 (서명)</div>' +
+        '<div><div style="width:34mm;height:11mm;border-bottom:1px solid #aaa;margin-bottom:3px"></div>담당자 확인</div>' +
+      '</div>';
   }
 
   function printQuote(info) {
-    var html = buildQuoteHTML(info);
-    var win = window.open('', '_blank', 'width=900,height=700,scrollbars=yes');
-    if (!win) { alert('팝업이 차단되었습니다. 팝업 허용 후 다시 시도하세요.'); return; }
-    win.document.write(html);
-    win.document.close();
-    win.onload = function() { setTimeout(function(){ win.print(); }, 300); };
+    if (!window.PrintFrame) { alert('출력 모듈을 불러오지 못했습니다. 페이지를 새로고침해 주세요.'); return; }
+    PrintFrame.open({
+      title: '시설 대관 견적서',
+      docTitle: '시 설 대 관 견 적 서',
+      category: '시설 대관',
+      bodyHTML: buildQuoteHTML(info),
+      extraCSS: '.ff-fee td:last-child,.ff-fee th:last-child{text-align:right;}' +
+                '.ff-total td{font-weight:800;color:#1a3a5c;background:#eff4fb;}',
+      footerLeft: '본 견적서는 담당자 최종 확인 후 확정되며, 최종 요금은 변경될 수 있습니다.'
+    });
   }
 
   return {

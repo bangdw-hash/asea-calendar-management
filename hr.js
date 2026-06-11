@@ -1723,6 +1723,17 @@ window.HRModule = (function () {
   /* ══════════════════════════════════════════════
      출력 (인쇄)
   ══════════════════════════════════════════════ */
+  /* 통일 레터헤드 밴드 (관리자 로고 + 기관명) */
+  function _hrLetterhead() {
+    var logo = '';
+    try { logo = localStorage.getItem('asea_logo') || ''; } catch (e) {}
+    var mark = logo
+      ? '<img class="hr-lh-logo" src="' + logo + '" alt="logo">'
+      : '<span class="hr-lh-emoji">📅</span>';
+    return '<div class="hr-letterhead">' + mark +
+      '<span class="hr-lh-org">(재) 아세아항공직업전문학교</span></div>';
+  }
+
   function _printApplicationForm(app) {
     var f = app.form1;
     var now = Date.now();
@@ -1733,6 +1744,7 @@ window.HRModule = (function () {
 
     var html =
       '<div class="hr-print-page">' +
+      _hrLetterhead() +
       '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4mm">' +
       '<div>' +
       '<div class="hr-print-title">① 교직원 채용(임용) 지원서</div>' +
@@ -1822,6 +1834,7 @@ window.HRModule = (function () {
 
     var html =
       '<div class="hr-print-page">' +
+      _hrLetterhead() +
       '<div class="hr-print-title">② 개인정보 수집·활용 동의서</div>' +
       '<table class="hr-print-table" style="margin-bottom:4mm">' +
       '<tr><th>수집 항목</th><td>성명, 생년월일, 사진, 주소, 핸드폰번호, 전화번호, E-mail주소, 자격사항, 근무경력사항 등</td></tr>' +
@@ -1875,6 +1888,10 @@ window.HRModule = (function () {
     var printCSS = [
       "body{font-family:'맑은 고딕',sans-serif;margin:0;padding:0;}",
       ".hr-print-page{width:210mm;padding:7mm 10mm;font-size:8pt;line-height:1.35;color:#000;box-sizing:border-box;page-break-after:always;}",
+      ".hr-letterhead{display:flex;align-items:center;gap:8px;padding-bottom:4px;margin-bottom:3mm;border-bottom:2px solid #1a3a5c;}",
+      ".hr-lh-logo{height:22px;width:auto;max-width:130px;object-fit:contain;}",
+      ".hr-lh-emoji{font-size:18px;line-height:1;}",
+      ".hr-lh-org{font-size:11pt;font-weight:800;color:#1a3a5c;letter-spacing:.3px;}",
       ".hr-print-title{font-size:13pt;font-weight:700;margin-bottom:2mm;letter-spacing:1px;}",
       ".hr-print-subtitle{font-size:9pt;font-weight:500;margin-bottom:2mm;}",
       ".hr-print-section-head{background:#eee;font-weight:700;padding:1mm 2mm;font-size:8pt;margin:2mm 0 1mm;}",
@@ -1887,7 +1904,7 @@ window.HRModule = (function () {
       ".hr-print-date{font-size:9pt;}",
       ".hr-print-footnote{font-size:7pt;color:#555;margin-top:2mm;border-top:1px solid #ccc;padding-top:1mm;}",
       ".hr-print-photo{float:right;width:22mm;height:28mm;border:1px solid #000;margin-left:3mm;}",
-      "@media print{@page{size:A4;margin:0;}.hr-print-page{page-break-after:always;}}",
+      "@media print{@page{size:A4;margin:0;}.hr-print-page{page-break-after:always;}*{-webkit-print-color-adjust:exact;print-color-adjust:exact;}}",
     ].join('');
     var win = window.open('', '_blank', 'width=900,height=700,scrollbars=yes');
     if (!win) { alert('팝업이 차단되었습니다. 이 사이트의 팝업을 허용한 후 다시 시도하세요.'); return; }
