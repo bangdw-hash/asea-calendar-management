@@ -30,6 +30,7 @@
   var _tapAnchor  = null;
 
   var _buildings  = [];
+  var _feeConfig  = null;  // 현재 선택 호실의 요금 설정
 
   /* ─────────────────────────────────────────────────
      유틸
@@ -208,6 +209,8 @@
 
       container.appendChild(row);
     });
+
+    updateFeeEstimate();
   }
 
   /* ─────────────────────────────────────────────────
@@ -313,6 +316,135 @@
       bSel.innerHTML = '<option value="">건물 목록을 불러올 수 없습니다</option>';
       showAlert('건물 목록 로드 오류: ' + e.message, 'error');
     }
+  }
+
+  function onRoomChange() {
+    var bId = $('fr-building').value;
+    var rId = $('fr-room').value;
+    var bld  = _buildings.find(function(b){ return b.id === bId; }) || {};
+    var room = (bld.rooms||[]).find(function(r){ return r.id === rId; }) || {};
+
+    _feeConfig = null;
+    var feeEl = $('fr-fee-info');
+    if (!feeEl) return;
+
+    if (!rId || !window.FacilityFeeModule) { feeEl.style.display = 'none'; return; }
+
+    _feeConfig = FacilityFeeModule.getFeeForRoom(bld.buildingName || '', room.name || '');
+    if (!_feeConfig) {
+      feeEl.style.display = 'none';
+      return;
+    }
+
+    // 요금 안내 카드 표시
+    var nm = _feeConfig.normalStart + '~' + _feeConfig.normalEnd;
+    var nr = FacilityFeeModule.comma(_feeConfig.normalRate || 0) + '원/시간';
+    var sm = _feeConfig.surchargeStart + '~' + _feeConfig.surchargeEnd;
+    var sr = FacilityFeeModule.comma(_feeConfig.surchargeRate || 0) + '원/시간';
+
+    feeEl.innerHTML =
+      '<div class="fr-fee-card">' +
+        '<div class="fr-fee-card-title">💰 ' + (bld.buildingName||'') + ' ' + (room.name||'') + ' 이용 요금 안내</div>' +
+        '<div class="fr-fee-rates">' +
+          '<div class="fr-fee-rate-item fr-fee-normal"><span class="fr-fee-tag">평상</span>' + nm + ' · ' + nr + '</div>' +
+          '<div class="fr-fee-rate-item fr-fee-surge"><span class="fr-fee-tag fr-fee-tag-surge">할증</span>' + sm + ' · ' + sr + '</div>' +
+        '</div>' +
+        (_feeConfig.deposit ? '<div class="fr-fee-extra">보증금 ' + FacilityFeeModule.comma(_feeConfig.deposit) + '원 별도</div>' : '') +
+        (_feeConfig.cleaningFee ? '<div class="fr-fee-extra">청소비 ' + FacilityFeeModule.comma(_feeConfig.cleaningFee) + '원 별도</div>' : '') +
+        (_feeConfig.notes ? '<div class="fr-fee-note">📌 ' + _feeConfig.notes + '</div>' : '') +
+      '</div>';
+    feeEl.style.display = '';
+
+    updateFeeEstimate();
+  }
+
+  function updateFeeEstimate() {
+    var estEl = $('fr-fee-estimate');
+    if (!estEl || !_feeConfig || !window.FacilityFeeModule) { if(estEl) estEl.style.display='none'; return; }
+
+    var ranges = [];
+    $('fr-time-ranges').querySelectorAll('.fr-time-range-row').forEach(function(row){
+      var s = row.querySelector('.fr-range-start');
+      var e = row.querySelector('.fr-range-end');
+      if (s && e && s.value && e.value) ranges.push({ startAt: s.value, endAt: e.value });
+    });
+
+    if (!ranges.length) { estEl.style.display = 'none'; return; }
+
+    var calc = FacilityFeeModule.calcFee(_feeConfig, ranges);
+    if (!calc) { estEl.style.display = 'none'; return; }
+
+    var lines = [];
+    if (calc.normalHours > 0) lines.push('평상 ' + calc.normalHours.toFixed(1) + '시간 × ' + FacilityFeeModule.comma(_feeConfig.normalRate) + '원 = ' + FacilityFeeModule.comma(calc.normalFee) + '원');
+    if (calc.surchargeHours > 0) lines.push('할증 ' + calc.surchargeHours.toFixed(1) + '시간 × ' + FacilityFeeModule.comma(_feeConfig.surchargeRate) + '원 = ' + FacilityFeeModule.comma(calc.surchargeFee) + '원');
+    if (calc.deposit > 0) lines.push('보증금 ' + FacilityFeeModule.comma(calc.deposit) + '원');
+    if (calc.cleaningFee > 0) lines.push('청소비 ' + FacilityFeeModule.comma(calc.cleaningFee) + '원');
+    (calc.extraItems||[]).forEach(function(ex){ lines.push(ex.name + ' ' + FacilityFeeModule.comma(ex.amount) + '원'); });
+
+    estEl.innerHTML =
+      '<div class="fr-estimate-box">' +
+        '<div class="fr-estimate-title">📊 예상 요금</div>' +
+        '<div class="fr-estimate-lines">' + lines.map(function(l){ return '<div class="fr-estimate-line">· ' + l + '</div>'; }).join('') + '</div>' +
+        (calc.underMin ? '<div class="fr-estimate-warn">⚠️ 최소 ' + calc.minHours + '시간 이용 필요</div>' : '') +
+        '<div class="fr-estimate-total">합계: <strong>' + FacilityFeeModule.comma(calc.total) + '원</strong></div>' +
+        '<button type="button" class="fr-quote-btn" id="fr-quote-btn">📄 견적서 미리보기</button>' +
+      '</div>';
+
+    estEl.style.display = '';
+
+    var qBtn = $('fr-quote-btn');
+    if (qBtn) qBtn.addEventListener('click', function() { openQuoteModal(calc); });
+  }
+
+  function openQuoteModal(calc) {
+    if (!_feeConfig || !window.FacilityFeeModule) return;
+
+    var bId = $('fr-building').value;
+    var rId = $('fr-room').value;
+    var bld  = _buildings.find(function(b){ return b.id === bId; }) || {};
+    var room = (bld.rooms||[]).find(function(r){ return r.id === rId; }) || {};
+
+    var ranges = [];
+    $('fr-time-ranges').querySelectorAll('.fr-time-range-row').forEach(function(row){
+      var s = row.querySelector('.fr-range-start');
+      var e = row.querySelector('.fr-range-end');
+      if (s && e) ranges.push({ startAt: s.value, endAt: e.value });
+    });
+
+    var info = {
+      buildingName: bld.buildingName || '',
+      roomName: room.name || '',
+      ranges: ranges,
+      applicant: {
+        name:  ($('fr-name')  && $('fr-name').value)  || '',
+        org:   ($('fr-org')   && $('fr-org').value)   || '',
+        phone: ($('fr-phone') && $('fr-phone').value) || '',
+        email: ($('fr-email') && $('fr-email').value) || ''
+      },
+      title:     ($('fr-title')     && $('fr-title').value)     || '',
+      purpose:   ($('fr-purpose')   && $('fr-purpose').value)   || '',
+      attendees: ($('fr-attendees') && $('fr-attendees').value) || '',
+      calc: calc,
+      feeConfig: _feeConfig
+    };
+
+    var modal = $('fr-quote-modal');
+    if (!modal) return;
+
+    var previewEl = $('fr-quote-preview');
+    if (previewEl) {
+      previewEl.innerHTML = '<iframe id="fr-quote-iframe" style="width:100%;height:500px;border:none"></iframe>';
+      var iframe = $('fr-quote-iframe');
+      if (iframe) {
+        var doc = iframe.contentDocument || iframe.contentWindow.document;
+        doc.open();
+        doc.write(FacilityFeeModule.buildQuoteHTML(info));
+        doc.close();
+      }
+    }
+
+    modal._quoteInfo = info;
+    modal.hidden = false;
   }
 
   function onBuildingChange() {
@@ -624,8 +756,25 @@
       updateSteps(_currentStep);
     });
     $('fr-room').addEventListener('change', function () {
+      onRoomChange();
       updateSteps(_currentStep);
     });
+
+    // 시간 입력 변화 감지 → 실시간 요금 계산
+    $('fr-time-ranges').addEventListener('change', function(e) {
+      if (e.target.classList.contains('fr-range-start') || e.target.classList.contains('fr-range-end')) {
+        updateFeeEstimate();
+      }
+    });
+
+    // 견적서 인쇄 버튼
+    var printQuoteBtn = $('fr-quote-print-btn');
+    if (printQuoteBtn) {
+      printQuoteBtn.addEventListener('click', function() {
+        var modal = $('fr-quote-modal');
+        if (modal && modal._quoteInfo) FacilityFeeModule.printQuote(modal._quoteInfo);
+      });
+    }
 
     // 폼 제출
     $('fr-form').addEventListener('submit', onSubmit);

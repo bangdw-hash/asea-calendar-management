@@ -879,14 +879,19 @@ var FacilityModule = (function () {
         var target = btn.dataset.subtab;
         var calPanel = $f('fac-subtab-calendar');
         var reqPanel = $f('fac-subtab-requests');
+        var feePanel = $f('fac-subtab-fees');
         if (calPanel) calPanel.hidden = (target !== 'calendar');
         if (reqPanel) reqPanel.hidden = (target !== 'requests');
+        if (feePanel) feePanel.hidden = (target !== 'fees');
         if (target === 'requests') loadAndRenderRequests();
+        if (target === 'fees') renderFeeAdmin();
       });
     });
     // 관리자 아닌 경우 신청 관리 탭 숨김
     var reqTabBtn = $f('fac-subtab-requests-btn');
     if (reqTabBtn) reqTabBtn.style.display = isAdmin ? '' : 'none';
+    var feeTabBtn = $f('fac-subtab-fees-btn');
+    if (feeTabBtn) feeTabBtn.style.display = isAdmin ? '' : 'none';
 
     // 신청 관리 - 필터
     var reqFilterSel = $f('fac-req-status-filter');
@@ -1142,6 +1147,156 @@ var FacilityModule = (function () {
 
     // 최초 로드
     refresh();
+  }
+
+  /* ─────────────────────────────────────────────────────────
+     관리자: 요금 관리
+  ───────────────────────────────────────────────────────── */
+  function renderFeeAdmin() {
+    if (!window.FacilityFeeModule) return;
+    var el = $f('fac-fee-list');
+    if (!el) return;
+
+    var fees = FacilityFeeModule.loadFees();
+
+    var addBtn = $f('fac-fee-add-btn');
+    if (addBtn && !addBtn._wired) {
+      addBtn._wired = true;
+      addBtn.addEventListener('click', function() { openFeeModal(null); });
+    }
+
+    if (!fees.length) {
+      el.innerHTML = '<p class="empty-state">등록된 요금 설정이 없습니다.</p>';
+      return;
+    }
+
+    el.innerHTML = '';
+    fees.forEach(function(fee) {
+      var card = document.createElement('div');
+      card.className = 'settings-card';
+      card.style.cssText = 'margin-bottom:10px;padding:14px 16px;';
+      card.innerHTML =
+        '<div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px">' +
+          '<div>' +
+            '<div style="font-size:15px;font-weight:700;color:#1a3a5c;margin-bottom:6px">🏢 ' + _esc(fee.buildingName) + ' · ' + _esc(fee.roomName) + '</div>' +
+            '<div style="font-size:12px;color:#374151;display:flex;gap:12px;flex-wrap:wrap">' +
+              '<span style="background:#EFF6FF;border:1px solid #BFDBFE;border-radius:5px;padding:3px 8px">평상 ' + (fee.normalStart||'--') + '~' + (fee.normalEnd||'--') + ' · ' + FacilityFeeModule.comma(fee.normalRate||0) + '원/h</span>' +
+              '<span style="background:#FEF9EC;border:1px solid #FCD34D;border-radius:5px;padding:3px 8px;color:#92400E">할증 ' + (fee.surchargeStart||'--') + '~' + (fee.surchargeEnd||'--') + ' · ' + FacilityFeeModule.comma(fee.surchargeRate||0) + '원/h</span>' +
+              (fee.deposit ? '<span>보증금 ' + FacilityFeeModule.comma(fee.deposit) + '원</span>' : '') +
+              (fee.cleaningFee ? '<span>청소비 ' + FacilityFeeModule.comma(fee.cleaningFee) + '원</span>' : '') +
+            '</div>' +
+            (fee.notes ? '<div style="font-size:11px;color:#92400E;margin-top:4px">📌 ' + _esc(fee.notes) + '</div>' : '') +
+          '</div>' +
+          '<div style="display:flex;gap:6px">' +
+            '<button class="btn btn-ghost btn-sm fac-fee-edit-btn" data-id="' + fee.id + '">수정</button>' +
+            '<button class="btn btn-ghost btn-sm btn-danger fac-fee-del-btn" data-id="' + fee.id + '">삭제</button>' +
+          '</div>' +
+        '</div>';
+      card.querySelector('.fac-fee-edit-btn').onclick = function() { openFeeModal(fee); };
+      card.querySelector('.fac-fee-del-btn').onclick = function() {
+        if (!confirm(fee.buildingName + ' ' + fee.roomName + ' 요금 설정을 삭제하시겠습니까?')) return;
+        FacilityFeeModule.deleteFee(fee.id);
+        renderFeeAdmin();
+        toast('삭제되었습니다.', 'success');
+      };
+      el.appendChild(card);
+    });
+  }
+
+  function _esc(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+  function openFeeModal(fee) {
+    var modal = $f('fac-fee-modal');
+    if (!modal) return;
+    $f('fac-fee-modal-title').textContent = fee ? '요금 설정 수정' : '요금 설정 추가';
+    $f('fac-fee-building').value  = fee ? (fee.buildingName||'')         : '';
+    $f('fac-fee-room').value      = fee ? (fee.roomName||'')             : '';
+    $f('fac-fee-norm-s').value    = fee ? (fee.normalStart||'09:00')     : '09:00';
+    $f('fac-fee-norm-e').value    = fee ? (fee.normalEnd||'18:00')       : '18:00';
+    $f('fac-fee-norm-r').value    = fee ? (fee.normalRate||'')           : '';
+    $f('fac-fee-sur-s').value     = fee ? (fee.surchargeStart||'18:00')  : '18:00';
+    $f('fac-fee-sur-e').value     = fee ? (fee.surchargeEnd||'22:00')    : '22:00';
+    $f('fac-fee-sur-r').value     = fee ? (fee.surchargeRate||'')        : '';
+    $f('fac-fee-minh').value      = fee ? (fee.minHours||'')             : '';
+    $f('fac-fee-dep').value       = fee ? (fee.deposit||'')              : '';
+    $f('fac-fee-clean').value     = fee ? (fee.cleaningFee||'')          : '';
+    $f('fac-fee-notes').value     = fee ? (fee.notes||'')                : '';
+
+    renderFeeExtras(fee ? (fee.extraItems||[]) : []);
+
+    modal._fee = fee || null;
+    modal.hidden = false;
+
+    var saveBtn = $f('fac-fee-save-btn');
+    if (saveBtn) saveBtn.onclick = function() { saveFeeModal(); };
+
+    var extraAddBtn = $f('fac-fee-extra-add-btn');
+    if (extraAddBtn && !extraAddBtn._wired) {
+      extraAddBtn._wired = true;
+      extraAddBtn.addEventListener('click', function() {
+        var cont = $f('fac-fee-extras');
+        var row = document.createElement('div');
+        row.style.cssText = 'display:flex;gap:6px;margin-bottom:6px';
+        row.innerHTML = '<input type="text" class="form-input fee-extra-name" placeholder="항목명" style="flex:2">' +
+          '<input type="number" class="form-input fee-extra-amt" placeholder="금액(원)" min="0" style="flex:1">' +
+          '<button type="button" class="btn btn-ghost btn-sm" onclick="this.parentNode.remove()">×</button>';
+        cont.appendChild(row);
+      });
+    }
+  }
+
+  function renderFeeExtras(items) {
+    var cont = $f('fac-fee-extras');
+    if (!cont) return;
+    cont.innerHTML = '';
+    items.forEach(function(item) {
+      var row = document.createElement('div');
+      row.style.cssText = 'display:flex;gap:6px;margin-bottom:6px';
+      row.innerHTML = '<input type="text" class="form-input fee-extra-name" placeholder="항목명" style="flex:2" value="' + _esc(item.name||'') + '">' +
+        '<input type="number" class="form-input fee-extra-amt" placeholder="금액(원)" min="0" style="flex:1" value="' + (item.amount||'') + '">' +
+        '<button type="button" class="btn btn-ghost btn-sm" onclick="this.parentNode.remove()">×</button>';
+      cont.appendChild(row);
+    });
+  }
+
+  function saveFeeModal() {
+    if (!window.FacilityFeeModule) return;
+    var modal = $f('fac-fee-modal');
+    var buildingName = ($f('fac-fee-building').value||'').trim();
+    var roomName     = ($f('fac-fee-room').value||'').trim();
+    if (!buildingName || !roomName) { toast('건물명과 호실명을 입력하세요.', 'error'); return; }
+
+    var extras = [];
+    $f('fac-fee-extras').querySelectorAll('div').forEach(function(row) {
+      var n = row.querySelector('.fee-extra-name');
+      var a = row.querySelector('.fee-extra-amt');
+      if (n && a && n.value.trim()) extras.push({ name: n.value.trim(), amount: parseFloat(a.value)||0 });
+    });
+
+    var data = {
+      buildingName: buildingName, roomName: roomName,
+      normalStart:    $f('fac-fee-norm-s').value,
+      normalEnd:      $f('fac-fee-norm-e').value,
+      normalRate:     parseFloat($f('fac-fee-norm-r').value)||0,
+      surchargeStart: $f('fac-fee-sur-s').value,
+      surchargeEnd:   $f('fac-fee-sur-e').value,
+      surchargeRate:  parseFloat($f('fac-fee-sur-r').value)||0,
+      minHours:       parseFloat($f('fac-fee-minh').value)||0,
+      deposit:        parseFloat($f('fac-fee-dep').value)||0,
+      cleaningFee:    parseFloat($f('fac-fee-clean').value)||0,
+      extraItems: extras,
+      notes: ($f('fac-fee-notes').value||'').trim()
+    };
+
+    if (modal._fee) {
+      FacilityFeeModule.updateFee(modal._fee.id, data);
+      toast('✅ 요금 설정이 수정되었습니다.', 'success');
+    } else {
+      FacilityFeeModule.addFee(data);
+      toast('✅ 요금 설정이 추가되었습니다.', 'success');
+    }
+    modal.hidden = true;
+    renderFeeAdmin();
   }
 
   return {

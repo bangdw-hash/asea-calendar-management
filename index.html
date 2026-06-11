@@ -715,6 +715,7 @@
         <div id="fac-subtab-bar" class="facility-subtab-bar" style="margin-bottom:16px">
           <button class="subtab-btn active" data-subtab="calendar">📅 예약 캘린더</button>
           <button class="subtab-btn" data-subtab="requests" id="fac-subtab-requests-btn" style="display:none">📋 신청 관리</button>
+          <button class="subtab-btn" data-subtab="fees" id="fac-subtab-fees-btn" style="display:none">💰 요금 관리</button>
         </div>
 
         <!-- ── 서브탭: 예약 캘린더 ── -->
@@ -803,6 +804,19 @@
             <p class="empty-state">등록된 건물이 없습니다.</p>
           </div>
         </div>
+
+        <!-- ── 서브탭: 요금 관리 ── -->
+        <div id="fac-subtab-fees" hidden>
+          <div class="settings-card" style="margin-bottom:16px">
+            <h3 class="settings-section-title">💰 호실별 요금 설정 <span class="badge-admin">관리자</span></h3>
+            <p style="font-size:12px;color:#888;margin-bottom:12px">호실별 평상/할증 시간대와 요금 산식을 등록합니다. 대관신청 폼에서 자동으로 견적을 계산합니다.</p>
+            <button id="fac-fee-add-btn" class="btn btn-primary btn-sm">+ 요금 설정 추가</button>
+          </div>
+          <div id="fac-fee-list">
+            <p class="empty-state">등록된 요금 설정이 없습니다.</p>
+          </div>
+        </div>
+
         </div><!-- /.tab-body -->
 
         <!-- 대관신청 검토 모달 -->
@@ -2364,6 +2378,57 @@
     </div>
   </div>
 
+  <!-- 요금 설정 모달 -->
+  <div id="fac-fee-modal" class="modal" hidden aria-modal="true" role="dialog">
+    <div class="modal-backdrop" onclick="document.getElementById('fac-fee-modal').hidden=true"></div>
+    <div class="modal-dialog" style="max-width:560px">
+      <div class="modal-header">
+        <h3 id="fac-fee-modal-title" class="modal-title">요금 설정 추가</h3>
+        <button class="modal-close" onclick="document.getElementById('fac-fee-modal').hidden=true">✕</button>
+      </div>
+      <div class="modal-body">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+          <div class="form-group"><label class="form-label">건물명 *</label><input id="fac-fee-building" type="text" class="form-input" placeholder="예: 본관"></div>
+          <div class="form-group"><label class="form-label">호실명 *</label><input id="fac-fee-room" type="text" class="form-input" placeholder="예: 대강당"></div>
+        </div>
+        <div style="background:#EFF6FF;border-radius:8px;padding:12px;margin-bottom:12px">
+          <div style="font-size:12px;font-weight:700;color:#1a3a5c;margin-bottom:8px">⏰ 평상 시간대</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
+            <div class="form-group"><label class="form-label">시작</label><input id="fac-fee-norm-s" type="time" class="form-input" value="09:00"></div>
+            <div class="form-group"><label class="form-label">종료</label><input id="fac-fee-norm-e" type="time" class="form-input" value="18:00"></div>
+            <div class="form-group"><label class="form-label">요금(원/시간)</label><input id="fac-fee-norm-r" type="number" class="form-input" placeholder="50000" min="0"></div>
+          </div>
+        </div>
+        <div style="background:#FEF9EC;border-radius:8px;padding:12px;margin-bottom:12px">
+          <div style="font-size:12px;font-weight:700;color:#D97706;margin-bottom:8px">⏰ 할증 시간대</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
+            <div class="form-group"><label class="form-label">시작</label><input id="fac-fee-sur-s" type="time" class="form-input" value="18:00"></div>
+            <div class="form-group"><label class="form-label">종료</label><input id="fac-fee-sur-e" type="time" class="form-input" value="22:00"></div>
+            <div class="form-group"><label class="form-label">요금(원/시간)</label><input id="fac-fee-sur-r" type="number" class="form-input" placeholder="75000" min="0"></div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:12px">
+          <div class="form-group"><label class="form-label">최소 이용시간(시)</label><input id="fac-fee-minh" type="number" class="form-input" placeholder="2" min="0" step="0.5"></div>
+          <div class="form-group"><label class="form-label">보증금(원)</label><input id="fac-fee-dep" type="number" class="form-input" placeholder="0" min="0"></div>
+          <div class="form-group"><label class="form-label">청소비(원)</label><input id="fac-fee-clean" type="number" class="form-input" placeholder="0" min="0"></div>
+        </div>
+        <div class="form-group" style="margin-bottom:12px">
+          <label class="form-label">추가 항목 <span style="font-weight:400;color:#888;font-size:11px">(음향장비, 냉난방비 등)</span></label>
+          <div id="fac-fee-extras"></div>
+          <button type="button" id="fac-fee-extra-add-btn" class="btn btn-ghost btn-sm" style="margin-top:6px">+ 항목 추가</button>
+        </div>
+        <div class="form-group">
+          <label class="form-label">비고/산식 설명</label>
+          <textarea id="fac-fee-notes" class="form-input" rows="2" placeholder="예: 1시간 단위, 최소 2시간, VAT 별도"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="fac-fee-cancel-btn" class="btn btn-ghost" onclick="document.getElementById('fac-fee-modal').hidden=true">취소</button>
+        <button id="fac-fee-save-btn" class="btn btn-primary">저장</button>
+      </div>
+    </div>
+  </div>
+
   <!-- ═══════════════════════════════════════════════════════
        차량 예약 모달
        ═══════════════════════════════════════════════════════ -->
@@ -2893,6 +2958,7 @@
   <script src="monthly-report.js?v=20260611m2"></script>
   <script src="promo.js?v=20260611p2"></script>
   <script src="meet.js?v=20260610mt1"></script>
+  <script src="facility-fee.js?v=20260611ff1"></script>
   <script src="hr.js?v=20260611hr4"></script>
   <script src="retire.js?v=20260611rt2"></script>
   <script src="help.js?v=20260609a1"></script>

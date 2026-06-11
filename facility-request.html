@@ -87,6 +87,8 @@
           <option value="">먼저 건물을 선택하세요</option>
         </select>
       </div>
+      <!-- 요금 안내 카드 -->
+      <div id="fr-fee-info" style="display:none;margin-top:12px"></div>
     </fieldset>
 
     <!-- 달력 날짜 선택 -->
@@ -125,6 +127,8 @@
       <div id="fr-no-date-msg" class="fr-no-date-msg">
         달력에서 날짜를 선택해 주세요.
       </div>
+      <!-- 예상 요금 -->
+      <div id="fr-fee-estimate" style="display:none;margin-top:12px"></div>
     </fieldset>
 
     <fieldset class="fr-fieldset" id="fr-section-3">
@@ -220,6 +224,22 @@
   </div>
 </div>
 
+<!-- 견적서 미리보기 모달 -->
+<div id="fr-quote-modal" class="fr-quote-modal" hidden aria-modal="true" role="dialog">
+  <div class="fr-quote-modal-backdrop" onclick="document.getElementById('fr-quote-modal').hidden=true"></div>
+  <div class="fr-quote-modal-dialog">
+    <div class="fr-quote-modal-header">
+      <span>📄 시설 대관 견적서</span>
+      <div style="display:flex;gap:8px">
+        <button id="fr-quote-print-btn" class="fr-quote-print-btn">🖨️ 인쇄</button>
+        <button onclick="document.getElementById('fr-quote-modal').hidden=true" style="background:none;border:none;font-size:20px;cursor:pointer;color:#666">✕</button>
+      </div>
+    </div>
+    <div id="fr-quote-preview" class="fr-quote-preview"></div>
+  </div>
+</div>
+
+<script src="facility-fee.js"></script>
 <script src="facility-request.js"></script>
 </body>
 </html>
