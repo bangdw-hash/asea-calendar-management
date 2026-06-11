@@ -6153,3 +6153,43 @@ body.is-dragging-event .day-events { pointer-events: none !important; }
 .logo-preview img { max-height: 56px; max-width: 200px; object-fit: contain; }
 .logo-empty { font-size: 13px; color: #9ca3af; }
 .logo-actions { display: flex; flex-direction: column; gap: 8px; }
+
+/* ═══════════════════════════════════════════════════════════
+   캘린더 상단 툴바 — 버튼 높이 / 아이콘 포맷 통일
+   ═══════════════════════════════════════════════════════════ */
+.calendar-actions .tb-btn,
+.calendar-actions .view-toggle {
+  height: 34px;
+  box-sizing: border-box;
+}
+.calendar-actions .tb-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 13px;
+  font-size: 13px;
+  line-height: 1;
+  white-space: nowrap;
+}
+.calendar-actions .view-toggle { display: inline-flex; align-items: stretch; }
+.calendar-actions .view-btn {
+  display: inline-flex;
+  align-items: center;
+  height: 100%;
+  padding: 0 15px;
+  font-size: 13px;
+}
+/* 통일 아이콘 — 동일 크기·선두께, 버튼 글자색 상속 */
+.calendar-actions .tb-ico {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+  display: block;
+}
+@media (max-width: 768px) {
+  .calendar-actions .tb-btn,
+  .calendar-actions .view-toggle { height: 30px; }
+  .calendar-actions .tb-btn { padding: 0 9px; font-size: 11px; gap: 4px; }
+  .calendar-actions .view-btn { padding: 0 11px; font-size: 11px; }
+  .calendar-actions .tb-ico { width: 13px; height: 13px; }
+}

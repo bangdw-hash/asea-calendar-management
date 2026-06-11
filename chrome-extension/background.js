@@ -22,6 +22,13 @@ chrome.action.onClicked && chrome.action.onClicked.addListener(async () => {
 /* ── 핵심 로직 ──────────────────────────────────────────── */
 async function handleShortcut() {
   try {
+    // 0. 지금 보고 있는 탭이 이미 ASEA면 → 새 탭/창 없이 그 자리에서 바로 모달 오픈
+    const [active] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+    if (active && active.id != null && active.url && active.url.indexOf(ASEA_URL) === 0) {
+      await injectOpenModal(active.id);
+      return;
+    }
+
     // 1. ASEA 탭이 이미 열려 있는지 확인
     const tabs = await chrome.tabs.query({ url: ASEA_PATTERN });
 
