@@ -126,42 +126,111 @@
       }
     });
 
-    // 모바일 이벤트 모달 스와이프 내비게이션
+    // 모바일 이벤트 모달 틴더-스타일 스와이프 내비게이션
     (function () {
-      var swipeStartX = 0, swipeStartY = 0, swipeMoved = false;
-      var evModal = null;
-      document.addEventListener('touchstart', function (e) {
-        evModal = $('event-modal');
-        if (!evModal || evModal.hidden) return;
-        var inner = evModal.querySelector('.modal-content') || evModal.querySelector('.modal-box');
-        if (!inner || !inner.contains(e.target)) return;
-        swipeStartX = e.touches[0].clientX;
-        swipeStartY = e.touches[0].clientY;
-        swipeMoved = false;
-      }, { passive: true });
-      document.addEventListener('touchmove', function (e) {
-        if (!evModal || evModal.hidden) return;
-        swipeMoved = true;
-      }, { passive: true });
-      document.addEventListener('touchend', function (e) {
-        if (!evModal || evModal.hidden || !swipeMoved) return;
-        var dx = e.changedTouches[0].clientX - swipeStartX;
-        var dy = e.changedTouches[0].clientY - swipeStartY;
-        if (Math.abs(dx) < 60 || Math.abs(dy) > Math.abs(dx)) return;
-        // 현재 편집 중인 이벤트 ID
-        var curId = S.editEventId;
-        if (!curId) return;
-        // 화면에 보이는 이벤트를 날짜/시간순 정렬
-        var sorted = (S.events || []).slice().sort(function (a, b) {
+      var _sx = 0, _sy = 0, _cx = 0, _cy = 0;
+      var _active = false, _card = null;
+      var THRESH = 80;
+
+      function _sortedEvents() {
+        return (S.events || []).slice().sort(function (a, b) {
           var ta = a.start.dateTime ? new Date(a.start.dateTime).getTime() : new Date(a.start.date).getTime();
           var tb = b.start.dateTime ? new Date(b.start.dateTime).getTime() : new Date(b.start.date).getTime();
           return ta - tb;
         });
+      }
+
+      function _navigate(offset) {
+        var curId = S.editEventId;
+        if (!curId) return false;
+        var sorted = _sortedEvents();
         var idx = sorted.findIndex(function (ev) { return ev.id === curId; });
-        if (idx === -1) return;
-        var nextIdx = dx < 0 ? idx + 1 : idx - 1; // 왼쪽=다음, 오른쪽=이전
-        if (nextIdx < 0 || nextIdx >= sorted.length) return;
-        openEventModal(sorted[nextIdx]);
+        if (idx === -1) return false;
+        var ni = idx + offset;
+        if (ni < 0 || ni >= sorted.length) return false;
+        openEventModal(sorted[ni]);
+        return true;
+      }
+
+      function _snapBack() {
+        if (!_card) return;
+        _card.style.transition = 'transform .3s cubic-bezier(.25,.46,.45,.94), opacity .3s';
+        _card.style.transform = '';
+        _card.style.opacity = '';
+        setTimeout(function () { if (_card) { _card.style.transition = ''; } }, 320);
+      }
+
+      function _flyOut(tx, ty, rot, cb) {
+        if (!_card) return;
+        _card.style.transition = 'transform .28s ease-in, opacity .22s ease-in';
+        _card.style.transform = 'translateX(' + tx + ') translateY(' + ty + ') rotate(' + rot + 'deg)';
+        _card.style.opacity = '0';
+        var c = _card;
+        setTimeout(function () {
+          c.style.transition = ''; c.style.transform = ''; c.style.opacity = '';
+          if (cb) cb();
+        }, 290);
+      }
+
+      document.addEventListener('touchstart', function (e) {
+        var evModal = $('event-modal');
+        if (!evModal || evModal.hidden) return;
+        _card = evModal.querySelector('.modal-dialog');
+        if (!_card || !_card.contains(e.target)) { _card = null; return; }
+        _sx = e.touches[0].clientX;
+        _sy = e.touches[0].clientY;
+        _cx = 0; _cy = 0; _active = true;
+        _card.style.transition = 'none';
+        _card.style.willChange = 'transform, opacity';
+      }, { passive: true });
+
+      document.addEventListener('touchmove', function (e) {
+        if (!_active || !_card) return;
+        _cx = e.touches[0].clientX - _sx;
+        _cy = e.touches[0].clientY - _sy;
+        var isUpward = _cy < -20 && Math.abs(_cy) > Math.abs(_cx) * 1.2;
+        if (isUpward) {
+          var scale = 1 + _cy * 0.0008;
+          _card.style.transform = 'translateY(' + _cy + 'px) scale(' + Math.max(scale, 0.7) + ')';
+          _card.style.opacity = String(Math.max(0, 1 + _cy / 200));
+        } else {
+          var rot = _cx * 0.06;
+          _card.style.transform = 'translateX(' + _cx + 'px) rotate(' + rot + 'deg)';
+          _card.style.opacity = String(Math.max(0, 1 - Math.abs(_cx) / 350));
+        }
+      }, { passive: true });
+
+      document.addEventListener('touchend', function () {
+        if (!_active || !_card) return;
+        _active = false;
+        var dx = _cx, dy = _cy;
+        var isUpward = dy < -THRESH && Math.abs(dy) > Math.abs(dx) * 1.2;
+
+        if (isUpward) {
+          _flyOut('0', '-130vh', 0, function () {
+            var evModal = $('event-modal');
+            if (evModal) evModal.hidden = true;
+          });
+        } else if (dx > THRESH) {
+          // 오른쪽 스와이프 → 다음 일정
+          _flyOut('120vw', '0', 20, function () {
+            if (!_navigate(1)) {
+              var evModal = $('event-modal');
+              if (evModal) evModal.hidden = true;
+            }
+          });
+        } else if (dx < -THRESH) {
+          // 왼쪽 스와이프 → 이전 일정
+          _flyOut('-120vw', '0', -20, function () {
+            if (!_navigate(-1)) {
+              var evModal = $('event-modal');
+              if (evModal) evModal.hidden = true;
+            }
+          });
+        } else {
+          _snapBack();
+        }
+        _card = null;
       }, { passive: true });
     })();
   }

@@ -602,6 +602,28 @@
       <h2>신청 현황</h2>
       <span class="count-badge" id="count-badge">0</span>
     </div>
+    <!-- Sort / Filter bar -->
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px;padding:10px 12px;background:#f8f9fa;border-radius:8px;border:1px solid #e5e7eb">
+      <div style="display:flex;gap:6px;align-items:center;font-size:13px;color:#6b7280">
+        <span>부서:</span>
+        <select id="filter-cat" style="font-size:13px;padding:3px 8px;border:1px solid #d1d5db;border-radius:6px;background:#fff">
+          <option value="">전체</option>
+          <option value="행정지원부서">행정지원부서</option>
+          <option value="교육부서">교육부서</option>
+        </select>
+      </div>
+      <div style="display:flex;gap:6px;align-items:center;font-size:13px;color:#6b7280">
+        <span>정렬:</span>
+        <select id="sort-by" style="font-size:13px;padding:3px 8px;border:1px solid #d1d5db;border-radius:6px;background:#fff">
+          <option value="date-desc">신청일 (최신순)</option>
+          <option value="date-asc">신청일 (오래된순)</option>
+          <option value="name-asc">이름순 (가-나)</option>
+          <option value="name-desc">이름순 (나-가)</option>
+          <option value="status">상태순</option>
+        </select>
+      </div>
+      <button onclick="resetFilters()" style="font-size:12px;padding:4px 10px;border:1px solid #d1d5db;border-radius:6px;background:#fff;cursor:pointer;color:#6b7280">초기화</button>
+    </div>
     <div id="entries-container">
       <div class="empty-state">아직 신청 내역이 없습니다.</div>
     </div>
@@ -761,10 +783,35 @@
   });
 
   /* ── Render list (table) ── */
+  window.resetFilters = function() {
+    document.getElementById('filter-cat').value = '';
+    document.getElementById('sort-by').value = 'date-desc';
+    renderList();
+  };
+  document.addEventListener('change', function(e) {
+    if (e.target.id === 'filter-cat' || e.target.id === 'sort-by') renderList();
+  });
+
   function renderList() {
-    const data    = load();
-    const admin   = isAdmin();
+    let data = load();
+    const admin = isAdmin();
     const container = document.getElementById('entries-container');
+
+    // filter
+    const filterCat = (document.getElementById('filter-cat') || {}).value || '';
+    if (filterCat) data = data.filter(function(d) { return d.category === filterCat; });
+
+    // sort
+    const sortBy = (document.getElementById('sort-by') || {}).value || 'date-desc';
+    data = data.slice().sort(function(a, b) {
+      if (sortBy === 'date-desc') return new Date(b.submittedAt) - new Date(a.submittedAt);
+      if (sortBy === 'date-asc')  return new Date(a.submittedAt) - new Date(b.submittedAt);
+      if (sortBy === 'name-asc')  return a.name.localeCompare(b.name, 'ko');
+      if (sortBy === 'name-desc') return b.name.localeCompare(a.name, 'ko');
+      if (sortBy === 'status')    return (a.status === '등록완료' ? 1 : 0) - (b.status === '등록완료' ? 1 : 0);
+      return 0;
+    });
+
     document.getElementById('count-badge').textContent = data.length;
 
     if (!data.length) {

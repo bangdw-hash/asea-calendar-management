@@ -1092,6 +1092,8 @@ a        { color: var(--color-accent); text-decoration: none; }
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  transform-origin: 50% 30%;
+  user-select: none;
 }
 
 .modal-lg { width: min(720px, 100%); }
