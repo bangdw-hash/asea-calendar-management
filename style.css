@@ -6035,3 +6035,121 @@ body.is-dragging-event .day-events { pointer-events: none !important; }
   user-select: none;
 }
 .bw-ectx-action:hover { background: var(--color-hover, rgba(0,0,0,.08)); }
+
+/* ═══════════════════════════════════════════════════════════
+   홈페이지 개선사항_01 — 로그인 안내 / 로고 / 메뉴 관리
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── 로그인 카드 안내(구동 환경 / 제공 기능) ── */
+.login-divider {
+  border: none;
+  border-top: 1px solid var(--color-border, #e5e7eb);
+  margin: var(--sp-5, 16px) 0 var(--sp-4, 12px);
+}
+.login-info {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  text-align: left;
+  font-size: var(--font-sm, 13px);
+  color: var(--color-text-secondary, #6b7280);
+  line-height: 1.7;
+}
+.login-info li { display: flex; gap: 8px; }
+.login-info-key {
+  flex-shrink: 0;
+  min-width: 64px;
+  font-weight: 700;
+  color: var(--color-text, #374151);
+}
+
+/* ── 업로드 로고 (헤더 / 로그인) ── */
+.header-icon .brand-logo-img {
+  height: 24px;
+  width: auto;
+  max-width: 160px;
+  object-fit: contain;
+  vertical-align: middle;
+  filter: none;        /* .header-icon 의 brightness(10) 무력화 */
+  display: inline-block;
+}
+.login-logo-icon .login-logo-img {
+  height: 40px;
+  width: auto;
+  max-width: 200px;
+  object-fit: contain;
+  vertical-align: middle;
+}
+
+/* ── 관리자 · 메뉴 관리 ── */
+.menu-manage-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-width: 560px;
+}
+.mm-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  border: 1px solid var(--color-border, #e5e7eb);
+  border-radius: 8px;
+  background: var(--color-surface, #fff);
+}
+.mm-row.mm-hidden { opacity: .55; background: var(--color-bg, #f9fafb); }
+.mm-pos {
+  flex-shrink: 0;
+  width: 24px;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: #9ca3af;
+}
+.mm-label { flex: 1; font-size: 14px; font-weight: 500; }
+.mm-actions { display: flex; align-items: center; gap: 6px; }
+.mm-btn {
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--color-border, #d1d5db);
+  border-radius: 6px;
+  background: var(--color-surface, #fff);
+  cursor: pointer;
+  font-size: 11px;
+  line-height: 1;
+  color: #4b5563;
+}
+.mm-btn:hover:not(:disabled) { background: var(--color-hover, #f3f4f6); }
+.mm-btn:disabled { opacity: .35; cursor: default; }
+.mm-toggle {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  color: #4b5563;
+  cursor: pointer;
+  user-select: none;
+  margin-left: 4px;
+}
+
+/* ── 관리자 · 로고 관리 ── */
+.logo-manage {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+.logo-preview {
+  min-width: 220px;
+  min-height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  border: 1px dashed var(--color-border, #d1d5db);
+  border-radius: 10px;
+  background: var(--color-bg, #f9fafb);
+}
+.logo-preview img { max-height: 56px; max-width: 200px; object-fit: contain; }
+.logo-empty { font-size: 13px; color: #9ca3af; }
+.logo-actions { display: flex; flex-direction: column; gap: 8px; }

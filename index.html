@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-  <meta name="description" content="ASEA 캘린더 관리 — 주간업무보고 배포 자동화">
-  <title>ASEA 캘린더 관리</title>
+  <meta name="description" content="ASEA 업무 관리 — 행정업무 관리 시스템">
+  <title>ASEA 업무 관리</title>
   <link rel="preload" as="style" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
   <!-- 게시판 에디터 추가 폰트 (Noto Sans KR, 나눔고딕, 나눔명조, 고운돋움, Black Han Sans, IBM Plex KR) -->
@@ -64,9 +64,9 @@
     <div class="login-card">
       <div class="login-logo">
         <span class="login-logo-icon">📅</span>
-        <h1 class="login-title">ASEA 캘린더 관리</h1>
+        <h1 class="login-title">ASEA 업무 관리</h1>
       </div>
-      <p class="login-subtitle">주간업무보고 배포 자동화 시스템</p>
+      <p class="login-subtitle">행정업무 관리 시스템</p>
       <button id="login-btn" class="btn btn-primary btn-login">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
           <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -77,6 +77,11 @@
         Google로 로그인
       </button>
       <p class="login-notice">필요 권한: 캘린더 읽기/쓰기, Drive 읽기, Gmail 발송</p>
+      <hr class="login-divider">
+      <ul class="login-info">
+        <li><span class="login-info-key">구동 환경</span> PC · 모바일 웹앱 / 구글아이디 계정 필요</li>
+        <li><span class="login-info-key">제공 기능</span> 업무 캘린더, 업무 공유 등</li>
+      </ul>
     </div>
   </div>
 
@@ -89,7 +94,7 @@
     <header class="app-header">
       <div class="header-brand">
         <span class="header-icon" aria-hidden="true">📅</span>
-        <span class="header-title">ASEA 캘린더 관리</span>
+        <span class="header-title">ASEA 업무 관리</span>
       </div>
       <div class="header-actions">
         <button id="sync-calendars-btn" class="btn btn-secondary btn-sm" title="내 캘린더 목록 불러오기">
@@ -131,7 +136,7 @@
     <svg class="tab-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
       <path d="M3 11l19-9-9 19-2-8-8-2z"/>
     </svg>
-    <span class="tab-label">홍보슬라이드</span>
+    <span class="tab-label">홍보화면</span>
   </button>
 
   <button class="tab-btn" data-tab="email" role="tab" aria-selected="false">
@@ -1638,9 +1643,9 @@
           <button id="save-make-webhook-btn" class="btn btn-primary btn-sm">저장</button>
         </div>
 
-        <!-- 홍보슬라이드 설정 -->
+        <!-- 홍보화면 설정 -->
         <div class="settings-card">
-          <h3 class="settings-section-title">📣 홍보슬라이드 설정</h3>
+          <h3 class="settings-section-title">📣 홍보화면 설정</h3>
           <div class="form-group">
             <label class="form-label" for="setting-promo-gas-url">GAS 프록시 URL</label>
             <input id="setting-promo-gas-url" type="url" class="form-input"

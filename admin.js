@@ -2,9 +2,12 @@
 (function () {
   'use strict';
 
-  var SK_ROLES    = 'asea_user_roles';
-  var SK_MENU_VIS = 'asea_menu_visibility';
-  var SK_FEAT_VIS = 'asea_feat_visibility';
+  var SK_ROLES      = 'asea_user_roles';
+  var SK_MENU_VIS   = 'asea_menu_visibility';
+  var SK_FEAT_VIS   = 'asea_feat_visibility';
+  var SK_MENU_ORDER = 'asea_menu_order';      // 메뉴 표시 순서 (id 배열)
+  var SK_MENU_HIDDEN= 'asea_menu_hidden';     // 전역 숨김 메뉴 (id 배열)
+  var SK_LOGO       = 'asea_logo';            // 로고 이미지 (dataURL)
 
   /* ══════════════════════════════════════════════════════
      버전 히스토리 (최신순)
@@ -121,12 +124,12 @@
     }
   ];
 
-  /* ── 전체 메뉴 목록 ─────────────────────────────────── */
+  /* ── 전체 메뉴 목록 (역할별 표시 제어용) ───────────────── */
   var MENU_ITEMS = [
     { id: 'calendar',    label: '📅 캘린더' },
     { id: 'weekly-hub', label: '📋 주간허브' },
-    { id: 'report',      label: '✅ 보고' },
-    { id: 'promo',       label: '📣 홍보슬라이드' },
+    { id: 'report',      label: '✅ 업무보고' },
+    { id: 'promo',       label: '📣 홍보화면' },
     { id: 'email',       label: '✉️ 이메일' },
     { id: 'extract',     label: '🔍 일정발췌' },
     { id: 'work',        label: '📝 업무관리' },
@@ -137,9 +140,46 @@
     { id: 'checkinmgmt', label: '🚪 입출입관리' },
     { id: 'sms',         label: '💬 문자발송' },
     { id: 'board',       label: '📌 게시판' },
+    { id: 'hr',          label: '👥 인사관리' },
+    { id: 'zoom',        label: '🎥 Zoom회의' },
     { id: 'settings',    label: '⚙️ 설정' },
     { id: 'help',        label: '❓ 도움말' }
   ];
+
+  /* ── 메뉴 순서/표시 관리용 전체 메뉴(라벨 포함) ────────────
+     · 데스크톱 상단 탭 + 모바일 하단 탭 공통 순서를 결정
+     · admin 탭은 별도(항상 관리자만) 처리하므로 제외          */
+  var NAV_MENUS = [
+    { id: 'calendar',     label: '📅 캘린더' },
+    { id: 'weekly-hub',   label: '📋 주간허브' },
+    { id: 'report',       label: '✅ 업무보고' },
+    { id: 'promo',        label: '📣 홍보화면' },
+    { id: 'email',        label: '✉️ 이메일' },
+    { id: 'extract',      label: '🔍 일정발췌' },
+    { id: 'work',         label: '📝 업무관리' },
+    { id: 'facility',     label: '🏢 대관업무' },
+    { id: 'vehicle',      label: '🚗 차량관리' },
+    { id: 'classroom',    label: '🏫 강의실현황' },
+    { id: 'workorder',    label: '🔧 작업지시' },
+    { id: 'checkinmgmt',  label: '🚪 입출입관리' },
+    { id: 'sms',          label: '💬 문자발송' },
+    { id: 'board',        label: '📌 게시판' },
+    { id: 'hr',           label: '👥 인사관리' },
+    { id: 'zoom',         label: '🎥 Zoom회의' },
+    { id: 'cal-share-nav',label: '🔗 캘린더 공유' },
+    { id: 'settings',     label: '⚙️ 설정' },
+    { id: 'help',         label: '❓ 도움말' }
+  ];
+
+  /* 기본 순서 — 캘린더 / 일정발췌 / 업무보고 / 홍보화면 / 이메일 … */
+  var DEFAULT_MENU_ORDER = [
+    'calendar', 'extract', 'report', 'promo', 'email',
+    'facility', 'vehicle', 'classroom', 'workorder', 'checkinmgmt',
+    'sms', 'board', 'hr', 'zoom', 'cal-share-nav', 'settings', 'help',
+    'weekly-hub', 'work'   // 기본 숨김 메뉴는 맨 뒤
+  ];
+  /* 기본 숨김 메뉴 — 업무관리 / 주간허브 */
+  var DEFAULT_MENU_HIDDEN = ['weekly-hub', 'work'];
 
   /* ── 기능 목록 ──────────────────────────────────────── */
   var FEAT_ITEMS = [
@@ -161,6 +201,28 @@
   function saveMenuVis(d) { try { localStorage.setItem(SK_MENU_VIS, JSON.stringify(d)); } catch(e) {} }
   function loadFeatVis()  { try { return JSON.parse(localStorage.getItem(SK_FEAT_VIS) || '{}'); } catch(e) { return {}; } }
   function saveFeatVis(d) { try { localStorage.setItem(SK_FEAT_VIS, JSON.stringify(d)); } catch(e) {} }
+
+  /* 메뉴 순서 — 미설정(null)이면 기본 순서 사용 */
+  function loadMenuOrder()  { try { var v = localStorage.getItem(SK_MENU_ORDER); return v === null ? [] : (JSON.parse(v) || []); } catch(e) { return []; } }
+  function saveMenuOrder(a) { try { localStorage.setItem(SK_MENU_ORDER, JSON.stringify(a)); } catch(e) {} }
+  /* 전역 숨김 — 미설정(null)이면 기본 숨김 목록 사용 */
+  function loadMenuHidden()  { try { var v = localStorage.getItem(SK_MENU_HIDDEN); return v === null ? DEFAULT_MENU_HIDDEN.slice() : (JSON.parse(v) || []); } catch(e) { return DEFAULT_MENU_HIDDEN.slice(); } }
+  function saveMenuHidden(a) { try { localStorage.setItem(SK_MENU_HIDDEN, JSON.stringify(a)); } catch(e) {} }
+  /* 로고 dataURL */
+  function loadLogo()   { try { return localStorage.getItem(SK_LOGO) || ''; } catch(e) { return ''; } }
+  function saveLogo(d)  { try { localStorage.setItem(SK_LOGO, d); return true; } catch(e) { return false; } }
+  function removeLogo() { try { localStorage.removeItem(SK_LOGO); } catch(e) {} }
+
+  /* 현재 적용 순서(전체 메뉴 id 배열) — 저장값 + 누락분 보정 */
+  function effectiveOrder() {
+    var ids   = NAV_MENUS.map(function (m) { return m.id; });
+    var saved = loadMenuOrder();
+    if (!saved.length) return DEFAULT_MENU_ORDER.slice();
+    var result = [];
+    saved.forEach(function (id) { if (ids.indexOf(id) !== -1 && result.indexOf(id) === -1) result.push(id); });
+    ids.forEach(function (id) { if (result.indexOf(id) === -1) result.push(id); });
+    return result;
+  }
 
   /* ── 역할 ────────────────────────────────────────── */
   function getUserRole(email) {
@@ -226,16 +288,39 @@
     saveFeatVis(vis);
   }
 
-  /* ── 메뉴 UI 적용 ────────────────────────────────── */
-  function applyMenuVisibility() {
-    var role = getUserRole(curEmail());
+  /* ── 버튼 id 판별 (data-tab 또는 캘린더공유 특수 버튼) ── */
+  function _btnId(b) {
+    if (b.dataset && b.dataset.tab) return b.dataset.tab;
+    if (b.id === 'cal-share-nav-btn') return 'cal-share-nav';
+    return '';
+  }
 
-    MENU_ITEMS.forEach(function (item) {
-      var visible = isMenuVisible(item.id, role);
-      var tabBtn  = document.querySelector('.tab-btn[data-tab="' + item.id + '"]');
-      var bnavBtn = document.querySelector('.bnav-btn[data-tab="' + item.id + '"]');
-      if (tabBtn)  tabBtn.style.display  = visible ? '' : 'none';
-      if (bnavBtn) bnavBtn.style.display = visible ? '' : 'none';
+  /* ── 메뉴 UI 적용 (순서 + 표시/숨김 통합) ───────────── */
+  function applyMenuVisibility() {
+    var role   = getUserRole(curEmail());
+    var order  = effectiveOrder();
+    var hidden = loadMenuHidden();
+
+    [['.desktop-tab-nav', '.tab-btn'], ['.mobile-bottom-nav', '.bnav-btn']].forEach(function (pair) {
+      var nav = document.querySelector(pair[0]);
+      if (!nav) return;
+      var btns = Array.prototype.slice.call(nav.querySelectorAll(pair[1]));
+
+      /* 1) 순서 적용 — order 순으로 재배치, 나머지는 뒤에 그대로 */
+      var placed = {};
+      order.forEach(function (id) {
+        var b = btns.filter(function (x) { return _btnId(x) === id; })[0];
+        if (b) { nav.appendChild(b); placed[id] = 1; }
+      });
+      btns.forEach(function (b) { if (!placed[_btnId(b)]) nav.appendChild(b); });
+
+      /* 2) 표시/숨김 적용 — 전역숨김 && 역할표시 */
+      btns.forEach(function (b) {
+        var id = _btnId(b);
+        if (!id || id === 'admin') return;            // 관리자 탭은 아래에서 처리
+        var visible = (hidden.indexOf(id) === -1) && isMenuVisible(id, role);
+        b.style.display = visible ? '' : 'none';
+      });
     });
 
     // 관리자 탭: admin만 보임
@@ -243,6 +328,20 @@
       var el = document.querySelector('.' + cls + '[data-tab="admin"]');
       if (el) el.style.display = isAdmin() ? '' : 'none';
     });
+  }
+
+  /* ── 로고 UI 적용 ────────────────────────────────── */
+  function applyLogo() {
+    var data  = loadLogo();
+    var hIcon = document.querySelector('.app-header .header-icon');
+    var lIcon = document.querySelector('#login-overlay .login-logo-icon');
+    if (data) {
+      if (hIcon) hIcon.innerHTML = '<img src="' + data + '" alt="로고" class="brand-logo-img">';
+      if (lIcon) lIcon.innerHTML = '<img src="' + data + '" alt="로고" class="login-logo-img">';
+    } else {
+      if (hIcon) hIcon.textContent = '📅';
+      if (lIcon) lIcon.textContent = '📅';
+    }
   }
 
   /* ── 기능 UI 적용 ────────────────────────────────── */
@@ -280,6 +379,8 @@
         '<nav class="admin-sidenav">' +
           '<button class="admin-nav-btn active" data-sec="changelog">📋 버전 관리</button>' +
           '<button class="admin-nav-btn" data-sec="permissions">👥 권한 관리</button>' +
+          '<button class="admin-nav-btn" data-sec="menu-manage">🧭 메뉴 관리</button>' +
+          '<button class="admin-nav-btn" data-sec="logo">🖼 로고 관리</button>' +
           '<button class="admin-nav-btn" data-sec="menu-ctrl">📂 메뉴 제어</button>' +
           '<button class="admin-nav-btn" data-sec="feat-ctrl">⚙️ 기능 제어</button>' +
           '<button class="admin-nav-btn" data-sec="tab-admin">🔗 탭별 관리</button>' +
@@ -307,6 +408,8 @@
     if (!body) return;
     if (sec === 'changelog')   body.innerHTML = _htmlChangelog();
     if (sec === 'permissions') { body.innerHTML = _htmlPermissions(); _bindPermEvents(); }
+    if (sec === 'menu-manage') { body.innerHTML = _htmlMenuManage(); _bindMenuManageEvents(); }
+    if (sec === 'logo')        { body.innerHTML = _htmlLogo();       _bindLogoEvents(); }
     if (sec === 'menu-ctrl')   { body.innerHTML = _htmlMenuCtrl();    _bindMenuCtrlEvents(); }
     if (sec === 'feat-ctrl')   { body.innerHTML = _htmlFeatCtrl();    _bindFeatCtrlEvents(); }
     if (sec === 'tab-admin')     { body.innerHTML = _htmlTabAdmin();      _bindTabAdminEvents(); }
@@ -454,6 +557,135 @@
         saveRoles(roles);
         _renderSection('permissions');
       });
+    });
+  }
+
+  /* ══════════════════════════════════════════════════════
+     메뉴 관리 — 순서 변경 + 표시/숨김 (전역)
+  ══════════════════════════════════════════════════════ */
+  function _htmlMenuManage() {
+    var order   = effectiveOrder();
+    var hidden  = loadMenuHidden();
+    var labelOf = {};
+    NAV_MENUS.forEach(function (m) { labelOf[m.id] = m.label; });
+
+    var html = '<div class="admin-section">' +
+      '<h3 class="admin-sec-title">🧭 메뉴 관리</h3>' +
+      '<p class="form-hint" style="margin-bottom:12px">메뉴의 <b>순서</b>와 <b>표시/숨김</b>을 설정합니다. 숨긴 메뉴도 여기서 다시 켤 수 있습니다.<br>' +
+      '<span style="color:#999">※ 설정은 이 브라우저에 저장됩니다(기기/계정별).</span></p>' +
+      '<div class="menu-manage-list" id="menu-manage-list">';
+
+    order.forEach(function (id, idx) {
+      var isHidden = hidden.indexOf(id) !== -1;
+      html += '<div class="mm-row' + (isHidden ? ' mm-hidden' : '') + '" data-id="' + esc(id) + '">' +
+        '<span class="mm-pos">' + (idx + 1) + '</span>' +
+        '<span class="mm-label">' + (labelOf[id] || esc(id)) + '</span>' +
+        '<div class="mm-actions">' +
+          '<button class="mm-btn mm-up" title="위로"' + (idx === 0 ? ' disabled' : '') + '>▲</button>' +
+          '<button class="mm-btn mm-down" title="아래로"' + (idx === order.length - 1 ? ' disabled' : '') + '>▼</button>' +
+          '<label class="mm-toggle"><input type="checkbox" class="mm-vis"' + (isHidden ? '' : ' checked') + '> 표시</label>' +
+        '</div>' +
+      '</div>';
+    });
+
+    html += '</div>' +
+      '<div style="margin-top:14px">' +
+        '<button id="mm-reset-btn" class="btn btn-ghost btn-sm">↺ 기본값으로 복원</button>' +
+      '</div>' +
+    '</div>';
+    return html;
+  }
+
+  function _bindMenuManageEvents() {
+    function move(id, dir) {
+      var order = effectiveOrder();
+      var i = order.indexOf(id), j = i + dir;
+      if (i < 0 || j < 0 || j >= order.length) return;
+      var t = order[i]; order[i] = order[j]; order[j] = t;
+      saveMenuOrder(order);
+      applyMenuVisibility();
+      _renderSection('menu-manage');
+    }
+
+    document.querySelectorAll('#menu-manage-list .mm-up').forEach(function (b) {
+      b.addEventListener('click', function () { move(this.closest('.mm-row').dataset.id, -1); });
+    });
+    document.querySelectorAll('#menu-manage-list .mm-down').forEach(function (b) {
+      b.addEventListener('click', function () { move(this.closest('.mm-row').dataset.id, 1); });
+    });
+    document.querySelectorAll('#menu-manage-list .mm-vis').forEach(function (cb) {
+      cb.addEventListener('change', function () {
+        var id = this.closest('.mm-row').dataset.id;
+        var hidden = loadMenuHidden();
+        var i = hidden.indexOf(id);
+        if (this.checked) { if (i !== -1) hidden.splice(i, 1); }
+        else              { if (i === -1) hidden.push(id); }
+        saveMenuHidden(hidden);
+        applyMenuVisibility();
+        _renderSection('menu-manage');
+      });
+    });
+
+    var reset = document.getElementById('mm-reset-btn');
+    if (reset) reset.addEventListener('click', function () {
+      if (!confirm('메뉴 순서와 표시 설정을 기본값으로 되돌립니다.')) return;
+      try { localStorage.removeItem(SK_MENU_ORDER); localStorage.removeItem(SK_MENU_HIDDEN); } catch(e) {}
+      applyMenuVisibility();
+      _renderSection('menu-manage');
+      if (window.toast) toast('기본값으로 복원했습니다.', 'success');
+    });
+  }
+
+  /* ══════════════════════════════════════════════════════
+     로고 관리 — 헤더/로그인 로고 업로드
+  ══════════════════════════════════════════════════════ */
+  function _htmlLogo() {
+    var data = loadLogo();
+    return '<div class="admin-section">' +
+      '<h3 class="admin-sec-title">🖼 로고 관리</h3>' +
+      '<p class="form-hint" style="margin-bottom:14px">상단 헤더와 로그인 화면의 로고를 등록합니다.<br>' +
+      '권장: 가로형 <b>PNG(투명 배경)</b> · 최대 500KB. 높이 기준으로 자동 맞춤됩니다.<br>' +
+      '<span style="color:#999">※ 설정은 이 브라우저에 저장됩니다(기기/계정별).</span></p>' +
+      '<div class="logo-manage">' +
+        '<div class="logo-preview" id="logo-preview">' +
+          (data ? '<img src="' + data + '" alt="로고 미리보기">'
+                : '<span class="logo-empty">현재 기본 아이콘(📅) 사용 중</span>') +
+        '</div>' +
+        '<div class="logo-actions">' +
+          '<input type="file" id="logo-file" accept="image/png,image/jpeg,image/svg+xml,image/webp" style="display:none">' +
+          '<button id="logo-upload-btn" class="btn btn-primary btn-sm">이미지 업로드</button>' +
+          '<button id="logo-remove-btn" class="btn btn-ghost btn-sm"' + (data ? '' : ' disabled') + '>로고 제거</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }
+
+  function _bindLogoEvents() {
+    var fileInput = document.getElementById('logo-file');
+    var upBtn     = document.getElementById('logo-upload-btn');
+    var rmBtn     = document.getElementById('logo-remove-btn');
+
+    if (upBtn && fileInput) upBtn.addEventListener('click', function () { fileInput.click(); });
+
+    if (fileInput) fileInput.addEventListener('change', function () {
+      var f = this.files && this.files[0];
+      if (!f) return;
+      if (f.size > 500 * 1024) { alert('이미지 용량이 너무 큽니다(최대 500KB). 더 작은 파일을 사용하세요.'); this.value = ''; return; }
+      var reader = new FileReader();
+      reader.onload = function (e) {
+        if (!saveLogo(e.target.result)) { alert('저장 실패: 브라우저 저장 용량이 부족합니다.'); return; }
+        applyLogo();
+        _renderSection('logo');
+        if (window.toast) toast('로고가 등록되었습니다.', 'success');
+      };
+      reader.readAsDataURL(f);
+    });
+
+    if (rmBtn) rmBtn.addEventListener('click', function () {
+      removeLogo();
+      applyLogo();
+      _renderSection('logo');
+      if (window.toast) toast('로고를 제거했습니다.', 'info');
     });
   }
 
@@ -652,6 +884,18 @@
   function onLogin() {
     applyMenuVisibility();
     applyFeatVisibility();
+    applyLogo();
+  }
+
+  /* 페이지 로드 즉시 — 로그인 화면 로고 + 메뉴 순서를 미리 적용 */
+  function _applyOnLoad() {
+    applyLogo();
+    applyMenuVisibility();
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', _applyOnLoad);
+  } else {
+    _applyOnLoad();
   }
 
   window.AdminModule = {
@@ -664,6 +908,7 @@
     getUserRole: getUserRole,
     applyMenuVisibility: applyMenuVisibility,
     applyFeatVisibility: applyFeatVisibility,
+    applyLogo: applyLogo,
     CHANGELOG: CHANGELOG
   };
 })();
