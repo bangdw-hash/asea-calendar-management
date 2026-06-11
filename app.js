@@ -433,6 +433,10 @@
     var bootstrapBtn = document.getElementById('admin-bootstrap-btn');
     if (bootstrapBtn) {
       bootstrapBtn.addEventListener('click', function () {
+        // 관리자는 코드 고정(ADMIN_EMAILS) — 자가 등록 차단
+        if (!(window.AdminModule && AdminModule.isAdmin && AdminModule.isAdmin())) {
+          toast('관리자 권한이 없습니다. 관리자에게 문의하세요.', 'error'); return;
+        }
         var email = S.userEmail || localStorage.getItem('asea_user_email') || '';
         if (!email) { toast('로그인된 계정 이메일을 찾을 수 없습니다.', 'error'); return; }
         try {
@@ -454,24 +458,8 @@
   function _checkAdminBootstrap() {
     var card = document.getElementById('admin-bootstrap-card');
     if (!card) return;
-    try {
-      var email = (S.userEmail || localStorage.getItem('asea_user_email') || '').toLowerCase();
-      var roles  = JSON.parse(localStorage.getItem('asea_user_roles') || '{}');
-      var myRole = email ? roles[email] : null;
-      // 현재 사용자가 이미 관리자면 카드 숨김
-      if (myRole === 'admin') { card.hidden = true; return; }
-      // 현재 사용자가 관리자가 아니면 항상 표시
-      card.hidden = false;
-      var emailEl  = document.getElementById('bootstrap-email-display');
-      var hintEl   = document.getElementById('admin-bootstrap-hint');
-      if (emailEl) emailEl.textContent = email || '알 수 없음';
-      if (hintEl) {
-        var hasOtherAdmin = Object.values(roles).some(function (r) { return r === 'admin'; });
-        hintEl.textContent = hasOtherAdmin
-          ? '⚠️ 이미 다른 관리자가 등록되어 있습니다. 아래 버튼으로 내 계정도 관리자로 추가할 수 있습니다.'
-          : '현재 시스템에 등록된 관리자가 없습니다. 아래 버튼으로 첫 번째 관리자로 등록하세요.';
-      }
-    } catch (e) { card.hidden = false; }
+    // 관리자는 코드에 고정(ADMIN_EMAILS) — 자가 등록 카드는 항상 숨김
+    card.hidden = true;
   }
 
   async function loadUserEmail() {

@@ -283,17 +283,30 @@
     return result;
   }
 
-  /* ── 역할 ────────────────────────────────────────── */
+  /* ── 역할 ────────────────────────────────────────────
+     ★ 고정 관리자(코드에 박힘) — 기기/localStorage 무관하게 항상 관리자.
+       그 외 계정은 'admin'으로 절대 승격 불가(자가 등록·로컬 오버라이드 무시).
+       관리자 추가가 필요하면 이 배열에 이메일을 넣는다. */
+  var ADMIN_EMAILS = ['bangdw@gmail.com'];
+  /* 게시된 직원 메뉴가 없을 때 비관리자에게 보일 기본 메뉴 */
+  var DEFAULT_STAFF_MENUS = ['calendar'];
+
+  function isSuperAdmin(email) {
+    return ADMIN_EMAILS.indexOf(String(email || '').trim().toLowerCase()) !== -1;
+  }
+
   function getUserRole(email) {
     if (!email) return 'staff';
-    // HR 직원목록에서 먼저 확인
+    if (isSuperAdmin(email)) return 'admin';          // 고정 관리자
+    // 그 외 — admin 으로는 절대 승격 불가. manager/staff 만 인정.
     var employees = [];
     try { employees = JSON.parse(localStorage.getItem('asea_employees') || '[]'); } catch(e) {}
     var emp = employees.find(function (e) { return e.email === email; });
-    if (emp && emp.role) return emp.role;
-    // 수동 오버라이드
+    if (emp && emp.role && emp.role !== 'admin') return emp.role;
     var roles = loadRoles();
-    return roles[email] || 'staff';
+    var r = roles[email];
+    if (r && r !== 'admin') return r;
+    return 'staff';
   }
 
   function setUserRole(email, role) {
@@ -360,7 +373,12 @@
     var order  = effectiveOrder();
     var hidden = loadMenuHidden();
     var isAdm  = (role === 'admin');
-    var staff  = isAdm ? null : loadStaffMenus();   // 비관리자만 직원 공유목록 적용
+    // 비관리자: 게시된 직원 메뉴(없으면 기본=캘린더)만 표시
+    var staffAllow = null;
+    if (!isAdm) {
+      var sc = loadStaffMenus();
+      staffAllow = (sc && Array.isArray(sc.menus)) ? sc.menus : DEFAULT_STAFF_MENUS;
+    }
 
     [['.desktop-tab-nav', '.tab-btn'], ['.mobile-bottom-nav', '.bnav-btn']].forEach(function (pair) {
       var nav = document.querySelector(pair[0]);
@@ -380,9 +398,9 @@
         var id = _btnId(b);
         if (!id || id === 'admin') return;            // 관리자 탭은 아래에서 처리
         var visible;
-        if (staff && staff.menus) {
-          // 직원: 관리자가 게시한 공유 메뉴만 표시 (화이트리스트가 유일 기준)
-          visible = staff.menus.indexOf(id) !== -1;
+        if (staffAllow) {
+          // 비관리자: 게시된(또는 기본) 메뉴만 표시 (화이트리스트가 유일 기준)
+          visible = staffAllow.indexOf(id) !== -1;
         } else {
           visible = (hidden.indexOf(id) === -1) && isMenuVisible(id, role);
         }
