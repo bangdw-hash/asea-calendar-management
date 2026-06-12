@@ -356,9 +356,10 @@
     var nr  = FacilityFeeModule.comma(_feeConfig.normalRate || 0) + '원/시간';
 
     var surchargeHtml = (_feeConfig.surchargeSlots||[]).map(function(slot) {
-      var sm = (slot.startTime||'') + '~' + (slot.endTime||'');
+      var slotLabel = slot.label || '할증';
+      var sm = (slot.start||'') + '~' + (slot.end||'');
       var sr = FacilityFeeModule.comma(slot.rate||0) + '원/시간';
-      return '<div class="fr-fee-rate-item fr-fee-surge"><span class="fr-fee-tag fr-fee-tag-surge">할증</span>' + sm + ' · ' + sr + '</div>';
+      return '<div class="fr-fee-rate-item fr-fee-surge"><span class="fr-fee-tag fr-fee-tag-surge">' + slotLabel + '</span>' + sm + ' · ' + sr + '</div>';
     }).join('');
 
     feeEl.innerHTML =
@@ -843,7 +844,7 @@
     block.className = 'fr-fieldset fr-ev-block';
     block.id = 'fr-ev-block-' + idx;
 
-    var bOpts = '<option value="">건물 선택</option>';
+    var bOpts = '';
     _buildings.forEach(function(b) {
       bOpts += '<option value="' + b.id + '">' + b.buildingName + '</option>';
     });

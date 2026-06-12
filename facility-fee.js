@@ -99,9 +99,17 @@ window.FacilityFeeModule = (function() {
     saveFees(fees);
     return _DEFAULT_FEES_RAW.length;
   }
-  /* 비어있을 때만 표준 기준표 시드 (신규 사용자 기본값) */
+  /* 누락된 기본 시설만 추가 (기존 커스텀 데이터 덮어쓰지 않음) */
   function seedIfEmpty() {
-    try { if (loadFees().length === 0) applyDefaults(); } catch(e) {}
+    try {
+      var fees = loadFees();
+      var added = 0;
+      _defaultFees().forEach(function(d) {
+        var ex = fees.find(function(f){ return f.buildingName===d.buildingName && f.roomName===d.roomName; });
+        if (!ex) { d.id = genId(); d.createdAt = Date.now(); fees.push(d); added++; }
+      });
+      if (added > 0) saveFees(fees);
+    } catch(e) {}
   }
 
   function addFee(fee) {
