@@ -243,13 +243,15 @@
   }
   /* GitHub에 staff-menus.json 게시 (관리자 PAT 필요) */
   function publishStaffMenus(menuIds) {
-    if (!window.CONFIG || !CONFIG.githubToken) {
+    var token = _getGithubToken();
+    if (!token) {
       return Promise.reject(new Error('설정 탭에서 GitHub Token을 먼저 저장하세요.'));
     }
-    var apiUrl = 'https://api.github.com/repos/' + CONFIG.githubOwner + '/' +
-                 CONFIG.githubRepo + '/contents/staff-menus.json';
+    var owner = (window.CONFIG && CONFIG.githubOwner) || 'bangdw-hash';
+    var repo  = (window.CONFIG && CONFIG.githubRepo)  || 'asea-calendar-management';
+    var apiUrl = 'https://api.github.com/repos/' + owner + '/' + repo + '/contents/staff-menus.json';
     var hdr = {
-      'Authorization': 'Bearer ' + CONFIG.githubToken,
+      'Authorization': 'Bearer ' + token,
       'Accept': 'application/vnd.github+json'
     };
     // 기존 파일 sha 조회(있으면 갱신)
@@ -693,14 +695,26 @@
   /* ══════════════════════════════════════════════════════
      직원 공유 메뉴 — 비관리자에게 보일 메뉴를 중앙 게시
   ══════════════════════════════════════════════════════ */
+  function _getGithubToken() {
+    /* 1) CONFIG에 있으면 우선 사용 */
+    if (window.CONFIG && CONFIG.githubToken) return CONFIG.githubToken;
+    /* 2) localStorage 직접 읽기 (CONFIG 로드 실패 대비) */
+    var keys = ['asea_github_token', 'github_token', 'githubToken'];
+    for (var i = 0; i < keys.length; i++) {
+      var v = localStorage.getItem(keys[i]);
+      if (v) {
+        /* CONFIG에도 백필 */
+        if (window.CONFIG) CONFIG.githubToken = v;
+        return v;
+      }
+    }
+    return '';
+  }
+
   function _htmlStaffShare() {
     var cfg = loadStaffMenus();
-    var checked = (cfg && cfg.menus) ? cfg.menus : ['calendar'];   // 기본: 캘린더만
-    if (window.CONFIG && !CONFIG.githubToken) {
-      var _t = localStorage.getItem(CONFIG.storageKeys ? CONFIG.storageKeys.githubToken : 'asea_github_token');
-      if (_t) CONFIG.githubToken = _t;
-    }
-    var hasToken = !!(window.CONFIG && CONFIG.githubToken);
+    var checked = (cfg && cfg.menus) ? cfg.menus : ['calendar'];
+    var hasToken = !!_getGithubToken();
 
     var html = '<div class="admin-section">' +
       '<h3 class="admin-sec-title">📢 직원 공유 메뉴</h3>' +
