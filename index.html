@@ -1385,6 +1385,7 @@
           <h3 class="settings-section-title">Google 계정</h3>
           <div class="settings-account">
             <span id="settings-user-email" class="settings-email">로그인 필요</span>
+            <span id="settings-role-badge" class="role-badge" style="display:none"></span>
             <button id="settings-logout-btn" class="btn btn-danger btn-sm">로그아웃</button>
           </div>
           <div id="my-profile-card" class="my-profile-card" hidden>
@@ -1414,10 +1415,10 @@
         </div>
 
         <!-- ── 인사 / 조직 관리 ────────────────────────────── -->
-        <div class="settings-group-label">인사 / 조직 관리</div>
+        <div class="settings-group-label" data-admin-only="true">인사 / 조직 관리</div>
 
         <!-- 직원관리 (admin 전용) -->
-        <div class="settings-card" id="hr-management-card" hidden>
+        <div class="settings-card" id="hr-management-card" data-admin-only="true" hidden>
           <h3 class="settings-section-title">👥 직원관리 <span class="badge-admin">관리자</span></h3>
 
           <!-- CSV 일괄등록 -->
@@ -1471,7 +1472,7 @@
         </div>
 
         <!-- 관리실 인원 등록 (admin 전용) -->
-        <div class="settings-card" id="mgr-staff-card" hidden>
+        <div class="settings-card" id="mgr-staff-card" data-admin-only="true" hidden>
           <h3 class="settings-section-title">🏢 관리실 인원 등록 <span class="badge-admin">관리자</span></h3>
           <p class="form-hint" style="margin-bottom:10px">관리실 당직 인원을 등록합니다. 관리실 포털에서 확인·배정됩니다.</p>
           <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin-bottom:10px">
@@ -1490,7 +1491,7 @@
         </div>
 
         <!-- 부서 관리 -->
-        <div class="settings-card">
+        <div class="settings-card" data-admin-only="true">
           <div class="settings-card-header">
             <h3 class="settings-section-title">부서 관리</h3>
             <button id="add-dept-btn" class="btn btn-secondary btn-sm">+ 부서 추가</button>
@@ -1499,7 +1500,7 @@
         </div>
 
         <!-- 수신자 목록 -->
-        <div class="settings-card">
+        <div class="settings-card" data-admin-only="true">
           <h3 class="settings-section-title">수신자 목록</h3>
           <div id="settings-recipients" class="settings-recipients"></div>
           <div class="settings-add-row">
@@ -1510,7 +1511,7 @@
         </div>
 
         <!-- 직원 데이터 전체 초기화 (admin 전용) -->
-        <div class="settings-card" id="hr-clear-card" hidden>
+        <div class="settings-card" id="hr-clear-card" data-admin-only="true" hidden>
           <h3 class="settings-section-title">🗑️ 직원 데이터 초기화 <span class="badge-admin">관리자</span></h3>
           <p class="form-hint" style="margin-bottom:10px">직원 시트의 <strong>모든 데이터를 완전 삭제</strong>합니다. 헤더(1행)는 유지됩니다. 중복 업로드 등으로 데이터가 오염된 경우 초기화 후 CSV를 1회 재업로드 하세요.</p>
           <button id="hr-clear-all-btn" class="btn btn-sm" style="background:#e53935;color:#fff">🗑️ 직원 전체 초기화</button>
@@ -1518,7 +1519,7 @@
         </div>
 
         <!-- DB 초기화 (admin 전용) -->
-        <div class="settings-card" id="hr-init-card" hidden>
+        <div class="settings-card" id="hr-init-card" data-admin-only="true" hidden>
           <h3 class="settings-section-title">🗄️ Sheets DB 초기화 <span class="badge-admin">관리자</span></h3>
           <p class="form-hint" style="margin-bottom:10px">Google Sheets에 필요한 모든 시트(직원·업무·업무수신·알림로그·시설·대관예약·차량·차량예약·작업지시·관리실인원·공간관리·입출입기록·입출입사용자)와 헤더를 자동으로 생성합니다. 최초 1회만 실행하면 됩니다.</p>
           <button id="hr-init-sheets-btn" class="btn btn-primary btn-sm">🗄️ 시트 초기화 실행</button>
@@ -1540,8 +1541,24 @@
           </div>
         </div>
 
+        <!-- 다른 캘린더 구독하기 (일반 사용자 노출) -->
+        <div class="settings-card" id="cal-subscribe-card">
+          <h3 class="settings-section-title">➕ 다른 캘린더 구독하기</h3>
+          <p class="settings-hint">Google 캘린더 ID 또는 iCal(ICS) URL을 입력하면 내 Google 캘린더에 추가됩니다.</p>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px">
+            <input id="calsub-subscribe-input" type="text" class="form-input" style="flex:1;min-width:200px"
+              placeholder="캘린더 ID (예: xxx@group.calendar.google.com) 또는 ICS URL">
+            <button id="calsub-subscribe-btn" class="btn btn-primary btn-sm">구독하기</button>
+          </div>
+          <p id="calsub-subscribe-status" class="form-hint" style="margin-top:8px"></p>
+          <p class="form-hint" style="margin-top:4px;color:#888">
+            💡 Google Calendar ID: 구글 캘린더 → 설정 → 캘린더 → "캘린더 ID" 복사<br>
+            💡 iCal URL: 구글 캘린더 → 설정 → "비공개 주소(ICS)" 또는 공개 ICS URL
+          </p>
+        </div>
+
         <!-- 공유 캘린더 소스 -->
-        <div class="settings-card">
+        <div class="settings-card" data-admin-only="true">
           <div class="settings-card-header">
             <h3 class="settings-section-title">공유 캘린더 소스</h3>
             <button id="add-shared-cal-btn" class="btn btn-secondary btn-sm">+ 캘린더 추가</button>
@@ -1551,7 +1568,7 @@
         </div>
 
         <!-- 개인 업무 캘린더 구독 -->
-        <div class="settings-card">
+        <div class="settings-card" data-admin-only="true">
           <div class="settings-card-header">
             <h3 class="settings-section-title">📥 개인 업무 캘린더 구독</h3>
             <button id="calsub-fetch-btn" class="btn btn-secondary btn-sm">지금 가져오기</button>
@@ -1577,10 +1594,10 @@
         </div>
 
         <!-- ── 시설 · 자원 관리 ────────────────────────────── -->
-        <div class="settings-group-label">시설 · 자원 관리</div>
+        <div class="settings-group-label" data-admin-only="true">시설 · 자원 관리</div>
 
         <!-- 시설(건물/호실) 관리 (admin 전용) -->
-        <div class="settings-card" id="settings-fac-card" hidden>
+        <div class="settings-card" id="settings-fac-card" data-admin-only="true" hidden>
           <h3 class="settings-section-title">🏢 시설(건물/호실) 관리 <span class="badge-admin">관리자</span></h3>
           <p class="form-hint" style="margin-bottom:10px">대관 가능한 건물과 호실을 등록/수정합니다. 등록 후 대관업무 탭에서 예약할 수 있습니다.<br>
           대관료 설정도 여기서 건물/호실별로 관리합니다.</p>
@@ -1588,17 +1605,17 @@
         </div>
 
         <!-- 차량 관리 (admin 전용) -->
-        <div class="settings-card" id="settings-veh-card" hidden>
+        <div class="settings-card" id="settings-veh-card" data-admin-only="true" hidden>
           <h3 class="settings-section-title">🚗 차량 관리 <span class="badge-admin">관리자</span></h3>
           <p class="form-hint" style="margin-bottom:10px">차량을 등록/수정합니다. 등록 후 차량관리 탭에서 예약할 수 있습니다.</p>
           <button id="settings-veh-go-btn" class="btn btn-primary btn-sm" onclick="document.querySelector('[data-tab=vehicle]').click()">🚗 차량관리 탭에서 관리</button>
         </div>
 
         <!-- ── 연동 / API 설정 ──────────────────────────────── -->
-        <div class="settings-group-label">연동 / API 설정</div>
+        <div class="settings-group-label" data-admin-only="true">연동 / API 설정</div>
 
         <!-- 클라우드 설정 동기화 -->
-        <div class="settings-card">
+        <div class="settings-card" data-admin-only="true">
           <h3 class="settings-section-title">☁️ 설정 클라우드 동기화</h3>
           <p class="form-hint" style="margin-bottom:12px">API 키·웹훅 URL·수신자/부서 목록 및 추출/공유 이력이 Google Drive에 자동 저장됩니다. 로그인하면 어느 기기에서나 동일한 이력과 설정이 자동으로 불러와집니다.</p>
           <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
@@ -1609,7 +1626,7 @@
         </div>
 
         <!-- Claude API 키 -->
-        <div class="settings-card">
+        <div class="settings-card" data-admin-only="true">
           <h3 class="settings-section-title">Claude API 키 (일정발췃 · AI 분석)</h3>
           <div class="form-group">
             <input id="setting-api-key" type="password" class="form-input"
@@ -1635,7 +1652,7 @@
         </div>
 
         <!-- GitHub PAT (일정 공유 페이지 자동 생성) -->
-        <div class="settings-card">
+        <div class="settings-card" data-admin-only="true">
           <h3 class="settings-section-title">GitHub Token (일정 공유 페이지 자동 생성)</h3>
           <div class="form-group">
             <input id="setting-github-token" type="password" class="form-input"
@@ -1646,7 +1663,7 @@
         </div>
 
         <!-- Make.com 웹훅 URL -->
-        <div class="settings-card">
+        <div class="settings-card" data-admin-only="true">
           <h3 class="settings-section-title">Make.com 웹훅 URL (이메일 예약 서버 발송)</h3>
           <div class="form-group">
             <input id="setting-make-webhook" type="url" class="form-input"
@@ -1657,7 +1674,7 @@
         </div>
 
         <!-- 홍보화면 설정 -->
-        <div class="settings-card">
+        <div class="settings-card" data-admin-only="true">
           <h3 class="settings-section-title">📣 홍보화면 설정</h3>
           <div class="form-group">
             <label class="form-label" for="setting-promo-gas-url">GAS 프록시 URL</label>
@@ -1677,7 +1694,7 @@
         </div>
 
         <!-- Drive 설정 -->
-        <div class="settings-card">
+        <div class="settings-card" data-admin-only="true">
           <h3 class="settings-section-title">Drive 설정</h3>
           <div class="form-group">
             <label class="form-label" for="setting-folder-id">보고서 폴더 ID</label>
@@ -1688,10 +1705,10 @@
         </div>
 
         <!-- ── 기타 설정 ────────────────────────────────────── -->
-        <div class="settings-group-label">기타 설정</div>
+        <div class="settings-group-label" data-admin-only="true">기타 설정</div>
 
         <!-- 앱 기본 URL (커스텀 도메인) 설정 -->
-        <div class="settings-card">
+        <div class="settings-card" data-admin-only="true">
           <h3 class="settings-section-title">🌐 앱 기본 URL (커스텀 도메인)</h3>
           <p class="form-hint" style="margin-bottom:10px">
             커스텀 도메인을 연결한 경우 여기서 URL을 변경하면 QR 코드 링크 등에 자동 반영됩니다.<br>
@@ -1707,7 +1724,7 @@
         </div>
 
         <!-- QR 체크인 서버 URL 설정 -->
-        <div class="settings-card" id="checkin-proxy-card">
+        <div class="settings-card" id="checkin-proxy-card" data-admin-only="true">
           <h3 class="settings-section-title">🔗 QR 체크인 서버 URL</h3>
           <p class="form-hint" style="margin-bottom:10px">
             QR 입출입 기록을 저장하려면 Google Apps Script 프록시 URL을 입력하세요.
@@ -3220,7 +3237,7 @@
   <script src="admin.js?v=20260612a11"></script>
   <script src="board.js?v=20260610b4"></script>
   <script src="usersettings.js?v=20260610u1"></script>
-  <script src="app.js?v=20260612s17"></script>
+  <script src="app.js?v=20260612s18"></script>
   <script>
     // 빠른 업무 등록 초기화 (DOM 준비 후)
     document.addEventListener('DOMContentLoaded', function () {

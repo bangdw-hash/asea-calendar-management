@@ -5025,6 +5025,8 @@
   var _settingsAccordionInited = false;
   function renderSettingsTab() {
     $('settings-user-email').textContent = S.userEmail || CONFIG.senderEmail;
+    _updateSettingsRoleBadge();
+    _applySettingsAdminVisibility();
     $('setting-folder-id').value = CONFIG.driveReportFolderId !== 'YOUR_FOLDER_ID'
       ? CONFIG.driveReportFolderId : '';
     var storedKey = CONFIG.anthropicApiKey;
@@ -5044,6 +5046,66 @@
     _initMgrStaff();
     _initBaseUrl();
     _initCheckinProxy();
+    _initCalendarSubscribe();
+  }
+
+  function _updateSettingsRoleBadge() {
+    var badge = $('settings-role-badge');
+    if (!badge) return;
+    var isAdm = window.AdminModule && AdminModule.isAdmin && AdminModule.isAdmin();
+    var email = S.userEmail || '';
+    if (!email) { badge.style.display = 'none'; return; }
+    badge.style.display = 'inline-block';
+    badge.textContent = isAdm ? '관리자' : '사용자';
+    badge.style.cssText = 'display:inline-block;margin-left:8px;padding:2px 8px;border-radius:12px;font-size:12px;font-weight:600;' +
+      (isAdm ? 'background:#1a73e8;color:#fff' : 'background:#e8f0fe;color:#1a73e8');
+  }
+
+  function _applySettingsAdminVisibility() {
+    var isAdm = window.AdminModule && AdminModule.isAdmin && AdminModule.isAdmin();
+    document.querySelectorAll('[data-admin-only]').forEach(function(el) {
+      el.style.display = isAdm ? '' : 'none';
+    });
+  }
+
+  var _calSubInited = false;
+  function _initCalendarSubscribe() {
+    if (_calSubInited) return;
+    _calSubInited = true;
+    var btn = $('calsub-subscribe-btn');
+    var input = $('calsub-subscribe-input');
+    var status = $('calsub-subscribe-status');
+    if (!btn || !input) return;
+    btn.addEventListener('click', function() {
+      var val = (input.value || '').trim();
+      if (!val) { status.textContent = '❌ 캘린더 ID 또는 URL을 입력하세요.'; return; }
+      status.textContent = '⏳ 처리 중...';
+      /* iCal/ICS URL이면 구글 캘린더 URL로 추가 안내 */
+      if (val.startsWith('http')) {
+        var gcUrl = 'https://calendar.google.com/calendar/r/settings/addbyurl?url=' + encodeURIComponent(val);
+        window.open(gcUrl, '_blank');
+        status.textContent = '✅ 구글 캘린더 창이 열렸습니다. "캘린더 추가" 버튼을 눌러 완료하세요.';
+        input.value = '';
+        return;
+      }
+      /* Google Calendar ID면 API로 바로 구독 */
+      if (!window.gapi || !gapi.client || !gapi.client.calendar) {
+        status.textContent = '❌ Google 캘린더에 로그인 후 사용하세요.';
+        return;
+      }
+      gapi.client.calendar.calendarList.insert({ resource: { id: val } })
+        .then(function() {
+          status.style.color = '#15803d';
+          status.textContent = '✅ 구독 완료! 캘린더 목록 새로고침 버튼을 눌러 확인하세요.';
+          input.value = '';
+          setTimeout(function() { status.textContent = ''; }, 5000);
+        })
+        .catch(function(err) {
+          var msg = (err && err.result && err.result.error && err.result.error.message) || '구독 실패';
+          status.style.color = '#dc2626';
+          status.textContent = '❌ ' + msg;
+        });
+    });
   }
 
   /* ── 기본 URL 설정 ── */
