@@ -1044,90 +1044,86 @@
   renderContact();
   renderList();
 
-  /* ── 직원 캘린더 바로가기 — Google 로그인 접근 제어 ── */
-  const ADMIN_EMAIL = 'bangdw@gmail.com';
-  const GIS_CLIENT_ID = '89094526186-ngj72p8cbqrvai06e2uhdiq0n5brrc2b.apps.googleusercontent.com';
+  /* ── 직원 캘린더 바로가기 — 내부 이메일 확인 ── */
+  const ALLOWED_EMAILS = ['bangdw@gmail.com', 'bangsw82@gmail.com'];
 
-  // 모달 HTML 삽입
-  const modalHtml = `
-  <div id="staff-gate-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center">
-    <div style="background:#fff;border-radius:16px;padding:32px 28px;max-width:380px;width:90%;box-shadow:0 20px 40px rgba(0,0,0,.2);text-align:center;position:relative">
-      <div style="font-size:48px;margin-bottom:12px" id="sgm-icon">⏳</div>
-      <h3 style="font-size:18px;font-weight:700;color:#111827;margin-bottom:10px" id="sgm-title">확인 중...</h3>
-      <p style="font-size:14px;color:#6b7280;line-height:1.6;margin-bottom:20px" id="sgm-body"></p>
-      <div id="sgm-actions"></div>
-      <button onclick="document.getElementById('staff-gate-modal').style.display='none'" style="position:absolute;top:12px;right:16px;background:none;border:none;font-size:20px;cursor:pointer;color:#9ca3af">✕</button>
+  // 모달 삽입
+  document.body.insertAdjacentHTML('beforeend', `
+  <div id="staff-gate-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;align-items:center;justify-content:center;padding:16px">
+    <div style="background:#fff;border-radius:16px;padding:32px 28px;max-width:400px;width:100%;box-shadow:0 20px 48px rgba(0,0,0,.22);position:relative">
+      <button onclick="document.getElementById('staff-gate-modal').style.display='none'" style="position:absolute;top:14px;right:16px;background:none;border:none;font-size:20px;cursor:pointer;color:#9ca3af;line-height:1">✕</button>
+      <div id="sgm-inner"></div>
     </div>
-  </div>`;
-  document.body.insertAdjacentHTML('beforeend', modalHtml);
+  </div>`);
 
-  function showGateModal(icon, title, body, actionsHtml) {
-    document.getElementById('sgm-icon').textContent = icon;
-    document.getElementById('sgm-title').textContent = title;
-    document.getElementById('sgm-body').innerHTML = body;
-    document.getElementById('sgm-actions').innerHTML = actionsHtml || '';
-    const m = document.getElementById('staff-gate-modal');
-    m.style.display = 'flex';
+  function closeGate() { document.getElementById('staff-gate-modal').style.display = 'none'; }
+
+  function showEmailForm() {
+    document.getElementById('sgm-inner').innerHTML = `
+      <div style="text-align:center;margin-bottom:20px">
+        <div style="font-size:44px;margin-bottom:10px">📅</div>
+        <h3 style="font-size:17px;font-weight:700;color:#111827;margin-bottom:6px">직원 캘린더 접속</h3>
+        <p style="font-size:13px;color:#6b7280;line-height:1.6">등록된 Gmail 계정만 이용할 수 있습니다.<br>본인의 Google 이메일을 입력해 주세요.</p>
+      </div>
+      <div style="margin-bottom:14px">
+        <input id="sgm-email-input" type="email" placeholder="example@gmail.com"
+          style="width:100%;padding:11px 14px;border:1.5px solid #d1d5db;border-radius:8px;font-size:14px;outline:none;transition:border .2s"
+          onfocus="this.style.borderColor='#1D4ED8'" onblur="this.style.borderColor='#d1d5db'">
+        <div id="sgm-email-err" style="font-size:12px;color:#dc2626;margin-top:5px;display:none"></div>
+      </div>
+      <button onclick="checkStaffEmail()" style="width:100%;background:#1D4ED8;color:#fff;border:none;border-radius:8px;padding:12px;font-size:15px;font-weight:600;cursor:pointer">입장하기</button>`;
+    document.getElementById('staff-gate-modal').style.display = 'flex';
+    setTimeout(function() { document.getElementById('sgm-email-input').focus(); }, 100);
+    document.getElementById('sgm-email-input').addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') checkStaffEmail();
+    });
   }
 
-  function isRegistered(email) {
+  window.checkStaffEmail = function() {
+    const input = document.getElementById('sgm-email-input');
+    const err = document.getElementById('sgm-email-err');
+    const email = (input.value || '').trim().toLowerCase();
+    if (!email) { err.textContent = '이메일을 입력해 주세요.'; err.style.display = 'block'; return; }
+
     const data = load();
-    return data.some(function(r) { return r.email === email && r.status === '등록완료'; });
-  }
+    const isAllowed = ALLOWED_EMAILS.indexOf(email) !== -1 ||
+      data.some(function(r) { return r.email === email && r.status === '등록완료'; });
 
-  function handleGoogleCredential(response) {
-    // JWT 디코딩 (서명 검증 없이 payload만)
-    try {
-      const payload = JSON.parse(atob(response.credential.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')));
-      const email = payload.email || '';
-      if (email === ADMIN_EMAIL || isRegistered(email)) {
-        showGateModal('✅', '접속 확인됨', email + '<br>잠시 후 직원 캘린더로 이동합니다.',
-          '<div style="font-size:13px;color:#6b7280">이동 중...</div>');
-        setTimeout(function() { location.href = './index.html?staff=1'; }, 1200);
-      } else {
-        showGateModal('🔒', '아직 등록되지 않은 계정입니다',
-          '<b>' + email + '</b><br><br>아래 공유 신청 폼에서 구글 이메일을 등록해 주세요.<br>관리자 등록 처리 후 접속 가능합니다.',
-          '<button onclick="document.getElementById(\'staff-gate-modal\').style.display=\'none\';document.getElementById(\'f-email\').focus()" style="background:#1D4ED8;color:#fff;border:none;border-radius:8px;padding:10px 20px;font-size:14px;font-weight:600;cursor:pointer;margin-top:4px">📝 지금 신청하기</button>');
-      }
-    } catch(e) {
-      showGateModal('⚠️', '로그인 처리 중 오류가 발생했습니다', '다시 시도해 주세요.', '');
+    if (isAllowed) {
+      document.getElementById('sgm-inner').innerHTML = `
+        <div style="text-align:center;padding:12px 0">
+          <div style="font-size:48px;margin-bottom:12px">✅</div>
+          <h3 style="font-size:17px;font-weight:700;color:#111827;margin-bottom:8px">접속이 확인되었습니다</h3>
+          <p style="font-size:13px;color:#6b7280">잠시 후 직원 캘린더로 이동합니다...</p>
+        </div>`;
+      setTimeout(function() { location.href = './index.html?staff=1'; }, 1000);
+    } else {
+      document.getElementById('sgm-inner').innerHTML = `
+        <div style="text-align:center;padding:8px 0">
+          <div style="font-size:48px;margin-bottom:12px">🔒</div>
+          <h3 style="font-size:17px;font-weight:700;color:#111827;margin-bottom:10px">등록되지 않은 계정입니다</h3>
+          <p style="font-size:14px;color:#6b7280;line-height:1.7;margin-bottom:20px">
+            <b style="color:#374151">${email}</b> 계정은<br>
+            아직 업무캘린더 공유 신청이 완료되지 않았습니다.<br><br>
+            아래 <b>신청서 작성</b> 폼에서 구글 이메일을 등록하시면<br>
+            관리자 승인 후 이용하실 수 있습니다.
+          </p>
+          <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+            <button onclick="closeGate();setTimeout(function(){document.getElementById('f-name').focus()},100)"
+              style="background:#1D4ED8;color:#fff;border:none;border-radius:8px;padding:10px 18px;font-size:14px;font-weight:600;cursor:pointer">
+              📝 신청서 작성하기
+            </button>
+            <button onclick="document.getElementById('sgm-inner').innerHTML='';showEmailForm()"
+              style="background:#f3f4f6;color:#374151;border:none;border-radius:8px;padding:10px 18px;font-size:14px;cursor:pointer">
+              ← 다시 입력
+            </button>
+          </div>
+        </div>`;
     }
-  }
+  };
 
-  document.getElementById('btn-staff-enter').addEventListener('click', function() {
-    if (typeof google === 'undefined' || !google.accounts) {
-      showGateModal('⏳', 'Google 로그인 로딩 중...', '잠시 후 다시 눌러주세요.', '');
-      return;
-    }
-    showGateModal('🔐', 'Google 계정으로 확인합니다', '등록된 계정만 직원 캘린더에 접속할 수 있습니다.', '');
-    google.accounts.id.initialize({
-      client_id: GIS_CLIENT_ID,
-      callback: handleGoogleCredential,
-      auto_select: false
-    });
-    google.accounts.id.prompt(function(notification) {
-      if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-        // One Tap 안 뜨면 팝업으로
-        google.accounts.id.renderButton(
-          Object.assign(document.createElement('div'), { style: 'display:none' }),
-          { theme: 'outline', size: 'large' }
-        );
-        const popup = window.open('', '_blank', 'width=500,height=600');
-        if (!popup) {
-          document.getElementById('sgm-actions').innerHTML =
-            '<button id="sgm-signin-btn" style="background:#fff;border:1px solid #d1d5db;border-radius:8px;padding:10px 20px;font-size:14px;cursor:pointer;display:flex;align-items:center;gap:8px;margin:0 auto"><img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="18" height="18"> Google로 로그인</button>';
-          document.getElementById('sgm-signin-btn').onclick = function() {
-            google.accounts.id.revoke('', function(){});
-            google.accounts.id.initialize({ client_id: GIS_CLIENT_ID, callback: handleGoogleCredential, ux_mode: 'popup' });
-            google.accounts.id.prompt();
-          };
-        }
-      }
-    });
-  });
+  document.getElementById('btn-staff-enter').addEventListener('click', showEmailForm);
 
 })();
-</script>
-<script src="https://accounts.google.com/gsi/client" async defer></script>
 </body>
 </html>
