@@ -37,21 +37,26 @@ window.QRCardModule = (function () {
     return lines.join('\r\n');
   }
 
-  /* ── QR 렌더링 ── */
+  /* ── QR 렌더링 (api.qrserver.com — 라이브러리 불필요) ── */
+  function _qrUrl(text, size) {
+    return 'https://api.qrserver.com/v1/create-qr-code/?size=' + size + 'x' + size +
+           '&color=111827&bgcolor=ffffff&data=' + encodeURIComponent(text);
+  }
   function _renderQR(containerId, text, size) {
     var el = document.getElementById(containerId);
     if (!el) return;
-    if (typeof QRCode === 'undefined') {
-      el.innerHTML = '<div style="font-size:11px;color:#ef4444">QRCode 라이브러리 로딩 중…</div>';
-      setTimeout(function () { _renderQR(containerId, text, size); }, 500);
-      return;
-    }
+    var sz = size || 180;
     el.innerHTML = '';
-    new QRCode(el, {
-      text: text, width: size || 180, height: size || 180,
-      colorDark: '#111827', colorLight: '#ffffff',
-      correctLevel: QRCode.CorrectLevel.M
-    });
+    var img = document.createElement('img');
+    img.width  = sz;
+    img.height = sz;
+    img.style.display = 'block';
+    img.alt    = 'QR';
+    img.src    = _qrUrl(text, sz);
+    img.onerror = function () {
+      el.innerHTML = '<div style="font-size:11px;color:#ef4444;padding:10px">QR 생성 실패<br>(네트워크 확인)</div>';
+    };
+    el.appendChild(img);
   }
 
   /* ── 갤러리 저장 (PNG 다운로드) ── */
@@ -59,10 +64,6 @@ window.QRCardModule = (function () {
     var cards = _load();
     var card  = cards.find(function (c) { return c.id === id; });
     if (!card) return;
-
-    var qrEl = document.getElementById('qr-' + id);
-    var qrCanvas = qrEl ? qrEl.querySelector('canvas') : null;
-    if (!qrCanvas) { alert('QR 이미지를 찾을 수 없습니다. 잠시 후 다시 시도해주세요.'); return; }
 
     var QR = 200, PAD = 32, W = QR + PAD * 2, HEADER = 72, FOOTER = 36;
     var infoLines = [];
@@ -75,43 +76,38 @@ window.QRCardModule = (function () {
     cvs.width = W; cvs.height = H;
     var ctx = cvs.getContext('2d');
 
-    /* 배경 */
-    ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, W, H);
+    function _drawAndSave(qrImg) {
+      ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = '#1D4ED8'; ctx.fillRect(0, 0, W, HEADER);
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 19px Arial,sans-serif'; ctx.textAlign = 'center';
+      ctx.fillText(card.name || '', W / 2, 28);
+      var sub = [card.org, card.dept, card.title].filter(Boolean).join(' · ');
+      ctx.font = '12px Arial,sans-serif'; ctx.fillText(sub, W / 2, 50);
+      if (qrImg) ctx.drawImage(qrImg, (W - QR) / 2, HEADER + PAD, QR, QR);
+      ctx.fillStyle = '#374151'; ctx.textAlign = 'left'; ctx.font = '13px Arial,sans-serif';
+      var iy = HEADER + PAD + QR + PAD;
+      infoLines.forEach(function (line) { ctx.fillText(line, PAD, iy); iy += 22; });
+      ctx.strokeStyle = '#e5e7eb'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(PAD, H - FOOTER - 4); ctx.lineTo(W - PAD, H - FOOTER - 4); ctx.stroke();
+      ctx.fillStyle = '#9ca3af'; ctx.font = '10px Arial,sans-serif'; ctx.textAlign = 'center';
+      ctx.fillText('QR 스캔 → 연락처 자동 저장 (iPhone \xB7 Android)', W / 2, H - 12);
+      try {
+        cvs.toBlob(function (blob) {
+          var url = URL.createObjectURL(blob);
+          var a = document.createElement('a');
+          a.href = url; a.download = (card.name || 'card') + '_QR명함.png';
+          document.body.appendChild(a); a.click(); document.body.removeChild(a);
+          setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+        }, 'image/png');
+      } catch (e) { alert('다운로드 실패 (CORS): QR 이미지 없이 저장할 수 없습니다.'); }
+    }
 
-    /* 헤더 */
-    ctx.fillStyle = '#1D4ED8'; ctx.fillRect(0, 0, W, HEADER);
-    ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 19px Arial,sans-serif'; ctx.textAlign = 'center';
-    ctx.fillText(card.name || '', W / 2, 28);
-    var sub = [card.org, card.dept, card.title].filter(Boolean).join(' · ');
-    ctx.font = '12px Arial,sans-serif';
-    ctx.fillText(sub, W / 2, 50);
-
-    /* QR */
-    ctx.drawImage(qrCanvas, (W - QR) / 2, HEADER + PAD, QR, QR);
-
-    /* 연락처 정보 */
-    ctx.fillStyle = '#374151'; ctx.textAlign = 'left';
-    ctx.font = '13px Arial,sans-serif';
-    var iy = HEADER + PAD + QR + PAD;
-    infoLines.forEach(function (line) { ctx.fillText(line, PAD, iy); iy += 22; });
-
-    /* 구분선 */
-    ctx.strokeStyle = '#e5e7eb'; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(PAD, H - FOOTER - 4); ctx.lineTo(W - PAD, H - FOOTER - 4); ctx.stroke();
-
-    /* 푸터 */
-    ctx.fillStyle = '#9ca3af'; ctx.font = '10px Arial,sans-serif'; ctx.textAlign = 'center';
-    ctx.fillText('QR 스캔 → 연락처 자동 저장 (iPhone \xB7 Android)', W / 2, H - 12);
-
-    cvs.toBlob(function (blob) {
-      var url = URL.createObjectURL(blob);
-      var a   = document.createElement('a');
-      a.href  = url;
-      a.download = (card.name || 'card') + '_QR명함.png';
-      document.body.appendChild(a); a.click(); document.body.removeChild(a);
-      setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
-    }, 'image/png');
+    var qrImg = new Image();
+    qrImg.crossOrigin = 'anonymous';
+    qrImg.onload  = function () { _drawAndSave(qrImg); };
+    qrImg.onerror = function () { _drawAndSave(null); };
+    qrImg.src = _qrUrl(_toVCard(card), QR);
   }
 
   /* ── 탭 메인 렌더 ── */
