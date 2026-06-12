@@ -774,7 +774,7 @@
 
     document.getElementById('request-form').reset();
     document.getElementById('f-privacy').checked = false;
-    document.querySelectorAll('#request-form .toggle-btn').forEach((b,i) => b.classList.toggle('active', i===0));
+    document.querySelectorAll('.toggle-group:first-of-type .toggle-btn').forEach((b,i) => b.classList.toggle('active', i===0));
     selectedCategory = '행정지원부서';
 
     showToast('신청이 완료되었습니다.');
@@ -1056,9 +1056,9 @@
     </div>
   </div>`);
 
-  function closeGate() { document.getElementById('staff-gate-modal').style.display = 'none'; }
+  window.closeGate = function() { document.getElementById('staff-gate-modal').style.display = 'none'; };
 
-  function showEmailForm() {
+  window.showEmailForm = function() {
     document.getElementById('sgm-inner').innerHTML = `
       <div style="text-align:center;margin-bottom:20px">
         <div style="font-size:44px;margin-bottom:10px">📅</div>
@@ -1122,7 +1122,7 @@
     }
   };
 
-  document.getElementById('btn-staff-enter').addEventListener('click', showEmailForm);
+  document.getElementById('btn-staff-enter').addEventListener('click', window.showEmailForm);
 
 })();
 </body>
