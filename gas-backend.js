@@ -44,7 +44,16 @@ function doGet(e) {
 /* ── Internal helpers ── */
 
 function _getSheet() {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var props = PropertiesService.getScriptProperties();
+  var ssId  = props.getProperty('SPREADSHEET_ID');
+  var ss;
+  if (ssId) {
+    try { ss = SpreadsheetApp.openById(ssId); } catch(e) { ss = null; }
+  }
+  if (!ss) {
+    ss = SpreadsheetApp.create('ASEA 업무캘린더 공유 신청 현황');
+    props.setProperty('SPREADSHEET_ID', ss.getId());
+  }
   var sheet = ss.getSheetByName(SHEET_NAME);
   if (!sheet) {
     sheet = ss.insertSheet(SHEET_NAME);
