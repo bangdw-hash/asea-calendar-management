@@ -653,6 +653,28 @@
   </div>
 </div>
 
+<!-- GAS URL 설정 모달 -->
+<div class="modal-overlay" id="gas-modal">
+  <div class="modal" style="max-width:520px">
+    <h3>⚙️ 공유 데이터 서버 설정</h3>
+    <p style="font-size:13px;color:var(--gray-500);margin-bottom:16px;line-height:1.6">
+      Google Apps Script 웹앱 URL을 입력하면 모든 사용자가 동일한 신청 데이터를 공유합니다.<br>
+      비워두면 이 브라우저의 로컬 저장소만 사용합니다.
+    </p>
+    <div class="form-group">
+      <label for="gas-url-input">GAS 웹앱 URL</label>
+      <input type="url" id="gas-url-input" placeholder="https://script.google.com/macros/s/…/exec" style="font-size:12px;">
+    </div>
+    <div style="font-size:12px;color:var(--gray-400);margin-bottom:12px;">
+      📌 설정 방법: <a href="https://script.google.com" target="_blank" style="color:var(--primary)">script.google.com</a>에서 gas-backend.js 코드로 웹앱 배포 후 URL 붙여넣기
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('gas-modal')">취소</button>
+      <button class="btn btn-primary" onclick="saveGasUrl()">저장</button>
+    </div>
+  </div>
+</div>
+
 <!-- Toast -->
 <div id="toast"></div>
 
@@ -664,25 +686,66 @@
   const SESSION_KEY   = 'asea_share_adm';
   const ADMIN_PW      = 'asea2024admin';
   const CONTACT_KEY   = 'asea_contact_info';
+  const GAS_KEY       = 'asea_gas_url';
 
   let selectedCategory = '행정지원부서';
-  // track which row is being edited
   let editingId = null;
 
+  /* ── GAS / localStorage 이중 레이어 ── */
+  function gasUrl() { return localStorage.getItem(GAS_KEY) || ''; }
+
+  async function dbLoad() {
+    const url = gasUrl();
+    if (url) {
+      try {
+        const r = await fetch(url + '?action=list&_=' + Date.now());
+        const j = await r.json();
+        if (j.ok) return j.data;
+      } catch(e) { console.warn('GAS load failed:', e); }
+    }
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); } catch { return []; }
+  }
+
+  async function dbAdd(entry) {
+    const url = gasUrl();
+    if (url) {
+      try { await fetch(url + '?action=add&d=' + encodeURIComponent(JSON.stringify(entry))); return; } catch(e) { console.warn('GAS add failed:', e); }
+    }
+    const data = _lsLoad(); data.unshift(entry); _lsSave(data);
+  }
+
+  async function dbUpdate(id, changes) {
+    const url = gasUrl();
+    if (url) {
+      try { await fetch(url + '?action=update&id=' + encodeURIComponent(id) + '&d=' + encodeURIComponent(JSON.stringify(changes))); return; } catch(e) { console.warn('GAS update failed:', e); }
+    }
+    const data = _lsLoad(); const idx = data.findIndex(e => e.id === id);
+    if (idx >= 0) { Object.assign(data[idx], changes); _lsSave(data); }
+  }
+
+  async function dbDelete(id) {
+    const url = gasUrl();
+    if (url) {
+      try { await fetch(url + '?action=delete&id=' + encodeURIComponent(id)); return; } catch(e) { console.warn('GAS delete failed:', e); }
+    }
+    _lsSave(_lsLoad().filter(e => e.id !== id));
+  }
+
+  function _lsLoad() { try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); } catch { return []; } }
+  function _lsSave(data) { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }
+
+  /* ── GAS URL 저장 (관리자) ── */
+  window.saveGasUrl = function() {
+    const val = (document.getElementById('gas-url-input').value || '').trim();
+    localStorage.setItem(GAS_KEY, val);
+    closeModal('gas-modal');
+    showToast(val ? 'GAS URL이 저장되었습니다. 데이터를 새로 불러옵니다.' : 'GAS URL이 제거되었습니다.');
+    renderList();
+  };
+
   /* ── Helpers ── */
-  function load() {
-    try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); }
-    catch { return []; }
-  }
-  function save(data) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-  }
-  function isAdmin() {
-    return sessionStorage.getItem(SESSION_KEY) === '1';
-  }
-  function uuid() {
-    return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
-  }
+  function isAdmin() { return sessionStorage.getItem(SESSION_KEY) === '1'; }
+  function uuid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
   function fmtDate(iso) {
     if (!iso) return '';
     const d = new Date(iso);
@@ -691,13 +754,15 @@
   }
   function showToast(msg) {
     const t = document.getElementById('toast');
-    t.textContent = msg;
-    t.classList.add('show');
-    clearTimeout(t._timer);
-    t._timer = setTimeout(() => t.classList.remove('show'), 2500);
+    t.textContent = msg; t.classList.add('show');
+    clearTimeout(t._timer); t._timer = setTimeout(() => t.classList.remove('show'), 2500);
   }
   function esc(str) {
     return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+  function showBusy(on) {
+    const c = document.getElementById('entries-container');
+    if (on) c.innerHTML = '<div class="empty-state" style="padding:32px 0">⏳ 불러오는 중...</div>';
   }
 
   /* ── Contact footer ── */
@@ -726,7 +791,7 @@
   };
 
   /* ── Form submit ── */
-  document.getElementById('request-form').addEventListener('submit', function(e) {
+  document.getElementById('request-form').addEventListener('submit', async function(e) {
     e.preventDefault();
     const name      = document.getElementById('f-name').value.trim();
     const dept      = document.getElementById('f-dept').value.trim();
@@ -734,53 +799,40 @@
     const privacy   = document.getElementById('f-privacy').checked;
 
     let valid = true;
-    function setErr(id, msg) {
-      document.getElementById(id).textContent = msg;
-      if (msg) { valid = false; }
-    }
+    function setErr(id, msg) { document.getElementById(id).textContent = msg; if (msg) valid = false; }
     function clearErrs() {
-      ['err-name','err-dept','err-email','err-privacy'].forEach(id => {
-        document.getElementById(id).textContent = '';
-      });
-      ['f-name','f-dept','f-email'].forEach(id => {
-        document.getElementById(id).classList.remove('error-field');
-      });
+      ['err-name','err-dept','err-email','err-privacy'].forEach(id => document.getElementById(id).textContent = '');
+      ['f-name','f-dept','f-email'].forEach(id => document.getElementById(id).classList.remove('error-field'));
     }
-
     clearErrs();
-    if (!name)     { setErr('err-name','이름을 입력해 주세요.'); document.getElementById('f-name').classList.add('error-field'); }
-    if (!dept)     { setErr('err-dept','소속/직위를 입력해 주세요.'); document.getElementById('f-dept').classList.add('error-field'); }
+    if (!name)    { setErr('err-name','이름을 입력해 주세요.'); document.getElementById('f-name').classList.add('error-field'); }
+    if (!dept)    { setErr('err-dept','소속/직위를 입력해 주세요.'); document.getElementById('f-dept').classList.add('error-field'); }
     if (!emailPfx || !/^[a-zA-Z0-9._+-]+$/.test(emailPfx)) {
       setErr('err-email','유효한 Gmail 계정명을 입력해 주세요.');
       document.getElementById('f-email').classList.add('error-field');
     }
-    if (!privacy)  { setErr('err-privacy','개인정보 수집·이용에 동의해 주세요.'); }
-
+    if (!privacy) { setErr('err-privacy','개인정보 수집·이용에 동의해 주세요.'); }
     if (!valid) return;
 
-    const data = load();
-    const entry = {
-      id: uuid(),
-      submittedAt: new Date().toISOString(),
-      category: selectedCategory,
-      name,
-      dept,
-      emailPrefix: emailPfx,
-      email: emailPfx + '@gmail.com',
-      status: '미등록',
-      registeredAt: null
-    };
-    data.unshift(entry);
-    save(data);
+    const submitBtn = this.querySelector('[type=submit]');
+    submitBtn.disabled = true; submitBtn.textContent = '신청 중...';
 
+    const entry = {
+      id: uuid(), submittedAt: new Date().toISOString(),
+      category: selectedCategory, name, dept,
+      emailPrefix: emailPfx, email: emailPfx + '@gmail.com',
+      status: '미등록', registeredAt: ''
+    };
+    await dbAdd(entry);
+
+    submitBtn.disabled = false; submitBtn.textContent = '신청하기';
     document.getElementById('request-form').reset();
     document.getElementById('f-privacy').checked = false;
     document.querySelectorAll('.toggle-group:first-of-type .toggle-btn').forEach((b,i) => b.classList.toggle('active', i===0));
     selectedCategory = '행정지원부서';
-
     showToast('신청이 완료되었습니다.');
     editingId = null;
-    renderList();
+    await renderList();
   });
 
   /* ── Render list (table) ── */
@@ -793,8 +845,9 @@
     if (e.target.id === 'filter-cat' || e.target.id === 'sort-by') renderList();
   });
 
-  function renderList() {
-    let data = load();
+  async function renderList() {
+    showBusy(true);
+    let data = await dbLoad();
     const admin = isAdmin();
     const container = document.getElementById('entries-container');
 
@@ -928,78 +981,81 @@
     btn.classList.add('active');
   };
 
-  window.saveEdit = function(id) {
+  window.saveEdit = async function(id) {
     const newName  = (document.getElementById('ei-name-' + id) || {}).value?.trim();
     const newDept  = (document.getElementById('ei-dept-' + id) || {}).value?.trim();
     const newEmail = (document.getElementById('ei-email-' + id) || {}).value?.trim().replace(/@.*/, '');
     const grp      = document.getElementById('ei-cat-grp-' + id);
     const activeCat = grp ? grp.querySelector('.toggle-btn.active') : null;
     const newCat   = activeCat ? activeCat.dataset.cat : null;
-
-    if (!newName || !newDept || !newEmail) {
-      showToast('모든 필드를 입력해 주세요.'); return;
-    }
-
-    const data = load();
-    const idx  = data.findIndex(e => e.id === id);
-    if (idx < 0) return;
-    data[idx].name        = newName;
-    data[idx].dept        = newDept;
-    data[idx].emailPrefix = newEmail;
-    if (newCat) data[idx].category = newCat;
-    save(data);
+    if (!newName || !newDept || !newEmail) { showToast('모든 필드를 입력해 주세요.'); return; }
+    const changes = { name: newName, dept: newDept, emailPrefix: newEmail, email: newEmail + '@gmail.com' };
+    if (newCat) changes.category = newCat;
+    await dbUpdate(id, changes);
     editingId = null;
     showToast('수정되었습니다.');
-    renderList();
+    await renderList();
   };
 
   /* ── Admin actions ── */
-  window.markDone = function(id) {
+  window.markDone = async function(id) {
     if (!isAdmin()) return;
-    const data = load();
-    const idx  = data.findIndex(e => e.id === id);
-    if (idx < 0) return;
-    data[idx].status = '등록완료';
-    data[idx].registeredAt = new Date().toISOString();
-    save(data);
+    await dbUpdate(id, { status: '등록완료', registeredAt: new Date().toISOString() });
     showToast('등록완료 처리되었습니다.');
-    renderList();
+    await renderList();
   };
 
-  window.markPending = function(id) {
+  window.markPending = async function(id) {
     if (!isAdmin()) return;
-    const data = load();
-    const idx  = data.findIndex(e => e.id === id);
-    if (idx < 0) return;
-    data[idx].status = '미등록';
-    data[idx].registeredAt = null;
-    save(data);
+    await dbUpdate(id, { status: '미등록', registeredAt: '' });
     showToast('미등록으로 변경되었습니다.');
-    renderList();
+    await renderList();
   };
 
-  window.deleteEntry = function(id) {
+  window.deleteEntry = async function(id) {
     if (!isAdmin()) return;
     if (!confirm('이 항목을 삭제하시겠습니까?')) return;
-    const data = load().filter(e => e.id !== id);
-    save(data);
+    await dbDelete(id);
     if (editingId === id) editingId = null;
     showToast('삭제되었습니다.');
-    renderList();
+    await renderList();
   };
 
   /* ── Admin FAB ── */
   window.handleAdminFab = function() {
     if (isAdmin()) {
-      sessionStorage.removeItem(SESSION_KEY);
-      document.getElementById('admin-fab').classList.remove('logged-in');
-      document.getElementById('admin-fab').textContent = '🔒 관리자';
-      showToast('관리자 로그아웃되었습니다.');
-      renderList();
+      // 로그인 상태 → 메뉴 드롭다운
+      const existing = document.getElementById('admin-fab-menu');
+      if (existing) { existing.remove(); return; }
+      const menu = document.createElement('div');
+      menu.id = 'admin-fab-menu';
+      menu.style.cssText = 'position:fixed;bottom:68px;right:20px;background:#fff;border:1px solid #e5e7eb;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.15);z-index:9999;min-width:180px;overflow:hidden';
+      menu.innerHTML = `
+        <button onclick="openGasSettings()" style="display:block;width:100%;padding:12px 16px;text-align:left;background:none;border:none;font-size:14px;cursor:pointer;border-bottom:1px solid #f3f4f6;">⚙️ 공유 서버 설정</button>
+        <button onclick="adminLogout()" style="display:block;width:100%;padding:12px 16px;text-align:left;background:none;border:none;font-size:14px;cursor:pointer;color:#dc2626;">🔓 로그아웃</button>`;
+      document.body.appendChild(menu);
+      setTimeout(() => document.addEventListener('click', function h(e) {
+        if (!menu.contains(e.target) && e.target.id !== 'admin-fab') { menu.remove(); document.removeEventListener('click', h); }
+      }), 50);
     } else {
       openModal('login-modal');
       setTimeout(() => document.getElementById('admin-pw').focus(), 100);
     }
+  };
+
+  window.adminLogout = function() {
+    document.getElementById('admin-fab-menu')?.remove();
+    sessionStorage.removeItem(SESSION_KEY);
+    document.getElementById('admin-fab').classList.remove('logged-in');
+    document.getElementById('admin-fab').textContent = '🔒 관리자';
+    showToast('관리자 로그아웃되었습니다.');
+    renderList();
+  };
+
+  window.openGasSettings = function() {
+    document.getElementById('admin-fab-menu')?.remove();
+    document.getElementById('gas-url-input').value = gasUrl();
+    openModal('gas-modal');
   };
 
   /* ── Modal ── */
@@ -1021,7 +1077,7 @@
       closeModal('login-modal');
       const fab = document.getElementById('admin-fab');
       fab.classList.add('logged-in');
-      fab.innerHTML = '🔓 관리자 (로그아웃)';
+      fab.innerHTML = '🔓 관리자 ▾';
       showToast('관리자로 로그인되었습니다.');
       renderList();
     } else {
@@ -1035,12 +1091,15 @@
   document.getElementById('login-modal').addEventListener('click', function(e) {
     if (e.target === this) closeModal('login-modal');
   });
+  document.getElementById('gas-modal').addEventListener('click', function(e) {
+    if (e.target === this) closeModal('gas-modal');
+  });
 
   /* ── Init ── */
   if (isAdmin()) {
     const fab = document.getElementById('admin-fab');
     fab.classList.add('logged-in');
-    fab.innerHTML = '🔓 관리자 (로그아웃)';
+    fab.innerHTML = '🔓 관리자 ▾';
   }
   renderContact();
   renderList();
@@ -1080,13 +1139,16 @@
     });
   }
 
-  window.checkStaffEmail = function() {
+  window.checkStaffEmail = async function() {
     const input = document.getElementById('sgm-email-input');
     const err = document.getElementById('sgm-email-err');
     const email = (input.value || '').trim().toLowerCase();
     if (!email) { err.textContent = '이메일을 입력해 주세요.'; err.style.display = 'block'; return; }
 
-    const data = load();
+    const checkBtn = document.querySelector('#sgm-inner button');
+    if (checkBtn) { checkBtn.disabled = true; checkBtn.textContent = '확인 중...'; }
+    const data = await dbLoad();
+    if (checkBtn) { checkBtn.disabled = false; checkBtn.textContent = '입장하기'; }
     const isAllowed = ALLOWED_EMAILS.indexOf(email) !== -1 ||
       data.some(function(r) { return r.email === email && r.status === '등록완료'; });
 
