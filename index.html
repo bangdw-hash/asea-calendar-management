@@ -253,6 +253,15 @@
     <span class="tab-label">기안문</span>
   </button>
 
+  <button class="tab-btn" data-tab="survey" role="tab" aria-selected="false">
+    <svg class="tab-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/>
+      <rect x="9" y="3" width="6" height="4" rx="2"/>
+      <line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/>
+    </svg>
+    <span class="tab-label">설문지</span>
+  </button>
+
   <button class="tab-btn" data-tab="help" role="tab" aria-selected="false">
     <svg class="tab-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
       <circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/>
@@ -1805,6 +1814,13 @@
       </section>
 
       <!-- ════════════════════════════════════════════════════
+           📋 설문지 탭
+           ════════════════════════════════════════════════════ -->
+      <section id="tab-survey" class="tab-panel" role="tabpanel" hidden>
+        <div id="survey-root"></div>
+      </section>
+
+      <!-- ════════════════════════════════════════════════════
            ❓ 도움말 탭
            ════════════════════════════════════════════════════ -->
       <section id="tab-help" class="tab-panel" role="tabpanel" hidden>
@@ -3167,6 +3183,16 @@
         <span class="bnav-label">기안문</span>
       </button>
 
+      <!-- 📋 설문지 -->
+      <button class="bnav-btn" data-tab="survey">
+        <svg class="bnav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/>
+          <rect x="9" y="3" width="6" height="4" rx="2"/>
+          <line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/>
+        </svg>
+        <span class="bnav-label">설문지</span>
+      </button>
+
       <!-- ❓ 도움말 -->
       <button class="bnav-btn" data-tab="help">
         <svg class="bnav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -3234,10 +3260,11 @@
   <script src="sms.js?v=20260608a1"></script>
   <!-- 신규 모듈 (admin → board → usersettings → app 순서) -->
   <script src="draft.js?v=20260612d2"></script>
-  <script src="admin.js?v=20260612a11"></script>
+  <script src="survey.js?v=20260612sv1"></script>
+  <script src="admin.js?v=20260612a12"></script>
   <script src="board.js?v=20260610b4"></script>
   <script src="usersettings.js?v=20260610u1"></script>
-  <script src="app.js?v=20260612s18"></script>
+  <script src="app.js?v=20260612s19"></script>
   <script>
     // 빠른 업무 등록 초기화 (DOM 준비 후)
     document.addEventListener('DOMContentLoaded', function () {

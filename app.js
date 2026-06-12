@@ -274,7 +274,8 @@
     if (name === 'hr')     { if (typeof HRModule !== 'undefined' && HRModule.init) { HRModule.init(); } if (typeof HRSubTab !== 'undefined') HRSubTab.show('entry'); }
     if (name === 'zoom')   { if (typeof MeetModule   !== 'undefined' && MeetModule.init)   MeetModule.init();   }
     if (name === 'help')   { if (typeof HelpModule   !== 'undefined' && HelpModule.init)   HelpModule.init();   }
-    if (name === 'draft')  { if (typeof DraftModule  !== 'undefined' && DraftModule.renderTab) DraftModule.renderTab(); }
+    if (name === 'draft')  { if (typeof DraftModule  !== 'undefined' && DraftModule.renderTab)  DraftModule.renderTab(); }
+    if (name === 'survey') { if (typeof SurveyModule !== 'undefined' && SurveyModule.renderTab) SurveyModule.renderTab(); }
     if (name === 'email')      renderEmailTab();
     if (name === 'settings')   renderSettingsTab();
     if (name === 'extract')    renderExtractTab();
@@ -956,6 +957,79 @@
           e.stopPropagation();
           showEventContextMenu(ev, e.clientX, e.clientY);
         });
+
+        /* ── 멀티데이 바 드래그&드롭 ── */
+        (function(evRef) {
+          var dur = ev.start.date
+            ? (_evEndDay(evRef).getTime() - _evStartDay(evRef).getTime())
+            : (new Date(evRef.end.dateTime) - new Date(evRef.start.dateTime));
+          var dragInfo = { eventId: evRef.id, calId: evRef._calId || '',
+            isAllDay: !!evRef.start.date, startTime: evRef.start.dateTime || '',
+            duration: dur, summary: evRef.summary };
+
+          bar.draggable = true;
+          bar.addEventListener('dragstart', function(e) {
+            e.dataTransfer.setData('text/plain', JSON.stringify(dragInfo));
+            e.dataTransfer.effectAllowed = 'move';
+            bar.classList.add('dragging');
+            setTimeout(function() { document.body.classList.add('is-dragging-event'); }, 0);
+          });
+          bar.addEventListener('dragend', function() {
+            bar.classList.remove('dragging');
+            document.body.classList.remove('is-dragging-event');
+            document.querySelectorAll('.calendar-day.drag-over').forEach(function(c) { c.classList.remove('drag-over'); });
+          });
+          /* 모바일 long-press */
+          bar.addEventListener('touchstart', function(te) {
+            var tx = te.touches[0];
+            _tcTmr = setTimeout(function() {
+              _tcDI = dragInfo;
+              _tcChip = bar;
+              _tcGhost = bar.cloneNode(true);
+              _tcGhost.style.cssText = 'position:fixed;opacity:.75;pointer-events:none;z-index:9999;width:' + bar.offsetWidth + 'px;left:' + (tx.clientX - bar.offsetWidth / 2) + 'px;top:' + (tx.clientY - 20) + 'px;border-radius:6px;';
+              document.body.appendChild(_tcGhost);
+              bar.style.opacity = '.3';
+              document.body.classList.add('is-dragging-event');
+              if (navigator.vibrate) navigator.vibrate(50);
+            }, 500);
+          }, { passive: true });
+          bar.addEventListener('touchmove', function(te) {
+            clearTimeout(_tcTmr); _tcTmr = null;
+            if (!_tcDI) return;
+            te.preventDefault();
+            var tx = te.touches[0];
+            if (_tcGhost) { _tcGhost.style.left = (tx.clientX - _tcGhost.offsetWidth / 2) + 'px'; _tcGhost.style.top = (tx.clientY - 20) + 'px'; }
+            document.querySelectorAll('.calendar-day.drag-over').forEach(function(c) { c.classList.remove('drag-over'); });
+            var el2 = document.elementFromPoint(tx.clientX, tx.clientY);
+            var dy = el2 ? el2.closest('.calendar-day') : null;
+            if (dy) dy.classList.add('drag-over');
+          }, { passive: false });
+          bar.addEventListener('touchend', function(te) {
+            clearTimeout(_tcTmr); _tcTmr = null;
+            if (!_tcDI) return;
+            var tx = te.changedTouches[0];
+            if (_tcGhost) { try { document.body.removeChild(_tcGhost); } catch(e2) {} _tcGhost = null; }
+            if (_tcChip) { _tcChip.style.opacity = ''; _tcChip = null; }
+            document.body.classList.remove('is-dragging-event');
+            document.querySelectorAll('.calendar-day.drag-over').forEach(function(c) { c.classList.remove('drag-over'); });
+            var el2 = document.elementFromPoint(tx.clientX, tx.clientY);
+            var dy = el2 ? el2.closest('.calendar-day') : null;
+            if (dy && dy.dataset.date) {
+              var pts = dy.dataset.date.split('-');
+              var dropDate = new Date(parseInt(pts[0]), parseInt(pts[1]) - 1, parseInt(pts[2]));
+              _moveEventToDate(dragInfo, dropDate);
+            }
+            _tcDI = null;
+          });
+          bar.addEventListener('touchcancel', function() {
+            clearTimeout(_tcTmr); _tcTmr = null;
+            if (_tcGhost) { try { document.body.removeChild(_tcGhost); } catch(e2) {} _tcGhost = null; }
+            if (_tcChip) { _tcChip.style.opacity = ''; _tcChip = null; }
+            document.body.classList.remove('is-dragging-event');
+            _tcDI = null;
+          });
+        })(ev);
+
         weekRow.appendChild(bar);
       });
 

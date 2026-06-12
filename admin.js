@@ -169,6 +169,7 @@
     { id: 'zoom',         label: '🎥 Zoom회의' },
     { id: 'cal-share-nav',label: '🔗 캘린더 공유' },
     { id: 'draft',        label: '📝 기안문' },
+    { id: 'survey',       label: '📋 설문지' },
     { id: 'settings',     label: '⚙️ 설정' },
     { id: 'help',         label: '❓ 도움말' }
   ];
@@ -177,7 +178,7 @@
   var DEFAULT_MENU_ORDER = [
     'calendar', 'extract', 'report', 'promo', 'email',
     'facility', 'vehicle', 'classroom', 'workorder', 'checkinmgmt',
-    'sms', 'board', 'hr', 'zoom', 'cal-share-nav', 'draft', 'settings', 'help',
+    'sms', 'board', 'hr', 'zoom', 'cal-share-nav', 'draft', 'survey', 'settings', 'help',
     'weekly-hub', 'work'   // 기본 숨김 메뉴는 맨 뒤
   ];
   /* 기본 숨김 메뉴 — 업무관리 / 주간허브 */
@@ -279,10 +280,22 @@
   function effectiveOrder() {
     var ids   = NAV_MENUS.map(function (m) { return m.id; });
     var saved = loadMenuOrder();
-    if (!saved.length) return DEFAULT_MENU_ORDER.slice();
+    /* 저장된 순서가 없으면 DEFAULT_MENU_ORDER + NAV_MENUS에 있는 신규 항목 자동 포함 */
+    var base  = saved.length ? saved.slice() : DEFAULT_MENU_ORDER.slice();
     var result = [];
-    saved.forEach(function (id) { if (ids.indexOf(id) !== -1 && result.indexOf(id) === -1) result.push(id); });
-    ids.forEach(function (id) { if (result.indexOf(id) === -1) result.push(id); });
+    base.forEach(function (id) { if (ids.indexOf(id) !== -1 && result.indexOf(id) === -1) result.push(id); });
+    /* NAV_MENUS에 새로 추가된 메뉴는 자동으로 맨 뒤(설정·도움말 앞)에 삽입 */
+    var insertBefore = ['settings', 'help'];
+    ids.forEach(function (id) {
+      if (result.indexOf(id) !== -1) return;
+      var pivot = -1;
+      for (var i = 0; i < insertBefore.length; i++) {
+        var idx = result.indexOf(insertBefore[i]);
+        if (idx !== -1) { pivot = idx; break; }
+      }
+      if (pivot !== -1) result.splice(pivot, 0, id);
+      else result.push(id);
+    });
     return result;
   }
 
