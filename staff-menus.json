@@ -3,8 +3,9 @@
     "calendar",
     "report",
     "promo",
-    "draft"
+    "draft",
+    "survey"
   ],
-  "updatedAt": "2026-06-12T03:31:59.743Z",
-  "version": 1781235119743
+  "updatedAt": "2026-06-12T04:14:53.219Z",
+  "version": 1781237693219
 }
