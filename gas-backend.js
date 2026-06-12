@@ -14,24 +14,25 @@ var SHEET_NAME = '신청현황';
 var COLS = ['id','submittedAt','category','name','dept','emailPrefix','email','status','registeredAt'];
 
 function doGet(e) {
-  var action = (e.parameter && e.parameter.action) || 'list';
+  var param  = (e && e.parameter) ? e.parameter : {};
+  var action = param.action || 'list';
   var sheet = _getSheet();
   try {
     if (action === 'list') {
       return _respond(_listEntries(sheet));
     }
     if (action === 'add') {
-      var entry = JSON.parse(decodeURIComponent(e.parameter.d || '{}'));
+      var entry = JSON.parse(decodeURIComponent(param.d || '{}'));
       _addEntry(sheet, entry);
       return _respond({ ok: true });
     }
     if (action === 'update') {
-      var changes = JSON.parse(decodeURIComponent(e.parameter.d || '{}'));
-      _updateEntry(sheet, e.parameter.id, changes);
+      var changes = JSON.parse(decodeURIComponent(param.d || '{}'));
+      _updateEntry(sheet, param.id, changes);
       return _respond({ ok: true });
     }
     if (action === 'delete') {
-      _deleteEntry(sheet, e.parameter.id);
+      _deleteEntry(sheet, param.id);
       return _respond({ ok: true });
     }
   } catch (err) {
