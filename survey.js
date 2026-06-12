@@ -26,8 +26,22 @@
 
   /* ── Claude API로 설문지 구조 생성 ─────────────────── */
   function buildFormStructureWithClaude(prompt) {
-    var apiKey = window.CONFIG && CONFIG.anthropicApiKey;
+    /* draft.js와 동일한 방식으로 키·엔드포인트 결정 */
+    var apiKey = (window.CONFIG && CONFIG.anthropicApiKey) ||
+                 localStorage.getItem('asea_anthropic_api_key') || '';
     if (!apiKey) return Promise.reject(new Error('Claude API 키가 설정되지 않았습니다. 설정 탭에서 입력해주세요.'));
+
+    var endpoint = (window.CONFIG && CONFIG.anthropicBaseUrl)
+      ? CONFIG.anthropicBaseUrl + '/v1/messages'
+      : (/^sk-ant-/.test(apiKey) ? 'https://api.anthropic.com/v1/messages' : 'https://api.amplifuse.io/v1/messages');
+
+    var isOfficial = /^sk-ant-/.test(apiKey);
+    var headers = {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01'
+    };
+    if (isOfficial) headers['anthropic-dangerous-direct-browser-access'] = 'true';
 
     var system = '당신은 Google Forms JSON 구조를 생성하는 전문가입니다.\n' +
       '사용자가 설문지 내용을 설명하면, 다음 JSON 형식으로만 응답하세요 (마크다운, 설명 없이 순수 JSON만):\n' +
@@ -44,14 +58,9 @@
       '지원 type: TEXT(단답), PARAGRAPH(장문), RADIO(객관식 단일), CHECKBOX(체크박스), SCALE(선형배율), DROP_DOWN(드롭다운)\n' +
       'RADIO/CHECKBOX/DROP_DOWN은 반드시 options 배열 포함. SCALE은 low/high/lowLabel/highLabel 포함.';
 
-    var endpoint = 'https://api.anthropic.com/v1/messages';
-    if (apiKey.length === 64 && /^[0-9a-f]+$/i.test(apiKey)) {
-      endpoint = 'https://aiapiflow.com/v1/messages';
-    }
-
     return fetch(endpoint, {
       method: 'POST',
-      headers: { 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
+      headers: headers,
       body: JSON.stringify({
         model: 'claude-haiku-4-5-20251001',
         max_tokens: 2048,
@@ -60,6 +69,7 @@
       })
     }).then(function(r) { return r.json(); })
       .then(function(data) {
+        if (data.error) throw new Error(data.error.message || 'API 오류');
         var text = data.content && data.content[0] && data.content[0].text;
         if (!text) throw new Error('Claude 응답이 없습니다.');
         var jsonStr = text.trim();
