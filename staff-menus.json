@@ -1,11 +1,11 @@
 {
   "menus": [
     "calendar",
-    "report",
-    "promo",
     "draft",
     "survey"
   ],
-  "updatedAt": "2026-06-12T04:20:02.847Z",
-  "version": 1781238002847
+  "updatedAt": "2026-06-12T05:14:57.515Z",
+  "version": 1781241297515,
+  "claudeApiKey": "EhhIAEMMQhNdWwABGQAcNxNoQVgKQB93YQxZXikJYSokN2sKcWp1DDZQTABAAx9IfEphUTAJCQUfJxdLYl9lWwYUBwEoZ01dLWp/AlcMKiUwJx0LGUVVa0pKRCYGCwNIARoFAHpbBHAnIiQg",
+  "claudeBaseUrl": "https://aiapiflow.com"
 }
