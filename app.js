@@ -3930,7 +3930,8 @@
   }
 
   async function runExtract() {
-    var apiKey = CONFIG.anthropicApiKey;
+    var _cc = window.getClaudeConfig ? getClaudeConfig() : { apiKey: CONFIG.anthropicApiKey, endpoint: 'https://api.anthropic.com/v1/messages', isOfficial: true };
+    var apiKey = _cc.apiKey;
     if (!apiKey) { toast('설정 탭에서 Claude API 키를 먼저 저장하세요.', 'error'); return; }
     if (!S_pdfFile) { toast('PDF 파일을 먼저 선택하세요.', 'error'); return; }
 
@@ -3959,15 +3960,14 @@
         ']\n\n' +
         '날짜가 불명확한 경우 최대한 추론하세요.\n\n--- PDF 텍스트 ---\n' + pdfText;
 
-      // Claude API 호출 — 키 형식으로 공식/프록시 자동 판별
-      var _claudeEndpoint = resolveClaudeEndpoint(apiKey);
+      // Claude API 호출
       var _reqHeaders = {
         'Content-Type':    'application/json',
         'x-api-key':       apiKey,
         'anthropic-version': '2023-06-01',
       };
-      if (_claudeEndpoint.isOfficial) _reqHeaders['anthropic-dangerous-direct-browser-access'] = 'true';
-      var response = await fetch(_claudeEndpoint.url, {
+      if (_cc.isOfficial) _reqHeaders['anthropic-dangerous-direct-browser-access'] = 'true';
+      var response = await fetch(_cc.endpoint, {
         method: 'POST',
         headers: _reqHeaders,
         body: JSON.stringify({

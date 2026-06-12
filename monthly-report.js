@@ -72,17 +72,16 @@ window.MonthlyReportModule = (function () {
   }
 
   async function _callClaude(userPrompt, systemPrompt) {
-    var apiKey = (typeof CONFIG !== 'undefined' && CONFIG.anthropicApiKey) ||
-                 localStorage.getItem('asea_anthropic_api_key') || '';
+    var _cc = window.getClaudeConfig ? getClaudeConfig() : { apiKey: (typeof CONFIG !== 'undefined' && CONFIG.anthropicApiKey) || localStorage.getItem('asea_anthropic_api_key') || '', endpoint: 'https://api.anthropic.com/v1/messages', isOfficial: true };
+    var apiKey = _cc.apiKey;
     if (!apiKey) throw new Error('Claude API 키가 없습니다. 설정 탭에서 API 키를 먼저 입력해주세요.');
-    var ep = _resolveEndpoint(apiKey);
     var headers = {
       'Content-Type': 'application/json',
       'x-api-key': apiKey,
       'anthropic-version': '2023-06-01',
     };
-    if (ep.isOfficial) headers['anthropic-dangerous-direct-browser-access'] = 'true';
-    var resp = await fetch(ep.url, {
+    if (_cc.isOfficial) headers['anthropic-dangerous-direct-browser-access'] = 'true';
+    var resp = await fetch(_cc.endpoint, {
       method: 'POST',
       headers: headers,
       body: JSON.stringify({
@@ -123,17 +122,16 @@ window.MonthlyReportModule = (function () {
 
   /* 이미지를 Claude Vision으로 텍스트 추출 */
   async function _imageToText(base64, mimeType) {
-    var apiKey = (typeof CONFIG !== 'undefined' && CONFIG.anthropicApiKey) ||
-                 localStorage.getItem('asea_anthropic_api_key') || '';
+    var _cc = window.getClaudeConfig ? getClaudeConfig() : { apiKey: (typeof CONFIG !== 'undefined' && CONFIG.anthropicApiKey) || localStorage.getItem('asea_anthropic_api_key') || '', endpoint: 'https://api.anthropic.com/v1/messages', isOfficial: true };
+    var apiKey = _cc.apiKey;
     if (!apiKey) throw new Error('Claude API 키가 없습니다.');
-    var ep = _resolveEndpoint(apiKey);
     var headers = {
       'Content-Type': 'application/json',
       'x-api-key': apiKey,
       'anthropic-version': '2023-06-01',
     };
-    if (ep.isOfficial) headers['anthropic-dangerous-direct-browser-access'] = 'true';
-    var resp = await fetch(ep.url, {
+    if (_cc.isOfficial) headers['anthropic-dangerous-direct-browser-access'] = 'true';
+    var resp = await fetch(_cc.endpoint, {
       method: 'POST',
       headers: headers,
       body: JSON.stringify({

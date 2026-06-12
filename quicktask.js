@@ -190,7 +190,8 @@ var QuickTaskModule = (function () {
   async function analyzeContent() {
     if (Q.isAnalyzing) return;
 
-    var apiKey = CONFIG.anthropicApiKey || localStorage.getItem('asea_anthropic_api_key') || '';
+    var _cc = window.getClaudeConfig ? getClaudeConfig() : { apiKey: CONFIG.anthropicApiKey || localStorage.getItem('asea_anthropic_api_key') || '', endpoint: 'https://api.anthropic.com/v1/messages', isOfficial: true };
+    var apiKey = _cc.apiKey;
     if (!apiKey) {
       toast('설정 → Claude API Key를 먼저 등록해주세요.', 'error');
       return;
@@ -244,14 +245,11 @@ var QuickTaskModule = (function () {
         messages = [{ role: 'user', content: '다음 내용에서 업무/일정 항목들을 추출해 JSON 배열로 반환하세요:\n\n' + text }];
       }
 
-      var resp = await fetch('https://api.anthropic.com/v1/messages', {
+      var _qtHeaders = { 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' };
+      if (_cc.isOfficial) _qtHeaders['anthropic-dangerous-direct-browser-access'] = 'true';
+      var resp = await fetch(_cc.endpoint, {
         method: 'POST',
-        headers: {
-          'x-api-key':                                  apiKey,
-          'anthropic-version':                          '2023-06-01',
-          'content-type':                               'application/json',
-          'anthropic-dangerous-direct-browser-access':  'true',
-        },
+        headers: _qtHeaders,
         body: JSON.stringify({
           model:      'claude-haiku-4-5',
           max_tokens: 1024,

@@ -87,7 +87,10 @@ window.PromoModule = (function () {
     return t ? t.bg : '#C8185A';
   }
   function getGasUrl()  { return (typeof CONFIG !== 'undefined' && CONFIG.promoGasUrl) || localStorage.getItem('asea_promo_gas_url') || ''; }
-  function getApiKey()  { return (typeof CONFIG !== 'undefined' && CONFIG.anthropicApiKey) || localStorage.getItem('asea_anthropic_api_key') || ''; }
+  function getApiKey()  {
+    if (window.getClaudeConfig) { var _c = getClaudeConfig(); return _c.apiKey; }
+    return (typeof CONFIG !== 'undefined' && CONFIG.anthropicApiKey) || localStorage.getItem('asea_anthropic_api_key') || '';
+  }
   function getToken()   { return localStorage.getItem('asea_promo_access_token') || ''; }
   function getTypeById(id) { return PRES_TYPES.find(function(t){ return t.id === id; }) || PRES_TYPES[3]; }
 
@@ -683,16 +686,16 @@ window.PromoModule = (function () {
     var inp = $p('prm-ai-input');
     var txt = (inp && inp.value.trim()) || '';
     if (!txt) { showErr('AI 생성: 홍보 내용을 먼저 입력하세요.'); return; }
-    var key = getApiKey();
+    var _cc = window.getClaudeConfig ? getClaudeConfig() : { apiKey: getApiKey(), endpoint: 'https://api.anthropic.com/v1/messages', isOfficial: true };
+    var key = _cc.apiKey;
     if (!key) { showErr('설정 탭에서 Claude API 키를 먼저 등록하세요.'); return; }
     var btn = $p('prm-gen-btn');
     btn.disabled = true; btn.innerHTML = '<span class="prm-spin"></span>';
     hideErr();
     try {
-      var ep = resolveEndpoint(key);
       var hdrs = { 'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01' };
-      if (ep.isOfficial) hdrs['anthropic-dangerous-direct-browser-access'] = 'true';
-      var resp = await fetch(ep.url, { method:'POST', headers:hdrs, body: JSON.stringify({
+      if (_cc.isOfficial) hdrs['anthropic-dangerous-direct-browser-access'] = 'true';
+      var resp = await fetch(_cc.endpoint, { method:'POST', headers:hdrs, body: JSON.stringify({
         model: 'claude-haiku-4-5-20251001', max_tokens: 300,
         system: '아세아항공직업전문학교 홍보 담당자입니다.\nJSON만 반환하세요. 형식: {"title":"20자이내","body":"80자이내(줄바꿈\\n허용)","tag":"#태그1 #태그2"}',
         messages: [{ role:'user', content:'테마:'+_cfg.theme+'\n내용:'+txt }],

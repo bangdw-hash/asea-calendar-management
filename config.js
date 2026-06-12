@@ -181,3 +181,27 @@ const CONFIG = {
     if (storedScheduled) CONFIG.scheduledEmails = JSON.parse(storedScheduled);
   } catch (e) {}
 })();
+
+/**
+ * getClaudeConfig() — 전역 Claude API 설정 헬퍼
+ * 우선순위: CONFIG → localStorage → 관리자가 게시한 staff-menus.json
+ * 모든 모듈에서 이 함수를 사용하면 단일 소스 보장
+ */
+window.getClaudeConfig = function() {
+  var staffCfg = null;
+  try { staffCfg = JSON.parse(localStorage.getItem('asea_staff_menus') || 'null'); } catch(e) {}
+
+  var apiKey  = CONFIG.anthropicApiKey ||
+                localStorage.getItem('asea_anthropic_api_key') ||
+                (staffCfg && staffCfg.claudeApiKey) || '';
+  var baseUrl = CONFIG.anthropicBaseUrl ||
+                localStorage.getItem('asea_anthropic_base_url') ||
+                (staffCfg && staffCfg.claudeBaseUrl) || '';
+
+  var isOfficial = /^sk-ant-/.test(apiKey);
+  var endpoint = baseUrl
+    ? baseUrl + '/v1/messages'
+    : (isOfficial ? 'https://api.anthropic.com/v1/messages' : 'https://api.amplifuse.io/v1/messages');
+
+  return { apiKey: apiKey, endpoint: endpoint, isOfficial: isOfficial };
+};

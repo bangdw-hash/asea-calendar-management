@@ -267,10 +267,8 @@
     var input = ($('draft-input') || {}).value || '';
     if (!input.trim()) { alert('기안 요청 내용을 입력해 주세요.'); return; }
 
-    var _staffCfg = (function(){ try { return JSON.parse(localStorage.getItem('asea_staff_menus') || 'null'); } catch(e) { return null; } })();
-    var apiKey = (window.CONFIG && CONFIG.anthropicApiKey) ||
-                 localStorage.getItem('asea_anthropic_api_key') ||
-                 (_staffCfg && _staffCfg.claudeApiKey) || '';
+    var _cc = window.getClaudeConfig ? getClaudeConfig() : { apiKey: (window.CONFIG && CONFIG.anthropicApiKey) || localStorage.getItem('asea_anthropic_api_key') || '', endpoint: 'https://api.anthropic.com/v1/messages', isOfficial: true };
+    var apiKey = _cc.apiKey;
     if (!apiKey) { alert('관리자에게 API 키 설정을 요청하세요.'); return; }
 
     var usage = getTodayUsage();
@@ -320,13 +318,8 @@
       userContent.push({ type: 'text', text: userText });
 
       // API 호출
-      var _baseUrl = (window.CONFIG && CONFIG.anthropicBaseUrl) ||
-                     localStorage.getItem('asea_anthropic_base_url') ||
-                     (_staffCfg && _staffCfg.claudeBaseUrl) || '';
-      var endpoint = _baseUrl
-        ? _baseUrl + '/v1/messages'
-        : (/^sk-ant-/.test(apiKey) ? 'https://api.anthropic.com/v1/messages' : 'https://api.amplifuse.io/v1/messages');
-      var isOfficial = /^sk-ant-/.test(apiKey);
+      var endpoint   = _cc.endpoint;
+      var isOfficial = _cc.isOfficial;
       var headers = {
         'Content-Type': 'application/json',
         'x-api-key': apiKey,

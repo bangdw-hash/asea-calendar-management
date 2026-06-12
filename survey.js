@@ -31,20 +31,12 @@
   /* ── Claude API로 설문지 구조 생성 ─────────────────── */
   function buildFormStructureWithClaude(prompt) {
     /* 1) 내 localStorage  2) 관리자가 게시한 staff-menus.json 순으로 키 탐색 */
-    var staffCfg  = _loadStaffMenus();
-    var apiKey    = (window.CONFIG && CONFIG.anthropicApiKey) ||
-                   localStorage.getItem('asea_anthropic_api_key') ||
-                   (staffCfg && staffCfg.claudeApiKey) || '';
+    var _cc = window.getClaudeConfig ? getClaudeConfig() : { apiKey: (window.CONFIG && CONFIG.anthropicApiKey) || localStorage.getItem('asea_anthropic_api_key') || '', endpoint: 'https://api.anthropic.com/v1/messages', isOfficial: true };
+    var apiKey     = _cc.apiKey;
     if (!apiKey) return Promise.reject(new Error('Claude API 키가 설정되지 않았습니다. 관리자에게 문의하세요.'));
 
-    var baseUrl   = (window.CONFIG && CONFIG.anthropicBaseUrl) ||
-                   localStorage.getItem('asea_anthropic_base_url') ||
-                   (staffCfg && staffCfg.claudeBaseUrl) || '';
-    var endpoint  = baseUrl
-      ? baseUrl + '/v1/messages'
-      : (/^sk-ant-/.test(apiKey) ? 'https://api.anthropic.com/v1/messages' : 'https://api.amplifuse.io/v1/messages');
-
-    var isOfficial = /^sk-ant-/.test(apiKey);
+    var endpoint   = _cc.endpoint;
+    var isOfficial = _cc.isOfficial;
     var headers = {
       'Content-Type': 'application/json',
       'x-api-key': apiKey,
