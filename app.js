@@ -275,7 +275,8 @@
     if (name === 'zoom')   { if (typeof MeetModule   !== 'undefined' && MeetModule.init)   MeetModule.init();   }
     if (name === 'help')   { if (typeof HelpModule   !== 'undefined' && HelpModule.init)   HelpModule.init();   }
     if (name === 'draft')  { if (typeof DraftModule  !== 'undefined' && DraftModule.renderTab)  DraftModule.renderTab(); }
-    if (name === 'survey') { if (typeof SurveyModule !== 'undefined' && SurveyModule.renderTab) SurveyModule.renderTab(); }
+    if (name === 'survey') { if (typeof SurveyModule  !== 'undefined' && SurveyModule.renderTab)  SurveyModule.renderTab(); }
+    if (name === 'qrcard') { if (typeof QRCardModule !== 'undefined' && QRCardModule.renderTab) QRCardModule.renderTab(); }
     if (name === 'email')      renderEmailTab();
     if (name === 'settings')   renderSettingsTab();
     if (name === 'extract')    renderExtractTab();

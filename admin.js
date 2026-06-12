@@ -170,6 +170,7 @@
     { id: 'cal-share-nav',label: '🔗 캘린더 공유' },
     { id: 'draft',        label: '📝 기안문' },
     { id: 'survey',       label: '📋 설문지' },
+    { id: 'qrcard',       label: '🪪 QR명함' },
     { id: 'settings',     label: '⚙️ 설정' },
     { id: 'help',         label: '❓ 도움말' }
   ];
@@ -178,7 +179,7 @@
   var DEFAULT_MENU_ORDER = [
     'calendar', 'extract', 'report', 'promo', 'email',
     'facility', 'vehicle', 'classroom', 'workorder', 'checkinmgmt',
-    'sms', 'board', 'hr', 'zoom', 'cal-share-nav', 'draft', 'survey', 'settings', 'help',
+    'sms', 'board', 'hr', 'zoom', 'cal-share-nav', 'draft', 'survey', 'qrcard', 'settings', 'help',
     'weekly-hub', 'work'   // 기본 숨김 메뉴는 맨 뒤
   ];
   /* 기본 숨김 메뉴 — 업무관리 / 주간허브 */

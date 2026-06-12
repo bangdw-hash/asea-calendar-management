@@ -262,6 +262,15 @@
     <span class="tab-label">설문지</span>
   </button>
 
+  <button class="tab-btn" data-tab="qrcard" role="tab" aria-selected="false">
+    <svg class="tab-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
+      <rect x="3" y="14" width="7" height="7" rx="1"/>
+      <path d="M14 14h2v2h-2zM18 14h3v3h-3zM14 18h3v3h-3zM19 19h2v2h-2z"/>
+    </svg>
+    <span class="tab-label">QR명함</span>
+  </button>
+
   <button class="tab-btn" data-tab="help" role="tab" aria-selected="false">
     <svg class="tab-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
       <circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/>
@@ -1753,6 +1762,12 @@
       </section>
 
       <!-- ════════════════════════════════════════════════════
+           🪪 QR명함 탭
+           ════════════════════════════════════════════════════ -->
+      <section id="tab-qrcard" class="tab-panel" role="tabpanel" hidden>
+      </section>
+
+      <!-- ════════════════════════════════════════════════════
            ❓ 도움말 탭
            ════════════════════════════════════════════════════ -->
       <section id="tab-help" class="tab-panel" role="tabpanel" hidden>
@@ -3125,6 +3140,16 @@
         <span class="bnav-label">설문지</span>
       </button>
 
+      <!-- 🪪 QR명함 -->
+      <button class="bnav-btn" data-tab="qrcard">
+        <svg class="bnav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
+          <rect x="3" y="14" width="7" height="7" rx="1"/>
+          <path d="M14 14h2v2h-2zM18 14h3v3h-3zM14 18h3v3h-3zM19 19h2v2h-2z"/>
+        </svg>
+        <span class="bnav-label">QR명함</span>
+      </button>
+
       <!-- ❓ 도움말 -->
       <button class="bnav-btn" data-tab="help">
         <svg class="bnav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -3164,6 +3189,7 @@
        ═══════════════════════════════════════════════════════ -->
   <!-- Quill.js 워드프로세서 -->
   <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
   <script src="config.js?v=20260612p3"></script>
   <script src="auth.js?v=20260612a1"></script>
@@ -3193,10 +3219,11 @@
   <!-- 신규 모듈 (admin → board → usersettings → app 순서) -->
   <script src="draft.js?v=20260612d4"></script>
   <script src="survey.js?v=20260612sv4"></script>
-  <script src="admin.js?v=20260612a14"></script>
+  <script src="qrcard.js?v=20260612qr1"></script>
+  <script src="admin.js?v=20260612a15"></script>
   <script src="board.js?v=20260610b4"></script>
   <script src="usersettings.js?v=20260610u1"></script>
-  <script src="app.js?v=20260612s19"></script>
+  <script src="app.js?v=20260612s20"></script>
   <script>
     // 빠른 업무 등록 초기화 (DOM 준비 후)
     document.addEventListener('DOMContentLoaded', function () {
