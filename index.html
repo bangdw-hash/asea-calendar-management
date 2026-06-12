@@ -1671,81 +1671,13 @@
           <button id="save-github-token-btn" class="btn btn-primary btn-sm">저장</button>
         </div>
 
-        <!-- Make.com 웹훅 URL -->
-        <div class="settings-card" data-admin-only="true">
-          <h3 class="settings-section-title">Make.com 웹훅 URL (이메일 예약 서버 발송)</h3>
-          <div class="form-group">
-            <input id="setting-make-webhook" type="url" class="form-input"
-              placeholder="https://hook.us2.make.com/...">
-            <p class="form-hint">Make.com 시나리오 1의 CustomWebHook 모듈 URL을 입력하세요. 이메일 예약 시 브라우저가 닫혀도 자동 발송됩니다.</p>
-          </div>
-          <button id="save-make-webhook-btn" class="btn btn-primary btn-sm">저장</button>
-        </div>
-
-        <!-- 홍보화면 설정 -->
-        <div class="settings-card" data-admin-only="true">
-          <h3 class="settings-section-title">📣 홍보화면 설정</h3>
-          <div class="form-group">
-            <label class="form-label" for="setting-promo-gas-url">GAS 프록시 URL</label>
-            <input id="setting-promo-gas-url" type="url" class="form-input"
-              placeholder="https://script.google.com/macros/s/.../exec">
-            <p class="form-hint">gas_slides_proxy.gs를 Google Apps Script에 배포한 후 발급된 URL을 입력하세요.<br>
-            자세한 내용은 <strong>REMOTE_SETUP.md</strong>를 참고하세요.</p>
-          </div>
-          <button id="save-promo-gas-btn" class="btn btn-primary btn-sm">저장</button>
-          <div class="form-group" style="margin-top:12px">
-            <label class="form-label" for="setting-promo-token">접근 토큰 (선택)</label>
-            <input id="setting-promo-token" type="text" class="form-input"
-              placeholder="영문·숫자 조합 임의 문자열 (예: asea2026promo)">
-            <p class="form-hint">설정 시 공개 URL을 통한 등록에 이 토큰이 있어야 합니다. GAS 스크립트 속성 <code>ACCESS_TOKEN</code>에도 동일한 값을 입력하세요.<br>비워두면 URL을 아는 누구나 슬라이드를 등록할 수 있습니다.</p>
-          </div>
-          <button id="save-promo-token-btn" class="btn btn-secondary btn-sm">접근 토큰 저장</button>
-        </div>
-
-        <!-- Drive 설정 -->
-        <div class="settings-card" data-admin-only="true">
-          <h3 class="settings-section-title">Drive 설정</h3>
-          <div class="form-group">
-            <label class="form-label" for="setting-folder-id">보고서 폴더 ID</label>
-            <input id="setting-folder-id" type="text" class="form-input"
-              placeholder="Google Drive 폴더 ID를 입력하세요">
-          </div>
-          <button id="save-folder-btn" class="btn btn-primary btn-sm">저장</button>
-        </div>
-
-        <!-- ── 기타 설정 ────────────────────────────────────── -->
-        <div class="settings-group-label" data-admin-only="true">기타 설정</div>
-
-        <!-- 앱 기본 URL (커스텀 도메인) 설정 -->
-        <div class="settings-card" data-admin-only="true">
-          <h3 class="settings-section-title">🌐 앱 기본 URL (커스텀 도메인)</h3>
-          <p class="form-hint" style="margin-bottom:10px">
-            커스텀 도메인을 연결한 경우 여기서 URL을 변경하면 QR 코드 링크 등에 자동 반영됩니다.<br>
-            끝에 <code>/</code>를 포함해야 합니다. 예: <code>https://simmanager.asea.or.kr/</code>
-          </p>
-          <div style="display:flex;gap:8px;align-items:center">
-            <input id="setting-base-url" type="url" class="form-input" style="flex:1"
-              placeholder="https://bangdw-hash.github.io/asea-calendar-management/">
-            <button id="setting-base-url-save" class="btn btn-primary btn-sm">저장</button>
-            <button id="setting-base-url-reset" class="btn btn-secondary btn-sm">기본값</button>
-          </div>
-          <p id="setting-base-url-status" class="form-hint" style="margin-top:8px"></p>
-        </div>
-
-        <!-- QR 체크인 서버 URL 설정 -->
-        <div class="settings-card" id="checkin-proxy-card" data-admin-only="true">
-          <h3 class="settings-section-title">🔗 QR 체크인 서버 URL</h3>
-          <p class="form-hint" style="margin-bottom:10px">
-            QR 입출입 기록을 저장하려면 Google Apps Script 프록시 URL을 입력하세요.
-            <strong>gas_checkin_proxy.gs</strong> 파일을 GAS에 배포 후 웹앱 URL을 붙여넣습니다.
-          </p>
-          <div style="display:flex;gap:8px;align-items:center">
-            <input id="checkin-proxy-url-input" type="url" class="form-input" style="flex:1" placeholder="https://script.google.com/macros/s/.../exec">
-            <button id="checkin-proxy-save-btn" class="btn btn-primary btn-sm">저장</button>
-            <button id="checkin-proxy-test-btn" class="btn btn-secondary btn-sm">테스트</button>
-          </div>
-          <p id="checkin-proxy-status" class="form-hint" style="margin-top:8px"></p>
-        </div>
+        <!-- Make.com 웹훅 URL — config.js 하드코딩으로 이동, UI 숨김 -->
+        <input id="setting-make-webhook" type="hidden">
+        <input id="setting-promo-gas-url" type="hidden">
+        <input id="setting-promo-token" type="hidden">
+        <input id="setting-folder-id" type="hidden">
+        <input id="setting-base-url" type="hidden">
+        <input id="checkin-proxy-url-input" type="hidden">
 
         </div><!-- /.tab-body -->
 
