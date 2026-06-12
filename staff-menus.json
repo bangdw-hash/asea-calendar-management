@@ -1,7 +1,10 @@
 {
   "menus": [
-    "calendar"
+    "calendar",
+    "report",
+    "promo",
+    "draft"
   ],
-  "updatedAt": "2026-06-12T00:00:00.000Z",
-  "version": 1
+  "updatedAt": "2026-06-12T03:31:59.743Z",
+  "version": 1781235119743
 }
