@@ -471,6 +471,7 @@
           '<button class="admin-nav-btn" data-sec="feat-ctrl">⚙️ 기능 제어</button>' +
           '<button class="admin-nav-btn" data-sec="tab-admin">🔗 탭별 관리</button>' +
           '<button class="admin-nav-btn" data-sec="contact-info">📞 연락처 관리</button>' +
+          '<button class="admin-nav-btn" data-sec="regulations">📚 규정집 관리</button>' +
         '</nav>' +
         '<div id="admin-sec-body" class="admin-sec-body"></div>' +
       '</div>';
@@ -501,6 +502,10 @@
     if (sec === 'feat-ctrl')   { body.innerHTML = _htmlFeatCtrl();    _bindFeatCtrlEvents(); }
     if (sec === 'tab-admin')     { body.innerHTML = _htmlTabAdmin();      _bindTabAdminEvents(); }
     if (sec === 'contact-info')  { body.innerHTML = _htmlContactInfo();  _bindContactInfoEvents(); }
+    if (sec === 'regulations')   {
+      if (window.DraftModule) { body.innerHTML = DraftModule.htmlAdmin(); DraftModule.bindAdmin(); }
+      else body.innerHTML = '<p style="padding:16px;color:#9ca3af">기안문 모듈을 불러오는 중...</p>';
+    }
 
     /* 버전 추가 버튼 */
     if (sec === 'changelog') {
@@ -1111,6 +1116,7 @@
     applyMenuVisibility: applyMenuVisibility,
     applyFeatVisibility: applyFeatVisibility,
     applyLogo: applyLogo,
+    _renderSection: _renderSection,
     CHANGELOG: CHANGELOG
   };
 })();

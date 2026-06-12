@@ -246,6 +246,13 @@
     <span class="tab-label">관리자</span>
   </button>
 
+  <button class="tab-btn" data-tab="draft" role="tab" aria-selected="false">
+    <svg class="tab-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+    </svg>
+    <span class="tab-label">기안문</span>
+  </button>
+
   <button class="tab-btn" data-tab="help" role="tab" aria-selected="false">
     <svg class="tab-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
       <circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/>
@@ -1774,6 +1781,13 @@
       </section>
 
       <!-- ════════════════════════════════════════════════════
+           📝 기안문 탭
+           ════════════════════════════════════════════════════ -->
+      <section id="tab-draft" class="tab-panel" role="tabpanel" hidden>
+        <div id="draft-root"></div>
+      </section>
+
+      <!-- ════════════════════════════════════════════════════
            ❓ 도움말 탭
            ════════════════════════════════════════════════════ -->
       <section id="tab-help" class="tab-panel" role="tabpanel" hidden>
@@ -3128,6 +3142,14 @@
         <span class="bnav-label">관리자</span>
       </button>
 
+      <!-- 📝 기안문 -->
+      <button class="bnav-btn" data-tab="draft">
+        <svg class="bnav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+        </svg>
+        <span class="bnav-label">기안문</span>
+      </button>
+
       <!-- ❓ 도움말 -->
       <button class="bnav-btn" data-tab="help">
         <svg class="bnav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -3194,6 +3216,7 @@
   <script src="quicktask.js?v=20260609r1"></script>
   <script src="sms.js?v=20260608a1"></script>
   <!-- 신규 모듈 (admin → board → usersettings → app 순서) -->
+  <script src="draft.js?v=20260612d1"></script>
   <script src="admin.js?v=20260612a6"></script>
   <script src="board.js?v=20260610b4"></script>
   <script src="usersettings.js?v=20260610u1"></script>
