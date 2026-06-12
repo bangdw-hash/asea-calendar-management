@@ -7,6 +7,10 @@
   var SK_HISTORY  = 'asea_survey_history';  // 로컬 이력 (폼 ID + 제목)
 
   /* ── 유틸 ─────────────────────────────────────────── */
+  function _loadStaffMenus() {
+    try { return JSON.parse(localStorage.getItem('asea_staff_menus') || 'null'); } catch(e) { return null; }
+  }
+
   function getToken() {
     return (window.Auth && Auth.getToken && Auth.getToken()) ||
            (window.S && S.accessToken) || '';
@@ -26,13 +30,18 @@
 
   /* ── Claude API로 설문지 구조 생성 ─────────────────── */
   function buildFormStructureWithClaude(prompt) {
-    /* draft.js와 동일한 방식으로 키·엔드포인트 결정 */
-    var apiKey = (window.CONFIG && CONFIG.anthropicApiKey) ||
-                 localStorage.getItem('asea_anthropic_api_key') || '';
-    if (!apiKey) return Promise.reject(new Error('Claude API 키가 설정되지 않았습니다. 설정 탭에서 입력해주세요.'));
+    /* 1) 내 localStorage  2) 관리자가 게시한 staff-menus.json 순으로 키 탐색 */
+    var staffCfg  = _loadStaffMenus();
+    var apiKey    = (window.CONFIG && CONFIG.anthropicApiKey) ||
+                   localStorage.getItem('asea_anthropic_api_key') ||
+                   (staffCfg && staffCfg.claudeApiKey) || '';
+    if (!apiKey) return Promise.reject(new Error('Claude API 키가 설정되지 않았습니다. 관리자에게 문의하세요.'));
 
-    var endpoint = (window.CONFIG && CONFIG.anthropicBaseUrl)
-      ? CONFIG.anthropicBaseUrl + '/v1/messages'
+    var baseUrl   = (window.CONFIG && CONFIG.anthropicBaseUrl) ||
+                   localStorage.getItem('asea_anthropic_base_url') ||
+                   (staffCfg && staffCfg.claudeBaseUrl) || '';
+    var endpoint  = baseUrl
+      ? baseUrl + '/v1/messages'
       : (/^sk-ant-/.test(apiKey) ? 'https://api.anthropic.com/v1/messages' : 'https://api.amplifuse.io/v1/messages');
 
     var isOfficial = /^sk-ant-/.test(apiKey);
