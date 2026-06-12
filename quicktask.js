@@ -245,13 +245,20 @@ var QuickTaskModule = (function () {
         messages = [{ role: 'user', content: '다음 내용에서 업무/일정 항목들을 추출해 JSON 배열로 반환하세요:\n\n' + text }];
       }
 
-      var _qtHeaders = { 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' };
-      if (_cc.isOfficial) _qtHeaders['anthropic-dangerous-direct-browser-access'] = 'true';
-      var resp = await fetch(_cc.endpoint, {
+      var _qtEndpoint = (_cc.endpoint && !_cc.endpoint.includes('amplifuse.io'))
+        ? _cc.endpoint
+        : 'https://api.anthropic.com/v1/messages';
+      var _qtHeaders = {
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'content-type': 'application/json',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      };
+      var resp = await fetch(_qtEndpoint, {
         method: 'POST',
         headers: _qtHeaders,
         body: JSON.stringify({
-          model:      'claude-haiku-4-5',
+          model:      'claude-haiku-4-5-20251001',
           max_tokens: 1024,
           system:     systemPrompt,
           messages:   messages,
