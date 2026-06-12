@@ -13,9 +13,37 @@
 var SHEET_NAME = '신청현황';
 var COLS = ['id','submittedAt','category','name','dept','emailPrefix','email','status','registeredAt'];
 
+var AMULBO_LOG_COLS = ['timestamp','userType','question','inputTokens','outputTokens','costUSD','elapsedMs','satisfied'];
+
 function doGet(e) {
   var param  = (e && e.parameter) ? e.parameter : {};
   var action = param.action || 'list';
+
+  // ── 아물보 관련 액션 (sheet 불필요) ──
+  try {
+    if (action === 'getAmulboConfig') {
+      return _respond(_getAmulboConfig());
+    }
+    if (action === 'saveAmulboConfig') {
+      return _respond(_saveAmulboConfig(param));
+    }
+    if (action === 'getAmulboKnowledge') {
+      return _respond(_getAmulboKnowledge());
+    }
+    if (action === 'saveAmulboKnowledge') {
+      return _respond(_saveAmulboKnowledge(param));
+    }
+    if (action === 'amulboLog') {
+      return _respond(_amulboLog(param));
+    }
+    if (action === 'amulboStats') {
+      return _respond(_amulboStats());
+    }
+  } catch (err) {
+    return _respond({ ok: false, error: err.message });
+  }
+
+  // ── 기존 신청현황 액션 ──
   var sheet = _getSheet();
   try {
     if (action === 'list') {
@@ -41,9 +69,130 @@ function doGet(e) {
   return _respond({ ok: false, error: 'Unknown action' });
 }
 
+/* ── 아물보 액션 함수 ── */
+
+function _getAmulboConfig() {
+  var props = PropertiesService.getScriptProperties();
+  return {
+    ok: true,
+    apiKey:  props.getProperty('AMULBO_API_KEY')  || '',
+    baseUrl: props.getProperty('AMULBO_BASE_URL') || '',
+    enabled: props.getProperty('AMULBO_ENABLED')  || 'false'
+  };
+}
+
+function _saveAmulboConfig(param) {
+  var props = PropertiesService.getScriptProperties();
+  if (param.apiKey  !== undefined) props.setProperty('AMULBO_API_KEY',  param.apiKey);
+  if (param.baseUrl !== undefined) props.setProperty('AMULBO_BASE_URL', param.baseUrl);
+  if (param.enabled !== undefined) props.setProperty('AMULBO_ENABLED',  param.enabled);
+  return { ok: true };
+}
+
+function _getAmulboKnowledge() {
+  var ss    = _getOrCreateSS();
+  var sheet = _getAmulboKnowledgeSheet(ss);
+  var lastRow = sheet.getLastRow();
+  // 헤더(key/value) 이후 'knowledge' 키 찾기
+  if (lastRow <= 1) return { ok: true, knowledge: '' };
+  var rows = sheet.getRange(2, 1, lastRow - 1, 2).getValues();
+  for (var i = 0; i < rows.length; i++) {
+    if (String(rows[i][0]) === 'knowledge') {
+      return { ok: true, knowledge: String(rows[i][1]) };
+    }
+  }
+  return { ok: true, knowledge: '' };
+}
+
+function _saveAmulboKnowledge(param) {
+  var text  = decodeURIComponent(atob(param.d || ''));
+  var ss    = _getOrCreateSS();
+  var sheet = _getAmulboKnowledgeSheet(ss);
+  var lastRow = sheet.getLastRow();
+  // 기존 'knowledge' 행 찾아서 업데이트, 없으면 추가
+  if (lastRow > 1) {
+    var rows = sheet.getRange(2, 1, lastRow - 1, 1).getValues();
+    for (var i = 0; i < rows.length; i++) {
+      if (String(rows[i][0]) === 'knowledge') {
+        sheet.getRange(i + 2, 2).setValue(text);
+        return { ok: true };
+      }
+    }
+  }
+  sheet.appendRow(['knowledge', text]);
+  return { ok: true };
+}
+
+function _amulboLog(param) {
+  var data  = JSON.parse(decodeURIComponent(atob(param.d || 'e30=')));
+  var ss    = _getOrCreateSS();
+  var sheet = _getAmulboLogSheet(ss);
+  var row = AMULBO_LOG_COLS.map(function(col) {
+    return data[col] !== undefined ? data[col] : '';
+  });
+  // timestamp가 없으면 현재 시각
+  if (!row[0]) row[0] = new Date().toISOString();
+  sheet.appendRow(row);
+  return { ok: true };
+}
+
+function _amulboStats() {
+  var ss    = _getOrCreateSS();
+  var sheet = _getAmulboLogSheet(ss);
+  var lastRow = sheet.getLastRow();
+  if (lastRow <= 1) {
+    return {
+      ok: true,
+      total: 0,
+      byType: {},
+      totalInputTokens: 0,
+      totalOutputTokens: 0,
+      totalCostUSD: 0,
+      recentRows: []
+    };
+  }
+
+  var rows = sheet.getRange(2, 1, lastRow - 1, AMULBO_LOG_COLS.length).getValues();
+
+  var total            = 0;
+  var byType           = {};
+  var totalInputTokens  = 0;
+  var totalOutputTokens = 0;
+  var totalCostUSD      = 0;
+
+  rows.forEach(function(row) {
+    var obj = {};
+    AMULBO_LOG_COLS.forEach(function(col, i) { obj[col] = row[i]; });
+    total++;
+    var ut = String(obj.userType || '');
+    byType[ut] = (byType[ut] || 0) + 1;
+    totalInputTokens  += Number(obj.inputTokens)  || 0;
+    totalOutputTokens += Number(obj.outputTokens) || 0;
+    totalCostUSD      += Number(obj.costUSD)       || 0;
+  });
+
+  // 최근 50행
+  var recentRaw = rows.slice(-50);
+  var recentRows = recentRaw.map(function(row) {
+    var obj = {};
+    AMULBO_LOG_COLS.forEach(function(col, i) { obj[col] = row[i]; });
+    return obj;
+  });
+
+  return {
+    ok: true,
+    total: total,
+    byType: byType,
+    totalInputTokens:  totalInputTokens,
+    totalOutputTokens: totalOutputTokens,
+    totalCostUSD:      totalCostUSD,
+    recentRows: recentRows
+  };
+}
+
 /* ── Internal helpers ── */
 
-function _getSheet() {
+function _getOrCreateSS() {
   var props = PropertiesService.getScriptProperties();
   var ssId  = props.getProperty('SPREADSHEET_ID');
   var ss;
@@ -54,10 +203,35 @@ function _getSheet() {
     ss = SpreadsheetApp.create('ASEA 업무캘린더 공유 신청 현황');
     props.setProperty('SPREADSHEET_ID', ss.getId());
   }
+  return ss;
+}
+
+function _getSheet() {
+  var ss    = _getOrCreateSS();
   var sheet = ss.getSheetByName(SHEET_NAME);
   if (!sheet) {
     sheet = ss.insertSheet(SHEET_NAME);
     sheet.appendRow(COLS);
+    sheet.setFrozenRows(1);
+  }
+  return sheet;
+}
+
+function _getAmulboKnowledgeSheet(ss) {
+  var sheet = ss.getSheetByName('아물보설정');
+  if (!sheet) {
+    sheet = ss.insertSheet('아물보설정');
+    sheet.appendRow(['key', 'value']);
+    sheet.setFrozenRows(1);
+  }
+  return sheet;
+}
+
+function _getAmulboLogSheet(ss) {
+  var sheet = ss.getSheetByName('아물보사용기록');
+  if (!sheet) {
+    sheet = ss.insertSheet('아물보사용기록');
+    sheet.appendRow(AMULBO_LOG_COLS);
     sheet.setFrozenRows(1);
   }
   return sheet;
@@ -93,7 +267,7 @@ function _updateEntry(sheet, id, changes) {
   var ids = sheet.getRange(2, 1, lastRow - 1, 1).getValues();
   for (var i = 0; i < ids.length; i++) {
     if (String(ids[i][0]) === String(id)) {
-      var rowNum = i + 2;
+      var rowNum  = i + 2;
       var rowVals = sheet.getRange(rowNum, 1, 1, COLS.length).getValues()[0];
       var obj = {};
       COLS.forEach(function(col, j) { obj[col] = rowVals[j]; });
