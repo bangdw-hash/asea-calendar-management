@@ -1680,6 +1680,65 @@
           <button id="save-github-token-btn" class="btn btn-primary btn-sm">저장</button>
         </div>
 
+        <!-- 아물보 관리 (관리자 전용) -->
+        <div class="settings-card" id="amulbo-admin-card" data-admin-only="true">
+          <h3 class="settings-section-title">🙏 아물보 관리 <span class="badge-admin">관리자</span></h3>
+          <p class="form-hint" style="margin-bottom:14px">아세아 무엇이든 물어보살 — AI 질의응답 서비스 설정</p>
+
+          <!-- 활성화 토글 -->
+          <div class="form-group" style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+            <label style="font-size:13px;color:#374151;font-weight:500">서비스 활성화</label>
+            <input type="checkbox" id="amulbo-enabled-chk" style="width:16px;height:16px;cursor:pointer">
+          </div>
+
+          <!-- API 키 -->
+          <div class="form-group">
+            <label class="form-label">아물보 전용 API 키</label>
+            <input type="password" id="amulbo-api-key" class="form-input" placeholder="sk-ant-... (아물보 전용)" autocomplete="off">
+            <p class="form-hint">메인 Claude API 키와 별도로 관리 — 아물보 과금 분리 목적. 저장 시에만 전송되며 재표시되지 않습니다.</p>
+          </div>
+
+          <!-- Base URL -->
+          <div class="form-group">
+            <label class="form-label">Base URL (선택, 프록시 사용 시)</label>
+            <input type="text" id="amulbo-base-url" class="form-input" placeholder="기본값: https://api.anthropic.com">
+          </div>
+
+          <!-- 지식 기반 -->
+          <div class="form-group">
+            <label class="form-label">지식 기반 (AI 참고 문서)</label>
+            <textarea id="amulbo-knowledge" class="form-input" rows="8" style="resize:vertical" placeholder="학교 규정, FAQ, 부서 안내 등을 여기에 붙여넣으세요..."></textarea>
+            <p class="form-hint">이 내용이 AI의 시스템 프롬프트에 포함되어 답변의 정확성을 높입니다.</p>
+          </div>
+
+          <!-- 저장 버튼 -->
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+            <button id="amulbo-save-btn" class="btn btn-primary btn-sm">💾 GAS에 설정 저장</button>
+            <span id="amulbo-save-status" style="font-size:13px"></span>
+          </div>
+
+          <!-- 공개 링크 -->
+          <div style="padding-top:16px;border-top:1px solid #e5e7eb">
+            <label class="form-label">공개 서비스 URL</label>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+              <input type="text" id="amulbo-public-url" class="form-input" readonly style="flex:1">
+              <button id="amulbo-copy-url-btn" class="btn btn-ghost btn-sm">📋 복사</button>
+              <a id="amulbo-open-btn" href="#" target="_blank" class="btn btn-ghost btn-sm">🔗 열기</a>
+            </div>
+          </div>
+
+          <!-- 사용량 통계 -->
+          <div style="margin-top:16px;padding-top:16px;border-top:1px solid #e5e7eb">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+              <label class="form-label" style="margin:0">사용량 통계</label>
+              <button id="amulbo-stats-btn" class="btn btn-ghost btn-sm">🔄 새로고침</button>
+            </div>
+            <div id="amulbo-stats-panel">
+              <p style="font-size:13px;color:#9ca3af">새로고침 버튼을 눌러 통계를 불러오세요.</p>
+            </div>
+          </div>
+        </div>
+
         <!-- Make.com 웹훅 URL — config.js 하드코딩으로 이동, UI 숨김 -->
         <input id="setting-make-webhook" type="hidden">
         <input id="setting-promo-gas-url" type="hidden">

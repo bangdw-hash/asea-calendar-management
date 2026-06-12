@@ -5122,6 +5122,7 @@
     _initBaseUrl();
     _initCheckinProxy();
     _initCalendarSubscribe();
+    if (window.AdminModule && AdminModule.initAmulboAdmin) AdminModule.initAmulboAdmin();
   }
 
   function _updateSettingsRoleBadge() {

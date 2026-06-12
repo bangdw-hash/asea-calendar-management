@@ -1140,6 +1140,169 @@
     _applyOnLoad();
   }
 
+  /* ── 아물보 관리 ──────────────────────────────────────── */
+  var AMULBO_GAS_URL = 'https://script.google.com/macros/s/AKfycbyZuuQpuc-0KWaaHmwJUTvnAc83liMcUcC5XxcdR-EFQCFC2AJ0LpFS3R1gS_JXI3Fykg/exec';
+
+  var _amulboInited = false;
+  function initAmulboAdmin() {
+    if (!isAdmin()) return;
+    var GAS_URL = AMULBO_GAS_URL;
+
+    // 공개 URL 세팅
+    var publicUrl = (location.origin + location.pathname).replace(/\/[^/]*$/, '/') + 'amulbo.html';
+    var urlEl  = document.getElementById('amulbo-public-url');
+    var openEl = document.getElementById('amulbo-open-btn');
+    if (urlEl)  urlEl.value = publicUrl;
+    if (openEl) openEl.href = publicUrl;
+
+    // URL 복사 버튼
+    var copyBtn = document.getElementById('amulbo-copy-url-btn');
+    if (copyBtn && !copyBtn._wired) {
+      copyBtn._wired = true;
+      copyBtn.addEventListener('click', function() {
+        navigator.clipboard.writeText(publicUrl).then(function() {
+          if (typeof window.aseaToast === 'function') window.aseaToast('URL 복사됨', 'success');
+          else if (typeof window.toast === 'function') toast('URL 복사됨', 'success');
+        });
+      });
+    }
+
+    if (_amulboInited) return;
+    _amulboInited = true;
+
+    // 현재 설정 로드
+    fetch(GAS_URL + '?action=getAmulboConfig', {cache:'no-cache'})
+      .then(function(r){ return r.json(); })
+      .then(function(d) {
+        if (!d.ok) return;
+        var enabledEl = document.getElementById('amulbo-enabled-chk');
+        var baseUrlEl = document.getElementById('amulbo-base-url');
+        if (enabledEl) enabledEl.checked = !!d.enabled;
+        if (baseUrlEl) baseUrlEl.value = d.baseUrl || '';
+        // API 키는 보안상 로드하지 않음
+      }).catch(function(){});
+
+    // 지식 로드
+    fetch(GAS_URL + '?action=getAmulboKnowledge', {cache:'no-cache'})
+      .then(function(r){ return r.json(); })
+      .then(function(d) {
+        var kEl = document.getElementById('amulbo-knowledge');
+        if (kEl && d.ok) kEl.value = d.knowledge || '';
+      }).catch(function(){});
+
+    // 저장 버튼
+    var saveBtn = document.getElementById('amulbo-save-btn');
+    if (saveBtn && !saveBtn._wired) {
+      saveBtn._wired = true;
+      saveBtn.addEventListener('click', function() {
+        var apiKeyRaw = (document.getElementById('amulbo-api-key').value || '').trim();
+        var baseUrl   = (document.getElementById('amulbo-base-url').value || '').trim();
+        var enabled   = document.getElementById('amulbo-enabled-chk').checked;
+        var knowledge = (document.getElementById('amulbo-knowledge').value || '').trim();
+        var status    = document.getElementById('amulbo-save-status');
+
+        // API key XOR encode
+        var encodedKey = (window._encodeApiKey && apiKeyRaw) ? _encodeApiKey(apiKeyRaw) : apiKeyRaw;
+
+        saveBtn.disabled = true;
+        if (status) status.textContent = '저장 중...';
+
+        var configUrl = GAS_URL + '?action=saveAmulboConfig' +
+          '&apiKey='  + encodeURIComponent(encodedKey) +
+          '&baseUrl=' + encodeURIComponent(baseUrl) +
+          '&enabled=' + (enabled ? 'true' : 'false');
+
+        var knowledgeEncoded = btoa(unescape(encodeURIComponent(knowledge)));
+        var knowledgeUrl = GAS_URL + '?action=saveAmulboKnowledge&d=' + encodeURIComponent(knowledgeEncoded);
+
+        Promise.all([
+          fetch(configUrl).then(function(r){ return r.json(); }),
+          fetch(knowledgeUrl).then(function(r){ return r.json(); })
+        ]).then(function(results) {
+          var ok = results[0].ok && results[1].ok;
+          if (status) {
+            status.style.color = ok ? '#15803d' : '#dc2626';
+            status.textContent = ok ? '✅ 저장 완료' : '❌ 저장 실패';
+          }
+          var msg = ok ? '아물보 설정 저장 완료' : '저장 실패';
+          if (typeof window.aseaToast === 'function') window.aseaToast(msg, ok ? 'success' : 'error');
+          else if (typeof window.toast === 'function') toast(msg, ok ? 'success' : 'error');
+        }).catch(function(e) {
+          if (status) { status.style.color = '#dc2626'; status.textContent = '❌ 오류: ' + e.message; }
+        }).finally(function() {
+          saveBtn.disabled = false;
+          var keyEl = document.getElementById('amulbo-api-key');
+          if (keyEl) keyEl.value = '';
+        });
+      });
+    }
+
+    // 통계 버튼
+    var statsBtn = document.getElementById('amulbo-stats-btn');
+    if (statsBtn && !statsBtn._wired) {
+      statsBtn._wired = true;
+      statsBtn.addEventListener('click', function() {
+        loadAmulboStats(GAS_URL);
+      });
+    }
+  }
+
+  function loadAmulboStats(GAS_URL) {
+    var panel = document.getElementById('amulbo-stats-panel');
+    if (!panel) return;
+    panel.innerHTML = '<p style="font-size:13px;color:#6b7280">통계 불러오는 중...</p>';
+    fetch(GAS_URL + '?action=amulboStats', {cache:'no-cache'})
+      .then(function(r){ return r.json(); })
+      .then(function(d) {
+        if (!d.ok) { panel.innerHTML = '<p style="color:#dc2626;font-size:13px">불러오기 실패</p>'; return; }
+        var s = d.stats;
+        var costKRW = Math.round((s.totalCostUSD || 0) * 1350);
+        panel.innerHTML =
+          '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-bottom:16px">' +
+            _amulboStatCard('총 질문 수', (s.total||0) + '건', '📊') +
+            _amulboStatCard('학생', (s.byType&&s.byType['학생']||0) + '건', '🎓') +
+            _amulboStatCard('교직원', (s.byType&&s.byType['교직원']||0) + '건', '👔') +
+            _amulboStatCard('총 토큰', _amulboCommaNum((s.totalInputTokens||0)+(s.totalOutputTokens||0)), '🔤') +
+            _amulboStatCard('예상 비용', '$' + (s.totalCostUSD||0).toFixed(4), '💵') +
+            _amulboStatCard('원화 환산', '≈ ₩' + costKRW.toLocaleString(), '💴') +
+          '</div>' +
+          (s.recentRows && s.recentRows.length ?
+            '<div style="font-size:12px;font-weight:600;color:#6b7280;margin-bottom:6px">최근 질문 (최대 50건)</div>' +
+            '<div style="max-height:300px;overflow-y:auto;border:1px solid #e5e7eb;border-radius:8px">' +
+            '<table style="width:100%;border-collapse:collapse;font-size:12px">' +
+            '<thead><tr style="background:#f9fafb">' +
+            '<th style="padding:6px 8px;text-align:left;border-bottom:1px solid #e5e7eb">시각</th>' +
+            '<th style="padding:6px 8px;border-bottom:1px solid #e5e7eb">유형</th>' +
+            '<th style="padding:6px 8px;text-align:left;border-bottom:1px solid #e5e7eb">질문(앞100자)</th>' +
+            '<th style="padding:6px 8px;border-bottom:1px solid #e5e7eb">토큰</th>' +
+            '<th style="padding:6px 8px;border-bottom:1px solid #e5e7eb">비용</th>' +
+            '</tr></thead><tbody>' +
+            s.recentRows.slice().reverse().map(function(row) {
+              var ts = row.timestamp ? new Date(row.timestamp).toLocaleString('ko-KR',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}) : '-';
+              return '<tr style="border-bottom:1px solid #f3f4f6">' +
+                '<td style="padding:5px 8px;color:#6b7280">' + ts + '</td>' +
+                '<td style="padding:5px 8px;text-align:center">' + esc(row.userType||'-') + '</td>' +
+                '<td style="padding:5px 8px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(row.question||'') + '</td>' +
+                '<td style="padding:5px 8px;text-align:right">' + ((row.inputTokens||0)+(row.outputTokens||0)) + '</td>' +
+                '<td style="padding:5px 8px;text-align:right">$' + parseFloat(row.costUSD||0).toFixed(5) + '</td>' +
+              '</tr>';
+            }).join('') +
+            '</tbody></table></div>'
+          : '<p style="font-size:13px;color:#9ca3af">아직 사용 기록이 없습니다.</p>');
+      }).catch(function(e) {
+        panel.innerHTML = '<p style="color:#dc2626;font-size:13px">오류: ' + e.message + '</p>';
+      });
+  }
+
+  function _amulboStatCard(label, value, icon) {
+    return '<div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;padding:12px;text-align:center">' +
+      '<div style="font-size:22px;margin-bottom:4px">' + icon + '</div>' +
+      '<div style="font-size:16px;font-weight:700;color:#111827">' + value + '</div>' +
+      '<div style="font-size:11px;color:#6b7280;margin-top:2px">' + label + '</div>' +
+    '</div>';
+  }
+  function _amulboCommaNum(n) { return Math.round(n).toLocaleString(); }
+
   window.AdminModule = {
     init: init,
     onTabOpen: onTabOpen,
@@ -1152,6 +1315,7 @@
     applyFeatVisibility: applyFeatVisibility,
     applyLogo: applyLogo,
     _renderSection: _renderSection,
-    CHANGELOG: CHANGELOG
+    CHANGELOG: CHANGELOG,
+    initAmulboAdmin: initAmulboAdmin
   };
 })();
