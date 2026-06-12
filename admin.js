@@ -265,7 +265,7 @@
         if (existing && existing.sha) body.sha = existing.sha;
         return fetch(apiUrl, {
           method: 'PUT',
-          headers: { 'Authorization': 'Bearer ' + CONFIG.githubToken, 'Content-Type': 'application/json', 'Accept': 'application/vnd.github+json' },
+          headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json', 'Accept': 'application/vnd.github+json' },
           body: JSON.stringify(body)
         }).then(function (res) {
           if (!res.ok) return res.json().then(function (e) { throw new Error(e.message || ('GitHub ' + res.status)); });
