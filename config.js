@@ -217,31 +217,26 @@ window.getClaudeConfig = function() {
   var apiKey  = CONFIG.anthropicApiKey ||
                 localStorage.getItem('asea_anthropic_api_key') ||
                 rawStaffKey || '';
-  var baseUrl = CONFIG.anthropicBaseUrl ||
-                localStorage.getItem('asea_anthropic_base_url') ||
-                (staffCfg && staffCfg.claudeBaseUrl) || '';
 
-  var isOfficial = /^sk-ant-/.test(apiKey);
-  // 공식 키(sk-ant-…)는 항상 Claude 공식 API에 직접 연결 — 저장된 Base URL(프록시) 무시.
-  // 프록시(hex) 키만 Base URL/프록시 엔드포인트를 사용한다.
-  var endpoint = isOfficial
-    ? 'https://api.anthropic.com/v1/messages'
-    : (baseUrl ? baseUrl + '/v1/messages' : 'https://api.amplifuse.io/v1/messages');
+  // ★ Claude 공식 API에 직접 연결 — 프록시(aiapiflow/amplifuse)·Base URL 사용 안 함.
+  //   브라우저 직접 호출 허용 헤더가 필요하므로 isOfficial=true 로 고정.
+  var endpoint   = 'https://api.anthropic.com/v1/messages';
+  var isOfficial = true;
 
   return { apiKey: apiKey, endpoint: endpoint, isOfficial: isOfficial };
 };
 
-/* 공식 키 사용 시 남아 있는 프록시 Base URL을 자동 정리(직접 연결 보장) */
+/* 죽은 프록시(aiapiflow/amplifuse) Base URL을 무조건 제거 — 공식 API 직접 사용 */
 window.clearProxyBaseUrlIfOfficial = function () {
   try {
-    var k = (window.CONFIG && CONFIG.anthropicApiKey) || localStorage.getItem('asea_anthropic_api_key') || '';
-    if (/^sk-ant-/.test(k)) {
-      if (window.CONFIG) CONFIG.anthropicBaseUrl = '';
-      localStorage.removeItem('asea_anthropic_base_url');
-      return true;
-    }
+    if (window.CONFIG) CONFIG.anthropicBaseUrl = '';
+    localStorage.removeItem('asea_anthropic_base_url');
+    // 직원 공유 캐시(staff-menus)에 박혀 있던 프록시 Base URL도 제거
+    var sc = null;
+    try { sc = JSON.parse(localStorage.getItem('asea_staff_menus') || 'null'); } catch (e) {}
+    if (sc && sc.claudeBaseUrl) { sc.claudeBaseUrl = ''; localStorage.setItem('asea_staff_menus', JSON.stringify(sc)); }
   } catch (e) {}
-  return false;
+  return true;
 };
 try { window.clearProxyBaseUrlIfOfficial(); } catch (e) {}
 
