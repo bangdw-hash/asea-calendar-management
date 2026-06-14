@@ -274,7 +274,7 @@ window.HRModule = (function () {
       });
 
       // ── 관리 버튼 ──
-      var cards2 = el('div', 'hr-role-cards');
+      var cards2 = el('div', 'hr-role-cards hr-cards-3');
       var roles = [
         { icon: '👀', name: '인사관리자', hint: '제출된 서류 조회 · 출력\n제출 ' + pendingCount + '건', view: 'manager' },
         { icon: '📄', name: '근로계약서', hint: '계약서 작성 · 전자계약\n온라인 서명 링크 발송', view: 'contract' },
