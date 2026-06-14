@@ -39,6 +39,13 @@ function doGet(e) {
     if (action === 'amulboStats') {
       return _respond(_amulboStats());
     }
+    // ── 범용 공유 KV 저장소 (예산/보고/규정/설문 등 공유) ──
+    if (action === 'kvGet') {
+      return _respond({ ok: true, key: param.key, value: _kvGet(param.key), updatedAt: _kvMeta(param.key) });
+    }
+    if (action === 'kvList') {
+      return _respond({ ok: true, keys: _kvList(param.prefix || '') });
+    }
   } catch (err) {
     return _respond({ ok: false, error: err.message });
   }
@@ -67,6 +74,64 @@ function doGet(e) {
     return _respond({ ok: false, error: err.message });
   }
   return _respond({ ok: false, error: 'Unknown action' });
+}
+
+/* ── POST: 대용량 쓰기(공유 KV) ── */
+function doPost(e) {
+  try {
+    var body = JSON.parse((e && e.postData && e.postData.contents) || '{}');
+    if (body.action === 'kvSet') { _kvSet(body.key, body.value); return _respond({ ok: true }); }
+    if (body.action === 'kvSetMany' && body.items) {
+      body.items.forEach(function (it) { _kvSet(it.key, it.value); });
+      return _respond({ ok: true });
+    }
+    return _respond({ ok: false, error: 'Unknown post action' });
+  } catch (err) {
+    return _respond({ ok: false, error: err.message });
+  }
+}
+
+/* ── 공유 KV (셀 50K 한계 → 청크 분할 저장) ── */
+var KV_SHEET = 'KV공유';
+var KV_CHUNK = 40000;
+function _kvSheet() {
+  var ss = _getOrCreateSS();
+  var sh = ss.getSheetByName(KV_SHEET);
+  if (!sh) { sh = ss.insertSheet(KV_SHEET); sh.appendRow(['key', 'idx', 'value', 'updatedAt']); sh.setFrozenRows(1); }
+  return sh;
+}
+function _kvGet(key) {
+  var sh = _kvSheet(); var last = sh.getLastRow(); if (last <= 1) return null;
+  var vals = sh.getRange(2, 1, last - 1, 3).getValues();
+  var chunks = [];
+  for (var i = 0; i < vals.length; i++) { if (String(vals[i][0]) === String(key)) chunks.push([Number(vals[i][1]) || 0, String(vals[i][2])]); }
+  if (!chunks.length) return null;
+  chunks.sort(function (a, b) { return a[0] - b[0]; });
+  return chunks.map(function (c) { return c[1]; }).join('');
+}
+function _kvMeta(key) {
+  var sh = _kvSheet(); var last = sh.getLastRow(); if (last <= 1) return '';
+  var vals = sh.getRange(2, 1, last - 1, 4).getValues();
+  for (var i = 0; i < vals.length; i++) { if (String(vals[i][0]) === String(key)) return vals[i][3]; }
+  return '';
+}
+function _kvList(prefix) {
+  var sh = _kvSheet(); var last = sh.getLastRow(); if (last <= 1) return [];
+  var vals = sh.getRange(2, 1, last - 1, 1).getValues(); var set = {};
+  vals.forEach(function (r) { var k = String(r[0]); if (k && (!prefix || k.indexOf(prefix) === 0)) set[k] = 1; });
+  return Object.keys(set);
+}
+function _kvSet(key, value) {
+  var sh = _kvSheet(); value = String(value == null ? '' : value);
+  var last = sh.getLastRow();
+  if (last > 1) {
+    var keys = sh.getRange(2, 1, last - 1, 1).getValues();
+    for (var i = keys.length - 1; i >= 0; i--) { if (String(keys[i][0]) === String(key)) sh.deleteRow(i + 2); }
+  }
+  var now = new Date().toISOString();
+  if (value.length === 0) { sh.appendRow([key, 0, '', now]); return; }
+  var idx = 0;
+  for (var off = 0; off < value.length; off += KV_CHUNK) { sh.appendRow([key, idx++, value.substr(off, KV_CHUNK), now]); }
 }
 
 /* ── 아물보 액션 함수 ── */

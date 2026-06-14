@@ -697,6 +697,7 @@
   async function dbLoad() {
     try {
       const j = await _gasReq('list');
+      _lsSave(j.data);          // 캐시 워밍 → 다음 진입 시 즉시 표시
       return j.data;
     } catch(e) {
       console.warn('GAS load failed:', e);
@@ -855,10 +856,16 @@
   });
 
   async function renderList() {
-    showBusy(true);
-    let data = await dbLoad();
+    // 1) 캐시를 즉시 렌더 → 체감 0.1초 (Apps Script 응답은 1~3초라 기다리지 않음)
+    const cached = _lsLoad();
+    if (cached.length) _paint(cached); else showBusy(true);
+    // 2) 서버에서 최신본을 받아 조용히 갱신 (실패 시 캐시 유지)
+    try { _paint(await dbLoad()); } catch(e) { /* 오프라인 */ }
+  }
+  function _paint(data) {
     const admin = isAdmin();
     const container = document.getElementById('entries-container');
+    if (!container) return;
 
     // filter
     const filterCat = (document.getElementById('filter-cat') || {}).value || '';
