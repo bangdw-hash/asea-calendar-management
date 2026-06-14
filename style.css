@@ -5367,6 +5367,7 @@ h3.settings-section-title {
 
 .admin-section    { }
 .admin-sec-title  { font-size: 16px; font-weight: 700; margin-bottom: 14px; color: #1a1a1a; }
+.admin-sec-desc   { font-size: 13px; color: #6b7280; line-height: 1.6; margin-bottom: 14px; }
 .admin-denied     { text-align: center; padding: 60px; color: #888; }
 .admin-denied-icon{ font-size: 48px; margin-bottom: 12px; }
 

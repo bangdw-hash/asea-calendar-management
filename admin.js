@@ -431,10 +431,10 @@
       });
     });
 
-    // 관리자 탭: admin만 보임
+    // 관리자 탭: 개발자(고정 이메일) 전용 — 다른 계정은 로그인해도 노출 안 됨
     ['tab-btn', 'bnav-btn'].forEach(function (cls) {
       var el = document.querySelector('.' + cls + '[data-tab="admin"]');
-      if (el) el.style.display = isAdmin() ? '' : 'none';
+      if (el) el.style.display = isSuperAdmin(curEmail()) ? '' : 'none';
     });
   }
 
@@ -473,11 +473,11 @@
     var container = document.getElementById('admin-content');
     if (!container) return;
 
-    if (!isAdmin()) {
+    if (!isSuperAdmin(curEmail())) {
       container.innerHTML = '<div class="admin-denied">' +
         '<div class="admin-denied-icon">⛔</div>' +
         '<h3>접근 권한이 없습니다</h3>' +
-        '<p>관리자(admin) 계정으로 로그인하세요.</p>' +
+        '<p>관리자 메뉴는 개발자 전용입니다.</p>' +
       '</div>';
       return;
     }
@@ -487,6 +487,7 @@
         '<nav class="admin-sidenav">' +
           '<button class="admin-nav-btn active" data-sec="changelog">📋 버전 관리</button>' +
           '<button class="admin-nav-btn" data-sec="permissions">👥 권한 관리</button>' +
+          '<button class="admin-nav-btn" data-sec="userorg">🏢 조직·사용자 관리</button>' +
           '<button class="admin-nav-btn" data-sec="staff-share">📢 직원 공유 메뉴</button>' +
           '<button class="admin-nav-btn" data-sec="menu-manage">🧭 메뉴 관리</button>' +
           '<button class="admin-nav-btn" data-sec="logo">🖼 로고 관리</button>' +
@@ -518,6 +519,7 @@
     if (!body) return;
     if (sec === 'changelog')   body.innerHTML = _htmlChangelog();
     if (sec === 'permissions') { body.innerHTML = _htmlPermissions(); _bindPermEvents(); }
+    if (sec === 'userorg')     { body.innerHTML = _htmlUserOrg();     _bindUserOrgEvents(); }
     if (sec === 'staff-share') { body.innerHTML = _htmlStaffShare(); _bindStaffShareEvents(); }
     if (sec === 'menu-manage') { body.innerHTML = _htmlMenuManage(); _bindMenuManageEvents(); }
     if (sec === 'logo')        { body.innerHTML = _htmlLogo();       _bindLogoEvents(); }
@@ -535,6 +537,30 @@
       var addBtn = document.getElementById('av-add-btn');
       if (addBtn) addBtn.addEventListener('click', _onAddVersion);
     }
+  }
+
+  /* ── 조직·사용자 관리 (부서/보직 디렉토리) ───────────── */
+  function _htmlUserOrg() {
+    return '<div class="admin-section">' +
+      '<h3 class="admin-sec-title">🏢 조직·사용자 관리</h3>' +
+      '<p class="admin-sec-desc">로그인한 사용자에게 <b>부서·보직</b>을 배정하고, 보직별로 노출할 메뉴를 설정합니다. ' +
+        '(예전 예산관리 화면의 「내 부서·보직 / 조직 관리」 기능이 이곳으로 통합되었습니다.)</p>' +
+      '<div class="av-row">' +
+        '<button id="uo-open-admin-btn" class="btn btn-primary">조직·사용자 관리 열기</button>' +
+        '<button id="uo-open-myinfo-btn" class="btn btn-secondary">내 부서·보직 설정</button>' +
+      '</div>' +
+    '</div>';
+  }
+
+  function _bindUserOrgEvents() {
+    var a = document.getElementById('uo-open-admin-btn');
+    if (a) a.addEventListener('click', function () {
+      if (window.UserOrg && UserOrg.openAdmin) UserOrg.openAdmin();
+    });
+    var b = document.getElementById('uo-open-myinfo-btn');
+    if (b) b.addEventListener('click', function () {
+      if (window.UserOrg && UserOrg.openMyInfo) UserOrg.openMyInfo();
+    });
   }
 
   /* ── 버전 관리 ──────────────────────────────────── */

@@ -437,10 +437,7 @@ var BudgetModule = (function () {
           '</select>' +
         '</span>' +
       '</div>' +
-      '<div class="bdg-role">'+ roleLabel +
-        ' <button id="bdg-my-info" class="bdg-link-btn">내 부서·보직</button>' +
-        (isBudgetAdmin() ? ' <button id="bdg-org-admin" class="bdg-link-btn">조직 관리</button>' : '') +
-      '</div>' +
+      '<div class="bdg-role">'+ roleLabel +'</div>' +
     '</div>' +
 
     '<div class="bdg-subtab-bar facility-subtab-bar" role="tablist">' +
@@ -454,11 +451,6 @@ var BudgetModule = (function () {
     el.innerHTML = html;
 
     document.getElementById('bdg-year').addEventListener('change', function(){ B.year = Number(this.value); B.selected = {}; renderTab(); });
-    document.getElementById('bdg-my-info').addEventListener('click', function(){
-      if (window.UserOrg && UserOrg.openMyInfo) UserOrg.openMyInfo(); else renderDeptPicker(el, true);
-    });
-    var orgBtn = document.getElementById('bdg-org-admin');
-    if (orgBtn) orgBtn.addEventListener('click', function(){ if (window.UserOrg && UserOrg.openAdmin) UserOrg.openAdmin(); });
     el.querySelectorAll('[data-bsub]').forEach(function(b){
       b.addEventListener('click', function(){ B.subtab = b.dataset.bsub; B.selected = {}; renderTab(); });
     });
