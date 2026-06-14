@@ -39,7 +39,8 @@
     return document.querySelector('.tab-btn[data-tab="' + t + '"]');
   }
   function isHidden(el) {
-    return !el || el.style.display === 'none' || el.hidden;
+    return !el || el.style.display === 'none' || el.hidden ||
+           (el.classList && el.classList.contains('uo-menu-hidden'));   // 보직별 메뉴 숨김
   }
   function visibleButtons(gid) {
     var out = [];

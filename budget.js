@@ -40,6 +40,7 @@ var BudgetModule = (function () {
 
   /* ── 권한 ── */
   function canSeeAll() {
+    try { if (window.UserOrg && UserOrg.canSeeAll && UserOrg.canSeeAll()) return true; } catch(e){}
     try { if (window.AdminModule && AdminModule.isManager && AdminModule.isManager()) return true; } catch(e){}
     // 예산 전용 임원 권한
     try { var ex = JSON.parse(localStorage.getItem('asea_budget_execs') || '[]'); if (ex.indexOf(curEmail()) >= 0) return true; } catch(e){}
@@ -49,7 +50,10 @@ var BudgetModule = (function () {
     try { if (window.AdminModule && AdminModule.isManager && AdminModule.isManager()) return true; } catch(e){}
     return canSeeAll();
   }
-  function myDept() { try { return localStorage.getItem('asea_budget_my_dept') || ''; } catch(e){ return ''; } }
+  function myDept() {
+    try { if (window.UserOrg && UserOrg.myDept) { var d = UserOrg.myDept(); if (d) return d; } } catch(e){}
+    try { return localStorage.getItem('asea_budget_my_dept') || ''; } catch(e){ return ''; }
+  }
   function setMyDept(d) { try { localStorage.setItem('asea_budget_my_dept', d || ''); } catch(e){} }
 
   function allDepts() {
@@ -281,7 +285,8 @@ var BudgetModule = (function () {
         '</span>' +
       '</div>' +
       '<div class="bdg-role">'+ roleLabel +
-        (seeAll ? ' <button id="bdg-change-dept" class="bdg-link-btn" title="내 부서 변경">부서설정</button>' : ' <button id="bdg-change-dept" class="bdg-link-btn">변경</button>') +
+        ' <button id="bdg-my-info" class="bdg-link-btn">내 부서·보직</button>' +
+        (isBudgetAdmin() ? ' <button id="bdg-org-admin" class="bdg-link-btn">조직 관리</button>' : '') +
       '</div>' +
     '</div>' +
 
@@ -296,7 +301,11 @@ var BudgetModule = (function () {
     el.innerHTML = html;
 
     document.getElementById('bdg-year').addEventListener('change', function(){ B.year = Number(this.value); B.selected = {}; renderTab(); });
-    document.getElementById('bdg-change-dept').addEventListener('click', function(){ renderDeptPicker(el, true); });
+    document.getElementById('bdg-my-info').addEventListener('click', function(){
+      if (window.UserOrg && UserOrg.openMyInfo) UserOrg.openMyInfo(); else renderDeptPicker(el, true);
+    });
+    var orgBtn = document.getElementById('bdg-org-admin');
+    if (orgBtn) orgBtn.addEventListener('click', function(){ if (window.UserOrg && UserOrg.openAdmin) UserOrg.openAdmin(); });
     el.querySelectorAll('[data-bsub]').forEach(function(b){
       b.addEventListener('click', function(){ B.subtab = b.dataset.bsub; B.selected = {}; renderTab(); });
     });
@@ -324,7 +333,8 @@ var BudgetModule = (function () {
     document.getElementById('bdg-pick-save').addEventListener('click', function(){
       var v = document.getElementById('bdg-pick-dept').value;
       if (!v) { toast('부서를 선택하세요.', 'error'); return; }
-      setMyDept(v); B.deptFilter = v; renderTab();
+      if (window.UserOrg && UserOrg.setMine) UserOrg.setMine(v, null); else setMyDept(v);
+      B.deptFilter = v; renderTab();
     });
     var cancel = document.getElementById('bdg-pick-cancel');
     if (cancel) cancel.addEventListener('click', renderTab);
@@ -365,11 +375,13 @@ var BudgetModule = (function () {
         '</div>' +
         '<div class="bdg-tb-right">' +
           '<button id="bdg-item-add" class="btn btn-primary btn-sm">＋ 초안 항목</button>' +
+          '<button id="bdg-submit" class="btn btn-secondary btn-sm">📨 부서 제출</button>' +
           (canConfirm ? '<button id="bdg-caps" class="btn btn-secondary btn-sm">🎯 부서 한도</button>' : '') +
           '<button id="bdg-import-prev" class="btn btn-ghost btn-sm">📂 ' + (B.year - 1) + '년 불러오기</button>' +
           '<button id="bdg-expand-all" class="btn btn-ghost btn-sm">⊕ 집행 모두 펼치기</button>' +
-          (canConfirm ? '<button id="bdg-confirm-bulk" class="btn btn-primary btn-sm">✅ 일괄 확정</button>' +
+          (canConfirm ? '<button id="bdg-confirm-bulk" class="btn btn-primary btn-sm">✅ 일괄 확정(승인)</button>' +
                         '<button id="bdg-confirm-sel" class="btn btn-secondary btn-sm">☑ 세부 확정</button>' +
+                        '<button id="bdg-reject-sel" class="btn btn-ghost btn-sm">↩ 반려</button>' +
                         '<button id="bdg-unconfirm-sel" class="btn btn-ghost btn-sm">확정 해제</button>' : '') +
           '<button id="bdg-exec-tpl" class="btn btn-ghost btn-sm">📥 집행 양식</button>' +
           '<button id="bdg-exec-up" class="btn btn-ghost btn-sm">📤 집행 일괄업로드</button>' +
@@ -386,8 +398,10 @@ var BudgetModule = (function () {
     if (canConfirm) {
       document.getElementById('bdg-confirm-bulk').addEventListener('click', function(){ confirmItems(its.map(function(i){return i.id;}), true); });
       document.getElementById('bdg-confirm-sel').addEventListener('click', function(){ confirmItems(selectedIds(), true); });
+      document.getElementById('bdg-reject-sel').addEventListener('click', function(){ rejectItems(selectedIds()); });
       document.getElementById('bdg-unconfirm-sel').addEventListener('click', function(){ confirmItems(selectedIds(), false); });
     }
+    document.getElementById('bdg-submit').addEventListener('click', function(){ submitItems(its); });
     document.getElementById('bdg-exec-tpl').addEventListener('click', function(){ downloadExecTemplate(its); });
     var upBtn = document.getElementById('bdg-exec-up'), upFile = document.getElementById('bdg-exec-file');
     upBtn.addEventListener('click', function(){ upFile.click(); });
@@ -499,7 +513,7 @@ var BudgetModule = (function () {
         '<td class="bdg-c-code">'+esc(it.gwan)+(it.hang?'.'+esc((''+it.hang).split('.').slice(-1)[0]):'')+'</td>' +
         '<td class="bdg-c-name"><b>'+esc(it.name)+'</b>'+(it.calc?'<span class="bdg-calc">'+esc(it.calc)+'</span>':'')+'</td>' +
         '<td class="bdg-c-amt">'+won(it.amount)+'</td>' +
-        '<td class="bdg-c-st">'+(it.confirmed?'<span class="bdg-badge ok">확정</span>':'<span class="bdg-badge">미확정</span>')+'</td>' +
+        '<td class="bdg-c-st">'+statusBadge(it)+'</td>' +
         '<td class="bdg-c-amt warn">'+won(used)+'</td>' +
         '<td class="bdg-c-amt '+(remain<0?'neg':'')+'">'+won(remain)+'</td>' +
         '<td class="bdg-c-rate">'+rateHtml+'</td>' +
@@ -528,12 +542,40 @@ var BudgetModule = (function () {
     var arr = items();
     var n = 0;
     arr.forEach(function(it){
-      if (ids.indexOf(it.id) >= 0) { it.confirmed = !!val; it.confirmedAt = val?when:''; it.confirmedBy = val?who:''; n++; }
+      if (ids.indexOf(it.id) >= 0) {
+        it.confirmed = !!val; it.confirmedAt = val?when:''; it.confirmedBy = val?who:'';
+        if (val) { it.submitted = false; it.rejectReason = ''; }   // 확정=승인 시 제출/반려 상태 정리
+        n++;
+      }
     });
     saveItems(arr);
     B.selected = {};
-    toast(n + '개 항목을 ' + (val?'확정':'확정 해제') + '했습니다.');
+    toast(n + '개 항목을 ' + (val?'확정(승인)':'확정 해제') + '했습니다.');
     renderTab();
+  }
+
+  function submitItems(list) {
+    var ids = list.filter(function(it){ return !it.confirmed; }).map(function(i){ return i.id; });
+    if (!ids.length) { toast('제출할 초안(미확정) 항목이 없습니다.', 'error'); return; }
+    if (!confirm(ids.length + '개 초안 항목을 제출(확정 요청)하시겠습니까?')) return;
+    var arr = items(); var now = new Date().toISOString(), who = curEmail();
+    arr.forEach(function(it){ if (ids.indexOf(it.id) >= 0 && !it.confirmed) { it.submitted = true; it.rejectReason = ''; it.submittedAt = now; it.submittedBy = who; } });
+    saveItems(arr); toast(ids.length + '개 항목을 제출했습니다. 관리자 확정을 기다립니다.'); renderTab();
+  }
+  function rejectItems(ids) {
+    if (!isBudgetAdmin()) { toast('반려 권한이 없습니다.', 'error'); return; }
+    if (!ids.length) { toast('반려할 항목을 선택하세요.', 'error'); return; }
+    var reason = prompt('반려 사유를 입력하세요(선택):', '') || '반려';
+    var arr = items();
+    arr.forEach(function(it){ if (ids.indexOf(it.id) >= 0) { it.confirmed = false; it.submitted = false; it.rejectReason = reason; } });
+    saveItems(arr); B.selected = {};
+    toast(ids.length + '개 항목을 반려했습니다.'); renderTab();
+  }
+  function statusBadge(it) {
+    if (it.confirmed) return '<span class="bdg-badge ok">확정</span>';
+    if (it.rejectReason) return '<span class="bdg-badge rej" title="'+esc(it.rejectReason)+'">반려</span>';
+    if (it.submitted) return '<span class="bdg-badge sub">제출</span>';
+    return '<span class="bdg-badge">작성중</span>';
   }
 
   /* ── 항목 상세 + 집행내역 ── */
