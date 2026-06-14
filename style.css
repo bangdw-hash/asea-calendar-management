@@ -6216,3 +6216,103 @@ summary:focus-visible,
   outline-offset: 2px;
   border-radius: var(--r-sm, 4px);
 }
+
+/* ──────────────────────────────────────────────────────────────
+   탭 메뉴 그룹화 (navgroups.js) — 23탭을 6개 카테고리로
+   ────────────────────────────────────────────────────────────── */
+/* 데스크탑: 카테고리 + 드롭다운 */
+.nav-group { position: relative; display: flex; align-items: stretch; flex-shrink: 0; }
+.nav-cat-btn {
+  display: flex; align-items: center; gap: var(--sp-2, 6px);
+  padding: 0 16px; height: 100%;
+  font-size: 13px; font-weight: 600;
+  color: var(--color-text-secondary);
+  border-bottom: 3px solid transparent;
+  background: none; cursor: pointer; white-space: nowrap;
+  transition: color .15s, background .15s, border-color .15s;
+}
+.nav-cat-btn:hover { color: var(--color-accent); background: var(--color-accent-light); }
+/* 활성 탭이 속한 카테고리 강조 — :has() 로 처리(관찰 루프 회피) */
+.nav-group:has(.tab-btn.active) .nav-cat-btn {
+  color: var(--color-accent);
+  border-bottom-color: var(--color-accent);
+  font-weight: 700;
+}
+.nav-caret { width: 13px; height: 13px; opacity: .55; flex-shrink: 0; }
+
+.nav-group-menu {
+  position: fixed; z-index: 1200;
+  min-width: 190px;
+  background: var(--color-card, #fff);
+  border: 1px solid var(--color-border, #e8eaed);
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(0,0,0,.16);
+  padding: 6px;
+  display: flex; flex-direction: column; gap: 2px;
+}
+.nav-group-menu[hidden] { display: none; }
+/* 드롭다운 안의 기존 탭 버튼: 가로 전체 행으로 */
+.nav-group-menu .tab-btn {
+  width: 100%; justify-content: flex-start;
+  height: auto !important;
+  padding: 9px 12px !important;
+  border-bottom: none !important;
+  border-radius: 8px !important;
+  font-size: 13.5px !important;
+  color: var(--color-text) !important;
+}
+.nav-group-menu .tab-btn:hover { background: var(--color-accent-light) !important; }
+.nav-group-menu .tab-btn.active {
+  background: var(--color-accent-light) !important;
+  color: var(--color-accent) !important;
+  font-weight: 700 !important;
+}
+
+/* 모바일: 하단 6개 카테고리 + 바텀시트 */
+.mnav-cat {
+  flex: 1 1 0; min-width: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 3px; padding: 6px 2px;
+  background: none; cursor: pointer;
+  color: var(--color-text-secondary);
+}
+.mnav-cat .tab-svg { width: 22px; height: 22px; }
+.mnav-cat .bnav-label { font-size: 10.5px; line-height: 1.1; white-space: nowrap; }
+.mnav-cat.active { color: var(--color-accent); }
+.mnav-cat:active { background: var(--color-accent-light); }
+
+.nav-sheet-backdrop {
+  position: fixed; inset: 0; z-index: 1400;
+  background: rgba(0,0,0,.38);
+}
+.nav-sheet-backdrop[hidden] { display: none; }
+.nav-sheet {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 1401;
+  background: var(--color-card, #fff);
+  border-radius: 18px 18px 0 0;
+  box-shadow: 0 -8px 30px rgba(0,0,0,.2);
+  max-height: 72vh; overflow-y: auto;
+  padding: 6px 10px calc(14px + env(safe-area-inset-bottom));
+  animation: navSheetUp .18s ease-out;
+}
+.nav-sheet[hidden] { display: none; }
+@keyframes navSheetUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+.nav-sheet-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 8px 8px; font-size: 16px; font-weight: 700;
+  color: var(--color-text);
+  position: sticky; top: 0; background: var(--color-card, #fff);
+}
+.nav-sheet-close {
+  background: none; border: none; font-size: 20px; line-height: 1;
+  color: var(--color-text-secondary); cursor: pointer; padding: 4px 8px;
+}
+.nav-sheet-item {
+  display: flex; align-items: center; gap: 14px; width: 100%;
+  padding: 14px 14px; border-radius: 12px;
+  font-size: 15px; color: var(--color-text);
+  background: none; cursor: pointer; text-align: left;
+}
+.nav-sheet-item svg { width: 22px; height: 22px; flex-shrink: 0; }
+.nav-sheet-item:active { background: var(--color-accent-light); }
+.nav-sheet-item.active { background: var(--color-accent-light); color: var(--color-accent); font-weight: 700; }
