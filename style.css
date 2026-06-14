@@ -6527,3 +6527,8 @@ body.nav-sheet-open .quick-fab { display: none; }
 .mm-label,
 .nav-sheet-emoji { filter: grayscale(1); }
 .nav-sheet-emoji { opacity: .7; }
+
+/* 관리자·설정 메뉴 이모지 → 단색 라인 SVG (monoicons.js) */
+.mono-ico { display:inline-flex; align-items:center; justify-content:center; vertical-align:-3px; margin-right:7px; flex-shrink:0; }
+.mono-ico svg { width:18px; height:18px; }
+.admin-nav-btn .mono-ico { margin-right:8px; }
