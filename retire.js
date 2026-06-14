@@ -341,7 +341,7 @@ window.RetireModule = (function () {
       '<div style="font-size:12px;color:#6B7280;line-height:1.7;margin-bottom:18px">아래 저장 코드를 반드시 메모해 두세요.<br>같은 링크에서 <strong>이어서 작성하기</strong> → 코드+이름 입력으로<br>언제든 이어서 작성할 수 있습니다.</div>' +
       '<div style="background:#EFF6FF;border:2px solid #2563EB;border-radius:10px;padding:16px;margin-bottom:16px">' +
         '<div style="font-size:11px;color:#6B7280;margin-bottom:6px;font-weight:600">저장 코드</div>' +
-        '<div style="font-size:30px;font-weight:900;letter-spacing:8px;color:#1D4ED8;font-family:monospace">' + _esc(app.resumeCode) + '</div>' +
+        '<div style="font-size:30px;font-weight:900;letter-spacing:8px;color:#1A73E8;font-family:monospace">' + _esc(app.resumeCode) + '</div>' +
         '<div style="font-size:12px;color:#374151;margin-top:8px">이름: <strong>' + _esc(app.form.name) + '</strong></div>' +
       '</div>' +
       '<button id="rt-ov-copy" style="display:block;width:100%;padding:10px;background:#1a3a5c;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:8px">📋 코드 복사</button>' +
@@ -705,7 +705,7 @@ window.RetireModule = (function () {
     body.appendChild(desc);
 
     var urlBox = el('div');
-    urlBox.style.cssText = 'background:#F9FAFB;border:1px solid #D1D5DB;border-radius:8px;padding:12px;font-size:13px;word-break:break-all;color:#1D4ED8;margin-bottom:12px';
+    urlBox.style.cssText = 'background:#F9FAFB;border:1px solid #D1D5DB;border-radius:8px;padding:12px;font-size:13px;word-break:break-all;color:#1A73E8;margin-bottom:12px';
     urlBox.textContent = formUrl;
     body.appendChild(urlBox);
 

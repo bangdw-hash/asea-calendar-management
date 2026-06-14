@@ -2,17 +2,18 @@
 
 /* 홈 화면 */
 .rt-home-wrap { max-width: 600px; margin: 0 auto; padding: 24px 16px; }
-.rt-home-title { font-size: 22px; font-weight: 700; color: #1a3a5c; margin-bottom: 4px; }
-.rt-home-sub   { font-size: 13px; color: #6B7280; margin-bottom: 24px; }
+/* 입사(hr) 화면과 카드 규격 통일 */
+.rt-home-title { font-size: 20px; font-weight: 700; color: #1a3a5c; margin-bottom: 8px; }
+.rt-home-sub   { font-size: 13px; color: #6B7280; margin-bottom: 28px; }
 
-.rt-role-cards { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin-bottom: 20px; }
+.rt-role-cards { display: flex; gap: 16px; flex-wrap: wrap; justify-content: center; max-width: 700px; margin: 0 auto 20px; }
 .rt-role-card  {
-  background: #fff; border: 1.5px solid #E5E7EB; border-radius: 12px;
-  padding: 20px 14px; text-align: center; cursor: pointer;
+  background: #fff; border: 2px solid #E5E7EB; border-radius: 14px;
+  padding: 24px 28px; text-align: center; cursor: pointer; width: 190px;
   transition: border-color .2s, box-shadow .2s;
 }
-.rt-role-card:hover { border-color: #1a3a5c; box-shadow: 0 2px 12px rgba(26,58,92,.12); }
-.rt-role-icon  { font-size: 28px; margin-bottom: 8px; }
+.rt-role-card:hover { border-color: #1a3a5c; box-shadow: 0 4px 16px rgba(26,58,92,.12); }
+.rt-role-icon  { font-size: 36px; margin-bottom: 10px; }
 .rt-role-title { font-size: 14px; font-weight: 700; color: #1a3a5c; margin-bottom: 4px; }
 .rt-role-desc  { font-size: 12px; color: #6B7280; }
 
@@ -202,7 +203,8 @@ textarea.rt-input { resize: vertical; min-height: 80px; }
 .rt-field.w120 { width: 120px; flex: none; }
 
 @media (max-width: 600px) {
-  .rt-role-cards { grid-template-columns: 1fr; }
+  .rt-role-cards { flex-direction: column; align-items: center; }
+  .rt-role-card  { width: 100%; max-width: 320px; }
   .rt-row { flex-direction: column; }
   .rt-field.w100, .rt-field.w120, .rt-field.w140, .rt-field.w160, .rt-field.w200 { width: 100%; }
   .rt-code-meta { flex-direction: column; }
