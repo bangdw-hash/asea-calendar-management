@@ -695,40 +695,47 @@
   function gasUrl() { return localStorage.getItem(GAS_KEY) || GAS_URL_DEFAULT; }
 
   async function dbLoad() {
-    const url = gasUrl();
-    if (url) {
-      try {
-        const r = await fetch(url + '?action=list&_=' + Date.now());
-        const j = await r.json();
-        if (j.ok) return j.data;
-      } catch(e) { console.warn('GAS load failed:', e); }
+    try {
+      const j = await _gasReq('list');
+      return j.data;
+    } catch(e) {
+      console.warn('GAS load failed:', e);
+      return _lsLoad();
     }
-    try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); } catch { return []; }
   }
 
-  async function dbAdd(entry) {
+  /* 서버에 요청하고 ok 여부까지 검증. 실패 시 throw */
+  async function _gasReq(action, params) {
     const url = gasUrl();
-    if (url) {
-      try { await fetch(url + '?action=add&d=' + encodeURIComponent(JSON.stringify(entry))); return; } catch(e) { console.warn('GAS add failed:', e); }
-    }
+    if (!url) throw new Error('GAS URL이 설정되지 않았습니다');
+    let qs = '?action=' + encodeURIComponent(action) + '&_=' + Date.now();
+    if (params) for (const k in params) qs += '&' + k + '=' + encodeURIComponent(params[k]);
+    const r = await fetch(url + qs);
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const j = await r.json();   // 비정상(HTML 등) 응답이면 여기서 throw → 폴백
+    if (!j.ok) throw new Error(j.error || '서버 응답 오류');
+    return j;
+  }
+
+  /* 쓰기: 서버 저장을 검증하고 { synced, error } 반환.
+     서버 실패해도 로컬에는 남겨 화면엔 보이게 하되, 동기화 실패를 호출부에 알림 */
+  async function dbAdd(entry) {
     const data = _lsLoad(); data.unshift(entry); _lsSave(data);
+    try { await _gasReq('add', { d: JSON.stringify(entry) }); return { synced: true }; }
+    catch(e) { console.warn('GAS add failed:', e); return { synced: false, error: e.message }; }
   }
 
   async function dbUpdate(id, changes) {
-    const url = gasUrl();
-    if (url) {
-      try { await fetch(url + '?action=update&id=' + encodeURIComponent(id) + '&d=' + encodeURIComponent(JSON.stringify(changes))); return; } catch(e) { console.warn('GAS update failed:', e); }
-    }
     const data = _lsLoad(); const idx = data.findIndex(e => e.id === id);
     if (idx >= 0) { Object.assign(data[idx], changes); _lsSave(data); }
+    try { await _gasReq('update', { id: id, d: JSON.stringify(changes) }); return { synced: true }; }
+    catch(e) { console.warn('GAS update failed:', e); return { synced: false, error: e.message }; }
   }
 
   async function dbDelete(id) {
-    const url = gasUrl();
-    if (url) {
-      try { await fetch(url + '?action=delete&id=' + encodeURIComponent(id)); return; } catch(e) { console.warn('GAS delete failed:', e); }
-    }
     _lsSave(_lsLoad().filter(e => e.id !== id));
+    try { await _gasReq('delete', { id: id }); return { synced: true }; }
+    catch(e) { console.warn('GAS delete failed:', e); return { synced: false, error: e.message }; }
   }
 
   function _lsLoad() { try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); } catch { return []; } }
@@ -752,11 +759,12 @@
     return d.toLocaleDateString('ko-KR', { year:'numeric', month:'2-digit', day:'2-digit' })
       + ' ' + d.toLocaleTimeString('ko-KR', { hour:'2-digit', minute:'2-digit' });
   }
-  function showToast(msg) {
+  function showToast(msg, ms) {
     const t = document.getElementById('toast');
     t.textContent = msg; t.classList.add('show');
-    clearTimeout(t._timer); t._timer = setTimeout(() => t.classList.remove('show'), 2500);
+    clearTimeout(t._timer); t._timer = setTimeout(() => t.classList.remove('show'), ms || 2500);
   }
+  const SYNC_FAIL_MSG = '⚠️ 저장은 됐지만 공유 서버 동기화 실패 — 다른 기기/브라우저에서는 보이지 않습니다. 관리자에게 GAS 재배포를 요청하세요.';
   function esc(str) {
     return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
@@ -823,14 +831,15 @@
       emailPrefix: emailPfx, email: emailPfx + '@gmail.com',
       status: '미등록', registeredAt: ''
     };
-    await dbAdd(entry);
+    const res = await dbAdd(entry);
 
     submitBtn.disabled = false; submitBtn.textContent = '신청하기';
     document.getElementById('request-form').reset();
     document.getElementById('f-privacy').checked = false;
     document.querySelectorAll('.toggle-group:first-of-type .toggle-btn').forEach((b,i) => b.classList.toggle('active', i===0));
     selectedCategory = '행정지원부서';
-    showToast('신청이 완료되었습니다.');
+    if (res.synced) showToast('신청이 완료되었습니다.');
+    else            showToast(SYNC_FAIL_MSG, 7000);
     editingId = null;
     await renderList();
   });
@@ -991,33 +1000,33 @@
     if (!newName || !newDept || !newEmail) { showToast('모든 필드를 입력해 주세요.'); return; }
     const changes = { name: newName, dept: newDept, emailPrefix: newEmail, email: newEmail + '@gmail.com' };
     if (newCat) changes.category = newCat;
-    await dbUpdate(id, changes);
+    const r = await dbUpdate(id, changes);
     editingId = null;
-    showToast('수정되었습니다.');
+    showToast(r.synced ? '수정되었습니다.' : SYNC_FAIL_MSG, r.synced ? 2500 : 7000);
     await renderList();
   };
 
   /* ── Admin actions ── */
   window.markDone = async function(id) {
     if (!isAdmin()) return;
-    await dbUpdate(id, { status: '등록완료', registeredAt: new Date().toISOString() });
-    showToast('등록완료 처리되었습니다.');
+    const r = await dbUpdate(id, { status: '등록완료', registeredAt: new Date().toISOString() });
+    showToast(r.synced ? '등록완료 처리되었습니다.' : SYNC_FAIL_MSG, r.synced ? 2500 : 7000);
     await renderList();
   };
 
   window.markPending = async function(id) {
     if (!isAdmin()) return;
-    await dbUpdate(id, { status: '미등록', registeredAt: '' });
-    showToast('미등록으로 변경되었습니다.');
+    const r = await dbUpdate(id, { status: '미등록', registeredAt: '' });
+    showToast(r.synced ? '미등록으로 변경되었습니다.' : SYNC_FAIL_MSG, r.synced ? 2500 : 7000);
     await renderList();
   };
 
   window.deleteEntry = async function(id) {
     if (!isAdmin()) return;
     if (!confirm('이 항목을 삭제하시겠습니까?')) return;
-    await dbDelete(id);
+    const r = await dbDelete(id);
     if (editingId === id) editingId = null;
-    showToast('삭제되었습니다.');
+    showToast(r.synced ? '삭제되었습니다.' : SYNC_FAIL_MSG, r.synced ? 2500 : 7000);
     await renderList();
   };
 
@@ -1069,21 +1078,38 @@
     box.style.background = '#f3f4f6';
     box.style.color = '#374151';
     box.textContent = '⏳ 연결 테스트 중...';
-    try {
-      const r = await fetch(url + '?action=list&_=' + Date.now());
-      if (!r.ok) { throw new Error('HTTP ' + r.status); }
+    box.style.whiteSpace = 'pre-line';
+    const reqWith = async (action, params) => {
+      let qs = '?action=' + encodeURIComponent(action) + '&_=' + Date.now();
+      if (params) for (const k in params) qs += '&' + k + '=' + encodeURIComponent(params[k]);
+      const r = await fetch(url + qs);
+      if (!r.ok) throw new Error('HTTP ' + r.status);
       const j = await r.json();
-      if (j.ok) {
+      if (!j.ok) throw new Error(j.error || JSON.stringify(j));
+      return j;
+    };
+    try {
+      // 1단계: 읽기
+      const list = await reqWith('list');
+      box.textContent = '⏳ 읽기 성공 (' + list.data.length + '건). 쓰기 테스트 중...';
+      // 2단계: 쓰기 왕복 — 프로브 추가 → 목록 확인 → 삭제 (실제 공유 저장 여부 검증)
+      const probeId = '__conntest_' + Date.now();
+      const probe = { id: probeId, submittedAt: new Date().toISOString(), category: '__test__',
+                      name: '연결테스트', dept: '', emailPrefix: '', email: '', status: '__test__', registeredAt: '' };
+      await reqWith('add', { d: JSON.stringify(probe) });
+      const after = await reqWith('list');
+      const saved = after.data.some(e => String(e.id) === probeId);
+      await reqWith('delete', { id: probeId });   // 정리
+      if (saved) {
         box.style.background = '#f0fdf4'; box.style.color = '#166534';
-        box.textContent = '✅ 연결 성공! 저장된 신청 건수: ' + j.data.length + '건';
+        box.textContent = '✅ 읽기·쓰기 모두 정상! 저장된 신청 ' + list.data.length + '건\n→ 다른 기기/브라우저와 정상 공유됩니다.';
       } else {
-        box.style.background = '#fef2f2'; box.style.color = '#991b1b';
-        box.textContent = '❌ GAS 응답 오류: ' + (j.error || JSON.stringify(j));
+        box.style.background = '#fffbeb'; box.style.color = '#92400e';
+        box.textContent = '⚠️ 읽기는 되지만 쓰기가 서버에 저장되지 않습니다.\n→ gas-backend.js 최신 코드로 GAS를 다시 배포(새 버전 게시)해야 합니다.\n   (이 상태에서는 신청이 그 기기에만 임시 저장되고 공유되지 않습니다.)';
       }
     } catch(e) {
       box.style.background = '#fef2f2'; box.style.color = '#991b1b';
       box.textContent = '❌ 연결 실패: ' + e.message + '\n→ GAS 배포 권한(모든 사용자)을 확인하고, script.google.com에서 doGet을 한 번 직접 실행해 권한을 부여하세요.';
-      box.style.whiteSpace = 'pre-line';
     }
   };
 
