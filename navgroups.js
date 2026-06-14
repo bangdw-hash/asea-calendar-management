@@ -27,7 +27,7 @@
   var ORDER = ['cal', 'work', 'fac', 'comm', 'hr', 'settings'];
   var GROUPS = {
     cal:      { label: '캘린더',    tabs: ['calendar', 'weekly-hub', 'extract', '#cal-share-nav-btn'] },
-    work:     { label: '업무',      tabs: ['work', 'report', 'workorder', 'draft', 'survey'] },
+    work:     { label: '업무',      tabs: ['work', 'budget', 'report', 'workorder', 'draft', 'survey'] },
     fac:      { label: '시설·자원', tabs: ['facility', 'vehicle', 'classroom', 'checkinmgmt'] },
     comm:     { label: '소통·홍보', tabs: ['board', 'email', 'sms', 'zoom', 'promo', 'qrcard', '#amulbo-nav-btn'] },
     hr:       { label: '인사',      tabs: ['hr'] },
