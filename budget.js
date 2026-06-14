@@ -243,6 +243,122 @@ var BudgetModule = (function () {
     toast('항목을 삭제했습니다.'); renderTab();
   }
 
+  /* ── 집행승인번호(예약/encumbrance) ── */
+  function kResv(y) { return 'asea_budget_resv_' + (y || B.year); }
+  function reservs(y) { return _load(kResv(y)); }
+  function saveReservs(arr, y) { _save(kResv(y), arr); }
+  function reservedForItem(itemId, y) {
+    return reservs(y).reduce(function (s, r) { return (r.itemId === itemId && r.status === 'reserved') ? s + (Number(r.amount) || 0) : s; }, 0);
+  }
+  function availableForItem(it) {
+    return (it.confirmed ? it.amount : 0) - execTotalForItem(it.id) - reservedForItem(it.id);
+  }
+  function verifyBase() {
+    var p = location.pathname.replace(/[^/]*$/, '');   // 현재 폴더
+    return location.origin + p + 'verify.html';
+  }
+  function genNo(year, type) {
+    var code = (type === 'sechul' ? 'E' : 'I');
+    var seq = reservs(year).length + 1;
+    var rand = Math.random().toString(36).slice(2, 7).toUpperCase();
+    return year + '-' + code + '-' + ('000' + seq).slice(-4) + '-' + rand;
+  }
+
+  // 집행 사전신청 → 승인번호 발급(예약). 가용잔액 초과 시 차단.
+  function openIssueModal(itemId) {
+    var it = items().find(function (x) { return x.id === itemId; }); if (!it) return;
+    if (!it.confirmed) { toast('확정된 예산만 승인번호 발급이 가능합니다.', 'error'); return; }
+    var avail = availableForItem(it);
+    var body = '<div class="bdg-form">' +
+      '<p class="bdg-muted">' + esc(it.dept) + ' · ' + esc(it.name) + '</p>' +
+      '<div class="bdg-detail-stats"><span>확정예산 <b>' + won(it.amount) + '</b></span><span>집행 <b>' + won(execTotalForItem(it.id)) + '</b></span><span>예약 <b>' + won(reservedForItem(it.id)) + '</b></span><span>가용잔액 <b>' + won(avail) + '</b></span></div>' +
+      '<label>집행(신청) 금액 <span class="bdg-req">*</span></label><input id="iv-amt" type="number" inputmode="numeric" placeholder="원">' +
+      '<label>집행 사유/적요 <span class="bdg-req">*</span></label><input id="iv-sum" placeholder="예: 1분기 교재 구입(기안 예정)">' +
+      '<div id="iv-info" class="bdg-cap-info"></div>' +
+      '<div class="bdg-form-actions"><button id="iv-save" class="btn btn-primary">승인번호 발급</button><button id="iv-cancel" class="btn btn-secondary">취소</button></div>' +
+      '</div>';
+    showModal('집행 사전신청 · 승인번호 발급', body);
+    function upd() {
+      var amt = Number(document.getElementById('iv-amt').value) || 0;
+      var info = document.getElementById('iv-info');
+      if (amt > avail) { info.innerHTML = '<b style="color:var(--color-error)">⚠ 가용잔액 초과 (부족 ' + won(amt - avail) + '원) — 발급 불가</b>'; }
+      else if (amt > 0) { info.innerHTML = '발급 후 가용잔액 ' + won(avail - amt) + '원'; }
+      else info.textContent = '';
+    }
+    document.getElementById('iv-amt').addEventListener('input', upd);
+    document.getElementById('iv-cancel').addEventListener('click', closeModal);
+    document.getElementById('iv-save').addEventListener('click', function () {
+      var amt = Number(document.getElementById('iv-amt').value) || 0;
+      var sum = document.getElementById('iv-sum').value.trim();
+      if (!amt || amt <= 0) { toast('금액을 입력하세요.', 'error'); return; }
+      if (!sum) { toast('사유/적요를 입력하세요.', 'error'); return; }
+      if (amt > avail) { toast('가용잔액 초과로 발급할 수 없습니다. (부족 ' + won(amt - avail) + '원)', 'error'); return; }
+      var no = genNo(B.year, it.type);
+      var r = { id: uid(), no: no, year: B.year, type: it.type, itemId: it.id, dept: it.dept,
+                itemName: it.name, amount: amt, summary: sum, status: 'reserved',
+                createdAt: new Date().toISOString(), createdBy: curEmail() };
+      var arr = reservs(); arr.push(r); saveReservs(arr);
+      closeModal(); showIssuedResult(r); renderTab();
+    });
+  }
+  function showIssuedResult(r) {
+    var url = verifyBase() + '?no=' + encodeURIComponent(r.no);
+    var body = '<div class="bdg-form">' +
+      '<p>✅ 집행승인번호가 발급되었습니다. 아래 <b>번호</b>와 <b>조회 URL</b>을 기안문에 기재하세요.</p>' +
+      '<label>집행승인번호</label><input id="ir-no" readonly value="' + esc(r.no) + '">' +
+      '<label>결재자 조회 URL (기안문에 붙여넣기)</label><input id="ir-url" readonly value="' + esc(url) + '">' +
+      '<div class="bdg-form-actions">' +
+        '<button id="ir-copy" class="btn btn-primary">URL 복사</button>' +
+        '<button id="ir-copy2" class="btn btn-secondary">번호 복사</button>' +
+        '<button id="ir-close" class="btn btn-ghost">닫기</button>' +
+      '</div>' +
+      '<p class="bdg-muted" style="margin-top:8px">※ 결재권자가 이 URL을 클릭하면 해당 건의 예산·집행 현황을 실시간으로 확인합니다.</p>' +
+      '</div>';
+    showModal('승인번호 발급 완료', body);
+    function copy(text){ try { navigator.clipboard.writeText(text); toast('복사되었습니다.'); } catch(e){ var i=document.getElementById('ir-url'); i.select(); document.execCommand('copy'); toast('복사되었습니다.'); } }
+    document.getElementById('ir-copy').addEventListener('click', function(){ copy(url); });
+    document.getElementById('ir-copy2').addEventListener('click', function(){ copy(r.no); });
+    document.getElementById('ir-close').addEventListener('click', closeModal);
+  }
+  function openReservList() {
+    var arr = reservs().slice().sort(function(a,b){ return (b.createdAt||'').localeCompare(a.createdAt||''); });
+    if (!canSeeAll()) arr = arr.filter(function(r){ return r.dept === myDept(); });
+    var statusLabel = { reserved:'예약중', executed:'집행완료', canceled:'취소' };
+    var rows = arr.length ? arr.map(function(r){
+      var url = verifyBase() + '?no=' + encodeURIComponent(r.no);
+      return '<tr>' +
+        '<td>' + esc(r.no) + '</td>' +
+        '<td>' + esc(r.dept) + '<div class="bdg-muted">' + esc(r.itemName||'') + '</div></td>' +
+        '<td class="bdg-c-amt">' + won(r.amount) + '</td>' +
+        '<td>' + esc(r.summary||'') + '</td>' +
+        '<td><span class="bdg-badge ' + (r.status==='executed'?'ok':(r.status==='canceled'?'rej':'sub')) + '">' + (statusLabel[r.status]||r.status) + '</span></td>' +
+        '<td class="bdg-c-act">' +
+          '<button class="rv-url" data-url="' + esc(url) + '">URL</button>' +
+          (r.status==='reserved' ? '<button class="rv-exec" data-id="'+r.id+'">집행전환</button><button class="rv-cancel" data-id="'+r.id+'">취소</button>' : '') +
+        '</td></tr>';
+    }).join('') : '<tr><td colspan="6" class="bdg-empty">발급된 승인번호가 없습니다.</td></tr>';
+    var body = '<div class="scroll-x"><table class="bdg-table sm"><thead><tr><th>승인번호</th><th>부서/항목</th><th>금액</th><th>사유</th><th>상태</th><th>관리</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
+    showModal('집행승인번호 관리', body);
+    document.querySelectorAll('.rv-url').forEach(function(b){ b.addEventListener('click', function(){ try{ navigator.clipboard.writeText(this.dataset.url); toast('URL 복사됨'); }catch(e){} }); });
+    document.querySelectorAll('.rv-exec').forEach(function(b){ b.addEventListener('click', function(){ reservToExec(this.dataset.id); }); });
+    document.querySelectorAll('.rv-cancel').forEach(function(b){ b.addEventListener('click', function(){ if(confirm('이 승인번호를 취소할까요? (예약 잔액이 복원됩니다)')){ setReservStatus(this.dataset.id,'canceled'); } }); });
+  }
+  function setReservStatus(id, st) {
+    var arr = reservs(); var r = arr.find(function(x){ return x.id===id; }); if(!r) return;
+    r.status = st; saveReservs(arr); toast('처리되었습니다.'); closeModal(); openReservList();
+  }
+  // 예약 → 실제 집행내역으로 전환
+  function reservToExec(id) {
+    var arr = reservs(); var r = arr.find(function(x){ return x.id===id; }); if(!r) return;
+    var docNo = prompt('집행 문서번호(지출결의/공문)를 입력하세요:', r.no) || r.no;
+    var ex = execs(); ex.push({ id: uid(), year: r.year, type: r.type, itemId: r.itemId, dept: r.dept,
+      date: todayYMD(), docNo: docNo, amount: r.amount, summary: r.summary, payee: '', note: '승인번호 '+r.no,
+      createdAt: new Date().toISOString(), createdBy: curEmail() });
+    saveExecs(ex);
+    r.status = 'executed'; saveReservs(arr);
+    toast('집행내역으로 전환되었습니다.'); closeModal(); renderTab();
+  }
+
   /* ── 집계 ── */
   function execTotalForItem(itemId, exArr) {
     var sum = 0; (exArr || execs()).forEach(function(e){ if (e.itemId === itemId) sum += Number(e.amount) || 0; });
@@ -377,6 +493,7 @@ var BudgetModule = (function () {
           '<button id="bdg-item-add" class="btn btn-primary btn-sm">＋ 초안 항목</button>' +
           '<button id="bdg-submit" class="btn btn-secondary btn-sm">📨 부서 제출</button>' +
           (canConfirm ? '<button id="bdg-caps" class="btn btn-secondary btn-sm">🎯 부서 한도</button>' : '') +
+          '<button id="bdg-resv-list" class="btn btn-ghost btn-sm">🔖 승인번호 관리</button>' +
           '<button id="bdg-import-prev" class="btn btn-ghost btn-sm">📂 ' + (B.year - 1) + '년 불러오기</button>' +
           '<button id="bdg-expand-all" class="btn btn-ghost btn-sm">⊕ 집행 모두 펼치기</button>' +
           (canConfirm ? '<button id="bdg-confirm-bulk" class="btn btn-primary btn-sm">✅ 일괄 확정(승인)</button>' +
@@ -402,6 +519,10 @@ var BudgetModule = (function () {
       document.getElementById('bdg-unconfirm-sel').addEventListener('click', function(){ confirmItems(selectedIds(), false); });
     }
     document.getElementById('bdg-submit').addEventListener('click', function(){ submitItems(its); });
+    document.getElementById('bdg-resv-list').addEventListener('click', openReservList);
+    body.querySelectorAll('.bdg-issue-btn').forEach(function(btn){
+      btn.addEventListener('click', function(){ openIssueModal(this.dataset.id); });
+    });
     document.getElementById('bdg-exec-tpl').addEventListener('click', function(){ downloadExecTemplate(its); });
     var upBtn = document.getElementById('bdg-exec-up'), upFile = document.getElementById('bdg-exec-file');
     upBtn.addEventListener('click', function(){ upFile.click(); });
@@ -518,7 +639,7 @@ var BudgetModule = (function () {
         '<td class="bdg-c-amt '+(remain<0?'neg':'')+'">'+won(remain)+'</td>' +
         '<td class="bdg-c-rate">'+rateHtml+'</td>' +
         '<td class="bdg-c-act">' +
-          (it.confirmed?'<button class="bdg-exec-btn" data-id="'+it.id+'">＋집행</button>'
+          (it.confirmed?'<button class="bdg-exec-btn" data-id="'+it.id+'">＋집행</button><button class="bdg-issue-btn" data-id="'+it.id+'">🔖번호</button>'
                        :'<button class="bdg-item-edit" data-id="'+it.id+'">수정</button><button class="bdg-item-del" data-id="'+it.id+'">삭제</button>') +
           '<button class="bdg-toggle-btn" data-id="'+it.id+'">'+(B.expanded[it.id]?'▾ 닫기':'▸ 세부')+'</button>' +
         '</td>' +
