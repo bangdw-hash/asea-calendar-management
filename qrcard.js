@@ -427,9 +427,16 @@ window.QRCardModule = (function () {
         }]
       })
     })
-    .then(function (r) { return r.json(); })
-    .then(function (data) {
-      var text  = (data.content && data.content[0] && data.content[0].text) || '{}';
+    .then(function (r) {
+      return r.json().then(function (j) { return { ok: r.ok, body: j }; });
+    })
+    .then(function (res) {
+      if (!res.ok || !res.body || !res.body.content || !res.body.content[0] || !res.body.content[0].text) {
+        var msg = (res.body && res.body.error && res.body.error.message) || 'AI 응답 오류';
+        throw new Error(msg);
+      }
+      var data  = res.body;
+      var text  = data.content[0].text;
       var match = text.match(/\{[\s\S]*\}/);
       var parsed = {};
       try { parsed = JSON.parse(match ? match[0] : '{}'); } catch (e) {}

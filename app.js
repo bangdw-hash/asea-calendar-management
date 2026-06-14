@@ -5347,7 +5347,7 @@
     $('ci-log-filter-type').addEventListener('change', _ciRenderLogs);
 
     // 오늘 날짜 기본값
-    $('ci-log-filter-date').value = new Date().toISOString().slice(0, 10);
+    $('ci-log-filter-date').value = window.toLocalYMD();
 
     _ciLoadSpaces();
   }
@@ -5415,7 +5415,7 @@
     var old = document.getElementById('ci-logs-modal');
     if (old) old.remove();
 
-    var today = new Date().toISOString().slice(0, 10);
+    var today = window.toLocalYMD();
 
     var modal = document.createElement('div');
     modal.id = 'ci-logs-modal';
@@ -5462,19 +5462,19 @@
     document.getElementById('ci-logs-load').onclick     = _ciLoadSpaceLogs;
     document.getElementById('ci-logs-excel-btn').onclick = _ciDownloadLogsExcel;
     document.getElementById('ci-logs-today').onclick    = function () {
-      document.getElementById('ci-logs-date').value = new Date().toISOString().slice(0,10);
+      document.getElementById('ci-logs-date').value = window.toLocalYMD();
       _ciLoadSpaceLogs();
     };
     document.getElementById('ci-logs-prev').onclick = function () {
       var d = new Date(document.getElementById('ci-logs-date').value);
       d.setDate(d.getDate() - 1);
-      document.getElementById('ci-logs-date').value = d.toISOString().slice(0,10);
+      document.getElementById('ci-logs-date').value = window.toLocalYMD(d);
       _ciLoadSpaceLogs();
     };
     document.getElementById('ci-logs-next').onclick = function () {
       var d = new Date(document.getElementById('ci-logs-date').value);
       d.setDate(d.getDate() + 1);
-      document.getElementById('ci-logs-date').value = d.toISOString().slice(0,10);
+      document.getElementById('ci-logs-date').value = window.toLocalYMD(d);
       _ciLoadSpaceLogs();
     };
     document.getElementById('ci-logs-date').onchange = _ciLoadSpaceLogs;
@@ -5493,7 +5493,7 @@
     if (!logs || !logs.length) return;
 
     var dateEl = document.getElementById('ci-logs-date');
-    var date   = dateEl ? dateEl.value : new Date().toISOString().slice(0,10);
+    var date   = dateEl ? dateEl.value : window.toLocalYMD();
 
     // 파일명: 시설명_조회일시_v1
     var now = new Date();
@@ -5556,8 +5556,8 @@
     for (var i = 0; i < 7; i++) {
       var d = new Date(mon);
       d.setDate(mon.getDate() + i);
-      var ds = d.toISOString().slice(0,10);
-      var isToday = ds === new Date().toISOString().slice(0,10);
+      var ds = window.toLocalYMD(d);
+      var isToday = ds === window.toLocalYMD();
       var isSel   = ds === selectedDate;
       html += '<button class="ci-week-day-btn' +
         (isSel ? ' selected' : '') + (isToday ? ' today' : '') + '" ' +
@@ -5583,7 +5583,7 @@
   async function _ciLoadSpaceLogs() {
     var bodyEl = document.getElementById('ci-logs-body');
     var sumEl  = document.getElementById('ci-logs-summary');
-    var date   = document.getElementById('ci-logs-date').value || new Date().toISOString().slice(0,10);
+    var date   = document.getElementById('ci-logs-date').value || window.toLocalYMD();
     if (!bodyEl) return;
 
     _ciRenderWeekCal(date);
@@ -5847,7 +5847,7 @@
   async function _ciLoadLogs() {
     $('ci-log-list').innerHTML = '<p class="empty-state">불러오는 중...</p>';
     $('ci-log-summary').innerHTML = '';
-    var date = $('ci-log-filter-date').value || new Date().toISOString().slice(0, 10);
+    var date = $('ci-log-filter-date').value || window.toLocalYMD();
     try {
       _ciLogs = (await SheetsModule.getCheckinLogs(null, date, date)) || [];
       _ciRenderLogs();

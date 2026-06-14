@@ -41,6 +41,26 @@ var SheetsModule = (function () {
 
   function authHeader() { return { 'Authorization': 'Bearer ' + getToken() }; }
 
+  /**
+   * _sfetch — 401(토큰 만료/무효) 발생 시 무음 재인증 후 1회 재시도하는 공통 래퍼.
+   * 기존에는 calendar.js만 재인증을 했고 sheets.js(전 모듈의 DB 계층)는 누락되어,
+   * 앱을 ~1시간 이상 켜두면 토큰 만료로 모든 저장/조회가 401로 먹통이 되던 문제를 해결.
+   */
+  async function _sfetch(url, opts) {
+    opts = opts || {};
+    opts.headers = Object.assign({}, opts.headers);
+    if (!opts.headers.Authorization) opts.headers.Authorization = 'Bearer ' + getToken();
+    var res = await fetch(url, opts);
+    if (res.status === 401 && window.Auth && Auth.reauth) {
+      var fresh = await Auth.reauth();
+      if (fresh) {
+        opts.headers.Authorization = 'Bearer ' + fresh;
+        res = await fetch(url, opts);
+      }
+    }
+    return res;
+  }
+
   /* ──────────────────────────────────────────────────
      기본 API 헬퍼
   ────────────────────────────────────────────────── */
@@ -90,7 +110,7 @@ var SheetsModule = (function () {
   }
 
   async function apiGet(range) {
-    var res = await fetch(
+    var res = await _sfetch(
       BASE + '/values/' + encodeURIComponent(range) + '?valueRenderOption=UNFORMATTED_VALUE',
       { headers: authHeader() }
     );
@@ -99,7 +119,7 @@ var SheetsModule = (function () {
   }
 
   async function apiAppend(sheetName, rows) {
-    var res = await fetch(
+    var res = await _sfetch(
       BASE + '/values/' + encodeURIComponent(sheetName + '!A1') + ':append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS',
       {
         method: 'POST',
@@ -112,7 +132,7 @@ var SheetsModule = (function () {
   }
 
   async function apiUpdate(range, rows) {
-    var res = await fetch(
+    var res = await _sfetch(
       BASE + '/values/' + encodeURIComponent(range) + '?valueInputOption=USER_ENTERED',
       {
         method: 'PUT',
@@ -125,7 +145,7 @@ var SheetsModule = (function () {
   }
 
   async function batchUpdate(requests) {
-    var res = await fetch(BASE + ':batchUpdate', {
+    var res = await _sfetch(BASE + ':batchUpdate', {
       method: 'POST',
       headers: Object.assign({ 'Content-Type': 'application/json' }, authHeader()),
       body: JSON.stringify({ requests: requests }),
@@ -139,7 +159,7 @@ var SheetsModule = (function () {
   ────────────────────────────────────────────────── */
   async function initSheets() {
     // 현재 시트 목록 조회 (fields 파라미터 없이 전체 메타 조회)
-    var res = await fetch(BASE, { headers: authHeader() });
+    var res = await _sfetch(BASE, { headers: authHeader() });
     if (!res.ok) {
       var errBody = '';
       try { errBody = await res.text(); } catch (e) {}
@@ -234,7 +254,7 @@ var SheetsModule = (function () {
   var _sheetIdCache = {};
   async function getSheetId(sheetName) {
     if (_sheetIdCache[sheetName] !== undefined) return _sheetIdCache[sheetName];
-    var res = await fetch(BASE + '?fields=sheets.properties', { headers: authHeader() });
+    var res = await _sfetch(BASE + '?fields=sheets.properties', { headers: authHeader() });
     if (!res.ok) throw new Error('메타 조회 실패: ' + res.status);
     var meta = await res.json();
     (meta.sheets || []).forEach(function (s) {
@@ -282,7 +302,7 @@ var SheetsModule = (function () {
 
   // 직원 시트 전체 데이터 초기화 (헤더 1행 유지, 2행~끝 clear)
   async function clearEmployees() {
-    var res = await fetch(
+    var res = await _sfetch(
       BASE + '/values/' + encodeURIComponent('직원!A2:Z') + ':clear',
       {
         method: 'POST',

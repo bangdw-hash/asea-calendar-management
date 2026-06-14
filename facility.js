@@ -29,6 +29,7 @@ var FacilityModule = (function () {
   var _fDragCur    = null;
   var _fIsDragging = false;
   var _fDragCtrl   = false;
+  var _fDocBound   = false;  // document-level 리스너 1회만 바인딩 (탭 재진입 시 중복 누적/예약 중복 저장 방지)
 
   // ── 모바일 터치 전용 상태 ──────────────────────────────────
   var _fTouchTimer  = null;
@@ -1043,49 +1044,56 @@ var FacilityModule = (function () {
       }, { passive: false });
     }
 
-    // mouseup (document-level) — 데스크톱
-    document.addEventListener('mouseup', function(e) {
-      if (!_fIsDragging) return;
-      var dragRange = _fCurDragRange();
-      dragRange.forEach(function(d){ _fSelDates.add(d); });
-      _fIsDragging = false; _fDragStart = null; _fDragCur = null;
-      _fUpdateHighlight();
-      if (_fSelDates.size > 0 && !e.target.closest('.res-cal-item')) {
-        openResvModal(null, null);
-      }
-    });
+    // document-level 리스너(mouseup/touchend)는 페이지당 1회만 바인딩.
+    // (캘린더 렌더/탭 재진입마다 재등록되어 핸들러가 누적되면 드래그 한 번에
+    //  예약 모달이 여러 번 열리거나 예약이 중복 저장되는 버그가 있었음)
+    if (!_fDocBound) {
+      _fDocBound = true;
 
-    // touchend (document-level) — 모바일
-    document.addEventListener('touchend', function(e) {
-      if (!_fIsDragging) return;
-
-      clearTimeout(_fTouchTimer);
-      _fTouchTimer = null;
-
-      var dragRange = _fCurDragRange();
-
-      if (!_fTouchMoved) {
-        // 순수 탭: 단일 날짜 토글
-        var d = _fDragStart;
-        if (d) {
-          if (_fSelDates.has(d)) { _fSelDates.delete(d); }
-          else                   { _fSelDates.add(d); }
-        }
-      } else {
-        // 드래그 or 롱프레스+드래그: 범위 추가
+      // mouseup (document-level) — 데스크톱
+      document.addEventListener('mouseup', function(e) {
+        if (!_fIsDragging) return;
+        var dragRange = _fCurDragRange();
         dragRange.forEach(function(d){ _fSelDates.add(d); });
-      }
+        _fIsDragging = false; _fDragStart = null; _fDragCur = null;
+        _fUpdateHighlight();
+        if (_fSelDates.size > 0 && !e.target.closest('.res-cal-item')) {
+          openResvModal(null, null);
+        }
+      });
 
-      _fIsDragging     = false;
-      _fDragStart      = null;
-      _fDragCur        = null;
-      _fIsLongPress    = false;
-      _fDragCtrl       = false;
-      _fTouchMoved     = false;
-      _fTouchStartCell = null;
+      // touchend (document-level) — 모바일
+      document.addEventListener('touchend', function(e) {
+        if (!_fIsDragging) return;
 
-      _fUpdateHighlight();
-    }, { passive: true });
+        clearTimeout(_fTouchTimer);
+        _fTouchTimer = null;
+
+        var dragRange = _fCurDragRange();
+
+        if (!_fTouchMoved) {
+          // 순수 탭: 단일 날짜 토글
+          var d = _fDragStart;
+          if (d) {
+            if (_fSelDates.has(d)) { _fSelDates.delete(d); }
+            else                   { _fSelDates.add(d); }
+          }
+        } else {
+          // 드래그 or 롱프레스+드래그: 범위 추가
+          dragRange.forEach(function(d){ _fSelDates.add(d); });
+        }
+
+        _fIsDragging     = false;
+        _fDragStart      = null;
+        _fDragCur        = null;
+        _fIsLongPress    = false;
+        _fDragCtrl       = false;
+        _fTouchMoved     = false;
+        _fTouchStartCell = null;
+
+        _fUpdateHighlight();
+      }, { passive: true });
+    }
 
     // 선택 초기화
     var clearSelBtn = $f('fac-clear-sel-btn');

@@ -227,7 +227,7 @@
    */
   function _judge() {
     var now = new Date();
-    var todayStr = now.toISOString().slice(0, 10);
+    var todayStr = window.toLocalYMD(now);
 
     // 오늘의 로그만 필터
     var todayLogs = (_lastLog ? [_lastLog] : []).concat(
@@ -426,7 +426,7 @@
     if (_user && _user.name) {
       // 오늘 입출입 로그 로드 (판정에 사용)
       try {
-        var todayStr = new Date().toISOString().slice(0, 10);
+        var todayStr = window.toLocalYMD();
         var logs = await _readSheet('입출입기록');
         window._allLogs = logs;
         var myLogs = logs.filter(function (l) {
