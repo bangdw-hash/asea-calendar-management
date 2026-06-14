@@ -6487,3 +6487,13 @@ body.nav-sheet-open .quick-fab { display: none; }
 .bdg-sub-wrap .bdg-table.sm { min-width:0; background:#fff; }
 .bdg-sub-wrap .bdg-table.sm th { background:#eef1f6; }
 .bdg-exec-edit { color:var(--color-accent); border-color:var(--color-accent) !important; }
+
+/* 예산: 부서 한도 태그 / 집행률 바 초과 / 한도 안내 */
+.bdg-cap-tag { font-size:12px; font-weight:600; color:var(--color-text-secondary); margin-left:6px; }
+.bdg-cap-tag.muted { color:var(--color-text-secondary); opacity:.8; }
+.bdg-cap-tag b { color:var(--color-text); }
+.bdg-cap-tag b.neg { color:var(--color-error); }
+.bdg-bar span.over { background:var(--color-error); }
+.bdg-cap-info { font-size:12px; color:var(--color-text-secondary); margin-top:6px; min-height:16px; }
+.bdg-c-act .bdg-item-edit { color:var(--color-accent); border-color:var(--color-accent) !important; }
+.bdg-c-act .bdg-item-del { color:var(--color-error); }

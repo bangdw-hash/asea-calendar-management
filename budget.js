@@ -110,6 +110,135 @@ var BudgetModule = (function () {
     return Object.keys(ys).map(Number).sort(function(a,b){ return b - a; });
   }
 
+  /* ── 부서별 예산 한도(캡) + 편성 ── */
+  function kCaps(y) { return 'asea_budget_caps_' + (y || B.year); }
+  function getCaps(y) { try { return JSON.parse(localStorage.getItem(kCaps(y)) || '{}'); } catch (e) { return {}; } }
+  function saveCaps(obj, y) { _save(kCaps(y), obj); }
+  function capOf(dept, type, y) { var c = getCaps(y); return (c[dept] && Number(c[dept][type])) || 0; }
+  function deptDrafted(dept, type, y, excludeId) {
+    return items(y).reduce(function (s, it) {
+      return (it.dept === dept && it.type === type && it.id !== excludeId) ? s + (Number(it.amount) || 0) : s;
+    }, 0);
+  }
+  function gv(id) { var el = document.getElementById(id); return el ? (el.value || '').trim() : ''; }
+
+  // 전년도 예산을 초안으로 불러오기
+  function importPrevYear() {
+    var prev = B.year - 1;
+    var prevItems = items(prev);
+    if (!canSeeAll()) prevItems = prevItems.filter(function (it) { return it.dept === myDept(); });
+    if (!prevItems.length) { toast(prev + '년 예산 데이터가 없습니다.', 'error'); return; }
+    if (!confirm(prev + '년 예산 ' + prevItems.length + '건을 ' + B.year + '년 초안으로 불러올까요?\n(금액은 그대로, 확정상태는 해제되어 복사됩니다)')) return;
+    var cur = items(B.year);
+    var copied = prevItems.map(function (s) {
+      return { id: uid(), year: B.year, type: s.type, dept: s.dept, gwan: s.gwan, hang: s.hang, mok: s.mok,
+               name: s.name, desc: s.desc, example: s.example, calc: s.calc, amount: Number(s.amount) || 0,
+               confirmed: false, confirmedAt: '', confirmedBy: '', createdAt: new Date().toISOString(), createdBy: curEmail() };
+    });
+    saveItems(cur.concat(copied), B.year);
+    toast(prev + '년 예산 ' + copied.length + '건을 ' + B.year + '년 초안으로 불러왔습니다.');
+    renderTab();
+  }
+
+  // 관리자: 부서별 편성 한도 설정
+  function openCapsModal(type) {
+    if (!isBudgetAdmin()) { toast('한도 설정 권한이 없습니다.', 'error'); return; }
+    var caps = getCaps(); var depts = allDepts();
+    var rows = depts.map(function (d) {
+      var v = (caps[d] || {})[type] || 0;
+      var drafted = deptDrafted(d, type, B.year);
+      return '<tr><td>' + esc(d) + '</td>' +
+        '<td><input class="bdg-cap-in" data-dept="' + esc(d) + '" type="number" inputmode="numeric" value="' + (v || '') + '" placeholder="무제한"></td>' +
+        '<td class="bdg-c-amt">' + won(drafted) + '</td></tr>';
+    }).join('');
+    var body = '<div class="bdg-form">' +
+      '<p class="bdg-muted">' + TYPES[type] + ' 예산의 부서별 <b>편성 한도(원)</b>. 비워두면 무제한. 각 부서는 한도 내에서만 초안을 편성할 수 있습니다.</p>' +
+      '<div class="scroll-x"><table class="bdg-table sm"><thead><tr><th>부서</th><th>편성 한도</th><th>현재 편성액</th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
+      '<div class="bdg-form-actions"><button id="bdg-caps-save" class="btn btn-primary">저장</button><button id="bdg-caps-cancel" class="btn btn-secondary">취소</button></div>' +
+      '</div>';
+    showModal(TYPES[type] + ' 부서별 편성 한도', body);
+    document.getElementById('bdg-caps-cancel').addEventListener('click', closeModal);
+    document.getElementById('bdg-caps-save').addEventListener('click', function () {
+      var c = getCaps();
+      document.querySelectorAll('.bdg-cap-in').forEach(function (inp) {
+        var d = inp.dataset.dept; if (!c[d]) c[d] = {}; c[d][type] = Number(inp.value) || 0;
+      });
+      saveCaps(c); closeModal(); toast('부서별 편성 한도를 저장했습니다.'); renderTab();
+    });
+  }
+
+  // 초안 항목 추가/수정
+  function openItemEdit(editId, type) {
+    var seeAll = canSeeAll();
+    var ed = editId ? items().find(function (x) { return x.id === editId; }) : null;
+    if (ed && ed.confirmed && !isBudgetAdmin()) { toast('확정된 항목은 수정할 수 없습니다. (관리자 확정 해제 후 가능)', 'error'); return; }
+    var dept = ed ? ed.dept : (seeAll ? (B.deptFilter !== 'ALL' ? B.deptFilter : (allDepts()[0] || '')) : myDept());
+    var deptField = (seeAll && !ed)
+      ? '<label>부서</label><select id="bi-dept">' + allDepts().map(function (d) { return '<option' + (d === dept ? ' selected' : '') + '>' + esc(d) + '</option>'; }).join('') + '</select>'
+      : '<label>부서</label><input id="bi-dept" value="' + esc(dept) + '" readonly>';
+    var v = ed || {};
+    var body = '<div class="bdg-form">' +
+      deptField +
+      '<label>관 / 항 / 목 (코드)</label><div style="display:flex;gap:6px">' +
+        '<input id="bi-gwan" value="' + esc(v.gwan || '') + '" placeholder="관">' +
+        '<input id="bi-hang" value="' + esc(v.hang || '') + '" placeholder="항">' +
+        '<input id="bi-mok" value="' + esc(v.mok || '') + '" placeholder="목"></div>' +
+      '<label>명칭 <span class="bdg-req">*</span></label><input id="bi-name" value="' + esc(v.name || '') + '" placeholder="예: 직원 역량강화 교육비">' +
+      '<label>설명</label><input id="bi-desc" value="' + esc(v.desc || '') + '">' +
+      '<label>산출 세부내역</label><input id="bi-calc" value="' + esc(v.calc || '') + '" placeholder="예: 50만원 × 4회">' +
+      '<label>예산액(원) <span class="bdg-req">*</span></label><input id="bi-amt" type="number" inputmode="numeric" value="' + (v.amount != null ? v.amount : '') + '">' +
+      '<div id="bi-cap-info" class="bdg-cap-info"></div>' +
+      '<div class="bdg-form-actions"><button id="bi-save" class="btn btn-primary">' + (ed ? '수정 저장' : '추가') + '</button><button id="bi-cancel" class="btn btn-secondary">취소</button></div>' +
+      '</div>';
+    showModal(ed ? (TYPES[type] + ' 항목 수정') : (TYPES[type] + ' 초안 항목 추가'), body);
+    function curDept() { var el = document.getElementById('bi-dept'); return el ? el.value : dept; }
+    function updCap() {
+      var d = curDept(); var cap = capOf(d, type, B.year); var drafted = deptDrafted(d, type, B.year, editId);
+      var amt = Number(document.getElementById('bi-amt').value) || 0;
+      var info = document.getElementById('bi-cap-info');
+      if (cap > 0) {
+        var after = drafted + amt;
+        info.innerHTML = '편성 한도 ' + won(cap) + '원 · 편성예정 ' + won(after) + '원 · 잔여 ' + won(cap - after) + '원' +
+          (after > cap ? ' <b style="color:var(--color-error)">⚠ 한도 초과</b>' : '');
+        info.style.color = after > cap ? 'var(--color-error)' : '';
+      } else { info.textContent = '편성 한도 미설정(무제한)'; info.style.color = ''; }
+    }
+    ['bi-amt'].forEach(function (id) { var el = document.getElementById(id); if (el) el.addEventListener('input', updCap); });
+    var ds = document.getElementById('bi-dept'); if (ds && ds.tagName === 'SELECT') ds.addEventListener('change', updCap);
+    updCap();
+    document.getElementById('bi-cancel').addEventListener('click', closeModal);
+    document.getElementById('bi-save').addEventListener('click', function () {
+      var d = curDept();
+      var name = document.getElementById('bi-name').value.trim();
+      var amt = Number(document.getElementById('bi-amt').value) || 0;
+      if (!name) { toast('명칭을 입력하세요.', 'error'); return; }
+      if (amt < 0) { toast('금액을 확인하세요.', 'error'); return; }
+      var cap = capOf(d, type, B.year), drafted = deptDrafted(d, type, B.year, editId);
+      if (cap > 0 && drafted + amt > cap) {
+        toast('부서 편성 한도 초과: 한도 ' + won(cap) + ' / 편성 ' + won(drafted + amt) + ' (초과 ' + won(drafted + amt - cap) + ')', 'error'); return;
+      }
+      var arr = items();
+      if (ed) {
+        var r = arr.find(function (x) { return x.id === editId; });
+        if (r) { r.dept = d; r.gwan = gv('bi-gwan'); r.hang = gv('bi-hang'); r.mok = gv('bi-mok'); r.name = name; r.desc = gv('bi-desc'); r.calc = gv('bi-calc'); r.amount = amt; r.updatedAt = new Date().toISOString(); }
+      } else {
+        arr.push({ id: uid(), year: B.year, type: type, dept: d, gwan: gv('bi-gwan'), hang: gv('bi-hang'), mok: gv('bi-mok'),
+                   name: name, desc: gv('bi-desc'), example: '', calc: gv('bi-calc'), amount: amt,
+                   confirmed: false, confirmedAt: '', confirmedBy: '', createdAt: new Date().toISOString(), createdBy: curEmail() });
+      }
+      saveItems(arr); closeModal(); toast(ed ? '항목을 수정했습니다.' : '초안 항목을 추가했습니다.'); renderTab();
+    });
+  }
+
+  function deleteItem(id) {
+    var it = items().find(function (x) { return x.id === id; }); if (!it) return;
+    if (it.confirmed && !isBudgetAdmin()) { toast('확정된 항목은 삭제할 수 없습니다.', 'error'); return; }
+    if (!confirm('이 예산 항목을 삭제하시겠습니까?\n(관련 집행내역도 함께 삭제됩니다)')) return;
+    saveItems(items().filter(function (x) { return x.id !== id; }));
+    saveExecs(execs().filter(function (e) { return e.itemId !== id; }));
+    toast('항목을 삭제했습니다.'); renderTab();
+  }
+
   /* ── 집계 ── */
   function execTotalForItem(itemId, exArr) {
     var sum = 0; (exArr || execs()).forEach(function(e){ if (e.itemId === itemId) sum += Number(e.amount) || 0; });
@@ -235,6 +364,9 @@ var BudgetModule = (function () {
           '<span class="bdg-stat">잔액 <b>'+won(totConf - totExec)+'</b>원</span>' +
         '</div>' +
         '<div class="bdg-tb-right">' +
+          '<button id="bdg-item-add" class="btn btn-primary btn-sm">＋ 초안 항목</button>' +
+          (canConfirm ? '<button id="bdg-caps" class="btn btn-secondary btn-sm">🎯 부서 한도</button>' : '') +
+          '<button id="bdg-import-prev" class="btn btn-ghost btn-sm">📂 ' + (B.year - 1) + '년 불러오기</button>' +
           '<button id="bdg-expand-all" class="btn btn-ghost btn-sm">⊕ 집행 모두 펼치기</button>' +
           (canConfirm ? '<button id="bdg-confirm-bulk" class="btn btn-primary btn-sm">✅ 일괄 확정</button>' +
                         '<button id="bdg-confirm-sel" class="btn btn-secondary btn-sm">☑ 세부 확정</button>' +
@@ -244,7 +376,7 @@ var BudgetModule = (function () {
           '<input id="bdg-exec-file" type="file" accept=".xlsx,.xls" hidden>' +
         '</div>' +
       '</div>' +
-      '<div class="scroll-x">' + buildTable(its, ex, canConfirm) + '</div>';
+      '<div class="scroll-x">' + buildTable(its, ex, canConfirm, type) + '</div>';
 
     body.innerHTML = html;
 
@@ -260,6 +392,12 @@ var BudgetModule = (function () {
     var upBtn = document.getElementById('bdg-exec-up'), upFile = document.getElementById('bdg-exec-file');
     upBtn.addEventListener('click', function(){ upFile.click(); });
     upFile.addEventListener('change', function(){ if (this.files[0]) bulkUploadExec(this.files[0]); this.value=''; });
+
+    // 초안 편성/한도/전년도 불러오기
+    document.getElementById('bdg-item-add').addEventListener('click', function(){ openItemEdit(null, type); });
+    var capsBtn = document.getElementById('bdg-caps');
+    if (capsBtn) capsBtn.addEventListener('click', function(){ openCapsModal(type); });
+    document.getElementById('bdg-import-prev').addEventListener('click', importPrevYear);
 
     // 모두 펼치기/접기
     var expandAll = document.getElementById('bdg-expand-all');
@@ -297,6 +435,13 @@ var BudgetModule = (function () {
         deleteExec(this.dataset.eid); renderBudgetList(type);
       });
     });
+    // 초안 항목 수정/삭제
+    body.querySelectorAll('.bdg-item-edit').forEach(function(btn){
+      btn.addEventListener('click', function(){ openItemEdit(this.dataset.id, type); });
+    });
+    body.querySelectorAll('.bdg-item-del').forEach(function(btn){
+      btn.addEventListener('click', function(){ deleteItem(this.dataset.id); });
+    });
   }
 
   /* 항목별 집행내역 인라인 HTML (펼침 영역 + 모달 공용) */
@@ -326,39 +471,50 @@ var BudgetModule = (function () {
       '</div>';
   }
 
-  function buildTable(its, ex, canConfirm) {
-    if (!its.length) return '<div class="bdg-empty">해당 조건의 예산 항목이 없습니다.</div>';
+  function buildTable(its, ex, canConfirm, type) {
+    if (!its.length) return '<div class="bdg-empty">해당 조건의 예산 항목이 없습니다. 상단 「＋ 초안 항목」 또는 「' + (B.year - 1) + '년 불러오기」로 편성을 시작하세요.</div>';
     // 부서 → 관 → 항 그룹 정렬
     its = its.slice().sort(function(a,b){
       return (a.dept+'').localeCompare(b.dept+'','ko') || numcmp(a.gwan,b.gwan) || numcmp(a.hang,b.hang) || numcmp(a.mok,b.mok);
     });
+    var COLS = 9;
     var rows = '', curDept = null;
     its.forEach(function(it){
       if (it.dept !== curDept) {
         curDept = it.dept;
-        rows += '<tr class="bdg-dept-row"><td colspan="9">🏢 '+esc(curDept)+'</td></tr>';
+        var cap = capOf(it.dept, type, B.year), drafted = deptDrafted(it.dept, type, B.year);
+        var capHtml = cap > 0
+          ? ' <span class="bdg-cap-tag">편성한도 '+won(cap)+' · 편성 '+won(drafted)+' · 잔여 <b class="'+((cap-drafted)<0?'neg':'')+'">'+won(cap-drafted)+'</b></span>'
+          : ' <span class="bdg-cap-tag muted">한도 미설정 · 편성 '+won(drafted)+'</span>';
+        rows += '<tr class="bdg-dept-row"><td colspan="'+COLS+'">🏢 '+esc(curDept)+capHtml+'</td></tr>';
       }
       var used = execTotalForItem(it.id, ex);
       var remain = (it.confirmed ? it.amount : 0) - used;
+      var rate = (it.confirmed && it.amount) ? Math.round(used / it.amount * 100) : 0;
+      var rateHtml = it.confirmed
+        ? '<div class="bdg-bar"><span style="width:'+Math.min(rate,100)+'%" class="'+(rate>100?'over':'')+'"></span></div>'+rate+'%'
+        : '<span class="bdg-muted">-</span>';
       rows += '<tr class="'+(it.confirmed?'bdg-confirmed':'')+'">' +
         '<td class="bdg-c-chk">'+(canConfirm?'<input type="checkbox" class="bdg-row-check" data-id="'+it.id+'">':'')+'</td>' +
-        '<td class="bdg-c-code">'+esc(it.gwan)+(it.hang?'.'+esc(it.hang.split('.').slice(-1)[0]):'')+'</td>' +
+        '<td class="bdg-c-code">'+esc(it.gwan)+(it.hang?'.'+esc((''+it.hang).split('.').slice(-1)[0]):'')+'</td>' +
         '<td class="bdg-c-name"><b>'+esc(it.name)+'</b>'+(it.calc?'<span class="bdg-calc">'+esc(it.calc)+'</span>':'')+'</td>' +
         '<td class="bdg-c-amt">'+won(it.amount)+'</td>' +
         '<td class="bdg-c-st">'+(it.confirmed?'<span class="bdg-badge ok">확정</span>':'<span class="bdg-badge">미확정</span>')+'</td>' +
         '<td class="bdg-c-amt warn">'+won(used)+'</td>' +
         '<td class="bdg-c-amt '+(remain<0?'neg':'')+'">'+won(remain)+'</td>' +
+        '<td class="bdg-c-rate">'+rateHtml+'</td>' +
         '<td class="bdg-c-act">' +
-          (it.confirmed?'<button class="bdg-exec-btn" data-id="'+it.id+'">＋집행</button>':'') +
+          (it.confirmed?'<button class="bdg-exec-btn" data-id="'+it.id+'">＋집행</button>'
+                       :'<button class="bdg-item-edit" data-id="'+it.id+'">수정</button><button class="bdg-item-del" data-id="'+it.id+'">삭제</button>') +
           '<button class="bdg-toggle-btn" data-id="'+it.id+'">'+(B.expanded[it.id]?'▾ 닫기':'▸ 세부')+'</button>' +
         '</td>' +
       '</tr>';
       if (B.expanded[it.id]) {
-        rows += '<tr class="bdg-sub-row"><td colspan="8">'+execListHtml(it, ex)+'</td></tr>';
+        rows += '<tr class="bdg-sub-row"><td colspan="'+COLS+'">'+execListHtml(it, ex)+'</td></tr>';
       }
     });
     return '<table class="bdg-table"><thead><tr>' +
-      '<th></th><th>코드</th><th>항목(산출내역)</th><th>예산액</th><th>확정</th><th>집행누계</th><th>잔액</th><th>관리</th>' +
+      '<th></th><th>코드</th><th>항목(산출내역)</th><th>예산액</th><th>확정</th><th>집행누계</th><th>잔액</th><th>집행률</th><th>관리</th>' +
       '</tr></thead><tbody>'+rows+'</tbody></table>';
   }
   function numcmp(a,b){ var x=parseFloat(a)||0, y=parseFloat(b)||0; return x-y; }
