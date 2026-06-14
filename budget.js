@@ -303,22 +303,59 @@ var BudgetModule = (function () {
   }
   function showIssuedResult(r) {
     var url = verifyBase() + '?no=' + encodeURIComponent(r.no);
+    var it = items().find(function(x){ return x.id === r.itemId; }) || { name: r.itemName, amount: 0, confirmed: true };
+    var budget = it.confirmed ? it.amount : 0;
+    var usedBefore = execTotalForItem(it.id);               // 기존 누적 집행액
+    var reservedAll = reservedForItem(it.id);               // 이 건 포함 예약 합계
+    var remainAfter = budget - usedBefore - reservedAll;    // 잔여(가용)
+    var qr = 'https://api.qrserver.com/v1/create-qr-code/?size=240x240&margin=8&data=' + encodeURIComponent(url);
+    var basis =
+      '[예산 집행 근거]\n' +
+      '· 예산항목: ' + (it.name || r.itemName || '') + ' (' + r.dept + '/' + TYPES[r.type] + ')\n' +
+      '· 집행 승인코드: ' + r.no + '\n' +
+      '· 금번 집행(신청)액: ' + won(r.amount) + '원\n' +
+      '· 기존 누적 집행액: ' + won(usedBefore) + '원\n' +
+      '· 잔여 집행 가능액: ' + won(remainAfter) + '원\n' +
+      '· 확정예산: ' + won(budget) + '원\n' +
+      '· 사유: ' + (r.summary || '') + '\n' +
+      '· 실시간 조회: ' + url;
     var body = '<div class="bdg-form">' +
-      '<p>✅ 집행승인번호가 발급되었습니다. 아래 <b>번호</b>와 <b>조회 URL</b>을 기안문에 기재하세요.</p>' +
+      '<p>✅ 집행승인번호가 발급되었습니다. 아래 내용을 기안문에 붙여넣으세요.</p>' +
       '<label>집행승인번호</label><input id="ir-no" readonly value="' + esc(r.no) + '">' +
-      '<label>결재자 조회 URL (기안문에 붙여넣기)</label><input id="ir-url" readonly value="' + esc(url) + '">' +
-      '<div class="bdg-form-actions">' +
-        '<button id="ir-copy" class="btn btn-primary">URL 복사</button>' +
-        '<button id="ir-copy2" class="btn btn-secondary">번호 복사</button>' +
+      '<label>결재자 조회 URL</label><input id="ir-url" readonly value="' + esc(url) + '">' +
+      '<div style="text-align:center;margin:12px 0">' +
+        '<img id="ir-qr" src="' + qr + '" alt="조회 QR" width="180" height="180" style="border:1px solid var(--color-border);border-radius:10px;background:#fff" crossorigin="anonymous">' +
+        '<div class="bdg-muted" style="margin-top:4px">QR을 길게 눌러(모바일)/우클릭(PC) 복사하거나 아래 버튼으로 저장</div>' +
+      '</div>' +
+      '<label>집행 근거 (기안문 붙여넣기용)</label>' +
+      '<textarea id="ir-basis" readonly rows="9" style="width:100%;font-size:12.5px;line-height:1.6;border:1px solid var(--color-border);border-radius:8px;padding:10px;box-sizing:border-box">' + esc(basis) + '</textarea>' +
+      '<div class="bdg-form-actions" style="flex-wrap:wrap">' +
+        '<button id="ir-copy-basis" class="btn btn-primary">📋 집행근거 복사</button>' +
+        '<button id="ir-copy" class="btn btn-secondary">URL 복사</button>' +
+        '<button id="ir-qr-copy" class="btn btn-secondary">QR 복사</button>' +
+        '<button id="ir-qr-dl" class="btn btn-ghost">QR 저장</button>' +
         '<button id="ir-close" class="btn btn-ghost">닫기</button>' +
       '</div>' +
-      '<p class="bdg-muted" style="margin-top:8px">※ 결재권자가 이 URL을 클릭하면 해당 건의 예산·집행 현황을 실시간으로 확인합니다.</p>' +
       '</div>';
     showModal('승인번호 발급 완료', body);
-    function copy(text){ try { navigator.clipboard.writeText(text); toast('복사되었습니다.'); } catch(e){ var i=document.getElementById('ir-url'); i.select(); document.execCommand('copy'); toast('복사되었습니다.'); } }
+    function copy(text){
+      function fb(){ try{ var ta=document.getElementById('ir-basis'); ta.removeAttribute('readonly'); ta.value=text; ta.focus(); ta.select(); document.execCommand('copy'); ta.setAttribute('readonly','readonly'); ta.value=basis; toast('복사되었습니다.'); }catch(_){ toast('복사 실패 — 길게 눌러 복사하세요.','error'); } }
+      try { if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(function(){toast('복사되었습니다.');}, fb); else fb(); } catch(e){ fb(); }
+    }
+    document.getElementById('ir-copy-basis').addEventListener('click', function(){ copy(basis); });
     document.getElementById('ir-copy').addEventListener('click', function(){ copy(url); });
-    document.getElementById('ir-copy2').addEventListener('click', function(){ copy(r.no); });
     document.getElementById('ir-close').addEventListener('click', closeModal);
+    document.getElementById('ir-qr-dl').addEventListener('click', function(){ var a=document.createElement('a'); a.href=qr; a.download='집행승인_'+r.no+'.png'; a.target='_blank'; document.body.appendChild(a); a.click(); a.remove(); });
+    document.getElementById('ir-qr-copy').addEventListener('click', function(){
+      try {
+        fetch(qr).then(function(res){ return res.blob(); }).then(function(blob){
+          if (window.ClipboardItem && navigator.clipboard && navigator.clipboard.write) {
+            return navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]).then(function(){ toast('QR 이미지가 복사되었습니다.'); });
+          }
+          throw 0;
+        }).catch(function(){ toast('QR은 길게 눌러(모바일)/우클릭(PC)으로 복사하거나 저장하세요.', 'error'); });
+      } catch(e){ toast('QR은 길게 눌러/우클릭으로 복사하세요.', 'error'); }
+    });
   }
   function openReservList() {
     var arr = reservs().slice().sort(function(a,b){ return (b.createdAt||'').localeCompare(a.createdAt||''); });

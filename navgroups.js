@@ -150,10 +150,12 @@
       var lblEl = src.querySelector('.tab-label');
       if (lblEl) label = lblEl.textContent;
       var svg = src.querySelector('svg');
+      var emoji = src.querySelector('.tab-icon');   // svg 없는 버튼(예: 캘린더 공유 🔗)
+      var icon = svg ? svg.outerHTML : (emoji ? '<span class="nav-sheet-emoji">' + emoji.textContent + '</span>' : '<span class="nav-sheet-emoji">•</span>');
       var item = document.createElement('button');
       item.type = 'button';
       item.className = 'nav-sheet-item' + (src.classList.contains('active') ? ' active' : '');
-      item.innerHTML = (svg ? svg.outerHTML : '') + '<span>' + label + '</span>';
+      item.innerHTML = icon + '<span>' + label + '</span>';
       item.addEventListener('click', function () { closeSheet(); src.click(); });
       body.appendChild(item);
     });
