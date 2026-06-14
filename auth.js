@@ -106,17 +106,38 @@
     });
   }
 
+  /**
+   * GIS(gsi/client)는 async 로드라 부팅 직후엔 아직 준비 안 됐을 수 있다.
+   * login/reauth가 즉시 실패하지 않도록 최대 5초까지 준비를 대기한다.
+   */
+  function _ensureClient() {
+    _initTokenClient();
+    if (_tokenClient) return Promise.resolve(true);
+    return new Promise(function (resolve) {
+      var waited = 0;
+      var iv = setInterval(function () {
+        _initTokenClient();
+        if (_tokenClient || waited >= 5000) {
+          clearInterval(iv);
+          resolve(!!_tokenClient);
+        }
+        waited += 100;
+      }, 100);
+    });
+  }
+
   /* ── 공개 인터페이스 ─────────────────────────────────────────── */
   window.Auth = {
 
     /** 사용자 클릭 로그인 — 팝업/계정 선택 */
     login: function () {
-      if (!_tokenClient) _initTokenClient();
-      if (!_tokenClient) return Promise.reject(new Error('Google Identity Services가 아직 로드되지 않았습니다.'));
-      return new Promise(function (resolve) {
-        _isMainLogin    = true;
-        _pendingResolve = resolve;
-        _tokenClient.requestAccessToken({ prompt: '' });
+      return _ensureClient().then(function (ready) {
+        if (!ready) return Promise.reject(new Error('Google Identity Services가 아직 로드되지 않았습니다.'));
+        return new Promise(function (resolve) {
+          _isMainLogin    = true;
+          _pendingResolve = resolve;
+          _tokenClient.requestAccessToken({ prompt: '' });
+        });
       });
     },
 
@@ -125,13 +146,14 @@
      * 성공 시 새 토큰(string), 실패 시 null 반환 (UI/세션은 건드리지 않음).
      */
     reauth: function () {
-      if (!_tokenClient) _initTokenClient();
-      if (!_tokenClient) return Promise.resolve(null);
-      return new Promise(function (resolve) {
-        _isMainLogin    = false;
-        _pendingResolve = function (ok) { resolve(ok ? _accessToken : null); };
-        try { _tokenClient.requestAccessToken({ prompt: '' }); }
-        catch (e) { _pendingResolve = null; resolve(null); }
+      return _ensureClient().then(function (ready) {
+        if (!ready) return null;
+        return new Promise(function (resolve) {
+          _isMainLogin    = false;
+          _pendingResolve = function (ok) { resolve(ok ? _accessToken : null); };
+          try { _tokenClient.requestAccessToken({ prompt: '' }); }
+          catch (e) { _pendingResolve = null; resolve(null); }
+        });
       });
     },
 

@@ -12,11 +12,12 @@
 var PROPS = PropertiesService.getScriptProperties();
 
 function doGet(e) {
-  var action = e.parameter.action || '';
+  var p = (e && e.parameter) ? e.parameter : {};
+  var action = p.action || '';
   var result;
   try {
     if (action === 'host_token') {
-      result = _makeHostToken(e.parameter.room || '', e.parameter.topic || '');
+      result = _makeHostToken(p.room || '', p.topic || '');
     } else if (action === 'ping') {
       result = { ok: true, msg: 'ASEA Meet Proxy 정상 작동 중' };
     } else {
