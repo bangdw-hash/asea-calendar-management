@@ -96,6 +96,9 @@ window.MonthlyReportModule = (function () {
       throw new Error((err.error && err.error.message) || 'API 오류 '+resp.status);
     }
     var data = await resp.json();
+    if (!data || !data.content || !data.content[0] || !data.content[0].text) {
+      throw new Error('AI 응답 형식 오류');
+    }
     return data.content[0].text;
   }
 
@@ -148,6 +151,9 @@ window.MonthlyReportModule = (function () {
     });
     if (!resp.ok) throw new Error('이미지 분석 오류 '+resp.status);
     var data = await resp.json();
+    if (!data || !data.content || !data.content[0] || !data.content[0].text) {
+      throw new Error('이미지 분석 응답 형식 오류');
+    }
     return data.content[0].text;
   }
 

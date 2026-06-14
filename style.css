@@ -3678,9 +3678,9 @@ a        { color: var(--color-accent); text-decoration: none; }
   transition: background .12s, color .12s;
 }
 .personal-filter-btn.active {
-  background: #1A73E8;
+  background: var(--color-accent);
   color: #fff;
-  border-color: #1A73E8;
+  border-color: var(--color-accent);
 }
 
 /* 개인 업무 카드 */
@@ -3912,7 +3912,7 @@ a        { color: var(--color-accent); text-decoration: none; }
 .ci-log-time-item.in  .ci-log-time-label { color: #2e7d32; }
 .ci-log-time-item.out .ci-log-time-label { color: #c62828; }
 .ci-log-time-val { font-size: 14px; font-weight: 800; font-family: monospace; color: #202124; }
-.ci-log-duration { font-size: 12px; color: #1a73e8; font-weight: 600; }
+.ci-log-duration { font-size: 12px; color: var(--color-accent); font-weight: 600; }
 
 /* ── 직원 목록 테이블 ────────────────────────────── */
 .hr-emp-table {
@@ -3979,7 +3979,7 @@ a        { color: var(--color-accent); text-decoration: none; }
   margin-bottom: 8px;
   font-size: 12px;
 }
-.hr-bulk-bar .hr-sel-count { flex: 1; color: #1a73e8; font-weight: 600; }
+.hr-bulk-bar .hr-sel-count { flex: 1; color: var(--color-accent); font-weight: 600; }
 
 /* ── 작업지시 카드 ───────────────────────────────── */
 .wo-card {
@@ -4052,7 +4052,7 @@ a        { color: var(--color-accent); text-decoration: none; }
   transition: background .2s;
   flex-shrink: 0;
 }
-.ci-gps-toggle-wrap input:checked + .ci-gps-toggle-track { background: #1a73e8; }
+.ci-gps-toggle-wrap input:checked + .ci-gps-toggle-track { background: var(--color-accent); }
 .ci-gps-toggle-thumb {
   position: absolute;
   top: 3px;
@@ -5577,7 +5577,7 @@ body.is-dragging-event .day-events { pointer-events: none !important; }
   display: none;
   align-items: center;
   gap: 4px;
-  background: #1a73e8;
+  background: var(--color-accent);
   color: #fff;
   font-size: 11px;
   font-weight: 600;
@@ -5598,7 +5598,7 @@ body.is-dragging-event .day-events { pointer-events: none !important; }
   position: absolute;
   display: none;
   height: 3px;
-  background: #1a73e8;
+  background: var(--color-accent);
   border-radius: 2px;
   pointer-events: none;
   z-index: 199;
@@ -5608,7 +5608,7 @@ body.is-dragging-event .day-events { pointer-events: none !important; }
   position: absolute;
   left: -4px; top: -4px;
   width: 10px; height: 10px;
-  background: #1a73e8;
+  background: var(--color-accent);
   border-radius: 50%;
 }
 
@@ -6192,4 +6192,27 @@ body.is-dragging-event .day-events { pointer-events: none !important; }
   .calendar-actions .tb-btn { padding: 0 9px; font-size: 11px; gap: 4px; }
   .calendar-actions .view-btn { padding: 0 11px; font-size: 11px; }
   .calendar-actions .tb-ico { width: 13px; height: 13px; }
+}
+
+/* ──────────────────────────────────────────────────────────────
+   접근성: 키보드 포커스 표시 복구 (디자인 통일)
+   - 기존 input/button의 outline:none 으로 키보드 포커스가 안 보이던 문제 보완
+   - :focus-visible 이므로 마우스 클릭 시에는 나타나지 않고, Tab 키 탐색 시에만 표시
+   ────────────────────────────────────────────────────────────── */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+summary:focus-visible,
+[tabindex]:focus-visible,
+[role="button"]:focus-visible,
+[role="menuitem"]:focus-visible,
+[role="tab"]:focus-visible,
+.btn:focus-visible,
+.tab-btn:focus-visible,
+.bnav-btn:focus-visible {
+  outline: 2px solid var(--color-accent) !important;
+  outline-offset: 2px;
+  border-radius: var(--r-sm, 4px);
 }

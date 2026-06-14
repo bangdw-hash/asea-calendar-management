@@ -131,56 +131,56 @@ const CONFIG = {
 };
 
 // localStorage에 저장된 값이 있으면 기본값 덮어쓰기
+// (키별 개별 복구: 한 항목이 손상돼도 나머지 설정은 정상 복구되도록)
 (function applyStoredSettings() {
-  try {
-    var s = CONFIG.storageKeys;
+  var s = CONFIG.storageKeys;
 
-    var storedRecipients = localStorage.getItem(s.recipients);
-    if (storedRecipients) CONFIG.recipients = JSON.parse(storedRecipients);
+  // 문자열 값: parse 불필요 → 단순 복구
+  function applyStr(key, prop) {
+    var v = localStorage.getItem(key);
+    if (v) CONFIG[prop] = v;
+  }
+  // JSON 값: 개별 try/catch — 손상된 항목만 건너뛰고 자동 정리
+  function applyJSON(key, prop) {
+    var raw = localStorage.getItem(key);
+    if (!raw) return;
+    try {
+      CONFIG[prop] = JSON.parse(raw);
+    } catch (e) {
+      console.warn('[config] 손상된 설정 항목 무시:', key);
+      try { localStorage.removeItem(key); } catch (_) {}
+    }
+  }
 
-    var storedFolderId = localStorage.getItem(s.driveFolderId);
-    if (storedFolderId) CONFIG.driveReportFolderId = storedFolderId;
-
-    var storedDepts = localStorage.getItem(s.departments);
-    if (storedDepts) CONFIG.departments = JSON.parse(storedDepts);
-
-    var storedSelCal = localStorage.getItem(s.selectedCalendars);
-    if (storedSelCal) CONFIG.selectedCalendars = JSON.parse(storedSelCal);
-
-    var storedShared = localStorage.getItem(s.sharedCalendars);
-    if (storedShared) CONFIG.sharedCalendars = JSON.parse(storedShared);
-
-    var storedGeminiKey = localStorage.getItem(s.geminiApiKey);
-    if (storedGeminiKey) CONFIG.geminiApiKey = storedGeminiKey;
-
-    var storedApiKey = localStorage.getItem(s.anthropicApiKey);
-    if (storedApiKey) CONFIG.anthropicApiKey = storedApiKey;
-
-    var storedBaseUrl = localStorage.getItem(s.anthropicBaseUrl);
-    if (storedBaseUrl) CONFIG.anthropicBaseUrl = storedBaseUrl;
-
-    var storedWebhook = localStorage.getItem(s.makeWebhookUrl);
-    if (storedWebhook) CONFIG.makeWebhookUrl = storedWebhook;
-
-    var storedGithubToken = localStorage.getItem(s.githubToken);
-    if (storedGithubToken) CONFIG.githubToken = storedGithubToken;
-
-    var storedPromoGas = localStorage.getItem(s.promoGasUrl);
-    if (storedPromoGas) CONFIG.promoGasUrl = storedPromoGas;
-
-    var storedExtHist = localStorage.getItem(s.extractHistory);
-    if (storedExtHist) CONFIG.extractHistory = JSON.parse(storedExtHist);
-
-    var storedShareHist = localStorage.getItem(s.shareHistory);
-    if (storedShareHist) CONFIG.shareHistory = JSON.parse(storedShareHist);
-
-    var storedHistory = localStorage.getItem(s.emailHistory);
-    if (storedHistory) CONFIG.emailHistory = JSON.parse(storedHistory);
-
-    var storedScheduled = localStorage.getItem(s.scheduledEmails);
-    if (storedScheduled) CONFIG.scheduledEmails = JSON.parse(storedScheduled);
-  } catch (e) {}
+  applyJSON(s.recipients,        'recipients');
+  applyStr (s.driveFolderId,     'driveReportFolderId');
+  applyJSON(s.departments,       'departments');
+  applyJSON(s.selectedCalendars, 'selectedCalendars');
+  applyJSON(s.sharedCalendars,   'sharedCalendars');
+  applyStr (s.geminiApiKey,      'geminiApiKey');
+  applyStr (s.anthropicApiKey,   'anthropicApiKey');
+  applyStr (s.anthropicBaseUrl,  'anthropicBaseUrl');
+  applyStr (s.makeWebhookUrl,    'makeWebhookUrl');
+  applyStr (s.githubToken,       'githubToken');
+  applyStr (s.promoGasUrl,       'promoGasUrl');
+  applyJSON(s.extractHistory,    'extractHistory');
+  applyJSON(s.shareHistory,      'shareHistory');
+  applyJSON(s.emailHistory,      'emailHistory');
+  applyJSON(s.scheduledEmails,   'scheduledEmails');
 })();
+
+/**
+ * toLocalYMD(date) — 로컬(KST) 기준 'YYYY-MM-DD' 반환
+ * new Date().toISOString().slice(0,10) 은 UTC 기준이라 KST 00~09시에 -1일 오차 발생.
+ * 날짜만 필요한 모든 곳에서 이 함수를 사용하면 타임존 오차가 사라진다.
+ */
+window.toLocalYMD = function (d) {
+  d = d || new Date();
+  var y = d.getFullYear();
+  var m = String(d.getMonth() + 1).padStart(2, '0');
+  var day = String(d.getDate()).padStart(2, '0');
+  return y + '-' + m + '-' + day;
+};
 
 /**
  * getClaudeConfig() — 전역 Claude API 설정 헬퍼

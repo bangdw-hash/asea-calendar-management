@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="ASEA 업무 관리 — 행정업무 관리 시스템">
   <title>ASEA 업무 관리</title>
   <link rel="preload" as="style" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&family=Nanum+Gothic:wght@400;700&family=Nanum+Myeongjo:wght@400;700&family=Gowun+Dodum&family=Black+Han+Sans&family=IBM+Plex+Sans+KR:wght@400;500;700&display=swap">
-  <link rel="stylesheet" href="style.css?v=20260612s3">
+  <link rel="stylesheet" href="style.css?v=20260614r1">
   <link rel="stylesheet" href="report.css?v=20260610r1">
   <link rel="stylesheet" href="promo.css?v=20260611p3">
   <link rel="stylesheet" href="help.css?v=20260610h1">
@@ -29,9 +29,8 @@
     })();
   </script>
   <script src="https://accounts.google.com/gsi/client" async></script>
-  <!-- SheetJS for Excel support -->
-  <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <!-- SheetJS for Excel support — 로컬 xlsx.mini.min.js(하단 로드)로 일원화하여 중복 로드 제거 -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" defer></script>
 
   <style>
     html.staff-mode .desktop-tab-nav,
@@ -3267,42 +3266,42 @@
        기존 모듈은 절대 수정하지 않음 — 새 모듈만 추가
        ═══════════════════════════════════════════════════════ -->
   <!-- Quill.js 워드프로세서 -->
-  <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js" defer></script>
 
-  <script src="config.js?v=20260612p3"></script>
-  <script src="auth.js?v=20260612a1"></script>
-  <script src="calendar.js?v=20260612c1"></script>
-  <script src="drive.js?v=20260608s"></script>
-  <script src="gmail.js?v=20260608s"></script>
-  <script src="print-frame.js?v=20260612pf2"></script>
-  <script src="report.js?v=20260611r4"></script>
-  <script src="monthly-report.js?v=20260612m3"></script>
-  <script src="promo.js?v=20260612p3"></script>
-  <script src="meet.js?v=20260610mt1"></script>
-  <script src="facility-fee.js?v=20260611ff5"></script>
+  <script src="config.js?v=20260614r1" defer></script>
+  <script src="auth.js?v=20260612a1" defer></script>
+  <script src="calendar.js?v=20260612c1" defer></script>
+  <script src="drive.js?v=20260608s" defer></script>
+  <script src="gmail.js?v=20260608s" defer></script>
+  <script src="print-frame.js?v=20260612pf2" defer></script>
+  <script src="report.js?v=20260611r4" defer></script>
+  <script src="monthly-report.js?v=20260614r1" defer></script>
+  <script src="promo.js?v=20260612p3" defer></script>
+  <script src="meet.js?v=20260610mt1" defer></script>
+  <script src="facility-fee.js?v=20260611ff5" defer></script>
   <link rel="stylesheet" href="labor-contract.css?v=20260611lc1">
-  <script src="labor-contract.js?v=20260612lc3"></script>
-  <script src="hr.js?v=20260612sa6"></script>
-  <script src="retire.js?v=20260612rt6"></script>
-  <script src="help.js?v=20260609a1"></script>
-  <script src="sheets.js?v=20260608w"></script>
-  <script src="resutil.js?v=20260608s"></script>
-  <script src="facility.js?v=20260611fx2"></script>
-  <script src="vehicle.js?v=20260609m2"></script>
-  <script src="classroom.js?v=20260608s"></script>
-  <script src="work.js?v=20260608y"></script>
-  <script src="workorder.js?v=20260608s"></script>
-  <script src="quicktask.js?v=20260612r2"></script>
-  <script src="sms.js?v=20260608a1"></script>
+  <script src="labor-contract.js?v=20260612lc3" defer></script>
+  <script src="hr.js?v=20260612sa6" defer></script>
+  <script src="retire.js?v=20260612rt6" defer></script>
+  <script src="help.js?v=20260609a1" defer></script>
+  <script src="sheets.js?v=20260614r1" defer></script>
+  <script src="resutil.js?v=20260608s" defer></script>
+  <script src="facility.js?v=20260614r1" defer></script>
+  <script src="vehicle.js?v=20260609m2" defer></script>
+  <script src="classroom.js?v=20260608s" defer></script>
+  <script src="work.js?v=20260614r1" defer></script>
+  <script src="workorder.js?v=20260608s" defer></script>
+  <script src="quicktask.js?v=20260612r2" defer></script>
+  <script src="sms.js?v=20260608a1" defer></script>
   <!-- 신규 모듈 (admin → board → usersettings → app 순서) -->
-  <script src="draft.js?v=20260612d4"></script>
-  <script src="survey.js?v=20260612sv4"></script>
-  <script src="xlsx.mini.min.js"></script>
-  <script src="qrcard.js?v=20260612qr2"></script>
-  <script src="admin.js?v=20260612a15"></script>
-  <script src="board.js?v=20260610b4"></script>
-  <script src="usersettings.js?v=20260610u1"></script>
-  <script src="app.js?v=20260612s20"></script>
+  <script src="draft.js?v=20260612d4" defer></script>
+  <script src="survey.js?v=20260612sv4" defer></script>
+  <script src="xlsx.mini.min.js" defer></script>
+  <script src="qrcard.js?v=20260614r1" defer></script>
+  <script src="admin.js?v=20260612a15" defer></script>
+  <script src="board.js?v=20260610b4" defer></script>
+  <script src="usersettings.js?v=20260610u1" defer></script>
+  <script src="app.js?v=20260614r1" defer></script>
   <script>
     // 빠른 업무 등록 초기화 (DOM 준비 후)
     document.addEventListener('DOMContentLoaded', function () {

@@ -445,7 +445,7 @@ var WorkModule = (function () {
 
     var eventBody;
     if (allDay) {
-      var due = task.dueDate || new Date().toISOString().slice(0,10);
+      var due = task.dueDate || window.toLocalYMD();
       eventBody = {
         summary: title,
         start: { date: due },
