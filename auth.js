@@ -137,14 +137,19 @@
   /* ── 공개 인터페이스 ─────────────────────────────────────────── */
   window.Auth = {
 
-    /** 사용자 클릭 로그인 — 팝업/계정 선택 */
-    login: function () {
+    /**
+     * 사용자 클릭 로그인.
+     * opts.chooseAccount=true 면 계정 선택 화면을 강제로 띄운다(계정 전환용).
+     * (자동 로그인은 인자 없이 호출 → prompt:'' 로 조용히 토큰 발급)
+     */
+    login: function (opts) {
+      var promptVal = (opts && opts.chooseAccount) ? 'select_account' : '';
       return _ensureClient().then(function (ready) {
         if (!ready) return Promise.reject(new Error('Google Identity Services가 아직 로드되지 않았습니다.'));
         return new Promise(function (resolve) {
           _isMainLogin    = true;
           _pendingResolve = resolve;
-          _tokenClient.requestAccessToken({ prompt: '' });
+          _tokenClient.requestAccessToken({ prompt: promptVal });
         });
       });
     },
