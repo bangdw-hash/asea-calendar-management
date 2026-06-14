@@ -775,20 +775,9 @@
 
   /* ── Contact footer ── */
   function renderContact() {
-    let info = { name: '방시원', title: '차장', phone: '010-2055-5883' };
-    try {
-      const stored = JSON.parse(localStorage.getItem(CONTACT_KEY) || 'null');
-      if (stored) info = Object.assign(info, stored);
-    } catch {}
+    // 일반 연락처(방시원) 표기 제거 — 푸터 비표시
     const footer = document.getElementById('contact-footer');
-    let html = `문의: <span>${esc(info.name)} ${esc(info.title)}</span>`;
-    if (info.phone) {
-      html += ` &nbsp;<a href="tel:${esc(info.phone)}">${esc(info.phone)}</a>`;
-    }
-    footer.innerHTML = html;
-    // PIPA notice contact
-    const pipaEl = document.getElementById('pipa-contact');
-    if (pipaEl) pipaEl.textContent = info.name + ' ' + info.title + (info.phone ? ' ' + info.phone : '');
+    if (footer) { footer.innerHTML = ''; footer.style.display = 'none'; }
   }
 
   /* ── Category toggle ── */

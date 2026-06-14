@@ -154,11 +154,12 @@ window.RetireModule = (function () {
   /* ── 홈 ── */
   function _renderHome(root) {
     var wrap  = el('div', 'rt-home-wrap');
+    var icon  = el('div', 'rt-role-icon'); icon.textContent = '🚪'; icon.style.cssText = 'margin-bottom:12px';
     var title = el('div', 'rt-home-title', '퇴직자 관리');
     var sub   = el('div', 'rt-home-sub',
       STANDALONE ? '사직서를 온라인으로 작성·제출하는 시스템입니다.'
                  : '사직서 온라인 제출 및 퇴직 절차 안내 시스템');
-    wrap.appendChild(title); wrap.appendChild(sub);
+    wrap.appendChild(icon); wrap.appendChild(title); wrap.appendChild(sub);
 
     var cards = el('div', 'rt-role-cards');
 
@@ -180,24 +181,23 @@ window.RetireModule = (function () {
 
       cards.appendChild(c1); cards.appendChild(c2);
     } else {
-      /* ── index.html 관리자 진입 화면 ── */
+      /* ── index.html 관리자 진입 화면 (입사 화면과 동일 구조) ── */
       var apps = loadApps();
       var draftCount = apps.filter(function(a){ return a.status === 'draft'; }).length;
       var subCount   = apps.filter(function(a){ return a.status !== 'draft'; }).length;
+      var formUrl = _getFormUrl('retire-form.html');
 
-      var cLink = el('div', 'rt-role-card');
-      cLink.innerHTML =
-        '<div class="rt-role-icon">📋</div>' +
-        '<div class="rt-role-title">신청 링크 복사</div>' +
-        '<div class="rt-role-desc">퇴직 대상자에게 보낼<br>작성 링크를 복사합니다</div>';
-      cLink.addEventListener('click', function () {
-        var url = _getFormUrl('retire-form.html');
-        if (navigator.clipboard) {
-          navigator.clipboard.writeText(url).then(function(){ toast('링크가 복사되었습니다.'); });
-        } else {
-          prompt('아래 링크를 복사하여 전달하세요.', url);
-        }
-      });
+      // ── 신청자 공유 링크 박스 (상단, 입사와 동일) ──
+      var linkBox = document.createElement('div');
+      linkBox.style.cssText = 'width:100%;max-width:540px;background:#EFF6FF;border:1.5px solid #93C5FD;border-radius:12px;padding:16px 18px;margin-bottom:20px;text-align:left';
+      linkBox.innerHTML =
+        '<div style="font-size:12px;font-weight:700;color:#1A73E8;margin-bottom:6px;letter-spacing:.4px">📎 퇴직 신청자 공유 링크</div>' +
+        '<div style="font-size:12px;color:#374151;word-break:break-all;background:#fff;border:1px solid #BFDBFE;border-radius:6px;padding:8px 10px;margin-bottom:10px;font-family:monospace">' + formUrl + '</div>' +
+        '<div style="display:flex;gap:8px">' +
+          '<button id="rt-home-copy-link" style="flex:1;padding:8px 0;background:#1A73E8;color:#fff;border:none;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer">📋 링크 복사</button>' +
+          '<button id="rt-home-copy-msg"  style="flex:1;padding:8px 0;background:#fff;color:#1A73E8;border:1.5px solid #93C5FD;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer">✉️ 안내 메시지 복사</button>' +
+        '</div>';
+      wrap.appendChild(linkBox);
 
       var cAdmin = el('div', 'rt-role-card');
       cAdmin.innerHTML =
@@ -206,8 +206,22 @@ window.RetireModule = (function () {
         '<div class="rt-role-desc">제출된 사직서 조회<br>' +
         '(작성중 ' + draftCount + '건 · 제출 ' + subCount + '건)</div>';
       cAdmin.addEventListener('click', function () { _renderAdminAuth(); });
+      cards.appendChild(cAdmin);
 
-      cards.appendChild(cLink); cards.appendChild(cAdmin);
+      // 링크 박스 버튼 이벤트
+      setTimeout(function () {
+        var cl = document.getElementById('rt-home-copy-link');
+        var cm = document.getElementById('rt-home-copy-msg');
+        if (cl) cl.addEventListener('click', function () {
+          if (navigator.clipboard) navigator.clipboard.writeText(formUrl).then(function(){ toast('링크가 복사되었습니다.'); });
+          else prompt('아래 링크를 복사하여 전달하세요.', formUrl);
+        });
+        if (cm) cm.addEventListener('click', function () {
+          var msg = '[사직서 제출 안내]\n\n아세아항공직업전문학교 퇴직 절차 사직서 제출 링크를 안내드립니다.\n\n▶ 작성 링크:\n' + formUrl + '\n\n링크 접속 후 본인 이름을 입력하고 작성해 주세요.\n작성 중단 시 저장 코드로 이어서 작성하실 수 있습니다.';
+          if (navigator.clipboard) navigator.clipboard.writeText(msg).then(function(){ toast('안내 메시지가 복사되었습니다.'); });
+          else prompt('아래 메시지를 복사하세요.', msg);
+        });
+      }, 0);
     }
 
     wrap.appendChild(cards);
@@ -339,7 +353,7 @@ window.RetireModule = (function () {
       '<div style="font-size:36px;margin-bottom:8px">✅</div>' +
       '<div style="font-size:18px;font-weight:700;color:#1a3a5c;margin-bottom:6px">중간 저장 완료</div>' +
       '<div style="font-size:12px;color:#6B7280;line-height:1.7;margin-bottom:18px">아래 저장 코드를 반드시 메모해 두세요.<br>같은 링크에서 <strong>이어서 작성하기</strong> → 코드+이름 입력으로<br>언제든 이어서 작성할 수 있습니다.</div>' +
-      '<div style="background:#EFF6FF;border:2px solid #2563EB;border-radius:10px;padding:16px;margin-bottom:16px">' +
+      '<div style="background:#EFF6FF;border:2px solid #1A73E8;border-radius:10px;padding:16px;margin-bottom:16px">' +
         '<div style="font-size:11px;color:#6B7280;margin-bottom:6px;font-weight:600">저장 코드</div>' +
         '<div style="font-size:30px;font-weight:900;letter-spacing:8px;color:#1A73E8;font-family:monospace">' + _esc(app.resumeCode) + '</div>' +
         '<div style="font-size:12px;color:#374151;margin-top:8px">이름: <strong>' + _esc(app.form.name) + '</strong></div>' +
@@ -761,7 +775,7 @@ window.RetireModule = (function () {
         '퇴사예정: <strong>' + (f.retireDate || '미입력') + '</strong>' +
         ' &nbsp;|&nbsp; 제출: ' + (app.submittedAt ? new Date(app.submittedAt).toLocaleDateString('ko-KR') : '미제출') +
         ' &nbsp;|&nbsp; IRP: ' + (app.irp.bank || '-') +
-        (app.resumeCode ? ' &nbsp;|&nbsp; 저장코드: <strong style="color:#2563EB">' + _esc(app.resumeCode) + '</strong>' : '') +
+        (app.resumeCode ? ' &nbsp;|&nbsp; 저장코드: <strong style="color:#1A73E8">' + _esc(app.resumeCode) + '</strong>' : '') +
         '</span>';
 
       var badge = el('span', statusBadge[app.status] || 'rt-badge rt-badge-draft');
