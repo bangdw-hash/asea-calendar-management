@@ -15,21 +15,30 @@ var QuickTaskModule = (function () {
   /* ────────────────────────────────────────────────────────────
      상태
   ──────────────────────────────────────────────────────────── */
-  var _SAVED_CALS_KEY = 'asea_qt_calendars'; // localStorage 키 (배열)
+  /* 등록 대상 캘린더는 계정별로 분리 저장 — 다른 직원이 로그인하면
+     이전 계정(예: 관리자)의 기본 캘린더가 그대로 선택되어 보이는 것을 방지.
+     계정별 키가 비어 있으면 "미선택" 상태로 시작해 본인이 직접 선택하게 한다. */
+  function _curEmail() {
+    try {
+      if (window.CONFIG && CONFIG.currentUser && CONFIG.currentUser.email) return CONFIG.currentUser.email;
+      return localStorage.getItem('asea_user_email') || '';
+    } catch (e) { return ''; }
+  }
+  function _calsKey() {
+    var em = (_curEmail() || 'anon').toLowerCase();
+    return 'asea_qt_calendars__' + em;
+  }
 
   function _loadSavedCalendars() {
     try {
-      var v = localStorage.getItem(_SAVED_CALS_KEY);
+      var v = localStorage.getItem(_calsKey());
       if (v) return JSON.parse(v);
-      // 구버전 단일 키 마이그레이션
-      var old = localStorage.getItem('asea_qt_last_calendar');
-      if (old) { var c = JSON.parse(old); return c ? [c] : []; }
-      return [];
+      return [];   // 계정별 선택이 없으면 빈 상태(미선택)로 시작
     } catch (e) { return []; }
   }
 
   function _saveCalendars(list) {
-    try { localStorage.setItem(_SAVED_CALS_KEY, JSON.stringify(list || [])); } catch (e) {}
+    try { localStorage.setItem(_calsKey(), JSON.stringify(list || [])); } catch (e) {}
   }
 
   var Q = {
@@ -115,6 +124,8 @@ var QuickTaskModule = (function () {
     Q.pasteImageB64  = null;
     Q.pasteText      = '';
     Q.isAnalyzing    = false;
+    // 현재 로그인 계정 기준으로 등록 대상 캘린더 다시 로드(계정 전환 반영)
+    Q.targetCalendars = _loadSavedCalendars();
 
     renderPasteZone();
     renderTaskList();
