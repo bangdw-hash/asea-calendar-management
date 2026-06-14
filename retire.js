@@ -811,16 +811,16 @@ window.RetireModule = (function () {
        · 행정직: 인사부서 결재란 1개 (우측 정렬)
        · 교무직: 결재라인(교무) 좌 + 인사부서 우 — 2개 병렬 (우측 정렬) */
     function _apBox(label, cols, cw) {
-      return '<table class="pf-table" style="width:auto;font-size:8.5pt;margin:0">' +
-        '<tr><td class="pf-th-label" rowspan="2" style="padding:1.5mm 3mm">' + label + '</td>' +
-          cols.map(function (c) { return '<th style="width:' + cw + '">' + c + '</th>'; }).join('') +
+      return '<table class="pf-table" style="width:auto;font-size:8pt;margin:0;letter-spacing:-0.2px">' +
+        '<tr><td class="pf-th-label" rowspan="2" style="padding:1.5mm 2.5mm;white-space:nowrap">' + label + '</td>' +
+          cols.map(function (c) { return '<th style="white-space:nowrap;padding:1mm 2.5mm;min-width:' + cw + '">' + c + '</th>'; }).join('') +
         '</tr>' +
-        '<tr>' + cols.map(function () { return '<td style="height:13mm">&nbsp;</td>'; }).join('') + '</tr>' +
+        '<tr>' + cols.map(function () { return '<td style="height:13mm;min-width:' + cw + '">&nbsp;</td>'; }).join('') + '</tr>' +
       '</table>';
     }
     var approval;
     if (f.jobType === '교무직') {
-      approval = '<div style="display:flex;justify-content:flex-end;align-items:flex-start;gap:6mm;margin-bottom:6mm">' +
+      approval = '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:6mm;margin-bottom:6mm">' +
         _apBox('결재<br>라인', ['부서장', '교육지원처장', '학장'], '20mm') +
         _apBox('인사<br>부서', ['기획처장', '총괄이사', '이 사 장'], '20mm') +
       '</div>';
