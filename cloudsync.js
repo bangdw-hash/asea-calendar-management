@@ -16,7 +16,7 @@
 
   // 공유할 키 (프리픽스 + 정확일치). 개인/기기 전용 키는 절대 포함하지 않는다.
   var PREFIXES = ['asea_budget_items_', 'asea_budget_exec_', 'asea_budget_caps_'];
-  var EXACT = ['asea_weekly_reports', 'asea_weekly_weeks', 'asea_regulations', 'asea_survey_history', 'asea_budget_execs', 'asea_draft_limit'];
+  var EXACT = ['asea_weekly_reports', 'asea_weekly_weeks', 'asea_regulations', 'asea_survey_history', 'asea_budget_execs', 'asea_draft_limit', 'asea_user_directory', 'asea_position_menus'];
   // 공유 제외(개인/민감)
   var EXCLUDE = ['asea_budget_my_dept', 'asea_user_email', 'asea_is_admin', 'asea_anthropic_api_key', 'asea_gtoken', 'asea_draft_usage'];
 

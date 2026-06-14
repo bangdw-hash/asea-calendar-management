@@ -6497,3 +6497,17 @@ body.nav-sheet-open .quick-fab { display: none; }
 .bdg-cap-info { font-size:12px; color:var(--color-text-secondary); margin-top:6px; min-height:16px; }
 .bdg-c-act .bdg-item-edit { color:var(--color-accent); border-color:var(--color-accent) !important; }
 .bdg-c-act .bdg-item-del { color:var(--color-error); }
+
+/* 조직/사용자(UserOrg) */
+.uo-menu-hidden { display: none !important; }
+.uo-tabs { display:flex; gap:6px; margin-bottom:12px; }
+.uo-admin .uo-pos-block { border:1px solid var(--color-border); border-radius:10px; padding:10px 12px; margin-bottom:10px; }
+.uo-pos-title { font-weight:800; margin-bottom:8px; color:var(--color-accent); }
+.uo-menu-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(130px,1fr)); gap:4px 10px; }
+.uo-chk { font-size:13px; display:flex; align-items:center; gap:6px; }
+.uo-u-dept, .uo-u-pos { padding:5px 8px; border:1px solid var(--color-border); border-radius:6px; font-size:13px; }
+.uo-u-del { font-size:11px; padding:3px 8px; border:1px solid var(--color-border); border-radius:6px; background:#fff; color:var(--color-error); cursor:pointer; }
+
+/* 예산 상태 배지: 제출/반려 */
+.bdg-badge.sub { background:#e8f0fe; color:#1a56db; }
+.bdg-badge.rej { background:#fde8e8; color:#b91c1c; }
