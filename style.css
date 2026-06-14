@@ -1067,7 +1067,7 @@ a        { color: var(--color-accent); text-decoration: none; }
 .modal {
   position: fixed;
   inset: 0;
-  z-index: 500;
+  z-index: 1000;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -6561,3 +6561,6 @@ body.nav-sheet-open .quick-fab { display: none; }
 .hr-card-title .mono-ico svg, .rt-card-title .mono-ico svg,
 .hr-section-title .mono-ico svg, .rt-role-title .mono-ico svg { width: 18px; height: 18px; }
 .hr-subtab-btn .mono-ico svg { width: 17px; height: 17px; }
+
+/* 모달 열렸을 때 빠른등록 FAB 숨김(겹침 방지) */
+body:has(.modal:not([hidden])) .quick-fab { display: none; }
