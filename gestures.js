@@ -25,15 +25,17 @@
     });
 
     // 스와이프
-    var sx = 0, sy = 0, on = false, ctrlStart = false;
+    var sx = 0, sy = 0, on = false, ctrlStart = false, footerStart = false;
     var dialog = m.querySelector('.modal-dialog, .qt-modal-dialog') || m;
     dialog.addEventListener('touchstart', function (e) {
       if (e.touches.length !== 1) { on = false; return; }
       var t = e.touches[0]; sx = t.clientX; sy = t.clientY; on = true;
       ctrlStart = isControl(e.target);
+      footerStart = !!(e.target.closest && e.target.closest('.modal-footer')); // 하단 메뉴는 스크롤용
     }, { passive: true });
     dialog.addEventListener('touchend', function (e) {
       if (!on) return; on = false;
+      if (footerStart) return;   // 하단 메뉴 스와이프 = 메뉴 가로 스크롤(일정 이동 아님)
       var t = e.changedTouches[0];
       var dx = t.clientX - sx, dy = t.clientY - sy;
       // 좌우 스와이프 → 일정 수정 시 이전/다음 일정
