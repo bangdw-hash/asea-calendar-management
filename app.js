@@ -4003,6 +4003,8 @@
       var key     = $('extract-api-key').value.trim();
       var baseUrl = $('extract-api-base-url').value.trim().replace(/\/$/, '');
       if (!key) { toast('API 키를 입력하세요.', 'error'); return; }
+      // 공식 키(sk-ant-…)는 프록시 Base URL을 쓰지 않고 Claude 공식 API에 직접 연결
+      if (/^sk-ant-/.test(key)) baseUrl = '';
       // CONFIG 및 localStorage 저장 (설정 탭과 동일 키)
       CONFIG.anthropicApiKey  = key;
       CONFIG.anthropicBaseUrl = baseUrl;
@@ -6450,6 +6452,8 @@
       var key     = $('setting-api-key').value.trim();
       var baseUrl = $('setting-api-base-url').value.trim().replace(/\/$/, '');  // 끝 슬래시 제거
       if (!key) { toast('API 키를 입력하세요.', 'error'); return; }
+      // 공식 키(sk-ant-…)는 프록시 Base URL을 쓰지 않고 Claude 공식 API에 직접 연결
+      if (/^sk-ant-/.test(key)) { baseUrl = ''; if ($('setting-api-base-url')) $('setting-api-base-url').value = ''; }
       CONFIG.anthropicApiKey  = key;
       CONFIG.anthropicBaseUrl = baseUrl;
       try { localStorage.setItem(CONFIG.storageKeys.anthropicApiKey,  key);     } catch (e) {}
