@@ -1,0 +1,80 @@
+/* onboarding.css — 메뉴 툴팁 말풍선 + 첫 사용 안내 오버레이 */
+
+/* 커스텀 말풍선(PC hover) */
+.ob-tip {
+  position: fixed;
+  z-index: 100000;
+  max-width: 260px;
+  background: #1a3a5c;
+  color: #fff;
+  font-size: 12px;
+  line-height: 1.45;
+  padding: 7px 10px;
+  border-radius: 8px;
+  box-shadow: 0 6px 20px rgba(0,0,0,.22);
+  pointer-events: none;
+  white-space: normal;
+}
+/* 터치 기기에선 hover 말풍선 숨김(첫 안내 오버레이로 대체) */
+@media (hover: none) {
+  .ob-tip { display: none !important; }
+}
+
+/* 첫 사용 안내 오버레이 */
+.ob-overlay {
+  position: fixed; inset: 0; z-index: 99990;
+  background: rgba(15, 23, 42, .55);
+  display: flex; align-items: center; justify-content: center;
+  padding: 18px;
+  animation: obFade .18s ease;
+}
+@keyframes obFade { from { opacity: 0; } to { opacity: 1; } }
+
+.ob-card {
+  position: relative;
+  width: 100%; max-width: 480px;
+  background: #fff; border-radius: 16px;
+  padding: 22px 22px 18px;
+  box-shadow: 0 20px 60px rgba(0,0,0,.3);
+  max-height: 88vh; overflow-y: auto;
+  animation: obPop .2s ease;
+}
+@keyframes obPop { from { transform: translateY(10px) scale(.98); opacity: .6; } to { transform: none; opacity: 1; } }
+
+.ob-x {
+  position: absolute; top: 12px; right: 12px;
+  width: 30px; height: 30px; border: none; background: #f1f5f9;
+  border-radius: 8px; color: #475569; font-size: 15px; cursor: pointer;
+}
+.ob-x:hover { background: #e2e8f0; }
+
+.ob-head { display: flex; gap: 12px; align-items: flex-start; margin-bottom: 14px; padding-right: 28px; }
+.ob-emoji { font-size: 30px; line-height: 1; flex-shrink: 0; }
+.ob-title { font-size: 18px; font-weight: 800; color: #1a3a5c; margin: 0 0 4px; }
+.ob-sub   { font-size: 13px; color: #64748b; margin: 0; line-height: 1.5; }
+
+.ob-list { margin: 0 0 16px; padding-left: 18px; display: flex; flex-direction: column; gap: 9px; }
+.ob-list li { font-size: 13.5px; color: #334155; line-height: 1.55; }
+.ob-list b { color: #1a3a5c; }
+
+.ob-opts {
+  display: flex; flex-wrap: wrap; gap: 14px;
+  background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px;
+  padding: 10px 12px; margin-bottom: 14px;
+}
+.ob-opt { display: flex; align-items: center; gap: 7px; font-size: 13px; color: #475569; cursor: pointer; }
+.ob-opt input { width: 16px; height: 16px; cursor: pointer; }
+
+.ob-btns { display: flex; justify-content: flex-end; }
+.ob-btn-primary {
+  background: #1a73e8; color: #fff; border: none;
+  border-radius: 10px; padding: 10px 22px;
+  font-size: 14px; font-weight: 700; cursor: pointer;
+}
+.ob-btn-primary:hover { background: #1557b0; }
+
+@media (max-width: 520px) {
+  .ob-card { padding: 18px 16px 14px; border-radius: 14px; }
+  .ob-title { font-size: 16px; }
+  .ob-list li { font-size: 13px; }
+}
