@@ -123,7 +123,10 @@
   }
 
   function start() {
-    pullAll(true);
+    // 초기 동기화는 로그인/첫 화면 렌더 이후로 미뤄 시작 지연을 막는다(GAS는 1~3초 소요).
+    var kick = function () { pullAll(true); };
+    if (window.requestIdleCallback) requestIdleCallback(kick, { timeout: 4000 });
+    else setTimeout(kick, 2500);
     // 다른 탭/창에서 변경 → 화면 복귀 시 재동기화
     document.addEventListener('visibilitychange', function () { if (!document.hidden) pullAll(false); });
     window.addEventListener('focus', function () { pullAll(false); });
