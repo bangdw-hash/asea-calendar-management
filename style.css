@@ -6570,3 +6570,17 @@ body:has(.modal:not([hidden])) .quick-fab { display: none; }
 .modal-footer::-webkit-scrollbar { display: none; }
 .modal-footer > *, .modal-footer-right > * { flex-shrink: 0; }
 .modal-footer-right { flex-wrap: nowrap; }
+
+/* 일정 모달 하단 버튼: 색/아이콘 제거하고 텍스트만 통일 */
+#event-modal .modal-footer .btn {
+  background: none !important;
+  border: none !important;
+  box-shadow: none !important;
+  color: var(--color-text-secondary) !important;
+  font-weight: 600 !important;
+  padding: 8px 12px !important;
+}
+#event-modal .modal-footer #save-event-btn {
+  color: var(--color-accent) !important;
+  font-weight: 800 !important;
+}

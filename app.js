@@ -29,6 +29,8 @@
   };
 
   var _ctxEv = null; // 우클릭 대상 이벤트
+  var _ctxOpenedAt = 0;   // 컨텍스트 메뉴 오픈 시각(직후 클릭 닫힘 방지)
+  var _lpFired = false;   // long-press로 메뉴를 띄웠는지(직후 클릭 억제)
 
   /* ═══════════════════════════════════════════════════════════
      유틸
@@ -979,6 +981,7 @@
 
         bar.addEventListener('click', function (e) {
           e.stopPropagation();
+          if (_lpFired) { _lpFired = false; return; }   // 길게 눌러 메뉴 띄운 직후 클릭 무시
           openEventModal(ev);
         });
         bar.addEventListener('contextmenu', function (e) {
@@ -1011,15 +1014,11 @@
           /* 모바일 long-press */
           bar.addEventListener('touchstart', function(te) {
             var tx = te.touches[0];
+            _lpFired = false;
             _tcTmr = setTimeout(function() {
-              _tcDI = dragInfo;
-              _tcChip = bar;
-              _tcGhost = bar.cloneNode(true);
-              _tcGhost.style.cssText = 'position:fixed;opacity:.75;pointer-events:none;z-index:9999;width:' + bar.offsetWidth + 'px;left:' + (tx.clientX - bar.offsetWidth / 2) + 'px;top:' + (tx.clientY - 20) + 'px;border-radius:6px;';
-              document.body.appendChild(_tcGhost);
-              bar.style.opacity = '.3';
-              document.body.classList.add('is-dragging-event');
-              if (navigator.vibrate) navigator.vibrate(50);
+              _tcTmr = null; _lpFired = true;
+              if (navigator.vibrate) navigator.vibrate(40);
+              showEventContextMenu(ev, tx.clientX, tx.clientY);   // 꾹 누르면 메뉴(드래그 대신)
             }, 500);
           }, { passive: true });
           bar.addEventListener('touchmove', function(te) {
@@ -1431,17 +1430,11 @@
       (function(ev) {
         chip.addEventListener('touchstart', function(te) {
           var tx = te.touches[0];
+          _lpFired = false;
           _tcTmr = setTimeout(function() {
-            _tcDI = { eventId: ev.id, calId: ev._calId || '', isAllDay: !!ev.start.date,
-              startTime: ev.start.dateTime || '', summary: ev.summary,
-              duration: ev.start.dateTime ? (new Date(ev.end.dateTime) - new Date(ev.start.dateTime)) : 86400000 };
-            _tcChip = chip;
-            _tcGhost = chip.cloneNode(true);
-            _tcGhost.style.cssText = 'position:fixed;opacity:.75;pointer-events:none;z-index:9999;width:' + chip.offsetWidth + 'px;left:' + (tx.clientX - chip.offsetWidth / 2) + 'px;top:' + (tx.clientY - 20) + 'px;border-radius:6px;';
-            document.body.appendChild(_tcGhost);
-            chip.style.opacity = '.3';
-            document.body.classList.add('is-dragging-event');
-            if (navigator.vibrate) navigator.vibrate(50);
+            _tcTmr = null; _lpFired = true;
+            if (navigator.vibrate) navigator.vibrate(40);
+            showEventContextMenu(ev, tx.clientX, tx.clientY);   // 꾹 누르면 메뉴(드래그 대신)
           }, 500);
         }, { passive: true });
         chip.addEventListener('touchmove', function(te) {
@@ -1483,6 +1476,7 @@
       })(ev);
       chip.addEventListener('click', function (e) {
         e.stopPropagation();
+        if (_lpFired) { _lpFired = false; return; }   // 길게 눌러 메뉴 띄운 직후 클릭 무시
         openEventModal(ev);
       });
       chip.addEventListener('contextmenu', function (e) {
@@ -1872,6 +1866,11 @@
 
     renderEventCalChips();
     openModal('event-modal');
+    // 일정을 새로 열거나 넘길 때 항상 맨 위(제목)부터 보이게
+    var _mb = document.querySelector('#event-modal .modal-body');
+    if (_mb) _mb.scrollTop = 0;
+    var _md = document.querySelector('#event-modal .modal-dialog');
+    if (_md) _md.scrollTop = 0;
   }
 
   function toGCalDateStr(isoStr) {
@@ -1893,6 +1892,7 @@
 
   function showEventContextMenu(ev, x, y) {
     _ctxEv = ev;
+    _ctxOpenedAt = Date.now();
     var menu = $('ev-ctx-menu');
     if (!menu) return;
     menu.hidden = false;
@@ -1912,7 +1912,7 @@
     var menu = $('ev-ctx-menu');
     if (!menu) return;
 
-    document.addEventListener('click', function () { hideEventContextMenu(); });
+    document.addEventListener('click', function () { if (Date.now() - _ctxOpenedAt < 400) return; hideEventContextMenu(); });
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape') hideEventContextMenu(); });
 
     $('ev-ctx-delete').addEventListener('click', function (e) {

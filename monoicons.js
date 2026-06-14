@@ -55,7 +55,7 @@
     '_default': s('<circle cx="12" cy="12" r="3"/>')
   };
 
-  var SEL = '.admin-nav-btn, .admin-sec-title, .settings-section-title, .mm-label, #tab-settings h3, #tab-admin h3, #tab-admin h4, .subtab-btn, .bdg-subtab-bar .subtab-btn, .ctrl-table td:first-child, .board-filter-btn, .modal-footer button'
+  var SEL = '.admin-nav-btn, .admin-sec-title, .settings-section-title, .mm-label, #tab-settings h3, #tab-admin h3, #tab-admin h4, .subtab-btn, .bdg-subtab-bar .subtab-btn, .ctrl-table td:first-child, .board-filter-btn'
     + ', .hr-subtab-btn, .hr-role-icon, .hr-auth-icon, .hr-done-icon, .hr-section-title, .hr-card-title, .hr-portal-title, .hr-share-title'
     + ', .rt-role-icon, .rt-auth-icon, .rt-complete-icon, .rt-role-title, .rt-card-title, .rt-card-subtitle'
     + ', #tab-hr .hr-section-title, #tab-hr button';
