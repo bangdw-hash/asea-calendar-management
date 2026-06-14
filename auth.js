@@ -86,14 +86,22 @@
     var expiresIn = ((tokenResponse.expires_in || 3600) - 60) * 1000;
     var expiresAt = Date.now() + expiresIn;
     _saveToken(_accessToken, expiresAt);
-    _expireTimer = setTimeout(function () {
-      _clearToken();
-      _notifyChange();
-    }, expiresIn);
+    // 만료 직전 자동 무음 갱신 → 재로그인 없이 세션 유지(로그아웃하지 않음)
+    _expireTimer = setTimeout(function () { _silentRefresh(); }, expiresIn);
 
     if (_pendingResolve) { _pendingResolve(true); _pendingResolve = null; }
     _isMainLogin = false;
     _notifyChange();
+  }
+
+  /* 만료 직전/주기적 무음 토큰 갱신 — 실패해도 세션은 보존(로그인 화면 안 띄움) */
+  function _silentRefresh() {
+    _initTokenClient();
+    if (!_tokenClient) { _expireTimer = setTimeout(_silentRefresh, 30000); return; }
+    _isMainLogin = false;          // 무음: 에러 시 세션 유지(_handleTokenResponse 에러 분기에서 return)
+    _pendingResolve = null;
+    try { _tokenClient.requestAccessToken({ prompt: '' }); }
+    catch (e) { _expireTimer = setTimeout(_silentRefresh, 30000); }
   }
 
   function _initTokenClient() {

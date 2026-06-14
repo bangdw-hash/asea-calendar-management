@@ -55,10 +55,10 @@
       if (!isControl(e.target)) hide(m);
     });
 
-    var sx = 0, sy = 0, on = false, ctrlStart = false, footerStart = false;
+    var sx = 0, sy = 0, on = false, ctrlStart = false, footerStart = false, st = 0;
     dialog.addEventListener('touchstart', function (e) {
       if (e.touches.length !== 1) { on = false; return; }
-      var t = e.touches[0]; sx = t.clientX; sy = t.clientY; on = true;
+      var t = e.touches[0]; sx = t.clientX; sy = t.clientY; on = true; st = Date.now();
       ctrlStart = isControl(e.target);
       footerStart = !!(e.target.closest && e.target.closest('.modal-footer'));
     }, { passive: true });
@@ -67,11 +67,14 @@
       if (footerStart) return;   // 하단 메뉴 = 가로 스크롤
       var t = e.changedTouches[0];
       var dx = t.clientX - sx, dy = t.clientY - sy;
+      var dt = Date.now() - st;
       if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.4) {
         if (id === 'event-modal' && window._eventNav) slideNav(dialog, dx < 0 ? 1 : -1);
         return;
       }
-      if (dy < -55 && Math.abs(dy) > Math.abs(dx) && !ctrlStart) slideClose(m, dialog);
+      // 위로 "빠르게 튕기는(플릭)" 동작만 닫기 — 천천히 올려 내용 보는 건 닫지 않음
+      var vy = Math.abs(dy) / Math.max(dt, 1);   // px/ms
+      if (dy < -70 && Math.abs(dy) > Math.abs(dx) && !ctrlStart && dt < 300 && vy > 0.5) slideClose(m, dialog);
     }, { passive: true });
   }
 
