@@ -1378,6 +1378,7 @@
     onLogin: onLogin,
     renderAdmin: renderAdmin,
     isAdmin: isAdmin,
+    isSuperAdmin: isSuperAdmin,
     isManager: isManager,
     getUserRole: getUserRole,
     applyMenuVisibility: applyMenuVisibility,

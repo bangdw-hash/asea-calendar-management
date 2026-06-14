@@ -379,10 +379,21 @@
       $('login-overlay').hidden = loggedIn;
       $('app').hidden = !loggedIn;
       if (loggedIn) {
+        // ★ 신원 확인 전: 이전 계정 이메일이 남아 관리자 메뉴가 새는 것을 차단.
+        //   이메일을 비우고 즉시 메뉴 가시성을 재계산하면 관리자 탭은 숨겨진다.
+        S.userEmail = '';
+        try { localStorage.removeItem('asea_user_email'); } catch (e) {}
+        if (window.CONFIG) CONFIG.currentUser = null;
+        if (typeof AdminModule !== 'undefined') { try { AdminModule.applyMenuVisibility(); } catch (e) {} }
         loadUserEmail().then(function () {
           if (typeof WorkModule    !== 'undefined') WorkModule.onLogin(S.userEmail);
-          // 관리자 모듈 — 메뉴/기능 가시성 적용
+          // 관리자 모듈 — 메뉴/기능 가시성 적용 (검증된 이메일 기준)
           if (typeof AdminModule   !== 'undefined') AdminModule.onLogin();
+          // 개발자(고정 관리자)가 아니면 관리자 탭에 머무르지 않고 캘린더로
+          if (typeof AdminModule !== 'undefined' && AdminModule.isSuperAdmin &&
+              !AdminModule.isSuperAdmin(S.userEmail) && S.tab === 'admin') {
+            switchTab('calendar');
+          }
           // 게시판 — 클라우드 동기화 후 미읽은 전사알림 팝업 표시
           if (typeof BoardModule   !== 'undefined') BoardModule.syncFromCloud().then(function() {
             BoardModule.checkAndShowNotices(S.userEmail);
@@ -426,12 +437,20 @@
 
     $('login-btn').addEventListener('click', function () {
       $('login-btn').disabled = true;
-      Auth.login()
+      // 직접 로그인 시에는 계정 선택 화면을 띄워 다른 계정으로 전환 가능하게 함
+      Auth.login({ chooseAccount: true })
         .catch(function (e) { if (e && e.message) toast(e.message, 'error'); })
         .finally(function () { $('login-btn').disabled = false; });
     });
 
-    var doLogout = function () { Auth.logout(); };
+    var doLogout = function () {
+      // 로그아웃 시 신원 정보 완전 초기화 — 다음 로그인에 이전 계정이 새지 않게
+      try { localStorage.removeItem('asea_user_email'); } catch (e) {}
+      if (window.CONFIG) CONFIG.currentUser = null;
+      S.userEmail = '';
+      if (typeof AdminModule !== 'undefined') { try { AdminModule.applyMenuVisibility(); } catch (e) {} }
+      Auth.logout();
+    };
     $('logout-btn').addEventListener('click', doLogout);
     $('settings-logout-btn').addEventListener('click', doLogout);
 
@@ -482,6 +501,10 @@
       $('user-email').textContent = S.userEmail;
       $('settings-user-email').textContent = S.userEmail || CONFIG.senderEmail;
       _checkAdminBootstrap();
+      // 검증된 이메일로 관리자/메뉴 가시성 재계산 (관리자 탭은 고정 개발자만 노출)
+      if (typeof AdminModule !== 'undefined') {
+        try { AdminModule.applyMenuVisibility(); AdminModule.applyFeatVisibility(); } catch (e) {}
+      }
     } catch (e) {}
   }
 
