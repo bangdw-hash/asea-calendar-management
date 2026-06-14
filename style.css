@@ -6476,3 +6476,14 @@ body.nav-sheet-open .quick-fab { display: none; }
   .bdg-title { font-size:17px; }
   .bdg-jong-cards { grid-template-columns:repeat(2,1fr); }
 }
+
+/* 예산 집행내역 인라인 펼침(아코디언) */
+.bdg-toggle-btn { font-weight:700; }
+.bdg-sub-row > td { background:#fbfcfe; padding:0 !important; border-bottom:1px solid var(--color-border); }
+.bdg-sub-wrap { padding:12px 14px 14px; }
+.bdg-sub-stats { font-size:12.5px; color:var(--color-text-secondary); margin-bottom:8px; }
+.bdg-sub-stats b { color:var(--color-text); }
+.bdg-sub-stats b.neg { color:var(--color-error); }
+.bdg-sub-wrap .bdg-table.sm { min-width:0; background:#fff; }
+.bdg-sub-wrap .bdg-table.sm th { background:#eef1f6; }
+.bdg-exec-edit { color:var(--color-accent); border-color:var(--color-accent) !important; }
