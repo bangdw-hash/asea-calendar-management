@@ -1011,20 +1011,26 @@
             document.body.classList.remove('is-dragging-event');
             document.querySelectorAll('.calendar-day.drag-over').forEach(function(c) { c.classList.remove('drag-over'); });
           });
-          /* 모바일 long-press */
+          /* 모바일 long-press: 집어들기 → 이동=드래그 / 안 움직이고 떼면=메뉴 */
           bar.addEventListener('touchstart', function(te) {
-            var tx = te.touches[0];
-            _lpFired = false;
+            var tx = te.touches[0]; _tcMX = tx.clientX; _tcMY = tx.clientY;
+            _lpFired = false; _tcMoved = false;
             _tcTmr = setTimeout(function() {
               _tcTmr = null; _lpFired = true;
+              _tcDI = dragInfo;
+              _tcChip = bar;
+              _tcGhost = bar.cloneNode(true);
+              _tcGhost.style.cssText = 'position:fixed;opacity:.75;pointer-events:none;z-index:9999;width:' + bar.offsetWidth + 'px;left:' + (_tcMX - bar.offsetWidth / 2) + 'px;top:' + (_tcMY - 20) + 'px;border-radius:6px;';
+              document.body.appendChild(_tcGhost);
+              bar.style.opacity = '.3';
+              document.body.classList.add('is-dragging-event');
               if (navigator.vibrate) navigator.vibrate(40);
-              showEventContextMenu(ev, tx.clientX, tx.clientY);   // 꾹 누르면 메뉴(드래그 대신)
             }, 500);
           }, { passive: true });
           bar.addEventListener('touchmove', function(te) {
-            clearTimeout(_tcTmr); _tcTmr = null;
-            if (!_tcDI) return;
+            if (!_tcDI) { clearTimeout(_tcTmr); _tcTmr = null; return; }
             te.preventDefault();
+            _tcMoved = true;
             var tx = te.touches[0];
             if (_tcGhost) { _tcGhost.style.left = (tx.clientX - _tcGhost.offsetWidth / 2) + 'px'; _tcGhost.style.top = (tx.clientY - 20) + 'px'; }
             document.querySelectorAll('.calendar-day.drag-over').forEach(function(c) { c.classList.remove('drag-over'); });
@@ -1040,12 +1046,16 @@
             if (_tcChip) { _tcChip.style.opacity = ''; _tcChip = null; }
             document.body.classList.remove('is-dragging-event');
             document.querySelectorAll('.calendar-day.drag-over').forEach(function(c) { c.classList.remove('drag-over'); });
-            var el2 = document.elementFromPoint(tx.clientX, tx.clientY);
-            var dy = el2 ? el2.closest('.calendar-day') : null;
-            if (dy && dy.dataset.date) {
-              var pts = dy.dataset.date.split('-');
-              var dropDate = new Date(parseInt(pts[0]), parseInt(pts[1]) - 1, parseInt(pts[2]));
-              _moveEventToDate(dragInfo, dropDate);
+            if (_tcMoved) {
+              var el2 = document.elementFromPoint(tx.clientX, tx.clientY);
+              var dy = el2 ? el2.closest('.calendar-day') : null;
+              if (dy && dy.dataset.date) {
+                var pts = dy.dataset.date.split('-');
+                var dropDate = new Date(parseInt(pts[0]), parseInt(pts[1]) - 1, parseInt(pts[2]));
+                _moveEventToDate(dragInfo, dropDate);
+              }
+            } else {
+              showEventContextMenu(ev, _tcMX, _tcMY);   // 움직임 없이 길게 → 메뉴
             }
             _tcDI = null;
           });
@@ -1339,7 +1349,7 @@
   }
 
   // 모바일 터치 드래그 상태
-  var _tcDI = null, _tcTmr = null, _tcChip = null, _tcGhost = null;
+  var _tcDI = null, _tcTmr = null, _tcChip = null, _tcGhost = null, _tcMoved = false, _tcMX = 0, _tcMY = 0;
 
   function buildDayCell(cellDate, viewDate, today, evMap) {
     var el = document.createElement('div');
@@ -1426,21 +1436,30 @@
           c.classList.remove('drag-over');
         });
       });
-      // ── 모바일 long-press 드래그 ──
+      // ── 모바일 long-press: 집어들기 → 이동=드래그 / 안 움직이고 떼면=메뉴 ──
       (function(ev) {
+        var moved = false, mx = 0, my = 0;
         chip.addEventListener('touchstart', function(te) {
-          var tx = te.touches[0];
-          _lpFired = false;
+          var tx = te.touches[0]; mx = tx.clientX; my = tx.clientY;
+          _lpFired = false; moved = false;
           _tcTmr = setTimeout(function() {
             _tcTmr = null; _lpFired = true;
+            _tcDI = { eventId: ev.id, calId: ev._calId || '', isAllDay: !!ev.start.date,
+              startTime: ev.start.dateTime || '', summary: ev.summary,
+              duration: ev.start.dateTime ? (new Date(ev.end.dateTime) - new Date(ev.start.dateTime)) : 86400000 };
+            _tcChip = chip;
+            _tcGhost = chip.cloneNode(true);
+            _tcGhost.style.cssText = 'position:fixed;opacity:.75;pointer-events:none;z-index:9999;width:' + chip.offsetWidth + 'px;left:' + (mx - chip.offsetWidth / 2) + 'px;top:' + (my - 20) + 'px;border-radius:6px;';
+            document.body.appendChild(_tcGhost);
+            chip.style.opacity = '.3';
+            document.body.classList.add('is-dragging-event');
             if (navigator.vibrate) navigator.vibrate(40);
-            showEventContextMenu(ev, tx.clientX, tx.clientY);   // 꾹 누르면 메뉴(드래그 대신)
           }, 500);
         }, { passive: true });
         chip.addEventListener('touchmove', function(te) {
-          clearTimeout(_tcTmr); _tcTmr = null;
-          if (!_tcDI) return;
+          if (!_tcDI) { clearTimeout(_tcTmr); _tcTmr = null; return; }   // 픽업 전 이동 → 스크롤
           te.preventDefault();
+          moved = true;
           var tx = te.touches[0];
           if (_tcGhost) { _tcGhost.style.left = (tx.clientX - _tcGhost.offsetWidth / 2) + 'px'; _tcGhost.style.top = (tx.clientY - 20) + 'px'; }
           document.querySelectorAll('.calendar-day.drag-over').forEach(function(c) { c.classList.remove('drag-over'); });
@@ -1456,13 +1475,17 @@
           if (_tcChip) { _tcChip.style.opacity = ''; _tcChip = null; }
           document.body.classList.remove('is-dragging-event');
           document.querySelectorAll('.calendar-day.drag-over').forEach(function(c) { c.classList.remove('drag-over'); });
-          var el2 = document.elementFromPoint(tx.clientX, tx.clientY);
-          var dy = el2 ? el2.closest('.calendar-day') : null;
-          if (dy && dy.dataset.date) {
-            var pts = dy.dataset.date.split('-');
-            var dropDate = new Date(parseInt(pts[0]), parseInt(pts[1]) - 1, parseInt(pts[2]));
-            var ev2 = S.events ? S.events.find(function(e2) { return e2.id === _tcDI.eventId; }) : null;
-            _moveEventToDate(_tcDI, dropDate, ev2);
+          if (moved) {
+            var el2 = document.elementFromPoint(tx.clientX, tx.clientY);
+            var dy = el2 ? el2.closest('.calendar-day') : null;
+            if (dy && dy.dataset.date) {
+              var pts = dy.dataset.date.split('-');
+              var dropDate = new Date(parseInt(pts[0]), parseInt(pts[1]) - 1, parseInt(pts[2]));
+              var ev2 = S.events ? S.events.find(function(e2) { return e2.id === _tcDI.eventId; }) : null;
+              _moveEventToDate(_tcDI, dropDate, ev2);
+            }
+          } else {
+            showEventContextMenu(ev, mx, my);   // 움직임 없이 길게 → 메뉴
           }
           _tcDI = null;
         });
