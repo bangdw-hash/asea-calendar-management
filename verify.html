@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>예산 집행 조회 — ASEA</title>
+<style>
+  :root{ --accent:#1A73E8; --bg:#f3f4f6; --card:#fff; --bd:#e5e7eb; --tx:#202124; --mut:#6b7280; --ok:#137333; --warn:#b45309; --err:#c0392b; }
+  *{ box-sizing:border-box; }
+  body{ margin:0; font-family:'Pretendard','Noto Sans KR',-apple-system,sans-serif; background:var(--bg); color:var(--tx); padding:16px; }
+  .wrap{ max-width:620px; margin:0 auto; }
+  .hd{ display:flex; align-items:center; gap:8px; font-weight:800; font-size:18px; margin:8px 4px 16px; }
+  .card{ background:var(--card); border:1px solid var(--bd); border-radius:14px; padding:18px 18px 20px; box-shadow:0 2px 10px rgba(0,0,0,.05); }
+  .muted{ color:var(--mut); font-size:13px; }
+  h2{ font-size:18px; margin:6px 0 2px; }
+  .badge{ display:inline-block; padding:2px 10px; border-radius:12px; font-size:12px; font-weight:700; }
+  .badge.reserved{ background:#e8f0fe; color:#1a56db; } .badge.executed{ background:#e6f4ea; color:var(--ok); } .badge.canceled{ background:#fde8e8; color:var(--err); }
+  .stats{ display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:10px; margin:16px 0; }
+  .stat{ background:#f8f9fb; border:1px solid var(--bd); border-radius:10px; padding:12px; }
+  .stat .l{ font-size:12px; color:var(--mut); } .stat .v{ font-size:17px; font-weight:800; }
+  .stat .v.neg{ color:var(--err); } .stat .v.ok{ color:var(--ok); } .stat .v.warn{ color:var(--warn); }
+  table{ width:100%; border-collapse:collapse; font-size:13px; margin-top:10px; }
+  th,td{ padding:8px; border-bottom:1px solid var(--bd); text-align:left; }
+  th{ background:#f1f3f4; color:var(--mut); }
+  td.amt,th.amt{ text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap; }
+  .bar{ height:10px; background:#eef0f3; border-radius:5px; overflow:hidden; margin-top:8px; }
+  .bar span{ display:block; height:100%; background:var(--accent); }
+  .bar span.over{ background:var(--err); }
+  .msg{ text-align:center; padding:48px 16px; color:var(--mut); }
+  .foot{ text-align:center; color:var(--mut); font-size:12px; margin-top:18px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hd">💰 ASEA 예산 집행 조회</div>
+  <div id="root" class="card"><div class="msg">⏳ 불러오는 중…</div></div>
+  <div class="foot">본 페이지는 결재 참고용 실시간 조회입니다. · ASEA 예산관리</div>
+</div>
+<script>
+(function(){
+  var GAS = 'https://script.google.com/macros/s/AKfycbyZuuQpuc-0KWaaHmwJUTvnAc83liMcUcC5XxcdR-EFQCFC2AJ0LpFS3R1gS_JXI3Fykg/exec';
+  var root = document.getElementById('root');
+  function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  function won(n){ return (Number(n)||0).toLocaleString('ko-KR'); }
+  function msg(t){ root.innerHTML='<div class="msg">'+t+'</div>'; }
+  function qp(k){ return new URLSearchParams(location.search).get(k); }
+  function kvGet(key){
+    return fetch(GAS+'?action=kvGet&key='+encodeURIComponent(key)+'&_='+Date.now())
+      .then(function(r){ if(!r.ok) throw 0; return r.json(); })
+      .then(function(j){ if(!j||!j.ok) throw 0; return j.value; });
+  }
+  function parseArr(s){ try{ return JSON.parse(s||'[]')||[]; }catch(e){ return []; } }
+
+  var no = qp('no');
+  if(!no){ msg('조회할 승인번호가 없습니다.'); return; }
+  var year = (no.split('-')[0]||'').replace(/[^0-9]/g,'') || new Date().getFullYear();
+
+  Promise.all([
+    kvGet('asea_budget_resv_'+year).catch(function(){return null;}),
+    kvGet('asea_budget_items_'+year).catch(function(){return null;}),
+    kvGet('asea_budget_exec_'+year).catch(function(){return null;})
+  ]).then(function(res){
+    var reservs=parseArr(res[0]), itemsArr=parseArr(res[1]), execArr=parseArr(res[2]);
+    var r = reservs.find(function(x){ return String(x.no)===String(no); });
+    if(!r){ msg('❌ 해당 승인번호를 찾을 수 없습니다.<br><span class="muted">'+esc(no)+'</span><br><br><span class="muted">번호를 확인하시거나, 발급 시스템이 아직 동기화되지 않았을 수 있습니다.</span>'); return; }
+    var it = itemsArr.find(function(x){ return x.id===r.itemId; });
+    var execs = execArr.filter(function(e){ return e.itemId===r.itemId; }).sort(function(a,b){ return (b.date||'').localeCompare(a.date||''); });
+    var budget = it ? (it.confirmed? it.amount : 0) : 0;
+    var used = execs.reduce(function(s,e){ return s+(Number(e.amount)||0); },0);
+    var reserved = reservs.reduce(function(s,x){ return (x.itemId===r.itemId && x.status==='reserved')? s+(Number(x.amount)||0):s; },0);
+    var remain = budget - used - reserved;
+    var rate = budget? Math.round(used/budget*100):0;
+    var stLabel={reserved:'예약중(기안 진행)',executed:'집행완료',canceled:'취소'};
+    var execRows = execs.length ? execs.map(function(e){
+      return '<tr><td>'+esc(e.date)+'</td><td>'+esc(e.docNo)+'</td><td class="amt">'+won(e.amount)+'</td><td>'+esc(e.summary)+'</td></tr>';
+    }).join('') : '<tr><td colspan="4" style="text-align:center;color:#6b7280">집행내역이 없습니다.</td></tr>';
+
+    root.innerHTML =
+      '<div class="muted">'+esc(r.dept)+' · '+(r.type==='sechul'?'세출':'세입')+'</div>'+
+      '<h2>'+esc(it? it.name : (r.itemName||'예산항목'))+'</h2>'+
+      '<div style="margin:8px 0"><span class="muted">승인번호</span> <b>'+esc(r.no)+'</b> '+
+        '<span class="badge '+esc(r.status)+'">'+(stLabel[r.status]||r.status)+'</span></div>'+
+      '<div class="muted">이 승인건: 승인금액 <b>'+won(r.amount)+'</b>원 · 사유: '+esc(r.summary||'')+'</div>'+
+      '<div class="stats">'+
+        '<div class="stat"><div class="l">확정예산</div><div class="v">'+won(budget)+'</div></div>'+
+        '<div class="stat"><div class="l">집행누계</div><div class="v warn">'+won(used)+'</div></div>'+
+        '<div class="stat"><div class="l">예약(기안중)</div><div class="v">'+won(reserved)+'</div></div>'+
+        '<div class="stat"><div class="l">가용잔액</div><div class="v '+(remain<0?'neg':'ok')+'">'+won(remain)+'</div></div>'+
+      '</div>'+
+      '<div class="muted">집행률 '+rate+'%</div><div class="bar"><span class="'+(rate>100?'over':'')+'" style="width:'+Math.min(rate,100)+'%"></span></div>'+
+      '<h3 style="margin:18px 0 4px;font-size:14px">집행내역</h3>'+
+      '<table><thead><tr><th>일자</th><th>문서번호</th><th class="amt">금액</th><th>적요</th></tr></thead><tbody>'+execRows+'</tbody></table>';
+  }).catch(function(){
+    msg('❌ 조회 중 오류가 발생했습니다.<br><span class="muted">잠시 후 다시 시도해 주세요.</span>');
+  });
+})();
+</script>
+</body>
+</html>

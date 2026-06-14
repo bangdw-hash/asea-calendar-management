@@ -6511,3 +6511,9 @@ body.nav-sheet-open .quick-fab { display: none; }
 /* 예산 상태 배지: 제출/반려 */
 .bdg-badge.sub { background:#e8f0fe; color:#1a56db; }
 .bdg-badge.rej { background:#fde8e8; color:#b91c1c; }
+
+/* 예산 승인번호 버튼 */
+.bdg-issue-btn { color:#1a56db; border-color:#1a56db !important; font-weight:700; }
+.rv-url, .rv-exec, .rv-cancel { font-size:11px; padding:3px 8px; border:1px solid var(--color-border); border-radius:6px; background:#fff; cursor:pointer; margin-left:3px; }
+.rv-exec { color:var(--color-success); }
+.rv-cancel { color:var(--color-error); }
