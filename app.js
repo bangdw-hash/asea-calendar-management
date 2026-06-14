@@ -4017,6 +4017,31 @@
       var label = baseUrl ? 'Claude API 키 + Base URL 저장 (' + baseUrl + ')' : 'Claude API 키 저장됨';
       toast(label, 'success');
     });
+
+    var testBtn = $('extract-test-api-btn');
+    if (testBtn && !testBtn._bound) {
+      testBtn._bound = true;
+      testBtn.addEventListener('click', async function () {
+        var out = $('extract-api-test-msg');
+        // 입력란에 값이 있으면 먼저 저장 상태로 반영(점검 정확도)
+        var typed = ($('extract-api-key').value || '').trim();
+        if (typed) {
+          CONFIG.anthropicApiKey = typed;
+          try { localStorage.setItem(CONFIG.storageKeys.anthropicApiKey, typed); } catch (e) {}
+        }
+        testBtn.disabled = true; var orig = testBtn.textContent; testBtn.textContent = '점검 중…';
+        if (out) { out.style.display = 'block'; out.style.color = '#6b7280'; out.style.whiteSpace = 'pre-line'; out.textContent = '🔌 연결 점검 중…'; }
+        try {
+          var r = await window.testClaudeConnection();
+          if (out) { out.style.color = r.ok ? '#15803d' : '#dc2626'; out.textContent = (r.ok ? '✅ ' : '⚠️ ') + r.message; }
+          toast(r.ok ? '연결 정상' : '연결 실패', r.ok ? 'success' : 'error');
+        } catch (e) {
+          if (out) { out.style.color = '#dc2626'; out.textContent = '⚠️ 점검 실패: ' + (e && e.message || e); }
+        } finally {
+          testBtn.disabled = false; testBtn.textContent = orig;
+        }
+      });
+    }
   }
 
   function initExtractTab() {
@@ -4231,7 +4256,11 @@
       renderExtractedEvents();
       toast(S.extractedEvents.length + '개 일정이 추출되었습니다.', 'success');
     } catch (e) {
-      toast('추출 실패: ' + e.message, 'error');
+      var msg = e.message || String(e);
+      if (/Failed to fetch|NetworkError|load failed/i.test(msg)) {
+        msg = '서버에 닿지 못했습니다(네트워크/CORS). 「🔌 연결 점검」으로 키·엔드포인트를 확인하세요. [' + (_cc.endpoint || '') + ']';
+      }
+      toast('추출 실패: ' + msg, 'error');
     } finally {
       btn.disabled = false;
       btn.textContent = '🤖 AI로 일정 추출';
