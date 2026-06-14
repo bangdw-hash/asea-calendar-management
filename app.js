@@ -933,6 +933,7 @@
     var grid  = $('calendar-grid');
     grid.className = 'calendar-grid';
     grid.innerHTML = '';
+    initCalendarRangeSelect();
 
     var first = new Date(d.getFullYear(), d.getMonth(), 1);
     var start = new Date(first);
@@ -1556,8 +1557,71 @@
       e.stopPropagation();
     });
 
-    el.addEventListener('click', function () { openEventModal(null, cellDate); });
+    el.addEventListener('click', function () {
+      if (S._rangeJustSelected) return;   // 드래그로 기간 선택 직후의 클릭은 무시
+      openEventModal(null, cellDate);
+    });
     return el;
+  }
+
+  /* ───────── 캘린더 기간 드래그 선택 → 하루 종일 일정 등록 (PC·모바일) ─────────
+     같은 주(줄) 안에서 시작 날짜를 누른 채 끝 날짜까지 드래그 후 떼면
+     그 기간을 '하루 종일' 일정으로 미리 채운 등록 팝업이 열린다. */
+  function initCalendarRangeSelect() {
+    var grid = $('calendar-grid');
+    if (!grid || grid._rangeReady) return;
+    grid._rangeReady = true;
+
+    var startIdx = -1, rowLo = -1, rowHi = -1, moved = false, selecting = false;
+    function cells() { return Array.prototype.slice.call(grid.querySelectorAll('.calendar-day')); }
+    function clearHL() { grid.querySelectorAll('.calendar-day.range-sel').forEach(function (c) { c.classList.remove('range-sel'); }); }
+    function highlight(a, b) {
+      var cs = cells(), lo = Math.min(a, b), hi = Math.max(a, b);
+      clearHL();
+      for (var i = lo; i <= hi; i++) { if (cs[i]) cs[i].classList.add('range-sel'); }
+    }
+    function cellAt(x, y) { var el = document.elementFromPoint(x, y); return el ? el.closest('.calendar-day') : null; }
+    function idxOf(cell) { return cells().indexOf(cell); }
+
+    grid.addEventListener('pointerdown', function (e) {
+      if (S.calView && S.calView !== 'month') return;       // 월간 보기에서만
+      var cell = e.target.closest('.calendar-day');
+      if (!cell || e.target.closest('.event-chip')) return; // 빈 영역에서 시작(일정 칩 제외)
+      startIdx = idxOf(cell);
+      if (startIdx < 0) return;
+      var row = Math.floor(startIdx / 7); rowLo = row * 7; rowHi = rowLo + 6;
+      moved = false; selecting = true;
+      window._calRangeSelecting = true;
+    });
+    grid.addEventListener('pointermove', function (e) {
+      if (!selecting) return;
+      var cell = cellAt(e.clientX, e.clientY);
+      if (!cell) return;
+      var idx = idxOf(cell);
+      if (idx < rowLo) idx = rowLo; if (idx > rowHi) idx = rowHi;   // 같은 줄로 제한
+      if (idx !== startIdx) { moved = true; if (e.cancelable) e.preventDefault(); }
+      highlight(startIdx, idx);
+    });
+    function finish(e) {
+      if (!selecting) return;
+      selecting = false;
+      var endCell = cellAt(e.clientX, e.clientY);
+      var endIdx = endCell ? idxOf(endCell) : startIdx;
+      if (endIdx < rowLo) endIdx = rowLo; if (endIdx > rowHi) endIdx = rowHi;
+      clearHL();
+      if (moved && endIdx !== startIdx && startIdx >= 0) {
+        var cs = cells(), lo = Math.min(startIdx, endIdx), hi = Math.max(startIdx, endIdx);
+        if (cs[lo] && cs[hi] && cs[lo].dataset.date && cs[hi].dataset.date) {
+          S._rangeJustSelected = true;
+          setTimeout(function () { S._rangeJustSelected = false; }, 400);
+          openEventModal(null, _parseYMD(cs[lo].dataset.date), { endDate: _parseYMD(cs[hi].dataset.date), allDay: true });
+        }
+      }
+      startIdx = -1; moved = false;
+      setTimeout(function () { window._calRangeSelecting = false; }, 60);
+    }
+    grid.addEventListener('pointerup', finish);
+    grid.addEventListener('pointercancel', function () { selecting = false; clearHL(); window._calRangeSelecting = false; });
   }
 
   /* ═══════════════════════════════════════════════════════════
@@ -1833,7 +1897,35 @@
     openEventModal(list[ni]);
   };
 
-  function openEventModal(event, date) {
+  function _ymd(d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+  function _parseYMD(s) { var p = String(s).split('-'); return new Date(+p[0], +p[1] - 1, +p[2]); }
+
+  /* 하루 종일 토글 — 체크 시 시작/종료 입력을 날짜(date)로, 해제 시 datetime-local로 전환 */
+  function applyAllDayUI(allDay) {
+    var s = $('event-start'), e = $('event-end');
+    if (!s || !e) return;
+    if (allDay) {
+      if (s.type !== 'date') { s.value = (s.value || '').slice(0, 10); s.type = 'date'; }
+      if (e.type !== 'date') { e.value = (e.value || '').slice(0, 10); e.type = 'date'; }
+    } else {
+      if (s.type === 'date') { s.type = 'datetime-local'; if (s.value && s.value.length === 10) s.value += 'T09:00'; }
+      if (e.type === 'date') { e.type = 'datetime-local'; if (e.value && e.value.length === 10) e.value += 'T10:00'; }
+    }
+  }
+
+  /* 모달 입력값(start/end 문자열)을 Google 이벤트 start/end 객체로 변환 */
+  function buildEventDates(allDay, start, end, tz) {
+    if (allDay) {
+      var endExcl = _parseYMD(end.slice(0, 10)); endExcl.setDate(endExcl.getDate() + 1); // end.date는 비포함
+      return { start: { date: start.slice(0, 10) }, end: { date: _ymd(endExcl) } };
+    }
+    return {
+      start: { dateTime: new Date(start).toISOString(), timeZone: tz },
+      end:   { dateTime: new Date(end).toISOString(),   timeZone: tz },
+    };
+  }
+
+  function openEventModal(event, date, opts) {
     S.editEventId  = null;
     S.editCalId    = null;
     S.editCalendars = [];
@@ -1871,19 +1963,35 @@
       var m = /\[부서:([^\]]+)\]/.exec(rawDesc);
       if (m) $('event-dept').value = m[1];
 
-      var sdt = event.start.dateTime
-        ? toLocalDateTime(new Date(event.start.dateTime))
-        : event.start.date + 'T09:00';
-      var edt = event.end.dateTime
-        ? toLocalDateTime(new Date(event.end.dateTime))
-        : event.end.date + 'T10:00';
-      $('event-start').value = sdt;
-      $('event-end').value   = edt;
+      var isAD = !!event.start.date && !event.start.dateTime;
+      if ($('event-allday')) $('event-allday').checked = isAD;
+      if (isAD) {
+        applyAllDayUI(true);
+        $('event-start').value = event.start.date;
+        // Google 종료일(end.date)은 비포함(+1일) → 표시용으로 -1일
+        var endIncl = _parseYMD(event.end.date); endIncl.setDate(endIncl.getDate() - 1);
+        $('event-end').value = _ymd(endIncl);
+      } else {
+        applyAllDayUI(false);
+        $('event-start').value = event.start.dateTime
+          ? toLocalDateTime(new Date(event.start.dateTime)) : event.start.date + 'T09:00';
+        $('event-end').value = event.end.dateTime
+          ? toLocalDateTime(new Date(event.end.dateTime)) : event.end.date + 'T10:00';
+      }
     } else {
       var base   = date || new Date();
-      var prefix = base.getFullYear() + '-' + pad(base.getMonth() + 1) + '-' + pad(base.getDate());
-      $('event-start').value = prefix + 'T09:00';
-      $('event-end').value   = prefix + 'T10:00';
+      var endD   = (opts && opts.endDate) ? opts.endDate : base;
+      var allDay = !!(opts && opts.allDay);
+      if ($('event-allday')) $('event-allday').checked = allDay;
+      applyAllDayUI(allDay);
+      if (allDay) {
+        $('event-start').value = _ymd(base);
+        $('event-end').value   = _ymd(endD);
+      } else {
+        var prefix = _ymd(base);
+        $('event-start').value = prefix + 'T09:00';
+        $('event-end').value   = prefix + 'T10:00';
+      }
     }
 
     // 반복 UI 초기화/복원
@@ -2072,10 +2180,15 @@
       var end   = $('event-end').value;
       var dept  = $('event-dept').value;
       var desc  = $('event-description').value.trim();
+      var allDay = !!($('event-allday') && $('event-allday').checked);
 
-      if (!title)                           { toast('제목을 입력하세요.', 'error'); return; }
-      if (!start || !end)                   { toast('시작·종료 시간을 입력하세요.', 'error'); return; }
-      if (new Date(start) >= new Date(end)) { toast('종료는 시작 이후여야 합니다.', 'error'); return; }
+      if (!title)         { toast('제목을 입력하세요.', 'error'); return; }
+      if (!start || !end) { toast('시작·종료 ' + (allDay ? '날짜' : '시간') + '를 입력하세요.', 'error'); return; }
+      if (allDay) {
+        if (start.slice(0,10) > end.slice(0,10)) { toast('종료는 시작 이후여야 합니다.', 'error'); return; }
+      } else if (new Date(start) >= new Date(end)) {
+        toast('종료는 시작 이후여야 합니다.', 'error'); return;
+      }
 
       var tz        = Intl.DateTimeFormat().resolvedOptions().timeZone || 'Asia/Seoul';
       var deptColor = getDeptColor(dept);
@@ -2093,11 +2206,12 @@
       var colorId = palette[dIdx >= 0 ? dIdx % palette.length : 10];
 
       var recurrence = buildRecurrence();
+      var _d = buildEventDates(allDay, start, end, tz);
       var eventData = {
         summary:     title,
         description: fullDesc,
-        start: { dateTime: new Date(start).toISOString(), timeZone: tz },
-        end:   { dateTime: new Date(end).toISOString(),   timeZone: tz },
+        start: _d.start,
+        end:   _d.end,
         colorId: colorId,
       };
       if (recurrence.length) eventData.recurrence = recurrence;
@@ -2158,6 +2272,12 @@
       } else {
         confirmDeleteEvent('this');
       }
+    });
+
+    var allDayCb = $('event-allday');
+    if (allDayCb) allDayCb.addEventListener('change', function () {
+      applyAllDayUI(this.checked);
+      clearTimeout(S.dupTimer); S.dupTimer = setTimeout(runDupCheck, 300);
     });
 
     [$('event-title'), $('event-start'), $('event-end')].forEach(function (el) {
@@ -3008,10 +3128,15 @@
       var end   = $('event-end').value;
       var dept  = $('event-dept').value;
       var desc  = $('event-description').value.trim();
+      var allDay = !!($('event-allday') && $('event-allday').checked);
 
-      if (!title)                           { toast('제목을 입력하세요.', 'error'); return; }
-      if (!start || !end)                   { toast('시작·종료 시간을 입력하세요.', 'error'); return; }
-      if (new Date(start) >= new Date(end)) { toast('종료는 시작 이후여야 합니다.', 'error'); return; }
+      if (!title)         { toast('제목을 입력하세요.', 'error'); return; }
+      if (!start || !end) { toast('시작·종료 ' + (allDay ? '날짜' : '시간') + '를 입력하세요.', 'error'); return; }
+      if (allDay) {
+        if (start.slice(0,10) > end.slice(0,10)) { toast('종료는 시작 이후여야 합니다.', 'error'); return; }
+      } else if (new Date(start) >= new Date(end)) {
+        toast('종료는 시작 이후여야 합니다.', 'error'); return;
+      }
 
       var recurrence = buildRecurrence();
       if (!recurrence.length) {
@@ -3036,11 +3161,12 @@
         ? S.editCalendars.map(function (c) { return c.id; })
         : [CONFIG.calendarId];
 
+      var _dr = buildEventDates(allDay, start, end, tz);
       var eventData = {
         summary:     title,
         description: fullDesc,
-        start: { dateTime: new Date(start).toISOString(), timeZone: tz },
-        end:   { dateTime: new Date(end).toISOString(),   timeZone: tz },
+        start: _dr.start,
+        end:   _dr.end,
         colorId: colorId,
         recurrence: recurrence,
       };
@@ -3063,6 +3189,7 @@
 
   async function runDupCheck() {
     if (!Auth.isLoggedIn()) return;
+    if ($('event-allday') && $('event-allday').checked) { var da = $('duplicate-alert'); if (da) da.hidden = true; return; }
     var title = $('event-title').value.trim();
     var start = $('event-start').value;
     var end   = $('event-end').value;

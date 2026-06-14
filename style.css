@@ -5534,6 +5534,14 @@ body.is-dragging-event .day-events { pointer-events: none !important; }
   transition: background 0.1s;
 }
 
+/* 기간 드래그 선택 하이라이트 */
+.calendar-grid { touch-action: pan-y; }
+.calendar-day.range-sel {
+  background: rgba(26,115,232,.14) !important;
+  box-shadow: inset 0 0 0 2px rgba(26,115,232,.4);
+}
+.calendar-grid .calendar-day, .calendar-grid .day-number { user-select: none; -webkit-user-select: none; }
+
 /* ── Quill 확장 에디터 스타일 ───────────────────────── */
 
 /* 자간/행간 picker 레이블 */

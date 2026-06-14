@@ -111,7 +111,9 @@
       var t = e.touches[0]; sx = t.clientX; sy = t.clientY; on = true;
     }, { passive: true });
     cont.addEventListener('touchend', function (e) {
-      if (!on) return; on = false; var t = e.changedTouches[0];
+      if (!on) return; on = false;
+      if (window._calRangeSelecting) return;   // 기간 드래그 중엔 월 전환 스와이프 무시
+      var t = e.changedTouches[0];
       var dx = t.clientX - sx, dy = t.clientY - sy;
       if (Math.abs(dx) > 55 && Math.abs(dx) > Math.abs(dy) * 1.3) calSlide(dx < 0 ? -1 : 1);
     }, { passive: true });
