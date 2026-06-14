@@ -6532,3 +6532,20 @@ body.nav-sheet-open .quick-fab { display: none; }
 .mono-ico { display:inline-flex; align-items:center; justify-content:center; vertical-align:-3px; margin-right:7px; flex-shrink:0; }
 .mono-ico svg { width:18px; height:18px; }
 .admin-nav-btn .mono-ico { margin-right:8px; }
+
+/* 서브탭 바: 전역 가로 스크롤 보장(미디어쿼리/JS 의존 없이 항상 스와이프 가능) */
+.facility-subtab-bar, .bdg-subtab-bar, .email-subtabs, .extract-subtabs, .sms-subtab-bar,
+.work-subtab-bar, .work-status-tab-bar, .mt-subtab-nav, .rt-mgr-tabs, .rt-step-bar, .hr-subtab-bar {
+  overflow-x: auto;
+  flex-wrap: nowrap;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-x;
+  scrollbar-width: none;
+}
+.facility-subtab-bar::-webkit-scrollbar, .bdg-subtab-bar::-webkit-scrollbar,
+.email-subtabs::-webkit-scrollbar, .extract-subtabs::-webkit-scrollbar,
+.sms-subtab-bar::-webkit-scrollbar, .work-subtab-bar::-webkit-scrollbar,
+.work-status-tab-bar::-webkit-scrollbar, .mt-subtab-nav::-webkit-scrollbar,
+.rt-mgr-tabs::-webkit-scrollbar, .rt-step-bar::-webkit-scrollbar,
+.hr-subtab-bar::-webkit-scrollbar { display: none; }
+.facility-subtab-bar .subtab-btn, .bdg-subtab-bar .subtab-btn { flex-shrink: 0; }
