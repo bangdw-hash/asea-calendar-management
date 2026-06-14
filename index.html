@@ -550,10 +550,12 @@
                     style="font-size:12px;padding:6px 10px">
                   <!-- Base URL 자동 판별 — 별도 입력 불필요 -->
                   <input id="extract-api-base-url" type="hidden" value="">
-                  <div style="display:flex;gap:6px;align-items:center">
+                  <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
                     <button id="extract-save-api-btn" class="btn btn-primary btn-sm" style="font-size:12px;padding:5px 14px">저장</button>
+                    <button id="extract-test-api-btn" class="btn btn-secondary btn-sm" style="font-size:12px;padding:5px 14px">🔌 연결 점검</button>
                     <span id="extract-api-saved-msg" style="font-size:11px;color:#2e7d32;display:none">✔ 저장됨</span>
                   </div>
+                  <p id="extract-api-test-msg" style="font-size:11px;margin:0;display:none"></p>
                   <p style="font-size:11px;color:#888;margin:0">sk-ant-api03-... → 공식 API &nbsp;|&nbsp; sk-9bbf... (hex) → aiapiflow 프록시 자동 연결</p>
                 </div>
               </div>
@@ -3271,7 +3273,7 @@
   <!-- Quill.js 워드프로세서 -->
   <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js" defer></script>
 
-  <script src="config.js?v=20260614r1" defer></script>
+  <script src="config.js?v=20260614r2" defer></script>
   <script src="cloudsync.js?v=20260614c5" defer></script>
   <script src="auth.js?v=20260614r5" defer></script>
   <script src="calendar.js?v=20260612c1" defer></script>
@@ -3307,7 +3309,7 @@
   <script src="usersettings.js?v=20260610u1" defer></script>
   <script src="budget-seed-2026.js?v=20260614b1" defer></script>
   <script src="budget.js?v=20260614b9" defer></script>
-  <script src="app.js?v=20260614r10" defer></script>
+  <script src="app.js?v=20260614r11" defer></script>
   <script src="navgroups.js?v=20260614r13" defer></script>
   <script src="userorg.js?v=20260614u1" defer></script>
   <script src="onboarding.js?v=20260614ob1" defer></script>

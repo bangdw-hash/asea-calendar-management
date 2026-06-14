@@ -228,3 +228,41 @@ window.getClaudeConfig = function() {
 
   return { apiKey: apiKey, endpoint: endpoint, isOfficial: isOfficial };
 };
+
+/**
+ * testClaudeConnection() — 현재 저장된 Claude API 설정으로 실제 연결을 점검.
+ * 반환: { ok, status, message, endpoint }
+ *  - ok:true  → 키·엔드포인트 정상
+ *  - status 있음(HTTP 코드) → 서버에 닿았으나 키/권한 오류 등
+ *  - status 없음 → 네트워크/CORS 차단('Failed to fetch') = 엔드포인트 접근 불가
+ */
+window.testClaudeConnection = async function () {
+  var cc = window.getClaudeConfig();
+  if (!cc.apiKey) return { ok: false, message: 'API 키가 없습니다. 먼저 저장하세요.', endpoint: cc.endpoint };
+  var headers = {
+    'Content-Type': 'application/json',
+    'x-api-key': cc.apiKey,
+    'anthropic-version': '2023-06-01',
+  };
+  if (cc.isOfficial) headers['anthropic-dangerous-direct-browser-access'] = 'true';
+  try {
+    var res = await fetch(cc.endpoint, {
+      method: 'POST',
+      headers: headers,
+      body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 4, messages: [{ role: 'user', content: 'ping' }] }),
+    });
+    if (res.ok) {
+      return { ok: true, status: res.status, endpoint: cc.endpoint,
+        message: '연결 정상 ✓ (' + (cc.isOfficial ? '공식 API' : '프록시') + ')' };
+    }
+    var detail = 'HTTP ' + res.status;
+    try { var j = await res.json(); if (j && j.error && j.error.message) detail = j.error.message; } catch (e) {}
+    return { ok: false, status: res.status, endpoint: cc.endpoint,
+      message: '서버 응답 오류: ' + detail + ' — 키가 올바른지/권한이 있는지 확인하세요.' };
+  } catch (e) {
+    return { ok: false, endpoint: cc.endpoint,
+      message: '네트워크/CORS 오류로 서버에 닿지 못했습니다 (' + (e && e.message || e) + ').\n' +
+               '엔드포인트: ' + cc.endpoint + '\n' +
+               '→ 키 형식(공식 sk-ant- / 프록시 hex)이 맞는지, 프록시 주소가 유효한지 확인하세요.' };
+  }
+};
