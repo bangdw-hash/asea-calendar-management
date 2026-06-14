@@ -59,6 +59,11 @@
 
   /* ─────────────── 데스크탑 드롭다운 ─────────────── */
   var _open = null;
+  // 마우스 오버로 열고, 떠나면 약간의 여유를 두고 닫는다(버튼↔메뉴 사이 간격 보정)
+  var HOVER = !(window.matchMedia && window.matchMedia('(hover: none)').matches);
+  var _hoverCloseT = null;
+  function scheduleClose() { clearTimeout(_hoverCloseT); _hoverCloseT = setTimeout(closeDesktop, 160); }
+  function cancelClose() { clearTimeout(_hoverCloseT); }
   function closeDesktop() {
     if (!_open) return;
     _open.menu.hidden = true;
@@ -113,13 +118,17 @@
         if (_open && _open.menu === menu) { closeDesktop(); return; }
         openDesktop(cat, menu);
       });
-      // 메가메뉴: 한 메뉴가 열려 있을 때 다른 카테고리로 마우스를 옮기면 즉시 전환
-      cat.addEventListener('pointerenter', function (e) {
-        if (e.pointerType && e.pointerType !== 'mouse') return;  // 마우스만
-        if (!_open || _open.menu === menu) return;               // 열려 있을 때만 전환
-        if (visibleButtons(gid).length <= 1) { closeDesktop(); return; }
-        openDesktop(cat, menu);
-      });
+      // 마우스 오버 시 자동으로 서브메뉴 펼침(메가메뉴) — 마우스 환경에서만
+      if (HOVER) {
+        wrap.addEventListener('mouseenter', function () {
+          cancelClose();
+          if (visibleButtons(gid).length <= 1) { closeDesktop(); return; }  // 단일 항목은 클릭으로 바로 전환
+          openDesktop(cat, menu);
+        });
+        wrap.addEventListener('mouseleave', scheduleClose);
+        menu.addEventListener('mouseenter', cancelClose);   // 버튼→메뉴 이동 시 닫힘 취소
+        menu.addEventListener('mouseleave', scheduleClose);
+      }
       menu.addEventListener('click', function (e) {
         if (e.target.closest('.tab-btn')) closeDesktop();
       });
