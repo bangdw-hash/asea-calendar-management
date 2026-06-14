@@ -6571,16 +6571,23 @@ body:has(.modal:not([hidden])) .quick-fab { display: none; }
 .modal-footer > *, .modal-footer-right > * { flex-shrink: 0; }
 .modal-footer-right { flex-wrap: nowrap; }
 
-/* 일정 모달 하단 버튼: 색/아이콘 제거하고 텍스트만 통일 */
+/* 일정 모달 하단 버튼: 동일 폰트·그레이 버튼으로 통일, 한 줄에 모두 표시(PC/모바일 공통) */
+#event-modal .modal-footer { gap: 6px !important; padding: 10px !important; justify-content: space-between !important; flex-wrap: nowrap !important; overflow: visible !important; }
+#event-modal .modal-footer-right { gap: 6px !important; flex-wrap: nowrap !important; }
 #event-modal .modal-footer .btn {
-  background: none !important;
-  border: none !important;
-  box-shadow: none !important;
-  color: var(--color-text-secondary) !important;
+  font-size: 12px !important;
   font-weight: 600 !important;
-  padding: 8px 12px !important;
+  padding: 7px 9px !important;
+  min-width: 0 !important;
+  background: #eef0f3 !important;
+  color: #444 !important;
+  border: none !important;
+  border-radius: 8px !important;
+  box-shadow: none !important;
+  white-space: nowrap;
 }
 #event-modal .modal-footer #save-event-btn {
-  color: var(--color-accent) !important;
-  font-weight: 800 !important;
+  background: var(--color-accent) !important;
+  color: #fff !important;
+  font-weight: 700 !important;
 }
