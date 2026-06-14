@@ -1781,6 +1781,18 @@
     setTimeout(function () { document.addEventListener('click', _pickerOutside); }, 100);
   }
 
+  // 일정 수정 모달에서 좌우 스와이프로 이전/다음 일정 이동(gestures.js에서 호출)
+  window._eventNav = function (dir) {
+    if (!S.editEventId) return;                 // 추가 모드는 무시
+    var list = sortEvents(S.events || []);
+    var idx = -1;
+    for (var i = 0; i < list.length; i++) { if (list[i].id === S.editEventId) { idx = i; break; } }
+    if (idx < 0) return;
+    var ni = idx + (dir > 0 ? 1 : -1);
+    if (ni < 0 || ni >= list.length) { toast(dir > 0 ? '마지막 일정입니다.' : '첫 일정입니다.'); return; }
+    openEventModal(list[ni]);
+  };
+
   function openEventModal(event, date) {
     S.editEventId  = null;
     S.editCalId    = null;
