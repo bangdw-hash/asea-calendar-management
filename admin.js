@@ -126,25 +126,15 @@
   ];
 
   /* ── 전체 메뉴 목록 (역할별 표시 제어용) ───────────────── */
-  var MENU_ITEMS = [
-    { id: 'calendar',    label: '📅 캘린더' },
-    { id: 'weekly-hub', label: '📋 주간허브' },
-    { id: 'report',      label: '✅ 업무보고' },
-    { id: 'promo',       label: '📣 홍보화면' },
-    { id: 'email',       label: '✉️ 이메일' },
-    { id: 'extract',     label: '🔍 일정발췌' },
-    { id: 'work',        label: '📝 업무관리' },
-    { id: 'facility',    label: '🏢 대관업무' },
-    { id: 'vehicle',     label: '🚗 차량관리' },
-    { id: 'classroom',   label: '🏫 강의실현황' },
-    { id: 'workorder',   label: '🔧 작업지시' },
-    { id: 'checkinmgmt', label: '🚪 입출입관리' },
-    { id: 'sms',         label: '💬 문자발송' },
-    { id: 'board',       label: '📌 게시판' },
-    { id: 'hr',          label: '👥 인사관리' },
-    { id: 'zoom',        label: '🎥 Zoom회의' },
-    { id: 'settings',    label: '⚙️ 설정' },
-    { id: 'help',        label: '❓ 도움말' }
+  /* 모바일 네비(navgroups.js)와 동일한 6개 카테고리(정보구조).
+     관리자 화면의 메뉴 목록을 이 분류로 묶어 보여준다. */
+  var MENU_GROUPS = [
+    { label: '캘린더',    ids: ['calendar', 'weekly-hub', 'extract', 'cal-share-nav'] },
+    { label: '업무',      ids: ['work', 'budget', 'report', 'workorder', 'draft', 'survey'] },
+    { label: '시설·자원', ids: ['facility', 'vehicle', 'classroom', 'checkinmgmt'] },
+    { label: '소통·홍보', ids: ['board', 'email', 'sms', 'zoom', 'promo', 'qrcard'] },
+    { label: '인사',      ids: ['hr'] },
+    { label: '설정',      ids: ['settings', 'help'] }
   ];
 
   /* ── 메뉴 순서/표시 관리용 전체 메뉴(라벨 포함) ────────────
@@ -302,6 +292,22 @@
     } catch (e) {}
     // DOM에서 못 읽은(아직 렌더 전) 메뉴는 NAV_MENUS로 보강
     NAV_MENUS.forEach(function (m) { if (m.id !== 'admin' && !seen[m.id]) { seen[m.id] = 1; out.push(m); } });
+    return out;
+  }
+
+  /* _navMenus()를 모바일과 동일한 6개 카테고리로 그룹핑.
+     어떤 그룹에도 속하지 않는 신규 메뉴는 '기타'로 모아 항상 노출되게 한다. */
+  function _groupedNavMenus() {
+    var all = _navMenus();
+    var byId = {}; all.forEach(function (m) { byId[m.id] = m; });
+    var used = {}, out = [];
+    MENU_GROUPS.forEach(function (g) {
+      var items = [];
+      g.ids.forEach(function (id) { if (byId[id]) { items.push(byId[id]); used[id] = 1; } });
+      if (items.length) out.push({ label: g.label, items: items });
+    });
+    var rest = all.filter(function (m) { return !used[m.id]; });
+    if (rest.length) out.push({ label: '기타', items: rest });
     return out;
   }
 
@@ -796,12 +802,15 @@
     }
 
     html += '<div class="menu-manage-list" id="staff-share-list">';
-    _navMenus().forEach(function (m) {
-      var on = checked.indexOf(m.id) !== -1;
-      html += '<label class="mm-row" style="cursor:pointer">' +
-        '<input type="checkbox" class="ss-cb" data-id="' + esc(m.id) + '"' + (on ? ' checked' : '') + ' style="width:16px;height:16px;margin-right:10px;flex-shrink:0">' +
-        '<span class="mm-label">' + (m.label || esc(m.id)) + '</span>' +
-      '</label>';
+    _groupedNavMenus().forEach(function (grp) {
+      html += '<div class="mm-group-label">' + esc(grp.label) + '</div>';
+      grp.items.forEach(function (m) {
+        var on = checked.indexOf(m.id) !== -1;
+        html += '<label class="mm-row" style="cursor:pointer">' +
+          '<input type="checkbox" class="ss-cb" data-id="' + esc(m.id) + '"' + (on ? ' checked' : '') + ' style="width:16px;height:16px;margin-right:10px;flex-shrink:0">' +
+          '<span class="mm-label">' + (m.label || esc(m.id)) + '</span>' +
+        '</label>';
+      });
     });
     html += '</div>';
 
@@ -863,17 +872,32 @@
       '<span style="color:#999">※ 설정은 이 브라우저에 저장됩니다(기기/계정별).</span></p>' +
       '<div class="menu-manage-list" id="menu-manage-list">';
 
-    order.forEach(function (id, idx) {
-      var isHidden = hidden.indexOf(id) !== -1;
-      html += '<div class="mm-row' + (isHidden ? ' mm-hidden' : '') + '" data-id="' + esc(id) + '">' +
-        '<span class="mm-pos">' + (idx + 1) + '</span>' +
-        '<span class="mm-label">' + (labelOf[id] || esc(id)) + '</span>' +
-        '<div class="mm-actions">' +
-          '<button class="mm-btn mm-up" title="위로"' + (idx === 0 ? ' disabled' : '') + '>▲</button>' +
-          '<button class="mm-btn mm-down" title="아래로"' + (idx === order.length - 1 ? ' disabled' : '') + '>▼</button>' +
-          '<label class="mm-toggle"><input type="checkbox" class="mm-vis"' + (isHidden ? '' : ' checked') + '> 표시</label>' +
-        '</div>' +
-      '</div>';
+    /* 전역 순서상의 위치(번호·끝단 판별용) */
+    var pos = {};
+    order.forEach(function (id, i) { pos[id] = i; });
+
+    /* 모바일과 동일한 6개 카테고리로 묶어 표시(순서는 전역 순서 기준) */
+    _groupedNavMenus().forEach(function (grp) {
+      html += '<div class="mm-group-label">' + esc(grp.label) + '</div>';
+      var items = grp.items.slice().sort(function (a, b) {
+        var pa = (pos[a.id] == null ? 999 : pos[a.id]);
+        var pb = (pos[b.id] == null ? 999 : pos[b.id]);
+        return pa - pb;
+      });
+      items.forEach(function (m) {
+        var id = m.id;
+        var idx = (pos[id] == null ? 0 : pos[id]);
+        var isHidden = hidden.indexOf(id) !== -1;
+        html += '<div class="mm-row' + (isHidden ? ' mm-hidden' : '') + '" data-id="' + esc(id) + '">' +
+          '<span class="mm-pos">' + (idx + 1) + '</span>' +
+          '<span class="mm-label">' + (labelOf[id] || m.label || esc(id)) + '</span>' +
+          '<div class="mm-actions">' +
+            '<button class="mm-btn mm-up" title="위로"' + (idx === 0 ? ' disabled' : '') + '>▲</button>' +
+            '<button class="mm-btn mm-down" title="아래로"' + (idx === order.length - 1 ? ' disabled' : '') + '>▼</button>' +
+            '<label class="mm-toggle"><input type="checkbox" class="mm-vis"' + (isHidden ? '' : ' checked') + '> 표시</label>' +
+          '</div>' +
+        '</div>';
+      });
     });
 
     html += '</div>' +
@@ -988,22 +1012,19 @@
       roles.map(function (r) { return '<th>' + r + '</th>'; }).join('') +
       '</tr></thead><tbody>';
 
-    MENU_ITEMS.forEach(function (item) {
-      html += '<tr><td>' + item.label + '</td>';
-      roles.forEach(function (role) {
-        var key     = item.id + '__' + role;
-        var checked;
-        if (item.id === 'admin') {
-          checked = (role === 'admin');
-        } else {
-          checked = typeof vis[key] === 'boolean' ? vis[key] : true;
-        }
-        var disabled = (item.id === 'admin') ? ' disabled' : '';
-        html += '<td><input type="checkbox" class="menu-ctrl-cb"' +
-          ' data-menu="' + item.id + '" data-role="' + role + '"' +
-          (checked ? ' checked' : '') + disabled + '></td>';
+    _groupedNavMenus().forEach(function (grp) {
+      html += '<tr class="ctrl-group-row"><td colspan="' + (roles.length + 1) + '">' + esc(grp.label) + '</td></tr>';
+      grp.items.forEach(function (item) {
+        html += '<tr><td>' + esc(item.label) + '</td>';
+        roles.forEach(function (role) {
+          var key     = item.id + '__' + role;
+          var checked = typeof vis[key] === 'boolean' ? vis[key] : true;
+          html += '<td><input type="checkbox" class="menu-ctrl-cb"' +
+            ' data-menu="' + item.id + '" data-role="' + role + '"' +
+            (checked ? ' checked' : '') + '></td>';
+        });
+        html += '</tr>';
       });
-      html += '</tr>';
     });
     html += '</tbody></table></div>';
     return html;

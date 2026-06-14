@@ -6089,6 +6089,16 @@ body.is-dragging-event .day-events { pointer-events: none !important; }
   gap: 6px;
   max-width: 560px;
 }
+/* 모바일 네비와 동일한 카테고리 구분 라벨 */
+.mm-group-label {
+  font-size: 12px; font-weight: 700; color: #1a3a5c;
+  letter-spacing: .3px; margin: 12px 0 2px; padding-left: 2px;
+}
+.mm-group-label:first-child { margin-top: 0; }
+.ctrl-table .ctrl-group-row td {
+  background: #f1f5fb; font-weight: 700; color: #1a3a5c;
+  font-size: 12px; letter-spacing: .3px; padding: 7px 10px;
+}
 .mm-row {
   display: flex;
   align-items: center;
