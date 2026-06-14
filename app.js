@@ -685,37 +685,44 @@
       calsToLoad = enabled;
     }
 
-    var allEvents = [];
-    for (var i = 0; i < calsToLoad.length; i++) {
-      var cal = calsToLoad[i];
-      try {
-        var evts = await CalendarModule.listEvents(cal.id, timeMin, timeMax);
-        evts.forEach(function (ev) {
-          ev._calColor = cal.color;
-          ev._calName  = cal.name;
-          ev._calId    = cal.id;   // 수정/삭제 시 올바른 캘린더 지정에 필요
-        });
-        allEvents = allEvents.concat(evts);
-      } catch (e) { /* 권한 없는 캘린더 무시 */ }
-    }
-
-    // 공유 캘린더 (ICS URL → calendarId 추출)
-    for (var j = 0; j < CONFIG.sharedCalendars.length; j++) {
-      var sc = CONFIG.sharedCalendars[j];
+    // 모든 캘린더를 병렬로 조회(순차 대기 → 병렬로 속도 대폭 개선)
+    var tasks = [];
+    calsToLoad.forEach(function (cal) {
+      tasks.push(
+        CalendarModule.listEvents(cal.id, timeMin, timeMax).then(function (evts) {
+          evts.forEach(function (ev) { ev._calColor = cal.color; ev._calName = cal.name; ev._calId = cal.id; });
+          return evts;
+        }).catch(function () { return []; })
+      );
+    });
+    CONFIG.sharedCalendars.forEach(function (sc) {
       var calId = extractCalendarId(sc.url);
-      if (!calId) continue;
-      try {
-        var sevts = await CalendarModule.listEvents(calId, timeMin, timeMax);
-        sevts.forEach(function (ev) {
-          ev._calColor = sc.color || '#FBBC05';
-          ev._calName  = sc.name;
-        });
-        allEvents = allEvents.concat(sevts);
-      } catch (e) {}
-    }
+      if (!calId) return;
+      tasks.push(
+        CalendarModule.listEvents(calId, timeMin, timeMax).then(function (sevts) {
+          sevts.forEach(function (ev) { ev._calColor = sc.color || '#FBBC05'; ev._calName = sc.name; });
+          return sevts;
+        }).catch(function () { return []; })
+      );
+    });
+
+    var results = await Promise.all(tasks);
+    var allEvents = [];
+    results.forEach(function (r) { allEvents = allEvents.concat(r); });
 
     S.events = allEvents;
+    _saveCalCache(allEvents);
   }
+
+  /* 캘린더 이벤트 캐시(기기별) — 즉시 렌더용 */
+  function _calCacheKey() {
+    var d = S.viewDate;
+    if (S.calView === 'month') return 'asea_cal_cache_m_' + d.getFullYear() + '_' + d.getMonth();
+    var day = d.getDay(); var sun = new Date(d.getFullYear(), d.getMonth(), d.getDate() - day);
+    return 'asea_cal_cache_w_' + sun.getFullYear() + '_' + sun.getMonth() + '_' + sun.getDate();
+  }
+  function _saveCalCache(evts) { try { localStorage.setItem(_calCacheKey(), JSON.stringify(evts)); } catch (e) {} }
+  function _loadCalCache() { try { var v = localStorage.getItem(_calCacheKey()); return v ? JSON.parse(v) : null; } catch (e) { return null; } }
 
   function extractCalendarId(url) {
     if (!url) return null;
@@ -777,11 +784,16 @@
   ═══════════════════════════════════════════════════════════ */
   async function renderCalendar() {
     if (!Auth.isLoggedIn()) return;
-    await loadEvents();
     updateCalendarTitle();
+    // 1) 캐시(있으면)로 즉시 렌더 → 체감 즉시 표시
+    var cached = _loadCalCache();
+    if (cached) S.events = cached;
     renderLegend();
-    if (S.calView === 'month') renderMonth();
-    else renderWeek();
+    if (S.calView === 'month') renderMonth(); else renderWeek();
+    // 2) 서버에서 최신 이벤트 병렬 로드 후 갱신
+    await loadEvents();
+    renderLegend();
+    if (S.calView === 'month') renderMonth(); else renderWeek();
   }
 
   function updateCalendarTitle() {
