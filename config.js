@@ -222,12 +222,28 @@ window.getClaudeConfig = function() {
                 (staffCfg && staffCfg.claudeBaseUrl) || '';
 
   var isOfficial = /^sk-ant-/.test(apiKey);
-  var endpoint = baseUrl
-    ? baseUrl + '/v1/messages'
-    : (isOfficial ? 'https://api.anthropic.com/v1/messages' : 'https://api.amplifuse.io/v1/messages');
+  // 공식 키(sk-ant-…)는 항상 Claude 공식 API에 직접 연결 — 저장된 Base URL(프록시) 무시.
+  // 프록시(hex) 키만 Base URL/프록시 엔드포인트를 사용한다.
+  var endpoint = isOfficial
+    ? 'https://api.anthropic.com/v1/messages'
+    : (baseUrl ? baseUrl + '/v1/messages' : 'https://api.amplifuse.io/v1/messages');
 
   return { apiKey: apiKey, endpoint: endpoint, isOfficial: isOfficial };
 };
+
+/* 공식 키 사용 시 남아 있는 프록시 Base URL을 자동 정리(직접 연결 보장) */
+window.clearProxyBaseUrlIfOfficial = function () {
+  try {
+    var k = (window.CONFIG && CONFIG.anthropicApiKey) || localStorage.getItem('asea_anthropic_api_key') || '';
+    if (/^sk-ant-/.test(k)) {
+      if (window.CONFIG) CONFIG.anthropicBaseUrl = '';
+      localStorage.removeItem('asea_anthropic_base_url');
+      return true;
+    }
+  } catch (e) {}
+  return false;
+};
+try { window.clearProxyBaseUrlIfOfficial(); } catch (e) {}
 
 /**
  * testClaudeConnection() — 현재 저장된 Claude API 설정으로 실제 연결을 점검.
