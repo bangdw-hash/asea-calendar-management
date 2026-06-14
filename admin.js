@@ -168,6 +168,7 @@
     { id: 'hr',           label: '👥 인사관리' },
     { id: 'zoom',         label: '🎥 Zoom회의' },
     { id: 'cal-share-nav',label: '🔗 캘린더 공유' },
+    { id: 'budget',       label: '💰 예산관리' },
     { id: 'draft',        label: '📝 기안문' },
     { id: 'survey',       label: '📋 설문지' },
     { id: 'qrcard',       label: '🪪 QR명함' },
@@ -179,7 +180,7 @@
   var DEFAULT_MENU_ORDER = [
     'calendar', 'extract', 'report', 'promo', 'email',
     'facility', 'vehicle', 'classroom', 'workorder', 'checkinmgmt',
-    'sms', 'board', 'hr', 'zoom', 'cal-share-nav', 'draft', 'survey', 'qrcard', 'settings', 'help',
+    'sms', 'board', 'hr', 'zoom', 'cal-share-nav', 'budget', 'draft', 'survey', 'qrcard', 'settings', 'help',
     'weekly-hub', 'work'   // 기본 숨김 메뉴는 맨 뒤
   ];
   /* 기본 숨김 메뉴 — 업무관리 / 주간허브 */
@@ -283,9 +284,30 @@
       });
   }
 
+  /* 관리 대상 메뉴 목록 — 실제 네비 탭(단일 소스)에서 동적 수집.
+     → 새 메뉴를 nav에 추가하면 직원공유·메뉴관리·순서에 자동 반영된다.
+     (NAV_MENUS는 라벨/아이콘 보강용 + DOM 미렌더 시 폴백) */
+  function _navMenus() {
+    var out = [], seen = {}, labelOf = {};
+    NAV_MENUS.forEach(function (m) { labelOf[m.id] = m.label; });
+    try {
+      document.querySelectorAll('.desktop-tab-nav .tab-btn').forEach(function (b) {
+        var id = (b.dataset && b.dataset.tab) || (b.id === 'cal-share-nav-btn' ? 'cal-share-nav' : '');
+        if (!id || id === 'admin' || seen[id]) return;   // 관리자 탭은 개발자 전용 → 제외
+        seen[id] = 1;
+        var lbl = labelOf[id];
+        if (!lbl) { var t = b.querySelector('.tab-label'); lbl = ((t && t.textContent) || '').trim() || id; }
+        out.push({ id: id, label: lbl });
+      });
+    } catch (e) {}
+    // DOM에서 못 읽은(아직 렌더 전) 메뉴는 NAV_MENUS로 보강
+    NAV_MENUS.forEach(function (m) { if (m.id !== 'admin' && !seen[m.id]) { seen[m.id] = 1; out.push(m); } });
+    return out;
+  }
+
   /* 현재 적용 순서(전체 메뉴 id 배열) — 저장값 + 누락분 보정 */
   function effectiveOrder() {
-    var ids   = NAV_MENUS.map(function (m) { return m.id; });
+    var ids   = _navMenus().map(function (m) { return m.id; });
     var saved = loadMenuOrder();
     /* 저장된 순서가 없으면 DEFAULT_MENU_ORDER + NAV_MENUS에 있는 신규 항목 자동 포함 */
     var base  = saved.length ? saved.slice() : DEFAULT_MENU_ORDER.slice();
@@ -774,7 +796,7 @@
     }
 
     html += '<div class="menu-manage-list" id="staff-share-list">';
-    NAV_MENUS.forEach(function (m) {
+    _navMenus().forEach(function (m) {
       var on = checked.indexOf(m.id) !== -1;
       html += '<label class="mm-row" style="cursor:pointer">' +
         '<input type="checkbox" class="ss-cb" data-id="' + esc(m.id) + '"' + (on ? ' checked' : '') + ' style="width:16px;height:16px;margin-right:10px;flex-shrink:0">' +
@@ -833,7 +855,7 @@
     var order   = effectiveOrder();
     var hidden  = loadMenuHidden();
     var labelOf = {};
-    NAV_MENUS.forEach(function (m) { labelOf[m.id] = m.label; });
+    _navMenus().forEach(function (m) { labelOf[m.id] = m.label; });
 
     var html = '<div class="admin-section">' +
       '<h3 class="admin-sec-title">🧭 메뉴 관리</h3>' +
