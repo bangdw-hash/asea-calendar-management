@@ -89,9 +89,21 @@
     // 만료 직전 자동 무음 갱신 → 재로그인 없이 세션 유지(로그아웃하지 않음)
     _expireTimer = setTimeout(function () { _silentRefresh(); }, expiresIn);
 
+    // 로그인 성공 시 일회성 힌트 제거(이후 계정 전환을 방해하지 않도록)
+    try { sessionStorage.removeItem('asea_login_hint'); } catch (e) {}
+
     if (_pendingResolve) { _pendingResolve(true); _pendingResolve = null; }
     _isMainLogin = false;
     _notifyChange();
+  }
+
+  /* 직원 캘린더 바로가기 등에서 전달한 로그인 힌트(이메일) → 계정 자동 선택 */
+  function _reqOpts(base) {
+    try {
+      var h = sessionStorage.getItem('asea_login_hint');
+      if (h) base.hint = h;
+    } catch (e) {}
+    return base;
   }
 
   /* 만료 직전/주기적 무음 토큰 갱신 — 실패해도 세션은 보존(로그인 화면 안 띄움) */
@@ -100,7 +112,7 @@
     if (!_tokenClient) { _expireTimer = setTimeout(_silentRefresh, 30000); return; }
     _isMainLogin = false;          // 무음: 에러 시 세션 유지(_handleTokenResponse 에러 분기에서 return)
     _pendingResolve = null;
-    try { _tokenClient.requestAccessToken({ prompt: '' }); }
+    try { _tokenClient.requestAccessToken(_reqOpts({ prompt: '' })); }
     catch (e) { _expireTimer = setTimeout(_silentRefresh, 30000); }
   }
 
@@ -149,7 +161,7 @@
         return new Promise(function (resolve) {
           _isMainLogin    = true;
           _pendingResolve = resolve;
-          _tokenClient.requestAccessToken({ prompt: promptVal });
+          _tokenClient.requestAccessToken(_reqOpts({ prompt: promptVal }));
         });
       });
     },
@@ -164,7 +176,7 @@
         return new Promise(function (resolve) {
           _isMainLogin    = false;
           _pendingResolve = function (ok) { resolve(ok ? _accessToken : null); };
-          try { _tokenClient.requestAccessToken({ prompt: '' }); }
+          try { _tokenClient.requestAccessToken(_reqOpts({ prompt: '' })); }
           catch (e) { _pendingResolve = null; resolve(null); }
         });
       });
