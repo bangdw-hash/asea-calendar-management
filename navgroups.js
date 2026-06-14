@@ -218,7 +218,22 @@
     });
   }
 
-  /* ─────────────── 우측 하단 빠른 등록 FAB ─────────────── */
+  /* ─────────────── 우측 하단 빠른 등록 FAB (드래그 이동 + 위치 기억) ─────────────── */
+  var FAB_POS_KEY = 'asea_fab_pos';
+  function _clampFab(fab, x, y) {
+    var m = 6;
+    var w = fab.offsetWidth || 56, h = fab.offsetHeight || 56;
+    return {
+      x: Math.max(m, Math.min(x, window.innerWidth - w - m)),
+      y: Math.max(m, Math.min(y, window.innerHeight - h - m)),
+    };
+  }
+  function _applyFabPos(fab, x, y) {
+    fab.style.left = x + 'px';
+    fab.style.top = y + 'px';
+    fab.style.right = 'auto';
+    fab.style.bottom = 'auto';
+  }
   function buildFab() {
     if (document.getElementById('quick-fab')) return;
     var fab = document.createElement('button');
@@ -226,12 +241,60 @@
     fab.type = 'button';
     fab.className = 'quick-fab';
     fab.setAttribute('aria-label', '빠른 업무 등록');
-    fab.title = '빠른 업무 등록 (Ctrl+Alt+R)';
+    fab.title = '빠른 업무 등록 (드래그로 이동 · Ctrl+Alt+R)';
     fab.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>';
-    fab.addEventListener('click', function () {
-      if (window.QuickTaskModule && QuickTaskModule.open) QuickTaskModule.open();
-    });
     document.body.appendChild(fab);
+
+    // 저장된 위치 복원(현재 화면 크기에 맞게 보정)
+    var saved = null;
+    try { saved = JSON.parse(localStorage.getItem(FAB_POS_KEY) || 'null'); } catch (e) {}
+    if (saved && typeof saved.x === 'number' && typeof saved.y === 'number') {
+      var sp = _clampFab(fab, saved.x, saved.y);
+      _applyFabPos(fab, sp.x, sp.y);
+    }
+
+    // 드래그 이동 / 클릭 구분 (포인터 = 마우스+터치 통합)
+    var dragging = false, moved = false;
+    var startX = 0, startY = 0, baseX = 0, baseY = 0;
+
+    fab.addEventListener('pointerdown', function (e) {
+      dragging = true; moved = false;
+      var r = fab.getBoundingClientRect();
+      baseX = r.left; baseY = r.top;
+      startX = e.clientX; startY = e.clientY;
+      try { fab.setPointerCapture(e.pointerId); } catch (_) {}
+    });
+    fab.addEventListener('pointermove', function (e) {
+      if (!dragging) return;
+      var dx = e.clientX - startX, dy = e.clientY - startY;
+      if (!moved && (Math.abs(dx) > 5 || Math.abs(dy) > 5)) moved = true;
+      if (moved) {
+        var p = _clampFab(fab, baseX + dx, baseY + dy);
+        _applyFabPos(fab, p.x, p.y);
+      }
+    });
+    function endDrag(e) {
+      if (!dragging) return;
+      dragging = false;
+      try { fab.releasePointerCapture(e.pointerId); } catch (_) {}
+      if (moved) {
+        var r = fab.getBoundingClientRect();
+        try { localStorage.setItem(FAB_POS_KEY, JSON.stringify({ x: Math.round(r.left), y: Math.round(r.top) })); } catch (_) {}
+      } else {
+        // 이동 없이 떼면 = 클릭 → 빠른 등록 열기
+        if (window.QuickTaskModule && QuickTaskModule.open) QuickTaskModule.open();
+      }
+    }
+    fab.addEventListener('pointerup', endDrag);
+    fab.addEventListener('pointercancel', endDrag);
+
+    // 창 크기 변경 시 화면 밖으로 나가지 않도록 보정
+    window.addEventListener('resize', function () {
+      if (!fab.style.left) return;
+      var r = fab.getBoundingClientRect();
+      var p = _clampFab(fab, r.left, r.top);
+      _applyFabPos(fab, p.x, p.y);
+    });
   }
 
   function start() {
