@@ -274,6 +274,7 @@
     if (name === 'hr')     { if (typeof HRModule !== 'undefined' && HRModule.init) { HRModule.init(); } if (typeof HRSubTab !== 'undefined') HRSubTab.show('entry'); }
     if (name === 'zoom')   { if (typeof MeetModule   !== 'undefined' && MeetModule.init)   MeetModule.init();   }
     if (name === 'help')   { if (typeof HelpModule   !== 'undefined' && HelpModule.init)   HelpModule.init();   }
+    if (name === 'budget') { if (typeof BudgetModule !== 'undefined' && BudgetModule.renderTab) BudgetModule.renderTab(); }
     if (name === 'draft')  { if (typeof DraftModule  !== 'undefined' && DraftModule.renderTab)  DraftModule.renderTab(); }
     if (name === 'survey') { if (typeof SurveyModule  !== 'undefined' && SurveyModule.renderTab)  SurveyModule.renderTab(); }
     if (name === 'qrcard') { if (typeof QRCardModule !== 'undefined' && QRCardModule.renderTab) QRCardModule.renderTab(); }
