@@ -579,6 +579,24 @@ window.RetireModule = (function () {
       '나원만 앱 → 메뉴 → 퇴직연금 → IRP/DC 가입 → 퇴직 IRP → 가입 시작하기 → 개설 진행';
     body.appendChild(irpGuide);
 
+    /* 퇴직급여 지급신청서 다운로드 — 자필 작성·지류(실물) 제출 원칙 */
+    body.appendChild(sectionTitle('■ 퇴직급여 지급신청서 (자필 작성)'));
+    var dlNote = el('div', 'rt-warn-box');
+    dlNote.innerHTML = '✍️ 아래 신청서를 <strong>출력하여 반드시 자필로 작성·서명</strong>한 뒤, ' +
+      '<strong>실물(종이) 형태</strong>로 기획처 방시원 차장에게 직접 제출하세요. <strong>(온라인·전자 제출 불가)</strong><br>' +
+      '<span style="color:#6B7280">※ 작성 방법은 「견본양식」을 참고하세요.</span>';
+    body.appendChild(dlNote);
+
+    var dlWrap = el('div');
+    dlWrap.style.cssText = 'display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px';
+    var _appUrl = _getFormUrl('forms/dc-irp-application.pdf');
+    var _smpUrl = _getFormUrl('forms/dc-irp-sample.pdf');
+    var _btnCss = 'flex:1;min-width:170px;display:inline-flex;align-items:center;justify-content:center;gap:6px;text-decoration:none';
+    dlWrap.innerHTML =
+      '<a class="rt-btn rt-btn-primary" style="' + _btnCss + '" href="' + _appUrl + '" download="퇴직연금(DC·IRP)지급신청서.pdf" target="_blank" rel="noopener">📄 지급신청서 다운로드</a>' +
+      '<a class="rt-btn rt-btn-outline" style="' + _btnCss + '" href="' + _smpUrl + '" target="_blank" rel="noopener">👁️ 견본양식 보기 · 다운로드</a>';
+    body.appendChild(dlWrap);
+
     /* 확인 체크박스 */
     body.appendChild(sectionTitle('■ 확인 사항'));
     [
