@@ -297,11 +297,72 @@
     });
   }
 
+  /* ─────────────── 가로 스와이프 가능한 서브탭/메뉴 바 (전 페이지) ───────────────
+     폭을 넘는 서브탭 바가 잘려서 안 보이던 문제 해결.
+     - 터치: overflow-x:auto 로 네이티브 스와이프
+     - 마우스: 드래그 스크롤(데스크탑)
+     - 동적으로 생성되는 바도 MutationObserver 로 자동 적용 */
+  var SWIPE_SEL = [
+    '.facility-subtab-bar', '.email-subtabs', '.extract-subtabs', '.sms-subtab-bar',
+    '.work-subtab-bar', '.work-status-tab-bar', '.mt-subtab-nav',
+    '.rt-mgr-tabs', '.rt-step-bar', '.hr-subtab-bar', '[role="tablist"]',
+  ].join(', ');
+
+  function _attachDragScroll(el) {
+    if (el.dataset.swipeReady) return;
+    el.dataset.swipeReady = '1';
+    var down = false, moved = false, sx = 0, sl = 0;
+    el.addEventListener('pointerdown', function (e) {
+      if (e.pointerType !== 'mouse') return;   // 터치는 네이티브 스크롤 사용
+      down = true; moved = false; sx = e.clientX; sl = el.scrollLeft;
+      try { el.setPointerCapture(e.pointerId); } catch (_) {}
+      el.classList.add('swipe-grabbing');
+    });
+    el.addEventListener('pointermove', function (e) {
+      if (!down) return;
+      var dx = e.clientX - sx;
+      if (Math.abs(dx) > 4) moved = true;
+      el.scrollLeft = sl - dx;
+    });
+    function up(e) {
+      if (!down) return;
+      down = false;
+      try { el.releasePointerCapture(e.pointerId); } catch (_) {}
+      el.classList.remove('swipe-grabbing');
+    }
+    el.addEventListener('pointerup', up);
+    el.addEventListener('pointercancel', up);
+    // 드래그 직후의 클릭(탭 전환) 억제
+    el.addEventListener('click', function (e) {
+      if (moved) { e.stopPropagation(); e.preventDefault(); moved = false; }
+    }, true);
+  }
+
+  function enableSwipeBars(root) {
+    (root || document).querySelectorAll(SWIPE_SEL).forEach(function (el) {
+      if (el.classList.contains('desktop-tab-nav') || el.classList.contains('mobile-bottom-nav')) return;
+      el.classList.add('swipe-x');
+      _attachDragScroll(el);
+    });
+  }
+
+  var _swipeT;
+  function watchSwipeBars() {
+    enableSwipeBars(document);
+    if (!window.MutationObserver) return;
+    var target = document.querySelector('.tab-content') || document.body;
+    new MutationObserver(function () {
+      clearTimeout(_swipeT);
+      _swipeT = setTimeout(function () { enableSwipeBars(document); }, 200);
+    }).observe(target, { childList: true, subtree: true });
+  }
+
   function start() {
     try {
       buildDesktop();
       buildMobile();
       buildFab();
+      watchSwipeBars();
       syncActive();
       var nav = document.querySelector('.desktop-tab-nav');
       if (nav && window.MutationObserver) {
