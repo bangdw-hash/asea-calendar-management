@@ -521,6 +521,14 @@ var BudgetModule = (function () {
   }
   function closeModal() { var m = document.getElementById('bdg-modal'); if (m) m.remove(); }
 
+  /* ── 공유 동기화 갱신 시 현재 보고 있으면 다시 그림 ── */
+  try {
+    window.addEventListener('cloudsync-updated', function () {
+      var t = document.getElementById('tab-budget');
+      if (t && !t.hidden && !document.getElementById('bdg-modal')) renderTab();
+    });
+  } catch (e) {}
+
   /* ── 공개 ── */
   return {
     init: function () { /* 데이터는 탭 진입 시 로드 */ },
