@@ -436,15 +436,20 @@
       if (!nav) return;
       var btns = Array.prototype.slice.call(nav.querySelectorAll(pair[1]));
 
-      /* 1) 순서 적용 — order 순으로 재배치, 나머지는 뒤에 그대로 */
-      var placed = {};
-      order.forEach(function (id) {
-        var b = btns.filter(function (x) { return _btnId(x) === id; })[0];
-        if (b) { nav.appendChild(b); placed[id] = 1; }
-      });
-      btns.forEach(function (b) { if (!placed[_btnId(b)]) nav.appendChild(b); });
+      /* 1) 순서 적용 — order 순으로 재배치, 나머지는 뒤에 그대로.
+         ★ navgroups가 카테고리 드롭다운으로 그룹화한 경우(ngReady)엔 건너뛴다.
+            그렇지 않으면 드롭다운 안의 .tab-btn 들이 상단으로 끌려나와
+            그룹 버튼과 함께 "평면 탭"이 중복 노출됨(PC 상단 메뉴 깨짐). */
+      if (!nav.dataset.ngReady) {
+        var placed = {};
+        order.forEach(function (id) {
+          var b = btns.filter(function (x) { return _btnId(x) === id; })[0];
+          if (b) { nav.appendChild(b); placed[id] = 1; }
+        });
+        btns.forEach(function (b) { if (!placed[_btnId(b)]) nav.appendChild(b); });
+      }
 
-      /* 2) 표시/숨김 적용 — 전역숨김 && 역할표시 */
+      /* 2) 표시/숨김 적용 — 전역숨김 && 역할표시 (제자리에서 display 토글) */
       btns.forEach(function (b) {
         var id = _btnId(b);
         if (!id || id === 'admin') return;            // 관리자 탭은 아래에서 처리
