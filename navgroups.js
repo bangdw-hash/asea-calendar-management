@@ -319,8 +319,10 @@
     if (el.dataset.swipeReady) return;
     el.dataset.swipeReady = '1';
     var down = false, moved = false, sx = 0, sl = 0;
+    function scrollable() { return el.scrollWidth > el.clientWidth + 2; }
     el.addEventListener('pointerdown', function (e) {
       if (e.pointerType !== 'mouse') return;   // 터치는 네이티브 스크롤 사용
+      if (!scrollable()) return;               // 넘치지 않으면 드래그 안 함 → 클릭(탭 전환) 보존
       down = true; moved = false; sx = e.clientX; sl = el.scrollLeft;
       try { el.setPointerCapture(e.pointerId); } catch (_) {}
       el.classList.add('swipe-grabbing');
@@ -328,8 +330,8 @@
     el.addEventListener('pointermove', function (e) {
       if (!down) return;
       var dx = e.clientX - sx;
-      if (Math.abs(dx) > 4) moved = true;
-      el.scrollLeft = sl - dx;
+      if (Math.abs(dx) > 6) moved = true;
+      if (moved) el.scrollLeft = sl - dx;
     });
     function up(e) {
       if (!down) return;
@@ -339,7 +341,7 @@
     }
     el.addEventListener('pointerup', up);
     el.addEventListener('pointercancel', up);
-    // 드래그 직후의 클릭(탭 전환) 억제
+    // 실제 드래그가 있었을 때만 직후 클릭(탭 전환) 억제
     el.addEventListener('click', function (e) {
       if (moved) { e.stopPropagation(); e.preventDefault(); moved = false; }
     }, true);
