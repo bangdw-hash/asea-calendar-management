@@ -6355,3 +6355,7 @@ summary:focus-visible,
 
 /* 바텀시트가 열리면 FAB 숨김(겹침 방지) */
 body.nav-sheet-open .quick-fab { display: none; }
+
+/* FAB 드래그 시 모바일에서 페이지 스크롤 방지 + 이동 커서 */
+.quick-fab { touch-action: none; cursor: grab; }
+.quick-fab:active { cursor: grabbing; }
