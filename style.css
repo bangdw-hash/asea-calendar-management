@@ -6549,3 +6549,15 @@ body.nav-sheet-open .quick-fab { display: none; }
 .rt-mgr-tabs::-webkit-scrollbar, .rt-step-bar::-webkit-scrollbar,
 .hr-subtab-bar::-webkit-scrollbar { display: none; }
 .facility-subtab-bar .subtab-btn, .bdg-subtab-bar .subtab-btn { flex-shrink: 0; }
+
+/* 인사(입사/퇴직) 아이콘 원톤 통일 — 히어로 아이콘 크게 + 그레이 톤 */
+.hr-role-icon, .hr-auth-icon, .hr-done-icon,
+.rt-role-icon, .rt-auth-icon, .rt-complete-icon { color: var(--color-text-secondary); }
+.hr-role-icon .mono-ico, .hr-auth-icon .mono-ico, .hr-done-icon .mono-ico,
+.rt-role-icon .mono-ico, .rt-auth-icon .mono-ico, .rt-complete-icon .mono-ico { margin-right: 0; }
+.hr-role-icon .mono-ico svg, .hr-auth-icon .mono-ico svg, .hr-done-icon .mono-ico svg,
+.rt-role-icon .mono-ico svg, .rt-auth-icon .mono-ico svg, .rt-complete-icon .mono-ico svg { width: 40px; height: 40px; }
+/* 카드 제목/서브탭 아이콘 크기 통일 */
+.hr-card-title .mono-ico svg, .rt-card-title .mono-ico svg,
+.hr-section-title .mono-ico svg, .rt-role-title .mono-ico svg { width: 18px; height: 18px; }
+.hr-subtab-btn .mono-ico svg { width: 17px; height: 17px; }
