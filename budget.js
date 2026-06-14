@@ -21,6 +21,7 @@ var BudgetModule = (function () {
     subtab: 'sein',
     deptFilter: 'ALL',
     selected: {},   // itemId -> true (세부확정 체크)
+    expanded: {},   // itemId -> true (집행내역 펼침)
   };
 
   /* ── 유틸 ── */
@@ -234,6 +235,7 @@ var BudgetModule = (function () {
           '<span class="bdg-stat">잔액 <b>'+won(totConf - totExec)+'</b>원</span>' +
         '</div>' +
         '<div class="bdg-tb-right">' +
+          '<button id="bdg-expand-all" class="btn btn-ghost btn-sm">⊕ 집행 모두 펼치기</button>' +
           (canConfirm ? '<button id="bdg-confirm-bulk" class="btn btn-primary btn-sm">✅ 일괄 확정</button>' +
                         '<button id="bdg-confirm-sel" class="btn btn-secondary btn-sm">☑ 세부 확정</button>' +
                         '<button id="bdg-unconfirm-sel" class="btn btn-ghost btn-sm">확정 해제</button>' : '') +
@@ -259,6 +261,14 @@ var BudgetModule = (function () {
     upBtn.addEventListener('click', function(){ upFile.click(); });
     upFile.addEventListener('change', function(){ if (this.files[0]) bulkUploadExec(this.files[0]); this.value=''; });
 
+    // 모두 펼치기/접기
+    var expandAll = document.getElementById('bdg-expand-all');
+    if (expandAll) expandAll.addEventListener('click', function(){
+      var anyClosed = its.some(function(i){ return !B.expanded[i.id]; });
+      its.forEach(function(i){ B.expanded[i.id] = anyClosed; });
+      renderBudgetList(type);
+    });
+
     // 행 이벤트
     body.querySelectorAll('.bdg-row-check').forEach(function(cb){
       cb.addEventListener('change', function(){ B.selected[this.dataset.id] = this.checked; });
@@ -266,9 +276,54 @@ var BudgetModule = (function () {
     body.querySelectorAll('.bdg-exec-btn').forEach(function(btn){
       btn.addEventListener('click', function(){ openExecModal(this.dataset.id); });
     });
-    body.querySelectorAll('.bdg-detail-btn').forEach(function(btn){
-      btn.addEventListener('click', function(){ openItemDetail(this.dataset.id); });
+    // 세부보기 = 인라인 펼침/접힘(아코디언)
+    body.querySelectorAll('.bdg-toggle-btn').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var id = this.dataset.id;
+        B.expanded[id] = !B.expanded[id];
+        renderBudgetList(type);
+      });
     });
+    // 인라인 집행내역: 추가/수정/삭제
+    body.querySelectorAll('.bdg-subadd-btn').forEach(function(btn){
+      btn.addEventListener('click', function(){ openExecModal(this.dataset.id); });
+    });
+    body.querySelectorAll('.bdg-exec-edit').forEach(function(btn){
+      btn.addEventListener('click', function(){ openExecModal(this.dataset.id, this.dataset.eid); });
+    });
+    body.querySelectorAll('.bdg-exec-del').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        if (!confirm('이 집행내역을 삭제하시겠습니까?')) return;
+        deleteExec(this.dataset.eid); renderBudgetList(type);
+      });
+    });
+  }
+
+  /* 항목별 집행내역 인라인 HTML (펼침 영역 + 모달 공용) */
+  function execListHtml(item, ex) {
+    var list = (ex || execs()).filter(function(e){ return e.itemId === item.id; })
+      .sort(function(a,b){ return (b.date||'').localeCompare(a.date||''); });
+    var used = list.reduce(function(s,e){ return s + (Number(e.amount)||0); }, 0);
+    var rowsH = list.length ? list.map(function(e){
+      return '<tr>' +
+        '<td>'+esc(e.date)+'</td>' +
+        '<td>'+esc(e.docNo)+'</td>' +
+        '<td class="bdg-c-amt">'+won(e.amount)+'</td>' +
+        '<td>'+esc(e.summary)+'</td>' +
+        '<td>'+esc(e.payee||'')+'</td>' +
+        '<td class="bdg-c-act">' +
+          '<button class="bdg-exec-edit" data-id="'+item.id+'" data-eid="'+e.id+'">수정</button>' +
+          '<button class="bdg-exec-del" data-id="'+item.id+'" data-eid="'+e.id+'">삭제</button>' +
+        '</td></tr>';
+    }).join('') : '<tr><td colspan="6" class="bdg-empty">집행내역이 없습니다.</td></tr>';
+    var addBtn = item.confirmed
+      ? '<button class="bdg-subadd-btn btn btn-primary btn-sm" data-id="'+item.id+'">＋ 집행내역 추가</button>'
+      : '<span class="bdg-muted">※ 확정된 예산만 집행 입력이 가능합니다.</span>';
+    return '<div class="bdg-sub-wrap">' +
+      '<div class="bdg-sub-stats">집행 <b>'+won(used)+'</b>원 · 예산 '+won(item.amount)+'원 · 잔액 <b class="'+(((item.confirmed?item.amount:0)-used)<0?'neg':'')+'">'+won((item.confirmed?item.amount:0)-used)+'</b>원</div>' +
+      '<table class="bdg-table sm"><thead><tr><th>일자</th><th>문서번호</th><th>금액</th><th>적요</th><th>거래처</th><th>관리</th></tr></thead><tbody>'+rowsH+'</tbody></table>' +
+      '<div style="margin-top:8px">'+addBtn+'</div>' +
+      '</div>';
   }
 
   function buildTable(its, ex, canConfirm) {
@@ -295,9 +350,12 @@ var BudgetModule = (function () {
         '<td class="bdg-c-amt '+(remain<0?'neg':'')+'">'+won(remain)+'</td>' +
         '<td class="bdg-c-act">' +
           (it.confirmed?'<button class="bdg-exec-btn" data-id="'+it.id+'">＋집행</button>':'') +
-          '<button class="bdg-detail-btn" data-id="'+it.id+'">상세</button>' +
+          '<button class="bdg-toggle-btn" data-id="'+it.id+'">'+(B.expanded[it.id]?'▾ 닫기':'▸ 세부')+'</button>' +
         '</td>' +
       '</tr>';
+      if (B.expanded[it.id]) {
+        rows += '<tr class="bdg-sub-row"><td colspan="8">'+execListHtml(it, ex)+'</td></tr>';
+      }
     });
     return '<table class="bdg-table"><thead><tr>' +
       '<th></th><th>코드</th><th>항목(산출내역)</th><th>예산액</th><th>확정</th><th>집행누계</th><th>잔액</th><th>관리</th>' +
@@ -348,21 +406,25 @@ var BudgetModule = (function () {
     });
   }
 
-  function openExecModal(itemId) {
+  function openExecModal(itemId, editId) {
     var it = items().find(function(x){ return x.id === itemId; }); if (!it) return;
     if (!it.confirmed) { toast('확정된 예산만 집행 입력이 가능합니다.', 'error'); return; }
-    var used = execTotalForItem(itemId), remain = it.amount - used;
+    var editRec = editId ? execs().find(function(e){ return e.id === editId; }) : null;
+    var used = execTotalForItem(itemId) - (editRec ? (Number(editRec.amount)||0) : 0);
+    var remain = it.amount - used;
+    var v = editRec || {};
+    var val = function(x){ return esc(x == null ? '' : x); };
     var body = '<div class="bdg-form">' +
       '<p class="bdg-muted">'+esc(it.dept)+' · '+esc(it.name)+' · 잔액 <b>'+won(remain)+'</b>원</p>' +
-      '<label>집행일자</label><input id="bx-date" type="date" value="'+todayYMD()+'">' +
-      '<label>문서번호 <span class="bdg-req">*</span></label><input id="bx-doc" placeholder="예: 2026-기획-0001 (지출결의/공문 번호)">' +
-      '<label>집행금액 <span class="bdg-req">*</span></label><input id="bx-amt" type="number" inputmode="numeric" placeholder="원">' +
-      '<label>적요(집행내용) <span class="bdg-req">*</span></label><input id="bx-sum" placeholder="예: 1분기 교재 구입">' +
-      '<label>거래처</label><input id="bx-payee" placeholder="예: ○○문구">' +
-      '<label>비고</label><input id="bx-note" placeholder="근거/메모">' +
-      '<div class="bdg-form-actions"><button id="bx-save" class="btn btn-primary">저장</button><button id="bx-cancel" class="btn btn-secondary">취소</button></div>' +
+      '<label>집행일자</label><input id="bx-date" type="date" value="'+val(v.date || todayYMD())+'">' +
+      '<label>문서번호 <span class="bdg-req">*</span></label><input id="bx-doc" value="'+val(v.docNo)+'" placeholder="예: 2026-기획-0001 (지출결의/공문 번호)">' +
+      '<label>집행금액 <span class="bdg-req">*</span></label><input id="bx-amt" type="number" inputmode="numeric" value="'+val(v.amount)+'" placeholder="원">' +
+      '<label>적요(집행내용) <span class="bdg-req">*</span></label><input id="bx-sum" value="'+val(v.summary)+'" placeholder="예: 1분기 교재 구입">' +
+      '<label>거래처</label><input id="bx-payee" value="'+val(v.payee)+'" placeholder="예: ○○문구">' +
+      '<label>비고</label><input id="bx-note" value="'+val(v.note)+'" placeholder="근거/메모">' +
+      '<div class="bdg-form-actions"><button id="bx-save" class="btn btn-primary">'+(editRec?'수정 저장':'저장')+'</button><button id="bx-cancel" class="btn btn-secondary">취소</button></div>' +
       '</div>';
-    showModal('집행내역 입력', body);
+    showModal(editRec ? '집행내역 수정' : '집행내역 입력', body);
     document.getElementById('bx-cancel').addEventListener('click', closeModal);
     document.getElementById('bx-save').addEventListener('click', function(){
       var doc = document.getElementById('bx-doc').value.trim();
@@ -371,16 +433,24 @@ var BudgetModule = (function () {
       if (!doc) { toast('문서번호를 입력하세요.', 'error'); return; }
       if (!amt || amt <= 0) { toast('집행금액을 입력하세요.', 'error'); return; }
       if (!sum) { toast('적요를 입력하세요.', 'error'); return; }
-      var rec = {
-        id: uid(), year: B.year, type: it.type, itemId: itemId, dept: it.dept,
-        date: document.getElementById('bx-date').value || todayYMD(),
-        docNo: doc, amount: amt, summary: sum,
-        payee: document.getElementById('bx-payee').value.trim(),
-        note: document.getElementById('bx-note').value.trim(),
-        createdAt: new Date().toISOString(), createdBy: curEmail()
-      };
-      var arr = execs(); arr.push(rec); saveExecs(arr);
-      closeModal(); toast('집행내역이 저장되었습니다.'); renderTab();
+      var date = document.getElementById('bx-date').value || todayYMD();
+      var payee = document.getElementById('bx-payee').value.trim();
+      var note = document.getElementById('bx-note').value.trim();
+      var arr = execs();
+      if (editRec) {
+        var r = arr.find(function(e){ return e.id === editId; });
+        if (r) { r.date=date; r.docNo=doc; r.amount=amt; r.summary=sum; r.payee=payee; r.note=note; r.updatedAt=new Date().toISOString(); r.updatedBy=curEmail(); }
+        saveExecs(arr); closeModal(); toast('집행내역을 수정했습니다.');
+      } else {
+        arr.push({
+          id: uid(), year: B.year, type: it.type, itemId: itemId, dept: it.dept,
+          date: date, docNo: doc, amount: amt, summary: sum, payee: payee, note: note,
+          createdAt: new Date().toISOString(), createdBy: curEmail()
+        });
+        saveExecs(arr); closeModal(); toast('집행내역이 저장되었습니다.');
+      }
+      B.expanded[itemId] = true;   // 입력/수정 후 해당 항목 펼친 상태 유지
+      renderTab();
     });
   }
   function deleteExec(eid) {
