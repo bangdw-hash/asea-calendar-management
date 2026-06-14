@@ -47,10 +47,18 @@
     '🔔': s('<path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/>'),
     '📅': s('<rect x="3" y="4" width="18" height="18" rx="3"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>'),
     '📊': s('<line x1="3" y1="20" x2="21" y2="20"/><rect x="5" y="10" width="3" height="8"/><rect x="10.5" y="5" width="3" height="13"/><rect x="16" y="13" width="3" height="5"/>'),
+    '👀': s('<path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6z"/><circle cx="12" cy="12" r="2.5"/>'),
+    '👔': s('<circle cx="12" cy="7" r="4"/><path d="M5.5 21a6.5 6.5 0 0 1 13 0"/>'),
+    '📄': s('<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="13" y2="17"/>'),
+    '📎': s('<path d="M21 9.5 12 18.5a4.5 4.5 0 0 1-6.4-6.4l8.8-8.8a3 3 0 0 1 4.3 4.3l-8.8 8.8a1.5 1.5 0 0 1-2.1-2.1l7.8-7.8"/>'),
+    '🙋': s('<circle cx="12" cy="7" r="4"/><path d="M5.5 21a6.5 6.5 0 0 1 13 0"/><line x1="19" y1="3" x2="19" y2="8"/>'),
     '_default': s('<circle cx="12" cy="12" r="3"/>')
   };
 
-  var SEL = '.admin-nav-btn, .admin-sec-title, .settings-section-title, .mm-label, #tab-settings h3, #tab-admin h3, #tab-admin h4, .subtab-btn, .bdg-subtab-bar .subtab-btn, .ctrl-table td:first-child, .board-filter-btn';
+  var SEL = '.admin-nav-btn, .admin-sec-title, .settings-section-title, .mm-label, #tab-settings h3, #tab-admin h3, #tab-admin h4, .subtab-btn, .bdg-subtab-bar .subtab-btn, .ctrl-table td:first-child, .board-filter-btn'
+    + ', .hr-subtab-btn, .hr-role-icon, .hr-auth-icon, .hr-done-icon, .hr-section-title, .hr-card-title, .hr-portal-title, .hr-share-title'
+    + ', .rt-role-icon, .rt-auth-icon, .rt-complete-icon, .rt-role-title, .rt-card-title, .rt-card-subtitle'
+    + ', #tab-hr .hr-section-title, #tab-hr button';
   var EMOJI_RE = /^\s*(\p{Extended_Pictographic}️?(?:‍\p{Extended_Pictographic}️?)*)\s*/u;
 
   function processEl(el) {
