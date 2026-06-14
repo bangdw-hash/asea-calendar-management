@@ -346,14 +346,47 @@
     });
   }
 
+  /* ─────────────── 넓은 표 자동 가로 스크롤 래핑 (전 페이지) ───────────────
+     화면 폭을 넘는 표가 페이지를 옆으로 밀거나 잘리던 문제 해결.
+     표를 .scroll-x(overflow-x:auto)로 감싸기만 하므로 세로 내용은 안 잘림.
+     이미 스크롤 가능한 래퍼 안에 있는 표는 건너뜀. */
+  function _scrolls(el) {
+    if (!el || !el.classList) return false;
+    if (el.classList.contains('scroll-x') ||
+        el.classList.contains('table-wrap') ||
+        el.classList.contains('table-responsive')) return true;
+    var ov = '';
+    try { ov = getComputedStyle(el).overflowX; } catch (e) {}
+    return ov === 'auto' || ov === 'scroll';
+  }
+  function wrapTables(root) {
+    (root || document).querySelectorAll('.tab-content table, .tab-panel table').forEach(function (t) {
+      if (t.dataset.wrapReady) return;
+      t.dataset.wrapReady = '1';
+      // 이미 스크롤 가능한 조상(최대 3단계) 안이면 스킵
+      var p = t.parentElement, hop = 0;
+      while (p && hop < 3) { if (_scrolls(p)) return; p = p.parentElement; hop++; }
+      var wrap = document.createElement('div');
+      wrap.className = 'scroll-x';
+      if (t.parentNode) {
+        t.parentNode.insertBefore(wrap, t);
+        wrap.appendChild(t);
+      }
+    });
+  }
+
   var _swipeT;
-  function watchSwipeBars() {
+  function refreshResponsive() {
     enableSwipeBars(document);
+    wrapTables(document);
+  }
+  function watchSwipeBars() {
+    refreshResponsive();
     if (!window.MutationObserver) return;
     var target = document.querySelector('.tab-content') || document.body;
     new MutationObserver(function () {
       clearTimeout(_swipeT);
-      _swipeT = setTimeout(function () { enableSwipeBars(document); }, 200);
+      _swipeT = setTimeout(refreshResponsive, 200);
     }).observe(target, { childList: true, subtree: true });
   }
 
