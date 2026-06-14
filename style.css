@@ -6564,3 +6564,9 @@ body.nav-sheet-open .quick-fab { display: none; }
 
 /* 모달 열렸을 때 빠른등록 FAB 숨김(겹침 방지) */
 body:has(.modal:not([hidden])) .quick-fab { display: none; }
+
+/* 모달 푸터가 넘칠 때 가로 스와이프 스크롤 (저장 버튼 잘림 방지) */
+.modal-footer { overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; flex-wrap: nowrap; }
+.modal-footer::-webkit-scrollbar { display: none; }
+.modal-footer > *, .modal-footer-right > * { flex-shrink: 0; }
+.modal-footer-right { flex-wrap: nowrap; }
