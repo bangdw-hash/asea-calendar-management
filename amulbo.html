@@ -454,40 +454,31 @@ function _decodeKey(encoded) {
 let _apiKey = '';
 let _baseUrl = '';
 let _knowledge = '';
+let _knowledgeP = null;   // 지식 로딩 Promise(백그라운드) — 전송 시 필요하면 대기
 let _userType = 'student';
 let _sessionCount = 0;
 let _isSending = false;
 
 // ── Init ─────────────────────────────────────────────────────
 async function init() {
-  try {
-    // 1. Get config
-    const cfgRes = await fetch(`${GAS_URL}?action=getAmulboConfig`);
-    const cfg = await cfgRes.json();
+  // 설정과 지식을 동시에 요청(병렬) — Apps Script 왕복 지연을 한 번으로 단축
+  const cfgP = fetch(`${GAS_URL}?action=getAmulboConfig`).then(r => r.json());
+  _knowledgeP = fetch(`${GAS_URL}?action=getAmulboKnowledge`)
+    .then(r => r.json())
+    .then(kn => { if (kn && kn.ok && kn.knowledge) _knowledge = kn.knowledge; return _knowledge; })
+    .catch(() => '');   // 지식은 선택사항
 
-    if (!cfg.ok || !cfg.enabled) {
-      showUnavailable();
-      return;
-    }
+  try {
+    const cfg = await cfgP;
+    if (!cfg.ok || !cfg.enabled) { showUnavailable(); return; }
 
     _apiKey = _decodeKey(cfg.apiKey);
     _baseUrl = cfg.baseUrl || '';
+    if (!_apiKey) { showUnavailable(); return; }
 
-    if (!_apiKey) {
-      showUnavailable();
-      return;
-    }
-
-    // 2. Get knowledge (fire-and-ignore-error)
-    try {
-      const knRes = await fetch(`${GAS_URL}?action=getAmulboKnowledge`);
-      const kn = await knRes.json();
-      if (kn.ok && kn.knowledge) _knowledge = kn.knowledge;
-    } catch(e) { /* knowledge optional */ }
-
+    // 설정이 확인되면 지식 로딩을 기다리지 않고 즉시 화면 표시
     showMain();
-
-  } catch(e) {
+  } catch (e) {
     console.error('Init failed:', e);
     showUnavailable();
   }
@@ -540,6 +531,9 @@ async function sendQuestion() {
   setSendingUI(true);
 
   const startMs = Date.now();
+
+  // 지식이 백그라운드 로딩 중이면 잠깐 대기(이미 끝났으면 즉시 통과)
+  if (!_knowledge && _knowledgeP) { try { await _knowledgeP; } catch (e) {} }
 
   // Create Q&A item
   const qaEl = createQAItem(question);

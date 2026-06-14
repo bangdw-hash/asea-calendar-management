@@ -19,27 +19,11 @@
   <link rel="stylesheet" href="hr.css?v=20260614hr4">
   <link rel="stylesheet" href="retire.css?v=20260614rt7">
   <link rel="stylesheet" href="onboarding.css?v=20260614ob1">
-  <script>
-    (function() {
-      if (new URLSearchParams(location.search).get('staff') === '1') {
-        document.documentElement.classList.add('staff-mode');
-        document.addEventListener('DOMContentLoaded', function() {
-          document.body.classList.add('staff-mode');
-        });
-      }
-    })();
-  </script>
   <script src="https://accounts.google.com/gsi/client" async></script>
   <!-- SheetJS for Excel support — 로컬 xlsx.mini.min.js(하단 로드)로 일원화하여 중복 로드 제거 -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" defer></script>
 
   <style>
-    html.staff-mode .desktop-tab-nav,
-    html.staff-mode .mobile-bottom-nav,
-    body.staff-mode .desktop-tab-nav,
-    body.staff-mode .mobile-bottom-nav {
-      display: none !important;
-    }
     .hr-subtab-bar {
       display: flex; gap: 0; border-bottom: 2px solid #E5E7EB;
       background: #fff; padding: 0 16px;
@@ -227,7 +211,7 @@
     </svg>
     <span class="tab-label">Zoom회의</span>
   </button>
-  <button class="tab-btn" id="cal-share-nav-btn" role="tab" aria-selected="false" onclick="window.open('calendar-share.html?v=20260614e','_blank');return false">
+  <button class="tab-btn" id="cal-share-nav-btn" role="tab" aria-selected="false" onclick="window.open('calendar-share.html?v=20260614f','_blank');return false">
     <svg class="tab-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
       <path d="M10 13a5 5 0 0 0 7.07 0l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.07 0l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
     </svg>
@@ -3182,7 +3166,7 @@
       </button>
 
       <!-- 🔗 캘린더 공유 -->
-      <button class="bnav-btn" data-tab="cal-share-nav" onclick="window.open('calendar-share.html?v=20260614e','_blank');return false">
+      <button class="bnav-btn" data-tab="cal-share-nav" onclick="window.open('calendar-share.html?v=20260614f','_blank');return false">
         <svg class="bnav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
         </svg>
@@ -3286,7 +3270,7 @@
 
   <script src="config.js?v=20260614r1" defer></script>
   <script src="cloudsync.js?v=20260614c5" defer></script>
-  <script src="auth.js?v=20260614r4" defer></script>
+  <script src="auth.js?v=20260614r5" defer></script>
   <script src="calendar.js?v=20260612c1" defer></script>
   <script src="drive.js?v=20260608s" defer></script>
   <script src="gmail.js?v=20260608s" defer></script>
