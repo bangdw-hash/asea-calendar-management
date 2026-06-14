@@ -46,10 +46,11 @@
     '➕': s('<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>'),
     '🔔': s('<path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/>'),
     '📅': s('<rect x="3" y="4" width="18" height="18" rx="3"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>'),
+    '📊': s('<line x1="3" y1="20" x2="21" y2="20"/><rect x="5" y="10" width="3" height="8"/><rect x="10.5" y="5" width="3" height="13"/><rect x="16" y="13" width="3" height="5"/>'),
     '_default': s('<circle cx="12" cy="12" r="3"/>')
   };
 
-  var SEL = '.admin-nav-btn, .admin-sec-title, .settings-section-title, .mm-label, #tab-settings h3, #tab-admin h3, #tab-admin h4';
+  var SEL = '.admin-nav-btn, .admin-sec-title, .settings-section-title, .mm-label, #tab-settings h3, #tab-admin h3, #tab-admin h4, .subtab-btn, .bdg-subtab-bar .subtab-btn, .ctrl-table td:first-child, .board-filter-btn';
   var EMOJI_RE = /^\s*(\p{Extended_Pictographic}️?(?:‍\p{Extended_Pictographic}️?)*)\s*/u;
 
   function processEl(el) {

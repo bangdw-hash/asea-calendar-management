@@ -660,34 +660,25 @@
   /* ═══════════════════════════════════════════════════════════
      캘린더 — 다중 캘린더 로딩
   ═══════════════════════════════════════════════════════════ */
-  async function loadEvents() {
-    if (!Auth.isLoggedIn()) return;
-    var d = S.viewDate;
-    var timeMin, timeMax;
-
-    if (S.calView === 'month') {
-      timeMin = new Date(d.getFullYear(), d.getMonth(), -6).toISOString();
-      timeMax = new Date(d.getFullYear(), d.getMonth() + 1, 8).toISOString();
-    } else {
-      var day = d.getDay();
-      var sun = new Date(d.getFullYear(), d.getMonth(), d.getDate() - day);
-      timeMin = sun.toISOString();
-      timeMax = new Date(sun.getTime() + 7 * 86400000).toISOString();
+  function _rangeFor(d, view) {
+    if (view === 'month') {
+      return {
+        min: new Date(d.getFullYear(), d.getMonth(), -6).toISOString(),
+        max: new Date(d.getFullYear(), d.getMonth() + 1, 8).toISOString(),
+      };
     }
-
-    // 표시할 캘린더 결정
-    var calsToLoad = [];
+    var day = d.getDay();
+    var sun = new Date(d.getFullYear(), d.getMonth(), d.getDate() - day);
+    return { min: sun.toISOString(), max: new Date(sun.getTime() + 7 * 86400000).toISOString() };
+  }
+  function _calsToLoad() {
     var enabled = CONFIG.selectedCalendars.filter(function (c) { return c.enabled !== false; });
-    if (enabled.length === 0) {
-      // 선택된 캘린더 없으면 primary만
-      calsToLoad.push({ id: 'primary', name: '기본 캘린더', color: '#1A73E8' });
-    } else {
-      calsToLoad = enabled;
-    }
-
-    // 모든 캘린더를 병렬로 조회(순차 대기 → 병렬로 속도 대폭 개선)
+    return enabled.length ? enabled : [{ id: 'primary', name: '기본 캘린더', color: '#1A73E8' }];
+  }
+  // 지정 기간의 이벤트를 모든 캘린더에서 병렬 조회
+  function _fetchRange(timeMin, timeMax) {
     var tasks = [];
-    calsToLoad.forEach(function (cal) {
+    _calsToLoad().forEach(function (cal) {
       tasks.push(
         CalendarModule.listEvents(cal.id, timeMin, timeMax).then(function (evts) {
           evts.forEach(function (ev) { ev._calColor = cal.color; ev._calName = cal.name; ev._calId = cal.id; });
@@ -705,13 +696,37 @@
         }).catch(function () { return []; })
       );
     });
+    return Promise.all(tasks).then(function (results) {
+      var all = []; results.forEach(function (r) { all = all.concat(r); }); return all;
+    });
+  }
 
-    var results = await Promise.all(tasks);
-    var allEvents = [];
-    results.forEach(function (r) { allEvents = allEvents.concat(r); });
+  async function loadEvents() {
+    if (!Auth.isLoggedIn()) return;
+    var r = _rangeFor(S.viewDate, S.calView);
+    S.events = await _fetchRange(r.min, r.max);
+    _saveCalCache(S.events);
+    _prefetchAdjacent();   // 인접 월 미리 캐시(백그라운드)
+  }
 
-    S.events = allEvents;
-    _saveCalCache(allEvents);
+  // 이전/다음 달을 백그라운드로 미리 조회해 캐시 → 월 이동 즉시 표시
+  var _prefetchInFlight = {};
+  function _prefetchAdjacent() {
+    if (!Auth.isLoggedIn() || S.calView !== 'month') return;
+    var base = S.viewDate;
+    setTimeout(function () {
+      [-1, 1].forEach(function (off) {
+        var d = new Date(base.getFullYear(), base.getMonth() + off, 1);
+        var key = 'asea_cal_cache_m_' + d.getFullYear() + '_' + d.getMonth();
+        if (localStorage.getItem(key) || _prefetchInFlight[key]) return;
+        _prefetchInFlight[key] = 1;
+        var rg = _rangeFor(d, 'month');
+        _fetchRange(rg.min, rg.max).then(function (evts) {
+          try { localStorage.setItem(key, JSON.stringify(evts)); } catch (e) {}
+          delete _prefetchInFlight[key];
+        }).catch(function () { delete _prefetchInFlight[key]; });
+      });
+    }, 400);
   }
 
   /* 캘린더 이벤트 캐시(기기별) — 즉시 렌더용 */
