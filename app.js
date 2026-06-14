@@ -4029,8 +4029,9 @@
     return new Promise(function (resolve, reject) {
       var reader = new FileReader();
       reader.onload = function (e) {
-        var base64 = e.target.result.split(',')[1];
-        resolve(base64);
+        var _parts = String((e.target && e.target.result) || '').split(',');
+        if (_parts.length < 2 || !_parts[1]) { reject(new Error('파일 변환 실패')); return; }
+        resolve(_parts[1]);
       };
       reader.onerror = reject;
       reader.readAsDataURL(file);

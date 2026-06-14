@@ -73,7 +73,8 @@
         var canvas = document.createElement('canvas');
         canvas.width = w; canvas.height = h;
         canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-        resolve(canvas.toDataURL('image/jpeg', 0.85).split(',')[1]);
+        var _du = canvas.toDataURL('image/jpeg', 0.85).split(',');
+        resolve(_du.length > 1 ? _du[1] : '');
       };
       img.onerror = reject;
       img.src = url;

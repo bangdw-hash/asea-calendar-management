@@ -6,6 +6,8 @@
   var SK_COMMENTS = 'asea_board_comments';
   var SK_READS    = 'asea_board_notice_reads';
 
+  var _bwCtxDocBound = false;  // 컨텍스트 메뉴 document 리스너 1회만 바인딩 (글쓰기 재진입 시 누적 방지)
+
   /* Drive 파일명 */
   var CF_POSTS    = 'asea-board-posts.json';
   var CF_COMMENTS = 'asea-board-comments.json';
@@ -909,12 +911,20 @@
       });
     });
 
-    document.addEventListener('mousedown', function(e) {
-      if (!menu.hidden && !menu.contains(e.target)) closeMenu();
-    });
-    document.addEventListener('keydown', function(e) {
-      if (!menu.hidden && e.key === 'Escape') closeMenu();
-    });
+    // document-level 리스너는 페이지당 1회만 바인딩(글쓰기 뷰 재진입마다 누적되던 문제 해결).
+    // 메뉴는 재생성되므로 closure 대신 live 엘리먼트를 id로 조회한다.
+    if (!_bwCtxDocBound) {
+      _bwCtxDocBound = true;
+      document.addEventListener('mousedown', function(e) {
+        var m = document.getElementById('bw-editor-ctx');
+        if (m && !m.hidden && !m.contains(e.target)) m.hidden = true;
+      });
+      document.addEventListener('keydown', function(e) {
+        if (e.key !== 'Escape') return;
+        var m = document.getElementById('bw-editor-ctx');
+        if (m && !m.hidden) m.hidden = true;
+      });
+    }
   }
 
   function _ctxBtn(fmt, label, cls) {

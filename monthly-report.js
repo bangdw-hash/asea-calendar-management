@@ -588,8 +588,9 @@ window.MonthlyReportModule = (function () {
     return new Promise(function(resolve, reject){
       var reader = new FileReader();
       reader.onload = function(e){
-        var dataUrl = e.target.result;
-        resolve(dataUrl.split(',')[1]);
+        var dataUrl = String((e.target && e.target.result) || '');
+        var _du = dataUrl.split(',');
+        resolve(_du.length > 1 ? _du[1] : '');
       };
       reader.onerror = function(){ reject(new Error('파일 변환 실패')); };
       reader.readAsDataURL(file);
