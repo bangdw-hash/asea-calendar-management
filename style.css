@@ -6375,3 +6375,19 @@ body.nav-sheet-open .quick-fab { display: none; }
 .swipe-x::-webkit-scrollbar { display: none; }
 .swipe-x > button, .swipe-x > a { flex-shrink: 0; }
 .swipe-x.swipe-grabbing { cursor: grabbing; user-select: none; scroll-behavior: auto; }
+
+/* ──────────────────────────────────────────────────────────────
+   PC 메뉴 이동 최적화 — 드롭다운 등장 애니메이션 + 열림 상태 피드백
+   ────────────────────────────────────────────────────────────── */
+@keyframes navMenuIn {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.nav-group-menu { animation: navMenuIn .14s ease-out; }
+.nav-caret { transition: transform .15s ease; }
+/* 메뉴가 열린 카테고리: 캐럿 회전 + 강조 (순수 CSS) */
+.nav-group:has(.nav-group-menu:not([hidden])) .nav-caret { transform: rotate(180deg); }
+.nav-group:has(.nav-group-menu:not([hidden])) .nav-cat-btn {
+  color: var(--color-accent);
+  background: var(--color-accent-light);
+}

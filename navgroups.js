@@ -112,6 +112,13 @@
         if (_open && _open.menu === menu) { closeDesktop(); return; }
         openDesktop(cat, menu);
       });
+      // 메가메뉴: 한 메뉴가 열려 있을 때 다른 카테고리로 마우스를 옮기면 즉시 전환
+      cat.addEventListener('pointerenter', function (e) {
+        if (e.pointerType && e.pointerType !== 'mouse') return;  // 마우스만
+        if (!_open || _open.menu === menu) return;               // 열려 있을 때만 전환
+        if (visibleButtons(gid).length <= 1) { closeDesktop(); return; }
+        openDesktop(cat, menu);
+      });
       menu.addEventListener('click', function (e) {
         if (e.target.closest('.tab-btn')) closeDesktop();
       });
