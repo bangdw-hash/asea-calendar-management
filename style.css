@@ -6316,3 +6316,42 @@ summary:focus-visible,
 .nav-sheet-item svg { width: 22px; height: 22px; flex-shrink: 0; }
 .nav-sheet-item:active { background: var(--color-accent-light); }
 .nav-sheet-item.active { background: var(--color-accent-light); color: var(--color-accent); font-weight: 700; }
+
+/* ──────────────────────────────────────────────────────────────
+   우측 하단 빠른 등록 플로팅 버튼(FAB) — navgroups.js
+   ────────────────────────────────────────────────────────────── */
+.quick-fab {
+  position: fixed;
+  right: 20px;
+  bottom: 24px;
+  z-index: 600;
+  width: 56px; height: 56px;
+  border-radius: 50%;
+  background: var(--color-accent);
+  color: #fff;
+  border: none;
+  box-shadow: 0 6px 18px rgba(26,115,232,.45);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  transition: transform .15s ease, box-shadow .15s ease, background .15s ease;
+}
+.quick-fab svg { width: 26px; height: 26px; }
+.quick-fab:hover {
+  background: var(--color-accent-hover, #1557B0);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 26px rgba(26,115,232,.5);
+}
+.quick-fab:active { transform: scale(.94); }
+
+/* 모바일: 하단 내비 위로 올려 겹치지 않게 */
+@media (max-width: 600px) {
+  .quick-fab {
+    right: 16px;
+    bottom: calc(var(--bottom-nav-h, 56px) + 14px + env(safe-area-inset-bottom));
+    width: 52px; height: 52px;
+  }
+  .quick-fab svg { width: 24px; height: 24px; }
+}
+
+/* 바텀시트가 열리면 FAB 숨김(겹침 방지) */
+body.nav-sheet-open .quick-fab { display: none; }

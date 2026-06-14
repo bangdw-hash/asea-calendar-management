@@ -218,10 +218,27 @@
     });
   }
 
+  /* ─────────────── 우측 하단 빠른 등록 FAB ─────────────── */
+  function buildFab() {
+    if (document.getElementById('quick-fab')) return;
+    var fab = document.createElement('button');
+    fab.id = 'quick-fab';
+    fab.type = 'button';
+    fab.className = 'quick-fab';
+    fab.setAttribute('aria-label', '빠른 업무 등록');
+    fab.title = '빠른 업무 등록 (Ctrl+Alt+R)';
+    fab.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>';
+    fab.addEventListener('click', function () {
+      if (window.QuickTaskModule && QuickTaskModule.open) QuickTaskModule.open();
+    });
+    document.body.appendChild(fab);
+  }
+
   function start() {
     try {
       buildDesktop();
       buildMobile();
+      buildFab();
       syncActive();
       var nav = document.querySelector('.desktop-tab-nav');
       if (nav && window.MutationObserver) {
