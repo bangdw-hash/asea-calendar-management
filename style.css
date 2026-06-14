@@ -6520,3 +6520,10 @@ body.nav-sheet-open .quick-fab { display: none; }
 
 /* 모바일 시트: svg 없는 메뉴(예: 캘린더 공유)의 이모지 아이콘 정렬 */
 .nav-sheet-emoji { display:inline-flex; align-items:center; justify-content:center; width:22px; height:22px; font-size:18px; flex-shrink:0; }
+
+/* 아이콘 원톤 통일: 관리자 메뉴/제목 이모지 + 모바일 시트 이모지 → 단색(grayscale) */
+.admin-nav-btn:not(.active),
+.admin-sec-title,
+.mm-label,
+.nav-sheet-emoji { filter: grayscale(1); }
+.nav-sheet-emoji { opacity: .7; }
