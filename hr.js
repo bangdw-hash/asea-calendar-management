@@ -215,14 +215,14 @@ window.HRModule = (function () {
 
   /* ── 홈: 역할 선택 ── */
   function _renderOnboardHome(wrap) {
-    var screen = el('div', 'hr-role-screen');
+    var screen = el('div', 'hr-home-wrap');
 
-    var icon = el('div', 'hr-role-icon'); icon.textContent = '🏢'; icon.style.cssText = 'margin-bottom:12px';
-    var title = el('div', 'hr-role-title', '입사자 관리 시스템');
+    var icon = el('div', 'hr-home-icon'); icon.textContent = '🏢';
+    var title = el('div', 'hr-home-title', '입사자 관리');
 
     if (STANDALONE) {
       /* ── 공개 링크 진입: 새로 작성 / 이어서 작성 ── */
-      var desc = el('div', 'hr-role-desc', '아세아항공직업전문학교 입사 예정자 서류 제출 시스템');
+      var desc = el('div', 'hr-home-sub', '아세아항공직업전문학교 입사 예정자 서류 제출 시스템');
       var cards = el('div', 'hr-role-cards');
 
       var c1 = el('div', 'hr-role-card');
@@ -257,7 +257,7 @@ window.HRModule = (function () {
           '<button id="hr-home-copy-link" style="flex:1;padding:8px 0;background:#1A73E8;color:#fff;border:none;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer">📋 링크 복사</button>' +
           '<button id="hr-home-copy-msg"  style="flex:1;padding:8px 0;background:#fff;color:#1A73E8;border:1.5px solid #93C5FD;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer">✉️ 안내 메시지 복사</button>' +
         '</div>';
-      var adesc = el('div', 'hr-role-desc', '입사 예정자 서류 제출 관리 시스템');
+      var adesc = el('div', 'hr-home-sub', '입사 예정자 서류 제출 및 채용 절차 관리 시스템');
       screen.appendChild(icon); screen.appendChild(title); screen.appendChild(adesc); screen.appendChild(linkBox);
 
       // 버튼 이벤트
