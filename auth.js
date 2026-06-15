@@ -97,10 +97,13 @@
     _notifyChange();
   }
 
-  /* 직원 캘린더 바로가기 등에서 전달한 로그인 힌트(이메일) → 계정 자동 선택 */
+  /* 로그인 힌트(이메일) → 계정 자동 선택.
+     · 명시 힌트(asea_login_hint, 직원 바로가기) 우선
+     · 없으면 현재 로그인된 이메일(asea_user_email)을 사용.
+     → 무음 토큰 갱신 시 계정이 여러 개여도 계정 선택 팝업이 뜨지 않게 함. */
   function _reqOpts(base) {
     try {
-      var h = sessionStorage.getItem('asea_login_hint');
+      var h = sessionStorage.getItem('asea_login_hint') || localStorage.getItem('asea_user_email');
       if (h) base.hint = h;
     } catch (e) {}
     return base;
