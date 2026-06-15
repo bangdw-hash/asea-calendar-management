@@ -19,7 +19,9 @@
   <link rel="stylesheet" href="hr.css?v=20260614hr5">
   <link rel="stylesheet" href="retire.css?v=20260614rt7">
   <link rel="stylesheet" href="onboarding.css?v=20260614ob1">
+  <link rel="stylesheet" href="dormitory.css?v=20260615d1">
   <script src="https://accounts.google.com/gsi/client" async></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
   <!-- SheetJS for Excel support — 로컬 xlsx.mini.min.js(하단 로드)로 일원화하여 중복 로드 제거 -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" defer></script>
 
@@ -164,6 +166,13 @@
       <path d="M2 20h20M4 20V9l8-5 8 5v11"/><rect x="9" y="14" width="6" height="6"/><path d="M9 9h.01M15 9h.01"/>
     </svg>
     <span class="tab-label">강의실현황</span>
+  </button>
+
+  <button class="tab-btn" data-tab="dorm" role="tab" aria-selected="false">
+    <svg class="tab-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M3 21h18M5 21V7l7-4 7 4v14"/><rect x="9" y="9" width="2.5" height="2.5"/><rect x="13" y="9" width="2.5" height="2.5"/><rect x="9" y="14" width="2.5" height="2.5"/><rect x="13" y="14" width="2.5" height="2.5"/>
+    </svg>
+    <span class="tab-label">기숙사관리</span>
   </button>
 
   <button class="tab-btn" data-tab="workorder" role="tab" aria-selected="false">
@@ -1146,6 +1155,13 @@
       <!-- ════════════════════════════════════════════════════
            ⚙️ 설정 탭
            ════════════════════════════════════════════════════ -->
+      <!-- 🏢 기숙사 관리 탭 -->
+      <section id="tab-dorm" class="tab-panel" role="tabpanel" hidden>
+        <div class="tab-body" id="dorm-root">
+          <p style="padding:40px;text-align:center;color:#9ca3af">기숙사 관리 모듈을 불러오는 중…</p>
+        </div>
+      </section>
+
       <!-- 🔧 작업지시 탭 -->
       <section id="tab-workorder" class="tab-panel" role="tabpanel" hidden>
         <div class="tab-body">
@@ -3275,6 +3291,7 @@
 
   <script src="config.js?v=20260614r4" defer></script>
   <script src="cloudsync.js?v=20260614c5" defer></script>
+  <script src="dormitory.js?v=20260615d1" defer></script>
   <script src="auth.js?v=20260614r5" defer></script>
   <script src="calendar.js?v=20260612c1" defer></script>
   <script src="drive.js?v=20260608s" defer></script>
