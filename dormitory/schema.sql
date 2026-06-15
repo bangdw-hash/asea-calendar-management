@@ -342,6 +342,23 @@ end; $$;
 grant execute on function dorm_complaint_status(text) to anon, authenticated;
 
 -- =====================================================================
+--  추가 필드 (계열/학년/학기/데모 구분) — 신규 설치 시 함께 생성
+-- =====================================================================
+alter table dormitory_buildings  add column if not exists is_demo boolean default false;
+alter table dormitory_rooms      add column if not exists is_demo boolean default false;
+alter table dormitory_residents  add column if not exists is_demo boolean default false;
+alter table dormitory_residents  add column if not exists department text;
+alter table dormitory_residents  add column if not exists grade int;
+alter table dormitory_contracts  add column if not exists is_demo boolean default false;
+alter table dormitory_contracts  add column if not exists department text;
+alter table dormitory_contracts  add column if not exists grade int;
+alter table dormitory_contracts  add column if not exists semester text;
+alter table dormitory_expenses   add column if not exists is_demo boolean default false;
+create index if not exists idx_contracts_demo     on dormitory_contracts(is_demo);
+create index if not exists idx_contracts_dept      on dormitory_contracts(department);
+create index if not exists idx_contracts_semester  on dormitory_contracts(semester);
+
+-- =====================================================================
 --  Storage (수동 1회): 대시보드 → Storage 에서 버킷 생성 권장
 --   · dorm-contracts (계약서)   · dorm-receipts (지출 증빙)
 --   · dorm-ocr (OCR 원본)       · dorm-complaints (민원 첨부)
