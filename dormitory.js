@@ -842,61 +842,166 @@
   function signLink(token) { return portalBase() + 'dormitory/contract-sign.html?t=' + token; }
   function signMsg(name, link) { return '[아세아 기숙사] ' + (name || '') + '님, 기숙사 입소계약서 전자서명 안내입니다.\n아래 링크에서 계약서 확인 후 서명해 주세요.\n' + link; }
 
+  /* 전자계약 상태(필터/선택/양식) */
+  var _es = { rows: [], blds: [], depts: [], tpls: {}, sel: {}, filt: { b: '', g: '', d: '', s: '' }, q: '' };
+  function esBadge(s) { var m = { signed: ['서명완료', 'occ'], pending: ['서명대기', 'vac'] }; var x = m[s] || ['미발송', 'vac']; return '<span class="dorm-badge ' + x[1] + '">' + x[0] + '</span>'; }
+  function uniq(a) { var o = {}, r = []; a.forEach(function (x) { if (x && !o[x]) { o[x] = 1; r.push(x); } }); return r.sort(); }
+  function esById(id) { return _es.rows.filter(function (r) { return r.id === id; })[0]; }
+  function esSelectedRows() { return _es.rows.filter(function (r) { return _es.sel[r.id]; }); }
+
   async function renderEsign() {
     loading();
-    var tplVal = '', rows = [];
     try {
-      var tpl = await _db.from('dormitory_settings').select('value').eq('key', 'contract_template').limit(1);
-      tplVal = (tpl.data && tpl.data[0] && tpl.data[0].value) || DEFAULT_TEMPLATE;
-      var cs = await _db.from('dormitory_contracts').select('id,resident_name,student_no,phone,sign_status,sign_token,dormitory_buildings(name),dormitory_rooms(room_number)').eq('status', 'active').order('resident_name').limit(300);
-      if (cs.error) throw cs.error; rows = cs.data || [];
-    } catch (e) { body().innerHTML = errBox(e); return; }
+      var tr = await _db.from('dormitory_settings').select('value').eq('key', 'contract_templates').limit(1);
+      var tpls = {}; try { tpls = JSON.parse((tr.data && tr.data[0] && tr.data[0].value) || '{}'); } catch (e) {}
+      if (!tpls || !Object.keys(tpls).length) tpls = { '기본': DEFAULT_TEMPLATE };
+      _es.tpls = tpls;
+      var bs = await _db.from('dormitory_buildings').select('name').order('name'); _es.blds = (bs.data || []).map(function (x) { return x.name; });
+      var cs = await _db.from('dormitory_contracts').select('id,resident_name,student_no,phone,department,grade,sign_status,sign_token,dormitory_buildings(name),dormitory_rooms(room_number)').eq('status', 'active').order('resident_name').limit(1000);
+      if (cs.error) throw cs.error;
+      _es.rows = (cs.data || []).map(function (c) { return { id: c.id, name: c.resident_name || '', sno: c.student_no || '', phone: c.phone || '', dept: c.department || '', grade: c.grade || '', status: c.sign_status || 'none', token: c.sign_token || '', bld: (c.dormitory_buildings ? c.dormitory_buildings.name : ''), room: (c.dormitory_rooms ? c.dormitory_rooms.room_number : '') }; });
+      _es.depts = uniq(_es.rows.map(function (r) { return r.dept; }));
+      _es.sel = {};
+      esRender();
+    } catch (e) { body().innerHTML = errBox(e); }
+  }
 
-    function badge(s) { var m = { signed: ['서명완료', 'occ'], pending: ['서명대기', 'vac'] }; var x = m[s] || ['미발송', 'vac']; return '<span class="dorm-badge ' + x[1] + '">' + x[0] + '</span>'; }
+  function esRender() {
+    var names = Object.keys(_es.tpls);
+    var opt = function (arr, sel) { return arr.map(function (v) { return '<option' + (v === sel ? ' selected' : '') + '>' + esc(v) + '</option>'; }).join(''); };
     body().innerHTML =
-      '<div class="dorm-card"><h3 class="dorm-h3">📄 계약서 양식(약관 문구)</h3>' +
-        '<p class="dorm-muted">아래 문구가 학생 서명 페이지에 표시됩니다. 수정 후 저장하세요.</p>' +
-        '<textarea id="tpl-text" class="form-input" rows="10" style="font-family:inherit;line-height:1.6">' + esc(tplVal) + '</textarea>' +
-        '<div class="dorm-actions"><button id="tpl-save" class="btn btn-primary">양식 저장</button></div></div>' +
-      '<div class="dorm-card"><h3 class="dorm-h3">✍️ 전자계약 발송·서명 현황 (' + rows.length + ')</h3>' +
-        '<p class="dorm-muted">계약별로 서명 링크를 만들어 학생 휴대폰으로 보냅니다. 학생이 서명하면 "서명완료"로 표시됩니다.</p>' +
-        (rows.length ? '<div class="scroll-x"><table class="dorm-table"><thead><tr><th>성명</th><th>학번</th><th>건물·호실</th><th>연락처</th><th>상태</th><th>처리</th></tr></thead><tbody>' +
-          rows.map(function (c) {
-            var loc = (c.dormitory_buildings ? c.dormitory_buildings.name : '') + ' ' + (c.dormitory_rooms ? c.dormitory_rooms.room_number + '호' : '');
-            var has = !!c.sign_token;
-            return '<tr data-id="' + c.id + '" data-name="' + esc(c.resident_name) + '" data-phone="' + esc(c.phone || '') + '" data-token="' + esc(c.sign_token || '') + '">' +
-              '<td>' + esc(c.resident_name) + '</td><td>' + esc(c.student_no || '-') + '</td><td>' + esc(loc.trim() || '-') + '</td><td>' + esc(c.phone || '-') + '</td>' +
-              '<td>' + badge(c.sign_status) + '</td>' +
-              '<td>' + (has ? '<button class="btn btn-secondary btn-sm es-copy">링크복사</button> <button class="btn btn-primary btn-sm es-sms">문자발송</button>' +
-                (c.sign_status === 'signed' ? ' <button class="btn btn-ghost btn-sm es-view">서명본</button>' : '')
-                : '<button class="btn btn-primary btn-sm es-gen">서명링크 생성</button>') + '</td></tr>';
-          }).join('') + '</tbody></table></div>' : '<p class="dorm-muted">진행 중 계약이 없습니다. 먼저 계약을 등록하세요.</p>') +
-      '</div>';
+      '<div class="dorm-card"><h3 class="dorm-h3">📄 계약서 양식 관리 (여러 개 저장 가능 — 그룹마다 다른 약관 사용)</h3>' +
+        '<div class="dorm-row"><div><label class="dorm-label">양식 선택/편집</label><select id="es-tpl-sel" class="form-select">' + opt(names, '') + '</select></div>' +
+        '<div><label class="dorm-label">양식 이름 (새 이름 입력 시 새 양식 추가)</label><input id="es-tpl-name" class="form-input" value="' + esc(names[0] || '기본') + '"></div></div>' +
+        '<label class="dorm-label">약관 문구 (학생 서명 페이지에 표시)</label>' +
+        '<textarea id="es-tpl-text" class="form-input" rows="9" style="font-family:inherit;line-height:1.6">' + esc(_es.tpls[names[0]] || DEFAULT_TEMPLATE) + '</textarea>' +
+        '<div class="dorm-actions"><button id="es-tpl-save" class="btn btn-primary">양식 저장</button><button id="es-tpl-del" class="btn btn-ghost" style="color:#dc2626">양식 삭제</button></div></div>' +
+      '<div class="dorm-card"><h3 class="dorm-h3">✍️ 대상 선택 → 일괄/선택 발송</h3>' +
+        '<div class="dorm-row4">' +
+          '<div><label class="dorm-label">건물</label><select id="es-f-b" class="form-select"><option value="">전체 건물</option>' + opt(_es.blds, _es.filt.b) + '</select></div>' +
+          '<div><label class="dorm-label">계열</label><select id="es-f-d" class="form-select"><option value="">전체 계열</option>' + opt(_es.depts, _es.filt.d) + '</select></div>' +
+          '<div><label class="dorm-label">학년</label><select id="es-f-g" class="form-select"><option value="">전체 학년</option><option value="1">1학년</option><option value="2">2학년</option></select></div>' +
+          '<div><label class="dorm-label">서명상태</label><select id="es-f-s" class="form-select"><option value="">전체 상태</option><option value="none">미발송</option><option value="pending">서명대기</option><option value="signed">서명완료</option></select></div>' +
+        '</div>' +
+        '<div class="dorm-row"><div><label class="dorm-label">이름/학번/호실 검색</label><input id="es-q" class="form-input" value="' + esc(_es.q) + '" placeholder="검색"></div>' +
+        '<div><label class="dorm-label">발송 시 사용할 양식</label><select id="es-send-tpl" class="form-select">' + opt(names, '') + '</select></div></div>' +
+        '<div class="dorm-actions" style="align-items:center;flex-wrap:wrap">' +
+          '<button id="es-all" class="btn btn-secondary btn-sm">전체 선택</button>' +
+          '<button id="es-none" class="btn btn-ghost btn-sm">전체 취소</button>' +
+          '<button id="es-send" class="btn btn-primary">선택 발송(문자)</button>' +
+          '<button id="es-copy-sel" class="btn btn-secondary">선택 링크 복사</button>' +
+          '<span id="es-selcnt" class="dorm-muted"></span></div>' +
+        '<div id="es-table"></div><div id="es-links"></div></div>';
+    document.getElementById('es-f-g').value = _es.filt.g; document.getElementById('es-f-s').value = _es.filt.s;
+    var sel = document.getElementById('es-tpl-sel');
+    sel.addEventListener('change', function () { document.getElementById('es-tpl-name').value = this.value; document.getElementById('es-tpl-text').value = _es.tpls[this.value] || ''; });
+    document.getElementById('es-tpl-save').addEventListener('click', esSaveTpl);
+    document.getElementById('es-tpl-del').addEventListener('click', esDelTpl);
+    function fb(id, key) { document.getElementById(id).addEventListener('change', function () { _es.filt[key] = this.value; esRenderTable(); }); }
+    fb('es-f-b', 'b'); fb('es-f-d', 'd'); fb('es-f-g', 'g'); fb('es-f-s', 's');
+    document.getElementById('es-q').addEventListener('input', function () { _es.q = this.value; esRenderTable(); });
+    document.getElementById('es-all').addEventListener('click', function () { esFiltered().forEach(function (r) { _es.sel[r.id] = true; }); esRenderTable(); });
+    document.getElementById('es-none').addEventListener('click', function () { _es.sel = {}; esRenderTable(); });
+    document.getElementById('es-send').addEventListener('click', function () { esSend(this); });
+    document.getElementById('es-copy-sel').addEventListener('click', esCopySel);
+    esRenderTable();
+  }
 
-    document.getElementById('tpl-save').addEventListener('click', async function () {
-      var v = document.getElementById('tpl-text').value;
-      var res = await _db.from('dormitory_settings').upsert({ key: 'contract_template', value: v, updated_at: new Date().toISOString() });
-      if (res.error) { toast('저장 실패: ' + res.error.message, 'error'); return; } toast('계약서 양식을 저장했습니다.', 'success');
+  function esFiltered() {
+    var q = (_es.q || '').toLowerCase();
+    return _es.rows.filter(function (r) {
+      if (_es.filt.b && r.bld !== _es.filt.b) return false;
+      if (_es.filt.d && r.dept !== _es.filt.d) return false;
+      if (_es.filt.g && String(r.grade) !== _es.filt.g) return false;
+      if (_es.filt.s && r.status !== _es.filt.s) return false;
+      if (q && (r.name + ' ' + r.sno + ' ' + r.room).toLowerCase().indexOf(q) === -1) return false;
+      return true;
     });
-    body().querySelectorAll('.es-gen').forEach(function (b) { b.addEventListener('click', async function () {
-      var tr = this.closest('tr'); var token = genToken();
-      var res = await _db.from('dormitory_contracts').update({ sign_token: token, sign_status: 'pending' }).eq('id', tr.dataset.id);
-      if (res.error) { toast('실패: ' + res.error.message, 'error'); return; } toast('서명 링크 생성됨', 'success'); renderEsign();
-    }); });
-    body().querySelectorAll('.es-copy').forEach(function (b) { b.addEventListener('click', function () {
-      var link = signLink(this.closest('tr').dataset.token);
-      try { navigator.clipboard.writeText(link).then(function () { toast('링크 복사됨', 'success'); }); } catch (e) { prompt('링크', link); }
-    }); });
-    body().querySelectorAll('.es-sms').forEach(function (b) { b.addEventListener('click', async function () {
-      var tr = this.closest('tr'); var link = signLink(tr.dataset.token); var msg = signMsg(tr.dataset.name, link); var phone = tr.dataset.phone;
-      if (!phone) { toast('연락처가 없습니다.', 'error'); return; }
-      if (window.SmsModule && SmsModule.sendDirect) {
-        try { await SmsModule.sendDirect(phone, msg, '기숙사 계약'); toast('문자 발송 완료', 'success'); return; }
-        catch (e) { toast('앱 문자발송 미설정/실패 — 휴대폰 문자앱으로 대체합니다.', 'info'); }
-      }
-      location.href = 'sms:' + phone.replace(/[^0-9]/g, '') + '?&body=' + encodeURIComponent(msg);
-    }); });
-    body().querySelectorAll('.es-view').forEach(function (b) { b.addEventListener('click', function () { viewSigned(this.closest('tr').dataset.id); }); });
+  }
+  function esRenderTable() {
+    var rows = esFiltered();
+    document.getElementById('es-selcnt').textContent = '필터 ' + rows.length + '명 · 선택 ' + Object.keys(_es.sel).filter(function (k) { return _es.sel[k]; }).length + '명';
+    var html = '<div class="scroll-x" style="margin-top:10px"><table class="dorm-table"><thead><tr><th></th><th>성명</th><th>학번</th><th>계열</th><th>학년</th><th>건물·호실</th><th>연락처</th><th>상태</th><th></th></tr></thead><tbody>' +
+      rows.map(function (r) { return '<tr><td><input type="checkbox" class="es-cb" data-id="' + r.id + '"' + (_es.sel[r.id] ? ' checked' : '') + '></td>' +
+        '<td>' + esc(r.name) + '</td><td>' + esc(r.sno || '-') + '</td><td>' + esc(r.dept || '-') + '</td><td>' + (r.grade ? esc(r.grade) + '학년' : '-') + '</td>' +
+        '<td>' + esc((r.bld + ' ' + (r.room ? r.room + '호' : '')).trim() || '-') + '</td><td>' + esc(r.phone || '-') + '</td><td>' + esBadge(r.status) + '</td>' +
+        '<td>' + (r.token ? '<button class="btn btn-ghost btn-sm es-row-copy" data-id="' + r.id + '">링크</button>' + (r.status === 'signed' ? ' <button class="btn btn-ghost btn-sm es-row-view" data-id="' + r.id + '">서명본</button>' : '') : '') + '</td></tr>'; }).join('') +
+      '</tbody></table></div>';
+    var t = document.getElementById('es-table'); t.innerHTML = rows.length ? html : '<p class="dorm-muted" style="margin-top:10px">대상이 없습니다.</p>';
+    t.querySelectorAll('.es-cb').forEach(function (cb) { cb.addEventListener('change', function () { _es.sel[this.dataset.id] = this.checked; esRenderTable(); }); });
+    t.querySelectorAll('.es-row-copy').forEach(function (b) { b.addEventListener('click', function () { var r = esById(this.dataset.id); var l = signLink(r.token); try { navigator.clipboard.writeText(l).then(function () { toast('링크 복사됨', 'success'); }); } catch (e) { prompt('링크', l); } }); });
+    t.querySelectorAll('.es-row-view').forEach(function (b) { b.addEventListener('click', function () { viewSigned(this.dataset.id); }); });
+  }
+
+  async function esSaveTpl() {
+    var name = (val('es-tpl-name') || '').trim(); if (!name) { toast('양식 이름을 입력하세요.', 'error'); return; }
+    var text = val('es-tpl-text');
+    var oldSel = val('es-tpl-sel');
+    if (oldSel && oldSel !== name && _es.tpls[oldSel] !== undefined) delete _es.tpls[oldSel];
+    _es.tpls[name] = text;
+    var def = _es.tpls['기본'] || _es.tpls[Object.keys(_es.tpls)[0]] || text;
+    var now = new Date().toISOString();
+    var r1 = await _db.from('dormitory_settings').upsert({ key: 'contract_templates', value: JSON.stringify(_es.tpls), updated_at: now });
+    var r2 = await _db.from('dormitory_settings').upsert({ key: 'contract_template', value: def, updated_at: now });
+    if (r1.error || r2.error) { toast('저장 실패', 'error'); return; }
+    toast('양식 저장됨', 'success'); esRender();
+  }
+  async function esDelTpl() {
+    var name = val('es-tpl-sel'); if (!name) return;
+    if (Object.keys(_es.tpls).length <= 1) { toast('최소 1개 양식은 있어야 합니다.', 'error'); return; }
+    if (!confirm('"' + name + '" 양식을 삭제할까요?')) return;
+    delete _es.tpls[name];
+    await _db.from('dormitory_settings').upsert({ key: 'contract_templates', value: JSON.stringify(_es.tpls), updated_at: new Date().toISOString() });
+    toast('삭제됨', 'success'); esRender();
+  }
+
+  async function esEnsureLink(r, tplText) {
+    var patch = { sign_template: tplText };
+    if (!r.token) { r.token = genToken(); patch.sign_token = r.token; }
+    if (r.status !== 'signed') patch.sign_status = 'pending';
+    var u = await _db.from('dormitory_contracts').update(patch).eq('id', r.id);
+    if (u.error) throw u.error;
+    if (r.status !== 'signed') r.status = 'pending';
+    return signLink(r.token);
+  }
+
+  async function esSend(btn) {
+    var rows = esSelectedRows(); if (!rows.length) { toast('대상을 선택하세요.', 'error'); return; }
+    var tplName = val('es-send-tpl'); var tplText = _es.tpls[tplName] || '';
+    var todo = rows.filter(function (r) { return r.status !== 'signed'; });
+    if (!todo.length) { toast('선택 대상이 모두 서명완료 상태입니다.', 'info'); return; }
+    if (!confirm(todo.length + '명에게 "' + tplName + '" 양식으로 서명 요청을 발송합니다. (이미 서명완료 제외) 계속할까요?')) return;
+    var smsOk = !!(window.SmsModule && SmsModule.sendDirect);
+    if (btn) btn.disabled = true;
+    var cnt = document.getElementById('es-selcnt'); var sent = 0, fail = 0, nophone = 0, manual = [];
+    for (var i = 0; i < todo.length; i++) {
+      var r = todo[i], link;
+      try { link = await esEnsureLink(r, tplText); } catch (e) { fail++; continue; }
+      var msg = signMsg(r.name, link);
+      if (r.phone && smsOk) { try { await SmsModule.sendDirect(r.phone, msg, '기숙사 계약'); sent++; } catch (e2) { fail++; manual.push({ name: r.name, phone: r.phone, link: link }); } }
+      else { if (!r.phone) nophone++; manual.push({ name: r.name, phone: r.phone, link: link }); }
+      if (cnt) cnt.textContent = '발송 중… ' + (i + 1) + '/' + todo.length;
+    }
+    if (btn) btn.disabled = false;
+    toast('발송 완료 — 성공 ' + sent + ' / 실패 ' + fail + (nophone ? (' / 번호없음 ' + nophone) : ''), 'success');
+    var le = document.getElementById('es-links');
+    if (manual.length) {
+      le.innerHTML = '<div class="dorm-card" style="margin-top:12px"><h3 class="dorm-h3">문자 미발송분 링크 (' + manual.length + ') — 복사해 직접 전달</h3>' +
+        '<textarea class="form-input" rows="6" id="es-manual" readonly>' + esc(manual.map(function (m) { return m.name + ' ' + (m.phone || '') + ' : ' + m.link; }).join('\n')) + '</textarea>' +
+        '<div class="dorm-actions"><button id="es-manual-copy" class="btn btn-secondary btn-sm">목록 복사</button></div></div>';
+      document.getElementById('es-manual-copy').addEventListener('click', function () { var t = document.getElementById('es-manual'); t.select(); try { document.execCommand('copy'); } catch (e) {} toast('복사됨', 'success'); });
+    } else le.innerHTML = '';
+    esRenderTable();
+  }
+
+  async function esCopySel() {
+    var rows = esSelectedRows(); if (!rows.length) { toast('대상을 선택하세요.', 'error'); return; }
+    var tplText = _es.tpls[val('es-send-tpl')] || '';
+    var out = [];
+    for (var i = 0; i < rows.length; i++) { var r = rows[i]; try { var link = await esEnsureLink(r, tplText); out.push(r.name + ' ' + (r.phone || '') + ' : ' + link); } catch (e) {} }
+    var text = out.join('\n');
+    try { navigator.clipboard.writeText(text).then(function () { toast(out.length + '개 링크 복사됨', 'success'); }); } catch (e) { prompt('링크 목록', text); }
+    esRenderTable();
   }
 
   async function viewSigned(cid) {
