@@ -843,7 +843,7 @@
   function signMsg(name, link) { return '[아세아 기숙사] ' + (name || '') + '님, 기숙사 입소계약서 전자서명 안내입니다.\n아래 링크에서 계약서 확인 후 서명해 주세요.\n' + link; }
 
   /* 전자계약 상태(필터/선택/양식) */
-  var _es = { rows: [], blds: [], depts: [], tpls: {}, sel: {}, filt: { b: '', g: '', d: '', s: '' }, q: '' };
+  var _es = { rows: [], blds: [], depts: [], floors: [], tpls: {}, sel: {}, filt: { b: '', g: '', d: '', s: '', f: '' }, q: '' };
   function esBadge(s) { var m = { signed: ['서명완료', 'occ'], pending: ['서명대기', 'vac'] }; var x = m[s] || ['미발송', 'vac']; return '<span class="dorm-badge ' + x[1] + '">' + x[0] + '</span>'; }
   function uniq(a) { var o = {}, r = []; a.forEach(function (x) { if (x && !o[x]) { o[x] = 1; r.push(x); } }); return r.sort(); }
   function esById(id) { return _es.rows.filter(function (r) { return r.id === id; })[0]; }
@@ -857,10 +857,12 @@
       if (!tpls || !Object.keys(tpls).length) tpls = { '기본': DEFAULT_TEMPLATE };
       _es.tpls = tpls;
       var bs = await _db.from('dormitory_buildings').select('name').order('name'); _es.blds = (bs.data || []).map(function (x) { return x.name; });
-      var cs = await _db.from('dormitory_contracts').select('id,resident_name,student_no,phone,department,grade,sign_status,sign_token,dormitory_buildings(name),dormitory_rooms(room_number)').eq('status', 'active').order('resident_name').limit(1000);
+      var cs = await _db.from('dormitory_contracts').select('id,resident_name,student_no,phone,department,grade,sign_status,sign_token,dormitory_buildings(name),dormitory_rooms(room_number,floor)').eq('status', 'active').order('resident_name').limit(1000);
       if (cs.error) throw cs.error;
-      _es.rows = (cs.data || []).map(function (c) { return { id: c.id, name: c.resident_name || '', sno: c.student_no || '', phone: c.phone || '', dept: c.department || '', grade: c.grade || '', status: c.sign_status || 'none', token: c.sign_token || '', bld: (c.dormitory_buildings ? c.dormitory_buildings.name : ''), room: (c.dormitory_rooms ? c.dormitory_rooms.room_number : '') }; });
+      _es.rows = (cs.data || []).map(function (c) { return { id: c.id, name: c.resident_name || '', sno: c.student_no || '', phone: c.phone || '', dept: c.department || '', grade: c.grade || '', status: c.sign_status || 'none', token: c.sign_token || '', bld: (c.dormitory_buildings ? c.dormitory_buildings.name : ''), room: (c.dormitory_rooms ? c.dormitory_rooms.room_number : ''), floor: (c.dormitory_rooms && c.dormitory_rooms.floor != null ? c.dormitory_rooms.floor : '') }; });
       _es.depts = uniq(_es.rows.map(function (r) { return r.dept; }));
+      var _fl = {}; _es.rows.forEach(function (r) { if (r.floor !== '' && r.floor != null) _fl[r.floor] = 1; });
+      _es.floors = Object.keys(_fl).sort(function (a, b) { return a - b; });
       _es.sel = {};
       esRender();
     } catch (e) { body().innerHTML = errBox(e); }
@@ -879,6 +881,7 @@
       '<div class="dorm-card"><h3 class="dorm-h3">✍️ 대상 선택 → 일괄/선택 발송</h3>' +
         '<div class="dorm-row4">' +
           '<div><label class="dorm-label">건물</label><select id="es-f-b" class="form-select"><option value="">전체 건물</option>' + opt(_es.blds, _es.filt.b) + '</select></div>' +
+          '<div><label class="dorm-label">층</label><select id="es-f-f" class="form-select"><option value="">전체 층</option>' + _es.floors.map(function (f) { return '<option value="' + esc(f) + '">' + esc(f) + '층</option>'; }).join('') + '</select></div>' +
           '<div><label class="dorm-label">계열</label><select id="es-f-d" class="form-select"><option value="">전체 계열</option>' + opt(_es.depts, _es.filt.d) + '</select></div>' +
           '<div><label class="dorm-label">학년</label><select id="es-f-g" class="form-select"><option value="">전체 학년</option><option value="1">1학년</option><option value="2">2학년</option></select></div>' +
           '<div><label class="dorm-label">서명상태</label><select id="es-f-s" class="form-select"><option value="">전체 상태</option><option value="none">미발송</option><option value="pending">서명대기</option><option value="signed">서명완료</option></select></div>' +
@@ -892,13 +895,13 @@
           '<button id="es-copy-sel" class="btn btn-secondary">선택 링크 복사</button>' +
           '<span id="es-selcnt" class="dorm-muted"></span></div>' +
         '<div id="es-table"></div><div id="es-links"></div></div>';
-    document.getElementById('es-f-g').value = _es.filt.g; document.getElementById('es-f-s').value = _es.filt.s;
+    document.getElementById('es-f-g').value = _es.filt.g; document.getElementById('es-f-s').value = _es.filt.s; document.getElementById('es-f-f').value = _es.filt.f;
     var sel = document.getElementById('es-tpl-sel');
     sel.addEventListener('change', function () { document.getElementById('es-tpl-name').value = this.value; document.getElementById('es-tpl-text').value = _es.tpls[this.value] || ''; });
     document.getElementById('es-tpl-save').addEventListener('click', esSaveTpl);
     document.getElementById('es-tpl-del').addEventListener('click', esDelTpl);
     function fb(id, key) { document.getElementById(id).addEventListener('change', function () { _es.filt[key] = this.value; esRenderTable(); }); }
-    fb('es-f-b', 'b'); fb('es-f-d', 'd'); fb('es-f-g', 'g'); fb('es-f-s', 's');
+    fb('es-f-b', 'b'); fb('es-f-f', 'f'); fb('es-f-d', 'd'); fb('es-f-g', 'g'); fb('es-f-s', 's');
     document.getElementById('es-q').addEventListener('input', function () { _es.q = this.value; esRenderTable(); });
     document.getElementById('es-all').addEventListener('click', function () { esFiltered().forEach(function (r) { _es.sel[r.id] = true; }); esRenderTable(); });
     document.getElementById('es-none').addEventListener('click', function () { _es.sel = {}; esRenderTable(); });
@@ -911,6 +914,7 @@
     var q = (_es.q || '').toLowerCase();
     return _es.rows.filter(function (r) {
       if (_es.filt.b && r.bld !== _es.filt.b) return false;
+      if (_es.filt.f && String(r.floor) !== _es.filt.f) return false;
       if (_es.filt.d && r.dept !== _es.filt.d) return false;
       if (_es.filt.g && String(r.grade) !== _es.filt.g) return false;
       if (_es.filt.s && r.status !== _es.filt.s) return false;
@@ -921,10 +925,10 @@
   function esRenderTable() {
     var rows = esFiltered();
     document.getElementById('es-selcnt').textContent = '필터 ' + rows.length + '명 · 선택 ' + Object.keys(_es.sel).filter(function (k) { return _es.sel[k]; }).length + '명';
-    var html = '<div class="scroll-x" style="margin-top:10px"><table class="dorm-table"><thead><tr><th></th><th>성명</th><th>학번</th><th>계열</th><th>학년</th><th>건물·호실</th><th>연락처</th><th>상태</th><th></th></tr></thead><tbody>' +
+    var html = '<div class="scroll-x" style="margin-top:10px"><table class="dorm-table"><thead><tr><th></th><th>성명</th><th>학번</th><th>계열</th><th>학년</th><th>건물·호실</th><th>층</th><th>연락처</th><th>상태</th><th></th></tr></thead><tbody>' +
       rows.map(function (r) { return '<tr><td><input type="checkbox" class="es-cb" data-id="' + r.id + '"' + (_es.sel[r.id] ? ' checked' : '') + '></td>' +
         '<td>' + esc(r.name) + '</td><td>' + esc(r.sno || '-') + '</td><td>' + esc(r.dept || '-') + '</td><td>' + (r.grade ? esc(r.grade) + '학년' : '-') + '</td>' +
-        '<td>' + esc((r.bld + ' ' + (r.room ? r.room + '호' : '')).trim() || '-') + '</td><td>' + esc(r.phone || '-') + '</td><td>' + esBadge(r.status) + '</td>' +
+        '<td>' + esc((r.bld + ' ' + (r.room ? r.room + '호' : '')).trim() || '-') + '</td><td>' + (r.floor !== '' ? esc(r.floor) + '층' : '-') + '</td><td>' + esc(r.phone || '-') + '</td><td>' + esBadge(r.status) + '</td>' +
         '<td>' + (r.token ? '<button class="btn btn-ghost btn-sm es-row-copy" data-id="' + r.id + '">링크</button>' + (r.status === 'signed' ? ' <button class="btn btn-ghost btn-sm es-row-view" data-id="' + r.id + '">서명본</button>' : '') : '') + '</td></tr>'; }).join('') +
       '</tbody></table></div>';
     var t = document.getElementById('es-table'); t.innerHTML = rows.length ? html : '<p class="dorm-muted" style="margin-top:10px">대상이 없습니다.</p>';
