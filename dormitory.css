@@ -1,0 +1,37 @@
+/* dormitory.css — 기숙사 관리 모듈 */
+#tab-dorm .dorm-top { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:12px; }
+.dorm-title { font-size:18px; font-weight:800; color:#1a3a5c; margin:0; }
+.dorm-user { font-size:13px; color:#6b7280; display:flex; align-items:center; gap:8px; }
+.dorm-h2 { font-size:17px; font-weight:700; color:#1a3a5c; margin:0 0 10px; }
+.dorm-h3 { font-size:15px; font-weight:700; color:#1a3a5c; margin:0 0 12px; }
+.dorm-muted { font-size:13px; color:#6b7280; line-height:1.6; }
+.dorm-muted code { background:#f1f5f9; padding:1px 5px; border-radius:4px; font-size:12px; }
+
+.dorm-card { background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding:18px; margin-bottom:14px; }
+.dorm-label { display:block; font-size:12px; font-weight:600; color:#374151; margin:10px 0 4px; }
+.dorm-actions { display:flex; gap:8px; flex-wrap:wrap; margin-top:14px; }
+
+.dorm-subtabs { margin-bottom:14px; }
+
+.dorm-grid2 { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+.dorm-row  { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.dorm-row4 { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }
+@media (max-width:760px){
+  .dorm-grid2 { grid-template-columns:1fr; }
+  .dorm-row4  { grid-template-columns:1fr 1fr; }
+}
+
+.dorm-kpis { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:14px; }
+@media (max-width:620px){ .dorm-kpis { grid-template-columns:1fr 1fr; } }
+.dorm-kpi { background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding:16px; text-align:center; }
+.dorm-kpi-num { font-size:26px; font-weight:800; color:#1a3a5c; }
+.dorm-kpi-num span { font-size:13px; font-weight:600; color:#9ca3af; margin-left:3px; }
+.dorm-kpi-label { font-size:12px; color:#6b7280; margin-top:4px; }
+
+.dorm-table { width:100%; border-collapse:collapse; font-size:13px; }
+.dorm-table th, .dorm-table td { padding:8px 10px; border-bottom:1px solid #eef1f4; text-align:left; white-space:nowrap; }
+.dorm-table th { background:#f8fafc; font-weight:700; color:#475569; font-size:12px; }
+
+.dorm-badge { font-size:11px; font-weight:700; padding:2px 8px; border-radius:999px; }
+.dorm-badge.vac { background:#eef2ff; color:#4f46e5; }
+.dorm-badge.occ { background:#ecfdf5; color:#059669; }
