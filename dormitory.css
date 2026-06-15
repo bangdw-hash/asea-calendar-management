@@ -57,3 +57,10 @@
 .dorm-cm-content { background:#f8fafc; border:1px solid #eef1f4; border-radius:8px; padding:12px; font-size:14px; line-height:1.6; white-space:pre-line; margin:8px 0; }
 .dorm-cm-list { display:flex; flex-direction:column; gap:8px; margin-bottom:10px; }
 .dorm-cm-item { border-left:3px solid #1a73e8; background:#f8fafc; padding:8px 12px; border-radius:6px; font-size:13px; }
+
+/* 현황 요약 칩 */
+.dorm-sum { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+@media (max-width:680px){ .dorm-sum { grid-template-columns:1fr; } }
+.dorm-sum-t { font-size:12px; font-weight:700; color:#1a3a5c; margin-bottom:6px; }
+.dorm-chip { display:inline-block; background:#f1f5fb; border:1px solid #e1e9f3; border-radius:999px; padding:3px 10px; font-size:12px; color:#475569; margin:2px 2px; }
+.dorm-chip b { color:#1a3a5c; }

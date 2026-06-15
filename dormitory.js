@@ -140,20 +140,151 @@
   }
 
   /* ── 대시보드 ─────────────────────────────────────────── */
+  /* 계열·학생 임의 생성용 */
+  var DEPTS = ['항공정비계열', '스마트안전진단계열', '항공관광계열', '항공보안계열', '국방경찰계열'];
+  var SUR = '김이박최정강조윤장임한오서신권황안송류전홍고문양손배백허유남'.split('');
+  var GIV = '민서지현준우예수은하도윤시주연채다건정진성호영선경태승재원석아빈'.split('');
+  function rint(a, b) { return a + Math.floor(Math.random() * (b - a + 1)); }
+  function makeStudent(i) {
+    var name = SUR[rint(0, SUR.length - 1)] + GIV[rint(0, GIV.length - 1)] + GIV[rint(0, GIV.length - 1)];
+    var grade = Math.random() < 0.5 ? 1 : 2;
+    var sno = (grade === 1 ? '2025' : '2024') + ('000' + (i + 1)).slice(-4);
+    return { name: name, grade: grade, sno: sno, dept: DEPTS[rint(0, DEPTS.length - 1)],
+      phone: '010-' + ('000' + rint(0, 9999)).slice(-4) + '-' + ('000' + rint(0, 9999)).slice(-4) };
+  }
+
   async function renderDash() {
     loading();
     try {
       var b = await _db.from('dormitory_buildings').select('id', { count: 'exact', head: true });
       var r = await _db.from('dormitory_rooms').select('id', { count: 'exact', head: true });
       var rv = await _db.from('dormitory_rooms').select('id', { count: 'exact', head: true }).eq('is_vacant', true);
-      var ct = await _db.from('dormitory_contracts').select('id', { count: 'exact', head: true }).eq('status', 'active');
       var od = await _db.from('dormitory_payments').select('id', { count: 'exact', head: true }).eq('status', 'overdue');
+      // 진행 계약 + 분류 집계
+      var cs = await _db.from('dormitory_contracts').select('department,grade,dormitory_buildings(name),dormitory_rooms(room_type)').eq('status', 'active');
+      var rows = (cs.data || []);
+      var byB = {}, byD = {}, byG = { 1: 0, 2: 0 }, single = 0, dbl = 0;
+      rows.forEach(function (x) {
+        var bn = x.dormitory_buildings ? x.dormitory_buildings.name : '-'; byB[bn] = (byB[bn] || 0) + 1;
+        if (x.department) byD[x.department] = (byD[x.department] || 0) + 1;
+        if (x.grade) byG[x.grade] = (byG[x.grade] || 0) + 1;
+        var t = x.dormitory_rooms ? x.dormitory_rooms.room_type : ''; if (t === '1인실') single++; else if (t === '2인실') dbl++;
+      });
       var cards = [['건물', b.count || 0, '동'], ['호실', r.count || 0, '실'], ['공실', rv.count || 0, '실'],
-        ['진행 계약', ct.count || 0, '건'], ['미납(연체)', od.count || 0, '건']];
-      body().innerHTML = '<div class="dorm-kpis">' + cards.map(function (c) {
-        return '<div class="dorm-kpi"><div class="dorm-kpi-num">' + won(c[1]) + '<span>' + c[2] + '</span></div><div class="dorm-kpi-label">' + c[0] + '</div></div>'; }).join('') + '</div>' +
-        '<div class="dorm-card"><p class="dorm-muted">메뉴: <b>건물·호실</b>(마스터) → <b>계약 등록·조회</b>(개별·xlsx·OCR) → <b>기숙사비</b>(납부) → <b>지출</b> → <b>단가 역산</b> → <b>고지서</b> → <b>수익·손익</b> · <b>민원</b></p></div>';
+        ['재실 인원', rows.length, '명'], ['미납(연체)', od.count || 0, '건']];
+      function tile(map, unit) { var ks = Object.keys(map); if (!ks.length) return '<span class="dorm-muted">데이터 없음</span>';
+        return ks.map(function (k) { return '<span class="dorm-chip">' + esc(k) + ' <b>' + (map[k]) + (unit || '명') + '</b></span>'; }).join(' '); }
+      var html = '<div class="dorm-kpis">' + cards.map(function (c) {
+        return '<div class="dorm-kpi"><div class="dorm-kpi-num">' + won(c[1]) + '<span>' + c[2] + '</span></div><div class="dorm-kpi-label">' + c[0] + '</div></div>'; }).join('') + '</div>';
+      if (rows.length) {
+        html += '<div class="dorm-card"><h3 class="dorm-h3">📊 현황 요약 (재실 ' + rows.length + '명)</h3>' +
+          '<div class="dorm-sum"><div><div class="dorm-sum-t">건물별</div>' + tile(byB) + '</div>' +
+          '<div><div class="dorm-sum-t">계열별</div>' + tile(byD) + '</div>' +
+          '<div><div class="dorm-sum-t">학년별</div>' + tile({ '1학년': byG[1], '2학년': byG[2] }) + '</div>' +
+          '<div><div class="dorm-sum-t">실 유형</div><span class="dorm-chip">독실 <b>' + single + '명</b></span> <span class="dorm-chip">2인1실 <b>' + dbl + '명</b></span></div></div></div>';
+      }
+      html += '<div class="dorm-card"><h3 class="dorm-h3">🧪 데모(샘플) 데이터 — 2025‑2학기</h3>' +
+        '<p class="dorm-muted">교육·시연용으로 165명(6개 생활관, 독실/2인1실 혼합, 계열·학년 임의, 월 40~60만원)을 생성합니다. ' +
+        '먼저 <code>dormitory/migration_2025_demo.sql</code> 을 Supabase에서 1회 실행하세요(필드 추가). 시연 후 일괄 삭제 가능합니다.</p>' +
+        '<div class="dorm-actions"><button id="seed-gen" class="btn btn-primary">2025‑2학기 165명 생성</button>' +
+        '<button id="seed-del" class="btn btn-ghost" style="color:#dc2626">데모 데이터 일괄 삭제</button></div>' +
+        '<p id="seed-prog" class="dorm-muted" style="margin-top:8px"></p></div>';
+      body().innerHTML = html;
+      var g = document.getElementById('seed-gen'); if (g) g.addEventListener('click', function () { generateSeed(this); });
+      var d = document.getElementById('seed-del'); if (d) d.addEventListener('click', function () { deleteDemo(this); });
     } catch (e) { body().innerHTML = errBox(e); }
+  }
+
+  /* ── 데모 데이터 생성 (2025‑2학기 165명) ──────────────── */
+  async function generateSeed(btn) {
+    if (!confirm('2025‑2학기 샘플(데모) 데이터 165명을 생성합니다. 계속할까요?')) return;
+    if (btn) btn.disabled = true;
+    var prog = document.getElementById('seed-prog'); function P(t) { if (prog) prog.textContent = t; }
+    try {
+      P('건물 생성 중…');
+      var bnames = ['1생활관', '2생활관', '3생활관', '4생활관', '5생활관', '6생활관'];
+      var bIns = await _db.from('dormitory_buildings').insert(bnames.map(function (n) {
+        return { name: n, grade: 'A', base_price: 500000, is_demo: true, note: '[DEMO 2025-2]' }; })).select('id,name');
+      if (bIns.error) throw bIns.error;
+      var bByName = {}; bIns.data.forEach(function (x) { bByName[x.name] = x.id; });
+
+      var students = []; for (var i = 0; i < 165; i++) students.push(makeStudent(i));
+
+      P('호실 배정 중…');
+      var rooms = [], seq = [1, 1, 1, 1, 1, 1], idx = 0, bi = 0;
+      while (idx < 165) {
+        var b = bi % 6, remaining = 165 - idx;
+        var type = (remaining === 1) ? '독실' : (Math.random() < 0.5 ? '독실' : '2인1실');
+        var cap = type === '독실' ? 1 : 2, occ = Math.min(cap, remaining);
+        var s = seq[b]++; var floor = Math.floor((s - 1) / 10) + 1; var roomNum = floor * 100 + (((s - 1) % 10) + 1);
+        var price = (type === '독실' ? rint(50, 60) : rint(40, 50)) * 10000;
+        var ro = { building_id: bByName[bnames[b]], room_number: String(roomNum), room_type: type === '독실' ? '1인실' : '2인실',
+          capacity: cap, floor: floor, unit_price: price, is_vacant: false, is_demo: true, _stu: [] };
+        for (var k = 0; k < occ; k++) { ro._stu.push(idx); idx++; }
+        rooms.push(ro); bi++;
+      }
+      P('호실 생성 중… (' + rooms.length + '실)');
+      var rIns = await _db.from('dormitory_rooms').insert(rooms.map(function (x) {
+        return { building_id: x.building_id, room_number: x.room_number, room_type: x.room_type, capacity: x.capacity,
+          floor: x.floor, unit_price: x.unit_price, is_vacant: false, is_demo: true }; })).select('id,building_id,room_number');
+      if (rIns.error) throw rIns.error;
+      var rmap = {}; rIns.data.forEach(function (x) { rmap[x.building_id + '|' + x.room_number] = x.id; });
+      rooms.forEach(function (x) { x._id = rmap[x.building_id + '|' + x.room_number]; });
+
+      P('입소자 생성 중…');
+      var resIns = await _db.from('dormitory_residents').insert(students.map(function (s2) {
+        return { name: s2.name, student_no: s2.sno, phone: s2.phone, department: s2.dept, grade: s2.grade, is_demo: true }; })).select('id,student_no');
+      if (resIns.error) throw resIns.error;
+      var resByNo = {}; resIns.data.forEach(function (x) { resByNo[x.student_no] = x.id; });
+
+      P('계약 생성 중…');
+      var contracts = [];
+      rooms.forEach(function (x) { x._stu.forEach(function (si) { var s3 = students[si];
+        contracts.push({ resident_id: resByNo[s3.sno] || null, building_id: x.building_id, room_id: x._id, resident_name: s3.name,
+          student_no: s3.sno, phone: s3.phone, start_date: '2025-09-01', end_date: '2026-02-28', contract_type: '학기별',
+          unit_price: x.unit_price, deposit: 200000, source: 'seed', status: 'active', department: s3.dept, grade: s3.grade,
+          semester: '2025-2', is_demo: true }); }); });
+      var cIns = await _db.from('dormitory_contracts').insert(contracts).select('id,unit_price');
+      if (cIns.error) throw cIns.error;
+
+      P('납부 스케줄 생성 중…');
+      var months = ['2025-09', '2025-10', '2025-11', '2025-12', '2026-01', '2026-02'];
+      var pays = [];
+      cIns.data.forEach(function (c) { months.forEach(function (m) { var paid = Math.random() < 0.6;
+        pays.push({ contract_id: c.id, period: m, amount: c.unit_price, due_date: m + '-01', status: paid ? 'paid' : 'pending', paid_date: paid ? (m + '-03') : null }); }); });
+      for (var ci = 0; ci < pays.length; ci += 300) { var pr = await _db.from('dormitory_payments').insert(pays.slice(ci, ci + 300)); if (pr.error) throw pr.error; }
+
+      P('지출 샘플 생성 중…');
+      var exC = ['유지보수비', '관리비', '인건비', '보험료', '행정비용'];
+      var exs = []; for (var e = 0; e < 15; e++) exs.push({ expense_date: months[e % 6] + '-15', item_name: exC[e % 5] + ' ' + (e + 1) + '월분', category: exC[e % 5], amount: rint(50, 250) * 10000, is_demo: true });
+      await _db.from('dormitory_expenses').insert(exs);
+
+      P('완료! 165명 생성됨.');
+      toast('2025‑2학기 샘플 데이터가 생성되었습니다.', 'success');
+      renderDash();
+    } catch (err) {
+      var msg = (err && err.message) || err;
+      if (/column .* does not exist|is_demo|department|grade|semester/i.test(String(msg)))
+        msg = '필드가 없습니다 — Supabase에서 dormitory/migration_2025_demo.sql 을 먼저 실행하세요. (' + msg + ')';
+      P('실패: ' + msg); toast('생성 실패: ' + msg, 'error');
+    } finally { if (btn) btn.disabled = false; }
+  }
+
+  /* ── 데모 데이터 일괄 삭제 ─────────────────────────────── */
+  async function deleteDemo(btn) {
+    if (!confirm('데모(2025‑2학기) 데이터를 모두 삭제합니다. 되돌릴 수 없습니다. 계속할까요?')) return;
+    if (btn) btn.disabled = true;
+    var prog = document.getElementById('seed-prog'); function P(t) { if (prog) prog.textContent = t; }
+    try {
+      P('계약·납부 삭제 중…'); await _db.from('dormitory_contracts').delete().eq('is_demo', true);   // payments cascade
+      P('입소자 삭제 중…');    await _db.from('dormitory_residents').delete().eq('is_demo', true);
+      P('지출 삭제 중…');      await _db.from('dormitory_expenses').delete().eq('is_demo', true);
+      P('건물·호실 삭제 중…'); await _db.from('dormitory_buildings').delete().eq('is_demo', true);    // rooms cascade
+      await _db.from('dormitory_rooms').delete().eq('is_demo', true);
+      P('데모 데이터 삭제 완료.');
+      toast('데모 데이터를 삭제했습니다.', 'success'); renderDash();
+    } catch (err) { P('실패: ' + (err.message || err)); toast('삭제 실패: ' + (err.message || err), 'error'); }
+    finally { if (btn) btn.disabled = false; }
   }
 
   /* ── 건물·호실 마스터 ─────────────────────────────────── */
@@ -250,9 +381,12 @@
       '<div><label class="dorm-label">성명 *</label><input id="ct-name" class="form-input"></div>' +
       '<div><label class="dorm-label">학번/사번</label><input id="ct-sno" class="form-input"></div></div>' +
       '<div class="dorm-row4"><div><label class="dorm-label">연락처</label><input id="ct-phone" class="form-input"></div>' +
-      '<div><label class="dorm-label">유형</label><select id="ct-type" class="form-select"><option>학기별</option><option>월별</option><option>연간</option></select></div>' +
-      '<div><label class="dorm-label">시작일 *</label><input id="ct-start" type="date" class="form-input"></div>' +
-      '<div><label class="dorm-label">종료일 *</label><input id="ct-end" type="date" class="form-input"></div></div>' +
+      '<div><label class="dorm-label">계열</label><select id="ct-dept" class="form-select"><option value="">—</option>' + DEPTS.map(function (d) { return '<option>' + d + '</option>'; }).join('') + '</select></div>' +
+      '<div><label class="dorm-label">학년</label><select id="ct-grade" class="form-select"><option value="">—</option><option value="1">1학년</option><option value="2">2학년</option></select></div>' +
+      '<div><label class="dorm-label">유형</label><select id="ct-type" class="form-select"><option>학기별</option><option>월별</option><option>연간</option></select></div></div>' +
+      '<div class="dorm-row4"><div><label class="dorm-label">시작일 *</label><input id="ct-start" type="date" class="form-input"></div>' +
+      '<div><label class="dorm-label">종료일 *</label><input id="ct-end" type="date" class="form-input"></div>' +
+      '<div></div><div></div></div>' +
       '<div class="dorm-row4"><div><label class="dorm-label">단가(월,원)</label><input id="ct-price" class="form-input" inputmode="numeric"></div>' +
       '<div><label class="dorm-label">보증금(원)</label><input id="ct-dep" class="form-input" inputmode="numeric"></div>' +
       '<div style="grid-column:span 2"><label class="dorm-label">비고</label><input id="ct-note" class="form-input"></div></div>' +
@@ -271,12 +405,13 @@
     if (start > end) { toast('종료일이 시작일보다 빠릅니다.', 'error'); return; }
     var btn = document.getElementById('ct-save'); btn.disabled = true;
     try {
-      var resId = null; var ins = await _db.from('dormitory_residents').insert({ name: name, student_no: (val('ct-sno') || '').trim(), phone: (val('ct-phone') || '').trim() }).select('id').single();
+      var dept = val('ct-dept') || null, grade = val('ct-grade') ? parseInt(val('ct-grade'), 10) : null;
+      var resId = null; var ins = await _db.from('dormitory_residents').insert({ name: name, student_no: (val('ct-sno') || '').trim(), phone: (val('ct-phone') || '').trim(), department: dept, grade: grade }).select('id').single();
       if (!ins.error && ins.data) resId = ins.data.id;
       var c = await _db.from('dormitory_contracts').insert({ resident_id: resId, building_id: bid, room_id: rid, resident_name: name,
         student_no: (val('ct-sno') || '').trim(), phone: (val('ct-phone') || '').trim(), start_date: start, end_date: end,
         contract_type: val('ct-type'), unit_price: num(val('ct-price')), deposit: num(val('ct-dep')), source: 'manual', status: 'active',
-        note: (val('ct-note') || '').trim(), created_by: who() });
+        department: dept, grade: grade, semester: '2025-2', note: (val('ct-note') || '').trim(), created_by: who() });
       if (c.error) throw c.error;
       await _db.from('dormitory_rooms').update({ is_vacant: false }).eq('id', rid);
       toast('계약이 등록되었습니다.', 'success'); ['ct-name', 'ct-sno', 'ct-phone', 'ct-note', 'ct-price', 'ct-dep'].forEach(function (id) { document.getElementById(id).value = ''; });
@@ -387,10 +522,10 @@
     if (cs.error) { wrap.innerHTML = errBox(cs.error); return; }
     var rows = cs.data || [];
     wrap.innerHTML = '<h3 class="dorm-h3">최근 계약 (' + rows.length + ')</h3>' + (rows.length ?
-      '<div class="scroll-x"><table class="dorm-table"><thead><tr><th>성명</th><th>학번</th><th>건물·호실</th><th>기간</th><th>유형</th><th>단가</th><th>상태</th></tr></thead><tbody>' +
+      '<div class="scroll-x"><table class="dorm-table"><thead><tr><th>성명</th><th>학번</th><th>계열</th><th>학년</th><th>건물·호실</th><th>기간</th><th>단가</th><th>상태</th></tr></thead><tbody>' +
       rows.map(function (c) { var loc = (c.dormitory_buildings ? c.dormitory_buildings.name : '') + ' ' + (c.dormitory_rooms ? c.dormitory_rooms.room_number + '호' : '');
-        return '<tr><td>' + esc(c.resident_name) + '</td><td>' + esc(c.student_no || '-') + '</td><td>' + esc(loc.trim() || '-') + '</td><td>' + esc(c.start_date) + '~' + esc(c.end_date) + '</td>' +
-          '<td>' + esc(c.contract_type) + '</td><td>' + won(c.unit_price) + '</td><td><span class="dorm-badge ' + (c.status === 'active' ? 'occ' : 'vac') + '">' + esc(c.status) + '</span></td></tr>'; }).join('') +
+        return '<tr><td>' + esc(c.resident_name) + '</td><td>' + esc(c.student_no || '-') + '</td><td>' + esc(c.department || '-') + '</td><td>' + (c.grade ? esc(c.grade) + '학년' : '-') + '</td><td>' + esc(loc.trim() || '-') + '</td><td>' + esc(c.start_date) + '~' + esc(c.end_date) + '</td>' +
+          '<td>' + won(c.unit_price) + '</td><td><span class="dorm-badge ' + (c.status === 'active' ? 'occ' : 'vac') + '">' + esc(c.status) + '</span></td></tr>'; }).join('') +
       '</tbody></table></div>' : '<p class="dorm-muted">등록된 계약이 없습니다.</p>');
   }
 
