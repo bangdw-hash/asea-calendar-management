@@ -1,32 +1,50 @@
 'use strict';
 /**
  * dormitory.js — 기숙사 관리 (시설·자원 ▸ 기숙사관리)
- *  백엔드: Supabase (CDN @supabase/supabase-js@2)
- *  인증  : 관리자 Supabase Auth(이메일+비밀번호) → RLS authenticated 전체 CRUD
+ *  백엔드: Supabase (CDN @supabase/supabase-js@2) · 관리자 Supabase Auth
  *
- *  [1단계 구현] Supabase 연결 설정 · 관리자 로그인 · 건물/호실 마스터 ·
- *               계약 개별 등록/조회 (+대시보드 요약)
- *  [예정] xlsx 일괄·OCR 등록 / 납부·지출 / 단가 역산 / 고지서 / 통계 / 외부 포털
+ *  구현 범위(프론트엔드 전체):
+ *   대시보드 · 건물/호실 마스터 · 계약(개별/ xlsx 일괄 / OCR) ·
+ *   기숙사비 납부 · 지출 · 단가 역산 엔진 · 고지서 발행(PDF 인쇄) ·
+ *   수익·손익 통계 · 민원 관리
+ *  외부 포털(민원 접수 / 입소자 셀프)은 dormitory/complaint.html · resident.html
  */
 (function () {
   var ROOT = 'dorm-root';
-  var SK_URL = 'asea_dorm_supabase_url';
-  var SK_KEY = 'asea_dorm_supabase_key';
-
+  var SK_URL = 'asea_dorm_supabase_url', SK_KEY = 'asea_dorm_supabase_key';
   var _db = null, _session = null;
-  var _st = { sub: 'dash', bid: null };
+  var _st = { sub: 'dash', bid: null, cmode: 'manual' };
 
+  /* ── 공통 헬퍼 ─────────────────────────────────────────── */
   function root() { return document.getElementById(ROOT); }
+  function body() { return document.getElementById('dorm-body'); }
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
     return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
   function won(n) { return (Number(n) || 0).toLocaleString('ko-KR'); }
+  function num(v) { return parseInt(String(v == null ? '' : v).replace(/[^\d-]/g, ''), 10) || 0; }
   function toast(m, t) { try { if (typeof window.aseaToast === 'function') window.aseaToast(m, t); else console.log(m); } catch (e) {} }
   function cfg() { return { url: localStorage.getItem(SK_URL) || '', key: localStorage.getItem(SK_KEY) || '' }; }
+  function who() { return (_session && _session.user && _session.user.email) || ''; }
+  function loading() { body().innerHTML = '<p class="dorm-muted" style="padding:24px">불러오는 중…</p>'; }
+  function errBox(e) { return '<div class="dorm-card"><p style="color:#dc2626">오류: ' + esc(e && e.message || e) +
+    '</p><p class="dorm-muted">테이블이 없으면 <code>dormitory/schema.sql</code>을 Supabase에서 먼저 실행하세요.</p></div>'; }
+  function val(id) { var e = document.getElementById(id); return e ? e.value : ''; }
+  function todayStr() { var d = new Date(); return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+  function pad(n) { return String(n).padStart(2, '0'); }
+  function monthsBetween(s, e) {
+    var out = [], a = new Date(s + 'T00:00:00'), b = new Date(e + 'T00:00:00');
+    var y = a.getFullYear(), m = a.getMonth();
+    while (y < b.getFullYear() || (y === b.getFullYear() && m <= b.getMonth())) {
+      out.push(y + '-' + pad(m + 1)); m++; if (m > 11) { m = 0; y++; } if (out.length > 60) break;
+    }
+    return out;
+  }
+  function fileToB64(file) { return new Promise(function (res, rej) {
+    var r = new FileReader(); r.onload = function () { res(String(r.result).split(',')[1]); }; r.onerror = rej; r.readAsDataURL(file); }); }
 
   function libReady() { return !!(window.supabase && window.supabase.createClient); }
   function ensureClient() {
-    var c = cfg();
-    if (!c.url || !c.key || !libReady()) return null;
+    var c = cfg(); if (!c.url || !c.key || !libReady()) return null;
     if (_db) return _db;
     _db = window.supabase.createClient(c.url, c.key, { auth: { persistSession: true, autoRefreshToken: true } });
     return _db;
@@ -35,16 +53,12 @@
   /* ── 진입 ─────────────────────────────────────────────── */
   async function onTabOpen() {
     var r = root(); if (!r) return;
-    if (!libReady()) {
-      r.innerHTML = '<p style="padding:40px;text-align:center;color:#9ca3af">Supabase 라이브러리 로딩 중… 잠시 후 다시 들어와 주세요.</p>';
-      setTimeout(function () { if (libReady()) onTabOpen(); }, 600);
-      return;
-    }
+    if (!libReady()) { r.innerHTML = '<p style="padding:40px;text-align:center;color:#9ca3af">Supabase 라이브러리 로딩 중…</p>';
+      setTimeout(function () { if (libReady()) onTabOpen(); }, 600); return; }
     var c = cfg();
     if (!c.url || !c.key) { renderSetup(); return; }
     if (!ensureClient()) { renderSetup('연결 정보를 확인하세요.'); return; }
-    try { var s = await _db.auth.getSession(); _session = s && s.data ? s.data.session : null; }
-    catch (e) { _session = null; }
+    try { var s = await _db.auth.getSession(); _session = s && s.data ? s.data.session : null; } catch (e) { _session = null; }
     if (!_session) { renderLogin(); return; }
     renderApp();
   }
@@ -52,114 +66,73 @@
   /* ── 연결 설정 ─────────────────────────────────────────── */
   function renderSetup(msg) {
     var c = cfg();
-    root().innerHTML =
-      '<div class="dorm-card" style="max-width:560px;margin:24px auto">' +
-        '<h2 class="dorm-h2">🏢 기숙사 관리 — Supabase 연결 설정</h2>' +
-        '<p class="dorm-muted">최초 1회만 설정합니다. Supabase 프로젝트의 <b>Project URL</b>과 <b>anon public key</b>를 입력하세요. ' +
-          '(대시보드 → Project Settings → API)</p>' +
-        (msg ? '<p style="color:#dc2626;font-size:13px">' + esc(msg) + '</p>' : '') +
-        '<label class="dorm-label">Project URL</label>' +
-        '<input id="dorm-cfg-url" class="form-input" placeholder="https://xxxx.supabase.co" value="' + esc(c.url) + '">' +
-        '<label class="dorm-label">anon public key</label>' +
-        '<input id="dorm-cfg-key" class="form-input" placeholder="eyJhbGci..." value="' + esc(c.key) + '">' +
-        '<p class="dorm-muted" style="margin-top:8px">먼저 <code>dormitory/schema.sql</code> 을 Supabase SQL Editor에서 실행해 테이블을 만들어 주세요.</p>' +
-        '<div class="dorm-actions"><button id="dorm-cfg-save" class="btn btn-primary">저장하고 계속</button></div>' +
-      '</div>';
+    root().innerHTML = '<div class="dorm-card" style="max-width:560px;margin:24px auto">' +
+      '<h2 class="dorm-h2">🏢 기숙사 관리 — Supabase 연결 설정</h2>' +
+      '<p class="dorm-muted">최초 1회만 설정합니다. Supabase 프로젝트의 <b>Project URL</b>과 <b>anon public key</b>를 입력하세요. (대시보드 → Project Settings → API)</p>' +
+      (msg ? '<p style="color:#dc2626;font-size:13px">' + esc(msg) + '</p>' : '') +
+      '<label class="dorm-label">Project URL</label><input id="dorm-cfg-url" class="form-input" placeholder="https://xxxx.supabase.co" value="' + esc(c.url) + '">' +
+      '<label class="dorm-label">anon public key</label><input id="dorm-cfg-key" class="form-input" placeholder="eyJhbGci..." value="' + esc(c.key) + '">' +
+      '<p class="dorm-muted" style="margin-top:8px">먼저 <code>dormitory/schema.sql</code> 을 SQL Editor에서 실행해 테이블을 만들어 주세요.</p>' +
+      '<div class="dorm-actions"><button id="dorm-cfg-save" class="btn btn-primary">저장하고 계속</button></div></div>';
     document.getElementById('dorm-cfg-save').addEventListener('click', function () {
-      var u = (document.getElementById('dorm-cfg-url').value || '').trim().replace(/\/$/, '');
-      var k = (document.getElementById('dorm-cfg-key').value || '').trim();
+      var u = (val('dorm-cfg-url') || '').trim().replace(/\/$/, ''), k = (val('dorm-cfg-key') || '').trim();
       if (!u || !k) { toast('URL과 키를 모두 입력하세요.', 'error'); return; }
-      localStorage.setItem(SK_URL, u); localStorage.setItem(SK_KEY, k);
-      _db = null; onTabOpen();
+      localStorage.setItem(SK_URL, u); localStorage.setItem(SK_KEY, k); _db = null; onTabOpen();
     });
   }
 
-  /* ── 관리자 로그인 (Supabase Auth) ─────────────────────── */
+  /* ── 관리자 로그인 ─────────────────────────────────────── */
   function renderLogin() {
-    root().innerHTML =
-      '<div class="dorm-card" style="max-width:420px;margin:24px auto">' +
-        '<h2 class="dorm-h2">🔐 기숙사 관리자 로그인</h2>' +
-        '<p class="dorm-muted">Supabase에 등록된 관리자 계정으로 로그인하세요.</p>' +
-        '<label class="dorm-label">이메일</label>' +
-        '<input id="dorm-li-email" type="email" class="form-input" autocomplete="username">' +
-        '<label class="dorm-label">비밀번호</label>' +
-        '<input id="dorm-li-pw" type="password" class="form-input" autocomplete="current-password">' +
-        '<div id="dorm-li-err" style="color:#dc2626;font-size:12px;margin-top:6px;display:none"></div>' +
-        '<div class="dorm-actions">' +
-          '<button id="dorm-li-btn" class="btn btn-primary">로그인</button>' +
-          '<button id="dorm-li-signup" class="btn btn-secondary">관리자 등록</button>' +
-          '<button id="dorm-li-cfg" class="btn btn-ghost btn-sm">연결 설정</button>' +
-        '</div>' +
-      '</div>';
+    root().innerHTML = '<div class="dorm-card" style="max-width:420px;margin:24px auto">' +
+      '<h2 class="dorm-h2">🔐 기숙사 관리자 로그인</h2>' +
+      '<p class="dorm-muted">Supabase에 등록된 관리자 계정으로 로그인하세요.</p>' +
+      '<label class="dorm-label">이메일</label><input id="dorm-li-email" type="email" class="form-input">' +
+      '<label class="dorm-label">비밀번호</label><input id="dorm-li-pw" type="password" class="form-input">' +
+      '<div id="dorm-li-err" style="color:#dc2626;font-size:12px;margin-top:6px;display:none"></div>' +
+      '<div class="dorm-actions"><button id="dorm-li-btn" class="btn btn-primary">로그인</button>' +
+      '<button id="dorm-li-signup" class="btn btn-secondary">관리자 등록</button>' +
+      '<button id="dorm-li-cfg" class="btn btn-ghost btn-sm">연결 설정</button></div></div>';
     var err = document.getElementById('dorm-li-err');
     function showErr(m) { err.style.display = 'block'; err.textContent = m; }
     document.getElementById('dorm-li-cfg').addEventListener('click', function () { renderSetup(); });
     document.getElementById('dorm-li-btn').addEventListener('click', async function () {
-      var email = (document.getElementById('dorm-li-email').value || '').trim();
-      var pw = document.getElementById('dorm-li-pw').value || '';
+      var email = (val('dorm-li-email') || '').trim(), pw = val('dorm-li-pw');
       if (!email || !pw) { showErr('이메일과 비밀번호를 입력하세요.'); return; }
-      this.disabled = true;
-      var res = await _db.auth.signInWithPassword({ email: email, password: pw });
-      this.disabled = false;
+      this.disabled = true; var res = await _db.auth.signInWithPassword({ email: email, password: pw }); this.disabled = false;
       if (res.error) { showErr('로그인 실패: ' + res.error.message); return; }
       _session = res.data.session; renderApp();
     });
     document.getElementById('dorm-li-signup').addEventListener('click', async function () {
-      var email = (document.getElementById('dorm-li-email').value || '').trim();
-      var pw = document.getElementById('dorm-li-pw').value || '';
-      if (!email || pw.length < 6) { showErr('이메일과 6자 이상 비밀번호를 입력하세요.'); return; }
+      var email = (val('dorm-li-email') || '').trim(), pw = val('dorm-li-pw');
+      if (!email || pw.length < 6) { showErr('이메일과 6자 이상 비밀번호.'); return; }
       var res = await _db.auth.signUp({ email: email, password: pw });
       if (res.error) { showErr('등록 실패: ' + res.error.message); return; }
       if (res.data.session) { _session = res.data.session; renderApp(); }
-      else toast('확인 메일이 발송되었습니다. 메일 인증 후 로그인하세요.', 'info');
+      else toast('확인 메일 발송됨. 인증 후 로그인하세요.', 'info');
     });
   }
 
   /* ── 앱 본체 ───────────────────────────────────────────── */
   var SUBS = [
-    { id: 'dash',     label: '대시보드' },
-    { id: 'master',   label: '건물·호실' },
-    { id: 'contract', label: '계약 등록·조회' },
-    { id: 'payment',  label: '기숙사비' },
-    { id: 'expense',  label: '지출' },
-    { id: 'price',    label: '단가 역산' },
-    { id: 'notice',   label: '고지서' },
-    { id: 'stat',     label: '통계' },
-    { id: 'complaint',label: '민원' },
+    { id: 'dash', label: '대시보드' }, { id: 'master', label: '건물·호실' },
+    { id: 'contract', label: '계약 등록·조회' }, { id: 'payment', label: '기숙사비' },
+    { id: 'expense', label: '지출' }, { id: 'price', label: '단가 역산' },
+    { id: 'notice', label: '고지서' }, { id: 'stat', label: '수익·손익' }, { id: 'complaint', label: '민원' },
   ];
   function renderApp() {
-    var email = (_session && _session.user && _session.user.email) || '';
-    root().innerHTML =
-      '<div class="dorm-top">' +
-        '<h2 class="dorm-title">🏢 기숙사 관리</h2>' +
-        '<div class="dorm-user">' + esc(email) + ' <button id="dorm-logout" class="btn btn-ghost btn-sm">로그아웃</button></div>' +
-      '</div>' +
+    root().innerHTML = '<div class="dorm-top"><h2 class="dorm-title">🏢 기숙사 관리</h2>' +
+      '<div class="dorm-user">' + esc(who()) + ' <button id="dorm-logout" class="btn btn-ghost btn-sm">로그아웃</button></div></div>' +
       '<div class="dorm-subtabs facility-subtab-bar" role="tablist">' +
-        SUBS.map(function (s) { return '<button class="subtab-btn' + (_st.sub === s.id ? ' active' : '') + '" data-dsub="' + s.id + '">' + s.label + '</button>'; }).join('') +
-      '</div>' +
-      '<div id="dorm-body"></div>';
-    document.getElementById('dorm-logout').addEventListener('click', async function () {
-      try { await _db.auth.signOut(); } catch (e) {}
-      _session = null; renderLogin();
-    });
-    root().querySelectorAll('[data-dsub]').forEach(function (b) {
-      b.addEventListener('click', function () { _st.sub = b.dataset.dsub; renderApp(); });
-    });
+      SUBS.map(function (s) { return '<button class="subtab-btn' + (_st.sub === s.id ? ' active' : '') + '" data-dsub="' + s.id + '">' + s.label + '</button>'; }).join('') +
+      '</div><div id="dorm-body"></div>';
+    document.getElementById('dorm-logout').addEventListener('click', async function () { try { await _db.auth.signOut(); } catch (e) {} _session = null; renderLogin(); });
+    root().querySelectorAll('[data-dsub]').forEach(function (b) { b.addEventListener('click', function () { _st.sub = b.dataset.dsub; renderApp(); }); });
     renderBody();
   }
-
-  function body() { return document.getElementById('dorm-body'); }
-  function loading() { body().innerHTML = '<p class="dorm-muted" style="padding:24px">불러오는 중…</p>'; }
-  function placeholder(label) {
-    body().innerHTML = '<div class="dorm-card"><h3 class="dorm-h3">🚧 ' + esc(label) + '</h3>' +
-      '<p class="dorm-muted">이 메뉴는 다음 단계에서 개발 예정입니다. (현재 1단계: 건물·호실 / 계약 등록)</p></div>';
-  }
-
-  async function renderBody() {
-    if (_st.sub === 'dash')      return renderDash();
-    if (_st.sub === 'master')    return renderMaster();
-    if (_st.sub === 'contract')  return renderContract();
-    placeholder(SUBS.filter(function (s) { return s.id === _st.sub; })[0].label);
+  function renderBody() {
+    var f = { dash: renderDash, master: renderMaster, contract: renderContract, payment: renderPayment,
+      expense: renderExpense, price: renderPrice, notice: renderNotice, stat: renderStat, complaint: renderComplaint };
+    (f[_st.sub] || renderDash)();
   }
 
   /* ── 대시보드 ─────────────────────────────────────────── */
@@ -170,226 +143,548 @@
       var r = await _db.from('dormitory_rooms').select('id', { count: 'exact', head: true });
       var rv = await _db.from('dormitory_rooms').select('id', { count: 'exact', head: true }).eq('is_vacant', true);
       var ct = await _db.from('dormitory_contracts').select('id', { count: 'exact', head: true }).eq('status', 'active');
-      var cards = [
-        ['건물', b.count || 0, '동'], ['호실', r.count || 0, '실'],
-        ['공실', rv.count || 0, '실'], ['진행 계약', ct.count || 0, '건'],
-      ];
+      var od = await _db.from('dormitory_payments').select('id', { count: 'exact', head: true }).eq('status', 'overdue');
+      var cards = [['건물', b.count || 0, '동'], ['호실', r.count || 0, '실'], ['공실', rv.count || 0, '실'],
+        ['진행 계약', ct.count || 0, '건'], ['미납(연체)', od.count || 0, '건']];
       body().innerHTML = '<div class="dorm-kpis">' + cards.map(function (c) {
-        return '<div class="dorm-kpi"><div class="dorm-kpi-num">' + won(c[1]) + '<span>' + c[2] + '</span></div><div class="dorm-kpi-label">' + c[0] + '</div></div>';
-      }).join('') + '</div>' +
-      '<div class="dorm-card"><p class="dorm-muted">시작하려면 <b>건물·호실</b>에서 마스터를 설정한 뒤 <b>계약 등록·조회</b>에서 입소자 계약을 등록하세요.</p></div>';
+        return '<div class="dorm-kpi"><div class="dorm-kpi-num">' + won(c[1]) + '<span>' + c[2] + '</span></div><div class="dorm-kpi-label">' + c[0] + '</div></div>'; }).join('') + '</div>' +
+        '<div class="dorm-card"><p class="dorm-muted">메뉴: <b>건물·호실</b>(마스터) → <b>계약 등록·조회</b>(개별·xlsx·OCR) → <b>기숙사비</b>(납부) → <b>지출</b> → <b>단가 역산</b> → <b>고지서</b> → <b>수익·손익</b> · <b>민원</b></p></div>';
     } catch (e) { body().innerHTML = errBox(e); }
-  }
-  function errBox(e) {
-    return '<div class="dorm-card"><p style="color:#dc2626">오류: ' + esc(e && e.message || e) +
-      '</p><p class="dorm-muted">테이블이 없으면 <code>dormitory/schema.sql</code>을 Supabase에서 먼저 실행하세요.</p></div>';
   }
 
   /* ── 건물·호실 마스터 ─────────────────────────────────── */
   async function renderMaster() {
     loading();
-    var bs;
-    try { bs = await _db.from('dormitory_buildings').select('*').order('name'); if (bs.error) throw bs.error; }
+    var bs; try { bs = await _db.from('dormitory_buildings').select('*').order('name'); if (bs.error) throw bs.error; }
     catch (e) { body().innerHTML = errBox(e); return; }
     var list = bs.data || [];
-    var html = '<div class="dorm-grid2">' +
-      '<div class="dorm-card">' +
-        '<h3 class="dorm-h3">건물 등록</h3>' +
+    body().innerHTML = '<div class="dorm-grid2">' +
+      '<div class="dorm-card"><h3 class="dorm-h3">건물 등록</h3>' +
         '<label class="dorm-label">건물명 *</label><input id="db-name" class="form-input">' +
         '<div class="dorm-row"><div><label class="dorm-label">등급</label><input id="db-grade" class="form-input" placeholder="A/B/C"></div>' +
-          '<div><label class="dorm-label">기본 단가(월,원)</label><input id="db-price" class="form-input" inputmode="numeric" placeholder="350000"></div></div>' +
+        '<div><label class="dorm-label">기본 단가(월,원)</label><input id="db-price" class="form-input" inputmode="numeric" placeholder="350000"></div></div>' +
         '<label class="dorm-label">비고</label><input id="db-note" class="form-input">' +
-        '<div class="dorm-actions"><button id="db-add" class="btn btn-primary">건물 추가</button></div>' +
-      '</div>' +
-      '<div class="dorm-card">' +
-        '<h3 class="dorm-h3">건물 목록</h3>' +
+        '<div class="dorm-actions"><button id="db-add" class="btn btn-primary">건물 추가</button></div></div>' +
+      '<div class="dorm-card"><h3 class="dorm-h3">건물 목록</h3>' +
         (list.length ? '<div class="scroll-x"><table class="dorm-table"><thead><tr><th>건물</th><th>등급</th><th>기본단가</th><th>호실</th><th></th></tr></thead><tbody>' +
-          list.map(function (b) {
-            return '<tr><td>' + esc(b.name) + '</td><td>' + esc(b.grade || '-') + '</td><td>' + won(b.base_price) + '</td>' +
-              '<td>' + (b.total_rooms || 0) + '</td>' +
-              '<td><button class="btn btn-secondary btn-sm db-rooms" data-id="' + b.id + '" data-name="' + esc(b.name) + '" data-price="' + (b.base_price || 0) + '">호실 관리</button></td></tr>';
-          }).join('') + '</tbody></table></div>' : '<p class="dorm-muted">등록된 건물이 없습니다.</p>') +
-      '</div>' +
-    '</div>' +
-    '<div id="dorm-rooms"></div>';
-    body().innerHTML = html;
-
+          list.map(function (b) { return '<tr><td>' + esc(b.name) + '</td><td>' + esc(b.grade || '-') + '</td><td>' + won(b.base_price) + '</td><td>' + (b.total_rooms || 0) + '</td>' +
+            '<td><button class="btn btn-secondary btn-sm db-rooms" data-id="' + b.id + '" data-name="' + esc(b.name) + '" data-price="' + (b.base_price || 0) + '">호실 관리</button> ' +
+            '<button class="btn btn-ghost btn-sm db-del" data-id="' + b.id + '">삭제</button></td></tr>'; }).join('') + '</tbody></table></div>'
+          : '<p class="dorm-muted">등록된 건물이 없습니다.</p>') + '</div></div><div id="dorm-rooms"></div>';
     document.getElementById('db-add').addEventListener('click', async function () {
-      var name = (document.getElementById('db-name').value || '').trim();
-      if (!name) { toast('건물명을 입력하세요.', 'error'); return; }
-      var rec = { name: name, grade: (document.getElementById('db-grade').value || '').trim(),
-        base_price: parseInt((document.getElementById('db-price').value || '0').replace(/[^\d]/g, ''), 10) || 0,
-        note: (document.getElementById('db-note').value || '').trim() };
-      var res = await _db.from('dormitory_buildings').insert(rec);
-      if (res.error) { toast('저장 실패: ' + res.error.message, 'error'); return; }
-      toast('건물이 등록되었습니다.', 'success'); renderMaster();
+      var name = (val('db-name') || '').trim(); if (!name) { toast('건물명을 입력하세요.', 'error'); return; }
+      var res = await _db.from('dormitory_buildings').insert({ name: name, grade: (val('db-grade') || '').trim(), base_price: num(val('db-price')), note: (val('db-note') || '').trim() });
+      if (res.error) { toast('저장 실패: ' + res.error.message, 'error'); return; } toast('건물 등록 완료', 'success'); renderMaster();
     });
-    body().querySelectorAll('.db-rooms').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        _st.bid = this.dataset.id;
-        renderRooms(this.dataset.id, this.dataset.name, parseInt(this.dataset.price, 10) || 0);
-      });
-    });
-    if (_st.bid) {
-      var cur = list.filter(function (b) { return b.id === _st.bid; })[0];
-      if (cur) renderRooms(cur.id, cur.name, cur.base_price || 0);
-    }
+    body().querySelectorAll('.db-del').forEach(function (b) { b.addEventListener('click', async function () {
+      if (!confirm('건물과 하위 호실이 모두 삭제됩니다. 계속할까요?')) return;
+      var res = await _db.from('dormitory_buildings').delete().eq('id', this.dataset.id);
+      if (res.error) { toast('삭제 실패: ' + res.error.message, 'error'); return; } _st.bid = null; renderMaster(); }); });
+    body().querySelectorAll('.db-rooms').forEach(function (btn) { btn.addEventListener('click', function () {
+      _st.bid = this.dataset.id; renderRooms(this.dataset.id, this.dataset.name, num(this.dataset.price)); }); });
+    if (_st.bid) { var cur = list.filter(function (b) { return b.id === _st.bid; })[0]; if (cur) renderRooms(cur.id, cur.name, cur.base_price || 0); }
   }
-
   async function renderRooms(bid, bname, basePrice) {
-    var wrap = document.getElementById('dorm-rooms');
-    wrap.innerHTML = '<div class="dorm-card"><p class="dorm-muted">호실 불러오는 중…</p></div>';
-    var rs;
-    try { rs = await _db.from('dormitory_rooms').select('*').eq('building_id', bid).order('room_number'); if (rs.error) throw rs.error; }
+    var wrap = document.getElementById('dorm-rooms'); wrap.innerHTML = '<div class="dorm-card"><p class="dorm-muted">호실 불러오는 중…</p></div>';
+    var rs; try { rs = await _db.from('dormitory_rooms').select('*').eq('building_id', bid).order('room_number'); if (rs.error) throw rs.error; }
     catch (e) { wrap.innerHTML = errBox(e); return; }
     var rooms = rs.data || [];
-    wrap.innerHTML = '<div class="dorm-card">' +
-      '<h3 class="dorm-h3">🚪 ' + esc(bname) + ' — 호실 관리</h3>' +
-      '<div class="dorm-row4">' +
-        '<div><label class="dorm-label">호실번호 *</label><input id="rm-no" class="form-input" placeholder="201"></div>' +
-        '<div><label class="dorm-label">유형</label><select id="rm-type" class="form-select"><option>1인실</option><option>2인실</option><option>다인실</option></select></div>' +
-        '<div><label class="dorm-label">층</label><input id="rm-floor" class="form-input" inputmode="numeric"></div>' +
-        '<div><label class="dorm-label">단가(월,원)</label><input id="rm-price" class="form-input" inputmode="numeric" value="' + (basePrice || '') + '"></div>' +
-      '</div>' +
+    wrap.innerHTML = '<div class="dorm-card"><h3 class="dorm-h3">🚪 ' + esc(bname) + ' — 호실 관리</h3>' +
+      '<div class="dorm-row4"><div><label class="dorm-label">호실번호 *</label><input id="rm-no" class="form-input" placeholder="201"></div>' +
+      '<div><label class="dorm-label">유형</label><select id="rm-type" class="form-select"><option>1인실</option><option>2인실</option><option>다인실</option></select></div>' +
+      '<div><label class="dorm-label">층</label><input id="rm-floor" class="form-input" inputmode="numeric"></div>' +
+      '<div><label class="dorm-label">단가(월,원)</label><input id="rm-price" class="form-input" inputmode="numeric" value="' + (basePrice || '') + '"></div></div>' +
       '<div class="dorm-actions"><button id="rm-add" class="btn btn-primary">호실 추가</button></div>' +
       (rooms.length ? '<div class="scroll-x" style="margin-top:12px"><table class="dorm-table"><thead><tr><th>호실</th><th>유형</th><th>층</th><th>단가</th><th>상태</th><th></th></tr></thead><tbody>' +
-        rooms.map(function (r) {
-          return '<tr><td>' + esc(r.room_number) + '</td><td>' + esc(r.room_type) + '</td><td>' + (r.floor == null ? '-' : r.floor) + '</td>' +
-            '<td>' + won(r.unit_price) + '</td><td>' + (r.is_vacant ? '<span class="dorm-badge vac">공실</span>' : '<span class="dorm-badge occ">입실</span>') + '</td>' +
-            '<td><button class="btn btn-ghost btn-sm rm-del" data-id="' + r.id + '">삭제</button></td></tr>';
-        }).join('') + '</tbody></table></div>' : '<p class="dorm-muted" style="margin-top:12px">등록된 호실이 없습니다.</p>') +
-    '</div>';
-
+        rooms.map(function (r) { return '<tr><td>' + esc(r.room_number) + '</td><td>' + esc(r.room_type) + '</td><td>' + (r.floor == null ? '-' : r.floor) + '</td><td>' + won(r.unit_price) + '</td>' +
+          '<td>' + (r.is_vacant ? '<span class="dorm-badge vac">공실</span>' : '<span class="dorm-badge occ">입실</span>') + '</td>' +
+          '<td><button class="btn btn-ghost btn-sm rm-del" data-id="' + r.id + '">삭제</button></td></tr>'; }).join('') + '</tbody></table></div>'
+        : '<p class="dorm-muted" style="margin-top:12px">등록된 호실이 없습니다.</p>') + '</div>';
     document.getElementById('rm-add').addEventListener('click', async function () {
-      var no = (document.getElementById('rm-no').value || '').trim();
-      if (!no) { toast('호실번호를 입력하세요.', 'error'); return; }
-      var rec = { building_id: bid, room_number: no,
-        room_type: document.getElementById('rm-type').value,
-        floor: parseInt(document.getElementById('rm-floor').value, 10) || null,
-        unit_price: parseInt((document.getElementById('rm-price').value || '0').replace(/[^\d]/g, ''), 10) || 0,
-        is_vacant: true };
-      var res = await _db.from('dormitory_rooms').insert(rec);
+      var no = (val('rm-no') || '').trim(); if (!no) { toast('호실번호를 입력하세요.', 'error'); return; }
+      var res = await _db.from('dormitory_rooms').insert({ building_id: bid, room_number: no, room_type: val('rm-type'),
+        floor: parseInt(val('rm-floor'), 10) || null, unit_price: num(val('rm-price')), is_vacant: true });
       if (res.error) { toast('저장 실패: ' + res.error.message, 'error'); return; }
       await _db.from('dormitory_buildings').update({ total_rooms: rooms.length + 1 }).eq('id', bid);
-      toast('호실이 등록되었습니다.', 'success'); renderRooms(bid, bname, basePrice);
+      toast('호실 등록 완료', 'success'); renderRooms(bid, bname, basePrice);
     });
-    wrap.querySelectorAll('.rm-del').forEach(function (b) {
-      b.addEventListener('click', async function () {
-        if (!confirm('이 호실을 삭제할까요?')) return;
-        var res = await _db.from('dormitory_rooms').delete().eq('id', this.dataset.id);
-        if (res.error) { toast('삭제 실패: ' + res.error.message, 'error'); return; }
-        renderRooms(bid, bname, basePrice);
-      });
-    });
+    wrap.querySelectorAll('.rm-del').forEach(function (b) { b.addEventListener('click', async function () {
+      if (!confirm('이 호실을 삭제할까요?')) return; var res = await _db.from('dormitory_rooms').delete().eq('id', this.dataset.id);
+      if (res.error) { toast('삭제 실패: ' + res.error.message, 'error'); return; } renderRooms(bid, bname, basePrice); }); });
   }
 
-  /* ── 계약 등록·조회 (개별 입력) ────────────────────────── */
+  /* ── 계약 등록·조회 (개별 / xlsx / OCR) ────────────────── */
   async function renderContract() {
     loading();
-    var bs;
-    try { bs = await _db.from('dormitory_buildings').select('id,name,base_price').order('name'); if (bs.error) throw bs.error; }
+    var bs; try { bs = await _db.from('dormitory_buildings').select('id,name,base_price').order('name'); if (bs.error) throw bs.error; }
     catch (e) { body().innerHTML = errBox(e); return; }
     var blds = bs.data || [];
     if (!blds.length) { body().innerHTML = '<div class="dorm-card"><p class="dorm-muted">먼저 <b>건물·호실</b>에서 건물·호실을 등록하세요.</p></div>'; return; }
 
-    body().innerHTML =
-      '<div class="dorm-card">' +
-        '<h3 class="dorm-h3">계약 개별 등록</h3>' +
-        '<div class="dorm-row4">' +
-          '<div><label class="dorm-label">건물 *</label><select id="ct-bld" class="form-select">' +
-            blds.map(function (b) { return '<option value="' + b.id + '" data-price="' + (b.base_price || 0) + '">' + esc(b.name) + '</option>'; }).join('') + '</select></div>' +
-          '<div><label class="dorm-label">호실 *</label><select id="ct-room" class="form-select"><option value="">—</option></select></div>' +
-          '<div><label class="dorm-label">성명 *</label><input id="ct-name" class="form-input"></div>' +
-          '<div><label class="dorm-label">학번/사번</label><input id="ct-sno" class="form-input"></div>' +
-        '</div>' +
-        '<div class="dorm-row4">' +
-          '<div><label class="dorm-label">연락처</label><input id="ct-phone" class="form-input" placeholder="010-…"></div>' +
-          '<div><label class="dorm-label">유형</label><select id="ct-type" class="form-select"><option>학기별</option><option>월별</option><option>연간</option></select></div>' +
-          '<div><label class="dorm-label">시작일 *</label><input id="ct-start" type="date" class="form-input"></div>' +
-          '<div><label class="dorm-label">종료일 *</label><input id="ct-end" type="date" class="form-input"></div>' +
-        '</div>' +
-        '<div class="dorm-row4">' +
-          '<div><label class="dorm-label">단가(월,원)</label><input id="ct-price" class="form-input" inputmode="numeric"></div>' +
-          '<div><label class="dorm-label">보증금(원)</label><input id="ct-dep" class="form-input" inputmode="numeric"></div>' +
-          '<div style="grid-column:span 2"><label class="dorm-label">비고</label><input id="ct-note" class="form-input"></div>' +
-        '</div>' +
-        '<div class="dorm-actions"><button id="ct-save" class="btn btn-primary">계약 저장</button></div>' +
-      '</div>' +
-      '<div id="dorm-ct-list" class="dorm-card"><p class="dorm-muted">계약 목록 불러오는 중…</p></div>';
+    body().innerHTML = '<div class="dorm-modebar">' +
+        ['manual', 'xlsx', 'ocr'].map(function (m) { var lab = { manual: '개별 입력', xlsx: 'xlsx 일괄', ocr: 'OCR 스캔' }[m];
+          return '<button class="dorm-mode' + (_st.cmode === m ? ' active' : '') + '" data-cmode="' + m + '">' + lab + '</button>'; }).join('') + '</div>' +
+      '<div id="dorm-cform"></div><div id="dorm-ct-list" class="dorm-card"><p class="dorm-muted">목록 불러오는 중…</p></div>';
+    body().querySelectorAll('[data-cmode]').forEach(function (b) { b.addEventListener('click', function () { _st.cmode = b.dataset.cmode; renderContract(); }); });
 
-    var bldSel = document.getElementById('ct-bld');
-    async function loadRooms() {
-      var bid = bldSel.value;
-      var rs = await _db.from('dormitory_rooms').select('id,room_number,room_type,unit_price,is_vacant').eq('building_id', bid).order('room_number');
-      var rooms = (rs.data || []);
-      var sel = document.getElementById('ct-room');
-      sel.innerHTML = '<option value="">—</option>' + rooms.map(function (r) {
-        return '<option value="' + r.id + '" data-price="' + (r.unit_price || 0) + '"' + (r.is_vacant ? '' : ' data-occ="1"') + '>' +
-          esc(r.room_number) + ' (' + esc(r.room_type) + ')' + (r.is_vacant ? '' : ' · 입실중') + '</option>';
-      }).join('');
-    }
-    bldSel.addEventListener('change', loadRooms);
-    document.getElementById('ct-room').addEventListener('change', function () {
-      var opt = this.options[this.selectedIndex];
-      var p = opt && opt.getAttribute('data-price');
-      if (p && !document.getElementById('ct-price').value) document.getElementById('ct-price').value = p;
-    });
-    await loadRooms();
-
-    document.getElementById('ct-save').addEventListener('click', onSaveContract);
+    if (_st.cmode === 'xlsx') renderXlsx(blds);
+    else if (_st.cmode === 'ocr') renderOcr(blds);
+    else renderManual(blds);
     loadContractList();
   }
 
-  async function onSaveContract() {
-    var name = (document.getElementById('ct-name').value || '').trim();
-    var bid = document.getElementById('ct-bld').value;
-    var rid = document.getElementById('ct-room').value;
-    var start = document.getElementById('ct-start').value;
-    var end = document.getElementById('ct-end').value;
+  function bldOptions(blds) { return blds.map(function (b) { return '<option value="' + b.id + '" data-price="' + (b.base_price || 0) + '">' + esc(b.name) + '</option>'; }).join(''); }
+  async function fillRoomSelect(bid, sel) {
+    var rs = await _db.from('dormitory_rooms').select('id,room_number,room_type,unit_price,is_vacant').eq('building_id', bid).order('room_number');
+    sel.innerHTML = '<option value="">—</option>' + (rs.data || []).map(function (r) {
+      return '<option value="' + r.id + '" data-price="' + (r.unit_price || 0) + '">' + esc(r.room_number) + ' (' + esc(r.room_type) + ')' + (r.is_vacant ? '' : ' · 입실중') + '</option>'; }).join('');
+  }
+  function renderManual(blds) {
+    document.getElementById('dorm-cform').innerHTML = '<div class="dorm-card"><h3 class="dorm-h3">계약 개별 등록</h3>' +
+      '<div class="dorm-row4"><div><label class="dorm-label">건물 *</label><select id="ct-bld" class="form-select">' + bldOptions(blds) + '</select></div>' +
+      '<div><label class="dorm-label">호실 *</label><select id="ct-room" class="form-select"><option value="">—</option></select></div>' +
+      '<div><label class="dorm-label">성명 *</label><input id="ct-name" class="form-input"></div>' +
+      '<div><label class="dorm-label">학번/사번</label><input id="ct-sno" class="form-input"></div></div>' +
+      '<div class="dorm-row4"><div><label class="dorm-label">연락처</label><input id="ct-phone" class="form-input"></div>' +
+      '<div><label class="dorm-label">유형</label><select id="ct-type" class="form-select"><option>학기별</option><option>월별</option><option>연간</option></select></div>' +
+      '<div><label class="dorm-label">시작일 *</label><input id="ct-start" type="date" class="form-input"></div>' +
+      '<div><label class="dorm-label">종료일 *</label><input id="ct-end" type="date" class="form-input"></div></div>' +
+      '<div class="dorm-row4"><div><label class="dorm-label">단가(월,원)</label><input id="ct-price" class="form-input" inputmode="numeric"></div>' +
+      '<div><label class="dorm-label">보증금(원)</label><input id="ct-dep" class="form-input" inputmode="numeric"></div>' +
+      '<div style="grid-column:span 2"><label class="dorm-label">비고</label><input id="ct-note" class="form-input"></div></div>' +
+      '<div class="dorm-actions"><button id="ct-save" class="btn btn-primary">계약 저장</button></div></div>';
+    var bldSel = document.getElementById('ct-bld');
+    bldSel.addEventListener('change', function () { fillRoomSelect(this.value, document.getElementById('ct-room')); });
+    document.getElementById('ct-room').addEventListener('change', function () {
+      var o = this.options[this.selectedIndex], p = o && o.getAttribute('data-price');
+      if (p && !val('ct-price')) document.getElementById('ct-price').value = p; });
+    fillRoomSelect(bldSel.value, document.getElementById('ct-room'));
+    document.getElementById('ct-save').addEventListener('click', onSaveManual);
+  }
+  async function onSaveManual() {
+    var name = (val('ct-name') || '').trim(), bid = val('ct-bld'), rid = val('ct-room'), start = val('ct-start'), end = val('ct-end');
     if (!name || !rid || !start || !end) { toast('건물·호실·성명·기간은 필수입니다.', 'error'); return; }
     if (start > end) { toast('종료일이 시작일보다 빠릅니다.', 'error'); return; }
-    var sno = (document.getElementById('ct-sno').value || '').trim();
-    var phone = (document.getElementById('ct-phone').value || '').trim();
-    var price = parseInt((document.getElementById('ct-price').value || '0').replace(/[^\d]/g, ''), 10) || 0;
-    var dep = parseInt((document.getElementById('ct-dep').value || '0').replace(/[^\d]/g, ''), 10) || 0;
-    var who = (_session && _session.user && _session.user.email) || '';
-
     var btn = document.getElementById('ct-save'); btn.disabled = true;
     try {
-      // 입소자 upsert (이름+학번 기준, 단순화)
-      var resId = null;
-      var ins = await _db.from('dormitory_residents').insert({ name: name, student_no: sno, phone: phone }).select('id').single();
+      var resId = null; var ins = await _db.from('dormitory_residents').insert({ name: name, student_no: (val('ct-sno') || '').trim(), phone: (val('ct-phone') || '').trim() }).select('id').single();
       if (!ins.error && ins.data) resId = ins.data.id;
-      var c = await _db.from('dormitory_contracts').insert({
-        resident_id: resId, building_id: bid, room_id: rid,
-        resident_name: name, student_no: sno, phone: phone,
-        start_date: start, end_date: end, contract_type: document.getElementById('ct-type').value,
-        unit_price: price, deposit: dep, source: 'manual', status: 'active',
-        note: (document.getElementById('ct-note').value || '').trim(), created_by: who,
-      });
+      var c = await _db.from('dormitory_contracts').insert({ resident_id: resId, building_id: bid, room_id: rid, resident_name: name,
+        student_no: (val('ct-sno') || '').trim(), phone: (val('ct-phone') || '').trim(), start_date: start, end_date: end,
+        contract_type: val('ct-type'), unit_price: num(val('ct-price')), deposit: num(val('ct-dep')), source: 'manual', status: 'active',
+        note: (val('ct-note') || '').trim(), created_by: who() });
       if (c.error) throw c.error;
-      await _db.from('dormitory_rooms').update({ is_vacant: false }).eq('id', rid);  // 입실 자동 반영
-      toast('계약이 등록되었습니다.', 'success');
-      ['ct-name', 'ct-sno', 'ct-phone', 'ct-note'].forEach(function (id) { document.getElementById(id).value = ''; });
+      await _db.from('dormitory_rooms').update({ is_vacant: false }).eq('id', rid);
+      toast('계약이 등록되었습니다.', 'success'); ['ct-name', 'ct-sno', 'ct-phone', 'ct-note', 'ct-price', 'ct-dep'].forEach(function (id) { document.getElementById(id).value = ''; });
       loadContractList();
-    } catch (e) { toast('저장 실패: ' + (e.message || e), 'error'); }
-    finally { btn.disabled = false; }
+    } catch (e) { toast('저장 실패: ' + (e.message || e), 'error'); } finally { btn.disabled = false; }
+  }
+
+  /* xlsx 일괄 */
+  var XL_COLS = ['건물명', '호실', '성명', '학번/사번', '연락처', '계약시작일', '계약종료일', '유형', '단가', '보증금', '비고'];
+  function renderXlsx(blds) {
+    document.getElementById('dorm-cform').innerHTML = '<div class="dorm-card"><h3 class="dorm-h3">xlsx 일괄 업로드</h3>' +
+      '<div class="dorm-actions"><button id="xl-tmpl" class="btn btn-secondary btn-sm">📥 양식 다운로드</button>' +
+      '<label class="btn btn-primary btn-sm" style="cursor:pointer">📤 파일 선택<input id="xl-file" type="file" accept=".xlsx,.xls" hidden></label></div>' +
+      '<p class="dorm-muted" style="margin-top:6px">컬럼: ' + XL_COLS.join(' | ') + '</p><div id="xl-preview"></div></div>';
+    document.getElementById('xl-tmpl').addEventListener('click', function () {
+      if (!window.XLSX) { toast('xlsx 라이브러리 로딩 중', 'error'); return; }
+      var ws = XLSX.utils.aoa_to_sheet([XL_COLS, ['A동', '201', '홍길동', '20241234', '010-1234-5678', '2025-03-01', '2025-08-31', '학기별', 350000, 200000, '']]);
+      var wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, '계약'); XLSX.writeFile(wb, '기숙사_계약_양식.xlsx');
+    });
+    document.getElementById('xl-file').addEventListener('change', function (e) { var f = e.target.files[0]; if (f) parseXlsx(f, blds); });
+  }
+  async function parseXlsx(file, blds) {
+    var buf = await file.arrayBuffer(); var wb = XLSX.read(buf, { type: 'array' });
+    var rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval: '' });
+    // 건물/호실 맵
+    var bmap = {}; blds.forEach(function (b) { bmap[b.name.trim()] = b; });
+    var rs = await _db.from('dormitory_rooms').select('id,building_id,room_number,unit_price,is_vacant');
+    var rmap = {}; (rs.data || []).forEach(function (r) { rmap[r.building_id + '|' + String(r.room_number).trim()] = r; });
+    var parsed = rows.map(function (r) {
+      var bname = String(r['건물명'] || '').trim(), rno = String(r['호실'] || '').trim();
+      var b = bmap[bname], room = b ? rmap[b.id + '|' + rno] : null;
+      var errs = [];
+      if (!bname || !b) errs.push('건물없음'); if (!rno || !room) errs.push('호실없음');
+      if (!String(r['성명'] || '').trim()) errs.push('성명');
+      var sd = fmtDate(r['계약시작일']), ed = fmtDate(r['계약종료일']);
+      if (!sd) errs.push('시작일'); if (!ed) errs.push('종료일');
+      return { raw: r, b: b, room: room, sd: sd, ed: ed, errs: errs };
+    });
+    var ok = parsed.filter(function (p) { return !p.errs.length; }), bad = parsed.filter(function (p) { return p.errs.length; });
+    document.getElementById('xl-preview').innerHTML = '<div class="scroll-x" style="margin-top:12px"><table class="dorm-table"><thead><tr><th>상태</th><th>건물</th><th>호실</th><th>성명</th><th>기간</th><th>단가</th><th>오류</th></tr></thead><tbody>' +
+      parsed.map(function (p) { return '<tr style="' + (p.errs.length ? 'background:#fef2f2' : '') + '"><td>' + (p.errs.length ? '⚠️' : '✅') + '</td>' +
+        '<td>' + esc(p.raw['건물명']) + '</td><td>' + esc(p.raw['호실']) + '</td><td>' + esc(p.raw['성명']) + '</td><td>' + esc(p.sd || p.raw['계약시작일']) + '~' + esc(p.ed || p.raw['계약종료일']) + '</td>' +
+        '<td>' + won(num(p.raw['단가'])) + '</td><td style="color:#dc2626">' + p.errs.join(',') + '</td></tr>'; }).join('') + '</tbody></table></div>' +
+      '<div class="dorm-actions"><button id="xl-save" class="btn btn-primary"' + (ok.length ? '' : ' disabled') + '>정상 ' + ok.length + '건 저장 (오류 ' + bad.length + '건 제외)</button></div>';
+    document.getElementById('xl-save').addEventListener('click', async function () {
+      this.disabled = true; var recs = ok.map(function (p) { return { building_id: p.b.id, room_id: p.room.id, resident_name: String(p.raw['성명']).trim(),
+        student_no: String(p.raw['학번/사번'] || '').trim(), phone: String(p.raw['연락처'] || '').trim(), start_date: p.sd, end_date: p.ed,
+        contract_type: String(p.raw['유형'] || '학기별').trim() || '학기별', unit_price: num(p.raw['단가']) || p.room.unit_price, deposit: num(p.raw['보증금']),
+        source: 'xlsx', status: 'active', note: String(p.raw['비고'] || '').trim(), created_by: who() }; });
+      var res = await _db.from('dormitory_contracts').insert(recs);
+      if (res.error) { toast('저장 실패: ' + res.error.message, 'error'); this.disabled = false; return; }
+      var rids = ok.map(function (p) { return p.room.id; });
+      if (rids.length) await _db.from('dormitory_rooms').update({ is_vacant: false }).in('id', rids);
+      toast(ok.length + '건 일괄 등록 완료', 'success'); loadContractList(); document.getElementById('xl-preview').innerHTML = '';
+    });
+  }
+  function fmtDate(v) {
+    if (v == null || v === '') return '';
+    if (typeof v === 'number' && window.XLSX && XLSX.SSF) { var d = XLSX.SSF.parse_date_code(v); if (d) return d.y + '-' + pad(d.m) + '-' + pad(d.d); }
+    var s = String(v).trim().replace(/[./]/g, '-'); var m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/); return m ? m[1] + '-' + pad(+m[2]) + '-' + pad(+m[3]) : '';
+  }
+
+  /* OCR 스캔 */
+  function renderOcr(blds) {
+    document.getElementById('dorm-cform').innerHTML = '<div class="dorm-card"><h3 class="dorm-h3">OCR 스캔 등록 (종이 계약서)</h3>' +
+      '<p class="dorm-muted">계약서 이미지를 올리면 AI가 항목을 추출해 개별 입력 폼에 채웁니다. 검토 후 저장하세요. (jpg/png)</p>' +
+      '<div class="dorm-actions"><label class="btn btn-primary btn-sm" style="cursor:pointer">📷 이미지 선택<input id="oc-file" type="file" accept="image/*" hidden></label>' +
+      '<span id="oc-status" class="dorm-muted"></span></div><div id="oc-form"></div></div>';
+    document.getElementById('oc-file').addEventListener('change', async function (e) {
+      var f = e.target.files[0]; if (!f) return;
+      var st = document.getElementById('oc-status'); st.textContent = '🤖 AI 분석 중…';
+      try {
+        var data = await ocrExtract(f); st.textContent = '✅ 추출 완료 — 검토 후 저장';
+        renderManual(blds);
+        // prefill (개별 폼이 dorm-cform을 덮으므로 다시 oc 영역 없음 — 값 채움)
+        if (data['성명']) document.getElementById('ct-name').value = data['성명'];
+        if (data['연락처']) document.getElementById('ct-phone').value = data['연락처'];
+        if (data['계약시작일']) document.getElementById('ct-start').value = data['계약시작일'];
+        if (data['계약종료일']) document.getElementById('ct-end').value = data['계약종료일'];
+        if (data['월납부금액']) document.getElementById('ct-price').value = data['월납부금액'];
+        if (data['보증금']) document.getElementById('ct-dep').value = data['보증금'];
+        toast('AI 추출값을 채웠습니다. 건물·호실을 선택하고 저장하세요.', 'info');
+      } catch (err) { st.textContent = '⚠️ 추출 실패: ' + (err.message || err); }
+    });
+  }
+  async function ocrExtract(file) {
+    var cc = window.getClaudeConfig ? window.getClaudeConfig() : null;
+    if (!cc || !cc.apiKey) throw new Error('설정 탭에서 Claude API 키를 먼저 저장하세요.');
+    var b64 = await fileToB64(file); var media = file.type || 'image/jpeg';
+    var prompt = '아래 이미지는 기숙사 입사 계약서입니다. 다음 정보를 JSON으로만 추출하세요. ' +
+      '추출 항목: 성명, 연락처, 건물명, 호실, 계약시작일(YYYY-MM-DD), 계약종료일(YYYY-MM-DD), 월납부금액(숫자만), 보증금(숫자만). ' +
+      '확인 불가는 null. 반드시 JSON만 반환.';
+    var headers = { 'Content-Type': 'application/json', 'x-api-key': cc.apiKey, 'anthropic-version': '2023-06-01' };
+    if (cc.isOfficial) headers['anthropic-dangerous-direct-browser-access'] = 'true';
+    var res = await fetch(cc.endpoint, { method: 'POST', headers: headers, body: JSON.stringify({
+      model: 'claude-haiku-4-5-20251001', max_tokens: 1024,
+      messages: [{ role: 'user', content: [{ type: 'image', source: { type: 'base64', media_type: media, data: b64 } }, { type: 'text', text: prompt }] }] }) });
+    if (!res.ok) { var t = ''; try { var j = await res.json(); t = j.error && j.error.message; } catch (e) {} throw new Error(t || ('HTTP ' + res.status)); }
+    var d = await res.json(); var text = d.content && d.content[0] && d.content[0].text || '';
+    var mm = text.match(/\{[\s\S]*\}/); if (!mm) throw new Error('추출 결과 파싱 실패');
+    try { _db.from('dormitory_ocr_logs').insert({ result_json: JSON.parse(mm[0]), success: true, created_by: who() }); } catch (e) {}
+    return JSON.parse(mm[0]);
   }
 
   async function loadContractList() {
-    var wrap = document.getElementById('dorm-ct-list');
-    var cs = await _db.from('dormitory_contracts').select('*, dormitory_buildings(name), dormitory_rooms(room_number)')
-      .order('created_at', { ascending: false }).limit(50);
+    var wrap = document.getElementById('dorm-ct-list'); if (!wrap) return;
+    var cs = await _db.from('dormitory_contracts').select('*, dormitory_buildings(name), dormitory_rooms(room_number)').order('created_at', { ascending: false }).limit(50);
     if (cs.error) { wrap.innerHTML = errBox(cs.error); return; }
     var rows = cs.data || [];
-    wrap.innerHTML = '<h3 class="dorm-h3">최근 계약 (' + rows.length + ')</h3>' +
-      (rows.length ? '<div class="scroll-x"><table class="dorm-table"><thead><tr><th>성명</th><th>학번</th><th>건물·호실</th><th>기간</th><th>유형</th><th>단가</th><th>상태</th></tr></thead><tbody>' +
-        rows.map(function (c) {
-          var loc = (c.dormitory_buildings ? c.dormitory_buildings.name : '') + ' ' + (c.dormitory_rooms ? c.dormitory_rooms.room_number + '호' : '');
-          return '<tr><td>' + esc(c.resident_name) + '</td><td>' + esc(c.student_no || '-') + '</td><td>' + esc(loc.trim() || '-') + '</td>' +
-            '<td>' + esc(c.start_date) + '~' + esc(c.end_date) + '</td><td>' + esc(c.contract_type) + '</td><td>' + won(c.unit_price) + '</td>' +
-            '<td><span class="dorm-badge ' + (c.status === 'active' ? 'occ' : 'vac') + '">' + esc(c.status) + '</span></td></tr>';
-        }).join('') + '</tbody></table></div>' : '<p class="dorm-muted">등록된 계약이 없습니다.</p>');
+    wrap.innerHTML = '<h3 class="dorm-h3">최근 계약 (' + rows.length + ')</h3>' + (rows.length ?
+      '<div class="scroll-x"><table class="dorm-table"><thead><tr><th>성명</th><th>학번</th><th>건물·호실</th><th>기간</th><th>유형</th><th>단가</th><th>상태</th></tr></thead><tbody>' +
+      rows.map(function (c) { var loc = (c.dormitory_buildings ? c.dormitory_buildings.name : '') + ' ' + (c.dormitory_rooms ? c.dormitory_rooms.room_number + '호' : '');
+        return '<tr><td>' + esc(c.resident_name) + '</td><td>' + esc(c.student_no || '-') + '</td><td>' + esc(loc.trim() || '-') + '</td><td>' + esc(c.start_date) + '~' + esc(c.end_date) + '</td>' +
+          '<td>' + esc(c.contract_type) + '</td><td>' + won(c.unit_price) + '</td><td><span class="dorm-badge ' + (c.status === 'active' ? 'occ' : 'vac') + '">' + esc(c.status) + '</span></td></tr>'; }).join('') +
+      '</tbody></table></div>' : '<p class="dorm-muted">등록된 계약이 없습니다.</p>');
+  }
+
+  /* ── 기숙사비(납부) ────────────────────────────────────── */
+  async function renderPayment() {
+    loading();
+    var cs; try { cs = await _db.from('dormitory_contracts').select('id,resident_name,student_no,unit_price,start_date,end_date,status').eq('status', 'active').order('resident_name'); if (cs.error) throw cs.error; }
+    catch (e) { body().innerHTML = errBox(e); return; }
+    var contracts = cs.data || [];
+    var ps = await _db.from('dormitory_payments').select('*').order('due_date');
+    var pays = (ps.data || []); var byC = {}; pays.forEach(function (p) { (byC[p.contract_id] = byC[p.contract_id] || []).push(p); });
+    // 연체 자동 표시 갱신은 조회 시 계산만
+    var billed = 0, paid = 0; pays.forEach(function (p) { billed += p.amount || 0; if (p.status === 'paid') paid += p.amount || 0; });
+    var unpaid = billed - paid;
+    body().innerHTML = '<div class="dorm-kpis"><div class="dorm-kpi"><div class="dorm-kpi-num">' + won(billed) + '<span>원</span></div><div class="dorm-kpi-label">총 청구</div></div>' +
+      '<div class="dorm-kpi"><div class="dorm-kpi-num">' + won(paid) + '<span>원</span></div><div class="dorm-kpi-label">수납</div></div>' +
+      '<div class="dorm-kpi"><div class="dorm-kpi-num" style="color:#dc2626">' + won(unpaid) + '<span>원</span></div><div class="dorm-kpi-label">미납</div></div></div>' +
+      '<div class="dorm-card"><h3 class="dorm-h3">납부 스케줄 / 현황</h3><p class="dorm-muted">계약별로 월 납부 일정을 생성하고, 입금 확인 시 「수납」을 누르세요. (납부일 1일 기준)</p>' +
+      (contracts.length ? contracts.map(function (c) {
+        var list = (byC[c.id] || []); var has = list.length;
+        return '<div class="dorm-paybox"><div class="dorm-payhd"><b>' + esc(c.resident_name) + '</b> <span class="dorm-muted">' + esc(c.student_no || '') + ' · ' + won(c.unit_price) + '원/월</span>' +
+          (has ? '' : '<button class="btn btn-secondary btn-sm pay-gen" data-id="' + c.id + '" data-s="' + c.start_date + '" data-e="' + c.end_date + '" data-p="' + c.unit_price + '">납부 스케줄 생성</button>') + '</div>' +
+          (has ? '<div class="scroll-x"><table class="dorm-table"><thead><tr><th>기간</th><th>금액</th><th>납부기한</th><th>상태</th><th></th></tr></thead><tbody>' +
+            list.map(function (p) { var od = p.status !== 'paid' && p.due_date && p.due_date < todayStr();
+              return '<tr><td>' + esc(p.period) + '</td><td>' + won(p.amount) + '</td><td>' + esc(p.due_date || '-') + '</td>' +
+              '<td>' + (p.status === 'paid' ? '<span class="dorm-badge occ">완납</span>' : (od ? '<span class="dorm-badge" style="background:#fef2f2;color:#dc2626">연체</span>' : '<span class="dorm-badge vac">미납</span>')) + '</td>' +
+              '<td>' + (p.status === 'paid' ? '<button class="btn btn-ghost btn-sm pay-un" data-id="' + p.id + '">취소</button>' : '<button class="btn btn-primary btn-sm pay-ok" data-id="' + p.id + '">수납</button>') + '</td></tr>'; }).join('') +
+            '</tbody></table></div>' : '') + '</div>';
+      }).join('') : '<p class="dorm-muted">진행 중 계약이 없습니다.</p>') + '</div>';
+    body().querySelectorAll('.pay-gen').forEach(function (b) { b.addEventListener('click', async function () {
+      var months = monthsBetween(this.dataset.s, this.dataset.e); var p = num(this.dataset.p), cid = this.dataset.id;
+      var recs = months.map(function (m) { return { contract_id: cid, period: m, amount: p, due_date: m + '-01', status: 'pending' }; });
+      var res = await _db.from('dormitory_payments').insert(recs); if (res.error) { toast('생성 실패: ' + res.error.message, 'error'); return; }
+      toast(months.length + '개월 스케줄 생성', 'success'); renderPayment(); }); });
+    body().querySelectorAll('.pay-ok').forEach(function (b) { b.addEventListener('click', async function () {
+      await _db.from('dormitory_payments').update({ status: 'paid', paid_date: todayStr(), method: '수동' }).eq('id', this.dataset.id); renderPayment(); }); });
+    body().querySelectorAll('.pay-un').forEach(function (b) { b.addEventListener('click', async function () {
+      await _db.from('dormitory_payments').update({ status: 'pending', paid_date: null }).eq('id', this.dataset.id); renderPayment(); }); });
+  }
+
+  /* ── 지출 ──────────────────────────────────────────────── */
+  var EXP_CATS = ['유지보수비', '관리비', '인건비', '보험료', '행정비용', '기타'];
+  async function renderExpense() {
+    loading();
+    var es; try { es = await _db.from('dormitory_expenses').select('*, dormitory_buildings(name)').order('expense_date', { ascending: false }).limit(200); if (es.error) throw es.error; }
+    catch (e) { body().innerHTML = errBox(e); return; }
+    var rows = es.data || []; var bs = await _db.from('dormitory_buildings').select('id,name').order('name');
+    var totals = {}; EXP_CATS.forEach(function (c) { totals[c] = 0; }); var sum = 0;
+    rows.forEach(function (r) { totals[r.category] = (totals[r.category] || 0) + (r.amount || 0); sum += r.amount || 0; });
+    var maxC = Math.max.apply(null, EXP_CATS.map(function (c) { return totals[c]; }).concat([1]));
+    body().innerHTML = '<div class="dorm-grid2"><div class="dorm-card"><h3 class="dorm-h3">지출 등록</h3>' +
+      '<div class="dorm-row"><div><label class="dorm-label">지출일</label><input id="ex-date" type="date" class="form-input" value="' + todayStr() + '"></div>' +
+      '<div><label class="dorm-label">카테고리</label><select id="ex-cat" class="form-select">' + EXP_CATS.map(function (c) { return '<option>' + c + '</option>'; }).join('') + '</select></div></div>' +
+      '<label class="dorm-label">항목명 *</label><input id="ex-item" class="form-input">' +
+      '<div class="dorm-row"><div><label class="dorm-label">금액(원) *</label><input id="ex-amt" class="form-input" inputmode="numeric"></div>' +
+      '<div><label class="dorm-label">건물 귀속</label><select id="ex-bld" class="form-select"><option value="">전체 공통</option>' + (bs.data || []).map(function (b) { return '<option value="' + b.id + '">' + esc(b.name) + '</option>'; }).join('') + '</select></div></div>' +
+      '<label class="dorm-label">비고</label><input id="ex-note" class="form-input">' +
+      '<div class="dorm-actions"><button id="ex-add" class="btn btn-primary">지출 추가</button></div></div>' +
+      '<div class="dorm-card"><h3 class="dorm-h3">카테고리별 집계 (총 ' + won(sum) + '원)</h3>' +
+      EXP_CATS.map(function (c) { var w = Math.round((totals[c] / maxC) * 100); return '<div class="dorm-bar-row"><span class="dorm-bar-lab">' + c + '</span><span class="dorm-bar"><span style="width:' + w + '%"></span></span><span class="dorm-bar-val">' + won(totals[c]) + '</span></div>'; }).join('') +
+      '<div class="dorm-actions"><button id="ex-xls" class="btn btn-secondary btn-sm">📥 엑셀 내보내기</button></div></div></div>' +
+      '<div class="dorm-card"><h3 class="dorm-h3">지출 목록</h3>' + (rows.length ?
+        '<div class="scroll-x"><table class="dorm-table"><thead><tr><th>일자</th><th>카테고리</th><th>항목</th><th>건물</th><th>금액</th><th></th></tr></thead><tbody>' +
+        rows.map(function (r) { return '<tr><td>' + esc(r.expense_date) + '</td><td>' + esc(r.category) + '</td><td>' + esc(r.item_name) + '</td><td>' + esc(r.dormitory_buildings ? r.dormitory_buildings.name : '공통') + '</td><td>' + won(r.amount) + '</td>' +
+          '<td><button class="btn btn-ghost btn-sm ex-del" data-id="' + r.id + '">삭제</button></td></tr>'; }).join('') + '</tbody></table></div>' : '<p class="dorm-muted">지출 내역이 없습니다.</p>') + '</div>';
+    document.getElementById('ex-add').addEventListener('click', async function () {
+      var item = (val('ex-item') || '').trim(), amt = num(val('ex-amt')); if (!item || !amt) { toast('항목명과 금액을 입력하세요.', 'error'); return; }
+      var res = await _db.from('dormitory_expenses').insert({ expense_date: val('ex-date') || todayStr(), item_name: item, category: val('ex-cat'), amount: amt, building_id: val('ex-bld') || null, note: (val('ex-note') || '').trim(), created_by: who() });
+      if (res.error) { toast('저장 실패: ' + res.error.message, 'error'); return; } toast('지출 등록 완료', 'success'); renderExpense();
+    });
+    body().querySelectorAll('.ex-del').forEach(function (b) { b.addEventListener('click', async function () {
+      if (!confirm('삭제할까요?')) return; await _db.from('dormitory_expenses').delete().eq('id', this.dataset.id); renderExpense(); }); });
+    document.getElementById('ex-xls').addEventListener('click', function () {
+      if (!window.XLSX) return; var aoa = [['일자', '카테고리', '항목', '건물', '금액', '비고']].concat(rows.map(function (r) { return [r.expense_date, r.category, r.item_name, r.dormitory_buildings ? r.dormitory_buildings.name : '공통', r.amount, r.note || '']; }));
+      var wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(aoa), '지출'); XLSX.writeFile(wb, '기숙사_지출.xlsx');
+    });
+  }
+
+  /* ── 단가 역산 엔진 ────────────────────────────────────── */
+  async function renderPrice() {
+    loading();
+    var rs = await _db.from('dormitory_rooms').select('*, dormitory_buildings(name)').order('building_id');
+    if (rs.error) { body().innerHTML = errBox(rs.error); return; }
+    var rooms = rs.data || [];
+    var ps = await _db.from('dormitory_payments').select('amount,status'); var income = 0; (ps.data || []).forEach(function (p) { if (p.status === 'paid') income += p.amount || 0; });
+    var ex = await _db.from('dormitory_expenses').select('amount'); var expense = 0; (ex.data || []).forEach(function (e) { expense += e.amount || 0; });
+    var avgCur = rooms.length ? Math.round(rooms.reduce(function (s, r) { return s + (r.unit_price || 0); }, 0) / rooms.length) : 0;
+    body().innerHTML = '<div class="dorm-card"><h3 class="dorm-h3">📐 단가 역산 계산기</h3>' +
+      '<div class="dorm-row4"><div><label class="dorm-label">기준 학기</label><input id="pr-sem" class="form-input" placeholder="2025-2학기"></div>' +
+      '<div><label class="dorm-label">현재 총수입(자동)</label><input id="pr-inc" class="form-input" inputmode="numeric" value="' + income + '"></div>' +
+      '<div><label class="dorm-label">현재 총지출(자동)</label><input id="pr-exp" class="form-input" inputmode="numeric" value="' + expense + '"></div>' +
+      '<div><label class="dorm-label">학기 개월수</label><input id="pr-mon" class="form-input" inputmode="numeric" value="6"></div></div>' +
+      '<div class="dorm-row4"><div><label class="dorm-label">목표 손익(원, 흑자+ / 적자-)</label><input id="pr-goal" class="form-input" inputmode="numeric" value="0"></div>' +
+      '<div><label class="dorm-label">다음 학기 예상 입실(명)</label><input id="pr-head" class="form-input" inputmode="numeric"></div>' +
+      '<div><label class="dorm-label">다음 학기 예상 지출</label><input id="pr-nexp" class="form-input" inputmode="numeric" value="' + expense + '"></div>' +
+      '<div style="align-self:end"><button id="pr-calc" class="btn btn-primary" style="width:100%">단가 계산</button></div></div>' +
+      '<div id="pr-result"></div></div><div id="pr-table"></div>';
+    document.getElementById('pr-calc').addEventListener('click', function () {
+      var months = num(val('pr-mon')) || 1, head = num(val('pr-head')), goal = num(val('pr-goal')), nexp = num(val('pr-nexp'));
+      if (!head) { toast('예상 입실 인원을 입력하세요.', 'error'); return; }
+      var targetIncome = nexp + goal; var avgNeed = Math.round(targetIncome / head / months);
+      var rate = avgCur ? ((avgNeed - avgCur) / avgCur * 100) : 0;
+      document.getElementById('pr-result').innerHTML = '<div class="dorm-kpis" style="margin-top:14px">' +
+        '<div class="dorm-kpi"><div class="dorm-kpi-num">' + won(targetIncome) + '<span>원</span></div><div class="dorm-kpi-label">목표 수입</div></div>' +
+        '<div class="dorm-kpi"><div class="dorm-kpi-num">' + won(avgNeed) + '<span>원</span></div><div class="dorm-kpi-label">평균 필요 단가</div></div>' +
+        '<div class="dorm-kpi"><div class="dorm-kpi-num">' + won(avgCur) + '<span>원</span></div><div class="dorm-kpi-label">현재 평균 단가</div></div>' +
+        '<div class="dorm-kpi"><div class="dorm-kpi-num" style="color:' + (rate >= 0 ? '#dc2626' : '#059669') + '">' + rate.toFixed(1) + '<span>%</span></div><div class="dorm-kpi-label">필요 인상률</div></div></div>';
+      renderPriceTable(rooms, rate, val('pr-sem'));
+    });
+  }
+  function renderPriceTable(rooms, rate, sem) {
+    var wrap = document.getElementById('pr-table');
+    wrap.innerHTML = '<div class="dorm-card"><h3 class="dorm-h3">건물·호실별 추천 단가 <span class="dorm-muted">(추천 = 현재×(1+인상률), 수동 조정 가능)</span></h3>' +
+      '<div class="scroll-x"><table class="dorm-table"><thead><tr><th>건물</th><th>호실</th><th>현재</th><th>추천</th><th>최종(조정)</th></tr></thead><tbody>' +
+      rooms.map(function (r) { var rec = Math.round((r.unit_price || 0) * (1 + rate / 100));
+        return '<tr data-rid="' + r.id + '" data-cur="' + (r.unit_price || 0) + '"><td>' + esc(r.dormitory_buildings ? r.dormitory_buildings.name : '') + '</td><td>' + esc(r.room_number) + '</td>' +
+        '<td>' + won(r.unit_price) + '</td><td class="pr-rec">' + won(rec) + '</td><td><input class="form-input pr-fin" inputmode="numeric" value="' + rec + '" style="width:120px"></td></tr>'; }).join('') +
+      '</tbody></table></div><div id="pr-proj" class="dorm-muted" style="margin-top:8px"></div>' +
+      '<div class="dorm-actions"><button id="pr-save" class="btn btn-primary">단가 확정 저장</button></div></div>';
+    function recalc() { var sum = 0; wrap.querySelectorAll('tr[data-rid]').forEach(function (tr) { sum += num(tr.querySelector('.pr-fin').value); });
+      document.getElementById('pr-proj').textContent = '최종 단가 월 합계: ' + won(sum) + '원 (입실 가정 시 월 수입 추정)'; }
+    wrap.querySelectorAll('.pr-fin').forEach(function (i) { i.addEventListener('input', function () {
+      var tr = i.closest('tr'), cur = num(tr.dataset.cur), v = num(i.value);
+      var rec = num(tr.querySelector('.pr-rec').textContent);
+      i.style.background = (rec && Math.abs(v - rec) > rec * 0.1) ? '#fff7ed' : ''; recalc(); }); });
+    recalc();
+    document.getElementById('pr-save').addEventListener('click', async function () {
+      this.disabled = true; var hist = [], changed = 0;
+      var ops = [];
+      wrap.querySelectorAll('tr[data-rid]').forEach(function (tr) { var rid = tr.dataset.rid, cur = num(tr.dataset.cur), fin = num(tr.querySelector('.pr-fin').value);
+        if (fin && fin !== cur) { ops.push(_db.from('dormitory_rooms').update({ unit_price: fin }).eq('id', rid)); hist.push({ room_id: rid, old_price: cur, new_price: fin, semester: sem, reason: '역산 단가 적용', changed_by: who() }); changed++; } });
+      try { await Promise.all(ops); if (hist.length) await _db.from('dormitory_price_history').insert(hist);
+        await _db.from('dormitory_price_calc_logs').insert({ semester: sem, input_json: { rate: rate }, result_json: { changed: changed }, confirmed: true, created_by: who() });
+        toast(changed + '개 호실 단가가 확정되었습니다.', 'success');
+      } catch (e) { toast('저장 실패: ' + (e.message || e), 'error'); } finally { this.disabled = false; }
+    });
+  }
+
+  /* ── 고지서 발행 (인쇄 → PDF) ──────────────────────────── */
+  async function renderNotice() {
+    loading();
+    var cs = await _db.from('dormitory_contracts').select('*, dormitory_buildings(name), dormitory_rooms(room_number,room_type,floor)').eq('status', 'active').order('resident_name');
+    if (cs.error) { body().innerHTML = errBox(cs.error); return; }
+    var rows = cs.data || [];
+    body().innerHTML = '<div class="dorm-card"><h3 class="dorm-h3">🧾 고지서 발행</h3>' +
+      '<div class="dorm-row4"><div><label class="dorm-label">학기/기간 표기</label><input id="nt-sem" class="form-input" placeholder="25.09~02월"></div>' +
+      '<div><label class="dorm-label">납부 마감일</label><input id="nt-due" type="date" class="form-input"></div>' +
+      '<div style="grid-column:span 2"><label class="dorm-label">납부 계좌 안내</label><input id="nt-acc" class="form-input" value="우리은행 1234-567-890123 (예금주: 아세아항공직업전문학교)"></div></div>' +
+      '<div class="dorm-actions"><label class="dorm-cb"><input type="checkbox" id="nt-all"> 전체 선택</label>' +
+      '<button id="nt-print" class="btn btn-primary">선택 고지서 발행(인쇄/PDF)</button></div>' +
+      (rows.length ? '<div class="scroll-x" style="margin-top:10px"><table class="dorm-table"><thead><tr><th></th><th>성명</th><th>학번</th><th>건물·호실</th><th>월단가</th></tr></thead><tbody>' +
+        rows.map(function (c) { return '<tr><td><input type="checkbox" class="nt-cb" value="' + c.id + '"></td><td>' + esc(c.resident_name) + '</td><td>' + esc(c.student_no || '-') + '</td>' +
+          '<td>' + esc((c.dormitory_buildings ? c.dormitory_buildings.name : '') + ' ' + (c.dormitory_rooms ? c.dormitory_rooms.room_number + '호' : '')) + '</td><td>' + won(c.unit_price) + '</td></tr>'; }).join('') +
+        '</tbody></table></div>' : '<p class="dorm-muted">진행 중 계약이 없습니다.</p>') + '</div>' +
+      '<div class="dorm-card"><h3 class="dorm-h3">발행 이력</h3><div id="nt-hist"><p class="dorm-muted">불러오는 중…</p></div></div>';
+    document.getElementById('nt-all').addEventListener('change', function () { body().querySelectorAll('.nt-cb').forEach(function (cb) { cb.checked = this.checked; }.bind(this)); });
+    document.getElementById('nt-print').addEventListener('click', function () { onPrintNotices(rows); });
+    loadNoticeHist();
+  }
+  async function onPrintNotices(rows) {
+    var ids = []; body().querySelectorAll('.nt-cb:checked').forEach(function (cb) { ids.push(cb.value); });
+    if (!ids.length) { toast('대상을 선택하세요.', 'error'); return; }
+    var sem = val('nt-sem'), due = val('nt-due'), acc = val('nt-acc');
+    var sel = rows.filter(function (c) { return ids.indexOf(c.id) !== -1; });
+    var html = sel.map(function (c, i) {
+      var loc = (c.dormitory_buildings ? c.dormitory_buildings.name : '') + ' ' + (c.dormitory_rooms ? c.dormitory_rooms.room_number + '호' : '');
+      var no = 'DRM-' + new Date().getFullYear() + '-' + pad(i + 1);
+      var amt = c.unit_price || 0, dep = c.deposit || 0, tot = amt + dep;
+      return '<div class="nt-page"><div class="nt-org">(재) 아세아항공직업전문학교</div><h1 class="nt-h1">기숙사비 납부 고지서</h1>' +
+        '<div class="nt-meta">발행일: ' + todayStr() + ' &nbsp; 고지번호: ' + no + '</div>' +
+        '<table class="nt-tb"><tr><th>성명</th><td>' + esc(c.resident_name) + '</td><th>학번</th><td>' + esc(c.student_no || '') + '</td></tr>' +
+        '<tr><th>건물·호실</th><td colspan="3">' + esc(loc) + '</td></tr></table>' +
+        '<table class="nt-tb"><tr><th>항목</th><th>기간</th><th>금액</th></tr>' +
+        '<tr><td>기숙사비</td><td>' + esc(sem) + '</td><td style="text-align:right">' + won(amt) + '원</td></tr>' +
+        (dep ? '<tr><td>보증금</td><td></td><td style="text-align:right">' + won(dep) + '원</td></tr>' : '') +
+        '<tr><td><b>합계</b></td><td></td><td style="text-align:right"><b>' + won(tot) + '원</b></td></tr></table>' +
+        '<div class="nt-note">납부 마감일: <b>' + esc(due || '-') + '</b><br>납부 계좌: ' + esc(acc) + '<br>입금자명은 [성명+학번] 형식으로 입력해 주세요.<br>' +
+        '<span style="color:#888">기한 내 미납 시 연체료가 부과될 수 있습니다.</span></div></div>'; });
+    var w = window.open('', '_blank');
+    w.document.write('<html><head><title>기숙사비 고지서</title><meta charset="utf-8"><style>' +
+      'body{font-family:"Malgun Gothic",sans-serif;margin:0;color:#222}.nt-page{page-break-after:always;padding:24mm 18mm}' +
+      '.nt-org{font-weight:700;color:#1a3a5c}.nt-h1{text-align:center;letter-spacing:8px;font-size:22pt;margin:14px 0}' +
+      '.nt-meta{text-align:right;font-size:10pt;color:#555;margin-bottom:10px}.nt-tb{width:100%;border-collapse:collapse;margin-bottom:12px;font-size:11pt}' +
+      '.nt-tb th,.nt-tb td{border:1px solid #444;padding:7px 10px}.nt-tb th{background:#eef2f7;width:90px}.nt-note{font-size:10.5pt;line-height:1.9;margin-top:10px;border-top:1px solid #ccc;padding-top:10px}' +
+      '</style></head><body>' + html.join('') + '</body></html>');
+    w.document.close(); setTimeout(function () { try { w.print(); } catch (e) {} }, 400);
+    // 발행 이력 저장
+    var recs = sel.map(function (c, i) { return { contract_id: c.id, notice_no: 'DRM-' + new Date().getFullYear() + '-' + pad(i + 1), semester: sem, amount: (c.unit_price || 0) + (c.deposit || 0),
+      fee_breakdown: { rent: c.unit_price || 0, deposit: c.deposit || 0 }, due_date: due || null, issued_by: who(), status: 'issued' }; });
+    var res = await _db.from('dormitory_notices').insert(recs); if (!res.error) { toast(sel.length + '건 발행 완료', 'success'); loadNoticeHist(); }
+  }
+  async function loadNoticeHist() {
+    var el = document.getElementById('nt-hist'); if (!el) return;
+    var ns = await _db.from('dormitory_notices').select('*').order('created_at', { ascending: false }).limit(50);
+    var rows = ns.data || [];
+    el.innerHTML = rows.length ? '<div class="scroll-x"><table class="dorm-table"><thead><tr><th>고지번호</th><th>학기</th><th>금액</th><th>마감</th><th>발행일</th><th>상태</th></tr></thead><tbody>' +
+      rows.map(function (n) { return '<tr><td>' + esc(n.notice_no || '-') + '</td><td>' + esc(n.semester || '') + '</td><td>' + won(n.amount) + '</td><td>' + esc(n.due_date || '-') + '</td><td>' + esc((n.issue_date || '').slice(0, 10)) + '</td><td>' + esc(n.status) + '</td></tr>'; }).join('') + '</tbody></table></div>'
+      : '<p class="dorm-muted">발행 이력이 없습니다.</p>';
+  }
+
+  /* ── 수익·손익 통계 ────────────────────────────────────── */
+  async function renderStat() {
+    loading();
+    var ps = await _db.from('dormitory_payments').select('amount,status'); var income = 0; (ps.data || []).forEach(function (p) { if (p.status === 'paid') income += p.amount || 0; });
+    var ex = await _db.from('dormitory_expenses').select('amount,category'); var expense = 0, cat = {}; (ex.data || []).forEach(function (e) { expense += e.amount || 0; cat[e.category] = (cat[e.category] || 0) + (e.amount || 0); });
+    var rv = await _db.from('dormitory_rooms').select('unit_price,is_vacant'); var vac = 0, vacLoss = 0; (rv.data || []).forEach(function (r) { if (r.is_vacant) { vac++; vacLoss += (r.unit_price || 0); } });
+    var profit = income - expense; var maxIE = Math.max(income, expense, 1);
+    body().innerHTML = '<div class="dorm-kpis">' +
+      '<div class="dorm-kpi"><div class="dorm-kpi-num">' + won(income) + '<span>원</span></div><div class="dorm-kpi-label">총 수입(수납)</div></div>' +
+      '<div class="dorm-kpi"><div class="dorm-kpi-num">' + won(expense) + '<span>원</span></div><div class="dorm-kpi-label">총 지출</div></div>' +
+      '<div class="dorm-kpi"><div class="dorm-kpi-num" style="color:' + (profit >= 0 ? '#059669' : '#dc2626') + '">' + won(profit) + '<span>원</span></div><div class="dorm-kpi-label">순손익</div></div>' +
+      '<div class="dorm-kpi"><div class="dorm-kpi-num">' + won(vacLoss) + '<span>원/월</span></div><div class="dorm-kpi-label">공실 손실(' + vac + '실)</div></div></div>' +
+      '<div class="dorm-grid2"><div class="dorm-card"><h3 class="dorm-h3">수입 vs 지출</h3>' +
+        '<div class="dorm-bar-row"><span class="dorm-bar-lab">수입</span><span class="dorm-bar"><span style="width:' + Math.round(income / maxIE * 100) + '%;background:#059669"></span></span><span class="dorm-bar-val">' + won(income) + '</span></div>' +
+        '<div class="dorm-bar-row"><span class="dorm-bar-lab">지출</span><span class="dorm-bar"><span style="width:' + Math.round(expense / maxIE * 100) + '%;background:#dc2626"></span></span><span class="dorm-bar-val">' + won(expense) + '</span></div></div>' +
+      '<div class="dorm-card"><h3 class="dorm-h3">지출 카테고리</h3>' +
+        EXP_CATS.map(function (c) { var v = cat[c] || 0, w = expense ? Math.round(v / expense * 100) : 0; return '<div class="dorm-bar-row"><span class="dorm-bar-lab">' + c + '</span><span class="dorm-bar"><span style="width:' + w + '%"></span></span><span class="dorm-bar-val">' + won(v) + '</span></div>'; }).join('') + '</div></div>';
+  }
+
+  /* ── 민원 관리 ─────────────────────────────────────────── */
+  var CM_TEMPLATES = ['접수되었습니다. 담당자 확인 후 처리 예정입니다.', '현재 처리 중에 있습니다. 빠른 시일 내 완료 예정입니다.', '처리가 완료되었습니다. 추가 문의 사항이 있으시면 연락 주세요.'];
+  var _cmFilter = 'all', _cmOpen = null;
+  async function renderComplaint() {
+    loading();
+    var q = _db.from('dormitory_complaints').select('*').order('created_at', { ascending: false }).limit(200);
+    if (_cmFilter === 'in_progress') q = _db.from('dormitory_complaints').select('*').eq('status', 'in_progress').order('created_at', { ascending: false });
+    if (_cmFilter === 'done') q = _db.from('dormitory_complaints').select('*').eq('status', 'done').order('created_at', { ascending: false });
+    var cs = await q; if (cs.error) { body().innerHTML = errBox(cs.error); return; }
+    var rows = cs.data || [];
+    var tabs = [['all', '전체'], ['received', '접수'], ['in_progress', '처리중'], ['done', '완료']];
+    body().innerHTML = portalPanel() + '<div class="dorm-card"><div class="dorm-modebar">' +
+      tabs.map(function (t) { return '<button class="dorm-mode' + (_cmFilter === t[0] ? ' active' : '') + '" data-cmf="' + t[0] + '">' + t[1] + '</button>'; }).join('') + '</div>' +
+      (rows.length ? '<div class="scroll-x" style="margin-top:10px"><table class="dorm-table"><thead><tr><th>접수번호</th><th>호실</th><th>성명</th><th>제목</th><th>분류</th><th>접수일</th><th>상태</th></tr></thead><tbody>' +
+        rows.filter(function (r) { return _cmFilter === 'all' || _cmFilter === 'received' ? (_cmFilter === 'all' || r.status === 'received') : true; }).map(function (c) {
+          return '<tr class="cm-row" data-id="' + c.id + '" style="cursor:pointer"><td>' + esc(c.ticket_no || '-') + '</td><td>' + esc(c.room_label || '-') + '</td><td>' + esc(c.resident_name || '-') + '</td>' +
+          '<td>' + esc(c.title) + '</td><td>' + esc(c.category || '-') + '</td><td>' + esc((c.created_at || '').slice(0, 10)) + '</td><td>' + cmBadge(c.status) + '</td></tr>'; }).join('') +
+        '</tbody></table></div>' : '<p class="dorm-muted" style="margin-top:10px">민원이 없습니다.</p>') + '</div><div id="cm-detail"></div>';
+    body().querySelectorAll('[data-cmf]').forEach(function (b) { b.addEventListener('click', function () { _cmFilter = b.dataset.cmf; _cmOpen = null; renderComplaint(); }); });
+    body().querySelectorAll('.cm-row').forEach(function (tr) { tr.addEventListener('click', function () { openComplaint(this.dataset.id); }); });
+    bindPortalPanel();
+    if (_cmOpen) openComplaint(_cmOpen);
+  }
+
+  /* 외부 포털 링크(설정 내장) — 입소자/민원 포털을 모바일로 공유 */
+  function portalBase() {
+    try { return (location.origin + location.pathname).replace(/[^/]*$/, ''); } catch (e) { return ''; }
+  }
+  function portalLink(page) {
+    var c = cfg(); var k = '';
+    try { k = btoa(unescape(encodeURIComponent(c.url + '\n' + c.key))); } catch (e) {}
+    return portalBase() + 'dormitory/' + page + '?k=' + k;
+  }
+  function portalPanel() {
+    return '<div class="dorm-card"><h3 class="dorm-h3">🔗 외부 포털 링크 (입소자 공유용)</h3>' +
+      '<p class="dorm-muted">아래 링크에는 연결 정보(공개 anon key)가 포함되어 있어, 입소자가 그대로 접속할 수 있습니다.</p>' +
+      '<div class="dorm-actions">' +
+        '<button class="btn btn-secondary btn-sm" id="pt-resident">입소자 셀프 포털 링크 복사</button>' +
+        '<button class="btn btn-secondary btn-sm" id="pt-complaint">민원 접수 포털 링크 복사</button>' +
+        '<a class="btn btn-ghost btn-sm" id="pt-open-r" target="_blank" rel="noopener">입소자 포털 열기</a>' +
+        '<a class="btn btn-ghost btn-sm" id="pt-open-c" target="_blank" rel="noopener">민원 포털 열기</a>' +
+      '</div></div>';
+  }
+  function bindPortalPanel() {
+    var lr = portalLink('resident.html'), lc = portalLink('complaint.html');
+    var or = document.getElementById('pt-open-r'), oc = document.getElementById('pt-open-c');
+    if (or) or.href = lr; if (oc) oc.href = lc;
+    function copy(t) { try { navigator.clipboard.writeText(t).then(function () { toast('링크가 복사되었습니다.', 'success'); }); } catch (e) { prompt('링크 복사', t); } }
+    var br = document.getElementById('pt-resident'), bc = document.getElementById('pt-complaint');
+    if (br) br.addEventListener('click', function () { copy(lr); });
+    if (bc) bc.addEventListener('click', function () { copy(lc); });
+  }
+  function cmBadge(s) { var m = { received: ['접수', 'vac'], in_progress: ['처리중', 'occ'], done: ['완료', 'occ'] }; var x = m[s] || ['?', 'vac']; return '<span class="dorm-badge ' + x[1] + '">' + x[0] + '</span>'; }
+  async function openComplaint(id) {
+    _cmOpen = id; var el = document.getElementById('cm-detail'); el.innerHTML = '<div class="dorm-card"><p class="dorm-muted">불러오는 중…</p></div>';
+    var c = (await _db.from('dormitory_complaints').select('*').eq('id', id).single()).data;
+    var cm = (await _db.from('dormitory_complaint_comments').select('*').eq('complaint_id', id).order('created_at')).data || [];
+    if (!c) { el.innerHTML = ''; return; }
+    el.innerHTML = '<div class="dorm-card"><h3 class="dorm-h3">' + esc(c.title) + ' <span class="dorm-muted">' + esc(c.ticket_no || '') + '</span></h3>' +
+      '<p class="dorm-muted">' + esc(c.resident_name || '') + ' · ' + esc(c.room_label || '') + ' · ' + esc(c.category || '') + ' · ' + esc((c.created_at || '').slice(0, 16).replace('T', ' ')) + '</p>' +
+      '<div class="dorm-cm-content">' + esc(c.content || '') + '</div>' +
+      (c.attachment_url ? '<p><a href="' + esc(c.attachment_url) + '" target="_blank">첨부 보기</a></p>' : '') +
+      '<div class="dorm-row"><div><label class="dorm-label">상태</label><select id="cm-status" class="form-select">' +
+        ['received', 'in_progress', 'done'].map(function (s) { return '<option value="' + s + '"' + (c.status === s ? ' selected' : '') + '>' + { received: '접수', in_progress: '처리중', done: '완료' }[s] + '</option>'; }).join('') + '</select></div>' +
+      '<div><label class="dorm-label">담당자</label><input id="cm-assignee" class="form-input" value="' + esc(c.assignee || '') + '"></div></div>' +
+      '<div class="dorm-actions"><button id="cm-save" class="btn btn-secondary btn-sm">상태/담당 저장</button></div>' +
+      '<h4 class="dorm-label" style="margin-top:14px">처리 내역</h4><div class="dorm-cm-list">' +
+        (cm.length ? cm.map(function (m) { return '<div class="dorm-cm-item"><b>' + esc(m.author || '관리자') + '</b> <span class="dorm-muted">' + esc((m.created_at || '').slice(0, 16).replace('T', ' ')) + '</span><div>' + esc(m.body) + '</div></div>'; }).join('') : '<p class="dorm-muted">아직 없습니다.</p>') + '</div>' +
+      '<label class="dorm-label">댓글/답변</label><select id="cm-tmpl" class="form-select"><option value="">템플릿 선택…</option>' + CM_TEMPLATES.map(function (t) { return '<option>' + esc(t) + '</option>'; }).join('') + '</select>' +
+      '<textarea id="cm-body" class="form-input" rows="2" style="margin-top:6px"></textarea>' +
+      '<div class="dorm-actions"><button id="cm-add" class="btn btn-primary btn-sm">답변 등록</button></div></div>';
+    document.getElementById('cm-tmpl').addEventListener('change', function () { if (this.value) document.getElementById('cm-body').value = this.value; });
+    document.getElementById('cm-save').addEventListener('click', async function () {
+      await _db.from('dormitory_complaints').update({ status: val('cm-status'), assignee: (val('cm-assignee') || '').trim() }).eq('id', id); toast('저장됨', 'success'); renderComplaint();
+    });
+    document.getElementById('cm-add').addEventListener('click', async function () {
+      var b = (val('cm-body') || '').trim(); if (!b) return;
+      await _db.from('dormitory_complaint_comments').insert({ complaint_id: id, author: who(), body: b }); openComplaint(id);
+    });
   }
 
   window.DormModule = { onTabOpen: onTabOpen };
