@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>기숙사 입소자 포털</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{ --c:#1a3a5c; }
+  *{ box-sizing:border-box; }
+  body{ font-family:"Malgun Gothic","Apple SD Gothic Neo",sans-serif; margin:0; background:#eef3f8; color:#1f2937; }
+  .wrap{ max-width:560px; margin:0 auto; padding:18px 16px 60px; }
+  .hd{ background:var(--c); color:#fff; border-radius:14px; padding:18px; margin-bottom:14px; }
+  .hd h1{ font-size:18px; margin:0 0 4px; } .hd p{ font-size:13px; margin:0; opacity:.85; }
+  .card{ background:#fff; border:1px solid #e5e7eb; border-radius:14px; padding:16px; margin-bottom:14px; }
+  label{ display:block; font-size:12px; font-weight:600; color:#374151; margin:10px 0 4px; }
+  input,select,textarea{ width:100%; padding:10px 12px; border:1.5px solid #d1d5db; border-radius:8px; font-size:14px; font-family:inherit; }
+  .btn{ width:100%; background:var(--c); color:#fff; border:none; border-radius:9px; padding:13px; font-size:15px; font-weight:700; cursor:pointer; margin-top:14px; }
+  .btn.sec{ background:#fff; color:var(--c); border:1.5px solid #cdd9e6; }
+  .err{ color:#dc2626; font-size:13px; margin-top:8px; }
+  .muted{ font-size:12px; color:#6b7280; line-height:1.6; }
+  .row2{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  h2{ font-size:15px; color:var(--c); margin:0 0 10px; }
+  table{ width:100%; border-collapse:collapse; font-size:13px; }
+  th,td{ border-bottom:1px solid #eef1f4; padding:7px 8px; text-align:left; }
+  th{ background:#f8fafc; color:#475569; font-size:12px; }
+  .tabs{ display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px; }
+  .tabs button{ padding:7px 12px; border:1px solid #cdd9e6; background:#fff; border-radius:8px; font-size:13px; font-weight:600; color:#475569; cursor:pointer; }
+  .tabs button.active{ background:var(--c); color:#fff; border-color:var(--c); }
+  .badge{ font-size:11px; font-weight:700; padding:2px 8px; border-radius:999px; background:#eef2ff; color:#4f46e5; }
+  .badge.paid{ background:#ecfdf5; color:#059669; } .badge.od{ background:#fef2f2; color:#dc2626; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hd"><h1>🏠 기숙사 입소자 포털</h1><p>아세아항공직업전문학교 기숙사</p></div>
+  <div id="app"></div>
+</div>
+<script>
+function getSb(){
+  var p=new URLSearchParams(location.search).get('k');
+  if(p){ try{ var d=decodeURIComponent(escape(atob(p))).split('\n'); return {url:d[0],key:d[1]}; }catch(e){} }
+  return { url: localStorage.getItem('asea_dorm_supabase_url')||'', key: localStorage.getItem('asea_dorm_supabase_key')||'' };
+}
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
+function won(n){ return (Number(n)||0).toLocaleString('ko-KR'); }
+var cfg=getSb(), db=null, ME=null, DATA=null, TAB='contract';
+if(cfg.url&&cfg.key&&window.supabase){ db=window.supabase.createClient(cfg.url,cfg.key); }
+var app=document.getElementById('app');
+if(!db){ app.innerHTML='<div class="card"><p class="muted">연결 정보가 없습니다. 관리자에게 정식 포털 링크를 요청하세요.</p></div>'; }
+else renderLogin();
+
+function renderLogin(){
+  app.innerHTML='<div class="card"><h2>본인 확인</h2>'+
+    '<label>학번/사번</label><input id="li-sno">'+
+    '<label>성명</label><input id="li-name">'+
+    '<div class="err" id="li-err" style="display:none"></div>'+
+    '<button class="btn" id="li-btn">조회</button>'+
+    '<p class="muted" style="margin-top:8px">등록된 학번과 성명으로 본인 계약/납부/고지서를 조회합니다.</p></div>';
+  document.getElementById('li-btn').addEventListener('click', async function(){
+    var sno=(document.getElementById('li-sno').value||'').trim(), name=(document.getElementById('li-name').value||'').trim();
+    var err=document.getElementById('li-err'); err.style.display='none';
+    if(!sno||!name){ err.textContent='학번과 성명을 입력하세요.'; err.style.display='block'; return; }
+    this.disabled=true; var r=await db.rpc('dorm_resident_lookup',{p_student_no:sno,p_name:name}); this.disabled=false;
+    if(r.error){ err.textContent='조회 실패: '+r.error.message; err.style.display='block'; return; }
+    if(!r.data){ err.textContent='일치하는 정보가 없습니다. 학번/성명을 확인하세요.'; err.style.display='block'; return; }
+    ME={sno:sno,name:name}; DATA=r.data; TAB='contract'; renderHome();
+  });
+}
+
+function renderHome(){
+  app.innerHTML='<div class="card"><div style="display:flex;justify-content:space-between;align-items:center">'+
+    '<b>'+esc(ME.name)+'</b> 님 <button class="btn sec" style="width:auto;margin:0;padding:7px 12px" id="lo">로그아웃</button></div></div>'+
+    '<div class="tabs">'+
+      [['contract','계약'],['payment','납부'],['notice','고지서'],['complaint','민원접수'],['moveout','퇴실신청']]
+        .map(function(t){return '<button data-t="'+t[0]+'" class="'+(TAB===t[0]?'active':'')+'">'+t[1]+'</button>';}).join('')+
+    '</div><div id="tabc"></div>';
+  document.getElementById('lo').addEventListener('click',function(){ ME=null;DATA=null;renderLogin(); });
+  app.querySelectorAll('[data-t]').forEach(function(b){ b.addEventListener('click',function(){ TAB=this.dataset.t; renderHome(); }); });
+  var c=document.getElementById('tabc');
+  if(TAB==='contract') c.innerHTML=tabContract();
+  else if(TAB==='payment') c.innerHTML=tabPayment();
+  else if(TAB==='notice') c.innerHTML=tabNotice();
+  else if(TAB==='complaint') renderComplaintForm(c);
+  else if(TAB==='moveout') renderMoveout(c);
+}
+function tabContract(){
+  var cs=DATA.contracts||[]; if(!cs.length) return '<div class="card"><p class="muted">계약 정보가 없습니다.</p></div>';
+  return '<div class="card"><h2>내 계약</h2>'+cs.map(function(c){
+    return '<div style="border:1px solid #eef1f4;border-radius:10px;padding:12px;margin-bottom:8px">'+
+      '<b>'+esc(c.building||'')+' '+esc(c.room||'')+'호</b> <span class="badge">'+esc(c.status)+'</span><br>'+
+      '<span class="muted">기간: '+esc(c.start)+' ~ '+esc(c.end)+' · '+esc(c.type)+'</span><br>'+
+      '<span class="muted">월 단가: '+won(c.unit_price)+'원'+(c.deposit?(' · 보증금: '+won(c.deposit)+'원'):'')+'</span>'+
+      (c.attachment?'<br><a href="'+esc(c.attachment)+'" target="_blank">계약서 보기</a>':'')+'</div>';
+  }).join('')+'</div>';
+}
+function tabPayment(){
+  var ps=DATA.payments||[]; if(!ps.length) return '<div class="card"><p class="muted">납부 내역이 없습니다.</p></div>';
+  var today=new Date().toISOString().slice(0,10);
+  return '<div class="card"><h2>납부 내역</h2><table><thead><tr><th>기간</th><th>금액</th><th>기한</th><th>상태</th></tr></thead><tbody>'+
+    ps.map(function(p){ var od=p.status!=='paid'&&p.due_date&&p.due_date<today;
+      var b=p.status==='paid'?'<span class="badge paid">완납</span>':(od?'<span class="badge od">연체</span>':'<span class="badge">미납</span>');
+      return '<tr><td>'+esc(p.period)+'</td><td>'+won(p.amount)+'</td><td>'+esc(p.due_date||'-')+'</td><td>'+b+'</td></tr>'; }).join('')+
+    '</tbody></table></div>';
+}
+function tabNotice(){
+  var ns=DATA.notices||[]; if(!ns.length) return '<div class="card"><p class="muted">발행된 고지서가 없습니다.</p></div>';
+  return '<div class="card"><h2>고지서</h2><table><thead><tr><th>고지번호</th><th>학기</th><th>금액</th><th>마감</th><th>상태</th></tr></thead><tbody>'+
+    ns.map(function(n){ return '<tr><td>'+esc(n.notice_no||'-')+'</td><td>'+esc(n.semester||'')+'</td><td>'+won(n.amount)+'</td><td>'+esc(n.due_date||'-')+'</td><td>'+esc(n.status)+'</td></tr>'; }).join('')+
+    '</tbody></table></div>';
+}
+function renderComplaintForm(c){
+  var room=(DATA.contracts&&DATA.contracts[0])?(DATA.contracts[0].building+' '+DATA.contracts[0].room+'호'):'';
+  c.innerHTML='<div class="card"><h2>민원 접수</h2>'+
+    '<label>분류</label><select id="mc-cat"><option>시설 하자(누수·파손·고장)</option><option>생활 환경(냄새·소음·위생)</option><option>냉·난방</option><option>인터넷·전기</option><option>동료 입소자 관련</option><option>기타</option></select>'+
+    '<label>제목</label><input id="mc-title">'+
+    '<label>내용</label><textarea id="mc-content" maxlength="500"></textarea>'+
+    '<div class="err" id="mc-err" style="display:none"></div><button class="btn" id="mc-btn">접수하기</button></div>';
+  document.getElementById('mc-btn').addEventListener('click',async function(){
+    var title=(document.getElementById('mc-title').value||'').trim(), content=(document.getElementById('mc-content').value||'').trim();
+    var err=document.getElementById('mc-err'); err.style.display='none';
+    if(!title||!content){ err.textContent='제목과 내용을 입력하세요.'; err.style.display='block'; return; }
+    this.disabled=true;
+    var res=await db.from('dormitory_complaints').insert({ resident_name:ME.name, student_no:ME.sno, room_label:room,
+      category:document.getElementById('mc-cat').value, title:title, content:content, status:'received' }).select('ticket_no').single();
+    this.disabled=false;
+    if(res.error){ err.textContent='접수 실패: '+res.error.message; err.style.display='block'; return; }
+    c.innerHTML='<div class="card" style="text-align:center"><div style="font-size:40px">✅</div><h2>접수 완료</h2><p>접수번호: <b>'+esc(res.data.ticket_no)+'</b></p></div>';
+  });
+}
+function renderMoveout(c){
+  c.innerHTML='<div class="card"><h2>퇴실 신청</h2><p class="muted">희망 퇴실일과 사유를 입력하면 관리자 검토 후 처리됩니다.</p>'+
+    '<label>희망 퇴실일</label><input id="mo-date" type="date">'+
+    '<label>사유</label><textarea id="mo-reason" maxlength="500"></textarea>'+
+    '<div class="err" id="mo-err" style="display:none"></div><button class="btn" id="mo-btn">퇴실 신청</button></div>';
+  document.getElementById('mo-btn').addEventListener('click',async function(){
+    var date=document.getElementById('mo-date').value, reason=(document.getElementById('mo-reason').value||'').trim();
+    var err=document.getElementById('mo-err'); err.style.display='none';
+    if(!date){ err.textContent='희망 퇴실일을 선택하세요.'; err.style.display='block'; return; }
+    var room=(DATA.contracts&&DATA.contracts[0])?(DATA.contracts[0].building+' '+DATA.contracts[0].room+'호'):'';
+    this.disabled=true;
+    var res=await db.from('dormitory_complaints').insert({ resident_name:ME.name, student_no:ME.sno, room_label:room,
+      category:'퇴실신청', title:'퇴실 신청 ('+date+')', content:'희망 퇴실일: '+date+'\n사유: '+reason, status:'received' }).select('ticket_no').single();
+    this.disabled=false;
+    if(res.error){ err.textContent='신청 실패: '+res.error.message; err.style.display='block'; return; }
+    c.innerHTML='<div class="card" style="text-align:center"><div style="font-size:40px">✅</div><h2>퇴실 신청 완료</h2><p>접수번호: <b>'+esc(res.data.ticket_no)+'</b></p><p class="muted">관리자 승인 후 처리됩니다.</p></div>';
+  });
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>기숙사 민원 접수</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{ --c:#1a3a5c; }
+  *{ box-sizing:border-box; }
+  body{ font-family:"Malgun Gothic","Apple SD Gothic Neo",sans-serif; margin:0; background:#eef3f8; color:#1f2937; }
+  .wrap{ max-width:520px; margin:0 auto; padding:18px 16px 60px; }
+  .hd{ background:var(--c); color:#fff; border-radius:14px; padding:18px; margin-bottom:14px; }
+  .hd h1{ font-size:18px; margin:0 0 4px; } .hd p{ font-size:13px; margin:0; opacity:.85; }
+  .card{ background:#fff; border:1px solid #e5e7eb; border-radius:14px; padding:16px; margin-bottom:14px; }
+  label{ display:block; font-size:12px; font-weight:600; color:#374151; margin:10px 0 4px; }
+  input,select,textarea{ width:100%; padding:10px 12px; border:1.5px solid #d1d5db; border-radius:8px; font-size:14px; font-family:inherit; }
+  textarea{ min-height:110px; resize:vertical; }
+  .btn{ width:100%; background:var(--c); color:#fff; border:none; border-radius:9px; padding:13px; font-size:15px; font-weight:700; cursor:pointer; margin-top:14px; }
+  .btn.sec{ background:#fff; color:var(--c); border:1.5px solid #cdd9e6; }
+  .err{ color:#dc2626; font-size:13px; margin-top:8px; }
+  .ok{ text-align:center; padding:18px; }
+  .ok .no{ font-size:24px; font-weight:800; color:var(--c); letter-spacing:1px; margin:10px 0; }
+  .muted{ font-size:12px; color:#6b7280; line-height:1.6; }
+  .row2{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  h2{ font-size:15px; color:var(--c); margin:0 0 10px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hd"><h1>🏢 기숙사 민원 접수</h1><p>아세아항공직업전문학교 기숙사</p></div>
+  <div class="card" id="form-card">
+    <h2>민원 접수</h2>
+    <div class="row2">
+      <div><label>성명</label><input id="f-name"></div>
+      <div><label>학번/사번</label><input id="f-sno"></div>
+    </div>
+    <div class="row2">
+      <div><label>건물·호실</label><input id="f-room" placeholder="A동 201호"></div>
+      <div><label>분류</label><select id="f-cat">
+        <option>시설 하자(누수·파손·고장)</option><option>생활 환경(냄새·소음·위생)</option>
+        <option>냉·난방</option><option>인터넷·전기</option><option>동료 입소자 관련</option><option>기타</option>
+      </select></div>
+    </div>
+    <label>제목</label><input id="f-title">
+    <label>내용 (최대 500자)</label><textarea id="f-content" maxlength="500"></textarea>
+    <div class="err" id="f-err" style="display:none"></div>
+    <button class="btn" id="f-submit">접수하기</button>
+  </div>
+
+  <div class="card">
+    <h2>접수 현황 조회</h2>
+    <label>접수번호</label><input id="q-ticket" placeholder="예: C2506150001">
+    <button class="btn sec" id="q-btn">조회</button>
+    <div id="q-result" style="margin-top:12px"></div>
+  </div>
+</div>
+<script>
+function getSb(){
+  var p = new URLSearchParams(location.search).get('k');
+  if(p){ try{ var d=decodeURIComponent(escape(atob(p))).split('\n'); return {url:d[0],key:d[1]}; }catch(e){} }
+  return { url: localStorage.getItem('asea_dorm_supabase_url')||'', key: localStorage.getItem('asea_dorm_supabase_key')||'' };
+}
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
+var cfg=getSb(), db=null;
+if(cfg.url&&cfg.key&&window.supabase){ db=window.supabase.createClient(cfg.url,cfg.key); }
+if(!db){ document.getElementById('form-card').innerHTML='<p class="muted">연결 정보가 없습니다. 관리자에게 정식 접수 링크를 요청하세요.</p>'; }
+
+document.getElementById('f-submit').addEventListener('click', async function(){
+  var err=document.getElementById('f-err'); err.style.display='none';
+  var title=(document.getElementById('f-title').value||'').trim();
+  var content=(document.getElementById('f-content').value||'').trim();
+  if(!title||!content){ err.textContent='제목과 내용을 입력하세요.'; err.style.display='block'; return; }
+  this.disabled=true;
+  var rec={ resident_name:(document.getElementById('f-name').value||'').trim(),
+    student_no:(document.getElementById('f-sno').value||'').trim(),
+    room_label:(document.getElementById('f-room').value||'').trim(),
+    category:document.getElementById('f-cat').value, title:title, content:content, status:'received' };
+  var res=await db.from('dormitory_complaints').insert(rec).select('ticket_no').single();
+  this.disabled=false;
+  if(res.error){ err.textContent='접수 실패: '+res.error.message; err.style.display='block'; return; }
+  document.getElementById('form-card').innerHTML='<div class="ok"><div style="font-size:42px">✅</div>'+
+    '<h2>접수되었습니다</h2><div class="no">'+esc(res.data.ticket_no)+'</div>'+
+    '<p class="muted">접수번호를 저장해 두시면 처리 현황을 조회할 수 있습니다.</p></div>';
+});
+
+document.getElementById('q-btn').addEventListener('click', async function(){
+  var t=(document.getElementById('q-ticket').value||'').trim(); var out=document.getElementById('q-result');
+  if(!t){ out.innerHTML='<p class="err">접수번호를 입력하세요.</p>'; return; }
+  var r=await db.rpc('dorm_complaint_status',{p_ticket:t});
+  if(r.error||!r.data){ out.innerHTML='<p class="muted">해당 접수번호를 찾을 수 없습니다.</p>'; return; }
+  var d=r.data; var st={received:'접수',in_progress:'처리중',done:'완료'}[d.status]||d.status;
+  out.innerHTML='<div style="border:1px solid #e5e7eb;border-radius:10px;padding:12px">'+
+    '<b>'+esc(d.title)+'</b> <span class="muted">'+esc(d.ticket_no)+'</span><br>'+
+    '<span class="muted">상태: <b>'+esc(st)+'</b> · '+esc((d.created_at||'').slice(0,10))+'</span>'+
+    (d.comments&&d.comments.length? '<div style="margin-top:8px">'+d.comments.map(function(c){return '<div class="muted" style="border-top:1px dashed #e5e7eb;padding-top:6px;margin-top:6px">▸ '+esc(c.body)+'</div>';}).join('')+'</div>':'')+
+    '</div>';
+});
+</script>
+</body>
+</html>

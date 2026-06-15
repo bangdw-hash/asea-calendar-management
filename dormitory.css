@@ -35,3 +35,25 @@
 .dorm-badge { font-size:11px; font-weight:700; padding:2px 8px; border-radius:999px; }
 .dorm-badge.vac { background:#eef2ff; color:#4f46e5; }
 .dorm-badge.occ { background:#ecfdf5; color:#059669; }
+
+/* 모드/필터 바 */
+.dorm-modebar { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px; }
+.dorm-mode { padding:7px 14px; border:1px solid #d6e0ea; background:#fff; border-radius:8px; font-size:13px; font-weight:600; color:#475569; cursor:pointer; }
+.dorm-mode.active { background:#1a3a5c; color:#fff; border-color:#1a3a5c; }
+
+/* 막대 차트 */
+.dorm-bar-row { display:flex; align-items:center; gap:10px; margin:7px 0; font-size:13px; }
+.dorm-bar-lab { width:90px; flex-shrink:0; color:#475569; }
+.dorm-bar { flex:1; background:#eef1f4; border-radius:6px; height:16px; overflow:hidden; }
+.dorm-bar > span { display:block; height:100%; background:#1a73e8; border-radius:6px; }
+.dorm-bar-val { width:110px; text-align:right; flex-shrink:0; font-variant-numeric:tabular-nums; color:#1a3a5c; font-weight:600; }
+
+/* 납부 박스 */
+.dorm-paybox { border:1px solid #eef1f4; border-radius:10px; padding:12px; margin-bottom:10px; }
+.dorm-payhd { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:8px; flex-wrap:wrap; }
+.dorm-cb { display:inline-flex; align-items:center; gap:6px; font-size:13px; color:#475569; }
+
+/* 민원 상세 */
+.dorm-cm-content { background:#f8fafc; border:1px solid #eef1f4; border-radius:8px; padding:12px; font-size:14px; line-height:1.6; white-space:pre-line; margin:8px 0; }
+.dorm-cm-list { display:flex; flex-direction:column; gap:8px; margin-bottom:10px; }
+.dorm-cm-item { border-left:3px solid #1a73e8; background:#f8fafc; padding:8px 12px; border-radius:6px; font-size:13px; }

@@ -280,6 +280,68 @@ create policy dormitory_complaints_anon_insert on dormitory_complaints
 --     anon 에 직접 SELECT 권한을 주지 않아 개인정보 노출을 방지한다.
 
 -- =====================================================================
+--  외부 포털용 함수 (민원 접수 / 입소자 셀프 조회)
+-- =====================================================================
+
+-- 민원 접수번호 자동 생성(anon INSERT 대비)
+create or replace function dorm_gen_ticket()
+returns trigger language plpgsql as $$
+begin
+  if new.ticket_no is null or new.ticket_no = '' then
+    new.ticket_no := 'C' || to_char(now(), 'YYMMDD') || lpad((floor(random()*9000)+1000)::int::text, 4, '0');
+  end if;
+  return new;
+end; $$;
+drop trigger if exists trg_complaint_ticket on dormitory_complaints;
+create trigger trg_complaint_ticket before insert on dormitory_complaints
+  for each row execute function dorm_gen_ticket();
+
+-- 입소자 셀프 조회: 학번 + 성명으로 본인 계약/납부/고지서 조회 (RLS 우회 SECURITY DEFINER)
+create or replace function dorm_resident_lookup(p_student_no text, p_name text)
+returns jsonb language plpgsql security definer set search_path = public as $$
+declare res jsonb; n int;
+begin
+  select count(*) into n from dormitory_contracts c
+    where c.student_no = p_student_no and c.resident_name = p_name;
+  if n = 0 then return null; end if;
+  res := jsonb_build_object(
+    'name', p_name,
+    'contracts', coalesce((select jsonb_agg(jsonb_build_object(
+        'id', c.id, 'building', b.name, 'room', rm.room_number, 'start', c.start_date, 'end', c.end_date,
+        'type', c.contract_type, 'unit_price', c.unit_price, 'deposit', c.deposit, 'status', c.status,
+        'attachment', c.attachment_url) order by c.start_date desc)
+      from dormitory_contracts c
+      left join dormitory_buildings b on b.id = c.building_id
+      left join dormitory_rooms rm on rm.id = c.room_id
+      where c.student_no = p_student_no and c.resident_name = p_name), '[]'::jsonb),
+    'payments', coalesce((select jsonb_agg(jsonb_build_object(
+        'period', p.period, 'amount', p.amount, 'due_date', p.due_date, 'status', p.status) order by p.due_date)
+      from dormitory_payments p join dormitory_contracts c on c.id = p.contract_id
+      where c.student_no = p_student_no and c.resident_name = p_name), '[]'::jsonb),
+    'notices', coalesce((select jsonb_agg(jsonb_build_object(
+        'notice_no', nt.notice_no, 'semester', nt.semester, 'amount', nt.amount, 'due_date', nt.due_date, 'status', nt.status) order by nt.created_at desc)
+      from dormitory_notices nt join dormitory_contracts c on c.id = nt.contract_id
+      where c.student_no = p_student_no and c.resident_name = p_name), '[]'::jsonb)
+  );
+  return res;
+end; $$;
+grant execute on function dorm_resident_lookup(text, text) to anon, authenticated;
+
+-- 민원 처리현황 조회: 접수번호로 상태/처리내역 조회
+create or replace function dorm_complaint_status(p_ticket text)
+returns jsonb language plpgsql security definer set search_path = public as $$
+declare res jsonb;
+begin
+  select jsonb_build_object('ticket_no', c.ticket_no, 'title', c.title, 'status', c.status,
+      'created_at', c.created_at,
+      'comments', coalesce((select jsonb_agg(jsonb_build_object('author', cc.author, 'body', cc.body, 'created_at', cc.created_at) order by cc.created_at)
+                            from dormitory_complaint_comments cc where cc.complaint_id = c.id), '[]'::jsonb))
+    into res from dormitory_complaints c where c.ticket_no = p_ticket limit 1;
+  return res;
+end; $$;
+grant execute on function dorm_complaint_status(text) to anon, authenticated;
+
+-- =====================================================================
 --  Storage (수동 1회): 대시보드 → Storage 에서 버킷 생성 권장
 --   · dorm-contracts (계약서)   · dorm-receipts (지출 증빙)
 --   · dorm-ocr (OCR 원본)       · dorm-complaints (민원 첨부)
