@@ -26,6 +26,7 @@ alter table dormitory_contracts add column if not exists agree_privacy     boole
 alter table dormitory_contracts add column if not exists guardian_name     text;
 alter table dormitory_contracts add column if not exists guardian_sign_b64 text;
 alter table dormitory_contracts add column if not exists signed_at         timestamptz;
+alter table dormitory_contracts add column if not exists sign_template     text;
 create unique index if not exists idx_contracts_sign_token
   on dormitory_contracts(sign_token) where sign_token is not null;
 
@@ -39,7 +40,7 @@ begin
     'building', b.name, 'room', rm.room_number,
     'start', c.start_date, 'end', c.end_date, 'unit_price', c.unit_price, 'deposit', c.deposit,
     'status', c.sign_status,
-    'template', coalesce((select value from dormitory_settings where key = 'contract_template'), '')
+    'template', coalesce(c.sign_template, (select value from dormitory_settings where key = 'contract_template'), '')
   ) into res
   from dormitory_contracts c
   left join dormitory_buildings b on b.id = c.building_id
