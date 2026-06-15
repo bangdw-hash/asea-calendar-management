@@ -118,7 +118,7 @@
 
   /* ── 앱 본체 ───────────────────────────────────────────── */
   var SUBS = [
-    { id: 'dash', label: '대시보드' }, { id: 'master', label: '건물·호실' },
+    { id: 'dash', label: '대시보드' }, { id: 'master', label: '건물·호실' }, { id: 'map', label: '배치도' },
     { id: 'contract', label: '계약 등록·조회' }, { id: 'esign', label: '전자계약' }, { id: 'payment', label: '기숙사비' },
     { id: 'expense', label: '지출' }, { id: 'price', label: '단가 역산' },
     { id: 'notice', label: '고지서' }, { id: 'stat', label: '수익·손익' }, { id: 'complaint', label: '민원' },
@@ -134,7 +134,7 @@
     renderBody();
   }
   function renderBody() {
-    var f = { dash: renderDash, master: renderMaster, contract: renderContract, esign: renderEsign, payment: renderPayment,
+    var f = { dash: renderDash, master: renderMaster, map: renderMap, contract: renderContract, esign: renderEsign, payment: renderPayment,
       expense: renderExpense, price: renderPrice, notice: renderNotice, stat: renderStat, complaint: renderComplaint };
     (f[_st.sub] || renderDash)();
   }
@@ -1022,6 +1022,106 @@
       '<h3>학생 서명</h3>' + (c.student_sign_b64 ? '<img src="' + c.student_sign_b64 + '">' : '(없음)') +
       (c.guardian_name ? '<h3>보호자: ' + esc(c.guardian_name) + '</h3>' + (c.guardian_sign_b64 ? '<img src="' + c.guardian_sign_b64 + '">' : '') : '') +
       '</body></html>'); w.document.close();
+  }
+
+  /* ── 배치도(평면도) 입실 현황 ──────────────────────────── */
+  var _map = { bid: '', floor: '', edit: false, rooms: [], plan: '', occ: {}, blds: [], floors: [] };
+  function uniqNum(a) { var o = {}; a.forEach(function (x) { if (x != null && x !== '') o[x] = 1; }); return Object.keys(o).map(Number).sort(function (p, q) { return p - q; }); }
+  function compressImage(file, maxW) {
+    return new Promise(function (res, rej) {
+      var r = new FileReader();
+      r.onload = function () { var img = new Image(); img.onload = function () {
+        var s = Math.min(1, (maxW || 1400) / img.width); var w = Math.round(img.width * s), h = Math.round(img.height * s);
+        var cv = document.createElement('canvas'); cv.width = w; cv.height = h; cv.getContext('2d').drawImage(img, 0, 0, w, h);
+        res(cv.toDataURL('image/jpeg', 0.82)); }; img.onerror = rej; img.src = r.result; };
+      r.onerror = rej; r.readAsDataURL(file);
+    });
+  }
+
+  async function renderMap() {
+    loading();
+    try {
+      var bs = await _db.from('dormitory_buildings').select('id,name').order('name'); _map.blds = bs.data || [];
+      if (!_map.blds.length) { body().innerHTML = '<div class="dorm-card"><p class="dorm-muted">먼저 <b>건물·호실</b>을 등록하세요.</p></div>'; return; }
+      if (!_map.bid || !_map.blds.filter(function (b) { return b.id === _map.bid; }).length) _map.bid = _map.blds[0].id;
+      var rs = await _db.from('dormitory_rooms').select('id,room_number,room_type,floor,is_vacant,map_x,map_y').eq('building_id', _map.bid).order('room_number');
+      var rooms = rs.data || [];
+      _map.floors = uniqNum(rooms.map(function (r) { return r.floor; }));
+      if (_map.floor === '' || _map.floors.indexOf(Number(_map.floor)) === -1) _map.floor = _map.floors.length ? String(_map.floors[0]) : '';
+      _map.rooms = rooms.filter(function (r) { return String(r.floor) === String(_map.floor); });
+      var fp = await _db.from('dormitory_floorplans').select('image').eq('building_id', _map.bid).eq('floor', Number(_map.floor)).limit(1);
+      _map.plan = (fp.data && fp.data[0] && fp.data[0].image) || '';
+      _map.occ = {};
+      if (_map.rooms.length) {
+        var rids = _map.rooms.map(function (r) { return r.id; });
+        var cs = await _db.from('dormitory_contracts').select('room_id,resident_name,student_no,department,grade').eq('status', 'active').in('room_id', rids);
+        (cs.data || []).forEach(function (c) { _map.occ[c.room_id] = { name: c.resident_name, sno: c.student_no, dept: c.department, grade: c.grade }; });
+      }
+      mapRender();
+    } catch (e) { body().innerHTML = errBox(e); }
+  }
+  function mapRender() {
+    var occN = _map.rooms.filter(function (r) { return _map.occ[r.id]; }).length;
+    body().innerHTML =
+      '<div class="dorm-card"><div class="dorm-row4">' +
+        '<div><label class="dorm-label">건물</label><select id="mp-bld" class="form-select">' + _map.blds.map(function (b) { return '<option value="' + b.id + '"' + (b.id === _map.bid ? ' selected' : '') + '>' + esc(b.name) + '</option>'; }).join('') + '</select></div>' +
+        '<div><label class="dorm-label">층</label><select id="mp-fl" class="form-select">' + (_map.floors.length ? _map.floors.map(function (f) { return '<option value="' + f + '"' + (String(f) === String(_map.floor) ? ' selected' : '') + '>' + f + '층</option>'; }).join('') : '<option value="">-</option>') + '</select></div>' +
+        '<div style="grid-column:span 2;align-self:end"><div class="dorm-actions" style="margin:0">' +
+          '<label class="btn btn-secondary btn-sm" style="cursor:pointer">🖼 도면 업로드<input id="mp-file" type="file" accept="image/*" hidden></label>' +
+          (_map.plan ? '<button id="mp-del" class="btn btn-ghost btn-sm">도면 삭제</button>' : '') +
+          '<button id="mp-edit" class="btn ' + (_map.edit ? 'btn-primary' : 'btn-secondary') + ' btn-sm">' + (_map.edit ? '편집 종료' : '배치 편집') + '</button>' +
+          (_map.edit ? '<button id="mp-grid" class="btn btn-ghost btn-sm">자동 격자</button><button id="mp-save" class="btn btn-primary btn-sm">위치 저장</button>' : '') +
+        '</div></div></div>' +
+        '<p class="dorm-muted">' + (_map.edit ? '호실 표식을 드래그해 도면 위에 배치 → 「위치 저장」.' : ('입실 ' + occN + ' / 공실 ' + (_map.rooms.length - occN) + ' · 표식 클릭 시 정보 표시. (초록=입실, 회색=공실)')) + '</p>' +
+        '<div id="mp-stage" class="mp-stage' + (_map.plan ? '' : ' empty') + '">' + (_map.plan ? '<img src="' + _map.plan + '" class="mp-img">' : '<div class="mp-noimg">도면 이미지가 없습니다. 「도면 업로드」로 평면도를 올리세요.</div>') + '<div id="mp-markers"></div></div>' +
+      '</div><div id="mp-info"></div>';
+    document.getElementById('mp-bld').addEventListener('change', function () { _map.bid = this.value; _map.floor = ''; renderMap(); });
+    document.getElementById('mp-fl').addEventListener('change', function () { _map.floor = this.value; renderMap(); });
+    document.getElementById('mp-file').addEventListener('change', mpUpload);
+    if (document.getElementById('mp-del')) document.getElementById('mp-del').addEventListener('click', mpDeletePlan);
+    document.getElementById('mp-edit').addEventListener('click', function () { _map.edit = !_map.edit; mapRender(); });
+    if (_map.edit) { document.getElementById('mp-grid').addEventListener('click', mpAutoGrid); document.getElementById('mp-save').addEventListener('click', mpSavePositions); }
+    mpRenderMarkers();
+  }
+  function mpRenderMarkers() {
+    var wrap = document.getElementById('mp-markers'); if (!wrap) return;
+    var i = 0; _map.rooms.forEach(function (r) { if (r.map_x == null || r.map_y == null) { var col = i % 6, row = Math.floor(i / 6); r.map_x = 8 + col * 15; r.map_y = 10 + row * 14; i++; } });
+    wrap.innerHTML = _map.rooms.map(function (r) { var cls = _map.occ[r.id] ? 'occ' : 'vac';
+      return '<div class="mp-mk ' + cls + '" data-id="' + r.id + '" style="left:' + r.map_x + '%;top:' + r.map_y + '%">' + esc(r.room_number) + '</div>'; }).join('');
+    wrap.querySelectorAll('.mp-mk').forEach(function (m) {
+      if (_map.edit) mpDrag(m); else m.addEventListener('click', function () { mpInfo(this.dataset.id); });
+    });
+  }
+  function mpDrag(m) {
+    var stage = document.getElementById('mp-stage'); var rid = m.dataset.id; var on = false;
+    m.style.cursor = 'move';
+    m.addEventListener('pointerdown', function (e) { e.preventDefault(); on = true; try { m.setPointerCapture(e.pointerId); } catch (_) {} });
+    m.addEventListener('pointermove', function (e) { if (!on) return; var r = stage.getBoundingClientRect();
+      var x = Math.max(0, Math.min(100, (e.clientX - r.left) / r.width * 100)), y = Math.max(0, Math.min(100, (e.clientY - r.top) / r.height * 100));
+      m.style.left = x + '%'; m.style.top = y + '%'; var room = _map.rooms.filter(function (z) { return z.id === rid; })[0]; if (room) { room.map_x = x; room.map_y = y; } });
+    m.addEventListener('pointerup', function (e) { on = false; try { m.releasePointerCapture(e.pointerId); } catch (_) {} });
+  }
+  function mpInfo(rid) {
+    var r = _map.rooms.filter(function (z) { return z.id === rid; })[0]; var o = _map.occ[rid];
+    document.getElementById('mp-info').innerHTML = '<div class="dorm-card"><h3 class="dorm-h3">🚪 ' + esc(r.room_number) + '호 <span class="dorm-muted">(' + esc(r.room_type) + ' · ' + esc(r.floor) + '층)</span></h3>' +
+      (o ? '<p>입실: <b>' + esc(o.name) + '</b> ' + esc(o.sno || '') + (o.dept ? ' · ' + esc(o.dept) : '') + (o.grade ? ' ' + esc(o.grade) + '학년' : '') + '</p>' : '<p class="dorm-muted">공실</p>') + '</div>';
+  }
+  async function mpUpload(e) {
+    var f = e.target.files[0]; if (!f) return; if (!_map.floor) { toast('층이 없습니다. 먼저 호실을 등록하세요.', 'error'); return; }
+    toast('도면 처리 중…', 'info');
+    try { var data = await compressImage(f, 1400);
+      var res = await _db.from('dormitory_floorplans').upsert({ building_id: _map.bid, floor: Number(_map.floor), image: data, updated_at: new Date().toISOString() });
+      if (res.error) throw res.error; toast('도면 업로드 완료', 'success'); renderMap();
+    } catch (err) { toast('업로드 실패: ' + (err.message || err), 'error'); }
+  }
+  async function mpDeletePlan() {
+    if (!confirm('이 층의 도면을 삭제할까요?')) return;
+    await _db.from('dormitory_floorplans').delete().eq('building_id', _map.bid).eq('floor', Number(_map.floor)); renderMap();
+  }
+  function mpAutoGrid() { var i = 0; _map.rooms.forEach(function (r) { var col = i % 6, row = Math.floor(i / 6); r.map_x = 8 + col * 15; r.map_y = 10 + row * 14; i++; }); mpRenderMarkers(); }
+  async function mpSavePositions() {
+    var ops = _map.rooms.map(function (r) { return _db.from('dormitory_rooms').update({ map_x: r.map_x, map_y: r.map_y }).eq('id', r.id); });
+    try { await Promise.all(ops); toast('배치를 저장했습니다.', 'success'); } catch (e) { toast('저장 실패: ' + (e.message || e), 'error'); }
   }
 
   window.DormModule = { onTabOpen: onTabOpen };
