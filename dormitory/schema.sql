@@ -408,6 +408,20 @@ end; $$;
 grant execute on function dorm_sign_submit(text, text, boolean, text, text) to anon, authenticated;
 
 -- =====================================================================
+--  배치도(평면도) — 신규 설치 시 함께 생성
+-- =====================================================================
+alter table dormitory_rooms add column if not exists map_x numeric;
+alter table dormitory_rooms add column if not exists map_y numeric;
+create table if not exists dormitory_floorplans (
+  building_id uuid references dormitory_buildings(id) on delete cascade,
+  floor int not null, image text, updated_at timestamptz default now(),
+  primary key (building_id, floor)
+);
+alter table dormitory_floorplans enable row level security;
+drop policy if exists dormitory_floorplans_admin on dormitory_floorplans;
+create policy dormitory_floorplans_admin on dormitory_floorplans for all to authenticated using (true) with check (true);
+
+-- =====================================================================
 --  Storage (수동 1회): 대시보드 → Storage 에서 버킷 생성 권장
 --   · dorm-contracts (계약서)   · dorm-receipts (지출 증빙)
 --   · dorm-ocr (OCR 원본)       · dorm-complaints (민원 첨부)
