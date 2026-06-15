@@ -119,7 +119,7 @@
   /* ── 앱 본체 ───────────────────────────────────────────── */
   var SUBS = [
     { id: 'dash', label: '대시보드' }, { id: 'master', label: '건물·호실' },
-    { id: 'contract', label: '계약 등록·조회' }, { id: 'payment', label: '기숙사비' },
+    { id: 'contract', label: '계약 등록·조회' }, { id: 'esign', label: '전자계약' }, { id: 'payment', label: '기숙사비' },
     { id: 'expense', label: '지출' }, { id: 'price', label: '단가 역산' },
     { id: 'notice', label: '고지서' }, { id: 'stat', label: '수익·손익' }, { id: 'complaint', label: '민원' },
   ];
@@ -134,7 +134,7 @@
     renderBody();
   }
   function renderBody() {
-    var f = { dash: renderDash, master: renderMaster, contract: renderContract, payment: renderPayment,
+    var f = { dash: renderDash, master: renderMaster, contract: renderContract, esign: renderEsign, payment: renderPayment,
       expense: renderExpense, price: renderPrice, notice: renderNotice, stat: renderStat, complaint: renderComplaint };
     (f[_st.sub] || renderDash)();
   }
@@ -824,6 +824,95 @@
       var b = (val('cm-body') || '').trim(); if (!b) return;
       await _db.from('dormitory_complaint_comments').insert({ complaint_id: id, author: who(), body: b }); openComplaint(id);
     });
+  }
+
+  /* ── 전자계약(서명) ────────────────────────────────────── */
+  var DEFAULT_TEMPLATE =
+'[기숙사 입소(생활관) 계약서]\n\n' +
+'제1조(목적) 본 계약은 아세아항공직업전문학교 기숙사(생활관) 입소에 관한 사항을 정함을 목적으로 한다.\n' +
+'제2조(입소기간) 입소기간은 계약서에 명시된 시작일부터 종료일까지로 한다.\n' +
+'제3조(기숙사비) 입소자는 계약서에 명시된 월 기숙사비 및 보증금을 정해진 기일 내에 납부한다.\n' +
+'제4조(환불) 중도 퇴실 시 학교 규정에 따라 잔여 기간분을 정산·환불한다.\n' +
+'제5조(생활수칙) 입소자는 생활관 규칙 및 안전수칙을 준수하며, 위반 시 퇴실 조치될 수 있다.\n' +
+'제6조(퇴실) 퇴실 시 사전에 신청하고 시설 원상복구 및 비품 반납을 완료한다.\n' +
+'제7조(개인정보) 입소 관리를 위해 수집된 개인정보는 관련 법령에 따라 보호·관리된다.\n\n' +
+'※ 본 약관 문구는 관리자(전자계약 ▸ 계약서 양식)에서 수정할 수 있습니다.';
+
+  function genToken() { return 'sg' + Date.now().toString(36) + Math.random().toString(36).slice(2, 10); }
+  function signLink(token) { return portalBase() + 'dormitory/contract-sign.html?t=' + token; }
+  function signMsg(name, link) { return '[아세아 기숙사] ' + (name || '') + '님, 기숙사 입소계약서 전자서명 안내입니다.\n아래 링크에서 계약서 확인 후 서명해 주세요.\n' + link; }
+
+  async function renderEsign() {
+    loading();
+    var tplVal = '', rows = [];
+    try {
+      var tpl = await _db.from('dormitory_settings').select('value').eq('key', 'contract_template').limit(1);
+      tplVal = (tpl.data && tpl.data[0] && tpl.data[0].value) || DEFAULT_TEMPLATE;
+      var cs = await _db.from('dormitory_contracts').select('id,resident_name,student_no,phone,sign_status,sign_token,dormitory_buildings(name),dormitory_rooms(room_number)').eq('status', 'active').order('resident_name').limit(300);
+      if (cs.error) throw cs.error; rows = cs.data || [];
+    } catch (e) { body().innerHTML = errBox(e); return; }
+
+    function badge(s) { var m = { signed: ['서명완료', 'occ'], pending: ['서명대기', 'vac'] }; var x = m[s] || ['미발송', 'vac']; return '<span class="dorm-badge ' + x[1] + '">' + x[0] + '</span>'; }
+    body().innerHTML =
+      '<div class="dorm-card"><h3 class="dorm-h3">📄 계약서 양식(약관 문구)</h3>' +
+        '<p class="dorm-muted">아래 문구가 학생 서명 페이지에 표시됩니다. 수정 후 저장하세요.</p>' +
+        '<textarea id="tpl-text" class="form-input" rows="10" style="font-family:inherit;line-height:1.6">' + esc(tplVal) + '</textarea>' +
+        '<div class="dorm-actions"><button id="tpl-save" class="btn btn-primary">양식 저장</button></div></div>' +
+      '<div class="dorm-card"><h3 class="dorm-h3">✍️ 전자계약 발송·서명 현황 (' + rows.length + ')</h3>' +
+        '<p class="dorm-muted">계약별로 서명 링크를 만들어 학생 휴대폰으로 보냅니다. 학생이 서명하면 "서명완료"로 표시됩니다.</p>' +
+        (rows.length ? '<div class="scroll-x"><table class="dorm-table"><thead><tr><th>성명</th><th>학번</th><th>건물·호실</th><th>연락처</th><th>상태</th><th>처리</th></tr></thead><tbody>' +
+          rows.map(function (c) {
+            var loc = (c.dormitory_buildings ? c.dormitory_buildings.name : '') + ' ' + (c.dormitory_rooms ? c.dormitory_rooms.room_number + '호' : '');
+            var has = !!c.sign_token;
+            return '<tr data-id="' + c.id + '" data-name="' + esc(c.resident_name) + '" data-phone="' + esc(c.phone || '') + '" data-token="' + esc(c.sign_token || '') + '">' +
+              '<td>' + esc(c.resident_name) + '</td><td>' + esc(c.student_no || '-') + '</td><td>' + esc(loc.trim() || '-') + '</td><td>' + esc(c.phone || '-') + '</td>' +
+              '<td>' + badge(c.sign_status) + '</td>' +
+              '<td>' + (has ? '<button class="btn btn-secondary btn-sm es-copy">링크복사</button> <button class="btn btn-primary btn-sm es-sms">문자발송</button>' +
+                (c.sign_status === 'signed' ? ' <button class="btn btn-ghost btn-sm es-view">서명본</button>' : '')
+                : '<button class="btn btn-primary btn-sm es-gen">서명링크 생성</button>') + '</td></tr>';
+          }).join('') + '</tbody></table></div>' : '<p class="dorm-muted">진행 중 계약이 없습니다. 먼저 계약을 등록하세요.</p>') +
+      '</div>';
+
+    document.getElementById('tpl-save').addEventListener('click', async function () {
+      var v = document.getElementById('tpl-text').value;
+      var res = await _db.from('dormitory_settings').upsert({ key: 'contract_template', value: v, updated_at: new Date().toISOString() });
+      if (res.error) { toast('저장 실패: ' + res.error.message, 'error'); return; } toast('계약서 양식을 저장했습니다.', 'success');
+    });
+    body().querySelectorAll('.es-gen').forEach(function (b) { b.addEventListener('click', async function () {
+      var tr = this.closest('tr'); var token = genToken();
+      var res = await _db.from('dormitory_contracts').update({ sign_token: token, sign_status: 'pending' }).eq('id', tr.dataset.id);
+      if (res.error) { toast('실패: ' + res.error.message, 'error'); return; } toast('서명 링크 생성됨', 'success'); renderEsign();
+    }); });
+    body().querySelectorAll('.es-copy').forEach(function (b) { b.addEventListener('click', function () {
+      var link = signLink(this.closest('tr').dataset.token);
+      try { navigator.clipboard.writeText(link).then(function () { toast('링크 복사됨', 'success'); }); } catch (e) { prompt('링크', link); }
+    }); });
+    body().querySelectorAll('.es-sms').forEach(function (b) { b.addEventListener('click', async function () {
+      var tr = this.closest('tr'); var link = signLink(tr.dataset.token); var msg = signMsg(tr.dataset.name, link); var phone = tr.dataset.phone;
+      if (!phone) { toast('연락처가 없습니다.', 'error'); return; }
+      if (window.SmsModule && SmsModule.sendDirect) {
+        try { await SmsModule.sendDirect(phone, msg, '기숙사 계약'); toast('문자 발송 완료', 'success'); return; }
+        catch (e) { toast('앱 문자발송 미설정/실패 — 휴대폰 문자앱으로 대체합니다.', 'info'); }
+      }
+      location.href = 'sms:' + phone.replace(/[^0-9]/g, '') + '?&body=' + encodeURIComponent(msg);
+    }); });
+    body().querySelectorAll('.es-view').forEach(function (b) { b.addEventListener('click', function () { viewSigned(this.closest('tr').dataset.id); }); });
+  }
+
+  async function viewSigned(cid) {
+    var c = (await _db.from('dormitory_contracts').select('*, dormitory_buildings(name), dormitory_rooms(room_number)').eq('id', cid).single()).data;
+    if (!c) return;
+    var w = window.open('', '_blank');
+    var loc = (c.dormitory_buildings ? c.dormitory_buildings.name : '') + ' ' + (c.dormitory_rooms ? c.dormitory_rooms.room_number + '호' : '');
+    w.document.write('<html><head><meta charset="utf-8"><title>서명본 — ' + esc(c.resident_name) + '</title>' +
+      '<style>body{font-family:sans-serif;padding:24px;color:#222}h2{color:#1a3a5c}img{border:1px solid #ccc;border-radius:6px;max-width:320px}table{border-collapse:collapse}td,th{border:1px solid #444;padding:6px 10px;text-align:left}</style></head><body>' +
+      '<h2>기숙사 입소계약 — 전자서명본</h2>' +
+      '<table><tr><th>성명</th><td>' + esc(c.resident_name) + '</td><th>학번</th><td>' + esc(c.student_no || '') + '</td></tr>' +
+      '<tr><th>건물·호실</th><td>' + esc(loc) + '</td><th>기간</th><td>' + esc(c.start_date) + '~' + esc(c.end_date) + '</td></tr>' +
+      '<tr><th>개인정보 동의</th><td>' + (c.agree_privacy ? '동의' : '미동의') + '</td><th>서명일시</th><td>' + esc((c.signed_at || '').replace('T', ' ').slice(0, 19)) + '</td></tr></table>' +
+      '<h3>학생 서명</h3>' + (c.student_sign_b64 ? '<img src="' + c.student_sign_b64 + '">' : '(없음)') +
+      (c.guardian_name ? '<h3>보호자: ' + esc(c.guardian_name) + '</h3>' + (c.guardian_sign_b64 ? '<img src="' + c.guardian_sign_b64 + '">' : '') : '') +
+      '</body></html>'); w.document.close();
   }
 
   window.DormModule = { onTabOpen: onTabOpen };
