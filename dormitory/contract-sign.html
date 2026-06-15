@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>기숙사 입소계약서 서명</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{ --c:#1a3a5c; }
+  *{ box-sizing:border-box; }
+  body{ font-family:"Malgun Gothic","Apple SD Gothic Neo",sans-serif; margin:0; background:#eef3f8; color:#1f2937; }
+  .wrap{ max-width:600px; margin:0 auto; padding:16px 14px 60px; }
+  .hd{ background:var(--c); color:#fff; border-radius:14px; padding:16px; margin-bottom:12px; }
+  .hd h1{ font-size:17px; margin:0 0 3px; } .hd p{ font-size:12px; margin:0; opacity:.85; }
+  .card{ background:#fff; border:1px solid #e5e7eb; border-radius:14px; padding:16px; margin-bottom:12px; }
+  h2{ font-size:14px; color:var(--c); margin:0 0 10px; }
+  table{ width:100%; border-collapse:collapse; font-size:13px; }
+  th,td{ border:1px solid #e5e7eb; padding:7px 9px; text-align:left; } th{ background:#f8fafc; width:34%; color:#475569; }
+  .terms{ white-space:pre-wrap; font-size:13px; line-height:1.7; max-height:300px; overflow-y:auto; border:1px solid #eef1f4; border-radius:8px; padding:12px; background:#fafbfc; }
+  label.chk{ display:flex; gap:8px; align-items:flex-start; font-size:13px; margin:10px 0; cursor:pointer; }
+  label.chk input{ width:18px; height:18px; margin-top:1px; flex-shrink:0; }
+  input.txt{ width:100%; padding:10px 12px; border:1.5px solid #d1d5db; border-radius:8px; font-size:14px; }
+  .signbox{ border:1.5px dashed #b8c4d4; border-radius:10px; background:#fff; touch-action:none; width:100%; height:170px; display:block; }
+  .sig-row{ display:flex; justify-content:space-between; align-items:center; margin:6px 0 2px; }
+  .clr{ background:#f1f5f9; border:1px solid #d6e0ea; border-radius:7px; padding:5px 12px; font-size:12px; cursor:pointer; }
+  .btn{ width:100%; background:var(--c); color:#fff; border:none; border-radius:10px; padding:14px; font-size:16px; font-weight:700; cursor:pointer; margin-top:8px; }
+  .btn:disabled{ opacity:.5; }
+  .err{ color:#dc2626; font-size:13px; margin-top:8px; }
+  .muted{ font-size:12px; color:#6b7280; }
+  .label{ font-size:12px; font-weight:600; color:#374151; margin:12px 0 5px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hd"><h1>🏠 기숙사 입소계약서</h1><p>아세아항공직업전문학교 기숙사</p></div>
+  <div id="app"><div class="card"><p class="muted">불러오는 중…</p></div></div>
+</div>
+<script>
+var DEF_URL='https://zbpeyklwpotjyveipzxd.supabase.co';
+var DEF_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpicGV5a2x3cG90anl2ZWlwenhkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE1MTYxMDcsImV4cCI6MjA5NzA5MjEwN30.6JgoQ6rPRnmrbBTG68A-Y9HDQk40mnwubhXVnkZvHrQ';
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
+function won(n){ return (Number(n)||0).toLocaleString('ko-KR'); }
+var token=new URLSearchParams(location.search).get('t')||'';
+var db=window.supabase?window.supabase.createClient(DEF_URL,DEF_KEY):null;
+var app=document.getElementById('app');
+var sigStudent=null, sigGuardian=null;
+
+if(!token||!db){ app.innerHTML='<div class="card"><p class="err">잘못된 접근입니다. 관리자에게 정식 서명 링크를 요청하세요.</p></div>'; }
+else load();
+
+async function load(){
+  var r=await db.rpc('dorm_sign_get',{p_token:token});
+  if(r.error||!r.data){ app.innerHTML='<div class="card"><p class="err">계약 정보를 찾을 수 없습니다.</p></div>'; return; }
+  var d=r.data;
+  if(d.status==='signed'){ app.innerHTML='<div class="card" style="text-align:center"><div style="font-size:42px">✅</div><h2>이미 서명이 완료된 계약입니다.</h2><p class="muted">감사합니다.</p></div>'; return; }
+  app.innerHTML=
+    '<div class="card"><h2>계약 정보</h2><table>'+
+      '<tr><th>성명</th><td>'+esc(d.name)+'</td></tr>'+
+      '<tr><th>학번/사번</th><td>'+esc(d.student_no||'-')+'</td></tr>'+
+      '<tr><th>건물·호실</th><td>'+esc((d.building||'')+' '+(d.room?d.room+'호':''))+'</td></tr>'+
+      '<tr><th>입소 기간</th><td>'+esc(d.start)+' ~ '+esc(d.end)+'</td></tr>'+
+      '<tr><th>월 기숙사비</th><td>'+won(d.unit_price)+'원'+(d.deposit?(' (보증금 '+won(d.deposit)+'원)'):'')+'</td></tr>'+
+    '</table></div>'+
+    '<div class="card"><h2>계약 약관</h2><div class="terms">'+esc(d.template||'(약관 내용이 등록되지 않았습니다. 관리자에게 문의하세요.)')+'</div>'+
+      '<label class="chk"><input type="checkbox" id="ag-terms"> 위 계약 내용을 모두 확인하였으며 이에 동의합니다.</label>'+
+      '<label class="chk"><input type="checkbox" id="ag-privacy"> [필수] 개인정보 수집·이용에 동의합니다. (입소 관리 목적, 보관기간: 재학/입소 기간)</label>'+
+    '</div>'+
+    '<div class="card"><h2>본인(학생) 서명</h2>'+
+      '<div class="sig-row"><span class="muted">아래 칸에 손가락/마우스로 서명하세요.</span><button type="button" class="clr" id="clr-s">지우기</button></div>'+
+      '<canvas id="sig-s" class="signbox"></canvas></div>'+
+    '<div class="card"><h2>보호자(법정대리인) 동의 — 미성년자 시 필수</h2>'+
+      '<div class="label">보호자 성명</div><input class="txt" id="g-name" placeholder="미성년자인 경우 입력">'+
+      '<div class="sig-row"><span class="muted">보호자 서명(해당 시)</span><button type="button" class="clr" id="clr-g">지우기</button></div>'+
+      '<canvas id="sig-g" class="signbox"></canvas></div>'+
+    '<div class="err" id="err" style="display:none"></div>'+
+    '<button class="btn" id="submit">서명 제출 (계약 체결)</button>'+
+    '<p class="muted" style="text-align:center;margin-top:10px">제출 시 위 약관에 동의하고 전자서명한 것으로 계약이 체결됩니다.</p>';
+  sigStudent=initCanvas('sig-s'); sigGuardian=initCanvas('sig-g');
+  document.getElementById('clr-s').addEventListener('click',function(){ sigStudent.clear(); });
+  document.getElementById('clr-g').addEventListener('click',function(){ sigGuardian.clear(); });
+  document.getElementById('submit').addEventListener('click', submit);
+}
+
+function initCanvas(id){
+  var cv=document.getElementById(id);
+  function resize(){ var r=cv.getBoundingClientRect(); cv.width=r.width*2; cv.height=r.height*2; var c=cv.getContext('2d'); c.scale(2,2); c.lineWidth=2.2; c.lineCap='round'; c.strokeStyle='#111'; }
+  resize();
+  var ctx=cv.getContext('2d'), drawing=false, empty=true, lx=0, ly=0;
+  function pos(e){ var r=cv.getBoundingClientRect(); var t=e.touches?e.touches[0]:e; return {x:t.clientX-r.left, y:t.clientY-r.top}; }
+  function down(e){ e.preventDefault(); drawing=true; empty=false; var p=pos(e); lx=p.x; ly=p.y; }
+  function move(e){ if(!drawing) return; e.preventDefault(); var p=pos(e); ctx.beginPath(); ctx.moveTo(lx,ly); ctx.lineTo(p.x,p.y); ctx.stroke(); lx=p.x; ly=p.y; }
+  function up(){ drawing=false; }
+  cv.addEventListener('mousedown',down); cv.addEventListener('mousemove',move); window.addEventListener('mouseup',up);
+  cv.addEventListener('touchstart',down,{passive:false}); cv.addEventListener('touchmove',move,{passive:false}); cv.addEventListener('touchend',up);
+  return { isEmpty:function(){return empty;}, clear:function(){ var c=cv.getContext('2d'); c.clearRect(0,0,cv.width,cv.height); empty=true; },
+    data:function(){ return empty?null:cv.toDataURL('image/png'); } };
+}
+
+async function submit(){
+  var err=document.getElementById('err'); err.style.display='none';
+  if(!document.getElementById('ag-terms').checked){ err.textContent='계약 내용 동의에 체크하세요.'; err.style.display='block'; return; }
+  if(!document.getElementById('ag-privacy').checked){ err.textContent='[필수] 개인정보 수집·이용에 동의해야 합니다.'; err.style.display='block'; return; }
+  if(sigStudent.isEmpty()){ err.textContent='본인(학생) 서명을 해주세요.'; err.style.display='block'; return; }
+  var gname=(document.getElementById('g-name').value||'').trim();
+  if(gname && sigGuardian.isEmpty()){ err.textContent='보호자 성명을 입력한 경우 보호자 서명도 해주세요.'; err.style.display='block'; return; }
+  var btn=document.getElementById('submit'); btn.disabled=true; btn.textContent='제출 중…';
+  var r=await db.rpc('dorm_sign_submit',{ p_token:token, p_student:sigStudent.data(), p_agree:true, p_gname:gname, p_gsign:sigGuardian.data() });
+  if(r.error||(r.data&&r.data.ok===false)){ err.textContent='제출 실패: '+((r.data&&r.data.error)||(r.error&&r.error.message)||'오류'); err.style.display='block'; btn.disabled=false; btn.textContent='서명 제출 (계약 체결)'; return; }
+  app.innerHTML='<div class="card" style="text-align:center"><div style="font-size:48px">✅</div><h2>계약이 체결되었습니다</h2><p class="muted">전자서명이 정상 접수되었습니다. 감사합니다.</p></div>';
+}
+</script>
+</body>
+</html>

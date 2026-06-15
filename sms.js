@@ -551,8 +551,29 @@ var SmsModule = (function () {
   }
 
   /* ── 공개 API ─────────────────────────────────────────────── */
+  // 외부 모듈에서 단건 문자 발송 (예: 기숙사 전자계약 링크 발송)
+  async function sendDirect(phone, message, title) {
+    var cfg = _loadCfg();
+    var proxy = cfg.proxyUrl || _proxyUrl;
+    var sender = cfg.senderNum || _senderNum;
+    if (!proxy)  throw new Error('문자발송이 설정되지 않았습니다. (설정/소통·홍보 → 문자발송에서 프록시 등록)');
+    if (!sender) throw new Error('발신번호가 등록되지 않았습니다. (문자발송 설정)');
+    var to = String(phone || '').replace(/[^0-9]/g, '');
+    if (!to) throw new Error('수신 번호가 없습니다.');
+    var res = await fetch(proxy, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'sendSms', sender: sender, message: message,
+        title: title || '안내', receivers: [to], msgType: (message && message.length > 45) ? 'LMS' : 'SMS' })
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    var j = await res.json();
+    if (!j.ok && j.error) throw new Error(j.error);
+    return j;
+  }
+
   return {
-    initSmsTab: initSmsTab
+    initSmsTab: initSmsTab,
+    sendDirect: sendDirect
   };
 
 })();
