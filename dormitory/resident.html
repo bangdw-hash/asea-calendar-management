@@ -37,10 +37,12 @@
   <div id="app"></div>
 </div>
 <script>
+var DEF_URL='https://zbpeyklwpotjyveipzxd.supabase.co';
+var DEF_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpicGV5a2x3cG90anl2ZWlwenhkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE1MTYxMDcsImV4cCI6MjA5NzA5MjEwN30.6JgoQ6rPRnmrbBTG68A-Y9HDQk40mnwubhXVnkZvHrQ';
 function getSb(){
   var p=new URLSearchParams(location.search).get('k');
   if(p){ try{ var d=decodeURIComponent(escape(atob(p))).split('\n'); return {url:d[0],key:d[1]}; }catch(e){} }
-  return { url: localStorage.getItem('asea_dorm_supabase_url')||'', key: localStorage.getItem('asea_dorm_supabase_key')||'' };
+  return { url: localStorage.getItem('asea_dorm_supabase_url')||DEF_URL, key: localStorage.getItem('asea_dorm_supabase_key')||DEF_KEY };
 }
 function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
 function won(n){ return (Number(n)||0).toLocaleString('ko-KR'); }

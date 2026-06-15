@@ -12,6 +12,10 @@
 (function () {
   var ROOT = 'dorm-root';
   var SK_URL = 'asea_dorm_supabase_url', SK_KEY = 'asea_dorm_supabase_key';
+  // 공용 기본 연결정보 — 모든 기기/사용자가 별도 입력 없이 자동 연결.
+  // (anon 키는 공개용이라 노출돼도 안전 — 데이터 접근은 RLS+로그인으로 보호)
+  var DEFAULT_URL = 'https://zbpeyklwpotjyveipzxd.supabase.co';
+  var DEFAULT_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpicGV5a2x3cG90anl2ZWlwenhkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE1MTYxMDcsImV4cCI6MjA5NzA5MjEwN30.6JgoQ6rPRnmrbBTG68A-Y9HDQk40mnwubhXVnkZvHrQ';
   var _db = null, _session = null;
   var _st = { sub: 'dash', bid: null, cmode: 'manual' };
 
@@ -23,7 +27,7 @@
   function won(n) { return (Number(n) || 0).toLocaleString('ko-KR'); }
   function num(v) { return parseInt(String(v == null ? '' : v).replace(/[^\d-]/g, ''), 10) || 0; }
   function toast(m, t) { try { if (typeof window.aseaToast === 'function') window.aseaToast(m, t); else console.log(m); } catch (e) {} }
-  function cfg() { return { url: localStorage.getItem(SK_URL) || '', key: localStorage.getItem(SK_KEY) || '' }; }
+  function cfg() { return { url: localStorage.getItem(SK_URL) || DEFAULT_URL, key: localStorage.getItem(SK_KEY) || DEFAULT_KEY }; }
   function who() { return (_session && _session.user && _session.user.email) || ''; }
   function loading() { body().innerHTML = '<p class="dorm-muted" style="padding:24px">불러오는 중…</p>'; }
   function errBox(e) { return '<div class="dorm-card"><p style="color:#dc2626">오류: ' + esc(e && e.message || e) +
