@@ -292,7 +292,7 @@ window.HRModule = (function () {
 
       // 통계 바
       var statRow = el('div', 'hr-stat-row');
-      statRow.style.cssText = 'margin-top:20px;justify-content:center;max-width:480px;width:100%';
+      statRow.style.cssText = 'margin-top:20px;justify-content:center;max-width:540px;width:100%';
       var stats = [
         { num: apps.length, label: '전체 지원자' },
         { num: apps.filter(function(a){ return a.status==='submitted'||a.status==='approved'; }).length, label: '제출 완료' },

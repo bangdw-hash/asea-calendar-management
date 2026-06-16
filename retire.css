@@ -17,13 +17,9 @@
 .rt-home-icon  { font-size: 48px; margin-bottom: 12px; }
 .rt-role-title { font-size: 14px; font-weight: 700; color: #1a3a5c; margin-bottom: 4px; }
 .rt-role-desc  { font-size: 12px; color: #6B7280; }
-/* 관리 카드 가로 전체폭 3개 배치 (입사와 동일 포맷) */
-.rt-cards-3 { width: 100%; max-width: 680px; flex-wrap: nowrap; }
+/* 관리 카드 — 상단 링크 박스와 동일 폭(540px) (입사와 동일 포맷) */
+.rt-cards-3 { width: 100%; max-width: 540px; flex-wrap: nowrap; }
 .rt-cards-3 .rt-role-card { flex: 1 1 0; width: auto; min-width: 0; padding: 20px 14px; }
-@media (max-width: 560px) {
-  .rt-cards-3 { flex-wrap: wrap; }
-  .rt-cards-3 .rt-role-card { flex: 1 1 44%; }
-}
 
 /* 공통 래퍼 */
 .rt-wrap { max-width: 620px; margin: 0 auto; padding: 16px 12px; }
@@ -213,6 +209,9 @@ textarea.rt-input { resize: vertical; min-height: 80px; }
 @media (max-width: 600px) {
   .rt-role-cards { flex-direction: column; align-items: center; }
   .rt-role-card  { width: 100%; max-width: 320px; }
+  /* 관리 카드는 상단 박스와 동일하게 전체폭으로 세로 배치(320px 제한 해제) */
+  .rt-cards-3 { flex-direction: column; align-items: stretch; flex-wrap: nowrap; max-width: 540px; }
+  .rt-cards-3 .rt-role-card { flex: 1 1 auto; width: 100%; max-width: none; }
   .rt-row { flex-direction: column; }
   .rt-field.w100, .rt-field.w120, .rt-field.w140, .rt-field.w160, .rt-field.w200 { width: 100%; }
   .rt-code-meta { flex-direction: column; }
