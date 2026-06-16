@@ -32,6 +32,11 @@
   var _ctxOpenedAt = 0;   // 컨텍스트 메뉴 오픈 시각(직후 클릭 닫힘 방지)
   var _lpFired = false;   // long-press로 메뉴를 띄웠는지(직후 클릭 억제)
 
+  /* 시작/종료만 표시 — 다일 일정을 시작·종료 두 마커로만 보이게 하는 이벤트 id 목록(로컬 저장) */
+  var _seOnly = (function () { try { return JSON.parse(localStorage.getItem('asea_cal_se_only') || '[]'); } catch (e) { return []; } })();
+  function _isSeOnly(id) { return _seOnly.indexOf(id) !== -1; }
+  function _saveSeOnly() { try { localStorage.setItem('asea_cal_se_only', JSON.stringify(_seOnly)); } catch (e) {} }
+
   /* ═══════════════════════════════════════════════════════════
      유틸
   ═══════════════════════════════════════════════════════════ */
@@ -905,6 +910,22 @@
     /* 2일 이상 걸치는 이벤트 */
     return _evEndDay(ev).getTime() - _evStartDay(ev).getTime() > 86400000;
   }
+  function _ymd(dt) { return dt.getFullYear() + '-' + pad(dt.getMonth() + 1) + '-' + pad(dt.getDate()); }
+  /* '시작/종료만 표시'용 — 다일 일정 ev를 시작 마커·종료 마커(각각 단일일 종일 칩)로 분리 */
+  function _seMarkers(ev) {
+    var sDay = _evStartDay(ev), eExcl = _evEndDay(ev);
+    var lastDay = new Date(eExcl.getTime() - 86400000);
+    var base = ev.summary || '(제목 없음)';
+    function mk(dayStart, dayEndExcl, mark) {
+      return Object.assign({}, ev, {
+        _seMark: mark, _seRef: ev,
+        summary: base + (mark === 'start' ? ' (시작)' : ' (종료)'),
+        start: { date: _ymd(dayStart) }, end: { date: _ymd(dayEndExcl) }
+      });
+    }
+    return { start: mk(sDay, new Date(sDay.getTime() + 86400000), 'start'),
+             end:   mk(lastDay, eExcl, 'end') };
+  }
   function _buildMultiDayTracks(events, weekStart) {
     /* 각 이벤트에 startCol(0-6), endCol(1-7, exclusive), track 할당 */
     var weekT = weekStart.getTime();
@@ -943,8 +964,12 @@
     start.setDate(start.getDate() - start.getDay());
 
     /* 단일일 이벤트만 evMap에 넣어 buildDayCell에 전달 */
-    var multiDay  = S.events.filter(function (ev) { return _isMultiDay(ev); });
+    var multiDay  = S.events.filter(function (ev) { return _isMultiDay(ev) && !_isSeOnly(ev.id); });
     var singleDay = S.events.filter(function (ev) { return !_isMultiDay(ev); });
+    /* '시작/종료만 표시'로 지정된 다일 일정 → 시작·종료 마커 칩으로 분리 추가 */
+    S.events.forEach(function (ev) {
+      if (_isMultiDay(ev) && _isSeOnly(ev.id)) { var m = _seMarkers(ev); singleDay.push(m.start, m.end); }
+    });
     var evMap = eventsGroupedByDate(singleDay);
 
     var TRACK_H   = 22; /* 트랙당 픽셀 높이 */
@@ -1431,6 +1456,8 @@
         titleSpan2.textContent = ev.summary || '(제목 없음)';
         chip.appendChild(titleSpan2);
       }
+      // 시작/종료 마커는 드래그 비활성 (원본 일정을 손상시키지 않도록)
+      if (!ev._seMark) {
       // 드래그앤드롭 설정
       chip.draggable = true;
       chip.dataset.eventId = ev.id;
@@ -1524,15 +1551,17 @@
           _tcDI = null;
         });
       })(ev);
+      } // /if (!ev._seMark)
+      var _chipRef = ev._seMark ? (ev._seRef || ev) : ev;   // 마커 칩은 원본 일정을 가리킴
       chip.addEventListener('click', function (e) {
         e.stopPropagation();
         if (_lpFired) { _lpFired = false; return; }   // 길게 눌러 메뉴 띄운 직후 클릭 무시
-        openEventModal(ev);
+        openEventModal(_chipRef);
       });
       chip.addEventListener('contextmenu', function (e) {
         e.preventDefault();
         e.stopPropagation();
-        showEventContextMenu(ev, e.clientX, e.clientY);
+        showEventContextMenu(_chipRef, e.clientX, e.clientY);
       });
       evWrap.appendChild(chip);
     });
@@ -2052,9 +2081,18 @@
     _ctxOpenedAt = Date.now();
     var menu = $('ev-ctx-menu');
     if (!menu) return;
+    /* 항목 가시성/라벨 구성 */
+    var seBtn = $('ev-ctx-seonly');
+    if (seBtn) {
+      seBtn.hidden = !_isMultiDay(ev);   // 다일 일정에만 의미 있음
+      var lbl = seBtn.querySelector('.ev-ctx-label');
+      if (lbl) lbl.textContent = _isSeOnly(ev.id) ? '전체 기간 표시' : '시작/종료만 표시';
+    }
+    var adBtn = $('ev-ctx-allday');
+    if (adBtn) adBtn.hidden = !!ev.start.date;   // 이미 종일이면 숨김
     menu.hidden = false;
     var W = window.innerWidth, H = window.innerHeight;
-    var mW = 160, mH = 116;
+    var mW = 190, mH = menu.offsetHeight || 200;
     menu.style.left = Math.min(x, W - mW - 8) + 'px';
     menu.style.top  = Math.min(y, H - mH - 8) + 'px';
   }
@@ -2105,6 +2143,46 @@
         if (shareBtn && !shareBtn.hidden) shareBtn.click();
       }, 200);
     });
+
+    var seBtn = $('ev-ctx-seonly');
+    if (seBtn) seBtn.addEventListener('click', function (e) {
+      e.stopPropagation(); var ev = _ctxEv; hideEventContextMenu();
+      if (ev) toggleStartEndOnly(ev);
+    });
+
+    var adBtn = $('ev-ctx-allday');
+    if (adBtn) adBtn.addEventListener('click', function (e) {
+      e.stopPropagation(); var ev = _ctxEv; hideEventContextMenu();
+      if (ev) convertToAllDay(ev);
+    });
+  }
+
+  /* 다일 일정: 시작/종료만 표시 ↔ 전체 기간 표시 토글 (로컬 저장 · 표시 전용) */
+  function toggleStartEndOnly(ev) {
+    if (!ev || !ev.id) return;
+    var i = _seOnly.indexOf(ev.id);
+    if (i === -1) { _seOnly.push(ev.id); toast('시작·종료 날짜만 표시합니다.', 'success'); }
+    else { _seOnly.splice(i, 1); toast('전체 기간을 표시합니다.', 'info'); }
+    _saveSeOnly();
+    if (S.calView === 'month') renderMonth(); else renderWeek();
+  }
+
+  /* 일정을 종일(하루 종일) 일정으로 변경 — 기존 걸친 날짜 범위 유지 */
+  function convertToAllDay(ev) {
+    if (!ev) return;
+    if (ev.start.date) { toast('이미 종일 일정입니다.', 'info'); return; }
+    var calIdStr = ev._calId || CONFIG.calendarId;
+    var sDay = _evStartDay(ev), eExcl = _evEndDay(ev);
+    if (eExcl.getTime() <= sDay.getTime()) eExcl = new Date(sDay.getTime() + 86400000);
+    var startField = { date: _ymd(sDay) }, endField = { date: _ymd(eExcl) };
+    toast('📅 종일 일정으로 변경 중…', 'info');
+    CalendarModule.patchEvent(calIdStr, ev.id, { start: startField, end: endField })
+      .then(function () {
+        toast('✅ 종일 일정으로 변경됐습니다.', 'success');
+        ev.start = startField; ev.end = endField;   // 로컬 캐시 갱신
+        renderCalendar();
+      })
+      .catch(function (err) { toast('❌ 변경 실패: ' + (err && err.message || err), 'error'); });
   }
 
   function initEventModal() {
@@ -4486,22 +4564,19 @@
       // 선택된 캘린더에서 해당 기간 이벤트 조회
       var calEvents = await CalendarModule.listEvents(calendarId, minDate.toISOString(), maxDate.toISOString());
 
-      // 충돌 판단: 시간 겹침 OR 제목 유사 (공백 제거 후 포함 여부)
+      // 충돌 판단: '시간 겹침' AND '제목이 충분히 비슷할' 때만 (무관한 동시간대 일정 제외)
+      var simTh = CalendarModule.DUP_SIM_TH || 0.6;
       var conflictSet = new Set();
       S.extractedEvents.forEach(function (ev, i) {
         var evStart = new Date(ev.startDateTime);
         var evEnd   = new Date(ev.endDateTime);
-        var evTitle = ev.title.replace(/\s/g, '').toLowerCase();
 
         var hit = calEvents.some(function (existing) {
           var exStart = new Date(existing.start.dateTime || existing.start.date);
           var exEnd   = new Date(existing.end.dateTime   || existing.end.date);
           var timeOverlap = evStart < exEnd && evEnd > exStart;
-          var existingTitle = (existing.summary || '').replace(/\s/g, '').toLowerCase();
-          var titleSimilar = existingTitle.length > 0 && (
-            evTitle.includes(existingTitle) || existingTitle.includes(evTitle)
-          );
-          return timeOverlap || titleSimilar;
+          if (!timeOverlap) return false;
+          return CalendarModule.titleSimilarity(existing.summary, ev.title) >= simTh;
         });
 
         if (hit) conflictSet.add(i);
