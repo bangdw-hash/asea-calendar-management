@@ -13,7 +13,7 @@
   var FTYPES = [['text', '글자'], ['date', '날짜'], ['number', '숫자/금액'], ['checkbox', '체크(✓)'], ['signature', '서명']];
   var _db = null, _session = null;
   // C.cur = 편집 중 서식 {id,title,description,pages:[{image,w,h}],fields:[{key,label,type,page,x,y,font_size,required}],link_mode,status}
-  var C = { view: 'list', list: [], cur: null, page: 0, sel: null, subs: [], snap: false, grid: 1 };
+  var C = { view: 'list', list: [], cur: null, page: 0, sel: null, subs: [], snap: false, grid: 1, _ci: {} };
 
   function root() { return document.getElementById(ROOT); }
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
@@ -268,24 +268,73 @@
     var t = tplById(id); if (!t) { await editTemplate(id); t = C.cur; } else { var d = await _db.from('form_templates').select('*').eq('id', id).limit(1); C.cur = (d.data && d.data[0]) || t; }
     C.view = 'subs'; renderSubs();
   }
+  function subById(id) { return C.subs.filter(function (x) { return x.id === id; })[0]; }
   async function renderSubs() {
     var t = C.cur;
     var d = await _db.from('form_submissions').select('*').eq('template_id', t.id).order('created_at', { ascending: false });
     C.subs = (d.data) || [];
+    var ci = await _db.from('contract_integrity').select('id,submission_id').eq('template_id', t.id);
+    C._ci = {}; (ci.data || []).forEach(function (r) { if (r.submission_id) C._ci[r.submission_id] = r.id; });
     var rows = C.subs.map(function (s, i) {
       var vals = s.values || {}; var summary = Object.keys(vals).slice(0, 3).map(function (k) { return esc(String(vals[k])); }).join(' · ');
+      var cid = C._ci[s.id];
+      var integ = cid ? '<span class="dorm-badge occ">🔒 검증가능</span>' : '<span class="dorm-badge vac">미등록</span>';
+      var act = '<button class="btn btn-secondary btn-sm" data-cg-pdf="' + s.id + '">완성본 PDF' + (cid ? '' : ' + 등록') + '</button>';
+      if (cid) act += ' <button class="btn btn-ghost btn-sm" data-cg-vlink="' + cid + '">검증링크</button> <button class="btn btn-ghost btn-sm" data-cg-rereg="' + s.id + '">재등록</button>';
       return '<tr><td>' + (i + 1) + '</td><td>' + esc(s.submitter_name || '(이름없음)') + '<div class="dorm-muted">' + esc(s.submitter_contact || '') + '</div></td>' +
         '<td class="dorm-muted">' + summary + '</td><td>' + esc((s.submitted_at || s.created_at || '').slice(0, 16).replace('T', ' ')) + '</td>' +
-        '<td><button class="btn btn-secondary btn-sm" data-cg-pdf="' + s.id + '">완성본 PDF</button></td></tr>';
+        '<td>' + integ + '</td><td>' + act + '</td></tr>';
     }).join('');
     root().innerHTML = topBar('제출 이력 — ' + esc(t.title || '')) +
       '<div class="dorm-card"><div class="dorm-actions" style="justify-content:space-between"><h3 class="dorm-h3" style="margin:0">' + esc(t.title || '') + ' 제출 (' + C.subs.length + ')</h3>' +
-        '<button id="cg-back2" class="btn btn-ghost btn-sm">← 목록</button></div>' +
-      (C.subs.length ? '<table class="dorm-table" style="margin-top:10px"><thead><tr><th>#</th><th>제출자</th><th>요약</th><th>제출시각</th><th>출력</th></tr></thead><tbody>' + rows + '</tbody></table>'
+        '<div><a class="btn btn-ghost btn-sm" href="' + portalBase() + 'contract-verify.html" target="_blank" rel="noopener">🔎 검증 포털</a> <button id="cg-back2" class="btn btn-ghost btn-sm">← 목록</button></div></div>' +
+      '<p class="dorm-muted">「완성본 PDF」를 누르면 그 파일이 발급되고 <b>무결성 원본으로 자동 등록</b>됩니다(검증 가능). 같은 파일을 검증 포털에 올리면 위·변조 여부가 확인됩니다.</p>' +
+      (C.subs.length ? '<table class="dorm-table" style="margin-top:10px"><thead><tr><th>#</th><th>제출자</th><th>요약</th><th>제출시각</th><th>무결성</th><th>출력/검증</th></tr></thead><tbody>' + rows + '</tbody></table>'
         : '<p class="dorm-muted" style="margin-top:10px">아직 제출이 없습니다.</p>') + '</div>';
     bindTop();
     document.getElementById('cg-back2').addEventListener('click', function () { C.view = 'list'; C.cur = null; onTabOpen(); });
-    root().querySelectorAll('[data-cg-pdf]').forEach(function (b) { b.addEventListener('click', function () { var s = C.subs.filter(function (x) { return x.id === b.dataset.cgPdf; })[0]; if (s) genPdf(t, s); }); });
+    root().querySelectorAll('[data-cg-pdf]').forEach(function (b) { b.addEventListener('click', function () { var s = subById(b.dataset.cgPdf); if (s) genPdf(t, s, !C._ci[s.id]).then(renderSubs); }); });
+    root().querySelectorAll('[data-cg-rereg]').forEach(function (b) { b.addEventListener('click', function () { var s = subById(b.dataset.cgRereg); if (s && confirm('완성본을 새로 발급하고 무결성을 재등록할까요? (이전 발급본은 더 이상 검증되지 않습니다)')) genPdf(t, s, true).then(renderSubs); }); });
+    root().querySelectorAll('[data-cg-vlink]').forEach(function (b) { b.addEventListener('click', function () { copy(portalBase() + 'contract-verify.html?id=' + b.dataset.cgVlink); }); });
+  }
+
+  // ── 무결성(ECIS): 해시·매니페스트·감사체인 ──────────────
+  async function sha256Hex(data) {
+    var bytes = typeof data === 'string' ? new TextEncoder().encode(data) : (data instanceof ArrayBuffer ? new Uint8Array(data) : data);
+    var h = await crypto.subtle.digest('SHA-256', bytes);
+    return Array.prototype.map.call(new Uint8Array(h), function (b) { return ('0' + b.toString(16)).slice(-2); }).join('');
+  }
+  async function ensurePdfLib() { if (!window.PDFLib) await loadScript('https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js'); }
+  async function pageHashesOf(bytes) {
+    await ensurePdfLib();
+    var src = await PDFLib.PDFDocument.load(bytes, { ignoreEncryption: true });
+    var n = src.getPageCount(), out = [];
+    for (var i = 0; i < n; i++) {
+      var d = await PDFLib.PDFDocument.create(); var pgs = await d.copyPages(src, [i]); d.addPage(pgs[0]);
+      var b = await d.save(); var hh = await sha256Hex(b);
+      out.push({ pageIndex: i, pageNumber: i + 1, hash: hh, byteSize: b.length });
+    }
+    return out;
+  }
+  function entryHashOf(prev, cid, ev, actor, payload) { return sha256Hex(prev + '|' + cid + '|' + ev + '|' + (actor || '') + '|' + JSON.stringify(payload || {})); }
+  async function appendAudit(cid, ev, payload) {
+    var actor = (_session && _session.user && _session.user.email) || 'admin';
+    var last = await _db.rpc('ci_audit_get', { p_id: cid }); var arr = last.data || [];
+    var prev = arr.length ? arr[arr.length - 1].entry_hash : '';
+    var eh = await entryHashOf(prev, cid, ev, actor, payload);
+    await _db.rpc('ci_audit_add', { p_contract: cid, p_event: ev, p_actor: actor, p_payload: payload, p_prev: prev, p_entry: eh });
+  }
+  async function registerIntegrity(tpl, sub, bytes) {
+    var fileHash = await sha256Hex(bytes);
+    var ph = await pageHashesOf(bytes);
+    var manifest = { contractId: null, createdAt: new Date().toISOString(), totalPages: ph.length, fileHash: fileHash, pageHashes: ph,
+      signers: [{ name: sub.submitter_name || '', email: sub.submitter_contact || '', signedAt: sub.submitted_at || sub.created_at || '', ip: '', userAgent: '', signatureHex: '' }] };
+    var ins = await _db.from('contract_integrity').insert({ submission_id: sub.id, template_id: tpl.id, title: tpl.title, file_hash: fileHash, total_pages: ph.length, manifest: manifest, created_by: (_session && _session.user && _session.user.email) || '' }).select('id').limit(1);
+    if (ins.error) { toast('무결성 등록 실패: ' + ins.error.message, 'error'); return null; }
+    var cid = ins.data[0].id; manifest.contractId = cid;
+    await _db.from('contract_integrity').update({ manifest: manifest }).eq('id', cid);
+    await appendAudit(cid, 'CONTRACT_CREATED', { fileHash: fileHash, totalPages: ph.length, submitter: sub.submitter_name || '' });
+    return cid;
   }
 
   // 칸(boxW×boxH)에 맞게 글씨 자동 축소 + 필요시 줄바꿈
@@ -301,7 +350,7 @@
     var maxLines = Math.max(1, Math.floor(boxH / (size * 1.18)));
     for (var li = 0; li < Math.min(lines.length, maxLines); li++) ctx.fillText(lines[li], x, y + li * size * 1.18, boxW);
   }
-  async function genPdf(tpl, sub) {
+  async function genPdf(tpl, sub, autoRegister) {
     try {
       toast('완성본 생성 중…', 'info');
       if (!window.jspdf) await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
@@ -326,7 +375,12 @@
         else doc.addPage([pg.w, pg.h], orient);
         doc.addImage(cv.toDataURL('image/jpeg', 0.9), 'JPEG', 0, 0, pg.w, pg.h);
       }
-      doc.save((tpl.title || '문서') + '_' + (sub.submitter_name || '') + '.pdf');
+      var bytes = new Uint8Array(doc.output('arraybuffer'));   // 다운로드/해시 동일 바이트
+      var name = (tpl.title || '문서') + '_' + (sub.submitter_name || '') + '.pdf';
+      var blob = new Blob([bytes], { type: 'application/pdf' }), urlb = URL.createObjectURL(blob);
+      var a = document.createElement('a'); a.href = urlb; a.download = name; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(urlb);
+      if (autoRegister) { var cid = await registerIntegrity(tpl, sub, bytes); if (cid) { C._ci[sub.id] = cid; toast('완성본 발급 + 무결성 등록 완료 (검증 가능)', 'success'); } }
+      else toast('완성본 PDF를 내려받았습니다.', 'success');
     } catch (e) { toast('PDF 생성 실패: ' + (e.message || e), 'error'); }
   }
 
