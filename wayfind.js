@@ -97,7 +97,7 @@
       (f ? '<div class="dorm-actions" style="margin-top:6px">' +
         ['node', 'link', 'move'].map(function (m) { var lab = { node: '지점 추가', link: '지점 연결', move: '이동' }[m]; return '<button class="dorm-mode' + (W.mode === m ? ' active' : '') + '" data-wfm="' + m + '">' + lab + '</button>'; }).join('') +
         '<button id="wf-delfloor" class="btn btn-ghost btn-sm" style="color:#dc2626;margin-left:auto">이 층 삭제</button></div>' +
-        '<p class="dorm-muted">' + (W.mode === 'node' ? '도면 빈 곳을 클릭해 지점을 추가합니다. 지점을 클릭하면 속성 편집.' : W.mode === 'link' ? '연결할 지점을 차례로 클릭하면 경로가 이어집니다. (ESC=연결 취소)' : '지점을 드래그해 위치를 옮깁니다. 드래그 중 <b>ESC·우클릭</b>이면 취소.') +
+        '<p class="dorm-muted">' + (W.mode === 'node' ? '도면 빈 곳을 클릭하면 <b>이름을 입력</b>해 지점을 추가합니다. 지점 <b>더블클릭=이름 변경</b>, 클릭=속성 편집.' : W.mode === 'link' ? '연결할 지점을 차례로 클릭하면 경로가 이어집니다. (ESC=연결 취소)' : '지점을 드래그해 위치를 옮깁니다. 드래그 중 <b>ESC·우클릭</b>이면 취소. <b>더블클릭=이름 변경</b>.') +
         ' <b style="color:#dc2626">우클릭</b>: 경로(선)=그 경로 삭제 · 지점=그 지점 삭제. (계단/엘리베이터는 <b>여러 층에 같은 이름</b>으로 두면 층간 자동 연결됩니다.)</p>' : '') +
       '<div id="wf-stage" class="wf-stage' + (f && f.image ? '' : ' empty') + '">' + (f && f.image ? '<img src="' + f.image + '" class="wf-img"><svg class="wf-svg" viewBox="0 0 100 100" preserveAspectRatio="none"></svg><div class="wf-nodes"></div>' : '<div class="dorm-muted">' + (f ? '도면 이미지를 업로드하세요.' : '먼저 「+ 층/도면 추가」로 층을 만드세요.') + '</div>') + '</div>' +
       '</div><div id="wf-prop"></div>' +
@@ -156,7 +156,10 @@
       if (e.target.closest('.wf-mk')) return;
       var r = stage.getBoundingClientRect();
       var x = (e.clientX - r.left) / r.width * 100, y = (e.clientY - r.top) / r.height * 100;
-      var n = { id: uid(), floor: W.cur, x: Math.round(x * 10) / 10, y: Math.round(y * 10) / 10, name: '지점' + (W.nodes.length + 1), type: '일반', qr: false };
+      var def = '지점' + (W.nodes.length + 1);
+      var nm = prompt('이 지점의 이름을 입력하세요. (예: 항공보안 무도장)\n※ 입력한 이름이 방문자 목적지 검색에 그대로 사용됩니다. 비워두면 임시 이름으로 생성됩니다.', '');
+      var name = (nm == null || !nm.trim()) ? def : nm.trim();
+      var n = { id: uid(), floor: W.cur, x: Math.round(x * 10) / 10, y: Math.round(y * 10) / 10, name: name, type: '일반', qr: false };
       W.nodes.push(n); W.sel = n.id; wfRenderGraph(); wfRenderProp();
     });
     // 빈 곳 우클릭: 브라우저 메뉴 차단 + 연결/드래그 중이면 취소
@@ -165,6 +168,14 @@
       if (W._cancelDrag) { W._cancelDrag(); return; }
       if (W.linkFrom) { W.linkFrom = null; wfRenderGraph(); toast('연결을 취소했습니다.', 'info'); }
     });
+  }
+  function wfRenameNode(id) {
+    var n = nodeById(id); if (!n) return;
+    var nm = prompt('지점 이름 (예: 항공보안 무도장)\n※ 이 이름이 방문자 목적지 검색에 사용됩니다.', n.name || '');
+    if (nm == null) return;                 // 취소
+    nm = nm.trim(); if (!nm) return;        // 빈 값은 무시
+    n.name = nm; W.sel = id; wfRenderGraph(); wfRenderProp();
+    toast('이름을 "' + nm + '"(으)로 변경했습니다.', 'success');
   }
   function wfDeleteNode(id) {
     var n = nodeById(id); if (!n) return;
@@ -194,6 +205,7 @@
     wrap.querySelectorAll('.wf-mk').forEach(function (m) {
       if (W.mode === 'move') wfDrag(m);
       m.addEventListener('click', function (ev) { ev.stopPropagation(); wfNodeClick(this.dataset.id); });
+      m.addEventListener('dblclick', function (ev) { ev.stopPropagation(); ev.preventDefault(); wfRenameNode(this.dataset.id); });
       m.addEventListener('contextmenu', function (ev) {
         ev.preventDefault(); ev.stopPropagation();
         if (W._cancelDrag) { W._cancelDrag(); return; }            // 드래그 중 → 취소
@@ -233,7 +245,7 @@
     var n = nodeById(W.sel); var p = document.getElementById('wf-prop'); if (!n) { p.innerHTML = ''; return; }
     var link = portalBase() + 'wayfind.html?from=' + n.id;
     p.innerHTML = '<div class="dorm-card"><h3 class="dorm-h3">지점 속성</h3>' +
-      '<div class="dorm-row4"><div><label class="dorm-label">이름</label><input id="wf-n-name" class="form-input" value="' + esc(n.name) + '"></div>' +
+      '<div class="dorm-row4"><div><label class="dorm-label">이름 (목적지 검색에 사용)</label><input id="wf-n-name" class="form-input" placeholder="예: 항공보안 무도장" value="' + esc(n.name) + '"></div>' +
       '<div><label class="dorm-label">유형</label><select id="wf-n-type" class="form-select">' + TYPES.map(function (t) { return '<option' + (t === n.type ? ' selected' : '') + '>' + t + '</option>'; }).join('') + '</select></div>' +
       '<div style="align-self:end"><label class="dorm-cb"><input type="checkbox" id="wf-n-qr"' + (n.qr ? ' checked' : '') + '> QR 지점</label></div>' +
       '<div style="align-self:end"><button id="wf-n-del" class="btn btn-ghost btn-sm" style="color:#dc2626">지점 삭제</button></div></div>' +
