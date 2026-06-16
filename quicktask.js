@@ -130,6 +130,7 @@ var QuickTaskModule = (function () {
     renderPasteZone();
     renderTaskList();
     renderCalendarBadge();
+    qtClearResult();
     modal.hidden = false;
 
     // 드래그 이동 + 리사이즈 초기화
@@ -497,14 +498,23 @@ var QuickTaskModule = (function () {
     var tasks = Q.extractedTasks.filter(function (t) { return t.checked && t.title; });
     if (tasks.length === 0) { toast('등록할 항목을 선택하세요.', 'warning'); return; }
 
+    // 로그인(토큰) 확인 — 캘린더 등록 전제
+    if (typeof Auth !== 'undefined' && Auth.getToken && !Auth.getToken()) {
+      qtShowResult('err', '⚠️ 등록 불가 — 구글 로그인이 만료되었습니다.', [{ title: '해결', msg: '화면 우측 상단에서 다시 로그인한 뒤 등록해 주세요.' }]);
+      toast('로그인이 필요합니다. 다시 로그인하세요.', 'error'); return;
+    }
+
     var me = window._workMe || {};
     var btn = $q('qt-register-btn');
     if (btn) { btn.disabled = true; btn.textContent = '등록 중...'; }
+    qtClearResult();
 
-    var success = 0, fail = 0;
+    var success = 0, fail = 0, calMade = 0;
+    var issues = [];   // {title, msg} — 부분 실패/완전 실패 사유
 
     for (var i = 0; i < tasks.length; i++) {
       var t = tasks[i];
+      var calStatus = 'skip', calMsg = '', sheetsStatus = 'skip', sheetsMsg = '';
       try {
         // 1. Sheets에 업무 등록
         var taskData = {
@@ -575,7 +585,7 @@ var QuickTaskModule = (function () {
             };
           }
 
-          var firstCalEventId = '';
+          var firstCalEventId = '', calErrs = [];
           for (var ci = 0; ci < calTargets.length; ci++) {
             try {
               var token = Auth.getToken();
@@ -591,30 +601,48 @@ var QuickTaskModule = (function () {
               if (calResp.ok) {
                 var calData = await calResp.json();
                 if (!firstCalEventId) firstCalEventId = calData.id || '';
+              } else {
+                var em = ''; try { var ej = await calResp.json(); em = (ej.error && ej.error.message) || ('HTTP ' + calResp.status); } catch (e) { em = 'HTTP ' + calResp.status; }
+                calErrs.push(calTargets[ci].name + ': ' + em);
               }
-            } catch (calErr) { console.warn('[ASEA] 캘린더 등록 실패:', calTargets[ci].name, calErr); }
+            } catch (calErr) { calErrs.push(calTargets[ci].name + ': ' + (calErr.message || '네트워크 오류')); }
           }
-          taskData.calEventId = firstCalEventId;
+          if (firstCalEventId) { calStatus = 'ok'; taskData.calEventId = firstCalEventId; }
+          else { calStatus = 'fail'; calMsg = calErrs.join(' / ') || '캘린더 등록 실패'; }
+        } else if (calTargets.length > 0 && !t.dueDate) {
+          calStatus = 'skip'; calMsg = '마감일(날짜)이 없어 캘린더에는 등록하지 않음';
+        } else {
+          calStatus = 'skip'; calMsg = '등록할 캘린더가 선택되지 않음';
         }
 
-        // Sheets 등록 (SheetsModule이 있으면 — 실패해도 캘린더 등록은 유지)
+        // Sheets(업무관리) 등록
         if (typeof SheetsModule !== 'undefined' && SheetsModule.createTask) {
           try {
             await SheetsModule.createTask(taskData);
-            // 수신함에 자기 자신에게도 등록 (개인 업무)
             if (SheetsModule.createReceived && me.id) {
-              await SheetsModule.createReceived(taskData.id, [{
-                userId: me.id, userName: me.name || '',
-              }]);
+              await SheetsModule.createReceived(taskData.id, [{ userId: me.id, userName: me.name || '' }]);
             }
-          } catch (sheetsErr) {
-            console.warn('[ASEA] Sheets 등록 실패 (캘린더 등록은 완료):', sheetsErr);
-          }
+            sheetsStatus = 'ok';
+          } catch (sheetsErr) { sheetsStatus = 'fail'; sheetsMsg = (sheetsErr.message || '업무관리 시트 등록 실패'); }
         }
 
-        success++;
+        // 성공 판정: 캘린더 또는 업무목록 중 하나라도 등록되면 성공
+        if (calStatus === 'ok' || sheetsStatus === 'ok') {
+          success++; if (calStatus === 'ok') calMade++;
+          if (calStatus === 'fail') issues.push({ title: t.title, msg: '캘린더 등록 실패(업무목록엔 저장됨) — ' + calMsg });
+          if (sheetsStatus === 'fail') issues.push({ title: t.title, msg: '업무목록 저장 실패(캘린더엔 등록됨) — ' + sheetsMsg });
+          t._done = true;
+        } else {
+          fail++;
+          var reason = '';
+          if (calStatus === 'fail') reason = '캘린더: ' + calMsg;
+          if (sheetsStatus === 'fail') reason += (reason ? ' / ' : '') + '업무목록: ' + sheetsMsg;
+          if (!reason) reason = '등록 대상이 없습니다 — 캘린더를 선택하거나 마감일(날짜)을 입력하세요.' + (calMsg ? ' (' + calMsg + ')' : '');
+          issues.push({ title: t.title, msg: reason });
+        }
       } catch (err) {
         fail++;
+        issues.push({ title: t.title, msg: (err.message || '알 수 없는 오류') });
         console.warn('quicktask register error', err);
       }
     }
@@ -622,25 +650,28 @@ var QuickTaskModule = (function () {
     if (btn) { btn.disabled = false; btn.textContent = '✅ 등록하기'; }
 
     if (success > 0) {
-      toast('✅ ' + success + '건 등록 완료!' + (fail ? ' (' + fail + '건 실패)' : ''), 'success');
-      // 등록된 항목 체크 해제
-      Q.extractedTasks.forEach(function (t) {
-        if (t.checked) t._done = true;
-      });
       Q.extractedTasks = Q.extractedTasks.filter(function (t) { return !t._done; });
       renderTaskList();
-
-      // 업무관리 탭 새로고침
-      if (typeof WorkModule !== 'undefined' && WorkModule.refreshInbox) {
-        WorkModule.refreshInbox();
-      }
-      // 캘린더 탭 새로고침 (앱 전역 함수가 있으면)
-      if (typeof window.aseaRefreshCalendar === 'function') {
-        window.aseaRefreshCalendar();
-      }
-    } else {
-      toast('등록에 실패했습니다. 로그인 상태를 확인하세요.', 'error');
+      if (typeof WorkModule !== 'undefined' && WorkModule.refreshInbox) WorkModule.refreshInbox();
+      if (typeof window.aseaRefreshCalendar === 'function') window.aseaRefreshCalendar();
     }
+    var head = success > 0
+      ? ('✅ ' + success + '건 등록 완료' + (calMade ? ' · 캘린더 ' + calMade + '건' : '') + (fail ? ' · ⚠️ ' + fail + '건 실패' : ''))
+      : ('⚠️ 등록 실패 — ' + fail + '건');
+    toast(head, success > 0 ? (fail ? 'warning' : 'success') : 'error');
+    qtShowResult(success > 0 ? ((fail || issues.length) ? 'warn' : 'ok') : 'err', head, issues);
+  }
+
+  function qtClearResult() { var el = $q('qt-result'); if (el) { el.hidden = true; el.innerHTML = ''; } }
+  function qtShowResult(kind, head, issues) {
+    var el = $q('qt-result'); if (!el) return; el.hidden = false;
+    var c = kind === 'ok' ? ['#ecfdf5', '#a7f3d0', '#065f46'] : kind === 'warn' ? ['#fffbeb', '#fde68a', '#92400e'] : ['#fef2f2', '#fecaca', '#991b1b'];
+    var html = '<div style="background:' + c[0] + ';border:1px solid ' + c[1] + ';border-radius:10px;padding:12px 14px;margin-top:10px;color:' + c[2] + '">' +
+      '<div style="font-weight:700;font-size:14px">' + escapeHtml(head) + '</div>';
+    if (issues && issues.length) html += '<ul style="margin:8px 0 0;padding-left:18px;font-size:13px;line-height:1.6">' + issues.map(function (x) { return '<li><b>' + escapeHtml(x.title) + '</b> — ' + escapeHtml(x.msg) + '</li>'; }).join('') + '</ul>';
+    else if (kind === 'ok') html += '<div style="font-size:13px;margin-top:4px">모두 정상 등록되었습니다.</div>';
+    html += '</div>';
+    el.innerHTML = html;
   }
 
   /* ────────────────────────────────────────────────────────────
