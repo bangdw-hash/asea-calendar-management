@@ -73,3 +73,18 @@
 #mp-markers { position:absolute; inset:0; }
 .mp-mk { position:absolute; transform:translate(-50%,-50%); min-width:36px; height:28px; padding:0 7px; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; border-radius:7px; color:#fff; box-shadow:0 1px 5px rgba(0,0,0,.3); white-space:nowrap; }
 .mp-mk.occ { background:#059669; } .mp-mk.vac { background:#94a3b8; }
+
+/* 안내도(길찾기) 설계기 */
+.wf-stage { position:relative; width:100%; min-height:380px; background:#f1f5f9; border:1px solid #e5e7eb; border-radius:10px; overflow:hidden; margin-top:6px; }
+.wf-stage.empty { display:flex; align-items:center; justify-content:center; min-height:300px; }
+.wf-img { display:block; width:100%; height:auto; user-select:none; -webkit-user-drag:none; }
+.wf-svg { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; }
+.wf-nodes { position:absolute; inset:0; }
+.wf-mk { position:absolute; transform:translate(-50%,-50%); display:flex; align-items:center; gap:3px; cursor:pointer; }
+.wf-mk::before { content:''; width:13px; height:13px; border-radius:50%; background:#1a73e8; border:2px solid #fff; box-shadow:0 1px 4px rgba(0,0,0,.35); flex-shrink:0; }
+.wf-mk.t-계단::before, .wf-mk.t-엘리베이터::before { background:#d97706; }
+.wf-mk.t-입구::before { background:#059669; }
+.wf-mk.qr::before { background:#7c3aed; }
+.wf-mk.sel::before { outline:3px solid rgba(26,115,232,.4); }
+.wf-mk.linking::before { box-shadow:0 0 0 4px rgba(220,38,38,.4); }
+.wf-mk span { font-size:11px; font-weight:700; color:#111; background:rgba(255,255,255,.85); padding:1px 5px; border-radius:5px; white-space:nowrap; }

@@ -19,7 +19,7 @@
   <link rel="stylesheet" href="hr.css?v=20260614hr5">
   <link rel="stylesheet" href="retire.css?v=20260614rt7">
   <link rel="stylesheet" href="onboarding.css?v=20260614ob1">
-  <link rel="stylesheet" href="dormitory.css?v=20260615d8">
+  <link rel="stylesheet" href="dormitory.css?v=20260616d9">
   <script src="https://accounts.google.com/gsi/client" async></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
   <!-- SheetJS for Excel support — 로컬 xlsx.mini.min.js(하단 로드)로 일원화하여 중복 로드 제거 -->
@@ -173,6 +173,13 @@
       <path d="M3 21h18M5 21V7l7-4 7 4v14"/><rect x="9" y="9" width="2.5" height="2.5"/><rect x="13" y="9" width="2.5" height="2.5"/><rect x="9" y="14" width="2.5" height="2.5"/><rect x="13" y="14" width="2.5" height="2.5"/>
     </svg>
     <span class="tab-label">기숙사관리</span>
+  </button>
+
+  <button class="tab-btn" data-tab="wayfind" role="tab" aria-selected="false">
+    <svg class="tab-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M9 20l-5.5 2 0-16L9 4m0 16l6-2m-6 2V4m6 14l5.5 2 0-16L15 4m0 14V4m0 0L9 4"/><circle cx="12" cy="10" r="1.5"/>
+    </svg>
+    <span class="tab-label">안내도</span>
   </button>
 
   <button class="tab-btn" data-tab="workorder" role="tab" aria-selected="false">
@@ -1159,6 +1166,13 @@
       <section id="tab-dorm" class="tab-panel" role="tabpanel" hidden>
         <div class="tab-body" id="dorm-root">
           <p style="padding:40px;text-align:center;color:#9ca3af">기숙사 관리 모듈을 불러오는 중…</p>
+        </div>
+      </section>
+
+      <!-- 🧭 안내도(길찾기) 탭 -->
+      <section id="tab-wayfind" class="tab-panel" role="tabpanel" hidden>
+        <div class="tab-body" id="wayfind-root">
+          <p style="padding:40px;text-align:center;color:#9ca3af">안내도 모듈을 불러오는 중…</p>
         </div>
       </section>
 
@@ -3292,6 +3306,7 @@
   <script src="config.js?v=20260614r4" defer></script>
   <script src="cloudsync.js?v=20260614c5" defer></script>
   <script src="dormitory.js?v=20260615d8" defer></script>
+  <script src="wayfind.js?v=20260616w1" defer></script>
   <script src="auth.js?v=20260615r6" defer></script>
   <script src="calendar.js?v=20260612c1" defer></script>
   <script src="drive.js?v=20260608s" defer></script>

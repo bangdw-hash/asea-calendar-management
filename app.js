@@ -285,6 +285,7 @@
     if (name === 'extract')    renderExtractTab();
     if (name === 'workorder')    initWorkOrderTab();
     if (name === 'dorm' && typeof DormModule !== 'undefined') DormModule.onTabOpen();
+    if (name === 'wayfind' && typeof WayfindModule !== 'undefined') WayfindModule.onTabOpen();
     if (name === 'checkinmgmt')  initCheckinMgmtTab();
     if (name === 'sms' && typeof SmsModule !== 'undefined') SmsModule.initSmsTab();
     // 직원관리 탭: 캐시가 있으면 즉시 렌더, 없으면 placeholder (수동 불러오기 버튼 안내)
