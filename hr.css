@@ -58,7 +58,7 @@
   padding: 40px 20px;
 }
 /* 입사 관리 홈 — 퇴직 관리(rt-home-*)와 동일한 좌측정렬 컴팩트 헤더 */
-.hr-home-wrap  { max-width: 720px; margin: 0 auto; padding: 24px 16px; }
+.hr-home-wrap  { max-width: 600px; margin: 0 auto; padding: 24px 16px; }
 .hr-home-icon  { font-size: 36px; margin-bottom: 12px; }
 .hr-home-title { font-size: 20px; font-weight: 700; color: #1a3a5c; margin-bottom: 8px; }
 .hr-home-sub   { font-size: 13px; color: #6B7280; margin-bottom: 28px; }
