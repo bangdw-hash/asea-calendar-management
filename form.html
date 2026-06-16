@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>전자서식 작성</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{ --c:#1a3a5c; }
+  *{ box-sizing:border-box; }
+  body{ font-family:"Malgun Gothic","Apple SD Gothic Neo",sans-serif; margin:0; background:#eef3f8; color:#1f2937; }
+  .wrap{ max-width:680px; margin:0 auto; padding:14px 12px 80px; }
+  .hd{ background:var(--c); color:#fff; border-radius:14px; padding:16px 18px; margin-bottom:12px; }
+  .hd h1{ font-size:18px; margin:0 0 3px; } .hd p{ font-size:13px; margin:0; opacity:.85; }
+  .card{ background:#fff; border:1px solid #e5e7eb; border-radius:14px; padding:16px; margin-bottom:12px; }
+  label{ display:block; font-size:13px; font-weight:600; color:#374151; margin:10px 0 5px; }
+  label .req{ color:#dc2626; }
+  input,textarea{ width:100%; padding:12px; border:1.5px solid #d1d5db; border-radius:9px; font-size:16px; }
+  .cb{ display:flex; align-items:center; gap:8px; font-size:15px; } .cb input{ width:auto; }
+  .btn{ width:100%; background:var(--c); color:#fff; border:none; border-radius:10px; padding:14px; font-size:17px; font-weight:700; cursor:pointer; margin-top:14px; }
+  .muted{ font-size:12px; color:#6b7280; line-height:1.6; }
+  .err{ color:#dc2626; font-size:14px; }
+  h2{ font-size:15px; color:var(--c); margin:0 0 8px; }
+  .pageimg{ width:100%; border:1px solid #e5e7eb; border-radius:10px; margin-bottom:8px; }
+  .sigwrap{ border:1.5px dashed #cbd5e1; border-radius:10px; padding:8px; }
+  .sigpad{ width:100%; height:160px; background:#fff; border:1px solid #e5e7eb; border-radius:8px; touch-action:none; }
+  .sigbtns{ display:flex; gap:8px; margin-top:6px; }
+  .sigbtns button{ flex:1; padding:9px; border:1px solid #d1d5db; background:#fff; border-radius:8px; font-size:13px; cursor:pointer; }
+  .ok{ text-align:center; padding:30px 12px; }
+  .ok .big{ font-size:46px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hd"><h1>📝 전자서식 작성</h1><p>아래 항목을 작성하고 제출하세요.</p></div>
+  <div id="app"><div class="card"><p class="muted">불러오는 중…</p></div></div>
+</div>
+<script>
+var DEF_URL='https://zbpeyklwpotjyveipzxd.supabase.co';
+var DEF_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpicGV5a2x3cG90anl2ZWlwenhkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE1MTYxMDcsImV4cCI6MjA5NzA5MjEwN30.6JgoQ6rPRnmrbBTG68A-Y9HDQk40mnwubhXVnkZvHrQ';
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
+var db=window.supabase?window.supabase.createClient(DEF_URL,DEF_KEY):null;
+var app=document.getElementById('app');
+var qs=new URLSearchParams(location.search), TID=qs.get('id')||'', TOKEN=qs.get('t')||'';
+var TPL=null, SIGS={};
+
+if(!db||!TID){ app.innerHTML='<div class="card"><p class="err">잘못된 링크입니다.</p></div>'; }
+else load();
+
+async function load(){
+  var r=await db.rpc('form_get',{p_template:TID});
+  if(r.error){ app.innerHTML='<div class="card"><p class="err">불러오기 실패: '+esc(r.error.message)+'</p></div>'; return; }
+  var row=r.data&&r.data[0]; if(!row){ app.innerHTML='<div class="card"><p class="muted">발행되지 않았거나 존재하지 않는 서식입니다.</p></div>'; return; }
+  TPL=row; TPL.pages=TPL.pages||[]; TPL.fields=TPL.fields||[];
+  renderForm();
+}
+
+function fieldInput(f){
+  var req=f.required?' <span class="req">*</span>':'';
+  if(f.type==='checkbox') return '<label class="cb"><input type="checkbox" id="fld-'+f.key+'"> '+esc(f.label)+req+'</label>';
+  if(f.type==='signature') return '<label>'+esc(f.label)+req+'</label>'+
+    '<div class="sigwrap"><canvas class="sigpad" id="sig-'+f.key+'" data-key="'+f.key+'"></canvas>'+
+    '<div class="sigbtns"><button type="button" data-clear="'+f.key+'">지우기</button></div></div>';
+  var typ=f.type==='date'?'date':(f.type==='number'?'number':'text');
+  return '<label>'+esc(f.label)+req+'</label><input type="'+typ+'" id="fld-'+f.key+'"'+(f.type==='number'?' inputmode="numeric"':'')+'>';
+}
+
+function renderForm(){
+  var imgs=TPL.pages.map(function(p){ return '<img class="pageimg" src="'+p.image+'">'; }).join('');
+  var fields=TPL.fields.map(fieldInput).join('');
+  app.innerHTML=
+    '<div class="card"><h2>'+esc(TPL.title||'전자서식')+'</h2>'+(TPL.description?'<p class="muted">'+esc(TPL.description)+'</p>':'')+'</div>'+
+    (imgs?'<div class="card"><h2>서식 미리보기</h2>'+imgs+'</div>':'')+
+    '<div class="card"><h2>작성</h2>'+
+      '<label>작성자 성명 <span class="req">*</span></label><input id="sub-name">'+
+      '<label>연락처(휴대폰/이메일)</label><input id="sub-contact">'+
+      fields+
+      '<div class="err" id="ferr" style="display:none;margin-top:8px"></div>'+
+      '<button class="btn" id="submit">제출하기</button>'+
+    '</div>';
+  // 서명 패드 초기화
+  TPL.fields.filter(function(f){return f.type==='signature';}).forEach(function(f){ initSig(document.getElementById('sig-'+f.key)); });
+  app.querySelectorAll('[data-clear]').forEach(function(b){ b.addEventListener('click',function(){ clearSig(b.dataset.clear); }); });
+  document.getElementById('submit').addEventListener('click', submit);
+}
+
+function initSig(cv){
+  if(!cv) return; var r=cv.getBoundingClientRect(); cv.width=r.width; cv.height=r.height;
+  var ctx=cv.getContext('2d'); ctx.lineWidth=2.2; ctx.lineCap='round'; ctx.strokeStyle='#111';
+  var drawing=false, has=false;
+  function pos(e){ var b=cv.getBoundingClientRect(); var t=e.touches?e.touches[0]:e; return {x:t.clientX-b.left,y:t.clientY-b.top}; }
+  function start(e){ e.preventDefault(); drawing=true; var p=pos(e); ctx.beginPath(); ctx.moveTo(p.x,p.y); }
+  function move(e){ if(!drawing)return; e.preventDefault(); var p=pos(e); ctx.lineTo(p.x,p.y); ctx.stroke(); has=true; }
+  function end(){ if(!drawing)return; drawing=false; if(has) SIGS[cv.dataset.key]=cv.toDataURL('image/png'); }
+  cv.addEventListener('pointerdown',start); cv.addEventListener('pointermove',move);
+  cv.addEventListener('pointerup',end); cv.addEventListener('pointerleave',end);
+}
+function clearSig(key){ var cv=document.getElementById('sig-'+key); if(cv){ cv.getContext('2d').clearRect(0,0,cv.width,cv.height); delete SIGS[key]; } }
+
+async function submit(){
+  var err=document.getElementById('ferr'); err.style.display='none';
+  var name=(document.getElementById('sub-name').value||'').trim();
+  if(!name){ err.textContent='작성자 성명을 입력하세요.'; err.style.display='block'; return; }
+  var values={};
+  for(var i=0;i<TPL.fields.length;i++){ var f=TPL.fields[i];
+    if(f.type==='signature'){ if(f.required&&!SIGS[f.key]){ err.textContent='"'+f.label+'" 서명을 해주세요.'; err.style.display='block'; return; } continue; }
+    var el=document.getElementById('fld-'+f.key); var v= f.type==='checkbox'? (el&&el.checked) : (el?el.value.trim():'');
+    if(f.required && (v===''||v===false)){ err.textContent='"'+f.label+'" 항목을 입력하세요.'; err.style.display='block'; return; }
+    values[f.key]=v;
+  }
+  var btn=document.getElementById('submit'); btn.disabled=true; btn.textContent='제출 중…';
+  var r=await db.rpc('form_submit',{p_template:TID,p_name:name,p_contact:(document.getElementById('sub-contact').value||'').trim(),p_values:values,p_signatures:SIGS,p_token:TOKEN||null});
+  if(r.error){ btn.disabled=false; btn.textContent='제출하기'; err.textContent='제출 실패: '+esc(r.error.message); err.style.display='block'; return; }
+  app.innerHTML='<div class="card ok"><div class="big">✅</div><h2>제출이 완료되었습니다</h2><p class="muted">작성해 주셔서 감사합니다. 담당자에게 정상 접수되었습니다.</p></div>';
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+</script>
+</body>
+</html>
