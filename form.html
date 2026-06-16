@@ -55,10 +55,11 @@ async function load(){
   renderForm();
 }
 
+function isDraw(f){ return f.type==='signature'||f.draw; }
 function fieldInput(f){
   var req=f.required?' <span class="req">*</span>':'';
   if(f.type==='checkbox') return '<label class="cb"><input type="checkbox" id="fld-'+f.key+'"> '+esc(f.label)+req+'</label>';
-  if(f.type==='signature') return '<label>'+esc(f.label)+req+'</label>'+
+  if(isDraw(f)) return '<label>'+esc(f.label)+req+' <span class="muted">(손글씨)</span></label>'+
     '<div class="sigwrap"><canvas class="sigpad" id="sig-'+f.key+'" data-key="'+f.key+'"></canvas>'+
     '<div class="sigbtns"><button type="button" data-clear="'+f.key+'">지우기</button></div></div>';
   var typ=f.type==='date'?'date':(f.type==='number'?'number':'text');
@@ -78,8 +79,8 @@ function renderForm(){
       '<div class="err" id="ferr" style="display:none;margin-top:8px"></div>'+
       '<button class="btn" id="submit">제출하기</button>'+
     '</div>';
-  // 서명 패드 초기화
-  TPL.fields.filter(function(f){return f.type==='signature';}).forEach(function(f){ initSig(document.getElementById('sig-'+f.key)); });
+  // 손글씨/서명 패드 초기화
+  TPL.fields.filter(isDraw).forEach(function(f){ initSig(document.getElementById('sig-'+f.key)); });
   app.querySelectorAll('[data-clear]').forEach(function(b){ b.addEventListener('click',function(){ clearSig(b.dataset.clear); }); });
   document.getElementById('submit').addEventListener('click', submit);
 }
@@ -103,7 +104,7 @@ async function submit(){
   if(!name){ err.textContent='작성자 성명을 입력하세요.'; err.style.display='block'; return; }
   var values={};
   for(var i=0;i<TPL.fields.length;i++){ var f=TPL.fields[i];
-    if(f.type==='signature'){ if(f.required&&!SIGS[f.key]){ err.textContent='"'+f.label+'" 서명을 해주세요.'; err.style.display='block'; return; } continue; }
+    if(isDraw(f)){ if(f.required&&!SIGS[f.key]){ err.textContent='"'+f.label+'" 칸에 손글씨를 입력해 주세요.'; err.style.display='block'; return; } continue; }
     var el=document.getElementById('fld-'+f.key); var v= f.type==='checkbox'? (el&&el.checked) : (el?el.value.trim():'');
     if(f.required && (v===''||v===false)){ err.textContent='"'+f.label+'" 항목을 입력하세요.'; err.style.display='block'; return; }
     values[f.key]=v;
