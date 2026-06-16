@@ -13,7 +13,7 @@
   var FTYPES = [['text', '글자'], ['date', '날짜'], ['number', '숫자/금액'], ['checkbox', '체크(✓)'], ['signature', '서명']];
   var _db = null, _session = null;
   // C.cur = 편집 중 서식 {id,title,description,pages:[{image,w,h}],fields:[{key,label,type,page,x,y,font_size,required}],link_mode,status}
-  var C = { view: 'list', list: [], cur: null, page: 0, sel: null, subs: [] };
+  var C = { view: 'list', list: [], cur: null, page: 0, sel: null, subs: [], snap: false, grid: 1 };
 
   function root() { return document.getElementById(ROOT); }
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
@@ -25,6 +25,9 @@
   function ensure() { if (_db) return _db; if (!libReady()) return null; var c = cfg(); _db = window.supabase.createClient(c.url, c.key, { auth: { persistSession: true, autoRefreshToken: true } }); return _db; }
   function portalBase() { try { return (location.origin + location.pathname).replace(/[^/]*$/, ''); } catch (e) { return ''; } }
   function r1(v) { return Math.round(v * 10) / 10; }
+  function snap(v) { if (C.snap) { var g = C.grid || 1; return Math.round(v / g) * g; } return r1(v); }
+  function clamp(v, max) { return Math.max(0, Math.min(max == null ? 100 : max, v)); }
+  function isDraw(f) { return f.type === 'signature' || !!f.draw; }
   function loadImg(src) { return new Promise(function (res, rej) { var i = new Image(); i.onload = function () { res(i); }; i.onerror = rej; i.src = src; }); }
   function loadScript(src) { return new Promise(function (res, rej) { var s = document.createElement('script'); s.src = src; s.onload = res; s.onerror = rej; document.head.appendChild(s); }); }
 
@@ -121,7 +124,8 @@
         '<button id="cg-back" class="btn btn-ghost btn-sm" style="margin-left:auto">← 목록</button>' +
       '</div>' +
       (t.pages.length ? pageNav(t) +
-        '<p class="dorm-muted">도면처럼 <b>값이 들어갈 자리를 클릭</b>해 필드를 추가하세요(이름을 입력). 필드를 <b>드래그</b>해 위치를 옮기고, <b>클릭</b>하면 속성을 편집합니다.</p>' +
+        '<div class="dorm-actions" style="margin-top:4px"><label class="dorm-cb"><input type="checkbox" id="cg-snap"' + (C.snap ? ' checked' : '') + '> 격자 맞춤(촘촘히 정렬)</label></div>' +
+        '<p class="dorm-muted"><b>값이 들어갈 자리를 클릭</b>해 칸을 추가(이름 입력). 칸을 <b>드래그=이동</b>, 모서리 핸들 <b>드래그=크기 조절</b>(많이 쓰는 칸은 크게), <b>클릭=속성 편집</b>. 글씨는 칸을 넘치면 자동으로 작아집니다.</p>' +
         '<div id="cg-stage" class="cg-stage"><img src="' + pg.image + '" class="cg-img"><div id="cg-fields"></div></div>'
         : '<p class="dorm-muted">먼저 PDF를 업로드하세요. 각 페이지가 배경으로 깔리고 그 위에 입력 자리를 찍습니다.</p>') +
       '</div>' +
@@ -142,6 +146,7 @@
     var tk = document.getElementById('cg-token'); if (tk) tk.addEventListener('click', function () { copy(pubLink + '&t=' + uid('t')); toast('1회용 토큰 링크를 복사했습니다.', 'success'); });
     root().querySelectorAll('[data-cg-pg]').forEach(function (b) { b.addEventListener('click', function () { C.page = +b.dataset.cgPg; C.sel = null; renderEdit(); }); });
     var dp = document.getElementById('cg-delpage'); if (dp) dp.addEventListener('click', delPage);
+    var sn = document.getElementById('cg-snap'); if (sn) sn.addEventListener('change', function () { C.snap = this.checked; });
     if (t.pages.length) { cgBindStage(); cgRenderFields(); if (C.sel) cgRenderProp(); }
   }
   function pageNav(t) {
@@ -185,7 +190,7 @@
       var x = (e.clientX - r.left) / r.width * 100, y = (e.clientY - r.top) / r.height * 100;
       var lab = prompt('이 자리에 들어갈 항목 이름 (예: 성명, 주민번호, 입사일, 계좌번호)', '');
       if (lab == null || !lab.trim()) return;
-      var f = { key: uid(), label: lab.trim(), type: 'text', page: C.page, x: r1(x), y: r1(y), font_size: 2.4, required: true };
+      var f = { key: uid(), label: lab.trim(), type: 'text', page: C.page, x: snap(clamp(x, 90)), y: snap(clamp(y, 96)), w: 24, h: 5, font_size: 2.4, required: true, draw: false };
       C.cur.fields.push(f); C.sel = f.key; cgRenderFields(); cgRenderProp();
     });
   }
@@ -193,22 +198,32 @@
     var wrap = document.getElementById('cg-fields'); if (!wrap) return;
     var fs = C.cur.fields.filter(function (f) { return f.page === C.page; });
     wrap.innerHTML = fs.map(function (f) {
-      var icon = f.type === 'signature' ? '✍ ' : f.type === 'checkbox' ? '☑ ' : '';
-      return '<div class="cg-mk' + (C.sel === f.key ? ' sel' : '') + '" data-id="' + f.key + '" style="left:' + f.x + '%;top:' + f.y + '%" title="' + esc(f.label) + '">' + icon + esc(f.label) + '</div>';
+      var icon = isDraw(f) ? '✍ ' : f.type === 'checkbox' ? '☑ ' : '';
+      var w = f.w || 24, h = f.h || 5;
+      return '<div class="cg-mk' + (C.sel === f.key ? ' sel' : '') + (isDraw(f) ? ' draw' : '') + '" data-id="' + f.key + '" style="left:' + f.x + '%;top:' + f.y + '%;width:' + w + '%;height:' + h + '%" title="' + esc(f.label) + '"><span class="cg-lab">' + icon + esc(f.label) + '</span><span class="cg-rs" data-rs="' + f.key + '"></span></div>';
     }).join('');
     wrap.querySelectorAll('.cg-mk').forEach(function (m) {
       cgDrag(m);
       m.addEventListener('click', function (ev) { ev.stopPropagation(); if (m._sup) { m._sup = false; return; } C.sel = m.dataset.id; cgRenderFields(); cgRenderProp(); });
     });
+    wrap.querySelectorAll('.cg-rs').forEach(function (h) { cgResize(h); });
   }
+  function fldBy(id) { return C.cur.fields.filter(function (f) { return f.key === id; })[0]; }
   function cgDrag(m) {
     var stage = document.getElementById('cg-stage'); var id = m.dataset.id; var on = false, moved = false, pid = null;
-    function fld() { return C.cur.fields.filter(function (f) { return f.key === id; })[0]; }
-    m.addEventListener('pointerdown', function (e) { if (e.button !== 0) return; e.preventDefault(); on = true; moved = false; pid = e.pointerId; try { m.setPointerCapture(e.pointerId); } catch (_) {} });
+    m.addEventListener('pointerdown', function (e) { if (e.button !== 0 || e.target.classList.contains('cg-rs')) return; e.preventDefault(); on = true; moved = false; pid = e.pointerId; try { m.setPointerCapture(e.pointerId); } catch (_) {} });
     m.addEventListener('pointermove', function (e) { if (!on) return; var r = stage.getBoundingClientRect();
-      var x = Math.max(0, Math.min(100, (e.clientX - r.left) / r.width * 100)), y = Math.max(0, Math.min(100, (e.clientY - r.top) / r.height * 100));
-      var f = fld(); if (f) { moved = true; f.x = r1(x); f.y = r1(y); m.style.left = f.x + '%'; m.style.top = f.y + '%'; } });
+      var x = clamp((e.clientX - r.left) / r.width * 100, 100), y = clamp((e.clientY - r.top) / r.height * 100, 100);
+      var f = fldBy(id); if (f) { moved = true; f.x = snap(x); f.y = snap(y); m.style.left = f.x + '%'; m.style.top = f.y + '%'; } });
     m.addEventListener('pointerup', function () { if (moved) m._sup = true; on = false; try { m.releasePointerCapture(pid); } catch (_) {} });
+  }
+  function cgResize(h) {
+    var stage = document.getElementById('cg-stage'); var id = h.dataset.rs; var on = false, pid = null;
+    h.addEventListener('pointerdown', function (e) { if (e.button !== 0) return; e.preventDefault(); e.stopPropagation(); on = true; pid = e.pointerId; try { h.setPointerCapture(e.pointerId); } catch (_) {} });
+    h.addEventListener('pointermove', function (e) { if (!on) return; var r = stage.getBoundingClientRect();
+      var px = (e.clientX - r.left) / r.width * 100, py = (e.clientY - r.top) / r.height * 100;
+      var f = fldBy(id); if (f) { f.w = Math.max(3, snap(clamp(px - f.x, 100))); f.h = Math.max(2, snap(clamp(py - f.y, 100))); var m = h.parentNode; m.style.width = f.w + '%'; m.style.height = f.h + '%'; } });
+    h.addEventListener('pointerup', function () { on = false; try { h.releasePointerCapture(pid); } catch (_) {} });
   }
   function cgRenderProp() {
     var f = C.cur.fields.filter(function (x) { return x.key === C.sel; })[0];
@@ -216,13 +231,20 @@
     p.innerHTML = '<div class="dorm-card"><h3 class="dorm-h3">필드 속성</h3><div class="dorm-row4">' +
       '<div><label class="dorm-label">항목 이름</label><input id="cg-f-label" class="form-input" value="' + esc(f.label) + '"></div>' +
       '<div><label class="dorm-label">유형</label><select id="cg-f-type" class="form-select">' + FTYPES.map(function (t) { return '<option value="' + t[0] + '"' + (t[0] === f.type ? ' selected' : '') + '>' + t[1] + '</option>'; }).join('') + '</select></div>' +
-      '<div><label class="dorm-label">글자 크기</label><input id="cg-f-size" class="form-input" type="number" step="0.2" min="1" value="' + (f.font_size || 2.4) + '"></div>' +
-      '<div style="align-self:end"><label class="dorm-cb"><input type="checkbox" id="cg-f-req"' + (f.required ? ' checked' : '') + '> 필수</label> <button id="cg-f-del" class="btn btn-ghost btn-sm" style="color:#dc2626">삭제</button></div>' +
-      '</div><p class="dorm-muted">글자 크기는 페이지 높이 대비 %입니다. 위치는 완성본 PDF에 값이 찍힐 좌표가 됩니다.</p></div>';
+      '<div><label class="dorm-label">최대 글자크기(%)</label><input id="cg-f-size" class="form-input" type="number" step="0.2" min="1" value="' + (f.font_size || 2.4) + '"></div>' +
+      '<div style="align-self:end"><label class="dorm-cb"><input type="checkbox" id="cg-f-req"' + (f.required ? ' checked' : '') + '> 필수</label></div>' +
+      '<div><label class="dorm-label">칸 너비(%)</label><input id="cg-f-w" class="form-input" type="number" step="1" min="3" value="' + (f.w || 24) + '"></div>' +
+      '<div><label class="dorm-label">칸 높이(%)</label><input id="cg-f-h" class="form-input" type="number" step="1" min="2" value="' + (f.h || 5) + '"></div>' +
+      '<div style="align-self:end"><label class="dorm-cb"><input type="checkbox" id="cg-f-draw"' + (isDraw(f) ? ' checked' : '') + (f.type === 'signature' ? ' disabled' : '') + '> ✍ 손글씨로 입력받기</label></div>' +
+      '<div style="align-self:end"><button id="cg-f-del" class="btn btn-ghost btn-sm" style="color:#dc2626">필드 삭제</button></div>' +
+      '</div><p class="dorm-muted">칸 너비·높이만큼 영역이 잡히고, 입력값이 길면 <b>글씨가 자동으로 작아져</b> 칸 안에 들어갑니다(필요시 줄바꿈). <b>손글씨로 입력받기</b>를 켜면 작성자가 그 칸에 자필로 써서 그림으로 들어갑니다(서명·이름 등). 위치/크기는 완성본 PDF 좌표가 됩니다.</p></div>';
     document.getElementById('cg-f-label').addEventListener('input', function () { f.label = this.value; cgRenderFields(); });
-    document.getElementById('cg-f-type').addEventListener('change', function () { f.type = this.value; cgRenderFields(); });
+    document.getElementById('cg-f-type').addEventListener('change', function () { f.type = this.value; cgRenderFields(); cgRenderProp(); });
     document.getElementById('cg-f-size').addEventListener('input', function () { f.font_size = parseFloat(this.value) || 2.4; });
+    document.getElementById('cg-f-w').addEventListener('input', function () { f.w = Math.max(3, parseFloat(this.value) || 24); cgRenderFields(); });
+    document.getElementById('cg-f-h').addEventListener('input', function () { f.h = Math.max(2, parseFloat(this.value) || 5); cgRenderFields(); });
     document.getElementById('cg-f-req').addEventListener('change', function () { f.required = this.checked; });
+    document.getElementById('cg-f-draw').addEventListener('change', function () { f.draw = this.checked; cgRenderFields(); });
     document.getElementById('cg-f-del').addEventListener('click', function () { C.cur.fields = C.cur.fields.filter(function (x) { return x.key !== f.key; }); C.sel = null; cgRenderFields(); document.getElementById('cg-prop').innerHTML = ''; });
   }
 
@@ -266,6 +288,19 @@
     root().querySelectorAll('[data-cg-pdf]').forEach(function (b) { b.addEventListener('click', function () { var s = C.subs.filter(function (x) { return x.id === b.dataset.cgPdf; })[0]; if (s) genPdf(t, s); }); });
   }
 
+  // 칸(boxW×boxH)에 맞게 글씨 자동 축소 + 필요시 줄바꿈
+  function drawFitText(ctx, text, x, y, boxW, boxH, maxPx) {
+    var size = maxPx, min = Math.max(6, maxPx * 0.4);
+    function setF(s) { ctx.font = '600 ' + s + 'px "Malgun Gothic","Apple SD Gothic Neo",sans-serif'; }
+    setF(size);
+    while (size > min && ctx.measureText(text).width > boxW) { size -= 0.5; setF(size); }
+    if (ctx.measureText(text).width <= boxW || boxH < size * 2) { ctx.fillText(text, x, y, boxW); return; }
+    var lines = [], cur = '';                         // 한글: 글자 단위 줄바꿈
+    for (var i = 0; i < text.length; i++) { var test = cur + text[i]; if (ctx.measureText(test).width > boxW && cur) { lines.push(cur); cur = text[i]; } else cur = test; }
+    if (cur) lines.push(cur);
+    var maxLines = Math.max(1, Math.floor(boxH / (size * 1.18)));
+    for (var li = 0; li < Math.min(lines.length, maxLines); li++) ctx.fillText(lines[li], x, y + li * size * 1.18, boxW);
+  }
   async function genPdf(tpl, sub) {
     try {
       toast('완성본 생성 중…', 'info');
@@ -280,11 +315,11 @@
         ctx.fillStyle = '#111'; ctx.textBaseline = 'top';
         var fs = tpl.fields.filter(function (f) { return f.page === pi; });
         for (var k = 0; k < fs.length; k++) {
-          var f = fs[k], x = f.x / 100 * pg.w, y = f.y / 100 * pg.h, fp = (f.font_size || 2.4) / 100 * pg.h;
-          ctx.font = '600 ' + fp + 'px "Malgun Gothic","Apple SD Gothic Neo",sans-serif';
-          if (f.type === 'signature') { var sg = sigs[f.key]; if (sg) { var si = await loadImg(sg); ctx.drawImage(si, x, y, fp * 6, fp * 3); } }
-          else if (f.type === 'checkbox') { if (vals[f.key]) ctx.fillText('✓', x, y); }
-          else if (vals[f.key] != null && vals[f.key] !== '') ctx.fillText(String(vals[f.key]), x, y);
+          var f = fs[k], x = f.x / 100 * pg.w, y = f.y / 100 * pg.h;
+          var boxW = (f.w || 24) / 100 * pg.w, boxH = (f.h || 5) / 100 * pg.h, maxPx = (f.font_size || 2.4) / 100 * pg.h;
+          if (f.type === 'signature' || f.draw) { var sg = sigs[f.key]; if (sg) { var si = await loadImg(sg); var iw = si.width, ih = si.height, sc = Math.min(boxW / iw, boxH / ih); ctx.drawImage(si, x, y, iw * sc, ih * sc); } }
+          else if (f.type === 'checkbox') { if (vals[f.key]) { var cp = Math.min(boxH, maxPx) * 1.1; ctx.font = '700 ' + cp + 'px "Malgun Gothic",sans-serif'; ctx.fillText('✓', x, y); } }
+          else if (vals[f.key] != null && vals[f.key] !== '') drawFitText(ctx, String(vals[f.key]), x, y, boxW, boxH, maxPx);
         }
         var orient = pg.w > pg.h ? 'l' : 'p';
         if (!doc) doc = new JsPDF({ orientation: orient, unit: 'px', format: [pg.w, pg.h] });
