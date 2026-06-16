@@ -235,7 +235,7 @@ window.RetireModule = (function () {
     // ── 통계 (지원 총계) — 입사 화면과 동일 포맷 ──
     if (!STANDALONE) {
       var statRow = el('div', 'hr-stat-row');
-      statRow.style.cssText = 'margin-top:20px;justify-content:center;max-width:480px;width:100%';
+      statRow.style.cssText = 'margin-top:20px;justify-content:center;max-width:540px;width:100%';
       var rstats = [
         { num: apps.length, label: '전체 신청자' },
         { num: subCount,    label: '제출 완료' },
