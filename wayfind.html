@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>아세아 길찾기</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{ --c:#1a3a5c; }
+  *{ box-sizing:border-box; }
+  body{ font-family:"Malgun Gothic","Apple SD Gothic Neo",sans-serif; margin:0; background:#eef3f8; color:#1f2937; }
+  .wrap{ max-width:620px; margin:0 auto; padding:14px 12px 60px; }
+  .hd{ background:var(--c); color:#fff; border-radius:14px; padding:14px 16px; margin-bottom:12px; }
+  .hd h1{ font-size:17px; margin:0 0 2px; } .hd p{ font-size:12px; margin:0; opacity:.85; }
+  .card{ background:#fff; border:1px solid #e5e7eb; border-radius:14px; padding:14px; margin-bottom:12px; }
+  label{ display:block; font-size:12px; font-weight:600; color:#374151; margin:8px 0 4px; }
+  select,input{ width:100%; padding:11px 12px; border:1.5px solid #d1d5db; border-radius:9px; font-size:15px; }
+  .btn{ width:100%; background:var(--c); color:#fff; border:none; border-radius:10px; padding:13px; font-size:16px; font-weight:700; cursor:pointer; margin-top:12px; }
+  .muted{ font-size:12px; color:#6b7280; line-height:1.6; }
+  .err{ color:#dc2626; font-size:13px; }
+  h2{ font-size:15px; color:var(--c); margin:0 0 8px; }
+  .stage{ position:relative; width:100%; background:#f1f5f9; border:1px solid #e5e7eb; border-radius:10px; overflow:hidden; }
+  .stage img{ display:block; width:100%; height:auto; }
+  .stage svg{ position:absolute; inset:0; width:100%; height:100%; }
+  .floorttl{ font-weight:700; color:var(--c); margin:4px 0 6px; }
+  .trans{ background:#eef4fb; border:1px solid #cfe0f3; border-radius:10px; padding:10px 12px; font-size:14px; margin:10px 0; color:#1a3a5c; }
+  .steps{ font-size:13px; line-height:1.8; }
+  .dot{ position:absolute; transform:translate(-50%,-50%); width:14px; height:14px; border-radius:50%; border:2px solid #fff; box-shadow:0 1px 3px rgba(0,0,0,.4); }
+  .dot.s{ background:#16a34a; } .dot.e{ background:#dc2626; }
+  .pin{ position:absolute; transform:translate(-50%,-110%); font-size:11px; font-weight:700; background:#111; color:#fff; padding:2px 6px; border-radius:6px; white-space:nowrap; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hd"><h1>🧭 아세아 길찾기</h1><p>QR을 찍은 지점이 현재 위치로 설정됩니다.</p></div>
+  <div id="app"><div class="card"><p class="muted">불러오는 중…</p></div></div>
+</div>
+<script>
+var DEF_URL='https://zbpeyklwpotjyveipzxd.supabase.co';
+var DEF_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpicGV5a2x3cG90anl2ZWlwenhkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE1MTYxMDcsImV4cCI6MjA5NzA5MjEwN30.6JgoQ6rPRnmrbBTG68A-Y9HDQk40mnwubhXVnkZvHrQ';
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
+var db=window.supabase?window.supabase.createClient(DEF_URL,DEF_KEY):null;
+var app=document.getElementById('app');
+var DATA={floors:[],nodes:[],edges:[]}, FROM=new URLSearchParams(location.search).get('from')||'';
+var FMAP={}, NMAP={};
+
+if(!db){ app.innerHTML='<div class="card"><p class="err">연결 정보를 불러올 수 없습니다.</p></div>'; }
+else load();
+
+async function load(){
+  var d=await db.from('wayfind_data').select('data').eq('id','main').limit(1);
+  if(d.error){ app.innerHTML='<div class="card"><p class="err">데이터 조회 실패: '+esc(d.error.message)+'</p></div>'; return; }
+  DATA=(d.data&&d.data[0]&&d.data[0].data)||{floors:[],nodes:[],edges:[]};
+  DATA.floors=DATA.floors||[]; DATA.nodes=DATA.nodes||[]; DATA.edges=DATA.edges||[];
+  DATA.floors.forEach(function(f){ FMAP[f.id]=f; });
+  DATA.nodes.forEach(function(n){ NMAP[n.id]=n; });
+  if(!DATA.nodes.length){ app.innerHTML='<div class="card"><p class="muted">아직 등록된 안내도가 없습니다. 관리자에게 문의하세요.</p></div>'; return; }
+  renderForm();
+}
+
+function nodeOptions(selId){
+  // 층별 그룹
+  return DATA.floors.map(function(f){
+    var ns=DATA.nodes.filter(function(n){return n.floor===f.id && n.name;});
+    if(!ns.length) return '';
+    return '<optgroup label="'+esc(f.name)+'">'+ns.map(function(n){ return '<option value="'+n.id+'"'+(n.id===selId?' selected':'')+'>'+esc(n.name)+'</option>'; }).join('')+'</optgroup>';
+  }).join('');
+}
+function renderForm(){
+  var fromName=NMAP[FROM]?NMAP[FROM].name:'';
+  app.innerHTML='<div class="card"><h2>현재 위치</h2>'+
+    (FROM&&NMAP[FROM]? '<p style="font-size:15px"><b>📍 '+esc(fromName)+'</b> <span class="muted">('+esc((FMAP[NMAP[FROM].floor]||{}).name||'')+')</span></p>'
+      : '<label>현재 위치 선택</label><select id="wf-from">'+nodeOptions(FROM)+'</select>')+
+    '<label>목적지</label><select id="wf-to">'+nodeOptions('')+'</select>'+
+    '<div class="err" id="wf-err" style="display:none"></div>'+
+    '<button class="btn" id="wf-go">길찾기</button></div>'+
+    '<div id="wf-out"></div>';
+  document.getElementById('wf-go').addEventListener('click', go);
+}
+
+function buildGraph(){
+  var adj={}; DATA.nodes.forEach(function(n){ adj[n.id]=[]; });
+  function add(a,b,w){ if(adj[a]&&adj[b]){ adj[a].push({to:b,w:w}); adj[b].push({to:a,w:w}); } }
+  DATA.edges.forEach(function(e){ var a=NMAP[e[0]],b=NMAP[e[1]]; if(!a||!b) return;
+    if(a.floor===b.floor){ var dx=a.x-b.x,dy=a.y-b.y; add(a.id,b.id,Math.sqrt(dx*dx+dy*dy)); }
+    else add(a.id,b.id,40); });
+  // 계단/엘리베이터 같은 이름끼리 층간 자동 연결
+  var grp={};
+  DATA.nodes.forEach(function(n){ if(n.type==='계단'||n.type==='엘리베이터'){ var k=n.type+'|'+(n.name||''); (grp[k]=grp[k]||[]).push(n); } });
+  Object.keys(grp).forEach(function(k){ var arr=grp[k]; for(var i=0;i<arr.length;i++) for(var j=i+1;j<arr.length;j++){ if(arr[i].floor!==arr[j].floor) add(arr[i].id,arr[j].id,40); } });
+  return adj;
+}
+function dijkstra(adj,s,t){
+  var dist={},prev={},done={},pq=[];
+  Object.keys(adj).forEach(function(k){ dist[k]=Infinity; }); dist[s]=0; pq.push(s);
+  while(pq.length){ // simple: pick min
+    var u=null,best=Infinity; pq.forEach(function(x){ if(!done[x]&&dist[x]<best){best=dist[x];u=x;} });
+    if(u==null) break; if(u===t) break; done[u]=true; pq=pq.filter(function(x){return x!==u;});
+    (adj[u]||[]).forEach(function(e){ var nd=dist[u]+e.w; if(nd<dist[e.to]){ dist[e.to]=nd; prev[e.to]=u; if(!done[e.to]) pq.push(e.to); } });
+  }
+  if(dist[t]===Infinity) return null;
+  var path=[],c=t; while(c!=null){ path.unshift(c); c=prev[c]; } return path;
+}
+
+function go(){
+  var err=document.getElementById('wf-err'); err.style.display='none';
+  var from=FROM&&NMAP[FROM]?FROM:(document.getElementById('wf-from')?document.getElementById('wf-from').value:'');
+  var to=document.getElementById('wf-to').value;
+  if(!from||!to){ err.textContent='현재 위치와 목적지를 선택하세요.'; err.style.display='block'; return; }
+  if(from===to){ err.textContent='현재 위치와 목적지가 같습니다.'; err.style.display='block'; return; }
+  var adj=buildGraph();
+  var path=dijkstra(adj,from,to);
+  if(!path){ err.textContent='경로를 찾을 수 없습니다. (지점이 서로 연결되어 있는지 관리자에게 문의)'; err.style.display='block'; return; }
+  renderRoute(path);
+}
+
+function renderRoute(path){
+  // 층별 구간으로 분할
+  var segs=[], cur=null;
+  path.forEach(function(id){ var n=NMAP[id]; if(!cur||cur.floor!==n.floor){ cur={floor:n.floor,ids:[]}; segs.push(cur); } cur.ids.push(id); });
+  var html='<div class="card"><h2>경로 안내</h2><p class="muted">📍 '+esc(NMAP[path[0]].name)+' → 🏁 '+esc(NMAP[path[path.length-1]].name)+'</p></div>';
+  segs.forEach(function(seg,si){
+    var f=FMAP[seg.floor]||{};
+    var pts=seg.ids.map(function(id){ return NMAP[id]; });
+    var poly=pts.map(function(p){ return p.x+','+p.y; }).join(' ');
+    html+='<div class="card"><div class="floorttl">'+esc(f.name||'')+'</div>';
+    if(f.image){
+      var dots='';
+      if(si===0) dots+='<div class="dot s" style="left:'+pts[0].x+'%;top:'+pts[0].y+'%"></div><div class="pin" style="left:'+pts[0].x+'%;top:'+pts[0].y+'%">출발</div>';
+      if(si===segs.length-1){ var le=pts[pts.length-1]; dots+='<div class="dot e" style="left:'+le.x+'%;top:'+le.y+'%"></div><div class="pin" style="left:'+le.x+'%;top:'+le.y+'%">도착</div>'; }
+      html+='<div class="stage"><img src="'+f.image+'">'+
+        '<svg viewBox="0 0 100 100" preserveAspectRatio="none"><defs><marker id="ar'+si+'" markerWidth="6" markerHeight="6" refX="4" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#dc2626"/></marker></defs>'+
+        '<polyline points="'+poly+'" fill="none" stroke="#dc2626" stroke-width="1.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#ar'+si+')"/></svg>'+
+        dots+'</div>';
+    } else {
+      html+='<p class="muted">이 층 도면 이미지가 없습니다. 경로: '+pts.map(function(p){return esc(p.name);}).join(' → ')+'</p>';
+    }
+    html+='<div class="steps">'+pts.map(function(p,i){ return (i+1)+'. '+esc(p.name); }).join('<br>')+'</div></div>';
+    // 다음 구간으로의 층 이동 안내
+    if(si<segs.length-1){
+      var lastNode=NMAP[seg.ids[seg.ids.length-1]];
+      var nextFloor=FMAP[segs[si+1].floor]||{};
+      html+='<div class="trans">🔁 <b>'+esc(lastNode.name)+'</b>('+esc(lastNode.type)+')에서 <b>'+esc(nextFloor.name)+'</b>(으)로 이동하세요.</div>';
+    }
+  });
+  document.getElementById('wf-out').innerHTML=html;
+  document.getElementById('wf-out').scrollIntoView({behavior:'smooth',block:'start'});
+}
+</script>
+</body>
+</html>
