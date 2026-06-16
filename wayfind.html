@@ -37,6 +37,12 @@
   .modes{ display:flex; gap:10px; margin:4px 0; }
   .mode{ flex:1; display:flex; align-items:center; justify-content:center; gap:6px; border:1.5px solid #d1d5db; border-radius:9px; padding:10px; font-size:14px; cursor:pointer; }
   .mode input{ width:auto; }
+  .simdot{ position:absolute; transform:translate(-50%,-50%); width:18px; height:18px; border-radius:50%; background:#2563eb; border:3px solid #fff; box-shadow:0 0 0 4px rgba(37,99,235,.35); animation:simpulse 1.1s infinite; }
+  @keyframes simpulse{ 0%{box-shadow:0 0 0 0 rgba(37,99,235,.5);} 100%{box-shadow:0 0 0 11px rgba(37,99,235,0);} }
+  .simctl{ display:flex; gap:8px; margin-top:10px; }
+  .simctl button{ flex:1; padding:11px; border:1.5px solid #cfe0f3; background:#fff; color:var(--c); border-radius:9px; font-size:15px; font-weight:700; cursor:pointer; }
+  .simctl button:disabled{ opacity:.4; cursor:default; }
+  #sim-play{ background:var(--c); color:#fff; border-color:var(--c); }
 </style>
 </head>
 <body>
@@ -50,7 +56,9 @@ var DEF_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZi
 function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
 var db=window.supabase?window.supabase.createClient(DEF_URL,DEF_KEY):null;
 var app=document.getElementById('app');
-var DATA={floors:[],nodes:[],edges:[]}, FROM=new URLSearchParams(location.search).get('from')||'';
+var _qs=new URLSearchParams(location.search);
+var DATA={floors:[],nodes:[],edges:[]}, FROM=_qs.get('from')||'';
+var TOQ=_qs.get('to')||'', MODEQ=_qs.get('mode')||'', AUTOQ=_qs.get('auto')==='1';
 var FMAP={}, NMAP={};
 
 if(!db){ app.innerHTML='<div class="card"><p class="err">연결 정보를 불러올 수 없습니다.</p></div>'; }
@@ -107,7 +115,11 @@ function renderForm(){
   document.getElementById('wf-q').addEventListener('input',function(){ renderDestList(this.value); });
   document.getElementById('wf-go').addEventListener('click', go);
   document.getElementById('wf-evac').addEventListener('click', evac);
+  // URL 파라미터(시뮬레이션/QR 미리보기)로 목적지·이동수단 사전 지정 + 자동 실행
+  if(MODEQ){ var mr=document.querySelector('input[name=wf-mode][value="'+(MODEQ==='elevator'?'elevator':'walk')+'"]'); if(mr) mr.checked=true; }
+  if(TOQ&&NMAP[TOQ]) SELDEST=TOQ;
   renderDestList('');
+  if(AUTOQ&&FROM&&NMAP[FROM]&&SELDEST){ go(); }
 }
 
 function buildGraph(mode){
@@ -172,7 +184,8 @@ function renderRoute(path,isEvac){
   var segs=[], cur=null;
   path.forEach(function(id){ var n=NMAP[id]; if(!cur||cur.floor!==n.floor){ cur={floor:n.floor,ids:[]}; segs.push(cur); } cur.ids.push(id); });
   var endName=esc(NMAP[path[path.length-1]].name);
-  var html='<div class="card"><h2>'+(isEvac?'🔥 대피 경로 안내':'경로 안내')+'</h2><p class="muted">📍 '+esc(NMAP[path[0]].name)+' → '+(isEvac?'🚪 '+endName+' (출구)':'🏁 '+endName)+'</p></div>';
+  var html='<div id="wf-sim"></div>'+
+    '<div class="card"><h2>'+(isEvac?'🔥 대피 경로 안내':'경로 안내')+'</h2><p class="muted">📍 '+esc(NMAP[path[0]].name)+' → '+(isEvac?'🚪 '+endName+' (출구)':'🏁 '+endName)+'</p></div>';
   segs.forEach(function(seg,si){
     var f=FMAP[seg.floor]||{};
     var pts=seg.ids.map(function(id){ return NMAP[id]; });
@@ -198,7 +211,44 @@ function renderRoute(path,isEvac){
     }
   });
   document.getElementById('wf-out').innerHTML=html;
+  startSim(path,isEvac);
   document.getElementById('wf-out').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+/* ── 이동 시뮬레이션 재생(이전/다음/재생·일시정지) ── */
+var PLAY=null;
+function startSim(path,isEvac){ simStop(); PLAY={path:path,idx:0,timer:null,isEvac:!!isEvac}; renderSim(); }
+function simStop(){ if(PLAY&&PLAY.timer){ clearInterval(PLAY.timer); PLAY.timer=null; } }
+function simTogglePlay(){ if(!PLAY) return; if(PLAY.timer){ simStop(); renderSim(); return; }
+  if(PLAY.idx>=PLAY.path.length-1) PLAY.idx=0;
+  PLAY.timer=setInterval(function(){ if(PLAY.idx>=PLAY.path.length-1){ simStop(); renderSim(); return; } PLAY.idx++; renderSim(); },1000);
+  renderSim();
+}
+function simNext(){ if(PLAY&&PLAY.idx<PLAY.path.length-1){ simStop(); PLAY.idx++; renderSim(); } }
+function simPrev(){ if(PLAY&&PLAY.idx>0){ simStop(); PLAY.idx--; renderSim(); } }
+function renderSim(){
+  var el=document.getElementById('wf-sim'); if(!el||!PLAY) return;
+  var path=PLAY.path, idx=PLAY.idx, len=path.length, cur=NMAP[path[idx]], f=FMAP[cur.floor]||{};
+  var onFloor=[]; path.forEach(function(id,i){ var n=NMAP[id]; if(n&&n.floor===cur.floor) onFloor.push({i:i,n:n}); });
+  var full=onFloor.map(function(o){return o.n.x+','+o.n.y;}).join(' ');
+  var done=onFloor.filter(function(o){return o.i<=idx;}).map(function(o){return o.n.x+','+o.n.y;}).join(' ');
+  var playing=!!PLAY.timer, stage='';
+  if(f.image){
+    stage='<div class="stage"><img src="'+f.image+'"><svg viewBox="0 0 100 100" preserveAspectRatio="none">'+
+      '<polyline points="'+full+'" fill="none" stroke="#9ca3af" stroke-width="1" stroke-dasharray="2 2" stroke-linecap="round"/>'+
+      (done?'<polyline points="'+done+'" fill="none" stroke="#dc2626" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>':'')+
+      '</svg><div class="simdot" style="left:'+cur.x+'%;top:'+cur.y+'%"></div>'+
+      '<div class="pin" style="left:'+cur.x+'%;top:'+cur.y+'%">'+esc(cur.name||'경유')+'</div></div>';
+  } else { stage='<p class="muted">이 층 도면 이미지가 없습니다. ('+esc(f.name||'')+')</p>'; }
+  var hint='';
+  if(idx<len-1){ var nx=NMAP[path[idx+1]]; if(nx&&nx.floor!==cur.floor) hint='<div class="trans">🔁 <b>'+esc(cur.name)+'</b>('+esc(cur.type||'')+')에서 <b>'+esc((FMAP[nx.floor]||{}).name||'')+'</b>(으)로 이동</div>'; }
+  else hint='<div class="trans" style="background:#ecfdf5;border-color:#a7f3d0;color:#065f46">'+(PLAY.isEvac?'🚪 대피 완료':'🏁 목적지 도착')+'</div>';
+  el.innerHTML='<div class="card"><h2>🧭 이동 시뮬레이션</h2><div class="floorttl">'+esc(f.name||'')+' · 단계 '+(idx+1)+' / '+len+'</div>'+stage+
+    '<p style="font-size:15px;margin:8px 0 2px"><b>📍 '+esc(cur.name||'경유점')+'</b></p>'+hint+
+    '<div class="simctl"><button id="sim-prev"'+(idx===0?' disabled':'')+'>◀ 이전</button><button id="sim-play">'+(playing?'⏸ 일시정지':'▶ 재생')+'</button><button id="sim-next"'+(idx>=len-1?' disabled':'')+'>다음 ▶</button></div></div>';
+  document.getElementById('sim-prev').addEventListener('click',simPrev);
+  document.getElementById('sim-play').addEventListener('click',simTogglePlay);
+  document.getElementById('sim-next').addEventListener('click',simNext);
 }
 </script>
 </body>
