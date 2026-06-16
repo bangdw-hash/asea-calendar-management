@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>전자계약서 진위 확인</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+<style>
+  :root{ --c:#1a3a5c; --ok:#16a34a; --no:#dc2626; }
+  *{ box-sizing:border-box; }
+  body{ font-family:"Malgun Gothic","Apple SD Gothic Neo",sans-serif; margin:0; background:#eef3f8; color:#1f2937; }
+  .wrap{ max-width:640px; margin:0 auto; padding:14px 12px 80px; }
+  .hd{ background:var(--c); color:#fff; border-radius:14px; padding:16px 18px; margin-bottom:12px; }
+  .hd h1{ font-size:18px; margin:0 0 3px; } .hd p{ font-size:12px; margin:0; opacity:.85; }
+  .card{ background:#fff; border:1px solid #e5e7eb; border-radius:14px; padding:16px; margin-bottom:12px; }
+  label{ display:block; font-size:13px; font-weight:600; color:#374151; margin:8px 0 5px; }
+  input[type=text]{ width:100%; padding:12px; border:1.5px solid #d1d5db; border-radius:9px; font-size:15px; }
+  .drop{ border:2px dashed #cbd5e1; border-radius:12px; padding:26px 14px; text-align:center; color:#6b7280; font-size:14px; cursor:pointer; background:#f8fafc; }
+  .drop.over{ border-color:var(--c); background:#eef4fb; color:var(--c); }
+  .drop b{ color:var(--c); }
+  .fname{ font-size:13px; color:#111; margin-top:8px; font-weight:600; }
+  .btn{ width:100%; background:var(--c); color:#fff; border:none; border-radius:10px; padding:14px; font-size:17px; font-weight:700; cursor:pointer; margin-top:14px; }
+  .btn:disabled{ opacity:.5; }
+  .muted{ font-size:12px; color:#6b7280; line-height:1.7; }
+  .res{ border-radius:12px; padding:16px; }
+  .res.ok{ background:#ecfdf5; border:1px solid #a7f3d0; }
+  .res.no{ background:#fef2f2; border:1px solid #fecaca; }
+  .res h2{ margin:0 0 8px; font-size:18px; }
+  .res.ok h2{ color:var(--ok); } .res.no h2{ color:var(--no); }
+  .res ul{ margin:8px 0 0; padding-left:18px; font-size:14px; line-height:1.8; }
+  .meta{ font-size:13px; color:#374151; line-height:1.9; margin-top:8px; }
+  .meta b{ color:var(--c); }
+  .tlrow{ display:flex; gap:10px; font-size:13px; padding:7px 0; border-bottom:1px solid #f1f5f9; }
+  .tldot{ width:10px; height:10px; border-radius:50%; background:var(--c); margin-top:5px; flex-shrink:0; }
+  .chip{ display:inline-block; font-size:11px; font-weight:700; padding:2px 8px; border-radius:999px; }
+  .chip.ok{ background:#dcfce7; color:#166534; } .chip.no{ background:#fee2e2; color:#991b1b; }
+  .err{ color:var(--no); font-size:14px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hd"><h1>🛡 전자계약서 진위 확인</h1><p>등록된 원본과 대조해 위·변조 여부를 확인합니다.</p></div>
+  <div class="card">
+    <label>계약 ID</label><input type="text" id="cid" placeholder="검증할 계약 ID">
+    <label>계약서 PDF 파일</label>
+    <div class="drop" id="drop">📄 여기로 <b>PDF를 끌어다 놓거나</b> 눌러서 선택하세요<div class="fname" id="fname"></div></div>
+    <input type="file" id="file" accept="application/pdf" hidden>
+    <button class="btn" id="go">확인하기</button>
+    <div class="err" id="err" style="display:none;margin-top:8px"></div>
+  </div>
+  <div id="out"></div>
+</div>
+<script>
+var DEF_URL='https://zbpeyklwpotjyveipzxd.supabase.co';
+var DEF_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpicGV5a2x3cG90anl2ZWlwenhkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE1MTYxMDcsImV4cCI6MjA5NzA5MjEwN30.6JgoQ6rPRnmrbBTG68A-Y9HDQk40mnwubhXVnkZvHrQ';
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
+var db=window.supabase?window.supabase.createClient(DEF_URL,DEF_KEY):null;
+var FILE=null;
+var cidEl=document.getElementById('cid'), drop=document.getElementById('drop'), fileEl=document.getElementById('file'), fname=document.getElementById('fname');
+var qid=new URLSearchParams(location.search).get('id'); if(qid) cidEl.value=qid;
+
+drop.addEventListener('click',function(){ fileEl.click(); });
+fileEl.addEventListener('change',function(){ if(fileEl.files[0]) setFile(fileEl.files[0]); });
+['dragenter','dragover'].forEach(function(ev){ drop.addEventListener(ev,function(e){ e.preventDefault(); drop.classList.add('over'); }); });
+['dragleave','drop'].forEach(function(ev){ drop.addEventListener(ev,function(e){ e.preventDefault(); drop.classList.remove('over'); }); });
+drop.addEventListener('drop',function(e){ var f=e.dataTransfer.files[0]; if(f) setFile(f); });
+function setFile(f){ FILE=f; fname.textContent='✓ '+f.name; }
+document.getElementById('go').addEventListener('click', run);
+
+async function sha256Hex(data){
+  var bytes=typeof data==='string'?new TextEncoder().encode(data):(data instanceof ArrayBuffer?new Uint8Array(data):data);
+  var h=await crypto.subtle.digest('SHA-256',bytes);
+  return Array.prototype.map.call(new Uint8Array(h),function(b){return ('0'+b.toString(16)).slice(-2);}).join('');
+}
+async function pageHashesOf(bytes){
+  var src=await PDFLib.PDFDocument.load(bytes,{ignoreEncryption:true});
+  var n=src.getPageCount(), out=[];
+  for(var i=0;i<n;i++){ var d=await PDFLib.PDFDocument.create(); var pgs=await d.copyPages(src,[i]); d.addPage(pgs[0]); var b=await d.save(); out.push(await sha256Hex(b)); }
+  return out;
+}
+function entryHashOf(prev,cid,ev,actor,payload){ return sha256Hex(prev+'|'+cid+'|'+ev+'|'+(actor||'')+'|'+JSON.stringify(payload||{})); }
+function fmtDate(s){ if(!s) return '-'; var d=new Date(s); if(isNaN(d)) return s; function p(n){return ('0'+n).slice(-2);} return d.getFullYear()+'년 '+p(d.getMonth()+1)+'월 '+p(d.getDate())+'일 '+p(d.getHours())+':'+p(d.getMinutes())+':'+p(d.getSeconds()); }
+
+async function run(){
+  var err=document.getElementById('err'); err.style.display='none'; document.getElementById('out').innerHTML='';
+  var id=(cidEl.value||'').trim();
+  if(!id){ err.textContent='계약 ID를 입력하세요.'; err.style.display='block'; return; }
+  if(!FILE){ err.textContent='PDF 파일을 선택하세요.'; err.style.display='block'; return; }
+  if(!window.PDFLib||!db){ err.textContent='검증 모듈 로드 실패. 잠시 후 다시 시도하세요.'; err.style.display='block'; return; }
+  var btn=document.getElementById('go'); btn.disabled=true; btn.textContent='확인 중…';
+  try{
+    var ab=await FILE.arrayBuffer(); var bytes=new Uint8Array(ab);
+    var fileHash=await sha256Hex(bytes);
+    var subHashes=await pageHashesOf(bytes);
+    var r=await db.rpc('ci_get',{p_id:id});
+    if(r.error){ throw new Error(r.error.message); }
+    var rec=r.data&&r.data[0];
+    if(!rec){ err.textContent='해당 계약 ID의 등록 원본을 찾을 수 없습니다.'; err.style.display='block'; btn.disabled=false; btn.textContent='확인하기'; return; }
+    var man=rec.manifest||{}; var origHashes=(man.pageHashes||[]).map(function(p){return p.hash;});
+    var result=compare(fileHash, subHashes, rec.file_hash, origHashes);
+    render(result, rec);
+    await logVerify(id, result);
+    await renderChain(id);
+  }catch(e){ err.textContent='검증 실패: '+esc(e.message||e); err.style.display='block'; }
+  btn.disabled=false; btn.textContent='확인하기';
+}
+
+function compare(fileHash, sub, origFileHash, orig){
+  var res={ valid:false, fileIntact:fileHash===origFileHash, pageIntact:[], deletedPages:[], addedPages:[], changedPages:[], issues:[] };
+  var oset={}, sset={};
+  orig.forEach(function(h){ oset[h]=true; }); sub.forEach(function(h){ sset[h]=true; });
+  var min=Math.min(orig.length, sub.length);
+  for(var i=0;i<min;i++){ var ok=orig[i]===sub[i]; res.pageIntact.push(ok); if(!ok && oset[sub[i]]==null && sset[orig[i]]==null) res.changedPages.push(i+1); }
+  orig.forEach(function(h,i){ if(!sset[h]) res.deletedPages.push(i+1); });
+  sub.forEach(function(h,i){ if(!oset[h]) res.addedPages.push(i+1); });
+  res.valid = res.fileIntact;
+  if(!res.fileIntact){
+    if(res.changedPages.length) res.issues.push(res.changedPages.join('·')+'페이지의 내용이 변경되었습니다.');
+    if(sub.length<orig.length) res.issues.push((orig.length-sub.length)+'페이지가 삭제되었습니다.'+(res.deletedPages.length?' (원본 '+res.deletedPages.join('·')+'페이지)':''));
+    if(sub.length>orig.length) res.issues.push('원본에 없는 페이지가 추가되었습니다. ('+res.addedPages.join('·')+'페이지)');
+    if(!res.issues.length) res.issues.push('파일 자체가 교체되었거나 재저장되었습니다. (전체 해시 불일치)');
+  }
+  return res;
+}
+
+function render(res, rec){
+  var html='';
+  if(res.valid){
+    html+='<div class="res ok"><h2>✅ 이 계약서는 원본과 동일합니다.</h2>'+
+      '<div class="meta">등록 일시: <b>'+fmtDate(rec.registered_at)+'</b> (서버 시각 기준)<br>'+
+      '전체 페이지 수: <b>'+(rec.total_pages||0)+'페이지</b> (모두 원본과 일치)<br>'+
+      '무결성 해시: <b>SHA-256 일치</b></div></div>';
+  } else {
+    html+='<div class="res no"><h2>⚠ 이 계약서는 원본과 다릅니다.</h2><ul>'+
+      res.issues.map(function(x){return '<li>'+esc(x)+'</li>';}).join('')+'</ul>'+
+      '<div class="meta">원본 등록 일시: <b>'+fmtDate(rec.registered_at)+'</b><br>원본 페이지 수: <b>'+(rec.total_pages||0)+'페이지</b></div></div>';
+  }
+  document.getElementById('out').innerHTML='<div class="card">'+html+'</div><div class="card"><h2 style="font-size:15px;color:var(--c);margin:0 0 8px">📜 감사 이력</h2><div id="tl" class="muted">불러오는 중…</div></div>';
+}
+
+async function logVerify(id, res){
+  try{
+    var prev='', last=await db.rpc('ci_audit_get',{p_id:id}); var arr=last.data||[]; if(arr.length) prev=arr[arr.length-1].entry_hash;
+    var e1=await entryHashOf(prev,id,'VERIFY_REQUESTED','public',{});
+    await db.rpc('ci_audit_add',{p_contract:id,p_event:'VERIFY_REQUESTED',p_actor:'public',p_payload:{},p_prev:prev,p_entry:e1});
+    var p1={result:res.valid?'ORIGINAL':'TAMPERED'};
+    var e2=await entryHashOf(e1,id,'VERIFY_RESULT','public',p1);
+    await db.rpc('ci_audit_add',{p_contract:id,p_event:'VERIFY_RESULT',p_actor:'public',p_payload:p1,p_prev:e1,p_entry:e2});
+  }catch(e){}
+}
+
+async function renderChain(id){
+  var tl=document.getElementById('tl'); if(!tl) return;
+  var r=await db.rpc('ci_audit_get',{p_id:id}); var arr=r.data||[];
+  var broken=null, prev='';
+  for(var i=0;i<arr.length;i++){ var a=arr[i];
+    var calc=await entryHashOf(prev,id,a.event_type,a.actor,a.payload||{});
+    if(a.prev_entry_hash!==prev || a.entry_hash!==calc){ broken=a.id; break; }
+    prev=a.entry_hash;
+  }
+  var label={CONTRACT_CREATED:'계약 생성·원본 등록',SIGNER_SIGNED:'서명',TIMESTAMP_ISSUED:'타임스탬프',VERIFY_REQUESTED:'검증 요청',VERIFY_RESULT:'검증 결과'};
+  var rows=arr.map(function(a){ var pl=a.payload&&a.payload.result?(' — '+(a.payload.result==='ORIGINAL'?'원본 일치':'변조 감지')):''; return '<div class="tlrow"><span class="tldot"></span><div><b>'+esc(label[a.event_type]||a.event_type)+'</b>'+esc(pl)+'<br><span class="muted">'+fmtDate(a.created_at)+'</span></div></div>'; }).join('');
+  var chip=broken?'<span class="chip no">체인 끊김 감지</span>':'<span class="chip ok">감사로그 무결</span>';
+  tl.innerHTML='<div style="margin-bottom:6px">'+chip+(broken?' <span class="muted">('+esc(broken)+' 지점)</span>':'')+'</div>'+(rows||'<span class="muted">이력 없음</span>');
+}
+</script>
+</body>
+</html>
