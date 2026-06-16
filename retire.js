@@ -231,6 +231,24 @@ window.RetireModule = (function () {
     }
 
     wrap.appendChild(cards);
+
+    // ── 통계 (지원 총계) — 입사 화면과 동일 포맷 ──
+    if (!STANDALONE) {
+      var statRow = el('div', 'hr-stat-row');
+      statRow.style.cssText = 'margin-top:20px;justify-content:center;max-width:480px;width:100%';
+      var rstats = [
+        { num: apps.length, label: '전체 신청자' },
+        { num: subCount,    label: '제출 완료' },
+        { num: draftCount,  label: '작성 중' },
+      ];
+      rstats.forEach(function (s) {
+        var c = el('div', 'hr-stat-card');
+        c.innerHTML = '<div class="hr-stat-num">' + s.num + '</div><div class="hr-stat-label">' + s.label + '</div>';
+        statRow.appendChild(c);
+      });
+      wrap.appendChild(statRow);
+    }
+
     root.appendChild(wrap);
   }
 

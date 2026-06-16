@@ -4887,6 +4887,8 @@ h3.settings-section-title {
   /* 탭 콘텐츠 하단 여백 (하단 탭 높이만큼) */
   .tab-panel { padding: 0 !important; }
   .tab-body { padding: 14px 12px !important; padding-bottom: calc(var(--bottom-nav-h) + 20px) !important; }
+  /* #tab-hr 은 .tab-body 래퍼가 없어 하단 탭에 콘텐츠가 가려짐 → 패널에 직접 여백 */
+  #hr-entry-panel, #hr-retire-panel { padding-bottom: calc(var(--bottom-nav-h) + 24px) !important; }
 
   /* ── 하단 내비 (가로 스크롤) ── */
   .mobile-bottom-nav {
@@ -6576,6 +6578,10 @@ body.nav-sheet-open .quick-fab { display: none; }
 .rt-role-icon .mono-ico, .rt-auth-icon .mono-ico, .rt-complete-icon .mono-ico { margin-right: 0; }
 .hr-role-icon .mono-ico svg, .hr-auth-icon .mono-ico svg, .hr-done-icon .mono-ico svg,
 .rt-role-icon .mono-ico svg, .rt-auth-icon .mono-ico svg, .rt-complete-icon .mono-ico svg { width: 40px; height: 40px; }
+/* 입사/퇴직 홈 큰 아이콘: 색상·크기 동일 통일 */
+.hr-home-icon, .rt-home-icon { color: var(--color-text-secondary); }
+.hr-home-icon .mono-ico, .rt-home-icon .mono-ico { margin-right: 0; }
+.hr-home-icon .mono-ico svg, .rt-home-icon .mono-ico svg { width: 44px; height: 44px; }
 /* 카드 제목/서브탭 아이콘 크기 통일 */
 .hr-card-title .mono-ico svg, .rt-card-title .mono-ico svg,
 .hr-section-title .mono-ico svg, .rt-role-title .mono-ico svg { width: 18px; height: 18px; }
