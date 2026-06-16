@@ -71,7 +71,17 @@
   }
 
   /* ── 화면 ─────────────────────────────────────────────── */
+  function bindEsc() {
+    if (W._escBound) return; W._escBound = true;
+    document.addEventListener('keydown', function (e) {
+      if (e.key !== 'Escape') return;
+      if (!root() || document.getElementById(ROOT) !== root()) {}
+      if (W._cancelDrag) { W._cancelDrag(); }
+      else if (W.linkFrom) { W.linkFrom = null; wfRenderGraph(); toast('연결을 취소했습니다.', 'info'); }
+    });
+  }
   function render() {
+    bindEsc();
     var f = curFloor();
     var portalUrl = portalBase() + 'wayfind.html';
     root().innerHTML =
@@ -87,8 +97,8 @@
       (f ? '<div class="dorm-actions" style="margin-top:6px">' +
         ['node', 'link', 'move'].map(function (m) { var lab = { node: '지점 추가', link: '지점 연결', move: '이동' }[m]; return '<button class="dorm-mode' + (W.mode === m ? ' active' : '') + '" data-wfm="' + m + '">' + lab + '</button>'; }).join('') +
         '<button id="wf-delfloor" class="btn btn-ghost btn-sm" style="color:#dc2626;margin-left:auto">이 층 삭제</button></div>' +
-        '<p class="dorm-muted">' + (W.mode === 'node' ? '도면 빈 곳을 클릭해 지점을 추가합니다. 지점을 클릭하면 속성 편집.' : W.mode === 'link' ? '연결할 지점을 차례로 클릭하면 경로가 이어집니다.' : '지점을 드래그해 위치를 옮깁니다.') +
-        ' (계단/엘리베이터는 <b>여러 층에 같은 이름</b>으로 두면 층간 자동 연결됩니다.)</p>' : '') +
+        '<p class="dorm-muted">' + (W.mode === 'node' ? '도면 빈 곳을 클릭해 지점을 추가합니다. 지점을 클릭하면 속성 편집.' : W.mode === 'link' ? '연결할 지점을 차례로 클릭하면 경로가 이어집니다. (ESC=연결 취소)' : '지점을 드래그해 위치를 옮깁니다. 드래그 중 <b>ESC·우클릭</b>이면 취소.') +
+        ' <b style="color:#dc2626">우클릭</b>: 경로(선)=그 경로 삭제 · 지점=그 지점 삭제. (계단/엘리베이터는 <b>여러 층에 같은 이름</b>으로 두면 층간 자동 연결됩니다.)</p>' : '') +
       '<div id="wf-stage" class="wf-stage' + (f && f.image ? '' : ' empty') + '">' + (f && f.image ? '<img src="' + f.image + '" class="wf-img"><svg class="wf-svg" viewBox="0 0 100 100" preserveAspectRatio="none"></svg><div class="wf-nodes"></div>' : '<div class="dorm-muted">' + (f ? '도면 이미지를 업로드하세요.' : '먼저 「+ 층/도면 추가」로 층을 만드세요.') + '</div>') + '</div>' +
       '</div><div id="wf-prop"></div>' +
       '<div class="dorm-card"><h3 class="dorm-h3">🔗 안내 포털 / QR</h3>' +
@@ -108,12 +118,19 @@
     }
   }
 
+  // 층 이름에서 정렬용 층번호 자동 추출 (지하/B → 음수)
+  function parseLvl(name) {
+    var s = String(name || ''); var m = s.match(/-?\d+/); var num = m ? parseInt(m[0], 10) : 0;
+    if (/지하|\bB/i.test(s)) return -Math.abs(num || 1);
+    return num;
+  }
+  function sortFloors() { W.floors.sort(function (a, b) { return (b.level || 0) - (a.level || 0); }); } // 고층→지하 순
   function wfAddFloor() {
-    var name = prompt('층/도면 이름 (예: 본관 1층)', '');
-    if (!name) return;
-    var lvl = parseInt(prompt('층 번호(숫자, 층간 이동 정렬용)', '1'), 10) || 0;
+    var name = prompt('층/도면 이름 (예: 본관 3층 · 지하 1층 · B2)\n※ "지하"·"B"가 있으면 지하층으로 자동 정렬됩니다.', '');
+    if (name == null) return; name = name.trim(); if (!name) return;
     var id = uid();
-    W.floors.push({ id: id, name: name.trim(), level: lvl, image: '' });
+    W.floors.push({ id: id, name: name, level: parseLvl(name), image: '' });
+    sortFloors();
     W.cur = id; render();
   }
   async function wfDelFloor() {
@@ -142,6 +159,19 @@
       var n = { id: uid(), floor: W.cur, x: Math.round(x * 10) / 10, y: Math.round(y * 10) / 10, name: '지점' + (W.nodes.length + 1), type: '일반', qr: false };
       W.nodes.push(n); W.sel = n.id; wfRenderGraph(); wfRenderProp();
     });
+    // 빈 곳 우클릭: 브라우저 메뉴 차단 + 연결/드래그 중이면 취소
+    stage.addEventListener('contextmenu', function (e) {
+      e.preventDefault();
+      if (W._cancelDrag) { W._cancelDrag(); return; }
+      if (W.linkFrom) { W.linkFrom = null; wfRenderGraph(); toast('연결을 취소했습니다.', 'info'); }
+    });
+  }
+  function wfDeleteNode(id) {
+    var n = nodeById(id); if (!n) return;
+    W.nodes = W.nodes.filter(function (x) { return x.id !== id; });
+    W.edges = W.edges.filter(function (e) { return e[0] !== id && e[1] !== id; });
+    if (W.sel === id) { W.sel = null; var p = document.getElementById('wf-prop'); if (p) p.innerHTML = ''; }
+    wfRenderGraph(); toast('지점을 삭제했습니다.', 'success');
   }
   function wfRenderGraph() {
     var f = curFloor(); if (!f) return;
@@ -149,15 +179,27 @@
     var svg = document.querySelector('#wf-stage .wf-svg');
     if (svg) {
       var lines = '';
-      W.edges.forEach(function (ed) { var a = nodeById(ed[0]), b = nodeById(ed[1]); if (a && b && a.floor === W.cur && b.floor === W.cur) lines += '<line x1="' + a.x + '" y1="' + a.y + '" x2="' + b.x + '" y2="' + b.y + '" stroke="#1a73e8" stroke-width="0.6" stroke-linecap="round"/>'; });
+      W.edges.forEach(function (ed, idx) { var a = nodeById(ed[0]), b = nodeById(ed[1]); if (a && b && a.floor === W.cur && b.floor === W.cur) {
+        lines += '<line class="wf-edge" x1="' + a.x + '" y1="' + a.y + '" x2="' + b.x + '" y2="' + b.y + '"/>';
+        lines += '<line class="wf-hit" data-ei="' + idx + '" x1="' + a.x + '" y1="' + a.y + '" x2="' + b.x + '" y2="' + b.y + '"><title>우클릭으로 이 경로 삭제</title></line>';
+      } });
       svg.innerHTML = lines;
+      svg.querySelectorAll('.wf-hit').forEach(function (h) {
+        h.addEventListener('contextmenu', function (ev) { ev.preventDefault(); ev.stopPropagation(); var i = +this.dataset.ei; if (i >= 0) { W.edges.splice(i, 1); wfRenderGraph(); toast('경로를 삭제했습니다.', 'success'); } });
+      });
     }
     var wrap = document.querySelector('#wf-stage .wf-nodes'); if (!wrap) return;
     wrap.innerHTML = nodes.map(function (n) { var cls = 'wf-mk t-' + esc(n.type) + (W.sel === n.id ? ' sel' : '') + (W.linkFrom === n.id ? ' linking' : '') + (n.qr ? ' qr' : '');
-      return '<div class="' + cls + '" data-id="' + n.id + '" style="left:' + n.x + '%;top:' + n.y + '%" title="' + esc(n.name) + '"><span>' + esc(n.name) + '</span></div>'; }).join('');
+      return '<div class="' + cls + '" data-id="' + n.id + '" style="left:' + n.x + '%;top:' + n.y + '%" title="' + esc(n.name) + ' — 우클릭으로 삭제"><span>' + esc(n.name) + '</span></div>'; }).join('');
     wrap.querySelectorAll('.wf-mk').forEach(function (m) {
       if (W.mode === 'move') wfDrag(m);
       m.addEventListener('click', function (ev) { ev.stopPropagation(); wfNodeClick(this.dataset.id); });
+      m.addEventListener('contextmenu', function (ev) {
+        ev.preventDefault(); ev.stopPropagation();
+        if (W._cancelDrag) { W._cancelDrag(); return; }            // 드래그 중 → 취소
+        if (W.mode === 'link' && W.linkFrom) { W.linkFrom = null; wfRenderGraph(); toast('연결을 취소했습니다.', 'info'); return; }
+        wfDeleteNode(this.dataset.id);                              // 그 외 → 지점 삭제
+      });
     });
   }
   function wfNodeClick(id) {
@@ -173,12 +215,19 @@
     W.sel = id; wfRenderGraph(); wfRenderProp();
   }
   function wfDrag(m) {
-    var stage = document.getElementById('wf-stage'); var id = m.dataset.id; var on = false;
-    m.addEventListener('pointerdown', function (e) { e.preventDefault(); on = true; try { m.setPointerCapture(e.pointerId); } catch (_) {} });
+    var stage = document.getElementById('wf-stage'); var id = m.dataset.id; var on = false, ox = 0, oy = 0, pid = null;
+    function endDrag() { on = false; W._cancelDrag = null; if (pid != null) { try { m.releasePointerCapture(pid); } catch (_) {} pid = null; } }
+    function cancel() { if (!on) return; var n = nodeById(id); if (n) { n.x = ox; n.y = oy; } endDrag(); wfRenderGraph(); toast('이동을 취소했습니다.', 'info'); }
+    m.addEventListener('pointerdown', function (e) {
+      if (e.button !== 0) return;            // 좌클릭만 드래그 시작 (우클릭은 contextmenu에서 처리)
+      e.preventDefault(); var n = nodeById(id); if (!n) return;
+      ox = n.x; oy = n.y; on = true; pid = e.pointerId; W._cancelDrag = cancel;
+      try { m.setPointerCapture(e.pointerId); } catch (_) {}
+    });
     m.addEventListener('pointermove', function (e) { if (!on) return; var r = stage.getBoundingClientRect();
       var x = Math.max(0, Math.min(100, (e.clientX - r.left) / r.width * 100)), y = Math.max(0, Math.min(100, (e.clientY - r.top) / r.height * 100));
-      var n = nodeById(id); if (n) { n.x = Math.round(x * 10) / 10; n.y = Math.round(y * 10) / 10; } m.style.left = n.x + '%'; m.style.top = n.y + '%'; wfRenderGraph(); });
-    m.addEventListener('pointerup', function (e) { on = false; try { m.releasePointerCapture(e.pointerId); } catch (_) {} });
+      var n = nodeById(id); if (n) { n.x = Math.round(x * 10) / 10; n.y = Math.round(y * 10) / 10; m.style.left = n.x + '%'; m.style.top = n.y + '%'; } wfRenderGraph(); });
+    m.addEventListener('pointerup', function () { endDrag(); });
   }
   function wfRenderProp() {
     var n = nodeById(W.sel); var p = document.getElementById('wf-prop'); if (!n) { p.innerHTML = ''; return; }
