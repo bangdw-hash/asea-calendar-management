@@ -1054,8 +1054,13 @@
       _map.occ = {};
       if (_map.rooms.length) {
         var rids = _map.rooms.map(function (r) { return r.id; });
-        var cs = await _db.from('dormitory_contracts').select('room_id,resident_name,student_no,department,grade').eq('status', 'active').in('room_id', rids);
-        (cs.data || []).forEach(function (c) { _map.occ[c.room_id] = { name: c.resident_name, sno: c.student_no, dept: c.department, grade: c.grade }; });
+        var cs = await _db.from('dormitory_contracts').select('id,room_id,resident_name,student_no,department,grade,phone,unit_price,deposit,start_date,end_date').eq('status', 'active').in('room_id', rids);
+        var cmap = {}, cids = [];
+        (cs.data || []).forEach(function (c) { _map.occ[c.room_id] = { cid: c.id, name: c.resident_name, sno: c.student_no, dept: c.department, grade: c.grade, phone: c.phone, price: c.unit_price, deposit: c.deposit, start: c.start_date, end: c.end_date, unpaid: 0 }; cmap[c.id] = c.room_id; cids.push(c.id); });
+        if (cids.length) {
+          var ps = await _db.from('dormitory_payments').select('contract_id,amount,status').in('contract_id', cids);
+          (ps.data || []).forEach(function (p) { if (p.status !== 'paid') { var rid = cmap[p.contract_id]; if (rid && _map.occ[rid]) _map.occ[rid].unpaid += (p.amount || 0); } });
+        }
       }
       mapRender();
     } catch (e) { body().innerHTML = errBox(e); }
@@ -1086,8 +1091,9 @@
   function mpRenderMarkers() {
     var wrap = document.getElementById('mp-markers'); if (!wrap) return;
     var i = 0; _map.rooms.forEach(function (r) { if (r.map_x == null || r.map_y == null) { var col = i % 6, row = Math.floor(i / 6); r.map_x = 8 + col * 15; r.map_y = 10 + row * 14; i++; } });
-    wrap.innerHTML = _map.rooms.map(function (r) { var cls = _map.occ[r.id] ? 'occ' : 'vac';
-      return '<div class="mp-mk ' + cls + '" data-id="' + r.id + '" style="left:' + r.map_x + '%;top:' + r.map_y + '%">' + esc(r.room_number) + '</div>'; }).join('');
+    wrap.innerHTML = _map.rooms.map(function (r) { var o = _map.occ[r.id]; var cls = o ? 'occ' : 'vac';
+      var sub = o ? '<span class="mp-mk-sub">' + esc(o.name) + (o.dept ? ' · ' + esc(String(o.dept).replace('계열', '')) : '') + '</span>' : '';
+      return '<div class="mp-mk ' + cls + '" data-id="' + r.id + '" style="left:' + r.map_x + '%;top:' + r.map_y + '%"><b>' + esc(r.room_number) + '</b>' + sub + '</div>'; }).join('');
     wrap.querySelectorAll('.mp-mk').forEach(function (m) {
       if (_map.edit) mpDrag(m); else m.addEventListener('click', function () { mpInfo(this.dataset.id); });
     });
@@ -1103,8 +1109,17 @@
   }
   function mpInfo(rid) {
     var r = _map.rooms.filter(function (z) { return z.id === rid; })[0]; var o = _map.occ[rid];
-    document.getElementById('mp-info').innerHTML = '<div class="dorm-card"><h3 class="dorm-h3">🚪 ' + esc(r.room_number) + '호 <span class="dorm-muted">(' + esc(r.room_type) + ' · ' + esc(r.floor) + '층)</span></h3>' +
-      (o ? '<p>입실: <b>' + esc(o.name) + '</b> ' + esc(o.sno || '') + (o.dept ? ' · ' + esc(o.dept) : '') + (o.grade ? ' ' + esc(o.grade) + '학년' : '') + '</p>' : '<p class="dorm-muted">공실</p>') + '</div>';
+    var html = '<div class="dorm-card"><h3 class="dorm-h3">🚪 ' + esc(r.room_number) + '호 <span class="dorm-muted">(' + esc(r.room_type) + ' · ' + esc(r.floor) + '층)</span></h3>';
+    if (!o) { html += '<p class="dorm-muted">공실</p></div>'; document.getElementById('mp-info').innerHTML = html; return; }
+    html += '<table class="dorm-table" style="max-width:520px"><tbody>' +
+      '<tr><th style="width:110px">입소자</th><td><b>' + esc(o.name) + '</b> ' + esc(o.sno || '') + (o.grade ? ' · ' + esc(o.grade) + '학년' : '') + '</td></tr>' +
+      '<tr><th>소속(계열)</th><td>' + esc(o.dept || '-') + '</td></tr>' +
+      '<tr><th>연락처</th><td>' + esc(o.phone || '-') + '</td></tr>' +
+      '<tr><th>월 기숙사비</th><td>' + won(o.price) + '원' + (o.deposit ? ' <span class="dorm-muted">(보증금 ' + won(o.deposit) + '원)</span>' : '') + '</td></tr>' +
+      '<tr><th>미납금</th><td style="' + (o.unpaid > 0 ? 'color:#dc2626;font-weight:700' : '') + '">' + won(o.unpaid) + '원' + (o.unpaid > 0 ? ' (미납)' : ' (완납)') + '</td></tr>' +
+      '<tr><th>계약 기간</th><td>' + esc(o.start || '') + ' ~ <b>' + esc(o.end || '') + '</b> (만료일)</td></tr>' +
+      '</tbody></table></div>';
+    document.getElementById('mp-info').innerHTML = html;
   }
   async function mpUpload(e) {
     var f = e.target.files[0]; if (!f) return; if (!_map.floor) { toast('층이 없습니다. 먼저 호실을 등록하세요.', 'error'); return; }
