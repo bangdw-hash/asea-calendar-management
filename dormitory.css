@@ -90,6 +90,9 @@
 .wf-mk.t-계단::before, .wf-mk.t-엘리베이터::before { background:#d97706; }
 .wf-mk.t-입구::before { background:#059669; }
 .wf-mk.qr::before { background:#7c3aed; }
+.wf-mk.exit::before { background:#dc2626; width:15px; height:15px; }
+.wf-mk.wp::before { width:8px; height:8px; background:#64748b; border-width:1.5px; }   /* 이동선 경유점 */
 .wf-mk.sel::before { outline:3px solid rgba(26,115,232,.4); }
 .wf-mk.linking::before { box-shadow:0 0 0 4px rgba(220,38,38,.4); }
 .wf-mk span { font-size:11px; font-weight:700; color:#111; background:rgba(255,255,255,.85); padding:1px 5px; border-radius:5px; white-space:nowrap; }
+.wf-mk.exit span { color:#fff; background:#dc2626; }
