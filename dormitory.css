@@ -92,6 +92,7 @@
 .wf-mk.qr::before { background:#7c3aed; }
 .wf-mk.exit::before { background:#dc2626; width:15px; height:15px; }
 .wf-mk.wp::before { width:8px; height:8px; background:#64748b; border-width:1.5px; }   /* 이동선 경유점 */
+.wf-mk.dangle::before { background:#dc2626; box-shadow:0 0 0 3px rgba(220,38,38,.35); }  /* 이름 없는 허공 끝점 경고 */
 .wf-mk.sel::before { outline:3px solid rgba(26,115,232,.4); }
 .wf-mk.asel::before { outline:3px solid rgba(37,99,235,.7); }
 .wf-mk.linking::before { box-shadow:0 0 0 4px rgba(220,38,38,.4); }
