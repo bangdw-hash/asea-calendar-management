@@ -12,7 +12,7 @@
   var TYPES = ['일반', '입구', '계단', '엘리베이터', '화장실', '강의실', '사무실', '편의시설', '경유'];
   var ATTACH_TH = 10;   // 자동 연결 허용 거리(%)
   var _db = null, _session = null;
-  var W = { floors: [], nodes: [], edges: [], cur: null, mode: 'node', sel: null, linkFrom: null, wireFrom: null, autoLink: true, snap: false, grid: 2.5, alignSel: [] };
+  var W = { floors: [], nodes: [], edges: [], cur: null, mode: 'node', sel: null, linkFrom: null, wireFrom: null, autoLink: true, snap: false, grid: 2.5, alignSel: [], nodeType: '일반', ortho: true };
 
   function root() { return document.getElementById(ROOT); }
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
@@ -71,13 +71,34 @@
       return '<optgroup label="' + esc(f.name) + '">' + ns.map(function (n) { return '<option value="' + n.id + '"' + (n.id === sel ? ' selected' : '') + '>' + esc(n.name) + '</option>'; }).join('') + '</optgroup>';
     }).join('');
   }
-  // 선택한 지점들 수평(h)/수직(v) 정렬
-  function alignSelected(axis) {
+  function clamp(v) { return Math.max(0, Math.min(100, v)); }
+  // 선택한 지점들 정렬: h(같은 높이)·v(같은 가로)·left·right·top·bottom·disth(가로 균등)·distv(세로 균등)
+  function alignSelected(mode) {
     var ns = W.alignSel.map(nodeById).filter(Boolean);
     if (ns.length < 2) { toast('정렬할 지점을 2개 이상 선택하세요.', 'warning'); return; }
-    if (axis === 'h') { var ay = ns.reduce(function (s, n) { return s + n.y; }, 0) / ns.length; ns.forEach(function (n) { n.y = r1(ay); }); }
-    else { var ax = ns.reduce(function (s, n) { return s + n.x; }, 0) / ns.length; ns.forEach(function (n) { n.x = r1(ax); }); }
+    var xs = ns.map(function (n) { return n.x; }), ys = ns.map(function (n) { return n.y; });
+    var avg = function (a) { return a.reduce(function (s, v) { return s + v; }, 0) / a.length; };
+    if (mode === 'h')           ns.forEach(function (n) { n.y = r1(avg(ys)); });
+    else if (mode === 'v')      ns.forEach(function (n) { n.x = r1(avg(xs)); });
+    else if (mode === 'left')   ns.forEach(function (n) { n.x = r1(Math.min.apply(null, xs)); });
+    else if (mode === 'right')  ns.forEach(function (n) { n.x = r1(Math.max.apply(null, xs)); });
+    else if (mode === 'top')    ns.forEach(function (n) { n.y = r1(Math.min.apply(null, ys)); });
+    else if (mode === 'bottom') ns.forEach(function (n) { n.y = r1(Math.max.apply(null, ys)); });
+    else if (mode === 'disth')  { ns.sort(function (a, b) { return a.x - b.x; }); var x0 = ns[0].x, st = (ns[ns.length - 1].x - x0) / (ns.length - 1); ns.forEach(function (n, i) { n.x = r1(x0 + st * i); }); }
+    else if (mode === 'distv')  { ns.sort(function (a, b) { return a.y - b.y; }); var y0 = ns[0].y, sv = (ns[ns.length - 1].y - y0) / (ns.length - 1); ns.forEach(function (n, i) { n.y = r1(y0 + sv * i); }); }
     wfRenderGraph(); toast('정렬했습니다.', 'success');
+  }
+  // 이동선 직각(ㄱ자) 연결 — 두 점 사이에 코너 경유점을 끼워 수평/수직 2구간으로 잇는다
+  function elbowCorner(a, b) {
+    return (Math.abs(b.x - a.x) >= Math.abs(b.y - a.y)) ? { x: b.x, y: a.y } : { x: a.x, y: b.y };
+  }
+  function connectWire(fromId, toId) {
+    if (!fromId || !toId || fromId === toId) return;
+    var a = nodeById(fromId), b = nodeById(toId);
+    if (W.ortho && a && b && Math.abs(b.x - a.x) > 0.3 && Math.abs(b.y - a.y) > 0.3) {
+      var c = elbowCorner(a, b), cor = mkWaypoint(snap(c.x), snap(c.y));
+      addEdge(fromId, cor.id); addEdge(cor.id, toId);
+    } else { addEdge(fromId, toId); }
   }
   function portalBase() { try { return (location.origin + location.pathname).replace(/[^/]*$/, ''); } catch (e) { return ''; } }
   function qrImg(text, size) { return 'https://api.qrserver.com/v1/create-qr-code/?size=' + (size || 180) + 'x' + (size || 180) + '&data=' + encodeURIComponent(text); }
@@ -130,11 +151,26 @@
   function bindEsc() {
     if (W._escBound) return; W._escBound = true;
     document.addEventListener('keydown', function (e) {
-      if (e.key !== 'Escape') return;
-      if (!root() || document.getElementById(ROOT) !== root()) {}
-      if (W._cancelDrag) { W._cancelDrag(); }
-      else if (W.linkFrom) { W.linkFrom = null; wfRenderGraph(); toast('연결을 취소했습니다.', 'info'); }
-      else if (W.wireFrom) { W.wireFrom = null; wfRenderGraph(); toast('이동선 그리기를 끝냈습니다.', 'info'); }
+      var panel = document.getElementById('tab-wayfind');
+      if (panel && panel.hidden) return;                 // 안내도 탭이 열려 있을 때만
+      if (e.key === 'Escape') {
+        if (W._cancelDrag) { W._cancelDrag(); }
+        else if (W.linkFrom) { W.linkFrom = null; wfRenderGraph(); toast('연결을 취소했습니다.', 'info'); }
+        else if (W.wireFrom) { W.wireFrom = null; wfRenderGraph(); toast('이동선 그리기를 끝냈습니다.', 'info'); }
+        return;
+      }
+      // 화살표 = 선택 지점 미세 이동 (Shift=격자 한 칸, 기본=0.2%)
+      if (e.key.indexOf('Arrow') !== 0) return;
+      var ae = document.activeElement;
+      if (ae && /^(INPUT|SELECT|TEXTAREA)$/.test(ae.tagName)) return;   // 입력 중엔 제외
+      var ids = (W.mode === 'align' && W.alignSel.length) ? W.alignSel : (W.sel ? [W.sel] : []);
+      if (!ids.length) return;
+      e.preventDefault();
+      var step = e.shiftKey ? (W.grid || 2.5) : 0.2;
+      var dx = e.key === 'ArrowLeft' ? -step : e.key === 'ArrowRight' ? step : 0;
+      var dy = e.key === 'ArrowUp' ? -step : e.key === 'ArrowDown' ? step : 0;
+      ids.map(nodeById).filter(Boolean).forEach(function (n) { n.x = clamp(r1(n.x + dx)); n.y = clamp(r1(n.y + dy)); });
+      wfRenderGraph();
     });
   }
   function render() {
@@ -155,11 +191,28 @@
         ['node', 'wire', 'link', 'move', 'align'].map(function (m) { var lab = { node: '지점 추가', wire: '이동선 그리기', link: '지점 연결', move: '이동', align: '정렬' }[m]; return '<button class="dorm-mode' + (W.mode === m ? ' active' : '') + '" data-wfm="' + m + '">' + lab + '</button>'; }).join('') +
         '<label class="dorm-cb" style="margin-left:4px"><input type="checkbox" id="wf-autolink"' + (W.autoLink ? ' checked' : '') + '> 자동 연결</label>' +
         '<label class="dorm-cb"><input type="checkbox" id="wf-snap"' + (W.snap ? ' checked' : '') + '> 격자 맞춤</label>' +
+        '<select id="wf-grid" class="form-select" style="width:auto;padding:4px 8px;font-size:12px" title="격자 간격(작을수록 세밀)">' +
+          [0.5, 1, 2, 2.5, 5].map(function (g) { return '<option value="' + g + '"' + (W.grid === g ? ' selected' : '') + '>격자 ' + g + '%</option>'; }).join('') + '</select>' +
+        '<label class="dorm-cb"><input type="checkbox" id="wf-ortho"' + (W.ortho ? ' checked' : '') + '> 직각(ㄱ자) 이동선</label>' +
         '<button id="wf-delfloor" class="btn btn-ghost btn-sm" style="color:#dc2626;margin-left:auto">이 층 삭제</button></div>' +
-        (W.mode === 'align' ? '<div class="dorm-actions" style="margin-top:4px"><button id="wf-al-h" class="btn btn-secondary btn-sm">↔ 수평 정렬(같은 높이)</button><button id="wf-al-v" class="btn btn-secondary btn-sm">↕ 수직 정렬(같은 가로)</button><button id="wf-al-c" class="btn btn-ghost btn-sm">선택 해제</button><span class="dorm-muted" style="align-self:center">선택: ' + W.alignSel.length + '개</span></div>' : '') +
+        (W.mode === 'node' ? '<div class="dorm-actions" style="margin-top:4px;flex-wrap:wrap">' +
+          [['일반', '📍 일반'], ['계단', '🪜 계단'], ['엘리베이터', '🛗 엘리베이터'], ['출입구', '🚪 출입구(대피)']].map(function (t) {
+            return '<button class="dorm-mode' + (W.nodeType === t[0] ? ' active' : '') + '" data-wfnt="' + t[0] + '">' + t[1] + '</button>'; }).join('') +
+          '<span class="dorm-muted" style="align-self:center">유형을 고르고 빈 곳을 클릭하면 그 유형의 점이 생깁니다.</span></div>' : '') +
+        (W.mode === 'align' ? '<div class="dorm-actions" style="margin-top:4px;flex-wrap:wrap">' +
+          '<button id="wf-al-h" class="btn btn-secondary btn-sm">↔ 수평(같은 높이)</button>' +
+          '<button id="wf-al-v" class="btn btn-secondary btn-sm">↕ 수직(같은 가로)</button>' +
+          '<button data-al="left" class="btn btn-ghost btn-sm">⇤ 왼쪽</button>' +
+          '<button data-al="right" class="btn btn-ghost btn-sm">⇥ 오른쪽</button>' +
+          '<button data-al="top" class="btn btn-ghost btn-sm">⤒ 위</button>' +
+          '<button data-al="bottom" class="btn btn-ghost btn-sm">⤓ 아래</button>' +
+          '<button data-al="disth" class="btn btn-ghost btn-sm">⇿ 가로 균등</button>' +
+          '<button data-al="distv" class="btn btn-ghost btn-sm">↥↧ 세로 균등</button>' +
+          '<button id="wf-al-c" class="btn btn-ghost btn-sm">선택 해제</button>' +
+          '<span class="dorm-muted" style="align-self:center">선택: ' + W.alignSel.length + '개</span></div>' : '') +
         '<p class="dorm-muted">' + (
-          W.mode === 'node' ? '도면 빈 곳을 클릭하면 <b>이름을 입력</b>해 지점을 추가합니다. <b>자동 연결</b>이 켜져 있으면 가장 가까운 이동선/지점에 자동으로 이어집니다(전기선 흐름도식). 지점 <b>더블클릭=이름 변경</b>·드래그=이동.'
-          : W.mode === 'wire' ? '빈 곳을 차례로 클릭해 <b>이동선(복도)</b>을 그립니다. <b>Shift</b>를 누른 채 클릭하면 <b>직선(수평/수직)</b>으로 고정됩니다. 지점을 클릭하면 그 지점에 연결됩니다. (ESC·우클릭·더블클릭=선 끝내기)'
+          W.mode === 'node' ? '빈 곳을 클릭하면 <b>점이 바로 생깁니다</b>(이름 입력창 없이). 점을 <b>드래그</b>하거나 점 선택 후 <b>←↑↓→(미세)·Shift+←↑↓→(격자 한 칸)</b>로 위치를 맞추고, 점을 클릭하면 아래 <b>속성창에서 이름</b>을 입력합니다(더블클릭=빠른 이름). 위 유형(일반·계단·엘리베이터·출입구)을 골라 찍을 수 있어요.'
+          : W.mode === 'wire' ? '빈 곳을 차례로 클릭해 <b>이동선(복도)</b>을 그립니다. <b>직각(ㄱ자)</b>이 켜져 있으면 대각선이 아니라 자동으로 <b>꺾인 직각선</b>으로 이어집니다. <b>Shift</b>=수평/수직 1구간 직선. 지점을 클릭하면 그 지점에 연결됩니다. (ESC·우클릭·더블클릭=선 끝내기)'
           : W.mode === 'link' ? '연결할 지점을 차례로 클릭하면 경로가 이어집니다. (ESC=연결 취소)'
           : W.mode === 'align' ? '정렬할 지점들을 <b>클릭해 여러 개 선택</b>한 뒤 <b>수평/수직 정렬</b>을 누르면 한 줄로 깔끔하게 맞춰집니다.'
           : '지점을 드래그해 위치를 옮깁니다. 드래그 중 <b>ESC·우클릭</b>이면 취소. <b>더블클릭=이름 변경</b>.') +
@@ -176,8 +229,9 @@
           '<div><label class="dorm-label">이동수단</label><select id="wf-sim-mode" class="form-select"><option value="walk">도보(계단)</option><option value="elevator">엘리베이터</option></select></div>' +
           '<div style="align-self:end"><button id="wf-sim-go" class="btn btn-primary btn-sm">시뮬레이션 열기</button></div>' +
         '</div>' +
-        '<div class="dorm-actions"><button id="wf-sim-qr" class="btn btn-secondary btn-sm">📱 QR 스캔 화면 미리보기(출발 지점)</button></div>' +
-        '<p class="dorm-muted">방문자가 실제로 보는 길찾기 화면이 새 창으로 열립니다. (출발→도착 경로가 자동 재생됩니다)</p></div>';
+        '<div class="dorm-actions"><button id="wf-sim-qr" class="btn btn-secondary btn-sm">📱 QR 스캔 화면 미리보기(출발 지점)</button>' +
+          '<button id="wf-sim-evac" class="btn btn-sm" style="background:#dc2626;color:#fff;border:none">🚨 대피 경로 미리보기(가장 가까운 출구)</button></div>' +
+        '<p class="dorm-muted">방문자가 실제로 보는 길찾기 화면이 새 창으로 열립니다. (출발→도착 경로가 자동 재생됩니다) · 대피 미리보기는 <b>출입구(대피)</b>로 표시한 지점 중 가장 가까운 곳으로 안내합니다.</p></div>';
     document.getElementById('wf-logout').addEventListener('click', async function () { try { await _db.auth.signOut(); } catch (e) {} _session = null; renderLogin(); });
     document.getElementById('wf-floor').addEventListener('change', function () { W.cur = this.value; W.sel = null; W.linkFrom = null; render(); });
     document.getElementById('wf-addfloor').addEventListener('click', wfAddFloor);
@@ -193,15 +247,25 @@
       var a = val('wf-sim-from'); if (!a) { toast('출발(QR) 지점을 선택하세요.', 'warning'); return; }
       window.open(portalBase() + 'wayfind.html?from=' + encodeURIComponent(a), '_blank', 'noopener');
     });
+    var sev = document.getElementById('wf-sim-evac'); if (sev) sev.addEventListener('click', function () {
+      var a = val('wf-sim-from') || W.sel;
+      if (!a) { toast('출발 지점을 선택(또는 도면에서 지점 클릭)하세요.', 'warning'); return; }
+      if (!W.nodes.some(function (n) { return n.exit; })) { toast('출입구(대피) 지점을 먼저 추가하세요. (지점 추가 → 🚪 출입구)', 'warning'); return; }
+      window.open(portalBase() + 'wayfind.html?from=' + encodeURIComponent(a) + '&evac=1', '_blank', 'noopener');
+    });
     if (f) {
       root().querySelectorAll('[data-wfm]').forEach(function (b) { b.addEventListener('click', function () { W.mode = b.dataset.wfm; W.linkFrom = null; W.wireFrom = null; render(); }); });
       var al = document.getElementById('wf-autolink'); if (al) al.addEventListener('change', function () { W.autoLink = this.checked; });
       var sn = document.getElementById('wf-snap'); if (sn) sn.addEventListener('change', function () { W.snap = this.checked; render(); });
+      var gr = document.getElementById('wf-grid'); if (gr) gr.addEventListener('change', function () { W.grid = parseFloat(this.value) || 2.5; if (W.snap) render(); });
+      var or = document.getElementById('wf-ortho'); if (or) or.addEventListener('change', function () { W.ortho = this.checked; });
+      root().querySelectorAll('[data-wfnt]').forEach(function (b) { b.addEventListener('click', function () { W.nodeType = b.dataset.wfnt; render(); }); });
       if (W.mode === 'align') {
         var ah = document.getElementById('wf-al-h'), av = document.getElementById('wf-al-v'), ac = document.getElementById('wf-al-c');
         if (ah) ah.addEventListener('click', function () { alignSelected('h'); });
         if (av) av.addEventListener('click', function () { alignSelected('v'); });
         if (ac) ac.addEventListener('click', function () { W.alignSel = []; render(); });
+        root().querySelectorAll('[data-al]').forEach(function (b) { b.addEventListener('click', function () { alignSelected(b.dataset.al); }); });
       }
       document.getElementById('wf-delfloor').addEventListener('click', wfDelFloor);
       wfBindStage();
@@ -248,13 +312,15 @@
       if (e.target.closest('.wf-mk')) return;       // 지점 위 클릭은 마커 핸들러가 처리
       var p = stageXY(stage, e);
       if (W.mode === 'node') {
-        var def = '지점' + (W.nodes.length + 1);
-        var nm = prompt('이 지점의 이름을 입력하세요. (예: 항공보안 무도장)\n※ 입력한 이름이 방문자 목적지 검색에 그대로 사용됩니다. 비워두면 임시 이름으로 생성됩니다.', '');
-        var name = (nm == null || !nm.trim()) ? def : nm.trim();
-        var n = { id: uid(), floor: W.cur, x: snap(p.x), y: snap(p.y), name: name, type: '일반', qr: false };
+        // 이름 입력창 없이 점을 바로 생성 → 위치 조정 후 속성창에서 이름 입력
+        var t = W.nodeType || '일반', isExit = (t === '출입구');
+        var n = { id: uid(), floor: W.cur, x: snap(p.x), y: snap(p.y), name: '', type: isExit ? '입구' : t, qr: false };
+        if (isExit) n.exit = true;
         W.nodes.push(n); W.sel = n.id;
         autoAttach(n.id);                             // 가장 가까운 이동선/지점에 자동 연결
         wfRenderGraph(); wfRenderProp();
+        var nmInp = document.getElementById('wf-n-name'); if (nmInp) { try { nmInp.focus(); } catch (_) {} }
+        toast('점을 드래그(또는 ←↑↓→)로 맞춘 뒤 이름을 입력하세요.', 'info');
       } else if (W.mode === 'wire') {
         var x = p.x, y = p.y;
         if (e.shiftKey && W.wireFrom) {               // Shift: 직전 점 기준 수평/수직 고정(직선)
@@ -262,7 +328,7 @@
           if (pf) { if (Math.abs(x - pf.x) >= Math.abs(y - pf.y)) y = pf.y; else x = pf.x; }
         }
         var w = mkWaypoint(snap(x), snap(y));
-        if (W.wireFrom) addEdge(W.wireFrom, w.id);
+        if (W.wireFrom) { if (e.shiftKey) addEdge(W.wireFrom, w.id); else connectWire(W.wireFrom, w.id); }
         else { var near = nearestOnFloor(w.x, w.y, w.id); if (near) addEdge(w.id, near.type === 'edge' ? splitEdgeAt(near.ei, near.fx, near.fy) : near.id); }
         W.wireFrom = w.id; wfRenderGraph();
       }
@@ -311,7 +377,7 @@
     var wrap = document.querySelector('#wf-stage .wf-nodes'); if (!wrap) return;
     wrap.innerHTML = nodes.map(function (n) {
       var cls = 'wf-mk t-' + esc(n.type) + (n.type === '경유' ? ' wp' : '') + (n.exit ? ' exit' : '') + (W.sel === n.id ? ' sel' : '') + (W.alignSel.indexOf(n.id) >= 0 ? ' asel' : '') + ((W.linkFrom === n.id || W.wireFrom === n.id) ? ' linking' : '') + (n.qr ? ' qr' : '');
-      var lab = (n.type === '경유' && !n.name) ? '' : '<span>' + esc(n.exit ? '🚪' + n.name : n.name) + '</span>';
+      var lab = !n.name ? '' : '<span>' + esc(n.exit ? '🚪' + n.name : n.name) + '</span>';
       return '<div class="' + cls + '" data-id="' + n.id + '" style="left:' + n.x + '%;top:' + n.y + '%" title="' + esc(n.name || '경유점') + ' — 우클릭으로 삭제">' + lab + '</div>'; }).join('');
     wrap.querySelectorAll('.wf-mk').forEach(function (m) {
       if (W.mode === 'move' || W.mode === 'node') wfDrag(m);
@@ -332,7 +398,7 @@
       wfRenderGraph(); return;
     }
     if (W.mode === 'wire') {                 // 이동선 그리는 중 지점 클릭 → 그 지점에 연결
-      if (W.wireFrom && W.wireFrom !== id) addEdge(W.wireFrom, id);
+      if (W.wireFrom && W.wireFrom !== id) connectWire(W.wireFrom, id);
       W.wireFrom = id; wfRenderGraph(); return;
     }
     if (W.mode === 'align') {                 // 정렬 대상 다중 선택 토글
