@@ -61,6 +61,27 @@
     };
   }
 
+  /* ── 제목 유사도(중복 판정용) ──────────────────────────────────
+     공백 정규화 후 2-그램 Dice 계수로 유사도(0~1) 계산.
+     "같은 시간대 + 비슷한 문구"일 때만 중복으로 보기 위함. */
+  var DUP_SIM_TH = 0.6;   // 유사도 임계값(이상이면 비슷한 제목으로 간주)
+  function _normTitle(s) { return String(s == null ? '' : s).toLowerCase().replace(/\s+/g, ' ').trim(); }
+  function titleSimilarity(a, b) {
+    a = _normTitle(a); b = _normTitle(b);
+    if (!a || !b) return 0;
+    if (a === b) return 1;
+    if (a.length < 4 || b.length < 4) return a === b ? 1 : 0;   // 너무 짧은 제목은 완전일치만
+    var ba = {}, i;
+    for (i = 0; i < a.length - 1; i++) { var g = a.substr(i, 2); ba[g] = (ba[g] || 0) + 1; }
+    var match = 0, total = 0, g2;
+    for (i = 0; i < b.length - 1; i++) {
+      g2 = b.substr(i, 2); total++;
+      if (ba[g2] > 0) { ba[g2]--; match++; }
+    }
+    total += (a.length - 1);
+    return total ? (2 * match) / total : 0;
+  }
+
   /* ── 공개 인터페이스 ─────────────────────────────────────────── */
 
   window.CalendarModule = {
@@ -153,11 +174,13 @@
 
       var events = await CalendarModule.listEvents(calendarId, qMin, qMax);
 
+      /* 중복 판정: '시간대가 겹치고' + '제목이 충분히 비슷할' 때만.
+         (예전엔 시간만 겹쳐도 중복으로 떠서, 무관한 동시간대 일정까지 잡혔음) */
       var conflicts = events.filter(function (ev) {
-        var t      = evtTime(ev);
+        var t       = evtTime(ev);
         var overlap = start < t.end && end > t.start;
-        var sameTitle = ev.summary === summary;
-        return overlap || sameTitle;
+        if (!overlap) return false;
+        return titleSimilarity(ev.summary, summary) >= DUP_SIM_TH;
       });
 
       return {
@@ -167,6 +190,10 @@
         }),
       };
     },
+
+    /** 제목 유사도(0~1) — 중복 판정 임계값(0.6)도 함께 노출 */
+    titleSimilarity: titleSimilarity,
+    DUP_SIM_TH: DUP_SIM_TH,
 
     /**
      * 캘린더 목록 조회
