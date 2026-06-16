@@ -405,10 +405,24 @@
       });
     }
     var wrap = document.querySelector('#wf-stage .wf-nodes'); if (!wrap) return;
-    var deg = {}; W.edges.forEach(function (e) { deg[e[0]] = (deg[e[0]] || 0) + 1; deg[e[1]] = (deg[e[1]] || 0) + 1; });
+    var deg = {}, adj = {};
+    W.edges.forEach(function (e) {
+      deg[e[0]] = (deg[e[0]] || 0) + 1; deg[e[1]] = (deg[e[1]] || 0) + 1;
+      var a = nodeById(e[0]), b = nodeById(e[1]);
+      if (a && b && a.floor === W.cur && b.floor === W.cur) { (adj[a.id] = adj[a.id] || []).push(b); (adj[b.id] = adj[b.id] || []).push(a); }
+    });
+    // 이름표를 연결선 반대쪽으로 자동 배치 (선이 이름표를 가리지 않게)
+    function labelPos(n) {
+      var nb = adj[n.id] || []; if (!nb.length) return 'lp-bottom';
+      var sx = 0, sy = 0;
+      nb.forEach(function (m) { var dx = m.x - n.x, dy = m.y - n.y, L = Math.hypot(dx, dy) || 1; sx += dx / L; sy += dy / L; });
+      if (Math.abs(sx) < 0.05 && Math.abs(sy) < 0.05) return 'lp-bottom';
+      if (Math.abs(sx) >= Math.abs(sy)) return sx > 0 ? 'lp-left' : 'lp-right';   // 선이 오른쪽 → 이름표 왼쪽
+      return sy > 0 ? 'lp-top' : 'lp-bottom';                                       // 선이 아래 → 이름표 위
+    }
     wrap.innerHTML = nodes.map(function (n) {
       var dangle = !n.name && (deg[n.id] || 0) <= 1;   // 이름 없는 허공 끝점 = 경고 표시
-      var cls = 'wf-mk t-' + esc(n.type) + (n.type === '경유' ? ' wp' : '') + (n.exit ? ' exit' : '') + (dangle ? ' dangle' : '') + (W.sel === n.id ? ' sel' : '') + (W.alignSel.indexOf(n.id) >= 0 ? ' asel' : '') + ((W.linkFrom === n.id || W.wireFrom === n.id) ? ' linking' : '') + (n.qr ? ' qr' : '');
+      var cls = 'wf-mk t-' + esc(n.type) + (n.type === '경유' ? ' wp' : '') + (n.exit ? ' exit' : '') + (dangle ? ' dangle' : '') + (n.name ? ' ' + labelPos(n) : '') + (W.sel === n.id ? ' sel' : '') + (W.alignSel.indexOf(n.id) >= 0 ? ' asel' : '') + ((W.linkFrom === n.id || W.wireFrom === n.id) ? ' linking' : '') + (n.qr ? ' qr' : '');
       var lab = !n.name ? '' : '<span>' + esc(n.exit ? '🚪' + n.name : n.name) + '</span>';
       return '<div class="' + cls + '" data-id="' + n.id + '" style="left:' + n.x + '%;top:' + n.y + '%" title="' + esc(n.name || '경유점') + ' — 우클릭으로 삭제">' + lab + '</div>'; }).join('');
     wrap.querySelectorAll('.wf-mk').forEach(function (m) {

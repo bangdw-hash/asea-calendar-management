@@ -85,8 +85,9 @@
 .wf-hit { stroke:transparent; stroke-width:2.6; stroke-linecap:round; pointer-events:stroke; cursor:context-menu; }
 .wf-hit:hover { stroke:rgba(220,38,38,.28); }
 .wf-nodes { position:absolute; inset:0; pointer-events:none; }
-.wf-mk { position:absolute; transform:translate(-50%,-50%); display:flex; align-items:center; gap:3px; cursor:pointer; pointer-events:auto; }
-.wf-mk::before { content:''; width:13px; height:13px; border-radius:50%; background:#1a73e8; border:2px solid #fff; box-shadow:0 1px 4px rgba(0,0,0,.35); flex-shrink:0; }
+/* 마커는 (n.x,n.y)에 놓인 0크기 점 — 점(dot)이 정확히 좌표 위에 오고, 선도 점 중심에 연결된다 */
+.wf-mk { position:absolute; width:0; height:0; cursor:pointer; pointer-events:auto; }
+.wf-mk::before { content:''; position:absolute; left:0; top:0; transform:translate(-50%,-50%); width:13px; height:13px; border-radius:50%; background:#1a73e8; border:2px solid #fff; box-shadow:0 1px 4px rgba(0,0,0,.35); }
 .wf-mk.t-계단::before, .wf-mk.t-엘리베이터::before { background:#d97706; }
 .wf-mk.t-입구::before { background:#059669; }
 .wf-mk.qr::before { background:#7c3aed; }
@@ -97,5 +98,10 @@
 .wf-mk.asel::before { outline:3px solid rgba(37,99,235,.7); }
 .wf-mk.linking::before { box-shadow:0 0 0 4px rgba(220,38,38,.4); }
 .wf-grid { stroke:rgba(0,0,0,.08); stroke-width:0.2; pointer-events:none; }
-.wf-mk span { font-size:11px; font-weight:700; color:#111; background:rgba(255,255,255,.85); padding:1px 5px; border-radius:5px; white-space:nowrap; }
+/* 이름표(span): 점 위가 아니라 연결선 반대쪽에 살짝 비켜 표시 (기본=아래) */
+.wf-mk span { position:absolute; left:0; top:0; transform:translate(-50%, 11px); font-size:11px; font-weight:700; color:#111; background:rgba(255,255,255,.88); padding:1px 5px; border-radius:5px; white-space:nowrap; box-shadow:0 1px 3px rgba(0,0,0,.12); }
+.wf-mk.lp-bottom span { transform:translate(-50%, 11px); }
+.wf-mk.lp-top span    { transform:translate(-50%, calc(-100% - 9px)); }
+.wf-mk.lp-right span  { transform:translate(11px, -50%); }
+.wf-mk.lp-left span   { transform:translate(calc(-100% - 11px), -50%); }
 .wf-mk.exit span { color:#fff; background:#dc2626; }
