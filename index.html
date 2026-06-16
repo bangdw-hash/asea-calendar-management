@@ -20,6 +20,7 @@
   <link rel="stylesheet" href="retire.css?v=20260614rt7">
   <link rel="stylesheet" href="onboarding.css?v=20260614ob1">
   <link rel="stylesheet" href="dormitory.css?v=20260616d13">
+  <link rel="stylesheet" href="contractgen.css?v=20260616c1">
   <script src="https://accounts.google.com/gsi/client" async></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
   <!-- SheetJS for Excel support — 로컬 xlsx.mini.min.js(하단 로드)로 일원화하여 중복 로드 제거 -->
@@ -180,6 +181,13 @@
       <path d="M9 20l-5.5 2 0-16L9 4m0 16l6-2m-6 2V4m6 14l5.5 2 0-16L15 4m0 14V4m0 0L9 4"/><circle cx="12" cy="10" r="1.5"/>
     </svg>
     <span class="tab-label">안내도</span>
+  </button>
+
+  <button class="tab-btn" data-tab="contractgen" role="tab" aria-selected="false">
+    <svg class="tab-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 13h6M9 17h6"/>
+    </svg>
+    <span class="tab-label">계약생성</span>
   </button>
 
   <button class="tab-btn" data-tab="workorder" role="tab" aria-selected="false">
@@ -1173,6 +1181,13 @@
       <section id="tab-wayfind" class="tab-panel" role="tabpanel" hidden>
         <div class="tab-body" id="wayfind-root">
           <p style="padding:40px;text-align:center;color:#9ca3af">안내도 모듈을 불러오는 중…</p>
+        </div>
+      </section>
+
+      <!-- 📄 계약생성(전자서식) 탭 -->
+      <section id="tab-contractgen" class="tab-panel" role="tabpanel" hidden>
+        <div class="tab-body" id="contractgen-root">
+          <p style="padding:40px;text-align:center;color:#9ca3af">전자서식 모듈을 불러오는 중…</p>
         </div>
       </section>
 
@@ -3310,6 +3325,7 @@
   <script src="cloudsync.js?v=20260614c5" defer></script>
   <script src="dormitory.js?v=20260616d10" defer></script>
   <script src="wayfind.js?v=20260616w5" defer></script>
+  <script src="contractgen.js?v=20260616c1" defer></script>
   <script src="auth.js?v=20260615r6" defer></script>
   <script src="calendar.js?v=20260612c1" defer></script>
   <script src="drive.js?v=20260608s" defer></script>
