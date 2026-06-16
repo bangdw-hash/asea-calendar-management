@@ -34,6 +34,9 @@
   .destbtn.on{ background:var(--c); color:#fff; border-color:var(--c); }
   .dty{ font-size:11px; opacity:.7; }
   .destbtn.on .dty{ opacity:.9; }
+  .modes{ display:flex; gap:10px; margin:4px 0; }
+  .mode{ flex:1; display:flex; align-items:center; justify-content:center; gap:6px; border:1.5px solid #d1d5db; border-radius:9px; padding:10px; font-size:14px; cursor:pointer; }
+  .mode input{ width:auto; }
 </style>
 </head>
 <body>
@@ -91,27 +94,43 @@ function renderForm(){
   app.innerHTML='<div class="card"><h2>현재 위치</h2>'+
     (FROM&&NMAP[FROM]? '<p style="font-size:15px"><b>📍 '+esc(fromName)+'</b> <span class="muted">('+esc((FMAP[NMAP[FROM].floor]||{}).name||'')+')</span></p>'
       : '<label>현재 위치 선택</label><select id="wf-from">'+nodeOptions(FROM)+'</select>')+
+    '<label>이동수단</label><div class="modes">'+
+      '<label class="mode"><input type="radio" name="wf-mode" value="walk" checked> 🚶 도보(계단)</label>'+
+      '<label class="mode"><input type="radio" name="wf-mode" value="elevator"> 🛗 엘리베이터</label>'+
+    '</div>'+
     '<label>목적지 검색 (예: 교수실, 여자화장실, 휴게실)</label><input id="wf-q" placeholder="이름으로 검색…">'+
     '<div id="wf-dest" class="destlist"></div>'+
     '<div class="err" id="wf-err" style="display:none"></div>'+
-    '<button class="btn" id="wf-go">길찾기</button></div>'+
+    '<button class="btn" id="wf-go">길찾기</button>'+
+    '<button class="btn" id="wf-evac" style="background:#dc2626;margin-top:8px">🔥 가장 빠른 대피 경로</button></div>'+
     '<div id="wf-out"></div>';
   document.getElementById('wf-q').addEventListener('input',function(){ renderDestList(this.value); });
   document.getElementById('wf-go').addEventListener('click', go);
+  document.getElementById('wf-evac').addEventListener('click', evac);
   renderDestList('');
 }
 
-function buildGraph(){
+function buildGraph(mode){
+  // mode: 'walk'(계단) | 'elevator'(엘리베이터) — 층간 이동수단 선택
+  var connType = mode==='elevator' ? '엘리베이터' : '계단';
   var adj={}; DATA.nodes.forEach(function(n){ adj[n.id]=[]; });
   function add(a,b,w){ if(adj[a]&&adj[b]){ adj[a].push({to:b,w:w}); adj[b].push({to:a,w:w}); } }
   DATA.edges.forEach(function(e){ var a=NMAP[e[0]],b=NMAP[e[1]]; if(!a||!b) return;
     if(a.floor===b.floor){ var dx=a.x-b.x,dy=a.y-b.y; add(a.id,b.id,Math.sqrt(dx*dx+dy*dy)); }
-    else add(a.id,b.id,40); });
-  // 계단/엘리베이터 같은 이름끼리 층간 자동 연결
+    else if(a.type===connType||b.type===connType){ add(a.id,b.id,40); } });   // 층간 명시 간선은 선택 이동수단만
+  // 같은 이름 층간 입출입(계단)/엘리베이터 자동 연결 (선택 이동수단만)
   var grp={};
-  DATA.nodes.forEach(function(n){ if(n.type==='계단'||n.type==='엘리베이터'){ var k=n.type+'|'+(n.name||''); (grp[k]=grp[k]||[]).push(n); } });
+  DATA.nodes.forEach(function(n){ if(n.type===connType){ var k=n.type+'|'+(n.name||''); (grp[k]=grp[k]||[]).push(n); } });
   Object.keys(grp).forEach(function(k){ var arr=grp[k]; for(var i=0;i<arr.length;i++) for(var j=i+1;j<arr.length;j++){ if(arr[i].floor!==arr[j].floor) add(arr[i].id,arr[j].id,40); } });
   return adj;
+}
+function pathLen(p){ var s=0; for(var i=1;i<p.length;i++){ var a=NMAP[p[i-1]],b=NMAP[p[i]]; if(!a||!b) continue; s+= a.floor===b.floor ? Math.hypot(a.x-b.x,a.y-b.y) : 40; } return s; }
+function nearestExitPath(adj,s){
+  var exits=DATA.nodes.filter(function(n){return n.exit;}).map(function(n){return n.id;});
+  if(!exits.length) return {err:'등록된 출입구(대피 출구)가 없습니다. 관리자에게 문의하세요.'};
+  var best=null;
+  exits.forEach(function(t){ if(t===s){ best={path:[s],d:0}; return; } var p=dijkstra(adj,s,t); if(p){ var d=pathLen(p); if(!best||d<best.d) best={path:p,d:d}; } });
+  return best?{path:best.path}:{err:'대피 경로를 찾을 수 없습니다. (지점이 출입구까지 연결되어 있는지 확인)'};
 }
 function dijkstra(adj,s,t){
   var dist={},prev={},done={},pq=[];
@@ -125,24 +144,35 @@ function dijkstra(adj,s,t){
   var path=[],c=t; while(c!=null){ path.unshift(c); c=prev[c]; } return path;
 }
 
+function curMode(){ var r=document.querySelector('input[name=wf-mode]:checked'); return r?r.value:'walk'; }
+function curFrom(){ return FROM&&NMAP[FROM]?FROM:(document.getElementById('wf-from')?document.getElementById('wf-from').value:''); }
 function go(){
   var err=document.getElementById('wf-err'); err.style.display='none';
-  var from=FROM&&NMAP[FROM]?FROM:(document.getElementById('wf-from')?document.getElementById('wf-from').value:'');
-  var to=SELDEST;
+  var from=curFrom(); var to=SELDEST; var mode=curMode();
   if(!from){ err.textContent='현재 위치를 선택하세요.'; err.style.display='block'; return; }
   if(!to){ err.textContent='목적지를 검색·선택하세요.'; err.style.display='block'; return; }
   if(from===to){ err.textContent='현재 위치와 목적지가 같습니다.'; err.style.display='block'; return; }
-  var adj=buildGraph();
+  var adj=buildGraph(mode);
   var path=dijkstra(adj,from,to);
-  if(!path){ err.textContent='경로를 찾을 수 없습니다. (지점이 서로 연결되어 있는지 관리자에게 문의)'; err.style.display='block'; return; }
-  renderRoute(path);
+  if(!path){ err.textContent='경로를 찾을 수 없습니다. '+(mode==='elevator'?'(엘리베이터로 연결된 경로가 없으면 도보를 선택해 보세요)':'(지점이 서로 연결되어 있는지 관리자에게 문의)'); err.style.display='block'; return; }
+  renderRoute(path,false);
+}
+function evac(){
+  var err=document.getElementById('wf-err'); err.style.display='none';
+  var from=curFrom();
+  if(!from){ err.textContent='현재 위치를 선택하세요.'; err.style.display='block'; return; }
+  var res=nearestExitPath(buildGraph('walk'),from);   // 대피는 도보(계단) 기준
+  if(res.err){ err.textContent=res.err; err.style.display='block'; return; }
+  if(res.path.length<2){ err.textContent='현재 위치가 이미 출입구입니다.'; err.style.display='block'; return; }
+  renderRoute(res.path,true);
 }
 
-function renderRoute(path){
+function renderRoute(path,isEvac){
   // 층별 구간으로 분할
   var segs=[], cur=null;
   path.forEach(function(id){ var n=NMAP[id]; if(!cur||cur.floor!==n.floor){ cur={floor:n.floor,ids:[]}; segs.push(cur); } cur.ids.push(id); });
-  var html='<div class="card"><h2>경로 안내</h2><p class="muted">📍 '+esc(NMAP[path[0]].name)+' → 🏁 '+esc(NMAP[path[path.length-1]].name)+'</p></div>';
+  var endName=esc(NMAP[path[path.length-1]].name);
+  var html='<div class="card"><h2>'+(isEvac?'🔥 대피 경로 안내':'경로 안내')+'</h2><p class="muted">📍 '+esc(NMAP[path[0]].name)+' → '+(isEvac?'🚪 '+endName+' (출구)':'🏁 '+endName)+'</p></div>';
   segs.forEach(function(seg,si){
     var f=FMAP[seg.floor]||{};
     var pts=seg.ids.map(function(id){ return NMAP[id]; });
@@ -151,7 +181,7 @@ function renderRoute(path){
     if(f.image){
       var dots='';
       if(si===0) dots+='<div class="dot s" style="left:'+pts[0].x+'%;top:'+pts[0].y+'%"></div><div class="pin" style="left:'+pts[0].x+'%;top:'+pts[0].y+'%">출발</div>';
-      if(si===segs.length-1){ var le=pts[pts.length-1]; dots+='<div class="dot e" style="left:'+le.x+'%;top:'+le.y+'%"></div><div class="pin" style="left:'+le.x+'%;top:'+le.y+'%">도착</div>'; }
+      if(si===segs.length-1){ var le=pts[pts.length-1]; dots+='<div class="dot e" style="left:'+le.x+'%;top:'+le.y+'%"></div><div class="pin" style="left:'+le.x+'%;top:'+le.y+'%">'+(isEvac?'🚪 대피구':'도착')+'</div>'; }
       html+='<div class="stage"><img src="'+f.image+'">'+
         '<svg viewBox="0 0 100 100" preserveAspectRatio="none"><defs><marker id="ar'+si+'" markerWidth="6" markerHeight="6" refX="4" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#dc2626"/></marker></defs>'+
         '<polyline points="'+poly+'" fill="none" stroke="#dc2626" stroke-width="1.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#ar'+si+')"/></svg>'+
