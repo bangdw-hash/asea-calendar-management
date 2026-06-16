@@ -95,10 +95,34 @@
   function connectWire(fromId, toId) {
     if (!fromId || !toId || fromId === toId) return;
     var a = nodeById(fromId), b = nodeById(toId);
-    if (W.ortho && a && b && Math.abs(b.x - a.x) > 0.3 && Math.abs(b.y - a.y) > 0.3) {
+    if (W.ortho && a && b && a.floor === b.floor && Math.abs(b.x - a.x) > 0.3 && Math.abs(b.y - a.y) > 0.3) {
       var c = elbowCorner(a, b), cor = mkWaypoint(snap(c.x), snap(c.y));
       addEdge(fromId, cor.id); addEdge(cor.id, toId);
     } else { addEdge(fromId, toId); }
+  }
+  var SNAP_NODE = 6;   // 이동선을 그릴 때 '이름 있는 지점'에 자동으로 붙는 거리(%)
+  // (x,y) 근처에서 가장 가까운 '이름 있는 지점' 찾기 (끝점은 이름 지점이 되도록 스냅)
+  function nearestNamedNode(x, y, maxD) {
+    var best = null;
+    W.nodes.forEach(function (n) {
+      if (n.floor !== W.cur || !n.name) return;
+      var d = Math.hypot(x - n.x, y - n.y);
+      if (d <= (maxD || SNAP_NODE) && (!best || d < best.d)) best = { id: n.id, d: d };
+    });
+    return best;
+  }
+  // 이동선 그리기 종료 — 끝이 이름 없는 경유점(허공)이면 가까운 지점에 붙이거나 경고
+  function finishWire() {
+    var n = nodeById(W.wireFrom);
+    if (n && !n.name) {
+      var deg = W.edges.filter(function (e) { return e[0] === n.id || e[1] === n.id; }).length;
+      if (deg <= 1) {
+        var hit = nearestNamedNode(n.x, n.y, 10);
+        if (hit && hit.id !== n.id) { addEdge(n.id, hit.id); toast('끝점을 가까운 지점에 붙였습니다.', 'success'); }
+        else toast('이동선의 끝은 이름 있는 지점에 연결하세요. (빨간 점=허공 끝) 지점 근처로 그리면 자동으로 붙습니다.', 'warning');
+      }
+    }
+    W.wireFrom = null; wfRenderGraph();
   }
   function portalBase() { try { return (location.origin + location.pathname).replace(/[^/]*$/, ''); } catch (e) { return ''; } }
   function qrImg(text, size) { return 'https://api.qrserver.com/v1/create-qr-code/?size=' + (size || 180) + 'x' + (size || 180) + '&data=' + encodeURIComponent(text); }
@@ -156,7 +180,7 @@
       if (e.key === 'Escape') {
         if (W._cancelDrag) { W._cancelDrag(); }
         else if (W.linkFrom) { W.linkFrom = null; wfRenderGraph(); toast('연결을 취소했습니다.', 'info'); }
-        else if (W.wireFrom) { W.wireFrom = null; wfRenderGraph(); toast('이동선 그리기를 끝냈습니다.', 'info'); }
+        else if (W.wireFrom) finishWire();
         return;
       }
       // 화살표 = 선택 지점 미세 이동 (Shift=격자 한 칸, 기본=0.2%)
@@ -212,7 +236,7 @@
           '<span class="dorm-muted" style="align-self:center">선택: ' + W.alignSel.length + '개</span></div>' : '') +
         '<p class="dorm-muted">' + (
           W.mode === 'node' ? '빈 곳을 클릭하면 <b>점이 바로 생깁니다</b>(이름 입력창 없이). 점을 <b>드래그</b>하거나 점 선택 후 <b>←↑↓→(미세)·Shift+←↑↓→(격자 한 칸)</b>로 위치를 맞추고, 점을 클릭하면 아래 <b>속성창에서 이름</b>을 입력합니다(더블클릭=빠른 이름). 위 유형(일반·계단·엘리베이터·출입구)을 골라 찍을 수 있어요.'
-          : W.mode === 'wire' ? '빈 곳을 차례로 클릭해 <b>이동선(복도)</b>을 그립니다. <b>직각(ㄱ자)</b>이 켜져 있으면 대각선이 아니라 자동으로 <b>꺾인 직각선</b>으로 이어집니다. <b>Shift</b>=수평/수직 1구간 직선. 지점을 클릭하면 그 지점에 연결됩니다. (ESC·우클릭·더블클릭=선 끝내기)'
+          : W.mode === 'wire' ? '빈 곳을 차례로 클릭해 <b>이동선(복도)</b>을 그립니다. <b>이름 있는 지점 근처를 클릭하면 그 지점에 자동으로 붙습니다(스냅)</b> — 끝점은 항상 이름 지점이 되도록 하세요. <b>직각(ㄱ자)</b>이 켜져 있으면 대각선 대신 <b>꺾인 직각선</b>으로 이어집니다. <b>Shift</b>=1구간 직선. <b style="color:#dc2626">빨간 점</b>=허공에 떠 있는 끝(지점에 연결 필요). (ESC·우클릭·더블클릭=선 끝내기)'
           : W.mode === 'link' ? '연결할 지점을 차례로 클릭하면 경로가 이어집니다. (ESC=연결 취소)'
           : W.mode === 'align' ? '정렬할 지점들을 <b>클릭해 여러 개 선택</b>한 뒤 <b>수평/수직 정렬</b>을 누르면 한 줄로 깔끔하게 맞춰집니다.'
           : '지점을 드래그해 위치를 옮깁니다. 드래그 중 <b>ESC·우클릭</b>이면 취소. <b>더블클릭=이름 변경</b>.') +
@@ -322,6 +346,12 @@
         var nmInp = document.getElementById('wf-n-name'); if (nmInp) { try { nmInp.focus(); } catch (_) {} }
         toast('점을 드래그(또는 ←↑↓→)로 맞춘 뒤 이름을 입력하세요.', 'info');
       } else if (W.mode === 'wire') {
+        // 가까운 '이름 있는 지점'이 있으면 새 경유점 대신 그 지점에 자동 스냅·연결 (끝점=이름 지점)
+        var snapHit = nearestNamedNode(p.x, p.y, SNAP_NODE);
+        if (snapHit) {
+          if (W.wireFrom && W.wireFrom !== snapHit.id) connectWire(W.wireFrom, snapHit.id);
+          W.wireFrom = snapHit.id; wfRenderGraph(); return;
+        }
         var x = p.x, y = p.y;
         if (e.shiftKey && W.wireFrom) {               // Shift: 직전 점 기준 수평/수직 고정(직선)
           var pf = nodeById(W.wireFrom);
@@ -333,13 +363,13 @@
         W.wireFrom = w.id; wfRenderGraph();
       }
     });
-    stage.addEventListener('dblclick', function (e) { if (W.mode === 'wire' && W.wireFrom) { W.wireFrom = null; wfRenderGraph(); } });
+    stage.addEventListener('dblclick', function (e) { if (W.mode === 'wire' && W.wireFrom) finishWire(); });
     // 빈 곳 우클릭: 브라우저 메뉴 차단 + 연결/이동선/드래그 중이면 종료
     stage.addEventListener('contextmenu', function (e) {
       e.preventDefault();
       if (W._cancelDrag) { W._cancelDrag(); return; }
       if (W.linkFrom) { W.linkFrom = null; wfRenderGraph(); toast('연결을 취소했습니다.', 'info'); return; }
-      if (W.wireFrom) { W.wireFrom = null; wfRenderGraph(); toast('이동선 그리기를 끝냈습니다.', 'info'); }
+      if (W.wireFrom) finishWire();
     });
   }
   function wfRenameNode(id) {
@@ -375,8 +405,10 @@
       });
     }
     var wrap = document.querySelector('#wf-stage .wf-nodes'); if (!wrap) return;
+    var deg = {}; W.edges.forEach(function (e) { deg[e[0]] = (deg[e[0]] || 0) + 1; deg[e[1]] = (deg[e[1]] || 0) + 1; });
     wrap.innerHTML = nodes.map(function (n) {
-      var cls = 'wf-mk t-' + esc(n.type) + (n.type === '경유' ? ' wp' : '') + (n.exit ? ' exit' : '') + (W.sel === n.id ? ' sel' : '') + (W.alignSel.indexOf(n.id) >= 0 ? ' asel' : '') + ((W.linkFrom === n.id || W.wireFrom === n.id) ? ' linking' : '') + (n.qr ? ' qr' : '');
+      var dangle = !n.name && (deg[n.id] || 0) <= 1;   // 이름 없는 허공 끝점 = 경고 표시
+      var cls = 'wf-mk t-' + esc(n.type) + (n.type === '경유' ? ' wp' : '') + (n.exit ? ' exit' : '') + (dangle ? ' dangle' : '') + (W.sel === n.id ? ' sel' : '') + (W.alignSel.indexOf(n.id) >= 0 ? ' asel' : '') + ((W.linkFrom === n.id || W.wireFrom === n.id) ? ' linking' : '') + (n.qr ? ' qr' : '');
       var lab = !n.name ? '' : '<span>' + esc(n.exit ? '🚪' + n.name : n.name) + '</span>';
       return '<div class="' + cls + '" data-id="' + n.id + '" style="left:' + n.x + '%;top:' + n.y + '%" title="' + esc(n.name || '경유점') + ' — 우클릭으로 삭제">' + lab + '</div>'; }).join('');
     wrap.querySelectorAll('.wf-mk').forEach(function (m) {
@@ -394,7 +426,7 @@
   function wfNodeClick(id) {
     if (W.mode === 'link') {
       if (!W.linkFrom) { W.linkFrom = id; }
-      else if (W.linkFrom !== id) { addEdge(W.linkFrom, id); W.linkFrom = id; /* 연속 연결 */ }
+      else if (W.linkFrom !== id) { connectWire(W.linkFrom, id); W.linkFrom = id; /* 연속 연결 */ }
       wfRenderGraph(); return;
     }
     if (W.mode === 'wire') {                 // 이동선 그리는 중 지점 클릭 → 그 지점에 연결
