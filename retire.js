@@ -154,7 +154,7 @@ window.RetireModule = (function () {
   /* ── 홈 ── */
   function _renderHome(root) {
     var wrap  = el('div', 'rt-home-wrap');
-    var icon  = el('div', 'rt-role-icon'); icon.textContent = '🚪'; icon.style.cssText = 'margin-bottom:12px';
+    var icon  = el('div', 'rt-home-icon'); icon.textContent = '🚪';
     var title = el('div', 'rt-home-title', '퇴직자 관리');
     var sub   = el('div', 'rt-home-sub',
       STANDALONE ? '사직서를 온라인으로 작성·제출하는 시스템입니다.'
@@ -199,14 +199,20 @@ window.RetireModule = (function () {
         '</div>';
       wrap.appendChild(linkBox);
 
+      cards.className = 'rt-role-cards rt-cards-3';
       var cAdmin = el('div', 'rt-role-card');
       cAdmin.innerHTML =
-        '<div class="rt-role-icon">👔</div>' +
+        '<div class="rt-role-icon">👀</div>' +
         '<div class="rt-role-title">인사관리자</div>' +
-        '<div class="rt-role-desc">제출된 사직서 조회<br>' +
-        '(작성중 ' + draftCount + '건 · 제출 ' + subCount + '건)</div>';
-      cAdmin.addEventListener('click', function () { _renderAdminAuth(); });
-      cards.appendChild(cAdmin);
+        '<div class="rt-role-desc">제출된 사직서 조회·출력<br>(작성중 ' + draftCount + '건 · 제출 ' + subCount + '건)</div>';
+      cAdmin.addEventListener('click', function () { _renderAdminAuth('apps'); });
+      var cLink = el('div', 'rt-role-card');
+      cLink.innerHTML =
+        '<div class="rt-role-icon">🔗</div>' +
+        '<div class="rt-role-title">신청 링크 관리</div>' +
+        '<div class="rt-role-desc">퇴직 신청 공유 링크<br>안내 메시지 발송</div>';
+      cLink.addEventListener('click', function () { _renderAdminAuth('link'); });
+      cards.appendChild(cAdmin); cards.appendChild(cLink);
 
       // 링크 박스 버튼 이벤트
       setTimeout(function () {
@@ -233,9 +239,9 @@ window.RetireModule = (function () {
     return base + filename;
   }
 
-  function _renderAdminAuth() {
+  function _renderAdminAuth(tab) {
     var pw = prompt('인사관리자 비밀번호를 입력하세요.');
-    if (pw === ADMIN_PW) { _st.isAdmin = true; _st.view = 'manager'; _st.mgrTab = 'link'; _render(); }
+    if (pw === ADMIN_PW) { _st.isAdmin = true; _st.view = 'manager'; _st.mgrTab = tab || 'link'; _render(); }
     else if (pw !== null) toast('비밀번호가 올바르지 않습니다.', '#DC2626');
   }
 

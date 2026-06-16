@@ -14,8 +14,16 @@
 }
 .rt-role-card:hover { border-color: #1a3a5c; box-shadow: 0 4px 16px rgba(26,58,92,.12); }
 .rt-role-icon  { font-size: 36px; margin-bottom: 10px; }
+.rt-home-icon  { font-size: 48px; margin-bottom: 12px; }
 .rt-role-title { font-size: 14px; font-weight: 700; color: #1a3a5c; margin-bottom: 4px; }
 .rt-role-desc  { font-size: 12px; color: #6B7280; }
+/* 관리 카드 가로 전체폭 3개 배치 (입사와 동일 포맷) */
+.rt-cards-3 { width: 100%; max-width: 680px; flex-wrap: nowrap; }
+.rt-cards-3 .rt-role-card { flex: 1 1 0; width: auto; min-width: 0; padding: 20px 14px; }
+@media (max-width: 560px) {
+  .rt-cards-3 { flex-wrap: wrap; }
+  .rt-cards-3 .rt-role-card { flex: 1 1 44%; }
+}
 
 /* 공통 래퍼 */
 .rt-wrap { max-width: 620px; margin: 0 auto; padding: 16px 12px; }
