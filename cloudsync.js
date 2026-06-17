@@ -14,23 +14,35 @@
   var GAS_DEFAULT = 'https://script.google.com/macros/s/AKfycbyZuuQpuc-0KWaaHmwJUTvnAc83liMcUcC5XxcdR-EFQCFC2AJ0LpFS3R1gS_JXI3Fykg/exec';
   function GAS() { try { return localStorage.getItem('asea_gas_url') || GAS_DEFAULT; } catch (e) { return GAS_DEFAULT; } }
 
-  // 공유할 키 (프리픽스 + 정확일치). 개인/기기 전용 키는 절대 포함하지 않는다.
-  var PREFIXES = ['asea_budget_items_', 'asea_budget_exec_', 'asea_budget_caps_', 'asea_budget_resv_'];
-  var EXACT = ['asea_weekly_reports', 'asea_weekly_weeks', 'asea_regulations', 'asea_survey_history', 'asea_budget_execs', 'asea_draft_limit', 'asea_user_directory', 'asea_position_menus'];
-  // 공유 제외(개인/민감)
-  var EXCLUDE = ['asea_budget_my_dept', 'asea_user_email', 'asea_is_admin', 'asea_anthropic_api_key', 'asea_gtoken', 'asea_draft_usage'];
+  /* 동기화 정책: 'asea_' 로 시작하는 모든 키를 기본 동기화한다.
+     단, 아래 '제외'는 기기/계정 로컬에 유지(보안키·토큰·접속설정·신원·기기 UI·캐시·이미 Supabase로 동기화되는 모듈). */
 
-  // 계정(이메일)별 개인 데이터 — 키에 로그인 이메일이 포함되어 사용자별로만 동기화됨(예: QR 명함)
+  // 계정(이메일)별 개인 데이터 — 키에 로그인 이메일이 포함되어 '본인 것'만 동기화(예: QR 명함)
   var USER_PREFIXES = ['asea_qrcards_', 'asea_recv_cards_'];
   function _curEmail() { try { return localStorage.getItem('asea_user_email') || ''; } catch (e) { return ''; } }
   function _userKeys() { var em = _curEmail(); if (!em) return []; return USER_PREFIXES.map(function (p) { return p + em; }); }
 
+  // 동기화 제외(정확일치) — 보안키·토큰·접속설정·신원·기기 UI·개인 보기설정·별도 동기화 경로
+  var EXCLUDE = [
+    'asea_anthropic_api_key', 'asea_anthropic_base_url', 'asea_gemini_api_key', 'asea_github_token', 'asea_make_webhook_url', 'asea_sheets_api_key', 'asea_login_hint', 'asea_promo_access_token',
+    'asea_gas_url', 'asea_base_url', 'asea_dorm_supabase_url', 'asea_dorm_supabase_key', 'asea_checkin_proxy_url', 'asea_facility_proxy_url', 'asea_promo_gas_url', 'asea_drive_folder_id',
+    'asea_user_email', 'asea_is_admin', 'asea_user_roles', 'asea_budget_my_dept', 'asea_draft_usage', 'asea_checkin_device', 'asea_checkin_user',
+    'asea_fab_pos', 'asea_cal_se_only', 'asea_selected_calendars', 'asea_shared_calendars', 'asea_cal_subscriptions',
+    'asea_email_history', 'asea_scheduled_emails', 'asea_extract_history', 'asea_share_history'
+  ];
+  // 동기화 제외(프리픽스) — 캐시·토큰·개인 보기·개인키(별도 처리)·이미 Supabase로 동기화되는 모듈
+  var EXCLUDE_PREFIXES = [
+    'asea_cal_cache_', 'asea_gtoken', 'asea_qt_calendars_',
+    'asea_qrcards_', 'asea_recv_cards_',
+    'asea_board_', 'asea_hr_', 'asea_meetings', 'asea_promo_', 'asea_facility_', 'asea_monthly_rpt_', 'asea_sms_'
+  ];
+
   function isSynced(k) {
-    if (!k || EXCLUDE.indexOf(k) >= 0) return false;
-    if (EXACT.indexOf(k) >= 0) return true;
-    if (_userKeys().indexOf(k) >= 0) return true;   // 현재 로그인 계정의 개인 데이터
-    for (var i = 0; i < PREFIXES.length; i++) { if (k.indexOf(PREFIXES[i]) === 0) return true; }
-    return false;
+    if (!k || k.indexOf('asea_') !== 0) return false;
+    if (_userKeys().indexOf(k) >= 0) return true;        // 현재 계정 개인 데이터(스코프됨)
+    if (EXCLUDE.indexOf(k) >= 0) return false;
+    for (var i = 0; i < EXCLUDE_PREFIXES.length; i++) { if (k.indexOf(EXCLUDE_PREFIXES[i]) === 0) return false; }
+    return true;                                          // 그 외 asea_* 는 기본 동기화
   }
 
   /* ── setItem 후킹: 공유 키 쓰기를 서버로 디바운스 푸시 ── */
@@ -70,11 +82,14 @@
   function ts(o) { return String((o && (o.updatedAt || o.confirmedAt || o.createdAt || o.addedAt || o.submittedAt)) || ''); }
   function mergeById(local, cloud) {
     var map = {}, order = [];
+    function keyOf(o) {
+      if (o && o.id != null) return 'id:' + o.id;
+      try { return 'v:' + JSON.stringify(o); } catch (e) { return 'v:' + String(o); }   // id 없는 항목은 값으로 dedupe(중복 방지)
+    }
     function put(o) {
-      if (!o || o.id == null) { var rk = '__' + order.length + Math.random(); map[rk] = o; order.push(rk); return; }
-      var k = 'id:' + o.id;
-      if (!(k in map)) order.push(k);
-      if (!(k in map) || ts(o) >= ts(map[k])) map[k] = o;
+      var k = keyOf(o);
+      if (!(k in map)) { order.push(k); map[k] = o; }
+      else if (ts(o) >= ts(map[k])) map[k] = o;   // id 동일 항목은 최신본 우선
     }
     (local || []).forEach(put); (cloud || []).forEach(put);
     return order.map(function (k) { return map[k]; });
@@ -99,11 +114,10 @@
     _pulling = true; _lastPull = now;
 
     var cloudKeys = {};
-    var jobs = PREFIXES.map(function (p) { return kvList(p).then(function (ks) { ks.forEach(function (k) { cloudKeys[k] = 1; }); }); });
-    Promise.all(jobs).then(function () {
-      EXACT.forEach(function (k) { cloudKeys[k] = 1; });
-      _userKeys().forEach(function (k) { cloudKeys[k] = 1; });   // 현재 계정의 개인 데이터(QR 명함 등)
-      // 로컬에만 있는 공유 키도 업로드 대상에 포함
+    kvList('asea_').then(function (ks) {
+      ks.forEach(function (k) { if (isSynced(k)) cloudKeys[k] = 1; });    // 서버의 동기화 대상 키
+      _userKeys().forEach(function (k) { cloudKeys[k] = 1; });            // 현재 계정의 개인 데이터(QR 명함 등)
+      // 로컬에만 있는 동기화 대상도 업로드 대상에 포함
       try { for (var i = 0; i < localStorage.length; i++) { var lk = localStorage.key(i); if (isSynced(lk)) cloudKeys[lk] = 1; } } catch (e) {}
 
       var keys = Object.keys(cloudKeys);
