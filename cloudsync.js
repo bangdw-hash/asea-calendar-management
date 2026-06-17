@@ -20,9 +20,15 @@
   // 공유 제외(개인/민감)
   var EXCLUDE = ['asea_budget_my_dept', 'asea_user_email', 'asea_is_admin', 'asea_anthropic_api_key', 'asea_gtoken', 'asea_draft_usage'];
 
+  // 계정(이메일)별 개인 데이터 — 키에 로그인 이메일이 포함되어 사용자별로만 동기화됨(예: QR 명함)
+  var USER_PREFIXES = ['asea_qrcards_', 'asea_recv_cards_'];
+  function _curEmail() { try { return localStorage.getItem('asea_user_email') || ''; } catch (e) { return ''; } }
+  function _userKeys() { var em = _curEmail(); if (!em) return []; return USER_PREFIXES.map(function (p) { return p + em; }); }
+
   function isSynced(k) {
     if (!k || EXCLUDE.indexOf(k) >= 0) return false;
     if (EXACT.indexOf(k) >= 0) return true;
+    if (_userKeys().indexOf(k) >= 0) return true;   // 현재 로그인 계정의 개인 데이터
     for (var i = 0; i < PREFIXES.length; i++) { if (k.indexOf(PREFIXES[i]) === 0) return true; }
     return false;
   }
@@ -96,6 +102,7 @@
     var jobs = PREFIXES.map(function (p) { return kvList(p).then(function (ks) { ks.forEach(function (k) { cloudKeys[k] = 1; }); }); });
     Promise.all(jobs).then(function () {
       EXACT.forEach(function (k) { cloudKeys[k] = 1; });
+      _userKeys().forEach(function (k) { cloudKeys[k] = 1; });   // 현재 계정의 개인 데이터(QR 명함 등)
       // 로컬에만 있는 공유 키도 업로드 대상에 포함
       try { for (var i = 0; i < localStorage.length; i++) { var lk = localStorage.key(i); if (isSynced(lk)) cloudKeys[lk] = 1; } } catch (e) {}
 
