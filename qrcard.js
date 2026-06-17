@@ -11,8 +11,10 @@ window.QRCardModule = (function () {
   var _activeSubTab = 'my';
 
   function _userEmail() {
-    try { return gapi.auth2.getAuthInstance().currentUser.get().getBasicProfile().getEmail(); }
-    catch (e) { return 'local'; }
+    // 앱 전체와 동일한 이메일 출처 사용(GIS 로그인). 이래야 cloudsync 키와 일치해 기기 간 동기화됨.
+    try { var e = localStorage.getItem('asea_user_email'); if (e) return e; } catch (_) {}
+    try { return gapi.auth2.getAuthInstance().currentUser.get().getBasicProfile().getEmail(); } catch (e) {}
+    return 'local';
   }
 
   function _myKey()   { return MY_PREFIX   + _userEmail(); }
@@ -21,6 +23,30 @@ window.QRCardModule = (function () {
   function _rvLoad()  { try { return JSON.parse(localStorage.getItem(_rvKey())  || '[]'); } catch (e) { return []; } }
   function _mySave(a) { localStorage.setItem(_myKey(),  JSON.stringify(a)); }
   function _rvSave(a) { localStorage.setItem(_rvKey(),  JSON.stringify(a)); }
+
+  // 과거 'local' 키(이메일 못 읽던 시절)에 저장된 명함을 현재 이메일 키로 1회 이관(합집합)
+  function _migrateLegacy() {
+    var em = '';
+    try { em = localStorage.getItem('asea_user_email') || ''; } catch (_) {}
+    if (!em || em === 'local') return;
+    [MY_PREFIX, RECV_PREFIX].forEach(function (pfx) {
+      var legacyKey = pfx + 'local', targetKey = pfx + em;
+      if (legacyKey === targetKey) return;
+      var lv = null; try { lv = localStorage.getItem(legacyKey); } catch (_) {}
+      if (!lv) return;
+      var la = []; try { la = JSON.parse(lv) || []; } catch (e) {}
+      if (!la.length) { try { localStorage.removeItem(legacyKey); } catch (_) {} return; }
+      var ta = []; try { ta = JSON.parse(localStorage.getItem(targetKey) || '[]') || []; } catch (e) {}
+      var byId = {}, order = [];
+      ta.concat(la).forEach(function (c) {
+        var k = (c && c.id != null) ? ('id:' + c.id) : ('v:' + JSON.stringify(c));
+        if (!(k in byId)) order.push(k);
+        byId[k] = c;
+      });
+      localStorage.setItem(targetKey, JSON.stringify(order.map(function (k) { return byId[k]; })));
+      try { localStorage.removeItem(legacyKey); } catch (_) {}
+    });
+  }
 
   function _uuid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
   function _h(s)   { return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
@@ -62,6 +88,7 @@ window.QRCardModule = (function () {
   function renderTab() {
     var panel = document.getElementById('tab-qrcard');
     if (!panel) return;
+    _migrateLegacy();   // 과거 'local' 키 명함을 현재 이메일 키로 이관(동기화 가능하게)
     panel.innerHTML =
       '<div class="tab-body">' +
         '<div style="display:flex;border-bottom:2px solid #e5e7eb;margin-bottom:24px;gap:4px">' +
