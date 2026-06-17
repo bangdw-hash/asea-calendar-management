@@ -177,6 +177,7 @@ window.QRCardModule = (function () {
     var name = g('qcf-name');
     if (!name) { alert('이름을 입력해 주세요.'); document.getElementById('qcf-name').focus(); return; }
     var card = { id: _editingId || _uuid(), createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),   // 클라우드 병합 시 최신본 판단용
       name: name, org: g('qcf-org'), dept: g('qcf-dept'), title: g('qcf-title'),
       mobile: g('qcf-mobile'), email: g('qcf-email'), workPhone: g('qcf-work') };
     var cards = _myLoad();
@@ -634,6 +635,13 @@ window.QRCardModule = (function () {
   }
 
   /* ── Public API ── */
+  // 클라우드 동기화로 명함 데이터가 갱신되면 현재 화면을 다시 그린다(다른 기기 변경 반영)
+  try {
+    window.addEventListener('cloudsync-updated', function () {
+      if (document.getElementById('qr-subtab-content')) _switchSubTab(_activeSubTab);
+    });
+  } catch (e) {}
+
   return {
     renderTab:       renderTab,
     _switchSubTab:   _switchSubTab,
