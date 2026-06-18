@@ -4888,7 +4888,7 @@ h3.settings-section-title {
   .tab-panel { padding: 0 !important; }
   .tab-body { padding: 14px 12px !important; padding-bottom: calc(var(--bottom-nav-h) + 20px) !important; }
   /* #tab-hr 은 .tab-body 래퍼가 없어 하단 탭에 콘텐츠가 가려짐 → 패널에 직접 여백 */
-  #hr-entry-panel, #hr-retire-panel { padding-bottom: calc(var(--bottom-nav-h) + 24px) !important; }
+  #tab-hr, #tab-retire { padding-bottom: calc(var(--bottom-nav-h) + 24px) !important; }
 
   /* ── 하단 내비 (가로 스크롤) ── */
   .mobile-bottom-nav {
