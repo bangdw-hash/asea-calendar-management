@@ -6074,6 +6074,21 @@ body.is-dragging-event .day-events { pointer-events: none !important; }
   color: var(--color-text, #374151);
 }
 
+/* ── 테스터(교직원) 처음 이용 안내 ── */
+.login-tester { margin-top: 14px; text-align: left; border: 1px solid #e5e7eb; border-radius: 10px; background: #f8fafc; }
+.login-tester > summary { cursor: pointer; list-style: none; padding: 10px 12px; font-size: 13px; font-weight: 700; color: #1a73e8; user-select: none; }
+.login-tester > summary::-webkit-details-marker { display: none; }
+.login-tester[open] > summary { border-bottom: 1px solid #e5e7eb; }
+.login-tester-body { padding: 10px 14px 14px; font-size: 12.5px; color: #374151; line-height: 1.6; }
+.login-tester-body ol { margin: 0 0 8px; padding-left: 18px; }
+.login-tester-body li { margin-bottom: 6px; }
+.login-tester-body .muted { color: #9ca3af; }
+.login-tester-link { display: flex; gap: 6px; margin-top: 6px; }
+.login-tester-link input { flex: 1; min-width: 0; font-size: 11.5px; font-family: monospace; padding: 6px 8px; border: 1px solid #d1d5db; border-radius: 6px; background: #fff; color: #111; }
+.login-tester-link .btn { flex-shrink: 0; white-space: nowrap; }
+.login-tester-note { margin: 8px 0 0; padding: 8px 10px; background: #fff7ed; border: 1px solid #fed7aa; border-radius: 8px; font-size: 12px; color: #9a3412; }
+.login-tester-note a { color: #1a73e8; }
+
 /* ── 업로드 로고 (헤더 / 로그인) ── */
 .header-icon .brand-logo-img {
   height: 24px;

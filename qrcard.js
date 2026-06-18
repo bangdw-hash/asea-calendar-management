@@ -89,6 +89,7 @@ window.QRCardModule = (function () {
     var panel = document.getElementById('tab-qrcard');
     if (!panel) return;
     _migrateLegacy();   // 과거 'local' 키 명함을 현재 이메일 키로 이관(동기화 가능하게)
+    try { if (window.CloudSync && CloudSync.pull) CloudSync.pull(); } catch (e) {}   // 탭 열 때 최신본 즉시 가져오기
     panel.innerHTML =
       '<div class="tab-body">' +
         '<div style="display:flex;border-bottom:2px solid #e5e7eb;margin-bottom:24px;gap:4px">' +
@@ -121,14 +122,36 @@ window.QRCardModule = (function () {
     var content = document.getElementById('qr-subtab-content');
     if (!content) return;
     var cards = _myLoad();
+    var em = _userEmail();
+    var acct = (em && em !== 'local')
+      ? '🔗 동기화 계정: <b>' + _h(em) + '</b> — 다른 기기에서도 같은 계정으로 로그인하면 공유됩니다'
+      : '⚠️ 로그인 계정을 못 읽어 <b>이 기기에만</b> 저장됩니다. 로그아웃 후 다시 로그인해 주세요.';
     content.innerHTML =
-      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">' +
         '<p style="font-size:13px;color:#6b7280">내 QR 명함을 만들어 상대방이 카메라로 스캔하면 연락처에 자동 저장됩니다</p>' +
-        '<button class="btn btn-primary" onclick="QRCardModule._openMyForm(null)">+ 새 명함</button>' +
+        '<div style="display:flex;gap:8px">' +
+          '<button class="btn btn-ghost btn-sm" onclick="QRCardModule._syncNow()" title="다른 기기 변경사항 즉시 가져오기">🔄 동기화</button>' +
+          '<button class="btn btn-primary" onclick="QRCardModule._openMyForm(null)">+ 새 명함</button>' +
+        '</div>' +
       '</div>' +
+      '<div style="font-size:12px;color:#6b7280;margin-bottom:16px;padding:8px 10px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px">' + acct + '</div>' +
       '<div id="qrcard-list"></div>';
     _renderMyList(cards);
   }
+
+  // 수동 동기화: 현재 명함을 서버로 올리고, 서버 최신본을 받아온다
+  function _syncNow() {
+    try {
+      if (window.CloudSync) {
+        if (CloudSync.push) { CloudSync.push(_myKey()); CloudSync.push(_rvKey()); }
+        if (CloudSync.pull) CloudSync.pull();
+        _toast('동기화를 요청했습니다. 잠시 후(1~3초) 자동 반영됩니다.');
+      } else {
+        _toast('동기화 모듈을 찾을 수 없습니다.');
+      }
+    } catch (e) { _toast('동기화 오류: ' + (e && e.message || e)); }
+  }
+  function _toast(m) { try { if (typeof window.aseaToast === 'function') window.aseaToast(m, 'info'); else alert(m); } catch (e) { alert(m); } }
 
   function _renderMyList(cards) {
     var list = document.getElementById('qrcard-list');
@@ -211,6 +234,7 @@ window.QRCardModule = (function () {
     var idx = cards.findIndex(function (c) { return c.id === card.id; });
     if (idx >= 0) cards[idx] = card; else cards.unshift(card);
     _mySave(cards);
+    try { if (window.CloudSync && CloudSync.push) CloudSync.push(_myKey()); } catch (e) {}   // 저장 즉시 서버 반영
     document.getElementById('qrcard-modal').remove();
     _renderMyTab();
   }
@@ -672,6 +696,7 @@ window.QRCardModule = (function () {
   return {
     renderTab:       renderTab,
     _switchSubTab:   _switchSubTab,
+    _syncNow:        _syncNow,
     _openMyForm:     _openMyForm,
     _saveMyForm:     _saveMyForm,
     _deleteMyCard:   _deleteMyCard,

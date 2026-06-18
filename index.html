@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&family=Nanum+Gothic:wght@400;700&family=Nanum+Myeongjo:wght@400;700&family=Gowun+Dodum&family=Black+Han+Sans&family=IBM+Plex+Sans+KR:wght@400;500;700&display=swap">
-  <link rel="stylesheet" href="style.css?v=20260616r26">
+  <link rel="stylesheet" href="style.css?v=20260617r27">
   <link rel="stylesheet" href="report.css?v=20260610r1">
   <link rel="stylesheet" href="promo.css?v=20260611p3">
   <link rel="stylesheet" href="help.css?v=20260610h1">
@@ -71,6 +71,28 @@
         <li><span class="login-info-key">구동 환경</span> PC · 모바일 웹앱 / 구글아이디 계정 필요</li>
         <li><span class="login-info-key">제공 기능</span> 업무 캘린더, 업무 공유 등</li>
       </ul>
+
+      <!-- 테스터(교직원) 처음 이용 안내 -->
+      <details class="login-tester">
+        <summary>🧪 테스터(교직원) 처음 이용 안내 — 펼치기</summary>
+        <div class="login-tester-body">
+          <ol>
+            <li>아래 <b>앱 주소</b>를 본인 휴대폰·PC 브라우저에서 엽니다.
+              <div class="login-tester-link">
+                <input id="tester-app-url" type="text" readonly value="https://bangdw-hash.github.io/asea-calendar-management/">
+                <button type="button" id="tester-copy-url" class="btn btn-secondary btn-sm" onclick="(function(b){var u=document.getElementById('tester-app-url');var t=u.value;function done(){var o=b.textContent;b.textContent='복사됨 ✓';setTimeout(function(){b.textContent=o;},1500);}try{navigator.clipboard.writeText(t).then(done,function(){u.select();document.execCommand('copy');done();});}catch(e){u.select();document.execCommand('copy');done();}})(this)">링크 복사</button>
+              </div>
+            </li>
+            <li><b>‘Google로 로그인’</b> → 본인 Gmail 계정 선택</li>
+            <li>“<b>Google에서 확인하지 않은 앱</b>” 경고가 보이면 →
+              <b>고급</b> → <b>‘…(으)로 이동(안전하지 않음)’</b> 클릭 <span class="muted">(테스트 단계라 정상입니다)</span></li>
+            <li>권한 화면에서 <b>허용</b> → 완료</li>
+          </ol>
+          <p class="login-tester-note">⚠️ 로그인이 안 되거나 “액세스 차단됨”이 뜨면, 관리자에게
+            <b>본인 Gmail 주소</b>를 알려 <b>테스터 등록</b>을 요청하세요.
+            <br>관리자: <a href="mailto:bangdw@gmail.com?subject=ASEA%20업무관리%20테스터%20등록%20요청&body=등록할%20Gmail%20주소:%20">bangdw@gmail.com 으로 요청 메일 보내기</a></p>
+        </div>
+      </details>
     </div>
   </div>
 
@@ -3356,7 +3378,7 @@
   <script src="draft.js?v=20260614r2" defer></script>
   <script src="survey.js?v=20260612sv4" defer></script>
   <script src="xlsx.mini.min.js" defer></script>
-  <script src="qrcard.js?v=20260617r3" defer></script>
+  <script src="qrcard.js?v=20260617r4" defer></script>
   <script src="admin.js?v=20260614a20" defer></script>
   <script src="board.js?v=20260614r2" defer></script>
   <script src="usersettings.js?v=20260610u1" defer></script>
