@@ -1796,6 +1796,18 @@
       });
       listEl.appendChild(item);
     });
+    // "시작/종료만 표시"된 일정이 있으면 → 구글 캘린더에도 실제 분리하는 일괄 버튼
+    if (_seOnly && _seOnly.length) {
+      var sep = document.createElement('div');
+      sep.style.cssText = 'border-top:1px solid #e5e7eb;margin:8px 0 6px';
+      listEl.appendChild(sep);
+      var btn = document.createElement('button');
+      btn.className = 'btn btn-secondary btn-sm';
+      btn.style.cssText = 'width:100%;white-space:normal;text-align:left;line-height:1.4';
+      btn.innerHTML = '🔪 “시작/종료만 표시”한 일정 ' + _seOnly.length + '개<br>→ 구글 캘린더에도 실제 분리';
+      btn.addEventListener('click', function () { splitAllSeOnlyInGoogle(); });
+      listEl.appendChild(btn);
+    }
   }
 
   function persistSelectedCalendars() {
@@ -2092,6 +2104,8 @@
     }
     var adBtn = $('ev-ctx-allday');
     if (adBtn) adBtn.hidden = !!ev.start.date;   // 이미 종일이면 숨김
+    var spBtn = $('ev-ctx-split');
+    if (spBtn) spBtn.hidden = !(_isMultiDay(ev) && !ev.recurrence && !ev.recurringEventId);  // 다일·비반복만
     menu.hidden = false;
     var W = window.innerWidth, H = window.innerHeight;
     var mW = 190, mH = menu.offsetHeight || 200;
@@ -2157,7 +2171,88 @@
       e.stopPropagation(); var ev = _ctxEv; hideEventContextMenu();
       if (ev) convertToAllDay(ev);
     });
+
+    var spBtn = $('ev-ctx-split');
+    if (spBtn) spBtn.addEventListener('click', function (e) {
+      e.stopPropagation(); var ev = _ctxEv; hideEventContextMenu();
+      if (ev) splitEventInGoogle(ev);
+    });
   }
+
+  /* 코어: 다일 일정을 구글 캘린더에서 시작/종료 2개의 종일 일정으로 실제 분리.
+     안전 순서: 시작·종료 생성 → 둘 다 성공 시 원본 삭제(생성 실패 시 롤백). 성공 true/실패 false.
+     (확인창 없음 — 단건/일괄에서 공통 사용) */
+  async function _splitOneInGoogle(ev) {
+    if (!ev || !ev.id || !_isMultiDay(ev) || ev.recurrence || ev.recurringEventId) return false;
+    var calIdStr = ev._calId || CONFIG.calendarId;
+    var sDay = _evStartDay(ev), eExcl = _evEndDay(ev);
+    var lastDay = new Date(eExcl.getTime() - 86400000);
+    var base = ev.summary || '(제목 없음)';
+    var note = '\n\n[분리됨] 원본 기간: ' + _ymd(sDay) + ' ~ ' + _ymd(lastDay);
+    function mkAllDay(title, dayStart, dayEndExcl) {
+      var d = { summary: title, start: { date: _ymd(dayStart) }, end: { date: _ymd(dayEndExcl) },
+                description: (ev.description || '') + note };
+      if (ev.colorId) d.colorId = ev.colorId;
+      return d;
+    }
+    var startEv = mkAllDay(base + ' (시작)', sDay, new Date(sDay.getTime() + 86400000));
+    var endEv   = mkAllDay(base + ' (종료)', lastDay, eExcl);
+    var createdStartId = null;
+    try {
+      var r1 = await CalendarModule.createEvent(calIdStr, startEv);
+      createdStartId = r1 && r1.id;
+      await CalendarModule.createEvent(calIdStr, endEv);
+    } catch (e) {
+      if (createdStartId) { try { await CalendarModule.deleteEvent(calIdStr, createdStartId); } catch (_) {} }  // 롤백
+      return false;
+    }
+    await CalendarModule.deleteEvent(calIdStr, ev.id);   // 둘 다 성공 → 원본 삭제(실패해도 분리 자체는 됨)
+    var si = _seOnly.indexOf(ev.id); if (si >= 0) { _seOnly.splice(si, 1); _saveSeOnly(); }  // 표시전용 플래그 정리
+    return true;
+  }
+
+  /* 단건: 확인창 → 코어 실행 */
+  async function splitEventInGoogle(ev) {
+    if (!ev) return;
+    if (!_isMultiDay(ev)) { toast('여러 날에 걸친 일정만 분리할 수 있습니다.', 'warning'); return; }
+    if (ev.recurrence || ev.recurringEventId) { toast('반복 일정은 분리할 수 없습니다. (반복 해제 후 시도)', 'error'); return; }
+    var sDay = _evStartDay(ev), lastDay = new Date(_evEndDay(ev).getTime() - 86400000);
+    var base = ev.summary || '(제목 없음)';
+    if (!confirm('“' + base + '”\n\n원본(연속) 일정을 삭제하고, 시작/종료 2개의 종일 일정으로 분리합니다.\n· 시작: ' + _ymd(sDay) + '\n· 종료: ' + _ymd(lastDay) + '\n\n되돌리기 어렵습니다. 진행할까요?')) return;
+    toast('시작/종료로 분리 중…', 'info');
+    var ok = await _splitOneInGoogle(ev);
+    toast(ok ? '시작/종료로 분리했습니다.' : '분리 실패 — 공유 읽기전용 캘린더이거나 권한 문제일 수 있습니다.', ok ? 'success' : 'error');
+    renderCalendar();
+  }
+
+  /* 일괄: 이미 "시작/종료만 표시"(_seOnly)된 일정들을 구글 캘린더에도 실제 분리.
+     대상 기간: 올해 6월 1일 ~ 내년 1월 31일(요청 범위 6~12월 포함). */
+  async function splitAllSeOnlyInGoogle() {
+    if (!Auth.isLoggedIn()) { toast('먼저 로그인하세요.', 'error'); return; }
+    if (!_seOnly.length) { toast('“시작/종료만 표시”로 분리해 둔 일정이 없습니다.', 'info'); return; }
+    var y = new Date().getFullYear();
+    var min = new Date(y, 5, 1).toISOString();        // 6월 1일
+    var max = new Date(y + 1, 0, 31).toISOString();   // 내년 1월 31일
+    if (!confirm('현재 “시작/종료만 표시”로 분리해 둔 일정들을\n구글 캘린더에도 실제로 분리합니다.\n(' + y + '년 6월~12월 범위 · 원본 삭제 후 시작/종료 2개 생성)\n\n반복·읽기전용(공유) 캘린더 일정은 제외됩니다. 되돌리기 어렵습니다. 진행할까요?')) return;
+    toast('대상 일정을 불러오는 중…', 'info');
+    var all;
+    try { all = await _fetchRange(min, max); } catch (e) { toast('일정 조회 실패: ' + (e && e.message || e), 'error'); return; }
+    var seen = {}, targets = [];
+    all.forEach(function (ev) {
+      if (!ev || !ev.id || seen[ev.id]) return;
+      if (_isSeOnly(ev.id) && _isMultiDay(ev) && !ev.recurrence && !ev.recurringEventId) { seen[ev.id] = 1; targets.push(ev); }
+    });
+    if (!targets.length) { toast('이 범위에서 분리할 대상이 없습니다.', 'info'); return; }
+    var ok = 0, fail = 0;
+    for (var i = 0; i < targets.length; i++) {
+      toast('분리 중… (' + (i + 1) + '/' + targets.length + ')', 'info');
+      var r = await _splitOneInGoogle(targets[i]);
+      if (r) ok++; else fail++;
+    }
+    toast('완료: ' + ok + '개 분리' + (fail ? ' · ' + fail + '개 실패(읽기전용/권한)' : ''), fail ? 'warning' : 'success');
+    renderCalendar();
+  }
+  window.__aseaSplitAllSeOnly = splitAllSeOnlyInGoogle;   // 콘솔/버튼에서 호출 가능
 
   /* 다일 일정: 시작/종료만 표시 ↔ 전체 기간 표시 토글 (로컬 저장 · 표시 전용) */
   function toggleStartEndOnly(ev) {
