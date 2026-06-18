@@ -71,7 +71,7 @@ window.TasksModule = (function () {
   function renderForm() {
     var body = $('tasks-body');
     if (!_lists.length) { body.innerHTML = '<p class="tasks-muted">구글 할일 목록이 없습니다. (구글 할일에서 먼저 항목을 만들어 주세요)</p>'; return; }
-    var cals = (window.CONFIG && CONFIG.selectedCalendars) ? CONFIG.selectedCalendars : [];
+    var cals = (typeof CONFIG !== 'undefined' && CONFIG.selectedCalendars) ? CONFIG.selectedCalendars : [];
     var today = new Date();
     var from = new Date(today.getFullYear(), today.getMonth(), 1);
     var to = new Date(today.getFullYear(), today.getMonth() + 1, 0);
@@ -83,7 +83,7 @@ window.TasksModule = (function () {
         '<select id="tasks-list" class="form-select">' + _lists.map(function (l) { return '<option value="' + esc(l.id) + '">' + esc(l.title) + '</option>'; }).join('') + '</select></div>' +
       '<div class="tasks-row"><label>기간 (마감일 기준)</label>' +
         '<div class="tasks-range"><input type="date" id="tasks-from" class="form-input" value="' + ymd(from) + '"><span>~</span><input type="date" id="tasks-to" class="form-input" value="' + ymd(to) + '"></div></div>' +
-      '<div class="tasks-row"><label>가져올 캘린더</label>' +
+      '<div class="tasks-row"><label>할일을 붙일 캘린더</label>' +
         '<select id="tasks-cal" class="form-select">' + calOpts + '</select></div>' +
       '<div class="tasks-cbrow">' +
         '<label class="tasks-cb"><input type="checkbox" id="tasks-done"> 완료된 할일도 포함</label>' +
