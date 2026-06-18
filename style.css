@@ -285,7 +285,8 @@ a        { color: var(--color-accent); text-decoration: none; }
 #tab-calendar .calendar-filter-panel,
 #tab-calendar #duplicate-banner { padding-left: 16px; padding-right: 16px; }
 /* 캘린더 컨테이너는 margin으로 여백 — 이렇게 해야 border-radius(둥근 모서리)가 살아남 */
-#tab-calendar .calendar-container { margin-left: 16px; margin-right: 16px; }
+#tab-calendar .calendar-container,
+#tab-calendar .calendar-stickyhead .calendar-weekdays { margin-left: 16px; margin-right: 16px; }
 
 /* 탭 내부: 넓은 고정폭 블록이 viewport보다 좁아지지 않도록 */
 .tab-panel > * { min-width: 0; }
@@ -4606,6 +4607,39 @@ h3.settings-section-title {
 }
 .weekday.sunday   { color: rgba(255,200,200,.95) !important; }
 .weekday.saturday { color: rgba(200,220,255,.95) !important; }
+
+/* ── 나의 할일 가져오기 패널 ── */
+.tasks-muted { color: var(--color-text-secondary); font-size: 13px; padding: 4px 2px; }
+.tasks-err { color: #dc2626; font-size: 13px; padding: 4px 2px; }
+.tasks-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+.tasks-row > label { flex: 0 0 130px; font-size: 13px; font-weight: 600; color: var(--color-text); }
+.tasks-row .form-select, .tasks-row .form-input { flex: 1; min-width: 140px; }
+.tasks-range { flex: 1; display: flex; align-items: center; gap: 8px; }
+.tasks-range .form-input { flex: 1; min-width: 120px; }
+.tasks-cbrow { display: flex; gap: 16px; flex-wrap: wrap; margin: 6px 0 12px; }
+.tasks-cb { font-size: 13px; color: var(--color-text); display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+.tasks-actions { display: flex; gap: 8px; margin-bottom: 10px; }
+.tasks-prev-head { font-size: 13px; font-weight: 700; color: #1a3a5c; margin: 6px 0; }
+.tasks-prev-list { max-height: 260px; overflow-y: auto; border: 1px solid var(--color-border); border-radius: 8px; }
+.tasks-prev-item { display: flex; align-items: center; gap: 8px; padding: 7px 10px; border-bottom: 1px solid #f0f0f0; font-size: 13px; }
+.tasks-prev-item:last-child { border-bottom: none; }
+.tasks-prev-item .d { flex: 0 0 92px; color: var(--color-text-secondary); font-variant-numeric: tabular-nums; }
+.tasks-prev-item .t { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tasks-prev-item.is-done { opacity: .55; }
+.tasks-prev-item .badge { flex: 0 0 auto; font-size: 11px; background: #e5e7eb; color: #6b7280; padding: 1px 7px; border-radius: 10px; }
+
+/* ── 캘린더 상단 고정 헤더(엑셀 틀고정): 범례 + 요일 헤더 ── */
+.calendar-stickyhead {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  background: var(--color-bg);
+}
+/* 요일 헤더가 컨테이너 밖으로 빠졌으므로, 그리드 컨테이너 위 모서리는 직각으로(한 장의 카드처럼 이어 보이게) */
+.calendar-container {
+  border-top-left-radius: 0 !important;
+  border-top-right-radius: 0 !important;
+}
 
 /* 달력 주간 행 */
 .calendar-week-row {
