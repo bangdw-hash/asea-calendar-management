@@ -71,23 +71,23 @@ window.TasksModule = (function () {
   function renderForm() {
     var body = $('tasks-body');
     if (!_lists.length) { body.innerHTML = '<p class="tasks-muted">구글 할일 목록이 없습니다. (구글 할일에서 먼저 항목을 만들어 주세요)</p>'; return; }
-    var cals = (window.CONFIG && CONFIG.selectedCalendars) ? CONFIG.selectedCalendars : [];
+    var cals = (typeof CONFIG !== 'undefined' && CONFIG.selectedCalendars) ? CONFIG.selectedCalendars : [];
     var today = new Date();
     var from = new Date(today.getFullYear(), today.getMonth(), 1);
-    var to = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+    var to = new Date(today.getFullYear(), today.getMonth() + 3, 0);   // 기본: 이번 달 ~ +2개월(예정 포함)
     var calOpts = cals.length
       ? cals.map(function (c) { return '<option value="' + esc(c.id) + '">' + esc(c.name) + '</option>'; }).join('')
       : '<option value="primary">기본 캘린더</option>';
     body.innerHTML =
       '<div class="tasks-row"><label>할일 목록(카테고리)</label>' +
         '<select id="tasks-list" class="form-select">' + _lists.map(function (l) { return '<option value="' + esc(l.id) + '">' + esc(l.title) + '</option>'; }).join('') + '</select></div>' +
-      '<div class="tasks-row"><label>기간 (마감일 기준)</label>' +
+      '<div class="tasks-row"><label>기간 (가져올 범위)</label>' +
         '<div class="tasks-range"><input type="date" id="tasks-from" class="form-input" value="' + ymd(from) + '"><span>~</span><input type="date" id="tasks-to" class="form-input" value="' + ymd(to) + '"></div></div>' +
-      '<div class="tasks-row"><label>가져올 캘린더</label>' +
+      '<div class="tasks-row"><label>할일을 붙일 캘린더</label>' +
         '<select id="tasks-cal" class="form-select">' + calOpts + '</select></div>' +
       '<div class="tasks-cbrow">' +
-        '<label class="tasks-cb"><input type="checkbox" id="tasks-done"> 완료된 할일도 포함</label>' +
-        '<label class="tasks-cb"><input type="checkbox" id="tasks-nodue"> 마감일 없는 할일도(오늘로)</label></div>' +
+        '<label class="tasks-cb"><input type="checkbox" id="tasks-todo" checked> 예정 일정 (오늘 포함)</label>' +
+        '<label class="tasks-cb"><input type="checkbox" id="tasks-done" checked> 완료 일정</label></div>' +
       '<div class="tasks-actions">' +
         '<button id="tasks-preview" class="btn btn-secondary btn-sm">미리보기</button>' +
         '<button id="tasks-import" class="btn btn-primary btn-sm" disabled>캘린더에 일괄 등록</button></div>' +
@@ -96,25 +96,43 @@ window.TasksModule = (function () {
     $('tasks-import').addEventListener('click', doImport);
   }
 
+  // 할일의 '캘린더 표시 날짜' = 마감일 > 완료일 > (정보없으면) 오늘
+  function taskDate(t) {
+    var s = t.due ? t.due.slice(0, 10) : (t.completed ? t.completed.slice(0, 10) : '');
+    return s ? new Date(s + 'T00:00:00') : new Date(new Date().toDateString());
+  }
+  // 목록의 모든 할일(완료 포함) 페이지네이션으로 수집
+  function fetchAll(listId) {
+    var out = [];
+    function page(tok) {
+      var q = '/lists/' + encodeURIComponent(listId) + '/tasks?maxResults=100&showCompleted=true&showHidden=true' + (tok ? '&pageToken=' + encodeURIComponent(tok) : '');
+      return api(q).then(function (d) {
+        (d.items || []).forEach(function (x) { out.push(x); });
+        if (d.nextPageToken && out.length < 1000) return page(d.nextPageToken);
+        return out;
+      });
+    }
+    return page(null);
+  }
   function gather() {
     var listId = $('tasks-list').value;
     var fromV = $('tasks-from').value, toV = $('tasks-to').value;
-    var includeDone = $('tasks-done').checked, includeNoDue = $('tasks-nodue').checked;
+    var includeTodo = $('tasks-todo').checked;   // 예정 일정(미완료, 오늘·미래 포함)
+    var includeDone = $('tasks-done').checked;   // 완료 일정
     var fromT = fromV ? new Date(fromV + 'T00:00:00').getTime() : -Infinity;
     var toT = toV ? new Date(toV + 'T23:59:59').getTime() : Infinity;
-    var q = '/lists/' + encodeURIComponent(listId) + '/tasks?maxResults=100&showHidden=true&showCompleted=' + (includeDone ? 'true' : 'false');
-    return api(q).then(function (d) {
-      var items = (d && d.items) || [];
+    return fetchAll(listId).then(function (items) {
       var imp = impLoad();
       return items.filter(function (t) {
         if (!t.title) return false;
-        if (!includeDone && t.status === 'completed') return false;
-        if (t.due) { var dt = new Date(t.due).getTime(); if (dt < fromT || dt > toT) return false; }
-        else if (!includeNoDue) return false;
+        var isDone = t.status === 'completed';
+        if (isDone ? !includeDone : !includeTodo) return false;   // 상태별 포함 여부
+        var dt = taskDate(t).getTime();
+        if (dt < fromT || dt > toT) return false;                 // 표시 날짜가 범위 안
         return true;
       }).map(function (t) {
-        var d2 = t.due ? new Date(t.due.slice(0, 10) + 'T00:00:00') : new Date();  // 마감일은 날짜만 사용
-        return { id: t.id, title: t.title, notes: t.notes || '', date: ymd(d2), already: !!imp[t.id] };
+        return { id: t.id, title: t.title, notes: t.notes || '', date: ymd(taskDate(t)),
+                 done: t.status === 'completed', already: !!imp[t.id] };
       }).sort(function (a, b) { return a.date < b.date ? -1 : a.date > b.date ? 1 : 0; });
     });
   }
@@ -130,7 +148,9 @@ window.TasksModule = (function () {
       box.innerHTML =
         '<div class="tasks-prev-head">총 ' + list.length + '개 · 신규 ' + newCnt + '개 · 이미 등록 ' + (list.length - newCnt) + '개</div>' +
         '<div class="tasks-prev-list">' + list.map(function (x) {
-          return '<div class="tasks-prev-item' + (x.already ? ' is-done' : '') + '"><span class="d">' + x.date + '</span><span class="t">' + esc(x.title) + '</span>' + (x.already ? '<span class="badge">등록됨</span>' : '') + '</div>';
+          return '<div class="tasks-prev-item' + (x.already ? ' is-done' : '') + '"><span class="d">' + x.date + '</span><span class="t">' + esc(x.title) + '</span>' +
+            '<span class="badge">' + (x.done ? '완료' : '예정') + '</span>' +
+            (x.already ? '<span class="badge">등록됨</span>' : '') + '</div>';
         }).join('') + '</div>';
     }).catch(function (e) { box.innerHTML = '<p class="tasks-err">' + esc(e.message) + '</p>'; });
   }
@@ -147,8 +167,8 @@ window.TasksModule = (function () {
       var t = targets[i];
       toast('등록 중… (' + (i + 1) + '/' + targets.length + ')', 'info');
       var nd = new Date(t.date + 'T00:00:00'); nd.setDate(nd.getDate() + 1);
-      var body = { summary: t.title, start: { date: t.date }, end: { date: ymd(nd) },
-                   description: (t.notes ? t.notes + '\n\n' : '') + '[Google 할일에서 가져옴]' };
+      var body = { summary: (t.done ? '✔ ' : '') + t.title, start: { date: t.date }, end: { date: ymd(nd) },
+                   description: (t.notes ? t.notes + '\n\n' : '') + '[Google 할일' + (t.done ? '·완료' : '·예정') + '에서 가져옴]' };
       try { var r = await CalendarModule.createEvent(calId, body); imp[t.id] = { eventId: (r && r.id) || '', at: Date.now() }; ok++; }
       catch (e) { fail++; }
     }
