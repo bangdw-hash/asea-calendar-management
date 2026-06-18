@@ -6631,3 +6631,243 @@ body:has(.modal:not([hidden])) .quick-fab { display: none; }
   color: #fff !important;
   font-weight: 700 !important;
 }
+
+/* ═══════════════════════════════════════════════════════════
+   🎁 기념품 관리 모듈 스타일
+   ═══════════════════════════════════════════════════════════ */
+.gift-wrap {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 16px;
+}
+.gift-admin-wrap {
+  max-width: 100%;
+}
+.gift-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.gift-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1a3a5c;
+  margin: 0;
+}
+.gift-desc {
+  font-size: 13px;
+  color: #6b7280;
+  margin-bottom: 16px;
+}
+.gift-admin-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: #f1f5f9;
+  border-radius: 10px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+.gift-tab-bar {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.gift-subtab-bar {
+  background: #f9fafb;
+  padding: 8px;
+  border-radius: 8px;
+}
+.gift-tab-btn {
+  padding: 8px 16px;
+  background: #f3f4f6;
+  color: #374151;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  transition: background .15s, color .15s;
+  min-height: 36px;
+}
+.gift-tab-btn.active {
+  background: #1a3a5c;
+  color: #fff;
+}
+.gift-tab-btn:hover:not(.active) {
+  background: #e5e7eb;
+}
+.gift-tab-sm {
+  font-size: 12px;
+  padding: 6px 12px;
+  min-height: 32px;
+}
+
+/* 품목 카드 그리드 */
+.gift-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+@media (max-width: 480px) {
+  .gift-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+}
+.gift-card {
+  background: #fff;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 14px 12px;
+  transition: border-color .15s, box-shadow .15s, transform .1s;
+  user-select: none;
+  min-height: 100px;
+}
+.gift-card:hover:not(.gift-card-sold) {
+  border-color: #1a3a5c;
+  box-shadow: 0 4px 12px rgba(26,58,92,.12);
+  transform: translateY(-1px);
+}
+.gift-card-sold {
+  background: #f9fafb;
+  opacity: .65;
+}
+.gift-card-cat {
+  font-size: 11px;
+  color: #9ca3af;
+  margin-bottom: 4px;
+}
+.gift-card-name {
+  font-weight: 700;
+  font-size: 14px;
+  color: #111827;
+  margin-bottom: 6px;
+}
+.gift-card-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+/* 배지 */
+.gift-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 600;
+}
+.gift-badge-red    { background: #fee2e2; color: #dc2626; }
+.gift-badge-orange { background: #fff7ed; color: #ea580c; }
+.gift-badge-green  { background: #dcfce7; color: #16a34a; }
+.gift-badge-blue   { background: #dbeafe; color: #2563eb; }
+
+/* 신청 폼 */
+.gift-form { display: flex; flex-direction: column; gap: 0; }
+.gift-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+  margin-top: 12px;
+  margin-bottom: 4px;
+  display: block;
+}
+.gift-req { color: #ef4444; }
+.gift-selected-box {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+}
+
+/* 확인 테이블 */
+.gift-confirm-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 4px;
+}
+.gift-confirm-table th,
+.gift-confirm-table td {
+  padding: 10px 12px;
+  text-align: left;
+  border-bottom: 1px solid #f3f4f6;
+  font-size: 14px;
+}
+.gift-confirm-table th {
+  color: #6b7280;
+  font-weight: 600;
+  width: 90px;
+  white-space: nowrap;
+}
+
+/* 관리자 테이블 */
+.gift-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.gift-table th {
+  background: #f8fafc;
+  padding: 8px 10px;
+  text-align: left;
+  font-weight: 600;
+  color: #374151;
+  border-bottom: 2px solid #e5e7eb;
+  white-space: nowrap;
+}
+.gift-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid #f3f4f6;
+  vertical-align: middle;
+}
+.gift-table tr:hover td { background: #f9fafb; }
+
+/* 재고 현황 그리드 */
+.gift-stock-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+}
+.gift-stock-card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 14px;
+}
+.gift-stock-low {
+  border-color: #fca5a5;
+  background: #fff5f5;
+}
+.gift-stock-bar-wrap {
+  height: 6px;
+  background: #e5e7eb;
+  border-radius: 3px;
+  overflow: hidden;
+}
+.gift-stock-bar {
+  height: 100%;
+  border-radius: 3px;
+  transition: width .3s;
+}
+
+/* QR 그리드 */
+.gift-qr-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 12px;
+  margin-top: 8px;
+}
+
+@media (max-width: 600px) {
+  .gift-stock-grid { grid-template-columns: repeat(2, 1fr); }
+  .gift-qr-grid    { grid-template-columns: repeat(2, 1fr); }
+}
