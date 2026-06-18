@@ -429,16 +429,18 @@
             console.warn('[ASEA] initSheets 자동 실행 실패:', e);
           });
         }
-        // 로그인 시 설정 불러오기 + 이력 병합 동기화
+        // 로그인 시 설정 불러오기 + 이력 병합 동기화 (실패해도 캘린더 로드는 독립적으로 진행)
         Promise.all([loadSettingsFromCloud(true), syncHistoryOnLogin()]).then(function () {
-          // 로그인 시마다 Google 서버 색상 자동 동기화 (기기 간 색상 일치)
-          loadAndSyncCalendars().then(function () {
-            renderMyCalendarsList();
-            if (S.tab === 'calendar') renderCalendar();
-            if (S.tab === 'settings') renderSettingsTab();
-          });
+          if (S.tab === 'settings') renderSettingsTab();
+        }).catch(function () {});
+        // ★ 캘린더는 항상 '로그인한 본인 계정'의 전체 캘린더(공유받은 것 포함)를 불러와 표시.
+        //   공용/고정 캘린더 개념 없음 — 각 사용자 구글 계정 기준으로만 표현됨.
+        loadAndSyncCalendars().then(function () {
+          renderMyCalendarsList();
           if (S.tab === 'calendar') renderCalendar();
           if (S.tab === 'settings') renderSettingsTab();
+        }).catch(function () {
+          if (S.tab === 'calendar') renderCalendar();   // 실패 시에도 기본(primary)로 표시
         });
       }
     });
