@@ -1719,6 +1719,13 @@
       $('calendar-filter-panel').hidden = true;
     });
 
+    // 나의 할일 → 캘린더 가져오기
+    var tasksBtn = $('tasks-import-btn');
+    if (tasksBtn) tasksBtn.addEventListener('click', function () {
+      $('calendar-filter-panel').hidden = true;
+      if (window.TasksModule) TasksModule.toggle();
+    });
+
     $('sync-filter-calendars-btn').addEventListener('click', async function () {
       this.textContent = '⏳ 동기화 중...';
       this.disabled = true;
