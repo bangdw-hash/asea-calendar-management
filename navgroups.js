@@ -30,7 +30,7 @@
     work:     { label: '업무',      tabs: ['work', 'budget', 'report', 'workorder', 'draft', 'survey', 'contractgen'] },
     fac:      { label: '시설·자원', tabs: ['facility', 'vehicle', 'classroom', 'dorm', 'wayfind', 'checkinmgmt'] },
     comm:     { label: '소통·홍보', tabs: ['board', 'email', 'sms', 'zoom', 'promo', 'qrcard', '#amulbo-nav-btn'] },
-    hr:       { label: '인사',      tabs: ['hr'] },
+    hr:       { label: '인사',      tabs: ['hr', 'retire'] },
     settings: { label: '설정',      tabs: ['settings', 'admin', 'help'] },
   };
 
