@@ -75,6 +75,16 @@
       }
       // 메인 로그인 실패 → 토큰 초기화
       _clearToken();
+      // 테스터 안내: 막힌 이유를 알려준다(앱은 계정을 막지 않음 — 구글 OAuth 단계에서 막힘).
+      try {
+        if (typeof window.aseaToast === 'function') {
+          window.aseaToast(
+            '로그인이 완료되지 않았습니다. ① 본인 Gmail로 로그인했는지 ② “확인되지 않은 앱” 경고에서 [고급 → 계속]을 눌렀는지 확인하세요. ' +
+            '계속 막히면 이 계정이 아직 테스터로 등록되지 않았을 수 있습니다(관리자에게 Gmail 등록 요청).',
+            'error'
+          );
+        }
+      } catch (e) {}
       if (_pendingResolve) { _pendingResolve(false); _pendingResolve = null; }
       _notifyChange();
       return;
