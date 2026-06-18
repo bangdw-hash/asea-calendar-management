@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&family=Nanum+Gothic:wght@400;700&family=Nanum+Myeongjo:wght@400;700&family=Gowun+Dodum&family=Black+Han+Sans&family=IBM+Plex+Sans+KR:wght@400;500;700&display=swap">
-  <link rel="stylesheet" href="style.css?v=20260617r28">
+  <link rel="stylesheet" href="style.css?v=20260617r29">
   <link rel="stylesheet" href="report.css?v=20260610r1">
   <link rel="stylesheet" href="promo.css?v=20260611p3">
   <link rel="stylesheet" href="help.css?v=20260610h1">
@@ -403,11 +403,9 @@
           <button class="alert-close" id="close-duplicate-banner" aria-label="닫기">✕</button>
         </div>
 
-        <!-- 캘린더 범례 -->
-        <div id="calendar-legend" class="calendar-legend"></div>
-
-        <!-- 캘린더 그리드 -->
-        <div id="calendar-container" class="calendar-container">
+        <!-- 스크롤해도 상단 고정(엑셀 틀고정): 범례 + 요일 헤더 -->
+        <div class="calendar-stickyhead">
+          <div id="calendar-legend" class="calendar-legend"></div>
           <div class="calendar-weekdays" aria-hidden="true">
             <div class="weekday sunday">일</div>
             <div class="weekday">월</div>
@@ -417,6 +415,10 @@
             <div class="weekday">금</div>
             <div class="weekday saturday">토</div>
           </div>
+        </div>
+
+        <!-- 캘린더 그리드 -->
+        <div id="calendar-container" class="calendar-container">
           <div id="calendar-grid" class="calendar-grid" role="grid" aria-label="캘린더"></div>
         </div>
       </section>
