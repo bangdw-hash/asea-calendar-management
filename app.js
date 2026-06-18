@@ -300,6 +300,8 @@
     if (name === 'board' && typeof BoardModule !== 'undefined') BoardModule.onTabOpen();
     // 관리자 패널
     if (name === 'admin' && typeof AdminModule !== 'undefined') AdminModule.onTabOpen();
+    // 기념품 관리
+    if (name === 'gift' && typeof GiftModule !== 'undefined') GiftModule.onTabOpen();
     // 사용자 색상 설정 탭 열릴 때 재렌더
     if (name === 'settings' && typeof UserSettingsModule !== 'undefined') UserSettingsModule.renderColorSettings();
   }
