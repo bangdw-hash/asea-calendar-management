@@ -4627,6 +4627,7 @@ h3.settings-section-title {
 .tasks-prev-item .t { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .tasks-prev-item.is-done { opacity: .55; }
 .tasks-prev-item .badge { flex: 0 0 auto; font-size: 11px; background: #e5e7eb; color: #6b7280; padding: 1px 7px; border-radius: 10px; }
+.tasks-prev-item .badge.b-upd { background: #fef3c7; color: #b45309; }
 
 /* ── 캘린더 상단 고정 헤더(엑셀 틀고정): 범례 + 요일 헤더 ── */
 .calendar-stickyhead {
