@@ -21,6 +21,32 @@ window.RetireModule = (function () {
     var i = apps.findIndex(function (a) { return a.id === app.id; });
     if (i > -1) apps[i] = app; else apps.push(app);
     saveApps(apps);
+    _cloudSave(app);   // 로컬과 함께 클라우드에도 저장(디바운스) → 관리자가 어느 단말에서나 조회
+  }
+  /* ── 클라우드(Supabase) 동시 저장: 잦은 입력은 디바운스 ── */
+  var _cloudTimers = {};
+  function _cloudSave(app) {
+    if (!app || !app.id || !window.CloudForms) return;
+    clearTimeout(_cloudTimers[app.id]);
+    _cloudTimers[app.id] = setTimeout(function () {
+      try { CloudForms.save('retire', app.id, (app.form && app.form.name) || '', app.status || 'draft', app); } catch (e) {}
+    }, 1200);
+  }
+  /* ── 관리자: 클라우드의 모든 제출분을 로컬로 병합 ── */
+  function _pullCloudApps(cb) {
+    if (!window.CloudForms || !CloudForms.ready()) { if (cb) cb(false); return; }
+    CloudForms.list('retire').then(function (res) {
+      if (!res.ok) { if (cb) cb(false); return; }
+      var local = loadApps(), byId = {};
+      local.forEach(function (a) { if (a && a.id) byId[a.id] = a; });
+      var changed = false;
+      res.rows.forEach(function (row) {
+        var app = row && row.data; if (!app || !app.id) return;
+        byId[app.id] = app; changed = true;   // 클라우드를 관리자 기준 원본으로 병합
+      });
+      if (changed) saveApps(Object.keys(byId).map(function (k) { return byId[k]; }));
+      if (cb) cb(changed);
+    }).catch(function () { if (cb) cb(false); });
   }
 
   /* ── 저장 코드 생성 (6자리) ── */
@@ -259,7 +285,7 @@ window.RetireModule = (function () {
 
   function _renderAdminAuth(tab) {
     var pw = prompt('인사관리자 비밀번호를 입력하세요.');
-    if (pw === ADMIN_PW) { _st.isAdmin = true; _st.view = 'manager'; _st.mgrTab = tab || 'link'; _render(); }
+    if (pw === ADMIN_PW) { _st.isAdmin = true; _st.view = 'manager'; _st.mgrTab = tab || 'link'; _st._cloudPulled = false; _render(); }
     else if (pw !== null) toast('비밀번호가 올바르지 않습니다.', '#DC2626');
   }
 
@@ -793,6 +819,15 @@ window.RetireModule = (function () {
   /* ── 신청 목록 탭 ── */
   function _renderMgrApps(wrap) {
     var section = el('div', 'rt-mgr-section');
+    // 서버(클라우드)에서 모든 제출분 불러오기 — 최초 1회 자동 + 수동 버튼
+    var bar = el('div'); bar.style.cssText = 'display:flex;justify-content:flex-end;align-items:center;gap:8px;margin-bottom:8px';
+    var hint = el('span'); hint.style.cssText = 'font-size:11px;color:#6B7280';
+    hint.textContent = (window.CloudForms && CloudForms.ready()) ? '클라우드 저장 사용 중' : '※ 클라우드 미연결(로컬만)';
+    var rb = el('button', 'rt-btn rt-btn-outline rt-btn-sm', '🔄 서버에서 불러오기');
+    rb.addEventListener('click', function () { rb.textContent = '⏳ 불러오는 중…'; _pullCloudApps(function () { _render(); }); });
+    bar.appendChild(hint); bar.appendChild(rb); section.appendChild(bar);
+    if (!_st._cloudPulled) { _st._cloudPulled = true; _pullCloudApps(function (ch) { if (ch) _render(); }); }
+
     var apps = loadApps().filter(function(a){ return a.form && a.form.name; });
 
     if (!apps.length) {
