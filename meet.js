@@ -143,7 +143,7 @@ window.MeetModule = (function () {
         '</div>' +
         '<div class="mt-field">' +
           '<label>시작 시간 *</label>' +
-          '<input id="mt-f-time" type="time" value="'+(d.time||'10:00')+'">' +
+          '<input id="mt-f-time" type="time" step="600" value="'+(d.time||'10:00')+'">' +
         '</div>' +
         '<div class="mt-field">' +
           '<label>소요 시간</label>' +
@@ -348,7 +348,7 @@ window.MeetModule = (function () {
             '<input id="mt-e-topic" type="text" value="'+esc(m.topic||'')+'">' +
           '</div>' +
           '<div class="mt-field"><label>날짜</label><input id="mt-e-date" type="date" value="'+date+'"></div>' +
-          '<div class="mt-field"><label>시작 시간</label><input id="mt-e-time" type="time" value="'+time+'"></div>' +
+          '<div class="mt-field"><label>시작 시간</label><input id="mt-e-time" type="time" step="600" value="'+time+'"></div>' +
           '<div class="mt-field"><label>소요 시간</label><select id="mt-e-duration">'+durationOpts+'</select></div>' +
           '<div class="mt-field" style="grid-column:1/-1">' +
             '<label>회의 안건</label>' +

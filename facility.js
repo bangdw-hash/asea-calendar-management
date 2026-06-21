@@ -1377,9 +1377,9 @@ var FacilityModule = (function () {
       '<div class="form-group" style="margin:0"><label class="form-label" style="font-size:11px">구분명</label>' +
         '<input type="text" class="form-input fee-sur-label" placeholder="예:야간" value="' + _esc((s&&s.label)||'') + '"></div>' +
       '<div class="form-group" style="margin:0"><label class="form-label" style="font-size:11px">시작</label>' +
-        '<input type="time" class="form-input fee-sur-s" value="' + ((s&&s.start)||'18:00') + '"></div>' +
+        '<input type="time" step="600" class="form-input fee-sur-s" value="' + ((s&&s.start)||'18:00') + '"></div>' +
       '<div class="form-group" style="margin:0"><label class="form-label" style="font-size:11px">종료</label>' +
-        '<input type="time" class="form-input fee-sur-e" value="' + ((s&&s.end)||'22:00') + '"></div>' +
+        '<input type="time" step="600" class="form-input fee-sur-e" value="' + ((s&&s.end)||'22:00') + '"></div>' +
       '<div class="form-group" style="margin:0"><label class="form-label" style="font-size:11px">요금(원/시간)</label>' +
         '<input type="number" class="form-input fee-sur-r" placeholder="75000" min="0" value="' + ((s&&s.rate)||'') + '"></div>' +
       '<button type="button" class="btn btn-ghost btn-sm" style="margin-bottom:0;align-self:end" onclick="this.parentNode.remove();_updateSurEmpty&&_updateSurEmpty()">×</button>';

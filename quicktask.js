@@ -368,9 +368,9 @@ var QuickTaskModule = (function () {
             '</div>' +
             '<div class="qt-time-row">' +
               '<input type="date" class="qt-task-date-input form-input" style="padding:3px 8px;font-size:12px" data-idx="' + idx + '" value="' + escapeHtml(task.dueDate) + '">' +
-              '<input type="time" class="qt-task-time-input form-input" style="padding:3px 6px;font-size:12px" data-idx="' + idx + '" value="' + escapeHtml(task.dueTime || '') + '" title="시작 시간">' +
+              '<input type="time" step="600" class="qt-task-time-input form-input" style="padding:3px 6px;font-size:12px" data-idx="' + idx + '" value="' + escapeHtml(task.dueTime || '') + '" title="시작 시간">' +
               '<span class="qt-time-sep">~</span>' +
-              '<input type="time" class="qt-task-endtime-input form-input" style="padding:3px 6px;font-size:12px" data-idx="' + idx + '" value="' + escapeHtml(task.endTime || '') + '" title="종료 시간">' +
+              '<input type="time" step="600" class="qt-task-endtime-input form-input" style="padding:3px 6px;font-size:12px" data-idx="' + idx + '" value="' + escapeHtml(task.endTime || '') + '" title="종료 시간">' +
               '<select class="qt-task-cat-sel form-select" style="width:96px;padding:3px 6px;font-size:12px" data-idx="' + idx + '">' +
                 ['일반업무','교육일정','행사','대관','차량','기타'].map(function(c){
                   return '<option value="'+c+'"'+(c===task.category?' selected':'')+'>'+c+'</option>';

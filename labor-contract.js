@@ -519,10 +519,10 @@ window.LaborContractModule = (function () {
       '<div class="lc-form-section">' +
       '<div class="lc-section-title" style="font-size:13px;">근로시간 / 근무일</div>' +
       '<div class="lc-form-grid">' +
-      '<div class="lc-field"><label>근로 시작</label><input id="lc-wstart" type="time" value="' + esc(ct.workStart) + '"></div>' +
-      '<div class="lc-field"><label>근로 종료</label><input id="lc-wend" type="time" value="' + esc(ct.workEnd) + '"></div>' +
-      '<div class="lc-field"><label>휴게 시작</label><input id="lc-bstart" type="time" value="' + esc(ct.breakStart) + '"></div>' +
-      '<div class="lc-field"><label>휴게 종료</label><input id="lc-bend" type="time" value="' + esc(ct.breakEnd) + '"></div>' +
+      '<div class="lc-field"><label>근로 시작</label><input id="lc-wstart" type="time" step="600" value="' + esc(ct.workStart) + '"></div>' +
+      '<div class="lc-field"><label>근로 종료</label><input id="lc-wend" type="time" step="600" value="' + esc(ct.workEnd) + '"></div>' +
+      '<div class="lc-field"><label>휴게 시작</label><input id="lc-bstart" type="time" step="600" value="' + esc(ct.breakStart) + '"></div>' +
+      '<div class="lc-field"><label>휴게 종료</label><input id="lc-bend" type="time" step="600" value="' + esc(ct.breakEnd) + '"></div>' +
       '<div class="lc-field"><label>근무일</label><input id="lc-workdays" type="text" value="' + esc(ct.workDays) + '"></div>' +
       '<div class="lc-field"><label>주휴일</label><input id="lc-holiday" type="text" value="' + esc(ct.holiday) + '"></div>' +
       '</div></div>' +
