@@ -6,123 +6,111 @@
   <title>나의 할일 작업창</title>
   <style>
     :root {
-      --accent: #1A73E8; --accent-d: #1557B0; --accent-l: #E8F0FE;
-      --bg: #F4F7FB; --card: #fff; --bd: #E2E8F0; --txt: #202124; --muted: #6B7280;
+      --sky: #54AEE6; --sky-d: #2E89C7; --sky-l: #E8F5FD; --sky-l2: #D5EBF9;
+      --bg: #F3FAFE; --card: #FFFFFF; --bd: #DCEAF4; --txt: #1F3140; --muted: #6E8597;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: 'Pretendard', 'Noto Sans KR', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      background: var(--bg); color: var(--txt); min-height: 100vh; font-size: 13px;
-    }
-    /* 헤더 */
-    .tw-header {
-      background: linear-gradient(135deg, var(--accent), var(--accent-d)); color: #fff;
-      padding: 9px 12px; display: flex; align-items: center; gap: 8px; position: sticky; top: 0; z-index: 5;
-    }
+    body { font-family: 'Pretendard', 'Noto Sans KR', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--txt); min-height: 100vh; font-size: 13px; }
+
+    .tw-header { background: linear-gradient(135deg, var(--sky), var(--sky-d)); color: #fff; padding: 9px 12px; display: flex; align-items: center; gap: 8px; position: sticky; top: 0; z-index: 5; }
     .tw-header h1 { font-size: 14px; font-weight: 700; flex: 1; }
     .tw-header .ico { font-size: 16px; }
-    .tw-hbtn { background: rgba(255,255,255,.18); color: #fff; border: none; border-radius: 6px; padding: 5px 9px; font-size: 11.5px; cursor: pointer; white-space: nowrap; }
-    .tw-hbtn:hover { background: rgba(255,255,255,.32); }
+    .tw-hbtn { background: rgba(255,255,255,.2); color: #fff; border: none; border-radius: 6px; padding: 5px 9px; font-size: 11.5px; cursor: pointer; white-space: nowrap; }
+    .tw-hbtn:hover { background: rgba(255,255,255,.34); }
 
     .tw-wrap { padding: 9px 10px 14px; max-width: 820px; margin: 0 auto; }
 
-    /* 새 할일 + 비고 + 마감일 (콤팩트, 한 줄 래핑) */
-    .tw-new {
-      display: flex; gap: 5px; flex-wrap: wrap; align-items: center; background: var(--card);
-      border: 1px solid var(--bd); border-radius: 9px; padding: 7px; margin-bottom: 9px;
-    }
-    .tw-new input[type=text] { border: 1px solid var(--bd); border-radius: 6px; padding: 7px 9px; font-size: 13px; }
-    #tw-new-title { flex: 2 1 180px; min-width: 130px; font-weight: 600; }
-    #tw-new-notes { flex: 1 1 120px; min-width: 90px; color: #444; }
-    .tw-new input[type=date] { border: 1px solid var(--bd); border-radius: 6px; padding: 6px 8px; font-size: 12px; }
-    .tw-add { background: var(--accent); color: #fff; border: none; border-radius: 6px; padding: 7px 14px; font-weight: 700; cursor: pointer; font-size: 13px; }
-    .tw-add:hover { background: var(--accent-d); }
+    /* 새 할일: 좌측 제목+비고 세로 / 우측 날짜·시간+추가 */
+    .tw-new { display: flex; gap: 8px; background: var(--card); border: 1px solid var(--bd); border-radius: 10px; padding: 8px; margin-bottom: 9px; }
+    .tw-new-left { flex: 1 1 auto; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+    .tw-new-left input { width: 100%; border: 1px solid var(--bd); border-radius: 7px; padding: 8px 10px; font-size: 13px; }
+    #tw-new-title { font-weight: 600; }
+    #tw-new-notes { color: #44586a; }
+    .tw-new-right { flex: 0 0 auto; display: flex; flex-direction: column; gap: 6px; justify-content: space-between; }
+    .tw-new-right .tw-dt { display: flex; gap: 5px; }
+    .tw-new-right input { border: 1px solid var(--bd); border-radius: 7px; padding: 7px 8px; font-size: 12px; }
+    #tw-new-due { width: 120px; }
+    #tw-new-time { width: 78px; }
+    .tw-add { background: var(--sky); color: #fff; border: none; border-radius: 7px; padding: 8px 14px; font-weight: 700; cursor: pointer; font-size: 13px; }
+    .tw-add:hover { background: var(--sky-d); }
 
-    /* 목록(카테고리) 탭 */
     .tw-lists { display: flex; gap: 5px; overflow-x: auto; padding-bottom: 6px; margin-bottom: 4px; scrollbar-width: thin; }
     .tw-listtab { flex: 0 0 auto; background: var(--card); border: 1px solid var(--bd); border-radius: 99px; padding: 5px 12px; font-size: 12px; cursor: pointer; color: var(--muted); white-space: nowrap; }
-    .tw-listtab.active { background: var(--accent); color: #fff; border-color: var(--accent); font-weight: 700; }
+    .tw-listtab.active { background: var(--sky); color: #fff; border-color: var(--sky); font-weight: 700; }
 
-    /* 선택 바 (완료 처리/해제) */
-    .tw-selbar {
-      display: flex; align-items: center; gap: 6px; background: var(--accent-l);
-      border: 1px solid #C6DAFB; border-radius: 8px; padding: 6px 9px; margin-bottom: 7px;
-    }
+    /* 도구바: 캘린더 등록 + 정렬 */
+    .tw-tools { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 7px; }
+    #tw-cal { flex: 1 1 130px; min-width: 110px; max-width: 240px; border: 1px solid var(--bd); border-radius: 7px; padding: 6px 8px; font-size: 12px; background: #fff; color: var(--txt); }
+    .tw-tbtn { border: 1px solid var(--bd); background: #fff; border-radius: 7px; padding: 6px 9px; font-size: 12px; cursor: pointer; color: var(--sky-d); display: inline-flex; align-items: center; gap: 4px; }
+    .tw-tbtn:hover { background: var(--sky-l); }
+    #tw-register { background: var(--sky); color: #fff; border-color: var(--sky); font-weight: 600; }
+    #tw-register:hover { background: var(--sky-d); }
+    .tw-tools .spacer { flex: 1 1 auto; }
+
+    .tw-selbar { display: flex; align-items: center; gap: 6px; background: var(--sky-l); border: 1px solid var(--sky-l2); border-radius: 8px; padding: 6px 9px; margin-bottom: 7px; flex-wrap: wrap; }
     .tw-selbar[hidden] { display: none; }
-    #tw-selcount { font-size: 12px; font-weight: 700; color: var(--accent-d); flex: 1; }
+    #tw-selcount { font-size: 12px; font-weight: 700; color: var(--sky-d); flex: 1; }
     .tw-selbtn { border: none; border-radius: 6px; padding: 6px 11px; font-size: 12px; font-weight: 600; cursor: pointer; }
-    #tw-complete { background: var(--accent); color: #fff; }
-    #tw-complete:hover { background: var(--accent-d); }
-    #tw-uncomplete { background: #fff; color: var(--accent-d); border: 1px solid #B9D2F7; }
+    #tw-complete { background: var(--sky); color: #fff; }
+    #tw-complete:hover { background: var(--sky-d); }
+    #tw-uncomplete { background: #fff; color: var(--sky-d); border: 1px solid var(--sky-l2); }
     #tw-clearsel { background: transparent; color: var(--muted); }
 
-    .tw-toolbar { display: flex; justify-content: flex-end; margin-bottom: 5px; }
-    #tw-sortdate { background: #fff; border: 1px solid var(--bd); border-radius: 6px; padding: 5px 10px; font-size: 12px; cursor: pointer; color: #374151; }
-    #tw-sortdate:hover { background: #F0F4FA; }
-
     .tw-status { font-size: 11.5px; color: var(--muted); min-height: 15px; margin: 1px 2px 5px; }
-    .tw-status.tw-err { color: #C62828; white-space: pre-line; }
+    .tw-status.tw-err { color: #C0392B; white-space: pre-line; }
 
-    /* 할일 항목 (촘촘) */
     .tw-group { display: flex; flex-direction: column; }
-    .tw-task {
-      display: flex; align-items: center; gap: 7px; background: var(--card);
-      border: 1px solid var(--bd); border-radius: 8px; padding: 6px 9px; margin-bottom: 5px;
-      position: relative;
-    }
-    .tw-task.is-sel { background: var(--accent-l); border-color: #B9D2F7; }
+    .tw-task { display: flex; align-items: center; gap: 7px; background: var(--card); border: 1px solid var(--bd); border-radius: 9px; padding: 7px 9px; margin-bottom: 5px; position: relative; }
+    .tw-task.is-sel { background: var(--sky-l); border-color: var(--sky-l2); }
     .tw-task.dragging { opacity: .45; }
-    .tw-task.drop-before::before, .tw-task.drop-after::after {
-      content: ''; position: absolute; left: 6px; right: 6px; height: 3px; border-radius: 2px;
-      background: var(--accent);
-    }
+    .tw-task.drop-before::before, .tw-task.drop-after::after { content: ''; position: absolute; left: 6px; right: 6px; height: 3px; border-radius: 2px; background: var(--sky); }
     .tw-task.drop-before::before { top: -4px; }
     .tw-task.drop-after::after { bottom: -4px; }
 
-    .tw-grip { flex: 0 0 auto; width: 12px; color: #B6BdC8; cursor: grab; font-size: 13px; line-height: 1; user-select: none; text-align: center; }
+    .tw-grip { flex: 0 0 auto; width: 12px; color: #AFC4D4; cursor: grab; font-size: 13px; line-height: 1; user-select: none; text-align: center; }
     .tw-grip-off { cursor: default; }
-    .tw-sel {
-      flex: 0 0 auto; width: 20px; height: 20px; border-radius: 50%; border: 2px solid var(--accent);
-      background: #fff; color: #fff; cursor: pointer; font-size: 11px; line-height: 1; padding: 0;
-    }
-    .tw-sel.on { background: var(--accent); }
+    .tw-sel { flex: 0 0 auto; width: 20px; height: 20px; border-radius: 50%; border: 2px solid var(--sky); background: #fff; color: #fff; cursor: pointer; font-size: 11px; line-height: 1; padding: 0; }
+    .tw-sel.on { background: var(--sky); }
     .tw-main { flex: 1 1 auto; min-width: 0; }
-    .tw-title { font-size: 13.5px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .tw-title { font-size: 13.5px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; gap: 5px; }
     .tw-task.is-done .tw-title { text-decoration: line-through; color: var(--muted); font-weight: 500; }
-    .tw-notes {
-      font-size: 11.5px; color: var(--muted); margin-top: 1px;
-      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
-    }
+    .tw-reg { display: inline-flex; flex: 0 0 auto; }
+    .tw-reg svg { width: 14px; height: 14px; color: var(--sky-d); }
+    .tw-notes { font-size: 11.5px; color: var(--muted); margin-top: 1px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
     .tw-due { flex: 0 0 auto; font-size: 11px; font-weight: 700; border-radius: 5px; padding: 3px 7px; white-space: nowrap; }
-    .tw-due-over  { background: #FDE7E7; color: #D32F2F; }
-    .tw-due-today { background: #FFF1DE; color: #E8710A; }
-    .tw-due-soon  { background: var(--accent-l); color: var(--accent-d); }
-    .tw-due-wk    { background: #EAF1FC; color: #3B6FB5; }
-    .tw-due-far   { background: #EEF1F5; color: #6B7280; }
-    .tw-due-none  { background: #F2F4F7; color: #A0A6AE; }
-    .tw-edit, .tw-del { flex: 0 0 auto; background: none; border: none; cursor: pointer; font-size: 13px; opacity: .55; padding: 2px; }
-    .tw-edit:hover, .tw-del:hover { opacity: 1; }
+    .tw-due-over  { background: var(--sky-d); color: #fff; }
+    .tw-due-today { background: var(--sky); color: #fff; }
+    .tw-due-soon  { background: var(--sky-l2); color: var(--sky-d); }
+    .tw-due-wk    { background: var(--sky-l); color: var(--sky-d); }
+    .tw-due-far   { background: #EDF2F6; color: #5E7488; }
+    .tw-due-none  { background: #F0F4F7; color: #9DAAB5; }
+    .tw-icon { flex: 0 0 auto; background: none; border: none; cursor: pointer; padding: 3px; color: var(--sky-d); opacity: .7; display: inline-flex; }
+    .tw-icon svg { width: 16px; height: 16px; }
+    .tw-icon:hover { opacity: 1; }
+    .tw-del { color: #8FA3B2; }
+    .tw-del:hover { color: var(--sky-d); }
 
     .tw-done-head { margin: 8px 2px 4px; font-size: 12px; color: var(--muted); }
     .tw-done-head label { cursor: pointer; }
     .tw-empty { color: var(--muted); text-align: center; padding: 26px 12px; white-space: pre-line; line-height: 1.6; }
     .tw-empty-sm { padding: 12px; font-size: 12px; }
 
-    /* 수정 모달 */
-    .tw-modal { position: fixed; inset: 0; background: rgba(0,0,0,.4); display: flex; align-items: center; justify-content: center; z-index: 50; padding: 16px; }
+    .tw-modal { position: fixed; inset: 0; background: rgba(20,40,55,.4); display: flex; align-items: center; justify-content: center; z-index: 50; padding: 16px; }
     .tw-modal[hidden] { display: none; }
     .tw-dialog { background: #fff; border-radius: 12px; width: 100%; max-width: 400px; padding: 16px; }
-    .tw-dialog h2 { font-size: 14px; margin-bottom: 11px; }
+    .tw-dialog h2 { font-size: 14px; margin-bottom: 11px; color: var(--sky-d); }
     .tw-field { margin-bottom: 9px; }
     .tw-field label { display: block; font-size: 11.5px; color: var(--muted); margin-bottom: 3px; }
     .tw-field input, .tw-field textarea { width: 100%; border: 1px solid var(--bd); border-radius: 7px; padding: 8px 10px; font-size: 13px; font-family: inherit; }
     .tw-field textarea { resize: vertical; min-height: 60px; }
+    .tw-row2 { display: flex; gap: 8px; }
+    .tw-row2 .tw-field { flex: 1; }
     .tw-dialog-btns { display: flex; justify-content: flex-end; gap: 7px; margin-top: 12px; }
     .tw-dialog-btns button { border: none; border-radius: 7px; padding: 8px 15px; font-size: 13px; font-weight: 600; cursor: pointer; }
-    #tw-edit-cancel { background: #eef0f3; color: #444; }
-    #tw-edit-save { background: var(--accent); color: #fff; }
+    #tw-edit-cancel { background: #eef2f5; color: #4a5b69; }
+    #tw-edit-save { background: var(--sky); color: #fff; }
 
-    .tw-foot { text-align: center; font-size: 10.5px; color: #9AA3AB; padding: 10px 0 4px; }
+    .tw-foot { text-align: center; font-size: 10.5px; color: #9DB0BD; padding: 10px 0 4px; line-height: 1.5; }
   </style>
 </head>
 <body>
@@ -134,16 +122,32 @@
   </div>
 
   <div class="tw-wrap">
-    <!-- 새 할일 + 비고 + 마감일 -->
+    <!-- 새 할일: 좌측 제목/비고, 우측 날짜·시간 + 추가 -->
     <div class="tw-new">
-      <input type="text" id="tw-new-title" placeholder="새 할일">
-      <input type="text" id="tw-new-notes" placeholder="비고(선택)">
-      <input type="date" id="tw-new-due" title="마감일">
-      <button class="tw-add" id="tw-add-btn">＋ 추가</button>
+      <div class="tw-new-left">
+        <input type="text" id="tw-new-title" placeholder="새 할일">
+        <input type="text" id="tw-new-notes" placeholder="비고(선택)">
+      </div>
+      <div class="tw-new-right">
+        <div class="tw-dt">
+          <input type="date" id="tw-new-due" title="마감일(기본: 오늘)">
+          <input type="time" id="tw-new-time" title="시간(선택)">
+        </div>
+        <button class="tw-add" id="tw-add-btn">＋ 추가</button>
+      </div>
     </div>
 
     <!-- 목록 탭 -->
     <div class="tw-lists" id="tw-lists"></div>
+
+    <!-- 도구바: 캘린더 등록 / 정렬 -->
+    <div class="tw-tools">
+      <select id="tw-cal" title="등록할 캘린더"></select>
+      <button class="tw-tbtn" id="tw-cal-reload" title="등록할 캘린더 불러오기">↻</button>
+      <button class="tw-tbtn" id="tw-register" title="선택한 할일을 구글캘린더에 등록">📅 구글캘린더 등록</button>
+      <span class="spacer"></span>
+      <button class="tw-tbtn" id="tw-sortdate" title="마감일 빠른 순으로 정렬(영구)">↕ 일자순 정렬</button>
+    </div>
 
     <!-- 선택 바 -->
     <div class="tw-selbar" id="tw-selbar" hidden>
@@ -153,19 +157,12 @@
       <button class="tw-selbtn" id="tw-clearsel">선택 해제</button>
     </div>
 
-    <!-- 정렬 -->
-    <div class="tw-toolbar">
-      <button id="tw-sortdate" title="마감일이 빠른 순으로 정렬(영구 반영)">📅 일자순 정렬</button>
-    </div>
-
     <div class="tw-status" id="tw-status"></div>
 
-    <!-- 할일 목록 -->
     <div id="tw-tasks"></div>
-    <!-- 완료 섹션 -->
     <div id="tw-done-wrap"></div>
 
-    <div class="tw-foot">동그라미로 여러 개 선택 → 완료 처리 · 드래그로 순서 이동 · 변경은 구글 할일/캘린더에 즉시 반영</div>
+    <div class="tw-foot">동그라미로 여러 개 선택 → 완료 처리 / 캘린더 등록 · 드래그로 순서 이동<br>모든 변경은 로그인한 구글 계정의 할일·캘린더에 동기화됩니다.</div>
   </div>
 
   <!-- 수정 모달 -->
@@ -174,7 +171,10 @@
       <h2>할일 수정</h2>
       <div class="tw-field"><label>제목</label><input type="text" id="tw-edit-title"></div>
       <div class="tw-field"><label>비고(메모)</label><textarea id="tw-edit-notes"></textarea></div>
-      <div class="tw-field"><label>마감일</label><input type="date" id="tw-edit-due"></div>
+      <div class="tw-row2">
+        <div class="tw-field"><label>마감일</label><input type="date" id="tw-edit-due"></div>
+        <div class="tw-field"><label>시간(선택)</label><input type="time" id="tw-edit-time"></div>
+      </div>
       <div class="tw-dialog-btns">
         <button id="tw-edit-cancel">취소</button>
         <button id="tw-edit-save">저장</button>
@@ -182,6 +182,8 @@
     </div>
   </div>
 
-  <script src="tasks-window.js?v=20260621tw2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="cloudforms.js?v=20260617cf1"></script>
+  <script src="tasks-window.js?v=20260621tw3"></script>
 </body>
 </html>

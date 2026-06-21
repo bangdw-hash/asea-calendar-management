@@ -798,13 +798,24 @@
           if (dt < minT || dt > maxT) return;
           var nd = new Date(ymd + 'T00:00:00'); nd.setDate(nd.getDate() + 1);
           var done = tk.status === 'completed';
-          out.push({
+          // 비고의 시간 마커 [⏰HH:MM] → 시간 일정으로 표시
+          var tm = (tk.notes || '').match(/\[⏰\s*(\d{1,2}:\d{2})\]/);
+          var ev = {
             id: 'task_' + tk.id,
             summary: (done ? '✔ ' : '☐ ') + tk.title,
-            start: { date: ymd }, end: { date: _ymd(nd) },
             _calColor: TASKS_COLOR, _calName: '나의 할일', _calId: '__tasks__',
             _isTask: true, _taskDone: done, _taskId: tk.id, _taskListId: tk._listId, _taskNotes: tk.notes || ''
-          });
+          };
+          if (tm) {
+            var hm = tm[1].length === 4 ? '0' + tm[1] : tm[1];
+            var sISO = ymd + 'T' + hm + ':00';
+            var eD = new Date(sISO); eD.setHours(eD.getHours() + 1);
+            ev.start = { dateTime: sISO };
+            ev.end = { dateTime: _ymd(eD) + 'T' + pad(eD.getHours()) + ':' + pad(eD.getMinutes()) + ':00' };
+          } else {
+            ev.start = { date: ymd }; ev.end = { date: _ymd(nd) };
+          }
+          out.push(ev);
         });
         return out;
       });
@@ -816,7 +827,7 @@
   function openTasksWindow() {
     try {
       if (_tasksWin && !_tasksWin.closed) { _tasksWin.focus(); return; }
-      _tasksWin = window.open('tasks-window.html?v=20260621tw2', 'asea-tasks',
+      _tasksWin = window.open('tasks-window.html?v=20260621tw3', 'asea-tasks',
         'width=480,height=820,scrollbars=yes,resizable=yes');
       if (_tasksWin) _tasksWin.focus();
     } catch (e) {}
