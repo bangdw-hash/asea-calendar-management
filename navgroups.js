@@ -26,7 +26,7 @@
   // 그룹 정의 — 값은 data-tab, '#id' 는 외부링크 버튼(캘린더공유/아물보)
   var ORDER = ['cal', 'work', 'fac', 'comm', 'hr', 'settings'];
   var GROUPS = {
-    cal:      { label: '캘린더',    tabs: ['calendar', 'weekly-hub', 'extract', '#cal-share-nav-btn'] },
+    cal:      { label: '캘린더',    tabs: ['calendar', 'weekly-hub', 'extract', '#tasks-window-nav-btn', '#cal-share-nav-btn'] },
     work:     { label: '업무',      tabs: ['work', 'budget', 'report', 'workorder', 'draft', 'survey', 'contractgen'] },
     fac:      { label: '시설·자원', tabs: ['facility', 'vehicle', 'classroom', 'dorm', 'wayfind', 'checkinmgmt'] },
     comm:     { label: '소통·홍보', tabs: ['board', 'email', 'sms', 'zoom', 'promo', 'qrcard', 'bizcard', 'souvenir', '#amulbo-nav-btn'] },
