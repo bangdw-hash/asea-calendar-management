@@ -323,6 +323,17 @@
 
     // PC 탭 내비 마우스 드래그 스크롤
     initNavDrag(document.querySelector('.desktop-tab-nav'));
+
+    // 상단 로고 클릭 → 어느 화면에서든 캘린더(달력) 탭으로 이동
+    var brand = document.querySelector('.header-brand');
+    if (brand) {
+      brand.style.cursor = 'pointer';
+      brand.title = '캘린더로 이동';
+      brand.addEventListener('click', function () {
+        S.calView = 'month';
+        switchTab('calendar');
+      });
+    }
   }
 
   /* ─────────────────────────────────────────────────────────────
