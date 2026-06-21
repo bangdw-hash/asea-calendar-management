@@ -4629,6 +4629,12 @@ h3.settings-section-title {
 .tasks-prev-item .badge { flex: 0 0 auto; font-size: 11px; background: #e5e7eb; color: #6b7280; padding: 1px 7px; border-radius: 10px; }
 .tasks-prev-item .badge.b-upd { background: #fef3c7; color: #b45309; }
 
+/* ── 외부 앱 임베드(명함신청·기념품신청) ── */
+.embed-wrap { display: flex; flex-direction: column; height: 100%; min-height: 75vh; }
+.embed-bar { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 14px; border-bottom: 1px solid var(--color-border); background: var(--color-card); flex-shrink: 0; }
+.embed-title { font-weight: 700; color: #1a3a5c; font-size: 15px; }
+.embed-frame { flex: 1; width: 100%; border: 0; background: #fff; min-height: 600px; display: block; }
+
 /* ── 캘린더 상단 고정 헤더(엑셀 틀고정): 범례 + 요일 헤더 ── */
 .calendar-stickyhead {
   position: sticky;

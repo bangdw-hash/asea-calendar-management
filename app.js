@@ -299,6 +299,9 @@
     if (name === 'work' && typeof WorkModule !== 'undefined') WorkModule.showHrPlaceholderOrCache();
     // 게시판
     if (name === 'board' && typeof BoardModule !== 'undefined') BoardModule.onTabOpen();
+    // 외부 앱 임베드(명함/기념품): 처음 열 때만 iframe 로드(지연)
+    if (name === 'bizcard')  { var bf = $('bizcard-frame');  if (bf && !bf.src && bf.dataset.src) bf.src = bf.dataset.src; }
+    if (name === 'souvenir') { var sf = $('souvenir-frame'); if (sf && !sf.src && sf.dataset.src) sf.src = sf.dataset.src; }
     // 관리자 패널
     if (name === 'admin' && typeof AdminModule !== 'undefined') AdminModule.onTabOpen();
     // 사용자 색상 설정 탭 열릴 때 재렌더
