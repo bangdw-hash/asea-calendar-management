@@ -131,8 +131,11 @@ window.TasksModule = (function () {
         if (dt < fromT || dt > toT) return false;                 // 표시 날짜가 범위 안
         return true;
       }).map(function (t) {
+        var rec = imp[t.id], cur = (t.status === 'completed');
         return { id: t.id, title: t.title, notes: t.notes || '', date: ymd(taskDate(t)),
-                 done: t.status === 'completed', already: !!imp[t.id] };
+                 done: cur, already: !!rec,
+                 changed: !!(rec && rec.eventId && (!!rec.done) !== cur),   // 등록됨 + 상태(예정↔완료) 바뀜
+                 eventId: rec ? (rec.eventId || '') : '', calId: rec ? (rec.calId || '') : '' };
       }).sort(function (a, b) { return a.date < b.date ? -1 : a.date > b.date ? 1 : 0; });
     });
   }
@@ -143,37 +146,52 @@ window.TasksModule = (function () {
     gather().then(function (list) {
       _candidates = list;
       var newCnt = list.filter(function (x) { return !x.already; }).length;
-      $('tasks-import').disabled = newCnt === 0;
+      var updCnt = list.filter(function (x) { return x.changed; }).length;
+      $('tasks-import').disabled = (newCnt + updCnt) === 0;
+      $('tasks-import').textContent = updCnt ? '캘린더에 등록/갱신' : '캘린더에 일괄 등록';
       if (!list.length) { box.innerHTML = '<p class="tasks-muted">해당 기간에 가져올 할일이 없습니다.</p>'; return; }
       box.innerHTML =
-        '<div class="tasks-prev-head">총 ' + list.length + '개 · 신규 ' + newCnt + '개 · 이미 등록 ' + (list.length - newCnt) + '개</div>' +
+        '<div class="tasks-prev-head">총 ' + list.length + '개 · 신규 ' + newCnt + '개 · 상태갱신 ' + updCnt + '개 · 그대로 ' + (list.length - newCnt - updCnt) + '개</div>' +
         '<div class="tasks-prev-list">' + list.map(function (x) {
-          return '<div class="tasks-prev-item' + (x.already ? ' is-done' : '') + '"><span class="d">' + x.date + '</span><span class="t">' + esc(x.title) + '</span>' +
+          return '<div class="tasks-prev-item' + (x.already && !x.changed ? ' is-done' : '') + '"><span class="d">' + x.date + '</span><span class="t">' + esc(x.title) + '</span>' +
             '<span class="badge">' + (x.done ? '완료' : '예정') + '</span>' +
-            (x.already ? '<span class="badge">등록됨</span>' : '') + '</div>';
+            (x.changed ? '<span class="badge b-upd">상태갱신</span>' : (x.already ? '<span class="badge">등록됨</span>' : '')) + '</div>';
         }).join('') + '</div>';
     }).catch(function (e) { box.innerHTML = '<p class="tasks-err">' + esc(e.message) + '</p>'; });
   }
 
+  function descOf(t) { return (t.notes ? t.notes + '\n\n' : '') + '[Google 할일' + (t.done ? '·완료' : '·예정') + '에서 가져옴]'; }
+
   async function doImport() {
     var calId = $('tasks-cal').value;
     var calName = ($('tasks-cal').selectedOptions[0] || {}).textContent || '';
-    var targets = _candidates.filter(function (x) { return !x.already; });
-    if (!targets.length) { toast('새로 등록할 할일이 없습니다.', 'warning'); return; }
-    if (!confirm('할일 ' + targets.length + '개를 “' + calName + '” 캘린더에 종일 일정으로 등록합니다. 진행할까요?')) return;
+    var toCreate = _candidates.filter(function (x) { return !x.already; });
+    var toUpdate = _candidates.filter(function (x) { return x.changed; });   // 이미 등록 + 상태(예정↔완료) 변경
+    if (!toCreate.length && !toUpdate.length) { toast('새로 등록하거나 갱신할 할일이 없습니다.', 'warning'); return; }
+    if (!confirm('“' + calName + '” 캘린더에\n· 신규 등록 ' + toCreate.length + '개\n· 상태 갱신 ' + toUpdate.length + '개\n진행할까요? (중복은 자동으로 제외됩니다)')) return;
     var btn = $('tasks-import'); btn.disabled = true;
-    var imp = impLoad(), ok = 0, fail = 0;
-    for (var i = 0; i < targets.length; i++) {
-      var t = targets[i];
-      toast('등록 중… (' + (i + 1) + '/' + targets.length + ')', 'info');
+    var imp = impLoad(), ok = 0, upd = 0, fail = 0, n = 0, total = toCreate.length + toUpdate.length;
+
+    for (var i = 0; i < toCreate.length; i++) {
+      var t = toCreate[i]; n++;
+      toast('등록 중… (' + n + '/' + total + ')', 'info');
       var nd = new Date(t.date + 'T00:00:00'); nd.setDate(nd.getDate() + 1);
-      var body = { summary: (t.done ? '✔ ' : '') + t.title, start: { date: t.date }, end: { date: ymd(nd) },
-                   description: (t.notes ? t.notes + '\n\n' : '') + '[Google 할일' + (t.done ? '·완료' : '·예정') + '에서 가져옴]' };
-      try { var r = await CalendarModule.createEvent(calId, body); imp[t.id] = { eventId: (r && r.id) || '', at: Date.now() }; ok++; }
+      var body = { summary: (t.done ? '✔ ' : '') + t.title, start: { date: t.date }, end: { date: ymd(nd) }, description: descOf(t) };
+      try { var r = await CalendarModule.createEvent(calId, body); imp[t.id] = { eventId: (r && r.id) || '', calId: calId, done: t.done, at: Date.now() }; ok++; }
       catch (e) { fail++; }
     }
+    // 이미 등록된 건의 상태 변경분만 기존 이벤트 갱신(중복 없이 예정→완료 등 반영)
+    for (var j = 0; j < toUpdate.length; j++) {
+      var u = toUpdate[j]; n++;
+      toast('상태 갱신 중… (' + n + '/' + total + ')', 'info');
+      var ucal = u.calId || calId, eid = u.eventId;
+      try {
+        await CalendarModule.patchEvent(ucal, eid, { summary: (u.done ? '✔ ' : '') + u.title, description: descOf(u) });
+        if (imp[u.id]) { imp[u.id].done = u.done; } upd++;
+      } catch (e) { fail++; }
+    }
     impSave(imp);
-    toast('완료: ' + ok + '개 등록' + (fail ? ' · ' + fail + '개 실패(읽기전용 캘린더?)' : ''), fail ? 'warning' : 'success');
+    toast('완료: 신규 ' + ok + '개 · 갱신 ' + upd + '개' + (fail ? ' · 실패 ' + fail + '개(읽기전용/권한?)' : ''), fail ? 'warning' : 'success');
     btn.disabled = false;
     preview();
     try { if (window.aseaRefreshCalendar) window.aseaRefreshCalendar(); } catch (e) {}

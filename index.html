@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&family=Nanum+Gothic:wght@400;700&family=Nanum+Myeongjo:wght@400;700&family=Gowun+Dodum&family=Black+Han+Sans&family=IBM+Plex+Sans+KR:wght@400;500;700&display=swap">
-  <link rel="stylesheet" href="style.css?v=20260617r29">
+  <link rel="stylesheet" href="style.css?v=20260617r32">
   <link rel="stylesheet" href="report.css?v=20260610r1">
   <link rel="stylesheet" href="promo.css?v=20260611p3">
   <link rel="stylesheet" href="help.css?v=20260610h1">
@@ -23,6 +23,7 @@
   <link rel="stylesheet" href="contractgen.css?v=20260616c2">
   <script src="https://accounts.google.com/gsi/client" async></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+  <script src="cloudforms.js?v=20260617cf1" defer></script>
   <!-- SheetJS for Excel support — 로컬 xlsx.mini.min.js(하단 로드)로 일원화하여 중복 로드 제거 -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" defer></script>
 
@@ -325,6 +326,14 @@
       <path d="M14 14h2v2h-2zM18 14h3v3h-3zM14 18h3v3h-3zM19 19h2v2h-2z"/>
     </svg>
     <span class="tab-label">QR명함</span>
+  </button>
+  <button class="tab-btn" data-tab="bizcard" role="tab" aria-selected="false">
+    <svg class="tab-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="2"/><circle cx="8" cy="11" r="2"/><line x1="13" y1="10" x2="18" y2="10"/><line x1="13" y1="14" x2="18" y2="14"/></svg>
+    <span class="tab-label">명함신청</span>
+  </button>
+  <button class="tab-btn" data-tab="souvenir" role="tab" aria-selected="false">
+    <svg class="tab-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg>
+    <span class="tab-label">기념품신청</span>
   </button>
 
   <button class="tab-btn" data-tab="help" role="tab" aria-selected="false">
@@ -1908,6 +1917,28 @@
       <section id="tab-qrcard" class="tab-panel" role="tabpanel" hidden>
       </section>
 
+      <!-- 명함 신청 (외부 앱 임베드) -->
+      <section id="tab-bizcard" class="tab-panel" role="tabpanel" hidden>
+        <div class="embed-wrap">
+          <div class="embed-bar">
+            <span class="embed-title">💳 명함 신청</span>
+            <a class="btn btn-ghost btn-sm" id="bizcard-open" target="_blank" rel="noopener" href="https://bangdw-hash.github.io/asea-business-card-app/">새 창에서 열기 ↗</a>
+          </div>
+          <iframe id="bizcard-frame" class="embed-frame" title="명함 신청" data-src="https://bangdw-hash.github.io/asea-business-card-app/" referrerpolicy="no-referrer-when-downgrade"></iframe>
+        </div>
+      </section>
+
+      <!-- 기념품 신청 (외부 앱 임베드) -->
+      <section id="tab-souvenir" class="tab-panel" role="tabpanel" hidden>
+        <div class="embed-wrap">
+          <div class="embed-bar">
+            <span class="embed-title">🎁 기념품 신청</span>
+            <a class="btn btn-ghost btn-sm" id="souvenir-open" target="_blank" rel="noopener" href="https://bangdw-hash.github.io/souvenir-app/">새 창에서 열기 ↗</a>
+          </div>
+          <iframe id="souvenir-frame" class="embed-frame" title="기념품 신청" data-src="https://bangdw-hash.github.io/souvenir-app/" referrerpolicy="no-referrer-when-downgrade"></iframe>
+        </div>
+      </section>
+
       <!-- ════════════════════════════════════════════════════
            ❓ 도움말 탭
            ════════════════════════════════════════════════════ -->
@@ -3361,7 +3392,7 @@
   <script src="contractgen.js?v=20260616c3" defer></script>
   <script src="auth.js?v=20260617r7" defer></script>
   <script src="calendar.js?v=20260616c2" defer></script>
-  <script src="tasks.js?v=20260617t3" defer></script>
+  <script src="tasks.js?v=20260617t4" defer></script>
   <script src="drive.js?v=20260608s" defer></script>
   <script src="gmail.js?v=20260608s" defer></script>
   <script src="print-frame.js?v=20260612pf2" defer></script>
@@ -3372,8 +3403,8 @@
   <script src="facility-fee.js?v=20260611ff5" defer></script>
   <link rel="stylesheet" href="labor-contract.css?v=20260611lc1">
   <script src="labor-contract.js?v=20260612lc3" defer></script>
-  <script src="hr.js?v=20260616sa11" defer></script>
-  <script src="retire.js?v=20260616rt13" defer></script>
+  <script src="hr.js?v=20260617sa12" defer></script>
+  <script src="retire.js?v=20260617rt14" defer></script>
   <script src="help.js?v=20260609a1" defer></script>
   <script src="sheets.js?v=20260614r1" defer></script>
   <script src="resutil.js?v=20260608s" defer></script>
@@ -3394,8 +3425,8 @@
   <script src="usersettings.js?v=20260610u1" defer></script>
   <script src="budget-seed-2026.js?v=20260614b1" defer></script>
   <script src="budget.js?v=20260614b9" defer></script>
-  <script src="app.js?v=20260617r17" defer></script>
-  <script src="navgroups.js?v=20260617r14" defer></script>
+  <script src="app.js?v=20260617r18" defer></script>
+  <script src="navgroups.js?v=20260617r15" defer></script>
   <script src="userorg.js?v=20260614u1" defer></script>
   <script src="onboarding.js?v=20260614ob1" defer></script>
   <script src="monoicons.js?v=20260617m8" defer></script>
