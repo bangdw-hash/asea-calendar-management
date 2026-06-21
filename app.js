@@ -744,9 +744,73 @@
     if (!Auth.isLoggedIn()) return;
     var r = _rangeFor(S.viewDate, S.calView);
     S.events = await _fetchRange(r.min, r.max);
+    if (_tasksLayerOn()) {
+      try {
+        var te = await _fetchTaskEvents(r.min, r.max);
+        S.events = S.events.concat(te);
+      } catch (e) { /* 할일 로드 실패는 캘린더에 영향 주지 않음 */ }
+    }
     _saveCalCache(S.events);
     _prefetchAdjacent();   // 인접 월 미리 캐시(백그라운드)
   }
+
+  /* ── 나의 할일(Google Tasks) 캘린더 레이어 ─────────────────────
+     마감일이 있는 할일을 종일 칩(pseudo-event)으로 만들어 달력에 표시.
+     범례의 "나의 할일" 항목으로 on/off (기기별 localStorage). */
+  var TASKS_COLOR = '#0B8043';            // 할일 레이어 색(녹색 계열)
+  var TASKS_LAYER_KEY = 'asea_tasks_layer_on';
+  function _tasksLayerOn() { try { return localStorage.getItem(TASKS_LAYER_KEY) === '1'; } catch (e) { return false; } }
+  function _setTasksLayer(on) { try { localStorage.setItem(TASKS_LAYER_KEY, on ? '1' : '0'); } catch (e) {} }
+
+  // 기간 내 마감일을 가진 모든 할일 → 종일 pseudo-event 배열
+  function _fetchTaskEvents(timeMin, timeMax) {
+    var t = Auth.getToken();
+    if (!t) return Promise.resolve([]);
+    var TAPI = 'https://tasks.googleapis.com/tasks/v1';
+    var hdr = { Authorization: 'Bearer ' + t };
+    var minT = new Date(timeMin).getTime(), maxT = new Date(timeMax).getTime();
+    function jget(url) { return fetch(TAPI + url, { headers: hdr }).then(function (r) { return r.ok ? r.json() : { items: [] }; }); }
+    return jget('/users/@me/lists?maxResults=100').then(function (d) {
+      var lists = (d && d.items) || [];
+      return Promise.all(lists.map(function (l) {
+        return jget('/lists/' + encodeURIComponent(l.id) + '/tasks?maxResults=100&showCompleted=true&showHidden=true')
+          .then(function (r) {
+            return ((r && r.items) || []).map(function (tk) { tk._listId = l.id; tk._listTitle = l.title; return tk; });
+          }).catch(function () { return []; });
+      })).then(function (arr) {
+        var all = []; arr.forEach(function (x) { all = all.concat(x); });
+        var out = [];
+        all.forEach(function (tk) {
+          if (!tk.title || !tk.due) return;            // 마감일 없는 할일은 달력에 못 올림(팝업에서 관리)
+          var ymd = tk.due.slice(0, 10);
+          var dt = new Date(ymd + 'T00:00:00').getTime();
+          if (dt < minT || dt > maxT) return;
+          var nd = new Date(ymd + 'T00:00:00'); nd.setDate(nd.getDate() + 1);
+          var done = tk.status === 'completed';
+          out.push({
+            id: 'task_' + tk.id,
+            summary: (done ? '✔ ' : '☐ ') + tk.title,
+            start: { date: ymd }, end: { date: _ymd(nd) },
+            _calColor: TASKS_COLOR, _calName: '나의 할일', _calId: '__tasks__',
+            _isTask: true, _taskDone: done, _taskId: tk.id, _taskListId: tk._listId, _taskNotes: tk.notes || ''
+          });
+        });
+        return out;
+      });
+    });
+  }
+
+  /* 나의 할일 작업창(팝업) 열기 — 같은 도메인이라 로그인 토큰 공유 */
+  var _tasksWin = null;
+  function openTasksWindow() {
+    try {
+      if (_tasksWin && !_tasksWin.closed) { _tasksWin.focus(); return; }
+      _tasksWin = window.open('tasks-window.html', 'asea-tasks',
+        'width=480,height=820,scrollbars=yes,resizable=yes');
+      if (_tasksWin) _tasksWin.focus();
+    } catch (e) {}
+  }
+  window.aseaOpenTasks = openTasksWindow;
 
   // 이전/다음 달을 백그라운드로 미리 조회해 캐시 → 월 이동 즉시 표시
   var _prefetchInFlight = {};
@@ -800,6 +864,7 @@
           var seen = {};
           var list = [];
           S.events.forEach(function (ev) {
+            if (ev._isTask) return;   // 할일 레이어는 아래에서 별도 토글로 표시
             if (ev._calName && !seen[ev._calName]) {
               seen[ev._calName] = true;
               list.push({ id: ev._calId || ev._calName, name: ev._calName, color: ev._calColor, enabled: true });
@@ -830,6 +895,21 @@
 
       el.appendChild(item);
     });
+
+    // 나의 할일(Google Tasks) 레이어 토글 — 캘린더들 뒤에 표시
+    var tOn = _tasksLayerOn();
+    var tItem = document.createElement('div');
+    tItem.className = 'legend-item' + (tOn ? '' : ' legend-item--off');
+    tItem.title = tOn ? '클릭하여 숨기기 (나의 할일)' : '클릭하여 표시 (나의 할일)';
+    tItem.innerHTML =
+      '<div class="legend-dot" style="background:' + (tOn ? TASKS_COLOR : '#ccc') + '"></div>' +
+      '<span class="legend-name">나의 할일</span>';
+    tItem.addEventListener('click', function () {
+      _setTasksLayer(!_tasksLayerOn());
+      renderLegend();
+      renderCalendar();
+    });
+    el.appendChild(tItem);
   }
 
   /* ═══════════════════════════════════════════════════════════
@@ -1461,8 +1541,8 @@
         titleSpan2.textContent = ev.summary || '(제목 없음)';
         chip.appendChild(titleSpan2);
       }
-      // 시작/종료 마커는 드래그 비활성 (원본 일정을 손상시키지 않도록)
-      if (!ev._seMark) {
+      // 시작/종료 마커·할일 칩은 드래그 비활성 (원본을 손상시키지 않도록)
+      if (!ev._seMark && !ev._isTask) {
       // 드래그앤드롭 설정
       chip.draggable = true;
       chip.dataset.eventId = ev.id;
@@ -1557,6 +1637,17 @@
         });
       })(ev);
       } // /if (!ev._seMark)
+      if (ev._isTask) {
+        chip.classList.add('event-chip--task');
+        if (ev._taskDone) chip.classList.add('event-chip--task-done');
+        chip.title = (ev._taskDone ? '[완료] ' : '[예정] ') + (ev.summary || '').replace(/^[✔☐]\s*/, '') + ' — 클릭하면 나의 할일 작업창이 열립니다';
+        chip.addEventListener('click', function (e) {
+          e.stopPropagation();
+          openTasksWindow();
+        });
+        evWrap.appendChild(chip);
+        return;
+      }
       var _chipRef = ev._seMark ? (ev._seRef || ev) : ev;   // 마커 칩은 원본 일정을 가리킴
       chip.addEventListener('click', function (e) {
         e.stopPropagation();

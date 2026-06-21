@@ -729,6 +729,11 @@ a        { color: var(--color-accent); text-decoration: none; }
 
 .event-chip:hover { filter: brightness(0.93); }
 
+/* 나의 할일(Tasks) 칩 — 점선 테두리로 일정과 구분, 완료는 취소선+흐림 */
+.event-chip--task { border-left-style: dashed; }
+.event-chip--task-done { opacity: .6; }
+.event-chip--task-done .chip-title { text-decoration: line-through; }
+
 .chip-time {
   font-size: 9px;
   font-weight: 700;

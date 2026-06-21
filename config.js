@@ -22,7 +22,7 @@ const CONFIG = {
     'https://www.googleapis.com/auth/spreadsheets',
     'https://www.googleapis.com/auth/forms.body',
     'https://www.googleapis.com/auth/forms.responses.readonly',
-    'https://www.googleapis.com/auth/tasks.readonly',
+    'https://www.googleapis.com/auth/tasks',
     'email',
     'profile',
   ],
