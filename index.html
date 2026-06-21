@@ -272,7 +272,7 @@
     </svg>
     <span class="tab-label">캘린더 공유</span>
   </button>
-  <button class="tab-btn" id="tasks-window-nav-btn" role="tab" aria-selected="false" onclick="if(window.aseaOpenTasks){window.aseaOpenTasks();}else{window.open('tasks-window.html?v=20260621tw3','asea-tasks','width=480,height=820,scrollbars=yes,resizable=yes');}return false">
+  <button class="tab-btn" id="tasks-window-nav-btn" role="tab" aria-selected="false" onclick="if(window.aseaOpenTasks){window.aseaOpenTasks();}else{window.open('tasks-window.html?v=20260621tw4','asea-tasks','width=480,height=820,scrollbars=yes,resizable=yes');}return false">
     <svg class="tab-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
       <polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
     </svg>
@@ -2710,8 +2710,8 @@
         <div style="background:#EFF6FF;border-radius:8px;padding:12px;margin-bottom:10px">
           <div style="font-size:12px;font-weight:700;color:#1a3a5c;margin-bottom:8px">⏰ 평상 시간대</div>
           <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
-            <div class="form-group"><label class="form-label">시작</label><input id="fac-fee-norm-s" type="time" class="form-input" value="09:00"></div>
-            <div class="form-group"><label class="form-label">종료</label><input id="fac-fee-norm-e" type="time" class="form-input" value="18:00"></div>
+            <div class="form-group"><label class="form-label">시작</label><input id="fac-fee-norm-s" type="time" step="600" class="form-input" value="09:00"></div>
+            <div class="form-group"><label class="form-label">종료</label><input id="fac-fee-norm-e" type="time" step="600" class="form-input" value="18:00"></div>
             <div class="form-group"><label class="form-label">요금 (원/시간)</label><input id="fac-fee-norm-r" type="number" class="form-input" placeholder="50000" min="0"></div>
           </div>
         </div>
@@ -3405,21 +3405,21 @@
   <script src="report.js?v=20260611r4" defer></script>
   <script src="monthly-report.js?v=20260614r2" defer></script>
   <script src="promo.js?v=20260612p3" defer></script>
-  <script src="meet.js?v=20260610mt1" defer></script>
+  <script src="meet.js?v=20260621mt2" defer></script>
   <script src="facility-fee.js?v=20260621ff1" defer></script>
   <link rel="stylesheet" href="labor-contract.css?v=20260611lc1">
-  <script src="labor-contract.js?v=20260612lc3" defer></script>
+  <script src="labor-contract.js?v=20260621lc4" defer></script>
   <script src="hr.js?v=20260621sa13" defer></script>
   <script src="retire.js?v=20260621rt15" defer></script>
   <script src="help.js?v=20260609a1" defer></script>
   <script src="sheets.js?v=20260614r1" defer></script>
   <script src="resutil.js?v=20260608s" defer></script>
-  <script src="facility.js?v=20260621r2" defer></script>
+  <script src="facility.js?v=20260621r3" defer></script>
   <script src="vehicle.js?v=20260609m2" defer></script>
   <script src="classroom.js?v=20260608s" defer></script>
   <script src="work.js?v=20260614r1" defer></script>
   <script src="workorder.js?v=20260608s" defer></script>
-  <script src="quicktask.js?v=20260616r4" defer></script>
+  <script src="quicktask.js?v=20260621r5" defer></script>
   <script src="sms.js?v=20260615a2" defer></script>
   <!-- 신규 모듈 (admin → board → usersettings → app 순서) -->
   <script src="draft.js?v=20260614r2" defer></script>
@@ -3431,7 +3431,7 @@
   <script src="usersettings.js?v=20260610u1" defer></script>
   <script src="budget-seed-2026.js?v=20260614b1" defer></script>
   <script src="budget.js?v=20260614b9" defer></script>
-  <script src="app.js?v=20260621r23" defer></script>
+  <script src="app.js?v=20260621r24" defer></script>
   <script src="navgroups.js?v=20260621r16" defer></script>
   <script src="userorg.js?v=20260614u1" defer></script>
   <script src="onboarding.js?v=20260614ob1" defer></script>

@@ -306,12 +306,22 @@
     });
   }
   function doReorder(dragId, targetId, after) {
-    var order = pendingItems().map(function (t) { return t.id; }).filter(function (id) { return id !== dragId; });
-    var idx = order.indexOf(targetId), insertAt = after ? idx + 1 : idx;
-    order.splice(insertAt, 0, dragId);
-    var prev = insertAt > 0 ? order[insertAt - 1] : '';
-    setStatus('순서 변경 중…');
-    move(dragId, prev).then(loadTasks).then(refreshOpener).catch(handleErr);
+    var pend = pendingItems();
+    var ids = pend.map(function (t) { return t.id; }).filter(function (id) { return id !== dragId; });
+    var idx = ids.indexOf(targetId);
+    if (idx < 0) return;
+    var insertAt = after ? idx + 1 : idx;
+    ids.splice(insertAt, 0, dragId);
+    // 1) 화면에 즉시 반영(낙관적) — _items의 미완료 순서를 새 순서로 재구성
+    var pmap = {}; pend.forEach(function (t) { pmap[t.id] = t; });
+    var newPend = ids.map(function (id) { return pmap[id]; }).filter(Boolean);
+    _items = newPend.concat(_items.filter(function (t) { return t.status === 'completed'; }));
+    render();
+    // 2) 서버에 영구 저장(백그라운드). 실패 시에만 새로고침으로 원복
+    var prev = insertAt > 0 ? ids[insertAt - 1] : '';
+    setStatus('순서 저장 중…');
+    move(dragId, prev).then(function () { setStatus(''); refreshOpener(); })
+      .catch(function () { setStatus('순서 저장 실패 — 다시 시도해 주세요', 'err'); loadTasks(); });
   }
   async function sortByDate() {
     var pend = pendingItems().slice().sort(function (a, b) {
