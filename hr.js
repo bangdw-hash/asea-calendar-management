@@ -66,7 +66,30 @@ window.HRModule = (function () {
   function loadApps() {
     try { return JSON.parse(localStorage.getItem(LS_APPS) || '[]'); } catch(e) { return []; }
   }
-  function saveApps(arr) { localStorage.setItem(LS_APPS, JSON.stringify(arr)); }
+  function saveApps(arr) { localStorage.setItem(LS_APPS, JSON.stringify(arr)); _hrCloudPush(arr); }
+  /* ── 클라우드(Supabase) 저장: 저장 길목에서 전체를 디바운스 upsert ── */
+  var _hrCloudT;
+  function _hrCloudPush(arr) {
+    if (!window.CloudForms) return;
+    clearTimeout(_hrCloudT);
+    _hrCloudT = setTimeout(function () {
+      (arr || []).forEach(function (a) {
+        if (a && a.id) { try { CloudForms.save('hr', a.id, (a.form1 && a.form1.nameKr) || '', a.status || 'pending', a); } catch (e) {} }
+      });
+    }, 1200);
+  }
+  /* ── 관리자: 클라우드의 모든 제출분을 로컬로 병합 ── */
+  function _hrPullCloud(cb) {
+    if (!window.CloudForms || !CloudForms.ready()) { if (cb) cb(false); return; }
+    CloudForms.list('hr').then(function (res) {
+      if (!res.ok) { if (cb) cb(false); return; }
+      var byId = {}; loadApps().forEach(function (a) { if (a && a.id) byId[a.id] = a; });
+      var changed = false;
+      res.rows.forEach(function (row) { var a = row && row.data; if (a && a.id) { byId[a.id] = a; changed = true; } });
+      if (changed) localStorage.setItem(LS_APPS, JSON.stringify(Object.keys(byId).map(function (k) { return byId[k]; })));
+      if (cb) cb(changed);
+    }).catch(function () { if (cb) cb(false); });
+  }
   function loadCodes() {
     try { return JSON.parse(localStorage.getItem(LS_CODES) || '[]'); } catch(e) { return []; }
   }
@@ -1359,7 +1382,7 @@ window.HRModule = (function () {
       _renderPasswordEntry(wrap, '인사관리자 인증', '인사관리자 비밀번호를 입력하세요.', function(pw) {
         var cfg = loadCfg();
         var correctPw = cfg.mgrPw || MGR_PW;
-        if (pw === correctPw) { _st.mgrAuth = true; _render(); }
+        if (pw === correctPw) { _st.mgrAuth = true; _st._hrCloudPulled = false; _render(); }
         else return '비밀번호가 올바르지 않습니다.';
       });
       return;
@@ -1374,6 +1397,7 @@ window.HRModule = (function () {
   }
 
   function _renderManagerList(wrap) {
+    if (!_st._hrCloudPulled) { _st._hrCloudPulled = true; _hrPullCloud(function (ch) { if (ch) _render(); }); }  // 최초 1회 클라우드 병합
     var apps = loadApps().filter(function(a){ return a.type === 'onboard' || !a.type; });
 
     var toolbar = el('div', 'hr-mgr-toolbar');
@@ -1397,10 +1421,13 @@ window.HRModule = (function () {
     });
     var excelBtn = el('button', 'hr-btn hr-btn-secondary hr-btn-sm', '⬇ 목록 다운로드');
     excelBtn.addEventListener('click', function() { _downloadCSV(apps); });
+    var rfBtn = el('button', 'hr-btn hr-btn-ghost hr-btn-sm', '🔄 서버 불러오기');
+    rfBtn.addEventListener('click', function() { rfBtn.textContent = '⏳ 불러오는 중…'; _hrPullCloud(function() { _render(); }); });
     var backBtn = el('button', 'hr-btn hr-btn-ghost hr-btn-sm', '← 돌아가기');
     backBtn.addEventListener('click', function() { _st.view='home'; _st.mgrAuth=false; _render(); });
     btnRow.appendChild(linkBtn);
     btnRow.appendChild(excelBtn);
+    btnRow.appendChild(rfBtn);
     btnRow.appendChild(backBtn);
     toolbar.appendChild(btnRow);
     wrap.appendChild(toolbar);
