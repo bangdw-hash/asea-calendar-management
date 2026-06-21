@@ -2069,16 +2069,17 @@
   function _ymd(d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
   function _parseYMD(s) { var p = String(s).split('-'); return new Date(+p[0], +p[1] - 1, +p[2]); }
 
-  /* 하루 종일 토글 — 체크 시 시작/종료 입력을 날짜(date)로, 해제 시 datetime-local로 전환 */
+  /* 하루 종일 토글 — 체크 시 시작/종료 입력을 날짜(date)로, 해제 시 datetime-local로 전환
+     ※ 값을 먼저 읽고 type을 바꾼 뒤 값을 다시 넣어야 함(반대로 하면 형식 불일치로 값이 지워짐) */
   function applyAllDayUI(allDay) {
     var s = $('event-start'), e = $('event-end');
     if (!s || !e) return;
     if (allDay) {
-      if (s.type !== 'date') { s.value = (s.value || '').slice(0, 10); s.type = 'date'; }
-      if (e.type !== 'date') { e.value = (e.value || '').slice(0, 10); e.type = 'date'; }
+      if (s.type !== 'date') { var sv = (s.value || '').slice(0, 10); s.type = 'date'; s.value = sv; }
+      if (e.type !== 'date') { var ev = (e.value || '').slice(0, 10); e.type = 'date'; e.value = ev; }
     } else {
-      if (s.type === 'date') { s.type = 'datetime-local'; if (s.value && s.value.length === 10) s.value += 'T09:00'; }
-      if (e.type === 'date') { e.type = 'datetime-local'; if (e.value && e.value.length === 10) e.value += 'T10:00'; }
+      if (s.type === 'date') { var sv2 = s.value || ''; s.type = 'datetime-local'; s.value = (sv2.length === 10) ? sv2 + 'T09:00' : sv2; }
+      if (e.type === 'date') { var ev2 = e.value || ''; e.type = 'datetime-local'; e.value = (ev2.length === 10) ? ev2 + 'T10:00' : ev2; }
     }
   }
 
