@@ -4381,7 +4381,7 @@ a        { color: var(--color-accent); text-decoration: none; }
 
 /* ── 1. 디자인 토큰 재정의 — Windows 11 Fluent Sky Blue 테마 ──── */
 :root {
-  --font-family:          'Pretendard Variable', 'Pretendard', 'Noto Sans KR', -apple-system, sans-serif;
+  --font-family:          'AseaWorkspace', 'Pretendard Variable', 'Pretendard', 'Noto Sans KR', -apple-system, sans-serif;
 
   /* ── Windows 11 Fluent 팔레트 ──
      배경: 은은한 하늘색 (Win11 배경과 동일 계열)
