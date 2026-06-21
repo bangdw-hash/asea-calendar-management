@@ -30,7 +30,23 @@ window.TasksModule = (function () {
   function email() { try { return localStorage.getItem('asea_user_email') || ''; } catch (e) { return ''; } }
   function impKey() { return 'asea_tasks_imported_' + email(); }
   function impLoad() { try { return JSON.parse(localStorage.getItem(impKey()) || '{}'); } catch (e) { return {}; } }
-  function impSave(o) { try { localStorage.setItem(impKey(), JSON.stringify(o)); } catch (e) {} }
+  function impSave(o) { try { localStorage.setItem(impKey(), JSON.stringify(o)); } catch (e) {} _impCloudPush(); }
+
+  // 계정별 등록기록 클라우드 동기화(작업창과 동일 키 공유: tasks_imported)
+  function _impCloudPush() {
+    if (!(window.CloudForms && CloudForms.save) || !email()) return;
+    try { CloudForms.save('tasks_imported', email(), email(), 'state', { map: impLoad(), updatedAt: Date.now() }); } catch (e) {}
+  }
+  function _impCloudPull(cb) {
+    if (!(window.CloudForms && CloudForms.list) || !email()) { if (cb) cb(); return; }
+    CloudForms.list('tasks_imported').then(function (res) {
+      try {
+        var row = (res.rows || []).find(function (r) { return r.ref === email(); });
+        if (row && row.data && row.data.map) { try { localStorage.setItem(impKey(), JSON.stringify(Object.assign({}, row.data.map, impLoad()))); } catch (e) {} }
+      } catch (e) {}
+      if (cb) cb();
+    }).catch(function () { if (cb) cb(); });
+  }
 
   /* 패널 토글 */
   function toggle() {
@@ -51,6 +67,7 @@ window.TasksModule = (function () {
       '</div>' +
       '<div id="tasks-body"><p class="tasks-muted">할일 목록을 불러오는 중…</p></div>';
     $('tasks-close').addEventListener('click', function () { panel.hidden = true; });
+    _impCloudPull(function () {});   // 다른 단말 등록기록 회수
     loadLists();
   }
 
