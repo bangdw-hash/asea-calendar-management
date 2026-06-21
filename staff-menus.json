@@ -11,10 +11,11 @@
     "vehicle",
     "checkinmgmt",
     "qrcard",
+    "hr",
     "settings"
   ],
-  "updatedAt": "2026-06-18T06:39:51.685Z",
-  "version": 1781764791685,
+  "updatedAt": "2026-06-21T04:43:36.986Z",
+  "version": 1782017016986,
   "claudeApiKey": "EhhIAEMMQhNdWwABGQAcNxNoQVgKQB93YQxZXikJYSokN2sKcWp1DDZQTABAAx9IfEphUTAJCQUfJxdLYl9lWwYUBwEoZ01dLWp/AlcMKiUwJx0LGUVVa0pKRCYGCwNIARoFAHpbBHAnIiQg",
   "claudeBaseUrl": ""
 }
