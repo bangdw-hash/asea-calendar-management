@@ -815,8 +815,7 @@
       item.title = enabled ? '클릭하여 숨기기' : '클릭하여 표시';
       item.innerHTML =
         '<div class="legend-dot" style="background:' + (enabled ? cal.color : '#ccc') + '"></div>' +
-        '<span class="legend-name">' + cal.name + '</span>' +
-        (!enabled ? '<span class="legend-off-badge">OFF</span>' : '');
+        '<span class="legend-name">' + cal.name + '</span>';
 
       item.addEventListener('click', function () {
         // CONFIG.selectedCalendars에서 해당 캘린더 찾아 토글

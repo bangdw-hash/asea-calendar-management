@@ -1928,17 +1928,6 @@ a        { color: var(--color-accent); text-decoration: none; }
 .legend-item--off {
   opacity: 0.45;
 }
-.legend-item--off .legend-name {
-  text-decoration: line-through;
-}
-
-.legend-off-badge {
-  font-size: 10px;
-  font-weight: 700;
-  color: #999;
-  letter-spacing: 0.03em;
-  margin-left: 2px;
-}
 
 .legend-dot {
   width: 10px;
