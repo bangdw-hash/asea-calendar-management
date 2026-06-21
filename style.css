@@ -2,28 +2,6 @@
    ASEA Calendar Management — Design System
    ================================================================ */
 
-/* ── 0. 앱 공통 서체(업로드 4종: Light/Regular/Medium/Bold) ──────── */
-@font-face {
-  font-family: 'AseaWorkspace';
-  src: url('fonts/AseaWorkspace-Light.ttf') format('truetype');
-  font-weight: 300; font-style: normal; font-display: swap;
-}
-@font-face {
-  font-family: 'AseaWorkspace';
-  src: url('fonts/AseaWorkspace-Regular.ttf') format('truetype');
-  font-weight: 400; font-style: normal; font-display: swap;
-}
-@font-face {
-  font-family: 'AseaWorkspace';
-  src: url('fonts/AseaWorkspace-Medium.ttf') format('truetype');
-  font-weight: 500 600; font-style: normal; font-display: swap;   /* 500·600(semibold)은 Medium 사용 */
-}
-@font-face {
-  font-family: 'AseaWorkspace';
-  src: url('fonts/AseaWorkspace-Bold.ttf') format('truetype');
-  font-weight: 700 900; font-style: normal; font-display: swap;
-}
-
 /* ── 1. CSS 변수 ──────────────────────────────────────────────── */
 :root {
   /* 기본 색상 */
@@ -49,7 +27,7 @@
   --color-dept-4: #EA4335;  /* 기타   */
 
   /* 타이포그래피 */
-  --font-family: 'AseaWorkspace', 'Noto Sans KR', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-family: 'Noto Sans KR', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --font-xs:   11px;
   --font-sm:   12px;
   --font-base: 14px;
@@ -4381,7 +4359,7 @@ a        { color: var(--color-accent); text-decoration: none; }
 
 /* ── 1. 디자인 토큰 재정의 — Windows 11 Fluent Sky Blue 테마 ──── */
 :root {
-  --font-family:          'AseaWorkspace', 'Pretendard Variable', 'Pretendard', 'Noto Sans KR', -apple-system, sans-serif;
+  --font-family:          'Pretendard Variable', 'Pretendard', 'Noto Sans KR', -apple-system, sans-serif;
 
   /* ── Windows 11 Fluent 팔레트 ──
      배경: 은은한 하늘색 (Win11 배경과 동일 계열)
@@ -6693,62 +6671,4 @@ body:has(.modal:not([hidden])) .quick-fab { display: none; }
   background: var(--color-accent) !important;
   color: #fff !important;
   font-weight: 700 !important;
-}
-
-/* ================================================================
-   서체 적용 지침 (AseaWorkspace 4종 임베드 — 전 단말 동일 표시)
-   ----------------------------------------------------------------
-   임베드 파일 : fonts/AseaWorkspace-{Bold,Medium,Regular,Light}.ttf
-   가중치 매핑 : 700~900 → Bold · 500~600 → Medium · 400 → Regular · 300 → Light
-   역할별 적용 :
-     · 제목(title/heading)  → Bold    (font-weight 700)
-     · 부제·강조(label 등)  → Medium  (font-weight 500~600)
-     · 본문(body/기본)      → Regular (font-weight 400)  ← 기본값
-     · 설명글·캡션·안내      → Light   (font-weight 300)
-   ※ 모듈별 CSS가 style.css 뒤에 로드되어도 이기도록 body 접두로 특이도 보강.
-   ================================================================ */
-
-/* ── 본문 기본: Regular ── */
-body { font-weight: 400; }
-
-/* ── 제목류: Bold ── */
-h1, h2, h3, h4,
-body [class*="-title"],
-body [class*="_title"],
-body [class$="title"],
-body [class*="-heading"],
-body [class*="page-head"] {
-  font-weight: 700;
-}
-
-/* ── 설명글·캡션·안내문: Light ── */
-small,
-figcaption,
-body [class*="hint"],
-body [class*="muted"],
-body [class*="-desc"],
-body [class*="_desc"],
-body [class$="desc"],
-body [class*="caption"],
-body [class*="subtitle"],
-body [class*="footnote"],
-body [class*="-note"],
-body [class*="_note"],
-body [class*="-guide"],
-body [class*="-meta"],
-body [class*="_meta"],
-body [class*="helper"],
-body [class*="secondary-text"],
-body [class*="placeholder-text"] {
-  font-weight: 300;
-}
-input::placeholder, textarea::placeholder { font-weight: 300; }
-
-/* 설명 영역 안의 강조(strong/b)는 가독성 위해 Medium 유지 */
-body [class*="hint"] strong,  body [class*="hint"] b,
-body [class*="muted"] strong, body [class*="muted"] b,
-body [class*="-desc"] strong, body [class*="-desc"] b,
-body [class*="-note"] strong, body [class*="-note"] b,
-body [class*="-guide"] strong,body [class*="-guide"] b {
-  font-weight: 600;
 }
