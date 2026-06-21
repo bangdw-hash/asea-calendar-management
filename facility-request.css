@@ -2,10 +2,16 @@
    facility-request.css — 대관신청 공개 폼
    ================================================================ */
 
+/* 앱 공통 서체 */
+@font-face { font-family:'AseaWorkspace'; src:url('fonts/AseaWorkspace-Light.ttf') format('truetype');   font-weight:300; font-display:swap; }
+@font-face { font-family:'AseaWorkspace'; src:url('fonts/AseaWorkspace-Regular.ttf') format('truetype'); font-weight:400; font-display:swap; }
+@font-face { font-family:'AseaWorkspace'; src:url('fonts/AseaWorkspace-Medium.ttf') format('truetype');  font-weight:500 600; font-display:swap; }
+@font-face { font-family:'AseaWorkspace'; src:url('fonts/AseaWorkspace-Bold.ttf') format('truetype');    font-weight:700 900; font-display:swap; }
+
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
-  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: 'AseaWorkspace', 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   background: #EDF4FB;   /* Win11 하늘빛 배경 */
   color: #202124;
   min-height: 100vh;
