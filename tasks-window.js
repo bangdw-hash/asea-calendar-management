@@ -100,6 +100,42 @@
     try { CloudForms.save('tasks_imported', userEmail(), userEmail(), 'state', { map: impLoad(), updatedAt: Date.now() }); } catch (e) {}
   }
 
+  /* ── 수동 순서 저장(계정+목록별, 로컬+클라우드) ──
+     구글 tasks.move 와 별개로 우리 순서를 보관해, 저장 실패·단말 변경에도 순서 복원 보장 */
+  function orderKey() { return 'asea_tasks_order_' + userEmail(); }
+  function orderMetaKey() { return 'asea_tasks_order_meta_' + userEmail(); }
+  function orderLoad() { try { return JSON.parse(localStorage.getItem(orderKey()) || '{}'); } catch (e) { return {}; } }
+  function orderMeta() { try { return parseInt(localStorage.getItem(orderMetaKey()) || '0', 10); } catch (e) { return 0; } }
+  function orderSave(o) { try { localStorage.setItem(orderKey(), JSON.stringify(o)); localStorage.setItem(orderMetaKey(), String(Date.now())); } catch (e) {} }
+  function captureOrderIds(ids) { var all = orderLoad(); all[_curList] = ids.slice(); orderSave(all); orderCloudPush(); }
+  function captureOrder() { captureOrderIds(_items.filter(function (t) { return t.status !== 'completed'; }).map(function (t) { return t.id; })); }
+  function applyOrder() {
+    var ord = (orderLoad()[_curList]) || [];
+    if (!ord.length) return;
+    var pos = {}; ord.forEach(function (id, i) { pos[id] = i; });
+    var pend = _items.filter(function (t) { return t.status !== 'completed'; });
+    var done = _items.filter(function (t) { return t.status === 'completed'; });
+    pend.sort(function (a, b) { var pa = pos[a.id], pb = pos[b.id]; if (pa == null && pb == null) return 0; if (pa == null) return 1; if (pb == null) return -1; return pa - pb; });
+    _items = pend.concat(done);
+  }
+  function orderCloudPush() {
+    if (!(window.CloudForms && CloudForms.save) || !userEmail()) return;
+    try { CloudForms.save('tasks_order', userEmail(), userEmail(), 'state', { orders: orderLoad(), updatedAt: Date.now() }); } catch (e) {}
+  }
+  function orderCloudPull(cb) {
+    if (!(window.CloudForms && CloudForms.list) || !userEmail()) { if (cb) cb(); return; }
+    CloudForms.list('tasks_order').then(function (res) {
+      try {
+        var row = (res.rows || []).find(function (r) { return r.ref === userEmail(); });
+        if (row && row.data && row.data.orders) {
+          var cAt = row.data.updatedAt || 0;
+          if (cAt > orderMeta()) { localStorage.setItem(orderKey(), JSON.stringify(row.data.orders)); localStorage.setItem(orderMetaKey(), String(cAt)); }
+        }
+      } catch (e) {}
+      if (cb) cb();
+    }).catch(function () { if (cb) cb(); });
+  }
+
   /* ── 목록 ── */
   function loadLists() {
     setStatus('할일 목록 불러오는 중…');
@@ -125,6 +161,7 @@
         _items = (d && d.items) || [];
         var ids = {}; _items.forEach(function (t) { ids[t.id] = 1; });
         Object.keys(_sel).forEach(function (k) { if (!ids[k]) delete _sel[k]; });
+        applyOrder();   // 저장해 둔 수동 순서로 복원
         render(); setStatus('');
       }).catch(handleErr);
   }
@@ -316,12 +353,13 @@
     var pmap = {}; pend.forEach(function (t) { pmap[t.id] = t; });
     var newPend = ids.map(function (id) { return pmap[id]; }).filter(Boolean);
     _items = newPend.concat(_items.filter(function (t) { return t.status === 'completed'; }));
+    captureOrder();   // 우리 순서 저장(로컬+클라우드) → 다음 로그인/재방문에도 유지
     render();
-    // 2) 서버에 영구 저장(백그라운드). 실패 시에만 새로고침으로 원복
+    // 2) 구글에도 순서 반영(백그라운드)
     var prev = insertAt > 0 ? ids[insertAt - 1] : '';
     setStatus('순서 저장 중…');
     move(dragId, prev).then(function () { setStatus(''); refreshOpener(); })
-      .catch(function () { setStatus('순서 저장 실패 — 다시 시도해 주세요', 'err'); loadTasks(); });
+      .catch(function () { setStatus('구글 순서반영 실패(작업창 순서는 저장됨)', 'err'); });
   }
   async function sortByDate() {
     var pend = pendingItems().slice().sort(function (a, b) {
@@ -330,6 +368,7 @@
     });
     if (pend.length < 2) return;
     setStatus('일자순 정렬 중…');
+    captureOrderIds(pend.map(function (t) { return t.id; }));   // 정렬 순서 저장(로컬+클라우드)
     var prev = '';
     for (var i = 0; i < pend.length; i++) { try { await move(pend[i].id, prev); prev = pend[i].id; } catch (e) {} }
     await loadTasks(); refreshOpener(); setStatus('');
@@ -348,7 +387,7 @@
     $('tw-add-btn').addEventListener('click', addTask);
     $('tw-new-title').addEventListener('keydown', function (e) { if (e.key === 'Enter') addTask(); });
     $('tw-new-notes').addEventListener('keydown', function (e) { if (e.key === 'Enter') addTask(); });
-    $('tw-refresh').addEventListener('click', function () { impCloudPull(render); loadLists(); loadCalendars(); });
+    $('tw-refresh').addEventListener('click', function () { impCloudPull(function () {}); orderCloudPull(function () { loadLists(); }); loadCalendars(); });
     $('tw-open-google').addEventListener('click', function () { window.open('https://tasks.google.com/', '_blank'); });
     $('tw-sortdate').addEventListener('click', sortByDate);
     $('tw-complete').addEventListener('click', function () { bulkComplete(true); });
@@ -362,7 +401,7 @@
 
     if (!token()) { renderEmpty('로그인이 필요합니다.\n메인 캘린더 창에서 로그인한 뒤 이 창을 다시 열어 주세요.'); setStatus('로그인 필요', 'err'); return; }
     impCloudPull(function () { if (_items.length) render(); });   // 계정별 등록기록 클라우드 회수
-    loadLists();
+    orderCloudPull(function () { loadLists(); });                 // 저장된 수동 순서 회수 후 목록 로드
     loadCalendars();
   }
 
