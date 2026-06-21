@@ -571,6 +571,41 @@ var FacilityModule = (function () {
     }
   }
 
+  // 클라우드(공개폼·타 단말 접수분)를 로컬 asea_facility_requests 에 병합
+  function _pullRequestsCloud() {
+    if (!(window.CloudForms && CloudForms.list)) return Promise.resolve();
+    return CloudForms.list('facility_request').then(function (res) {
+      try {
+        if (res && res.rows && res.rows.length) {
+          var local = JSON.parse(localStorage.getItem('asea_facility_requests') || '[]');
+          var byId = {};
+          local.forEach(function (r) { if (r && r.id) byId[r.id] = r; });
+          res.rows.forEach(function (row) {
+            var r = row && row.data;
+            if (r && r.id) byId[r.id] = Object.assign({}, byId[r.id], r);
+          });
+          var merged = Object.keys(byId).map(function (k) { return byId[k]; });
+          localStorage.setItem('asea_facility_requests', JSON.stringify(merged));
+        }
+      } catch (e) {}
+    }).catch(function () {});
+  }
+
+  // 신청 상태/검토의견 변경을 로컬 + 클라우드에 반영 (신청자가 어느 단말에서나 결과 조회 가능)
+  function _updateRequestLocalCloud(req, patch) {
+    var merged = Object.assign({}, req, patch);
+    try {
+      var local = JSON.parse(localStorage.getItem('asea_facility_requests') || '[]');
+      var found = false;
+      local = local.map(function (r) { if (r && r.id === req.id) { found = true; return Object.assign({}, r, patch); } return r; });
+      if (!found) local.push(merged);
+      localStorage.setItem('asea_facility_requests', JSON.stringify(local));
+    } catch (e) {}
+    if (window.CloudForms && CloudForms.save) {
+      try { CloudForms.save('facility_request', req.id, merged.applicantName || '', merged.status || '신청', merged); } catch (e) {}
+    }
+  }
+
   async function loadAndRenderRequests(status) {
     var el = $f('fac-requests-list');
     if (!el) return;
@@ -578,7 +613,9 @@ var FacilityModule = (function () {
     try {
       var sheetsData = [];
       try { sheetsData = await SheetsModule.getFacilityRequests(status||''); } catch(e2) { /* ignore sheets error */ }
-      // also read from localStorage (submitted via public form)
+      // 클라우드(다른 단말 접수분)를 로컬에 병합 — 어느 관리자 단말에서나 동일하게 조회
+      try { await _pullRequestsCloud(); } catch(eCloud) {}
+      // also read from localStorage (submitted via public form / cloud)
       var lsData = [];
       try {
         var raw = JSON.parse(localStorage.getItem('asea_facility_requests') || '[]');
@@ -676,6 +713,14 @@ var FacilityModule = (function () {
   async function _confirmFacReview(req, statusValue, note, autoResv) {
     var me = window._workMe || {};
     var proxyUrl = _getProxyUrl();
+    var reviewPatch = {
+      status: statusValue,
+      reviewNote: note,
+      reviewedBy: me.name || me.email || '관리자',
+      reviewedAt: new Date().toISOString(),
+    };
+    // 공개폼·타 단말 접수분(시트에 행이 없는 건)도 항상 로컬+클라우드에 반영
+    _updateRequestLocalCloud(req, reviewPatch);
     try {
       if (proxyUrl) {
         var res = await fetch(proxyUrl, {
@@ -689,14 +734,8 @@ var FacilityModule = (function () {
         });
         var data = await res.json();
         if (!data.ok) throw new Error(data.error || '프록시 오류');
-      } else {
-        if (!req._row) throw new Error('행 번호 없음');
-        await SheetsModule.updateFacilityRequest(req._row, {
-          status: statusValue,
-          reviewNote: note,
-          reviewedBy: me.name || me.email || '관리자',
-          reviewedAt: new Date().toISOString(),
-        });
+      } else if (req._row) {
+        await SheetsModule.updateFacilityRequest(req._row, reviewPatch);
       }
       if (statusValue === '승인' && autoResv && typeof SheetsModule !== 'undefined' && SheetsModule.addFacilityReservation) {
         try {
@@ -726,6 +765,7 @@ var FacilityModule = (function () {
 
   async function _setRequestStatus(req, newStatus) {
     var proxyUrl = _getProxyUrl();
+    _updateRequestLocalCloud(req, { status: newStatus });
     try {
       if (proxyUrl) {
         var res = await fetch(proxyUrl, {
@@ -734,8 +774,7 @@ var FacilityModule = (function () {
         });
         var data = await res.json();
         if (!data.ok) throw new Error(data.error || '프록시 오류');
-      } else {
-        if (!req._row) throw new Error('행 번호 없음');
+      } else if (req._row) {
         await SheetsModule.updateFacilityRequest(req._row, { status: newStatus });
       }
       toast('상태가 "'+newStatus+'"(으)로 변경되었습니다.', 'info');
@@ -1204,6 +1243,12 @@ var FacilityModule = (function () {
     if (!window.FacilityFeeModule) return;
     var el = $f('fac-fee-list');
     if (!el) return;
+
+    // 다른 단말에서 수정된 최신 기준표를 먼저 회수 (최초 1회) 후 재렌더
+    if (!renderFeeAdmin._pulled && FacilityFeeModule.pullCloud) {
+      renderFeeAdmin._pulled = true;
+      FacilityFeeModule.pullCloud(function (changed) { if (changed) renderFeeAdmin(); });
+    }
 
     var fees = FacilityFeeModule.loadFees();
 

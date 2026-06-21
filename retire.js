@@ -358,18 +358,14 @@ window.RetireModule = (function () {
       err.textContent = '';
       if (!code || code.length < 6) { err.textContent = '저장 코드 6자리를 입력해 주세요.'; return; }
       if (!name) { err.textContent = '성명을 입력해 주세요.'; return; }
-      var apps = loadApps();
-      var app  = apps.find(function(a){
-        return a.resumeCode === code && (a.form.name || '').trim() === name;
-      });
-      if (!app) { err.textContent = '저장 코드 또는 이름이 일치하지 않습니다.'; return; }
-      if (app.status === 'submitted') {
-        err.textContent = '이미 최종 제출된 사직서입니다.'; return;
-      }
-      _st.app  = app;
-      _st.step = 0;
-      _st.view = 'form';
-      _render();
+      var _match = function () {
+        var app = loadApps().find(function(a){ return a.resumeCode === code && (a.form.name || '').trim() === name; });
+        if (!app) { err.textContent = '저장 코드 또는 이름이 일치하지 않습니다.'; return; }
+        if (app.status === 'submitted') { err.textContent = '이미 최종 제출된 사직서입니다.'; return; }
+        _st.app = app; _st.step = 0; _st.view = 'form'; _render();
+      };
+      err.textContent = '확인 중…';
+      _pullCloudApps(function () { err.textContent = ''; _match(); });   // 다른 단말 작성분도 클라우드에서 회수
     };
     document.getElementById('rt-ee-btn').addEventListener('click', doResume);
     document.getElementById('rt-ee-name').addEventListener('keydown', function(e) {
