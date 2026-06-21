@@ -827,7 +827,7 @@
   function openTasksWindow() {
     try {
       if (_tasksWin && !_tasksWin.closed) { _tasksWin.focus(); return; }
-      _tasksWin = window.open('tasks-window.html?v=20260621tw4', 'asea-tasks',
+      _tasksWin = window.open('tasks-window.html?v=20260621tw5', 'asea-tasks',
         'width=480,height=820,scrollbars=yes,resizable=yes');
       if (_tasksWin) _tasksWin.focus();
     } catch (e) {}
