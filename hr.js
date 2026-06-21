@@ -412,16 +412,20 @@ window.HRModule = (function () {
       err.textContent = '';
       if (!code || code.length < 6) { err.textContent = '저장 코드 6자리를 입력해 주세요.'; return; }
       if (!name) { err.textContent = '성명을 입력해 주세요.'; return; }
-      var apps = loadApps();
-      var app  = apps.find(function(a) {
-        return a.resumeCode === code && (a.form1.nameKr || '').trim() === name;
-      });
-      if (!app) { err.textContent = '저장 코드 또는 이름이 일치하지 않습니다.'; return; }
-      if (app.status === 'submitted' || app.status === 'approved') {
-        err.textContent = '이미 최종 제출된 서류입니다.'; return;
-      }
-      _st.applicant = app; _st.appStep = 0;
-      _render();
+      var _match = function () {
+        var apps = loadApps();
+        var app  = apps.find(function(a) {
+          return a.resumeCode === code && (a.form1.nameKr || '').trim() === name;
+        });
+        if (!app) { err.textContent = '저장 코드 또는 이름이 일치하지 않습니다.'; return; }
+        if (app.status === 'submitted' || app.status === 'approved') {
+          err.textContent = '이미 최종 제출된 서류입니다.'; return;
+        }
+        _st.applicant = app; _st.appStep = 0;
+        _render();
+      };
+      err.textContent = '확인 중…';
+      _hrPullCloud(function () { err.textContent = ''; _match(); });   // 다른 단말 작성분도 클라우드에서 회수
     };
     document.getElementById('hr-sr-btn').addEventListener('click', doResume);
     document.getElementById('hr-sr-name').addEventListener('keydown', function(e) { if (e.key==='Enter') doResume(); });

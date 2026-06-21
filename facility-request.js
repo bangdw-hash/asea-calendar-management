@@ -565,7 +565,7 @@
       var reqs   = JSON.parse(localStorage.getItem(reqKey) || '[]');
       var reqId  = 'FR-' + Date.now().toString(36).toUpperCase();
 
-      reqs.push({
+      var reqObj = {
         id:             reqId,
         status:         '신청',
         createdAt:      new Date().toISOString(),
@@ -581,8 +581,14 @@
         applicantOrg:   org,
         applicantPhone: phone,
         applicantEmail: email
-      });
+      };
+      reqs.push(reqObj);
       localStorage.setItem(reqKey, JSON.stringify(reqs));
+
+      // 클라우드 저장 — 관리자가 다른 단말/계정에서도 신청 내역을 조회할 수 있도록
+      if (window.CloudForms && CloudForms.save) {
+        try { CloudForms.save('facility_request', reqId, name, '신청', reqObj); } catch (e) {}
+      }
 
       $('fr-form').style.display    = 'none';
       $('fr-success').style.display = '';
@@ -781,8 +787,16 @@
       renderTimeRanges();
     });
 
-    // 건물 로드 (localStorage 연동)
+    // 건물 로드 (localStorage 연동) — 관리자가 클라우드에 올린 최신 요금표를 먼저 회수
     loadBuildings();
+    if (window.FacilityFeeModule && FacilityFeeModule.pullCloud) {
+      FacilityFeeModule.pullCloud(function (changed) {
+        if (changed) {
+          loadBuildings();
+          onBuildingChange();   // 선택된 건물·호실 요금 표시 갱신
+        }
+      });
+    }
     $('fr-building').addEventListener('change', function () {
       onBuildingChange();
       updateSteps(_currentStep);
@@ -1085,6 +1099,37 @@
       if (!email) { alert('이메일을 입력하세요.'); return; }
       var result = $('fr-status-result');
       result.style.display = '';
+      result.innerHTML = '<p style="color:#888;font-size:13px">조회 중…</p>';
+
+      // 클라우드(다른 단말 접수분·관리자 처리결과 포함)를 먼저 회수하여 병합
+      _pullRequestsCloud(function () { _renderStatus(email, phone); });
+    });
+  }
+
+  // 클라우드의 대관신청 내역을 로컬과 병합 (id 기준, 최신 우선)
+  function _pullRequestsCloud(cb) {
+    if (!(window.CloudForms && CloudForms.list)) { if (cb) cb(); return; }
+    CloudForms.list('facility_request').then(function (res) {
+      try {
+        if (res && res.rows && res.rows.length) {
+          var local = JSON.parse(localStorage.getItem('asea_facility_requests') || '[]');
+          var byId = {};
+          local.forEach(function (r) { if (r && r.id) byId[r.id] = r; });
+          res.rows.forEach(function (row) {
+            var r = row && row.data;
+            if (r && r.id) byId[r.id] = Object.assign({}, byId[r.id], r);
+          });
+          var merged = Object.keys(byId).map(function (k) { return byId[k]; });
+          localStorage.setItem('asea_facility_requests', JSON.stringify(merged));
+        }
+      } catch (e) {}
+      if (cb) cb();
+    }).catch(function () { if (cb) cb(); });
+  }
+
+  function _renderStatus(email, phone) {
+      var result = $('fr-status-result');
+      result.style.display = '';
 
       var reqs = JSON.parse(localStorage.getItem('asea_facility_requests') || '[]');
       var matched = reqs.filter(function(r) {
@@ -1121,7 +1166,6 @@
           '<div style="font-size:11px;color:#aaa;margin-top:4px">접수: ' + (r.createdAt||'').slice(0,10) + ' · 신청번호: ' + r.id + '</div>' +
         '</div>';
       }).join('');
-    });
   }
 
   if (document.readyState === 'loading') {

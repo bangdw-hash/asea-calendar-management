@@ -17,10 +17,46 @@ window.FacilityFeeModule = (function() {
     backward compat: surchargeStart/End/Rate → surchargeSlots[0] 으로 변환
   */
 
+  var META_KEY = 'asea_facility_fees_meta';   // { savedAt } — 클라우드 최종변경 시각(LWW 비교용)
+
   function loadFees() {
     try { return JSON.parse(localStorage.getItem(STORE_KEY)||'[]'); } catch(e){ return []; }
   }
   function saveFees(a) { localStorage.setItem(STORE_KEY, JSON.stringify(a)); }
+
+  /* ── 대관료 기준표 클라우드 공유 (관리자 설정을 모든 단말·공개폼에 동기화) ── */
+  function _getMeta() { try { return JSON.parse(localStorage.getItem(META_KEY)||'{}'); } catch(e){ return {}; } }
+  function _setMeta(savedAt) { try { localStorage.setItem(META_KEY, JSON.stringify({ savedAt: savedAt })); } catch(e){} }
+
+  var _pushTimer = null;
+  function _markChanged() {
+    var ts = Date.now();
+    _setMeta(ts);
+    clearTimeout(_pushTimer);
+    _pushTimer = setTimeout(function () {
+      if (window.CloudForms && CloudForms.save) {
+        try { CloudForms.save('facility_fee', 'config', '대관료 기준표', 'config', { fees: loadFees(), savedAt: ts }); } catch (e) {}
+      }
+    }, 600);
+  }
+
+  // 클라우드의 최신 기준표를 내려받아 더 최신이면 로컬에 반영 (last-write-wins)
+  function pullCloud(cb) {
+    if (!(window.CloudForms && CloudForms.list)) { if (cb) cb(false); return; }
+    CloudForms.list('facility_fee').then(function (res) {
+      var changed = false;
+      try {
+        var row = (res.rows||[]).find(function (r) { return r.ref === 'config'; });
+        var cloudAt = row && row.data && row.data.savedAt || 0;
+        if (row && row.data && row.data.fees && cloudAt > (_getMeta().savedAt || 0)) {
+          saveFees(row.data.fees);
+          _setMeta(cloudAt);
+          changed = true;
+        }
+      } catch (e) {}
+      if (cb) cb(changed);
+    }).catch(function () { if (cb) cb(false); });
+  }
 
   function genId() { return 'fee_' + Date.now().toString(36) + Math.random().toString(36).slice(2,5); }
 
@@ -97,6 +133,7 @@ window.FacilityFeeModule = (function() {
       else { d.id = genId(); d.createdAt = Date.now(); fees.push(d); }
     });
     saveFees(fees);
+    _markChanged();
     return _DEFAULT_FEES_RAW.length;
   }
   /* 누락된 기본 시설만 추가 (기존 커스텀 데이터 덮어쓰지 않음) */
@@ -115,15 +152,16 @@ window.FacilityFeeModule = (function() {
   function addFee(fee) {
     var fees = loadFees();
     fee.id = genId(); fee.createdAt = Date.now();
-    fees.push(fee); saveFees(fees); return fee;
+    fees.push(fee); saveFees(fees); _markChanged(); return fee;
   }
   function updateFee(id, data) {
     var fees = loadFees();
     var i = fees.findIndex(function(f){ return f.id === id; });
-    if (i > -1) { fees[i] = Object.assign({}, fees[i], data); saveFees(fees); }
+    if (i > -1) { fees[i] = Object.assign({}, fees[i], data); saveFees(fees); _markChanged(); }
   }
   function deleteFee(id) {
     saveFees(loadFees().filter(function(f){ return f.id !== id; }));
+    _markChanged();
   }
   function getFeeForRoom(buildingName, roomName) {
     var f = loadFees().find(function(f){
@@ -380,6 +418,7 @@ window.FacilityFeeModule = (function() {
     calcFee: calcFee, normalize: normalize,
     buildQuoteHTML: buildQuoteHTML, printQuote: printQuote,
     applyDefaults: applyDefaults, seedIfEmpty: seedIfEmpty,
+    pullCloud: pullCloud,
     DEFAULT_FEES: _DEFAULT_FEES_RAW,
     comma: comma, fmtDT: fmtDT
   };
