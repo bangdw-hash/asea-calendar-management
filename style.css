@@ -729,6 +729,20 @@ a        { color: var(--color-accent); text-decoration: none; }
 
 .event-chip:hover { filter: brightness(0.93); }
 
+/* 일정발췌 — 등록 캘린더 복수 선택 드롭다운 */
+.extract-cal-ms { position: relative; display: inline-block; }
+.extract-cal-ms-panel {
+  position: absolute; z-index: 60; top: 100%; left: 0; margin-top: 4px;
+  background: #fff; border: 1px solid var(--color-border); border-radius: 10px;
+  box-shadow: var(--shadow-md); padding: 6px; min-width: 220px; max-height: 300px; overflow: auto;
+}
+.extract-cal-ms-panel[hidden] { display: none; }
+.extract-cal-ms-panel .ms-head { display: flex; gap: 6px; padding: 4px 6px 8px; border-bottom: 1px solid var(--color-border); margin-bottom: 4px; }
+.extract-cal-ms-panel .ms-head button { font-size: 11px; padding: 3px 8px; border: 1px solid var(--color-border); border-radius: 6px; background: #fff; cursor: pointer; color: var(--color-text-secondary); }
+.extract-cal-ms-panel label { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 6px; font-size: 13px; cursor: pointer; white-space: nowrap; }
+.extract-cal-ms-panel label:hover { background: var(--color-accent-light); }
+.extract-cal-ms-panel .ms-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
 /* 나의 할일(Tasks) 칩 — 점선 테두리로 일정과 구분, 완료는 취소선+흐림 */
 .event-chip--task { border-left-style: dashed; }
 .event-chip--task-done { opacity: .6; }

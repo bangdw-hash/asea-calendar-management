@@ -4270,22 +4270,54 @@
      일정발췌 탭 (PDF + Claude API)
   ═══════════════════════════════════════════════════════════ */
   function renderExtractTab() {
-    var sel = $('extract-target-calendar');
-    var cals = S.userCalendars;
-    if (!cals || cals.length === 0) {
-      sel.innerHTML = '<option value="primary">기본 캘린더</option>';
-    } else {
-      sel.innerHTML = '';
-      cals.forEach(function (cal) {
-        var opt = document.createElement('option');
-        opt.value = cal.id;
-        opt.textContent = cal.summary + (cal.primary ? ' (기본)' : '');
-        if (cal.primary) opt.selected = true;
-        sel.appendChild(opt);
-      });
-    }
+    renderExtractCalCheckboxes();
     // API 박스 값 동기화 (설정 탭과 동일 CONFIG 사용)
     _syncExtractApiBox();
+  }
+
+  /* 등록 캘린더 복수 선택 체크박스 렌더 */
+  function renderExtractCalCheckboxes(preselectIds) {
+    var panel = $('extract-cal-ms-panel');
+    if (!panel) return;
+    var cals = (S.userCalendars && S.userCalendars.length)
+      ? S.userCalendars
+      : [{ id: 'primary', summary: '기본 캘린더', primary: true }];
+    var pre = preselectIds || null;
+    panel.innerHTML =
+      '<div class="ms-head"><button type="button" id="extract-cal-ms-all">전체 선택</button>' +
+      '<button type="button" id="extract-cal-ms-none">전체 해제</button></div>' +
+      cals.map(function (cal) {
+        var checked = pre ? (pre.indexOf(cal.id) !== -1) : !!cal.primary;
+        var color = cal.backgroundColor || cal.color || '#1A73E8';
+        return '<label><input type="checkbox" class="extract-cal-cb" value="' + _esc(cal.id) + '" data-name="' + _esc(cal.summary || cal.id) + '"' + (checked ? ' checked' : '') + '>' +
+          '<span class="ms-dot" style="background:' + _esc(color) + '"></span>' +
+          '<span>' + _esc(cal.summary || cal.id) + (cal.primary ? ' (기본)' : '') + '</span></label>';
+      }).join('');
+    panel.querySelectorAll('.extract-cal-cb').forEach(function (cb) {
+      cb.addEventListener('change', updateExtractCalLabel);
+    });
+    var allBtn = $('extract-cal-ms-all'), noneBtn = $('extract-cal-ms-none');
+    if (allBtn) allBtn.addEventListener('click', function () { panel.querySelectorAll('.extract-cal-cb').forEach(function (c) { c.checked = true; }); updateExtractCalLabel(); });
+    if (noneBtn) noneBtn.addEventListener('click', function () { panel.querySelectorAll('.extract-cal-cb').forEach(function (c) { c.checked = false; }); updateExtractCalLabel(); });
+    updateExtractCalLabel();
+  }
+
+  // 선택된 등록 캘린더 [{id,name}] (없으면 기본)
+  function getSelectedExtractCalendars() {
+    var out = [];
+    document.querySelectorAll('.extract-cal-cb:checked').forEach(function (cb) {
+      out.push({ id: cb.value, name: cb.dataset.name || cb.value });
+    });
+    if (!out.length) out.push({ id: 'primary', name: '기본 캘린더' });
+    return out;
+  }
+  function updateExtractCalLabel() {
+    var btn = $('extract-cal-ms-btn'); if (!btn) return;
+    var sel = [];
+    document.querySelectorAll('.extract-cal-cb:checked').forEach(function (cb) { sel.push(cb.dataset.name || cb.value); });
+    if (!sel.length) btn.textContent = '📅 등록 캘린더 선택 ▾';
+    else if (sel.length === 1) btn.textContent = '📅 ' + sel[0] + ' ▾';
+    else btn.textContent = '📅 ' + sel.length + '개 캘린더 ▾';
   }
 
   // 일정발췃 탭 API 키/Base URL 박스 ↔ CONFIG/localStorage 동기화
@@ -4426,6 +4458,14 @@
     });
 
     $('extract-add-selected').addEventListener('click', addExtractedToCalendar);
+
+    // 등록 캘린더 복수 선택 드롭다운 토글 + 외부 클릭 닫기
+    var msBtn = $('extract-cal-ms-btn'), msPanel = $('extract-cal-ms-panel');
+    if (msBtn && msPanel) {
+      msBtn.addEventListener('click', function (e) { e.stopPropagation(); msPanel.hidden = !msPanel.hidden; });
+      msPanel.addEventListener('click', function (e) { e.stopPropagation(); });
+      document.addEventListener('click', function () { msPanel.hidden = true; });
+    }
 
     $('clear-extract-history-btn').addEventListener('click', function () {
       if (!confirm('추출 이력을 모두 삭제하시겠습니까?')) return;
@@ -4781,7 +4821,8 @@
   }
 
   async function checkExtractConflicts() {
-    var calendarId = $('extract-target-calendar').value;
+    var _sels = getSelectedExtractCalendars();
+    var calendarId = _sels.length ? _sels[0].id : '';   // 충돌 확인은 첫 선택 캘린더 기준
     if (!calendarId) { toast('캘린더를 선택하세요.', 'error'); return; }
     if (!S.extractedEvents || S.extractedEvents.length === 0) { toast('먼저 일정을 추출하세요.', 'error'); return; }
 
@@ -5120,10 +5161,10 @@
       if (cb.checked) checkedIndices.push(i);
     });
 
-    // 현재 캘린더명
-    var calSel = $('extract-target-calendar');
-    var calendarId   = calSel ? calSel.value : '';
-    var calendarName = calSel && calSel.selectedOptions[0] ? calSel.selectedOptions[0].text : '';
+    // 현재 캘린더명 (복수 선택 시 첫 캘린더 기준)
+    var _selCals = getSelectedExtractCalendars();
+    var calendarId   = _selCals.length ? _selCals[0].id : '';
+    var calendarName = _selCals.length ? _selCals[0].name : '';
 
     // 현재 등록 방식
     var modeEl = document.querySelector('input[name="extract-mode"]:checked');
@@ -5193,13 +5234,9 @@
 
         renderExtractedEvents(null);
 
-        // 캘린더 복원
+        // 캘린더 복원 (저장 시점의 캘린더를 체크)
         if (h.calendarId) {
-          var calSel = $('extract-target-calendar');
-          if (calSel) {
-            var opt = Array.from(calSel.options).find(function (o) { return o.value === h.calendarId; });
-            if (opt) calSel.value = h.calendarId;
-          }
+          renderExtractCalCheckboxes([h.calendarId]);
         }
 
         // 등록 방식 복원
@@ -5230,7 +5267,8 @@
   }
 
   async function addExtractedToCalendar() {
-    var calId = $('extract-target-calendar').value || CONFIG.calendarId;
+    var targetCals = getSelectedExtractCalendars();   // 복수 캘린더
+    if (!targetCals.length) { toast('등록할 캘린더를 선택하세요.', 'error'); return; }
     var tz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'Asia/Seoul';
     var selected = [];
     document.querySelectorAll('.extract-event-check input:checked').forEach(function (cb) {
@@ -5245,59 +5283,62 @@
     btn.textContent = '등록 중...';
 
     var toCreate = selected;
-
-    var ok = 0, fail = 0;
+    var calCount = targetCals.length;
+    var total = toCreate.length * calCount;
+    var ok = 0, fail = 0, done = 0;
     for (var i = 0; i < toCreate.length; i++) {
       var ev = toCreate[i];
       var dept = ev.department || '기타';
       var dIdx = CONFIG.departments.findIndex(function (d) { return d.name === dept; });
       var palette = ['1','2','3','4','5','6','7','8','9','10','11'];
       var colorId = palette[dIdx >= 0 ? dIdx % palette.length : 10];
-      try {
-        // 시간 정보 유무 판별: "T00:00:00" 이거나 시간 부분이 없으면 종일 이벤트
-        var _hasTime = function (dt) {
-          if (!dt) return false;
-          var t = dt.split('T')[1];
-          return t && t !== '00:00:00' && t !== '00:00';
-        };
-        var startHasTime = _hasTime(ev.startDateTime);
-        var endHasTime   = _hasTime(ev.endDateTime);
-        var isAllDay     = !startHasTime && !endHasTime;
+      // 시간 정보 유무 판별: "T00:00:00" 이거나 시간 부분이 없으면 종일 이벤트
+      var _hasTime = function (dt) {
+        if (!dt) return false;
+        var t = dt.split('T')[1];
+        return t && t !== '00:00:00' && t !== '00:00';
+      };
+      var startHasTime = _hasTime(ev.startDateTime);
+      var endHasTime   = _hasTime(ev.endDateTime);
+      var isAllDay     = !startHasTime && !endHasTime;
 
-        var eventBody;
-        if (isAllDay) {
-          // 종일 이벤트: date 형식(YYYY-MM-DD), end는 다음날로 설정
-          var startDate = (ev.startDateTime || '').split('T')[0];
-          var endDate   = (ev.endDateTime   || '').split('T')[0];
-          if (!endDate || endDate === startDate) {
-            // 종료일이 없거나 시작과 같으면 다음날
-            var d = new Date(startDate); d.setDate(d.getDate() + 1);
-            endDate = d.toISOString().split('T')[0];
-          }
-          eventBody = {
-            summary:     ev.title,
-            description: (ev.description || '') + '\n[부서:' + dept + ']',
-            start: { date: startDate },
-            end:   { date: endDate },
-            colorId: colorId,
-          };
-        } else {
-          eventBody = {
-            summary:     ev.title,
-            description: (ev.description || '') + '\n[부서:' + dept + ']',
-            start: { dateTime: new Date(ev.startDateTime).toISOString(), timeZone: tz },
-            end:   { dateTime: new Date(ev.endDateTime).toISOString(),   timeZone: tz },
-            colorId: colorId,
-          };
+      var eventBody;
+      if (isAllDay) {
+        var startDate = (ev.startDateTime || '').split('T')[0];
+        var endDate   = (ev.endDateTime   || '').split('T')[0];
+        if (!endDate || endDate === startDate) {
+          var d = new Date(startDate); d.setDate(d.getDate() + 1);
+          endDate = d.toISOString().split('T')[0];
         }
-        await CalendarModule.createEvent(calId, eventBody);
-        ok++;
-      } catch (e) { fail++; }
+        eventBody = {
+          summary:     ev.title,
+          description: (ev.description || '') + '\n[부서:' + dept + ']',
+          start: { date: startDate },
+          end:   { date: endDate },
+          colorId: colorId,
+        };
+      } else {
+        eventBody = {
+          summary:     ev.title,
+          description: (ev.description || '') + '\n[부서:' + dept + ']',
+          start: { dateTime: new Date(ev.startDateTime).toISOString(), timeZone: tz },
+          end:   { dateTime: new Date(ev.endDateTime).toISOString(),   timeZone: tz },
+          colorId: colorId,
+        };
+      }
+      // 선택된 모든 캘린더에 동일 일정 등록
+      for (var c = 0; c < targetCals.length; c++) {
+        done++;
+        btn.textContent = '등록 중... (' + done + '/' + total + ')';
+        try { await CalendarModule.createEvent(targetCals[c].id, eventBody); ok++; }
+        catch (e) { fail++; }
+      }
     }
 
     btn.disabled = false;
     btn.textContent = '선택 항목 등록';
-    toast('등록 완료: ' + ok + '건 성공' + (fail ? ', ' + fail + '건 실패' : ''), ok ? 'success' : 'error');
+    var calMsg = calCount > 1 ? (calCount + '개 캘린더에 ') : '';
+    toast(calMsg + '등록 완료: ' + ok + '건 성공' + (fail ? ', ' + fail + '건 실패' : ''), ok ? 'success' : 'error');
     if (ok > 0 && S.tab === 'calendar') renderCalendar();
   }
 
