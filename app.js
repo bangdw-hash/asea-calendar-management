@@ -4443,6 +4443,8 @@
 
     $('extract-split-btn').addEventListener('click', splitSelectedEvents);
     $('extract-check-conflict-btn').addEventListener('click', checkExtractConflicts);
+    var aiDupBtn = $('extract-ai-dup-btn');
+    if (aiDupBtn) aiDupBtn.addEventListener('click', checkExtractDuplicatesAI);
     $('extract-save-state-btn').addEventListener('click', saveExtractState);
     $('extract-gen-share-url-btn').addEventListener('click', generateShareUrl);
     $('extract-text-btn').addEventListener('click', buildExtractText);
@@ -4628,6 +4630,7 @@
         toast('응답 일부 복구됨. ' + parsed.length + '개 항목.', 'info');
       }
       S.extractedEvents = _autoSplitExtracted(parsed);
+      S._aiMissing = [];   // 새 추출 시 중복검사 참고 패널 초기화
 
       // 추출 이력 저장
       var histEntry = {
@@ -4677,6 +4680,15 @@
     area.hidden = false;
     listEl.innerHTML = '';
 
+    // AI 중복 검사 결과: 이번 발췌에 없는 기존 등록분(취소/변경 검토용 참고)
+    if (S._aiMissing && S._aiMissing.length) {
+      var mp = document.createElement('div');
+      mp.className = 'extract-missing-panel';
+      mp.innerHTML = '<div class="emp-head">🔎 참고 — 이번 발췌에 <b>없는</b> 기존 등록 일정 ' + S._aiMissing.length + '건 (취소/변경 가능성, 자동 처리 안 함)</div>' +
+        S._aiMissing.map(function (m) { return '<div class="emp-item">· ' + _esc(m.title) + ' <span class="emp-date">(' + _esc(m.date) + (m.calName ? ' · ' + _esc(m.calName) : '') + ')</span></div>'; }).join('');
+      listEl.appendChild(mp);
+    }
+
     var conflictCount = 0;
 
     S.extractedEvents.forEach(function (ev, i) {
@@ -4688,13 +4700,18 @@
       card.dataset.index = i;
 
       var deptColor = getDeptColor(ev.department || '기타');
+      var dup = ev._aiDup;   // AI 중복 의심 정보 {title, confidence, reason}
       var badge = isConflict
         ? '<span class="extract-event-badge badge-conflict">⚠ 충돌</span>'
-        : '<span class="extract-event-badge badge-new">신규</span>';
+        : (dup ? '<span class="extract-event-badge badge-conflict">🤖 중복 의심 ' + Math.round((dup.confidence || 0) * 100) + '%</span>'
+               : '<span class="extract-event-badge badge-new">신규</span>');
+
+      card.className = 'extract-event-card ' + (isConflict ? 'is-conflict' : (dup ? 'is-conflict' : 'is-new'));
+      var _checked = (isConflict || dup) ? '' : ' checked';   // 충돌·중복은 기본 체크 해제
 
       card.innerHTML =
         '<div class="extract-event-check">' +
-          '<input type="checkbox" id="ev-check-' + i + '" checked>' +
+          '<input type="checkbox" id="ev-check-' + i + '"' + _checked + '>' +
         '</div>' +
         '<div class="extract-event-info">' +
           '<div class="extract-event-title">' +
@@ -4704,6 +4721,7 @@
           '<div class="extract-event-meta">' +
             '📅 ' + formatDate(ev.startDateTime) + ' ~ ' + formatDate(ev.endDateTime) + '<br>' +
             '🏢 ' + (ev.department || '기타') +
+            (dup ? '<br>🤖 기존 「' + _esc(dup.title || '') + '」와(과) 같은 업무로 추정' + (dup.reason ? ' · ' + _esc(dup.reason) : '') : '') +
             (ev.description ? '<br>📝 ' + ev.description : '') +
           '</div>' +
         '</div>' +
@@ -4713,7 +4731,7 @@
       cb.addEventListener('change', function () {
         card.classList.toggle('selected', cb.checked);
       });
-      card.classList.toggle('selected', true);
+      card.classList.toggle('selected', cb.checked);
 
       card.querySelector('.extract-edit-btn').addEventListener('click', function (e) {
         e.stopPropagation();
@@ -4723,14 +4741,15 @@
       listEl.appendChild(card);
     });
 
-    var newCount = S.extractedEvents.length - conflictCount;
-    if (conflictSet) {
-      countEl.textContent = '총 ' + S.extractedEvents.length + '개 (신규 ' + newCount + '개 / 충돌 ' + conflictCount + '개)';
-      $('extract-deselect-conflict').disabled = conflictCount === 0;
-    } else {
-      countEl.textContent = '총 ' + S.extractedEvents.length + '개 (충돌 확인 전)';
-      $('extract-deselect-conflict').disabled = true;
-    }
+    var dupCount = S.extractedEvents.filter(function (e) { return e._aiDup; }).length;
+    var newCount = S.extractedEvents.length - conflictCount - dupCount;
+    var parts = ['총 ' + S.extractedEvents.length + '개'];
+    if (dupCount) parts.push('🤖 중복 의심 ' + dupCount + '개');
+    if (conflictSet) parts.push('⚠ 충돌 ' + conflictCount + '개');
+    parts.push('신규 ' + Math.max(0, newCount) + '개' + (conflictSet || dupCount ? '' : ' (검사 전)'));
+    countEl.textContent = parts.join(' · ');
+    var dcBtn = $('extract-deselect-conflict');
+    if (dcBtn) dcBtn.disabled = (conflictCount + dupCount) === 0;
   }
 
   function splitSelectedEvents() {
@@ -4895,6 +4914,87 @@
     } finally {
       btn.disabled = false;
       btn.textContent = '🔍 충돌 확인';
+    }
+  }
+
+  /* AI 의미기반 중복 검사 — 기존 등록 일정과 부서·명칭의미·날짜로 같은 업무인지 판정.
+     (다음 주 보고서가 표현/날짜가 달라도 같은 업무면 중복으로 잡아 재등록 방지) */
+  async function checkExtractDuplicatesAI() {
+    if (!S.extractedEvents || !S.extractedEvents.length) { toast('먼저 일정을 추출하세요.', 'error'); return; }
+    var _cc = window.getClaudeConfig ? getClaudeConfig() : { apiKey: CONFIG.anthropicApiKey, endpoint: 'https://api.anthropic.com/v1/messages', isOfficial: true };
+    if (!_cc.apiKey) { toast('설정에서 Claude API 키를 먼저 저장하세요.', 'error'); return; }
+    var cals = getSelectedExtractCalendars();
+    if (!cals.length) { toast('비교할 캘린더를 선택하세요.', 'error'); return; }
+
+    var btn = $('extract-ai-dup-btn');
+    if (btn) { btn.disabled = true; btn.textContent = '🤖 중복 검사 중...'; }
+    try {
+      // 발췌 기간 ± 3주
+      var ds = S.extractedEvents.map(function (e) { return [new Date(e.startDateTime).getTime(), new Date(e.endDateTime).getTime()]; }).flat().filter(function (n) { return !isNaN(n); });
+      var coreMin = new Date(Math.min.apply(null, ds)), coreMax = new Date(Math.max.apply(null, ds));
+      var qMin = new Date(coreMin.getTime() - 21 * 86400000), qMax = new Date(coreMax.getTime() + 21 * 86400000);
+
+      // 선택 캘린더들에서 기존 일정 수집
+      var existing = [];
+      for (var ci = 0; ci < cals.length; ci++) {
+        try {
+          var evs = await CalendarModule.listEvents(cals[ci].id, qMin.toISOString(), qMax.toISOString());
+          (evs || []).forEach(function (x) {
+            var s = x.start.dateTime || x.start.date, e = x.end.dateTime || x.end.date;
+            var mk = /\[부서:([^\]]+)\]/.exec(x.description || '');
+            existing.push({ id: x.id, calId: cals[ci].id, calName: cals[ci].name, title: x.summary || '', dept: mk ? mk[1] : '', start: (s || '').slice(0, 10), end: (e || '').slice(0, 10), isApp: !!mk });
+          });
+        } catch (e2) {}
+      }
+      if (existing.length > 200) existing = existing.slice(0, 200);   // 토큰 보호
+      if (!existing.length) { toast('비교할 기존 일정이 없습니다(해당 기간).', 'info'); return; }
+
+      var newList = S.extractedEvents.map(function (e, i) { return { idx: i, title: e.title || '', dept: e.department || '', start: (e.startDateTime || '').slice(0, 10), end: (e.endDateTime || '').slice(0, 10) }; });
+
+      var prompt = '주간 업무보고에서 새로 추출한 "신규" 일정이, 이미 캘린더에 있는 "기존" 일정과 같은 업무(중복)인지 판정하라.\n' +
+        '판정 기준: ① 부서 일치 ② 명칭의 의미적 동일성(표현·문구가 달라도 같은 업무면 동일. 예: "KAI 방문"≈"한국항공우주 방문 협의") ③ 날짜 근접/겹침(요일·주차가 옮겨졌어도 같은 업무일 수 있음).\n' +
+        '제목의 "(시작)"/"(종료)"는 같은 업무를 시작/종료로 나눈 것이니 동일 업무로 본다.\n' +
+        '각 신규 항목마다 가장 잘 맞는 기존 1건을 찾아, 같은 업무로 판단되면 isDup=true.\n' +
+        '반드시 아래 JSON 배열만 출력(설명·코드블록 금지): [{"idx":번호,"existingId":"기존id 또는 null","isDup":true/false,"confidence":0~1,"reason":"간단근거"}]\n\n' +
+        '신규=' + JSON.stringify(newList) + '\n기존=' + JSON.stringify(existing.map(function (x) { return { id: x.id, title: x.title, dept: x.dept, start: x.start, end: x.end }; }));
+
+      var hdr = { 'Content-Type': 'application/json', 'x-api-key': _cc.apiKey, 'anthropic-version': '2023-06-01' };
+      if (_cc.isOfficial) hdr['anthropic-dangerous-direct-browser-access'] = 'true';
+      var resp = await fetch(_cc.endpoint, { method: 'POST', headers: hdr, body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 8000, messages: [{ role: 'user', content: prompt }] }) });
+      if (!resp.ok) { var ed = await resp.json().catch(function () { return {}; }); throw new Error((ed.error && ed.error.message) || ('API ' + resp.status)); }
+      var data = await resp.json();
+      var text = (data.content && data.content[0] && data.content[0].text) || '';
+      var m = text.match(/\[[\s\S]*\]/);
+      if (!m) throw new Error('AI 응답 파싱 실패');
+      var results = JSON.parse(m[0]);
+
+      // 결과 반영
+      var exById = {}; existing.forEach(function (x) { exById[x.id] = x; });
+      var matchedIds = {};
+      S.extractedEvents.forEach(function (e) { delete e._aiDup; });
+      var dupCnt = 0;
+      results.forEach(function (r) {
+        if (!r || r.idx == null) return;
+        var ev = S.extractedEvents[r.idx];
+        if (!ev) return;
+        if (r.isDup && (r.confidence == null || r.confidence >= 0.5) && r.existingId && exById[r.existingId]) {
+          ev._aiDup = { title: exById[r.existingId].title, confidence: r.confidence == null ? 0.7 : r.confidence, reason: r.reason || '' };
+          matchedIds[r.existingId] = 1; dupCnt++;
+        }
+      });
+
+      // 누락(참고) — 발췌 핵심기간 내 '앱 등록(부서표시)' 기존 일정 중 매칭 안 된 것
+      var cMin = coreMin.toISOString().slice(0, 10), cMax = coreMax.toISOString().slice(0, 10);
+      S._aiMissing = existing.filter(function (x) {
+        return x.isApp && !matchedIds[x.id] && x.start >= cMin && x.start <= cMax;
+      }).map(function (x) { return { title: x.title, date: x.start, calName: x.calName }; });
+
+      renderExtractedEvents(null);
+      toast('AI 중복 검사 완료 — 중복 의심 ' + dupCnt + '개' + (S._aiMissing.length ? (' · 참고(미발췌) ' + S._aiMissing.length + '건' ) : ''), dupCnt ? 'info' : 'success');
+    } catch (e) {
+      toast('AI 중복 검사 실패: ' + (e.message || e), 'error');
+    } finally {
+      if (btn) { btn.disabled = false; btn.textContent = '🤖 AI 중복 검사'; }
     }
   }
 
