@@ -743,6 +743,12 @@ a        { color: var(--color-accent); text-decoration: none; }
 .extract-cal-ms-panel label:hover { background: var(--color-accent-light); }
 .extract-cal-ms-panel .ms-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
 
+/* 일정발췌 — AI 중복검사: 미발췌(누락) 참고 패널 */
+.extract-missing-panel { background: #FFF8E1; border: 1px solid #FFE082; border-radius: 8px; padding: 8px 10px; margin-bottom: 8px; font-size: 12.5px; }
+.extract-missing-panel .emp-head { color: #8a6d1a; font-weight: 600; margin-bottom: 4px; }
+.extract-missing-panel .emp-item { color: #5f4f1f; line-height: 1.5; }
+.extract-missing-panel .emp-date { color: #9c8a4f; font-size: 11px; }
+
 /* 나의 할일(Tasks) 칩 — 점선 테두리로 일정과 구분, 완료는 취소선+흐림 */
 .event-chip--task { border-left-style: dashed; }
 .event-chip--task-done { opacity: .6; }
