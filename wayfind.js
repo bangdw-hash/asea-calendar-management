@@ -124,6 +124,62 @@
     }
     W.wireFrom = null; wfRenderGraph();
   }
+
+  /* ── 지점 자동 연결 — 이름 있는 지점들을 최소경로 트리(MST)로 직각(ㄱ자) 연결 ── */
+  function autoElbowConnect(a, b) {
+    if (Math.abs(b.x - a.x) > 0.3 && Math.abs(b.y - a.y) > 0.3) {
+      var c = elbowCorner(a, b), cor = mkWaypoint(snap(c.x), snap(c.y));   // 직각 코너 경유점 삽입
+      addEdge(a.id, cor.id); addEdge(cor.id, b.id);
+    } else { addEdge(a.id, b.id); }
+  }
+  function autoRoute() {
+    var named = W.nodes.filter(function (n) { return n.floor === W.cur && n.name; });
+    if (named.length < 2) { toast('이름 있는 지점을 2개 이상 먼저 찍어 주세요.', 'warning'); return; }
+    if (!confirm('이름 있는 지점 ' + named.length + '개를 가장 가까운 순서로 직각(ㄱ자) 경로로 자동 연결합니다.\n(기존 선은 그대로 두고 추가) 진행할까요?')) return;
+    // Prim MST — 맨해튼(직각) 거리 기준
+    var inTree = [named[0]], rest = named.slice(1), added = 0, guard = 0;
+    while (rest.length && guard++ < 2000) {
+      var best = null;
+      inTree.forEach(function (a) { rest.forEach(function (b) {
+        var d = Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
+        if (!best || d < best.d) best = { a: a, b: b, d: d };
+      }); });
+      if (!best) break;
+      if (!edgeExists(best.a.id, best.b.id)) { autoElbowConnect(best.a, best.b); added++; }
+      inTree.push(best.b); rest = rest.filter(function (x) { return x !== best.b; });
+    }
+    wfRenderGraph();
+    toast('자동 연결 완료 — ' + added + '개 구간(직각). 필요 없는 선은 우클릭 → 삭제하세요.', 'success');
+  }
+
+  /* ── 선(간선) 우클릭 메뉴 — 그 구간만 삭제 ── */
+  function hideEdgeMenu() { var m = document.getElementById('wf-edge-menu'); if (m) m.remove(); }
+  function cleanupOrphanWaypoints() {
+    var deg = {}; W.edges.forEach(function (e) { deg[e[0]] = (deg[e[0]] || 0) + 1; deg[e[1]] = (deg[e[1]] || 0) + 1; });
+    W.nodes = W.nodes.filter(function (n) { return n.name || (deg[n.id] || 0) > 0; });   // 이름 없는 0연결 경유점(허공 잔재) 제거
+  }
+  function showEdgeMenu(ei, x, y) {
+    hideEdgeMenu();
+    if (ei < 0 || ei >= W.edges.length) return;
+    var m = document.createElement('div');
+    m.id = 'wf-edge-menu'; m.className = 'wf-edge-menu';
+    m.style.left = x + 'px'; m.style.top = y + 'px';
+    m.innerHTML = '<button class="wf-em-del">🗑 이 구간 선 삭제</button><button class="wf-em-cancel">취소</button>';
+    document.body.appendChild(m);
+    m.querySelector('.wf-em-del').addEventListener('click', function (e) {
+      e.stopPropagation();
+      W.edges.splice(ei, 1);
+      cleanupOrphanWaypoints();
+      hideEdgeMenu(); wfRenderGraph();
+      toast('이 구간 선을 삭제했습니다.', 'success');
+    });
+    m.querySelector('.wf-em-cancel').addEventListener('click', function (e) { e.stopPropagation(); hideEdgeMenu(); });
+    setTimeout(function () {
+      document.addEventListener('click', hideEdgeMenu, { once: true });
+      document.addEventListener('contextmenu', hideEdgeMenu, { once: true });
+    }, 0);
+  }
+
   function portalBase() { try { return (location.origin + location.pathname).replace(/[^/]*$/, ''); } catch (e) { return ''; } }
   function qrImg(text, size) { return 'https://api.qrserver.com/v1/create-qr-code/?size=' + (size || 180) + 'x' + (size || 180) + '&data=' + encodeURIComponent(text); }
   function compressImage(file, maxW) {
@@ -218,6 +274,7 @@
         '<select id="wf-grid" class="form-select" style="width:auto;padding:4px 8px;font-size:12px" title="격자 간격(작을수록 세밀)">' +
           [0.5, 1, 2, 2.5, 5].map(function (g) { return '<option value="' + g + '"' + (W.grid === g ? ' selected' : '') + '>격자 ' + g + '%</option>'; }).join('') + '</select>' +
         '<label class="dorm-cb"><input type="checkbox" id="wf-ortho"' + (W.ortho ? ' checked' : '') + '> 직각(ㄱ자) 이동선</label>' +
+        '<button id="wf-autoroute" class="btn btn-secondary btn-sm" title="이름 있는 지점들을 가장 가까운 순서로 직각(ㄱ자) 경로로 자동 연결합니다">🪄 지점 자동 연결</button>' +
         '<button id="wf-delfloor" class="btn btn-ghost btn-sm" style="color:#dc2626;margin-left:auto">이 층 삭제</button></div>' +
         (W.mode === 'node' ? '<div class="dorm-actions" style="margin-top:4px;flex-wrap:wrap">' +
           [['일반', '📍 일반'], ['계단', '🪜 계단'], ['엘리베이터', '🛗 엘리베이터'], ['출입구', '🚪 출입구(대피)']].map(function (t) {
@@ -283,6 +340,7 @@
       var sn = document.getElementById('wf-snap'); if (sn) sn.addEventListener('change', function () { W.snap = this.checked; render(); });
       var gr = document.getElementById('wf-grid'); if (gr) gr.addEventListener('change', function () { W.grid = parseFloat(this.value) || 2.5; if (W.snap) render(); });
       var or = document.getElementById('wf-ortho'); if (or) or.addEventListener('change', function () { W.ortho = this.checked; });
+      var arb = document.getElementById('wf-autoroute'); if (arb) arb.addEventListener('click', autoRoute);
       root().querySelectorAll('[data-wfnt]').forEach(function (b) { b.addEventListener('click', function () { W.nodeType = b.dataset.wfnt; render(); }); });
       if (W.mode === 'align') {
         var ah = document.getElementById('wf-al-h'), av = document.getElementById('wf-al-v'), ac = document.getElementById('wf-al-c');
@@ -401,7 +459,7 @@
       } });
       svg.innerHTML = lines;
       svg.querySelectorAll('.wf-hit').forEach(function (h) {
-        h.addEventListener('contextmenu', function (ev) { ev.preventDefault(); ev.stopPropagation(); var i = +this.dataset.ei; if (i >= 0) { W.edges.splice(i, 1); wfRenderGraph(); toast('경로를 삭제했습니다.', 'success'); } });
+        h.addEventListener('contextmenu', function (ev) { ev.preventDefault(); ev.stopPropagation(); showEdgeMenu(+this.dataset.ei, ev.clientX, ev.clientY); });
       });
     }
     var wrap = document.querySelector('#wf-stage .wf-nodes'); if (!wrap) return;
