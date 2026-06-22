@@ -4924,7 +4924,10 @@
     var _cc = window.getClaudeConfig ? getClaudeConfig() : { apiKey: CONFIG.anthropicApiKey, endpoint: 'https://api.anthropic.com/v1/messages', isOfficial: true };
     if (!_cc.apiKey) { toast('설정에서 Claude API 키를 먼저 저장하세요.', 'error'); return; }
     var cals = getSelectedExtractCalendars();
-    if (!cals.length) { toast('비교할 캘린더를 선택하세요.', 'error'); return; }
+    // 명시적으로 체크한 캘린더가 있어야 '기준'이 분명해짐(미선택 시 기본캘린더로 슬쩍 비교하던 혼동 방지)
+    var explicitCnt = document.querySelectorAll('.extract-cal-cb:checked').length;
+    if (!explicitCnt) { toast("먼저 '📅 등록 캘린더 선택'에서 중복을 비교할 캘린더를 선택하세요. (그 캘린더의 기존 일정과 비교합니다)", 'error'); return; }
+    var calNames = cals.map(function (c) { return c.name; }).join(', ');
 
     var btn = $('extract-ai-dup-btn');
     if (btn) { btn.disabled = true; btn.textContent = '🤖 중복 검사 중...'; }
@@ -4990,7 +4993,7 @@
       }).map(function (x) { return { title: x.title, date: x.start, calName: x.calName }; });
 
       renderExtractedEvents(null);
-      toast('AI 중복 검사 완료 — 중복 의심 ' + dupCnt + '개' + (S._aiMissing.length ? (' · 참고(미발췌) ' + S._aiMissing.length + '건' ) : ''), dupCnt ? 'info' : 'success');
+      toast('「' + calNames + '」 기준 · 기존 ' + existing.length + '건과 비교 — 중복 의심 ' + dupCnt + '개' + (S._aiMissing.length ? (' · 참고(미발췌) ' + S._aiMissing.length + '건') : ''), dupCnt ? 'info' : 'success');
     } catch (e) {
       toast('AI 중복 검사 실패: ' + (e.message || e), 'error');
     } finally {
