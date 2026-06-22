@@ -7160,19 +7160,23 @@
      — 브라우저에 활성 Google 세션이 있으면 클릭 없이 자동 로그인
   ═══════════════════════════════════════════════════════════ */
   function tryAutoLogin() {
-    // Google GIS 스크립트 로드 후 1.5초 내 silent request 시도
-    var MAX_WAIT = 1500;
+    // 활성 구글 세션이 있으면 클릭 없이 무음 로그인 → 바로 캘린더.
+    // ★ reauth()(무음 전용)를 사용: 무음 실패해도 에러/로그아웃 없이 로그인 화면만 유지.
+    //    (login()은 메인 로그인이라 무음 실패 시 토큰을 지우고 에러를 띄움 — 사용 금지)
+    var MAX_WAIT = 6000;
     var started  = Date.now();
+    var done = false;
+    function attempt() {
+      if (done) return;
+      if (typeof Auth === 'undefined' || !Auth.reauth) return;          // GIS 아직 로드 전 → 다음 tick
+      if (Auth.isLoggedIn && Auth.isLoggedIn()) { done = true; return; } // 이미 복원됨
+      done = true;
+      try { Auth.reauth().catch(function () {}); } catch (e) {}          // 성공 시 onAuthChange가 앱 표시
+    }
     var interval = setInterval(function () {
-      if (typeof Auth !== 'undefined' && Auth.isLoggedIn && !Auth.isLoggedIn()) {
-        try {
-          Auth.login(); // prompt:'' → 이미 로그인 세션 있으면 팝업 없이 토큰 반환
-        } catch (e) {}
-        clearInterval(interval);
-      } else if (Date.now() - started > MAX_WAIT || (typeof Auth !== 'undefined' && Auth.isLoggedIn && Auth.isLoggedIn())) {
-        clearInterval(interval);
-      }
-    }, 300);
+      attempt();
+      if (done || Date.now() - started > MAX_WAIT) clearInterval(interval);
+    }, 250);
   }
 
   if (document.readyState === 'loading') {

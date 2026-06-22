@@ -228,7 +228,9 @@
 
         _accessToken = token;
         var remaining = expires - Date.now();
-        _expireTimer = setTimeout(function () { _clearToken(); _notifyChange(); }, remaining);
+        // 만료 2분 전 무음 갱신 → 재로그인 없이 세션 유지(활성 구글 세션이 있는 한 계속 로그인 상태)
+        var refreshIn = Math.max(1000, remaining - 120000);
+        _expireTimer = setTimeout(function () { _silentRefresh(); }, refreshIn);
         _notifyChange();
         return true;
       } catch (e) {}
