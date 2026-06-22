@@ -14,6 +14,15 @@
   var GAS_DEFAULT = 'https://script.google.com/macros/s/AKfycbyZuuQpuc-0KWaaHmwJUTvnAc83liMcUcC5XxcdR-EFQCFC2AJ0LpFS3R1gS_JXI3Fykg/exec';
   function GAS() { try { return localStorage.getItem('asea_gas_url') || GAS_DEFAULT; } catch (e) { return GAS_DEFAULT; } }
 
+  /* GAS(KV) 동기화는 기본 비활성(opt-in).
+     - 이 GAS 웹앱은 CORS 헤더를 주지 않아 읽기 동기화가 구조적으로 실패 → 콘솔 에러 유발.
+     - 중요한 데이터(신청서·할일·기숙사 등)는 이미 Supabase로 동기화되므로 실효 없음.
+     - 필요 시 CloudSync.enable() 로 켤 수 있고, 켜져 있어도 첫 실패 시 세션 동안 자동 차단. */
+  var _enabled = (function () { try { return localStorage.getItem('asea_cloudsync_enabled') === '1'; } catch (e) { return false; } })();
+  var _broken = false;   // 세션 서킷 브레이커: 한 번 실패하면 더 시도 안 함(콘솔 도배 방지)
+  function _trip() { _broken = true; }
+
+
   /* 동기화 정책: 'asea_' 로 시작하는 모든 키를 기본 동기화한다.
      단, 아래 '제외'는 기기/계정 로컬에 유지(보안키·토큰·접속설정·신원·기기 UI·캐시·이미 Supabase로 동기화되는 모듈). */
 
@@ -51,7 +60,7 @@
   var _pushTimers = {};
   localStorage.setItem = function (k, v) {
     _origSet(k, v);
-    if (!_applying && isSynced(k)) schedulePush(k);
+    if (_enabled && !_broken && !_applying && isSynced(k)) schedulePush(k);
   };
   function _applySet(k, v) { _applying = true; try { _origSet(k, v); } finally { _applying = false; } }
 
@@ -67,15 +76,16 @@
       .then(function (j) { if (!j || !j.ok) throw 0; return j.value; });   // string | null
   }
   function kvList(prefix) {
+    // 실패를 삼키지 않고 전파 → pullAll에서 서킷 차단 판단(콘솔 도배 방지)
     return fetch(GAS() + '?action=kvList&prefix=' + encodeURIComponent(prefix) + '&_=' + Date.now())
       .then(function (r) { if (!r.ok) throw 0; return r.json(); })
-      .then(function (j) { return (j && j.ok && j.keys) || []; })
-      .catch(function () { return []; });
+      .then(function (j) { return (j && j.ok && j.keys) || []; });
   }
   function push(key, value) {
+    if (!_enabled || _broken) return Promise.resolve();
     var body = JSON.stringify({ action: 'kvSet', key: key, value: value == null ? (localStorage.getItem(key) || '') : value });
     return fetch(GAS(), { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: body })
-      .catch(function (e) { /* 오프라인: 다음 변경/새로고침 때 재시도 */ });
+      .catch(function (e) { _trip(); /* 실패 시 세션 동안 중단 */ });
   }
 
   /* ── 병합 ── */
@@ -108,7 +118,7 @@
   /* ── 전체 동기화(캐시 우선 → 서버 병합) ── */
   var _lastPull = 0, _pulling = false;
   function pullAll(force) {
-    if (_pulling) return;
+    if (!_enabled || _broken || _pulling) return;
     var now = Date.now();
     if (!force && now - _lastPull < 15000) return;  // 과도호출 방지
     _pulling = true; _lastPull = now;
@@ -140,10 +150,22 @@
           try { window.dispatchEvent(new CustomEvent('cloudsync-updated')); } catch (e) {}
         }
       }).catch(function () { _pulling = false; });
-    }).catch(function () { _pulling = false; });
+    }).catch(function () { _pulling = false; _trip(); });   // kvList 실패(CORS/네트워크) → 세션 동안 동기화 중단
   }
 
   function start() {
+    // 제어 API는 항상 노출(끄고 켜기·상태확인 가능)
+    window.CloudSync = {
+      pull: function () { pullAll(true); },
+      push: push,
+      isSynced: isSynced,
+      enabled: function () { return _enabled; },
+      enable: function (url) { try { if (url) localStorage.setItem('asea_gas_url', url); localStorage.setItem('asea_cloudsync_enabled', '1'); } catch (e) {} location.reload(); },
+      disable: function () { try { localStorage.removeItem('asea_cloudsync_enabled'); } catch (e) {} location.reload(); }
+    };
+    // 기본 비활성: GAS(KV) 동기화를 켜지 않았으면 어떤 네트워크 호출도 하지 않음 → 콘솔 에러 0
+    if (!_enabled) return;
+
     // 초기 동기화는 로그인/첫 화면 렌더 이후로 미뤄 시작 지연을 막는다(GAS는 1~3초 소요).
     var kick = function () { pullAll(true); };
     if (window.requestIdleCallback) requestIdleCallback(kick, { timeout: 4000 });
@@ -152,7 +174,6 @@
     document.addEventListener('visibilitychange', function () { if (!document.hidden) pullAll(false); });
     window.addEventListener('focus', function () { pullAll(false); });
     setInterval(function () { if (!document.hidden) pullAll(false); }, 60000);
-    window.CloudSync = { pull: function () { pullAll(true); }, push: push, isSynced: isSynced };
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
   else start();
