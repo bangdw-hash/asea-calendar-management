@@ -5282,55 +5282,48 @@
     btn.disabled = true;
     btn.textContent = '등록 중...';
 
-    var toCreate = selected;
     var calCount = targetCals.length;
-    var total = toCreate.length * calCount;
-    var ok = 0, fail = 0, done = 0;
-    for (var i = 0; i < toCreate.length; i++) {
-      var ev = toCreate[i];
+
+    // 1) 각 추출 일정을 등록용 body로 변환 — 2일 이상 연속 일정은 시작/종료 2개로 자동 분리
+    var _hasTime = function (dt) { if (!dt) return false; var t = dt.split('T')[1]; return t && t !== '00:00:00' && t !== '00:00'; };
+    var _nextDay = function (dateStr) { var nd = new Date(dateStr + 'T00:00:00'); nd.setDate(nd.getDate() + 1); return _ymd(nd); };
+    var bodiesList = [];
+    selected.forEach(function (ev) {
       var dept = ev.department || '기타';
       var dIdx = CONFIG.departments.findIndex(function (d) { return d.name === dept; });
       var palette = ['1','2','3','4','5','6','7','8','9','10','11'];
       var colorId = palette[dIdx >= 0 ? dIdx % palette.length : 10];
-      // 시간 정보 유무 판별: "T00:00:00" 이거나 시간 부분이 없으면 종일 이벤트
-      var _hasTime = function (dt) {
-        if (!dt) return false;
-        var t = dt.split('T')[1];
-        return t && t !== '00:00:00' && t !== '00:00';
-      };
-      var startHasTime = _hasTime(ev.startDateTime);
-      var endHasTime   = _hasTime(ev.endDateTime);
-      var isAllDay     = !startHasTime && !endHasTime;
+      var desc = (ev.description || '') + '\n[부서:' + dept + ']';
+      var sDate = (ev.startDateTime || '').split('T')[0];
+      var eDate = (ev.endDateTime || '').split('T')[0];
+      var titleHasMarker = /\s*[\(\[]?\s*(시작|종료)\s*[\)\]]?\s*$/.test(ev.title || '');
+      var multiDay = sDate && eDate && eDate > sDate;
 
-      var eventBody;
-      if (isAllDay) {
-        var startDate = (ev.startDateTime || '').split('T')[0];
-        var endDate   = (ev.endDateTime   || '').split('T')[0];
-        if (!endDate || endDate === startDate) {
-          var d = new Date(startDate); d.setDate(d.getDate() + 1);
-          endDate = d.toISOString().split('T')[0];
-        }
-        eventBody = {
-          summary:     ev.title,
-          description: (ev.description || '') + '\n[부서:' + dept + ']',
-          start: { date: startDate },
-          end:   { date: endDate },
-          colorId: colorId,
-        };
-      } else {
-        eventBody = {
-          summary:     ev.title,
-          description: (ev.description || '') + '\n[부서:' + dept + ']',
-          start: { dateTime: new Date(ev.startDateTime).toISOString(), timeZone: tz },
-          end:   { dateTime: new Date(ev.endDateTime).toISOString(),   timeZone: tz },
-          colorId: colorId,
-        };
+      if (multiDay && !titleHasMarker) {
+        // 연속 일정 → 시작(첫날)·종료(끝날) 종일 일정 2개로 분리 등록
+        bodiesList.push({ summary: (ev.title || '') + ' (시작)', description: desc, start: { date: sDate }, end: { date: _nextDay(sDate) }, colorId: colorId });
+        bodiesList.push({ summary: (ev.title || '') + ' (종료)', description: desc, start: { date: eDate }, end: { date: _nextDay(eDate) }, colorId: colorId });
+        return;
       }
-      // 선택된 모든 캘린더에 동일 일정 등록
+      // 단일일(또는 이미 시작/종료로 분리된 항목)
+      var isAllDay = !_hasTime(ev.startDateTime) && !_hasTime(ev.endDateTime);
+      if (isAllDay) {
+        var startDate = sDate, endDate = eDate;
+        if (!endDate || endDate === startDate) endDate = _nextDay(startDate);
+        bodiesList.push({ summary: ev.title, description: desc, start: { date: startDate }, end: { date: endDate }, colorId: colorId });
+      } else {
+        bodiesList.push({ summary: ev.title, description: desc, start: { dateTime: new Date(ev.startDateTime).toISOString(), timeZone: tz }, end: { dateTime: new Date(ev.endDateTime).toISOString(), timeZone: tz }, colorId: colorId });
+      }
+    });
+
+    // 2) 선택된 모든 캘린더에 일괄 등록
+    var total = bodiesList.length * calCount;
+    var ok = 0, fail = 0, done = 0;
+    for (var b = 0; b < bodiesList.length; b++) {
       for (var c = 0; c < targetCals.length; c++) {
         done++;
         btn.textContent = '등록 중... (' + done + '/' + total + ')';
-        try { await CalendarModule.createEvent(targetCals[c].id, eventBody); ok++; }
+        try { await CalendarModule.createEvent(targetCals[c].id, bodiesList[b]); ok++; }
         catch (e) { fail++; }
       }
     }
