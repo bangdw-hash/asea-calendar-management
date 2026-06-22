@@ -4512,6 +4512,26 @@
     return { url: url, isOfficial: isOfficial };
   }
 
+  /* 추출 결과 후처리 — 2일 이상 연속 일정을 시작/종료 2개(단일일)로 강제 분리.
+     AI가 연속으로 내보내도 발췌 결과부터 분리되어 보이게 한다(이미 (시작)/(종료) 표시는 제외). */
+  function _autoSplitExtracted(list) {
+    if (!Array.isArray(list)) return list;
+    var out = [];
+    list.forEach(function (ev) {
+      if (!ev || !ev.startDateTime) { out.push(ev); return; }
+      var sDate = String(ev.startDateTime).split('T')[0];
+      var eDate = String(ev.endDateTime || ev.startDateTime).split('T')[0];
+      var hasMarker = /\s*[\(\[]?\s*(시작|종료)\s*[\)\]]?\s*$/.test(ev.title || '');
+      if (sDate && eDate && eDate > sDate && !hasMarker) {
+        out.push(Object.assign({}, ev, { title: (ev.title || '') + ' (시작)', startDateTime: sDate + 'T00:00:00', endDateTime: sDate + 'T00:00:00' }));
+        out.push(Object.assign({}, ev, { title: (ev.title || '') + ' (종료)', startDateTime: eDate + 'T00:00:00', endDateTime: eDate + 'T00:00:00' }));
+      } else {
+        out.push(ev);
+      }
+    });
+    return out;
+  }
+
   async function runExtract() {
     var _cc = window.getClaudeConfig ? getClaudeConfig() : { apiKey: CONFIG.anthropicApiKey, endpoint: 'https://api.anthropic.com/v1/messages', isOfficial: true };
     var apiKey = _cc.apiKey;
@@ -4544,10 +4564,17 @@
         '  - 업무종류: 업무 성격을 나타내는 "최대 4글자" 한국어 키워드를 직접 정한다(대외 · 대외협력 · 대외감사 · 교육일정 · 회의 · 출장 · 행사 · 점검 · 보고 · 채용 · 워크숍 등)\n' +
         '  - 제목: 업무 내용을 직관적으로 요약\n' +
         '  예) "[기획/대외협력] KAI 직업계고 방문", "[비행/교육일정] 자가용 과정 입과", "[기종/점검] 정비실습장 안전점검", "[무인/행사] 드론 경진대회"\n\n' +
-        '■ 다일(2일 이상 연속) 일정 분리:\n' +
-        '  - 하루짜리 일정: 객체 1개.\n' +
-        '  - 2일 이상 연속 일정: 객체 2개로 분리 — 첫째 제목 끝에 " 시작"(startDateTime·endDateTime=시작일), 둘째 제목 끝에 " 종료"(startDateTime·endDateTime=종료일).\n' +
-        '  - 시간이 명시되지 않은 일정은 종일로 보고 시간을 "00:00:00".\n\n' +
+        '■ 다일(2일 이상 연속) 일정 분리 — 가장 중요한 규칙(반드시 준수):\n' +
+        '  ★ 시작일과 종료일이 다른 일정(하루를 초과하는 모든 일정)은 절대로 하나의 연속 일정으로 출력하지 마라.\n' +
+        '  ★ 반드시 객체 2개로 쪼갠다. 기간이 몇 달(예: 03.09~06.30)이라도 예외 없이 2개로 분리한다.\n' +
+        '    · 첫째 객체: 제목 끝에 " 시작", startDateTime=endDateTime=시작일(그 하루)\n' +
+        '    · 둘째 객체: 제목 끝에 " 종료", startDateTime=endDateTime=종료일(그 하루)\n' +
+        '  ★ 즉 출력된 어떤 객체도 startDateTime의 날짜와 endDateTime의 날짜가 같아야 한다(모두 단일일).\n' +
+        '  - 하루짜리 일정만 객체 1개.\n' +
+        '  - 시간이 명시되지 않은 일정은 종일로 보고 시간을 "00:00:00".\n' +
+        '  [분리 예시] "26-1차 기종교육과정 B737NG 진행"(2026.03.09~2026.06.30) →\n' +
+        '    {"title":"[기종/교육일정] 26-1차 기종교육과정 B737NG 진행 시작","startDateTime":"2026-03-09T00:00:00","endDateTime":"2026-03-09T00:00:00", ...},\n' +
+        '    {"title":"[기종/교육일정] 26-1차 기종교육과정 B737NG 진행 종료","startDateTime":"2026-06-30T00:00:00","endDateTime":"2026-06-30T00:00:00", ...}\n\n' +
         '■ 출력: 아래 JSON 배열만 반환하고 설명·코드블록은 절대 포함하지 마세요. 항목이 많아도 절대 중간에 끊지 말고 끝까지 모두 출력하세요:\n' +
         '[\n' +
         '  {\n' +
@@ -4600,7 +4627,7 @@
         parsed = JSON.parse(rawJson.slice(0, lastComplete + 1) + ']');
         toast('응답 일부 복구됨. ' + parsed.length + '개 항목.', 'info');
       }
-      S.extractedEvents = parsed;
+      S.extractedEvents = _autoSplitExtracted(parsed);
 
       // 추출 이력 저장
       var histEntry = {
