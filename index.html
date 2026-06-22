@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&family=Nanum+Gothic:wght@400;700&family=Nanum+Myeongjo:wght@400;700&family=Gowun+Dodum&family=Black+Han+Sans&family=IBM+Plex+Sans+KR:wght@400;500;700&display=swap">
-  <link rel="stylesheet" href="style.css?v=20260621r39">
+  <link rel="stylesheet" href="style.css?v=20260621r40">
   <link rel="stylesheet" href="report.css?v=20260610r1">
   <link rel="stylesheet" href="promo.css?v=20260611p3">
   <link rel="stylesheet" href="help.css?v=20260610h1">
@@ -272,7 +272,7 @@
     </svg>
     <span class="tab-label">캘린더 공유</span>
   </button>
-  <button class="tab-btn" id="tasks-window-nav-btn" role="tab" aria-selected="false" onclick="if(window.aseaOpenTasks){window.aseaOpenTasks();}else{window.open('tasks-window.html?v=20260621tw5','asea-tasks','width=480,height=820,scrollbars=yes,resizable=yes');}return false">
+  <button class="tab-btn" id="tasks-window-nav-btn" role="tab" aria-selected="false" onclick="if(window.aseaOpenTasks){window.aseaOpenTasks();}else{window.open('tasks-window.html?v=20260621tw6','asea-tasks','width=480,height=820,scrollbars=yes,resizable=yes');}return false">
     <svg class="tab-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
       <polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
     </svg>
@@ -646,21 +646,29 @@
               <div class="extract-result-header">
                 <span id="extract-result-count"></span>
                 <div class="extract-result-actions">
-                  <button id="extract-select-all" class="btn btn-ghost btn-sm">전체 선택</button>
-                  <button id="extract-deselect-all" class="btn btn-ghost btn-sm">전체 취소</button>
-                  <button id="extract-deselect-conflict" class="btn btn-ghost btn-sm extract-conflict-btn" disabled>⚠ 충돌 취소</button>
-                  <button id="extract-delete-selected-btn" class="btn btn-ghost btn-sm" style="color:#d32f2f">🗑️ 선택 삭제</button>
-                  <button id="extract-split-btn" class="btn btn-ghost btn-sm" title="선택된 다일 일정을 시작·종료 2개로 분리">✂️ 시작/종료 분리</button>
-                  <div class="extract-cal-ms" id="extract-cal-ms">
-                    <button type="button" id="extract-cal-ms-btn" class="btn btn-secondary btn-sm" style="min-width:160px">📅 등록 캘린더 선택 ▾</button>
-                    <div class="extract-cal-ms-panel" id="extract-cal-ms-panel" hidden></div>
+                  <div class="exa-group" role="group" aria-label="선택">
+                    <button id="extract-select-all" class="btn btn-ghost btn-sm" title="추출된 모든 일정을 선택(체크)합니다">전체 선택</button>
+                    <button id="extract-deselect-all" class="btn btn-ghost btn-sm" title="모든 일정의 선택(체크)을 해제합니다">전체 취소</button>
+                    <button id="extract-deselect-conflict" class="btn btn-ghost btn-sm extract-conflict-btn" disabled title="충돌·중복으로 표시된 항목의 선택을 한 번에 해제합니다">⚠ 충돌·중복 취소</button>
+                    <button id="extract-delete-selected-btn" class="btn btn-ghost btn-sm" style="color:#d32f2f" title="선택한 일정을 추출 목록에서 삭제합니다(캘린더 등록 전)">🗑️ 선택 삭제</button>
                   </div>
-                  <button id="extract-check-conflict-btn" class="btn btn-secondary btn-sm">🔍 충돌 확인</button>
-                  <button id="extract-ai-dup-btn" class="btn btn-secondary btn-sm" title="기존 등록 일정과 부서·명칭·날짜로 의미상 중복인지 AI가 판정">🤖 AI 중복 검사</button>
-                  <button id="extract-save-state-btn" class="btn btn-ghost btn-sm">💾 현재 상태 저장</button>
-                  <button id="extract-gen-share-url-btn" class="btn btn-secondary btn-sm">📤 선택 일정 공유</button>
-                  <button id="extract-add-selected" class="btn btn-primary btn-sm">선택 항목 등록</button>
-                  <button id="extract-text-btn" class="btn btn-secondary btn-sm">📋 텍스트 보기</button>
+                  <span class="exa-div" aria-hidden="true"></span>
+                  <div class="exa-group" role="group" aria-label="검사·도구">
+                    <button id="extract-check-conflict-btn" class="btn btn-secondary btn-sm" title="선택한 캘린더의 기존 일정과 시간이 겹치는지(+제목 유사) 확인합니다">🔍 충돌 확인</button>
+                    <button id="extract-ai-dup-btn" class="btn btn-secondary btn-sm" title="기존 등록 일정과 부서·명칭(의미)·날짜로 같은 업무(중복)인지 AI가 판정합니다">🤖 AI 중복 검사</button>
+                    <button id="extract-split-btn" class="btn btn-ghost btn-sm" title="선택한 다일(2일 이상) 일정을 시작·종료 2개로 분리합니다">✂️ 시작/종료 분리</button>
+                    <button id="extract-text-btn" class="btn btn-ghost btn-sm" title="추출된 일정을 텍스트(표) 형태로 봅니다">📋 텍스트 보기</button>
+                    <button id="extract-save-state-btn" class="btn btn-ghost btn-sm" title="현재 추출·검토 상태를 저장해 두고 나중에 이어서 작업합니다">💾 상태 저장</button>
+                    <button id="extract-gen-share-url-btn" class="btn btn-ghost btn-sm" title="선택한 일정을 공유 링크(URL)로 만들어 다른 사람에게 전달합니다">📤 공유</button>
+                  </div>
+                  <span class="exa-div" aria-hidden="true"></span>
+                  <div class="exa-group exa-group-register" role="group" aria-label="등록">
+                    <div class="extract-cal-ms" id="extract-cal-ms">
+                      <button type="button" id="extract-cal-ms-btn" class="btn btn-secondary btn-sm" style="min-width:150px" title="등록할 캘린더를 복수로 선택합니다(여러 캘린더에 동시 등록)">📅 등록 캘린더 선택 ▾</button>
+                      <div class="extract-cal-ms-panel" id="extract-cal-ms-panel" hidden></div>
+                    </div>
+                    <button id="extract-add-selected" class="btn btn-primary btn-sm" title="체크된 일정을 선택한 캘린더에 등록합니다(다일 일정은 시작/종료로 자동 분리)">✅ 선택 항목 등록</button>
+                  </div>
                 </div>
               </div>
               <div id="extract-events-list" class="extract-events-list"></div>
@@ -3433,8 +3441,9 @@
   <script src="usersettings.js?v=20260610u1" defer></script>
   <script src="budget-seed-2026.js?v=20260614b1" defer></script>
   <script src="budget.js?v=20260614b9" defer></script>
-  <script src="app.js?v=20260621r32" defer></script>
+  <script src="app.js?v=20260621r33" defer></script>
   <script src="navgroups.js?v=20260621r16" defer></script>
+  <script src="tooltips.js?v=20260621tt1" defer></script>
   <script src="userorg.js?v=20260614u1" defer></script>
   <script src="onboarding.js?v=20260614ob1" defer></script>
   <script src="monoicons.js?v=20260617m8" defer></script>

@@ -2332,6 +2332,11 @@ a        { color: var(--color-accent); text-decoration: none; }
   flex-wrap: wrap;
   margin-left: auto;
 }
+/* 그룹 정리: 선택 | 검사·도구 | 등록 */
+.extract-result-actions .exa-group { display: inline-flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+.extract-result-actions .exa-group-register { gap: 6px; }
+.extract-result-actions .exa-div { width: 1px; align-self: stretch; min-height: 22px; background: var(--color-border); margin: 0 2px; }
+@media (max-width: 768px) { .extract-result-actions .exa-div { display: none; } }
 
 .extract-events-list {
   display: flex;
