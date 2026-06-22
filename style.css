@@ -6627,6 +6627,13 @@ body.nav-sheet-open .quick-fab { display: none; }
 /* 관리자·설정 메뉴 이모지 → 단색 라인 SVG (monoicons.js) */
 .mono-ico { display:inline-flex; align-items:center; justify-content:center; vertical-align:-3px; margin-right:7px; flex-shrink:0; }
 .mono-ico svg { width:18px; height:18px; }
+/* 작은 버튼·인라인 라벨에서는 아이콘을 작게 */
+.btn-sm .mono-ico, .tab-btn .mono-ico, .view-btn .mono-ico, .ev-ctx-item .mono-ico,
+.tw-tbtn .mono-ico, .tw-selbtn .mono-ico, .subtab-btn .mono-ico { margin-right: 5px; }
+.btn-sm .mono-ico svg, .tab-btn .mono-ico svg, .view-btn .mono-ico svg, .ev-ctx-item .mono-ico svg,
+.tw-tbtn .mono-ico svg, .tw-selbtn .mono-ico svg, .subtab-btn .mono-ico svg,
+.extract-event-meta .mono-ico svg { width:14px; height:14px; }
+.extract-event-meta .mono-ico { margin-right:4px; vertical-align:-2px; }
 .admin-nav-btn .mono-ico { margin-right:8px; }
 
 /* 서브탭 바: 전역 가로 스크롤 보장(미디어쿼리/JS 의존 없이 항상 스와이프 가능) */
