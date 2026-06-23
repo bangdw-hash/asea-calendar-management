@@ -593,6 +593,19 @@ window.RetireModule = (function () {
       body.appendChild(div);
     });
 
+    /* 하나은행 퇴직연금 IRP 개설 QR + 바로가기 */
+    var hanaUrl = 'https://m.hanabank.com/cont/mybranch/0350/05/MYB03500152489/index.html';
+    var hanaQr = el('div');
+    hanaQr.style.cssText = 'margin:14px 0;padding:14px;border:1px solid #DCE3EE;border-radius:10px;background:#F4F8FF;display:flex;gap:14px;align-items:center;flex-wrap:wrap';
+    hanaQr.innerHTML =
+      '<img src="https://api.qrserver.com/v1/create-qr-code/?size=140x140&margin=4&data=' + encodeURIComponent(hanaUrl) + '" alt="하나은행 IRP 개설 QR코드" style="width:118px;height:118px;border:1px solid #E5E7EB;border-radius:8px;background:#fff;flex-shrink:0">' +
+      '<div style="flex:1;min-width:190px">' +
+        '<div style="font-size:14px;font-weight:700;color:#1a3a5c">하나은행 퇴직연금 IRP 개설하기</div>' +
+        '<div style="font-size:12px;color:#5B6B7B;margin:6px 0 10px;line-height:1.7">하나은행 IRP(개인형퇴직연금) 계좌가 없으면, 휴대폰으로 <strong>QR을 스캔</strong>하거나 아래 버튼을 눌러 바로 개설하세요.</div>' +
+        '<a href="' + hanaUrl + '" target="_blank" rel="noopener" style="display:inline-block;background:#1a3a5c;color:#fff;font-size:13px;font-weight:600;padding:9px 16px;border-radius:8px;text-decoration:none">하나은행 IRP 개설 페이지 열기 →</a>' +
+      '</div>';
+    body.appendChild(hanaQr);
+
     /* IRP 계좌 */
     body.appendChild(sectionTitle('■ IRP 계좌 정보'));
     var bankNote = el('div');
