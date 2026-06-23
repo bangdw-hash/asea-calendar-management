@@ -28,6 +28,32 @@
     saveHistory(list);
   }
 
+  /* ── 편집 이력(드래프트) — 계정별 클라우드 저장(Supabase app_submissions, kind=survey_draft) ──
+     구글 드라이브에 올리기 전의 편집 내역을 보관 → 다른 단말에서 조회·이어편집·복제 가능 */
+  function _uid() { return 'sd_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+  function _email() { try { return localStorage.getItem('asea_user_email') || ''; } catch (e) { return ''; } }
+  function _draftSave(draft) {
+    draft.updatedAt = new Date().toISOString();
+    if (!(window.CloudForms && CloudForms.save) || !_email()) return Promise.resolve({ ok: false });
+    return CloudForms.save('survey_draft', draft.id, draft.title || '설문 초안', draft.formId ? 'created' : 'draft',
+      { email: _email(), id: draft.id, title: draft.title, structure: draft.structure, formId: draft.formId || '', createdAt: draft.createdAt || '', updatedAt: draft.updatedAt });
+  }
+  function _draftList(cb) {
+    if (!(window.CloudForms && CloudForms.list) || !_email()) { cb([]); return; }
+    CloudForms.list('survey_draft').then(function (res) {
+      var em = _email();
+      var rows = (res.rows || []).map(function (r) { return r.data; })
+        .filter(function (d) { return d && d.email === em && !d.deleted; });
+      rows.sort(function (a, b) { return (b.updatedAt || '') < (a.updatedAt || '') ? -1 : 1; });
+      cb(rows);
+    }).catch(function () { cb([]); });
+  }
+  function _draftDelete(id, title, cb) {
+    if (!(window.CloudForms && CloudForms.save)) { cb && cb(); return; }
+    CloudForms.save('survey_draft', id, title || '', 'deleted', { email: _email(), id: id, deleted: true, updatedAt: new Date().toISOString() })
+      .then(function () { cb && cb(); }).catch(function () { cb && cb(); });
+  }
+
   /* ── Claude API로 설문지 구조 생성 ─────────────────── */
   function buildFormStructureWithClaude(prompt) {
     /* 1) 내 localStorage  2) 관리자가 게시한 staff-menus.json 순으로 키 탐색 */
@@ -199,8 +225,17 @@
         '</div>' +
 
         '<div class="settings-card" style="margin-top:16px">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">' +
+          '<h3 class="settings-section-title" style="margin:0">📝 편집 이력 (클라우드)</h3>' +
+          '<button id="survey-draft-refresh" class="btn btn-ghost btn-sm">🔄 새로고침</button>' +
+        '</div>' +
+        '<p class="form-hint" style="margin:0 0 10px">구글 드라이브에 올리기 전의 편집 내역이 <b>로그인 계정별로 클라우드에 저장</b>되어 어느 단말에서나 조회됩니다. 불러와 이어 편집하거나, <b>복제</b>해 새 설문으로 만들 수 있어요(예: 1학기 → 2학기).</p>' +
+        '<div id="survey-draft-list"><p class="empty-state">불러오는 중...</p></div>' +
+        '</div>' +
+
+        '<div class="settings-card" style="margin-top:16px">' +
         '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">' +
-          '<h3 class="settings-section-title" style="margin:0">📂 내 설문지 목록</h3>' +
+          '<h3 class="settings-section-title" style="margin:0">📂 내 설문지 목록 (구글 드라이브)</h3>' +
           '<button id="survey-refresh-btn" class="btn btn-ghost btn-sm">🔄 새로고침</button>' +
         '</div>' +
         '<div id="survey-list"><p class="empty-state">불러오는 중...</p></div>' +
@@ -218,6 +253,56 @@
 
     _bindCreateEvents();
     _loadFormList();
+    _loadDraftList();
+    var dref = document.getElementById('survey-draft-refresh');
+    if (dref) dref.addEventListener('click', _loadDraftList);
+  }
+
+  /* 편집 이력(드래프트) 목록 렌더 */
+  function _loadDraftList() {
+    var el = document.getElementById('survey-draft-list');
+    if (!el) return;
+    el.innerHTML = '<p class="empty-state">불러오는 중...</p>';
+    _draftList(function (rows) {
+      if (!rows.length) { el.innerHTML = '<p class="empty-state">저장된 편집 이력이 없습니다. 편집기에서 「💾 편집 이력 저장」을 눌러 보관하세요.</p>'; return; }
+      el.innerHTML = rows.map(function (d) {
+        var when = d.updatedAt ? new Date(d.updatedAt).toLocaleString('ko-KR') : '';
+        var qn = (d.structure && d.structure.questions) ? d.structure.questions.filter(function (q) { return q.type !== 'SECTION' && q.type !== 'TEXT_BLOCK'; }).length : 0;
+        var made = d.formId ? '<span style="font-size:11px;color:#188038;margin-left:6px">· 생성됨</span>' : '';
+        return '<div class="sv-draft" data-id="' + _esc(d.id) + '">' +
+          '<div class="sv-draft-info"><div class="sv-draft-title">' + _esc(d.title || '(제목 없음)') + made + '</div>' +
+            '<div class="sv-draft-meta">질문 ' + qn + '개 · 수정 ' + _esc(when) + '</div></div>' +
+          '<div class="sv-draft-btns">' +
+            '<button class="btn btn-secondary btn-sm" data-dact="edit">이어서 편집</button>' +
+            '<button class="btn btn-ghost btn-sm" data-dact="dup">📑 복제하여 새 설문</button>' +
+            (d.formId ? '<a class="btn btn-ghost btn-sm" href="https://docs.google.com/forms/d/' + _esc(d.formId) + '/edit" target="_blank">구글폼 열기</a>' : '') +
+            '<button class="btn btn-ghost btn-sm" data-dact="del" style="color:#dc2626">삭제</button>' +
+          '</div></div>';
+      }).join('');
+      el.querySelectorAll('.sv-draft').forEach(function (row) {
+        var id = row.getAttribute('data-id');
+        var d = rows.filter(function (x) { return x.id === id; })[0]; if (!d) return;
+        row.querySelectorAll('[data-dact]').forEach(function (b) {
+          b.addEventListener('click', function () {
+            var act = b.getAttribute('data-dact');
+            if (act === 'edit') { _openDraft(d, false); }
+            else if (act === 'dup') { _openDraft(d, true); }
+            else if (act === 'del') { if (confirm('이 편집 이력을 삭제할까요?')) _draftDelete(d.id, d.title, _loadDraftList); }
+          });
+        });
+      });
+    });
+  }
+  /* 드래프트를 편집기로 로드. dup=true 면 새 id로 복제(원본 보존) */
+  function _openDraft(d, dup) {
+    var st = _normalize(JSON.parse(JSON.stringify(d.structure || { questions: [] })));
+    if (dup) { st._draftId = _uid(); st.title = (st.title || '설문') + ' (사본)'; st._formId = ''; }
+    else { st._draftId = d.id; st._formId = d.formId || ''; }
+    _pendingStructure = st;
+    _renderEditor();
+    _setStatus(dup ? '복제본을 불러왔습니다. 제목/내용을 바꾼 뒤 「💾 편집 이력 저장」 하면 새 이력으로 남습니다.' : '편집 이력을 불러왔습니다.');
+    var card = document.getElementById('survey-create-card');
+    if (card && card.scrollIntoView) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
   var _pendingStructure = null;
@@ -336,6 +421,7 @@
       '</div>' +
       '<div class="sv-ed-foot">' +
         '<button id="survey-confirm-btn" class="btn btn-primary">📤 구글 드라이브에 생성</button>' +
+        '<button id="survey-save-draft" class="btn btn-secondary">💾 편집 이력 저장</button>' +
         '<button id="survey-regen-btn" class="btn btn-ghost">✏️ 다시 생성</button>' +
       '</div>' +
       '</div>';
@@ -384,11 +470,26 @@
     });
     // 드래그 순서 이동 + 드롭 위치 표시
     _bindDnd(box.querySelector('#sv-ed-list'));
-    // 생성/재생성
+    // 생성/재생성/이력저장
     var cf = document.getElementById('survey-confirm-btn');
     if (cf) cf.addEventListener('click', _doCreate);
+    var sd = document.getElementById('survey-save-draft');
+    if (sd) sd.addEventListener('click', _saveDraftFromEditor);
     var rg = document.getElementById('survey-regen-btn');
     if (rg) rg.addEventListener('click', function () { box.style.display = 'none'; box.innerHTML = ''; _pendingStructure = null; _setStatus(''); });
+  }
+
+  function _saveDraftFromEditor() {
+    var st = _pendingStructure; if (!st) return;
+    if (!_email()) { _setStatus('❌ 로그인 후 이용하세요(클라우드 저장).'); return; }
+    if (!st._draftId) st._draftId = _uid();
+    var draft = { id: st._draftId, title: st.title, structure: { title: st.title, description: st.description, questions: st.questions }, formId: st._formId || '' };
+    _setStatus('💾 편집 이력 저장 중...');
+    _draftSave(draft).then(function (res) {
+      _setStatus((res && res.ok === false) ? ('⚠ 저장 실패: ' + (res.err || '로그인/네트워크 확인')) : '✅ 편집 이력이 클라우드에 저장됐습니다.');
+      _loadDraftList();
+      setTimeout(function () { _setStatus(''); }, 3000);
+    });
   }
 
   var _dragI = null;
@@ -430,11 +531,16 @@
     var cf = document.getElementById('survey-confirm-btn');
     _setStatus('📤 구글 드라이브에 생성 중...');
     if (cf) cf.disabled = true;
-    createForm(_pendingStructure)
+    var st = _pendingStructure;
+    createForm(st)
       .then(function (form) {
-        addHistory({ formId: form.formId, title: _pendingStructure.title, createdAt: new Date().toISOString(),
+        addHistory({ formId: form.formId, title: st.title, createdAt: new Date().toISOString(),
           editUrl: 'https://docs.google.com/forms/d/' + form.formId + '/edit',
           respondUrl: form.responderUri || ('https://docs.google.com/forms/d/' + form.formId + '/viewform') });
+        // 편집 이력(클라우드)에도 생성 사실 기록(편집본 보존 + 구글폼 링크 연결)
+        if (!st._draftId) st._draftId = _uid();
+        _draftSave({ id: st._draftId, title: st.title, structure: { title: st.title, description: st.description, questions: st.questions }, formId: form.formId, createdAt: new Date().toISOString() })
+          .then(function () { _loadDraftList(); });
         _setStatus('✅ 생성 완료! 구글폼이 만들어졌습니다.');
         var box = document.getElementById('survey-preview'); if (box) { box.style.display = 'none'; box.innerHTML = ''; }
         var pr = document.getElementById('survey-prompt'); if (pr) pr.value = '';
