@@ -601,10 +601,27 @@ window.RetireModule = (function () {
       '<img src="https://api.qrserver.com/v1/create-qr-code/?size=140x140&margin=4&data=' + encodeURIComponent(hanaUrl) + '" alt="하나은행 IRP 개설 QR코드" style="width:118px;height:118px;border:1px solid #E5E7EB;border-radius:8px;background:#fff;flex-shrink:0">' +
       '<div style="flex:1;min-width:190px">' +
         '<div style="font-size:14px;font-weight:700;color:#1a3a5c">하나은행 퇴직연금 IRP 개설하기</div>' +
-        '<div style="font-size:12px;color:#5B6B7B;margin:6px 0 10px;line-height:1.7">하나은행 IRP(개인형퇴직연금) 계좌가 없으면, 휴대폰으로 <strong>QR을 스캔</strong>하거나 아래 버튼을 눌러 바로 개설하세요.</div>' +
-        '<a href="' + hanaUrl + '" target="_blank" rel="noopener" style="display:inline-block;background:#1a3a5c;color:#fff;font-size:13px;font-weight:600;padding:9px 16px;border-radius:8px;text-decoration:none">하나은행 IRP 개설 페이지 열기 →</a>' +
+        '<div style="font-size:12px;color:#5B6B7B;margin:6px 0 10px;line-height:1.7">하나은행 IRP(개인형퇴직연금) 계좌가 없으면, 휴대폰으로 <strong>QR을 스캔</strong>하거나 아래 버튼을 눌러 바로 개설하세요. <span style="color:#9AA3AB">(버튼은 안내 후 새 창으로 열립니다)</span></div>' +
+        '<a id="rt-irp-open-link" href="' + hanaUrl + '" target="_blank" rel="noopener" style="display:inline-block;background:#1a3a5c;color:#fff;font-size:13px;font-weight:600;padding:9px 16px;border-radius:8px;text-decoration:none">하나은행 IRP 개설 페이지 열기 →</a>' +
       '</div>';
     body.appendChild(hanaQr);
+    // 외부 페이지로 바로 이동하지 않고: 저장 안내 + 새 창 이동 안내 후 새 탭으로 열기(현재 작성 페이지 유지)
+    var _irpLink = hanaQr.querySelector('#rt-irp-open-link');
+    if (_irpLink) _irpLink.addEventListener('click', function (e) {
+      e.preventDefault();
+      try { saveApp(app); } catch (_) {}
+      var ok = window.confirm(
+        '하나은행 IRP 개설 페이지로 이동합니다.\n\n' +
+        '• 지금까지 작성한 내용은 자동 저장되어 있고, 이 페이지는 그대로 유지됩니다.\n' +
+        '• 개설 페이지는 새 창(탭)으로 열립니다.\n' +
+        '• 개설 후 발급받은 IRP 계좌번호를 이 화면의 「IRP 계좌번호」에 입력해 주세요.\n\n' +
+        '이동할까요?'
+      );
+      if (ok) {
+        try { if (typeof toast === 'function') toast('작성 내용을 저장했습니다. 새 창에서 IRP 개설을 진행하세요.', '#16A34A'); } catch (_) {}
+        window.open(hanaUrl, '_blank', 'noopener');
+      }
+    });
 
     /* IRP 계좌 */
     body.appendChild(sectionTitle('■ IRP 계좌 정보'));
@@ -649,7 +666,7 @@ window.RetireModule = (function () {
     var dlWrap = el('div');
     dlWrap.style.cssText = 'display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px';
     var _appUrl = _getFormUrl('forms/dc-irp-application.pdf');
-    var _smpUrl = _getFormUrl('forms/dc-irp-sample.pdf');
+    var _smpUrl = _getFormUrl('forms/dc-irp-sample.pdf?v=20260623');
     var _btnCss = 'flex:1;min-width:170px;display:inline-flex;align-items:center;justify-content:center;gap:6px;text-decoration:none';
     dlWrap.innerHTML =
       '<a class="rt-btn rt-btn-primary" style="' + _btnCss + '" href="' + _appUrl + '" download="퇴직연금(DC·IRP)지급신청서.pdf" target="_blank" rel="noopener">📄 지급신청서 다운로드</a>' +
