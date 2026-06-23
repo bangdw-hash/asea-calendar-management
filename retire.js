@@ -649,7 +649,7 @@ window.RetireModule = (function () {
     var dlWrap = el('div');
     dlWrap.style.cssText = 'display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px';
     var _appUrl = _getFormUrl('forms/dc-irp-application.pdf');
-    var _smpUrl = _getFormUrl('forms/dc-irp-sample.pdf');
+    var _smpUrl = _getFormUrl('forms/dc-irp-sample.pdf?v=20260623');
     var _btnCss = 'flex:1;min-width:170px;display:inline-flex;align-items:center;justify-content:center;gap:6px;text-decoration:none';
     dlWrap.innerHTML =
       '<a class="rt-btn rt-btn-primary" style="' + _btnCss + '" href="' + _appUrl + '" download="퇴직연금(DC·IRP)지급신청서.pdf" target="_blank" rel="noopener">📄 지급신청서 다운로드</a>' +
