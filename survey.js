@@ -56,8 +56,9 @@
       '    { "title": "점수 질문", "type": "SCALE", "required": false, "low": 1, "high": 5, "lowLabel": "매우 나쁨", "highLabel": "매우 좋음" }\n' +
       '  ]\n' +
       '}\n' +
-      '지원 type: TEXT(단답), PARAGRAPH(장문), RADIO(객관식 단일), CHECKBOX(체크박스), SCALE(선형배율), DROP_DOWN(드롭다운)\n' +
-      'RADIO/CHECKBOX/DROP_DOWN은 반드시 options 배열 포함. SCALE은 low/high/lowLabel/highLabel 포함.';
+      '지원 type: TEXT(단답), PARAGRAPH(장문), RADIO(객관식 단일), CHECKBOX(체크박스), SCALE(선형배율), DROP_DOWN(드롭다운), SECTION(섹션·페이지 나눔), TEXT_BLOCK(설명 텍스트)\n' +
+      'RADIO/CHECKBOX/DROP_DOWN은 반드시 options 배열 포함. SCALE은 low/high/lowLabel/highLabel 포함.\n' +
+      'SECTION/TEXT_BLOCK은 { "title":"...", "type":"SECTION", "description":"..." } 형식(설명 페이지·구획 나눔용). 설문이 길면 적절히 SECTION으로 단계를 나누고, 맨 앞에 TEXT_BLOCK으로 간단한 안내문을 넣어도 좋습니다.';
 
     return fetch(endpoint, {
       method: 'POST',
@@ -106,25 +107,32 @@
         if (structure.description) {
           requests.push({ updateFormInfo: { info: { description: structure.description }, updateMask: 'description' } });
         }
-        (structure.questions || []).forEach(function(q, idx) {
-          var item = { title: q.title, questionItem: { question: { required: !!q.required } } };
+        var loc = 0;
+        (structure.questions || []).forEach(function(q) {
           var qt = (q.type || 'TEXT').toUpperCase();
-          if (qt === 'TEXT' || qt === 'SHORT_ANSWER') {
-            item.questionItem.question.textQuestion = { paragraph: false };
-          } else if (qt === 'PARAGRAPH') {
-            item.questionItem.question.textQuestion = { paragraph: true };
-          } else if (qt === 'RADIO') {
-            item.questionItem.question.choiceQuestion = { type: 'RADIO', options: (q.options || []).map(function(o) { return { value: o }; }) };
-          } else if (qt === 'CHECKBOX') {
-            item.questionItem.question.choiceQuestion = { type: 'CHECKBOX', options: (q.options || []).map(function(o) { return { value: o }; }) };
-          } else if (qt === 'DROP_DOWN') {
-            item.questionItem.question.choiceQuestion = { type: 'DROP_DOWN', options: (q.options || []).map(function(o) { return { value: o }; }) };
-          } else if (qt === 'SCALE') {
-            item.questionItem.question.scaleQuestion = { low: q.low || 1, high: q.high || 5, lowLabel: q.lowLabel || '', highLabel: q.highLabel || '' };
+          if (!q.title && qt !== 'TEXT_BLOCK') q.title = '(제목 없음)';
+          var item;
+          if (qt === 'SECTION') {
+            // 섹션(페이지 나눔) — 구글폼의 '섹션 추가'
+            item = { title: q.title || '섹션', description: q.description || '', pageBreakItem: {} };
+          } else if (qt === 'TEXT_BLOCK') {
+            // 설명 텍스트(소개/안내 블록)
+            item = { title: q.title || '', description: q.description || '', textItem: {} };
           } else {
-            item.questionItem.question.textQuestion = { paragraph: false };
+            item = { title: q.title, questionItem: { question: { required: !!q.required } } };
+            if (qt === 'TEXT' || qt === 'SHORT_ANSWER') {
+              item.questionItem.question.textQuestion = { paragraph: false };
+            } else if (qt === 'PARAGRAPH') {
+              item.questionItem.question.textQuestion = { paragraph: true };
+            } else if (qt === 'RADIO' || qt === 'CHECKBOX' || qt === 'DROP_DOWN') {
+              item.questionItem.question.choiceQuestion = { type: qt, options: (q.options || []).filter(function (o) { return (o || '').trim(); }).map(function(o) { return { value: o }; }) };
+            } else if (qt === 'SCALE') {
+              item.questionItem.question.scaleQuestion = { low: q.low || 1, high: q.high || 5, lowLabel: q.lowLabel || '', highLabel: q.highLabel || '' };
+            } else {
+              item.questionItem.question.textQuestion = { paragraph: false };
+            }
           }
-          requests.push({ createItem: { item: item, location: { index: idx } } });
+          requests.push({ createItem: { item: item, location: { index: loc++ } } });
         });
 
         if (!requests.length) return form;
@@ -187,15 +195,7 @@
           '<button id="survey-generate-btn" class="btn btn-primary">🤖 AI로 설문지 생성</button>' +
           '<span id="survey-status" class="form-hint" style="margin:0"></span>' +
         '</div>' +
-        '<div id="survey-preview" style="display:none;margin-top:16px;border:1px solid var(--color-border);border-radius:8px;padding:14px">' +
-          '<h4 id="survey-preview-title" style="font-size:15px;font-weight:700;margin-bottom:4px"></h4>' +
-          '<p id="survey-preview-desc" class="form-hint" style="margin-bottom:10px"></p>' +
-          '<div id="survey-preview-questions"></div>' +
-          '<div style="margin-top:14px;display:flex;gap:8px">' +
-            '<button id="survey-confirm-btn" class="btn btn-primary">📤 구글 드라이브에 생성</button>' +
-            '<button id="survey-edit-btn" class="btn btn-ghost">✏️ 다시 생성</button>' +
-          '</div>' +
-        '</div>' +
+        '<div id="survey-preview" style="display:none;margin-top:16px"></div>' +
         '</div>' +
 
         '<div class="settings-card" style="margin-top:16px">' +
@@ -224,8 +224,6 @@
 
   function _bindCreateEvents() {
     var genBtn    = document.getElementById('survey-generate-btn');
-    var confirmBtn= document.getElementById('survey-confirm-btn');
-    var editBtn   = document.getElementById('survey-edit-btn');
     var refreshBtn= document.getElementById('survey-refresh-btn');
 
     if (genBtn) genBtn.addEventListener('click', function() {
@@ -235,9 +233,9 @@
       genBtn.disabled = true;
       buildFormStructureWithClaude(prompt)
         .then(function(structure) {
-          _pendingStructure = structure;
-          _showPreview(structure);
-          _setStatus('');
+          _pendingStructure = _normalize(structure);
+          _renderEditor();
+          _setStatus('초안이 생성됐습니다. 아래에서 자유롭게 편집한 뒤 「구글 드라이브에 생성」을 누르세요.');
           genBtn.disabled = false;
         })
         .catch(function(err) {
@@ -246,55 +244,209 @@
         });
     });
 
-    if (confirmBtn) confirmBtn.addEventListener('click', function() {
-      if (!_pendingStructure) return;
-      _setStatus('📤 구글 드라이브에 생성 중...');
-      confirmBtn.disabled = true;
-      createForm(_pendingStructure)
-        .then(function(form) {
-          addHistory({ formId: form.formId, title: _pendingStructure.title, createdAt: new Date().toISOString(),
-            editUrl: 'https://docs.google.com/forms/d/' + form.formId + '/edit',
-            respondUrl: form.responderUri || ('https://docs.google.com/forms/d/' + form.formId + '/viewform') });
-          _setStatus('✅ 생성 완료!');
-          document.getElementById('survey-preview').style.display = 'none';
-          document.getElementById('survey-prompt').value = '';
-          _pendingStructure = null;
-          confirmBtn.disabled = false;
-          setTimeout(function() { _setStatus(''); }, 3000);
-          _loadFormList();
-        })
-        .catch(function(err) {
-          _setStatus('❌ ' + (err.message || '생성 실패'));
-          confirmBtn.disabled = false;
-        });
-    });
-
-    if (editBtn) editBtn.addEventListener('click', function() {
-      document.getElementById('survey-preview').style.display = 'none';
-      _pendingStructure = null;
-      _setStatus('');
-    });
-
     if (refreshBtn) refreshBtn.addEventListener('click', _loadFormList);
   }
 
-  function _showPreview(structure) {
-    var preview = document.getElementById('survey-preview');
-    document.getElementById('survey-preview-title').textContent = structure.title || '';
-    document.getElementById('survey-preview-desc').textContent  = structure.description || '';
-    var qList = document.getElementById('survey-preview-questions');
-    qList.innerHTML = (structure.questions || []).map(function(q, i) {
-      var typeLabel = { TEXT:'단답형', PARAGRAPH:'장문형', RADIO:'객관식', CHECKBOX:'체크박스', SCALE:'선형배율', DROP_DOWN:'드롭다운' }[q.type] || q.type;
-      var opts = q.options ? '<div style="margin-top:4px;font-size:12px;color:#666">' + q.options.map(function(o) { return '▪ ' + o; }).join('  ') + '</div>' : '';
-      var scale = (q.type === 'SCALE') ? '<div style="font-size:12px;color:#666;margin-top:4px">' + (q.low||1) + '~' + (q.high||5) + ' (' + (q.lowLabel||'') + ' → ' + (q.highLabel||'') + ')</div>' : '';
-      return '<div style="padding:8px 0;border-bottom:1px solid var(--color-border)">' +
-        '<span style="font-size:12px;color:#1a73e8;margin-right:6px">' + (i+1) + '.</span>' +
-        '<span style="font-size:13px">' + q.title + '</span>' +
-        '<span style="font-size:11px;color:#888;margin-left:6px">[' + typeLabel + (q.required?' *':'') + ']</span>' +
-        opts + scale + '</div>';
-    }).join('');
-    preview.style.display = 'block';
+  /* 구조 정규화 — 누락 필드 보정 */
+  function _normalize(st) {
+    st = st || {};
+    st.title = st.title || '새 설문지';
+    st.description = st.description || '';
+    st.questions = (st.questions || []).map(function (q) {
+      q = q || {};
+      q.type = (q.type || 'TEXT').toUpperCase();
+      q.title = q.title || '';
+      q.required = !!q.required;
+      if (q.type === 'RADIO' || q.type === 'CHECKBOX' || q.type === 'DROP_DOWN') {
+        q.options = (q.options && q.options.length) ? q.options : ['옵션 1', '옵션 2'];
+      }
+      if (q.type === 'SCALE') { q.low = q.low || 1; q.high = q.high || 5; q.lowLabel = q.lowLabel || ''; q.highLabel = q.highLabel || ''; }
+      if (q.type === 'SECTION' || q.type === 'TEXT_BLOCK') { q.description = q.description || ''; }
+      return q;
+    });
+    return st;
   }
+
+  /* ── 편집 가능한 설문 에디터 (구글폼 편집창 형태) ───────────── */
+  var TYPES = [
+    ['TEXT', '단답형'], ['PARAGRAPH', '장문형'], ['RADIO', '객관식 (단일선택)'],
+    ['CHECKBOX', '체크박스 (복수선택)'], ['DROP_DOWN', '드롭다운'], ['SCALE', '선형배율(점수)'],
+    ['SECTION', '── 섹션 (페이지 나눔)'], ['TEXT_BLOCK', '설명 텍스트']
+  ];
+  function _typeSelect(q, i) {
+    return '<select class="sv-type" data-i="' + i + '">' +
+      TYPES.map(function (t) { return '<option value="' + t[0] + '"' + (q.type === t[0] ? ' selected' : '') + '>' + t[1] + '</option>'; }).join('') +
+      '</select>';
+  }
+  function _cardHTML(q, i, qnum) {
+    var isSection = q.type === 'SECTION', isText = q.type === 'TEXT_BLOCK';
+    var head;
+    if (isSection) {
+      head = '<div class="sv-tag sv-tag-section">섹션</div>' +
+        '<input class="sv-title" data-i="' + i + '" data-f="title" value="' + _attr(q.title) + '" placeholder="섹션 제목 (예: 1부. 기본 정보)">' + _typeSelect(q, i);
+    } else if (isText) {
+      head = '<div class="sv-tag sv-tag-text">설명</div>' +
+        '<input class="sv-title" data-i="' + i + '" data-f="title" value="' + _attr(q.title) + '" placeholder="안내 문구 제목">' + _typeSelect(q, i);
+    } else {
+      head = '<span class="sv-num">' + qnum + '.</span>' +
+        '<input class="sv-title" data-i="' + i + '" data-f="title" value="' + _attr(q.title) + '" placeholder="질문을 입력하세요">' + _typeSelect(q, i);
+    }
+    var body = '';
+    if (isSection || isText) {
+      body = '<textarea class="sv-desc" data-i="' + i + '" data-f="description" rows="2" placeholder="' + (isSection ? '섹션 설명(선택)' : '표시할 설명 문구') + '">' + _esc(q.description || '') + '</textarea>';
+    } else if (q.type === 'RADIO' || q.type === 'CHECKBOX' || q.type === 'DROP_DOWN') {
+      body = '<div class="sv-opts">' + (q.options || []).map(function (o, oi) {
+        return '<div class="sv-opt"><span class="sv-opt-mk"></span>' +
+          '<input class="sv-opt-in" data-i="' + i + '" data-oi="' + oi + '" value="' + _attr(o) + '" placeholder="옵션 ' + (oi + 1) + '">' +
+          '<button class="sv-opt-del" data-act="del-opt" data-i="' + i + '" data-oi="' + oi + '" title="옵션 삭제">✕</button></div>';
+      }).join('') +
+      '<button class="sv-opt-add" data-act="add-opt" data-i="' + i + '">+ 옵션 추가</button></div>';
+    } else if (q.type === 'SCALE') {
+      body = '<div class="sv-scale">' +
+        '<label>최소 <input type="number" class="sv-num-in" data-i="' + i + '" data-f="low" value="' + (q.low || 1) + '" min="0" max="10"></label>' +
+        '<label>최대 <input type="number" class="sv-num-in" data-i="' + i + '" data-f="high" value="' + (q.high || 5) + '" min="2" max="10"></label>' +
+        '<input class="sv-lab" data-i="' + i + '" data-f="lowLabel" value="' + _attr(q.lowLabel || '') + '" placeholder="최소 라벨(예: 매우 불만족)">' +
+        '<input class="sv-lab" data-i="' + i + '" data-f="highLabel" value="' + _attr(q.highLabel || '') + '" placeholder="최대 라벨(예: 매우 만족)">' +
+        '</div>';
+    }
+    var foot = (isSection || isText) ? '' :
+      '<label class="sv-req"><input type="checkbox" data-i="' + i + '" data-f="required"' + (q.required ? ' checked' : '') + '> 필수 응답</label>';
+    return '<div class="sv-card' + (isSection ? ' is-section' : '') + (isText ? ' is-text' : '') + '" draggable="true" data-i="' + i + '">' +
+      '<span class="sv-grip" title="드래그하여 순서 이동">⠿</span>' +
+      '<div class="sv-card-main"><div class="sv-card-head">' + head + '</div>' + body + foot + '</div>' +
+      '<button class="sv-card-del" data-act="del" data-i="' + i + '" title="삭제">🗑</button>' +
+      '</div>';
+  }
+  function _editorHTML(st) {
+    var qnum = 0;
+    var cards = st.questions.map(function (q, i) {
+      if (q.type !== 'SECTION' && q.type !== 'TEXT_BLOCK') qnum++;
+      return _cardHTML(q, i, qnum);
+    }).join('');
+    return '<div class="sv-ed">' +
+      '<div class="sv-ed-head">' +
+        '<input class="sv-ed-title" data-f="title" value="' + _attr(st.title) + '" placeholder="설문 제목">' +
+        '<textarea class="sv-ed-desc" data-f="description" rows="2" placeholder="설문 소개/설명 (응답자에게 보이는 안내문)">' + _esc(st.description || '') + '</textarea>' +
+      '</div>' +
+      '<div class="sv-ed-list" id="sv-ed-list">' + cards + '</div>' +
+      '<div class="sv-ed-add">' +
+        '<button class="btn btn-secondary btn-sm" data-act="add-q">＋ 질문</button>' +
+        '<button class="btn btn-ghost btn-sm" data-act="add-section">＋ 섹션</button>' +
+        '<button class="btn btn-ghost btn-sm" data-act="add-text">＋ 설명</button>' +
+      '</div>' +
+      '<div class="sv-ed-foot">' +
+        '<button id="survey-confirm-btn" class="btn btn-primary">📤 구글 드라이브에 생성</button>' +
+        '<button id="survey-regen-btn" class="btn btn-ghost">✏️ 다시 생성</button>' +
+      '</div>' +
+      '</div>';
+  }
+
+  function _renderEditor() {
+    var box = document.getElementById('survey-preview');
+    if (!box || !_pendingStructure) return;
+    box.style.display = 'block';
+    box.innerHTML = _editorHTML(_pendingStructure);
+    _bindEditor(box);
+  }
+
+  function _bindEditor(box) {
+    var st = _pendingStructure;
+    // 입력 → 모델 갱신(리렌더 없이 포커스 유지)
+    box.addEventListener('input', function (e) {
+      var t = e.target, f = t.getAttribute('data-f'), i = t.getAttribute('data-i'), oi = t.getAttribute('data-oi');
+      if (oi != null) { var q = st.questions[+i]; if (q && q.options) q.options[+oi] = t.value; return; }
+      if (f == null) return;
+      if (i == null) { st[f] = t.value; return; }      // 최상위 title/description
+      var q2 = st.questions[+i]; if (!q2) return;
+      if (f === 'low' || f === 'high') q2[f] = parseInt(t.value, 10) || (f === 'low' ? 1 : 5);
+      else q2[f] = t.value;
+    });
+    box.addEventListener('change', function (e) {
+      var t = e.target;
+      if (t.classList.contains('sv-type')) {
+        var i = +t.getAttribute('data-i'), q = st.questions[i]; if (!q) return;
+        q.type = t.value;
+        if ((q.type === 'RADIO' || q.type === 'CHECKBOX' || q.type === 'DROP_DOWN') && (!q.options || !q.options.length)) q.options = ['옵션 1', '옵션 2'];
+        if (q.type === 'SCALE') { q.low = q.low || 1; q.high = q.high || 5; }
+        _renderEditor(); return;
+      }
+      if (t.getAttribute('data-f') === 'required') { var q3 = st.questions[+t.getAttribute('data-i')]; if (q3) q3.required = t.checked; }
+    });
+    box.addEventListener('click', function (e) {
+      var b = e.target.closest('[data-act]'); if (!b) return;
+      var act = b.getAttribute('data-act'), i = b.getAttribute('data-i'), oi = b.getAttribute('data-oi');
+      if (act === 'add-q') { st.questions.push({ type: 'RADIO', title: '', required: false, options: ['옵션 1', '옵션 2'] }); _renderEditor(); }
+      else if (act === 'add-section') { st.questions.push({ type: 'SECTION', title: '', description: '' }); _renderEditor(); }
+      else if (act === 'add-text') { st.questions.push({ type: 'TEXT_BLOCK', title: '', description: '' }); _renderEditor(); }
+      else if (act === 'del') { st.questions.splice(+i, 1); _renderEditor(); }
+      else if (act === 'add-opt') { var q = st.questions[+i]; (q.options = q.options || []).push('옵션 ' + (q.options.length + 1)); _renderEditor(); }
+      else if (act === 'del-opt') { var q2 = st.questions[+i]; if (q2 && q2.options && q2.options.length > 1) { q2.options.splice(+oi, 1); _renderEditor(); } }
+    });
+    // 드래그 순서 이동 + 드롭 위치 표시
+    _bindDnd(box.querySelector('#sv-ed-list'));
+    // 생성/재생성
+    var cf = document.getElementById('survey-confirm-btn');
+    if (cf) cf.addEventListener('click', _doCreate);
+    var rg = document.getElementById('survey-regen-btn');
+    if (rg) rg.addEventListener('click', function () { box.style.display = 'none'; box.innerHTML = ''; _pendingStructure = null; _setStatus(''); });
+  }
+
+  var _dragI = null;
+  function _bindDnd(list) {
+    if (!list) return;
+    [].slice.call(list.querySelectorAll('.sv-card')).forEach(function (card) {
+      card.addEventListener('dragstart', function (e) {
+        // 입력칸에서 시작된 드래그는 무시(텍스트 선택 보존)
+        if (e.target && /INPUT|TEXTAREA|SELECT|BUTTON/.test(e.target.tagName)) { e.preventDefault(); return; }
+        _dragI = +card.getAttribute('data-i'); card.classList.add('sv-dragging');
+        try { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', String(_dragI)); } catch (x) {}
+      });
+      card.addEventListener('dragend', function () { card.classList.remove('sv-dragging'); list.querySelectorAll('.drop-before,.drop-after').forEach(function (x) { x.classList.remove('drop-before', 'drop-after'); }); });
+      card.addEventListener('dragover', function (e) {
+        e.preventDefault();
+        list.querySelectorAll('.drop-before,.drop-after').forEach(function (x) { x.classList.remove('drop-before', 'drop-after'); });
+        var r = card.getBoundingClientRect();
+        card.classList.add((e.clientY - r.top) > r.height / 2 ? 'drop-after' : 'drop-before');
+      });
+      card.addEventListener('drop', function (e) {
+        e.preventDefault();
+        var after = card.classList.contains('drop-after');
+        list.querySelectorAll('.drop-before,.drop-after').forEach(function (x) { x.classList.remove('drop-before', 'drop-after'); });
+        var target = +card.getAttribute('data-i');
+        if (_dragI == null || _dragI === target) return;
+        var arr = _pendingStructure.questions;
+        var item = arr.splice(_dragI, 1)[0];                 // 드래그 항목 제거
+        var tgt = target > _dragI ? target - 1 : target;     // 제거 후 target 위치 보정
+        var insertAt = after ? tgt + 1 : tgt;
+        arr.splice(insertAt, 0, item);                       // 새 위치에 삽입
+        _dragI = null;
+        _renderEditor();
+      });
+    });
+  }
+
+  function _doCreate() {
+    if (!_pendingStructure || !_pendingStructure.questions.length) { _setStatus('❌ 질문이 없습니다.'); return; }
+    var cf = document.getElementById('survey-confirm-btn');
+    _setStatus('📤 구글 드라이브에 생성 중...');
+    if (cf) cf.disabled = true;
+    createForm(_pendingStructure)
+      .then(function (form) {
+        addHistory({ formId: form.formId, title: _pendingStructure.title, createdAt: new Date().toISOString(),
+          editUrl: 'https://docs.google.com/forms/d/' + form.formId + '/edit',
+          respondUrl: form.responderUri || ('https://docs.google.com/forms/d/' + form.formId + '/viewform') });
+        _setStatus('✅ 생성 완료! 구글폼이 만들어졌습니다.');
+        var box = document.getElementById('survey-preview'); if (box) { box.style.display = 'none'; box.innerHTML = ''; }
+        var pr = document.getElementById('survey-prompt'); if (pr) pr.value = '';
+        _pendingStructure = null;
+        if (cf) cf.disabled = false;
+        setTimeout(function () { _setStatus(''); }, 4000);
+        _loadFormList();
+      })
+      .catch(function (err) { _setStatus('❌ ' + (err.message || '생성 실패')); if (cf) cf.disabled = false; });
+  }
+
+  function _attr(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;'); }
 
   function _loadFormList() {
     var listEl = document.getElementById('survey-list');
