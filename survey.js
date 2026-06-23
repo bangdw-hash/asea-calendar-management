@@ -198,6 +198,54 @@
       .then(function(d) { return d.files || []; });
   }
 
+  /* ── 기존 구글폼 상세 조회 → 편집기 구조로 역변환 ──────────
+     "다시 만들기"에서 사용: 구글 드라이브의 폼을 읽어 편집 UI로 불러온다.
+     forms.body 스코프로 읽기 가능. */
+  function getFormDetail(formId) {
+    var token = getToken();
+    if (!token) return Promise.reject(new Error('Google 로그인이 필요합니다.'));
+    return fetch(FORMS_API + '/' + formId, { headers: { Authorization: 'Bearer ' + token } })
+      .then(function (r) {
+        if (!r.ok) return r.json().then(function (e) {
+          throw new Error((e.error && e.error.message) || ('폼 조회 실패 (' + r.status + ')'));
+        });
+        return r.json();
+      });
+  }
+
+  /* 구글폼 응답(JSON) → 편집기 structure 로 매핑 */
+  function _formToStructure(form) {
+    var info = form.info || {};
+    var st = { title: info.title || info.documentTitle || '설문지', description: info.description || '', questions: [] };
+    (form.items || []).forEach(function (it) {
+      if (it.pageBreakItem) {
+        st.questions.push({ type: 'SECTION', title: it.title || '섹션', description: it.description || '' });
+        return;
+      }
+      if (it.textItem) {
+        st.questions.push({ type: 'TEXT_BLOCK', title: it.title || '', description: it.description || '' });
+        return;
+      }
+      var qi = it.questionItem;
+      if (!qi || !qi.question) return; // 그리드/이미지 등 미지원 항목은 건너뜀
+      var q = qi.question, out = { title: it.title || '', required: !!q.required };
+      if (q.choiceQuestion) {
+        out.type = (q.choiceQuestion.type || 'RADIO').toUpperCase();
+        out.options = (q.choiceQuestion.options || []).map(function (o) { return o.value || ''; }).filter(function (v) { return v !== ''; });
+      } else if (q.scaleQuestion) {
+        out.type = 'SCALE';
+        out.low = q.scaleQuestion.low; out.high = q.scaleQuestion.high;
+        out.lowLabel = q.scaleQuestion.lowLabel || ''; out.highLabel = q.scaleQuestion.highLabel || '';
+      } else if (q.textQuestion && q.textQuestion.paragraph) {
+        out.type = 'PARAGRAPH';
+      } else {
+        out.type = 'TEXT'; // 단답/날짜/시간/파일 등은 단답형으로 안전 매핑
+      }
+      st.questions.push(out);
+    });
+    return st;
+  }
+
   /* ── 설문지 응답 요약 ────────────────────────────────── */
   function getResponseCount(formId) {
     var token = getToken();
@@ -207,6 +255,23 @@
       .then(function(r) { return r.json(); })
       .then(function(d) { return (d.totalSize !== undefined) ? d.totalSize : (d.responses ? d.responses.length : null); })
       .catch(function() { return null; });
+  }
+
+  /* "다시 만들기" — 기존 폼을 편집기로 불러옴 → 편집 후 새 폼으로 생성 */
+  function _recreateFromForm(formId, name) {
+    _setStatus('📥 「' + (name || '설문지') + '」 불러오는 중...');
+    getFormDetail(formId)
+      .then(function (form) {
+        var st = _formToStructure(form);
+        if (!st.questions.length) { _setStatus('❌ 불러올 질문이 없습니다(미지원 항목만 있을 수 있음).'); return; }
+        st._draftId = null;               // 새 이력으로 취급(원본 폼과 분리)
+        _pendingStructure = _normalize(st);
+        _renderEditor();
+        var ed = document.getElementById('survey-editor') || document.getElementById('survey-preview');
+        if (ed && ed.scrollIntoView) ed.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        _setStatus('✅ 불러왔습니다. 질문을 추가·삭제·수정한 뒤 「구글 드라이브에 생성」을 누르면 새 설문으로 만들어집니다.');
+      })
+      .catch(function (err) { _setStatus('❌ ' + (err.message || '불러오기 실패')); });
   }
 
   /* ── UI 렌더 ─────────────────────────────────────────── */
@@ -588,13 +653,20 @@
               '<div style="font-size:14px;font-weight:600">' + _esc(f.name) + '</div>' +
               '<div style="font-size:12px;color:#888;margin-top:2px">' + d + '</div>' +
             '</div>' +
-            '<div style="display:flex;gap:6px">' +
+            '<div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">' +
               '<a href="' + f.webViewLink + '" target="_blank" class="btn btn-ghost btn-sm">✏️ 편집</a>' +
+              '<button class="btn btn-ghost btn-sm" data-recreate="' + _attr(f.id) + '" data-rname="' + _attr(f.name) + '" title="이 설문을 편집기로 불러와 새 버전으로 다시 만들기">🔁 다시 만들기</button>' +
               '<a href="https://docs.google.com/forms/d/' + f.id + '/viewform" target="_blank" class="btn btn-secondary btn-sm">📋 응답</a>' +
               '<a href="https://docs.google.com/forms/d/' + f.id + '/viewanalytics" target="_blank" class="btn btn-ghost btn-sm">📊 결과</a>' +
             '</div>' +
           '</div>';
         }).join('');
+        // "다시 만들기" 위임 바인딩
+        listEl.querySelectorAll('[data-recreate]').forEach(function (b) {
+          b.addEventListener('click', function () {
+            _recreateFromForm(b.getAttribute('data-recreate'), b.getAttribute('data-rname'));
+          });
+        });
       })
       .catch(function(err) {
         listEl.innerHTML = '<p class="empty-state" style="color:#dc2626">❌ ' + (err.message || '목록 로드 실패') + '</p>';
