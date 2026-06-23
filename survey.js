@@ -84,14 +84,15 @@
       '}\n' +
       '지원 type: TEXT(단답), PARAGRAPH(장문), RADIO(객관식 단일), CHECKBOX(체크박스), SCALE(선형배율), DROP_DOWN(드롭다운), SECTION(섹션·페이지 나눔), TEXT_BLOCK(설명 텍스트)\n' +
       'RADIO/CHECKBOX/DROP_DOWN은 반드시 options 배열 포함. SCALE은 low/high/lowLabel/highLabel 포함.\n' +
-      'SECTION/TEXT_BLOCK은 { "title":"...", "type":"SECTION", "description":"..." } 형식(설명 페이지·구획 나눔용). 설문이 길면 적절히 SECTION으로 단계를 나누고, 맨 앞에 TEXT_BLOCK으로 간단한 안내문을 넣어도 좋습니다.';
+      'SECTION/TEXT_BLOCK은 { "title":"...", "type":"SECTION", "description":"..." } 형식(설명 페이지·구획 나눔용). 설문이 길면 적절히 SECTION으로 단계를 나누고, 맨 앞에 TEXT_BLOCK으로 간단한 안내문을 넣어도 좋습니다.\n' +
+      '질문은 핵심 위주로 적정 개수(보통 8~16개)로 작성하고, 반드시 "완결된 JSON"만 출력하세요(모든 괄호·따옴표를 끝까지 닫을 것).';
 
     return fetch(endpoint, {
       method: 'POST',
       headers: headers,
       body: JSON.stringify({
         model: 'claude-haiku-4-5-20251001',
-        max_tokens: 2048,
+        max_tokens: 8000,
         system: system,
         messages: [{ role: 'user', content: prompt }]
       })
@@ -100,11 +101,30 @@
         if (data.error) throw new Error(data.error.message || 'API 오류');
         var text = data.content && data.content[0] && data.content[0].text;
         if (!text) throw new Error('Claude 응답이 없습니다.');
-        var jsonStr = text.trim();
-        /* 마크다운 코드블록 제거 */
-        jsonStr = jsonStr.replace(/^```[a-z]*\n?/i, '').replace(/\n?```$/i, '').trim();
-        return JSON.parse(jsonStr);
+        return _parseFormJson(text);
       });
+  }
+
+  /* AI 응답 JSON 파싱 — 마크다운 제거 + 잘린(truncated) 응답 복구 */
+  function _parseFormJson(text) {
+    var s = String(text || '').trim().replace(/^```[a-z]*\n?/i, '').replace(/\n?```$/i, '').trim();
+    var a = s.indexOf('{'); if (a > 0) s = s.slice(a);
+    try { return JSON.parse(s); } catch (e) {}
+    // 복구: 끝쪽 '}' 위치를 줄여가며 questions 배열을 닫아 본다
+    var suffixes = ['', ']}', '}', '"}]}', '"}]} '];
+    var i = s.length;
+    for (var k = 0; k < 40; k++) {
+      i = s.lastIndexOf('}', i - 1);
+      if (i <= 0) break;
+      var cand = s.slice(0, i + 1);
+      for (var j = 0; j < suffixes.length; j++) {
+        try {
+          var obj = JSON.parse(cand + suffixes[j]);
+          if (obj && obj.questions) return obj;
+        } catch (_) {}
+      }
+    }
+    throw new Error('AI 응답이 너무 길어 일부가 잘렸습니다. 설명을 조금 더 간단히 하거나 다시 시도해 주세요.');
   }
 
   /* ── Google Forms API 호출 ──────────────────────────── */
