@@ -506,7 +506,7 @@
       '확인 불가는 null. 반드시 JSON만 반환.';
     var headers = { 'Content-Type': 'application/json', 'x-api-key': cc.apiKey, 'anthropic-version': '2023-06-01' };
     if (cc.isOfficial) headers['anthropic-dangerous-direct-browser-access'] = 'true';
-    var res = await fetch(cc.endpoint, { method: 'POST', headers: headers, body: JSON.stringify({
+    var res = await window.claudeFetch(cc.endpoint, { method: 'POST', headers: headers, body: JSON.stringify({
       model: 'claude-haiku-4-5-20251001', max_tokens: 1024,
       messages: [{ role: 'user', content: [{ type: 'image', source: { type: 'base64', media_type: media, data: b64 } }, { type: 'text', text: prompt }] }] }) });
     if (!res.ok) { var t = ''; try { var j = await res.json(); t = j.error && j.error.message; } catch (e) {} throw new Error(t || ('HTTP ' + res.status)); }

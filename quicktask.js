@@ -266,7 +266,7 @@ var QuickTaskModule = (function () {
         'content-type': 'application/json',
         'anthropic-dangerous-direct-browser-access': 'true'
       };
-      var resp = await fetch(_qtEndpoint, {
+      var resp = await window.claudeFetch(_qtEndpoint, {
         method: 'POST',
         headers: _qtHeaders,
         body: JSON.stringify({

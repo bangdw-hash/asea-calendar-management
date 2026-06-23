@@ -208,6 +208,63 @@ window._decodeApiKey = function(encoded) {
   try { return _xorKey(atob(encoded)); } catch(e) { return encoded; }
 };
 
+/* ────────────────────────────────────────────────────────────────
+   AI 프록시(Supabase Edge Function) — Claude 키를 클라이언트에 노출하지
+   않고 서버에서 대신 호출. (보고서 항목 32)
+   · asea_ai_proxy_url 로 덮어쓰기/비활성('') 가능
+   · 프록시 미배포·게이트웨이 오류 시, 직접 키가 있으면 직접 호출로 폴백
+──────────────────────────────────────────────────────────────── */
+window.SUPA_ANON = window.SUPA_ANON ||
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpicGV5a2x3cG90anl2ZWlwenhkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE1MTYxMDcsImV4cCI6MjA5NzA5MjEwN30.6JgoQ6rPRnmrbBTG68A-Y9HDQk40mnwubhXVnkZvHrQ';
+
+window.getAIProxyUrl = function () {
+  try { var v = localStorage.getItem('asea_ai_proxy_url'); if (v !== null) return v; } catch (e) {}
+  return 'https://zbpeyklwpotjyveipzxd.supabase.co/functions/v1/ai-proxy';
+};
+
+function _claudeHasRealKey(opts) {
+  try {
+    var h = (opts && opts.headers) || {};
+    var k = h['x-api-key'] || h['X-Api-Key'];
+    return !!(k && String(k).indexOf('sk-') === 0);
+  } catch (e) { return false; }
+}
+
+/**
+ * claudeFetch(endpoint, opts) — fetch()의 드롭인 대체.
+ * 프록시가 설정돼 있으면 Supabase Edge Function(ai-proxy)으로 라우팅하고,
+ * 아니면(또는 프록시 장애 시 직접 키 보유) 기존처럼 직접 호출한다.
+ * opts.body(원본 Claude 본문)를 그대로 프록시에 전달(passthrough)한다.
+ */
+window.claudeFetch = async function (endpoint, opts) {
+  opts = opts || {};
+  var proxy = window.getAIProxyUrl();
+  function direct() { return fetch(endpoint || 'https://api.anthropic.com/v1/messages', opts); }
+  if (!proxy) return direct();
+  // 원본 Claude 본문을 { service:'claude', payload } 로 감싸 전송
+  // (이미 배포된 함수 형식과 호환)
+  var proxyBody = opts.body;
+  try { proxyBody = JSON.stringify({ service: 'claude', payload: JSON.parse(opts.body) }); } catch (e) {}
+  try {
+    var res = await fetch(proxy, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + window.SUPA_ANON,
+        'apikey': window.SUPA_ANON
+      },
+      body: proxyBody
+    });
+    if ((res.status === 404 || res.status === 503 || res.status === 546) && _claudeHasRealKey(opts)) {
+      return direct();
+    }
+    return res;
+  } catch (e) {
+    if (_claudeHasRealKey(opts)) return direct();
+    throw e;
+  }
+};
+
 window.getClaudeConfig = function() {
   var staffCfg = null;
   try { staffCfg = JSON.parse(localStorage.getItem('asea_staff_menus') || 'null'); } catch(e) {}
@@ -219,8 +276,10 @@ window.getClaudeConfig = function() {
                 localStorage.getItem('asea_anthropic_api_key') ||
                 rawStaffKey || '';
 
-  // ★ Claude 공식 API에 직접 연결 — 프록시(aiapiflow/amplifuse)·Base URL 사용 안 함.
-  //   브라우저 직접 호출 허용 헤더가 필요하므로 isOfficial=true 로 고정.
+  // 프록시가 켜져 있으면 클라이언트 키가 없어도 동작 → 가드 통과용 센티넬
+  if (!apiKey && window.getAIProxyUrl && window.getAIProxyUrl()) apiKey = 'via-proxy';
+
+  // ★ 직접 호출 시 사용할 공식 엔드포인트(프록시 장애 폴백용).
   var endpoint   = 'https://api.anthropic.com/v1/messages';
   var isOfficial = true;
 
@@ -258,14 +317,15 @@ window.testClaudeConnection = async function () {
   };
   if (cc.isOfficial) headers['anthropic-dangerous-direct-browser-access'] = 'true';
   try {
-    var res = await fetch(cc.endpoint, {
+    var _viaProxy = !!(window.getAIProxyUrl && window.getAIProxyUrl());
+    var res = await window.claudeFetch(cc.endpoint, {
       method: 'POST',
       headers: headers,
       body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 4, messages: [{ role: 'user', content: 'ping' }] }),
     });
     if (res.ok) {
       return { ok: true, status: res.status, endpoint: cc.endpoint,
-        message: '연결 정상 ✓ (' + (cc.isOfficial ? '공식 API' : '프록시') + ')' };
+        message: '연결 정상 ✓ (' + (_viaProxy ? '서버 프록시' : (cc.isOfficial ? '공식 API' : '프록시')) + ')' };
     }
     var detail = 'HTTP ' + res.status;
     try { var j = await res.json(); if (j && j.error && j.error.message) detail = j.error.message; } catch (e) {}

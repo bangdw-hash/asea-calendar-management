@@ -87,7 +87,7 @@
       'SECTION/TEXT_BLOCK은 { "title":"...", "type":"SECTION", "description":"..." } 형식(설명 페이지·구획 나눔용). 설문이 길면 적절히 SECTION으로 단계를 나누고, 맨 앞에 TEXT_BLOCK으로 간단한 안내문을 넣어도 좋습니다.\n' +
       '질문은 핵심 위주로 적정 개수(보통 8~16개)로 작성하고, 반드시 "완결된 JSON"만 출력하세요(모든 괄호·따옴표를 끝까지 닫을 것).';
 
-    return fetch(endpoint, {
+    return window.claudeFetch(endpoint, {
       method: 'POST',
       headers: headers,
       body: JSON.stringify({

@@ -358,7 +358,7 @@
       };
       if (isOfficial) headers['anthropic-dangerous-direct-browser-access'] = 'true';
 
-      var resp = await fetch(endpoint, {
+      var resp = await window.claudeFetch(endpoint, {
         method: 'POST',
         headers: headers,
         body: JSON.stringify({

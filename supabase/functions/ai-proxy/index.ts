@@ -36,8 +36,16 @@ Deno.serve(async (req) => {
 
   let req_body: any;
   try { req_body = await req.json(); } catch { return json({ error: "bad json" }, 400); }
-  const service = String(req_body?.service || "");
-  const payload = req_body?.payload ?? {};
+
+  // 두 가지 호출 형태 지원:
+  //  (1) { service, payload }
+  //  (2) 원본 Claude 본문 그대로({ model, messages, ... }) → service=claude 로 간주
+  let service = String(req_body?.service || "");
+  let payload = req_body?.payload ?? {};
+  if (!service && (req_body?.messages || req_body?.model)) {
+    service = "claude";
+    payload = req_body;
+  }
 
   try {
     if (service === "claude") {
