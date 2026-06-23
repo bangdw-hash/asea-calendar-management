@@ -21,9 +21,11 @@
   <link rel="stylesheet" href="onboarding.css?v=20260614ob1">
   <link rel="stylesheet" href="dormitory.css?v=20260622d16">
   <link rel="stylesheet" href="contractgen.css?v=20260616c2">
+  <link rel="stylesheet" href="platform.css?v=20260623pf1">
   <script src="https://accounts.google.com/gsi/client" async></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
   <script src="cloudforms.js?v=20260617cf1" defer></script>
+  <script src="platform.js?v=20260623pf1" defer></script>
   <!-- SheetJS for Excel support — 로컬 xlsx.mini.min.js(하단 로드)로 일원화하여 중복 로드 제거 -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" defer></script>
 
@@ -3452,6 +3454,16 @@
     // 빠른 업무 등록 초기화 (DOM 준비 후)
     document.addEventListener('DOMContentLoaded', function () {
       if (typeof QuickTaskModule !== 'undefined') QuickTaskModule.init();
+      // 최초 1회 코치마크 (기기별, platform.js)
+      if (window.Platform && Platform.coach) {
+        setTimeout(function () {
+          Platform.coach('intro_v1', [
+            { el: '.header-brand', title: '환영합니다 👋', body: '로고를 누르면 어느 화면에서든 캘린더로 돌아옵니다.' },
+            { el: '#pf-view-btn', title: '보기 설정', body: '다크 모드와 글자 크기를 여기서 바꿀 수 있어요.' },
+            { el: '.tab-nav', title: '빠른 검색 ⌘K', body: 'Ctrl+K(또는 ⌘K)로 메뉴·명령을 바로 찾을 수 있습니다.' }
+          ]);
+        }, 1200);
+      }
     });
   </script>
 
