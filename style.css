@@ -782,6 +782,12 @@ a        { color: var(--color-accent); text-decoration: none; }
 .sv-num-in { width: 56px; border: 1px solid var(--color-border); border-radius: 6px; padding: 5px 6px; }
 .sv-lab { flex: 1 1 160px; min-width: 120px; border: 1px solid var(--color-border); border-radius: 6px; padding: 6px 8px; font-size: 12.5px; }
 .sv-req { display: inline-flex; align-items: center; gap: 5px; margin-top: 9px; font-size: 12.5px; color: #555; cursor: pointer; }
+/* 설문 섹션 접기/펼치기 */
+.sv-collapse .sv-chev { transition: transform .18s ease; flex-shrink: 0; color: var(--color-text-secondary); }
+.sv-collapse.collapsed .sv-chev { transform: rotate(-90deg); }
+.sv-collapse.collapsed .sv-sec-body { display: none; }
+.sv-collapse.collapsed .sv-sec-head { margin-bottom: 0 !important; }
+.sv-sec-head:hover .sv-chev { color: var(--color-accent); }
 /* 그리드(객관식/체크박스) 행·열 편집 */
 .sv-grid { margin-top: 9px; display: flex; gap: 18px; flex-wrap: wrap; }
 .sv-grid .sv-opts { margin-top: 0; flex: 1 1 200px; min-width: 180px; }

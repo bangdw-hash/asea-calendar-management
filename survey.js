@@ -32,6 +32,19 @@
      구글 드라이브에 올리기 전의 편집 내역을 보관 → 다른 단말에서 조회·이어편집·복제 가능 */
   function _uid() { return 'sd_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
   function _email() { try { return localStorage.getItem('asea_user_email') || ''; } catch (e) { return ''; } }
+  /* 섹션 접기/펼치기 상태(기기별 기억) */
+  function _isCollapsed(key) { try { return localStorage.getItem('asea_sv_col_' + key) === '1'; } catch (e) { return false; } }
+  function _setCollapsed(key, v) { try { localStorage.setItem('asea_sv_col_' + key, v ? '1' : '0'); } catch (e) {} }
+  function _bindCollapsibles() {
+    document.querySelectorAll('#survey-root .sv-sec-head').forEach(function (h) {
+      h.addEventListener('click', function (e) {
+        if (e.target.closest('.btn')) return;       // 새로고침 버튼 클릭은 토글 제외
+        var card = h.closest('.sv-collapse'); if (!card) return;
+        var col = card.classList.toggle('collapsed');
+        _setCollapsed(h.getAttribute('data-col'), col);
+      });
+    });
+  }
   function _draftSave(draft) {
     draft.updatedAt = new Date().toISOString();
     if (!(window.CloudForms && CloudForms.save) || !_email()) return Promise.resolve({ ok: false });
@@ -363,22 +376,28 @@
         '<div id="survey-preview" style="display:none;margin-top:16px"></div>' +
         '</div>' +
 
-        '<div class="settings-card" style="margin-top:16px">' +
-        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">' +
-          '<h3 class="settings-section-title" style="margin:0">📝 편집 이력 (클라우드)</h3>' +
+        '<div class="settings-card sv-collapse' + (_isCollapsed('draft') ? ' collapsed' : '') + '" style="margin-top:16px">' +
+        '<div class="sv-sec-head" data-col="draft" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;cursor:pointer">' +
+          '<h3 class="settings-section-title" style="margin:0;display:flex;align-items:center;gap:6px">' +
+            '<svg class="sv-chev" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>' +
+            '📝 편집 이력 (클라우드)</h3>' +
           '<button id="survey-draft-refresh" class="btn btn-ghost btn-sm">🔄 새로고침</button>' +
         '</div>' +
+        '<div class="sv-sec-body">' +
         '<p class="form-hint" style="margin:0 0 10px">구글 드라이브에 올리기 전의 편집 내역이 <b>로그인 계정별로 클라우드에 저장</b>되어 어느 단말에서나 조회됩니다. 불러와 이어 편집하거나, <b>복제</b>해 새 설문으로 만들 수 있어요(예: 1학기 → 2학기).</p>' +
         '<div id="survey-draft-list"><p class="empty-state">불러오는 중...</p></div>' +
-        '</div>' +
+        '</div></div>' +
 
-        '<div class="settings-card" style="margin-top:16px">' +
-        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">' +
-          '<h3 class="settings-section-title" style="margin:0">📂 내 설문지 목록 (구글 드라이브)</h3>' +
+        '<div class="settings-card sv-collapse' + (_isCollapsed('list') ? ' collapsed' : '') + '" style="margin-top:16px">' +
+        '<div class="sv-sec-head" data-col="list" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;cursor:pointer">' +
+          '<h3 class="settings-section-title" style="margin:0;display:flex;align-items:center;gap:6px">' +
+            '<svg class="sv-chev" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>' +
+            '📂 내 설문지 목록 (구글 드라이브)</h3>' +
           '<button id="survey-refresh-btn" class="btn btn-ghost btn-sm">🔄 새로고침</button>' +
         '</div>' +
+        '<div class="sv-sec-body">' +
         '<div id="survey-list"><p class="empty-state">불러오는 중...</p></div>' +
-        '</div>'
+        '</div></div>'
       ) +
       '</div>';
 
@@ -391,6 +410,7 @@
     }
 
     _bindCreateEvents();
+    _bindCollapsibles();
     _loadFormList();
     _loadDraftList();
     var dref = document.getElementById('survey-draft-refresh');
