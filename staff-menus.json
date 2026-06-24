@@ -1,10 +1,13 @@
 {
   "menus": [
     "calendar",
-    "extract"
+    "extract",
+    "board",
+    "qrcard",
+    "settings"
   ],
-  "updatedAt": "2026-06-24T15:30:23.666Z",
-  "version": 1782315023666,
+  "updatedAt": "2026-06-24T15:30:42.139Z",
+  "version": 1782315042139,
   "claudeApiKey": "EhhIAEMMQhNdWwABGQAcNxNoQVgKQB93YQxZXikJYSokN2sKcWp1DDZQTABAAx9IfEphUTAJCQUfJxdLYl9lWwYUBwEoZ01dLWp/AlcMKiUwJx0LGUVVa0pKRCYGCwNIARoFAHpbBHAnIiQg",
   "claudeBaseUrl": ""
 }
