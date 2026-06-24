@@ -526,7 +526,6 @@
           '<button class="admin-nav-btn" data-sec="logo">🖼 로고 관리</button>' +
           '<button class="admin-nav-btn" data-sec="menu-ctrl">📂 메뉴 제어</button>' +
           '<button class="admin-nav-btn" data-sec="feat-ctrl">⚙️ 기능 제어</button>' +
-          '<button class="admin-nav-btn" data-sec="ai-provider">🤖 AI 제공자</button>' +
           '<button class="admin-nav-btn" data-sec="tab-admin">🔗 탭별 관리</button>' +
           '<button class="admin-nav-btn" data-sec="contact-info">📞 연락처 관리</button>' +
           '<button class="admin-nav-btn" data-sec="regulations">📚 규정집 관리</button>' +
@@ -559,7 +558,6 @@
     if (sec === 'logo')        { body.innerHTML = _htmlLogo();       _bindLogoEvents(); }
     if (sec === 'menu-ctrl')   { body.innerHTML = _htmlMenuCtrl();    _bindMenuCtrlEvents(); }
     if (sec === 'feat-ctrl')   { body.innerHTML = _htmlFeatCtrl();    _bindFeatCtrlEvents(); }
-    if (sec === 'ai-provider') { body.innerHTML = _htmlAIProvider(); _bindAIProviderEvents(); }
     if (sec === 'tab-admin')     { body.innerHTML = _htmlTabAdmin();      _bindTabAdminEvents(); }
     if (sec === 'contact-info')  { body.innerHTML = _htmlContactInfo();  _bindContactInfoEvents(); }
     if (sec === 'regulations')   {
@@ -1464,6 +1462,8 @@
     onTabOpen: onTabOpen,
     onLogin: onLogin,
     renderAdmin: renderAdmin,
+    htmlAIProvider: _htmlAIProvider,
+    bindAIProvider: _bindAIProviderEvents,
     isAdmin: isAdmin,
     isSuperAdmin: isSuperAdmin,
     isManager: isManager,

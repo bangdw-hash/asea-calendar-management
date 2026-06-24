@@ -1756,9 +1756,12 @@
           <p id="cloud-sync-status" class="form-hint" style="margin-top:8px;color:#4285F4"></p>
         </div>
 
-        <!-- Claude API 키 -->
+        <!-- AI 제공자 설정 (3중 라우팅 + 전 직원 클라우드 공유) -->
+        <div id="settings-ai-provider-mount" data-admin-only="true"></div>
+
+        <!-- Claude API 키 (레거시 — 단일 키 방식) -->
         <div class="settings-card" data-admin-only="true">
-          <h3 class="settings-section-title">Claude API 키 (일정발췃 · AI 분석)</h3>
+          <h3 class="settings-section-title">Claude API 키 (레거시 · 단일 키)</h3>
           <div class="form-group">
             <input id="setting-api-key" type="password" class="form-input"
               placeholder="API 키 입력">
@@ -3438,7 +3441,7 @@
   <script src="survey.js?v=20260623sv11" defer></script>
   <script src="xlsx.mini.min.js" defer></script>
   <script src="qrcard.js?v=20260623ai1" defer></script>
-  <script src="admin.js?v=20260623ai2" defer></script>
+  <script src="admin.js?v=20260623ai3" defer></script>
   <script src="board.js?v=20260614r2" defer></script>
   <script src="usersettings.js?v=20260610u1" defer></script>
   <script src="budget-seed-2026.js?v=20260614b1" defer></script>
@@ -3454,6 +3457,14 @@
     // 빠른 업무 등록 초기화 (DOM 준비 후)
     document.addEventListener('DOMContentLoaded', function () {
       if (typeof QuickTaskModule !== 'undefined') QuickTaskModule.init();
+      // 설정 탭: AI 제공자 카드 마운트(3중 라우팅 + 전 직원 공유)
+      try {
+        var _mnt = document.getElementById('settings-ai-provider-mount');
+        if (_mnt && window.AdminModule && AdminModule.htmlAIProvider) {
+          _mnt.innerHTML = AdminModule.htmlAIProvider();
+          AdminModule.bindAIProvider();
+        }
+      } catch (e) {}
       // 최초 1회 코치마크 (기기별, platform.js)
       if (window.Platform && Platform.coach) {
         setTimeout(function () {
