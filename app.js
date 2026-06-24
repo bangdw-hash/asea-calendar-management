@@ -4320,7 +4320,7 @@
     else btn.textContent = '📅 ' + sel.length + '개 캘린더 ▾';
   }
 
-  // 일정발췃 탭 API 키/Base URL 박스 ↔ CONFIG/localStorage 동기화
+  // 일정발췌 탭 API 키/Base URL 박스 ↔ CONFIG/localStorage 동기화
   function _syncExtractApiBox() {
     var keyEl     = $('extract-api-key');
     var baseEl    = $('extract-api-base-url');
@@ -6957,7 +6957,7 @@
       CONFIG.anthropicBaseUrl = baseUrl;
       try { localStorage.setItem(CONFIG.storageKeys.anthropicApiKey,  key);     } catch (e) {}
       try { localStorage.setItem(CONFIG.storageKeys.anthropicBaseUrl, baseUrl); } catch (e) {}
-      // 일정발췃 탭 입력란도 동기화
+      // 일정발췌 탭 입력란도 동기화
       if ($('extract-api-key'))      $('extract-api-key').value      = key;
       if ($('extract-api-base-url')) $('extract-api-base-url').value = baseUrl;
       var msg = baseUrl
