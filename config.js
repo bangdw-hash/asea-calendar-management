@@ -308,11 +308,13 @@ window.claudeFetch = async function (endpoint, opts) {
     });
   }
   // Flow(aiapiflow 등) — CORS 회피 위해 프록시 경유 forward
+  // opts.keepModel=true 면 flow.model 강제치환 안 함(추출 등 저비용 작업은 본문 모델 유지)
   if (active === 'flow' && P.flow.key && proxy) {
+    var _fpay = opts.keepModel ? opts.body : _bodyWithModel(opts.body, P.flow.model);
     return fetch(proxy, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + window.SUPA_ANON, 'apikey': window.SUPA_ANON },
-      body: JSON.stringify({ service: 'claude', payload: _safeParse(_bodyWithModel(opts.body, P.flow.model)), upstream: { baseUrl: (P.flow.baseUrl || 'https://aiapiflow.com').replace(/\/$/, ''), key: P.flow.key } })
+      body: JSON.stringify({ service: 'claude', payload: _safeParse(_fpay), upstream: { baseUrl: (P.flow.baseUrl || 'https://aiapiflow.com').replace(/\/$/, ''), key: P.flow.key } })
     });
   }
 
