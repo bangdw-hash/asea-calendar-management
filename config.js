@@ -273,14 +273,21 @@ window.setAIProviders = function (cfg, cloud) {
 /* 클라우드 공유 설정을 로컬에 반영(모든 직원 동일 적용) */
 window.loadAIProvidersFromCloud = function () {
   if (!(window.CloudForms && CloudForms.list)) return Promise.resolve(false);
-  return CloudForms.list('ai_provider_config').then(function (rows) {
-    var row = (rows || []).filter(function (r) { return r.ref === 'global'; })[0] || (rows || [])[0];
+  return CloudForms.list('ai_provider_config').then(function (res) {
+    // CloudForms.list 는 { ok, rows } 를 반환 → rows 를 풀어야 함
+    var rows = (res && res.rows) ? res.rows : (Array.isArray(res) ? res : []);
+    var row = rows.filter(function (r) { return r.ref === 'global'; })[0] || rows[0];
     var cfg = row && row.data && row.data.config;
     if (cfg) { try { localStorage.setItem(_AIP_KEY, JSON.stringify(cfg)); } catch (e) {} return true; }
     return false;
   }).catch(function () { return false; });
 };
-try { window.addEventListener('load', function () { if (window.loadAIProvidersFromCloud) window.loadAIProvidersFromCloud(); }); } catch (e) {}
+// 부팅 시 가능한 빨리 클라우드 설정 적용(여러 시점에 시도 → 첫 AI 호출 전에 반영되도록)
+try {
+  if (document.readyState !== 'loading') { if (window.loadAIProvidersFromCloud) window.loadAIProvidersFromCloud(); }
+  else document.addEventListener('DOMContentLoaded', function () { if (window.loadAIProvidersFromCloud) window.loadAIProvidersFromCloud(); });
+  window.addEventListener('load', function () { if (window.loadAIProvidersFromCloud) window.loadAIProvidersFromCloud(); });
+} catch (e) {}
 
 function _claudeHasRealKey(opts) {
   try {

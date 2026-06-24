@@ -3429,7 +3429,7 @@
   <!-- Quill.js 워드프로세서 -->
   <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js" defer></script>
 
-  <script src="config.js?v=20260623ai6" defer></script>
+  <script src="config.js?v=20260623ai7" defer></script>
   <script src="cloudsync.js?v=20260621c8" defer></script>
   <script src="dormitory.js?v=20260623ai1" defer></script>
   <script src="wayfind.js?v=20260622w9" defer></script>
@@ -3480,7 +3480,7 @@
     // 빠른 업무 등록 초기화 (DOM 준비 후)
     document.addEventListener('DOMContentLoaded', function () {
       if (typeof QuickTaskModule !== 'undefined') QuickTaskModule.init();
-      // AI제공자 탭에 카드 마운트(3중 라우팅 + 전 직원 공유) + 탭 열 때마다 최신값으로 갱신
+      // AI제공자 탭 카드 마운트 — 항상 클라우드 설정을 먼저 불러온 뒤 렌더
       function _mountAIProvider() {
         try {
           var _mnt = document.getElementById('ai-provider-content');
@@ -3490,9 +3490,13 @@
           }
         } catch (e) {}
       }
-      _mountAIProvider();
+      function _loadThenMountAIP() {
+        if (window.loadAIProvidersFromCloud) window.loadAIProvidersFromCloud().then(_mountAIProvider, _mountAIProvider);
+        else _mountAIProvider();
+      }
+      _loadThenMountAIP();
       document.querySelectorAll('[data-tab="ai-provider"]').forEach(function (b) {
-        b.addEventListener('click', function () { setTimeout(_mountAIProvider, 30); });
+        b.addEventListener('click', function () { setTimeout(_loadThenMountAIP, 30); });
       });
       // 최초 1회 코치마크 (기기별, platform.js)
       if (window.Platform && Platform.coach) {
