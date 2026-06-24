@@ -787,6 +787,8 @@ a        { color: var(--color-accent); text-decoration: none; }
 .sv-collapse.collapsed .sv-chev { transform: rotate(-90deg); }
 .sv-collapse.collapsed .sv-sec-body { display: none; }
 .sv-collapse.collapsed .sv-sec-head { margin-bottom: 0 !important; }
+.sv-sec-head { border-radius: 8px; transition: background .12s; user-select: none; }
+.sv-sec-head:hover { background: var(--color-accent-light, #E8F0FE); }
 .sv-sec-head:hover .sv-chev { color: var(--color-accent); }
 /* 그리드(객관식/체크박스) 행·열 편집 */
 .sv-grid { margin-top: 9px; display: flex; gap: 18px; flex-wrap: wrap; }
