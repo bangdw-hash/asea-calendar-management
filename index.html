@@ -311,6 +311,14 @@
     <span class="tab-label">관리자</span>
   </button>
 
+  <!-- 🤖 AI제공자 (admin만 표시) -->
+  <button class="tab-btn" data-tab="ai-provider" role="tab" aria-selected="false" style="display:none">
+    <svg class="tab-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <rect x="4" y="7" width="16" height="12" rx="3"/><path d="M12 3v4M9 13h.01M15 13h.01M8 19l-1 2M16 19l1 2"/>
+    </svg>
+    <span class="tab-label">AI제공자</span>
+  </button>
+
   <button class="tab-btn" data-tab="draft" role="tab" aria-selected="false">
     <svg class="tab-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
       <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
@@ -1756,10 +1764,9 @@
           <p id="cloud-sync-status" class="form-hint" style="margin-top:8px;color:#4285F4"></p>
         </div>
 
-        <!-- AI 제공자 설정 (3중 라우팅 + 전 직원 클라우드 공유) -->
-        <div id="settings-ai-provider-mount" data-admin-only="true"></div>
+        <!-- AI 제공자 설정은 별도 메뉴(설정 ▾ → AI제공자)로 이관됨 -->
 
-        <!-- Claude API 키 (레거시 — 단일 키 방식) · 숨김(위 AI 제공자 카드로 대체) -->
+        <!-- Claude API 키 (레거시 — 단일 키 방식) · 숨김(AI제공자 메뉴로 대체) -->
         <div class="settings-card" data-admin-only="true" style="display:none">
           <h3 class="settings-section-title">Claude API 키 (레거시 · 단일 키)</h3>
           <div class="form-group">
@@ -1954,6 +1961,17 @@
             <a class="btn btn-ghost btn-sm" id="souvenir-open" target="_blank" rel="noopener" href="https://bangdw-hash.github.io/souvenir-app/">새 창에서 열기 ↗</a>
           </div>
           <iframe id="souvenir-frame" class="embed-frame" title="기념품 신청" data-src="https://bangdw-hash.github.io/souvenir-app/" referrerpolicy="no-referrer-when-downgrade"></iframe>
+        </div>
+      </section>
+
+      <!-- ════════════════════════════════════════════════════
+           🤖 AI제공자 탭 (관리자 전용) — 모든 AI/프록시 설정 일원화
+           ════════════════════════════════════════════════════ -->
+      <section id="tab-ai-provider" class="tab-panel" role="tabpanel" hidden>
+        <div class="tab-body">
+          <h2 class="section-title" style="margin:0 0 4px">🤖 AI 제공자</h2>
+          <p class="form-hint" style="margin:0 0 16px">모든 AI 기능(일정발췟·AI분석·설문·아물보 등)과 프록시 설정을 여기서 한 곳에서 관리합니다. 저장하면 전 직원·전 단말·전 계정에 동일하게 적용됩니다.</p>
+          <div id="ai-provider-content"></div>
         </div>
       </section>
 
@@ -3335,6 +3353,14 @@
         <span class="bnav-label">관리자</span>
       </button>
 
+      <!-- 🤖 AI제공자 (admin) -->
+      <button class="bnav-btn" data-tab="ai-provider" style="display:none">
+        <svg class="bnav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="4" y="7" width="16" height="12" rx="3"/><path d="M12 3v4M9 13h.01M15 13h.01"/>
+        </svg>
+        <span class="bnav-label">AI제공자</span>
+      </button>
+
       <!-- 📝 기안문 -->
       <button class="bnav-btn" data-tab="draft">
         <svg class="bnav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -3438,13 +3464,13 @@
   <script src="survey.js?v=20260623sv11" defer></script>
   <script src="xlsx.mini.min.js" defer></script>
   <script src="qrcard.js?v=20260623ai1" defer></script>
-  <script src="admin.js?v=20260623ai4" defer></script>
+  <script src="admin.js?v=20260623ai5" defer></script>
   <script src="board.js?v=20260614r2" defer></script>
   <script src="usersettings.js?v=20260610u1" defer></script>
   <script src="budget-seed-2026.js?v=20260614b1" defer></script>
   <script src="budget.js?v=20260614b9" defer></script>
   <script src="app.js?v=20260623ai1" defer></script>
-  <script src="navgroups.js?v=20260621r16" defer></script>
+  <script src="navgroups.js?v=20260623ng1" defer></script>
   <script src="tooltips.js?v=20260621tt1" defer></script>
   <script src="userorg.js?v=20260614u1" defer></script>
   <script src="onboarding.js?v=20260614ob1" defer></script>
@@ -3454,14 +3480,20 @@
     // 빠른 업무 등록 초기화 (DOM 준비 후)
     document.addEventListener('DOMContentLoaded', function () {
       if (typeof QuickTaskModule !== 'undefined') QuickTaskModule.init();
-      // 설정 탭: AI 제공자 카드 마운트(3중 라우팅 + 전 직원 공유)
-      try {
-        var _mnt = document.getElementById('settings-ai-provider-mount');
-        if (_mnt && window.AdminModule && AdminModule.htmlAIProvider) {
-          _mnt.innerHTML = AdminModule.htmlAIProvider();
-          AdminModule.bindAIProvider();
-        }
-      } catch (e) {}
+      // AI제공자 탭에 카드 마운트(3중 라우팅 + 전 직원 공유) + 탭 열 때마다 최신값으로 갱신
+      function _mountAIProvider() {
+        try {
+          var _mnt = document.getElementById('ai-provider-content');
+          if (_mnt && window.AdminModule && AdminModule.htmlAIProvider) {
+            _mnt.innerHTML = AdminModule.htmlAIProvider();
+            AdminModule.bindAIProvider();
+          }
+        } catch (e) {}
+      }
+      _mountAIProvider();
+      document.querySelectorAll('[data-tab="ai-provider"]').forEach(function (b) {
+        b.addEventListener('click', function () { setTimeout(_mountAIProvider, 30); });
+      });
       // 최초 1회 코치마크 (기기별, platform.js)
       if (window.Platform && Platform.coach) {
         setTimeout(function () {

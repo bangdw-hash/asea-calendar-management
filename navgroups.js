@@ -31,7 +31,7 @@
     fac:      { label: '시설·자원', tabs: ['facility', 'vehicle', 'classroom', 'dorm', 'wayfind', 'checkinmgmt'] },
     comm:     { label: '소통·홍보', tabs: ['board', 'email', 'sms', 'zoom', 'promo', 'qrcard', 'bizcard', 'souvenir', '#amulbo-nav-btn'] },
     hr:       { label: '인사',      tabs: ['hr', 'retire'] },
-    settings: { label: '설정',      tabs: ['settings', 'admin', 'help'] },
+    settings: { label: '설정',      tabs: ['settings', 'admin', 'ai-provider', 'help'] },
   };
 
   function btnFor(t) {

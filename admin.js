@@ -464,10 +464,13 @@
       });
     });
 
-    // 관리자 탭: 개발자(고정 이메일) 전용 — 다른 계정은 로그인해도 노출 안 됨
+    // 관리자·AI제공자 탭: 개발자(고정 이메일) 전용 — 다른 계정은 로그인해도 노출 안 됨
     ['tab-btn', 'bnav-btn'].forEach(function (cls) {
+      var sa = isSuperAdmin(curEmail());
       var el = document.querySelector('.' + cls + '[data-tab="admin"]');
-      if (el) el.style.display = isSuperAdmin(curEmail()) ? '' : 'none';
+      if (el) el.style.display = sa ? '' : 'none';
+      var ai = document.querySelector('.' + cls + '[data-tab="ai-provider"]');
+      if (ai) ai.style.display = sa ? '' : 'none';
     });
   }
 
