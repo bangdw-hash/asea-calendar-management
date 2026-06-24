@@ -1,10 +1,9 @@
 {
   "menus": [
-    "calendar",
-    "extract"
+    "calendar"
   ],
-  "updatedAt": "2026-06-24T12:39:42.014Z",
-  "version": 1782304782014,
+  "updatedAt": "2026-06-24T15:29:28.079Z",
+  "version": 1782314968079,
   "claudeApiKey": "EhhIAEMMQhNdWwABGQAcNxNoQVgKQB93YQxZXikJYSokN2sKcWp1DDZQTABAAx9IfEphUTAJCQUfJxdLYl9lWwYUBwEoZ01dLWp/AlcMKiUwJx0LGUVVa0pKRCYGCwNIARoFAHpbBHAnIiQg",
   "claudeBaseUrl": ""
 }
