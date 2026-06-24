@@ -6939,7 +6939,8 @@
   }
 
   function initSettings() {
-    $('save-folder-btn').addEventListener('click', function () {
+    function _bindBtn(id, fn) { var e = $(id); if (e) e.addEventListener('click', fn); }
+    _bindBtn('save-folder-btn', function () {
       var val = $('setting-folder-id').value.trim();
       if (!val) { toast('폴더 ID를 입력하세요.', 'error'); return; }
       CONFIG.driveReportFolderId = val;
@@ -6947,7 +6948,7 @@
       toast('저장되었습니다.', 'success');
     });
 
-    $('save-api-key-btn').addEventListener('click', async function () {
+    _bindBtn('save-api-key-btn', async function () {
       var key     = $('setting-api-key').value.trim();
       var baseUrl = $('setting-api-base-url').value.trim().replace(/\/$/, '');  // 끝 슬래시 제거
       if (!key) { toast('API 키를 입력하세요.', 'error'); return; }
@@ -6967,7 +6968,7 @@
       saveSettingsToCloud(true);
     });
 
-    $('save-gemini-key-btn').addEventListener('click', async function () {
+    _bindBtn('save-gemini-key-btn', async function () {
       var key = $('setting-gemini-key').value.trim();
       CONFIG.geminiApiKey = key;
       try { localStorage.setItem(CONFIG.storageKeys.geminiApiKey, key || ''); } catch (e) {}
@@ -6975,14 +6976,14 @@
       saveSettingsToCloud(true);
     });
 
-    $('cloud-save-settings-btn').addEventListener('click', async function () {
+    _bindBtn('cloud-save-settings-btn', async function () {
       var btn = $('cloud-save-settings-btn');
       btn.disabled = true; btn.textContent = '저장 중...';
       await saveSettingsToCloud();
       btn.disabled = false; btn.textContent = '☁️ 클라우드에 저장';
     });
 
-    $('cloud-sync-now-btn').addEventListener('click', async function () {
+    _bindBtn('cloud-sync-now-btn', async function () {
       var btn = $('cloud-sync-now-btn');
       btn.disabled = true; btn.textContent = '동기화 중...';
       await syncHistoryOnLogin();
@@ -6992,7 +6993,7 @@
       btn.disabled = false; btn.textContent = '🔄 이력 지금 동기화';
     });
 
-    $('save-github-token-btn').addEventListener('click', async function () {
+    _bindBtn('save-github-token-btn', async function () {
       var token = $('setting-github-token').value.trim();
       CONFIG.githubToken = token;
       try { localStorage.setItem(CONFIG.storageKeys.githubToken, token); } catch (e) {}
@@ -7000,7 +7001,7 @@
       saveSettingsToCloud(true);
     });
 
-    $('save-make-webhook-btn').addEventListener('click', async function () {
+    _bindBtn('save-make-webhook-btn', async function () {
       var url = $('setting-make-webhook').value.trim();
       if (url && !url.startsWith('https://hook.')) {
         toast('올바른 Make.com 웹훅 URL을 입력하세요.', 'error'); return;
