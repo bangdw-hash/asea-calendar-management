@@ -457,12 +457,8 @@
     var order  = effectiveOrder();
     var hidden = loadMenuHidden();
     var isAdm  = (role === 'admin');
-    // 비관리자: 게시된 직원 메뉴(없으면 기본=캘린더)만 표시
-    var staffAllow = null;
-    if (!isAdm) {
-      var sc = loadStaffMenus();
-      staffAllow = (sc && Array.isArray(sc.menus)) ? sc.menus : DEFAULT_STAFF_MENUS;
-    }
+    // ★ 메뉴 표시는 '메뉴 제어'(역할별 isMenuVisible) + 전역숨김으로 일원화.
+    //   직원 통제도 '직원 공유 메뉴' 화이트리스트가 아니라 '메뉴 제어'로 진행.
 
     [['.desktop-tab-nav', '.tab-btn'], ['.mobile-bottom-nav', '.bnav-btn']].forEach(function (pair) {
       var nav = document.querySelector(pair[0]);
@@ -486,13 +482,8 @@
       btns.forEach(function (b) {
         var id = _btnId(b);
         if (!id || id === 'admin') return;            // 관리자 탭은 아래에서 처리
-        var visible;
-        if (staffAllow) {
-          // 비관리자: 게시된(또는 기본) 메뉴만 표시 (화이트리스트가 유일 기준)
-          visible = staffAllow.indexOf(id) !== -1;
-        } else {
-          visible = (hidden.indexOf(id) === -1) && isMenuVisible(id, role);
-        }
+        // 관리자/직원 공통: 전역숨김 + 역할별 메뉴제어(isMenuVisible)로 표시 판정
+        var visible = (hidden.indexOf(id) === -1) && isMenuVisible(id, role);
         b.style.display = visible ? '' : 'none';
       });
     });
