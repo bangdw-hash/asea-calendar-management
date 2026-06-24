@@ -431,6 +431,9 @@
 
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="cloudforms.js?v=20260617cf1"></script>
+<script src="config.js?v=20260623ai2"></script>
 <script>
 // ── Constants ──────────────────────────────────────────────
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbyZuuQpuc-0KWaaHmwJUTvnAc83liMcUcC5XxcdR-EFQCFC2AJ0LpFS3R1gS_JXI3Fykg/exec';
@@ -472,9 +475,8 @@ async function init() {
     const cfg = await cfgP;
     if (!cfg.ok || !cfg.enabled) { showUnavailable(); return; }
 
-    _apiKey = _decodeKey(cfg.apiKey);
-    _baseUrl = cfg.baseUrl || '';
-    if (!_apiKey) { showUnavailable(); return; }
+    // 공용 AI 제공자(클라우드) 설정 로드 — 메인 앱과 동일한 API 사용
+    try { if (window.loadAIProvidersFromCloud) await window.loadAIProvidersFromCloud(); } catch (e) {}
 
     // 설정이 확인되면 지식 로딩을 기다리지 않고 즉시 화면 표시
     showMain();
@@ -545,8 +547,6 @@ async function sendQuestion() {
   input.style.height = 'auto';
 
   try {
-    const endpoint = (_baseUrl ? _baseUrl + '/v1/messages' : 'https://api.anthropic.com/v1/messages');
-
     let systemPrompt = `당신은 아세아항공직업전문학교(ASEA) 안내 도우미 "아물보"입니다.
 학생과 교직원의 질문에 친절하고 명확하게 한국어로 답변하세요.
 마크다운 기호(**, ##, -, \` 등) 사용 금지. 순수 텍스트만.
@@ -558,13 +558,6 @@ async function sendQuestion() {
 
     const userMsg = (_userType === 'staff' ? '[교직원 문의] ' : '[학생 문의] ') + question;
 
-    const headers = {
-      'Content-Type': 'application/json',
-      'x-api-key': _apiKey,
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true'
-    };
-
     const body = {
       model: 'claude-haiku-4-5-20251001',
       max_tokens: 1024,
@@ -572,11 +565,11 @@ async function sendQuestion() {
       messages: [{ role: 'user', content: userMsg }]
     };
 
-    const res = await fetch(endpoint, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(body)
-    });
+    // 공용 AI 제공자(서버 프록시/공식/Flow) 경유 — 메인 앱과 동일 API
+    const _call = window.claudeFetch
+      ? window.claudeFetch('https://api.anthropic.com/v1/messages', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+      : fetch('https://api.anthropic.com/v1/messages', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    const res = await _call;
 
     if (!res.ok) {
       const errText = await res.text();

@@ -1361,9 +1361,10 @@
         saveBtn.disabled = true;
         if (status) status.textContent = '저장 중...';
 
+        // 아물보는 공용 AI 제공자를 사용 → 전용 키/baseUrl은 비어있으면 전송하지 않음(기존값 보존)
         var configUrl = GAS_URL + '?action=saveAmulboConfig' +
-          '&apiKey='  + encodeURIComponent(encodedKey) +
-          '&baseUrl=' + encodeURIComponent(baseUrl) +
+          (encodedKey ? '&apiKey='  + encodeURIComponent(encodedKey) : '') +
+          (baseUrl    ? '&baseUrl=' + encodeURIComponent(baseUrl)    : '') +
           '&enabled=' + (enabled ? 'true' : 'false');
 
         var knowledgeEncoded = btoa(unescape(encodeURIComponent(knowledge)));

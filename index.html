@@ -1759,8 +1759,8 @@
         <!-- AI 제공자 설정 (3중 라우팅 + 전 직원 클라우드 공유) -->
         <div id="settings-ai-provider-mount" data-admin-only="true"></div>
 
-        <!-- Claude API 키 (레거시 — 단일 키 방식) -->
-        <div class="settings-card" data-admin-only="true">
+        <!-- Claude API 키 (레거시 — 단일 키 방식) · 숨김(위 AI 제공자 카드로 대체) -->
+        <div class="settings-card" data-admin-only="true" style="display:none">
           <h3 class="settings-section-title">Claude API 키 (레거시 · 단일 키)</h3>
           <div class="form-group">
             <input id="setting-api-key" type="password" class="form-input"
@@ -1807,17 +1807,14 @@
             <input type="checkbox" id="amulbo-enabled-chk" style="width:16px;height:16px;cursor:pointer">
           </div>
 
-          <!-- API 키 -->
+          <!-- API 키: 공용 AI 제공자 사용(전용 키 제거) -->
           <div class="form-group">
-            <label class="form-label">아물보 전용 API 키</label>
-            <input type="password" id="amulbo-api-key" class="form-input" placeholder="sk-ant-... (아물보 전용)" autocomplete="off">
-            <p class="form-hint">메인 Claude API 키와 별도로 관리 — 아물보 과금 분리 목적. 저장 시에만 전송되며 재표시되지 않습니다.</p>
-          </div>
-
-          <!-- Base URL -->
-          <div class="form-group">
-            <label class="form-label">Base URL (선택, 프록시 사용 시)</label>
-            <input type="text" id="amulbo-base-url" class="form-input" placeholder="기본값: https://api.anthropic.com">
+            <p class="form-hint" style="margin:0;padding:10px 12px;background:#EFF6FF;border-radius:8px;border:1px solid #DBEAFE">
+              ℹ️ 아물보는 이제 <b>위 「AI 제공자 설정」의 공용 API</b>(서버 프록시/공식/Flow)를 그대로 사용합니다.
+              별도 전용 키가 필요 없습니다. 제공자·모델은 한 곳(AI 제공자 설정)에서 관리됩니다.
+            </p>
+            <input type="hidden" id="amulbo-api-key" value="">
+            <input type="hidden" id="amulbo-base-url" value="">
           </div>
 
           <!-- 지식 기반 -->
@@ -3441,7 +3438,7 @@
   <script src="survey.js?v=20260623sv11" defer></script>
   <script src="xlsx.mini.min.js" defer></script>
   <script src="qrcard.js?v=20260623ai1" defer></script>
-  <script src="admin.js?v=20260623ai3" defer></script>
+  <script src="admin.js?v=20260623ai4" defer></script>
   <script src="board.js?v=20260614r2" defer></script>
   <script src="usersettings.js?v=20260610u1" defer></script>
   <script src="budget-seed-2026.js?v=20260614b1" defer></script>
