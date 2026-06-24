@@ -547,8 +547,6 @@
         '<nav class="admin-sidenav">' +
           '<button class="admin-nav-btn active" data-sec="changelog">📋 버전 관리</button>' +
           '<button class="admin-nav-btn" data-sec="permissions">👥 권한 관리</button>' +
-          '<button class="admin-nav-btn" data-sec="userorg">🏢 조직·사용자 관리</button>' +
-          '<button class="admin-nav-btn" data-sec="staff-share">📢 직원 공유 메뉴</button>' +
           '<button class="admin-nav-btn" data-sec="menu-manage">🧭 메뉴 관리</button>' +
           '<button class="admin-nav-btn" data-sec="logo">🖼 로고 관리</button>' +
           '<button class="admin-nav-btn" data-sec="menu-ctrl">📂 메뉴 제어</button>' +
@@ -556,6 +554,7 @@
           '<button class="admin-nav-btn" data-sec="tab-admin">🔗 탭별 관리</button>' +
           '<button class="admin-nav-btn" data-sec="contact-info">📞 연락처 관리</button>' +
           '<button class="admin-nav-btn" data-sec="regulations">📚 규정집 관리</button>' +
+          '<button class="admin-nav-btn" data-sec="etc">📦 기타 관리</button>' +
         '</nav>' +
         '<div id="admin-sec-body" class="admin-sec-body"></div>' +
       '</div>';
@@ -574,9 +573,60 @@
     });
   }
 
+  /* ── 기타 관리: 설정 탭의 관리자(data-admin-only) 항목을 이곳으로 이전 ──
+     설정 = 개인용만 남기고, 관리자/모호한 항목은 「기타 관리」에서 모아 관리.
+     live DOM 노드를 이동하므로 기존 이벤트 바인딩 유지. holder는 항상 document에
+     부착(getElementById 동작 보장). */
+  function _ensureEtcHolder() {
+    var h = document.getElementById('etc-holder');
+    if (!h) { h = document.createElement('div'); h.id = 'etc-holder'; h.style.display = 'none'; document.body.appendChild(h); }
+    var st = document.getElementById('tab-settings');
+    if (st) {
+      Array.prototype.slice.call(st.querySelectorAll('[data-admin-only]')).forEach(function (n) {
+        if (n.closest && n.closest('#etc-holder')) return;   // 이미 이동됨
+        h.appendChild(n);
+      });
+    }
+    return h;
+  }
+  function _stowEtcHolder() {
+    var h = document.getElementById('etc-holder');
+    var body = document.getElementById('admin-sec-body');
+    if (h && body && body.contains(h)) { h.style.display = 'none'; document.body.appendChild(h); }
+  }
+  function _htmlEtc() {
+    return '<h3 class="admin-sec-title">📦 기타 관리</h3>' +
+      '<p class="form-hint" style="margin-bottom:12px">설정에서 옮겨온 관리자 항목입니다. (수신자·캘린더 소스·시설·연동/API·아물보 등)</p>' +
+      '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">' +
+        '<button class="btn btn-secondary btn-sm" data-etc="cards">⚙️ 설정 항목</button>' +
+        '<button class="btn btn-secondary btn-sm" data-etc="org">👥 인사/조직 관리</button>' +
+        '<button class="btn btn-secondary btn-sm" data-etc="staff-share">📢 직원 공유 메뉴</button>' +
+      '</div>' +
+      '<div id="etc-sub"></div>';
+  }
+  function _bindEtc() {
+    function showCards() {
+      var sub = document.getElementById('etc-sub'); if (!sub) return;
+      var h = _ensureEtcHolder(); h.style.display = ''; sub.appendChild(h);
+      // 이전된 설정 카드들의 바인딩/렌더 보장(설정 탭을 한 번도 안 열었어도)
+      try { if (window.renderSettingsTab) window.renderSettingsTab(); } catch (e) {}
+    }
+    document.querySelectorAll('[data-etc]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        var w = b.getAttribute('data-etc');
+        if (w === 'org') _renderSection('userorg');
+        else if (w === 'staff-share') _renderSection('staff-share');
+        else showCards();
+      });
+    });
+    showCards();   // 기본: 설정 항목 표시
+  }
+
   function _renderSection(sec) {
     var body = document.getElementById('admin-sec-body');
     if (!body) return;
+    _stowEtcHolder();   // 기타관리 holder가 body 안에 있으면 먼저 안전하게 회수
+    if (sec === 'etc')         { body.innerHTML = _htmlEtc(); _bindEtc(); }
     if (sec === 'changelog')   body.innerHTML = _htmlChangelog();
     if (sec === 'permissions') { body.innerHTML = _htmlPermissions(); _bindPermEvents(); }
     if (sec === 'userorg')     { body.innerHTML = _htmlUserOrg();     _bindUserOrgEvents(); }
@@ -1306,6 +1356,8 @@
     applyMenuVisibility();
     applyFeatVisibility();
     applyLogo();
+    // 관리자면 설정 탭의 관리자 항목을 '기타 관리'로 이전(설정=개인용만 남김)
+    try { if (isSuperAdmin(curEmail()) || isAdmin()) setTimeout(_ensureEtcHolder, 0); } catch (e) {}
     // ① 클라우드(admin_config) 설정을 먼저 받아 반영 → 마스터가 정한 권한/메뉴/기능/조직이
     //    이 계정·이 기기에도 동일 적용  ② 직원 공유 메뉴(GitHub)도 갱신
     Promise.all([
