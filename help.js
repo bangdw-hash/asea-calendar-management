@@ -86,7 +86,7 @@ window.HelpModule = (function () {
       ],
     },
     {
-      id: 'extract', icon: '📄', title: '일정발췃',
+      id: 'extract', icon: '📄', title: '일정발췌',
       desc: '공문·안내문 PDF를 업로드하면 AI가 일정을 자동 추출하여 Google Calendar에 등록',
       steps: [
         '탭 내 API 키 입력란에 Claude API 키 붙여넣기 후 저장',
@@ -186,7 +186,7 @@ window.HelpModule = (function () {
       steps: [
         'Google 계정 — 로그인 상태 및 로그아웃 버튼',
         '직원관리(관리자) — CSV 파일로 직원 일괄 등록 (형식: 이름,부서,직급,구글이메일,입사일,전화번호,권한)',
-        'Claude API 키 — 일정발췃·홍보화면에 사용. 키 형식에 따라 엔드포인트 자동 결정',
+        'Claude API 키 — 일정발췌·홍보화면에 사용. 키 형식에 따라 엔드포인트 자동 결정',
         'GitHub Token — 일정 공유 페이지 자동 생성 시 필요. GitHub → Fine-grained tokens에서 발급',
         '홍보화면 설정 — GAS 프록시 URL 입력 (도움말 → GAS 설정 가이드 참고)',
         'Make.com 웹훅 URL — 이메일 예약 자동 발송에 필요',
