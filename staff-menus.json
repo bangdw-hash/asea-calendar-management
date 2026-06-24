@@ -1,21 +1,10 @@
 {
   "menus": [
     "calendar",
-    "extract",
-    "cal-share-nav",
-    "budget",
-    "report",
-    "draft",
-    "survey",
-    "facility",
-    "vehicle",
-    "checkinmgmt",
-    "qrcard",
-    "hr",
-    "settings"
+    "extract"
   ],
-  "updatedAt": "2026-06-24T08:54:01.885Z",
-  "version": 1782291241885,
+  "updatedAt": "2026-06-24T12:39:42.014Z",
+  "version": 1782304782014,
   "claudeApiKey": "EhhIAEMMQhNdWwABGQAcNxNoQVgKQB93YQxZXikJYSokN2sKcWp1DDZQTABAAx9IfEphUTAJCQUfJxdLYl9lWwYUBwEoZ01dLWp/AlcMKiUwJx0LGUVVa0pKRCYGCwNIARoFAHpbBHAnIiQg",
   "claudeBaseUrl": ""
 }
