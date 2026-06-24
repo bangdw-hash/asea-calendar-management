@@ -222,6 +222,66 @@ window.getAIProxyUrl = function () {
   return 'https://zbpeyklwpotjyveipzxd.supabase.co/functions/v1/ai-proxy';
 };
 
+/* ────────────────────────────────────────────────────────────────
+   AI 제공자(Provider) — 3중 라우팅 + 계정/기기 무관 클라우드 공유
+   · proxy   : Supabase Edge Function(ai-proxy) — 서버에 키 보관(기본·권장)
+   · official: 공식 Anthropic API 직접 호출 (sk-ant- 키, 브라우저 직접허용)
+   · flow    : aiapiflow 등 호환 게이트웨이 — CORS 회피 위해 프록시 경유 forward
+   설정은 Supabase(app_submissions, kind='ai_provider_config', ref='global')에
+   저장되어 모든 직원이 어느 기기/계정에서나 동일 적용.
+──────────────────────────────────────────────────────────────── */
+var _AIP_KEY = 'asea_ai_providers';
+function _aipDefault() {
+  return { active: 'proxy', official: { key: '' }, flow: { baseUrl: 'https://aiapiflow.com', key: '', model: '' } };
+}
+function _aipDec(k) { try { return (k && window._decodeApiKey) ? window._decodeApiKey(k) : (k || ''); } catch (e) { return k || ''; } }
+function _safeParse(s) { try { return JSON.parse(s); } catch (e) { return {}; } }
+function _bodyWithModel(body, model) {
+  if (!model) return body;
+  try { var b = JSON.parse(body); b.model = model; return JSON.stringify(b); } catch (e) { return body; }
+}
+/* 사용용(복호화된 키) 설정 반환 */
+window.getAIProviders = function () {
+  try {
+    var raw = localStorage.getItem(_AIP_KEY);
+    if (raw) {
+      var p = JSON.parse(raw);
+      return {
+        active: p.active || 'proxy',
+        official: { key: _aipDec(p.official && p.official.key) },
+        flow: { baseUrl: (p.flow && p.flow.baseUrl) || 'https://aiapiflow.com', key: _aipDec(p.flow && p.flow.key), model: (p.flow && p.flow.model) || '' }
+      };
+    }
+  } catch (e) {}
+  return _aipDefault();
+};
+/* 저장(키 난독화). cloud=true 면 Supabase에도 공유(전 직원 적용) */
+window.setAIProviders = function (cfg, cloud) {
+  var enc = window._encodeApiKey || function (x) { return x; };
+  var stored = {
+    active: cfg.active || 'proxy',
+    official: { key: enc((cfg.official && cfg.official.key) || '') },
+    flow: { baseUrl: (cfg.flow && cfg.flow.baseUrl) || 'https://aiapiflow.com', key: enc((cfg.flow && cfg.flow.key) || ''), model: (cfg.flow && cfg.flow.model) || '' }
+  };
+  try { localStorage.setItem(_AIP_KEY, JSON.stringify(stored)); } catch (e) {}
+  if (cloud && window.CloudForms && CloudForms.save) {
+    var who = ''; try { who = localStorage.getItem('asea_user_email') || ''; } catch (e) {}
+    return CloudForms.save('ai_provider_config', 'global', 'AI제공자설정', stored.active, { config: stored, updatedBy: who });
+  }
+  return Promise.resolve();
+};
+/* 클라우드 공유 설정을 로컬에 반영(모든 직원 동일 적용) */
+window.loadAIProvidersFromCloud = function () {
+  if (!(window.CloudForms && CloudForms.list)) return Promise.resolve(false);
+  return CloudForms.list('ai_provider_config').then(function (rows) {
+    var row = (rows || []).filter(function (r) { return r.ref === 'global'; })[0] || (rows || [])[0];
+    var cfg = row && row.data && row.data.config;
+    if (cfg) { try { localStorage.setItem(_AIP_KEY, JSON.stringify(cfg)); } catch (e) {} return true; }
+    return false;
+  }).catch(function () { return false; });
+};
+try { window.addEventListener('load', function () { if (window.loadAIProvidersFromCloud) window.loadAIProvidersFromCloud(); }); } catch (e) {}
+
 function _claudeHasRealKey(opts) {
   try {
     var h = (opts && opts.headers) || {};
@@ -231,33 +291,43 @@ function _claudeHasRealKey(opts) {
 }
 
 /**
- * claudeFetch(endpoint, opts) — fetch()의 드롭인 대체.
- * 프록시가 설정돼 있으면 Supabase Edge Function(ai-proxy)으로 라우팅하고,
- * 아니면(또는 프록시 장애 시 직접 키 보유) 기존처럼 직접 호출한다.
- * opts.body(원본 Claude 본문)를 그대로 프록시에 전달(passthrough)한다.
+ * claudeFetch(endpoint, opts) — fetch()의 드롭인 대체. 활성 제공자에 따라 라우팅.
  */
 window.claudeFetch = async function (endpoint, opts) {
   opts = opts || {};
+  var P = window.getAIProviders();
+  var active = P.active || 'proxy';
   var proxy = window.getAIProxyUrl();
+
+  // 공식 직접(sk-ant-) — Anthropic은 브라우저 직접호출 허용
+  if (active === 'official' && P.official.key) {
+    return fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': P.official.key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+      body: opts.body
+    });
+  }
+  // Flow(aiapiflow 등) — CORS 회피 위해 프록시 경유 forward
+  if (active === 'flow' && P.flow.key && proxy) {
+    return fetch(proxy, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + window.SUPA_ANON, 'apikey': window.SUPA_ANON },
+      body: JSON.stringify({ service: 'claude', payload: _safeParse(_bodyWithModel(opts.body, P.flow.model)), upstream: { baseUrl: (P.flow.baseUrl || 'https://aiapiflow.com').replace(/\/$/, ''), key: P.flow.key } })
+    });
+  }
+
+  // 기본: 서버 프록시(서버 키)
   function direct() { return fetch(endpoint || 'https://api.anthropic.com/v1/messages', opts); }
   if (!proxy) return direct();
-  // 원본 Claude 본문을 { service:'claude', payload } 로 감싸 전송
-  // (이미 배포된 함수 형식과 호환)
   var proxyBody = opts.body;
   try { proxyBody = JSON.stringify({ service: 'claude', payload: JSON.parse(opts.body) }); } catch (e) {}
   try {
     var res = await fetch(proxy, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + window.SUPA_ANON,
-        'apikey': window.SUPA_ANON
-      },
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + window.SUPA_ANON, 'apikey': window.SUPA_ANON },
       body: proxyBody
     });
-    if ((res.status === 404 || res.status === 503 || res.status === 546) && _claudeHasRealKey(opts)) {
-      return direct();
-    }
+    if ((res.status === 404 || res.status === 503 || res.status === 546) && _claudeHasRealKey(opts)) return direct();
     return res;
   } catch (e) {
     if (_claudeHasRealKey(opts)) return direct();
@@ -276,8 +346,13 @@ window.getClaudeConfig = function() {
                 localStorage.getItem('asea_anthropic_api_key') ||
                 rawStaffKey || '';
 
-  // 프록시가 켜져 있으면 클라이언트 키가 없어도 동작 → 가드 통과용 센티넬
-  if (!apiKey && window.getAIProxyUrl && window.getAIProxyUrl()) apiKey = 'via-proxy';
+  // 활성 제공자(공식/Flow/프록시)가 있으면 클라이언트 키가 없어도 동작 → 가드 통과용 센티넬
+  if (!apiKey) {
+    var P = window.getAIProviders ? window.getAIProviders() : null;
+    if (P && P.active === 'official' && P.official.key) apiKey = P.official.key;
+    else if (P && P.active === 'flow' && P.flow.key) apiKey = 'via-flow';
+    else if (window.getAIProxyUrl && window.getAIProxyUrl()) apiKey = 'via-proxy';
+  }
 
   // ★ 직접 호출 시 사용할 공식 엔드포인트(프록시 장애 폴백용).
   var endpoint   = 'https://api.anthropic.com/v1/messages';
@@ -301,40 +376,49 @@ window.clearProxyBaseUrlIfOfficial = function () {
 try { window.clearProxyBaseUrlIfOfficial(); } catch (e) {}
 
 /**
- * testClaudeConnection() — 현재 저장된 Claude API 설정으로 실제 연결을 점검.
- * 반환: { ok, status, message, endpoint }
- *  - ok:true  → 키·엔드포인트 정상
- *  - status 있음(HTTP 코드) → 서버에 닿았으나 키/권한 오류 등
- *  - status 없음 → 네트워크/CORS 차단('Failed to fetch') = 엔드포인트 접근 불가
+ * testClaudeConnection(override) — 실제 연결 점검.
+ *  · 인자 없음 → 현재 활성 제공자(claudeFetch) 기준
+ *  · override = { mode:'official'|'flow'|'proxy', key, baseUrl, model } → 특정 제공자 개별 점검
+ * 반환: { ok, status, message }
  */
-window.testClaudeConnection = async function () {
-  var cc = window.getClaudeConfig();
-  if (!cc.apiKey) return { ok: false, message: 'API 키가 없습니다. 먼저 저장하세요.', endpoint: cc.endpoint };
-  var headers = {
-    'Content-Type': 'application/json',
-    'x-api-key': cc.apiKey,
-    'anthropic-version': '2023-06-01',
-  };
-  if (cc.isOfficial) headers['anthropic-dangerous-direct-browser-access'] = 'true';
+window.testClaudeConnection = async function (override) {
+  var model = (override && override.model) || 'claude-haiku-4-5-20251001';
+  var body = JSON.stringify({ model: model, max_tokens: 4, messages: [{ role: 'user', content: 'ping' }] });
+  var label = '활성 제공자';
   try {
-    var _viaProxy = !!(window.getAIProxyUrl && window.getAIProxyUrl());
-    var res = await window.claudeFetch(cc.endpoint, {
-      method: 'POST',
-      headers: headers,
-      body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 4, messages: [{ role: 'user', content: 'ping' }] }),
-    });
-    if (res.ok) {
-      return { ok: true, status: res.status, endpoint: cc.endpoint,
-        message: '연결 정상 ✓ (' + (_viaProxy ? '서버 프록시' : (cc.isOfficial ? '공식 API' : '프록시')) + ')' };
+    var res;
+    if (override && override.mode === 'official') {
+      label = '공식 Anthropic';
+      if (!override.key) return { ok: false, message: '공식 API 키(sk-ant-…)를 입력하세요.' };
+      res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-api-key': override.key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+        body: body
+      });
+    } else if (override && override.mode === 'flow') {
+      label = 'Flow(' + ((override.baseUrl || 'aiapiflow').replace(/^https?:\/\//, '')) + ')';
+      if (!override.key) return { ok: false, message: 'Flow API 키를 입력하세요.' };
+      var proxy = window.getAIProxyUrl();
+      if (!proxy) return { ok: false, message: '서버 프록시(ai-proxy)가 필요합니다. Flow는 프록시 경유로 점검합니다.' };
+      res = await fetch(proxy, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + window.SUPA_ANON, 'apikey': window.SUPA_ANON },
+        body: JSON.stringify({ service: 'claude', payload: JSON.parse(body), upstream: { baseUrl: (override.baseUrl || 'https://aiapiflow.com').replace(/\/$/, ''), key: override.key } })
+      });
+    } else {
+      var P = window.getAIProviders ? window.getAIProviders() : { active: 'proxy' };
+      label = P.active === 'flow' ? 'Flow' : P.active === 'official' ? '공식 Anthropic' : '서버 프록시';
+      res = await window.claudeFetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-api-key': 'via', 'anthropic-version': '2023-06-01' },
+        body: body
+      });
     }
+    if (res.ok) return { ok: true, status: res.status, message: '연결 정상 ✓ (' + label + ')' };
     var detail = 'HTTP ' + res.status;
-    try { var j = await res.json(); if (j && j.error && j.error.message) detail = j.error.message; } catch (e) {}
-    return { ok: false, status: res.status, endpoint: cc.endpoint,
-      message: '서버 응답 오류: ' + detail + ' — 키가 올바른지/권한이 있는지 확인하세요.' };
+    try { var j = await res.json(); if (j && j.error && j.error.message) detail = j.error.message; else if (j && j.message) detail = j.message; } catch (e) {}
+    return { ok: false, status: res.status, message: '응답 오류 (' + label + '): ' + detail + '\n→ 키/잔액/모델ID를 확인하세요.' };
   } catch (e) {
-    return { ok: false, endpoint: cc.endpoint,
-      message: '네트워크/CORS 오류로 서버에 닿지 못했습니다 (' + (e && e.message || e) + ').\n' +
-               '엔드포인트: ' + cc.endpoint + '\n' +
-               '→ 키 형식(공식 sk-ant- / 프록시 hex)이 맞는지, 프록시 주소가 유효한지 확인하세요.' };
+    return { ok: false, message: '네트워크/CORS 오류 (' + label + '): ' + (e && e.message || e) };
   }
 };

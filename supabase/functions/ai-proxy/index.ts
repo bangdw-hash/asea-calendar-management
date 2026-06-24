@@ -49,6 +49,22 @@ Deno.serve(async (req) => {
 
   try {
     if (service === "claude") {
+      // Flow 모드: 클라이언트가 upstream{baseUrl,key}를 주면 그 게이트웨이로 전달(aiapiflow 등)
+      const upstream = req_body?.upstream;
+      if (upstream && upstream.baseUrl && upstream.key) {
+        const u = String(upstream.baseUrl).replace(/\/$/, "") + "/v1/messages";
+        const r = await fetch(u, {
+          method: "POST",
+          headers: {
+            "content-type": "application/json",
+            "x-api-key": upstream.key,
+            "authorization": "Bearer " + upstream.key,
+            "anthropic-version": "2023-06-01",
+          },
+          body: JSON.stringify(payload),
+        });
+        return json(await r.json(), r.status);
+      }
       const key = Deno.env.get("ANTHROPIC_API_KEY");
       if (!key) return json({ error: "ANTHROPIC_API_KEY not set" }, 500);
       const r = await fetch("https://api.anthropic.com/v1/messages", {

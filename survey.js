@@ -371,7 +371,8 @@
           'placeholder="예) 신입사원 온보딩 만족도 조사, 항목은 업무환경/교육/팀문화/전반만족도 각각 5점 척도로, 마지막에 자유의견 주관식 포함"></textarea>' +
         '<div style="display:flex;gap:8px;margin-top:10px;align-items:center">' +
           '<button id="survey-generate-btn" class="btn btn-primary">🤖 AI로 설문지 생성</button>' +
-          '<span id="survey-status" class="form-hint" style="margin:0"></span>' +
+          '<button id="survey-test-api-btn" class="btn btn-ghost btn-sm" title="현재 활성 AI 제공자 연결 점검">🔌 API 작동 테스트</button>' +
+          '<span id="survey-status" class="form-hint" style="margin:0;white-space:pre-line"></span>' +
         '</div>' +
         '<div id="survey-preview" style="display:none;margin-top:16px"></div>' +
         '</div>' +
@@ -469,6 +470,17 @@
   function _bindCreateEvents() {
     var genBtn    = document.getElementById('survey-generate-btn');
     var refreshBtn= document.getElementById('survey-refresh-btn');
+    var testBtn   = document.getElementById('survey-test-api-btn');
+
+    if (testBtn) testBtn.addEventListener('click', function () {
+      if (!window.testClaudeConnection) { _setStatus('테스트 기능을 불러오지 못했습니다.'); return; }
+      _setStatus('🔌 AI 연결 점검 중…');
+      testBtn.disabled = true;
+      window.testClaudeConnection().then(function (r) {
+        _setStatus((r.ok ? '✅ ' : '❌ ') + r.message);
+        testBtn.disabled = false;
+      });
+    });
 
     if (genBtn) genBtn.addEventListener('click', function() {
       var prompt = (document.getElementById('survey-prompt').value || '').trim();
