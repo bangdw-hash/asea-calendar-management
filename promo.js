@@ -695,7 +695,7 @@ window.PromoModule = (function () {
     try {
       var hdrs = { 'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01' };
       if (_cc.isOfficial) hdrs['anthropic-dangerous-direct-browser-access'] = 'true';
-      var resp = await fetch(_cc.endpoint, { method:'POST', headers:hdrs, body: JSON.stringify({
+      var resp = await window.claudeFetch(_cc.endpoint, { method:'POST', headers:hdrs, body: JSON.stringify({
         model: 'claude-haiku-4-5-20251001', max_tokens: 300,
         system: '아세아항공직업전문학교 홍보 담당자입니다.\nJSON만 반환하세요. 형식: {"title":"20자이내","body":"80자이내(줄바꿈\\n허용)","tag":"#태그1 #태그2"}',
         messages: [{ role:'user', content:'테마:'+_cfg.theme+'\n내용:'+txt }],

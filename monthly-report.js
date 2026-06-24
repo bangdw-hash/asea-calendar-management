@@ -81,7 +81,7 @@ window.MonthlyReportModule = (function () {
       'anthropic-version': '2023-06-01',
     };
     if (_cc.isOfficial) headers['anthropic-dangerous-direct-browser-access'] = 'true';
-    var resp = await fetch(_cc.endpoint, {
+    var resp = await window.claudeFetch(_cc.endpoint, {
       method: 'POST',
       headers: headers,
       body: JSON.stringify({
@@ -134,7 +134,7 @@ window.MonthlyReportModule = (function () {
       'anthropic-version': '2023-06-01',
     };
     if (_cc.isOfficial) headers['anthropic-dangerous-direct-browser-access'] = 'true';
-    var resp = await fetch(_cc.endpoint, {
+    var resp = await window.claudeFetch(_cc.endpoint, {
       method: 'POST',
       headers: headers,
       body: JSON.stringify({

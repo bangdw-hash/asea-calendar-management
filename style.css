@@ -782,6 +782,18 @@ a        { color: var(--color-accent); text-decoration: none; }
 .sv-num-in { width: 56px; border: 1px solid var(--color-border); border-radius: 6px; padding: 5px 6px; }
 .sv-lab { flex: 1 1 160px; min-width: 120px; border: 1px solid var(--color-border); border-radius: 6px; padding: 6px 8px; font-size: 12.5px; }
 .sv-req { display: inline-flex; align-items: center; gap: 5px; margin-top: 9px; font-size: 12.5px; color: #555; cursor: pointer; }
+/* 설문 섹션 접기/펼치기 */
+.sv-collapse .sv-chev { transition: transform .18s ease; flex-shrink: 0; color: var(--color-text-secondary); }
+.sv-collapse.collapsed .sv-chev { transform: rotate(-90deg); }
+.sv-collapse.collapsed .sv-sec-body { display: none; }
+.sv-collapse.collapsed .sv-sec-head { margin-bottom: 0 !important; }
+.sv-sec-head { border-radius: 8px; transition: background .12s; user-select: none; }
+.sv-sec-head:hover { background: var(--color-accent-light, #E8F0FE); }
+.sv-sec-head:hover .sv-chev { color: var(--color-accent); }
+/* 그리드(객관식/체크박스) 행·열 편집 */
+.sv-grid { margin-top: 9px; display: flex; gap: 18px; flex-wrap: wrap; }
+.sv-grid .sv-opts { margin-top: 0; flex: 1 1 200px; min-width: 180px; }
+.sv-grid .sv-opt-mk { border-radius: 3px; }
 .sv-ed-add { display: flex; gap: 7px; flex-wrap: wrap; }
 .sv-ed-foot { display: flex; gap: 8px; margin-top: 4px; padding-top: 10px; border-top: 1px solid var(--color-border); flex-wrap: wrap; }
 /* 편집 이력 목록 */
@@ -5810,8 +5822,17 @@ body.is-dragging-event .day-events { pointer-events: none !important; }
   padding: 12px 16px 0;
   border-bottom: 2px solid var(--color-border, #e5e7eb);
   background: var(--color-bg-card, #fff);
+  /* 모바일: 서브탭이 화면을 넘으면 가로 스와이프로 끝까지 이동 */
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;   /* iOS 관성 스크롤 */
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;               /* Firefox: 스크롤바 숨김 */
 }
+.rpt-subtab-nav::-webkit-scrollbar { display: none; }  /* Chrome/Safari: 숨김 */
 .rpt-subtab-btn {
+  flex: 0 0 auto;            /* 줄어들지 않게 → 잘림 방지, 스크롤 유도 */
   padding: 8px 16px;
   border: none;
   background: none;

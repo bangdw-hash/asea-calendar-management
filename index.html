@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&family=Nanum+Gothic:wght@400;700&family=Nanum+Myeongjo:wght@400;700&family=Gowun+Dodum&family=Black+Han+Sans&family=IBM+Plex+Sans+KR:wght@400;500;700&display=swap">
-  <link rel="stylesheet" href="style.css?v=20260622r43">
+  <link rel="stylesheet" href="style.css?v=20260623r47">
   <link rel="stylesheet" href="report.css?v=20260610r1">
   <link rel="stylesheet" href="promo.css?v=20260611p3">
   <link rel="stylesheet" href="help.css?v=20260610h1">
@@ -21,9 +21,11 @@
   <link rel="stylesheet" href="onboarding.css?v=20260614ob1">
   <link rel="stylesheet" href="dormitory.css?v=20260622d16">
   <link rel="stylesheet" href="contractgen.css?v=20260616c2">
+  <link rel="stylesheet" href="platform.css?v=20260623pf1">
   <script src="https://accounts.google.com/gsi/client" async></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
   <script src="cloudforms.js?v=20260617cf1" defer></script>
+  <script src="platform.js?v=20260623pf1" defer></script>
   <!-- SheetJS for Excel support — 로컬 xlsx.mini.min.js(하단 로드)로 일원화하여 중복 로드 제거 -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" defer></script>
 
@@ -307,6 +309,14 @@
       <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
     </svg>
     <span class="tab-label">관리자</span>
+  </button>
+
+  <!-- 🤖 AI제공자 (admin만 표시) -->
+  <button class="tab-btn" data-tab="ai-provider" role="tab" aria-selected="false" style="display:none">
+    <svg class="tab-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <rect x="4" y="7" width="16" height="12" rx="3"/><path d="M12 3v4M9 13h.01M15 13h.01M8 19l-1 2M16 19l1 2"/>
+    </svg>
+    <span class="tab-label">AI제공자</span>
   </button>
 
   <button class="tab-btn" data-tab="draft" role="tab" aria-selected="false">
@@ -1754,9 +1764,11 @@
           <p id="cloud-sync-status" class="form-hint" style="margin-top:8px;color:#4285F4"></p>
         </div>
 
-        <!-- Claude API 키 -->
-        <div class="settings-card" data-admin-only="true">
-          <h3 class="settings-section-title">Claude API 키 (일정발췃 · AI 분석)</h3>
+        <!-- AI 제공자 설정은 별도 메뉴(설정 ▾ → AI제공자)로 이관됨 -->
+
+        <!-- Claude API 키 (레거시 — 단일 키 방식) · 숨김(AI제공자 메뉴로 대체) -->
+        <div class="settings-card" data-admin-only="true" style="display:none">
+          <h3 class="settings-section-title">Claude API 키 (레거시 · 단일 키)</h3>
           <div class="form-group">
             <input id="setting-api-key" type="password" class="form-input"
               placeholder="API 키 입력">
@@ -1802,17 +1814,14 @@
             <input type="checkbox" id="amulbo-enabled-chk" style="width:16px;height:16px;cursor:pointer">
           </div>
 
-          <!-- API 키 -->
+          <!-- API 키: 공용 AI 제공자 사용(전용 키 제거) -->
           <div class="form-group">
-            <label class="form-label">아물보 전용 API 키</label>
-            <input type="password" id="amulbo-api-key" class="form-input" placeholder="sk-ant-... (아물보 전용)" autocomplete="off">
-            <p class="form-hint">메인 Claude API 키와 별도로 관리 — 아물보 과금 분리 목적. 저장 시에만 전송되며 재표시되지 않습니다.</p>
-          </div>
-
-          <!-- Base URL -->
-          <div class="form-group">
-            <label class="form-label">Base URL (선택, 프록시 사용 시)</label>
-            <input type="text" id="amulbo-base-url" class="form-input" placeholder="기본값: https://api.anthropic.com">
+            <p class="form-hint" style="margin:0;padding:10px 12px;background:#EFF6FF;border-radius:8px;border:1px solid #DBEAFE">
+              ℹ️ 아물보는 이제 <b>위 「AI 제공자 설정」의 공용 API</b>(서버 프록시/공식/Flow)를 그대로 사용합니다.
+              별도 전용 키가 필요 없습니다. 제공자·모델은 한 곳(AI 제공자 설정)에서 관리됩니다.
+            </p>
+            <input type="hidden" id="amulbo-api-key" value="">
+            <input type="hidden" id="amulbo-base-url" value="">
           </div>
 
           <!-- 지식 기반 -->
@@ -1952,6 +1961,17 @@
             <a class="btn btn-ghost btn-sm" id="souvenir-open" target="_blank" rel="noopener" href="https://bangdw-hash.github.io/souvenir-app/">새 창에서 열기 ↗</a>
           </div>
           <iframe id="souvenir-frame" class="embed-frame" title="기념품 신청" data-src="https://bangdw-hash.github.io/souvenir-app/" referrerpolicy="no-referrer-when-downgrade"></iframe>
+        </div>
+      </section>
+
+      <!-- ════════════════════════════════════════════════════
+           🤖 AI제공자 탭 (관리자 전용) — 모든 AI/프록시 설정 일원화
+           ════════════════════════════════════════════════════ -->
+      <section id="tab-ai-provider" class="tab-panel" role="tabpanel" hidden>
+        <div class="tab-body">
+          <h2 class="section-title" style="margin:0 0 4px">🤖 AI 제공자</h2>
+          <p class="form-hint" style="margin:0 0 16px">모든 AI 기능(일정발췟·AI분석·설문·아물보 등)과 프록시 설정을 여기서 한 곳에서 관리합니다. 저장하면 전 직원·전 단말·전 계정에 동일하게 적용됩니다.</p>
+          <div id="ai-provider-content"></div>
         </div>
       </section>
 
@@ -3333,6 +3353,14 @@
         <span class="bnav-label">관리자</span>
       </button>
 
+      <!-- 🤖 AI제공자 (admin) -->
+      <button class="bnav-btn" data-tab="ai-provider" style="display:none">
+        <svg class="bnav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="4" y="7" width="16" height="12" rx="3"/><path d="M12 3v4M9 13h.01M15 13h.01"/>
+        </svg>
+        <span class="bnav-label">AI제공자</span>
+      </button>
+
       <!-- 📝 기안문 -->
       <button class="bnav-btn" data-tab="draft">
         <svg class="bnav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -3401,9 +3429,9 @@
   <!-- Quill.js 워드프로세서 -->
   <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js" defer></script>
 
-  <script src="config.js?v=20260621r6" defer></script>
+  <script src="config.js?v=20260623ai2" defer></script>
   <script src="cloudsync.js?v=20260621c8" defer></script>
-  <script src="dormitory.js?v=20260616d10" defer></script>
+  <script src="dormitory.js?v=20260623ai1" defer></script>
   <script src="wayfind.js?v=20260622w9" defer></script>
   <script src="contractgen.js?v=20260616c3" defer></script>
   <script src="auth.js?v=20260622r8" defer></script>
@@ -3413,8 +3441,8 @@
   <script src="gmail.js?v=20260608s" defer></script>
   <script src="print-frame.js?v=20260612pf2" defer></script>
   <script src="report.js?v=20260611r4" defer></script>
-  <script src="monthly-report.js?v=20260614r2" defer></script>
-  <script src="promo.js?v=20260612p3" defer></script>
+  <script src="monthly-report.js?v=20260623ai1" defer></script>
+  <script src="promo.js?v=20260623ai1" defer></script>
   <script src="meet.js?v=20260621mt2" defer></script>
   <script src="facility-fee.js?v=20260621ff1" defer></script>
   <link rel="stylesheet" href="labor-contract.css?v=20260611lc1">
@@ -3429,20 +3457,20 @@
   <script src="classroom.js?v=20260608s" defer></script>
   <script src="work.js?v=20260614r1" defer></script>
   <script src="workorder.js?v=20260608s" defer></script>
-  <script src="quicktask.js?v=20260621r5" defer></script>
+  <script src="quicktask.js?v=20260623ai1" defer></script>
   <script src="sms.js?v=20260615a2" defer></script>
   <!-- 신규 모듈 (admin → board → usersettings → app 순서) -->
-  <script src="draft.js?v=20260614r2" defer></script>
-  <script src="survey.js?v=20260622sv7" defer></script>
+  <script src="draft.js?v=20260623ai1" defer></script>
+  <script src="survey.js?v=20260623sv11" defer></script>
   <script src="xlsx.mini.min.js" defer></script>
-  <script src="qrcard.js?v=20260617r4" defer></script>
-  <script src="admin.js?v=20260614a20" defer></script>
+  <script src="qrcard.js?v=20260623ai1" defer></script>
+  <script src="admin.js?v=20260623ai5" defer></script>
   <script src="board.js?v=20260614r2" defer></script>
   <script src="usersettings.js?v=20260610u1" defer></script>
   <script src="budget-seed-2026.js?v=20260614b1" defer></script>
   <script src="budget.js?v=20260614b9" defer></script>
-  <script src="app.js?v=20260622r35" defer></script>
-  <script src="navgroups.js?v=20260621r16" defer></script>
+  <script src="app.js?v=20260623ai1" defer></script>
+  <script src="navgroups.js?v=20260623ng1" defer></script>
   <script src="tooltips.js?v=20260621tt1" defer></script>
   <script src="userorg.js?v=20260614u1" defer></script>
   <script src="onboarding.js?v=20260614ob1" defer></script>
@@ -3452,6 +3480,30 @@
     // 빠른 업무 등록 초기화 (DOM 준비 후)
     document.addEventListener('DOMContentLoaded', function () {
       if (typeof QuickTaskModule !== 'undefined') QuickTaskModule.init();
+      // AI제공자 탭에 카드 마운트(3중 라우팅 + 전 직원 공유) + 탭 열 때마다 최신값으로 갱신
+      function _mountAIProvider() {
+        try {
+          var _mnt = document.getElementById('ai-provider-content');
+          if (_mnt && window.AdminModule && AdminModule.htmlAIProvider) {
+            _mnt.innerHTML = AdminModule.htmlAIProvider();
+            AdminModule.bindAIProvider();
+          }
+        } catch (e) {}
+      }
+      _mountAIProvider();
+      document.querySelectorAll('[data-tab="ai-provider"]').forEach(function (b) {
+        b.addEventListener('click', function () { setTimeout(_mountAIProvider, 30); });
+      });
+      // 최초 1회 코치마크 (기기별, platform.js)
+      if (window.Platform && Platform.coach) {
+        setTimeout(function () {
+          Platform.coach('intro_v1', [
+            { el: '.header-brand', title: '환영합니다 👋', body: '로고를 누르면 어느 화면에서든 캘린더로 돌아옵니다.' },
+            { el: '#pf-view-btn', title: '보기 설정', body: '다크 모드와 글자 크기를 여기서 바꿀 수 있어요.' },
+            { el: '.tab-nav', title: '빠른 검색 ⌘K', body: 'Ctrl+K(또는 ⌘K)로 메뉴·명령을 바로 찾을 수 있습니다.' }
+          ]);
+        }, 1200);
+      }
     });
   </script>
 

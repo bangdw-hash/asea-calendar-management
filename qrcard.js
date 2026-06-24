@@ -459,7 +459,7 @@ window.QRCardModule = (function () {
     if (status) status.textContent = '🔍 AI가 명함을 인식 중입니다…';
     if (btn) { btn.disabled = true; btn.textContent = '인식 중…'; }
 
-    fetch(cfg.endpoint, {
+    window.claudeFetch(cfg.endpoint, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

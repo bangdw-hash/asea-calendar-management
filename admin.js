@@ -464,10 +464,13 @@
       });
     });
 
-    // 관리자 탭: 개발자(고정 이메일) 전용 — 다른 계정은 로그인해도 노출 안 됨
+    // 관리자·AI제공자 탭: 개발자(고정 이메일) 전용 — 다른 계정은 로그인해도 노출 안 됨
     ['tab-btn', 'bnav-btn'].forEach(function (cls) {
+      var sa = isSuperAdmin(curEmail());
       var el = document.querySelector('.' + cls + '[data-tab="admin"]');
-      if (el) el.style.display = isSuperAdmin(curEmail()) ? '' : 'none';
+      if (el) el.style.display = sa ? '' : 'none';
+      var ai = document.querySelector('.' + cls + '[data-tab="ai-provider"]');
+      if (ai) ai.style.display = sa ? '' : 'none';
     });
   }
 
@@ -1182,6 +1185,86 @@
   }
 
   /* ── XSS 방어 ──────────────────────────────────── */
+  /* ── AI 제공자 설정 (3중 라우팅 + 전 직원 클라우드 공유) ─────────── */
+  function _htmlAIProvider() {
+    var P = window.getAIProviders ? window.getAIProviders()
+      : { active: 'proxy', official: { key: '' }, flow: { baseUrl: 'https://aiapiflow.com', key: '', model: '' } };
+    function ck(v) { return P.active === v ? ' checked' : ''; }
+    return '' +
+      '<div class="settings-card">' +
+        '<h3 class="settings-section-title">🤖 AI 제공자 설정 (전 직원 공유)</h3>' +
+        '<p class="form-hint" style="margin:0 0 12px">여기서 저장하면 <b>모든 직원이 기기·계정과 무관하게</b> 같은 AI 제공자로 동작합니다. (설정은 클라우드에 저장됩니다)</p>' +
+        '<div style="margin-bottom:14px">' +
+          '<label style="display:block;font-weight:600;font-size:13px;margin-bottom:6px">활성 제공자(이 중 하나로 동작)</label>' +
+          '<label style="margin-right:14px;font-size:13px"><input type="radio" name="apv-active" value="proxy"' + ck('proxy') + '> 서버 프록시(권장)</label>' +
+          '<label style="margin-right:14px;font-size:13px"><input type="radio" name="apv-active" value="official"' + ck('official') + '> 공식 Claude</label>' +
+          '<label style="font-size:13px"><input type="radio" name="apv-active" value="flow"' + ck('flow') + '> Flow(aiapiflow)</label>' +
+        '</div>' +
+        '<div class="settings-card" style="background:#F8FAFF;margin-bottom:10px">' +
+          '<div style="display:flex;justify-content:space-between;align-items:center">' +
+            '<b style="font-size:13px">① 서버 프록시 (Edge Function)</b>' +
+            '<button class="btn btn-ghost btn-sm" data-apv-test="proxy">🔌 테스트</button></div>' +
+          '<p class="form-hint" style="margin:6px 0 0">키를 Supabase 시크릿(ANTHROPIC_API_KEY)에 보관 → 브라우저 노출 없음. 가장 안전.</p>' +
+        '</div>' +
+        '<div class="settings-card" style="background:#F8FAFF;margin-bottom:10px">' +
+          '<div style="display:flex;justify-content:space-between;align-items:center">' +
+            '<b style="font-size:13px">② 직접 Claude API (공식)</b>' +
+            '<button class="btn btn-ghost btn-sm" data-apv-test="official">🔌 테스트</button></div>' +
+          '<input id="apv-official-key" type="password" class="form-input" style="margin-top:8px" placeholder="sk-ant-api03-..." value="' + esc(P.official.key) + '">' +
+        '</div>' +
+        '<div class="settings-card" style="background:#F8FAFF">' +
+          '<div style="display:flex;justify-content:space-between;align-items:center">' +
+            '<b style="font-size:13px">③ Flow API (aiapiflow 등 호환 게이트웨이)</b>' +
+            '<button class="btn btn-ghost btn-sm" data-apv-test="flow">🔌 테스트</button></div>' +
+          '<input id="apv-flow-key" type="password" class="form-input" style="margin-top:8px" placeholder="sk-... (aiapiflow 키)" value="' + esc(P.flow.key) + '">' +
+          '<input id="apv-flow-base" type="text" class="form-input" style="margin-top:6px" placeholder="https://aiapiflow.com" value="' + esc(P.flow.baseUrl) + '">' +
+          '<input id="apv-flow-model" type="text" class="form-input" style="margin-top:6px" placeholder="모델 ID (예: claude-3-5-sonnet-20241022) — 비우면 호출 기본값" value="' + esc(P.flow.model) + '">' +
+          '<p class="form-hint" style="margin:6px 0 0">Flow는 CORS 회피를 위해 서버 프록시를 경유합니다. ai-proxy를 최신 버전(upstream 지원)으로 재배포해야 동작합니다.</p>' +
+        '</div>' +
+        '<div style="margin-top:14px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">' +
+          '<button id="apv-save" class="btn btn-primary btn-sm">💾 저장(전 직원 공유)</button>' +
+          '<span id="apv-status" class="form-hint" style="margin:0;white-space:pre-line"></span>' +
+        '</div>' +
+      '</div>';
+  }
+  function _bindAIProviderEvents() {
+    function gather() {
+      return {
+        active: (document.querySelector('input[name="apv-active"]:checked') || {}).value || 'proxy',
+        official: { key: (document.getElementById('apv-official-key') || {}).value || '' },
+        flow: {
+          key: (document.getElementById('apv-flow-key') || {}).value || '',
+          baseUrl: (document.getElementById('apv-flow-base') || {}).value || 'https://aiapiflow.com',
+          model: (document.getElementById('apv-flow-model') || {}).value || ''
+        }
+      };
+    }
+    function status(msg, ok) {
+      var s = document.getElementById('apv-status'); if (!s) return;
+      s.textContent = msg; s.style.color = ok === true ? '#16a34a' : ok === false ? '#dc2626' : '#6b7280';
+    }
+    document.querySelectorAll('[data-apv-test]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        var mode = b.getAttribute('data-apv-test'), c = gather();
+        var ov = mode === 'official' ? { mode: 'official', key: c.official.key }
+          : mode === 'flow' ? { mode: 'flow', key: c.flow.key, baseUrl: c.flow.baseUrl, model: c.flow.model }
+          : { mode: 'proxy' };
+        status('🔌 연결 점검 중…');
+        window.testClaudeConnection(ov).then(function (r) { status((r.ok ? '✅ ' : '❌ ') + r.message, r.ok); });
+      });
+    });
+    var save = document.getElementById('apv-save');
+    if (save) save.addEventListener('click', function () {
+      var c = gather(); status('💾 저장 중…');
+      Promise.resolve(window.setAIProviders(c, true))
+        .then(function (res) {
+          if (res && res.ok === false) status('⚠ 로컬에는 저장됨 · 클라우드 공유 실패(로그인/네트워크 확인)', false);
+          else status('✅ 저장 완료 — 전 직원에게 적용됩니다 (활성: ' + c.active + ')', true);
+        })
+        .catch(function () { status('⚠ 로컬에는 저장됨 · 클라우드 공유 실패', false); });
+    });
+  }
+
   function esc(s) {
     return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
@@ -1281,9 +1364,10 @@
         saveBtn.disabled = true;
         if (status) status.textContent = '저장 중...';
 
+        // 아물보는 공용 AI 제공자를 사용 → 전용 키/baseUrl은 비어있으면 전송하지 않음(기존값 보존)
         var configUrl = GAS_URL + '?action=saveAmulboConfig' +
-          '&apiKey='  + encodeURIComponent(encodedKey) +
-          '&baseUrl=' + encodeURIComponent(baseUrl) +
+          (encodedKey ? '&apiKey='  + encodeURIComponent(encodedKey) : '') +
+          (baseUrl    ? '&baseUrl=' + encodeURIComponent(baseUrl)    : '') +
           '&enabled=' + (enabled ? 'true' : 'false');
 
         var knowledgeEncoded = btoa(unescape(encodeURIComponent(knowledge)));
@@ -1382,6 +1466,8 @@
     onTabOpen: onTabOpen,
     onLogin: onLogin,
     renderAdmin: renderAdmin,
+    htmlAIProvider: _htmlAIProvider,
+    bindAIProvider: _bindAIProviderEvents,
     isAdmin: isAdmin,
     isSuperAdmin: isSuperAdmin,
     isManager: isManager,

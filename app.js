@@ -4596,7 +4596,7 @@
         'anthropic-version': '2023-06-01',
       };
       if (_cc.isOfficial) _reqHeaders['anthropic-dangerous-direct-browser-access'] = 'true';
-      var response = await fetch(_cc.endpoint, {
+      var response = await window.claudeFetch(_cc.endpoint, {
         method: 'POST',
         headers: _reqHeaders,
         body: JSON.stringify({
@@ -4963,7 +4963,7 @@
 
       var hdr = { 'Content-Type': 'application/json', 'x-api-key': _cc.apiKey, 'anthropic-version': '2023-06-01' };
       if (_cc.isOfficial) hdr['anthropic-dangerous-direct-browser-access'] = 'true';
-      var resp = await fetch(_cc.endpoint, { method: 'POST', headers: hdr, body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 8000, messages: [{ role: 'user', content: prompt }] }) });
+      var resp = await window.claudeFetch(_cc.endpoint, { method: 'POST', headers: hdr, body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 8000, messages: [{ role: 'user', content: prompt }] }) });
       if (!resp.ok) { var ed = await resp.json().catch(function () { return {}; }); throw new Error((ed.error && ed.error.message) || ('API ' + resp.status)); }
       var data = await resp.json();
       var text = (data.content && data.content[0] && data.content[0].text) || '';

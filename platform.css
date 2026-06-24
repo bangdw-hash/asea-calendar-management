@@ -1,0 +1,196 @@
+/* ================================================================
+   platform.css — 공통 플랫폼 레이어 (전역 UX 기반)
+   · 다크모드 / 글자크기(UI 배율)
+   · 저장상태·오프라인 인디케이터
+   · Undo 토스트 / 스켈레톤 / 빈 상태
+   · 명령 팔레트(⌘K) / 코치마크 / 접근성
+   추가 전용(additive) — 기존 스타일을 덮어쓰지 않음
+   ================================================================ */
+
+/* ── 접근성: 건너뛰기 링크 & 포커스 링 ─────────────────────────── */
+.pf-skip-link {
+  position: fixed; left: 8px; top: -48px; z-index: 100000;
+  background: var(--color-accent, #1A73E8); color: #fff;
+  padding: 8px 14px; border-radius: 8px; font-size: 13px; font-weight: 600;
+  transition: top 140ms ease; text-decoration: none;
+}
+.pf-skip-link:focus { top: 8px; }
+
+body.pf-kbd *:focus-visible {
+  outline: 2px solid var(--color-accent, #1A73E8) !important;
+  outline-offset: 2px !important;
+  border-radius: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pf-no-motion *, .pf-no-motion *::before, .pf-no-motion *::after {
+    animation-duration: .001ms !important; transition-duration: .001ms !important;
+  }
+}
+
+/* ── 다크 모드 (CSS 변수 재정의) ──────────────────────────────── */
+html[data-theme="dark"] {
+  --color-bg:            #15181D;
+  --color-accent:        #5AA0FF;
+  --color-accent-hover:  #7FB5FF;
+  --color-accent-light:  #1E2A3D;
+  --color-text:          #E8EAED;
+  --color-text-secondary:#9AA0A6;
+  --color-card:          #1E2228;
+  --color-border:        #2D333B;
+  --color-success:       #5BD08A;
+  --color-success-light: #16301F;
+  --color-warning:       #F7C84B;
+  --color-warning-light: #332A12;
+  --color-error:         #F2776B;
+  --color-error-light:   #3A1E1C;
+  --shadow-sm:  0 1px 3px rgba(0,0,0,.4);
+  --shadow-md:  0 2px 8px rgba(0,0,0,.45);
+  --shadow-lg:  0 8px 24px rgba(0,0,0,.5);
+  --shadow-overlay: 0 12px 40px rgba(0,0,0,.6);
+  color-scheme: dark;
+}
+html[data-theme="dark"] body { background: var(--color-bg); color: var(--color-text); }
+/* 다크모드에서 순수 흰 배경 카드가 너무 밝지 않도록 흔한 인라인 화이트 보정 */
+html[data-theme="dark"] img:not([src*=".svg"]) { filter: brightness(.92); }
+
+/* ── UI 배율(글자크기) ────────────────────────────────────────── */
+html[data-uiscale="lg"]  .app { zoom: 1.10; }
+html[data-uiscale="xl"]  .app { zoom: 1.22; }
+html[data-uiscale="sm"]  .app { zoom: 0.92; }
+
+/* ── 저장상태 / 오프라인 인디케이터 (헤더) ────────────────────── */
+.pf-savestate {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 12px; font-weight: 600; color: var(--color-text-secondary);
+  padding: 4px 10px; border-radius: 9999px; background: var(--color-card);
+  border: 1px solid var(--color-border); white-space: nowrap;
+  opacity: 0; transform: translateY(-2px); transition: opacity .2s, transform .2s;
+}
+.pf-savestate.show { opacity: 1; transform: none; }
+.pf-savestate .pf-dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.pf-savestate[data-s="saving"] { color: var(--color-warning, #FBBC05); }
+.pf-savestate[data-s="saved"]  { color: var(--color-success, #34A853); }
+.pf-savestate[data-s="error"]  { color: var(--color-error, #EA4335); }
+.pf-savestate[data-s="offline"]{ color: var(--color-text-secondary); }
+@keyframes pf-spin { to { transform: rotate(360deg); } }
+.pf-savestate[data-s="saving"] .pf-dot { animation: pf-spin 1s linear infinite; border: 1.5px solid currentColor; border-top-color: transparent; background: transparent; }
+
+.pf-net-badge {
+  position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%) translateY(60px);
+  z-index: 99998; background: #3A1E1C; color: #FFD7D2;
+  border: 1px solid #6b3a36; border-radius: 9999px;
+  padding: 8px 16px; font-size: 13px; font-weight: 600;
+  box-shadow: 0 6px 20px rgba(0,0,0,.3); transition: transform .25s ease;
+  display: inline-flex; align-items: center; gap: 8px;
+}
+.pf-net-badge.show { transform: translateX(-50%) translateY(0); }
+
+/* ── 토스트 (Undo 포함) ───────────────────────────────────────── */
+.pf-toast-wrap {
+  position: fixed; left: 50%; bottom: 72px; transform: translateX(-50%);
+  z-index: 99999; display: flex; flex-direction: column; gap: 8px; align-items: center;
+  pointer-events: none;
+}
+.pf-toast {
+  pointer-events: auto; display: inline-flex; align-items: center; gap: 14px;
+  background: #202124; color: #fff; border-radius: 10px;
+  padding: 11px 14px 11px 16px; font-size: 13.5px; box-shadow: 0 8px 28px rgba(0,0,0,.32);
+  max-width: min(92vw, 460px); animation: pf-toast-in .22s cubic-bezier(.2,.7,.3,1);
+}
+.pf-toast.out { animation: pf-toast-out .2s ease forwards; }
+@keyframes pf-toast-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@keyframes pf-toast-out { to { opacity: 0; transform: translateY(8px); } }
+.pf-toast .pf-toast-msg { flex: 1; line-height: 1.4; }
+.pf-toast .pf-toast-act {
+  flex: none; background: transparent; border: none; color: #8AB4F8;
+  font-weight: 700; font-size: 13px; cursor: pointer; padding: 4px 6px; border-radius: 6px;
+}
+.pf-toast .pf-toast-act:hover { background: rgba(255,255,255,.1); }
+.pf-toast .pf-toast-bar { position: absolute; left: 0; bottom: 0; height: 2px; background: #8AB4F8; border-radius: 0 0 10px 10px; }
+
+/* ── 스켈레톤 & 빈 상태 ───────────────────────────────────────── */
+.pf-skll {
+  background: linear-gradient(90deg, var(--color-border) 25%, rgba(0,0,0,.04) 37%, var(--color-border) 63%);
+  background-size: 400% 100%; animation: pf-shimmer 1.3s ease infinite;
+  border-radius: 6px; display: block;
+}
+@keyframes pf-shimmer { 0% { background-position: 100% 0; } 100% { background-position: 0 0; } }
+.pf-empty {
+  text-align: center; padding: 44px 20px; color: var(--color-text-secondary);
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+}
+.pf-empty .pf-empty-ico { width: 46px; height: 46px; opacity: .5; }
+.pf-empty .pf-empty-title { font-size: 15px; font-weight: 700; color: var(--color-text); }
+.pf-empty .pf-empty-desc { font-size: 13px; max-width: 360px; line-height: 1.5; }
+.pf-empty .pf-empty-btn {
+  margin-top: 6px; background: var(--color-accent, #1A73E8); color: #fff; border: none;
+  padding: 9px 18px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer;
+}
+
+/* ── 명령 팔레트 (⌘K) ─────────────────────────────────────────── */
+.pf-palette-back {
+  position: fixed; inset: 0; z-index: 100001; background: rgba(20,22,26,.45);
+  display: flex; align-items: flex-start; justify-content: center; padding-top: 12vh;
+  animation: pf-fade .12s ease;
+}
+@keyframes pf-fade { from { opacity: 0; } to { opacity: 1; } }
+.pf-palette {
+  width: min(92vw, 600px); background: var(--color-card); border: 1px solid var(--color-border);
+  border-radius: 14px; box-shadow: var(--shadow-overlay); overflow: hidden;
+  display: flex; flex-direction: column; max-height: 70vh;
+}
+.pf-palette-input {
+  border: none; outline: none; background: transparent; color: var(--color-text);
+  font-size: 16px; padding: 16px 18px; border-bottom: 1px solid var(--color-border);
+}
+.pf-palette-list { overflow-y: auto; padding: 6px; }
+.pf-palette-item {
+  display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 9px;
+  cursor: pointer; color: var(--color-text); font-size: 14px;
+}
+.pf-palette-item .pf-pi-ico { width: 18px; height: 18px; flex: none; color: var(--color-text-secondary); }
+.pf-palette-item .pf-pi-main { flex: 1; min-width: 0; }
+.pf-palette-item .pf-pi-sub { font-size: 11.5px; color: var(--color-text-secondary); }
+.pf-palette-item .pf-pi-cat {
+  font-size: 10.5px; color: var(--color-text-secondary); border: 1px solid var(--color-border);
+  border-radius: 5px; padding: 1px 6px; flex: none;
+}
+.pf-palette-item.active, .pf-palette-item:hover { background: var(--color-accent-light, #E8F0FE); }
+.pf-palette-empty { padding: 26px; text-align: center; color: var(--color-text-secondary); font-size: 13px; }
+.pf-palette-foot {
+  border-top: 1px solid var(--color-border); padding: 7px 14px; font-size: 11px;
+  color: var(--color-text-secondary); display: flex; gap: 14px;
+}
+.pf-palette-foot kbd {
+  font-family: inherit; background: var(--color-bg); border: 1px solid var(--color-border);
+  border-radius: 4px; padding: 0 5px; font-size: 10.5px;
+}
+
+/* ── 코치마크 ─────────────────────────────────────────────────── */
+.pf-coach-back { position: fixed; inset: 0; z-index: 100002; background: rgba(0,0,0,.55); }
+.pf-coach-hole { position: fixed; border-radius: 10px; box-shadow: 0 0 0 9999px rgba(0,0,0,.55); transition: all .2s ease; pointer-events: none; }
+.pf-coach-card {
+  position: fixed; z-index: 100003; background: var(--color-card); color: var(--color-text);
+  border-radius: 12px; box-shadow: var(--shadow-overlay); padding: 16px 18px; width: min(86vw, 320px);
+}
+.pf-coach-card h4 { margin: 0 0 6px; font-size: 15px; }
+.pf-coach-card p { margin: 0 0 12px; font-size: 13px; line-height: 1.5; color: var(--color-text-secondary); }
+.pf-coach-card .pf-coach-row { display: flex; align-items: center; justify-content: space-between; }
+.pf-coach-card .pf-coach-step { font-size: 11.5px; color: var(--color-text-secondary); }
+.pf-coach-card .pf-coach-btns { display: flex; gap: 8px; }
+.pf-coach-card button {
+  border: none; border-radius: 7px; padding: 7px 13px; font-size: 12.5px; font-weight: 600; cursor: pointer;
+}
+.pf-coach-card .pf-coach-skip { background: transparent; color: var(--color-text-secondary); }
+.pf-coach-card .pf-coach-next { background: var(--color-accent, #1A73E8); color: #fff; }
+
+/* 보기 설정 미니 메뉴 */
+.pf-view-menu {
+  position: fixed; z-index: 100001; background: var(--color-card); border: 1px solid var(--color-border);
+  border-radius: 12px; box-shadow: var(--shadow-overlay); padding: 10px; width: 240px;
+}
+.pf-view-menu .pf-vm-row { display: flex; align-items: center; justify-content: space-between; padding: 7px 6px; font-size: 13px; }
+.pf-view-menu .pf-seg { display: inline-flex; border: 1px solid var(--color-border); border-radius: 8px; overflow: hidden; }
+.pf-view-menu .pf-seg button { border: none; background: transparent; padding: 5px 10px; font-size: 12px; cursor: pointer; color: var(--color-text); }
+.pf-view-menu .pf-seg button.on { background: var(--color-accent, #1A73E8); color: #fff; }
