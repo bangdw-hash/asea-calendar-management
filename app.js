@@ -5868,15 +5868,19 @@
     _initCalendarSubscribe();
     if (window.AdminModule && AdminModule.initAmulboAdmin) AdminModule.initAmulboAdmin();
   }
+  // '기타 관리'(관리자)에서 이전된 설정 카드들의 바인딩/렌더를 위해 노출
+  try { window.renderSettingsTab = renderSettingsTab; } catch (e) {}
 
   function _updateSettingsRoleBadge() {
     var badge = $('settings-role-badge');
     if (!badge) return;
-    var isAdm = window.AdminModule && AdminModule.isAdmin && AdminModule.isAdmin();
     var email = S.userEmail || '';
     if (!email) { badge.style.display = 'none'; return; }
+    var role = (window.AdminModule && AdminModule.getUserRole) ? AdminModule.getUserRole(email) : 'staff';
+    var label = role === 'admin' ? '관리자' : role === 'manager' ? '부서장' : '일반직원';
+    var isAdm = role === 'admin';
     badge.style.display = 'inline-block';
-    badge.textContent = isAdm ? '관리자' : '사용자';
+    badge.textContent = label;
     badge.style.cssText = 'display:inline-block;margin-left:8px;padding:2px 8px;border-radius:12px;font-size:12px;font-weight:600;' +
       (isAdm ? 'background:#1a73e8;color:#fff' : 'background:#e8f0fe;color:#1a73e8');
   }
