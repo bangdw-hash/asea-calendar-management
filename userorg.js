@@ -23,7 +23,7 @@ var UserOrg = (function () {
 
   /* ── 디렉토리 ── */
   function dir(){ try { return JSON.parse(localStorage.getItem(DIR_KEY)||'[]'); } catch(e){ return []; } }
-  function saveDir(a){ try { localStorage.setItem(DIR_KEY, JSON.stringify(a)); } catch(e){} }
+  function saveDir(a){ try { localStorage.setItem(DIR_KEY, JSON.stringify(a)); } catch(e){} try { if(window._adminCfgPush) window._adminCfgPush(); } catch(e){} }
   function rec(email){ email=(email||curEmail()).toLowerCase(); return dir().find(function(u){ return (u.email||'').toLowerCase()===email; })||null; }
   function me(){ return rec(curEmail()); }
   function myDept(){ var r=me(); return (r&&r.dept)||localStorage.getItem('asea_budget_my_dept')||''; }
@@ -64,7 +64,7 @@ var UserOrg = (function () {
 
   /* ── 보직별 메뉴 노출 ── */
   function posMenus(){ try { return JSON.parse(localStorage.getItem(POS_KEY)||'{}'); } catch(e){ return {}; } }
-  function savePosMenus(o){ try { localStorage.setItem(POS_KEY, JSON.stringify(o)); } catch(e){} }
+  function savePosMenus(o){ try { localStorage.setItem(POS_KEY, JSON.stringify(o)); } catch(e){} try { if(window._adminCfgPush) window._adminCfgPush(); } catch(e){} }
   function allowedMenus(){
     if(canSeeAll()) return null;            // 전체 노출
     var pos=myPosition(); if(!pos) return null;

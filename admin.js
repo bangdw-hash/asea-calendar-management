@@ -191,22 +191,55 @@
 
   /* ── 스토리지 ─────────────────────────────────────── */
   function loadRoles()    { try { return JSON.parse(localStorage.getItem(SK_ROLES)    || '{}'); } catch(e) { return {}; } }
-  function saveRoles(d)   { try { localStorage.setItem(SK_ROLES,    JSON.stringify(d)); } catch(e) {} }
+  function saveRoles(d)   { try { localStorage.setItem(SK_ROLES,    JSON.stringify(d)); } catch(e) {} _adminCfgChanged(); }
   function loadMenuVis()  { try { return JSON.parse(localStorage.getItem(SK_MENU_VIS) || '{}'); } catch(e) { return {}; } }
-  function saveMenuVis(d) { try { localStorage.setItem(SK_MENU_VIS, JSON.stringify(d)); } catch(e) {} }
+  function saveMenuVis(d) { try { localStorage.setItem(SK_MENU_VIS, JSON.stringify(d)); } catch(e) {} _adminCfgChanged(); }
   function loadFeatVis()  { try { return JSON.parse(localStorage.getItem(SK_FEAT_VIS) || '{}'); } catch(e) { return {}; } }
-  function saveFeatVis(d) { try { localStorage.setItem(SK_FEAT_VIS, JSON.stringify(d)); } catch(e) {} }
+  function saveFeatVis(d) { try { localStorage.setItem(SK_FEAT_VIS, JSON.stringify(d)); } catch(e) {} _adminCfgChanged(); }
 
   /* 메뉴 순서 — 미설정(null)이면 기본 순서 사용 */
   function loadMenuOrder()  { try { var v = localStorage.getItem(SK_MENU_ORDER); return v === null ? [] : (JSON.parse(v) || []); } catch(e) { return []; } }
-  function saveMenuOrder(a) { try { localStorage.setItem(SK_MENU_ORDER, JSON.stringify(a)); } catch(e) {} }
+  function saveMenuOrder(a) { try { localStorage.setItem(SK_MENU_ORDER, JSON.stringify(a)); } catch(e) {} _adminCfgChanged(); }
   /* 전역 숨김 — 미설정(null)이면 기본 숨김 목록 사용 */
   function loadMenuHidden()  { try { var v = localStorage.getItem(SK_MENU_HIDDEN); return v === null ? DEFAULT_MENU_HIDDEN.slice() : (JSON.parse(v) || []); } catch(e) { return DEFAULT_MENU_HIDDEN.slice(); } }
-  function saveMenuHidden(a) { try { localStorage.setItem(SK_MENU_HIDDEN, JSON.stringify(a)); } catch(e) {} }
+  function saveMenuHidden(a) { try { localStorage.setItem(SK_MENU_HIDDEN, JSON.stringify(a)); } catch(e) {} _adminCfgChanged(); }
   /* 로고 dataURL */
   function loadLogo()   { try { return localStorage.getItem(SK_LOGO) || ''; } catch(e) { return ''; } }
   function saveLogo(d)  { try { localStorage.setItem(SK_LOGO, d); return true; } catch(e) { return false; } }
   function removeLogo() { try { localStorage.removeItem(SK_LOGO); } catch(e) {} }
+
+  /* ── 관리자 설정 클라우드 동기화 (계정별 권한·메뉴·기능 제어 전 단말 공유) ──
+     기존 localStorage 전용 설정을 Supabase(app_submissions, kind='admin_config',
+     ref='global')에 저장 → 마스터가 정한 권한/메뉴/기능/조직 설정이 어느 기기·
+     계정에서나 동일 적용. (로고는 용량 커서 제외) */
+  var ADMIN_CFG_KEYS = ['asea_user_roles', 'asea_menu_visibility', 'asea_feat_visibility',
+    'asea_menu_order', 'asea_menu_hidden', 'asea_position_menus', 'asea_user_directory', 'asea_contact_info'];
+  var _adminCfgTimer = null;
+  function _canAdminPush() { try { return isSuperAdmin(curEmail()) || isAdmin(); } catch (e) { return false; } }
+  function _pushAdminConfig() {
+    if (!(window.CloudForms && CloudForms.save) || !_canAdminPush()) return Promise.resolve();
+    var data = {};
+    ADMIN_CFG_KEYS.forEach(function (k) { try { var v = localStorage.getItem(k); if (v != null) data[k] = v; } catch (e) {} });
+    return CloudForms.save('admin_config', 'global', '관리자설정', 'active', { keys: data, updatedBy: curEmail() });
+  }
+  function _adminCfgChanged() {   // 디바운스 push (관리자만)
+    if (!_canAdminPush()) return;
+    if (_adminCfgTimer) clearTimeout(_adminCfgTimer);
+    _adminCfgTimer = setTimeout(_pushAdminConfig, 800);
+  }
+  function pullAdminConfig() {    // 클라우드 → 로컬 반영(모든 사용자)
+    if (!(window.CloudForms && CloudForms.list)) return Promise.resolve(false);
+    return CloudForms.list('admin_config').then(function (res) {
+      var rows = (res && res.rows) ? res.rows : [];
+      var row = rows.filter(function (r) { return r.ref === 'global'; })[0] || rows[0];
+      var keys = row && row.data && row.data.keys;
+      if (!keys) return false;
+      Object.keys(keys).forEach(function (k) { try { localStorage.setItem(k, keys[k]); } catch (e) {} });
+      return true;
+    }).catch(function () { return false; });
+  }
+  window._adminCfgPush = _adminCfgChanged;   // userorg 등 외부 모듈에서 변경 통지용
+
 
   /* ── 직원 공유 메뉴 (GitHub 중앙 게시) ──────────────────
      관리자가 고른 메뉴를 staff-menus.json으로 repo에 커밋(공개) →
@@ -1282,8 +1315,18 @@
     applyMenuVisibility();
     applyFeatVisibility();
     applyLogo();
-    // 직원 공유 메뉴를 중앙(GitHub)에서 가져와 재적용 (비관리자 메뉴 제한)
-    fetchStaffMenus().then(function () { applyMenuVisibility(); });
+    // ① 클라우드(admin_config) 설정을 먼저 받아 반영 → 마스터가 정한 권한/메뉴/기능/조직이
+    //    이 계정·이 기기에도 동일 적용  ② 직원 공유 메뉴(GitHub)도 갱신
+    Promise.all([
+      pullAdminConfig().catch(function () { return false; }),
+      fetchStaffMenus().catch(function () { return null; })
+    ]).then(function (results) {
+      applyMenuVisibility();
+      applyFeatVisibility();
+      try { if (window.UserOrg && UserOrg.applyMenuVis) UserOrg.applyMenuVis(); } catch (e) {}
+      // 클라우드에 설정이 없고 내가 관리자면, 현재 로컬 설정을 최초 기준으로 올림(부트스트랩)
+      if (!results[0] && _canAdminPush()) _pushAdminConfig();
+    });
   }
 
   /* 페이지 로드 즉시 — 로그인 화면 로고 + 메뉴 순서를 미리 적용 */
