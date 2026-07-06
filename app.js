@@ -4630,7 +4630,7 @@
       }
 
       var data = await response.json();
-      var text = data.content && data.content[0] && data.content[0].text;
+      var text = window.claudeExtractText ? window.claudeExtractText(data) : (data.content && data.content[0] && data.content[0].text);
       if (!text) throw new Error('AI 응답이 비어 있습니다.');
 
       // JSON 파싱 — 응답에서 JSON 배열만 추출
@@ -4985,7 +4985,7 @@
       var resp = await window.claudeFetch(_cc.endpoint, { method: 'POST', headers: hdr, body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 8000, messages: [{ role: 'user', content: prompt }] }) });
       if (!resp.ok) { var ed = await resp.json().catch(function () { return {}; }); throw new Error((ed.error && ed.error.message) || ('API ' + resp.status)); }
       var data = await resp.json();
-      var text = (data.content && data.content[0] && data.content[0].text) || '';
+      var text = (window.claudeExtractText ? window.claudeExtractText(data) : (data.content && data.content[0] && data.content[0].text)) || '';
       var m = text.match(/\[[\s\S]*\]/);
       if (!m) throw new Error('AI 응답 파싱 실패');
       var results = JSON.parse(m[0]);

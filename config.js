@@ -431,3 +431,14 @@ window.testClaudeConnection = async function (override) {
     return { ok: false, message: '네트워크/CORS 오류 (' + label + '): ' + (e && e.message || e) };
   }
 };
+
+/**
+ * claudeExtractText(data) — claudeFetch 응답 JSON에서 텍스트 추출.
+ * raw Anthropic 포맷과 프록시 래핑(data/result) 형식 모두 지원.
+ * 오류 응답이면 빈 문자열 반환.
+ */
+window.claudeExtractText = function(data) {
+  if (!data) return '';
+  var inner = (data.content) ? data : (data.data || data.result || {});
+  return (inner.content && inner.content[0] && inner.content[0].text) || '';
+};

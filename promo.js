@@ -702,7 +702,7 @@ window.PromoModule = (function () {
       })});
       if (!resp.ok) throw new Error('API ' + resp.status);
       var data = await resp.json();
-      var text = (data.content&&data.content[0]&&data.content[0].text) || '';
+      var text = (window.claudeExtractText ? window.claudeExtractText(data) : (data.content&&data.content[0]&&data.content[0].text)) || '';
       var m = text.match(/\{[\s\S]*\}/); if (!m) throw new Error('JSON 없음');
       var parsed = JSON.parse(m[0]);
       var ti=$p('prm-title'), bo=$p('prm-body'), ta=$p('prm-tag');

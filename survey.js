@@ -115,7 +115,7 @@
     }).then(function(r) { return r.json(); })
       .then(function(data) {
         if (data.error) throw new Error(data.error.message || 'API 오류');
-        var text = data.content && data.content[0] && data.content[0].text;
+        var text = window.claudeExtractText ? window.claudeExtractText(data) : (data.content && data.content[0] && data.content[0].text);
         if (!text) throw new Error('Claude 응답이 없습니다.');
         return _parseFormJson(text);
       });

@@ -510,7 +510,7 @@
       model: 'claude-haiku-4-5-20251001', max_tokens: 1024,
       messages: [{ role: 'user', content: [{ type: 'image', source: { type: 'base64', media_type: media, data: b64 } }, { type: 'text', text: prompt }] }] }) });
     if (!res.ok) { var t = ''; try { var j = await res.json(); t = j.error && j.error.message; } catch (e) {} throw new Error(t || ('HTTP ' + res.status)); }
-    var d = await res.json(); var text = d.content && d.content[0] && d.content[0].text || '';
+    var d = await res.json(); var text = (window.claudeExtractText ? window.claudeExtractText(d) : (d.content && d.content[0] && d.content[0].text)) || '';
     var mm = text.match(/\{[\s\S]*\}/); if (!mm) throw new Error('추출 결과 파싱 실패');
     try { _db.from('dormitory_ocr_logs').insert({ result_json: JSON.parse(mm[0]), success: true, created_by: who() }); } catch (e) {}
     return JSON.parse(mm[0]);

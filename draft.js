@@ -375,8 +375,8 @@
       }
 
       var data = await resp.json();
-      var result = (data.content && data.content[0] && data.content[0].text) || '';
-      if (!result) throw new Error('응답이 비어 있습니다.');
+      var result = window.claudeExtractText ? window.claudeExtractText(data) : ((data.content && data.content[0] && data.content[0].text) || '');
+      if (!result) throw new Error('응답이 비어 있습니다.' + (data.error ? ' (' + (data.error.message || JSON.stringify(data.error).slice(0,80)) + ')' : ''));
 
       // 사용량 증가
       var newCount = incTodayUsage();
