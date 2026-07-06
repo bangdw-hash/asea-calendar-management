@@ -117,30 +117,58 @@
   function render() {
     var el = root();
     if (!el) return;
-    el.innerHTML = isManager() ? renderManager() : renderApplicant();
+    el.innerHTML = renderUnified();
     bind();
   }
 
   /* ══════════════════════════════════════════════════════════
-     APPLICANT SIDE
+     UNIFIED RENDER — applicant tabs always visible;
+     manager tabs shown only when isManager()
      ══════════════════════════════════════════════════════════ */
-  function renderApplicant() {
+  function renderUnified() {
     var myReqs = loadRequests().filter(function(r){ return r.submittedBy === myEmail(); });
-    var pendingCount = myReqs.filter(function(r){ return r.status === 'pending'; }).length;
+    var myPendingCount = myReqs.filter(function(r){ return r.status === 'pending'; }).length;
 
+    var isMgr = isManager();
+    var all = isMgr ? loadRequests() : [];
+    var counts = isMgr ? countByStatus(all) : {};
+    var pendingBadge  = (isMgr && counts.pending)   ? '<span class="bc-nav-badge">'        + counts.pending   + '</span>' : '';
+    var reviewBadge   = (isMgr && counts.reviewing) ? '<span class="bc-nav-badge yellow">' + counts.reviewing + '</span>' : '';
+
+    /* applicant nav (everyone) */
+    var applicantNavActive = _view === 'home' || _view === 'staff-pick' || _view === 'form';
+    var myNavActive        = _view === 'my'   || _view === 'edit';
+    var nav =
+      navBtn('home', '새 신청', applicantNavActive) +
+      navBtn('my', '내 신청 내역' + (myPendingCount ? '<span class="bc-nav-badge">' + myPendingCount + '</span>' : ''), myNavActive);
+
+    /* manager nav (managers only) */
+    if (isMgr) {
+      nav += '<span class="bc-nav-sep"></span>' +
+        navBtn('mgr-list',     '신청 목록' + pendingBadge + reviewBadge, _view === 'mgr-list') +
+        navBtn('mgr-settings', '설정·단가',  _view === 'mgr-settings') +
+        navBtn('mgr-order',    '발주 문서',  _view === 'mgr-order');
+    }
+
+    /* content */
     var content = '';
-    if (_view === 'staff-pick') content = renderStaffPicker();
-    else if (_view === 'form')  content = renderForm();
-    else if (_view === 'my')    content = renderMySubmissions();
-    else if (_view === 'edit')  content = renderFormEdit();
-    else                        content = renderApplicantHome();
+    if      (_view === 'staff-pick')    content = renderStaffPicker();
+    else if (_view === 'form')          content = renderForm();
+    else if (_view === 'my')            content = renderMySubmissions();
+    else if (_view === 'edit')          content = renderFormEdit();
+    else if (_view === 'mgr-settings')  content = renderMgrSettings();
+    else if (_view === 'mgr-order')     content = renderMgrOrder();
+    else if (_view === 'mgr-list')      content = renderMgrList();
+    else                                content = renderApplicantHome();
+
+    var isMgrView = _view === 'mgr-list' || _view === 'mgr-settings' || _view === 'mgr-order';
 
     return '<div class="bc-root">' +
-      '<nav class="bc-nav">' +
-        navBtn('home', '새 신청', _view === 'home' || _view === 'staff-pick' || _view === 'form') +
-        navBtn('my', '내 신청 내역' + (pendingCount ? '<span class="bc-nav-badge">' + pendingCount + '</span>' : ''), _view === 'my' || _view === 'edit') +
-      '</nav>' +
-      '<div class="bc-content">' + content + '</div>' +
+      '<nav class="bc-nav">' + nav + '</nav>' +
+      (isMgrView
+        ? content  /* manager views handle their own layout wrapper */
+        : '<div class="bc-content">' + content + '</div>'
+      ) +
     '</div>';
   }
 
@@ -450,37 +478,8 @@
   }
 
   /* ══════════════════════════════════════════════════════════
-     MANAGER SIDE
+     MANAGER SIDE (content only — nav rendered by renderUnified)
      ══════════════════════════════════════════════════════════ */
-  function renderManager() {
-    var navItems;
-    if (_view === 'mgr-settings') {
-      navItems = [['mgr-list','신청 목록'],['mgr-settings','설정'],['mgr-order','발주 문서']];
-    } else if (_view === 'mgr-order') {
-      navItems = [['mgr-list','신청 목록'],['mgr-settings','설정'],['mgr-order','발주 문서']];
-    } else {
-      navItems = [['mgr-list','신청 목록'],['mgr-settings','설정'],['mgr-order','발주 문서']];
-    }
-
-    var all = loadRequests();
-    var counts = countByStatus(all);
-    var pendingBadge = counts.pending ? '<span class="bc-nav-badge">' + counts.pending + '</span>' : '';
-    var reviewBadge  = counts.reviewing ? '<span class="bc-nav-badge yellow">' + counts.reviewing + '</span>' : '';
-
-    var content;
-    if (_view === 'mgr-settings')   content = renderMgrSettings();
-    else if (_view === 'mgr-order') content = renderMgrOrder();
-    else                            content = renderMgrList();
-
-    return '<div class="bc-root">' +
-      '<nav class="bc-nav">' +
-        '<button class="bc-nav-btn' + (_view==='mgr-list'?' active':'') + '" data-bcview="mgr-list">신청 목록' + pendingBadge + reviewBadge + '</button>' +
-        '<button class="bc-nav-btn' + (_view==='mgr-settings'?' active':'') + '" data-bcview="mgr-settings">설정·단가</button>' +
-        '<button class="bc-nav-btn' + (_view==='mgr-order'?' active':'') + '" data-bcview="mgr-order">발주 문서</button>' +
-      '</nav>' +
-      content +
-    '</div>';
-  }
 
   /* ── Manager: List ────────────────────────────────────────── */
   function renderMgrList() {
@@ -977,7 +976,9 @@
           _staffList = []; _selStaff = null; _view = 'staff-pick'; render(); return;
         }
         if (action === 'cancel-form') {
-          _view = isManager() ? 'mgr-list' : 'home'; _editForm = null; render(); return;
+          _editForm = null;
+          _view = (_view === 'edit') ? 'my' : (isManager() ? 'mgr-list' : 'home');
+          render(); return;
         }
         if (action === 'view-my' || action === 'edit-my') {
           var req = loadRequests().find(function(r){ return r.id === id; });
@@ -1261,7 +1262,7 @@
      ══════════════════════════════════════════════════════════ */
   window.BizcardModule = {
     onTabOpen: onTabOpen,
-    _retry: function() { _view = isManager() ? 'mgr-list' : 'staff-pick'; render(); },
+    _retry: function() { _view = 'staff-pick'; render(); },
   };
 
 })();

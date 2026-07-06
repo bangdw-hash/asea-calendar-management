@@ -48,6 +48,15 @@
   color: var(--color-accent);
   border-bottom-color: var(--color-accent);
 }
+.bc-nav-sep {
+  display: inline-block;
+  width: 1px;
+  height: 20px;
+  background: var(--color-border);
+  margin: 0 8px;
+  align-self: center;
+  flex-shrink: 0;
+}
 .bc-nav-badge {
   display: inline-flex;
   align-items: center;
