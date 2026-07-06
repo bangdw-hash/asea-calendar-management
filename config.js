@@ -440,5 +440,12 @@ window.testClaudeConnection = async function (override) {
 window.claudeExtractText = function(data) {
   if (!data) return '';
   var inner = (data.content) ? data : (data.data || data.result || {});
-  return (inner.content && inner.content[0] && inner.content[0].text) || '';
+  var arr = inner.content;
+  if (!arr || !arr.length) return '';
+  // thinking 블록(type:'thinking')을 건너뛰고 첫 번째 text 블록 반환
+  for (var i = 0; i < arr.length; i++) {
+    if (arr[i].type === 'text' && arr[i].text) return arr[i].text;
+  }
+  // fallback: type 없이 text 필드만 있는 경우
+  return (arr[0] && arr[0].text) || '';
 };
