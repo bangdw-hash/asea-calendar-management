@@ -300,7 +300,7 @@
     // 게시판
     if (name === 'board' && typeof BoardModule !== 'undefined') BoardModule.onTabOpen();
     // 외부 앱 임베드(명함/기념품): 처음 열 때만 iframe 로드(지연)
-    if (name === 'bizcard')  { var bf = $('bizcard-frame');  if (bf && !bf.src && bf.dataset.src) bf.src = bf.dataset.src; }
+    if (name === 'bizcard' && typeof BizcardModule !== 'undefined') BizcardModule.onTabOpen();
     if (name === 'souvenir') { var sf = $('souvenir-frame'); if (sf && !sf.src && sf.dataset.src) sf.src = sf.dataset.src; }
     // 관리자 패널
     if (name === 'admin' && typeof AdminModule !== 'undefined') AdminModule.onTabOpen();
