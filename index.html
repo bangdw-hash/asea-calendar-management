@@ -23,6 +23,7 @@
   <link rel="stylesheet" href="dormitory.css?v=20260622d16">
   <link rel="stylesheet" href="contractgen.css?v=20260616c2">
   <link rel="stylesheet" href="platform.css?v=20260623pf1">
+  <link rel="stylesheet" href="bizcard.css?v=20260706bc1">
   <script src="https://accounts.google.com/gsi/client" async></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
   <script src="cloudforms.js?v=20260617cf1" defer></script>
@@ -1943,14 +1944,12 @@
       <section id="tab-qrcard" class="tab-panel" role="tabpanel" hidden>
       </section>
 
-      <!-- 명함 신청 (외부 앱 임베드) -->
+      <!-- ════════════════════════════════════════════════════
+           💳 명함 신청 탭
+           ════════════════════════════════════════════════════ -->
       <section id="tab-bizcard" class="tab-panel" role="tabpanel" hidden>
-        <div class="embed-wrap">
-          <div class="embed-bar">
-            <span class="embed-title">💳 명함 신청</span>
-            <a class="btn btn-ghost btn-sm" id="bizcard-open" target="_blank" rel="noopener" href="https://bangdw-hash.github.io/asea-business-card-app/">새 창에서 열기 ↗</a>
-          </div>
-          <iframe id="bizcard-frame" class="embed-frame" title="명함 신청" data-src="https://bangdw-hash.github.io/asea-business-card-app/" referrerpolicy="no-referrer-when-downgrade"></iframe>
+        <div class="tab-body" style="padding:0;height:calc(100vh - 56px - 48px);overflow:hidden;">
+          <div id="bizcard-root" style="height:100%;"></div>
         </div>
       </section>
 
@@ -3467,6 +3466,7 @@
   <script src="qrcard.js?v=20260623ai1" defer></script>
   <script src="admin.js?v=20260624rz1" defer></script>
   <script src="board.js?v=20260614r2" defer></script>
+  <script src="bizcard.js?v=20260706bc1" defer></script>
   <script src="usersettings.js?v=20260610u1" defer></script>
   <script src="budget-seed-2026.js?v=20260614b1" defer></script>
   <script src="budget.js?v=20260614b9" defer></script>
