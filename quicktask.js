@@ -285,7 +285,7 @@ var QuickTaskModule = (function () {
         throw new Error(errMsg);
       }
 
-      var rawText = (data.content && data.content[0] && data.content[0].text) || '';
+      var rawText = (window.claudeExtractText ? window.claudeExtractText(data) : (data.content && data.content[0] && data.content[0].text)) || '';
       var parsed  = extractJsonArray(rawText);
 
       if (!parsed || parsed.length === 0) {

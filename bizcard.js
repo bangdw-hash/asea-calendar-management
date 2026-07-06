@@ -913,7 +913,7 @@
 
     if (!res.ok) throw new Error('AI API 오류 (' + res.status + ')');
     var data = await res.json();
-    var text = (data.content && data.content[0] && data.content[0].text) || '';
+    var text = (window.claudeExtractText ? window.claudeExtractText(data) : (data.content && data.content[0] && data.content[0].text)) || '';
 
     var jsonMatch = text.match(/\{[\s\S]*\}/);
     if (!jsonMatch) throw new Error('AI 응답을 파싱할 수 없습니다.');
