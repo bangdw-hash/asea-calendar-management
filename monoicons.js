@@ -87,6 +87,53 @@
     '🔄': s('<polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.5 9a9 9 0 0 1 14.9-3.4L23 10M1 14l4.6 4.4A9 9 0 0 0 20.5 15"/>'),
     '🔁': s('<polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/>'),
     '🎉': s('<path d="M12 3l1.6 4.4L18 9l-4.4 1.6L12 15l-1.6-4.4L6 9l4.4-1.6z"/>'),
+    '⏳': s('<path d="M6 2h12M6 22h12"/><path d="M7 2v4l5 5 5-5V2"/><path d="M7 22v-4l5-5 5 5v4"/>'),
+    '⏱': s('<circle cx="12" cy="13" r="8"/><polyline points="12 9 12 13 15 15"/><line x1="10" y1="2" x2="14" y2="2"/>'),
+    '🔌': s('<path d="M9 2v6M15 2v6"/><path d="M6 8h12v4a6 6 0 0 1-12 0z"/><path d="M12 18v4"/>'),
+    '🔓': s('<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/>'),
+    '🌐': s('<circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>'),
+    '🧪': s('<path d="M9 3h6"/><path d="M10 3v6L4.5 19a2 2 0 0 0 1.8 3h11.4a2 2 0 0 0 1.8-3L14 9V3"/><line x1="7" y1="15" x2="17" y2="15"/>'),
+    'ℹ': s('<circle cx="12" cy="12" r="10"/><line x1="12" y1="11" x2="12" y2="16"/><line x1="12" y1="8" x2="12.01" y2="8"/>'),
+    '🌡': s('<path d="M14 14.8V4a2 2 0 0 0-4 0v10.8a4 4 0 1 0 4 0z"/>'),
+    '📧': s('<rect x="3" y="5" width="18" height="14" rx="2"/><polyline points="3 7 12 13 21 7"/>'),
+    '📬': s('<rect x="3" y="5" width="18" height="14" rx="2"/><polyline points="3 7 12 13 21 7"/>'),
+    '🔎': s('<circle cx="11" cy="11" r="7"/><path d="m21 21-3.5-3.5"/>'),
+    '📖': s('<path d="M2 4h6a4 4 0 0 1 4 4v12a3 3 0 0 0-3-3H2z"/><path d="M22 4h-6a4 4 0 0 0-4 4v12a3 3 0 0 1 3-3h7z"/>'),
+    '📜': s('<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="13" y2="17"/>'),
+    '📑': s('<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>'),
+    '📁': s('<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>'),
+    '🗂': s('<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><line x1="3" y1="11" x2="21" y2="11"/>'),
+    '📇': s('<rect x="2" y="5" width="20" height="14" rx="2"/><circle cx="8" cy="12" r="2.2"/><line x1="13" y1="10" x2="18" y2="10"/><line x1="13" y1="14" x2="17" y2="14"/>'),
+    '📐': s('<path d="M3 21 21 3v18z"/><path d="M9 15v6M13 11v10M17 7v14"/>'),
+    '☎': s('<path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3-8.6A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.5c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z"/>'),
+    '🖥': s('<rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>'),
+    '📹': s('<rect x="2" y="6" width="13" height="12" rx="2"/><path d="M15 10l6-3v10l-6-3z"/>'),
+    '💳': s('<rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/>'),
+    '💵': s('<rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/>'),
+    '💴': s('<rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/>'),
+    '🧾': s('<path d="M4 2v20l2-1.5L8 22l2-1.5L12 22l2-1.5L16 22l2-1.5L20 22V2l-2 1.5L16 2l-2 1.5L12 2l-2 1.5L8 2 6 3.5z"/><line x1="8" y1="8" x2="16" y2="8"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="16" x2="13" y2="16"/>'),
+    '🚀': s('<path d="M4.5 16.5c-1.5 1.3-2 5-2 5s3.7-.5 5-2c.7-.8.7-2 0-2.8-.8-.7-2-.7-3 0z"/><path d="M12 15l-3-3a22 22 0 0 1 2-3.9A12.9 12.9 0 0 1 22 2c0 2.7-.9 7.4-6 11a22.4 22.4 0 0 1-4 2z"/><path d="M9 12H4s.6-3.3 2-4c1.6-.9 5 0 5 0"/><path d="M12 15v5s3.3-.6 4-2c.9-1.6 0-5 0-5"/>'),
+    '🚨': s('<path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>'),
+    '🚧': s('<path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>'),
+    '🤝': s('<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>'),
+    '✂': s('<circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.1" y2="15.9"/><line x1="14.5" y1="12.5" x2="20" y2="20"/><line x1="8.1" y1="8.1" x2="12" y2="12"/>'),
+    '✈': s('<path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"/>'),
+    '🏁': s('<path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/>'),
+    '🪄': s('<path d="M12 3l1.6 4.4L18 9l-4.4 1.6L12 15l-1.6-4.4L6 9l4.4-1.6z"/><path d="M19 15l.7 1.8L21.5 17l-1.8.7L19 19l-.7-1.3-1.8-.7 1.8-.7z"/>'),
+    '🖱': s('<rect x="6" y="3" width="12" height="18" rx="6"/><line x1="12" y1="7" x2="12" y2="11"/>'),
+    '🚶': s('<circle cx="13" cy="4" r="2"/><path d="M15 22v-5l-2-3v-4l-3 1-2 3"/><path d="M13 10l3 2 3 1"/><path d="M11 15l-3 7"/>'),
+    '🛗': s('<rect x="4" y="2" width="16" height="20" rx="2"/><path d="M9 8l-2 2h4zM15 12l2-2h-4z"/>'),
+    '🪜': s('<path d="M8 3v18M16 3v18"/><line x1="8" y1="7" x2="16" y2="7"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="17" x2="16" y2="17"/>'),
+    '🔖': s('<path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>'),
+    '🔥': s('<path d="M12 22c4.4 0 7-2.8 7-7 0-3-2-5.5-3.5-7C14 6.5 13 4.5 13 2c-3 2-5 5-5 8-1-.7-1.8-1.8-2.2-3C4.6 8.6 4 10.7 4 13c0 5 3.2 9 8 9z"/>'),
+    '👷': s('<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/><path d="M8 6a4 4 0 0 1 8 0"/>'),
+    '📶': s('<path d="M4 18h2M9 14v4h2M14 10v8h2M19 5v13h2"/>'),
+    '🔤': s('<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 15V9l4 6V9"/>'),
+    '🔀': s('<polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/>'),
+    '🎁': s('<rect x="3" y="8" width="18" height="4"/><path d="M5 12v8a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-8"/><line x1="12" y1="8" x2="12" y2="21"/><path d="M12 8a3 3 0 1 0-3-3c0 1.7 1.3 3 3 3zM12 8a3 3 0 1 1 3-3c0 1.7-1.3 3-3 3z"/>'),
+    '👋': s('<circle cx="12" cy="7" r="4"/><path d="M5.5 21a6.5 6.5 0 0 1 13 0"/><line x1="19" y1="3" x2="19" y2="8"/>'),
+    '👍': s('<path d="M7 10v12"/><path d="M15 5.9 14 10h5.6a2 2 0 0 1 1.9 2.6l-2.3 7a2 2 0 0 1-1.9 1.4H7V10l4-8a3 3 0 0 1 4 2z"/>'),
+    '🕘': s('<circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 16 14"/>'),
     '_default': null
   };
 
@@ -95,7 +142,9 @@
     + ', .admin-nav-btn, .admin-sec-title, .settings-section-title, .mm-label, #tab-settings h3, #tab-admin h3, #tab-admin h4'
     + ', .ctrl-table td:first-child, .hr-subtab-btn, .hr-role-icon, .hr-home-icon, .hr-auth-icon, .hr-done-icon, .hr-section-title, .hr-card-title, .hr-portal-title, .hr-share-title'
     + ', .rt-role-icon, .rt-home-icon, .rt-auth-icon, .rt-complete-icon, .rt-role-title, .rt-card-title, .rt-card-subtitle'
-    + ', .section-title, .card-title, .modal-title, legend';
+    + ', .section-title, .card-title, .modal-title, legend'
+    + ', .page-logo, .confirm-title, .my-info-label, .edit-info-title, .ci-status-icon'
+    + ', h1, h2';
   // 내부 모든 텍스트노드의 앞머리 이모지를 교체(여러 줄 라벨)
   var INLINE_SEL = '.extract-event-meta';
 
@@ -138,8 +187,20 @@
     try { r.querySelectorAll(INLINE_SEL).forEach(processInline); } catch (e) {}
   }
 
+  /* 독립 페이지(style.css 미포함)에서도 아이콘 크기가 유지되도록 최소 CSS 자체 주입 */
+  function injectBaseCss() {
+    if (document.getElementById('mono-ico-base-css')) return;
+    // 메인 앱(style.css 포함)은 전용 규칙이 있으므로 주입 생략
+    if (document.querySelector('link[href*="style.css"]')) return;
+    var st = document.createElement('style');
+    st.id = 'mono-ico-base-css';
+    st.textContent = '.mono-ico{display:inline-flex;align-items:center;justify-content:center;vertical-align:-3px;margin-right:6px;flex-shrink:0}.mono-ico svg{width:1em;height:1em;min-width:14px;min-height:14px}';
+    document.head.appendChild(st);
+  }
+
   var t;
   function start() {
+    injectBaseCss();
     scan(document);
     if (window.MutationObserver) {
       new MutationObserver(function () { clearTimeout(t); t = setTimeout(function () { scan(document); }, 150); })
