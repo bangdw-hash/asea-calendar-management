@@ -318,11 +318,23 @@ window.claudeFetch = async function (endpoint, opts) {
   // opts.keepModel=true 면 flow.model 강제치환 안 함(추출 등 저비용 작업은 본문 모델 유지)
   if (active === 'flow' && P.flow.key && proxy) {
     var _fpay = opts.keepModel ? opts.body : _bodyWithModel(opts.body, P.flow.model);
-    return fetch(proxy, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + window.SUPA_ANON, 'apikey': window.SUPA_ANON },
-      body: JSON.stringify({ service: 'claude', payload: _safeParse(_fpay), upstream: { baseUrl: (P.flow.baseUrl || 'https://aiapiflow.com').replace(/\/$/, ''), key: P.flow.key } })
-    });
+    try {
+      return await fetch(proxy, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + window.SUPA_ANON, 'apikey': window.SUPA_ANON },
+        body: JSON.stringify({ service: 'claude', payload: _safeParse(_fpay), upstream: { baseUrl: (P.flow.baseUrl || 'https://aiapiflow.com').replace(/\/$/, ''), key: P.flow.key } })
+      });
+    } catch (flowErr) {
+      // 프록시 네트워크 오류 시 official 키가 있으면 직접 호출로 폴백
+      if (P.official && P.official.key) {
+        return fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-api-key': P.official.key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+          body: opts.body
+        });
+      }
+      throw flowErr;
+    }
   }
 
   // 기본: 서버 프록시(서버 키)
