@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="ASEA 설문지 자동 생성">
+  <title>ASEA 설문지 자동 생성</title>
+  <link rel="preload" as="style" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+  <link rel="stylesheet" href="style.css?v=20260623r47">
+  <script src="https://accounts.google.com/gsi/client" async></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    body {
+      font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #F3F4F6;
+      margin: 0; padding: 0;
+      min-height: 100vh;
+    }
+    /* ── 상단 헤더 ── */
+    .sv-header {
+      background: #1a3a5c;
+      color: #fff;
+      padding: 14px 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .sv-header-logo {
+      font-size: 18px; font-weight: 700; letter-spacing: -0.3px;
+    }
+    .sv-header-sub {
+      font-size: 13px; opacity: .75; margin-left: 4px;
+    }
+    .sv-header-user {
+      margin-left: auto;
+      display: flex; align-items: center; gap: 10px;
+      font-size: 13px;
+    }
+    .sv-header-user img {
+      width: 30px; height: 30px; border-radius: 50%; object-fit: cover;
+    }
+    .sv-logout-btn {
+      background: rgba(255,255,255,.18); border: none; border-radius: 6px;
+      color: #fff; font-size: 12px; padding: 4px 10px; cursor: pointer;
+    }
+    .sv-logout-btn:hover { background: rgba(255,255,255,.3); }
+
+    /* ── 본문 ── */
+    .sv-main {
+      max-width: 800px;
+      margin: 28px auto;
+      padding: 0 16px 60px;
+    }
+
+    /* ── 로딩 오버레이 ── */
+    #sv-loading {
+      position: fixed; inset: 0; background: rgba(255,255,255,.85);
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 14px; font-size: 15px; color: #1a3a5c; z-index: 999;
+    }
+    .sv-spinner {
+      width: 36px; height: 36px;
+      border: 3px solid #e5e7eb;
+      border-top-color: #1a3a5c;
+      border-radius: 50%;
+      animation: sv-spin .8s linear infinite;
+    }
+    @keyframes sv-spin { to { transform: rotate(360deg); } }
+    #sv-loading.hidden { display: none; }
+
+    /* ── section-title (survey.js가 생성) ── */
+    .section-title {
+      font-size: 18px; font-weight: 700; color: #1a3a5c;
+      display: flex; align-items: center; gap: 8px;
+      margin: 0 0 18px;
+    }
+    .section-icon { width: 22px; height: 22px; flex-shrink: 0; }
+
+    /* survey.js collapse 스타일 보완 */
+    .sv-collapse .sv-sec-body { overflow: hidden; }
+    .sv-collapse.collapsed .sv-sec-body { display: none; }
+    .sv-collapse.collapsed .sv-chev { transform: rotate(-90deg); }
+    .sv-chev { transition: transform .2s; }
+  </style>
+</head>
+<body>
+
+<!-- 로딩 오버레이 -->
+<div id="sv-loading">
+  <div class="sv-spinner"></div>
+  <span id="sv-loading-msg">초기화 중...</span>
+</div>
+
+<!-- 헤더 -->
+<div class="sv-header">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+       stroke-linecap="round" stroke-linejoin="round" style="width:22px;height:22px">
+    <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/>
+    <rect x="9" y="3" width="6" height="4" rx="2"/>
+    <line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/>
+  </svg>
+  <span class="sv-header-logo">ASEA <span class="sv-header-sub">설문지 자동 생성</span></span>
+  <div class="sv-header-user" id="sv-user-area" style="display:none">
+    <img id="sv-user-avatar" src="" alt="">
+    <span id="sv-user-name"></span>
+    <button class="sv-logout-btn" onclick="svLogout()">로그아웃</button>
+  </div>
+</div>
+
+<!-- 본문 -->
+<div class="sv-main">
+  <div id="survey-root"></div>
+</div>
+
+<!-- 의존 스크립트 -->
+<script src="cloudforms.js?v=20260617cf1" defer></script>
+<script src="config.js?v=20260623ai7" defer></script>
+<script src="auth.js?v=20260622r8" defer></script>
+<script src="survey.js?v=20260623sv11" defer></script>
+
+<script>
+(function () {
+  'use strict';
+
+  var ADMIN_EMAIL = 'bangdw@gmail.com';
+
+  function setLoading(msg) {
+    var el = document.getElementById('sv-loading');
+    var msgEl = document.getElementById('sv-loading-msg');
+    if (msg === false) { el.classList.add('hidden'); return; }
+    el.classList.remove('hidden');
+    if (msg && msgEl) msgEl.textContent = msg;
+  }
+
+  function showUserArea(profile) {
+    var area = document.getElementById('sv-user-area');
+    var avatarEl = document.getElementById('sv-user-avatar');
+    var nameEl = document.getElementById('sv-user-name');
+    if (!area) return;
+    area.style.display = 'flex';
+    if (profile) {
+      if (avatarEl && profile.picture) avatarEl.src = profile.picture;
+      if (nameEl) nameEl.textContent = profile.name || profile.email || '';
+    }
+  }
+
+  window.svLogout = function () {
+    if (window.Auth && Auth.logout) Auth.logout();
+    document.getElementById('sv-user-area').style.display = 'none';
+    if (window.SurveyModule) SurveyModule.renderTab();
+  };
+
+  /* Google 프로필을 id_token 없이 userinfo 엔드포인트에서 가져옴 */
+  function fetchProfile(token) {
+    return fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+      headers: { Authorization: 'Bearer ' + token }
+    }).then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; });
+  }
+
+  /* 관리자의 AI 설정을 클라우드에서 로드 */
+  function loadAdminAI() {
+    if (window.loadAIProvidersFromCloud) {
+      return window.loadAIProvidersFromCloud().catch(function () {});
+    }
+    return Promise.resolve();
+  }
+
+  /* 사용자 이메일을 localStorage에 저장 (survey.js _email() 참조용) */
+  function storeUserEmail(email) {
+    try { localStorage.setItem('asea_user_email', email); } catch (e) {}
+  }
+
+  /* 초기화 메인 */
+  function init() {
+    /* defer 스크립트들이 모두 실행됐는지 확인 후 시작 */
+    var MAX_WAIT = 6000;
+    var start = Date.now();
+
+    function waitForDeps() {
+      var ready = window.Config !== undefined ||
+                  (window.CONFIG !== undefined) ||
+                  (window.getAIProviders !== undefined);
+      var authReady = window.Auth !== undefined;
+      var surveyReady = window.SurveyModule !== undefined;
+
+      if (!ready || !authReady || !surveyReady) {
+        if (Date.now() - start > MAX_WAIT) {
+          setLoading('스크립트 로드 실패. 새로고침 해주세요.');
+          return;
+        }
+        setTimeout(waitForDeps, 80);
+        return;
+      }
+      doInit();
+    }
+
+    function doInit() {
+      setLoading('AI 설정 로드 중...');
+
+      loadAdminAI().then(function () {
+        setLoading('로그인 상태 확인 중...');
+
+        /* 이미 로그인된 토큰이 있으면 바로 렌더 */
+        var token = window.Auth && Auth.getToken && Auth.getToken();
+        if (token) {
+          fetchProfile(token).then(function (profile) {
+            if (profile) {
+              showUserArea(profile);
+              storeUserEmail(profile.email || '');
+            }
+            setLoading(false);
+            SurveyModule.renderTab();
+          });
+          return;
+        }
+
+        /* 로그인 안 된 상태 → 렌더하면 로그인 버튼이 표시됨 */
+        setLoading(false);
+        SurveyModule.renderTab();
+
+        /* Auth 변화 감지 — 로그인 완료 시 프로필 fetch + 재렌더 */
+        if (Auth.onAuthChange) {
+          Auth.onAuthChange(function (loggedIn) {
+            if (!loggedIn) {
+              document.getElementById('sv-user-area').style.display = 'none';
+              SurveyModule.renderTab();
+              return;
+            }
+            var t = Auth.getToken();
+            fetchProfile(t).then(function (profile) {
+              if (profile) {
+                showUserArea(profile);
+                storeUserEmail(profile.email || '');
+              }
+              SurveyModule.renderTab();
+            });
+          });
+        }
+      });
+    }
+
+    waitForDeps();
+  }
+
+  /* defer 스크립트가 끝난 뒤 실행 */
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function () { setTimeout(init, 0); });
+  } else {
+    setTimeout(init, 0);
+  }
+})();
+</script>
+</body>
+</html>
