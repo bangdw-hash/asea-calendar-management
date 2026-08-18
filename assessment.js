@@ -271,7 +271,46 @@ window.AssessmentModule = (function () {
   }
 
   /* ── 로그인 화면 ─────────────────────────────────────────────── */
+  /* ── 인앱 브라우저 감지 ───────────────────────────────────────────
+     카카오톡·네이버·라인·인스타그램·페이스북 등 인앱(웹뷰) 브라우저는
+     Google이 정책적으로 로그인을 차단한다(disallowed_useragent) — 코드 문제가 아니라
+     Google Identity Services 자체가 이런 웹뷰에서 초기화되지 않거나 거부된다.
+     로그인 시도 전에 감지해 "기본 브라우저로 열기"를 안내한다. */
+  function detectInAppBrowser() {
+    var ua = navigator.userAgent || '';
+    if (/KAKAOTALK/i.test(ua)) return { blocked: true, name: '카카오톡', scheme: 'kakaotalk://web/openExternal?url=' };
+    if (/NAVER\(/i.test(ua)) return { blocked: true, name: '네이버 앱', scheme: null };
+    if (/Line\//i.test(ua)) return { blocked: true, name: '라인', scheme: null };
+    if (/FBAN|FBAV|FB_IAB/i.test(ua)) return { blocked: true, name: '페이스북', scheme: null };
+    if (/Instagram/i.test(ua)) return { blocked: true, name: '인스타그램', scheme: null };
+    // 일반 안드로이드 웹뷰(브랜드 앱 등): Chrome이지만 'Version/' 토큰이 없고 'wv' 포함
+    if (/Android/i.test(ua) && /; wv\)/i.test(ua)) return { blocked: true, name: '앱 내장 브라우저', scheme: null };
+    return { blocked: false };
+  }
+  function openInExternalBrowser(info) {
+    var url = location.href;
+    if (info.scheme) {
+      location.href = info.scheme + encodeURIComponent(url);
+      return;
+    }
+    try {
+      navigator.clipboard.writeText(url).then(function () {
+        toast('링크를 복사했습니다. 우측 상단 메뉴(⋮ 또는 •••)에서 "다른 브라우저로 열기"를 선택하거나, Chrome/Samsung Internet에 붙여넣어 접속해 주세요.', 'info');
+      });
+    } catch (e) {
+      toast('우측 상단 메뉴(⋮ 또는 •••)에서 "다른 브라우저로 열기"를 선택해 접속해 주세요.', 'info');
+    }
+  }
+  function inAppWarningHtml(info) {
+    return '<div class="asm-inapp-warn">' +
+      '<b>⚠️ ' + esc(info.name) + ' 인앱 브라우저에서는 Google 로그인이 차단됩니다.</b>' +
+      '<p>Google 정책상 카카오톡·네이버·인스타그램 등 앱 내장 브라우저에서는 로그인 창이 열리지 않습니다. 아래 버튼으로 <b>기본 브라우저(Chrome/Samsung Internet 등)</b>에서 열어 주세요.</p>' +
+      '<button class="asm-btn asm-btn-primary" id="asm-open-external">' + (info.scheme ? '기본 브라우저로 열기' : '링크 복사(브라우저에 붙여넣기)') + '</button>' +
+    '</div>';
+  }
+
   function renderLogin() {
+    var inapp = detectInAppBrowser();
     S.root.innerHTML =
       '<div class="asm-gate">' +
         '<div class="asm-gate-card">' +
@@ -279,13 +318,16 @@ window.AssessmentModule = (function () {
           '<h1 class="asm-gate-title">개인별 직무역량 자가진단</h1>' +
           '<p class="asm-gate-desc">본 진단표는 개인별 직무역량을 파악하고 연말 인사고과 평가에 반영하기 위한 자료입니다.<br>' +
           '개인 <b>Google 계정</b>으로 로그인하면 작성 기록이 안전하게 저장되어, 다른 컴퓨터에서도 이어서 작성할 수 있습니다.</p>' +
-          '<button class="asm-btn asm-btn-primary asm-btn-lg" id="asm-login-btn">' +
+          (inapp.blocked ? inAppWarningHtml(inapp) : '') +
+          '<button class="asm-btn asm-btn-primary asm-btn-lg" id="asm-login-btn"' + (inapp.blocked ? ' disabled' : '') + '>' +
             '<svg width="18" height="18" viewBox="0 0 24 24"><path fill="#fff" d="M12 11v2.9h4.1c-.2 1-.9 2.5-2.6 3.3l-.02.1 2.5 1.9.2.02C18.9 17.6 20 15 20 12.2c0-.7-.1-1.3-.2-1.8H12z"/><path fill="#fff" d="M12 20c2.4 0 4.4-.8 5.8-2.1l-2.8-2.1c-.7.5-1.7.9-3 .9-2.3 0-4.2-1.5-4.9-3.6H4.2v2.2C5.6 18 8.5 20 12 20z" opacity=".85"/><path fill="#fff" d="M7.1 13.1c-.2-.5-.3-1.1-.3-1.6s.1-1.1.3-1.6V7.7H4.2C3.7 8.8 3.4 10 3.4 11.5s.3 2.7.8 3.8l2.9-2.2z" opacity=".6"/><path fill="#fff" d="M12 6.6c1.3 0 2.2.6 2.7 1l2-2C15.4 4.4 13.9 3.6 12 3.6 8.5 3.6 5.6 5.6 4.2 8.5l2.9 2.2C7.8 8.5 9.7 6.6 12 6.6z" opacity=".9"/></svg>' +
             'Google 계정으로 로그인' +
           '</button>' +
           '<p class="asm-gate-foot">주관: 기획처 · 제출기한: 2026. 12. 11.</p>' +
         '</div>' +
       '</div>';
+    var openBtn = S.root.querySelector('#asm-open-external');
+    if (openBtn) openBtn.addEventListener('click', function () { openInExternalBrowser(inapp); });
     var btn = S.root.querySelector('#asm-login-btn');
     btn.addEventListener('click', function () {
       btn.disabled = true; btn.textContent = '로그인 중…';
@@ -294,7 +336,11 @@ window.AssessmentModule = (function () {
         Auth.login({ chooseAccount: true }).then(function () {}).catch(function (e) {
           try { console.error('[assessment] login rejected:', e); } catch (_) {}
           btn.disabled = false; btn.textContent = 'Google 계정으로 로그인';
-          toast('로그인 창을 열지 못했습니다. 팝업 차단을 해제하고 다시 시도해 주세요.' + (e && e.message ? ' (' + e.message + ')' : ''), 'error');
+          var again = detectInAppBrowser();
+          var msg = again.blocked
+            ? again.name + ' 인앱 브라우저에서는 Google 로그인이 차단됩니다. 기본 브라우저로 열어 주세요.'
+            : '로그인 창을 열지 못했습니다. 팝업 차단을 해제하고 다시 시도해 주세요.' + (e && e.message ? ' (' + e.message + ')' : '');
+          toast(msg, 'error');
         });
       }
     });
