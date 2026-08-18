@@ -39,7 +39,9 @@
   var _STORE_SCOPES  = 'asea_assess_gtoken_scopes';
 
   function _clientId() {
-    try { return (window.CONFIG && CONFIG.googleClientId) || ''; } catch (e) { return ''; }
+    // config.js는 `const CONFIG`(전역 렉시컬 바인딩)으로 선언되므로 window.CONFIG로는
+    // 접근되지 않는다. auth.js와 동일하게 전역 식별자 CONFIG를 직접 참조한다.
+    try { return (typeof CONFIG !== 'undefined' && CONFIG.googleClientId) || ''; } catch (e) { return ''; }
   }
 
   function _saveToken(token, expiresAt) {
