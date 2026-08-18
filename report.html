@@ -503,11 +503,14 @@
     var input = ($('rpt-input') || {}).value || '';
     if (!input.trim()) { toast('기안 요청 내용을 입력해 주세요.', 'error'); return; }
 
-    var _cc = window.getClaudeConfig ? getClaudeConfig() : {
-      apiKey: (window.CONFIG && CONFIG.anthropicApiKey) || localStorage.getItem('asea_anthropic_api_key') || '',
-      endpoint: 'https://api.anthropic.com/v1/messages', isOfficial: true
-    };
-    if (!_cc.apiKey) { toast('관리자에게 API 키 설정을 요청하세요.', 'error'); return; }
+    // 메인 앱 설정 페이지에서 저장한 AI 제공자(Flow/공식/프록시) 사용
+    var P = window.getAIProviders ? window.getAIProviders() : null;
+    var hasProvider = P && (
+      (P.active === 'official' && P.official && P.official.key) ||
+      (P.active === 'flow'    && P.flow    && P.flow.key)    ||
+      (P.active === 'proxy')
+    );
+    if (!hasProvider) { toast('관리자 설정 페이지에서 AI 제공자를 설정해 주세요.', 'error'); return; }
 
     var usage = getTodayUsage(), limit = getLimit();
     if (usage >= limit) { toast('오늘 사용 한도(' + limit + '회)에 도달했습니다.', 'error'); return; }
@@ -554,11 +557,9 @@
       if (pdfTexts) userText += '\n\n' + pdfTexts;
       userContent.push({ type: 'text', text: userText });
 
-      var headers = { 'Content-Type': 'application/json', 'x-api-key': _cc.apiKey, 'anthropic-version': '2023-06-01' };
-      if (_cc.isOfficial) headers['anthropic-dangerous-direct-browser-access'] = 'true';
-
-      var resp = await window.claudeFetch(_cc.endpoint, {
-        method: 'POST', headers: headers,
+      // claudeFetch가 활성 제공자(Flow/공식/프록시)에 맞게 헤더·엔드포인트를 자동 처리
+      var resp = await window.claudeFetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
         body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 4096, system: systemPrompt, messages: [{ role: 'user', content: userContent }] })
       });
       if (!resp.ok) { var eb = await resp.text(); throw new Error('API 오류 ' + resp.status + ': ' + eb.slice(0, 200)); }
@@ -1093,6 +1094,8 @@
 
     function doInit() {
       window.aseaToast = toast;
+      // 메인 앱 "전 직원 공유" AI 제공자 설정을 Supabase에서 로컬에 적용
+      if (window.loadAIProvidersFromCloud) window.loadAIProvidersFromCloud();
       if (window.Auth && Auth.tryRestoreSession) Auth.tryRestoreSession();
       var token = window.Auth && Auth.getToken && Auth.getToken();
 
