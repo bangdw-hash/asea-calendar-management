@@ -55,9 +55,9 @@ window.AssessmentModule = (function () {
     adminTab: 'list',     // 'list' | 'analysis'
     adminSort: { key: 'dept', dir: 1 },   // key + 방향(1 오름차순/-1 내림차순)
     adminSel: {},         // 선택된 ref 맵 { ref: true }
-    analysis: { keywords: '', depts: [], jobGroup: '', results: null },
-    // 작성자 폼 표 정렬(직무 분석/업무 성과)
-    formSort: { jobs: { key: '', dir: 1 }, performance: { key: '', dir: 1 } },
+    analysis: { keywords: '', depts: [], jobGroup: '', results: null, sort: null },
+    // 작성자 폼 표 정렬(경로별): { 'jobs': {key,dir}, 'admin.projects': {...}, ... }
+    formSort: {},
   };
 
   /* ── 유틸 ─────────────────────────────────────────────────────── */
@@ -528,7 +528,7 @@ window.AssessmentModule = (function () {
       '<div class="asm-scroll"><table class="asm-table asm-table-month">' + head + body + '</table></div>' +
       '<h4 class="asm-h4">4-1-2. 연간 참여 사업 <span class="asm-tag">행정직</span></h4>' +
       '<div class="asm-scroll"><table class="asm-table asm-table-grid">' +
-        '<thead><tr><th class="asm-td-no">연번</th><th>사업 기간</th><th>참여 사업명</th><th>담당업무 및 사업성과</th><th></th></tr></thead>' +
+        '<thead><tr><th class="asm-td-no">연번</th>' + fsh('admin.projects', 'period', '사업 기간') + fsh('admin.projects', 'name', '참여 사업명') + '<th>담당업무 및 사업성과</th><th></th></tr></thead>' +
         '<tbody>' + projRows + '</tbody></table></div>' +
       '<div class="asm-rowadd"><button class="asm-btn asm-btn-ghost asm-btn-sm" data-add="admin.projects">+ 참여 사업 추가</button></div>';
   }
@@ -572,7 +572,7 @@ window.AssessmentModule = (function () {
       '<h4 class="asm-h4">4-2-2. 지도교수 학생관리 현황 <span class="asm-tag asm-tag-fac">교무직</span></h4>' +
       '<div class="asm-scroll"><table class="asm-table asm-table-grid asm-table-student">' +
         '<thead>' +
-          '<tr><th rowspan="2">연도</th><th colspan="5">1학기</th><th colspan="5">2학기</th><th colspan="2">계</th><th rowspan="2"></th></tr>' +
+          '<tr>' + '<th rowspan="2" class="asm-fsort" data-fsort="faculty.students::year" title="클릭하여 정렬">연도 ' + (S.formSort['faculty.students'] && S.formSort['faculty.students'].key === 'year' ? '<span class="asm-sort-ico on">' + (S.formSort['faculty.students'].dir > 0 ? '▲' : '▼') + '</span>' : '<span class="asm-sort-ico">⇅</span>') + '</th><th colspan="5">1학기</th><th colspan="5">2학기</th><th colspan="2">계</th><th rowspan="2"></th></tr>' +
           '<tr><th>등록</th><th>휴학</th><th>자퇴</th><th>수료</th><th>등록률</th><th>등록</th><th>휴학</th><th>자퇴</th><th>수료</th><th>등록률</th><th>등록</th><th>수료</th></tr>' +
         '</thead><tbody>' + stuRows + '</tbody></table></div>' +
         '<div class="asm-rowadd"><button class="asm-btn asm-btn-ghost asm-btn-sm" data-add="faculty.students">+ 연도 행 추가</button></div>' +
@@ -606,7 +606,7 @@ window.AssessmentModule = (function () {
     }).join('');
     return section('5', '개인역량개발 <small>(교육 이수·희망)</small>',
       '<div class="asm-scroll"><table class="asm-table asm-table-grid">' +
-        '<thead><tr><th>구분</th><th>교육과정명</th><th>주관기관</th><th>교육기간<br><small>(시간)</small></th><th>비용</th><th>교육 내용</th><th>업무반영범위</th><th></th></tr></thead>' +
+        '<thead><tr>' + fsh('development', 'div', '구분') + fsh('development', 'course', '교육과정명') + fsh('development', 'org', '주관기관') + '<th>교육기간<br><small>(시간)</small></th><th>비용</th><th>교육 내용</th><th>업무반영범위</th><th></th></tr></thead>' +
         '<tbody>' + rows + '</tbody></table></div>' +
       '<div class="asm-rowadd"><button class="asm-btn asm-btn-ghost asm-btn-sm" data-add="development">+ 교육 행 추가</button></div>');
   }
@@ -633,31 +633,38 @@ window.AssessmentModule = (function () {
      헤더를 클릭하면 엑셀처럼 해당 열 기준으로 행을 정렬한다.
      직무구분(주·부·희망업무)·구분(학교·부서·개인·기타)·수행주기는 지정된 순서로,
      그 외 텍스트 열은 한글 사전순으로 정렬한다. */
-  function fsh(section, key, label) {
-    var s = S.formSort[section];
+  // path: 배열 경로('jobs','performance','admin.projects','faculty.students','development')
+  function fsh(path, key, label) {
+    var s = S.formSort[path];
     var ico = (s && s.key === key)
       ? '<span class="asm-sort-ico on">' + (s.dir > 0 ? '▲' : '▼') + '</span>'
       : '<span class="asm-sort-ico">⇅</span>';
-    return '<th class="asm-fsort" data-fsort="' + section + ':' + key + '" title="클릭하여 정렬">' + label + ' ' + ico + '</th>';
+    return '<th class="asm-fsort" data-fsort="' + path + '::' + key + '" title="클릭하여 정렬">' + label + ' ' + ico + '</th>';
   }
-  function sortFormArray(sectionKey, key) {
+  function sortFormArray(path, key) {
     syncFormFromInputs();
-    var s = S.formSort[sectionKey];
+    var s = S.formSort[path] || (S.formSort[path] = { key: '', dir: 1 });
     if (s.key === key) s.dir *= -1; else { s.key = key; s.dir = 1; }
-    var arr = S.form[sectionKey];
+    var arr = getArr(path);
     if (!Array.isArray(arr)) return;
     var orderOf = function (list, v) { var i = list.indexOf(v); return i < 0 ? 999 : i; };
     var val = function (o) {
-      if (sectionKey === 'jobs') {
-        if (key === 'group') return orderOf(JOB_KINDS, o.group);
-        if (key === 'cycle') return orderOf(CYCLES, o.cycle);
-        if (key === 'title') return o.title || '';
-        if (key === 'relDept') return o.relDept || '';
-      } else if (sectionKey === 'performance') {
-        if (key === 'category') return orderOf(PERF_CATS, o.category);
-        if (key === 'task') return o.task || '';
+      switch (path) {
+        case 'jobs':
+          if (key === 'group') return orderOf(JOB_KINDS, o.group);
+          if (key === 'cycle') return orderOf(CYCLES, o.cycle);
+          return o[key] || '';                       // title, relDept
+        case 'performance':
+          if (key === 'category') return orderOf(PERF_CATS, o.category);
+          return o[key] || '';                       // task
+        case 'admin.projects':                       // period, name
+          return o[key] || '';
+        case 'faculty.students':                     // year (숫자 우선)
+          var n = parseFloat(o[key]); return isNaN(n) ? (o[key] || '') : n;
+        case 'development':                          // div, course, org
+          return o[key] || '';
+        default: return o[key] || '';
       }
-      return '';
     };
     arr.sort(function (a, b) {
       var va = val(a), vb = val(b), c;
@@ -723,7 +730,7 @@ window.AssessmentModule = (function () {
       // 작성자 폼 표 정렬 헤더(직무 분석/업무 성과)
       var fso = e.target.closest ? e.target.closest('.asm-fsort') : null;
       if (fso && fso.hasAttribute('data-fsort')) {
-        var spec = fso.getAttribute('data-fsort').split(':');
+        var spec = fso.getAttribute('data-fsort').split('::');
         sortFormArray(spec[0], spec[1]);
         return;
       }
@@ -1230,6 +1237,25 @@ window.AssessmentModule = (function () {
     if (form.issues) parts.push(form.issues.nextPlan);
     return parts.filter(Boolean).join(' \n ');
   }
+  function ansh(key, label) {
+    var s = S.analysis.sort;
+    var ico = (s && s.key === key)
+      ? '<span class="asm-sort-ico on">' + (s.dir > 0 ? '▲' : '▼') + '</span>'
+      : '<span class="asm-sort-ico">⇅</span>';
+    return '<th class="asm-th-sort" data-ansort="' + key + '">' + esc(label) + ' ' + ico + '</th>';
+  }
+  function sortAnalysis(key) {
+    var s = S.analysis.sort;
+    if (s && s.key === key) s.dir *= -1; else S.analysis.sort = { key: key, dir: 1 };
+    s = S.analysis.sort;
+    (S.analysis.results || []).sort(function (a, b) {
+      var va = a[key], vb = b[key], c;
+      if (typeof va === 'number' && typeof vb === 'number') c = va - vb;
+      else c = String(va == null ? '' : va).localeCompare(String(vb == null ? '' : vb), 'ko');
+      return c * s.dir;
+    });
+    renderAdmin();
+  }
   function analysisPanel() {
     var rows = adminYearRows();
     var deptChips = DEPARTMENTS.map(function (d) {
@@ -1247,10 +1273,12 @@ window.AssessmentModule = (function () {
         resHtml = '<div class="asm-admin-actions"><b>분석 결과 ' + results.length + '명</b><span class="asm-flex1"></span>' +
           '<button class="asm-btn asm-btn-secondary asm-btn-sm" id="an-export-md">📄 AI 기초자료(.md) 내보내기</button>' +
           '<button class="asm-btn asm-btn-secondary asm-btn-sm" id="an-copy">📋 복사</button></div>' +
-          '<div class="asm-scroll"><table class="asm-table asm-admin-table"><thead><tr><th>순위</th><th>소속</th><th>성명</th><th>직군</th><th>매치 점수</th><th>매칭 키워드</th><th>근거</th><th></th></tr></thead><tbody>' +
+          '<div class="asm-scroll"><table class="asm-table asm-admin-table"><thead><tr><th>순위</th>' +
+            ansh('dept', '소속') + ansh('name', '성명') + ansh('jobGroup', '직군') + ansh('score', '매치 점수') +
+            '<th>매칭 키워드</th><th>근거</th><th></th></tr></thead><tbody>' +
           results.map(function (x, i) {
             return '<tr>' +
-              '<td><b>' + (i + 1) + '</b></td>' +
+              '<td><b>' + (x.rank || (i + 1)) + '</b></td>' +
               '<td>' + esc(x.dept) + '</td><td><b>' + esc(x.name) + '</b></td><td>' + esc(x.jobGroup) + '</td>' +
               '<td><span class="an-score">' + x.score + '</span></td>' +
               '<td>' + (x.matched.length ? x.matched.map(function (k) { return '<span class="an-kw">' + esc(k) + '</span>'; }).join(' ') : '-') + '</td>' +
@@ -1292,7 +1320,10 @@ window.AssessmentModule = (function () {
     });
     var run = S.root.querySelector('#an-run'); if (run) run.addEventListener('click', runAnalysis);
     var reset = S.root.querySelector('#an-reset'); if (reset) reset.addEventListener('click', function () {
-      S.analysis = { keywords: '', depts: [], jobGroup: '', results: null }; renderAdmin();
+      S.analysis = { keywords: '', depts: [], jobGroup: '', results: null, sort: null }; renderAdmin();
+    });
+    S.root.querySelectorAll('[data-ansort]').forEach(function (thEl) {
+      thEl.addEventListener('click', function () { sortAnalysis(thEl.getAttribute('data-ansort')); });
     });
     var md = S.root.querySelector('#an-export-md'); if (md) md.addEventListener('click', exportAnalysisMd);
     var cp = S.root.querySelector('#an-copy'); if (cp) cp.addEventListener('click', function () {
@@ -1334,7 +1365,9 @@ window.AssessmentModule = (function () {
     // 키워드가 있으면 점수순, 없으면 이름순
     if (kws.length) results.sort(function (a, b) { return b.score - a.score || String(a.name).localeCompare(b.name, 'ko'); });
     else results.sort(function (a, b) { return String(a.dept).localeCompare(b.dept, 'ko') || String(a.name).localeCompare(b.name, 'ko'); });
+    results.forEach(function (x, i) { x.rank = i + 1; });   // 점수 기준 순위 고정(헤더 정렬해도 유지)
     S.analysis.results = results;
+    S.analysis.sort = null;
     renderAdmin();
     toast('분석 완료: ' + results.length + '명', 'success');
   }
