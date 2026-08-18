@@ -56,6 +56,8 @@ window.AssessmentModule = (function () {
     adminSort: { key: 'dept', dir: 1 },   // key + 방향(1 오름차순/-1 내림차순)
     adminSel: {},         // 선택된 ref 맵 { ref: true }
     analysis: { keywords: '', depts: [], jobGroup: '', results: null },
+    // 작성자 폼 표 정렬(직무 분석/업무 성과)
+    formSort: { jobs: { key: '', dir: 1 }, performance: { key: '', dir: 1 } },
   };
 
   /* ── 유틸 ─────────────────────────────────────────────────────── */
@@ -461,8 +463,8 @@ window.AssessmentModule = (function () {
     return section('2', '직무 분석',
       '<div class="asm-scroll"><table class="asm-table asm-table-grid">' +
         '<thead><tr>' +
-          '<th class="asm-td-no">No</th><th>직무구분</th><th>직무(업무)명</th><th>업무 내용<br><small>(구체적)</small></th>' +
-          '<th>필요역량<br><small>(기술·지식)</small></th><th>수행<br>주기</th><th>관련부서</th><th></th>' +
+          '<th class="asm-td-no">No</th>' + fsh('jobs', 'group', '직무구분') + fsh('jobs', 'title', '직무(업무)명') + '<th>업무 내용<br><small>(구체적)</small></th>' +
+          '<th>필요역량<br><small>(기술·지식)</small></th>' + fsh('jobs', 'cycle', '수행<br>주기') + fsh('jobs', 'relDept', '관련부서') + '<th></th>' +
         '</tr></thead><tbody>' + rows + '</tbody>' +
       '</table></div>' +
       '<div class="asm-rowadd"><button class="asm-btn asm-btn-ghost asm-btn-sm" data-add="jobs">+ 직무 행 추가</button></div>' +
@@ -485,7 +487,7 @@ window.AssessmentModule = (function () {
     }).join('');
     return section('3', S.year + '년도 업무 성과 및 기여',
       '<div class="asm-scroll"><table class="asm-table asm-table-grid">' +
-        '<thead><tr><th>구분</th><th>해당 업무</th><th>업무 성과 및 기여 내용 <small>(수치·결과 포함)</small></th><th>비고<br><small>(협력부서·근거)</small></th><th></th></tr></thead>' +
+        '<thead><tr>' + fsh('performance', 'category', '구분') + fsh('performance', 'task', '해당 업무') + '<th>업무 성과 및 기여 내용 <small>(수치·결과 포함)</small></th><th>비고<br><small>(협력부서·근거)</small></th><th></th></tr></thead>' +
         '<tbody>' + rows + '</tbody>' +
       '</table></div>' +
       '<div class="asm-rowadd"><button class="asm-btn asm-btn-ghost asm-btn-sm" data-add="performance">+ 성과 행 추가</button></div>');
@@ -627,6 +629,46 @@ window.AssessmentModule = (function () {
     return '<div class="asm-section">' + sectionHead(no, title) + '<div class="asm-sec-body">' + body + '</div></div>';
   }
 
+  /* ── 작성자 폼 표 정렬(직무 분석/업무 성과) ─────────────────────
+     헤더를 클릭하면 엑셀처럼 해당 열 기준으로 행을 정렬한다.
+     직무구분(주·부·희망업무)·구분(학교·부서·개인·기타)·수행주기는 지정된 순서로,
+     그 외 텍스트 열은 한글 사전순으로 정렬한다. */
+  function fsh(section, key, label) {
+    var s = S.formSort[section];
+    var ico = (s && s.key === key)
+      ? '<span class="asm-sort-ico on">' + (s.dir > 0 ? '▲' : '▼') + '</span>'
+      : '<span class="asm-sort-ico">⇅</span>';
+    return '<th class="asm-fsort" data-fsort="' + section + ':' + key + '" title="클릭하여 정렬">' + label + ' ' + ico + '</th>';
+  }
+  function sortFormArray(sectionKey, key) {
+    syncFormFromInputs();
+    var s = S.formSort[sectionKey];
+    if (s.key === key) s.dir *= -1; else { s.key = key; s.dir = 1; }
+    var arr = S.form[sectionKey];
+    if (!Array.isArray(arr)) return;
+    var orderOf = function (list, v) { var i = list.indexOf(v); return i < 0 ? 999 : i; };
+    var val = function (o) {
+      if (sectionKey === 'jobs') {
+        if (key === 'group') return orderOf(JOB_KINDS, o.group);
+        if (key === 'cycle') return orderOf(CYCLES, o.cycle);
+        if (key === 'title') return o.title || '';
+        if (key === 'relDept') return o.relDept || '';
+      } else if (sectionKey === 'performance') {
+        if (key === 'category') return orderOf(PERF_CATS, o.category);
+        if (key === 'task') return o.task || '';
+      }
+      return '';
+    };
+    arr.sort(function (a, b) {
+      var va = val(a), vb = val(b), c;
+      if (typeof va === 'number' && typeof vb === 'number') c = va - vb;
+      else c = String(va).localeCompare(String(vb), 'ko');
+      return c * s.dir;
+    });
+    markDirty();
+    renderForm();
+  }
+
   /* ── 직군에 따른 4장 표시 전환 ────────────────────────────────── */
   function toggleJobGroupSections() {
     var jg = S.form.meta.jobGroup;
@@ -678,6 +720,13 @@ window.AssessmentModule = (function () {
     });
     // 버튼(행 추가/삭제, 연도, 저장/제출/관리자)
     S.root.addEventListener('click', function (e) {
+      // 작성자 폼 표 정렬 헤더(직무 분석/업무 성과)
+      var fso = e.target.closest ? e.target.closest('.asm-fsort') : null;
+      if (fso && fso.hasAttribute('data-fsort')) {
+        var spec = fso.getAttribute('data-fsort').split(':');
+        sortFormArray(spec[0], spec[1]);
+        return;
+      }
       var t = e.target.closest ? e.target.closest('button, .asm-year-tab') : null;
       if (!t) return;
       if (t.classList.contains('asm-year-tab') && t.hasAttribute('data-year')) { switchYear(t.getAttribute('data-year')); return; }
