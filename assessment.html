@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="2026년도 개인별 직무역량 자가진단">
+  <title>개인별 직무역량 자가진단 · ASEA</title>
+  <link rel="preload" as="style" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+  <script src="https://accounts.google.com/gsi/client" async></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+  <style>
+    :root {
+      --navy: #16324f;
+      --navy-2: #1f4a75;
+      --blue: #2563eb;
+      --blue-d: #1d4ed8;
+      --line: #d9dee6;
+      --line-2: #e8ebf0;
+      --bg: #eef1f5;
+      --paper: #ffffff;
+      --ink: #1a2433;
+      --muted: #6b7686;
+      --green: #0f9d58;
+      --amber: #e8a13a;
+      --red: #d64545;
+    }
+    * , *::before, *::after { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Malgun Gothic', sans-serif;
+      background: var(--bg); color: var(--ink);
+      min-height: 100vh; font-size: 14px; line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── 헤더 ── */
+    .asm-header {
+      background: linear-gradient(100deg, var(--navy), var(--navy-2));
+      color: #fff; padding: 12px 20px;
+      display: flex; align-items: center; gap: 12px;
+      position: sticky; top: 0; z-index: 50;
+      box-shadow: 0 2px 10px rgba(0,0,0,.12);
+    }
+    .asm-header .asm-logo { display: flex; align-items: center; gap: 9px; }
+    .asm-header .asm-logo b { font-size: 16px; font-weight: 800; letter-spacing: -0.3px; }
+    .asm-header .asm-logo span { font-size: 12.5px; opacity: .82; }
+    .asm-header-user { margin-left: auto; display: flex; align-items: center; gap: 10px; font-size: 13px; }
+    .asm-header-user img { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; background: rgba(255,255,255,.2); }
+    .asm-header-logout { background: rgba(255,255,255,.16); border: none; border-radius: 6px; color: #fff; font-size: 12px; padding: 5px 11px; cursor: pointer; }
+    .asm-header-logout:hover { background: rgba(255,255,255,.3); }
+
+    .asm-main { max-width: 1080px; margin: 22px auto; padding: 0 16px 80px; }
+
+    /* ── 로딩 ── */
+    #asm-loading {
+      position: fixed; inset: 0; background: rgba(238,241,245,.9);
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 14px; font-size: 14px; color: var(--navy); z-index: 999;
+    }
+    .asm-spinner { width: 34px; height: 34px; border: 3px solid #dfe4ea; border-top-color: var(--navy); border-radius: 50%; animation: asm-spin .8s linear infinite; }
+    @keyframes asm-spin { to { transform: rotate(360deg); } }
+    #asm-loading.hidden { display: none; }
+
+    /* ── 버튼 ── */
+    .asm-btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+      border: 1px solid transparent; border-radius: 8px; cursor: pointer;
+      font-family: inherit; font-size: 13px; font-weight: 600; padding: 8px 14px;
+      transition: background .15s, box-shadow .15s, transform .05s; white-space: nowrap;
+    }
+    .asm-btn:active { transform: translateY(1px); }
+    .asm-btn-primary { background: var(--blue); color: #fff; }
+    .asm-btn-primary:hover { background: var(--blue-d); }
+    .asm-btn-secondary { background: #eef2f8; color: var(--navy); border-color: #d5deeb; }
+    .asm-btn-secondary:hover { background: #e2e9f4; }
+    .asm-btn-ghost { background: transparent; color: var(--muted); border-color: var(--line); }
+    .asm-btn-ghost:hover { background: #f2f4f8; color: var(--ink); }
+    .asm-btn-admin { background: #2d2f45; color: #fff; }
+    .asm-btn-admin:hover { background: #3a3d58; }
+    .asm-btn-lg { padding: 12px 22px; font-size: 15px; border-radius: 10px; }
+    .asm-btn-sm { padding: 5px 10px; font-size: 12px; }
+    .asm-btn:disabled { opacity: .6; cursor: default; }
+    .asm-linkbtn { background: none; border: none; color: var(--blue); font-weight: 700; cursor: pointer; font-size: inherit; padding: 0 2px; text-decoration: underline; }
+
+    /* ── 게이트(로그인/온보딩) ── */
+    .asm-gate { display: flex; justify-content: center; padding: 40px 0; }
+    .asm-gate-card {
+      background: var(--paper); border: 1px solid var(--line-2); border-radius: 16px;
+      padding: 40px 34px; max-width: 480px; width: 100%; text-align: center;
+      box-shadow: 0 10px 34px rgba(22,50,79,.10);
+    }
+    .asm-onboard { text-align: left; }
+    .asm-gate-icon { font-size: 40px; margin-bottom: 8px; }
+    .asm-gate-title { font-size: 22px; font-weight: 800; color: var(--navy); margin: 6px 0 14px; }
+    .asm-onboard .asm-gate-title { text-align: center; }
+    .asm-gate-desc { font-size: 13.5px; color: var(--muted); line-height: 1.7; margin: 0 0 22px; }
+    .asm-gate-foot { font-size: 12px; color: var(--muted); margin: 20px 0 0; }
+    .asm-muted { color: var(--muted); }
+    .asm-req { color: var(--red); }
+
+    .asm-field { margin-bottom: 16px; }
+    .asm-label { display: block; font-size: 13px; font-weight: 700; color: var(--navy); margin-bottom: 6px; }
+    .asm-input {
+      width: 100%; border: 1px solid var(--line); border-radius: 9px; padding: 10px 12px;
+      font-family: inherit; font-size: 14px; color: var(--ink); background: #fbfcfe;
+    }
+    .asm-input:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px rgba(37,99,235,.12); background: #fff; }
+    .asm-hint { font-size: 12px; color: var(--muted); margin: 6px 0 0; line-height: 1.5; }
+    .asm-hint.asm-inline { display: inline; margin-left: 8px; }
+    .asm-radio-group { display: flex; flex-direction: column; gap: 8px; }
+    .asm-radio { display: flex; align-items: center; gap: 7px; font-size: 14px; padding: 9px 12px; border: 1px solid var(--line); border-radius: 9px; cursor: pointer; }
+    .asm-radio:hover { border-color: var(--blue); background: #f7faff; }
+    .asm-radio-hint { color: var(--muted); font-size: 12px; }
+
+    /* ── 툴바 ── */
+    .asm-toolbar {
+      display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+      background: var(--paper); border: 1px solid var(--line-2); border-radius: 12px;
+      padding: 10px 12px; margin-bottom: 16px; position: sticky; top: 60px; z-index: 40;
+      box-shadow: 0 2px 8px rgba(22,50,79,.06);
+    }
+    .asm-toolbar-right { margin-left: auto; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .asm-year-tabs { display: inline-flex; background: #eef1f6; border-radius: 9px; padding: 3px; gap: 2px; }
+    .asm-year-tab { border: none; background: transparent; color: var(--muted); font-family: inherit; font-weight: 700; font-size: 13px; padding: 6px 14px; border-radius: 7px; cursor: pointer; }
+    .asm-year-tab.active { background: var(--paper); color: var(--navy); box-shadow: 0 1px 4px rgba(0,0,0,.12); }
+
+    .asm-badge { font-size: 12px; color: var(--muted); font-weight: 600; padding: 4px 8px; border-radius: 6px; background: #f1f3f7; }
+    .asm-badge-dirty { color: var(--amber); background: #fdf4e3; }
+    .asm-badge-saving { color: var(--blue); background: #e8f0ff; }
+    .asm-badge-done { color: var(--green); background: #e7f6ee; }
+
+    .asm-notice { padding: 11px 15px; border-radius: 10px; font-size: 13px; margin-bottom: 14px; }
+    .asm-notice-done { background: #e7f6ee; color: #0b6b3c; border: 1px solid #bfe6cf; }
+
+    /* ── 문서(폼) ── */
+    .asm-doc {
+      background: var(--paper); border: 1px solid var(--line-2); border-radius: 14px;
+      padding: 26px 26px 30px; box-shadow: 0 6px 22px rgba(22,50,79,.07);
+    }
+    .asm-readonly .asm-cell-input, .asm-readonly .asm-input { pointer-events: none; background: #f6f7f9; color: #55606f; }
+    .asm-readonly .asm-rowdel, .asm-readonly .asm-rowadd { display: none; }
+    .asm-doc-head { text-align: center; position: relative; border-bottom: 2px solid var(--navy); padding-bottom: 14px; margin-bottom: 22px; }
+    .asm-confidential { position: absolute; right: 0; top: 0; border: 1.5px solid var(--red); color: var(--red); font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 4px; letter-spacing: 2px; }
+    .asm-doc-title { font-size: 21px; font-weight: 800; color: var(--navy); margin: 4px 0 8px; letter-spacing: -0.4px; }
+    .asm-doc-note { font-size: 12px; color: var(--muted); margin: 0; }
+
+    /* ── 섹션 ── */
+    .asm-section { margin-bottom: 30px; }
+    .asm-sec-head { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+    .asm-sec-no { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; background: var(--navy); color: #fff; border-radius: 7px; font-weight: 800; font-size: 14px; flex-shrink: 0; }
+    .asm-sec-title { font-size: 16.5px; font-weight: 800; color: var(--navy); margin: 0; }
+    .asm-sec-title small { font-weight: 600; color: var(--muted); font-size: 13px; }
+    .asm-h4 { font-size: 14px; font-weight: 800; color: var(--navy-2); margin: 18px 0 8px; display: flex; align-items: center; gap: 8px; }
+    .asm-tag { font-size: 11px; font-weight: 700; background: #e8f0ff; color: var(--blue-d); padding: 2px 8px; border-radius: 20px; }
+    .asm-tag-fac { background: #eaf7ef; color: #0b7a43; }
+
+    /* ── 테이블 ── */
+    .asm-scroll { overflow-x: auto; border-radius: 8px; }
+    .asm-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .asm-table th, .asm-table td { border: 1px solid var(--line); padding: 0; vertical-align: middle; }
+    .asm-table thead th { background: #f3f6fa; color: var(--navy); font-weight: 700; padding: 8px 6px; text-align: center; font-size: 12.5px; line-height: 1.35; }
+    .asm-table thead th small { font-weight: 500; color: var(--muted); font-size: 11px; }
+    .asm-table-info th { background: #f3f6fa; color: var(--navy); font-weight: 700; text-align: center; padding: 8px 10px; white-space: nowrap; width: 1%; }
+    .asm-table-info td { padding: 2px; }
+    .asm-cell-input {
+      width: 100%; border: none; background: transparent; padding: 8px 9px;
+      font-family: inherit; font-size: 13px; color: var(--ink); resize: none; display: block;
+    }
+    .asm-cell-input:focus { outline: 2px solid rgba(37,99,235,.4); outline-offset: -2px; background: #f7faff; border-radius: 3px; }
+    select.asm-cell-input { padding: 7px 8px; cursor: pointer; -webkit-appearance: none; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath fill='%236b7686' d='M0 0l5 6 5-6z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 8px center; padding-right: 22px; }
+    .asm-ta { line-height: 1.45; min-height: 34px; overflow: hidden; }
+    .asm-cell-sm { font-size: 12.5px; }
+    .asm-cell-num { text-align: center; }
+    .asm-td-no { width: 42px; text-align: center; color: var(--muted); font-weight: 600; background: #fafbfc; }
+    .asm-td-del { width: 34px; text-align: center; }
+    .asm-rowdel { border: none; background: transparent; color: #c4ccd6; cursor: pointer; font-size: 13px; padding: 4px 6px; border-radius: 5px; }
+    .asm-rowdel:hover { background: #fdeaea; color: var(--red); }
+    .asm-rowadd { margin: 8px 0 0; }
+    .asm-table-grid td { min-width: 70px; }
+    .asm-table-month th, .asm-table-month td { min-width: 40px; text-align: center; }
+    .asm-table-month thead th, .asm-table-month tr > th:first-child { background: #f3f6fa; font-weight: 700; }
+    .asm-table-month tr > th { background: #f3f6fa; color: var(--navy); font-weight: 700; padding: 6px; white-space: nowrap; }
+    .asm-sum { background: #eef4ff; font-weight: 800; color: var(--blue-d); text-align: center; }
+    .asm-table-student th, .asm-table-student td { min-width: 44px; }
+    .asm-note-input { border: 1px solid var(--line); border-radius: 8px; margin-top: 8px; background: #fbfcfe; }
+
+    /* ── 4장 직군 스위치 ── */
+    .asm-jobgroup-switch { background: #f7f9fc; border: 1px dashed var(--line); border-radius: 9px; padding: 9px 13px; margin-bottom: 14px; font-size: 13px; }
+    .asm-jobgroup-switch b { color: var(--navy); }
+    .asm-subsec { margin-bottom: 6px; }
+
+    .asm-doc-actions { display: flex; justify-content: center; gap: 12px; margin-top: 30px; padding-top: 22px; border-top: 1px dashed var(--line); }
+
+    /* ── 관리자 ── */
+    .asm-admin-stat { display: flex; gap: 14px; margin-bottom: 18px; flex-wrap: wrap; }
+    .asm-stat { flex: 1; min-width: 120px; background: #f5f8fc; border: 1px solid var(--line-2); border-radius: 12px; padding: 16px; text-align: center; }
+    .asm-stat-num { display: block; font-size: 28px; font-weight: 800; color: var(--navy); }
+    .asm-stat-lbl { font-size: 12px; color: var(--muted); }
+    .asm-admin-table th, .asm-admin-table td { padding: 9px 10px; text-align: center; font-size: 13px; }
+    .asm-admin-table thead th { background: #f3f6fa; }
+    .asm-admin-table tbody tr:hover { background: #f7faff; }
+    .asm-admin-email { color: var(--muted); font-size: 12px; }
+    .asm-status { font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 20px; }
+    .asm-status-done { background: #e7f6ee; color: #0b6b3c; }
+    .asm-status-draft { background: #fdf4e3; color: #a5701a; }
+    .asm-admin-empty { text-align: center; color: var(--muted); padding: 46px 0; font-size: 14px; }
+
+    /* ── 상세 모달 ── */
+    .asm-modal-back { position: fixed; inset: 0; background: rgba(20,30,45,.5); display: flex; align-items: center; justify-content: center; z-index: 200; padding: 20px; }
+    .asm-modal { background: #fff; border-radius: 14px; max-width: 760px; width: 100%; max-height: 86vh; display: flex; flex-direction: column; overflow: hidden; }
+    .asm-modal-head { display: flex; align-items: center; gap: 10px; padding: 14px 18px; border-bottom: 1px solid var(--line-2); }
+    .asm-modal-x { margin-left: auto; border: none; background: #f1f3f7; border-radius: 7px; width: 28px; height: 28px; cursor: pointer; color: var(--muted); }
+    .asm-modal-body { padding: 16px 18px; overflow-y: auto; }
+    .asm-detail-meta { font-size: 13px; color: var(--muted); margin-bottom: 12px; }
+    .asm-detail-json { background: #0f172a; color: #cbd5e1; font-size: 11.5px; line-height: 1.5; padding: 14px; border-radius: 8px; overflow-x: auto; white-space: pre-wrap; word-break: break-all; }
+
+    /* ── 토스트 ── */
+    .asm-toast { position: fixed; bottom: 26px; left: 50%; transform: translate(-50%, 20px); opacity: 0; background: #1f2937; color: #fff; padding: 11px 20px; border-radius: 10px; font-size: 13.5px; z-index: 500; transition: opacity .3s, transform .3s; box-shadow: 0 8px 24px rgba(0,0,0,.24); max-width: 90vw; }
+    .asm-toast.show { opacity: 1; transform: translate(-50%, 0); }
+    .asm-toast-success { background: #0f9d58; }
+    .asm-toast-error { background: #d64545; }
+
+    @media (max-width: 720px) {
+      .asm-doc { padding: 18px 14px 22px; }
+      .asm-doc-title { font-size: 17px; }
+      .asm-toolbar { top: 56px; }
+      .asm-header-user span { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<div id="asm-loading">
+  <div class="asm-spinner"></div>
+  <span id="asm-loading-msg">초기화 중…</span>
+</div>
+
+<div class="asm-header">
+  <span class="asm-logo">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:22px;height:22px">
+      <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/>
+      <rect x="9" y="3" width="6" height="4" rx="2"/>
+      <path d="M9 12l2 2 4-4"/>
+    </svg>
+    <b>ASEA</b> <span>개인별 직무역량 자가진단</span>
+  </span>
+  <div class="asm-header-user" id="asm-user-area" style="display:none">
+    <img id="asm-user-avatar" src="" alt="">
+    <span id="asm-user-name"></span>
+    <button class="asm-header-logout" onclick="asmLogout()">로그아웃</button>
+  </div>
+</div>
+
+<div class="asm-main">
+  <div id="assessment-root"></div>
+</div>
+
+<!-- 의존 스크립트 -->
+<script src="cloudforms.js?v=20260617cf1" defer></script>
+<script src="config.js?v=20260623ai7" defer></script>
+<script src="auth.js?v=20260622r8" defer></script>
+<script src="assessment.js?v=20260817a1" defer></script>
+
+<script>
+(function () {
+  'use strict';
+
+  function setLoading(msg) {
+    var el = document.getElementById('asm-loading');
+    var msgEl = document.getElementById('asm-loading-msg');
+    if (!el) return;
+    if (msg === false) { el.classList.add('hidden'); return; }
+    el.classList.remove('hidden');
+    if (msg && msgEl) msgEl.textContent = msg;
+  }
+
+  function showUserArea(profile) {
+    var area = document.getElementById('asm-user-area');
+    var avatarEl = document.getElementById('asm-user-avatar');
+    var nameEl = document.getElementById('asm-user-name');
+    if (!area) return;
+    area.style.display = 'flex';
+    if (profile) {
+      if (avatarEl && profile.picture) avatarEl.src = profile.picture;
+      if (nameEl) nameEl.textContent = profile.name || profile.email || '';
+    }
+  }
+
+  window.asmLogout = function () {
+    if (window.Auth && Auth.logout) Auth.logout();
+    var area = document.getElementById('asm-user-area');
+    if (area) area.style.display = 'none';
+    if (window.AssessmentModule) { AssessmentModule.setEmail(''); AssessmentModule.renderTab(); }
+  };
+
+  function fetchProfile(token) {
+    return fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+      headers: { Authorization: 'Bearer ' + token }
+    }).then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; });
+  }
+
+  function storeUserEmail(email) {
+    try { if (email) localStorage.setItem('asea_user_email', email); } catch (e) {}
+  }
+
+  function onLoggedIn(token) {
+    return fetchProfile(token).then(function (profile) {
+      if (profile) {
+        showUserArea(profile);
+        storeUserEmail(profile.email || '');
+      }
+      var email = (profile && profile.email) || '';
+      if (window.AssessmentModule) {
+        AssessmentModule.setEmail(email);
+        AssessmentModule.boot();
+      }
+    });
+  }
+
+  function init() {
+    var MAX_WAIT = 6000, start = Date.now();
+    function waitForDeps() {
+      var ready = window.Auth !== undefined && window.AssessmentModule !== undefined;
+      if (!ready) {
+        if (Date.now() - start > MAX_WAIT) { setLoading('스크립트 로드 실패. 새로고침 해주세요.'); return; }
+        setTimeout(waitForDeps, 80); return;
+      }
+      doInit();
+    }
+
+    function doInit() {
+      // 저장된 세션 복원 시도
+      if (window.Auth && Auth.tryRestoreSession) Auth.tryRestoreSession();
+      var token = window.Auth && Auth.getToken && Auth.getToken();
+
+      AssessmentModule.renderTab(document.getElementById('assessment-root'));
+
+      if (token) {
+        setLoading('기록 불러오는 중…');
+        onLoggedIn(token).then(function () { setLoading(false); });
+      } else {
+        setLoading(false);
+        AssessmentModule.renderTab();  // 로그인 화면
+      }
+
+      // 로그인/로그아웃 변화 감지
+      if (Auth.onAuthChange) {
+        Auth.onAuthChange(function (loggedIn) {
+          if (!loggedIn) {
+            var area = document.getElementById('asm-user-area');
+            if (area) area.style.display = 'none';
+            AssessmentModule.setEmail('');
+            AssessmentModule.renderTab();
+            return;
+          }
+          var t = Auth.getToken();
+          setLoading('기록 불러오는 중…');
+          onLoggedIn(t).then(function () { setLoading(false); });
+        });
+      }
+
+      // 주기적 자동 중간저장(90초) + 이탈 경고
+      setInterval(function () { try { AssessmentModule.autosave(); } catch (e) {} }, 90000);
+      window.addEventListener('beforeunload', function (e) {
+        var st = AssessmentModule._state;
+        if (st && st.dirty && st.email && st.status !== 'submitted') {
+          e.preventDefault(); e.returnValue = '';
+        }
+      });
+    }
+
+    waitForDeps();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function () { setTimeout(init, 0); });
+  } else {
+    setTimeout(init, 0);
+  }
+})();
+</script>
+</body>
+</html>
