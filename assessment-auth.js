@@ -25,7 +25,9 @@
  */
 (function () {
   // 로그인(식별)에 필요한 최소 비민감 권한만 요청
-  var SCOPES = 'openid email profile';
+  // auth.js와 동일하게 email·profile만 사용한다. 토큰 모델(implicit) 흐름에서
+  // openid 스코프는 거부되어 로그인이 실패할 수 있으므로 포함하지 않는다.
+  var SCOPES = 'email profile';
 
   var _accessToken   = null;
   var _expireTimer   = null;
@@ -75,13 +77,20 @@
 
   function _handleTokenResponse(tokenResponse) {
     if (tokenResponse && tokenResponse.error) {
+      // 실제 원인을 콘솔/화면에 노출해 진단 가능하게 한다.
+      var code = tokenResponse.error || '';
+      var desc = tokenResponse.error_description || '';
+      try { console.error('[assessment-auth] token error:', code, desc, tokenResponse); } catch (e) {}
       if (!_isMainLogin) {                       // 무음 갱신 실패 → 세션 유지
         if (_pendingResolve) { _pendingResolve(false); _pendingResolve = null; }
         return;
       }
       _clearToken();
       if (typeof window.aseaToast === 'function') {
-        window.aseaToast('로그인이 완료되지 않았습니다. 본인 Google 계정으로 다시 시도해 주세요.', 'error');
+        var msg = '로그인이 완료되지 않았습니다';
+        if (code) msg += ' (' + code + (desc ? ': ' + desc : '') + ')';
+        msg += '. 팝업 차단을 해제하고 본인 Google 계정으로 다시 시도해 주세요.';
+        window.aseaToast(msg, 'error');
       }
       if (_pendingResolve) { _pendingResolve(false); _pendingResolve = null; }
       _isMainLogin = false;
