@@ -52,6 +52,10 @@ window.AssessmentModule = (function () {
     adminYear: '2026',
     adminRows: null,
     adminLoading: false,
+    adminTab: 'list',     // 'list' | 'analysis'
+    adminSort: { key: 'dept', dir: 1 },   // key + 방향(1 오름차순/-1 내림차순)
+    adminSel: {},         // 선택된 ref 맵 { ref: true }
+    analysis: { keywords: '', depts: [], jobGroup: '', results: null },
   };
 
   /* ── 유틸 ─────────────────────────────────────────────────────── */
@@ -772,128 +776,560 @@ window.AssessmentModule = (function () {
     }).catch(function () { S.adminLoading = false; S.adminRows = []; if (S.view === 'admin') renderAdmin(); });
   }
 
+  /* 연도·정렬 적용된 관리자 행 목록 */
+  function adminYearRows() {
+    var rows = (S.adminRows || []).filter(function (r) {
+      return (r.data && r.data.year === S.adminYear) || (r.ref || '').indexOf('::' + S.adminYear) >= 0;
+    });
+    return sortAdminRows(rows);
+  }
+  function rowMeta(r) {
+    var m = (r.data && r.data.form && r.data.form.meta) || {};
+    return {
+      email: (r.ref || '').split('::')[0],
+      dept: m.dept || '', name: m.name || r.name || '', position: m.position || '',
+      jobGroup: m.jobGroup || '', status: r.status || 'draft', updated: r.updated_at || '',
+      form: (r.data && r.data.form) || null, meta: m
+    };
+  }
+  function sortAdminRows(rows) {
+    var key = S.adminSort.key, dir = S.adminSort.dir;
+    var val = function (r) {
+      var m = rowMeta(r);
+      switch (key) {
+        case 'dept': return m.dept;
+        case 'name': return m.name;
+        case 'position': return m.position;
+        case 'jobGroup': return m.jobGroup;
+        case 'status': return m.status;
+        case 'email': return m.email;
+        case 'updated': return m.updated;
+        default: return m.dept;
+      }
+    };
+    return rows.slice().sort(function (a, b) {
+      var va = val(a) || '', vb = val(b) || '';
+      var c;
+      if (key === 'updated') c = String(va) < String(vb) ? -1 : (String(va) > String(vb) ? 1 : 0);
+      else c = String(va).localeCompare(String(vb), 'ko');
+      if (c === 0) {  // 2차 정렬: 성명
+        c = String(rowMeta(a).name).localeCompare(String(rowMeta(b).name), 'ko');
+      }
+      return c * dir;
+    });
+  }
+  function toggleSort(key) {
+    if (S.adminSort.key === key) S.adminSort.dir *= -1;
+    else { S.adminSort.key = key; S.adminSort.dir = 1; }
+    renderAdmin();
+  }
+  function sortArrow(key) {
+    if (S.adminSort.key !== key) return '<span class="asm-sort-ico">⇅</span>';
+    return '<span class="asm-sort-ico on">' + (S.adminSort.dir > 0 ? '▲' : '▼') + '</span>';
+  }
+
   function renderAdmin() {
     var yearTabs = YEARS.map(function (y) {
       return '<button class="asm-year-tab' + (y === S.adminYear ? ' active' : '') + '" data-ayear="' + y + '">' + y + '년</button>';
     }).join('');
-    var rowsForYear = (S.adminRows || []).filter(function (r) {
-      return (r.data && r.data.year === S.adminYear) || (r.ref || '').indexOf('::' + S.adminYear) >= 0;
-    });
-    // 소속 → 인원 그룹핑
-    var body;
-    if (S.adminLoading) {
-      body = '<div class="asm-admin-empty">불러오는 중…</div>';
-    } else if (!(window.CloudForms && CloudForms.ready())) {
-      body = '<div class="asm-admin-empty">클라우드(Supabase)에 연결되지 않아 기록을 조회할 수 없습니다.</div>';
-    } else if (!rowsForYear.length) {
-      body = '<div class="asm-admin-empty">' + S.adminYear + '년도에 작성된 기록이 없습니다.</div>';
-    } else {
-      var submitted = rowsForYear.filter(function (r) { return r.status === 'submitted'; }).length;
-      var trs = rowsForYear.slice().sort(function (a, b) {
-        var da = (a.data && a.data.form && a.data.form.meta && a.data.form.meta.dept) || '';
-        var db = (b.data && b.data.form && b.data.form.meta && b.data.form.meta.dept) || '';
-        if (da !== db) return da < db ? -1 : 1;
-        return (b.updated_at || '') > (a.updated_at || '') ? 1 : -1;
-      }).map(function (r, i) {
-        var m = (r.data && r.data.form && r.data.form.meta) || {};
-        var email = (r.ref || '').split('::')[0];
-        var badge = r.status === 'submitted'
-          ? '<span class="asm-status asm-status-done">제출</span>'
-          : '<span class="asm-status asm-status-draft">작성중</span>';
-        return '<tr>' +
-          '<td>' + (i + 1) + '</td>' +
-          '<td>' + esc(m.dept || '-') + '</td>' +
-          '<td>' + esc(m.name || r.name || '-') + '</td>' +
-          '<td>' + esc(m.position || '-') + '</td>' +
-          '<td>' + esc(m.jobGroup || '-') + '</td>' +
-          '<td>' + badge + '</td>' +
-          '<td class="asm-admin-email">' + esc(email) + '</td>' +
-          '<td>' + fmtDt(r.updated_at) + '</td>' +
-          '<td><button class="asm-btn asm-btn-ghost asm-btn-sm asm-admin-view" data-ref="' + esc(r.ref) + '">보기</button></td>' +
-        '</tr>';
-      }).join('');
-      body =
-        '<div class="asm-admin-stat">' +
-          '<div class="asm-stat"><span class="asm-stat-num">' + rowsForYear.length + '</span><span class="asm-stat-lbl">작성 인원</span></div>' +
-          '<div class="asm-stat"><span class="asm-stat-num">' + submitted + '</span><span class="asm-stat-lbl">제출 완료</span></div>' +
-          '<div class="asm-stat"><span class="asm-stat-num">' + (rowsForYear.length - submitted) + '</span><span class="asm-stat-lbl">작성 중</span></div>' +
-        '</div>' +
-        '<div class="asm-scroll"><table class="asm-table asm-admin-table">' +
-          '<thead><tr><th>#</th><th>소속</th><th>성명</th><th>직책</th><th>직군</th><th>상태</th><th>계정</th><th>최종수정</th><th></th></tr></thead>' +
-          '<tbody>' + trs + '</tbody></table></div>';
-    }
+    var tabBtns =
+      '<div class="asm-adtab">' +
+        '<button class="asm-adtab-btn' + (S.adminTab === 'list' ? ' active' : '') + '" data-adtab="list">📋 작성 현황</button>' +
+        '<button class="asm-adtab-btn' + (S.adminTab === 'analysis' ? ' active' : '') + '" data-adtab="analysis">🎯 평가·분석</button>' +
+      '</div>';
 
     S.root.innerHTML =
       '<div class="asm-toolbar">' +
         '<div class="asm-year-tabs">' + yearTabs + '</div>' +
         '<div class="asm-toolbar-right">' +
           '<button class="asm-btn asm-btn-ghost" id="asm-admin-refresh">새로고침</button>' +
-          '<button class="asm-btn asm-btn-secondary" id="asm-admin-csv">CSV 내보내기</button>' +
           '<button class="asm-btn asm-btn-primary" id="asm-admin-back">← 내 작성으로</button>' +
         '</div>' +
       '</div>' +
       '<div class="asm-doc">' +
-        '<div class="asm-doc-head"><h1 class="asm-doc-title">관리자 · 직무역량 자가진단 현황</h1>' +
-        '<p class="asm-doc-note">전체 작성 인원의 기록을 연도별로 조회합니다. (관리자: ' + esc(S.email) + ')</p></div>' +
-        body +
+        '<div class="asm-doc-head"><h1 class="asm-doc-title">관리자 · 직무역량 자가진단</h1>' +
+        '<p class="asm-doc-note">전체 작성 인원의 기록을 연도별로 조회·분석합니다. (관리자: ' + esc(S.email) + ')</p></div>' +
+        tabBtns +
+        '<div id="asm-admin-panel">' + (S.adminTab === 'analysis' ? analysisPanel() : listPanel()) + '</div>' +
       '</div>' +
       '<div id="asm-admin-modal"></div>';
 
-    S.root.querySelector('#asm-admin-back').addEventListener('click', function () { S.view = 'form'; render(); });
-    S.root.querySelector('#asm-admin-refresh').addEventListener('click', function () { loadAdmin(); renderAdmin(); });
-    var csv = S.root.querySelector('#asm-admin-csv');
-    if (csv) csv.addEventListener('click', exportCsv);
+    bindAdmin();
+  }
+
+  function listPanel() {
+    if (S.adminLoading) return '<div class="asm-admin-empty">불러오는 중…</div>';
+    if (!(window.CloudForms && CloudForms.ready())) return '<div class="asm-admin-empty">클라우드(Supabase)에 연결되지 않아 기록을 조회할 수 없습니다.</div>';
+    var rows = adminYearRows();
+    if (!rows.length) return '<div class="asm-admin-empty">' + S.adminYear + '년도에 작성된 기록이 없습니다.</div>';
+
+    var submitted = rows.filter(function (r) { return r.status === 'submitted'; }).length;
+    var selCount = rows.filter(function (r) { return S.adminSel[r.ref]; }).length;
+    var allSel = selCount > 0 && selCount === rows.length;
+
+    var th = function (key, label) {
+      return '<th class="asm-th-sort" data-sortkey="' + key + '">' + esc(label) + ' ' + sortArrow(key) + '</th>';
+    };
+    var trs = rows.map(function (r, i) {
+      var m = rowMeta(r);
+      var badge = r.status === 'submitted'
+        ? '<span class="asm-status asm-status-done">제출</span>'
+        : '<span class="asm-status asm-status-draft">작성중</span>';
+      return '<tr' + (S.adminSel[r.ref] ? ' class="asm-row-sel"' : '') + '>' +
+        '<td class="asm-td-chk"><input type="checkbox" class="asm-rowchk" data-selref="' + esc(r.ref) + '"' + (S.adminSel[r.ref] ? ' checked' : '') + '></td>' +
+        '<td>' + (i + 1) + '</td>' +
+        '<td>' + esc(m.dept || '-') + '</td>' +
+        '<td><b>' + esc(m.name || '-') + '</b></td>' +
+        '<td>' + esc(m.position || '-') + '</td>' +
+        '<td>' + esc(m.jobGroup || '-') + '</td>' +
+        '<td>' + badge + '</td>' +
+        '<td class="asm-admin-email">' + esc(m.email) + '</td>' +
+        '<td>' + fmtDt(r.updated) + '</td>' +
+        '<td><button class="asm-btn asm-btn-ghost asm-btn-sm asm-admin-view" data-ref="' + esc(r.ref) + '">보기</button></td>' +
+      '</tr>';
+    }).join('');
+
+    return '' +
+      '<div class="asm-admin-stat">' +
+        '<div class="asm-stat"><span class="asm-stat-num">' + rows.length + '</span><span class="asm-stat-lbl">작성 인원</span></div>' +
+        '<div class="asm-stat"><span class="asm-stat-num">' + submitted + '</span><span class="asm-stat-lbl">제출 완료</span></div>' +
+        '<div class="asm-stat"><span class="asm-stat-num">' + (rows.length - submitted) + '</span><span class="asm-stat-lbl">작성 중</span></div>' +
+        '<div class="asm-stat asm-stat-sel"><span class="asm-stat-num" id="asm-sel-count">' + selCount + '</span><span class="asm-stat-lbl">선택됨</span></div>' +
+      '</div>' +
+      '<div class="asm-admin-actions">' +
+        '<button class="asm-btn asm-btn-ghost asm-btn-sm" id="asm-sel-all">전체선택</button>' +
+        '<button class="asm-btn asm-btn-ghost asm-btn-sm" id="asm-sel-none">전체해제</button>' +
+        '<span class="asm-flex1"></span>' +
+        '<button class="asm-btn asm-btn-secondary asm-btn-sm" id="asm-admin-csv">CSV</button>' +
+        '<button class="asm-btn asm-btn-primary asm-btn-sm" id="asm-admin-pdf">📥 선택 PDF 다운로드</button>' +
+      '</div>' +
+      '<p class="asm-hint">헤더를 클릭하면 엑셀처럼 정렬됩니다. 여러 건 선택 시 ZIP으로, 1건 선택 시 PDF로 내려받습니다.</p>' +
+      '<div class="asm-scroll"><table class="asm-table asm-admin-table">' +
+        '<thead><tr>' +
+          '<th class="asm-td-chk"><input type="checkbox" id="asm-chk-all"' + (allSel ? ' checked' : '') + '></th>' +
+          '<th>#</th>' + th('dept', '소속') + th('name', '성명') + th('position', '직책') +
+          th('jobGroup', '직군') + th('status', '상태') + th('email', '계정') + th('updated', '최종수정') +
+          '<th></th>' +
+        '</tr></thead><tbody>' + trs + '</tbody></table></div>';
+  }
+
+  function bindAdmin() {
+    var $ = function (id) { return S.root.querySelector(id); };
+    $('#asm-admin-back').addEventListener('click', function () { S.view = 'form'; render(); });
+    $('#asm-admin-refresh').addEventListener('click', function () { loadAdmin(); renderAdmin(); });
     S.root.querySelectorAll('[data-ayear]').forEach(function (b) {
       b.addEventListener('click', function () { S.adminYear = b.getAttribute('data-ayear'); renderAdmin(); });
     });
+    S.root.querySelectorAll('[data-adtab]').forEach(function (b) {
+      b.addEventListener('click', function () { S.adminTab = b.getAttribute('data-adtab'); renderAdmin(); });
+    });
+    // 정렬 헤더
+    S.root.querySelectorAll('.asm-th-sort').forEach(function (thEl) {
+      thEl.addEventListener('click', function () { toggleSort(thEl.getAttribute('data-sortkey')); });
+    });
+    // 체크박스
+    S.root.querySelectorAll('.asm-rowchk').forEach(function (c) {
+      c.addEventListener('change', function () {
+        var ref = c.getAttribute('data-selref');
+        if (c.checked) S.adminSel[ref] = true; else delete S.adminSel[ref];
+        renderAdmin();
+      });
+    });
+    var chkAll = $('#asm-chk-all');
+    if (chkAll) chkAll.addEventListener('change', function () {
+      var rows = adminYearRows();
+      rows.forEach(function (r) { if (chkAll.checked) S.adminSel[r.ref] = true; else delete S.adminSel[r.ref]; });
+      renderAdmin();
+    });
+    var selAll = $('#asm-sel-all'); if (selAll) selAll.addEventListener('click', function () { adminYearRows().forEach(function (r) { S.adminSel[r.ref] = true; }); renderAdmin(); });
+    var selNone = $('#asm-sel-none'); if (selNone) selNone.addEventListener('click', function () { S.adminSel = {}; renderAdmin(); });
+    var csv = $('#asm-admin-csv'); if (csv) csv.addEventListener('click', exportCsv);
+    var pdf = $('#asm-admin-pdf'); if (pdf) pdf.addEventListener('click', exportSelectedPdf);
     S.root.querySelectorAll('.asm-admin-view').forEach(function (b) {
       b.addEventListener('click', function () { showDetail(b.getAttribute('data-ref')); });
     });
+    // 분석 패널
+    bindAnalysis();
   }
 
   function exportCsv() {
-    var rows = (S.adminRows || []).filter(function (r) {
-      return (r.data && r.data.year === S.adminYear) || (r.ref || '').indexOf('::' + S.adminYear) >= 0;
-    });
+    var rows = adminYearRows();
     var head = ['소속', '성명', '직책', '직군', '상태', '계정', '최종수정'];
     var lines = [head.join(',')];
     rows.forEach(function (r) {
-      var m = (r.data && r.data.form && r.data.form.meta) || {};
-      var email = (r.ref || '').split('::')[0];
+      var m = rowMeta(r);
       var f = function (v) { return '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"'; };
-      lines.push([m.dept, m.name || r.name, m.position, m.jobGroup, r.status, email, fmtDt(r.updated_at)].map(f).join(','));
+      lines.push([m.dept, m.name, m.position, m.jobGroup, m.status, m.email, fmtDt(m.updated)].map(f).join(','));
     });
-    var blob = new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });
-    var a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = '직무역량자가진단_' + S.adminYear + '.csv';
-    document.body.appendChild(a); a.click(); a.remove();
+    downloadBlob(new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' }), '직무역량자가진단_' + S.adminYear + '.csv');
+  }
+
+  /* ── 예쁜 문서(HTML) 렌더 ─────────────────────────────────────── */
+  function dv(v) { v = (v == null ? '' : String(v)).trim(); return v ? esc(v) : '<span class="pd-empty">-</span>'; }
+  function monthTableRows(obj, label) {
+    var cells = MONTHS.map(function (mo) { return '<td>' + dv(obj && obj[mo]) + '</td>'; }).join('');
+    var sum = 0; MONTHS.forEach(function (mo) { var n = parseFloat(obj && obj[mo]); if (!isNaN(n)) sum += n; });
+    return '<tr><th>' + esc(label) + '</th>' + cells + '<td class="pd-sum">' + sum + '</td></tr>';
+  }
+  function buildDocHtml(form, meta) {
+    if (!form) return '<div class="pd-empty">데이터 없음</div>';
+    var m = meta || form.meta || {};
+    var year = (form.meta && form.meta.year) || S.adminYear;
+    var infoRow = function (a, av, b, bv, c, cv) {
+      return '<tr><th>' + a + '</th><td>' + dv(av) + '</td><th>' + b + '</th><td>' + dv(bv) + '</td>' +
+        (c ? '<th>' + c + '</th><td>' + dv(cv) + '</td>' : '<td colspan="2"></td>') + '</tr>';
+    };
+    // 1. 신상
+    var sec1 = '<table class="pd-tbl pd-info">' +
+      infoRow('소속', m.dept, '직책', m.position, '성명', m.name) +
+      infoRow('입사일', m.hireDate, '전체근무경력', m.totalCareer, '현직무경력', m.currentCareer) +
+      '<tr><th>직군</th><td>' + dv(m.jobGroup) + '</td><th>주요 자격·면허</th><td colspan="3">' + dv(m.licenses) + '</td></tr>' +
+      '<tr><th>직책업무 요약</th><td colspan="5">' + dv(m.roleSummary) + '</td></tr>' +
+      '</table>';
+    // 2. 직무분석
+    var jobsRows = (form.jobs || []).filter(function (j) { return j.title || j.content || j.competency; });
+    var sec2 = jobsRows.length ? '<table class="pd-tbl"><thead><tr><th>No</th><th>구분</th><th>직무명</th><th>업무 내용</th><th>필요역량</th><th>주기</th><th>관련부서</th></tr></thead><tbody>' +
+      jobsRows.map(function (j, i) { return '<tr><td>' + (i + 1) + '</td><td>' + dv(j.group) + '</td><td>' + dv(j.title) + '</td><td class="pd-l">' + dv(j.content) + '</td><td class="pd-l">' + dv(j.competency) + '</td><td>' + dv(j.cycle) + '</td><td>' + dv(j.relDept) + '</td></tr>'; }).join('') +
+      '</tbody></table>' : '<div class="pd-empty">작성된 직무 없음</div>';
+    // 3. 성과
+    var perfRows = (form.performance || []).filter(function (p) { return p.task || p.result; });
+    var sec3 = perfRows.length ? '<table class="pd-tbl"><thead><tr><th>구분</th><th>해당 업무</th><th>업무 성과 및 기여 내용</th><th>비고</th></tr></thead><tbody>' +
+      perfRows.map(function (p) { return '<tr><td>' + dv(p.category) + '</td><td>' + dv(p.task) + '</td><td class="pd-l">' + dv(p.result) + '</td><td>' + dv(p.note) + '</td></tr>'; }).join('') +
+      '</tbody></table>' : '<div class="pd-empty">작성된 성과 없음</div>';
+    // 4. 직군별 실적
+    var sec4;
+    if (m.jobGroup === '교무직') {
+      var f = form.faculty || {};
+      var lec = f.lecture || {};
+      var lecTbl = '<h4 class="pd-h4">4-2-1. 개인별 강의시수</h4><div class="pd-scroll"><table class="pd-tbl pd-month"><thead><tr><th>구분</th>' + MONTHS.map(function (mo) { return '<th>' + mo + '</th>'; }).join('') + '<th>계</th></tr></thead><tbody>' +
+        monthTableRows(lec.banSu, '반수') + monthTableRows(lec.credit, '학점') + monthTableRows(lec.nonCredit, '비학점') + monthTableRows(lec.etc, '기타') + monthTableRows(lec.total, '전체') + '</tbody></table></div>';
+      var stu = (f.students || []);
+      var stuTbl = '<h4 class="pd-h4">4-2-2. 지도학생 관리 현황</h4><div class="pd-scroll"><table class="pd-tbl"><thead><tr><th>연도</th><th>1학기 등록</th><th>휴학</th><th>자퇴</th><th>수료</th><th>등록률</th><th>2학기 등록</th><th>휴학</th><th>자퇴</th><th>수료</th><th>등록률</th><th>계 등록</th><th>계 수료</th></tr></thead><tbody>' +
+        stu.map(function (s) { var a = s.s1 || {}, b = s.s2 || {}, c = s.sum || {}; return '<tr><td>' + dv(s.year) + '</td><td>' + dv(a.reg) + '</td><td>' + dv(a.leave) + '</td><td>' + dv(a.drop) + '</td><td>' + dv(a.done) + '</td><td>' + dv(a.rate) + '</td><td>' + dv(b.reg) + '</td><td>' + dv(b.leave) + '</td><td>' + dv(b.drop) + '</td><td>' + dv(b.done) + '</td><td>' + dv(b.rate) + '</td><td>' + dv(c.reg) + '</td><td>' + dv(c.done) + '</td></tr>'; }).join('') + '</tbody></table></div>';
+      var cnsTbl = '<h4 class="pd-h4">4-2-3. 학생 상담 횟수</h4><div class="pd-scroll"><table class="pd-tbl pd-month"><thead><tr><th>월</th>' + MONTHS.map(function (mo) { return '<th>' + mo + '</th>'; }).join('') + '<th>계</th></tr></thead><tbody>' + monthTableRows(f.counsel, '건수') + '</tbody></table></div>';
+      sec4 = '<div class="pd-tag pd-tag-fac">교무직</div>' + lecTbl + stuTbl + cnsTbl;
+    } else {
+      var a2 = form.admin || {};
+      var draftTbl = '<h4 class="pd-h4">4-1-1. 연간 기안 상신 건수</h4><div class="pd-scroll"><table class="pd-tbl pd-month"><thead><tr><th>월</th>' + MONTHS.map(function (mo) { return '<th>' + mo + '</th>'; }).join('') + '<th>계</th></tr></thead><tbody>' + monthTableRows(a2.draftCounts, '건수') + '</tbody></table></div>';
+      var projs = (a2.projects || []).filter(function (p) { return p.name || p.period; });
+      var projTbl = '<h4 class="pd-h4">4-1-2. 연간 참여 사업</h4>' + (projs.length ? '<table class="pd-tbl"><thead><tr><th>연번</th><th>사업 기간</th><th>참여 사업명</th><th>담당업무 및 사업성과</th></tr></thead><tbody>' +
+        projs.map(function (p, i) { return '<tr><td>' + (i + 1) + '</td><td>' + dv(p.period) + '</td><td>' + dv(p.name) + '</td><td class="pd-l">' + dv(p.role) + '</td></tr>'; }).join('') + '</tbody></table>' : '<div class="pd-empty">작성된 참여 사업 없음</div>');
+      sec4 = '<div class="pd-tag">행정직</div>' + draftTbl + projTbl;
+    }
+    // 5. 개인역량개발
+    var devs = (form.development || []).filter(function (d) { return d.course || d.org; });
+    var sec5 = devs.length ? '<table class="pd-tbl"><thead><tr><th>구분</th><th>교육과정명</th><th>주관기관</th><th>기간</th><th>비용</th><th>교육 내용</th><th>업무반영범위</th></tr></thead><tbody>' +
+      devs.map(function (d) { return '<tr><td>' + dv(d.div) + '</td><td>' + dv(d.course) + '</td><td>' + dv(d.org) + '</td><td>' + dv(d.period) + '</td><td>' + dv(d.cost) + '</td><td class="pd-l">' + dv(d.content) + '</td><td>' + dv(d.scope) + '</td></tr>'; }).join('') + '</tbody></table>' : '<div class="pd-empty">작성된 교육 이력 없음</div>';
+    // 6. 애로사항
+    var iss = form.issues || {};
+    var sec6 = '<table class="pd-tbl pd-info">' +
+      '<tr><th>애로사항</th><td class="pd-l">' + dv(iss.difficulty) + '</td></tr>' +
+      '<tr><th>개선사항 건의</th><td class="pd-l">' + dv(iss.improvement) + '</td></tr>' +
+      '<tr><th>' + (parseInt(year, 10) + 1) + '년 목표 및 계획</th><td class="pd-l">' + dv(iss.nextPlan) + '</td></tr>' +
+      '</table>';
+
+    var sec = function (no, title, body) { return '<div class="pd-sec"><div class="pd-sec-h"><span class="pd-no">' + no + '</span>' + esc(title) + '</div>' + body + '</div>'; };
+    return '<div class="pd-root">' +
+      '<div class="pd-head"><div class="pd-conf">대외비</div><h1 class="pd-title">' + esc(year) + '년도 개인별 직무역량 자기진단표</h1>' +
+      '<div class="pd-sub">' + dv(m.dept) + ' · ' + dv(m.name) + ' (' + dv(m.jobGroup) + ')</div></div>' +
+      sec('1', '개인 신상 정보', sec1) +
+      sec('2', '직무 분석', sec2) +
+      sec('3', year + '년도 업무 성과 및 기여', sec3) +
+      sec('4', '개인별 업무처리 실적', sec4) +
+      sec('5', '개인역량개발', sec5) +
+      sec('6', '직무 관련 애로사항 및 건의', sec6) +
+      '</div>';
   }
 
   function showDetail(ref) {
     var row = (S.adminRows || []).filter(function (r) { return r.ref === ref; })[0];
     if (!row || !row.data || !row.data.form) { toast('상세 데이터를 찾을 수 없습니다.', 'error'); return; }
-    var f = row.data.form; var m = f.meta || {};
-    var pre = '<pre class="asm-detail-json">' + esc(JSON.stringify(f, null, 2)) + '</pre>';
-    var jobsTbl = (f.jobs || []).filter(function (j) { return j.title; }).map(function (j) {
-      return '<tr><td>' + esc(j.group) + '</td><td>' + esc(j.title) + '</td><td>' + esc(j.content) + '</td><td>' + esc(j.cycle) + '</td></tr>';
-    }).join('');
+    var m = rowMeta(row);
     var modal = S.root.querySelector('#asm-admin-modal');
     modal.innerHTML =
-      '<div class="asm-modal-back" id="asm-modal-back"><div class="asm-modal">' +
+      '<div class="asm-modal-back" id="asm-modal-back"><div class="asm-modal asm-modal-lg">' +
         '<div class="asm-modal-head"><b>' + esc(m.dept || '') + ' · ' + esc(m.name || '') + '</b>' +
-          '<span class="asm-status ' + (row.status === 'submitted' ? 'asm-status-done' : 'asm-status-draft') + '">' + (row.status === 'submitted' ? '제출' : '작성중') + '</span>' +
+          '<span class="asm-status ' + (m.status === 'submitted' ? 'asm-status-done' : 'asm-status-draft') + '">' + (m.status === 'submitted' ? '제출' : '작성중') + '</span>' +
+          '<span class="asm-flex1"></span>' +
+          '<button class="asm-btn asm-btn-primary asm-btn-sm" id="asm-detail-pdf">📥 PDF 저장</button>' +
           '<button class="asm-modal-x" id="asm-modal-x">✕</button></div>' +
         '<div class="asm-modal-body">' +
-          '<div class="asm-detail-meta">직군: ' + esc(m.jobGroup || '-') + ' / 직책: ' + esc(m.position || '-') +
-            ' / 입사일: ' + esc(m.hireDate || '-') + ' / 경력: ' + esc(m.totalCareer || '-') + '</div>' +
-          (jobsTbl ? '<h4 class="asm-h4">직무 분석</h4><table class="asm-table asm-table-grid"><thead><tr><th>구분</th><th>직무명</th><th>내용</th><th>주기</th></tr></thead><tbody>' + jobsTbl + '</tbody></table>' : '') +
-          '<h4 class="asm-h4">전체 데이터(JSON)</h4>' + pre +
+          buildDocHtml(m.form, m.meta) +
+          '<details class="asm-json-details"><summary>개발용 원본 데이터(JSON)</summary><pre class="asm-detail-json">' + esc(JSON.stringify(m.form, null, 2)) + '</pre></details>' +
         '</div>' +
       '</div></div>';
     var close = function () { modal.innerHTML = ''; };
     S.root.querySelector('#asm-modal-x').addEventListener('click', close);
     S.root.querySelector('#asm-modal-back').addEventListener('click', function (e) { if (e.target.id === 'asm-modal-back') close(); });
+    S.root.querySelector('#asm-detail-pdf').addEventListener('click', function () {
+      S.adminSel = {}; S.adminSel[ref] = true; exportSelectedPdf();
+    });
+  }
+
+  /* ── PDF / ZIP 내보내기 ───────────────────────────────────────── */
+  function loadScript(src) {
+    return new Promise(function (res, rej) {
+      if (document.querySelector('script[data-src="' + src + '"]')) { res(); return; }
+      var s = document.createElement('script'); s.src = src; s.setAttribute('data-src', src);
+      s.onload = res; s.onerror = function () { rej(new Error('스크립트 로드 실패: ' + src)); };
+      document.head.appendChild(s);
+    });
+  }
+  function ensureLibs() {
+    var jobs = [];
+    if (!window.html2canvas) jobs.push(loadScript('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js'));
+    if (!(window.jspdf && window.jspdf.jsPDF)) jobs.push(loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js'));
+    if (!window.JSZip) jobs.push(loadScript('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js'));
+    return Promise.all(jobs);
+  }
+  function fmtDate(iso) {
+    if (!iso) return '';
+    try { var d = new Date(iso); var p = function (n) { return (n < 10 ? '0' : '') + n; }; return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()); }
+    catch (e) { return ''; }
+  }
+  function sanitizeFn(s) { return String(s == null ? '' : s).replace(/[\\\/:*?"<>|]/g, '').replace(/\s+/g, ''); }
+  function filenameFor(r) {
+    var m = rowMeta(r);
+    return '직무역량자가진단_' + S.adminYear + '_' + (sanitizeFn(m.dept) || '미상') + '_' + (sanitizeFn(m.name) || '미상') + '_' + (fmtDate(m.updated) || '작성전') + '.pdf';
+  }
+  function downloadBlob(blob, name) {
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a'); a.href = url; a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
+  }
+  function makePrintEl(html) {
+    var el = document.createElement('div');
+    el.className = 'pd-print';
+    el.style.cssText = 'position:fixed;left:-99999px;top:0;width:760px;background:#fff;';
+    el.innerHTML = html;
+    document.body.appendChild(el);
+    return el;
+  }
+  function htmlToPdf(el) {
+    return window.html2canvas(el, { scale: 2, backgroundColor: '#ffffff', useCORS: true, logging: false })
+      .then(function (canvas) {
+        var JsPDF = window.jspdf.jsPDF;
+        var pdf = new JsPDF({ orientation: 'p', unit: 'pt', format: 'a4' });
+        var pageW = pdf.internal.pageSize.getWidth();
+        var pageH = pdf.internal.pageSize.getHeight();
+        var imgW = pageW;
+        var scale = imgW / canvas.width;
+        var imgFullH = canvas.height * scale;
+        if (imgFullH <= pageH) {
+          pdf.addImage(canvas.toDataURL('image/jpeg', 0.92), 'JPEG', 0, 0, imgW, imgFullH);
+        } else {
+          var pxPerPage = Math.floor(canvas.width * pageH / pageW);   // 캔버스 픽셀 기준 페이지 높이
+          var offset = 0, first = true;
+          while (offset < canvas.height) {
+            var sliceH = Math.min(pxPerPage, canvas.height - offset);
+            var c2 = document.createElement('canvas');
+            c2.width = canvas.width; c2.height = sliceH;
+            var ctx = c2.getContext('2d');
+            ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c2.width, c2.height);
+            ctx.drawImage(canvas, 0, offset, canvas.width, sliceH, 0, 0, canvas.width, sliceH);
+            if (!first) pdf.addPage();
+            pdf.addImage(c2.toDataURL('image/jpeg', 0.92), 'JPEG', 0, 0, imgW, sliceH * scale);
+            first = false; offset += sliceH;
+          }
+        }
+        return pdf;
+      });
+  }
+  function exportSelectedPdf() {
+    var rows = adminYearRows().filter(function (r) { return S.adminSel[r.ref] && r.data && r.data.form; });
+    if (!rows.length) { toast('선택된 항목이 없습니다. 표에서 체크박스를 선택하세요.', 'error'); return; }
+    toast('PDF 생성 중… (' + rows.length + '건, 잠시만 기다려 주세요)', 'info');
+    ensureLibs().then(function () {
+      var items = [];
+      var seq = rows.reduce(function (pr, r) {
+        return pr.then(function () {
+          var m = rowMeta(r);
+          var el = makePrintEl(buildDocHtml(m.form, m.meta));
+          return htmlToPdf(el).then(function (pdf) {
+            el.remove();
+            items.push({ name: filenameFor(r), blob: pdf.output('blob') });
+          }).catch(function (e) { el.remove(); throw e; });
+        });
+      }, Promise.resolve());
+
+      seq.then(function () {
+        if (items.length === 1) {
+          downloadBlob(items[0].blob, items[0].name);
+          toast('PDF를 내려받았습니다: ' + items[0].name, 'success');
+        } else {
+          var zip = new window.JSZip();
+          items.forEach(function (it) { zip.file(it.name, it.blob); });
+          return zip.generateAsync({ type: 'blob' }).then(function (content) {
+            downloadBlob(content, '직무역량자가진단_' + S.adminYear + '.zip');
+            toast(items.length + '건을 ZIP으로 내려받았습니다.', 'success');
+          });
+        }
+      }).catch(function (e) { toast('PDF 생성 실패: ' + (e && e.message || e), 'error'); });
+    }).catch(function (e) { toast('필요 라이브러리 로드 실패: ' + (e && e.message || e), 'error'); });
+  }
+
+  /* ── 평가·분석 패널 ───────────────────────────────────────────── */
+  function analysisSearchText(form) {
+    if (!form) return '';
+    var parts = [];
+    var m = form.meta || {};
+    parts.push(m.licenses, m.roleSummary, m.position, m.dept);
+    (form.jobs || []).forEach(function (j) { parts.push(j.title, j.content, j.competency); });
+    (form.performance || []).forEach(function (p) { parts.push(p.task, p.result); });
+    (form.development || []).forEach(function (d) { parts.push(d.course, d.content, d.scope, d.org); });
+    if (form.issues) parts.push(form.issues.nextPlan);
+    return parts.filter(Boolean).join(' \n ');
+  }
+  function analysisPanel() {
+    var rows = adminYearRows();
+    var deptChips = DEPARTMENTS.map(function (d) {
+      var on = S.analysis.depts.indexOf(d) >= 0;
+      return '<label class="asm-chip' + (on ? ' on' : '') + '"><input type="checkbox" class="an-dept" value="' + esc(d) + '"' + (on ? ' checked' : '') + '> ' + esc(d) + '</label>';
+    }).join('');
+    var jgOpts = ['', '행정직', '교무직'].map(function (g) {
+      return '<option value="' + esc(g) + '"' + (S.analysis.jobGroup === g ? ' selected' : '') + '>' + (g || '전체') + '</option>';
+    }).join('');
+    var results = S.analysis.results;
+    var resHtml = '';
+    if (results) {
+      if (!results.length) resHtml = '<div class="asm-admin-empty">조건에 맞는 인원이 없습니다.</div>';
+      else {
+        resHtml = '<div class="asm-admin-actions"><b>분석 결과 ' + results.length + '명</b><span class="asm-flex1"></span>' +
+          '<button class="asm-btn asm-btn-secondary asm-btn-sm" id="an-export-md">📄 AI 기초자료(.md) 내보내기</button>' +
+          '<button class="asm-btn asm-btn-secondary asm-btn-sm" id="an-copy">📋 복사</button></div>' +
+          '<div class="asm-scroll"><table class="asm-table asm-admin-table"><thead><tr><th>순위</th><th>소속</th><th>성명</th><th>직군</th><th>매치 점수</th><th>매칭 키워드</th><th>근거</th><th></th></tr></thead><tbody>' +
+          results.map(function (x, i) {
+            return '<tr>' +
+              '<td><b>' + (i + 1) + '</b></td>' +
+              '<td>' + esc(x.dept) + '</td><td><b>' + esc(x.name) + '</b></td><td>' + esc(x.jobGroup) + '</td>' +
+              '<td><span class="an-score">' + x.score + '</span></td>' +
+              '<td>' + (x.matched.length ? x.matched.map(function (k) { return '<span class="an-kw">' + esc(k) + '</span>'; }).join(' ') : '-') + '</td>' +
+              '<td class="an-snip">' + esc(x.snippet || '-') + '</td>' +
+              '<td><button class="asm-btn asm-btn-ghost asm-btn-sm asm-admin-view" data-ref="' + esc(x.ref) + '">보기</button></td>' +
+            '</tr>';
+          }).join('') + '</tbody></table></div>';
+      }
+    }
+    return '' +
+      '<div class="an-box">' +
+        '<div class="an-desc">특정 프로젝트에 적합한 인원을 <b>' + S.adminYear + '년도 전체 데이터</b>에서 추려냅니다. 필요 역량 키워드를 입력하면, 각자의 직무·성과·교육·자격 기록에서 키워드 일치도를 계산해 순위를 매깁니다. ' +
+          '<span class="asm-muted">예) 비행교육원 홈페이지 개설 → “홈페이지, 웹, 디자인, 콘텐츠, 촬영, 편집”</span></div>' +
+        '<div class="an-field"><label class="asm-label">필요 역량 키워드 <span class="asm-muted">(쉼표 또는 공백으로 구분)</span></label>' +
+          '<input id="an-keywords" class="asm-input" placeholder="예: 홈페이지, 웹, 디자인, 콘텐츠, 촬영, 편집" value="' + esc(S.analysis.keywords) + '"></div>' +
+        '<div class="an-row">' +
+          '<div class="an-field an-jg"><label class="asm-label">직군</label><select id="an-jobgroup" class="asm-input">' + jgOpts + '</select></div>' +
+          '<div class="an-field an-tot"><label class="asm-label">대상 인원</label><div class="an-count">' + rows.length + '명 (' + S.adminYear + ')</div></div>' +
+        '</div>' +
+        '<div class="an-field"><label class="asm-label">소속 필터 <span class="asm-muted">(선택 안 하면 전체)</span></label><div class="an-chips">' + deptChips + '</div></div>' +
+        '<div class="an-actions"><button class="asm-btn asm-btn-primary" id="an-run">🎯 분석 실행</button>' +
+          '<button class="asm-btn asm-btn-ghost" id="an-reset">초기화</button></div>' +
+      '</div>' +
+      '<div id="an-results">' + resHtml + '</div>';
+  }
+  function bindAnalysis() {
+    var kw = S.root.querySelector('#an-keywords');
+    if (!kw) return;   // 분석 탭이 아님
+    kw.addEventListener('input', function () { S.analysis.keywords = kw.value; });
+    var jg = S.root.querySelector('#an-jobgroup');
+    if (jg) jg.addEventListener('change', function () { S.analysis.jobGroup = jg.value; });
+    S.root.querySelectorAll('.an-dept').forEach(function (c) {
+      c.addEventListener('change', function () {
+        var v = c.value; var idx = S.analysis.depts.indexOf(v);
+        if (c.checked && idx < 0) S.analysis.depts.push(v);
+        else if (!c.checked && idx >= 0) S.analysis.depts.splice(idx, 1);
+        c.closest('.asm-chip').classList.toggle('on', c.checked);
+      });
+    });
+    var run = S.root.querySelector('#an-run'); if (run) run.addEventListener('click', runAnalysis);
+    var reset = S.root.querySelector('#an-reset'); if (reset) reset.addEventListener('click', function () {
+      S.analysis = { keywords: '', depts: [], jobGroup: '', results: null }; renderAdmin();
+    });
+    var md = S.root.querySelector('#an-export-md'); if (md) md.addEventListener('click', exportAnalysisMd);
+    var cp = S.root.querySelector('#an-copy'); if (cp) cp.addEventListener('click', function () {
+      try { navigator.clipboard.writeText(buildAnalysisMd()).then(function () { toast('클립보드에 복사했습니다.', 'success'); }); }
+      catch (e) { toast('복사 실패', 'error'); }
+    });
+  }
+  function parseKeywords(s) {
+    return String(s || '').split(/[,\s]+/).map(function (x) { return x.trim(); }).filter(Boolean);
+  }
+  function runAnalysis() {
+    var kws = parseKeywords(S.analysis.keywords);
+    var rows = adminYearRows().filter(function (r) {
+      var m = rowMeta(r);
+      if (S.analysis.jobGroup && m.jobGroup !== S.analysis.jobGroup) return false;
+      if (S.analysis.depts.length && S.analysis.depts.indexOf(m.dept) < 0) return false;
+      return true;
+    });
+    var results = rows.map(function (r) {
+      var m = rowMeta(r);
+      var text = analysisSearchText(m.form);
+      var low = text.toLowerCase();
+      var score = 0, matched = [];
+      kws.forEach(function (k) {
+        var kl = k.toLowerCase(); if (!kl) return;
+        var n = low.split(kl).length - 1;
+        if (n > 0) { score += n; matched.push(k); }
+      });
+      // 근거 스니펫: 첫 매칭 키워드 주변 텍스트
+      var snippet = '';
+      if (matched.length) {
+        var idx = low.indexOf(matched[0].toLowerCase());
+        if (idx >= 0) snippet = text.substring(Math.max(0, idx - 20), idx + 50).replace(/\s+/g, ' ').trim();
+      } else {
+        snippet = (m.meta.roleSummary || '').substring(0, 60);
+      }
+      return { ref: r.ref, dept: m.dept, name: m.name, jobGroup: m.jobGroup, score: score, matched: matched, snippet: snippet };
+    });
+    // 키워드가 있으면 점수순, 없으면 이름순
+    if (kws.length) results.sort(function (a, b) { return b.score - a.score || String(a.name).localeCompare(b.name, 'ko'); });
+    else results.sort(function (a, b) { return String(a.dept).localeCompare(b.dept, 'ko') || String(a.name).localeCompare(b.name, 'ko'); });
+    S.analysis.results = results;
+    renderAdmin();
+    toast('분석 완료: ' + results.length + '명', 'success');
+  }
+  function buildAnalysisMd() {
+    var kws = parseKeywords(S.analysis.keywords);
+    var lines = [];
+    lines.push('# 직무역량 분석 · ' + S.adminYear + '년도');
+    lines.push('');
+    lines.push('- 필요 역량 키워드: ' + (kws.length ? kws.join(', ') : '(없음)'));
+    lines.push('- 직군 필터: ' + (S.analysis.jobGroup || '전체'));
+    lines.push('- 소속 필터: ' + (S.analysis.depts.length ? S.analysis.depts.join(', ') : '전체'));
+    lines.push('- 생성일: ' + fmtDate(nowIso()));
+    lines.push('');
+    lines.push('## 후보 순위');
+    lines.push('');
+    lines.push('| 순위 | 소속 | 성명 | 직군 | 매치점수 | 매칭키워드 |');
+    lines.push('|---|---|---|---|---|---|');
+    (S.analysis.results || []).forEach(function (x, i) {
+      lines.push('| ' + (i + 1) + ' | ' + x.dept + ' | ' + x.name + ' | ' + x.jobGroup + ' | ' + x.score + ' | ' + (x.matched.join(', ') || '-') + ' |');
+    });
+    lines.push('');
+    lines.push('## 후보별 상세(원문 발췌)');
+    lines.push('');
+    (S.analysis.results || []).forEach(function (x, i) {
+      var row = (S.adminRows || []).filter(function (r) { return r.ref === x.ref; })[0];
+      var m = row ? rowMeta(row) : null;
+      lines.push('### ' + (i + 1) + '. ' + x.dept + ' ' + x.name + ' (' + x.jobGroup + ') — 점수 ' + x.score);
+      if (m && m.form) {
+        var jobs = (m.form.jobs || []).filter(function (j) { return j.title; });
+        if (jobs.length) { lines.push('- 직무: ' + jobs.map(function (j) { return j.title + (j.competency ? '(' + j.competency + ')' : ''); }).join(' / ')); }
+        if (m.meta.licenses) lines.push('- 자격·면허: ' + m.meta.licenses);
+        var devs = (m.form.development || []).filter(function (d) { return d.course; });
+        if (devs.length) lines.push('- 교육이수: ' + devs.map(function (d) { return d.course; }).join(' / '));
+        var perf = (m.form.performance || []).filter(function (p) { return p.result; });
+        if (perf.length) lines.push('- 주요성과: ' + perf.map(function (p) { return (p.task ? p.task + '—' : '') + p.result; }).slice(0, 3).join(' / '));
+      }
+      lines.push('');
+    });
+    return lines.join('\n');
+  }
+  function exportAnalysisMd() {
+    downloadBlob(new Blob([buildAnalysisMd()], { type: 'text/markdown;charset=utf-8' }),
+      '직무역량분석_' + S.adminYear + '_' + fmtDate(nowIso()) + '.md');
+    toast('AI 기초자료(.md)를 내려받았습니다.', 'success');
   }
 
   /* ── 공개 진입점 ─────────────────────────────────────────────── */

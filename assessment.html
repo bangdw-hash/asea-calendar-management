@@ -227,6 +227,64 @@
       .asm-toolbar { top: 56px; }
       .asm-header-user span { display: none; }
     }
+
+    /* ── 관리자: 탭 · 정렬 · 선택 · 액션 ── */
+    .asm-adtab { display: flex; gap: 6px; margin-bottom: 16px; border-bottom: 2px solid var(--line-2); }
+    .asm-adtab-btn { border: none; background: transparent; font-family: inherit; font-weight: 700; font-size: 14px; color: var(--muted); padding: 9px 16px; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px; }
+    .asm-adtab-btn.active { color: var(--navy); border-bottom-color: var(--blue); }
+    .asm-stat-sel .asm-stat-num { color: var(--blue-d); }
+    .asm-admin-actions { display: flex; align-items: center; gap: 8px; margin: 6px 0 4px; flex-wrap: wrap; }
+    .asm-flex1 { flex: 1; }
+    .asm-th-sort { cursor: pointer; user-select: none; white-space: nowrap; }
+    .asm-th-sort:hover { background: #e9eff7; }
+    .asm-sort-ico { font-size: 10px; color: #b3bccb; margin-left: 2px; }
+    .asm-sort-ico.on { color: var(--blue); }
+    .asm-td-chk { width: 34px; text-align: center; }
+    .asm-td-chk input { width: 15px; height: 15px; cursor: pointer; accent-color: var(--blue); }
+    .asm-row-sel { background: #eef4ff !important; }
+    .asm-json-details { margin-top: 18px; }
+    .asm-json-details summary { cursor: pointer; color: var(--muted); font-size: 12.5px; font-weight: 600; }
+    .asm-modal-lg { max-width: 900px; }
+
+    /* ── 예쁜 문서(pd-*) — 보기/PDF 공용 ── */
+    .pd-root { background: #fff; color: #1a2433; font-size: 12.5px; line-height: 1.5; padding: 6px 2px; }
+    .pd-print .pd-root { padding: 26px; }
+    .pd-head { text-align: center; border-bottom: 2px solid var(--navy); padding-bottom: 12px; margin-bottom: 18px; position: relative; }
+    .pd-conf { position: absolute; right: 0; top: 0; border: 1.5px solid var(--red); color: var(--red); font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 4px; letter-spacing: 2px; }
+    .pd-title { font-size: 18px; font-weight: 800; color: var(--navy); margin: 2px 0 6px; }
+    .pd-sub { font-size: 13px; color: #44506080; color: var(--muted); font-weight: 600; }
+    .pd-sec { margin-bottom: 18px; break-inside: avoid; }
+    .pd-sec-h { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 800; color: var(--navy); margin-bottom: 8px; }
+    .pd-no { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; background: var(--navy); color: #fff; border-radius: 6px; font-size: 12px; }
+    .pd-h4 { font-size: 12.5px; font-weight: 800; color: var(--navy-2); margin: 12px 0 6px; }
+    .pd-tbl { width: 100%; border-collapse: collapse; font-size: 11.5px; margin-bottom: 4px; }
+    .pd-tbl th, .pd-tbl td { border: 1px solid #cdd4de; padding: 5px 7px; text-align: center; vertical-align: middle; }
+    .pd-tbl thead th { background: #eef2f7; color: var(--navy); font-weight: 700; }
+    .pd-tbl .pd-l { text-align: left; white-space: pre-wrap; word-break: break-word; }
+    .pd-info th { background: #eef2f7; color: var(--navy); font-weight: 700; white-space: nowrap; width: 1%; }
+    .pd-info td { text-align: left; }
+    .pd-month th, .pd-month td { padding: 4px 3px; font-size: 10.5px; }
+    .pd-sum { background: #eef4ff; font-weight: 800; color: var(--blue-d); }
+    .pd-scroll { overflow-x: auto; }
+    .pd-empty { color: #9aa4b2; font-size: 12px; padding: 6px 2px; }
+    .pd-tag { display: inline-block; font-size: 10.5px; font-weight: 700; background: #e8f0ff; color: var(--blue-d); padding: 2px 8px; border-radius: 20px; margin-bottom: 6px; }
+    .pd-tag-fac { background: #eaf7ef; color: #0b7a43; }
+
+    /* ── 분석 패널 ── */
+    .an-box { background: #f7f9fc; border: 1px solid var(--line-2); border-radius: 12px; padding: 18px; margin-bottom: 16px; }
+    .an-desc { font-size: 13px; color: #45506a; line-height: 1.65; margin-bottom: 14px; }
+    .an-field { margin-bottom: 12px; }
+    .an-row { display: flex; gap: 12px; flex-wrap: wrap; }
+    .an-jg { width: 160px; } .an-tot { flex: 1; }
+    .an-count { padding: 10px 12px; background: #fff; border: 1px solid var(--line); border-radius: 9px; font-weight: 700; color: var(--navy); }
+    .an-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+    .asm-chip { display: inline-flex; align-items: center; gap: 4px; font-size: 12.5px; padding: 5px 10px; border: 1px solid var(--line); border-radius: 20px; cursor: pointer; background: #fff; }
+    .asm-chip.on { background: #e8f0ff; border-color: var(--blue); color: var(--blue-d); font-weight: 600; }
+    .asm-chip input { display: none; }
+    .an-actions { display: flex; gap: 8px; margin-top: 4px; }
+    .an-score { display: inline-block; min-width: 26px; background: var(--blue); color: #fff; font-weight: 800; border-radius: 6px; padding: 2px 7px; }
+    .an-kw { display: inline-block; background: #eef4ff; color: var(--blue-d); font-size: 11px; border-radius: 10px; padding: 1px 7px; margin: 1px; }
+    .an-snip { font-size: 11.5px; color: var(--muted); text-align: left; max-width: 260px; }
   </style>
 </head>
 <body>
@@ -261,7 +319,7 @@
 <script src="config.js?v=20260623ai7" defer></script>
 <!-- 자가진단 전용 경량 로그인(email·profile만) — 사전등록 없이 로그인 가능하도록 -->
 <script src="assessment-auth.js?v=20260818aa3" defer></script>
-<script src="assessment.js?v=20260818a3" defer></script>
+<script src="assessment.js?v=20260818a4" defer></script>
 
 <script>
 (function () {
