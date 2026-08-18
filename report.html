@@ -1,0 +1,1141 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="아세아항공직업전문학교 기안문 AI 작성">
+  <title>기안문 AI 작성 · ASEA</title>
+  <link rel="preload" as="style" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+  <script src="https://accounts.google.com/gsi/client" async></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+  <style>
+    :root {
+      --navy:   #16324f;
+      --navy-2: #1f4a75;
+      --blue:   #2563eb;
+      --blue-d: #1d4ed8;
+      --line:   #d9dee6;
+      --line-2: #e8ebf0;
+      --bg:     #eef1f5;
+      --paper:  #ffffff;
+      --ink:    #1a2433;
+      --muted:  #6b7686;
+      --green:  #0f9d58;
+      --amber:  #e8a13a;
+      --red:    #d64545;
+    }
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont,
+        'Segoe UI', 'Malgun Gothic', sans-serif;
+      background: var(--bg); color: var(--ink);
+      min-height: 100vh; font-size: 14px; line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── 로딩 ── */
+    #rpt-loading {
+      position: fixed; inset: 0; background: rgba(238,241,245,.92);
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 14px; font-size: 14px; color: var(--navy); z-index: 999;
+    }
+    .rpt-spinner { width: 34px; height: 34px; border: 3px solid #dfe4ea; border-top-color: var(--navy); border-radius: 50%; animation: rpt-spin .8s linear infinite; }
+    @keyframes rpt-spin { to { transform: rotate(360deg); } }
+    #rpt-loading.hidden { display: none; }
+
+    /* ── 헤더 ── */
+    .rpt-header {
+      background: linear-gradient(100deg, var(--navy), var(--navy-2));
+      color: #fff; padding: 12px 20px;
+      display: flex; align-items: center; gap: 12px;
+      position: sticky; top: 0; z-index: 50;
+      box-shadow: 0 2px 10px rgba(0,0,0,.12);
+    }
+    .rpt-logo { display: flex; align-items: center; gap: 9px; }
+    .rpt-logo b { font-size: 16px; font-weight: 800; letter-spacing: -.3px; }
+    .rpt-logo span { font-size: 12.5px; opacity: .82; }
+    .rpt-user-area { margin-left: auto; display: flex; align-items: center; gap: 10px; font-size: 13px; }
+    .rpt-user-area img { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; background: rgba(255,255,255,.2); }
+    .rpt-logout-btn { background: rgba(255,255,255,.16); border: none; border-radius: 6px; color: #fff; font-size: 12px; padding: 5px 11px; cursor: pointer; }
+    .rpt-logout-btn:hover { background: rgba(255,255,255,.3); }
+
+    .rpt-main { max-width: 1000px; margin: 22px auto; padding: 0 16px 80px; }
+
+    /* ── 버튼 ── */
+    .rpt-btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+      border: 1px solid transparent; border-radius: 8px; cursor: pointer;
+      font-family: inherit; font-size: 13px; font-weight: 600; padding: 8px 14px;
+      transition: background .15s, transform .05s; white-space: nowrap;
+    }
+    .rpt-btn:active { transform: translateY(1px); }
+    .rpt-btn:disabled { opacity: .55; cursor: default; pointer-events: none; }
+    .rpt-btn-primary  { background: var(--blue);   color: #fff; }
+    .rpt-btn-primary:hover  { background: var(--blue-d); }
+    .rpt-btn-secondary { background: #eef2f8; color: var(--navy); border-color: #d5deeb; }
+    .rpt-btn-secondary:hover { background: #e2e9f4; }
+    .rpt-btn-ghost    { background: transparent; color: var(--muted); border-color: var(--line); }
+    .rpt-btn-ghost:hover    { background: #f2f4f8; color: var(--ink); }
+    .rpt-btn-danger   { background: #fef2f2; color: var(--red); border-color: #fca5a5; }
+    .rpt-btn-danger:hover   { background: #fee2e2; }
+    .rpt-btn-lg { padding: 12px 22px; font-size: 15px; border-radius: 10px; }
+    .rpt-btn-sm { padding: 5px 10px; font-size: 12px; }
+    .rpt-btn-full { width: 100%; justify-content: center; }
+
+    /* ── 로그인 게이트 ── */
+    .rpt-gate { display: flex; justify-content: center; padding: 40px 0; }
+    .rpt-gate-card {
+      background: var(--paper); border: 1px solid var(--line-2); border-radius: 16px;
+      padding: 40px 34px; max-width: 480px; width: 100%; text-align: center;
+      box-shadow: 0 10px 34px rgba(22,50,79,.10);
+    }
+    .rpt-gate-icon  { font-size: 40px; margin-bottom: 8px; }
+    .rpt-gate-title { font-size: 22px; font-weight: 800; color: var(--navy); margin: 6px 0 14px; }
+    .rpt-gate-desc  { font-size: 13.5px; color: var(--muted); line-height: 1.7; margin: 0 0 22px; }
+    .rpt-gate-foot  { font-size: 12px; color: var(--muted); margin: 20px 0 0; }
+    .rpt-inapp-warn { text-align: left; background: #fff6e5; border: 1px solid #f0d59a; border-radius: 10px; padding: 14px 16px; margin-bottom: 18px; }
+    .rpt-inapp-warn b { color: #8a5a00; font-size: 13.5px; }
+    .rpt-inapp-warn p { font-size: 12.5px; color: #6b5320; line-height: 1.6; margin: 6px 0 12px; }
+
+    /* ── 툴바 ── */
+    .rpt-toolbar {
+      display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+      background: var(--paper); border: 1px solid var(--line-2); border-radius: 12px;
+      padding: 10px 14px; margin-bottom: 16px;
+      position: sticky; top: 60px; z-index: 40;
+      box-shadow: 0 2px 8px rgba(22,50,79,.06);
+    }
+    .rpt-tabs { display: inline-flex; background: #eef1f6; border-radius: 9px; padding: 3px; gap: 2px; }
+    .rpt-tab { border: none; background: transparent; color: var(--muted); font-family: inherit; font-weight: 700; font-size: 13px; padding: 6px 16px; border-radius: 7px; cursor: pointer; transition: background .15s; }
+    .rpt-tab.active { background: var(--paper); color: var(--navy); box-shadow: 0 1px 4px rgba(0,0,0,.12); }
+    .rpt-toolbar-right { margin-left: auto; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .rpt-badge { font-size: 12px; color: var(--muted); font-weight: 600; padding: 4px 10px; border-radius: 6px; background: #f1f3f7; }
+    .rpt-badge-dirty  { color: var(--amber); background: #fdf4e3; }
+    .rpt-badge-saving { color: var(--blue);  background: #e8f0ff; }
+    .rpt-badge-saved  { color: var(--green); background: #e7f6ee; }
+
+    /* ── 카드 ── */
+    .rpt-card {
+      background: var(--paper); border: 1px solid var(--line-2); border-radius: 12px;
+      padding: 20px 22px; box-shadow: 0 2px 10px rgba(22,50,79,.06); margin-bottom: 14px;
+    }
+    .rpt-card-title { font-size: 15px; font-weight: 700; color: var(--navy); margin: 0 0 14px; display: flex; align-items: center; gap: 7px; }
+
+    /* ── 폼 ── */
+    .rpt-label { display: block; font-size: 13px; font-weight: 700; color: var(--navy); margin-bottom: 6px; }
+    .rpt-hint  { font-size: 12px; color: var(--muted); }
+    .rpt-textarea {
+      width: 100%; border: 1.5px solid var(--line); border-radius: 9px; padding: 11px 13px;
+      font-family: inherit; font-size: 14px; color: var(--ink); background: #fbfcfe;
+      resize: vertical; outline: none; transition: border .2s;
+    }
+    .rpt-textarea:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(37,99,235,.12); background: #fff; }
+
+    /* ── 규정집 안내 ── */
+    .rpt-reg-notice {
+      background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px;
+      padding: 10px 14px; font-size: 13px; color: #1e40af; margin-bottom: 14px;
+      display: flex; align-items: center; gap: 8px;
+    }
+
+    /* ── 드롭존 ── */
+    .rpt-dropzone {
+      border: 2px dashed var(--line); border-radius: 8px; padding: 14px 16px;
+      text-align: center; cursor: pointer; transition: border .2s, background .2s;
+      font-size: 13px; color: #9ca3af;
+    }
+    .rpt-dropzone.over, .rpt-dropzone:hover { border-color: var(--blue); background: #eff6ff; color: var(--blue-d); }
+
+    /* ── 파일 목록 ── */
+    .rpt-file-item { display: flex; align-items: center; gap: 8px; padding: 6px 10px; background: #f9fafb; border: 1px solid var(--line-2); border-radius: 6px; margin-top: 4px; font-size: 13px; }
+    .rpt-file-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .rpt-file-rm   { background: none; border: none; cursor: pointer; color: var(--red); font-size: 16px; padding: 0 2px; line-height: 1; }
+
+    /* ── 에디터 ── */
+    .rpt-editor-wrap { background: var(--paper); border: 1px solid var(--line-2); border-radius: 12px; overflow: hidden; box-shadow: 0 2px 10px rgba(22,50,79,.06); margin-bottom: 14px; }
+    .rpt-editor-bar  { background: #f8fafc; border-bottom: 1px solid var(--line-2); padding: 8px 12px; display: flex; gap: 4px; flex-wrap: wrap; align-items: center; }
+    .rpt-edbtn { min-width: 32px; height: 32px; border: 1px solid var(--line); border-radius: 5px; background: #fff; cursor: pointer; font-size: 13px; padding: 0 8px; display: inline-flex; align-items: center; justify-content: center; transition: background .1s; }
+    .rpt-edbtn:hover { background: #eef4ff; border-color: var(--blue); }
+    .rpt-edvdiv { width: 1px; height: 24px; background: var(--line); margin: 0 4px; flex-shrink: 0; }
+    .rpt-editor-body {
+      min-height: 480px; padding: 32px 40px; font-size: 14px; line-height: 1.85;
+      outline: none; font-family: '맑은 고딕', 'Noto Sans KR', sans-serif;
+      color: var(--ink); white-space: pre-wrap;
+    }
+    .rpt-editor-body:focus { outline: none; }
+    .rpt-editor-actions { padding: 12px 14px; border-top: 1px solid var(--line-2); display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+
+    /* ── 생성 로딩 ── */
+    #rpt-gen-loading { display: none; text-align: center; padding: 28px 20px; background: var(--paper); border-radius: 12px; box-shadow: 0 2px 10px rgba(22,50,79,.06); margin-bottom: 14px; }
+    .rpt-gen-spin { font-size: 30px; animation: rpt-spin 1s linear infinite; display: inline-block; }
+
+    /* ── 이력 테이블 ── */
+    .rpt-hist-scroll { overflow-x: auto; border-radius: 8px; }
+    .rpt-hist-table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 560px; }
+    .rpt-hist-table th { background: #f3f6fa; color: var(--navy); font-weight: 700; padding: 9px 10px; text-align: left; border: 1px solid var(--line); }
+    .rpt-hist-table td { padding: 9px 10px; border: 1px solid var(--line); vertical-align: middle; }
+    .rpt-hist-table tbody tr { cursor: pointer; transition: background .1s; }
+    .rpt-hist-table tbody tr:hover { background: #f0f6ff; }
+    .rpt-hist-cell-title  { max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; color: var(--ink); }
+    .rpt-hist-cell-prompt { max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); }
+    .rpt-hist-cell-date   { color: var(--muted); font-size: 12px; white-space: nowrap; }
+    .rpt-hist-empty { text-align: center; color: var(--muted); padding: 44px 0; font-size: 14px; }
+
+    /* ── 모달 ── */
+    .rpt-modal-back { position: fixed; inset: 0; background: rgba(20,30,45,.52); display: flex; align-items: center; justify-content: center; z-index: 200; padding: 20px; }
+    .rpt-modal      { background: #fff; border-radius: 14px; max-width: 820px; width: 100%; max-height: 88vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,.25); }
+    .rpt-modal-head { display: flex; align-items: flex-start; gap: 10px; padding: 14px 18px; border-bottom: 1px solid var(--line-2); }
+    .rpt-modal-title { font-size: 15px; font-weight: 700; color: var(--navy); margin: 0; }
+    .rpt-modal-sub  { font-size: 12px; color: var(--muted); margin: 3px 0 0; }
+    .rpt-modal-x    { margin-left: auto; flex-shrink: 0; border: none; background: #f1f3f7; border-radius: 7px; width: 28px; height: 28px; cursor: pointer; color: var(--muted); font-size: 16px; line-height: 1; }
+    .rpt-modal-x:hover { background: #e2e6ec; }
+    .rpt-modal-body { padding: 16px 18px; overflow-y: auto; flex: 1; }
+    .rpt-modal-foot { padding: 12px 18px; border-top: 1px solid var(--line-2); display: flex; gap: 8px; flex-wrap: wrap; }
+
+    /* ── 규정집 아이템 ── */
+    .rpt-reg-item  { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: #f9fafb; border: 1px solid var(--line-2); border-radius: 8px; margin-bottom: 6px; }
+    .rpt-reg-info  { flex: 1; min-width: 0; }
+    .rpt-reg-name  { font-size: 13px; font-weight: 600; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .rpt-reg-meta  { font-size: 11px; color: var(--muted); }
+
+    /* ── 토스트 ── */
+    .rpt-toast { position: fixed; bottom: 26px; left: 50%; transform: translate(-50%, 20px); opacity: 0; background: #1f2937; color: #fff; padding: 11px 20px; border-radius: 10px; font-size: 13.5px; z-index: 500; transition: opacity .3s, transform .3s; box-shadow: 0 8px 24px rgba(0,0,0,.24); max-width: 90vw; pointer-events: none; }
+    .rpt-toast.show { opacity: 1; transform: translate(-50%, 0); }
+    .rpt-toast-success { background: var(--green); }
+    .rpt-toast-error   { background: var(--red); }
+    .rpt-toast-info    { background: var(--blue-d); }
+
+    /* ── 반응형 ── */
+    @media (max-width: 680px) {
+      .rpt-editor-body { padding: 20px 16px; }
+      .rpt-toolbar { top: 56px; }
+      .rpt-user-area span { display: none; }
+      .rpt-modal { max-height: 92vh; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- 로딩 오버레이 -->
+<div id="rpt-loading">
+  <div class="rpt-spinner"></div>
+  <span id="rpt-loading-msg">초기화 중…</span>
+</div>
+
+<!-- 헤더 -->
+<header class="rpt-header">
+  <div class="rpt-logo">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+         stroke-linecap="round" stroke-linejoin="round" style="width:22px;height:22px">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+      <polyline points="14 2 14 8 20 8"/>
+      <line x1="16" y1="13" x2="8" y2="13"/>
+      <line x1="16" y1="17" x2="8" y2="17"/>
+    </svg>
+    <b>ASEA</b>
+    <span>기안문 AI 작성</span>
+  </div>
+  <div class="rpt-user-area" id="rpt-user-area" style="display:none">
+    <img id="rpt-avatar" src="" alt="">
+    <span id="rpt-user-name"></span>
+    <button class="rpt-logout-btn" onclick="rptLogout()">로그아웃</button>
+  </div>
+</header>
+
+<!-- 메인 -->
+<main class="rpt-main">
+  <div id="report-root"></div>
+</main>
+
+<!-- 토스트 -->
+<div id="rpt-toast" class="rpt-toast"></div>
+
+<!-- 의존 스크립트 -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" defer></script>
+<script src="config.js?v=20260623ai7" defer></script>
+<script src="cloudforms.js?v=20260617cf1" defer></script>
+<script src="assessment-auth.js?v=20260818aa3" defer></script>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ════════════════════════════════════════════════
+     상수
+  ════════════════════════════════════════════════ */
+  var ADMIN_EMAIL    = 'bangdw@gmail.com';
+  var KIND           = 'draft_document';
+  var SK_REGS        = 'asea_regulations';
+  var SK_USAGE       = 'asea_draft_usage';
+  var SK_LIMIT       = 'asea_draft_limit';
+  var MAX_FILES      = 3;
+  var MAX_FILE_BYTES = 4 * 1024 * 1024;
+  var MAX_IMG_PX     = 1024;
+  var DEFAULT_LIMIT  = 20;
+
+  /* ════════════════════════════════════════════════
+     상태
+  ════════════════════════════════════════════════ */
+  var S = {
+    email: '', name: '', picture: '',
+    view: 'write',       // 'write' | 'history'
+    currentId: null,     // 현재 편집 중인 기안문 ID
+    currentPrompt: '',
+    dirty: false,
+    saving: false,
+    savedAt: '',
+    attachedFiles: [],   // [{name, type, content, mediaType?}]
+    historyRows: [],
+  };
+
+  /* ════════════════════════════════════════════════
+     유틸
+  ════════════════════════════════════════════════ */
+  function esc(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+  function $(id) { return document.getElementById(id); }
+  function isAdmin() { return S.email.toLowerCase() === ADMIN_EMAIL; }
+  function genId() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
+  function fmtSize(b) {
+    if (b < 1024) return b + 'B';
+    if (b < 1024*1024) return (b/1024).toFixed(1) + 'KB';
+    return (b/1024/1024).toFixed(1) + 'MB';
+  }
+  function fmtDt(iso) {
+    if (!iso) return '-';
+    try {
+      var d = new Date(iso);
+      var p = function(n){ return (n<10?'0':'')+n; };
+      return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())+
+             ' '+p(d.getHours())+':'+p(d.getMinutes());
+    } catch(e) { return iso; }
+  }
+  function extractTitle(html) {
+    if (!html) return '(제목 없음)';
+    var t = html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+    return (t.slice(0, 60) + (t.length > 60 ? '…' : '')) || '(제목 없음)';
+  }
+
+  /* ════════════════════════════════════════════════
+     토스트 / 로딩
+  ════════════════════════════════════════════════ */
+  var _toastTimer;
+  function toast(msg, type) {
+    var el = $('rpt-toast');
+    if (!el) return;
+    el.textContent = msg;
+    el.className = 'rpt-toast rpt-toast-' + (type || 'info');
+    clearTimeout(_toastTimer);
+    setTimeout(function(){ el.classList.add('show'); }, 10);
+    _toastTimer = setTimeout(function(){ el.classList.remove('show'); }, 2800);
+  }
+  window.aseaToast = toast;
+
+  function setLoading(msg) {
+    var el = $('rpt-loading');
+    if (!el) return;
+    if (msg === false) { el.classList.add('hidden'); return; }
+    el.classList.remove('hidden');
+    var m = $('rpt-loading-msg');
+    if (msg && m) m.textContent = msg;
+  }
+
+  /* ════════════════════════════════════════════════
+     규정집 (localStorage)
+  ════════════════════════════════════════════════ */
+  function loadRegs()  { try { return JSON.parse(localStorage.getItem(SK_REGS) || '[]'); } catch(e){ return []; } }
+  function saveRegs(d) { try { localStorage.setItem(SK_REGS, JSON.stringify(d)); } catch(e){} }
+  function getLimit()  { var v = parseInt(localStorage.getItem(SK_LIMIT), 10); return isNaN(v) ? DEFAULT_LIMIT : v; }
+  function setLimit(n) { localStorage.setItem(SK_LIMIT, String(n)); }
+  function getTodayUsage() {
+    try {
+      var u = JSON.parse(localStorage.getItem(SK_USAGE) || '{}');
+      var today = new Date().toISOString().slice(0, 10);
+      return (u.date === today) ? (u.count || 0) : 0;
+    } catch(e){ return 0; }
+  }
+  function incTodayUsage() {
+    var today = new Date().toISOString().slice(0, 10);
+    var count = getTodayUsage() + 1;
+    localStorage.setItem(SK_USAGE, JSON.stringify({ date: today, count: count }));
+    return count;
+  }
+
+  /* ════════════════════════════════════════════════
+     PDF 텍스트 추출 / 이미지 처리
+  ════════════════════════════════════════════════ */
+  async function extractPdfText(file) {
+    if (!window.pdfjsLib) throw new Error('PDF.js 로드 실패');
+    pdfjsLib.GlobalWorkerOptions.workerSrc =
+      'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    var buf = await file.arrayBuffer();
+    var pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+    var text = '';
+    for (var i = 1; i <= pdf.numPages; i++) {
+      var page = await pdf.getPage(i);
+      var tc   = await page.getTextContent();
+      text += tc.items.map(function(it){ return it.str; }).join(' ') + '\n';
+    }
+    return text.trim();
+  }
+
+  function resizeImageToBase64(file) {
+    return new Promise(function(resolve, reject) {
+      var img = new Image(), url = URL.createObjectURL(file);
+      img.onload = function() {
+        URL.revokeObjectURL(url);
+        var w = img.width, h = img.height;
+        if (w > MAX_IMG_PX || h > MAX_IMG_PX) {
+          var r = Math.min(MAX_IMG_PX/w, MAX_IMG_PX/h);
+          w = Math.round(w*r); h = Math.round(h*r);
+        }
+        var c = document.createElement('canvas');
+        c.width = w; c.height = h;
+        c.getContext('2d').drawImage(img, 0, 0, w, h);
+        var parts = c.toDataURL('image/jpeg', 0.85).split(',');
+        resolve(parts.length > 1 ? parts[1] : '');
+      };
+      img.onerror = reject; img.src = url;
+    });
+  }
+
+  async function handleFiles(files) {
+    var errEl = $('rpt-file-err');
+    if (errEl) errEl.textContent = '';
+    for (var i = 0; i < files.length; i++) {
+      var file = files[i];
+      if (S.attachedFiles.length >= MAX_FILES) {
+        if (errEl) errEl.textContent = '파일은 최대 ' + MAX_FILES + '개까지 첨부할 수 있습니다.';
+        break;
+      }
+      if (file.size > MAX_FILE_BYTES) {
+        if (errEl) errEl.textContent = '"' + file.name + '" 파일이 ' + fmtSize(MAX_FILE_BYTES) + '를 초과합니다.';
+        continue;
+      }
+      var isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+      var isImg = file.type.startsWith('image/');
+      if (!isPdf && !isImg) {
+        if (errEl) errEl.textContent = 'PDF 또는 이미지 파일만 첨부할 수 있습니다.';
+        continue;
+      }
+      var zone = $('rpt-dropzone');
+      if (zone) zone.textContent = '처리 중...';
+      try {
+        if (isPdf) {
+          var text = await extractPdfText(file);
+          S.attachedFiles.push({ name: file.name, type: 'pdf', content: text });
+        } else {
+          var b64 = await resizeImageToBase64(file);
+          S.attachedFiles.push({ name: file.name, type: 'image', content: b64, mediaType: file.type || 'image/jpeg' });
+        }
+      } catch(e) {
+        if (errEl) errEl.textContent = '"' + file.name + '" 처리 실패: ' + e.message;
+      }
+    }
+    if ($('rpt-dropzone')) $('rpt-dropzone').textContent = '클릭하거나 파일을 여기에 드래그하세요';
+    renderFileList();
+  }
+
+  function renderFileList() {
+    var el = $('rpt-file-list');
+    if (!el) return;
+    if (!S.attachedFiles.length) { el.innerHTML = ''; return; }
+    el.innerHTML = S.attachedFiles.map(function(f, i){
+      return '<div class="rpt-file-item">' +
+        '<span>' + (f.type === 'pdf' ? '📄' : '🖼️') + '</span>' +
+        '<span class="rpt-file-name">' + esc(f.name) + '</span>' +
+        '<span class="rpt-hint">' + (f.type === 'pdf' ? 'PDF' : '이미지') + '</span>' +
+        '<button class="rpt-file-rm" onclick="ReportModule.removeFile(' + i + ')">✕</button>' +
+      '</div>';
+    }).join('');
+  }
+
+  /* ════════════════════════════════════════════════
+     Supabase — 기안문 저장·조회
+  ════════════════════════════════════════════════ */
+  function saveDraftToCloud(prompt, content) {
+    if (!S.email || !window.CloudForms || !CloudForms.ready()) return Promise.resolve({ ok: false, err: 'DB 연결 안됨' });
+    if (!S.currentId) S.currentId = genId();
+    var ref   = S.email + '::' + S.currentId;
+    var title = extractTitle(content);
+    var data  = { prompt: prompt || '', content: content, savedAt: new Date().toISOString() };
+    return CloudForms.save(KIND, ref, title, 'saved', data);
+  }
+
+  function loadHistory() {
+    if (!window.CloudForms || !CloudForms.ready()) return Promise.resolve([]);
+    return CloudForms.list(KIND).then(function(res){
+      if (!res.ok) return [];
+      var rows = res.rows || [];
+      if (!isAdmin()) {
+        var prefix = S.email + '::';
+        rows = rows.filter(function(r){ return r.ref && r.ref.startsWith(prefix); });
+      }
+      return rows.sort(function(a, b){ return (b.updated_at || '').localeCompare(a.updated_at || ''); });
+    });
+  }
+
+  /* ════════════════════════════════════════════════
+     저장 상태 배지
+  ════════════════════════════════════════════════ */
+  function updateSaveBadge() {
+    var el = $('rpt-save-badge');
+    if (!el) return;
+    if (S.saving) {
+      el.textContent = '저장 중…'; el.className = 'rpt-badge rpt-badge-saving';
+    } else if (S.dirty) {
+      el.textContent = '● 미저장';  el.className = 'rpt-badge rpt-badge-dirty';
+    } else if (S.savedAt) {
+      el.textContent = '✓ ' + fmtDt(S.savedAt).slice(11) + ' 저장됨'; el.className = 'rpt-badge rpt-badge-saved';
+    } else {
+      el.textContent = ''; el.className = 'rpt-badge';
+    }
+  }
+
+  /* ════════════════════════════════════════════════
+     Claude API 호출
+  ════════════════════════════════════════════════ */
+  async function generateDraft() {
+    var input = ($('rpt-input') || {}).value || '';
+    if (!input.trim()) { toast('기안 요청 내용을 입력해 주세요.', 'error'); return; }
+
+    var _cc = window.getClaudeConfig ? getClaudeConfig() : {
+      apiKey: (window.CONFIG && CONFIG.anthropicApiKey) || localStorage.getItem('asea_anthropic_api_key') || '',
+      endpoint: 'https://api.anthropic.com/v1/messages', isOfficial: true
+    };
+    if (!_cc.apiKey) { toast('관리자에게 API 키 설정을 요청하세요.', 'error'); return; }
+
+    var usage = getTodayUsage(), limit = getLimit();
+    if (usage >= limit) { toast('오늘 사용 한도(' + limit + '회)에 도달했습니다.', 'error'); return; }
+
+    var genBtn = $('rpt-gen-btn');
+    if (genBtn) genBtn.disabled = true;
+    $('rpt-gen-loading').style.display = 'block';
+    var outSec = $('rpt-output-section');
+    if (outSec) outSec.style.display = 'none';
+
+    try {
+      var regs = loadRegs();
+      var regCtx = regs.length
+        ? '=== 아세아항공직업전문학교 규정집 ===\n' +
+          regs.map(function(r){ return '【' + r.name + '】\n' + r.text; }).join('\n\n') + '\n\n'
+        : '';
+
+      var systemPrompt = regCtx +
+        '당신은 아세아항공직업전문학교 행정 담당자입니다.\n' +
+        '요청에 따라 공문/기안문 초안을 작성합니다.\n\n' +
+        '=== 출력 형식 규칙 (반드시 준수) ===\n' +
+        '1. 마크다운 기호 완전 금지: **, *, #, ##, ###, --(구분선), > 등 일절 사용 금지\n' +
+        '2. 불릿 기호(- · • ◦) 사용 금지 — 번호 체계만 사용\n' +
+        '3. 출력 결과는 바로 문서에 붙여넣을 수 있는 순수 텍스트\n' +
+        '4. 항목 간 빈 줄은 단락 구분에만 최소한으로 사용\n\n' +
+        '=== 공문서 번호 체계 (반드시 준수) ===\n' +
+        '대항목  : 1.  2.  3.\n중항목  : 가.  나.  다.\n소항목  : (1)  (2)  (3)\n세항목  : (가)  (나)  (다)\n' +
+        '들여쓰기: 대→중 2칸, 중→소 2칸, 소→세 2칸\n\n' +
+        '=== 기안문 구성 순서 ===\n' +
+        '제목\n수신: [수신처]\n참조: [참조처] (해당 시)\n\n' +
+        '1. 관련근거\n  가. [관련 법령·규정·지침 등]\n  나. [추가 근거] (해당 시)\n\n' +
+        '2. 위 관련에 따라 아래와 같이 [내용 요약]합니다.\n  가. [첫 번째 사항]\n  나. [두 번째 사항]\n    (1) [세부 사항]\n\n' +
+        '붙임  1. [붙임 서류명] 1부. (해당 시)\n\n' +
+        '문체: 공문서체(~함, ~임), 간결하고 명확하게\n' +
+        '규정집이 제공된 경우 관련 조항을 1. 관련근거 항목에 반드시 인용하세요.';
+
+      var userContent = [];
+      S.attachedFiles.filter(function(f){ return f.type === 'image'; }).forEach(function(f){
+        userContent.push({ type: 'image', source: { type: 'base64', media_type: f.mediaType || 'image/jpeg', data: f.content } });
+      });
+      var pdfTexts = S.attachedFiles.filter(function(f){ return f.type === 'pdf'; })
+        .map(function(f){ return '=== 첨부 파일: ' + f.name + ' ===\n' + f.content; }).join('\n\n');
+      var userText = '다음 내용으로 기안문 초안을 작성해 주세요:\n\n' + input.trim();
+      if (pdfTexts) userText += '\n\n' + pdfTexts;
+      userContent.push({ type: 'text', text: userText });
+
+      var headers = { 'Content-Type': 'application/json', 'x-api-key': _cc.apiKey, 'anthropic-version': '2023-06-01' };
+      if (_cc.isOfficial) headers['anthropic-dangerous-direct-browser-access'] = 'true';
+
+      var resp = await window.claudeFetch(_cc.endpoint, {
+        method: 'POST', headers: headers,
+        body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 4096, system: systemPrompt, messages: [{ role: 'user', content: userContent }] })
+      });
+      if (!resp.ok) { var eb = await resp.text(); throw new Error('API 오류 ' + resp.status + ': ' + eb.slice(0, 200)); }
+
+      var data   = await resp.json();
+      var result = window.claudeExtractText ? window.claudeExtractText(data) : ((data.content && data.content[0] && data.content[0].text) || '');
+      if (!result) throw new Error('응답이 비어 있습니다.' + (data.error ? ' (' + (data.error.message || '') + ')' : ''));
+
+      incTodayUsage();
+      var uc = $('rpt-usage-count'); if (uc) uc.textContent = getTodayUsage();
+
+      var editor = $('rpt-editor');
+      if (editor) editor.innerHTML = result.replace(/\n/g, '<br>');
+      $('rpt-gen-loading').style.display = 'none';
+      if (outSec) outSec.style.display = 'block';
+      if (editor) editor.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+      // 자동 클라우드 저장
+      S.currentPrompt = input;
+      S.currentId     = null;   // 새 ID 생성
+      S.dirty         = false;
+      S.saving        = true;
+      updateSaveBadge();
+      var htmlContent = result.replace(/\n/g, '<br>');
+      saveDraftToCloud(input, htmlContent).then(function(res){
+        S.saving = false;
+        if (res.ok) { S.savedAt = new Date().toISOString(); toast('기안문이 클라우드에 저장되었습니다.', 'success'); }
+        else { S.dirty = true; toast('클라우드 저장 실패 — 로컬에서는 사용 가능합니다.', 'error'); }
+        updateSaveBadge();
+      });
+
+    } catch(e) {
+      $('rpt-gen-loading').style.display = 'none';
+      toast('생성 실패: ' + e.message, 'error');
+    } finally {
+      if (genBtn) genBtn.disabled = false;
+    }
+  }
+
+  /* ════════════════════════════════════════════════
+     수동 저장
+  ════════════════════════════════════════════════ */
+  function manualSave() {
+    var editor = $('rpt-editor');
+    if (!editor || !editor.innerHTML.trim()) { toast('저장할 내용이 없습니다.', 'error'); return; }
+    S.saving = true; S.dirty = false; updateSaveBadge();
+    saveDraftToCloud(S.currentPrompt, editor.innerHTML).then(function(res){
+      S.saving = false;
+      if (res.ok) { S.savedAt = new Date().toISOString(); toast('저장 완료', 'success'); }
+      else { S.dirty = true; toast('저장 실패: ' + res.err, 'error'); }
+      updateSaveBadge();
+    });
+  }
+
+  /* ════════════════════════════════════════════════
+     렌더: 로그인 게이트
+  ════════════════════════════════════════════════ */
+  function renderLogin() {
+    var root = $('report-root');
+    if (!root) return;
+    var ua = navigator.userAgent || '';
+    var isInApp = /KAKAOTALK|Line\/|NAVER|FB_IAB|Instagram|Twitter/i.test(ua) || (ua.includes('wv') && /Android/i.test(ua));
+
+    root.innerHTML =
+      '<div class="rpt-gate"><div class="rpt-gate-card">' +
+      (isInApp
+        ? '<div class="rpt-inapp-warn"><b>⚠️ 인앱 브라우저 감지</b>' +
+          '<p>현재 앱 내 브라우저에서는 Google 로그인이 차단될 수 있습니다.<br>외부 브라우저(Chrome, Safari)로 열어주세요.</p>' +
+          '<button class="rpt-btn rpt-btn-secondary rpt-btn-full" onclick="location.href=\'googlechrome://\'+location.href.replace(/^https?:\\/\\//,\'\')">Chrome으로 열기</button></div>'
+        : '') +
+      '<div class="rpt-gate-icon">📝</div>' +
+      '<h1 class="rpt-gate-title">기안문 AI 작성</h1>' +
+      '<p class="rpt-gate-desc">규정집을 업로드하면 AI가 관련 조항을 참조하여<br>공문서 형식에 맞는 기안문 초안을 자동 생성합니다.<br><br>작성 기록은 클라우드에 저장되어<br>다른 기기·계정에서도 이력을 조회할 수 있습니다.</p>' +
+      '<button id="rpt-login-btn" class="rpt-btn rpt-btn-primary rpt-btn-lg rpt-btn-full" onclick="ReportModule.login()">' +
+        '<svg viewBox="0 0 24 24" width="18" height="18" style="flex-shrink:0">' +
+          '<path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>' +
+          '<path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>' +
+          '<path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>' +
+          '<path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>' +
+        '</svg>' +
+        'Google 계정으로 로그인' +
+      '</button>' +
+      '<p class="rpt-gate-foot">아세아항공직업전문학교 교직원용 · Google 계정 필요</p>' +
+      '</div></div>';
+  }
+
+  /* ════════════════════════════════════════════════
+     렌더: 메인 앱
+  ════════════════════════════════════════════════ */
+  function renderApp() {
+    var root = $('report-root');
+    if (!root) return;
+    var regs  = loadRegs();
+    var usage = getTodayUsage();
+    var limit = getLimit();
+
+    root.innerHTML =
+      /* 툴바 */
+      '<div class="rpt-toolbar" id="rpt-toolbar">' +
+        '<div class="rpt-tabs">' +
+          '<button class="rpt-tab' + (S.view === 'write'   ? ' active' : '') + '" onclick="ReportModule.setView(\'write\')">✏️ 기안문 작성</button>' +
+          '<button class="rpt-tab' + (S.view === 'history' ? ' active' : '') + '" onclick="ReportModule.setView(\'history\')">📋 이력 조회</button>' +
+        '</div>' +
+        '<div class="rpt-toolbar-right">' +
+          '<span id="rpt-save-badge" class="rpt-badge"></span>' +
+          '<button class="rpt-btn rpt-btn-ghost rpt-btn-sm" onclick="ReportModule.openRegModal()">' +
+            '📚 규정집' +
+            (regs.length ? ' <span style="background:var(--blue-d);color:#fff;border-radius:10px;padding:1px 7px;font-size:11px;margin-left:2px">' + regs.length + '</span>' : '') +
+          '</button>' +
+          (isAdmin() ? '<span style="font-size:11px;background:#fdf4e3;color:#a5701a;border-radius:20px;padding:2px 10px;font-weight:700">관리자</span>' : '') +
+        '</div>' +
+      '</div>' +
+
+      /* ─ 쓰기 뷰 ─ */
+      '<div id="rpt-view-write" style="display:' + (S.view === 'write' ? 'block' : 'none') + '">' +
+        (regs.length ? '<div class="rpt-reg-notice">📚 규정집 <b>' + regs.length + '</b>개 로드됨 — 생성 시 자동 참조됩니다.</div>' : '') +
+
+        /* 입력 카드 */
+        '<div class="rpt-card">' +
+          '<div class="rpt-card-title">✏️ 기안 요청 내용 <span style="color:var(--red);font-size:13px">*</span></div>' +
+          '<div style="position:relative;margin-bottom:14px">' +
+            '<textarea id="rpt-input" class="rpt-textarea" rows="6"' +
+              ' placeholder="기안문 작성에 필요한 내용을 입력하세요.&#10;예) 교직원 하계 워크숍 개최 계획 공문 작성. 일시: 7월 15일, 장소: 제주도, 참가 인원: 전 교직원"></textarea>' +
+          '</div>' +
+          '<div class="rpt-label">📎 파일 첨부 <span class="rpt-hint" style="font-weight:400">최대 ' + MAX_FILES + '개 · 파일당 ' + fmtSize(MAX_FILE_BYTES) + ' · PDF/이미지</span></div>' +
+          '<div id="rpt-dropzone" class="rpt-dropzone" onclick="document.getElementById(\'rpt-file-input\').click()">클릭하거나 파일을 여기에 드래그하세요</div>' +
+          '<input id="rpt-file-input" type="file" accept=".pdf,image/*" multiple style="display:none">' +
+          '<div id="rpt-file-list" style="margin-top:4px"></div>' +
+          '<div id="rpt-file-err" style="font-size:12px;color:var(--red);margin-top:4px"></div>' +
+        '</div>' +
+
+        /* 생성 버튼 + 사용량 */
+        '<div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">' +
+          '<button id="rpt-gen-btn" class="rpt-btn rpt-btn-primary rpt-btn-lg" style="flex:1" onclick="ReportModule.generate()">✨ 기안문 초안 생성</button>' +
+          '<span style="font-size:12px;color:var(--muted);background:#f3f4f6;padding:5px 12px;border-radius:20px;white-space:nowrap">오늘 <b id="rpt-usage-count">' + usage + '</b>/' + limit + '회</span>' +
+        '</div>' +
+
+        /* 생성 로딩 */
+        '<div id="rpt-gen-loading">' +
+          '<div class="rpt-gen-spin">⚙️</div>' +
+          '<p style="margin-top:12px;font-size:14px;color:var(--muted)">기안문 생성 중…</p>' +
+        '</div>' +
+
+        /* 출력 에디터 */
+        '<div id="rpt-output-section" style="display:none">' +
+          '<div class="rpt-editor-wrap">' +
+            '<div class="rpt-editor-bar">' +
+              '<button class="rpt-edbtn" onclick="document.execCommand(\'bold\')" title="굵게"><b>B</b></button>' +
+              '<button class="rpt-edbtn" onclick="document.execCommand(\'italic\')" title="기울임"><i>I</i></button>' +
+              '<button class="rpt-edbtn" onclick="document.execCommand(\'underline\')" title="밑줄"><u>U</u></button>' +
+              '<div class="rpt-edvdiv"></div>' +
+              '<button class="rpt-edbtn" onclick="document.execCommand(\'justifyLeft\')"   title="왼쪽 정렬">≡</button>' +
+              '<button class="rpt-edbtn" onclick="document.execCommand(\'justifyCenter\')" title="가운데 정렬">☰</button>' +
+              '<button class="rpt-edbtn" onclick="document.execCommand(\'justifyRight\')"  title="오른쪽 정렬">≡</button>' +
+              '<div class="rpt-edvdiv"></div>' +
+              '<select onchange="document.execCommand(\'fontSize\',false,this.value);this.value=\'\'" style="height:32px;border:1px solid var(--line);border-radius:5px;font-size:13px;padding:0 5px;cursor:pointer">' +
+                '<option value="">크기</option><option value="1">소</option><option value="3">중</option><option value="5">대</option><option value="7">특대</option>' +
+              '</select>' +
+            '</div>' +
+            '<div id="rpt-editor" class="rpt-editor-body" contenteditable="true"></div>' +
+            '<div class="rpt-editor-actions">' +
+              '<button class="rpt-btn rpt-btn-primary" onclick="ReportModule.saveToCloud()">💾 저장</button>' +
+              '<button class="rpt-btn rpt-btn-secondary" onclick="ReportModule.copyDraft()">📋 복사</button>' +
+              '<button class="rpt-btn rpt-btn-secondary" onclick="ReportModule.printDraft()">🖨️ 인쇄</button>' +
+              '<button class="rpt-btn rpt-btn-ghost" style="margin-left:auto" onclick="ReportModule.newDraft()">✕ 닫기</button>' +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+
+      /* ─ 이력 뷰 ─ */
+      '<div id="rpt-view-history" style="display:' + (S.view === 'history' ? 'block' : 'none') + '">' +
+        '<div class="rpt-card">' +
+          '<div class="rpt-card-title">📋 기안문 이력' +
+            '<button class="rpt-btn rpt-btn-sm rpt-btn-secondary" style="margin-left:auto" onclick="ReportModule.refreshHistory()">🔄 새로고침</button>' +
+          '</div>' +
+          '<div id="rpt-hist-body"><p style="color:var(--muted);text-align:center;padding:20px">로딩 중…</p></div>' +
+        '</div>' +
+      '</div>';
+
+    bindWriteEvents();
+    updateSaveBadge();
+    if (S.view === 'history') loadAndRenderHistory();
+  }
+
+  function bindWriteEvents() {
+    var fi = $('rpt-file-input');
+    if (fi) fi.addEventListener('change', function(){ handleFiles(Array.from(this.files)); this.value = ''; });
+
+    var zone = $('rpt-dropzone');
+    if (zone) {
+      zone.addEventListener('dragover',  function(e){ e.preventDefault(); this.classList.add('over'); });
+      zone.addEventListener('dragleave', function(){  this.classList.remove('over'); });
+      zone.addEventListener('drop',      function(e){ e.preventDefault(); this.classList.remove('over'); handleFiles(Array.from(e.dataTransfer.files)); });
+    }
+
+    var editor = $('rpt-editor');
+    if (editor) editor.addEventListener('input', function(){ S.dirty = true; updateSaveBadge(); });
+  }
+
+  /* ════════════════════════════════════════════════
+     이력 탭
+  ════════════════════════════════════════════════ */
+  function loadAndRenderHistory() {
+    var body = $('rpt-hist-body');
+    if (!body) return;
+    body.innerHTML = '<p style="color:var(--muted);text-align:center;padding:20px">이력 불러오는 중…</p>';
+    loadHistory().then(function(rows){
+      S.historyRows = rows;
+      renderHistoryTable();
+    }).catch(function(err){
+      var b = $('rpt-hist-body');
+      if (b) b.innerHTML = '<p style="color:var(--red);text-align:center;padding:20px">이력 불러오기 실패: ' + esc(String(err)) + '</p>';
+    });
+  }
+
+  function renderHistoryTable() {
+    var body = $('rpt-hist-body');
+    if (!body) return;
+    var rows = S.historyRows;
+    if (!rows.length) { body.innerHTML = '<p class="rpt-hist-empty">저장된 기안문이 없습니다.</p>'; return; }
+
+    var html = '<div class="rpt-hist-scroll"><table class="rpt-hist-table"><thead><tr>' +
+      (isAdmin() ? '<th style="width:160px">작성자</th>' : '') +
+      '<th>제목</th><th>기안 요청 내용</th><th style="width:130px">저장일시</th><th style="width:110px">액션</th>' +
+      '</tr></thead><tbody>';
+
+    rows.forEach(function(row, i){
+      var d       = row.data || {};
+      var prompt  = d.prompt || '';
+      var savedAt = d.savedAt || row.updated_at || '';
+      var title   = row.name || extractTitle(d.content || '');
+      var author  = isAdmin() ? row.ref.split('::')[0] : '';
+
+      html += '<tr onclick="ReportModule.openHistModal(' + i + ')">' +
+        (isAdmin() ? '<td><span style="font-size:12px;color:var(--muted)">' + esc(author) + '</span></td>' : '') +
+        '<td><span class="rpt-hist-cell-title" title="' + esc(title) + '">' + esc(title.slice(0, 50) + (title.length > 50 ? '…' : '')) + '</span></td>' +
+        '<td><span class="rpt-hist-cell-prompt" title="' + esc(prompt) + '">' + esc(prompt.slice(0, 60) + (prompt.length > 60 ? '…' : '')) + '</span></td>' +
+        '<td><span class="rpt-hist-cell-date">' + fmtDt(savedAt) + '</span></td>' +
+        '<td onclick="event.stopPropagation()" style="white-space:nowrap">' +
+          '<button class="rpt-btn rpt-btn-sm rpt-btn-secondary" onclick="ReportModule.openHistModal(' + i + ')">보기</button> ' +
+          '<button class="rpt-btn rpt-btn-sm rpt-btn-ghost"     onclick="ReportModule.loadIntoDraft(' + i + ')">편집</button>' +
+        '</td>' +
+      '</tr>';
+    });
+
+    html += '</tbody></table></div>';
+    body.innerHTML = html;
+  }
+
+  /* ════════════════════════════════════════════════
+     이력 모달 — 보기
+  ════════════════════════════════════════════════ */
+  function openHistModal(idx) {
+    var row = S.historyRows[idx]; if (!row) return;
+    var d       = row.data || {};
+    var content = d.content || '';
+    var prompt  = d.prompt  || '';
+    var title   = row.name  || extractTitle(content);
+    var savedAt = d.savedAt || row.updated_at || '';
+    var author  = isAdmin() ? row.ref.split('::')[0] : '';
+
+    var modal = document.createElement('div');
+    modal.className = 'rpt-modal-back'; modal.id = 'rpt-hist-modal';
+    modal.innerHTML =
+      '<div class="rpt-modal">' +
+        '<div class="rpt-modal-head">' +
+          '<div>' +
+            '<p class="rpt-modal-title">📄 ' + esc(title.slice(0, 72)) + '</p>' +
+            '<p class="rpt-modal-sub">저장일시: ' + fmtDt(savedAt) + (isAdmin() ? ' · 작성자: ' + esc(author) : '') + '</p>' +
+          '</div>' +
+          '<button class="rpt-modal-x" id="rpt-hist-modal-x">✕</button>' +
+        '</div>' +
+        '<div class="rpt-modal-body">' +
+          (prompt ? '<div style="background:#f3f6fa;border-radius:8px;padding:10px 14px;font-size:13px;color:var(--muted);margin-bottom:12px"><b style="color:var(--navy)">기안 요청 내용</b><br>' + esc(prompt) + '</div>' : '') +
+          '<div style="min-height:300px;padding:24px 28px;font-size:14px;line-height:1.85;font-family:\'맑은 고딕\',\'Noto Sans KR\',sans-serif;border:1px solid var(--line-2);border-radius:8px;background:#fff">' + content + '</div>' +
+        '</div>' +
+        '<div class="rpt-modal-foot">' +
+          '<button class="rpt-btn rpt-btn-primary" id="rpt-hist-load">✏️ 이 기안문으로 편집</button>' +
+          '<button class="rpt-btn rpt-btn-secondary" id="rpt-hist-copy">📋 복사</button>' +
+          '<button class="rpt-btn rpt-btn-secondary" id="rpt-hist-print">🖨️ 인쇄</button>' +
+          '<button class="rpt-btn rpt-btn-ghost" id="rpt-hist-close" style="margin-left:auto">닫기</button>' +
+        '</div>' +
+      '</div>';
+
+    document.body.appendChild(modal);
+    modal.addEventListener('click', function(e){ if (e.target === modal) modal.remove(); });
+    modal.querySelector('#rpt-hist-modal-x').onclick = function(){ modal.remove(); };
+    modal.querySelector('#rpt-hist-close').onclick    = function(){ modal.remove(); };
+    modal.querySelector('#rpt-hist-load').onclick = function(){
+      modal.remove(); loadIntoDraft(idx);
+    };
+    modal.querySelector('#rpt-hist-copy').onclick = function(){
+      var tmp = document.createElement('div');
+      tmp.innerHTML = content;
+      var range = document.createRange(); range.selectNodeContents(tmp);
+      document.body.appendChild(tmp);
+      var sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(range);
+      document.execCommand('copy'); sel.removeAllRanges(); document.body.removeChild(tmp);
+      toast('클립보드에 복사했습니다.', 'success');
+    };
+    modal.querySelector('#rpt-hist-print').onclick = function(){
+      var win = window.open('', '_blank');
+      win.document.write('<html><head><title>기안문</title><style>body{font-family:"맑은 고딕","Noto Sans KR",sans-serif;font-size:14px;line-height:1.85;padding:40px;color:#1f2937}@media print{body{padding:20mm}}</style></head><body>' + content + '</body></html>');
+      win.document.close(); win.print();
+    };
+  }
+
+  /* ════════════════════════════════════════════════
+     이력 → 편집 탭으로 불러오기
+  ════════════════════════════════════════════════ */
+  function loadIntoDraft(idx) {
+    var row = S.historyRows[idx]; if (!row) return;
+    var d = row.data || {};
+    var parts = row.ref.split('::');
+    S.currentId     = parts[1] || null;
+    S.currentPrompt = d.prompt || '';
+    S.savedAt       = d.savedAt || row.updated_at || '';
+    S.dirty         = false;
+    S.view          = 'write';
+    renderApp();
+    var inputEl = $('rpt-input');    if (inputEl && d.prompt)   inputEl.value = d.prompt;
+    var editor  = $('rpt-editor');   if (editor  && d.content)  editor.innerHTML = d.content;
+    var outSec  = $('rpt-output-section'); if (outSec && d.content) outSec.style.display = 'block';
+    updateSaveBadge();
+    toast('기존 기안문을 불러왔습니다. 편집 후 저장하세요.', 'info');
+  }
+
+  /* ════════════════════════════════════════════════
+     규정집 모달
+  ════════════════════════════════════════════════ */
+  function openRegModal() {
+    if ($('rpt-reg-modal')) return;
+    var regs  = loadRegs();
+    var limit = getLimit();
+
+    var modal = document.createElement('div');
+    modal.className = 'rpt-modal-back'; modal.id = 'rpt-reg-modal';
+
+    function regListHtml(regsArr) {
+      if (!regsArr.length) return '<p style="font-size:13px;color:var(--muted);padding:12px 0">등록된 규정집이 없습니다.</p>';
+      return regsArr.map(function(r){
+        return '<div class="rpt-reg-item">' +
+          '<span style="font-size:20px">📄</span>' +
+          '<div class="rpt-reg-info">' +
+            '<div class="rpt-reg-name">' + esc(r.name) + '</div>' +
+            '<div class="rpt-reg-meta">' + fmtSize(r.size) + ' · ' + new Date(r.addedAt).toLocaleDateString('ko-KR') + ' · 텍스트 ' + r.text.length.toLocaleString() + '자</div>' +
+          '</div>' +
+          '<button class="rpt-btn rpt-btn-danger rpt-btn-sm" onclick="ReportModule.deleteReg(\'' + r.id + '\')">삭제</button>' +
+        '</div>';
+      }).join('');
+    }
+
+    modal.innerHTML =
+      '<div class="rpt-modal" style="max-width:560px">' +
+        '<div class="rpt-modal-head">' +
+          '<p class="rpt-modal-title">📚 규정집 관리</p>' +
+          '<button class="rpt-modal-x" id="rpt-reg-modal-x">✕</button>' +
+        '</div>' +
+        '<div class="rpt-modal-body">' +
+          '<p style="font-size:13px;color:var(--muted);margin:0 0 14px">업로드한 PDF는 기안문 생성 시 자동 참조됩니다. 텍스트 추출 가능한 PDF만 지원합니다. (이 기기에 저장)</p>' +
+          (isAdmin()
+            ? '<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;background:#f3f6fa;border-radius:8px;padding:10px 12px">' +
+                '<label style="font-size:13px;font-weight:600;color:var(--navy)">일일 생성 제한</label>' +
+                '<input type="number" id="rpt-reg-limit" value="' + limit + '" min="1" max="200" style="width:70px;padding:6px 8px;border:1px solid var(--line);border-radius:6px;font-size:13px">' +
+                '<button class="rpt-btn rpt-btn-primary rpt-btn-sm" onclick="ReportModule.saveLimit()">저장</button>' +
+                '<span class="rpt-hint">현재 ' + limit + '회/일</span>' +
+              '</div>'
+            : '') +
+          '<div style="margin-bottom:14px">' +
+            '<label id="rpt-reg-upload-lbl" style="display:inline-flex;align-items:center;gap:6px;background:var(--blue-d);color:#fff;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600">' +
+              '📤 PDF 파일 추가<input type="file" id="rpt-reg-file" accept=".pdf" multiple style="display:none">' +
+            '</label>' +
+            '<span id="rpt-reg-status" style="font-size:12px;color:var(--muted);margin-left:10px"></span>' +
+          '</div>' +
+          '<div id="rpt-reg-list">' + regListHtml(regs) + '</div>' +
+        '</div>' +
+      '</div>';
+
+    document.body.appendChild(modal);
+    modal.addEventListener('click', function(e){ if (e.target === modal) modal.remove(); });
+    modal.querySelector('#rpt-reg-modal-x').onclick = function(){ modal.remove(); };
+
+    var fileInput = $('rpt-reg-file');
+    if (fileInput) fileInput.addEventListener('change', async function(){
+      var status = $('rpt-reg-status');
+      var files  = Array.from(this.files);
+      if (!files.length) return;
+      if (status) status.textContent = '처리 중…';
+      var regs2 = loadRegs(), added = 0;
+      for (var i = 0; i < files.length; i++) {
+        try {
+          var text = await extractPdfText(files[i]);
+          if (!text || text.length < 10) throw new Error('텍스트 추출 실패');
+          regs2.push({ id: genId(), name: files[i].name, text: text, size: files[i].size, addedAt: new Date().toISOString() });
+          added++;
+        } catch(e) {
+          if (status) status.textContent = '"' + files[i].name + '" 실패: ' + e.message;
+        }
+      }
+      saveRegs(regs2); this.value = '';
+      if (status) status.textContent = added + '개 추가 완료';
+      var listEl = $('rpt-reg-list');
+      if (listEl) listEl.innerHTML = regListHtml(loadRegs());
+    });
+  }
+
+  /* ════════════════════════════════════════════════
+     공개 API (window.ReportModule)
+  ════════════════════════════════════════════════ */
+  window.ReportModule = {
+    login: function(){
+      if (!window.Auth) { toast('로그인 모듈 로드 중…', 'info'); return; }
+      Auth.login({ chooseAccount: true }).then(function(ok){
+        if (!ok) toast('로그인 실패. 팝업 차단을 해제하고 다시 시도하세요.', 'error');
+      });
+    },
+    setView: function(v){
+      S.view = v;
+      document.querySelectorAll('.rpt-tab').forEach(function(btn){
+        btn.classList.toggle('active', (v === 'write' && btn.textContent.includes('작성')) || (v === 'history' && btn.textContent.includes('이력')));
+      });
+      var wr = $('rpt-view-write'), hi = $('rpt-view-history');
+      if (wr) wr.style.display = v === 'write'   ? 'block' : 'none';
+      if (hi) hi.style.display = v === 'history' ? 'block' : 'none';
+      if (v === 'history') loadAndRenderHistory();
+    },
+    generate:    generateDraft,
+    saveToCloud: manualSave,
+    copyDraft: function(){
+      var editor = $('rpt-editor'); if (!editor) return;
+      var range = document.createRange(); range.selectNodeContents(editor);
+      var sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(range);
+      document.execCommand('copy'); sel.removeAllRanges();
+      toast('클립보드에 복사했습니다.', 'success');
+    },
+    printDraft: function(){
+      var editor = $('rpt-editor'); if (!editor) return;
+      var win = window.open('', '_blank');
+      win.document.write('<html><head><title>기안문</title><style>body{font-family:"맑은 고딕","Noto Sans KR",sans-serif;font-size:14px;line-height:1.85;padding:40px;color:#1f2937}@media print{body{padding:20mm}}</style></head><body>' + editor.innerHTML + '</body></html>');
+      win.document.close(); win.print();
+    },
+    newDraft: function(){
+      S.currentId = null; S.currentPrompt = ''; S.dirty = false; S.savedAt = '';
+      S.attachedFiles = [];
+      var outSec = $('rpt-output-section'); if (outSec) outSec.style.display = 'none';
+      var inputEl = $('rpt-input');         if (inputEl) inputEl.value = '';
+      renderFileList(); updateSaveBadge();
+    },
+    openRegModal:    openRegModal,
+    openHistModal:   openHistModal,
+    loadIntoDraft:   loadIntoDraft,
+    refreshHistory:  loadAndRenderHistory,
+    removeFile: function(idx){ S.attachedFiles.splice(idx, 1); renderFileList(); },
+    deleteReg: function(id){
+      if (!confirm('규정집을 삭제할까요?')) return;
+      saveRegs(loadRegs().filter(function(r){ return r.id !== id; }));
+      var listEl = $('rpt-reg-list');
+      if (listEl) {
+        var regs = loadRegs();
+        listEl.innerHTML = regs.length
+          ? regs.map(function(r){
+              return '<div class="rpt-reg-item">' +
+                '<span style="font-size:20px">📄</span>' +
+                '<div class="rpt-reg-info"><div class="rpt-reg-name">' + esc(r.name) + '</div>' +
+                '<div class="rpt-reg-meta">' + fmtSize(r.size) + ' · ' + new Date(r.addedAt).toLocaleDateString('ko-KR') + ' · 텍스트 ' + r.text.length.toLocaleString() + '자</div></div>' +
+                '<button class="rpt-btn rpt-btn-danger rpt-btn-sm" onclick="ReportModule.deleteReg(\'' + r.id + '\')">삭제</button>' +
+              '</div>';
+            }).join('')
+          : '<p style="font-size:13px;color:var(--muted);padding:12px 0">등록된 규정집이 없습니다.</p>';
+      }
+      toast('삭제되었습니다.', 'success');
+    },
+    saveLimit: function(){
+      var v = parseInt(($('rpt-reg-limit') || {}).value, 10);
+      if (isNaN(v) || v < 1) { toast('1 이상의 숫자를 입력하세요.', 'error'); return; }
+      setLimit(v); toast('일일 제한이 ' + v + '회로 설정되었습니다.', 'success');
+    },
+  };
+
+  /* ════════════════════════════════════════════════
+     헤더 사용자 영역 / 로그아웃
+  ════════════════════════════════════════════════ */
+  function showUserArea(profile) {
+    var area = $('rpt-user-area'), av = $('rpt-avatar'), nm = $('rpt-user-name');
+    if (!area) return;
+    area.style.display = 'flex';
+    if (profile && av && profile.picture) av.src = profile.picture;
+    if (profile && nm) nm.textContent = profile.name || profile.email || '';
+  }
+
+  window.rptLogout = function(){
+    if (window.Auth && Auth.logout) Auth.logout();
+    var area = $('rpt-user-area'); if (area) area.style.display = 'none';
+    S.email = ''; S.name = ''; S.picture = '';
+    renderLogin();
+  };
+
+  function fetchProfile(token) {
+    return fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+      headers: { Authorization: 'Bearer ' + token }
+    }).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; });
+  }
+
+  function onLoggedIn(token) {
+    return fetchProfile(token).then(function(profile){
+      if (profile) {
+        showUserArea(profile);
+        S.email   = profile.email   || '';
+        S.name    = profile.name    || '';
+        S.picture = profile.picture || '';
+        try { if (S.email) localStorage.setItem('asea_user_email', S.email); } catch(e){}
+      }
+      renderApp();
+    });
+  }
+
+  /* ════════════════════════════════════════════════
+     초기화
+  ════════════════════════════════════════════════ */
+  function init() {
+    var MAX_WAIT = 8000, start = Date.now();
+
+    function waitForDeps() {
+      var ready = window.Auth !== undefined && window.CloudForms !== undefined;
+      if (!ready) {
+        if (Date.now() - start > MAX_WAIT) { setLoading('스크립트 로드 실패. 새로고침 해주세요.'); return; }
+        setTimeout(waitForDeps, 80); return;
+      }
+      doInit();
+    }
+
+    function doInit() {
+      window.aseaToast = toast;
+      if (window.Auth && Auth.tryRestoreSession) Auth.tryRestoreSession();
+      var token = window.Auth && Auth.getToken && Auth.getToken();
+
+      if (token) {
+        setLoading('기록 불러오는 중…');
+        onLoggedIn(token).then(function(){ setLoading(false); });
+      } else {
+        setLoading(false);
+        renderLogin();
+      }
+
+      if (Auth.onAuthChange) {
+        Auth.onAuthChange(function(loggedIn){
+          if (!loggedIn) {
+            var area = $('rpt-user-area'); if (area) area.style.display = 'none';
+            S.email = ''; renderLogin(); return;
+          }
+          setLoading('기록 불러오는 중…');
+          onLoggedIn(Auth.getToken()).then(function(){ setLoading(false); });
+        });
+      }
+
+      // 90초마다 에디터 내용 자동 저장
+      setInterval(function(){
+        var editor = $('rpt-editor');
+        if (editor && editor.innerHTML.trim() && S.dirty && S.email) manualSave();
+      }, 90000);
+
+      // 이탈 경고 (미저장 상태)
+      window.addEventListener('beforeunload', function(e){
+        if (S.dirty) { e.preventDefault(); e.returnValue = ''; }
+      });
+    }
+
+    waitForDeps();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function(){ setTimeout(init, 0); });
+  } else {
+    setTimeout(init, 0);
+  }
+})();
+</script>
+</body>
+</html>
