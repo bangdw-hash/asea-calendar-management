@@ -284,9 +284,11 @@ window.AssessmentModule = (function () {
     btn.addEventListener('click', function () {
       btn.disabled = true; btn.textContent = '로그인 중…';
       if (window.Auth && Auth.login) {
-        Auth.login().then(function () {}).catch(function () {
+        // 계정 선택 화면을 강제로 띄워 팝업이 클릭 제스처에 확실히 연결되도록 한다.
+        Auth.login({ chooseAccount: true }).then(function () {}).catch(function (e) {
+          try { console.error('[assessment] login rejected:', e); } catch (_) {}
           btn.disabled = false; btn.textContent = 'Google 계정으로 로그인';
-          toast('로그인에 실패했습니다. 다시 시도해 주세요.', 'error');
+          toast('로그인 창을 열지 못했습니다. 팝업 차단을 해제하고 다시 시도해 주세요.' + (e && e.message ? ' (' + e.message + ')' : ''), 'error');
         });
       }
     });
