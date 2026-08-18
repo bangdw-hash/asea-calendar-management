@@ -267,7 +267,8 @@
   ════════════════════════════════════════════════ */
   var ADMIN_EMAIL    = 'bangdw@gmail.com';
   var KIND           = 'draft_document';
-  var SK_REGS        = 'asea_regulations';
+  var KIND_REG       = 'regulation_book';   // 공통 규정집 (Supabase 공유)
+  var KIND_USAGE     = 'draft_usage';       // 사용 횟수 집계 (Supabase 공유)
   var SK_USAGE       = 'asea_draft_usage';
   var SK_LIMIT       = 'asea_draft_limit';
   var MAX_FILES      = 3;
@@ -288,6 +289,7 @@
     savedAt: '',
     attachedFiles: [],   // [{name, type, content, mediaType?}]
     historyRows: [],
+    cloudRegs: [],       // 공통 규정집 [{ref, name, text, size, addedAt, addedBy}]
   };
 
   /* ════════════════════════════════════════════════
@@ -345,10 +347,28 @@
   }
 
   /* ════════════════════════════════════════════════
-     규정집 (localStorage)
+     규정집 — Supabase 공유 (전 직원 공통)
   ════════════════════════════════════════════════ */
-  function loadRegs()  { try { return JSON.parse(localStorage.getItem(SK_REGS) || '[]'); } catch(e){ return []; } }
-  function saveRegs(d) { try { localStorage.setItem(SK_REGS, JSON.stringify(d)); } catch(e){} }
+  function loadCloudRegs() {
+    if (!window.CloudForms || !CloudForms.ready()) return Promise.resolve([]);
+    return CloudForms.list(KIND_REG).then(function(res) {
+      var rows = (res.rows || []).filter(function(r){ return r.status !== 'deleted'; });
+      return rows.map(function(r){
+        var d = r.data || {};
+        return { ref: r.ref, name: r.name || d.filename || '', text: d.text || '', size: d.size || 0, addedAt: d.addedAt || r.updated_at, addedBy: d.addedBy || '' };
+      });
+    }).catch(function(){ return []; });
+  }
+  function saveRegToCloud(name, text, size) {
+    if (!window.CloudForms || !CloudForms.ready()) return Promise.resolve({ ok: false, err: 'DB 연결 안됨' });
+    var ref  = 'reg::' + genId();
+    var data = { text: text, filename: name, size: size, addedAt: new Date().toISOString(), addedBy: S.email };
+    return CloudForms.save(KIND_REG, ref, name, 'active', data);
+  }
+  function deleteRegFromCloud(ref) {
+    var row = S.cloudRegs.filter(function(r){ return r.ref === ref; })[0] || {};
+    return CloudForms.save(KIND_REG, ref, row.name || '', 'deleted', { text: '', deleted: true, deletedAt: new Date().toISOString(), deletedBy: S.email });
+  }
   function getLimit()  { var v = parseInt(localStorage.getItem(SK_LIMIT), 10); return isNaN(v) ? DEFAULT_LIMIT : v; }
   function setLimit(n) { localStorage.setItem(SK_LIMIT, String(n)); }
   function getTodayUsage() {
@@ -362,7 +382,21 @@
     var today = new Date().toISOString().slice(0, 10);
     var count = getTodayUsage() + 1;
     localStorage.setItem(SK_USAGE, JSON.stringify({ date: today, count: count }));
+    // 관리자 집계용 클라우드 동기화
+    if (S.email && window.CloudForms && CloudForms.ready()) {
+      CloudForms.save(KIND_USAGE, S.email + '::' + today, S.email, 'active', { email: S.email, date: today, count: count });
+    }
     return count;
+  }
+  function loadUsageStats() {
+    if (!window.CloudForms || !CloudForms.ready()) return Promise.resolve([]);
+    var today = new Date().toISOString().slice(0, 10);
+    return CloudForms.list(KIND_USAGE).then(function(res) {
+      return (res.rows || [])
+        .filter(function(r){ return r.data && r.data.date === today; })
+        .map(function(r){ return { email: r.name || r.data.email || '', count: r.data.count || 0 }; })
+        .sort(function(a, b){ return b.count - a.count; });
+    }).catch(function(){ return []; });
   }
 
   /* ════════════════════════════════════════════════
@@ -503,11 +537,14 @@
     var input = ($('rpt-input') || {}).value || '';
     if (!input.trim()) { toast('기안 요청 내용을 입력해 주세요.', 'error'); return; }
 
-    var _cc = window.getClaudeConfig ? getClaudeConfig() : {
-      apiKey: (window.CONFIG && CONFIG.anthropicApiKey) || localStorage.getItem('asea_anthropic_api_key') || '',
-      endpoint: 'https://api.anthropic.com/v1/messages', isOfficial: true
-    };
-    if (!_cc.apiKey) { toast('관리자에게 API 키 설정을 요청하세요.', 'error'); return; }
+    // 메인 앱 설정 페이지에서 저장한 AI 제공자(Flow/공식/프록시) 사용
+    var P = window.getAIProviders ? window.getAIProviders() : null;
+    var hasProvider = P && (
+      (P.active === 'official' && P.official && P.official.key) ||
+      (P.active === 'flow'    && P.flow    && P.flow.key)    ||
+      (P.active === 'proxy')
+    );
+    if (!hasProvider) { toast('관리자 설정 페이지에서 AI 제공자를 설정해 주세요.', 'error'); return; }
 
     var usage = getTodayUsage(), limit = getLimit();
     if (usage >= limit) { toast('오늘 사용 한도(' + limit + '회)에 도달했습니다.', 'error'); return; }
@@ -519,7 +556,7 @@
     if (outSec) outSec.style.display = 'none';
 
     try {
-      var regs = loadRegs();
+      var regs = S.cloudRegs;
       var regCtx = regs.length
         ? '=== 아세아항공직업전문학교 규정집 ===\n' +
           regs.map(function(r){ return '【' + r.name + '】\n' + r.text; }).join('\n\n') + '\n\n'
@@ -554,11 +591,9 @@
       if (pdfTexts) userText += '\n\n' + pdfTexts;
       userContent.push({ type: 'text', text: userText });
 
-      var headers = { 'Content-Type': 'application/json', 'x-api-key': _cc.apiKey, 'anthropic-version': '2023-06-01' };
-      if (_cc.isOfficial) headers['anthropic-dangerous-direct-browser-access'] = 'true';
-
-      var resp = await window.claudeFetch(_cc.endpoint, {
-        method: 'POST', headers: headers,
+      // claudeFetch가 활성 제공자(Flow/공식/프록시)에 맞게 헤더·엔드포인트를 자동 처리
+      var resp = await window.claudeFetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
         body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 4096, system: systemPrompt, messages: [{ role: 'user', content: userContent }] })
       });
       if (!resp.ok) { var eb = await resp.text(); throw new Error('API 오류 ' + resp.status + ': ' + eb.slice(0, 200)); }
@@ -651,7 +686,7 @@
   function renderApp() {
     var root = $('report-root');
     if (!root) return;
-    var regs  = loadRegs();
+    var regs  = S.cloudRegs;
     var usage = getTodayUsage();
     var limit = getLimit();
 
@@ -664,11 +699,14 @@
         '</div>' +
         '<div class="rpt-toolbar-right">' +
           '<span id="rpt-save-badge" class="rpt-badge"></span>' +
-          '<button class="rpt-btn rpt-btn-ghost rpt-btn-sm" onclick="ReportModule.openRegModal()">' +
-            '📚 규정집' +
-            (regs.length ? ' <span style="background:var(--blue-d);color:#fff;border-radius:10px;padding:1px 7px;font-size:11px;margin-left:2px">' + regs.length + '</span>' : '') +
-          '</button>' +
-          (isAdmin() ? '<span style="font-size:11px;background:#fdf4e3;color:#a5701a;border-radius:20px;padding:2px 10px;font-weight:700">관리자</span>' : '') +
+          '<span style="font-size:12px;color:var(--muted);background:#f1f3f7;padding:4px 10px;border-radius:6px;">' +
+            '📚 규정집 ' +
+            '<b style="color:var(--navy)">' + regs.length + '</b>개' +
+          '</span>' +
+          (isAdmin()
+            ? '<button class="rpt-btn rpt-btn-ghost rpt-btn-sm" onclick="ReportModule.openRegModal()">📚 규정집 관리</button>' +
+              '<button class="rpt-btn rpt-btn-ghost rpt-btn-sm" onclick="ReportModule.openSettingsModal()">⚙️ 설정</button>'
+            : '') +
         '</div>' +
       '</div>' +
 
@@ -888,12 +926,11 @@
   }
 
   /* ════════════════════════════════════════════════
-     규정집 모달
+     규정집 관리 모달 (관리자 전용 — 클라우드 업로드/삭제)
   ════════════════════════════════════════════════ */
   function openRegModal() {
+    if (!isAdmin()) return;
     if ($('rpt-reg-modal')) return;
-    var regs  = loadRegs();
-    var limit = getLimit();
 
     var modal = document.createElement('div');
     modal.className = 'rpt-modal-back'; modal.id = 'rpt-reg-modal';
@@ -905,36 +942,28 @@
           '<span style="font-size:20px">📄</span>' +
           '<div class="rpt-reg-info">' +
             '<div class="rpt-reg-name">' + esc(r.name) + '</div>' +
-            '<div class="rpt-reg-meta">' + fmtSize(r.size) + ' · ' + new Date(r.addedAt).toLocaleDateString('ko-KR') + ' · 텍스트 ' + r.text.length.toLocaleString() + '자</div>' +
+            '<div class="rpt-reg-meta">' + fmtSize(r.size) + ' · 텍스트 ' + r.text.length.toLocaleString() + '자 · ' + fmtDt(r.addedAt) + '</div>' +
           '</div>' +
-          '<button class="rpt-btn rpt-btn-danger rpt-btn-sm" onclick="ReportModule.deleteReg(\'' + r.id + '\')">삭제</button>' +
+          '<button class="rpt-btn rpt-btn-danger rpt-btn-sm" onclick="ReportModule.deleteCloudReg(\'' + esc(r.ref) + '\')">삭제</button>' +
         '</div>';
       }).join('');
     }
 
     modal.innerHTML =
-      '<div class="rpt-modal" style="max-width:560px">' +
+      '<div class="rpt-modal" style="max-width:580px">' +
         '<div class="rpt-modal-head">' +
-          '<p class="rpt-modal-title">📚 규정집 관리</p>' +
+          '<p class="rpt-modal-title">📚 공통 규정집 관리 (클라우드)</p>' +
           '<button class="rpt-modal-x" id="rpt-reg-modal-x">✕</button>' +
         '</div>' +
         '<div class="rpt-modal-body">' +
-          '<p style="font-size:13px;color:var(--muted);margin:0 0 14px">업로드한 PDF는 기안문 생성 시 자동 참조됩니다. 텍스트 추출 가능한 PDF만 지원합니다. (이 기기에 저장)</p>' +
-          (isAdmin()
-            ? '<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;background:#f3f6fa;border-radius:8px;padding:10px 12px">' +
-                '<label style="font-size:13px;font-weight:600;color:var(--navy)">일일 생성 제한</label>' +
-                '<input type="number" id="rpt-reg-limit" value="' + limit + '" min="1" max="200" style="width:70px;padding:6px 8px;border:1px solid var(--line);border-radius:6px;font-size:13px">' +
-                '<button class="rpt-btn rpt-btn-primary rpt-btn-sm" onclick="ReportModule.saveLimit()">저장</button>' +
-                '<span class="rpt-hint">현재 ' + limit + '회/일</span>' +
-              '</div>'
-            : '') +
-          '<div style="margin-bottom:14px">' +
-            '<label id="rpt-reg-upload-lbl" style="display:inline-flex;align-items:center;gap:6px;background:var(--blue-d);color:#fff;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600">' +
-              '📤 PDF 파일 추가<input type="file" id="rpt-reg-file" accept=".pdf" multiple style="display:none">' +
+          '<p style="font-size:13px;color:var(--muted);margin:0 0 14px">여기 업로드한 규정집은 <b>전 직원이 공유</b>하며, 기안문 생성 시 자동 참조됩니다.<br>텍스트 추출 가능한 PDF만 지원합니다. (스캔본 불가)</p>' +
+          '<div style="margin-bottom:14px;display:flex;align-items:center;gap:10px">' +
+            '<label style="display:inline-flex;align-items:center;gap:6px;background:var(--blue-d);color:#fff;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600">' +
+              '📤 PDF 업로드 (클라우드)<input type="file" id="rpt-reg-file" accept=".pdf" multiple style="display:none">' +
             '</label>' +
-            '<span id="rpt-reg-status" style="font-size:12px;color:var(--muted);margin-left:10px"></span>' +
+            '<span id="rpt-reg-status" style="font-size:12px;color:var(--muted)"></span>' +
           '</div>' +
-          '<div id="rpt-reg-list">' + regListHtml(regs) + '</div>' +
+          '<div id="rpt-reg-list">' + regListHtml(S.cloudRegs) + '</div>' +
         '</div>' +
       '</div>';
 
@@ -948,21 +977,91 @@
       var files  = Array.from(this.files);
       if (!files.length) return;
       if (status) status.textContent = '처리 중…';
-      var regs2 = loadRegs(), added = 0;
+      var added = 0;
       for (var i = 0; i < files.length; i++) {
         try {
           var text = await extractPdfText(files[i]);
-          if (!text || text.length < 10) throw new Error('텍스트 추출 실패');
-          regs2.push({ id: genId(), name: files[i].name, text: text, size: files[i].size, addedAt: new Date().toISOString() });
+          if (!text || text.length < 10) throw new Error('텍스트 추출 실패 (스캔 PDF는 지원 안 됨)');
+          var res = await saveRegToCloud(files[i].name, text, files[i].size);
+          if (!res.ok) throw new Error(res.err);
           added++;
-        } catch(e) {
-          if (status) status.textContent = '"' + files[i].name + '" 실패: ' + e.message;
+        } catch(err) {
+          if (status) status.textContent = '"' + files[i].name + '" 실패: ' + err.message;
         }
       }
-      saveRegs(regs2); this.value = '';
-      if (status) status.textContent = added + '개 추가 완료';
-      var listEl = $('rpt-reg-list');
-      if (listEl) listEl.innerHTML = regListHtml(loadRegs());
+      this.value = '';
+      if (status) status.textContent = added + '개 클라우드에 저장 완료';
+      // 목록 새로고침
+      loadCloudRegs().then(function(regs){
+        S.cloudRegs = regs;
+        var listEl = $('rpt-reg-list');
+        if (listEl) listEl.innerHTML = regListHtml(regs);
+        // 툴바 뱃지 갱신
+        var badge = document.querySelector('.rpt-toolbar-right span');
+        // (renderApp 재호출 없이 숫자만 업데이트)
+      });
+    });
+  }
+
+  /* ════════════════════════════════════════════════
+     설정 모달 (관리자 전용 — 일일 한도 + 사용 현황)
+  ════════════════════════════════════════════════ */
+  function openSettingsModal() {
+    if (!isAdmin()) return;
+    if ($('rpt-settings-modal')) return;
+    var limit = getLimit();
+
+    var modal = document.createElement('div');
+    modal.className = 'rpt-modal-back'; modal.id = 'rpt-settings-modal';
+
+    modal.innerHTML =
+      '<div class="rpt-modal" style="max-width:520px">' +
+        '<div class="rpt-modal-head">' +
+          '<p class="rpt-modal-title">⚙️ 설정 (관리자)</p>' +
+          '<button class="rpt-modal-x" id="rpt-settings-modal-x">✕</button>' +
+        '</div>' +
+        '<div class="rpt-modal-body">' +
+          /* 일일 한도 */
+          '<div style="background:#f3f6fa;border-radius:10px;padding:14px 16px;margin-bottom:18px">' +
+            '<p style="font-size:13px;font-weight:700;color:var(--navy);margin:0 0 10px">일일 생성 한도</p>' +
+            '<div style="display:flex;align-items:center;gap:10px">' +
+              '<input type="number" id="rpt-settings-limit" value="' + limit + '" min="1" max="500"' +
+                ' style="width:80px;padding:7px 10px;border:1.5px solid var(--line);border-radius:7px;font-size:14px">' +
+              '<span style="font-size:13px;color:var(--muted)">회/일 (현재 ' + limit + '회)</span>' +
+              '<button class="rpt-btn rpt-btn-primary rpt-btn-sm" onclick="ReportModule.saveLimit()">저장</button>' +
+            '</div>' +
+          '</div>' +
+          /* 사용 현황 */
+          '<div>' +
+            '<p style="font-size:13px;font-weight:700;color:var(--navy);margin:0 0 10px">오늘 사용 현황</p>' +
+            '<div id="rpt-usage-stats"><p style="font-size:13px;color:var(--muted)">불러오는 중…</p></div>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+
+    document.body.appendChild(modal);
+    modal.addEventListener('click', function(e){ if (e.target === modal) modal.remove(); });
+    modal.querySelector('#rpt-settings-modal-x').onclick = function(){ modal.remove(); };
+
+    // 사용 현황 비동기 로드
+    loadUsageStats().then(function(rows){
+      var el = $('rpt-usage-stats');
+      if (!el) return;
+      if (!rows.length) { el.innerHTML = '<p style="font-size:13px;color:var(--muted)">오늘 사용 기록 없음</p>'; return; }
+      var total = rows.reduce(function(s, r){ return s + r.count; }, 0);
+      var html =
+        '<div style="font-size:13px;color:var(--muted);margin-bottom:8px">전체 합계: <b style="color:var(--ink)">' + total + '회</b></div>' +
+        '<table style="width:100%;border-collapse:collapse;font-size:13px">' +
+        '<thead><tr>' +
+          '<th style="background:#f3f6fa;padding:7px 10px;text-align:left;border:1px solid var(--line)">사용자</th>' +
+          '<th style="background:#f3f6fa;padding:7px 10px;text-align:right;border:1px solid var(--line);width:80px">생성 횟수</th>' +
+        '</tr></thead><tbody>';
+      rows.forEach(function(r){
+        html += '<tr><td style="padding:7px 10px;border:1px solid var(--line)">' + esc(r.email) + '</td>' +
+                '<td style="padding:7px 10px;border:1px solid var(--line);text-align:right;font-weight:700;color:var(--navy)">' + r.count + '</td></tr>';
+      });
+      html += '</tbody></table>';
+      el.innerHTML = html;
     });
   }
 
@@ -1008,32 +1107,36 @@
       var inputEl = $('rpt-input');         if (inputEl) inputEl.value = '';
       renderFileList(); updateSaveBadge();
     },
-    openRegModal:    openRegModal,
-    openHistModal:   openHistModal,
-    loadIntoDraft:   loadIntoDraft,
-    refreshHistory:  loadAndRenderHistory,
+    openRegModal:      openRegModal,
+    openSettingsModal: openSettingsModal,
+    openHistModal:     openHistModal,
+    loadIntoDraft:     loadIntoDraft,
+    refreshHistory:    loadAndRenderHistory,
     removeFile: function(idx){ S.attachedFiles.splice(idx, 1); renderFileList(); },
-    deleteReg: function(id){
-      if (!confirm('규정집을 삭제할까요?')) return;
-      saveRegs(loadRegs().filter(function(r){ return r.id !== id; }));
-      var listEl = $('rpt-reg-list');
-      if (listEl) {
-        var regs = loadRegs();
-        listEl.innerHTML = regs.length
-          ? regs.map(function(r){
-              return '<div class="rpt-reg-item">' +
-                '<span style="font-size:20px">📄</span>' +
-                '<div class="rpt-reg-info"><div class="rpt-reg-name">' + esc(r.name) + '</div>' +
-                '<div class="rpt-reg-meta">' + fmtSize(r.size) + ' · ' + new Date(r.addedAt).toLocaleDateString('ko-KR') + ' · 텍스트 ' + r.text.length.toLocaleString() + '자</div></div>' +
-                '<button class="rpt-btn rpt-btn-danger rpt-btn-sm" onclick="ReportModule.deleteReg(\'' + r.id + '\')">삭제</button>' +
-              '</div>';
-            }).join('')
-          : '<p style="font-size:13px;color:var(--muted);padding:12px 0">등록된 규정집이 없습니다.</p>';
-      }
-      toast('삭제되었습니다.', 'success');
+    deleteCloudReg: function(ref){
+      if (!confirm('규정집을 클라우드에서 삭제할까요?\n전 직원이 더 이상 참조할 수 없게 됩니다.')) return;
+      deleteRegFromCloud(ref).then(function(res){
+        if (!res.ok) { toast('삭제 실패: ' + res.err, 'error'); return; }
+        S.cloudRegs = S.cloudRegs.filter(function(r){ return r.ref !== ref; });
+        toast('삭제되었습니다.', 'success');
+        var listEl = $('rpt-reg-list');
+        if (listEl) {
+          var html = S.cloudRegs.length
+            ? S.cloudRegs.map(function(r){
+                return '<div class="rpt-reg-item">' +
+                  '<span style="font-size:20px">📄</span>' +
+                  '<div class="rpt-reg-info"><div class="rpt-reg-name">' + esc(r.name) + '</div>' +
+                  '<div class="rpt-reg-meta">' + fmtSize(r.size) + ' · 텍스트 ' + r.text.length.toLocaleString() + '자 · ' + fmtDt(r.addedAt) + '</div></div>' +
+                  '<button class="rpt-btn rpt-btn-danger rpt-btn-sm" onclick="ReportModule.deleteCloudReg(\'' + esc(r.ref) + '\')">삭제</button>' +
+                '</div>';
+              }).join('')
+            : '<p style="font-size:13px;color:var(--muted);padding:12px 0">등록된 규정집이 없습니다.</p>';
+          listEl.innerHTML = html;
+        }
+      });
     },
     saveLimit: function(){
-      var v = parseInt(($('rpt-reg-limit') || {}).value, 10);
+      var v = parseInt(($('rpt-settings-limit') || $('rpt-reg-limit') || {}).value, 10);
       if (isNaN(v) || v < 1) { toast('1 이상의 숫자를 입력하세요.', 'error'); return; }
       setLimit(v); toast('일일 제한이 ' + v + '회로 설정되었습니다.', 'success');
     },
@@ -1072,7 +1175,11 @@
         S.picture = profile.picture || '';
         try { if (S.email) localStorage.setItem('asea_user_email', S.email); } catch(e){}
       }
-      renderApp();
+      // 공통 규정집 클라우드에서 로드 (한 번만 추출·저장된 텍스트를 재사용)
+      return loadCloudRegs().then(function(regs){
+        S.cloudRegs = regs;
+        renderApp();
+      });
     });
   }
 
@@ -1093,6 +1200,8 @@
 
     function doInit() {
       window.aseaToast = toast;
+      // 메인 앱 "전 직원 공유" AI 제공자 설정을 Supabase에서 로컬에 적용
+      if (window.loadAIProvidersFromCloud) window.loadAIProvidersFromCloud();
       if (window.Auth && Auth.tryRestoreSession) Auth.tryRestoreSession();
       var token = window.Auth && Auth.getToken && Auth.getToken();
 
