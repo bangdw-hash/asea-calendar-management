@@ -117,7 +117,7 @@
 <!-- 의존 스크립트 -->
 <script src="cloudforms.js?v=20260617cf1" defer></script>
 <script src="config.js?v=20260623ai7" defer></script>
-<script src="auth.js?v=20260622r8" defer></script>
+<script src="survey-auth.js?v=20260819sv1" defer></script>
 <script src="survey.js?v=20260623sv11" defer></script>
 
 <script>
@@ -202,24 +202,6 @@
       loadAdminAI().then(function () {
         setLoading('로그인 상태 확인 중...');
 
-        /* 이미 로그인된 토큰이 있으면 바로 렌더 */
-        var token = window.Auth && Auth.getToken && Auth.getToken();
-        if (token) {
-          fetchProfile(token).then(function (profile) {
-            if (profile) {
-              showUserArea(profile);
-              storeUserEmail(profile.email || '');
-            }
-            setLoading(false);
-            SurveyModule.renderTab();
-          });
-          return;
-        }
-
-        /* 로그인 안 된 상태 → 렌더하면 로그인 버튼이 표시됨 */
-        setLoading(false);
-        SurveyModule.renderTab();
-
         /* Auth 변화 감지 — 로그인 완료 시 프로필 fetch + 재렌더 */
         if (Auth.onAuthChange) {
           Auth.onAuthChange(function (loggedIn) {
@@ -238,6 +220,27 @@
             });
           });
         }
+
+        /* 저장된 세션 복원 시도 */
+        var restored = Auth.tryRestoreSession && Auth.tryRestoreSession();
+        if (restored) {
+          var token = Auth.getToken && Auth.getToken();
+          if (token) {
+            fetchProfile(token).then(function (profile) {
+              if (profile) {
+                showUserArea(profile);
+                storeUserEmail(profile.email || '');
+              }
+              setLoading(false);
+              SurveyModule.renderTab();
+            });
+            return;
+          }
+        }
+
+        /* 로그인 안 된 상태 → 렌더하면 로그인 버튼이 표시됨 */
+        setLoading(false);
+        SurveyModule.renderTab();
       });
     }
 
