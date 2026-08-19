@@ -12,8 +12,14 @@
   }
 
   function getToken() {
-    return (window.Auth && Auth.getToken && Auth.getToken()) ||
+    // Google Forms/Drive API용 — 2단계(Forms 연동) 토큰 우선, 없으면 기본 토큰 반환
+    return (window.Auth && Auth.getFormsToken && Auth.getFormsToken()) ||
+           (window.Auth && Auth.getToken && Auth.getToken()) ||
            (window.S && S.accessToken) || '';
+  }
+
+  function isFormsLinked() {
+    return !!(window.Auth && Auth.isFormsLinked && Auth.isFormsLinked());
   }
 
   function loadHistory() {
@@ -346,8 +352,16 @@
     var root = document.getElementById('survey-root');
     if (!root) return;
 
-    var token = getToken();
-    var loggedIn = !!token;
+    var baseLoggedIn  = !!(window.Auth && Auth.getToken && Auth.getToken());
+    var formsLinked   = isFormsLinked();
+
+    /* Google Forms 연동 배너 (로그인됐지만 Forms 미연동) */
+    var formsBanner = !formsLinked ?
+      '<div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">' +
+        '<span style="font-size:13px;color:#92400e;flex:1">📌 <b>Google Forms 연동</b>이 필요해야 구글 드라이브에 설문지를 저장할 수 있습니다. ' +
+          'AI 설계·편집·클라우드 이력은 지금 바로 사용 가능합니다.</span>' +
+        '<button id="survey-forms-link-btn" class="btn btn-primary btn-sm" style="white-space:nowrap">🔗 Google Forms 연동</button>' +
+      '</div>' : '';
 
     root.innerHTML =
       '<div class="tab-body">' +
@@ -358,11 +372,13 @@
           '<line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/>' +
         '</svg>설문지 자동 생성</h2>' +
 
-      (!loggedIn ?
+      (!baseLoggedIn ?
         '<div class="settings-card" style="text-align:center;padding:32px">' +
         '<p style="margin-bottom:16px;color:#666">Google 계정으로 로그인하면 설문지를 만들고 관리할 수 있습니다.</p>' +
         '<button id="survey-login-btn" class="btn btn-primary">Google 로그인</button>' +
         '</div>' :
+
+        formsBanner +
 
         '<div class="settings-card" id="survey-create-card">' +
         '<h3 class="settings-section-title">✨ 새 설문지 만들기</h3>' +
@@ -394,15 +410,23 @@
           '<h3 class="settings-section-title" style="margin:0;display:flex;align-items:center;gap:6px">' +
             '<svg class="sv-chev" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>' +
             '📂 내 설문지 목록 (구글 드라이브)</h3>' +
-          '<button id="survey-refresh-btn" class="btn btn-ghost btn-sm">🔄 새로고침</button>' +
+          (formsLinked ? '<button id="survey-refresh-btn" class="btn btn-ghost btn-sm">🔄 새로고침</button>' : '') +
         '</div>' +
         '<div class="sv-sec-body">' +
-        '<div id="survey-list"><p class="empty-state">불러오는 중...</p></div>' +
+        '<div id="survey-list">' +
+          (!formsLinked ?
+            '<div style="text-align:center;padding:20px 0;color:#888;font-size:13px">' +
+              '<p style="margin:0 0 12px">Google Forms 연동 후 내 드라이브의 설문지 목록을 조회할 수 있습니다.</p>' +
+              '<button id="survey-list-link-btn" class="btn btn-secondary btn-sm">🔗 Google Forms 연동하기</button>' +
+            '</div>' :
+            '<p class="empty-state">불러오는 중...</p>'
+          ) +
+        '</div>' +
         '</div></div>'
       ) +
       '</div>';
 
-    if (!loggedIn) {
+    if (!baseLoggedIn) {
       var loginBtn = document.getElementById('survey-login-btn');
       if (loginBtn) loginBtn.addEventListener('click', function() {
         if (window.Auth && Auth.login) Auth.login().then(function() { renderTab(); });
@@ -410,12 +434,26 @@
       return;
     }
 
+    /* Google Forms 연동 버튼 */
+    function _doFormsLink() {
+      if (!(window.Auth && Auth.loginForms)) return;
+      Auth.loginForms().then(function (ok) {
+        if (ok) { renderTab(); } else { _setStatus('❌ Google Forms 연동에 실패했습니다. 다시 시도해 주세요.'); }
+      });
+    }
+    var flinkBtn = document.getElementById('survey-forms-link-btn');
+    if (flinkBtn) flinkBtn.addEventListener('click', _doFormsLink);
+    var llinkBtn = document.getElementById('survey-list-link-btn');
+    if (llinkBtn) llinkBtn.addEventListener('click', _doFormsLink);
+
     _bindCreateEvents();
     _bindCollapsibles();
-    _loadFormList();
+    if (formsLinked) _loadFormList();
     _loadDraftList();
     var dref = document.getElementById('survey-draft-refresh');
     if (dref) dref.addEventListener('click', _loadDraftList);
+    var rref = document.getElementById('survey-refresh-btn');
+    if (rref) rref.addEventListener('click', _loadFormList);
   }
 
   /* 편집 이력(드래프트) 목록 렌더 */
@@ -468,9 +506,8 @@
   var _pendingStructure = null;
 
   function _bindCreateEvents() {
-    var genBtn    = document.getElementById('survey-generate-btn');
-    var refreshBtn= document.getElementById('survey-refresh-btn');
-    var testBtn   = document.getElementById('survey-test-api-btn');
+    var genBtn  = document.getElementById('survey-generate-btn');
+    var testBtn = document.getElementById('survey-test-api-btn');
 
     if (testBtn) testBtn.addEventListener('click', function () {
       if (!window.testClaudeConnection) { _setStatus('테스트 기능을 불러오지 못했습니다.'); return; }
@@ -491,7 +528,10 @@
         .then(function(structure) {
           _pendingStructure = _normalize(structure);
           _renderEditor();
-          _setStatus('초안이 생성됐습니다. 아래에서 자유롭게 편집한 뒤 「구글 드라이브에 생성」을 누르세요.');
+          var hint = isFormsLinked()
+            ? '초안이 생성됐습니다. 아래에서 자유롭게 편집한 뒤 「구글 드라이브에 생성」을 누르세요.'
+            : '초안이 생성됐습니다. 편집 후 「💾 편집 이력 저장」으로 클라우드에 보관하거나, Google Forms 연동 후 드라이브에 생성할 수 있습니다.';
+          _setStatus(hint);
           genBtn.disabled = false;
         })
         .catch(function(err) {
@@ -499,8 +539,6 @@
           genBtn.disabled = false;
         });
     });
-
-    if (refreshBtn) refreshBtn.addEventListener('click', _loadFormList);
   }
 
   /* 구조 정규화 — 누락 필드 보정 */
@@ -774,6 +812,10 @@
 
   function _doCreate() {
     if (!_pendingStructure || !_pendingStructure.questions.length) { _setStatus('❌ 질문이 없습니다.'); return; }
+    if (!isFormsLinked()) {
+      _setStatus('⚠️ Google Forms 연동이 필요합니다. 화면 상단의 「Google Forms 연동」 버튼을 먼저 눌러주세요.');
+      return;
+    }
     var cf = document.getElementById('survey-confirm-btn');
     _setStatus('📤 구글 드라이브에 생성 중...');
     if (cf) cf.disabled = true;

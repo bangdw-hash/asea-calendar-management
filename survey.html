@@ -147,7 +147,7 @@
   }
 
   window.svLogout = function () {
-    if (window.Auth && Auth.logout) Auth.logout();
+    if (window.Auth && Auth.logout) Auth.logout();  // 기본+Forms 토큰 모두 해제
     document.getElementById('sv-user-area').style.display = 'none';
     if (window.SurveyModule) SurveyModule.renderTab();
   };
@@ -202,7 +202,7 @@
       loadAdminAI().then(function () {
         setLoading('로그인 상태 확인 중...');
 
-        /* Auth 변화 감지 — 로그인 완료 시 프로필 fetch + 재렌더 */
+        /* Auth 변화 감지 — 기본 로그인 완료 시 프로필 fetch + 재렌더 */
         if (Auth.onAuthChange) {
           Auth.onAuthChange(function (loggedIn) {
             if (!loggedIn) {
@@ -221,7 +221,13 @@
           });
         }
 
-        /* 저장된 세션 복원 시도 */
+        /* Forms 연동 상태 변화 감지 — 재렌더만 */
+        if (Auth.onFormsAuthChange) {
+          Auth.onFormsAuthChange(function () { SurveyModule.renderTab(); });
+        }
+
+        /* 저장된 세션 복원 시도 (기본 + Forms) */
+        if (Auth.tryRestoreFormsSession) Auth.tryRestoreFormsSession();
         var restored = Auth.tryRestoreSession && Auth.tryRestoreSession();
         if (restored) {
           var token = Auth.getToken && Auth.getToken();
