@@ -816,8 +816,13 @@ window.AssessmentModule = (function () {
     var admin = isAdmin();
     var rows = S.form.development.map(function (d, i) {
       var badge = d.broadcastId ? '<span class="asm-bcast-badge" title="관리자가 전사에 일괄 반영한 항목입니다">🏢 전사반영</span>' : '';
-      var bcastBtn = admin ? '<button class="asm-broadcast-btn" data-bcast-idx="' + i + '" title="이 항목을 전체 인원의 개인역량개발 맨 위에 일괄 반영">🏢 전사반영</button>' : '';
+      // 관리자 전용 열: 좁은 삭제(✕) 열에 끼워 넣으면 표 오른쪽 끝으로 밀려 눈에 잘 안 띄므로
+      // 별도의 넓은 열로 분리해 맨 왼쪽 가까이(구분 열 앞)에 크게 배치한다.
+      var bcastCell = admin
+        ? '<td class="asm-td-bcast"><button class="asm-broadcast-btn" data-bcast-idx="' + i + '" title="이 항목을 전체 인원의 개인역량개발 맨 위에 일괄 반영">🏢 전사반영</button></td>'
+        : '';
       return '<tr' + (d.broadcastId ? ' class="asm-row-bcast"' : '') + '>' +
+        bcastCell +
         '<td>' + badge + '<input data-path="development.' + i + '.div" class="asm-cell-input asm-cell-sm" value="' + esc(d.div) + '" placeholder="예: 2026년(실시)"></td>' +
         '<td><input data-path="development.' + i + '.course" class="asm-cell-input" placeholder="교육과정명" value="' + esc(d.course) + '"></td>' +
         '<td><input data-path="development.' + i + '.org" class="asm-cell-input asm-cell-sm" placeholder="주관기관" value="' + esc(d.org) + '"></td>' +
@@ -825,13 +830,14 @@ window.AssessmentModule = (function () {
         '<td><input data-path="development.' + i + '.cost" class="asm-cell-input asm-cell-sm" placeholder="비용" value="' + esc(d.cost) + '"></td>' +
         '<td>' + rte('development.' + i + '.content', d.content, '교육 내용') + '</td>' +
         '<td>' + rte('development.' + i + '.scope', d.scope, '업무반영범위') + '</td>' +
-        '<td class="asm-td-del">' + bcastBtn + '<button class="asm-rowdel" data-arr="development" data-idx="' + i + '" title="행 삭제">✕</button></td>' +
+        '<td class="asm-td-del"><button class="asm-rowdel" data-arr="development" data-idx="' + i + '" title="행 삭제">✕</button></td>' +
       '</tr>';
     }).join('');
+    var bcastHead = admin ? '<th class="asm-td-bcast-h">전사반영</th>' : '';
     return section('5', '개인역량개발 <small>(교육 이수·희망)</small>',
-      (admin ? '<p class="asm-hint asm-bcast-hint">🏢 관리자 전용: 각 행의 [전사반영] 버튼을 누르면 해당 내용이 전체 인원(신규 계정 포함)의 개인역량개발 맨 위에 일괄 반영됩니다.</p>' : '') +
+      (admin ? '<p class="asm-hint asm-bcast-hint">🏢 관리자 전용: 각 행 맨 왼쪽의 [전사반영] 버튼을 누르면 해당 내용이 전체 인원(신규 계정 포함)의 개인역량개발 맨 위에 일괄 반영됩니다.</p>' : '') +
       '<div class="asm-scroll"><table class="asm-table asm-table-grid">' +
-        '<thead><tr>' + fsh('development', 'div', '구분') + fsh('development', 'course', '교육과정명') + fsh('development', 'org', '주관기관') + '<th>교육기간<br><small>(시간)</small></th><th>비용</th><th>교육 내용</th><th>업무반영범위</th><th></th></tr></thead>' +
+        '<thead><tr>' + bcastHead + fsh('development', 'div', '구분') + fsh('development', 'course', '교육과정명') + fsh('development', 'org', '주관기관') + '<th>교육기간<br><small>(시간)</small></th><th>비용</th><th>교육 내용</th><th>업무반영범위</th><th></th></tr></thead>' +
         '<tbody>' + rows + '</tbody></table></div>' +
       '<div class="asm-rowadd"><button class="asm-btn asm-btn-ghost asm-btn-sm" data-add="development">+ 교육 행 추가</button></div>');
   }
