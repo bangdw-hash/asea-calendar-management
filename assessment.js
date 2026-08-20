@@ -593,6 +593,7 @@ window.AssessmentModule = (function () {
         '<div class="asm-year-tabs">' + yearTabs + '</div>' +
         '<div class="asm-toolbar-right">' +
           '<span id="asm-save-badge" class="asm-badge">작성 중</span>' +
+          (YEARS.indexOf(S.year) > 0 ? '<button class="asm-btn asm-btn-ghost" id="asm-load-prev" title="전년도(' + (parseInt(S.year, 10) - 1) + '년) 작성 내용을 이 폼에 불러옵니다">📋 전년도 내용 불러오기</button>' : '') +
           '<button class="asm-btn asm-btn-ghost" id="asm-reload">불러오기</button>' +
           '<button class="asm-btn asm-btn-secondary" id="asm-save-draft">중간저장</button>' +
           '<button class="asm-btn asm-btn-primary" id="asm-submit">제출하기</button>' +
@@ -1001,6 +1002,7 @@ window.AssessmentModule = (function () {
         case 'asm-save-draft': case 'asm-save-draft2': saveForm('draft'); break;
         case 'asm-submit': case 'asm-submit2': doSubmit(); break;
         case 'asm-reload': doReload(); break;
+        case 'asm-load-prev': loadPreviousYearForm(); break;
         case 'asm-goadmin':
           syncFormFromInputs();
           saveFormLocal(S.year, { form: S.form, status: S.status, updatedAt: S.lastSavedAt });
@@ -1218,6 +1220,46 @@ window.AssessmentModule = (function () {
     if (S.dirty && !confirm('저장하지 않은 변경이 있습니다. 클라우드 기록으로 다시 불러오면 현재 편집 내용이 사라질 수 있습니다. 계속할까요?')) return;
     toast('클라우드에서 불러오는 중…', 'info');
     pullFromCloud().then(function () { S.dirty = false; render(); toast('불러오기 완료.', 'success'); });
+  }
+
+  // 같은 계정의 특정 연도 폼을 조회(클라우드 우선, 없으면 로컬 캐시)
+  function fetchYearForm(year) {
+    var local = loadFormLocal(year);
+    var fallback = (local && local.form) || null;
+    if (!(window.CloudForms && CloudForms.ready())) return Promise.resolve(fallback);
+    return CloudForms.list(KIND_FORM).then(function (res) {
+      if (res.ok) {
+        var ref = S.email + '::' + year;
+        var row = (res.rows || []).filter(function (r) { return r.ref === ref; })[0];
+        if (row && row.data && row.data.form) return row.data.form;
+      }
+      return fallback;
+    }).catch(function () { return fallback; });
+  }
+  // 전년도 내용 불러오기 — 같은 계정의 전년도 작성 내용을 현재 연도 폼에 복사(전사반영은 이 연도 것으로 재적용)
+  function loadPreviousYearForm() {
+    var prevYear = String(parseInt(S.year, 10) - 1);
+    if (YEARS.indexOf(prevYear) < 0) {
+      toast(prevYear + '년은 지원 연도 범위(' + YEARS.join('·') + ')를 벗어납니다.', 'error');
+      return;
+    }
+    toast(prevYear + '년 내용을 불러오는 중…', 'info');
+    fetchYearForm(prevYear).then(function (prevForm) {
+      if (!prevForm) { toast(prevYear + '년에 작성된 내용이 없습니다.', 'error'); return; }
+      if (!confirm(prevYear + '년도 작성 내용을 ' + S.year + '년도 폼에 불러옵니다.\n현재 ' + S.year + '년도에 작성 중이던 내용은 모두 덮어씌워집니다. 계속하시겠습니까?')) return;
+      var copy = JSON.parse(JSON.stringify(prevForm));
+      copy.meta.year = S.year;
+      copy.meta.appliedBroadcastIds = [];   // 전사반영 적용 이력은 연도별로 새로 추적
+      (copy.development || []).forEach(function (d) { delete d.broadcastId; });   // 지난 연도의 전사반영 표시는 제거
+      S.form = copy;
+      S.status = 'draft';
+      S.dirty = true;
+      mergeBroadcastForYear(S.year).then(function () {
+        persistFormSilently();
+        render();
+        toast(prevYear + '년 내용을 불러왔습니다. 필요한 부분을 수정한 뒤 저장해 주세요.', 'success');
+      });
+    }).catch(function (e) { toast('불러오기 실패: ' + ((e && e.message) || e), 'error'); });
   }
 
   /* ── 관리자 화면 ─────────────────────────────────────────────── */
