@@ -446,7 +446,9 @@ const BUCKET = 'forum-files';
 const PAGE_SIZE = 15;
 const CATS = ['전체','일반','AI활용사례','질문','제안','트러블슈팅','공지'];
 
-const sb = supabase.createClient(SUPA_URL, SUPA_KEY);
+const sb = supabase.createClient(SUPA_URL, SUPA_KEY, {
+  auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false }
+});
 
 /* ===================== State ===================== */
 let S = {
