@@ -23,6 +23,7 @@ window.AssessmentModule = (function () {
   var YEARS       = ['2026', '2027', '2028'];
   var KIND_FORM   = 'competency_assessment';
   var KIND_PROFILE = 'competency_profile';
+  var KIND_BROADCAST = 'competency_broadcast';   // 관리자 전사반영 항목(연도별 1행, data.items 배열)
 
   // 사용자 지정 소속(부서) 기본 세팅
   var DEPARTMENTS = [
@@ -68,6 +69,43 @@ window.AssessmentModule = (function () {
   }
   function isAdmin() { return (S.email || '').toLowerCase() === ADMIN_EMAIL; }
   function nowIso() { return new Date().toISOString(); }
+
+  /* 서술형(rte) 필드 저장값 → 화면 삽입용 HTML.
+     새로 입력된 값은 이미 브라우저의 기본 Enter 처리 결과(줄마다 <div>/<p> 또는 <br>)와
+     글자 크기 조절용 <span style="font-size">를 포함한 안전한 HTML이고, 이전 버전에 저장된
+     순수 텍스트(개행 문자 \n 포함) 값도 안전하게 escape 후 변환한다. */
+  function toRteHtml(raw) {
+    raw = raw == null ? '' : String(raw);
+    if (/<br\s*\/?>|<div[\s>]|<p[\s>]|<span[^>]*font-size/i.test(raw)) return raw;   // 이미 우리 형식의 HTML
+    return esc(raw).replace(/\r\n|\n/g, '<br>');
+  }
+  // rte HTML → 순수 텍스트(검색·CSV·마크다운 내보내기용). <br>/블록 경계는 공백으로
+  // 치환한 뒤 읽어 줄이 바뀌는 지점에서 단어가 서로 붙어버리지 않게 한다.
+  function stripHtml(html) {
+    if (!html) return '';
+    var d = document.createElement('div');
+    // 여는/닫는 태그 경계 모두를 공백으로 치환 — 여는 태그 앞의 텍스트("word1<div>word2</div>")도
+    // 분리되어야 붙어버리지 않는다.
+    d.innerHTML = String(html).replace(/<br\s*\/?>/gi, ' ').replace(/<\/?(div|p)[^>]*>/gi, ' ');
+    return (d.textContent || d.innerText || '').replace(/[ \t]+/g, ' ').trim();
+  }
+  // 입사일(YYYY-MM-DD) → 오늘 기준 전체근무경력("N년 M개월") 자동 계산
+  function calcTotalCareer(hireDateStr) {
+    if (!hireDateStr) return '';
+    var hd = new Date(hireDateStr);
+    if (isNaN(hd.getTime())) return '';
+    var now = new Date();
+    if (hd > now) return '';
+    var years = now.getFullYear() - hd.getFullYear();
+    var months = now.getMonth() - hd.getMonth();
+    if (now.getDate() < hd.getDate()) months -= 1;
+    if (months < 0) { years -= 1; months += 12; }
+    if (years < 0) return '';
+    var parts = [];
+    if (years > 0) parts.push(years + '년');
+    parts.push(months + '개월');
+    return parts.join(' ');
+  }
   function fmtDt(iso) {
     if (!iso) return '-';
     try {
@@ -134,13 +172,58 @@ window.AssessmentModule = (function () {
       issues: { difficulty: '', improvement: '', nextPlan: '' }   // 6. 애로사항 및 건의
     };
   }
+  /* ── 강의시수·지도학생 자동계산 유틸(순수 함수 — DOM 접근 없음) ──── */
+  function numOrZero(v) { var n = parseFloat(v); return isNaN(n) ? 0 : n; }
+  function pctStr(num, den) { den = numOrZero(den); if (den <= 0) return ''; return (numOrZero(num) / den * 100).toFixed(1) + '%'; }
+  // 관리자 화면 등에서 이전 버전/불완전한 레코드를 열람할 수 있으므로, 하위 객체가
+  // 없어도 안전하게 동작하도록 필요한 형태를 보장한다.
+  function ensureLectureShape(lec) {
+    ['banSu', 'credit', 'nonCredit', 'etc', 'total'].forEach(function (k) { if (!lec[k]) lec[k] = {}; });
+    return lec;
+  }
+  // 전체시수(월별) = 학점 + 비학점 + 기타시수 자동 합산
+  function computeLectureTotals(lec) {
+    ensureLectureShape(lec);
+    MONTHS.forEach(function (m) {
+      var hasAny = lec.credit[m] !== '' || lec.nonCredit[m] !== '' || lec.etc[m] !== '';
+      lec.total[m] = hasAny ? String(numOrZero(lec.credit[m]) + numOrZero(lec.nonCredit[m]) + numOrZero(lec.etc[m])) : '';
+    });
+  }
+  // 해당 행(반수/학점/비학점/기타/전체)의 12개월 평균
+  function lectureYearAvg(lec, key) {
+    ensureLectureShape(lec);
+    var sum = 0; MONTHS.forEach(function (m) { sum += numOrZero(lec[key][m]); });
+    return (sum / 12).toFixed(1);
+  }
+  // 지도학생 행: 수료=등록-휴학-자퇴, 등록유지율=수료/등록, 계=1+2학기 합, 수료율=계수료/계등록
+  function computeStudentRow(r) {
+    r.s1 = r.s1 || { reg: '', leave: '', drop: '', done: '', rate: '' };
+    r.s2 = r.s2 || { reg: '', leave: '', drop: '', done: '', rate: '' };
+    r.sum = r.sum || { reg: '', done: '', rate: '' };
+    var s1has = r.s1.reg !== '' || r.s1.leave !== '' || r.s1.drop !== '';
+    if (s1has) {
+      r.s1.done = String(Math.max(0, numOrZero(r.s1.reg) - numOrZero(r.s1.leave) - numOrZero(r.s1.drop)));
+      r.s1.rate = pctStr(r.s1.done, r.s1.reg);
+    } else { r.s1.done = ''; r.s1.rate = ''; }
+    var s2has = r.s2.reg !== '' || r.s2.leave !== '' || r.s2.drop !== '';
+    if (s2has) {
+      r.s2.done = String(Math.max(0, numOrZero(r.s2.reg) - numOrZero(r.s2.leave) - numOrZero(r.s2.drop)));
+      r.s2.rate = pctStr(r.s2.done, r.s2.reg);
+    } else { r.s2.done = ''; r.s2.rate = ''; }
+    if (s1has || s2has) {
+      r.sum.reg = String(numOrZero(r.s1.reg) + numOrZero(r.s2.reg));
+      r.sum.done = String(numOrZero(r.s1.done) + numOrZero(r.s2.done));
+      r.sum.rate = pctStr(r.sum.done, r.sum.reg);
+    } else { r.sum.reg = ''; r.sum.done = ''; r.sum.rate = ''; }
+  }
+
   function blankProject() { return { period: '', name: '', role: '' }; }
   function blankStudentRow(yr) {
     return {
       year: yr,
       s1: { reg: '', leave: '', drop: '', done: '', rate: '' },
       s2: { reg: '', leave: '', drop: '', done: '', rate: '' },
-      sum: { reg: '', done: '' }
+      sum: { reg: '', done: '', rate: '' }
     };
   }
   function blankDev(div) { return { div: div, course: '', org: '', period: '', cost: '', content: '', scope: '' }; }
@@ -228,13 +311,17 @@ window.AssessmentModule = (function () {
   }
 
   /* ── DOM ↔ 상태 동기화 ────────────────────────────────────────── */
+  // input/select/textarea는 .value, 서술형(rte) contenteditable은 .innerHTML을 값으로 사용
+  function elValue(el) {
+    return el.hasAttribute('contenteditable') ? el.innerHTML : el.value;
+  }
   // 입력값을 S.form 으로 수집(data-path 속성 기반)
   function syncFormFromInputs() {
     if (!S.root) return;
     var els = S.root.querySelectorAll('[data-path]');
     for (var i = 0; i < els.length; i++) {
       var el = els[i];
-      setByPath(S.form, el.getAttribute('data-path'), el.value);
+      setByPath(S.form, el.getAttribute('data-path'), elValue(el));
     }
   }
   function setByPath(obj, path, val) {
@@ -385,9 +472,12 @@ window.AssessmentModule = (function () {
       if (!name) { toast('성명을 입력해 주세요.', 'error'); return; }
       if (!jobGroup) { toast('직군을 선택해 주세요.', 'error'); return; }
       saveProfile({ dept: dept, name: name, position: position, jobGroup: jobGroup });
-      // 현재 연도 폼 준비 + 메타 반영
+      // 현재 연도 폼 준비 + 메타 반영 + 전사반영 항목 병합(신규 계정도 자동 적용)
       ensureFormLoaded().then(function () {
         applyProfileToForm();
+        return mergeBroadcastForYear(S.year);
+      }).then(function (changed) {
+        if (changed) persistFormSilently();
         S.view = 'form';
         render();
         toast('등록되었습니다. 작성을 시작하세요.', 'success');
@@ -403,6 +493,81 @@ window.AssessmentModule = (function () {
     if (!m.position) m.position = S.profile.position;
     if (!m.jobGroup) m.jobGroup = S.profile.jobGroup;
     saveFormLocal(S.year, { form: S.form, status: S.status, updatedAt: S.lastSavedAt });
+  }
+
+  /* ── 관리자 전사반영(개인역량개발 일괄 적용) ────────────────────────
+     관리자가 자신의 「개인역량개발」 행 옆 [전사반영] 버튼을 누르면, 그 행 내용이
+     연도별 공용 저장소(kind=competency_broadcast, ref=연도)에 추가되고, 이후
+     그 연도 폼을 불러오는 모든 계정(기존 작성자·신규 작성자 모두)의 개인역량개발
+     맨 위에 자동으로 삽입된다. 이미 적용된 항목은 meta.appliedBroadcastIds 로
+     추적해 다시 불러와도 중복 삽입되지 않는다(사용자가 삭제해도 재삽입되지 않음). */
+  function fetchBroadcastItems(year) {
+    if (!(window.CloudForms && CloudForms.ready())) return Promise.resolve([]);
+    return CloudForms.list(KIND_BROADCAST).then(function (res) {
+      if (!res.ok) return [];
+      var row = (res.rows || []).filter(function (r) { return r.ref === String(year); })[0];
+      return (row && row.data && row.data.items) || [];
+    }).catch(function () { return []; });
+  }
+  function mergeBroadcastIntoForm(form, items) {
+    if (!form || !items || !items.length) return false;
+    if (!Array.isArray(form.meta.appliedBroadcastIds)) form.meta.appliedBroadcastIds = [];
+    var applied = form.meta.appliedBroadcastIds;
+    var toInsert = items.filter(function (it) { return applied.indexOf(it.id) < 0; });
+    if (!toInsert.length) return false;
+    for (var i = toInsert.length - 1; i >= 0; i--) {   // 나중 반영분이 맨 위로 오도록 역순 unshift
+      var it = toInsert[i];
+      form.development.unshift({
+        div: it.div || '', course: it.course || '', org: it.org || '', period: it.period || '',
+        cost: it.cost || '', content: it.content || '', scope: it.scope || '', broadcastId: it.id
+      });
+      applied.push(it.id);
+    }
+    return true;
+  }
+  // 연도의 전사반영 항목을 조회해 현재 S.form에 병합. 변경되었으면 true를 resolve.
+  function mergeBroadcastForYear(year) {
+    return fetchBroadcastItems(year).then(function (items) {
+      if (String(S.year) !== String(year) || !S.form) return false;   // 그 사이 연도가 바뀌었으면 무시
+      return mergeBroadcastIntoForm(S.form, items);
+    });
+  }
+  // 토스트 없이 현재 폼을 로컬+클라우드에 조용히 저장(전사반영 병합 직후 자동 반영용)
+  function persistFormSilently() {
+    saveFormLocal(S.year, { form: S.form, status: S.status, updatedAt: S.lastSavedAt });
+    if (!(window.CloudForms && CloudForms.ready()) || !S.email) return;
+    var name = (S.profile && S.profile.name) || (S.form.meta && S.form.meta.name) || '';
+    var ref = S.email + '::' + S.year;
+    CloudForms.save(KIND_FORM, ref, name, S.status, { form: S.form, status: S.status, updatedAt: S.lastSavedAt, email: S.email, year: S.year }).catch(function () {});
+  }
+  // 관리자: 개인역량개발 특정 행을 전체 인원에게 일괄 반영
+  function broadcastDevRow(idx) {
+    if (!isAdmin()) return;
+    syncFormFromInputs();
+    var row = S.form.development[idx];
+    if (!row || (!row.course && !row.div && !stripHtml(row.content))) {
+      toast('반영할 내용(구분·교육과정명·교육 내용 등)을 먼저 입력해 주세요.', 'error');
+      return;
+    }
+    if (!confirm('이 항목을 전체 인원(신규 계정 포함)의 개인역량개발 맨 위에 일괄 반영하시겠습니까?\n각자 기존에 작성한 내용은 아래로 밀려 그대로 유지됩니다.')) return;
+    if (!(window.CloudForms && CloudForms.ready())) { toast('클라우드에 연결되지 않아 전사반영을 저장할 수 없습니다.', 'error'); return; }
+    var id = 'bc_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7);
+    var item = { id: id, div: row.div, course: row.course, org: row.org, period: row.period, cost: row.cost, content: row.content, scope: row.scope, createdAt: nowIso() };
+    fetchBroadcastItems(S.year).then(function (items) {
+      items.push(item);
+      return CloudForms.save(KIND_BROADCAST, String(S.year), '', 'active', { items: items });
+    }).then(function (r) {
+      if (!r || r.ok === false) { toast('전사반영 저장에 실패했습니다: ' + ((r && r.err) || '알 수 없는 오류'), 'error'); return; }
+      // 관리자 자신의 목록에서도 해당 행을 맨 위로 이동 + 적용 표시(중복 재삽입 방지)
+      S.form.development.splice(idx, 1);
+      row.broadcastId = id;
+      S.form.development.unshift(row);
+      if (!Array.isArray(S.form.meta.appliedBroadcastIds)) S.form.meta.appliedBroadcastIds = [];
+      S.form.meta.appliedBroadcastIds.push(id);
+      markDirty();
+      renderForm();
+      toast('전사반영 완료! 신규 계정을 포함한 모든 인원의 개인역량개발 맨 위에 표시됩니다.', 'success');
+    }).catch(function (e) { toast('전사반영 실패: ' + ((e && e.message) || e), 'error'); });
   }
 
   // 현재 연도 폼을 로컬 → 없으면 빈 폼으로 준비
@@ -458,6 +623,9 @@ window.AssessmentModule = (function () {
   /* 1. 개인 신상 정보 */
   function sec1() {
     var m = S.form.meta;
+    // 입사일 기준 전체근무경력을 오늘 날짜로 항상 자동 계산(수동 입력 불가) — 현직무경력만 수동.
+    var totalCareer = calcTotalCareer(m.hireDate);
+    if (totalCareer) m.totalCareer = totalCareer;
     var deptOpts = '<option value="">— 선택 —</option>' + DEPARTMENTS.map(function (d) {
       return '<option value="' + esc(d) + '"' + (m.dept === d ? ' selected' : '') + '>' + esc(d) + '</option>';
     }).join('');
@@ -473,15 +641,15 @@ window.AssessmentModule = (function () {
         '</tr>' +
         '<tr>' +
           '<th>입사일</th><td><input data-path="meta.hireDate" type="date" class="asm-cell-input" value="' + esc(m.hireDate) + '"></td>' +
-          '<th>전체근무경력</th><td><input data-path="meta.totalCareer" class="asm-cell-input" placeholder="예: 10년 3개월" value="' + esc(m.totalCareer) + '"></td>' +
+          '<th>전체근무경력 <small class="asm-auto-badge">자동</small></th><td><input id="asm-total-career" class="asm-cell-input asm-cell-readonly" value="' + esc(m.totalCareer || '') + '" readonly title="입사일 기준으로 오늘 날짜까지 자동 계산됩니다"></td>' +
           '<th>현직무경력</th><td><input data-path="meta.currentCareer" class="asm-cell-input" placeholder="예: 4년" value="' + esc(m.currentCareer) + '"></td>' +
         '</tr>' +
         '<tr>' +
           '<th>직 군</th><td><select data-path="meta.jobGroup" id="asm-jobgroup" class="asm-cell-input">' + jgOpts + '</select></td>' +
-          '<th>주요 자격·면허</th><td colspan="3"><input data-path="meta.licenses" class="asm-cell-input" placeholder="해당 자격증·면허·인증 등 모두 기재" value="' + esc(m.licenses) + '"></td>' +
+          '<th>주요 자격·면허</th><td colspan="3">' + rte('meta.licenses', m.licenses, '해당 자격증·면허·인증 등 모두 기재') + '</td>' +
         '</tr>' +
         '<tr>' +
-          '<th>직책업무 요약</th><td colspan="5"><textarea data-path="meta.roleSummary" class="asm-cell-input asm-ta" rows="2">' + esc(m.roleSummary) + '</textarea></td>' +
+          '<th>직책업무 요약</th><td colspan="5">' + rte('meta.roleSummary', m.roleSummary, '', 'asm-rte-lg') + '</td>' +
         '</tr>' +
       '</table>');
   }
@@ -499,8 +667,8 @@ window.AssessmentModule = (function () {
         '<td class="asm-td-no">' + (i + 1) + '</td>' +
         '<td><select data-path="jobs.' + i + '.group" class="asm-cell-input asm-cell-sm">' + grpOpts + '</select></td>' +
         '<td><input data-path="jobs.' + i + '.title" class="asm-cell-input" placeholder="직무명" value="' + esc(j.title) + '"></td>' +
-        '<td><textarea data-path="jobs.' + i + '.content" class="asm-cell-input asm-ta" rows="1" placeholder="구체적 업무 내용">' + esc(j.content) + '</textarea></td>' +
-        '<td><textarea data-path="jobs.' + i + '.competency" class="asm-cell-input asm-ta" rows="1" placeholder="기술·지식">' + esc(j.competency) + '</textarea></td>' +
+        '<td>' + rte('jobs.' + i + '.content', j.content, '구체적 업무 내용') + '</td>' +
+        '<td>' + rte('jobs.' + i + '.competency', j.competency, '기술·지식') + '</td>' +
         '<td><select data-path="jobs.' + i + '.cycle" class="asm-cell-input asm-cell-sm">' + cyc + '</select></td>' +
         '<td><input data-path="jobs.' + i + '.relDept" class="asm-cell-input asm-cell-sm" value="' + esc(j.relDept) + '"></td>' +
         '<td class="asm-td-del"><button class="asm-rowdel" data-arr="jobs" data-idx="' + i + '" title="행 삭제">✕</button></td>' +
@@ -526,8 +694,8 @@ window.AssessmentModule = (function () {
       return '<tr>' +
         '<td><select data-path="performance.' + i + '.category" class="asm-cell-input asm-cell-sm">' + catOpts + '</select></td>' +
         '<td><input data-path="performance.' + i + '.task" class="asm-cell-input" placeholder="해당 업무명" value="' + esc(p.task) + '"></td>' +
-        '<td><textarea data-path="performance.' + i + '.result" class="asm-cell-input asm-ta" rows="1" placeholder="업무 성과 및 기여 내용 (수치·결과 포함)">' + esc(p.result) + '</textarea></td>' +
-        '<td><input data-path="performance.' + i + '.note" class="asm-cell-input asm-cell-sm" placeholder="협력부서·근거" value="' + esc(p.note) + '"></td>' +
+        '<td>' + rte('performance.' + i + '.result', p.result, '업무 성과 및 기여 내용 (수치·결과 포함)') + '</td>' +
+        '<td>' + rte('performance.' + i + '.note', p.note, '협력부서·근거') + '</td>' +
         '<td class="asm-td-del"><button class="asm-rowdel" data-arr="performance" data-idx="' + i + '" title="행 삭제">✕</button></td>' +
       '</tr>';
     }).join('');
@@ -565,7 +733,7 @@ window.AssessmentModule = (function () {
         '<td class="asm-td-no">' + (i + 1) + '</td>' +
         '<td><input data-path="admin.projects.' + i + '.period" class="asm-cell-input asm-cell-sm" placeholder="예: 2026.03~06" value="' + esc(p.period) + '"></td>' +
         '<td><input data-path="admin.projects.' + i + '.name" class="asm-cell-input" placeholder="참여 사업명" value="' + esc(p.name) + '"></td>' +
-        '<td><textarea data-path="admin.projects.' + i + '.role" class="asm-cell-input asm-ta" rows="1" placeholder="담당업무 및 사업성과">' + esc(p.role) + '</textarea></td>' +
+        '<td>' + rte('admin.projects.' + i + '.role', p.role, '담당업무 및 사업성과') + '</td>' +
         '<td class="asm-td-del"><button class="asm-rowdel" data-arr="admin.projects" data-idx="' + i + '" title="행 삭제">✕</button></td>' +
       '</tr>';
     }).join('');
@@ -582,35 +750,41 @@ window.AssessmentModule = (function () {
   /* 4-2 교무직 */
   function sec4Faculty() {
     var f = S.form.faculty;
-    var monthHead = '<tr><th>구분</th>' + MONTHS.map(function (m) { return '<th>' + m + '</th>'; }).join('') + '</tr>';
-    var lecRow = function (label, key) {
-      return '<tr><th>' + label + '</th>' + MONTHS.map(function (m) {
-        return '<td><input data-path="faculty.lecture.' + key + '.' + m + '" class="asm-cell-input asm-cell-num" inputmode="numeric" value="' + esc(f.lecture[key][m]) + '"></td>';
-      }).join('') + '</tr>';
+    computeLectureTotals(f.lecture);
+    var monthHead = '<tr><th>구분</th>' + MONTHS.map(function (m) { return '<th>' + m + '</th>'; }).join('') + '<th>연평균</th></tr>';
+    var lecRow = function (label, key, editable) {
+      var cells = MONTHS.map(function (m) {
+        if (editable) return '<td><input data-path="faculty.lecture.' + key + '.' + m + '" class="asm-cell-input asm-cell-num" inputmode="numeric" value="' + esc(f.lecture[key][m]) + '"></td>';
+        return '<td><input id="asm-lec-total-' + m + '" class="asm-cell-input asm-cell-num asm-cell-readonly" readonly value="' + esc(f.lecture[key][m]) + '"></td>';
+      }).join('');
+      return '<tr><th>' + label + '</th>' + cells + '<td class="asm-sum" id="asm-avg-lec-' + key + '">' + lectureYearAvg(f.lecture, key) + '</td></tr>';
     };
     var lecture =
       '<h4 class="asm-h4">4-2-1. 개인별 강의시수 <span class="asm-tag asm-tag-fac">교무직</span></h4>' +
       '<div class="asm-scroll"><table class="asm-table asm-table-month">' +
         monthHead +
-        lecRow('반수', 'banSu') +
-        lecRow('학점 시수', 'credit') +
-        lecRow('비학점 시수', 'nonCredit') +
-        lecRow('기타시수(국비 등)', 'etc') +
-        lecRow('전체시수', 'total') +
+        lecRow('반수', 'banSu', true) +
+        lecRow('학점 시수', 'credit', true) +
+        lecRow('비학점 시수', 'nonCredit', true) +
+        lecRow('기타시수(국비 등)', 'etc', true) +
+        lecRow('전체시수', 'total', false) +
       '</table></div>' +
-      '<input data-path="faculty.lecture.note" class="asm-cell-input asm-note-input" placeholder="※ 비고: 참고사항 자유롭게 기재" value="' + esc(f.lecture.note) + '">';
+      '<p class="asm-hint">※ 전체시수 = 학점 + 비학점 + 기타시수(자동 계산). 연평균은 12개월 평균입니다.</p>' +
+      rte('faculty.lecture.note', f.lecture.note, '※ 비고: 참고사항 자유롭게 기재', 'asm-note-input');
 
     var stuRows = f.students.map(function (r, i) {
-      var cell = function (path, v) { return '<td><input data-path="' + path + '" class="asm-cell-input asm-cell-num" value="' + esc(v) + '"></td>'; };
+      computeStudentRow(r);
+      var edCell = function (path, v) { return '<td><input data-path="' + path + '" class="asm-cell-input asm-cell-num" value="' + esc(v) + '"></td>'; };
+      var roCell = function (id, v) { return '<td><input id="' + id + '" class="asm-cell-input asm-cell-num asm-cell-readonly" readonly value="' + esc(v) + '"></td>'; };
       return '<tr>' +
         '<td><input data-path="faculty.students.' + i + '.year" class="asm-cell-input asm-cell-sm" value="' + esc(r.year) + '"></td>' +
-        cell('faculty.students.' + i + '.s1.reg', r.s1.reg) + cell('faculty.students.' + i + '.s1.leave', r.s1.leave) +
-        cell('faculty.students.' + i + '.s1.drop', r.s1.drop) + cell('faculty.students.' + i + '.s1.done', r.s1.done) +
-        cell('faculty.students.' + i + '.s1.rate', r.s1.rate) +
-        cell('faculty.students.' + i + '.s2.reg', r.s2.reg) + cell('faculty.students.' + i + '.s2.leave', r.s2.leave) +
-        cell('faculty.students.' + i + '.s2.drop', r.s2.drop) + cell('faculty.students.' + i + '.s2.done', r.s2.done) +
-        cell('faculty.students.' + i + '.s2.rate', r.s2.rate) +
-        cell('faculty.students.' + i + '.sum.reg', r.sum.reg) + cell('faculty.students.' + i + '.sum.done', r.sum.done) +
+        edCell('faculty.students.' + i + '.s1.reg', r.s1.reg) + edCell('faculty.students.' + i + '.s1.leave', r.s1.leave) +
+        edCell('faculty.students.' + i + '.s1.drop', r.s1.drop) +
+        roCell('asm-stu-' + i + '-s1done', r.s1.done) + roCell('asm-stu-' + i + '-s1rate', r.s1.rate) +
+        edCell('faculty.students.' + i + '.s2.reg', r.s2.reg) + edCell('faculty.students.' + i + '.s2.leave', r.s2.leave) +
+        edCell('faculty.students.' + i + '.s2.drop', r.s2.drop) +
+        roCell('asm-stu-' + i + '-s2done', r.s2.done) + roCell('asm-stu-' + i + '-s2rate', r.s2.rate) +
+        roCell('asm-stu-' + i + '-sumreg', r.sum.reg) + roCell('asm-stu-' + i + '-sumdone', r.sum.done) + roCell('asm-stu-' + i + '-sumrate', r.sum.rate) +
         '<td class="asm-td-del"><button class="asm-rowdel" data-arr="faculty.students" data-idx="' + i + '" title="행 삭제">✕</button></td>' +
       '</tr>';
     }).join('');
@@ -618,11 +792,12 @@ window.AssessmentModule = (function () {
       '<h4 class="asm-h4">4-2-2. 지도교수 학생관리 현황 <span class="asm-tag asm-tag-fac">교무직</span></h4>' +
       '<div class="asm-scroll"><table class="asm-table asm-table-grid asm-table-student">' +
         '<thead>' +
-          '<tr>' + '<th rowspan="2" class="asm-fsort" data-fsort="faculty.students::year" title="클릭하여 정렬">연도 ' + (S.formSort['faculty.students'] && S.formSort['faculty.students'].key === 'year' ? '<span class="asm-sort-ico on">' + (S.formSort['faculty.students'].dir > 0 ? '▲' : '▼') + '</span>' : '<span class="asm-sort-ico">⇅</span>') + '</th><th colspan="5">1학기</th><th colspan="5">2학기</th><th colspan="2">계</th><th rowspan="2"></th></tr>' +
-          '<tr><th>등록</th><th>휴학</th><th>자퇴</th><th>수료</th><th>등록률</th><th>등록</th><th>휴학</th><th>자퇴</th><th>수료</th><th>등록률</th><th>등록</th><th>수료</th></tr>' +
+          '<tr>' + '<th rowspan="2" class="asm-fsort" data-fsort="faculty.students::year" title="클릭하여 정렬">연도 ' + (S.formSort['faculty.students'] && S.formSort['faculty.students'].key === 'year' ? '<span class="asm-sort-ico on">' + (S.formSort['faculty.students'].dir > 0 ? '▲' : '▼') + '</span>' : '<span class="asm-sort-ico">⇅</span>') + '</th><th colspan="5">1학기</th><th colspan="5">2학기</th><th colspan="3">계</th><th rowspan="2"></th></tr>' +
+          '<tr><th>등록</th><th>휴학</th><th>자퇴</th><th>수료</th><th>등록유지율</th><th>등록</th><th>휴학</th><th>자퇴</th><th>수료</th><th>등록유지율</th><th>등록</th><th>수료</th><th>수료율</th></tr>' +
         '</thead><tbody>' + stuRows + '</tbody></table></div>' +
         '<div class="asm-rowadd"><button class="asm-btn asm-btn-ghost asm-btn-sm" data-add="faculty.students">+ 연도 행 추가</button></div>' +
-      '<input data-path="faculty.studentsNote" class="asm-cell-input asm-note-input" placeholder="※ 비고: 참고사항 자유롭게 기재" value="' + esc(f.studentsNote) + '">';
+      '<p class="asm-hint">※ 수료=등록-휴학-자퇴, 등록유지율=수료÷등록, 계=1·2학기 합, 수료율=계 수료÷계 등록 (모두 자동 계산).</p>' +
+      rte('faculty.studentsNote', f.studentsNote, '※ 비고: 참고사항 자유롭게 기재', 'asm-note-input');
 
     var cHead = '<tr><th>월</th>' + MONTHS.map(function (m) { return '<th>' + m + '</th>'; }).join('') + '<th>합계</th></tr>';
     var cBody = '<tr><th>건수</th>' + MONTHS.map(function (m) {
@@ -638,19 +813,23 @@ window.AssessmentModule = (function () {
 
   /* 5. 개인역량개발 */
   function sec5() {
+    var admin = isAdmin();
     var rows = S.form.development.map(function (d, i) {
-      return '<tr>' +
-        '<td><input data-path="development.' + i + '.div" class="asm-cell-input asm-cell-sm" value="' + esc(d.div) + '" placeholder="예: 2026년(실시)"></td>' +
+      var badge = d.broadcastId ? '<span class="asm-bcast-badge" title="관리자가 전사에 일괄 반영한 항목입니다">🏢 전사반영</span>' : '';
+      var bcastBtn = admin ? '<button class="asm-broadcast-btn" data-bcast-idx="' + i + '" title="이 항목을 전체 인원의 개인역량개발 맨 위에 일괄 반영">🏢 전사반영</button>' : '';
+      return '<tr' + (d.broadcastId ? ' class="asm-row-bcast"' : '') + '>' +
+        '<td>' + badge + '<input data-path="development.' + i + '.div" class="asm-cell-input asm-cell-sm" value="' + esc(d.div) + '" placeholder="예: 2026년(실시)"></td>' +
         '<td><input data-path="development.' + i + '.course" class="asm-cell-input" placeholder="교육과정명" value="' + esc(d.course) + '"></td>' +
         '<td><input data-path="development.' + i + '.org" class="asm-cell-input asm-cell-sm" placeholder="주관기관" value="' + esc(d.org) + '"></td>' +
         '<td><input data-path="development.' + i + '.period" class="asm-cell-input asm-cell-sm" placeholder="시간" value="' + esc(d.period) + '"></td>' +
         '<td><input data-path="development.' + i + '.cost" class="asm-cell-input asm-cell-sm" placeholder="비용" value="' + esc(d.cost) + '"></td>' +
-        '<td><textarea data-path="development.' + i + '.content" class="asm-cell-input asm-ta" rows="1" placeholder="교육 내용">' + esc(d.content) + '</textarea></td>' +
-        '<td><input data-path="development.' + i + '.scope" class="asm-cell-input asm-cell-sm" placeholder="업무반영범위" value="' + esc(d.scope) + '"></td>' +
-        '<td class="asm-td-del"><button class="asm-rowdel" data-arr="development" data-idx="' + i + '" title="행 삭제">✕</button></td>' +
+        '<td>' + rte('development.' + i + '.content', d.content, '교육 내용') + '</td>' +
+        '<td>' + rte('development.' + i + '.scope', d.scope, '업무반영범위') + '</td>' +
+        '<td class="asm-td-del">' + bcastBtn + '<button class="asm-rowdel" data-arr="development" data-idx="' + i + '" title="행 삭제">✕</button></td>' +
       '</tr>';
     }).join('');
     return section('5', '개인역량개발 <small>(교육 이수·희망)</small>',
+      (admin ? '<p class="asm-hint asm-bcast-hint">🏢 관리자 전용: 각 행의 [전사반영] 버튼을 누르면 해당 내용이 전체 인원(신규 계정 포함)의 개인역량개발 맨 위에 일괄 반영됩니다.</p>' : '') +
       '<div class="asm-scroll"><table class="asm-table asm-table-grid">' +
         '<thead><tr>' + fsh('development', 'div', '구분') + fsh('development', 'course', '교육과정명') + fsh('development', 'org', '주관기관') + '<th>교육기간<br><small>(시간)</small></th><th>비용</th><th>교육 내용</th><th>업무반영범위</th><th></th></tr></thead>' +
         '<tbody>' + rows + '</tbody></table></div>' +
@@ -662,9 +841,9 @@ window.AssessmentModule = (function () {
     var s = S.form.issues;
     return section('6', '직무 관련 애로사항 및 건의',
       '<table class="asm-table asm-table-info">' +
-        '<tr><th>애로사항</th><td><textarea data-path="issues.difficulty" class="asm-cell-input asm-ta" rows="3">' + esc(s.difficulty) + '</textarea></td></tr>' +
-        '<tr><th>개선사항 건의</th><td><textarea data-path="issues.improvement" class="asm-cell-input asm-ta" rows="3">' + esc(s.improvement) + '</textarea></td></tr>' +
-        '<tr><th>' + (parseInt(S.year, 10) + 1) + '년 목표 및 계획</th><td><textarea data-path="issues.nextPlan" class="asm-cell-input asm-ta" rows="3">' + esc(s.nextPlan) + '</textarea></td></tr>' +
+        '<tr><th>애로사항</th><td>' + rte('issues.difficulty', s.difficulty, '', 'asm-rte-lg') + '</td></tr>' +
+        '<tr><th>개선사항 건의</th><td>' + rte('issues.improvement', s.improvement, '', 'asm-rte-lg') + '</td></tr>' +
+        '<tr><th>' + (parseInt(S.year, 10) + 1) + '년 목표 및 계획</th><td>' + rte('issues.nextPlan', s.nextPlan, '', 'asm-rte-lg') + '</td></tr>' +
       '</table>');
   }
 
@@ -673,6 +852,13 @@ window.AssessmentModule = (function () {
   }
   function section(no, title, body) {
     return '<div class="asm-section">' + sectionHead(no, title) + '<div class="asm-sec-body">' + body + '</div></div>';
+  }
+
+  /* 서술형 입력 셀(rte) — Enter로 줄바꿈되는 주관식 입력 + 선택 글자 크기 조절.
+     <textarea> 대신 contenteditable div를 사용해 부분 선택 글자 크기 조절(가- / 가+)을 지원한다. */
+  function rte(path, value, placeholder, extraClass) {
+    return '<div class="asm-cell-input asm-rte' + (extraClass ? ' ' + extraClass : '') + '" contenteditable="true" ' +
+      'data-path="' + path + '" data-ph="' + esc(placeholder || '') + '">' + toRteHtml(value) + '</div>';
   }
 
   /* ── 작성자 폼 표 정렬(직무 분석/업무 성과) ─────────────────────
@@ -757,10 +943,29 @@ window.AssessmentModule = (function () {
     S.root.addEventListener('input', function (e) {
       var t = e.target;
       if (t.matches && t.matches('[data-path]')) {
-        if (S.form) setByPath(S.form, t.getAttribute('data-path'), t.value);
+        if (S.form) setByPath(S.form, t.getAttribute('data-path'), elValue(t));
         markDirty();
         if (t.hasAttribute('data-sum')) recalcSums();
         autoGrow(t);
+        var dp = t.getAttribute('data-path') || '';
+        if (dp === 'meta.hireDate') updateTotalCareerDisplay();
+        if (/^faculty\.lecture\.(banSu|credit|nonCredit|etc)\.\d+$/.test(dp)) recalcLectureTotalsDisplay();
+        var stuM = dp.match(/^faculty\.students\.(\d+)\.(s1|s2)\.(reg|leave|drop)$/);
+        if (stuM) recalcStudentRowDisplay(parseInt(stuM[1], 10));
+      }
+    });
+    // 서술형(rte) 입력: Enter는 가로채지 않고 브라우저 기본 동작에 맡긴다.
+    // (Range API로 <br>을 직접 삽입하면, 줄 끝에서의 캐럿 위치가 브라우저 렌더링
+    //  주기 사이에 정규화되어 다음 글자가 br 앞으로 들어가는 문제가 실제 타이핑
+    //  환경에서도 재현됨 — 브라우저 자체 Enter 처리가 훨씬 안정적이다.
+    //  결과로 생기는 <div>/<p> 줄바꿈은 toRteHtml()/stripHtml()에서 함께 처리한다.)
+
+    // 서술형(rte) 붙여넣기: 서식 없는 텍스트만 삽입(외부 서식·태그 유입 방지)
+    S.root.addEventListener('paste', function (e) {
+      if (e.target && e.target.matches && e.target.matches('.asm-rte')) {
+        e.preventDefault();
+        var text = (e.clipboardData || window.clipboardData).getData('text/plain');
+        document.execCommand('insertText', false, text);
       }
     });
     // 직군 변경 → 4장 전환
@@ -785,6 +990,7 @@ window.AssessmentModule = (function () {
       if (t.classList.contains('asm-year-tab') && t.hasAttribute('data-year')) { switchYear(t.getAttribute('data-year')); return; }
       if (t.hasAttribute('data-add')) { addRow(t.getAttribute('data-add')); return; }
       if (t.classList.contains('asm-rowdel')) { delRow(t.getAttribute('data-arr'), parseInt(t.getAttribute('data-idx'), 10)); return; }
+      if (t.hasAttribute('data-bcast-idx')) { broadcastDevRow(parseInt(t.getAttribute('data-bcast-idx'), 10)); return; }
       switch (t.id) {
         case 'asm-save-draft': case 'asm-save-draft2': saveForm('draft'); break;
         case 'asm-submit': case 'asm-submit2': doSubmit(); break;
@@ -796,6 +1002,144 @@ window.AssessmentModule = (function () {
         case 'asm-reopen': S.status = 'draft'; render(); break;
       }
     });
+
+    initRteToolbar();
+  }
+
+  // 입사일 변경 시 전체근무경력 표시를 즉시 갱신(전체 재렌더 없이)
+  function updateTotalCareerDisplay() {
+    if (!S.form) return;
+    var computed = calcTotalCareer(S.form.meta.hireDate);
+    S.form.meta.totalCareer = computed;
+    var el = S.root && S.root.querySelector('#asm-total-career');
+    if (el) el.value = computed;
+  }
+
+  // 강의시수 월별 입력 변경 → 전체시수·연평균을 재계산해 화면에 즉시 반영(전체 재렌더 없이)
+  function recalcLectureTotalsDisplay() {
+    if (!S.form || !S.form.faculty) return;
+    var lec = S.form.faculty.lecture;
+    computeLectureTotals(lec);
+    MONTHS.forEach(function (m) {
+      var el = S.root.querySelector('#asm-lec-total-' + m);
+      if (el) el.value = lec.total[m];
+    });
+    ['banSu', 'credit', 'nonCredit', 'etc', 'total'].forEach(function (key) {
+      var el = S.root.querySelector('#asm-avg-lec-' + key);
+      if (el) el.textContent = lectureYearAvg(lec, key);
+    });
+  }
+  // 지도학생 행 입력 변경 → 수료·등록유지율·계·수료율을 재계산해 화면에 즉시 반영
+  function recalcStudentRowDisplay(i) {
+    if (!S.form || !S.form.faculty) return;
+    var r = S.form.faculty.students[i];
+    if (!r) return;
+    computeStudentRow(r);
+    var set = function (id, v) { var el = S.root.querySelector('#' + id); if (el) el.value = v; };
+    set('asm-stu-' + i + '-s1done', r.s1.done); set('asm-stu-' + i + '-s1rate', r.s1.rate);
+    set('asm-stu-' + i + '-s2done', r.s2.done); set('asm-stu-' + i + '-s2rate', r.s2.rate);
+    set('asm-stu-' + i + '-sumreg', r.sum.reg); set('asm-stu-' + i + '-sumdone', r.sum.done); set('asm-stu-' + i + '-sumrate', r.sum.rate);
+  }
+
+  /* ── 서술형(rte) 글자 크기 조절 — 선택한 글자만 크기 변경 ──────────
+     Word/Google Docs 방식: 텍스트를 드래그 선택하면 선택 영역 위에 작은 툴바가
+     떠오르고, [가-]/[가+] 버튼을 누르면 선택된 부분의 글자 크기만 바뀐다. */
+  var _rteToolbar = null;
+  var _rteSel = null;   // 마지막으로 감지된 { rte, range } — 버튼 클릭 시 selection 유실 대비
+
+  function initRteToolbar() {
+    if (S._rteInit) return;
+    S._rteInit = true;
+    document.addEventListener('selectionchange', function () {
+      if (S._rtePending) return;
+      S._rtePending = true;
+      window.requestAnimationFrame(function () { S._rtePending = false; onRteSelectionChange(); });
+    });
+    document.addEventListener('mousedown', function (e) {
+      var tb = _rteToolbar;
+      if (tb && !tb.contains(e.target) && !(e.target.closest && e.target.closest('.asm-rte'))) hideRteToolbar();
+    });
+  }
+
+  function ensureRteToolbar() {
+    if (_rteToolbar) return _rteToolbar;
+    var tb = document.createElement('div');
+    tb.className = 'asm-rte-toolbar';
+    tb.innerHTML =
+      '<button type="button" data-rtesize="-1" title="글자 작게">가<b>－</b></button>' +
+      '<button type="button" data-rtesize="1" title="글자 크게">가<b>＋</b></button>' +
+      '<button type="button" data-rtesize="0" title="기본 크기로">가↺</button>';
+    document.body.appendChild(tb);
+    // mousedown에서 preventDefault → 버튼 클릭 시 텍스트 선택(selection)이 풀리지 않게 함
+    tb.addEventListener('mousedown', function (e) { e.preventDefault(); });
+    tb.addEventListener('click', function (e) {
+      var b = e.target.closest('button[data-rtesize]');
+      if (!b) return;
+      applyFontSize(parseInt(b.getAttribute('data-rtesize'), 10));
+    });
+    _rteToolbar = tb;
+    return tb;
+  }
+  function showRteToolbarAt(rect) {
+    var tb = ensureRteToolbar();
+    tb.style.display = 'flex';
+    var top = rect.top + window.scrollY - tb.offsetHeight - 8;
+    var left = rect.left + window.scrollX + (rect.width / 2) - (tb.offsetWidth / 2);
+    if (top < window.scrollY + 4) top = rect.bottom + window.scrollY + 8;   // 화면 위로 넘치면 아래에 표시
+    left = Math.max(4, Math.min(left, window.scrollX + document.documentElement.clientWidth - tb.offsetWidth - 4));
+    tb.style.top = Math.max(4, top) + 'px';
+    tb.style.left = left + 'px';
+  }
+  function hideRteToolbar() { if (_rteToolbar) _rteToolbar.style.display = 'none'; }
+
+  function onRteSelectionChange() {
+    var sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0 || sel.isCollapsed) { hideRteToolbar(); return; }
+    var range = sel.getRangeAt(0);
+    var node = range.commonAncestorContainer;
+    var el = node.nodeType === 1 ? node : node.parentElement;
+    var rte = el && el.closest ? el.closest('.asm-rte') : null;
+    if (!rte || !S.root || !S.root.contains(rte)) { hideRteToolbar(); return; }
+    var rect = range.getBoundingClientRect();
+    if (!rect || (rect.width === 0 && rect.height === 0)) { hideRteToolbar(); return; }
+    _rteSel = { rte: rte, range: range.cloneRange() };
+    showRteToolbarAt(rect);
+  }
+
+  function applyFontSize(dir) {
+    var sel = window.getSelection();
+    var range = (sel && sel.rangeCount && !sel.isCollapsed) ? sel.getRangeAt(0) : (_rteSel && _rteSel.range);
+    if (!range) return;
+    var node = range.commonAncestorContainer;
+    var el = node.nodeType === 1 ? node : node.parentElement;
+    var rte = (el && el.closest ? el.closest('.asm-rte') : null) || (_rteSel && _rteSel.rte);
+    if (!rte) return;
+
+    if (dir === 0) {
+      unwrapFontSize(range);
+    } else {
+      var startEl = range.startContainer.nodeType === 3 ? range.startContainer.parentElement : range.startContainer;
+      var cur = parseFloat(getComputedStyle(startEl).fontSize) || 13;
+      var next = Math.round(Math.min(24, Math.max(10, cur * (dir > 0 ? 1.15 : 0.87))));
+      var span = document.createElement('span');
+      span.style.fontSize = next + 'px';
+      var frag = range.extractContents();
+      span.appendChild(frag);
+      range.insertNode(span);
+    }
+    setByPath(S.form, rte.getAttribute('data-path'), rte.innerHTML);
+    markDirty();
+    hideRteToolbar();
+    try { window.getSelection().removeAllRanges(); } catch (e) {}
+  }
+  // 선택 영역 내 font-size 스타일을 제거해 기본 크기로 되돌린다
+  function unwrapFontSize(range) {
+    var frag = range.extractContents();
+    var walker = document.createTreeWalker(frag, NodeFilter.SHOW_ELEMENT, null);
+    var toClean = [];
+    var n; while ((n = walker.nextNode())) { if (n.style && n.style.fontSize) toClean.push(n); }
+    toClean.forEach(function (elx) { elx.style.fontSize = ''; if (!elx.getAttribute('style')) elx.removeAttribute('style'); });
+    range.insertNode(frag);
   }
 
   // 렌더 직후 1회성 DOM 후처리(textarea 높이·합계)
@@ -845,8 +1189,11 @@ window.AssessmentModule = (function () {
     S.year = y;
     ensureFormLoaded().then(function () {
       applyProfileToForm();
-      // 클라우드 최신본 재조회
-      pullFromCloud().then(function () { render(); });
+      // 클라우드 최신본 재조회 + 전사반영 병합
+      pullFromCloud().then(function () { return mergeBroadcastForYear(y); }).then(function (changed) {
+        if (changed) persistFormSilently();
+        render();
+      });
       render();
     });
   }
@@ -1068,6 +1415,8 @@ window.AssessmentModule = (function () {
 
   /* ── 예쁜 문서(HTML) 렌더 ─────────────────────────────────────── */
   function dv(v) { v = (v == null ? '' : String(v)).trim(); return v ? esc(v) : '<span class="pd-empty">-</span>'; }
+  // 서술형(rte) 필드 표시용 — 이미 안전한 HTML(텍스트+<br>+font-size span)이므로 그대로 삽입
+  function dvHtml(v) { v = (v == null ? '' : String(v)).trim(); return v ? toRteHtml(v) : '<span class="pd-empty">-</span>'; }
   function monthTableRows(obj, label) {
     var cells = MONTHS.map(function (mo) { return '<td>' + dv(obj && obj[mo]) + '</td>'; }).join('');
     var sum = 0; MONTHS.forEach(function (mo) { var n = parseFloat(obj && obj[mo]); if (!isNaN(n)) sum += n; });
@@ -1085,29 +1434,31 @@ window.AssessmentModule = (function () {
     var sec1 = '<table class="pd-tbl pd-info">' +
       infoRow('소속', m.dept, '직책', m.position, '성명', m.name) +
       infoRow('입사일', m.hireDate, '전체근무경력', m.totalCareer, '현직무경력', m.currentCareer) +
-      '<tr><th>직군</th><td>' + dv(m.jobGroup) + '</td><th>주요 자격·면허</th><td colspan="3">' + dv(m.licenses) + '</td></tr>' +
-      '<tr><th>직책업무 요약</th><td colspan="5">' + dv(m.roleSummary) + '</td></tr>' +
+      '<tr><th>직군</th><td>' + dv(m.jobGroup) + '</td><th>주요 자격·면허</th><td colspan="3">' + dvHtml(m.licenses) + '</td></tr>' +
+      '<tr><th>직책업무 요약</th><td colspan="5">' + dvHtml(m.roleSummary) + '</td></tr>' +
       '</table>';
     // 2. 직무분석
     var jobsRows = (form.jobs || []).filter(function (j) { return j.title || j.content || j.competency; });
     var sec2 = jobsRows.length ? '<table class="pd-tbl"><thead><tr><th>No</th><th>구분</th><th>직무명</th><th>업무 내용</th><th>필요역량</th><th>주기</th><th>관련부서</th></tr></thead><tbody>' +
-      jobsRows.map(function (j, i) { return '<tr><td>' + (i + 1) + '</td><td>' + dv(j.group) + '</td><td>' + dv(j.title) + '</td><td class="pd-l">' + dv(j.content) + '</td><td class="pd-l">' + dv(j.competency) + '</td><td>' + dv(j.cycle) + '</td><td>' + dv(j.relDept) + '</td></tr>'; }).join('') +
+      jobsRows.map(function (j, i) { return '<tr><td>' + (i + 1) + '</td><td>' + dv(j.group) + '</td><td>' + dv(j.title) + '</td><td class="pd-l">' + dvHtml(j.content) + '</td><td class="pd-l">' + dvHtml(j.competency) + '</td><td>' + dv(j.cycle) + '</td><td>' + dv(j.relDept) + '</td></tr>'; }).join('') +
       '</tbody></table>' : '<div class="pd-empty">작성된 직무 없음</div>';
     // 3. 성과
     var perfRows = (form.performance || []).filter(function (p) { return p.task || p.result; });
     var sec3 = perfRows.length ? '<table class="pd-tbl"><thead><tr><th>구분</th><th>해당 업무</th><th>업무 성과 및 기여 내용</th><th>비고</th></tr></thead><tbody>' +
-      perfRows.map(function (p) { return '<tr><td>' + dv(p.category) + '</td><td>' + dv(p.task) + '</td><td class="pd-l">' + dv(p.result) + '</td><td>' + dv(p.note) + '</td></tr>'; }).join('') +
+      perfRows.map(function (p) { return '<tr><td>' + dv(p.category) + '</td><td>' + dv(p.task) + '</td><td class="pd-l">' + dvHtml(p.result) + '</td><td>' + dvHtml(p.note) + '</td></tr>'; }).join('') +
       '</tbody></table>' : '<div class="pd-empty">작성된 성과 없음</div>';
     // 4. 직군별 실적
     var sec4;
     if (m.jobGroup === '교무직') {
       var f = form.faculty || {};
       var lec = f.lecture || {};
+      if (lec.credit && lec.nonCredit && lec.etc && lec.total) computeLectureTotals(lec);
       var lecTbl = '<h4 class="pd-h4">4-2-1. 개인별 강의시수</h4><div class="pd-scroll"><table class="pd-tbl pd-month"><thead><tr><th>구분</th>' + MONTHS.map(function (mo) { return '<th>' + mo + '</th>'; }).join('') + '<th>계</th></tr></thead><tbody>' +
         monthTableRows(lec.banSu, '반수') + monthTableRows(lec.credit, '학점') + monthTableRows(lec.nonCredit, '비학점') + monthTableRows(lec.etc, '기타') + monthTableRows(lec.total, '전체') + '</tbody></table></div>';
       var stu = (f.students || []);
-      var stuTbl = '<h4 class="pd-h4">4-2-2. 지도학생 관리 현황</h4><div class="pd-scroll"><table class="pd-tbl"><thead><tr><th>연도</th><th>1학기 등록</th><th>휴학</th><th>자퇴</th><th>수료</th><th>등록률</th><th>2학기 등록</th><th>휴학</th><th>자퇴</th><th>수료</th><th>등록률</th><th>계 등록</th><th>계 수료</th></tr></thead><tbody>' +
-        stu.map(function (s) { var a = s.s1 || {}, b = s.s2 || {}, c = s.sum || {}; return '<tr><td>' + dv(s.year) + '</td><td>' + dv(a.reg) + '</td><td>' + dv(a.leave) + '</td><td>' + dv(a.drop) + '</td><td>' + dv(a.done) + '</td><td>' + dv(a.rate) + '</td><td>' + dv(b.reg) + '</td><td>' + dv(b.leave) + '</td><td>' + dv(b.drop) + '</td><td>' + dv(b.done) + '</td><td>' + dv(b.rate) + '</td><td>' + dv(c.reg) + '</td><td>' + dv(c.done) + '</td></tr>'; }).join('') + '</tbody></table></div>';
+      stu.forEach(function (s) { if (s.s1 && s.s2 && s.sum) computeStudentRow(s); });
+      var stuTbl = '<h4 class="pd-h4">4-2-2. 지도학생 관리 현황</h4><div class="pd-scroll"><table class="pd-tbl"><thead><tr><th>연도</th><th>1학기 등록</th><th>휴학</th><th>자퇴</th><th>수료</th><th>등록유지율</th><th>2학기 등록</th><th>휴학</th><th>자퇴</th><th>수료</th><th>등록유지율</th><th>계 등록</th><th>계 수료</th><th>수료율</th></tr></thead><tbody>' +
+        stu.map(function (s) { var a = s.s1 || {}, b = s.s2 || {}, c = s.sum || {}; return '<tr><td>' + dv(s.year) + '</td><td>' + dv(a.reg) + '</td><td>' + dv(a.leave) + '</td><td>' + dv(a.drop) + '</td><td>' + dv(a.done) + '</td><td>' + dv(a.rate) + '</td><td>' + dv(b.reg) + '</td><td>' + dv(b.leave) + '</td><td>' + dv(b.drop) + '</td><td>' + dv(b.done) + '</td><td>' + dv(b.rate) + '</td><td>' + dv(c.reg) + '</td><td>' + dv(c.done) + '</td><td>' + dv(c.rate) + '</td></tr>'; }).join('') + '</tbody></table></div>';
       var cnsTbl = '<h4 class="pd-h4">4-2-3. 학생 상담 횟수</h4><div class="pd-scroll"><table class="pd-tbl pd-month"><thead><tr><th>월</th>' + MONTHS.map(function (mo) { return '<th>' + mo + '</th>'; }).join('') + '<th>계</th></tr></thead><tbody>' + monthTableRows(f.counsel, '건수') + '</tbody></table></div>';
       sec4 = '<div class="pd-tag pd-tag-fac">교무직</div>' + lecTbl + stuTbl + cnsTbl;
     } else {
@@ -1115,19 +1466,19 @@ window.AssessmentModule = (function () {
       var draftTbl = '<h4 class="pd-h4">4-1-1. 연간 기안 상신 건수</h4><div class="pd-scroll"><table class="pd-tbl pd-month"><thead><tr><th>월</th>' + MONTHS.map(function (mo) { return '<th>' + mo + '</th>'; }).join('') + '<th>계</th></tr></thead><tbody>' + monthTableRows(a2.draftCounts, '건수') + '</tbody></table></div>';
       var projs = (a2.projects || []).filter(function (p) { return p.name || p.period; });
       var projTbl = '<h4 class="pd-h4">4-1-2. 연간 참여 사업</h4>' + (projs.length ? '<table class="pd-tbl"><thead><tr><th>연번</th><th>사업 기간</th><th>참여 사업명</th><th>담당업무 및 사업성과</th></tr></thead><tbody>' +
-        projs.map(function (p, i) { return '<tr><td>' + (i + 1) + '</td><td>' + dv(p.period) + '</td><td>' + dv(p.name) + '</td><td class="pd-l">' + dv(p.role) + '</td></tr>'; }).join('') + '</tbody></table>' : '<div class="pd-empty">작성된 참여 사업 없음</div>');
+        projs.map(function (p, i) { return '<tr><td>' + (i + 1) + '</td><td>' + dv(p.period) + '</td><td>' + dv(p.name) + '</td><td class="pd-l">' + dvHtml(p.role) + '</td></tr>'; }).join('') + '</tbody></table>' : '<div class="pd-empty">작성된 참여 사업 없음</div>');
       sec4 = '<div class="pd-tag">행정직</div>' + draftTbl + projTbl;
     }
     // 5. 개인역량개발
     var devs = (form.development || []).filter(function (d) { return d.course || d.org; });
     var sec5 = devs.length ? '<table class="pd-tbl"><thead><tr><th>구분</th><th>교육과정명</th><th>주관기관</th><th>기간</th><th>비용</th><th>교육 내용</th><th>업무반영범위</th></tr></thead><tbody>' +
-      devs.map(function (d) { return '<tr><td>' + dv(d.div) + '</td><td>' + dv(d.course) + '</td><td>' + dv(d.org) + '</td><td>' + dv(d.period) + '</td><td>' + dv(d.cost) + '</td><td class="pd-l">' + dv(d.content) + '</td><td>' + dv(d.scope) + '</td></tr>'; }).join('') + '</tbody></table>' : '<div class="pd-empty">작성된 교육 이력 없음</div>';
+      devs.map(function (d) { return '<tr><td>' + dv(d.div) + (d.broadcastId ? ' <span class="pd-tag">전사반영</span>' : '') + '</td><td>' + dv(d.course) + '</td><td>' + dv(d.org) + '</td><td>' + dv(d.period) + '</td><td>' + dv(d.cost) + '</td><td class="pd-l">' + dvHtml(d.content) + '</td><td class="pd-l">' + dvHtml(d.scope) + '</td></tr>'; }).join('') + '</tbody></table>' : '<div class="pd-empty">작성된 교육 이력 없음</div>';
     // 6. 애로사항
     var iss = form.issues || {};
     var sec6 = '<table class="pd-tbl pd-info">' +
-      '<tr><th>애로사항</th><td class="pd-l">' + dv(iss.difficulty) + '</td></tr>' +
-      '<tr><th>개선사항 건의</th><td class="pd-l">' + dv(iss.improvement) + '</td></tr>' +
-      '<tr><th>' + (parseInt(year, 10) + 1) + '년 목표 및 계획</th><td class="pd-l">' + dv(iss.nextPlan) + '</td></tr>' +
+      '<tr><th>애로사항</th><td class="pd-l">' + dvHtml(iss.difficulty) + '</td></tr>' +
+      '<tr><th>개선사항 건의</th><td class="pd-l">' + dvHtml(iss.improvement) + '</td></tr>' +
+      '<tr><th>' + (parseInt(year, 10) + 1) + '년 목표 및 계획</th><td class="pd-l">' + dvHtml(iss.nextPlan) + '</td></tr>' +
       '</table>';
 
     var sec = function (no, title, body) { return '<div class="pd-sec"><div class="pd-sec-h"><span class="pd-no">' + no + '</span>' + esc(title) + '</div>' + body + '</div>'; };
@@ -1276,11 +1627,12 @@ window.AssessmentModule = (function () {
     if (!form) return '';
     var parts = [];
     var m = form.meta || {};
-    parts.push(m.licenses, m.roleSummary, m.position, m.dept);
-    (form.jobs || []).forEach(function (j) { parts.push(j.title, j.content, j.competency); });
-    (form.performance || []).forEach(function (p) { parts.push(p.task, p.result); });
-    (form.development || []).forEach(function (d) { parts.push(d.course, d.content, d.scope, d.org); });
-    if (form.issues) parts.push(form.issues.nextPlan);
+    // 서술형(rte) 필드는 HTML로 저장되므로 검색 전 태그를 제거한 순수 텍스트로 변환
+    parts.push(stripHtml(m.licenses), stripHtml(m.roleSummary), m.position, m.dept);
+    (form.jobs || []).forEach(function (j) { parts.push(j.title, stripHtml(j.content), stripHtml(j.competency)); });
+    (form.performance || []).forEach(function (p) { parts.push(p.task, stripHtml(p.result)); });
+    (form.development || []).forEach(function (d) { parts.push(d.course, stripHtml(d.content), stripHtml(d.scope), d.org); });
+    if (form.issues) parts.push(stripHtml(form.issues.nextPlan));
     return parts.filter(Boolean).join(' \n ');
   }
   function ansh(key, label) {
@@ -1442,13 +1794,15 @@ window.AssessmentModule = (function () {
       var m = row ? rowMeta(row) : null;
       lines.push('### ' + (i + 1) + '. ' + x.dept + ' ' + x.name + ' (' + x.jobGroup + ') — 점수 ' + x.score);
       if (m && m.form) {
+        // 서술형(rte) 필드는 HTML로 저장되므로 마크다운에는 태그를 제거한 순수 텍스트로 기재
         var jobs = (m.form.jobs || []).filter(function (j) { return j.title; });
-        if (jobs.length) { lines.push('- 직무: ' + jobs.map(function (j) { return j.title + (j.competency ? '(' + j.competency + ')' : ''); }).join(' / ')); }
-        if (m.meta.licenses) lines.push('- 자격·면허: ' + m.meta.licenses);
+        if (jobs.length) { lines.push('- 직무: ' + jobs.map(function (j) { var c = stripHtml(j.competency); return j.title + (c ? '(' + c + ')' : ''); }).join(' / ')); }
+        var licenses = stripHtml(m.meta.licenses);
+        if (licenses) lines.push('- 자격·면허: ' + licenses);
         var devs = (m.form.development || []).filter(function (d) { return d.course; });
         if (devs.length) lines.push('- 교육이수: ' + devs.map(function (d) { return d.course; }).join(' / '));
         var perf = (m.form.performance || []).filter(function (p) { return p.result; });
-        if (perf.length) lines.push('- 주요성과: ' + perf.map(function (p) { return (p.task ? p.task + '—' : '') + p.result; }).slice(0, 3).join(' / '));
+        if (perf.length) lines.push('- 주요성과: ' + perf.map(function (p) { return (p.task ? p.task + '—' : '') + stripHtml(p.result); }).slice(0, 3).join(' / '));
       }
       lines.push('');
     });
@@ -1473,7 +1827,10 @@ window.AssessmentModule = (function () {
       render();               // 캐시로 즉시 표시
       pullFromCloud().then(function () {
         if (S.profile) applyProfileToForm();
-        render();             // 클라우드 병합 후 갱신
+        return mergeBroadcastForYear(S.year);
+      }).then(function (changed) {
+        if (changed) persistFormSilently();
+        render();             // 클라우드 병합(+ 전사반영 병합) 후 갱신
       });
     });
   }
