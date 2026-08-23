@@ -226,7 +226,13 @@ window.AssessmentModule = (function () {
       sum: { reg: '', done: '', rate: '' }
     };
   }
-  function blankDev(div) { return { div: div, course: '', org: '', period: '', cost: '', content: '', scope: '' }; }
+  function blankDev(div) { return { div: div, dateFrom: '', dateTo: '', isRange: false, course: '', org: '', period: '', cost: '', content: '', scope: '' }; }
+  // 개인역량개발 실시일자 표시용("YYYY-MM-DD" 또는 기간이면 "YYYY-MM-DD ~ YYYY-MM-DD")
+  function devDateLabel(d) {
+    if (!d.dateFrom) return '';
+    if (d.isRange && d.dateTo && d.dateTo !== d.dateFrom) return d.dateFrom + ' ~ ' + d.dateTo;
+    return d.dateFrom;
+  }
 
   /* ── 데이터 로드/저장 ─────────────────────────────────────────── */
   function loadProfileLocal() {
@@ -822,9 +828,16 @@ window.AssessmentModule = (function () {
       var bcastCell = admin
         ? '<td class="asm-td-bcast"><button class="asm-broadcast-btn" data-bcast-idx="' + i + '" title="이 항목을 전체 인원의 개인역량개발 맨 위에 일괄 반영">🏢 전사반영</button></td>'
         : '';
+      var dateCell =
+        '<td class="asm-dev-date">' +
+          '<input type="date" data-path="development.' + i + '.dateFrom" class="asm-cell-input asm-cell-sm" value="' + esc(d.dateFrom) + '">' +
+          (d.isRange ? '<span class="asm-daterange-sep">~</span><input type="date" data-path="development.' + i + '.dateTo" class="asm-cell-input asm-cell-sm" value="' + esc(d.dateTo) + '">' : '') +
+          '<button class="asm-daterange-toggle" data-dev-range-idx="' + i + '" title="여러 날짜에 걸친 교육이면 기간으로 설정">' + (d.isRange ? '단일일자로' : '＋ 기간 설정') + '</button>' +
+        '</td>';
       return '<tr' + (d.broadcastId ? ' class="asm-row-bcast"' : '') + '>' +
         bcastCell +
         '<td>' + badge + '<input data-path="development.' + i + '.div" class="asm-cell-input asm-cell-sm" value="' + esc(d.div) + '" placeholder="예: 2026년(실시)"></td>' +
+        dateCell +
         '<td><input data-path="development.' + i + '.course" class="asm-cell-input" placeholder="교육과정명" value="' + esc(d.course) + '"></td>' +
         '<td><input data-path="development.' + i + '.org" class="asm-cell-input asm-cell-sm" placeholder="주관기관" value="' + esc(d.org) + '"></td>' +
         '<td><input data-path="development.' + i + '.period" class="asm-cell-input asm-cell-sm" placeholder="시간" value="' + esc(d.period) + '"></td>' +
@@ -838,7 +851,7 @@ window.AssessmentModule = (function () {
     return section('5', '개인역량개발 <small>(교육 이수·희망)</small>',
       (admin ? '<p class="asm-hint asm-bcast-hint">🏢 관리자 전용: 각 행 맨 왼쪽의 [전사반영] 버튼을 누르면 해당 내용이 전체 인원(신규 계정 포함)의 개인역량개발 맨 위에 일괄 반영됩니다.</p>' : '') +
       '<div class="asm-scroll"><table class="asm-table asm-table-grid">' +
-        '<thead><tr>' + bcastHead + fsh('development', 'div', '구분') + fsh('development', 'course', '교육과정명') + fsh('development', 'org', '주관기관') + '<th>교육기간<br><small>(시간)</small></th><th>비용</th><th>교육 내용</th><th>업무반영범위</th><th></th></tr></thead>' +
+        '<thead><tr>' + bcastHead + fsh('development', 'div', '구분') + fsh('development', 'dateFrom', '실시일자') + fsh('development', 'course', '교육과정명') + fsh('development', 'org', '주관기관') + '<th>교육기간<br><small>(시간)</small></th><th>비용</th><th>교육 내용</th><th>업무반영범위</th><th></th></tr></thead>' +
         '<tbody>' + rows + '</tbody></table></div>' +
       '<div class="asm-rowadd"><button class="asm-btn asm-btn-ghost asm-btn-sm" data-add="development">+ 교육 행 추가</button></div>');
   }
@@ -998,6 +1011,7 @@ window.AssessmentModule = (function () {
       if (t.hasAttribute('data-add')) { addRow(t.getAttribute('data-add')); return; }
       if (t.classList.contains('asm-rowdel')) { delRow(t.getAttribute('data-arr'), parseInt(t.getAttribute('data-idx'), 10)); return; }
       if (t.hasAttribute('data-bcast-idx')) { broadcastDevRow(parseInt(t.getAttribute('data-bcast-idx'), 10)); return; }
+      if (t.hasAttribute('data-dev-range-idx')) { toggleDevDateRange(parseInt(t.getAttribute('data-dev-range-idx'), 10)); return; }
       switch (t.id) {
         case 'asm-save-draft': case 'asm-save-draft2': saveForm('draft'); break;
         case 'asm-submit': case 'asm-submit2': doSubmit(); break;
@@ -1185,6 +1199,17 @@ window.AssessmentModule = (function () {
     if (!Array.isArray(arr) || idx < 0 || idx >= arr.length) return;
     if (arr.length <= 1) { toast('최소 1개 행은 필요합니다.', 'info'); return; }
     arr.splice(idx, 1);
+    markDirty(); renderForm();
+  }
+
+  // 개인역량개발 실시일자를 단일일자 ↔ 기간(from~to)으로 전환. 기본은 하루짜리(단일일자).
+  function toggleDevDateRange(idx) {
+    syncFormFromInputs();
+    var d = S.form.development[idx];
+    if (!d) return;
+    d.isRange = !d.isRange;
+    if (d.isRange && !d.dateTo) d.dateTo = d.dateFrom;   // 기간 켜면 종료일 기본값=시작일
+    if (!d.isRange) d.dateTo = '';                       // 단일일자로 되돌리면 종료일 비움
     markDirty(); renderForm();
   }
 
@@ -1519,8 +1544,8 @@ window.AssessmentModule = (function () {
     }
     // 5. 개인역량개발
     var devs = (form.development || []).filter(function (d) { return d.course || d.org; });
-    var sec5 = devs.length ? '<table class="pd-tbl"><thead><tr><th>구분</th><th>교육과정명</th><th>주관기관</th><th>기간</th><th>비용</th><th>교육 내용</th><th>업무반영범위</th></tr></thead><tbody>' +
-      devs.map(function (d) { return '<tr><td>' + dv(d.div) + (d.broadcastId ? ' <span class="pd-tag">전사반영</span>' : '') + '</td><td>' + dv(d.course) + '</td><td>' + dv(d.org) + '</td><td>' + dv(d.period) + '</td><td>' + dv(d.cost) + '</td><td class="pd-l">' + dvHtml(d.content) + '</td><td class="pd-l">' + dvHtml(d.scope) + '</td></tr>'; }).join('') + '</tbody></table>' : '<div class="pd-empty">작성된 교육 이력 없음</div>';
+    var sec5 = devs.length ? '<table class="pd-tbl"><thead><tr><th>구분</th><th>실시일자</th><th>교육과정명</th><th>주관기관</th><th>교육시간</th><th>비용</th><th>교육 내용</th><th>업무반영범위</th></tr></thead><tbody>' +
+      devs.map(function (d) { return '<tr><td>' + dv(d.div) + (d.broadcastId ? ' <span class="pd-tag">전사반영</span>' : '') + '</td><td>' + dv(devDateLabel(d)) + '</td><td>' + dv(d.course) + '</td><td>' + dv(d.org) + '</td><td>' + dv(d.period) + '</td><td>' + dv(d.cost) + '</td><td class="pd-l">' + dvHtml(d.content) + '</td><td class="pd-l">' + dvHtml(d.scope) + '</td></tr>'; }).join('') + '</tbody></table>' : '<div class="pd-empty">작성된 교육 이력 없음</div>';
     // 6. 애로사항
     var iss = form.issues || {};
     var sec6 = '<table class="pd-tbl pd-info">' +
