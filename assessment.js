@@ -487,7 +487,7 @@ window.AssessmentModule = (function () {
         S.view = 'form';
         render();
         toast('등록되었습니다. 작성을 시작하세요.', 'success');
-      });
+      }).catch(function () { S.view = 'form'; render(); });
     });
   }
 
@@ -516,27 +516,32 @@ window.AssessmentModule = (function () {
     }).catch(function () { return []; });
   }
   function mergeBroadcastIntoForm(form, items) {
-    if (!form || !items || !items.length) return false;
-    if (!Array.isArray(form.meta.appliedBroadcastIds)) form.meta.appliedBroadcastIds = [];
-    var applied = form.meta.appliedBroadcastIds;
-    var toInsert = items.filter(function (it) { return applied.indexOf(it.id) < 0; });
-    if (!toInsert.length) return false;
-    for (var i = toInsert.length - 1; i >= 0; i--) {   // 나중 반영분이 맨 위로 오도록 역순 unshift
-      var it = toInsert[i];
-      form.development.unshift({
-        div: it.div || '', course: it.course || '', org: it.org || '', period: it.period || '',
-        cost: it.cost || '', content: it.content || '', scope: it.scope || '', broadcastId: it.id
-      });
-      applied.push(it.id);
-    }
-    return true;
+    try {
+      if (!form || !form.meta || !items || !items.length) return false;
+      if (!Array.isArray(form.development)) form.development = [];   // 손상/구버전 레코드 방어
+      if (!Array.isArray(form.meta.appliedBroadcastIds)) form.meta.appliedBroadcastIds = [];
+      var applied = form.meta.appliedBroadcastIds;
+      var toInsert = items.filter(function (it) { return applied.indexOf(it.id) < 0; });
+      if (!toInsert.length) return false;
+      for (var i = toInsert.length - 1; i >= 0; i--) {   // 나중 반영분이 맨 위로 오도록 역순 unshift
+        var it = toInsert[i];
+        form.development.unshift({
+          div: it.div || '', dateFrom: it.dateFrom || '', dateTo: it.dateTo || '', isRange: !!it.isRange,
+          course: it.course || '', org: it.org || '', period: it.period || '',
+          cost: it.cost || '', content: it.content || '', scope: it.scope || '', broadcastId: it.id
+        });
+        applied.push(it.id);
+      }
+      return true;
+    } catch (e) { try { console.error('[assessment] mergeBroadcastIntoForm failed:', e); } catch (ex) {} return false; }
   }
-  // 연도의 전사반영 항목을 조회해 현재 S.form에 병합. 변경되었으면 true를 resolve.
+  // 연도의 전사반영 항목을 조회해 현재 S.form에 병합. 변경되었으면 true를 resolve(실패해도 false로 안전하게 처리 —
+  // 이 병합이 실패해도 로그인/저장 흐름 전체가 멈추지 않도록 항상 이 함수 선에서 오류를 흡수한다).
   function mergeBroadcastForYear(year) {
     return fetchBroadcastItems(year).then(function (items) {
       if (String(S.year) !== String(year) || !S.form) return false;   // 그 사이 연도가 바뀌었으면 무시
       return mergeBroadcastIntoForm(S.form, items);
-    });
+    }).catch(function (e) { try { console.error('[assessment] mergeBroadcastForYear failed:', e); } catch (ex) {} return false; });
   }
   // 토스트 없이 현재 폼을 로컬+클라우드에 조용히 저장(전사반영 병합 직후 자동 반영용)
   function persistFormSilently() {
@@ -1226,7 +1231,7 @@ window.AssessmentModule = (function () {
       pullFromCloud().then(function () { return mergeBroadcastForYear(y); }).then(function (changed) {
         if (changed) persistFormSilently();
         render();
-      });
+      }).catch(function () { render(); });
       render();
     });
   }
@@ -1244,7 +1249,14 @@ window.AssessmentModule = (function () {
   function doReload() {
     if (S.dirty && !confirm('저장하지 않은 변경이 있습니다. 클라우드 기록으로 다시 불러오면 현재 편집 내용이 사라질 수 있습니다. 계속할까요?')) return;
     toast('클라우드에서 불러오는 중…', 'info');
-    pullFromCloud().then(function () { S.dirty = false; render(); toast('불러오기 완료.', 'success'); });
+    // 클라우드 최신본 재조회 + 전사반영 병합(이 버튼이 로그인 세션 중 새 전사반영을
+    // 확인하는 유일한 수동 새로고침 경로이므로 반드시 병합까지 포함해야 한다)
+    pullFromCloud().then(function () { return mergeBroadcastForYear(S.year); }).then(function (changed) {
+      S.dirty = false;
+      if (changed) persistFormSilently();
+      render();
+      toast('불러오기 완료.', 'success');
+    });
   }
 
   // 같은 계정의 특정 연도 폼을 조회(클라우드 우선, 없으면 로컬 캐시)
@@ -1904,7 +1916,7 @@ window.AssessmentModule = (function () {
       }).then(function (changed) {
         if (changed) persistFormSilently();
         render();             // 클라우드 병합(+ 전사반영 병합) 후 갱신
-      });
+      }).catch(function () { render(); });   // 위 체인에서 예기치 못한 오류가 나도 화면은 반드시 갱신
     });
   }
 
