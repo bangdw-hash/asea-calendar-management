@@ -258,6 +258,7 @@
     .asm-modal-head { display: flex; align-items: center; gap: 10px; padding: 14px 18px; border-bottom: 1px solid var(--line-2); }
     .asm-modal-x { margin-left: auto; border: none; background: #f1f3f7; border-radius: 7px; width: 28px; height: 28px; cursor: pointer; color: var(--muted); }
     .asm-modal-body { padding: 16px 18px; overflow-y: auto; }
+    .asm-modal-foot { display: flex; justify-content: flex-end; gap: 8px; padding: 12px 18px; border-top: 1px solid var(--line-2); }
     .asm-detail-meta { font-size: 13px; color: var(--muted); margin-bottom: 12px; }
     .asm-detail-json { background: #0f172a; color: #cbd5e1; font-size: 11.5px; line-height: 1.5; padding: 14px; border-radius: 8px; overflow-x: auto; white-space: pre-wrap; word-break: break-all; }
 
@@ -293,6 +294,25 @@
     .asm-json-details { margin-top: 18px; }
     .asm-json-details summary { cursor: pointer; color: var(--muted); font-size: 12.5px; font-weight: 600; }
     .asm-modal-lg { max-width: 900px; }
+    .asm-notice-error { background: #fdeaea; color: #a52424; border: 1px solid #f3c6c6; }
+
+    /* ── 업무일지 AI 자동정리 모달 ── */
+    .asm-ai-input input[type="file"] { display: block; margin-bottom: 12px; font-size: 13px; }
+    .asm-ai-textarea {
+      width: 100%; min-height: 220px; border: 1px solid var(--line); border-radius: 10px; padding: 12px;
+      font-family: inherit; font-size: 13px; line-height: 1.6; resize: vertical; background: #fbfcfe;
+    }
+    .asm-ai-textarea:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px rgba(37,99,235,.12); }
+    .asm-ai-loading { display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 50px 0; color: var(--navy); }
+    .asm-ai-group { margin-bottom: 18px; }
+    .asm-ai-group h4 { font-size: 13px; font-weight: 800; color: var(--navy-2); margin: 0 0 8px; }
+    .asm-ai-item {
+      display: flex; align-items: flex-start; gap: 9px; font-size: 13px; padding: 9px 11px;
+      border: 1px solid var(--line-2); border-radius: 9px; margin-bottom: 6px; cursor: pointer; background: #fbfcfe;
+    }
+    .asm-ai-item:hover { background: #f5f8fc; }
+    .asm-ai-item input { margin-top: 2px; accent-color: var(--blue); flex-shrink: 0; }
+    .asm-ai-item span { line-height: 1.5; }
 
     /* ── 예쁜 문서(pd-*) — 보기/PDF 공용 ── */
     .pd-root { background: #fff; color: #1a2433; font-size: 12.5px; line-height: 1.5; padding: 6px 2px; }
@@ -367,7 +387,7 @@
 <script src="config.js?v=20260623ai7" defer></script>
 <!-- 자가진단 전용 경량 로그인(email·profile만) — 사전등록 없이 로그인 가능하도록 -->
 <script src="assessment-auth.js?v=20260818aa3" defer></script>
-<script src="assessment.js?v=20260818a16" defer></script>
+<script src="assessment.js?v=20260818a17" defer></script>
 
 <script>
 (function () {
