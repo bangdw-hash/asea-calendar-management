@@ -1326,16 +1326,18 @@ window.AssessmentModule = (function () {
       '이 내용을 인사평가용 "개인별 직무역량 자가진단표"에 옮길 수 있도록, 아래 스키마의 JSON 객체 하나만 출력하세요. 설명·코드블록·그 외 텍스트는 절대 포함하지 마세요.\n\n' +
       '스키마:\n' +
       '{\n' +
-      '  "jobs": [ {"title":"직무/업무명(간결하게)", "content":"구체적 업무 내용", "competency":"필요 기술·지식(추정 가능한 경우만)", "cycle":"일일|주간|월간|분기|반기|연간|발생시 중 하나 또는 빈 문자열"} ],\n' +
-      '  "performance": [ {"task":"해당 업무명", "result":"성과 및 기여 내용 — 로그에 수치(건수·%·인원 등)가 있으면 반드시 포함"} ],\n' +
-      '  "development": [ {"dateFrom":"YYYY-MM-DD(로그에 날짜가 있으면 반드시 채움)", "course":"교육·연수·워크숍명", "org":"주관기관(모르면 빈 문자열)", "content":"교육 내용 요약"} ]\n' +
+      '  "jobs": [ {"title":"직무/업무명(간결하게)", "content":"구체적 업무 내용", "competency":"필요 기술·지식(추정 가능한 경우만)", "cycle":"일일|주간|월간|분기|반기|연간|발생시 중 하나 또는 빈 문자열", "kind":"주업무|부업무|희망업무 중 하나", "relDept":"업무상 협업한 타 부서명(로그에 명시된 경우만, 없으면 빈 문자열)"} ],\n' +
+      '  "performance": [ {"task":"해당 업무명", "result":"성과 및 기여 내용 — 로그에 수치(건수·%·인원 등)가 있으면 반드시 포함", "category":"학교|부서|개인|기타 중 하나"} ],\n' +
+      '  "development": [ {"dateFrom":"YYYY-MM-DD(로그에 날짜가 있으면 반드시 채움)", "dateTo":"여러 날에 걸친 교육이면 종료일(YYYY-MM-DD), 하루짜리면 dateFrom과 동일한 값", "course":"교육·연수·워크숍명", "org":"주관기관(모르면 빈 문자열)", "period":"교육 시간(로그에 있으면, 예: 4시간)", "content":"교육 내용 요약"} ]\n' +
       '}\n\n' +
       '규칙:\n' +
       '① 같은 성격의 업무·항목은 하나로 합쳐 중복 생성하지 말 것.\n' +
       '② 로그에 없는 내용을 지어내지 말 것 — 근거가 부족하면 해당 항목을 생략.\n' +
       '③ 교육·연수·워크숍 참석 기록만 development로 분류하고, 그 외 업무는 jobs 또는 performance로 분류.\n' +
       '④ 날짜는 YYYY-MM-DD 형식으로(연도가 로그에 없으면 ' + S.year + '년으로 간주).\n' +
-      '⑤ 해당 유형의 항목이 없으면 빈 배열([])로 둘 것.\n\n' +
+      '⑤ 해당 유형의 항목이 없으면 빈 배열([])로 둘 것.\n' +
+      '⑥ jobs의 kind는 로그에 반복적으로 등장하거나 핵심적으로 보이면 "주업무", 가끔 하는 보조 업무면 "부업무", 아직 실제로 수행하지 않고 하고 싶다고만 언급된 것이면 "희망업무"로 판단(애매하면 "부업무").\n' +
+      '⑦ performance의 category는 학교 전체에 영향을 준 성과면 "학교", 소속 부서 단위 성과면 "부서", 개인 업무 성과면 "개인", 판단이 애매하면 "기타"로 분류.\n\n' +
       '업무일지 원문:\n"""\n' + rawText.slice(0, AI_JOURNAL_MAX_CHARS) + '\n"""';
   }
 
@@ -1377,25 +1379,35 @@ window.AssessmentModule = (function () {
     });
   }
 
+  function pickFrom(list, val, fallback) {
+    return list.indexOf(val) >= 0 ? val : fallback;
+  }
+
   function applyAiImportSelections() {
     var p = S.aiImport.parsed;
     if (!p) return;
     var addedCount = 0;
     p.jobs.forEach(function (j, i) {
       if (!S.aiImport.sel['jobs.' + i]) return;
-      S.form.jobs.push({ group: '부업무', title: j.title || '', content: j.content || '', competency: j.competency || '', cycle: j.cycle || '', relDept: '' });
+      S.form.jobs.push({
+        group: pickFrom(JOB_KINDS, j.kind, '부업무'),
+        title: j.title || '', content: j.content || '', competency: j.competency || '',
+        cycle: pickFrom(CYCLES, j.cycle, ''), relDept: j.relDept || ''
+      });
       addedCount++;
     });
     p.performance.forEach(function (pf, i) {
       if (!S.aiImport.sel['performance.' + i]) return;
-      S.form.performance.push({ category: '개인', task: pf.task || '', result: pf.result || '', note: '' });
+      S.form.performance.push({ category: pickFrom(PERF_CATS, pf.category, '개인'), task: pf.task || '', result: pf.result || '', note: '' });
       addedCount++;
     });
     p.development.forEach(function (d, i) {
       if (!S.aiImport.sel['development.' + i]) return;
+      var dateTo = d.dateTo || d.dateFrom || '';
+      var isRange = !!(d.dateFrom && dateTo && dateTo !== d.dateFrom);
       S.form.development.push({
-        div: S.year + '년(실시)', dateFrom: d.dateFrom || '', dateTo: '', isRange: false,
-        course: d.course || '', org: d.org || '', period: '', cost: '', content: d.content || '', scope: ''
+        div: S.year + '년(실시)', dateFrom: d.dateFrom || '', dateTo: isRange ? dateTo : '', isRange: isRange,
+        course: d.course || '', org: d.org || '', period: d.period || '', cost: '', content: d.content || '', scope: ''
       });
       addedCount++;
     });
@@ -1414,23 +1426,28 @@ window.AssessmentModule = (function () {
     if (st.loading) {
       body = '<div class="asm-ai-loading"><div class="asm-spinner"></div><p>AI가 업무일지를 분석하고 있습니다…</p></div>';
     } else if (st.parsed) {
-      var sec = function (key, label, fields) {
+      var sec = function (key, label, fields, tagFn) {
         var items = st.parsed[key];
         if (!items.length) return '';
         var rows = items.map(function (it, i) {
           var id = key + '.' + i;
           var summary = fields.map(function (f) { return it[f]; }).filter(Boolean).join(' — ');
+          var tagText = tagFn ? tagFn(it) : '';
+          var tagHtml = tagText ? '<span class="asm-tag">' + esc(tagText) + '</span> ' : '';
           return '<label class="asm-ai-item"><input type="checkbox" data-ai-sel="' + id + '"' + (st.sel[id] ? ' checked' : '') + '>' +
-            '<span>' + esc(summary || '(내용 없음)') + '</span></label>';
+            '<span>' + tagHtml + esc(summary || '(내용 없음)') + '</span></label>';
         }).join('');
         return '<div class="asm-ai-group"><h4>' + label + ' (' + items.length + '건)</h4>' + rows + '</div>';
       };
       body =
         '<div class="asm-ai-results">' +
-          '<p class="asm-hint">AI가 정리한 항목입니다. 표에 추가할 항목만 선택한 뒤 [선택 항목 추가]를 눌러 주세요. 추가된 뒤에도 표에서 자유롭게 수정할 수 있습니다.</p>' +
-          sec('jobs', '2. 직무 분석에 추가', ['title', 'content']) +
-          sec('performance', '3. 업무 성과에 추가', ['task', 'result']) +
-          sec('development', '5. 개인역량개발에 추가', ['course', 'content']) +
+          '<p class="asm-hint">AI가 정리하고 분류(구분/성과범위/일자 등)까지 판단한 항목입니다. 표에 추가할 항목만 선택한 뒤 [선택 항목 추가]를 눌러 주세요. 분류가 다르면 추가된 뒤 표에서 자유롭게 수정할 수 있습니다.</p>' +
+          sec('jobs', '2. 직무 분석에 추가', ['title', 'content'], function (it) { return pickFrom(JOB_KINDS, it.kind, '부업무'); }) +
+          sec('performance', '3. 업무 성과에 추가', ['task', 'result'], function (it) { return pickFrom(PERF_CATS, it.category, '개인'); }) +
+          sec('development', '5. 개인역량개발에 추가', ['course', 'content'], function (it) {
+            if (!it.dateFrom) return '';
+            return (it.dateTo && it.dateTo !== it.dateFrom) ? (it.dateFrom + ' ~ ' + it.dateTo) : it.dateFrom;
+          }) +
         '</div>';
     } else {
       body =
