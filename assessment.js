@@ -59,6 +59,8 @@ window.AssessmentModule = (function () {
     analysis: { keywords: '', depts: [], jobGroup: '', results: null, sort: null },
     // 작성자 폼 표 정렬(경로별): { 'jobs': {key,dir}, 'admin.projects': {...}, ... }
     formSort: {},
+    // 업무일지 AI 자동정리 모달 상태
+    aiImport: { rawText: '', loading: false, error: '', parsed: null, sel: {} },
   };
 
   /* ── 유틸 ─────────────────────────────────────────────────────── */
@@ -604,6 +606,7 @@ window.AssessmentModule = (function () {
         '<div class="asm-year-tabs">' + yearTabs + '</div>' +
         '<div class="asm-toolbar-right">' +
           '<span id="asm-save-badge" class="asm-badge">작성 중</span>' +
+          '<button class="asm-btn asm-btn-ghost" id="asm-ai-import" title="평소에 적어둔 업무일지(txt) 또는 붙여넣은 텍스트를 AI가 읽어 표 항목으로 정리해 드립니다">🧠 업무일지 AI 정리</button>' +
           (YEARS.indexOf(S.year) > 0 ? '<button class="asm-btn asm-btn-ghost" id="asm-load-prev" title="전년도(' + (parseInt(S.year, 10) - 1) + '년) 작성 내용을 이 폼에 불러옵니다">📋 전년도 내용 불러오기</button>' : '') +
           '<button class="asm-btn asm-btn-ghost" id="asm-reload">불러오기</button>' +
           '<button class="asm-btn asm-btn-secondary" id="asm-save-draft">중간저장</button>' +
@@ -624,7 +627,8 @@ window.AssessmentModule = (function () {
           '<button class="asm-btn asm-btn-secondary asm-btn-lg" id="asm-save-draft2">중간저장</button>' +
           '<button class="asm-btn asm-btn-primary asm-btn-lg" id="asm-submit2">제출하기</button>' +
         '</div>' +
-      '</div>';
+      '</div>' +
+      '<div id="asm-ai-modal"></div>';
 
     S.root.innerHTML = html;
     bindForm();
@@ -1022,6 +1026,7 @@ window.AssessmentModule = (function () {
         case 'asm-submit': case 'asm-submit2': doSubmit(); break;
         case 'asm-reload': doReload(); break;
         case 'asm-load-prev': loadPreviousYearForm(); break;
+        case 'asm-ai-import': openAiImportModal(); break;
         case 'asm-goadmin':
           syncFormFromInputs();
           saveFormLocal(S.year, { form: S.form, status: S.status, updatedAt: S.lastSavedAt });
@@ -1297,6 +1302,186 @@ window.AssessmentModule = (function () {
         toast(prevYear + '년 내용을 불러왔습니다. 필요한 부분을 수정한 뒤 저장해 주세요.', 'success');
       });
     }).catch(function (e) { toast('불러오기 실패: ' + ((e && e.message) || e), 'error'); });
+  }
+
+  /* ── 업무일지 AI 자동정리 ─────────────────────────────────────────
+     평소 텍스트로 기록해 둔 일일 업무일지(txt 업로드 또는 붙여넣기)를
+     기존 공용 AI 프록시(claudeFetch, config.js — 서버에 키 보관, 직원 개별
+     설정 불필요)로 분석해 직무/성과/교육이력 항목으로 정리한다.
+     AI 결과는 절대 바로 반영하지 않고, 사용자가 항목별로 선택해야만
+     실제 폼에 추가된다(인사평가 문서이므로 검토 없는 자동반영은 하지 않음). */
+  var AI_JOURNAL_MAX_CHARS = 12000;   // 토큰 보호(과도하게 긴 일지는 앞부분만 사용)
+
+  function openAiImportModal() {
+    S.aiImport = { rawText: '', loading: false, error: '', parsed: null, sel: {} };
+    renderAiImportModal();
+  }
+  function closeAiImportModal() {
+    var modal = S.root && S.root.querySelector('#asm-ai-modal');
+    if (modal) modal.innerHTML = '';
+  }
+
+  function buildJournalPrompt(rawText) {
+    return '다음은 한 직원이 평소 자유롭게 기록해 둔 일일 업무일지입니다(날짜별 메모, 형식은 제각각일 수 있음).\n' +
+      '이 내용을 인사평가용 "개인별 직무역량 자가진단표"에 옮길 수 있도록, 아래 스키마의 JSON 객체 하나만 출력하세요. 설명·코드블록·그 외 텍스트는 절대 포함하지 마세요.\n\n' +
+      '스키마:\n' +
+      '{\n' +
+      '  "jobs": [ {"title":"직무/업무명(간결하게)", "content":"구체적 업무 내용", "competency":"필요 기술·지식(추정 가능한 경우만)", "cycle":"일일|주간|월간|분기|반기|연간|발생시 중 하나 또는 빈 문자열"} ],\n' +
+      '  "performance": [ {"task":"해당 업무명", "result":"성과 및 기여 내용 — 로그에 수치(건수·%·인원 등)가 있으면 반드시 포함"} ],\n' +
+      '  "development": [ {"dateFrom":"YYYY-MM-DD(로그에 날짜가 있으면 반드시 채움)", "course":"교육·연수·워크숍명", "org":"주관기관(모르면 빈 문자열)", "content":"교육 내용 요약"} ]\n' +
+      '}\n\n' +
+      '규칙:\n' +
+      '① 같은 성격의 업무·항목은 하나로 합쳐 중복 생성하지 말 것.\n' +
+      '② 로그에 없는 내용을 지어내지 말 것 — 근거가 부족하면 해당 항목을 생략.\n' +
+      '③ 교육·연수·워크숍 참석 기록만 development로 분류하고, 그 외 업무는 jobs 또는 performance로 분류.\n' +
+      '④ 날짜는 YYYY-MM-DD 형식으로(연도가 로그에 없으면 ' + S.year + '년으로 간주).\n' +
+      '⑤ 해당 유형의 항목이 없으면 빈 배열([])로 둘 것.\n\n' +
+      '업무일지 원문:\n"""\n' + rawText.slice(0, AI_JOURNAL_MAX_CHARS) + '\n"""';
+  }
+
+  function runAiJournalParse() {
+    var rawText = (S.aiImport.rawText || '').trim();
+    if (!rawText) { toast('먼저 업무일지 파일을 올리거나 내용을 붙여넣어 주세요.', 'error'); return; }
+    if (!window.claudeFetch) { toast('AI 기능을 사용할 수 없습니다(스크립트 로드 실패). 새로고침 후 다시 시도해 주세요.', 'error'); return; }
+    S.aiImport.loading = true; S.aiImport.error = ''; S.aiImport.parsed = null;
+    renderAiImportModal();
+    var cc = window.getClaudeConfig ? window.getClaudeConfig() : { apiKey: '', endpoint: 'https://api.anthropic.com/v1/messages', isOfficial: true };
+    var hdr = { 'Content-Type': 'application/json', 'x-api-key': cc.apiKey, 'anthropic-version': '2023-06-01' };
+    if (cc.isOfficial) hdr['anthropic-dangerous-direct-browser-access'] = 'true';
+    var body = JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 4000, messages: [{ role: 'user', content: buildJournalPrompt(rawText) }] });
+    window.claudeFetch(cc.endpoint, { method: 'POST', headers: hdr, body: body }).then(function (resp) {
+      if (!resp.ok) return resp.json().catch(function () { return {}; }).then(function (ed) { throw new Error((ed.error && ed.error.message) || ('API 오류 ' + resp.status)); });
+      return resp.json();
+    }).then(function (data) {
+      var text = window.claudeExtractText ? window.claudeExtractText(data) : '';
+      var m = text.match(/\{[\s\S]*\}/);
+      if (!m) throw new Error('AI 응답을 해석하지 못했습니다.');
+      var parsed = JSON.parse(m[0]);
+      parsed.jobs = Array.isArray(parsed.jobs) ? parsed.jobs : [];
+      parsed.performance = Array.isArray(parsed.performance) ? parsed.performance : [];
+      parsed.development = Array.isArray(parsed.development) ? parsed.development : [];
+      if (!parsed.jobs.length && !parsed.performance.length && !parsed.development.length) {
+        throw new Error('업무일지에서 정리할 만한 항목을 찾지 못했습니다. 내용을 조금 더 구체적으로 적어 주세요.');
+      }
+      S.aiImport.loading = false;
+      S.aiImport.parsed = parsed;
+      S.aiImport.sel = {};   // 기본 전체 선택
+      ['jobs', 'performance', 'development'].forEach(function (sec) {
+        parsed[sec].forEach(function (_, i) { S.aiImport.sel[sec + '.' + i] = true; });
+      });
+      renderAiImportModal();
+    }).catch(function (e) {
+      S.aiImport.loading = false;
+      S.aiImport.error = (e && e.message) || String(e);
+      renderAiImportModal();
+    });
+  }
+
+  function applyAiImportSelections() {
+    var p = S.aiImport.parsed;
+    if (!p) return;
+    var addedCount = 0;
+    p.jobs.forEach(function (j, i) {
+      if (!S.aiImport.sel['jobs.' + i]) return;
+      S.form.jobs.push({ group: '부업무', title: j.title || '', content: j.content || '', competency: j.competency || '', cycle: j.cycle || '', relDept: '' });
+      addedCount++;
+    });
+    p.performance.forEach(function (pf, i) {
+      if (!S.aiImport.sel['performance.' + i]) return;
+      S.form.performance.push({ category: '개인', task: pf.task || '', result: pf.result || '', note: '' });
+      addedCount++;
+    });
+    p.development.forEach(function (d, i) {
+      if (!S.aiImport.sel['development.' + i]) return;
+      S.form.development.push({
+        div: S.year + '년(실시)', dateFrom: d.dateFrom || '', dateTo: '', isRange: false,
+        course: d.course || '', org: d.org || '', period: '', cost: '', content: d.content || '', scope: ''
+      });
+      addedCount++;
+    });
+    if (!addedCount) { toast('선택된 항목이 없습니다.', 'error'); return; }
+    markDirty();
+    closeAiImportModal();
+    renderForm();
+    toast(addedCount + '개 항목을 표에 추가했습니다. 내용을 확인하고 필요하면 수정한 뒤 저장해 주세요.', 'success');
+  }
+
+  function renderAiImportModal() {
+    var modal = S.root && S.root.querySelector('#asm-ai-modal');
+    if (!modal) return;
+    var st = S.aiImport;
+    var body;
+    if (st.loading) {
+      body = '<div class="asm-ai-loading"><div class="asm-spinner"></div><p>AI가 업무일지를 분석하고 있습니다…</p></div>';
+    } else if (st.parsed) {
+      var sec = function (key, label, fields) {
+        var items = st.parsed[key];
+        if (!items.length) return '';
+        var rows = items.map(function (it, i) {
+          var id = key + '.' + i;
+          var summary = fields.map(function (f) { return it[f]; }).filter(Boolean).join(' — ');
+          return '<label class="asm-ai-item"><input type="checkbox" data-ai-sel="' + id + '"' + (st.sel[id] ? ' checked' : '') + '>' +
+            '<span>' + esc(summary || '(내용 없음)') + '</span></label>';
+        }).join('');
+        return '<div class="asm-ai-group"><h4>' + label + ' (' + items.length + '건)</h4>' + rows + '</div>';
+      };
+      body =
+        '<div class="asm-ai-results">' +
+          '<p class="asm-hint">AI가 정리한 항목입니다. 표에 추가할 항목만 선택한 뒤 [선택 항목 추가]를 눌러 주세요. 추가된 뒤에도 표에서 자유롭게 수정할 수 있습니다.</p>' +
+          sec('jobs', '2. 직무 분석에 추가', ['title', 'content']) +
+          sec('performance', '3. 업무 성과에 추가', ['task', 'result']) +
+          sec('development', '5. 개인역량개발에 추가', ['course', 'content']) +
+        '</div>';
+    } else {
+      body =
+        '<div class="asm-ai-input">' +
+          (st.error ? '<div class="asm-notice asm-notice-error">' + esc(st.error) + '</div>' : '') +
+          '<p class="asm-hint">평소 메모장·카카오톡 나에게 보내기 등에 적어둔 업무일지를 txt 파일로 올리거나, 아래에 그대로 붙여넣으세요. 날짜와 내용이 함께 있으면 더 정확하게 정리됩니다.</p>' +
+          '<input type="file" id="asm-ai-file" accept=".txt,text/plain">' +
+          '<textarea id="asm-ai-textarea" class="asm-ai-textarea" placeholder="예)\n2026-03-15 홈페이지 배너 3건 제작, 입학 상담 5건 응대\n2026-03-20 개인정보보호 교육 이수(2시간)">' + esc(st.rawText) + '</textarea>' +
+        '</div>';
+    }
+    var footer;
+    if (st.parsed) {
+      footer = '<button class="asm-btn asm-btn-ghost" id="asm-ai-back">다시 정리하기</button>' +
+        '<button class="asm-btn asm-btn-primary" id="asm-ai-apply">선택 항목 추가</button>';
+    } else {
+      footer = '<button class="asm-btn asm-btn-primary" id="asm-ai-run"' + (st.loading ? ' disabled' : '') + '>🧠 AI로 정리하기</button>';
+    }
+    modal.innerHTML =
+      '<div class="asm-modal-back" id="asm-ai-modal-back"><div class="asm-modal asm-modal-lg">' +
+        '<div class="asm-modal-head"><b>🧠 업무일지 AI 자동정리</b><span class="asm-flex1"></span><button class="asm-modal-x" id="asm-ai-modal-x">✕</button></div>' +
+        '<div class="asm-modal-body">' + body + '</div>' +
+        '<div class="asm-modal-foot">' + footer + '</div>' +
+      '</div></div>';
+
+    var close = function () { closeAiImportModal(); };
+    modal.querySelector('#asm-ai-modal-x').addEventListener('click', close);
+    modal.querySelector('#asm-ai-modal-back').addEventListener('click', function (e) { if (e.target.id === 'asm-ai-modal-back') close(); });
+
+    var fileEl = modal.querySelector('#asm-ai-file');
+    if (fileEl) fileEl.addEventListener('change', function () {
+      var f = fileEl.files && fileEl.files[0];
+      if (!f) return;
+      var reader = new FileReader();
+      reader.onload = function () {
+        S.aiImport.rawText = String(reader.result || '');
+        renderAiImportModal();
+      };
+      reader.onerror = function () { toast('파일을 읽지 못했습니다.', 'error'); };
+      reader.readAsText(f, 'utf-8');
+    });
+    var ta = modal.querySelector('#asm-ai-textarea');
+    if (ta) ta.addEventListener('input', function () { S.aiImport.rawText = ta.value; });
+    var runBtn = modal.querySelector('#asm-ai-run');
+    if (runBtn) runBtn.addEventListener('click', runAiJournalParse);
+    var backBtn = modal.querySelector('#asm-ai-back');
+    if (backBtn) backBtn.addEventListener('click', function () { S.aiImport.parsed = null; renderAiImportModal(); });
+    var applyBtn = modal.querySelector('#asm-ai-apply');
+    if (applyBtn) applyBtn.addEventListener('click', applyAiImportSelections);
+    modal.querySelectorAll('[data-ai-sel]').forEach(function (chk) {
+      chk.addEventListener('change', function () { S.aiImport.sel[chk.getAttribute('data-ai-sel')] = chk.checked; });
+    });
   }
 
   /* ── 관리자 화면 ─────────────────────────────────────────────── */
