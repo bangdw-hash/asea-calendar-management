@@ -36,9 +36,12 @@ body{font-family:var(--font);background:var(--gray-100);color:var(--gray-900);mi
 /* List toolbar */
 .ltb{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center}
 .sbox{flex:1;min-width:180px;position:relative}
-.sbox input{width:100%;padding:9px 12px 9px 34px;border:1px solid var(--border);border-radius:var(--r2);background:#fff;font-size:14px;outline:none;transition:border-color .2s;font-family:var(--font)}
+.sbox input{width:100%;padding:9px 30px 9px 34px;border:1px solid var(--border);border-radius:var(--r2);background:#fff;font-size:14px;outline:none;transition:border-color .2s;font-family:var(--font)}
 .sbox input:focus{border-color:var(--primary-l)}
 .sbox::before{content:'🔍';position:absolute;left:9px;top:50%;transform:translateY(-50%);font-size:14px}
+#search-clear{position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--gray-500);font-size:16px;line-height:1;padding:2px;border-radius:3px;display:none}
+#search-clear:hover{color:var(--gray-800)}
+#search-clear.show{display:block}
 #new-btn{background:var(--primary);color:#fff;border:none;padding:9px 16px;border-radius:var(--r2);cursor:pointer;font-size:14px;font-weight:600;white-space:nowrap;transition:background .2s;font-family:var(--font)}
 #new-btn:hover{background:#283593}
 
@@ -298,7 +301,8 @@ body{font-family:var(--font);background:var(--gray-100);color:var(--gray-900);mi
     <div class="cat-tabs" id="cat-tabs"></div>
     <div class="ltb">
       <div class="sbox">
-        <input id="search-in" type="text" placeholder="제목, 내용 검색..." oninput="onSearch(this.value)">
+        <input id="search-in" type="text" placeholder="제목, 내용 검색..." autocomplete="off" spellcheck="false" oninput="onSearch(this.value)">
+        <button id="search-clear" onclick="clearSearch()" title="검색 지우기">×</button>
       </div>
       <button id="new-btn" onclick="goEditor()">✏️ 새 글 쓰기</button>
     </div>
@@ -882,11 +886,32 @@ function goEditor(post=null) {
   window.scrollTo(0,0);
 }
 
-function setcat(c) { S.cat=c; S.page=1; loadPosts(); }
+function setcat(c) {
+  S.cat=c; S.page=1;
+  // Clear search when switching categories
+  if (S.search) {
+    S.search='';
+    const inp = document.getElementById('search-in');
+    if (inp) { inp.value=''; document.getElementById('search-clear').classList.remove('show'); }
+  }
+  loadPosts();
+}
 function setPage(p) { if(p<1) return; S.page=p; loadPosts(); window.scrollTo(0,0); }
 
 let searchTimer;
-function onSearch(v) { clearTimeout(searchTimer); searchTimer=setTimeout(()=>{ S.search=v; S.page=1; loadPosts(); },400); }
+function onSearch(v) {
+  clearTimeout(searchTimer);
+  document.getElementById('search-clear').classList.toggle('show', v.length > 0);
+  searchTimer = setTimeout(()=>{ S.search=v; S.page=1; loadPosts(); }, 400);
+}
+function clearSearch() {
+  const inp = document.getElementById('search-in');
+  inp.value = '';
+  document.getElementById('search-clear').classList.remove('show');
+  clearTimeout(searchTimer);
+  S.search = ''; S.page = 1; loadPosts();
+  inp.focus();
+}
 
 function esc(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
@@ -1383,6 +1408,9 @@ document.addEventListener('keydown', e=>{
 
 /* ===================== Init ===================== */
 async function init() {
+  // Clear search input immediately to prevent browser autofill from polluting S.search
+  const sinp = document.getElementById('search-in');
+  if (sinp) sinp.value = '';
   await loadSettings();
   if (isAdminSession()) {
     S.isAdmin=true;
