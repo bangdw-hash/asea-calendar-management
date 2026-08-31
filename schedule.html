@@ -167,6 +167,25 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','N
   flex-shrink:0;margin-top:2px}
 .checkbox-row label{font-size:.8rem;color:var(--g700);cursor:pointer;line-height:1.4}
 
+/* quick event actions (hover) */
+.evt-dot-wrap{position:relative;display:block}
+.evt-dot-wrap:hover .evt-quick{display:flex}
+.evt-quick{display:none;position:absolute;right:2px;top:50%;transform:translateY(-50%);
+  gap:2px;background:rgba(255,255,255,.92);border-radius:4px;padding:1px 2px;z-index:10}
+.evt-quick button{background:none;border:none;cursor:pointer;padding:1px 3px;
+  font-size:.65rem;border-radius:3px;transition:background .1s;line-height:1}
+.evt-quick button:hover{background:var(--g200)}
+
+/* day-cell clickable for new event */
+.day-cell.cur-month{cursor:pointer}
+.day-cell.cur-month:hover .day-num{color:var(--primary)}
+.day-cell.cur-month.drag-select{background:#e8f0fe!important}
+.day-cell.cur-month.drag-select .day-num{color:var(--primary)}
+
+/* week view time slot hover */
+.week-day-col{cursor:pointer}
+.week-day-col:hover{background:var(--primary-lt)}
+
 /* event detail modal */
 .evt-detail-title{font-size:1rem;font-weight:700;margin-bottom:6px}
 .evt-detail-time{font-size:.82rem;color:var(--g500);margin-bottom:10px}
@@ -188,6 +207,51 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','N
 
 /* modal large */
 .modal.modal-lg{max-width:780px}
+
+/* ── AI CHAT ── */
+.ai-fab{position:fixed;bottom:24px;right:84px;width:52px;height:52px;border-radius:50%;
+  background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#fff;font-size:1.4rem;border:none;
+  box-shadow:0 4px 12px rgba(124,58,237,.45);cursor:pointer;z-index:200;
+  display:flex;align-items:center;justify-content:center;transition:transform .2s,box-shadow .2s}
+.ai-fab:hover{transform:scale(1.1);box-shadow:0 6px 20px rgba(124,58,237,.55)}
+.ai-fab:active{transform:scale(.95)}
+
+.ai-panel{position:fixed;bottom:88px;right:20px;width:360px;max-width:calc(100vw - 32px);
+  max-height:calc(100vh - 120px);background:#fff;border-radius:16px;
+  box-shadow:0 8px 32px rgba(0,0,0,.18);z-index:300;display:flex;flex-direction:column;
+  overflow:hidden;transform:scale(.9) translateY(20px);opacity:0;
+  pointer-events:none;transform-origin:bottom right;transition:all .2s}
+.ai-panel.open{transform:scale(1) translateY(0);opacity:1;pointer-events:auto}
+.ai-panel-hdr{background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#fff;
+  padding:12px 16px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.ai-panel-hdr-left{display:flex;align-items:center;gap:8px}
+.ai-panel-title{font-size:.9rem;font-weight:700}
+.ai-panel-sub{font-size:.68rem;opacity:.8}
+.ai-close{background:none;border:none;color:#fff;cursor:pointer;font-size:1.1rem;
+  opacity:.7;transition:opacity .15s;padding:2px 6px;border-radius:4px}
+.ai-close:hover{opacity:1;background:rgba(255,255,255,.15)}
+.ai-msgs{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:10px;min-height:160px}
+.ai-msg{max-width:88%;font-size:.82rem;line-height:1.55;padding:8px 11px;border-radius:10px;word-break:break-word}
+.ai-msg.user{align-self:flex-end;background:#e8f0fe;color:#1a237e;border-bottom-right-radius:2px}
+.ai-msg.bot{align-self:flex-start;background:var(--g100);color:var(--g900);border-bottom-left-radius:2px}
+.ai-msg.bot.loading{color:var(--g400);font-style:italic}
+.ai-action-bar{padding:6px 12px;display:flex;gap:6px;flex-wrap:wrap;border-top:1px solid var(--g100);flex-shrink:0}
+.ai-chip{font-size:.72rem;padding:4px 9px;border-radius:999px;border:1px solid var(--g300);
+  background:#fff;color:var(--g700);cursor:pointer;transition:all .15s;white-space:nowrap}
+.ai-chip:hover{background:var(--primary-lt);border-color:var(--primary);color:var(--primary)}
+.ai-input-row{display:flex;gap:6px;padding:10px 12px;border-top:1px solid var(--g200);flex-shrink:0}
+#ai-input{flex:1;padding:8px 11px;border:1.5px solid var(--g300);border-radius:999px;
+  font-size:.82rem;outline:none;transition:border-color .2s}
+#ai-input:focus{border-color:#7c3aed;box-shadow:0 0 0 3px rgba(124,58,237,.1)}
+#ai-send{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#7c3aed,#4f46e5);
+  color:#fff;border:none;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;transition:opacity .15s}
+#ai-send:disabled{opacity:.4;cursor:not-allowed}
+
+@media(max-width:480px){
+  .ai-panel{bottom:84px;right:12px;width:calc(100vw - 24px)}
+  .ai-fab{right:80px;bottom:20px}
+}
 
 /* ── TOAST ── */
 #toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%) translateY(16px);
@@ -267,6 +331,35 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','N
 
 <!-- FAB: Add event -->
 <button class="fab" id="fab" onclick="onAddClick()" title="일정 추가">+</button>
+
+<!-- FAB: AI Chat -->
+<button class="ai-fab" onclick="toggleAiPanel()" title="AI 일정 도우미">🤖</button>
+
+<!-- AI Chat Panel -->
+<div class="ai-panel" id="ai-panel">
+  <div class="ai-panel-hdr">
+    <div class="ai-panel-hdr-left">
+      <span style="font-size:1.3rem">🤖</span>
+      <div>
+        <div class="ai-panel-title">AI 일정 도우미</div>
+        <div class="ai-panel-sub">자연어로 일정 추가 · 요약 · 분석</div>
+      </div>
+    </div>
+    <button class="ai-close" onclick="toggleAiPanel()">&times;</button>
+  </div>
+  <div class="ai-msgs" id="ai-msgs">
+    <div class="ai-msg bot">안녕하세요! 일정을 자연어로 추가하거나 이번 달 일정을 분석해 드릴 수 있어요. 아래 예시를 눌러보세요 👇</div>
+  </div>
+  <div class="ai-action-bar">
+    <button class="ai-chip" onclick="aiQuick('이번 달 일정 요약해줘')">📋 이번 달 요약</button>
+    <button class="ai-chip" onclick="aiQuick('다음 주 일정 알려줘')">📆 다음 주 일정</button>
+    <button class="ai-chip" onclick="aiQuick('내일 오후 2시 회의 1시간')">➕ 일정 추가 예시</button>
+  </div>
+  <div class="ai-input-row">
+    <input id="ai-input" placeholder="예) 다음 주 수요일 오후 3시 전체 회의 2시간" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();aiSend();}">
+    <button id="ai-send" onclick="aiSend()" title="전송">&#9658;</button>
+  </div>
+</div>
 
 <!-- ═══════════════════════ MODALS ═══════════════════════ -->
 
@@ -474,7 +567,7 @@ let _detailEvt  = null;
 function _initTokenClient(scope) {
   _tokenClient = google.accounts.oauth2.initTokenClient({
     client_id: CLIENT_ID,
-    scope: scope || SCOPE_RO,
+    scope: scope || SCOPES,
     callback: _handleToken,
   });
 }
@@ -497,15 +590,34 @@ function _handleToken(resp) {
   }
   _token = resp.access_token;
   const expiry = Date.now() + ((resp.expires_in || 3600) - 60) * 1000;
-  try { localStorage.setItem('sched_tok', _token); localStorage.setItem('sched_tok_exp', expiry); } catch(e){}
+  try {
+    [localStorage, sessionStorage].forEach(s => {
+      s.setItem('asea_gtoken', _token);
+      s.setItem('asea_gtoken_exp', String(expiry));
+    });
+  } catch(e){}
+  _scheduleRefresh((resp.expires_in || 3600) - 90);
   if (_pendingCb) { _pendingCb(true); _pendingCb = null; }
+}
+
+let _refreshTimer = null;
+function _scheduleRefresh(inSeconds) {
+  clearTimeout(_refreshTimer);
+  _refreshTimer = setTimeout(_silentRefresh, Math.max(inSeconds, 30) * 1000);
+}
+async function _silentRefresh() {
+  if (!_tokenClient) { await _ensureClient(); _initTokenClient(SCOPES); }
+  if (!_tokenClient) return;
+  try { _tokenClient.requestAccessToken({ prompt: '' }); } catch(e) {}
 }
 
 function _tryRestoreToken() {
   try {
-    const t = localStorage.getItem('sched_tok');
-    const e = parseInt(localStorage.getItem('sched_tok_exp') || '0', 10);
-    if (t && e > Date.now() + 30000) { _token = t; return true; }
+    for (const s of [sessionStorage, localStorage]) {
+      const t = s.getItem('asea_gtoken');
+      const e = parseInt(s.getItem('asea_gtoken_exp') || '0', 10);
+      if (t && e > Date.now() + 30000) { _token = t; _scheduleRefresh((e - Date.now()) / 1000 - 90); return true; }
+    }
   } catch(e) {}
   return false;
 }
@@ -516,10 +628,17 @@ function doLogin(scope) {
     _initTokenClient(scope || SCOPES);
     return new Promise(resolve => {
       _pendingCb = resolve;
-      _tokenClient.requestAccessToken({ prompt: 'select_account' });
+      try { _tokenClient.requestAccessToken({ prompt: '' }); }
+      catch(e) { _tokenClient.requestAccessToken({ prompt: 'select_account' }); }
     }).then(async success => {
-      if (success) await afterLogin();
-      return success;
+      if (!success) {
+        return new Promise(resolve2 => {
+          _pendingCb = resolve2;
+          _tokenClient.requestAccessToken({ prompt: 'select_account' });
+        }).then(async ok2 => { if (ok2) await afterLogin(); return ok2; });
+      }
+      await afterLogin();
+      return true;
     });
   });
 }
@@ -559,7 +678,8 @@ function logout() {
   if (_token && typeof google !== 'undefined' && google.accounts && google.accounts.oauth2)
     google.accounts.oauth2.revoke(_token, () => {});
   _token = null; _userEmail = null; _userInitial = '';
-  try { localStorage.removeItem('sched_tok'); localStorage.removeItem('sched_tok_exp'); } catch(e) {}
+  clearTimeout(_refreshTimer);
+  try { [localStorage, sessionStorage].forEach(s => { s.removeItem('asea_gtoken'); s.removeItem('asea_gtoken_exp'); }); } catch(e) {}
   updateUserArea();
   _events = [];
   renderCalendar();
@@ -636,7 +756,7 @@ function renderMonth(wrap) {
   const firstDay = new Date(y, m, 1).getDay();
   const daysInMonth = new Date(y, m + 1, 0).getDate();
   const today = new Date();
-  let html = '<div class="month-grid">';
+  let html = '<div class="month-grid" id="month-grid">';
   WEEKDAYS.forEach((wd, i) => {
     html += `<div class="weekday-hdr ${i===0?'sun':i===6?'sat':''}">${wd}</div>`;
   });
@@ -649,21 +769,132 @@ function renderMonth(wrap) {
   for (let d = 1; d <= daysInMonth; d++) {
     const isToday = today.getFullYear()===y && today.getMonth()===m && today.getDate()===d;
     const dow = (firstDay + d - 1) % 7;
-    const cls = ['day-cell', dow===0?'sun':dow===6?'sat':'', isToday?'today':''].filter(Boolean).join(' ');
+    const cls = ['day-cell cur-month', dow===0?'sun':dow===6?'sat':'', isToday?'today':''].filter(Boolean).join(' ');
     const dayEvts = evtsForDay(y, m, d);
     const numEl = isToday
       ? `<span class="day-num" style="background:var(--primary);color:#fff;border-radius:50%;width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center">${d}</span>`
       : `<span class="day-num">${d}</span>`;
-    const dotsHtml = dayEvts.slice(0, 3).map(ev =>
-      `<span class="evt-dot" onclick="showDetail(event,'${escId(ev.id)}')" title="${esc(ev.summary||'')}">${esc(ev.summary||'(제목 없음)')}</span>`
-    ).join('') + (dayEvts.length > 3 ? `<span class="evt-dot more">+${dayEvts.length - 3}개 더</span>` : '');
-    html += `<div class="${cls}${dayEvts.length?' has-events':''}">` + numEl + dotsHtml + '</div>';
+    const dotsHtml = dayEvts.slice(0, 3).map(ev => {
+      const qBtns = _token
+        ? `<span class="evt-quick"><button onclick="event.stopPropagation();editEvtById('${escId(ev.id)}')" title="수정">✏️</button><button onclick="event.stopPropagation();deleteEvtById('${escId(ev.id)}')" title="삭제">🗑</button></span>`
+        : '';
+      return `<span class="evt-dot-wrap"><span class="evt-dot" onclick="showDetail(event,'${escId(ev.id)}')" title="${esc(ev.summary||'')}">${esc(ev.summary||'(제목 없음)')}</span>${qBtns}</span>`;
+    }).join('') + (dayEvts.length > 3 ? `<span class="evt-dot more">+${dayEvts.length - 3}개 더</span>` : '');
+    html += `<div class="${cls}${dayEvts.length?' has-events':''}" data-y="${y}" data-m="${m}" data-d="${d}">` + numEl + dotsHtml + '</div>';
     dayCount++;
   }
   const remaining = 7 - (dayCount % 7 === 0 ? 7 : dayCount % 7);
   for (let d = 1; d <= remaining; d++)
     html += `<div class="day-cell other-month"><span class="day-num">${d}</span></div>`;
   wrap.innerHTML = html + '</div>';
+  initMonthDrag();
+}
+
+/* ── MONTH GRID DRAG-TO-CREATE & CLICK ── */
+let _dragStart = null, _dragEnd = null, _dragging = false;
+
+function initMonthDrag() {
+  const grid = document.getElementById('month-grid');
+  if (!grid) return;
+  const cells = () => grid.querySelectorAll('.day-cell.cur-month');
+
+  function cellDate(el) {
+    const y = +el.dataset.y, m = +el.dataset.m, d = +el.dataset.d;
+    return isNaN(y) ? null : { y, m, d, key: `${y}-${m}-${d}` };
+  }
+  function clearDrag() {
+    cells().forEach(c => c.classList.remove('drag-select'));
+    _dragStart = null; _dragEnd = null; _dragging = false;
+  }
+  function markRange(s, e) {
+    cells().forEach(c => c.classList.remove('drag-select'));
+    if (!s || !e) return;
+    const d1 = new Date(s.y, s.m, s.d), d2 = new Date(e.y, e.m, e.d);
+    const [lo, hi] = d1 <= d2 ? [d1, d2] : [d2, d1];
+    cells().forEach(c => {
+      const cd = cellDate(c);
+      if (!cd) return;
+      const dt = new Date(cd.y, cd.m, cd.d);
+      if (dt >= lo && dt <= hi) c.classList.add('drag-select');
+    });
+  }
+
+  grid.addEventListener('mousedown', e => {
+    const cell = e.target.closest('.day-cell.cur-month');
+    if (!cell || e.target.closest('.evt-dot,.evt-dot-wrap,.evt-quick')) return;
+    _dragStart = cellDate(cell);
+    _dragEnd = _dragStart;
+    _dragging = false;
+    e.preventDefault();
+  });
+  grid.addEventListener('mousemove', e => {
+    if (!_dragStart) return;
+    const cell = e.target.closest('.day-cell.cur-month');
+    if (!cell) return;
+    const cd = cellDate(cell);
+    if (!cd || cd.key === (_dragEnd && _dragEnd.key)) return;
+    _dragEnd = cd; _dragging = true;
+    markRange(_dragStart, _dragEnd);
+  });
+  document.addEventListener('mouseup', e => {
+    if (!_dragStart) return;
+    const cell = e.target.closest && e.target.closest('.day-cell.cur-month');
+    if (!_dragging && cell) {
+      const cd = cellDate(cell);
+      if (cd) openEventModalOnDate(cd.y, cd.m, cd.d, cd.y, cd.m, cd.d);
+    } else if (_dragging && _dragEnd) {
+      const d1 = new Date(_dragStart.y, _dragStart.m, _dragStart.d);
+      const d2 = new Date(_dragEnd.y, _dragEnd.m, _dragEnd.d);
+      const [lo, hi] = d1 <= d2 ? [_dragStart, _dragEnd] : [_dragEnd, _dragStart];
+      openEventModalOnDate(lo.y, lo.m, lo.d, hi.y, hi.m, hi.d);
+    }
+    clearDrag();
+  }, { capture: true });
+}
+
+async function openEventModalOnDate(sy, sm, sd, ey, em, ed) {
+  if (!_token) {
+    const ok = await doLogin(SCOPES);
+    if (!ok) return;
+  }
+  _editingEvt = null;
+  const startDate = new Date(sy, sm, sd);
+  const endDate = new Date(ey, em, ed);
+  const isRange = startDate.getTime() !== endDate.getTime();
+  document.getElementById('event-modal-title').textContent = '일정 추가';
+  document.getElementById('evt-save-label').textContent = '추가';
+  document.getElementById('evt-delete-btn').hidden = true;
+  document.getElementById('evt-error').textContent = '';
+  document.getElementById('evt-title').value = '';
+  document.getElementById('evt-date').value = fmtDate(startDate);
+  document.getElementById('evt-allday').checked = true;
+  toggleAllDay();
+  document.getElementById('evt-start').value = '09:00';
+  document.getElementById('evt-end').value = '10:00';
+  document.getElementById('evt-location').value = '';
+  document.getElementById('evt-desc').value = '';
+  if (isRange) {
+    document.getElementById('evt-date').dataset.endDate = fmtDate(endDate);
+  } else {
+    delete document.getElementById('evt-date').dataset.endDate;
+  }
+  ['err-evt-title','err-evt-date'].forEach(id => document.getElementById(id).textContent = '');
+  openOverlay('event-overlay');
+}
+
+function editEvtById(id) {
+  const ev = _events.find(x => x.id === id);
+  if (ev) openEventModal(ev);
+}
+async function deleteEvtById(id) {
+  const ev = _events.find(x => x.id === id);
+  if (!ev) return;
+  if (!confirm(`"${ev.summary || '(제목 없음)'}" 일정을 삭제하시겠습니까?`)) return;
+  try {
+    await apiFetch('DELETE', `/calendars/${encodeURIComponent(CAL_ID)}/events/${encodeURIComponent(id)}`);
+    showToast('일정이 삭제되었습니다.');
+    await fetchEvents(); renderCalendar();
+  } catch(e) { showToast('삭제 실패: ' + e.message, 'error'); }
 }
 
 function renderWeek(wrap) {
@@ -676,7 +907,7 @@ function renderWeek(wrap) {
     const dt = new Date(weekStart.getTime()); dt.setDate(weekStart.getDate() + d);
     const isToday = dt.toDateString() === today.toDateString();
     const dow = dt.getDay();
-    html += `<th class="${isToday?'today-col':''} ${dow===0?'sun':dow===6?'sat':''}">` +
+    html += `<th class="${isToday?'today-col':''} ${dow===0?'sun':dow===6?'sat':''}">`+
       `${dt.getMonth()+1}/${dt.getDate()} (${WEEKDAYS[dow]})</th>`;
   }
   html += '</tr></thead><tbody>';
@@ -690,9 +921,10 @@ function renderWeek(wrap) {
         return start.getFullYear()===dt.getFullYear() && start.getMonth()===dt.getMonth()
           && start.getDate()===dt.getDate() && start.getHours()===h;
       });
-      html += '<td class="week-day-col">' +
-        evts.map(ev => `<div class="week-evt" onclick="showDetail(event,'${escId(ev.id)}')">${esc(ev.summary||'')}</div>`).join('') +
-        '</td>';
+      const dateStr2 = `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`;
+      html += `<td class="week-day-col" onclick="onWeekCellClick(event,'${dateStr2}',${h})">${
+        evts.map(ev => `<div class="week-evt" onclick="event.stopPropagation();showDetail(event,'${escId(ev.id)}')">${esc(ev.summary||'')}</div>`).join('')
+      }</td>`;
     }
     html += '</tr>';
   });
@@ -776,6 +1008,7 @@ function openEventModal(evt) {
     document.getElementById('evt-location').value = '';
     document.getElementById('evt-desc').value = '';
   }
+  delete document.getElementById('evt-date').dataset.endDate;
   ['err-evt-title','err-evt-date'].forEach(id => document.getElementById(id).textContent = '');
   openOverlay('event-overlay');
 }
@@ -785,15 +1018,45 @@ function toggleAllDay() {
 }
 
 async function saveEvent() {
-  const title   = document.getElementById('evt-title').value.trim();
-  const dateStr = document.getElementById('evt-date').value;
+  const endDateEl = document.getElementById('evt-date');
+  const rangeEnd = endDateEl.dataset.endDate;
+  const title   = endDateEl.closest ? document.getElementById('evt-title').value.trim() : '';
+  const dateStr = endDateEl.value;
   const allDay  = document.getElementById('evt-allday').checked;
+
+  if (rangeEnd && rangeEnd !== dateStr && allDay) {
+    const t = document.getElementById('evt-title').value.trim();
+    if (!t) { document.getElementById('err-evt-title').textContent='제목을 입력해 주세요.'; return; }
+    document.getElementById('err-evt-title').textContent = '';
+    const loc  = document.getElementById('evt-location').value.trim();
+    const desc = document.getElementById('evt-desc').value.trim();
+    const ed = new Date(rangeEnd); ed.setDate(ed.getDate() + 1);
+    const body = { summary: t, start: { date: dateStr }, end: { date: fmtDate(ed) } };
+    if (loc) body.location = loc;
+    if (desc) body.description = desc;
+    const btn = document.getElementById('evt-save-btn');
+    btn.disabled = true;
+    document.getElementById('evt-save-label').textContent = '저장 중...';
+    document.getElementById('evt-error').textContent = '';
+    try {
+      await apiFetch('POST', `/calendars/${encodeURIComponent(CAL_ID)}/events`, body);
+      showToast('일정이 추가되었습니다.');
+      closeModal('event-overlay');
+      delete endDateEl.dataset.endDate;
+      await fetchEvents(); renderCalendar();
+    } catch(ex) {
+      document.getElementById('evt-error').textContent = '저장 실패: ' + ex.message;
+    } finally { btn.disabled = false; document.getElementById('evt-save-label').textContent = '추가'; }
+    return;
+  }
+
   const startT  = document.getElementById('evt-start').value;
   const endT    = document.getElementById('evt-end').value;
   const loc     = document.getElementById('evt-location').value.trim();
   const desc    = document.getElementById('evt-desc').value.trim();
+  const t2 = document.getElementById('evt-title').value.trim();
   let valid = true;
-  if (!title)   { document.getElementById('err-evt-title').textContent='제목을 입력해 주세요.'; valid=false; }
+  if (!t2)      { document.getElementById('err-evt-title').textContent='제목을 입력해 주세요.'; valid=false; }
   else            document.getElementById('err-evt-title').textContent='';
   if (!dateStr) { document.getElementById('err-evt-date').textContent='날짜를 선택해 주세요.'; valid=false; }
   else            document.getElementById('err-evt-date').textContent='';
@@ -801,9 +1064,9 @@ async function saveEvent() {
   let body;
   if (allDay) {
     const ed = new Date(dateStr); ed.setDate(ed.getDate() + 1);
-    body = { summary: title, start: { date: dateStr }, end: { date: fmtDate(ed) } };
+    body = { summary: t2, start: { date: dateStr }, end: { date: fmtDate(ed) } };
   } else {
-    body = { summary: title,
+    body = { summary: t2,
       start: { dateTime: `${dateStr}T${startT}:00+09:00`, timeZone: 'Asia/Seoul' },
       end:   { dateTime: `${dateStr}T${endT}:00+09:00`,   timeZone: 'Asia/Seoul' } };
   }
@@ -867,6 +1130,28 @@ function showDetail(e, evtId) {
   openOverlay('detail-overlay');
 }
 function editFromDetail() { closeModal('detail-overlay'); openEventModal(_detailEvt); }
+
+/* ══════════════ WEEK CELL CLICK ══════════════ */
+async function onWeekCellClick(e, dateStr, hour) {
+  if (e.target.closest('.week-evt')) return;
+  if (!_token) { const ok = await doLogin(SCOPES); if (!ok) return; }
+  _editingEvt = null;
+  document.getElementById('event-modal-title').textContent = '일정 추가';
+  document.getElementById('evt-save-label').textContent = '추가';
+  document.getElementById('evt-delete-btn').hidden = true;
+  document.getElementById('evt-error').textContent = '';
+  document.getElementById('evt-title').value = '';
+  document.getElementById('evt-date').value = dateStr;
+  document.getElementById('evt-allday').checked = false;
+  toggleAllDay();
+  document.getElementById('evt-start').value = String(hour).padStart(2,'0') + ':00';
+  document.getElementById('evt-end').value   = String(hour + 1).padStart(2,'0') + ':00';
+  document.getElementById('evt-location').value = '';
+  document.getElementById('evt-desc').value = '';
+  delete document.getElementById('evt-date').dataset.endDate;
+  ['err-evt-title','err-evt-date'].forEach(id => document.getElementById(id).textContent = '');
+  openOverlay('event-overlay');
+}
 
 /* ══════════════ SUBSCRIPTION ══════════════ */
 function openSubscribeModal() {
@@ -992,8 +1277,135 @@ function showToast(msg, type) {
   _toastTimer = setTimeout(() => t.className = '', 3500);
 }
 
+/* ══════════════ AI CHAT ══════════════ */
+let _aiOpen = false;
+let _aiMsgs = [];
+
+function toggleAiPanel() {
+  _aiOpen = !_aiOpen;
+  document.getElementById('ai-panel').classList.toggle('open', _aiOpen);
+  if (_aiOpen) setTimeout(() => document.getElementById('ai-input').focus(), 150);
+}
+
+function aiQuick(text) {
+  document.getElementById('ai-input').value = text;
+  aiSend();
+}
+
+function _aiAppend(role, text) {
+  const box = document.getElementById('ai-msgs');
+  const el = document.createElement('div');
+  el.className = 'ai-msg ' + role;
+  el.textContent = text;
+  box.appendChild(el);
+  box.scrollTop = box.scrollHeight;
+  return el;
+}
+
+async function aiSend() {
+  const input = document.getElementById('ai-input');
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+  document.getElementById('ai-send').disabled = true;
+
+  _aiAppend('user', text);
+  _aiMsgs.push({ role: 'user', content: text });
+
+  const loadEl = _aiAppend('bot loading', '답변 생성 중...');
+
+  const evtContext = _events.length
+    ? _events.slice(0, 60).map(ev => {
+        const s = ev.start && (ev.start.dateTime || ev.start.date);
+        const sd = s ? new Date(s).toLocaleString('ko-KR',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}) : '';
+        return `- ${sd} ${ev.summary||''}${ev.location?' ('+ev.location+')':''}`;
+      }).join('\n')
+    : '(현재 불러온 일정 없음)';
+
+  const today = new Date().toLocaleDateString('ko-KR',{year:'numeric',month:'long',day:'numeric',weekday:'long'});
+
+  const systemPrompt = `당신은 아세아항공직업전문학교 업무 캘린더 AI 어시스턴트입니다.\n오늘: ${today}\n현재 화면에 표시된 일정:\n${evtContext}\n\n사용자 요청을 분석해 아래 JSON 형식 중 하나로만 응답하세요. 설명 없이 JSON만.\n\n일정 추가/등록 요청 → {"action":"create_event","title":"제목","date":"YYYY-MM-DD","allDay":false,"startTime":"HH:MM","endTime":"HH:MM","location":"","description":"","summary":"한 줄 확인 메시지"}\n일정 조회/요약/분석 → {"action":"answer","text":"한국어 답변"}\n\n날짜 기준: 한국 시간(KST). 상대적 표현은 오늘 기준으로 절대 날짜로 변환.`;
+
+  const payload = {
+    model: 'claude-haiku-4-5-20251001',
+    max_tokens: 512,
+    system: systemPrompt,
+    messages: _aiMsgs,
+  };
+
+  try {
+    const r = await fetch(`${SB_URL}/functions/v1/ai-proxy`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'apikey': SB_ANON, 'Authorization': 'Bearer ' + SB_ANON },
+      body: JSON.stringify({ service: 'claude', payload }),
+    });
+    const data = await r.json();
+    const raw = data?.content?.[0]?.text || '';
+    loadEl.remove();
+
+    let parsed;
+    try {
+      const m2 = raw.match(/\{[\s\S]*\}/);
+      parsed = m2 ? JSON.parse(m2[0]) : null;
+    } catch(e) { parsed = null; }
+
+    if (parsed?.action === 'create_event') {
+      const confirmMsg = parsed.summary || `"${parsed.title}" 일정을 ${parsed.date}${parsed.allDay ? '' : (' ' + parsed.startTime + '~' + parsed.endTime)}에 추가할까요?`;
+      const botEl = _aiAppend('bot', confirmMsg);
+      const confirmBtn = document.createElement('button');
+      confirmBtn.className = 'ai-chip';
+      confirmBtn.style.marginTop = '6px';
+      confirmBtn.textContent = '✅ 일정 추가하기';
+      confirmBtn.onclick = async () => {
+        confirmBtn.disabled = true;
+        confirmBtn.textContent = '추가 중...';
+        if (!_token) {
+          const ok = await doLogin(SCOPES);
+          if (!ok) { confirmBtn.textContent = '로그인 필요'; return; }
+        }
+        _editingEvt = null;
+        document.getElementById('event-modal-title').textContent = '일정 추가';
+        document.getElementById('evt-save-label').textContent = '추가';
+        document.getElementById('evt-delete-btn').hidden = true;
+        document.getElementById('evt-error').textContent = '';
+        document.getElementById('evt-title').value = parsed.title || '';
+        document.getElementById('evt-date').value = parsed.date || fmtDate(new Date());
+        document.getElementById('evt-allday').checked = !!parsed.allDay;
+        toggleAllDay();
+        if (!parsed.allDay) {
+          document.getElementById('evt-start').value = parsed.startTime || '09:00';
+          document.getElementById('evt-end').value   = parsed.endTime   || '10:00';
+        }
+        document.getElementById('evt-location').value = parsed.location || '';
+        document.getElementById('evt-desc').value     = parsed.description || '';
+        delete document.getElementById('evt-date').dataset.endDate;
+        ['err-evt-title','err-evt-date'].forEach(id => document.getElementById(id).textContent='');
+        openOverlay('event-overlay');
+        confirmBtn.textContent = '✅ 폼에 채워졌어요';
+      };
+      botEl.appendChild(document.createElement('br'));
+      botEl.appendChild(confirmBtn);
+      _aiMsgs.push({ role: 'assistant', content: raw });
+    } else if (parsed?.action === 'answer') {
+      _aiAppend('bot', parsed.text);
+      _aiMsgs.push({ role: 'assistant', content: raw });
+    } else {
+      const cleaned = raw.replace(/\{[\s\S]*\}/,'').trim() || raw;
+      _aiAppend('bot', cleaned || '응답을 처리하지 못했습니다.');
+      _aiMsgs.push({ role: 'assistant', content: raw });
+    }
+  } catch(e) {
+    loadEl.remove();
+    _aiAppend('bot', '오류가 발생했습니다: ' + e.message);
+  } finally {
+    document.getElementById('ai-send').disabled = false;
+  }
+}
+
 /* ══════════════ BOOT ══════════════ */
 async function boot() {
+  await _ensureClient();
+  _initTokenClient(SCOPES);
   if (_tryRestoreToken()) {
     await fetchUserInfo();
     updateUserArea();
