@@ -284,6 +284,20 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','N
   .admin-table{font-size:.72rem}
   .admin-table th,.admin-table td{padding:5px 6px}
 }
+
+/* ── FEATURE REQUEST PANEL ── */
+.feat-item{border:1px solid var(--g200);border-radius:var(--r);margin-bottom:10px;overflow:hidden;background:#fff}
+.feat-item-hdr{padding:10px 14px;background:var(--g50);display:flex;align-items:flex-start;justify-content:space-between;gap:8px;border-bottom:1px solid var(--g100)}
+.feat-item-title{font-size:.88rem;font-weight:700;color:var(--g900)}
+.feat-item-meta{font-size:.72rem;color:var(--g400);white-space:nowrap;flex-shrink:0}
+.feat-item-body{padding:10px 14px;font-size:.83rem;color:var(--g700);white-space:pre-wrap;line-height:1.55}
+.feat-reply-wrap{background:var(--primary-lt);border-top:1px solid rgba(26,115,232,.15);padding:10px 14px}
+.feat-reply-label{font-size:.72rem;font-weight:700;color:var(--primary);margin-bottom:4px}
+.feat-reply-text{font-size:.82rem;color:var(--g700);line-height:1.5;white-space:pre-wrap}
+.feat-admin-row{padding:10px 14px;border-top:1px solid var(--g200);display:flex;flex-direction:column;gap:6px}
+.feat-admin-ta{width:100%;padding:8px 10px;border:1.5px solid var(--g300);border-radius:var(--r);font-size:.82rem;resize:vertical;font-family:inherit;min-height:60px;transition:border-color .2s}
+.feat-admin-ta:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(26,115,232,.1)}
+.feat-badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:.68rem;font-weight:700;background:#e8f5e9;color:#2e7d32}
 </style>
 </head>
 <body>
@@ -298,6 +312,7 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','N
   </div>
   <div class="hdr-right">
     <button class="btn btn-ghost-w btn-sm" onclick="openSubscribeModal()">📋 구독 신청</button>
+    <button class="btn btn-ghost-w btn-sm" onclick="openFeatureModal()">💡 기능 건의</button>
     <button class="btn btn-ghost-w btn-sm" onclick="openAdminLogin()">🔒 관리자</button>
   </div>
 </header>
@@ -532,6 +547,47 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','N
   </div>
 </div>
 
+<!-- Feature Request Modal -->
+<div class="overlay" id="feature-overlay">
+  <div class="modal modal-lg">
+    <div class="modal-hdr">
+      <h2>💡 기능 건의하기</h2>
+      <button class="modal-close" onclick="closeModal('feature-overlay')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:.82rem;color:var(--g500);margin-bottom:14px;line-height:1.5">
+        새 기능이나 개선 사항을 자유롭게 제안해 주세요. 관리자가 검토 후 답변을 드립니다.<br>
+        <a href="forum.html" target="_blank" style="color:var(--primary);font-size:.78rem">→ ASEA AI 포럼에서 전체 건의 목록 보기</a>
+      </p>
+      <!-- Submit form -->
+      <div style="background:var(--g50);border-radius:var(--r);padding:14px;border:1px solid var(--g200);margin-bottom:14px">
+        <div class="form-group">
+          <label class="form-label">이름 (선택)</label>
+          <input class="form-input" id="feat-name" placeholder="이름 (공란이면 익명으로 표시)" maxlength="30">
+        </div>
+        <div class="form-group">
+          <label class="form-label">제목 <span class="req">*</span></label>
+          <input class="form-input" id="feat-title" placeholder="예) 월별 통계 다운로드 기능 추가" maxlength="100">
+          <div class="err-msg" id="err-feat-title"></div>
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label class="form-label">내용 <span class="req">*</span></label>
+          <textarea class="form-input" id="feat-content" rows="3" placeholder="원하시는 기능이나 개선 사항을 자유롭게 작성해 주세요." style="resize:vertical;font-family:inherit"></textarea>
+          <div class="err-msg" id="err-feat-content"></div>
+        </div>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+        <span id="feat-list-count" style="font-size:.8rem;color:var(--g400)"></span>
+        <button class="btn btn-primary btn-sm" id="feat-submit-btn" onclick="submitFeatureRequest()">📨 건의 제출</button>
+      </div>
+      <!-- List -->
+      <div id="feat-loading" style="text-align:center;padding:20px;color:var(--g400)"><span class="spinner"></span> 불러오는 중...</div>
+      <div id="feat-list"></div>
+      <div id="feat-empty" hidden style="text-align:center;padding:24px;color:var(--g400)">아직 건의된 내용이 없습니다.</div>
+    </div>
+  </div>
+</div>
+
 <!-- TOAST -->
 <div id="toast"></div>
 
@@ -562,6 +618,7 @@ let _curDate    = new Date();
 let _view       = 'month';
 let _editingEvt = null;
 let _detailEvt  = null;
+let _isAdmin    = false;
 
 /* ══════════════ AUTH ══════════════ */
 function _initTokenClient(scope) {
@@ -1206,6 +1263,7 @@ function checkAdminPw() {
     document.getElementById('err-admin-pw').textContent = '비밀번호가 올바르지 않습니다.';
     return;
   }
+  _isAdmin = true;
   closeModal('admin-login-overlay');
   openOverlay('admin-overlay');
   loadAdminData();
@@ -1399,6 +1457,131 @@ async function aiSend() {
     _aiAppend('bot', '오류가 발생했습니다: ' + e.message);
   } finally {
     document.getElementById('ai-send').disabled = false;
+  }
+}
+
+/* ══════════════ FEATURE REQUESTS (forum_posts category=기능건의) ══════════════ */
+function openFeatureModal() {
+  document.getElementById('feat-name').value = (_userEmail || '').split('@')[0] || '';
+  document.getElementById('feat-title').value = '';
+  document.getElementById('feat-content').value = '';
+  ['err-feat-title','err-feat-content'].forEach(id => document.getElementById(id).textContent = '');
+  openOverlay('feature-overlay');
+  loadFeatureRequests();
+}
+
+async function loadFeatureRequests() {
+  const loadEl = document.getElementById('feat-loading');
+  const listEl = document.getElementById('feat-list');
+  const emptyEl = document.getElementById('feat-empty');
+  loadEl.hidden = false; listEl.innerHTML = ''; emptyEl.hidden = true;
+  document.getElementById('feat-list-count').textContent = '';
+  try {
+    const postRes = await fetch(
+      `${SB_URL}/rest/v1/forum_posts?category=eq.기능건의&is_deleted=eq.false&order=created_at.desc&limit=100`,
+      { headers: { apikey: SB_ANON, Authorization: 'Bearer ' + SB_ANON } }
+    );
+    const posts = await postRes.json();
+    loadEl.hidden = true;
+    if (!Array.isArray(posts) || !posts.length) { emptyEl.hidden = false; return; }
+
+    const ids = posts.map(p => p.id).join(',');
+    const repRes = await fetch(
+      `${SB_URL}/rest/v1/forum_replies?post_id=in.(${ids})&is_deleted=eq.false&order=created_at.asc`,
+      { headers: { apikey: SB_ANON, Authorization: 'Bearer ' + SB_ANON } }
+    );
+    const repRaw = await repRes.json();
+    const replies = Array.isArray(repRaw) ? repRaw : [];
+    const repMap = {};
+    replies.forEach(r => { if (!repMap[r.post_id]) repMap[r.post_id] = []; repMap[r.post_id].push(r); });
+
+    document.getElementById('feat-list-count').textContent = `총 ${posts.length}건`;
+    listEl.innerHTML = posts.map(p => {
+      const date = new Date(p.created_at).toLocaleDateString('ko-KR',{year:'numeric',month:'long',day:'numeric'});
+      const reps = repMap[p.id] || [];
+      const repHtml = reps.map(r =>
+        `<div class="feat-reply-wrap">
+          <div class="feat-reply-label">💬 관리자 답변 · ${new Date(r.created_at).toLocaleDateString('ko-KR',{month:'long',day:'numeric'})}</div>
+          <div class="feat-reply-text">${esc(r.content)}</div>
+        </div>`
+      ).join('');
+      const adminHtml = _isAdmin
+        ? `<div class="feat-admin-row">
+            <textarea class="feat-admin-ta" id="feat-rt-${p.id}" placeholder="관리자 답변을 입력하세요" rows="2"></textarea>
+            <div style="display:flex;gap:6px;justify-content:flex-end">
+              <button class="btn btn-primary btn-sm" onclick="submitFeatureReply('${p.id}')">답변 등록</button>
+            </div>
+           </div>`
+        : '';
+      const hasReply = reps.length > 0;
+      return `<div class="feat-item">
+        <div class="feat-item-hdr">
+          <div style="min-width:0">
+            <div class="feat-item-title">${esc(p.title)}</div>
+            <span style="font-size:.75rem;color:var(--g500)">${esc(p.author_name || '익명')}</span>
+            ${hasReply ? '<span class="feat-badge" style="margin-left:6px">답변완료</span>' : ''}
+          </div>
+          <span class="feat-item-meta">${date}</span>
+        </div>
+        <div class="feat-item-body">${esc(p.content)}</div>
+        ${repHtml}${adminHtml}
+      </div>`;
+    }).join('');
+  } catch(e) {
+    loadEl.hidden = true; emptyEl.hidden = false;
+    emptyEl.textContent = '불러오기 실패: ' + e.message;
+  }
+}
+
+async function submitFeatureRequest() {
+  const name    = document.getElementById('feat-name').value.trim();
+  const title   = document.getElementById('feat-title').value.trim();
+  const content = document.getElementById('feat-content').value.trim();
+  let valid = true;
+  const setErr = (id, msg) => { document.getElementById(id).textContent = msg; if (msg) valid = false; };
+  setErr('err-feat-title',   title   ? '' : '제목을 입력해 주세요.');
+  setErr('err-feat-content', content ? '' : '내용을 입력해 주세요.');
+  if (!valid) return;
+  const btn = document.getElementById('feat-submit-btn');
+  btn.disabled = true; btn.textContent = '제출 중...';
+  try {
+    const r = await fetch(`${SB_URL}/rest/v1/forum_posts`, {
+      method: 'POST',
+      headers: { 'Content-Type':'application/json', apikey:SB_ANON, Authorization:'Bearer '+SB_ANON, Prefer:'return=minimal' },
+      body: JSON.stringify({ title, content, author_name: name || '익명', category: '기능건의' })
+    });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    document.getElementById('feat-title').value = '';
+    document.getElementById('feat-content').value = '';
+    showToast('건의가 등록되었습니다. 감사합니다!');
+    loadFeatureRequests();
+  } catch(e) {
+    showToast('등록 실패: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false; btn.textContent = '📨 건의 제출';
+  }
+}
+
+async function submitFeatureReply(postId) {
+  const ta = document.getElementById('feat-rt-' + postId);
+  const text = ta ? ta.value.trim() : '';
+  if (!text) { showToast('답변 내용을 입력해 주세요.', 'error'); return; }
+  try {
+    const r = await fetch(`${SB_URL}/rest/v1/forum_replies`, {
+      method: 'POST',
+      headers: { 'Content-Type':'application/json', apikey:SB_ANON, Authorization:'Bearer '+SB_ANON, Prefer:'return=minimal' },
+      body: JSON.stringify({ post_id: postId, author_name: '관리자', content: text })
+    });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    await fetch(`${SB_URL}/rest/v1/forum_posts?id=eq.${postId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type':'application/json', apikey:SB_ANON, Authorization:'Bearer '+SB_ANON },
+      body: JSON.stringify({ reply_count: 1 })
+    });
+    showToast('답변이 등록되었습니다.');
+    loadFeatureRequests();
+  } catch(e) {
+    showToast('답변 등록 실패: ' + e.message, 'error');
   }
 }
 
