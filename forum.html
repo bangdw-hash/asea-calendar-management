@@ -301,7 +301,7 @@ body{font-family:var(--font);background:var(--gray-100);color:var(--gray-900);mi
     <div class="cat-tabs" id="cat-tabs"></div>
     <div class="ltb">
       <div class="sbox">
-        <input id="search-in" type="text" placeholder="제목, 내용 검색..." autocomplete="off" spellcheck="false" oninput="onSearch(this.value)">
+        <input id="search-in" type="text" placeholder="제목, 내용 검색..." autocomplete="off" spellcheck="false" readonly oninput="onSearch(this.value)" onchange="onSearch(this.value)">
         <button id="search-clear" onclick="clearSearch()" title="검색 지우기">×</button>
       </div>
       <button id="new-btn" onclick="goEditor()">✏️ 새 글 쓰기</button>
@@ -1415,13 +1415,17 @@ document.addEventListener('keydown', e=>{
 
 /* ===================== Init ===================== */
 async function init() {
-  // Clear search input immediately and after delay to guard against browser autofill
+  // Clear search input and keep it readonly briefly so Chrome cannot autofill it on page load.
+  // readonly is removed after 500ms — by then autofill window has passed.
   const sinp = document.getElementById('search-in');
-  if (sinp) sinp.value = '';
+  if (sinp) { sinp.value = ''; sinp.setAttribute('readonly', ''); }
   setTimeout(() => {
     const inp = document.getElementById('search-in');
-    if (inp && /^https?:\/\//i.test(inp.value)) { inp.value = ''; S.search = ''; }
-  }, 800);
+    if (inp) {
+      if (/^https?:\/\//i.test(inp.value)) inp.value = '';
+      inp.removeAttribute('readonly');
+    }
+  }, 500);
   await loadSettings();
   if (isAdminSession()) {
     S.isAdmin=true;
