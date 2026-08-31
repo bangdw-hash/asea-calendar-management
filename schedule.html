@@ -298,6 +298,20 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','N
 .feat-admin-ta{width:100%;padding:8px 10px;border:1.5px solid var(--g300);border-radius:var(--r);font-size:.82rem;resize:vertical;font-family:inherit;min-height:60px;transition:border-color .2s}
 .feat-admin-ta:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(26,115,232,.1)}
 .feat-badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:.68rem;font-weight:700;background:#e8f5e9;color:#2e7d32}
+
+/* ── PRINT ── */
+@media print{
+  .hdr,.toolbar,.fab,.ai-fab,.ai-panel,.toast,.overlay,#auth-banner,
+  .evt-quick,.nav-btn,[onclick="printMonth()"]{display:none!important}
+  body{background:#fff;font-size:11pt}
+  .cal-wrap{padding:0}
+  .month-grid{border:1px solid #ccc}
+  .day-cell{min-height:70px;page-break-inside:avoid}
+  .evt-dot{background:#e8f0fe!important;color:#000!important;font-size:8pt;margin-top:1px}
+  .print-title{display:block!important;text-align:center;font-size:16pt;font-weight:700;
+    margin:8px 0 4px;color:#1A73E8}
+}
+.print-title{display:none}
 </style>
 </head>
 <body>
@@ -311,8 +325,7 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','N
     </div>
   </div>
   <div class="hdr-right">
-    <button class="btn btn-ghost-w btn-sm" onclick="openSubscribeModal()">📋 구독 신청</button>
-    <button class="btn btn-ghost-w btn-sm" onclick="openFeatureModal()">💡 기능 건의</button>
+    <a class="btn btn-ghost-w btn-sm" href="forum.html" target="_blank">💡 기능 건의하기</a>
     <button class="btn btn-ghost-w btn-sm" onclick="openAdminLogin()">🔒 관리자</button>
   </div>
 </header>
@@ -331,6 +344,7 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','N
       <button class="view-btn" onclick="setView('week',this)">주</button>
       <button class="view-btn" onclick="setView('list',this)">목록</button>
     </div>
+    <button class="btn btn-sm" onclick="printMonth()" title="월별 인쇄" style="background:var(--g100);color:var(--g700)">🖨️ 인쇄</button>
     <div id="user-area"></div>
   </div>
 </div>
@@ -342,6 +356,7 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','N
 </div>
 
 <!-- CALENDAR AREA -->
+<span class="print-title" id="print-title"></span>
 <div class="cal-wrap" id="cal-wrap"></div>
 
 <!-- FAB: Add event -->
@@ -831,12 +846,12 @@ function renderMonth(wrap) {
     const numEl = isToday
       ? `<span class="day-num" style="background:var(--primary);color:#fff;border-radius:50%;width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center">${d}</span>`
       : `<span class="day-num">${d}</span>`;
-    const dotsHtml = dayEvts.slice(0, 3).map(ev => {
+    const dotsHtml = dayEvts.map(ev => {
       const qBtns = _token
         ? `<span class="evt-quick"><button onclick="event.stopPropagation();editEvtById('${escId(ev.id)}')" title="수정">✏️</button><button onclick="event.stopPropagation();deleteEvtById('${escId(ev.id)}')" title="삭제">🗑</button></span>`
         : '';
       return `<span class="evt-dot-wrap"><span class="evt-dot" onclick="showDetail(event,'${escId(ev.id)}')" title="${esc(ev.summary||'')}">${esc(ev.summary||'(제목 없음)')}</span>${qBtns}</span>`;
-    }).join('') + (dayEvts.length > 3 ? `<span class="evt-dot more">+${dayEvts.length - 3}개 더</span>` : '');
+    }).join('');
     html += `<div class="${cls}${dayEvts.length?' has-events':''}" data-y="${y}" data-m="${m}" data-d="${d}">` + numEl + dotsHtml + '</div>';
     dayCount++;
   }
@@ -1583,6 +1598,14 @@ async function submitFeatureReply(postId) {
   } catch(e) {
     showToast('답변 등록 실패: ' + e.message, 'error');
   }
+}
+
+/* ══════════════ PRINT ══════════════ */
+function printMonth() {
+  const title = document.getElementById('cal-title')?.textContent || '';
+  const el = document.getElementById('print-title');
+  if (el) el.textContent = '아세아항공직업전문학교 업무 일정표 — ' + title;
+  window.print();
 }
 
 /* ══════════════ BOOT ══════════════ */
