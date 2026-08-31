@@ -900,6 +900,13 @@ function setPage(p) { if(p<1) return; S.page=p; loadPosts(); window.scrollTo(0,0
 
 let searchTimer;
 function onSearch(v) {
+  // Block browser autofill of URLs (Chrome commits autofill on any click, triggering oninput)
+  if (/^https?:\/\//i.test(v)) {
+    const inp = document.getElementById('search-in');
+    inp.value = '';
+    document.getElementById('search-clear').classList.remove('show');
+    return;
+  }
   clearTimeout(searchTimer);
   document.getElementById('search-clear').classList.toggle('show', v.length > 0);
   searchTimer = setTimeout(()=>{ S.search=v; S.page=1; loadPosts(); }, 400);
@@ -1408,9 +1415,13 @@ document.addEventListener('keydown', e=>{
 
 /* ===================== Init ===================== */
 async function init() {
-  // Clear search input immediately to prevent browser autofill from polluting S.search
+  // Clear search input immediately and after delay to guard against browser autofill
   const sinp = document.getElementById('search-in');
   if (sinp) sinp.value = '';
+  setTimeout(() => {
+    const inp = document.getElementById('search-in');
+    if (inp && /^https?:\/\//i.test(inp.value)) { inp.value = ''; S.search = ''; }
+  }, 800);
   await loadSettings();
   if (isAdminSession()) {
     S.isAdmin=true;
