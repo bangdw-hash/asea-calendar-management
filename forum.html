@@ -675,7 +675,8 @@ async function updatePost(id, title, content, author, cat) {
 }
 
 async function deletePost(id) {
-  await sb.from('forum_posts').update({ is_deleted: true }).eq('id', id);
+  const { error } = await sb.rpc('soft_delete_post', { post_id: id });
+  if (error) { toast('삭제 실패: ' + error.message, 'err'); return; }
   toast('게시글이 삭제되었습니다.');
   goList();
 }
@@ -715,7 +716,8 @@ async function createReply(postId, parentId, author, content, pwHash, imgUrls, f
 }
 
 async function deleteReply(id) {
-  await sb.from('forum_replies').update({ is_deleted: true }).eq('id', id);
+  const { error } = await sb.rpc('soft_delete_reply', { reply_id: id });
+  if (error) { toast('삭제 실패: ' + error.message, 'err'); return; }
   toast('답글이 삭제되었습니다.');
   loadPost(S.post.id);
 }
