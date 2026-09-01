@@ -362,7 +362,7 @@ body{font-family:var(--font);background:var(--gray-100);color:var(--gray-900);mi
           <div class="erow">
             <div class="ef">
               <label>작성자</label>
-              <input class="ei" id="e-author" type="text" placeholder="익명" maxlength="20">
+              <input class="ei" id="e-author" type="text" placeholder="작성자 이름을 입력하세요" autocomplete="off" maxlength="20">
             </div>
             <div class="ef">
               <label>카테고리</label>
@@ -379,7 +379,7 @@ body{font-family:var(--font);background:var(--gray-100);color:var(--gray-900);mi
           <div class="erow">
             <div class="ef" style="flex:2">
               <label>비밀번호 <span style="color:var(--gray-400);font-weight:400">(설정 시 본인만 수정 가능)</span></label>
-              <input class="ei" id="e-pw" type="password" placeholder="나중에 수정/삭제할 때 필요" maxlength="50">
+              <input class="ei" id="e-pw" type="password" placeholder="나중에 수정/삭제할 때 필요" autocomplete="new-password" maxlength="50">
               <div class="phint">관리자는 항상 수정·삭제 가능합니다</div>
             </div>
           </div>
@@ -879,7 +879,13 @@ function goEditor(post=null) {
   S.pendingFiles = [];
   setView('editor');
   document.getElementById('e-title-lbl').textContent = post ? '게시글 수정' : '새 글 쓰기';
-  document.getElementById('e-author').value = post?.author_name||'';
+  const authorEl = document.getElementById('e-author');
+  authorEl.value = post?.author_name||'';
+  authorEl.setAttribute('readonly', '');
+  setTimeout(() => {
+    if (/^https?:\/\//i.test(authorEl.value)) authorEl.value = '';
+    authorEl.removeAttribute('readonly');
+  }, 500);
   document.getElementById('e-cat').value = post?.category||'일반';
   document.getElementById('e-post-title').value = post?.title||'';
   document.getElementById('e-pw').value = '';
@@ -1053,12 +1059,13 @@ function renderFileList() {
 /* ===================== Submit Post ===================== */
 async function submitPost() {
   const title = document.getElementById('e-post-title').value.trim();
-  const author = document.getElementById('e-author').value.trim()||'익명';
+  const author = document.getElementById('e-author').value.trim();
   const cat = document.getElementById('e-cat').value;
   const pw = document.getElementById('e-pw').value;
   const content = S.quill ? S.quill.root.innerHTML : '';
 
   if (!title) { toast('제목을 입력해주세요.','err'); return; }
+  if (!author) { toast('작성자 이름을 입력해주세요.','err'); return; }
   if (!content || content === '<p><br></p>') { toast('내용을 입력해주세요.','err'); return; }
 
   const btn = document.querySelector('#v-editor .pbtn-primary');
