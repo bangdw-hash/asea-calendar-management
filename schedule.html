@@ -6,6 +6,7 @@
 <title>업무 일정표 — 아세아항공직업전문학교</title>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+[hidden]{display:none!important}
 :root{
   --primary:#1A73E8;--primary-dk:#1557B0;--primary-lt:#E8F0FE;
   --green:#16a34a;--green-lt:#dcfce7;
@@ -794,10 +795,6 @@ function renderCalendar() {
   document.getElementById('cal-title').textContent =
     `${_curDate.getFullYear()}년 ${KO_MONTHS[_curDate.getMonth()]}`;
   const wrap = document.getElementById('cal-wrap');
-  if (!_token) {
-    wrap.innerHTML = `<div class="embed-wrap"><iframe src="${CAL_EMBED}" frameborder="0" scrolling="no" allowtransparency="true"></iframe></div>`;
-    return;
-  }
   if (_view === 'month') renderMonth(wrap);
   else if (_view === 'week') renderWeek(wrap);
   else renderList(wrap);
@@ -1029,7 +1026,9 @@ function renderList(wrap) {
 /* ══════════════ NAVIGATION ══════════════ */
 async function navMonth(delta) {
   _curDate.setMonth(_curDate.getMonth() + delta);
-  if (_token) { renderCalendar(); await fetchEvents(); }
+  renderCalendar();
+  if (_token) await fetchEvents();
+  else await fetchPublicEvents();
   renderCalendar();
 }
 function goToday() { _curDate = new Date(); navMonth(0); }
@@ -1608,6 +1607,24 @@ function printMonth() {
   window.print();
 }
 
+/* ══════════════ PUBLIC EVENTS (no auth) ══════════════ */
+async function fetchPublicEvents() {
+  const y = _curDate.getFullYear(), m = _curDate.getMonth();
+  const timeMin = new Date(y, m - 1, 1).toISOString();
+  const timeMax = new Date(y, m + 2, 0, 23, 59, 59).toISOString();
+  try {
+    const r = await fetch(`${SB_URL}/functions/v1/ai-proxy`, {
+      method: 'POST',
+      headers: { 'Content-Type':'application/json', 'apikey':SB_ANON, 'Authorization':'Bearer '+SB_ANON },
+      body: JSON.stringify({ service:'gcal-public', payload:{ calId:CAL_ID, timeMin, timeMax } }),
+    });
+    const data = await r.json();
+    _events = Array.isArray(data?.items) ? data.items : [];
+  } catch(e) {
+    _events = [];
+  }
+}
+
 /* ══════════════ BOOT ══════════════ */
 async function boot() {
   await _ensureClient();
@@ -1619,6 +1636,7 @@ async function boot() {
     await fetchEvents();
   } else {
     document.getElementById('auth-banner').hidden = false;
+    await fetchPublicEvents();
   }
   renderCalendar();
 }
