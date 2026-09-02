@@ -1625,6 +1625,17 @@ async function fetchPublicEvents() {
   }
 }
 
+/* ══════════════ SILENT RE-AUTH ══════════════ */
+function _trySilentLogin() {
+  if (!_tokenClient || _token || _pendingCb) return;
+  _pendingCb = async (ok) => {
+    _pendingCb = null;
+    if (ok) await afterLogin();
+  };
+  try { _tokenClient.requestAccessToken({ prompt: '' }); }
+  catch(e) { _pendingCb = null; }
+}
+
 /* ══════════════ BOOT ══════════════ */
 async function boot() {
   await _ensureClient();
@@ -1637,6 +1648,9 @@ async function boot() {
   } else {
     document.getElementById('auth-banner').hidden = false;
     await fetchPublicEvents();
+    renderCalendar();
+    _trySilentLogin();
+    return;
   }
   renderCalendar();
 }
