@@ -359,7 +359,7 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','N
 <div class="toolbar">
   <div class="cal-nav">
     <button class="nav-btn" onclick="navMonth(-1)" title="이전">&#8249;</button>
-    <div class="cal-title" id="cal-title" onclick="goToday()">2026년 8월</div>
+    <div class="cal-title" id="cal-title" onclick="goToday()"></div>
     <button class="nav-btn" onclick="navMonth(1)" title="다음">&#8250;</button>
     <button class="btn btn-sm" onclick="goToday()" style="background:var(--g100);color:var(--g700);padding:5px 10px">오늘</button>
   </div>
@@ -1914,6 +1914,7 @@ async function boot() {
   }
   renderCalendar();
 }
+renderCalendar();
 boot();
 </script>
 </body>
