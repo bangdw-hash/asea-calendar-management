@@ -441,31 +441,13 @@ window.AssessmentModule = (function () {
           '<p class="asm-gate-desc">본 진단표는 개인별 직무역량을 파악하고 연말 인사고과 평가에 반영하기 위한 자료입니다.<br>' +
           '개인 <b>Google 계정</b>으로 로그인하면 작성 기록이 안전하게 저장되어, 다른 컴퓨터에서도 이어서 작성할 수 있습니다.</p>' +
           (inapp.blocked ? inAppWarningHtml(inapp) : '') +
-          '<button class="asm-btn asm-btn-primary asm-btn-lg" id="asm-login-btn"' + (inapp.blocked ? ' disabled' : '') + '>' +
-            '<svg width="18" height="18" viewBox="0 0 24 24"><path fill="#fff" d="M12 11v2.9h4.1c-.2 1-.9 2.5-2.6 3.3l-.02.1 2.5 1.9.2.02C18.9 17.6 20 15 20 12.2c0-.7-.1-1.3-.2-1.8H12z"/><path fill="#fff" d="M12 20c2.4 0 4.4-.8 5.8-2.1l-2.8-2.1c-.7.5-1.7.9-3 .9-2.3 0-4.2-1.5-4.9-3.6H4.2v2.2C5.6 18 8.5 20 12 20z" opacity=".85"/><path fill="#fff" d="M7.1 13.1c-.2-.5-.3-1.1-.3-1.6s.1-1.1.3-1.6V7.7H4.2C3.7 8.8 3.4 10 3.4 11.5s.3 2.7.8 3.8l2.9-2.2z" opacity=".6"/><path fill="#fff" d="M12 6.6c1.3 0 2.2.6 2.7 1l2-2C15.4 4.4 13.9 3.6 12 3.6 8.5 3.6 5.6 5.6 4.2 8.5l2.9 2.2C7.8 8.5 9.7 6.6 12 6.6z" opacity=".9"/></svg>' +
-            'Google 계정으로 로그인' +
-          '</button>' +
+          (inapp.blocked ? '' : '<div id="asm-google-btn" class="asm-google-btn-wrap"></div>') +
           '<p class="asm-gate-foot">주관: 기획처 · 제출기한: 2026. 12. 11.</p>' +
         '</div>' +
       '</div>';
     var openBtn = S.root.querySelector('#asm-open-external');
     if (openBtn) openBtn.addEventListener('click', function () { openInExternalBrowser(inapp); });
-    var btn = S.root.querySelector('#asm-login-btn');
-    btn.addEventListener('click', function () {
-      btn.disabled = true; btn.textContent = '로그인 중…';
-      if (window.Auth && Auth.login) {
-        // 계정 선택 화면을 강제로 띄워 팝업이 클릭 제스처에 확실히 연결되도록 한다.
-        Auth.login({ chooseAccount: true }).then(function () {}).catch(function (e) {
-          try { console.error('[assessment] login rejected:', e); } catch (_) {}
-          btn.disabled = false; btn.textContent = 'Google 계정으로 로그인';
-          var again = detectInAppBrowser();
-          var msg = again.blocked
-            ? again.name + ' 인앱 브라우저에서는 Google 로그인이 차단됩니다. 기본 브라우저로 열어 주세요.'
-            : '로그인 창을 열지 못했습니다. 팝업 차단을 해제하고 다시 시도해 주세요.' + (e && e.message ? ' (' + e.message + ')' : '');
-          toast(msg, 'error');
-        });
-      }
-    });
+    if (!inapp.blocked && window.Auth && Auth.renderButton) Auth.renderButton('asm-google-btn');
   }
 
   /* ── 개인정보 수집·이용 동의(최초 1회 + 문구 개정 시 재동의) ──────
