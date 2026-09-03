@@ -45,5 +45,16 @@ window.CloudForms = (function () {
       .catch(function (e) { return { ok: false, err: (e && e.message) || String(e), rows: [] }; });
   }
 
-  return { ready: ready, save: save, list: list };
+  // 감사 로그 기록(민감 액션: 동의, 타인 개인정보 열람/내보내기 등) — 실패해도 조용히 무시.
+  function auditLog(actor, area, action, targetRef, detail) {
+    var d = db();
+    if (!d) return Promise.resolve({ ok: false, err: 'supabase 미로딩' });
+    var row = { actor: actor || '', area: area || '', action: action || '',
+                target_ref: targetRef == null ? '' : String(targetRef), detail: detail || {} };
+    return d.from('audit_log').insert(row)
+      .then(function (res) { return res.error ? { ok: false, err: res.error.message } : { ok: true }; })
+      .catch(function (e) { return { ok: false, err: (e && e.message) || String(e) }; });
+  }
+
+  return { ready: ready, save: save, list: list, auditLog: auditLog };
 })();
