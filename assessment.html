@@ -117,6 +117,24 @@
     .asm-radio:hover { border-color: var(--blue); background: #f7faff; }
     .asm-radio-hint { color: var(--muted); font-size: 12px; }
 
+    /* ── 개인정보 수집·이용 동의 화면 ── */
+    .asm-consent-card { max-width: 660px; text-align: left; max-height: 82vh; overflow-y: auto; }
+    .asm-consent-card .asm-gate-title { text-align: center; }
+    .asm-consent-sec { margin-bottom: 18px; }
+    .asm-consent-sec h3 { font-size: 13.5px; font-weight: 800; color: var(--navy); margin: 0 0 8px; }
+    .asm-consent-sec p, .asm-consent-sec li { font-size: 12.5px; color: var(--ink); line-height: 1.65; }
+    .asm-consent-sec ul { padding-left: 18px; margin: 0; }
+    .asm-consent-table { width: 100%; border-collapse: collapse; font-size: 12.5px; margin-bottom: 4px; }
+    .asm-consent-table th, .asm-consent-table td { border: 1px solid var(--line-2); padding: 7px 10px; text-align: left; vertical-align: top; }
+    .asm-consent-table th { background: #eff6ff; color: var(--blue-d); font-weight: 700; white-space: nowrap; }
+    .asm-consent-warn { background: #fdeaea; color: #a52424; border: 1px solid #f3c6c6; border-radius: 9px; padding: 12px 14px; font-size: 12.5px; line-height: 1.6; margin-top: 4px; }
+    .asm-consent-check { display: flex; align-items: flex-start; gap: 9px; font-size: 13px; padding: 12px 13px; border: 1px solid var(--line); border-radius: 9px; margin-top: 10px; cursor: pointer; }
+    .asm-consent-check:hover { border-color: var(--blue); background: #f7faff; }
+    .asm-consent-check input { margin-top: 2px; accent-color: var(--blue); flex-shrink: 0; }
+    .asm-consent-check b { color: var(--red); font-weight: 800; margin-right: 2px; }
+    .asm-consent-check.optional b { color: var(--muted); }
+    .asm-consent-link { display: block; text-align: center; font-size: 12px; margin-top: 14px; }
+
     /* ── 툴바 ── */
     .asm-toolbar {
       display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
@@ -383,11 +401,11 @@
 </div>
 
 <!-- 의존 스크립트 -->
-<script src="cloudforms.js?v=20260617cf1" defer></script>
+<script src="cloudforms.js?v=20260903cf2" defer></script>
 <script src="config.js?v=20260623ai7" defer></script>
 <!-- 자가진단 전용 경량 로그인(email·profile만) — 사전등록 없이 로그인 가능하도록 -->
 <script src="assessment-auth.js?v=20260818aa3" defer></script>
-<script src="assessment.js?v=20260825a18" defer></script>
+<script src="assessment.js?v=20260903a19" defer></script>
 
 <script>
 (function () {
