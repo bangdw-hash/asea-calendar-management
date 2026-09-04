@@ -994,6 +994,13 @@ function renderMonth(wrap) {
   wrap.innerHTML = html + '</div></div>';
   initMonthDrag();
   initCalSwipe(wrap);
+  // 현재 달이면 오늘 날짜 열을 화면 중앙으로 스크롤
+  if (y === today.getFullYear() && m === today.getMonth()) {
+    requestAnimationFrame(() => {
+      const colW = (wrap.scrollWidth || 700) / 7;
+      wrap.scrollLeft = Math.max(0, (today.getDay() + 0.5) * colW - wrap.clientWidth / 2);
+    });
+  }
 }
 
 /* ── HORIZONTAL SWIPE SCROLL FOR CALENDAR ── */
