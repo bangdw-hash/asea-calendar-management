@@ -919,7 +919,7 @@ async function fetchEvents() {
     _events = (data && data.items) ? data.items : [];
   } catch(e) {
     showToast('일정을 불러오지 못했습니다: ' + e.message, 'error');
-    _events = [];
+    await fetchPublicEvents(); // 인증 API 실패 시 공개 피드로 폴백
   }
 }
 
