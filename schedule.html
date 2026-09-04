@@ -874,7 +874,10 @@ async function fetchUserInfo() {
 
 function updateUserArea() {
   const area = document.getElementById('user-area');
-  if (!_token) { area.innerHTML = ''; return; }
+  if (!_token) {
+    area.innerHTML = `<button class="btn btn-sm btn-ghost-w" onclick="doLogin()" title="일정 추가·수정을 위해 로그인">🔑 로그인</button>`;
+    return;
+  }
   area.innerHTML = `<div class="user-pill">
     <div class="user-avatar">${_userInitial}</div>
     <span>${_userEmail || '로그인됨'}</span>
@@ -889,9 +892,7 @@ function logout() {
   clearTimeout(_refreshTimer);
   try { [localStorage, sessionStorage].forEach(s => { s.removeItem('asea_gtoken'); s.removeItem('asea_gtoken_exp'); }); } catch(e) {}
   updateUserArea();
-  _events = [];
-  renderCalendar();
-  document.getElementById('auth-banner').hidden = false;
+  fetchPublicEvents().then(() => renderCalendar());
 }
 
 /* ══════════════ CALENDAR API ══════════════ */
@@ -1970,7 +1971,7 @@ async function boot() {
     document.getElementById('auth-banner').hidden = true;
     await fetchEvents();
   } else {
-    document.getElementById('auth-banner').hidden = false;
+    updateUserArea();
     await fetchPublicEvents();
     renderCalendar();
     return;
@@ -1978,6 +1979,7 @@ async function boot() {
   renderCalendar();
 }
 renderCalendar();
+updateUserArea(); // 즉시 로그인 버튼 표시 (boot 완료 후 다시 갱신)
 boot();
 </script>
 </body>
