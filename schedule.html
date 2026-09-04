@@ -1210,12 +1210,64 @@ function renderList(wrap) {
 }
 
 /* ══════════════ NAVIGATION ══════════════ */
+let _navAnimating = false;
 async function navMonth(delta) {
-  _curDate.setMonth(_curDate.getMonth() + delta);
-  renderCalendar();
+  if (_navAnimating) return;
+  _navAnimating = true;
+
+  const wrap = document.getElementById('cal-wrap');
+  const D = 280; // animation duration ms
+
+  if (delta !== 0) {
+    const vw  = wrap.clientWidth;
+    const outX = delta > 0 ? -vw : vw;  // 현재 달 슬라이드 방향
+    const inX  = delta > 0 ?  vw : -vw; // 새 달 진입 방향
+
+    // 현재 달 슬라이드 아웃
+    const oldInner = wrap.querySelector('.cal-inner');
+    if (oldInner) {
+      wrap.style.overflow = 'hidden';
+      oldInner.style.transition = `transform ${D}ms cubic-bezier(.4,0,.2,1)`;
+      oldInner.style.transform  = `translateX(${outX}px)`;
+      await new Promise(r => setTimeout(r, D));
+    }
+
+    // 새 달 렌더 (이벤트 없이 먼저)
+    _curDate.setMonth(_curDate.getMonth() + delta);
+    renderCalendar();
+
+    // 새 달 슬라이드 인
+    const newInner = wrap.querySelector('.cal-inner');
+    if (newInner) {
+      newInner.style.opacity    = '0';
+      newInner.style.transition = 'none';
+      newInner.style.transform  = `translateX(${inX}px)`;
+      newInner.getBoundingClientRect(); // force reflow
+      newInner.style.opacity    = '1';
+      newInner.style.transition = `transform ${D}ms cubic-bezier(.4,0,.2,1)`;
+      newInner.style.transform  = 'translateX(0)';
+      await new Promise(r => setTimeout(r, D));
+      newInner.style.transition = '';
+      newInner.style.transform  = '';
+    }
+
+    // overflow 복원 + 스크롤 위치 설정 (이전 달: 오른쪽 끝)
+    wrap.style.overflow = '';
+    if (delta < 0) wrap.scrollLeft = wrap.scrollWidth - wrap.clientWidth;
+  } else {
+    _curDate.setMonth(_curDate.getMonth() + delta);
+    renderCalendar();
+  }
+
+  // 이벤트 불러오기 후 재렌더
   if (_token) await fetchEvents();
   else await fetchPublicEvents();
   renderCalendar();
+
+  // innerHTML 교체 후 scrollLeft 재설정
+  if (delta < 0) wrap.scrollLeft = wrap.scrollWidth - wrap.clientWidth;
+
+  _navAnimating = false;
 }
 function goToday() { _curDate = new Date(); navMonth(0); }
 function setView(v, btn) {
