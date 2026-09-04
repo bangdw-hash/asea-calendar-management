@@ -1124,19 +1124,37 @@ function renderWeek(wrap) {
   const dayOfWeek = new Date(y, m, cur).getDay();
   const weekStart = new Date(y, m, cur - dayOfWeek);
   const today = new Date();
-  let html = '<div class="week-grid"><table class="week-table"><thead><tr><th style="width:52px">시간</th>';
-  for (let d = 0; d < 7; d++) {
-    const dt = new Date(weekStart.getTime()); dt.setDate(weekStart.getDate() + d);
+
+  // build day list for this week
+  const days = Array.from({length:7}, (_, d) => {
+    const dt = new Date(weekStart.getTime()); dt.setDate(weekStart.getDate() + d); return dt;
+  });
+
+  let html = '<div class="cal-inner"><div class="week-grid"><table class="week-table"><thead><tr><th style="width:52px">시간</th>';
+  days.forEach(dt => {
     const isToday = dt.toDateString() === today.toDateString();
     const dow = dt.getDay();
     html += `<th class="${isToday?'today-col':''} ${dow===0?'sun':dow===6?'sat':''}">`+
       `${dt.getMonth()+1}/${dt.getDate()} (${WEEKDAYS[dow]})</th>`;
-  }
+  });
+
+  // all-day row
+  html += '</tr><tr><td class="week-time-col" style="font-size:.6rem;color:var(--g400)">종일</td>';
+  days.forEach(dt => {
+    const allDayEvts = _events.filter(ev => {
+      const { start, allDay } = evtDate(ev);
+      return allDay && start && start.getFullYear()===dt.getFullYear()
+        && start.getMonth()===dt.getMonth() && start.getDate()===dt.getDate();
+    });
+    html += `<td style="border:1px solid var(--g200);padding:2px;background:var(--g50);vertical-align:top">${
+      allDayEvts.map(ev => `<div class="week-evt" style="cursor:pointer" onclick="showDetail(event,'${escId(ev.id)}')">${esc(ev.summary||'')}</div>`).join('')
+    }</td>`;
+  });
   html += '</tr></thead><tbody>';
+
   [8,9,10,11,12,13,14,15,16,17,18,19].forEach(h => {
     html += `<tr><td class="week-time-col">${h}:00</td>`;
-    for (let d = 0; d < 7; d++) {
-      const dt = new Date(weekStart.getTime()); dt.setDate(weekStart.getDate() + d);
+    days.forEach(dt => {
       const evts = _events.filter(ev => {
         const { start, allDay } = evtDate(ev);
         if (!start || allDay) return false;
@@ -1147,10 +1165,11 @@ function renderWeek(wrap) {
       html += `<td class="week-day-col" onclick="onWeekCellClick(event,'${dateStr2}',${h})">${
         evts.map(ev => `<div class="week-evt" onclick="event.stopPropagation();showDetail(event,'${escId(ev.id)}')">${esc(ev.summary||'')}</div>`).join('')
       }</td>`;
-    }
+    });
     html += '</tr>';
   });
-  wrap.innerHTML = html + '</tbody></table></div>';
+  wrap.innerHTML = html + '</tbody></table></div></div>';
+  initCalSwipe(wrap);
 }
 
 function renderList(wrap) {
