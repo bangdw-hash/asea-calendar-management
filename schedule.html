@@ -385,9 +385,9 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','N
 <!-- TOOLBAR -->
 <div class="toolbar">
   <div class="cal-nav">
-    <button class="nav-btn" onclick="navMonth(-1)" title="이전">&#8249;</button>
+    <button class="nav-btn" onclick="nav(-1)" title="이전">&#8249;</button>
     <div class="cal-title" id="cal-title" onclick="goToday()"></div>
-    <button class="nav-btn" onclick="navMonth(1)" title="다음">&#8250;</button>
+    <button class="nav-btn" onclick="nav(1)" title="다음">&#8250;</button>
     <button class="btn btn-sm" onclick="goToday()" style="background:var(--g100);color:var(--g700);padding:5px 10px">오늘</button>
   </div>
   <div class="toolbar-right">
@@ -928,8 +928,19 @@ const WEEKDAYS = ['일','월','화','수','목','금','토'];
 const KO_MONTHS = ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
 
 function renderCalendar() {
-  document.getElementById('cal-title').textContent =
-    `${_curDate.getFullYear()}년 ${KO_MONTHS[_curDate.getMonth()]}`;
+  let title;
+  if (_view === 'week') {
+    const wy = _curDate.getFullYear(), wm = _curDate.getMonth(), wd = _curDate.getDate();
+    const dow = new Date(wy, wm, wd).getDay();
+    const ws = new Date(wy, wm, wd - dow);
+    const we = new Date(ws.getTime()); we.setDate(we.getDate() + 6);
+    title = ws.getMonth() === we.getMonth()
+      ? `${ws.getFullYear()}년 ${KO_MONTHS[ws.getMonth()]} ${ws.getDate()}–${we.getDate()}일`
+      : `${ws.getMonth()+1}/${ws.getDate()} – ${we.getMonth()+1}/${we.getDate()}`;
+  } else {
+    title = `${_curDate.getFullYear()}년 ${KO_MONTHS[_curDate.getMonth()]}`;
+  }
+  document.getElementById('cal-title').textContent = title;
   const wrap = document.getElementById('cal-wrap');
   if (_view === 'month') renderMonth(wrap);
   else if (_view === 'week') renderWeek(wrap);
@@ -1026,8 +1037,8 @@ function initCalSwipe(wrap) {
     const dx = startX - endX;
     const maxScroll = wrap.scrollWidth - wrap.clientWidth;
     if (Math.abs(dx) >= 40) {
-      if (dx > 0 && startScrollLeft >= maxScroll - 5) navMonth(1);   // 오른쪽 끝 → 다음 달
-      else if (dx < 0 && startScrollLeft <= 5) navMonth(-1);          // 왼쪽 끝 → 이전 달
+      if (dx > 0 && startScrollLeft >= maxScroll - 5) nav(1);   // 오른쪽 끝 → 다음 달/주
+      else if (dx < 0 && startScrollLeft <= 5) nav(-1);          // 왼쪽 끝 → 이전 달/주
     }
   }, { signal: sig });
   wrap.addEventListener('scroll', () => { wrap.classList.add('scrolled'); }, { once: true, passive: true, signal: sig });
@@ -1276,7 +1287,65 @@ async function navMonth(delta) {
 
   _navAnimating = false;
 }
-function goToday() { _curDate = new Date(); navMonth(0); }
+async function navWeek(delta) {
+  if (_navAnimating) return;
+  _navAnimating = true;
+  const wrap = document.getElementById('cal-wrap');
+  const D = 280;
+  const prevMonth = _curDate.getMonth();
+
+  if (delta !== 0) {
+    const vw = wrap.clientWidth;
+    const outX = delta > 0 ? -vw : vw;
+    const inX  = delta > 0 ?  vw : -vw;
+    const oldInner = wrap.querySelector('.cal-inner');
+    if (oldInner) {
+      wrap.style.overflow = 'hidden';
+      oldInner.style.transition = `transform ${D}ms cubic-bezier(.4,0,.2,1)`;
+      oldInner.style.transform  = `translateX(${outX}px)`;
+      await new Promise(r => setTimeout(r, D));
+    }
+    _curDate.setDate(_curDate.getDate() + delta * 7);
+    renderCalendar();
+    const newInner = wrap.querySelector('.cal-inner');
+    if (newInner) {
+      newInner.style.opacity    = '0';
+      newInner.style.transition = 'none';
+      newInner.style.transform  = `translateX(${inX}px)`;
+      newInner.getBoundingClientRect();
+      newInner.style.opacity    = '1';
+      newInner.style.transition = `transform ${D}ms cubic-bezier(.4,0,.2,1)`;
+      newInner.style.transform  = 'translateX(0)';
+      await new Promise(r => setTimeout(r, D));
+      newInner.style.transition = '';
+      newInner.style.transform  = '';
+    }
+    wrap.style.overflow = '';
+    if (delta < 0) wrap.scrollLeft = wrap.scrollWidth - wrap.clientWidth;
+  } else {
+    renderCalendar();
+  }
+
+  // 달이 바뀌었거나 오늘로 이동(delta===0)이면 이벤트 재로딩
+  if (_curDate.getMonth() !== prevMonth || delta === 0) {
+    if (_token) await fetchEvents();
+    else await fetchPublicEvents();
+    renderCalendar();
+    if (delta < 0) wrap.scrollLeft = wrap.scrollWidth - wrap.clientWidth;
+  }
+  _navAnimating = false;
+}
+
+function nav(delta) {
+  if (_view === 'week') navWeek(delta);
+  else navMonth(delta);
+}
+
+function goToday() {
+  _curDate = new Date();
+  if (_view === 'week') navWeek(0);
+  else navMonth(0);
+}
 function setView(v, btn) {
   _view = v;
   document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
