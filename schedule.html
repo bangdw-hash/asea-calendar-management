@@ -997,30 +997,33 @@ function renderMonth(wrap) {
 }
 
 /* ── HORIZONTAL SWIPE SCROLL FOR CALENDAR ── */
+let _calSwipeCtrl = null; // 이전 리스너 누적 방지
 function initCalSwipe(wrap) {
+  if (_calSwipeCtrl) _calSwipeCtrl.abort();
+  _calSwipeCtrl = new AbortController();
+  const sig = _calSwipeCtrl.signal;
   let startX = 0, endX = 0, startScrollLeft = 0, isDown = false;
   wrap.addEventListener('touchstart', e => {
     startX = endX = e.touches[0].clientX;
     startScrollLeft = wrap.scrollLeft;
     isDown = true;
-  }, { passive: true });
+  }, { passive: true, signal: sig });
   wrap.addEventListener('touchmove', e => {
     if (!isDown) return;
     endX = e.touches[0].clientX;
     wrap.scrollLeft = startScrollLeft + (startX - endX);
-  }, { passive: true });
+  }, { passive: true, signal: sig });
   wrap.addEventListener('touchend', () => {
     if (!isDown) return;
     isDown = false;
     const dx = startX - endX;
     const maxScroll = wrap.scrollWidth - wrap.clientWidth;
-    // 끝에서 다시 스와이프하면 월 이동 (40px 이상 스와이프)
     if (Math.abs(dx) >= 40) {
       if (dx > 0 && startScrollLeft >= maxScroll - 5) navMonth(1);   // 오른쪽 끝 → 다음 달
       else if (dx < 0 && startScrollLeft <= 5) navMonth(-1);          // 왼쪽 끝 → 이전 달
     }
-  });
-  wrap.addEventListener('scroll', () => { wrap.classList.add('scrolled'); }, { once: true, passive: true });
+  }, { signal: sig });
+  wrap.addEventListener('scroll', () => { wrap.classList.add('scrolled'); }, { once: true, passive: true, signal: sig });
 }
 
 /* ── MONTH GRID DRAG-TO-CREATE & CLICK ── */
