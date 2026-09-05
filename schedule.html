@@ -1559,8 +1559,8 @@ function _setCalEdge(edge) {
   clearTimeout(_calEdgeTimer);
   _calEdge = edge;
   if (edge) {
-    // 2.5초 내에 재스와이프 없으면 엣지 상태 초기화
-    _calEdgeTimer = setTimeout(() => { _calEdge = null; }, 2500);
+    // 1.5초 내에 재스와이프 없으면 엣지 상태 초기화
+    _calEdgeTimer = setTimeout(() => { _calEdge = null; }, 1500);
   }
 }
 
@@ -1605,9 +1605,10 @@ function initCalSwipe(wrap) {
     }
 
     if (Math.abs(dx) < MIN_EDGE) {
-      // 매우 짧은 터치 — 엣지 도달 여부만 기록
-      if (endScrollLeft >= maxScroll - 5) _setCalEdge('right');
-      else if (endScrollLeft <= 5) _setCalEdge('left');
+      // 매우 짧은 터치 — 스크롤 중 엣지에 "진입"한 경우만 기록
+      // (시작 위치가 이미 끝단이면 무시 — 초기 상태 보호)
+      if (endScrollLeft >= maxScroll - 5 && startScrollLeft < maxScroll - 20) _setCalEdge('right');
+      else if (endScrollLeft <= 5 && startScrollLeft > 20) _setCalEdge('left');
       return;
     }
 
@@ -1615,12 +1616,12 @@ function initCalSwipe(wrap) {
       // 왼쪽 스와이프 → 다음 달 방향
       if (endScrollLeft >= maxScroll - 5) {
         if (_calEdge === 'right' && Math.abs(dx) >= MIN_NAV) {
-          // 이미 엣지였고 충분히 큰 재스와이프 → 월 이동
-          _setCalEdge(null);
-          nav(1);
-        } else {
-          _setCalEdge('right'); // 엣지 도달 기록
+          _setCalEdge(null); nav(1);
+        } else if (startScrollLeft < maxScroll - 20) {
+          // 끝단 아닌 곳에서 시작해 끝단에 도달 → 엣지 플래그 설정
+          _setCalEdge('right');
         }
+        // startScrollLeft이 이미 끝단이면 플래그 미설정
       } else {
         _setCalEdge(null);
       }
@@ -1628,11 +1629,12 @@ function initCalSwipe(wrap) {
       // 오른쪽 스와이프 → 이전 달 방향
       if (endScrollLeft <= 5) {
         if (_calEdge === 'left' && Math.abs(dx) >= MIN_NAV) {
-          _setCalEdge(null);
-          nav(-1);
-        } else {
+          _setCalEdge(null); nav(-1);
+        } else if (startScrollLeft > 20) {
+          // 끝단 아닌 곳에서 시작해 끝단에 도달 → 엣지 플래그 설정
           _setCalEdge('left');
         }
+        // startScrollLeft이 이미 왼쪽 끝이면 플래그 미설정 (초기 상태 보호)
       } else {
         _setCalEdge(null);
       }
