@@ -1551,32 +1551,72 @@ function renderMonth(wrap) {
 }
 
 /* ── HORIZONTAL SWIPE SCROLL FOR CALENDAR ── */
-let _calSwipeCtrl = null; // 이전 리스너 누적 방지
+let _calSwipeCtrl = null;
+let _calEdge = null; // 'left' | 'right' | null — 엣지 도달 상태 (재스와이프 월이동 판단용)
+
 function initCalSwipe(wrap) {
   if (_calSwipeCtrl) _calSwipeCtrl.abort();
   _calSwipeCtrl = new AbortController();
+  _calEdge = null; // 월 변경 시 초기화
   const sig = _calSwipeCtrl.signal;
   let startX = 0, endX = 0, startScrollLeft = 0, isDown = false;
+  const MIN_SWIPE = 80; // 민감도 낮춤 (기존 40px → 80px)
+
   wrap.addEventListener('touchstart', e => {
     startX = endX = e.touches[0].clientX;
     startScrollLeft = wrap.scrollLeft;
     isDown = true;
   }, { passive: true, signal: sig });
+
   wrap.addEventListener('touchmove', e => {
     if (!isDown) return;
     endX = e.touches[0].clientX;
     wrap.scrollLeft = startScrollLeft + (startX - endX);
   }, { passive: true, signal: sig });
+
   wrap.addEventListener('touchend', () => {
     if (!isDown) return;
     isDown = false;
     const dx = startX - endX;
     const maxScroll = wrap.scrollWidth - wrap.clientWidth;
-    if (Math.abs(dx) >= 40) {
-      if (dx > 0 && startScrollLeft >= maxScroll - 5) nav(1);   // 오른쪽 끝 → 다음 달/주
-      else if (dx < 0 && startScrollLeft <= 5) nav(-1);          // 왼쪽 끝 → 이전 달/주
+    const endScrollLeft = wrap.scrollLeft;
+
+    // 스크롤이 없는 뷰(데스크톱)는 단순 스와이프로 월 이동
+    if (maxScroll <= 20) {
+      if (Math.abs(dx) >= MIN_SWIPE) {
+        if (dx > 0) nav(1);
+        else nav(-1);
+      }
+      return;
+    }
+
+    if (Math.abs(dx) < MIN_SWIPE) {
+      // 짧은 스와이프 — 엣지 상태만 갱신
+      if (endScrollLeft >= maxScroll - 5) _calEdge = 'right';
+      else if (endScrollLeft <= 5) _calEdge = 'left';
+      else _calEdge = null;
+      return;
+    }
+
+    if (dx > 0) {
+      // 왼쪽으로 스와이프 → 다음 달 방향
+      if (endScrollLeft >= maxScroll - 5) {
+        if (_calEdge === 'right') { nav(1); _calEdge = null; }
+        else { _calEdge = 'right'; } // 첫 도달 — 다음 스와이프에서 이동
+      } else {
+        _calEdge = null;
+      }
+    } else {
+      // 오른쪽으로 스와이프 → 이전 달 방향
+      if (endScrollLeft <= 5) {
+        if (_calEdge === 'left') { nav(-1); _calEdge = null; }
+        else { _calEdge = 'left'; }
+      } else {
+        _calEdge = null;
+      }
     }
   }, { signal: sig });
+
   wrap.addEventListener('scroll', () => { wrap.classList.add('scrolled'); }, { once: true, passive: true, signal: sig });
 }
 
