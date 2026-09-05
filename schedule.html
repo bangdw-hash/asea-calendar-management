@@ -488,8 +488,18 @@ html,body{height:100%;
   .hdr-logo{font-size:.9rem}
   .hdr-sub{display:none}
   .btn{padding:5px 8px;font-size:.72rem}
-  .modal{max-height:95vh}
-  .modal.modal-lg{max-height:95vh}
+  /* 모바일: 모달을 하단 시트로 표시 — 뷰포트 초과 방지 */
+  .overlay{align-items:flex-end;padding:0}
+  .modal{
+    max-width:100%;width:100%;
+    border-radius:16px 16px 0 0;
+    max-height:92dvh;max-height:92vh; /* dvh 미지원 브라우저 fallback */
+    overflow-y:auto;
+    transform:translateY(100%);
+    padding-bottom:env(safe-area-inset-bottom,0px);
+  }
+  .modal.modal-lg{max-height:92dvh;max-height:92vh}
+  .overlay.show .modal{transform:translateY(0)}
   .admin-table{font-size:.72rem}
   .admin-table th,.admin-table td{padding:5px 6px}
   /* hide print button on small screens */
@@ -2173,6 +2183,7 @@ let _aiMsgs = [];
 let _aiParsed = null;
 let _aiLastBotEl = null;
 let _aiPasteInited = false;
+let _aiImgSentCount = 0; // 세션당 전송된 이미지 수 (최대 5)
 
 function toggleAiPanel() {
   _aiOpen = !_aiOpen;
@@ -2649,6 +2660,10 @@ function _initAiPaste() {
 }
 
 function aiSetImg(rawDataUrl, mediaType) {
+  if (_aiImgSentCount >= 5) {
+    showToast('한 채팅 세션에 이미지는 최대 5장까지만 전송할 수 있습니다.', 'error');
+    return;
+  }
   // 전송 전 canvas로 최대 1280px / JPEG 0.8 압축 (Edge Function 페이로드 한도 대응)
   const img = new Image();
   img.onload = () => {
@@ -2714,6 +2729,7 @@ async function aiSend() {
       { type: 'text',  text: text || '이 이미지에서 일정 정보를 최대한 추출해서 일정으로 등록해줘.' },
     ];
     userDisplayText = (text ? text + '\n' : '') + '📷 이미지 첨부됨';
+    _aiImgSentCount++;
   } else {
     userMsgContent = text;
   }
@@ -2768,8 +2784,8 @@ ${evtContext}
 
 날짜 기준: 한국 시간(KST). 상대적 표현은 오늘 기준 절대 날짜로 변환.`;
 
-  // 히스토리는 최근 20개 메시지(10쌍)로 제한해 페이로드 비대화 방지
-  const recentMsgs = _aiMsgs.length > 20 ? _aiMsgs.slice(-20) : _aiMsgs;
+  // 직전 2쌍(4개)만 컨텍스트로 전송 — 일정 추출 특성상 긴 히스토리 불필요
+  const recentMsgs = _aiMsgs.length > 4 ? _aiMsgs.slice(-4) : _aiMsgs;
   const payload = {
     model: hasImg ? 'claude-sonnet-5' : 'claude-haiku-4-5-20251001',
     max_tokens: hasImg ? 2048 : 1024,
