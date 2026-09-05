@@ -2,83 +2,136 @@
 ASEA 캘린더 데스크탑 위젯
 Windows 11 투명 오버레이 / 항상 위 표시
 
-설치:
-    pip install PyQt5 PyQtWebEngine
-
-실행:
-    pythonw desktop_widget.py   (CMD 창 없음)
-    python   desktop_widget.py  (CMD 창 있음 — 자동 전환)
+설치:  pip install PyQt5 PyQtWebEngine
+실행:  python desktop_widget.py  (또는 실행.bat 더블클릭)
 """
 
 import sys, os, subprocess
 
-# python.exe로 실행된 경우 pythonw.exe(무창)로 자동 재실행
+# python.exe → pythonw.exe 자동 전환 (CMD 창 제거)
 if os.name == "nt" and sys.executable.lower().endswith("python.exe"):
     pythonw = sys.executable[:-10] + "pythonw.exe"
     if os.path.exists(pythonw):
         subprocess.Popen([pythonw] + sys.argv)
         sys.exit(0)
 
-from PyQt5.QtCore import Qt, QUrl, QRect
+os.environ.setdefault("QT_AUTO_SCREEN_SCALE_FACTOR", "1")
+
+from PyQt5.QtCore    import Qt, QUrl, QRect
+from PyQt5.QtGui     import QFont
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QPushButton, QSlider, QLabel, QSizeGrip, QMenu, QAction
 )
 from PyQt5.QtWebEngineWidgets import QWebEngineView, QWebEngineProfile, QWebEnginePage
+from PyQt5.QtPrintSupport import QPrinter, QPrintDialog
 
 CALENDAR_URL = "https://bangdw-hash.github.io/asea-calendar-management/schedule.html"
+
+# Segoe MDL2 Assets 코드포인트 (Windows 10/11 시스템 폰트)
+MDL2 = "Segoe MDL2 Assets"
+IC_BRIGHT   = chr(0xE706)  # Brightness
+IC_MONITOR  = chr(0xE7F4)  # TVMonitor
+IC_FULL     = chr(0xE740)  # FullScreen
+IC_RESTORE  = chr(0xE73F)  # BackToWindow
+IC_PIN      = chr(0xE718)  # Pin
+IC_UNPIN    = chr(0xE77A)  # UnPin
+IC_REFRESH  = chr(0xE72C)  # Refresh
+IC_MINIMIZE = chr(0xE921)  # ChromeMinimize
+IC_CLOSE    = chr(0xE8BB)  # ChromeClose
+
+
+def _mdl2_btn(char, tip="", obj_name="", size=28, font_size=13):
+    """Segoe MDL2 Assets 아이콘 버튼 생성"""
+    btn = QPushButton(char)
+    btn.setFont(QFont(MDL2, font_size))
+    btn.setToolTip(tip)
+    btn.setFixedSize(size, size)
+    if obj_name:
+        btn.setObjectName(obj_name)
+    return btn
+
+
+# ── 팝업 창 처리 (Google 로그인 등) ──────────────────────────────────────────
+class CalendarPage(QWebEnginePage):
+    def __init__(self, profile, parent=None):
+        super().__init__(profile, parent)
+
+    def createWindow(self, window_type):
+        popup = QWebEngineView()
+        popup.setWindowTitle("ASEA 캘린더 — 로그인")
+        popup.setWindowFlags(Qt.Window)
+        popup.setAttribute(Qt.WA_DeleteOnClose)
+        popup.resize(500, 700)
+        popup.show()
+        return popup
 
 
 # ── 컨트롤 바 ────────────────────────────────────────────────────────────────
 class ControlBar(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setFixedHeight(38)
+        self.setFixedHeight(40)
         self.setObjectName("controlBar")
         self.setStyleSheet("""
             #controlBar {
-                background: rgba(30, 30, 30, 210);
+                background: rgba(24, 24, 28, 215);
                 border-top-left-radius: 14px;
                 border-top-right-radius: 14px;
             }
             QPushButton {
                 background: transparent;
-                color: #ccc;
+                color: rgba(200,200,210,1);
                 border: none;
-                font-size: 13px;
-                padding: 2px 6px;
+                border-radius: 6px;
+                padding: 0;
+            }
+            QPushButton:hover { background: rgba(255,255,255,35); color: #fff; }
+            QPushButton#btnClose:hover { background: rgba(232,17,35,200); color: #fff; }
+            QPushButton[active="true"]  { color: #7eb8f7; }
+            QPushButton[pinned="true"]  { color: #7eb8f7; }
+            QSlider::groove:horizontal {
+                height: 3px;
+                background: rgba(255,255,255,50);
+                border-radius: 2px;
+            }
+            QSlider::handle:horizontal {
+                width: 11px; height: 11px;
+                margin: -4px 0;
+                background: #7eb8f7;
                 border-radius: 6px;
             }
-            QPushButton:hover { background: rgba(255,255,255,40); color: #fff; }
-            QPushButton#btnClose:hover { background: rgba(255,60,60,180); color: #fff; }
-            QPushButton#btnFullscreen[active="true"] { color: #7eb8f7; }
-            QPushButton#btnPin[pinned="true"] { color: #7eb8f7; }
-            QLabel#titleLabel { color: #bbb; font-size: 12px; font-family: 'Segoe UI', sans-serif; }
-            QSlider::groove:horizontal { height: 4px; background: rgba(255,255,255,60); border-radius: 2px; }
-            QSlider::handle:horizontal { width: 12px; height: 12px; margin: -4px 0; background: #7eb8f7; border-radius: 6px; }
-            QSlider::sub-page:horizontal { background: #7eb8f7; border-radius: 2px; }
-            QLabel#opacityLabel { color: #aaa; font-size: 11px; min-width: 28px; }
+            QSlider::sub-page:horizontal {
+                background: #7eb8f7;
+                border-radius: 2px;
+            }
+            QLabel#titleLabel { color: rgba(210,210,220,1); font-size: 12px; font-family: 'Segoe UI', sans-serif; letter-spacing: .3px; }
+            QLabel#opacityLabel { color: rgba(160,165,175,1); font-size: 11px; min-width: 30px; font-family: 'Segoe UI', sans-serif; }
+            QLabel#opacityIcon { color: rgba(160,165,175,1); }
         """)
 
         self._drag_pos = None
         layout = QHBoxLayout(self)
-        layout.setContentsMargins(10, 0, 8, 0)
-        layout.setSpacing(3)
+        layout.setContentsMargins(12, 0, 8, 0)
+        layout.setSpacing(2)
 
-        title = QLabel("📅 ASEA 캘린더")
+        # 타이틀
+        title = QLabel("ASEA 캘린더")
         title.setObjectName("titleLabel")
         layout.addWidget(title)
         layout.addStretch()
 
-        # 투명도
-        opaque_icon = QLabel("◑")
-        opaque_icon.setStyleSheet("color:#888;font-size:12px;")
-        layout.addWidget(opaque_icon)
+        # 투명도 아이콘 + 슬라이더
+        opac_icon = QLabel(IC_BRIGHT)
+        opac_icon.setObjectName("opacityIcon")
+        opac_icon.setFont(QFont(MDL2, 10))
+        opac_icon.setToolTip("투명도")
+        layout.addWidget(opac_icon)
 
         self.slider = QSlider(Qt.Horizontal)
         self.slider.setRange(20, 100)
         self.slider.setValue(95)
-        self.slider.setFixedWidth(72)
+        self.slider.setFixedWidth(76)
         self.slider.setToolTip("투명도")
         layout.addWidget(self.slider)
 
@@ -88,46 +141,45 @@ class ControlBar(QWidget):
 
         layout.addSpacing(4)
 
-        # 모니터 선택 버튼
-        self.btn_monitor = QPushButton("🖥")
-        self.btn_monitor.setToolTip("모니터 선택")
-        self.btn_monitor.setFixedSize(28, 28)
+        # 모니터 선택
+        self.btn_monitor = _mdl2_btn(IC_MONITOR, "모니터 선택")
         layout.addWidget(self.btn_monitor)
 
         # 전체화면 토글
-        self.btn_fullscreen = QPushButton("⛶")
-        self.btn_fullscreen.setObjectName("btnFullscreen")
-        self.btn_fullscreen.setToolTip("전체화면 ON/OFF")
-        self.btn_fullscreen.setFixedSize(28, 28)
-        self.btn_fullscreen.setProperty("active", "false")
-        layout.addWidget(self.btn_fullscreen)
+        self.btn_full = _mdl2_btn(IC_FULL, "전체화면 ON/OFF", "btnFull")
+        self.btn_full.setProperty("active", "false")
+        layout.addWidget(self.btn_full)
 
-        # 항상 위
-        self.btn_pin = QPushButton("📌")
-        self.btn_pin.setObjectName("btnPin")
-        self.btn_pin.setToolTip("항상 위 고정 ON/OFF")
-        self.btn_pin.setFixedSize(28, 28)
+        # 항상 위 핀
+        self.btn_pin = _mdl2_btn(IC_PIN, "항상 위 고정", "btnPin")
         self.btn_pin.setProperty("pinned", "true")
         layout.addWidget(self.btn_pin)
 
         # 새로고침
-        self.btn_refresh = QPushButton("↺")
-        self.btn_refresh.setToolTip("새로고침")
-        self.btn_refresh.setFixedSize(28, 28)
+        self.btn_refresh = _mdl2_btn(IC_REFRESH, "새로고침")
         layout.addWidget(self.btn_refresh)
 
         # 최소화
-        self.btn_min = QPushButton("−")
-        self.btn_min.setToolTip("최소화")
-        self.btn_min.setFixedSize(28, 28)
+        self.btn_min = _mdl2_btn(IC_MINIMIZE, "최소화")
         layout.addWidget(self.btn_min)
 
         # 닫기
-        self.btn_close = QPushButton("✕")
-        self.btn_close.setObjectName("btnClose")
-        self.btn_close.setToolTip("닫기")
-        self.btn_close.setFixedSize(28, 28)
+        self.btn_close = _mdl2_btn(IC_CLOSE, "닫기", "btnClose")
         layout.addWidget(self.btn_close)
+
+    def _refresh_btn(self, btn, prop, val):
+        btn.setProperty(prop, val)
+        btn.style().unpolish(btn)
+        btn.style().polish(btn)
+
+    def set_pin(self, pinned):
+        self.btn_pin.setText(IC_PIN if pinned else IC_UNPIN)
+        self._refresh_btn(self.btn_pin, "pinned", "true" if pinned else "false")
+
+    def set_fullscreen(self, active):
+        self.btn_full.setText(IC_RESTORE if active else IC_FULL)
+        self.btn_full.setToolTip("전체화면 해제" if active else "전체화면 ON/OFF")
+        self._refresh_btn(self.btn_full, "active", "true" if active else "false")
 
     def mousePressEvent(self, e):
         if e.button() == Qt.LeftButton:
@@ -135,7 +187,6 @@ class ControlBar(QWidget):
 
     def mouseMoveEvent(self, e):
         if e.buttons() == Qt.LeftButton and self._drag_pos:
-            # 전체화면 상태일 때는 드래그 금지
             if not self.window()._is_fullscreen:
                 self.window().move(e.globalPos() - self._drag_pos)
 
@@ -149,7 +200,7 @@ class CalendarWidget(QMainWindow):
         super().__init__()
         self._pinned = True
         self._is_fullscreen = False
-        self._saved_geometry = None          # 전체화면 전 크기/위치 저장
+        self._saved_geometry = None
         self._target_screen = QApplication.primaryScreen()
         self._setup_window()
         self._build_ui()
@@ -159,21 +210,23 @@ class CalendarWidget(QMainWindow):
         self.setWindowTitle("ASEA 캘린더")
         self.setWindowFlags(
             Qt.FramelessWindowHint |
-            Qt.WindowStaysOnTopHint |
-            Qt.Tool
+            Qt.WindowStaysOnTopHint
         )
         self.setAttribute(Qt.WA_TranslucentBackground)
-        self.setMinimumSize(300, 400)
-        self.resize(420, 680)
-
-        # 주 모니터 오른쪽 상단에 배치
+        self.setMinimumSize(320, 460)
+        self.resize(430, 700)
         geo = self._target_screen.availableGeometry()
         self.move(geo.right() - self.width() - 20, geo.top() + 40)
 
     def _build_ui(self):
         root = QWidget()
         root.setObjectName("root")
-        root.setStyleSheet("#root { background: rgba(255,255,255,0); border-radius: 14px; }")
+        root.setStyleSheet("""
+            #root {
+                background: rgba(255,255,255,0);
+                border-radius: 14px;
+            }
+        """)
         self.setCentralWidget(root)
 
         layout = QVBoxLayout(root)
@@ -183,24 +236,24 @@ class CalendarWidget(QMainWindow):
         self.bar = ControlBar()
         layout.addWidget(self.bar)
 
-        profile = QWebEngineProfile("asea_calendar", self)
+        profile = QWebEngineProfile("asea_calendar_v2", self)
         profile.setPersistentCookiesPolicy(QWebEngineProfile.AllowPersistentCookies)
         profile.setHttpCacheType(QWebEngineProfile.DiskHttpCache)
 
         self.web = QWebEngineView()
-        page = QWebEnginePage(profile, self.web)
-        self.web.setPage(page)
+        self._page = CalendarPage(profile, self.web)
+        self.web.setPage(self._page)
         self.web.setUrl(QUrl(CALENDAR_URL))
+        self.web.setFocusPolicy(Qt.StrongFocus)
 
         layout.addWidget(self.web)
 
-        # 크기 조절 핸들 (수동 리사이즈용)
+        # 크기 조절 핸들
         self._grip_row = QHBoxLayout()
         self._grip_row.setContentsMargins(0, 0, 2, 2)
         self._grip_row.addStretch()
         self._grip = QSizeGrip(self)
         self._grip.setFixedSize(16, 16)
-        self._grip.setToolTip("드래그하여 크기 조절")
         self._grip_row.addWidget(self._grip)
         layout.addLayout(self._grip_row)
 
@@ -210,8 +263,9 @@ class CalendarWidget(QMainWindow):
         self.bar.btn_refresh.clicked.connect(self.web.reload)
         self.bar.btn_min.clicked.connect(self.showMinimized)
         self.bar.btn_pin.clicked.connect(self._toggle_pin)
-        self.bar.btn_fullscreen.clicked.connect(self._toggle_fullscreen)
+        self.bar.btn_full.clicked.connect(self._toggle_fullscreen)
         self.bar.btn_monitor.clicked.connect(self._show_monitor_menu)
+        self._page.printRequested.connect(self._on_print)
 
     def _on_opacity(self, val):
         self.setWindowOpacity(val / 100)
@@ -219,53 +273,57 @@ class CalendarWidget(QMainWindow):
 
     def _toggle_pin(self):
         self._pinned = not self._pinned
-        flags = Qt.FramelessWindowHint | Qt.Tool
+        flags = Qt.FramelessWindowHint
         if self._pinned:
             flags |= Qt.WindowStaysOnTopHint
-        self.bar.btn_pin.setProperty("pinned", "true" if self._pinned else "false")
-        self.bar.btn_pin.style().unpolish(self.bar.btn_pin)
-        self.bar.btn_pin.style().polish(self.bar.btn_pin)
+        self.bar.set_pin(self._pinned)
         self.setWindowFlags(flags)
         self.show()
+        self.web.setFocus()
 
     # ── 모니터 선택 메뉴 ──────────────────────────────────────────────────────
     def _show_monitor_menu(self):
         screens = QApplication.screens()
-        if len(screens) == 1:
-            # 모니터가 하나뿐이면 바로 그 모니터로
-            self._target_screen = screens[0]
-            self._apply_to_screen(screens[0])
-            return
-
         menu = QMenu(self)
         menu.setStyleSheet("""
             QMenu {
-                background: rgba(30,30,30,230);
+                background: rgba(28,28,32,235);
                 color: #ddd;
-                border: 1px solid rgba(255,255,255,30);
-                border-radius: 8px;
-                padding: 4px;
+                border: 1px solid rgba(255,255,255,25);
+                border-radius: 10px;
+                padding: 5px;
                 font-family: 'Segoe UI', sans-serif;
                 font-size: 13px;
             }
-            QMenu::item { padding: 6px 16px; border-radius: 5px; }
-            QMenu::item:selected { background: rgba(126,184,247,120); color: #fff; }
+            QMenu::item { padding: 7px 18px; border-radius: 6px; }
+            QMenu::item:selected { background: rgba(126,184,247,110); color: #fff; }
+            QMenu::separator { height: 1px; background: rgba(255,255,255,18); margin: 4px 8px; }
+            QMenu::item:disabled { color: rgba(180,180,180,.45); }
         """)
 
         for i, screen in enumerate(screens):
-            geo = screen.geometry()
-            label = (
-                f"🖥  모니터 {i+1}  —  {geo.width()}×{geo.height()}"
-                f"  ({'현재' if screen == self._target_screen else screen.name()})"
-            )
-            action = QAction(label, self)
-            action.setData(i)
-            menu.addAction(action)
+            g = screen.geometry()
+            is_cur = (screen == self._target_screen)
+            label = f"  모니터 {i+1}  ·  {g.width()}×{g.height()}" + ("  ✓" if is_cur else "")
+
+            sub = QMenu(label, menu)
+            sub.setStyleSheet(menu.styleSheet())
+
+            act_move = QAction(f"  이 모니터로 이동", sub)
+            act_move.setData(("move", i))
+            sub.addAction(act_move)
+
+            act_fs = QAction(f"  이 모니터에서 전체화면", sub)
+            act_fs.setData(("full", i))
+            sub.addAction(act_fs)
+
+            menu.addMenu(sub)
 
         menu.addSeparator()
-        action_fullscreen = QAction("⛶  선택한 모니터에서 전체화면", self)
-        action_fullscreen.setData("fullscreen")
-        menu.addAction(action_fullscreen)
+
+        act_exit = QAction(f"  {"전체화면 해제" if self._is_fullscreen else "현재 위치에서 전체화면"}", menu)
+        act_exit.setData(("toggle_full", -1))
+        menu.addAction(act_exit)
 
         chosen = menu.exec_(self.bar.btn_monitor.mapToGlobal(
             self.bar.btn_monitor.rect().bottomLeft()
@@ -274,30 +332,27 @@ class CalendarWidget(QMainWindow):
             return
 
         data = chosen.data()
-        if data == "fullscreen":
-            self._apply_to_screen(self._target_screen, fullscreen=True)
-        elif isinstance(data, int):
-            self._target_screen = screens[data]
+        if not data:
+            return
+        cmd, idx = data
+
+        if cmd == "toggle_full":
+            self._toggle_fullscreen()
+        elif cmd == "move":
+            self._target_screen = QApplication.screens()[idx]
             if self._is_fullscreen:
-                self._apply_to_screen(self._target_screen, fullscreen=True)
+                self._enter_fullscreen(self._target_screen)
             else:
                 self._move_to_screen(self._target_screen)
+        elif cmd == "full":
+            self._target_screen = QApplication.screens()[idx]
+            self._enter_fullscreen(self._target_screen)
 
     def _move_to_screen(self, screen):
-        """선택 모니터 오른쪽 상단으로 이동 (크기 유지)"""
         geo = screen.availableGeometry()
         self.move(geo.right() - self.width() - 20, geo.top() + 40)
 
-    def _apply_to_screen(self, screen, fullscreen=None):
-        """선택 모니터에 전체화면 또는 이동"""
-        if fullscreen is None:
-            fullscreen = self._is_fullscreen
-        if fullscreen:
-            self._enter_fullscreen(screen)
-        else:
-            self._move_to_screen(screen)
-
-    # ── 전체화면 토글 ─────────────────────────────────────────────────────────
+    # ── 전체화면 ──────────────────────────────────────────────────────────────
     def _toggle_fullscreen(self):
         if self._is_fullscreen:
             self._exit_fullscreen()
@@ -305,42 +360,43 @@ class CalendarWidget(QMainWindow):
             self._enter_fullscreen(self._target_screen)
 
     def _enter_fullscreen(self, screen):
-        self._saved_geometry = self.geometry()
+        if not self._is_fullscreen:
+            self._saved_geometry = self.geometry()
         self._is_fullscreen = True
         self._grip.hide()
-
-        geo = screen.geometry()           # 전체 면적 (작업표시줄 포함)
-        self.setGeometry(geo)
-
-        self.bar.btn_fullscreen.setProperty("active", "true")
-        self.bar.btn_fullscreen.style().unpolish(self.bar.btn_fullscreen)
-        self.bar.btn_fullscreen.style().polish(self.bar.btn_fullscreen)
-        self.bar.btn_fullscreen.setToolTip("전체화면 해제")
+        self.setGeometry(screen.geometry())
+        self.bar.set_fullscreen(True)
 
     def _exit_fullscreen(self):
         self._is_fullscreen = False
         self._grip.show()
         if self._saved_geometry:
             self.setGeometry(self._saved_geometry)
+        self.bar.set_fullscreen(False)
 
-        self.bar.btn_fullscreen.setProperty("active", "false")
-        self.bar.btn_fullscreen.style().unpolish(self.bar.btn_fullscreen)
-        self.bar.btn_fullscreen.style().polish(self.bar.btn_fullscreen)
-        self.bar.btn_fullscreen.setToolTip("전체화면 ON/OFF")
+    # ── 인쇄 ──────────────────────────────────────────────────────────────────
+    def _on_print(self):
+        printer = QPrinter()
+        dlg = QPrintDialog(printer, self)
+        if dlg.exec_() == QPrintDialog.Accepted:
+            self._page.print(printer, lambda ok: None)
 
     def keyPressEvent(self, e):
         if e.key() == Qt.Key_Escape and self._is_fullscreen:
             self._exit_fullscreen()
         super().keyPressEvent(e)
 
+    # 창 클릭 시 웹뷰 포커스 보장
+    def mousePressEvent(self, e):
+        super().mousePressEvent(e)
+        self.activateWindow()
+        self.web.setFocus(Qt.MouseFocusReason)
+
 
 # ── 진입점 ──────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
-    os.environ.setdefault("QT_AUTO_SCREEN_SCALE_FACTOR", "1")
-
     app = QApplication(sys.argv)
     app.setApplicationName("ASEA Calendar Widget")
-
     win = CalendarWidget()
     win.show()
     sys.exit(app.exec_())
