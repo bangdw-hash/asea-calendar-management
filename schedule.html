@@ -256,6 +256,19 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','N
   flex-shrink:0;transition:opacity .15s}
 #ai-send:disabled{opacity:.4;cursor:not-allowed}
 
+/* image paste preview */
+.ai-img-preview-wrap{padding:8px 12px 0;display:none}
+.ai-img-preview-wrap.has-img{display:block}
+.ai-img-preview-inner{display:inline-flex;align-items:flex-start;gap:6px;position:relative;
+  background:var(--g100);border-radius:8px;padding:6px 8px}
+.ai-img-thumb{max-width:180px;max-height:120px;border-radius:6px;display:block;object-fit:contain}
+.ai-img-remove{position:absolute;top:-6px;right:-6px;width:18px;height:18px;border-radius:50%;
+  background:#ef4444;color:#fff;border:none;cursor:pointer;font-size:.65rem;
+  display:flex;align-items:center;justify-content:center;line-height:1}
+.ai-img-label{font-size:.68rem;color:var(--g500);margin-top:3px}
+.ai-img-ocr-badge{font-size:.65rem;background:#7c3aed;color:#fff;padding:2px 6px;
+  border-radius:999px;display:inline-block;margin-top:3px}
+
 @media(max-width:480px){
   .ai-panel{bottom:84px;right:12px;width:calc(100vw - 24px)}
   .ai-fab{right:80px;bottom:20px}
@@ -442,18 +455,29 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','N
 }
 
 /* ── PRINT ── */
+@page{size:A4 landscape;margin:10mm 10mm 12mm}
 @media print{
   .hdr,.toolbar,.fab,.ai-fab,.ai-panel,.toast,.overlay,#auth-banner,
-  .evt-quick,.nav-btn,[onclick="printMonth()"]{display:none!important}
-  body{background:#fff;font-size:11pt}
-  .cal-wrap{padding:0}
-  .month-grid{border:1px solid #ccc}
-  .day-cell{min-height:70px;page-break-inside:avoid}
-  .evt-dot{background:#e8f0fe!important;color:#000!important;font-size:8pt;margin-top:1px}
-  .print-title{display:block!important;text-align:center;font-size:16pt;font-weight:700;
-    margin:8px 0 4px;color:#1A73E8}
+  .evt-quick,.nav-btn,.ai-img-preview-wrap,
+  button[onclick*="printMonth"]{display:none!important}
+  *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  body{background:#fff;font-size:9pt;margin:0}
+  .cal-wrap{padding:0;overflow:visible}
+  .cal-inner{min-width:0;width:100%}
+  .month-grid{border:1px solid #bbb;width:100%;table-layout:fixed}
+  .weekday-hdr{padding:5px 2px;font-size:7.5pt;background:#f0f4ff!important}
+  .day-cell{min-height:80px;padding:3px;page-break-inside:avoid;vertical-align:top}
+  .day-num{font-size:8pt;font-weight:700}
+  .evt-dot{background:#dbeafe!important;color:#1e3a8a!important;font-size:7pt;
+    padding:1px 3px;margin-top:1px;border-radius:3px;white-space:normal;
+    line-height:1.3;overflow:visible;max-height:none}
+  .day-cell.today .day-num{background:#1A73E8!important;color:#fff!important}
+  .print-title{display:block!important;text-align:center;font-size:14pt;font-weight:700;
+    margin:0 0 4px;color:#1A73E8;letter-spacing:.3px}
+  .print-sub{display:block!important;text-align:center;font-size:8pt;color:#555;margin-bottom:6px}
 }
 .print-title{display:none}
+.print-sub{display:none}
 </style>
 </head>
 <body>
@@ -502,6 +526,7 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','N
 
 <!-- CALENDAR AREA -->
 <span class="print-title" id="print-title"></span>
+<span class="print-sub" id="print-sub"></span>
 <div class="cal-wrap" id="cal-wrap"></div>
 
 <!-- FAB: Add event -->
@@ -529,7 +554,20 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','N
     <button class="ai-chip" onclick="aiQuick('이번 달 일정 요약해줘')">📋 이번 달 요약</button>
     <button class="ai-chip" onclick="aiQuick('다음 주 일정 알려줘')">📆 다음 주 일정</button>
     <button class="ai-chip" onclick="aiQuick('내일 오후 2시 회의 1시간')">➕ 일정 추가 예시</button>
+    <button class="ai-chip" onclick="document.getElementById('ai-img-file').click()" title="이미지에서 일정 추출">🖼️ 이미지 붙여넣기</button>
   </div>
+  <!-- 이미지 붙여넣기 미리보기 -->
+  <div class="ai-img-preview-wrap" id="ai-img-preview-wrap">
+    <div class="ai-img-preview-inner">
+      <div>
+        <img id="ai-img-thumb" class="ai-img-thumb" src="" alt="붙여넣은 이미지">
+        <div class="ai-img-label">이미지에서 일정을 자동 추출합니다</div>
+        <span class="ai-img-ocr-badge">📷 OCR 대기</span>
+      </div>
+      <button class="ai-img-remove" onclick="aiRemoveImg()" title="이미지 제거">✕</button>
+    </div>
+  </div>
+  <input type="file" id="ai-img-file" accept="image/*" style="display:none" onchange="aiHandleFileImg(this)">
   <div class="ai-input-row">
     <input id="ai-input" placeholder="예) 다음 주 수요일 오후 3시 전체 회의 2시간" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();aiSend();}">
     <button id="ai-send" onclick="aiSend()" title="전송">&#9658;</button>
@@ -1982,11 +2020,15 @@ let _aiOpen = false;
 let _aiMsgs = [];
 let _aiParsed = null;
 let _aiLastBotEl = null;
+let _aiPasteInited = false;
 
 function toggleAiPanel() {
   _aiOpen = !_aiOpen;
   document.getElementById('ai-panel').classList.toggle('open', _aiOpen);
-  if (_aiOpen) setTimeout(() => document.getElementById('ai-input').focus(), 150);
+  if (_aiOpen) {
+    setTimeout(() => document.getElementById('ai-input').focus(), 150);
+    if (!_aiPasteInited) { _initAiPaste(); _aiPasteInited = true; }
+  }
 }
 
 function aiQuick(text) {
@@ -2432,17 +2474,81 @@ function _aiAppend(role, text) {
   return el;
 }
 
+/* ══ IMAGE PASTE / OCR ══ */
+let _aiPastedImg = null; // { dataUrl, mediaType }
+
+function _initAiPaste() {
+  const panel = document.getElementById('ai-panel');
+  if (!panel) return;
+  panel.addEventListener('paste', (e) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+    for (const item of items) {
+      if (item.type.startsWith('image/')) {
+        e.preventDefault();
+        const blob = item.getAsFile();
+        const reader = new FileReader();
+        reader.onload = ev => aiSetImg(ev.target.result, item.type);
+        reader.readAsDataURL(blob);
+        return;
+      }
+    }
+  });
+}
+
+function aiSetImg(dataUrl, mediaType) {
+  _aiPastedImg = { dataUrl, mediaType: mediaType || 'image/png' };
+  const wrap  = document.getElementById('ai-img-preview-wrap');
+  const thumb = document.getElementById('ai-img-thumb');
+  thumb.src = dataUrl;
+  wrap.classList.add('has-img');
+  document.getElementById('ai-input').placeholder = '이미지 설명 추가 (선택) 후 전송';
+}
+
+function aiHandleFileImg(input) {
+  const file = input.files?.[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => aiSetImg(ev.target.result, file.type);
+  reader.readAsDataURL(file);
+  input.value = '';
+}
+
+function aiRemoveImg() {
+  _aiPastedImg = null;
+  document.getElementById('ai-img-preview-wrap').classList.remove('has-img');
+  document.getElementById('ai-img-thumb').src = '';
+  document.getElementById('ai-input').placeholder = '예) 다음 주 수요일 오후 3시 전체 회의 2시간';
+}
+
 async function aiSend() {
   const input = document.getElementById('ai-input');
   const text = input.value.trim();
-  if (!text) return;
+  const hasImg = !!_aiPastedImg;
+  if (!text && !hasImg) return;
   input.value = '';
   document.getElementById('ai-send').disabled = true;
 
-  _aiAppend('user', text);
-  _aiMsgs.push({ role: 'user', content: text });
+  // Build user message — text only or vision (image + text)
+  let userMsgContent;
+  let userDisplayText = text;
+  if (hasImg) {
+    const imgData = _aiPastedImg;
+    aiRemoveImg();
+    const base64 = imgData.dataUrl.split(',')[1];
+    userMsgContent = [
+      { type: 'image', source: { type: 'base64', media_type: imgData.mediaType, data: base64 } },
+      { type: 'text',  text: text || '이 이미지에서 일정 정보를 최대한 추출해서 일정으로 등록해줘.' },
+    ];
+    userDisplayText = (text ? text + '\n' : '') + '📷 이미지 첨부됨';
+  } else {
+    userMsgContent = text;
+  }
 
-  const loadEl = _aiAppend('bot loading', '답변 생성 중...');
+  _aiAppend('user', userDisplayText);
+  _aiMsgs.push({ role: 'user', content: userMsgContent });
+
+  const loadEl = _aiAppend('bot loading', hasImg ? '이미지 분석 중 (OCR)...' : '답변 생성 중...');
 
   const evtContext = _events.length
     ? _events.slice(0, 60).map(ev => {
@@ -2490,8 +2596,8 @@ ${evtContext}
 날짜 기준: 한국 시간(KST). 상대적 표현은 오늘 기준 절대 날짜로 변환.`;
 
   const payload = {
-    model: 'claude-haiku-4-5-20251001',
-    max_tokens: 1024,
+    model: hasImg ? 'claude-sonnet-5' : 'claude-haiku-4-5-20251001',
+    max_tokens: hasImg ? 2048 : 1024,
     system: systemPrompt,
     messages: _aiMsgs,
   };
@@ -2674,9 +2780,15 @@ async function submitFeatureReply(postId) {
 /* ══════════════ PRINT ══════════════ */
 function printMonth() {
   const title = document.getElementById('cal-title')?.textContent || '';
-  const el = document.getElementById('print-title');
-  if (el) el.textContent = '아세아항공직업전문학교 업무 일정표 — ' + title;
+  const today = new Date().toLocaleDateString('ko-KR',{year:'numeric',month:'long',day:'numeric'});
+  const titleEl = document.getElementById('print-title');
+  const subEl   = document.getElementById('print-sub');
+  if (titleEl) titleEl.textContent = '아세아항공직업전문학교 업무 일정표 — ' + title;
+  if (subEl)   subEl.textContent   = '출력일: ' + today;
   window.print();
+  setTimeout(() => {
+    if (subEl) subEl.textContent = '';
+  }, 2000);
 }
 
 /* ══════════════ PUBLIC EVENTS (no auth) ══════════════ */
