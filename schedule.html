@@ -287,6 +287,11 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','N
 .ai-evt-question{margin:14px 0 4px;text-align:center;font-size:.88rem;
   color:var(--g700);font-weight:600}
 .ai-evt-card-footer{padding:12px 20px 18px;display:flex;gap:8px;justify-content:flex-end}
+.ai-evt-occ-list{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+.ai-evt-occ-chip{font-size:.68rem;padding:3px 8px;border-radius:999px;
+  background:var(--primary-lt);color:var(--primary);font-weight:600}
+.ai-evt-occ-more{background:var(--g100);color:var(--g500);}
+.ai-evt-progress{font-size:.72rem;color:var(--g500);margin-top:2px;font-style:italic}
 
 /* ── TOAST ── */
 #toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%) translateY(16px);
@@ -777,7 +782,7 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','N
 <div class="ai-evt-overlay" id="ai-evt-overlay" onclick="if(event.target===this)closeAiEvtOverlay()">
   <div class="ai-evt-card" id="ai-evt-card">
     <div class="ai-evt-card-hdr">
-      <div class="ai-evt-card-badge">✨ AI가 인식한 일정</div>
+      <div class="ai-evt-card-badge" id="ai-evt-card-badge">✨ AI가 인식한 일정</div>
       <div class="ai-evt-card-title" id="ai-evt-title-disp">-</div>
       <button class="ai-evt-card-close" onclick="closeAiEvtOverlay()">&times;</button>
     </div>
@@ -1829,62 +1834,149 @@ function aiQuick(text) {
 
 function showAiEvtOverlay(parsed) {
   _aiParsed = parsed;
+  const type = parsed.type || 'single';
+
   document.getElementById('ai-evt-title-disp').textContent = parsed.title || '(제목 없음)';
+  const badgeMap = {
+    single:         '✨ AI가 인식한 일정',
+    multiday:       '📆 AI가 인식한 다기간 일정',
+    recurring:      '🔁 AI가 인식한 반복 일정',
+    multi_instance: '📋 AI가 인식한 복수 일정',
+  };
+  document.getElementById('ai-evt-card-badge').textContent = badgeMap[type] || badgeMap.single;
 
   const body = document.getElementById('ai-evt-card-body');
   body.innerHTML = '';
 
-  // Date display
-  let dateDisplay = '';
-  if (parsed.date) {
-    const d = new Date(parsed.date + 'T00:00:00');
-    dateDisplay = d.toLocaleDateString('ko-KR', { year:'numeric', month:'long', day:'numeric', weekday:'short' });
+  function _fmtDate(ds) {
+    if (!ds) return '-';
+    const d = new Date(ds + 'T00:00:00');
+    return d.toLocaleDateString('ko-KR', { year:'numeric', month:'long', day:'numeric', weekday:'short' });
   }
-
-  // Time display
-  let timeDisplay = '';
-  if (parsed.allDay) {
-    timeDisplay = '종일';
-  } else if (parsed.startTime) {
-    timeDisplay = parsed.startTime + (parsed.endTime ? ' ~ ' + parsed.endTime : '');
+  function _fmtDateShort(ds) {
+    if (!ds) return '';
+    const d = new Date(ds + 'T00:00:00');
+    return d.toLocaleDateString('ko-KR', { month:'short', day:'numeric', weekday:'short' });
   }
-
-  const rows = [
-    { icon: '📅', label: '날짜', value: dateDisplay || parsed.date || '-' },
-    timeDisplay          ? { icon: '🕐', label: '시간',  value: timeDisplay }        : null,
-    parsed.location      ? { icon: '📍', label: '장소',  value: parsed.location }    : null,
-    parsed.description   ? { icon: '📝', label: '설명',  value: parsed.description } : null,
-  ].filter(Boolean);
-
-  rows.forEach(row => {
+  function _addRow(icon, label, valueNode) {
     const div = document.createElement('div');
     div.className = 'ai-evt-row';
-    const icon = document.createElement('span');
-    icon.className = 'ai-evt-row-icon';
-    icon.textContent = row.icon;
+    const ic = document.createElement('span');
+    ic.className = 'ai-evt-row-icon'; ic.textContent = icon;
     const txt = document.createElement('div');
     txt.className = 'ai-evt-row-txt';
     const lbl = document.createElement('div');
-    lbl.className = 'ai-evt-row-label';
-    lbl.textContent = row.label;
-    const val = document.createElement('div');
-    val.className = 'ai-evt-row-value';
-    val.textContent = row.value;
+    lbl.className = 'ai-evt-row-label'; lbl.textContent = label;
     txt.appendChild(lbl);
-    txt.appendChild(val);
-    div.appendChild(icon);
-    div.appendChild(txt);
+    if (typeof valueNode === 'string') {
+      const val = document.createElement('div');
+      val.className = 'ai-evt-row-value'; val.textContent = valueNode;
+      txt.appendChild(val);
+    } else {
+      txt.appendChild(valueNode);
+    }
+    div.appendChild(ic); div.appendChild(txt);
     body.appendChild(div);
-  });
+  }
+  function _chipList(dates) {
+    const wrap = document.createElement('div');
+    wrap.className = 'ai-evt-occ-list';
+    const shown = dates.slice(0, 9);
+    shown.forEach(d => {
+      const chip = document.createElement('span');
+      chip.className = 'ai-evt-occ-chip';
+      chip.textContent = _fmtDateShort(d);
+      wrap.appendChild(chip);
+    });
+    if (dates.length > 9) {
+      const more = document.createElement('span');
+      more.className = 'ai-evt-occ-chip ai-evt-occ-more';
+      more.textContent = `+${dates.length - 9}개 더`;
+      wrap.appendChild(more);
+    }
+    return wrap;
+  }
+  function _rruleToKo(rrule, until, count) {
+    if (!rrule) return '';
+    const dayMap = {MO:'월',TU:'화',WE:'수',TH:'목',FR:'금',SA:'토',SU:'일'};
+    const freq     = (rrule.match(/FREQ=(\w+)/)||[])[1];
+    const byDay    = (rrule.match(/BYDAY=([^;]+)/)||[])[1];
+    const interval = parseInt((rrule.match(/INTERVAL=(\d+)/)||[])[1] || '1');
+    let desc = '';
+    if (freq === 'DAILY')   desc = interval > 1 ? `${interval}일마다` : '매일';
+    else if (freq === 'WEEKLY') {
+      const days = byDay ? byDay.split(',').map(d => {
+        const m = d.match(/^(-?\d*)([A-Z]{2})$/);
+        const nm = m && m[1] ? (m[1]==='-1'?'마지막':m[1]+'번째 ') : '';
+        return nm + (dayMap[m?.[2]] || d) + '요일';
+      }).join('·') : '';
+      desc = interval > 1 ? `${interval}주마다 ${days}` : `매주 ${days}`;
+    } else if (freq === 'MONTHLY') {
+      const days = byDay ? byDay.split(',').map(d => {
+        const m = d.match(/^(-?\d*)([A-Z]{2})$/);
+        const nm = m && m[1] ? (m[1]==='-1'?'마지막 ':m[1]+'번째 ') : '';
+        return `매달 ${nm}${dayMap[m?.[2]] || d}요일`;
+      }).join('·') : '매달';
+      desc = days;
+    } else desc = rrule;
+    if (count)  desc += `, 총 ${count}회`;
+    else if (until) desc += ` (${_fmtDate(until)}까지)`;
+    return desc;
+  }
+
+  // ── Rows by type ──
+  if (type === 'single') {
+    _addRow('📅', '날짜', _fmtDate(parsed.date));
+    if (parsed.allDay) {
+      _addRow('🕐', '시간', '종일');
+    } else if (parsed.startTime) {
+      _addRow('🕐', '시간', `${parsed.startTime}${parsed.endTime ? ' ~ ' + parsed.endTime : ''}`);
+    }
+  } else if (type === 'multiday') {
+    _addRow('📅', '시작일', _fmtDate(parsed.startDate));
+    _addRow('📅', '종료일', _fmtDate(parsed.endDate));
+    if (parsed.startDate && parsed.endDate) {
+      const days = Math.round((new Date(parsed.endDate+'T00:00:00') - new Date(parsed.startDate+'T00:00:00')) / 86400000) + 1;
+      _addRow('📏', '기간', `${days}일간`);
+    }
+    if (!parsed.allDay && parsed.startTime)
+      _addRow('🕐', '매일 시간', `${parsed.startTime}${parsed.endTime ? ' ~ ' + parsed.endTime : ''}`);
+  } else if (type === 'recurring') {
+    _addRow('🔁', '반복', _rruleToKo(parsed.rrule, parsed.until, parsed.count));
+    _addRow('📅', '첫 시작일', _fmtDate(parsed.startDate));
+    if (parsed.startTime)
+      _addRow('🕐', '시간', `${parsed.startTime}${parsed.endTime ? ' ~ ' + parsed.endTime : ''}`);
+    if (parsed.occurrences?.length)
+      _addRow('📋', '예정 날짜', _chipList(parsed.occurrences));
+  } else if (type === 'multi_instance') {
+    const dates = parsed.dates || [];
+    _addRow('📋', `총 ${dates.length}개 날짜`, _chipList(dates));
+    if (parsed.startTime)
+      _addRow('🕐', '시간', `${parsed.startTime}${parsed.endTime ? ' ~ ' + parsed.endTime : ''}`);
+  }
+  if (parsed.location)    _addRow('📍', '장소', parsed.location);
+  if (parsed.description) _addRow('📝', '설명', parsed.description);
 
   const q = document.createElement('p');
   q.className = 'ai-evt-question';
-  q.textContent = '이 일정을 저장하겠습니까?';
+  const qMap = {
+    single:         '이 일정을 저장하겠습니까?',
+    multiday:       '이 다기간 일정을 저장하겠습니까?',
+    recurring:      '반복 일정을 등록하겠습니까?',
+    multi_instance: `${(parsed.dates||[]).length}개 일정을 모두 등록하겠습니까?`,
+  };
+  q.textContent = qMap[type] || qMap.single;
   body.appendChild(q);
 
   const btn = document.getElementById('ai-evt-save-btn');
   btn.disabled = false;
-  btn.textContent = '💾 저장하기';
+  const saveMap = {
+    single:         '💾 저장하기',
+    multiday:       '💾 저장하기',
+    recurring:      '🔁 반복 등록하기',
+    multi_instance: `💾 ${(parsed.dates||[]).length}개 등록하기`,
+  };
+  btn.textContent = saveMap[type] || '💾 저장하기';
   document.getElementById('ai-evt-overlay').classList.add('open');
 }
 
@@ -1908,28 +2000,76 @@ async function saveAiEvent() {
   }
 
   const p = _aiParsed;
-  const dateStr = p.date || fmtDate(new Date());
-  let body;
-  if (p.allDay) {
-    const ed = new Date(dateStr + 'T00:00:00'); ed.setDate(ed.getDate() + 1);
-    body = { summary: p.title, start: { date: dateStr }, end: { date: fmtDate(ed) } };
-  } else {
-    const st = p.startTime || '09:00';
-    const et = p.endTime   || '10:00';
-    body = { summary: p.title,
-      start: { dateTime: `${dateStr}T${st}:00+09:00`, timeZone: 'Asia/Seoul' },
-      end:   { dateTime: `${dateStr}T${et}:00+09:00`, timeZone: 'Asia/Seoul' } };
+  const type = p.type || 'single';
+  const cal  = encodeURIComponent(CAL_ID);
+
+  function _buildBody(dateStr, allDay, st, et, title) {
+    let b;
+    if (allDay) {
+      const ed = new Date(dateStr + 'T00:00:00'); ed.setDate(ed.getDate() + 1);
+      b = { summary: title, start: { date: dateStr }, end: { date: fmtDate(ed) } };
+    } else {
+      b = { summary: title,
+        start: { dateTime: `${dateStr}T${st||'09:00'}:00+09:00`, timeZone: 'Asia/Seoul' },
+        end:   { dateTime: `${dateStr}T${et||'10:00'}:00+09:00`, timeZone: 'Asia/Seoul' } };
+    }
+    if (p.location)    b.location    = p.location;
+    if (p.description) b.description = p.description;
+    return b;
   }
-  if (p.location)    body.location    = p.location;
-  if (p.description) body.description = p.description;
 
   try {
-    await apiFetch('POST', `/calendars/${encodeURIComponent(CAL_ID)}/events`, body);
-    showToast('일정이 추가되었습니다.');
-    closeAiEvtOverlay();
-    if (_aiLastBotEl) { _aiLastBotEl.textContent = `✅ "${p.title}" 일정이 저장되었습니다.`; }
-    _aiParsed = null;
-    await fetchEvents(); renderCalendar();
+    if (type === 'single') {
+      const body = _buildBody(p.date || fmtDate(new Date()), !!p.allDay, p.startTime, p.endTime, p.title);
+      await apiFetch('POST', `/calendars/${cal}/events`, body);
+      _onAiSaveSuccess(p.title, '일정이 추가되었습니다.');
+
+    } else if (type === 'multiday') {
+      const sd = p.startDate || fmtDate(new Date());
+      const ed = p.endDate   || sd;
+      let body;
+      if (p.allDay !== false || !p.startTime) {
+        // all-day multiday: Google Calendar requires end = day AFTER the last day
+        const endEx = new Date(ed + 'T00:00:00'); endEx.setDate(endEx.getDate() + 1);
+        body = { summary: p.title, start: { date: sd }, end: { date: fmtDate(endEx) } };
+      } else {
+        body = { summary: p.title,
+          start: { dateTime: `${sd}T${p.startTime}:00+09:00`, timeZone: 'Asia/Seoul' },
+          end:   { dateTime: `${ed}T${p.endTime||p.startTime}:00+09:00`, timeZone: 'Asia/Seoul' } };
+      }
+      if (p.location)    body.location    = p.location;
+      if (p.description) body.description = p.description;
+      await apiFetch('POST', `/calendars/${cal}/events`, body);
+      _onAiSaveSuccess(p.title, '다기간 일정이 추가되었습니다.');
+
+    } else if (type === 'recurring') {
+      const sd = p.startDate || fmtDate(new Date());
+      const body = _buildBody(sd, !!p.allDay, p.startTime, p.endTime, p.title);
+      // Build RRULE string
+      let rrStr = 'RRULE:' + (p.rrule || 'FREQ=WEEKLY');
+      // Append UNTIL or COUNT if not already embedded in rrule
+      const hasUntil = rrStr.includes('UNTIL');
+      const hasCount = rrStr.includes('COUNT');
+      if (!hasUntil && !hasCount) {
+        if (p.until) rrStr += ';UNTIL=' + p.until.replace(/-/g,'') + 'T000000Z';
+        else if (p.count) rrStr += ';COUNT=' + p.count;
+        else rrStr += ';COUNT=4';
+      }
+      body.recurrence = [rrStr];
+      await apiFetch('POST', `/calendars/${cal}/events`, body);
+      _onAiSaveSuccess(p.title, '반복 일정이 등록되었습니다.');
+
+    } else if (type === 'multi_instance') {
+      const dates = p.dates || [];
+      if (!dates.length) { showToast('등록할 날짜가 없습니다.', 'error'); btn.disabled = false; return; }
+      for (let i = 0; i < dates.length; i++) {
+        btn.textContent = `등록 중... (${i + 1}/${dates.length})`;
+        const body = _buildBody(dates[i], !!p.allDay, p.startTime, p.endTime, p.title);
+        await apiFetch('POST', `/calendars/${cal}/events`, body);
+      }
+      _onAiSaveSuccess(p.title, `${dates.length}개 일정이 모두 추가되었습니다.`);
+    }
+
   } catch(e) {
     const msg = e.message || '';
     if (msg.toLowerCase().includes('insufficient') || msg.toLowerCase().includes('scope')) {
@@ -1944,6 +2084,14 @@ async function saveAiEvent() {
     btn.disabled = false;
     btn.textContent = '💾 저장하기';
   }
+}
+
+function _onAiSaveSuccess(title, message) {
+  showToast(message);
+  closeAiEvtOverlay();
+  if (_aiLastBotEl) { _aiLastBotEl.textContent = `✅ "${title}" 일정이 저장되었습니다.`; }
+  _aiParsed = null;
+  fetchEvents().then(() => renderCalendar());
 }
 
 function _aiAppend(role, text) {
@@ -1978,11 +2126,37 @@ async function aiSend() {
 
   const today = new Date().toLocaleDateString('ko-KR',{year:'numeric',month:'long',day:'numeric',weekday:'long'});
 
-  const systemPrompt = `당신은 아세아항공직업전문학교 업무 캘린더 AI 어시스턴트입니다.\n오늘: ${today}\n현재 화면에 표시된 일정:\n${evtContext}\n\n사용자 요청을 분석해 아래 JSON 형식 중 하나로만 응답하세요. 설명 없이 JSON만.\n\n일정 추가/등록 요청 → {"action":"create_event","title":"제목","date":"YYYY-MM-DD","allDay":false,"startTime":"HH:MM","endTime":"HH:MM","location":"","description":"","summary":"한 줄 확인 메시지"}\n일정 조회/요약/분석 → {"action":"answer","text":"한국어 답변"}\n\n날짜 기준: 한국 시간(KST). 상대적 표현은 오늘 기준으로 절대 날짜로 변환.`;
+  const systemPrompt = `당신은 아세아항공직업전문학교 업무 캘린더 AI 어시스턴트입니다.
+오늘: ${today}
+현재 화면에 표시된 일정:
+${evtContext}
+
+사용자 요청을 분석해 아래 JSON 형식 중 정확히 하나로만 응답하세요. 마크다운·설명 없이 JSON만 출력하세요.
+
+[단일 일정]
+{"action":"create_event","type":"single","title":"제목","date":"YYYY-MM-DD","allDay":false,"startTime":"HH:MM","endTime":"HH:MM","location":"","description":""}
+
+[다기간 일정 — 연속된 여러 날: 출장·연수·합숙·워크숍 등]
+{"action":"create_event","type":"multiday","title":"제목","startDate":"YYYY-MM-DD","endDate":"YYYY-MM-DD","allDay":true,"startTime":"","endTime":"","location":"","description":""}
+※ 시간 언급 있으면 allDay:false로, startTime/endTime 채울 것
+
+[반복 일정 — 매일·매주·매달 등 규칙적 반복]
+{"action":"create_event","type":"recurring","title":"제목","startDate":"YYYY-MM-DD","allDay":false,"startTime":"HH:MM","endTime":"HH:MM","rrule":"FREQ=WEEKLY;BYDAY=MO","until":"YYYY-MM-DD","count":null,"location":"","description":"","occurrences":["YYYY-MM-DD"]}
+※ rrule: FREQ=DAILY/WEEKLY/MONTHLY, BYDAY=MO/TU/WE/TH/FR/SA/SU(콤마로 복수), INTERVAL=N(매N주 등), 1MO=첫째월요일
+※ until 또는 count 중 하나만. 기간 언급 없으면 count:4 기본값
+※ occurrences: 실제 발생 날짜 목록(최대 10개)
+
+[불규칙 복수 일정 — 규칙 없는 여러 날짜]
+{"action":"create_event","type":"multi_instance","title":"제목","dates":["YYYY-MM-DD"],"allDay":false,"startTime":"HH:MM","endTime":"HH:MM","location":"","description":""}
+
+[일정 조회·요약·분석]
+{"action":"answer","text":"한국어 답변"}
+
+날짜 기준: 한국 시간(KST). 상대적 표현은 오늘 기준 절대 날짜로 변환.`;
 
   const payload = {
     model: 'claude-haiku-4-5-20251001',
-    max_tokens: 512,
+    max_tokens: 1024,
     system: systemPrompt,
     messages: _aiMsgs,
   };
@@ -2004,7 +2178,13 @@ async function aiSend() {
     } catch(e) { parsed = null; }
 
     if (parsed?.action === 'create_event') {
-      _aiLastBotEl = _aiAppend('bot', `"${parsed.title || '새 일정'}" 일정을 인식했습니다. 아래에서 확인해 주세요.`);
+      const _typeMsg = {
+        single:         `"${parsed.title || '새 일정'}" 일정을 인식했습니다. 아래에서 확인해 주세요.`,
+        multiday:       `"${parsed.title || '새 일정'}" 다기간 일정을 인식했습니다. 아래에서 확인해 주세요.`,
+        recurring:      `"${parsed.title || '새 일정'}" 반복 일정을 인식했습니다. 아래에서 확인해 주세요.`,
+        multi_instance: `"${parsed.title || '새 일정'}" 등 ${(parsed.dates||[]).length}개 일정을 인식했습니다. 아래에서 확인해 주세요.`,
+      };
+      _aiLastBotEl = _aiAppend('bot', _typeMsg[parsed.type] || _typeMsg.single);
       _aiMsgs.push({ role: 'assistant', content: raw });
       showAiEvtOverlay(parsed);
     } else if (parsed?.action === 'answer') {
