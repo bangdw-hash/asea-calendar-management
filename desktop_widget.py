@@ -6,10 +6,19 @@ Windows 11 투명 오버레이 / 항상 위 표시
     pip install PyQt5 PyQtWebEngine
 
 실행:
-    python desktop_widget.py
+    pythonw desktop_widget.py   (CMD 창 없음)
+    python   desktop_widget.py  (CMD 창 있음 — 자동 전환)
 """
 
-import sys
+import sys, os, subprocess
+
+# python.exe로 실행된 경우 pythonw.exe(무창)로 자동 재실행
+if os.name == "nt" and sys.executable.lower().endswith("python.exe"):
+    pythonw = sys.executable[:-10] + "pythonw.exe"
+    if os.path.exists(pythonw):
+        subprocess.Popen([pythonw] + sys.argv)
+        sys.exit(0)
+
 from PyQt5.QtCore import Qt, QUrl, QPoint, QTimer
 from PyQt5.QtGui import QIcon, QColor
 from PyQt5.QtWidgets import (
@@ -236,12 +245,11 @@ class CalendarWidget(QMainWindow):
 
 # ── 진입점 ──────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
+    # High-DPI: QApplication 생성 전에 환경변수로 설정 (PyQt5 경고 없음)
+    os.environ.setdefault("QT_AUTO_SCREEN_SCALE_FACTOR", "1")
+
     app = QApplication(sys.argv)
     app.setApplicationName("ASEA Calendar Widget")
-
-    # High-DPI 지원 (Windows 11)
-    app.setAttribute(Qt.AA_EnableHighDpiScaling, True)
-    app.setAttribute(Qt.AA_UseHighDpiPixmaps, True)
 
     win = CalendarWidget()
     win.show()
