@@ -533,9 +533,10 @@ html,body{height:100%;
 
 /* ── DEPT FILTER BAR ── */
 .dept-filter-bar{background:var(--color-card);border-bottom:1px solid var(--color-border);
-  padding:6px 16px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;
+  padding:5px 16px;display:flex;flex-direction:column;gap:4px;
   position:sticky;top:calc(var(--header-h) + var(--toolbar-h));z-index:80}
 .dept-filter-bar[hidden]{display:none!important}
+.dft-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 .dft-label{font-size:var(--font-xs);color:var(--color-text-sec);font-weight:600;
   white-space:nowrap;flex-shrink:0}
 .dft-chip{font-size:var(--font-xs);padding:3px 9px;border-radius:999px;
@@ -546,6 +547,9 @@ html,body{height:100%;
   background:var(--color-accent-lt)}
 .dft-chip.active{background:var(--color-accent);color:#fff;border-color:var(--color-accent)}
 .dft-chip.all-chip.active{background:var(--color-text-sec);border-color:var(--color-text-sec)}
+.dft-chip.grp-chip.active{background:#374151;border-color:#374151;color:#fff}
+.dft-sub-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap;
+  padding-left:4px;border-left:3px solid var(--color-accent-lt)}
 
 /* ── PRINT ── */
 @page{size:A4 landscape;margin:10mm 10mm 12mm}
@@ -1124,7 +1128,14 @@ let _tokenHasWrite = false; // true when current token includes calendar write s
 let _userEmail  = null;
 let _userInitial = '';
 let _events     = [];
-let _deptFilter = null; // null = 전체, string = 특정 부서
+let _deptFilter = { group: null, dept: null }; // group: null|'운영부'|'계열'|'부설', dept: null|string
+
+// 그룹 → 부서 매핑
+const DEPT_GROUPS = {
+  '운영부': ['기획','교육','행정','입학'],
+  '계열':   ['정비','안전','관광','보안','국방'],
+  '부설':   ['군사','기종','무인','비행','평생'],
+};
 let _curDate    = new Date();
 let _view       = 'month';
 let _editingEvt = null;
@@ -1276,7 +1287,7 @@ function logout() {
   if (_token && typeof google !== 'undefined' && google.accounts && google.accounts.oauth2)
     google.accounts.oauth2.revoke(_token, () => {});
   _token = null; _tokenHasWrite = false; _userEmail = null; _userInitial = '';
-  _deptFilter = null;
+  _deptFilter = { group: null, dept: null };
   clearTimeout(_refreshTimer);
   try { [localStorage, sessionStorage].forEach(s => {
     s.removeItem('asea_gtoken'); s.removeItem('asea_gtoken_exp'); s.removeItem('asea_gtoken_write');
@@ -1338,26 +1349,59 @@ function parseDept(summary) {
 }
 
 function filteredEvents() {
-  if (!_deptFilter) return _events;
-  return _events.filter(ev => parseDept(ev.summary) === _deptFilter);
+  const { group, dept } = _deptFilter;
+  if (!group && !dept) return _events;
+  if (dept) return _events.filter(ev => parseDept(ev.summary) === dept);
+  // 그룹 전체
+  const members = DEPT_GROUPS[group] || [];
+  return _events.filter(ev => members.includes(parseDept(ev.summary)));
 }
 
 function updateDeptFilterBar() {
   const bar = document.getElementById('dept-filter-bar');
   if (!bar) return;
-  // collect unique depts from events that have the bracket prefix
-  const depts = [...new Set(_events.map(ev => parseDept(ev.summary)).filter(Boolean))].sort();
-  if (!depts.length) { bar.hidden = true; return; }
+  const hasDepts = _events.some(ev => parseDept(ev.summary));
+  if (!hasDepts) { bar.hidden = true; return; }
   bar.hidden = false;
-  const chips = depts.map(d =>
-    `<button class="dft-chip${_deptFilter===d?' active':''}" onclick="setDeptFilter('${d.replace(/'/g,"\\'")}')">${d}</button>`
-  ).join('');
-  bar.innerHTML = `<span class="dft-label">부서 필터:</span>` +
-    `<button class="dft-chip all-chip${!_deptFilter?' active':''}" onclick="setDeptFilter(null)">전체</button>` + chips;
+
+  const { group, dept } = _deptFilter;
+  const isAll = !group && !dept;
+
+  // 1행: 전체 + 그룹 칩
+  const grpChips = Object.keys(DEPT_GROUPS).map(g => {
+    const isActive = group === g;
+    return `<button class="dft-chip grp-chip${isActive?' active':''}" onclick="setDeptGroup('${g}')">${g}</button>`;
+  }).join('');
+  const row1 = `<div class="dft-row">` +
+    `<span class="dft-label">부서:</span>` +
+    `<button class="dft-chip all-chip${isAll?' active':''}" onclick="setDeptGroup(null)">전체</button>` +
+    grpChips + `</div>`;
+
+  // 2행: 선택된 그룹의 서브 칩
+  let row2 = '';
+  if (group && DEPT_GROUPS[group]) {
+    const subChips = DEPT_GROUPS[group].map(d => {
+      const hasEvents = _events.some(ev => parseDept(ev.summary) === d);
+      if (!hasEvents) return '';
+      return `<button class="dft-chip${dept===d?' active':''}" onclick="setDeptFilter('${d}')">${d}</button>`;
+    }).join('');
+    if (subChips) {
+      row2 = `<div class="dft-sub-row">${subChips}</div>`;
+    }
+  }
+
+  bar.innerHTML = row1 + row2;
+}
+
+function setDeptGroup(group) {
+  _deptFilter = { group, dept: null };
+  updateDeptFilterBar();
+  renderCalendar();
 }
 
 function setDeptFilter(dept) {
-  _deptFilter = dept;
+  // dept 선택 시 group은 유지
+  _deptFilter = { group: _deptFilter.group, dept };
   updateDeptFilterBar();
   renderCalendar();
 }
