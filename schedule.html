@@ -255,6 +255,39 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','N
   .ai-fab{right:80px;bottom:20px}
 }
 
+/* ── AI EVENT CONFIRM OVERLAY ── */
+.ai-evt-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:600;
+  display:flex;align-items:center;justify-content:center;padding:16px;
+  opacity:0;pointer-events:none;transition:opacity .2s}
+.ai-evt-overlay.open{opacity:1;pointer-events:auto}
+.ai-evt-card{background:#fff;border-radius:20px;width:100%;max-width:400px;
+  box-shadow:0 24px 64px rgba(0,0,0,.28);overflow:hidden;
+  transform:translateY(28px) scale(.96);opacity:0;
+  transition:transform .25s cubic-bezier(.34,1.56,.64,1),opacity .2s}
+.ai-evt-overlay.open .ai-evt-card{transform:none;opacity:1}
+.ai-evt-card-hdr{background:linear-gradient(135deg,#7c3aed 0%,#4f46e5 100%);
+  padding:18px 20px 16px;color:#fff;position:relative}
+.ai-evt-card-badge{font-size:.65rem;font-weight:700;letter-spacing:.8px;text-transform:uppercase;
+  opacity:.85;margin-bottom:6px;display:flex;align-items:center;gap:5px}
+.ai-evt-card-title{font-size:1.22rem;font-weight:700;line-height:1.3;word-break:break-word}
+.ai-evt-card-close{position:absolute;top:12px;right:14px;background:rgba(255,255,255,.18);
+  border:none;color:#fff;font-size:1rem;cursor:pointer;border-radius:50%;
+  width:26px;height:26px;display:flex;align-items:center;justify-content:center;
+  transition:background .15s}
+.ai-evt-card-close:hover{background:rgba(255,255,255,.32)}
+.ai-evt-card-body{padding:16px 20px 8px}
+.ai-evt-row{display:flex;align-items:flex-start;gap:10px;padding:9px 0;
+  border-bottom:1px solid var(--g100)}
+.ai-evt-row:last-child{border-bottom:none}
+.ai-evt-row-icon{font-size:1.05rem;flex-shrink:0;width:20px;text-align:center;margin-top:1px}
+.ai-evt-row-txt{}
+.ai-evt-row-label{font-size:.68rem;font-weight:700;text-transform:uppercase;
+  letter-spacing:.5px;color:var(--g400);margin-bottom:2px}
+.ai-evt-row-value{font-size:.9rem;color:var(--g900);font-weight:500;line-height:1.4}
+.ai-evt-question{margin:14px 0 4px;text-align:center;font-size:.88rem;
+  color:var(--g700);font-weight:600}
+.ai-evt-card-footer{padding:12px 20px 18px;display:flex;gap:8px;justify-content:flex-end}
+
 /* ── TOAST ── */
 #toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%) translateY(16px);
   background:var(--g900);color:#fff;padding:9px 20px;border-radius:999px;
@@ -736,6 +769,22 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','N
     <div class="modal-footer">
       <button class="btn" onclick="closeModal('access-overlay')" style="background:var(--g100);color:var(--g700)">취소</button>
       <button class="btn btn-primary" id="acc-submit-btn" onclick="submitAccessRequest()">권한 요청하기</button>
+    </div>
+  </div>
+</div>
+
+<!-- AI Event Confirm Overlay -->
+<div class="ai-evt-overlay" id="ai-evt-overlay" onclick="if(event.target===this)closeAiEvtOverlay()">
+  <div class="ai-evt-card" id="ai-evt-card">
+    <div class="ai-evt-card-hdr">
+      <div class="ai-evt-card-badge">✨ AI가 인식한 일정</div>
+      <div class="ai-evt-card-title" id="ai-evt-title-disp">-</div>
+      <button class="ai-evt-card-close" onclick="closeAiEvtOverlay()">&times;</button>
+    </div>
+    <div class="ai-evt-card-body" id="ai-evt-card-body"></div>
+    <div class="ai-evt-card-footer">
+      <button class="btn" style="background:var(--g100);color:var(--g700)" onclick="closeAiEvtOverlay()">취소</button>
+      <button class="btn btn-primary" id="ai-evt-save-btn" onclick="saveAiEvent()">💾 저장하기</button>
     </div>
   </div>
 </div>
@@ -1764,6 +1813,8 @@ function showToast(msg, type) {
 /* ══════════════ AI CHAT ══════════════ */
 let _aiOpen = false;
 let _aiMsgs = [];
+let _aiParsed = null;
+let _aiLastBotEl = null;
 
 function toggleAiPanel() {
   _aiOpen = !_aiOpen;
@@ -1774,6 +1825,125 @@ function toggleAiPanel() {
 function aiQuick(text) {
   document.getElementById('ai-input').value = text;
   aiSend();
+}
+
+function showAiEvtOverlay(parsed) {
+  _aiParsed = parsed;
+  document.getElementById('ai-evt-title-disp').textContent = parsed.title || '(제목 없음)';
+
+  const body = document.getElementById('ai-evt-card-body');
+  body.innerHTML = '';
+
+  // Date display
+  let dateDisplay = '';
+  if (parsed.date) {
+    const d = new Date(parsed.date + 'T00:00:00');
+    dateDisplay = d.toLocaleDateString('ko-KR', { year:'numeric', month:'long', day:'numeric', weekday:'short' });
+  }
+
+  // Time display
+  let timeDisplay = '';
+  if (parsed.allDay) {
+    timeDisplay = '종일';
+  } else if (parsed.startTime) {
+    timeDisplay = parsed.startTime + (parsed.endTime ? ' ~ ' + parsed.endTime : '');
+  }
+
+  const rows = [
+    { icon: '📅', label: '날짜', value: dateDisplay || parsed.date || '-' },
+    timeDisplay          ? { icon: '🕐', label: '시간',  value: timeDisplay }        : null,
+    parsed.location      ? { icon: '📍', label: '장소',  value: parsed.location }    : null,
+    parsed.description   ? { icon: '📝', label: '설명',  value: parsed.description } : null,
+  ].filter(Boolean);
+
+  rows.forEach(row => {
+    const div = document.createElement('div');
+    div.className = 'ai-evt-row';
+    const icon = document.createElement('span');
+    icon.className = 'ai-evt-row-icon';
+    icon.textContent = row.icon;
+    const txt = document.createElement('div');
+    txt.className = 'ai-evt-row-txt';
+    const lbl = document.createElement('div');
+    lbl.className = 'ai-evt-row-label';
+    lbl.textContent = row.label;
+    const val = document.createElement('div');
+    val.className = 'ai-evt-row-value';
+    val.textContent = row.value;
+    txt.appendChild(lbl);
+    txt.appendChild(val);
+    div.appendChild(icon);
+    div.appendChild(txt);
+    body.appendChild(div);
+  });
+
+  const q = document.createElement('p');
+  q.className = 'ai-evt-question';
+  q.textContent = '이 일정을 저장하겠습니까?';
+  body.appendChild(q);
+
+  const btn = document.getElementById('ai-evt-save-btn');
+  btn.disabled = false;
+  btn.textContent = '💾 저장하기';
+  document.getElementById('ai-evt-overlay').classList.add('open');
+}
+
+function closeAiEvtOverlay() {
+  document.getElementById('ai-evt-overlay').classList.remove('open');
+}
+
+async function saveAiEvent() {
+  if (!_aiParsed) return;
+  const btn = document.getElementById('ai-evt-save-btn');
+  btn.disabled = true;
+  btn.textContent = '저장 중...';
+
+  if (!_token || !_tokenHasWrite) {
+    const ok = await doLogin(SCOPES);
+    if (!ok) {
+      btn.disabled = false; btn.textContent = '💾 저장하기';
+      showToast('쓰기 권한 인증이 필요합니다.', 'error');
+      return;
+    }
+  }
+
+  const p = _aiParsed;
+  const dateStr = p.date || fmtDate(new Date());
+  let body;
+  if (p.allDay) {
+    const ed = new Date(dateStr + 'T00:00:00'); ed.setDate(ed.getDate() + 1);
+    body = { summary: p.title, start: { date: dateStr }, end: { date: fmtDate(ed) } };
+  } else {
+    const st = p.startTime || '09:00';
+    const et = p.endTime   || '10:00';
+    body = { summary: p.title,
+      start: { dateTime: `${dateStr}T${st}:00+09:00`, timeZone: 'Asia/Seoul' },
+      end:   { dateTime: `${dateStr}T${et}:00+09:00`, timeZone: 'Asia/Seoul' } };
+  }
+  if (p.location)    body.location    = p.location;
+  if (p.description) body.description = p.description;
+
+  try {
+    await apiFetch('POST', `/calendars/${encodeURIComponent(CAL_ID)}/events`, body);
+    showToast('일정이 추가되었습니다.');
+    closeAiEvtOverlay();
+    if (_aiLastBotEl) { _aiLastBotEl.textContent = `✅ "${p.title}" 일정이 저장되었습니다.`; }
+    _aiParsed = null;
+    await fetchEvents(); renderCalendar();
+  } catch(e) {
+    const msg = e.message || '';
+    if (msg.toLowerCase().includes('insufficient') || msg.toLowerCase().includes('scope')) {
+      _tokenHasWrite = false;
+      try { [localStorage, sessionStorage].forEach(s => s.setItem('asea_gtoken_write', '0')); } catch(_) {}
+      const ok = await doLogin(SCOPES);
+      if (ok) { saveAiEvent(); }
+      else { showToast('인증 실패. 다시 시도해 주세요.', 'error'); btn.disabled = false; btn.textContent = '💾 저장하기'; }
+      return;
+    }
+    showToast('저장 실패: ' + msg, 'error');
+    btn.disabled = false;
+    btn.textContent = '💾 저장하기';
+  }
 }
 
 function _aiAppend(role, text) {
@@ -1834,42 +2004,9 @@ async function aiSend() {
     } catch(e) { parsed = null; }
 
     if (parsed?.action === 'create_event') {
-      const confirmMsg = parsed.summary || `"${parsed.title}" 일정을 ${parsed.date}${parsed.allDay ? '' : (' ' + parsed.startTime + '~' + parsed.endTime)}에 추가할까요?`;
-      const botEl = _aiAppend('bot', confirmMsg);
-      const confirmBtn = document.createElement('button');
-      confirmBtn.className = 'ai-chip';
-      confirmBtn.style.marginTop = '6px';
-      confirmBtn.textContent = '✅ 일정 추가하기';
-      confirmBtn.onclick = async () => {
-        confirmBtn.disabled = true;
-        confirmBtn.textContent = '추가 중...';
-        if (!_token || !_tokenHasWrite) {
-          const ok = await doLogin(SCOPES);
-          if (!ok) { confirmBtn.disabled = false; confirmBtn.textContent = '✅ 일정 추가하기'; return; }
-        }
-        _editingEvt = null;
-        document.getElementById('event-modal-title').textContent = '일정 추가';
-        document.getElementById('evt-save-label').textContent = '추가';
-        document.getElementById('evt-delete-btn').hidden = true;
-        document.getElementById('evt-error').textContent = '';
-        document.getElementById('evt-title').value = parsed.title || '';
-        document.getElementById('evt-date').value = parsed.date || fmtDate(new Date());
-        document.getElementById('evt-allday').checked = !!parsed.allDay;
-        toggleAllDay();
-        if (!parsed.allDay) {
-          document.getElementById('evt-start').value = parsed.startTime || '09:00';
-          document.getElementById('evt-end').value   = parsed.endTime   || '10:00';
-        }
-        document.getElementById('evt-location').value = parsed.location || '';
-        document.getElementById('evt-desc').value     = parsed.description || '';
-        delete document.getElementById('evt-date').dataset.endDate;
-        ['err-evt-title','err-evt-date'].forEach(id => document.getElementById(id).textContent='');
-        openOverlay('event-overlay');
-        confirmBtn.textContent = '✅ 폼에 채워졌어요';
-      };
-      botEl.appendChild(document.createElement('br'));
-      botEl.appendChild(confirmBtn);
+      _aiLastBotEl = _aiAppend('bot', `"${parsed.title || '새 일정'}" 일정을 인식했습니다. 아래에서 확인해 주세요.`);
       _aiMsgs.push({ role: 'assistant', content: raw });
+      showAiEvtOverlay(parsed);
     } else if (parsed?.action === 'answer') {
       _aiAppend('bot', parsed.text);
       _aiMsgs.push({ role: 'assistant', content: raw });
