@@ -39,6 +39,12 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','N
 .btn-white:hover{background:#e8f0fe}
 .btn-ghost-w{background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.4)}
 .btn-ghost-w:hover{background:rgba(255,255,255,.25)}
+.btn-login-google{display:inline-flex;align-items:center;gap:8px;padding:6px 14px 6px 10px;
+  background:#fff;color:#3c4043;border:1.5px solid #dadce0;border-radius:8px;
+  font-size:.82rem;font-weight:600;font-family:inherit;cursor:pointer;
+  box-shadow:0 1px 3px rgba(0,0,0,.08);transition:box-shadow .15s,border-color .15s;white-space:nowrap}
+.btn-login-google:hover{box-shadow:0 2px 8px rgba(66,133,244,.25);border-color:#4285F4}
+.btn-login-google:active{box-shadow:none;background:#f8f9fa}
 .btn-primary{background:var(--primary);color:#fff}
 .btn-primary:hover:not(:disabled){background:var(--primary-dk)}
 .btn-success{background:var(--green);color:#fff}
@@ -298,7 +304,7 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','N
   display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;
   transition:opacity .2s}
 .dept-overlay.open{opacity:1;pointer-events:all}
-.dept-card{background:#fff;border-radius:14px;width:min(360px,92vw);
+.dept-card{background:#fff;border-radius:14px;width:min(400px,94vw);
   box-shadow:0 20px 40px rgba(0,0,0,.18);overflow:hidden;
   transform:scale(.94);transition:transform .2s}
 .dept-overlay.open .dept-card{transform:scale(1)}
@@ -326,6 +332,18 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','N
 .dept-add-inp:focus{border-color:var(--primary)}
 .dept-card-footer{padding:12px 20px 18px;display:flex;gap:8px;justify-content:flex-end;
   border-top:1px solid var(--g200)}
+.dept-step{transition:opacity .15s}
+.step-badge{display:inline-block;font-size:.68rem;font-weight:600;color:var(--primary);
+  background:var(--primary-lt);border-radius:99px;padding:1px 8px;margin-left:6px;vertical-align:middle}
+.dept-step2-label{font-size:.82rem;font-weight:700;color:var(--primary);margin-bottom:2px}
+.workcat-chip-grid{display:flex;flex-wrap:wrap;gap:6px;padding:12px 16px;
+  justify-content:center;max-height:260px;overflow-y:auto}
+.workcat-chip{flex:0 0 calc(20% - 5px);padding:7px 2px;border-radius:8px;border:2px solid var(--g200);
+  background:var(--g50);cursor:pointer;text-align:center;font-size:.8rem;font-weight:600;
+  transition:border-color .12s,background .12s,transform .1s}
+.workcat-chip:hover{border-color:var(--primary);background:var(--primary-lt)}
+.workcat-chip.selected{border-color:var(--primary);background:var(--primary);color:#fff}
+.workcat-chip:active{transform:scale(.94)}
 
 /* ── TOAST ── */
 #toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%) translateY(16px);
@@ -831,22 +849,39 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','N
 <!-- DEPT PICKER OVERLAY -->
 <div class="dept-overlay" id="dept-overlay" onclick="if(event.target===this)closeDeptPicker(false)">
   <div class="dept-card">
-    <div class="dept-card-hdr">
-      <h3>📋 부서 선택</h3>
-      <p>일정 제목에 부서 머릿말([부서])이 없습니다.<br>해당 부서를 선택해 주세요.</p>
-    </div>
-    <div class="dept-chip-grid" id="dept-chip-grid"></div>
-    <div class="dept-add-row">
-      <button class="dept-add-toggle" onclick="toggleDeptAddForm()">＋ 부서 추가</button>
-      <div class="dept-add-form" id="dept-add-form">
-        <input class="dept-add-inp" id="dept-add-name" placeholder="부서명 (예: 미래교육원)">
-        <input class="dept-add-inp" id="dept-add-prefix" placeholder="머릿말" maxlength="4">
-        <button class="btn btn-primary btn-sm" onclick="submitAddDept()">추가</button>
+    <!-- STEP 1: 부서 선택 -->
+    <div id="dept-step1" class="dept-step">
+      <div class="dept-card-hdr">
+        <h3>📋 부서 선택 <span class="step-badge">1 / 2</span></h3>
+        <p>일정 머릿말 <strong>[부서/업무유형]</strong> 형식으로 입력됩니다.<br>먼저 부서를 선택해 주세요.</p>
+      </div>
+      <div class="dept-chip-grid" id="dept-chip-grid"></div>
+      <div class="dept-add-row">
+        <button class="dept-add-toggle" onclick="toggleDeptAddForm()">＋ 부서 추가</button>
+        <div class="dept-add-form" id="dept-add-form">
+          <input class="dept-add-inp" id="dept-add-name" placeholder="부서명 (예: 미래교육원)">
+          <input class="dept-add-inp" id="dept-add-prefix" placeholder="머릿말" maxlength="4">
+          <button class="btn btn-primary btn-sm" onclick="submitAddDept()">추가</button>
+        </div>
+      </div>
+      <div class="dept-card-footer">
+        <button class="btn" style="background:var(--g100);color:var(--g700)" onclick="closeDeptPicker(false)">취소</button>
+        <button class="btn btn-primary" onclick="goToWorkCatStep()">다음 →</button>
       </div>
     </div>
-    <div class="dept-card-footer">
-      <button class="btn" style="background:var(--g100);color:var(--g700)" onclick="closeDeptPicker(false)">취소</button>
-      <button class="btn btn-primary" onclick="closeDeptPicker(true)">확인</button>
+    <!-- STEP 2: 업무유형 선택 -->
+    <div id="dept-step2" class="dept-step" style="display:none">
+      <div class="dept-card-hdr">
+        <h3>📂 업무유형 선택 <span class="step-badge">2 / 2</span></h3>
+        <div class="dept-step2-label" id="dept-step2-dept-label"></div>
+        <p style="font-size:.75rem;color:var(--g400);margin-top:2px">업무유형은 선택 사항입니다 (건너뛰기 가능)</p>
+      </div>
+      <div class="workcat-chip-grid" id="workcat-chip-grid"></div>
+      <div class="dept-card-footer">
+        <button class="btn" style="background:var(--g100);color:var(--g700)" onclick="backToDeptStep()">← 뒤로</button>
+        <button class="btn" style="background:var(--g100);color:var(--g700)" onclick="closeDeptPicker(true,true)">부서만</button>
+        <button class="btn btn-primary" onclick="closeDeptPicker(true,false)">확인</button>
+      </div>
     </div>
   </div>
 </div>
@@ -883,6 +918,41 @@ const DEPARTMENTS = [
   {name:'무인항공교육원',   prefix:'무인'},
   {name:'비행교육원',       prefix:'비행'},
   {name:'평생교육원',       prefix:'평생'},
+];
+
+const WORK_CATEGORIES = [
+  {label:'행사', desc:'행사·이벤트'},
+  {label:'회의', desc:'회의·미팅'},
+  {label:'시험', desc:'시험·평가'},
+  {label:'계약', desc:'계약·협약'},
+  {label:'실습', desc:'실습·훈련'},
+  {label:'교육', desc:'교육·연수'},
+  {label:'채용', desc:'채용·인사'},
+  {label:'홍보', desc:'홍보·마케팅'},
+  {label:'예산', desc:'예산·결산'},
+  {label:'보고', desc:'보고·기안'},
+  {label:'점검', desc:'점검·감사'},
+  {label:'출장', desc:'출장·방문'},
+  {label:'졸업', desc:'졸업·수료'},
+  {label:'입학', desc:'입학·등록'},
+  {label:'인증', desc:'인증·평가'},
+  {label:'구매', desc:'구매·조달'},
+  {label:'시설', desc:'시설·관리'},
+  {label:'연구', desc:'연구·개발'},
+  {label:'현장', desc:'현장·실사'},
+  {label:'기획', desc:'기획·계획'},
+  {label:'상담', desc:'상담·민원'},
+  {label:'복지', desc:'복지·지원'},
+  {label:'자격', desc:'자격·면허'},
+  {label:'공지', desc:'공지·안내'},
+  {label:'신청', desc:'신청·제출'},
+  {label:'심사', desc:'심사·선발'},
+  {label:'위탁', desc:'위탁·외주'},
+  {label:'성과', desc:'성과·평가'},
+  {label:'비행', desc:'비행·훈련'},
+  {label:'정비', desc:'정비·점검'},
+  {label:'안전', desc:'안전·비상'},
+  {label:'협약', desc:'협약·MOU'},
 ];
 const API_BASE  = 'https://www.googleapis.com/calendar/v3';
 const SB_URL    = 'https://zbpeyklwpotjyveipzxd.supabase.co';
@@ -1028,7 +1098,15 @@ async function fetchUserInfo() {
 function updateUserArea() {
   const area = document.getElementById('user-area');
   if (!_token) {
-    area.innerHTML = `<button class="btn btn-sm btn-ghost-w" onclick="doLogin()" title="일정 추가·수정을 위해 로그인">🔑 로그인</button>`;
+    area.innerHTML = `<button class="btn-login-google" onclick="doLogin()" title="일정 추가·수정을 위해 Google 계정으로 로그인">
+      <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
+        <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"/>
+        <path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/>
+        <path fill="#FBBC05" d="M3.964 10.706A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.706V4.962H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.038l3.007-2.332z"/>
+        <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.962L3.964 7.294C4.672 5.163 6.656 3.58 9 3.58z"/>
+      </svg>
+      <span>Google로 로그인</span>
+    </button>`;
     return;
   }
   area.innerHTML = `<div class="user-pill">
@@ -2190,11 +2268,13 @@ function _onAiSaveSuccess(title, message) {
 
 /* ── DEPARTMENT PREFIX HELPERS ── */
 function _hasDeptPrefix(title) {
-  return /^\[.{1,4}\]/.test(title || '');
+  // accepts [XX] or [XX/YY] format
+  return /^\[.{1,4}(?:\/.{1,4})?\]/.test(title || '');
 }
 
-let _deptCallback = null;
-let _deptSelected = null;
+let _deptCallback  = null;
+let _deptSelected  = null;
+let _workCatSelected = null;
 
 async function loadCustomDepts() {
   if (!_token) return;
@@ -2250,27 +2330,66 @@ function _renderDeptGrid() {
 }
 
 async function showDeptPicker(onConfirm) {
-  _deptCallback = onConfirm;
-  _deptSelected = null;
+  _deptCallback    = onConfirm;
+  _deptSelected    = null;
+  _workCatSelected = null;
   await loadCustomDepts();
   _renderDeptGrid();
   document.getElementById('dept-add-form').classList.remove('open');
-  document.getElementById('dept-add-name').value = '';
-  document.getElementById('dept-add-prefix').value = '';
+  document.getElementById('dept-add-name').value    = '';
+  document.getElementById('dept-add-prefix').value  = '';
+  // always start at step 1
+  document.getElementById('dept-step1').style.display = '';
+  document.getElementById('dept-step2').style.display = 'none';
   document.getElementById('dept-overlay').classList.add('open');
 }
 
-function closeDeptPicker(confirm) {
+function goToWorkCatStep() {
+  if (!_deptSelected) { showToast('부서를 먼저 선택해 주세요.'); return; }
+  _workCatSelected = null;
+  _renderWorkCatGrid();
+  document.getElementById('dept-step2-dept-label').textContent = '[' + _deptSelected + '] 선택됨';
+  document.getElementById('dept-step1').style.display = 'none';
+  document.getElementById('dept-step2').style.display = '';
+}
+
+function backToDeptStep() {
+  _workCatSelected = null;
+  document.getElementById('dept-step2').style.display = 'none';
+  document.getElementById('dept-step1').style.display = '';
+}
+
+function _renderWorkCatGrid() {
+  const grid = document.getElementById('workcat-chip-grid');
+  grid.innerHTML = '';
+  WORK_CATEGORIES.forEach(c => {
+    const chip = document.createElement('button');
+    chip.className = 'workcat-chip';
+    chip.title = c.desc;
+    chip.textContent = c.label;
+    chip.onclick = () => {
+      grid.querySelectorAll('.workcat-chip').forEach(x => x.classList.remove('selected'));
+      chip.classList.add('selected');
+      _workCatSelected = c.label;
+    };
+    grid.appendChild(chip);
+  });
+}
+
+function closeDeptPicker(confirm, deptOnly) {
   document.getElementById('dept-overlay').classList.remove('open');
   if (confirm && _deptSelected && _deptCallback) {
-    const prefix = '[' + _deptSelected + '] ';
+    const cat    = (!deptOnly && _workCatSelected) ? '/' + _workCatSelected : '';
+    const prefix = '[' + _deptSelected + cat + '] ';
     const cb = _deptCallback;
-    _deptCallback = null;
-    _deptSelected = null;
+    _deptCallback    = null;
+    _deptSelected    = null;
+    _workCatSelected = null;
     cb(prefix);
   } else {
-    _deptCallback = null;
-    _deptSelected = null;
+    _deptCallback    = null;
+    _deptSelected    = null;
+    _workCatSelected = null;
   }
 }
 
@@ -2342,21 +2461,28 @@ ${evtContext}
 
 사용자 요청을 분석해 아래 JSON 형식 중 정확히 하나로만 응답하세요. 마크다운·설명 없이 JSON만 출력하세요.
 
+【일정 제목 머릿말 규칙】
+- 반드시 [부서] 또는 [부서/업무유형] 형식으로 시작해야 합니다.
+- 예: [행정/계약] 외주업체 계약서 서명, [기획/행사] 입학식, [교육/연수] 신입직원 연수
+- 부서 약어: 기획, 교육, 행정, 입학, 정비, 안전, 보안, 관광, 국방, 군사, 기종, 무인, 비행, 평생
+- 업무유형 약어: 행사, 회의, 시험, 계약, 실습, 교육, 채용, 홍보, 예산, 보고, 점검, 출장, 졸업, 입학, 인증, 구매, 시설, 연구, 현장, 기획, 상담, 복지, 자격, 공지, 신청, 심사, 위탁, 성과, 비행, 정비, 안전, 협약
+- 사용자가 부서나 업무유형을 언급하지 않으면 title에 머릿말 없이 내용만 입력하세요 (시스템이 별도 처리)
+
 [단일 일정]
-{"action":"create_event","type":"single","title":"제목","date":"YYYY-MM-DD","allDay":false,"startTime":"HH:MM","endTime":"HH:MM","location":"","description":""}
+{"action":"create_event","type":"single","title":"[부서/업무유형] 제목","date":"YYYY-MM-DD","allDay":false,"startTime":"HH:MM","endTime":"HH:MM","location":"","description":""}
 
 [다기간 일정 — 연속된 여러 날: 출장·연수·합숙·워크숍 등]
-{"action":"create_event","type":"multiday","title":"제목","startDate":"YYYY-MM-DD","endDate":"YYYY-MM-DD","allDay":true,"startTime":"","endTime":"","location":"","description":""}
+{"action":"create_event","type":"multiday","title":"[부서/업무유형] 제목","startDate":"YYYY-MM-DD","endDate":"YYYY-MM-DD","allDay":true,"startTime":"","endTime":"","location":"","description":""}
 ※ 시간 언급 있으면 allDay:false로, startTime/endTime 채울 것
 
 [반복 일정 — 매일·매주·매달 등 규칙적 반복]
-{"action":"create_event","type":"recurring","title":"제목","startDate":"YYYY-MM-DD","allDay":false,"startTime":"HH:MM","endTime":"HH:MM","rrule":"FREQ=WEEKLY;BYDAY=MO","until":"YYYY-MM-DD","count":null,"location":"","description":"","occurrences":["YYYY-MM-DD"]}
+{"action":"create_event","type":"recurring","title":"[부서/업무유형] 제목","startDate":"YYYY-MM-DD","allDay":false,"startTime":"HH:MM","endTime":"HH:MM","rrule":"FREQ=WEEKLY;BYDAY=MO","until":"YYYY-MM-DD","count":null,"location":"","description":"","occurrences":["YYYY-MM-DD"]}
 ※ rrule: FREQ=DAILY/WEEKLY/MONTHLY, BYDAY=MO/TU/WE/TH/FR/SA/SU(콤마로 복수), INTERVAL=N(매N주 등), 1MO=첫째월요일
 ※ until 또는 count 중 하나만. 기간 언급 없으면 count:4 기본값
 ※ occurrences: 실제 발생 날짜 목록(최대 10개)
 
 [불규칙 복수 일정 — 규칙 없는 여러 날짜]
-{"action":"create_event","type":"multi_instance","title":"제목","dates":["YYYY-MM-DD"],"allDay":false,"startTime":"HH:MM","endTime":"HH:MM","location":"","description":""}
+{"action":"create_event","type":"multi_instance","title":"[부서/업무유형] 제목","dates":["YYYY-MM-DD"],"allDay":false,"startTime":"HH:MM","endTime":"HH:MM","location":"","description":""}
 
 [일정 조회·요약·분석]
 {"action":"answer","text":"한국어 답변"}
@@ -2396,7 +2522,7 @@ ${evtContext}
       _aiLastBotEl = _aiAppend('bot', _typeMsg[parsed.type] || _typeMsg.single);
       _aiMsgs.push({ role: 'assistant', content: raw });
       if (!_hasDeptPrefix(parsed.title)) {
-        _aiAppend('bot', '⚠️ 부서 머릿말([부서])이 없습니다. 부서를 선택해 주세요.');
+        _aiAppend('bot', '⚠️ 부서 머릿말이 없습니다. 부서와 업무유형을 선택해 주세요.');
         showDeptPicker(prefix => {
           parsed.title = prefix + parsed.title;
           showAiEvtOverlay(parsed);
