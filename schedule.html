@@ -762,6 +762,8 @@ const CAL_EMBED = 'https://calendar.google.com/calendar/embed?src=89cb23c42a75d9
 let _token      = null;
 let _tokenClient = null;
 let _pendingCb  = null;
+let _lastScope  = null;   // scope used for current _tokenClient
+let _tokenHasWrite = false; // true when current token includes calendar write scope
 let _userEmail  = null;
 let _userInitial = '';
 let _events     = [];
@@ -773,9 +775,10 @@ let _isAdmin    = false;
 
 /* ══════════════ AUTH ══════════════ */
 function _initTokenClient(scope) {
+  _lastScope = scope || SCOPES;
   _tokenClient = google.accounts.oauth2.initTokenClient({
     client_id: CLIENT_ID,
-    scope: scope || SCOPES,
+    scope: _lastScope,
     callback: _handleToken,
   });
 }
@@ -797,11 +800,13 @@ function _handleToken(resp) {
     return;
   }
   _token = resp.access_token;
+  _tokenHasWrite = !!_lastScope && !_lastScope.includes('readonly');
   const expiry = Date.now() + ((resp.expires_in || 3600) - 60) * 1000;
   try {
     [localStorage, sessionStorage].forEach(s => {
       s.setItem('asea_gtoken', _token);
       s.setItem('asea_gtoken_exp', String(expiry));
+      s.setItem('asea_gtoken_write', _tokenHasWrite ? '1' : '0');
     });
   } catch(e){}
   _scheduleRefresh((resp.expires_in || 3600) - 90);
@@ -824,7 +829,12 @@ function _tryRestoreToken() {
     for (const s of [sessionStorage, localStorage]) {
       const t = s.getItem('asea_gtoken');
       const e = parseInt(s.getItem('asea_gtoken_exp') || '0', 10);
-      if (t && e > Date.now() + 30000) { _token = t; _scheduleRefresh((e - Date.now()) / 1000 - 90); return true; }
+      if (t && e > Date.now() + 30000) {
+        _token = t;
+        _tokenHasWrite = s.getItem('asea_gtoken_write') === '1';
+        _scheduleRefresh((e - Date.now()) / 1000 - 90);
+        return true;
+      }
     }
   } catch(e) {}
   return false;
@@ -1107,7 +1117,7 @@ function initMonthDrag() {
 }
 
 async function openEventModalOnDate(sy, sm, sd, ey, em, ed) {
-  if (!_token) {
+  if (!_token || !_tokenHasWrite) {
     const ok = await doLogin(SCOPES);
     if (!ok) return;
   }
@@ -1143,6 +1153,10 @@ function editEvtById(id) {
 async function deleteEvtById(id) {
   const ev = _events.find(x => x.id === id);
   if (!ev) return;
+  if (!_token || !_tokenHasWrite) {
+    const ok = await doLogin(SCOPES);
+    if (!ok) return;
+  }
   if (!confirm(`"${ev.summary || '(제목 없음)'}" 일정을 삭제하시겠습니까?`)) return;
   try {
     await apiFetch('DELETE', `/calendars/${encodeURIComponent(CAL_ID)}/events/${encodeURIComponent(id)}`);
@@ -1355,7 +1369,7 @@ function setView(v, btn) {
 
 /* ══════════════ ADD / EDIT EVENT ══════════════ */
 async function onAddClick() {
-  if (!_token) {
+  if (!_token || !_tokenHasWrite) {
     const ok = await doLogin(SCOPES);
     if (!ok) return;
   }
@@ -1471,6 +1485,16 @@ async function saveEvent() {
     await fetchEvents(); renderCalendar();
   } catch(e) {
     const msg = e.message || '';
+    if (msg.toLowerCase().includes('insufficient') || msg.toLowerCase().includes('scope')) {
+      // 토큰에 쓰기 권한 없음 → 재인증 후 재시도
+      _tokenHasWrite = false;
+      try { [localStorage, sessionStorage].forEach(s => s.setItem('asea_gtoken_write', '0')); } catch(_) {}
+      document.getElementById('evt-error').textContent = '쓰기 권한 재인증 중...';
+      const ok = await doLogin(SCOPES);
+      if (ok) { saveEvent(); }
+      else { document.getElementById('evt-error').textContent = '인증 실패. 다시 시도해 주세요.'; }
+      return;
+    }
     document.getElementById('evt-error').textContent =
       (msg.includes('403') || msg.toLowerCase().includes('forbidden'))
         ? '권한이 없습니다. 캘린더 공유 수락이 완료된 계정으로 로그인하세요.'
