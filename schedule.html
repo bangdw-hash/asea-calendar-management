@@ -507,6 +507,7 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','N
     <div class="modal-body" id="detail-body"></div>
     <div class="modal-footer">
       <button class="btn" onclick="closeModal('detail-overlay')" style="background:var(--g100);color:var(--g700)">닫기</button>
+      <button class="btn btn-danger btn-sm" id="detail-delete-btn" onclick="deleteFromDetail()" hidden>삭제</button>
       <button class="btn btn-primary btn-sm" id="detail-edit-btn" onclick="editFromDetail()" hidden>수정</button>
     </div>
   </div>
@@ -1582,10 +1583,36 @@ function showDetail(e, evtId) {
     (ev.location ? `<div class="evt-detail-desc" style="margin-bottom:8px">📍 ${esc(ev.location)}</div>` : '') +
     (ev.description ? `<div class="evt-detail-desc">${esc(ev.description)}</div>` : '') +
     (!ev.description && !ev.location ? '<div style="color:var(--g400);font-size:.82rem">내용 없음</div>' : '');
-  document.getElementById('detail-edit-btn').hidden = !(_token && _tokenHasWrite);
+  const canEdit = _token && _tokenHasWrite;
+  document.getElementById('detail-edit-btn').hidden = !canEdit;
+  document.getElementById('detail-delete-btn').hidden = !canEdit;
   openOverlay('detail-overlay');
 }
 function editFromDetail() { closeModal('detail-overlay'); openEventModal(_detailEvt); }
+async function deleteFromDetail() {
+  if (!_detailEvt) return;
+  if (!_token || !_tokenHasWrite) {
+    const ok = await doLogin(SCOPES);
+    if (!ok) return;
+  }
+  if (!confirm(`"${_detailEvt.summary || '(제목 없음)'}" 일정을 삭제하시겠습니까?`)) return;
+  try {
+    await apiFetch('DELETE', `/calendars/${encodeURIComponent(CAL_ID)}/events/${encodeURIComponent(_detailEvt.id)}`);
+    showToast('일정이 삭제되었습니다.');
+    closeModal('detail-overlay');
+    await fetchEvents(); renderCalendar();
+  } catch(e) {
+    const msg = e.message || '';
+    if (msg.toLowerCase().includes('insufficient') || msg.toLowerCase().includes('scope')) {
+      _tokenHasWrite = false;
+      try { [localStorage, sessionStorage].forEach(s => s.setItem('asea_gtoken_write', '0')); } catch(_) {}
+      const ok = await doLogin(SCOPES);
+      if (ok) { deleteFromDetail(); } else { showToast('인증 실패. 다시 시도해 주세요.', 'error'); }
+      return;
+    }
+    showToast('삭제 실패: ' + msg, 'error');
+  }
+}
 
 /* ══════════════ WEEK CELL CLICK ══════════════ */
 async function onWeekCellClick(e, dateStr, hour) {
