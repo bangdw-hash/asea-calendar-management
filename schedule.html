@@ -127,6 +127,24 @@ html,body{height:100%;
   transition:background .15s;font-family:inherit}
 .btn-logout:hover{background:var(--g100)}
 
+/* ── HEADER OVERFLOW MENU ── */
+.hdr-menu-items{display:flex;gap:8px;align-items:center}
+.hdr-more-btn{display:none;background:none;border:none;cursor:pointer;
+  padding:6px 8px;border-radius:8px;color:var(--color-text-sec);
+  align-items:center;justify-content:center;transition:background .15s}
+.hdr-more-btn:hover{background:var(--g100)}
+.hdr-dropdown{position:absolute;top:calc(100% + 6px);right:0;
+  background:var(--color-card);border:1px solid var(--color-border);
+  border-radius:12px;box-shadow:var(--sh-lg);z-index:300;
+  min-width:160px;padding:6px 0;display:flex;flex-direction:column}
+.hdr-dropdown a,.hdr-dropdown button{display:flex;align-items:center;gap:10px;
+  padding:11px 16px;font-size:.87rem;color:var(--color-text);
+  background:none;border:none;cursor:pointer;text-decoration:none;
+  font-family:inherit;text-align:left;transition:background .15s;white-space:nowrap}
+.hdr-dropdown a:hover,.hdr-dropdown button:hover{background:var(--color-accent-lt);color:var(--color-accent)}
+.hdr-dropdown a svg,.hdr-dropdown button svg{flex-shrink:0}
+.hdr-right-wrap{position:relative;display:flex;gap:8px;align-items:center}
+
 /* ── CALENDAR AREA ── (index.html 스타일 동기화) */
 .cal-wrap{padding:16px 16px 80px;overflow-x:auto;-webkit-overflow-scrolling:touch}
 .cal-inner{min-width:700px}
@@ -473,20 +491,36 @@ html,body{height:100%;
 .badge-rejected{background:var(--red-lt);color:var(--red);padding:2px 8px;border-radius:12px;font-size:.72rem;font-weight:600;border:none;cursor:pointer}
 
 @media(max-width:600px){
+  :root{--header-h:48px;--toolbar-h:92px}
+  /* header compact */
+  .hdr{height:48px;padding:0 12px}
+  .hdr-sub{display:none}
+  .hdr-logo{font-size:.93rem}
+  .hdr-left gap{gap:6px}
+  /* hide inline menu items, show overflow button */
+  .hdr-menu-items{display:none}
+  .hdr-more-btn{display:flex}
   /* auth banner — single compact row */
   .auth-banner{padding:7px 10px;font-size:.76rem;gap:6px}
   .auth-banner-msg{font-size:.74rem;line-height:1.3}
   .auth-banner-btns{gap:5px}
-  /* toolbar */
-  .toolbar{padding:7px 10px;gap:5px;top:48px}
-  .cal-title{font-size:.85rem;min-width:90px}
-  .nav-btn{width:28px;height:28px;font-size:.9rem}
-  .view-btn{padding:4px 8px;font-size:.72rem}
+  /* toolbar — 2-row layout */
+  .toolbar{
+    flex-direction:column;align-items:stretch;
+    gap:6px;padding:8px 12px;top:var(--header-h)
+  }
+  .cal-nav{justify-content:center;gap:6px}
+  .cal-title{font-size:1.1rem;min-width:auto;font-weight:700}
+  .nav-btn{width:38px;height:38px;font-size:1.15rem;border-radius:50%}
+  .today-btn{font-size:.8rem;padding:5px 12px;border-radius:20px}
+  .toolbar-right{width:100%;justify-content:center;gap:0}
+  .view-toggle{width:100%;border-radius:10px;border-width:1.5px}
+  .view-btn{flex:1;padding:9px 4px;font-size:.82rem;font-weight:600}
+  /* hide add/print in toolbar — use FAB */
+  #hdr-add-btn,button[onclick="printMonth()"]{display:none}
   .btn-sm{padding:4px 8px;font-size:.7rem}
 }
 @media(max-width:480px){
-  .hdr-logo{font-size:.9rem}
-  .hdr-sub{display:none}
   .btn{padding:5px 8px;font-size:.72rem}
   /* 모바일: 모달을 하단 시트로 표시 — 뷰포트 초과 방지 */
   .overlay{align-items:flex-end;padding:0}
@@ -502,8 +536,6 @@ html,body{height:100%;
   .overlay.show .modal{transform:translateY(0)}
   .admin-table{font-size:.72rem}
   .admin-table th,.admin-table td{padding:5px 6px}
-  /* hide print button on small screens */
-  button[onclick="printMonth()"]{display:none}
 }
 
 /* ── FEATURE REQUEST PANEL ── */
@@ -591,15 +623,32 @@ html,body{height:100%;
       <div class="hdr-sub">아세아항공직업전문학교 업무 일정표</div>
     </div>
   </div>
-  <div class="hdr-right">
-    <a class="tb-btn" href="forum.html" target="_blank">
-      <svg class="tb-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-      기능 건의
-    </a>
-    <button class="tb-btn" onclick="openAdminLogin()">
-      <svg class="tb-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-      관리자
+  <div class="hdr-right-wrap">
+    <!-- Desktop: inline buttons -->
+    <div class="hdr-menu-items">
+      <a class="tb-btn" href="forum.html" target="_blank">
+        <svg class="tb-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        기능 건의
+      </a>
+      <button class="tb-btn" onclick="openAdminLogin()">
+        <svg class="tb-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        관리자
+      </button>
+    </div>
+    <!-- Mobile: overflow ⋮ menu -->
+    <button class="hdr-more-btn" onclick="toggleHdrMenu(event)" aria-label="더보기" id="hdr-more-btn">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
     </button>
+    <div class="hdr-dropdown" id="hdr-dropdown" hidden>
+      <a href="forum.html" target="_blank" onclick="closeHdrMenu()">
+        <svg class="tb-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        기능 건의
+      </a>
+      <button onclick="openAdminLogin();closeHdrMenu()">
+        <svg class="tb-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        관리자
+      </button>
+    </div>
     <div id="user-area"></div>
   </div>
 </header>
@@ -610,7 +659,7 @@ html,body{height:100%;
     <button class="nav-btn" onclick="nav(-1)" title="이전">&#8249;</button>
     <div class="cal-title" id="cal-title" onclick="goToday()"></div>
     <button class="nav-btn" onclick="nav(1)" title="다음">&#8250;</button>
-    <button class="tb-btn" onclick="goToday()">오늘</button>
+    <button class="tb-btn today-btn" onclick="goToday()">오늘</button>
   </div>
   <div class="toolbar-right">
     <div class="view-toggle">
@@ -1502,32 +1551,72 @@ function renderMonth(wrap) {
 }
 
 /* ── HORIZONTAL SWIPE SCROLL FOR CALENDAR ── */
-let _calSwipeCtrl = null; // 이전 리스너 누적 방지
+let _calSwipeCtrl = null;
+let _calEdge = null; // 'left' | 'right' | null — 엣지 도달 상태 (재스와이프 월이동 판단용)
+
 function initCalSwipe(wrap) {
   if (_calSwipeCtrl) _calSwipeCtrl.abort();
   _calSwipeCtrl = new AbortController();
+  _calEdge = null; // 월 변경 시 초기화
   const sig = _calSwipeCtrl.signal;
   let startX = 0, endX = 0, startScrollLeft = 0, isDown = false;
+  const MIN_SWIPE = 80; // 민감도 낮춤 (기존 40px → 80px)
+
   wrap.addEventListener('touchstart', e => {
     startX = endX = e.touches[0].clientX;
     startScrollLeft = wrap.scrollLeft;
     isDown = true;
   }, { passive: true, signal: sig });
+
   wrap.addEventListener('touchmove', e => {
     if (!isDown) return;
     endX = e.touches[0].clientX;
     wrap.scrollLeft = startScrollLeft + (startX - endX);
   }, { passive: true, signal: sig });
+
   wrap.addEventListener('touchend', () => {
     if (!isDown) return;
     isDown = false;
     const dx = startX - endX;
     const maxScroll = wrap.scrollWidth - wrap.clientWidth;
-    if (Math.abs(dx) >= 40) {
-      if (dx > 0 && startScrollLeft >= maxScroll - 5) nav(1);   // 오른쪽 끝 → 다음 달/주
-      else if (dx < 0 && startScrollLeft <= 5) nav(-1);          // 왼쪽 끝 → 이전 달/주
+    const endScrollLeft = wrap.scrollLeft;
+
+    // 스크롤이 없는 뷰(데스크톱)는 단순 스와이프로 월 이동
+    if (maxScroll <= 20) {
+      if (Math.abs(dx) >= MIN_SWIPE) {
+        if (dx > 0) nav(1);
+        else nav(-1);
+      }
+      return;
+    }
+
+    if (Math.abs(dx) < MIN_SWIPE) {
+      // 짧은 스와이프 — 엣지 상태만 갱신
+      if (endScrollLeft >= maxScroll - 5) _calEdge = 'right';
+      else if (endScrollLeft <= 5) _calEdge = 'left';
+      else _calEdge = null;
+      return;
+    }
+
+    if (dx > 0) {
+      // 왼쪽으로 스와이프 → 다음 달 방향
+      if (endScrollLeft >= maxScroll - 5) {
+        if (_calEdge === 'right') { nav(1); _calEdge = null; }
+        else { _calEdge = 'right'; } // 첫 도달 — 다음 스와이프에서 이동
+      } else {
+        _calEdge = null;
+      }
+    } else {
+      // 오른쪽으로 스와이프 → 이전 달 방향
+      if (endScrollLeft <= 5) {
+        if (_calEdge === 'left') { nav(-1); _calEdge = null; }
+        else { _calEdge = 'left'; }
+      } else {
+        _calEdge = null;
+      }
     }
   }, { signal: sig });
+
   wrap.addEventListener('scroll', () => { wrap.classList.add('scrolled'); }, { once: true, passive: true, signal: sig });
 }
 
@@ -1825,6 +1914,20 @@ async function navWeek(delta) {
     if (delta < 0) wrap.scrollLeft = wrap.scrollWidth - wrap.clientWidth;
   }
   _navAnimating = false;
+}
+
+function toggleHdrMenu(e) {
+  e && e.stopPropagation();
+  const d = document.getElementById('hdr-dropdown');
+  if (!d) return;
+  d.hidden = !d.hidden;
+  if (!d.hidden) {
+    setTimeout(() => document.addEventListener('click', closeHdrMenu, {once:true}), 10);
+  }
+}
+function closeHdrMenu() {
+  const d = document.getElementById('hdr-dropdown');
+  if (d) d.hidden = true;
 }
 
 function nav(delta) {
