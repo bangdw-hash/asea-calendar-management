@@ -521,11 +521,27 @@ html,body{height:100%;
   .cal-wrap.scrolled::after{display:none}
 }
 
+/* ── DEPT FILTER BAR ── */
+.dept-filter-bar{background:var(--color-card);border-bottom:1px solid var(--color-border);
+  padding:6px 16px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;
+  position:sticky;top:calc(var(--header-h) + var(--toolbar-h));z-index:80}
+.dept-filter-bar[hidden]{display:none!important}
+.dft-label{font-size:var(--font-xs);color:var(--color-text-sec);font-weight:600;
+  white-space:nowrap;flex-shrink:0}
+.dft-chip{font-size:var(--font-xs);padding:3px 9px;border-radius:999px;
+  border:1.5px solid var(--color-border);background:var(--color-card);
+  color:var(--color-text-sec);cursor:pointer;font-weight:500;transition:all .15s;
+  white-space:nowrap;font-family:inherit}
+.dft-chip:hover{border-color:var(--color-accent);color:var(--color-accent);
+  background:var(--color-accent-lt)}
+.dft-chip.active{background:var(--color-accent);color:#fff;border-color:var(--color-accent)}
+.dft-chip.all-chip.active{background:var(--color-text-sec);border-color:var(--color-text-sec)}
+
 /* ── PRINT ── */
 @page{size:A4 landscape;margin:10mm 10mm 12mm}
 @media print{
   .hdr,.toolbar,.fab,.ai-fab,.ai-panel,.toast,.overlay,#auth-banner,
-  .evt-quick,.nav-btn,.ai-img-preview-wrap,
+  #dept-filter-bar,.evt-quick,.nav-btn,.ai-img-preview-wrap,
   button[onclick*="printMonth"]{display:none!important}
   *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
   body{background:#fff;font-size:9pt;margin:0}
@@ -596,6 +612,12 @@ html,body{height:100%;
       일정 추가
     </button>
   </div>
+</div>
+
+<!-- DEPT FILTER BAR -->
+<div class="dept-filter-bar" id="dept-filter-bar" hidden>
+  <span class="dft-label">부서 필터:</span>
+  <!-- chips rendered by JS -->
 </div>
 
 <!-- AUTH BANNER -->
@@ -1092,6 +1114,7 @@ let _tokenHasWrite = false; // true when current token includes calendar write s
 let _userEmail  = null;
 let _userInitial = '';
 let _events     = [];
+let _deptFilter = null; // null = 전체, string = 특정 부서
 let _curDate    = new Date();
 let _view       = 'month';
 let _editingEvt = null;
@@ -1243,6 +1266,7 @@ function logout() {
   if (_token && typeof google !== 'undefined' && google.accounts && google.accounts.oauth2)
     google.accounts.oauth2.revoke(_token, () => {});
   _token = null; _tokenHasWrite = false; _userEmail = null; _userInitial = '';
+  _deptFilter = null;
   clearTimeout(_refreshTimer);
   try { [localStorage, sessionStorage].forEach(s => {
     s.removeItem('asea_gtoken'); s.removeItem('asea_gtoken_exp'); s.removeItem('asea_gtoken_write');
@@ -1273,6 +1297,7 @@ async function fetchEvents() {
       timeMin, timeMax, singleEvents: 'true', orderBy: 'startTime', maxResults: '500'
     })}`);
     _events = (data && data.items) ? data.items : [];
+    updateDeptFilterBar();
   } catch(e) {
     const msg = e.message || '';
     // 401/403: 토큰 만료 또는 권한 없음 → 상태 초기화 후 공개 피드로
@@ -1294,6 +1319,38 @@ async function fetchEvents() {
 /* ══════════════ RENDER ══════════════ */
 const WEEKDAYS = ['일','월','화','수','목','금','토'];
 const KO_MONTHS = ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+
+/* ── DEPT FILTER ── */
+function parseDept(summary) {
+  // "[행정/계약]..." → "행정"
+  const m = (summary || '').match(/^\[([^\]/]+)/);
+  return m ? m[1].trim() : null;
+}
+
+function filteredEvents() {
+  if (!_deptFilter) return _events;
+  return _events.filter(ev => parseDept(ev.summary) === _deptFilter);
+}
+
+function updateDeptFilterBar() {
+  const bar = document.getElementById('dept-filter-bar');
+  if (!bar) return;
+  // collect unique depts from events that have the bracket prefix
+  const depts = [...new Set(_events.map(ev => parseDept(ev.summary)).filter(Boolean))].sort();
+  if (!depts.length) { bar.hidden = true; return; }
+  bar.hidden = false;
+  const chips = depts.map(d =>
+    `<button class="dft-chip${_deptFilter===d?' active':''}" onclick="setDeptFilter('${d.replace(/'/g,"\\'")}')">${d}</button>`
+  ).join('');
+  bar.innerHTML = `<span class="dft-label">부서 필터:</span>` +
+    `<button class="dft-chip all-chip${!_deptFilter?' active':''}" onclick="setDeptFilter(null)">전체</button>` + chips;
+}
+
+function setDeptFilter(dept) {
+  _deptFilter = dept;
+  updateDeptFilterBar();
+  renderCalendar();
+}
 
 function renderCalendar() {
   let title;
@@ -1322,7 +1379,7 @@ function evtDate(ev) {
 }
 
 function evtsForDay(y, m, d) {
-  return _events.filter(ev => {
+  return filteredEvents().filter(ev => {
     const { start, end, allDay } = evtDate(ev);
     if (!start) return false;
     if (allDay) {
@@ -1555,7 +1612,7 @@ function renderWeek(wrap) {
   // all-day row
   html += '</tr><tr><td class="week-time-col" style="font-size:.6rem;color:var(--g400)">종일</td>';
   days.forEach(dt => {
-    const allDayEvts = _events.filter(ev => {
+    const allDayEvts = filteredEvents().filter(ev => {
       const { start, allDay } = evtDate(ev);
       return allDay && start && start.getFullYear()===dt.getFullYear()
         && start.getMonth()===dt.getMonth() && start.getDate()===dt.getDate();
@@ -1569,7 +1626,7 @@ function renderWeek(wrap) {
   [8,9,10,11,12,13,14,15,16,17,18,19].forEach(h => {
     html += `<tr><td class="week-time-col">${h}:00</td>`;
     days.forEach(dt => {
-      const evts = _events.filter(ev => {
+      const evts = filteredEvents().filter(ev => {
         const { start, allDay } = evtDate(ev);
         if (!start || allDay) return false;
         return start.getFullYear()===dt.getFullYear() && start.getMonth()===dt.getMonth()
@@ -1588,7 +1645,7 @@ function renderWeek(wrap) {
 
 function renderList(wrap) {
   const y = _curDate.getFullYear(), m = _curDate.getMonth();
-  const monthEvts = _events.filter(ev => {
+  const monthEvts = filteredEvents().filter(ev => {
     const { start } = evtDate(ev);
     return start && start.getFullYear()===y && start.getMonth()===m;
   }).sort((a,b) => new Date(a.start.dateTime||a.start.date) - new Date(b.start.dateTime||b.start.date));
@@ -2899,6 +2956,7 @@ async function fetchPublicEvents() {
     });
     const data = await r.json();
     _events = Array.isArray(data?.items) ? data.items : [];
+    updateDeptFilterBar();
   } catch(e) {
     _events = [];
   }
