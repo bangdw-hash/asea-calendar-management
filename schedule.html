@@ -488,8 +488,18 @@ html,body{height:100%;
   .hdr-logo{font-size:.9rem}
   .hdr-sub{display:none}
   .btn{padding:5px 8px;font-size:.72rem}
-  .modal{max-height:95vh}
-  .modal.modal-lg{max-height:95vh}
+  /* 모바일: 모달을 하단 시트로 표시 — 뷰포트 초과 방지 */
+  .overlay{align-items:flex-end;padding:0}
+  .modal{
+    max-width:100%;width:100%;
+    border-radius:16px 16px 0 0;
+    max-height:92dvh;max-height:92vh; /* dvh 미지원 브라우저 fallback */
+    overflow-y:auto;
+    transform:translateY(100%);
+    padding-bottom:env(safe-area-inset-bottom,0px);
+  }
+  .modal.modal-lg{max-height:92dvh;max-height:92vh}
+  .overlay.show .modal{transform:translateY(0)}
   .admin-table{font-size:.72rem}
   .admin-table th,.admin-table td{padding:5px 6px}
   /* hide print button on small screens */
