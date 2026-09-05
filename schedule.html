@@ -3,112 +3,179 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>업무 일정표 — 아세아항공직업전문학교</title>
+<title>ASEA 업무 일정표</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 [hidden]{display:none!important}
 :root{
-  --primary:#1A73E8;--primary-dk:#1557B0;--primary-lt:#E8F0FE;
+  /* index.html 디자인 시스템 동기화 */
+  --color-bg:          #F8F9FB;
+  --color-card:        #FFFFFF;
+  --color-accent:      #1A73E8;
+  --color-accent-dk:   #1557B0;
+  --color-accent-lt:   #E8F0FE;
+  --color-text:        #202124;
+  --color-text-sec:    #5F6368;
+  --color-border:      #E8EAED;
+  --color-success:     #34A853;
+  --color-warning:     #FBBC05;
+  --color-error:       #EA4335;
+  --color-error-lt:    #FCE8E6;
+  /* 레거시 별칭 (기존 코드 호환) */
+  --primary:    var(--color-accent);
+  --primary-dk: var(--color-accent-dk);
+  --primary-lt: var(--color-accent-lt);
   --green:#16a34a;--green-lt:#dcfce7;
   --orange:#ea580c;--orange-lt:#ffedd5;
-  --red:#dc2626;--red-lt:#fee2e2;
-  --g50:#f9fafb;--g100:#f3f4f6;--g200:#e5e7eb;--g300:#d1d5db;
-  --g400:#9ca3af;--g500:#6b7280;--g700:#374151;--g900:#111827;
-  --r:8px;--sh:0 1px 3px rgba(0,0,0,.12),0 1px 2px rgba(0,0,0,.08);
-  --sh-md:0 4px 6px rgba(0,0,0,.07),0 2px 4px rgba(0,0,0,.06);
-  --sh-lg:0 10px 15px rgba(0,0,0,.1),0 4px 6px rgba(0,0,0,.05);
+  --red:var(--color-error);--red-lt:var(--color-error-lt);
+  --g50:var(--color-bg);--g100:#F1F3F4;--g200:var(--color-border);
+  --g300:#D2D5D9;--g400:#9AA0A6;--g500:var(--color-text-sec);
+  --g700:#3C4043;--g900:var(--color-text);
+  --r:8px;
+  --sh:   0 1px 3px rgba(60,64,67,.08),0 1px 2px rgba(60,64,67,.06);
+  --sh-md:0 2px 8px rgba(60,64,67,.12),0 2px 4px rgba(60,64,67,.08);
+  --sh-lg:0 8px 24px rgba(60,64,67,.14),0 4px 8px rgba(60,64,67,.10);
+  --header-h:56px;
+  --toolbar-h:52px;
+  --font-xs:11px;--font-sm:12px;--font-base:14px;--font-md:15px;--font-lg:16px;
 }
-html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans KR',sans-serif;
-  background:var(--g50);color:var(--g900)}
+html,body{height:100%;
+  font-family:'Noto Sans KR',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  font-size:var(--font-base);background:var(--color-bg);color:var(--color-text);
+  -webkit-font-smoothing:antialiased}
 
-/* ── HEADER ── */
-.hdr{background:var(--primary);color:#fff;padding:14px 16px;
+/* ── HEADER ── (index.html 디자인 동기화) */
+.hdr{height:var(--header-h);background:var(--color-card);
+  border-bottom:1px solid var(--color-border);
   display:flex;align-items:center;justify-content:space-between;
-  box-shadow:var(--sh-md);position:sticky;top:0;z-index:100}
-.hdr-left{display:flex;align-items:center;gap:10px}
-.hdr-logo{font-size:1.1rem;font-weight:700;letter-spacing:-.3px;line-height:1.2}
-.hdr-sub{font-size:.72rem;opacity:.8;margin-top:2px}
-.hdr-right{display:flex;gap:8px;flex-shrink:0}
+  padding:0 16px;position:sticky;top:0;z-index:100;flex-shrink:0}
+.hdr-left{display:flex;align-items:center;gap:8px}
+.hdr-logo{font-size:var(--font-lg);font-weight:700;color:var(--color-text);letter-spacing:-.3px}
+.hdr-sub{font-size:var(--font-xs);color:var(--color-text-sec);margin-top:2px}
+.hdr-right{display:flex;gap:8px;align-items:center;flex-shrink:0}
+
+/* ── BUTTONS (index.html 스타일) */
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:5px;
-  padding:7px 13px;border-radius:var(--r);font-size:.8rem;font-weight:600;
-  cursor:pointer;border:none;transition:opacity .15s,transform .1s;text-decoration:none;
-  white-space:nowrap}
-.btn:active{transform:scale(.97)}
+  padding:6px 12px;border-radius:var(--r);font-size:var(--font-sm);font-weight:600;
+  cursor:pointer;border:1px solid transparent;transition:background .15s,box-shadow .15s;
+  text-decoration:none;white-space:nowrap;font-family:inherit}
+.btn:active{opacity:.85}
 .btn:disabled{opacity:.45;cursor:not-allowed}
-.btn-white{background:#fff;color:var(--primary)}
-.btn-white:hover{background:#e8f0fe}
+.btn-primary{background:var(--color-accent);color:#fff;border-color:var(--color-accent)}
+.btn-primary:hover:not(:disabled){background:var(--color-accent-dk);border-color:var(--color-accent-dk)}
+.btn-secondary{background:#fff;color:var(--color-accent);border-color:var(--color-border)}
+.btn-secondary:hover{background:var(--color-accent-lt)}
+.btn-ghost{background:transparent;color:var(--color-text-sec);border-color:transparent}
+.btn-ghost:hover{background:var(--g100);color:var(--color-text)}
 .btn-ghost-w{background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.4)}
 .btn-ghost-w:hover{background:rgba(255,255,255,.25)}
-.btn-login-google{display:inline-flex;align-items:center;gap:8px;padding:6px 14px 6px 10px;
-  background:#fff;color:#3c4043;border:1.5px solid #dadce0;border-radius:8px;
-  font-size:.82rem;font-weight:600;font-family:inherit;cursor:pointer;
-  box-shadow:0 1px 3px rgba(0,0,0,.08);transition:box-shadow .15s,border-color .15s;white-space:nowrap}
-.btn-login-google:hover{box-shadow:0 2px 8px rgba(66,133,244,.25);border-color:#4285F4}
-.btn-login-google:active{box-shadow:none;background:#f8f9fa}
-.btn-primary{background:var(--primary);color:#fff}
-.btn-primary:hover:not(:disabled){background:var(--primary-dk)}
 .btn-success{background:var(--green);color:#fff}
 .btn-danger{background:var(--red);color:#fff}
-.btn-sm{padding:5px 10px;font-size:.75rem}
+.btn-sm{padding:5px 10px;font-size:var(--font-xs)}
 .btn-full{width:100%}
+
+/* index.html tb-btn 스타일 (툴바 버튼) */
+.tb-btn{background:transparent;color:var(--color-text-sec);border:1px solid var(--color-border);
+  border-radius:var(--r);padding:5px 10px;font-size:var(--font-xs);font-weight:500;
+  display:inline-flex;align-items:center;gap:5px;cursor:pointer;transition:background .15s,color .15s}
+.tb-btn:hover{background:var(--color-accent-lt);color:var(--color-accent);border-color:var(--color-accent)}
+.tb-ico{width:14px;height:14px;flex-shrink:0}
+
+/* Google 로그인 버튼 */
+.btn-login-google{display:inline-flex;align-items:center;gap:8px;padding:6px 14px 6px 10px;
+  background:#fff;color:#3c4043;border:1.5px solid #dadce0;border-radius:8px;
+  font-size:var(--font-sm);font-weight:600;font-family:inherit;cursor:pointer;
+  box-shadow:var(--sh);transition:box-shadow .15s,border-color .15s;white-space:nowrap}
+.btn-login-google:hover{box-shadow:0 2px 8px rgba(66,133,244,.25);border-color:#4285F4}
+.btn-login-google:active{box-shadow:none;background:#f8f9fa}
+
+/* icon-btn (헤더 아이콘) */
 .icon-btn{background:none;border:none;cursor:pointer;padding:6px;border-radius:6px;
-  display:inline-flex;align-items:center;color:#fff;transition:background .15s}
-.icon-btn:hover{background:rgba(255,255,255,.2)}
+  display:inline-flex;align-items:center;color:var(--color-text-sec);transition:background .15s}
+.icon-btn:hover{background:var(--g100)}
 
-/* ── TOOLBAR ── */
-.toolbar{background:#fff;border-bottom:1px solid var(--g200);padding:10px 16px;
-  display:flex;align-items:center;gap:10px;flex-wrap:wrap;
-  position:sticky;top:56px;z-index:90;box-shadow:var(--sh)}
+/* ── TOOLBAR ── (index.html calendar-toolbar 동기화) */
+.toolbar{background:var(--color-card);border-bottom:1px solid var(--color-border);
+  padding:8px 16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  position:sticky;top:var(--header-h);z-index:90}
 .cal-nav{display:flex;align-items:center;gap:6px}
-.cal-title{font-size:1rem;font-weight:700;min-width:120px;text-align:center;cursor:pointer;
-  padding:4px 8px;border-radius:var(--r);transition:background .15s}
+.cal-title{font-size:1.1rem;font-weight:700;min-width:110px;text-align:center;cursor:pointer;
+  padding:4px 8px;border-radius:var(--r);transition:background .15s;color:var(--color-text)}
 .cal-title:hover{background:var(--g100)}
-.nav-btn{background:var(--g100);border:none;width:32px;height:32px;border-radius:50%;
-  cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;
-  transition:background .15s}
-.nav-btn:hover{background:var(--g200)}
-.toolbar-right{margin-left:auto;display:flex;gap:8px;align-items:center}
-.view-toggle{display:flex;border:1.5px solid var(--g200);border-radius:var(--r);overflow:hidden}
-.view-btn{padding:5px 11px;font-size:.78rem;font-weight:600;cursor:pointer;
-  background:#fff;border:none;color:var(--g500);transition:background .15s,color .15s}
-.view-btn.active{background:var(--primary);color:#fff}
+.nav-btn{background:transparent;border:1px solid var(--color-border);width:30px;height:30px;
+  border-radius:50%;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;
+  color:var(--color-text-sec);transition:background .15s}
+.nav-btn:hover{background:var(--g100)}
+.toolbar-right{margin-left:auto;display:flex;gap:6px;align-items:center}
+.view-toggle{display:flex;border:1px solid var(--color-border);border-radius:var(--r);overflow:hidden}
+.view-btn{padding:5px 10px;font-size:var(--font-xs);font-weight:500;cursor:pointer;
+  background:#fff;border:none;color:var(--color-text-sec);transition:background .15s,color .15s;
+  font-family:inherit}
+.view-btn.active{background:var(--color-accent);color:#fff}
 
-/* user pill */
-.user-pill{display:flex;align-items:center;gap:6px;padding:4px 10px;
-  background:var(--primary-lt);border-radius:999px;font-size:.78rem;color:var(--primary);font-weight:600}
-.user-avatar{width:22px;height:22px;border-radius:50%;background:var(--primary);
-  color:#fff;font-size:.65rem;display:flex;align-items:center;justify-content:center;font-weight:700}
+/* user area (index.html header-user 스타일) */
+.user-pill{display:flex;align-items:center;gap:6px;font-size:var(--font-sm);color:var(--color-text-sec)}
+.user-avatar{width:26px;height:26px;border-radius:50%;background:var(--color-accent);
+  color:#fff;font-size:.65rem;display:flex;align-items:center;justify-content:center;font-weight:700;
+  flex-shrink:0}
+.user-email-txt{max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.btn-logout{background:none;border:1px solid var(--color-border);border-radius:var(--r);
+  padding:4px 8px;font-size:var(--font-xs);color:var(--color-text-sec);cursor:pointer;
+  transition:background .15s;font-family:inherit}
+.btn-logout:hover{background:var(--g100)}
 
-/* ── CALENDAR AREA ── */
-.cal-wrap{padding:0 0 80px;overflow-x:auto;-webkit-overflow-scrolling:touch}
+/* ── CALENDAR AREA ── (index.html 스타일 동기화) */
+.cal-wrap{padding:16px 16px 80px;overflow-x:auto;-webkit-overflow-scrolling:touch}
 .cal-inner{min-width:700px}
 .embed-wrap{width:100%;height:calc(100vh - 120px)}
 .embed-wrap iframe{width:100%;height:100%;border:none;display:block}
 
-/* month grid */
-.month-grid{display:grid;grid-template-columns:repeat(7,1fr);
-  border-left:1px solid var(--g200);border-top:1px solid var(--g200)}
-.weekday-hdr{background:var(--g100);border-right:1px solid var(--g200);border-bottom:1px solid var(--g200);
-  text-align:center;padding:8px 4px;font-size:.73rem;font-weight:700;color:var(--g500);letter-spacing:.5px}
-.weekday-hdr.sun{color:#e53935}
-.weekday-hdr.sat{color:var(--primary)}
-.day-cell{border-right:1px solid var(--g200);border-bottom:1px solid var(--g200);
-  min-height:90px;padding:4px;background:#fff;transition:background .1s;cursor:default;vertical-align:top}
+/* calendar container (index.html .calendar-container) */
+.cal-container{background:var(--color-card);border-radius:12px;
+  box-shadow:var(--sh);overflow:hidden;border:1px solid var(--color-border)}
+
+/* weekday header (index.html .calendar-weekdays) */
+.month-weekdays{display:grid;grid-template-columns:repeat(7,1fr);
+  background:var(--color-bg);border-bottom:1px solid var(--color-border);
+  border-radius:12px 12px 0 0;overflow:hidden}
+.weekday-hdr{text-align:center;padding:8px 4px;font-size:var(--font-xs);
+  font-weight:500;color:var(--color-text-sec)}
+.weekday-hdr.sun{color:var(--color-error)}
+.weekday-hdr.sat{color:var(--color-accent)}
+
+/* month grid (index.html .calendar-grid) */
+.month-grid{display:flex;flex-direction:column}
+.month-week-row{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));
+  border-bottom:1px solid var(--color-border)}
+.month-week-row:last-child{border-bottom:none}
+
+.day-cell{min-height:96px;padding:4px;background:var(--color-card);
+  transition:background .1s;cursor:default;vertical-align:top;
+  border-right:1px solid var(--color-border);position:relative;overflow:hidden}
+.day-cell:last-child{border-right:none}
 @media(max-width:600px){.day-cell{min-height:60px}}
-.day-cell.other-month{background:var(--g50)}
-.day-cell.today .day-num{background:var(--primary);color:#fff;border-radius:50%;
-  width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center}
+.day-cell.other-month{background:var(--color-bg)}
+.day-cell.other-month .day-num{color:#ccc}
 .day-cell.has-events{cursor:pointer}
-.day-cell.has-events:hover{background:#f0f7ff}
-.day-num{font-size:.8rem;font-weight:600;color:var(--g700);line-height:1;margin-bottom:3px;
-  display:inline-block}
-.day-cell.sun .day-num{color:#e53935}
-.day-cell.sat .day-num{color:var(--primary)}
-.day-cell.today .day-num{color:#fff!important}
-.evt-dot{font-size:.7rem;padding:1px 5px;border-radius:3px;margin-top:1px;
+.day-cell:hover:not(.other-month){background:var(--color-accent-lt)}
+.day-num{font-size:var(--font-sm);font-weight:500;color:var(--color-text);
+  width:26px;height:26px;display:flex;align-items:center;justify-content:center;
+  margin-bottom:4px;border-radius:50%}
+.day-cell.sun .day-num{color:var(--color-error)}
+.day-cell.sat .day-num{color:var(--color-accent)}
+.day-cell.today .day-num{background:var(--color-accent);color:#fff!important}
+
+/* event chip (index.html .event-chip 스타일) */
+.evt-dot{font-size:var(--font-xs);padding:2px 4px;border-radius:3px;margin-top:2px;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;
-  background:var(--primary-lt);color:var(--primary-dk);font-weight:500;display:block}
-.evt-dot.more{background:var(--g100);color:var(--g500);font-size:.65rem}
+  border-left:3px solid var(--color-accent);
+  background:var(--color-accent-lt);color:var(--color-accent-dk);
+  font-weight:500;display:block;cursor:pointer;transition:filter .15s}
+.evt-dot:hover{filter:brightness(.93)}
+.evt-dot.more{border-left:none;background:var(--g100);color:var(--color-text-sec);font-size:var(--font-xs)}
 
 /* week grid */
 .week-grid{overflow-x:auto}
@@ -136,12 +203,12 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','N
 .agenda-desc{font-size:.75rem;color:var(--g500);margin-top:2px}
 .no-events{text-align:center;padding:40px 16px;color:var(--g400);font-size:.9rem}
 
-/* ── FAB ── */
+/* ── FAB ── (index.html 스타일) */
 .fab{position:fixed;bottom:24px;right:20px;width:52px;height:52px;border-radius:50%;
-  background:var(--primary);color:#fff;font-size:1.5rem;border:none;
-  box-shadow:0 4px 12px rgba(26,115,232,.45);cursor:pointer;z-index:200;
+  background:var(--color-accent);color:#fff;font-size:1.5rem;border:none;
+  box-shadow:0 4px 12px rgba(26,115,232,.4);cursor:pointer;z-index:200;
   display:flex;align-items:center;justify-content:center;transition:transform .2s,box-shadow .2s}
-.fab:hover{transform:scale(1.1);box-shadow:0 6px 20px rgba(26,115,232,.55)}
+.fab:hover{transform:scale(1.08);box-shadow:0 6px 20px rgba(26,115,232,.55)}
 .fab:active{transform:scale(.95)}
 
 /* ── MODAL ── */
@@ -464,8 +531,10 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','N
   body{background:#fff;font-size:9pt;margin:0}
   .cal-wrap{padding:0;overflow:visible}
   .cal-inner{min-width:0;width:100%}
-  .month-grid{border:1px solid #bbb;width:100%;table-layout:fixed}
-  .weekday-hdr{padding:5px 2px;font-size:7.5pt;background:#f0f4ff!important}
+  .cal-container{border:1px solid #bbb;border-radius:0!important;width:100%}
+  .month-weekdays{background:#f0f4ff!important;border-radius:0!important}
+  .weekday-hdr{padding:5px 2px;font-size:7.5pt}
+  .month-week-row{border-bottom:1px solid #bbb}
   .day-cell{min-height:80px;padding:3px;page-break-inside:avoid;vertical-align:top}
   .day-num{font-size:8pt;font-weight:700}
   .evt-dot{background:#dbeafe!important;color:#1e3a8a!important;font-size:7pt;
@@ -482,36 +551,50 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','N
 </head>
 <body>
 
-<!-- HEADER -->
+<!-- HEADER (index.html app-header 스타일) -->
 <header class="hdr">
   <div class="hdr-left">
+    <span style="font-size:20px">📅</span>
     <div>
-      <div class="hdr-logo">📅 업무 일정표</div>
-      <div class="hdr-sub">아세아항공직업전문학교</div>
+      <div class="hdr-logo">ASEA 업무 관리</div>
+      <div class="hdr-sub">아세아항공직업전문학교 업무 일정표</div>
     </div>
   </div>
   <div class="hdr-right">
-    <a class="btn btn-ghost-w btn-sm" href="forum.html" target="_blank">💡 기능 건의하기</a>
-    <button class="btn btn-ghost-w btn-sm" onclick="openAdminLogin()">🔒 관리자</button>
+    <a class="tb-btn" href="forum.html" target="_blank">
+      <svg class="tb-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      기능 건의
+    </a>
+    <button class="tb-btn" onclick="openAdminLogin()">
+      <svg class="tb-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      관리자
+    </button>
+    <div id="user-area"></div>
   </div>
 </header>
 
-<!-- TOOLBAR -->
+<!-- TOOLBAR (index.html calendar-toolbar 스타일) -->
 <div class="toolbar">
   <div class="cal-nav">
     <button class="nav-btn" onclick="nav(-1)" title="이전">&#8249;</button>
     <div class="cal-title" id="cal-title" onclick="goToday()"></div>
     <button class="nav-btn" onclick="nav(1)" title="다음">&#8250;</button>
-    <button class="btn btn-sm" onclick="goToday()" style="background:var(--g100);color:var(--g700);padding:5px 10px">오늘</button>
+    <button class="tb-btn" onclick="goToday()">오늘</button>
   </div>
   <div class="toolbar-right">
     <div class="view-toggle">
-      <button class="view-btn active" onclick="setView('month',this)">월</button>
-      <button class="view-btn" onclick="setView('week',this)">주</button>
+      <button class="view-btn active" onclick="setView('month',this)">월간</button>
+      <button class="view-btn" onclick="setView('week',this)">주간</button>
       <button class="view-btn" onclick="setView('list',this)">목록</button>
     </div>
-    <button class="btn btn-sm" onclick="printMonth()" title="월별 인쇄" style="background:var(--g100);color:var(--g700)">🖨️ 인쇄</button>
-    <div id="user-area"></div>
+    <button class="tb-btn" onclick="printMonth()" title="달력 인쇄 / PDF 저장">
+      <svg class="tb-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+      인쇄
+    </button>
+    <button class="btn btn-primary btn-sm" onclick="onAddClick()" id="hdr-add-btn">
+      <svg class="tb-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      일정 추가
+    </button>
   </div>
 </div>
 
@@ -527,10 +610,12 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','N
 <!-- CALENDAR AREA -->
 <span class="print-title" id="print-title"></span>
 <span class="print-sub" id="print-sub"></span>
-<div class="cal-wrap" id="cal-wrap"></div>
+<div class="cal-wrap" id="cal-wrap">
+  <div class="cal-inner" id="cal-inner"></div>
+</div>
 
-<!-- FAB: Add event -->
-<button class="fab" id="fab" onclick="onAddClick()" title="일정 추가">+</button>
+<!-- FAB: 일정 추가 -->
+<button class="fab" onclick="onAddClick()" id="fab" title="일정 추가">+</button>
 
 <!-- FAB: AI Chat -->
 <button class="ai-fab" onclick="toggleAiPanel()" title="AI 일정 도우미">🤖</button>
@@ -1149,8 +1234,8 @@ function updateUserArea() {
   }
   area.innerHTML = `<div class="user-pill">
     <div class="user-avatar">${_userInitial}</div>
-    <span>${_userEmail || '로그인됨'}</span>
-    <button onclick="logout()" class="btn btn-sm" style="background:rgba(26,115,232,.1);color:var(--primary);padding:3px 8px;font-size:.7rem">로그아웃</button>
+    <span class="user-email-txt">${_userEmail || '로그인됨'}</span>
+    <button onclick="logout()" class="btn-logout">로그아웃</button>
   </div>`;
 }
 
@@ -1224,7 +1309,7 @@ function renderCalendar() {
     title = `${_curDate.getFullYear()}년 ${KO_MONTHS[_curDate.getMonth()]}`;
   }
   document.getElementById('cal-title').textContent = title;
-  const wrap = document.getElementById('cal-wrap');
+  const wrap = document.getElementById('cal-inner') || document.getElementById('cal-wrap');
   if (_view === 'month') renderMonth(wrap);
   else if (_view === 'week') renderWeek(wrap);
   else renderList(wrap);
@@ -1255,46 +1340,56 @@ function renderMonth(wrap) {
   const firstDay = new Date(y, m, 1).getDay();
   const daysInMonth = new Date(y, m + 1, 0).getDate();
   const today = new Date();
-  let html = '<div class="cal-inner"><div class="month-grid" id="month-grid">';
-  WEEKDAYS.forEach((wd, i) => {
-    html += `<div class="weekday-hdr ${i===0?'sun':i===6?'sat':''}">${wd}</div>`;
-  });
   const prevDays = new Date(y, m, 0).getDate();
-  let dayCount = 0;
-  for (let i = firstDay - 1; i >= 0; i--) {
-    html += `<div class="day-cell other-month"><span class="day-num">${prevDays - i}</span></div>`;
-    dayCount++;
-  }
+
+  // weekday header
+  let weekdaysHtml = '<div class="month-weekdays">';
+  WEEKDAYS.forEach((wd, i) => {
+    weekdaysHtml += `<div class="weekday-hdr ${i===0?'sun':i===6?'sat':''}">${wd}</div>`;
+  });
+  weekdaysHtml += '</div>';
+
+  // build cells array
+  const cells = [];
+  for (let i = firstDay - 1; i >= 0; i--)
+    cells.push({ d: prevDays - i, cls: 'day-cell other-month', y: null });
   for (let d = 1; d <= daysInMonth; d++) {
     const isToday = today.getFullYear()===y && today.getMonth()===m && today.getDate()===d;
     const dow = (firstDay + d - 1) % 7;
     const cls = ['day-cell cur-month', dow===0?'sun':dow===6?'sat':'', isToday?'today':''].filter(Boolean).join(' ');
-    const dayEvts = evtsForDay(y, m, d);
-    const numEl = isToday
-      ? `<span class="day-num" style="background:var(--primary);color:#fff;border-radius:50%;width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center">${d}</span>`
-      : `<span class="day-num">${d}</span>`;
-    const dotsHtml = dayEvts.map(ev => {
-      const qBtns = (_token && _tokenHasWrite)
-        ? `<span class="evt-quick"><button onclick="event.stopPropagation();editEvtById('${escId(ev.id)}')" title="수정">✏️</button><button onclick="event.stopPropagation();deleteEvtById('${escId(ev.id)}')" title="삭제">🗑</button></span>`
-        : '';
-      return `<span class="evt-dot-wrap"><span class="evt-dot" onclick="showDetail(event,'${escId(ev.id)}')" title="${esc(ev.summary||'')}">${esc(ev.summary||'(제목 없음)')}</span>${qBtns}</span>`;
-    }).join('');
-    html += `<div class="${cls}${dayEvts.length?' has-events':''}" data-y="${y}" data-m="${m}" data-d="${d}">` + numEl + dotsHtml + '</div>';
-    dayCount++;
+    cells.push({ d, cls, y, m, isToday, evts: evtsForDay(y, m, d) });
   }
-  const remaining = 7 - (dayCount % 7 === 0 ? 7 : dayCount % 7);
+  const remaining = 7 - (cells.length % 7 === 0 ? 7 : cells.length % 7);
   for (let d = 1; d <= remaining; d++)
-    html += `<div class="day-cell other-month"><span class="day-num">${d}</span></div>`;
-  wrap.innerHTML = html + '</div></div>';
+    cells.push({ d, cls: 'day-cell other-month', y: null });
+
+  // build week rows
+  let gridHtml = '<div class="month-grid" id="month-grid">';
+  for (let r = 0; r < cells.length / 7; r++) {
+    gridHtml += '<div class="month-week-row">';
+    for (let c = 0; c < 7; c++) {
+      const cell = cells[r * 7 + c];
+      if (!cell) continue;
+      if (cell.y === null) {
+        gridHtml += `<div class="${cell.cls}"><span class="day-num">${cell.d}</span></div>`;
+        continue;
+      }
+      const numEl = `<span class="day-num">${cell.d}</span>`;
+      const dotsHtml = (cell.evts || []).map(ev => {
+        const qBtns = (_token && _tokenHasWrite)
+          ? `<span class="evt-quick"><button onclick="event.stopPropagation();editEvtById('${escId(ev.id)}')" title="수정">✏️</button><button onclick="event.stopPropagation();deleteEvtById('${escId(ev.id)}')" title="삭제">🗑</button></span>`
+          : '';
+        return `<span class="evt-dot-wrap"><span class="evt-dot" onclick="showDetail(event,'${escId(ev.id)}')" title="${esc(ev.summary||'')}">${esc(ev.summary||'(제목 없음)')}</span>${qBtns}</span>`;
+      }).join('');
+      gridHtml += `<div class="${cell.cls}${(cell.evts||[]).length?' has-events':''}" data-y="${y}" data-m="${m}" data-d="${cell.d}">${numEl}${dotsHtml}</div>`;
+    }
+    gridHtml += '</div>';
+  }
+  gridHtml += '</div>';
+
+  wrap.innerHTML = `<div class="cal-container">${weekdaysHtml}${gridHtml}</div>`;
   initMonthDrag();
   initCalSwipe(wrap);
-  // 현재 달이면 오늘 날짜 열을 화면 중앙으로 스크롤
-  if (y === today.getFullYear() && m === today.getMonth()) {
-    requestAnimationFrame(() => {
-      const colW = (wrap.scrollWidth || 700) / 7;
-      wrap.scrollLeft = Math.max(0, (today.getDay() + 0.5) * colW - wrap.clientWidth / 2);
-    });
-  }
 }
 
 /* ── HORIZONTAL SWIPE SCROLL FOR CALENDAR ── */
@@ -1449,7 +1544,7 @@ function renderWeek(wrap) {
     const dt = new Date(weekStart.getTime()); dt.setDate(weekStart.getDate() + d); return dt;
   });
 
-  let html = '<div class="cal-inner"><div class="week-grid"><table class="week-table"><thead><tr><th style="width:52px">시간</th>';
+  let html = '<div class="week-grid"><table class="week-table"><thead><tr><th style="width:52px">시간</th>';
   days.forEach(dt => {
     const isToday = dt.toDateString() === today.toDateString();
     const dow = dt.getDay();
@@ -1487,7 +1582,7 @@ function renderWeek(wrap) {
     });
     html += '</tr>';
   });
-  wrap.innerHTML = html + '</tbody></table></div></div>';
+  wrap.innerHTML = html + '</tbody></table></div>';
   initCalSwipe(wrap);
 }
 
