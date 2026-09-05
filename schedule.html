@@ -1604,11 +1604,13 @@ function initCalSwipe(wrap) {
       return;
     }
 
+    // 비례형 엣지 가드: 달력 너비의 30% 이상 끝단에서 떨어진 위치에서 시작해야 플래그 설정
+    // → 양방향 동일 기준으로 좌·우 대칭 보장
+    const edgeGuard = Math.max(50, maxScroll * 0.3);
+
     if (Math.abs(dx) < MIN_EDGE) {
-      // 매우 짧은 터치 — 스크롤 중 엣지에 "진입"한 경우만 기록
-      // (시작 위치가 이미 끝단이면 무시 — 초기 상태 보호)
-      if (endScrollLeft >= maxScroll - 5 && startScrollLeft < maxScroll - 20) _setCalEdge('right');
-      else if (endScrollLeft <= 5 && startScrollLeft > 20) _setCalEdge('left');
+      if (endScrollLeft >= maxScroll - 5 && startScrollLeft < maxScroll - edgeGuard) _setCalEdge('right');
+      else if (endScrollLeft <= 5 && startScrollLeft > edgeGuard) _setCalEdge('left');
       return;
     }
 
@@ -1617,11 +1619,9 @@ function initCalSwipe(wrap) {
       if (endScrollLeft >= maxScroll - 5) {
         if (_calEdge === 'right' && Math.abs(dx) >= MIN_NAV) {
           _setCalEdge(null); nav(1);
-        } else if (startScrollLeft < maxScroll - 20) {
-          // 끝단 아닌 곳에서 시작해 끝단에 도달 → 엣지 플래그 설정
+        } else if (startScrollLeft < maxScroll - edgeGuard) {
           _setCalEdge('right');
         }
-        // startScrollLeft이 이미 끝단이면 플래그 미설정
       } else {
         _setCalEdge(null);
       }
@@ -1630,11 +1630,9 @@ function initCalSwipe(wrap) {
       if (endScrollLeft <= 5) {
         if (_calEdge === 'left' && Math.abs(dx) >= MIN_NAV) {
           _setCalEdge(null); nav(-1);
-        } else if (startScrollLeft > 20) {
-          // 끝단 아닌 곳에서 시작해 끝단에 도달 → 엣지 플래그 설정
+        } else if (startScrollLeft > edgeGuard) {
           _setCalEdge('left');
         }
-        // startScrollLeft이 이미 왼쪽 끝이면 플래그 미설정 (초기 상태 보호)
       } else {
         _setCalEdge(null);
       }
