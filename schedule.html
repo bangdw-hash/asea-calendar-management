@@ -800,7 +800,17 @@ function _handleToken(resp) {
     return;
   }
   _token = resp.access_token;
-  _tokenHasWrite = !!_lastScope && !_lastScope.includes('readonly');
+  // 실제 부여된 scope로 쓰기 권한 판단 (요청 scope가 아님)
+  const grantedScope = resp.scope || _lastScope || '';
+  const CAL_WRITE = 'https://www.googleapis.com/auth/calendar';
+  _tokenHasWrite = grantedScope.split(/\s+/).includes(CAL_WRITE);
+  // 명시적 로그인 시 쓰기 scope를 요청했으나 읽기 전용만 부여된 경우 → 재동의 유도
+  if (_pendingCb && !_tokenHasWrite && _lastScope && !_lastScope.includes('readonly')) {
+    _token = null;
+    _pendingCb(false);
+    _pendingCb = null;
+    return;
+  }
   const expiry = Date.now() + ((resp.expires_in || 3600) - 60) * 1000;
   try {
     [localStorage, sessionStorage].forEach(s => {
@@ -847,12 +857,13 @@ function doLogin(scope) {
     return new Promise(resolve => {
       _pendingCb = resolve;
       try { _tokenClient.requestAccessToken({ prompt: '' }); }
-      catch(e) { _tokenClient.requestAccessToken({ prompt: 'select_account' }); }
+      catch(e) { _tokenClient.requestAccessToken({ prompt: 'consent' }); }
     }).then(async success => {
       if (!success) {
+        // 묵시적 인증 실패(미동의) 또는 scope 부족 → 동의 화면 강제 표시
         return new Promise(resolve2 => {
           _pendingCb = resolve2;
-          _tokenClient.requestAccessToken({ prompt: 'select_account' });
+          _tokenClient.requestAccessToken({ prompt: 'consent' });
         }).then(async ok2 => { if (ok2) await afterLogin(); return ok2; });
       }
       await afterLogin();
@@ -898,9 +909,11 @@ function updateUserArea() {
 function logout() {
   if (_token && typeof google !== 'undefined' && google.accounts && google.accounts.oauth2)
     google.accounts.oauth2.revoke(_token, () => {});
-  _token = null; _userEmail = null; _userInitial = '';
+  _token = null; _tokenHasWrite = false; _userEmail = null; _userInitial = '';
   clearTimeout(_refreshTimer);
-  try { [localStorage, sessionStorage].forEach(s => { s.removeItem('asea_gtoken'); s.removeItem('asea_gtoken_exp'); }); } catch(e) {}
+  try { [localStorage, sessionStorage].forEach(s => {
+    s.removeItem('asea_gtoken'); s.removeItem('asea_gtoken_exp'); s.removeItem('asea_gtoken_write');
+  }); } catch(e) {}
   updateUserArea();
   fetchPublicEvents().then(() => renderCalendar());
 }
@@ -928,8 +941,20 @@ async function fetchEvents() {
     })}`);
     _events = (data && data.items) ? data.items : [];
   } catch(e) {
-    showToast('일정을 불러오지 못했습니다: ' + e.message, 'error');
-    await fetchPublicEvents(); // 인증 API 실패 시 공개 피드로 폴백
+    const msg = e.message || '';
+    // 401/403: 토큰 만료 또는 권한 없음 → 상태 초기화 후 공개 피드로
+    if (msg.includes('401') || msg.includes('403') || msg.toLowerCase().includes('unauthorized') || msg.toLowerCase().includes('forbidden')) {
+      _token = null; _tokenHasWrite = false;
+      try { [localStorage, sessionStorage].forEach(s => {
+        s.removeItem('asea_gtoken'); s.removeItem('asea_gtoken_exp'); s.removeItem('asea_gtoken_write');
+      }); } catch(_) {}
+      updateUserArea();
+      document.getElementById('auth-banner').hidden = false;
+      showToast('로그인 세션이 만료되었습니다. 다시 로그인해 주세요.', 'error');
+    } else {
+      showToast('일정을 불러오지 못했습니다: ' + msg, 'error');
+    }
+    await fetchPublicEvents();
   }
 }
 
@@ -1001,7 +1026,7 @@ function renderMonth(wrap) {
       ? `<span class="day-num" style="background:var(--primary);color:#fff;border-radius:50%;width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center">${d}</span>`
       : `<span class="day-num">${d}</span>`;
     const dotsHtml = dayEvts.map(ev => {
-      const qBtns = _token
+      const qBtns = (_token && _tokenHasWrite)
         ? `<span class="evt-quick"><button onclick="event.stopPropagation();editEvtById('${escId(ev.id)}')" title="수정">✏️</button><button onclick="event.stopPropagation();deleteEvtById('${escId(ev.id)}')" title="삭제">🗑</button></span>`
         : '';
       return `<span class="evt-dot-wrap"><span class="evt-dot" onclick="showDetail(event,'${escId(ev.id)}')" title="${esc(ev.summary||'')}">${esc(ev.summary||'(제목 없음)')}</span>${qBtns}</span>`;
@@ -1444,7 +1469,17 @@ async function saveEvent() {
       delete endDateEl.dataset.endDate;
       await fetchEvents(); renderCalendar();
     } catch(ex) {
-      document.getElementById('evt-error').textContent = '저장 실패: ' + ex.message;
+      const exMsg = ex.message || '';
+      if (exMsg.toLowerCase().includes('insufficient') || exMsg.toLowerCase().includes('scope')) {
+        _tokenHasWrite = false;
+        try { [localStorage, sessionStorage].forEach(s => s.setItem('asea_gtoken_write', '0')); } catch(_) {}
+        document.getElementById('evt-error').textContent = '쓰기 권한 재인증 중...';
+        btn.disabled = false;
+        const ok = await doLogin(SCOPES);
+        if (ok) { saveEvent(); } else { document.getElementById('evt-error').textContent = '인증 실패. 다시 시도해 주세요.'; }
+        return;
+      }
+      document.getElementById('evt-error').textContent = '저장 실패: ' + exMsg;
     } finally { btn.disabled = false; document.getElementById('evt-save-label').textContent = '추가'; }
     return;
   }
@@ -1507,6 +1542,10 @@ async function saveEvent() {
 
 async function deleteCurrentEvent() {
   if (!_editingEvt) return;
+  if (!_token || !_tokenHasWrite) {
+    const ok = await doLogin(SCOPES);
+    if (!ok) return;
+  }
   if (!confirm(`"${_editingEvt.summary || '(제목 없음)'}" 일정을 삭제하시겠습니까?`)) return;
   try {
     await apiFetch('DELETE', `/calendars/${encodeURIComponent(CAL_ID)}/events/${encodeURIComponent(_editingEvt.id)}`);
@@ -1514,7 +1553,15 @@ async function deleteCurrentEvent() {
     closeModal('event-overlay'); closeModal('detail-overlay');
     await fetchEvents(); renderCalendar();
   } catch(e) {
-    document.getElementById('evt-error').textContent = '삭제 실패: ' + e.message;
+    const msg = e.message || '';
+    if (msg.toLowerCase().includes('insufficient') || msg.toLowerCase().includes('scope')) {
+      _tokenHasWrite = false;
+      try { [localStorage, sessionStorage].forEach(s => s.setItem('asea_gtoken_write', '0')); } catch(_) {}
+      const ok = await doLogin(SCOPES);
+      if (ok) { deleteCurrentEvent(); } else { document.getElementById('evt-error').textContent = '인증 실패. 다시 시도해 주세요.'; }
+      return;
+    }
+    document.getElementById('evt-error').textContent = '삭제 실패: ' + msg;
   }
 }
 
@@ -1535,7 +1582,7 @@ function showDetail(e, evtId) {
     (ev.location ? `<div class="evt-detail-desc" style="margin-bottom:8px">📍 ${esc(ev.location)}</div>` : '') +
     (ev.description ? `<div class="evt-detail-desc">${esc(ev.description)}</div>` : '') +
     (!ev.description && !ev.location ? '<div style="color:var(--g400);font-size:.82rem">내용 없음</div>' : '');
-  document.getElementById('detail-edit-btn').hidden = !_token;
+  document.getElementById('detail-edit-btn').hidden = !(_token && _tokenHasWrite);
   openOverlay('detail-overlay');
 }
 function editFromDetail() { closeModal('detail-overlay'); openEventModal(_detailEvt); }
@@ -1543,7 +1590,7 @@ function editFromDetail() { closeModal('detail-overlay'); openEventModal(_detail
 /* ══════════════ WEEK CELL CLICK ══════════════ */
 async function onWeekCellClick(e, dateStr, hour) {
   if (e.target.closest('.week-evt')) return;
-  if (!_token) { const ok = await doLogin(SCOPES); if (!ok) return; }
+  if (!_token || !_tokenHasWrite) { const ok = await doLogin(SCOPES); if (!ok) return; }
   _editingEvt = null;
   document.getElementById('event-modal-title').textContent = '일정 추가';
   document.getElementById('evt-save-label').textContent = '추가';
@@ -1769,9 +1816,9 @@ async function aiSend() {
       confirmBtn.onclick = async () => {
         confirmBtn.disabled = true;
         confirmBtn.textContent = '추가 중...';
-        if (!_token) {
+        if (!_token || !_tokenHasWrite) {
           const ok = await doLogin(SCOPES);
-          if (!ok) { confirmBtn.textContent = '로그인 필요'; return; }
+          if (!ok) { confirmBtn.disabled = false; confirmBtn.textContent = '✅ 일정 추가하기'; return; }
         }
         _editingEvt = null;
         document.getElementById('event-modal-title').textContent = '일정 추가';
