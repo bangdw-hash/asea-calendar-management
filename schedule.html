@@ -42,6 +42,19 @@
   --toolbar-h:52px;
   --font-xs:11px;--font-sm:12px;--font-base:14px;--font-md:15px;--font-lg:16px;
 }
+/* ── COLOR THEMES ── (같은 specificity, :root보다 나중 → 우선 적용) */
+[data-color-theme="aurora"]{
+  --color-accent:#8B5CF6;--color-accent-dk:#7C3AED;--color-accent-lt:#EDE9FE;
+  --color-bg:#F5F3FF;--color-border:#C4B5FD;
+}
+[data-color-theme="sky"]{
+  --color-accent:#0EA5E9;--color-accent-dk:#0284C7;--color-accent-lt:#E0F2FE;
+  --color-bg:#F0F9FF;--color-border:#BAE6FD;
+}
+[data-color-theme="mint"]{
+  --color-accent:#10B981;--color-accent-dk:#059669;--color-accent-lt:#D1FAE5;
+  --color-bg:#ECFDF5;--color-border:#A7F3D0;
+}
 html,body{height:100%;
   font-family:'Noto Sans KR',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
   font-size:var(--font-base);background:var(--color-bg);color:var(--color-text);
@@ -144,6 +157,19 @@ html,body{height:100%;
 .hdr-dropdown a:hover,.hdr-dropdown button:hover{background:var(--color-accent-lt);color:var(--color-accent)}
 .hdr-dropdown a svg,.hdr-dropdown button svg{flex-shrink:0}
 .hdr-right-wrap{position:relative;display:flex;gap:8px;align-items:center}
+
+/* ── THEME PICKER ── */
+.theme-picker-wrap{display:flex;align-items:center;gap:5px;padding:0 4px}
+.theme-swatch-btn{width:20px;height:20px;border-radius:50%;border:none;padding:0;
+  cursor:pointer;transition:transform .15s,box-shadow .15s;flex-shrink:0;outline:none}
+.theme-swatch-btn:hover{transform:scale(1.18)}
+.theme-swatch-btn.active{box-shadow:0 0 0 2px var(--color-card),0 0 0 4px var(--color-text)}
+.hdr-dropdown-theme{display:flex;align-items:center;justify-content:space-between;
+  padding:10px 16px;margin-top:4px;border-top:1px solid var(--color-border)}
+.hdr-dropdown-theme-label{font-size:.82rem;color:var(--color-text-sec);font-weight:500}
+.hdr-dropdown-theme-swatches{display:flex;gap:10px}
+.hdr-dropdown-theme .theme-swatch-btn{width:24px;height:24px}
+.hdr-dropdown-theme .theme-swatch-btn.active{box-shadow:0 0 0 2px var(--color-card),0 0 0 4px var(--color-text)}
 
 /* ── CALENDAR AREA ── (index.html 스타일 동기화) */
 .cal-wrap{padding:16px 16px 80px;overflow-x:auto;-webkit-overflow-scrolling:touch}
@@ -634,6 +660,11 @@ html,body{height:100%;
         <svg class="tb-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
         관리자
       </button>
+      <div class="theme-picker-wrap" title="테마 선택">
+        <button class="theme-swatch-btn" data-t="aurora" onclick="setColorTheme('aurora')" style="background:linear-gradient(135deg,#8B5CF6,#EC4899)" title="오로라"></button>
+        <button class="theme-swatch-btn" data-t="sky" onclick="setColorTheme('sky')" style="background:linear-gradient(135deg,#0EA5E9,#38BDF8)" title="하늘색"></button>
+        <button class="theme-swatch-btn" data-t="mint" onclick="setColorTheme('mint')" style="background:linear-gradient(135deg,#059669,#34D399)" title="민트"></button>
+      </div>
     </div>
     <!-- Mobile: overflow ⋮ menu -->
     <button class="hdr-more-btn" onclick="toggleHdrMenu(event)" aria-label="더보기" id="hdr-more-btn">
@@ -648,6 +679,14 @@ html,body{height:100%;
         <svg class="tb-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
         관리자
       </button>
+      <div class="hdr-dropdown-theme">
+        <span class="hdr-dropdown-theme-label">테마</span>
+        <div class="hdr-dropdown-theme-swatches">
+          <button class="theme-swatch-btn" data-t="aurora" onclick="setColorTheme('aurora')" style="background:linear-gradient(135deg,#8B5CF6,#EC4899)" title="오로라"></button>
+          <button class="theme-swatch-btn" data-t="sky" onclick="setColorTheme('sky')" style="background:linear-gradient(135deg,#0EA5E9,#38BDF8)" title="하늘색"></button>
+          <button class="theme-swatch-btn" data-t="mint" onclick="setColorTheme('mint')" style="background:linear-gradient(135deg,#059669,#34D399)" title="민트"></button>
+        </div>
+      </div>
     </div>
     <div id="user-area"></div>
   </div>
@@ -3349,6 +3388,19 @@ async function loadPrivacyConsents() {
   }
 }
 
+/* ══════════════ COLOR THEME ══════════════ */
+function setColorTheme(t) {
+  document.documentElement.setAttribute('data-color-theme', t);
+  try { localStorage.setItem('asea_color_theme', t); } catch(_) {}
+  document.querySelectorAll('.theme-swatch-btn').forEach(el =>
+    el.classList.toggle('active', el.dataset.t === t));
+}
+function initColorTheme() {
+  let t = 'sky';
+  try { t = localStorage.getItem('asea_color_theme') || 'sky'; } catch(_) {}
+  setColorTheme(t);
+}
+
 /* ══════════════ BOOT ══════════════ */
 async function boot() {
   await _ensureClient();
@@ -3366,6 +3418,7 @@ async function boot() {
   }
   renderCalendar();
 }
+initColorTheme();
 renderCalendar();
 updateUserArea(); // 즉시 로그인 버튼 표시 (boot 완료 후 다시 갱신)
 boot();
