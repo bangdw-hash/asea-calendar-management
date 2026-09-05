@@ -550,6 +550,7 @@ html,body{height:100%;
 .dft-chip.grp-chip.active{background:#374151;border-color:#374151;color:#fff}
 .dft-sub-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap;
   padding-left:4px;border-left:3px solid var(--color-accent-lt)}
+.dft-chip.no-events{opacity:0.4}
 
 /* ── PRINT ── */
 @page{size:A4 landscape;margin:10mm 10mm 12mm}
@@ -1382,12 +1383,9 @@ function updateDeptFilterBar() {
   if (group && DEPT_GROUPS[group]) {
     const subChips = DEPT_GROUPS[group].map(d => {
       const hasEvents = _events.some(ev => parseDept(ev.summary) === d);
-      if (!hasEvents) return '';
-      return `<button class="dft-chip${dept===d?' active':''}" onclick="setDeptFilter('${d}')">${d}</button>`;
+      return `<button class="dft-chip${dept===d?' active':''}${hasEvents?'':' no-events'}" onclick="setDeptFilter('${d}')">${d}</button>`;
     }).join('');
-    if (subChips) {
-      row2 = `<div class="dft-sub-row">${subChips}</div>`;
-    }
+    row2 = `<div class="dft-sub-row">${subChips}</div>`;
   }
 
   bar.innerHTML = row1 + row2;
