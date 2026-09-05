@@ -293,6 +293,32 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','N
 .ai-evt-occ-more{background:var(--g100);color:var(--g500);}
 .ai-evt-progress{font-size:.72rem;color:var(--g500);margin-top:2px;font-style:italic}
 
+/* ── DEPT PICKER ── */
+.dept-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1200;
+  display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;
+  transition:opacity .2s}
+.dept-overlay.open{opacity:1;pointer-events:all}
+.dept-card{background:#fff;border-radius:14px;width:min(360px,92vw);
+  box-shadow:0 20px 40px rgba(0,0,0,.18);overflow:hidden;
+  transform:scale(.94);transition:transform .2s}
+.dept-overlay.open .dept-card{transform:scale(1)}
+.dept-card-hdr{padding:18px 20px 14px;border-bottom:1px solid var(--g200)}
+.dept-card-hdr h3{font-size:.95rem;font-weight:700;color:var(--g900)}
+.dept-card-hdr p{font-size:.78rem;color:var(--g500);margin-top:4px;line-height:1.45}
+.dept-chip-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:16px 20px}
+.dept-chip{padding:9px 4px;border-radius:8px;border:2px solid var(--g200);
+  background:var(--g50);cursor:pointer;text-align:center;
+  transition:border-color .12s,background .12s,transform .1s}
+.dept-chip:hover{border-color:var(--primary);background:var(--primary-lt)}
+.dept-chip.selected{border-color:var(--primary);background:var(--primary);color:#fff}
+.dept-chip:active{transform:scale(.94)}
+.dept-chip-prefix{font-size:.85rem;font-weight:700;display:block;margin-bottom:2px}
+.dept-chip-name{font-size:.6rem;font-weight:500;opacity:.7;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+.dept-chip.selected .dept-chip-name{opacity:.9}
+.dept-card-footer{padding:12px 20px 18px;display:flex;gap:8px;justify-content:flex-end;
+  border-top:1px solid var(--g200)}
+
 /* ── TOAST ── */
 #toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%) translateY(16px);
   background:var(--g900);color:#fff;padding:9px 20px;border-radius:999px;
@@ -794,6 +820,21 @@ html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','N
   </div>
 </div>
 
+<!-- DEPT PICKER OVERLAY -->
+<div class="dept-overlay" id="dept-overlay" onclick="if(event.target===this)closeDeptPicker(false)">
+  <div class="dept-card">
+    <div class="dept-card-hdr">
+      <h3>📋 부서 선택</h3>
+      <p>일정 제목에 부서 머릿말([부서])이 없습니다.<br>해당 부서를 선택해 주세요.</p>
+    </div>
+    <div class="dept-chip-grid" id="dept-chip-grid"></div>
+    <div class="dept-card-footer">
+      <button class="btn" style="background:var(--g100);color:var(--g700)" onclick="closeDeptPicker(false)">취소</button>
+      <button class="btn btn-primary" onclick="closeDeptPicker(true)">확인</button>
+    </div>
+  </div>
+</div>
+
 <!-- TOAST -->
 <div id="toast"></div>
 
@@ -807,6 +848,21 @@ const CAL_ID    = '89cb23c42a75d99697bdd50e11f461e94d330edec941f4bcf4f52dfddaa75
 const CLIENT_ID = '89094526186-ngj72p8cbqrvai06e2uhdiq0n5brrc2b.apps.googleusercontent.com';
 const SCOPES    = 'https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/userinfo.email';
 const SCOPE_RO  = 'https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/userinfo.email';
+const DEPARTMENTS = [
+  {name:'기획처',           prefix:'기획'},
+  {name:'행정관리처',       prefix:'행정'},
+  {name:'입학처',           prefix:'입학'},
+  {name:'항공정비계열',     prefix:'정비'},
+  {name:'스마트안전진단계열', prefix:'안전'},
+  {name:'항공보안계열',     prefix:'보안'},
+  {name:'항공관광계열',     prefix:'관광'},
+  {name:'국방경찰계열',     prefix:'국방'},
+  {name:'군사교육단',       prefix:'군사'},
+  {name:'기종교육원',       prefix:'기종'},
+  {name:'무인항공교육원',   prefix:'무인'},
+  {name:'비행교육원',       prefix:'비행'},
+  {name:'평생교육원',       prefix:'평생'},
+];
 const API_BASE  = 'https://www.googleapis.com/calendar/v3';
 const SB_URL    = 'https://zbpeyklwpotjyveipzxd.supabase.co';
 const SB_ANON   = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpicGV5a2x3cG90anl2ZWlwenhkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE1MTYxMDcsImV4cCI6MjA5NzA5MjEwN30.6JgoQ6rPRnmrbBTG68A-Y9HDQk40mnwubhXVnkZvHrQ';
@@ -1550,6 +1606,13 @@ async function saveEvent() {
   if (!dateStr) { document.getElementById('err-evt-date').textContent='날짜를 선택해 주세요.'; valid=false; }
   else            document.getElementById('err-evt-date').textContent='';
   if (!valid) return;
+  if (!_hasDeptPrefix(t2)) {
+    showDeptPicker(prefix => {
+      document.getElementById('evt-title').value = prefix + t2;
+      saveEvent();
+    });
+    return;
+  }
   let body;
   if (allDay) {
     const ed = new Date(dateStr); ed.setDate(ed.getDate() + 1);
@@ -1999,6 +2062,16 @@ async function saveAiEvent() {
     }
   }
 
+  if (!_hasDeptPrefix(_aiParsed.title)) {
+    btn.disabled = false; btn.textContent = '💾 저장하기';
+    showDeptPicker(prefix => {
+      _aiParsed.title = prefix + _aiParsed.title;
+      document.getElementById('ai-evt-title-disp').textContent = _aiParsed.title;
+      saveAiEvent();
+    });
+    return;
+  }
+
   const p = _aiParsed;
   const type = p.type || 'single';
   const cal  = encodeURIComponent(CAL_ID);
@@ -2092,6 +2165,47 @@ function _onAiSaveSuccess(title, message) {
   if (_aiLastBotEl) { _aiLastBotEl.textContent = `✅ "${title}" 일정이 저장되었습니다.`; }
   _aiParsed = null;
   fetchEvents().then(() => renderCalendar());
+}
+
+/* ── DEPARTMENT PREFIX HELPERS ── */
+function _hasDeptPrefix(title) {
+  return /^\[.{1,4}\]/.test(title || '');
+}
+
+let _deptCallback = null;
+let _deptSelected = null;
+
+function showDeptPicker(onConfirm) {
+  _deptCallback = onConfirm;
+  _deptSelected = null;
+  const grid = document.getElementById('dept-chip-grid');
+  grid.innerHTML = '';
+  DEPARTMENTS.forEach(d => {
+    const chip = document.createElement('button');
+    chip.className = 'dept-chip';
+    chip.innerHTML = `<span class="dept-chip-prefix">[${d.prefix}]</span><span class="dept-chip-name">${d.name}</span>`;
+    chip.onclick = () => {
+      grid.querySelectorAll('.dept-chip').forEach(c => c.classList.remove('selected'));
+      chip.classList.add('selected');
+      _deptSelected = d.prefix;
+    };
+    grid.appendChild(chip);
+  });
+  document.getElementById('dept-overlay').classList.add('open');
+}
+
+function closeDeptPicker(confirm) {
+  document.getElementById('dept-overlay').classList.remove('open');
+  if (confirm && _deptSelected && _deptCallback) {
+    const prefix = '[' + _deptSelected + ']';
+    const cb = _deptCallback;
+    _deptCallback = null;
+    _deptSelected = null;
+    cb(prefix);
+  } else {
+    _deptCallback = null;
+    _deptSelected = null;
+  }
 }
 
 function _aiAppend(role, text) {
