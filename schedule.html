@@ -6,6 +6,8 @@
 <title>ASEA 업무 일정표</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://www.googleapis.com">
+<link rel="dns-prefetch" href="https://accounts.google.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -65,8 +67,8 @@ html,body{height:100%;
   border-bottom:1px solid var(--color-border);
   display:flex;align-items:center;justify-content:space-between;
   padding:0 16px;position:sticky;top:0;z-index:100;flex-shrink:0}
-.hdr-left{display:flex;align-items:center;gap:8px}
-.hdr-logo{font-size:var(--font-lg);font-weight:700;color:var(--color-text);letter-spacing:-.3px}
+.hdr-left{display:flex;align-items:center;gap:8px;flex:1;min-width:0;overflow:hidden}
+.hdr-logo{font-size:var(--font-lg);font-weight:700;color:var(--color-text);letter-spacing:-.3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .hdr-sub{font-size:var(--font-xs);color:var(--color-text-sec);margin-top:2px}
 .hdr-right{display:flex;gap:8px;align-items:center;flex-shrink:0}
 
@@ -533,11 +535,14 @@ html,body{height:100%;
   /* header compact */
   .hdr{height:48px;padding:0 12px}
   .hdr-sub{display:none}
-  .hdr-logo{font-size:.93rem}
-  .hdr-left gap{gap:6px}
+  .hdr-logo{font-size:.9rem}
+  .hdr-left{gap:6px}
   /* hide inline menu items, show overflow button */
   .hdr-menu-items{display:none}
   .hdr-more-btn{display:flex}
+  /* mobile: hide email text, keep avatar+logout compact */
+  .user-email-txt{display:none}
+  .btn-logout{padding:3px 7px;font-size:.72rem}
   /* auth banner — single compact row */
   .auth-banner{padding:7px 10px;font-size:.76rem;gap:6px}
   .auth-banner-msg{font-size:.74rem;line-height:1.3}
@@ -590,16 +595,6 @@ html,body{height:100%;
 .feat-admin-ta:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(26,115,232,.1)}
 .feat-badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:.68rem;font-weight:700;background:#e8f5e9;color:#2e7d32}
 
-/* ── SWIPE SCROLL HINT ── */
-@media(max-width:699px){
-  .cal-wrap{position:relative}
-  .cal-wrap::after{
-    content:'← 좌우로 스와이프하여 전체 보기 →';
-    display:block;text-align:center;font-size:.68rem;color:var(--g400);
-    padding:4px 0 8px;letter-spacing:.3px
-  }
-  .cal-wrap.scrolled::after{display:none}
-}
 
 /* ── DEPT FILTER BAR ── */
 .dept-filter-bar{background:var(--color-card);border-bottom:1px solid var(--color-border);
@@ -609,7 +604,7 @@ html,body{height:100%;
 .dft-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 .dft-label{font-size:var(--font-xs);color:var(--color-text-sec);font-weight:600;
   white-space:nowrap;flex-shrink:0}
-.dft-chip{font-size:var(--font-xs);padding:3px 9px;border-radius:999px;
+.dft-chip{font-size:var(--font-xs);padding:3px 10px;border-radius:var(--r);
   border:1.5px solid var(--color-border);background:var(--color-card);
   color:var(--color-text-sec);cursor:pointer;font-weight:500;transition:all .15s;
   white-space:nowrap;font-family:inherit}
@@ -1360,10 +1355,9 @@ function doLogin(scope) {
 }
 
 async function afterLogin() {
-  await fetchUserInfo();
+  await Promise.all([fetchUserInfo(), fetchEvents()]);
   updateUserArea();
   document.getElementById('auth-banner').hidden = true;
-  await fetchEvents();
   renderCalendar();
 }
 
@@ -1615,99 +1609,6 @@ function renderMonth(wrap) {
 
   wrap.innerHTML = `<div class="cal-container">${weekdaysHtml}${gridHtml}</div>`;
   initMonthDrag();
-  initCalSwipe(wrap);
-}
-
-/* ── HORIZONTAL SWIPE SCROLL FOR CALENDAR ── */
-let _calSwipeCtrl = null;
-let _calEdge = null;      // 'left' | 'right' | null
-let _calEdgeTimer = null; // 엣지 상태 자동 만료 타이머
-
-function _setCalEdge(edge) {
-  clearTimeout(_calEdgeTimer);
-  _calEdge = edge;
-  if (edge) {
-    // 1.5초 내에 재스와이프 없으면 엣지 상태 초기화
-    _calEdgeTimer = setTimeout(() => { _calEdge = null; }, 1500);
-  }
-}
-
-function initCalSwipe(wrap) {
-  if (_calSwipeCtrl) _calSwipeCtrl.abort();
-  _calSwipeCtrl = new AbortController();
-  _setCalEdge(null); // 월 변경 시 초기화
-  const sig = _calSwipeCtrl.signal;
-  let startX = 0, endX = 0, startScrollLeft = 0, isDown = false;
-
-  // 스크롤 내 이동 감지 임계값 (낮게 유지)
-  const MIN_EDGE = 50;
-  // 엣지 → 월 이동 임계값 (훨씬 크게 — 의도적인 큰 제스처)
-  const MIN_NAV = 180;
-
-  wrap.addEventListener('touchstart', e => {
-    startX = endX = e.touches[0].clientX;
-    startScrollLeft = wrap.scrollLeft;
-    isDown = true;
-  }, { passive: true, signal: sig });
-
-  wrap.addEventListener('touchmove', e => {
-    if (!isDown) return;
-    endX = e.touches[0].clientX;
-    wrap.scrollLeft = startScrollLeft + (startX - endX);
-  }, { passive: true, signal: sig });
-
-  wrap.addEventListener('touchend', () => {
-    if (!isDown) return;
-    isDown = false;
-    const dx = startX - endX;
-    const maxScroll = wrap.scrollWidth - wrap.clientWidth;
-    const endScrollLeft = wrap.scrollLeft;
-
-    // 스크롤 없는 뷰(데스크톱)는 단순 스와이프
-    if (maxScroll <= 20) {
-      if (Math.abs(dx) >= MIN_NAV) {
-        if (dx > 0) nav(1);
-        else nav(-1);
-      }
-      return;
-    }
-
-    // 비례형 엣지 가드: 달력 너비의 30% 이상 끝단에서 떨어진 위치에서 시작해야 플래그 설정
-    // → 양방향 동일 기준으로 좌·우 대칭 보장
-    const edgeGuard = Math.max(50, maxScroll * 0.3);
-
-    if (Math.abs(dx) < MIN_EDGE) {
-      if (endScrollLeft >= maxScroll - 5 && startScrollLeft < maxScroll - edgeGuard) _setCalEdge('right');
-      else if (endScrollLeft <= 5 && startScrollLeft > edgeGuard) _setCalEdge('left');
-      return;
-    }
-
-    if (dx > 0) {
-      // 왼쪽 스와이프 → 다음 달 방향
-      if (endScrollLeft >= maxScroll - 5) {
-        if (_calEdge === 'right' && Math.abs(dx) >= MIN_NAV) {
-          _setCalEdge(null); nav(1);
-        } else if (startScrollLeft < maxScroll - edgeGuard) {
-          _setCalEdge('right');
-        }
-      } else {
-        _setCalEdge(null);
-      }
-    } else {
-      // 오른쪽 스와이프 → 이전 달 방향
-      if (endScrollLeft <= 5) {
-        if (_calEdge === 'left' && Math.abs(dx) >= MIN_NAV) {
-          _setCalEdge(null); nav(-1);
-        } else if (startScrollLeft > edgeGuard) {
-          _setCalEdge('left');
-        }
-      } else {
-        _setCalEdge(null);
-      }
-    }
-  }, { signal: sig });
-
-  wrap.addEventListener('scroll', () => { wrap.classList.add('scrolled'); }, { once: true, passive: true, signal: sig });
 }
 
 /* ── MONTH GRID DRAG-TO-CREATE & CLICK ── */
@@ -1871,7 +1772,6 @@ function renderWeek(wrap) {
     html += '</tr>';
   });
   wrap.innerHTML = html + '</tbody></table></div>';
-  initCalSwipe(wrap);
 }
 
 function renderList(wrap) {
@@ -3517,10 +3417,9 @@ async function boot() {
   await _ensureClient();
   _initTokenClient(SCOPES);
   if (_tryRestoreToken()) {
-    await fetchUserInfo();
+    await Promise.all([fetchUserInfo(), fetchEvents()]);
     updateUserArea();
     document.getElementById('auth-banner').hidden = true;
-    await fetchEvents();
   } else {
     updateUserArea();
     await fetchPublicEvents();
