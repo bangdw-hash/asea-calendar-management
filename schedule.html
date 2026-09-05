@@ -34,7 +34,7 @@
   --g50:var(--color-bg);--g100:#F1F3F4;--g200:var(--color-border);
   --g300:#D2D5D9;--g400:#9AA0A6;--g500:var(--color-text-sec);
   --g700:#3C4043;--g900:var(--color-text);
-  --r:8px;
+  --r:10px;--r-xs:6px;--r-card:14px;--r-panel:18px;
   --sh:   0 1px 3px rgba(60,64,67,.08),0 1px 2px rgba(60,64,67,.06);
   --sh-md:0 2px 8px rgba(60,64,67,.12),0 2px 4px rgba(60,64,67,.08);
   --sh-lg:0 8px 24px rgba(60,64,67,.14),0 4px 8px rgba(60,64,67,.10);
@@ -99,14 +99,14 @@ html,body{height:100%;
 
 /* Google 로그인 버튼 */
 .btn-login-google{display:inline-flex;align-items:center;gap:8px;padding:6px 14px 6px 10px;
-  background:#fff;color:#3c4043;border:1.5px solid #dadce0;border-radius:8px;
+  background:#fff;color:#3c4043;border:1.5px solid #dadce0;border-radius:var(--r);
   font-size:var(--font-sm);font-weight:600;font-family:inherit;cursor:pointer;
   box-shadow:var(--sh);transition:box-shadow .15s,border-color .15s;white-space:nowrap}
 .btn-login-google:hover{box-shadow:0 2px 8px rgba(66,133,244,.25);border-color:#4285F4}
 .btn-login-google:active{box-shadow:none;background:#f8f9fa}
 
 /* icon-btn (헤더 아이콘) */
-.icon-btn{background:none;border:none;cursor:pointer;padding:6px;border-radius:6px;
+.icon-btn{background:none;border:none;cursor:pointer;padding:6px;border-radius:var(--r);
   display:inline-flex;align-items:center;color:var(--color-text-sec);transition:background .15s}
 .icon-btn:hover{background:var(--g100)}
 
@@ -119,7 +119,7 @@ html,body{height:100%;
   padding:4px 8px;border-radius:var(--r);transition:background .15s;color:var(--color-text)}
 .cal-title:hover{background:var(--g100)}
 .nav-btn{background:transparent;border:1px solid var(--color-border);width:30px;height:30px;
-  border-radius:50%;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;
+  border-radius:var(--r);cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;
   color:var(--color-text-sec);transition:background .15s}
 .nav-btn:hover{background:var(--g100)}
 .toolbar-right{margin-left:auto;display:flex;gap:6px;align-items:center}
@@ -143,12 +143,12 @@ html,body{height:100%;
 /* ── HEADER OVERFLOW MENU ── */
 .hdr-menu-items{display:flex;gap:8px;align-items:center}
 .hdr-more-btn{display:none;background:none;border:none;cursor:pointer;
-  padding:6px 8px;border-radius:8px;color:var(--color-text-sec);
+  padding:6px 8px;border-radius:var(--r);color:var(--color-text-sec);
   align-items:center;justify-content:center;transition:background .15s}
 .hdr-more-btn:hover{background:var(--g100)}
 .hdr-dropdown{position:absolute;top:calc(100% + 6px);right:0;
   background:var(--color-card);border:1px solid var(--color-border);
-  border-radius:12px;box-shadow:var(--sh-lg);z-index:300;
+  border-radius:var(--r-card);box-shadow:var(--sh-lg);z-index:300;
   min-width:160px;padding:6px 0;display:flex;flex-direction:column}
 .hdr-dropdown a,.hdr-dropdown button{display:flex;align-items:center;gap:10px;
   padding:11px 16px;font-size:.87rem;color:var(--color-text);
@@ -171,6 +171,18 @@ html,body{height:100%;
 .hdr-dropdown-theme .theme-swatch-btn{width:24px;height:24px}
 .hdr-dropdown-theme .theme-swatch-btn.active{box-shadow:0 0 0 2px var(--color-card),0 0 0 4px var(--color-text)}
 
+/* ── EVENT CONTEXT MENU ── */
+#evt-ctx-menu{position:fixed;background:var(--color-card);border:1px solid var(--color-border);
+  border-radius:var(--r-card);box-shadow:var(--sh-lg);z-index:900;min-width:168px;padding:6px 0;
+  display:flex;flex-direction:column;animation:ctx-in .13s ease}
+@keyframes ctx-in{from{opacity:0;transform:scale(.94) translateY(-4px)}to{opacity:1;transform:scale(1) translateY(0)}}
+#evt-ctx-menu button{display:flex;align-items:center;gap:10px;padding:11px 16px;
+  font-size:.87rem;color:var(--color-text);background:none;border:none;cursor:pointer;
+  text-align:left;font-family:inherit;transition:background .15s;white-space:nowrap;width:100%}
+#evt-ctx-menu button:hover{background:var(--color-accent-lt);color:var(--color-accent)}
+#evt-ctx-menu .ctx-divider{height:1px;background:var(--color-border);margin:4px 0}
+#evt-ctx-menu .ctx-share-btn:hover{background:#FFF3E0;color:#E65100}
+
 /* ── CALENDAR AREA ── (index.html 스타일 동기화) */
 .cal-wrap{padding:16px 16px 80px;overflow-x:auto;-webkit-overflow-scrolling:touch}
 .cal-inner{min-width:700px}
@@ -178,13 +190,13 @@ html,body{height:100%;
 .embed-wrap iframe{width:100%;height:100%;border:none;display:block}
 
 /* calendar container (index.html .calendar-container) */
-.cal-container{background:var(--color-card);border-radius:12px;
+.cal-container{background:var(--color-card);border-radius:var(--r-card);
   box-shadow:var(--sh);overflow:hidden;border:1px solid var(--color-border)}
 
 /* weekday header (index.html .calendar-weekdays) */
 .month-weekdays{display:grid;grid-template-columns:repeat(7,1fr);
   background:var(--color-bg);border-bottom:1px solid var(--color-border);
-  border-radius:12px 12px 0 0;overflow:hidden}
+  border-radius:var(--r-card) var(--r-card) 0 0;overflow:hidden}
 .weekday-hdr{text-align:center;padding:8px 4px;font-size:var(--font-xs);
   font-weight:500;color:var(--color-text-sec)}
 .weekday-hdr.sun{color:var(--color-error)}
@@ -260,7 +272,7 @@ html,body{height:100%;
   display:flex;align-items:center;justify-content:center;padding:16px;opacity:0;
   transition:opacity .2s;pointer-events:none}
 .overlay.show{opacity:1;pointer-events:auto}
-.modal{background:#fff;border-radius:12px;box-shadow:var(--sh-lg);
+.modal{background:#fff;border-radius:var(--r-panel);box-shadow:var(--sh-lg);
   width:100%;max-width:440px;max-height:90vh;overflow-y:auto;
   transform:translateY(20px);transition:transform .2s}
 .overlay.show .modal{transform:translateY(0)}
@@ -268,7 +280,7 @@ html,body{height:100%;
   display:flex;align-items:center;justify-content:space-between}
 .modal-hdr h2{font-size:1rem;font-weight:700}
 .modal-close{background:none;border:none;cursor:pointer;font-size:1.2rem;
-  color:var(--g400);padding:4px;border-radius:4px;transition:color .15s}
+  color:var(--g400);padding:4px;border-radius:var(--r-xs);transition:color .15s}
 .modal-close:hover{color:var(--g900)}
 .modal-body{padding:18px 20px}
 .form-group{margin-bottom:14px}
@@ -336,7 +348,7 @@ html,body{height:100%;
 .ai-fab:active{transform:scale(.95)}
 
 .ai-panel{position:fixed;bottom:88px;right:20px;width:360px;max-width:calc(100vw - 32px);
-  max-height:calc(100vh - 120px);background:#fff;border-radius:16px;
+  max-height:calc(100vh - 120px);background:#fff;border-radius:var(--r-panel);
   box-shadow:0 8px 32px rgba(0,0,0,.18);z-index:300;display:flex;flex-direction:column;
   overflow:hidden;transform:scale(.9) translateY(20px);opacity:0;
   pointer-events:none;transform-origin:bottom right;transition:all .2s}
@@ -347,7 +359,7 @@ html,body{height:100%;
 .ai-panel-title{font-size:.9rem;font-weight:700}
 .ai-panel-sub{font-size:.68rem;opacity:.8}
 .ai-close{background:none;border:none;color:#fff;cursor:pointer;font-size:1.1rem;
-  opacity:.7;transition:opacity .15s;padding:2px 6px;border-radius:4px}
+  opacity:.7;transition:opacity .15s;padding:2px 6px;border-radius:var(--r-xs)}
 .ai-close:hover{opacity:1;background:rgba(255,255,255,.15)}
 .ai-msgs{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:10px;min-height:160px}
 .ai-msg{max-width:88%;font-size:.82rem;line-height:1.55;padding:8px 11px;border-radius:10px;word-break:break-word}
@@ -371,8 +383,8 @@ html,body{height:100%;
 .ai-img-preview-wrap{padding:8px 12px 0;display:none}
 .ai-img-preview-wrap.has-img{display:block}
 .ai-img-preview-inner{display:inline-flex;align-items:flex-start;gap:6px;position:relative;
-  background:var(--g100);border-radius:8px;padding:6px 8px}
-.ai-img-thumb{max-width:180px;max-height:120px;border-radius:6px;display:block;object-fit:contain}
+  background:var(--g100);border-radius:var(--r);padding:6px 8px}
+.ai-img-thumb{max-width:180px;max-height:120px;border-radius:var(--r-xs);display:block;object-fit:contain}
 .ai-img-remove{position:absolute;top:-6px;right:-6px;width:18px;height:18px;border-radius:50%;
   background:#ef4444;color:#fff;border:none;cursor:pointer;font-size:.65rem;
   display:flex;align-items:center;justify-content:center;line-height:1}
@@ -390,7 +402,7 @@ html,body{height:100%;
   display:flex;align-items:center;justify-content:center;padding:16px;
   opacity:0;pointer-events:none;transition:opacity .2s}
 .ai-evt-overlay.open{opacity:1;pointer-events:auto}
-.ai-evt-card{background:#fff;border-radius:20px;width:100%;max-width:400px;
+.ai-evt-card{background:#fff;border-radius:var(--r-panel);width:100%;max-width:400px;
   box-shadow:0 24px 64px rgba(0,0,0,.28);overflow:hidden;
   transform:translateY(28px) scale(.96);opacity:0;
   transition:transform .25s cubic-bezier(.34,1.56,.64,1),opacity .2s}
@@ -428,7 +440,7 @@ html,body{height:100%;
   display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;
   transition:opacity .2s}
 .dept-overlay.open{opacity:1;pointer-events:all}
-.dept-card{background:#fff;border-radius:14px;width:min(400px,94vw);
+.dept-card{background:#fff;border-radius:var(--r-card);width:min(400px,94vw);
   box-shadow:0 20px 40px rgba(0,0,0,.18);overflow:hidden;
   transform:scale(.94);transition:transform .2s}
 .dept-overlay.open .dept-card{transform:scale(1)}
@@ -436,7 +448,7 @@ html,body{height:100%;
 .dept-card-hdr h3{font-size:.95rem;font-weight:700;color:var(--g900)}
 .dept-card-hdr p{font-size:.78rem;color:var(--g500);margin-top:4px;line-height:1.45}
 .dept-chip-grid{display:flex;flex-wrap:wrap;gap:8px;padding:16px 20px;justify-content:center}
-.dept-chip{flex:0 0 calc(25% - 6px);padding:9px 4px;border-radius:8px;border:2px solid var(--g200);
+.dept-chip{flex:0 0 calc(25% - 6px);padding:9px 4px;border-radius:var(--r);border:2px solid var(--g200);
   background:var(--g50);cursor:pointer;text-align:center;
   transition:border-color .12s,background .12s,transform .1s}
 .dept-chip:hover{border-color:var(--primary);background:var(--primary-lt)}
@@ -451,7 +463,7 @@ html,body{height:100%;
   cursor:pointer;padding:0;display:inline-flex;align-items:center;gap:4px}
 .dept-add-form{display:none;margin-top:10px;grid-template-columns:1fr 70px auto;gap:6px;align-items:center}
 .dept-add-form.open{display:grid}
-.dept-add-inp{padding:6px 9px;border:1.5px solid var(--g200);border-radius:6px;
+.dept-add-inp{padding:6px 9px;border:1.5px solid var(--g200);border-radius:var(--r);
   font-size:.78rem;width:100%;outline:none;font-family:inherit}
 .dept-add-inp:focus{border-color:var(--primary)}
 .dept-card-footer{padding:12px 20px 18px;display:flex;gap:8px;justify-content:flex-end;
@@ -462,7 +474,7 @@ html,body{height:100%;
 .dept-step2-label{font-size:.82rem;font-weight:700;color:var(--primary);margin-bottom:2px}
 .workcat-chip-grid{display:flex;flex-wrap:wrap;gap:6px;padding:12px 16px;
   justify-content:center;max-height:260px;overflow-y:auto}
-.workcat-chip{flex:0 0 calc(20% - 5px);padding:7px 2px;border-radius:8px;border:2px solid var(--g200);
+.workcat-chip{flex:0 0 calc(20% - 5px);padding:7px 2px;border-radius:var(--r);border:2px solid var(--g200);
   background:var(--g50);cursor:pointer;text-align:center;font-size:.8rem;font-weight:600;
   transition:border-color .12s,background .12s,transform .1s}
 .workcat-chip:hover{border-color:var(--primary);background:var(--primary-lt)}
@@ -496,7 +508,7 @@ html,body{height:100%;
 .privacy-box{background:var(--g50);border:1px solid var(--g200);border-radius:var(--r);padding:14px;font-size:.78rem;color:var(--g700);margin:14px 0}
 .privacy-box h4{font-size:.82rem;font-weight:700;margin-bottom:8px;color:var(--g900)}
 .privacy-scroll{max-height:150px;overflow-y:auto;padding:8px 10px;background:#fff;border:1px solid var(--g200);
-  border-radius:6px;line-height:1.75;font-size:.75rem;color:var(--g700);margin-bottom:10px}
+  border-radius:var(--r-xs);line-height:1.75;font-size:.75rem;color:var(--g700);margin-bottom:10px}
 .privacy-scroll table{width:100%;border-collapse:collapse;font-size:.74rem;margin-top:6px}
 .privacy-scroll th,.privacy-scroll td{border:1px solid var(--g300);padding:4px 6px;text-align:left;vertical-align:top}
 .privacy-scroll th{background:var(--g100);font-weight:600}
@@ -537,10 +549,10 @@ html,body{height:100%;
   }
   .cal-nav{justify-content:center;gap:6px}
   .cal-title{font-size:1.1rem;min-width:auto;font-weight:700}
-  .nav-btn{width:38px;height:38px;font-size:1.15rem;border-radius:50%}
-  .today-btn{font-size:.8rem;padding:5px 12px;border-radius:20px}
+  .nav-btn{width:38px;height:38px;font-size:1.15rem;border-radius:var(--r)}
+  .today-btn{font-size:.8rem;padding:5px 12px}
   .toolbar-right{width:100%;justify-content:center;gap:0}
-  .view-toggle{width:100%;border-radius:10px;border-width:1.5px}
+  .view-toggle{width:100%;border-radius:var(--r);border-width:1.5px}
   .view-btn{flex:1;padding:9px 4px;font-size:.82rem;font-weight:600}
   /* hide add/print in toolbar — use FAB */
   #hdr-add-btn,button[onclick="printMonth()"]{display:none}
@@ -552,7 +564,7 @@ html,body{height:100%;
   .overlay{align-items:flex-end;padding:0}
   .modal{
     max-width:100%;width:100%;
-    border-radius:16px 16px 0 0;
+    border-radius:var(--r-panel) var(--r-panel) 0 0;
     max-height:92dvh;max-height:92vh; /* dvh 미지원 브라우저 fallback */
     overflow-y:auto;
     transform:translateY(100%);
@@ -1078,6 +1090,23 @@ html,body{height:100%;
   </div>
 </div>
 
+<!-- Event Context Menu -->
+<div id="evt-ctx-menu" hidden>
+  <button id="ctx-edit-btn" onclick="ctxEdit()">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+    수정
+  </button>
+  <button id="ctx-delete-btn" onclick="ctxDelete()">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+    삭제
+  </button>
+  <div class="ctx-divider"></div>
+  <button class="ctx-share-btn" onclick="ctxShare()">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+    내 캘린더에 추가
+  </button>
+</div>
+
 <!-- AI Event Confirm Overlay -->
 <div class="ai-evt-overlay" id="ai-evt-overlay" onclick="if(event.target===this)closeAiEvtOverlay()">
   <div class="ai-evt-card" id="ai-evt-card">
@@ -1576,7 +1605,7 @@ function renderMonth(wrap) {
         const qBtns = (_token && _tokenHasWrite)
           ? `<span class="evt-quick"><button onclick="event.stopPropagation();editEvtById('${escId(ev.id)}')" title="수정">✏️</button><button onclick="event.stopPropagation();deleteEvtById('${escId(ev.id)}')" title="삭제">🗑</button></span>`
           : '';
-        return `<span class="evt-dot-wrap"><span class="evt-dot" onclick="showDetail(event,'${escId(ev.id)}')" title="${esc(ev.summary||'')}">${esc(ev.summary||'(제목 없음)')}</span>${qBtns}</span>`;
+        return `<span class="evt-dot-wrap"><span class="evt-dot" data-evtid="${ev.id}" onclick="showDetail(event,'${escId(ev.id)}')" title="${esc(ev.summary||'')}">${esc(ev.summary||'(제목 없음)')}</span>${qBtns}</span>`;
       }).join('');
       gridHtml += `<div class="${cell.cls}${(cell.evts||[]).length?' has-events':''}" data-y="${y}" data-m="${m}" data-d="${cell.d}">${numEl}${dotsHtml}</div>`;
     }
@@ -1820,7 +1849,7 @@ function renderWeek(wrap) {
         && start.getMonth()===dt.getMonth() && start.getDate()===dt.getDate();
     });
     html += `<td style="border:1px solid var(--g200);padding:2px;background:var(--g50);vertical-align:top">${
-      allDayEvts.map(ev => `<div class="week-evt" style="cursor:pointer" onclick="showDetail(event,'${escId(ev.id)}')">${esc(ev.summary||'')}</div>`).join('')
+      allDayEvts.map(ev => `<div class="week-evt" data-evtid="${ev.id}" style="cursor:pointer" onclick="showDetail(event,'${escId(ev.id)}')">${esc(ev.summary||'')}</div>`).join('')
     }</td>`;
   });
   html += '</tr></thead><tbody>';
@@ -1836,7 +1865,7 @@ function renderWeek(wrap) {
       });
       const dateStr2 = `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`;
       html += `<td class="week-day-col" onclick="onWeekCellClick(event,'${dateStr2}',${h})">${
-        evts.map(ev => `<div class="week-evt" onclick="event.stopPropagation();showDetail(event,'${escId(ev.id)}')">${esc(ev.summary||'')}</div>`).join('')
+        evts.map(ev => `<div class="week-evt" data-evtid="${ev.id}" onclick="event.stopPropagation();showDetail(event,'${escId(ev.id)}')">${esc(ev.summary||'')}</div>`).join('')
       }</td>`;
     });
     html += '</tr>';
@@ -1858,7 +1887,7 @@ function renderList(wrap) {
     const dateStr = start ? start.toLocaleDateString('ko-KR',{month:'long',day:'numeric',weekday:'short'}) : '';
     if (dateStr !== lastDate) { html += `<div class="agenda-date-hdr">${dateStr}</div>`; lastDate = dateStr; }
     const timeStr = allDay ? '종일' : start ? start.toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'}) : '';
-    html += `<div class="agenda-evt" onclick="showDetail(event,'${escId(ev.id)}')">` +
+    html += `<div class="agenda-evt" data-evtid="${ev.id}" onclick="showDetail(event,'${escId(ev.id)}')">` +
       `<div class="agenda-time">${timeStr}</div>` +
       `<div><div class="agenda-title">${esc(ev.summary||'(제목 없음)')}</div>` +
       (ev.location ? `<div class="agenda-desc">📍 ${esc(ev.location)}</div>` : '') +
@@ -3388,6 +3417,88 @@ async function loadPrivacyConsents() {
   }
 }
 
+/* ══════════════ EVENT CONTEXT MENU ══════════════ */
+let _ctxEvtId = null;
+let _ctxLpTimer = null;
+
+function openEvtCtxMenu(evtId, cx, cy) {
+  _ctxEvtId = evtId;
+  const menu = document.getElementById('evt-ctx-menu');
+  const canEdit = !!(_token && _tokenHasWrite);
+  document.getElementById('ctx-edit-btn').hidden = !canEdit;
+  document.getElementById('ctx-delete-btn').hidden = !canEdit;
+  menu.hidden = false;
+  requestAnimationFrame(() => {
+    const mw = menu.offsetWidth, mh = menu.offsetHeight;
+    const vw = window.innerWidth, vh = window.innerHeight;
+    menu.style.left = Math.min(cx, vw - mw - 8) + 'px';
+    menu.style.top  = Math.min(cy, vh - mh - 8) + 'px';
+  });
+  setTimeout(() => document.addEventListener('click', closeEvtCtxMenu, {once:true}), 20);
+}
+function closeEvtCtxMenu() {
+  const m = document.getElementById('evt-ctx-menu');
+  if (m) m.hidden = true;
+  _ctxEvtId = null;
+}
+function ctxEdit() {
+  const id = _ctxEvtId; closeEvtCtxMenu();
+  if (id) editEvtById(id);
+}
+async function ctxDelete() {
+  const id = _ctxEvtId; closeEvtCtxMenu();
+  if (id) await deleteEvtById(id);
+}
+function ctxShare() {
+  const ev = _events.find(x => x.id === _ctxEvtId);
+  closeEvtCtxMenu();
+  if (!ev) return;
+  const { start, end, allDay } = evtDate(ev);
+  const fmtDay = d => `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
+  const fmtDt  = d => d.toISOString().replace(/[-:]/g,'').replace(/\.\d{3}/,'');
+  let dates = '';
+  if (allDay && start) {
+    const endD = end || new Date(start.getTime() + 86400000);
+    dates = `${fmtDay(start)}/${fmtDay(endD)}`;
+  } else if (start) {
+    const endD = end || new Date(start.getTime() + 3600000);
+    dates = `${fmtDt(start)}/${fmtDt(endD)}`;
+  }
+  const p = new URLSearchParams({action:'TEMPLATE', text: ev.summary || '일정'});
+  if (dates) p.set('dates', dates);
+  if (ev.description) p.set('details', ev.description);
+  if (ev.location) p.set('location', ev.location);
+  const url = `https://calendar.google.com/calendar/render?${p.toString()}`;
+  window.open(url, '_blank', 'noopener');
+  try { navigator.clipboard.writeText(url).then(() => showToast('공유 링크가 클립보드에 복사되었습니다')); }
+  catch(_) { showToast('구글 캘린더에서 일정을 확인하세요'); }
+}
+function initCtxMenuListeners() {
+  const wrap = document.getElementById('cal-wrap');
+  if (!wrap) return;
+  // PC: right-click
+  wrap.addEventListener('contextmenu', e => {
+    const el = e.target.closest('[data-evtid]');
+    if (!el) return;
+    e.preventDefault();
+    openEvtCtxMenu(el.dataset.evtid, e.clientX, e.clientY);
+  });
+  // Mobile: long press (600ms)
+  wrap.addEventListener('touchstart', e => {
+    const el = e.target.closest('[data-evtid]');
+    if (!el) return;
+    const t = e.touches[0];
+    _ctxLpTimer = setTimeout(() => {
+      _ctxLpTimer = null;
+      openEvtCtxMenu(el.dataset.evtid, t.clientX, t.clientY);
+    }, 600);
+  }, { passive:true });
+  wrap.addEventListener('touchmove',  () => { if (_ctxLpTimer) { clearTimeout(_ctxLpTimer); _ctxLpTimer = null; } }, { passive:true });
+  wrap.addEventListener('touchend',   () => { if (_ctxLpTimer) { clearTimeout(_ctxLpTimer); _ctxLpTimer = null; } }, { passive:true });
+  // Escape to close
+  document.addEventListener('keydown', e => { if (e.key==='Escape') closeEvtCtxMenu(); });
+}
+
 /* ══════════════ COLOR THEME ══════════════ */
 function setColorTheme(t) {
   document.documentElement.setAttribute('data-color-theme', t);
@@ -3419,6 +3530,7 @@ async function boot() {
   renderCalendar();
 }
 initColorTheme();
+initCtxMenuListeners();
 renderCalendar();
 updateUserArea(); // 즉시 로그인 버튼 표시 (boot 완료 후 다시 갱신)
 boot();
