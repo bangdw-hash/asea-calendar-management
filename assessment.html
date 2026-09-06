@@ -96,6 +96,7 @@
     .asm-onboard .asm-gate-title { text-align: center; }
     .asm-gate-desc { font-size: 13.5px; color: var(--muted); line-height: 1.7; margin: 0 0 22px; }
     .asm-gate-foot { font-size: 12px; color: var(--muted); margin: 20px 0 0; }
+    .asm-google-btn-wrap { display: flex; justify-content: center; margin: 6px 0 4px; min-height: 40px; }
     .asm-inapp-warn { text-align: left; background: #fff6e5; border: 1px solid #f0d59a; border-radius: 10px; padding: 14px 16px; margin-bottom: 18px; }
     .asm-inapp-warn b { color: #8a5a00; font-size: 13.5px; }
     .asm-inapp-warn p { font-size: 12.5px; color: #6b5320; line-height: 1.6; margin: 6px 0 12px; }
@@ -116,6 +117,24 @@
     .asm-radio { display: flex; align-items: center; gap: 7px; font-size: 14px; padding: 9px 12px; border: 1px solid var(--line); border-radius: 9px; cursor: pointer; }
     .asm-radio:hover { border-color: var(--blue); background: #f7faff; }
     .asm-radio-hint { color: var(--muted); font-size: 12px; }
+
+    /* ── 개인정보 수집·이용 동의 화면 ── */
+    .asm-consent-card { max-width: 660px; text-align: left; max-height: 82vh; overflow-y: auto; }
+    .asm-consent-card .asm-gate-title { text-align: center; }
+    .asm-consent-sec { margin-bottom: 18px; }
+    .asm-consent-sec h3 { font-size: 13.5px; font-weight: 800; color: var(--navy); margin: 0 0 8px; }
+    .asm-consent-sec p, .asm-consent-sec li { font-size: 12.5px; color: var(--ink); line-height: 1.65; }
+    .asm-consent-sec ul { padding-left: 18px; margin: 0; }
+    .asm-consent-table { width: 100%; border-collapse: collapse; font-size: 12.5px; margin-bottom: 4px; }
+    .asm-consent-table th, .asm-consent-table td { border: 1px solid var(--line-2); padding: 7px 10px; text-align: left; vertical-align: top; }
+    .asm-consent-table th { background: #eff6ff; color: var(--blue-d); font-weight: 700; white-space: nowrap; }
+    .asm-consent-warn { background: #fdeaea; color: #a52424; border: 1px solid #f3c6c6; border-radius: 9px; padding: 12px 14px; font-size: 12.5px; line-height: 1.6; margin-top: 4px; }
+    .asm-consent-check { display: flex; align-items: flex-start; gap: 9px; font-size: 13px; padding: 12px 13px; border: 1px solid var(--line); border-radius: 9px; margin-top: 10px; cursor: pointer; }
+    .asm-consent-check:hover { border-color: var(--blue); background: #f7faff; }
+    .asm-consent-check input { margin-top: 2px; accent-color: var(--blue); flex-shrink: 0; }
+    .asm-consent-check b { color: var(--red); font-weight: 800; margin-right: 2px; }
+    .asm-consent-check.optional b { color: var(--muted); }
+    .asm-consent-link { display: block; text-align: center; font-size: 12px; margin-top: 14px; }
 
     /* ── 툴바 ── */
     .asm-toolbar {
@@ -383,11 +402,11 @@
 </div>
 
 <!-- 의존 스크립트 -->
-<script src="cloudforms.js?v=20260617cf1" defer></script>
+<script src="cloudforms.js?v=20260903cf3" defer></script>
 <script src="config.js?v=20260623ai7" defer></script>
 <!-- 자가진단 전용 경량 로그인(email·profile만) — 사전등록 없이 로그인 가능하도록 -->
-<script src="assessment-auth.js?v=20260818aa3" defer></script>
-<script src="assessment.js?v=20260825a18" defer></script>
+<script src="assessment-auth.js?v=20260903aa4" defer></script>
+<script src="assessment.js?v=20260903a20" defer></script>
 
 <script>
 (function () {
@@ -421,28 +440,8 @@
     if (window.AssessmentModule) { AssessmentModule.setEmail(''); AssessmentModule.renderTab(); }
   };
 
-  function fetchProfile(token) {
-    return fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-      headers: { Authorization: 'Bearer ' + token }
-    }).then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; });
-  }
-
   function storeUserEmail(email) {
     try { if (email) localStorage.setItem('asea_user_email', email); } catch (e) {}
-  }
-
-  function onLoggedIn(token) {
-    return fetchProfile(token).then(function (profile) {
-      if (profile) {
-        showUserArea(profile);
-        storeUserEmail(profile.email || '');
-      }
-      var email = (profile && profile.email) || '';
-      if (window.AssessmentModule) {
-        AssessmentModule.setEmail(email);
-        AssessmentModule.boot();
-      }
-    });
   }
 
   function init() {
@@ -457,35 +456,28 @@
     }
 
     function doInit() {
-      // 저장된 세션 복원 시도
-      if (window.Auth && Auth.tryRestoreSession) Auth.tryRestoreSession();
-      var token = window.Auth && Auth.getToken && Auth.getToken();
-
+      setLoading('로그인 확인 중…');
+      // 로그인 화면(및 Google 버튼)을 먼저 그려 두되, 로딩 오버레이가 화면을 가려 깜빡임은 없다.
       AssessmentModule.renderTab(document.getElementById('assessment-root'));
 
-      if (token) {
+      // 로그인/로그아웃/세션복원 변화는 전부 이 한 곳에서 통지된다(최초 호출 포함).
+      Auth.onAuthChange(function (loggedIn, profile) {
+        if (!loggedIn) {
+          var area = document.getElementById('asm-user-area');
+          if (area) area.style.display = 'none';
+          AssessmentModule.setEmail('');
+          AssessmentModule.renderTab();
+          setLoading(false);
+          return;
+        }
+        showUserArea(profile);
+        storeUserEmail(profile.email || '');
+        AssessmentModule.setEmail(profile.email || '');
         setLoading('기록 불러오는 중…');
-        onLoggedIn(token).then(function () { setLoading(false); });
-      } else {
+        AssessmentModule.boot();
         setLoading(false);
-        AssessmentModule.renderTab();  // 로그인 화면
-      }
-
-      // 로그인/로그아웃 변화 감지
-      if (Auth.onAuthChange) {
-        Auth.onAuthChange(function (loggedIn) {
-          if (!loggedIn) {
-            var area = document.getElementById('asm-user-area');
-            if (area) area.style.display = 'none';
-            AssessmentModule.setEmail('');
-            AssessmentModule.renderTab();
-            return;
-          }
-          var t = Auth.getToken();
-          setLoading('기록 불러오는 중…');
-          onLoggedIn(t).then(function () { setLoading(false); });
-        });
-      }
+      });
+      Auth.tryRestoreSession();
 
       // 주기적 자동 중간저장(90초) + 이탈 경고
       setInterval(function () { try { AssessmentModule.autosave(); } catch (e) {} }, 90000);

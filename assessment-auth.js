@@ -1,212 +1,206 @@
 'use strict';
 
 /**
- * assessment-auth.js — 자가진단 페이지 전용 경량 Google 로그인
+ * assessment-auth.js — 자가진단 페이지 전용 Google 로그인 (Supabase Auth 세션 기반)
  *
- * 목적
- *  - 기존 auth.js 는 Calendar·Drive·Gmail·Sheets·Forms·Tasks 등 '민감(sensitive) 권한'을
- *    한꺼번에 요청한다. 그 상태로 OAuth 앱을 프로덕션 게시하려면 Google 검증이 필요하고,
- *    테스트 모드에서는 '테스터로 등록된 계정'만 로그인할 수 있다.
- *  - 자가진단 페이지는 "사용자 식별"만 필요하므로 여기서는 오직 `email profile openid`
- *    (비민감 기본 권한)만 요청한다. → OAuth 동의화면을 프로덕션으로 게시하면 별도 검증 없이
- *    '아무 Google 계정이나' 사전등록 없이 로그인 가능.
+ * 이전 버전은 Google OAuth 액세스 토큰만으로 "이 사람이 이 이메일이다"라고 앱이 스스로
+ * 주장하는 방식이었다. DB(Supabase) 입장에서는 요청자가 누구인지 전혀 검증할 수 없어,
+ * 공개 anon key만 있으면 관리자 화면을 거치지 않고도 전체 데이터를 직접 읽고 쓸 수 있었다.
  *
- * 인터페이스(window.Auth): auth.js 와 동일 시그니처로 노출 → assessment.js/html 수정 불필요
- *   .login(opts)          → Promise<boolean>   (opts.chooseAccount=true 시 계정 선택 강제)
- *   .logout()             → void
- *   .getToken()           → string | null
- *   .isLoggedIn()         → boolean
- *   .onAuthChange(cb)     → void
- *   .reauth()             → Promise<string|null>
- *   .tryRestoreSession()  → boolean
+ * 이 버전은 Google의 ID 토큰(신원 증명 JWT)을 받아 supabase.auth.signInWithIdToken()으로
+ * 실제 Supabase 로그인 세션을 생성한다. 이후 CloudForms.save()/list()가 이 세션으로
+ * 자동 인증되므로, DB의 RLS 정책이 auth.jwt()로 요청자의 신원을 검증할 수 있게 된다.
  *
- * 저장 키는 메인 앱(asea_gtoken*)과 분리(asea_assess_gtoken*)하여 서로 간섭하지 않는다.
- * 의존성: config.js (CONFIG.googleClientId)
+ * 필요 조건(운영자 1회 설정): Supabase 프로젝트 → Authentication → Providers → Google
+ * 활성화 + 이 앱과 동일한 Google OAuth 클라이언트 ID를 "Authorized Client IDs"에 등록.
+ * 이 설정이 안 되어 있으면 로그인 시도 시 안내 메시지가 표시된다.
+ *
+ * 인터페이스(window.Auth) — assessment.js/html에서 사용:
+ *   .renderButton(containerId, opts?)  → 해당 DOM에 Google 공식 로그인 버튼을 렌더링
+ *   .logout()                          → void
+ *   .getProfile()                      → { email, name, picture } | null
+ *   .isLoggedIn()                      → boolean
+ *   .onAuthChange(cb)                  → cb(loggedIn, profile)
+ *   .tryRestoreSession()               → 저장된 세션 복원 시도(결과는 onAuthChange로 통지)
+ *
+ * 의존성: config.js(CONFIG.googleClientId), cloudforms.js(window.CloudForms — Supabase 클라이언트 보유)
  */
 (function () {
-  // 로그인(식별)에 필요한 최소 비민감 권한만 요청
-  // auth.js와 동일하게 email·profile만 사용한다. 토큰 모델(implicit) 흐름에서
-  // openid 스코프는 거부되어 로그인이 실패할 수 있으므로 포함하지 않는다.
-  var SCOPES = 'email profile';
-
-  var _accessToken   = null;
-  var _expireTimer   = null;
-  var _tokenClient   = null;
+  var _initialized = false;
   var _authCallbacks = [];
-  var _pendingResolve = null;
-  var _isMainLogin   = false;
-
-  var _STORE_TOKEN   = 'asea_assess_gtoken';
-  var _STORE_EXPIRES = 'asea_assess_gtoken_exp';
-  var _STORE_SCOPES  = 'asea_assess_gtoken_scopes';
+  var _currentProfile = null;   // { email, name, picture }
 
   function _clientId() {
     // config.js는 `const CONFIG`(전역 렉시컬 바인딩)으로 선언되므로 window.CONFIG로는
-    // 접근되지 않는다. auth.js와 동일하게 전역 식별자 CONFIG를 직접 참조한다.
+    // 접근되지 않는다. 전역 식별자 CONFIG를 직접 참조한다.
     try { return (typeof CONFIG !== 'undefined' && CONFIG.googleClientId) || ''; } catch (e) { return ''; }
   }
 
-  function _saveToken(token, expiresAt) {
+  // 자가진단 페이지는 app.js/work.js를 로드하지 않아 window.aseaToast가 없는 경우가 많다.
+  // 그런 경우에도 로그인 오류 같은 중요한 메시지는 반드시 화면에 보여야 하므로,
+  // assessment.js가 쓰는 것과 같은 .asm-toast 스타일로 자체 폴백을 둔다.
+  function _toast(msg, type) {
+    if (typeof window.aseaToast === 'function') { window.aseaToast(msg, type || 'info'); return; }
     try {
-      sessionStorage.setItem(_STORE_TOKEN, token);
-      sessionStorage.setItem(_STORE_EXPIRES, String(expiresAt));
-      sessionStorage.setItem(_STORE_SCOPES, SCOPES);
-      localStorage.setItem(_STORE_TOKEN, token);
-      localStorage.setItem(_STORE_EXPIRES, String(expiresAt));
-      localStorage.setItem(_STORE_SCOPES, SCOPES);
+      var t = document.createElement('div');
+      t.className = 'asm-toast asm-toast-' + (type || 'info');
+      t.textContent = msg;
+      document.body.appendChild(t);
+      setTimeout(function () { t.classList.add('show'); }, 10);
+      setTimeout(function () { t.classList.remove('show'); setTimeout(function () { t.remove(); }, 300); }, 3200);
     } catch (e) {}
   }
-  function _deleteStoredToken() {
+
+  function _extend(base, extra) {
+    var out = {}, k;
+    for (k in base) if (base.hasOwnProperty(k)) out[k] = base[k];
+    if (extra) for (k in extra) if (extra.hasOwnProperty(k)) out[k] = extra[k];
+    return out;
+  }
+
+  // Supabase user 객체(Google ID 토큰 클레임에서 채워짐) → 화면 표시용 프로필로 변환
+  function _profileFromUser(user) {
+    if (!user) return null;
+    var md = user.user_metadata || {};
+    return {
+      email: user.email || md.email || '',
+      name: md.full_name || md.name || '',
+      picture: md.avatar_url || md.picture || ''
+    };
+  }
+
+  // Google ID 토큰(JWT)의 payload(신원 클레임)만 직접 디코드 — 서명 검증은 하지 않는다.
+  // 이 값은 오직 "Supabase 로그인 세션이 아직 준비되지 않았을 때의 화면 표시용 임시 식별"에만
+  // 쓰이고, DB 접근 권한(RLS)에는 전혀 영향을 주지 않는다(권한은 오직 실제 Supabase 세션 여부로 결정됨).
+  function _decodeIdTokenClaims(idToken) {
     try {
-      [sessionStorage, localStorage].forEach(function (s) {
-        s.removeItem(_STORE_TOKEN); s.removeItem(_STORE_EXPIRES); s.removeItem(_STORE_SCOPES);
-      });
-    } catch (e) {}
+      var parts = String(idToken).split('.');
+      if (parts.length < 2) return null;
+      var b64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+      while (b64.length % 4) b64 += '=';
+      var json = decodeURIComponent(atob(b64).split('').map(function (c) {
+        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+      }).join(''));
+      return JSON.parse(json);
+    } catch (e) { return null; }
   }
-  function _clearToken() {
-    _accessToken = null;
-    if (_expireTimer) { clearTimeout(_expireTimer); _expireTimer = null; }
-    _deleteStoredToken();
-  }
-  function _notifyChange() {
-    var loggedIn = _accessToken !== null;
+
+  function _notify(loggedIn, profile) {
     for (var i = 0; i < _authCallbacks.length; i++) {
-      try { _authCallbacks[i](loggedIn); } catch (e) {}
+      try { _authCallbacks[i](loggedIn, profile); } catch (e) {}
     }
   }
 
-  function _handleTokenResponse(tokenResponse) {
-    if (tokenResponse && tokenResponse.error) {
-      // 실제 원인을 콘솔/화면에 노출해 진단 가능하게 한다.
-      var code = tokenResponse.error || '';
-      var desc = tokenResponse.error_description || '';
-      try { console.error('[assessment-auth] token error:', code, desc, tokenResponse); } catch (e) {}
-      if (!_isMainLogin) {                       // 무음 갱신 실패 → 세션 유지
-        if (_pendingResolve) { _pendingResolve(false); _pendingResolve = null; }
-        return;
-      }
-      _clearToken();
-      if (typeof window.aseaToast === 'function') {
-        var msg = '로그인이 완료되지 않았습니다';
-        if (code) msg += ' (' + code + (desc ? ': ' + desc : '') + ')';
-        msg += '. 팝업 차단을 해제하고 본인 Google 계정으로 다시 시도해 주세요.';
-        window.aseaToast(msg, 'error');
-      }
-      if (_pendingResolve) { _pendingResolve(false); _pendingResolve = null; }
-      _isMainLogin = false;
-      _notifyChange();
+  // Google 로그인 버튼(자체 팝업 포함)이 성공하면 GIS가 이 콜백에 ID 토큰(JWT)을 전달한다.
+  //
+  // 여기서 두 가지 일이 일어난다.
+  // ① ID 토큰 자체의 신원 클레임(email 등)으로 즉시 로그인 처리 — Supabase 세션이
+  //    수립되었는지와 무관하게 항상 동작한다. 운영자가 Supabase 대시보드에서
+  //    "Google 로그인 제공자"를 아직 활성화하지 않은 과도기에도 로그인이 끊기지 않게 하기 위함.
+  // ② 동시에 supabase.auth.signInWithIdToken()으로 실제 로그인 세션 수립을 시도한다.
+  //    성공하면(=위 대시보드 설정이 되어 있으면) onAuthStateChange가 SIGNED_IN을 통지해
+  //    같은 프로필로 한 번 더 갱신되며, 이때부터 CloudForms 요청이 검증된 사용자로 인증된다.
+  //    실패해도 ①의 로그인은 이미 되어 있으므로 일반 사용자에게는 오류를 보이지 않고,
+  //    관리자 계정에 한해 설정이 필요하다는 안내만 띄운다.
+  function _handleCredential(response) {
+    if (!response || !response.credential) return;
+    var claims = _decodeIdTokenClaims(response.credential);
+    if (!claims || !claims.email) {
+      _toast('로그인 정보를 확인하지 못했습니다. 다시 시도해 주세요.', 'error');
       return;
     }
-    _clearToken();
-    _accessToken = tokenResponse.access_token;
-    var expiresIn = ((tokenResponse.expires_in || 3600) - 60) * 1000;
-    var expiresAt = Date.now() + expiresIn;
-    _saveToken(_accessToken, expiresAt);
-    _expireTimer = setTimeout(function () { _silentRefresh(); }, expiresIn);
-    if (_pendingResolve) { _pendingResolve(true); _pendingResolve = null; }
-    _isMainLogin = false;
-    _notifyChange();
-  }
+    _currentProfile = { email: claims.email, name: claims.name || '', picture: claims.picture || '' };
+    _notify(true, _currentProfile);
 
-  // 계정 힌트 → 재인증 시 계정 선택 팝업 최소화
-  function _reqOpts(base) {
-    try {
-      var h = localStorage.getItem('asea_user_email');
-      if (h) base.hint = h;
-    } catch (e) {}
-    return base;
-  }
-
-  function _silentRefresh() {
-    _initTokenClient();
-    if (!_tokenClient) { _expireTimer = setTimeout(_silentRefresh, 30000); return; }
-    _isMainLogin = false;
-    _pendingResolve = null;
-    try { _tokenClient.requestAccessToken(_reqOpts({ prompt: '' })); }
-    catch (e) { _expireTimer = setTimeout(_silentRefresh, 30000); }
-  }
-
-  function _initTokenClient() {
-    if (typeof google === 'undefined' || !google.accounts || !google.accounts.oauth2) return;
-    if (_tokenClient) return;
-    var cid = _clientId();
-    if (!cid) return;
-    _tokenClient = google.accounts.oauth2.initTokenClient({
-      client_id: cid,
-      scope: SCOPES,
-      callback: _handleTokenResponse,
+    if (!(window.CloudForms && CloudForms.ready() && CloudForms.signInWithIdToken)) return;
+    CloudForms.signInWithIdToken(response.credential).then(function (r) {
+      if (r.ok) return;
+      try { console.warn('[assessment-auth] Supabase 세션 수립 실패(신원 확인 로그인 자체는 정상 동작):', r.err); } catch (e) {}
+      // 관리자 계정에 한해서만, 이 과도기 상태(대시보드 설정 필요)를 알려준다.
+      if (claims.email === 'bangdw@gmail.com' && r.err && /provider is not enabled/i.test(r.err)) {
+        _toast('관리자 안내: Supabase에서 Google 로그인 제공자가 아직 활성화되지 않았습니다. 대시보드 설정이 필요합니다(직원 로그인 자체는 정상 동작 중).', 'error');
+      }
     });
   }
 
-  function _ensureClient() {
-    _initTokenClient();
-    if (_tokenClient) return Promise.resolve(true);
+  function _initGis() {
+    if (_initialized) return;
+    if (typeof google === 'undefined' || !google.accounts || !google.accounts.id) return;
+    var cid = _clientId();
+    if (!cid) return;
+    google.accounts.id.initialize({
+      client_id: cid,
+      callback: _handleCredential,
+      // 이전에 로그인했던 사용자는 재방문 시 클릭 없이 자동 재로그인되도록 시도한다
+      // (Supabase 세션이 아직 없는 과도기에는 새로고침마다 다시 로그인해야 하는 부담을 줄여준다).
+      auto_select: true,
+      itp_support: true
+    });
+    _initialized = true;
+  }
+
+  function _ensureGis() {
+    _initGis();
+    if (_initialized) return Promise.resolve(true);
     return new Promise(function (resolve) {
       var waited = 0;
       var iv = setInterval(function () {
-        _initTokenClient();
-        if (_tokenClient || waited >= 5000) { clearInterval(iv); resolve(!!_tokenClient); }
+        _initGis();
+        if (_initialized || waited >= 6000) { clearInterval(iv); resolve(_initialized); }
         waited += 100;
       }, 100);
     });
   }
 
   window.Auth = {
-    login: function (opts) {
-      var promptVal = (opts && opts.chooseAccount) ? 'select_account' : '';
-      return _ensureClient().then(function (ready) {
-        if (!ready) return Promise.reject(new Error('Google Identity Services가 아직 로드되지 않았습니다.'));
-        return new Promise(function (resolve) {
-          _isMainLogin = true;
-          _pendingResolve = resolve;
-          _tokenClient.requestAccessToken(_reqOpts({ prompt: promptVal }));
-        });
-      });
-    },
-    reauth: function () {
-      return _ensureClient().then(function (ready) {
-        if (!ready) return null;
-        return new Promise(function (resolve) {
-          _isMainLogin = false;
-          _pendingResolve = function (ok) { resolve(ok ? _accessToken : null); };
-          try { _tokenClient.requestAccessToken(_reqOpts({ prompt: '' })); }
-          catch (e) { _pendingResolve = null; resolve(null); }
-        });
+    // 로그인 화면의 지정된 컨테이너에 Google 공식 버튼을 렌더링한다.
+    // 클릭~계정 선택~콜백까지 전부 Google이 담당하며, 로그인 성공 시 onAuthChange(true, profile)로 통지된다.
+    renderButton: function (containerId, opts) {
+      _ensureGis().then(function (ready) {
+        var el = document.getElementById(containerId);
+        if (!ready || !el) return;
+        el.innerHTML = '';
+        google.accounts.id.renderButton(el, _extend({
+          type: 'standard', theme: 'outline', size: 'large',
+          text: 'signin_with', shape: 'pill', logo_alignment: 'left', width: 320
+        }, opts));
       });
     },
     logout: function () {
-      if (_accessToken && typeof google !== 'undefined' && google.accounts && google.accounts.oauth2) {
-        google.accounts.oauth2.revoke(_accessToken, function () {});
+      if (typeof google !== 'undefined' && google.accounts && google.accounts.id) {
+        try { google.accounts.id.disableAutoSelect(); } catch (e) {}
       }
-      _clearToken();
-      _notifyChange();
+      if (window.CloudForms && CloudForms.signOut) CloudForms.signOut().catch(function () {});
+      // 세션 제거 결과는 아래 onAuthStateChange 구독이 SIGNED_OUT 이벤트로 통지한다.
     },
-    getToken:   function () { return _accessToken; },
-    isLoggedIn: function () { return _accessToken !== null; },
+    getProfile:  function () { return _currentProfile; },
+    isLoggedIn:  function () { return !!_currentProfile; },
     onAuthChange: function (cb) { if (typeof cb === 'function') _authCallbacks.push(cb); },
+    // 저장된 Supabase 세션 복원을 시도하고, 이후의 로그인/로그아웃/토큰갱신까지 계속 구독한다.
+    // supabase-js는 구독 직후 현재 세션 상태를 'INITIAL_SESSION' 이벤트로 즉시 한 번 전달하므로
+    // 별도의 동기 반환값 없이 onAuthChange 콜백으로 결과가 통지된다.
     tryRestoreSession: function () {
-      try {
-        var token   = sessionStorage.getItem(_STORE_TOKEN)   || localStorage.getItem(_STORE_TOKEN);
-        var expires = parseInt(sessionStorage.getItem(_STORE_EXPIRES) || localStorage.getItem(_STORE_EXPIRES) || '0', 10);
-        var scopes  = sessionStorage.getItem(_STORE_SCOPES)  || localStorage.getItem(_STORE_SCOPES) || '';
-        if (!token || expires <= Date.now()) { _deleteStoredToken(); return false; }
-        if (scopes && scopes !== SCOPES) { _deleteStoredToken(); return false; }
-        _accessToken = token;
-        var remaining = expires - Date.now();
-        var refreshIn = Math.max(1000, remaining - 120000);
-        _expireTimer = setTimeout(function () { _silentRefresh(); }, refreshIn);
-        _notifyChange();
-        return true;
-      } catch (e) {}
-      _deleteStoredToken();
-      return false;
-    },
+      if (!(window.CloudForms && CloudForms.ready() && CloudForms.onAuthStateChange)) {
+        _currentProfile = null;
+        _notify(false, null);
+        return;
+      }
+      CloudForms.onAuthStateChange(function (event, session) {
+        if (session && session.user) {
+          _currentProfile = _profileFromUser(session.user);
+          _notify(true, _currentProfile);
+        } else {
+          _currentProfile = null;
+          _notify(false, null);
+        }
+      });
+    }
   };
 
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', _initTokenClient);
+    document.addEventListener('DOMContentLoaded', _initGis);
   } else {
-    _initTokenClient();
+    _initGis();
   }
-  window.addEventListener('load', function () { if (!_tokenClient) _initTokenClient(); });
+  window.addEventListener('load', function () { if (!_initialized) _initGis(); });
 })();

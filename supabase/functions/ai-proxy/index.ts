@@ -105,8 +105,95 @@ Deno.serve(async (req) => {
       return json(await r.json(), r.status);
     }
 
+    // ── gcal-public: Google Calendar public iCal proxy ──────────────────
+    if (service === "gcal-public") {
+      const calId  = String(payload.calId  || "");
+      const tMinRaw = payload.timeMin ? new Date(payload.timeMin) : null;
+      const tMaxRaw = payload.timeMax ? new Date(payload.timeMax) : null;
+      if (!calId) return json({ error: "calId required" }, 400);
+
+      const icalUrl = `https://calendar.google.com/calendar/ical/${encodeURIComponent(calId)}/public/basic.ics`;
+      const icalRes = await fetch(icalUrl, { headers: { "User-Agent": "Mozilla/5.0" } });
+      if (!icalRes.ok) return json({ error: `ical ${icalRes.status}` }, 502);
+
+      const icalText = await icalRes.text();
+      return json({ items: gcalParseIcal(icalText, tMinRaw, tMaxRaw) });
+    }
+
     return json({ error: "unknown service: " + service }, 400);
   } catch (e) {
     return json({ error: String(e) }, 502);
   }
 });
+
+// ── iCal helpers ────────────────────────────────────────────────────────────
+function gcalUnfold(text: string): string {
+  return text.replace(/\r\n[ \t]/g, "").replace(/\n[ \t]/g, "");
+}
+
+function gcalFmtDate(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+}
+
+function gcalParseDate(raw: string): { date: Date; allDay: boolean } | null {
+  try {
+    const allDay = !raw.includes("T");
+    const y = parseInt(raw.slice(0,4)), mo = parseInt(raw.slice(4,6))-1, d = parseInt(raw.slice(6,8));
+    if (allDay) return { date: new Date(y, mo, d), allDay: true };
+    const h = parseInt(raw.slice(9,11)), mi = parseInt(raw.slice(11,13)), s = parseInt(raw.slice(13,15));
+    const date = raw.endsWith("Z")
+      ? new Date(Date.UTC(y, mo, d, h, mi, s))
+      : new Date(Date.UTC(y, mo, d, h-9, mi, s)); // assume KST if no Z
+    return { date, allDay: false };
+  } catch { return null; }
+}
+
+function gcalUnescape(s: string): string {
+  return s.replace(/\\n/g,"\n").replace(/\\,/g,",").replace(/\\;/g,";").replace(/\\\\/g,"\\");
+}
+
+function gcalParseIcal(icalText: string, tMin: Date|null, tMax: Date|null) {
+  const lines = gcalUnfold(icalText).split(/\r?\n/);
+  const events: Record<string, string>[] = [];
+  let cur: Record<string,string> | null = null;
+
+  for (const line of lines) {
+    if (line === "BEGIN:VEVENT") { cur = {}; continue; }
+    if (line === "END:VEVENT")   {
+      if (cur) events.push(cur);
+      cur = null; continue;
+    }
+    if (!cur) continue;
+    const ci = line.indexOf(":");
+    if (ci < 0) continue;
+    let key = line.slice(0, ci);
+    const semi = key.indexOf(";");
+    if (semi >= 0) key = key.slice(0, semi);
+    cur[key] = gcalUnescape(line.slice(ci+1));
+  }
+
+  const result: unknown[] = [];
+  for (const ev of events) {
+    const ps = ev["DTSTART"] ? gcalParseDate(ev["DTSTART"]) : null;
+    const pe = ev["DTEND"]   ? gcalParseDate(ev["DTEND"])   : null;
+    if (!ps) continue;
+    const end = pe?.date ?? ps.date;
+    if (tMin && end < tMin) continue;
+    if (tMax && ps.date > tMax) continue;
+    const out: Record<string,unknown> = {
+      id: ev["UID"] || `ical-${result.length}`,
+      summary: ev["SUMMARY"] || "",
+    };
+    if (ps.allDay) {
+      out.start = { date: gcalFmtDate(ps.date) };
+      out.end   = { date: gcalFmtDate(end) };
+    } else {
+      out.start = { dateTime: ps.date.toISOString() };
+      out.end   = { dateTime: end.toISOString() };
+    }
+    if (ev["DESCRIPTION"]) out.description = ev["DESCRIPTION"];
+    if (ev["LOCATION"])    out.location    = ev["LOCATION"];
+    result.push(out);
+  }
+  return result;
+}

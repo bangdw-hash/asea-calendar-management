@@ -24,6 +24,9 @@ window.AssessmentModule = (function () {
   var KIND_FORM   = 'competency_assessment';
   var KIND_PROFILE = 'competency_profile';
   var KIND_BROADCAST = 'competency_broadcast';   // 관리자 전사반영 항목(연도별 1행, data.items 배열)
+  var KIND_CONSENT = 'privacy_consent';          // 개인정보 수집·이용 동의 기록(ref=email)
+  // 동의 문구 버전. 문구를 실질적으로 바꾸면 이 값을 올려 전원 재동의를 받는다.
+  var CONSENT_VERSION = '2026-08-27';
 
   // 사용자 지정 소속(부서) 기본 세팅
   var DEPARTMENTS = [
@@ -43,6 +46,8 @@ window.AssessmentModule = (function () {
     root: null,
     email: '',
     profile: null,        // { dept, name, position, jobGroup }
+    consent: null,        // { email, name, dept, version, required, aiOptIn, agreedAt, userAgent }
+    consentRows: null,    // 관리자: 전체 동의 기록(admin 조회용)
     year: YEARS.indexOf(String(new Date().getFullYear())) >= 0 ? String(new Date().getFullYear()) : '2026',
     form: null,           // 현재 연도 폼 데이터
     status: 'draft',
@@ -119,6 +124,7 @@ window.AssessmentModule = (function () {
   }
   function lsKeyForm(email, year) { return 'asea_assess_' + email + '_' + year; }
   function lsKeyProfile(email) { return 'asea_assess_profile_' + email; }
+  function lsKeyConsent(email) { return 'asea_assess_consent_' + email; }
 
   function toast(msg, type) {
     if (typeof window.aseaToast === 'function') { window.aseaToast(msg, type || 'info'); return; }
@@ -243,6 +249,15 @@ window.AssessmentModule = (function () {
   function saveProfileLocal(p) {
     try { localStorage.setItem(lsKeyProfile(S.email), JSON.stringify(p)); } catch (e) {}
   }
+  function loadConsentLocal() {
+    try { var s = localStorage.getItem(lsKeyConsent(S.email)); return s ? JSON.parse(s) : null; } catch (e) { return null; }
+  }
+  function saveConsentLocal(c) {
+    try { localStorage.setItem(lsKeyConsent(S.email), JSON.stringify(c)); } catch (e) {}
+  }
+  function hasRequiredConsent() {
+    return !!(S.consent && S.consent.version === CONSENT_VERSION && S.consent.required);
+  }
   function loadFormLocal(year) {
     try { var s = localStorage.getItem(lsKeyForm(S.email, year)); return s ? JSON.parse(s) : null; } catch (e) { return null; }
   }
@@ -262,6 +277,17 @@ window.AssessmentModule = (function () {
         if (row && row.data) {
           S.profile = row.data;
           saveProfileLocal(S.profile);
+        }
+      }).catch(function () {})
+    );
+    // 개인정보 수집·이용 동의 기록
+    jobs.push(
+      CloudForms.list(KIND_CONSENT).then(function (res) {
+        if (!res.ok) return;
+        var row = (res.rows || []).filter(function (r) { return r.ref === S.email; })[0];
+        if (row && row.data) {
+          S.consent = row.data;
+          saveConsentLocal(S.consent);
         }
       }).catch(function () {})
     );
@@ -361,6 +387,7 @@ window.AssessmentModule = (function () {
     bindRootOnce();
     if (!S.email) { renderLogin(); return; }
     if (S.view === 'admin' && isAdmin()) { renderAdmin(); return; }
+    if (!hasRequiredConsent()) { renderConsent(); return; }
     if (!S.profile || !S.profile.dept || !S.profile.name) { renderOnboarding(); return; }
     renderForm();
   }
@@ -414,31 +441,120 @@ window.AssessmentModule = (function () {
           '<p class="asm-gate-desc">본 진단표는 개인별 직무역량을 파악하고 연말 인사고과 평가에 반영하기 위한 자료입니다.<br>' +
           '개인 <b>Google 계정</b>으로 로그인하면 작성 기록이 안전하게 저장되어, 다른 컴퓨터에서도 이어서 작성할 수 있습니다.</p>' +
           (inapp.blocked ? inAppWarningHtml(inapp) : '') +
-          '<button class="asm-btn asm-btn-primary asm-btn-lg" id="asm-login-btn"' + (inapp.blocked ? ' disabled' : '') + '>' +
-            '<svg width="18" height="18" viewBox="0 0 24 24"><path fill="#fff" d="M12 11v2.9h4.1c-.2 1-.9 2.5-2.6 3.3l-.02.1 2.5 1.9.2.02C18.9 17.6 20 15 20 12.2c0-.7-.1-1.3-.2-1.8H12z"/><path fill="#fff" d="M12 20c2.4 0 4.4-.8 5.8-2.1l-2.8-2.1c-.7.5-1.7.9-3 .9-2.3 0-4.2-1.5-4.9-3.6H4.2v2.2C5.6 18 8.5 20 12 20z" opacity=".85"/><path fill="#fff" d="M7.1 13.1c-.2-.5-.3-1.1-.3-1.6s.1-1.1.3-1.6V7.7H4.2C3.7 8.8 3.4 10 3.4 11.5s.3 2.7.8 3.8l2.9-2.2z" opacity=".6"/><path fill="#fff" d="M12 6.6c1.3 0 2.2.6 2.7 1l2-2C15.4 4.4 13.9 3.6 12 3.6 8.5 3.6 5.6 5.6 4.2 8.5l2.9 2.2C7.8 8.5 9.7 6.6 12 6.6z" opacity=".9"/></svg>' +
-            'Google 계정으로 로그인' +
-          '</button>' +
+          (inapp.blocked ? '' : '<div id="asm-google-btn" class="asm-google-btn-wrap"></div>') +
           '<p class="asm-gate-foot">주관: 기획처 · 제출기한: 2026. 12. 11.</p>' +
         '</div>' +
       '</div>';
     var openBtn = S.root.querySelector('#asm-open-external');
     if (openBtn) openBtn.addEventListener('click', function () { openInExternalBrowser(inapp); });
-    var btn = S.root.querySelector('#asm-login-btn');
+    if (!inapp.blocked && window.Auth && Auth.renderButton) Auth.renderButton('asm-google-btn');
+  }
+
+  /* ── 개인정보 수집·이용 동의(최초 1회 + 문구 개정 시 재동의) ──────
+     「개인정보 보호법」 제15조(수집·이용) 및 제22조(동의를 받는 방법)에 따라
+     로그인 직후, 온보딩(소속·성명 등 개인정보 입력)보다 먼저 처리한다.
+     기록은 kind='privacy_consent'(ref=email)로 클라우드에 저장되어 관리자가
+     동의 현황을 조회할 수 있다. */
+  function renderConsent() {
+    S.root.innerHTML =
+      '<div class="asm-gate">' +
+        '<div class="asm-gate-card asm-consent-card">' +
+          '<div class="asm-gate-icon">🔒</div>' +
+          '<h1 class="asm-gate-title">개인정보 수집·이용 동의</h1>' +
+          '<p class="asm-gate-desc">아세아항공직업전문학교는 「개인정보 보호법」 제15조·제22조에 따라 자가진단표 작성 전 아래 내용에 대한 동의를 받습니다.<br>' +
+          '<span class="asm-muted">로그인 계정: ' + esc(S.email) + '</span></p>' +
+
+          '<div class="asm-consent-sec"><h3>① 수집·이용 목적</h3><ul>' +
+            '<li>개인별 직무역량 파악 및 <b>인사평가(인사고과)</b> 자료 반영</li>' +
+            '<li>연말 인사(승진·전보·처우 등) 및 성과 관리 자료 활용</li>' +
+            '<li>학교 운영계획 수립, 인력배치 및 교육훈련 계획 수립</li>' +
+            '<li>관계 법령 또는 감독기관의 요청이 있는 경우 해당 자료 제출</li>' +
+          '</ul></div>' +
+
+          '<div class="asm-consent-sec"><h3>② 수집 항목</h3>' +
+            '<table class="asm-consent-table"><tbody>' +
+              '<tr><th>인적사항</th><td>이메일, 성명, 소속, 직책, 직군, 입사일</td></tr>' +
+              '<tr><th>직무·성과</th><td>직무 수행내용 및 역량, 업무성과, 참여사업 실적, 강의시수·지도학생 현황(교무직)</td></tr>' +
+              '<tr><th>기타</th><td>개인역량개발(교육이수) 내역, 애로사항 및 건의사항 등 자가진단표 작성 전체 내용</td></tr>' +
+            '</tbody></table>' +
+          '</div>' +
+
+          '<div class="asm-consent-sec"><h3>③ 보유·이용 기간</h3>' +
+            '<p>재직 기간 중 인사관리 목적으로 보관하며, 퇴직 또는 목적 달성 후 관계 법령 및 내부 규정에서 정한 기간(최대 5년) 보관 후 파기합니다.</p>' +
+          '</div>' +
+
+          '<div class="asm-consent-sec"><h3>④ 제3자 제공</h3>' +
+            '<p>원칙적으로 외부에 제공하지 않습니다. 다만 법령에 근거하거나 별도로 동의를 받은 경우는 예외로 합니다.</p>' +
+          '</div>' +
+
+          '<div class="asm-consent-sec"><h3>⑤ 동의 거부 권리 및 불이익 안내</h3>' +
+            '<div class="asm-consent-warn">귀하는 개인정보 수집·이용에 대한 동의를 거부할 권리가 있습니다. 다만 본 자가진단표는 인사평가의 기초자료이므로, ' +
+            '동의하지 않으실 경우 자가진단표 작성·제출이 제한되며 이는 인사평가 자료 미제출로 처리될 수 있습니다.</div>' +
+          '</div>' +
+
+          '<div class="asm-consent-sec"><h3>⑥ (선택) AI 업무일지 자동정리 기능 이용 동의</h3>' +
+            '<p>업무일지를 AI로 자동 분류하는 기능을 사용하면, 입력하신 텍스트가 외부 AI 처리(Anthropic Claude, 학교 서버 경유 전송)에 활용됩니다. ' +
+            '동의하지 않으셔도 자가진단표 작성 자체에는 지장이 없으며, 표에 직접 입력하는 방식으로 계속 이용하실 수 있습니다.</p>' +
+          '</div>' +
+
+          '<label class="asm-consent-check"><input type="checkbox" id="consent-required"><span><b>[필수]</b> 위 개인정보 수집·이용에 동의합니다.</span></label>' +
+          '<label class="asm-consent-check optional"><input type="checkbox" id="consent-ai"><span><b>[선택]</b> AI 업무일지 자동정리 기능의 AI 처리 위탁에 동의합니다.</span></label>' +
+
+          '<button class="asm-btn asm-btn-primary asm-btn-lg" id="consent-agree" style="width:100%;margin-top:18px" disabled>동의하고 시작하기</button>' +
+          '<a class="asm-consent-link" href="privacy.html" target="_blank" rel="noopener">개인정보처리방침 전문 보기 ↗</a>' +
+        '</div>' +
+      '</div>';
+
+    var reqEl = S.root.querySelector('#consent-required');
+    var aiEl  = S.root.querySelector('#consent-ai');
+    var btn   = S.root.querySelector('#consent-agree');
+    reqEl.addEventListener('change', function () { btn.disabled = !reqEl.checked; });
     btn.addEventListener('click', function () {
-      btn.disabled = true; btn.textContent = '로그인 중…';
-      if (window.Auth && Auth.login) {
-        // 계정 선택 화면을 강제로 띄워 팝업이 클릭 제스처에 확실히 연결되도록 한다.
-        Auth.login({ chooseAccount: true }).then(function () {}).catch(function (e) {
-          try { console.error('[assessment] login rejected:', e); } catch (_) {}
-          btn.disabled = false; btn.textContent = 'Google 계정으로 로그인';
-          var again = detectInAppBrowser();
-          var msg = again.blocked
-            ? again.name + ' 인앱 브라우저에서는 Google 로그인이 차단됩니다. 기본 브라우저로 열어 주세요.'
-            : '로그인 창을 열지 못했습니다. 팝업 차단을 해제하고 다시 시도해 주세요.' + (e && e.message ? ' (' + e.message + ')' : '');
-          toast(msg, 'error');
-        });
-      }
+      if (!reqEl.checked) return;
+      submitConsent(aiEl.checked, true);
     });
+  }
+
+  // aiOptIn: AI 업무일지 기능 동의 여부. isInitial: 최초 필수동의 화면에서의 호출인지 여부
+  // (최초 동의 시에는 온보딩 전이라 name/dept가 비어 있을 수 있어, 온보딩 완료 후 syncConsentIdentity로 보완한다.)
+  function submitConsent(aiOptIn, isInitial) {
+    var rec = {
+      email: S.email,
+      name: (S.profile && S.profile.name) || (S.consent && S.consent.name) || '',
+      dept: (S.profile && S.profile.dept) || (S.consent && S.consent.dept) || '',
+      version: CONSENT_VERSION,
+      required: true,
+      aiOptIn: !!aiOptIn,
+      agreedAt: nowIso(),
+      userAgent: (navigator && navigator.userAgent) || ''
+    };
+    S.consent = rec;
+    saveConsentLocal(rec);
+    if (window.CloudForms && CloudForms.ready()) {
+      CloudForms.save(KIND_CONSENT, S.email, rec.name, 'agreed', rec).catch(function () {});
+      if (CloudForms.auditLog) CloudForms.auditLog(S.email, 'assessment', 'consent_agree', S.email, { version: CONSENT_VERSION, aiOptIn: rec.aiOptIn }).catch(function () {});
+    }
+    if (isInitial) { render(); return; }
+    closeAiImportModal();
+    S.aiImport = { rawText: '', loading: false, error: '', parsed: null, sel: {} };
+    renderAiImportModal();
+  }
+
+  // 온보딩(소속·성명 등록) 완료 후, 동의 기록에도 실제 성명/소속을 반영해
+  // 관리자 동의 현황 화면에서 누구인지 바로 식별 가능하게 한다.
+  function syncConsentIdentity() {
+    if (!S.consent || !S.profile) return;
+    var rec = {
+      email: S.consent.email, version: S.consent.version, required: S.consent.required,
+      aiOptIn: S.consent.aiOptIn, agreedAt: S.consent.agreedAt, userAgent: S.consent.userAgent,
+      name: S.profile.name || S.consent.name || '',
+      dept: S.profile.dept || S.consent.dept || ''
+    };
+    S.consent = rec;
+    saveConsentLocal(rec);
+    if (window.CloudForms && CloudForms.ready()) {
+      CloudForms.save(KIND_CONSENT, S.email, rec.name || '', 'agreed', rec).catch(function () {});
+    }
   }
 
   /* ── 온보딩(최초 1회): 소속 + 성명 등록 ──────────────────────── */
@@ -480,6 +596,7 @@ window.AssessmentModule = (function () {
       if (!name) { toast('성명을 입력해 주세요.', 'error'); return; }
       if (!jobGroup) { toast('직군을 선택해 주세요.', 'error'); return; }
       saveProfile({ dept: dept, name: name, position: position, jobGroup: jobGroup });
+      syncConsentIdentity();
       // 현재 연도 폼 준비 + 메타 반영 + 전사반영 항목 병합(신규 계정도 자동 적용)
       ensureFormLoaded().then(function () {
         applyProfileToForm();
@@ -1313,12 +1430,41 @@ window.AssessmentModule = (function () {
   var AI_JOURNAL_MAX_CHARS = 12000;   // 토큰 보호(과도하게 긴 일지는 앞부분만 사용)
 
   function openAiImportModal() {
+    if (!(S.consent && S.consent.aiOptIn)) { renderAiOptInPrompt(); return; }
     S.aiImport = { rawText: '', loading: false, error: '', parsed: null, sel: {} };
     renderAiImportModal();
   }
   function closeAiImportModal() {
     var modal = S.root && S.root.querySelector('#asm-ai-modal');
     if (modal) modal.innerHTML = '';
+  }
+
+  // AI 업무일지 기능은 입력 텍스트를 외부 AI(Anthropic)로 전송하는, 자가진단표 작성과는
+  // 별도의 개인정보 처리이므로 최초 사용 시점에 별도 동의를 한 번 더 받는다.
+  function renderAiOptInPrompt() {
+    var modal = S.root && S.root.querySelector('#asm-ai-modal');
+    if (!modal) return;
+    modal.innerHTML =
+      '<div class="asm-modal-back" id="asm-ai-modal-back"><div class="asm-modal">' +
+        '<div class="asm-modal-head"><b>🧠 AI 업무일지 자동정리 — 이용 동의</b><span class="asm-flex1"></span><button class="asm-modal-x" id="asm-ai-modal-x">✕</button></div>' +
+        '<div class="asm-modal-body">' +
+          '<p class="asm-hint">이 기능을 사용하면 입력하신 업무일지 텍스트가 외부 AI 처리(Anthropic Claude, 학교 서버 경유 전송)에 활용됩니다. ' +
+          '동의하지 않으셔도 자가진단표 작성 자체에는 지장이 없으며, 표에 직접 입력하는 방식으로 계속 이용하실 수 있습니다.</p>' +
+          '<label class="asm-consent-check optional"><input type="checkbox" id="ai-opt-check"><span><b>[선택]</b> AI 처리 위탁에 동의하고 이 기능을 사용합니다.</span></label>' +
+        '</div>' +
+        '<div class="asm-modal-foot">' +
+          '<button class="asm-btn asm-btn-ghost" id="asm-ai-modal-x2">닫기</button>' +
+          '<button class="asm-btn asm-btn-primary" id="ai-opt-agree" disabled>동의하고 계속</button>' +
+        '</div>' +
+      '</div></div>';
+    var close = function () { closeAiImportModal(); };
+    modal.querySelector('#asm-ai-modal-x').addEventListener('click', close);
+    modal.querySelector('#asm-ai-modal-x2').addEventListener('click', close);
+    modal.querySelector('#asm-ai-modal-back').addEventListener('click', function (e) { if (e.target.id === 'asm-ai-modal-back') close(); });
+    var chk = modal.querySelector('#ai-opt-check');
+    var agreeBtn = modal.querySelector('#ai-opt-agree');
+    chk.addEventListener('change', function () { agreeBtn.disabled = !chk.checked; });
+    agreeBtn.addEventListener('click', function () { if (chk.checked) submitConsent(true, false); });
   }
 
   function buildJournalPrompt(rawText) {
@@ -1503,13 +1649,17 @@ window.AssessmentModule = (function () {
 
   /* ── 관리자 화면 ─────────────────────────────────────────────── */
   function loadAdmin() {
-    S.adminLoading = true; S.adminRows = null;
+    S.adminLoading = true; S.adminRows = null; S.consentRows = null;
     if (!(window.CloudForms && CloudForms.ready())) { S.adminLoading = false; return; }
-    CloudForms.list(KIND_FORM).then(function (res) {
+    Promise.all([
+      CloudForms.list(KIND_FORM).catch(function () { return { ok: false, rows: [] }; }),
+      CloudForms.list(KIND_CONSENT).catch(function () { return { ok: false, rows: [] }; })
+    ]).then(function (results) {
       S.adminLoading = false;
-      S.adminRows = res.ok ? (res.rows || []) : [];
+      S.adminRows = results[0].ok ? (results[0].rows || []) : [];
+      S.consentRows = results[1].ok ? (results[1].rows || []) : [];
       if (S.view === 'admin') renderAdmin();
-    }).catch(function () { S.adminLoading = false; S.adminRows = []; if (S.view === 'admin') renderAdmin(); });
+    }).catch(function () { S.adminLoading = false; S.adminRows = []; S.consentRows = []; if (S.view === 'admin') renderAdmin(); });
   }
 
   /* 연도·정렬 적용된 관리자 행 목록 */
@@ -1572,6 +1722,7 @@ window.AssessmentModule = (function () {
       '<div class="asm-adtab">' +
         '<button class="asm-adtab-btn' + (S.adminTab === 'list' ? ' active' : '') + '" data-adtab="list">📋 작성 현황</button>' +
         '<button class="asm-adtab-btn' + (S.adminTab === 'analysis' ? ' active' : '') + '" data-adtab="analysis">🎯 평가·분석</button>' +
+        '<button class="asm-adtab-btn' + (S.adminTab === 'consent' ? ' active' : '') + '" data-adtab="consent">🔒 동의 현황</button>' +
       '</div>';
 
     S.root.innerHTML =
@@ -1586,7 +1737,7 @@ window.AssessmentModule = (function () {
         '<div class="asm-doc-head"><h1 class="asm-doc-title">관리자 · 직무역량 자가진단</h1>' +
         '<p class="asm-doc-note">전체 작성 인원의 기록을 연도별로 조회·분석합니다. (관리자: ' + esc(S.email) + ')</p></div>' +
         tabBtns +
-        '<div id="asm-admin-panel">' + (S.adminTab === 'analysis' ? analysisPanel() : listPanel()) + '</div>' +
+        '<div id="asm-admin-panel">' + (S.adminTab === 'analysis' ? analysisPanel() : (S.adminTab === 'consent' ? consentPanel() : listPanel())) + '</div>' +
       '</div>' +
       '<div id="asm-admin-modal"></div>';
 
@@ -1649,6 +1800,47 @@ window.AssessmentModule = (function () {
         '</tr></thead><tbody>' + trs + '</tbody></table></div>';
   }
 
+  // 관리자: 개인정보 수집·이용 동의 현황(연도 무관, 계정당 1건)
+  function consentPanel() {
+    if (S.adminLoading) return '<div class="asm-admin-empty">불러오는 중…</div>';
+    if (!(window.CloudForms && CloudForms.ready())) return '<div class="asm-admin-empty">클라우드(Supabase)에 연결되지 않아 기록을 조회할 수 없습니다.</div>';
+    var rows = (S.consentRows || []).slice().sort(function (a, b) {
+      return (b.updated_at || '').localeCompare(a.updated_at || '');
+    });
+    if (!rows.length) return '<div class="asm-admin-empty">아직 동의 기록이 없습니다.</div>';
+
+    var current = rows.filter(function (r) { return r.data && r.data.version === CONSENT_VERSION; }).length;
+    var aiOptIn = rows.filter(function (r) { return r.data && r.data.aiOptIn; }).length;
+
+    var trs = rows.map(function (r, i) {
+      var d = r.data || {};
+      var verBadge = d.version === CONSENT_VERSION
+        ? '<span class="asm-status asm-status-done">최신(' + esc(d.version || '-') + ')</span>'
+        : '<span class="asm-status asm-status-draft">구버전(' + esc(d.version || '-') + ')</span>';
+      var aiBadge = d.aiOptIn ? '<span class="asm-tag">동의</span>' : '<span class="asm-muted">미동의</span>';
+      return '<tr>' +
+        '<td>' + (i + 1) + '</td>' +
+        '<td>' + esc(d.dept || '-') + '</td>' +
+        '<td><b>' + esc(d.name || '-') + '</b></td>' +
+        '<td class="asm-admin-email">' + esc(d.email || r.ref || '-') + '</td>' +
+        '<td>' + verBadge + '</td>' +
+        '<td>' + aiBadge + '</td>' +
+        '<td>' + fmtDt(d.agreedAt || r.updated_at) + '</td>' +
+      '</tr>';
+    }).join('');
+
+    return '' +
+      '<div class="asm-admin-stat">' +
+        '<div class="asm-stat"><span class="asm-stat-num">' + rows.length + '</span><span class="asm-stat-lbl">동의 기록 계정 수</span></div>' +
+        '<div class="asm-stat"><span class="asm-stat-num">' + current + '</span><span class="asm-stat-lbl">최신 버전 동의</span></div>' +
+        '<div class="asm-stat"><span class="asm-stat-num">' + aiOptIn + '</span><span class="asm-stat-lbl">AI 기능 동의</span></div>' +
+      '</div>' +
+      '<p class="asm-hint">개인정보 수집·이용 필수 동의는 로그인 직후(온보딩 이전) 1회 받으며, 동의 문구가 개정되어 버전이 올라가면 전원 재동의를 받습니다. AI 업무일지 기능은 최초 이용 시 별도로 동의를 받습니다.</p>' +
+      '<div class="asm-scroll"><table class="asm-table asm-admin-table">' +
+        '<thead><tr><th>#</th><th>소속</th><th>성명</th><th>계정</th><th>동의 버전</th><th>AI기능 동의</th><th>동의 일시</th></tr></thead>' +
+        '<tbody>' + trs + '</tbody></table></div>';
+  }
+
   function bindAdmin() {
     var $ = function (id) { return S.root.querySelector(id); };
     $('#asm-admin-back').addEventListener('click', function () { S.view = 'form'; render(); });
@@ -1690,6 +1882,7 @@ window.AssessmentModule = (function () {
 
   function exportCsv() {
     var rows = adminYearRows();
+    if (window.CloudForms && CloudForms.auditLog) CloudForms.auditLog(S.email, 'assessment', 'export_csv', S.adminYear, { count: rows.length }).catch(function () {});
     var head = ['소속', '성명', '직책', '직군', '상태', '계정', '최종수정'];
     var lines = [head.join(',')];
     rows.forEach(function (r) {
@@ -1785,6 +1978,7 @@ window.AssessmentModule = (function () {
     var row = (S.adminRows || []).filter(function (r) { return r.ref === ref; })[0];
     if (!row || !row.data || !row.data.form) { toast('상세 데이터를 찾을 수 없습니다.', 'error'); return; }
     var m = rowMeta(row);
+    if (window.CloudForms && CloudForms.auditLog) CloudForms.auditLog(S.email, 'assessment', 'view_detail', ref, { dept: m.dept, name: m.name }).catch(function () {});
     var modal = S.root.querySelector('#asm-admin-modal');
     modal.innerHTML =
       '<div class="asm-modal-back" id="asm-modal-back"><div class="asm-modal asm-modal-lg">' +
@@ -1879,6 +2073,7 @@ window.AssessmentModule = (function () {
   function exportSelectedPdf() {
     var rows = adminYearRows().filter(function (r) { return S.adminSel[r.ref] && r.data && r.data.form; });
     if (!rows.length) { toast('선택된 항목이 없습니다. 표에서 체크박스를 선택하세요.', 'error'); return; }
+    if (window.CloudForms && CloudForms.auditLog) CloudForms.auditLog(S.email, 'assessment', 'export_pdf', S.adminYear, { count: rows.length, refs: rows.map(function (r) { return r.ref; }) }).catch(function () {});
     toast('PDF 생성 중… (' + rows.length + '건, 잠시만 기다려 주세요)', 'info');
     ensureLibs().then(function () {
       var items = [];
@@ -2110,6 +2305,7 @@ window.AssessmentModule = (function () {
   function boot() {
     if (!S.email) { render(); return; }
     S.profile = loadProfileLocal();
+    S.consent = loadConsentLocal();
     ensureFormLoaded().then(function () {
       render();               // 캐시로 즉시 표시
       pullFromCloud().then(function () {
