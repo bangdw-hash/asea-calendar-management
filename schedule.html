@@ -345,24 +345,6 @@ html,body{height:100%;
 #evt-popup-footer{display:flex;gap:6px;justify-content:flex-end;padding:12px 20px 18px;border-top:1px solid var(--color-border)}
 #detail-share-btn{display:inline-flex;align-items:center;gap:4px}
 
-/* shared event import modal */
-#share-import-overlay{position:fixed;inset:0;z-index:900;background:rgba(0,0,0,.5);
-  display:none;align-items:center;justify-content:center}
-#share-import-overlay.show{display:flex}
-#share-import-box{background:#fff;border-radius:20px;width:min(400px,92vw);
-  box-shadow:0 24px 64px rgba(0,0,0,.22);overflow:hidden}
-#share-import-box .sim-hdr{background:var(--color-accent);color:#fff;padding:20px;
-  display:flex;align-items:center;gap:10px}
-#share-import-box .sim-hdr svg{flex-shrink:0}
-#share-import-box .sim-title{font-size:1rem;font-weight:700}
-#share-import-box .sim-sub{font-size:.78rem;opacity:.8;margin-top:2px}
-#share-import-box .sim-body{padding:20px}
-#share-import-box .sim-evtname{font-size:1.05rem;font-weight:700;color:var(--color-text);margin-bottom:12px}
-#share-import-box .sim-row{display:flex;align-items:flex-start;gap:8px;font-size:.83rem;
-  color:var(--color-text-sec);margin-bottom:8px;line-height:1.4}
-#share-import-box .sim-row svg{flex-shrink:0;margin-top:1px;opacity:.6}
-#share-import-box .sim-footer{display:flex;gap:8px;justify-content:flex-end;
-  padding:0 20px 20px}
 
 /* admin table */
 .admin-table{width:100%;border-collapse:collapse;font-size:.8rem;margin-top:8px}
@@ -907,26 +889,6 @@ html,body{height:100%;
   </div>
 </div>
 
-<!-- Shared Event Import Modal -->
-<div id="share-import-overlay">
-  <div id="share-import-box">
-    <div class="sim-hdr">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="m9 16 2 2 4-4"/></svg>
-      <div>
-        <div class="sim-title">일정 공유 초대</div>
-        <div class="sim-sub">이 일정을 내 캘린더에 추가하시겠습니까?</div>
-      </div>
-    </div>
-    <div class="sim-body">
-      <div class="sim-evtname" id="sim-evtname"></div>
-      <div id="sim-rows"></div>
-    </div>
-    <div class="sim-footer">
-      <button class="btn" onclick="document.getElementById('share-import-overlay').classList.remove('show')" style="background:var(--g100);color:var(--g700)">취소</button>
-      <button class="btn btn-primary" id="sim-add-btn" onclick="importSharedEvt()">내 캘린더에 추가</button>
-    </div>
-  </div>
-</div>
 
 <!-- Subscribe Modal -->
 <div class="overlay" id="sub-overlay">
@@ -2238,80 +2200,32 @@ function closeEvtPopup() {
   }, 200);
 }
 
+function _gcalDate(dt) {
+  if (!dt) return '';
+  if (dt.date) return dt.date.replace(/-/g, '');
+  if (dt.dateTime) return new Date(dt.dateTime).toISOString().replace(/[-:]/g,'').replace(/\.\d{3}/,'');
+  return '';
+}
+
 function shareEvtFromDetail() {
   if (!_detailEvt) return;
   const ev = _detailEvt;
-  const data = { summary: ev.summary || '', start: ev.start, end: ev.end, location: ev.location || '', description: ev.description || '' };
-  const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(data))));
-  const url = location.origin + location.pathname + '?shareEvt=' + encoded;
-  const copy = () => { showToast('클립보드에 공유링크가 복사되었습니다.'); };
+  const start = _gcalDate(ev.start);
+  const end   = _gcalDate(ev.end) || start;
+  const params = new URLSearchParams({ action:'TEMPLATE', text: ev.summary || '', dates: start + '/' + end });
+  if (ev.location)    params.set('location', ev.location);
+  if (ev.description) params.set('details',  ev.description);
+  const url = 'https://calendar.google.com/calendar/render?' + params.toString();
+  const copy = () => showToast('클립보드에 공유링크가 복사되었습니다.');
   if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(url).then(copy).catch(() => {
-      const el = document.createElement('textarea');
-      el.value = url; document.body.appendChild(el); el.select();
-      document.execCommand('copy'); document.body.removeChild(el); copy();
-    });
-  } else {
-    const el = document.createElement('textarea');
-    el.value = url; document.body.appendChild(el); el.select();
-    document.execCommand('copy'); document.body.removeChild(el); copy();
-  }
+    navigator.clipboard.writeText(url).then(copy).catch(() => { _fallbackCopy(url); copy(); });
+  } else { _fallbackCopy(url); copy(); }
 }
 
-let _sharedEvtData = null;
-async function importSharedEvt() {
-  if (!_sharedEvtData) return;
-  const btn = document.getElementById('sim-add-btn');
-  btn.disabled = true; btn.textContent = '추가 중...';
-  try {
-    if (!_token || !_tokenHasWrite) {
-      const ok = await doLogin(SCOPES);
-      if (!ok) { btn.disabled = false; btn.textContent = '내 캘린더에 추가'; return; }
-    }
-    const body = { summary: _sharedEvtData.summary, start: _sharedEvtData.start, end: _sharedEvtData.end };
-    if (_sharedEvtData.location) body.location = _sharedEvtData.location;
-    if (_sharedEvtData.description) body.description = _sharedEvtData.description;
-    await apiFetch('POST', `/calendars/${encodeURIComponent(CAL_ID)}/events`, body);
-    document.getElementById('share-import-overlay').classList.remove('show');
-    showToast('일정이 내 캘린더에 추가되었습니다.');
-    await fetchEvents(); renderCalendar();
-  } catch(err) {
-    showToast('추가 실패: ' + (err.message || err), 'error');
-  }
-  btn.disabled = false; btn.textContent = '내 캘린더에 추가';
-}
-
-function checkSharedEvt() {
-  const params = new URLSearchParams(location.search);
-  const raw = params.get('shareEvt');
-  if (!raw) return;
-  try {
-    const data = JSON.parse(decodeURIComponent(escape(atob(raw))));
-    if (!data || !data.summary) return;
-    _sharedEvtData = data;
-    document.getElementById('sim-evtname').textContent = data.summary;
-    const { start, end } = data;
-    let dateStr = '';
-    try {
-      if (start && start.date) {
-        dateStr = new Date(start.date + 'T00:00:00').toLocaleDateString('ko-KR',{year:'numeric',month:'long',day:'numeric',weekday:'short'}) + ' (종일)';
-      } else if (start && start.dateTime) {
-        const s = new Date(start.dateTime);
-        const e2 = end && end.dateTime ? new Date(end.dateTime) : null;
-        dateStr = s.toLocaleString('ko-KR',{year:'numeric',month:'long',day:'numeric',weekday:'short',hour:'2-digit',minute:'2-digit'});
-        if (e2) dateStr += ' ~ ' + e2.toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'});
-      }
-    } catch(_) {}
-    const _iconCal2 = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>`;
-    const _iconPin2 = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 17-5 5"/><path d="M17.001 3.34a1 1 0 0 1 .23 1.05L15.5 9h5a1 1 0 0 1 .78 1.63l-7 8a1 1 0 0 1-1.58-1.26L14.5 13H9a1 1 0 0 1-.78-1.63l4.5-8a1 1 0 0 1 .9-.5 1 1 0 0 1 .381.07z"/></svg>`;
-    const _iconNote2 = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>`;
-    let rows = dateStr ? `<div class="sim-row">${_iconCal2}<span>${dateStr}</span></div>` : '';
-    if (data.location) rows += `<div class="sim-row">${_iconPin2}<span>${esc(data.location)}</span></div>`;
-    if (data.description) rows += `<div class="sim-row">${_iconNote2}<span>${esc(data.description)}</span></div>`;
-    document.getElementById('sim-rows').innerHTML = rows;
-    document.getElementById('share-import-overlay').classList.add('show');
-    history.replaceState({}, '', location.pathname);
-  } catch(_) {}
+function _fallbackCopy(text) {
+  const el = document.createElement('textarea');
+  el.value = text; document.body.appendChild(el); el.select();
+  document.execCommand('copy'); document.body.removeChild(el);
 }
 function editFromDetail() { closeEvtPopup(); openEventModal(_detailEvt); }
 async function deleteFromDetail() {
@@ -3618,7 +3532,6 @@ initCtxMenuListeners();
 renderCalendar();
 updateUserArea(); // 즉시 로그인 버튼 표시 (boot 완료 후 다시 갱신)
 boot();
-checkSharedEvt();
 </script>
 </body>
 </html>
