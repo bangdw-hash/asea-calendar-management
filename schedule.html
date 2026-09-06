@@ -215,7 +215,7 @@ html,body{height:100%;
 .day-cell.other-month{background:var(--color-bg)}
 .day-cell.other-month .day-num{color:#ccc}
 .day-cell.has-events{cursor:pointer}
-.day-cell:hover:not(.other-month){background:var(--color-accent-lt)}
+.day-cell:hover:not(.other-month):not(:has(.evt-dot-wrap:hover)){background:var(--color-accent-lt)}
 .day-num{font-size:var(--font-sm);font-weight:500;color:var(--color-text);
   width:26px;height:26px;display:flex;align-items:center;justify-content:center;
   flex-shrink:0;border-radius:50%}
@@ -308,7 +308,7 @@ html,body{height:100%;
 
 /* day-cell clickable for new event */
 .day-cell.cur-month{cursor:pointer}
-.day-cell.cur-month:hover .day-num{color:var(--primary)}
+.day-cell.cur-month:hover:not(:has(.evt-dot-wrap:hover)) .day-num{color:var(--primary)}
 .day-cell.cur-month.drag-select{background:#e8f0fe!important}
 .day-cell.cur-month.drag-select .day-num{color:var(--primary)}
 .drag-drop-over{background:var(--color-accent-lt)!important;outline:2px dashed var(--color-accent);}
@@ -1137,7 +1137,7 @@ html,body{height:100%;
   <div class="ctx-divider"></div>
   <button class="ctx-share-btn" onclick="ctxShare()">
     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
-    내 캘린더에 추가
+    공유
   </button>
 </div>
 
@@ -3543,25 +3543,16 @@ function ctxShare() {
   const ev = _events.find(x => x.id === _ctxEvtId);
   closeEvtCtxMenu();
   if (!ev) return;
-  const { start, end, allDay } = evtDate(ev);
-  const fmtDay = d => `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
-  const fmtDt  = d => d.toISOString().replace(/[-:]/g,'').replace(/\.\d{3}/,'');
-  let dates = '';
-  if (allDay && start) {
-    const endD = end || new Date(start.getTime() + 86400000);
-    dates = `${fmtDay(start)}/${fmtDay(endD)}`;
-  } else if (start) {
-    const endD = end || new Date(start.getTime() + 3600000);
-    dates = `${fmtDt(start)}/${fmtDt(endD)}`;
+  const url = ev.htmlLink || `https://calendar.google.com/calendar/event?eid=${btoa(ev.id)}`;
+  if (navigator.share) {
+    navigator.share({ title: ev.summary || '일정', url }).catch(() => {});
+  } else {
+    try {
+      navigator.clipboard.writeText(url).then(() => showToast('공유 링크가 클립보드에 복사되었습니다'));
+    } catch(_) {
+      showToast('링크: ' + url);
+    }
   }
-  const p = new URLSearchParams({action:'TEMPLATE', text: ev.summary || '일정'});
-  if (dates) p.set('dates', dates);
-  if (ev.description) p.set('details', ev.description);
-  if (ev.location) p.set('location', ev.location);
-  const url = `https://calendar.google.com/calendar/render?${p.toString()}`;
-  window.open(url, '_blank', 'noopener');
-  try { navigator.clipboard.writeText(url).then(() => showToast('공유 링크가 클립보드에 복사되었습니다')); }
-  catch(_) { showToast('구글 캘린더에서 일정을 확인하세요'); }
 }
 function initCtxMenuListeners() {
   const wrap = document.getElementById('cal-wrap');
