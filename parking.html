@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>주차 위치 공유</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root {
+  --primary:#1A73E8;--primary-dk:#1557B0;--primary-lt:#E8F0FE;
+  --green:#16a34a;--green-lt:#dcfce7;
+  --orange:#ea580c;--orange-lt:#ffedd5;
+  --red:#dc2626;--red-lt:#fee2e2;
+  --gray:#6b7280;--gray-lt:#f3f4f6;
+  --r:10px;
+  --bg:#f8fafc;--card:#fff;--border:#e5e7eb;--text:#111827;--sub:#6b7280;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo','Noto Sans KR',sans-serif;
+  background:var(--bg);color:var(--text);min-height:100dvh;display:flex;flex-direction:column}
+header{background:var(--primary);color:#fff;padding:16px 20px 14px;
+  display:flex;align-items:center;justify-content:space-between;gap:8px}
+header h1{font-size:18px;font-weight:700;letter-spacing:-.3px}
+.share-btn{background:rgba(255,255,255,.2);border:none;color:#fff;
+  padding:6px 12px;border-radius:20px;font-size:13px;cursor:pointer;font-weight:600}
+.share-btn:active{background:rgba(255,255,255,.35)}
+
+/* ── 상태 카드 ── */
+.status-card{margin:16px 16px 0;background:var(--card);border-radius:16px;
+  box-shadow:0 1px 4px rgba(0,0,0,.08);overflow:hidden}
+.status-bar{padding:14px 18px;display:flex;align-items:center;gap:10px}
+.status-dot{width:12px;height:12px;border-radius:50%;flex-shrink:0}
+.parked .status-dot{background:var(--green);box-shadow:0 0 0 3px var(--green-lt)}
+.away   .status-dot{background:var(--gray)}
+.status-label{font-size:15px;font-weight:700}
+.parked .status-label{color:var(--green)}
+.away   .status-label{color:var(--gray)}
+.status-time{font-size:12px;color:var(--sub);margin-left:auto;white-space:nowrap}
+
+.location-display{padding:0 18px 18px}
+.loc-row{display:flex;align-items:center;gap:8px;margin-top:8px}
+.loc-badge{font-size:28px;font-weight:800;color:var(--primary);line-height:1}
+.loc-detail{flex:1}
+.loc-building{font-size:15px;font-weight:600;color:var(--text)}
+.loc-sub{font-size:13px;color:var(--sub);margin-top:2px}
+.loc-notes{font-size:13px;color:var(--gray);margin-top:6px;
+  background:var(--gray-lt);border-radius:6px;padding:8px 10px;line-height:1.5}
+.empty-msg{font-size:14px;color:var(--sub);padding:4px 0 6px;font-style:italic}
+
+/* ── 입력 폼 ── */
+.form-section{margin:12px 16px 0;background:var(--card);border-radius:16px;
+  box-shadow:0 1px 4px rgba(0,0,0,.08);padding:18px}
+.form-title{font-size:14px;font-weight:700;color:var(--sub);margin-bottom:14px;
+  text-transform:uppercase;letter-spacing:.5px}
+
+.field{margin-bottom:14px}
+.field label{display:block;font-size:13px;font-weight:600;color:var(--sub);margin-bottom:6px}
+.field input,.field textarea{width:100%;border:1.5px solid var(--border);border-radius:var(--r);
+  padding:11px 13px;font-size:16px;color:var(--text);background:#fff;
+  outline:none;transition:border-color .15s;font-family:inherit}
+.field input:focus,.field textarea:focus{border-color:var(--primary)}
+.field textarea{resize:none;height:72px;font-size:14px}
+
+/* 층 선택 칩 */
+.chip-group{display:flex;flex-wrap:wrap;gap:8px}
+.chip{padding:8px 14px;border-radius:20px;border:1.5px solid var(--border);
+  font-size:14px;font-weight:600;cursor:pointer;background:#fff;color:var(--text);
+  transition:all .1s;user-select:none}
+.chip:active{transform:scale(.95)}
+.chip.selected{background:var(--primary-lt);border-color:var(--primary);color:var(--primary)}
+
+/* 버튼 */
+.btn-row{display:flex;gap:10px;margin-top:6px}
+.btn{flex:1;padding:14px;border:none;border-radius:var(--r);font-size:16px;
+  font-weight:700;cursor:pointer;transition:all .15s;font-family:inherit}
+.btn:active{transform:scale(.97)}
+.btn-park{background:var(--primary);color:#fff}
+.btn-park:disabled{background:#9ca3af;cursor:not-allowed;transform:none}
+.btn-leave{background:var(--red-lt);color:var(--red);border:1.5px solid #fca5a5}
+
+/* 하단 여백 */
+.spacer{flex:1;min-height:20px}
+footer{text-align:center;font-size:12px;color:var(--sub);padding:16px;margin-top:4px}
+
+/* 토스트 */
+.toast-wrap{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
+  z-index:999;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none}
+.toast{background:#1f2937;color:#fff;padding:10px 20px;border-radius:24px;
+  font-size:14px;font-weight:600;opacity:0;transition:opacity .25s;white-space:nowrap}
+.toast.show{opacity:1}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🚗 주차 위치</h1>
+  <button class="share-btn" onclick="copyLink()">링크 복사</button>
+</header>
+
+<!-- 현재 상태 표시 -->
+<div class="status-card" id="statusCard">
+  <div class="status-bar away" id="statusBar">
+    <span class="status-dot"></span>
+    <span class="status-label" id="statusLabel">확인 중...</span>
+    <span class="status-time" id="statusTime"></span>
+  </div>
+  <div class="location-display" id="locationDisplay" style="display:none"></div>
+</div>
+
+<!-- 입력 폼 -->
+<div class="form-section">
+  <div class="form-title">주차 위치 입력</div>
+
+  <div class="field">
+    <label>장소명 (건물 / 주차장)</label>
+    <input type="text" id="inBuilding" placeholder="예: 롯데백화점 잠실점, 회사 지하주차장" autocomplete="off">
+  </div>
+
+  <div class="field">
+    <label>층</label>
+    <div class="chip-group" id="floorChips">
+      <span class="chip" data-val="B3">B3</span>
+      <span class="chip" data-val="B2">B2</span>
+      <span class="chip" data-val="B1">B1</span>
+      <span class="chip" data-val="1F">1층</span>
+      <span class="chip" data-val="2F">2층</span>
+      <span class="chip" data-val="옥상">옥상</span>
+    </div>
+  </div>
+
+  <div class="field" style="display:flex;gap:10px">
+    <div style="flex:1">
+      <label>구역</label>
+      <input type="text" id="inZone" placeholder="A, B, C..." maxlength="4"
+        style="text-transform:uppercase;text-align:center;font-size:20px;font-weight:700">
+    </div>
+    <div style="flex:1">
+      <label>번호</label>
+      <input type="text" id="inSpot" placeholder="123" maxlength="6"
+        style="text-align:center;font-size:20px;font-weight:700" inputmode="numeric">
+    </div>
+  </div>
+
+  <div class="field">
+    <label>메모 (선택)</label>
+    <textarea id="inNotes" placeholder="엘리베이터 근처, 기둥 옆..."></textarea>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn btn-park" id="btnPark" onclick="saveParking()">🅿️ 주차 완료</button>
+    <button class="btn btn-leave" onclick="clearParking()">출차 완료</button>
+  </div>
+</div>
+
+<div class="spacer"></div>
+<footer>가족과 주차 위치 공유 · 링크 복사 후 카카오톡으로 전송</footer>
+
+<div class="toast-wrap" id="toastWrap"></div>
+
+<script>
+'use strict';
+const SUPA_URL = 'https://zbpeyklwpotjyveipzxd.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpicGV5a2x3cG90anl2ZWlwenhkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE1MTYxMDcsImV4cCI6MjA5NzA5MjEwN30.6JgoQ6rPRnmrbBTG68A-Y9HDQk40mnwubhXVnkZvHrQ';
+
+// URL ?key=xxx 로 가족별 구분 (기본: default)
+const params = new URLSearchParams(location.search);
+const OWNER_KEY = params.get('key') || 'default';
+
+const sb = supabase.createClient(SUPA_URL, SUPA_KEY, {
+  auth: { persistSession: false, autoRefreshToken: false }
+});
+
+// 층 칩 선택
+let selectedFloor = '';
+document.querySelectorAll('#floorChips .chip').forEach(c => {
+  c.addEventListener('click', () => {
+    document.querySelectorAll('#floorChips .chip').forEach(x => x.classList.remove('selected'));
+    c.classList.add('selected');
+    selectedFloor = c.dataset.val;
+  });
+});
+
+// 현재 상태 로드
+async function loadStatus() {
+  const { data } = await sb
+    .from('parking_locations')
+    .select('*')
+    .eq('owner_key', OWNER_KEY)
+    .order('updated_at', { ascending: false })
+    .limit(1);
+
+  const rec = data?.[0];
+  renderStatus(rec);
+}
+
+function renderStatus(rec) {
+  const bar = document.getElementById('statusBar');
+  const label = document.getElementById('statusLabel');
+  const timeEl = document.getElementById('statusTime');
+  const display = document.getElementById('locationDisplay');
+
+  bar.className = 'status-bar ' + (rec?.is_parked ? 'parked' : 'away');
+  label.textContent = rec?.is_parked ? '현재 주차 중' : '주차 위치 없음';
+
+  if (rec?.is_parked && rec?.parked_at) {
+    timeEl.textContent = fmtTime(rec.parked_at);
+  } else {
+    timeEl.textContent = '';
+  }
+
+  if (rec?.is_parked) {
+    display.style.display = '';
+    const floor = rec.floor || '-';
+    const zone  = rec.zone  || '';
+    const spot  = rec.spot  || '';
+    const locBadge = [zone, spot].filter(Boolean).join('-') || floor;
+    display.innerHTML = `
+      <div class="loc-row">
+        <div class="loc-badge">${esc(floor)}</div>
+        <div class="loc-detail">
+          <div class="loc-building">${esc(rec.building || '위치 미입력')}</div>
+          ${zone||spot ? `<div class="loc-sub">구역 ${esc(zone||'-')} · ${esc(spot||'-')}번</div>` : ''}
+        </div>
+      </div>
+      ${rec.notes ? `<div class="loc-notes">${esc(rec.notes)}</div>` : ''}
+    `;
+  } else {
+    display.style.display = 'none';
+  }
+}
+
+function fmtTime(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  const now = new Date();
+  const diffMin = Math.floor((now - d) / 60000);
+  const hh = String(d.getHours()).padStart(2,'0');
+  const mm = String(d.getMinutes()).padStart(2,'0');
+  if (diffMin < 1)  return '방금';
+  if (diffMin < 60) return `${diffMin}분 전`;
+  const diffHr = Math.floor(diffMin / 60);
+  if (diffHr < 24) return `${hh}:${mm} (${diffHr}시간 전)`;
+  return `${d.getMonth()+1}/${d.getDate()} ${hh}:${mm}`;
+}
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+async function saveParking() {
+  const building = document.getElementById('inBuilding').value.trim();
+  const zone     = document.getElementById('inZone').value.trim().toUpperCase();
+  const spot     = document.getElementById('inSpot').value.trim();
+  const notes    = document.getElementById('inNotes').value.trim();
+  const floor    = selectedFloor;
+
+  if (!building && !floor && !zone && !spot) {
+    toast('층, 구역, 번호 중 하나 이상 입력해 주세요.', 'warn'); return;
+  }
+
+  document.getElementById('btnPark').disabled = true;
+
+  // 기존 레코드 삭제 후 새로 삽입 (단순 upsert)
+  await sb.from('parking_locations').delete().eq('owner_key', OWNER_KEY);
+
+  const { error } = await sb.from('parking_locations').insert({
+    owner_key: OWNER_KEY,
+    building,
+    floor,
+    zone,
+    spot,
+    notes,
+    is_parked: true,
+    parked_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  });
+
+  document.getElementById('btnPark').disabled = false;
+
+  if (error) { toast('저장 실패: ' + error.message, 'err'); return; }
+  toast('주차 위치 저장 완료 ✅');
+  await loadStatus();
+}
+
+async function clearParking() {
+  const { error } = await sb.from('parking_locations')
+    .update({ is_parked: false, updated_at: new Date().toISOString() })
+    .eq('owner_key', OWNER_KEY);
+
+  if (error) { toast('업데이트 실패', 'err'); return; }
+  toast('출차 처리 완료 🚗');
+  await loadStatus();
+}
+
+async function copyLink() {
+  const url = location.href;
+  try {
+    await navigator.clipboard.writeText(url);
+    toast('링크 복사 완료 — 카카오톡으로 전송하세요');
+  } catch {
+    prompt('아래 링크를 복사하세요:', url);
+  }
+}
+
+function toast(msg, type) {
+  const wrap = document.getElementById('toastWrap');
+  const el = document.createElement('div');
+  el.className = 'toast';
+  el.textContent = msg;
+  wrap.appendChild(el);
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => el.classList.add('show'));
+  });
+  setTimeout(() => {
+    el.classList.remove('show');
+    setTimeout(() => el.remove(), 300);
+  }, 2800);
+}
+
+// Supabase Realtime 구독
+function subscribeRealtime() {
+  sb.channel('parking-' + OWNER_KEY)
+    .on('postgres_changes', {
+      event: '*', schema: 'public', table: 'parking_locations',
+      filter: `owner_key=eq.${OWNER_KEY}`
+    }, () => loadStatus())
+    .subscribe();
+}
+
+loadStatus();
+subscribeRealtime();
+// 1분마다 시간 표시 갱신
+setInterval(loadStatus, 60000);
+</script>
+</body>
+</html>
