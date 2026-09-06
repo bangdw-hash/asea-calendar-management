@@ -32,14 +32,24 @@ html{scroll-behavior:smooth}
 body{font-family:var(--font);background:var(--gray-100);color:var(--gray-900);min-height:100vh;font-size:14px;line-height:1.6}
 
 /* Header */
-#app-header{position:sticky;top:0;z-index:100;background:var(--primary);color:#fff;box-shadow:var(--sh2)}
-.hdr{max-width:900px;margin:0 auto;padding:0 16px;height:56px;display:flex;align-items:center;gap:10px}
+.hdr{background:var(--primary);color:#fff;padding:12px 16px;
+  display:flex;align-items:center;justify-content:space-between;
+  box-shadow:var(--sh-md);position:sticky;top:0;z-index:100}
+.hdr-left{display:flex;align-items:center;gap:8px}
+.hdr-logo{font-size:1.05rem;font-weight:700;letter-spacing:-.3px;line-height:1.2;cursor:pointer}
+.hdr-sub{font-size:.72rem;opacity:.8;margin-top:2px}
+.hdr-right{display:flex;gap:8px;align-items:center;flex-shrink:0}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:5px;
+  padding:7px 13px;border-radius:var(--r);font-size:.8rem;font-weight:600;
+  cursor:pointer;border:none;transition:opacity .15s,transform .1s;text-decoration:none;
+  white-space:nowrap;font-family:var(--font)}
+.btn:active{transform:scale(.97)}
+.btn-ghost-w{background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.4)}
+.btn-ghost-w:hover{background:rgba(255,255,255,.25)}
+.btn-sm{padding:5px 10px;font-size:.75rem}
 #back-btn{background:none;border:none;color:rgba(255,255,255,.8);cursor:pointer;padding:4px 6px;border-radius:4px;display:none;align-items:center;justify-content:center}
 #back-btn.show{display:flex}
 #back-btn:hover{color:#fff}
-#ftitle{flex:1;font-size:17px;font-weight:700;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.hbtn{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);color:#fff;padding:6px 12px;border-radius:var(--r1);cursor:pointer;font-size:13px;font-weight:500;white-space:nowrap;transition:background .2s;font-family:var(--font)}
-.hbtn:hover{background:rgba(255,255,255,.25)}
 .admin-badge{background:var(--warn);color:#fff;font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;letter-spacing:.5px}
 
 /* Main */
@@ -307,24 +317,27 @@ body{font-family:var(--font);background:var(--gray-100);color:var(--gray-900);mi
 <body>
 
 <!-- Header -->
-<header id="app-header">
-  <div class="hdr">
+<header class="hdr">
+  <div class="hdr-left">
     <button id="back-btn" onclick="goList()" aria-label="목록으로">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
     </button>
-    <div id="ftitle" onclick="goList()">ASEA AI 활용 포럼</div>
-    <div style="display:flex;gap:8px;align-items:center">
-      <div class="theme-swatches">
-        <div class="tswatch active" data-theme="blue" onclick="applyTheme('blue')" title="블루"></div>
-        <div class="tswatch" data-theme="green" onclick="applyTheme('green')" title="그린"></div>
-        <div class="tswatch" data-theme="orange" onclick="applyTheme('orange')" title="오렌지"></div>
-      </div>
-      <span id="admin-badge" class="admin-badge hidden">관리자</span>
-      <button class="hbtn" id="admin-btn" onclick="openAdminModal()" style="display:flex;align-items:center;gap:5px">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-        관리자
-      </button>
+    <div>
+      <div class="hdr-logo" id="ftitle" onclick="goList()">ASEA AI 활용 포럼</div>
+      <div class="hdr-sub">아세아항공직업전문학교</div>
     </div>
+  </div>
+  <div class="hdr-right">
+    <div class="theme-swatches">
+      <div class="tswatch active" data-theme="blue" onclick="applyTheme('blue')" title="블루"></div>
+      <div class="tswatch" data-theme="green" onclick="applyTheme('green')" title="그린"></div>
+      <div class="tswatch" data-theme="orange" onclick="applyTheme('orange')" title="오렌지"></div>
+    </div>
+    <span id="admin-badge" class="admin-badge hidden">관리자</span>
+    <button class="btn btn-ghost-w btn-sm" id="admin-btn" onclick="openAdminModal()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      관리자
+    </button>
   </div>
 </header>
 
