@@ -1689,6 +1689,8 @@ function initMonthDrag() {
   }
 
   grid.addEventListener('mousedown', e => {
+    // if context menu is open, close it and swallow this interaction
+    if (_ctxEvtId) { closeEvtCtxMenu(); e.preventDefault(); return; }
     const cell = e.target.closest('.day-cell.cur-month');
     if (!cell || e.target.closest('.evt-dot,.evt-dot-wrap,.evt-quick')) return;
     // ripple at click position
@@ -3523,6 +3525,7 @@ async function loadPrivacyConsents() {
 /* ══════════════ EVENT CONTEXT MENU ══════════════ */
 let _ctxEvtId = null;
 let _ctxLpTimer = null;
+let _ctxOutsideHandler = null;
 
 function openEvtCtxMenu(evtId, cx, cy) {
   _ctxEvtId = evtId;
@@ -3540,7 +3543,10 @@ function openEvtCtxMenu(evtId, cx, cy) {
     menu.style.left = Math.min(cx, vw - mw - 8) + 'px';
     menu.style.top  = Math.min(cy, vh - mh - 8) + 'px';
   });
-  setTimeout(() => document.addEventListener('click', closeEvtCtxMenu, {once:true}), 20);
+  setTimeout(() => document.addEventListener('mousedown', _ctxOutsideHandler = e => {
+    const menu = document.getElementById('evt-ctx-menu');
+    if (menu && !menu.contains(e.target)) { closeEvtCtxMenu(); e.preventDefault(); }
+  }, {once:true, capture:true}), 20);
 }
 function closeEvtCtxMenu() {
   const m = document.getElementById('evt-ctx-menu');
