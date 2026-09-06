@@ -311,6 +311,10 @@ html,body{height:100%;
 .day-cell.cur-month:hover .day-num{color:var(--primary)}
 .day-cell.cur-month.drag-select{background:#e8f0fe!important}
 .day-cell.cur-month.drag-select .day-num{color:var(--primary)}
+.drag-drop-over{background:var(--color-accent-lt)!important;outline:2px dashed var(--color-accent);}
+.evt-dot-wrap.dragging{opacity:0.4;}
+.evt-dot[draggable]{cursor:grab;}
+.evt-dot[draggable]:active{cursor:grabbing;}
 
 /* week view time slot hover */
 .week-day-col{cursor:pointer}
@@ -1621,7 +1625,8 @@ function renderMonth(wrap) {
         const qBtns = (_token && _tokenHasWrite)
           ? `<span class="evt-quick"><button onclick="event.stopPropagation();editEvtById('${escId(ev.id)}')" title="수정">✏️</button><button onclick="event.stopPropagation();deleteEvtById('${escId(ev.id)}')" title="삭제">🗑</button></span>`
           : '';
-        return `<span class="evt-dot-wrap"><span class="evt-dot" data-evtid="${ev.id}" onclick="showDetail(event,'${escId(ev.id)}')" title="${esc(ev.summary||'')}">${esc(ev.summary||'(제목 없음)')}</span>${qBtns}</span>`;
+        const draggable = (_token && _tokenHasWrite) ? ' draggable="true"' : '';
+        return `<span class="evt-dot-wrap"><span class="evt-dot"${draggable} data-evtid="${ev.id}" onclick="showDetail(event,'${escId(ev.id)}')" title="${esc(ev.summary||'')}">${esc(ev.summary||'(제목 없음)')}</span>${qBtns}</span>`;
       }).join('');
       gridHtml += `<div class="${cell.cls}${(cell.evts||[]).length?' has-events':''}" data-y="${y}" data-m="${m}" data-d="${cell.d}">${numEl}${dotsHtml}</div>`;
     }
@@ -1631,6 +1636,7 @@ function renderMonth(wrap) {
 
   wrap.innerHTML = `<div class="cal-container">${gridHtml}</div>`;
   initMonthDrag();
+  initEventDrag();
 }
 
 /* ── MONTH GRID DRAG-TO-CREATE & CLICK ── */
@@ -1693,6 +1699,79 @@ function initMonthDrag() {
     }
     clearDrag();
   }, { capture: true });
+}
+
+function initEventDrag() {
+  if (!_token || !_tokenHasWrite) return;
+  const grid = document.getElementById('month-grid');
+  if (!grid) return;
+  let _dragEvtId = null;
+  grid.querySelectorAll('.evt-dot[draggable]').forEach(dot => {
+    dot.addEventListener('dragstart', e => {
+      _dragEvtId = dot.dataset.evtid;
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', _dragEvtId);
+      dot.closest('.evt-dot-wrap')?.classList.add('dragging');
+    });
+    dot.addEventListener('dragend', () => {
+      _dragEvtId = null;
+      grid.querySelectorAll('.drag-drop-over').forEach(c => c.classList.remove('drag-drop-over'));
+      dot.closest('.evt-dot-wrap')?.classList.remove('dragging');
+    });
+  });
+  grid.querySelectorAll('.day-cell.cur-month').forEach(cell => {
+    cell.addEventListener('dragover', e => {
+      if (!_dragEvtId) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      cell.classList.add('drag-drop-over');
+    });
+    cell.addEventListener('dragleave', e => {
+      if (!cell.contains(e.relatedTarget)) cell.classList.remove('drag-drop-over');
+    });
+    cell.addEventListener('drop', async e => {
+      e.preventDefault();
+      cell.classList.remove('drag-drop-over');
+      const evtId = e.dataTransfer.getData('text/plain');
+      const newY = +cell.dataset.y, newM = +cell.dataset.m, newD = +cell.dataset.d;
+      if (!evtId || isNaN(newY)) return;
+      await moveEvent(evtId, newY, newM, newD);
+    });
+  });
+}
+
+async function moveEvent(evtId, newY, newM, newD) {
+  const ev = _events.find(e => e.id === evtId);
+  if (!ev) return;
+  const { start: oldStart, end: oldEnd, allDay } = evtDate(ev);
+  if (!oldStart) return;
+  const oldDate = new Date(oldStart.getFullYear(), oldStart.getMonth(), oldStart.getDate());
+  const newDate = new Date(newY, newM, newD);
+  const diffMs = newDate - oldDate;
+  if (diffMs === 0) return;
+  let body;
+  if (allDay) {
+    const newStartDate = new Date(oldDate.getTime() + diffMs);
+    const newEndDate = new Date(new Date(oldEnd.getFullYear(), oldEnd.getMonth(), oldEnd.getDate()).getTime() + diffMs);
+    body = { start: { date: fmtDate(newStartDate) }, end: { date: fmtDate(newEndDate) } };
+  } else {
+    const newStart = new Date(oldStart.getTime() + diffMs);
+    const newEnd = new Date(oldEnd.getTime() + diffMs);
+    body = {
+      start: { dateTime: newStart.toISOString(), timeZone: 'Asia/Seoul' },
+      end:   { dateTime: newEnd.toISOString(),   timeZone: 'Asia/Seoul' }
+    };
+  }
+  try {
+    showToast('이동 중...');
+    await apiFetch('PATCH', `/calendars/${encodeURIComponent(CAL_ID)}/events/${encodeURIComponent(evtId)}`, body);
+    if (allDay) { ev.start.date = body.start.date; ev.end.date = body.end.date; }
+    else { ev.start.dateTime = body.start.dateTime; ev.end.dateTime = body.end.dateTime; }
+    renderCalendar();
+    showToast('일정이 이동되었습니다.');
+  } catch(err) {
+    showToast('이동 실패: ' + (err.message || ''), 'error');
+  }
 }
 
 async function openEventModalOnDate(sy, sm, sd, ey, em, ed) {
