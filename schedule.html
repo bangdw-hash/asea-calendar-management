@@ -203,7 +203,7 @@ html,body{height:100%;
   overflow:hidden;}
 #month-weekdays-sticky:empty{display:none;border:none}
 #month-weekdays-sticky .month-weekdays{
-  display:grid;grid-template-columns:repeat(7,1fr);
+  display:grid;grid-template-columns:repeat(7,minmax(0,1fr));
   min-width:698px;margin:0 17px;}
 /* weekday header inside cal-container (month view: hidden; used only in print) */
 .month-weekdays{display:none}
@@ -1671,6 +1671,14 @@ function renderMonth(wrap) {
   if (stickyBar) stickyBar.innerHTML = weekdaysHtml;
 
   wrap.innerHTML = `<div class="cal-container">${gridHtml}</div>`;
+
+  // sync transform immediately so the bar matches current scroll position
+  (function() {
+    const calWrap = document.getElementById('cal-wrap');
+    if (!calWrap || !stickyBar) return;
+    const wd = stickyBar.querySelector('.month-weekdays');
+    if (wd) wd.style.transform = `translateX(${-calWrap.scrollLeft}px)`;
+  })();
   initMonthDrag();
 }
 
