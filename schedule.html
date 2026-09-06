@@ -195,22 +195,11 @@ html,body{height:100%;
 .cal-container{background:var(--color-card);border-radius:var(--r-card);
   box-shadow:var(--sh);overflow:hidden;border:1px solid var(--color-border)}
 
-/* weekday header — sticky bar outside cal-wrap */
-#month-weekdays-sticky{
-  position:sticky;top:var(--cal-sticky-top,0);z-index:75;
-  background:var(--color-card);
-  border-bottom:2px solid var(--color-border);
-  overflow:hidden;}
-#month-weekdays-sticky:empty{display:none;border:none}
-#month-weekdays-sticky .month-weekdays{
-  display:grid;grid-template-columns:repeat(7,minmax(0,1fr));
-  min-width:698px;margin:0 17px;}
-/* weekday header inside cal-container (month view: hidden; used only in print) */
-.month-weekdays{display:none}
-.weekday-hdr{text-align:center;padding:8px 4px;font-size:var(--font-xs);
-  font-weight:500;color:var(--color-text-sec)}
-.weekday-hdr.sun{color:var(--color-error)}
-.weekday-hdr.sat{color:var(--color-accent)}
+/* day-of-week label inside each month cell */
+.day-cell-hdr{display:flex;align-items:center;gap:4px;margin-bottom:4px}
+.day-dow{font-size:var(--font-xs);font-weight:500;color:var(--color-text-sec)}
+.day-cell.sun .day-dow{color:var(--color-error)}
+.day-cell.sat .day-dow{color:var(--color-accent)}
 
 /* month grid (index.html .calendar-grid) */
 .month-grid{display:flex;flex-direction:column}
@@ -229,7 +218,7 @@ html,body{height:100%;
 .day-cell:hover:not(.other-month){background:var(--color-accent-lt)}
 .day-num{font-size:var(--font-sm);font-weight:500;color:var(--color-text);
   width:26px;height:26px;display:flex;align-items:center;justify-content:center;
-  margin-bottom:4px;border-radius:50%}
+  flex-shrink:0;border-radius:50%}
 .day-cell.sun .day-num{color:var(--color-error)}
 .day-cell.sat .day-num{color:var(--color-accent)}
 .day-cell.today .day-num{background:var(--color-accent);color:#fff!important}
@@ -662,10 +651,7 @@ html,body{height:100%;
   .cal-wrap{padding:0;overflow:visible}
   .cal-inner{min-width:0;width:100%}
   .cal-container{border:1px solid #bbb;border-radius:0!important;width:100%}
-  #month-weekdays-sticky{position:static!important;border:none!important;overflow:visible!important}
-  #month-weekdays-sticky .month-weekdays{display:grid!important;min-width:0!important;margin:0!important;background:#f0f4ff!important}
-  .month-weekdays{display:none}
-  .weekday-hdr{padding:5px 2px;font-size:7.5pt}
+  .day-dow{font-size:7.5pt}
   .month-week-row{border-bottom:1px solid #bbb}
   .day-cell{min-height:80px;padding:3px;page-break-inside:avoid;vertical-align:top}
   .day-num{font-size:8pt;font-weight:700}
@@ -778,7 +764,6 @@ html,body{height:100%;
 <!-- CALENDAR AREA -->
 <span class="print-title" id="print-title"></span>
 <span class="print-sub" id="print-sub"></span>
-<div id="month-weekdays-sticky"></div>
 <div class="cal-wrap" id="cal-wrap">
   <div class="cal-inner" id="cal-inner"></div>
 </div>
@@ -1558,16 +1543,6 @@ function setDeptFilter(dept) {
   renderCalendar();
 }
 
-function _updateCalStickyTop() {
-  const hdr = document.querySelector('.hdr');
-  const toolbar = document.querySelector('.toolbar');
-  const deptBar = document.querySelector('.dept-filter-bar');
-  let top = 0;
-  if (hdr) top += hdr.getBoundingClientRect().height;
-  if (toolbar) top += toolbar.getBoundingClientRect().height;
-  if (deptBar && !deptBar.hidden) top += deptBar.getBoundingClientRect().height;
-  document.documentElement.style.setProperty('--cal-sticky-top', top + 'px');
-}
 
 function renderCalendar() {
   let title;
@@ -1584,14 +1559,9 @@ function renderCalendar() {
   }
   document.getElementById('cal-title').textContent = title;
   const wrap = document.getElementById('cal-inner') || document.getElementById('cal-wrap');
-  if (_view !== 'month') {
-    const sb = document.getElementById('month-weekdays-sticky');
-    if (sb) sb.innerHTML = '';
-  }
   if (_view === 'month') renderMonth(wrap);
   else if (_view === 'week') renderWeek(wrap);
   else renderList(wrap);
-  requestAnimationFrame(_updateCalStickyTop);
 }
 
 function evtDate(ev) {
@@ -1621,13 +1591,6 @@ function renderMonth(wrap) {
   const today = new Date();
   const prevDays = new Date(y, m, 0).getDate();
 
-  // weekday header
-  let weekdaysHtml = '<div class="month-weekdays">';
-  WEEKDAYS.forEach((wd, i) => {
-    weekdaysHtml += `<div class="weekday-hdr ${i===0?'sun':i===6?'sat':''}">${wd}</div>`;
-  });
-  weekdaysHtml += '</div>';
-
   // build cells array
   const cells = [];
   for (let i = firstDay - 1; i >= 0; i--)
@@ -1650,10 +1613,10 @@ function renderMonth(wrap) {
       const cell = cells[r * 7 + c];
       if (!cell) continue;
       if (cell.y === null) {
-        gridHtml += `<div class="${cell.cls}"><span class="day-num">${cell.d}</span></div>`;
+        gridHtml += `<div class="${cell.cls}"><div class="day-cell-hdr"><span class="day-num">${cell.d}</span><span class="day-dow">${WEEKDAYS[c]}</span></div></div>`;
         continue;
       }
-      const numEl = `<span class="day-num">${cell.d}</span>`;
+      const numEl = `<div class="day-cell-hdr"><span class="day-num">${cell.d}</span><span class="day-dow">${WEEKDAYS[c]}</span></div>`;
       const dotsHtml = (cell.evts || []).map(ev => {
         const qBtns = (_token && _tokenHasWrite)
           ? `<span class="evt-quick"><button onclick="event.stopPropagation();editEvtById('${escId(ev.id)}')" title="수정">✏️</button><button onclick="event.stopPropagation();deleteEvtById('${escId(ev.id)}')" title="삭제">🗑</button></span>`
@@ -1666,19 +1629,7 @@ function renderMonth(wrap) {
   }
   gridHtml += '</div>';
 
-  // inject weekday header into sticky bar (outside overflow containers)
-  const stickyBar = document.getElementById('month-weekdays-sticky');
-  if (stickyBar) stickyBar.innerHTML = weekdaysHtml;
-
   wrap.innerHTML = `<div class="cal-container">${gridHtml}</div>`;
-
-  // sync transform immediately so the bar matches current scroll position
-  (function() {
-    const calWrap = document.getElementById('cal-wrap');
-    if (!calWrap || !stickyBar) return;
-    const wd = stickyBar.querySelector('.month-weekdays');
-    if (wd) wd.style.transform = `translateX(${-calWrap.scrollLeft}px)`;
-  })();
   initMonthDrag();
 }
 
@@ -3571,25 +3522,6 @@ initCtxMenuListeners();
 renderCalendar();
 updateUserArea(); // 즉시 로그인 버튼 표시 (boot 완료 후 다시 갱신)
 boot();
-if (typeof ResizeObserver !== 'undefined') {
-  const _ro = new ResizeObserver(_updateCalStickyTop);
-  ['.hdr','.toolbar','.dept-filter-bar'].forEach(sel => {
-    const el = document.querySelector(sel);
-    if (el) _ro.observe(el);
-  });
-}
-window.addEventListener('resize', _updateCalStickyTop);
-
-// sync horizontal scroll: translate weekday bar to match cal-wrap scroll position
-(function() {
-  const calWrap = document.getElementById('cal-wrap');
-  const stickyBar = document.getElementById('month-weekdays-sticky');
-  if (!calWrap || !stickyBar) return;
-  calWrap.addEventListener('scroll', () => {
-    const weekdays = stickyBar.querySelector('.month-weekdays');
-    if (weekdays) weekdays.style.transform = `translateX(${-calWrap.scrollLeft}px)`;
-  }, { passive: true });
-})();
 
 
 checkSharedEvt();
