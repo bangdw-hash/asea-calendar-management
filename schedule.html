@@ -798,6 +798,7 @@ html,body{height:100%;
 <!-- CALENDAR AREA -->
 <span class="print-title" id="print-title"></span>
 <span class="print-sub" id="print-sub"></span>
+<div id="month-weekdays-sticky"></div>
 <div class="cal-wrap" id="cal-wrap">
   <div class="cal-inner" id="cal-inner"></div>
 </div>
@@ -1601,6 +1602,10 @@ function renderCalendar() {
   }
   document.getElementById('cal-title').textContent = title;
   const wrap = document.getElementById('cal-inner') || document.getElementById('cal-wrap');
+  if (_view !== 'month') {
+    const sb = document.getElementById('month-weekdays-sticky');
+    if (sb) sb.innerHTML = '';
+  }
   if (_view === 'month') renderMonth(wrap);
   else if (_view === 'week') renderWeek(wrap);
   else renderList(wrap);
