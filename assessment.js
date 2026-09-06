@@ -766,7 +766,7 @@ window.AssessmentModule = (function () {
       return '<option value="' + esc(g) + '"' + (m.jobGroup === g ? ' selected' : '') + '>' + esc(g) + '</option>';
     }).join('');
     return section('1', '개인 신상 정보',
-      '<table class="asm-table asm-table-info">' +
+      '<div class="asm-scroll"><table class="asm-table asm-table-info">' +
         '<tr>' +
           '<th>소 속</th><td><select data-path="meta.dept" class="asm-cell-input">' + deptOpts + '</select></td>' +
           '<th>직 책</th><td><input data-path="meta.position" class="asm-cell-input" value="' + esc(m.position) + '"></td>' +
@@ -784,7 +784,7 @@ window.AssessmentModule = (function () {
         '<tr>' +
           '<th>직책업무 요약</th><td colspan="5">' + rte('meta.roleSummary', m.roleSummary, '', 'asm-rte-lg') + '</td>' +
         '</tr>' +
-      '</table>');
+      '</table></div>');
   }
 
   /* 2. 직무 분석 */
@@ -986,11 +986,11 @@ window.AssessmentModule = (function () {
   function sec6() {
     var s = S.form.issues;
     return section('6', '직무 관련 애로사항 및 건의',
-      '<table class="asm-table asm-table-info">' +
+      '<div class="asm-scroll"><table class="asm-table asm-table-info">' +
         '<tr><th>애로사항</th><td>' + rte('issues.difficulty', s.difficulty, '', 'asm-rte-lg') + '</td></tr>' +
         '<tr><th>개선사항 건의</th><td>' + rte('issues.improvement', s.improvement, '', 'asm-rte-lg') + '</td></tr>' +
         '<tr><th>' + (parseInt(S.year, 10) + 1) + '년 목표 및 계획</th><td>' + rte('issues.nextPlan', s.nextPlan, '', 'asm-rte-lg') + '</td></tr>' +
-      '</table>');
+      '</table></div>');
   }
 
   function sectionHead(no, title) {
