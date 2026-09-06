@@ -315,6 +315,13 @@ html,body{height:100%;
 .evt-dot-wrap.dragging{opacity:0.4;}
 .evt-dot[draggable]{cursor:grab;}
 .evt-dot[draggable]:active{cursor:grabbing;}
+/* click animations */
+@keyframes evt-chip-press{0%{transform:scale(1)}40%{transform:scale(.88);filter:brightness(.8)}100%{transform:scale(1);filter:brightness(1)}}
+.evt-dot.clicking{animation:evt-chip-press .22s ease-out}
+@keyframes cell-ripple-anim{0%{transform:scale(0);opacity:.3}100%{transform:scale(6);opacity:0}}
+.cell-ripple{position:absolute;border-radius:50%;width:40px;height:40px;
+  margin:-20px 0 0 -20px;background:var(--color-accent);pointer-events:none;
+  animation:cell-ripple-anim .45s ease-out forwards;z-index:0}
 
 /* week view time slot hover */
 .week-day-col{cursor:pointer}
@@ -1626,7 +1633,7 @@ function renderMonth(wrap) {
           ? `<span class="evt-quick"><button onclick="event.stopPropagation();editEvtById('${escId(ev.id)}')" title="수정">✏️</button><button onclick="event.stopPropagation();deleteEvtById('${escId(ev.id)}')" title="삭제">🗑</button></span>`
           : '';
         const draggable = (_token && _tokenHasWrite) ? ' draggable="true"' : '';
-        return `<span class="evt-dot-wrap"><span class="evt-dot"${draggable} data-evtid="${ev.id}" onclick="showDetail(event,'${escId(ev.id)}')" title="${esc(ev.summary||'')}">${esc(ev.summary||'(제목 없음)')}</span>${qBtns}</span>`;
+        return `<span class="evt-dot-wrap"><span class="evt-dot"${draggable} data-evtid="${ev.id}" onclick="evtChipClick(event,this,'${escId(ev.id)}')" title="${esc(ev.summary||'')}">${esc(ev.summary||'(제목 없음)')}</span>${qBtns}</span>`;
       }).join('');
       gridHtml += `<div class="${cell.cls}${(cell.evts||[]).length?' has-events':''}" data-y="${y}" data-m="${m}" data-d="${cell.d}">${numEl}${dotsHtml}</div>`;
     }
@@ -1671,6 +1678,14 @@ function initMonthDrag() {
   grid.addEventListener('mousedown', e => {
     const cell = e.target.closest('.day-cell.cur-month');
     if (!cell || e.target.closest('.evt-dot,.evt-dot-wrap,.evt-quick')) return;
+    // ripple at click position
+    const rect = cell.getBoundingClientRect();
+    const rp = document.createElement('span');
+    rp.className = 'cell-ripple';
+    rp.style.left = (e.clientX - rect.left) + 'px';
+    rp.style.top  = (e.clientY - rect.top)  + 'px';
+    cell.appendChild(rp);
+    setTimeout(() => rp.remove(), 500);
     _dragStart = cellDate(cell);
     _dragEnd = _dragStart;
     _dragging = false;
@@ -1772,6 +1787,13 @@ async function moveEvent(evtId, newY, newM, newD) {
   } catch(err) {
     showToast('이동 실패: ' + (err.message || ''), 'error');
   }
+}
+
+function evtChipClick(e, el, evtId) {
+  e.stopPropagation();
+  el.classList.add('clicking');
+  setTimeout(() => el.classList.remove('clicking'), 250);
+  showDetail(e, evtId);
 }
 
 async function openEventModalOnDate(sy, sm, sd, ey, em, ed) {
