@@ -8,10 +8,10 @@ Windows 11 투명 오버레이 / 항상 위 표시
 기능:
   - 4-모서리 + 4-변 크기 조절 핸들
   - 자석 스냅 — 화면 끝 20px 이내 접근 시 모서리에 달라붙기
-  - Win+← / Win+→  : 현재 모니터 절반 스냅
-  - Win+↑           : 현재 모니터 전체화면
-  - Win+↓           : 이전 크기로 복원 / 최소화
-  - ESC             : 전체화면 해제
+  - Win+← / Win+→  : 현재 모니터 좌/우 절반 스냅
+  - Win+↑           : 일반 → 상단 절반 → 전체화면  (연속 입력 시 진행)
+  - Win+↓           : 전체화면 → 복원 / 상단절반 → 하단절반 / 일반 → 최소화
+  - ESC             : 전체화면 / 절반 스냅 해제
   - 타이틀바 더블클릭 : 전체화면 토글
 """
 
@@ -439,15 +439,16 @@ class CalendarWidget(QMainWindow):
             self.setGeometry(self._saved_geometry)
         self.bar.set_fullscreen(False)
 
-    # ── 절반 스냅 (Win+← / Win+→) ────────────────────────────────────────────
+    # ── 절반 스냅 ─────────────────────────────────────────────────────────────
     def _snap_half(self, side):
-        """현재 모니터의 좌/우 절반에 창을 붙임"""
+        """현재 모니터의 좌/우/상/하 절반에 창을 붙임"""
         screen = self._current_screen()
-        geo = screen.availableGeometry()
+        geo    = screen.availableGeometry()
         half_w = geo.width() // 2
+        half_h = geo.height() // 2
 
         if self._snapped_half == side:
-            # 이미 같은 방향으로 스냅된 상태 → 이전 크기로 복원
+            # 같은 방향 재입력 → 이전 크기 복원
             self._snapped_half = None
             if self._saved_geometry:
                 self.setGeometry(self._saved_geometry)
@@ -461,10 +462,14 @@ class CalendarWidget(QMainWindow):
         self._show_handles()
         self.bar.set_fullscreen(False)
 
-        if side == 'left':
-            self.setGeometry(geo.left(), geo.top(), half_w, geo.height())
-        else:
-            self.setGeometry(geo.left() + half_w, geo.top(), half_w, geo.height())
+        if   side == 'left':
+            self.setGeometry(geo.left(),          geo.top(),          half_w, geo.height())
+        elif side == 'right':
+            self.setGeometry(geo.left() + half_w, geo.top(),          half_w, geo.height())
+        elif side == 'top':
+            self.setGeometry(geo.left(),          geo.top(),          geo.width(), half_h)
+        elif side == 'bottom':
+            self.setGeometry(geo.left(),          geo.top() + half_h, geo.width(), half_h)
 
     def _hide_handles(self):
         for h in self._handles:
@@ -574,12 +579,13 @@ class CalendarWidget(QMainWindow):
         key  = e.key()
         mods = e.modifiers()
 
-        # ESC → 전체화면/절반스냅 해제
+        # ESC → 전체화면 / 절반스냅(상하좌우) 해제
         if key == Qt.Key_Escape:
             if self._is_fullscreen:
                 self._exit_fullscreen()
             elif self._snapped_half:
                 self._snapped_half = None
+                self._show_handles()
                 if self._saved_geometry:
                     self.setGeometry(self._saved_geometry)
             return
@@ -587,19 +593,45 @@ class CalendarWidget(QMainWindow):
         # Win + 방향키  (Windows 탐색기 스타일)
         if mods & Qt.MetaModifier:
             if key == Qt.Key_Up:
-                self._enter_fullscreen(self._current_screen())
+                # 전체화면 → 복원 / 상단절반 → 전체화면 / 그 외 → 상단절반
+                if self._is_fullscreen:
+                    self._exit_fullscreen()
+                elif self._snapped_half == 'top':
+                    self._exit_fullscreen_silent()
+                    self._snapped_half = None
+                    self._enter_fullscreen(self._current_screen())
+                elif self._snapped_half == 'bottom':
+                    self._snapped_half = None
+                    self._exit_fullscreen_silent()
+                    if self._saved_geometry:
+                        self.setGeometry(self._saved_geometry)
+                else:
+                    if self._is_fullscreen:
+                        self._exit_fullscreen_silent()
+                    self._snap_half('top')
                 return
             if key == Qt.Key_Down:
-                if self._is_fullscreen or self._snapped_half:
-                    if self._is_fullscreen:
-                        self._exit_fullscreen()
+                # 전체화면 → 복원 / 상단절반 → 하단절반 / 하단절반 → 최소화 / 일반 → 하단절반
+                if self._is_fullscreen:
+                    self._exit_fullscreen()
+                elif self._snapped_half == 'top':
+                    self._exit_fullscreen_silent()
+                    self._snapped_half = None
+                    self._snap_half('bottom')
+                elif self._snapped_half == 'bottom':
+                    self._snapped_half = None
+                    self._show_handles()
+                    if self._saved_geometry:
+                        self.setGeometry(self._saved_geometry)
                     else:
-                        self._snapped_half = None
-                        self._show_handles()
-                        if self._saved_geometry:
-                            self.setGeometry(self._saved_geometry)
+                        self.showMinimized()
+                elif self._snapped_half in ('left', 'right'):
+                    self._snapped_half = None
+                    self._show_handles()
+                    if self._saved_geometry:
+                        self.setGeometry(self._saved_geometry)
                 else:
-                    self.showMinimized()
+                    self._snap_half('bottom')
                 return
             if key == Qt.Key_Left:
                 if self._is_fullscreen:
