@@ -198,7 +198,8 @@ html,body{height:100%;
 /* weekday header (index.html .calendar-weekdays) */
 .month-weekdays{display:grid;grid-template-columns:repeat(7,1fr);
   background:var(--color-bg);border-bottom:1px solid var(--color-border);
-  border-radius:var(--r-card) var(--r-card) 0 0;overflow:hidden}
+  border-radius:var(--r-card) var(--r-card) 0 0;overflow:hidden;
+  position:sticky;top:var(--cal-sticky-top,calc(var(--header-h) + var(--toolbar-h)));z-index:75}
 .weekday-hdr{text-align:center;padding:8px 4px;font-size:var(--font-xs);
   font-weight:500;color:var(--color-text-sec)}
 .weekday-hdr.sun{color:var(--color-error)}
@@ -1547,6 +1548,17 @@ function setDeptFilter(dept) {
   renderCalendar();
 }
 
+function _updateCalStickyTop() {
+  const hdr = document.querySelector('.hdr');
+  const toolbar = document.querySelector('.toolbar');
+  const deptBar = document.querySelector('.dept-filter-bar');
+  let top = 0;
+  if (hdr) top += hdr.getBoundingClientRect().height;
+  if (toolbar) top += toolbar.getBoundingClientRect().height;
+  if (deptBar && !deptBar.hidden) top += deptBar.getBoundingClientRect().height;
+  document.documentElement.style.setProperty('--cal-sticky-top', top + 'px');
+}
+
 function renderCalendar() {
   let title;
   if (_view === 'week') {
@@ -1565,6 +1577,7 @@ function renderCalendar() {
   if (_view === 'month') renderMonth(wrap);
   else if (_view === 'week') renderWeek(wrap);
   else renderList(wrap);
+  requestAnimationFrame(_updateCalStickyTop);
 }
 
 function evtDate(ev) {
@@ -3532,6 +3545,14 @@ initCtxMenuListeners();
 renderCalendar();
 updateUserArea(); // 즉시 로그인 버튼 표시 (boot 완료 후 다시 갱신)
 boot();
+if (typeof ResizeObserver !== 'undefined') {
+  const _ro = new ResizeObserver(_updateCalStickyTop);
+  ['.hdr','.toolbar','.dept-filter-bar'].forEach(sel => {
+    const el = document.querySelector(sel);
+    if (el) _ro.observe(el);
+  });
+}
+window.addEventListener('resize', _updateCalStickyTop);
 checkSharedEvt();
 </script>
 </body>
