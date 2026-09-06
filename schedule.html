@@ -220,6 +220,8 @@ html,body{height:100%;
 .day-cell.other-month .day-num{color:#ccc}
 .day-cell.has-events{cursor:pointer}
 .day-cell:hover:not(.other-month):not(:has(.evt-dot-wrap:hover)){background:var(--color-accent-lt)}
+#month-grid.ctx-menu-open .day-cell:hover{background:transparent!important}
+#month-grid.ctx-menu-open .day-cell.cur-month:hover .day-num{color:inherit!important}
 .day-num{font-size:var(--font-sm);font-weight:500;color:var(--color-text);
   width:26px;height:26px;display:flex;align-items:center;justify-content:center;
   flex-shrink:0;border-radius:50%}
@@ -3565,9 +3567,9 @@ function openEvtCtxMenu(evtId, cx, cy) {
   document.querySelectorAll('.drag-select').forEach(c => c.classList.remove('drag-select'));
   // reset drag state so lingering mousemove from a long-press touch can't re-add drag-select
   _dragStart = null; _dragEnd = null; _dragging = false;
-  // freeze grid pointer-events to kill any stuck hover highlights
+  // suppress hover highlights while context menu is open (class-based: keeps pointer-events active for drag)
   const grid = document.getElementById('month-grid');
-  if (grid) grid.style.pointerEvents = 'none';
+  if (grid) grid.classList.add('ctx-menu-open');
   const menu = document.getElementById('evt-ctx-menu');
   const canEdit = !!(_token && _tokenHasWrite);
   document.getElementById('ctx-edit-btn').hidden = !canEdit;
@@ -3589,7 +3591,7 @@ function closeEvtCtxMenu() {
   if (m) m.hidden = true;
   _ctxEvtId = null;
   const grid = document.getElementById('month-grid');
-  if (grid) grid.style.pointerEvents = '';
+  if (grid) grid.classList.remove('ctx-menu-open');
 }
 function ctxEdit() {
   const id = _ctxEvtId; closeEvtCtxMenu();
