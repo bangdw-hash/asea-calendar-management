@@ -24,6 +24,25 @@
       --green: #0f9d58;
       --amber: #e8a13a;
       --red: #d64545;
+
+      /* 테두리 반경 — iOS 스타일 3단계 스케일(schedule.html과 동일한 규격) */
+      --r-sm: 6px;   /* 아이콘버튼·작은 배지·작은 사각버튼 */
+      --r: 8px;      /* 기본: 버튼·인풋·칩·작은 박스 */
+      --r-md: 12px;  /* 카드: 문서·통계·모달·툴바 */
+      --r-lg: 16px;  /* 큰 패널: 로그인/온보딩 게이트 카드 */
+      --pill: 999px; /* 태그·배지 전용(필 형태) — 일반 버튼에는 쓰지 않음 */
+
+      /* 그림자 — iOS 스타일 계층(schedule.html과 동일한 규격) */
+      --sh-sm: 0 1px 3px rgba(0,0,0,.12), 0 1px 2px rgba(0,0,0,.08);
+      --sh-md: 0 4px 6px rgba(0,0,0,.07), 0 2px 4px rgba(0,0,0,.06);
+      --sh-lg: 0 10px 15px rgba(0,0,0,.1), 0 4px 6px rgba(0,0,0,.05);
+    }
+    /* ── 색상 테마(헤더의 스와치로 선택, localStorage에 저장) ── */
+    html[data-asm-theme="green"] {
+      --navy: #14532d; --navy-2: #1f7a43; --blue: #16a34a; --blue-d: #15803d;
+    }
+    html[data-asm-theme="purple"] {
+      --navy: #3c2a6b; --navy-2: #4c3494; --blue: #7c3aed; --blue-d: #6d28d9;
     }
     * , *::before, *::after { box-sizing: border-box; }
     html, body { margin: 0; padding: 0; }
@@ -40,15 +59,34 @@
       color: #fff; padding: 12px 20px;
       display: flex; align-items: center; gap: 12px;
       position: sticky; top: 0; z-index: 50;
-      box-shadow: 0 2px 10px rgba(0,0,0,.12);
+      box-shadow: var(--sh-md);
     }
     .asm-header .asm-logo { display: flex; align-items: center; gap: 9px; }
     .asm-header .asm-logo b { font-size: 16px; font-weight: 800; letter-spacing: -0.3px; }
     .asm-header .asm-logo span { font-size: 12.5px; opacity: .82; }
-    .asm-header-user { margin-left: auto; display: flex; align-items: center; gap: 10px; font-size: 13px; }
-    .asm-header-user img { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; background: rgba(255,255,255,.2); }
-    .asm-header-logout { background: rgba(255,255,255,.16); border: none; border-radius: 6px; color: #fff; font-size: 12px; padding: 5px 11px; cursor: pointer; }
-    .asm-header-logout:hover { background: rgba(255,255,255,.3); }
+    .asm-header-right { margin-left: auto; display: flex; align-items: center; gap: 14px; }
+    /* 테마 스와치(3색상 선택) */
+    .asm-theme-picker { display: flex; align-items: center; gap: 6px; }
+    .asm-theme-swatch {
+      width: 20px; height: 20px; border-radius: 50%; cursor: pointer; padding: 0;
+      border: 2px solid rgba(255,255,255,.55); transition: transform .1s, border-color .15s;
+    }
+    .asm-theme-swatch:hover { transform: scale(1.12); }
+    .asm-theme-swatch.active { border-color: #fff; box-shadow: 0 0 0 2px rgba(255,255,255,.35); }
+    .asm-theme-swatch[data-theme="blue"] { background: #2563eb; }
+    .asm-theme-swatch[data-theme="green"] { background: #16a34a; }
+    .asm-theme-swatch[data-theme="purple"] { background: #7c3aed; }
+    .asm-header-user { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+    .asm-header-user img { width: 26px; height: 26px; border-radius: 50%; object-fit: cover; background: rgba(255,255,255,.2); }
+    .asm-header-user span#asm-user-name {
+      background: rgba(255,255,255,.15); padding: 4px 11px; border-radius: var(--pill); font-weight: 600;
+    }
+    .asm-header-logout {
+      background: rgba(255,255,255,.15); border: 1px solid rgba(255,255,255,.4);
+      border-radius: var(--r); color: #fff; font-size: 12px; padding: 5px 11px; cursor: pointer;
+      transition: background .15s;
+    }
+    .asm-header-logout:hover { background: rgba(255,255,255,.28); }
 
     .asm-main { max-width: 1080px; margin: 22px auto; padding: 0 16px 80px; }
 
@@ -65,7 +103,7 @@
     /* ── 버튼 ── */
     .asm-btn {
       display: inline-flex; align-items: center; justify-content: center; gap: 6px;
-      border: 1px solid transparent; border-radius: 8px; cursor: pointer;
+      border: 1px solid transparent; border-radius: var(--r); cursor: pointer;
       font-family: inherit; font-size: 13px; font-weight: 600; padding: 8px 14px;
       transition: background .15s, box-shadow .15s, transform .05s; white-space: nowrap;
     }
@@ -78,7 +116,7 @@
     .asm-btn-ghost:hover { background: #f2f4f8; color: var(--ink); }
     .asm-btn-admin { background: #2d2f45; color: #fff; }
     .asm-btn-admin:hover { background: #3a3d58; }
-    .asm-btn-lg { padding: 12px 22px; font-size: 15px; border-radius: 10px; }
+    .asm-btn-lg { padding: 12px 22px; font-size: 15px; border-radius: var(--r); }
     .asm-btn-sm { padding: 5px 10px; font-size: 12px; }
     .asm-btn:disabled { opacity: .6; cursor: default; }
     .asm-linkbtn { background: none; border: none; color: var(--blue); font-weight: 700; cursor: pointer; font-size: inherit; padding: 0 2px; text-decoration: underline; }
@@ -86,9 +124,9 @@
     /* ── 게이트(로그인/온보딩) ── */
     .asm-gate { display: flex; justify-content: center; padding: 40px 0; }
     .asm-gate-card {
-      background: var(--paper); border: 1px solid var(--line-2); border-radius: 16px;
+      background: var(--paper); border: 1px solid var(--line-2); border-radius: var(--r-lg);
       padding: 40px 34px; max-width: 480px; width: 100%; text-align: center;
-      box-shadow: 0 10px 34px rgba(22,50,79,.10);
+      box-shadow: var(--sh-lg);
     }
     .asm-onboard { text-align: left; }
     .asm-gate-icon { font-size: 40px; margin-bottom: 8px; }
@@ -97,7 +135,7 @@
     .asm-gate-desc { font-size: 13.5px; color: var(--muted); line-height: 1.7; margin: 0 0 22px; }
     .asm-gate-foot { font-size: 12px; color: var(--muted); margin: 20px 0 0; }
     .asm-google-btn-wrap { display: flex; justify-content: center; margin: 6px 0 4px; min-height: 40px; }
-    .asm-inapp-warn { text-align: left; background: #fff6e5; border: 1px solid #f0d59a; border-radius: 10px; padding: 14px 16px; margin-bottom: 18px; }
+    .asm-inapp-warn { text-align: left; background: #fff6e5; border: 1px solid #f0d59a; border-radius: var(--r); padding: 14px 16px; margin-bottom: 18px; }
     .asm-inapp-warn b { color: #8a5a00; font-size: 13.5px; }
     .asm-inapp-warn p { font-size: 12.5px; color: #6b5320; line-height: 1.6; margin: 6px 0 12px; }
     .asm-inapp-warn .asm-btn { width: 100%; }
@@ -107,14 +145,14 @@
     .asm-field { margin-bottom: 16px; }
     .asm-label { display: block; font-size: 13px; font-weight: 700; color: var(--navy); margin-bottom: 6px; }
     .asm-input {
-      width: 100%; border: 1px solid var(--line); border-radius: 9px; padding: 10px 12px;
+      width: 100%; border: 1px solid var(--line); border-radius: var(--r); padding: 10px 12px;
       font-family: inherit; font-size: 14px; color: var(--ink); background: #fbfcfe;
     }
     .asm-input:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px rgba(37,99,235,.12); background: #fff; }
     .asm-hint { font-size: 12px; color: var(--muted); margin: 6px 0 0; line-height: 1.5; }
     .asm-hint.asm-inline { display: inline; margin-left: 8px; }
     .asm-radio-group { display: flex; flex-direction: column; gap: 8px; }
-    .asm-radio { display: flex; align-items: center; gap: 7px; font-size: 14px; padding: 9px 12px; border: 1px solid var(--line); border-radius: 9px; cursor: pointer; }
+    .asm-radio { display: flex; align-items: center; gap: 7px; font-size: 14px; padding: 9px 12px; border: 1px solid var(--line); border-radius: var(--r); cursor: pointer; }
     .asm-radio:hover { border-color: var(--blue); background: #f7faff; }
     .asm-radio-hint { color: var(--muted); font-size: 12px; }
 
@@ -128,8 +166,8 @@
     .asm-consent-table { width: 100%; border-collapse: collapse; font-size: 12.5px; margin-bottom: 4px; }
     .asm-consent-table th, .asm-consent-table td { border: 1px solid var(--line-2); padding: 7px 10px; text-align: left; vertical-align: top; }
     .asm-consent-table th { background: #eff6ff; color: var(--blue-d); font-weight: 700; white-space: nowrap; }
-    .asm-consent-warn { background: #fdeaea; color: #a52424; border: 1px solid #f3c6c6; border-radius: 9px; padding: 12px 14px; font-size: 12.5px; line-height: 1.6; margin-top: 4px; }
-    .asm-consent-check { display: flex; align-items: flex-start; gap: 9px; font-size: 13px; padding: 12px 13px; border: 1px solid var(--line); border-radius: 9px; margin-top: 10px; cursor: pointer; }
+    .asm-consent-warn { background: #fdeaea; color: #a52424; border: 1px solid #f3c6c6; border-radius: var(--r); padding: 12px 14px; font-size: 12.5px; line-height: 1.6; margin-top: 4px; }
+    .asm-consent-check { display: flex; align-items: flex-start; gap: 9px; font-size: 13px; padding: 12px 13px; border: 1px solid var(--line); border-radius: var(--r); margin-top: 10px; cursor: pointer; }
     .asm-consent-check:hover { border-color: var(--blue); background: #f7faff; }
     .asm-consent-check input { margin-top: 2px; accent-color: var(--blue); flex-shrink: 0; }
     .asm-consent-check b { color: var(--red); font-weight: 800; margin-right: 2px; }
@@ -139,47 +177,47 @@
     /* ── 툴바 ── */
     .asm-toolbar {
       display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
-      background: var(--paper); border: 1px solid var(--line-2); border-radius: 12px;
+      background: var(--paper); border: 1px solid var(--line-2); border-radius: var(--r-md);
       padding: 10px 12px; margin-bottom: 16px; position: sticky; top: 60px; z-index: 40;
-      box-shadow: 0 2px 8px rgba(22,50,79,.06);
+      box-shadow: var(--sh-sm);
     }
     .asm-toolbar-right { margin-left: auto; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-    .asm-year-tabs { display: inline-flex; background: #eef1f6; border-radius: 9px; padding: 3px; gap: 2px; }
-    .asm-year-tab { border: none; background: transparent; color: var(--muted); font-family: inherit; font-weight: 700; font-size: 13px; padding: 6px 14px; border-radius: 7px; cursor: pointer; }
+    .asm-year-tabs { display: inline-flex; background: #eef1f6; border-radius: var(--r); padding: 3px; gap: 2px; }
+    .asm-year-tab { border: none; background: transparent; color: var(--muted); font-family: inherit; font-weight: 700; font-size: 13px; padding: 6px 14px; border-radius: var(--r-sm); cursor: pointer; }
     .asm-year-tab.active { background: var(--paper); color: var(--navy); box-shadow: 0 1px 4px rgba(0,0,0,.12); }
 
-    .asm-badge { font-size: 12px; color: var(--muted); font-weight: 600; padding: 4px 8px; border-radius: 6px; background: #f1f3f7; }
+    .asm-badge { font-size: 12px; color: var(--muted); font-weight: 600; padding: 4px 8px; border-radius: var(--r-sm); background: #f1f3f7; }
     .asm-badge-dirty { color: var(--amber); background: #fdf4e3; }
     .asm-badge-saving { color: var(--blue); background: #e8f0ff; }
     .asm-badge-done { color: var(--green); background: #e7f6ee; }
 
-    .asm-notice { padding: 11px 15px; border-radius: 10px; font-size: 13px; margin-bottom: 14px; }
+    .asm-notice { padding: 11px 15px; border-radius: var(--r); font-size: 13px; margin-bottom: 14px; }
     .asm-notice-done { background: #e7f6ee; color: #0b6b3c; border: 1px solid #bfe6cf; }
 
     /* ── 문서(폼) ── */
     .asm-doc {
-      background: var(--paper); border: 1px solid var(--line-2); border-radius: 14px;
-      padding: 26px 26px 30px; box-shadow: 0 6px 22px rgba(22,50,79,.07);
+      background: var(--paper); border: 1px solid var(--line-2); border-radius: var(--r-md);
+      padding: 26px 26px 30px; box-shadow: var(--sh-md);
     }
     .asm-readonly .asm-cell-input, .asm-readonly .asm-input { pointer-events: none; background: #f6f7f9; color: #55606f; }
     .asm-readonly .asm-rowdel, .asm-readonly .asm-rowadd { display: none; }
     .asm-doc-head { text-align: center; position: relative; border-bottom: 2px solid var(--navy); padding-bottom: 14px; margin-bottom: 22px; }
-    .asm-confidential { position: absolute; right: 0; top: 0; border: 1.5px solid var(--red); color: var(--red); font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 4px; letter-spacing: 2px; }
+    .asm-confidential { position: absolute; right: 0; top: 0; border: 1.5px solid var(--red); color: var(--red); font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: var(--r-sm); letter-spacing: 2px; }
     .asm-doc-title { font-size: 21px; font-weight: 800; color: var(--navy); margin: 4px 0 8px; letter-spacing: -0.4px; }
     .asm-doc-note { font-size: 12px; color: var(--muted); margin: 0; }
 
     /* ── 섹션 ── */
     .asm-section { margin-bottom: 30px; }
     .asm-sec-head { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
-    .asm-sec-no { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; background: var(--navy); color: #fff; border-radius: 7px; font-weight: 800; font-size: 14px; flex-shrink: 0; }
+    .asm-sec-no { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; background: var(--navy); color: #fff; border-radius: var(--r-sm); font-weight: 800; font-size: 14px; flex-shrink: 0; }
     .asm-sec-title { font-size: 16.5px; font-weight: 800; color: var(--navy); margin: 0; }
     .asm-sec-title small { font-weight: 600; color: var(--muted); font-size: 13px; }
     .asm-h4 { font-size: 14px; font-weight: 800; color: var(--navy-2); margin: 18px 0 8px; display: flex; align-items: center; gap: 8px; }
-    .asm-tag { font-size: 11px; font-weight: 700; background: #e8f0ff; color: var(--blue-d); padding: 2px 8px; border-radius: 20px; }
+    .asm-tag { font-size: 11px; font-weight: 700; background: #e8f0ff; color: var(--blue-d); padding: 2px 8px; border-radius: var(--pill); }
     .asm-tag-fac { background: #eaf7ef; color: #0b7a43; }
 
     /* ── 테이블 ── */
-    .asm-scroll { overflow-x: auto; border-radius: 8px; }
+    .asm-scroll { overflow-x: auto; border-radius: var(--r); }
     .asm-table { width: 100%; border-collapse: collapse; font-size: 13px; }
     .asm-table th, .asm-table td { border: 1px solid var(--line); padding: 0; vertical-align: middle; }
     .asm-table thead th { background: #f3f6fa; color: var(--navy); font-weight: 700; padding: 8px 6px; text-align: center; font-size: 12.5px; line-height: 1.35; }
@@ -196,7 +234,7 @@
     .asm-cell-sm { font-size: 12.5px; }
     .asm-cell-num { text-align: center; }
     .asm-cell-readonly { background: #f6f7f9; color: #55606f; cursor: not-allowed; }
-    .asm-auto-badge { display: inline-block; font-size: 10px; font-weight: 700; color: var(--blue-d); background: #e8f0ff; border-radius: 20px; padding: 1px 7px; margin-left: 4px; vertical-align: 1px; }
+    .asm-auto-badge { display: inline-block; font-size: 10px; font-weight: 700; color: var(--blue-d); background: #e8f0ff; border-radius: var(--pill); padding: 1px 7px; margin-left: 4px; vertical-align: 1px; }
 
     /* ── 서술형(rte) 입력 — Enter 줄바꿈 + 선택 글자 크기 조절 ── */
     .asm-rte { line-height: 1.5; min-height: 34px; white-space: pre-wrap; word-break: break-word; cursor: text; }
@@ -204,18 +242,18 @@
     .asm-rte div, .asm-rte p { margin: 0; padding: 0; }
     .asm-rte:empty::before { content: attr(data-ph); color: #9aa4b2; pointer-events: none; }
     .asm-rte-toolbar {
-      display: none; position: absolute; z-index: 400; background: #1f2937; border-radius: 9px;
+      display: none; position: absolute; z-index: 400; background: #1f2937; border-radius: var(--r);
       padding: 4px; gap: 2px; box-shadow: 0 8px 22px rgba(0,0,0,.28);
     }
     .asm-rte-toolbar button {
       border: none; background: transparent; color: #fff; font-family: inherit; font-weight: 700;
-      font-size: 12px; padding: 6px 9px; border-radius: 6px; cursor: pointer; line-height: 1;
+      font-size: 12px; padding: 6px 9px; border-radius: var(--r-sm); cursor: pointer; line-height: 1;
     }
     .asm-rte-toolbar button:hover { background: rgba(255,255,255,.16); }
     .asm-rte-toolbar button b { font-size: 13px; margin-left: 1px; }
     .asm-td-no { width: 42px; text-align: center; color: var(--muted); font-weight: 600; background: #fafbfc; }
     .asm-td-del { width: 34px; text-align: center; }
-    .asm-rowdel { border: none; background: transparent; color: #c4ccd6; cursor: pointer; font-size: 13px; padding: 4px 6px; border-radius: 5px; }
+    .asm-rowdel { border: none; background: transparent; color: #c4ccd6; cursor: pointer; font-size: 13px; padding: 4px 6px; border-radius: var(--r-sm); }
     .asm-rowdel:hover { background: #fdeaea; color: var(--red); }
     .asm-rowadd { margin: 8px 0 0; }
     .asm-table-grid td { min-width: 70px; }
@@ -224,24 +262,24 @@
     .asm-table-month tr > th { background: #f3f6fa; color: var(--navy); font-weight: 700; padding: 6px; white-space: nowrap; }
     .asm-sum { background: #eef4ff; font-weight: 800; color: var(--blue-d); text-align: center; }
     .asm-table-student th, .asm-table-student td { min-width: 44px; }
-    .asm-note-input { border: 1px solid var(--line); border-radius: 8px; margin-top: 8px; background: #fbfcfe; }
+    .asm-note-input { border: 1px solid var(--line); border-radius: var(--r); margin-top: 8px; background: #fbfcfe; }
 
     /* ── 4장 직군 스위치 ── */
-    .asm-jobgroup-switch { background: #f7f9fc; border: 1px dashed var(--line); border-radius: 9px; padding: 9px 13px; margin-bottom: 14px; font-size: 13px; }
+    .asm-jobgroup-switch { background: #f7f9fc; border: 1px dashed var(--line); border-radius: var(--r); padding: 9px 13px; margin-bottom: 14px; font-size: 13px; }
     .asm-jobgroup-switch b { color: var(--navy); }
 
     /* ── 관리자 전사반영(개인역량개발) ── */
-    .asm-bcast-hint { background: #fff6e5; border: 1px solid #f0d59a; border-radius: 8px; padding: 8px 12px; color: #8a5a00; margin-bottom: 10px; font-weight: 600; }
+    .asm-bcast-hint { background: #fff6e5; border: 1px solid #f0d59a; border-radius: var(--r); padding: 8px 12px; color: #8a5a00; margin-bottom: 10px; font-weight: 600; }
     .asm-td-bcast, .asm-td-bcast-h { width: 108px; min-width: 108px; text-align: center; background: #fffbf0; }
     .asm-broadcast-btn {
       display: block; width: 100%; border: 1.5px solid #f0c05a; background: #fff3d6; color: #8a5a00; font-size: 11.5px; font-weight: 800;
-      padding: 7px 6px; border-radius: 7px; cursor: pointer; white-space: nowrap;
+      padding: 7px 6px; border-radius: var(--r-sm); cursor: pointer; white-space: nowrap;
     }
     .asm-broadcast-btn:hover { background: #ffe6a8; border-color: #d9a53a; }
     .asm-row-bcast { background: #fffaf0; }
     .asm-bcast-badge {
       display: inline-block; font-size: 10px; font-weight: 700; background: #fff3d6; color: #8a5a00;
-      border-radius: 20px; padding: 1px 7px; margin-bottom: 4px;
+      border-radius: var(--pill); padding: 1px 7px; margin-bottom: 4px;
     }
     .asm-subsec { margin-bottom: 6px; }
 
@@ -251,7 +289,7 @@
     .asm-daterange-sep { color: var(--muted); font-size: 12px; margin: 0 3px; }
     .asm-daterange-toggle {
       display: block; width: 100%; margin-top: 4px; border: 1px dashed var(--line); background: #fbfcfe;
-      color: var(--blue-d); font-size: 10.5px; font-weight: 600; padding: 3px 4px; border-radius: 6px; cursor: pointer;
+      color: var(--blue-d); font-size: 10.5px; font-weight: 600; padding: 3px 4px; border-radius: var(--r-sm); cursor: pointer;
     }
     .asm-daterange-toggle:hover { background: #eef4ff; border-color: var(--blue); }
 
@@ -259,30 +297,30 @@
 
     /* ── 관리자 ── */
     .asm-admin-stat { display: flex; gap: 14px; margin-bottom: 18px; flex-wrap: wrap; }
-    .asm-stat { flex: 1; min-width: 120px; background: #f5f8fc; border: 1px solid var(--line-2); border-radius: 12px; padding: 16px; text-align: center; }
+    .asm-stat { flex: 1; min-width: 120px; background: #f5f8fc; border: 1px solid var(--line-2); border-radius: var(--r-md); padding: 16px; text-align: center; }
     .asm-stat-num { display: block; font-size: 28px; font-weight: 800; color: var(--navy); }
     .asm-stat-lbl { font-size: 12px; color: var(--muted); }
     .asm-admin-table th, .asm-admin-table td { padding: 9px 10px; text-align: center; font-size: 13px; }
     .asm-admin-table thead th { background: #f3f6fa; }
     .asm-admin-table tbody tr:hover { background: #f7faff; }
     .asm-admin-email { color: var(--muted); font-size: 12px; }
-    .asm-status { font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 20px; }
+    .asm-status { font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: var(--pill); }
     .asm-status-done { background: #e7f6ee; color: #0b6b3c; }
     .asm-status-draft { background: #fdf4e3; color: #a5701a; }
     .asm-admin-empty { text-align: center; color: var(--muted); padding: 46px 0; font-size: 14px; }
 
     /* ── 상세 모달 ── */
     .asm-modal-back { position: fixed; inset: 0; background: rgba(20,30,45,.5); display: flex; align-items: center; justify-content: center; z-index: 200; padding: 20px; }
-    .asm-modal { background: #fff; border-radius: 14px; max-width: 760px; width: 100%; max-height: 86vh; display: flex; flex-direction: column; overflow: hidden; }
+    .asm-modal { background: #fff; border-radius: var(--r-md); max-width: 760px; width: 100%; max-height: 86vh; display: flex; flex-direction: column; overflow: hidden; }
     .asm-modal-head { display: flex; align-items: center; gap: 10px; padding: 14px 18px; border-bottom: 1px solid var(--line-2); }
-    .asm-modal-x { margin-left: auto; border: none; background: #f1f3f7; border-radius: 7px; width: 28px; height: 28px; cursor: pointer; color: var(--muted); }
+    .asm-modal-x { margin-left: auto; border: none; background: #f1f3f7; border-radius: var(--r-sm); width: 28px; height: 28px; cursor: pointer; color: var(--muted); }
     .asm-modal-body { padding: 16px 18px; overflow-y: auto; }
     .asm-modal-foot { display: flex; justify-content: flex-end; gap: 8px; padding: 12px 18px; border-top: 1px solid var(--line-2); }
     .asm-detail-meta { font-size: 13px; color: var(--muted); margin-bottom: 12px; }
-    .asm-detail-json { background: #0f172a; color: #cbd5e1; font-size: 11.5px; line-height: 1.5; padding: 14px; border-radius: 8px; overflow-x: auto; white-space: pre-wrap; word-break: break-all; }
+    .asm-detail-json { background: #0f172a; color: #cbd5e1; font-size: 11.5px; line-height: 1.5; padding: 14px; border-radius: var(--r); overflow-x: auto; white-space: pre-wrap; word-break: break-all; }
 
     /* ── 토스트 ── */
-    .asm-toast { position: fixed; bottom: 26px; left: 50%; transform: translate(-50%, 20px); opacity: 0; background: #1f2937; color: #fff; padding: 11px 20px; border-radius: 10px; font-size: 13.5px; z-index: 500; transition: opacity .3s, transform .3s; box-shadow: 0 8px 24px rgba(0,0,0,.24); max-width: 90vw; }
+    .asm-toast { position: fixed; bottom: 26px; left: 50%; transform: translate(-50%, 20px); opacity: 0; background: #1f2937; color: #fff; padding: 11px 20px; border-radius: var(--r); font-size: 13.5px; z-index: 500; transition: opacity .3s, transform .3s; box-shadow: 0 8px 24px rgba(0,0,0,.24); max-width: 90vw; }
     .asm-toast.show { opacity: 1; transform: translate(-50%, 0); }
     .asm-toast-success { background: #0f9d58; }
     .asm-toast-error { background: #d64545; }
@@ -318,7 +356,7 @@
     /* ── 업무일지 AI 자동정리 모달 ── */
     .asm-ai-input input[type="file"] { display: block; margin-bottom: 12px; font-size: 13px; }
     .asm-ai-textarea {
-      width: 100%; min-height: 220px; border: 1px solid var(--line); border-radius: 10px; padding: 12px;
+      width: 100%; min-height: 220px; border: 1px solid var(--line); border-radius: var(--r); padding: 12px;
       font-family: inherit; font-size: 13px; line-height: 1.6; resize: vertical; background: #fbfcfe;
     }
     .asm-ai-textarea:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px rgba(37,99,235,.12); }
@@ -327,7 +365,7 @@
     .asm-ai-group h4 { font-size: 13px; font-weight: 800; color: var(--navy-2); margin: 0 0 8px; }
     .asm-ai-item {
       display: flex; align-items: flex-start; gap: 9px; font-size: 13px; padding: 9px 11px;
-      border: 1px solid var(--line-2); border-radius: 9px; margin-bottom: 6px; cursor: pointer; background: #fbfcfe;
+      border: 1px solid var(--line-2); border-radius: var(--r); margin-bottom: 6px; cursor: pointer; background: #fbfcfe;
     }
     .asm-ai-item:hover { background: #f5f8fc; }
     .asm-ai-item input { margin-top: 2px; accent-color: var(--blue); flex-shrink: 0; }
@@ -337,12 +375,12 @@
     .pd-root { background: #fff; color: #1a2433; font-size: 12.5px; line-height: 1.5; padding: 6px 2px; }
     .pd-print .pd-root { padding: 26px; }
     .pd-head { text-align: center; border-bottom: 2px solid var(--navy); padding-bottom: 12px; margin-bottom: 18px; position: relative; }
-    .pd-conf { position: absolute; right: 0; top: 0; border: 1.5px solid var(--red); color: var(--red); font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 4px; letter-spacing: 2px; }
+    .pd-conf { position: absolute; right: 0; top: 0; border: 1.5px solid var(--red); color: var(--red); font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: var(--r-sm); letter-spacing: 2px; }
     .pd-title { font-size: 18px; font-weight: 800; color: var(--navy); margin: 2px 0 6px; }
     .pd-sub { font-size: 13px; color: #44506080; color: var(--muted); font-weight: 600; }
     .pd-sec { margin-bottom: 18px; break-inside: avoid; }
     .pd-sec-h { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 800; color: var(--navy); margin-bottom: 8px; }
-    .pd-no { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; background: var(--navy); color: #fff; border-radius: 6px; font-size: 12px; }
+    .pd-no { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; background: var(--navy); color: #fff; border-radius: var(--r-sm); font-size: 12px; }
     .pd-h4 { font-size: 12.5px; font-weight: 800; color: var(--navy-2); margin: 12px 0 6px; }
     .pd-tbl { width: 100%; border-collapse: collapse; font-size: 11.5px; margin-bottom: 4px; }
     .pd-tbl th, .pd-tbl td { border: 1px solid #cdd4de; padding: 5px 7px; text-align: center; vertical-align: middle; }
@@ -354,23 +392,23 @@
     .pd-sum { background: #eef4ff; font-weight: 800; color: var(--blue-d); }
     .pd-scroll { overflow-x: auto; }
     .pd-empty { color: #9aa4b2; font-size: 12px; padding: 6px 2px; }
-    .pd-tag { display: inline-block; font-size: 10.5px; font-weight: 700; background: #e8f0ff; color: var(--blue-d); padding: 2px 8px; border-radius: 20px; margin-bottom: 6px; }
+    .pd-tag { display: inline-block; font-size: 10.5px; font-weight: 700; background: #e8f0ff; color: var(--blue-d); padding: 2px 8px; border-radius: var(--pill); margin-bottom: 6px; }
     .pd-tag-fac { background: #eaf7ef; color: #0b7a43; }
 
     /* ── 분석 패널 ── */
-    .an-box { background: #f7f9fc; border: 1px solid var(--line-2); border-radius: 12px; padding: 18px; margin-bottom: 16px; }
+    .an-box { background: #f7f9fc; border: 1px solid var(--line-2); border-radius: var(--r-md); padding: 18px; margin-bottom: 16px; }
     .an-desc { font-size: 13px; color: #45506a; line-height: 1.65; margin-bottom: 14px; }
     .an-field { margin-bottom: 12px; }
     .an-row { display: flex; gap: 12px; flex-wrap: wrap; }
     .an-jg { width: 160px; } .an-tot { flex: 1; }
-    .an-count { padding: 10px 12px; background: #fff; border: 1px solid var(--line); border-radius: 9px; font-weight: 700; color: var(--navy); }
+    .an-count { padding: 10px 12px; background: #fff; border: 1px solid var(--line); border-radius: var(--r); font-weight: 700; color: var(--navy); }
     .an-chips { display: flex; flex-wrap: wrap; gap: 6px; }
-    .asm-chip { display: inline-flex; align-items: center; gap: 4px; font-size: 12.5px; padding: 5px 10px; border: 1px solid var(--line); border-radius: 20px; cursor: pointer; background: #fff; }
+    .asm-chip { display: inline-flex; align-items: center; gap: 4px; font-size: 12.5px; padding: 5px 10px; border: 1px solid var(--line); border-radius: var(--pill); cursor: pointer; background: #fff; }
     .asm-chip.on { background: #e8f0ff; border-color: var(--blue); color: var(--blue-d); font-weight: 600; }
     .asm-chip input { display: none; }
     .an-actions { display: flex; gap: 8px; margin-top: 4px; }
-    .an-score { display: inline-block; min-width: 26px; background: var(--blue); color: #fff; font-weight: 800; border-radius: 6px; padding: 2px 7px; }
-    .an-kw { display: inline-block; background: #eef4ff; color: var(--blue-d); font-size: 11px; border-radius: 10px; padding: 1px 7px; margin: 1px; }
+    .an-score { display: inline-block; min-width: 26px; background: var(--blue); color: #fff; font-weight: 800; border-radius: var(--r-sm); padding: 2px 7px; }
+    .an-kw { display: inline-block; background: #eef4ff; color: var(--blue-d); font-size: 11px; border-radius: var(--pill); padding: 1px 7px; margin: 1px; }
     .an-snip { font-size: 11.5px; color: var(--muted); text-align: left; max-width: 260px; }
   </style>
 </head>
@@ -390,10 +428,17 @@
     </svg>
     <b>ASEA</b> <span>개인별 직무역량 자가진단</span>
   </span>
-  <div class="asm-header-user" id="asm-user-area" style="display:none">
-    <img id="asm-user-avatar" src="" alt="">
-    <span id="asm-user-name"></span>
-    <button class="asm-header-logout" onclick="asmLogout()">로그아웃</button>
+  <div class="asm-header-right">
+    <div class="asm-theme-picker" id="asm-theme-picker" title="테마 색상 선택">
+      <button class="asm-theme-swatch" data-theme="blue" aria-label="파란색 테마"></button>
+      <button class="asm-theme-swatch" data-theme="green" aria-label="초록색 테마"></button>
+      <button class="asm-theme-swatch" data-theme="purple" aria-label="보라색 테마"></button>
+    </div>
+    <div class="asm-header-user" id="asm-user-area" style="display:none">
+      <img id="asm-user-avatar" src="" alt="">
+      <span id="asm-user-name"></span>
+      <button class="asm-header-logout" onclick="asmLogout()">로그아웃</button>
+    </div>
   </div>
 </div>
 
@@ -420,6 +465,29 @@
     el.classList.remove('hidden');
     if (msg && msgEl) msgEl.textContent = msg;
   }
+
+  // ── 색상 테마 선택(파랑/초록/보라) — 로그인 여부와 무관하게 항상 동작, 브라우저별 저장 ──
+  var THEME_KEY = 'asea_assess_theme';
+  function applyTheme(theme) {
+    if (theme === 'blue') { document.documentElement.removeAttribute('data-asm-theme'); }
+    else { document.documentElement.setAttribute('data-asm-theme', theme); }
+    document.querySelectorAll('.asm-theme-swatch').forEach(function (b) {
+      b.classList.toggle('active', b.getAttribute('data-theme') === theme);
+    });
+  }
+  function initThemePicker() {
+    var saved = 'blue';
+    try { saved = localStorage.getItem(THEME_KEY) || 'blue'; } catch (e) {}
+    applyTheme(saved);
+    document.querySelectorAll('.asm-theme-swatch').forEach(function (b) {
+      b.addEventListener('click', function () {
+        var theme = b.getAttribute('data-theme');
+        applyTheme(theme);
+        try { localStorage.setItem(THEME_KEY, theme); } catch (e) {}
+      });
+    });
+  }
+  initThemePicker();
 
   function showUserArea(profile) {
     var area = document.getElementById('asm-user-area');
