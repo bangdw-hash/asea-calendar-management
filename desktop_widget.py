@@ -31,10 +31,15 @@ from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QPushButton, QSlider, QLabel, QMenu, QAction
 )
-from PyQt5.QtWebEngineWidgets import QWebEngineView, QWebEngineProfile, QWebEnginePage
+from PyQt5.QtWebEngineWidgets import (
+    QWebEngineView, QWebEngineProfile, QWebEnginePage,
+    QWebEngineScript
+)
 from PyQt5.QtPrintSupport import QPrinter, QPrintDialog
 
-CALENDAR_URL = "https://bangdw-hash.github.io/asea-calendar-management/schedule.html"
+import webbrowser
+
+CALENDAR_URL = "https://bangdw-hash.github.io/asea-calendar-management/schedule.html?widget=1"
 SNAP_MARGIN  = 20   # 자석 스냅 거리 (px)
 RESIZE_EDGE  = 10   # 리사이즈 핸들 두께 (px)
 MIN_W, MIN_H = 320, 460
@@ -83,14 +88,27 @@ def _mdl2_btn(char, tip="", obj_name="", size=28, font_size=13):
     return btn
 
 
-# ── 팝업 창 처리 (Google 로그인 등) ──────────────────────────────────────────
+# ── 팝업 창 처리 ─────────────────────────────────────────────────────────────
 class CalendarPage(QWebEnginePage):
+    """
+    위젯 모드(?widget=1)에서는 Google OAuth 관련 팝업/외부 링크는
+    시스템 기본 브라우저로 열어 준다.
+    """
     def __init__(self, profile, parent=None):
         super().__init__(profile, parent)
 
+    def acceptNavigationRequest(self, qurl, nav_type, is_main_frame):
+        url = qurl.toString()
+        # Google OAuth 흐름이 메인 프레임을 탈취하려 하면 브라우저로 위임
+        if is_main_frame and any(h in url for h in (
+                'accounts.google.com', 'oauth2', '/auth?', 'signin/oauth')):
+            webbrowser.open(url)
+            return False
+        return super().acceptNavigationRequest(qurl, nav_type, is_main_frame)
+
     def createWindow(self, window_type):
         popup = QWebEngineView()
-        popup.setWindowTitle("ASEA 캘린더 — 로그인")
+        popup.setWindowTitle("ASEA 캘린더 — 팝업")
         popup.setWindowFlags(Qt.Window)
         popup.setAttribute(Qt.WA_DeleteOnClose)
         popup.resize(500, 700)
