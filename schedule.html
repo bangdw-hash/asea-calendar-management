@@ -1829,6 +1829,7 @@ async function moveEvent(evtId, newY, newM, newD) {
 
 function evtChipClick(e, el, evtId) {
   e.stopPropagation();
+  if (_ctxJustClosed) return;
   el.classList.add('clicking');
   setTimeout(() => el.classList.remove('clicking'), 250);
   showDetail(e, evtId);
@@ -3552,6 +3553,7 @@ async function loadPrivacyConsents() {
 let _ctxEvtId = null;
 let _ctxLpTimer = null;
 let _ctxOutsideHandler = null;
+let _ctxJustClosed = false;
 
 function openEvtCtxMenu(evtId, cx, cy) {
   _ctxEvtId = evtId;
@@ -3571,7 +3573,7 @@ function openEvtCtxMenu(evtId, cx, cy) {
   });
   setTimeout(() => document.addEventListener('mousedown', _ctxOutsideHandler = e => {
     const menu = document.getElementById('evt-ctx-menu');
-    if (menu && !menu.contains(e.target)) { closeEvtCtxMenu(); e.preventDefault(); e.stopPropagation(); }
+    if (menu && !menu.contains(e.target)) { closeEvtCtxMenu(); _ctxJustClosed = true; setTimeout(() => { _ctxJustClosed = false; }, 150); e.preventDefault(); e.stopPropagation(); }
   }, {once:true, capture:true}), 20);
 }
 function closeEvtCtxMenu() {
