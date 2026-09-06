@@ -200,7 +200,7 @@ html,body{height:100%;
   position:sticky;top:var(--cal-sticky-top,0);z-index:75;
   background:var(--color-card);
   border-bottom:2px solid var(--color-border);
-  overflow-x:auto;-webkit-overflow-scrolling:touch;}
+  overflow:hidden;}
 #month-weekdays-sticky:empty{display:none;border:none}
 #month-weekdays-sticky .month-weekdays{
   display:grid;grid-template-columns:repeat(7,1fr);
@@ -3572,24 +3572,15 @@ if (typeof ResizeObserver !== 'undefined') {
 }
 window.addEventListener('resize', _updateCalStickyTop);
 
-// sync horizontal scroll: weekday sticky bar ↔ cal-wrap
+// sync horizontal scroll: translate weekday bar to match cal-wrap scroll position
 (function() {
   const calWrap = document.getElementById('cal-wrap');
   const stickyBar = document.getElementById('month-weekdays-sticky');
   if (!calWrap || !stickyBar) return;
-  let _syncing = false;
   calWrap.addEventListener('scroll', () => {
-    if (_syncing) return;
-    _syncing = true;
-    stickyBar.scrollLeft = calWrap.scrollLeft;
-    _syncing = false;
-  });
-  stickyBar.addEventListener('scroll', () => {
-    if (_syncing) return;
-    _syncing = true;
-    calWrap.scrollLeft = stickyBar.scrollLeft;
-    _syncing = false;
-  });
+    const weekdays = stickyBar.querySelector('.month-weekdays');
+    if (weekdays) weekdays.style.transform = `translateX(${-calWrap.scrollLeft}px)`;
+  }, { passive: true });
 })();
 
 
