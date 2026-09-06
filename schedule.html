@@ -1714,6 +1714,9 @@ function initMonthDrag() {
   grid.addEventListener('mousedown', e => {
     // if context menu is open, close it and swallow this interaction
     if (_ctxEvtId) { closeEvtCtxMenu(); e.preventDefault(); return; }
+    // if detail popup is open, let the click-listener close it — skip ripple/drag
+    const ep = document.getElementById('evt-popup');
+    if (ep && ep.classList.contains('open')) return;
     const cell = e.target.closest('.day-cell.cur-month');
     if (!cell || e.target.closest('.evt-dot,.evt-dot-wrap,.evt-quick')) return;
     // ripple at click position
