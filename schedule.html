@@ -1447,9 +1447,16 @@ async function fetchUserInfo() {
   } catch(e) {}
 }
 
+const _WIDGET_MODE = new URLSearchParams(location.search).get('widget') === '1';
+
 function updateUserArea() {
   const area = document.getElementById('user-area');
   if (!_token) {
+    // 위젯 외부 조회 모드: 로그인 버튼 대신 조회 전용 배지 표시
+    if (_WIDGET_MODE) {
+      area.innerHTML = `<span style="font-size:.78rem;color:#888;padding:4px 10px;border:1px solid #ddd;border-radius:20px;background:#f9f9f9;">📖 조회 전용</span>`;
+      return;
+    }
     area.innerHTML = `<button class="btn-login-google" onclick="doLogin()" title="일정 추가·수정을 위해 Google 계정으로 로그인">
       <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
         <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"/>
@@ -3714,6 +3721,13 @@ function initColorTheme() {
 
 /* ══════════════ BOOT ══════════════ */
 async function boot() {
+  // 위젯 외부 조회 모드: Google OAuth 초기화 없이 공개 일정만 로드
+  if (_WIDGET_MODE) {
+    updateUserArea();
+    await fetchPublicEvents();
+    renderCalendar();
+    return;
+  }
   await _ensureClient();
   _initTokenClient(SCOPES);
   if (_tryRestoreToken()) {
