@@ -3,201 +3,405 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>주차 위치 공유</title>
+<title>주차 위치</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root {
-  --primary:#1A73E8;--primary-dk:#1557B0;--primary-lt:#E8F0FE;
-  --green:#16a34a;--green-lt:#dcfce7;--green-bd:#bbf7d0;
-  --orange:#ea580c;--orange-lt:#ffedd5;
-  --red:#dc2626;--red-lt:#fee2e2;
-  --gray:#6b7280;--gray-lt:#f3f4f6;
-  --r:10px;
-  --bg:#f8fafc;--card:#fff;--border:#e5e7eb;--text:#111827;--sub:#6b7280;
+  --primary: #1A73E8;
+  --primary-dk: #1557B0;
+  --primary-lt: #EEF4FD;
+  --green: #16a34a;
+  --green-dk: #15803d;
+  --green-lt: #f0fdf4;
+  --red: #dc2626;
+  --red-lt: #fef2f2;
+  --g50: #f9fafb;
+  --g100: #f3f4f6;
+  --g200: #e5e7eb;
+  --g300: #d1d5db;
+  --g400: #9ca3af;
+  --g500: #6b7280;
+  --g700: #374151;
+  --g900: #111827;
+  --r: 14px;
+  --r-sm: 10px;
+  --sh: 0 1px 3px rgba(0,0,0,.08);
+  --sh-md: 0 4px 12px rgba(0,0,0,.09);
 }
-*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-body{font-family:-apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo','Noto Sans KR',sans-serif;
-  background:var(--bg);color:var(--text);min-height:100dvh;display:flex;flex-direction:column}
-header{background:var(--primary);color:#fff;padding:16px 20px 14px;
-  display:flex;align-items:center;justify-content:space-between;gap:8px}
-header h1{font-size:18px;font-weight:700;letter-spacing:-.3px}
-.share-btn{background:rgba(255,255,255,.2);border:none;color:#fff;
-  padding:6px 14px;border-radius:20px;font-size:13px;cursor:pointer;font-weight:600}
-.share-btn:active{background:rgba(255,255,255,.35)}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+  background: var(--g100);
+  color: var(--g900);
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 68px;
+}
 
-/* ── 주차 중 상태 배너 (크게 표시) ── */
-.park-banner{margin:14px 14px 0;border-radius:16px;overflow:hidden;
-  border:2px solid var(--green-bd);background:var(--green-lt);display:none}
-.park-banner.show{display:block}
-.banner-head{padding:12px 18px 6px;display:flex;align-items:center;gap:8px}
-.banner-dot{width:10px;height:10px;border-radius:50%;background:var(--green);
-  box-shadow:0 0 0 3px rgba(22,163,74,.2);animation:pulse 2s infinite}
-@keyframes pulse{0%,100%{box-shadow:0 0 0 3px rgba(22,163,74,.2)}50%{box-shadow:0 0 0 6px rgba(22,163,74,.08)}}
-.banner-status{font-size:13px;font-weight:700;color:var(--green);letter-spacing:.3px}
-.banner-time{font-size:12px;color:var(--green);opacity:.7;margin-left:auto}
-.banner-body{padding:4px 18px 16px}
-.banner-place{font-size:22px;font-weight:800;color:#14532d;line-height:1.2}
-.banner-floor{font-size:16px;font-weight:700;color:var(--green);margin-top:4px}
-.banner-detail{font-size:13px;color:#166534;margin-top:3px;opacity:.85}
-.banner-notes{font-size:13px;color:#166534;margin-top:8px;
-  background:rgba(255,255,255,.6);border-radius:8px;padding:8px 10px;line-height:1.5}
+/* ── Header ── */
+.app-header {
+  position: sticky; top: 0; z-index: 100;
+  background: #fff;
+  border-bottom: 1px solid var(--g200);
+  height: 56px;
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.header-title {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 17px; font-weight: 700; color: var(--g900);
+}
+.header-title svg { color: var(--primary); flex-shrink: 0; }
+.header-btn {
+  display: flex; align-items: center; gap: 5px;
+  background: none; border: 1.5px solid var(--g200);
+  border-radius: var(--r-sm); padding: 6px 12px;
+  font-size: 13px; font-weight: 600; color: var(--g700);
+  cursor: pointer; font-family: inherit;
+  transition: background .12s;
+}
+.header-btn:active { background: var(--g50); }
 
-/* ── 주차 없음 배너 ── */
-.away-banner{margin:14px 14px 0;border-radius:16px;background:var(--card);
-  border:1.5px solid var(--border);padding:14px 18px;
-  display:flex;align-items:center;gap:10px}
-.away-banner.hide{display:none}
-.away-dot{width:10px;height:10px;border-radius:50%;background:#d1d5db}
-.away-label{font-size:14px;color:var(--sub);font-weight:600}
+/* ── Status Section ── */
+.status-section { padding: 14px 16px 6px; }
+.status-card {
+  background: #fff;
+  border-radius: var(--r);
+  box-shadow: var(--sh);
+  overflow: hidden;
+}
 
-/* ── 입력 폼 ── */
-.form-section{margin:12px 14px 0;background:var(--card);border-radius:16px;
-  box-shadow:0 1px 4px rgba(0,0,0,.07);padding:18px}
-.form-title{font-size:12px;font-weight:700;color:var(--sub);margin-bottom:16px;
-  letter-spacing:.8px;text-transform:uppercase}
+/* Parked */
+.s-parked { display: none; }
+.s-parked.show { display: block; }
+.s-parked-head {
+  background: linear-gradient(135deg, var(--green-dk) 0%, var(--green) 100%);
+  padding: 14px 18px 12px;
+  display: flex; align-items: center; gap: 10px;
+}
+.live-dot {
+  width: 9px; height: 9px; border-radius: 50%;
+  background: #fff; flex-shrink: 0;
+  box-shadow: 0 0 0 3px rgba(255,255,255,.28);
+  animation: pulse 2s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%, 100% { box-shadow: 0 0 0 3px rgba(255,255,255,.28); }
+  50% { box-shadow: 0 0 0 6px rgba(255,255,255,.1); }
+}
+.s-live-label {
+  font-size: 12px; font-weight: 700;
+  color: rgba(255,255,255,.9); letter-spacing: .5px;
+}
+.s-duration {
+  margin-left: auto; font-size: 13px;
+  font-weight: 600; color: rgba(255,255,255,.8);
+  background: rgba(0,0,0,.12); border-radius: 20px;
+  padding: 3px 10px;
+}
+.s-parked-body { padding: 16px 18px 18px; }
+.s-building { font-size: 24px; font-weight: 800; color: var(--g900); line-height: 1.2; }
+.s-floor { font-size: 15px; font-weight: 700; color: var(--primary); margin-top: 4px; }
+.s-detail { font-size: 13px; color: var(--g500); margin-top: 3px; }
+.s-notes {
+  font-size: 13px; color: var(--g700); margin-top: 12px;
+  background: var(--g50); border-radius: var(--r-sm);
+  padding: 10px 13px; line-height: 1.6;
+  border-left: 3px solid var(--g300);
+}
+.s-parked-time {
+  font-size: 12px; color: var(--g400); margin-top: 10px;
+  display: flex; align-items: center; gap: 4px;
+}
 
-.field{margin-bottom:16px}
-.field label{display:block;font-size:13px;font-weight:600;color:var(--sub);margin-bottom:7px}
-.field input,.field textarea,.field select{width:100%;border:1.5px solid var(--border);
-  border-radius:var(--r);padding:11px 13px;font-size:16px;color:var(--text);background:#fff;
-  outline:none;transition:border-color .15s;font-family:inherit;-webkit-appearance:none;appearance:none}
-.field input:focus,.field textarea:focus,.field select:focus{border-color:var(--primary)}
-.field textarea{resize:none;height:68px;font-size:14px}
+/* Away */
+.s-away {
+  display: flex; align-items: center; gap: 14px;
+  padding: 18px;
+}
+.s-away.hide { display: none; }
+.s-away-icon { color: var(--g300); flex-shrink: 0; }
+.s-away-text strong { display: block; font-size: 15px; font-weight: 700; color: var(--g700); }
+.s-away-text span { font-size: 13px; color: var(--g400); margin-top: 1px; display: block; }
 
-/* 장소 선택 */
-.place-row{display:flex;gap:8px}
-.place-seg{display:flex;border:1.5px solid var(--border);border-radius:var(--r);overflow:hidden;flex:1}
-.place-seg button{flex:1;padding:11px 6px;border:none;background:#fff;font-size:14px;
-  font-weight:600;color:var(--sub);cursor:pointer;transition:all .12s;font-family:inherit}
-.place-seg button+button{border-left:1px solid var(--border)}
-.place-seg button.active{background:var(--primary-lt);color:var(--primary)}
+/* ── Form Section ── */
+.form-section { padding: 6px 16px 14px; display: flex; flex-direction: column; gap: 10px; }
 
-/* 기타 입력 */
-#etcInput{display:none;margin-top:8px}
+.form-card {
+  background: #fff;
+  border-radius: var(--r);
+  box-shadow: var(--sh);
+  padding: 18px;
+}
+.form-card-label {
+  font-size: 11px; font-weight: 700; color: var(--g400);
+  letter-spacing: 1px; text-transform: uppercase; margin-bottom: 16px;
+}
+.field { margin-bottom: 14px; }
+.field:last-child { margin-bottom: 0; }
+.field > label {
+  display: block; font-size: 12px; font-weight: 600;
+  color: var(--g500); margin-bottom: 7px; letter-spacing: .2px;
+}
+.field input, .field textarea {
+  width: 100%;
+  border: 1.5px solid var(--g200);
+  border-radius: var(--r-sm);
+  padding: 11px 13px;
+  font-size: 16px; color: var(--g900);
+  background: #fff; outline: none;
+  transition: border-color .15s, box-shadow .15s;
+  font-family: inherit;
+  -webkit-appearance: none; appearance: none;
+}
+.field input:focus, .field textarea:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(26,115,232,.1);
+}
+.field textarea { resize: none; height: 72px; font-size: 14px; line-height: 1.5; }
 
-/* 층 선택 */
-.floor-row{display:flex;gap:8px;align-items:stretch}
-.floor-toggle{display:flex;border:1.5px solid var(--border);border-radius:var(--r);overflow:hidden}
-.floor-toggle button{padding:11px 16px;border:none;background:#fff;font-size:14px;
-  font-weight:700;cursor:pointer;transition:all .12s;font-family:inherit;color:var(--sub)}
-.floor-toggle button+button{border-left:1px solid var(--border)}
-.floor-toggle button.active{background:var(--primary-lt);color:var(--primary)}
-.floor-num-wrap{position:relative;flex:1;display:flex;align-items:center}
-.floor-num-wrap input{padding-right:28px;text-align:center;font-size:20px;font-weight:700}
-.floor-unit{position:absolute;right:12px;font-size:14px;font-weight:600;color:var(--sub);pointer-events:none}
+/* Segmented control */
+.seg {
+  display: flex;
+  background: var(--g100);
+  border-radius: var(--r-sm);
+  padding: 3px;
+  gap: 2px;
+}
+.seg button {
+  flex: 1; padding: 9px 6px;
+  border: none; background: transparent;
+  font-size: 14px; font-weight: 600; color: var(--g500);
+  cursor: pointer; border-radius: 7px;
+  transition: all .15s; font-family: inherit;
+}
+.seg button.active { background: #fff; color: var(--primary); box-shadow: var(--sh); }
 
-/* 구역·번호 행 */
-.spot-row{display:flex;gap:10px}
-.spot-row>div{flex:1}
-.spot-row input{text-align:center;font-size:20px;font-weight:700}
+#etcInput { display: none; margin-top: 8px; }
 
-/* 버튼 */
-.btn-row{display:flex;gap:10px;margin-top:4px}
-.btn{flex:1;padding:14px;border:none;border-radius:var(--r);font-size:16px;
-  font-weight:700;cursor:pointer;transition:all .15s;font-family:inherit}
-.btn:active{transform:scale(.97)}
-.btn-park{background:var(--primary);color:#fff}
-.btn-park:disabled{background:#9ca3af;cursor:not-allowed;transform:none}
-.btn-leave{background:var(--red-lt);color:var(--red);border:1.5px solid #fca5a5}
+/* Floor row */
+.floor-row { display: flex; gap: 8px; align-items: stretch; }
+.dir-toggle {
+  display: flex;
+  border: 1.5px solid var(--g200);
+  border-radius: var(--r-sm);
+  overflow: hidden; background: var(--g100);
+}
+.dir-toggle button {
+  padding: 11px 14px; border: none; background: transparent;
+  font-size: 13px; font-weight: 700; cursor: pointer;
+  transition: all .12s; font-family: inherit; color: var(--g500);
+}
+.dir-toggle button + button { border-left: 1px solid var(--g200); }
+.dir-toggle button.active { background: #fff; color: var(--primary); box-shadow: inset 0 0 0 1.5px var(--primary); }
 
-.spacer{flex:1;min-height:20px}
-footer{text-align:center;font-size:12px;color:var(--sub);padding:16px;margin-top:4px}
+.floor-num-wrap { position: relative; flex: 1; display: flex; align-items: center; }
+.floor-num-wrap input { padding-right: 30px; text-align: center; font-size: 20px; font-weight: 700; }
+.floor-unit { position: absolute; right: 12px; font-size: 13px; font-weight: 600; color: var(--g400); pointer-events: none; }
 
-/* 토스트 */
-.toast-wrap{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
-  z-index:999;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none}
-.toast{background:#1f2937;color:#fff;padding:10px 20px;border-radius:24px;
-  font-size:14px;font-weight:600;opacity:0;transition:opacity .25s;white-space:nowrap}
-.toast.show{opacity:1}
+/* Spot row */
+.spot-row { display: flex; gap: 10px; }
+.spot-row > div { flex: 1; }
+.spot-row input { text-align: center; font-size: 20px; font-weight: 700; }
+
+/* Action card */
+.action-card {
+  background: #fff;
+  border-radius: var(--r);
+  box-shadow: var(--sh);
+  padding: 14px;
+  display: flex; gap: 10px;
+}
+.btn {
+  flex: 1; padding: 14px; border: none;
+  border-radius: var(--r-sm);
+  font-size: 15px; font-weight: 700;
+  cursor: pointer; font-family: inherit;
+  display: flex; align-items: center; justify-content: center; gap: 7px;
+  transition: all .15s;
+}
+.btn:active { transform: scale(.97); }
+.btn-park { background: var(--primary); color: #fff; }
+.btn-park:disabled { background: var(--g400); cursor: not-allowed; transform: none; }
+.btn-leave { background: var(--red-lt); color: var(--red); border: 1.5px solid #fca5a5; }
+
+/* ── Bottom Nav ── */
+.bottom-nav {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  background: #fff; border-top: 1px solid var(--g200);
+  height: 68px; display: flex; z-index: 100;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.nav-item {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 4px;
+  border: none; background: none; cursor: pointer;
+  font-family: inherit; color: var(--g400);
+  text-decoration: none; font-size: 11px; font-weight: 600;
+  padding: 8px 0; transition: color .12s;
+}
+.nav-item.active { color: var(--primary); }
+.nav-item:active { background: var(--g50); }
+
+/* ── Toast ── */
+.toast-wrap {
+  position: fixed; bottom: 82px;
+  left: 50%; transform: translateX(-50%);
+  z-index: 999; display: flex; flex-direction: column;
+  gap: 8px; align-items: center; pointer-events: none;
+}
+.toast {
+  background: var(--g900); color: #fff;
+  padding: 9px 18px; border-radius: 20px;
+  font-size: 13px; font-weight: 600;
+  opacity: 0; transition: opacity .25s; white-space: nowrap;
+  display: flex; align-items: center; gap: 7px;
+}
+.toast.show { opacity: 1; }
 </style>
 </head>
 <body>
 
-<header>
-  <h1>🚗 주차 위치</h1>
-  <button class="share-btn" onclick="copyLink()">링크 복사</button>
+<header class="app-header">
+  <div class="header-title">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="1" y="3" width="15" height="13" rx="2"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/>
+      <circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/>
+    </svg>
+    주차 위치
+  </div>
+  <button class="header-btn" onclick="copyLink()">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+      <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+    </svg>
+    링크 공유
+  </button>
 </header>
 
-<!-- 주차 중 상태 배너 -->
-<div class="park-banner" id="parkBanner">
-  <div class="banner-head">
-    <span class="banner-dot"></span>
-    <span class="banner-status">현재 주차 중</span>
-    <span class="banner-time" id="bannerTime"></span>
-  </div>
-  <div class="banner-body">
-    <div class="banner-place" id="bannerPlace"></div>
-    <div class="banner-floor" id="bannerFloor"></div>
-    <div class="banner-detail" id="bannerDetail"></div>
-    <div class="banner-notes" id="bannerNotes" style="display:none"></div>
+<!-- Status -->
+<div class="status-section">
+  <div class="status-card">
+    <!-- Parked -->
+    <div class="s-parked" id="sPark">
+      <div class="s-parked-head">
+        <span class="live-dot"></span>
+        <span class="s-live-label">주차 중</span>
+        <span class="s-duration" id="sDur">--</span>
+      </div>
+      <div class="s-parked-body">
+        <div class="s-building" id="sBuilding"></div>
+        <div class="s-floor" id="sFloor"></div>
+        <div class="s-detail" id="sDetail"></div>
+        <div class="s-notes" id="sNotes" style="display:none"></div>
+        <div class="s-parked-time" id="sTime">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+          </svg>
+          <span id="sTimeText"></span>
+        </div>
+      </div>
+    </div>
+    <!-- Away -->
+    <div class="s-away" id="sAway">
+      <div class="s-away-icon">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="1" y="3" width="15" height="13" rx="2"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/>
+          <circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/>
+        </svg>
+      </div>
+      <div class="s-away-text">
+        <strong>주차 위치 없음</strong>
+        <span>아래에서 주차 위치를 입력하세요</span>
+      </div>
+    </div>
   </div>
 </div>
 
-<!-- 주차 없음 배너 -->
-<div class="away-banner" id="awayBanner">
-  <span class="away-dot"></span>
-  <span class="away-label">현재 주차 위치 없음</span>
-</div>
-
-<!-- 입력 폼 -->
+<!-- Form -->
 <div class="form-section">
-  <div class="form-title">주차 위치 입력</div>
+  <div class="form-card">
+    <div class="form-card-label">주차 정보</div>
 
-  <!-- 장소 선택 -->
-  <div class="field">
-    <label>장소</label>
-    <div class="place-seg" id="placeSegs">
-      <button class="active" data-place="집" onclick="selectPlace(this)">집</button>
-      <button data-place="회사" onclick="selectPlace(this)">회사</button>
-      <button data-place="기타" onclick="selectPlace(this)">기타</button>
+    <div class="field">
+      <label>장소</label>
+      <div class="seg" id="placeSegs">
+        <button class="active" data-place="집" onclick="selectPlace(this)">집</button>
+        <button data-place="회사" onclick="selectPlace(this)">회사</button>
+        <button data-place="기타" onclick="selectPlace(this)">기타</button>
+      </div>
+      <input type="text" id="etcInput" placeholder="장소명을 입력하세요" autocomplete="off">
     </div>
-    <input type="text" id="etcInput" placeholder="장소명 직접 입력..." autocomplete="off">
-  </div>
 
-  <!-- 층 입력 -->
-  <div class="field">
-    <label>층</label>
-    <div class="floor-row">
-      <div class="floor-toggle" id="floorToggle">
-        <button class="active" data-dir="지하" onclick="selectDir(this)">지하</button>
-        <button data-dir="지상" onclick="selectDir(this)">지상</button>
-      </div>
-      <div class="floor-num-wrap">
-        <input type="number" id="floorNum" min="1" max="99" placeholder="1" inputmode="numeric">
-        <span class="floor-unit">층</span>
-      </div>
-    </div>
-  </div>
-
-  <!-- 구역·번호 -->
-  <div class="field">
-    <div class="spot-row">
-      <div>
-        <label>구역</label>
-        <input type="text" id="inZone" placeholder="A, B, C..." maxlength="4"
-          style="text-transform:uppercase">
-      </div>
-      <div>
-        <label>번호</label>
-        <input type="text" id="inSpot" placeholder="123" maxlength="6" inputmode="numeric">
+    <div class="field">
+      <label>층</label>
+      <div class="floor-row">
+        <div class="dir-toggle" id="floorToggle">
+          <button class="active" data-dir="지하" onclick="selectDir(this)">지하</button>
+          <button data-dir="지상" onclick="selectDir(this)">지상</button>
+        </div>
+        <div class="floor-num-wrap">
+          <input type="number" id="floorNum" min="1" max="99" placeholder="0" inputmode="numeric">
+          <span class="floor-unit">층</span>
+        </div>
       </div>
     </div>
+
+    <div class="field">
+      <div class="spot-row">
+        <div>
+          <label>구역</label>
+          <input type="text" id="inZone" placeholder="A" maxlength="4" style="text-transform:uppercase" autocomplete="off">
+        </div>
+        <div>
+          <label>번호</label>
+          <input type="text" id="inSpot" placeholder="123" maxlength="6" inputmode="numeric" autocomplete="off">
+        </div>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>메모 (선택)</label>
+      <textarea id="inNotes" placeholder="엘리베이터 근처, 기둥 A 옆..."></textarea>
+    </div>
   </div>
 
-  <!-- 메모 -->
-  <div class="field">
-    <label>메모 (선택)</label>
-    <textarea id="inNotes" placeholder="엘리베이터 근처, 기둥 옆..."></textarea>
-  </div>
-
-  <div class="btn-row">
-    <button class="btn btn-park" id="btnPark" onclick="saveParking()">🅿️ 주차 완료</button>
-    <button class="btn btn-leave" onclick="clearParking()">출차 완료</button>
+  <div class="action-card">
+    <button class="btn btn-park" id="btnPark" onclick="saveParking()">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 17V7h4a3 3 0 0 1 0 6H9"/>
+      </svg>
+      입차 완료
+    </button>
+    <button class="btn btn-leave" id="btnLeave" onclick="clearParking()">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/>
+      </svg>
+      출차 완료
+    </button>
   </div>
 </div>
 
-<div class="spacer"></div>
-<footer>링크 복사 후 카카오톡으로 가족에게 전송하세요</footer>
+<!-- Bottom Nav -->
+<nav class="bottom-nav">
+  <a class="nav-item active" href="#" onclick="return false">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="1" y="3" width="15" height="13" rx="2"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/>
+      <circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/>
+    </svg>
+    현황
+  </a>
+  <a class="nav-item" id="historyNavBtn" href="#">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M3 3h7v7H3zM3 14h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7z"/>
+    </svg>
+    이력
+  </a>
+</nav>
+
 <div class="toast-wrap" id="toastWrap"></div>
 
 <script>
@@ -205,15 +409,20 @@ footer{text-align:center;font-size:12px;color:var(--sub);padding:16px;margin-top
 const SUPA_URL = 'https://zbpeyklwpotjyveipzxd.supabase.co';
 const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpicGV5a2x3cG90anl2ZWlwenhkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE1MTYxMDcsImV4cCI6MjA5NzA5MjEwN30.6JgoQ6rPRnmrbBTG68A-Y9HDQk40mnwubhXVnkZvHrQ';
 
-const params   = new URLSearchParams(location.search);
+const params    = new URLSearchParams(location.search);
 const OWNER_KEY = params.get('key') || 'default';
+
+const historyUrl = 'parking-history.html' + (OWNER_KEY !== 'default' ? '?key=' + encodeURIComponent(OWNER_KEY) : '');
+document.getElementById('historyNavBtn').href = historyUrl;
 
 const sb = supabase.createClient(SUPA_URL, SUPA_KEY, {
   auth: { persistSession: false, autoRefreshToken: false }
 });
 
-// ── 장소 선택 ──
 let selectedPlace = '집';
+let selectedDir   = '지하';
+let _parkedAt     = null;
+let _durTimer     = null;
 
 function selectPlace(btn) {
   document.querySelectorAll('#placeSegs button').forEach(b => b.classList.remove('active'));
@@ -224,16 +433,12 @@ function selectPlace(btn) {
   if (selectedPlace !== '기타') etc.value = '';
 }
 
-// ── 층 방향 ──
-let selectedDir = '지하';
-
 function selectDir(btn) {
   document.querySelectorAll('#floorToggle button').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   selectedDir = btn.dataset.dir;
 }
 
-// ── 현재 상태 로드 ──
 async function loadStatus() {
   const { data } = await sb
     .from('parking_locations')
@@ -241,52 +446,62 @@ async function loadStatus() {
     .eq('owner_key', OWNER_KEY)
     .order('updated_at', { ascending: false })
     .limit(1);
-
   renderStatus(data?.[0]);
 }
 
 function renderStatus(rec) {
-  const banner  = document.getElementById('parkBanner');
-  const awayBnr = document.getElementById('awayBanner');
+  const sPark = document.getElementById('sPark');
+  const sAway = document.getElementById('sAway');
 
   if (rec?.is_parked) {
-    banner.classList.add('show');
-    awayBnr.classList.add('hide');
+    sPark.classList.add('show');
+    sAway.classList.add('hide');
+    _parkedAt = new Date(rec.parked_at);
 
-    document.getElementById('bannerPlace').textContent  = rec.building || '장소 미입력';
-    document.getElementById('bannerFloor').textContent  = rec.floor    || '';
-    const detail = [rec.zone ? '구역 ' + rec.zone : '', rec.spot ? rec.spot + '번' : '']
-      .filter(Boolean).join(' · ');
-    document.getElementById('bannerDetail').textContent = detail;
-    const notesEl = document.getElementById('bannerNotes');
+    document.getElementById('sBuilding').textContent = rec.building || '장소 미입력';
+    document.getElementById('sFloor').textContent    = rec.floor    || '';
+    const detail = [rec.zone ? rec.zone + '구역' : '', rec.spot ? rec.spot + '번' : ''].filter(Boolean).join(' · ');
+    document.getElementById('sDetail').textContent  = detail;
+    const notesEl = document.getElementById('sNotes');
     if (rec.notes) { notesEl.textContent = rec.notes; notesEl.style.display = ''; }
     else            { notesEl.style.display = 'none'; }
-    document.getElementById('bannerTime').textContent = fmtTime(rec.parked_at);
+    document.getElementById('sTimeText').textContent = fmtAbsTime(rec.parked_at);
+
+    clearInterval(_durTimer);
+    updateDuration();
+    _durTimer = setInterval(updateDuration, 60000);
   } else {
-    banner.classList.remove('show');
-    awayBnr.classList.remove('hide');
+    sPark.classList.remove('show');
+    sAway.classList.remove('hide');
+    clearInterval(_durTimer);
+    _parkedAt = null;
   }
 }
 
-function fmtTime(iso) {
+function updateDuration() {
+  if (!_parkedAt) return;
+  const diff = Math.floor((Date.now() - _parkedAt) / 60000);
+  let txt;
+  if (diff < 1)   txt = '방금 입차';
+  else if (diff < 60) txt = diff + '분';
+  else {
+    const h = Math.floor(diff / 60), m = diff % 60;
+    txt = h + '시간' + (m > 0 ? ' ' + m + '분' : '');
+  }
+  document.getElementById('sDur').textContent = txt;
+}
+
+function fmtAbsTime(iso) {
   if (!iso) return '';
-  const d   = new Date(iso);
-  const now = new Date();
-  const diffMin = Math.floor((now - d) / 60000);
-  const hh = String(d.getHours()).padStart(2,'0');
-  const mm = String(d.getMinutes()).padStart(2,'0');
-  if (diffMin < 1)  return '방금';
-  if (diffMin < 60) return diffMin + '분 전';
-  const diffHr = Math.floor(diffMin / 60);
-  if (diffHr < 24) return hh + ':' + mm + ' (' + diffHr + '시간 전)';
-  return (d.getMonth()+1) + '/' + d.getDate() + ' ' + hh + ':' + mm;
+  const d = new Date(iso);
+  const mo = d.getMonth() + 1, da = d.getDate();
+  const hh = String(d.getHours()).padStart(2, '0');
+  const mm = String(d.getMinutes()).padStart(2, '0');
+  const today = new Date();
+  if (d.toDateString() === today.toDateString()) return hh + ':' + mm + ' 입차';
+  return mo + '/' + da + ' ' + hh + ':' + mm + ' 입차';
 }
 
-function esc(s) {
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-}
-
-// ── 주차 저장 ──
 async function saveParking() {
   const place = selectedPlace === '기타'
     ? document.getElementById('etcInput').value.trim()
@@ -301,45 +516,55 @@ async function saveParking() {
     toast('장소, 층, 구역·번호 중 하나 이상 입력해 주세요.'); return;
   }
   if (selectedPlace === '기타' && !place) {
-    toast('기타 장소명을 입력해 주세요.'); return;
+    toast('장소명을 입력해 주세요.'); return;
   }
 
-  document.getElementById('btnPark').disabled = true;
+  const btn = document.getElementById('btnPark');
+  btn.disabled = true;
+  const now = new Date().toISOString();
   await sb.from('parking_locations').delete().eq('owner_key', OWNER_KEY);
   const { error } = await sb.from('parking_locations').insert({
-    owner_key: OWNER_KEY,
-    building:  place,
-    floor,
-    zone,
-    spot,
-    notes,
-    is_parked: true,
-    parked_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
+    owner_key: OWNER_KEY, building: place, floor, zone, spot, notes,
+    is_parked: true, parked_at: now, updated_at: now,
   });
-  document.getElementById('btnPark').disabled = false;
-
-  if (error) { toast('저장 실패: ' + error.message); return; }
-  toast('주차 위치 저장 완료 ✅');
+  if (!error) {
+    await sb.from('parking_history').insert({
+      owner_key: OWNER_KEY, event_type: 'park',
+      building: place, floor, zone, spot, notes, event_at: now,
+    });
+  }
+  btn.disabled = false;
+  if (error) { toast('저장에 실패했습니다.'); return; }
+  toast('입차 위치가 저장되었습니다.');
   await loadStatus();
 }
 
-// ── 출차 ──
 async function clearParking() {
+  const { data } = await sb.from('parking_locations')
+    .select('*').eq('owner_key', OWNER_KEY).eq('is_parked', true).limit(1);
+  const rec = data?.[0];
+  const now = new Date().toISOString();
   const { error } = await sb.from('parking_locations')
-    .update({ is_parked: false, updated_at: new Date().toISOString() })
+    .update({ is_parked: false, updated_at: now })
     .eq('owner_key', OWNER_KEY);
-  if (error) { toast('업데이트 실패'); return; }
-  toast('출차 처리 완료 🚗');
+  if (!error && rec) {
+    await sb.from('parking_history').insert({
+      owner_key: OWNER_KEY, event_type: 'leave',
+      building: rec.building || '', floor: rec.floor || '',
+      zone: rec.zone || '', spot: rec.spot || '',
+      notes: rec.notes || '', event_at: now,
+    });
+  }
+  if (error) { toast('업데이트에 실패했습니다.'); return; }
+  toast('출차가 기록되었습니다.');
   await loadStatus();
 }
 
-// ── 링크 복사 ──
 async function copyLink() {
   const url = location.href;
   try {
     await navigator.clipboard.writeText(url);
-    toast('링크 복사 완료 — 카카오톡으로 전송하세요');
+    toast('링크가 복사되었습니다.');
   } catch {
     prompt('아래 링크를 복사하세요:', url);
   }
@@ -348,7 +573,7 @@ async function copyLink() {
 function toast(msg) {
   const wrap = document.getElementById('toastWrap');
   const el   = document.createElement('div');
-  el.className = 'toast';
+  el.className   = 'toast';
   el.textContent = msg;
   wrap.appendChild(el);
   requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add('show')));
@@ -358,11 +583,10 @@ function toast(msg) {
   }, 2800);
 }
 
-// ── Realtime ──
 sb.channel('parking-' + OWNER_KEY)
   .on('postgres_changes', {
     event: '*', schema: 'public', table: 'parking_locations',
-    filter: 'owner_key=eq.' + OWNER_KEY
+    filter: 'owner_key=eq.' + OWNER_KEY,
   }, loadStatus)
   .subscribe();
 
