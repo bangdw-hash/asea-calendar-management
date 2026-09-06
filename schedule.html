@@ -214,7 +214,7 @@ html,body{height:100%;
   transition:background .1s;cursor:default;vertical-align:top;
   border-right:1px solid var(--color-border);position:relative;overflow:hidden}
 .day-cell:last-child{border-right:none}
-@media(max-width:600px){.day-cell{min-height:60px}}
+@media(max-width:600px){.day-cell{min-height:80px}}
 .day-cell.other-month{background:var(--color-bg)}
 .day-cell.other-month .day-num{color:#ccc}
 .day-cell.has-events{cursor:pointer}
@@ -319,10 +319,26 @@ html,body{height:100%;
 .week-day-col{cursor:pointer}
 .week-day-col:hover{background:var(--primary-lt)}
 
-/* event detail modal */
-.evt-detail-title{font-size:1rem;font-weight:700;margin-bottom:6px}
-.evt-detail-time{font-size:.82rem;color:var(--g500);margin-bottom:10px}
-.evt-detail-desc{font-size:.85rem;color:var(--g700);white-space:pre-wrap;line-height:1.5}
+/* event detail floating popup */
+#evt-popup{position:fixed;z-index:800;width:292px;
+  background:var(--color-surface);border-radius:var(--r-panel);
+  box-shadow:0 12px 40px rgba(0,0,0,.18),0 2px 8px rgba(0,0,0,.1);
+  border:1px solid var(--color-border);
+  opacity:0;transform:scale(.93);transform-origin:top left;
+  pointer-events:none;transition:opacity .16s,transform .16s;display:none}
+#evt-popup.open{opacity:1;transform:scale(1);pointer-events:auto}
+#evt-popup-hdr{display:flex;align-items:flex-start;justify-content:space-between;
+  padding:14px 16px 10px;border-bottom:1px solid var(--color-border)}
+#evt-popup-title{font-size:.95rem;font-weight:700;line-height:1.35;color:var(--color-text);flex:1;min-width:0;padding-right:8px}
+#evt-popup-close{background:none;border:none;cursor:pointer;color:var(--g400);
+  font-size:1.15rem;padding:0;line-height:1;flex-shrink:0;border-radius:var(--r-xs);
+  width:22px;height:22px;display:flex;align-items:center;justify-content:center;transition:background .1s}
+#evt-popup-close:hover{background:var(--g100);color:var(--g700)}
+#evt-popup-body{padding:12px 16px}
+.epop-row{display:flex;align-items:flex-start;gap:8px;margin-bottom:7px;font-size:.82rem;color:var(--color-text-sec);line-height:1.4}
+.epop-row svg{flex-shrink:0;margin-top:1px;opacity:.55}
+.epop-desc{font-size:.82rem;color:var(--color-text-sec);white-space:pre-wrap;line-height:1.5;margin-top:4px}
+#evt-popup-footer{display:flex;gap:6px;justify-content:flex-end;padding:10px 16px 14px;border-top:1px solid var(--color-border)}
 
 /* admin table */
 .admin-table{width:100%;border-collapse:collapse;font-size:.8rem;margin-top:8px}
@@ -562,6 +578,10 @@ html,body{height:100%;
   /* hide add/print in toolbar — use FAB */
   #hdr-add-btn,button[onclick="printMonth()"]{display:none}
   .btn-sm{padding:4px 8px;font-size:.7rem}
+  /* 달력 폭 두 배 확보 — 이벤트 텍스트 잘림 방지 */
+  .cal-inner{min-width:1200px}
+  .week-table{min-width:1100px}
+  .evt-dot{font-size:.72rem;padding:2px 5px}
 }
 @media(max-width:480px){
   .btn{padding:5px 8px;font-size:.72rem}
@@ -650,10 +670,10 @@ html,body{height:100%;
 <!-- HEADER (index.html app-header 스타일) -->
 <header class="hdr">
   <div class="hdr-left">
-    <span style="font-size:20px">📅</span>
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;color:var(--color-primary)"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="m9 16 2 2 4-4"/></svg>
     <div>
-      <div class="hdr-logo">ASEA 업무 관리</div>
-      <div class="hdr-sub">아세아항공직업전문학교 업무 일정표</div>
+      <div class="hdr-logo">ASEA 일정 관리</div>
+      <div class="hdr-sub">아세아항공직업전문학교 일정 관리</div>
     </div>
   </div>
   <div class="hdr-right-wrap">
@@ -842,19 +862,17 @@ html,body{height:100%;
   </div>
 </div>
 
-<!-- Event Detail Modal -->
-<div class="overlay" id="detail-overlay">
-  <div class="modal">
-    <div class="modal-hdr">
-      <h2>일정 상세</h2>
-      <button class="modal-close" onclick="closeModal('detail-overlay')">&times;</button>
-    </div>
-    <div class="modal-body" id="detail-body"></div>
-    <div class="modal-footer">
-      <button class="btn" onclick="closeModal('detail-overlay')" style="background:var(--g100);color:var(--g700)">닫기</button>
-      <button class="btn btn-danger btn-sm" id="detail-delete-btn" onclick="deleteFromDetail()" hidden>삭제</button>
-      <button class="btn btn-primary btn-sm" id="detail-edit-btn" onclick="editFromDetail()" hidden>수정</button>
-    </div>
+<!-- Event Detail Floating Popup -->
+<div id="evt-popup">
+  <div id="evt-popup-hdr">
+    <div id="evt-popup-title"></div>
+    <button id="evt-popup-close" onclick="closeEvtPopup()" title="닫기">✕</button>
+  </div>
+  <div id="evt-popup-body"></div>
+  <div id="evt-popup-footer">
+    <button class="btn" onclick="closeEvtPopup()" style="background:var(--g100);color:var(--g700);font-size:.8rem;padding:5px 12px">닫기</button>
+    <button class="btn btn-danger btn-sm" id="detail-delete-btn" onclick="deleteFromDetail()" hidden style="font-size:.8rem;padding:5px 12px">삭제</button>
+    <button class="btn btn-primary btn-sm" id="detail-edit-btn" onclick="editFromDetail()" hidden style="font-size:.8rem;padding:5px 12px">수정</button>
   </div>
 </div>
 
@@ -2068,7 +2086,7 @@ async function saveEvent() {
     else
       await apiFetch('POST', `/calendars/${encodeURIComponent(CAL_ID)}/events`, body);
     showToast(_editingEvt ? '일정이 수정되었습니다.' : '일정이 추가되었습니다.');
-    closeModal('event-overlay'); closeModal('detail-overlay');
+    closeModal('event-overlay'); closeEvtPopup();
     await fetchEvents(); renderCalendar();
   } catch(e) {
     const msg = e.message || '';
@@ -2102,7 +2120,7 @@ async function deleteCurrentEvent() {
   try {
     await apiFetch('DELETE', `/calendars/${encodeURIComponent(CAL_ID)}/events/${encodeURIComponent(_editingEvt.id)}`);
     showToast('일정이 삭제되었습니다.');
-    closeModal('event-overlay'); closeModal('detail-overlay');
+    closeModal('event-overlay'); closeEvtPopup();
     await fetchEvents(); renderCalendar();
   } catch(e) {
     const msg = e.message || '';
@@ -2117,29 +2135,56 @@ async function deleteCurrentEvent() {
   }
 }
 
-/* ══════════════ DETAIL MODAL ══════════════ */
+/* ══════════════ DETAIL POPUP ══════════════ */
+const _iconCal = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>`;
+const _iconPin = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 17-5 5"/><path d="M17.001 3.34a1 1 0 0 1 .23 1.05L15.5 9h5a1 1 0 0 1 .78 1.63l-7 8a1 1 0 0 1-1.58-1.26L14.5 13H9a1 1 0 0 1-.78-1.63l4.5-8a1 1 0 0 1 .9-.5 1 1 0 0 1 .381.07z"/></svg>`;
+const _iconNote = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>`;
+
 function showDetail(e, evtId) {
   e.stopPropagation();
   const ev = _events.find(x => x.id === evtId);
   if (!ev) return;
   _detailEvt = ev;
   const { start, end, allDay } = evtDate(ev);
-  const timeStr = allDay
+  const dateStr = allDay
     ? (start ? start.toLocaleDateString('ko-KR',{year:'numeric',month:'long',day:'numeric',weekday:'short'}) + ' (종일)' : '종일')
     : (start ? start.toLocaleString('ko-KR',{year:'numeric',month:'long',day:'numeric',weekday:'short',hour:'2-digit',minute:'2-digit'}) : '');
   const endStr = (!allDay && end) ? ' ~ ' + end.toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'}) : '';
-  document.getElementById('detail-body').innerHTML =
-    `<div class="evt-detail-title">${esc(ev.summary||'(제목 없음)')}</div>` +
-    `<div class="evt-detail-time">${timeStr}${endStr}</div>` +
-    (ev.location ? `<div class="evt-detail-desc" style="margin-bottom:8px">📍 ${esc(ev.location)}</div>` : '') +
-    (ev.description ? `<div class="evt-detail-desc">${esc(ev.description)}</div>` : '') +
-    (!ev.description && !ev.location ? '<div style="color:var(--g400);font-size:.82rem">내용 없음</div>' : '');
+
+  document.getElementById('evt-popup-title').textContent = ev.summary || '(제목 없음)';
+  document.getElementById('evt-popup-body').innerHTML =
+    `<div class="epop-row">${_iconCal}<span>${dateStr}${endStr}</span></div>` +
+    (ev.location ? `<div class="epop-row">${_iconPin}<span>${esc(ev.location)}</span></div>` : '') +
+    (ev.description ? `<div class="epop-row">${_iconNote}<span class="epop-desc">${esc(ev.description)}</span></div>` : '') +
+    (!ev.description && !ev.location ? `<div style="color:var(--g400);font-size:.8rem;padding:2px 0">내용 없음</div>` : '');
+
   const canEdit = _token && _tokenHasWrite;
   document.getElementById('detail-edit-btn').hidden = !canEdit;
   document.getElementById('detail-delete-btn').hidden = !canEdit;
-  openOverlay('detail-overlay');
+
+  const popup = document.getElementById('evt-popup');
+  popup.classList.remove('open');
+  popup.style.display = 'block';
+
+  // 클릭 위치 기준으로 팝업 배치 (화면 밖으로 나가지 않게)
+  requestAnimationFrame(() => {
+    const pw = popup.offsetWidth, ph = popup.offsetHeight;
+    let x = e.clientX + 10, y = e.clientY + 10;
+    if (x + pw > window.innerWidth  - 12) x = e.clientX - pw - 10;
+    if (y + ph > window.innerHeight - 12) y = e.clientY - ph - 10;
+    x = Math.max(12, x); y = Math.max(12, y);
+    popup.style.left = x + 'px';
+    popup.style.top  = y + 'px';
+    popup.style.transformOrigin = (e.clientX < window.innerWidth / 2 ? 'top left' : 'top right');
+    popup.classList.add('open');
+  });
 }
-function editFromDetail() { closeModal('detail-overlay'); openEventModal(_detailEvt); }
+function closeEvtPopup() {
+  const p = document.getElementById('evt-popup');
+  p.classList.remove('open');
+  setTimeout(() => { if (!p.classList.contains('open')) p.style.display = 'none'; }, 160);
+}
+function editFromDetail() { closeEvtPopup(); openEventModal(_detailEvt); }
 async function deleteFromDetail() {
   if (!_detailEvt) return;
   if (!_token || !_tokenHasWrite) {
@@ -2150,7 +2195,7 @@ async function deleteFromDetail() {
   try {
     await apiFetch('DELETE', `/calendars/${encodeURIComponent(CAL_ID)}/events/${encodeURIComponent(_detailEvt.id)}`);
     showToast('일정이 삭제되었습니다.');
-    closeModal('detail-overlay');
+    closeEvtPopup();
     await fetchEvents(); renderCalendar();
   } catch(e) {
     const msg = e.message || '';
@@ -2295,8 +2340,17 @@ async function adminToggle(id, status) {
 /* ══════════════ MODAL HELPERS ══════════════ */
 function openOverlay(id) { document.getElementById(id).classList.add('show'); document.body.style.overflow='hidden'; }
 function closeModal(id)  { document.getElementById(id).classList.remove('show'); document.body.style.overflow=''; }
-document.addEventListener('click', e => { if (e.target.classList.contains('overlay')) { e.target.classList.remove('show'); document.body.style.overflow=''; } });
-document.addEventListener('keydown', e => { if (e.key==='Escape') document.querySelectorAll('.overlay.show').forEach(o => { o.classList.remove('show'); document.body.style.overflow=''; }); });
+document.addEventListener('click', e => {
+  if (e.target.classList.contains('overlay')) { e.target.classList.remove('show'); document.body.style.overflow=''; }
+  const ep = document.getElementById('evt-popup');
+  if (ep && ep.classList.contains('open') && !ep.contains(e.target)) closeEvtPopup();
+});
+document.addEventListener('keydown', e => {
+  if (e.key==='Escape') {
+    document.querySelectorAll('.overlay.show').forEach(o => { o.classList.remove('show'); document.body.style.overflow=''; });
+    closeEvtPopup();
+  }
+});
 
 /* ══════════════ UTILS ══════════════ */
 function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
