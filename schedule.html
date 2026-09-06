@@ -294,6 +294,16 @@ html,body{height:100%;
 .form-input:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(26,115,232,.15)}
 .form-input.err{border-color:var(--red)}
 .err-msg{font-size:.75rem;color:var(--red);margin-top:3px}
+.evt-title-wrap{position:relative}
+.ai-title-btn{position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:1rem;padding:2px 4px;opacity:.6;transition:opacity .15s}
+.ai-title-btn:hover{opacity:1}
+.ai-title-btn:disabled{opacity:.3;cursor:default}
+.ai-title-suggest{display:flex;align-items:center;gap:6px;margin-top:5px;padding:7px 10px;background:var(--color-accent-lt);border:1px solid var(--primary);border-radius:var(--r);font-size:.82rem}
+.ai-title-suggest-text{flex:1;font-weight:600;color:var(--primary)}
+.ai-title-suggest-apply{padding:3px 10px;background:var(--primary);color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:.78rem;font-weight:600;white-space:nowrap}
+.ai-title-suggest-apply:hover{opacity:.85}
+.ai-title-suggest-dismiss{padding:3px 8px;background:none;border:1px solid var(--g300);border-radius:4px;cursor:pointer;font-size:.78rem;color:var(--g600);white-space:nowrap}
+.ai-title-suggest-dismiss:hover{border-color:var(--g500)}
 .hint{font-size:.75rem;color:var(--g500);margin-top:4px;line-height:1.5}
 .modal-footer{padding:12px 20px;border-top:1px solid var(--g100);display:flex;gap:8px;justify-content:flex-end}
 .checkbox-row{display:flex;align-items:flex-start;gap:8px;margin-bottom:12px}
@@ -788,6 +798,7 @@ html,body{height:100%;
 <!-- CALENDAR AREA -->
 <span class="print-title" id="print-title"></span>
 <span class="print-sub" id="print-sub"></span>
+<div id="month-weekdays-sticky"></div>
 <div class="cal-wrap" id="cal-wrap">
   <div class="cal-inner" id="cal-inner"></div>
 </div>
@@ -849,7 +860,15 @@ html,body{height:100%;
     <div class="modal-body">
       <div class="form-group">
         <label class="form-label">제목 <span class="req">*</span></label>
-        <input class="form-input" id="evt-title" placeholder="일정 제목" maxlength="100">
+        <div class="evt-title-wrap">
+          <input class="form-input" id="evt-title" placeholder="일정 제목" maxlength="100" style="padding-right:36px">
+          <button class="ai-title-btn" id="ai-title-btn" onclick="aiSuggestTitle()" title="AI 제목 규칙 추천" type="button">✨</button>
+        </div>
+        <div class="ai-title-suggest" id="ai-title-suggest" hidden>
+          <span class="ai-title-suggest-text" id="ai-title-suggest-text"></span>
+          <button class="ai-title-suggest-apply" onclick="aiTitleApply()" type="button">적용</button>
+          <button class="ai-title-suggest-dismiss" onclick="aiTitleDismiss()" type="button">취소</button>
+        </div>
         <div class="err-msg" id="err-evt-title"></div>
       </div>
       <div class="form-group">
@@ -1583,6 +1602,10 @@ function renderCalendar() {
   }
   document.getElementById('cal-title').textContent = title;
   const wrap = document.getElementById('cal-inner') || document.getElementById('cal-wrap');
+  if (_view !== 'month') {
+    const sb = document.getElementById('month-weekdays-sticky');
+    if (sb) sb.innerHTML = '';
+  }
   if (_view === 'month') renderMonth(wrap);
   else if (_view === 'week') renderWeek(wrap);
   else renderList(wrap);
@@ -1838,6 +1861,7 @@ async function openEventModalOnDate(sy, sm, sd, ey, em, ed) {
     delete document.getElementById('evt-date').dataset.endDate;
   }
   ['err-evt-title','err-evt-date'].forEach(id => document.getElementById(id).textContent = '');
+  document.getElementById('ai-title-suggest').hidden = true;
   openOverlay('event-overlay');
 }
 
@@ -2117,6 +2141,7 @@ function openEventModal(evt) {
   }
   delete document.getElementById('evt-date').dataset.endDate;
   ['err-evt-title','err-evt-date'].forEach(id => document.getElementById(id).textContent = '');
+  document.getElementById('ai-title-suggest').hidden = true;
   openOverlay('event-overlay');
 }
 
@@ -2378,6 +2403,7 @@ async function onWeekCellClick(e, dateStr, hour) {
   document.getElementById('evt-desc').value = '';
   delete document.getElementById('evt-date').dataset.endDate;
   ['err-evt-title','err-evt-date'].forEach(id => document.getElementById(id).textContent = '');
+  document.getElementById('ai-title-suggest').hidden = true;
   openOverlay('event-overlay');
 }
 
@@ -3545,7 +3571,7 @@ function openEvtCtxMenu(evtId, cx, cy) {
   });
   setTimeout(() => document.addEventListener('mousedown', _ctxOutsideHandler = e => {
     const menu = document.getElementById('evt-ctx-menu');
-    if (menu && !menu.contains(e.target)) { closeEvtCtxMenu(); e.preventDefault(); }
+    if (menu && !menu.contains(e.target)) { closeEvtCtxMenu(); e.preventDefault(); e.stopPropagation(); }
   }, {once:true, capture:true}), 20);
 }
 function closeEvtCtxMenu() {
@@ -3576,6 +3602,63 @@ function ctxShare() {
     }
   }
 }
+/* ══════════════ AI TITLE SUGGEST ══════════════ */
+async function aiSuggestTitle() {
+  const titleEl = document.getElementById('evt-title');
+  const title = titleEl.value.trim();
+  if (!title) { showToast('제목을 먼저 입력해 주세요.'); return; }
+  if (_hasDeptPrefix(title)) { showToast('이미 명칭 규칙이 적용된 제목입니다.'); return; }
+  const btn = document.getElementById('ai-title-btn');
+  btn.disabled = true; btn.textContent = '…';
+  document.getElementById('ai-title-suggest').hidden = true;
+  const deptList = [...DEPARTMENTS, ..._customDepts].map(d => `${d.name} → [${d.prefix}]`).join('\n');
+  const systemPrompt = `ASEA 항공 직업 전문학교 캘린더 일정 제목 보정 도우미입니다.
+입력된 일정 제목을 [부서코드] 내용 형식으로 변환하세요.
+예시: "기획처 동일원소 계약" → "[기획] 동일원소 계약"
+
+부서 목록 (부서명 → 코드):
+${deptList}
+
+반드시 JSON만 반환: {"suggested":"[코드] 내용"}
+부서명이 명확하지 않으면 내용을 보고 가장 가까운 부서를 추론하세요.`;
+  const payload = {
+    model: 'claude-haiku-4-5-20251001',
+    max_tokens: 128,
+    system: systemPrompt,
+    messages: [{ role: 'user', content: title }],
+  };
+  try {
+    const r = await fetch(`${SB_URL}/functions/v1/ai-proxy`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'apikey': SB_ANON, 'Authorization': 'Bearer ' + SB_ANON },
+      body: JSON.stringify({ service: 'claude', payload }),
+    });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data?.error || `HTTP ${r.status}`);
+    const raw = data?.content?.[0]?.text || '';
+    const m = raw.match(/\{[\s\S]*\}/);
+    const parsed = m ? JSON.parse(m[0]) : null;
+    if (parsed?.suggested) {
+      document.getElementById('ai-title-suggest-text').textContent = parsed.suggested;
+      document.getElementById('ai-title-suggest').hidden = false;
+    } else {
+      showToast('제목 추천을 생성하지 못했습니다.');
+    }
+  } catch(err) {
+    showToast('AI 오류: ' + err.message);
+  } finally {
+    btn.disabled = false; btn.textContent = '✨';
+  }
+}
+function aiTitleApply() {
+  const sug = document.getElementById('ai-title-suggest-text').textContent;
+  if (sug) document.getElementById('evt-title').value = sug;
+  document.getElementById('ai-title-suggest').hidden = true;
+}
+function aiTitleDismiss() {
+  document.getElementById('ai-title-suggest').hidden = true;
+}
+
 function initCtxMenuListeners() {
   const wrap = document.getElementById('cal-wrap');
   if (!wrap) return;
