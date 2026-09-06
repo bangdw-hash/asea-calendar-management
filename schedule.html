@@ -151,7 +151,7 @@ html,body{height:100%;
 .hdr-dropdown{position:absolute;top:calc(100% + 6px);right:0;
   background:var(--color-card);border:1px solid var(--color-border);
   border-radius:var(--r-card);box-shadow:var(--sh-lg);z-index:300;
-  min-width:160px;padding:6px 0;display:flex;flex-direction:column}
+  min-width:220px;padding:6px 0;display:flex;flex-direction:column}
 .hdr-dropdown a,.hdr-dropdown button{display:flex;align-items:center;gap:10px;
   padding:11px 16px;font-size:.87rem;color:var(--color-text);
   background:none;border:none;cursor:pointer;text-decoration:none;
@@ -162,16 +162,20 @@ html,body{height:100%;
 
 /* ── THEME PICKER ── */
 .theme-picker-wrap{display:flex;align-items:center;gap:5px;padding:0 4px}
-.theme-swatch-btn{width:20px;height:20px;border-radius:50%;border:none;padding:0;
+.theme-swatch-btn{width:20px;height:20px;border-radius:5px;border:none;padding:0;
   cursor:pointer;transition:transform .15s,box-shadow .15s;flex-shrink:0;outline:none}
-.theme-swatch-btn:hover{transform:scale(1.18)}
-.theme-swatch-btn.active{box-shadow:0 0 0 2px var(--color-card),0 0 0 4px var(--color-text)}
-.hdr-dropdown-theme{display:flex;align-items:center;justify-content:space-between;
-  padding:10px 16px;margin-top:4px;border-top:1px solid var(--color-border)}
-.hdr-dropdown-theme-label{font-size:.82rem;color:var(--color-text-sec);font-weight:500}
-.hdr-dropdown-theme-swatches{display:flex;gap:10px}
-.hdr-dropdown-theme .theme-swatch-btn{width:24px;height:24px}
-.hdr-dropdown-theme .theme-swatch-btn.active{box-shadow:0 0 0 2px var(--color-card),0 0 0 4px var(--color-text)}
+.theme-swatch-btn:hover{transform:scale(1.12)}
+.theme-swatch-btn.active{box-shadow:0 0 0 2px var(--color-card),0 0 0 3.5px var(--color-text)}
+/* Dropdown theme section */
+.hdr-dropdown-theme{display:flex;flex-direction:column;gap:10px;
+  padding:12px 16px 16px;margin-top:4px;border-top:1px solid var(--color-border)}
+.hdr-dropdown-theme-label{font-size:.78rem;color:var(--color-text-sec);font-weight:600;
+  letter-spacing:.04em;text-transform:uppercase}
+.hdr-dropdown-theme-swatches{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.theme-swatch-item{display:flex;flex-direction:column;align-items:center;gap:5px}
+.theme-swatch-item .theme-swatch-btn{width:100%;height:42px;border-radius:8px}
+.theme-swatch-item .swatch-label{font-size:.72rem;color:var(--color-text-sec);
+  font-weight:500;line-height:1}
 
 /* ── EVENT CONTEXT MENU ── */
 #evt-ctx-menu{position:fixed;background:var(--color-card);border:1px solid var(--color-border);
@@ -722,9 +726,18 @@ html,body{height:100%;
       <div class="hdr-dropdown-theme">
         <span class="hdr-dropdown-theme-label">테마</span>
         <div class="hdr-dropdown-theme-swatches">
-          <button class="theme-swatch-btn" data-t="aurora" onclick="setColorTheme('aurora')" style="background:linear-gradient(135deg,#8B5CF6,#EC4899)" title="오로라"></button>
-          <button class="theme-swatch-btn" data-t="sky" onclick="setColorTheme('sky')" style="background:linear-gradient(135deg,#0EA5E9,#38BDF8)" title="하늘색"></button>
-          <button class="theme-swatch-btn" data-t="mint" onclick="setColorTheme('mint')" style="background:linear-gradient(135deg,#059669,#34D399)" title="민트"></button>
+          <div class="theme-swatch-item">
+            <button class="theme-swatch-btn" data-t="aurora" onclick="setColorTheme('aurora')" style="background:linear-gradient(135deg,#8B5CF6,#EC4899)"></button>
+            <span class="swatch-label">오로라</span>
+          </div>
+          <div class="theme-swatch-item">
+            <button class="theme-swatch-btn" data-t="sky" onclick="setColorTheme('sky')" style="background:linear-gradient(135deg,#0EA5E9,#38BDF8)"></button>
+            <span class="swatch-label">하늘</span>
+          </div>
+          <div class="theme-swatch-item">
+            <button class="theme-swatch-btn" data-t="mint" onclick="setColorTheme('mint')" style="background:linear-gradient(135deg,#059669,#34D399)"></button>
+            <span class="swatch-label">민트</span>
+          </div>
         </div>
       </div>
     </div>
@@ -3513,6 +3526,9 @@ let _ctxLpTimer = null;
 
 function openEvtCtxMenu(evtId, cx, cy) {
   _ctxEvtId = evtId;
+  // clear any drag-over or drag-select highlights left from touch/drag
+  document.querySelectorAll('.drag-drop-over').forEach(c => c.classList.remove('drag-drop-over'));
+  document.querySelectorAll('.drag-select').forEach(c => c.classList.remove('drag-select'));
   const menu = document.getElementById('evt-ctx-menu');
   const canEdit = !!(_token && _tokenHasWrite);
   document.getElementById('ctx-edit-btn').hidden = !canEdit;
