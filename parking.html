@@ -246,6 +246,29 @@ body {
 .nav-item.active { color: var(--primary); }
 .nav-item:active { background: var(--g50); }
 
+/* ── Notify Card ── */
+.notify-card {
+  background: #fff;
+  border-radius: var(--r);
+  box-shadow: var(--sh);
+  padding: 14px 16px;
+  display: flex; align-items: center; gap: 12px;
+}
+.notify-icon { color: var(--primary); flex-shrink: 0; }
+.notify-text { flex: 1; min-width: 0; }
+.notify-text strong { display: block; font-size: 14px; font-weight: 700; color: var(--g900); }
+.notify-text span { font-size: 12px; color: var(--g500); margin-top: 1px; display: block; }
+.notify-btn {
+  background: var(--primary-lt); color: var(--primary);
+  border: none; border-radius: var(--r-sm);
+  padding: 8px 14px; font-size: 13px; font-weight: 700;
+  cursor: pointer; font-family: inherit; white-space: nowrap; flex-shrink: 0;
+  transition: background .12s;
+}
+.notify-btn:active { background: #dbeafe; }
+.notify-btn.subscribed { background: var(--green-lt); color: var(--green); }
+.notify-btn.denied { background: var(--g100); color: var(--g400); cursor: default; }
+
 /* ── Toast ── */
 .toast-wrap {
   position: fixed; bottom: 82px;
@@ -367,6 +390,21 @@ body {
       <label>메모 (선택)</label>
       <textarea id="inNotes" placeholder="엘리베이터 근처, 기둥 A 옆..."></textarea>
     </div>
+  </div>
+
+  <!-- Notification -->
+  <div class="notify-card" id="notifyCard">
+    <div class="notify-icon">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+        <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+      </svg>
+    </div>
+    <div class="notify-text">
+      <strong id="notifyTitle">매일 22시 알림</strong>
+      <span id="notifySub">미입력 시 자동으로 알림을 보내드립니다</span>
+    </div>
+    <button class="notify-btn" id="notifyBtn" onclick="toggleNotify()">설정</button>
   </div>
 
   <div class="action-card">
@@ -583,6 +621,86 @@ function toast(msg) {
   }, 2800);
 }
 
+// ── Web Push / Notification ──
+const VAPID_PUBLIC = 'BIJcBR_5ugZ3pmksvwy_tRzV_hZJ4y1btHqPNAii1Hdo5dERarwiOIuaIH2PtNHz3LEkQwfUlSFO6xaaVeIUCgQ';
+
+function urlBase64ToUint8Array(b64) {
+  const pad = '='.repeat((4 - b64.length % 4) % 4);
+  const raw = atob((b64 + pad).replace(/-/g, '+').replace(/_/g, '/'));
+  return Uint8Array.from(raw, c => c.charCodeAt(0));
+}
+
+async function initNotify() {
+  if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+    document.getElementById('notifyCard').style.display = 'none'; return;
+  }
+  await navigator.serviceWorker.register('/asea-calendar-management/sw.js');
+  updateNotifyUI();
+}
+
+async function updateNotifyUI() {
+  const perm  = Notification.permission;
+  const btn   = document.getElementById('notifyBtn');
+  const title = document.getElementById('notifyTitle');
+  const sub   = document.getElementById('notifySub');
+
+  if (perm === 'denied') {
+    btn.textContent = '차단됨';
+    btn.className   = 'notify-btn denied';
+    sub.textContent = '브라우저 설정에서 알림을 허용해 주세요';
+    return;
+  }
+
+  const sw  = await navigator.serviceWorker.ready;
+  const reg = await sw.pushManager.getSubscription();
+
+  if (reg) {
+    title.textContent = '알림 설정됨 · 매일 22:00';
+    sub.textContent   = '알림이 활성화되어 있습니다';
+    btn.textContent   = '해제';
+    btn.className     = 'notify-btn subscribed';
+  } else {
+    title.textContent = '매일 22시 알림';
+    sub.textContent   = '미입력 시 자동으로 알림을 보내드립니다';
+    btn.textContent   = '설정';
+    btn.className     = 'notify-btn';
+  }
+}
+
+async function toggleNotify() {
+  if (Notification.permission === 'denied') return;
+  const sw  = await navigator.serviceWorker.ready;
+  const reg = await sw.pushManager.getSubscription();
+
+  if (reg) {
+    // Unsubscribe
+    await reg.unsubscribe();
+    await sb.from('push_subscriptions')
+      .delete()
+      .eq('owner_key', OWNER_KEY)
+      .eq('endpoint', reg.endpoint);
+    toast('알림이 해제되었습니다.');
+  } else {
+    // Subscribe
+    const perm = await Notification.requestPermission();
+    if (perm !== 'granted') { updateNotifyUI(); return; }
+
+    const newSub = await sw.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC),
+    });
+    const json = newSub.toJSON();
+    await sb.from('push_subscriptions').upsert({
+      owner_key: OWNER_KEY,
+      endpoint:  json.endpoint,
+      p256dh:    json.keys.p256dh,
+      auth:      json.keys.auth,
+    }, { onConflict: 'owner_key,endpoint' });
+    toast('알림이 설정되었습니다. 매일 22:00에 알려드립니다.');
+  }
+  updateNotifyUI();
+}
+
 sb.channel('parking-' + OWNER_KEY)
   .on('postgres_changes', {
     event: '*', schema: 'public', table: 'parking_locations',
@@ -592,6 +710,7 @@ sb.channel('parking-' + OWNER_KEY)
 
 loadStatus();
 setInterval(loadStatus, 60000);
+initNotify();
 </script>
 </body>
 </html>
