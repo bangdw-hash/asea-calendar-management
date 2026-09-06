@@ -3563,6 +3563,11 @@ function openEvtCtxMenu(evtId, cx, cy) {
   // clear any drag-over or drag-select highlights left from touch/drag
   document.querySelectorAll('.drag-drop-over').forEach(c => c.classList.remove('drag-drop-over'));
   document.querySelectorAll('.drag-select').forEach(c => c.classList.remove('drag-select'));
+  // reset drag state so lingering mousemove from a long-press touch can't re-add drag-select
+  _dragStart = null; _dragEnd = null; _dragging = false;
+  // freeze grid pointer-events to kill any stuck hover highlights
+  const grid = document.getElementById('month-grid');
+  if (grid) grid.style.pointerEvents = 'none';
   const menu = document.getElementById('evt-ctx-menu');
   const canEdit = !!(_token && _tokenHasWrite);
   document.getElementById('ctx-edit-btn').hidden = !canEdit;
@@ -3583,6 +3588,8 @@ function closeEvtCtxMenu() {
   const m = document.getElementById('evt-ctx-menu');
   if (m) m.hidden = true;
   _ctxEvtId = null;
+  const grid = document.getElementById('month-grid');
+  if (grid) grid.style.pointerEvents = '';
 }
 function ctxEdit() {
   const id = _ctxEvtId; closeEvtCtxMenu();
