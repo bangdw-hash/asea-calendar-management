@@ -204,7 +204,10 @@ html,body{height:100%;
 #month-weekdays-sticky:empty{display:none;border:none}
 #month-weekdays-sticky .month-weekdays{
   display:grid;grid-template-columns:repeat(7,1fr);
-  min-width:700px;margin:0 16px;}
+  min-width:700px;margin:0 16px;
+  box-sizing:border-box;
+  border-left:1px solid var(--color-border);
+  border-right:1px solid var(--color-border);}
 /* weekday header inside cal-container (month view: hidden; used only in print) */
 .month-weekdays{display:none}
 .weekday-hdr{text-align:center;padding:8px 4px;font-size:var(--font-xs);
@@ -663,7 +666,7 @@ html,body{height:100%;
   .cal-inner{min-width:0;width:100%}
   .cal-container{border:1px solid #bbb;border-radius:0!important;width:100%}
   #month-weekdays-sticky{position:static!important;border:none!important;overflow:visible!important}
-  #month-weekdays-sticky .month-weekdays{display:grid!important;min-width:0!important;padding:0!important;background:#f0f4ff!important}
+  #month-weekdays-sticky .month-weekdays{display:grid!important;min-width:0!important;padding:0!important;margin:0!important;border:none!important;background:#f0f4ff!important}
   .month-weekdays{display:none}
   .weekday-hdr{padding:5px 2px;font-size:7.5pt}
   .month-week-row{border-bottom:1px solid #bbb}
