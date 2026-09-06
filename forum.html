@@ -6,7 +6,27 @@
 <title>ASEA AI 활용 포럼</title>
 <link rel="stylesheet" href="https://cdn.quilljs.com/1.3.7/quill.snow.css">
 <style>
-:root{--primary:#1A237E;--primary-l:#4285F4;--primary-bg:#E8EAF6;--warn:#F57C00;--danger:#D32F2F;--success:#2E7D32;--gray-50:#FAFAFA;--gray-100:#F5F5F5;--gray-200:#EEEEEE;--gray-300:#E0E0E0;--gray-400:#BDBDBD;--gray-500:#9E9E9E;--gray-600:#757575;--gray-700:#616161;--gray-800:#424242;--gray-900:#212121;--border:#E0E0E0;--sh1:0 1px 3px rgba(0,0,0,.08);--sh2:0 4px 12px rgba(0,0,0,.10);--sh3:0 8px 24px rgba(0,0,0,.12);--r1:6px;--r2:10px;--r3:16px;--r4:24px;--font:-apple-system,'Malgun Gothic','맑은 고딕',BlinkMacSystemFont,'Segoe UI',sans-serif}
+:root{
+  --primary:#1A73E8;--primary-dk:#1557B0;--primary-lt:#E8F0FE;
+  --green:#16a34a;--green-lt:#dcfce7;
+  --orange:#ea580c;--orange-lt:#ffedd5;
+  --red:#dc2626;--red-lt:#fee2e2;
+  --g50:#f9fafb;--g100:#f3f4f6;--g200:#e5e7eb;--g300:#d1d5db;
+  --g400:#9ca3af;--g500:#6b7280;--g700:#374151;--g900:#111827;
+  --r:8px;
+  --sh:0 1px 3px rgba(0,0,0,.12),0 1px 2px rgba(0,0,0,.08);
+  --sh-md:0 4px 6px rgba(0,0,0,.07),0 2px 4px rgba(0,0,0,.06);
+  --sh-lg:0 10px 15px rgba(0,0,0,.1),0 4px 6px rgba(0,0,0,.05);
+  --font:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans KR','Malgun Gothic','맑은 고딕',sans-serif;
+  --primary-l:var(--primary);--primary-bg:var(--primary-lt);
+  --warn:var(--orange);--danger:var(--red);--success:var(--green);
+  --gray-50:var(--g50);--gray-100:var(--g100);--gray-200:var(--g200);
+  --gray-300:var(--g300);--gray-400:var(--g400);--gray-500:var(--g500);
+  --gray-600:var(--g500);--gray-700:var(--g700);--gray-800:var(--g700);--gray-900:var(--g900);
+  --border:var(--g200);
+  --sh1:var(--sh);--sh2:var(--sh-md);--sh3:var(--sh-lg);
+  --r1:var(--r);--r2:var(--r);--r3:12px;--r4:var(--r);
+}
 *{box-sizing:border-box;margin:0;padding:0}
 html{scroll-behavior:smooth}
 body{font-family:var(--font);background:var(--gray-100);color:var(--gray-900);min-height:100vh;font-size:14px;line-height:1.6}
@@ -14,8 +34,8 @@ body{font-family:var(--font);background:var(--gray-100);color:var(--gray-900);mi
 /* Header */
 #app-header{position:sticky;top:0;z-index:100;background:var(--primary);color:#fff;box-shadow:var(--sh2)}
 .hdr{max-width:900px;margin:0 auto;padding:0 16px;height:56px;display:flex;align-items:center;gap:10px}
-#back-btn{background:none;border:none;color:rgba(255,255,255,.8);cursor:pointer;font-size:20px;padding:4px 6px;border-radius:4px;display:none}
-#back-btn.show{display:block}
+#back-btn{background:none;border:none;color:rgba(255,255,255,.8);cursor:pointer;padding:4px 6px;border-radius:4px;display:none;align-items:center;justify-content:center}
+#back-btn.show{display:flex}
 #back-btn:hover{color:#fff}
 #ftitle{flex:1;font-size:17px;font-weight:700;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .hbtn{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);color:#fff;padding:6px 12px;border-radius:var(--r1);cursor:pointer;font-size:13px;font-weight:500;white-space:nowrap;transition:background .2s;font-family:var(--font)}
@@ -26,25 +46,25 @@ body{font-family:var(--font);background:var(--gray-100);color:var(--gray-900);mi
 #app-main{max-width:900px;margin:0 auto;padding:16px;min-height:calc(100vh - 56px)}
 .view{display:none}.view.active{display:block}
 
-/* Category tabs */
-.cat-tabs{display:flex;gap:6px;margin-bottom:12px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none}
+/* Category tabs – underline style */
+.cat-tabs{display:flex;gap:0;margin-bottom:12px;overflow-x:auto;scrollbar-width:none;border-bottom:2px solid var(--border)}
 .cat-tabs::-webkit-scrollbar{display:none}
-.ctab{padding:6px 14px;border-radius:var(--r4);border:1px solid var(--border);background:#fff;cursor:pointer;font-size:13px;font-weight:500;white-space:nowrap;transition:all .2s;color:var(--gray-700);font-family:var(--font)}
-.ctab:hover{border-color:var(--primary-l);color:var(--primary)}
-.ctab.on{background:var(--primary);border-color:var(--primary);color:#fff}
+.ctab{padding:8px 16px;border-radius:0;border:none;border-bottom:2px solid transparent;background:none;cursor:pointer;font-size:13px;font-weight:500;white-space:nowrap;transition:all .2s;color:var(--g500);font-family:var(--font);margin-bottom:-2px}
+.ctab:hover{color:var(--primary)}
+.ctab.on{color:var(--primary);border-bottom-color:var(--primary);font-weight:600}
 
 /* List toolbar */
 .ltb{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center}
 .sbox{flex:1;min-width:180px;position:relative}
 .sbox input{width:100%;padding:9px 30px 9px 34px;border:1px solid var(--border);border-radius:var(--r2);background:#fff;font-size:14px;outline:none;transition:border-color .2s;font-family:var(--font)}
-.sbox input:focus{border-color:var(--primary-l)}
+.sbox input:focus{border-color:var(--primary)}
 .sbox input[type="search"]::-webkit-search-cancel-button,.sbox input[type="search"]::-webkit-search-decoration{-webkit-appearance:none;appearance:none}
-.sbox::before{content:'🔍';position:absolute;left:9px;top:50%;transform:translateY(-50%);font-size:14px}
+.sbox-icon{position:absolute;left:9px;top:50%;transform:translateY(-50%);color:var(--g400);pointer-events:none;display:flex}
 #search-clear{position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--gray-500);font-size:16px;line-height:1;padding:2px;border-radius:3px;display:none}
 #search-clear:hover{color:var(--gray-800)}
 #search-clear.show{display:block}
-#new-btn{background:var(--primary);color:#fff;border:none;padding:9px 16px;border-radius:var(--r2);cursor:pointer;font-size:14px;font-weight:600;white-space:nowrap;transition:background .2s;font-family:var(--font)}
-#new-btn:hover{background:#283593}
+#new-btn{background:var(--primary);color:#fff;border:none;padding:9px 16px;border-radius:var(--r2);cursor:pointer;font-size:14px;font-weight:600;white-space:nowrap;transition:background .2s;font-family:var(--font);display:flex;align-items:center;gap:6px}
+#new-btn:hover{background:var(--primary-dk)}
 
 /* Post card */
 .plist{display:flex;flex-direction:column;gap:8px}
@@ -159,7 +179,7 @@ body{font-family:var(--font);background:var(--gray-100);color:var(--gray-900);mi
 .attbtn{padding:7px 12px;border:1px solid var(--border);border-radius:var(--r1);background:#fff;cursor:pointer;font-size:13px;color:var(--gray-600);transition:all .2s;font-family:var(--font);display:flex;align-items:center;gap:4px}
 .attbtn:hover{border-color:var(--primary-l);color:var(--primary)}
 .subbtn{padding:8px 20px;background:var(--primary);color:#fff;border:none;border-radius:var(--r1);cursor:pointer;font-size:14px;font-weight:600;transition:background .2s;font-family:var(--font)}
-.subbtn:hover{background:#283593}
+.subbtn:hover{background:var(--primary-dk)}
 .subbtn:disabled{opacity:.6;cursor:not-allowed}
 .canbtn{padding:7px 14px;border:1px solid var(--border);background:#fff;border-radius:var(--r1);cursor:pointer;font-size:13px;color:var(--gray-600);transition:all .2s;font-family:var(--font)}
 .canbtn:hover{border-color:var(--gray-400)}
@@ -205,8 +225,8 @@ body{font-family:var(--font);background:var(--gray-100);color:var(--gray-900);mi
 @keyframes su{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
 .mhdr{padding:18px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
 .mttl{font-size:16px;font-weight:700}
-.mclose{background:none;border:none;font-size:22px;cursor:pointer;color:var(--gray-400);line-height:1;padding:0;font-family:var(--font)}
-.mclose:hover{color:var(--gray-800)}
+.mclose{background:none;border:none;cursor:pointer;color:var(--g400);padding:2px;display:flex;align-items:center;justify-content:center;border-radius:4px}
+.mclose:hover{color:var(--g700);background:var(--g100)}
 .mbody{padding:20px}
 .mfoot{padding:12px 20px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end;background:var(--gray-50)}
 .fg{margin-bottom:14px}
@@ -235,15 +255,26 @@ body{font-family:var(--font);background:var(--gray-100);color:var(--gray-900);mi
 /* Loading */
 .loading{text-align:center;padding:40px;color:var(--gray-400);font-size:14px}
 
-/* Anon banner */
-.anon-banner{background:linear-gradient(135deg,#E3F2FD,#E8F5E9);border:1px solid #BBDEFB;border-radius:var(--r2);padding:12px 16px;margin-bottom:16px;display:flex;align-items:flex-start;gap:12px}
-.anon-emoji{font-size:24px;flex-shrink:0}
-.anon-txt h4{font-size:13px;font-weight:700;color:#1565C0;margin-bottom:2px}
-.anon-txt p{font-size:12px;color:#1976D2;line-height:1.5}
+/* Info banner */
+.info-banner{background:var(--primary-lt);border:1px solid rgba(26,115,232,.2);border-radius:var(--r2);padding:12px 16px;margin-bottom:16px;display:flex;align-items:flex-start;gap:12px}
+.info-icon{color:var(--primary);flex-shrink:0;margin-top:1px}
+.info-txt h4{font-size:13px;font-weight:700;color:var(--primary-dk);margin-bottom:2px}
+.info-txt p{font-size:12px;color:var(--primary);line-height:1.5;opacity:.85}
+
+/* Theme swatches */
+.theme-swatches{display:flex;gap:5px;align-items:center}
+.tswatch{width:18px;height:18px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:all .2s;flex-shrink:0}
+.tswatch.active,.tswatch:hover{border-color:rgba(255,255,255,.9);transform:scale(1.15)}
+.tswatch[data-theme=blue]{background:#1A73E8}
+.tswatch[data-theme=green]{background:#16a34a}
+.tswatch[data-theme=orange]{background:#ea580c}
+
+/* Hidden utility */
+.hidden{display:none!important}
 
 /* Primary button */
 .pbtn-primary{padding:9px 20px;background:var(--primary);color:#fff;border:none;border-radius:var(--r1);cursor:pointer;font-size:14px;font-weight:600;transition:background .2s;font-family:var(--font)}
-.pbtn-primary:hover{background:#283593}
+.pbtn-primary:hover{background:var(--primary-dk)}
 .pbtn-sec{padding:9px 14px;border:1px solid var(--border);background:#fff;border-radius:var(--r1);cursor:pointer;font-size:13px;color:var(--gray-600);transition:all .2s;font-family:var(--font)}
 .pbtn-sec:hover{border-color:var(--gray-400)}
 .pbtn-danger{padding:9px 14px;background:var(--danger);color:#fff;border:none;border-radius:var(--r1);cursor:pointer;font-size:13px;font-weight:600;transition:background .2s;font-family:var(--font)}
@@ -278,11 +309,21 @@ body{font-family:var(--font);background:var(--gray-100);color:var(--gray-900);mi
 <!-- Header -->
 <header id="app-header">
   <div class="hdr">
-    <button id="back-btn" onclick="goList()">←</button>
+    <button id="back-btn" onclick="goList()" aria-label="목록으로">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
     <div id="ftitle" onclick="goList()">ASEA AI 활용 포럼</div>
     <div style="display:flex;gap:8px;align-items:center">
+      <div class="theme-swatches">
+        <div class="tswatch active" data-theme="blue" onclick="applyTheme('blue')" title="블루"></div>
+        <div class="tswatch" data-theme="green" onclick="applyTheme('green')" title="그린"></div>
+        <div class="tswatch" data-theme="orange" onclick="applyTheme('orange')" title="오렌지"></div>
+      </div>
       <span id="admin-badge" class="admin-badge hidden">관리자</span>
-      <button class="hbtn" id="admin-btn" onclick="openAdminModal()">⚙️ 관리자</button>
+      <button class="hbtn" id="admin-btn" onclick="openAdminModal()" style="display:flex;align-items:center;gap:5px">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        관리자
+      </button>
     </div>
   </div>
 </header>
@@ -292,9 +333,11 @@ body{font-family:var(--font);background:var(--gray-100);color:var(--gray-900);mi
 
   <!-- LIST VIEW -->
   <div id="v-list" class="view active">
-    <div class="anon-banner">
-      <div class="anon-emoji">💡</div>
-      <div class="anon-txt">
+    <div class="info-banner">
+      <div class="info-icon">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      </div>
+      <div class="info-txt">
         <h4>익명으로 자유롭게 공유하세요!</h4>
         <p>AI 활용이 서툴러도 괜찮아요. 작은 경험이 동료에게 큰 도움이 됩니다. 이름 없이 글을 남겨도 됩니다.</p>
       </div>
@@ -302,10 +345,14 @@ body{font-family:var(--font);background:var(--gray-100);color:var(--gray-900);mi
     <div class="cat-tabs" id="cat-tabs"></div>
     <div class="ltb">
       <form class="sbox" autocomplete="off" onsubmit="return false">
+        <span class="sbox-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
         <input id="search-in" type="search" name="forum-search" placeholder="제목, 내용 검색..." autocomplete="off" spellcheck="false" readonly oninput="onSearch(this.value)" onchange="onSearch(this.value)">
         <button id="search-clear" onclick="clearSearch()" title="검색 지우기">×</button>
       </form>
-      <button id="new-btn" onclick="goEditor()">✏️ 새 글 쓰기</button>
+      <button id="new-btn" onclick="goEditor()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        새 글 쓰기
+      </button>
     </div>
     <div class="plist" id="post-list"><div class="loading">로딩 중...</div></div>
     <div class="pages" id="pages"></div>
@@ -325,11 +372,17 @@ body{font-family:var(--font);background:var(--gray-100);color:var(--gray-900);mi
       <div class="ql-view" id="d-content"></div>
     </div>
     <div class="attsec hidden" id="d-atts">
-      <div class="atttitle">📎 첨부파일</div>
+      <div class="atttitle" style="display:flex;align-items:center;gap:5px">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+        첨부파일
+      </div>
       <div id="d-att-list"></div>
     </div>
     <div class="rsec">
-      <div class="rsec-hdr">💬 답글 <span class="rcnt" id="r-cnt">0</span></div>
+      <div class="rsec-hdr">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="opacity:.7"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        답글 <span class="rcnt" id="r-cnt">0</span>
+      </div>
       <div id="reply-list"></div>
       <div class="rwrap" id="main-rw">
         <div class="rwhdr">답글 작성</div>
@@ -339,12 +392,16 @@ body{font-family:var(--font);background:var(--gray-100);color:var(--gray-900);mi
             <div class="fg"><div class="flbl">비밀번호 <span style="color:var(--gray-400);font-weight:400">(선택·수정용)</span></div><input class="fi" id="rw-pw" type="password" placeholder="설정 안 하면 수정 불가" maxlength="50"></div>
           </div>
           <textarea class="rta" id="rw-text" placeholder="답글을 입력하세요..." rows="3"></textarea>
-          <div class="paste-hint" id="rw-paste" ondragover="onDragOver(event,'rw-paste')" ondragleave="onDragLeave('rw-paste')" ondrop="onDrop(event,'main')">
-            📷 이미지를 여기에 붙여넣기(Ctrl+V) 하거나 드래그하세요
+          <div class="paste-hint" id="rw-paste" ondragover="onDragOver(event,'rw-paste')" ondragleave="onDragLeave('rw-paste')" ondrop="onDrop(event,'main')" style="display:flex;align-items:center;justify-content:center;gap:6px">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            이미지를 여기에 붙여넣기(Ctrl+V) 하거나 드래그하세요
           </div>
           <div class="rprevs" id="rw-prevs"></div>
           <div class="rwfoot">
-            <label class="attbtn">📎 파일 첨부<input type="file" multiple style="display:none" onchange="onRwFile(event,'main')"></label>
+            <label class="attbtn">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+              파일 첨부<input type="file" multiple style="display:none" onchange="onRwFile(event,'main')">
+            </label>
             <div id="rw-flist" style="flex:1;font-size:12px;color:var(--gray-600)"></div>
             <button class="subbtn" onclick="submitReply(null)">답글 등록</button>
           </div>
@@ -388,7 +445,10 @@ body{font-family:var(--font);background:var(--gray-100);color:var(--gray-900);mi
       </div>
       <div id="editor"></div>
       <div class="uzn">
-        <div class="uzlbl">📎 파일 첨부</div>
+        <div class="uzlbl" style="display:flex;align-items:center;gap:5px">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+          파일 첨부
+        </div>
         <div class="uarea" id="uarea" onclick="document.getElementById('file-in').click()" ondragover="onDragOver(event,'uarea')" ondragleave="onDragLeave('uarea')" ondrop="onDropFiles(event)">
           파일을 드래그하거나 클릭하여 첨부 (최대 50MB)
         </div>
@@ -397,7 +457,10 @@ body{font-family:var(--font);background:var(--gray-100);color:var(--gray-900);mi
       </div>
       <div class="efoot">
         <button class="pbtn-sec" onclick="goList()">취소</button>
-        <button class="pbtn-primary" onclick="submitPost()">📝 게시하기</button>
+        <button class="pbtn-primary" onclick="submitPost()" style="display:flex;align-items:center;gap:6px">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          게시하기
+        </button>
       </div>
     </div>
   </div>
@@ -408,7 +471,7 @@ body{font-family:var(--font);background:var(--gray-100);color:var(--gray-900);mi
 <div id="iro"><div id="iro-hint"></div><div id="iro-handle"></div></div>
 
 <!-- Lightbox -->
-<div id="lb" onclick="closeLB()"><button id="lb-close" onclick="closeLB()">✕</button><img id="lb-img" src="" alt=""></div>
+<div id="lb" onclick="closeLB()"><button id="lb-close" onclick="closeLB()" aria-label="닫기"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button><img id="lb-img" src="" alt=""></div>
 
 <!-- Toast container -->
 <div id="toast-c"></div>
@@ -416,7 +479,7 @@ body{font-family:var(--font);background:var(--gray-100);color:var(--gray-900);mi
 <!-- Admin Modal -->
 <div class="mover" id="m-admin">
   <div class="modal">
-    <div class="mhdr"><span class="mttl" id="m-admin-title">관리자</span><button class="mclose" onclick="closeModal('m-admin')">✕</button></div>
+    <div class="mhdr"><span class="mttl" id="m-admin-title">관리자</span><button class="mclose" onclick="closeModal('m-admin')" aria-label="닫기"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
     <div class="mbody" id="m-admin-body">
       <!-- filled by JS -->
     </div>
@@ -426,7 +489,7 @@ body{font-family:var(--font);background:var(--gray-100);color:var(--gray-900);mi
 <!-- Password prompt modal -->
 <div class="mover" id="m-pw">
   <div class="modal" style="max-width:360px">
-    <div class="mhdr"><span class="mttl" id="m-pw-title">비밀번호 확인</span><button class="mclose" onclick="closeModal('m-pw')">✕</button></div>
+    <div class="mhdr"><span class="mttl" id="m-pw-title">비밀번호 확인</span><button class="mclose" onclick="closeModal('m-pw')" aria-label="닫기"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
     <div class="mbody">
       <div class="fg">
         <label id="m-pw-label">작성 시 설정한 비밀번호를 입력하세요</label>
@@ -443,6 +506,24 @@ body{font-family:var(--font);background:var(--gray-100);color:var(--gray-900);mi
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
 <script>
+/* ===================== Theme ===================== */
+function applyTheme(name) {
+  const themes = {
+    blue:   {primary:'#1A73E8', dk:'#1557B0', lt:'#E8F0FE'},
+    green:  {primary:'#16a34a', dk:'#15803d', lt:'#dcfce7'},
+    orange: {primary:'#ea580c', dk:'#c2410c', lt:'#ffedd5'},
+  };
+  const t = themes[name] || themes.blue;
+  const r = document.documentElement.style;
+  r.setProperty('--primary', t.primary);
+  r.setProperty('--primary-dk', t.dk);
+  r.setProperty('--primary-lt', t.lt);
+  r.setProperty('--primary-l', t.primary);
+  r.setProperty('--primary-bg', t.lt);
+  document.querySelectorAll('.tswatch').forEach(s => s.classList.toggle('active', s.dataset.theme === name));
+  try { localStorage.setItem('forum-theme', name); } catch(e) {}
+}
+
 /* ===================== Constants ===================== */
 const SUPA_URL = 'https://zbpeyklwpotjyveipzxd.supabase.co';
 const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpicGV5a2x3cG90anl2ZWlwenhkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE1MTYxMDcsImV4cCI6MjA5NzA5MjEwN30.6JgoQ6rPRnmrbBTG68A-Y9HDQk40mnwubhXVnkZvHrQ';
@@ -1421,6 +1502,7 @@ document.addEventListener('keydown', e=>{
 
 /* ===================== Init ===================== */
 async function init() {
+  try { applyTheme(localStorage.getItem('forum-theme') || 'blue'); } catch(e) { applyTheme('blue'); }
   // Clear search input and keep it readonly briefly so Chrome cannot autofill it on page load.
   // readonly is removed after 500ms — by then autofill window has passed.
   const sinp = document.getElementById('search-in');
