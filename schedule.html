@@ -824,7 +824,7 @@ html,body{height:100%;
         <svg class="tb-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
         관리자
       </button>
-      <button class="tb-btn" onclick="openSubscribeModal()" title="캘린더 구독">
+      <button class="tb-btn" onclick="openCalSubModal()" title="캘린더 구독">
         <svg class="tb-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0 1 18 14.158V11a6 6 0 1 0-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 1 1-6 0v-1m6 0H9"/></svg>
         구독
       </button>
@@ -851,11 +851,11 @@ html,body{height:100%;
         <svg class="tb-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
         관리자
       </button>
-      <button onclick="openSubscribeModal();closeHdrMenu()">
+      <button onclick="closeHdrMenu();setTimeout(openCalSubModal,200)">
         <svg class="tb-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0 1 18 14.158V11a6 6 0 1 0-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 1 1-6 0v-1m6 0H9"/></svg>
         구독
       </button>
-      <button onclick="openShortcutModal();closeHdrMenu()">
+      <button onclick="closeHdrMenu();setTimeout(openShortcutModal,200)">
         <svg class="tb-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
         바로가기
       </button>
@@ -4389,7 +4389,7 @@ const _CAL_ICS = 'https://calendar.google.com/calendar/ical/89cb23c42a75d99697bd
 const _CAL_WEBCAL = 'webcal://calendar.google.com/calendar/ical/89cb23c42a75d99697bdd50e11f461e94d330edec941f4bcf4f52dfddaa75553%40group.calendar.google.com/public/basic.ics';
 const _CAL_GCAL_SUB = 'https://calendar.google.com/calendar/r?cid=' + encodeURIComponent(_CAL_GID);
 
-function openSubscribeModal() {
+function openCalSubModal() {
   const el = document.getElementById('cal-ics-display');
   if (el) el.textContent = _CAL_ICS;
   document.getElementById('cal-sub-overlay').classList.add('show');
@@ -4438,14 +4438,18 @@ function openShortcutModal() {
 
   if (plat === 'windows') {
     body.innerHTML = `
-      <p class="sc-note" style="margin-bottom:12px">Windows 바탕화면에 ASEA 일정 바로가기를 만들어 드립니다.</p>
+      <p class="sc-note" style="margin-bottom:12px">Windows 바탕화면에 <strong>아세아 업무일정.lnk</strong> 바로가기를 자동으로 만들어 드립니다.</p>
+      <div class="sc-platform" style="margin-bottom:12px">
+        <div class="sc-step"><div class="sc-step-num">1</div><div class="sc-step-text">아래 버튼을 눌러 <strong>ASEA_바로가기.vbs</strong> 파일을 다운로드하세요.</div></div>
+        <div class="sc-step"><div class="sc-step-num">2</div><div class="sc-step-text">다운로드된 <strong>.vbs</strong> 파일을 <strong>더블클릭</strong>하세요.</div></div>
+        <div class="sc-step"><div class="sc-step-num">3</div><div class="sc-step-text">바탕화면에 <strong>아세아 업무일정.lnk</strong> 바로가기가 자동 생성됩니다.</div></div>
+      </div>
       <div class="sc-action-row">
         <button class="sc-dl-btn" onclick="_downloadShortcutWindows()">
           <svg style="width:16px;height:16px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          바로가기 파일 다운로드 (.url)
+          ASEA_바로가기.vbs 다운로드
         </button>
-      </div>
-      <p class="sc-note" style="margin-top:10px">다운로드된 <strong>.url</strong> 파일을 바탕화면으로 옮겨 두시면 더블클릭으로 바로 열 수 있습니다.</p>`;
+      </div>`;
   } else if (plat === 'mac') {
     body.innerHTML = `
       <p class="sc-note" style="margin-bottom:12px">macOS 바탕화면에 ASEA 일정 바로가기를 만들어 드립니다.</p>
@@ -4504,9 +4508,28 @@ function openShortcutModal() {
 }
 
 function _downloadShortcutWindows() {
-  const url = location.href.split('?')[0];
-  const content = '[InternetShortcut]\r\nURL=' + url + '\r\nIconIndex=0\r\n';
-  _triggerDownload(new Blob([content], {type:'text/plain'}), '아세아 업무일정.url');
+  const url = 'https://bangdw-hash.github.io/asea-calendar-management/schedule.html';
+  const vbs =
+    'Set oWS = WScript.CreateObject("WScript.Shell")\r\n' +
+    'sLink = oWS.SpecialFolders("Desktop") & "\\아세아 업무일정.lnk"\r\n' +
+    'Set oSC = oWS.CreateShortcut(sLink)\r\n' +
+    'oSC.TargetPath = "' + url + '"\r\n' +
+    'oSC.Description = "ASEA 업무 일정 관리"\r\n' +
+    'oSC.Save\r\n' +
+    'MsgBox "바탕화면에 \'아세아 업무일정\' 바로가기가 생성되었습니다.", 64, "ASEA 일정"\r\n';
+  const buf = new ArrayBuffer(2 + vbs.length * 2);
+  const view = new DataView(buf);
+  view.setUint16(0, 0xFEFF, true);
+  for (let i = 0; i < vbs.length; i++) view.setUint16(2 + i * 2, vbs.charCodeAt(i), true);
+  const blob = new Blob([buf], {type:'application/octet-stream'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'ASEA_바로가기.vbs';
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); document.body.removeChild(a); }, 1000);
+  showToast('ASEA_바로가기.vbs 파일을 다운로드했습니다.', 'success');
+  closeModal('shortcut-overlay');
 }
 function _downloadShortcutMac() {
   const url = location.href.split('?')[0];
