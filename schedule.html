@@ -9,6 +9,7 @@
 <link rel="preconnect" href="https://www.googleapis.com">
 <link rel="dns-prefetch" href="https://accounts.google.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 [hidden]{display:none!important}
@@ -667,12 +668,47 @@ html,body{height:100%;
   padding-left:4px;border-left:3px solid var(--color-accent-lt)}
 .dft-chip.no-events{opacity:0.4}
 
+/* ── OUTPUT DROPDOWN ── */
+.output-dropdown-wrap{position:relative}
+.output-dropdown{position:absolute;top:calc(100% + 5px);right:0;
+  background:var(--color-card);border:1px solid var(--color-border);
+  border-radius:var(--r-card);box-shadow:var(--sh-lg);z-index:300;
+  min-width:190px;padding:4px 0;display:flex;flex-direction:column}
+.output-dropdown button{display:flex;align-items:center;gap:10px;
+  padding:11px 16px;font-size:.87rem;color:var(--color-text);
+  background:none;border:none;cursor:pointer;text-align:left;
+  font-family:inherit;transition:background .15s;white-space:nowrap;width:100%}
+.output-dropdown button:hover{background:var(--color-accent-lt);color:var(--color-accent)}
+.output-dropdown .odrop-divider{height:1px;background:var(--color-border);margin:4px 0}
+
+/* ── EXCEL MODAL ── */
+.excel-modal{max-width:480px}
+.excel-month-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:8px}
+.excel-month-btn{padding:8px 4px;border-radius:var(--r);border:1.5px solid var(--color-border);
+  background:#fff;font-size:.82rem;color:var(--color-text);cursor:pointer;
+  font-family:inherit;font-weight:500;transition:all .15s;text-align:center}
+.excel-month-btn:hover{border-color:var(--color-accent);background:var(--color-accent-lt);color:var(--color-accent)}
+.excel-month-btn.selected{border-color:var(--color-accent);background:var(--color-accent);color:#fff;font-weight:700}
+.excel-year-row{display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:10px;font-weight:700}
+.excel-year-nav{background:transparent;border:1px solid var(--color-border);
+  width:28px;height:28px;border-radius:var(--r);cursor:pointer;font-size:1rem;
+  display:flex;align-items:center;justify-content:center;color:var(--color-text-sec);
+  transition:background .15s;font-family:inherit}
+.excel-year-nav:hover{background:var(--g100)}
+.excel-mode-row{display:flex;gap:8px;margin-bottom:14px}
+.excel-mode-btn{flex:1;padding:8px;border-radius:var(--r);border:1.5px solid var(--color-border);
+  background:#fff;font-size:.82rem;cursor:pointer;font-family:inherit;font-weight:500;transition:all .15s}
+.excel-mode-btn.active{border-color:var(--color-accent);background:var(--color-accent);color:#fff}
+.excel-hint{font-size:.78rem;color:var(--color-text-sec);margin-top:10px;padding:8px 10px;
+  background:var(--color-bg);border-radius:var(--r);border:1px solid var(--color-border)}
+
 /* ── PRINT ── */
 @page{size:A4 landscape;margin:10mm 10mm 12mm}
 @media print{
   .hdr,.toolbar,.fab,.ai-fab,.ai-panel,.toast,.overlay,#auth-banner,
   #dept-filter-bar,.evt-quick,.nav-btn,.ai-img-preview-wrap,
-  button[onclick*="printMonth"]{display:none!important}
+  .output-dropdown-wrap,button[onclick*="printMonth"]{display:none!important}
   *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
   body{background:#fff;font-size:9pt;margin:0}
   .cal-wrap{padding:0;overflow:visible}
@@ -771,10 +807,24 @@ html,body{height:100%;
       <button class="view-btn" onclick="setView('week',this)">주간</button>
       <button class="view-btn" onclick="setView('list',this)">목록</button>
     </div>
-    <button class="tb-btn" onclick="printMonth()" title="달력 인쇄 / PDF 저장">
-      <svg class="tb-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
-      인쇄
-    </button>
+    <div class="output-dropdown-wrap">
+      <button class="tb-btn" id="output-drop-btn" onclick="toggleOutputDropdown()" title="일정 출력 / 내보내기">
+        <svg class="tb-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+        일정 출력
+        <svg style="width:10px;height:10px;margin-left:1px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div class="output-dropdown" id="output-dropdown" hidden>
+        <button onclick="closeOutputDropdown();openExcelModal()">
+          <svg style="width:16px;height:16px;flex-shrink:0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+          Excel 다운로드
+        </button>
+        <div class="odrop-divider"></div>
+        <button onclick="closeOutputDropdown();printMonth()">
+          <svg style="width:16px;height:16px;flex-shrink:0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+          실물 출력 / PDF
+        </button>
+      </div>
+    </div>
     <button class="btn btn-primary btn-sm" onclick="onAddClick()" id="hdr-add-btn">
       <svg class="tb-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
       일정 추가
@@ -803,6 +853,49 @@ html,body{height:100%;
 <div id="month-weekdays-sticky"></div>
 <div class="cal-wrap" id="cal-wrap">
   <div class="cal-inner" id="cal-inner"></div>
+</div>
+
+<!-- EXCEL DOWNLOAD MODAL -->
+<div class="overlay" id="excel-overlay" onclick="if(event.target===this)closeExcelModal()">
+  <div class="modal excel-modal">
+    <div class="modal-hdr">
+      <h2>
+        <svg style="width:18px;height:18px;vertical-align:-3px;margin-right:6px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+        Excel 다운로드
+      </h2>
+      <button class="modal-close" onclick="closeExcelModal()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group" style="margin-bottom:10px">
+        <div class="form-label">다운로드 범위</div>
+        <div class="excel-mode-row">
+          <button class="excel-mode-btn active" id="excel-mode-cur" onclick="setExcelMode('current')">현재 달</button>
+          <button class="excel-mode-btn" id="excel-mode-multi" onclick="setExcelMode('multi')">여러 달 선택</button>
+        </div>
+      </div>
+
+      <div id="excel-multi-section" hidden>
+        <div class="form-label" style="margin-bottom:6px">연도 선택</div>
+        <div class="excel-year-row">
+          <button class="excel-year-nav" onclick="excelYearNav(-1)">&#8249;</button>
+          <span id="excel-year-label" style="font-size:1rem"></span>
+          <button class="excel-year-nav" onclick="excelYearNav(1)">&#8250;</button>
+        </div>
+        <div class="form-label" style="margin-bottom:6px">월 선택 <span style="font-weight:400;color:var(--color-text-sec)">(여러 달 선택 가능)</span></div>
+        <div class="excel-month-grid" id="excel-month-grid"></div>
+      </div>
+
+      <div class="excel-hint" id="excel-hint">현재 화면에 보이는 달의 일정을 Excel 파일로 저장합니다.</div>
+
+      <div style="margin-top:16px;display:flex;gap:8px;justify-content:flex-end">
+        <button class="btn btn-secondary" onclick="closeExcelModal()">취소</button>
+        <button class="btn btn-primary" onclick="doExcelDownload()" id="excel-dl-btn">
+          <svg style="width:14px;height:14px;margin-right:4px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          다운로드
+        </button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- FAB: 일정 추가 -->
@@ -3360,6 +3453,333 @@ async function submitFeatureReply(postId) {
     loadFeatureRequests();
   } catch(e) {
     showToast('답변 등록 실패: ' + e.message, 'error');
+  }
+}
+
+/* ══════════════ OUTPUT DROPDOWN ══════════════ */
+function toggleOutputDropdown() {
+  const dd = document.getElementById('output-dropdown');
+  if (dd.hidden) {
+    dd.hidden = false;
+    setTimeout(() => document.addEventListener('click', _outputClickAway, {once:true}), 0);
+  } else {
+    dd.hidden = true;
+  }
+}
+function closeOutputDropdown() {
+  document.getElementById('output-dropdown').hidden = true;
+}
+function _outputClickAway(e) {
+  const wrap = document.querySelector('.output-dropdown-wrap');
+  if (wrap && !wrap.contains(e.target)) closeOutputDropdown();
+}
+
+/* ══════════════ EXCEL MODAL ══════════════ */
+let _excelMode = 'current';
+let _excelPickYear = null;
+let _excelPickMonths = new Set();
+
+function openExcelModal() {
+  _excelMode = 'current';
+  _excelPickYear = _curDate.getFullYear();
+  _excelPickMonths = new Set([_curDate.getMonth()]);
+  setExcelMode('current');
+  renderExcelMonthGrid();
+  document.getElementById('excel-overlay').classList.add('show');
+}
+function closeExcelModal() {
+  document.getElementById('excel-overlay').classList.remove('show');
+}
+function setExcelMode(mode) {
+  _excelMode = mode;
+  document.getElementById('excel-mode-cur').classList.toggle('active', mode === 'current');
+  document.getElementById('excel-mode-multi').classList.toggle('active', mode === 'multi');
+  document.getElementById('excel-multi-section').hidden = (mode === 'current');
+  updateExcelHint();
+}
+function excelYearNav(dir) {
+  _excelPickYear += dir;
+  _excelPickMonths.clear();
+  document.getElementById('excel-year-label').textContent = _excelPickYear + '년';
+  renderExcelMonthGrid();
+  updateExcelHint();
+}
+function renderExcelMonthGrid() {
+  document.getElementById('excel-year-label').textContent = _excelPickYear + '년';
+  const grid = document.getElementById('excel-month-grid');
+  grid.innerHTML = KO_MONTHS.map((name, i) => {
+    const sel = _excelPickMonths.has(i);
+    return `<button class="excel-month-btn${sel?' selected':''}" onclick="toggleExcelMonth(${i})">${name}</button>`;
+  }).join('');
+}
+function toggleExcelMonth(m) {
+  if (_excelPickMonths.has(m)) _excelPickMonths.delete(m);
+  else _excelPickMonths.add(m);
+  renderExcelMonthGrid();
+  updateExcelHint();
+}
+function updateExcelHint() {
+  const hint = document.getElementById('excel-hint');
+  if (_excelMode === 'current') {
+    const y = _curDate.getFullYear(), m = _curDate.getMonth();
+    hint.textContent = `${y}년 ${KO_MONTHS[m]}의 일정을 Excel 파일 1장으로 저장합니다.`;
+  } else {
+    const cnt = _excelPickMonths.size;
+    hint.textContent = cnt === 0
+      ? '월을 선택하세요.'
+      : `선택한 ${cnt}개월을 각각 별도 시트로 저장합니다. (${_excelPickYear}년 ${[..._excelPickMonths].sort((a,b)=>a-b).map(i=>KO_MONTHS[i]).join(', ')})`;
+  }
+}
+
+/* ── EXCEL EXPORT ── */
+async function doExcelDownload() {
+  let targets = [];
+  if (_excelMode === 'current') {
+    targets = [{y: _curDate.getFullYear(), m: _curDate.getMonth()}];
+  } else {
+    if (_excelPickMonths.size === 0) { showToast('월을 하나 이상 선택해 주세요.', 'warn'); return; }
+    targets = [..._excelPickMonths].sort((a,b)=>a-b).map(m => ({y: _excelPickYear, m}));
+  }
+
+  const btn = document.getElementById('excel-dl-btn');
+  btn.disabled = true; btn.textContent = '생성 중…';
+
+  try {
+    // Determine theme colors from CSS variables
+    const rootStyle = getComputedStyle(document.documentElement);
+    const accent = (rootStyle.getPropertyValue('--color-accent') || '#1A73E8').trim().replace('#','');
+    const accentLt = (rootStyle.getPropertyValue('--color-accent-lt') || '#E8F0FE').trim().replace('#','');
+    const accentDk = (rootStyle.getPropertyValue('--color-accent-dk') || '#1557B0').trim().replace('#','');
+    const textColor = (rootStyle.getPropertyValue('--color-text') || '#202124').trim().replace('#','');
+    const textSec = (rootStyle.getPropertyValue('--color-text-sec') || '#5F6368').trim().replace('#','');
+    const borderColor = (rootStyle.getPropertyValue('--color-border') || '#E8EAED').trim().replace('#','');
+    const bgColor = (rootStyle.getPropertyValue('--color-bg') || '#F8F9FB').trim().replace('#','');
+
+    // If multi-month, we may need to fetch events for months not currently loaded
+    // For now we use _events (which covers ±1 month from current) and note limitation
+    const needFetch = targets.some(({y,m}) => {
+      const cy = _curDate.getFullYear(), cm = _curDate.getMonth();
+      return Math.abs((y * 12 + m) - (cy * 12 + cm)) > 1;
+    });
+
+    let eventsSource = _events;
+    if (needFetch && targets.length > 0) {
+      // Fetch wider range covering all selected months
+      const allYears = targets.map(t=>t.y), allMonths = targets.map(t=>t.m);
+      const minY = Math.min(...allYears), minM = Math.min(...allMonths.filter((_,i)=>allYears[i]===minY));
+      const maxY = Math.max(...allYears), maxM = Math.max(...allMonths.filter((_,i)=>allYears[i]===maxY));
+      const timeMin = new Date(minY, minM, 1).toISOString();
+      const timeMax = new Date(maxY, maxM + 1, 0, 23, 59, 59).toISOString();
+      try {
+        let data;
+        if (_token) {
+          data = await apiFetch('GET', `/calendars/${encodeURIComponent(CAL_ID)}/events?${new URLSearchParams({
+            timeMin, timeMax, singleEvents:'true', orderBy:'startTime', maxResults:'2000'
+          })}`);
+          eventsSource = data?.items || _events;
+        } else {
+          const r = await fetch(`${SB_URL}/functions/v1/ai-proxy`, {
+            method:'POST',
+            headers:{'Content-Type':'application/json','apikey':SB_ANON,'Authorization':'Bearer '+SB_ANON},
+            body: JSON.stringify({service:'gcal-public', payload:{calId:CAL_ID, timeMin, timeMax}})
+          });
+          const rd = await r.json();
+          eventsSource = rd?.result?.items || _events;
+        }
+      } catch(_) { /* fallback to _events */ }
+    }
+
+    function evtsForExcelDay(y, m, d, evSrc) {
+      return evSrc.filter(ev => {
+        const s = ev.start && (ev.start.dateTime || ev.start.date);
+        const e = ev.end && (ev.end.dateTime || ev.end.date);
+        if (!s) return false;
+        const start = new Date(s), end = e ? new Date(e) : null;
+        const allDay = !ev.start.dateTime;
+        if (allDay) {
+          const ds = new Date(y, m, d), de = new Date(y, m, d + 1);
+          const es = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+          const ee = end ? new Date(end.getFullYear(), end.getMonth(), end.getDate()) : new Date(es.getTime() + 86400000);
+          return ds < ee && de > es;
+        }
+        return start.getFullYear()===y && start.getMonth()===m && start.getDate()===d;
+      });
+    }
+
+    function formatEvtTime(ev) {
+      if (ev.start.dateTime) {
+        const d = new Date(ev.start.dateTime);
+        return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+      }
+      return '';
+    }
+
+    const wb = XLSX.utils.book_new();
+
+    targets.forEach(({y, m}) => {
+      const firstDay = new Date(y, m, 1).getDay(); // 0=sun
+      const daysInMonth = new Date(y, m + 1, 0).getDate();
+      const today = new Date();
+      const isThisMonth = today.getFullYear()===y && today.getMonth()===m;
+
+      // Build the AOA (array of arrays) for the sheet
+      // Row 0: Title (merged A-G)
+      // Row 1: Weekday headers
+      // Row 2+: calendar weeks (each week = 1 row, max 5-6 weeks)
+      // Each week row can span multiple display rows if cells have many events
+      const ROW_HEADER = 0;
+      const ROW_WDAYS  = 1;
+      const COLS = 7;
+
+      // Determine max events per cell (for row height planning)
+      // We'll write: date line + event lines in a single cell with \n
+      // ExcelJS not available; use SheetJS with rich text approach
+
+      // Build cells
+      const cellsData = [];
+      for (let wk = 0; wk < 6; wk++) {
+        const row = [];
+        for (let d = 0; d < 7; d++) {
+          const dayNum = wk * 7 + d - firstDay + 1;
+          if (dayNum < 1 || dayNum > daysInMonth) {
+            row.push({v: '', t:'s'});
+          } else {
+            const evts = evtsForExcelDay(y, m, dayNum, eventsSource);
+            const timeStr = `${dayNum}일`;
+            const evtLines = evts.map(ev => {
+              const tm = formatEvtTime(ev);
+              return tm ? `${tm} ${ev.summary||'(제목 없음)'}` : (ev.summary||'(제목 없음)');
+            });
+            row.push({v: [timeStr, ...evtLines].join('\n'), t:'s',
+              _dayNum: dayNum, _evts: evts, _isToday: isThisMonth && today.getDate()===dayNum});
+          }
+        }
+        cellsData.push(row);
+      }
+      // Remove trailing empty weeks
+      while (cellsData.length > 1) {
+        const last = cellsData[cellsData.length-1];
+        if (last.every(c => c.v === '')) cellsData.pop(); else break;
+      }
+
+      // Construct AOA
+      const aoa = [];
+      // Title row
+      aoa.push([`아세아항공직업전문학교 업무 일정표  ${y}년 ${KO_MONTHS[m]}`, '', '', '', '', '', '']);
+      // Weekday row
+      aoa.push(['일', '월', '화', '수', '목', '금', '토']);
+      cellsData.forEach(wkRow => aoa.push(wkRow.map(c => c.v)));
+
+      const ws = XLSX.utils.aoa_to_sheet(aoa);
+
+      // Column widths
+      ws['!cols'] = Array(7).fill({wch: 22});
+
+      // Merge title row A1:G1
+      ws['!merges'] = [{s:{r:0,c:0}, e:{r:0,c:6}}];
+
+      // Row heights
+      ws['!rows'] = [{hpx:40}]; // title
+      ws['!rows'].push({hpx:24}); // weekday header
+      cellsData.forEach(wkRow => {
+        const maxLines = Math.max(1, ...wkRow.map(c => c.v ? c.v.split('\n').length : 1));
+        ws['!rows'].push({hpx: Math.max(60, maxLines * 18)});
+      });
+
+      // Apply cell styles
+      function setStyle(addr, style) {
+        if (!ws[addr]) ws[addr] = {v:'', t:'s'};
+        ws[addr].s = style;
+      }
+      function addr(r, c) { return XLSX.utils.encode_cell({r, c}); }
+
+      const BORDER = {style:'thin', color:{rgb: borderColor}};
+      const BORDER_MED = {style:'medium', color:{rgb:'CCCCCC'}};
+      const ALL_BORDERS = {top:BORDER, bottom:BORDER, left:BORDER, right:BORDER};
+
+      // Title cell style
+      setStyle(addr(0,0), {
+        font:{bold:true, sz:14, color:{rgb: accentDk}, name:'맑은 고딕'},
+        fill:{patternType:'solid', fgColor:{rgb: accentLt}},
+        alignment:{horizontal:'center', vertical:'center', wrapText:true},
+        border:{bottom:{style:'medium', color:{rgb: accent}}}
+      });
+      // Force title value
+      ws[addr(0,0)] = {v:`아세아항공직업전문학교 업무 일정표  ${y}년 ${KO_MONTHS[m]}`, t:'s',
+        s: ws[addr(0,0)].s};
+
+      // Weekday headers
+      const WDAY_COLORS = {0:'DC2626', 6: accent};
+      for (let c = 0; c < 7; c++) {
+        const a = addr(1, c);
+        if (!ws[a]) ws[a] = {v:['일','월','화','수','목','금','토'][c],t:'s'};
+        ws[a].s = {
+          font:{bold:true, sz:10, color:{rgb: c===0?'DC2626': c===6?accent:'5F6368'}, name:'맑은 고딕'},
+          fill:{patternType:'solid', fgColor:{rgb:'F1F3F4'}},
+          alignment:{horizontal:'center', vertical:'center'},
+          border:{top:BORDER_MED, bottom:BORDER_MED, left:BORDER, right:BORDER}
+        };
+      }
+
+      // Calendar cells
+      cellsData.forEach((wkRow, wi) => {
+        const r = wi + 2;
+        wkRow.forEach((cell, c) => {
+          const a = addr(r, c);
+          if (!ws[a]) ws[a] = {v: cell.v, t:'s'};
+          const isEmpty = cell.v === '';
+          const isToday = cell._isToday;
+          const hasEvts = cell._evts && cell._evts.length > 0;
+          const dayNum  = cell._dayNum;
+          const isSun   = c === 0;
+          const isSat   = c === 6;
+
+          let fillColor = isEmpty ? bgColor : 'FFFFFF';
+          let numColor  = isSun ? 'DC2626' : isSat ? accent : textColor;
+
+          ws[a].s = {
+            font:{sz:9, name:'맑은 고딕', color:{rgb: numColor}},
+            fill:{patternType:'solid', fgColor:{rgb: fillColor}},
+            alignment:{horizontal:'left', vertical:'top', wrapText:true},
+            border: ALL_BORDERS
+          };
+
+          // Style first line of cell (date number) — bold
+          if (!isEmpty && dayNum) {
+            if (isToday) {
+              // Highlight today: rich blue background for the number area
+              ws[a].s.fill = {patternType:'solid', fgColor:{rgb: accentLt}};
+              ws[a].s.font = {sz:9, bold:true, name:'맑은 고딕', color:{rgb: accentDk}};
+            }
+          }
+        });
+      });
+
+      // Wrap text in all data cells
+      const range = XLSX.utils.decode_range(ws['!ref'] || 'A1');
+      for (let r = 2; r <= range.e.r; r++) {
+        for (let c = 0; c <= 6; c++) {
+          const a = addr(r, c);
+          if (ws[a] && ws[a].s) ws[a].s.alignment = {horizontal:'left',vertical:'top',wrapText:true};
+        }
+      }
+
+      const sheetName = `${y}년 ${m+1}월`;
+      XLSX.utils.book_append_sheet(wb, ws, sheetName);
+    });
+
+    const fileName = targets.length === 1
+      ? `ASEA일정_${targets[0].y}년_${targets[0].m+1}월.xlsx`
+      : `ASEA일정_${targets[0].y}년_${targets.map(t=>t.m+1).join('-')}월.xlsx`;
+
+    XLSX.writeFile(wb, fileName, {bookType:'xlsx', cellStyles:true, compression:true});
+    showToast(`Excel 파일을 다운로드했습니다: ${fileName}`, 'success');
+    closeExcelModal();
+  } catch(err) {
+    showToast('Excel 생성 실패: ' + err.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<svg style="width:14px;height:14px;margin-right:4px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>다운로드';
   }
 }
 
