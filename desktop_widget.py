@@ -37,9 +37,16 @@ from PyQt5.QtWebEngineWidgets import (
 )
 from PyQt5.QtPrintSupport import QPrinter, QPrintDialog
 
-import webbrowser
+import webbrowser, ctypes
 
-CALENDAR_URL = "https://bangdw-hash.github.io/asea-calendar-management/schedule.html?widget=1"
+CALENDAR_URL = "https://bangdw-hash.github.io/asea-calendar-management/schedule.html"
+
+# Google OAuth가 embedded browser를 차단하지 않도록 Chrome UA 사용
+CHROME_UA = (
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+    "AppleWebKit/537.36 (KHTML, like Gecko) "
+    "Chrome/124.0.0.0 Safari/537.36"
+)
 SNAP_MARGIN  = 20   # 자석 스냅 거리 (px)
 RESIZE_EDGE  = 10   # 리사이즈 핸들 두께 (px)
 MIN_W, MIN_H = 320, 460
@@ -91,29 +98,42 @@ def _mdl2_btn(char, tip="", obj_name="", size=28, font_size=13):
 # ── 팝업 창 처리 ─────────────────────────────────────────────────────────────
 class CalendarPage(QWebEnginePage):
     """
-    위젯 모드(?widget=1)에서는 Google OAuth 관련 팝업/외부 링크는
-    시스템 기본 브라우저로 열어 준다.
+    Chrome UA로 Google OAuth를 WebEngine 내부에서 처리.
+    앱 도메인(bangdw-hash.github.io)과 Google 인증 도메인은
+    WebEngine 안에서 직접 처리하고, 완전히 외부 사이트는 브라우저로 위임.
     """
+    # Google OAuth / 앱 도메인은 내부에서 처리
+    _INTERNAL = (
+        'bangdw-hash.github.io',
+        'accounts.google.com',
+        'oauth2.googleapis.com',
+        'googleapis.com',
+        'google.com',
+    )
+
     def __init__(self, profile, parent=None):
         super().__init__(profile, parent)
 
     def acceptNavigationRequest(self, qurl, nav_type, is_main_frame):
         url = qurl.toString()
-        # Google OAuth 흐름이 메인 프레임을 탈취하려 하면 브라우저로 위임
-        if is_main_frame and any(h in url for h in (
-                'accounts.google.com', 'oauth2', '/auth?', 'signin/oauth')):
-            webbrowser.open(url)
-            return False
+        # 완전히 외부 링크(앱·Google 인증 이외)만 시스템 브라우저로 위임
+        if is_main_frame and url.startswith('http') and nav_type == QWebEnginePage.NavigationTypeLinkClicked:
+            if not any(h in url for h in self._INTERNAL):
+                webbrowser.open(url)
+                return False
         return super().acceptNavigationRequest(qurl, nav_type, is_main_frame)
 
     def createWindow(self, window_type):
-        popup = QWebEngineView()
-        popup.setWindowTitle("ASEA 캘린더 — 팝업")
-        popup.setWindowFlags(Qt.Window)
-        popup.setAttribute(Qt.WA_DeleteOnClose)
-        popup.resize(500, 700)
-        popup.show()
-        return popup
+        # Google OAuth 팝업 창을 같은 프로파일로 WebEngine 안에서 처리
+        popup_view = QWebEngineView()
+        popup_page = QWebEnginePage(self.profile(), popup_view)
+        popup_view.setPage(popup_page)
+        popup_view.setWindowTitle("ASEA 캘린더 — 로그인")
+        popup_view.setWindowFlags(Qt.Window)
+        popup_view.setAttribute(Qt.WA_DeleteOnClose)
+        popup_view.resize(520, 680)
+        popup_view.show()
+        return popup_view
 
 
 # ── 리사이즈 핸들 위젯 ────────────────────────────────────────────────────────
@@ -251,8 +271,8 @@ class ControlBar(QWidget):
         self.btn_full.setProperty("active", "false")
         layout.addWidget(self.btn_full)
 
-        self.btn_pin = _mdl2_btn(IC_PIN, "항상 위 고정", "btnPin")
-        self.btn_pin.setProperty("pinned", "true")
+        self.btn_pin = _mdl2_btn(IC_UNPIN, "앞으로 고정 (현재: 뒤에 고정)", "btnPin")
+        self.btn_pin.setProperty("pinned", "false")
         layout.addWidget(self.btn_pin)
 
         self.btn_refresh = _mdl2_btn(IC_REFRESH, "새로고침")
@@ -269,9 +289,15 @@ class ControlBar(QWidget):
         btn.style().unpolish(btn)
         btn.style().polish(btn)
 
-    def set_pin(self, pinned):
-        self.btn_pin.setText(IC_PIN if pinned else IC_UNPIN)
-        self._refresh_btn(self.btn_pin, "pinned", "true" if pinned else "false")
+    def set_pin(self, bottom_mode):
+        """bottom_mode=True → 뒤에 고정 상태, False → 앞에 고정 상태"""
+        if bottom_mode:
+            self.btn_pin.setText(IC_UNPIN)
+            self.btn_pin.setToolTip("앞으로 고정 (현재: 뒤에 고정)")
+        else:
+            self.btn_pin.setText(IC_PIN)
+            self.btn_pin.setToolTip("뒤로 고정 (현재: 앞에 고정)")
+        self._refresh_btn(self.btn_pin, "pinned", "true" if not bottom_mode else "false")
 
     def set_fullscreen(self, active):
         self.btn_full.setText(IC_RESTORE if active else IC_FULL)
@@ -303,10 +329,10 @@ class ControlBar(QWidget):
 class CalendarWidget(QMainWindow):
     def __init__(self):
         super().__init__()
-        self._pinned          = True
+        self._bottom_mode     = True   # True=맨 뒤(바탕화면 위젯) / False=항상 위
         self._is_fullscreen   = False
         self._saved_geometry  = None
-        self._snapped_half    = None   # 'left' | 'right' | None
+        self._snapped_half    = None
         self._target_screen   = QApplication.primaryScreen()
         self._setup_window()
         self._build_ui()
@@ -314,7 +340,8 @@ class CalendarWidget(QMainWindow):
 
     def _setup_window(self):
         self.setWindowTitle("ASEA 캘린더")
-        self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint)
+        # 기본: 맨 뒤 고정(바탕화면 위젯 모드)
+        self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnBottomHint | Qt.Tool)
         self.setAttribute(Qt.WA_TranslucentBackground)
         self.setMinimumSize(MIN_W, MIN_H)
         self.resize(430, 700)
@@ -334,9 +361,10 @@ class CalendarWidget(QMainWindow):
         self.bar = ControlBar()
         layout.addWidget(self.bar)
 
-        profile = QWebEngineProfile("asea_calendar_v2", self)
+        profile = QWebEngineProfile("asea_calendar_v3", self)
         profile.setPersistentCookiesPolicy(QWebEngineProfile.AllowPersistentCookies)
         profile.setHttpCacheType(QWebEngineProfile.DiskHttpCache)
+        profile.setHttpUserAgent(CHROME_UA)  # Google OAuth 허용을 위한 Chrome UA
 
         self.web = QWebEngineView()
         self._page = CalendarPage(profile, self.web)
@@ -394,14 +422,36 @@ class CalendarWidget(QMainWindow):
         self.bar.opacity_label.setText(f"{val}%")
 
     def _toggle_pin(self):
-        self._pinned = not self._pinned
-        flags = Qt.FramelessWindowHint
-        if self._pinned:
+        """뒤에 고정(바탕화면 위젯) ↔ 앞에 고정(항상 위) 토글"""
+        self._bottom_mode = not self._bottom_mode
+        flags = Qt.FramelessWindowHint | Qt.Tool
+        if self._bottom_mode:
+            flags |= Qt.WindowStaysOnBottomHint
+        else:
             flags |= Qt.WindowStaysOnTopHint
-        self.bar.set_pin(self._pinned)
+        self.bar.set_pin(self._bottom_mode)
         self.setWindowFlags(flags)
         self.show()
+        if self._bottom_mode:
+            self._push_to_bottom()
         self.web.setFocus()
+
+    def _push_to_bottom(self):
+        """Windows API로 창을 z-order 맨 뒤로 강제 고정"""
+        if os.name != 'nt':
+            return
+        try:
+            hwnd = int(self.winId())
+            HWND_BOTTOM   = 1
+            SWP_NOMOVE    = 0x0002
+            SWP_NOSIZE    = 0x0001
+            SWP_NOACTIVATE= 0x0010
+            ctypes.windll.user32.SetWindowPos(
+                hwnd, HWND_BOTTOM, 0, 0, 0, 0,
+                SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE
+            )
+        except Exception:
+            pass
 
     # ── 자석 스냅 ─────────────────────────────────────────────────────────────
     def _snap_position(self, pos):
@@ -664,9 +714,25 @@ class CalendarWidget(QMainWindow):
 
         super().keyPressEvent(e)
 
+    def showEvent(self, e):
+        super().showEvent(e)
+        if self._bottom_mode:
+            # show() 직후 Qt가 z-order를 올릴 수 있으므로 다시 내림
+            from PyQt5.QtCore import QTimer
+            QTimer.singleShot(0, self._push_to_bottom)
+
+    def changeEvent(self, e):
+        from PyQt5.QtCore import QEvent
+        super().changeEvent(e)
+        # 창이 활성화될 때 bottom_mode면 z-order를 다시 내림
+        if e.type() == QEvent.ActivationChange and self._bottom_mode and self.isActiveWindow():
+            from PyQt5.QtCore import QTimer
+            QTimer.singleShot(0, self._push_to_bottom)
+
     def mousePressEvent(self, e):
         super().mousePressEvent(e)
-        self.activateWindow()
+        if not self._bottom_mode:
+            self.activateWindow()
         self.web.setFocus(Qt.MouseFocusReason)
 
 
