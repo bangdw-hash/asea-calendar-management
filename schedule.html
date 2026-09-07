@@ -9,6 +9,12 @@
 <link rel="preconnect" href="https://www.googleapis.com">
 <link rel="dns-prefetch" href="https://accounts.google.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap">
+<link rel="manifest" href="manifest.json">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="ASEA 일정">
+<link rel="apple-touch-icon" href="icons/calendar-192.svg">
 <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -754,6 +760,46 @@ html,body{height:100%;
 .print-title{display:none}
 .print-title-school{display:none}
 .print-sub{display:none}
+
+/* ── Subscribe & Shortcut Modals ── */
+.sub-options{display:flex;flex-direction:column;gap:10px;margin-bottom:4px}
+.sub-option{display:flex;align-items:flex-start;gap:12px;padding:14px;
+  border:1.5px solid var(--color-border);border-radius:var(--r);cursor:pointer;
+  background:#fff;text-align:left;transition:border-color .15s,background .15s;width:100%}
+.sub-option:hover{border-color:var(--color-accent);background:var(--color-accent-lt)}
+.sub-option-icon{width:36px;height:36px;border-radius:8px;background:var(--color-accent-lt);
+  display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.sub-option-icon svg{width:20px;height:20px;color:var(--color-accent)}
+.sub-option-text strong{display:block;font-size:.875rem;font-weight:600;color:var(--color-text);margin-bottom:2px}
+.sub-option-text span{font-size:.78rem;color:var(--color-text-sec);line-height:1.4}
+.sub-copy-row{display:flex;gap:6px;margin-top:10px;align-items:center}
+.sub-copy-url{flex:1;padding:8px 10px;font-size:.75rem;font-family:monospace;
+  border:1.5px solid var(--color-border);border-radius:var(--r-xs);color:var(--color-text-sec);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:var(--color-bg)}
+.sub-copy-btn{padding:8px 12px;background:var(--color-accent-lt);color:var(--color-accent);
+  border:1.5px solid var(--color-accent);border-radius:var(--r-xs);font-size:.78rem;
+  font-weight:600;cursor:pointer;white-space:nowrap;transition:background .15s}
+.sub-copy-btn:hover{background:var(--color-accent);color:#fff}
+.sub-divider{height:1px;background:var(--color-border);margin:12px 0}
+.sub-label{font-size:.75rem;font-weight:600;color:var(--color-text-sec);margin-bottom:8px;
+  text-transform:uppercase;letter-spacing:.5px}
+
+/* Shortcut modal */
+.sc-platform{display:flex;flex-direction:column;gap:10px}
+.sc-step{display:flex;gap:10px;align-items:flex-start;padding:12px;
+  border:1.5px solid var(--color-border);border-radius:var(--r);background:#fff}
+.sc-step-num{width:24px;height:24px;border-radius:50%;background:var(--color-accent);
+  color:#fff;font-size:.75rem;font-weight:700;display:flex;align-items:center;
+  justify-content:center;flex-shrink:0;margin-top:1px}
+.sc-step-text{font-size:.85rem;color:var(--color-text);line-height:1.5}
+.sc-step-text strong{color:var(--color-accent)}
+.sc-action-row{display:flex;gap:8px;margin-top:4px;flex-wrap:wrap}
+.sc-dl-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;
+  background:var(--color-accent);color:#fff;border:none;border-radius:var(--r);
+  font-size:.82rem;font-weight:600;cursor:pointer;transition:background .15s}
+.sc-dl-btn:hover{background:var(--color-accent-dk)}
+.sc-note{font-size:.75rem;color:var(--color-text-sec);margin-top:10px;line-height:1.5;
+  padding:8px 10px;background:var(--color-bg);border-radius:var(--r-xs)}
 </style>
 </head>
 <body>
@@ -778,6 +824,14 @@ html,body{height:100%;
         <svg class="tb-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
         관리자
       </button>
+      <button class="tb-btn" onclick="openSubscribeModal()" title="캘린더 구독">
+        <svg class="tb-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0 1 18 14.158V11a6 6 0 1 0-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 1 1-6 0v-1m6 0H9"/></svg>
+        구독
+      </button>
+      <button class="tb-btn" onclick="openShortcutModal()" title="바탕화면 바로가기">
+        <svg class="tb-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        바로가기
+      </button>
       <div class="theme-picker-wrap" title="테마 선택">
         <button class="theme-swatch-btn" data-t="aurora" onclick="setColorTheme('aurora')" style="background:linear-gradient(135deg,#8B5CF6,#EC4899)" title="오로라"></button>
         <button class="theme-swatch-btn" data-t="sky" onclick="setColorTheme('sky')" style="background:linear-gradient(135deg,#0EA5E9,#38BDF8)" title="하늘색"></button>
@@ -796,6 +850,14 @@ html,body{height:100%;
       <button onclick="openAdminLogin();closeHdrMenu()">
         <svg class="tb-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
         관리자
+      </button>
+      <button onclick="openSubscribeModal();closeHdrMenu()">
+        <svg class="tb-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0 1 18 14.158V11a6 6 0 1 0-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 1 1-6 0v-1m6 0H9"/></svg>
+        구독
+      </button>
+      <button onclick="openShortcutModal();closeHdrMenu()">
+        <svg class="tb-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        바로가기
       </button>
       <div class="hdr-dropdown-theme">
         <span class="hdr-dropdown-theme-label">테마</span>
@@ -1091,6 +1153,66 @@ html,body{height:100%;
     <div class="modal-footer">
       <button class="btn" onclick="closeModal('sub-overlay')" style="background:var(--g100);color:var(--g700)">취소</button>
       <button class="btn btn-primary" id="sub-btn" onclick="submitSubscription()">신청하기</button>
+    </div>
+  </div>
+</div>
+
+<!-- Calendar Subscribe Modal -->
+<div class="overlay" id="cal-sub-overlay" onclick="if(event.target===this)closeModal('cal-sub-overlay')">
+  <div class="modal" style="max-width:460px">
+    <div class="modal-hdr">
+      <h2>
+        <svg style="width:18px;height:18px;vertical-align:-3px;margin-right:6px;color:var(--color-accent)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0 1 18 14.158V11a6 6 0 1 0-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 1 1-6 0v-1m6 0H9"/></svg>
+        캘린더 구독
+      </h2>
+      <button class="modal-close" onclick="closeModal('cal-sub-overlay')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="sub-options">
+        <button class="sub-option" onclick="subscribeGoogleCal()">
+          <div class="sub-option-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+          </div>
+          <div class="sub-option-text">
+            <strong>Google 캘린더로 구독</strong>
+            <span>Google 계정 캘린더에 ASEA 업무 일정을 추가합니다. PC·안드로이드에 적합합니다.</span>
+          </div>
+        </button>
+        <button class="sub-option" onclick="subscribeICal()">
+          <div class="sub-option-icon" style="background:var(--orange-lt)">
+            <svg style="color:var(--orange)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="m9 16 2 2 4-4"/></svg>
+          </div>
+          <div class="sub-option-text">
+            <strong>iCal로 구독 (iPhone / Outlook)</strong>
+            <span>iPhone 기본 캘린더·Outlook·macOS 캘린더 앱에서 자동으로 동기화됩니다.</span>
+          </div>
+        </button>
+      </div>
+      <div class="sub-divider"></div>
+      <div class="sub-label">iCal 주소 복사</div>
+      <div class="sub-copy-row">
+        <div class="sub-copy-url" id="cal-ics-display"></div>
+        <button class="sub-copy-btn" onclick="copyICalUrl()">복사</button>
+      </div>
+      <p style="font-size:.75rem;color:var(--color-text-sec);margin-top:8px;line-height:1.5">
+        주소를 복사해 캘린더 앱의 '인터넷 캘린더 추가' 기능에 붙여넣으면 어느 앱에서나 구독할 수 있습니다.
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- Desktop Shortcut Modal -->
+<div class="overlay" id="shortcut-overlay" onclick="if(event.target===this)closeModal('shortcut-overlay')">
+  <div class="modal" style="max-width:440px">
+    <div class="modal-hdr">
+      <h2>
+        <svg style="width:18px;height:18px;vertical-align:-3px;margin-right:6px;color:var(--color-accent)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        바탕화면 바로가기
+      </h2>
+      <button class="modal-close" onclick="closeModal('shortcut-overlay')">&times;</button>
+    </div>
+    <div class="modal-body" id="shortcut-modal-body">
+      <!-- Filled dynamically by openShortcutModal() -->
     </div>
   </div>
 </div>
@@ -3649,6 +3771,61 @@ async function doExcelDownload() {
     // ── Build workbook
     const wb = XS.utils.book_new();
 
+    // ── Download info sheet (첫 번째 시트)
+    {
+      const now = new Date();
+      const dlTime = now.toLocaleString('ko-KR', {
+        year:'numeric', month:'long', day:'numeric',
+        hour:'2-digit', minute:'2-digit', second:'2-digit', weekday:'short'
+      });
+      const monthsLabel = targets.map(t => `${t.y}년 ${t.m+1}월`).join(', ');
+      const totalEvents = targets.reduce((sum, {y, m}) => {
+        const dInM = new Date(y, m+1, 0).getDate();
+        let cnt = 0;
+        for (let d = 1; d <= dInM; d++) cnt += evtsForDay(y, m, d, eventsSource).length;
+        return sum + cnt;
+      }, 0);
+
+      const iws = {};
+      const infoStyle = (bg, bold, sz, align) => ({
+        fill: {patternType:'solid', fgColor:{rgb: bg}},
+        font: {name:'맑은 고딕', sz: sz||10, bold:!!bold, color:{rgb:'202124'}},
+        alignment: {horizontal: align||'left', vertical:'center'},
+        border: {top:bThin('E8EAED'),right:bThin('E8EAED'),bottom:bThin('E8EAED'),left:bThin('E8EAED')}
+      });
+      const acStyle = (bg, bold, sz, align, textRgb) => ({
+        fill: {patternType:'solid', fgColor:{rgb: bg}},
+        font: {name:'맑은 고딕', sz: sz||10, bold:!!bold, color:{rgb: textRgb||'FFFFFF'}},
+        alignment: {horizontal: align||'left', vertical:'center'},
+        border: {top:bThin('E8EAED'),right:bThin('E8EAED'),bottom:bThin('E8EAED'),left:bThin('E8EAED')}
+      });
+
+      const rows = [
+        [{v:'ASEA 업무 일정 — 다운로드 정보', t:'s', s: acStyle(accent, true, 14, 'center', 'FFFFFF')}, null, null],
+        [{v:'항목', t:'s', s: infoStyle('E8F0FE', true, 10, 'center')}, {v:'내용', t:'s', s: infoStyle('E8F0FE', true, 10, 'left')}],
+        [{v:'다운로드 일시', t:'s', s: infoStyle('F8F9FB', true)}, {v:dlTime, t:'s', s: infoStyle('FFFFFF', false)}],
+        [{v:'포함 기간', t:'s', s: infoStyle('F8F9FB', true)}, {v:monthsLabel, t:'s', s: infoStyle('FFFFFF', false)}],
+        [{v:'총 일정 건수', t:'s', s: infoStyle('F8F9FB', true)}, {v:`${totalEvents}건`, t:'s', s: infoStyle('FFFFFF', false)}],
+        [{v:'생성 시스템', t:'s', s: infoStyle('F8F9FB', true)}, {v:'ASEA 업무 일정 관리 시스템 (schedule.html)', t:'s', s: infoStyle('FFFFFF', false)}],
+        [{v:'참고', t:'s', s: infoStyle('F8F9FB', true)}, {v:'이 파일은 다운로드 시점의 스냅샷입니다. 최신 일정은 웹에서 확인하세요.', t:'s', s: infoStyle('FFFBEB', false)}],
+      ];
+
+      rows.forEach((row, ri) => {
+        row.forEach((cell, ci) => {
+          if (cell === null) return;
+          iws[XS.utils.encode_cell({r:ri, c:ci})] = cell;
+        });
+      });
+
+      iws['!ref'] = `A1:C${rows.length}`;
+      iws['!merges'] = [{s:{r:0,c:0}, e:{r:0,c:2}}];
+      iws['!cols'] = [{wch:20}, {wch:55}, {wch:0}];
+      iws['!rows'] = [
+        {hpx:28}, {hpx:20}, {hpx:18}, {hpx:18}, {hpx:18}, {hpx:18}, {hpx:32}
+      ];
+      XS.utils.book_append_sheet(wb, iws, '다운로드 정보');
+    }
+
     targets.forEach(({y, m}) => {
       const firstDay    = new Date(y, m, 1).getDay();
       const daysInMonth = new Date(y, m + 1, 0).getDate();
@@ -4205,6 +4382,168 @@ boot();
 
 
 checkSharedEvt();
+
+/* ══════════════ CALENDAR SUBSCRIBE ══════════════ */
+const _CAL_GID = '89cb23c42a75d99697bdd50e11f461e94d330edec941f4bcf4f52dfddaa75553@group.calendar.google.com';
+const _CAL_ICS = 'https://calendar.google.com/calendar/ical/89cb23c42a75d99697bdd50e11f461e94d330edec941f4bcf4f52dfddaa75553%40group.calendar.google.com/public/basic.ics';
+const _CAL_WEBCAL = 'webcal://calendar.google.com/calendar/ical/89cb23c42a75d99697bdd50e11f461e94d330edec941f4bcf4f52dfddaa75553%40group.calendar.google.com/public/basic.ics';
+const _CAL_GCAL_SUB = 'https://calendar.google.com/calendar/r?cid=' + encodeURIComponent(_CAL_GID);
+
+function openSubscribeModal() {
+  const el = document.getElementById('cal-ics-display');
+  if (el) el.textContent = _CAL_ICS;
+  document.getElementById('cal-sub-overlay').classList.add('show');
+  document.body.style.overflow = 'hidden';
+}
+function subscribeGoogleCal() {
+  window.open(_CAL_GCAL_SUB, '_blank', 'noopener');
+}
+function subscribeICal() {
+  window.location.href = _CAL_WEBCAL;
+}
+function copyICalUrl() {
+  navigator.clipboard.writeText(_CAL_ICS).then(() => {
+    showToast('iCal 주소를 복사했습니다.', 'success');
+  }).catch(() => {
+    const ta = document.createElement('textarea');
+    ta.value = _CAL_ICS;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    showToast('iCal 주소를 복사했습니다.', 'success');
+  });
+}
+
+/* ══════════════ DESKTOP / MOBILE SHORTCUT ══════════════ */
+let _deferredInstallPrompt = null;
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  _deferredInstallPrompt = e;
+});
+
+function _getPlatform() {
+  const ua = navigator.userAgent || '';
+  if (/iPhone|iPad|iPod/i.test(ua)) return 'ios';
+  if (/Android/i.test(ua)) return 'android';
+  if (/Win/i.test(navigator.platform || ua)) return 'windows';
+  if (/Mac/i.test(navigator.platform || ua)) return 'mac';
+  return 'other';
+}
+
+function openShortcutModal() {
+  const body = document.getElementById('shortcut-modal-body');
+  const plat = _getPlatform();
+  const pageUrl = location.href.split('?')[0];
+
+  if (plat === 'windows') {
+    body.innerHTML = `
+      <p class="sc-note" style="margin-bottom:12px">Windows 바탕화면에 ASEA 일정 바로가기를 만들어 드립니다.</p>
+      <div class="sc-action-row">
+        <button class="sc-dl-btn" onclick="_downloadShortcutWindows()">
+          <svg style="width:16px;height:16px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          바로가기 파일 다운로드 (.url)
+        </button>
+      </div>
+      <p class="sc-note" style="margin-top:10px">다운로드된 <strong>.url</strong> 파일을 바탕화면으로 옮겨 두시면 더블클릭으로 바로 열 수 있습니다.</p>`;
+  } else if (plat === 'mac') {
+    body.innerHTML = `
+      <p class="sc-note" style="margin-bottom:12px">macOS 바탕화면에 ASEA 일정 바로가기를 만들어 드립니다.</p>
+      <div class="sc-action-row">
+        <button class="sc-dl-btn" onclick="_downloadShortcutMac()">
+          <svg style="width:16px;height:16px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          바로가기 파일 다운로드 (.webloc)
+        </button>
+      </div>
+      <p class="sc-note" style="margin-top:10px">다운로드된 <strong>.webloc</strong> 파일을 바탕화면이나 독으로 옮겨 두세요.</p>`;
+  } else if (plat === 'ios') {
+    body.innerHTML = `
+      <p style="font-size:.85rem;font-weight:600;color:var(--color-text);margin-bottom:10px">iPhone / iPad 홈 화면에 추가하기</p>
+      <div class="sc-platform">
+        <div class="sc-step"><div class="sc-step-num">1</div><div class="sc-step-text">아래 <strong>Safari</strong>로 열기 버튼을 눌러 Safari에서 이 페이지를 여세요.</div></div>
+        <div class="sc-step"><div class="sc-step-num">2</div><div class="sc-step-text">화면 하단 가운데 <strong>공유</strong> 버튼(□↑)을 탭하세요.</div></div>
+        <div class="sc-step"><div class="sc-step-num">3</div><div class="sc-step-text">스크롤을 내려 <strong>홈 화면에 추가</strong>를 탭하면 완료됩니다.</div></div>
+      </div>
+      <div class="sc-action-row" style="margin-top:12px">
+        <a class="sc-dl-btn" href="${pageUrl}" target="_blank" rel="noopener">Safari로 열기</a>
+      </div>`;
+  } else if (plat === 'android') {
+    if (_deferredInstallPrompt) {
+      body.innerHTML = `
+        <p class="sc-note" style="margin-bottom:12px">Android 홈 화면에 앱처럼 ASEA 일정을 추가할 수 있습니다.</p>
+        <div class="sc-action-row">
+          <button class="sc-dl-btn" onclick="_triggerPwaInstall()">
+            <svg style="width:16px;height:16px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+            홈 화면에 추가
+          </button>
+        </div>`;
+    } else {
+      body.innerHTML = `
+        <p style="font-size:.85rem;font-weight:600;color:var(--color-text);margin-bottom:10px">Android Chrome 홈 화면에 추가하기</p>
+        <div class="sc-platform">
+          <div class="sc-step"><div class="sc-step-num">1</div><div class="sc-step-text">Chrome 브라우저 오른쪽 상단 <strong>⋮ 메뉴</strong>를 탭하세요.</div></div>
+          <div class="sc-step"><div class="sc-step-num">2</div><div class="sc-step-text"><strong>홈 화면에 추가</strong>를 탭하세요.</div></div>
+          <div class="sc-step"><div class="sc-step-num">3</div><div class="sc-step-text"><strong>추가</strong>를 확인하면 홈 화면 아이콘이 생성됩니다.</div></div>
+        </div>`;
+    }
+  } else {
+    body.innerHTML = `
+      <div class="sc-action-row" style="flex-direction:column;gap:8px">
+        <button class="sc-dl-btn" onclick="_downloadShortcutWindows()">
+          <svg style="width:16px;height:16px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Windows 바로가기 (.url) 다운로드
+        </button>
+        <button class="sc-dl-btn" onclick="_downloadShortcutMac()">
+          <svg style="width:16px;height:16px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          macOS 바로가기 (.webloc) 다운로드
+        </button>
+      </div>`;
+  }
+  document.getElementById('shortcut-overlay').classList.add('show');
+  document.body.style.overflow = 'hidden';
+}
+
+function _downloadShortcutWindows() {
+  const url = location.href.split('?')[0];
+  const content = '[InternetShortcut]\r\nURL=' + url + '\r\nIconIndex=0\r\n';
+  _triggerDownload(new Blob([content], {type:'text/plain'}), '아세아 업무일정.url');
+}
+function _downloadShortcutMac() {
+  const url = location.href.split('?')[0];
+  const content = '<?xml version="1.0" encoding="UTF-8"?>\n<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">\n<plist version="1.0">\n<dict>\n\t<key>URL</key>\n\t<string>' + url + '</string>\n</dict>\n</plist>';
+  _triggerDownload(new Blob([content], {type:'application/xml'}), '아세아 업무일정.webloc');
+}
+function _triggerDownload(blob, name) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); document.body.removeChild(a); }, 1000);
+  showToast(name + ' 파일을 다운로드했습니다.', 'success');
+  closeModal('shortcut-overlay');
+}
+function _triggerPwaInstall() {
+  if (!_deferredInstallPrompt) return;
+  _deferredInstallPrompt.prompt();
+  _deferredInstallPrompt.userChoice.then(r => {
+    if (r.outcome === 'accepted') showToast('홈 화면에 추가되었습니다.', 'success');
+    _deferredInstallPrompt = null;
+    closeModal('shortcut-overlay');
+  });
+}
+
+function openModal(id) {
+  document.getElementById(id).classList.add('show');
+  document.body.style.overflow = 'hidden';
+}
+
+/* ══════════════ SERVICE WORKER REGISTRATION ══════════════ */
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/asea-calendar-management/sw.js').catch(() => {});
+  });
+}
 </script>
 </body>
 </html>
