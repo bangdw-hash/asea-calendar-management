@@ -713,17 +713,23 @@ html,body{height:100%;
 /* ── PRINT ── */
 @page{size:A4 landscape;margin:8mm 8mm 10mm}
 @media print{
+  html,body{width:100%;height:auto;max-width:100%;overflow:hidden;margin:0;padding:0}
   .hdr,.toolbar,.fab,.ai-fab,.ai-panel,.toast,.overlay,#auth-banner,
   #dept-filter-bar,.evt-quick,.nav-btn,.ai-img-preview-wrap,
-  .output-dropdown-wrap,button[onclick*="printMonth"]{display:none!important}
+  .output-dropdown-wrap,button[onclick*="printMonth"],
+  #month-weekdays-sticky{display:none!important}
   *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
-  body{background:#fff;font-size:9pt;margin:0}
-  .cal-wrap{padding:0;overflow:visible}
-  .cal-inner{min-width:0;width:100%}
-  .cal-container{border:1.5px solid var(--color-accent);border-radius:0!important;width:100%}
+  body{background:#fff;font-size:9pt}
+  .cal-wrap{padding:0;overflow:hidden;width:100%}
+  .cal-inner{min-width:0!important;width:100%;max-width:100%}
+  .cal-container{border:1.5px solid var(--color-accent);border-radius:0!important;
+    width:100%;max-width:100%;overflow:hidden}
+  .month-grid{width:100%}
   .month-week-row{border-bottom:1px solid var(--color-border)}
-  .day-cell{min-height:84px;padding:3px 4px;page-break-inside:avoid;vertical-align:top}
-  .day-cell-hdr{border-bottom:1px solid var(--color-border);padding-bottom:2px;margin-bottom:2px;display:flex;justify-content:space-between;align-items:baseline}
+  .day-cell{min-height:60px;padding:3px 4px;page-break-inside:avoid;
+    vertical-align:top;overflow:hidden}
+  .day-cell-hdr{border-bottom:1px solid var(--color-border);padding-bottom:2px;
+    margin-bottom:2px;display:flex;justify-content:space-between;align-items:baseline}
   .day-num{font-size:8.5pt;font-weight:800}
   .day-dow{font-size:6.5pt;color:var(--color-text-sec)!important}
   /* weekend column tints */
@@ -735,12 +741,13 @@ html,body{height:100%;
   /* event chips */
   .evt-dot{background:var(--color-accent-lt)!important;color:var(--color-accent-dk)!important;
     font-size:6.5pt;padding:1px 4px;margin-top:2px;border-radius:3px;
-    white-space:normal;line-height:1.35;overflow:visible;max-height:none;
-    border-left:2.5px solid var(--color-accent)!important;display:block}
-  /* today */
-  .day-cell.today .day-num{background:var(--color-accent)!important;color:#fff!important;
-    padding:1px 5px;border-radius:3px;display:inline-block}
-  .day-cell.today{background:var(--color-accent-lt)!important}
+    white-space:normal;line-height:1.35;overflow:hidden;max-height:none;
+    border-left:2.5px solid var(--color-accent)!important;display:block;
+    word-break:break-all}
+  /* today: plain — no highlight when printing */
+  .day-cell.today .day-num{background:none!important;color:inherit!important;
+    padding:0;border-radius:0;display:inline}
+  .day-cell.today{background:none!important}
   /* other month */
   .day-cell.other-month{background:#f9fafb!important}
   .day-cell.other-month .day-num{color:#d1d5db!important}
