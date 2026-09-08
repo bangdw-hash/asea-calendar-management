@@ -4389,7 +4389,7 @@ let _lastModalOpen = 0;
 const _CAL_GID = '89cb23c42a75d99697bdd50e11f461e94d330edec941f4bcf4f52dfddaa75553@group.calendar.google.com';
 const _CAL_ICS = 'https://calendar.google.com/calendar/ical/89cb23c42a75d99697bdd50e11f461e94d330edec941f4bcf4f52dfddaa75553%40group.calendar.google.com/public/basic.ics';
 const _CAL_WEBCAL = 'webcal://calendar.google.com/calendar/ical/89cb23c42a75d99697bdd50e11f461e94d330edec941f4bcf4f52dfddaa75553%40group.calendar.google.com/public/basic.ics';
-const _CAL_GCAL_SUB = 'https://calendar.google.com/calendar/r?cid=' + encodeURIComponent(_CAL_GID);
+const _CAL_GCAL_SUB = 'https://calendar.google.com/calendar/r/settings/addbyurl?url=' + encodeURIComponent(_CAL_ICS);
 
 function openCalSubModal() {
   _lastModalOpen = Date.now();
@@ -4399,7 +4399,7 @@ function openCalSubModal() {
   document.body.style.overflow = 'hidden';
 }
 function subscribeGoogleCal() {
-  window.open(_CAL_GCAL_SUB, '_blank', 'noopener');
+  location.href = _CAL_GCAL_SUB;
 }
 function subscribeICal() {
   window.location.href = _CAL_WEBCAL;
