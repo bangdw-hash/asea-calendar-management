@@ -201,6 +201,47 @@
     .sv-collapse.collapsed .sv-sec-body { display: none; }
     .sv-collapse.collapsed .sv-chev { transform: rotate(-90deg); }
     .sv-chev { transition: transform .2s; color: var(--color-text-sec); }
+
+    /* ── style.css pill/gradient 오버라이드 (iOS 라운드각 통일) ── */
+    .sv-main .btn,
+    .sv-main .btn-primary,
+    .sv-main .btn-secondary,
+    .sv-main .btn-ghost,
+    .sv-main .btn-danger,
+    .sv-main .btn-sm,
+    .sv-main .btn-lg,
+    .sv-header .btn {
+      border-radius: 10px !important;
+    }
+    .sv-main .btn-primary {
+      background: var(--color-accent) !important;
+      background-image: none !important;
+      box-shadow: none !important;
+    }
+    .sv-main .btn-primary:hover:not(:disabled) {
+      background: var(--color-accent-dk) !important;
+      transform: none !important;
+      box-shadow: none !important;
+    }
+    .sv-main .btn:hover:not(:disabled),
+    .sv-main .btn-ghost:hover:not(:disabled) {
+      transform: none !important;
+    }
+
+    /* ── 카드/박스 라운드각 통일 (12px) ── */
+    .sv-main .settings-card,
+    .sv-main .sv-card,
+    .sv-main .sv-ed-head,
+    .sv-main .sv-sec,
+    .sv-main .sv-sec-head,
+    .sv-main .sv-sec-body,
+    .sv-main .card,
+    .sv-main [class*="-card"],
+    .sv-main [class*="-box"],
+    .sv-main .sv-banner,
+    .sv-main .sv-forms-banner {
+      border-radius: 12px !important;
+    }
   </style>
 </head>
 <body>
