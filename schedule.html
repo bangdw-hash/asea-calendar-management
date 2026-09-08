@@ -358,6 +358,8 @@ html,body{height:100%;
 .cell-ripple{position:absolute;border-radius:50%;width:40px;height:40px;
   margin:-20px 0 0 -20px;background:var(--color-accent);pointer-events:none;
   animation:cell-ripple-anim .45s ease-out forwards;z-index:0}
+@keyframes lp-ring{0%{box-shadow:0 0 0 0 var(--color-accent)}60%{box-shadow:0 0 0 6px transparent}100%{box-shadow:0 0 0 0 transparent}}
+.day-cell.lp-active{animation:lp-ring .45s ease-out;background:var(--color-accent-lt)!important}
 
 /* week view time slot hover */
 .week-day-col{cursor:pointer}
@@ -2359,31 +2361,44 @@ function initMonthDrag() {
     clearDrag();
   }, { capture: true });
 
-  // Mobile touch drag selection
-  let _touchStartX = 0, _touchStartY = 0, _touchDragDir = null;
+  // Mobile: swipe = 월 이동 / long-press + drag = 범위 선택 (PC 동작 불변)
+  let _touchStartX = 0, _touchStartY = 0;
+  let _touchLpTimer = null, _touchLpCell = null;
+  let _touchLpActivated = false, _touchMoved = false;
+
   grid.addEventListener('touchstart', e => {
     if (e.target.closest('.evt-dot-wrap')) return;
     if (_ctxEvtId) return;
     const touch = e.touches[0];
-    const cell = document.elementFromPoint(touch.clientX, touch.clientY)?.closest('.day-cell');
-    if (!cell) return;
     _touchStartX = touch.clientX;
     _touchStartY = touch.clientY;
-    _touchDragDir = null;
-    _dragStart = cellDate(cell);
-    _dragEnd = _dragStart;
-    _dragging = false;
+    _touchMoved = false;
+    _touchLpActivated = false;
+    _touchLpCell = document.elementFromPoint(touch.clientX, touch.clientY)?.closest('.day-cell') || null;
+    if (_touchLpTimer) clearTimeout(_touchLpTimer);
+    _touchLpTimer = setTimeout(() => {
+      _touchLpTimer = null;
+      if (_touchMoved) return;
+      // Long press activated: vibrate + visual ring
+      if (navigator.vibrate) navigator.vibrate(45);
+      if (_touchLpCell) _touchLpCell.classList.add('lp-active');
+      _touchLpActivated = true;
+      _dragStart = _touchLpCell ? cellDate(_touchLpCell) : null;
+      _dragEnd = _dragStart;
+      _dragging = false;
+    }, 450);
   }, { passive: true });
+
   grid.addEventListener('touchmove', e => {
-    if (!_dragStart) return;
     const touch = e.touches[0];
-    const dx = Math.abs(touch.clientX - _touchStartX);
-    const dy = Math.abs(touch.clientY - _touchStartY);
-    if (!_touchDragDir) {
-      if (dx < 8 && dy < 8) return;
-      _touchDragDir = dx >= dy ? 'h' : 'v';
+    const dx = touch.clientX - _touchStartX;
+    const dy = touch.clientY - _touchStartY;
+    if (Math.abs(dx) > 6 || Math.abs(dy) > 6) {
+      _touchMoved = true;
+      if (_touchLpTimer) { clearTimeout(_touchLpTimer); _touchLpTimer = null; }
     }
-    if (_touchDragDir === 'v') { _dragStart = null; return; }
+    if (!_touchLpActivated || !_dragStart) return;
+    // Long press drag: range selection
     e.preventDefault();
     const el = document.elementFromPoint(touch.clientX, touch.clientY);
     const cell = el?.closest('.day-cell');
@@ -2393,22 +2408,44 @@ function initMonthDrag() {
     _dragEnd = cd; _dragging = true;
     markRange(_dragStart, _dragEnd);
   }, { passive: false });
+
   grid.addEventListener('touchend', e => {
-    if (!_dragStart || !_dragging || !_dragEnd) {
-      _dragStart = null; _dragEnd = null; _dragging = false; _touchDragDir = null;
+    if (_touchLpTimer) { clearTimeout(_touchLpTimer); _touchLpTimer = null; }
+    // Remove long-press visual
+    grid.querySelectorAll('.lp-active').forEach(c => c.classList.remove('lp-active'));
+
+    if (_touchLpActivated) {
+      // Long-press mode completed
+      _touchLpActivated = false;
+      if (_dragStart && _dragging && _dragEnd) {
+        e.preventDefault();
+        const d1 = new Date(_dragStart.y, _dragStart.m, _dragStart.d);
+        const d2 = new Date(_dragEnd.y, _dragEnd.m, _dragEnd.d);
+        const [lo, hi] = d1 <= d2 ? [_dragStart, _dragEnd] : [_dragEnd, _dragStart];
+        clearDrag();
+        if (!_token) {
+          showToast('조회 전용 모드입니다. 일정 추가·수정은 Google 로그인 후 이용 가능합니다.', 'info');
+        } else {
+          openEventModalOnDate(lo.y, lo.m, lo.d, hi.y, hi.m, hi.d);
+        }
+      } else {
+        clearDrag();
+      }
       return;
     }
-    e.preventDefault();
-    const d1 = new Date(_dragStart.y, _dragStart.m, _dragStart.d);
-    const d2 = new Date(_dragEnd.y, _dragEnd.m, _dragEnd.d);
-    const [lo, hi] = d1 <= d2 ? [_dragStart, _dragEnd] : [_dragEnd, _dragStart];
-    clearDrag();
-    _touchDragDir = null;
-    if (!_token) {
-      showToast('조회 전용 모드입니다. 일정 추가·수정은 Google 로그인 후 이용 가능합니다.', 'info');
-    } else {
-      openEventModalOnDate(lo.y, lo.m, lo.d, hi.y, hi.m, hi.d);
+
+    // Normal touch end: check for horizontal swipe to navigate months
+    if (_touchMoved) {
+      const touch = e.changedTouches[0];
+      const dx = touch.clientX - _touchStartX;
+      const dy = touch.clientY - _touchStartY;
+      if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy) * 1.4) {
+        nav(dx < 0 ? 1 : -1);
+        e.preventDefault();
+      }
     }
+    clearDrag();
+    _touchLpCell = null;
   }, { passive: false });
 
   // Ctrl+Click confirm: double-click any selected cell or press Enter
@@ -3304,12 +3341,12 @@ document.addEventListener('keydown', e => {
 function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function escId(s) { return String(s||'').replace(/'/g,"\\'"); }
 function fmtHolidayName(name) {
-  // "쉬는 날 X" → "대체 공휴일(X)"
+  // "쉬는 날 X" → "대체공휴일(X)"
   const m1 = name.match(/^쉬는\s*날\s+(.+)$/);
-  if (m1) return `대체 공휴일(${m1[1].trim()})`;
-  // "X 대체공휴일" → "대체 공휴일(X)"
+  if (m1) return `대체공휴일(${m1[1].trim()})`;
+  // "X 대체공휴일" → "대체공휴일(X)"
   const idx = name.indexOf('대체공휴일');
-  if (idx > 0) { const orig = name.slice(0, idx).trim(); return orig ? `대체 공휴일(${orig})` : '대체 공휴일'; }
+  if (idx > 0) { const orig = name.slice(0, idx).trim(); return orig ? `대체공휴일(${orig})` : '대체공휴일'; }
   return name;
 }
 function fmtDate(d) { return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
