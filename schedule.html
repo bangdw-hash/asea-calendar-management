@@ -2434,16 +2434,7 @@ function initMonthDrag() {
       return;
     }
 
-    // Normal touch end: check for horizontal swipe to navigate months
-    if (_touchMoved) {
-      const touch = e.changedTouches[0];
-      const dx = touch.clientX - _touchStartX;
-      const dy = touch.clientY - _touchStartY;
-      if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy) * 1.4) {
-        nav(dx < 0 ? 1 : -1);
-        e.preventDefault();
-      }
-    }
+    // (swipe-to-navigate disabled — 좌우 버튼으로 월 이동)
     clearDrag();
     _touchLpCell = null;
   }, { passive: false });
