@@ -234,6 +234,8 @@ html,body{height:100%;
   flex-shrink:0;border-radius:50%}
 .day-cell.sun .day-num{color:var(--color-error)}
 .day-cell.sat .day-num{color:var(--color-accent)}
+.day-holiday{font-size:var(--font-xs);font-weight:600;color:var(--color-error);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;flex:1}
+.day-cell.holiday .day-num{color:var(--color-error)}
 .day-cell.today .day-num{background:var(--color-accent);color:#fff!important}
 
 /* event chip (index.html .event-chip 스타일) */
@@ -758,6 +760,9 @@ html,body{height:100%;
   /* sunday/saturday day numbers */
   .month-week-row .day-cell:first-child .day-num{color:#DC2626!important}
   .month-week-row .day-cell:last-child .day-num{color:var(--color-accent)!important}
+  /* holiday labels */
+  .day-holiday{color:#DC2626!important;font-size:5pt;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .day-cell.holiday:not(.sun) .day-num{color:#DC2626!important}
   /* event chips: 1-line truncation keeps cells compact on A4 */
   .evt-dot{background:var(--color-accent-lt)!important;color:var(--color-accent-dk)!important;
     font-size:5.5pt;padding:1px 4px;margin-top:2px;border-radius:3px;
@@ -1605,7 +1610,8 @@ const WORK_CATEGORIES = [
   {label:'안전', desc:'안전·비상'},
   {label:'협약', desc:'협약·MOU'},
 ];
-const API_BASE  = 'https://www.googleapis.com/calendar/v3';
+const API_BASE      = 'https://www.googleapis.com/calendar/v3';
+const HOLIDAY_CAL   = 'ko.south_korea#holiday@group.v.calendar.google.com';
 const SB_URL    = 'https://zbpeyklwpotjyveipzxd.supabase.co';
 const SB_ANON   = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpicGV5a2x3cG90anl2ZWlwenhkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE1MTYxMDcsImV4cCI6MjA5NzA5MjEwN30.6JgoQ6rPRnmrbBTG68A-Y9HDQk40mnwubhXVnkZvHrQ';
 const ADMIN_PW  = 'qkdtldnjs82!@';
@@ -1620,6 +1626,7 @@ let _tokenHasWrite = false; // true when current token includes calendar write s
 let _userEmail  = null;
 let _userInitial = '';
 let _events     = [];
+let _holidays   = {}; // 'YYYY-MM-DD' → 공휴일명
 let _deptFilter = { group: null, dept: null }; // group: null|'운영부'|'계열'|'부설', dept: null|string
 
 // 그룹 → 부서 매핑
@@ -1806,15 +1813,44 @@ async function apiFetch(method, path, body) {
   return data;
 }
 
+async function fetchHolidays() {
+  const y = _curDate.getFullYear(), m = _curDate.getMonth();
+  const timeMin = new Date(y, m - 1, 1).toISOString();
+  const timeMax = new Date(y, m + 2, 0, 23, 59, 59).toISOString();
+  const qs = new URLSearchParams({ timeMin, timeMax, singleEvents:'true', maxResults:'100' });
+  let items = [];
+  try {
+    if (_token) {
+      const d = await apiFetch('GET', `/calendars/${encodeURIComponent(HOLIDAY_CAL)}/events?${qs}`);
+      items = d?.items || [];
+    } else {
+      const r = await fetch(`${SB_URL}/functions/v1/ai-proxy`, {
+        method: 'POST',
+        headers: { 'Content-Type':'application/json', 'apikey':SB_ANON, 'Authorization':'Bearer '+SB_ANON },
+        body: JSON.stringify({ service:'gcal-public', payload:{ calId: HOLIDAY_CAL, timeMin, timeMax } }),
+      });
+      if (r.ok) { const d = await r.json(); items = Array.isArray(d?.items) ? d.items : []; }
+    }
+  } catch(_) {}
+  _holidays = {};
+  items.forEach(ev => {
+    const date = ev.start?.date || (ev.start?.dateTime || '').slice(0, 10);
+    if (date && ev.summary) _holidays[date] = ev.summary;
+  });
+}
+
 async function fetchEvents() {
   if (!_token) return;
   const y = _curDate.getFullYear(), m = _curDate.getMonth();
   const timeMin = new Date(y, m - 1, 1).toISOString();
   const timeMax = new Date(y, m + 2, 0, 23, 59, 59).toISOString();
   try {
-    const data = await apiFetch('GET', `/calendars/${encodeURIComponent(CAL_ID)}/events?${new URLSearchParams({
-      timeMin, timeMax, singleEvents: 'true', orderBy: 'startTime', maxResults: '500'
-    })}`);
+    const [data] = await Promise.all([
+      apiFetch('GET', `/calendars/${encodeURIComponent(CAL_ID)}/events?${new URLSearchParams({
+        timeMin, timeMax, singleEvents: 'true', orderBy: 'startTime', maxResults: '500'
+      })}`),
+      fetchHolidays(),
+    ]);
     _events = (data && data.items) ? data.items : [];
     updateDeptFilterBar();
   } catch(e) {
@@ -1978,7 +2014,10 @@ function renderMonth(wrap) {
         gridHtml += `<div class="${cell.cls}"><div class="day-cell-hdr"><span class="day-num">${cell.d}</span><span class="day-dow">${WEEKDAYS[c]}</span></div></div>`;
         continue;
       }
-      const numEl = `<div class="day-cell-hdr"><span class="day-num">${cell.d}</span><span class="day-dow">${WEEKDAYS[c]}</span></div>`;
+      const dateKey = `${y}-${String(m+1).padStart(2,'0')}-${String(cell.d).padStart(2,'0')}`;
+      const holiday = _holidays[dateKey];
+      const holidayHtml = holiday ? `<span class="day-holiday">${esc(holiday)}</span>` : '';
+      const numEl = `<div class="day-cell-hdr"><span class="day-num">${cell.d}</span><span class="day-dow">${WEEKDAYS[c]}</span>${holidayHtml}</div>`;
       const dotsHtml = (cell.evts || []).map(ev => {
         const qBtns = (_token && _tokenHasWrite)
           ? `<span class="evt-quick"><button onclick="event.stopPropagation();editEvtById('${escId(ev.id)}')" title="수정">✏️</button><button onclick="event.stopPropagation();deleteEvtById('${escId(ev.id)}')" title="삭제">🗑</button></span>`
@@ -1986,7 +2025,7 @@ function renderMonth(wrap) {
         const draggable = (_token && _tokenHasWrite) ? ' draggable="true"' : '';
         return `<span class="evt-dot-wrap"><span class="evt-dot"${draggable} data-evtid="${ev.id}" onclick="evtChipClick(event,this,'${escId(ev.id)}')" title="${esc(ev.summary||'')}">${esc(ev.summary||'(제목 없음)')}</span>${qBtns}</span>`;
       }).join('');
-      gridHtml += `<div class="${cell.cls}${(cell.evts||[]).length?' has-events':''}" data-y="${y}" data-m="${m}" data-d="${cell.d}">${numEl}${dotsHtml}</div>`;
+      gridHtml += `<div class="${cell.cls}${holiday?' holiday':''}${(cell.evts||[]).length?' has-events':''}" data-y="${y}" data-m="${m}" data-d="${cell.d}">${numEl}${dotsHtml}</div>`;
     }
     gridHtml += '</div>';
   }
@@ -4277,11 +4316,14 @@ async function fetchPublicEvents() {
   const timeMin = new Date(y, m - 1, 1).toISOString();
   const timeMax = new Date(y, m + 2, 0, 23, 59, 59).toISOString();
   try {
-    const r = await fetch(`${SB_URL}/functions/v1/ai-proxy`, {
-      method: 'POST',
-      headers: { 'Content-Type':'application/json', 'apikey':SB_ANON, 'Authorization':'Bearer '+SB_ANON },
-      body: JSON.stringify({ service:'gcal-public', payload:{ calId:CAL_ID, timeMin, timeMax } }),
-    });
+    const [r] = await Promise.all([
+      fetch(`${SB_URL}/functions/v1/ai-proxy`, {
+        method: 'POST',
+        headers: { 'Content-Type':'application/json', 'apikey':SB_ANON, 'Authorization':'Bearer '+SB_ANON },
+        body: JSON.stringify({ service:'gcal-public', payload:{ calId:CAL_ID, timeMin, timeMax } }),
+      }),
+      fetchHolidays(),
+    ]);
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
     const data = await r.json();
     _events = Array.isArray(data?.items) ? data.items : [];
