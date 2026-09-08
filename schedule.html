@@ -247,7 +247,8 @@ html,body{height:100%;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;
   border-left:3px solid var(--color-accent);
   background:var(--color-accent-lt);color:var(--color-accent-dk);
-  font-weight:500;display:block;cursor:pointer;transition:filter .15s}
+  font-weight:500;display:block;cursor:pointer;transition:filter .15s;
+  box-shadow:0 1px 3px rgba(0,0,0,.10),0 1px 2px rgba(0,0,0,.06)}
 .evt-dot:hover{filter:brightness(.93)}
 .evt-dot.more{border-left:none;background:var(--g100);color:var(--color-text-sec);font-size:var(--font-xs)}
 .evt-dot.school-evt{border-left-color:var(--g700)!important;background:var(--g100)!important;color:var(--g900)!important}
@@ -330,19 +331,22 @@ html,body{height:100%;
 /* quick event actions (hover) */
 .evt-dot-wrap{position:relative;display:block}
 .evt-dot-wrap:hover .evt-quick{display:flex}
-.evt-quick{display:none;position:absolute;right:2px;top:50%;transform:translateY(-50%);
-  gap:2px;background:rgba(255,255,255,.92);border-radius:4px;padding:1px 2px;z-index:10}
-.evt-quick button{background:none;border:none;cursor:pointer;padding:1px 3px;
-  font-size:.65rem;border-radius:3px;transition:background .1s;line-height:1}
-.evt-quick button:hover{background:var(--g200)}
+.evt-quick{display:none;position:absolute;right:0;top:0;bottom:0;
+  gap:1px;background:rgba(255,255,255,.9);border-radius:0 3px 3px 0;padding:1px;z-index:10;align-items:stretch}
+.evt-quick button{background:none;border:none;cursor:pointer;padding:0 4px;
+  border-radius:2px;transition:background .1s,color .1s;display:flex;align-items:center;color:var(--g500)}
+.evt-quick button:hover{background:var(--g200);color:var(--g700)}
+.evt-quick .quick-del:hover{background:var(--red-lt)!important;color:var(--red)!important}
+.evt-quick button svg{width:9px;height:9px;flex-shrink:0}
 
 /* day-cell clickable for new event */
 .day-cell.cur-month{cursor:pointer}
 .day-cell.cur-month:hover:not(:has(.evt-dot-wrap:hover)) .day-num{color:var(--primary)}
 .day-cell.cur-month.drag-select{background:var(--color-accent-lt)!important;outline:2px dashed var(--color-accent);outline-offset:-2px}
 .day-cell.cur-month.drag-select .day-num{color:var(--primary)}
-.day-cell.cur-month.ctrl-select{background:var(--color-accent-lt)!important;outline:2px dashed var(--color-accent);outline-offset:-2px}
-.day-cell.cur-month.ctrl-select .day-num{color:var(--primary)}
+.day-cell.ctrl-select{background:var(--color-accent-lt)!important;outline:2px dashed var(--color-accent);outline-offset:-2px}
+.day-cell.ctrl-select .day-num{color:var(--primary)}
+.day-cell.ctrl-drag-sel{background:var(--color-accent-lt)!important;outline:2px dashed var(--color-accent);outline-offset:-2px;opacity:.75}
 .drag-drop-over{background:var(--color-accent-lt)!important;outline:2px dashed var(--color-accent);}
 .evt-dot-wrap.dragging{opacity:0.4;}
 .evt-dot[draggable]{cursor:grab;}
@@ -572,6 +576,14 @@ html,body{height:100%;
 #toast.error-toast{background:var(--red)}
 #toast.success-toast{background:var(--green)}
 #toast.info-toast{background:var(--color-accent)}
+
+/* ── CTRL-SELECT POPUP ── */
+#ctrl-popup{position:fixed;z-index:400;background:var(--color-card);border:1px solid var(--color-border);
+  border-radius:var(--r-card);box-shadow:var(--sh-lg);padding:8px 10px;min-width:164px;
+  display:none;animation:ctx-in .13s ease}
+#ctrl-popup.open{display:block}
+#ctrl-popup-count{font-size:.78rem;font-weight:600;color:var(--color-text);margin-bottom:7px;display:block}
+#ctrl-popup-actions{display:flex;gap:5px}
 
 /* ── AUTH BANNER ── */
 .auth-banner{background:var(--orange-lt);border-bottom:1px solid var(--orange);
@@ -986,12 +998,13 @@ html,body{height:100%;
   </div>
 </div>
 
-<!-- CTRL-SELECT BANNER -->
-<div id="ctrl-select-banner" hidden style="position:sticky;top:calc(var(--header-h) + var(--toolbar-h) + 36px);z-index:90;margin:0;padding:6px 16px;background:var(--color-accent);color:#fff;font-size:.82rem;display:flex;align-items:center;gap:10px">
-  <span id="ctrl-select-count"></span>
-  <button onclick="if(!_token){showToast('조회 전용 모드입니다. 일정 추가·수정은 Google 로그인 후 이용 가능합니다.','info');return;}if(_ctrlDates.length>0){const d=[..._ctrlDates].sort((a,b)=>new Date(a.y,a.m,a.d)-new Date(b.y,b.m,b.d));clearAllSelections();openEventModalOnDates(d);}" style="background:rgba(255,255,255,.25);border:none;border-radius:4px;color:#fff;padding:3px 10px;font-size:.78rem;cursor:pointer;font-family:inherit">일정 추가</button>
-  <button onclick="clearAllSelections()" style="background:none;border:1px solid rgba(255,255,255,.5);border-radius:4px;color:#fff;padding:3px 8px;font-size:.78rem;cursor:pointer;font-family:inherit">취소</button>
-  <span style="margin-left:auto;font-size:.72rem;opacity:.85">Ctrl+클릭으로 날짜 추가/해제 · 더블클릭으로 확정</span>
+<!-- CTRL-SELECT POPUP (날짜 다중선택 시 마지막 셀 근처에 표시) -->
+<div id="ctrl-popup">
+  <span id="ctrl-popup-count"></span>
+  <div id="ctrl-popup-actions">
+    <button class="btn btn-primary btn-sm" onclick="if(!_token){showToast('조회 전용 모드입니다. 일정 추가·수정은 Google 로그인 후 이용 가능합니다.','info');return;}if(_ctrlDates.length>0){const d=[..._ctrlDates].sort((a,b)=>new Date(a.y,a.m,a.d)-new Date(b.y,b.m,b.d));clearAllSelections();openEventModalOnDates(d);}">일정 추가</button>
+    <button class="btn btn-sm" style="background:var(--g100);color:var(--g700)" onclick="clearAllSelections()">취소</button>
+  </div>
 </div>
 
 <!-- CALENDAR AREA -->
@@ -2120,7 +2133,7 @@ function renderMonth(wrap) {
           const isSchool = ev.description && ev.description.includes('[학교일정]');
           const schoolCls = isSchool ? ' school-evt' : '';
           const qBtns = (_token && _tokenHasWrite)
-            ? `<span class="evt-quick"><button onclick="event.stopPropagation();editEvtById('${escId(ev.id)}')" title="수정">✏️</button><button onclick="event.stopPropagation();deleteEvtById('${escId(ev.id)}')" title="삭제">🗑</button></span>`
+            ? `<span class="evt-quick"><button class="quick-edit" onclick="event.stopPropagation();editEvtById('${escId(ev.id)}')" title="수정"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2.5l2.5 2.5-7 7H2v-2.5z"/><path d="M7.5 4l2.5 2.5"/></svg></button><button class="quick-del" onclick="event.stopPropagation();deleteEvtById('${escId(ev.id)}')" title="삭제"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="1" y1="4" x2="13" y2="4"/><path d="M5 4V2.5h4V4"/><rect x="2" y="4" width="10" height="8.5" rx="1"/></svg></button></span>`
             : '';
           return `<span class="evt-dot-wrap"><span class="evt-dot${schoolCls}" data-evtid="${ev.id}" onclick="evtChipClick(event,this,'${escId(ev.id)}')" title="${esc(ev.summary||'')}">${esc(ev.summary||'(제목 없음)')}</span>${qBtns}</span>`;
         }).join('');
@@ -2130,13 +2143,13 @@ function renderMonth(wrap) {
       }
       const dateKey = `${y}-${String(m+1).padStart(2,'0')}-${String(cell.d).padStart(2,'0')}`;
       const holiday = _holidays[dateKey];
-      const holidayHtml = holiday ? `<span class="day-holiday">${esc(holiday)}</span>` : '';
+      const holidayHtml = holiday ? `<span class="day-holiday">${esc(fmtHolidayName(holiday))}</span>` : '';
       const numEl = `<div class="day-cell-hdr"><span class="day-num">${cell.d}</span><span class="day-dow">${WEEKDAYS[c]}</span>${holidayHtml}</div>`;
       const dotsHtml = (cell.evts || []).map(ev => {
         const isSchool = ev.description && ev.description.includes('[학교일정]');
         const schoolCls = isSchool ? ' school-evt' : '';
         const qBtns = (_token && _tokenHasWrite)
-          ? `<span class="evt-quick"><button onclick="event.stopPropagation();editEvtById('${escId(ev.id)}')" title="수정">✏️</button><button onclick="event.stopPropagation();deleteEvtById('${escId(ev.id)}')" title="삭제">🗑</button></span>`
+          ? `<span class="evt-quick"><button class="quick-edit" onclick="event.stopPropagation();editEvtById('${escId(ev.id)}')" title="수정"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2.5l2.5 2.5-7 7H2v-2.5z"/><path d="M7.5 4l2.5 2.5"/></svg></button><button class="quick-del" onclick="event.stopPropagation();deleteEvtById('${escId(ev.id)}')" title="삭제"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="1" y1="4" x2="13" y2="4"/><path d="M5 4V2.5h4V4"/><rect x="2" y="4" width="10" height="8.5" rx="1"/></svg></button></span>`
           : '';
         const draggable = (_token && _tokenHasWrite) ? ' draggable="true"' : '';
         return `<span class="evt-dot-wrap"><span class="evt-dot${schoolCls}"${draggable} data-evtid="${ev.id}" onclick="evtChipClick(event,this,'${escId(ev.id)}')" title="${esc(ev.summary||'')}">${esc(ev.summary||'(제목 없음)')}</span>${qBtns}</span>`;
@@ -2155,31 +2168,39 @@ function renderMonth(wrap) {
 /* ── MONTH GRID DRAG-TO-CREATE & CLICK ── */
 let _dragStart = null, _dragEnd = null, _dragging = false;
 let _ctrlDates = []; // ctrl+click selected individual dates
+let _ctrlLastCell = null; // last cell for popup positioning
 
 function clearAllSelections() {
-  document.querySelectorAll('.drag-select,.ctrl-select').forEach(c => {
-    c.classList.remove('drag-select'); c.classList.remove('ctrl-select');
+  document.querySelectorAll('.drag-select,.ctrl-select,.ctrl-drag-sel').forEach(c => {
+    c.classList.remove('drag-select','ctrl-select','ctrl-drag-sel');
   });
   _dragStart = null; _dragEnd = null; _dragging = false;
   _ctrlDates = [];
-  _updateCtrlBanner();
+  _ctrlLastCell = null;
+  _updateCtrlPopup();
 }
 
-function _updateCtrlBanner() {
-  const banner = document.getElementById('ctrl-select-banner');
-  if (!banner) return;
-  if (_ctrlDates.length > 0) {
-    banner.hidden = false;
-    document.getElementById('ctrl-select-count').textContent = `${_ctrlDates.length}개 날짜 선택됨`;
-  } else {
-    banner.hidden = true;
-  }
+function _updateCtrlPopup() {
+  const popup = document.getElementById('ctrl-popup');
+  if (!popup) return;
+  if (_ctrlDates.length === 0 || !_ctrlLastCell) { popup.classList.remove('open'); return; }
+  const rect = _ctrlLastCell.getBoundingClientRect();
+  let top = rect.bottom + 6, left = rect.left;
+  const pw = 170, ph = 74;
+  if (left + pw > window.innerWidth - 8) left = window.innerWidth - pw - 8;
+  if (left < 8) left = 8;
+  if (top + ph > window.innerHeight - 8) top = rect.top - ph - 4;
+  popup.style.top = top + 'px';
+  popup.style.left = left + 'px';
+  document.getElementById('ctrl-popup-count').textContent = `${_ctrlDates.length}개 날짜 선택됨`;
+  popup.classList.add('open');
 }
 
 function initMonthDrag() {
   const grid = document.getElementById('month-grid');
   if (!grid) return;
   const cells = () => grid.querySelectorAll('.day-cell');
+  let _ctrlDragStart = null, _ctrlDragStartCell = null, _ctrlDragging = false;
 
   function cellDate(el) {
     const y = +el.dataset.y, m = +el.dataset.m, d = +el.dataset.d;
@@ -2212,20 +2233,12 @@ function initMonthDrag() {
     const cell = e.target.closest('.day-cell');
     if (!cell || e.target.closest('.evt-dot,.evt-dot-wrap,.evt-quick')) return;
 
-    // Ctrl/Cmd+Click: toggle individual date selection
+    // Ctrl/Cmd: start ctrl-drag (drag = range, no drag = toggle)
     if (e.ctrlKey || e.metaKey) {
       e.preventDefault();
       const cd = cellDate(cell);
       if (!cd) return;
-      const idx = _ctrlDates.findIndex(x => x.key === cd.key);
-      if (idx >= 0) {
-        _ctrlDates.splice(idx, 1);
-        cell.classList.remove('ctrl-select');
-      } else {
-        _ctrlDates.push(cd);
-        cell.classList.add('ctrl-select');
-      }
-      _updateCtrlBanner();
+      _ctrlDragStart = cd; _ctrlDragStartCell = cell; _ctrlDragging = false;
       return;
     }
 
@@ -2246,6 +2259,26 @@ function initMonthDrag() {
     e.preventDefault();
   });
   grid.addEventListener('mousemove', e => {
+    // Ctrl drag: highlight preview range
+    if (_ctrlDragStart) {
+      const cell = e.target.closest('.day-cell');
+      if (cell) {
+        const cd = cellDate(cell);
+        if (cd && cd.key !== _ctrlDragStart.key) _ctrlDragging = true;
+        if (_ctrlDragging && cd) {
+          const d1 = new Date(_ctrlDragStart.y, _ctrlDragStart.m, _ctrlDragStart.d);
+          const d2 = new Date(cd.y, cd.m, cd.d);
+          const [lo, hi] = d1 <= d2 ? [d1, d2] : [d2, d1];
+          cells().forEach(c => {
+            const ccd = cellDate(c);
+            if (!ccd) return;
+            const dt = new Date(ccd.y, ccd.m, ccd.d);
+            c.classList.toggle('ctrl-drag-sel', dt >= lo && dt <= hi && !c.classList.contains('ctrl-select'));
+          });
+        }
+      }
+      return;
+    }
     if (!_dragStart) return;
     const cell = e.target.closest('.day-cell.cur-month');
     if (!cell) return;
@@ -2255,8 +2288,48 @@ function initMonthDrag() {
     markRange(_dragStart, _dragEnd);
   });
   document.addEventListener('mouseup', e => {
-    if (_ctrlDates.length > 0 && !_dragStart) return;
+    // Ctrl drag/click completion
+    if (_ctrlDragStart) {
+      if (_ctrlDragging) {
+        const overCell = e.target.closest && e.target.closest('.day-cell');
+        const endCd = (overCell && cellDate(overCell)) || _ctrlDragStart;
+        const d1 = new Date(_ctrlDragStart.y, _ctrlDragStart.m, _ctrlDragStart.d);
+        const d2 = new Date(endCd.y, endCd.m, endCd.d);
+        const [lo, hi] = d1 <= d2 ? [d1, d2] : [d2, d1];
+        let lastCell = null;
+        cells().forEach(c => {
+          c.classList.remove('ctrl-drag-sel');
+          const ccd = cellDate(c);
+          if (!ccd) return;
+          const dt = new Date(ccd.y, ccd.m, ccd.d);
+          if (dt >= lo && dt <= hi) {
+            if (!_ctrlDates.find(x => x.key === ccd.key)) _ctrlDates.push(ccd);
+            c.classList.add('ctrl-select');
+            lastCell = c;
+          }
+        });
+        _ctrlLastCell = lastCell || overCell;
+      } else {
+        // Single cell toggle
+        const cd = _ctrlDragStart;
+        let togCell = null;
+        cells().forEach(c => { if (!togCell && cellDate(c)?.key === cd.key) togCell = c; });
+        const idx = _ctrlDates.findIndex(x => x.key === cd.key);
+        if (idx >= 0) {
+          _ctrlDates.splice(idx, 1);
+          if (togCell) togCell.classList.remove('ctrl-select');
+        } else {
+          _ctrlDates.push(cd);
+          if (togCell) togCell.classList.add('ctrl-select');
+        }
+        _ctrlLastCell = _ctrlDates.length > 0 ? (togCell || _ctrlDragStartCell) : null;
+      }
+      _ctrlDragStart = null; _ctrlDragging = false; _ctrlDragStartCell = null;
+      _updateCtrlPopup();
+      return;
+    }
 
+    if (_ctrlDates.length > 0 && !_dragStart) return;
     if (!_dragStart) return;
     const cell = e.target.closest && e.target.closest('.day-cell');
     if (!_dragging && cell) {
@@ -3218,12 +3291,18 @@ document.addEventListener('keydown', e => {
   if (e.key==='Escape') {
     document.querySelectorAll('.overlay.show').forEach(o => { o.classList.remove('show'); document.body.style.overflow=''; });
     closeEvtPopup();
+    clearAllSelections();
   }
 });
 
 /* ══════════════ UTILS ══════════════ */
 function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function escId(s) { return String(s||'').replace(/'/g,"\\'"); }
+function fmtHolidayName(name) {
+  const idx = name.indexOf('대체공휴일');
+  if (idx > 0) { const orig = name.slice(0, idx).trim(); return (orig ? orig + ' → ' : '') + '대체공휴일'; }
+  return name;
+}
 function fmtDate(d) { return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
 function fmtTime(d) { return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'); }
 let _toastTimer;
