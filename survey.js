@@ -1,10 +1,36 @@
-// survey.js — 구글 설문지 자동 생성 모듈 v1.0 (2026-06-12)
+// survey.js — 구글 설문지 자동 생성 모듈 v1.1 (2026-09-08)
 (function () {
   'use strict';
 
   var FORMS_API   = 'https://forms.googleapis.com/v1/forms';
   var DRIVE_API   = 'https://www.googleapis.com/drive/v3/files';
-  var SK_HISTORY  = 'asea_survey_history';  // 로컬 이력 (폼 ID + 제목)
+  var SK_HISTORY  = 'asea_survey_history';
+
+  /* ── SVG 아이콘 헬퍼 ──────────────────────────────────── */
+  function _ico(name, size) {
+    size = size || 14;
+    var s = 'width="' + size + '" height="' + size + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0;vertical-align:-2px"';
+    var paths = {
+      sparkles: '<path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/><path d="M20 3v4"/><path d="M22 5h-4"/><path d="M4 17v2"/><path d="M5 18H3"/>',
+      upload: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>',
+      save: '<path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/>',
+      pencil: '<path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>',
+      link: '<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>',
+      refresh: '<path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/>',
+      'file-text': '<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><line x1="10" y1="12" x2="16" y2="12"/><line x1="10" y1="16" x2="14" y2="16"/>',
+      folder: '<path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/>',
+      copy: '<rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>',
+      trash: '<path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>',
+      zap: '<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>',
+      repeat: '<path d="m17 2 4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="m7 22-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/>',
+      clipboard: '<rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/>',
+      'bar-chart': '<line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/>',
+      download: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>',
+      'alert-circle': '<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>',
+      check: '<polyline points="20 6 9 17 4 12"/>'
+    };
+    return '<svg ' + s + '>' + (paths[name] || '') + '</svg>';
+  }
 
   /* ── 유틸 ─────────────────────────────────────────── */
   function _loadStaffMenus() {
@@ -12,7 +38,6 @@
   }
 
   function getToken() {
-    // Google Forms/Drive API용 — 2단계(Forms 연동) 토큰 우선, 없으면 기본 토큰 반환
     return (window.Auth && Auth.getFormsToken && Auth.getFormsToken()) ||
            (window.Auth && Auth.getToken && Auth.getToken()) ||
            (window.S && S.accessToken) || '';
@@ -34,17 +59,15 @@
     saveHistory(list);
   }
 
-  /* ── 편집 이력(드래프트) — 계정별 클라우드 저장(Supabase app_submissions, kind=survey_draft) ──
-     구글 드라이브에 올리기 전의 편집 내역을 보관 → 다른 단말에서 조회·이어편집·복제 가능 */
+  /* ── 편집 이력(드래프트) ── */
   function _uid() { return 'sd_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
   function _email() { try { return localStorage.getItem('asea_user_email') || ''; } catch (e) { return ''; } }
-  /* 섹션 접기/펼치기 상태(기기별 기억) */
   function _isCollapsed(key) { try { return localStorage.getItem('asea_sv_col_' + key) === '1'; } catch (e) { return false; } }
   function _setCollapsed(key, v) { try { localStorage.setItem('asea_sv_col_' + key, v ? '1' : '0'); } catch (e) {} }
   function _bindCollapsibles() {
     document.querySelectorAll('#survey-root .sv-sec-head').forEach(function (h) {
       h.addEventListener('click', function (e) {
-        if (e.target.closest('.btn')) return;       // 새로고침 버튼 클릭은 토글 제외
+        if (e.target.closest('.btn')) return;
         var card = h.closest('.sv-collapse'); if (!card) return;
         var col = card.classList.toggle('collapsed');
         _setCollapsed(h.getAttribute('data-col'), col);
@@ -75,7 +98,6 @@
 
   /* ── Claude API로 설문지 구조 생성 ─────────────────── */
   function buildFormStructureWithClaude(prompt) {
-    /* 1) 내 localStorage  2) 관리자가 게시한 staff-menus.json 순으로 키 탐색 */
     var _cc = window.getClaudeConfig ? getClaudeConfig() : { apiKey: (window.CONFIG && CONFIG.anthropicApiKey) || localStorage.getItem('asea_anthropic_api_key') || '', endpoint: 'https://api.anthropic.com/v1/messages', isOfficial: true };
     var apiKey     = _cc.apiKey;
     if (!apiKey) return Promise.reject(new Error('Claude API 키가 설정되지 않았습니다. 관리자에게 문의하세요.'));
@@ -127,12 +149,10 @@
       });
   }
 
-  /* AI 응답 JSON 파싱 — 마크다운 제거 + 잘린(truncated) 응답 복구 */
   function _parseFormJson(text) {
     var s = String(text || '').trim().replace(/^```[a-z]*\n?/i, '').replace(/\n?```$/i, '').trim();
     var a = s.indexOf('{'); if (a > 0) s = s.slice(a);
     try { return JSON.parse(s); } catch (e) {}
-    // 복구: 끝쪽 '}' 위치를 줄여가며 questions 배열을 닫아 본다
     var suffixes = ['', ']}', '}', '"}]}', '"}]} '];
     var i = s.length;
     for (var k = 0; k < 40; k++) {
@@ -166,11 +186,9 @@
 
   /* ── 설문지 생성 ────────────────────────────────────── */
   function createForm(structure) {
-    /* Step 1: 폼 생성 */
     return apiRequest('POST', FORMS_API, { info: { title: structure.title, documentTitle: structure.title } })
       .then(function(form) {
         var formId = form.formId;
-        /* Step 2: 질문 일괄 추가 (batchUpdate) */
         var requests = [];
         if (structure.description) {
           requests.push({ updateFormInfo: { info: { description: structure.description }, updateMask: 'description' } });
@@ -184,7 +202,6 @@
           } else if (qt === 'TEXT_BLOCK') {
             item = { title: q.title || '', description: q.description || '', textItem: {} };
           } else if (qt === 'RADIO_GRID' || qt === 'CHECKBOX_GRID') {
-            // 객관식/체크박스 그리드 — questionGroupItem(행=questions, 열=grid.columns)
             var gtype = qt === 'CHECKBOX_GRID' ? 'CHECKBOX' : 'RADIO';
             item = { title: q.title, questionGroupItem: {
               grid: { columns: { type: gtype, options: (q.cols || []).filter(function (c) { return (c || '').trim(); }).map(function (c) { return { value: c }; }) } },
@@ -217,7 +234,6 @@
         });
 
         if (!requests.length) return form;
-        // 1차: 한 번의 batchUpdate(빠름). 실패 시 항목별로 재시도(미지원 항목 건너뜀).
         var batch = requests.map(function (item, idx) { return { createItem: { item: item, location: { index: idx } } }; });
         return apiRequest('POST', FORMS_API + '/' + formId + ':batchUpdate', { requests: batch })
           .then(function() { return form; })
@@ -228,7 +244,7 @@
               var one = { requests: [{ createItem: { item: requests[k], location: { index: idx } } }] };
               return apiRequest('POST', FORMS_API + '/' + formId + ':batchUpdate', one)
                 .then(function () { idx++; return step(k + 1); })
-                .catch(function () { return step(k + 1); }); // 실패 항목 건너뜀
+                .catch(function () { return step(k + 1); });
             }
             return step(0);
           });
@@ -246,9 +262,6 @@
       .then(function(d) { return d.files || []; });
   }
 
-  /* ── 기존 구글폼 상세 조회 → 편집기 구조로 역변환 ──────────
-     "다시 만들기"에서 사용: 구글 드라이브의 폼을 읽어 편집 UI로 불러온다.
-     forms.body 스코프로 읽기 가능. */
   function getFormDetail(formId) {
     var token = getToken();
     if (!token) return Promise.reject(new Error('Google 로그인이 필요합니다.'));
@@ -261,7 +274,6 @@
       });
   }
 
-  /* 구글폼 응답(JSON) → 편집기 structure 로 매핑 */
   function _formToStructure(form) {
     var info = form.info || {};
     var st = { title: info.title || info.documentTitle || '설문지', description: info.description || '', questions: [] };
@@ -286,7 +298,7 @@
         return;
       }
       var qi = it.questionItem;
-      if (!qi || !qi.question) return; // 이미지 등 미지원 항목은 건너뜀
+      if (!qi || !qi.question) return;
       var q = qi.question, out = { title: it.title || '', required: !!q.required };
       if (q.choiceQuestion) {
         out.type = (q.choiceQuestion.type || 'RADIO').toUpperCase();
@@ -330,21 +342,20 @@
       .catch(function() { return null; });
   }
 
-  /* "다시 만들기" — 기존 폼을 편집기로 불러옴 → 편집 후 새 폼으로 생성 */
   function _recreateFromForm(formId, name) {
-    _setStatus('📥 「' + (name || '설문지') + '」 불러오는 중...');
+    _setStatus('「' + (name || '설문지') + '」 불러오는 중...');
     getFormDetail(formId)
       .then(function (form) {
         var st = _formToStructure(form);
-        if (!st.questions.length) { _setStatus('❌ 불러올 질문이 없습니다(미지원 항목만 있을 수 있음).'); return; }
-        st._draftId = null;               // 새 이력으로 취급(원본 폼과 분리)
+        if (!st.questions.length) { _setStatus('불러올 질문이 없습니다(미지원 항목만 있을 수 있음).'); return; }
+        st._draftId = null;
         _pendingStructure = _normalize(st);
         _renderEditor();
         var ed = document.getElementById('survey-editor') || document.getElementById('survey-preview');
         if (ed && ed.scrollIntoView) ed.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        _setStatus('✅ 불러왔습니다. 질문을 추가·삭제·수정한 뒤 「구글 드라이브에 생성」을 누르면 새 설문으로 만들어집니다.');
+        _setStatus('불러왔습니다. 질문을 추가·삭제·수정한 뒤 「Google Drive에 생성」을 누르면 새 설문으로 만들어집니다.');
       })
-      .catch(function (err) { _setStatus('❌ ' + (err.message || '불러오기 실패')); });
+      .catch(function (err) { _setStatus('오류: ' + (err.message || '불러오기 실패')); });
   }
 
   /* ── UI 렌더 ─────────────────────────────────────────── */
@@ -355,12 +366,16 @@
     var baseLoggedIn  = !!(window.Auth && Auth.getToken && Auth.getToken());
     var formsLinked   = isFormsLinked();
 
-    /* Google Forms 연동 배너 (로그인됐지만 Forms 미연동) */
+    /* Google Forms 연동 배너 */
     var formsBanner = !formsLinked ?
-      '<div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">' +
-        '<span style="font-size:13px;color:#92400e;flex:1">📌 <b>Google Forms 연동</b>이 필요해야 구글 드라이브에 설문지를 저장할 수 있습니다. ' +
+      '<div style="background:var(--color-accent-lt,#E8F0FE);border:1px solid var(--color-border);border-radius:12px;padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">' +
+        '<span style="display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--color-text);flex:1;min-width:200px">' +
+          _ico('alert-circle', 16) +
+          '<span><b>Google Forms 연동</b>이 필요해야 구글 드라이브에 설문지를 저장할 수 있습니다. ' +
           'AI 설계·편집·클라우드 이력은 지금 바로 사용 가능합니다.</span>' +
-        '<button id="survey-forms-link-btn" class="btn btn-primary btn-sm" style="white-space:nowrap">🔗 Google Forms 연동</button>' +
+        '</span>' +
+        '<button id="survey-forms-link-btn" class="btn btn-primary btn-sm" style="white-space:nowrap;display:inline-flex;align-items:center;gap:5px">' +
+          _ico('link') + 'Google Forms 연동</button>' +
       '</div>' : '';
 
     root.innerHTML =
@@ -374,31 +389,35 @@
 
       (!baseLoggedIn ?
         '<div class="settings-card" style="text-align:center;padding:32px">' +
-        '<p style="margin-bottom:16px;color:#666">Google 계정으로 로그인하면 설문지를 만들고 관리할 수 있습니다.</p>' +
+        '<p style="margin-bottom:16px;color:var(--color-text-sec)">Google 계정으로 로그인하면 설문지를 만들고 관리할 수 있습니다.</p>' +
         '<button id="survey-login-btn" class="btn btn-primary">Google 로그인</button>' +
         '</div>' :
 
         formsBanner +
 
         '<div class="settings-card" id="survey-create-card">' +
-        '<h3 class="settings-section-title">✨ 새 설문지 만들기</h3>' +
+        '<h3 class="settings-section-title" style="display:flex;align-items:center;gap:6px">' +
+          _ico('sparkles', 16) + ' 새 설문지 만들기</h3>' +
         '<p class="form-hint" style="margin-bottom:10px">어떤 설문지를 만들고 싶은지 자연어로 설명하세요. Claude AI가 자동으로 설계합니다.</p>' +
         '<textarea id="survey-prompt" class="form-input" rows="4" style="resize:vertical" ' +
           'placeholder="예) 신입사원 온보딩 만족도 조사, 항목은 업무환경/교육/팀문화/전반만족도 각각 5점 척도로, 마지막에 자유의견 주관식 포함"></textarea>' +
-        '<div style="display:flex;gap:8px;margin-top:10px;align-items:center">' +
-          '<button id="survey-generate-btn" class="btn btn-primary">🤖 AI로 설문지 생성</button>' +
-          '<button id="survey-test-api-btn" class="btn btn-ghost btn-sm" title="현재 활성 AI 제공자 연결 점검">🔌 API 작동 테스트</button>' +
+        '<div style="display:flex;gap:8px;margin-top:10px;align-items:center;flex-wrap:wrap">' +
+          '<button id="survey-generate-btn" class="btn btn-primary" style="display:inline-flex;align-items:center;gap:5px">' +
+            _ico('sparkles') + 'AI로 설문지 생성</button>' +
+          '<button id="survey-test-api-btn" class="btn btn-ghost btn-sm" style="display:inline-flex;align-items:center;gap:5px" title="현재 활성 AI 제공자 연결 점검">' +
+            _ico('zap') + 'API 연결 확인</button>' +
           '<span id="survey-status" class="form-hint" style="margin:0;white-space:pre-line"></span>' +
         '</div>' +
         '<div id="survey-preview" style="display:none;margin-top:16px"></div>' +
         '</div>' +
 
         '<div class="settings-card sv-collapse' + (_isCollapsed('draft') ? ' collapsed' : '') + '" style="margin-top:16px">' +
-        '<div class="sv-sec-head" data-col="draft" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;cursor:pointer">' +
-          '<h3 class="settings-section-title" style="margin:0;display:flex;align-items:center;gap:6px">' +
+        '<div class="sv-sec-head" data-col="draft" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;cursor:pointer;padding:2px 0">' +
+          '<h3 class="settings-section-title" style="margin:0;display:flex;align-items:center;gap:6px;border:none;padding:0">' +
             '<svg class="sv-chev" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>' +
-            '📝 편집 이력 (클라우드)</h3>' +
-          '<button id="survey-draft-refresh" class="btn btn-ghost btn-sm">🔄 새로고침</button>' +
+            _ico('file-text', 15) + ' 편집 이력 (클라우드)</h3>' +
+          '<button id="survey-draft-refresh" class="btn btn-ghost btn-sm" style="display:inline-flex;align-items:center;gap:4px">' +
+            _ico('refresh') + '새로고침</button>' +
         '</div>' +
         '<div class="sv-sec-body">' +
         '<p class="form-hint" style="margin:0 0 10px">구글 드라이브에 올리기 전의 편집 내역이 <b>로그인 계정별로 클라우드에 저장</b>되어 어느 단말에서나 조회됩니다. 불러와 이어 편집하거나, <b>복제</b>해 새 설문으로 만들 수 있어요(예: 1학기 → 2학기).</p>' +
@@ -406,18 +425,19 @@
         '</div></div>' +
 
         '<div class="settings-card sv-collapse' + (_isCollapsed('list') ? ' collapsed' : '') + '" style="margin-top:16px">' +
-        '<div class="sv-sec-head" data-col="list" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;cursor:pointer">' +
-          '<h3 class="settings-section-title" style="margin:0;display:flex;align-items:center;gap:6px">' +
+        '<div class="sv-sec-head" data-col="list" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;cursor:pointer;padding:2px 0">' +
+          '<h3 class="settings-section-title" style="margin:0;display:flex;align-items:center;gap:6px;border:none;padding:0">' +
             '<svg class="sv-chev" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>' +
-            '📂 내 설문지 목록 (구글 드라이브)</h3>' +
-          (formsLinked ? '<button id="survey-refresh-btn" class="btn btn-ghost btn-sm">🔄 새로고침</button>' : '') +
+            _ico('folder', 15) + ' 내 설문지 목록 (구글 드라이브)</h3>' +
+          (formsLinked ? '<button id="survey-refresh-btn" class="btn btn-ghost btn-sm" style="display:inline-flex;align-items:center;gap:4px">' + _ico('refresh') + '새로고침</button>' : '') +
         '</div>' +
         '<div class="sv-sec-body">' +
         '<div id="survey-list">' +
           (!formsLinked ?
-            '<div style="text-align:center;padding:20px 0;color:#888;font-size:13px">' +
+            '<div style="text-align:center;padding:20px 0;color:var(--color-text-sec);font-size:13px">' +
               '<p style="margin:0 0 12px">Google Forms 연동 후 내 드라이브의 설문지 목록을 조회할 수 있습니다.</p>' +
-              '<button id="survey-list-link-btn" class="btn btn-secondary btn-sm">🔗 Google Forms 연동하기</button>' +
+              '<button id="survey-list-link-btn" class="btn btn-secondary btn-sm" style="display:inline-flex;align-items:center;gap:5px">' +
+                _ico('link') + 'Google Forms 연동하기</button>' +
             '</div>' :
             '<p class="empty-state">불러오는 중...</p>'
           ) +
@@ -434,11 +454,10 @@
       return;
     }
 
-    /* Google Forms 연동 버튼 */
     function _doFormsLink() {
       if (!(window.Auth && Auth.loginForms)) return;
       Auth.loginForms().then(function (ok) {
-        if (ok) { renderTab(); } else { _setStatus('❌ Google Forms 연동에 실패했습니다. 다시 시도해 주세요.'); }
+        if (ok) { renderTab(); } else { _setStatus('Google Forms 연동에 실패했습니다. 다시 시도해 주세요.'); }
       });
     }
     var flinkBtn = document.getElementById('survey-forms-link-btn');
@@ -462,7 +481,10 @@
     if (!el) return;
     el.innerHTML = '<p class="empty-state">불러오는 중...</p>';
     _draftList(function (rows) {
-      if (!rows.length) { el.innerHTML = '<p class="empty-state">저장된 편집 이력이 없습니다. 편집기에서 「💾 편집 이력 저장」을 눌러 보관하세요.</p>'; return; }
+      if (!rows.length) {
+        el.innerHTML = '<p class="empty-state">저장된 편집 이력이 없습니다. 편집기에서 「편집 이력 저장」을 눌러 보관하세요.</p>';
+        return;
+      }
       el.innerHTML = rows.map(function (d) {
         var when = d.updatedAt ? new Date(d.updatedAt).toLocaleString('ko-KR') : '';
         var qn = (d.structure && d.structure.questions) ? d.structure.questions.filter(function (q) { return q.type !== 'SECTION' && q.type !== 'TEXT_BLOCK'; }).length : 0;
@@ -472,9 +494,9 @@
             '<div class="sv-draft-meta">질문 ' + qn + '개 · 수정 ' + _esc(when) + '</div></div>' +
           '<div class="sv-draft-btns">' +
             '<button class="btn btn-secondary btn-sm" data-dact="edit">이어서 편집</button>' +
-            '<button class="btn btn-ghost btn-sm" data-dact="dup">📑 복제하여 새 설문</button>' +
+            '<button class="btn btn-ghost btn-sm" data-dact="dup" style="display:inline-flex;align-items:center;gap:4px">' + _ico('copy') + '복제하여 새 설문</button>' +
             (d.formId ? '<a class="btn btn-ghost btn-sm" href="https://docs.google.com/forms/d/' + _esc(d.formId) + '/edit" target="_blank">구글폼 열기</a>' : '') +
-            '<button class="btn btn-ghost btn-sm" data-dact="del" style="color:#dc2626">삭제</button>' +
+            '<button class="btn btn-ghost btn-sm" data-dact="del" style="color:#dc2626;display:inline-flex;align-items:center;gap:4px">' + _ico('trash') + '삭제</button>' +
           '</div></div>';
       }).join('');
       el.querySelectorAll('.sv-draft').forEach(function (row) {
@@ -491,14 +513,14 @@
       });
     });
   }
-  /* 드래프트를 편집기로 로드. dup=true 면 새 id로 복제(원본 보존) */
+
   function _openDraft(d, dup) {
     var st = _normalize(JSON.parse(JSON.stringify(d.structure || { questions: [] })));
     if (dup) { st._draftId = _uid(); st.title = (st.title || '설문') + ' (사본)'; st._formId = ''; }
     else { st._draftId = d.id; st._formId = d.formId || ''; }
     _pendingStructure = st;
     _renderEditor();
-    _setStatus(dup ? '복제본을 불러왔습니다. 제목/내용을 바꾼 뒤 「💾 편집 이력 저장」 하면 새 이력으로 남습니다.' : '편집 이력을 불러왔습니다.');
+    _setStatus(dup ? '복제본을 불러왔습니다. 제목/내용을 바꾼 뒤 「편집 이력 저장」하면 새 이력으로 남습니다.' : '편집 이력을 불러왔습니다.');
     var card = document.getElementById('survey-create-card');
     if (card && card.scrollIntoView) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
@@ -511,37 +533,36 @@
 
     if (testBtn) testBtn.addEventListener('click', function () {
       if (!window.testClaudeConnection) { _setStatus('테스트 기능을 불러오지 못했습니다.'); return; }
-      _setStatus('🔌 AI 연결 점검 중…');
+      _setStatus('AI 연결 점검 중...');
       testBtn.disabled = true;
       window.testClaudeConnection().then(function (r) {
-        _setStatus((r.ok ? '✅ ' : '❌ ') + r.message);
+        _setStatus((r.ok ? '연결 성공: ' : '연결 실패: ') + r.message);
         testBtn.disabled = false;
       });
     });
 
     if (genBtn) genBtn.addEventListener('click', function() {
       var prompt = (document.getElementById('survey-prompt').value || '').trim();
-      if (!prompt) { _setStatus('❌ 설문지 내용을 입력하세요.'); return; }
-      _setStatus('🤖 AI가 설문지를 설계 중...');
+      if (!prompt) { _setStatus('설문지 내용을 입력하세요.'); return; }
+      _setStatus('AI가 설문지를 설계 중...');
       genBtn.disabled = true;
       buildFormStructureWithClaude(prompt)
         .then(function(structure) {
           _pendingStructure = _normalize(structure);
           _renderEditor();
           var hint = isFormsLinked()
-            ? '초안이 생성됐습니다. 아래에서 자유롭게 편집한 뒤 「구글 드라이브에 생성」을 누르세요.'
-            : '초안이 생성됐습니다. 편집 후 「💾 편집 이력 저장」으로 클라우드에 보관하거나, Google Forms 연동 후 드라이브에 생성할 수 있습니다.';
+            ? '초안이 생성됐습니다. 아래에서 자유롭게 편집한 뒤 「Google Drive에 생성」을 누르세요.'
+            : '초안이 생성됐습니다. 편집 후 「편집 이력 저장」으로 클라우드에 보관하거나, Google Forms 연동 후 드라이브에 생성할 수 있습니다.';
           _setStatus(hint);
           genBtn.disabled = false;
         })
         .catch(function(err) {
-          _setStatus('❌ ' + (err.message || '오류'));
+          _setStatus('오류: ' + (err.message || '오류'));
           genBtn.disabled = false;
         });
     });
   }
 
-  /* 구조 정규화 — 누락 필드 보정 */
   function _normalize(st) {
     st = st || {};
     st.title = st.title || '새 설문지';
@@ -569,7 +590,7 @@
     return st;
   }
 
-  /* ── 편집 가능한 설문 에디터 (구글폼 편집창 형태) ───────────── */
+  /* ── 편집 가능한 설문 에디터 ───────────── */
   var TYPES = [
     ['TEXT', '단답형'], ['PARAGRAPH', '장문형'], ['RADIO', '객관식 (단일선택)'],
     ['CHECKBOX', '체크박스 (복수선택)'], ['DROP_DOWN', '드롭다운'],
@@ -583,14 +604,13 @@
       TYPES.map(function (t) { return '<option value="' + t[0] + '"' + (q.type === t[0] ? ' selected' : '') + '>' + t[1] + '</option>'; }).join('') +
       '</select>';
   }
-  /* 그리드 행/열 편집 리스트 */
   function _gridList(items, listName, i, label) {
     return '<div class="sv-opts" data-list="' + listName + '">' +
       '<div style="font-size:12px;font-weight:600;color:#666;margin:2px 0 4px">' + label + '</div>' +
       items.map(function (o, oi) {
         return '<div class="sv-opt"><span class="sv-opt-mk"></span>' +
           '<input class="sv-opt-in" data-i="' + i + '" data-list="' + listName + '" data-oi="' + oi + '" value="' + _attr(o) + '" placeholder="' + label + ' ' + (oi + 1) + '">' +
-          '<button class="sv-opt-del" data-act="del-opt" data-list="' + listName + '" data-i="' + i + '" data-oi="' + oi + '" title="삭제">✕</button></div>';
+          '<button class="sv-opt-del" data-act="del-opt" data-list="' + listName + '" data-i="' + i + '" data-oi="' + oi + '" title="삭제">&times;</button></div>';
       }).join('') +
       '<button class="sv-opt-add" data-act="add-opt" data-list="' + listName + '" data-i="' + i + '">+ ' + label + ' 추가</button></div>';
   }
@@ -614,7 +634,7 @@
       body = '<div class="sv-opts">' + (q.options || []).map(function (o, oi) {
         return '<div class="sv-opt"><span class="sv-opt-mk"></span>' +
           '<input class="sv-opt-in" data-i="' + i + '" data-oi="' + oi + '" value="' + _attr(o) + '" placeholder="옵션 ' + (oi + 1) + '">' +
-          '<button class="sv-opt-del" data-act="del-opt" data-i="' + i + '" data-oi="' + oi + '" title="옵션 삭제">✕</button></div>';
+          '<button class="sv-opt-del" data-act="del-opt" data-i="' + i + '" data-oi="' + oi + '" title="옵션 삭제">&times;</button></div>';
       }).join('') +
       '<button class="sv-opt-add" data-act="add-opt" data-i="' + i + '">+ 옵션 추가</button></div>';
     } else if (q.type === 'SCALE') {
@@ -628,7 +648,7 @@
       body = '<div class="sv-scale">' +
         '<label>단계 <input type="number" class="sv-num-in" data-i="' + i + '" data-f="ratingScaleLevel" value="' + (q.ratingScaleLevel || 5) + '" min="3" max="10"></label>' +
         '<label>아이콘 <select class="sv-type" style="width:auto" data-i="' + i + '" data-f="iconType">' +
-          ['STAR:★ 별','HEART:♥ 하트','THUMB_UP:👍 좋아요'].map(function (o) { var v = o.split(':'); return '<option value="' + v[0] + '"' + (q.iconType === v[0] ? ' selected' : '') + '>' + v[1] + '</option>'; }).join('') +
+          ['STAR:★ 별', 'HEART:♥ 하트', 'THUMB_UP:▲ 좋아요'].map(function (o) { var v = o.split(':'); return '<option value="' + v[0] + '"' + (q.iconType === v[0] ? ' selected' : '') + '>' + v[1] + '</option>'; }).join('') +
         '</select></label></div>';
     } else if (q.type === 'RADIO_GRID' || q.type === 'CHECKBOX_GRID') {
       body = '<div class="sv-grid">' +
@@ -653,9 +673,9 @@
     var foot = (isSection || isText) ? '' :
       '<label class="sv-req"><input type="checkbox" data-i="' + i + '" data-f="required"' + (q.required ? ' checked' : '') + '> 필수 응답</label>';
     return '<div class="sv-card' + (isSection ? ' is-section' : '') + (isText ? ' is-text' : '') + '" draggable="true" data-i="' + i + '">' +
-      '<span class="sv-grip" title="드래그하여 순서 이동">⠿</span>' +
+      '<span class="sv-grip" title="드래그하여 순서 이동">&#10783;</span>' +
       '<div class="sv-card-main"><div class="sv-card-head">' + head + '</div>' + body + foot + '</div>' +
-      '<button class="sv-card-del" data-act="del" data-i="' + i + '" title="삭제">🗑</button>' +
+      '<button class="sv-card-del" data-act="del" data-i="' + i + '" title="삭제" style="display:inline-flex;align-items:center">' + _ico('trash', 13) + '</button>' +
       '</div>';
   }
   function _editorHTML(st) {
@@ -671,14 +691,17 @@
       '</div>' +
       '<div class="sv-ed-list" id="sv-ed-list">' + cards + '</div>' +
       '<div class="sv-ed-add">' +
-        '<button class="btn btn-secondary btn-sm" data-act="add-q">＋ 질문</button>' +
-        '<button class="btn btn-ghost btn-sm" data-act="add-section">＋ 섹션</button>' +
-        '<button class="btn btn-ghost btn-sm" data-act="add-text">＋ 설명</button>' +
+        '<button class="btn btn-secondary btn-sm" data-act="add-q">+ 질문</button>' +
+        '<button class="btn btn-ghost btn-sm" data-act="add-section">+ 섹션</button>' +
+        '<button class="btn btn-ghost btn-sm" data-act="add-text">+ 설명</button>' +
       '</div>' +
       '<div class="sv-ed-foot">' +
-        '<button id="survey-confirm-btn" class="btn btn-primary">📤 구글 드라이브에 생성</button>' +
-        '<button id="survey-save-draft" class="btn btn-secondary">💾 편집 이력 저장</button>' +
-        '<button id="survey-regen-btn" class="btn btn-ghost">✏️ 다시 생성</button>' +
+        '<button id="survey-confirm-btn" class="btn btn-primary" style="display:inline-flex;align-items:center;gap:5px">' +
+          _ico('upload') + 'Google Drive에 생성</button>' +
+        '<button id="survey-save-draft" class="btn btn-secondary" style="display:inline-flex;align-items:center;gap:5px">' +
+          _ico('save') + '편집 이력 저장</button>' +
+        '<button id="survey-regen-btn" class="btn btn-ghost" style="display:inline-flex;align-items:center;gap:5px">' +
+          _ico('pencil') + '다시 생성</button>' +
       '</div>' +
       '</div>';
   }
@@ -693,7 +716,6 @@
 
   function _bindEditor(box) {
     var st = _pendingStructure;
-    // 입력 → 모델 갱신(리렌더 없이 포커스 유지)
     var NUMF = { low: 1, high: 5, ratingScaleLevel: 5, maxFiles: 1 };
     box.addEventListener('input', function (e) {
       var t = e.target, f = t.getAttribute('data-f'), i = t.getAttribute('data-i'), oi = t.getAttribute('data-oi'), list = t.getAttribute('data-list');
@@ -705,7 +727,7 @@
         return;
       }
       if (f == null) return;
-      if (i == null) { st[f] = t.value; return; }      // 최상위 title/description
+      if (i == null) { st[f] = t.value; return; }
       var q2 = st.questions[+i]; if (!q2) return;
       if (NUMF.hasOwnProperty(f)) q2[f] = parseInt(t.value, 10) || NUMF[f];
       else q2[f] = t.value;
@@ -726,7 +748,6 @@
         if (q.type === 'FILE_UPLOAD') q.maxFiles = q.maxFiles || 1;
         _renderEditor(); return;
       }
-      // 일반 data-f (체크박스 boolean / 셀렉트 값) — required, includeYear, includeTime, duration, iconType ...
       var f = t.getAttribute('data-f'); if (f == null) return;
       var ix = t.getAttribute('data-i'); if (ix == null) return;
       var qq = st.questions[+ix]; if (!qq) return;
@@ -752,9 +773,7 @@
         if (arr && arr.length > 1) { arr.splice(+oi, 1); _renderEditor(); }
       }
     });
-    // 드래그 순서 이동 + 드롭 위치 표시
     _bindDnd(box.querySelector('#sv-ed-list'));
-    // 생성/재생성/이력저장
     var cf = document.getElementById('survey-confirm-btn');
     if (cf) cf.addEventListener('click', _doCreate);
     var sd = document.getElementById('survey-save-draft');
@@ -765,12 +784,12 @@
 
   function _saveDraftFromEditor() {
     var st = _pendingStructure; if (!st) return;
-    if (!_email()) { _setStatus('❌ 로그인 후 이용하세요(클라우드 저장).'); return; }
+    if (!_email()) { _setStatus('로그인 후 이용하세요(클라우드 저장).'); return; }
     if (!st._draftId) st._draftId = _uid();
     var draft = { id: st._draftId, title: st.title, structure: { title: st.title, description: st.description, questions: st.questions }, formId: st._formId || '' };
-    _setStatus('💾 편집 이력 저장 중...');
+    _setStatus('편집 이력 저장 중...');
     _draftSave(draft).then(function (res) {
-      _setStatus((res && res.ok === false) ? ('⚠ 저장 실패: ' + (res.err || '로그인/네트워크 확인')) : '✅ 편집 이력이 클라우드에 저장됐습니다.');
+      _setStatus((res && res.ok === false) ? ('저장 실패: ' + (res.err || '로그인/네트워크 확인')) : '편집 이력이 클라우드에 저장됐습니다.');
       _loadDraftList();
       setTimeout(function () { _setStatus(''); }, 3000);
     });
@@ -781,7 +800,6 @@
     if (!list) return;
     [].slice.call(list.querySelectorAll('.sv-card')).forEach(function (card) {
       card.addEventListener('dragstart', function (e) {
-        // 입력칸에서 시작된 드래그는 무시(텍스트 선택 보존)
         if (e.target && /INPUT|TEXTAREA|SELECT|BUTTON/.test(e.target.tagName)) { e.preventDefault(); return; }
         _dragI = +card.getAttribute('data-i'); card.classList.add('sv-dragging');
         try { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', String(_dragI)); } catch (x) {}
@@ -800,10 +818,10 @@
         var target = +card.getAttribute('data-i');
         if (_dragI == null || _dragI === target) return;
         var arr = _pendingStructure.questions;
-        var item = arr.splice(_dragI, 1)[0];                 // 드래그 항목 제거
-        var tgt = target > _dragI ? target - 1 : target;     // 제거 후 target 위치 보정
+        var item = arr.splice(_dragI, 1)[0];
+        var tgt = target > _dragI ? target - 1 : target;
         var insertAt = after ? tgt + 1 : tgt;
-        arr.splice(insertAt, 0, item);                       // 새 위치에 삽입
+        arr.splice(insertAt, 0, item);
         _dragI = null;
         _renderEditor();
       });
@@ -811,13 +829,13 @@
   }
 
   function _doCreate() {
-    if (!_pendingStructure || !_pendingStructure.questions.length) { _setStatus('❌ 질문이 없습니다.'); return; }
+    if (!_pendingStructure || !_pendingStructure.questions.length) { _setStatus('질문이 없습니다.'); return; }
     if (!isFormsLinked()) {
-      _setStatus('⚠️ Google Forms 연동이 필요합니다. 화면 상단의 「Google Forms 연동」 버튼을 먼저 눌러주세요.');
+      _setStatus('Google Forms 연동이 필요합니다. 화면 상단의 「Google Forms 연동」 버튼을 먼저 눌러주세요.');
       return;
     }
     var cf = document.getElementById('survey-confirm-btn');
-    _setStatus('📤 구글 드라이브에 생성 중...');
+    _setStatus('Google Drive에 생성 중...');
     if (cf) cf.disabled = true;
     var st = _pendingStructure;
     createForm(st)
@@ -825,11 +843,10 @@
         addHistory({ formId: form.formId, title: st.title, createdAt: new Date().toISOString(),
           editUrl: 'https://docs.google.com/forms/d/' + form.formId + '/edit',
           respondUrl: form.responderUri || ('https://docs.google.com/forms/d/' + form.formId + '/viewform') });
-        // 편집 이력(클라우드)에도 생성 사실 기록(편집본 보존 + 구글폼 링크 연결)
         if (!st._draftId) st._draftId = _uid();
         _draftSave({ id: st._draftId, title: st.title, structure: { title: st.title, description: st.description, questions: st.questions }, formId: form.formId, createdAt: new Date().toISOString() })
           .then(function () { _loadDraftList(); });
-        _setStatus('✅ 생성 완료! 구글폼이 만들어졌습니다.');
+        _setStatus('생성 완료! 구글폼이 만들어졌습니다.');
         var box = document.getElementById('survey-preview'); if (box) { box.style.display = 'none'; box.innerHTML = ''; }
         var pr = document.getElementById('survey-prompt'); if (pr) pr.value = '';
         _pendingStructure = null;
@@ -837,7 +854,7 @@
         setTimeout(function () { _setStatus(''); }, 4000);
         _loadFormList();
       })
-      .catch(function (err) { _setStatus('❌ ' + (err.message || '생성 실패')); if (cf) cf.disabled = false; });
+      .catch(function (err) { _setStatus('오류: ' + (err.message || '생성 실패')); if (cf) cf.disabled = false; });
   }
 
   function _attr(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;'); }
@@ -854,17 +871,16 @@
           return '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--color-border)">' +
             '<div>' +
               '<div style="font-size:14px;font-weight:600">' + _esc(f.name) + '</div>' +
-              '<div style="font-size:12px;color:#888;margin-top:2px">' + d + '</div>' +
+              '<div style="font-size:12px;color:var(--color-text-sec);margin-top:2px">' + d + '</div>' +
             '</div>' +
             '<div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">' +
-              '<a href="' + f.webViewLink + '" target="_blank" class="btn btn-ghost btn-sm">✏️ 편집</a>' +
-              '<button class="btn btn-ghost btn-sm" data-recreate="' + _attr(f.id) + '" data-rname="' + _attr(f.name) + '" title="이 설문을 편집기로 불러와 새 버전으로 다시 만들기">🔁 다시 만들기</button>' +
-              '<a href="https://docs.google.com/forms/d/' + f.id + '/viewform" target="_blank" class="btn btn-secondary btn-sm">📋 응답</a>' +
-              '<a href="https://docs.google.com/forms/d/' + f.id + '/viewanalytics" target="_blank" class="btn btn-ghost btn-sm">📊 결과</a>' +
+              '<a href="' + f.webViewLink + '" target="_blank" class="btn btn-ghost btn-sm" style="display:inline-flex;align-items:center;gap:4px">' + _ico('pencil') + '편집</a>' +
+              '<button class="btn btn-ghost btn-sm" data-recreate="' + _attr(f.id) + '" data-rname="' + _attr(f.name) + '" style="display:inline-flex;align-items:center;gap:4px" title="이 설문을 편집기로 불러와 새 버전으로 다시 만들기">' + _ico('repeat') + '다시 만들기</button>' +
+              '<a href="https://docs.google.com/forms/d/' + f.id + '/viewform" target="_blank" class="btn btn-secondary btn-sm" style="display:inline-flex;align-items:center;gap:4px">' + _ico('clipboard') + '응답</a>' +
+              '<a href="https://docs.google.com/forms/d/' + f.id + '/viewanalytics" target="_blank" class="btn btn-ghost btn-sm" style="display:inline-flex;align-items:center;gap:4px">' + _ico('bar-chart') + '결과</a>' +
             '</div>' +
           '</div>';
         }).join('');
-        // "다시 만들기" 위임 바인딩
         listEl.querySelectorAll('[data-recreate]').forEach(function (b) {
           b.addEventListener('click', function () {
             _recreateFromForm(b.getAttribute('data-recreate'), b.getAttribute('data-rname'));
@@ -872,7 +888,7 @@
         });
       })
       .catch(function(err) {
-        listEl.innerHTML = '<p class="empty-state" style="color:#dc2626">❌ ' + (err.message || '목록 로드 실패') + '</p>';
+        listEl.innerHTML = '<p class="empty-state" style="color:var(--color-error)">' + _esc(err.message || '목록 로드 실패') + '</p>';
       });
   }
 
