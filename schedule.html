@@ -1477,6 +1477,14 @@ html,body{height:100%;
         <p style="font-size:.75rem;color:var(--g400);margin-top:2px">업무유형은 선택 사항입니다 (건너뛰기 가능)</p>
       </div>
       <div class="workcat-chip-grid" id="workcat-chip-grid"></div>
+      <div class="dept-add-row">
+        <button class="dept-add-toggle" onclick="toggleWorkCatAddForm()">＋ 업무명 추가</button>
+        <div class="dept-add-form" id="workcat-add-form">
+          <input class="dept-add-inp" id="workcat-add-label" placeholder="업무명 (예: 협력)" maxlength="6">
+          <input class="dept-add-inp" id="workcat-add-desc" placeholder="설명 (예: 협력·제휴)">
+          <button class="btn btn-primary btn-sm" onclick="submitAddWorkCat()">추가</button>
+        </div>
+      </div>
       <div class="dept-card-footer">
         <button class="btn" style="background:var(--g100);color:var(--g700)" onclick="backToDeptStep()">← 뒤로</button>
         <button class="btn" style="background:var(--g100);color:var(--g700)" onclick="closeDeptPicker(true,true)">부서만</button>
@@ -1502,6 +1510,25 @@ const SCOPE_RO  = 'https://www.googleapis.com/auth/calendar.readonly https://www
 const DEPT_CFG_KEY = '__ASEA_DEPT_CFG__';
 let _customDepts = [];
 let _deptCfgEventId = null;
+
+// 부서 정렬 순서
+const DEPT_ORDER = ['기획','교육','행정','입학','정비','안전','보안','관광','국방','군사','기종','무인','비행','평생'];
+function _deptOrderIdx(summary) {
+  const d = parseDept(summary);
+  if (!d) return DEPT_ORDER.length;
+  const i = DEPT_ORDER.indexOf(d);
+  return i === -1 ? DEPT_ORDER.length + 1 : i;
+}
+function sortEvts(evts) {
+  return [...evts].sort((a, b) => {
+    const ia = _deptOrderIdx(a.summary), ib = _deptOrderIdx(b.summary);
+    if (ia !== ib) return ia - ib;
+    return (a.summary || '').localeCompare(b.summary || '', 'ko');
+  });
+}
+
+// 커스텀 업무유형 (Supabase — 크로스유저 공유)
+let _customWorkCats = [];
 
 const DEPARTMENTS = [
   {name:'기획처',           prefix:'기획'},
@@ -1882,7 +1909,7 @@ function evtDate(ev) {
 }
 
 function evtsForDay(y, m, d) {
-  return filteredEvents().filter(ev => {
+  return sortEvts(filteredEvents().filter(ev => {
     const { start, end, allDay } = evtDate(ev);
     if (!start) return false;
     if (allDay) {
@@ -1892,7 +1919,7 @@ function evtsForDay(y, m, d) {
       return ds < ee && de > es;
     }
     return start.getFullYear()===y && start.getMonth()===m && start.getDate()===d;
-  });
+  }));
 }
 
 function renderMonth(wrap) {
@@ -3173,6 +3200,7 @@ async function showDeptPicker(onConfirm) {
   _deptSelected    = null;
   _workCatSelected = null;
   await loadCustomDepts();
+  await loadCustomWorkCats();
   _renderDeptGrid();
   document.getElementById('dept-add-form').classList.remove('open');
   document.getElementById('dept-add-name').value    = '';
@@ -3201,10 +3229,10 @@ function backToDeptStep() {
 function _renderWorkCatGrid() {
   const grid = document.getElementById('workcat-chip-grid');
   grid.innerHTML = '';
-  WORK_CATEGORIES.forEach(c => {
+  [...WORK_CATEGORIES, ..._customWorkCats].forEach(c => {
     const chip = document.createElement('button');
     chip.className = 'workcat-chip';
-    chip.title = c.desc;
+    chip.title = c.desc || c.description || c.label;
     chip.textContent = c.label;
     chip.onclick = () => {
       grid.querySelectorAll('.workcat-chip').forEach(x => x.classList.remove('selected'));
@@ -3213,6 +3241,59 @@ function _renderWorkCatGrid() {
     };
     grid.appendChild(chip);
   });
+}
+
+async function loadCustomWorkCats() {
+  try {
+    const res = await fetch(
+      `${SB_URL}/rest/v1/work_categories?select=id,label,description&order=created_at.asc`,
+      { headers: { apikey: SB_ANON, Authorization: `Bearer ${SB_ANON}` } }
+    );
+    if (res.ok) _customWorkCats = await res.json();
+  } catch(_) { _customWorkCats = []; }
+}
+
+async function saveCustomWorkCat(label, description) {
+  const res = await fetch(`${SB_URL}/rest/v1/work_categories`, {
+    method: 'POST',
+    headers: {
+      apikey: SB_ANON,
+      Authorization: `Bearer ${SB_ANON}`,
+      'Content-Type': 'application/json',
+      Prefer: 'return=representation',
+    },
+    body: JSON.stringify({ label, description }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || `HTTP ${res.status}`);
+  }
+  const rows = await res.json();
+  _customWorkCats = [..._customWorkCats, rows[0] || { label, description }];
+}
+
+function toggleWorkCatAddForm() {
+  document.getElementById('workcat-add-form').classList.toggle('open');
+}
+
+async function submitAddWorkCat() {
+  const label = document.getElementById('workcat-add-label').value.trim();
+  const desc  = document.getElementById('workcat-add-desc').value.trim();
+  if (!label) { showToast('업무명을 입력해 주세요.'); return; }
+  const btn = document.querySelector('#workcat-add-form .btn-primary');
+  btn.disabled = true;
+  try {
+    await saveCustomWorkCat(label, desc || label);
+    _renderWorkCatGrid();
+    document.getElementById('workcat-add-form').classList.remove('open');
+    document.getElementById('workcat-add-label').value = '';
+    document.getElementById('workcat-add-desc').value  = '';
+    showToast(`[${label}] 업무유형이 추가되었습니다.`);
+  } catch(e) {
+    showToast('추가 실패: ' + e.message);
+  } finally {
+    btn.disabled = false;
+  }
 }
 
 function closeDeptPicker(confirm, deptOnly) {
