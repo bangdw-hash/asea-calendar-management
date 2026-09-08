@@ -536,6 +536,24 @@ html,body{height:100%;
 .workcat-chip.selected{border-color:var(--primary);background:var(--primary);color:#fff}
 .workcat-chip:active{transform:scale(.94)}
 
+/* ── 검색 + 칩 수정·삭제 ── */
+.dept-search-wrap{padding:10px 20px 0}
+.dept-search-inp{width:100%;box-sizing:border-box;border:1.5px solid var(--g200);border-radius:var(--r);
+  padding:7px 11px;font-size:.82rem;color:var(--g800);background:var(--g50);outline:none;
+  font-family:inherit;transition:border-color .15s}
+.dept-search-inp:focus{border-color:var(--primary);background:#fff}
+.dept-chip,.workcat-chip{position:relative}
+.chip-actions{position:absolute;top:2px;right:2px;display:flex;gap:2px;
+  opacity:0;transition:opacity .12s;pointer-events:none}
+.dept-chip:hover .chip-actions,.workcat-chip:hover .chip-actions{opacity:1;pointer-events:auto}
+.chip-action-btn{border:none;background:rgba(0,0,0,.09);border-radius:3px;cursor:pointer;
+  font-size:.55rem;padding:1px 4px;line-height:1.5;color:var(--g600);font-family:inherit}
+.chip-action-btn:hover{background:rgba(0,0,0,.2);color:var(--g900)}
+.dept-chip.selected .chip-action-btn,.workcat-chip.selected .chip-action-btn{
+  color:rgba(255,255,255,.75);background:rgba(255,255,255,.18)}
+.dept-chip.selected .chip-action-btn:hover,.workcat-chip.selected .chip-action-btn:hover{
+  background:rgba(255,255,255,.35);color:#fff}
+
 /* ── TOAST ── */
 #toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%) translateY(16px);
   background:var(--g900);color:#fff;padding:9px 20px;border-radius:999px;
@@ -1455,6 +1473,9 @@ html,body{height:100%;
         <h3>📋 부서 선택 <span class="step-badge">1 / 2</span></h3>
         <p>일정 머릿말 <strong>[부서/업무유형]</strong> 형식으로 입력됩니다.<br>먼저 부서를 선택해 주세요.</p>
       </div>
+      <div class="dept-search-wrap">
+        <input class="dept-search-inp" id="dept-search" placeholder="부서 검색..." oninput="_onDeptSearch(this.value)">
+      </div>
       <div class="dept-chip-grid" id="dept-chip-grid"></div>
       <div class="dept-add-row">
         <button class="dept-add-toggle" onclick="toggleDeptAddForm()">＋ 부서 추가</button>
@@ -1475,6 +1496,9 @@ html,body{height:100%;
         <h3>📂 업무유형 선택 <span class="step-badge">2 / 2</span></h3>
         <div class="dept-step2-label" id="dept-step2-dept-label"></div>
         <p style="font-size:.75rem;color:var(--g400);margin-top:2px">업무유형은 선택 사항입니다 (건너뛰기 가능)</p>
+      </div>
+      <div class="dept-search-wrap">
+        <input class="dept-search-inp" id="workcat-search" placeholder="업무유형 검색..." oninput="_onWorkCatSearch(this.value)">
       </div>
       <div class="workcat-chip-grid" id="workcat-chip-grid"></div>
       <div class="dept-add-row">
@@ -3141,6 +3165,8 @@ function _hasDeptPrefix(title) {
 let _deptCallback  = null;
 let _deptSelected  = null;
 let _workCatSelected = null;
+let _editDeptIdx   = -1;
+let _editWorkCatId = null;
 
 async function loadCustomDepts() {
   if (!_token) return;
@@ -3179,13 +3205,30 @@ async function saveCustomDept(name, prefix) {
   _customDepts = updated;
 }
 
-function _renderDeptGrid() {
+function _renderDeptGrid(q) {
+  const query = (q || '').trim().toLowerCase();
   const grid = document.getElementById('dept-chip-grid');
   grid.innerHTML = '';
-  [...DEPARTMENTS, ..._customDepts].forEach(d => {
+  const allDepts = [...DEPARTMENTS, ..._customDepts];
+  allDepts.forEach((d, i) => {
+    if (query && !(d.prefix.toLowerCase().includes(query) || d.name.toLowerCase().includes(query))) return;
+    const isCustom = i >= DEPARTMENTS.length;
+    const customIdx = i - DEPARTMENTS.length;
     const chip = document.createElement('button');
     chip.className = 'dept-chip';
     chip.innerHTML = `<span class="dept-chip-prefix">[${d.prefix}]</span><span class="dept-chip-name">${d.name}</span>`;
+    if (isCustom) {
+      const actions = document.createElement('div');
+      actions.className = 'chip-actions';
+      const editBtn = document.createElement('button');
+      editBtn.className = 'chip-action-btn'; editBtn.title = '수정'; editBtn.textContent = '✏';
+      editBtn.onclick = e => { e.stopPropagation(); editCustomDept(customIdx); };
+      const delBtn = document.createElement('button');
+      delBtn.className = 'chip-action-btn'; delBtn.title = '삭제'; delBtn.textContent = '✕';
+      delBtn.onclick = e => { e.stopPropagation(); deleteCustomDept(customIdx); };
+      actions.appendChild(editBtn); actions.appendChild(delBtn);
+      chip.appendChild(actions);
+    }
     chip.onclick = () => {
       grid.querySelectorAll('.dept-chip').forEach(c => c.classList.remove('selected'));
       chip.classList.add('selected');
@@ -3201,10 +3244,12 @@ async function showDeptPicker(onConfirm) {
   _workCatSelected = null;
   await loadCustomDepts();
   await loadCustomWorkCats();
+  document.getElementById('dept-search').value = '';
   _renderDeptGrid();
   document.getElementById('dept-add-form').classList.remove('open');
   document.getElementById('dept-add-name').value    = '';
   document.getElementById('dept-add-prefix').value  = '';
+  _editDeptIdx = -1;
   // always start at step 1
   document.getElementById('dept-step1').style.display = '';
   document.getElementById('dept-step2').style.display = 'none';
@@ -3214,6 +3259,8 @@ async function showDeptPicker(onConfirm) {
 function goToWorkCatStep() {
   if (!_deptSelected) { showToast('부서를 먼저 선택해 주세요.'); return; }
   _workCatSelected = null;
+  document.getElementById('workcat-search').value = '';
+  _editWorkCatId = null;
   _renderWorkCatGrid();
   document.getElementById('dept-step2-dept-label').textContent = '[' + _deptSelected + '] 선택됨';
   document.getElementById('dept-step1').style.display = 'none';
@@ -3226,22 +3273,42 @@ function backToDeptStep() {
   document.getElementById('dept-step1').style.display = '';
 }
 
-function _renderWorkCatGrid() {
+function _renderWorkCatGrid(q) {
+  const query = (q || '').trim().toLowerCase();
   const grid = document.getElementById('workcat-chip-grid');
   grid.innerHTML = '';
-  [...WORK_CATEGORIES, ..._customWorkCats].forEach(c => {
+  [...WORK_CATEGORIES, ..._customWorkCats].forEach((c, i) => {
+    const label = c.label;
+    const desc  = c.desc || c.description || c.label;
+    if (query && !(label.toLowerCase().includes(query) || desc.toLowerCase().includes(query))) return;
+    const isCustom = i >= WORK_CATEGORIES.length;
     const chip = document.createElement('button');
     chip.className = 'workcat-chip';
-    chip.title = c.desc || c.description || c.label;
-    chip.textContent = c.label;
+    chip.title = desc;
+    chip.textContent = label;
+    if (isCustom) {
+      const actions = document.createElement('div');
+      actions.className = 'chip-actions';
+      const editBtn = document.createElement('button');
+      editBtn.className = 'chip-action-btn'; editBtn.title = '수정'; editBtn.textContent = '✏';
+      editBtn.onclick = e => { e.stopPropagation(); editCustomWorkCat(c.id, c.label, c.description || ''); };
+      const delBtn = document.createElement('button');
+      delBtn.className = 'chip-action-btn'; delBtn.title = '삭제'; delBtn.textContent = '✕';
+      delBtn.onclick = e => { e.stopPropagation(); deleteCustomWorkCat(c.id, c.label); };
+      actions.appendChild(editBtn); actions.appendChild(delBtn);
+      chip.appendChild(actions);
+    }
     chip.onclick = () => {
       grid.querySelectorAll('.workcat-chip').forEach(x => x.classList.remove('selected'));
       chip.classList.add('selected');
-      _workCatSelected = c.label;
+      _workCatSelected = label;
     };
     grid.appendChild(chip);
   });
 }
+
+function _onDeptSearch(val) { _renderDeptGrid(val); }
+function _onWorkCatSearch(val) { _renderWorkCatGrid(val); }
 
 async function loadCustomWorkCats() {
   try {
@@ -3273,7 +3340,35 @@ async function saveCustomWorkCat(label, description) {
 }
 
 function toggleWorkCatAddForm() {
-  document.getElementById('workcat-add-form').classList.toggle('open');
+  const form = document.getElementById('workcat-add-form');
+  form.classList.toggle('open');
+  if (!form.classList.contains('open')) {
+    _editWorkCatId = null;
+    document.querySelector('#workcat-add-form .btn-primary').textContent = '추가';
+  }
+}
+
+function editCustomWorkCat(id, label, description) {
+  _editWorkCatId = id;
+  document.getElementById('workcat-add-label').value = label;
+  document.getElementById('workcat-add-desc').value  = description;
+  document.getElementById('workcat-add-form').classList.add('open');
+  document.querySelector('#workcat-add-form .btn-primary').textContent = '수정';
+}
+
+async function deleteCustomWorkCat(id, label) {
+  try {
+    const res = await fetch(`${SB_URL}/rest/v1/work_categories?id=eq.${id}`, {
+      method: 'DELETE',
+      headers: { apikey: SB_ANON, Authorization: `Bearer ${SB_ANON}` },
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    _customWorkCats = _customWorkCats.filter(c => c.id !== id);
+    _renderWorkCatGrid(document.getElementById('workcat-search').value);
+    showToast(`[${label}] 업무유형 삭제됨`);
+  } catch(e) {
+    showToast('삭제 실패: ' + e.message);
+  }
 }
 
 async function submitAddWorkCat() {
@@ -3282,15 +3377,32 @@ async function submitAddWorkCat() {
   if (!label) { showToast('업무명을 입력해 주세요.'); return; }
   const btn = document.querySelector('#workcat-add-form .btn-primary');
   btn.disabled = true;
+  const isEdit = _editWorkCatId !== null;
   try {
-    await saveCustomWorkCat(label, desc || label);
-    _renderWorkCatGrid();
+    if (isEdit) {
+      const res = await fetch(`${SB_URL}/rest/v1/work_categories?id=eq.${_editWorkCatId}`, {
+        method: 'PATCH',
+        headers: {
+          apikey: SB_ANON, Authorization: `Bearer ${SB_ANON}`,
+          'Content-Type': 'application/json', Prefer: 'return=representation',
+        },
+        body: JSON.stringify({ label, description: desc || label }),
+      });
+      if (!res.ok) { const e = await res.json().catch(()=>({})); throw new Error(e.message || `HTTP ${res.status}`); }
+      _customWorkCats = _customWorkCats.map(c => c.id === _editWorkCatId ? {...c, label, description: desc || label} : c);
+      showToast(`[${label}] 업무유형 수정됨`);
+    } else {
+      await saveCustomWorkCat(label, desc || label);
+      showToast(`[${label}] 업무유형이 추가되었습니다.`);
+    }
+    _renderWorkCatGrid(document.getElementById('workcat-search').value);
     document.getElementById('workcat-add-form').classList.remove('open');
     document.getElementById('workcat-add-label').value = '';
     document.getElementById('workcat-add-desc').value  = '';
-    showToast(`[${label}] 업무유형이 추가되었습니다.`);
+    btn.textContent = '추가';
+    _editWorkCatId = null;
   } catch(e) {
-    showToast('추가 실패: ' + e.message);
+    showToast((isEdit ? '수정' : '추가') + ' 실패: ' + e.message);
   } finally {
     btn.disabled = false;
   }
@@ -3314,11 +3426,51 @@ function closeDeptPicker(confirm, deptOnly) {
 }
 
 function toggleDeptAddForm() {
-  document.getElementById('dept-add-form').classList.toggle('open');
+  const form = document.getElementById('dept-add-form');
+  form.classList.toggle('open');
+  if (!form.classList.contains('open')) {
+    _editDeptIdx = -1;
+    document.querySelector('#dept-add-form .btn-primary').textContent = '추가';
+  }
+}
+
+function editCustomDept(idx) {
+  const d = _customDepts[idx];
+  _editDeptIdx = idx;
+  document.getElementById('dept-add-name').value   = d.name;
+  document.getElementById('dept-add-prefix').value = d.prefix;
+  document.getElementById('dept-add-form').classList.add('open');
+  document.querySelector('#dept-add-form .btn-primary').textContent = '수정';
+}
+
+async function deleteCustomDept(idx) {
+  const d = _customDepts[idx];
+  const updated = _customDepts.filter((_, i) => i !== idx);
+  const cal = encodeURIComponent(CAL_ID);
+  const body = {
+    summary: DEPT_CFG_KEY,
+    description: JSON.stringify(updated),
+    start: {date: '1900-01-01'},
+    end:   {date: '1900-01-02'},
+    visibility: 'private',
+  };
+  try {
+    if (_deptCfgEventId) {
+      await apiFetch('PUT', `/calendars/${cal}/events/${encodeURIComponent(_deptCfgEventId)}`, body);
+    } else {
+      const ev = await apiFetch('POST', `/calendars/${cal}/events`, body);
+      _deptCfgEventId = ev.id;
+    }
+    _customDepts = updated;
+    _renderDeptGrid(document.getElementById('dept-search').value);
+    showToast(`[${d.prefix}] ${d.name} 삭제됨`);
+  } catch(e) {
+    showToast('삭제 실패: ' + e.message);
+  }
 }
 
 async function submitAddDept() {
-  const name = document.getElementById('dept-add-name').value.trim();
+  const name   = document.getElementById('dept-add-name').value.trim();
   const prefix = document.getElementById('dept-add-prefix').value.trim();
   if (!name || !prefix) { showToast('부서명과 머릿말을 모두 입력해 주세요.'); return; }
   if (prefix.length > 4)  { showToast('머릿말은 최대 4자입니다.'); return; }
@@ -3328,15 +3480,35 @@ async function submitAddDept() {
   }
   const btn = document.querySelector('#dept-add-form .btn-primary');
   btn.disabled = true;
+  const isEdit = _editDeptIdx >= 0;
   try {
-    await saveCustomDept(name, prefix);
-    _renderDeptGrid();
+    const updated = isEdit
+      ? _customDepts.map((d, i) => i === _editDeptIdx ? {name, prefix} : d)
+      : [..._customDepts, {name, prefix}];
+    const cal = encodeURIComponent(CAL_ID);
+    const body = {
+      summary: DEPT_CFG_KEY,
+      description: JSON.stringify(updated),
+      start: {date: '1900-01-01'},
+      end:   {date: '1900-01-02'},
+      visibility: 'private',
+    };
+    if (_deptCfgEventId) {
+      await apiFetch('PUT', `/calendars/${cal}/events/${encodeURIComponent(_deptCfgEventId)}`, body);
+    } else {
+      const ev = await apiFetch('POST', `/calendars/${cal}/events`, body);
+      _deptCfgEventId = ev.id;
+    }
+    _customDepts = updated;
+    _renderDeptGrid(document.getElementById('dept-search').value);
     document.getElementById('dept-add-form').classList.remove('open');
-    document.getElementById('dept-add-name').value = '';
+    document.getElementById('dept-add-name').value   = '';
     document.getElementById('dept-add-prefix').value = '';
-    showToast(`[${prefix}] ${name} 부서가 추가되었습니다.`);
+    btn.textContent = '추가';
+    _editDeptIdx = -1;
+    showToast(isEdit ? `[${prefix}] ${name} 수정됨` : `[${prefix}] ${name} 부서가 추가되었습니다.`);
   } catch(e) {
-    showToast('부서 추가 실패: ' + e.message);
+    showToast((isEdit ? '수정' : '부서 추가') + ' 실패: ' + e.message);
   } finally {
     btn.disabled = false;
   }
