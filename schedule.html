@@ -1644,11 +1644,10 @@ let _isAdmin    = false;
 /* ══════════════ AUTH ══════════════ */
 function _initTokenClient(scope) {
   _lastScope = scope || SCOPES;
-  _tokenClient = google.accounts.oauth2.initTokenClient({
-    client_id: CLIENT_ID,
-    scope: _lastScope,
-    callback: _handleToken,
-  });
+  const hint = _userEmail || (() => { try { return localStorage.getItem('asea_gtoken_email') || ''; } catch(_) { return ''; } })();
+  const opts = { client_id: CLIENT_ID, scope: _lastScope, callback: _handleToken };
+  if (hint) opts.login_hint = hint;
+  _tokenClient = google.accounts.oauth2.initTokenClient(opts);
 }
 
 function _ensureClient() {
@@ -1710,6 +1709,7 @@ function _tryRestoreToken() {
       if (t && e > Date.now() + 300000) {
         _token = t;
         _tokenHasWrite = s.getItem('asea_gtoken_write') === '1';
+        if (!_userEmail) { try { _userEmail = localStorage.getItem('asea_gtoken_email') || ''; } catch(_) {} }
         _scheduleRefresh((e - Date.now()) / 1000 - 90);
         return true;
       }
@@ -1757,6 +1757,7 @@ async function fetchUserInfo() {
     const d = await r.json();
     _userEmail = d.email || '';
     _userInitial = (_userEmail[0] || 'U').toUpperCase();
+    if (_userEmail) { try { localStorage.setItem('asea_gtoken_email', _userEmail); } catch(_) {} }
   } catch(e) {}
 }
 
@@ -1833,10 +1834,21 @@ async function fetchHolidays() {
     }
   } catch(_) {}
   _holidays = {};
-  items.forEach(ev => {
+  items.filter(_isKoreanPublicHoliday).forEach(ev => {
     const date = ev.start?.date || (ev.start?.dateTime || '').slice(0, 10);
     if (date && ev.summary) _holidays[date] = ev.summary;
   });
+}
+
+// 법정 공휴일만 허용 — 이브·기념일 등 제외
+function _isKoreanPublicHoliday(ev) {
+  const name = ev.summary || '';
+  if (!name) return false;
+  if (name.includes('이브')) return false; // 크리스마스 이브 등 제외
+  const PATTERNS = ['신정','새해','설날','삼일절','어린이날','석가탄신일','부처님오신날',
+    '현충일','광복절','추석','개천절','한글날','성탄절','크리스마스',
+    '대체공휴일','임시공휴일','선거일','투표일'];
+  return PATTERNS.some(p => name.includes(p));
 }
 
 async function fetchEvents() {
@@ -1858,6 +1870,17 @@ async function fetchEvents() {
     // 401/403: 토큰 만료 또는 권한 없음 → 상태 초기화 후 공개 피드로
     if (msg.includes('401') || msg.includes('403') || msg.toLowerCase().includes('unauthorized') || msg.toLowerCase().includes('forbidden') || msg.toLowerCase().includes('invalid authentication') || msg.toLowerCase().includes('invalid_grant') || msg.toLowerCase().includes('token expired')) {
       _token = null; _tokenHasWrite = false;
+      // 토큰 만료 시 무음 재인증 시도 — Google 세션이 살아있으면 팝업 없이 갱신됨
+      if (_tokenClient && !_pendingCb) {
+        const reauthed = await new Promise(resolve => {
+          const t = setTimeout(() => { if (_pendingCb === cb) { _pendingCb = null; resolve(false); } }, 8000);
+          const cb = ok => { clearTimeout(t); if (_pendingCb === cb) _pendingCb = null; resolve(ok); };
+          _pendingCb = cb;
+          try { _tokenClient.requestAccessToken({ prompt: '' }); }
+          catch(e) { clearTimeout(t); if (_pendingCb === cb) _pendingCb = null; resolve(false); }
+        });
+        if (reauthed) { await fetchEvents(); return; }
+      }
       try { [localStorage, sessionStorage].forEach(s => {
         s.removeItem('asea_gtoken'); s.removeItem('asea_gtoken_exp'); s.removeItem('asea_gtoken_write');
       }); } catch(_) {}
