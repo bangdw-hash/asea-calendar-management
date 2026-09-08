@@ -713,7 +713,9 @@ html,body{height:100%;
 /* ── PRINT ── */
 @page{size:A4 landscape;margin:8mm 8mm 10mm}
 @media print{
-  html,body{width:100%;height:auto;max-width:100%;overflow:hidden;margin:0;padding:0}
+  html,body{width:100%;height:auto;max-width:100%;overflow:hidden;margin:0;padding:0;
+    background:#fff!important}
+  .cal-wrap,.cal-inner,.cal-container,.month-grid{background:#fff!important}
   .hdr,.toolbar,.fab,.ai-fab,.ai-panel,.toast,.overlay,#auth-banner,
   #dept-filter-bar,.evt-quick,.nav-btn,.ai-img-preview-wrap,
   .output-dropdown-wrap,button[onclick*="printMonth"],
