@@ -738,12 +738,11 @@ html,body{height:100%;
   /* sunday/saturday day numbers */
   .month-week-row .day-cell:first-child .day-num{color:#DC2626!important}
   .month-week-row .day-cell:last-child .day-num{color:var(--color-accent)!important}
-  /* event chips */
+  /* event chips: 1-line truncation keeps cells compact on A4 */
   .evt-dot{background:var(--color-accent-lt)!important;color:var(--color-accent-dk)!important;
-    font-size:6.5pt;padding:1px 4px;margin-top:2px;border-radius:3px;
-    white-space:normal;line-height:1.35;overflow:hidden;max-height:none;
-    border-left:2.5px solid var(--color-accent)!important;display:block;
-    word-break:break-all}
+    font-size:5.5pt;padding:1px 4px;margin-top:2px;border-radius:3px;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+    border-left:2.5px solid var(--color-accent)!important;display:block}
   /* today: plain — no highlight when printing */
   .day-cell.today .day-num{background:none!important;color:inherit!important;
     padding:0;border-radius:0;display:inline}
