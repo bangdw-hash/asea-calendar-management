@@ -1075,6 +1075,7 @@ html,body{height:100%;
   <div class="modal">
     <div class="modal-hdr">
       <h2 id="event-modal-title">일정 추가</h2>
+      <p id="evt-range-info" hidden style="margin:2px 0 0;font-size:.78rem;color:var(--color-accent);font-weight:500"></p>
       <button class="modal-close" onclick="closeModal('event-overlay')">&times;</button>
     </div>
     <div class="modal-body">
@@ -2132,6 +2133,54 @@ function initMonthDrag() {
     }
     clearDrag();
   }, { capture: true });
+
+  // Mobile touch drag selection
+  let _touchStartX = 0, _touchStartY = 0, _touchDragDir = null;
+  grid.addEventListener('touchstart', e => {
+    if (e.target.closest('.evt-dot-wrap')) return;
+    if (_ctxEvtId) return;
+    const touch = e.touches[0];
+    const cell = document.elementFromPoint(touch.clientX, touch.clientY)?.closest('.day-cell.cur-month');
+    if (!cell) return;
+    _touchStartX = touch.clientX;
+    _touchStartY = touch.clientY;
+    _touchDragDir = null;
+    _dragStart = cellDate(cell);
+    _dragEnd = _dragStart;
+    _dragging = false;
+  }, { passive: true });
+  grid.addEventListener('touchmove', e => {
+    if (!_dragStart) return;
+    const touch = e.touches[0];
+    const dx = Math.abs(touch.clientX - _touchStartX);
+    const dy = Math.abs(touch.clientY - _touchStartY);
+    if (!_touchDragDir) {
+      if (dx < 8 && dy < 8) return;
+      _touchDragDir = dx >= dy ? 'h' : 'v';
+    }
+    if (_touchDragDir === 'v') { _dragStart = null; return; }
+    e.preventDefault();
+    const el = document.elementFromPoint(touch.clientX, touch.clientY);
+    const cell = el?.closest('.day-cell.cur-month');
+    if (!cell) return;
+    const cd = cellDate(cell);
+    if (!cd || (cd.y === _dragEnd?.y && cd.m === _dragEnd?.m && cd.d === _dragEnd?.d)) return;
+    _dragEnd = cd; _dragging = true;
+    markRange(_dragStart, _dragEnd);
+  }, { passive: false });
+  grid.addEventListener('touchend', e => {
+    if (!_dragStart || !_dragging || !_dragEnd) {
+      _dragStart = null; _dragEnd = null; _dragging = false; _touchDragDir = null;
+      return;
+    }
+    e.preventDefault();
+    const d1 = new Date(_dragStart.y, _dragStart.m, _dragStart.d);
+    const d2 = new Date(_dragEnd.y, _dragEnd.m, _dragEnd.d);
+    const [lo, hi] = d1 <= d2 ? [_dragStart, _dragEnd] : [_dragEnd, _dragStart];
+    clearDrag();
+    _touchDragDir = null;
+    openEventModalOnDate(lo.y, lo.m, lo.d, hi.y, hi.m, hi.d);
+  }, { passive: false });
 }
 
 function initEventDrag() {
@@ -2238,8 +2287,12 @@ async function openEventModalOnDate(sy, sm, sd, ey, em, ed) {
   document.getElementById('evt-desc').value = '';
   if (isRange) {
     document.getElementById('evt-date').dataset.endDate = fmtDate(endDate);
+    const days = Math.round((endDate - startDate) / 86400000) + 1;
+    document.getElementById('evt-range-info').textContent = `${fmtDate(startDate)} ~ ${fmtDate(endDate)} · ${days}일 (날짜별 개별 추가)`;
+    document.getElementById('evt-range-info').hidden = false;
   } else {
     delete document.getElementById('evt-date').dataset.endDate;
+    document.getElementById('evt-range-info').hidden = true;
   }
   ['err-evt-title','err-evt-date'].forEach(id => document.getElementById(id).textContent = '');
   document.getElementById('ai-title-suggest').hidden = true;
@@ -2521,6 +2574,7 @@ function openEventModal(evt) {
     document.getElementById('evt-desc').value = '';
   }
   delete document.getElementById('evt-date').dataset.endDate;
+  document.getElementById('evt-range-info').hidden = true;
   ['err-evt-title','err-evt-date'].forEach(id => document.getElementById(id).textContent = '');
   document.getElementById('ai-title-suggest').hidden = true;
   openOverlay('event-overlay');
@@ -2541,35 +2595,44 @@ async function saveEvent() {
     const t = document.getElementById('evt-title').value.trim();
     if (!t) { document.getElementById('err-evt-title').textContent='제목을 입력해 주세요.'; return; }
     document.getElementById('err-evt-title').textContent = '';
+    if (!_hasDeptPrefix(t)) {
+      showDeptPicker(prefix => { document.getElementById('evt-title').value = prefix + t; saveEvent(); });
+      return;
+    }
     const loc  = document.getElementById('evt-location').value.trim();
     const desc = document.getElementById('evt-desc').value.trim();
-    const ed = new Date(rangeEnd); ed.setDate(ed.getDate() + 1);
-    const body = { summary: t, start: { date: dateStr }, end: { date: fmtDate(ed) } };
-    if (loc) body.location = loc;
-    if (desc) body.description = desc;
+    // 날짜 범위 내 모든 날짜를 수집
+    const dates = [];
+    let cur = new Date(dateStr);
+    const endD = new Date(rangeEnd);
+    while (cur <= endD) { dates.push(fmtDate(new Date(cur))); cur.setDate(cur.getDate() + 1); }
     const btn = document.getElementById('evt-save-btn');
     btn.disabled = true;
-    document.getElementById('evt-save-label').textContent = '저장 중...';
     document.getElementById('evt-error').textContent = '';
-    try {
-      await apiFetch('POST', `/calendars/${encodeURIComponent(CAL_ID)}/events`, body);
-      showToast('일정이 추가되었습니다.');
-      closeModal('event-overlay');
-      delete endDateEl.dataset.endDate;
-      await fetchEvents(); renderCalendar();
-    } catch(ex) {
-      const exMsg = ex.message || '';
-      if (exMsg.toLowerCase().includes('insufficient') || exMsg.toLowerCase().includes('scope')) {
-        _tokenHasWrite = false;
-        try { [localStorage, sessionStorage].forEach(s => s.setItem('asea_gtoken_write', '0')); } catch(_) {}
-        document.getElementById('evt-error').textContent = '쓰기 권한 재인증 중...';
-        btn.disabled = false;
-        const ok = await doLogin(SCOPES);
-        if (ok) { saveEvent(); } else { document.getElementById('evt-error').textContent = '인증 실패. 다시 시도해 주세요.'; }
-        return;
-      }
-      document.getElementById('evt-error').textContent = '저장 실패: ' + exMsg;
-    } finally { btn.disabled = false; document.getElementById('evt-save-label').textContent = '추가'; }
+    let saved = 0, errMsg = '';
+    for (const d of dates) {
+      document.getElementById('evt-save-label').textContent = `추가 중 ${saved + 1}/${dates.length}...`;
+      try {
+        const ed = new Date(d); ed.setDate(ed.getDate() + 1);
+        const body = { summary: t, start: { date: d }, end: { date: fmtDate(ed) } };
+        if (loc) body.location = loc;
+        if (desc) body.description = desc;
+        await apiFetch('POST', `/calendars/${encodeURIComponent(CAL_ID)}/events`, body);
+        saved++;
+      } catch(ex) { errMsg = ex.message || '오류'; break; }
+    }
+    btn.disabled = false;
+    document.getElementById('evt-save-label').textContent = '추가';
+    if (errMsg) {
+      document.getElementById('evt-error').textContent = `${saved}개 저장 후 오류: ${errMsg}`;
+      if (saved > 0) { await fetchEvents(); renderCalendar(); }
+      return;
+    }
+    showToast(`${dates.length}개 일정이 추가되었습니다.`);
+    closeModal('event-overlay');
+    delete endDateEl.dataset.endDate;
+    document.getElementById('evt-range-info').hidden = true;
+    await fetchEvents(); renderCalendar();
     return;
   }
 
