@@ -208,7 +208,7 @@ html,body{height:100%;
 
 /* day-of-week label inside each month cell */
 .day-cell-hdr{display:flex;align-items:center;gap:4px;margin-bottom:4px}
-.day-dow{font-size:var(--font-xs);font-weight:500;color:var(--color-text-sec)}
+.day-dow{font-size:var(--font-sm);font-weight:500;color:var(--color-text-sec)}
 .day-cell.sun .day-dow{color:var(--color-error)}
 .day-cell.sat .day-dow{color:var(--color-accent)}
 
@@ -225,9 +225,10 @@ html,body{height:100%;
 @media(max-width:600px){.day-cell{min-height:80px}}
 .day-cell.other-month{background:var(--color-bg)}
 .day-cell.other-month .day-num{color:#ccc}
-.day-cell.other-month .evt-dot{opacity:.45;font-size:.68rem;pointer-events:none;background:var(--g200)!important;color:var(--g500)!important}
+.day-cell.other-month .evt-dot{opacity:.45;font-size:.68rem;background:var(--g200)!important;color:var(--g500)!important}
 .day-cell.has-events{cursor:pointer}
-.day-cell:hover:not(.other-month):not(:has(.evt-dot-wrap:hover)){background:var(--color-accent-lt)}
+.day-cell:hover:not(:has(.evt-dot-wrap:hover)){background:var(--color-accent-lt)}
+.day-cell.other-month:hover{background:var(--g100)!important}
 #month-grid.ctx-menu-open .day-cell:hover{background:transparent!important}
 #month-grid.ctx-menu-open .day-cell.cur-month:hover .day-num{color:inherit!important}
 .day-num{font-size:var(--font-sm);font-weight:500;color:var(--color-text);
@@ -235,7 +236,7 @@ html,body{height:100%;
   flex-shrink:0;border-radius:50%}
 .day-cell.sun .day-num{color:var(--color-error)}
 .day-cell.sat .day-num{color:var(--color-accent)}
-.day-holiday{font-size:var(--font-xs);font-weight:600;color:var(--color-error);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;flex:1}
+.day-holiday{font-size:var(--font-sm);font-weight:600;color:var(--color-error);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;flex:1}
 .day-cell.holiday .day-num{color:var(--color-error)!important}
 .day-cell.holiday .day-dow{color:var(--color-error)!important}
 .day-cell.holiday .day-holiday{color:var(--color-error)}
@@ -249,6 +250,7 @@ html,body{height:100%;
   font-weight:500;display:block;cursor:pointer;transition:filter .15s}
 .evt-dot:hover{filter:brightness(.93)}
 .evt-dot.more{border-left:none;background:var(--g100);color:var(--color-text-sec);font-size:var(--font-xs)}
+.evt-dot.school-evt{border-left-color:var(--g700)!important;background:var(--g100)!important;color:var(--g900)!important}
 
 /* week grid */
 .week-grid{overflow-x:auto}
@@ -568,6 +570,8 @@ html,body{height:100%;
   white-space:nowrap;max-width:90vw;text-align:center}
 #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 #toast.error-toast{background:var(--red)}
+#toast.success-toast{background:var(--green)}
+#toast.info-toast{background:var(--color-accent)}
 
 /* ── AUTH BANNER ── */
 .auth-banner{background:var(--orange-lt);border-bottom:1px solid var(--orange);
@@ -758,7 +762,7 @@ html,body{height:100%;
   body{background:#fff;font-size:9pt}
   .cal-wrap{padding:0;overflow:hidden;width:100%}
   .cal-inner{min-width:0!important;width:100%;max-width:100%}
-  .cal-container{border:1.5px solid var(--color-accent);border-radius:0!important;
+  .cal-container{border-top:1.5px solid var(--color-accent);border-bottom:1.5px solid var(--color-accent);border-left:none;border-right:none;border-radius:0!important;
     width:100%;max-width:100%;overflow:hidden}
   .month-grid{width:100%}
   .month-week-row{border-bottom:1px solid var(--color-border)}
@@ -775,7 +779,7 @@ html,body{height:100%;
   .month-week-row .day-cell:first-child .day-num{color:#DC2626!important}
   .month-week-row .day-cell:last-child .day-num{color:var(--color-accent)!important}
   /* holiday labels */
-  .day-holiday{color:#DC2626!important;font-size:5pt;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .day-holiday{color:#DC2626!important;font-size:6.5pt;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .day-cell.holiday .day-num{color:#DC2626!important}
   .day-cell.holiday .day-dow{color:#DC2626!important}
   /* event chips: 1-line truncation keeps cells compact on A4 */
@@ -985,7 +989,7 @@ html,body{height:100%;
 <!-- CTRL-SELECT BANNER -->
 <div id="ctrl-select-banner" hidden style="position:sticky;top:calc(var(--header-h) + var(--toolbar-h) + 36px);z-index:90;margin:0;padding:6px 16px;background:var(--color-accent);color:#fff;font-size:.82rem;display:flex;align-items:center;gap:10px">
   <span id="ctrl-select-count"></span>
-  <button onclick="if(_ctrlDates.length>0){const d=[..._ctrlDates].sort((a,b)=>new Date(a.y,a.m,a.d)-new Date(b.y,b.m,b.d));clearAllSelections();openEventModalOnDates(d);}" style="background:rgba(255,255,255,.25);border:none;border-radius:4px;color:#fff;padding:3px 10px;font-size:.78rem;cursor:pointer;font-family:inherit">일정 추가</button>
+  <button onclick="if(!_token){showToast('조회 전용 모드입니다. 일정 추가·수정은 Google 로그인 후 이용 가능합니다.','info');return;}if(_ctrlDates.length>0){const d=[..._ctrlDates].sort((a,b)=>new Date(a.y,a.m,a.d)-new Date(b.y,b.m,b.d));clearAllSelections();openEventModalOnDates(d);}" style="background:rgba(255,255,255,.25);border:none;border-radius:4px;color:#fff;padding:3px 10px;font-size:.78rem;cursor:pointer;font-family:inherit">일정 추가</button>
   <button onclick="clearAllSelections()" style="background:none;border:1px solid rgba(255,255,255,.5);border-radius:4px;color:#fff;padding:3px 8px;font-size:.78rem;cursor:pointer;font-family:inherit">취소</button>
   <span style="margin-left:auto;font-size:.72rem;opacity:.85">Ctrl+클릭으로 날짜 추가/해제 · 더블클릭으로 확정</span>
 </div>
@@ -1313,6 +1317,7 @@ html,body{height:100%;
       <button class="admin-tab active" id="atab-subscribe" onclick="showAdminTab('subscribe')">📋 구독 신청</button>
       <button class="admin-tab" id="atab-access" onclick="showAdminTab('access')">🔑 권한 요청</button>
       <button class="admin-tab" id="atab-consent" onclick="showAdminTab('consent')">🛡 개인정보 동의</button>
+      <button class="admin-tab" id="atab-school" onclick="showAdminTab('school')">🏫 학교일정</button>
     </div>
 
     <!-- Section 1: 구독 신청 (기존) -->
@@ -1369,6 +1374,43 @@ html,body{height:100%;
         </table>
       </div>
       <div id="consent-empty" hidden style="text-align:center;padding:32px;color:var(--g400)">동의 내역이 없습니다.</div>
+    </div>
+
+    <!-- Section 4: 학교 일정 관리 -->
+    <div id="admin-sec-school" class="admin-section" hidden>
+      <p style="font-size:.82rem;color:var(--g500);margin-bottom:12px;line-height:1.5">개교기념일 등 학교 주요 일정을 등록하고 캘린더에 반영합니다.<br>날짜는 달력으로 선택하거나 직접 입력할 수 있습니다. 저장 후 <strong>캘린더에 반영</strong> 버튼을 눌러야 실제 캘린더에 적용됩니다.</p>
+      <!-- Add form -->
+      <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;padding:12px;background:var(--g50);border-radius:var(--r);border:1px solid var(--g200);margin-bottom:14px">
+        <div style="display:flex;flex-direction:column;gap:4px;min-width:130px">
+          <label style="font-size:.75rem;font-weight:600;color:var(--g700)">날짜</label>
+          <input type="date" id="school-evt-date" class="form-input" style="padding:5px 8px;font-size:.82rem">
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px;flex:1;min-width:160px">
+          <label style="font-size:.75rem;font-weight:600;color:var(--g700)">일정 명칭</label>
+          <input type="text" id="school-evt-name" class="form-input" placeholder="예: 개교기념일" style="padding:5px 8px;font-size:.82rem" onkeydown="if(event.key==='Enter')adminSaveSchoolEvt()">
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <label style="font-size:.75rem;font-weight:600;color:var(--g700)">반복</label>
+          <select id="school-evt-repeat" class="form-input" style="padding:5px 8px;font-size:.82rem">
+            <option value="none">반복 없음</option>
+            <option value="yearly">매년 반복</option>
+            <option value="monthly">매월 반복</option>
+          </select>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="adminSaveSchoolEvt()" style="margin-bottom:1px">저장</button>
+      </div>
+      <!-- Saved list -->
+      <div style="margin-bottom:12px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+          <strong style="font-size:.82rem">저장된 학교 일정</strong>
+          <div id="school-evt-actions" hidden style="display:flex;gap:6px">
+            <button class="btn btn-sm" onclick="adminApplySchoolEvts()" style="background:var(--green);color:#fff">캘린더에 반영</button>
+            <button class="btn btn-sm" onclick="adminClearSchoolEvts()" style="background:var(--red-lt);color:var(--red)">전체 삭제</button>
+          </div>
+        </div>
+        <div id="school-evt-list"></div>
+        <div id="school-evt-empty" style="text-align:center;padding:24px;color:var(--g400);font-size:.82rem">저장된 학교 일정이 없습니다.</div>
+      </div>
     </div>
   </div>
 </div>
@@ -1755,7 +1797,7 @@ function doLogin(scope) {
     _initTokenClient(scope || SCOPES);
     return new Promise(resolve => {
       _pendingCb = resolve;
-      try { _tokenClient.requestAccessToken({ prompt: '' }); }
+      try { _tokenClient.requestAccessToken({ prompt: 'select_account' }); }
       catch(e) { _tokenClient.requestAccessToken({ prompt: 'consent' }); }
     }).then(async success => {
       if (!success) {
@@ -2074,9 +2116,16 @@ function renderMonth(wrap) {
       if (!cell) continue;
       if (cell.cls.includes('other-month')) {
         const omEvts = (cell.evts || []).slice(0, 3);
-        const omDots = omEvts.map(ev => `<span class="evt-dot" style="opacity:.5;pointer-events:none">${esc(ev.summary||'(제목 없음)')}</span>`).join('');
+        const omDots = omEvts.map(ev => {
+          const isSchool = ev.description && ev.description.includes('[학교일정]');
+          const schoolCls = isSchool ? ' school-evt' : '';
+          const qBtns = (_token && _tokenHasWrite)
+            ? `<span class="evt-quick"><button onclick="event.stopPropagation();editEvtById('${escId(ev.id)}')" title="수정">✏️</button><button onclick="event.stopPropagation();deleteEvtById('${escId(ev.id)}')" title="삭제">🗑</button></span>`
+            : '';
+          return `<span class="evt-dot-wrap"><span class="evt-dot${schoolCls}" data-evtid="${ev.id}" onclick="evtChipClick(event,this,'${escId(ev.id)}')" title="${esc(ev.summary||'')}">${esc(ev.summary||'(제목 없음)')}</span>${qBtns}</span>`;
+        }).join('');
         const omMore = cell.evts && cell.evts.length > 3 ? `<span style="font-size:.65rem;color:var(--g400);padding:0 4px">+${cell.evts.length-3}</span>` : '';
-        gridHtml += `<div class="${cell.cls}"><div class="day-cell-hdr"><span class="day-num">${cell.d}</span><span class="day-dow">${WEEKDAYS[c]}</span></div>${omDots}${omMore}</div>`;
+        gridHtml += `<div class="${cell.cls}${(cell.evts||[]).length?' has-events':''}" data-y="${cell.y}" data-m="${cell.m}" data-d="${cell.d}">${'<div class="day-cell-hdr"><span class="day-num">' + cell.d + '</span><span class="day-dow">' + WEEKDAYS[c] + '</span></div>'}${omDots}${omMore}</div>`;
         continue;
       }
       const dateKey = `${y}-${String(m+1).padStart(2,'0')}-${String(cell.d).padStart(2,'0')}`;
@@ -2084,11 +2133,13 @@ function renderMonth(wrap) {
       const holidayHtml = holiday ? `<span class="day-holiday">${esc(holiday)}</span>` : '';
       const numEl = `<div class="day-cell-hdr"><span class="day-num">${cell.d}</span><span class="day-dow">${WEEKDAYS[c]}</span>${holidayHtml}</div>`;
       const dotsHtml = (cell.evts || []).map(ev => {
+        const isSchool = ev.description && ev.description.includes('[학교일정]');
+        const schoolCls = isSchool ? ' school-evt' : '';
         const qBtns = (_token && _tokenHasWrite)
           ? `<span class="evt-quick"><button onclick="event.stopPropagation();editEvtById('${escId(ev.id)}')" title="수정">✏️</button><button onclick="event.stopPropagation();deleteEvtById('${escId(ev.id)}')" title="삭제">🗑</button></span>`
           : '';
         const draggable = (_token && _tokenHasWrite) ? ' draggable="true"' : '';
-        return `<span class="evt-dot-wrap"><span class="evt-dot"${draggable} data-evtid="${ev.id}" onclick="evtChipClick(event,this,'${escId(ev.id)}')" title="${esc(ev.summary||'')}">${esc(ev.summary||'(제목 없음)')}</span>${qBtns}</span>`;
+        return `<span class="evt-dot-wrap"><span class="evt-dot${schoolCls}"${draggable} data-evtid="${ev.id}" onclick="evtChipClick(event,this,'${escId(ev.id)}')" title="${esc(ev.summary||'')}">${esc(ev.summary||'(제목 없음)')}</span>${qBtns}</span>`;
       }).join('');
       gridHtml += `<div class="${cell.cls}${holiday?' holiday':''}${(cell.evts||[]).length?' has-events':''}" data-y="${y}" data-m="${m}" data-d="${cell.d}">${numEl}${dotsHtml}</div>`;
     }
@@ -2128,7 +2179,7 @@ function _updateCtrlBanner() {
 function initMonthDrag() {
   const grid = document.getElementById('month-grid');
   if (!grid) return;
-  const cells = () => grid.querySelectorAll('.day-cell.cur-month');
+  const cells = () => grid.querySelectorAll('.day-cell');
 
   function cellDate(el) {
     const y = +el.dataset.y, m = +el.dataset.m, d = +el.dataset.d;
@@ -2158,7 +2209,7 @@ function initMonthDrag() {
     // if detail popup is open, let the click-listener close it — skip ripple/drag
     const ep = document.getElementById('evt-popup');
     if (ep && ep.classList.contains('open')) return;
-    const cell = e.target.closest('.day-cell.cur-month');
+    const cell = e.target.closest('.day-cell');
     if (!cell || e.target.closest('.evt-dot,.evt-dot-wrap,.evt-quick')) return;
 
     // Ctrl/Cmd+Click: toggle individual date selection
@@ -2204,20 +2255,28 @@ function initMonthDrag() {
     markRange(_dragStart, _dragEnd);
   });
   document.addEventListener('mouseup', e => {
-    // Handle Ctrl+Click: if we have ctrl-selected dates and user double-clicked or pressed Enter
-    // The actual confirm happens via Enter key or a UI trigger; for now open modal on single ctrl+click if only 1 date selected
-    if (_ctrlDates.length > 0 && !_dragStart) return; // wait for explicit action
+    if (_ctrlDates.length > 0 && !_dragStart) return;
 
     if (!_dragStart) return;
-    const cell = e.target.closest && e.target.closest('.day-cell.cur-month');
+    const cell = e.target.closest && e.target.closest('.day-cell');
     if (!_dragging && cell) {
       const cd = cellDate(cell);
-      if (cd) openEventModalOnDate(cd.y, cd.m, cd.d, cd.y, cd.m, cd.d);
+      if (cd) {
+        if (!_token) {
+          showToast('조회 전용 모드입니다. 일정 추가·수정은 Google 로그인 후 이용 가능합니다.', 'info');
+        } else {
+          openEventModalOnDate(cd.y, cd.m, cd.d, cd.y, cd.m, cd.d);
+        }
+      }
     } else if (_dragging && _dragEnd) {
-      const d1 = new Date(_dragStart.y, _dragStart.m, _dragStart.d);
-      const d2 = new Date(_dragEnd.y, _dragEnd.m, _dragEnd.d);
-      const [lo, hi] = d1 <= d2 ? [_dragStart, _dragEnd] : [_dragEnd, _dragStart];
-      openEventModalOnDate(lo.y, lo.m, lo.d, hi.y, hi.m, hi.d);
+      if (!_token) {
+        showToast('조회 전용 모드입니다. 일정 추가·수정은 Google 로그인 후 이용 가능합니다.', 'info');
+      } else {
+        const d1 = new Date(_dragStart.y, _dragStart.m, _dragStart.d);
+        const d2 = new Date(_dragEnd.y, _dragEnd.m, _dragEnd.d);
+        const [lo, hi] = d1 <= d2 ? [_dragStart, _dragEnd] : [_dragEnd, _dragStart];
+        openEventModalOnDate(lo.y, lo.m, lo.d, hi.y, hi.m, hi.d);
+      }
     }
     clearDrag();
   }, { capture: true });
@@ -2228,7 +2287,7 @@ function initMonthDrag() {
     if (e.target.closest('.evt-dot-wrap')) return;
     if (_ctxEvtId) return;
     const touch = e.touches[0];
-    const cell = document.elementFromPoint(touch.clientX, touch.clientY)?.closest('.day-cell.cur-month');
+    const cell = document.elementFromPoint(touch.clientX, touch.clientY)?.closest('.day-cell');
     if (!cell) return;
     _touchStartX = touch.clientX;
     _touchStartY = touch.clientY;
@@ -2249,7 +2308,7 @@ function initMonthDrag() {
     if (_touchDragDir === 'v') { _dragStart = null; return; }
     e.preventDefault();
     const el = document.elementFromPoint(touch.clientX, touch.clientY);
-    const cell = el?.closest('.day-cell.cur-month');
+    const cell = el?.closest('.day-cell');
     if (!cell) return;
     const cd = cellDate(cell);
     if (!cd || (cd.y === _dragEnd?.y && cd.m === _dragEnd?.m && cd.d === _dragEnd?.d)) return;
@@ -2267,15 +2326,20 @@ function initMonthDrag() {
     const [lo, hi] = d1 <= d2 ? [_dragStart, _dragEnd] : [_dragEnd, _dragStart];
     clearDrag();
     _touchDragDir = null;
-    openEventModalOnDate(lo.y, lo.m, lo.d, hi.y, hi.m, hi.d);
+    if (!_token) {
+      showToast('조회 전용 모드입니다. 일정 추가·수정은 Google 로그인 후 이용 가능합니다.', 'info');
+    } else {
+      openEventModalOnDate(lo.y, lo.m, lo.d, hi.y, hi.m, hi.d);
+    }
   }, { passive: false });
 
   // Ctrl+Click confirm: double-click any selected cell or press Enter
   grid.addEventListener('dblclick', e => {
     if (_ctrlDates.length < 1) return;
-    const cell = e.target.closest('.day-cell.cur-month');
+    const cell = e.target.closest('.day-cell');
     if (!cell) return;
     e.preventDefault();
+    if (!_token) { showToast('조회 전용 모드입니다. 일정 추가·수정은 Google 로그인 후 이용 가능합니다.', 'info'); clearAllSelections(); return; }
     const dates = [..._ctrlDates].sort((a, b) => new Date(a.y,a.m,a.d) - new Date(b.y,b.m,b.d));
     clearDrag();
     openEventModalOnDates(dates);
@@ -3166,7 +3230,7 @@ let _toastTimer;
 function showToast(msg, type) {
   const t = document.getElementById('toast');
   t.textContent = msg;
-  t.className = 'show' + (type==='error' ? ' error-toast' : '');
+  t.className = 'show' + (type==='error' ? ' error-toast' : type==='success' ? ' success-toast' : type==='info' ? ' info-toast' : '');
   clearTimeout(_toastTimer);
   _toastTimer = setTimeout(() => t.className = '', 3500);
 }
@@ -4701,12 +4765,13 @@ async function submitAccessRequest() {
 
 /* ══════════════ ADMIN TABS ══════════════ */
 function showAdminTab(tab) {
-  ['subscribe','access','consent'].forEach(t => {
+  ['subscribe','access','consent','school'].forEach(t => {
     document.getElementById('atab-' + t).classList.toggle('active', t === tab);
     document.getElementById('admin-sec-' + t).hidden = t !== tab;
   });
   if (tab === 'access') loadAccessRequests();
   if (tab === 'consent') loadPrivacyConsents();
+  if (tab === 'school') _renderSchoolEvtList();
 }
 
 async function loadAccessRequests() {
@@ -4944,6 +5009,102 @@ function initCtxMenuListeners() {
   wrap.addEventListener('touchend',   () => { if (_ctxLpTimer) { clearTimeout(_ctxLpTimer); _ctxLpTimer = null; } }, { passive:true });
   // Escape to close
   document.addEventListener('keydown', e => { if (e.key==='Escape') closeEvtCtxMenu(); });
+}
+
+/* ══════════════ SCHOOL EVENTS (admin) ══════════════ */
+const SCHOOL_EVTS_KEY = 'asea_school_evts';
+
+function _loadSchoolEvts() {
+  try { return JSON.parse(localStorage.getItem(SCHOOL_EVTS_KEY) || '[]'); } catch(_) { return []; }
+}
+function _saveSchoolEvts(list) {
+  try { localStorage.setItem(SCHOOL_EVTS_KEY, JSON.stringify(list)); } catch(_) {}
+}
+
+function adminSaveSchoolEvt() {
+  const date = document.getElementById('school-evt-date').value.trim();
+  const name = document.getElementById('school-evt-name').value.trim();
+  const repeat = document.getElementById('school-evt-repeat').value;
+  if (!date) { showToast('날짜를 입력해 주세요.', 'error'); return; }
+  if (!name) { showToast('일정 명칭을 입력해 주세요.', 'error'); return; }
+  const list = _loadSchoolEvts();
+  list.push({ id: Date.now().toString(36), date, name, repeat });
+  _saveSchoolEvts(list);
+  document.getElementById('school-evt-name').value = '';
+  document.getElementById('school-evt-date').value = '';
+  document.getElementById('school-evt-repeat').value = 'none';
+  _renderSchoolEvtList();
+  showToast('저장되었습니다. 캘린더에 반영하려면 "캘린더에 반영" 버튼을 클릭하세요.', 'success');
+}
+
+function adminDeleteSchoolEvt(id) {
+  const list = _loadSchoolEvts().filter(x => x.id !== id);
+  _saveSchoolEvts(list);
+  _renderSchoolEvtList();
+}
+
+function adminClearSchoolEvts() {
+  if (!confirm('저장된 학교 일정을 모두 삭제하시겠습니까?')) return;
+  _saveSchoolEvts([]);
+  _renderSchoolEvtList();
+}
+
+function _renderSchoolEvtList() {
+  const list = _loadSchoolEvts();
+  const listEl = document.getElementById('school-evt-list');
+  const emptyEl = document.getElementById('school-evt-empty');
+  const actionsEl = document.getElementById('school-evt-actions');
+  if (!listEl) return;
+  if (!list.length) {
+    listEl.innerHTML = '';
+    if (emptyEl) emptyEl.hidden = false;
+    if (actionsEl) actionsEl.hidden = true;
+    return;
+  }
+  if (emptyEl) emptyEl.hidden = true;
+  if (actionsEl) actionsEl.hidden = false;
+  const repeatLabel = { none: '반복 없음', yearly: '매년', monthly: '매월' };
+  listEl.innerHTML = `<table class="admin-table"><thead><tr><th>#</th><th>날짜</th><th>일정명</th><th>반복</th><th>삭제</th></tr></thead><tbody>` +
+    list.map((item, i) => `<tr>
+      <td>${i+1}</td>
+      <td>${esc(item.date)}</td>
+      <td style="font-weight:600">${esc(item.name)}</td>
+      <td>${esc(repeatLabel[item.repeat] || '반복 없음')}</td>
+      <td><button class="btn btn-sm btn-danger" style="padding:2px 8px;font-size:.72rem" onclick="adminDeleteSchoolEvt('${esc(item.id)}')">삭제</button></td>
+    </tr>`).join('') + `</tbody></table>`;
+}
+
+async function adminApplySchoolEvts() {
+  const list = _loadSchoolEvts();
+  if (!list.length) { showToast('저장된 학교 일정이 없습니다.', 'error'); return; }
+  if (!_token || !_tokenHasWrite) {
+    showToast('캘린더 반영은 Google 로그인(쓰기 권한) 후 이용 가능합니다.', 'error');
+    return;
+  }
+  const btn = document.querySelector('#admin-sec-school button[onclick="adminApplySchoolEvts()"]');
+  if (btn) { btn.disabled = true; btn.textContent = '반영 중...'; }
+  let success = 0, fail = 0;
+  for (const item of list) {
+    try {
+      const body = {
+        summary: item.name,
+        description: '[학교일정]',
+        start: { date: item.date },
+        end: { date: item.date }
+      };
+      if (item.repeat === 'yearly') body.recurrence = ['RRULE:FREQ=YEARLY'];
+      else if (item.repeat === 'monthly') body.recurrence = ['RRULE:FREQ=MONTHLY'];
+      await apiFetch('POST', `/calendars/${encodeURIComponent(CAL_ID)}/events`, body);
+      success++;
+    } catch(e) { fail++; }
+  }
+  if (btn) { btn.disabled = false; btn.textContent = '캘린더에 반영'; }
+  if (success > 0) {
+    showToast(`${success}개 학교 일정이 캘린더에 추가되었습니다.${fail > 0 ? ` (${fail}개 실패)` : ''}`, 'success');
+    fetchEvents().then(() => renderCalendar());
+  } else {
+    showToast(`캘린더 반영 실패. 로그인 상태와 권한을 확인하세요.`, 'error');
+  }
 }
 
 /* ══════════════ COLOR THEME ══════════════ */
