@@ -898,7 +898,11 @@ html,body{height:100%;
 .mycal-order-btn{flex:1;padding:6px 10px;font-size:.78rem;font-weight:600;background:#fff;color:var(--color-text-sec);border:none;cursor:pointer;transition:background .15s,color .15s}
 .mycal-order-btn.active{background:var(--color-accent);color:#fff}
 .mycal-list{display:flex;flex-direction:column;gap:6px;max-height:340px;overflow-y:auto;padding-right:2px}
-.mycal-item{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:var(--r-xs);border:1px solid var(--color-border);background:var(--color-card)}
+.mycal-item{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:var(--r-xs);border:1px solid var(--color-border);background:var(--color-card)}
+.mycal-move-btns{display:flex;flex-direction:column;gap:2px;flex-shrink:0}
+.mycal-move-btn{background:none;border:1px solid var(--color-border);border-radius:3px;width:18px;height:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--color-text-sec);padding:0;line-height:1;transition:background .12s,color .12s}
+.mycal-move-btn:hover:not(:disabled){background:var(--g100);color:var(--color-text)}
+.mycal-move-btn:disabled{opacity:.22;cursor:default}
 .mycal-check{width:18px;height:18px;accent-color:var(--color-accent);cursor:pointer;flex-shrink:0}
 .mycal-name{flex:1;font-size:.82rem;color:var(--color-text);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .mycal-color-wrap{display:flex;align-items:center;gap:6px;flex-shrink:0}
@@ -5295,7 +5299,16 @@ function _renderMyCalList() {
       `<button class="mycal-color-swatch" style="background:${col.bg};border-color:${col.border}" title="${col.border}"
         onclick="setMyCalColor(${idx},${ci})" data-cidx="${ci}"></button>`
     ).join('');
+    const isFirst = idx === 0, isLast = idx === _userCals.length - 1;
     return `<div class="mycal-item" id="mycal-item-${idx}">
+      <div class="mycal-move-btns">
+        <button class="mycal-move-btn" onclick="moveMyCalItem(${idx},-1)" title="위로" ${isFirst ? 'disabled' : ''}>
+          <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
+        </button>
+        <button class="mycal-move-btn" onclick="moveMyCalItem(${idx},1)" title="아래로" ${isLast ? 'disabled' : ''}>
+          <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+      </div>
       <input type="checkbox" class="mycal-check" id="mycal-chk-${idx}"
         onchange="_userCals[${idx}].checked=this.checked"
         ${cal.checked ? 'checked' : ''}>
@@ -5318,6 +5331,15 @@ function _renderMyCalList() {
 
 function setMyCalColor(calIdx, colorIdx) {
   _userCals[calIdx].userColor = _CAL_COLORS[colorIdx];
+  _renderMyCalList();
+}
+
+function moveMyCalItem(idx, dir) {
+  const target = idx + dir;
+  if (target < 0 || target >= _userCals.length) return;
+  const tmp = _userCals[idx];
+  _userCals[idx] = _userCals[target];
+  _userCals[target] = tmp;
   _renderMyCalList();
 }
 
