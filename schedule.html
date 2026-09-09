@@ -134,10 +134,11 @@ html,body{height:100%;
 .nav-btn:hover{background:var(--g100)}
 .toolbar-right{margin-left:auto;display:flex;gap:6px;align-items:center}
 .view-toggle{display:flex;border:1px solid var(--color-border);border-radius:var(--r);overflow:hidden}
-.view-btn{padding:5px 10px;font-size:var(--font-xs);font-weight:500;cursor:pointer;
+.view-btn{padding:0 10px;font-size:var(--font-xs);font-weight:500;cursor:pointer;
   background:#fff;border:none;color:var(--color-text-sec);transition:background .15s,color .15s;
-  font-family:inherit}
+  font-family:inherit;height:34px;box-sizing:border-box;display:flex;align-items:center}
 .view-btn.active{background:var(--color-accent);color:#fff}
+.toolbar-right .btn{height:34px;box-sizing:border-box}
 
 /* user area (index.html header-user 스타일) */
 .user-pill{display:flex;align-items:center;gap:6px;font-size:var(--font-sm);color:var(--color-text-sec)}
@@ -5251,7 +5252,7 @@ function _gcalBgToIdx(googleBg) {
 
 async function openMyCalModal() {
   if (!_token) { showToast('Google 로그인 후 이용 가능합니다.', 'error'); return; }
-  document.getElementById('mycal-overlay').hidden = false;
+  document.getElementById('mycal-overlay').classList.add('show');
   const list = document.getElementById('mycal-list');
   list.innerHTML = '<div style="text-align:center;padding:20px;color:var(--color-text-sec);font-size:.82rem">불러오는 중…</div>';
 
@@ -5332,7 +5333,7 @@ function myCalDeselectAll() {
 }
 
 function closeMyCalModal() {
-  document.getElementById('mycal-overlay').hidden = true;
+  document.getElementById('mycal-overlay').classList.remove('show');
 }
 
 async function applyMyCal() {
