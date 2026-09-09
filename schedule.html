@@ -702,12 +702,13 @@ html,body{height:100%;
   .modal{
     max-width:100%;width:100%;
     border-radius:var(--r-panel) var(--r-panel) 0 0;
-    max-height:92dvh;max-height:92vh; /* dvh 미지원 브라우저 fallback */
+    max-height:92vh; /* fallback: dvh 미지원 브라우저 */
+    max-height:92dvh; /* 동적 뷰포트 — 키보드 등장 시 자동 축소 */
     overflow-y:auto;
     transform:translateY(100%);
     padding-bottom:env(safe-area-inset-bottom,0px);
   }
-  .modal.modal-lg{max-height:92dvh;max-height:92vh}
+  .modal.modal-lg{max-height:92vh;max-height:92dvh}
   .overlay.show .modal{transform:translateY(0)}
   .admin-table{font-size:.72rem}
   .admin-table th,.admin-table td{padding:5px 6px}
@@ -3686,13 +3687,21 @@ async function adminToggle(id, status) {
 /* ══════════════ MODAL HELPERS ══════════════ */
 function openOverlay(id) { document.getElementById(id).classList.add('show'); document.body.style.overflow='hidden'; }
 function closeModal(id)  {
-  document.getElementById(id).classList.remove('show');
+  var ov = document.getElementById(id);
+  ov.classList.remove('show');
   document.body.style.overflow='';
+  // 키보드로 인해 설정된 모달 인라인 스타일 초기화
+  var modal = ov.querySelector('.modal');
+  if (modal) { modal.style.marginBottom = ''; modal.style.maxHeight = ''; }
   // Clear any drag/ctrl-select highlight when event modal is dismissed
   if (id === 'event-overlay') clearAllSelections();
 }
 document.addEventListener('click', e => {
-  if (e.target.classList.contains('overlay')) { e.target.classList.remove('show'); document.body.style.overflow=''; }
+  if (e.target.classList.contains('overlay')) {
+    var _m = e.target.querySelector('.modal');
+    if (_m) { _m.style.marginBottom=''; _m.style.maxHeight=''; }
+    e.target.classList.remove('show'); document.body.style.overflow='';
+  }
   const ep = document.getElementById('evt-popup');
   const eb = document.getElementById('evt-popup-backdrop');
   if (ep && ep.classList.contains('open') && !ep.contains(e.target) && e.target !== eb) closeEvtPopup();
@@ -6164,15 +6173,24 @@ loadLinkedItems(); // 강의실 예약 연동 항목 로드
    visualViewport resize 시 모달 max-height 재계산 + 포커스된 입력 ScrollIntoView */
 (function() {
   function _onVpResize() {
-    const vp = window.visualViewport;
-    const overlay = document.querySelector('.overlay.show');
-    if (!overlay) return;
-    const modal = overlay.querySelector('.modal');
-    if (!modal) return;
-    modal.style.maxHeight = Math.floor(vp.height * 0.97) + 'px';
+    if (window.innerWidth > 600) return;
+    var vp = window.visualViewport;
+    /* iOS Safari: position:fixed는 레이아웃 뷰포트(전체 화면) 기준 — 키보드 높이만큼
+       모달을 margin-bottom 으로 밀어올려야 입력칸이 키보드 뒤로 숨지 않음 */
+    var kbH = Math.max(0, window.innerHeight - vp.offsetTop - vp.height);
+    document.querySelectorAll('.overlay.show .modal').forEach(function(modal) {
+      if (kbH > 20) {
+        modal.style.marginBottom = kbH + 'px';
+        modal.style.maxHeight = Math.floor(vp.height * 0.95) + 'px';
+      } else {
+        modal.style.marginBottom = '';
+        modal.style.maxHeight = '';
+      }
+    });
   }
   if (window.visualViewport) {
     window.visualViewport.addEventListener('resize', _onVpResize);
+    window.visualViewport.addEventListener('scroll', _onVpResize);
   }
   // 포커스 시 모달 내 입력칸을 뷰포트 안으로 스크롤
   document.addEventListener('focusin', function(e) {
@@ -6181,7 +6199,10 @@ loadLinkedItems(); // 강의실 예약 연동 항목 로드
     if (el.tagName !== 'INPUT' && el.tagName !== 'TEXTAREA' && el.tagName !== 'SELECT') return;
     var modal = el.closest('.modal');
     if (!modal) return;
-    setTimeout(function() { el.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); }, 320);
+    setTimeout(function() {
+      el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      _onVpResize(); /* 키보드 등장 후 marginBottom 재계산 */
+    }, 350);
   });
 })();
 
