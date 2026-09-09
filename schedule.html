@@ -1349,6 +1349,10 @@ html,body{height:100%;
     <div class="modal-footer">
       <button class="btn" onclick="closeModal('event-overlay')" style="background:var(--g100);color:var(--g700)">취소</button>
       <button class="btn btn-danger btn-sm" id="evt-delete-btn" onclick="deleteCurrentEvent()" hidden>삭제</button>
+      <button class="btn btn-sm" id="evt-transfer-btn" onclick="transferToSchoolCal()" hidden
+        style="background:var(--green-lt);color:var(--green);border:1px solid var(--green);font-weight:600">
+        <span id="evt-transfer-label">학교 일정 등록</span>
+      </button>
       <button class="btn btn-primary" id="evt-save-btn" onclick="saveEvent()">
         <span id="evt-save-label">저장</span>
       </button>
@@ -3191,6 +3195,8 @@ function openEventModal(evt) {
   document.getElementById('event-modal-title').textContent = isEdit ? '일정 수정' : '일정 추가';
   document.getElementById('evt-save-label').textContent = isEdit ? '저장' : '추가';
   document.getElementById('evt-delete-btn').hidden = !isEdit;
+  /* 내 캘린더 일정만 학교 일정 이관 버튼 노출 */
+  document.getElementById('evt-transfer-btn').hidden = !(isEdit && evt._userCal);
   document.getElementById('evt-error').textContent = '';
   if (isEdit) {
     document.getElementById('evt-title').value = evt.summary || '';
@@ -5807,6 +5813,120 @@ function aiTitleApply() {
 }
 function aiTitleDismiss() {
   document.getElementById('ai-title-suggest').hidden = true;
+}
+
+/* ══════════════ 내 캘린더 → 학교 일정 이관 ══════════════ */
+async function transferToSchoolCal() {
+  if (!_editingEvt || !_editingEvt._userCal) return;
+  if (!_token || !_tokenHasWrite) {
+    const ok = await doLogin(SCOPES);
+    if (!ok) return;
+  }
+
+  const transferBtn = document.getElementById('evt-transfer-btn');
+  const labelEl     = document.getElementById('evt-transfer-label');
+  const errorEl     = document.getElementById('evt-error');
+
+  let title = document.getElementById('evt-title').value.trim();
+  if (!title) { document.getElementById('err-evt-title').textContent = '제목을 입력해 주세요.'; return; }
+  document.getElementById('err-evt-title').textContent = '';
+  errorEl.textContent = '';
+
+  /* 1. 부서 머릿말 없으면 AI 자동 검수 */
+  if (!_hasDeptPrefix(title)) {
+    transferBtn.disabled = true;
+    labelEl.textContent = 'AI 검수 중...';
+    try {
+      const deptList = [...DEPARTMENTS, ..._customDepts].map(d => `${d.name} → [${d.prefix}]`).join('\n');
+      const systemPrompt = `ASEA 항공 직업 전문학교 캘린더 일정 제목 보정 도우미입니다.
+입력된 일정 제목을 [부서코드] 내용 형식으로 변환하세요.
+예시: "기획처 동일원소 계약" → "[기획] 동일원소 계약"
+
+부서 목록 (부서명 → 코드):
+${deptList}
+
+반드시 JSON만 반환: {"suggested":"[코드] 내용"}
+부서명이 명확하지 않으면 내용을 보고 가장 가까운 부서를 추론하세요.`;
+      const payload = {
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 128,
+        system: systemPrompt,
+        messages: [{ role: 'user', content: title }],
+      };
+      const r = await fetch(`${SB_URL}/functions/v1/ai-proxy`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'apikey': SB_ANON, 'Authorization': 'Bearer ' + SB_ANON },
+        body: JSON.stringify({ service: 'claude', payload }),
+      });
+      const data = await r.json();
+      if (!r.ok) throw new Error(data?.error || `HTTP ${r.status}`);
+      const raw = data?.content?.[0]?.text || '';
+      const m = raw.match(/\{[\s\S]*\}/);
+      const parsed = m ? JSON.parse(m[0]) : null;
+      if (parsed?.suggested && _hasDeptPrefix(parsed.suggested)) {
+        title = parsed.suggested;
+        /* UI에도 반영 */
+        document.getElementById('evt-title').value = title;
+        document.getElementById('ai-title-suggest').hidden = true;
+      } else {
+        /* AI가 규칙에 맞는 제목을 못 만들면 부서 선택 피커로 폴백 */
+        transferBtn.disabled = false;
+        labelEl.textContent = '학교 일정 등록';
+        showDeptPicker(prefix => {
+          document.getElementById('evt-title').value = prefix + document.getElementById('evt-title').value.trim();
+          transferToSchoolCal();
+        });
+        return;
+      }
+    } catch (err) {
+      transferBtn.disabled = false;
+      labelEl.textContent = '학교 일정 등록';
+      errorEl.textContent = 'AI 검수 오류: ' + err.message;
+      return;
+    }
+  }
+
+  /* 2. 학교 캘린더에 이벤트 생성 */
+  transferBtn.disabled = true;
+  labelEl.textContent = '이관 중...';
+  try {
+    const dateStr = document.getElementById('evt-date').value;
+    const allDay  = document.getElementById('evt-allday').checked;
+    const startT  = document.getElementById('evt-start').value;
+    const endT    = document.getElementById('evt-end').value;
+    const loc     = document.getElementById('evt-location').value.trim();
+    const desc    = document.getElementById('evt-desc').value.trim();
+
+    let body;
+    if (allDay) {
+      const ed = new Date(dateStr); ed.setDate(ed.getDate() + 1);
+      body = { summary: title, start: { date: dateStr }, end: { date: fmtDate(ed) } };
+    } else {
+      body = { summary: title,
+        start: { dateTime: `${dateStr}T${startT}:00+09:00`, timeZone: 'Asia/Seoul' },
+        end:   { dateTime: `${dateStr}T${endT}:00+09:00`,   timeZone: 'Asia/Seoul' } };
+    }
+    if (loc)  body.location = loc;
+    if (desc) body.description = desc;
+
+    await apiFetch('POST', `/calendars/${encodeURIComponent(CAL_ID)}/events`, body);
+
+    /* 3. 내 캘린더에서 원본 삭제 */
+    const delCalId = _editingEvt._userCal.calId;
+    const delId    = _editingEvt.id;
+    await apiFetch('DELETE', `/calendars/${encodeURIComponent(delCalId)}/events/${encodeURIComponent(delId)}`);
+    _userCalEvts = _userCalEvts.filter(e => e.id !== delId);
+
+    showToast(`"${title}" — 학교 일정으로 이관 완료`);
+    closeModal('event-overlay');
+    _evCacheClear();
+    await Promise.all([fetchEvents(), _refreshUserCalEvts()]);
+    renderCalendar();
+  } catch (err) {
+    errorEl.textContent = '이관 실패: ' + err.message;
+    transferBtn.disabled = false;
+    labelEl.textContent = '학교 일정 등록';
+  }
 }
 
 function initCtxMenuListeners() {
