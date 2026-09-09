@@ -88,7 +88,7 @@ html,body{height:100%;
 .btn:disabled{opacity:.45;cursor:not-allowed}
 .btn-primary{background:var(--color-accent);color:#fff;border-color:var(--color-accent)}
 .btn-primary:hover:not(:disabled){background:var(--color-accent-dk);border-color:var(--color-accent-dk)}
-.btn-secondary{background:#fff;color:var(--color-accent);border-color:var(--color-border)}
+.btn-secondary{background:var(--g100);color:var(--color-accent);border-color:transparent}
 .btn-secondary:hover{background:var(--color-accent-lt)}
 .btn-ghost{background:transparent;color:var(--color-text-sec);border-color:transparent}
 .btn-ghost:hover{background:var(--g100);color:var(--color-text)}
@@ -100,11 +100,11 @@ html,body{height:100%;
 .btn-full{width:100%}
 
 /* index.html tb-btn 스타일 (툴바 버튼) */
-.tb-btn{background:transparent;color:var(--color-text-sec);border:1px solid var(--color-border);
+.tb-btn{background:transparent;color:var(--color-text-sec);border:none;
   border-radius:var(--r);padding:0 10px;font-size:var(--font-xs);font-weight:500;
   display:inline-flex;align-items:center;gap:5px;cursor:pointer;transition:background .15s,color .15s;
   height:34px;box-sizing:border-box;white-space:nowrap}
-.tb-btn:hover{background:var(--color-accent-lt);color:var(--color-accent);border-color:var(--color-accent)}
+.tb-btn:hover{background:var(--color-accent-lt);color:var(--color-accent)}
 .tb-ico{width:14px;height:14px;flex-shrink:0}
 
 /* Google 로그인 버튼 */
@@ -128,16 +128,16 @@ html,body{height:100%;
 .cal-title{font-size:1.1rem;font-weight:700;min-width:110px;text-align:center;cursor:pointer;
   padding:4px 8px;border-radius:var(--r);transition:background .15s;color:var(--color-text)}
 .cal-title:hover{background:var(--g100)}
-.nav-btn{background:transparent;border:1px solid var(--color-border);width:30px;height:30px;
+.nav-btn{background:transparent;border:none;width:30px;height:30px;
   border-radius:var(--r);cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;
   color:var(--color-text-sec);transition:background .15s}
 .nav-btn:hover{background:var(--g100)}
 .toolbar-right{margin-left:auto;display:flex;gap:6px;align-items:center}
-.view-toggle{display:flex;border:1px solid var(--color-border);border-radius:var(--r);overflow:hidden}
-.view-btn{padding:0 10px;font-size:var(--font-xs);font-weight:500;cursor:pointer;
-  background:#fff;border:none;color:var(--color-text-sec);transition:background .15s,color .15s;
-  font-family:inherit;height:34px;box-sizing:border-box;display:flex;align-items:center}
-.view-btn.active{background:var(--color-accent);color:#fff}
+.view-toggle{display:flex;background:var(--g100);border:none;border-radius:var(--r);overflow:hidden;padding:2px;gap:0}
+.view-btn{padding:0 10px;font-size:var(--font-xs);font-weight:600;cursor:pointer;
+  background:transparent;border:none;color:var(--color-text-sec);transition:background .15s,color .15s,box-shadow .15s;
+  font-family:inherit;height:30px;box-sizing:border-box;display:flex;align-items:center;border-radius:calc(var(--r) - 2px)}
+.view-btn.active{background:var(--color-card);color:var(--color-accent);box-shadow:0 1px 4px rgba(0,0,0,.12)}
 .toolbar-right .btn{height:34px;box-sizing:border-box}
 
 /* user area (index.html header-user 스타일) */
@@ -146,7 +146,7 @@ html,body{height:100%;
   color:#fff;font-size:.65rem;display:flex;align-items:center;justify-content:center;font-weight:700;
   flex-shrink:0}
 .user-email-txt{max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.btn-logout{background:none;border:1px solid var(--color-border);border-radius:var(--r);
+.btn-logout{background:none;border:none;border-radius:var(--r);
   padding:4px 8px;font-size:var(--font-xs);color:var(--color-text-sec);cursor:pointer;
   transition:background .15s;font-family:inherit}
 .btn-logout:hover{background:var(--g100)}
@@ -865,26 +865,25 @@ html,body{height:100%;
 .dft-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 .dft-label{font-size:var(--font-xs);color:var(--color-text-sec);font-weight:600;
   white-space:nowrap;flex-shrink:0}
-/* group chips: same container/button style as .view-toggle/.view-btn */
-.dft-grp-toggle{display:flex;border:1px solid var(--color-border);border-radius:var(--r);overflow:hidden}
-.dft-chip{font-size:var(--font-xs);padding:5px 10px;border-radius:0;
-  border:none;border-right:1px solid var(--color-border);background:var(--color-card);
-  color:var(--color-text-sec);cursor:pointer;font-weight:500;transition:background .15s,color .15s;
+/* group chips: segmented control, borderless */
+.dft-grp-toggle{display:flex;background:var(--g100);border:none;border-radius:var(--r);overflow:hidden;padding:2px;gap:0}
+.dft-chip{font-size:var(--font-xs);padding:5px 10px;border-radius:calc(var(--r) - 2px);
+  border:none;background:transparent;
+  color:var(--color-text-sec);cursor:pointer;font-weight:500;transition:background .15s,color .15s,box-shadow .15s;
   white-space:nowrap;font-family:inherit}
-.dft-chip:last-child{border-right:none}
 .dft-chip:hover{background:var(--color-accent-lt);color:var(--color-accent)}
-.dft-chip.active{background:var(--color-accent);color:#fff}
-.dft-chip.all-chip.active{background:var(--color-text-sec);color:#fff}
-.dft-chip.grp-chip.active{background:#374151;color:#fff}
+.dft-chip.active{background:var(--color-card);color:var(--color-accent);box-shadow:0 1px 4px rgba(0,0,0,.12)}
+.dft-chip.all-chip.active{background:var(--color-card);color:var(--color-text-sec);box-shadow:0 1px 4px rgba(0,0,0,.12)}
+.dft-chip.grp-chip.active{background:var(--color-card);color:#374151;box-shadow:0 1px 4px rgba(0,0,0,.12)}
 .dft-sub-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap;
   padding-left:4px;border-left:3px solid var(--color-accent-lt)}
-/* sub-dept chips keep pill style */
+/* sub-dept chips: borderless background fill */
 .dft-sub-chip{font-size:var(--font-xs);padding:3px 10px;border-radius:var(--r);
-  border:1.5px solid var(--color-border);background:var(--color-card);
+  border:none;background:var(--g100);
   color:var(--color-text-sec);cursor:pointer;font-weight:500;transition:all .15s;
   white-space:nowrap;font-family:inherit}
-.dft-sub-chip:hover{border-color:var(--color-accent);color:var(--color-accent);background:var(--color-accent-lt)}
-.dft-sub-chip.active{background:var(--color-accent);color:#fff;border-color:var(--color-accent)}
+.dft-sub-chip:hover{color:var(--color-accent);background:var(--color-accent-lt)}
+.dft-sub-chip.active{background:var(--color-accent);color:#fff}
 .dft-chip.no-events,.dft-sub-chip.no-events{opacity:0.4}
 
 /* ── OUTPUT DROPDOWN ── */
@@ -903,22 +902,22 @@ html,body{height:100%;
 /* ── EXCEL MODAL ── */
 .excel-modal{max-width:480px}
 .excel-month-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:8px}
-.excel-month-btn{padding:8px 4px;border-radius:var(--r);border:1.5px solid var(--color-border);
-  background:#fff;font-size:.82rem;color:var(--color-text);cursor:pointer;
+.excel-month-btn{padding:8px 4px;border-radius:var(--r);border:none;
+  background:var(--g100);font-size:.82rem;color:var(--color-text);cursor:pointer;
   font-family:inherit;font-weight:500;transition:all .15s;text-align:center}
-.excel-month-btn:hover{border-color:var(--color-accent);background:var(--color-accent-lt);color:var(--color-accent)}
-.excel-month-btn.selected{border-color:var(--color-accent);background:var(--color-accent);color:#fff;font-weight:700}
+.excel-month-btn:hover{background:var(--color-accent-lt);color:var(--color-accent)}
+.excel-month-btn.selected{background:var(--color-accent);color:#fff;font-weight:700}
 .excel-year-row{display:flex;align-items:center;justify-content:space-between;
   margin-bottom:10px;font-weight:700}
-.excel-year-nav{background:transparent;border:1px solid var(--color-border);
+.excel-year-nav{background:var(--g100);border:none;
   width:28px;height:28px;border-radius:var(--r);cursor:pointer;font-size:1rem;
   display:flex;align-items:center;justify-content:center;color:var(--color-text-sec);
   transition:background .15s;font-family:inherit}
-.excel-year-nav:hover{background:var(--g100)}
+.excel-year-nav:hover{background:var(--color-accent-lt)}
 .excel-mode-row{display:flex;gap:8px;margin-bottom:14px}
-.excel-mode-btn{flex:1;padding:8px;border-radius:var(--r);border:1.5px solid var(--color-border);
-  background:#fff;font-size:.82rem;cursor:pointer;font-family:inherit;font-weight:500;transition:all .15s}
-.excel-mode-btn.active{border-color:var(--color-accent);background:var(--color-accent);color:#fff}
+.excel-mode-btn{flex:1;padding:8px;border-radius:var(--r);border:none;
+  background:var(--g100);font-size:.82rem;cursor:pointer;font-family:inherit;font-weight:500;transition:all .15s}
+.excel-mode-btn.active{background:var(--color-accent);color:#fff}
 .excel-hint{font-size:.78rem;color:var(--color-text-sec);margin-top:10px;padding:8px 10px;
   background:var(--color-bg);border-radius:var(--r);border:1px solid var(--color-border)}
 
