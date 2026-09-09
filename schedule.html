@@ -1086,7 +1086,7 @@ html,body{height:100%;
         <button class="hdr-email-chk-btn" onclick="checkHeaderEmail()">확인</button>
         <span id="hdr-email-result" class="hdr-email-result"></span>
       </div>
-      <a class="tb-btn" href="https://bit.ly/asea-cal" target="_blank" rel="noopener" title="캘린더 구독">
+      <a class="tb-btn" href="https://calendar.google.com/calendar/u/0/r?cid=ODljYjIzYzQyYTc1ZDk5Njk3YmRkNTBlMTFmNDYxZTk0ZDMzMGVkZWM5NDFmNGJjZjRmNTJkZmRkYWE3NTU1M0Bncm91cC5jYWxlbmRhci5nb29nbGUuY29t" target="_blank" rel="noopener" title="캘린더 구독">
         <svg class="tb-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0 1 18 14.158V11a6 6 0 1 0-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 1 1-6 0v-1m6 0H9"/></svg>
         구독
       </a>
@@ -1130,7 +1130,7 @@ html,body{height:100%;
         </div>
         <div id="hdr-mob-email-result" style="font-size:.77rem;margin-top:5px;min-height:18px"></div>
       </div>
-      <a href="https://bit.ly/asea-cal" target="_blank" rel="noopener" onclick="closeHdrMenu()">
+      <a href="https://calendar.google.com/calendar/u/0/r?cid=ODljYjIzYzQyYTc1ZDk5Njk3YmRkNTBlMTFmNDYxZTk0ZDMzMGVkZWM5NDFmNGJjZjRmNTJkZmRkYWE3NTU1M0Bncm91cC5jYWxlbmRhci5nb29nbGUuY29t" target="_blank" rel="noopener" onclick="closeHdrMenu()">
         <svg class="tb-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0 1 18 14.158V11a6 6 0 1 0-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 1 1-6 0v-1m6 0H9"/></svg>
         구독
       </a>
@@ -2530,6 +2530,18 @@ function evtsForDay(y, m, d) {
   return _calOrder === 'my-first' ? [...myCal, ...school] : [...school, ...myCal];
 }
 
+function renderEvtItemHTML(ev, allowDrag = true) {
+  const isSchool = ev.description && ev.description.includes('[학교일정]');
+  const schoolCls = isSchool ? ' school-evt' : '';
+  const chipStyle = _evtChipStyle(ev);
+  const editDelBtns = (_token && (_tokenHasWrite || ev._userCal?.calId))
+    ? `<button class="quick-edit" onclick="event.stopPropagation();editEvtById('${escId(ev.id)}')" title="수정"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2.5l2.5 2.5-7 7H2v-2.5z"/><path d="M7.5 4l2.5 2.5"/></svg></button><button class="quick-del" onclick="event.stopPropagation();deleteEvtById('${escId(ev.id)}')" title="삭제"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="1" y1="4" x2="13" y2="4"/><path d="M5 4V2.5h4V4"/><rect x="2" y="4" width="10" height="8.5" rx="1"/></svg></button>`
+    : '';
+  const qBtns = `<span class="evt-quick">${editDelBtns}<button class="quick-share" onclick="event.stopPropagation();quickShareEvt('${escId(ev.id)}')" title="공유 링크 복사"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="10.5" cy="2.5" r="1.5"/><circle cx="10.5" cy="11.5" r="1.5"/><circle cx="3.5" cy="7" r="1.5"/><line x1="9" y1="3.3" x2="5" y2="6.2"/><line x1="5" y1="7.8" x2="9" y2="10.7"/></svg></button></span>`;
+  const draggable = (allowDrag && _token && _tokenHasWrite && !ev._userCal) ? ' draggable="true"' : '';
+  return `<span class="evt-dot-wrap"><span class="evt-dot${schoolCls}"${chipStyle}${draggable} data-evtid="${ev.id}" onclick="evtChipClick(event,this,'${escId(ev.id)}')" data-tip="${esc(ev.summary||'')}">${esc(ev.summary||'(제목 없음)')}</span>${qBtns}</span>`;
+}
+
 function renderMonth(wrap) {
   const y = _curDate.getFullYear(), m = _curDate.getMonth();
   const firstDay = new Date(y, m, 1).getDay();
@@ -2571,16 +2583,7 @@ function renderMonth(wrap) {
         const omEvts = (cell.evts || []);
         const visOmEvts = (isMob && omEvts.length > MAX_MOB) ? omEvts.slice(0, MAX_MOB) : omEvts;
         const omMore = (isMob && omEvts.length > MAX_MOB) ? omEvts.length - MAX_MOB : 0;
-        const omDots = visOmEvts.map(ev => {
-          const isSchool = ev.description && ev.description.includes('[학교일정]');
-          const schoolCls = isSchool ? ' school-evt' : '';
-          const chipStyle = _evtChipStyle(ev);
-          const editDelBtns = (_token && (_tokenHasWrite || ev._userCal?.calId))
-            ? `<button class="quick-edit" onclick="event.stopPropagation();editEvtById('${escId(ev.id)}')" title="수정"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2.5l2.5 2.5-7 7H2v-2.5z"/><path d="M7.5 4l2.5 2.5"/></svg></button><button class="quick-del" onclick="event.stopPropagation();deleteEvtById('${escId(ev.id)}')" title="삭제"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="1" y1="4" x2="13" y2="4"/><path d="M5 4V2.5h4V4"/><rect x="2" y="4" width="10" height="8.5" rx="1"/></svg></button>`
-            : '';
-          const qBtns = `<span class="evt-quick">${editDelBtns}<button class="quick-share" onclick="event.stopPropagation();quickShareEvt('${escId(ev.id)}')" title="공유 링크 복사"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="10.5" cy="2.5" r="1.5"/><circle cx="10.5" cy="11.5" r="1.5"/><circle cx="3.5" cy="7" r="1.5"/><line x1="9" y1="3.3" x2="5" y2="6.2"/><line x1="5" y1="7.8" x2="9" y2="10.7"/></svg></button></span>`;
-          return `<span class="evt-dot-wrap"><span class="evt-dot${schoolCls}"${chipStyle} data-evtid="${ev.id}" onclick="evtChipClick(event,this,'${escId(ev.id)}')" data-tip="${esc(ev.summary||'')}">${esc(ev.summary||'(제목 없음)')}</span>${qBtns}</span>`;
-        }).join('');
+        const omDots = visOmEvts.map(ev => renderEvtItemHTML(ev, false)).join('');
         const omMoreHtml = omMore ? `<span class="evt-more-chip" onclick="event.stopPropagation();showDayEvts(${cell.y},${cell.m},${cell.d})">+${omMore} 더보기</span>` : '';
         gridHtml += `<div class="${cell.cls}${(cell.evts||[]).length?' has-events':''}" data-y="${cell.y}" data-m="${cell.m}" data-d="${cell.d}">${'<div class="day-cell-hdr"><span class="day-num">' + cell.d + '</span><span class="day-dow">' + WEEKDAYS[c] + '</span></div>'}${omDots}${omMoreHtml}</div>`;
         continue;
@@ -2592,17 +2595,7 @@ function renderMonth(wrap) {
       const allCellEvts = (cell.evts || []);
       const visEvts = (isMob && allCellEvts.length > MAX_MOB) ? allCellEvts.slice(0, MAX_MOB) : allCellEvts;
       const moreCount = (isMob && allCellEvts.length > MAX_MOB) ? allCellEvts.length - MAX_MOB : 0;
-      const dotsHtml = visEvts.map(ev => {
-        const isSchool = ev.description && ev.description.includes('[학교일정]');
-        const schoolCls = isSchool ? ' school-evt' : '';
-        const chipStyle = _evtChipStyle(ev);
-        const editDelBtns = (_token && (_tokenHasWrite || ev._userCal?.calId))
-          ? `<button class="quick-edit" onclick="event.stopPropagation();editEvtById('${escId(ev.id)}')" title="수정"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2.5l2.5 2.5-7 7H2v-2.5z"/><path d="M7.5 4l2.5 2.5"/></svg></button><button class="quick-del" onclick="event.stopPropagation();deleteEvtById('${escId(ev.id)}')" title="삭제"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="1" y1="4" x2="13" y2="4"/><path d="M5 4V2.5h4V4"/><rect x="2" y="4" width="10" height="8.5" rx="1"/></svg></button>`
-          : '';
-        const qBtns = `<span class="evt-quick">${editDelBtns}<button class="quick-share" onclick="event.stopPropagation();quickShareEvt('${escId(ev.id)}')" title="공유 링크 복사"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="10.5" cy="2.5" r="1.5"/><circle cx="10.5" cy="11.5" r="1.5"/><circle cx="3.5" cy="7" r="1.5"/><line x1="9" y1="3.3" x2="5" y2="6.2"/><line x1="5" y1="7.8" x2="9" y2="10.7"/></svg></button></span>`;
-        const draggable = (_token && _tokenHasWrite && !ev._userCal) ? ' draggable="true"' : '';
-        return `<span class="evt-dot-wrap"><span class="evt-dot${schoolCls}"${chipStyle}${draggable} data-evtid="${ev.id}" onclick="evtChipClick(event,this,'${escId(ev.id)}')" data-tip="${esc(ev.summary||'')}">${esc(ev.summary||'(제목 없음)')}</span>${qBtns}</span>`;
-      }).join('');
+      const dotsHtml = visEvts.map(ev => renderEvtItemHTML(ev, true)).join('');
       const linkedHtml = (_linkedItems[dateKey]||[]).map(li=>`<span class="evt-dot-wrap"><span class="evt-dot rv-linked" style="background:${li.classroom_color||'#1A73E8'};--rv-color:${li.classroom_color||'#1A73E8'}" title="${esc(li.label)}">${esc(li.label)}</span></span>`).join('');
       const moreHtml = moreCount ? `<span class="evt-more-chip" onclick="event.stopPropagation();showDayEvts(${y},${m},${cell.d})">+${moreCount} 더보기</span>` : '';
       gridHtml += `<div class="${cell.cls}${holiday?' holiday':''}${allCellEvts.length||linkedHtml?' has-events':''}" data-y="${y}" data-m="${m}" data-d="${cell.d}">${numEl}${dotsHtml}${linkedHtml}${moreHtml}</div>`;
@@ -2898,7 +2891,7 @@ function initMonthDrag() {
 
 function initEventDrag() {
   if (!_token || !_tokenHasWrite) return;
-  const grid = document.getElementById('month-grid');
+  const grid = document.getElementById('month-grid') || document.getElementById('week-grid');
   if (!grid) return;
   let _dragEvtId = null;
   grid.querySelectorAll('.evt-dot[draggable]').forEach(dot => {
@@ -2914,7 +2907,7 @@ function initEventDrag() {
       dot.closest('.evt-dot-wrap')?.classList.remove('dragging');
     });
   });
-  grid.querySelectorAll('.day-cell').forEach(cell => {
+  grid.querySelectorAll('.day-cell, .week-day-col').forEach(cell => {
     cell.addEventListener('dragover', e => {
       if (!_dragEvtId) return;
       e.preventDefault();
@@ -2929,33 +2922,49 @@ function initEventDrag() {
       cell.classList.remove('drag-drop-over');
       const evtId = e.dataTransfer.getData('text/plain');
       const newY = +cell.dataset.y, newM = +cell.dataset.m, newD = +cell.dataset.d;
+      const newH = cell.dataset.h !== undefined ? +cell.dataset.h : undefined;
       if (!evtId || isNaN(newY)) return;
-      await moveEvent(evtId, newY, newM, newD);
+      await moveEvent(evtId, newY, newM, newD, newH);
     });
   });
 }
 
-async function moveEvent(evtId, newY, newM, newD) {
+async function moveEvent(evtId, newY, newM, newD, newH) {
   const ev = _events.find(e => e.id === evtId);
   if (!ev) return;
   const { start: oldStart, end: oldEnd, allDay } = evtDate(ev);
   if (!oldStart) return;
-  const oldDate = new Date(oldStart.getFullYear(), oldStart.getMonth(), oldStart.getDate());
-  const newDate = new Date(newY, newM, newD);
-  const diffMs = newDate - oldDate;
-  if (diffMs === 0) return;
   let body;
   if (allDay) {
+    const oldDate = new Date(oldStart.getFullYear(), oldStart.getMonth(), oldStart.getDate());
+    const newDate = new Date(newY, newM, newD);
+    const diffMs = newDate - oldDate;
+    if (diffMs === 0) return;
     const newStartDate = new Date(oldDate.getTime() + diffMs);
     const newEndDate = new Date(new Date(oldEnd.getFullYear(), oldEnd.getMonth(), oldEnd.getDate()).getTime() + diffMs);
     body = { start: { date: fmtDate(newStartDate) }, end: { date: fmtDate(newEndDate) } };
   } else {
-    const newStart = new Date(oldStart.getTime() + diffMs);
-    const newEnd = new Date(oldEnd.getTime() + diffMs);
-    body = {
-      start: { dateTime: newStart.toISOString(), timeZone: 'Asia/Seoul' },
-      end:   { dateTime: newEnd.toISOString(),   timeZone: 'Asia/Seoul' }
-    };
+    if (newH !== undefined && !isNaN(newH)) {
+      const durationMs = (oldEnd ? oldEnd.getTime() - oldStart.getTime() : 3600000) || 3600000;
+      const newStart = new Date(newY, newM, newD, newH, oldStart.getMinutes());
+      const newEnd = new Date(newStart.getTime() + durationMs);
+      if (newStart.getTime() === oldStart.getTime()) return;
+      body = {
+        start: { dateTime: newStart.toISOString(), timeZone: 'Asia/Seoul' },
+        end:   { dateTime: newEnd.toISOString(),   timeZone: 'Asia/Seoul' }
+      };
+    } else {
+      const oldDate = new Date(oldStart.getFullYear(), oldStart.getMonth(), oldStart.getDate());
+      const newDate = new Date(newY, newM, newD);
+      const diffMs = newDate - oldDate;
+      if (diffMs === 0) return;
+      const newStart = new Date(oldStart.getTime() + diffMs);
+      const newEnd = new Date(oldEnd.getTime() + diffMs);
+      body = {
+        start: { dateTime: newStart.toISOString(), timeZone: 'Asia/Seoul' },
+        end:   { dateTime: newEnd.toISOString(),   timeZone: 'Asia/Seoul' }
+      };
+    }
   }
   try {
     showToast('이동 중...');
@@ -3087,7 +3096,7 @@ function renderWeek(wrap) {
     const dt = new Date(weekStart.getTime()); dt.setDate(weekStart.getDate() + d); return dt;
   });
 
-  let html = '<div class="week-grid"><table class="week-table"><thead><tr><th style="width:52px">시간</th>';
+  let html = '<div class="week-grid" id="week-grid"><table class="week-table"><thead><tr><th style="width:52px">시간</th>';
   days.forEach(dt => {
     const isToday = dt.toDateString() === today.toDateString();
     const dow = dt.getDay();
@@ -3103,8 +3112,8 @@ function renderWeek(wrap) {
       return allDay && start && start.getFullYear()===dt.getFullYear()
         && start.getMonth()===dt.getMonth() && start.getDate()===dt.getDate();
     });
-    html += `<td style="border:1px solid var(--g200);padding:2px;background:var(--g50);vertical-align:top">${
-      allDayEvts.map(ev => `<div class="week-evt" data-evtid="${ev.id}" style="cursor:pointer" onclick="showDetail(event,'${escId(ev.id)}')">${esc(ev.summary||'')}</div>`).join('')
+    html += `<td class="week-day-col" data-y="${dt.getFullYear()}" data-m="${dt.getMonth()}" data-d="${dt.getDate()}" style="border:1px solid var(--g200);padding:2px;background:var(--g50);vertical-align:top">${
+      allDayEvts.map(ev => renderEvtItemHTML(ev)).join('')
     }</td>`;
   });
   html += '</tr></thead><tbody>';
@@ -3119,13 +3128,14 @@ function renderWeek(wrap) {
           && start.getDate()===dt.getDate() && start.getHours()===h;
       });
       const dateStr2 = `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`;
-      html += `<td class="week-day-col" onclick="onWeekCellClick(event,'${dateStr2}',${h})">${
-        evts.map(ev => `<div class="week-evt" data-evtid="${ev.id}" onclick="event.stopPropagation();showDetail(event,'${escId(ev.id)}')">${esc(ev.summary||'')}</div>`).join('')
+      html += `<td class="week-day-col" data-y="${dt.getFullYear()}" data-m="${dt.getMonth()}" data-d="${dt.getDate()}" data-h="${h}" onclick="onWeekCellClick(event,'${dateStr2}',${h})">${
+        evts.map(ev => renderEvtItemHTML(ev)).join('')
       }</td>`;
     });
     html += '</tr>';
   });
   wrap.innerHTML = html + '</tbody></table></div>';
+  initEventDrag();
 }
 
 function renderList(wrap) {
@@ -6524,7 +6534,7 @@ let _lastModalOpen = 0;
 const _CAL_GID = '89cb23c42a75d99697bdd50e11f461e94d330edec941f4bcf4f52dfddaa75553@group.calendar.google.com';
 const _CAL_ICS = 'https://calendar.google.com/calendar/ical/89cb23c42a75d99697bdd50e11f461e94d330edec941f4bcf4f52dfddaa75553%40group.calendar.google.com/public/basic.ics';
 const _CAL_WEBCAL = 'webcal://calendar.google.com/calendar/ical/89cb23c42a75d99697bdd50e11f461e94d330edec941f4bcf4f52dfddaa75553%40group.calendar.google.com/public/basic.ics';
-const _CAL_GCAL_SUB = 'https://bit.ly/asea-cal';
+const _CAL_GCAL_SUB = 'https://calendar.google.com/calendar/u/0/r?cid=ODljYjIzYzQyYTc1ZDk5Njk3YmRkNTBlMTFmNDYxZTk0ZDMzMGVkZWM5NDFmNGJjZjRmNTJkZmRkYWE3NTU1M0Bncm91cC5jYWxlbmRhci5nb29nbGUuY29t';
 
 function openCalSubModal() {
   _lastModalOpen = Date.now();
