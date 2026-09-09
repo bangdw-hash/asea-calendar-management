@@ -713,7 +713,10 @@ html,body{height:100%;
   .admin-table th,.admin-table td{padding:5px 6px}
 
   /* 모바일 텍스트 전용 이벤트 칩 — 배경 박스 제거, 선+텍스트만 */
-  .evt-dot {
+  .evt-dot,
+  .evt-dot.school-evt,
+  .evt-dot.more,
+  .day-cell.other-month .evt-dot {
     background: transparent !important;
     border-radius: 0 !important;
     box-shadow: none !important;
@@ -726,6 +729,7 @@ html,body{height:100%;
   }
   .evt-dot.school-evt {
     color: var(--g800) !important;
+    border-left-color: var(--g600) !important;
   }
   /* 강의실 예약 연동 칩: 배경 없애면 흰 글자 안 보임 — 색상 변수로 대응 */
   .evt-dot.rv-linked {
