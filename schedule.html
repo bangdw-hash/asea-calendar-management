@@ -353,7 +353,11 @@ html,body{height:100%;
   border-radius:2px;transition:background .1s,color .1s;display:flex;align-items:center;color:var(--g500)}
 .evt-quick button:hover{background:var(--g200);color:var(--g700)}
 .evt-quick .quick-del:hover{background:var(--red-lt)!important;color:var(--red)!important}
+.evt-quick .quick-share:hover{background:var(--primary-lt)!important;color:var(--primary)!important}
 .evt-quick button svg{width:9px;height:9px;flex-shrink:0}
+#evt-tip{position:fixed;background:rgba(40,40,40,.92);color:#fff;font-size:.72rem;padding:3px 8px;
+  border-radius:4px;pointer-events:none;z-index:9999;white-space:nowrap;max-width:260px;
+  overflow:hidden;text-overflow:ellipsis;opacity:0;display:none;transition:opacity .08s}
 
 /* day-cell clickable for new event */
 .day-cell.cur-month{cursor:pointer}
@@ -1881,6 +1885,8 @@ const _EV_TTL   = 5 * 60 * 1000; // 5분
 let _userCals   = []; // {id, summary, backgroundColor, checked, userColor}
 let _userCalEvts = []; // fetched events from user's calendars
 let _calOrder   = 'school-first'; // 'school-first' | 'my-first'
+let _savedCalSettings = []; // Drive-persisted cal settings [{id, checked, userColor}]
+let _dsFileId   = null;     // cached Drive App Data file id
 
 // 그룹 → 부서 매핑
 const DEPT_GROUPS = {
@@ -2012,6 +2018,7 @@ async function fetchUserInfo() {
     _userInitial = (_userEmail[0] || 'U').toUpperCase();
     if (_userEmail) { try { localStorage.setItem('asea_gtoken_email', _userEmail); } catch(_) {} }
     loadDensity(_userEmail);
+    loadCalSettingsFromDrive(); // async, no await — background sync
   } catch(e) {}
 }
 
@@ -2382,10 +2389,11 @@ function renderMonth(wrap) {
           const isSchool = ev.description && ev.description.includes('[학교일정]');
           const schoolCls = isSchool ? ' school-evt' : '';
           const chipStyle = _evtChipStyle(ev);
-          const qBtns = (_token && _tokenHasWrite && !ev._userCal)
-            ? `<span class="evt-quick"><button class="quick-edit" onclick="event.stopPropagation();editEvtById('${escId(ev.id)}')" title="수정"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2.5l2.5 2.5-7 7H2v-2.5z"/><path d="M7.5 4l2.5 2.5"/></svg></button><button class="quick-del" onclick="event.stopPropagation();deleteEvtById('${escId(ev.id)}')" title="삭제"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="1" y1="4" x2="13" y2="4"/><path d="M5 4V2.5h4V4"/><rect x="2" y="4" width="10" height="8.5" rx="1"/></svg></button></span>`
+          const editDelBtns = (_token && _tokenHasWrite && !ev._userCal)
+            ? `<button class="quick-edit" onclick="event.stopPropagation();editEvtById('${escId(ev.id)}')" title="수정"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2.5l2.5 2.5-7 7H2v-2.5z"/><path d="M7.5 4l2.5 2.5"/></svg></button><button class="quick-del" onclick="event.stopPropagation();deleteEvtById('${escId(ev.id)}')" title="삭제"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="1" y1="4" x2="13" y2="4"/><path d="M5 4V2.5h4V4"/><rect x="2" y="4" width="10" height="8.5" rx="1"/></svg></button>`
             : '';
-          return `<span class="evt-dot-wrap"><span class="evt-dot${schoolCls}"${chipStyle} data-evtid="${ev.id}" onclick="evtChipClick(event,this,'${escId(ev.id)}')" title="${esc(ev.summary||'')}">${esc(ev.summary||'(제목 없음)')}</span>${qBtns}</span>`;
+          const qBtns = `<span class="evt-quick">${editDelBtns}<button class="quick-share" onclick="event.stopPropagation();quickShareEvt('${escId(ev.id)}')" title="공유 링크 복사"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="10.5" cy="2.5" r="1.5"/><circle cx="10.5" cy="11.5" r="1.5"/><circle cx="3.5" cy="7" r="1.5"/><line x1="9" y1="3.3" x2="5" y2="6.2"/><line x1="5" y1="7.8" x2="9" y2="10.7"/></svg></button></span>`;
+          return `<span class="evt-dot-wrap"><span class="evt-dot${schoolCls}"${chipStyle} data-evtid="${ev.id}" onclick="evtChipClick(event,this,'${escId(ev.id)}')" data-tip="${esc(ev.summary||'')}">${esc(ev.summary||'(제목 없음)')}</span>${qBtns}</span>`;
         }).join('');
         gridHtml += `<div class="${cell.cls}${(cell.evts||[]).length?' has-events':''}" data-y="${cell.y}" data-m="${cell.m}" data-d="${cell.d}">${'<div class="day-cell-hdr"><span class="day-num">' + cell.d + '</span><span class="day-dow">' + WEEKDAYS[c] + '</span></div>'}${omDots}</div>`;
         continue;
@@ -2398,11 +2406,12 @@ function renderMonth(wrap) {
         const isSchool = ev.description && ev.description.includes('[학교일정]');
         const schoolCls = isSchool ? ' school-evt' : '';
         const chipStyle = _evtChipStyle(ev);
-        const qBtns = (_token && _tokenHasWrite && !ev._userCal)
-          ? `<span class="evt-quick"><button class="quick-edit" onclick="event.stopPropagation();editEvtById('${escId(ev.id)}')" title="수정"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2.5l2.5 2.5-7 7H2v-2.5z"/><path d="M7.5 4l2.5 2.5"/></svg></button><button class="quick-del" onclick="event.stopPropagation();deleteEvtById('${escId(ev.id)}')" title="삭제"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="1" y1="4" x2="13" y2="4"/><path d="M5 4V2.5h4V4"/><rect x="2" y="4" width="10" height="8.5" rx="1"/></svg></button></span>`
+        const editDelBtns = (_token && _tokenHasWrite && !ev._userCal)
+          ? `<button class="quick-edit" onclick="event.stopPropagation();editEvtById('${escId(ev.id)}')" title="수정"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2.5l2.5 2.5-7 7H2v-2.5z"/><path d="M7.5 4l2.5 2.5"/></svg></button><button class="quick-del" onclick="event.stopPropagation();deleteEvtById('${escId(ev.id)}')" title="삭제"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="1" y1="4" x2="13" y2="4"/><path d="M5 4V2.5h4V4"/><rect x="2" y="4" width="10" height="8.5" rx="1"/></svg></button>`
           : '';
+        const qBtns = `<span class="evt-quick">${editDelBtns}<button class="quick-share" onclick="event.stopPropagation();quickShareEvt('${escId(ev.id)}')" title="공유 링크 복사"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="10.5" cy="2.5" r="1.5"/><circle cx="10.5" cy="11.5" r="1.5"/><circle cx="3.5" cy="7" r="1.5"/><line x1="9" y1="3.3" x2="5" y2="6.2"/><line x1="5" y1="7.8" x2="9" y2="10.7"/></svg></button></span>`;
         const draggable = (_token && _tokenHasWrite && !ev._userCal) ? ' draggable="true"' : '';
-        return `<span class="evt-dot-wrap"><span class="evt-dot${schoolCls}"${chipStyle}${draggable} data-evtid="${ev.id}" onclick="evtChipClick(event,this,'${escId(ev.id)}')" title="${esc(ev.summary||'')}">${esc(ev.summary||'(제목 없음)')}</span>${qBtns}</span>`;
+        return `<span class="evt-dot-wrap"><span class="evt-dot${schoolCls}"${chipStyle}${draggable} data-evtid="${ev.id}" onclick="evtChipClick(event,this,'${escId(ev.id)}')" data-tip="${esc(ev.summary||'')}">${esc(ev.summary||'(제목 없음)')}</span>${qBtns}</span>`;
       }).join('');
       gridHtml += `<div class="${cell.cls}${holiday?' holiday':''}${(cell.evts||[]).length?' has-events':''}" data-y="${y}" data-m="${m}" data-d="${cell.d}">${numEl}${dotsHtml}</div>`;
     }
@@ -5300,11 +5309,14 @@ async function openMyCalModal() {
   try {
     const data = await apiFetch('GET', '/users/me/calendarList?maxResults=100&minAccessRole=reader');
     const items = (data?.items || []).filter(c => c.id !== CAL_ID && c.id !== HOLIDAY_CAL);
-    // Preserve prior user choices
+    // Preserve prior user choices (in-memory first, Drive-persisted as fallback)
+    const prevOrder = _userCals.map(c => c.id);
     const prevMap = {};
     _userCals.forEach(c => { prevMap[c.id] = c; });
-    _userCals = items.map(c => {
-      const prev = prevMap[c.id];
+    const savedMap = {};
+    _savedCalSettings.forEach(s => { savedMap[s.id] = s; });
+    const newItems = items.map(c => {
+      const prev = prevMap[c.id] || savedMap[c.id];
       const colorIdx = prev ? _CAL_COLORS.indexOf(prev.userColor) : _gcalBgToIdx(c.backgroundColor);
       return {
         id: c.id,
@@ -5314,6 +5326,18 @@ async function openMyCalModal() {
         userColor: prev ? prev.userColor : _CAL_COLORS[Math.max(0, colorIdx)],
       };
     });
+    // Re-sort to match prior order (in-memory first, then Drive-saved order)
+    const orderRef = prevOrder.length ? prevOrder : _savedCalSettings.map(s => s.id);
+    if (orderRef.length) {
+      const orderMap = {};
+      orderRef.forEach((id, i) => { orderMap[id] = i; });
+      newItems.sort((a, b) => {
+        const ai = orderMap[a.id] !== undefined ? orderMap[a.id] : 999;
+        const bi = orderMap[b.id] !== undefined ? orderMap[b.id] : 999;
+        return ai - bi;
+      });
+    }
+    _userCals = newItems;
     _renderMyCalList();
   } catch(e) {
     list.innerHTML = `<div style="color:var(--red);padding:12px;font-size:.82rem">오류: ${esc(e.message)}</div>`;
@@ -5398,6 +5422,7 @@ async function applyMyCal() {
     _userCalEvts = [];
     renderCalendar();
     closeMyCalModal();
+    saveCalSettingsToDrive();
     return;
   }
   showToast('캘린더 불러오는 중…');
@@ -5423,6 +5448,7 @@ async function applyMyCal() {
   renderCalendar();
   closeMyCalModal();
   showToast(`${allEvts.length}개 일정을 불러왔습니다.`);
+  saveCalSettingsToDrive();
 }
 
 async function adminDirectRegister() {
@@ -5860,6 +5886,139 @@ function changeDensity(dir) {
   _density = _DENSITY_LEVELS[next];
   _applyDensity();
   try { localStorage.setItem(_densityKey(_densityEmail), _density); } catch(e) {}
+  saveCalSettingsToDrive();
+}
+
+/* ─── Google Drive App Data: cross-device calendar & density sync ─── */
+async function _dsGetFileId() {
+  if (_dsFileId) return _dsFileId;
+  try {
+    const r = await fetch("https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=name%3D'asea-cal-settings.json'&fields=files(id)", {
+      headers: { Authorization: 'Bearer ' + _token }
+    });
+    if (!r.ok) return null;
+    const d = await r.json();
+    _dsFileId = (d.files && d.files[0] && d.files[0].id) || null;
+    return _dsFileId;
+  } catch(e) { return null; }
+}
+
+async function loadCalSettingsFromDrive() {
+  if (!_token) return;
+  try {
+    const fileId = await _dsGetFileId();
+    if (!fileId) return;
+    const r = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
+      headers: { Authorization: 'Bearer ' + _token }
+    });
+    if (!r.ok) return;
+    const cfg = await r.json();
+    // Apply density for current device type
+    const isMobile = window.matchMedia('(max-width:767px)').matches;
+    const savedDensity = isMobile ? (cfg.densityMobile || cfg.density) : (cfg.densityPc || cfg.density);
+    if (savedDensity && _DENSITY_LEVELS.includes(savedDensity)) {
+      _density = savedDensity;
+      _applyDensity();
+      try { localStorage.setItem(_densityKey(_densityEmail), _density); } catch(e) {}
+    }
+    if (cfg.calOrder) _calOrder = cfg.calOrder;
+    if (Array.isArray(cfg.userCals)) _savedCalSettings = cfg.userCals;
+    await _autoApplySavedCals();
+  } catch(e) {}
+}
+
+async function saveCalSettingsToDrive() {
+  if (!_token) return;
+  try {
+    const isMobile = window.matchMedia('(max-width:767px)').matches;
+    let existing = {};
+    const existingId = await _dsGetFileId();
+    if (existingId) {
+      try {
+        const rx = await fetch(`https://www.googleapis.com/drive/v3/files/${existingId}?alt=media`, {
+          headers: { Authorization: 'Bearer ' + _token }
+        });
+        if (rx.ok) existing = await rx.json();
+      } catch(e) {}
+    }
+    const cfg = Object.assign({}, existing, {
+      [isMobile ? 'densityMobile' : 'densityPc']: _density,
+      calOrder: _calOrder,
+      userCals: _userCals.map(c => ({ id: c.id, checked: c.checked, userColor: c.userColor })),
+      savedAt: new Date().toISOString()
+    });
+    const blob = new Blob([JSON.stringify(cfg)], { type: 'application/json' });
+    const meta = JSON.stringify(existingId
+      ? { name: 'asea-cal-settings.json' }
+      : { name: 'asea-cal-settings.json', parents: ['appDataFolder'] });
+    const form = new FormData();
+    form.append('metadata', new Blob([meta], { type: 'application/json' }));
+    form.append('file', blob);
+    const method = existingId ? 'PATCH' : 'POST';
+    const url = existingId
+      ? `https://www.googleapis.com/upload/drive/v3/files/${existingId}?uploadType=multipart`
+      : 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart';
+    const r = await fetch(url, { method, headers: { Authorization: 'Bearer ' + _token }, body: form });
+    if (r.ok) { const d = await r.json(); if (d.id) _dsFileId = d.id; }
+  } catch(e) {}
+}
+
+async function _autoApplySavedCals() {
+  if (!_savedCalSettings.length) return;
+  try {
+    const data = await apiFetch('GET', '/users/me/calendarList?maxResults=100&minAccessRole=reader');
+    const items = (data?.items || []).filter(c => c.id !== CAL_ID && c.id !== HOLIDAY_CAL);
+    const savedMap = {};
+    _savedCalSettings.forEach(s => { savedMap[s.id] = s; });
+    const freshItems = items.map(c => {
+      const saved = savedMap[c.id];
+      const colorIdx = saved ? _CAL_COLORS.indexOf(saved.userColor) : _gcalBgToIdx(c.backgroundColor);
+      return {
+        id: c.id, summary: c.summary || c.id,
+        backgroundColor: c.backgroundColor || '#4285F4',
+        checked: saved ? saved.checked : false,
+        userColor: saved ? saved.userColor : _CAL_COLORS[Math.max(0, colorIdx)],
+      };
+    });
+    const orderMap = {};
+    _savedCalSettings.forEach((s, i) => { orderMap[s.id] = i; });
+    freshItems.sort((a, b) => {
+      const ai = orderMap[a.id] !== undefined ? orderMap[a.id] : 999;
+      const bi = orderMap[b.id] !== undefined ? orderMap[b.id] : 999;
+      return ai - bi;
+    });
+    _userCals = freshItems;
+    const selected = freshItems.filter(c => c.checked);
+    if (!selected.length) return;
+    const y = _curDate.getFullYear(), m = _curDate.getMonth();
+    const timeMin = new Date(y, m - 1, 1).toISOString();
+    const timeMax = new Date(y, m + 2, 0, 23, 59, 59).toISOString();
+    const qs = new URLSearchParams({ timeMin, timeMax, singleEvents:'true', orderBy:'startTime', maxResults:'500' });
+    const allEvts = [];
+    for (const cal of selected) {
+      try {
+        const d2 = await apiFetch('GET', `/calendars/${encodeURIComponent(cal.id)}/events?${qs}`);
+        (d2?.items || []).forEach(ev => allEvts.push({ ...ev, _userCal: { summary: cal.summary, color: cal.userColor } }));
+      } catch(e) {}
+    }
+    if (allEvts.length) { _userCalEvts = allEvts; renderCalendar(); }
+  } catch(e) {}
+}
+
+async function quickShareEvt(evtId) {
+  const ev = _events.find(x => x.id === evtId) || _userCalEvts.find(x => x.id === evtId);
+  if (!ev) return;
+  const start = _gcalDate(ev.start);
+  const end   = _gcalDate(ev.end) || start;
+  const params = new URLSearchParams({ action:'TEMPLATE', text: ev.summary || '', dates: start + '/' + end });
+  if (ev.location) params.set('location', ev.location);
+  const longUrl = 'https://calendar.google.com/calendar/render?' + params.toString();
+  const short = await _shortenUrl(longUrl);
+  const url = short || longUrl;
+  const doCopy = () => showToast(short ? '단축 공유링크가 복사됐습니다.' : '공유링크가 복사됐습니다.');
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(url).then(doCopy).catch(() => { _fallbackCopy(url); doCopy(); });
+  } else { _fallbackCopy(url); doCopy(); }
 }
 
 /* ══════════════ BOOT ══════════════ */
@@ -6017,6 +6176,49 @@ function openModal(id) {
   document.getElementById(id).classList.add('show');
   document.body.style.overflow = 'hidden';
 }
+
+/* ── Custom tooltip (200ms delay) replacing browser native title ── */
+(function() {
+  const DELAY = 200;
+  const tip = document.createElement('div');
+  tip.id = 'evt-tip';
+  document.body.appendChild(tip);
+  let timer = null, cx = 0, cy = 0;
+
+  function show(text) {
+    tip.textContent = text;
+    tip.style.left = Math.min(cx + 12, window.innerWidth - 270) + 'px';
+    tip.style.top = Math.max(cy - 28, 4) + 'px';
+    tip.style.display = 'block';
+    tip.style.opacity = '1';
+  }
+  function hide() {
+    clearTimeout(timer);
+    tip.style.opacity = '0';
+    tip.style.display = 'none';
+  }
+  document.addEventListener('mouseover', function(e) {
+    const el = e.target.closest('[data-tip]');
+    if (!el) return;
+    clearTimeout(timer);
+    const text = el.dataset.tip;
+    if (!text) return;
+    timer = setTimeout(function() { show(text); }, DELAY);
+  });
+  document.addEventListener('mousemove', function(e) {
+    cx = e.clientX; cy = e.clientY;
+    if (tip.style.display !== 'none') {
+      tip.style.left = Math.min(cx + 12, window.innerWidth - 270) + 'px';
+      tip.style.top = Math.max(cy - 28, 4) + 'px';
+    }
+  });
+  document.addEventListener('mouseout', function(e) {
+    if (!e.target.closest('[data-tip]')) return;
+    hide();
+  });
+  document.addEventListener('click', hide);
+  document.addEventListener('scroll', hide, true);
+})();
 
 /* ══════════════ SERVICE WORKER REGISTRATION ══════════════ */
 if ('serviceWorker' in navigator) {
