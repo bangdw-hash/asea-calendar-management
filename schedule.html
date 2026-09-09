@@ -101,8 +101,9 @@ html,body{height:100%;
 
 /* index.html tb-btn 스타일 (툴바 버튼) */
 .tb-btn{background:transparent;color:var(--color-text-sec);border:1px solid var(--color-border);
-  border-radius:var(--r);padding:5px 10px;font-size:var(--font-xs);font-weight:500;
-  display:inline-flex;align-items:center;gap:5px;cursor:pointer;transition:background .15s,color .15s}
+  border-radius:var(--r);padding:0 10px;font-size:var(--font-xs);font-weight:500;
+  display:inline-flex;align-items:center;gap:5px;cursor:pointer;transition:background .15s,color .15s;
+  height:34px;box-sizing:border-box;white-space:nowrap}
 .tb-btn:hover{background:var(--color-accent-lt);color:var(--color-accent);border-color:var(--color-accent)}
 .tb-ico{width:14px;height:14px;flex-shrink:0}
 
@@ -838,7 +839,7 @@ html,body{height:100%;
   background:#fff;text-align:left;transition:border-color .15s,background .15s;width:100%}
 .sub-option:hover{border-color:var(--color-accent);background:var(--color-accent-lt)}
 /* Header email check widget */
-.hdr-email-chk-wrap{display:flex;align-items:center;gap:5px;background:var(--color-bg);border:1.5px solid var(--color-border);border-radius:8px;padding:3px 8px 3px 10px;height:34px}
+.hdr-email-chk-wrap{display:flex;align-items:center;gap:5px;background:var(--color-bg);border:1.5px solid var(--color-border);border-radius:8px;padding:0 8px 0 10px;height:34px;box-sizing:border-box}
 .hdr-email-chk-label{font-size:.72rem;font-weight:700;color:var(--color-text-sec);white-space:nowrap;flex-shrink:0}
 .hdr-email-chk-input{width:160px;height:24px;padding:0 6px;font-size:.78rem;border:none;background:transparent;color:var(--color-text);outline:none;font-family:inherit}
 .hdr-email-chk-btn{height:24px;padding:0 8px;font-size:.73rem;font-weight:700;background:var(--color-accent);color:#fff;border:none;border-radius:5px;cursor:pointer;white-space:nowrap;flex-shrink:0;transition:background .15s}
@@ -882,8 +883,6 @@ html,body{height:100%;
   padding:8px 10px;background:var(--color-bg);border-radius:var(--r-xs)}
 
 /* ── MY CALENDAR MODAL ── */
-#mycal-btn{display:none}
-#mycal-btn.visible{display:inline-flex}
 .mycal-modal{max-width:480px;width:95vw}
 .mycal-order-toggle{display:flex;border:1px solid var(--color-border);border-radius:var(--r);overflow:hidden;margin-bottom:12px}
 .mycal-order-btn{flex:1;padding:6px 10px;font-size:.78rem;font-weight:600;background:#fff;color:var(--color-text-sec);border:none;cursor:pointer;transition:background .15s,color .15s}
@@ -1994,8 +1993,6 @@ function updateUserArea() {
     <span class="user-email-txt">${_userEmail || '로그인됨'}</span>
     <button onclick="logout()" class="btn-logout">로그아웃</button>
   </div>`;
-  const myCalBtn = document.getElementById('mycal-btn');
-  if (myCalBtn) myCalBtn.classList.toggle('visible', !!_token);
 }
 
 function logout() {
@@ -2004,8 +2001,6 @@ function logout() {
   _token = null; _tokenHasWrite = false; _userEmail = null; _userInitial = '';
   _deptFilter = { group: null, dept: null };
   _userCalEvts = []; _userCals = [];
-  const myCalBtn = document.getElementById('mycal-btn');
-  if (myCalBtn) myCalBtn.classList.remove('visible');
   clearTimeout(_refreshTimer);
   try { [localStorage, sessionStorage].forEach(s => {
     s.removeItem('asea_gtoken'); s.removeItem('asea_gtoken_exp'); s.removeItem('asea_gtoken_write');
