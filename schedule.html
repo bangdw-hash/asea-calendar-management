@@ -1300,9 +1300,9 @@ html,body{height:100%;
           <label class="form-label" for="evt-allday" style="margin:0;cursor:pointer">종일 일정</label>
         </div>
         <div id="time-row" hidden style="display:flex;gap:8px">
-          <input class="form-input" id="evt-start" type="time" style="flex:1" value="09:00" onchange="(function(){var s=this.value;if(!s)return;var p=s.split(':'),h=+p[0],m=+p[1],eh=(h+1)%24;document.getElementById('evt-end').value=String(eh).padStart(2,'0')+':'+String(m).padStart(2,'0');}).call(this)">
+          <input class="form-input" id="evt-start" type="time" style="flex:1" value="09:00" oninput="(function(){var s=this.value;if(!s)return;var p=s.split(':'),h=+p[0],m=+p[1],eh=(h+1)%24;document.getElementById('evt-end').value=String(eh).padStart(2,'0')+':'+String(m).padStart(2,'0');}).call(this)" onkeydown="if(event.key==='Enter'){event.preventDefault();saveEvent();}">
           <span style="align-self:center;color:var(--g400)">~</span>
-          <input class="form-input" id="evt-end" type="time" style="flex:1" value="10:00">
+          <input class="form-input" id="evt-end" type="time" style="flex:1" value="10:00" onkeydown="if(event.key==='Enter'){event.preventDefault();saveEvent();}">
         </div>
       </div>
       <div class="form-group">
