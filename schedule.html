@@ -2865,6 +2865,9 @@ async function openEventModalOnDate(sy, sm, sd, ey, em, ed) {
   document.getElementById('event-modal-title').textContent = '일정 추가';
   document.getElementById('evt-save-label').textContent = '추가';
   document.getElementById('evt-delete-btn').hidden = true;
+  const _tb1 = document.getElementById('evt-transfer-btn');
+  _tb1.hidden = true; _tb1.disabled = false;
+  document.getElementById('evt-transfer-label').textContent = '학교 일정 등록';
   document.getElementById('evt-error').textContent = '';
   document.getElementById('evt-title').value = '';
   document.getElementById('evt-date').value = fmtDate(startDate);
@@ -2903,6 +2906,9 @@ async function openEventModalOnDates(dates) {
   document.getElementById('event-modal-title').textContent = '일정 추가';
   document.getElementById('evt-save-label').textContent = '추가';
   document.getElementById('evt-delete-btn').hidden = true;
+  const _tb2 = document.getElementById('evt-transfer-btn');
+  _tb2.hidden = true; _tb2.disabled = false;
+  document.getElementById('evt-transfer-label').textContent = '학교 일정 등록';
   document.getElementById('evt-error').textContent = '';
   document.getElementById('evt-title').value = '';
   const dateEl = document.getElementById('evt-date');
@@ -3195,8 +3201,11 @@ function openEventModal(evt) {
   document.getElementById('event-modal-title').textContent = isEdit ? '일정 수정' : '일정 추가';
   document.getElementById('evt-save-label').textContent = isEdit ? '저장' : '추가';
   document.getElementById('evt-delete-btn').hidden = !isEdit;
-  /* 내 캘린더 일정만 학교 일정 이관 버튼 노출 */
-  document.getElementById('evt-transfer-btn').hidden = !(isEdit && evt._userCal);
+  /* 내 캘린더 일정만 학교 일정 이관 버튼 노출 — 항상 상태 초기화 */
+  const _tb = document.getElementById('evt-transfer-btn');
+  _tb.hidden = !(isEdit && evt._userCal);
+  _tb.disabled = false;
+  document.getElementById('evt-transfer-label').textContent = '학교 일정 등록';
   document.getElementById('evt-error').textContent = '';
   if (isEdit) {
     document.getElementById('evt-title').value = evt.summary || '';
@@ -6213,7 +6222,13 @@ async function saveCalSettingsToDrive() {
       : 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart';
     const r = await fetch(url, { method, headers: { Authorization: 'Bearer ' + _token }, body: form });
     if (r.ok) { const d = await r.json(); if (d.id) _dsFileId = d.id; }
-    else { console.error('[Drive sync save] HTTP', r.status, await r.text().catch(()=>'')); }
+    else {
+      const status = r.status;
+      if (status === 401 || status === 403) {
+        /* drive.appdata 권한 없음 — 재로그인 유도 */
+        showToast('크로스 단말기 동기화를 위해 재로그인이 필요합니다. 로그아웃 후 다시 로그인해 주세요.', 'error');
+      }
+    }
   } catch(e) { console.error('[Drive sync save]', e); }
 }
 
