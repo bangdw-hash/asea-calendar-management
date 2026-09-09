@@ -1279,7 +1279,7 @@ html,body{height:100%;
       <div class="form-group">
         <label class="form-label">제목 <span class="req">*</span></label>
         <div class="evt-title-wrap">
-          <input class="form-input" id="evt-title" placeholder="일정 제목" maxlength="100" style="padding-right:36px">
+          <input class="form-input" id="evt-title" placeholder="일정 제목" maxlength="100" style="padding-right:36px" onkeydown="if(event.key==='Enter'){event.preventDefault();saveEvent();}">
           <button class="ai-title-btn" id="ai-title-btn" onclick="aiSuggestTitle()" title="AI 제목 규칙 추천" type="button">✨</button>
         </div>
         <div class="ai-title-suggest" id="ai-title-suggest" hidden>
@@ -2844,6 +2844,7 @@ async function openEventModalOnDate(sy, sm, sd, ey, em, ed) {
   ['err-evt-title','err-evt-date'].forEach(id => document.getElementById(id).textContent = '');
   document.getElementById('ai-title-suggest').hidden = true;
   openOverlay('event-overlay');
+  setTimeout(() => document.getElementById('evt-title').focus(), 60);
 }
 
 async function openEventModalOnDates(dates) {
@@ -2876,6 +2877,7 @@ async function openEventModalOnDates(dates) {
   ['err-evt-title','err-evt-date'].forEach(id => document.getElementById(id).textContent = '');
   document.getElementById('ai-title-suggest').hidden = true;
   openOverlay('event-overlay');
+  setTimeout(() => document.getElementById('evt-title').focus(), 60);
 }
 
 function editEvtById(id) {
@@ -3158,6 +3160,7 @@ function openEventModal(evt) {
   ['err-evt-title','err-evt-date'].forEach(id => document.getElementById(id).textContent = '');
   document.getElementById('ai-title-suggest').hidden = true;
   openOverlay('event-overlay');
+  setTimeout(() => document.getElementById('evt-title').focus(), 60);
 }
 
 function toggleAllDay() {
