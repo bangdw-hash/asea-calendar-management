@@ -998,10 +998,21 @@ html,body{height:100%;
 
 <!-- AUTH BANNER -->
 <div class="auth-banner" id="auth-banner" hidden>
-  <span class="auth-banner-msg">📖 공개 공유 일정만 표시 중 — 전체 일정 조회·추가·수정은 Google 로그인 후 이용 가능합니다.</span>
-  <div class="auth-banner-btns">
-    <button class="btn btn-sm" style="background:rgba(234,88,12,.12);color:var(--orange);border:1px solid var(--orange)" onclick="openAccessRequest()">📋 권한 요청</button>
-    <button class="btn btn-sm btn-primary" onclick="doLogin()">Google 로그인</button>
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;width:100%">
+    <span class="auth-banner-msg">📖 공개 공유 일정만 표시 중 — 전체 일정 조회·추가·수정은 Google 로그인 후 이용 가능합니다.</span>
+    <div class="auth-banner-btns">
+      <button class="btn btn-sm" style="background:rgba(234,88,12,.12);color:var(--orange);border:1px solid var(--orange)" onclick="openAccessRequest()">📋 권한 요청</button>
+      <button class="btn btn-sm btn-primary" onclick="doLogin()">Google 로그인</button>
+    </div>
+  </div>
+  <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;width:100%;margin-top:6px;padding-top:6px;border-top:1px solid rgba(234,88,12,.2)">
+    <span style="font-size:.75rem;color:var(--g600);flex-shrink:0">내 이메일 등록 확인</span>
+    <input id="banner-email-chk" type="email" placeholder="Gmail 주소 입력" maxlength="100"
+      style="flex:1;min-width:160px;max-width:280px;height:28px;padding:0 8px;font-size:.78rem;border:1px solid var(--g300);border-radius:5px;background:var(--bg);color:var(--g900);outline:none"
+      onkeydown="if(event.key==='Enter')checkBannerEmail()">
+    <button class="btn btn-sm" onclick="checkBannerEmail()"
+      style="height:28px;padding:0 10px;font-size:.78rem;background:var(--g100);color:var(--g700);flex-shrink:0">확인</button>
+    <span id="banner-email-result" style="font-size:.77rem;flex-shrink:0"></span>
   </div>
 </div>
 
@@ -1366,6 +1377,22 @@ html,body{height:100%;
 
     <!-- Section 2: 캘린더 권한 요청 -->
     <div id="admin-sec-access" class="admin-section" hidden>
+      <!-- 직접 등록 -->
+      <div style="background:var(--primary-lt);border:1px solid var(--primary);border-radius:8px;padding:14px 16px;margin-bottom:16px">
+        <div style="font-size:.85rem;font-weight:700;color:var(--primary);margin-bottom:10px">➕ 이메일 직접 등록</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
+          <div style="flex:1;min-width:120px">
+            <div style="font-size:.73rem;color:var(--g500);margin-bottom:3px">성명</div>
+            <input id="admin-reg-name" class="form-input" placeholder="성명" maxlength="30" style="height:32px;font-size:.82rem">
+          </div>
+          <div style="flex:2;min-width:180px">
+            <div style="font-size:.73rem;color:var(--g500);margin-bottom:3px">Gmail 주소</div>
+            <input id="admin-reg-email" class="form-input" type="email" placeholder="example@gmail.com" maxlength="100" style="height:32px;font-size:.82rem">
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="adminDirectRegister()" style="height:32px;white-space:nowrap">등록 확정</button>
+        </div>
+        <div id="admin-reg-msg" style="font-size:.77rem;margin-top:6px"></div>
+      </div>
       <div class="admin-toolbar">
         <button class="btn btn-sm" onclick="loadAccessRequests()" style="background:var(--g100);color:var(--g700)">🔄 새로고침</button>
         <span id="access-req-count" style="font-size:.8rem;color:var(--g500)"></span>
@@ -4918,6 +4945,75 @@ async function submitAccessRequest() {
   } catch(e) {
     showToast('요청 실패: ' + e.message, 'error');
     btn.disabled = false; btn.textContent = '권한 요청하기';
+  }
+}
+
+/* ══════════════ EMAIL REGISTRATION CHECK ══════════════ */
+async function checkBannerEmail() {
+  const input = document.getElementById('banner-email-chk');
+  const result = document.getElementById('banner-email-result');
+  const email = (input ? input.value : '').trim();
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    result.innerHTML = '<span style="color:var(--red)">유효한 이메일을 입력해 주세요.</span>';
+    return;
+  }
+  result.textContent = '확인 중...';
+  try {
+    const r = await fetch(
+      `${SB_URL}/rest/v1/calendar_access_requests?email=eq.${encodeURIComponent(email)}&select=status&order=requested_at.desc&limit=1`,
+      { headers: { 'apikey': SB_ANON, 'Authorization': 'Bearer ' + SB_ANON } }
+    );
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const rows = await r.json();
+    if (!rows.length) {
+      const safeEmail = email.replace(/'/g, '');
+      result.innerHTML = `<span style="color:var(--red)">미등록 이메일입니다.</span>&nbsp;<button class="btn btn-sm" style="height:22px;padding:0 8px;font-size:.72rem;background:var(--orange);color:#fff;border:none;border-radius:4px;cursor:pointer" onclick="openAccessRequestPrefilled('${safeEmail}')">등록 신청하기</button>`;
+    } else if (rows[0].status === 'approved') {
+      result.innerHTML = '<span style="color:var(--green);font-weight:600">✓ 등록된 이메일입니다</span>';
+    } else if (rows[0].status === 'pending') {
+      result.innerHTML = '<span style="color:var(--orange)">⏳ 신청이 접수되어 처리 중입니다</span>';
+    } else {
+      const safeEmail = email.replace(/'/g, '');
+      result.innerHTML = `<span style="color:var(--red)">미등록 이메일입니다.</span>&nbsp;<button class="btn btn-sm" style="height:22px;padding:0 8px;font-size:.72rem;background:var(--orange);color:#fff;border:none;border-radius:4px;cursor:pointer" onclick="openAccessRequestPrefilled('${safeEmail}')">등록 신청하기</button>`;
+    }
+  } catch(e) {
+    result.innerHTML = '<span style="color:var(--red)">확인 실패: ' + esc(e.message) + '</span>';
+  }
+}
+
+function openAccessRequestPrefilled(email) {
+  openAccessRequest();
+  const emailInput = document.getElementById('acc-email');
+  if (emailInput && email) emailInput.value = email;
+}
+
+async function adminDirectRegister() {
+  const name  = (document.getElementById('admin-reg-name')?.value  || '').trim();
+  const email = (document.getElementById('admin-reg-email')?.value || '').trim();
+  const msg   = document.getElementById('admin-reg-msg');
+  if (!name)  { if (msg) msg.innerHTML = '<span style="color:var(--red)">성명을 입력해 주세요.</span>'; return; }
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    if (msg) msg.innerHTML = '<span style="color:var(--red)">유효한 이메일을 입력해 주세요.</span>';
+    return;
+  }
+  if (msg) msg.textContent = '등록 중...';
+  try {
+    const r = await fetch(`${SB_URL}/rest/v1/calendar_access_requests`, {
+      method: 'POST',
+      headers: { 'Content-Type':'application/json', 'apikey':SB_ANON, 'Authorization':'Bearer '+SB_ANON, 'Prefer':'return=minimal,resolution=ignore-duplicates' },
+      body: JSON.stringify({ name, email, status: 'approved', processed_at: new Date().toISOString() })
+    });
+    if (!r.ok) {
+      const errBody = await r.json().catch(() => ({}));
+      if (r.status === 409 || errBody?.code === '23505') throw new Error('이미 등록된 이메일입니다 — 기존 항목을 승인 처리해 주세요.');
+      throw new Error('서버 오류 ' + r.status);
+    }
+    if (msg) msg.innerHTML = '<span style="color:var(--green);font-weight:600">✓ 등록 완료</span>';
+    document.getElementById('admin-reg-name').value  = '';
+    document.getElementById('admin-reg-email').value = '';
+    loadAccessRequests();
+  } catch(e) {
+    if (msg) msg.innerHTML = '<span style="color:var(--red)">등록 실패: ' + esc(e.message) + '</span>';
   }
 }
 

@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>캘린더 등록 확인</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --primary: #1A73E8;
+    --primary-dk: #1557B0;
+    --primary-lt: #E8F0FE;
+    --green: #16a34a;
+    --green-lt: #dcfce7;
+    --orange: #ea580c;
+    --orange-lt: #ffedd5;
+    --red: #dc2626;
+    --red-lt: #fee2e2;
+    --bg: #f8f9fa;
+    --card: #ffffff;
+    --g100: #f1f3f4;
+    --g200: #e8eaed;
+    --g300: #dadce0;
+    --g500: #80868b;
+    --g600: #5f6368;
+    --g700: #3c4043;
+    --g900: #202124;
+    --text: #202124;
+    --r: 10px;
+    --sh: 0 1px 4px rgba(0,0,0,.12);
+    --sh-md: 0 2px 12px rgba(0,0,0,.15);
+    --sh-lg: 0 4px 24px rgba(0,0,0,.18);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #1a1b1e;
+      --card: #25262b;
+      --g100: #2c2d32;
+      --g200: #35363c;
+      --g300: #4a4b52;
+      --g500: #9ea3aa;
+      --g600: #bdc1c9;
+      --g700: #d2d6dc;
+      --g900: #f1f3f4;
+      --text: #e8eaed;
+      --primary-lt: #1e3a5f;
+      --green-lt: #0d2f1c;
+      --orange-lt: #3d1f0a;
+      --red-lt: #3b0f0f;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #1a1b1e;
+    --card: #25262b;
+    --g100: #2c2d32;
+    --g200: #35363c;
+    --g300: #4a4b52;
+    --g500: #9ea3aa;
+    --g600: #bdc1c9;
+    --g700: #d2d6dc;
+    --g900: #f1f3f4;
+    --text: #e8eaed;
+    --primary-lt: #1e3a5f;
+    --green-lt: #0d2f1c;
+    --orange-lt: #3d1f0a;
+    --red-lt: #3b0f0f;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Noto Sans KR', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 16px;
+  }
+  .card {
+    background: var(--card);
+    border-radius: var(--r);
+    box-shadow: var(--sh-lg);
+    width: 100%;
+    max-width: 440px;
+    padding: 32px 28px 28px;
+  }
+  .logo-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 24px;
+  }
+  .logo-icon {
+    width: 36px; height: 36px;
+    background: var(--primary);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .logo-icon svg { width: 20px; height: 20px; fill: #fff; }
+  .logo-text { font-size: 1rem; font-weight: 700; color: var(--g900); line-height: 1.2; }
+  .logo-sub  { font-size: .72rem; color: var(--g500); font-weight: 400; }
+
+  h2 { font-size: 1.1rem; font-weight: 700; margin-bottom: 6px; }
+  .desc { font-size: .83rem; color: var(--g600); margin-bottom: 22px; line-height: 1.6; }
+
+  label { display: block; font-size: .8rem; font-weight: 600; color: var(--g700); margin-bottom: 5px; }
+  .input-wrap { position: relative; margin-bottom: 12px; }
+  .form-input {
+    display: block; width: 100%;
+    height: 42px; padding: 0 12px;
+    font-size: .9rem; font-family: inherit;
+    border: 1.5px solid var(--g300);
+    border-radius: 7px;
+    background: var(--bg);
+    color: var(--text);
+    outline: none;
+    transition: border-color .15s;
+  }
+  .form-input:focus { border-color: var(--primary); }
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    gap: 6px;
+    height: 42px; padding: 0 18px;
+    font-size: .9rem; font-weight: 600; font-family: inherit;
+    border: none; border-radius: 7px;
+    cursor: pointer; transition: background .15s, opacity .15s;
+  }
+  .btn:disabled { opacity: .55; cursor: not-allowed; }
+  .btn-primary { background: var(--primary); color: #fff; }
+  .btn-primary:hover:not(:disabled) { background: var(--primary-dk); }
+  .btn-block { width: 100%; }
+
+  .result-box {
+    min-height: 48px;
+    border-radius: 8px;
+    padding: 12px 14px;
+    font-size: .88rem;
+    font-weight: 500;
+    display: flex; align-items: center; gap: 10px;
+    margin-top: 14px;
+    transition: all .2s;
+  }
+  .result-box[hidden] { display: none; }
+  .result-box.ok  { background: var(--green-lt);  color: var(--green);  border: 1px solid var(--green); }
+  .result-box.pending { background: var(--orange-lt); color: var(--orange); border: 1px solid var(--orange); }
+  .result-box.miss { background: var(--red-lt); color: var(--red); border: 1px solid var(--red); }
+  .result-box.info { background: var(--primary-lt); color: var(--primary); border: 1px solid var(--primary); }
+
+  .result-icon { font-size: 1.25rem; flex-shrink: 0; }
+  .result-content { flex: 1; }
+  .result-title { font-weight: 700; margin-bottom: 2px; }
+  .result-detail { font-size: .78rem; opacity: .85; }
+
+  .btn-request {
+    display: inline-flex; align-items: center; gap: 6px;
+    margin-top: 12px;
+    height: 38px; padding: 0 16px;
+    font-size: .84rem; font-weight: 600; font-family: inherit;
+    background: var(--orange); color: #fff;
+    border: none; border-radius: 6px; cursor: pointer;
+    transition: background .15s;
+  }
+  .btn-request:hover { background: #c2410c; }
+  .btn-back {
+    display: inline-flex; align-items: center; gap: 6px;
+    margin-top: 10px;
+    height: 38px; padding: 0 16px;
+    font-size: .84rem; font-weight: 600; font-family: inherit;
+    background: var(--g100); color: var(--g700);
+    border: none; border-radius: 6px; cursor: pointer;
+    transition: background .15s;
+  }
+  .btn-back:hover { background: var(--g200); }
+
+  /* Request form */
+  .req-form { display: none; margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--g200); }
+  .req-form.show { display: block; }
+  .req-form h3 { font-size: .95rem; font-weight: 700; margin-bottom: 14px; }
+  .err-msg { font-size: .75rem; color: var(--red); margin-top: 3px; min-height: 16px; }
+  .consent-row { display: flex; gap: 8px; align-items: flex-start; margin-top: 12px; }
+  .consent-row input[type=checkbox] { margin-top: 2px; flex-shrink: 0; accent-color: var(--primary); }
+  .consent-row label { font-size: .78rem; font-weight: 400; color: var(--g600); cursor: pointer; }
+
+  .divider { border: none; border-top: 1px solid var(--g200); margin: 20px 0; }
+  .footer-link { font-size: .75rem; color: var(--g500); text-align: center; margin-top: 18px; }
+  .footer-link a { color: var(--primary); text-decoration: none; }
+  .footer-link a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="logo-row">
+    <div class="logo-icon">
+      <svg viewBox="0 0 24 24"><path d="M19 3h-1V1h-2v2H8V1H6v2H5a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zm0 18H5V8h14v13z"/></svg>
+    </div>
+    <div class="logo-text">ASEA 캘린더
+      <div class="logo-sub">캘린더 등록 여부 확인</div>
+    </div>
+  </div>
+
+  <h2>내 이메일 등록 확인</h2>
+  <p class="desc">Gmail 주소를 입력하면 ASEA 공유 캘린더에 등록되어 있는지 확인할 수 있습니다.</p>
+
+  <label for="chk-email">Gmail 주소</label>
+  <div class="input-wrap">
+    <input class="form-input" id="chk-email" type="email" placeholder="example@gmail.com" maxlength="100"
+      onkeydown="if(event.key==='Enter')checkAccess()">
+  </div>
+  <button class="btn btn-primary btn-block" id="chk-btn" onclick="checkAccess()">확인하기</button>
+
+  <div id="result-box" class="result-box" hidden>
+    <div class="result-icon" id="result-icon"></div>
+    <div class="result-content">
+      <div class="result-title" id="result-title"></div>
+      <div class="result-detail" id="result-detail"></div>
+    </div>
+  </div>
+
+  <div class="req-form" id="req-form">
+    <h3>캘린더 등록 신청</h3>
+    <label for="req-name">성명</label>
+    <input class="form-input" id="req-name" placeholder="성명" maxlength="30" style="margin-bottom:2px">
+    <div class="err-msg" id="err-req-name"></div>
+    <div style="margin-top:10px"></div>
+    <label for="req-email">Gmail 주소</label>
+    <input class="form-input" id="req-email" type="email" placeholder="example@gmail.com" maxlength="100" style="margin-bottom:2px">
+    <div class="err-msg" id="err-req-email"></div>
+    <div class="consent-row">
+      <input type="checkbox" id="req-consent">
+      <label for="req-consent">개인정보(성명·이메일)를 ASEA 캘린더 공유 목적으로 수집·이용하는 것에 동의합니다.</label>
+    </div>
+    <div class="err-msg" id="err-req-consent"></div>
+    <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
+      <button class="btn-request" id="req-submit-btn" onclick="submitRequest()">신청하기</button>
+      <button class="btn-back" onclick="cancelRequest()">취소</button>
+    </div>
+  </div>
+
+  <hr class="divider">
+  <div class="footer-link">
+    <a href="./schedule.html" target="_blank">→ ASEA 캘린더 바로가기</a>
+  </div>
+</div>
+
+<script>
+'use strict';
+const SB_URL  = 'https://zbpeyklwpotjyveipzxd.supabase.co';
+const SB_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpicGV5a2x3cG90anl2ZWlwenhkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE1MTYxMDcsImV4cCI6MjA5NzA5MjEwN30.6JgoQ6rPRnmrbBTG68A-Y9HDQk40mnwubhXVnkZvHrQ';
+
+function esc(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function showResult(type, icon, title, detail) {
+  const box = document.getElementById('result-box');
+  box.className = 'result-box ' + type;
+  box.hidden = false;
+  document.getElementById('result-icon').textContent = icon;
+  document.getElementById('result-title').textContent = title;
+  document.getElementById('result-detail').textContent = detail;
+}
+
+async function checkAccess() {
+  const email = (document.getElementById('chk-email').value || '').trim();
+  const btn = document.getElementById('chk-btn');
+  const reqForm = document.getElementById('req-form');
+  reqForm.classList.remove('show');
+
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    showResult('info', 'ℹ️', '유효한 Gmail 주소를 입력해 주세요.', '');
+    return;
+  }
+  btn.disabled = true;
+  btn.textContent = '확인 중...';
+  try {
+    const r = await fetch(
+      `${SB_URL}/rest/v1/calendar_access_requests?email=eq.${encodeURIComponent(email)}&select=status&order=requested_at.desc&limit=1`,
+      { headers: { 'apikey': SB_ANON, 'Authorization': 'Bearer ' + SB_ANON } }
+    );
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const rows = await r.json();
+    if (!rows.length) {
+      showResult('miss', '✗', '미등록 이메일입니다', '아직 ASEA 공유 캘린더에 등록되어 있지 않습니다. 아래에서 등록을 신청할 수 있습니다.');
+      openRequestForm(email);
+    } else if (rows[0].status === 'approved') {
+      showResult('ok', '✓', '등록된 이메일입니다', 'ASEA 공유 캘린더에 정상 등록되어 있습니다.');
+    } else if (rows[0].status === 'pending') {
+      showResult('pending', '⏳', '신청 처리 중', '등록 신청이 접수되어 관리자 검토 중입니다. 승인 후 캘린더에서 일정을 확인할 수 있습니다.');
+    } else {
+      showResult('miss', '✗', '미등록 이메일입니다', '이전 신청이 거절되었거나 아직 등록되어 있지 않습니다. 아래에서 다시 신청할 수 있습니다.');
+      openRequestForm(email);
+    }
+  } catch(e) {
+    showResult('info', '⚠️', '확인 실패', '서버에 연결할 수 없습니다. 잠시 후 다시 시도해 주세요. (' + e.message + ')');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '확인하기';
+  }
+}
+
+function openRequestForm(prefillEmail) {
+  const form = document.getElementById('req-form');
+  form.classList.add('show');
+  if (prefillEmail) {
+    const emailInput = document.getElementById('req-email');
+    if (emailInput && !emailInput.value) emailInput.value = prefillEmail;
+  }
+  ['err-req-name','err-req-email','err-req-consent'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = '';
+  });
+  const btn = document.getElementById('req-submit-btn');
+  btn.disabled = false; btn.textContent = '신청하기';
+}
+
+function cancelRequest() {
+  document.getElementById('req-form').classList.remove('show');
+}
+
+async function submitRequest() {
+  const name      = (document.getElementById('req-name').value    || '').trim();
+  const email     = (document.getElementById('req-email').value   || '').trim();
+  const consented = document.getElementById('req-consent').checked;
+  let valid = true;
+  const setErr = (id, msg) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = msg;
+    if (msg) valid = false;
+  };
+  setErr('err-req-name',    name    ? '' : '성명을 입력해 주세요.');
+  setErr('err-req-email',   email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? '' : '유효한 Gmail 주소를 입력해 주세요.');
+  setErr('err-req-consent', consented ? '' : '개인정보 수집·이용에 동의해 주세요.');
+  if (!valid) return;
+
+  const btn = document.getElementById('req-submit-btn');
+  btn.disabled = true; btn.textContent = '신청 중...';
+  try {
+    const r = await fetch(`${SB_URL}/rest/v1/calendar_access_requests`, {
+      method: 'POST',
+      headers: { 'Content-Type':'application/json', 'apikey':SB_ANON, 'Authorization':'Bearer '+SB_ANON, 'Prefer':'return=representation' },
+      body: JSON.stringify({ name, email, status: 'pending' })
+    });
+    if (!r.ok) {
+      const errBody = await r.json().catch(() => ({}));
+      if (r.status === 409 || errBody?.code === '23505') throw new Error('이미 동일한 이메일로 대기 중인 요청이 있습니다. 관리자 처리를 기다려 주세요.');
+      throw new Error('서버 오류 ' + r.status);
+    }
+    const rows = await r.json();
+    const requestId = rows[0]?.id;
+    if (requestId) {
+      await fetch(`${SB_URL}/rest/v1/privacy_consents`, {
+        method: 'POST',
+        headers: { 'Content-Type':'application/json', 'apikey':SB_ANON, 'Authorization':'Bearer '+SB_ANON, 'Prefer':'return=minimal' },
+        body: JSON.stringify({ request_id: requestId, user_agent: navigator.userAgent.slice(0, 500) })
+      });
+    }
+    document.getElementById('req-form').classList.remove('show');
+    showResult('pending', '⏳', '신청이 완료되었습니다', '관리자가 검토 후 승인하면 공유 캘린더를 이용하실 수 있습니다.');
+  } catch(e) {
+    btn.disabled = false; btn.textContent = '신청하기';
+    setErr('err-req-consent', '신청 실패: ' + e.message);
+  }
+}
+</script>
+</body>
+</html>
