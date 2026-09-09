@@ -222,9 +222,9 @@ html,body{height:100%;
 
 .day-cell{min-height:96px;padding:4px;background:var(--color-card);
   transition:background .1s;cursor:default;vertical-align:top;
-  border-right:1px solid var(--color-border);position:relative;overflow:hidden}
+  border-right:1px solid var(--color-border);position:relative;overflow:visible}
 .day-cell:last-child{border-right:none}
-@media(max-width:600px){.day-cell{height:104px;min-height:unset}}
+@media(max-width:600px){.day-cell{min-height:80px;height:auto}}
 .day-cell.other-month{background:var(--color-bg)}
 .day-cell.other-month .day-num{color:#ccc}
 .day-cell.other-month .evt-dot{opacity:.45;font-size:.68rem;background:var(--g200)!important;color:var(--g500)!important}
