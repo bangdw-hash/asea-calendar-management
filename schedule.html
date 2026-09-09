@@ -1821,7 +1821,7 @@ html,body{height:100%;
 /* ══════════════ CONSTANTS ══════════════ */
 const CAL_ID    = '89cb23c42a75d99697bdd50e11f461e94d330edec941f4bcf4f52dfddaa75553@group.calendar.google.com';
 const CLIENT_ID = '89094526186-ngj72p8cbqrvai06e2uhdiq0n5brrc2b.apps.googleusercontent.com';
-const SCOPES    = 'https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/userinfo.email';
+const SCOPES    = 'https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/drive.appdata';
 const BITLY_TOKEN = '91460e89de2243c5b7d9280c708d43b9ceb44062';
 const SCOPE_RO  = 'https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/userinfo.email';
 const DEPT_CFG_KEY = '__ASEA_DEPT_CFG__';
@@ -6113,6 +6113,20 @@ function changeDensity(dir) {
   saveCalSettingsToDrive();
 }
 
+/* ─── localStorage 캘린더 설정 저장/복원 (Drive 실패 시에도 동작) ─── */
+function _calSettingsKey() { return 'asea_calset_' + (_userEmail || 'anon'); }
+function _saveCalToLocal() {
+  try {
+    localStorage.setItem(_calSettingsKey(), JSON.stringify({
+      userCals: _userCals.map(c => ({ id: c.id, checked: c.checked, userColor: c.userColor })),
+      calOrder: _calOrder,
+    }));
+  } catch(e) {}
+}
+function _loadCalFromLocal() {
+  try { return JSON.parse(localStorage.getItem(_calSettingsKey()) || 'null'); } catch(e) { return null; }
+}
+
 /* ─── Google Drive App Data: cross-device calendar & density sync ─── */
 async function _dsGetFileId() {
   if (_dsFileId) return _dsFileId;
@@ -6128,6 +6142,14 @@ async function _dsGetFileId() {
 }
 
 async function loadCalSettingsFromDrive() {
+  /* ① localStorage 즉시 복원 — Drive API 결과를 기다리지 않아도 동작 */
+  const local = _loadCalFromLocal();
+  if (local && Array.isArray(local.userCals) && local.userCals.length) {
+    _savedCalSettings = local.userCals;
+    if (local.calOrder) _calOrder = local.calOrder;
+    await _autoApplySavedCals();
+  }
+  /* ② Drive 동기화 — scope 있을 때 크로스 디바이스 반영 */
   if (!_token) return;
   try {
     const fileId = await _dsGetFileId();
@@ -6148,10 +6170,14 @@ async function loadCalSettingsFromDrive() {
     if (cfg.calOrder) _calOrder = cfg.calOrder;
     if (Array.isArray(cfg.userCals)) _savedCalSettings = cfg.userCals;
     await _autoApplySavedCals();
+    /* Drive에서 불러온 최신 설정을 localStorage에도 반영 */
+    _saveCalToLocal();
   } catch(e) { console.error('[Drive sync load]', e); }
 }
 
 async function saveCalSettingsToDrive() {
+  /* Always save to localStorage first — works without Drive scope or offline */
+  _saveCalToLocal();
   if (!_token) return;
   try {
     const isMobile = window.matchMedia('(max-width:767px)').matches;
