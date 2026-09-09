@@ -658,7 +658,7 @@ html,body{height:100%;
 .badge-rejected{background:var(--red-lt);color:var(--red);padding:2px 8px;border-radius:12px;font-size:.72rem;font-weight:600;border:none;cursor:pointer}
 
 @media(max-width:600px){
-  :root{--header-h:48px;--toolbar-h:92px}
+  :root{--header-h:48px;--toolbar-h:86px}
   /* header compact */
   .hdr{height:48px;padding:0 12px}
   .hdr-sub{display:none}
@@ -674,19 +674,59 @@ html,body{height:100%;
   .auth-banner{padding:7px 10px;font-size:.76rem;gap:6px}
   .auth-banner-msg{font-size:.74rem;line-height:1.3}
   .auth-banner-btns{gap:5px}
-  /* toolbar — 2-row layout */
+  /* ── 모바일 툴바: 텍스트 전용 무테두리 균일 디자인 ── */
   .toolbar{
     flex-direction:column;align-items:stretch;
-    gap:6px;padding:8px 12px;top:var(--header-h)
+    gap:4px;padding:6px 12px 8px;top:var(--header-h)
   }
-  .cal-nav{justify-content:center;gap:6px}
-  .cal-title{font-size:1.1rem;min-width:auto;font-weight:700}
-  .nav-btn{width:38px;height:38px;font-size:1.15rem;border-radius:var(--r)}
-  .today-btn{height:38px;padding:0 14px;font-size:.82rem;font-weight:600;border-width:1.5px}
-  .toolbar-right{width:100%;justify-content:center;gap:6px}
-  .view-toggle{flex:1;border-radius:var(--r);border-width:1.5px}
-  .view-btn{flex:1;padding:0;height:38px;font-size:.82rem;font-weight:600}
-  #output-drop-btn{height:38px;padding:0 14px;font-size:.82rem;font-weight:600;border-width:1.5px;flex-shrink:0}
+  /* 행1 — 월 네비게이션 */
+  .cal-nav{justify-content:center;gap:4px}
+  .cal-title{font-size:1.05rem;min-width:auto;font-weight:700}
+  .nav-btn{
+    width:36px;height:36px;font-size:1.2rem;
+    border:none;background:transparent;
+    color:var(--color-text);border-radius:50%
+  }
+  .nav-btn:hover{background:var(--g100)}
+  .today-btn{
+    height:36px;padding:0 14px;font-size:.8rem;font-weight:700;
+    border:none;background:var(--color-accent-lt);color:var(--color-accent);
+    border-radius:18px
+  }
+  /* 행2 — 뷰 + 기능 버튼 */
+  .toolbar-right{width:100%;justify-content:center;gap:3px;
+    border-top:1px solid var(--color-border);padding-top:6px}
+  /* 뷰 토글: 세그먼트 컨트롤 */
+  .view-toggle{
+    flex:none;border:none;overflow:hidden;
+    background:var(--g100);border-radius:18px;
+    padding:2px;gap:0
+  }
+  .view-btn{
+    flex:1;min-width:40px;padding:0 12px;height:32px;
+    border:none;font-size:.78rem;font-weight:700;
+    border-radius:16px;background:transparent;
+    color:var(--color-text-sec);transition:background .15s,color .15s,box-shadow .15s
+  }
+  .view-btn.active{
+    background:var(--color-card);color:var(--color-accent);
+    box-shadow:0 1px 4px rgba(0,0,0,.13)
+  }
+  /* 기능 버튼: 아이콘 숨김, 텍스트만, 무테두리 */
+  .toolbar-right .tb-btn{
+    border:none;background:transparent;height:36px;
+    padding:0 7px;font-size:.78rem;font-weight:600;
+    color:var(--color-text-sec);border-radius:var(--r)
+  }
+  .toolbar-right .tb-btn:hover{
+    background:var(--color-accent-lt);color:var(--color-accent)
+  }
+  .toolbar-right .tb-btn .tb-ico{display:none}
+  /* 일정 출력 드롭다운 버튼 */
+  #output-drop-btn{
+    height:36px;padding:0 7px;font-size:.78rem;font-weight:600;
+    border:none;background:transparent;flex-shrink:0
+  }
   /* hide add/print in toolbar — use FAB */
   #hdr-add-btn,button[onclick="printMonth()"]{display:none}
   .btn-sm{padding:4px 8px;font-size:.7rem}
