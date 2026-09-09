@@ -734,6 +734,50 @@ html,body{height:100%;
   .cal-inner{min-width:1200px}
   .week-table{min-width:1100px}
   .evt-dot{font-size:.72rem;padding:2px 5px}
+
+  /* ── 모바일 무테두리: 부서 필터 세그먼트 컨트롤 ── */
+  .dft-grp-toggle{
+    border:none;background:var(--g100);
+    border-radius:18px;padding:2px;gap:0
+  }
+  .dft-chip{
+    border:none;border-right:none;
+    border-radius:16px;background:transparent;
+    padding:5px 12px;
+  }
+  .dft-chip.active{
+    background:var(--color-card);color:var(--color-accent);
+    box-shadow:0 1px 4px rgba(0,0,0,.13)
+  }
+  .dft-chip.all-chip.active{
+    background:var(--color-card);color:var(--color-text-sec)
+  }
+  .dft-chip.grp-chip.active{
+    background:var(--color-card);color:#374151
+  }
+  /* 하위 부서 칩: 무테두리 배경 필 */
+  .dft-sub-chip{
+    border:none;background:var(--g100);
+    border-radius:16px;padding:4px 12px
+  }
+  .dft-sub-chip:hover{border:none;background:var(--color-accent-lt);color:var(--color-accent)}
+  .dft-sub-chip.active{background:var(--color-accent);color:#fff;border:none}
+
+  /* ── 캘린더 컨테이너: 외곽 테두리·쉐도우 제거 ── */
+  .cal-container{border:none;box-shadow:none;border-radius:0}
+
+  /* ── 엑셀·출력 모달 버튼: 무테두리 배경 ── */
+  .excel-month-btn{border:none;background:var(--g100)}
+  .excel-month-btn:hover{border:none;background:var(--color-accent-lt);color:var(--color-accent)}
+  .excel-month-btn.selected{border:none;background:var(--color-accent);color:#fff}
+  .excel-mode-btn{border:none;background:var(--g100)}
+  .excel-mode-btn.active{border:none;background:var(--color-accent);color:#fff}
+  .excel-year-nav{border:none;background:var(--g100);border-radius:10px}
+  .excel-year-nav:hover{background:var(--color-accent-lt)}
+
+  /* ── 모달 내 secondary 버튼: 무테두리 ── */
+  .btn-secondary{border:none;background:var(--g100);color:var(--color-text-sec)}
+  .btn-secondary:hover{background:var(--color-accent-lt);color:var(--color-accent)}
 }
 @media(max-width:480px){
   .btn{padding:5px 8px;font-size:.72rem}
@@ -777,6 +821,24 @@ html,body{height:100%;
   .day-cell.other-month .evt-dot {
     color: var(--g400) !important;
     opacity: .7 !important;
+  }
+
+  /* ── 480px 이하: 모달 인풋 iOS 스타일 라운드 ── */
+  .modal input[type="text"],
+  .modal input[type="date"],
+  .modal input[type="datetime-local"],
+  .modal input[type="time"],
+  .modal textarea,
+  .modal select {
+    border-radius:12px;
+    border:1px solid var(--color-border);
+    background:var(--g100)
+  }
+  .modal input:focus,
+  .modal textarea:focus,
+  .modal select:focus {
+    background:var(--color-card);
+    border-color:var(--color-accent)
   }
 }
 
