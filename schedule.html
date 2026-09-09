@@ -758,7 +758,7 @@ html,body{height:100%;
   /* 하위 부서 칩: 무테두리 배경 필 */
   .dft-sub-chip{
     border:none;background:var(--g100);
-    border-radius:var(--r-mobile);padding:4px 12px
+    border-radius:12px;padding:4px 12px
   }
   .dft-sub-chip:hover{border:none;background:var(--color-accent-lt);color:var(--color-accent)}
   .dft-sub-chip.active{background:var(--color-accent);color:#fff;border:none}
@@ -1930,7 +1930,7 @@ let _customDepts = [];
 let _deptCfgEventId = null;
 
 // 부서 정렬 순서
-const DEPT_ORDER = ['기획','교육','행정','입학','정비','안전','보안','관광','국방','군사','기종','무인','비행','평생'];
+const DEPT_ORDER = ['기획','교육','행정','입학','정비','안전','보안','관광','국방','군사','기종','무인','비행','평생','위탁'];
 function _deptOrderIdx(summary) {
   const d = parseDept(summary);
   if (!d) return DEPT_ORDER.length;
@@ -1963,6 +1963,7 @@ const DEPARTMENTS = [
   {name:'무인항공교육원',   prefix:'무인'},
   {name:'비행교육원',       prefix:'비행'},
   {name:'평생교육원',       prefix:'평생'},
+  {name:'위탁교육',         prefix:'위탁'},
 ];
 
 const WORK_CATEGORIES = [
@@ -2032,7 +2033,7 @@ let _driveAuthResolve = null;      // resolves silent Drive scope upgrade promis
 const DEPT_GROUPS = {
   '운영부': ['기획','교육','행정','입학'],
   '계열':   ['정비','안전','관광','보안','국방'],
-  '부설':   ['군사','기종','무인','비행','평생'],
+  '부설':   ['군사','기종','무인','비행','평생','위탁'],
 };
 let _curDate    = new Date();
 let _view       = 'month';
@@ -3265,6 +3266,7 @@ function _hdrOutsideClick(e) {
   if (!d) { document.removeEventListener('click', _hdrOutsideClick); return; }
   /* 드롭다운 내부 클릭(입력칸 포함)은 닫지 않음 */
   if (d.contains(e.target)) return;
+  e.stopPropagation();
   d.hidden = true;
   document.removeEventListener('click', _hdrOutsideClick);
 }
@@ -4746,7 +4748,7 @@ ${evtContext}
 【일정 제목 머릿말 규칙】
 - 반드시 [부서] 또는 [부서/업무유형] 형식으로 시작해야 합니다.
 - 예: [행정/계약] 외주업체 계약서 서명, [기획/행사] 입학식, [교육/연수] 신입직원 연수
-- 부서 약어: 기획, 교육, 행정, 입학, 정비, 안전, 보안, 관광, 국방, 군사, 기종, 무인, 비행, 평생
+- 부서 약어: 기획, 교육, 행정, 입학, 정비, 안전, 보안, 관광, 국방, 군사, 기종, 무인, 비행, 평생, 위탁
 - 업무유형 약어: 행사, 회의, 시험, 계약, 실습, 교육, 채용, 홍보, 예산, 보고, 점검, 출장, 졸업, 입학, 인증, 구매, 시설, 연구, 현장, 기획, 상담, 복지, 자격, 공지, 신청, 심사, 위탁, 성과, 비행, 정비, 안전, 협약
 - 내용을 분석하여 가장 적합한 부서·업무유형을 반드시 추론하고 [부서/업무유형] 머릿말을 항상 제목에 포함하세요
 - 부서명이 명확하지 않아도 내용과 관련 있는 부서를 선택하여 포함시키세요 (예: 시험·교육 → [교육/시험], 행사·식 → [기획/행사], 정비·점검 → [정비/점검])
