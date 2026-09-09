@@ -1924,6 +1924,8 @@ let _userCalEvts = []; // fetched events from user's calendars
 let _calOrder   = 'school-first'; // 'school-first' | 'my-first'
 let _savedCalSettings = []; // Drive-persisted cal settings [{id, checked, userColor}]
 let _dsFileId   = null;     // cached Drive App Data file id
+let _tokenHasDriveAppdata = false; // true when current token has drive.appdata scope
+let _driveAuthResolve = null;      // resolves silent Drive scope upgrade promise
 
 // 그룹 → 부서 매핑
 const DEPT_GROUPS = {
@@ -1965,8 +1967,11 @@ function _handleToken(resp) {
   _token = resp.access_token;
   // 실제 부여된 scope로 쓰기 권한 판단 (요청 scope가 아님)
   const grantedScope = resp.scope || _lastScope || '';
-  const CAL_WRITE = 'https://www.googleapis.com/auth/calendar';
-  _tokenHasWrite = grantedScope.split(/\s+/).includes(CAL_WRITE);
+  const CAL_WRITE    = 'https://www.googleapis.com/auth/calendar';
+  const DRIVE_APPDATA = 'https://www.googleapis.com/auth/drive.appdata';
+  const scopeList    = grantedScope.split(/\s+/);
+  _tokenHasWrite = scopeList.includes(CAL_WRITE);
+  _tokenHasDriveAppdata = scopeList.includes(DRIVE_APPDATA);
   // 명시적 로그인 시 쓰기 scope를 요청했으나 읽기 전용만 부여된 경우 → 재동의 유도
   if (_pendingCb && !_tokenHasWrite && _lastScope && !_lastScope.includes('readonly')) {
     _token = null;
@@ -1980,10 +1985,13 @@ function _handleToken(resp) {
       s.setItem('asea_gtoken', _token);
       s.setItem('asea_gtoken_exp', String(expiry));
       s.setItem('asea_gtoken_write', _tokenHasWrite ? '1' : '0');
+      s.setItem('asea_gtoken_drive', _tokenHasDriveAppdata ? '1' : '0');
     });
   } catch(e){}
   _scheduleRefresh((resp.expires_in || 3600) - 90);
   if (_pendingCb) { _pendingCb(true); _pendingCb = null; }
+  /* Drive scope 업그레이드 대기 중이었으면 결과 전달 */
+  if (_driveAuthResolve) { const r = _driveAuthResolve; _driveAuthResolve = null; r(_tokenHasDriveAppdata); }
 }
 
 let _refreshTimer = null;
@@ -1997,6 +2005,19 @@ async function _silentRefresh() {
   try { _tokenClient.requestAccessToken({ prompt: '' }); } catch(e) {}
 }
 
+/* drive.appdata scope 없으면 prompt:'' 로 조용히 재인증 — 최대 8초 대기 */
+async function _ensureDriveScope() {
+  if (_tokenHasDriveAppdata) return true;
+  if (!_tokenClient) { await _ensureClient(); _initTokenClient(SCOPES); }
+  if (!_tokenClient || _pendingCb || _driveAuthResolve) return false;
+  return new Promise(resolve => {
+    const t = setTimeout(() => { _driveAuthResolve = null; resolve(false); }, 8000);
+    _driveAuthResolve = ok => { clearTimeout(t); resolve(ok); };
+    try { _tokenClient.requestAccessToken({ prompt: '' }); }
+    catch(e) { clearTimeout(t); _driveAuthResolve = null; resolve(false); }
+  });
+}
+
 function _tryRestoreToken() {
   try {
     for (const s of [sessionStorage, localStorage]) {
@@ -2005,6 +2026,7 @@ function _tryRestoreToken() {
       if (t && e > Date.now() + 300000) {
         _token = t;
         _tokenHasWrite = s.getItem('asea_gtoken_write') === '1';
+        _tokenHasDriveAppdata = s.getItem('asea_gtoken_drive') === '1';
         if (!_userEmail) { try { _userEmail = localStorage.getItem('asea_gtoken_email') || ''; } catch(_) {} }
         _scheduleRefresh((e - Date.now()) / 1000 - 90);
         return true;
@@ -6158,8 +6180,12 @@ async function loadCalSettingsFromDrive() {
     if (local.calOrder) _calOrder = local.calOrder;
     await _autoApplySavedCals();
   }
-  /* ② Drive 동기화 — scope 있을 때 크로스 디바이스 반영 */
+  /* ② Drive 동기화 — scope 확보 후 크로스 디바이스 반영 */
   if (!_token) return;
+  if (!_tokenHasDriveAppdata) {
+    const granted = await _ensureDriveScope();
+    if (!granted) return;
+  }
   try {
     const fileId = await _dsGetFileId();
     if (!fileId) return;
@@ -6185,9 +6211,21 @@ async function loadCalSettingsFromDrive() {
 }
 
 async function saveCalSettingsToDrive() {
-  /* Always save to localStorage first — works without Drive scope or offline */
+  /* ① localStorage 즉시 저장 — 오프라인/scope 없이도 동작 */
   _saveCalToLocal();
   if (!_token) return;
+
+  /* ② drive.appdata scope 확보 — 없으면 조용히 재인증 시도 */
+  if (!_tokenHasDriveAppdata) {
+    const granted = await _ensureDriveScope();
+    if (!granted) return; // scope 확보 불가 — localStorage만으로 동작
+  }
+
+  /* ③ Drive App Data 저장 */
+  await _doDriveSave();
+}
+
+async function _doDriveSave() {
   try {
     const isMobile = window.matchMedia('(max-width:767px)').matches;
     let existing = {};
@@ -6221,13 +6259,13 @@ async function saveCalSettingsToDrive() {
       ? `https://www.googleapis.com/upload/drive/v3/files/${existingId}?uploadType=multipart`
       : 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart';
     const r = await fetch(url, { method, headers: { Authorization: 'Bearer ' + _token }, body: form });
-    if (r.ok) { const d = await r.json(); if (d.id) _dsFileId = d.id; }
-    else {
-      const status = r.status;
-      if (status === 401 || status === 403) {
-        /* drive.appdata 권한 없음 — 재로그인 유도 */
-        showToast('크로스 단말기 동기화를 위해 재로그인이 필요합니다. 로그아웃 후 다시 로그인해 주세요.', 'error');
-      }
+    if (r.ok) {
+      const d = await r.json();
+      if (d.id) _dsFileId = d.id;
+    } else if (r.status === 401 || r.status === 403) {
+      /* scope 플래그 초기화 — 다음 saveCalSettingsToDrive 호출 시 재인증 시도 */
+      _tokenHasDriveAppdata = false;
+      try { [localStorage, sessionStorage].forEach(s => s.setItem('asea_gtoken_drive', '0')); } catch(e) {}
     }
   } catch(e) { console.error('[Drive sync save]', e); }
 }
