@@ -466,6 +466,7 @@ html,body{height:100%;
 @media(max-width:480px){
   .ai-panel{bottom:84px;right:12px;width:calc(100vw - 24px)}
   .ai-fab{right:80px;bottom:20px}
+  .fab{bottom:20px}
 }
 
 /* ── AI EVENT CONFIRM OVERLAY ── */
@@ -838,11 +839,19 @@ html,body{height:100%;
   border:1.5px solid var(--color-border);border-radius:var(--r);cursor:pointer;
   background:#fff;text-align:left;transition:border-color .15s,background .15s;width:100%}
 .sub-option:hover{border-color:var(--color-accent);background:var(--color-accent-lt)}
+/* Header nav buttons — borderless text-link style (header only) */
+.hdr-menu-items .tb-btn{border:none;background:transparent;height:28px;box-sizing:border-box;
+  color:var(--color-accent);font-size:.75rem;font-weight:600;padding:0 7px;
+  display:inline-flex;align-items:center;gap:4px;border-radius:6px;white-space:nowrap;
+  cursor:pointer;transition:background .13s,color .13s;text-decoration:none}
+.hdr-menu-items .tb-btn:hover{background:var(--color-accent-lt);color:var(--color-accent-dk)}
+.hdr-menu-items .tb-btn .tb-ico{width:12px;height:12px}
+
 /* Header email check widget */
-.hdr-email-chk-wrap{display:flex;align-items:center;gap:5px;background:var(--color-bg);border:1.5px solid var(--color-border);border-radius:8px;padding:0 8px 0 10px;height:34px;box-sizing:border-box}
-.hdr-email-chk-label{font-size:.72rem;font-weight:700;color:var(--color-text-sec);white-space:nowrap;flex-shrink:0}
-.hdr-email-chk-input{width:160px;height:24px;padding:0 6px;font-size:.78rem;border:none;background:transparent;color:var(--color-text);outline:none;font-family:inherit}
-.hdr-email-chk-btn{height:24px;padding:0 8px;font-size:.73rem;font-weight:700;background:var(--color-accent);color:#fff;border:none;border-radius:5px;cursor:pointer;white-space:nowrap;flex-shrink:0;transition:background .15s}
+.hdr-email-chk-wrap{display:flex;align-items:center;gap:5px;background:var(--color-bg);border:1.5px solid var(--color-border);border-radius:7px;padding:0 7px 0 9px;height:28px;box-sizing:border-box}
+.hdr-email-chk-label{font-size:.7rem;font-weight:700;color:var(--color-text-sec);white-space:nowrap;flex-shrink:0}
+.hdr-email-chk-input{width:150px;height:20px;padding:0 5px;font-size:.75rem;border:none;background:transparent;color:var(--color-text);outline:none;font-family:inherit}
+.hdr-email-chk-btn{height:20px;padding:0 7px;font-size:.7rem;font-weight:700;background:var(--color-accent);color:#fff;border:none;border-radius:4px;cursor:pointer;white-space:nowrap;flex-shrink:0;transition:background .15s}
 .hdr-email-chk-btn:hover{background:var(--color-accent-dk)}
 .hdr-email-result{font-size:.72rem;white-space:nowrap;flex-shrink:0;max-width:160px;overflow:hidden;text-overflow:ellipsis}
 .hdr-dropdown-email-chk{padding:10px 14px 8px;border-bottom:1px solid var(--color-border);margin-bottom:4px}
@@ -1736,6 +1745,7 @@ html,body{height:100%;
 const CAL_ID    = '89cb23c42a75d99697bdd50e11f461e94d330edec941f4bcf4f52dfddaa75553@group.calendar.google.com';
 const CLIENT_ID = '89094526186-ngj72p8cbqrvai06e2uhdiq0n5brrc2b.apps.googleusercontent.com';
 const SCOPES    = 'https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/userinfo.email';
+const BITLY_TOKEN = '91460e89de2243c5b7d9280c708d43b9ceb44062';
 const SCOPE_RO  = 'https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/userinfo.email';
 const DEPT_CFG_KEY = '__ASEA_DEPT_CFG__';
 let _customDepts = [];
@@ -3339,18 +3349,45 @@ function linkifyDesc(text) {
   }).join('');
 }
 
-function shareEvtFromDetail() {
+async function _shortenUrl(longUrl) {
+  if (!BITLY_TOKEN) return null;
+  try {
+    const r = await fetch('https://api-ssl.bitly.com/v4/shorten', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + BITLY_TOKEN, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ long_url: longUrl, domain: 'bit.ly' })
+    });
+    if (!r.ok) return null;
+    const data = await r.json();
+    return data.link || null;
+  } catch { return null; }
+}
+
+async function shareEvtFromDetail() {
   if (!_detailEvt) return;
   const ev = _detailEvt;
   const start = _gcalDate(ev.start);
   const end   = _gcalDate(ev.end) || start;
   const params = new URLSearchParams({ action:'TEMPLATE', text: ev.summary || '', dates: start + '/' + end });
   if (ev.location) params.set('location', ev.location);
-  const url = 'https://calendar.google.com/calendar/render?' + params.toString();
-  const copy = () => showToast('클립보드에 공유링크가 복사되었습니다.');
+  const longUrl = 'https://calendar.google.com/calendar/render?' + params.toString();
+
+  const btn = document.getElementById('detail-share-btn');
+  const origHtml = btn ? btn.innerHTML : '';
+  if (btn) { btn.disabled = true; btn.textContent = '생성 중…'; }
+
+  const short = await _shortenUrl(longUrl);
+  const url = short || longUrl;
+
+  if (btn) { btn.disabled = false; btn.innerHTML = origHtml; }
+
+  const doCopy = () => {
+    if (short) showToast(`단축링크 복사됨 → ${url}`);
+    else showToast('클립보드에 공유링크가 복사되었습니다.');
+  };
   if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(url).then(copy).catch(() => { _fallbackCopy(url); copy(); });
-  } else { _fallbackCopy(url); copy(); }
+    navigator.clipboard.writeText(url).then(doCopy).catch(() => { _fallbackCopy(url); doCopy(); });
+  } else { _fallbackCopy(url); doCopy(); }
 }
 
 function _fallbackCopy(text) {
@@ -5512,16 +5549,18 @@ async function ctxDelete() {
   const id = _ctxEvtId; closeEvtCtxMenu();
   if (id) await deleteEvtById(id);
 }
-function ctxShare() {
+async function ctxShare() {
   const ev = _events.find(x => x.id === _ctxEvtId);
   closeEvtCtxMenu();
   if (!ev) return;
-  const url = ev.htmlLink || `https://calendar.google.com/calendar/event?eid=${btoa(ev.id)}`;
+  const longUrl = ev.htmlLink || `https://calendar.google.com/calendar/event?eid=${btoa(ev.id)}`;
+  const short = await _shortenUrl(longUrl);
+  const url = short || longUrl;
   if (navigator.share) {
     navigator.share({ title: ev.summary || '일정', url }).catch(() => {});
   } else {
     try {
-      navigator.clipboard.writeText(url).then(() => showToast('공유 링크가 클립보드에 복사되었습니다'));
+      navigator.clipboard.writeText(url).then(() => showToast(short ? `단축링크 복사됨 → ${url}` : '공유 링크가 클립보드에 복사되었습니다'));
     } catch(_) {
       showToast('링크: ' + url);
     }
