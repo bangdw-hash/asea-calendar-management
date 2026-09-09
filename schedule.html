@@ -711,6 +711,31 @@ html,body{height:100%;
   .overlay.show .modal{transform:translateY(0)}
   .admin-table{font-size:.72rem}
   .admin-table th,.admin-table td{padding:5px 6px}
+
+  /* 모바일 텍스트 전용 이벤트 칩 — 배경 박스 제거, 선+텍스트만 */
+  .evt-dot {
+    background: transparent !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    border-top: none !important;
+    border-right: none !important;
+    border-bottom: none !important;
+    border-left-width: 2px !important;
+    padding: 0 2px 0 5px !important;
+    margin-top: 2px !important;
+  }
+  .evt-dot.school-evt {
+    color: var(--g800) !important;
+  }
+  /* 강의실 예약 연동 칩: 배경 없애면 흰 글자 안 보임 — 색상 변수로 대응 */
+  .evt-dot.rv-linked {
+    color: var(--rv-color, var(--primary)) !important;
+    border-left: 2px solid var(--rv-color, var(--primary)) !important;
+  }
+  .day-cell.other-month .evt-dot {
+    color: var(--g500) !important;
+    opacity: .6 !important;
+  }
 }
 
 /* ── FEATURE REQUEST PANEL ── */
@@ -2448,7 +2473,7 @@ function renderMonth(wrap) {
         const draggable = (_token && _tokenHasWrite && !ev._userCal) ? ' draggable="true"' : '';
         return `<span class="evt-dot-wrap"><span class="evt-dot${schoolCls}"${chipStyle}${draggable} data-evtid="${ev.id}" onclick="evtChipClick(event,this,'${escId(ev.id)}')" data-tip="${esc(ev.summary||'')}">${esc(ev.summary||'(제목 없음)')}</span>${qBtns}</span>`;
       }).join('');
-      const linkedHtml = (_linkedItems[dateKey]||[]).map(li=>`<span class="evt-dot-wrap"><span class="evt-dot rv-linked" style="background:${li.classroom_color||'#1A73E8'}" title="${esc(li.label)}">${esc(li.label)}</span></span>`).join('');
+      const linkedHtml = (_linkedItems[dateKey]||[]).map(li=>`<span class="evt-dot-wrap"><span class="evt-dot rv-linked" style="background:${li.classroom_color||'#1A73E8'};--rv-color:${li.classroom_color||'#1A73E8'}" title="${esc(li.label)}">${esc(li.label)}</span></span>`).join('');
       const moreHtml = moreCount ? `<span class="evt-more-chip" onclick="event.stopPropagation();showDayEvts(${y},${m},${cell.d})">+${moreCount} 더보기</span>` : '';
       gridHtml += `<div class="${cell.cls}${holiday?' holiday':''}${allCellEvts.length||linkedHtml?' has-events':''}" data-y="${y}" data-m="${m}" data-d="${cell.d}">${numEl}${dotsHtml}${linkedHtml}${moreHtml}</div>`;
     }
@@ -6130,6 +6155,31 @@ renderCalendar();
 updateUserArea(); // 즉시 로그인 버튼 표시 (boot 완료 후 다시 갱신)
 boot();
 loadLinkedItems(); // 강의실 예약 연동 항목 로드
+
+/* 모바일 가상 키보드 — 모달 입력칸이 키보드 뒤로 숨는 버그 수정
+   visualViewport resize 시 모달 max-height 재계산 + 포커스된 입력 ScrollIntoView */
+(function() {
+  function _onVpResize() {
+    const vp = window.visualViewport;
+    const overlay = document.querySelector('.overlay.show');
+    if (!overlay) return;
+    const modal = overlay.querySelector('.modal');
+    if (!modal) return;
+    modal.style.maxHeight = Math.floor(vp.height * 0.97) + 'px';
+  }
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', _onVpResize);
+  }
+  // 포커스 시 모달 내 입력칸을 뷰포트 안으로 스크롤
+  document.addEventListener('focusin', function(e) {
+    if (window.innerWidth > 600) return;
+    var el = e.target;
+    if (el.tagName !== 'INPUT' && el.tagName !== 'TEXTAREA' && el.tagName !== 'SELECT') return;
+    var modal = el.closest('.modal');
+    if (!modal) return;
+    setTimeout(function() { el.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); }, 320);
+  });
+})();
 
 
 checkSharedEvt();
