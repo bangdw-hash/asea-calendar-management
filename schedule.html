@@ -2412,7 +2412,7 @@ function renderMonth(wrap) {
           const isSchool = ev.description && ev.description.includes('[학교일정]');
           const schoolCls = isSchool ? ' school-evt' : '';
           const chipStyle = _evtChipStyle(ev);
-          const editDelBtns = (_token && _tokenHasWrite && !ev._userCal)
+          const editDelBtns = (_token && (_tokenHasWrite || ev._userCal?.calId))
             ? `<button class="quick-edit" onclick="event.stopPropagation();editEvtById('${escId(ev.id)}')" title="수정"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2.5l2.5 2.5-7 7H2v-2.5z"/><path d="M7.5 4l2.5 2.5"/></svg></button><button class="quick-del" onclick="event.stopPropagation();deleteEvtById('${escId(ev.id)}')" title="삭제"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="1" y1="4" x2="13" y2="4"/><path d="M5 4V2.5h4V4"/><rect x="2" y="4" width="10" height="8.5" rx="1"/></svg></button>`
             : '';
           const qBtns = `<span class="evt-quick">${editDelBtns}<button class="quick-share" onclick="event.stopPropagation();quickShareEvt('${escId(ev.id)}')" title="공유 링크 복사"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="10.5" cy="2.5" r="1.5"/><circle cx="10.5" cy="11.5" r="1.5"/><circle cx="3.5" cy="7" r="1.5"/><line x1="9" y1="3.3" x2="5" y2="6.2"/><line x1="5" y1="7.8" x2="9" y2="10.7"/></svg></button></span>`;
@@ -2429,7 +2429,7 @@ function renderMonth(wrap) {
         const isSchool = ev.description && ev.description.includes('[학교일정]');
         const schoolCls = isSchool ? ' school-evt' : '';
         const chipStyle = _evtChipStyle(ev);
-        const editDelBtns = (_token && _tokenHasWrite && !ev._userCal)
+        const editDelBtns = (_token && (_tokenHasWrite || ev._userCal?.calId))
           ? `<button class="quick-edit" onclick="event.stopPropagation();editEvtById('${escId(ev.id)}')" title="수정"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2.5l2.5 2.5-7 7H2v-2.5z"/><path d="M7.5 4l2.5 2.5"/></svg></button><button class="quick-del" onclick="event.stopPropagation();deleteEvtById('${escId(ev.id)}')" title="삭제"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="1" y1="4" x2="13" y2="4"/><path d="M5 4V2.5h4V4"/><rect x="2" y="4" width="10" height="8.5" rx="1"/></svg></button>`
           : '';
         const qBtns = `<span class="evt-quick">${editDelBtns}<button class="quick-share" onclick="event.stopPropagation();quickShareEvt('${escId(ev.id)}')" title="공유 링크 복사"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="10.5" cy="2.5" r="1.5"/><circle cx="10.5" cy="11.5" r="1.5"/><circle cx="3.5" cy="7" r="1.5"/><line x1="9" y1="3.3" x2="5" y2="6.2"/><line x1="5" y1="7.8" x2="9" y2="10.7"/></svg></button></span>`;
@@ -2881,21 +2881,24 @@ async function openEventModalOnDates(dates) {
 }
 
 function editEvtById(id) {
-  const ev = _events.find(x => x.id === id);
+  const ev = _events.find(x => x.id === id) || _userCalEvts.find(x => x.id === id);
   if (ev) openEventModal(ev);
 }
 async function deleteEvtById(id) {
-  const ev = _events.find(x => x.id === id);
+  const ev = _events.find(x => x.id === id) || _userCalEvts.find(x => x.id === id);
   if (!ev) return;
-  if (!_token || !_tokenHasWrite) {
+  const isUserCal = !!ev._userCal?.calId;
+  if (!_token || (!isUserCal && !_tokenHasWrite)) {
     const ok = await doLogin(SCOPES);
     if (!ok) return;
   }
   if (!confirm(`"${ev.summary || '(제목 없음)'}" 일정을 삭제하시겠습니까?`)) return;
   try {
-    await apiFetch('DELETE', `/calendars/${encodeURIComponent(CAL_ID)}/events/${encodeURIComponent(id)}`);
+    const delCalId = isUserCal ? ev._userCal.calId : CAL_ID;
+    await apiFetch('DELETE', `/calendars/${encodeURIComponent(delCalId)}/events/${encodeURIComponent(id)}`);
     showToast('일정이 삭제되었습니다.');
-    _evCacheClear(); await fetchEvents(); renderCalendar();
+    if (isUserCal) { _userCalEvts = _userCalEvts.filter(e => e.id !== id); renderCalendar(); }
+    else { _evCacheClear(); await fetchEvents(); renderCalendar(); }
   } catch(e) { showToast('삭제 실패: ' + e.message, 'error'); }
 }
 
@@ -3299,13 +3302,16 @@ async function saveEvent() {
   document.getElementById('evt-save-label').textContent = '저장 중...';
   document.getElementById('evt-error').textContent = '';
   try {
+    const _saveCalId = _editingEvt?._userCal?.calId || CAL_ID;
+    const _isUserCalEdit = !!_editingEvt?._userCal?.calId;
     if (_editingEvt)
-      await apiFetch('PUT', `/calendars/${encodeURIComponent(CAL_ID)}/events/${encodeURIComponent(_editingEvt.id)}`, body);
+      await apiFetch('PUT', `/calendars/${encodeURIComponent(_saveCalId)}/events/${encodeURIComponent(_editingEvt.id)}`, body);
     else
       await apiFetch('POST', `/calendars/${encodeURIComponent(CAL_ID)}/events`, body);
     showToast(_editingEvt ? '일정이 수정되었습니다.' : '일정이 추가되었습니다.');
     closeModal('event-overlay'); closeEvtPopup();
-    _evCacheClear(); await fetchEvents(); renderCalendar();
+    if (_isUserCalEdit) { await _refreshUserCalEvts(); renderCalendar(); }
+    else { _evCacheClear(); await fetchEvents(); renderCalendar(); }
   } catch(e) {
     const msg = e.message || '';
     if (msg.toLowerCase().includes('insufficient') || msg.toLowerCase().includes('scope')) {
@@ -3330,16 +3336,20 @@ async function saveEvent() {
 
 async function deleteCurrentEvent() {
   if (!_editingEvt) return;
-  if (!_token || !_tokenHasWrite) {
+  const _isUserCalDel = !!_editingEvt._userCal?.calId;
+  if (!_token || (!_isUserCalDel && !_tokenHasWrite)) {
     const ok = await doLogin(SCOPES);
     if (!ok) return;
   }
   if (!confirm(`"${_editingEvt.summary || '(제목 없음)'}" 일정을 삭제하시겠습니까?`)) return;
   try {
-    await apiFetch('DELETE', `/calendars/${encodeURIComponent(CAL_ID)}/events/${encodeURIComponent(_editingEvt.id)}`);
+    const _delCalId = _isUserCalDel ? _editingEvt._userCal.calId : CAL_ID;
+    const _delId = _editingEvt.id;
+    await apiFetch('DELETE', `/calendars/${encodeURIComponent(_delCalId)}/events/${encodeURIComponent(_delId)}`);
     showToast('일정이 삭제되었습니다.');
     closeModal('event-overlay'); closeEvtPopup();
-    _evCacheClear(); await fetchEvents(); renderCalendar();
+    if (_isUserCalDel) { _userCalEvts = _userCalEvts.filter(e => e.id !== _delId); renderCalendar(); }
+    else { _evCacheClear(); await fetchEvents(); renderCalendar(); }
   } catch(e) {
     const msg = e.message || '';
     if (msg.toLowerCase().includes('insufficient') || msg.toLowerCase().includes('scope')) {
@@ -5465,7 +5475,7 @@ async function applyMyCal() {
       const data = await apiFetch('GET', `/calendars/${encodeURIComponent(cal.id)}/events?${qs}`);
       const items = (data?.items || []).map(ev => ({
         ...ev,
-        _userCal: { summary: cal.summary, color: cal.userColor }
+        _userCal: { summary: cal.summary, color: cal.userColor, calId: cal.id }
       }));
       allEvts.push(...items);
     } catch(e) {
@@ -5952,7 +5962,7 @@ async function loadCalSettingsFromDrive() {
     if (cfg.calOrder) _calOrder = cfg.calOrder;
     if (Array.isArray(cfg.userCals)) _savedCalSettings = cfg.userCals;
     await _autoApplySavedCals();
-  } catch(e) {}
+  } catch(e) { console.error('[Drive sync load]', e); }
 }
 
 async function saveCalSettingsToDrive() {
@@ -5972,9 +5982,12 @@ async function saveCalSettingsToDrive() {
     const cfg = Object.assign({}, existing, {
       [isMobile ? 'densityMobile' : 'densityPc']: _density,
       calOrder: _calOrder,
-      userCals: _userCals.map(c => ({ id: c.id, checked: c.checked, userColor: c.userColor })),
       savedAt: new Date().toISOString()
     });
+    // Only overwrite userCals when we have actual data — never clobber saved settings with an empty array
+    if (_userCals.length > 0) {
+      cfg.userCals = _userCals.map(c => ({ id: c.id, checked: c.checked, userColor: c.userColor }));
+    }
     const blob = new Blob([JSON.stringify(cfg)], { type: 'application/json' });
     const meta = JSON.stringify(existingId
       ? { name: 'asea-cal-settings.json' }
@@ -5988,7 +6001,25 @@ async function saveCalSettingsToDrive() {
       : 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart';
     const r = await fetch(url, { method, headers: { Authorization: 'Bearer ' + _token }, body: form });
     if (r.ok) { const d = await r.json(); if (d.id) _dsFileId = d.id; }
-  } catch(e) {}
+    else { console.error('[Drive sync save] HTTP', r.status, await r.text().catch(()=>'')); }
+  } catch(e) { console.error('[Drive sync save]', e); }
+}
+
+async function _refreshUserCalEvts() {
+  const selected = _userCals.filter(c => c.checked);
+  if (!selected.length) { _userCalEvts = []; return; }
+  const y = _curDate.getFullYear(), mo = _curDate.getMonth();
+  const timeMin = new Date(y, mo - 1, 1).toISOString();
+  const timeMax = new Date(y, mo + 2, 0, 23, 59, 59).toISOString();
+  const qs = new URLSearchParams({ timeMin, timeMax, singleEvents:'true', orderBy:'startTime', maxResults:'500' });
+  const allEvts = [];
+  for (const cal of selected) {
+    try {
+      const d2 = await apiFetch('GET', `/calendars/${encodeURIComponent(cal.id)}/events?${qs}`);
+      (d2?.items || []).forEach(ev => allEvts.push({ ...ev, _userCal: { summary: cal.summary, color: cal.userColor, calId: cal.id } }));
+    } catch(e) {}
+  }
+  _userCalEvts = allEvts;
 }
 
 async function _autoApplySavedCals() {
@@ -6026,7 +6057,7 @@ async function _autoApplySavedCals() {
     for (const cal of selected) {
       try {
         const d2 = await apiFetch('GET', `/calendars/${encodeURIComponent(cal.id)}/events?${qs}`);
-        (d2?.items || []).forEach(ev => allEvts.push({ ...ev, _userCal: { summary: cal.summary, color: cal.userColor } }));
+        (d2?.items || []).forEach(ev => allEvts.push({ ...ev, _userCal: { summary: cal.summary, color: cal.userColor, calId: cal.id } }));
       } catch(e) {}
     }
     if (allEvts.length) { _userCalEvts = allEvts; renderCalendar(); }
