@@ -387,7 +387,7 @@ html,body{height:100%;
 #evt-popup-body{padding:16px 20px}
 .epop-row{display:flex;align-items:flex-start;gap:8px;margin-bottom:9px;font-size:.84rem;color:var(--color-text-sec);line-height:1.4}
 .epop-row svg{flex-shrink:0;margin-top:1px;opacity:.55}
-.epop-desc{font-size:.84rem;color:var(--color-text-sec);white-space:pre-wrap;line-height:1.5;margin-top:4px}
+.epop-desc{font-size:.84rem;color:var(--color-text-sec);white-space:pre-wrap;line-height:1.5;margin-top:4px;word-break:break-word}
 #evt-popup-footer{display:flex;gap:6px;justify-content:flex-end;padding:12px 20px 18px;border-top:1px solid var(--color-border)}
 #detail-share-btn{display:inline-flex;align-items:center;gap:4px}
 
@@ -837,6 +837,16 @@ html,body{height:100%;
   border:1.5px solid var(--color-border);border-radius:var(--r);cursor:pointer;
   background:#fff;text-align:left;transition:border-color .15s,background .15s;width:100%}
 .sub-option:hover{border-color:var(--color-accent);background:var(--color-accent-lt)}
+/* Header email check widget */
+.hdr-email-chk-wrap{display:flex;align-items:center;gap:5px;background:var(--color-bg);border:1.5px solid var(--color-border);border-radius:8px;padding:3px 8px 3px 10px;height:34px}
+.hdr-email-chk-label{font-size:.72rem;font-weight:700;color:var(--color-text-sec);white-space:nowrap;flex-shrink:0}
+.hdr-email-chk-input{width:160px;height:24px;padding:0 6px;font-size:.78rem;border:none;background:transparent;color:var(--color-text);outline:none;font-family:inherit}
+.hdr-email-chk-btn{height:24px;padding:0 8px;font-size:.73rem;font-weight:700;background:var(--color-accent);color:#fff;border:none;border-radius:5px;cursor:pointer;white-space:nowrap;flex-shrink:0;transition:background .15s}
+.hdr-email-chk-btn:hover{background:var(--color-accent-dk)}
+.hdr-email-result{font-size:.72rem;white-space:nowrap;flex-shrink:0;max-width:160px;overflow:hidden;text-overflow:ellipsis}
+.hdr-dropdown-email-chk{padding:10px 14px 8px;border-bottom:1px solid var(--color-border);margin-bottom:4px}
+.hdr-dropdown-email-label{font-size:.72rem;font-weight:700;color:var(--color-text-sec);margin-bottom:5px}
+@media(max-width:860px){.hdr-email-chk-wrap{display:none}}
 .sub-option-icon{width:36px;height:36px;border-radius:8px;background:var(--color-accent-lt);
   display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .sub-option-icon svg{width:20px;height:20px;color:var(--color-accent)}
@@ -870,6 +880,24 @@ html,body{height:100%;
 .sc-dl-btn:hover{background:var(--color-accent-dk)}
 .sc-note{font-size:.75rem;color:var(--color-text-sec);margin-top:10px;line-height:1.5;
   padding:8px 10px;background:var(--color-bg);border-radius:var(--r-xs)}
+
+/* ── MY CALENDAR MODAL ── */
+#mycal-btn{display:none}
+#mycal-btn.visible{display:inline-flex}
+.mycal-modal{max-width:480px;width:95vw}
+.mycal-order-toggle{display:flex;border:1px solid var(--color-border);border-radius:var(--r);overflow:hidden;margin-bottom:12px}
+.mycal-order-btn{flex:1;padding:6px 10px;font-size:.78rem;font-weight:600;background:#fff;color:var(--color-text-sec);border:none;cursor:pointer;transition:background .15s,color .15s}
+.mycal-order-btn.active{background:var(--color-accent);color:#fff}
+.mycal-list{display:flex;flex-direction:column;gap:6px;max-height:340px;overflow-y:auto;padding-right:2px}
+.mycal-item{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:var(--r-xs);border:1px solid var(--color-border);background:var(--color-card)}
+.mycal-check{width:18px;height:18px;accent-color:var(--color-accent);cursor:pointer;flex-shrink:0}
+.mycal-name{flex:1;font-size:.82rem;color:var(--color-text);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mycal-color-wrap{display:flex;align-items:center;gap:6px;flex-shrink:0}
+.mycal-color-swatch{width:20px;height:20px;border-radius:50%;border:2px solid rgba(0,0,0,.15);cursor:pointer;flex-shrink:0}
+.mycal-color-picker{opacity:0;width:0;height:0;position:absolute}
+.mycal-footer-actions{display:flex;justify-content:space-between;align-items:center;padding-top:10px;border-top:1px solid var(--color-border);margin-top:10px}
+.mycal-deselect{font-size:.78rem;color:var(--color-text-sec);background:none;border:1px solid var(--color-border);border-radius:var(--r);padding:5px 10px;cursor:pointer}
+.mycal-deselect:hover{background:var(--g100)}
 </style>
 </head>
 <body>
@@ -886,6 +914,23 @@ html,body{height:100%;
   <div class="hdr-right-wrap">
     <!-- Desktop: inline buttons -->
     <div class="hdr-menu-items">
+      <!-- 이메일 등록 확인 인라인 (데스크탑) -->
+      <div class="hdr-email-chk-wrap" id="hdr-email-chk-wrap">
+        <span class="hdr-email-chk-label">등록 확인</span>
+        <input id="hdr-email-chk" type="email" placeholder="Gmail 주소" maxlength="100"
+          class="hdr-email-chk-input"
+          onkeydown="if(event.key==='Enter')checkHeaderEmail()">
+        <button class="hdr-email-chk-btn" onclick="checkHeaderEmail()">확인</button>
+        <span id="hdr-email-result" class="hdr-email-result"></span>
+      </div>
+      <a class="tb-btn" href="https://bit.ly/asea-cal" target="_blank" rel="noopener" title="캘린더 구독">
+        <svg class="tb-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0 1 18 14.158V11a6 6 0 1 0-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 1 1-6 0v-1m6 0H9"/></svg>
+        구독
+      </a>
+      <button class="tb-btn" onclick="openShortcutModal()" title="바탕화면 바로가기">
+        <svg class="tb-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        바로가기 만들기
+      </button>
       <a class="tb-btn" href="forum.html" target="_blank">
         <svg class="tb-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
         기능 건의
@@ -893,14 +938,6 @@ html,body{height:100%;
       <button class="tb-btn" onclick="openAdminLogin()">
         <svg class="tb-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
         관리자
-      </button>
-      <a class="tb-btn" href="https://calendar.google.com/calendar/u/0/r?cid=ODljYjIzYzQyYTc1ZDk5Njk3YmRkNTBlMTFmNDYxZTk0ZDMzMGVkZWM5NDFmNGJjZjRmNTJkZmRkYWE3NTU1M0Bncm91cC5jYWxlbmRhci5nb29nbGUuY29t" target="_blank" rel="noopener" title="캘린더 구독">
-        <svg class="tb-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0 1 18 14.158V11a6 6 0 1 0-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 1 1-6 0v-1m6 0H9"/></svg>
-        구독
-      </a>
-      <button class="tb-btn" onclick="openShortcutModal()" title="바탕화면 바로가기">
-        <svg class="tb-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-        바로가기
       </button>
       <div class="theme-picker-wrap" title="테마 선택">
         <button class="theme-swatch-btn" data-t="aurora" onclick="setColorTheme('aurora')" style="background:linear-gradient(135deg,#8B5CF6,#EC4899)" title="오로라"></button>
@@ -913,6 +950,25 @@ html,body{height:100%;
       <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
     </button>
     <div class="hdr-dropdown" id="hdr-dropdown" hidden>
+      <!-- 모바일: 이메일 등록 확인 -->
+      <div class="hdr-dropdown-email-chk">
+        <div class="hdr-dropdown-email-label">등록 확인</div>
+        <div style="display:flex;gap:6px;align-items:center">
+          <input id="hdr-mob-email-chk" type="email" placeholder="Gmail 주소 입력" maxlength="100"
+            style="flex:1;height:34px;padding:0 8px;font-size:.82rem;border:1px solid var(--g300);border-radius:6px;background:var(--bg);color:var(--g900);outline:none"
+            onkeydown="if(event.key==='Enter'){checkMobileEmail();closeHdrMenu();}">
+          <button onclick="checkMobileEmail()" style="height:34px;padding:0 12px;font-size:.82rem;font-weight:600;background:var(--primary);color:#fff;border:none;border-radius:6px;cursor:pointer;white-space:nowrap">확인</button>
+        </div>
+        <div id="hdr-mob-email-result" style="font-size:.77rem;margin-top:5px;min-height:18px"></div>
+      </div>
+      <a href="https://bit.ly/asea-cal" target="_blank" rel="noopener" onclick="closeHdrMenu()">
+        <svg class="tb-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0 1 18 14.158V11a6 6 0 1 0-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 1 1-6 0v-1m6 0H9"/></svg>
+        구독
+      </a>
+      <button onclick="closeHdrMenu();openShortcutModal()">
+        <svg class="tb-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        바로가기 만들기
+      </button>
       <a href="forum.html" target="_blank" onclick="closeHdrMenu()">
         <svg class="tb-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
         기능 건의
@@ -920,14 +976,6 @@ html,body{height:100%;
       <button onclick="openAdminLogin();closeHdrMenu()">
         <svg class="tb-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
         관리자
-      </button>
-      <a href="https://calendar.google.com/calendar/u/0/r?cid=ODljYjIzYzQyYTc1ZDk5Njk3YmRkNTBlMTFmNDYxZTk0ZDMzMGVkZWM5NDFmNGJjZjRmNTJkZmRkYWE3NTU1M0Bncm91cC5jYWxlbmRhci5nb29nbGUuY29t" target="_blank" rel="noopener" onclick="closeHdrMenu()">
-        <svg class="tb-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0 1 18 14.158V11a6 6 0 1 0-12 0v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 1 1-6 0v-1m6 0H9"/></svg>
-        구독
-      </a>
-      <button onclick="closeHdrMenu();openShortcutModal()">
-        <svg class="tb-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-        바로가기
       </button>
       <div class="hdr-dropdown-theme">
         <span class="hdr-dropdown-theme-label">테마</span>
@@ -983,6 +1031,10 @@ html,body{height:100%;
         </button>
       </div>
     </div>
+    <button class="tb-btn" id="mycal-btn" onclick="openMyCalModal()" title="내 Google 캘린더 불러오기">
+      <svg class="tb-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/><circle cx="8" cy="16" r="1" fill="currentColor"/><circle cx="12" cy="16" r="1" fill="currentColor"/><circle cx="16" cy="16" r="1" fill="currentColor"/></svg>
+      내 캘린더
+    </button>
     <button class="btn btn-primary btn-sm" onclick="onAddClick()" id="hdr-add-btn">
       <svg class="tb-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
       일정 추가
@@ -1036,6 +1088,36 @@ html,body{height:100%;
 <div id="month-weekdays-sticky"></div>
 <div class="cal-wrap" id="cal-wrap">
   <div class="cal-inner" id="cal-inner"></div>
+</div>
+
+<!-- MY CALENDAR MODAL -->
+<div class="overlay" id="mycal-overlay" onclick="if(event.target===this)closeMyCalModal()">
+  <div class="modal mycal-modal">
+    <div class="modal-hdr">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+      <span class="modal-title">내 캘린더 불러오기</span>
+      <button class="modal-x" onclick="closeMyCalModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <!-- 반영 우선순위 토글 -->
+      <div style="font-size:.75rem;font-weight:700;color:var(--color-text-sec);margin-bottom:6px">표시 순서</div>
+      <div class="mycal-order-toggle">
+        <button class="mycal-order-btn active" id="mycal-order-school" onclick="setCalOrder('school-first',this)">학교 일정 먼저</button>
+        <button class="mycal-order-btn" id="mycal-order-my" onclick="setCalOrder('my-first',this)">내 캘린더 먼저</button>
+      </div>
+      <div style="font-size:.75rem;font-weight:700;color:var(--color-text-sec);margin-bottom:6px">캘린더 선택 &amp; 색상</div>
+      <div class="mycal-list" id="mycal-list">
+        <div style="text-align:center;padding:20px;color:var(--color-text-sec);font-size:.82rem">불러오는 중…</div>
+      </div>
+      <div class="mycal-footer-actions">
+        <button class="mycal-deselect" onclick="myCalDeselectAll()">전체 해제</button>
+        <div style="display:flex;gap:8px">
+          <button class="btn" onclick="closeMyCalModal()" style="background:var(--g100);color:var(--g700)">취소</button>
+          <button class="btn btn-primary" onclick="applyMyCal()">캘린더 반영</button>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- EXCEL DOWNLOAD MODAL -->
@@ -1748,6 +1830,11 @@ let _userInitial = '';
 let _events     = [];
 let _holidays   = {}; // 'YYYY-MM-DD' → 공휴일명
 let _deptFilter = { group: null, dept: null }; // group: null|'운영부'|'계열'|'부설', dept: null|string
+const _evCache  = {}; // key: 'y_m' → {items, ts}
+const _EV_TTL   = 5 * 60 * 1000; // 5분
+let _userCals   = []; // {id, summary, backgroundColor, checked, userColor}
+let _userCalEvts = []; // fetched events from user's calendars
+let _calOrder   = 'school-first'; // 'school-first' | 'my-first'
 
 // 그룹 → 부서 매핑
 const DEPT_GROUPS = {
@@ -1907,6 +1994,8 @@ function updateUserArea() {
     <span class="user-email-txt">${_userEmail || '로그인됨'}</span>
     <button onclick="logout()" class="btn-logout">로그아웃</button>
   </div>`;
+  const myCalBtn = document.getElementById('mycal-btn');
+  if (myCalBtn) myCalBtn.classList.toggle('visible', !!_token);
 }
 
 function logout() {
@@ -1914,6 +2003,9 @@ function logout() {
     google.accounts.oauth2.revoke(_token, () => {});
   _token = null; _tokenHasWrite = false; _userEmail = null; _userInitial = '';
   _deptFilter = { group: null, dept: null };
+  _userCalEvts = []; _userCals = [];
+  const myCalBtn = document.getElementById('mycal-btn');
+  if (myCalBtn) myCalBtn.classList.remove('visible');
   clearTimeout(_refreshTimer);
   try { [localStorage, sessionStorage].forEach(s => {
     s.removeItem('asea_gtoken'); s.removeItem('asea_gtoken_exp'); s.removeItem('asea_gtoken_write');
@@ -1932,6 +2024,32 @@ async function apiFetch(method, path, body) {
   const data = await r.json();
   if (!r.ok) throw new Error(`HTTP ${r.status}: ${(data.error && data.error.message) || 'API 오류'}`);
   return data;
+}
+
+async function _prefetchEvents(y, m) {
+  if (!_token) return;
+  const timeMin = new Date(y, m - 1, 1).toISOString();
+  const timeMax = new Date(y, m + 2, 0, 23, 59, 59).toISOString();
+  try {
+    const data = await apiFetch('GET', `/calendars/${encodeURIComponent(CAL_ID)}/events?${new URLSearchParams({
+      timeMin, timeMax, singleEvents:'true', orderBy:'startTime', maxResults:'500'
+    })}`);
+    const items = (data && data.items) ? data.items : [];
+    const months = [
+      { y: m === 0 ? y - 1 : y, m: m === 0 ? 11 : m - 1 },
+      { y, m },
+      { y: m === 11 ? y + 1 : y, m: m === 11 ? 0 : m + 1 },
+    ];
+    months.forEach(mo => {
+      const slice = items.filter(ev => {
+        const s = ev.start && (ev.start.dateTime || ev.start.date);
+        if (!s) return false;
+        const d = new Date(s);
+        return d.getFullYear() === mo.y && d.getMonth() === mo.m;
+      });
+      _evCachePut(mo.y, mo.m, slice);
+    });
+  } catch(_) {}
 }
 
 async function fetchHolidays() {
@@ -1971,9 +2089,38 @@ function _isKoreanPublicHoliday(ev) {
   return PATTERNS.some(p => name.includes(p));
 }
 
+function _evCacheKey(y, m) { return `${y}_${m}`; }
+function _evCachePut(y, m, items) { _evCache[_evCacheKey(y, m)] = { items, ts: Date.now() }; }
+function _evCacheGet(y, m) {
+  const e = _evCache[_evCacheKey(y, m)];
+  return (e && Date.now() - e.ts < _EV_TTL) ? e.items : null;
+}
+function _evCacheClear() { Object.keys(_evCache).forEach(k => delete _evCache[k]); }
+
 async function fetchEvents() {
   if (!_token) return;
   const y = _curDate.getFullYear(), m = _curDate.getMonth();
+
+  // Cache hit: prev, cur, next all fresh → skip network fetch
+  const months = [
+    { y: m === 0 ? y - 1 : y, m: m === 0 ? 11 : m - 1 },
+    { y, m },
+    { y: m === 11 ? y + 1 : y, m: m === 11 ? 0 : m + 1 },
+  ];
+  const allCached = months.every(mo => _evCacheGet(mo.y, mo.m) !== null);
+  if (allCached) {
+    const seen = new Set();
+    const merged = [];
+    months.forEach(mo => (_evCacheGet(mo.y, mo.m) || []).forEach(ev => {
+      if (!seen.has(ev.id)) { seen.add(ev.id); merged.push(ev); }
+    }));
+    _events = merged;
+    updateDeptFilterBar();
+    // Refresh cache in background so data doesn't get stale
+    _prefetchEvents(y, m);
+    return;
+  }
+
   const timeMin = new Date(y, m - 1, 1).toISOString();
   const timeMax = new Date(y, m + 2, 0, 23, 59, 59).toISOString();
   try {
@@ -1983,7 +2130,18 @@ async function fetchEvents() {
       })}`),
       fetchHolidays(),
     ]);
-    _events = (data && data.items) ? data.items : [];
+    const items = (data && data.items) ? data.items : [];
+    // Store per-month slices in cache
+    months.forEach(mo => {
+      const slice = items.filter(ev => {
+        const s = ev.start && (ev.start.dateTime || ev.start.date);
+        if (!s) return false;
+        const d = new Date(s);
+        return d.getFullYear() === mo.y && d.getMonth() === mo.m;
+      });
+      _evCachePut(mo.y, mo.m, slice);
+    });
+    _events = items;
     updateDeptFilterBar();
   } catch(e) {
     const msg = e.message || '';
@@ -2112,8 +2270,16 @@ function evtDate(ev) {
   return { start: s ? new Date(s) : null, end: e ? new Date(e) : null, allDay: !ev.start.dateTime };
 }
 
-function evtsForDay(y, m, d) {
-  return sortEvts(filteredEvents().filter(ev => {
+function _evtChipStyle(ev) {
+  if (ev._userCal && ev._userCal.color) {
+    const c = ev._userCal.color;
+    return ` style="background:${c.bg};color:${c.text};border-left-color:${c.border}"`;
+  }
+  return '';
+}
+
+function _filterForDay(arr, y, m, d) {
+  return arr.filter(ev => {
     const { start, end, allDay } = evtDate(ev);
     if (!start) return false;
     if (allDay) {
@@ -2123,7 +2289,13 @@ function evtsForDay(y, m, d) {
       return ds < ee && de > es;
     }
     return start.getFullYear()===y && start.getMonth()===m && start.getDate()===d;
-  }));
+  });
+}
+
+function evtsForDay(y, m, d) {
+  const school = sortEvts(_filterForDay(filteredEvents(), y, m, d));
+  const myCal  = sortEvts(_filterForDay(_userCalEvts, y, m, d));
+  return _calOrder === 'my-first' ? [...myCal, ...school] : [...school, ...myCal];
 }
 
 function renderMonth(wrap) {
@@ -2162,17 +2334,17 @@ function renderMonth(wrap) {
       const cell = cells[r * 7 + c];
       if (!cell) continue;
       if (cell.cls.includes('other-month')) {
-        const omEvts = (cell.evts || []).slice(0, 3);
+        const omEvts = (cell.evts || []);
         const omDots = omEvts.map(ev => {
           const isSchool = ev.description && ev.description.includes('[학교일정]');
           const schoolCls = isSchool ? ' school-evt' : '';
-          const qBtns = (_token && _tokenHasWrite)
+          const chipStyle = _evtChipStyle(ev);
+          const qBtns = (_token && _tokenHasWrite && !ev._userCal)
             ? `<span class="evt-quick"><button class="quick-edit" onclick="event.stopPropagation();editEvtById('${escId(ev.id)}')" title="수정"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2.5l2.5 2.5-7 7H2v-2.5z"/><path d="M7.5 4l2.5 2.5"/></svg></button><button class="quick-del" onclick="event.stopPropagation();deleteEvtById('${escId(ev.id)}')" title="삭제"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="1" y1="4" x2="13" y2="4"/><path d="M5 4V2.5h4V4"/><rect x="2" y="4" width="10" height="8.5" rx="1"/></svg></button></span>`
             : '';
-          return `<span class="evt-dot-wrap"><span class="evt-dot${schoolCls}" data-evtid="${ev.id}" onclick="evtChipClick(event,this,'${escId(ev.id)}')" title="${esc(ev.summary||'')}">${esc(ev.summary||'(제목 없음)')}</span>${qBtns}</span>`;
+          return `<span class="evt-dot-wrap"><span class="evt-dot${schoolCls}"${chipStyle} data-evtid="${ev.id}" onclick="evtChipClick(event,this,'${escId(ev.id)}')" title="${esc(ev.summary||'')}">${esc(ev.summary||'(제목 없음)')}</span>${qBtns}</span>`;
         }).join('');
-        const omMore = cell.evts && cell.evts.length > 3 ? `<span style="font-size:.65rem;color:var(--g400);padding:0 4px">+${cell.evts.length-3}</span>` : '';
-        gridHtml += `<div class="${cell.cls}${(cell.evts||[]).length?' has-events':''}" data-y="${cell.y}" data-m="${cell.m}" data-d="${cell.d}">${'<div class="day-cell-hdr"><span class="day-num">' + cell.d + '</span><span class="day-dow">' + WEEKDAYS[c] + '</span></div>'}${omDots}${omMore}</div>`;
+        gridHtml += `<div class="${cell.cls}${(cell.evts||[]).length?' has-events':''}" data-y="${cell.y}" data-m="${cell.m}" data-d="${cell.d}">${'<div class="day-cell-hdr"><span class="day-num">' + cell.d + '</span><span class="day-dow">' + WEEKDAYS[c] + '</span></div>'}${omDots}</div>`;
         continue;
       }
       const dateKey = `${y}-${String(m+1).padStart(2,'0')}-${String(cell.d).padStart(2,'0')}`;
@@ -2182,11 +2354,12 @@ function renderMonth(wrap) {
       const dotsHtml = (cell.evts || []).map(ev => {
         const isSchool = ev.description && ev.description.includes('[학교일정]');
         const schoolCls = isSchool ? ' school-evt' : '';
-        const qBtns = (_token && _tokenHasWrite)
+        const chipStyle = _evtChipStyle(ev);
+        const qBtns = (_token && _tokenHasWrite && !ev._userCal)
           ? `<span class="evt-quick"><button class="quick-edit" onclick="event.stopPropagation();editEvtById('${escId(ev.id)}')" title="수정"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2.5l2.5 2.5-7 7H2v-2.5z"/><path d="M7.5 4l2.5 2.5"/></svg></button><button class="quick-del" onclick="event.stopPropagation();deleteEvtById('${escId(ev.id)}')" title="삭제"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="1" y1="4" x2="13" y2="4"/><path d="M5 4V2.5h4V4"/><rect x="2" y="4" width="10" height="8.5" rx="1"/></svg></button></span>`
           : '';
-        const draggable = (_token && _tokenHasWrite) ? ' draggable="true"' : '';
-        return `<span class="evt-dot-wrap"><span class="evt-dot${schoolCls}"${draggable} data-evtid="${ev.id}" onclick="evtChipClick(event,this,'${escId(ev.id)}')" title="${esc(ev.summary||'')}">${esc(ev.summary||'(제목 없음)')}</span>${qBtns}</span>`;
+        const draggable = (_token && _tokenHasWrite && !ev._userCal) ? ' draggable="true"' : '';
+        return `<span class="evt-dot-wrap"><span class="evt-dot${schoolCls}"${chipStyle}${draggable} data-evtid="${ev.id}" onclick="evtChipClick(event,this,'${escId(ev.id)}')" title="${esc(ev.summary||'')}">${esc(ev.summary||'(제목 없음)')}</span>${qBtns}</span>`;
       }).join('');
       gridHtml += `<div class="${cell.cls}${holiday?' holiday':''}${(cell.evts||[]).length?' has-events':''}" data-y="${y}" data-m="${m}" data-d="${cell.d}">${numEl}${dotsHtml}</div>`;
     }
@@ -2644,7 +2817,7 @@ async function deleteEvtById(id) {
   try {
     await apiFetch('DELETE', `/calendars/${encodeURIComponent(CAL_ID)}/events/${encodeURIComponent(id)}`);
     showToast('일정이 삭제되었습니다.');
-    await fetchEvents(); renderCalendar();
+    _evCacheClear(); await fetchEvents(); renderCalendar();
   } catch(e) { showToast('삭제 실패: ' + e.message, 'error'); }
 }
 
@@ -2954,7 +3127,7 @@ async function saveEvent() {
       document.getElementById('evt-save-label').textContent = '추가';
       if (errMsg) {
         document.getElementById('evt-error').textContent = `${saved}개 저장 후 오류: ${errMsg}`;
-        if (saved > 0) { await fetchEvents(); renderCalendar(); }
+        if (saved > 0) { _evCacheClear(); await fetchEvents(); renderCalendar(); }
         return;
       }
       showToast(`${dates.length}개 일정이 추가되었습니다.`);
@@ -2962,7 +3135,7 @@ async function saveEvent() {
       delete endDateEl.dataset.dates;
       document.getElementById('evt-range-info').hidden = true;
       clearAllSelections();
-      await fetchEvents(); renderCalendar();
+      _evCacheClear(); await fetchEvents(); renderCalendar();
       return;
     }
   }
@@ -3001,14 +3174,14 @@ async function saveEvent() {
     document.getElementById('evt-save-label').textContent = '추가';
     if (errMsg) {
       document.getElementById('evt-error').textContent = `${saved}개 저장 후 오류: ${errMsg}`;
-      if (saved > 0) { await fetchEvents(); renderCalendar(); }
+      if (saved > 0) { _evCacheClear(); await fetchEvents(); renderCalendar(); }
       return;
     }
     showToast(`${dates.length}개 일정이 추가되었습니다.`);
     closeModal('event-overlay');
     delete endDateEl.dataset.endDate;
     document.getElementById('evt-range-info').hidden = true;
-    await fetchEvents(); renderCalendar();
+    _evCacheClear(); await fetchEvents(); renderCalendar();
     return;
   }
 
@@ -3052,7 +3225,7 @@ async function saveEvent() {
       await apiFetch('POST', `/calendars/${encodeURIComponent(CAL_ID)}/events`, body);
     showToast(_editingEvt ? '일정이 수정되었습니다.' : '일정이 추가되었습니다.');
     closeModal('event-overlay'); closeEvtPopup();
-    await fetchEvents(); renderCalendar();
+    _evCacheClear(); await fetchEvents(); renderCalendar();
   } catch(e) {
     const msg = e.message || '';
     if (msg.toLowerCase().includes('insufficient') || msg.toLowerCase().includes('scope')) {
@@ -3086,7 +3259,7 @@ async function deleteCurrentEvent() {
     await apiFetch('DELETE', `/calendars/${encodeURIComponent(CAL_ID)}/events/${encodeURIComponent(_editingEvt.id)}`);
     showToast('일정이 삭제되었습니다.');
     closeModal('event-overlay'); closeEvtPopup();
-    await fetchEvents(); renderCalendar();
+    _evCacheClear(); await fetchEvents(); renderCalendar();
   } catch(e) {
     const msg = e.message || '';
     if (msg.toLowerCase().includes('insufficient') || msg.toLowerCase().includes('scope')) {
@@ -3120,7 +3293,7 @@ function showDetail(e, evtId) {
   document.getElementById('evt-popup-body').innerHTML =
     `<div class="epop-row">${_iconCal}<span>${dateStr}${endStr}</span></div>` +
     (ev.location ? `<div class="epop-row">${_iconPin}<span>${esc(ev.location)}</span></div>` : '') +
-    (ev.description ? `<div class="epop-row">${_iconNote}<span class="epop-desc">${esc(ev.description)}</span></div>` : '') +
+    (ev.description ? `<div class="epop-row">${_iconNote}<span class="epop-desc">${linkifyDesc(ev.description)}</span></div>` : '') +
     (!ev.description && !ev.location ? `<div style="color:var(--g400);font-size:.8rem;padding:2px 0">내용 없음</div>` : '');
 
   const canEdit = _token && _tokenHasWrite;
@@ -3158,14 +3331,26 @@ function _gcalDate(dt) {
   return '';
 }
 
+function linkifyDesc(text) {
+  if (!text) return '';
+  // Split on URLs, alternating between plain text and URL segments
+  const parts = text.split(/(https?:\/\/[^\s\n<>"]+)/g);
+  return parts.map((p, i) => {
+    if (i % 2 === 1) {
+      const escaped = esc(p);
+      return `<a href="${escaped}" target="_blank" rel="noopener" style="color:var(--primary);text-decoration:underline;word-break:break-all">${escaped}</a>`;
+    }
+    return esc(p).replace(/\n/g, '<br>');
+  }).join('');
+}
+
 function shareEvtFromDetail() {
   if (!_detailEvt) return;
   const ev = _detailEvt;
   const start = _gcalDate(ev.start);
   const end   = _gcalDate(ev.end) || start;
   const params = new URLSearchParams({ action:'TEMPLATE', text: ev.summary || '', dates: start + '/' + end });
-  if (ev.location)    params.set('location', ev.location);
-  if (ev.description) params.set('details',  ev.description);
+  if (ev.location) params.set('location', ev.location);
   const url = 'https://calendar.google.com/calendar/render?' + params.toString();
   const copy = () => showToast('클립보드에 공유링크가 복사되었습니다.');
   if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -3190,7 +3375,7 @@ async function deleteFromDetail() {
     await apiFetch('DELETE', `/calendars/${encodeURIComponent(CAL_ID)}/events/${encodeURIComponent(_detailEvt.id)}`);
     showToast('일정이 삭제되었습니다.');
     closeEvtPopup();
-    await fetchEvents(); renderCalendar();
+    _evCacheClear(); await fetchEvents(); renderCalendar();
   } catch(e) {
     const msg = e.message || '';
     if (msg.toLowerCase().includes('insufficient') || msg.toLowerCase().includes('scope')) {
@@ -4773,12 +4958,14 @@ async function doExcelDownload() {
               border: {top:topB, right:bThin('D1D5DB'), bottom:botB, left:bThin('D1D5DB')}
             });
           } else {
-            const dayLabel = `${day.d}일`;
-            let numFg = isSun ? 'DC2626' : isSat ? accent : '1E293B';
-            let fillRgb = day.isToday ? accentLt : 'FFFFFF';
+            const dateKey2 = `${y}-${String(m+1).padStart(2,'0')}-${String(day.d).padStart(2,'0')}`;
+            const holName  = _holidays[dateKey2] || '';
+            let numFg = isSun || holName ? 'DC2626' : isSat ? accent : '1E293B';
+            let fillRgb = day.isToday ? accentLt : holName ? 'FEF2F2' : 'FFFFFF';
             if (day.isToday) numFg = accentDk;
+            const dayLabel = holName ? `${day.d}일  ${fmtHolidayName(holName)}` : `${day.d}일`;
             sc(curRow, c, dayLabel, {
-              font: {bold:true, sz:10, color:{rgb:numFg}, name:'맑은 고딕'},
+              font: {bold:true, sz:9, color:{rgb:numFg}, name:'맑은 고딕'},
               fill: {patternType:'solid', fgColor:{rgb:fillRgb}},
               alignment: {horizontal:'left', vertical:'center', indent:1},
               border: {top:topB, right:bThin('D1D5DB'), bottom:botB, left:bThin('D1D5DB')}
@@ -4804,11 +4991,15 @@ async function doExcelDownload() {
               if (ev) {
                 const tm  = fmtTime(ev);
                 const txt = (tm ? tm + ' ' : '') + (ev.summary || '(제목 없음)');
+                const isSchool = ev.description && ev.description.includes('[학교일정]');
+                const evBg  = isSchool ? 'F1F5F9' : accentLt;
+                const evFg  = isSchool ? '374151' : accentDk;
+                const evBar = isSchool ? '374151' : accent;
                 sc(curRow, c, txt, {
-                  font: {sz:8, color:{rgb:accentDk}, name:'맑은 고딕'},
-                  fill: {patternType:'solid', fgColor:{rgb:accentLt}},
+                  font: {sz:8, color:{rgb:evFg}, name:'맑은 고딕'},
+                  fill: {patternType:'solid', fgColor:{rgb:evBg}},
                   alignment: {horizontal:'left', vertical:'center', indent:1, wrapText:false},
-                  border: {top:bNone, right:bThin('D1D5DB'), bottom:botB, left:bMed(accent)}
+                  border: {top:bNone, right:bThin('D1D5DB'), bottom:botB, left:bMed(evBar)}
                 });
               } else {
                 sc(curRow, c, '', {
@@ -4915,7 +5106,7 @@ async function submitAccessRequest() {
   let valid = true;
   const setErr = (id, msg) => { document.getElementById(id).textContent = msg; if (msg) valid = false; };
   setErr('err-acc-name', name ? '' : '성명을 입력해 주세요.');
-  setErr('err-acc-email', email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? '' : '유효한 Gmail 주소를 입력해 주세요.');
+  setErr('err-acc-email', email && _isGmailAddr(email) ? '' : '@gmail.com 주소만 등록 가능합니다.');
   setErr('err-acc-consent', consentReq ? '' : '개인정보 수집·이용에 동의해 주세요.');
   if (!valid) return;
   const btn = document.getElementById('acc-submit-btn');
@@ -4949,15 +5140,16 @@ async function submitAccessRequest() {
 }
 
 /* ══════════════ EMAIL REGISTRATION CHECK ══════════════ */
-async function checkBannerEmail() {
-  const input = document.getElementById('banner-email-chk');
-  const result = document.getElementById('banner-email-result');
-  const email = (input ? input.value : '').trim();
-  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    result.innerHTML = '<span style="color:var(--red)">유효한 이메일을 입력해 주세요.</span>';
+function _isGmailAddr(email) {
+  return /^[^\s@]+@gmail\.com$/i.test(email);
+}
+
+async function _doEmailCheck(email, resultEl) {
+  if (!email || !_isGmailAddr(email)) {
+    resultEl.innerHTML = '<span style="color:var(--red)">@gmail.com 주소만 등록 가능합니다.</span>';
     return;
   }
-  result.textContent = '확인 중...';
+  resultEl.textContent = '확인 중...';
   try {
     const r = await fetch(
       `${SB_URL}/rest/v1/calendar_access_requests?email=eq.${encodeURIComponent(email)}&select=status&order=requested_at.desc&limit=1`,
@@ -4965,20 +5157,32 @@ async function checkBannerEmail() {
     );
     if (!r.ok) throw new Error('HTTP ' + r.status);
     const rows = await r.json();
-    if (!rows.length) {
-      const safeEmail = email.replace(/'/g, '');
-      result.innerHTML = `<span style="color:var(--red)">미등록 이메일입니다.</span>&nbsp;<button class="btn btn-sm" style="height:22px;padding:0 8px;font-size:.72rem;background:var(--orange);color:#fff;border:none;border-radius:4px;cursor:pointer" onclick="openAccessRequestPrefilled('${safeEmail}')">등록 신청하기</button>`;
+    const safeEmail = email.replace(/'/g, '');
+    if (!rows.length || rows[0].status === 'rejected') {
+      resultEl.innerHTML = `<span style="color:var(--red)">미등록</span>&nbsp;<button style="height:20px;padding:0 7px;font-size:.7rem;font-weight:600;background:var(--orange);color:#fff;border:none;border-radius:4px;cursor:pointer" onclick="openAccessRequestPrefilled('${safeEmail}')">신청하기</button>`;
     } else if (rows[0].status === 'approved') {
-      result.innerHTML = '<span style="color:var(--green);font-weight:600">✓ 등록된 이메일입니다</span>';
+      resultEl.innerHTML = '<span style="color:var(--green);font-weight:700">✓ 등록됨</span>';
     } else if (rows[0].status === 'pending') {
-      result.innerHTML = '<span style="color:var(--orange)">⏳ 신청이 접수되어 처리 중입니다</span>';
-    } else {
-      const safeEmail = email.replace(/'/g, '');
-      result.innerHTML = `<span style="color:var(--red)">미등록 이메일입니다.</span>&nbsp;<button class="btn btn-sm" style="height:22px;padding:0 8px;font-size:.72rem;background:var(--orange);color:#fff;border:none;border-radius:4px;cursor:pointer" onclick="openAccessRequestPrefilled('${safeEmail}')">등록 신청하기</button>`;
+      resultEl.innerHTML = '<span style="color:var(--orange)">⏳ 처리 중</span>';
     }
   } catch(e) {
-    result.innerHTML = '<span style="color:var(--red)">확인 실패: ' + esc(e.message) + '</span>';
+    resultEl.innerHTML = '<span style="color:var(--red)">오류: ' + esc(e.message) + '</span>';
   }
+}
+
+async function checkBannerEmail() {
+  const email = (document.getElementById('banner-email-chk')?.value || '').trim();
+  await _doEmailCheck(email, document.getElementById('banner-email-result'));
+}
+
+async function checkHeaderEmail() {
+  const email = (document.getElementById('hdr-email-chk')?.value || '').trim();
+  await _doEmailCheck(email, document.getElementById('hdr-email-result'));
+}
+
+async function checkMobileEmail() {
+  const email = (document.getElementById('hdr-mob-email-chk')?.value || '').trim();
+  await _doEmailCheck(email, document.getElementById('hdr-mob-email-result'));
 }
 
 function openAccessRequestPrefilled(email) {
@@ -4987,13 +5191,159 @@ function openAccessRequestPrefilled(email) {
   if (emailInput && email) emailInput.value = email;
 }
 
+/* ══════════════ MY CALENDAR MODAL ══════════════ */
+// Predefined color palette: light bg + dark text pairs
+const _CAL_COLORS = [
+  {bg:'#EDE9FE',text:'#5B21B6',border:'#8B5CF6'},  // violet
+  {bg:'#DBEAFE',text:'#1E40AF',border:'#3B82F6'},  // blue
+  {bg:'#D1FAE5',text:'#065F46',border:'#10B981'},  // green
+  {bg:'#FEF3C7',text:'#92400E',border:'#F59E0B'},  // amber
+  {bg:'#FCE7F3',text:'#9D174D',border:'#EC4899'},  // pink
+  {bg:'#FFEDD5',text:'#9A3412',border:'#F97316'},  // orange
+  {bg:'#F0FDF4',text:'#14532D',border:'#22C55E'},  // emerald
+  {bg:'#E0F2FE',text:'#075985',border:'#0EA5E9'},  // sky
+  {bg:'#F5F3FF',text:'#4C1D95',border:'#7C3AED'},  // purple
+  {bg:'#FFF1F2',text:'#881337',border:'#F43F5E'},  // rose
+];
+
+function _gcalBgToIdx(googleBg) {
+  // Map Google Calendar color to nearest palette entry index (simple hue match)
+  const map = {
+    '#a4bdfc':'1','#7ae7bf':'2','#dbadff':'0','#ff887c':'9','#fbd75b':'3',
+    '#ffb878':'5','#46d6db':'7','#e1e1e1':'1','#5484ed':'1','#51b749':'2',
+    '#dc2626':'9','#dc4646':'9',
+  };
+  const lower = (googleBg || '').toLowerCase();
+  return parseInt(map[lower] ?? '0', 10) % _CAL_COLORS.length;
+}
+
+async function openMyCalModal() {
+  if (!_token) { showToast('Google 로그인 후 이용 가능합니다.', 'error'); return; }
+  document.getElementById('mycal-overlay').hidden = false;
+  const list = document.getElementById('mycal-list');
+  list.innerHTML = '<div style="text-align:center;padding:20px;color:var(--color-text-sec);font-size:.82rem">불러오는 중…</div>';
+
+  // Restore order button state
+  document.getElementById('mycal-order-school').classList.toggle('active', _calOrder === 'school-first');
+  document.getElementById('mycal-order-my').classList.toggle('active', _calOrder === 'my-first');
+
+  try {
+    const data = await apiFetch('GET', '/users/me/calendarList?maxResults=100&minAccessRole=reader');
+    const items = (data?.items || []).filter(c => c.id !== CAL_ID && c.id !== HOLIDAY_CAL);
+    // Preserve prior user choices
+    const prevMap = {};
+    _userCals.forEach(c => { prevMap[c.id] = c; });
+    _userCals = items.map(c => {
+      const prev = prevMap[c.id];
+      const colorIdx = prev ? _CAL_COLORS.indexOf(prev.userColor) : _gcalBgToIdx(c.backgroundColor);
+      return {
+        id: c.id,
+        summary: c.summary || c.id,
+        backgroundColor: c.backgroundColor || '#4285F4',
+        checked: prev ? prev.checked : false,
+        userColor: prev ? prev.userColor : _CAL_COLORS[Math.max(0, colorIdx)],
+      };
+    });
+    _renderMyCalList();
+  } catch(e) {
+    list.innerHTML = `<div style="color:var(--red);padding:12px;font-size:.82rem">오류: ${esc(e.message)}</div>`;
+  }
+}
+
+function _renderMyCalList() {
+  const list = document.getElementById('mycal-list');
+  if (!_userCals.length) {
+    list.innerHTML = '<div style="color:var(--color-text-sec);padding:16px;font-size:.82rem">등록된 캘린더가 없습니다.</div>';
+    return;
+  }
+  list.innerHTML = _userCals.map((cal, idx) => {
+    const c = cal.userColor;
+    const colorSwatches = _CAL_COLORS.map((col, ci) =>
+      `<button class="mycal-color-swatch" style="background:${col.bg};border-color:${col.border}" title="${col.border}"
+        onclick="setMyCalColor(${idx},${ci})" data-cidx="${ci}"></button>`
+    ).join('');
+    return `<div class="mycal-item" id="mycal-item-${idx}">
+      <input type="checkbox" class="mycal-check" id="mycal-chk-${idx}"
+        onchange="_userCals[${idx}].checked=this.checked"
+        ${cal.checked ? 'checked' : ''}>
+      <label for="mycal-chk-${idx}" class="mycal-name" title="${esc(cal.summary)}">${esc(cal.summary)}</label>
+      <div class="mycal-color-wrap" style="position:relative">
+        <div style="display:flex;gap:4px;flex-wrap:wrap;max-width:140px">${colorSwatches}</div>
+      </div>
+    </div>`;
+  }).join('');
+  // Highlight current color
+  _userCals.forEach((cal, idx) => {
+    const curIdx = _CAL_COLORS.indexOf(cal.userColor);
+    const btns = document.querySelectorAll(`#mycal-item-${idx} .mycal-color-swatch`);
+    btns.forEach((b, bi) => {
+      b.style.outline = bi === curIdx ? '2.5px solid var(--color-accent)' : 'none';
+      b.style.outlineOffset = '2px';
+    });
+  });
+}
+
+function setMyCalColor(calIdx, colorIdx) {
+  _userCals[calIdx].userColor = _CAL_COLORS[colorIdx];
+  _renderMyCalList();
+}
+
+function setCalOrder(order, btn) {
+  _calOrder = order;
+  document.querySelectorAll('.mycal-order-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+function myCalDeselectAll() {
+  _userCals.forEach(c => { c.checked = false; });
+  _renderMyCalList();
+}
+
+function closeMyCalModal() {
+  document.getElementById('mycal-overlay').hidden = true;
+}
+
+async function applyMyCal() {
+  const selected = _userCals.filter(c => c.checked);
+  if (!selected.length) {
+    // No calendars selected — remove user cal events and re-render
+    _userCalEvts = [];
+    renderCalendar();
+    closeMyCalModal();
+    return;
+  }
+  showToast('캘린더 불러오는 중…');
+  const y = _curDate.getFullYear(), m = _curDate.getMonth();
+  const timeMin = new Date(y, m - 1, 1).toISOString();
+  const timeMax = new Date(y, m + 2, 0, 23, 59, 59).toISOString();
+  const qs = new URLSearchParams({ timeMin, timeMax, singleEvents:'true', orderBy:'startTime', maxResults:'500' });
+
+  const allEvts = [];
+  for (const cal of selected) {
+    try {
+      const data = await apiFetch('GET', `/calendars/${encodeURIComponent(cal.id)}/events?${qs}`);
+      const items = (data?.items || []).map(ev => ({
+        ...ev,
+        _userCal: { summary: cal.summary, color: cal.userColor }
+      }));
+      allEvts.push(...items);
+    } catch(e) {
+      showToast(`"${cal.summary}" 로드 실패: ${e.message}`, 'error');
+    }
+  }
+  _userCalEvts = allEvts;
+  renderCalendar();
+  closeMyCalModal();
+  showToast(`${allEvts.length}개 일정을 불러왔습니다.`);
+}
+
 async function adminDirectRegister() {
   const name  = (document.getElementById('admin-reg-name')?.value  || '').trim();
   const email = (document.getElementById('admin-reg-email')?.value || '').trim();
   const msg   = document.getElementById('admin-reg-msg');
   if (!name)  { if (msg) msg.innerHTML = '<span style="color:var(--red)">성명을 입력해 주세요.</span>'; return; }
-  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    if (msg) msg.innerHTML = '<span style="color:var(--red)">유효한 이메일을 입력해 주세요.</span>';
+  if (!email || !_isGmailAddr(email)) {
+    if (msg) msg.innerHTML = '<span style="color:var(--red)">@gmail.com 주소만 등록 가능합니다.</span>';
     return;
   }
   if (msg) msg.textContent = '등록 중...';
@@ -5411,7 +5761,7 @@ let _lastModalOpen = 0;
 const _CAL_GID = '89cb23c42a75d99697bdd50e11f461e94d330edec941f4bcf4f52dfddaa75553@group.calendar.google.com';
 const _CAL_ICS = 'https://calendar.google.com/calendar/ical/89cb23c42a75d99697bdd50e11f461e94d330edec941f4bcf4f52dfddaa75553%40group.calendar.google.com/public/basic.ics';
 const _CAL_WEBCAL = 'webcal://calendar.google.com/calendar/ical/89cb23c42a75d99697bdd50e11f461e94d330edec941f4bcf4f52dfddaa75553%40group.calendar.google.com/public/basic.ics';
-const _CAL_GCAL_SUB = 'https://calendar.google.com/calendar/u/0/r?cid=ODljYjIzYzQyYTc1ZDk5Njk3YmRkNTBlMTFmNDYxZTk0ZDMzMGVkZWM5NDFmNGJjZjRmNTJkZmRkYWE3NTU1M0Bncm91cC5jYWxlbmRhci5nb29nbGUuY29t';
+const _CAL_GCAL_SUB = 'https://bit.ly/asea-cal';
 
 function openCalSubModal() {
   _lastModalOpen = Date.now();
