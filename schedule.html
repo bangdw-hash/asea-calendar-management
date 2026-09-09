@@ -2540,7 +2540,7 @@ function renderMonth(wrap) {
   const prevMonthY = m === 0 ? y - 1 : y, prevMonthM = m === 0 ? 11 : m - 1;
   const nextMonthY = m === 11 ? y + 1 : y, nextMonthM = m === 11 ? 0 : m + 1;
   const isMob = window.innerWidth <= 600;
-  const MAX_MOB = 3;
+  const MAX_MOB = Infinity;
 
   // build cells array
   const cells = [];
