@@ -244,6 +244,20 @@ html,body{height:100%;
 .day-cell.holiday .day-holiday{color:var(--color-error)}
 .day-cell.today .day-num{background:var(--color-accent);color:#fff!important}
 
+/* ── DENSITY (글자 크기 5단계) ── */
+:root{--evt-fs:var(--font-xs)}
+:root[data-density="xs"]{--evt-fs:9px}
+:root[data-density="sm"]{--evt-fs:10px}
+:root[data-density="lg"]{--evt-fs:13px}
+:root[data-density="xl"]{--evt-fs:15px}
+.evt-dot,.week-evt{font-size:var(--evt-fs)!important}
+/* density 버튼 */
+.hdr-density-wrap{display:flex;align-items:center;gap:2px;border:1px solid var(--color-border);border-radius:6px;padding:2px 5px;background:var(--color-bg);height:28px;box-sizing:border-box}
+.hdr-density-btn{background:none;border:none;cursor:pointer;font-size:.78rem;font-weight:800;color:var(--color-text-sec);padding:0 5px;border-radius:3px;line-height:1;height:20px;display:flex;align-items:center;justify-content:center;transition:background .12s,color .12s;font-family:inherit}
+.hdr-density-btn:hover:not(:disabled){background:var(--g100);color:var(--color-text)}
+.hdr-density-btn:disabled{opacity:.2;cursor:default}
+.hdr-density-label{font-size:.65rem;font-weight:700;color:var(--color-text-sec);min-width:26px;text-align:center}
+
 /* event chip (index.html .event-chip 스타일) */
 .evt-dot{font-size:var(--font-xs);padding:2px 4px;border-radius:3px;margin-top:2px;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;
@@ -921,7 +935,6 @@ html,body{height:100%;
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;color:var(--color-primary)"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="m9 16 2 2 4-4"/></svg>
     <div>
       <div class="hdr-logo">ASEA 일정 관리</div>
-      <div class="hdr-sub">아세아항공직업전문학교 일정 관리</div>
     </div>
   </div>
   <div class="hdr-right-wrap">
@@ -956,6 +969,12 @@ html,body{height:100%;
         <button class="theme-swatch-btn" data-t="aurora" onclick="setColorTheme('aurora')" style="background:linear-gradient(135deg,#8B5CF6,#EC4899)" title="오로라"></button>
         <button class="theme-swatch-btn" data-t="sky" onclick="setColorTheme('sky')" style="background:linear-gradient(135deg,#0EA5E9,#38BDF8)" title="하늘색"></button>
         <button class="theme-swatch-btn" data-t="mint" onclick="setColorTheme('mint')" style="background:linear-gradient(135deg,#059669,#34D399)" title="민트"></button>
+      </div>
+      <!-- 글자 크기 조절 -->
+      <div class="hdr-density-wrap" title="일정 글자 크기">
+        <button class="hdr-density-btn" id="density-down" onclick="changeDensity(-1)" title="더 작게">A−</button>
+        <span class="hdr-density-label" id="density-label">표준</span>
+        <button class="hdr-density-btn" id="density-up" onclick="changeDensity(1)" title="더 크게">A+</button>
       </div>
     </div>
     <!-- Mobile: overflow ⋮ menu -->
@@ -1007,6 +1026,15 @@ html,body{height:100%;
           </div>
         </div>
       </div>
+      <!-- 모바일 글자 크기 조절 -->
+      <div class="hdr-dropdown-theme" style="border-top:1px solid var(--color-border);padding-top:10px;margin-top:2px">
+        <span class="hdr-dropdown-theme-label">일정 글자 크기</span>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
+          <button class="hdr-density-btn" id="mob-density-down" onclick="changeDensity(-1)" style="border:1px solid var(--color-border);border-radius:5px;padding:4px 10px;font-size:.82rem;height:32px">A−</button>
+          <span id="mob-density-label" style="flex:1;text-align:center;font-size:.82rem;font-weight:600;color:var(--color-text)">표준</span>
+          <button class="hdr-density-btn" id="mob-density-up" onclick="changeDensity(1)" style="border:1px solid var(--color-border);border-radius:5px;padding:4px 10px;font-size:.82rem;height:32px">A+</button>
+        </div>
+      </div>
     </div>
     <div id="user-area"></div>
   </div>
@@ -1048,6 +1076,10 @@ html,body{height:100%;
       <svg class="tb-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/><circle cx="8" cy="16" r="1" fill="currentColor"/><circle cx="12" cy="16" r="1" fill="currentColor"/><circle cx="16" cy="16" r="1" fill="currentColor"/></svg>
       내 캘린더
     </button>
+    <a class="tb-btn" href="reservation.html" title="강의실 예약 시스템">
+      <svg class="tb-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      강의실 예약
+    </a>
     <button class="btn btn-primary btn-sm" onclick="onAddClick()" id="hdr-add-btn">
       <svg class="tb-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
       일정 추가
@@ -1979,6 +2011,7 @@ async function fetchUserInfo() {
     _userEmail = d.email || '';
     _userInitial = (_userEmail[0] || 'U').toUpperCase();
     if (_userEmail) { try { localStorage.setItem('asea_gtoken_email', _userEmail); } catch(_) {} }
+    loadDensity(_userEmail);
   } catch(e) {}
 }
 
@@ -5781,6 +5814,54 @@ function initColorTheme() {
   setColorTheme(t);
 }
 
+/* ══════════════ DENSITY (글자 크기 조절) ══════════════ */
+const _DENSITY_LEVELS = ['xs','sm','md','lg','xl'];
+const _DENSITY_LABELS = ['더 작게','작게','표준','크게','더 크게'];
+let _density = 'md';
+let _densityEmail = '';
+
+function _densityKey(email) {
+  const isMobile = window.matchMedia('(max-width:767px)').matches;
+  return 'asea_density_' + (isMobile ? 'mobile' : 'pc') + '_' + (email || 'anon');
+}
+
+function loadDensity(email) {
+  _densityEmail = email || _densityEmail || '';
+  try {
+    const saved = localStorage.getItem(_densityKey(_densityEmail));
+    if (saved && _DENSITY_LEVELS.includes(saved)) _density = saved;
+    else _density = 'md';
+  } catch(e) { _density = 'md'; }
+  _applyDensity();
+}
+
+function _applyDensity() {
+  document.documentElement.dataset.density = _density;
+  const idx = _DENSITY_LEVELS.indexOf(_density);
+  const lbl = _DENSITY_LABELS[idx];
+  const el  = document.getElementById('density-label');
+  const mel = document.getElementById('mob-density-label');
+  if (el)  el.textContent  = lbl;
+  if (mel) mel.textContent = lbl;
+  const btnD  = document.getElementById('density-down');
+  const btnU  = document.getElementById('density-up');
+  const mbtnD = document.getElementById('mob-density-down');
+  const mbtnU = document.getElementById('mob-density-up');
+  if (btnD)  btnD.disabled  = idx <= 0;
+  if (btnU)  btnU.disabled  = idx >= _DENSITY_LEVELS.length - 1;
+  if (mbtnD) mbtnD.disabled = idx <= 0;
+  if (mbtnU) mbtnU.disabled = idx >= _DENSITY_LEVELS.length - 1;
+}
+
+function changeDensity(dir) {
+  const idx = _DENSITY_LEVELS.indexOf(_density);
+  const next = idx + dir;
+  if (next < 0 || next >= _DENSITY_LEVELS.length) return;
+  _density = _DENSITY_LEVELS[next];
+  _applyDensity();
+  try { localStorage.setItem(_densityKey(_densityEmail), _density); } catch(e) {}
+}
+
 /* ══════════════ BOOT ══════════════ */
 async function boot() {
   // 위젯 외부 조회 모드: Google OAuth 초기화 없이 공개 일정만 로드
@@ -5805,6 +5886,7 @@ async function boot() {
   renderCalendar();
 }
 initColorTheme();
+try { loadDensity(localStorage.getItem('asea_gtoken_email') || ''); } catch(e) { loadDensity(''); }
 initCtxMenuListeners();
 renderCalendar();
 updateUserArea(); // 즉시 로그인 버튼 표시 (boot 완료 후 다시 갱신)
