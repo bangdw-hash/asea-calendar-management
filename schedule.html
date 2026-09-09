@@ -658,7 +658,7 @@ html,body{height:100%;
 .badge-rejected{background:var(--red-lt);color:var(--red);padding:2px 8px;border-radius:12px;font-size:.72rem;font-weight:600;border:none;cursor:pointer}
 
 @media(max-width:600px){
-  :root{--header-h:48px;--toolbar-h:86px}
+  :root{--header-h:48px;--toolbar-h:86px;--r-mobile:12px}
   /* header compact */
   .hdr{height:48px;padding:0 12px}
   .hdr-sub{display:none}
@@ -691,7 +691,7 @@ html,body{height:100%;
   .today-btn{
     height:36px;padding:0 14px;font-size:.8rem;font-weight:700;
     border:none;background:var(--color-accent-lt);color:var(--color-accent);
-    border-radius:18px
+    border-radius:var(--r-mobile)
   }
   /* 행2 — 뷰 + 기능 버튼 */
   .toolbar-right{width:100%;justify-content:center;gap:3px;
@@ -699,13 +699,13 @@ html,body{height:100%;
   /* 뷰 토글: 세그먼트 컨트롤 */
   .view-toggle{
     flex:none;border:none;overflow:hidden;
-    background:var(--g100);border-radius:18px;
+    background:var(--g100);border-radius:var(--r-mobile);
     padding:2px;gap:0
   }
   .view-btn{
     flex:1;min-width:40px;padding:0 12px;height:32px;
     border:none;font-size:.78rem;font-weight:700;
-    border-radius:16px;background:transparent;
+    border-radius:calc(var(--r-mobile) - 2px);background:transparent;
     color:var(--color-text-sec);transition:background .15s,color .15s,box-shadow .15s
   }
   .view-btn.active{
@@ -716,7 +716,7 @@ html,body{height:100%;
   .toolbar-right .tb-btn{
     border:none;background:transparent;height:36px;
     padding:0 7px;font-size:.78rem;font-weight:600;
-    color:var(--color-text-sec);border-radius:var(--r)
+    color:var(--color-text-sec);border-radius:var(--r-mobile)
   }
   .toolbar-right .tb-btn:hover{
     background:var(--color-accent-lt);color:var(--color-accent)
@@ -738,11 +738,11 @@ html,body{height:100%;
   /* ── 모바일 무테두리: 부서 필터 세그먼트 컨트롤 ── */
   .dft-grp-toggle{
     border:none;background:var(--g100);
-    border-radius:18px;padding:2px;gap:0
+    border-radius:var(--r-mobile);padding:2px;gap:0
   }
   .dft-chip{
     border:none;border-right:none;
-    border-radius:16px;background:transparent;
+    border-radius:calc(var(--r-mobile) - 2px);background:transparent;
     padding:5px 12px;
   }
   .dft-chip.active{
@@ -758,7 +758,7 @@ html,body{height:100%;
   /* 하위 부서 칩: 무테두리 배경 필 */
   .dft-sub-chip{
     border:none;background:var(--g100);
-    border-radius:16px;padding:4px 12px
+    border-radius:var(--r-mobile);padding:4px 12px
   }
   .dft-sub-chip:hover{border:none;background:var(--color-accent-lt);color:var(--color-accent)}
   .dft-sub-chip.active{background:var(--color-accent);color:#fff;border:none}
@@ -767,16 +767,16 @@ html,body{height:100%;
   .cal-container{border:none;box-shadow:none;border-radius:0}
 
   /* ── 엑셀·출력 모달 버튼: 무테두리 배경 ── */
-  .excel-month-btn{border:none;background:var(--g100)}
+  .excel-month-btn{border:none;background:var(--g100);border-radius:var(--r-mobile)}
   .excel-month-btn:hover{border:none;background:var(--color-accent-lt);color:var(--color-accent)}
   .excel-month-btn.selected{border:none;background:var(--color-accent);color:#fff}
-  .excel-mode-btn{border:none;background:var(--g100)}
+  .excel-mode-btn{border:none;background:var(--g100);border-radius:var(--r-mobile)}
   .excel-mode-btn.active{border:none;background:var(--color-accent);color:#fff}
-  .excel-year-nav{border:none;background:var(--g100);border-radius:10px}
+  .excel-year-nav{border:none;background:var(--g100);border-radius:var(--r-mobile)}
   .excel-year-nav:hover{background:var(--color-accent-lt)}
 
   /* ── 모달 내 secondary 버튼: 무테두리 ── */
-  .btn-secondary{border:none;background:var(--g100);color:var(--color-text-sec)}
+  .btn-secondary{border:none;background:var(--g100);color:var(--color-text-sec);border-radius:var(--r-mobile)}
   .btn-secondary:hover{background:var(--color-accent-lt);color:var(--color-accent)}
 }
 @media(max-width:480px){
@@ -823,14 +823,14 @@ html,body{height:100%;
     opacity: .7 !important;
   }
 
-  /* ── 480px 이하: 모달 인풋 iOS 스타일 라운드 ── */
+  /* ── 480px 이하: 모달 인풋 --r-mobile 통일 ── */
   .modal input[type="text"],
   .modal input[type="date"],
   .modal input[type="datetime-local"],
   .modal input[type="time"],
   .modal textarea,
   .modal select {
-    border-radius:12px;
+    border-radius:var(--r-mobile);
     border:1px solid var(--color-border);
     background:var(--g100)
   }
