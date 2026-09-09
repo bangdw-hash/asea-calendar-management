@@ -1,0 +1,1415 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>강의실 예약 | ASEA</title>
+<style>
+:root {
+  --primary:#1A73E8; --primary-dk:#1557B0; --primary-lt:#E8F0FE;
+  --green:#16a34a;   --green-lt:#dcfce7;
+  --orange:#ea580c;  --orange-lt:#ffedd5;
+  --red:#dc2626;     --red-lt:#fee2e2;
+  --gray:#6b7280;    --gray-lt:#f3f4f6;
+  --border:#e5e7eb;  --text:#111827;  --text-sm:#374151;
+  --r:8px;
+  --sh:0 1px 3px rgba(0,0,0,.1);
+  --sh-md:0 4px 12px rgba(0,0,0,.12);
+  --sh-lg:0 8px 28px rgba(0,0,0,.18);
+  --font:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font);background:#f0f4f8;color:var(--text);min-height:100vh}
+
+/* ── Header ── */
+header{
+  position:sticky;top:0;z-index:100;
+  background:#fff;border-bottom:1px solid var(--border);box-shadow:var(--sh);
+  display:flex;align-items:center;justify-content:space-between;
+  padding:10px 16px;gap:10px;
+}
+.hd-logo{display:flex;align-items:center;gap:8px}
+.hd-title{font-size:17px;font-weight:800;color:var(--primary);white-space:nowrap}
+.hd-right{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+
+/* ── Buttons ── */
+.btn{padding:7px 14px;border-radius:var(--r);font-size:13px;font-weight:600;cursor:pointer;border:none;transition:.15s;white-space:nowrap;display:inline-flex;align-items:center;gap:4px;font-family:var(--font)}
+.btn-outline{background:#fff;border:1.5px solid var(--border);color:var(--text-sm)}
+.btn-outline:hover{border-color:var(--primary);color:var(--primary)}
+.btn-primary{background:var(--primary);color:#fff}
+.btn-primary:hover{background:var(--primary-dk)}
+.btn-green{background:var(--green);color:#fff}
+.btn-green:hover{background:#15803d}
+.btn-red{background:var(--red);color:#fff}
+.btn-red:hover{background:#b91c1c}
+.btn-sm{padding:5px 11px;font-size:12px}
+.btn-xs{padding:3px 8px;font-size:11px}
+.btn:disabled{opacity:.55;cursor:not-allowed}
+
+/* ── Toolbar ── */
+.toolbar{
+  background:#fff;border-bottom:1px solid var(--border);
+  padding:8px 16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+}
+.month-nav{display:flex;align-items:center;gap:6px}
+.month-nav button{
+  width:30px;height:30px;border:1.5px solid var(--border);background:#fff;
+  border-radius:var(--r);cursor:pointer;font-size:17px;color:var(--gray);
+  line-height:1;transition:.15s;display:flex;align-items:center;justify-content:center;
+}
+.month-nav button:hover{border-color:var(--primary);color:var(--primary)}
+.month-label{font-size:15px;font-weight:700;min-width:88px;text-align:center}
+.tb-sep{width:1px;height:20px;background:var(--border)}
+
+.mode-btns{display:flex;gap:3px}
+.mode-btn{
+  padding:4px 10px;border-radius:14px;font-size:11px;font-weight:700;cursor:pointer;
+  border:1.5px solid var(--border);background:#fff;color:var(--gray);transition:.15s;
+}
+.mode-btn.range.on{background:var(--green-lt);border-color:var(--green);color:var(--green)}
+.mode-btn.multi.on{background:var(--orange-lt);border-color:var(--orange);color:var(--orange)}
+.mode-btn.single.on{background:var(--primary-lt);border-color:var(--primary);color:var(--primary)}
+.mode-btn:hover:not(.on){border-color:#9ca3af;color:var(--text-sm)}
+
+.floor-tabs{display:flex;gap:3px;flex-wrap:wrap}
+.floor-tab{
+  padding:4px 10px;border-radius:14px;font-size:11px;font-weight:700;cursor:pointer;
+  border:1.5px solid var(--border);background:#fff;color:var(--gray);transition:.15s;
+}
+.floor-tab.on{background:var(--primary);border-color:var(--primary);color:#fff}
+.floor-tab:hover:not(.on){border-color:var(--primary);color:var(--primary)}
+
+/* ── Multi-select banner ── */
+.multi-banner{
+  background:var(--orange-lt);border-bottom:1.5px solid var(--orange);
+  padding:7px 16px;display:flex;align-items:center;justify-content:space-between;gap:8px;
+}
+.multi-banner span{font-size:13px;color:#9a3412;font-weight:700}
+
+/* ── Calendar ── */
+.cal-wrap{padding:12px 12px 0}
+.cal-dow{
+  display:grid;grid-template-columns:repeat(7,1fr);
+  text-align:center;margin-bottom:4px;
+}
+.cal-dow span{font-size:11px;font-weight:700;color:var(--gray);padding:4px 0}
+.cal-dow span:first-child{color:var(--red)}
+.cal-dow span:last-child{color:var(--primary)}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;padding-bottom:16px}
+
+.cal-cell{
+  min-height:88px;background:#fff;border-radius:var(--r);
+  border:1.5px solid var(--border);padding:4px;
+  cursor:pointer;transition:.15s;overflow:hidden;user-select:none;
+}
+.cal-cell:hover{border-color:var(--primary);box-shadow:0 0 0 1px var(--primary-lt)}
+.cal-cell.other-month{background:#f9fafb;opacity:.45}
+.cal-cell.today{border-color:var(--primary);box-shadow:0 0 0 2px var(--primary-lt)}
+.cal-cell.sun .day-num{color:var(--red)}
+.cal-cell.sat .day-num{color:var(--primary)}
+.cal-cell.range-start,.cal-cell.range-end{background:var(--primary);border-color:var(--primary)}
+.cal-cell.range-start .day-num,.cal-cell.range-end .day-num{color:#fff;background:rgba(255,255,255,.25)}
+.cal-cell.in-range{background:#dbeafe;border-color:#93c5fd}
+.cal-cell.multi-sel{background:var(--orange-lt);border-color:var(--orange);border-style:dashed}
+.cal-cell.single-sel{background:var(--primary-lt);border-color:var(--primary)}
+
+.day-num{
+  font-size:12px;font-weight:700;width:22px;height:22px;
+  display:flex;align-items:center;justify-content:center;border-radius:50%;
+}
+.cal-cell.today .day-num{background:var(--primary);color:#fff}
+
+.rv-pills{margin-top:2px;display:flex;flex-direction:column;gap:2px}
+.rv-pill{
+  font-size:10px;padding:2px 5px;border-radius:4px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  cursor:pointer;font-weight:600;color:#fff;max-width:100%;line-height:1.3;
+}
+.rv-pill:hover{filter:brightness(.88)}
+.rv-more{font-size:9px;color:var(--gray);padding:1px 3px;cursor:pointer}
+.rv-more:hover{color:var(--primary)}
+
+/* ── Drawer ── */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;opacity:0;pointer-events:none;transition:opacity .25s}
+.overlay.show{opacity:1;pointer-events:all}
+.drawer{
+  position:fixed;bottom:0;left:0;right:0;z-index:210;
+  background:#fff;border-radius:16px 16px 0 0;box-shadow:var(--sh-lg);
+  max-height:92vh;overflow-y:auto;
+  transform:translateY(100%);transition:transform .3s ease;
+}
+.drawer.open{transform:translateY(0)}
+@media(min-width:720px){
+  .drawer{top:0;bottom:0;right:0;left:auto;width:500px;border-radius:0;transform:translateX(100%)}
+  .drawer.open{transform:translateX(0)}
+}
+.drawer-hdr{
+  position:sticky;top:0;background:#fff;z-index:1;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 20px;border-bottom:1px solid var(--border);
+}
+.drawer-title{font-size:15px;font-weight:700}
+.close-btn{background:none;border:none;font-size:20px;cursor:pointer;color:var(--gray);line-height:1}
+.drawer-body{padding:20px;display:flex;flex-direction:column;gap:14px}
+
+/* ── Form ── */
+.fg{display:flex;flex-direction:column;gap:6px}
+.fl{font-size:12px;font-weight:700;color:var(--text-sm)}
+.fl .req{color:var(--red)}
+.fi,.fs,.fta{
+  width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:var(--r);
+  font-size:13px;font-family:var(--font);outline:none;transition:.15s;background:#fff;color:var(--text);
+}
+.fi:focus,.fs:focus,.fta:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(26,115,232,.1)}
+.fta{resize:vertical;min-height:70px}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+
+.room-row{display:flex;gap:8px;align-items:center}
+.room-dot{width:12px;height:12px;border-radius:50%;flex-shrink:0}
+.date-tags{display:flex;flex-wrap:wrap;gap:4px;align-items:center}
+.date-tag{background:var(--primary-lt);color:var(--primary-dk);padding:3px 9px;border-radius:12px;font-size:11px;font-weight:700}
+
+.conflict-box{background:var(--red-lt);border:1.5px solid var(--red);border-radius:var(--r);padding:10px 12px;font-size:12px;color:var(--red)}
+.conflict-box b{display:block;margin-bottom:4px}
+.ai-box{background:var(--primary-lt);border:1.5px solid #93b4f3;border-radius:var(--r);padding:10px 12px;font-size:12px;color:var(--primary-dk);white-space:pre-wrap;line-height:1.6}
+.info-box{background:var(--gray-lt);border-radius:var(--r);padding:10px 12px;font-size:11px;color:var(--gray);line-height:1.6}
+
+/* ── Modal ── */
+.modal{
+  position:fixed;inset:0;z-index:300;display:flex;align-items:center;justify-content:center;
+  padding:16px;background:rgba(0,0,0,.5);
+  opacity:0;pointer-events:none;transition:opacity .2s;
+}
+.modal.show{opacity:1;pointer-events:all}
+.modal-box{
+  background:#fff;border-radius:var(--r);box-shadow:var(--sh-lg);
+  max-width:540px;width:100%;max-height:88vh;overflow-y:auto;
+  transform:scale(.95);transition:transform .2s;
+}
+.modal.show .modal-box{transform:scale(1)}
+.modal-box.wide{max-width:980px}
+.modal-hdr{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid var(--border);position:sticky;top:0;background:#fff;z-index:1}
+.modal-title{font-size:15px;font-weight:700}
+.modal-body{padding:20px}
+.modal-ftr{padding:14px 20px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end}
+
+/* ── Detail ── */
+.detail-grid{display:flex;flex-direction:column;gap:11px}
+.detail-row{display:flex;gap:12px;align-items:flex-start}
+.dl{font-size:12px;color:var(--gray);min-width:76px;flex-shrink:0;margin-top:1px}
+.dv{font-size:13px;font-weight:500}
+.badge{display:inline-block;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700;color:#fff}
+.linked-badge{background:var(--green-lt);color:var(--green);padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;margin-left:6px}
+.label-mono{font-size:11px;font-family:monospace;background:var(--gray-lt);padding:5px 10px;border-radius:6px;line-height:1.5}
+
+/* ── Admin table ── */
+.adm-filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;align-items:center}
+.rv-tbl{width:100%;border-collapse:collapse;font-size:12px}
+.rv-tbl th{background:var(--gray-lt);padding:8px 6px;text-align:left;font-weight:700;border-bottom:1.5px solid var(--border);white-space:nowrap}
+.rv-tbl td{padding:7px 6px;border-bottom:1px solid var(--border);vertical-align:top}
+.rv-tbl tr:hover td{background:#f8fafc}
+.tbl-wrap{overflow-x:auto}
+
+/* ── Toast ── */
+#toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:9999;display:flex;flex-direction:column;gap:6px;align-items:center;pointer-events:none}
+.ti{padding:9px 20px;border-radius:24px;font-size:13px;font-weight:700;box-shadow:var(--sh-md);white-space:nowrap}
+.ti.success{background:var(--green);color:#fff}
+.ti.error{background:var(--red);color:#fff}
+.ti.info{background:var(--primary);color:#fff}
+.ti.warn{background:var(--orange);color:#fff}
+
+/* ── Misc ── */
+.spinner{width:22px;height:22px;border:2.5px solid var(--border);border-top-color:var(--primary);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.img-preview{max-width:100%;border-radius:var(--r);margin-top:8px}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:#d1d5db;border-radius:9px}
+
+@media(max-width:600px){
+  .cal-cell{min-height:64px}
+  .rv-pill{font-size:9px}
+  .hd-title{font-size:15px}
+  .frow{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<header>
+  <div class="hd-logo">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+    <span class="hd-title">강의실 예약</span>
+  </div>
+  <div class="hd-right">
+    <a href="schedule.html" class="btn btn-outline btn-sm">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      학교일정 바로가기
+    </a>
+    <button id="adminBtn" class="btn btn-outline btn-sm" onclick="onAdminBtn()">관리자</button>
+    <button class="btn btn-primary btn-sm" onclick="openDrawer(null)">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      예약 등록
+    </button>
+  </div>
+</header>
+
+<!-- Toolbar -->
+<div class="toolbar">
+  <div class="month-nav">
+    <button onclick="moveMonth(-1)" title="이전 달">&#8249;</button>
+    <span class="month-label" id="monthLabel">2026년 9월</span>
+    <button onclick="moveMonth(1)" title="다음 달">&#8250;</button>
+  </div>
+  <div class="tb-sep"></div>
+  <div style="display:flex;align-items:center;gap:5px">
+    <span style="font-size:11px;color:var(--gray)">선택:</span>
+    <div class="mode-btns">
+      <button class="mode-btn range on" id="modeRange" onclick="setMode('range')">범위</button>
+      <button class="mode-btn multi" id="modeMulti" onclick="setMode('multi')">다중</button>
+      <button class="mode-btn single" id="modeSingle" onclick="setMode('single')">단일</button>
+    </div>
+  </div>
+  <div class="tb-sep"></div>
+  <div class="floor-tabs" id="floorTabs"></div>
+</div>
+
+<!-- Multi-select banner -->
+<div id="multiBanner" class="multi-banner" hidden>
+  <span id="multiBannerTxt">0개 날짜 선택됨</span>
+  <div style="display:flex;gap:6px">
+    <button class="btn btn-sm btn-outline" onclick="clearSel()">취소</button>
+    <button class="btn btn-sm btn-orange" style="background:var(--orange);color:#fff" onclick="openDrawer(null)">예약 등록</button>
+  </div>
+</div>
+
+<!-- Calendar -->
+<div class="cal-wrap">
+  <div class="cal-dow">
+    <span>일</span><span>월</span><span>화</span><span>수</span>
+    <span>목</span><span>금</span><span>토</span>
+  </div>
+  <div id="calGrid" class="cal-grid"></div>
+</div>
+
+<!-- Drawer overlay -->
+<div id="drawerOverlay" class="overlay" onclick="closeDrawer()"></div>
+
+<!-- Drawer: reservation form -->
+<div id="drawer" class="drawer">
+  <div class="drawer-hdr">
+    <span class="drawer-title" id="drawerTitle">예약 등록</span>
+    <button class="close-btn" onclick="closeDrawer()">✕</button>
+  </div>
+  <div class="drawer-body">
+
+    <div class="fg" id="fgDates">
+      <div class="fl">선택 날짜 <span class="req">*</span></div>
+      <div class="date-tags" id="dateTagsArea"></div>
+    </div>
+
+    <div class="fg">
+      <div class="fl">강의실 <span class="req">*</span></div>
+      <div class="room-row">
+        <div class="room-dot" id="roomDot" style="background:var(--primary)"></div>
+        <select id="roomSel" class="fs" style="flex:1" onchange="onRoomChange()">
+          <option value="">강의실 선택...</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="frow">
+      <div class="fg">
+        <div class="fl">시작 시간 <span class="req">*</span></div>
+        <input type="time" id="tStart" class="fi" value="09:00" onchange="schedCC()">
+      </div>
+      <div class="fg">
+        <div class="fl">종료 시간 <span class="req">*</span></div>
+        <input type="time" id="tEnd" class="fi" value="18:00" onchange="schedCC()">
+      </div>
+    </div>
+
+    <div id="conflictBox" hidden></div>
+
+    <div class="fg">
+      <div class="fl">사용 목적 <span class="req">*</span></div>
+      <textarea id="purposeIn" class="fta" placeholder="예: 신변보호사 대면강좌, 외부 강사 특강, 자격증 시험 등"></textarea>
+    </div>
+
+    <div style="display:flex;align-items:center;gap:8px">
+      <button class="btn btn-outline btn-sm" id="aiBtn" onclick="runAI()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
+        AI 검토
+      </button>
+      <span style="font-size:11px;color:var(--gray)">목적 입력 후 클릭하면 자동 정리</span>
+    </div>
+    <div id="aiBox" hidden class="ai-box"></div>
+
+    <div class="fg">
+      <div class="fl">부서 <span class="req">*</span></div>
+      <select id="deptSel" class="fs">
+        <option value="">부서 선택...</option>
+      </select>
+    </div>
+
+    <div class="frow">
+      <div class="fg">
+        <div class="fl">신청자 <span class="req">*</span></div>
+        <input type="text" id="reqName" class="fi" placeholder="이름">
+      </div>
+      <div class="fg">
+        <div class="fl">연락처</div>
+        <input type="text" id="reqContact" class="fi" placeholder="010-0000-0000">
+      </div>
+    </div>
+
+    <div class="frow">
+      <div class="fg">
+        <div class="fl">비밀번호 <span class="req">*</span></div>
+        <input type="password" id="pwIn" class="fi" placeholder="4자 이상 (수정·삭제용)">
+      </div>
+      <div class="fg">
+        <div class="fl">비밀번호 확인 <span class="req">*</span></div>
+        <input type="password" id="pwIn2" class="fi" placeholder="동일하게 입력">
+      </div>
+    </div>
+
+    <div class="fg">
+      <div class="fl">첨부 이미지 (선택)</div>
+      <input type="file" id="imgIn" accept="image/*" class="fi" style="padding:6px" onchange="onImg(event)">
+      <img id="imgPrev" class="img-preview" hidden>
+      <div id="imgAiBox" hidden class="ai-box" style="margin-top:8px"></div>
+    </div>
+
+    <div class="info-box">비밀번호는 수정·삭제 시 사용됩니다. 분실 시 관리자에게 문의해주세요.</div>
+
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-primary" style="flex:1" id="submitBtn" onclick="submitRv()">예약 등록</button>
+      <button class="btn btn-outline" onclick="closeDrawer()">취소</button>
+    </div>
+  </div>
+</div>
+
+<!-- Detail modal -->
+<div id="detailModal" class="modal" onclick="if(event.target===this)closeDetail()">
+  <div class="modal-box">
+    <div class="modal-hdr">
+      <span class="modal-title">예약 상세</span>
+      <button class="close-btn" onclick="closeDetail()">✕</button>
+    </div>
+    <div class="modal-body" id="detailBody"></div>
+    <div class="modal-ftr" id="detailFtr"></div>
+  </div>
+</div>
+
+<!-- Password verify modal -->
+<div id="pwModal" class="modal" onclick="if(event.target===this)closePwM()">
+  <div class="modal-box" style="max-width:360px">
+    <div class="modal-hdr">
+      <span class="modal-title" id="pwMTitle">비밀번호 확인</span>
+      <button class="close-btn" onclick="closePwM()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="fg">
+        <div class="fl">비밀번호</div>
+        <input type="password" id="pwVerify" class="fi" placeholder="등록 시 설정한 비밀번호" onkeydown="if(event.key==='Enter')doPwAction()">
+      </div>
+      <p style="font-size:11px;color:var(--gray);margin-top:8px">3회 오류 시 잠깁니다.</p>
+    </div>
+    <div class="modal-ftr">
+      <button class="btn btn-outline" onclick="closePwM()">취소</button>
+      <button class="btn btn-primary" onclick="doPwAction()">확인</button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit modal -->
+<div id="editModal" class="modal" onclick="if(event.target===this)closeEditM()">
+  <div class="modal-box">
+    <div class="modal-hdr">
+      <span class="modal-title">예약 수정</span>
+      <button class="close-btn" onclick="closeEditM()">✕</button>
+    </div>
+    <div class="modal-body" id="editBody"></div>
+    <div class="modal-ftr">
+      <button class="btn btn-outline" onclick="closeEditM()">취소</button>
+      <button class="btn btn-primary" id="editSaveBtn" onclick="saveEdit()">수정 저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- Admin login modal -->
+<div id="loginModal" class="modal" onclick="if(event.target===this)closeLoginM()">
+  <div class="modal-box" style="max-width:360px">
+    <div class="modal-hdr">
+      <span class="modal-title">관리자 로그인</span>
+      <button class="close-btn" onclick="closeLoginM()">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:13px;color:var(--gray);margin-bottom:16px">구글 계정(관리자)으로 로그인하세요.</p>
+      <button class="btn btn-primary" style="width:100%" onclick="googleLogin()">
+        <svg width="16" height="16" viewBox="0 0 24 24" style="flex-shrink:0"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+        Google로 로그인
+      </button>
+      <div id="loginMsg" style="margin-top:10px;font-size:12px;color:var(--red)"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Admin panel modal -->
+<div id="adminModal" class="modal" onclick="if(event.target===this)closeAdminM()">
+  <div class="modal-box wide">
+    <div class="modal-hdr">
+      <span class="modal-title">관리자 패널</span>
+      <button class="close-btn" onclick="closeAdminM()">✕</button>
+    </div>
+    <div class="modal-body" id="adminBody"></div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://accounts.google.com/gsi/client" async></script>
+<script>
+'use strict';
+
+/* ── Constants ── */
+const SB_URL  = 'https://zbpeyklwpotjyveipzxd.supabase.co';
+const SB_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpicGV5a2x3cG90anl2ZWlwenhkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE1MTYxMDcsImV4cCI6MjA5NzA5MjEwN30.6JgoQ6rPRnmrbBTG68A-Y9HDQk40mnwubhXVnkZvHrQ';
+const ADMIN_EMAILS = ['bangdw@gmail.com', 'chajungsin@gmail.com'];
+const PW_SALT = 'asea-rv1';
+const G_CLIENT_ID = '89094526186-ngj72p8cbqrvai06e2uhdiq0n5brrc2b.apps.googleusercontent.com';
+const DEPTS = [
+  '항공정비과','항공기계과','항공전기전자과','항공보안과','항공관광과','항공서비스과',
+  '교학처','기획처','행정실','학생처','취업지원센터','도서관','교수학습개발원','외부기관'
+];
+
+/* ── Supabase ── */
+const sb = supabase.createClient(SB_URL, SB_ANON);
+
+/* ── State ── */
+let curYear = new Date().getFullYear();
+let curMonth = new Date().getMonth();
+let classrooms = [];
+let reservations = [];
+let selMode = 'range';
+let selDates = [];
+let rangeStart = null;
+let filterFloor = 'all';
+let ccTimer = null;
+let adminEmail = sessionStorage.getItem('rv_adm') || null;
+let editingId = null;
+let editIsAdmin = false;
+let pwPending = null; // {action:'edit'|'delete', id}
+let pwFails = 0;
+let rtSub = null;
+
+/* ── Init ── */
+async function init() {
+  await loadClassrooms();
+  populateFloorTabs();
+  populateRoomSel();
+  populateDeptSel();
+  renderCal();
+  await loadRvs();
+  subscribeRT();
+  updateAdminBtn();
+  initLongPress();
+}
+
+/* ── SHA-256 ── */
+async function sha256(s) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+
+/* ── Classrooms ── */
+async function loadClassrooms() {
+  const { data } = await sb.from('classrooms').select('*').eq('active', true).order('floor').order('name');
+  classrooms = data || [];
+}
+
+const FLOOR_LABEL = { B1:'B1층', '1F':'1층', '2F':'2층', '3F':'3층', '4F':'4층', '5F':'5층' };
+
+function populateFloorTabs() {
+  const floors = [...new Set(classrooms.map(c => c.floor))];
+  document.getElementById('floorTabs').innerHTML =
+    ['all', ...floors].map(f =>
+      `<button class="floor-tab ${f==='all'?'on':''}" data-f="${f}" onclick="setFloor('${f}')">${f==='all'?'전체':FLOOR_LABEL[f]||f}</button>`
+    ).join('');
+}
+
+function setFloor(f) {
+  filterFloor = f;
+  document.querySelectorAll('.floor-tab').forEach(t => t.classList.toggle('on', t.dataset.f === f));
+  renderCal();
+}
+
+function populateRoomSel() {
+  const sel = document.getElementById('roomSel');
+  const floors = [...new Set(classrooms.map(c => c.floor))];
+  floors.forEach(fl => {
+    const g = document.createElement('optgroup');
+    g.label = FLOOR_LABEL[fl] || fl;
+    classrooms.filter(c => c.floor === fl).forEach(c => {
+      const o = document.createElement('option');
+      o.value = c.name; o.dataset.color = c.color || '#1A73E8'; o.textContent = c.name;
+      g.appendChild(o);
+    });
+    sel.appendChild(g);
+  });
+}
+
+function populateDeptSel() {
+  const sel = document.getElementById('deptSel');
+  DEPTS.forEach(d => { const o = document.createElement('option'); o.value = d; o.textContent = d; sel.appendChild(o); });
+}
+
+/* ── Reservations ── */
+async function loadRvs() {
+  const pad2 = n => String(n).padStart(2,'0');
+  const y1 = curYear, m1 = curMonth;
+  const last = new Date(y1, m1 + 1, 0);
+  const dateS = `${y1}-${pad2(m1+1)}-01`;
+  const dateE = `${last.getFullYear()}-${pad2(last.getMonth()+1)}-${pad2(last.getDate())}`;
+
+  const { data } = await sb.from('reservations').select('*')
+    .is('deleted_at', null).eq('status', 'active')
+    .lte('date_start', dateE).gte('date_end', dateS)
+    .order('time_start');
+  reservations = data || [];
+  renderCal();
+}
+
+/* ── Calendar render ── */
+function renderCal() {
+  const y = curYear, m = curMonth;
+  document.getElementById('monthLabel').textContent = `${y}년 ${m+1}월`;
+  const today = toStr(new Date());
+  const firstDow = new Date(y, m, 1).getDay();
+  const lastD = new Date(y, m+1, 0).getDate();
+  const prevLastD = new Date(y, m, 0).getDate();
+  const prevY = m === 0 ? y-1 : y, prevM = m === 0 ? 11 : m-1;
+  const nextY = m === 11 ? y+1 : y, nextM = m === 11 ? 0 : m+1;
+
+  let cells = [];
+  for (let i = firstDow-1; i >= 0; i--) {
+    const d = prevLastD - i;
+    cells.push({ s: toStr(new Date(prevY, prevM, d)), d, other: true, dow: new Date(prevY, prevM, d).getDay() });
+  }
+  for (let d = 1; d <= lastD; d++) {
+    const dt = new Date(y, m, d);
+    cells.push({ s: toStr(dt), d, other: false, dow: dt.getDay() });
+  }
+  const rem = 42 - cells.length;
+  for (let d = 1; d <= rem; d++) {
+    cells.push({ s: toStr(new Date(nextY, nextM, d)), d, other: true, dow: new Date(nextY, nextM, d).getDay() });
+  }
+
+  document.getElementById('calGrid').innerHTML = cells.map(c => buildCell(c, today)).join('');
+}
+
+function buildCell(cell, today) {
+  const { s, d, other, dow } = cell;
+  let cls = 'cal-cell';
+  if (other) cls += ' other-month';
+  if (s === today) cls += ' today';
+  if (!other && dow === 0) cls += ' sun';
+  if (!other && dow === 6) cls += ' sat';
+
+  if (selMode === 'range' && selDates.length === 2) {
+    const [a, b] = selDates;
+    if (s === a) cls += ' range-start';
+    else if (s === b) cls += ' range-end';
+    else if (s > a && s < b) cls += ' in-range';
+  } else if (selMode === 'range' && rangeStart && selDates.length === 0) {
+    if (s === rangeStart) cls += ' range-start';
+  } else if (selMode === 'multi' && selDates.includes(s)) {
+    cls += ' multi-sel';
+  } else if (selMode === 'single' && selDates.includes(s)) {
+    cls += ' single-sel';
+  }
+
+  const rvs = getRvsForDate(s);
+  const pills = buildPills(rvs);
+  return `<div class="${cls}" data-s="${s}" onclick="onCell(event,'${s}')"><div class="day-num">${d}</div><div class="rv-pills">${pills}</div></div>`;
+}
+
+function getRvsForDate(dateStr) {
+  let rvs = reservations.filter(r => r.date_start <= dateStr && r.date_end >= dateStr);
+  if (filterFloor !== 'all') {
+    const names = classrooms.filter(c => c.floor === filterFloor).map(c => c.name);
+    rvs = rvs.filter(r => names.includes(r.classroom_name));
+  }
+  return rvs;
+}
+
+function buildPills(rvs) {
+  if (!rvs.length) return '';
+  const MAX = 3;
+  let h = rvs.slice(0, MAX).map(rv => {
+    const c = rv.classroom_color || '#1A73E8';
+    const lbl = rv.formatted_label || mkLabel(rv.classroom_name, rv.time_start, rv.time_end, rv.purpose);
+    const short = lbl.length > 22 ? lbl.slice(0, 20) + '…' : lbl;
+    return `<div class="rv-pill" style="background:${c}" onclick="event.stopPropagation();openDetail('${rv.id}')" title="${esc(lbl)}">${esc(short)}</div>`;
+  }).join('');
+  if (rvs.length > MAX) h += `<div class="rv-more" onclick="event.stopPropagation()">+${rvs.length - MAX}건 더보기</div>`;
+  return h;
+}
+
+/* ── Long press (mobile multi-select) ── */
+function initLongPress() {
+  let lpTimer = null;
+  document.addEventListener('touchstart', e => {
+    const cell = e.target.closest('.cal-cell');
+    if (!cell) return;
+    const s = cell.dataset.s;
+    lpTimer = setTimeout(() => {
+      navigator.vibrate && navigator.vibrate(30);
+      if (selMode !== 'multi') setMode('multi');
+      toggleMulti(s);
+      renderCal();
+    }, 500);
+  }, { passive: true });
+  document.addEventListener('touchend', () => clearTimeout(lpTimer), { passive: true });
+  document.addEventListener('touchmove', () => clearTimeout(lpTimer), { passive: true });
+}
+
+/* ── Cell click ── */
+function onCell(event, s) {
+  if (event.target.classList.contains('rv-pill') || event.target.classList.contains('rv-more')) return;
+
+  if (event.ctrlKey || event.metaKey) {
+    if (selMode !== 'multi') setMode('multi');
+    toggleMulti(s);
+    renderCal();
+    return;
+  }
+
+  if (selMode === 'single') {
+    selDates = [s];
+    renderCal();
+    openDrawer(null);
+    return;
+  }
+
+  if (selMode === 'multi') {
+    toggleMulti(s);
+    renderCal();
+    return;
+  }
+
+  // range mode
+  if (!rangeStart) {
+    rangeStart = s; selDates = [];
+    renderCal();
+  } else if (s === rangeStart) {
+    selDates = [s, s]; rangeStart = null;
+    renderCal();
+    openDrawer(null);
+  } else {
+    const a = rangeStart < s ? rangeStart : s;
+    const b = rangeStart < s ? s : rangeStart;
+    selDates = [a, b]; rangeStart = null;
+    renderCal();
+    openDrawer(null);
+  }
+}
+
+function toggleMulti(s) {
+  const i = selDates.indexOf(s);
+  if (i >= 0) selDates.splice(i, 1); else selDates.push(s);
+  selDates.sort();
+  updMultiBanner();
+}
+
+function updMultiBanner() {
+  const show = selMode === 'multi' && selDates.length > 0;
+  document.getElementById('multiBanner').hidden = !show;
+  if (show) document.getElementById('multiBannerTxt').textContent = `${selDates.length}개 날짜 선택됨`;
+}
+
+/* ── Mode & month ── */
+function setMode(mode) {
+  selMode = mode; selDates = []; rangeStart = null;
+  document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('on'));
+  document.getElementById('mode' + mode.charAt(0).toUpperCase() + mode.slice(1)).classList.add('on');
+  updMultiBanner();
+  renderCal();
+}
+
+function clearSel() {
+  selDates = []; rangeStart = null;
+  updMultiBanner();
+  renderCal();
+}
+
+function moveMonth(d) {
+  curMonth += d;
+  if (curMonth < 0) { curMonth = 11; curYear--; }
+  if (curMonth > 11) { curMonth = 0; curYear++; }
+  loadRvs();
+}
+
+/* ── Drawer ── */
+function openDrawer(dateStr) {
+  if (dateStr) { selDates = [dateStr]; renderCal(); }
+  if (!selDates.length) return toast('날짜를 먼저 선택해주세요', 'warn');
+
+  // Build date display
+  let html = '';
+  if (selMode === 'range' && selDates.length === 2 && selDates[0] !== selDates[1]) {
+    const [a, b] = selDates;
+    const days = Math.round((new Date(b) - new Date(a)) / 86400000) + 1;
+    html = `<span class="date-tag">${fmtD(a)}</span><span style="color:var(--gray);font-size:12px;margin:0 2px">~</span><span class="date-tag">${fmtD(b)}</span><span style="font-size:11px;color:var(--gray);margin-left:4px">(${days}일)</span>`;
+  } else {
+    html = selDates.map(d => `<span class="date-tag">${fmtD(d)}</span>`).join('');
+  }
+  document.getElementById('dateTagsArea').innerHTML = html;
+  document.getElementById('drawerTitle').textContent = '예약 등록';
+  document.getElementById('conflictBox').hidden = true;
+  document.getElementById('aiBox').hidden = true;
+
+  document.getElementById('drawer').classList.add('open');
+  document.getElementById('drawerOverlay').classList.add('show');
+}
+
+function closeDrawer() {
+  document.getElementById('drawer').classList.remove('open');
+  document.getElementById('drawerOverlay').classList.remove('show');
+}
+
+function resetForm() {
+  ['roomSel','deptSel'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('tStart').value = '09:00';
+  document.getElementById('tEnd').value = '18:00';
+  ['purposeIn','reqName','reqContact','pwIn','pwIn2'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('roomDot').style.background = 'var(--primary)';
+  document.getElementById('conflictBox').hidden = true;
+  document.getElementById('aiBox').hidden = true;
+  document.getElementById('imgIn').value = '';
+  document.getElementById('imgPrev').hidden = true;
+  document.getElementById('imgAiBox').hidden = true;
+}
+
+/* ── Room change → conflict check ── */
+function onRoomChange() {
+  const opt = document.getElementById('roomSel').selectedOptions[0];
+  document.getElementById('roomDot').style.background = opt?.dataset.color || 'var(--primary)';
+  schedCC();
+}
+
+function schedCC() {
+  clearTimeout(ccTimer);
+  ccTimer = setTimeout(runCC, 400);
+}
+
+async function runCC() {
+  const room = document.getElementById('roomSel').value;
+  const ts = document.getElementById('tStart').value;
+  const te = document.getElementById('tEnd').value;
+  const box = document.getElementById('conflictBox');
+  if (!room || !ts || !te || !selDates.length) { box.hidden = true; return; }
+
+  const dateS = selDates[0], dateE = selDates[selDates.length - 1];
+
+  const { data } = await sb.rpc('check_room_conflict', {
+    p_classroom_name: room, p_date_start: dateS, p_date_end: dateE,
+    p_time_start: ts, p_time_end: te, p_exclude_id: editingId || null
+  });
+
+  if (data?.conflict && data.conflicts?.length) {
+    const c = data.conflicts[0];
+    box.hidden = false;
+    box.className = 'conflict-box';
+    box.innerHTML = `<b>⚠ 예약 충돌</b>
+      ${fmtD(c.date_start)}${c.date_start!==c.date_end?' ~ '+fmtD(c.date_end):''} ${c.time_start}~${c.time_end}<br>
+      신청자: <b>${esc(c.requester_name)}</b> (${esc(c.department)})${c.contact?`<br>연락처: ${esc(c.contact)}`:''}`;
+  } else {
+    box.hidden = true;
+  }
+}
+
+/* ── Submit reservation ── */
+async function submitRv() {
+  const room = document.getElementById('roomSel').value;
+  const ts   = document.getElementById('tStart').value;
+  const te   = document.getElementById('tEnd').value;
+  const purp = document.getElementById('purposeIn').value.trim();
+  const dept = document.getElementById('deptSel').value;
+  const req  = document.getElementById('reqName').value.trim();
+  const cont = document.getElementById('reqContact').value.trim();
+  const pw   = document.getElementById('pwIn').value;
+  const pw2  = document.getElementById('pwIn2').value;
+
+  if (!room) return toast('강의실을 선택해주세요', 'warn');
+  if (!selDates.length) return toast('날짜를 선택해주세요', 'warn');
+  if (!ts || !te) return toast('시간을 입력해주세요', 'warn');
+  if (ts >= te) return toast('종료 시간이 시작 시간보다 늦어야 합니다', 'warn');
+  if (!purp) return toast('사용 목적을 입력해주세요', 'warn');
+  if (!dept) return toast('부서를 선택해주세요', 'warn');
+  if (!req) return toast('신청자 이름을 입력해주세요', 'warn');
+  if (!pw || pw.length < 4) return toast('비밀번호 4자 이상 입력해주세요', 'warn');
+  if (pw !== pw2) return toast('비밀번호가 일치하지 않습니다', 'warn');
+
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true; btn.textContent = '등록 중...';
+
+  try {
+    const pwHash = await sha256(pw + PW_SALT);
+    const color = document.getElementById('roomSel').selectedOptions[0]?.dataset.color || '#1A73E8';
+
+    let records;
+    if (selMode === 'multi' && selDates.length > 1) {
+      records = selDates.map(d => mkRecord(room, color, d, d, ts, te, purp, dept, req, cont, pwHash));
+    } else {
+      const dateS = selDates[0], dateE = selDates[selDates.length - 1];
+      records = [mkRecord(room, color, dateS, dateE, ts, te, purp, dept, req, cont, pwHash)];
+    }
+
+    const { error } = await sb.from('reservations').insert(records);
+    if (error) throw error;
+
+    toast(`예약 등록 완료 (${records.length}건)`, 'success');
+    clearSel();
+    closeDrawer();
+    resetForm();
+    await loadRvs();
+  } catch (e) {
+    toast('등록 실패: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false; btn.textContent = '예약 등록';
+  }
+}
+
+function mkRecord(room, color, ds, de, ts, te, purp, dept, req, cont, pwHash) {
+  return {
+    classroom_name: room, classroom_color: color,
+    date_start: ds, date_end: de, time_start: ts, time_end: te,
+    purpose: purp, department: dept, requester_name: req,
+    contact: cont || null, raw_input: purp,
+    formatted_label: mkLabel(room, ts, te, purp),
+    password_hash: pwHash,
+  };
+}
+
+function mkLabel(room, ts, te, purp) {
+  return `[${room}] ${ts}~${te} | ${purp}`;
+}
+
+/* ── Detail modal ── */
+async function openDetail(id) {
+  const rv = reservations.find(r => r.id === id);
+  if (!rv) return;
+
+  const body = document.getElementById('detailBody');
+  const isLinked = rv.synced_to_schedule;
+
+  body.innerHTML = `<div class="detail-grid">
+    <div class="detail-row">
+      <div class="dl">강의실</div>
+      <div class="dv">
+        <span class="badge" style="background:${rv.classroom_color||'#1A73E8'}">${esc(rv.classroom_name)}</span>
+        ${isLinked ? '<span class="linked-badge">학교일정 연동됨</span>' : ''}
+      </div>
+    </div>
+    <div class="detail-row">
+      <div class="dl">날짜</div>
+      <div class="dv">${fmtD(rv.date_start)}${rv.date_start!==rv.date_end?' ~ '+fmtD(rv.date_end):''}</div>
+    </div>
+    <div class="detail-row">
+      <div class="dl">시간</div>
+      <div class="dv">${rv.time_start} ~ ${rv.time_end}</div>
+    </div>
+    <div class="detail-row">
+      <div class="dl">사용 목적</div>
+      <div class="dv">${esc(rv.purpose)}</div>
+    </div>
+    <div class="detail-row">
+      <div class="dl">부서</div>
+      <div class="dv">${esc(rv.department)}</div>
+    </div>
+    <div class="detail-row">
+      <div class="dl">신청자</div>
+      <div class="dv">${esc(rv.requester_name)}</div>
+    </div>
+    ${rv.contact ? `<div class="detail-row"><div class="dl">연락처</div><div class="dv">${esc(rv.contact)}</div></div>` : ''}
+    <div class="detail-row">
+      <div class="dl">표시 레이블</div>
+      <div class="dv label-mono">${esc(rv.formatted_label || mkLabel(rv.classroom_name, rv.time_start, rv.time_end, rv.purpose))}</div>
+    </div>
+    <div class="detail-row">
+      <div class="dl">등록일</div>
+      <div class="dv">${fmtDT(rv.created_at)}</div>
+    </div>
+  </div>`;
+
+  let ftr = `<button class="btn btn-outline" onclick="closeDetail()">닫기</button>`;
+  if (isAdmin()) {
+    ftr = `<button class="btn btn-red btn-sm" onclick="adminDelRv('${id}')">삭제</button>
+           <button class="btn btn-primary btn-sm" onclick="adminEditRv('${id}')">수정</button>
+           ${isLinked
+             ? `<button class="btn btn-outline btn-sm" onclick="adminUnlink('${id}')">연동 해제</button>`
+             : `<button class="btn btn-green btn-sm" onclick="adminLink('${id}')">학교일정 연동</button>`
+           }` + ftr;
+  } else {
+    ftr = `<button class="btn btn-outline btn-sm" onclick="openPwM('edit','${id}')">수정</button>
+           <button class="btn btn-red btn-sm" onclick="openPwM('delete','${id}')">삭제</button>` + ftr;
+  }
+  document.getElementById('detailFtr').innerHTML = ftr;
+  showM('detailModal');
+}
+
+function closeDetail() { hideM('detailModal'); }
+
+/* ── PW modal ── */
+function openPwM(action, id) {
+  pwPending = { action, id }; pwFails = 0;
+  document.getElementById('pwMTitle').textContent = action === 'delete' ? '삭제 비밀번호 확인' : '수정 비밀번호 확인';
+  document.getElementById('pwVerify').value = '';
+  showM('pwModal');
+}
+function closePwM() { hideM('pwModal'); pwPending = null; }
+
+async function doPwAction() {
+  const pw = document.getElementById('pwVerify').value;
+  if (!pw) return toast('비밀번호를 입력해주세요', 'warn');
+  const { action, id } = pwPending;
+  const pwHash = await sha256(pw + PW_SALT);
+
+  if (action === 'delete') {
+    const { data } = await sb.rpc('delete_reservation', { p_id: id, p_password_hash: pwHash });
+    if (!data?.success) {
+      pwFails++;
+      if (pwFails >= 3) { closePwM(); return toast('비밀번호 3회 오류. 잠김.', 'error'); }
+      return toast(`비밀번호 오류 (${pwFails}/3)`, 'error');
+    }
+    toast('예약이 삭제되었습니다', 'success');
+    closePwM(); closeDetail();
+    await loadRvs();
+  } else {
+    const rv = reservations.find(r => r.id === id);
+    if (!rv) return;
+    if (pwHash !== rv.password_hash) {
+      pwFails++;
+      if (pwFails >= 3) { closePwM(); return toast('비밀번호 3회 오류. 잠김.', 'error'); }
+      return toast(`비밀번호 오류 (${pwFails}/3)`, 'error');
+    }
+    closePwM();
+    openEditM(id, pwHash, false);
+  }
+}
+
+/* ── Edit modal ── */
+function openEditM(id, pwHash, admin) {
+  editingId = id; editIsAdmin = admin;
+  const rv = reservations.find(r => r.id === id);
+  if (!rv) return;
+
+  document.getElementById('editBody').innerHTML = `
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div class="fg">
+        <div class="fl">강의실</div>
+        <div style="font-weight:700">${esc(rv.classroom_name)}</div>
+      </div>
+      <div class="fg">
+        <div class="fl">날짜 (변경 불가)</div>
+        <div style="color:var(--gray);font-size:13px">${fmtD(rv.date_start)}${rv.date_start!==rv.date_end?' ~ '+fmtD(rv.date_end):''}</div>
+      </div>
+      <div class="frow">
+        <div class="fg">
+          <div class="fl">시작 시간 <span class="req">*</span></div>
+          <input type="time" id="eTs" class="fi" value="${rv.time_start}">
+        </div>
+        <div class="fg">
+          <div class="fl">종료 시간 <span class="req">*</span></div>
+          <input type="time" id="eTe" class="fi" value="${rv.time_end}">
+        </div>
+      </div>
+      <div class="fg">
+        <div class="fl">사용 목적 <span class="req">*</span></div>
+        <textarea id="ePurp" class="fta" rows="3">${esc(rv.purpose)}</textarea>
+      </div>
+      <div class="fg">
+        <div class="fl">부서 <span class="req">*</span></div>
+        <select id="eDept" class="fs">
+          ${DEPTS.map(d => `<option value="${d}" ${d===rv.department?'selected':''}>${d}</option>`).join('')}
+        </select>
+      </div>
+      <div class="frow">
+        <div class="fg">
+          <div class="fl">신청자 <span class="req">*</span></div>
+          <input type="text" id="eReq" class="fi" value="${esc(rv.requester_name)}">
+        </div>
+        <div class="fg">
+          <div class="fl">연락처</div>
+          <input type="text" id="eCont" class="fi" value="${esc(rv.contact||'')}">
+        </div>
+      </div>
+    </div>`;
+
+  document.getElementById('editSaveBtn').dataset.pwHash = pwHash || '';
+  closeDetail();
+  showM('editModal');
+}
+
+function closeEditM() { hideM('editModal'); editingId = null; }
+
+async function saveEdit() {
+  const ts   = document.getElementById('eTs').value;
+  const te   = document.getElementById('eTe').value;
+  const purp = document.getElementById('ePurp').value.trim();
+  const dept = document.getElementById('eDept').value;
+  const req  = document.getElementById('eReq').value.trim();
+  const cont = document.getElementById('eCont').value.trim();
+  const pwHash = document.getElementById('editSaveBtn').dataset.pwHash;
+  const id = editingId;
+
+  if (!ts || !te) return toast('시간을 입력해주세요', 'warn');
+  if (ts >= te) return toast('종료 시간이 시작 시간보다 늦어야 합니다', 'warn');
+  if (!purp || !dept || !req) return toast('필수 항목을 입력해주세요', 'warn');
+
+  const rv = reservations.find(r => r.id === id);
+  if (!rv) return;
+  const lbl = mkLabel(rv.classroom_name, ts, te, purp);
+  const btn = document.getElementById('editSaveBtn');
+  btn.disabled = true; btn.textContent = '저장 중...';
+
+  try {
+    let data, error;
+    if (editIsAdmin) {
+      ({ data, error } = await sb.rpc('admin_modify_reservation', {
+        p_id: id, p_admin_email: adminEmail,
+        p_date_start: rv.date_start, p_date_end: rv.date_end,
+        p_time_start: ts, p_time_end: te, p_purpose: purp,
+        p_department: dept, p_requester_name: req,
+        p_contact: cont || null, p_formatted_label: lbl,
+      }));
+    } else {
+      ({ data, error } = await sb.rpc('modify_reservation', {
+        p_id: id, p_password_hash: pwHash,
+        p_date_start: rv.date_start, p_date_end: rv.date_end,
+        p_time_start: ts, p_time_end: te, p_purpose: purp,
+        p_department: dept, p_requester_name: req,
+        p_contact: cont || null, p_formatted_label: lbl,
+      }));
+    }
+    if (error || !data?.success) throw new Error(data?.error || error?.message || '수정 실패');
+    toast('예약이 수정되었습니다', 'success');
+    closeEditM();
+    await loadRvs();
+    if (editIsAdmin) loadAdminList();
+  } catch (e) {
+    toast('수정 실패: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false; btn.textContent = '수정 저장';
+  }
+}
+
+/* ── Admin ── */
+function isAdmin() { return adminEmail && ADMIN_EMAILS.includes(adminEmail); }
+
+function updateAdminBtn() {
+  const btn = document.getElementById('adminBtn');
+  if (isAdmin()) {
+    btn.textContent = '관리자 패널';
+    btn.className = 'btn btn-green btn-sm';
+  } else {
+    btn.textContent = '관리자';
+    btn.className = 'btn btn-outline btn-sm';
+  }
+}
+
+function onAdminBtn() {
+  if (isAdmin()) openAdminM();
+  else showM('loginModal');
+}
+
+function closeLoginM() { hideM('loginModal'); }
+
+function googleLogin() {
+  if (!window.google) return toast('Google 인증 모듈 로딩 중...', 'info');
+  const client = google.accounts.oauth2.initTokenClient({
+    client_id: G_CLIENT_ID,
+    scope: 'email profile',
+    callback: async res => {
+      if (res.error) { document.getElementById('loginMsg').textContent = '로그인 실패: ' + res.error; return; }
+      try {
+        const r = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', { headers: { Authorization: 'Bearer ' + res.access_token } });
+        const u = await r.json();
+        if (ADMIN_EMAILS.includes(u.email)) {
+          adminEmail = u.email;
+          sessionStorage.setItem('rv_adm', adminEmail);
+          closeLoginM(); updateAdminBtn();
+          toast(`관리자 로그인 완료 (${adminEmail})`, 'success');
+        } else {
+          document.getElementById('loginMsg').textContent = '관리자 계정이 아닙니다: ' + u.email;
+        }
+      } catch (e) { document.getElementById('loginMsg').textContent = '인증 오류: ' + e.message; }
+    }
+  });
+  client.requestAccessToken({ prompt: 'select_account' });
+}
+
+async function adminDelRv(id) {
+  if (!isAdmin()) return toast('관리자 권한이 필요합니다', 'error');
+  if (!confirm('이 예약을 삭제하시겠습니까?')) return;
+  const { data } = await sb.rpc('admin_delete_reservation', { p_id: id, p_admin_email: adminEmail });
+  if (!data?.success) return toast('삭제 실패: ' + (data?.error || ''), 'error');
+  toast('삭제되었습니다', 'success');
+  closeDetail(); await loadRvs(); loadAdminList();
+}
+
+function adminEditRv(id) {
+  if (!isAdmin()) return;
+  openEditM(id, '', true);
+}
+
+async function adminLink(id) {
+  if (!isAdmin()) return;
+  const { data } = await sb.rpc('link_to_schedule', { p_reservation_id: id, p_admin_email: adminEmail });
+  if (!data?.success) return toast('연동 실패: ' + (data?.error || ''), 'error');
+  toast('학교일정에 연동되었습니다', 'success');
+  closeDetail(); await loadRvs();
+}
+
+async function adminUnlink(id) {
+  if (!isAdmin()) return;
+  const { data } = await sb.rpc('unlink_from_schedule', { p_reservation_id: id, p_admin_email: adminEmail });
+  if (!data?.success) return toast('연동 해제 실패: ' + (data?.error || ''), 'error');
+  toast('연동이 해제되었습니다', 'success');
+  closeDetail(); await loadRvs();
+}
+
+/* ── Admin panel ── */
+let admRvs = [];
+let admFilter = { room: '', date: '' };
+
+async function openAdminM() {
+  if (!isAdmin()) return;
+  showM('adminModal');
+  await loadAdminList();
+}
+function closeAdminM() { hideM('adminModal'); }
+
+async function loadAdminList() {
+  if (!isAdmin()) return;
+  const body = document.getElementById('adminBody');
+  body.innerHTML = '<div style="display:flex;justify-content:center;padding:40px"><div class="spinner"></div></div>';
+  const { data } = await sb.from('reservations').select('*')
+    .is('deleted_at', null).eq('status', 'active')
+    .order('date_start', { ascending: false }).limit(200);
+  admRvs = data || [];
+  renderAdmTable();
+}
+
+function renderAdmTable() {
+  const body = document.getElementById('adminBody');
+  let rvs = admRvs;
+  if (admFilter.room) rvs = rvs.filter(r => r.classroom_name.includes(admFilter.room));
+  if (admFilter.date) rvs = rvs.filter(r => r.date_start <= admFilter.date && r.date_end >= admFilter.date);
+
+  body.innerHTML = `
+    <div class="adm-filters">
+      <div>
+        <span style="font-size:12px;color:var(--gray)">관리자: </span>
+        <span style="font-size:13px;font-weight:700;color:var(--green)">${adminEmail}</span>
+        <button class="btn btn-xs btn-outline" style="margin-left:8px" onclick="admLogout()">로그아웃</button>
+      </div>
+      <input type="text" class="fi" style="width:180px" placeholder="강의실 검색..."
+        value="${esc(admFilter.room)}" oninput="admFilter.room=this.value;renderAdmTable()">
+      <input type="date" class="fi" style="width:150px"
+        value="${admFilter.date}" onchange="admFilter.date=this.value;renderAdmTable()">
+      <button class="btn btn-sm btn-outline" onclick="admFilter={room:'',date:''};renderAdmTable()">초기화</button>
+      <button class="btn btn-sm btn-primary" onclick="loadAdminList()">새로고침</button>
+    </div>
+    <div style="font-size:12px;color:var(--gray);margin-bottom:8px">표시: ${rvs.length}건 / 전체: ${admRvs.length}건</div>
+    <div class="tbl-wrap">
+      <table class="rv-tbl">
+        <thead>
+          <tr>
+            <th>기간</th><th>강의실</th><th>시간</th><th>목적</th>
+            <th>부서</th><th>신청자</th><th>연락처</th><th>학교일정</th><th>작업</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rvs.map(rv => `<tr>
+            <td style="white-space:nowrap">${rv.date_start}${rv.date_start!==rv.date_end?'<br>~'+rv.date_end:''}</td>
+            <td><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${rv.classroom_color||'#1A73E8'};margin-right:4px;vertical-align:middle"></span>${esc(rv.classroom_name)}</td>
+            <td style="white-space:nowrap">${rv.time_start}~${rv.time_end}</td>
+            <td style="max-width:140px;overflow:hidden">${esc(rv.purpose)}</td>
+            <td>${esc(rv.department)}</td>
+            <td>${esc(rv.requester_name)}</td>
+            <td>${esc(rv.contact||'')}</td>
+            <td>${rv.synced_to_schedule
+              ? `<button class="btn btn-xs btn-outline" onclick="admUnlink('${rv.id}')">연동해제</button>`
+              : `<button class="btn btn-xs btn-green" onclick="admLink('${rv.id}')">연동</button>`}</td>
+            <td style="display:flex;gap:3px">
+              <button class="btn btn-xs btn-primary" onclick="adminEditRv('${rv.id}')">수정</button>
+              <button class="btn btn-xs btn-red" onclick="adminDelRv('${rv.id}')">삭제</button>
+            </td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`;
+}
+
+async function admLink(id) {
+  await adminLink(id);
+  await loadAdminList();
+}
+async function admUnlink(id) {
+  await adminUnlink(id);
+  await loadAdminList();
+}
+
+function admLogout() {
+  adminEmail = null;
+  sessionStorage.removeItem('rv_adm');
+  updateAdminBtn(); closeAdminM();
+  toast('로그아웃되었습니다', 'info');
+}
+
+/* ── AI review ── */
+async function runAI() {
+  const purp = document.getElementById('purposeIn').value.trim();
+  const room = document.getElementById('roomSel').value;
+  const ts = document.getElementById('tStart').value;
+  const te = document.getElementById('tEnd').value;
+  if (!purp) return toast('사용 목적을 먼저 입력해주세요', 'warn');
+
+  const btn = document.getElementById('aiBtn');
+  const box = document.getElementById('aiBox');
+  btn.disabled = true; btn.textContent = '분석 중...';
+  box.hidden = false; box.textContent = '...';
+
+  const prompt = `강의실 예약 정보 정리 요청:
+강의실: ${room || '미정'}, 시간: ${ts||'?'}~${te||'?'}
+목적 원문: ${purp}
+
+다음 형식으로 짧게 답변해주세요:
+1. 표준 레이블: [강의실] 시작~종료 | 목적요약(20자이내)
+2. 보완 의견: 1~2줄 (없으면 "특이사항 없음")`;
+
+  try {
+    const result = await callAI(prompt);
+    box.textContent = result;
+    // Try to extract purpose summary and fill in
+    const m = result.match(/\|\s*([^\n]+)/);
+    if (m) {
+      const ex = m[1].trim().replace(/[「」【】\[\]]/g, '');
+      if (ex && ex.length <= 30) document.getElementById('purposeIn').value = ex;
+    }
+  } catch (e) {
+    box.textContent = '⚠ AI 검토 실패: ' + e.message;
+  } finally {
+    btn.disabled = false; btn.textContent = 'AI 검토';
+  }
+}
+
+async function callAI(prompt) {
+  const ak = localStorage.getItem('anthropicApiKey');
+  if (ak) {
+    const r = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'x-api-key': ak, 'anthropic-version': '2023-06-01', 'content-type': 'application/json', 'anthropic-dangerous-request-options': 'true' },
+      body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 400, messages: [{ role: 'user', content: prompt }] })
+    });
+    if (r.ok) { const d = await r.json(); return d.content[0].text; }
+  }
+  const gk = localStorage.getItem('geminiApiKey');
+  if (gk) {
+    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${gk}`, {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+    });
+    if (r.ok) { const d = await r.json(); return d.candidates[0].content.parts[0].text; }
+  }
+  return '(AI 키 미설정) 입력하신 목적을 그대로 사용합니다.';
+}
+
+/* ── Image AI ── */
+async function onImg(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = async e => {
+    const prev = document.getElementById('imgPrev');
+    prev.src = e.target.result; prev.hidden = false;
+    const box = document.getElementById('imgAiBox');
+    box.hidden = false; box.textContent = '이미지 분석 중...';
+    try {
+      const ak = localStorage.getItem('anthropicApiKey');
+      if (!ak) { box.textContent = '(AI 키 없음) 이미지 분석을 건너뜁니다.'; return; }
+      const b64 = e.target.result.split(',')[1];
+      const r = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'x-api-key': ak, 'anthropic-version': '2023-06-01', 'content-type': 'application/json', 'anthropic-dangerous-request-options': 'true' },
+        body: JSON.stringify({
+          model: 'claude-haiku-4-5-20251001', max_tokens: 250,
+          messages: [{ role: 'user', content: [
+            { type: 'image', source: { type: 'base64', media_type: file.type, data: b64 } },
+            { type: 'text', text: '이미지를 2~3문장으로 설명해주세요. 강의실 예약 목적에 참고할 정보가 있으면 알려주세요.' }
+          ]}]
+        })
+      });
+      if (r.ok) { const d = await r.json(); box.textContent = '📸 ' + d.content[0].text; }
+      else box.textContent = '이미지 분석 실패.';
+    } catch (e) { box.textContent = '오류: ' + e.message; }
+  };
+  reader.readAsDataURL(file);
+}
+
+/* ── Realtime ── */
+function subscribeRT() {
+  if (rtSub) sb.removeChannel(rtSub);
+  rtSub = sb.channel('rv-rt')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'reservations' }, () => loadRvs())
+    .subscribe();
+}
+
+/* ── Modal helpers ── */
+function showM(id) {
+  document.getElementById(id).classList.add('show');
+  document.body.style.overflow = 'hidden';
+}
+function hideM(id) {
+  document.getElementById(id).classList.remove('show');
+  if (!document.querySelector('.modal.show')) document.body.style.overflow = '';
+}
+
+/* ── Toast ── */
+function toast(msg, type = 'info') {
+  const el = document.createElement('div');
+  el.className = `ti ${type}`; el.textContent = msg;
+  document.getElementById('toast').appendChild(el);
+  setTimeout(() => { el.style.opacity = '0'; el.style.transition = 'opacity .4s'; setTimeout(() => el.remove(), 400); }, 2600);
+}
+
+/* ── Utils ── */
+function toStr(dt) {
+  return `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`;
+}
+function fmtD(s) {
+  if (!s) return '';
+  const [y, m, d] = s.split('-');
+  const dow = ['일','월','화','수','목','금','토'][new Date(+y, +m-1, +d).getDay()];
+  return `${y}.${m}.${d}(${dow})`;
+}
+function fmtDT(s) {
+  if (!s) return '';
+  const d = new Date(s);
+  return `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+}
+function esc(s) {
+  if (!s) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+/* ── Start ── */
+init();
+</script>
+</body>
+</html>

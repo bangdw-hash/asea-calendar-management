@@ -268,6 +268,7 @@ html,body{height:100%;
 .evt-dot:hover{filter:brightness(.93)}
 .evt-dot.more{border-left:none;background:var(--g100);color:var(--color-text-sec);font-size:var(--font-xs)}
 .evt-dot.school-evt{border-left-color:var(--g700)!important;background:var(--g100)!important;color:var(--g900)!important}
+.evt-dot.rv-linked{border-left:none;color:#fff!important;font-weight:600;opacity:.9}
 
 /* week grid */
 .week-grid{overflow-x:auto}
@@ -1875,6 +1876,7 @@ let _userEmail  = null;
 let _userInitial = '';
 let _events     = [];
 let _holidays   = {}; // 'YYYY-MM-DD' → 공휴일명
+let _linkedItems = {}; // 'YYYY-MM-DD' → [{label, classroom_color}] from reservation.html
 let _deptFilter = { group: null, dept: null }; // group: null|'운영부'|'계열'|'부설', dept: null|string
 const _evCache  = {}; // key: 'y_m' → {items, ts}
 const _EV_TTL   = 5 * 60 * 1000; // 5분
@@ -2092,6 +2094,27 @@ async function _prefetchEvents(y, m) {
       });
       _evCachePut(mo.y, mo.m, slice);
     });
+  } catch(_) {}
+}
+
+async function loadLinkedItems() {
+  const y = _curDate.getFullYear(), m = _curDate.getMonth();
+  const pad2 = n => String(n).padStart(2,'0');
+  const dateS = `${y}-${pad2(m+1)}-01`;
+  const last  = new Date(y, m+1, 0);
+  const dateE = `${last.getFullYear()}-${pad2(last.getMonth()+1)}-${pad2(last.getDate())}`;
+  try {
+    const r = await fetch(
+      `${SB_URL}/rest/v1/schedule_linked_items?target_date=gte.${dateS}&target_date=lte.${dateE}&unlinked_at=is.null&select=target_date,label,classroom_color&order=target_date`,
+      { headers: { apikey: SB_ANON, Authorization: 'Bearer ' + SB_ANON } }
+    );
+    if (!r.ok) return;
+    const data = await r.json();
+    _linkedItems = {};
+    (data || []).forEach(li => {
+      (_linkedItems[li.target_date] = _linkedItems[li.target_date] || []).push(li);
+    });
+    if (_view === 'month') renderCalendar();
   } catch(_) {}
 }
 
@@ -2404,7 +2427,8 @@ function renderMonth(wrap) {
         const draggable = (_token && _tokenHasWrite && !ev._userCal) ? ' draggable="true"' : '';
         return `<span class="evt-dot-wrap"><span class="evt-dot${schoolCls}"${chipStyle}${draggable} data-evtid="${ev.id}" onclick="evtChipClick(event,this,'${escId(ev.id)}')" title="${esc(ev.summary||'')}">${esc(ev.summary||'(제목 없음)')}</span>${qBtns}</span>`;
       }).join('');
-      gridHtml += `<div class="${cell.cls}${holiday?' holiday':''}${(cell.evts||[]).length?' has-events':''}" data-y="${y}" data-m="${m}" data-d="${cell.d}">${numEl}${dotsHtml}</div>`;
+      const linkedHtml = (_linkedItems[dateKey]||[]).map(li=>`<span class="evt-dot-wrap"><span class="evt-dot rv-linked" style="background:${li.classroom_color||'#1A73E8'}" title="${esc(li.label)}">${esc(li.label)}</span></span>`).join('');
+      gridHtml += `<div class="${cell.cls}${holiday?' holiday':''}${(cell.evts||[]).length||linkedHtml?' has-events':''}" data-y="${y}" data-m="${m}" data-d="${cell.d}">${numEl}${dotsHtml}${linkedHtml}</div>`;
     }
     gridHtml += '</div>';
   }
@@ -2989,10 +3013,11 @@ async function navMonth(delta) {
     renderCalendar();
   }
 
-  // 이벤트 불러오기 후 재렌더
+  // 이벤트 + 강의실 연동 불러오기 후 재렌더
   if (_token) await fetchEvents();
   else await fetchPublicEvents();
   renderCalendar();
+  loadLinkedItems();
 
   // innerHTML 교체 후 scrollLeft 재설정
   if (delta < 0) wrap.scrollLeft = wrap.scrollWidth - wrap.clientWidth;
@@ -5891,6 +5916,7 @@ initCtxMenuListeners();
 renderCalendar();
 updateUserArea(); // 즉시 로그인 버튼 표시 (boot 완료 후 다시 갱신)
 boot();
+loadLinkedItems(); // 강의실 예약 연동 항목 로드
 
 
 checkSharedEvt();
