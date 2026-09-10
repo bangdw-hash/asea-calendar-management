@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>강의실 예약 | ASEA</title>
+<title>ASEA 강의실 계약</title>
 <style>
 :root {
   --primary:#1A73E8; --primary-dk:#1557B0; --primary-lt:#E8F0FE;
@@ -25,14 +25,54 @@ body{font-family:var(--font);background:#f0f4f8;color:var(--text);min-height:100
 
 /* ── Header ── */
 header{
-  position:sticky;top:0;z-index:100;
-  background:#fff;border-bottom:1px solid var(--border);box-shadow:var(--sh);
+  position:sticky;top:0;z-index:100;height:56px;
+  background:#fff;border-bottom:1px solid var(--border);
   display:flex;align-items:center;justify-content:space-between;
-  padding:10px 16px;gap:10px;
+  padding:0 16px;gap:8px;flex-shrink:0;
 }
-.hd-logo{display:flex;align-items:center;gap:8px}
-.hd-title{font-size:17px;font-weight:800;color:var(--primary);white-space:nowrap}
-.hd-right{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.hd-logo{display:flex;align-items:center;gap:8px;flex:1;min-width:0;overflow:hidden}
+.hd-title{font-size:16px;font-weight:700;color:var(--text);letter-spacing:-.3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hd-right{display:flex;gap:4px;align-items:center;flex-shrink:0}
+/* 텍스트형 ghost 버튼 (schedule.html tb-btn 스타일) */
+.tb-btn{background:transparent;color:var(--gray);border:none;
+  border-radius:var(--r);padding:0 10px;font-size:12px;font-weight:500;
+  display:inline-flex;align-items:center;gap:5px;cursor:pointer;
+  transition:background .15s,color .15s;height:34px;white-space:nowrap;font-family:var(--font)}
+.tb-btn:hover{background:var(--primary-lt);color:var(--primary)}
+.tb-ico{width:14px;height:14px;flex-shrink:0}
+/* CTA 버튼 - 대관예약 (orange), 예약등록 (primary) */
+.btn-cta-rental{background:var(--orange-lt);color:var(--orange);border:none;
+  border-radius:var(--r);padding:5px 12px;font-size:12px;font-weight:700;
+  cursor:pointer;display:inline-flex;align-items:center;gap:4px;
+  transition:background .15s;white-space:nowrap;font-family:var(--font)}
+.btn-cta-rental:hover{background:#fed7aa}
+.btn-cta-new{background:var(--primary);color:#fff;border:none;
+  border-radius:var(--r);padding:5px 13px;font-size:12px;font-weight:700;
+  cursor:pointer;display:inline-flex;align-items:center;gap:4px;
+  transition:background .15s;white-space:nowrap;font-family:var(--font)}
+.btn-cta-new:hover{background:var(--primary-dk)}
+/* 모바일 ⋮ 드롭다운 */
+.hd-more{background:none;border:none;width:34px;height:34px;border-radius:var(--r);
+  cursor:pointer;display:none;align-items:center;justify-content:center;
+  color:var(--gray);font-size:20px;font-weight:700;line-height:1}
+.hd-more:hover{background:var(--gray-lt)}
+.hd-desktop{display:flex;gap:2px;align-items:center}
+.hd-dropdown{
+  position:absolute;top:56px;right:12px;
+  background:#fff;border:1px solid var(--border);border-radius:var(--r);
+  box-shadow:var(--sh-lg);min-width:140px;padding:4px;z-index:200;
+  display:flex;flex-direction:column;gap:1px;
+}
+.hd-dropdown a,.hd-dropdown button{
+  background:none;border:none;width:100%;text-align:left;padding:9px 14px;
+  font-size:13px;color:var(--text);cursor:pointer;border-radius:8px;
+  display:flex;align-items:center;gap:8px;text-decoration:none;font-family:var(--font);
+}
+.hd-dropdown a:hover,.hd-dropdown button:hover{background:var(--gray-lt)}
+@media(max-width:600px){
+  .hd-desktop{display:none}
+  .hd-more{display:flex}
+}
 
 /* ── Buttons ── */
 .btn{padding:7px 14px;border-radius:var(--r);font-size:13px;font-weight:600;cursor:pointer;border:none;transition:.15s;white-space:nowrap;display:inline-flex;align-items:center;gap:4px;font-family:var(--font)}
@@ -205,7 +245,7 @@ header{
 .date-tag:active{opacity:.7}
 .add-date-btn{padding:3px 10px;border-radius:var(--r);font-size:11px;font-weight:700;cursor:pointer;border:1.5px dashed var(--primary);background:#fff;color:var(--primary)}
 .add-date-btn:hover{background:var(--primary-lt)}
-.date-ctx{position:fixed;background:var(--card);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--sh-lg);padding:4px;display:flex;flex-direction:column;gap:2px;z-index:9999;min-width:90px;animation:dtCtxIn .12s ease}
+.date-ctx{position:fixed;background:#fff;border:1px solid var(--border);border-radius:var(--r);box-shadow:0 4px 20px rgba(0,0,0,.18);padding:4px;display:flex;flex-direction:column;gap:2px;z-index:9999;min-width:100px;animation:dtCtxIn .12s ease}
 @keyframes dtCtxIn{from{opacity:0;transform:scale(.9)}to{opacity:1;transform:scale(1)}}
 .date-ctx button{background:none;border:none;padding:7px 14px;text-align:left;font-size:12px;font-weight:600;cursor:pointer;border-radius:8px;white-space:nowrap;color:var(--text)}
 .date-ctx button:hover{background:var(--bg-2)}
@@ -287,23 +327,44 @@ header{
 <!-- Header -->
 <header>
   <div class="hd-logo">
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-    <span class="hd-title">강의실 예약</span>
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+    <span class="hd-title">ASEA 강의실 계약</span>
   </div>
   <div class="hd-right">
-    <a href="schedule.html" class="btn btn-outline btn-sm">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-      학교일정 바로가기
-    </a>
-    <button id="adminBtn" class="btn btn-outline btn-sm" onclick="onAdminBtn()">관리자</button>
-    <button class="btn btn-outline btn-sm" style="border-color:var(--orange);color:var(--orange)" onclick="openDrawer(null,true)">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 9h1M9 13h1M14 9h1M14 13h1"/></svg>
+    <!-- 데스크탑: 텍스트형 ghost 버튼 -->
+    <div class="hd-desktop">
+      <a href="schedule.html" class="tb-btn">
+        <svg class="tb-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        학교일정
+      </a>
+      <button id="adminBtn" class="tb-btn" onclick="onAdminBtn()">
+        <svg class="tb-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        관리자
+      </button>
+    </div>
+    <!-- CTA 버튼 (항상 표시) -->
+    <button class="btn-cta-rental" onclick="openDrawer(null,true)">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 9h1M9 13h1M14 9h1M14 13h1"/></svg>
       대관예약
     </button>
-    <button class="btn btn-primary btn-sm" onclick="openDrawer(null,false)">
+    <button class="btn-cta-new" onclick="openDrawer(null,false)">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
       예약 등록
     </button>
+    <!-- 모바일: ⋮ 메뉴 -->
+    <button class="hd-more" id="hdMoreBtn" onclick="toggleHdDropdown(event)" aria-label="더보기">
+      <svg width="4" height="18" viewBox="0 0 4 18" fill="currentColor"><circle cx="2" cy="2" r="2"/><circle cx="2" cy="9" r="2"/><circle cx="2" cy="16" r="2"/></svg>
+    </button>
+    <div class="hd-dropdown" id="hdDropdown" hidden>
+      <a href="schedule.html">
+        <svg class="tb-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        학교일정 바로가기
+      </a>
+      <button onclick="onAdminBtn();closeHdDropdown()">
+        <svg class="tb-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        관리자
+      </button>
+    </div>
   </div>
 </header>
 
@@ -1784,6 +1845,23 @@ function updateAdminBtn() {
 function onAdminBtn() {
   if (isAdmin()) openAdminM();
   else showM('loginModal');
+}
+
+function toggleHdDropdown(e) {
+  e.stopPropagation();
+  const dd = document.getElementById('hdDropdown');
+  dd.hidden = !dd.hidden;
+  if (!dd.hidden) {
+    setTimeout(() => document.addEventListener('pointerdown', _closeHdDdOutside, { capture: true, once: true }), 50);
+  }
+}
+function closeHdDropdown() {
+  const dd = document.getElementById('hdDropdown');
+  if (dd) dd.hidden = true;
+}
+function _closeHdDdOutside(e) {
+  const dd = document.getElementById('hdDropdown');
+  if (dd && !dd.contains(e.target)) closeHdDropdown();
 }
 
 function closeLoginM() { hideM('loginModal'); }
