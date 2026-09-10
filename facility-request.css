@@ -22,17 +22,18 @@ body {
   text-align: center;
   padding: 32px 20px 24px;
   background: linear-gradient(135deg, #0078D4 0%, #1565C0 100%);
-  border-radius: 16px 16px 0 0;
+  border-radius: 12px 12px 0 0;
   border-bottom: none;
 }
-.fr-logo  { font-size: 40px; margin-bottom: 8px; filter: drop-shadow(0 2px 6px rgba(0,0,0,.2)); }
+.fr-logo  { display: flex; justify-content: center; margin-bottom: 8px; filter: drop-shadow(0 2px 6px rgba(0,0,0,.2)); }
+.fr-logo svg { width: 40px; height: 40px; color: #fff; }
 .fr-title { font-size: 22px; font-weight: 800; color: #fff; margin-bottom: 8px; text-shadow: 0 1px 4px rgba(0,0,0,.15); }
 .fr-subtitle { font-size: 14px; color: rgba(255,255,255,.85); line-height: 1.6; }
 
 /* ── 알림 ── */
 .fr-alert {
   padding: 12px 16px;
-  border-radius: 8px;
+  border-radius: 12px;
   font-size: 14px;
   margin: 0 0 12px;
 }
@@ -43,12 +44,12 @@ body {
 .fr-form {
   background: #fff;
   padding: 20px;
-  border-radius: 0 0 16px 16px;
+  border-radius: 0 0 12px 12px;
 }
 
 .fr-fieldset {
   border: 1px solid #E8EAED;
-  border-radius: 10px;
+  border-radius: 12px;
   padding: 16px;
   margin-bottom: 16px;
 }
@@ -79,7 +80,7 @@ body {
   width: 100%;
   padding: 10px 12px;
   border: 1px solid #DADCE0;
-  border-radius: 8px;
+  border-radius: 12px;
   font-size: 14px;
   color: #202124;
   background: #fff;
@@ -105,7 +106,7 @@ body {
 .fr-cal-guide {
   background: #F8F9FB;
   border: 1px solid #E8EAED;
-  border-radius: 8px;
+  border-radius: 12px;
   padding: 8px 12px;
   font-size: 12px;
   color: #5F6368;
@@ -173,7 +174,7 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  border-radius: 8px;
+  border-radius: 12px;
   cursor: pointer;
   font-size: 13px;
   font-weight: 500;
@@ -216,8 +217,8 @@ body {
 }
 
 /* 구간 시작/끝 강조 */
-.fr-cal-cell.fr-cal-range-start { border-radius: 8px 8px 8px 8px; }
-.fr-cal-cell.fr-cal-range-end   { border-radius: 8px 8px 8px 8px; }
+.fr-cal-cell.fr-cal-range-start { border-radius: 12px 12px 12px 12px; }
+.fr-cal-cell.fr-cal-range-end   { border-radius: 12px 12px 12px 12px; }
 
 /* 일요일/토요일 색상 */
 .fr-cal-cell:nth-child(7n+1):not(.fr-cal-empty):not(.fr-cal-past) { color: #E53935; }
@@ -243,7 +244,7 @@ body {
   margin: 6px auto 0;
   padding: 4px 14px;
   border: 1px solid #DADCE0;
-  border-radius: 20px;
+  border-radius: 12px;
   background: #fff;
   font-size: 12px;
   color: #5F6368;
@@ -264,7 +265,7 @@ body {
 .fr-time-range-row {
   background: #F8F9FB;
   border: 1px solid #E8EAED;
-  border-radius: 10px;
+  border-radius: 12px;
   padding: 12px 14px;
   margin-bottom: 10px;
 }
@@ -330,7 +331,7 @@ body {
   background: linear-gradient(135deg, #0078D4 0%, #1565C0 100%);
   color: #fff;
   border: none;
-  border-radius: 10px;
+  border-radius: 12px;
   font-size: 16px;
   font-weight: 700;
   cursor: pointer;
@@ -344,11 +345,12 @@ body {
 /* ── 완료 화면 ── */
 .fr-success {
   background: #fff;
-  border-radius: 16px;
+  border-radius: 12px;
   padding: 40px 24px;
   text-align: center;
 }
-.fr-success-icon { font-size: 56px; margin-bottom: 16px; }
+.fr-success-icon { display: flex; justify-content: center; margin-bottom: 16px; color: #2E7D32; }
+.fr-success-icon svg { width: 56px; height: 56px; }
 .fr-success h2   { font-size: 20px; font-weight: 800; margin-bottom: 10px; color: #2E7D32; }
 .fr-success p    { font-size: 14px; color: #5F6368; line-height: 1.6; }
 .fr-again-btn {
@@ -357,7 +359,7 @@ body {
   background: #E5F2FB;
   color: #0078D4;
   border: none;
-  border-radius: 8px;
+  border-radius: 12px;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
@@ -467,7 +469,7 @@ body {
   flex: 0 0 24px;
   height: 2px;
   background: #E8EAED;
-  border-radius: 1px;
+  border-radius: 12px;
   transition: background .3s;
   margin-bottom: 18px; /* label 높이만큼 올림 */
 }
@@ -509,13 +511,13 @@ body {
 .fr-share-prog-track {
   height: 4px;
   background: #E8EAED;
-  border-radius: 2px;
+  border-radius: 12px;
   overflow: hidden;
 }
 .fr-share-prog-fill {
   height: 100%;
   background: linear-gradient(90deg, #0078D4 0%, #34A853 100%);
-  border-radius: 2px;
+  border-radius: 12px;
   width: 25%;
   transition: width .4s cubic-bezier(0.34,1.56,0.64,1);
 }
@@ -535,7 +537,7 @@ body {
   background: #0078D4;
   color: #fff;
   border: none;
-  border-radius: 20px;
+  border-radius: 12px;
   font-size: 13px;
   font-weight: 700;
   cursor: pointer;
@@ -560,7 +562,7 @@ body {
   font-size: 12px;
   font-weight: 600;
   padding: 7px 14px;
-  border-radius: 20px;
+  border-radius: 12px;
   white-space: nowrap;
   opacity: 0;
   transform: translateY(6px);
@@ -587,30 +589,30 @@ body {
 }
 
 /* ── 요금 안내 카드 ── */
-.fr-fee-card { background:#EFF6FF; border:1.5px solid #BFDBFE; border-radius:10px; padding:14px 16px; }
+.fr-fee-card { background:#EFF6FF; border:1.5px solid #BFDBFE; border-radius:12px; padding:14px 16px; }
 .fr-fee-card-title { font-size:13px; font-weight:700; color:#1a3a5c; margin-bottom:10px; }
 .fr-fee-rates { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:8px; }
-.fr-fee-rate-item { font-size:12px; color:#374151; background:#fff; border:1px solid #BFDBFE; border-radius:6px; padding:6px 10px; }
-.fr-fee-tag { display:inline-block; background:#1a3a5c; color:#fff; font-size:10px; font-weight:700; border-radius:4px; padding:1px 6px; margin-right:5px; }
+.fr-fee-rate-item { font-size:12px; color:#374151; background:#fff; border:1px solid #BFDBFE; border-radius:12px; padding:6px 10px; }
+.fr-fee-tag { display:inline-block; background:#1a3a5c; color:#fff; font-size:10px; font-weight:700; border-radius:12px; padding:1px 6px; margin-right:5px; }
 .fr-fee-tag-surge { background:#D97706; }
 .fr-fee-extra { font-size:11px; color:#6B7280; margin-top:2px; }
-.fr-fee-note { font-size:11px; color:#92400E; background:#FEF3C7; border-radius:4px; padding:5px 8px; margin-top:6px; }
+.fr-fee-note { font-size:11px; color:#92400E; background:#FEF3C7; border-radius:12px; padding:5px 8px; margin-top:6px; }
 
 /* ── 예상 요금 박스 ── */
-.fr-estimate-box { background:#F0FDF4; border:1.5px solid #86EFAC; border-radius:10px; padding:14px 16px; }
+.fr-estimate-box { background:#F0FDF4; border:1.5px solid #86EFAC; border-radius:12px; padding:14px 16px; }
 .fr-estimate-title { font-size:13px; font-weight:700; color:#15803D; margin-bottom:8px; }
 .fr-estimate-lines { margin-bottom:6px; }
 .fr-estimate-line { font-size:12px; color:#374151; margin-bottom:3px; }
-.fr-estimate-warn { font-size:12px; color:#D97706; background:#FEF3C7; border-radius:4px; padding:4px 8px; margin:6px 0; }
+.fr-estimate-warn { font-size:12px; color:#D97706; background:#FEF3C7; border-radius:12px; padding:4px 8px; margin:6px 0; }
 .fr-estimate-total { font-size:14px; font-weight:700; color:#15803D; margin-top:8px; padding-top:8px; border-top:1px dashed #86EFAC; }
-.fr-quote-btn { margin-top:10px; background:#1a3a5c; color:#fff; border:none; border-radius:8px; padding:9px 18px; font-size:13px; font-weight:600; cursor:pointer; width:100%; }
+.fr-quote-btn { margin-top:10px; background:#1a3a5c; color:#fff; border:none; border-radius:12px; padding:9px 18px; font-size:13px; font-weight:600; cursor:pointer; width:100%; }
 .fr-quote-btn:hover { opacity:.87; }
 
 /* ── 견적서 모달 ── */
 .fr-quote-modal { position:fixed; inset:0; z-index:2000; display:flex; align-items:center; justify-content:center; }
 .fr-quote-modal[hidden] { display:none; }
 .fr-quote-modal-backdrop { position:absolute; inset:0; background:rgba(0,0,0,.5); }
-.fr-quote-modal-dialog { position:relative; background:#fff; border-radius:14px; width:min(900px,96vw); max-height:90vh; display:flex; flex-direction:column; overflow:hidden; z-index:1; }
+.fr-quote-modal-dialog { position:relative; background:#fff; border-radius:12px; width:min(900px,96vw); max-height:90vh; display:flex; flex-direction:column; overflow:hidden; z-index:1; }
 .fr-quote-modal-header { display:flex; justify-content:space-between; align-items:center; padding:14px 18px; border-bottom:1px solid #E5E7EB; font-size:15px; font-weight:700; color:#1a3a5c; }
-.fr-quote-print-btn { background:#1a3a5c; color:#fff; border:none; border-radius:7px; padding:7px 14px; font-size:13px; font-weight:600; cursor:pointer; }
+.fr-quote-print-btn { background:#1a3a5c; color:#fff; border:none; border-radius:12px; padding:7px 14px; font-size:13px; font-weight:600; cursor:pointer; }
 .fr-quote-preview { flex:1; overflow:auto; padding:12px; }
