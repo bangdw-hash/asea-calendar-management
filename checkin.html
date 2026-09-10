@@ -10,11 +10,11 @@
 <body>
 
   <div id="offline-notice" class="offline-notice">
-    📶 네트워크 연결이 끊겼습니다. 인터넷 연결 후 다시 시도해 주세요.
+    네트워크 연결이 끊겼습니다. 인터넷 연결 후 다시 시도해 주세요.
   </div>
 
   <header class="page-header">
-    <div class="page-logo">🏫 ASEA 입출입 관리</div>
+    <div class="page-logo">ASEA 입출입 관리</div>
     <div id="room-name" class="room-name">로딩 중...</div>
     <div id="room-location" class="room-location"></div>
   </header>
@@ -27,7 +27,7 @@
   <!-- 오류 -->
   <div id="screen-error-room" hidden>
     <div class="card" style="text-align:center;padding:32px 20px">
-      <div style="font-size:48px;margin-bottom:12px">⚠️</div>
+      <div style="margin-bottom:12px;color:#e53935"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
       <div style="font-size:17px;font-weight:700;margin-bottom:8px">공간을 찾을 수 없습니다</div>
       <div id="err-room-msg" style="font-size:14px;color:#5f6368">QR코드를 다시 스캔해 주세요.</div>
     </div>
@@ -36,7 +36,7 @@
   <!-- 동의 + 정보입력 -->
   <div id="screen-consent" hidden>
     <div id="consent-section" class="card">
-      <div style="font-size:20px;font-weight:700;margin-bottom:4px">👤 개인정보 수집 동의</div>
+      <div style="font-size:20px;font-weight:700;margin-bottom:4px">개인정보 수집 동의</div>
       <div style="font-size:13px;color:#5f6368;margin-bottom:14px">입출입 기록을 위해 개인정보 수집에 동의해 주세요.</div>
       <div class="consent-box" id="consent-text" style="white-space:pre-line"></div>
       <label class="consent-check-row">
@@ -46,7 +46,7 @@
       <button id="btn-consent-next" class="btn btn-primary" disabled>동의하고 계속 →</button>
     </div>
     <div id="info-section" class="card" hidden>
-      <div style="font-size:18px;font-weight:700;margin-bottom:4px">✏️ 정보 입력</div>
+      <div style="font-size:18px;font-weight:700;margin-bottom:4px">정보 입력</div>
       <div style="font-size:13px;color:#5f6368;margin-bottom:18px">이 기기에 1회만 입력합니다. 이후에는 자동으로 인식됩니다.</div>
       <div id="error-msg" class="error-msg"></div>
       <div class="form-group">
@@ -68,7 +68,7 @@
   <!-- 정보 확인 화면 (최초 입력 후) -->
   <div id="screen-confirm" hidden>
     <div class="card confirm-card">
-      <div class="confirm-title">📋 입력하신 정보가 맞나요?</div>
+      <div class="confirm-title">입력하신 정보가 맞나요?</div>
       <div class="confirm-desc">아래 정보로 입출입이 기록됩니다. 틀린 내용이 있으면 다시 입력해 주세요.</div>
       <div class="confirm-info-box">
         <div class="confirm-row">
@@ -86,10 +86,10 @@
       </div>
       <div id="confirm-error" class="error-msg"></div>
       <button id="btn-confirm-ok" class="btn btn-primary" style="font-size:17px;padding:16px">
-        ✅ 맞습니다 — 등록 완료
+        맞습니다 — 등록 완료
       </button>
       <button id="btn-confirm-back" class="btn btn-ghost" style="margin-top:10px">
-        ✏️ 다시 입력하기
+        다시 입력하기
       </button>
     </div>
   </div>
@@ -99,15 +99,15 @@
 
     <!-- 내 정보 카드 -->
     <div class="my-info-card" id="my-info-card">
-      <div class="my-info-label">👤 내 정보</div>
+      <div class="my-info-label">내 정보</div>
       <div class="my-info-name" id="ci-user-name"></div>
       <div class="my-info-detail" id="ci-user-sub"></div>
-      <button id="btn-edit-info-open" class="btn-edit-trigger">✏️ 정보가 잘못됐나요? 지금 수정하기</button>
+      <button id="btn-edit-info-open" class="btn-edit-trigger">정보가 잘못됐나요? 지금 수정하기</button>
     </div>
 
     <!-- 정보 수정 폼 -->
     <div id="edit-info-form" class="card edit-info-card" hidden>
-      <div class="edit-info-title">✏️ 내 정보 수정</div>
+      <div class="edit-info-title">내 정보 수정</div>
       <div class="edit-info-desc">수정하면 이전에 기록된 입출입 내역도 함께 업데이트됩니다.</div>
       <div id="edit-error-msg" class="error-msg"></div>
       <div class="form-group">
@@ -131,7 +131,7 @@
 
     <!-- 현재 상태 표시 -->
     <div id="ci-status-box" class="ci-status-box ready">
-      <span class="ci-status-icon">🔵</span>
+      <span class="ci-status-icon"><svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="#1a73e8"/></svg></span>
       <div>
         <div class="ci-status-title">입실 준비</div>
         <div class="ci-status-time">오늘 방문 기록 없음</div>
@@ -142,7 +142,7 @@
     <div id="error-checkin-msg" class="error-msg" style="margin:0 0 8px"></div>
 
     <!-- 메인 스캔 버튼 (1개) -->
-    <button id="btn-scan" class="btn btn-scan-main">✅ 입실 등록</button>
+    <button id="btn-scan" class="btn btn-scan-main">입실 등록</button>
 
     <button id="btn-change-user" class="btn btn-ghost"
       style="margin-top:12px;font-size:12px;color:#bdbdbd;border-color:#eeeeee">
