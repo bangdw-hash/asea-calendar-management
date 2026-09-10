@@ -12,7 +12,8 @@
   --red:#dc2626;     --red-lt:#fee2e2;
   --gray:#6b7280;    --gray-lt:#f3f4f6;
   --border:#e5e7eb;  --text:#111827;  --text-sm:#374151;
-  --r:8px;
+  --r:12px;
+  --r-card:14px;
   --sh:0 1px 3px rgba(0,0,0,.1);
   --sh-md:0 4px 12px rgba(0,0,0,.12);
   --sh-lg:0 8px 28px rgba(0,0,0,.18);
@@ -55,6 +56,7 @@ header{
 .month-nav button{
   width:30px;height:30px;border:1.5px solid var(--border);background:#fff;
   border-radius:var(--r);cursor:pointer;font-size:17px;color:var(--gray);
+  box-sizing:border-box;
   line-height:1;transition:.15s;display:flex;align-items:center;justify-content:center;
 }
 .month-nav button:hover{border-color:var(--primary);color:var(--primary)}
@@ -63,7 +65,7 @@ header{
 
 .mode-btns{display:flex;gap:3px}
 .mode-btn{
-  padding:4px 10px;border-radius:14px;font-size:11px;font-weight:700;cursor:pointer;
+  padding:4px 10px;border-radius:var(--r);font-size:11px;font-weight:700;cursor:pointer;
   border:1.5px solid var(--border);background:#fff;color:var(--gray);transition:.15s;
 }
 .mode-btn.range.on{background:var(--green-lt);border-color:var(--green);color:var(--green)}
@@ -73,7 +75,7 @@ header{
 
 .floor-tabs{display:flex;gap:3px;flex-wrap:wrap}
 .floor-tab{
-  padding:4px 10px;border-radius:14px;font-size:11px;font-weight:700;cursor:pointer;
+  padding:4px 10px;border-radius:var(--r);font-size:11px;font-weight:700;cursor:pointer;
   border:1.5px solid var(--border);background:#fff;color:var(--gray);transition:.15s;
 }
 .floor-tab.on{background:var(--primary);border-color:var(--primary);color:#fff}
@@ -86,48 +88,62 @@ header{
 }
 .multi-banner span{font-size:13px;color:#9a3412;font-weight:700}
 
-/* ── Calendar ── */
-.cal-wrap{padding:12px 12px 0}
+/* ── Calendar (schedule.html 스타일 — 심리스 카드형) ── */
+.cal-wrap{padding:16px;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.cal-card{
+  background:#fff;border:1px solid var(--border);border-radius:var(--r-card);
+  box-shadow:var(--sh);overflow:hidden;
+}
+.cal-wrap .cal-card{min-width:680px}
 .cal-dow{
   display:grid;grid-template-columns:repeat(7,1fr);
-  text-align:center;margin-bottom:4px;
+  text-align:center;border-bottom:1px solid var(--border);
 }
-.cal-dow span{font-size:11px;font-weight:700;color:var(--gray);padding:4px 0}
+.cal-dow span{font-size:12px;font-weight:600;color:var(--gray);padding:10px 0}
 .cal-dow span:first-child{color:var(--red)}
 .cal-dow span:last-child{color:var(--primary)}
-.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;padding-bottom:16px}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr)}
 
 .cal-cell{
-  min-height:88px;background:#fff;border-radius:var(--r);
-  border:1.5px solid var(--border);padding:4px;
-  cursor:pointer;transition:.15s;overflow:hidden;user-select:none;
+  min-height:96px;background:#fff;
+  border-right:1px solid var(--border);border-bottom:1px solid var(--border);
+  padding:5px;cursor:pointer;transition:background .12s;overflow:visible;user-select:none;
+  position:relative;
 }
-.cal-cell:hover{border-color:var(--primary);box-shadow:0 0 0 1px var(--primary-lt)}
-.cal-cell.other-month{background:#f9fafb;opacity:.45}
-.cal-cell.today{border-color:var(--primary);box-shadow:0 0 0 2px var(--primary-lt)}
+.cal-cell:nth-child(7n){border-right:none}
+.cal-grid > .cal-cell:nth-last-child(-n+7){border-bottom:none}
+.cal-cell:hover{background:var(--primary-lt)}
+.cal-cell.other-month{background:#fafbfc}
+.cal-cell.other-month .day-num{color:#ccc}
+.cal-cell.other-month:hover{background:var(--gray-lt)}
 .cal-cell.sun .day-num{color:var(--red)}
 .cal-cell.sat .day-num{color:var(--primary)}
-.cal-cell.range-start,.cal-cell.range-end{background:var(--primary);border-color:var(--primary)}
-.cal-cell.range-start .day-num,.cal-cell.range-end .day-num{color:#fff;background:rgba(255,255,255,.25)}
-.cal-cell.in-range{background:#dbeafe;border-color:#93c5fd}
-.cal-cell.multi-sel{background:var(--orange-lt);border-color:var(--orange);border-style:dashed}
-.cal-cell.single-sel{background:var(--primary-lt);border-color:var(--primary)}
+.cal-cell.range-start,.cal-cell.range-end,.cal-cell.single-sel{background:var(--primary-lt)}
+.cal-cell.in-range{background:#eef4fd}
+.cal-cell.multi-sel{background:var(--orange-lt)}
+.cal-cell.drag-select{background:var(--primary-lt)!important;outline:2px dashed var(--primary);outline-offset:-2px}
+.cal-cell.ctrl-drag-sel{background:var(--orange-lt)!important;outline:2px dashed var(--orange);outline-offset:-2px}
 
 .day-num{
-  font-size:12px;font-weight:700;width:22px;height:22px;
+  font-size:13px;font-weight:600;width:26px;height:26px;
   display:flex;align-items:center;justify-content:center;border-radius:50%;
 }
 .cal-cell.today .day-num{background:var(--primary);color:#fff}
+.cal-cell.range-start .day-num,.cal-cell.range-end .day-num{color:var(--primary-dk);font-weight:800}
 
-.rv-pills{margin-top:2px;display:flex;flex-direction:column;gap:2px}
+.rv-pills{margin-top:3px;display:flex;flex-direction:column;gap:2px}
 .rv-pill{
-  font-size:10px;padding:2px 5px;border-radius:4px;
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-  cursor:pointer;font-weight:600;color:#fff;max-width:100%;line-height:1.3;
+  font-size:10.5px;padding:3px 6px;border-radius:6px;
+  white-space:normal;overflow-wrap:break-word;word-break:break-word;
+  cursor:pointer;font-weight:600;color:#fff;line-height:1.35;
 }
 .rv-pill:hover{filter:brightness(.88)}
-.rv-more{font-size:9px;color:var(--gray);padding:1px 3px;cursor:pointer}
+.rv-more{font-size:10px;color:var(--gray);padding:2px 4px;cursor:pointer;font-weight:700}
 .rv-more:hover{color:var(--primary)}
+
+/* mini calendar popup: compact cells */
+#mcGrid .cal-cell{min-height:34px;padding:3px}
+#mcGrid .day-num{width:22px;height:22px;font-size:11px}
 
 /* ── Drawer ── */
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;opacity:0;pointer-events:none;transition:opacity .25s}
@@ -167,7 +183,9 @@ header{
 .room-row{display:flex;gap:8px;align-items:center}
 .room-dot{width:12px;height:12px;border-radius:50%;flex-shrink:0}
 .date-tags{display:flex;flex-wrap:wrap;gap:4px;align-items:center}
-.date-tag{background:var(--primary-lt);color:var(--primary-dk);padding:3px 9px;border-radius:12px;font-size:11px;font-weight:700}
+.date-tag{background:var(--primary-lt);color:var(--primary-dk);padding:3px 9px;border-radius:var(--r);font-size:11px;font-weight:700}
+.add-date-btn{padding:3px 10px;border-radius:var(--r);font-size:11px;font-weight:700;cursor:pointer;border:1.5px dashed var(--primary);background:#fff;color:var(--primary)}
+.add-date-btn:hover{background:var(--primary-lt)}
 
 .conflict-box{background:var(--red-lt);border:1.5px solid var(--red);border-radius:var(--r);padding:10px 12px;font-size:12px;color:var(--red)}
 .conflict-box b{display:block;margin-bottom:4px}
@@ -198,12 +216,18 @@ header{
 .detail-row{display:flex;gap:12px;align-items:flex-start}
 .dl{font-size:12px;color:var(--gray);min-width:76px;flex-shrink:0;margin-top:1px}
 .dv{font-size:13px;font-weight:500}
-.badge{display:inline-block;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:700;color:#fff}
-.linked-badge{background:var(--green-lt);color:var(--green);padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;margin-left:6px}
+.badge{display:inline-block;padding:3px 10px;border-radius:var(--r);font-size:11px;font-weight:700;color:#fff}
+.linked-badge{background:var(--green-lt);color:var(--green);padding:2px 8px;border-radius:var(--r);font-size:10px;font-weight:700;margin-left:6px}
 .label-mono{font-size:11px;font-family:monospace;background:var(--gray-lt);padding:5px 10px;border-radius:6px;line-height:1.5}
 
 /* ── Admin table ── */
+.adm-tabs{display:flex;gap:4px;flex-wrap:wrap;border-bottom:1.5px solid var(--border);margin-bottom:14px;padding-bottom:8px}
+.adm-tab-btn{padding:6px 12px;border-radius:var(--r);font-size:12px;font-weight:700;cursor:pointer;border:1.5px solid var(--border);background:#fff;color:var(--gray);transition:.15s}
+.adm-tab-btn.on{background:var(--primary);border-color:var(--primary);color:#fff}
+.adm-tab-btn:hover:not(.on){border-color:var(--primary);color:var(--primary)}
 .adm-filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;align-items:center}
+.adm-card{background:var(--gray-lt);border-radius:var(--r);padding:14px;margin-bottom:12px}
+.adm-form-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin-bottom:10px}
 .rv-tbl{width:100%;border-collapse:collapse;font-size:12px}
 .rv-tbl th{background:var(--gray-lt);padding:8px 6px;text-align:left;font-weight:700;border-bottom:1.5px solid var(--border);white-space:nowrap}
 .rv-tbl td{padding:7px 6px;border-bottom:1px solid var(--border);vertical-align:top}
@@ -227,10 +251,10 @@ header{
 ::-webkit-scrollbar-thumb{background:#d1d5db;border-radius:9px}
 
 @media(max-width:600px){
-  .cal-cell{min-height:64px}
-  .rv-pill{font-size:9px}
+  .cal-cell{min-height:80px}
   .hd-title{font-size:15px}
   .frow{grid-template-columns:1fr}
+  .cal-wrap{padding:10px}
 }
 </style>
 </head>
@@ -248,7 +272,11 @@ header{
       학교일정 바로가기
     </a>
     <button id="adminBtn" class="btn btn-outline btn-sm" onclick="onAdminBtn()">관리자</button>
-    <button class="btn btn-primary btn-sm" onclick="openDrawer(null)">
+    <button class="btn btn-outline btn-sm" style="border-color:var(--orange);color:var(--orange)" onclick="openDrawer(null,true)">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 9h1M9 13h1M14 9h1M14 13h1"/></svg>
+      대관예약
+    </button>
+    <button class="btn btn-primary btn-sm" onclick="openDrawer(null,false)">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
       예약 등록
     </button>
@@ -286,11 +314,13 @@ header{
 
 <!-- Calendar -->
 <div class="cal-wrap">
-  <div class="cal-dow">
-    <span>일</span><span>월</span><span>화</span><span>수</span>
-    <span>목</span><span>금</span><span>토</span>
+  <div class="cal-card">
+    <div class="cal-dow">
+      <span>일</span><span>월</span><span>화</span><span>수</span>
+      <span>목</span><span>금</span><span>토</span>
+    </div>
+    <div id="calGrid" class="cal-grid"></div>
   </div>
-  <div id="calGrid" class="cal-grid"></div>
 </div>
 
 <!-- Drawer overlay -->
@@ -307,6 +337,7 @@ header{
     <div class="fg" id="fgDates">
       <div class="fl">선택 날짜 <span class="req">*</span></div>
       <div class="date-tags" id="dateTagsArea"></div>
+      <button type="button" class="add-date-btn" onclick="openMiniCal()">+ 날짜 추가</button>
     </div>
 
     <div class="fg">
@@ -332,6 +363,25 @@ header{
 
     <div id="conflictBox" hidden></div>
 
+    <div class="fg" id="fgRentalOrg" hidden>
+      <div class="fl">외부기관명 <span class="req">*</span></div>
+      <select id="rentalOrgSel" class="fs">
+        <option value="">외부기관 선택...</option>
+      </select>
+      <div style="font-size:11px;color:var(--gray)">목록에 없는 기관은 관리자 &gt; 대관업체 관리에서 먼저 등록해주세요.</div>
+    </div>
+
+    <div class="frow" id="fgRentalCourse" hidden>
+      <div class="fg">
+        <div class="fl">과정명 <span class="req">*</span></div>
+        <input type="text" id="courseNameIn" class="fi" placeholder="예: 2026년 상반기 실무교육" autocomplete="off" value="">
+      </div>
+      <div class="fg">
+        <div class="fl">일 대관료(원) <span class="req">*</span></div>
+        <input type="number" id="dailyFeeIn" class="fi" placeholder="예: 300000" min="0" step="1000" autocomplete="off" value="">
+      </div>
+    </div>
+
     <div class="fg">
       <div class="fl">사용 목적 <span class="req">*</span></div>
       <textarea id="purposeIn" class="fta" placeholder="예: 신변보호사 대면강좌, 외부 강사 특강, 자격증 시험 등"></textarea>
@@ -356,22 +406,22 @@ header{
     <div class="frow">
       <div class="fg">
         <div class="fl">신청자 <span class="req">*</span></div>
-        <input type="text" id="reqName" class="fi" placeholder="이름">
+        <input type="text" id="reqName" class="fi" placeholder="이름" value="" autocomplete="off">
       </div>
       <div class="fg">
         <div class="fl">연락처</div>
-        <input type="text" id="reqContact" class="fi" placeholder="010-0000-0000">
+        <input type="text" id="reqContact" class="fi" placeholder="010-0000-0000" value="" autocomplete="off">
       </div>
     </div>
 
     <div class="frow">
       <div class="fg">
         <div class="fl">비밀번호 <span class="req">*</span></div>
-        <input type="password" id="pwIn" class="fi" placeholder="4자 이상 (수정·삭제용)">
+        <input type="password" id="pwIn" class="fi" placeholder="4자 이상 (수정·삭제용)" value="" autocomplete="new-password">
       </div>
       <div class="fg">
         <div class="fl">비밀번호 확인 <span class="req">*</span></div>
-        <input type="password" id="pwIn2" class="fi" placeholder="동일하게 입력">
+        <input type="password" id="pwIn2" class="fi" placeholder="동일하게 입력" value="" autocomplete="new-password">
       </div>
     </div>
 
@@ -387,6 +437,38 @@ header{
     <div style="display:flex;gap:8px">
       <button class="btn btn-primary" style="flex:1" id="submitBtn" onclick="submitRv()">예약 등록</button>
       <button class="btn btn-outline" onclick="closeDrawer()">취소</button>
+    </div>
+  </div>
+</div>
+
+<!-- Mini calendar popup (add more dates) -->
+<div id="miniCalModal" class="modal" onclick="if(event.target===this)closeMiniCal()">
+  <div class="modal-box" style="max-width:380px">
+    <div class="modal-hdr">
+      <span class="modal-title">날짜 추가 선택</span>
+      <button class="close-btn" onclick="closeMiniCal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <button class="btn btn-outline btn-xs" onclick="mcMove(-1)">&#8249;</button>
+        <span id="mcLabel" style="font-weight:700;font-size:14px"></span>
+        <button class="btn btn-outline btn-xs" onclick="mcMove(1)">&#8250;</button>
+      </div>
+      <div style="font-size:11px;color:var(--gray);margin-bottom:8px;line-height:1.5">
+        드래그: 연속 날짜 범위 선택 · Ctrl(⌘)+클릭/드래그: 개별 날짜 추가 선택 · Esc: 선택 취소
+      </div>
+      <div class="cal-card">
+        <div class="cal-dow"><span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span></div>
+        <div id="mcGrid" class="cal-grid"></div>
+      </div>
+      <div id="mcActions" style="display:flex;gap:8px;margin-top:12px" hidden>
+        <button class="btn btn-primary" style="flex:1" onclick="mcApply()">반영</button>
+        <button class="btn btn-outline" onclick="mcCancelSel()">선택 취소</button>
+      </div>
+    </div>
+    <div class="modal-ftr">
+      <span style="font-size:11px;color:var(--gray);margin-right:auto" id="mcCountTxt">0개 날짜 선택됨</span>
+      <button class="btn btn-outline" onclick="closeMiniCal()">닫기</button>
     </div>
   </div>
 </div>
@@ -494,6 +576,7 @@ let curYear = new Date().getFullYear();
 let curMonth = new Date().getMonth();
 let classrooms = [];
 let reservations = [];
+let rentalCompanies = [];
 let selMode = 'range';
 let selDates = [];
 let rangeStart = null;
@@ -517,6 +600,9 @@ async function init() {
   subscribeRT();
   updateAdminBtn();
   initLongPress();
+  initDragSelect();
+  initMiniCalDrag();
+  await loadRentalCompanies();
 }
 
 /* ── SHA-256 ── */
@@ -565,6 +651,23 @@ function populateRoomSel() {
 function populateDeptSel() {
   const sel = document.getElementById('deptSel');
   DEPTS.forEach(d => { const o = document.createElement('option'); o.value = d; o.textContent = d; sel.appendChild(o); });
+}
+
+/* ── Rental companies (대관업체) ── */
+async function loadRentalCompanies() {
+  const { data, error } = await sb.from('rental_companies').select('*').order('biz_name');
+  if (error) { rentalCompanies = []; return; }
+  rentalCompanies = data || [];
+}
+
+function populateRentalOrgSel() {
+  const sel = document.getElementById('rentalOrgSel');
+  sel.innerHTML = '<option value="">외부기관 선택...</option>';
+  rentalCompanies.forEach(c => {
+    const o = document.createElement('option');
+    o.value = c.id; o.textContent = c.biz_name;
+    sel.appendChild(o);
+  });
 }
 
 /* ── Reservations ── */
@@ -634,7 +737,7 @@ function buildCell(cell, today) {
 
   const rvs = getRvsForDate(s);
   const pills = buildPills(rvs);
-  return `<div class="${cls}" data-s="${s}" onclick="onCell(event,'${s}')"><div class="day-num">${d}</div><div class="rv-pills">${pills}</div></div>`;
+  return `<div class="${cls}" data-s="${s}"><div class="day-num">${d}</div><div class="rv-pills">${pills}</div></div>`;
 }
 
 function getRvsForDate(dateStr) {
@@ -652,8 +755,7 @@ function buildPills(rvs) {
   let h = rvs.slice(0, MAX).map(rv => {
     const c = rv.classroom_color || '#1A73E8';
     const lbl = rv.formatted_label || mkLabel(rv.classroom_name, rv.time_start, rv.time_end, rv.purpose);
-    const short = lbl.length > 22 ? lbl.slice(0, 20) + '…' : lbl;
-    return `<div class="rv-pill" style="background:${c}" onclick="event.stopPropagation();openDetail('${rv.id}')" title="${esc(lbl)}">${esc(short)}</div>`;
+    return `<div class="rv-pill" style="background:${c}" onclick="event.stopPropagation();openDetail('${rv.id}')" title="${esc(lbl)}">${esc(lbl)}</div>`;
   }).join('');
   if (rvs.length > MAX) h += `<div class="rv-more" onclick="event.stopPropagation()">+${rvs.length - MAX}건 더보기</div>`;
   return h;
@@ -677,11 +779,9 @@ function initLongPress() {
   document.addEventListener('touchmove', () => clearTimeout(lpTimer), { passive: true });
 }
 
-/* ── Cell click ── */
-function onCell(event, s) {
-  if (event.target.classList.contains('rv-pill') || event.target.classList.contains('rv-more')) return;
-
-  if (event.ctrlKey || event.metaKey) {
+/* ── Cell click (no drag) ── */
+function handleCellClick(s, ctrl) {
+  if (ctrl) {
     if (selMode !== 'multi') setMode('multi');
     toggleMulti(s);
     renderCal();
@@ -718,6 +818,97 @@ function onCell(event, s) {
   }
 }
 
+/* ── Drag select (schedule.html 방식: 클릭+드래그로 범위 선택, Ctrl+드래그로 다중 선택) ── */
+let dsDown = false, dsStart = null, dsEnd = null, dsDragging = false, dsCtrl = false;
+
+function initDragSelect() {
+  const grid = document.getElementById('calGrid');
+
+  grid.addEventListener('mousedown', e => {
+    if (e.button !== 0) return;
+    if (e.target.closest('.rv-pill,.rv-more')) return;
+    const cell = e.target.closest('.cal-cell');
+    if (!cell) return;
+    dsDown = true; dsCtrl = e.ctrlKey || e.metaKey;
+    dsStart = cell.dataset.s; dsEnd = dsStart; dsDragging = false;
+  });
+
+  document.addEventListener('mousemove', e => {
+    if (!dsDown || !dsStart) return;
+    const cell = e.target.closest('.cal-cell');
+    if (!cell) return;
+    const s = cell.dataset.s;
+    if (s === dsEnd) return;
+    dsEnd = s; dsDragging = true;
+    paintDragPreview();
+  });
+
+  document.addEventListener('mouseup', () => {
+    if (!dsDown) return;
+    dsDown = false;
+    if (!dsStart) return;
+    if (!dsDragging) {
+      handleCellClick(dsStart, dsCtrl);
+    } else {
+      finalizeDrag();
+    }
+    dsStart = null; dsEnd = null; dsDragging = false;
+    clearDragPreview();
+  });
+
+  document.addEventListener('keydown', e => {
+    if (e.key !== 'Escape') return;
+    if (dsDown || dsStart) {
+      dsDown = false; dsStart = null; dsEnd = null; dsDragging = false;
+      clearDragPreview();
+    }
+    if (rangeStart) { rangeStart = null; renderCal(); }
+  });
+}
+
+function paintDragPreview() {
+  clearDragPreview();
+  const a = dsStart < dsEnd ? dsStart : dsEnd;
+  const b = dsStart < dsEnd ? dsEnd : dsStart;
+  document.querySelectorAll('.cal-cell').forEach(c => {
+    const s = c.dataset.s;
+    if (s >= a && s <= b) c.classList.add(dsCtrl ? 'ctrl-drag-sel' : 'drag-select');
+  });
+}
+
+function clearDragPreview() {
+  document.querySelectorAll('.drag-select,.ctrl-drag-sel').forEach(c => c.classList.remove('drag-select', 'ctrl-drag-sel'));
+}
+
+function rangeToDates(a, b) {
+  const days = [];
+  let d = new Date(a + 'T00:00:00');
+  const end = new Date(b + 'T00:00:00');
+  while (d <= end) { days.push(toStr(d)); d.setDate(d.getDate() + 1); }
+  return days;
+}
+
+function finalizeDrag() {
+  const a = dsStart < dsEnd ? dsStart : dsEnd;
+  const b = dsStart < dsEnd ? dsEnd : dsStart;
+  const days = rangeToDates(a, b);
+
+  if (dsCtrl || selMode === 'multi') {
+    if (selMode !== 'multi') setMode('multi');
+    days.forEach(s => { if (!selDates.includes(s)) selDates.push(s); });
+    selDates.sort();
+    updMultiBanner();
+    renderCal();
+    return;
+  }
+
+  // range/single 모드에서 드래그 → 연속 범위 선택
+  rangeStart = null;
+  selDates = [a, b];
+  renderCal();
+  openDrawer(null);
+}
+
 function toggleMulti(s) {
   const i = selDates.indexOf(s);
   if (i >= 0) selDates.splice(i, 1); else selDates.push(s);
@@ -729,6 +920,147 @@ function updMultiBanner() {
   const show = selMode === 'multi' && selDates.length > 0;
   document.getElementById('multiBanner').hidden = !show;
   if (show) document.getElementById('multiBannerTxt').textContent = `${selDates.length}개 날짜 선택됨`;
+}
+
+/* ── Mini calendar popup (예약 폼에서 날짜 추가) ── */
+let mcYear = curYear, mcMonth = curMonth;
+let mcSelDates = [];
+let mcDown = false, mcStart = null, mcEnd = null, mcDragging = false, mcCtrl = false;
+
+function openMiniCal() {
+  mcYear = selDates.length ? +selDates[0].slice(0, 4) : curYear;
+  mcMonth = selDates.length ? (+selDates[0].slice(5, 7) - 1) : curMonth;
+  mcSelDates = [];
+  mcRender();
+  showM('miniCalModal');
+}
+function closeMiniCal() { hideM('miniCalModal'); mcSelDates = []; }
+
+function mcMove(d) {
+  mcMonth += d;
+  if (mcMonth < 0) { mcMonth = 11; mcYear--; }
+  if (mcMonth > 11) { mcMonth = 0; mcYear++; }
+  mcRender();
+}
+
+function mcRender() {
+  const y = mcYear, m = mcMonth;
+  document.getElementById('mcLabel').textContent = `${y}년 ${m + 1}월`;
+  const today = toStr(new Date());
+  const firstDow = new Date(y, m, 1).getDay();
+  const lastD = new Date(y, m + 1, 0).getDate();
+  const prevLastD = new Date(y, m, 0).getDate();
+  const prevY = m === 0 ? y - 1 : y, prevM = m === 0 ? 11 : m - 1;
+  const nextY = m === 11 ? y + 1 : y, nextM = m === 11 ? 0 : m + 1;
+
+  let cells = [];
+  for (let i = firstDow - 1; i >= 0; i--) {
+    const d = prevLastD - i;
+    cells.push({ s: toStr(new Date(prevY, prevM, d)), d, other: true, dow: new Date(prevY, prevM, d).getDay() });
+  }
+  for (let d = 1; d <= lastD; d++) {
+    const dt = new Date(y, m, d);
+    cells.push({ s: toStr(dt), d, other: false, dow: dt.getDay() });
+  }
+  const rem = 42 - cells.length;
+  for (let d = 1; d <= rem; d++) {
+    cells.push({ s: toStr(new Date(nextY, nextM, d)), d, other: true, dow: new Date(nextY, nextM, d).getDay() });
+  }
+
+  document.getElementById('mcGrid').innerHTML = cells.map(c => mcBuildCell(c, today)).join('');
+  mcUpdActions();
+}
+
+function mcBuildCell(cell, today) {
+  const { s, d, other, dow } = cell;
+  let cls = 'cal-cell';
+  if (other) cls += ' other-month';
+  if (s === today) cls += ' today';
+  if (!other && dow === 0) cls += ' sun';
+  if (!other && dow === 6) cls += ' sat';
+  if (selDates.includes(s)) cls += ' single-sel';
+  if (mcSelDates.includes(s)) cls += ' multi-sel';
+  return `<div class="${cls}" data-s="${s}"><div class="day-num">${d}</div></div>`;
+}
+
+function mcUpdActions() {
+  const n = mcSelDates.length;
+  document.getElementById('mcActions').hidden = n === 0;
+  document.getElementById('mcCountTxt').textContent = `${n}개 날짜 선택됨`;
+}
+
+function initMiniCalDrag() {
+  const grid = document.getElementById('mcGrid');
+  grid.addEventListener('mousedown', e => {
+    if (e.button !== 0) return;
+    const cell = e.target.closest('.cal-cell');
+    if (!cell) return;
+    mcDown = true; mcCtrl = e.ctrlKey || e.metaKey;
+    mcStart = cell.dataset.s; mcEnd = mcStart; mcDragging = false;
+  });
+  document.addEventListener('mousemove', e => {
+    if (!mcDown || !mcStart) return;
+    const cell = e.target.closest('.cal-cell');
+    if (!cell) return;
+    const s = cell.dataset.s;
+    if (s === mcEnd) return;
+    mcEnd = s; mcDragging = true;
+    mcPaintPreview();
+  });
+  document.addEventListener('mouseup', () => {
+    if (!mcDown) return;
+    mcDown = false;
+    if (!mcStart) return;
+    const a = mcStart < mcEnd ? mcStart : mcEnd;
+    const b = mcStart < mcEnd ? mcEnd : mcStart;
+    const days = mcDragging ? rangeToDates(a, b) : [mcStart];
+    days.forEach(s => { if (!mcSelDates.includes(s)) mcSelDates.push(s); });
+    mcSelDates.sort();
+    mcStart = null; mcEnd = null; mcDragging = false;
+    mcRender();
+  });
+  document.addEventListener('keydown', e => {
+    if (e.key !== 'Escape') return;
+    if (!document.getElementById('miniCalModal').classList.contains('show')) return;
+    if (mcSelDates.length) { mcSelDates = []; mcRender(); }
+    else closeMiniCal();
+  });
+}
+
+function mcPaintPreview() {
+  document.querySelectorAll('#mcGrid .cal-cell').forEach(c => c.classList.remove('drag-select', 'ctrl-drag-sel'));
+  const a = mcStart < mcEnd ? mcStart : mcEnd;
+  const b = mcStart < mcEnd ? mcEnd : mcStart;
+  document.querySelectorAll('#mcGrid .cal-cell').forEach(c => {
+    const s = c.dataset.s;
+    if (s >= a && s <= b) c.classList.add(mcCtrl ? 'ctrl-drag-sel' : 'drag-select');
+  });
+}
+
+function mcCancelSel() { mcSelDates = []; mcRender(); }
+
+function mcApply() {
+  if (!mcSelDates.length) { closeMiniCal(); return; }
+  let allDates;
+  if (selMode === 'range' && selDates.length === 2 && selDates[0] !== selDates[1]) {
+    allDates = rangeToDates(selDates[0], selDates[1]);
+  } else {
+    allDates = selDates.slice();
+  }
+  mcSelDates.forEach(s => { if (!allDates.includes(s)) allDates.push(s); });
+  allDates.sort();
+
+  selMode = 'multi';
+  selDates = allDates;
+  document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('on'));
+  document.getElementById('modeMulti').classList.add('on');
+  updMultiBanner();
+  renderCal();
+
+  mcSelDates = [];
+  closeMiniCal();
+  renderDateTags();
+  schedCC();
 }
 
 /* ── Mode & month ── */
@@ -754,11 +1086,30 @@ function moveMonth(d) {
 }
 
 /* ── Drawer ── */
-function openDrawer(dateStr) {
+let drawerRentalMode = false;
+
+function openDrawer(dateStr, rental) {
+  rental = !!rental;
   if (dateStr) { selDates = [dateStr]; renderCal(); }
   if (!selDates.length) return toast('날짜를 먼저 선택해주세요', 'warn');
 
-  // Build date display
+  resetForm();
+  drawerRentalMode = rental;
+  document.getElementById('fgRentalOrg').hidden = !rental;
+  document.getElementById('fgRentalCourse').hidden = !rental;
+  document.getElementById('drawerTitle').textContent = rental ? '대관 예약 등록' : '예약 등록';
+  if (rental) {
+    populateRentalOrgSel();
+    document.getElementById('deptSel').value = '외부기관';
+  }
+
+  renderDateTags();
+
+  document.getElementById('drawer').classList.add('open');
+  document.getElementById('drawerOverlay').classList.add('show');
+}
+
+function renderDateTags() {
   let html = '';
   if (selMode === 'range' && selDates.length === 2 && selDates[0] !== selDates[1]) {
     const [a, b] = selDates;
@@ -768,12 +1119,6 @@ function openDrawer(dateStr) {
     html = selDates.map(d => `<span class="date-tag">${fmtD(d)}</span>`).join('');
   }
   document.getElementById('dateTagsArea').innerHTML = html;
-  document.getElementById('drawerTitle').textContent = '예약 등록';
-  document.getElementById('conflictBox').hidden = true;
-  document.getElementById('aiBox').hidden = true;
-
-  document.getElementById('drawer').classList.add('open');
-  document.getElementById('drawerOverlay').classList.add('show');
 }
 
 function closeDrawer() {
@@ -782,10 +1127,10 @@ function closeDrawer() {
 }
 
 function resetForm() {
-  ['roomSel','deptSel'].forEach(id => document.getElementById(id).value = '');
+  ['roomSel','deptSel','rentalOrgSel'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('tStart').value = '09:00';
   document.getElementById('tEnd').value = '18:00';
-  ['purposeIn','reqName','reqContact','pwIn','pwIn2'].forEach(id => document.getElementById(id).value = '');
+  ['purposeIn','reqName','reqContact','pwIn','pwIn2','courseNameIn','dailyFeeIn'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('roomDot').style.background = 'var(--primary)';
   document.getElementById('conflictBox').hidden = true;
   document.getElementById('aiBox').hidden = true;
@@ -844,6 +1189,19 @@ async function submitRv() {
   const pw   = document.getElementById('pwIn').value;
   const pw2  = document.getElementById('pwIn2').value;
 
+  let rentalInfo = null;
+  if (drawerRentalMode) {
+    const orgSel = document.getElementById('rentalOrgSel');
+    const orgId = orgSel.value;
+    const orgName = orgSel.selectedOptions[0]?.textContent || '';
+    const course = document.getElementById('courseNameIn').value.trim();
+    const feeRaw = document.getElementById('dailyFeeIn').value;
+    if (!orgId) return toast('외부기관명을 선택해주세요', 'warn');
+    if (!course) return toast('과정명을 입력해주세요', 'warn');
+    if (feeRaw === '' || Number(feeRaw) < 0) return toast('일 대관료를 입력해주세요', 'warn');
+    rentalInfo = { orgId, orgName, course, fee: Number(feeRaw) };
+  }
+
   if (!room) return toast('강의실을 선택해주세요', 'warn');
   if (!selDates.length) return toast('날짜를 선택해주세요', 'warn');
   if (!ts || !te) return toast('시간을 입력해주세요', 'warn');
@@ -863,10 +1221,10 @@ async function submitRv() {
 
     let records;
     if (selMode === 'multi' && selDates.length > 1) {
-      records = selDates.map(d => mkRecord(room, color, d, d, ts, te, purp, dept, req, cont, pwHash));
+      records = selDates.map(d => mkRecord(room, color, d, d, ts, te, purp, dept, req, cont, pwHash, rentalInfo));
     } else {
       const dateS = selDates[0], dateE = selDates[selDates.length - 1];
-      records = [mkRecord(room, color, dateS, dateE, ts, te, purp, dept, req, cont, pwHash)];
+      records = [mkRecord(room, color, dateS, dateE, ts, te, purp, dept, req, cont, pwHash, rentalInfo)];
     }
 
     const { error } = await sb.from('reservations').insert(records);
@@ -884,18 +1242,28 @@ async function submitRv() {
   }
 }
 
-function mkRecord(room, color, ds, de, ts, te, purp, dept, req, cont, pwHash) {
-  return {
+function mkRecord(room, color, ds, de, ts, te, purp, dept, req, cont, pwHash, rentalInfo) {
+  const rec = {
     classroom_name: room, classroom_color: color,
     date_start: ds, date_end: de, time_start: ts, time_end: te,
     purpose: purp, department: dept, requester_name: req,
     contact: cont || null, raw_input: purp,
-    formatted_label: mkLabel(room, ts, te, purp),
+    formatted_label: mkLabel(room, ts, te, purp, rentalInfo),
     password_hash: pwHash,
   };
+  if (rentalInfo) {
+    rec.is_rental = true;
+    rec.rental_company_id = rentalInfo.orgId;
+    rec.rental_company_name = rentalInfo.orgName;
+    rec.course_name = rentalInfo.course;
+    rec.daily_fee = rentalInfo.fee;
+    rec.billing_status = 'pending';
+  }
+  return rec;
 }
 
-function mkLabel(room, ts, te, purp) {
+function mkLabel(room, ts, te, purp, rentalInfo) {
+  if (rentalInfo) return `[대관/${rentalInfo.orgName}] ${room} ${ts}~${te} | ${rentalInfo.course}`;
   return `[${room}] ${ts}~${te} | ${purp}`;
 }
 
@@ -923,6 +1291,19 @@ async function openDetail(id) {
       <div class="dl">시간</div>
       <div class="dv">${rv.time_start} ~ ${rv.time_end}</div>
     </div>
+    ${rv.is_rental ? `
+    <div class="detail-row">
+      <div class="dl">외부기관명</div>
+      <div class="dv"><span class="badge" style="background:var(--orange)">${esc(rv.rental_company_name||'')}</span></div>
+    </div>
+    <div class="detail-row">
+      <div class="dl">과정명</div>
+      <div class="dv">${esc(rv.course_name||'')}</div>
+    </div>
+    <div class="detail-row">
+      <div class="dl">일 대관료</div>
+      <div class="dv">${(rv.daily_fee||0).toLocaleString()}원</div>
+    </div>` : ''}
     <div class="detail-row">
       <div class="dl">사용 목적</div>
       <div class="dv">${esc(rv.purpose)}</div>
@@ -1186,18 +1567,43 @@ async function adminUnlink(id) {
 /* ── Admin panel ── */
 let admRvs = [];
 let admFilter = { room: '', date: '' };
+let admTab = 'reservations';
 
 async function openAdminM() {
   if (!isAdmin()) return;
+  admTab = 'reservations';
   showM('adminModal');
-  await loadAdminList();
+  await renderAdminPanel();
 }
 function closeAdminM() { hideM('adminModal'); }
 
+async function renderAdminPanel() {
+  const body = document.getElementById('adminBody');
+  const tabs = [
+    ['reservations', '예약 목록'],
+    ['classrooms', '강의실 관리'],
+    ['companies', '대관업체 관리'],
+    ['billing', '대관료 청구 관리'],
+  ];
+  body.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+      <div><span style="font-size:12px;color:var(--gray)">관리자: </span><span style="font-size:13px;font-weight:700;color:var(--green)">${esc(adminEmail)}</span></div>
+      <button class="btn btn-xs btn-outline" onclick="admLogout()">로그아웃</button>
+    </div>
+    <div class="adm-tabs">${tabs.map(([k, l]) => `<button class="adm-tab-btn ${admTab === k ? 'on' : ''}" onclick="switchAdmTab('${k}')">${l}</button>`).join('')}</div>
+    <div id="admTabContent"><div style="display:flex;justify-content:center;padding:40px"><div class="spinner"></div></div></div>`;
+  if (admTab === 'reservations') await loadAdminList();
+  else if (admTab === 'classrooms') await renderClassroomsTab();
+  else if (admTab === 'companies') await renderCompaniesTab();
+  else if (admTab === 'billing') await renderBillingTab();
+}
+
+function switchAdmTab(k) { admTab = k; renderAdminPanel(); }
+
 async function loadAdminList() {
   if (!isAdmin()) return;
-  const body = document.getElementById('adminBody');
-  body.innerHTML = '<div style="display:flex;justify-content:center;padding:40px"><div class="spinner"></div></div>';
+  const target = document.getElementById('admTabContent');
+  if (target) target.innerHTML = '<div style="display:flex;justify-content:center;padding:40px"><div class="spinner"></div></div>';
   const { data } = await sb.from('reservations').select('*')
     .is('deleted_at', null).eq('status', 'active')
     .order('date_start', { ascending: false }).limit(200);
@@ -1206,18 +1612,14 @@ async function loadAdminList() {
 }
 
 function renderAdmTable() {
-  const body = document.getElementById('adminBody');
+  const body = document.getElementById('admTabContent');
+  if (!body) return;
   let rvs = admRvs;
   if (admFilter.room) rvs = rvs.filter(r => r.classroom_name.includes(admFilter.room));
   if (admFilter.date) rvs = rvs.filter(r => r.date_start <= admFilter.date && r.date_end >= admFilter.date);
 
   body.innerHTML = `
     <div class="adm-filters">
-      <div>
-        <span style="font-size:12px;color:var(--gray)">관리자: </span>
-        <span style="font-size:13px;font-weight:700;color:var(--green)">${adminEmail}</span>
-        <button class="btn btn-xs btn-outline" style="margin-left:8px" onclick="admLogout()">로그아웃</button>
-      </div>
       <input type="text" class="fi" style="width:180px" placeholder="강의실 검색..."
         value="${esc(admFilter.room)}" oninput="admFilter.room=this.value;renderAdmTable()">
       <input type="date" class="fi" style="width:150px"
@@ -1270,6 +1672,380 @@ function admLogout() {
   sessionStorage.removeItem('rv_adm');
   updateAdminBtn(); closeAdminM();
   toast('로그아웃되었습니다', 'info');
+}
+
+/* ── Admin: 강의실 관리 ── */
+let admClassrooms = [];
+
+async function refreshClassroomUI() {
+  await loadClassrooms();
+  populateFloorTabs();
+  const roomSel = document.getElementById('roomSel');
+  roomSel.innerHTML = '<option value="">강의실 선택...</option>';
+  populateRoomSel();
+  renderCal();
+}
+
+async function renderClassroomsTab() {
+  const { data } = await sb.from('classrooms').select('*').order('floor').order('name');
+  admClassrooms = (data || []).map(c => ({ ...c, editing: false }));
+  paintClassroomsTab();
+}
+
+function paintClassroomsTab() {
+  const body = document.getElementById('admTabContent');
+  if (!body) return;
+  const floorOpts = ['B1', '1F', '2F', '3F', '4F', '5F'];
+  body.innerHTML = `
+    <div class="adm-card">
+      <div style="font-weight:700;font-size:13px;margin-bottom:8px">강의실 추가</div>
+      <div class="adm-form-row">
+        <input type="text" id="clsNameIn" class="fi" placeholder="강의실명 (예: 301호)">
+        <select id="clsFloorIn" class="fs">
+          ${floorOpts.map(f => `<option value="${f}">${FLOOR_LABEL[f] || f}</option>`).join('')}
+        </select>
+        <input type="color" id="clsColorIn" class="fi" value="#1A73E8" style="padding:2px;height:36px">
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="addClassroom()">+ 강의실 추가</button>
+    </div>
+    <div class="tbl-wrap">
+      <table class="rv-tbl">
+        <thead><tr><th>강의실명</th><th>층</th><th>색상</th><th>사용여부</th><th>작업</th></tr></thead>
+        <tbody>
+          ${admClassrooms.map(c => `<tr>
+            <td>${c.editing ? `<input type="text" class="fi" style="width:110px" id="clsEdName_${c.id}" value="${esc(c.name)}">` : esc(c.name)}</td>
+            <td>${c.editing ? `<select class="fs" id="clsEdFloor_${c.id}">${floorOpts.map(f => `<option value="${f}" ${f === c.floor ? 'selected' : ''}>${FLOOR_LABEL[f] || f}</option>`).join('')}</select>` : (FLOOR_LABEL[c.floor] || c.floor)}</td>
+            <td>${c.editing ? `<input type="color" id="clsEdColor_${c.id}" value="${c.color || '#1A73E8'}" style="width:40px;height:28px;padding:0">` : `<span style="display:inline-block;width:14px;height:14px;border-radius:4px;background:${c.color || '#1A73E8'};vertical-align:middle"></span>`}</td>
+            <td>${c.active ? '<span style="color:var(--green);font-weight:700">사용중</span>' : '<span style="color:var(--gray)">비활성</span>'}</td>
+            <td style="display:flex;gap:3px;flex-wrap:wrap">
+              ${c.editing
+                ? `<button class="btn btn-xs btn-primary" onclick="saveClassroom('${c.id}')">저장</button>
+                   <button class="btn btn-xs btn-outline" onclick="cancelEditClassroom('${c.id}')">취소</button>`
+                : `<button class="btn btn-xs btn-outline" onclick="editClassroom('${c.id}')">수정</button>
+                   <button class="btn btn-xs ${c.active ? 'btn-outline' : 'btn-green'}" onclick="toggleClassroomActive('${c.id}',${!c.active})">${c.active ? '비활성화' : '활성화'}</button>
+                   <button class="btn btn-xs btn-red" onclick="deleteClassroom('${c.id}')">삭제</button>`
+              }
+            </td>
+          </tr>`).join('') || `<tr><td colspan="5" style="text-align:center;color:var(--gray);padding:20px">등록된 강의실이 없습니다.</td></tr>`}
+        </tbody>
+      </table>
+    </div>`;
+}
+
+async function addClassroom() {
+  const name = document.getElementById('clsNameIn').value.trim();
+  const floor = document.getElementById('clsFloorIn').value;
+  const color = document.getElementById('clsColorIn').value;
+  if (!name) return toast('강의실명을 입력해주세요', 'warn');
+  const { error } = await sb.from('classrooms').insert({ name, floor, color, active: true });
+  if (error) return toast('추가 실패: ' + error.message, 'error');
+  toast('강의실이 추가되었습니다', 'success');
+  await renderClassroomsTab();
+  await refreshClassroomUI();
+}
+
+function editClassroom(id) {
+  admClassrooms = admClassrooms.map(c => c.id === id ? { ...c, editing: true } : c);
+  paintClassroomsTab();
+}
+function cancelEditClassroom(id) {
+  admClassrooms = admClassrooms.map(c => c.id === id ? { ...c, editing: false } : c);
+  paintClassroomsTab();
+}
+async function saveClassroom(id) {
+  const name = document.getElementById(`clsEdName_${id}`).value.trim();
+  const floor = document.getElementById(`clsEdFloor_${id}`).value;
+  const color = document.getElementById(`clsEdColor_${id}`).value;
+  if (!name) return toast('강의실명을 입력해주세요', 'warn');
+  const { error } = await sb.from('classrooms').update({ name, floor, color }).eq('id', id);
+  if (error) return toast('수정 실패: ' + error.message, 'error');
+  toast('수정되었습니다', 'success');
+  await renderClassroomsTab();
+  await refreshClassroomUI();
+}
+async function toggleClassroomActive(id, val) {
+  const { error } = await sb.from('classrooms').update({ active: val }).eq('id', id);
+  if (error) return toast('변경 실패: ' + error.message, 'error');
+  await renderClassroomsTab();
+  await refreshClassroomUI();
+}
+async function deleteClassroom(id) {
+  if (!confirm('이 강의실을 삭제하시겠습니까? 기존 예약 데이터는 유지됩니다.')) return;
+  const { error } = await sb.from('classrooms').delete().eq('id', id);
+  if (error) return toast('삭제 실패: ' + error.message, 'error');
+  toast('삭제되었습니다', 'success');
+  await renderClassroomsTab();
+  await refreshClassroomUI();
+}
+
+/* ── Admin: 대관업체 관리 (OCR 지원) ── */
+let admCompanies = [];
+let ocrImgB64 = null, ocrImgType = null;
+
+async function renderCompaniesTab() {
+  const { data } = await sb.from('rental_companies').select('*').order('biz_name');
+  admCompanies = data || [];
+  paintCompaniesTab();
+}
+
+function paintCompaniesTab() {
+  const body = document.getElementById('admTabContent');
+  if (!body) return;
+  body.innerHTML = `
+    <div class="adm-card">
+      <div style="font-weight:700;font-size:13px;margin-bottom:8px">대관업체 등록 (사업자등록증 AI OCR 지원)</div>
+      <div id="ocrDropZone" tabindex="0" style="border:2px dashed var(--border);border-radius:var(--r);padding:16px;text-align:center;font-size:12px;color:var(--gray);cursor:pointer;margin-bottom:10px">
+        사업자등록증 이미지를 여기를 클릭한 뒤 <b>Ctrl+V</b>로 붙여넣거나, 클릭하여 파일을 선택하세요.
+        <input type="file" id="ocrFileIn" accept="image/*" hidden onchange="onOcrFile(event)">
+      </div>
+      <div id="ocrPreviewWrap" hidden style="margin-bottom:10px">
+        <img id="ocrPreview" class="img-preview" style="max-height:160px">
+        <div id="ocrStatus" style="font-size:12px;color:var(--primary-dk);margin-top:6px"></div>
+      </div>
+      <div class="adm-form-row">
+        <input type="text" id="cmpNameIn" class="fi" placeholder="사업자(법인)명 *" autocomplete="off">
+        <input type="text" id="cmpBizNoIn" class="fi" placeholder="사업자번호" autocomplete="off">
+        <input type="text" id="cmpCorpNoIn" class="fi" placeholder="법인번호 (법인인 경우)" autocomplete="off">
+      </div>
+      <div class="adm-form-row">
+        <input type="text" id="cmpContactNameIn" class="fi" placeholder="담당자 이름" autocomplete="off">
+        <input type="text" id="cmpContactPhoneIn" class="fi" placeholder="담당자 연락처" autocomplete="off">
+        <input type="email" id="cmpInvoiceEmailIn" class="fi" placeholder="전자계산서 발행 이메일" autocomplete="off">
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="addCompany()">+ 대관업체 등록</button>
+    </div>
+    <div class="tbl-wrap">
+      <table class="rv-tbl">
+        <thead><tr><th>사업자(법인)명</th><th>사업자번호</th><th>법인번호</th><th>담당자</th><th>연락처</th><th>전자계산서 이메일</th><th>작업</th></tr></thead>
+        <tbody>
+          ${admCompanies.map(c => `<tr>
+            <td>${esc(c.biz_name)}</td>
+            <td>${esc(c.biz_reg_no || '')}</td>
+            <td>${esc(c.corp_reg_no || '')}</td>
+            <td>${esc(c.contact_name || '')}</td>
+            <td>${esc(c.contact_phone || '')}</td>
+            <td>${esc(c.invoice_email || '')}</td>
+            <td><button class="btn btn-xs btn-red" onclick="deleteCompany('${c.id}')">삭제</button></td>
+          </tr>`).join('') || `<tr><td colspan="7" style="text-align:center;color:var(--gray);padding:20px">등록된 대관업체가 없습니다.</td></tr>`}
+        </tbody>
+      </table>
+    </div>`;
+  initOcrPaste();
+}
+
+function initOcrPaste() {
+  const zone = document.getElementById('ocrDropZone');
+  if (!zone) return;
+  zone.addEventListener('paste', onOcrPaste);
+  zone.addEventListener('click', e => { if (e.target.id !== 'ocrFileIn') document.getElementById('ocrFileIn').click(); });
+}
+
+function onOcrFile(event) {
+  const file = event.target.files[0];
+  if (file) readOcrImage(file);
+}
+
+function onOcrPaste(e) {
+  const items = (e.clipboardData || window.clipboardData)?.items;
+  if (!items) return;
+  for (const item of items) {
+    if (item.type.indexOf('image') === 0) {
+      const file = item.getAsFile();
+      readOcrImage(file);
+      e.preventDefault();
+      return;
+    }
+  }
+}
+
+function readOcrImage(file) {
+  const reader = new FileReader();
+  reader.onload = async e => {
+    document.getElementById('ocrPreviewWrap').hidden = false;
+    document.getElementById('ocrPreview').src = e.target.result;
+    ocrImgB64 = e.target.result.split(',')[1];
+    ocrImgType = file.type;
+    await runOcr();
+  };
+  reader.readAsDataURL(file);
+}
+
+async function runOcr() {
+  const status = document.getElementById('ocrStatus');
+  status.textContent = 'AI OCR 분석 중...';
+  const ak = localStorage.getItem('anthropicApiKey');
+  if (!ak) { status.textContent = '(AI 키 미설정) 자동입력을 건너뜁니다. 직접 입력해주세요.'; return; }
+  const prompt = `첨부된 사업자등록증 이미지를 분석해서 아래 JSON 형식으로만 답변해주세요. 다른 설명은 하지 마세요. 확인되지 않는 값은 빈 문자열로 두세요.
+{"biz_name":"상호(법인)명","biz_reg_no":"사업자등록번호","corp_reg_no":"법인등록번호","contact_name":"","contact_phone":"","invoice_email":""}`;
+  try {
+    const r = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'x-api-key': ak, 'anthropic-version': '2023-06-01', 'content-type': 'application/json', 'anthropic-dangerous-request-options': 'true' },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001', max_tokens: 400,
+        messages: [{ role: 'user', content: [
+          { type: 'image', source: { type: 'base64', media_type: ocrImgType, data: ocrImgB64 } },
+          { type: 'text', text: prompt }
+        ]}]
+      })
+    });
+    if (!r.ok) { status.textContent = 'OCR 분석 실패.'; return; }
+    const d = await r.json();
+    const text = d.content[0].text;
+    const m = text.match(/\{[\s\S]*\}/);
+    if (!m) { status.textContent = 'OCR 결과를 해석하지 못했습니다. 직접 입력해주세요.'; return; }
+    const j = JSON.parse(m[0]);
+    if (j.biz_name) document.getElementById('cmpNameIn').value = j.biz_name;
+    if (j.biz_reg_no) document.getElementById('cmpBizNoIn').value = j.biz_reg_no;
+    if (j.corp_reg_no) document.getElementById('cmpCorpNoIn').value = j.corp_reg_no;
+    if (j.contact_name) document.getElementById('cmpContactNameIn').value = j.contact_name;
+    if (j.contact_phone) document.getElementById('cmpContactPhoneIn').value = j.contact_phone;
+    if (j.invoice_email) document.getElementById('cmpInvoiceEmailIn').value = j.invoice_email;
+    status.textContent = '✓ OCR 자동입력 완료. 내용을 확인 후 등록해주세요.';
+  } catch (e) {
+    status.textContent = 'OCR 오류: ' + e.message;
+  }
+}
+
+async function addCompany() {
+  const biz_name = document.getElementById('cmpNameIn').value.trim();
+  const biz_reg_no = document.getElementById('cmpBizNoIn').value.trim();
+  const corp_reg_no = document.getElementById('cmpCorpNoIn').value.trim();
+  const contact_name = document.getElementById('cmpContactNameIn').value.trim();
+  const contact_phone = document.getElementById('cmpContactPhoneIn').value.trim();
+  const invoice_email = document.getElementById('cmpInvoiceEmailIn').value.trim();
+  if (!biz_name) return toast('사업자(법인)명을 입력해주세요', 'warn');
+  const { error } = await sb.from('rental_companies').insert({
+    biz_name, biz_reg_no: biz_reg_no || null, corp_reg_no: corp_reg_no || null,
+    contact_name: contact_name || null, contact_phone: contact_phone || null, invoice_email: invoice_email || null,
+  });
+  if (error) return toast('등록 실패: ' + error.message, 'error');
+  toast('대관업체가 등록되었습니다', 'success');
+  ocrImgB64 = null; ocrImgType = null;
+  await renderCompaniesTab();
+  await loadRentalCompanies();
+}
+
+async function deleteCompany(id) {
+  if (!confirm('이 대관업체를 삭제하시겠습니까?')) return;
+  const { error } = await sb.from('rental_companies').delete().eq('id', id);
+  if (error) return toast('삭제 실패: ' + error.message, 'error');
+  toast('삭제되었습니다', 'success');
+  await renderCompaniesTab();
+  await loadRentalCompanies();
+}
+
+/* ── Admin: 대관료 청구 관리 ── */
+let admBillCompany = '', admBillCourse = '';
+
+async function renderBillingTab() {
+  const { data } = await sb.from('rental_companies').select('*').order('biz_name');
+  admCompanies = data || [];
+  paintBillingTab();
+}
+
+function paintBillingTab() {
+  const body = document.getElementById('admTabContent');
+  if (!body) return;
+  body.innerHTML = `
+    <div class="adm-card">
+      <div class="adm-form-row" style="grid-template-columns:1fr 1fr">
+        <div class="fg">
+          <div class="fl">대관업체</div>
+          <select id="billCompanySel" class="fs" onchange="onBillCompanyChange()">
+            <option value="">업체 선택...</option>
+            ${admCompanies.map(c => `<option value="${c.id}" ${String(c.id) === String(admBillCompany) ? 'selected' : ''}>${esc(c.biz_name)}</option>`).join('')}
+          </select>
+        </div>
+        <div class="fg">
+          <div class="fl">과정명</div>
+          <select id="billCourseSel" class="fs" onchange="onBillCourseChange()">
+            <option value="">과정 선택...</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div id="billResult"></div>`;
+  if (admBillCompany) populateBillCourseSel();
+}
+
+async function onBillCompanyChange() {
+  admBillCompany = document.getElementById('billCompanySel').value;
+  admBillCourse = '';
+  document.getElementById('billResult').innerHTML = '';
+  await populateBillCourseSel();
+}
+
+async function populateBillCourseSel() {
+  const sel = document.getElementById('billCourseSel');
+  if (!sel) return;
+  if (!admBillCompany) { sel.innerHTML = '<option value="">과정 선택...</option>'; return; }
+  const { data } = await sb.from('reservations').select('course_name')
+    .eq('is_rental', true).eq('rental_company_id', admBillCompany).is('deleted_at', null);
+  const courses = [...new Set((data || []).map(r => r.course_name).filter(Boolean))];
+  sel.innerHTML = '<option value="">과정 선택...</option>' + courses.map(c => `<option value="${esc(c)}" ${c === admBillCourse ? 'selected' : ''}>${esc(c)}</option>`).join('');
+  if (admBillCourse) await loadBillingDetail();
+}
+
+async function onBillCourseChange() {
+  admBillCourse = document.getElementById('billCourseSel').value;
+  if (!admBillCourse) { document.getElementById('billResult').innerHTML = ''; return; }
+  await loadBillingDetail();
+}
+
+async function loadBillingDetail() {
+  const result = document.getElementById('billResult');
+  if (!result) return;
+  result.innerHTML = '<div style="display:flex;justify-content:center;padding:24px"><div class="spinner"></div></div>';
+  const { data } = await sb.from('reservations').select('*')
+    .eq('is_rental', true).eq('rental_company_id', admBillCompany).eq('course_name', admBillCourse)
+    .is('deleted_at', null).order('date_start');
+  const rows = data || [];
+  if (!rows.length) { result.innerHTML = '<div class="info-box">등록된 일정이 없습니다.</div>'; return; }
+
+  let totalFee = 0;
+  let maxEnd = rows[0].date_end;
+  rows.forEach(r => {
+    const days = Math.round((new Date(r.date_end) - new Date(r.date_start)) / 86400000) + 1;
+    totalFee += (r.daily_fee || 0) * days;
+    if (r.date_end > maxEnd) maxEnd = r.date_end;
+  });
+  const dueDate = new Date(maxEnd + 'T00:00:00'); dueDate.setDate(dueDate.getDate() + 1);
+  const dueDateStr = toStr(dueDate);
+  const allBilled = rows.every(r => r.billing_status === 'billed');
+
+  result.innerHTML = `
+    <div class="detail-grid" style="margin-bottom:14px">
+      <div class="detail-row"><div class="dl">과정명</div><div class="dv">${esc(admBillCourse)}</div></div>
+      <div class="detail-row"><div class="dl">일정 건수</div><div class="dv">${rows.length}건</div></div>
+      <div class="detail-row"><div class="dl">대관료 합계</div><div class="dv" style="font-weight:800;color:var(--primary-dk)">${totalFee.toLocaleString()}원</div></div>
+      <div class="detail-row"><div class="dl">청구 예정일</div><div class="dv">${fmtD(dueDateStr)} <span style="font-size:11px;color:var(--gray)">(과정 종료일 다음날)</span></div></div>
+      <div class="detail-row"><div class="dl">청구 상태</div><div class="dv">${allBilled ? '<span style="color:var(--green);font-weight:700">청구 완료</span>' : '<span style="color:var(--orange);font-weight:700">청구 대기</span>'}</div></div>
+    </div>
+    ${!allBilled ? `<button class="btn btn-primary btn-sm" onclick="markBilled()">청구 완료 처리</button>` : ''}
+    <div class="tbl-wrap" style="margin-top:14px">
+      <table class="rv-tbl">
+        <thead><tr><th>날짜</th><th>강의실</th><th>시간</th><th>일 대관료</th><th>상태</th></tr></thead>
+        <tbody>
+          ${rows.map(r => `<tr>
+            <td style="white-space:nowrap">${r.date_start}${r.date_start !== r.date_end ? '~' + r.date_end : ''}</td>
+            <td>${esc(r.classroom_name)}</td>
+            <td style="white-space:nowrap">${r.time_start}~${r.time_end}</td>
+            <td>${(r.daily_fee || 0).toLocaleString()}원</td>
+            <td>${r.billing_status === 'billed' ? '완료' : '대기'}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`;
+}
+
+async function markBilled() {
+  if (!confirm('청구 완료로 처리하시겠습니까?')) return;
+  const { error } = await sb.from('reservations').update({ billing_status: 'billed', billed_at: new Date().toISOString() })
+    .eq('is_rental', true).eq('rental_company_id', admBillCompany).eq('course_name', admBillCourse);
+  if (error) return toast('처리 실패: ' + error.message, 'error');
+  toast('청구 완료로 처리되었습니다', 'success');
+  await loadBillingDetail();
 }
 
 /* ── AI review ── */
