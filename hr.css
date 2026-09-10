@@ -39,14 +39,14 @@
 .hr-nav-btn.active { color: #1a3a5c; border-bottom-color: #1a3a5c; }
 .hr-nav-badge {
   display: inline-block; margin-left: 5px; padding: 1px 6px;
-  background: #DC2626; color: #fff; border-radius: 10px; font-size: 10px;
+  background: #DC2626; color: #fff; border-radius:12px; font-size: 10px;
 }
 
 /* ── 상태 카드 ── */
 .hr-stat-row { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
 .hr-stat-card {
   flex: 1; min-width: 120px; background: #fff; border: 1px solid #E5E7EB;
-  border-radius: 10px; padding: 14px 16px; text-align: center;
+  border-radius:12px; padding: 14px 16px; text-align: center;
   box-shadow: 0 1px 3px rgba(0,0,0,.04);
 }
 .hr-stat-num { font-size: 26px; font-weight: 700; color: #1a3a5c; }
@@ -66,7 +66,7 @@
 .hr-role-desc  { font-size: 13px; color: #6B7280; margin-bottom: 28px; text-align: center; }
 .hr-role-cards { display: flex; gap: 16px; flex-wrap: wrap; justify-content: center; max-width: 700px; }
 .hr-role-card {
-  background: #fff; border: 2px solid #E5E7EB; border-radius: 14px;
+  background: #fff; border: 2px solid #E5E7EB; border-radius:12px;
   padding: 24px 28px; cursor: pointer; width: 190px; text-align: center;
   transition: border-color .2s, box-shadow .2s;
 }
@@ -89,7 +89,7 @@
 .hr-auth-title { font-size: 18px; font-weight: 700; color: #1a3a5c; margin-bottom: 6px; }
 .hr-auth-desc  { font-size: 13px; color: #6B7280; margin-bottom: 20px; line-height: 1.6; }
 .hr-auth-input {
-  width: 100%; padding: 10px 14px; border: 1.5px solid #D1D5DB; border-radius: 8px;
+  width: 100%; padding: 10px 14px; border: 1.5px solid #D1D5DB; border-radius:12px;
   font-size: 15px; text-align: center; letter-spacing: 4px; box-sizing: border-box;
   margin-bottom: 12px; font-family: 'Pretendard', monospace;
 }
@@ -98,7 +98,7 @@
 
 /* ── 공통 버튼 ── */
 .hr-btn {
-  padding: 9px 20px; border-radius: 8px; font-size: 13px; font-weight: 600;
+  padding: 9px 20px; border-radius:12px; font-size: 13px; font-weight: 600;
   cursor: pointer; border: none; transition: background .15s, opacity .15s;
   font-family: 'Pretendard', sans-serif;
 }
@@ -123,7 +123,7 @@
   gap: 6px;
   background: linear-gradient(135deg, #EDE9FE, #F5F3FF);
   border: 1.5px solid #A78BFA;
-  border-radius: 10px;
+  border-radius:12px;
   padding: 10px 16px;
   margin-bottom: 14px;
   font-size: 13px;
@@ -169,8 +169,8 @@
   font-size: 14px; font-weight: 700; color: #1a3a5c;
   display: flex; align-items: center; gap: 8px;
 }
-.hr-card-title .hr-badge-ok  { background: #DCFCE7; color: #15803D; font-size: 10px; padding: 2px 7px; border-radius: 10px; font-weight: 600; }
-.hr-card-title .hr-badge-req { background: #FEF9C3; color: #A16207; font-size: 10px; padding: 2px 7px; border-radius: 10px; font-weight: 600; }
+.hr-card-title .hr-badge-ok  { background: #DCFCE7; color: #15803D; font-size: 10px; padding: 2px 7px; border-radius:12px; font-weight: 600; }
+.hr-card-title .hr-badge-req { background: #FEF9C3; color: #A16207; font-size: 10px; padding: 2px 7px; border-radius:12px; font-weight: 600; }
 .hr-card-toggle { color: #9CA3AF; font-size: 18px; }
 .hr-card-body   { padding: 20px; }
 
@@ -178,7 +178,7 @@
 .hr-app-form { font-size: 13px; }
 .hr-photo-row { display: flex; gap: 20px; margin-bottom: 16px; }
 .hr-photo-box {
-  width: 100px; height: 130px; border: 2px dashed #D1D5DB; border-radius: 6px;
+  width: 100px; height: 130px; border: 2px dashed #D1D5DB; border-radius:12px;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   cursor: pointer; flex-shrink: 0; overflow: hidden; background: #F9FAFB;
   transition: border-color .15s;
@@ -191,13 +191,13 @@
 .hr-form-section { margin-bottom: 16px; }
 .hr-section-title {
   font-size: 12px; font-weight: 700; color: #1a3a5c;
-  background: #F0F4FF; padding: 6px 10px; border-radius: 6px; margin-bottom: 10px;
+  background: #F0F4FF; padding: 6px 10px; border-radius:12px; margin-bottom: 10px;
 }
 .hr-row { display: flex; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
 .hr-field { display: flex; flex-direction: column; gap: 3px; }
 .hr-field label { font-size: 11px; font-weight: 600; color: #374151; }
 .hr-field input, .hr-field select, .hr-field textarea {
-  padding: 7px 10px; border: 1px solid #D1D5DB; border-radius: 6px;
+  padding: 7px 10px; border: 1px solid #D1D5DB; border-radius:12px;
   font-size: 12px; font-family: 'Pretendard', sans-serif; box-sizing: border-box;
 }
 .hr-field input:focus, .hr-field select:focus, .hr-field textarea:focus {
@@ -232,7 +232,7 @@
   padding: 4px 6px; border: 1px solid #E5E7EB; vertical-align: middle;
 }
 .hr-table td input, .hr-table td select {
-  width: 100%; padding: 5px 6px; border: 1px solid #E5E7EB; border-radius: 4px;
+  width: 100%; padding: 5px 6px; border: 1px solid #E5E7EB; border-radius:12px;
   font-size: 11px; font-family: 'Pretendard', sans-serif; box-sizing: border-box; background: transparent;
 }
 .hr-table td input:focus, .hr-table td select:focus {
@@ -244,7 +244,7 @@
 .hr-sig-wrap { text-align: left; }
 .hr-sig-label { font-size: 12px; font-weight: 600; color: #374151; margin-bottom: 6px; }
 .hr-sig-canvas {
-  border: 1.5px solid #D1D5DB; border-radius: 8px; cursor: crosshair;
+  border: 1.5px solid #D1D5DB; border-radius:12px; cursor: crosshair;
   background: #FAFAFA; display: block; touch-action: none;
 }
 .hr-sig-actions { display: flex; gap: 6px; margin-top: 6px; align-items: center; }
@@ -262,7 +262,7 @@
   display: flex; align-items: center; justify-content: center; flex-shrink: 0;
 }
 .hr-upload-zone {
-  border: 2px dashed #CBD5E1; border-radius: 10px; padding: 20px;
+  border: 2px dashed #CBD5E1; border-radius:12px; padding: 20px;
   text-align: center; cursor: pointer; background: #F8FAFF;
   transition: border-color .2s, background .2s;
 }
@@ -274,7 +274,7 @@
 .hr-uploaded-list { margin-top: 10px; display: flex; flex-direction: column; gap: 6px; }
 .hr-uploaded-item {
   display: flex; align-items: center; gap: 10px;
-  background: #F0FDF4; border: 1px solid #BBF7D0; border-radius: 8px;
+  background: #F0FDF4; border: 1px solid #BBF7D0; border-radius:12px;
   padding: 8px 12px; font-size: 12px;
 }
 .hr-uploaded-item.pdf-file  { background: #FFF7ED; border-color: #FED7AA; }
@@ -293,14 +293,14 @@
 .hr-pension-files { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }
 .hr-pension-file {
   flex: 1; min-width: 200px; background: #fff; border: 1px solid #E5E7EB;
-  border-radius: 10px; padding: 16px; display: flex; flex-direction: column; gap: 8px;
+  border-radius:12px; padding: 16px; display: flex; flex-direction: column; gap: 8px;
   box-shadow: 0 1px 4px rgba(0,0,0,.04);
 }
 .hr-pension-file-icon { font-size: 28px; }
 .hr-pension-file-name { font-size: 13px; font-weight: 700; color: #1a3a5c; }
 .hr-pension-file-desc { font-size: 11px; color: #6B7280; line-height: 1.5; }
 .hr-pension-notice {
-  background: #FEF9C3; border: 1px solid #FDE68A; border-radius: 10px;
+  background: #FEF9C3; border: 1px solid #FDE68A; border-radius:12px;
   padding: 16px 20px; margin-bottom: 12px;
 }
 .hr-pension-notice-title { font-size: 13px; font-weight: 700; color: #92400E; margin-bottom: 8px; }
@@ -312,11 +312,11 @@
   margin-bottom: 14px; flex-wrap: wrap; gap: 10px;
 }
 .hr-mgr-search {
-  padding: 8px 12px; border: 1px solid #D1D5DB; border-radius: 8px;
+  padding: 8px 12px; border: 1px solid #D1D5DB; border-radius:12px;
   font-size: 13px; width: 240px; font-family: 'Pretendard', sans-serif;
 }
 .hr-applicant-card {
-  background: #fff; border: 1px solid #E5E7EB; border-radius: 10px;
+  background: #fff; border: 1px solid #E5E7EB; border-radius:12px;
   padding: 14px 18px; margin-bottom: 10px; cursor: pointer;
   transition: box-shadow .15s, border-color .15s;
   display: flex; align-items: center; gap: 16px;
@@ -341,7 +341,7 @@
 
 /* ── 관리자 코드 생성 ── */
 .hr-code-card {
-  background: #fff; border: 1px solid #E5E7EB; border-radius: 10px;
+  background: #fff; border: 1px solid #E5E7EB; border-radius:12px;
   padding: 16px 18px; margin-bottom: 10px; display: flex;
   align-items: center; gap: 14px;
 }
@@ -366,7 +366,7 @@
 /* ── 토스트 ── */
 .hr-toast {
   position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
-  padding: 10px 22px; border-radius: 8px; font-size: 13px; z-index: 9999;
+  padding: 10px 22px; border-radius:12px; font-size: 13px; z-index: 9999;
   animation: hr-fadein .2s ease; pointer-events: none; color: #fff; white-space: nowrap;
   background: #1a3a5c;
 }
@@ -381,7 +381,7 @@
   display: flex; align-items: center; justify-content: center; padding: 20px;
 }
 .hr-modal {
-  background: #fff; border-radius: 14px; width: min(700px, 96vw);
+  background: #fff; border-radius:12px; width: min(700px, 96vw);
   max-height: 90vh; overflow-y: auto;
   box-shadow: 0 20px 60px rgba(0,0,0,.25); padding: 0;
 }
@@ -393,7 +393,7 @@
 .hr-modal-title { font-size: 16px; font-weight: 700; color: #1a3a5c; }
 .hr-modal-close {
   background: none; border: none; cursor: pointer; font-size: 18px; color: #6B7280;
-  padding: 4px; border-radius: 4px;
+  padding: 4px; border-radius:12px;
 }
 .hr-modal-close:hover { background: #F3F4F6; }
 .hr-modal-body { padding: 24px; }
@@ -410,11 +410,11 @@
 .hr-view-value { font-size: 13px; color: #111827; font-weight: 500; }
 .hr-view-section-title {
   font-size: 12px; font-weight: 700; background: #F0F4FF;
-  padding: 5px 10px; border-radius: 5px; margin: 12px 0 8px; color: #1a3a5c;
+  padding: 5px 10px; border-radius:12px; margin: 12px 0 8px; color: #1a3a5c;
 }
 .hr-file-link {
   display: inline-flex; align-items: center; gap: 5px; padding: 5px 10px;
-  background: #F0F4FF; border: 1px solid #BFDBFE; border-radius: 6px;
+  background: #F0F4FF; border: 1px solid #BFDBFE; border-radius:12px;
   color: #1D4ED8; font-size: 12px; text-decoration: none; cursor: pointer;
   margin: 3px; transition: background .15s;
 }

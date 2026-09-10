@@ -10,13 +10,13 @@
   *{ box-sizing:border-box; }
   body{ font-family:"Malgun Gothic","Apple SD Gothic Neo",sans-serif; margin:0; background:#eef3f8; color:#1f2937; }
   .wrap{ max-width:520px; margin:0 auto; padding:18px 16px 60px; }
-  .hd{ background:var(--c); color:#fff; border-radius:14px; padding:18px; margin-bottom:14px; }
+  .hd{ background:var(--c); color:#fff; border-radius:12px; padding:18px; margin-bottom:14px; }
   .hd h1{ font-size:18px; margin:0 0 4px; } .hd p{ font-size:13px; margin:0; opacity:.85; }
-  .card{ background:#fff; border:1px solid #e5e7eb; border-radius:14px; padding:16px; margin-bottom:14px; }
+  .card{ background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding:16px; margin-bottom:14px; }
   label{ display:block; font-size:12px; font-weight:600; color:#374151; margin:10px 0 4px; }
-  input,select,textarea{ width:100%; padding:10px 12px; border:1.5px solid #d1d5db; border-radius:8px; font-size:14px; font-family:inherit; }
+  input,select,textarea{ width:100%; padding:10px 12px; border:1.5px solid #d1d5db; border-radius:12px; font-size:14px; font-family:inherit; }
   textarea{ min-height:110px; resize:vertical; }
-  .btn{ width:100%; background:var(--c); color:#fff; border:none; border-radius:9px; padding:13px; font-size:15px; font-weight:700; cursor:pointer; margin-top:14px; }
+  .btn{ width:100%; background:var(--c); color:#fff; border:none; border-radius:12px; padding:13px; font-size:15px; font-weight:700; cursor:pointer; margin-top:14px; }
   .btn.sec{ background:#fff; color:var(--c); border:1.5px solid #cdd9e6; }
   .err{ color:#dc2626; font-size:13px; margin-top:8px; }
   .ok{ text-align:center; padding:18px; }
@@ -28,7 +28,7 @@
 </head>
 <body>
 <div class="wrap">
-  <div class="hd"><h1>🏢 기숙사 민원 접수</h1><p>아세아항공직업전문학교 기숙사</p></div>
+  <div class="hd"><h1>기숙사 민원 접수</h1><p>아세아항공직업전문학교 기숙사</p></div>
   <div class="card" id="form-card">
     <h2>민원 접수</h2>
     <div class="row2">
@@ -81,7 +81,7 @@ document.getElementById('f-submit').addEventListener('click', async function(){
   var res=await db.from('dormitory_complaints').insert(rec).select('ticket_no').single();
   this.disabled=false;
   if(res.error){ err.textContent='접수 실패: '+res.error.message; err.style.display='block'; return; }
-  document.getElementById('form-card').innerHTML='<div class="ok"><div style="font-size:42px">✅</div>'+
+  document.getElementById('form-card').innerHTML='<div class="ok"><div><svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>'+
     '<h2>접수되었습니다</h2><div class="no">'+esc(res.data.ticket_no)+'</div>'+
     '<p class="muted">접수번호를 저장해 두시면 처리 현황을 조회할 수 있습니다.</p></div>';
 });
@@ -92,7 +92,7 @@ document.getElementById('q-btn').addEventListener('click', async function(){
   var r=await db.rpc('dorm_complaint_status',{p_ticket:t});
   if(r.error||!r.data){ out.innerHTML='<p class="muted">해당 접수번호를 찾을 수 없습니다.</p>'; return; }
   var d=r.data; var st={received:'접수',in_progress:'처리중',done:'완료'}[d.status]||d.status;
-  out.innerHTML='<div style="border:1px solid #e5e7eb;border-radius:10px;padding:12px">'+
+  out.innerHTML='<div style="border:1px solid #e5e7eb;border-radius:12px;padding:12px">'+
     '<b>'+esc(d.title)+'</b> <span class="muted">'+esc(d.ticket_no)+'</span><br>'+
     '<span class="muted">상태: <b>'+esc(st)+'</b> · '+esc((d.created_at||'').slice(0,10))+'</span>'+
     (d.comments&&d.comments.length? '<div style="margin-top:8px">'+d.comments.map(function(c){return '<div class="muted" style="border-top:1px dashed #e5e7eb;padding-top:6px;margin-top:6px">▸ '+esc(c.body)+'</div>';}).join('')+'</div>':'')+
