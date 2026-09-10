@@ -15,42 +15,42 @@
     .tw-header { background: linear-gradient(135deg, var(--sky), var(--sky-d)); color: #fff; padding: 9px 12px; display: flex; align-items: center; gap: 8px; position: sticky; top: 0; z-index: 5; }
     .tw-header h1 { font-size: 14px; font-weight: 700; flex: 1; }
     .tw-header .ico { font-size: 16px; }
-    .tw-hbtn { background: rgba(255,255,255,.2); color: #fff; border: none; border-radius: 6px; padding: 5px 9px; font-size: 11.5px; cursor: pointer; white-space: nowrap; }
+    .tw-hbtn { background: rgba(255,255,255,.2); color: #fff; border: none; border-radius: 12px; padding: 5px 9px; font-size: 11.5px; cursor: pointer; white-space: nowrap; }
     .tw-hbtn:hover { background: rgba(255,255,255,.34); }
 
     .tw-wrap { padding: 9px 10px 14px; max-width: 820px; margin: 0 auto; }
 
     /* 새 할일: 좌측 제목+비고 세로 / 우측 날짜·시간+추가 */
-    .tw-new { display: flex; gap: 8px; background: var(--card); border: 1px solid var(--bd); border-radius: 10px; padding: 8px; margin-bottom: 9px; }
+    .tw-new { display: flex; gap: 8px; background: var(--card); border: 1px solid var(--bd); border-radius: 12px; padding: 8px; margin-bottom: 9px; }
     .tw-new-left { flex: 1 1 auto; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
-    .tw-new-left input { width: 100%; border: 1px solid var(--bd); border-radius: 7px; padding: 8px 10px; font-size: 13px; }
+    .tw-new-left input { width: 100%; border: 1px solid var(--bd); border-radius: 12px; padding: 8px 10px; font-size: 13px; }
     #tw-new-title { font-weight: 600; }
     #tw-new-notes { color: #44586a; }
     .tw-new-right { flex: 0 0 auto; display: flex; flex-direction: column; gap: 6px; justify-content: space-between; }
     .tw-new-right .tw-dt { display: flex; gap: 5px; }
-    .tw-new-right input { border: 1px solid var(--bd); border-radius: 7px; padding: 7px 8px; font-size: 12px; }
+    .tw-new-right input { border: 1px solid var(--bd); border-radius: 12px; padding: 7px 8px; font-size: 12px; }
     #tw-new-due { width: 120px; }
     #tw-new-time { width: 78px; }
-    .tw-add { background: var(--sky); color: #fff; border: none; border-radius: 7px; padding: 8px 14px; font-weight: 700; cursor: pointer; font-size: 13px; }
+    .tw-add { background: var(--sky); color: #fff; border: none; border-radius: 12px; padding: 8px 14px; font-weight: 700; cursor: pointer; font-size: 13px; }
     .tw-add:hover { background: var(--sky-d); }
 
     .tw-lists { display: flex; gap: 5px; overflow-x: auto; padding-bottom: 6px; margin-bottom: 4px; scrollbar-width: thin; }
-    .tw-listtab { flex: 0 0 auto; background: var(--card); border: 1px solid var(--bd); border-radius: 99px; padding: 5px 12px; font-size: 12px; cursor: pointer; color: var(--muted); white-space: nowrap; }
+    .tw-listtab { flex: 0 0 auto; background: var(--card); border: 1px solid var(--bd); border-radius: 12px; padding: 5px 12px; font-size: 12px; cursor: pointer; color: var(--muted); white-space: nowrap; }
     .tw-listtab.active { background: var(--sky); color: #fff; border-color: var(--sky); font-weight: 700; }
 
     /* 도구바: 캘린더 등록 + 정렬 */
     .tw-tools { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 7px; }
-    #tw-cal { flex: 1 1 130px; min-width: 110px; max-width: 240px; border: 1px solid var(--bd); border-radius: 7px; padding: 6px 8px; font-size: 12px; background: #fff; color: var(--txt); }
-    .tw-tbtn { border: 1px solid var(--bd); background: #fff; border-radius: 7px; padding: 6px 9px; font-size: 12px; cursor: pointer; color: var(--sky-d); display: inline-flex; align-items: center; gap: 4px; }
+    #tw-cal { flex: 1 1 130px; min-width: 110px; max-width: 240px; border: 1px solid var(--bd); border-radius: 12px; padding: 6px 8px; font-size: 12px; background: #fff; color: var(--txt); }
+    .tw-tbtn { border: 1px solid var(--bd); background: #fff; border-radius: 12px; padding: 6px 9px; font-size: 12px; cursor: pointer; color: var(--sky-d); display: inline-flex; align-items: center; gap: 4px; }
     .tw-tbtn:hover { background: var(--sky-l); }
     #tw-register { background: var(--sky); color: #fff; border-color: var(--sky); font-weight: 600; }
     #tw-register:hover { background: var(--sky-d); }
     .tw-tools .spacer { flex: 1 1 auto; }
 
-    .tw-selbar { display: flex; align-items: center; gap: 6px; background: var(--sky-l); border: 1px solid var(--sky-l2); border-radius: 8px; padding: 6px 9px; margin-bottom: 7px; flex-wrap: wrap; }
+    .tw-selbar { display: flex; align-items: center; gap: 6px; background: var(--sky-l); border: 1px solid var(--sky-l2); border-radius: 12px; padding: 6px 9px; margin-bottom: 7px; flex-wrap: wrap; }
     .tw-selbar[hidden] { display: none; }
     #tw-selcount { font-size: 12px; font-weight: 700; color: var(--sky-d); flex: 1; }
-    .tw-selbtn { border: none; border-radius: 6px; padding: 6px 11px; font-size: 12px; font-weight: 600; cursor: pointer; }
+    .tw-selbtn { border: none; border-radius: 12px; padding: 6px 11px; font-size: 12px; font-weight: 600; cursor: pointer; }
     #tw-complete { background: var(--sky); color: #fff; }
     #tw-complete:hover { background: var(--sky-d); }
     #tw-uncomplete { background: #fff; color: var(--sky-d); border: 1px solid var(--sky-l2); }
@@ -60,10 +60,10 @@
     .tw-status.tw-err { color: #C0392B; white-space: pre-line; }
 
     .tw-group { display: flex; flex-direction: column; }
-    .tw-task { display: flex; align-items: center; gap: 7px; background: var(--card); border: 1px solid var(--bd); border-radius: 9px; padding: 7px 9px; margin-bottom: 5px; position: relative; }
+    .tw-task { display: flex; align-items: center; gap: 7px; background: var(--card); border: 1px solid var(--bd); border-radius: 12px; padding: 7px 9px; margin-bottom: 5px; position: relative; }
     .tw-task.is-sel { background: var(--sky-l); border-color: var(--sky-l2); }
     .tw-task.dragging { opacity: .45; }
-    .tw-task.drop-before::before, .tw-task.drop-after::after { content: ''; position: absolute; left: 6px; right: 6px; height: 3px; border-radius: 2px; background: var(--sky); }
+    .tw-task.drop-before::before, .tw-task.drop-after::after { content: ''; position: absolute; left: 6px; right: 6px; height: 3px; border-radius: 12px; background: var(--sky); }
     .tw-task.drop-before::before { top: -4px; }
     .tw-task.drop-after::after { bottom: -4px; }
 
@@ -77,7 +77,7 @@
     .tw-reg { display: inline-flex; flex: 0 0 auto; }
     .tw-reg svg { width: 14px; height: 14px; color: var(--sky-d); }
     .tw-notes { font-size: 11.5px; color: var(--muted); margin-top: 1px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-    .tw-due { flex: 0 0 auto; font-size: 11px; font-weight: 700; border-radius: 5px; padding: 3px 7px; white-space: nowrap; }
+    .tw-due { flex: 0 0 auto; font-size: 11px; font-weight: 700; border-radius: 12px; padding: 3px 7px; white-space: nowrap; }
     .tw-due-over  { background: var(--sky-d); color: #fff; }
     .tw-due-today { background: var(--sky); color: #fff; }
     .tw-due-soon  { background: var(--sky-l2); color: var(--sky-d); }
@@ -101,12 +101,12 @@
     .tw-dialog h2 { font-size: 14px; margin-bottom: 11px; color: var(--sky-d); }
     .tw-field { margin-bottom: 9px; }
     .tw-field label { display: block; font-size: 11.5px; color: var(--muted); margin-bottom: 3px; }
-    .tw-field input, .tw-field textarea { width: 100%; border: 1px solid var(--bd); border-radius: 7px; padding: 8px 10px; font-size: 13px; font-family: inherit; }
+    .tw-field input, .tw-field textarea { width: 100%; border: 1px solid var(--bd); border-radius: 12px; padding: 8px 10px; font-size: 13px; font-family: inherit; }
     .tw-field textarea { resize: vertical; min-height: 60px; }
     .tw-row2 { display: flex; gap: 8px; }
     .tw-row2 .tw-field { flex: 1; }
     .tw-dialog-btns { display: flex; justify-content: flex-end; gap: 7px; margin-top: 12px; }
-    .tw-dialog-btns button { border: none; border-radius: 7px; padding: 8px 15px; font-size: 13px; font-weight: 600; cursor: pointer; }
+    .tw-dialog-btns button { border: none; border-radius: 12px; padding: 8px 15px; font-size: 13px; font-weight: 600; cursor: pointer; }
     #tw-edit-cancel { background: #eef2f5; color: #4a5b69; }
     #tw-edit-save { background: var(--sky); color: #fff; }
 
@@ -144,7 +144,7 @@
     <div class="tw-tools">
       <select id="tw-cal" title="등록할 캘린더"></select>
       <button class="tw-tbtn" id="tw-cal-reload" title="등록할 캘린더 불러오기">↻</button>
-      <button class="tw-tbtn" id="tw-register" title="선택한 할일을 구글캘린더에 등록">📅 구글캘린더 등록</button>
+      <button class="tw-tbtn" id="tw-register" title="선택한 할일을 구글캘린더에 등록">구글캘린더 등록</button>
       <span class="spacer"></span>
       <button class="tw-tbtn" id="tw-sortdate" title="마감일 빠른 순으로 정렬(영구)">↕ 일자순 정렬</button>
     </div>
@@ -152,7 +152,7 @@
     <!-- 선택 바 -->
     <div class="tw-selbar" id="tw-selbar" hidden>
       <span id="tw-selcount">0개 선택</span>
-      <button class="tw-selbtn" id="tw-complete">✔ 완료 처리</button>
+      <button class="tw-selbtn" id="tw-complete">완료 처리</button>
       <button class="tw-selbtn" id="tw-uncomplete">↺ 완료 해제</button>
       <button class="tw-selbtn" id="tw-clearsel">선택 해제</button>
     </div>

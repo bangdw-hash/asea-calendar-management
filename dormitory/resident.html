@@ -10,12 +10,12 @@
   *{ box-sizing:border-box; }
   body{ font-family:"Malgun Gothic","Apple SD Gothic Neo",sans-serif; margin:0; background:#eef3f8; color:#1f2937; }
   .wrap{ max-width:560px; margin:0 auto; padding:18px 16px 60px; }
-  .hd{ background:var(--c); color:#fff; border-radius:14px; padding:18px; margin-bottom:14px; }
+  .hd{ background:var(--c); color:#fff; border-radius:12px; padding:18px; margin-bottom:14px; }
   .hd h1{ font-size:18px; margin:0 0 4px; } .hd p{ font-size:13px; margin:0; opacity:.85; }
-  .card{ background:#fff; border:1px solid #e5e7eb; border-radius:14px; padding:16px; margin-bottom:14px; }
+  .card{ background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding:16px; margin-bottom:14px; }
   label{ display:block; font-size:12px; font-weight:600; color:#374151; margin:10px 0 4px; }
-  input,select,textarea{ width:100%; padding:10px 12px; border:1.5px solid #d1d5db; border-radius:8px; font-size:14px; font-family:inherit; }
-  .btn{ width:100%; background:var(--c); color:#fff; border:none; border-radius:9px; padding:13px; font-size:15px; font-weight:700; cursor:pointer; margin-top:14px; }
+  input,select,textarea{ width:100%; padding:10px 12px; border:1.5px solid #d1d5db; border-radius:12px; font-size:14px; font-family:inherit; }
+  .btn{ width:100%; background:var(--c); color:#fff; border:none; border-radius:12px; padding:13px; font-size:15px; font-weight:700; cursor:pointer; margin-top:14px; }
   .btn.sec{ background:#fff; color:var(--c); border:1.5px solid #cdd9e6; }
   .err{ color:#dc2626; font-size:13px; margin-top:8px; }
   .muted{ font-size:12px; color:#6b7280; line-height:1.6; }
@@ -25,15 +25,15 @@
   th,td{ border-bottom:1px solid #eef1f4; padding:7px 8px; text-align:left; }
   th{ background:#f8fafc; color:#475569; font-size:12px; }
   .tabs{ display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px; }
-  .tabs button{ padding:7px 12px; border:1px solid #cdd9e6; background:#fff; border-radius:8px; font-size:13px; font-weight:600; color:#475569; cursor:pointer; }
+  .tabs button{ padding:7px 12px; border:1px solid #cdd9e6; background:#fff; border-radius:12px; font-size:13px; font-weight:600; color:#475569; cursor:pointer; }
   .tabs button.active{ background:var(--c); color:#fff; border-color:var(--c); }
-  .badge{ font-size:11px; font-weight:700; padding:2px 8px; border-radius:999px; background:#eef2ff; color:#4f46e5; }
+  .badge{ font-size:11px; font-weight:700; padding:2px 8px; border-radius:12px; background:#eef2ff; color:#4f46e5; }
   .badge.paid{ background:#ecfdf5; color:#059669; } .badge.od{ background:#fef2f2; color:#dc2626; }
 </style>
 </head>
 <body>
 <div class="wrap">
-  <div class="hd"><h1>🏠 기숙사 입소자 포털</h1><p>아세아항공직업전문학교 기숙사</p></div>
+  <div class="hd"><h1>기숙사 입소자 포털</h1><p>아세아항공직업전문학교 기숙사</p></div>
   <div id="app"></div>
 </div>
 <script>
@@ -89,7 +89,7 @@ function renderHome(){
 function tabContract(){
   var cs=DATA.contracts||[]; if(!cs.length) return '<div class="card"><p class="muted">계약 정보가 없습니다.</p></div>';
   return '<div class="card"><h2>내 계약</h2>'+cs.map(function(c){
-    return '<div style="border:1px solid #eef1f4;border-radius:10px;padding:12px;margin-bottom:8px">'+
+    return '<div style="border:1px solid #eef1f4;border-radius:12px;padding:12px;margin-bottom:8px">'+
       '<b>'+esc(c.building||'')+' '+esc(c.room||'')+'호</b> <span class="badge">'+esc(c.status)+'</span><br>'+
       '<span class="muted">기간: '+esc(c.start)+' ~ '+esc(c.end)+' · '+esc(c.type)+'</span><br>'+
       '<span class="muted">월 단가: '+won(c.unit_price)+'원'+(c.deposit?(' · 보증금: '+won(c.deposit)+'원'):'')+'</span>'+
@@ -127,7 +127,7 @@ function renderComplaintForm(c){
       category:document.getElementById('mc-cat').value, title:title, content:content, status:'received' }).select('ticket_no').single();
     this.disabled=false;
     if(res.error){ err.textContent='접수 실패: '+res.error.message; err.style.display='block'; return; }
-    c.innerHTML='<div class="card" style="text-align:center"><div style="font-size:40px">✅</div><h2>접수 완료</h2><p>접수번호: <b>'+esc(res.data.ticket_no)+'</b></p></div>';
+    c.innerHTML='<div class="card" style="text-align:center"><div style="color:#16a34a;margin-bottom:4px"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div><h2>접수 완료</h2><p>접수번호: <b>'+esc(res.data.ticket_no)+'</b></p></div>';
   });
 }
 function renderMoveout(c){
@@ -145,7 +145,7 @@ function renderMoveout(c){
       category:'퇴실신청', title:'퇴실 신청 ('+date+')', content:'희망 퇴실일: '+date+'\n사유: '+reason, status:'received' }).select('ticket_no').single();
     this.disabled=false;
     if(res.error){ err.textContent='신청 실패: '+res.error.message; err.style.display='block'; return; }
-    c.innerHTML='<div class="card" style="text-align:center"><div style="font-size:40px">✅</div><h2>퇴실 신청 완료</h2><p>접수번호: <b>'+esc(res.data.ticket_no)+'</b></p><p class="muted">관리자 승인 후 처리됩니다.</p></div>';
+    c.innerHTML='<div class="card" style="text-align:center"><div style="color:#16a34a;margin-bottom:4px"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div><h2>퇴실 신청 완료</h2><p>접수번호: <b>'+esc(res.data.ticket_no)+'</b></p><p class="muted">관리자 승인 후 처리됩니다.</p></div>';
   });
 }
 </script>
