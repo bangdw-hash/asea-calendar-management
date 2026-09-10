@@ -3273,12 +3273,16 @@ async function navWeek(delta) {
 
 function _hdrOutsideClick(e) {
   const d = document.getElementById('hdr-dropdown');
-  if (!d) { document.removeEventListener('click', _hdrOutsideClick); return; }
+  if (!d) { document.removeEventListener('click', _hdrOutsideClick, true); return; }
   /* 드롭다운 내부 클릭(입력칸 포함)은 닫지 않음 */
   if (d.contains(e.target)) return;
+  /* 캡처 단계에서 여기서 완전히 가로채 아래 달력 셀 등으로 클릭이
+     전달되지 않도록 함(버블 단계에서 막으면 이미 하위 요소의 클릭 핸들러가
+     실행된 뒤라 늦음) */
   e.stopPropagation();
+  e.preventDefault();
   d.hidden = true;
-  document.removeEventListener('click', _hdrOutsideClick);
+  document.removeEventListener('click', _hdrOutsideClick, true);
 }
 function toggleHdrMenu(e) {
   e && e.stopPropagation();
@@ -3286,15 +3290,15 @@ function toggleHdrMenu(e) {
   if (!d) return;
   d.hidden = !d.hidden;
   if (!d.hidden) {
-    setTimeout(() => document.addEventListener('click', _hdrOutsideClick), 10);
+    setTimeout(() => document.addEventListener('click', _hdrOutsideClick, true), 10);
   } else {
-    document.removeEventListener('click', _hdrOutsideClick);
+    document.removeEventListener('click', _hdrOutsideClick, true);
   }
 }
 function closeHdrMenu() {
   const d = document.getElementById('hdr-dropdown');
   if (d) d.hidden = true;
-  document.removeEventListener('click', _hdrOutsideClick);
+  document.removeEventListener('click', _hdrOutsideClick, true);
 }
 
 function nav(delta) {
