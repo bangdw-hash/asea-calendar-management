@@ -43,7 +43,7 @@
   --g50:var(--color-bg);--g100:#F1F3F4;--g200:var(--color-border);
   --g300:#D2D5D9;--g400:#9AA0A6;--g500:var(--color-text-sec);
   --g700:#3C4043;--g900:var(--color-text);
-  --r:10px;--r-xs:6px;--r-card:14px;--r-panel:18px;
+  --r:12px;--r-xs:6px;--r-card:14px;--r-panel:18px;
   --sh:   0 1px 3px rgba(60,64,67,.08),0 1px 2px rgba(60,64,67,.06);
   --sh-md:0 2px 8px rgba(60,64,67,.12),0 2px 4px rgba(60,64,67,.08);
   --sh-lg:0 8px 24px rgba(60,64,67,.14),0 4px 8px rgba(60,64,67,.10);
@@ -256,7 +256,7 @@ html,body{height:100%;
 :root[data-density="xl"]{--evt-fs:15px}
 .evt-dot,.week-evt{font-size:var(--evt-fs)!important}
 /* density 버튼 */
-.hdr-density-wrap{display:flex;align-items:center;gap:2px;border:1px solid var(--color-border);border-radius:6px;padding:2px 5px;background:var(--color-bg);height:28px;box-sizing:border-box}
+.hdr-density-wrap{display:flex;align-items:center;gap:2px;border:1px solid var(--color-border);border-radius:var(--r-xs);padding:2px 5px;background:var(--color-bg);height:28px;box-sizing:border-box}
 .hdr-density-btn{background:none;border:none;cursor:pointer;font-size:.78rem;font-weight:800;color:var(--color-text-sec);padding:0 5px;border-radius:3px;line-height:1;height:20px;display:flex;align-items:center;justify-content:center;transition:background .12s,color .12s;font-family:inherit}
 .hdr-density-btn:hover:not(:disabled){background:var(--g100);color:var(--color-text)}
 .hdr-density-btn:disabled{opacity:.2;cursor:default}
@@ -397,7 +397,7 @@ html,body{height:100%;
 
 /* event detail modal */
 #evt-popup{position:fixed;z-index:800;width:min(400px,92vw);
-  background:#fff;border-radius:20px;
+  background:#fff;border-radius:var(--r-panel);
   box-shadow:0 24px 64px rgba(0,0,0,.22),0 4px 16px rgba(0,0,0,.12);
   top:50%;left:50%;transform:translate(-50%,-46%) scale(.94);
   opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;display:none}
@@ -423,7 +423,7 @@ html,body{height:100%;
   text-align:left;font-weight:700;color:var(--g700);white-space:nowrap}
 .admin-table td{border:1px solid var(--g200);padding:6px 8px;vertical-align:middle}
 .admin-table tbody tr:hover{background:var(--g50)}
-.status-badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:.7rem;font-weight:700}
+.status-badge{display:inline-block;padding:2px 8px;border-radius:var(--r);font-size:.7rem;font-weight:700}
 .status-pending{background:var(--orange-lt);color:var(--orange)}
 .status-done{background:var(--green-lt);color:var(--green)}
 .admin-toolbar{display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap}
@@ -462,11 +462,11 @@ html,body{height:100%;
 .ai-msg.bot{align-self:flex-start;background:var(--g100);color:var(--g900);border-bottom-left-radius:2px}
 .ai-msg.bot.loading{color:var(--g400);font-style:italic}
 .ai-action-bar{padding:6px 12px;display:flex;gap:6px;flex-wrap:wrap;border-top:1px solid var(--g100);flex-shrink:0}
-.ai-chip{font-size:.72rem;padding:4px 9px;border-radius:999px;border:1px solid var(--g300);
+.ai-chip{font-size:.72rem;padding:4px 9px;border-radius:var(--r);border:1px solid var(--g300);
   background:#fff;color:var(--g700);cursor:pointer;transition:all .15s;white-space:nowrap}
 .ai-chip:hover{background:var(--primary-lt);border-color:var(--primary);color:var(--primary)}
 .ai-input-row{display:flex;gap:6px;padding:10px 12px;border-top:1px solid var(--g200);flex-shrink:0}
-#ai-input{flex:1;padding:8px 11px;border:1.5px solid var(--g300);border-radius:999px;
+#ai-input{flex:1;padding:8px 11px;border:1.5px solid var(--g300);border-radius:var(--r);
   font-size:.82rem;outline:none;transition:border-color .2s}
 #ai-input:focus{border-color:var(--color-accent);box-shadow:0 0 0 3px rgba(26,115,232,.1)}
 #ai-send{width:34px;height:34px;border-radius:50%;background:var(--color-accent);
@@ -485,7 +485,7 @@ html,body{height:100%;
   display:flex;align-items:center;justify-content:center;line-height:1}
 .ai-img-label{font-size:.68rem;color:var(--g500);margin-top:3px}
 .ai-img-ocr-badge{font-size:.65rem;background:var(--color-accent);color:#fff;padding:2px 6px;
-  border-radius:999px;display:inline-block;margin-top:3px}
+  border-radius:var(--r);display:inline-block;margin-top:3px}
 
 @media(max-width:480px){
   .ai-panel{bottom:84px;right:12px;width:calc(100vw - 24px)}
@@ -531,7 +531,7 @@ html,body{height:100%;
   color:var(--g700);font-weight:600}
 .ai-evt-card-footer{padding:12px 20px 18px;display:flex;gap:8px;justify-content:flex-end}
 .ai-evt-occ-list{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
-.ai-evt-occ-chip{font-size:.68rem;padding:3px 8px;border-radius:999px;
+.ai-evt-occ-chip{font-size:.68rem;padding:3px 8px;border-radius:var(--r);
   background:var(--primary-lt);color:var(--primary);font-weight:600}
 .ai-evt-occ-more{background:var(--g100);color:var(--g500);}
 .ai-evt-progress{font-size:.72rem;color:var(--g500);margin-top:2px;font-style:italic}
@@ -571,7 +571,7 @@ html,body{height:100%;
   border-top:1px solid var(--g200)}
 .dept-step{transition:opacity .15s}
 .step-badge{display:inline-block;font-size:.68rem;font-weight:600;color:var(--primary);
-  background:var(--primary-lt);border-radius:99px;padding:1px 8px;margin-left:6px;vertical-align:middle}
+  background:var(--primary-lt);border-radius:var(--r);padding:1px 8px;margin-left:6px;vertical-align:middle}
 .dept-step2-label{font-size:.82rem;font-weight:700;color:var(--primary);margin-bottom:2px}
 .workcat-chip-grid{display:flex;flex-wrap:wrap;gap:6px;padding:12px 16px;
   justify-content:center;max-height:260px;overflow-y:auto}
@@ -602,7 +602,7 @@ html,body{height:100%;
 
 /* ── TOAST ── */
 #toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%) translateY(16px);
-  background:var(--g900);color:#fff;padding:9px 20px;border-radius:999px;
+  background:var(--g900);color:#fff;padding:9px 20px;border-radius:var(--r);
   font-size:.82rem;opacity:0;pointer-events:none;transition:opacity .3s,transform .3s;z-index:9999;
   white-space:nowrap;max-width:90vw;text-align:center}
 #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
@@ -653,9 +653,9 @@ html,body{height:100%;
 .admin-section{padding:14px 16px}
 
 /* ── REQUEST STATUS BADGES ── */
-.badge-pending{background:#fef3c7;color:#92400e;padding:2px 8px;border-radius:12px;font-size:.72rem;font-weight:600;border:none;cursor:pointer}
-.badge-approved{background:var(--green-lt);color:var(--green);padding:2px 8px;border-radius:12px;font-size:.72rem;font-weight:600;border:none;cursor:pointer}
-.badge-rejected{background:var(--red-lt);color:var(--red);padding:2px 8px;border-radius:12px;font-size:.72rem;font-weight:600;border:none;cursor:pointer}
+.badge-pending{background:#fef3c7;color:#92400e;padding:2px 8px;border-radius:var(--r);font-size:.72rem;font-weight:600;border:none;cursor:pointer}
+.badge-approved{background:var(--green-lt);color:var(--green);padding:2px 8px;border-radius:var(--r);font-size:.72rem;font-weight:600;border:none;cursor:pointer}
+.badge-rejected{background:var(--red-lt);color:var(--red);padding:2px 8px;border-radius:var(--r);font-size:.72rem;font-weight:600;border:none;cursor:pointer}
 
 @media(max-width:600px){
   :root{--header-h:48px;--toolbar-h:86px;--r-mobile:12px}
@@ -758,7 +758,7 @@ html,body{height:100%;
   /* 하위 부서 칩: 무테두리 배경 필 */
   .dft-sub-chip{
     border:none;background:var(--g100);
-    border-radius:12px;padding:4px 12px
+    border-radius:var(--r);padding:4px 12px
   }
   .dft-sub-chip:hover{border:none;background:var(--color-accent-lt);color:var(--color-accent)}
   .dft-sub-chip.active{background:var(--color-accent);color:#fff;border:none}
@@ -854,7 +854,7 @@ html,body{height:100%;
 .feat-admin-row{padding:10px 14px;border-top:1px solid var(--g200);display:flex;flex-direction:column;gap:6px}
 .feat-admin-ta{width:100%;padding:8px 10px;border:1.5px solid var(--g300);border-radius:var(--r);font-size:.82rem;resize:vertical;font-family:inherit;min-height:60px;transition:border-color .2s}
 .feat-admin-ta:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(26,115,232,.1)}
-.feat-badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:.68rem;font-weight:700;background:#e8f5e9;color:#2e7d32}
+.feat-badge{display:inline-block;padding:2px 8px;border-radius:var(--r);font-size:.68rem;font-weight:700;background:#e8f5e9;color:#2e7d32}
 
 
 /* ── DEPT FILTER BAR ── */
@@ -994,7 +994,7 @@ html,body{height:100%;
 /* Header nav buttons — borderless text-link style (header only) */
 .hdr-menu-items .tb-btn{border:none;background:transparent;height:28px;box-sizing:border-box;
   color:var(--color-accent);font-size:.75rem;font-weight:600;padding:0 7px;
-  display:inline-flex;align-items:center;gap:4px;border-radius:6px;white-space:nowrap;
+  display:inline-flex;align-items:center;gap:4px;border-radius:var(--r-xs);white-space:nowrap;
   cursor:pointer;transition:background .13s,color .13s;text-decoration:none}
 .hdr-menu-items .tb-btn:hover{background:var(--color-accent-lt);color:var(--color-accent-dk)}
 .hdr-menu-items .tb-btn .tb-ico{width:12px;height:12px}
@@ -1233,9 +1233,9 @@ html,body{height:100%;
 <!-- AUTH BANNER -->
 <div class="auth-banner" id="auth-banner" hidden>
   <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;width:100%">
-    <span class="auth-banner-msg">📖 공개 공유 일정만 표시 중 — 전체 일정 조회·추가·수정은 Google 로그인 후 이용 가능합니다.</span>
+    <span class="auth-banner-msg">공개 공유 일정만 표시 중 — 전체 일정 조회·추가·수정은 Google 로그인 후 이용 가능합니다.</span>
     <div class="auth-banner-btns">
-      <button class="btn btn-sm" style="background:rgba(234,88,12,.12);color:var(--orange);border:1px solid var(--orange)" onclick="openAccessRequest()">📋 권한 요청</button>
+      <button class="btn btn-sm" style="background:rgba(234,88,12,.12);color:var(--orange);border:1px solid var(--orange)" onclick="openAccessRequest()">권한 요청</button>
       <button class="btn btn-sm btn-primary" onclick="doLogin()">Google 로그인</button>
     </div>
   </div>
@@ -1349,13 +1349,13 @@ html,body{height:100%;
 <button class="fab" onclick="onAddClick()" id="fab" title="일정 추가">+</button>
 
 <!-- FAB: AI Chat -->
-<button class="ai-fab" onclick="toggleAiPanel()" title="AI 일정 도우미">🤖</button>
+<button class="ai-fab" onclick="toggleAiPanel()" title="AI 일정 도우미"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg></button>
 
 <!-- AI Chat Panel -->
 <div class="ai-panel" id="ai-panel">
   <div class="ai-panel-hdr">
     <div class="ai-panel-hdr-left">
-      <span style="font-size:1.3rem">🤖</span>
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
       <div>
         <div class="ai-panel-title">AI 일정 도우미</div>
         <div class="ai-panel-sub">자연어로 일정 추가 · 요약 · 분석</div>
@@ -1369,15 +1369,15 @@ html,body{height:100%;
       아래 기능을 사용할 수 있어요:<br>
       • <strong>자연어로 일정 추가</strong> — "다음 주 수요일 오후 2시 회의 1시간"<br>
       • <strong>달·기간 일정 요약·분석</strong> — "이번 달 일정 요약해줘"<br>
-      • <strong>이미지로 일정 추가</strong> — 시간표·공문 이미지를 클립보드에서 붙여넣기(Ctrl+V) 하거나 아래 🖼️ 버튼으로 업로드하면 자동으로 일정을 추출합니다.<br>
-      아래 예시를 눌러보세요 👇
+      • <strong>이미지로 일정 추가</strong> — 시간표·공문 이미지를 클립보드에서 붙여넣기(Ctrl+V) 하거나 아래 이미지 버튼으로 업로드하면 자동으로 일정을 추출합니다.<br>
+      아래 예시를 눌러보세요
     </div>
   </div>
   <div class="ai-action-bar">
-    <button class="ai-chip" onclick="aiQuick('이번 달 일정 요약해줘')">📋 이번 달 요약</button>
-    <button class="ai-chip" onclick="aiQuick('다음 주 일정 알려줘')">📆 다음 주 일정</button>
-    <button class="ai-chip" onclick="aiQuick('내일 오후 2시 회의 1시간')">➕ 일정 추가 예시</button>
-    <button class="ai-chip" onclick="document.getElementById('ai-img-file').click()" title="이미지에서 일정 추출">🖼️ 이미지 붙여넣기</button>
+    <button class="ai-chip" onclick="aiQuick('이번 달 일정 요약해줘')">이번 달 요약</button>
+    <button class="ai-chip" onclick="aiQuick('다음 주 일정 알려줘')">다음 주 일정</button>
+    <button class="ai-chip" onclick="aiQuick('내일 오후 2시 회의 1시간')">일정 추가 예시</button>
+    <button class="ai-chip" onclick="document.getElementById('ai-img-file').click()" title="이미지에서 일정 추출">이미지 붙여넣기</button>
   </div>
   <!-- 이미지 붙여넣기 미리보기 -->
   <div class="ai-img-preview-wrap" id="ai-img-preview-wrap">
@@ -1385,7 +1385,7 @@ html,body{height:100%;
       <div>
         <img id="ai-img-thumb" class="ai-img-thumb" src="" alt="붙여넣은 이미지">
         <div class="ai-img-label">이미지에서 일정을 자동 추출합니다</div>
-        <span class="ai-img-ocr-badge">📷 OCR 대기</span>
+        <span class="ai-img-ocr-badge">OCR 대기</span>
       </div>
       <button class="ai-img-remove" onclick="aiRemoveImg()" title="이미지 제거">✕</button>
     </div>
@@ -1412,7 +1412,7 @@ html,body{height:100%;
         <label class="form-label">제목 <span class="req">*</span></label>
         <div class="evt-title-wrap">
           <input class="form-input" id="evt-title" placeholder="일정 제목" maxlength="100" style="padding-right:36px" onkeydown="if(event.key==='Enter'){event.preventDefault();saveEvent();}">
-          <button class="ai-title-btn" id="ai-title-btn" onclick="aiSuggestTitle()" title="AI 제목 규칙 추천" type="button">✨</button>
+          <button class="ai-title-btn" id="ai-title-btn" onclick="aiSuggestTitle()" title="AI 제목 규칙 추천" type="button"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></button>
         </div>
         <div class="ai-title-suggest" id="ai-title-suggest" hidden>
           <span class="ai-title-suggest-text" id="ai-title-suggest-text"></span>
@@ -1487,7 +1487,7 @@ html,body{height:100%;
 <div class="overlay" id="sub-overlay">
   <div class="modal">
     <div class="modal-hdr">
-      <h2>📋 캘린더 구독 신청</h2>
+      <h2>캘린더 구독 신청</h2>
       <button class="modal-close" onclick="closeModal('sub-overlay')">&times;</button>
     </div>
     <div class="modal-body">
@@ -1508,7 +1508,7 @@ html,body{height:100%;
         <label class="form-label">구글 계정 (Gmail) <span class="req">*</span></label>
         <input class="form-input" id="sub-email" type="email" placeholder="예) example@gmail.com" maxlength="100">
         <div class="err-msg" id="err-sub-email"></div>
-        <div class="hint">⚠️ 반드시 Google Calendar에서 공유 수락이 가능한 Gmail 주소를 입력하세요.</div>
+        <div class="hint">반드시 Google Calendar에서 공유 수락이 가능한 Gmail 주소를 입력하세요.</div>
       </div>
       <div class="checkbox-row">
         <input type="checkbox" id="sub-agree">
@@ -1587,7 +1587,7 @@ html,body{height:100%;
 <div class="overlay" id="admin-login-overlay">
   <div class="modal" style="max-width:320px">
     <div class="modal-hdr">
-      <h2>🔒 관리자 로그인</h2>
+      <h2>관리자 로그인</h2>
       <button class="modal-close" onclick="closeModal('admin-login-overlay')">&times;</button>
     </div>
     <div class="modal-body">
@@ -1608,15 +1608,15 @@ html,body{height:100%;
 <div class="overlay" id="admin-overlay">
   <div class="modal modal-lg">
     <div class="modal-hdr">
-      <h2>🛠 관리자 패널</h2>
+      <h2>관리자 패널</h2>
       <button class="modal-close" onclick="closeModal('admin-overlay')">&times;</button>
     </div>
     <!-- Tab Bar -->
     <div class="admin-tab-bar">
-      <button class="admin-tab active" id="atab-subscribe" onclick="showAdminTab('subscribe')">📋 구독 신청</button>
-      <button class="admin-tab" id="atab-access" onclick="showAdminTab('access')">🔑 권한 요청</button>
-      <button class="admin-tab" id="atab-consent" onclick="showAdminTab('consent')">🛡 개인정보 동의</button>
-      <button class="admin-tab" id="atab-school" onclick="showAdminTab('school')">🏫 학교일정</button>
+      <button class="admin-tab active" id="atab-subscribe" onclick="showAdminTab('subscribe')">구독 신청</button>
+      <button class="admin-tab" id="atab-access" onclick="showAdminTab('access')">권한 요청</button>
+      <button class="admin-tab" id="atab-consent" onclick="showAdminTab('consent')">개인정보 동의</button>
+      <button class="admin-tab" id="atab-school" onclick="showAdminTab('school')">학교일정</button>
     </div>
 
     <!-- Section 1: 구독 신청 (기존) -->
@@ -1628,7 +1628,7 @@ html,body{height:100%;
         <span style="font-size:.75rem;color:var(--g500)">위 링크에서 신청자 이메일을 입력하여 캘린더를 공유하세요.</span>
       </div>
       <div class="admin-toolbar">
-        <button class="btn btn-sm" onclick="loadAdminData()" style="background:var(--g100);color:var(--g700)">🔄 새로고침</button>
+        <button class="btn btn-sm" onclick="loadAdminData()" style="background:var(--g100);color:var(--g700)">새로고침</button>
         <span id="admin-count" style="font-size:.8rem;color:var(--g500)"></span>
       </div>
       <div id="admin-table-wrap" style="overflow-x:auto">
@@ -1647,7 +1647,7 @@ html,body{height:100%;
     <div id="admin-sec-access" class="admin-section" hidden>
       <!-- 직접 등록 -->
       <div style="background:var(--primary-lt);border:1px solid var(--primary);border-radius:8px;padding:14px 16px;margin-bottom:16px">
-        <div style="font-size:.85rem;font-weight:700;color:var(--primary);margin-bottom:10px">➕ 이메일 직접 등록</div>
+        <div style="font-size:.85rem;font-weight:700;color:var(--primary);margin-bottom:10px">이메일 직접 등록</div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
           <div style="flex:1;min-width:120px">
             <div style="font-size:.73rem;color:var(--g500);margin-bottom:3px">성명</div>
@@ -1662,7 +1662,7 @@ html,body{height:100%;
         <div id="admin-reg-msg" style="font-size:.77rem;margin-top:6px"></div>
       </div>
       <div class="admin-toolbar">
-        <button class="btn btn-sm" onclick="loadAccessRequests()" style="background:var(--g100);color:var(--g700)">🔄 새로고침</button>
+        <button class="btn btn-sm" onclick="loadAccessRequests()" style="background:var(--g100);color:var(--g700)">새로고침</button>
         <span id="access-req-count" style="font-size:.8rem;color:var(--g500)"></span>
       </div>
       <div id="access-req-loading" style="text-align:center;padding:24px;color:var(--g400)"><span class="spinner"></span> 불러오는 중...</div>
@@ -1678,7 +1678,7 @@ html,body{height:100%;
     <!-- Section 3: 개인정보 동의 내역 -->
     <div id="admin-sec-consent" class="admin-section" hidden>
       <div class="admin-toolbar">
-        <button class="btn btn-sm" onclick="loadPrivacyConsents()" style="background:var(--g100);color:var(--g700)">🔄 새로고침</button>
+        <button class="btn btn-sm" onclick="loadPrivacyConsents()" style="background:var(--g100);color:var(--g700)">새로고침</button>
         <span id="consent-count" style="font-size:.8rem;color:var(--g500)"></span>
       </div>
       <div id="consent-loading" style="text-align:center;padding:24px;color:var(--g400)"><span class="spinner"></span> 불러오는 중...</div>
@@ -1734,7 +1734,7 @@ html,body{height:100%;
 <div class="overlay" id="feature-overlay">
   <div class="modal modal-lg">
     <div class="modal-hdr">
-      <h2>💡 기능 건의하기</h2>
+      <h2>기능 건의하기</h2>
       <button class="modal-close" onclick="closeModal('feature-overlay')">&times;</button>
     </div>
     <div class="modal-body">
@@ -1761,7 +1761,7 @@ html,body{height:100%;
       </div>
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
         <span id="feat-list-count" style="font-size:.8rem;color:var(--g400)"></span>
-        <button class="btn btn-primary btn-sm" id="feat-submit-btn" onclick="submitFeatureRequest()">📨 건의 제출</button>
+        <button class="btn btn-primary btn-sm" id="feat-submit-btn" onclick="submitFeatureRequest()">건의 제출</button>
       </div>
       <!-- List -->
       <div id="feat-loading" style="text-align:center;padding:20px;color:var(--g400)"><span class="spinner"></span> 불러오는 중...</div>
@@ -1775,7 +1775,7 @@ html,body{height:100%;
 <div class="overlay" id="access-overlay">
   <div class="modal">
     <div class="modal-hdr">
-      <h2>📋 캘린더 권한 요청</h2>
+      <h2>캘린더 권한 요청</h2>
       <button class="modal-close" onclick="closeModal('access-overlay')">&times;</button>
     </div>
     <div class="modal-body">
@@ -1791,10 +1791,10 @@ html,body{height:100%;
         <label class="form-label">Gmail 주소 <span class="req">*</span></label>
         <input class="form-input" id="acc-email" type="email" placeholder="예) example@gmail.com" maxlength="100">
         <div class="err-msg" id="err-acc-email"></div>
-        <div class="hint">⚠️ Google Calendar 공유 수락이 가능한 Gmail 주소를 입력하세요.</div>
+        <div class="hint">Google Calendar 공유 수락이 가능한 Gmail 주소를 입력하세요.</div>
       </div>
       <div class="privacy-box">
-        <h4>🛡 개인정보 수집·이용 동의 (필수)</h4>
+        <h4>개인정보 수집·이용 동의 (필수)</h4>
         <div class="privacy-scroll">
           <strong>개인정보보호법 제15조</strong>에 따라 아래와 같이 개인정보를 수집·이용합니다.<br><br>
           <table>
@@ -1845,14 +1845,14 @@ html,body{height:100%;
 <div class="ai-evt-overlay" id="ai-evt-overlay" onclick="if(event.target===this)closeAiEvtOverlay()">
   <div class="ai-evt-card" id="ai-evt-card">
     <div class="ai-evt-card-hdr">
-      <div class="ai-evt-card-badge" id="ai-evt-card-badge">✨ AI가 인식한 일정</div>
+      <div class="ai-evt-card-badge" id="ai-evt-card-badge">AI가 인식한 일정</div>
       <input class="ai-evt-card-title-input" id="ai-evt-title-disp" type="text" placeholder="일정 제목" autocomplete="off">
       <button class="ai-evt-card-close" onclick="closeAiEvtOverlay()">&times;</button>
     </div>
     <div class="ai-evt-card-body" id="ai-evt-card-body"></div>
     <div class="ai-evt-card-footer">
       <button class="btn" style="background:var(--g100);color:var(--g700)" onclick="closeAiEvtOverlay()">취소</button>
-      <button class="btn btn-primary" id="ai-evt-save-btn" onclick="saveAiEvent()">💾 저장하기</button>
+      <button class="btn btn-primary" id="ai-evt-save-btn" onclick="saveAiEvent()">저장하기</button>
     </div>
   </div>
 </div>
@@ -1863,7 +1863,7 @@ html,body{height:100%;
     <!-- STEP 1: 부서 선택 -->
     <div id="dept-step1" class="dept-step">
       <div class="dept-card-hdr">
-        <h3>📋 부서 선택 <span class="step-badge">1 / 2</span></h3>
+        <h3>부서 선택 <span class="step-badge">1 / 2</span></h3>
         <p>일정 머릿말 <strong>[부서/업무유형]</strong> 형식으로 입력됩니다.<br>먼저 부서를 선택해 주세요.</p>
       </div>
       <div class="dept-search-wrap">
@@ -1886,7 +1886,7 @@ html,body{height:100%;
     <!-- STEP 2: 업무유형 선택 -->
     <div id="dept-step2" class="dept-step" style="display:none">
       <div class="dept-card-hdr">
-        <h3>📂 업무유형 선택 <span class="step-badge">2 / 2</span></h3>
+        <h3>업무유형 선택 <span class="step-badge">2 / 2</span></h3>
         <div class="dept-step2-label" id="dept-step2-dept-label"></div>
         <p style="font-size:.75rem;color:var(--g400);margin-top:2px">업무유형은 선택 사항입니다 (건너뛰기 가능)</p>
       </div>
@@ -2190,7 +2190,7 @@ function updateUserArea() {
   if (!_token) {
     // 위젯 외부 조회 모드: 로그인 버튼 대신 조회 전용 배지 표시
     if (_WIDGET_MODE) {
-      area.innerHTML = `<span style="font-size:.78rem;color:#888;padding:4px 10px;border:1px solid #ddd;border-radius:20px;background:#f9f9f9;">📖 조회 전용</span>`;
+      area.innerHTML = `<span style="font-size:.78rem;color:#888;padding:4px 10px;border:1px solid #ddd;border-radius:12px;background:#f9f9f9;">조회 전용</span>`;
       return;
     }
     area.innerHTML = `<button class="btn-login-google" onclick="doLogin()" title="일정 추가·수정을 위해 Google 계정으로 로그인">
@@ -3154,7 +3154,7 @@ function renderList(wrap) {
     html += `<div class="agenda-evt" data-evtid="${ev.id}" onclick="showDetail(event,'${escId(ev.id)}')">` +
       `<div class="agenda-time">${timeStr}</div>` +
       `<div><div class="agenda-title">${esc(ev.summary||'(제목 없음)')}</div>` +
-      (ev.location ? `<div class="agenda-desc">📍 ${esc(ev.location)}</div>` : '') +
+      (ev.location ? `<div class="agenda-desc" style="display:flex;align-items:center;gap:4px">${_iconPin}${esc(ev.location)}</div>` : '') +
       (ev.description ? `<div class="agenda-desc">${esc(ev.description).slice(0,80)}</div>` : '') +
       '</div></div>';
   });
@@ -3575,6 +3575,9 @@ async function deleteCurrentEvent() {
 const _iconCal = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>`;
 const _iconPin = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 17-5 5"/><path d="M17.001 3.34a1 1 0 0 1 .23 1.05L15.5 9h5a1 1 0 0 1 .78 1.63l-7 8a1 1 0 0 1-1.58-1.26L14.5 13H9a1 1 0 0 1-.78-1.63l4.5-8a1 1 0 0 1 .9-.5 1 1 0 0 1 .381.07z"/></svg>`;
 const _iconNote = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>`;
+const _iconClock = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`;
+const _iconRepeat = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m17 2 4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14"/><path d="m7 22-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/></svg>`;
+const _iconList = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>`;
 
 function showDetail(e, evtId) {
   e.stopPropagation();
@@ -3925,10 +3928,10 @@ function showAiEvtOverlay(parsed) {
 
   document.getElementById('ai-evt-title-disp').value = parsed.title || '';
   const badgeMap = {
-    single:         '✨ AI가 인식한 일정',
-    multiday:       '📆 AI가 인식한 다기간 일정',
-    recurring:      '🔁 AI가 인식한 반복 일정',
-    multi_instance: '📋 AI가 인식한 복수 일정',
+    single:         'AI가 인식한 일정',
+    multiday:       'AI가 인식한 다기간 일정',
+    recurring:      'AI가 인식한 반복 일정',
+    multi_instance: 'AI가 인식한 복수 일정',
   };
   document.getElementById('ai-evt-card-badge').textContent = badgeMap[type] || badgeMap.single;
 
@@ -3949,7 +3952,7 @@ function showAiEvtOverlay(parsed) {
     const div = document.createElement('div');
     div.className = 'ai-evt-row';
     const ic = document.createElement('span');
-    ic.className = 'ai-evt-row-icon'; ic.textContent = icon;
+    ic.className = 'ai-evt-row-icon'; ic.innerHTML = icon;
     const txt = document.createElement('div');
     txt.className = 'ai-evt-row-txt';
     const lbl = document.createElement('div');
@@ -4031,7 +4034,7 @@ function showAiEvtOverlay(parsed) {
     const div = document.createElement('div');
     div.className = 'ai-evt-row';
     const ic = document.createElement('span');
-    ic.className = 'ai-evt-row-icon'; ic.textContent = icon;
+    ic.className = 'ai-evt-row-icon'; ic.innerHTML = icon;
     const txt = document.createElement('div');
     txt.className = 'ai-evt-row-txt'; txt.style.flex = '1'; txt.style.minWidth = '0';
     const lbl = document.createElement('div');
@@ -4042,37 +4045,37 @@ function showAiEvtOverlay(parsed) {
   }
 
   if (type === 'single') {
-    _addEditRow('📅', '날짜', _mkI('date', parsed.date), 'date');
+    _addEditRow(_iconCal, '날짜', _mkI('date', parsed.date), 'date');
     if (!parsed.allDay) {
-      _addEditRow('🕐', '시작 시간', _mkI('time', parsed.startTime), 'startTime');
-      _addEditRow('🕓', '종료 시간', _mkI('time', parsed.endTime), 'endTime');
+      _addEditRow(_iconClock, '시작 시간', _mkI('time', parsed.startTime), 'startTime');
+      _addEditRow(_iconClock, '종료 시간', _mkI('time', parsed.endTime), 'endTime');
     }
   } else if (type === 'multiday') {
-    _addEditRow('📅', '시작일', _mkI('date', parsed.startDate), 'startDate');
-    _addEditRow('📅', '종료일', _mkI('date', parsed.endDate), 'endDate');
+    _addEditRow(_iconCal, '시작일', _mkI('date', parsed.startDate), 'startDate');
+    _addEditRow(_iconCal, '종료일', _mkI('date', parsed.endDate), 'endDate');
     if (!parsed.allDay && parsed.startTime) {
-      _addEditRow('🕐', '시작 시간', _mkI('time', parsed.startTime), 'startTime');
-      _addEditRow('🕓', '종료 시간', _mkI('time', parsed.endTime), 'endTime');
+      _addEditRow(_iconClock, '시작 시간', _mkI('time', parsed.startTime), 'startTime');
+      _addEditRow(_iconClock, '종료 시간', _mkI('time', parsed.endTime), 'endTime');
     }
   } else if (type === 'recurring') {
-    _addRow('🔁', '반복', _rruleToKo(parsed.rrule, parsed.until, parsed.count));
-    _addEditRow('📅', '첫 시작일', _mkI('date', parsed.startDate), 'startDate');
+    _addRow(_iconRepeat, '반복', _rruleToKo(parsed.rrule, parsed.until, parsed.count));
+    _addEditRow(_iconCal, '첫 시작일', _mkI('date', parsed.startDate), 'startDate');
     if (parsed.startTime) {
-      _addEditRow('🕐', '시작 시간', _mkI('time', parsed.startTime), 'startTime');
-      _addEditRow('🕓', '종료 시간', _mkI('time', parsed.endTime), 'endTime');
+      _addEditRow(_iconClock, '시작 시간', _mkI('time', parsed.startTime), 'startTime');
+      _addEditRow(_iconClock, '종료 시간', _mkI('time', parsed.endTime), 'endTime');
     }
     if (parsed.occurrences?.length)
-      _addRow('📋', '예정 날짜', _chipList(parsed.occurrences));
+      _addRow(_iconList, '예정 날짜', _chipList(parsed.occurrences));
   } else if (type === 'multi_instance') {
     const dates = parsed.dates || [];
-    _addRow('📋', `총 ${dates.length}개 날짜`, _chipList(dates));
+    _addRow(_iconList, `총 ${dates.length}개 날짜`, _chipList(dates));
     if (parsed.startTime) {
-      _addEditRow('🕐', '시작 시간', _mkI('time', parsed.startTime), 'startTime');
-      _addEditRow('🕓', '종료 시간', _mkI('time', parsed.endTime), 'endTime');
+      _addEditRow(_iconClock, '시작 시간', _mkI('time', parsed.startTime), 'startTime');
+      _addEditRow(_iconClock, '종료 시간', _mkI('time', parsed.endTime), 'endTime');
     }
   }
-  _addEditRow('📍', '장소', _mkI('text', parsed.location, '장소 (선택)'), 'location');
-  _addEditRow('📝', '설명', _mkTA(parsed.description), 'description');
+  _addEditRow(_iconPin, '장소', _mkI('text', parsed.location, '장소 (선택)'), 'location');
+  _addEditRow(_iconNote, '설명', _mkTA(parsed.description), 'description');
 
   const q = document.createElement('p');
   q.className = 'ai-evt-question';
@@ -4088,12 +4091,12 @@ function showAiEvtOverlay(parsed) {
   const btn = document.getElementById('ai-evt-save-btn');
   btn.disabled = false;
   const saveMap = {
-    single:         '💾 저장하기',
-    multiday:       '💾 저장하기',
-    recurring:      '🔁 반복 등록하기',
-    multi_instance: `💾 ${(parsed.dates||[]).length}개 등록하기`,
+    single:         '저장하기',
+    multiday:       '저장하기',
+    recurring:      '반복 등록하기',
+    multi_instance: `${(parsed.dates||[]).length}개 등록하기`,
   };
-  btn.textContent = saveMap[type] || '💾 저장하기';
+  btn.textContent = saveMap[type] || '저장하기';
   document.getElementById('ai-evt-overlay').classList.add('open');
 }
 
@@ -4110,7 +4113,7 @@ async function saveAiEvent() {
   if (!_token || !_tokenHasWrite) {
     const ok = await doLogin(SCOPES);
     if (!ok) {
-      btn.disabled = false; btn.textContent = '💾 저장하기';
+      btn.disabled = false; btn.textContent = '저장하기';
       showToast('쓰기 권한 인증이 필요합니다.', 'error');
       return;
     }
@@ -4129,7 +4132,7 @@ async function saveAiEvent() {
   if (_aiEditFields.description !== undefined) _aiParsed.description = _aiEditFields.description?.value || '';
 
   if (!_hasDeptPrefix(_aiParsed.title)) {
-    btn.disabled = false; btn.textContent = '💾 저장하기';
+    btn.disabled = false; btn.textContent = '저장하기';
     showDeptPicker(prefix => {
       _aiParsed.title = prefix + _aiParsed.title;
       const tEl = document.getElementById('ai-evt-title-disp');
@@ -4217,19 +4220,19 @@ async function saveAiEvent() {
       try { [localStorage, sessionStorage].forEach(s => s.setItem('asea_gtoken_write', '0')); } catch(_) {}
       const ok = await doLogin(SCOPES);
       if (ok) { saveAiEvent(); }
-      else { showToast('인증 실패. 다시 시도해 주세요.', 'error'); btn.disabled = false; btn.textContent = '💾 저장하기'; }
+      else { showToast('인증 실패. 다시 시도해 주세요.', 'error'); btn.disabled = false; btn.textContent = '저장하기'; }
       return;
     }
     showToast('저장 실패: ' + msg, 'error');
     btn.disabled = false;
-    btn.textContent = '💾 저장하기';
+    btn.textContent = '저장하기';
   }
 }
 
 function _onAiSaveSuccess(title, message) {
   showToast(message);
   closeAiEvtOverlay();
-  if (_aiLastBotEl) { _aiLastBotEl.textContent = `✅ "${title}" 일정이 저장되었습니다.`; }
+  if (_aiLastBotEl) { _aiLastBotEl.textContent = `"${title}" 일정이 저장되었습니다.`; }
   _aiParsed = null;
   fetchEvents().then(() => renderCalendar());
 }
@@ -4727,7 +4730,7 @@ async function aiSend() {
       { type: 'image', source: { type: 'base64', media_type: imgData.mediaType, data: base64 } },
       { type: 'text',  text: text || '이 이미지에서 일정 정보를 최대한 추출해서 일정으로 등록해줘.' },
     ];
-    userDisplayText = (text ? text + '\n' : '') + '📷 이미지 첨부됨';
+    userDisplayText = (text ? text + '\n' : '') + '이미지 첨부됨';
     _aiImgSentCount++;
   } else {
     userMsgContent = text;
@@ -4814,7 +4817,7 @@ ${evtContext}
 
     if (!r.ok) {
       const errMsg = data?.error || data?.message || data?.msg || `서버 오류 (HTTP ${r.status})`;
-      _aiAppend('bot', `❌ API 오류: ${errMsg}`);
+      _aiAppend('bot', `API 오류: ${errMsg}`);
       return;
     }
 
@@ -4897,7 +4900,7 @@ async function loadFeatureRequests() {
       const reps = repMap[p.id] || [];
       const repHtml = reps.map(r =>
         `<div class="feat-reply-wrap">
-          <div class="feat-reply-label">💬 관리자 답변 · ${new Date(r.created_at).toLocaleDateString('ko-KR',{month:'long',day:'numeric'})}</div>
+          <div class="feat-reply-label">관리자 답변 · ${new Date(r.created_at).toLocaleDateString('ko-KR',{month:'long',day:'numeric'})}</div>
           <div class="feat-reply-text">${esc(r.content)}</div>
         </div>`
       ).join('');
@@ -4954,7 +4957,7 @@ async function submitFeatureRequest() {
   } catch(e) {
     showToast('등록 실패: ' + e.message, 'error');
   } finally {
-    btn.disabled = false; btn.textContent = '📨 건의 제출';
+    btn.disabled = false; btn.textContent = '건의 제출';
   }
 }
 
@@ -5909,6 +5912,7 @@ async function aiSuggestTitle() {
   if (!title) { showToast('제목을 먼저 입력해 주세요.'); return; }
   if (_hasDeptPrefix(title)) { showToast('이미 명칭 규칙이 적용된 제목입니다.'); return; }
   const btn = document.getElementById('ai-title-btn');
+  const btnIconHtml = btn.innerHTML;
   btn.disabled = true; btn.textContent = '…';
   document.getElementById('ai-title-suggest').hidden = true;
   const deptList = [...DEPARTMENTS, ..._customDepts].map(d => `${d.name} → [${d.prefix}]`).join('\n');
@@ -5947,7 +5951,7 @@ ${deptList}
   } catch(err) {
     showToast('AI 오류: ' + err.message);
   } finally {
-    btn.disabled = false; btn.textContent = '✨';
+    btn.disabled = false; btn.innerHTML = btnIconHtml;
   }
 }
 function aiTitleApply() {
