@@ -630,6 +630,14 @@ async function init() {
   await loadRentalCompanies();
 }
 
+/* ── AI 키 조회: 메인 앱(index.html) 설정 ▾ → AI제공자에서 등록한 키를 그대로 재사용 ── */
+function getAnthropicKey() {
+  return localStorage.getItem('anthropicApiKey') || localStorage.getItem('asea_anthropic_api_key') || '';
+}
+function getGeminiKey() {
+  return localStorage.getItem('geminiApiKey') || localStorage.getItem('asea_gemini_api_key') || '';
+}
+
 /* ── SHA-256 ── */
 async function sha256(s) {
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s));
@@ -1965,7 +1973,7 @@ function readOcrImage(file) {
 async function runOcr() {
   const status = document.getElementById('ocrStatus');
   status.textContent = 'AI OCR 분석 중...';
-  const ak = localStorage.getItem('anthropicApiKey');
+  const ak = getAnthropicKey();
   if (!ak) { status.textContent = '(AI 키 미설정) 자동입력을 건너뜁니다. 직접 입력해주세요.'; return; }
   const prompt = `첨부된 사업자등록증 이미지를 분석해서 아래 JSON 형식으로만 답변해주세요. 다른 설명은 하지 마세요. 확인되지 않는 값은 빈 문자열로 두세요.
 {"biz_name":"상호(법인)명","biz_reg_no":"사업자등록번호","corp_reg_no":"법인등록번호","contact_name":"","contact_phone":"","invoice_email":""}`;
@@ -2178,7 +2186,7 @@ async function runAI() {
 }
 
 async function callAI(prompt) {
-  const ak = localStorage.getItem('anthropicApiKey');
+  const ak = getAnthropicKey();
   if (ak) {
     const r = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -2187,7 +2195,7 @@ async function callAI(prompt) {
     });
     if (r.ok) { const d = await r.json(); return d.content[0].text; }
   }
-  const gk = localStorage.getItem('geminiApiKey');
+  const gk = getGeminiKey();
   if (gk) {
     const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${gk}`, {
       method: 'POST', headers: { 'content-type': 'application/json' },
@@ -2209,7 +2217,7 @@ async function onImg(event) {
     const box = document.getElementById('imgAiBox');
     box.hidden = false; box.textContent = '이미지 분석 중...';
     try {
-      const ak = localStorage.getItem('anthropicApiKey');
+      const ak = getAnthropicKey();
       if (!ak) { box.textContent = '(AI 키 없음) 이미지 분석을 건너뜁니다.'; return; }
       const b64 = e.target.result.split(',')[1];
       const r = await fetch('https://api.anthropic.com/v1/messages', {
