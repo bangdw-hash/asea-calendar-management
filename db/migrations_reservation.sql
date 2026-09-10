@@ -35,7 +35,7 @@ do $$ begin
 end $$;
 
 -- ============================================================================
--- 2) reservations — 강의실 예약 (기본 + 대관예약 확장 컬럼)
+-- 2) reservations — 기본 테이블 (없으면 생성)
 -- ============================================================================
 create table if not exists reservations (
   id               bigint generated always as identity primary key,
@@ -54,22 +54,9 @@ create table if not exists reservations (
   password_hash    text,
   status           text default 'active',
   deleted_at       timestamptz,
-  -- 대관예약 확장
-  is_rental        boolean default false,
-  rental_company_id bigint,
-  rental_company_name text,
-  course_name      text,
-  daily_fee        numeric,
-  billing_status   text default 'pending',
-  billed_at        timestamptz,
-  -- 학교일정 연동
-  schedule_event_id text,
   created_at       timestamptz default now(),
   updated_at       timestamptz default now()
 );
-create index if not exists idx_reservations_dates on reservations(date_start, date_end);
-create index if not exists idx_reservations_status on reservations(status, deleted_at);
-create index if not exists idx_reservations_rental on reservations(rental_company_id);
 drop trigger if exists trg_reservations_updated on reservations;
 create trigger trg_reservations_updated before update on reservations
   for each row execute function set_updated_at();
@@ -81,20 +68,26 @@ do $$ begin
   end if;
 end $$;
 
--- 기존 reservations가 있다면 컬럼 확장 (idempotent) ---------------------------
-alter table reservations add column if not exists is_rental           boolean default false;
-alter table reservations add column if not exists rental_company_id   bigint;
-alter table reservations add column if not exists rental_company_name text;
-alter table reservations add column if not exists course_name         text;
-alter table reservations add column if not exists daily_fee           numeric;
-alter table reservations add column if not exists billing_status      text default 'pending';
-alter table reservations add column if not exists billed_at           timestamptz;
-alter table reservations add column if not exists schedule_event_id   text;
-alter table reservations add column if not exists classroom_color     text;
-alter table reservations add column if not exists raw_input           text;
-alter table reservations add column if not exists formatted_label     text;
-alter table reservations add column if not exists contact             text;
-alter table reservations add column if not exists deleted_at          timestamptz;
+-- 2-b) 대관예약 확장 컬럼 추가 (기존 테이블에도 idempotent 적용) ---------------
+--      ★ 인덱스 생성은 컬럼 추가 이후에 해야 하므로 아래에서 처리합니다.
+alter table reservations add column if not exists classroom_color      text;
+alter table reservations add column if not exists raw_input            text;
+alter table reservations add column if not exists formatted_label      text;
+alter table reservations add column if not exists contact              text;
+alter table reservations add column if not exists deleted_at           timestamptz;
+alter table reservations add column if not exists is_rental            boolean default false;
+alter table reservations add column if not exists rental_company_id    bigint;
+alter table reservations add column if not exists rental_company_name  text;
+alter table reservations add column if not exists course_name          text;
+alter table reservations add column if not exists daily_fee            numeric;
+alter table reservations add column if not exists billing_status       text default 'pending';
+alter table reservations add column if not exists billed_at            timestamptz;
+alter table reservations add column if not exists schedule_event_id    text;
+
+-- 인덱스는 컬럼 추가 후에 생성 ---------------------------------------------------
+create index if not exists idx_reservations_dates  on reservations(date_start, date_end);
+create index if not exists idx_reservations_status on reservations(status, deleted_at);
+create index if not exists idx_reservations_rental on reservations(rental_company_id);
 
 -- ============================================================================
 -- 3) rental_companies — 대관업체(사업자) 정보
@@ -123,7 +116,7 @@ do $$ begin
 end $$;
 
 -- ============================================================================
--- 4) RPC 함수: 예약 충돌 확인
+-- 4) RPC: 예약 충돌 확인
 -- ============================================================================
 create or replace function check_room_conflict(
   p_classroom_name text,
@@ -133,9 +126,7 @@ create or replace function check_room_conflict(
   p_time_end       time,
   p_exclude_id     bigint default null
 ) returns jsonb language plpgsql security definer as $$
-declare
-  v_conflicts jsonb;
-begin
+declare v_conflicts jsonb; begin
   select jsonb_agg(jsonb_build_object(
     'id',             r.id,
     'date_start',     r.date_start,
@@ -145,8 +136,7 @@ begin
     'requester_name', r.requester_name,
     'department',     r.department,
     'contact',        r.contact
-  ))
-  into v_conflicts
+  )) into v_conflicts
   from reservations r
   where r.classroom_name = p_classroom_name
     and r.status = 'active'
@@ -156,24 +146,16 @@ begin
     and r.time_start <  p_time_end
     and r.time_end   >  p_time_start
     and (p_exclude_id is null or r.id <> p_exclude_id);
-
-  return jsonb_build_object(
-    'conflict',   v_conflicts is not null,
-    'conflicts',  coalesce(v_conflicts, '[]'::jsonb)
-  );
-end;
-$$;
+  return jsonb_build_object('conflict', v_conflicts is not null, 'conflicts', coalesce(v_conflicts, '[]'::jsonb));
+end; $$;
 
 -- ============================================================================
--- 5) RPC 함수: 비밀번호 확인 후 예약 삭제 (일반 사용자)
+-- 5) RPC: 비밀번호 확인 후 삭제 (일반 사용자)
 -- ============================================================================
 create or replace function delete_reservation(
-  p_id            bigint,
-  p_password_hash text
+  p_id bigint, p_password_hash text
 ) returns jsonb language plpgsql security definer as $$
-declare
-  v_hash text;
-begin
+declare v_hash text; begin
   select password_hash into v_hash from reservations where id = p_id and deleted_at is null;
   if not found then return jsonb_build_object('success', false, 'error', '예약을 찾을 수 없습니다'); end if;
   if v_hash is distinct from p_password_hash then
@@ -181,90 +163,62 @@ begin
   end if;
   update reservations set deleted_at = now(), status = 'deleted' where id = p_id;
   return jsonb_build_object('success', true);
-end;
-$$;
+end; $$;
 
 -- ============================================================================
--- 6) RPC 함수: 비밀번호 확인 후 예약 수정 (일반 사용자)
+-- 6) RPC: 비밀번호 확인 후 수정 (일반 사용자)
 -- ============================================================================
 create or replace function modify_reservation(
-  p_id              bigint,
-  p_password_hash   text,
-  p_date_start      date,
-  p_date_end        date,
-  p_time_start      time,
-  p_time_end        time,
-  p_purpose         text,
-  p_department      text,
-  p_requester_name  text,
-  p_contact         text default null,
-  p_formatted_label text default null
+  p_id bigint, p_password_hash text,
+  p_date_start date, p_date_end date,
+  p_time_start time, p_time_end time,
+  p_purpose text, p_department text, p_requester_name text,
+  p_contact text default null, p_formatted_label text default null
 ) returns jsonb language plpgsql security definer as $$
-declare
-  v_hash text;
-begin
+declare v_hash text; begin
   select password_hash into v_hash from reservations where id = p_id and deleted_at is null;
   if not found then return jsonb_build_object('success', false, 'error', '예약을 찾을 수 없습니다'); end if;
   if v_hash is distinct from p_password_hash then
     return jsonb_build_object('success', false, 'error', '비밀번호가 일치하지 않습니다');
   end if;
   update reservations set
-    date_start      = p_date_start,
-    date_end        = p_date_end,
-    time_start      = p_time_start,
-    time_end        = p_time_end,
-    purpose         = p_purpose,
-    department      = p_department,
-    requester_name  = p_requester_name,
-    contact         = p_contact,
-    formatted_label = coalesce(p_formatted_label, formatted_label)
+    date_start = p_date_start, date_end = p_date_end,
+    time_start = p_time_start, time_end = p_time_end,
+    purpose = p_purpose, department = p_department, requester_name = p_requester_name,
+    contact = p_contact, formatted_label = coalesce(p_formatted_label, formatted_label)
   where id = p_id;
   return jsonb_build_object('success', true);
-end;
-$$;
+end; $$;
 
 -- ============================================================================
--- 7) RPC 함수: 관리자 예약 수정 (이메일 확인)
+-- 7) RPC: 관리자 수정
 -- ============================================================================
 create or replace function admin_modify_reservation(
-  p_id              bigint,
-  p_admin_email     text,
-  p_date_start      date,
-  p_date_end        date,
-  p_time_start      time,
-  p_time_end        time,
-  p_purpose         text,
-  p_department      text,
-  p_requester_name  text,
-  p_contact         text default null,
-  p_formatted_label text default null
+  p_id bigint, p_admin_email text,
+  p_date_start date, p_date_end date,
+  p_time_start time, p_time_end time,
+  p_purpose text, p_department text, p_requester_name text,
+  p_contact text default null, p_formatted_label text default null
 ) returns jsonb language plpgsql security definer as $$
 begin
   if p_admin_email not in ('bangdw@gmail.com') then
     return jsonb_build_object('success', false, 'error', '관리자 권한이 없습니다');
   end if;
   update reservations set
-    date_start      = p_date_start,
-    date_end        = p_date_end,
-    time_start      = p_time_start,
-    time_end        = p_time_end,
-    purpose         = p_purpose,
-    department      = p_department,
-    requester_name  = p_requester_name,
-    contact         = p_contact,
-    formatted_label = coalesce(p_formatted_label, formatted_label)
+    date_start = p_date_start, date_end = p_date_end,
+    time_start = p_time_start, time_end = p_time_end,
+    purpose = p_purpose, department = p_department, requester_name = p_requester_name,
+    contact = p_contact, formatted_label = coalesce(p_formatted_label, formatted_label)
   where id = p_id and deleted_at is null;
   if not found then return jsonb_build_object('success', false, 'error', '예약을 찾을 수 없습니다'); end if;
   return jsonb_build_object('success', true);
-end;
-$$;
+end; $$;
 
 -- ============================================================================
--- 8) RPC 함수: 관리자 예약 삭제
+-- 8) RPC: 관리자 삭제
 -- ============================================================================
 create or replace function admin_delete_reservation(
-  p_id          bigint,
-  p_admin_email text
+  p_id bigint, p_admin_email text
 ) returns jsonb language plpgsql security definer as $$
 begin
   if p_admin_email not in ('bangdw@gmail.com') then
@@ -273,43 +227,36 @@ begin
   update reservations set deleted_at = now(), status = 'deleted' where id = p_id;
   if not found then return jsonb_build_object('success', false, 'error', '예약을 찾을 수 없습니다'); end if;
   return jsonb_build_object('success', true);
-end;
-$$;
+end; $$;
 
 -- ============================================================================
--- 9) RPC 함수: 학교일정 연동 / 해제 (schedule_event_id 필드 사용)
+-- 9) RPC: 학교일정 연동 / 해제
 -- ============================================================================
 create or replace function link_to_schedule(
-  p_reservation_id bigint,
-  p_admin_email    text
+  p_reservation_id bigint, p_admin_email text
 ) returns jsonb language plpgsql security definer as $$
 begin
   if p_admin_email not in ('bangdw@gmail.com') then
     return jsonb_build_object('success', false, 'error', '관리자 권한이 없습니다');
   end if;
-  update reservations
-    set schedule_event_id = 'linked-' || p_reservation_id::text
+  update reservations set schedule_event_id = 'linked-' || p_reservation_id::text
   where id = p_reservation_id and deleted_at is null;
   if not found then return jsonb_build_object('success', false, 'error', '예약을 찾을 수 없습니다'); end if;
   return jsonb_build_object('success', true);
-end;
-$$;
+end; $$;
 
 create or replace function unlink_from_schedule(
-  p_reservation_id bigint,
-  p_admin_email    text
+  p_reservation_id bigint, p_admin_email text
 ) returns jsonb language plpgsql security definer as $$
 begin
   if p_admin_email not in ('bangdw@gmail.com') then
     return jsonb_build_object('success', false, 'error', '관리자 권한이 없습니다');
   end if;
-  update reservations
-    set schedule_event_id = null
+  update reservations set schedule_event_id = null
   where id = p_reservation_id and deleted_at is null;
   if not found then return jsonb_build_object('success', false, 'error', '예약을 찾을 수 없습니다'); end if;
   return jsonb_build_object('success', true);
-end;
-$$;
+end; $$;
 
--- 끝. 'Success. No rows returned' 가 나오면 정상입니다. --------------------
--- 이후 Supabase 대시보드 → Settings → API → Reload Schema Cache 클릭.
+-- 끝. 'Success. No rows returned' 가 나오면 정상입니다. ---------------------
+-- 이후: Supabase 대시보드 → Settings → API → Reload Schema Cache 클릭.
