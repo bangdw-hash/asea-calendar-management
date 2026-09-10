@@ -159,6 +159,13 @@ header{
   .drawer{top:0;bottom:0;right:0;left:auto;width:500px;border-radius:0;transform:translateX(100%)}
   .drawer.open{transform:translateX(0)}
 }
+.drawer-handle{
+  display:flex;justify-content:center;align-items:center;padding:9px 0 3px;
+  cursor:grab;touch-action:none;position:sticky;top:0;background:#fff;z-index:2;
+}
+.drawer-handle:active{cursor:grabbing}
+.drawer-handle span{width:40px;height:4px;border-radius:3px;background:var(--border);transition:background .15s}
+.drawer-handle:hover span{background:#c3c9d1}
 .drawer-hdr{
   position:sticky;top:0;background:#fff;z-index:1;
   display:flex;align-items:center;justify-content:space-between;
@@ -324,10 +331,11 @@ header{
 </div>
 
 <!-- Drawer overlay -->
-<div id="drawerOverlay" class="overlay" onclick="closeDrawer()"></div>
+<div id="drawerOverlay" class="overlay"></div>
 
 <!-- Drawer: reservation form -->
 <div id="drawer" class="drawer">
+  <div class="drawer-handle" id="drawerHandle"><span></span></div>
   <div class="drawer-hdr">
     <span class="drawer-title" id="drawerTitle">예약 등록</span>
     <button class="close-btn" onclick="closeDrawer()">✕</button>
@@ -602,6 +610,7 @@ async function init() {
   initLongPress();
   initDragSelect();
   initMiniCalDrag();
+  initDrawerDrag();
   await loadRentalCompanies();
 }
 
@@ -1124,6 +1133,53 @@ function renderDateTags() {
 function closeDrawer() {
   document.getElementById('drawer').classList.remove('open');
   document.getElementById('drawerOverlay').classList.remove('show');
+}
+
+/* ── Drawer: 손잡이(핸들)를 끌어내려 닫기 (바깥 영역 클릭으로는 닫히지 않음) ── */
+function initDrawerDrag() {
+  const drawer = document.getElementById('drawer');
+  const handle = document.getElementById('drawerHandle');
+  const isPanelMode = () => window.matchMedia('(min-width:720px)').matches;
+  let dragging = false, startX = 0, startY = 0, axis = 'y';
+
+  function begin(e) {
+    if (!drawer.classList.contains('open')) return;
+    dragging = true;
+    axis = isPanelMode() ? 'x' : 'y';
+    const p = e.touches ? e.touches[0] : e;
+    startX = p.clientX; startY = p.clientY;
+    drawer.style.transition = 'none';
+  }
+
+  function move(e) {
+    if (!dragging) return;
+    const p = e.touches ? e.touches[0] : e;
+    if (axis === 'x') {
+      const dx = Math.max(0, p.clientX - startX);
+      drawer.style.transform = `translateX(${dx}px)`;
+    } else {
+      const dy = Math.max(0, p.clientY - startY);
+      drawer.style.transform = `translateY(${dy}px)`;
+    }
+  }
+
+  function end(e) {
+    if (!dragging) return;
+    dragging = false;
+    drawer.style.transition = '';
+    drawer.style.transform = '';
+    const p = e.changedTouches ? e.changedTouches[0] : e;
+    const delta = axis === 'x' ? (p.clientX - startX) : (p.clientY - startY);
+    const threshold = axis === 'x' ? 110 : 90;
+    if (delta > threshold) closeDrawer();
+  }
+
+  handle.addEventListener('mousedown', begin);
+  handle.addEventListener('touchstart', begin, { passive: true });
+  document.addEventListener('mousemove', move);
+  document.addEventListener('touchmove', move, { passive: true });
+  document.addEventListener('mouseup', end);
+  document.addEventListener('touchend', end);
 }
 
 function resetForm() {
