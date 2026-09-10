@@ -1993,7 +1993,10 @@ function paintCompaniesTab() {
         <input type="text" id="cmpContactPhoneIn" class="fi" placeholder="담당자 연락처" autocomplete="off">
         <input type="email" id="cmpInvoiceEmailIn" class="fi" placeholder="전자계산서 발행 이메일" autocomplete="off">
       </div>
-      <button class="btn btn-primary btn-sm" onclick="addCompany()">+ 대관업체 등록</button>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="btn btn-primary btn-sm" id="cmpSubmitBtn" onclick="submitCompany()">+ 대관업체 등록</button>
+        <button class="btn btn-sm" id="cmpCancelBtn" hidden onclick="cancelCompanyEdit()" style="background:var(--bg-2);color:var(--text)">취소</button>
+      </div>
     </div>
     <div class="tbl-wrap">
       <table class="rv-tbl">
@@ -2006,7 +2009,10 @@ function paintCompaniesTab() {
             <td>${esc(c.contact_name || '')}</td>
             <td>${esc(c.contact_phone || '')}</td>
             <td>${esc(c.invoice_email || '')}</td>
-            <td><button class="btn btn-xs btn-red" onclick="deleteCompany('${c.id}')">삭제</button></td>
+            <td style="white-space:nowrap;display:flex;gap:4px">
+              <button class="btn btn-xs" onclick="editCompany(${c.id})" style="background:var(--primary-lt);color:var(--primary-dk)">수정</button>
+              <button class="btn btn-xs btn-red" onclick="deleteCompany(${c.id})">삭제</button>
+            </td>
           </tr>`).join('') || `<tr><td colspan="7" style="text-align:center;color:var(--gray);padding:20px">등록된 대관업체가 없습니다.</td></tr>`}
         </tbody>
       </table>
@@ -2082,23 +2088,71 @@ async function runOcr() {
   }
 }
 
+let editingCompanyId = null;
+
+function _cmpFormValues() {
+  return {
+    biz_name:      document.getElementById('cmpNameIn').value.trim(),
+    biz_reg_no:    document.getElementById('cmpBizNoIn').value.trim() || null,
+    corp_reg_no:   document.getElementById('cmpCorpNoIn').value.trim() || null,
+    contact_name:  document.getElementById('cmpContactNameIn').value.trim() || null,
+    contact_phone: document.getElementById('cmpContactPhoneIn').value.trim() || null,
+    invoice_email: document.getElementById('cmpInvoiceEmailIn').value.trim() || null,
+  };
+}
+
+function submitCompany() {
+  if (editingCompanyId) updateCompany(editingCompanyId);
+  else addCompany();
+}
+
 async function addCompany() {
-  const biz_name = document.getElementById('cmpNameIn').value.trim();
-  const biz_reg_no = document.getElementById('cmpBizNoIn').value.trim();
-  const corp_reg_no = document.getElementById('cmpCorpNoIn').value.trim();
-  const contact_name = document.getElementById('cmpContactNameIn').value.trim();
-  const contact_phone = document.getElementById('cmpContactPhoneIn').value.trim();
-  const invoice_email = document.getElementById('cmpInvoiceEmailIn').value.trim();
-  if (!biz_name) return toast('사업자(법인)명을 입력해주세요', 'warn');
-  const { error } = await sb.from('rental_companies').insert({
-    biz_name, biz_reg_no: biz_reg_no || null, corp_reg_no: corp_reg_no || null,
-    contact_name: contact_name || null, contact_phone: contact_phone || null, invoice_email: invoice_email || null,
-  });
+  const vals = _cmpFormValues();
+  if (!vals.biz_name) return toast('사업자(법인)명을 입력해주세요', 'warn');
+  const { error } = await sb.from('rental_companies').insert(vals);
   if (error) return toast('등록 실패: ' + error.message, 'error');
   toast('대관업체가 등록되었습니다', 'success');
   ocrImgB64 = null; ocrImgType = null;
+  cancelCompanyEdit();
   await renderCompaniesTab();
   await loadRentalCompanies();
+}
+
+function editCompany(id) {
+  const c = admCompanies.find(x => x.id === id);
+  if (!c) return;
+  editingCompanyId = id;
+  document.getElementById('cmpNameIn').value         = c.biz_name || '';
+  document.getElementById('cmpBizNoIn').value        = c.biz_reg_no || '';
+  document.getElementById('cmpCorpNoIn').value       = c.corp_reg_no || '';
+  document.getElementById('cmpContactNameIn').value  = c.contact_name || '';
+  document.getElementById('cmpContactPhoneIn').value = c.contact_phone || '';
+  document.getElementById('cmpInvoiceEmailIn').value = c.invoice_email || '';
+  document.getElementById('cmpSubmitBtn').textContent = '수정 저장';
+  document.getElementById('cmpCancelBtn').hidden = false;
+  document.getElementById('cmpNameIn').focus();
+  document.getElementById('cmpNameIn').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+async function updateCompany(id) {
+  const vals = _cmpFormValues();
+  if (!vals.biz_name) return toast('사업자(법인)명을 입력해주세요', 'warn');
+  const { error } = await sb.from('rental_companies').update(vals).eq('id', id);
+  if (error) return toast('수정 실패: ' + error.message, 'error');
+  toast('수정되었습니다', 'success');
+  cancelCompanyEdit();
+  await renderCompaniesTab();
+  await loadRentalCompanies();
+}
+
+function cancelCompanyEdit() {
+  editingCompanyId = null;
+  ['cmpNameIn','cmpBizNoIn','cmpCorpNoIn','cmpContactNameIn','cmpContactPhoneIn','cmpInvoiceEmailIn']
+    .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  const btn = document.getElementById('cmpSubmitBtn');
+  const cancel = document.getElementById('cmpCancelBtn');
+  if (btn) btn.textContent = '+ 대관업체 등록';
+  if (cancel) cancel.hidden = true;
 }
 
 async function deleteCompany(id) {
