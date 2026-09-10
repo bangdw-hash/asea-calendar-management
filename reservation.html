@@ -630,12 +630,93 @@ async function init() {
   await loadRentalCompanies();
 }
 
-/* ── AI 키 조회: 메인 앱(index.html) 설정 ▾ → AI제공자에서 등록한 키를 그대로 재사용 ── */
+/* ── AI 제공자(3중 라우팅) — 메인 앱(index.html) 설정 ▾ → AI제공자 설정을 그대로 재사용
+   ① 서버 프록시(권장, Supabase Edge Function이 서버에 키 보관) ② 공식 Claude(브라우저 직접) ③ Flow(aiapiflow 등 게이트웨이, 프록시 경유)
+   config.js의 window.claudeFetch/getAIProviders와 동일한 로직(스토리지 키 asea_ai_providers 포함)을 이 페이지에서도 재사용. ── */
+const AI_PROXY_URL_DEFAULT = 'https://zbpeyklwpotjyveipzxd.supabase.co/functions/v1/ai-proxy';
+
 function getAnthropicKey() {
   return localStorage.getItem('anthropicApiKey') || localStorage.getItem('asea_anthropic_api_key') || '';
 }
 function getGeminiKey() {
   return localStorage.getItem('geminiApiKey') || localStorage.getItem('asea_gemini_api_key') || '';
+}
+
+function xorKey(str, seed) {
+  if (!str) return str;
+  const k = seed || 'asea-xor-2024';
+  let out = '';
+  for (let i = 0; i < str.length; i++) out += String.fromCharCode(str.charCodeAt(i) ^ k.charCodeAt(i % k.length));
+  return out;
+}
+function decodeApiKey(encoded) {
+  if (!encoded) return '';
+  try { return xorKey(atob(encoded)); } catch (e) { return encoded; }
+}
+function getAIProviderConfig() {
+  try {
+    const raw = localStorage.getItem('asea_ai_providers');
+    if (raw) {
+      const p = JSON.parse(raw);
+      return {
+        active: p.active || 'proxy',
+        official: { key: decodeApiKey(p.official && p.official.key) },
+        flow: { baseUrl: (p.flow && p.flow.baseUrl) || 'https://aiapiflow.com', key: decodeApiKey(p.flow && p.flow.key), model: (p.flow && p.flow.model) || '' },
+      };
+    }
+  } catch (e) {}
+  return { active: 'proxy', official: { key: '' }, flow: { baseUrl: 'https://aiapiflow.com', key: '', model: '' } };
+}
+function getAIProxyUrl() {
+  try { const v = localStorage.getItem('asea_ai_proxy_url'); if (v !== null) return v; } catch (e) {}
+  return AI_PROXY_URL_DEFAULT;
+}
+
+/* fetch()와 동일한 시그니처의 Claude Messages API 드롭인 대체. 활성 제공자에 따라 라우팅. */
+async function claudeFetch(bodyObj) {
+  const P = getAIProviderConfig();
+  const active = P.active || 'proxy';
+  const proxy = getAIProxyUrl();
+  const body = JSON.stringify(bodyObj);
+
+  const directCall = key => fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+    body,
+  });
+
+  if (active === 'official' && P.official.key) return directCall(P.official.key);
+
+  if (active === 'flow' && P.flow.key && proxy) {
+    try {
+      return await fetch(proxy, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + SB_ANON, 'apikey': SB_ANON },
+        body: JSON.stringify({ service: 'claude', payload: bodyObj, upstream: { baseUrl: (P.flow.baseUrl || 'https://aiapiflow.com').replace(/\/$/, ''), key: P.flow.key } }),
+      });
+    } catch (flowErr) {
+      if (P.official.key) return directCall(P.official.key);
+      throw flowErr;
+    }
+  }
+
+  if (proxy) {
+    try {
+      return await fetch(proxy, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + SB_ANON, 'apikey': SB_ANON },
+        body: JSON.stringify({ service: 'claude', payload: bodyObj }),
+      });
+    } catch (proxyErr) {
+      const legacyKey = getAnthropicKey();
+      if (legacyKey) return directCall(legacyKey);
+      throw proxyErr;
+    }
+  }
+
+  const legacyKey = getAnthropicKey();
+  if (legacyKey) return directCall(legacyKey);
+  throw new Error('AI 키가 설정되어 있지 않습니다');
 }
 
 /* ── SHA-256 ── */
@@ -1973,23 +2054,17 @@ function readOcrImage(file) {
 async function runOcr() {
   const status = document.getElementById('ocrStatus');
   status.textContent = 'AI OCR 분석 중...';
-  const ak = getAnthropicKey();
-  if (!ak) { status.textContent = '(AI 키 미설정) 자동입력을 건너뜁니다. 직접 입력해주세요.'; return; }
   const prompt = `첨부된 사업자등록증 이미지를 분석해서 아래 JSON 형식으로만 답변해주세요. 다른 설명은 하지 마세요. 확인되지 않는 값은 빈 문자열로 두세요.
 {"biz_name":"상호(법인)명","biz_reg_no":"사업자등록번호","corp_reg_no":"법인등록번호","contact_name":"","contact_phone":"","invoice_email":""}`;
   try {
-    const r = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'x-api-key': ak, 'anthropic-version': '2023-06-01', 'content-type': 'application/json', 'anthropic-dangerous-request-options': 'true' },
-      body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001', max_tokens: 400,
-        messages: [{ role: 'user', content: [
-          { type: 'image', source: { type: 'base64', media_type: ocrImgType, data: ocrImgB64 } },
-          { type: 'text', text: prompt }
-        ]}]
-      })
+    const r = await claudeFetch({
+      model: 'claude-haiku-4-5-20251001', max_tokens: 400,
+      messages: [{ role: 'user', content: [
+        { type: 'image', source: { type: 'base64', media_type: ocrImgType, data: ocrImgB64 } },
+        { type: 'text', text: prompt }
+      ]}]
     });
-    if (!r.ok) { status.textContent = 'OCR 분석 실패.'; return; }
+    if (!r.ok) { status.textContent = 'OCR 분석 실패 (관리자 → AI제공자 설정을 확인해주세요).'; return; }
     const d = await r.json();
     const text = d.content[0].text;
     const m = text.match(/\{[\s\S]*\}/);
@@ -2186,15 +2261,10 @@ async function runAI() {
 }
 
 async function callAI(prompt) {
-  const ak = getAnthropicKey();
-  if (ak) {
-    const r = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'x-api-key': ak, 'anthropic-version': '2023-06-01', 'content-type': 'application/json', 'anthropic-dangerous-request-options': 'true' },
-      body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 400, messages: [{ role: 'user', content: prompt }] })
-    });
+  try {
+    const r = await claudeFetch({ model: 'claude-haiku-4-5-20251001', max_tokens: 400, messages: [{ role: 'user', content: prompt }] });
     if (r.ok) { const d = await r.json(); return d.content[0].text; }
-  }
+  } catch (e) { /* 다음 경로(Gemini) 시도 */ }
   const gk = getGeminiKey();
   if (gk) {
     const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${gk}`, {
@@ -2217,22 +2287,16 @@ async function onImg(event) {
     const box = document.getElementById('imgAiBox');
     box.hidden = false; box.textContent = '이미지 분석 중...';
     try {
-      const ak = getAnthropicKey();
-      if (!ak) { box.textContent = '(AI 키 없음) 이미지 분석을 건너뜁니다.'; return; }
       const b64 = e.target.result.split(',')[1];
-      const r = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: { 'x-api-key': ak, 'anthropic-version': '2023-06-01', 'content-type': 'application/json', 'anthropic-dangerous-request-options': 'true' },
-        body: JSON.stringify({
-          model: 'claude-haiku-4-5-20251001', max_tokens: 250,
-          messages: [{ role: 'user', content: [
-            { type: 'image', source: { type: 'base64', media_type: file.type, data: b64 } },
-            { type: 'text', text: '이미지를 2~3문장으로 설명해주세요. 강의실 예약 목적에 참고할 정보가 있으면 알려주세요.' }
-          ]}]
-        })
+      const r = await claudeFetch({
+        model: 'claude-haiku-4-5-20251001', max_tokens: 250,
+        messages: [{ role: 'user', content: [
+          { type: 'image', source: { type: 'base64', media_type: file.type, data: b64 } },
+          { type: 'text', text: '이미지를 2~3문장으로 설명해주세요. 강의실 예약 목적에 참고할 정보가 있으면 알려주세요.' }
+        ]}]
       });
-      if (r.ok) { const d = await r.json(); box.textContent = '📸 ' + d.content[0].text; }
-      else box.textContent = '이미지 분석 실패.';
+      if (r.ok) { const d = await r.json(); box.textContent = d.content[0].text; }
+      else box.textContent = '이미지 분석 실패 (관리자 → AI제공자 설정을 확인해주세요).';
     } catch (e) { box.textContent = '오류: ' + e.message; }
   };
   reader.readAsDataURL(file);
