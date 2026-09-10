@@ -13,7 +13,7 @@
   --red:#dc2626;--red-lt:#fee2e2;
   --g50:#f9fafb;--g100:#f3f4f6;--g200:#e5e7eb;--g300:#d1d5db;
   --g400:#9ca3af;--g500:#6b7280;--g700:#374151;--g900:#111827;
-  --r:8px;
+  --r:12px;
   --sh:0 1px 3px rgba(0,0,0,.12),0 1px 2px rgba(0,0,0,.08);
   --sh-md:0 4px 6px rgba(0,0,0,.07),0 2px 4px rgba(0,0,0,.06);
   --sh-lg:0 10px 15px rgba(0,0,0,.1),0 4px 6px rgba(0,0,0,.05);
@@ -47,10 +47,10 @@ body{font-family:var(--font);background:var(--gray-100);color:var(--gray-900);mi
 .btn-ghost-w{background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.4)}
 .btn-ghost-w:hover{background:rgba(255,255,255,.25)}
 .btn-sm{padding:5px 10px;font-size:.75rem}
-#back-btn{background:none;border:none;color:rgba(255,255,255,.8);cursor:pointer;padding:4px 6px;border-radius:4px;display:none;align-items:center;justify-content:center}
+#back-btn{background:none;border:none;color:rgba(255,255,255,.8);cursor:pointer;padding:4px 6px;border-radius:12px;display:none;align-items:center;justify-content:center}
 #back-btn.show{display:flex}
 #back-btn:hover{color:#fff}
-.admin-badge{background:var(--warn);color:#fff;font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;letter-spacing:.5px}
+.admin-badge{background:var(--warn);color:#fff;font-size:10px;font-weight:700;padding:2px 6px;border-radius:12px;letter-spacing:.5px}
 
 /* Main */
 #app-main{max-width:900px;margin:0 auto;padding:16px;min-height:calc(100vh - 56px)}
@@ -70,7 +70,7 @@ body{font-family:var(--font);background:var(--gray-100);color:var(--gray-900);mi
 .sbox input:focus{border-color:var(--primary)}
 .sbox input[type="search"]::-webkit-search-cancel-button,.sbox input[type="search"]::-webkit-search-decoration{-webkit-appearance:none;appearance:none}
 .sbox-icon{position:absolute;left:9px;top:50%;transform:translateY(-50%);color:var(--g400);pointer-events:none;display:flex}
-#search-clear{position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--gray-500);font-size:16px;line-height:1;padding:2px;border-radius:3px;display:none}
+#search-clear{position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--gray-500);font-size:16px;line-height:1;padding:2px;border-radius:12px;display:none}
 #search-clear:hover{color:var(--gray-800)}
 #search-clear.show{display:block}
 #new-btn{background:var(--primary);color:#fff;border:none;padding:9px 16px;border-radius:var(--r2);cursor:pointer;font-size:14px;font-weight:600;white-space:nowrap;transition:background .2s;font-family:var(--font);display:flex;align-items:center;gap:6px}
@@ -82,7 +82,7 @@ body{font-family:var(--font);background:var(--gray-100);color:var(--gray-900);mi
 .pcard:hover{box-shadow:var(--sh2);transform:translateY(-1px)}
 .pcard.pinned{border-left:4px solid var(--warn)}
 .pcard-top{display:flex;align-items:center;gap:8px;margin-bottom:5px;flex-wrap:wrap}
-.cbadge{font-size:11px;font-weight:600;padding:2px 8px;border-radius:4px}
+.cbadge{font-size:11px;font-weight:600;padding:2px 8px;border-radius:12px}
 .c-일반{background:var(--gray-200);color:var(--gray-700)}
 .c-AI활용사례{background:#E3F2FD;color:#1565C0}
 .c-질문{background:#FFF8E1;color:#E65100}
@@ -128,14 +128,14 @@ body{font-family:var(--font);background:var(--gray-100);color:var(--gray-900);mi
 .ql-view li{margin:4px 0}
 .ql-view blockquote{border-left:4px solid var(--primary-l);padding:8px 12px;background:var(--primary-bg);margin:12px 0;border-radius:0 var(--r1) var(--r1) 0}
 .ql-view pre{background:var(--gray-900);color:#E8F0FE;padding:12px 16px;border-radius:var(--r1);overflow-x:auto;font-size:13px}
-.ql-view code{background:var(--gray-200);padding:2px 6px;border-radius:4px;font-size:13px}
+.ql-view code{background:var(--gray-200);padding:2px 6px;border-radius:12px;font-size:13px}
 
 /* Attachments */
 .attsec{background:#fff;border-radius:var(--r2);padding:14px 20px;margin-bottom:12px;box-shadow:var(--sh1);border:1px solid var(--border)}
 .atttitle{font-size:12px;font-weight:600;color:var(--gray-500);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px}
 .fitem{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:var(--r1);background:var(--gray-50);border:1px solid var(--border);margin-bottom:6px;text-decoration:none;color:var(--gray-800);transition:background .2s}
 .fitem:hover{background:var(--primary-bg)}
-.ficon{font-size:20px}
+.ficon{display:inline-flex;color:var(--gray-500)}
 .finfo{flex:1;min-width:0}
 .fname{font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .fsize{font-size:11px;color:var(--gray-500)}
@@ -157,7 +157,7 @@ body{font-family:var(--font);background:var(--gray-100);color:var(--gray-900);mi
 .rthumb{width:120px;height:90px;object-fit:cover;border-radius:var(--r1);cursor:pointer;border:1px solid var(--border);transition:opacity .2s}
 .rthumb:hover{opacity:.8}
 .racts{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
-.ract{font-size:12px;color:var(--gray-500);background:none;border:none;cursor:pointer;padding:2px 6px;border-radius:4px;transition:all .2s;font-family:var(--font)}
+.ract{font-size:12px;color:var(--gray-500);background:none;border:none;cursor:pointer;padding:2px 6px;border-radius:12px;transition:all .2s;font-family:var(--font)}
 .ract:hover{background:var(--gray-100);color:var(--primary)}
 .ract.red:hover{color:var(--danger);background:#FFF5F5}
 .rdiv{border:none;border-top:1px solid var(--gray-100);margin:14px 0}
@@ -215,7 +215,7 @@ body{font-family:var(--font);background:var(--gray-100);color:var(--gray-900);mi
 /* Image resize overlay */
 #iro{position:fixed;pointer-events:none;border:2px solid var(--primary-l);z-index:1000;display:none}
 #iro-handle{position:absolute;width:10px;height:10px;background:var(--primary);border:2px solid #fff;border-radius:2px;pointer-events:all;cursor:se-resize;right:-5px;bottom:-5px}
-#iro-hint{position:absolute;top:-22px;left:0;background:rgba(0,0,0,.7);color:#fff;font-size:11px;padding:2px 6px;border-radius:4px;white-space:nowrap;pointer-events:none}
+#iro-hint{position:absolute;top:-22px;left:0;background:rgba(0,0,0,.7);color:#fff;font-size:11px;padding:2px 6px;border-radius:12px;white-space:nowrap;pointer-events:none}
 
 /* Upload zone */
 .uzn{padding:12px 20px 16px;border-top:1px solid var(--border);background:var(--gray-50)}
@@ -224,7 +224,7 @@ body{font-family:var(--font);background:var(--gray-100);color:var(--gray-900);mi
 .uarea:hover,.uarea.dov{border-color:var(--primary-l);background:var(--primary-bg);color:var(--primary)}
 .ulist{margin-top:8px;display:flex;flex-direction:column;gap:4px}
 .ufitem{display:flex;align-items:center;gap:8px;padding:6px 10px;background:#fff;border:1px solid var(--border);border-radius:var(--r1);font-size:13px}
-.ufitem .xf{margin-left:auto;background:none;border:none;color:var(--gray-400);cursor:pointer;font-size:16px;line-height:1;padding:0 2px;font-family:var(--font)}
+.ufitem .xf{margin-left:auto;background:none;border:none;color:var(--gray-400);display:inline-flex;align-items:center;padding:0 2px;font-family:var(--font);cursor:pointer}
 .ufitem .xf:hover{color:var(--danger)}
 .efoot{display:flex;gap:10px;padding:14px 20px;border-top:1px solid var(--border);background:var(--gray-50);justify-content:flex-end;flex-wrap:wrap}
 
@@ -235,7 +235,7 @@ body{font-family:var(--font);background:var(--gray-100);color:var(--gray-900);mi
 @keyframes su{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
 .mhdr{padding:18px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
 .mttl{font-size:16px;font-weight:700}
-.mclose{background:none;border:none;cursor:pointer;color:var(--g400);padding:2px;display:flex;align-items:center;justify-content:center;border-radius:4px}
+.mclose{background:none;border:none;cursor:pointer;color:var(--g400);padding:2px;display:flex;align-items:center;justify-content:center;border-radius:12px}
 .mclose:hover{color:var(--g700);background:var(--g100)}
 .mbody{padding:20px}
 .mfoot{padding:12px 20px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end;background:var(--gray-50)}
@@ -628,14 +628,13 @@ function setView(name) {
 }
 
 function fileIcon(mime='') {
-  if (mime.startsWith('image/')) return '🖼️';
-  if (mime.startsWith('video/')) return '🎬';
-  if (mime.includes('pdf')) return '📄';
-  if (mime.includes('word')) return '📝';
-  if (mime.includes('sheet') || mime.includes('excel')) return '📊';
-  if (mime.includes('presentation') || mime.includes('powerpoint')) return '📊';
-  if (mime.includes('zip') || mime.includes('rar') || mime.includes('7z')) return '📦';
-  return '📎';
+  var svg = function(inner){ return '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+inner+'</svg>'; };
+  if (mime.startsWith('image/')) return svg('<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>');
+  if (mime.startsWith('video/')) return svg('<rect x="2" y="4" width="20" height="16" rx="2"/><polygon points="10 9 16 12 10 15 10 9"/>');
+  if (mime.includes('sheet') || mime.includes('excel') || mime.includes('presentation') || mime.includes('powerpoint')) return svg('<rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/>');
+  if (mime.includes('zip') || mime.includes('rar') || mime.includes('7z')) return svg('<rect x="3" y="4" width="18" height="4" rx="1"/><path d="M5 8v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8"/><line x1="10" y1="12" x2="14" y2="12"/>');
+  if (mime.includes('pdf') || mime.includes('word')) return svg('<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="14 3 14 9 20 9"/>');
+  return svg('<path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>');
 }
 
 /* ===================== Settings / Admin ===================== */
@@ -831,7 +830,7 @@ function renderList() {
 
   const el = document.getElementById('post-list');
   if (!S.posts.length) {
-    el.innerHTML = `<div class="empty"><div class="em">📝</div><h3>${S.search?'검색 결과가 없습니다':'아직 게시글이 없습니다'}</h3><p>첫 번째 글을 작성해보세요!</p></div>`;
+    el.innerHTML = `<div class="empty"><div class="em"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="14 3 14 9 20 9"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/></svg></div><h3>${S.search?'검색 결과가 없습니다':'아직 게시글이 없습니다'}</h3><p>첫 번째 글을 작성해보세요!</p></div>`;
     document.getElementById('pages').innerHTML = '';
     return;
   }
@@ -840,16 +839,16 @@ function renderList() {
     return `<div class="pcard ${p.is_pinned?'pinned':''}" onclick="goPost('${p.id}')">
       <div class="pcard-top">
         <span class="cbadge c-${p.category}">${p.category}</span>
-        ${p.is_pinned?'<span title="공지">📌</span>':''}
-        ${p.post_password?'<span title="비밀번호 설정됨" style="font-size:12px">🔒</span>':''}
+        ${p.is_pinned?'<span title="공지" style="display:inline-flex;color:var(--primary)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 17v5"/><path d="M9 3h6l-1 6 4 4H6l4-4-1-6z"/></svg></span>':''}
+        ${p.post_password?'<span title="비밀번호 설정됨" style="display:inline-flex;color:var(--gray-400)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>':''}
       </div>
       <div class="ptitle">${esc(p.title)}</div>
       ${excerpt?`<div class="pexcerpt">${esc(excerpt)}</div>`:''}
       <div class="pmeta">
-        <span>👤 ${esc(p.author_name||'익명')}</span>
-        <span>🕐 ${fmtDate(p.created_at)}</span>
-        <span>👁 ${p.view_count||0}</span>
-        <span>💬 ${p.reply_count||0}</span>
+        <span>${esc(p.author_name||'익명')}</span>
+        <span>${fmtDate(p.created_at)}</span>
+        <span>조회 ${p.view_count||0}</span>
+        <span>댓글 ${p.reply_count||0}</span>
       </div>
     </div>`;
   }).join('');
@@ -876,28 +875,28 @@ function renderPost() {
   // Badges
   document.getElementById('d-badges').innerHTML =
     `<span class="cbadge c-${p.category}">${p.category}</span>` +
-    (p.is_pinned?'<span>📌</span>':'') +
-    (p.post_password?'<span title="비밀번호 설정됨">🔒</span>':'');
+    (p.is_pinned?'<span title="공지" style="display:inline-flex;color:var(--primary)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 17v5"/><path d="M9 3h6l-1 6 4 4H6l4-4-1-6z"/></svg></span>':'') +
+    (p.post_password?'<span title="비밀번호 설정됨" style="display:inline-flex;color:var(--gray-400)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>':'');
 
   // Actions
   let acts = '';
   if (S.isAdmin) {
-    acts = `<button class="abtn" onclick="adminEditPost()">✏️ 수정</button>
-      <button class="abtn" onclick="adminPin()">📌 ${p.is_pinned?'고정 해제':'고정'}</button>
-      <button class="abtn red" onclick="adminDeletePost()">🗑️ 삭제</button>`;
+    acts = `<button class="abtn" onclick="adminEditPost()">수정</button>
+      <button class="abtn" onclick="adminPin()">${p.is_pinned?'고정 해제':'고정'}</button>
+      <button class="abtn red" onclick="adminDeletePost()">삭제</button>`;
   } else {
     if (p.post_password) {
-      acts = `<button class="abtn" onclick="userEdit()">✏️ 수정</button>
-        <button class="abtn red" onclick="userDelete()">🗑️ 삭제</button>`;
+      acts = `<button class="abtn" onclick="userEdit()">수정</button>
+        <button class="abtn red" onclick="userDelete()">삭제</button>`;
     }
   }
   document.getElementById('d-acts').innerHTML = acts;
 
   document.getElementById('d-title').textContent = p.title;
   document.getElementById('d-meta').innerHTML =
-    `<span>👤 ${esc(p.author_name||'익명')}</span>
-     <span>🕐 ${fmtDate(p.created_at)}${p.updated_at&&p.updated_at!==p.created_at?' (수정됨)':''}</span>
-     <span>👁 ${(p.view_count||0)+1}</span>`;
+    `<span>${esc(p.author_name||'익명')}</span>
+     <span>${fmtDate(p.created_at)}${p.updated_at&&p.updated_at!==p.created_at?' (수정됨)':''}</span>
+     <span>조회 ${(p.view_count||0)+1}</span>`;
 
   document.getElementById('d-content').innerHTML = p.content || '';
 
@@ -910,7 +909,7 @@ function renderPost() {
       `<a class="fitem" href="${f.public_url}" target="_blank" download="${esc(f.filename)}">
         <span class="ficon">${fileIcon(f.mime_type)}</span>
         <div class="finfo"><div class="fname">${esc(f.filename)}</div><div class="fsize">${fmtSize(f.file_size)}</div></div>
-        <span style="color:var(--gray-400);font-size:12px">⬇</span>
+        <span style="color:var(--gray-400);display:inline-flex"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></span>
       </a>`).join('');
   } else attSec.classList.add('hidden');
 
@@ -939,15 +938,15 @@ function renderReplyItem(r, isNested=false) {
       <div class="rmeta">
         <span class="rauthor">${esc(r.author_name||'익명')}</span>
         <span class="rtime">${fmtDate(r.created_at)}</span>
-        ${r.reply_password?'<span title="비밀번호 설정됨" style="font-size:11px">🔒</span>':''}
+        ${r.reply_password?'<span title="비밀번호 설정됨" style="display:inline-flex;color:var(--gray-400)"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>':''}
         ${r.updated_at&&r.updated_at!==r.created_at?'<span style="font-size:11px;color:var(--gray-400)">(수정됨)</span>':''}
       </div>
       <div class="rcontent" id="rc-${r.id}">${esc(r.content)}</div>
       ${imgs.length?`<div class="rimgs">${imgs.map(f=>`<img class="rthumb" src="${f.public_url}" alt="" onclick="openLB('${f.public_url}')" loading="lazy">`).join('')}</div>`:''}
       ${others.length?`<div class="reply-files">${others.map(f=>`<a class="fitem" href="${f.public_url}" target="_blank" style="margin-top:4px"><span class="ficon">${fileIcon(f.mime_type)}</span><div class="finfo"><div class="fname">${esc(f.filename)}</div><div class="fsize">${fmtSize(f.file_size)}</div></div></a>`).join('')}</div>`:''}
       <div class="racts">
-        ${!isNested?`<button class="ract" onclick="toggleInlineReply('${r.id}')">💬 답글</button>`:''}
-        ${(r.reply_password||S.isAdmin)?`<button class="ract" onclick="editReply('${r.id}','${r.reply_password||''}')">✏️ 수정</button><button class="ract red" onclick="delReply('${r.id}','${r.reply_password||''}')">🗑️ 삭제</button>`:''}
+        ${!isNested?`<button class="ract" onclick="toggleInlineReply('${r.id}')">답글</button>`:''}
+        ${(r.reply_password||S.isAdmin)?`<button class="ract" onclick="editReply('${r.id}','${r.reply_password||''}')">수정</button><button class="ract red" onclick="delReply('${r.id}','${r.reply_password||''}')">삭제</button>`:''}
       </div>
       <div id="irw-${r.id}" style="display:none"></div>
       ${!isNested&&nested.length?`<div class="nested">${nested.map(nr=>renderReplyItem(nr,true)).join('')}</div>`:''}
@@ -1145,7 +1144,7 @@ function removePendingFile(i) { S.pendingFiles.splice(i,1); renderFileList(); }
 
 function renderFileList() {
   document.getElementById('file-list').innerHTML = S.pendingFiles.map((f,i)=>
-    `<div class="ufitem">${fileIcon(f.type)} <span style="flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(f.name)}</span><span style="color:var(--gray-500);font-size:11px">${fmtSize(f.size)}</span><button class="xf" onclick="removePendingFile(${i})">✕</button></div>`
+    `<div class="ufitem">${fileIcon(f.type)} <span style="flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(f.name)}</span><span style="color:var(--gray-500);font-size:11px">${fmtSize(f.size)}</span><button class="xf" onclick="removePendingFile(${i})"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>`
   ).join('');
 }
 
@@ -1170,12 +1169,12 @@ async function submitPost() {
   let post;
   if (S.editPost) {
     const ok = await updatePost(S.editPost.id, title, content, author, cat);
-    if (!ok) { btn.disabled=false; btn.textContent='📝 게시하기'; return; }
+    if (!ok) { btn.disabled=false; btn.textContent='게시하기'; return; }
     post = S.editPost;
   } else {
     post = await createPost(title, content, author, cat, pwHash);
   }
-  if (!post) { btn.disabled=false; btn.textContent='📝 게시하기'; return; }
+  if (!post) { btn.disabled=false; btn.textContent='게시하기'; return; }
 
   // Upload attached files
   for (const f of S.pendingFiles) {
@@ -1232,7 +1231,7 @@ function toggleInlineReply(replyId) {
       <div class="fg"><div class="flbl">비밀번호</div><input class="fi" id="irw-pw-${replyId}" type="password" placeholder="수정용(선택)" maxlength="50"></div>
     </div>
     <textarea class="rta" id="irw-ta-${replyId}" placeholder="답글을 입력하세요..." rows="2" style="min-height:60px"></textarea>
-    <div class="paste-hint" id="irw-paste-${replyId}" ondragover="onDragOver(event,'irw-paste-${replyId}')" ondragleave="onDragLeave('irw-paste-${replyId}')" ondrop="onDrop(event,'${replyId}')">📷 이미지 붙여넣기(Ctrl+V) 또는 드래그</div>
+    <div class="paste-hint" id="irw-paste-${replyId}" ondragover="onDragOver(event,'irw-paste-${replyId}')" ondragleave="onDragLeave('irw-paste-${replyId}')" ondrop="onDrop(event,'${replyId}')" style="display:flex;align-items:center;justify-content:center;gap:6px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>이미지 붙여넣기(Ctrl+V) 또는 드래그</div>
     <div class="rprevs" id="irw-prevs-${replyId}"></div>
     <div class="rwfoot" style="margin-top:8px">
       <button class="canbtn" onclick="document.getElementById('irw-${replyId}').style.display='none'">취소</button>
@@ -1377,7 +1376,7 @@ function renderReplyPreviews(key) {
   const prevsEl = document.getElementById(key==='main'?'rw-prevs':`irw-prevs-${key}`);
   if (!prevsEl) return;
   prevsEl.innerHTML = imgs.map((img,i)=>
-    `<div class="pthmb"><img src="${img.url}" alt=""><button class="rmv" onclick="removeRImg('${key}',${i})">✕</button></div>`
+    `<div class="pthmb"><img src="${img.url}" alt=""><button class="rmv" onclick="removeRImg('${key}',${i})"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>`
   ).join('');
 }
 
