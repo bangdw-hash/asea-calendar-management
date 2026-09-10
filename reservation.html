@@ -20,7 +20,8 @@
   --font:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
 }
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:var(--font);background:#f0f4f8;color:var(--text);min-height:100vh}
+html{overscroll-behavior-y:contain}
+body{font-family:var(--font);background:#f0f4f8;color:var(--text);min-height:100vh;overscroll-behavior-y:contain}
 
 /* ── Header ── */
 header{
@@ -154,6 +155,9 @@ header{
   max-height:66vh;overflow-y:auto;overscroll-behavior:contain;
   transform:translateY(100%);transition:transform .38s cubic-bezier(.32,.72,0,1);
   will-change:transform;
+}
+@supports (height:1dvh){
+  .drawer{max-height:66dvh}
 }
 .drawer.open{transform:translateY(0)}
 @media(min-width:720px){
@@ -1161,10 +1165,13 @@ function initDrawerDrag() {
     const p = e.touches ? e.touches[0] : e;
     startX = p.clientX; startY = p.clientY;
     drawer.style.transition = 'none';
+    // 핸들에서 시작하는 제스처는 브라우저의 당겨서 새로고침/오버스크롤로 넘어가지 않도록 차단
+    if (e.cancelable) e.preventDefault();
   }
 
   function move(e) {
     if (!dragging) return;
+    if (e.cancelable) e.preventDefault();
     const p = e.touches ? e.touches[0] : e;
     if (axis === 'x') {
       const dx = Math.max(0, p.clientX - startX);
@@ -1204,9 +1211,9 @@ function initDrawerDrag() {
   }
 
   handle.addEventListener('mousedown', begin);
-  handle.addEventListener('touchstart', begin, { passive: true });
+  handle.addEventListener('touchstart', begin, { passive: false });
   document.addEventListener('mousemove', move);
-  document.addEventListener('touchmove', move, { passive: true });
+  document.addEventListener('touchmove', move, { passive: false });
   document.addEventListener('mouseup', end);
   document.addEventListener('touchend', end);
 }
