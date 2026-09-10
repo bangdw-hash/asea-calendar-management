@@ -26,11 +26,11 @@
       --red: #d64545;
 
       /* 테두리 반경 — iOS 스타일 3단계 스케일(schedule.html과 동일한 규격) */
-      --r-sm: 6px;   /* 아이콘버튼·작은 배지·작은 사각버튼 */
-      --r: 8px;      /* 기본: 버튼·인풋·칩·작은 박스 */
+      --r-sm: 12px;  /* 아이콘버튼·작은 배지·작은 사각버튼 */
+      --r: 12px;     /* 기본: 버튼·인풋·칩·작은 박스 */
       --r-md: 12px;  /* 카드: 문서·통계·모달·툴바 */
-      --r-lg: 16px;  /* 큰 패널: 로그인/온보딩 게이트 카드 */
-      --pill: 999px; /* 태그·배지 전용(필 형태) — 일반 버튼에는 쓰지 않음 */
+      --r-lg: 12px;  /* 큰 패널: 로그인/온보딩 게이트 카드 */
+      --pill: 12px;  /* 태그·배지 전용(필 형태 폐지, 플랫 라운드로 통일) */
 
       /* 그림자 — iOS 스타일 계층(schedule.html과 동일한 규격) */
       --sh-sm: 0 1px 3px rgba(0,0,0,.12), 0 1px 2px rgba(0,0,0,.08);
@@ -229,7 +229,7 @@
       width: 100%; border: none; background: transparent; padding: 8px 9px;
       font-family: inherit; font-size: 13px; color: var(--ink); resize: none; display: block;
     }
-    .asm-cell-input:focus { outline: 2px solid rgba(37,99,235,.4); outline-offset: -2px; background: #f7faff; border-radius: 3px; }
+    .asm-cell-input:focus { outline: 2px solid rgba(37,99,235,.4); outline-offset: -2px; background: #f7faff; border-radius: 12px; }
     select.asm-cell-input { padding: 7px 8px; cursor: pointer; -webkit-appearance: none; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath fill='%236b7686' d='M0 0l5 6 5-6z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 8px center; padding-right: 22px; }
     .asm-ta { line-height: 1.45; min-height: 34px; overflow: hidden; }
     .asm-cell-sm { font-size: 12.5px; }
