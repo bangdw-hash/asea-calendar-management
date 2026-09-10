@@ -182,7 +182,7 @@ html,body{height:100%;
   letter-spacing:.04em;text-transform:uppercase}
 .hdr-dropdown-theme-swatches{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 .theme-swatch-item{display:flex;flex-direction:column;align-items:center;gap:5px}
-.theme-swatch-item .theme-swatch-btn{width:100%;height:42px;border-radius:8px}
+.theme-swatch-item .theme-swatch-btn{width:100%;height:42px;border-radius:12px}
 .theme-swatch-item .swatch-label{font-size:.72rem;color:var(--color-text-sec);
   font-weight:500;line-height:1}
 
@@ -509,7 +509,7 @@ html,body{height:100%;
   opacity:.85;margin-bottom:6px;display:flex;align-items:center;gap:5px}
 .ai-evt-card-title{font-size:1.22rem;font-weight:700;line-height:1.3;word-break:break-word}
 .ai-evt-card-title-input{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.35);
-  border-radius:6px;color:#fff;font-size:1.08rem;font-weight:700;padding:6px 10px;
+  border-radius:12px;color:#fff;font-size:1.08rem;font-weight:700;padding:6px 10px;
   width:100%;box-sizing:border-box;outline:none;font-family:inherit;line-height:1.3}
 .ai-evt-card-title-input::placeholder{color:rgba(255,255,255,.55)}
 .ai-evt-card-title-input:focus{background:rgba(255,255,255,.25);border-color:rgba(255,255,255,.65)}
@@ -1000,7 +1000,7 @@ html,body{height:100%;
 .hdr-menu-items .tb-btn .tb-ico{width:12px;height:12px}
 
 /* Header email check widget */
-.hdr-email-chk-wrap{display:flex;align-items:center;gap:5px;background:var(--color-bg);border:1.5px solid var(--color-border);border-radius:7px;padding:0 7px 0 9px;height:28px;box-sizing:border-box}
+.hdr-email-chk-wrap{display:flex;align-items:center;gap:5px;background:var(--color-bg);border:1.5px solid var(--color-border);border-radius:12px;padding:0 7px 0 9px;height:28px;box-sizing:border-box}
 .hdr-email-chk-label{font-size:.7rem;font-weight:700;color:var(--color-text-sec);white-space:nowrap;flex-shrink:0}
 .hdr-email-chk-input{width:150px;height:20px;padding:0 5px;font-size:.75rem;border:none;background:transparent;color:var(--color-text);outline:none;font-family:inherit}
 .hdr-email-chk-btn{height:20px;padding:0 7px;font-size:.7rem;font-weight:700;background:var(--color-accent);color:#fff;border:none;border-radius:4px;cursor:pointer;white-space:nowrap;flex-shrink:0;transition:background .15s}
@@ -1009,7 +1009,7 @@ html,body{height:100%;
 .hdr-dropdown-email-chk{padding:10px 14px 8px;border-bottom:1px solid var(--color-border);margin-bottom:4px}
 .hdr-dropdown-email-label{font-size:.72rem;font-weight:700;color:var(--color-text-sec);margin-bottom:5px}
 @media(max-width:860px){.hdr-email-chk-wrap{display:none}}
-.sub-option-icon{width:36px;height:36px;border-radius:8px;background:var(--color-accent-lt);
+.sub-option-icon{width:36px;height:36px;border-radius:12px;background:var(--color-accent-lt);
   display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .sub-option-icon svg{width:20px;height:20px;color:var(--color-accent)}
 .sub-option-text strong{display:block;font-size:.875rem;font-weight:600;color:var(--color-text);margin-bottom:2px}
@@ -1124,7 +1124,7 @@ html,body{height:100%;
         <div class="hdr-dropdown-email-label">등록 확인</div>
         <div style="display:flex;gap:6px;align-items:center">
           <input id="hdr-mob-email-chk" type="email" placeholder="Gmail 주소 입력" maxlength="100"
-            style="flex:1;height:34px;padding:0 8px;font-size:.82rem;border:1px solid var(--g300);border-radius:6px;background:var(--bg);color:var(--g900);outline:none"
+            style="flex:1;height:34px;padding:0 8px;font-size:.82rem;border:1px solid var(--g300);border-radius:12px;background:var(--bg);color:var(--g900);outline:none"
             onkeydown="if(event.key==='Enter'){checkMobileEmail();closeHdrMenu();}">
           <button onclick="checkMobileEmail()" style="height:34px;padding:0 12px;font-size:.82rem;font-weight:600;background:var(--primary);color:#fff;border:none;border-radius:6px;cursor:pointer;white-space:nowrap">확인</button>
         </div>
@@ -1167,9 +1167,9 @@ html,body{height:100%;
       <div class="hdr-dropdown-theme" style="border-top:1px solid var(--color-border);padding-top:10px;margin-top:2px">
         <span class="hdr-dropdown-theme-label">일정 글자 크기</span>
         <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
-          <button class="hdr-density-btn" id="mob-density-down" onclick="changeDensity(-1)" style="border:1px solid var(--color-border);border-radius:5px;padding:4px 10px;font-size:.82rem;height:32px">A−</button>
+          <button class="hdr-density-btn" id="mob-density-down" onclick="changeDensity(-1)" style="border:1px solid var(--color-border);border-radius:12px;padding:4px 10px;font-size:.82rem;height:32px">A−</button>
           <span id="mob-density-label" style="flex:1;text-align:center;font-size:.82rem;font-weight:600;color:var(--color-text)">표준</span>
-          <button class="hdr-density-btn" id="mob-density-up" onclick="changeDensity(1)" style="border:1px solid var(--color-border);border-radius:5px;padding:4px 10px;font-size:.82rem;height:32px">A+</button>
+          <button class="hdr-density-btn" id="mob-density-up" onclick="changeDensity(1)" style="border:1px solid var(--color-border);border-radius:12px;padding:4px 10px;font-size:.82rem;height:32px">A+</button>
         </div>
       </div>
     </div>
@@ -1242,7 +1242,7 @@ html,body{height:100%;
   <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;width:100%;margin-top:6px;padding-top:6px;border-top:1px solid rgba(234,88,12,.2)">
     <span style="font-size:.75rem;color:var(--g600);flex-shrink:0">내 이메일 등록 확인</span>
     <input id="banner-email-chk" type="email" placeholder="Gmail 주소 입력" maxlength="100"
-      style="flex:1;min-width:160px;max-width:280px;height:28px;padding:0 8px;font-size:.78rem;border:1px solid var(--g300);border-radius:5px;background:var(--bg);color:var(--g900);outline:none"
+      style="flex:1;min-width:160px;max-width:280px;height:28px;padding:0 8px;font-size:.78rem;border:1px solid var(--g300);border-radius:12px;background:var(--bg);color:var(--g900);outline:none"
       onkeydown="if(event.key==='Enter')checkBannerEmail()">
     <button class="btn btn-sm" onclick="checkBannerEmail()"
       style="height:28px;padding:0 10px;font-size:.78rem;background:var(--g100);color:var(--g700);flex-shrink:0">확인</button>
@@ -1646,7 +1646,7 @@ html,body{height:100%;
     <!-- Section 2: 캘린더 권한 요청 -->
     <div id="admin-sec-access" class="admin-section" hidden>
       <!-- 직접 등록 -->
-      <div style="background:var(--primary-lt);border:1px solid var(--primary);border-radius:8px;padding:14px 16px;margin-bottom:16px">
+      <div style="background:var(--primary-lt);border:1px solid var(--primary);border-radius:12px;padding:14px 16px;margin-bottom:16px">
         <div style="font-size:.85rem;font-weight:700;color:var(--primary);margin-bottom:10px">이메일 직접 등록</div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
           <div style="flex:1;min-width:120px">
