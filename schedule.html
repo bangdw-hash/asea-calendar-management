@@ -327,6 +327,9 @@ html,body{height:100%;
 .form-group{margin-bottom:14px}
 .form-label{display:block;font-size:.82rem;font-weight:600;color:var(--g700);margin-bottom:5px}
 .form-label .req{color:var(--red);margin-left:2px}
+.evt-date-range{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.evt-date-help{margin:6px 0 0;font-size:.75rem;line-height:1.45;color:var(--g500)}
+@media(max-width:520px){.evt-date-range{grid-template-columns:1fr}}
 .form-input{width:100%;padding:9px 12px;border:1.5px solid var(--g300);border-radius:var(--r);
   font-size:.875rem;color:var(--g900);transition:border-color .2s,box-shadow .2s;background:#fff}
 .form-input:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(26,115,232,.15)}
@@ -1422,8 +1425,17 @@ html,body{height:100%;
         <div class="err-msg" id="err-evt-title"></div>
       </div>
       <div class="form-group">
-        <label class="form-label">날짜 <span class="req">*</span></label>
-        <input class="form-input" id="evt-date" type="date">
+        <div class="evt-date-range">
+          <div>
+            <label class="form-label" for="evt-start-date">시작 날짜 <span class="req">*</span></label>
+            <input class="form-input" id="evt-start-date" type="date" onchange="syncEventDateRange('start')">
+          </div>
+          <div>
+            <label class="form-label" for="evt-end-date">종료 날짜 <span class="req">*</span></label>
+            <input class="form-input" id="evt-end-date" type="date" onchange="syncEventDateRange('end')">
+          </div>
+        </div>
+        <p class="evt-date-help">하루 일정은 두 날짜가 동일하게 설정됩니다. 여러 날 일정은 종료 날짜를 달력에서 선택하거나 직접 입력하세요.</p>
         <div class="err-msg" id="err-evt-date"></div>
       </div>
       <div class="form-group">
@@ -3003,22 +3015,21 @@ async function openEventModalOnDate(sy, sm, sd, ey, em, ed) {
   document.getElementById('evt-transfer-label').textContent = '학교 일정 등록';
   document.getElementById('evt-error').textContent = '';
   document.getElementById('evt-title').value = '';
-  document.getElementById('evt-date').value = fmtDate(startDate);
+  document.getElementById('evt-start-date').value = fmtDate(startDate);
+  document.getElementById('evt-end-date').value = fmtDate(endDate);
   document.getElementById('evt-allday').checked = true;
   toggleAllDay();
   document.getElementById('evt-start').value = '09:00';
   document.getElementById('evt-end').value = '10:00';
   document.getElementById('evt-location').value = '';
   document.getElementById('evt-desc').value = '';
-  const dateEl = document.getElementById('evt-date');
+  const dateEl = document.getElementById('evt-start-date');
   delete dateEl.dataset.dates;
   if (isRange) {
-    dateEl.dataset.endDate = fmtDate(endDate);
     const days = Math.round((endDate - startDate) / 86400000) + 1;
-    document.getElementById('evt-range-info').textContent = `${fmtDate(startDate)} ~ ${fmtDate(endDate)} · ${days}일 (날짜별 개별 추가)`;
+    document.getElementById('evt-range-info').textContent = `${fmtDate(startDate)} ~ ${fmtDate(endDate)} · ${days}일 일정`;
     document.getElementById('evt-range-info').hidden = false;
   } else {
-    delete dateEl.dataset.endDate;
     document.getElementById('evt-range-info').hidden = true;
   }
   ['err-evt-title','err-evt-date'].forEach(id => document.getElementById(id).textContent = '');
@@ -3044,9 +3055,9 @@ async function openEventModalOnDates(dates) {
   document.getElementById('evt-transfer-label').textContent = '학교 일정 등록';
   document.getElementById('evt-error').textContent = '';
   document.getElementById('evt-title').value = '';
-  const dateEl = document.getElementById('evt-date');
+  const dateEl = document.getElementById('evt-start-date');
   dateEl.value = fmtDate(new Date(dates[0].y, dates[0].m, dates[0].d));
-  delete dateEl.dataset.endDate;
+  document.getElementById('evt-end-date').value = dateEl.value;
   dateEl.dataset.dates = JSON.stringify(dates.map(x => fmtDate(new Date(x.y, x.m, x.d))));
   document.getElementById('evt-allday').checked = true;
   toggleAllDay();
@@ -3348,7 +3359,9 @@ function openEventModal(evt) {
     document.getElementById('evt-allday').checked = allDay;
     toggleAllDay();
     if (start) {
-      document.getElementById('evt-date').value = fmtDate(start);
+      document.getElementById('evt-start-date').value = fmtDate(start);
+      const inclusiveEnd = allDay && end ? new Date(end.getTime() - 86400000) : (end || start);
+      document.getElementById('evt-end-date').value = fmtDate(inclusiveEnd);
       if (!allDay) {
         document.getElementById('evt-start').value = fmtTime(start);
         if (end) document.getElementById('evt-end').value = fmtTime(end);
@@ -3358,7 +3371,8 @@ function openEventModal(evt) {
     document.getElementById('evt-desc').value = evt.description || '';
   } else {
     document.getElementById('evt-title').value = '';
-    document.getElementById('evt-date').value = fmtDate(new Date());
+    document.getElementById('evt-start-date').value = fmtDate(new Date());
+    document.getElementById('evt-end-date').value = fmtDate(new Date());
     document.getElementById('evt-allday').checked = true;
     toggleAllDay();
     document.getElementById('evt-start').value = '09:00';
@@ -3366,7 +3380,7 @@ function openEventModal(evt) {
     document.getElementById('evt-location').value = '';
     document.getElementById('evt-desc').value = '';
   }
-  delete document.getElementById('evt-date').dataset.endDate;
+  delete document.getElementById('evt-start-date').dataset.dates;
   document.getElementById('evt-range-info').hidden = true;
   ['err-evt-title','err-evt-date'].forEach(id => document.getElementById(id).textContent = '');
   document.getElementById('ai-title-suggest').hidden = true;
@@ -3378,17 +3392,28 @@ function toggleAllDay() {
   document.getElementById('time-row').hidden = document.getElementById('evt-allday').checked;
 }
 
+function syncEventDateRange(changed) {
+  const startEl = document.getElementById('evt-start-date');
+  const endEl = document.getElementById('evt-end-date');
+  if (!startEl.value) return;
+  if (changed === 'start' && (!endEl.value || endEl.value < startEl.value)) endEl.value = startEl.value;
+  if (changed === 'end' && endEl.value && endEl.value < startEl.value) {
+    endEl.value = startEl.value;
+    showToast('종료 날짜는 시작 날짜보다 빠를 수 없습니다.', 'error');
+  }
+}
+
 async function saveEvent() {
-  const endDateEl = document.getElementById('evt-date');
-  const rangeEnd = endDateEl.dataset.endDate;
-  const title   = endDateEl.closest ? document.getElementById('evt-title').value.trim() : '';
-  const dateStr = endDateEl.value;
+  const startDateEl = document.getElementById('evt-start-date');
+  const endDateEl = document.getElementById('evt-end-date');
+  const dateStr = startDateEl.value;
+  const endDateStr = endDateEl.value;
   const allDay  = document.getElementById('evt-allday').checked;
 
   // Ctrl+Click multi-date (non-consecutive) save
-  if (endDateEl.dataset.dates) {
+  if (startDateEl.dataset.dates) {
     let dates;
-    try { dates = JSON.parse(endDateEl.dataset.dates); } catch(_) { dates = []; }
+    try { dates = JSON.parse(startDateEl.dataset.dates); } catch(_) { dates = []; }
     if (dates.length > 0) {
       const t = document.getElementById('evt-title').value.trim();
       if (!t) { document.getElementById('err-evt-title').textContent='제목을 입력해 주세요.'; return; }
@@ -3423,57 +3448,12 @@ async function saveEvent() {
       }
       showToast(`${dates.length}개 일정이 추가되었습니다.`);
       closeModal('event-overlay');
-      delete endDateEl.dataset.dates;
+      delete startDateEl.dataset.dates;
       document.getElementById('evt-range-info').hidden = true;
       clearAllSelections();
       _evCacheClear(); await fetchEvents(); renderCalendar();
       return;
     }
-  }
-
-  if (rangeEnd && rangeEnd !== dateStr && allDay) {
-    const t = document.getElementById('evt-title').value.trim();
-    if (!t) { document.getElementById('err-evt-title').textContent='제목을 입력해 주세요.'; return; }
-    document.getElementById('err-evt-title').textContent = '';
-    if (!_hasDeptPrefix(t)) {
-      showDeptPicker(prefix => { document.getElementById('evt-title').value = prefix + t; saveEvent(); });
-      return;
-    }
-    const loc  = document.getElementById('evt-location').value.trim();
-    const desc = document.getElementById('evt-desc').value.trim();
-    // 날짜 범위 내 모든 날짜를 수집
-    const dates = [];
-    let cur = new Date(dateStr);
-    const endD = new Date(rangeEnd);
-    while (cur <= endD) { dates.push(fmtDate(new Date(cur))); cur.setDate(cur.getDate() + 1); }
-    const btn = document.getElementById('evt-save-btn');
-    btn.disabled = true;
-    document.getElementById('evt-error').textContent = '';
-    let saved = 0, errMsg = '';
-    for (const d of dates) {
-      document.getElementById('evt-save-label').textContent = `추가 중 ${saved + 1}/${dates.length}...`;
-      try {
-        const ed = new Date(d); ed.setDate(ed.getDate() + 1);
-        const body = { summary: t, start: { date: d }, end: { date: fmtDate(ed) } };
-        if (loc) body.location = loc;
-        if (desc) body.description = desc;
-        await apiFetch('POST', `/calendars/${encodeURIComponent(CAL_ID)}/events`, body);
-        saved++;
-      } catch(ex) { errMsg = ex.message || '오류'; break; }
-    }
-    btn.disabled = false;
-    document.getElementById('evt-save-label').textContent = '추가';
-    if (errMsg) {
-      document.getElementById('evt-error').textContent = `${saved}개 저장 후 오류: ${errMsg}`;
-      if (saved > 0) { _evCacheClear(); await fetchEvents(); renderCalendar(); }
-      return;
-    }
-    showToast(`${dates.length}개 일정이 추가되었습니다.`);
-    closeModal('event-overlay');
-    delete endDateEl.dataset.endDate;
-    document.getElementById('evt-range-info').hidden = true;
-    _evCacheClear(); await fetchEvents(); renderCalendar();
-    return;
   }
 
   const startT  = document.getElementById('evt-start').value;
@@ -3484,8 +3464,10 @@ async function saveEvent() {
   let valid = true;
   if (!t2)      { document.getElementById('err-evt-title').textContent='제목을 입력해 주세요.'; valid=false; }
   else            document.getElementById('err-evt-title').textContent='';
-  if (!dateStr) { document.getElementById('err-evt-date').textContent='날짜를 선택해 주세요.'; valid=false; }
-  else            document.getElementById('err-evt-date').textContent='';
+  if (!dateStr || !endDateStr) { document.getElementById('err-evt-date').textContent='시작 날짜와 종료 날짜를 모두 선택해 주세요.'; valid=false; }
+  else if (endDateStr < dateStr) { document.getElementById('err-evt-date').textContent='종료 날짜는 시작 날짜보다 빠를 수 없습니다.'; valid=false; }
+  else if (!allDay && `${endDateStr}T${endT}` <= `${dateStr}T${startT}`) { document.getElementById('err-evt-date').textContent='종료 일시는 시작 일시보다 늦어야 합니다.'; valid=false; }
+  else document.getElementById('err-evt-date').textContent='';
   if (!valid) return;
   if (!_hasDeptPrefix(t2)) {
     showDeptPicker(prefix => {
@@ -3496,12 +3478,12 @@ async function saveEvent() {
   }
   let body;
   if (allDay) {
-    const ed = new Date(dateStr); ed.setDate(ed.getDate() + 1);
+    const ed = new Date(endDateStr); ed.setDate(ed.getDate() + 1);
     body = { summary: t2, start: { date: dateStr }, end: { date: fmtDate(ed) } };
   } else {
     body = { summary: t2,
       start: { dateTime: `${dateStr}T${startT}:00+09:00`, timeZone: 'Asia/Seoul' },
-      end:   { dateTime: `${dateStr}T${endT}:00+09:00`,   timeZone: 'Asia/Seoul' } };
+      end:   { dateTime: `${endDateStr}T${endT}:00+09:00`, timeZone: 'Asia/Seoul' } };
   }
   if (loc)  body.location = loc;
   if (desc) body.description = desc;
@@ -3724,14 +3706,15 @@ async function onWeekCellClick(e, dateStr, hour) {
   document.getElementById('evt-delete-btn').hidden = true;
   document.getElementById('evt-error').textContent = '';
   document.getElementById('evt-title').value = '';
-  document.getElementById('evt-date').value = dateStr;
-  document.getElementById('evt-allday').checked = false;
+  document.getElementById('evt-start-date').value = dateStr;
+  document.getElementById('evt-end-date').value = dateStr;
+  document.getElementById('evt-allday').checked = true;
   toggleAllDay();
   document.getElementById('evt-start').value = String(hour).padStart(2,'0') + ':00';
   document.getElementById('evt-end').value   = String(hour + 1).padStart(2,'0') + ':00';
   document.getElementById('evt-location').value = '';
   document.getElementById('evt-desc').value = '';
-  delete document.getElementById('evt-date').dataset.endDate;
+  delete document.getElementById('evt-start-date').dataset.dates;
   ['err-evt-title','err-evt-date'].forEach(id => document.getElementById(id).textContent = '');
   document.getElementById('ai-title-suggest').hidden = true;
   openOverlay('event-overlay');
@@ -6034,7 +6017,8 @@ ${deptList}
   transferBtn.disabled = true;
   labelEl.textContent = '이관 중...';
   try {
-    const dateStr = document.getElementById('evt-date').value;
+    const dateStr = document.getElementById('evt-start-date').value;
+    const endDateStr = document.getElementById('evt-end-date').value;
     const allDay  = document.getElementById('evt-allday').checked;
     const startT  = document.getElementById('evt-start').value;
     const endT    = document.getElementById('evt-end').value;
@@ -6043,12 +6027,12 @@ ${deptList}
 
     let body;
     if (allDay) {
-      const ed = new Date(dateStr); ed.setDate(ed.getDate() + 1);
+      const ed = new Date(endDateStr); ed.setDate(ed.getDate() + 1);
       body = { summary: title, start: { date: dateStr }, end: { date: fmtDate(ed) } };
     } else {
       body = { summary: title,
         start: { dateTime: `${dateStr}T${startT}:00+09:00`, timeZone: 'Asia/Seoul' },
-        end:   { dateTime: `${dateStr}T${endT}:00+09:00`,   timeZone: 'Asia/Seoul' } };
+        end:   { dateTime: `${endDateStr}T${endT}:00+09:00`, timeZone: 'Asia/Seoul' } };
     }
     if (loc)  body.location = loc;
     if (desc) body.description = desc;
