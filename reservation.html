@@ -201,9 +201,15 @@ header{
 .room-row{display:flex;gap:8px;align-items:center}
 .room-dot{width:12px;height:12px;border-radius:50%;flex-shrink:0}
 .date-tags{display:flex;flex-wrap:wrap;gap:4px;align-items:center}
-.date-tag{background:var(--primary-lt);color:var(--primary-dk);padding:3px 9px;border-radius:var(--r);font-size:11px;font-weight:700}
+.date-tag{background:var(--primary-lt);color:var(--primary-dk);padding:3px 9px;border-radius:var(--r);font-size:11px;font-weight:700;cursor:pointer;user-select:none;-webkit-user-select:none;touch-action:none}
+.date-tag:active{opacity:.7}
 .add-date-btn{padding:3px 10px;border-radius:var(--r);font-size:11px;font-weight:700;cursor:pointer;border:1.5px dashed var(--primary);background:#fff;color:var(--primary)}
 .add-date-btn:hover{background:var(--primary-lt)}
+.date-ctx{position:fixed;background:var(--card);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--sh-lg);padding:4px;display:flex;flex-direction:column;gap:2px;z-index:9999;min-width:90px;animation:dtCtxIn .12s ease}
+@keyframes dtCtxIn{from{opacity:0;transform:scale(.9)}to{opacity:1;transform:scale(1)}}
+.date-ctx button{background:none;border:none;padding:7px 14px;text-align:left;font-size:12px;font-weight:600;cursor:pointer;border-radius:8px;white-space:nowrap;color:var(--text)}
+.date-ctx button:hover{background:var(--bg-2)}
+.date-ctx .ctx-del{color:var(--red)}
 
 .conflict-box{background:var(--red-lt);border:1.5px solid var(--red);border-radius:var(--r);padding:10px 12px;font-size:12px;color:var(--red)}
 .conflict-box b{display:block;margin-bottom:4px}
@@ -1224,15 +1230,106 @@ function openDrawer(dateStr, rental) {
 }
 
 function renderDateTags() {
-  let html = '';
+  const area = document.getElementById('dateTagsArea');
+  area.innerHTML = '';
+  if (!selDates.length) return;
+
+  const mkTag = (d, label) => {
+    const sp = document.createElement('span');
+    sp.className = 'date-tag';
+    sp.textContent = label;
+    sp.dataset.d = d;
+    attachDateTagLongPress(sp);
+    return sp;
+  };
+
   if (selMode === 'range' && selDates.length === 2 && selDates[0] !== selDates[1]) {
     const [a, b] = selDates;
     const days = Math.round((new Date(b) - new Date(a)) / 86400000) + 1;
-    html = `<span class="date-tag">${fmtD(a)}</span><span style="color:var(--gray);font-size:12px;margin:0 2px">~</span><span class="date-tag">${fmtD(b)}</span><span style="font-size:11px;color:var(--gray);margin-left:4px">(${days}일)</span>`;
+    area.appendChild(mkTag(a, fmtD(a)));
+    const sep = document.createElement('span');
+    sep.style.cssText = 'color:var(--gray);font-size:12px;margin:0 2px';
+    sep.textContent = '~';
+    area.appendChild(sep);
+    area.appendChild(mkTag(b, fmtD(b)));
+    const cnt = document.createElement('span');
+    cnt.style.cssText = 'font-size:11px;color:var(--gray);margin-left:4px';
+    cnt.textContent = `(${days}일)`;
+    area.appendChild(cnt);
   } else {
-    html = selDates.map(d => `<span class="date-tag">${fmtD(d)}</span>`).join('');
+    selDates.forEach(d => area.appendChild(mkTag(d, fmtD(d))));
   }
-  document.getElementById('dateTagsArea').innerHTML = html;
+}
+
+/* ── 날짜 칩 롱프레스 컨텍스트 메뉴 ── */
+let _dtCtxEl = null, _dtLpTimer = null;
+
+function attachDateTagLongPress(sp) {
+  const trigger = (e) => {
+    e.preventDefault();
+    const rect = sp.getBoundingClientRect();
+    showDateCtx(sp.dataset.d, rect.left, rect.bottom + 6);
+  };
+  const cancel = () => { clearTimeout(_dtLpTimer); _dtLpTimer = null; };
+
+  sp.addEventListener('pointerdown', e => {
+    cancel();
+    _dtLpTimer = setTimeout(() => { trigger(e); }, 500);
+  });
+  sp.addEventListener('pointerup', cancel);
+  sp.addEventListener('pointermove', cancel);
+  sp.addEventListener('pointercancel', cancel);
+  sp.addEventListener('contextmenu', e => { e.preventDefault(); trigger(e); });
+}
+
+function showDateCtx(d, x, y) {
+  hideDateCtx();
+  const menu = document.createElement('div');
+  menu.className = 'date-ctx';
+  menu.id = 'dateCtxMenu';
+
+  const btnDel = document.createElement('button');
+  btnDel.className = 'ctx-del';
+  btnDel.textContent = '이 날짜 삭제';
+  btnDel.onclick = () => { hideDateCtx(); removeSingleDate(d); };
+  menu.appendChild(btnDel);
+
+  if (selMode === 'multi' || selDates.length > 1) {
+    const btnEdit = document.createElement('button');
+    btnEdit.textContent = '날짜 변경';
+    btnEdit.onclick = () => { hideDateCtx(); editSingleDate(d); };
+    menu.appendChild(btnEdit);
+  }
+
+  menu.style.left = Math.min(x, window.innerWidth - 120) + 'px';
+  menu.style.top  = Math.min(y, window.innerHeight - 80) + 'px';
+  document.body.appendChild(menu);
+  _dtCtxEl = menu;
+
+  setTimeout(() => document.addEventListener('pointerdown', hideDateCtxOutside, { capture: true, once: true }), 50);
+}
+
+function hideDateCtxOutside(e) {
+  if (_dtCtxEl && !_dtCtxEl.contains(e.target)) hideDateCtx();
+}
+
+function hideDateCtx() {
+  if (_dtCtxEl) { _dtCtxEl.remove(); _dtCtxEl = null; }
+}
+
+function removeSingleDate(d) {
+  const i = selDates.indexOf(d);
+  if (i < 0) return;
+  selDates.splice(i, 1);
+  selDates.sort();
+  if (selMode === 'range' && selDates.length === 1) selDates = [];
+  renderDateTags();
+  updMultiBanner();
+}
+
+function editSingleDate(d) {
+  removeSingleDate(d);
+  openMiniCal();
 }
 
 function closeDrawer() {
@@ -1993,7 +2090,10 @@ function paintCompaniesTab() {
         <input type="text" id="cmpContactPhoneIn" class="fi" placeholder="담당자 연락처" autocomplete="off">
         <input type="email" id="cmpInvoiceEmailIn" class="fi" placeholder="전자계산서 발행 이메일" autocomplete="off">
       </div>
-      <button class="btn btn-primary btn-sm" onclick="addCompany()">+ 대관업체 등록</button>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="btn btn-primary btn-sm" id="cmpSubmitBtn" onclick="submitCompany()">+ 대관업체 등록</button>
+        <button class="btn btn-sm" id="cmpCancelBtn" hidden onclick="cancelCompanyEdit()" style="background:var(--bg-2);color:var(--text)">취소</button>
+      </div>
     </div>
     <div class="tbl-wrap">
       <table class="rv-tbl">
@@ -2006,7 +2106,10 @@ function paintCompaniesTab() {
             <td>${esc(c.contact_name || '')}</td>
             <td>${esc(c.contact_phone || '')}</td>
             <td>${esc(c.invoice_email || '')}</td>
-            <td><button class="btn btn-xs btn-red" onclick="deleteCompany('${c.id}')">삭제</button></td>
+            <td style="white-space:nowrap;display:flex;gap:4px">
+              <button class="btn btn-xs" onclick="editCompany(${c.id})" style="background:var(--primary-lt);color:var(--primary-dk)">수정</button>
+              <button class="btn btn-xs btn-red" onclick="deleteCompany(${c.id})">삭제</button>
+            </td>
           </tr>`).join('') || `<tr><td colspan="7" style="text-align:center;color:var(--gray);padding:20px">등록된 대관업체가 없습니다.</td></tr>`}
         </tbody>
       </table>
@@ -2082,23 +2185,71 @@ async function runOcr() {
   }
 }
 
+let editingCompanyId = null;
+
+function _cmpFormValues() {
+  return {
+    biz_name:      document.getElementById('cmpNameIn').value.trim(),
+    biz_reg_no:    document.getElementById('cmpBizNoIn').value.trim() || null,
+    corp_reg_no:   document.getElementById('cmpCorpNoIn').value.trim() || null,
+    contact_name:  document.getElementById('cmpContactNameIn').value.trim() || null,
+    contact_phone: document.getElementById('cmpContactPhoneIn').value.trim() || null,
+    invoice_email: document.getElementById('cmpInvoiceEmailIn').value.trim() || null,
+  };
+}
+
+function submitCompany() {
+  if (editingCompanyId) updateCompany(editingCompanyId);
+  else addCompany();
+}
+
 async function addCompany() {
-  const biz_name = document.getElementById('cmpNameIn').value.trim();
-  const biz_reg_no = document.getElementById('cmpBizNoIn').value.trim();
-  const corp_reg_no = document.getElementById('cmpCorpNoIn').value.trim();
-  const contact_name = document.getElementById('cmpContactNameIn').value.trim();
-  const contact_phone = document.getElementById('cmpContactPhoneIn').value.trim();
-  const invoice_email = document.getElementById('cmpInvoiceEmailIn').value.trim();
-  if (!biz_name) return toast('사업자(법인)명을 입력해주세요', 'warn');
-  const { error } = await sb.from('rental_companies').insert({
-    biz_name, biz_reg_no: biz_reg_no || null, corp_reg_no: corp_reg_no || null,
-    contact_name: contact_name || null, contact_phone: contact_phone || null, invoice_email: invoice_email || null,
-  });
+  const vals = _cmpFormValues();
+  if (!vals.biz_name) return toast('사업자(법인)명을 입력해주세요', 'warn');
+  const { error } = await sb.from('rental_companies').insert(vals);
   if (error) return toast('등록 실패: ' + error.message, 'error');
   toast('대관업체가 등록되었습니다', 'success');
   ocrImgB64 = null; ocrImgType = null;
+  cancelCompanyEdit();
   await renderCompaniesTab();
   await loadRentalCompanies();
+}
+
+function editCompany(id) {
+  const c = admCompanies.find(x => x.id === id);
+  if (!c) return;
+  editingCompanyId = id;
+  document.getElementById('cmpNameIn').value         = c.biz_name || '';
+  document.getElementById('cmpBizNoIn').value        = c.biz_reg_no || '';
+  document.getElementById('cmpCorpNoIn').value       = c.corp_reg_no || '';
+  document.getElementById('cmpContactNameIn').value  = c.contact_name || '';
+  document.getElementById('cmpContactPhoneIn').value = c.contact_phone || '';
+  document.getElementById('cmpInvoiceEmailIn').value = c.invoice_email || '';
+  document.getElementById('cmpSubmitBtn').textContent = '수정 저장';
+  document.getElementById('cmpCancelBtn').hidden = false;
+  document.getElementById('cmpNameIn').focus();
+  document.getElementById('cmpNameIn').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+async function updateCompany(id) {
+  const vals = _cmpFormValues();
+  if (!vals.biz_name) return toast('사업자(법인)명을 입력해주세요', 'warn');
+  const { error } = await sb.from('rental_companies').update(vals).eq('id', id);
+  if (error) return toast('수정 실패: ' + error.message, 'error');
+  toast('수정되었습니다', 'success');
+  cancelCompanyEdit();
+  await renderCompaniesTab();
+  await loadRentalCompanies();
+}
+
+function cancelCompanyEdit() {
+  editingCompanyId = null;
+  ['cmpNameIn','cmpBizNoIn','cmpCorpNoIn','cmpContactNameIn','cmpContactPhoneIn','cmpInvoiceEmailIn']
+    .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  const btn = document.getElementById('cmpSubmitBtn');
+  const cancel = document.getElementById('cmpCancelBtn');
+  if (btn) btn.textContent = '+ 대관업체 등록';
+  if (cancel) cancel.hidden = true;
 }
 
 async function deleteCompany(id) {
