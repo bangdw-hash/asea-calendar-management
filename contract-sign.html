@@ -44,7 +44,7 @@
     .cs-error-box {
       background: #fff;
       border: 1px solid #fca5a5;
-      border-radius: 8px;
+      border-radius: 12px;
       padding: 32px 28px;
       text-align: center;
       box-shadow: 0 2px 8px rgba(0,0,0,0.08);
@@ -55,7 +55,7 @@
     /* ── 계약서 미리보기 영역 ── */
     .cs-contract-preview {
       background: #fff;
-      border-radius: 8px;
+      border-radius: 12px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.09);
       padding: 20px;
       margin-bottom: 24px;
@@ -71,13 +71,13 @@
       width: 100%;
       min-height: 480px;
       border: 1px solid #e5e7eb;
-      border-radius: 4px;
+      border-radius: 12px;
     }
 
     /* ── 서명 패드 영역 ── */
     .cs-sign-section {
       background: #fff;
-      border-radius: 8px;
+      border-radius: 12px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.09);
       padding: 24px;
       margin-bottom: 24px;
@@ -97,7 +97,7 @@
     .cs-canvas-wrap {
       position: relative;
       border: 2px solid #2563eb;
-      border-radius: 6px;
+      border-radius: 12px;
       background: #fafafa;
       overflow: hidden;
       cursor: crosshair;
@@ -135,7 +135,7 @@
       gap: 5px;
       padding: 9px 18px;
       border: none;
-      border-radius: 6px;
+      border-radius: 12px;
       font-size: 14px;
       font-family: inherit;
       cursor: pointer;
@@ -170,7 +170,7 @@
     /* ── 완료 화면 ── */
     .cs-done-box {
       background: #fff;
-      border-radius: 8px;
+      border-radius: 12px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.09);
       padding: 40px 28px;
       text-align: center;
@@ -423,7 +423,7 @@
     var eeName2 = (c.employee && c.employee.name) || '';
     root.innerHTML =
       '<div class="cs-done-box">' +
-      '<div class="cs-done-icon">✅</div>' +
+      '<div class="cs-done-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="52" height="52" fill="none" stroke="#16a34a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 12.5l2.5 2.5L16 9.5"/></svg></div>' +
       '<h2>계약이 체결되었습니다</h2>' +
       '<p>' + (alreadySigned ? '이미 서명이 완료된 계약서입니다.' : '<b>' + esc(eeName2) + '</b>님의 전자서명이 성공적으로 등록되었습니다.') + '</p>' +
       '<p style="color:#6b7280;font-size:13px;">이 페이지를 저장하거나 인쇄하여 보관하실 수 있습니다.<br>계약서 원본은 아세아항공직업전문학교 담당자에게 문의하세요.</p>' +
