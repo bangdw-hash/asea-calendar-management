@@ -425,7 +425,7 @@ window.AssessmentModule = (function () {
   }
   function inAppWarningHtml(info) {
     return '<div class="asm-inapp-warn">' +
-      '<b>⚠️ ' + esc(info.name) + ' 인앱 브라우저에서는 Google 로그인이 차단됩니다.</b>' +
+      '<b>' + esc(info.name) + ' 인앱 브라우저에서는 Google 로그인이 차단됩니다.</b>' +
       '<p>Google 정책상 카카오톡·네이버·인스타그램 등 앱 내장 브라우저에서는 로그인 창이 열리지 않습니다. 아래 버튼으로 <b>기본 브라우저(Chrome/Samsung Internet 등)</b>에서 열어 주세요.</p>' +
       '<button class="asm-btn asm-btn-primary" id="asm-open-external">' + (info.scheme ? '기본 브라우저로 열기' : '링크 복사(브라우저에 붙여넣기)') + '</button>' +
     '</div>';
@@ -436,7 +436,7 @@ window.AssessmentModule = (function () {
     S.root.innerHTML =
       '<div class="asm-gate">' +
         '<div class="asm-gate-card">' +
-          '<div class="asm-gate-icon">📋</div>' +
+          '<div class="asm-gate-icon"><svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1M9 11h6M9 15h6"/></svg></div>' +
           '<h1 class="asm-gate-title">개인별 직무역량 자가진단</h1>' +
           '<p class="asm-gate-desc">본 진단표는 개인별 직무역량을 파악하고 연말 인사고과 평가에 반영하기 위한 자료입니다.<br>' +
           '개인 <b>Google 계정</b>으로 로그인하면 작성 기록이 안전하게 저장되어, 다른 컴퓨터에서도 이어서 작성할 수 있습니다.</p>' +
@@ -459,7 +459,7 @@ window.AssessmentModule = (function () {
     S.root.innerHTML =
       '<div class="asm-gate">' +
         '<div class="asm-gate-card asm-consent-card">' +
-          '<div class="asm-gate-icon">🔒</div>' +
+          '<div class="asm-gate-icon"><svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div>' +
           '<h1 class="asm-gate-title">개인정보 수집·이용 동의</h1>' +
           '<p class="asm-gate-desc">아세아항공직업전문학교는 「개인정보 보호법」 제15조·제22조에 따라 자가진단표 작성 전 아래 내용에 대한 동의를 받습니다.<br>' +
           '<span class="asm-muted">로그인 계정: ' + esc(S.email) + '</span></p>' +
@@ -570,7 +570,7 @@ window.AssessmentModule = (function () {
     S.root.innerHTML =
       '<div class="asm-gate">' +
         '<div class="asm-gate-card asm-onboard">' +
-          '<div class="asm-gate-icon">👋</div>' +
+          '<div class="asm-gate-icon"><svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/><path d="M9 20l2 2 4-4"/></svg></div>' +
           '<h1 class="asm-gate-title">최초 등록</h1>' +
           '<p class="asm-gate-desc">처음 접속하셨습니다. 아래 정보를 등록하면 이후에는 바로 <b>작성하기</b>로 이어집니다.<br>' +
           '<span class="asm-muted">로그인 계정: ' + esc(S.email) + '</span></p>' +
@@ -723,8 +723,8 @@ window.AssessmentModule = (function () {
         '<div class="asm-year-tabs">' + yearTabs + '</div>' +
         '<div class="asm-toolbar-right">' +
           '<span id="asm-save-badge" class="asm-badge">작성 중</span>' +
-          '<button class="asm-btn asm-btn-ghost" id="asm-ai-import" title="평소에 적어둔 업무일지(txt) 또는 붙여넣은 텍스트를 AI가 읽어 표 항목으로 정리해 드립니다">🧠 업무일지 AI 정리</button>' +
-          (YEARS.indexOf(S.year) > 0 ? '<button class="asm-btn asm-btn-ghost" id="asm-load-prev" title="전년도(' + (parseInt(S.year, 10) - 1) + '년) 작성 내용을 이 폼에 불러옵니다">📋 전년도 내용 불러오기</button>' : '') +
+          '<button class="asm-btn asm-btn-ghost" id="asm-ai-import" title="평소에 적어둔 업무일지(txt) 또는 붙여넣은 텍스트를 AI가 읽어 표 항목으로 정리해 드립니다">업무일지 AI 정리</button>' +
+          (YEARS.indexOf(S.year) > 0 ? '<button class="asm-btn asm-btn-ghost" id="asm-load-prev" title="전년도(' + (parseInt(S.year, 10) - 1) + '년) 작성 내용을 이 폼에 불러옵니다">전년도 내용 불러오기</button>' : '') +
           '<button class="asm-btn asm-btn-ghost" id="asm-reload">불러오기</button>' +
           '<button class="asm-btn asm-btn-secondary" id="asm-save-draft">중간저장</button>' +
           '<button class="asm-btn asm-btn-primary" id="asm-submit">제출하기</button>' +
@@ -948,11 +948,11 @@ window.AssessmentModule = (function () {
   function sec5() {
     var admin = isAdmin();
     var rows = S.form.development.map(function (d, i) {
-      var badge = d.broadcastId ? '<span class="asm-bcast-badge" title="관리자가 전사에 일괄 반영한 항목입니다">🏢 전사반영</span>' : '';
+      var badge = d.broadcastId ? '<span class="asm-bcast-badge" title="관리자가 전사에 일괄 반영한 항목입니다">전사반영</span>' : '';
       // 관리자 전용 열: 좁은 삭제(✕) 열에 끼워 넣으면 표 오른쪽 끝으로 밀려 눈에 잘 안 띄므로
       // 별도의 넓은 열로 분리해 맨 왼쪽 가까이(구분 열 앞)에 크게 배치한다.
       var bcastCell = admin
-        ? '<td class="asm-td-bcast"><button class="asm-broadcast-btn" data-bcast-idx="' + i + '" title="이 항목을 전체 인원의 개인역량개발 맨 위에 일괄 반영">🏢 전사반영</button></td>'
+        ? '<td class="asm-td-bcast"><button class="asm-broadcast-btn" data-bcast-idx="' + i + '" title="이 항목을 전체 인원의 개인역량개발 맨 위에 일괄 반영">전사반영</button></td>'
         : '';
       var dateCell =
         '<td class="asm-dev-date">' +
@@ -975,7 +975,7 @@ window.AssessmentModule = (function () {
     }).join('');
     var bcastHead = admin ? '<th class="asm-td-bcast-h">전사반영</th>' : '';
     return section('5', '개인역량개발 <small>(교육 이수·희망)</small>',
-      (admin ? '<p class="asm-hint asm-bcast-hint">🏢 관리자 전용: 각 행 맨 왼쪽의 [전사반영] 버튼을 누르면 해당 내용이 전체 인원(신규 계정 포함)의 개인역량개발 맨 위에 일괄 반영됩니다.</p>' : '') +
+      (admin ? '<p class="asm-hint asm-bcast-hint">관리자 전용: 각 행 맨 왼쪽의 [전사반영] 버튼을 누르면 해당 내용이 전체 인원(신규 계정 포함)의 개인역량개발 맨 위에 일괄 반영됩니다.</p>' : '') +
       '<div class="asm-scroll"><table class="asm-table asm-table-grid">' +
         '<thead><tr>' + bcastHead + fsh('development', 'div', '구분') + fsh('development', 'dateFrom', '실시일자') + fsh('development', 'course', '교육과정명') + fsh('development', 'org', '주관기관') + '<th>교육기간<br><small>(시간)</small></th><th>비용</th><th>교육 내용</th><th>업무반영범위</th><th></th></tr></thead>' +
         '<tbody>' + rows + '</tbody></table></div>' +
@@ -1446,7 +1446,7 @@ window.AssessmentModule = (function () {
     if (!modal) return;
     modal.innerHTML =
       '<div class="asm-modal-back" id="asm-ai-modal-back"><div class="asm-modal">' +
-        '<div class="asm-modal-head"><b>🧠 AI 업무일지 자동정리 — 이용 동의</b><span class="asm-flex1"></span><button class="asm-modal-x" id="asm-ai-modal-x">✕</button></div>' +
+        '<div class="asm-modal-head"><b>AI 업무일지 자동정리 — 이용 동의</b><span class="asm-flex1"></span><button class="asm-modal-x" id="asm-ai-modal-x">✕</button></div>' +
         '<div class="asm-modal-body">' +
           '<p class="asm-hint">이 기능을 사용하면 입력하신 업무일지 텍스트가 외부 AI 처리(Anthropic Claude, 학교 서버 경유 전송)에 활용됩니다. ' +
           '동의하지 않으셔도 자가진단표 작성 자체에는 지장이 없으며, 표에 직접 입력하는 방식으로 계속 이용하실 수 있습니다.</p>' +
@@ -1609,11 +1609,11 @@ window.AssessmentModule = (function () {
       footer = '<button class="asm-btn asm-btn-ghost" id="asm-ai-back">다시 정리하기</button>' +
         '<button class="asm-btn asm-btn-primary" id="asm-ai-apply">선택 항목 추가</button>';
     } else {
-      footer = '<button class="asm-btn asm-btn-primary" id="asm-ai-run"' + (st.loading ? ' disabled' : '') + '>🧠 AI로 정리하기</button>';
+      footer = '<button class="asm-btn asm-btn-primary" id="asm-ai-run"' + (st.loading ? ' disabled' : '') + '>AI로 정리하기</button>';
     }
     modal.innerHTML =
       '<div class="asm-modal-back" id="asm-ai-modal-back"><div class="asm-modal asm-modal-lg">' +
-        '<div class="asm-modal-head"><b>🧠 업무일지 AI 자동정리</b><span class="asm-flex1"></span><button class="asm-modal-x" id="asm-ai-modal-x">✕</button></div>' +
+        '<div class="asm-modal-head"><b>업무일지 AI 자동정리</b><span class="asm-flex1"></span><button class="asm-modal-x" id="asm-ai-modal-x">✕</button></div>' +
         '<div class="asm-modal-body">' + body + '</div>' +
         '<div class="asm-modal-foot">' + footer + '</div>' +
       '</div></div>';
@@ -1720,9 +1720,9 @@ window.AssessmentModule = (function () {
     }).join('');
     var tabBtns =
       '<div class="asm-adtab">' +
-        '<button class="asm-adtab-btn' + (S.adminTab === 'list' ? ' active' : '') + '" data-adtab="list">📋 작성 현황</button>' +
-        '<button class="asm-adtab-btn' + (S.adminTab === 'analysis' ? ' active' : '') + '" data-adtab="analysis">🎯 평가·분석</button>' +
-        '<button class="asm-adtab-btn' + (S.adminTab === 'consent' ? ' active' : '') + '" data-adtab="consent">🔒 동의 현황</button>' +
+        '<button class="asm-adtab-btn' + (S.adminTab === 'list' ? ' active' : '') + '" data-adtab="list">작성 현황</button>' +
+        '<button class="asm-adtab-btn' + (S.adminTab === 'analysis' ? ' active' : '') + '" data-adtab="analysis">평가·분석</button>' +
+        '<button class="asm-adtab-btn' + (S.adminTab === 'consent' ? ' active' : '') + '" data-adtab="consent">동의 현황</button>' +
       '</div>';
 
     S.root.innerHTML =
@@ -1788,7 +1788,7 @@ window.AssessmentModule = (function () {
         '<button class="asm-btn asm-btn-ghost asm-btn-sm" id="asm-sel-none">전체해제</button>' +
         '<span class="asm-flex1"></span>' +
         '<button class="asm-btn asm-btn-secondary asm-btn-sm" id="asm-admin-csv">CSV</button>' +
-        '<button class="asm-btn asm-btn-primary asm-btn-sm" id="asm-admin-pdf">📥 선택 PDF 다운로드</button>' +
+        '<button class="asm-btn asm-btn-primary asm-btn-sm" id="asm-admin-pdf">선택 PDF 다운로드</button>' +
       '</div>' +
       '<p class="asm-hint">헤더를 클릭하면 엑셀처럼 정렬됩니다. 여러 건 선택 시 ZIP으로, 1건 선택 시 PDF로 내려받습니다.</p>' +
       '<div class="asm-scroll"><table class="asm-table asm-admin-table">' +
@@ -1985,7 +1985,7 @@ window.AssessmentModule = (function () {
         '<div class="asm-modal-head"><b>' + esc(m.dept || '') + ' · ' + esc(m.name || '') + '</b>' +
           '<span class="asm-status ' + (m.status === 'submitted' ? 'asm-status-done' : 'asm-status-draft') + '">' + (m.status === 'submitted' ? '제출' : '작성중') + '</span>' +
           '<span class="asm-flex1"></span>' +
-          '<button class="asm-btn asm-btn-primary asm-btn-sm" id="asm-detail-pdf">📥 PDF 저장</button>' +
+          '<button class="asm-btn asm-btn-primary asm-btn-sm" id="asm-detail-pdf">PDF 저장</button>' +
           '<button class="asm-modal-x" id="asm-modal-x">✕</button></div>' +
         '<div class="asm-modal-body">' +
           buildDocHtml(m.form, m.meta) +
@@ -2151,8 +2151,8 @@ window.AssessmentModule = (function () {
       if (!results.length) resHtml = '<div class="asm-admin-empty">조건에 맞는 인원이 없습니다.</div>';
       else {
         resHtml = '<div class="asm-admin-actions"><b>분석 결과 ' + results.length + '명</b><span class="asm-flex1"></span>' +
-          '<button class="asm-btn asm-btn-secondary asm-btn-sm" id="an-export-md">📄 AI 기초자료(.md) 내보내기</button>' +
-          '<button class="asm-btn asm-btn-secondary asm-btn-sm" id="an-copy">📋 복사</button></div>' +
+          '<button class="asm-btn asm-btn-secondary asm-btn-sm" id="an-export-md">AI 기초자료(.md) 내보내기</button>' +
+          '<button class="asm-btn asm-btn-secondary asm-btn-sm" id="an-copy">복사</button></div>' +
           '<div class="asm-scroll"><table class="asm-table asm-admin-table"><thead><tr><th>순위</th>' +
             ansh('dept', '소속') + ansh('name', '성명') + ansh('jobGroup', '직군') + ansh('score', '매치 점수') +
             '<th>매칭 키워드</th><th>근거</th><th></th></tr></thead><tbody>' +
@@ -2179,7 +2179,7 @@ window.AssessmentModule = (function () {
           '<div class="an-field an-tot"><label class="asm-label">대상 인원</label><div class="an-count">' + rows.length + '명 (' + S.adminYear + ')</div></div>' +
         '</div>' +
         '<div class="an-field"><label class="asm-label">소속 필터 <span class="asm-muted">(선택 안 하면 전체)</span></label><div class="an-chips">' + deptChips + '</div></div>' +
-        '<div class="an-actions"><button class="asm-btn asm-btn-primary" id="an-run">🎯 분석 실행</button>' +
+        '<div class="an-actions"><button class="asm-btn asm-btn-primary" id="an-run">분석 실행</button>' +
           '<button class="asm-btn asm-btn-ghost" id="an-reset">초기화</button></div>' +
       '</div>' +
       '<div id="an-results">' + resHtml + '</div>';

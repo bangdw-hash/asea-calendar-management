@@ -8,7 +8,7 @@
 
 .rt-role-cards { display: flex; gap: 16px; flex-wrap: wrap; justify-content: center; max-width: 700px; margin: 0 auto 20px; }
 .rt-role-card  {
-  background: #fff; border: 2px solid #E5E7EB; border-radius: 14px;
+  background: #fff; border: 2px solid #E5E7EB; border-radius:12px;
   padding: 24px 28px; text-align: center; cursor: pointer; width: 190px;
   transition: border-color .2s, box-shadow .2s;
 }
@@ -28,7 +28,7 @@
 .rt-step-bar { display: flex; gap: 6px; margin-bottom: 18px; }
 .rt-step-item {
   flex: 1; text-align: center; padding: 8px 4px; font-size: 12px;
-  background: #F3F4F6; border-radius: 6px; color: #9CA3AF; font-weight: 500;
+  background: #F3F4F6; border-radius:12px; color: #9CA3AF; font-weight: 500;
 }
 .rt-step-item.active { background: #1a3a5c; color: #fff; font-weight: 700; }
 .rt-step-item.done   { background: #DCFCE7; color: #16A34A; }
@@ -44,7 +44,7 @@
 .rt-section-title {
   font-size: 13px; font-weight: 700; color: #1a3a5c;
   background: #EFF6FF; border-left: 3px solid #1a3a5c;
-  padding: 6px 10px; margin: 14px 0 8px; border-radius: 0 4px 4px 0;
+  padding: 6px 10px; margin: 14px 0 8px; border-radius:0 12px 12px 0;
 }
 
 /* 폼 행/필드 — hr.css 재사용 가능하나 접두사 변경 */
@@ -59,7 +59,7 @@
 
 .rt-label { font-size: 12px; font-weight: 600; color: #374151; }
 .rt-input {
-  padding: 7px 10px; border: 1.5px solid #D1D5DB; border-radius: 6px;
+  padding: 7px 10px; border: 1.5px solid #D1D5DB; border-radius:12px;
   font-size: 13px; color: #111; background: #fff; transition: border-color .15s;
   width: 100%; box-sizing: border-box;
 }
@@ -70,7 +70,7 @@ textarea.rt-input { resize: vertical; min-height: 80px; }
 /* 버튼 */
 .rt-btn {
   padding: 9px 16px; font-size: 13px; font-weight: 600; border: none;
-  border-radius: 8px; cursor: pointer; transition: opacity .15s;
+  border-radius:12px; cursor: pointer; transition: opacity .15s;
 }
 .rt-btn:hover { opacity: .87; }
 .rt-btn-primary { background: #1a3a5c; color: #fff; }
@@ -81,15 +81,15 @@ textarea.rt-input { resize: vertical; min-height: 80px; }
 
 /* 안내 박스 */
 .rt-info-box {
-  background: #EFF6FF; border: 1px solid #BFDBFE; border-radius: 8px;
+  background: #EFF6FF; border: 1px solid #BFDBFE; border-radius:12px;
   padding: 14px; font-size: 12px; line-height: 1.8; margin-bottom: 14px;
 }
 .rt-warn-box {
-  background: #FEF3C7; border: 1px solid #FCD34D; border-radius: 6px;
+  background: #FEF3C7; border: 1px solid #FCD34D; border-radius:12px;
   padding: 10px 12px; font-size: 12px; color: #92400E; margin: 8px 0;
 }
 .rt-success-box {
-  background: #DCFCE7; border: 1px solid #86EFAC; border-radius: 8px;
+  background: #DCFCE7; border: 1px solid #86EFAC; border-radius:12px;
   padding: 16px; font-size: 13px; color: #15803D; margin-bottom: 14px; line-height: 1.8;
 }
 
@@ -104,7 +104,7 @@ textarea.rt-input { resize: vertical; min-height: 80px; }
 /* 서명 패드 */
 .rt-sig-wrap { display: flex; flex-direction: column; gap: 4px; }
 .rt-sig-canvas {
-  border: 1.5px solid #D1D5DB; border-radius: 8px;
+  border: 1.5px solid #D1D5DB; border-radius:12px;
   background: #fff; cursor: crosshair; touch-action: none;
 }
 .rt-sig-hint { font-size: 11px; color: #9CA3AF; }
@@ -117,7 +117,7 @@ textarea.rt-input { resize: vertical; min-height: 80px; }
 }
 .rt-mgr-row {
   display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
-  background: #fff; border: 1.5px solid #E5E7EB; border-radius: 10px;
+  background: #fff; border: 1.5px solid #E5E7EB; border-radius:12px;
   padding: 12px 14px; margin-bottom: 8px;
 }
 .rt-mgr-row:hover { border-color: #CBD5E1; }
@@ -133,7 +133,7 @@ textarea.rt-input { resize: vertical; min-height: 80px; }
 
 /* 반납 체크리스트 박스 */
 .rt-return-box {
-  background: #FEF9EC; border: 1px solid #FCD34D; border-radius: 8px;
+  background: #FEF9EC; border: 1px solid #FCD34D; border-radius:12px;
   padding: 12px 14px; font-size: 12px; color: #92400E; margin-top: 14px;
 }
 
@@ -160,7 +160,7 @@ textarea.rt-input { resize: vertical; min-height: 80px; }
 /* 인증 화면 (최초작성/중간수정) */
 .rt-auth-wrap { max-width: 440px; margin: 0 auto; padding: 24px 16px; }
 .rt-auth-box  {
-  background: #fff; border: 1.5px solid #E5E7EB; border-radius: 14px;
+  background: #fff; border: 1.5px solid #E5E7EB; border-radius:12px;
   padding: 28px 24px; text-align: center;
 }
 .rt-auth-icon  { font-size: 40px; margin-bottom: 10px; }
@@ -169,7 +169,7 @@ textarea.rt-input { resize: vertical; min-height: 80px; }
 .rt-auth-label { display: block; font-size: 12px; font-weight: 600; color: #374151; text-align: left; margin-bottom: 4px; }
 .rt-auth-input {
   display: block; width: 100%; box-sizing: border-box;
-  padding: 9px 12px; border: 1.5px solid #D1D5DB; border-radius: 8px;
+  padding: 9px 12px; border: 1.5px solid #D1D5DB; border-radius:12px;
   font-size: 14px; color: #111; margin-bottom: 4px;
 }
 .rt-auth-input:focus { outline: none; border-color: #1a3a5c; }
@@ -177,7 +177,7 @@ textarea.rt-input { resize: vertical; min-height: 80px; }
 
 /* 코드 카드 (관리자 코드 목록) */
 .rt-code-card {
-  background: #fff; border: 1.5px solid #E5E7EB; border-radius: 10px;
+  background: #fff; border: 1.5px solid #E5E7EB; border-radius:12px;
   padding: 14px 16px; margin-bottom: 10px;
 }
 .rt-code-meta  { display: flex; gap: 12px; align-items: flex-start; }
@@ -188,7 +188,7 @@ textarea.rt-input { resize: vertical; min-height: 80px; }
 .rt-mgr-tabs { display: flex; gap: 4px; margin-bottom: 14px; }
 .rt-mgr-tab {
   padding: 8px 18px; font-size: 13px; font-weight: 600; border: none;
-  border-radius: 8px; cursor: pointer; background: #F3F4F6; color: #6B7280;
+  border-radius:12px; cursor: pointer; background: #F3F4F6; color: #6B7280;
   transition: background .15s, color .15s;
 }
 .rt-mgr-tab.active { background: #1a3a5c; color: #fff; }
@@ -200,7 +200,7 @@ textarea.rt-input { resize: vertical; min-height: 80px; }
 /* 빈 상태 */
 .rt-empty {
   text-align: center; padding: 32px; color: #9CA3AF;
-  font-size: 14px; background: #F9FAFB; border-radius: 10px; margin-top: 8px;
+  font-size: 14px; background: #F9FAFB; border-radius:12px; margin-top: 8px;
 }
 
 /* 추가 필드 너비 */

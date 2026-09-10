@@ -10,7 +10,7 @@
   --prm-border:  #D0E4F5;
   --prm-text:    #202124;
   --prm-muted:   #5f6368;
-  --prm-radius:  10px;
+  --prm-radius:  12px;
 }
 
 .prm-wrap { max-width: 1100px; margin: 0 auto; padding: 20px 16px 60px; }
@@ -59,7 +59,7 @@
 /* 즉시 전환 버튼들 */
 .prm-sw-row { display: flex; gap: 7px; flex-wrap: wrap; }
 .prm-sw-btn {
-  padding: 6px 12px; border-radius: 8px; border: 1.5px solid rgba(255,255,255,.3);
+  padding: 6px 12px; border-radius: 12px; border: 1.5px solid rgba(255,255,255,.3);
   background: rgba(255,255,255,.12); color: #fff;
   font-size: 12px; font-weight: 700; cursor: pointer; transition: .15s;
   font-family: inherit; white-space: nowrap; display: flex; align-items: center; gap: 4px;
@@ -79,7 +79,7 @@
 /* URL 바 */
 .prm-status-urls {
   display: flex; flex-direction: column; gap: 6px;
-  background: rgba(0,0,0,.25); border-radius: 8px; padding: 10px 12px;
+  background: rgba(0,0,0,.25); border-radius: 12px; padding: 10px 12px;
 }
 .prm-url-item { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .prm-url-lbl  { font-size: 10px; font-weight: 700; color: rgba(255,255,255,.7);
@@ -92,7 +92,7 @@
 ══════════════════════════════════════════════════════════ */
 .prm-type-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
 .prm-type-card {
-  cursor: pointer; border: 2px solid var(--prm-border); border-radius: 10px;
+  cursor: pointer; border: 2px solid var(--prm-border); border-radius: 12px;
   padding: 10px 12px; display: flex; flex-direction: column; align-items: center;
   gap: 4px; transition: .15s; flex: 1; min-width: 80px; max-width: 130px;
   text-align: center; user-select: none;
@@ -101,19 +101,19 @@
 .prm-type-sel  { border-color: var(--prm-accent) !important; background: #e8f2fc !important; }
 .prm-type-icon { font-size: 20px; }
 .prm-type-lbl  { font-size: 12px; font-weight: 800; color: var(--prm-text); }
-.prm-type-badge { font-size: 10px; padding: 1px 7px; border-radius: 20px;
+.prm-type-badge { font-size: 10px; padding: 1px 7px; border-radius: 12px;
   background: #e8f2fc; color: var(--prm-accent); font-weight: 700; }
 .prm-type-desc {
   font-size: 12px; color: #555; line-height: 1.7;
   background: #f8faff; border: 1px solid var(--prm-border);
-  border-radius: 6px; padding: 8px 12px;
+  border-radius: 12px; padding: 8px 12px;
 }
 
 /* ══════════════════════════════════════════════════════════
    ③ 서식 설정 (접이식)
 ══════════════════════════════════════════════════════════ */
 .prm-format-details {
-  border: 1px solid var(--prm-border); border-radius: 8px;
+  border: 1px solid var(--prm-border); border-radius: 12px;
   margin-bottom: 18px; overflow: hidden;
 }
 .prm-format-summary {
@@ -131,13 +131,13 @@
 .prm-lt-row { display: flex; gap: 8px; flex-wrap: wrap; }
 .prm-lt-card {
   cursor: pointer; border: 2px solid var(--prm-border);
-  border-radius: 8px; padding: 6px 8px; display: flex; flex-direction: column;
+  border-radius: 12px; padding: 6px 8px; display: flex; flex-direction: column;
   align-items: center; gap: 4px; transition: .15s; min-width: 72px;
 }
 .prm-lt-card:hover { border-color: var(--prm-accent); background: #f0f7ff; }
 .prm-lt-sel  { border-color: var(--prm-accent) !important; background: #e8f2fc !important; }
 .prm-lt-thumb {
-  width: 56px; height: 36px; border-radius: 4px; border: 1px solid #ccc;
+  width: 56px; height: 36px; border-radius: 12px; border: 1px solid #ccc;
   display: block; overflow: hidden; position: relative;
 }
 .prm-lt-full-top::before { content:''; position:absolute; left:0;top:0;right:0;height:65%; background:#C8185A; }
@@ -147,17 +147,17 @@
 .prm-lt-lbl { font-size: 10px; font-weight: 700; color: var(--prm-text); white-space: nowrap; }
 
 /* 폰트 샘플 */
-.prm-sel { padding:7px 10px; border:1.5px solid var(--prm-border); border-radius:8px;
+.prm-sel { padding:7px 10px; border:1.5px solid var(--prm-border); border-radius:12px;
   font-size:13px; font-family:inherit; outline:none; }
 .prm-sel:focus { border-color: var(--prm-accent); }
 .prm-font-sample { padding:6px 12px; background:#f8faff; border:1px solid var(--prm-border);
-  border-radius:6px; font-size:14px; }
+  border-radius:12px; font-size:14px; }
 
 /* 테마 */
 .prm-theme-row { display:flex; gap:6px; flex-wrap:wrap; }
 .prm-theme-lbl { cursor:pointer; }
 .prm-theme-chip {
-  display:inline-block; padding:5px 12px; border-radius:20px;
+  display:inline-block; padding:5px 12px; border-radius:12px;
   font-size:12px; font-weight:700; transition:.15s;
   border: 2px solid transparent;
   background: color-mix(in srgb, var(--tc) 15%, white);
@@ -168,7 +168,7 @@ input[type=radio][name=prm-theme]:checked + .prm-theme-chip {
 }
 .prm-custom-row { display:flex; align-items:center; gap:8px; margin-top:8px; }
 .prm-color-inp  { width:34px; height:26px; border:1px solid var(--prm-border);
-  border-radius:4px; padding:2px; cursor:pointer; }
+  border-radius:12px; padding:2px; cursor:pointer; }
 
 /* ══════════════════════════════════════════════════════════
    ④ 텍스트 필드
@@ -178,7 +178,7 @@ input[type=radio][name=prm-theme]:checked + .prm-theme-chip {
 }
 .prm-field-badge {
   flex-shrink: 0; min-width: 42px; padding: 4px 8px;
-  border-radius: 6px; font-size: 11px; font-weight: 700;
+  border-radius: 12px; font-size: 11px; font-weight: 700;
   text-align: center; margin-top: 2px;
 }
 .prm-badge-tag   { background:#fef3c7; color:#92400e; }
@@ -187,13 +187,13 @@ input[type=radio][name=prm-theme]:checked + .prm-theme-chip {
 
 .prm-field-inp {
   flex: 1; padding: 8px 10px; border: 1.5px solid var(--prm-border);
-  border-radius: 8px; font-size: 13px; font-family: inherit; outline: none;
+  border-radius: 12px; font-size: 13px; font-family: inherit; outline: none;
   transition: border .15s;
 }
 .prm-field-inp:focus { border-color: var(--prm-accent); }
 .prm-field-ta {
   flex: 1; padding: 8px 10px; border: 1.5px solid var(--prm-border);
-  border-radius: 8px; font-size: 13px; font-family: inherit; outline: none;
+  border-radius: 12px; font-size: 13px; font-family: inherit; outline: none;
   resize: vertical; transition: border .15s;
 }
 .prm-field-ta:focus { border-color: var(--prm-accent); }
@@ -204,7 +204,7 @@ input[type=radio][name=prm-theme]:checked + .prm-theme-chip {
 .prm-ai-row .prm-field-inp { flex: 1; }
 .prm-err {
   margin-top: 8px; padding: 8px 12px; background: #fce8e6;
-  border-radius: 6px; font-size: 12px; color: #b31412;
+  border-radius: 12px; font-size: 12px; color: #b31412;
 }
 
 /* ══════════════════════════════════════════════════════════
@@ -213,7 +213,7 @@ input[type=radio][name=prm-theme]:checked + .prm-theme-chip {
 .prm-img-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .prm-img-zone { }
 .prm-drop {
-  border: 2px dashed var(--prm-border); border-radius: 8px;
+  border: 2px dashed var(--prm-border); border-radius: 12px;
   padding: 14px; text-align: center; cursor: pointer; transition: .15s;
   font-size: 12px; color: var(--prm-muted); min-height: 60px;
   display: flex; align-items: center; justify-content: center;
@@ -221,19 +221,19 @@ input[type=radio][name=prm-theme]:checked + .prm-theme-chip {
 .prm-drop:hover, .prm-drop-over { border-color: var(--prm-accent); background: #f0f7ff; }
 .prm-ins-list { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
 .prm-ins-item { display: flex; align-items: center; gap: 5px;
-  background: #f0f7ff; border-radius: 6px; padding: 3px 8px; font-size: 11px; }
-.prm-ins-item-img { height: 28px; border-radius: 3px; }
+  background: #f0f7ff; border-radius: 12px; padding: 3px 8px; font-size: 11px; }
+.prm-ins-item-img { height: 28px; border-radius: 12px; }
 .prm-ins-item-name { max-width: 80px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .prm-ins-del { background: none; border: none; color: #c00; cursor: pointer; font-size: 13px; }
 .prm-ins-thumbs { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
-.prm-ins-thumb  { height: 48px; border-radius: 4px; border: 1px solid var(--prm-border); }
+.prm-ins-thumb  { height: 48px; border-radius: 12px; border: 1px solid var(--prm-border); }
 
 /* ══════════════════════════════════════════════════════════
    ⑥ 미리보기 (16:9)
 ══════════════════════════════════════════════════════════ */
 .prm-pv-slide {
   position: relative; width: 100%; padding-bottom: 56.25%;
-  border-radius: 8px; overflow: hidden;
+  border-radius: 12px; overflow: hidden;
   box-shadow: 0 2px 8px rgba(0,0,0,.12); margin-bottom: 14px;
 }
 .prm-pv-full-top  { background: #fff; }
@@ -291,7 +291,7 @@ input[type=radio][name=prm-theme]:checked + .prm-theme-chip {
    버튼
 ══════════════════════════════════════════════════════════ */
 .prm-btn {
-  padding: 8px 16px; border-radius: 8px; border: none;
+  padding: 8px 16px; border-radius: 12px; border: none;
   font-size: 13px; font-weight: 700; cursor: pointer;
   transition: .15s; font-family: inherit; white-space: nowrap;
   display: inline-flex; align-items: center; gap: 5px;
@@ -305,7 +305,7 @@ input[type=radio][name=prm-theme]:checked + .prm-theme-chip {
 .prm-btn-ai:hover { background: #7c3aed; }
 .prm-btn-ai:disabled { background: #aaa; cursor: default; }
 .prm-btn-sm  { padding: 5px 10px; font-size: 11px; }
-.prm-btn-xs  { padding: 3px 8px; font-size: 10px; border-radius: 5px; }
+.prm-btn-xs  { padding: 3px 8px; font-size: 10px; border-radius: 12px; }
 
 .prm-spin {
   display: inline-block; width: 13px; height: 13px;
@@ -323,7 +323,7 @@ input[type=radio][name=prm-theme]:checked + .prm-theme-chip {
   font-weight: 700; color: var(--prm-accent2); border-bottom: 2px solid var(--prm-border); }
 .prm-tbl td { padding: 8px 10px; border-bottom: 1px solid #f0f4f8; }
 .prm-td-title { max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.prm-chip { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 700; }
+.prm-chip { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 700; }
 .prm-s-ok   { background: #dcfce7; color: #14532d; }
 .prm-s-fail { background: #fce8e6; color: #b31412; }
 .prm-s-pend { background: #fef9c3; color: #854d0e; }

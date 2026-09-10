@@ -177,7 +177,7 @@
           (o.assigneeName ? ' &nbsp;→&nbsp; 담당: ' + esc(o.assigneeName) : '') +
         '</div>' +
         (o.content ? '<div class="wo-card-content">' + esc(o.content).replace(/\n/g,'<br>') + '</div>' : '') +
-        (o.note ? '<div class="wo-card-meta" style="margin-top:4px">📌 ' + esc(o.note) + '</div>' : '') +
+        (o.note ? '<div class="wo-card-meta" style="margin-top:4px">' + esc(o.note) + '</div>' : '') +
         '<div class="wo-card-actions" style="margin-top:8px">' + statusBtns(o) + '</div>' +
       '</div>';
     }).join('');
@@ -197,12 +197,12 @@
   }
 
   function statusBtns(o) {
-    var result = '<button class="btn btn-secondary btn-xs wo-edit-btn" data-id="' + o.id + '">✏️ 수정</button>';
+    var result = '<button class="btn btn-secondary btn-xs wo-edit-btn" data-id="' + o.id + '">수정</button>';
     if (o.status === '대기') {
       result += '<button class="btn btn-primary btn-xs wo-status-btn" data-id="' + o.id + '" data-row="' + o._row + '" data-status="진행중">▶ 진행 시작</button>';
     }
     if (o.status === '진행중') {
-      result += '<button class="btn btn-primary btn-xs wo-status-btn" data-id="' + o.id + '" data-row="' + o._row + '" data-status="완료">✅ 완료 처리</button>';
+      result += '<button class="btn btn-primary btn-xs wo-status-btn" data-id="' + o.id + '" data-row="' + o._row + '" data-status="완료">완료 처리</button>';
     }
     if (o.status !== '취소' && o.status !== '완료') {
       result += '<button class="btn btn-danger btn-xs wo-status-btn" data-id="' + o.id + '" data-row="' + o._row + '" data-status="취소">취소</button>';
@@ -396,12 +396,12 @@
     $('staff-list').innerHTML = active.map(function (s) {
       var sc = shiftColor[s.shift] || '#9AA0A6';
       return '<div class="card" style="display:flex;align-items:center;gap:14px">' +
-        '<span style="font-size:28px">👤</span>' +
+        '<span style="display:inline-flex"><svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="#9AA0A6" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4.4 3.6-8 8-8s8 3.6 8 8"/></svg></span>' +
         '<div style="flex:1">' +
           '<div style="font-weight:700;font-size:15px">' + esc(s.name) + '</div>' +
           '<div style="font-size:12px;color:var(--color-text-secondary)">' + esc(s.googleEmail||'') + (s.phone ? ' · ' + esc(s.phone) : '') + '</div>' +
         '</div>' +
-        (s.shift ? '<span style="background:' + sc + ';color:#fff;border-radius:6px;padding:4px 12px;font-size:12px;font-weight:600">' + esc(s.shift) + '</span>' : '') +
+        (s.shift ? '<span style="background:' + sc + ';color:#fff;border-radius:12px;padding:4px 12px;font-size:12px;font-weight:600">' + esc(s.shift) + '</span>' : '') +
       '</div>';
     }).join('');
   }
@@ -442,14 +442,14 @@
       var checkinUrl = (CONFIG.baseUrl || '') + 'checkin.html?room=' + sp.id;
       return '<div class="card" style="display:grid;grid-template-columns:1fr auto;gap:12px;align-items:start">' +
         '<div>' +
-          '<div style="font-size:16px;font-weight:700;margin-bottom:2px">🚪 ' + esc(sp.name) + '</div>' +
+          '<div style="font-size:16px;font-weight:700;margin-bottom:2px">' + esc(sp.name) + '</div>' +
           '<div style="font-size:12px;color:var(--color-text-secondary);margin-bottom:6px">' +
             esc(sp.location || '') + (sp.description ? ' · ' + esc(sp.description) : '') +
           '</div>' +
           '<div style="font-size:11px;color:#aaa;word-break:break-all">' + checkinUrl + '</div>' +
         '</div>' +
         '<div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">' +
-          '<button class="btn btn-primary btn-sm" onclick="_showQrModal(\'' + sp.id + '\')">🔲 QR 보기</button>' +
+          '<button class="btn btn-primary btn-sm" onclick="_showQrModal(\'' + sp.id + '\')">QR 보기</button>' +
           '<button class="btn btn-secondary btn-sm" onclick="_deleteSpace(' + (i+2) + ',\'' + esc(sp.name) + '\')">삭제</button>' +
         '</div>' +
       '</div>';
@@ -572,9 +572,9 @@
     var outCount = filtered.filter(function (l) { return l.checkType === '퇴실'; }).length;
     var unames   = new Set(filtered.map(function (l) { return l.userName; }));
     $('ci-summary').innerHTML =
-      _ciSummaryCard('✅ 입실', inCount, '#e8f5e9', '#2e7d32') +
-      _ciSummaryCard('🚪 퇴실', outCount, '#fce4ec', '#c62828') +
-      _ciSummaryCard('👤 인원', unames.size + '명', '#e3f2fd', '#1565c0');
+      _ciSummaryCard('입실', inCount, '#e8f5e9', '#2e7d32') +
+      _ciSummaryCard('퇴실', outCount, '#fce4ec', '#c62828') +
+      _ciSummaryCard('인원', unames.size + '명', '#e3f2fd', '#1565c0');
 
     if (!filtered.length) {
       $('ci-list').innerHTML = '<p class="empty-state">기록이 없습니다.</p>';
@@ -598,7 +598,7 @@
         var tStr = ts ? (String(ts.getHours()).padStart(2,'0') + ':' + String(ts.getMinutes()).padStart(2,'0')) : '';
         return '<tr style="border-bottom:1px solid #f0f2f5">' +
           '<td style="padding:8px;color:#5f6368">' + esc(tStr) + '</td>' +
-          '<td style="padding:8px"><span style="background:' + (isIn?'#e8f5e9':'#fce4ec') + ';color:' + (isIn?'#2e7d32':'#c62828') + ';border-radius:4px;padding:2px 8px;font-size:12px;font-weight:600">' + esc(l.checkType) + '</span></td>' +
+          '<td style="padding:8px"><span style="background:' + (isIn?'#e8f5e9':'#fce4ec') + ';color:' + (isIn?'#2e7d32':'#c62828') + ';border-radius:12px;padding:2px 8px;font-size:12px;font-weight:600">' + esc(l.checkType) + '</span></td>' +
           '<td style="padding:8px">' + esc(l.roomName || l.roomId) + '</td>' +
           '<td style="padding:8px;font-weight:600">' + esc(l.userName) + '</td>' +
           '<td style="padding:8px;color:#5f6368">' + esc(l.affiliation) + '</td>' +
@@ -609,7 +609,7 @@
   }
 
   function _ciSummaryCard(label, value, bg, color) {
-    return '<div style="background:' + bg + ';border-radius:10px;padding:14px 18px">' +
+    return '<div style="background:' + bg + ';border-radius:12px;padding:14px 18px">' +
       '<div style="font-size:12px;color:' + color + ';font-weight:600">' + label + '</div>' +
       '<div style="font-size:26px;font-weight:700;color:' + color + '">' + value + '</div>' +
     '</div>';

@@ -47,6 +47,41 @@
     }
     .hr-subtab-btn.active { color: #1a3a5c; border-bottom-color: #1a3a5c; }
     .hr-subtab-btn:hover:not(.active) { color: #374151; background: #F9FAFB; }
+
+    /* ── 모바일: 진한 단색 칩 대신 옅은 톤 + 텍스트 중심 (schedule.html 모바일 기준) ──
+       style.css의 진한 단색 배지·칩(.badge-admin, .work-status-tab.active 등)을
+       모바일 폭에서만 옅은 톤(tint)으로 낮춰 화면이 덜 알록달록해 보이도록 한다.
+       index.html 로드 순서상 style.css보다 뒤에 위치하므로 동일 우선순위(!important)에서
+       이 규칙이 우선 적용된다. */
+    @media (max-width:600px) {
+      /* 업무관리 상태 탭 — 꽉 찬 색 대신 옅은 톤 배경 + 강조 텍스트 */
+      .work-status-tab,
+      .work-status-tab-personal,
+      .personal-filter-btn {
+        border-radius: 12px !important;
+      }
+      .work-status-tab.active {
+        background: var(--color-accent-light, #E8F0FE) !important;
+        color: var(--color-accent, #1A73E8) !important;
+        border-color: var(--color-accent-light, #E8F0FE) !important;
+      }
+      .work-status-tab-personal.active {
+        background: #E6F4EA !important;
+        color: #0F9D58 !important;
+        border-color: #E6F4EA !important;
+      }
+      .personal-filter-btn.active {
+        background: var(--color-accent-light, #E8F0FE) !important;
+        color: var(--color-accent, #1A73E8) !important;
+        border-color: var(--color-accent-light, #E8F0FE) !important;
+      }
+      /* 관리자/개인설정 배지 — 꽉 찬 알약 대신 옅은 톤의 사각 배지 */
+      .badge-admin {
+        background: #FCE8E6 !important;
+        color: #B3261E !important;
+        border-radius: 12px !important;
+      }
+    }
   </style>
 </head>
 <body>
@@ -57,7 +92,7 @@
   <div id="login-overlay" class="login-overlay">
     <div class="login-card">
       <div class="login-logo">
-        <span class="login-logo-icon">📅</span>
+        <span class="login-logo-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:1em;height:1em;display:inline-block;vertical-align:-0.15em" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><line x1="16" y1="3" x2="16" y2="7"/><line x1="8" y1="3" x2="8" y2="7"/><line x1="3" y1="9" x2="21" y2="9"/></svg></span>
         <h1 class="login-title">ASEA 업무 관리</h1>
       </div>
       <p class="login-subtitle">행정업무 관리 시스템</p>
@@ -79,13 +114,13 @@
 
       <!-- 테스터(교직원) 처음 이용 안내 -->
       <details class="login-tester">
-        <summary>🧪 테스터(교직원) 처음 이용 안내 — 펼치기</summary>
+        <summary>테스터(교직원) 처음 이용 안내 — 펼치기</summary>
         <div class="login-tester-body">
           <ol>
             <li>아래 <b>앱 주소</b>를 본인 휴대폰·PC 브라우저에서 엽니다.
               <div class="login-tester-link">
                 <input id="tester-app-url" type="text" readonly value="https://bangdw-hash.github.io/asea-calendar-management/">
-                <button type="button" id="tester-copy-url" class="btn btn-secondary btn-sm" onclick="(function(b){var u=document.getElementById('tester-app-url');var t=u.value;function done(){var o=b.textContent;b.textContent='복사됨 ✓';setTimeout(function(){b.textContent=o;},1500);}try{navigator.clipboard.writeText(t).then(done,function(){u.select();document.execCommand('copy');done();});}catch(e){u.select();document.execCommand('copy');done();}})(this)">링크 복사</button>
+                <button type="button" id="tester-copy-url" class="btn btn-secondary btn-sm" onclick="(function(b){var u=document.getElementById('tester-app-url');var t=u.value;function done(){var o=b.textContent;b.textContent='복사됨';setTimeout(function(){b.textContent=o;},1500);}try{navigator.clipboard.writeText(t).then(done,function(){u.select();document.execCommand('copy');done();});}catch(e){u.select();document.execCommand('copy');done();}})(this)">링크 복사</button>
               </div>
             </li>
             <li><b>‘Google로 로그인’</b> → 본인 Gmail 계정 선택</li>
@@ -93,7 +128,7 @@
               <b>고급</b> → <b>‘…(으)로 이동(안전하지 않음)’</b> 클릭 <span class="muted">(테스트 단계라 정상입니다)</span></li>
             <li>권한 화면에서 <b>허용</b> → 완료</li>
           </ol>
-          <p class="login-tester-note">⚠️ 로그인이 안 되거나 “액세스 차단됨”이 뜨면, 관리자에게
+          <p class="login-tester-note">로그인이 안 되거나 “액세스 차단됨”이 뜨면, 관리자에게
             <b>본인 Gmail 주소</b>를 알려 <b>테스터 등록</b>을 요청하세요.
             <br>관리자: <a href="mailto:bangdw@gmail.com?subject=ASEA%20업무관리%20테스터%20등록%20요청&body=등록할%20Gmail%20주소:%20">bangdw@gmail.com 으로 요청 메일 보내기</a></p>
         </div>
@@ -109,12 +144,12 @@
     <!-- ── 헤더 ────────────────────────────────────────────────── -->
     <header class="app-header">
       <div class="header-brand">
-        <span class="header-icon" aria-hidden="true">📅</span>
+        <span class="header-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:1em;height:1em;display:inline-block;vertical-align:-0.15em"><rect x="3" y="5" width="18" height="16" rx="2"/><line x1="16" y1="3" x2="16" y2="7"/><line x1="8" y1="3" x2="8" y2="7"/><line x1="3" y1="9" x2="21" y2="9"/></svg></span>
         <span class="header-title">ASEA 업무 관리</span>
       </div>
       <div class="header-actions">
         <button id="sync-calendars-btn" class="btn btn-secondary btn-sm" title="내 캘린더 목록 불러오기">
-          🔄 캘린더 불러오기
+          캘린더 불러오기
         </button>
       </div>
       <div class="header-user">
@@ -242,7 +277,7 @@
     <span class="tab-label">문자발송</span>
   </button>
 
-  <!-- 📌 게시판 -->
+  <!-- 게시판 -->
   <button class="tab-btn" data-tab="board" role="tab" aria-selected="false">
     <svg class="tab-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
       <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
@@ -305,7 +340,7 @@
     <span class="tab-label">설정</span>
   </button>
 
-  <!-- 🛡 관리자 (admin만 표시) -->
+  <!-- 관리자 (admin만 표시) -->
   <button class="tab-btn" data-tab="admin" role="tab" aria-selected="false" style="display:none">
     <svg class="tab-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
       <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
@@ -313,7 +348,7 @@
     <span class="tab-label">관리자</span>
   </button>
 
-  <!-- 🤖 AI제공자 (admin만 표시) -->
+  <!-- AI제공자 (admin만 표시) -->
   <button class="tab-btn" data-tab="ai-provider" role="tab" aria-selected="false" style="display:none">
     <svg class="tab-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
       <rect x="4" y="7" width="16" height="12" rx="3"/><path d="M12 3v4M9 13h.01M15 13h.01M8 19l-1 2M16 19l1 2"/>
@@ -367,7 +402,7 @@
     <main class="tab-content">
 
       <!-- ════════════════════════════════════════════════════
-           📅 캘린더 탭
+           캘린더 탭
            ════════════════════════════════════════════════════ -->
       <section id="tab-calendar" class="tab-panel active" role="tabpanel">
         <div class="calendar-toolbar">
@@ -419,7 +454,7 @@
         <div id="calendar-filter-panel" class="calendar-filter-panel" hidden>
           <div class="filter-panel-header">
             <span class="filter-panel-title">표시할 캘린더 선택</span>
-            <button id="sync-filter-calendars-btn" class="btn btn-ghost btn-sm" title="구글 캘린더와 목록 동기화">🔄 동기화</button>
+            <button id="sync-filter-calendars-btn" class="btn btn-ghost btn-sm" title="구글 캘린더와 목록 동기화">동기화</button>
             <button id="close-filter-panel" class="btn btn-ghost btn-sm">✕</button>
           </div>
           <div id="calendar-filter-list" class="calendar-filter-list"></div>
@@ -430,7 +465,7 @@
 
         <!-- 중복 경고 배너 -->
         <div id="duplicate-banner" class="alert alert-warning" hidden role="alert">
-          <span class="alert-icon" aria-hidden="true">⚠</span>
+          <span class="alert-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px" aria-hidden="true"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>
           <span id="duplicate-banner-text"></span>
           <button class="alert-close" id="close-duplicate-banner" aria-label="닫기">✕</button>
         </div>
@@ -456,7 +491,7 @@
       </section>
 
       <!-- ════════════════════════════════════════════════════
-           📋 주간허브 탭
+           주간허브 탭
            ════════════════════════════════════════════════════ -->
       <section id="tab-weekly-hub" class="tab-panel" role="tabpanel" hidden>
         <div class="tab-body">
@@ -497,7 +532,7 @@
 
           <div class="hub-actions">
             <button id="bulk-approve-btn" class="btn btn-success" disabled>
-              ✅ 전체 승인 → 캘린더 등록
+              전체 승인 → 캘린더 등록
             </button>
           </div>
         </div>
@@ -506,29 +541,29 @@
       </section>
 
       <!-- ════════════════════════════════════════════════════
-           📋 보고 탭 (주간업무보고서)
+           보고 탭 (주간업무보고서)
            ════════════════════════════════════════════════════ -->
       <section id="tab-report" class="tab-panel" role="tabpanel" hidden>
         <div id="rpt-root"></div>
       </section>
 
       <!-- ════════════════════════════════════════════════════
-           📣 홍보슬라이드 탭
+           홍보슬라이드 탭
            ════════════════════════════════════════════════════ -->
       <section id="tab-promo" class="tab-panel" role="tabpanel" hidden>
         <!-- PromoModule.init()이 이 패널 안에 직접 렌더링 -->
       </section>
 
       <!-- ════════════════════════════════════════════════════
-           ✉️ 이메일 탭
+           이메일 탭
            ════════════════════════════════════════════════════ -->
       <section id="tab-email" class="tab-panel" role="tabpanel" hidden>
         <div class="tab-body">
         <h2 class="section-title"><svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>이메일 발송</h2>
         <!-- 이메일 내부 탭 -->
         <div class="email-subtabs">
-          <button class="email-subtab active" data-etab="compose">✉️ 메일 작성</button>
-          <button class="email-subtab" data-etab="history">📜 발송 이력</button>
+          <button class="email-subtab active" data-etab="compose">메일 작성</button>
+          <button class="email-subtab" data-etab="history">발송 이력</button>
         </div>
 
         <!-- 메일 작성 -->
@@ -550,7 +585,7 @@
                     <input type="checkbox" id="select-all-recipients">
                     <span>전체 선택</span>
                   </label>
-                  <button id="import-recipients-btn" class="btn btn-ghost btn-sm">📁 파일로 일괄 등록</button>
+                  <button id="import-recipients-btn" class="btn btn-ghost btn-sm">파일로 일괄 등록</button>
                 </div>
               </div>
               <div id="recipients-list" class="recipients-list">
@@ -603,7 +638,7 @@
       </section>
 
       <!-- ════════════════════════════════════════════════════
-           📄 일정발췌 탭
+           일정발췌 탭
            ════════════════════════════════════════════════════ -->
       <section id="tab-extract" class="tab-panel" role="tabpanel" hidden>
         <div class="tab-body">
@@ -611,9 +646,9 @@
 
         <!-- 서브탭 -->
         <div class="email-subtabs" role="tablist">
-          <button class="email-subtab active" data-etab="extract-main" role="tab">📄 추출</button>
-          <button class="email-subtab" data-etab="extract-history" role="tab">🗂 추출 이력</button>
-          <button class="email-subtab" data-etab="share-history" role="tab">🔗 공유 이력</button>
+          <button class="email-subtab active" data-etab="extract-main" role="tab">추출</button>
+          <button class="email-subtab" data-etab="extract-history" role="tab">추출 이력</button>
+          <button class="email-subtab" data-etab="share-history" role="tab">공유 이력</button>
         </div>
 
         <!-- 추출 패널 -->
@@ -623,15 +658,15 @@
             <!-- 좌: 업로드 -->
             <div class="extract-upload-area">
               <div id="pdf-dropzone" class="csv-dropzone" role="button" tabindex="0">
-                <span class="csv-dropzone-icon">📄</span>
+                <span class="csv-dropzone-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:1em;height:1em;display:inline-block" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></span>
                 <p>PDF 파일을 드래그하거나 클릭하여 업로드</p>
                 <input id="pdf-file-input" type="file" accept=".pdf,application/pdf" style="display:none">
               </div>
               <div id="pdf-file-info" class="pdf-file-info" hidden></div>
 
               <!-- API 키 인라인 입력 — AI제공자 메뉴로 일원화되어 숨김(공용 제공자 사용) -->
-              <div id="extract-api-box" style="display:none;margin-top:14px;padding:12px 14px;background:var(--color-accent-light,#E5F2FB);border:1px solid var(--color-border,#D6E4F0);border-radius:10px">
-                <div style="font-size:12px;font-weight:600;color:var(--color-accent,#0078D4);margin-bottom:8px">🔑 Claude API 키</div>
+              <div id="extract-api-box" style="display:none;margin-top:14px;padding:12px 14px;background:var(--color-accent-light,#E5F2FB);border:1px solid var(--color-border,#D6E4F0);border-radius:12px">
+                <div style="font-size:12px;font-weight:600;color:var(--color-accent,#0078D4);margin-bottom:8px">Claude API 키</div>
                 <div style="display:flex;flex-direction:column;gap:6px">
                   <input id="extract-api-key" type="password" class="form-input"
                     placeholder="API 키 입력 (공식 또는 aiapiflow 프록시 — 자동 판별)"
@@ -640,8 +675,8 @@
                   <input id="extract-api-base-url" type="hidden" value="">
                   <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
                     <button id="extract-save-api-btn" class="btn btn-primary btn-sm" style="font-size:12px;padding:5px 14px">저장</button>
-                    <button id="extract-test-api-btn" class="btn btn-secondary btn-sm" style="font-size:12px;padding:5px 14px">🔌 연결 점검</button>
-                    <span id="extract-api-saved-msg" style="font-size:11px;color:#2e7d32;display:none">✔ 저장됨</span>
+                    <button id="extract-test-api-btn" class="btn btn-secondary btn-sm" style="font-size:12px;padding:5px 14px">연결 점검</button>
+                    <span id="extract-api-saved-msg" style="font-size:11px;color:#2e7d32;display:none">저장됨</span>
                   </div>
                   <p id="extract-api-test-msg" style="font-size:11px;margin:0;display:none"></p>
                   <p style="font-size:11px;color:#888;margin:0">Claude 공식 API 키(<strong>sk-ant-api03-…</strong>)를 입력하세요. api.anthropic.com 에 직접 연결됩니다.</p>
@@ -649,7 +684,7 @@
               </div>
 
               <button id="run-extract-btn" class="btn btn-primary" style="width:100%;margin-top:12px" disabled>
-                🤖 AI로 일정 추출
+                AI로 일정 추출
               </button>
             </div>
 
@@ -661,25 +696,25 @@
                   <div class="exa-group" role="group" aria-label="선택">
                     <button id="extract-select-all" class="btn btn-ghost btn-sm" title="추출된 모든 일정을 선택(체크)합니다">전체 선택</button>
                     <button id="extract-deselect-all" class="btn btn-ghost btn-sm" title="모든 일정의 선택(체크)을 해제합니다">전체 취소</button>
-                    <button id="extract-deselect-conflict" class="btn btn-ghost btn-sm extract-conflict-btn" disabled title="충돌·중복으로 표시된 항목의 선택을 한 번에 해제합니다">⚠ 충돌·중복 취소</button>
-                    <button id="extract-delete-selected-btn" class="btn btn-ghost btn-sm" style="color:#d32f2f" title="선택한 일정을 추출 목록에서 삭제합니다(캘린더 등록 전)">🗑️ 선택 삭제</button>
+                    <button id="extract-deselect-conflict" class="btn btn-ghost btn-sm extract-conflict-btn" disabled title="충돌·중복으로 표시된 항목의 선택을 한 번에 해제합니다">충돌·중복 취소</button>
+                    <button id="extract-delete-selected-btn" class="btn btn-ghost btn-sm" style="color:#d32f2f" title="선택한 일정을 추출 목록에서 삭제합니다(캘린더 등록 전)">선택 삭제</button>
                   </div>
                   <span class="exa-div" aria-hidden="true"></span>
                   <div class="exa-group" role="group" aria-label="검사·도구">
-                    <button id="extract-check-conflict-btn" class="btn btn-secondary btn-sm" title="선택한 캘린더의 기존 일정과 시간이 겹치는지(+제목 유사) 확인합니다">🔍 충돌 확인</button>
-                    <button id="extract-ai-dup-btn" class="btn btn-secondary btn-sm" title="선택한 '등록 캘린더'의 기존 일정(발췌기간 ±3주)과 부서·명칭(의미)·날짜로 같은 업무(중복)인지 AI가 판정합니다. 먼저 등록 캘린더를 선택하세요.">🤖 AI 중복 검사</button>
-                    <button id="extract-split-btn" class="btn btn-ghost btn-sm" title="선택한 다일(2일 이상) 일정을 시작·종료 2개로 분리합니다">✂️ 시작/종료 분리</button>
-                    <button id="extract-text-btn" class="btn btn-ghost btn-sm" title="추출된 일정을 텍스트(표) 형태로 봅니다">📋 텍스트 보기</button>
-                    <button id="extract-save-state-btn" class="btn btn-ghost btn-sm" title="현재 추출·검토 상태를 저장해 두고 나중에 이어서 작업합니다">💾 상태 저장</button>
-                    <button id="extract-gen-share-url-btn" class="btn btn-ghost btn-sm" title="선택한 일정을 공유 링크(URL)로 만들어 다른 사람에게 전달합니다">📤 공유</button>
+                    <button id="extract-check-conflict-btn" class="btn btn-secondary btn-sm" title="선택한 캘린더의 기존 일정과 시간이 겹치는지(+제목 유사) 확인합니다">충돌 확인</button>
+                    <button id="extract-ai-dup-btn" class="btn btn-secondary btn-sm" title="선택한 '등록 캘린더'의 기존 일정(발췌기간 ±3주)과 부서·명칭(의미)·날짜로 같은 업무(중복)인지 AI가 판정합니다. 먼저 등록 캘린더를 선택하세요.">AI 중복 검사</button>
+                    <button id="extract-split-btn" class="btn btn-ghost btn-sm" title="선택한 다일(2일 이상) 일정을 시작·종료 2개로 분리합니다">시작/종료 분리</button>
+                    <button id="extract-text-btn" class="btn btn-ghost btn-sm" title="추출된 일정을 텍스트(표) 형태로 봅니다">텍스트 보기</button>
+                    <button id="extract-save-state-btn" class="btn btn-ghost btn-sm" title="현재 추출·검토 상태를 저장해 두고 나중에 이어서 작업합니다">상태 저장</button>
+                    <button id="extract-gen-share-url-btn" class="btn btn-ghost btn-sm" title="선택한 일정을 공유 링크(URL)로 만들어 다른 사람에게 전달합니다">공유</button>
                   </div>
                   <span class="exa-div" aria-hidden="true"></span>
                   <div class="exa-group exa-group-register" role="group" aria-label="등록">
                     <div class="extract-cal-ms" id="extract-cal-ms">
-                      <button type="button" id="extract-cal-ms-btn" class="btn btn-secondary btn-sm" style="min-width:150px" title="등록할 캘린더를 복수로 선택합니다(여러 캘린더에 동시 등록)">📅 등록 캘린더 선택 ▾</button>
+                      <button type="button" id="extract-cal-ms-btn" class="btn btn-secondary btn-sm" style="min-width:150px" title="등록할 캘린더를 복수로 선택합니다(여러 캘린더에 동시 등록)">등록 캘린더 선택 ▾</button>
                       <div class="extract-cal-ms-panel" id="extract-cal-ms-panel" hidden></div>
                     </div>
-                    <button id="extract-add-selected" class="btn btn-primary btn-sm" title="체크된 일정을 선택한 캘린더에 등록합니다(다일 일정은 시작/종료로 자동 분리)">✅ 선택 항목 등록</button>
+                    <button id="extract-add-selected" class="btn btn-primary btn-sm" title="체크된 일정을 선택한 캘린더에 등록합니다(다일 일정은 시작/종료로 자동 분리)">선택 항목 등록</button>
                   </div>
                 </div>
               </div>
@@ -688,12 +723,12 @@
               <!-- 텍스트 출력 영역 -->
               <div id="extract-text-area" hidden style="margin-top:16px">
                 <div class="extract-text-section-header">
-                  <strong>📋 선택 일정 텍스트</strong>
+                  <strong>선택 일정 텍스트</strong>
                   <button id="extract-text-copy" class="btn btn-ghost btn-sm">복사</button>
                 </div>
                 <textarea id="extract-text-output" class="form-input extract-textarea" rows="8" readonly></textarea>
                 <div class="extract-text-section-header" style="margin-top:12px">
-                  <strong>📅 주간 전체 일정 (요일순)</strong>
+                  <strong>주간 전체 일정 (요일순)</strong>
                   <button id="extract-weekly-copy" class="btn btn-ghost btn-sm">복사</button>
                 </div>
                 <textarea id="extract-weekly-output" class="form-input extract-textarea" rows="12" readonly></textarea>
@@ -727,7 +762,7 @@
       </section>
 
       <!-- ════════════════════════════════════════════════════
-           📋 업무관리 탭
+           업무관리 탭
            ════════════════════════════════════════════════════ -->
       <section id="tab-work" class="tab-panel" role="tabpanel" hidden>
         <div class="tab-body">
@@ -736,15 +771,15 @@
         <!-- 상단 액션 -->
         <div style="display:flex;justify-content:flex-end;margin-bottom:8px">
           <button id="work-cal-import-btn" class="btn btn-secondary btn-sm" title="구독 캘린더에서 업무 가져오기">
-            📥 캘린더 구독 가져오기
+            캘린더 구독 가져오기
           </button>
         </div>
 
         <!-- 서브탭 -->
         <div class="extract-subtabs" style="margin-bottom:16px">
-          <button class="extract-subtab-btn active" data-wtab="send">📤 업무발송</button>
-          <button class="extract-subtab-btn" data-wtab="my">📥 내 업무현황</button>
-          <button class="extract-subtab-btn" data-wtab="dept">📊 부서현황</button>
+          <button class="extract-subtab-btn active" data-wtab="send">업무발송</button>
+          <button class="extract-subtab-btn" data-wtab="my">내 업무현황</button>
+          <button class="extract-subtab-btn" data-wtab="dept">부서현황</button>
         </div>
 
         <!-- 업무발송 -->
@@ -759,20 +794,20 @@
               <div class="form-group" style="flex:1;min-width:140px">
                 <label class="form-label">업무 카테고리</label>
                 <select id="work-category" class="form-select">
-                  <option value="일반업무">📌 일반업무</option>
-                  <option value="교육일정">🎓 교육일정</option>
-                  <option value="행사">🎉 행사</option>
-                  <option value="대관">🏢 대관업무</option>
-                  <option value="차량">🚗 차량관리</option>
+                  <option value="일반업무">일반업무</option>
+                  <option value="교육일정">교육일정</option>
+                  <option value="행사">행사</option>
+                  <option value="대관">대관업무</option>
+                  <option value="차량">차량관리</option>
                 </select>
               </div>
               <div class="form-group" style="flex:1;min-width:140px">
                 <label class="form-label">소통 유형</label>
                 <select id="work-type" class="form-select">
-                  <option value="지시">📢 지시</option>
-                  <option value="협조">🤝 협조</option>
-                  <option value="공람">👁 공람</option>
-                  <option value="알림">🔔 알림</option>
+                  <option value="지시">지시</option>
+                  <option value="협조">협조</option>
+                  <option value="공람">공람</option>
+                  <option value="알림">알림</option>
                 </select>
               </div>
               <div class="form-group" style="flex:1;min-width:140px">
@@ -792,7 +827,7 @@
               <label class="form-label">수신자 <span class="required">*</span></label>
               <div style="display:flex;gap:8px;margin-bottom:8px">
                 <input id="work-recipient-search" type="text" class="form-input" placeholder="이름 또는 부서 검색...">
-                <button id="work-recipient-search-btn" class="btn btn-ghost btn-sm">🔍</button>
+                <button id="work-recipient-search-btn" class="btn btn-ghost btn-sm"></button>
               </div>
               <div id="work-recipient-results" class="work-recipient-results" hidden></div>
               <div id="work-recipients-selected" class="work-recipients-chips"></div>
@@ -813,14 +848,14 @@
               <label class="form-label">첨부파일</label>
               <div class="work-attach-area">
                 <label class="btn btn-ghost btn-sm" style="cursor:pointer">
-                  📎 파일 선택
+                  파일 선택
                   <input id="work-attach-input" type="file" multiple hidden>
                 </label>
                 <div id="work-attach-list" class="work-attach-list"></div>
               </div>
             </div>
             <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">
-              <button id="work-send-btn" class="btn btn-primary">📤 발송하기</button>
+              <button id="work-send-btn" class="btn btn-primary">발송하기</button>
             </div>
           </div>
         </div>
@@ -833,9 +868,9 @@
               <button class="work-status-tab" data-status="처리중">처리중 <span id="cnt-처리중" class="work-cnt">0</span></button>
               <button class="work-status-tab" data-status="완료">완료 <span id="cnt-완료" class="work-cnt">0</span></button>
               <button class="work-status-tab" data-status="발송">발송함 <span id="cnt-발송" class="work-cnt">0</span></button>
-              <button class="work-status-tab work-status-tab-personal" data-status="개인">📝 개인등록 <span id="cnt-개인" class="work-cnt">0</span></button>
+              <button class="work-status-tab work-status-tab-personal" data-status="개인">개인등록 <span id="cnt-개인" class="work-cnt">0</span></button>
             </div>
-            <button id="work-refresh-btn" class="btn btn-ghost btn-sm">🔄 새로고침</button>
+            <button id="work-refresh-btn" class="btn btn-ghost btn-sm">새로고침</button>
           </div>
           <div id="work-my-list" class="work-list">
             <p class="empty-state">업무 내역을 불러오는 중...</p>
@@ -846,7 +881,7 @@
         <div id="wtab-dept" class="email-subpanel" hidden>
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
             <h3 class="settings-section-title" style="margin:0" id="work-dept-title">부서 업무현황</h3>
-            <button id="work-dept-refresh-btn" class="btn btn-ghost btn-sm">🔄 새로고침</button>
+            <button id="work-dept-refresh-btn" class="btn btn-ghost btn-sm">새로고침</button>
           </div>
           <div id="work-dept-list" class="work-list">
             <p class="empty-state">부서 업무 내역을 불러오는 중...</p>
@@ -856,7 +891,7 @@
       </section>
 
       <!-- ════════════════════════════════════════════════════
-           🏢 대관업무 탭
+           대관업무 탭
            ════════════════════════════════════════════════════ -->
       <section id="tab-facility" class="tab-panel" role="tabpanel" hidden>
         <div class="tab-body">
@@ -864,24 +899,24 @@
           <h2 class="section-title" style="margin:0"><svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21h18M3 10h18M5 6l7-3 7 3M4 10v11M20 10v11M8 14v3M12 14v3M16 14v3"/></svg>대관업무 예약</h2>
           <div style="display:flex;gap:8px;align-items:center">
             <span id="fac-admin-link" style="display:none">
-              <a href="#" onclick="document.querySelector('[data-tab=admin]').click();return false" class="btn btn-ghost btn-sm">🛡 관리자 패널</a>
+              <a href="#" onclick="document.querySelector('[data-tab=admin]').click();return false" class="btn btn-ghost btn-sm">관리자 패널</a>
             </span>
           </div>
         </div>
 
         <!-- 서브탭 -->
         <div id="fac-subtab-bar" class="facility-subtab-bar" style="margin-bottom:16px">
-          <button class="subtab-btn active" data-subtab="calendar">📅 예약 캘린더</button>
-          <button class="subtab-btn" data-subtab="requests" id="fac-subtab-requests-btn" style="display:none">📋 신청 관리</button>
-          <button class="subtab-btn" data-subtab="fees" id="fac-subtab-fees-btn" style="display:none">💰 요금 관리</button>
-          <button class="subtab-btn" data-subtab="link" id="fac-subtab-link-btn">🔗 신청 링크</button>
+          <button class="subtab-btn active" data-subtab="calendar">예약 캘린더</button>
+          <button class="subtab-btn" data-subtab="requests" id="fac-subtab-requests-btn" style="display:none">신청 관리</button>
+          <button class="subtab-btn" data-subtab="fees" id="fac-subtab-fees-btn" style="display:none">요금 관리</button>
+          <button class="subtab-btn" data-subtab="link" id="fac-subtab-link-btn">신청 링크</button>
         </div>
 
         <!-- ── 서브탭: 예약 캘린더 ── -->
         <div id="fac-subtab-calendar">
           <!-- 선택 안내 바 -->
           <div class="sel-hint-bar">
-            <span class="sel-hint-guide">💡 <strong>드래그</strong>: 날짜 범위 선택 &nbsp;|&nbsp; <strong>Ctrl + 드래그</strong>: 비연속 날짜 추가</span>
+            <span class="sel-hint-guide"><strong>드래그</strong>: 날짜 범위 선택 &nbsp;|&nbsp; <strong>Ctrl + 드래그</strong>: 비연속 날짜 추가</span>
             <span id="fac-sel-hint" style="display:none;color:var(--primary);font-weight:600"></span>
             <button id="fac-clear-sel-btn" class="btn btn-ghost btn-sm" style="display:none;padding:2px 8px" onclick="document.getElementById('fac-sel-hint').textContent&&(this.style.display='')">선택 초기화</button>
           </div>
@@ -905,7 +940,7 @@
         <!-- ── 서브탭: 신청 관리 ── -->
         <div id="fac-subtab-requests" hidden>
           <div style="display:flex;gap:8px;align-items:center;margin-bottom:16px;flex-wrap:wrap">
-            <h3 style="margin:0;font-size:15px;font-weight:700">📋 대관신청 목록</h3>
+            <h3 style="margin:0;font-size:15px;font-weight:700">대관신청 목록</h3>
             <select id="fac-req-status-filter" class="form-select" style="max-width:120px">
               <option value="">전체</option>
               <option value="신청">신청</option>
@@ -915,17 +950,17 @@
             </select>
             <button class="btn btn-ghost btn-sm" onclick="FacilityModule&&typeof FacilityModule==='object'">새로고침</button>
             <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
-              <button id="fac-public-qr-btn" class="btn btn-ghost btn-sm" title="QR 코드 보기">🔗 공개 신청 링크</button>
+              <button id="fac-public-qr-btn" class="btn btn-ghost btn-sm" title="QR 코드 보기">공개 신청 링크</button>
             </div>
           </div>
           <!-- QR 공개 링크 패널 -->
           <div id="fac-qr-panel" hidden style="background:var(--color-bg-secondary);border-radius:12px;padding:16px;margin-bottom:16px;display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap">
-            <img id="fac-qr-img" src="" alt="QR Code" style="width:120px;height:120px;border-radius:8px;border:1px solid var(--color-border)">
+            <img id="fac-qr-img" src="" alt="QR Code" style="width:120px;height:120px;border-radius:12px;border:1px solid var(--color-border)">
             <div style="flex:1;min-width:200px">
-              <div style="font-size:13px;font-weight:600;margin-bottom:6px">📋 외부 대관신청 공개 링크</div>
-              <div id="fac-qr-url" style="font-size:11px;word-break:break-all;color:#888;margin-bottom:8px;background:#fff;padding:6px 8px;border-radius:6px;border:1px solid var(--color-border)"></div>
+              <div style="font-size:13px;font-weight:600;margin-bottom:6px">외부 대관신청 공개 링크</div>
+              <div id="fac-qr-url" style="font-size:11px;word-break:break-all;color:#888;margin-bottom:8px;background:#fff;padding:6px 8px;border-radius:12px;border:1px solid var(--color-border)"></div>
               <div style="display:flex;gap:6px;flex-wrap:wrap">
-                <button id="fac-qr-copy-btn" class="btn btn-primary btn-sm">📋 URL 복사</button>
+                <button id="fac-qr-copy-btn" class="btn btn-primary btn-sm">URL 복사</button>
                 <a id="fac-qr-open-btn" href="#" target="_blank" class="btn btn-secondary btn-sm">↗ 열어보기</a>
               </div>
               <p style="font-size:11px;color:#aaa;margin-top:8px">외부 사용자가 이 URL에 접속하여 신청서를 작성합니다. 신청 후 관리자에게 알림이 발송됩니다.</p>
@@ -934,7 +969,7 @@
 
           <!-- 프록시 설정 -->
           <div class="settings-card" style="margin-bottom:16px;padding:12px 16px">
-            <div style="font-size:13px;font-weight:600;margin-bottom:6px">🔗 알림 프록시 URL (GAS 배포 URL)</div>
+            <div style="font-size:13px;font-weight:600;margin-bottom:6px">알림 프록시 URL (GAS 배포 URL)</div>
             <div style="display:flex;gap:8px">
               <input id="fac-proxy-url-input" type="url" class="form-input" placeholder="https://script.google.com/macros/s/.../exec" style="flex:1;font-size:12px">
               <button id="fac-proxy-url-save" class="btn btn-primary btn-sm">저장</button>
@@ -950,33 +985,33 @@
         <div id="fac-subtab-link" hidden>
           <div style="max-width:640px;margin:0 auto">
             <div class="settings-card" style="margin-bottom:16px">
-              <h3 style="margin:0 0 12px;font-size:15px;font-weight:700">🔗 외부 대관신청 링크 공유</h3>
+              <h3 style="margin:0 0 12px;font-size:15px;font-weight:700">외부 대관신청 링크 공유</h3>
               <p style="font-size:13px;color:#666;margin-bottom:16px">아래 URL을 대관 희망자에게 공유하면, 요금을 조회하고 신청서를 작성할 수 있습니다. 접수된 신청은 <strong>신청 관리</strong> 탭에서 확인할 수 있습니다.</p>
-              <div style="background:#f8f9fa;border-radius:8px;padding:12px 16px;font-size:12px;word-break:break-all;color:#374151;border:1px solid #e5e7eb;margin-bottom:12px" id="fac-link-url-display">로딩 중...</div>
+              <div style="background:#f8f9fa;border-radius:12px;padding:12px 16px;font-size:12px;word-break:break-all;color:#374151;border:1px solid #e5e7eb;margin-bottom:12px" id="fac-link-url-display">로딩 중...</div>
               <div style="display:flex;gap:8px;flex-wrap:wrap">
-                <button id="fac-link-copy-btn" class="btn btn-primary btn-sm">📋 링크 복사</button>
+                <button id="fac-link-copy-btn" class="btn btn-primary btn-sm">링크 복사</button>
                 <a id="fac-link-open-btn" href="#" target="_blank" class="btn btn-secondary btn-sm">↗ 미리보기</a>
               </div>
             </div>
             <div class="settings-card">
-              <h4 style="margin:0 0 8px;font-size:14px;font-weight:600">📱 QR 코드</h4>
+              <h4 style="margin:0 0 8px;font-size:14px;font-weight:600">QR 코드</h4>
               <p style="font-size:12px;color:#888;margin-bottom:8px">모바일 사용자를 위한 QR 코드입니다.</p>
-              <img id="fac-link-qr-img" src="" alt="QR Code" style="width:140px;height:140px;border-radius:8px;border:1px solid #e5e7eb;display:block">
+              <img id="fac-link-qr-img" src="" alt="QR Code" style="width:140px;height:140px;border-radius:12px;border:1px solid #e5e7eb;display:block">
             </div>
           </div>
         </div>
 
         <!-- 관리자: 시설 관리 섹션 (설정 탭으로 이전, 여기서는 링크만) -->
         <div id="fac-admin-section" class="settings-card" style="margin-top:24px" hidden>
-          <h3 class="settings-section-title">🏢 시설(건물/호실) 관리 <span class="badge-admin">관리자</span></h3>
+          <h3 class="settings-section-title">시설(건물/호실) 관리 <span class="badge-admin">관리자</span></h3>
           <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">
             <button id="fac-add-building-btn" class="btn btn-primary btn-sm">+ 건물 추가</button>
-            <button id="fac-csv-download-btn" class="btn btn-secondary btn-sm">⬇ 양식 다운로드</button>
+            <button id="fac-csv-download-btn" class="btn btn-secondary btn-sm">양식 다운로드</button>
             <label class="btn btn-secondary btn-sm" style="cursor:pointer;margin:0">
-              ⬆ 일괄 업로드
+              일괄 업로드
               <input id="fac-csv-upload-input" type="file" accept=".csv" style="display:none">
             </label>
-            <button id="fac-share-cal-btn" class="btn btn-ghost btn-sm">📅 캘린더 공유</button>
+            <button id="fac-share-cal-btn" class="btn btn-ghost btn-sm">캘린더 공유</button>
           </div>
           <div id="fac-csv-preview" class="csv-preview-box" hidden></div>
           <div id="fac-admin-building-list">
@@ -988,23 +1023,23 @@
         <div id="fac-subtab-fees" hidden>
           <!-- 툴바 -->
           <div class="settings-card" style="margin-bottom:14px">
-            <h3 class="settings-section-title" style="margin-bottom:10px">💰 호실별 요금 설정 <span class="badge-admin">관리자</span></h3>
+            <h3 class="settings-section-title" style="margin-bottom:10px">호실별 요금 설정 <span class="badge-admin">관리자</span></h3>
             <p style="font-size:12px;color:#888;margin-bottom:12px">호실별 평상/할증 시간대와 요금 산식을 등록합니다. 대관신청 폼에서 자동으로 견적을 계산합니다.</p>
             <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
               <button id="fac-fee-add-btn" class="btn btn-primary btn-sm">+ 요금 설정 추가</button>
-              <button id="fac-fee-tmpl-btn" class="btn btn-secondary btn-sm">📥 xlsx 양식 다운로드</button>
+              <button id="fac-fee-tmpl-btn" class="btn btn-secondary btn-sm">xlsx 양식 다운로드</button>
               <label class="btn btn-secondary btn-sm" style="cursor:pointer;margin:0">
-                📤 xlsx 일괄 업로드
+                xlsx 일괄 업로드
                 <input id="fac-fee-xlsx-input" type="file" accept=".xlsx,.xls" style="display:none">
               </label>
-              <button id="fac-fee-adjust-toggle-btn" class="btn btn-ghost btn-sm">📊 일괄 조정</button>
-              <button id="fac-fee-default-btn" class="btn btn-secondary btn-sm" title="아세아 표준 대관료 기준표(15개 시설)를 적용합니다">📋 표준 기준표 적용</button>
+              <button id="fac-fee-adjust-toggle-btn" class="btn btn-ghost btn-sm">일괄 조정</button>
+              <button id="fac-fee-default-btn" class="btn btn-secondary btn-sm" title="아세아 표준 대관료 기준표(15개 시설)를 적용합니다">표준 기준표 적용</button>
             </div>
           </div>
 
           <!-- 일괄 조정 패널 -->
           <div id="fac-fee-adjust-panel" hidden style="background:#fff;border:1.5px solid #E5E7EB;border-radius:12px;padding:18px;margin-bottom:14px">
-            <div style="font-size:14px;font-weight:700;color:#1a3a5c;margin-bottom:14px">📊 요금 일괄 조정</div>
+            <div style="font-size:14px;font-weight:700;color:#1a3a5c;margin-bottom:14px">요금 일괄 조정</div>
 
             <!-- 종합표 -->
             <div style="font-size:12px;font-weight:700;color:#374151;margin-bottom:6px">현재 요금 종합표</div>
@@ -1029,7 +1064,7 @@
             </div>
 
             <!-- 조정 컨트롤 -->
-            <div style="background:#F9FAFB;border-radius:8px;padding:14px;border:1px solid #E5E7EB">
+            <div style="background:#F9FAFB;border-radius:12px;padding:14px;border:1px solid #E5E7EB">
               <div style="font-size:12px;font-weight:700;color:#374151;margin-bottom:10px">조정 설정</div>
               <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end">
                 <div class="form-group" style="margin:0;min-width:140px">
@@ -1087,7 +1122,7 @@
               <button class="modal-close" onclick="document.getElementById('fac-review-modal').hidden=true">✕</button>
             </div>
             <div class="modal-body">
-              <div id="fac-rm-info" class="fac-rm-info" style="background:var(--color-bg-secondary);border-radius:8px;padding:12px;margin-bottom:16px;font-size:13px;line-height:1.8"></div>
+              <div id="fac-rm-info" class="fac-rm-info" style="background:var(--color-bg-secondary);border-radius:12px;padding:12px;margin-bottom:16px;font-size:13px;line-height:1.8"></div>
               <div class="form-group">
                 <label class="form-label">검토 의견 <span style="color:#888;font-weight:400">(선택)</span></label>
                 <textarea id="fac-rm-note" class="form-input" rows="3" placeholder="승인/반려 사유나 안내 메시지를 입력하세요..."></textarea>
@@ -1108,7 +1143,7 @@
       </section>
 
       <!-- ════════════════════════════════════════════════════
-           🚗 차량관리 탭
+           차량관리 탭
            ════════════════════════════════════════════════════ -->
       <section id="tab-vehicle" class="tab-panel" role="tabpanel" hidden>
         <div class="tab-body">
@@ -1116,14 +1151,14 @@
           <h2 class="section-title" style="margin:0"><svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 17H3v-4l2.5-5h11L19 13v4h-2"/><circle cx="7.5" cy="17.5" r="1.5"/><circle cx="16.5" cy="17.5" r="1.5"/><path d="M5 13h14"/></svg>차량 예약 관리</h2>
           <div style="display:flex;gap:8px;align-items:center">
             <span id="veh-admin-link" style="display:none">
-              <a href="#" onclick="document.querySelector('[data-tab=admin]').click();return false" class="btn btn-ghost btn-sm">🛡 관리자 패널</a>
+              <a href="#" onclick="document.querySelector('[data-tab=admin]').click();return false" class="btn btn-ghost btn-sm">관리자 패널</a>
             </span>
           </div>
         </div>
 
         <!-- 선택 안내 바 -->
         <div class="sel-hint-bar">
-          <span class="sel-hint-guide">💡 <strong>드래그</strong>: 날짜 범위 선택 &nbsp;|&nbsp; <strong>Ctrl + 드래그</strong>: 비연속 날짜 추가 선택</span>
+          <span class="sel-hint-guide"><strong>드래그</strong>: 날짜 범위 선택 &nbsp;|&nbsp; <strong>Ctrl + 드래그</strong>: 비연속 날짜 추가 선택</span>
           <span id="veh-sel-hint" style="display:none;color:var(--primary);font-weight:600"></span>
           <button id="veh-clear-sel-btn" class="btn btn-ghost btn-sm" style="padding:2px 8px">선택 초기화</button>
         </div>
@@ -1144,7 +1179,7 @@
 
         <!-- 관리자: 차량 관리 섹션 -->
         <div id="veh-admin-section" class="settings-card" style="margin-top:24px" hidden>
-          <h3 class="settings-section-title">🚗 차량 관리 <span class="badge-admin">관리자</span></h3>
+          <h3 class="settings-section-title">차량 관리 <span class="badge-admin">관리자</span></h3>
           <div style="margin-bottom:8px">
             <p class="form-hint" style="margin-bottom:8px">
               차량 유형 색상: <span style="color:#4285F4">■승용</span> <span style="color:#0F9D58">■승합</span> <span style="color:#F4B400">■버스</span> <span style="color:#DB4437">■화물</span>
@@ -1152,12 +1187,12 @@
             <button id="veh-add-vehicle-btn" class="btn btn-primary btn-sm">+ 차량 추가</button>
           </div>
           <div style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0">
-            <button id="veh-csv-download-btn" class="btn btn-secondary btn-sm">⬇ 양식 다운로드</button>
+            <button id="veh-csv-download-btn" class="btn btn-secondary btn-sm">양식 다운로드</button>
             <label class="btn btn-secondary btn-sm" style="cursor:pointer;margin:0">
-              ⬆ 일괄 업로드
+              일괄 업로드
               <input id="veh-csv-upload-input" type="file" accept=".csv" style="display:none">
             </label>
-            <button id="veh-share-cal-btn" class="btn btn-ghost btn-sm">📅 캘린더 공유</button>
+            <button id="veh-share-cal-btn" class="btn btn-ghost btn-sm">캘린더 공유</button>
           </div>
           <div id="veh-csv-preview" class="csv-preview-box" hidden></div>
           <div id="veh-admin-list">
@@ -1168,7 +1203,7 @@
       </section>
 
       <!-- ════════════════════════════════════════════════════
-           🏫 강의실현황 탭
+           강의실현황 탭
            ════════════════════════════════════════════════════ -->
       <section id="tab-classroom" class="tab-panel" role="tabpanel" hidden>
         <div class="tab-body">
@@ -1178,7 +1213,7 @@
             <button id="cls-view-timetable-btn" class="btn btn-secondary btn-sm active-view">시간표</button>
             <button id="cls-view-month-btn" class="btn btn-ghost btn-sm">월간</button>
             <span id="cls-admin-link" style="display:none">
-              <a href="#" onclick="document.querySelector('[data-tab=admin]').click();return false" class="btn btn-ghost btn-sm">🛡 관리자 패널</a>
+              <a href="#" onclick="document.querySelector('[data-tab=admin]').click();return false" class="btn btn-ghost btn-sm">관리자 패널</a>
             </span>
           </div>
         </div>
@@ -1223,15 +1258,15 @@
 
         <!-- 관리자 섹션 -->
         <div id="cls-admin-section" class="settings-card" style="margin-top:24px" hidden>
-          <h3 class="settings-section-title">🏫 강의실 예약 관리 <span class="badge-admin">관리자</span></h3>
+          <h3 class="settings-section-title">강의실 예약 관리 <span class="badge-admin">관리자</span></h3>
           <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
             <button id="cls-add-btn" class="btn btn-primary btn-sm">+ 개별 등록</button>
-            <button id="cls-csv-download-btn" class="btn btn-secondary btn-sm">⬇ 양식 다운로드</button>
+            <button id="cls-csv-download-btn" class="btn btn-secondary btn-sm">양식 다운로드</button>
             <label class="btn btn-secondary btn-sm" style="cursor:pointer;margin:0">
-              ⬆ 일괄 업로드
+              일괄 업로드
               <input id="cls-csv-upload-input" type="file" accept=".csv" style="display:none">
             </label>
-            <button id="cls-share-cal-btn" class="btn btn-ghost btn-sm">📅 캘린더 공유</button>
+            <button id="cls-share-cal-btn" class="btn btn-ghost btn-sm">캘린더 공유</button>
           </div>
           <div id="cls-csv-preview" class="csv-preview-box" hidden></div>
           <div id="cls-admin-list">
@@ -1242,38 +1277,38 @@
       </section>
 
       <!-- ════════════════════════════════════════════════════
-           ⚙️ 설정 탭
+           설정 탭
            ════════════════════════════════════════════════════ -->
-      <!-- 🏢 기숙사 관리 탭 -->
+      <!-- 기숙사 관리 탭 -->
       <section id="tab-dorm" class="tab-panel" role="tabpanel" hidden>
         <div class="tab-body" id="dorm-root">
           <p style="padding:40px;text-align:center;color:#9ca3af">기숙사 관리 모듈을 불러오는 중…</p>
         </div>
       </section>
 
-      <!-- 🧭 안내도(길찾기) 탭 -->
+      <!-- 안내도(길찾기) 탭 -->
       <section id="tab-wayfind" class="tab-panel" role="tabpanel" hidden>
         <div class="tab-body" id="wayfind-root">
           <p style="padding:40px;text-align:center;color:#9ca3af">안내도 모듈을 불러오는 중…</p>
         </div>
       </section>
 
-      <!-- 📄 계약생성(전자서식) 탭 -->
+      <!-- 계약생성(전자서식) 탭 -->
       <section id="tab-contractgen" class="tab-panel" role="tabpanel" hidden>
         <div class="tab-body" id="contractgen-root">
           <p style="padding:40px;text-align:center;color:#9ca3af">전자서식 모듈을 불러오는 중…</p>
         </div>
       </section>
 
-      <!-- 🔧 작업지시 탭 -->
+      <!-- 작업지시 탭 -->
       <section id="tab-workorder" class="tab-panel" role="tabpanel" hidden>
         <div class="tab-body">
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:18px">
           <h2 class="section-title" style="margin-bottom:0"><svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>작업지시</h2>
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-            <a href="manager/" target="_blank" class="btn btn-ghost btn-sm" style="text-decoration:none">🏢 관리실 포털 열기</a>
+            <a href="manager/" target="_blank" class="btn btn-ghost btn-sm" style="text-decoration:none">관리실 포털 열기</a>
             <button id="wo-main-add-btn" class="btn btn-primary btn-sm">+ 작업지시 등록</button>
-            <button id="wo-main-refresh-btn" class="btn btn-secondary btn-sm">🔄 새로고침</button>
+            <button id="wo-main-refresh-btn" class="btn btn-secondary btn-sm">새로고침</button>
           </div>
         </div>
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px">
@@ -1353,7 +1388,7 @@
         </div><!-- /.tab-body -->
       </section>
 
-      <!-- 🚪 강의실 입출입 관리 탭 -->
+      <!-- 강의실 입출입 관리 탭 -->
       <section id="tab-checkinmgmt" class="tab-panel" role="tabpanel" hidden>
         <div class="tab-body">
 
@@ -1361,8 +1396,8 @@
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:18px">
           <h2 class="section-title" style="margin-bottom:0"><svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>강의실 입출입 관리</h2>
           <div style="display:flex;gap:8px;flex-wrap:wrap">
-            <button id="ci-tab-btn" class="tab-sub-btn active" data-ci-tab="spaces">📍 공간 관리</button>
-            <button id="ci-log-btn" class="tab-sub-btn" data-ci-tab="logs">📊 입출입 현황</button>
+            <button id="ci-tab-btn" class="tab-sub-btn active" data-ci-tab="spaces">공간 관리</button>
+            <button id="ci-log-btn" class="tab-sub-btn" data-ci-tab="logs">입출입 현황</button>
           </div>
         </div>
 
@@ -1370,7 +1405,7 @@
         <div id="ci-section-spaces">
           <div style="display:flex;gap:8px;align-items:center;margin-bottom:16px;flex-wrap:wrap">
             <button id="ci-add-space-btn" class="btn btn-primary btn-sm">+ 공간 등록</button>
-            <button id="ci-refresh-spaces-btn" class="btn btn-secondary btn-sm">🔄 새로고침</button>
+            <button id="ci-refresh-spaces-btn" class="btn btn-secondary btn-sm">새로고침</button>
             <span style="font-size:12px;color:#888;margin-left:4px">공간 등록 후 QR 코드를 출력해 해당 공간에 부착하세요.</span>
           </div>
           <div id="ci-spaces-list"><p class="empty-state">로그인 후 불러옵니다.</p></div>
@@ -1388,7 +1423,7 @@
               <option value="퇴실">퇴실</option>
             </select>
             <input id="ci-log-filter-date" type="date" class="form-select" style="min-width:140px">
-            <button id="ci-log-load-btn" class="btn btn-primary btn-sm">🔍 조회</button>
+            <button id="ci-log-load-btn" class="btn btn-primary btn-sm">조회</button>
           </div>
           <div id="ci-log-summary" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-bottom:16px"></div>
           <div id="ci-log-list"><p class="empty-state">위 조건을 설정하고 조회 버튼을 누르세요.</p></div>
@@ -1420,7 +1455,7 @@
               <!-- GPS 위치 제한 -->
               <div class="form-group" style="margin-top:18px">
                 <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-                  <label class="form-label" style="margin:0;font-weight:700">📍 GPS 위치 제한</label>
+                  <label class="form-label" style="margin:0;font-weight:700">GPS 위치 제한</label>
                   <label class="ci-gps-toggle-wrap">
                     <input type="checkbox" id="ci-gps-toggle">
                     <span class="ci-gps-toggle-track">
@@ -1429,7 +1464,7 @@
                     <span id="ci-gps-toggle-label" style="font-size:13px;color:#5f6368;margin-left:6px">OFF — GPS 자유</span>
                   </label>
                 </div>
-                <div id="ci-gps-fields" hidden style="background:#f0f7ff;border:1.5px solid #90caf9;border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:10px">
+                <div id="ci-gps-fields" hidden style="background:#f0f7ff;border:1.5px solid #90caf9;border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:10px">
                   <p style="font-size:12px;color:#1565c0;margin:0">지정한 좌표 반경 안에서만 QR 스캔이 허용됩니다.</p>
                   <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
                     <div>
@@ -1449,7 +1484,7 @@
                     </div>
                   </div>
                   <button type="button" id="ci-gps-locate-btn" class="btn btn-secondary btn-sm" style="align-self:flex-start">
-                    📡 현재 위치로 자동 입력
+                    현재 위치로 자동 입력
                   </button>
                   <p id="ci-gps-locate-status" style="font-size:12px;color:#888;margin:0"></p>
                 </div>
@@ -1480,8 +1515,8 @@
               <div id="ci-qr-room-location" style="font-size:13px;color:#888"></div>
               <div id="ci-qr-url" style="font-size:11px;color:#aaa;word-break:break-all;padding:0 8px"></div>
               <div style="display:flex;gap:8px;margin-top:8px;justify-content:center;flex-wrap:wrap">
-                <button id="ci-qr-download-btn" class="btn btn-primary btn-sm">⬇️ PNG 다운로드</button>
-                <button id="ci-qr-print-btn" class="btn btn-secondary btn-sm">🖨️ 인쇄</button>
+                <button id="ci-qr-download-btn" class="btn btn-primary btn-sm">PNG 다운로드</button>
+                <button id="ci-qr-print-btn" class="btn btn-secondary btn-sm">인쇄</button>
               </div>
             </div>
           </div>
@@ -1490,7 +1525,7 @@
       </section>
 
       <!-- ════════════════════════════════════════════════════
-           📱 문자발송 탭
+           문자발송 탭
            ════════════════════════════════════════════════════ -->
       <section id="tab-sms" class="tab-panel" role="tabpanel" hidden>
         <div class="tab-body">
@@ -1498,9 +1533,9 @@
 
         <!-- 서브탭 -->
         <div class="sms-subtab-bar">
-          <button id="sms-subtab-compose"  class="sms-subtab-btn active">✏️ 문자 작성</button>
-          <button id="sms-subtab-history"  class="sms-subtab-btn">📋 발송 내역</button>
-          <button id="sms-subtab-settings" class="sms-subtab-btn">⚙️ 설정</button>
+          <button id="sms-subtab-compose"  class="sms-subtab-btn active">문자 작성</button>
+          <button id="sms-subtab-history"  class="sms-subtab-btn">발송 내역</button>
+          <button id="sms-subtab-settings" class="sms-subtab-btn">설정</button>
         </div>
 
         <!-- 작성 패널 -->
@@ -1538,20 +1573,20 @@
             </div>
           </div>
           <p id="my-profile-unregistered" class="form-hint" style="color:#e53935;margin-top:8px" hidden>
-            ⚠️ 직원 목록에 등록되지 않은 계정입니다. 관리자에게 문의하세요.
+            직원 목록에 등록되지 않은 계정입니다. 관리자에게 문의하세요.
           </p>
         </div>
 
         <!-- 관리자 등록 — 현재 사용자가 관리자가 아닐 때 항상 표시 -->
         <div class="settings-card" id="admin-bootstrap-card" hidden
              style="border:2px solid #f59e0b;background:var(--color-card)">
-          <h3 class="settings-section-title">🔑 관리자 등록</h3>
+          <h3 class="settings-section-title">관리자 등록</h3>
           <p id="admin-bootstrap-hint" class="form-hint" style="margin-bottom:8px"></p>
           <p class="form-hint" style="margin-bottom:12px">
             로그인 계정: <strong id="bootstrap-email-display"></strong><br>
-            등록 후 관리자 탭 → 👥 사용자 권한 관리에서 다른 사용자 권한도 변경할 수 있습니다.
+            등록 후 관리자 탭 → 사용자 권한 관리에서 다른 사용자 권한도 변경할 수 있습니다.
           </p>
-          <button id="admin-bootstrap-btn" class="btn btn-primary btn-sm">✅ 내 계정을 관리자로 등록</button>
+          <button id="admin-bootstrap-btn" class="btn btn-primary btn-sm">내 계정을 관리자로 등록</button>
           <p id="admin-bootstrap-status" class="form-hint" style="margin-top:8px;color:#4285F4"></p>
         </div>
 
@@ -1560,7 +1595,7 @@
 
         <!-- 직원관리 (admin 전용) -->
         <div class="settings-card" id="hr-management-card" data-admin-only="true" hidden>
-          <h3 class="settings-section-title">👥 직원관리 <span class="badge-admin">관리자</span></h3>
+          <h3 class="settings-section-title">직원관리 <span class="badge-admin">관리자</span></h3>
 
           <!-- CSV 일괄등록 -->
           <div style="margin-bottom:16px">
@@ -1569,11 +1604,11 @@
             </p>
             <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
               <label class="btn btn-ghost btn-sm" style="cursor:pointer">
-                📂 CSV 파일 선택
+                CSV 파일 선택
                 <input id="hr-csv-input" type="file" accept=".csv" hidden>
               </label>
-              <button id="hr-csv-upload-btn" class="btn btn-primary btn-sm" disabled>⬆️ 일괄 등록</button>
-              <button id="hr-csv-template-btn" class="btn btn-ghost btn-sm">📥 양식 다운로드</button>
+              <button id="hr-csv-upload-btn" class="btn btn-primary btn-sm" disabled>일괄 등록</button>
+              <button id="hr-csv-template-btn" class="btn btn-ghost btn-sm">양식 다운로드</button>
             </div>
             <div id="hr-csv-preview" class="hr-csv-preview" hidden></div>
           </div>
@@ -1596,7 +1631,7 @@
                 <option value="admin">관리자</option>
               </select>
             </div>
-            <button id="hr-add-btn" class="btn btn-primary btn-sm" style="margin-top:8px">➕ 직원 추가</button>
+            <button id="hr-add-btn" class="btn btn-primary btn-sm" style="margin-top:8px">직원 추가</button>
           </div>
 
           <!-- 직원 목록 -->
@@ -1604,7 +1639,7 @@
             <span style="font-size:13px;color:#666" id="hr-list-count">직원 0명</span>
             <div style="display:flex;gap:6px">
               <input id="hr-search" type="text" class="form-input" style="width:160px" placeholder="이름·부서 검색">
-              <button id="hr-refresh-btn" class="btn btn-ghost btn-sm">🔄</button>
+              <button id="hr-refresh-btn" class="btn btn-ghost btn-sm"></button>
             </div>
           </div>
           <div id="hr-employee-list" class="hr-employee-list">
@@ -1614,7 +1649,7 @@
 
         <!-- 관리실 인원 등록 (admin 전용) -->
         <div class="settings-card" id="mgr-staff-card" data-admin-only="true" hidden>
-          <h3 class="settings-section-title">🏢 관리실 인원 등록 <span class="badge-admin">관리자</span></h3>
+          <h3 class="settings-section-title">관리실 인원 등록 <span class="badge-admin">관리자</span></h3>
           <p class="form-hint" style="margin-bottom:10px">관리실 당직 인원을 등록합니다. 관리실 포털에서 확인·배정됩니다.</p>
           <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin-bottom:10px">
             <input id="mgr-add-name" type="text" class="form-input" placeholder="이름 *">
@@ -1627,7 +1662,7 @@
               <option value="비번">비번</option>
             </select>
           </div>
-          <button id="mgr-add-btn" class="btn btn-primary btn-sm">➕ 관리실 인원 추가</button>
+          <button id="mgr-add-btn" class="btn btn-primary btn-sm">관리실 인원 추가</button>
           <div id="mgr-staff-list" style="margin-top:14px"></div>
         </div>
 
@@ -1653,17 +1688,17 @@
 
         <!-- 직원 데이터 전체 초기화 (admin 전용) -->
         <div class="settings-card" id="hr-clear-card" data-admin-only="true" hidden>
-          <h3 class="settings-section-title">🗑️ 직원 데이터 초기화 <span class="badge-admin">관리자</span></h3>
+          <h3 class="settings-section-title">직원 데이터 초기화 <span class="badge-admin">관리자</span></h3>
           <p class="form-hint" style="margin-bottom:10px">직원 시트의 <strong>모든 데이터를 완전 삭제</strong>합니다. 헤더(1행)는 유지됩니다. 중복 업로드 등으로 데이터가 오염된 경우 초기화 후 CSV를 1회 재업로드 하세요.</p>
-          <button id="hr-clear-all-btn" class="btn btn-sm" style="background:#e53935;color:#fff">🗑️ 직원 전체 초기화</button>
+          <button id="hr-clear-all-btn" class="btn btn-sm" style="background:#e53935;color:#fff">직원 전체 초기화</button>
           <p id="hr-clear-status" class="form-hint" style="margin-top:8px"></p>
         </div>
 
         <!-- DB 초기화 (admin 전용) -->
         <div class="settings-card" id="hr-init-card" data-admin-only="true" hidden>
-          <h3 class="settings-section-title">🗄️ Sheets DB 초기화 <span class="badge-admin">관리자</span></h3>
+          <h3 class="settings-section-title">Sheets DB 초기화 <span class="badge-admin">관리자</span></h3>
           <p class="form-hint" style="margin-bottom:10px">Google Sheets에 필요한 모든 시트(직원·업무·업무수신·알림로그·시설·대관예약·차량·차량예약·작업지시·관리실인원·공간관리·입출입기록·입출입사용자)와 헤더를 자동으로 생성합니다. 최초 1회만 실행하면 됩니다.</p>
-          <button id="hr-init-sheets-btn" class="btn btn-primary btn-sm">🗄️ 시트 초기화 실행</button>
+          <button id="hr-init-sheets-btn" class="btn btn-primary btn-sm">시트 초기화 실행</button>
           <p id="hr-init-status" class="form-hint" style="margin-top:8px"></p>
         </div>
 
@@ -1674,7 +1709,7 @@
         <div class="settings-card">
           <div class="settings-card-header">
             <h3 class="settings-section-title">내 캘린더 표시 설정</h3>
-            <button id="load-my-calendars-btn" class="btn btn-secondary btn-sm">🔄 캘린더 목록 새로고침</button>
+            <button id="load-my-calendars-btn" class="btn btn-secondary btn-sm">캘린더 목록 새로고침</button>
           </div>
           <p class="settings-hint">표시할 캘린더를 선택하고 색상을 지정하세요. 여러 캘린더가 색상별로 구분 표시됩니다.</p>
           <div id="my-calendars-list" class="my-calendars-list">
@@ -1684,7 +1719,7 @@
 
         <!-- 다른 캘린더 구독하기 (일반 사용자 노출) -->
         <div class="settings-card" id="cal-subscribe-card">
-          <h3 class="settings-section-title">➕ 다른 캘린더 구독하기</h3>
+          <h3 class="settings-section-title">다른 캘린더 구독하기</h3>
           <p class="settings-hint">Google 캘린더 ID 또는 iCal(ICS) URL을 입력하면 내 Google 캘린더에 추가됩니다.</p>
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px">
             <input id="calsub-subscribe-input" type="text" class="form-input" style="flex:1;min-width:200px"
@@ -1693,8 +1728,8 @@
           </div>
           <p id="calsub-subscribe-status" class="form-hint" style="margin-top:8px"></p>
           <p class="form-hint" style="margin-top:4px;color:#888">
-            💡 Google Calendar ID: 구글 캘린더 → 설정 → 캘린더 → "캘린더 ID" 복사<br>
-            💡 iCal URL: 구글 캘린더 → 설정 → "비공개 주소(ICS)" 또는 공개 ICS URL
+            Google Calendar ID: 구글 캘린더 → 설정 → 캘린더 → "캘린더 ID" 복사<br>
+            iCal URL: 구글 캘린더 → 설정 → "비공개 주소(ICS)" 또는 공개 ICS URL
           </p>
         </div>
 
@@ -1711,7 +1746,7 @@
         <!-- 개인 업무 캘린더 구독 -->
         <div class="settings-card" data-admin-only="true">
           <div class="settings-card-header">
-            <h3 class="settings-section-title">📥 개인 업무 캘린더 구독</h3>
+            <h3 class="settings-section-title">개인 업무 캘린더 구독</h3>
             <button id="calsub-fetch-btn" class="btn btn-secondary btn-sm">지금 가져오기</button>
           </div>
           <p class="settings-hint">Google 캘린더 공개 ICS URL 또는 Google Calendar ID를 등록하면, <strong>업무관리 탭</strong>에서 해당 캘린더의 일정을 업무로 일괄 등록할 수 있습니다.</p>
@@ -1722,14 +1757,14 @@
             <button id="calsub-add-btn" class="btn btn-secondary btn-sm">추가</button>
           </div>
           <p class="form-hint" style="margin-top:6px">
-            💡 Google 캘린더 ICS URL: 구글 캘린더 → 설정 → 해당 캘린더 → "비공개 주소(ICS)" 복사<br>
-            💡 Google Calendar ID: 예) <code>primary</code> 또는 <code>xxx@group.calendar.google.com</code>
+            Google 캘린더 ICS URL: 구글 캘린더 → 설정 → 해당 캘린더 → "비공개 주소(ICS)" 복사<br>
+            Google Calendar ID: 예) <code>primary</code> 또는 <code>xxx@group.calendar.google.com</code>
           </p>
         </div>
 
-        <!-- 🎨 캘린더 색상 사용자 설정 -->
+        <!-- 캘린더 색상 사용자 설정 -->
         <div class="settings-card">
-          <h3 class="settings-section-title">🎨 캘린더 색상 설정 <span class="badge-personal">개인 설정</span></h3>
+          <h3 class="settings-section-title">캘린더 색상 설정 <span class="badge-personal">개인 설정</span></h3>
           <p class="form-hint" style="margin-bottom:12px">내 브라우저에만 적용되는 개인 색상 설정입니다. 프리셋을 선택하거나 직접 조합하세요.</p>
           <div id="user-color-settings"></div>
         </div>
@@ -1739,17 +1774,17 @@
 
         <!-- 시설(건물/호실) 관리 (admin 전용) -->
         <div class="settings-card" id="settings-fac-card" data-admin-only="true" hidden>
-          <h3 class="settings-section-title">🏢 시설(건물/호실) 관리 <span class="badge-admin">관리자</span></h3>
+          <h3 class="settings-section-title">시설(건물/호실) 관리 <span class="badge-admin">관리자</span></h3>
           <p class="form-hint" style="margin-bottom:10px">대관 가능한 건물과 호실을 등록/수정합니다. 등록 후 대관업무 탭에서 예약할 수 있습니다.<br>
           대관료 설정도 여기서 건물/호실별로 관리합니다.</p>
-          <button id="settings-fac-add-btn" class="btn btn-primary btn-sm" onclick="document.querySelector('[data-tab=facility]').click()">🏢 대관업무 탭에서 관리</button>
+          <button id="settings-fac-add-btn" class="btn btn-primary btn-sm" onclick="document.querySelector('[data-tab=facility]').click()">대관업무 탭에서 관리</button>
         </div>
 
         <!-- 차량 관리 (admin 전용) -->
         <div class="settings-card" id="settings-veh-card" data-admin-only="true" hidden>
-          <h3 class="settings-section-title">🚗 차량 관리 <span class="badge-admin">관리자</span></h3>
+          <h3 class="settings-section-title">차량 관리 <span class="badge-admin">관리자</span></h3>
           <p class="form-hint" style="margin-bottom:10px">차량을 등록/수정합니다. 등록 후 차량관리 탭에서 예약할 수 있습니다.</p>
-          <button id="settings-veh-go-btn" class="btn btn-primary btn-sm" onclick="document.querySelector('[data-tab=vehicle]').click()">🚗 차량관리 탭에서 관리</button>
+          <button id="settings-veh-go-btn" class="btn btn-primary btn-sm" onclick="document.querySelector('[data-tab=vehicle]').click()">차량관리 탭에서 관리</button>
         </div>
 
         <!-- ── 연동 / API 설정 ──────────────────────────────── -->
@@ -1757,11 +1792,11 @@
 
         <!-- 클라우드 설정 동기화 -->
         <div class="settings-card" data-admin-only="true">
-          <h3 class="settings-section-title">☁️ 설정 클라우드 동기화</h3>
+          <h3 class="settings-section-title">설정 클라우드 동기화</h3>
           <p class="form-hint" style="margin-bottom:12px">API 키·웹훅 URL·수신자/부서 목록 및 추출/공유 이력이 Google Drive에 자동 저장됩니다. 로그인하면 어느 기기에서나 동일한 이력과 설정이 자동으로 불러와집니다.</p>
           <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-            <button id="cloud-save-settings-btn" class="btn btn-primary btn-sm">☁️ 설정 지금 동기화</button>
-            <button id="cloud-sync-now-btn" class="btn btn-ghost btn-sm">🔄 이력 지금 동기화</button>
+            <button id="cloud-save-settings-btn" class="btn btn-primary btn-sm">설정 지금 동기화</button>
+            <button id="cloud-sync-now-btn" class="btn btn-ghost btn-sm">이력 지금 동기화</button>
           </div>
           <p id="cloud-sync-status" class="form-hint" style="margin-top:8px;color:#4285F4"></p>
         </div>
@@ -1775,7 +1810,7 @@
             <input id="setting-api-key" type="password" class="form-input"
               placeholder="API 키 입력">
             <p class="form-hint" style="margin-top:6px">
-              ⚠️ API 키는 브라우저 localStorage에만 저장됩니다.<br>
+              API 키는 브라우저 localStorage에만 저장됩니다.<br>
               키 형식에 따라 엔드포인트가 자동 결정됩니다 —
               <strong>sk-ant-api03-...</strong> → 공식 Anthropic API /
               <strong>sk-9bbf...</strong> (hex 64자) → aiapiflow 프록시 자동 사용
@@ -1800,14 +1835,14 @@
           <div class="form-group">
             <input id="setting-github-token" type="password" class="form-input"
               placeholder="ghp_xxxxxxxxxxxxxxxxxxxx">
-            <p class="form-hint">⚠️ localStorage에만 저장됩니다. GitHub → Settings → Developer settings → Personal access tokens → Fine-grained tokens에서 발급. <strong>Contents: Read and write</strong> 권한 필요.</p>
+            <p class="form-hint">localStorage에만 저장됩니다. GitHub → Settings → Developer settings → Personal access tokens → Fine-grained tokens에서 발급. <strong>Contents: Read and write</strong> 권한 필요.</p>
           </div>
           <button id="save-github-token-btn" class="btn btn-primary btn-sm">저장</button>
         </div>
 
         <!-- 아물보 관리 (관리자 전용) -->
         <div class="settings-card" id="amulbo-admin-card" data-admin-only="true">
-          <h3 class="settings-section-title">🙏 아물보 관리 <span class="badge-admin">관리자</span></h3>
+          <h3 class="settings-section-title">아물보 관리 <span class="badge-admin">관리자</span></h3>
           <p class="form-hint" style="margin-bottom:14px">아세아 무엇이든 물어보살 — AI 질의응답 서비스 설정</p>
 
           <!-- 활성화 토글 -->
@@ -1818,7 +1853,7 @@
 
           <!-- API 키: 공용 AI 제공자 사용(전용 키 제거) -->
           <div class="form-group">
-            <p class="form-hint" style="margin:0;padding:10px 12px;background:#EFF6FF;border-radius:8px;border:1px solid #DBEAFE">
+            <p class="form-hint" style="margin:0;padding:10px 12px;background:#EFF6FF;border-radius:12px;border:1px solid #DBEAFE">
               ℹ️ 아물보는 이제 <b>위 「AI 제공자 설정」의 공용 API</b>(서버 프록시/공식/Flow)를 그대로 사용합니다.
               별도 전용 키가 필요 없습니다. 제공자·모델은 한 곳(AI 제공자 설정)에서 관리됩니다.
             </p>
@@ -1835,7 +1870,7 @@
 
           <!-- 저장 버튼 -->
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
-            <button id="amulbo-save-btn" class="btn btn-primary btn-sm">💾 GAS에 설정 저장</button>
+            <button id="amulbo-save-btn" class="btn btn-primary btn-sm">GAS에 설정 저장</button>
             <span id="amulbo-save-status" style="font-size:13px"></span>
           </div>
 
@@ -1844,8 +1879,8 @@
             <label class="form-label">공개 서비스 URL</label>
             <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
               <input type="text" id="amulbo-public-url" class="form-input" readonly style="flex:1">
-              <button id="amulbo-copy-url-btn" class="btn btn-ghost btn-sm">📋 복사</button>
-              <a id="amulbo-open-btn" href="#" target="_blank" class="btn btn-ghost btn-sm">🔗 열기</a>
+              <button id="amulbo-copy-url-btn" class="btn btn-ghost btn-sm">복사</button>
+              <a id="amulbo-open-btn" href="#" target="_blank" class="btn btn-ghost btn-sm">열기</a>
             </div>
           </div>
 
@@ -1853,7 +1888,7 @@
           <div style="margin-top:16px;padding-top:16px;border-top:1px solid #e5e7eb">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
               <label class="form-label" style="margin:0">사용량 통계</label>
-              <button id="amulbo-stats-btn" class="btn btn-ghost btn-sm">🔄 새로고침</button>
+              <button id="amulbo-stats-btn" class="btn btn-ghost btn-sm">새로고침</button>
             </div>
             <div id="amulbo-stats-panel">
               <p style="font-size:13px;color:#9ca3af">새로고침 버튼을 눌러 통계를 불러오세요.</p>
@@ -1874,7 +1909,7 @@
       </section>
 
       <!-- ════════════════════════════════════════════════════
-           📌 게시판 탭
+           게시판 탭
            ════════════════════════════════════════════════════ -->
       <section id="tab-board" class="tab-panel" role="tabpanel" hidden>
         <!-- Quill CSS -->
@@ -1882,13 +1917,13 @@
         <div class="tab-body">
         <h2 class="section-title"><svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><line x1="9" y1="10" x2="15" y2="10"/><line x1="9" y1="14" x2="13" y2="14"/></svg>게시판</h2>
         <div id="board-content" class="board-content">
-          <div class="board-empty"><div class="board-empty-icon">📭</div><p>로딩 중...</p></div>
+          <div class="board-empty"><div class="board-empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:1em;height:1em;display:inline-block" aria-hidden="true"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg></div><p>로딩 중...</p></div>
         </div>
         </div><!-- /.tab-body -->
       </section>
 
       <!-- ════════════════════════════════════════════════════
-           🛡 관리자 탭
+           관리자 탭
            ════════════════════════════════════════════════════ -->
       <section id="tab-admin" class="tab-panel" role="tabpanel" hidden>
         <div class="tab-body">
@@ -1905,10 +1940,10 @@
       </section>
 
       <!-- ════════════════════════════════════════════════════
-           📹 Zoom 회의 탭
+           Zoom 회의 탭
            ════════════════════════════════════════════════════ -->
       <!-- ════════════════════════════════════════════════════
-           👥 인사관리 탭
+           인사관리 탭
            ════════════════════════════════════════════════════ -->
       <!-- 입사관리 서브페이지 -->
       <section id="tab-hr" class="tab-panel" role="tabpanel" hidden>
@@ -1925,27 +1960,27 @@
       </section>
 
       <!-- ════════════════════════════════════════════════════
-           📝 기안문 탭
+           기안문 탭
            ════════════════════════════════════════════════════ -->
       <section id="tab-draft" class="tab-panel" role="tabpanel" hidden>
         <div id="draft-root"></div>
       </section>
 
       <!-- ════════════════════════════════════════════════════
-           📋 설문지 탭
+           설문지 탭
            ════════════════════════════════════════════════════ -->
       <section id="tab-survey" class="tab-panel" role="tabpanel" hidden>
         <div id="survey-root"></div>
       </section>
 
       <!-- ════════════════════════════════════════════════════
-           🪪 QR명함 탭
+           QR명함 탭
            ════════════════════════════════════════════════════ -->
       <section id="tab-qrcard" class="tab-panel" role="tabpanel" hidden>
       </section>
 
       <!-- ════════════════════════════════════════════════════
-           💳 명함 신청 탭
+           명함 신청 탭
            ════════════════════════════════════════════════════ -->
       <section id="tab-bizcard" class="tab-panel" role="tabpanel" hidden>
         <div class="tab-body" style="padding:0;height:calc(100vh - 56px - 48px);overflow:hidden;">
@@ -1957,7 +1992,7 @@
       <section id="tab-souvenir" class="tab-panel" role="tabpanel" hidden>
         <div class="embed-wrap">
           <div class="embed-bar">
-            <span class="embed-title">🎁 기념품 신청</span>
+            <span class="embed-title">기념품 신청</span>
             <a class="btn btn-ghost btn-sm" id="souvenir-open" target="_blank" rel="noopener" href="https://bangdw-hash.github.io/souvenir-app/">새 창에서 열기 ↗</a>
           </div>
           <iframe id="souvenir-frame" class="embed-frame" title="기념품 신청" data-src="https://bangdw-hash.github.io/souvenir-app/" referrerpolicy="no-referrer-when-downgrade"></iframe>
@@ -1965,25 +2000,25 @@
       </section>
 
       <!-- ════════════════════════════════════════════════════
-           🤖 AI제공자 탭 (관리자 전용) — 모든 AI/프록시 설정 일원화
+           AI제공자 탭 (관리자 전용) — 모든 AI/프록시 설정 일원화
            ════════════════════════════════════════════════════ -->
       <section id="tab-ai-provider" class="tab-panel" role="tabpanel" hidden>
         <div class="tab-body">
-          <h2 class="section-title" style="margin:0 0 4px">🤖 AI 제공자</h2>
+          <h2 class="section-title" style="margin:0 0 4px">AI 제공자</h2>
           <p class="form-hint" style="margin:0 0 16px">모든 AI 기능(일정발췟·AI분석·설문·아물보 등)과 프록시 설정을 여기서 한 곳에서 관리합니다. 저장하면 전 직원·전 단말·전 계정에 동일하게 적용됩니다.</p>
           <div id="ai-provider-content"></div>
         </div>
       </section>
 
       <!-- ════════════════════════════════════════════════════
-           ❓ 도움말 탭
+           도움말 탭
            ════════════════════════════════════════════════════ -->
       <section id="tab-help" class="tab-panel" role="tabpanel" hidden>
         <div id="help-root"></div>
       </section>
 
       <!-- ════════════════════════════════════════════════════
-           💰 예산관리 탭
+           예산관리 탭
            ════════════════════════════════════════════════════ -->
       <section id="tab-budget" class="tab-panel" role="tabpanel" hidden>
       </section>
@@ -2121,12 +2156,12 @@
 
         <!-- 반복 일정으로 추가 등록 안내 (비반복 기존 이벤트 수정 시 표시) -->
         <div id="recur-add-hint" class="recur-add-hint" hidden>
-          <span class="recur-hint-icon">🔁</span>
+          <span class="recur-hint-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:1em;height:1em;display:inline-block" aria-hidden="true"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg></span>
           <span class="recur-hint-txt">반복 조건을 설정하면 <strong>현재 일정은 유지</strong>되고 반복 일정이 <strong>새로 추가</strong>됩니다.</span>
         </div>
 
         <div id="duplicate-alert" class="alert alert-warning" hidden role="alert">
-          <span class="alert-icon" aria-hidden="true">⚠</span>
+          <span class="alert-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px" aria-hidden="true"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>
           <div>
             <strong>중복 일정이 감지되었습니다</strong>
             <div id="duplicate-details" class="duplicate-details"></div>
@@ -2135,7 +2170,7 @@
 
         <!-- 공유 URL 영역 (공유 버튼 클릭 시 표시) -->
         <div id="event-share-area" hidden style="margin-top:12px">
-          <div class="share-area-label">🔗 공유 URL — 링크를 받은 사람이 누르면 자신의 구글 캘린더에 일정이 추가됩니다</div>
+          <div class="share-area-label">공유 URL — 링크를 받은 사람이 누르면 자신의 구글 캘린더에 일정이 추가됩니다</div>
           <div class="share-url-row">
             <input id="event-share-url" class="form-input share-url-input" type="text" readonly>
             <button id="event-share-copy" class="btn btn-secondary btn-sm">복사</button>
@@ -2161,7 +2196,7 @@
     <div class="modal-backdrop"></div>
     <div class="modal-dialog recur-del-dialog">
       <div class="modal-header">
-        <h3 class="modal-title">🔁 반복 일정 삭제</h3>
+        <h3 class="modal-title">반복 일정 삭제</h3>
         <button class="modal-close" id="recur-del-close">✕</button>
       </div>
       <div class="modal-body">
@@ -2197,7 +2232,7 @@
     <div class="modal-backdrop"></div>
     <div class="modal-dialog recur-del-dialog">
       <div class="modal-header">
-        <h3 class="modal-title">🔁 반복 일정 이동</h3>
+        <h3 class="modal-title">반복 일정 이동</h3>
         <button class="modal-close" id="recur-move-close">✕</button>
       </div>
       <div class="modal-body">
@@ -2242,7 +2277,7 @@
     <div class="modal-backdrop"></div>
     <div class="modal-dialog print-range-dialog">
       <div class="modal-header">
-        <h3 class="modal-title">🖨 달력 인쇄 설정</h3>
+        <h3 class="modal-title">달력 인쇄 설정</h3>
         <button class="modal-close" id="print-range-close">✕</button>
       </div>
       <div class="modal-body">
@@ -2290,7 +2325,7 @@
       <div class="modal-footer">
         <div class="modal-footer-right">
           <button id="print-range-cancel" class="btn btn-ghost">취소</button>
-          <button id="print-range-go" class="btn btn-primary">🖨 인쇄 / PDF 저장</button>
+          <button id="print-range-go" class="btn btn-primary">인쇄 / PDF 저장</button>
         </div>
       </div>
     </div>
@@ -2373,7 +2408,7 @@
 회의,2026-06-10 09:00,2026-06-10 10:00,기획처,주간회의</pre>
         </div>
         <div id="csv-dropzone" class="csv-dropzone" role="button" tabindex="0">
-          <span class="csv-dropzone-icon">📂</span>
+          <span class="csv-dropzone-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:1em;height:1em;display:inline-block" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></span>
           <p>CSV 파일을 드래그하거나 클릭하여 업로드</p>
           <input id="csv-file-input" type="file" accept=".csv,text/csv" style="display:none">
         </div>
@@ -2466,7 +2501,7 @@
           <p class="form-hint">첫 줄은 헤더(이름,이메일)이며 생략 가능합니다.</p>
         </div>
         <div id="recipients-dropzone" class="csv-dropzone" role="button" tabindex="0">
-          <span class="csv-dropzone-icon">📋</span>
+          <span class="csv-dropzone-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:1em;height:1em;display:inline-block" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></span>
           <p>xlsx / csv / txt 파일을 드래그하거나 클릭</p>
           <input id="recipients-file-input" type="file" accept=".xlsx,.xls,.csv,.txt" style="display:none">
         </div>
@@ -2503,7 +2538,7 @@
     <div class="modal-backdrop" data-close-modal></div>
     <div class="modal-dialog" style="max-width:560px">
       <div class="modal-header">
-        <h3 class="modal-title">🔗 일정 공유 URL 생성</h3>
+        <h3 class="modal-title">일정 공유 URL 생성</h3>
         <button class="modal-close" data-close-modal aria-label="닫기">✕</button>
       </div>
       <div class="modal-body">
@@ -2561,7 +2596,7 @@
       </div>
       <div class="modal-footer">
         <div class="modal-footer-left">
-          <button id="extract-edit-delete-btn" class="btn btn-danger">🗑️ 삭제</button>
+          <button id="extract-edit-delete-btn" class="btn btn-danger">삭제</button>
         </div>
         <div class="modal-footer-right">
           <button class="btn btn-ghost" data-close-modal>취소</button>
@@ -2598,7 +2633,7 @@
           </div>
           <!-- 캘린더 등록 옵션 -->
           <div id="work-cal-register-area" class="work-cal-register-area" hidden>
-            <label class="form-label">📅 캘린더 일정 등록</label>
+            <label class="form-label">캘린더 일정 등록</label>
             <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:6px">
               <label><input type="radio" name="work-cal-mode" value="allday" checked> 마감일 하루종일</label>
               <label><input type="radio" name="work-cal-mode" value="custom"> 직접 설정</label>
@@ -2666,7 +2701,7 @@
           <input id="fac-resv-attendees" type="text" class="form-input" placeholder="예: 30명">
         </div>
         <div class="form-group">
-          <label class="form-label">📅 Google Calendar에 추가 <span style="font-size:11px;color:#888">(선택사항)</span></label>
+          <label class="form-label">Google Calendar에 추가 <span style="font-size:11px;color:#888">(선택사항)</span></label>
           <select id="fac-resv-gcal" class="form-select">
             <option value="">(캘린더 선택 안 함)</option>
           </select>
@@ -2682,7 +2717,7 @@
       </div>
       <div class="modal-footer">
         <div class="modal-footer-left">
-          <button id="fac-resv-delete-btn" class="btn btn-danger btn-sm" style="display:none">🗑 취소</button>
+          <button id="fac-resv-delete-btn" class="btn btn-danger btn-sm" style="display:none">취소</button>
         </div>
         <button id="fac-resv-save-btn" class="btn btn-primary">저장</button>
       </div>
@@ -2706,7 +2741,7 @@
         </div>
         <div class="form-group">
           <label class="form-label">색상 (달력 표시)</label>
-          <input id="fac-bm-color" type="color" value="#4285F4" style="width:60px;height:36px;padding:2px;border:1px solid #ddd;border-radius:6px;cursor:pointer">
+          <input id="fac-bm-color" type="color" value="#4285F4" style="width:60px;height:36px;padding:2px;border:1px solid #ddd;border-radius:12px;cursor:pointer">
         </div>
         <div class="form-group">
           <label class="form-label">호실 목록</label>
@@ -2737,7 +2772,7 @@
         </div>
 
         <!-- 평상 시간대 -->
-        <div style="background:#EFF6FF;border-radius:8px;padding:12px;margin-bottom:10px">
+        <div style="background:#EFF6FF;border-radius:12px;padding:12px;margin-bottom:10px">
           <div style="font-size:12px;font-weight:700;color:#1a3a5c;margin-bottom:8px">⏰ 평상 시간대</div>
           <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
             <div class="form-group"><label class="form-label">시작</label><input id="fac-fee-norm-s" type="time" step="600" class="form-input" value="09:00"></div>
@@ -2747,9 +2782,9 @@
         </div>
 
         <!-- 할증 시간대 (복수) -->
-        <div style="background:#FEF9EC;border-radius:8px;padding:12px;margin-bottom:10px">
+        <div style="background:#FEF9EC;border-radius:12px;padding:12px;margin-bottom:10px">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-            <div style="font-size:12px;font-weight:700;color:#D97706">⚡ 할증 시간대 <span style="font-weight:400;color:#888;font-size:11px">(여러 구간 추가 가능)</span></div>
+            <div style="font-size:12px;font-weight:700;color:#D97706">할증 시간대 <span style="font-weight:400;color:#888;font-size:11px">(여러 구간 추가 가능)</span></div>
             <button type="button" id="fac-fee-sur-add-btn" class="btn btn-sm" style="background:#D97706;color:#fff;padding:4px 10px;font-size:11px">+ 할증 구간 추가</button>
           </div>
           <div id="fac-fee-sur-slots">
@@ -2766,10 +2801,10 @@
         </div>
 
         <!-- 시간비례 추가항목 -->
-        <div style="border:1.5px solid #E5E7EB;border-radius:8px;padding:12px;margin-bottom:10px">
+        <div style="border:1.5px solid #E5E7EB;border-radius:12px;padding:12px;margin-bottom:10px">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
             <div>
-              <span style="font-size:12px;font-weight:700;color:#1a3a5c">📐 시간비례 추가항목</span>
+              <span style="font-size:12px;font-weight:700;color:#1a3a5c">시간비례 추가항목</span>
               <span style="font-size:11px;color:#6B7280;margin-left:6px">이용 시간 × 단가 자동 계산</span>
             </div>
             <button type="button" id="fac-fee-time-add-btn" class="btn btn-ghost btn-sm" style="font-size:11px">+ 항목 추가</button>
@@ -2784,10 +2819,10 @@
         </div>
 
         <!-- 일괄 추가항목 -->
-        <div style="border:1.5px solid #E5E7EB;border-radius:8px;padding:12px;margin-bottom:14px">
+        <div style="border:1.5px solid #E5E7EB;border-radius:12px;padding:12px;margin-bottom:14px">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
             <div>
-              <span style="font-size:12px;font-weight:700;color:#1a3a5c">📦 일괄 추가항목</span>
+              <span style="font-size:12px;font-weight:700;color:#1a3a5c">일괄 추가항목</span>
               <span style="font-size:11px;color:#6B7280;margin-left:6px">시간과 무관한 회당 고정 금액</span>
             </div>
             <button type="button" id="fac-fee-flat-add-btn" class="btn btn-ghost btn-sm" style="font-size:11px">+ 항목 추가</button>
@@ -2802,10 +2837,10 @@
         </div>
 
         <!-- 냉난방비 -->
-        <div style="border:1.5px solid #BAE6FD;border-radius:8px;padding:12px;margin-bottom:14px;background:#F0F9FF">
+        <div style="border:1.5px solid #BAE6FD;border-radius:12px;padding:12px;margin-bottom:14px;background:#F0F9FF">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
             <div>
-              <span style="font-size:12px;font-weight:700;color:#0369A1">🌡️ 냉난방비</span>
+              <span style="font-size:12px;font-weight:700;color:#0369A1">냉난방비</span>
               <span style="font-size:11px;color:#6B7280;margin-left:6px">대관 날짜의 월 기준 자동 적용</span>
             </div>
             <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:12px;font-weight:600;color:#0369A1">
@@ -2824,8 +2859,8 @@
                 <input id="fac-fee-hvac-months" type="text" class="form-input" value="1,2,3,5,6,7,8,9,11,12" placeholder="1,2,3,5,6,7,8,9,11,12">
               </div>
             </div>
-            <div style="font-size:11px;color:#0369A1;background:#E0F2FE;border-radius:6px;padding:7px 10px;line-height:1.6">
-              💡 <strong>4월·10월 제외</strong> — 예약 날짜의 월이 위 목록에 포함되면 <strong>총 이용 시간 × 단가</strong>로 자동 산정됩니다.
+            <div style="font-size:11px;color:#0369A1;background:#E0F2FE;border-radius:12px;padding:7px 10px;line-height:1.6">
+              <strong>4월·10월 제외</strong> — 예약 날짜의 월이 위 목록에 포함되면 <strong>총 이용 시간 × 단가</strong>로 자동 산정됩니다.
             </div>
           </div>
         </div>
@@ -2894,7 +2929,7 @@
       </div>
       <div class="modal-footer">
         <div class="modal-footer-left">
-          <button id="veh-resv-delete-btn" class="btn btn-danger btn-sm" style="display:none">🗑 취소</button>
+          <button id="veh-resv-delete-btn" class="btn btn-danger btn-sm" style="display:none">취소</button>
         </div>
         <button id="veh-resv-save-btn" class="btn btn-primary">저장</button>
       </div>
@@ -2949,14 +2984,14 @@
   </div>
 
   <!-- ═══════════════════════════════════════════════════════════
-       📥 캘린더 구독 가져오기 모달
+       캘린더 구독 가져오기 모달
        ═══════════════════════════════════════════════════════════ -->
   <div id="calsub-modal" class="modal" hidden aria-modal="true" role="dialog">
     <div class="modal-backdrop" onclick="document.getElementById('calsub-modal').hidden=true"></div>
     <div class="modal-dialog" style="max-width:680px;max-height:90vh;display:flex;flex-direction:column">
       <div class="modal-header">
         <div>
-          <h3 class="modal-title">📥 캘린더 구독 — 업무 가져오기</h3>
+          <h3 class="modal-title">캘린더 구독 — 업무 가져오기</h3>
           <small style="color:#888;font-size:11px">구독 캘린더에서 일정을 불러와 업무로 등록합니다</small>
         </div>
         <button id="calsub-modal-close" class="modal-close">✕</button>
@@ -3002,20 +3037,20 @@
           <button id="calsub-select-target-btn" class="btn btn-ghost btn-sm" style="font-size:11px">선택</button>
         </div>
         <button onclick="document.getElementById('calsub-modal').hidden=true" class="btn btn-ghost">닫기</button>
-        <button id="calsub-register-btn" class="btn btn-primary" disabled>✅ 업무 등록</button>
+        <button id="calsub-register-btn" class="btn btn-primary" disabled>업무 등록</button>
       </div>
     </div>
   </div>
 
   <!-- ═══════════════════════════════════════════════════════════
-       ⚡ 빠른 업무 등록 모달 (Ctrl+Alt+R)
+       빠른 업무 등록 모달 (Ctrl+Alt+R)
        ═══════════════════════════════════════════════════════════ -->
   <div id="qt-modal" class="modal" hidden aria-modal="true" role="dialog" aria-labelledby="qt-modal-title">
     <div id="qt-backdrop" class="modal-backdrop"></div>
     <div class="modal-dialog qt-modal-dialog">
       <div class="modal-header">
         <div>
-          <h3 id="qt-modal-title" class="modal-title">⚡ 빠른 업무 등록</h3>
+          <h3 id="qt-modal-title" class="modal-title">빠른 업무 등록</h3>
           <small style="color:#888;font-size:11px">텍스트·이미지를 붙여넣으면 AI가 업무 항목을 추출합니다</small>
         </div>
         <button id="qt-close-btn" class="modal-close">✕</button>
@@ -3024,7 +3059,7 @@
 
         <!-- ── 입력 영역 ── -->
         <div class="qt-input-section">
-          <div class="qt-section-label">📋 내용 붙여넣기</div>
+          <div class="qt-section-label">내용 붙여넣기</div>
 
           <!-- 드롭존 + 텍스트 -->
           <div id="qt-drop-zone" class="qt-drop-zone">
@@ -3035,7 +3070,7 @@
           <!-- 이미지 업로드 + 미리보기 -->
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px">
             <label class="btn btn-ghost btn-sm" style="cursor:pointer;margin:0">
-              🖼 이미지 선택
+              이미지 선택
               <input id="qt-img-input" type="file" accept="image/*" style="display:none">
             </label>
             <span style="font-size:11px;color:#888">또는 이미지를 드래그&드롭</span>
@@ -3044,7 +3079,7 @@
 
           <!-- AI 분석 버튼 -->
           <div style="margin-top:10px;display:flex;gap:8px;align-items:center">
-            <button id="qt-analyze-btn" class="btn btn-primary btn-sm">🤖 AI 분석</button>
+            <button id="qt-analyze-btn" class="btn btn-primary btn-sm">AI 분석</button>
             <span style="font-size:11px;color:#888">Anthropic API Key 필요 (설정에서 등록)</span>
           </div>
         </div>
@@ -3052,7 +3087,7 @@
         <!-- ── 캘린더 선택 ── -->
         <div class="qt-cal-section">
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap">
-            <div class="qt-section-label" style="margin-bottom:0">📅 등록할 Google 캘린더</div>
+            <div class="qt-section-label" style="margin-bottom:0">등록할 Google 캘린더</div>
             <button id="qt-select-cal-btn" class="btn btn-secondary btn-sm">+ 캘린더 추가</button>
             <button id="qt-clear-cal-btn" class="btn btn-ghost btn-sm" style="font-size:11px">전체 해제</button>
           </div>
@@ -3061,7 +3096,7 @@
 
         <!-- ── 추출된 업무 목록 ── -->
         <div class="qt-list-section">
-          <div class="qt-section-label">✅ 추출된 업무 목록</div>
+          <div class="qt-section-label">추출된 업무 목록</div>
           <div id="qt-task-list"></div>
         </div>
 
@@ -3073,7 +3108,7 @@
         <span id="qt-selected-count" style="font-size:12px;color:#888">0건 선택됨</span>
         <div style="flex:1"></div>
         <button onclick="document.getElementById('qt-modal').hidden=true" class="btn btn-ghost">닫기</button>
-        <button id="qt-register-btn" class="btn btn-primary" disabled>✅ 등록하기</button>
+        <button id="qt-register-btn" class="btn btn-primary" disabled>등록하기</button>
       </div>
     </div>
   </div>
@@ -3185,7 +3220,7 @@
     <!-- ── 모바일 하단 탭 내비게이션 (가로 스크롤 전체 탭) ── -->
     <nav class="mobile-bottom-nav" id="mobile-bottom-nav" aria-label="하단 내비게이션">
 
-      <!-- 📅 캘린더 -->
+      <!-- 캘린더 -->
       <button class="bnav-btn active" data-tab="calendar">
         <svg class="bnav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
           <rect x="3" y="4" width="18" height="18" rx="3"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
@@ -3193,7 +3228,7 @@
         <span class="bnav-label">캘린더</span>
       </button>
 
-      <!-- 📋 주간허브 -->
+      <!-- 주간허브 -->
       <button class="bnav-btn" data-tab="weekly-hub">
         <svg class="bnav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
           <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
@@ -3201,7 +3236,7 @@
         <span class="bnav-label">주간허브</span>
       </button>
 
-      <!-- 📋 보고 -->
+      <!-- 보고 -->
       <button class="bnav-btn" data-tab="report">
         <svg class="bnav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
           <path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
@@ -3209,7 +3244,7 @@
         <span class="bnav-label">보고</span>
       </button>
 
-      <!-- 📣 홍보슬라이드 -->
+      <!-- 홍보슬라이드 -->
       <button class="bnav-btn" data-tab="promo">
         <svg class="bnav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
           <path d="M3 11l19-9-9 19-2-8-8-2z"/>
@@ -3217,7 +3252,7 @@
         <span class="bnav-label">홍보</span>
       </button>
 
-      <!-- ✉️ 이메일 -->
+      <!-- 이메일 -->
       <button class="bnav-btn" data-tab="email">
         <svg class="bnav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
           <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/>
@@ -3225,7 +3260,7 @@
         <span class="bnav-label">이메일</span>
       </button>
 
-      <!-- 📄 일정발췌 -->
+      <!-- 일정발췌 -->
       <button class="bnav-btn" data-tab="extract">
         <svg class="bnav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="11" cy="11" r="7"/><path d="m21 21-3.5-3.5"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/>
@@ -3242,7 +3277,7 @@
         <span class="bnav-badge" id="bnav-work-badge" hidden></span>
       </button>
 
-      <!-- 🏢 대관업무 -->
+      <!-- 대관업무 -->
       <button class="bnav-btn" data-tab="facility">
         <svg class="bnav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
           <path d="M3 21h18M3 10h18M5 6l7-3 7 3M4 10v11M20 10v11M8 14v3M12 14v3M16 14v3"/>
@@ -3250,7 +3285,7 @@
         <span class="bnav-label">대관</span>
       </button>
 
-      <!-- 🚗 차량관리 -->
+      <!-- 차량관리 -->
       <button class="bnav-btn" data-tab="vehicle">
         <svg class="bnav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
           <path d="M5 17H3v-4l2.5-5h11L19 13v4h-2"/><circle cx="7.5" cy="17.5" r="1.5"/><circle cx="16.5" cy="17.5" r="1.5"/><path d="M5 13h14"/>
@@ -3258,7 +3293,7 @@
         <span class="bnav-label">차량</span>
       </button>
 
-      <!-- 🏫 강의실 -->
+      <!-- 강의실 -->
       <button class="bnav-btn" data-tab="classroom">
         <svg class="bnav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
           <path d="M2 20h20M4 20V9l8-5 8 5v11"/><rect x="9" y="14" width="6" height="6"/><path d="M9 9h.01M15 9h.01"/>
@@ -3266,7 +3301,7 @@
         <span class="bnav-label">강의실</span>
       </button>
 
-      <!-- 🔧 작업지시 -->
+      <!-- 작업지시 -->
       <button class="bnav-btn" data-tab="workorder">
         <svg class="bnav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
           <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
@@ -3275,7 +3310,7 @@
         <span class="bnav-badge" id="bnav-workorder-badge" hidden></span>
       </button>
 
-      <!-- 🚪 입출입관리 -->
+      <!-- 입출입관리 -->
       <button class="bnav-btn" data-tab="checkinmgmt">
         <svg class="bnav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
           <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/>
@@ -3284,7 +3319,7 @@
         <span class="bnav-badge" id="bnav-checkin-badge" hidden></span>
       </button>
 
-      <!-- 📱 문자발송 -->
+      <!-- 문자발송 -->
       <button class="bnav-btn" data-tab="sms">
         <svg class="bnav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
           <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
@@ -3292,7 +3327,7 @@
         <span class="bnav-label">문자</span>
       </button>
 
-      <!-- 📌 게시판 -->
+      <!-- 게시판 -->
       <button class="bnav-btn" data-tab="board">
         <svg class="bnav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
           <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
@@ -3302,7 +3337,7 @@
         <span class="bnav-badge" id="bnav-board-badge" hidden></span>
       </button>
 
-      <!-- 👥 인사관리 -->
+      <!-- 인사관리 -->
       <button class="bnav-btn" data-tab="hr">
         <svg class="bnav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
           <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
@@ -3310,7 +3345,7 @@
         <span class="bnav-label">인사관리</span>
       </button>
 
-      <!-- 🎥 Zoom -->
+      <!-- Zoom -->
       <button class="bnav-btn" data-tab="zoom">
         <svg class="bnav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
           <polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
@@ -3318,7 +3353,7 @@
         <span class="bnav-label">Zoom</span>
       </button>
 
-      <!-- 🔗 캘린더 공유 -->
+      <!-- 캘린더 공유 -->
       <button class="bnav-btn" data-tab="cal-share-nav" onclick="window.open('calendar-share.html?v=20260614f','_blank');return false">
         <svg class="bnav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
@@ -3337,7 +3372,7 @@
         <span class="bnav-label">아물보</span>
       </button>
 
-      <!-- ⚙️ 설정 -->
+      <!-- 설정 -->
       <button class="bnav-btn" data-tab="settings">
         <svg class="bnav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
@@ -3345,7 +3380,7 @@
         <span class="bnav-label">설정</span>
       </button>
 
-      <!-- 🛡 관리자 (admin) -->
+      <!-- 관리자 (admin) -->
       <button class="bnav-btn" data-tab="admin" style="display:none">
         <svg class="bnav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
           <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
@@ -3353,7 +3388,7 @@
         <span class="bnav-label">관리자</span>
       </button>
 
-      <!-- 🤖 AI제공자 (admin) -->
+      <!-- AI제공자 (admin) -->
       <button class="bnav-btn" data-tab="ai-provider" style="display:none">
         <svg class="bnav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
           <rect x="4" y="7" width="16" height="12" rx="3"/><path d="M12 3v4M9 13h.01M15 13h.01"/>
@@ -3361,7 +3396,7 @@
         <span class="bnav-label">AI제공자</span>
       </button>
 
-      <!-- 📝 기안문 -->
+      <!-- 기안문 -->
       <button class="bnav-btn" data-tab="draft">
         <svg class="bnav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
           <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
@@ -3369,7 +3404,7 @@
         <span class="bnav-label">기안문</span>
       </button>
 
-      <!-- 📋 설문지 -->
+      <!-- 설문지 -->
       <button class="bnav-btn" data-tab="survey">
         <svg class="bnav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
           <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/>
@@ -3379,7 +3414,7 @@
         <span class="bnav-label">설문지</span>
       </button>
 
-      <!-- 🪪 QR명함 -->
+      <!-- QR명함 -->
       <button class="bnav-btn" data-tab="qrcard">
         <svg class="bnav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
           <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
@@ -3389,7 +3424,7 @@
         <span class="bnav-label">QR명함</span>
       </button>
 
-      <!-- ❓ 도움말 -->
+      <!-- 도움말 -->
       <button class="bnav-btn" data-tab="help">
         <svg class="bnav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/>
@@ -3405,7 +3440,7 @@
   <div id="board-notice-popup" class="notice-popup-overlay" hidden>
     <div class="notice-popup-card">
       <div class="notice-popup-header">
-        <span class="notice-popup-icon">📢</span>
+        <span class="notice-popup-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:1em;height:1em;display:inline-block" aria-hidden="true"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></span>
         <span class="notice-popup-label">전사 알림</span>
         <span id="bnp-remain" class="notice-popup-remain"></span>
         <button id="bnp-close" class="notice-popup-close" aria-label="닫기">✕</button>
@@ -3503,7 +3538,7 @@
       if (window.Platform && Platform.coach) {
         setTimeout(function () {
           Platform.coach('intro_v1', [
-            { el: '.header-brand', title: '환영합니다 👋', body: '로고를 누르면 어느 화면에서든 캘린더로 돌아옵니다.' },
+            { el: '.header-brand', title: '환영합니다', body: '로고를 누르면 어느 화면에서든 캘린더로 돌아옵니다.' },
             { el: '#pf-view-btn', title: '보기 설정', body: '다크 모드와 글자 크기를 여기서 바꿀 수 있어요.' },
             { el: '.tab-nav', title: '빠른 검색 ⌘K', body: 'Ctrl+K(또는 ⌘K)로 메뉴·명령을 바로 찾을 수 있습니다.' }
           ]);

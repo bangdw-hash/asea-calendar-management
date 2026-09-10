@@ -12,7 +12,7 @@
   --text: #202124;
   --text2: #5f6368;
   --border: #dadce0;
-  --radius: 14px;
+  --radius: 12px;
 }
 
 body {
@@ -68,7 +68,7 @@ body {
   align-items: center;
   gap: 6px;
   padding: 6px 14px;
-  border-radius: 24px;
+  border-radius: 12px;
   font-size: 14px;
   font-weight: 600;
 }
@@ -92,7 +92,7 @@ body {
 .my-info-card {
   background: #e8f0fe;
   border: 1.5px solid #c5d8fb;
-  border-radius: 14px;
+  border-radius: 12px;
   padding: 16px 18px 14px;
   margin-bottom: 12px;
 }
@@ -121,7 +121,7 @@ body {
   width: 100%;
   background: #fff;
   border: 1.5px solid #1a73e8;
-  border-radius: 8px;
+  border-radius: 12px;
   color: #1a73e8;
   font-size: 13px;
   font-weight: 700;
@@ -160,7 +160,7 @@ body {
   margin-top: 12px;
   padding: 10px 14px;
   background: #e6f4ea;
-  border-radius: 8px;
+  border-radius: 12px;
   font-size: 13px;
   color: #1e6823;
   font-weight: 600;
@@ -183,7 +183,7 @@ body {
   width: 100%;
   padding: 12px 14px;
   border: 1.5px solid var(--border);
-  border-radius: 10px;
+  border-radius: 12px;
   font-size: 16px;
   color: var(--text);
   outline: none;
@@ -197,7 +197,7 @@ body {
 .consent-box {
   background: #f8f9fa;
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: 12px;
   padding: 14px;
   font-size: 12px;
   color: var(--text2);
@@ -257,7 +257,7 @@ body {
   padding: 20px;
   font-size: 20px;
   font-weight: 800;
-  border-radius: 14px;
+  border-radius: 12px;
   border: none;
   background: #1b5e20;
   color: #fff;
@@ -314,7 +314,7 @@ body {
 .res-info-box {
   background: #f8f9fa;
   border: 1px solid #e0e4ea;
-  border-radius: 10px;
+  border-radius: 12px;
   padding: 14px 16px;
   text-align: left;
   margin: 0 auto 4px;
@@ -341,7 +341,7 @@ body {
   font-size: 12px;
   color: #f57c00;
   background: #fff8e1;
-  border-radius: 6px;
+  border-radius: 12px;
   padding: 6px 10px;
   text-align: center;
 }
@@ -367,7 +367,7 @@ body {
 .error-msg {
   background: #ffebee;
   border: 1px solid #ef9a9a;
-  border-radius: 10px;
+  border-radius: 12px;
   padding: 12px 14px;
   color: #c62828;
   font-size: 13px;
@@ -392,7 +392,7 @@ body {
 .confirm-info-box {
   background: var(--bg);
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: 12px;
   padding: 4px 0;
   margin-bottom: 20px;
 }
@@ -430,7 +430,7 @@ body {
 .offline-notice {
   background: #fff3e0;
   border: 1px solid #ffb74d;
-  border-radius: 10px;
+  border-radius: 12px;
   padding: 12px 14px;
   color: #e65100;
   font-size: 13px;

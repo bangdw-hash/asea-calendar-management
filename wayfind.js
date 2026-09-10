@@ -164,7 +164,7 @@
     var m = document.createElement('div');
     m.id = 'wf-edge-menu'; m.className = 'wf-edge-menu';
     m.style.left = x + 'px'; m.style.top = y + 'px';
-    m.innerHTML = '<button class="wf-em-del">🗑 이 구간 선 삭제</button><button class="wf-em-cancel">취소</button>';
+    m.innerHTML = '<button class="wf-em-del">이 구간 선 삭제</button><button class="wf-em-cancel">취소</button>';
     document.body.appendChild(m);
     m.querySelector('.wf-em-del').addEventListener('click', function (e) {
       e.stopPropagation();
@@ -200,7 +200,7 @@
   function errBox(e) { return '<div class="dorm-card"><p style="color:#dc2626">오류: ' + esc(e && e.message || e) + '</p><p class="dorm-muted">테이블이 없으면 wayfind 마이그레이션 SQL을 먼저 실행하세요.</p></div>'; }
 
   function renderLogin() {
-    root().innerHTML = '<div class="dorm-card" style="max-width:420px;margin:24px auto"><h2 class="dorm-h2">🔐 안내도 관리자 로그인</h2>' +
+    root().innerHTML = '<div class="dorm-card" style="max-width:420px;margin:24px auto"><h2 class="dorm-h2">안내도 관리자 로그인</h2>' +
       '<p class="dorm-muted">기숙사관리와 동일한 Supabase 계정으로 로그인하세요.</p>' +
       '<label class="dorm-label">이메일</label><input id="wf-e" class="form-input" type="email">' +
       '<label class="dorm-label">비밀번호</label><input id="wf-p" class="form-input" type="password">' +
@@ -258,13 +258,13 @@
     var f = curFloor();
     var portalUrl = portalBase() + 'wayfind.html';
     root().innerHTML =
-      '<div class="dorm-top"><h2 class="dorm-title">🧭 안내도 설계</h2>' +
+      '<div class="dorm-top"><h2 class="dorm-title">안내도 설계</h2>' +
         '<div class="dorm-user">' + esc((_session && _session.user && _session.user.email) || '') + ' <button id="wf-logout" class="btn btn-ghost btn-sm">로그아웃</button></div></div>' +
       '<div class="dorm-card"><div class="dorm-row4">' +
         '<div><label class="dorm-label">층(도면)</label><select id="wf-floor" class="form-select">' +
           (W.floors.length ? W.floors.map(function (x) { return '<option value="' + x.id + '"' + (x.id === W.cur ? ' selected' : '') + '>' + esc(x.name) + '</option>'; }).join('') : '<option value="">- 없음 -</option>') + '</select></div>' +
         '<div style="align-self:end"><button id="wf-addfloor" class="btn btn-secondary btn-sm">+ 층/도면 추가</button></div>' +
-        '<div style="align-self:end"><label class="btn btn-secondary btn-sm" style="cursor:pointer">🖼 도면 업로드<input id="wf-img" type="file" accept="image/*" hidden></label></div>' +
+        '<div style="align-self:end"><label class="btn btn-secondary btn-sm" style="cursor:pointer">도면 업로드<input id="wf-img" type="file" accept="image/*" hidden></label></div>' +
         '<div style="align-self:end"><button id="wf-save" class="btn btn-primary">경로 그래프 저장</button></div>' +
       '</div>' +
       (f ? '<div class="dorm-actions" style="margin-top:6px;align-items:center">' +
@@ -274,10 +274,10 @@
         '<select id="wf-grid" class="form-select" style="width:auto;padding:4px 8px;font-size:12px" title="격자 간격(작을수록 세밀)">' +
           [0.5, 1, 2, 2.5, 5].map(function (g) { return '<option value="' + g + '"' + (W.grid === g ? ' selected' : '') + '>격자 ' + g + '%</option>'; }).join('') + '</select>' +
         '<label class="dorm-cb"><input type="checkbox" id="wf-ortho"' + (W.ortho ? ' checked' : '') + '> 직각(ㄱ자) 이동선</label>' +
-        '<button id="wf-autoroute" class="btn btn-secondary btn-sm" title="이름 있는 지점들을 가장 가까운 순서로 직각(ㄱ자) 경로로 자동 연결합니다">🪄 지점 자동 연결</button>' +
+        '<button id="wf-autoroute" class="btn btn-secondary btn-sm" title="이름 있는 지점들을 가장 가까운 순서로 직각(ㄱ자) 경로로 자동 연결합니다">지점 자동 연결</button>' +
         '<button id="wf-delfloor" class="btn btn-ghost btn-sm" style="color:#dc2626;margin-left:auto">이 층 삭제</button></div>' +
         (W.mode === 'node' ? '<div class="dorm-actions" style="margin-top:4px;flex-wrap:wrap">' +
-          [['일반', '📍 일반'], ['계단', '🪜 계단'], ['엘리베이터', '🛗 엘리베이터'], ['출입구', '🚪 출입구(대피)']].map(function (t) {
+          [['일반', '일반'], ['계단', '계단'], ['엘리베이터', '엘리베이터'], ['출입구', '출입구(대피)']].map(function (t) {
             return '<button class="dorm-mode' + (W.nodeType === t[0] ? ' active' : '') + '" data-wfnt="' + t[0] + '">' + t[1] + '</button>'; }).join('') +
           '<span class="dorm-muted" style="align-self:center">유형을 고르고 빈 곳을 클릭하면 그 유형의 점이 생깁니다.</span></div>' : '') +
         (W.mode === 'align' ? '<div class="dorm-actions" style="margin-top:4px;flex-wrap:wrap">' +
@@ -300,18 +300,18 @@
         ' <b style="color:#dc2626">우클릭</b>: 경로(선)=그 경로 삭제 · 지점=그 지점 삭제. (계단/엘리베이터는 <b>여러 층에 같은 이름</b>으로 두면 층간 자동 연결됩니다.) <b>격자 맞춤</b> 켜면 점이 격자(약 ' + W.grid + '%)에 붙어 정렬이 쉬워집니다.</p>' : '') +
       '<div id="wf-stage" class="wf-stage' + (f && f.image ? '' : ' empty') + '">' + (f && f.image ? '<img src="' + f.image + '" class="wf-img"><svg class="wf-svg" viewBox="0 0 100 100" preserveAspectRatio="none"></svg><div class="wf-nodes"></div>' : '<div class="dorm-muted">' + (f ? '도면 이미지를 업로드하세요.' : '먼저 「+ 층/도면 추가」로 층을 만드세요.') + '</div>') + '</div>' +
       '</div><div id="wf-prop"></div>' +
-      '<div class="dorm-card"><h3 class="dorm-h3">🔗 안내 포털 / QR</h3>' +
+      '<div class="dorm-card"><h3 class="dorm-h3">안내 포털 / QR</h3>' +
         '<p class="dorm-muted">방문자는 각 지점의 QR을 찍으면 그 지점이 출발지로 설정됩니다. 포털 주소: <b>' + esc(portalUrl) + '</b></p>' +
         '<div class="dorm-actions"><a class="btn btn-secondary btn-sm" href="' + portalUrl + '" target="_blank" rel="noopener">안내 포털 열기</a></div></div>' +
-      '<div class="dorm-card"><h3 class="dorm-h3">🧪 시뮬레이션 / QR 화면 미리보기</h3>' +
+      '<div class="dorm-card"><h3 class="dorm-h3">시뮬레이션 / QR 화면 미리보기</h3>' +
         '<div class="dorm-row4">' +
           '<div><label class="dorm-label">출발(현재 위치)</label><select id="wf-sim-from" class="form-select">' + nodeOpts('') + '</select></div>' +
           '<div><label class="dorm-label">도착(목적지)</label><select id="wf-sim-to" class="form-select">' + nodeOpts('') + '</select></div>' +
           '<div><label class="dorm-label">이동수단</label><select id="wf-sim-mode" class="form-select"><option value="walk">도보(계단)</option><option value="elevator">엘리베이터</option></select></div>' +
           '<div style="align-self:end"><button id="wf-sim-go" class="btn btn-primary btn-sm">시뮬레이션 열기</button></div>' +
         '</div>' +
-        '<div class="dorm-actions"><button id="wf-sim-qr" class="btn btn-secondary btn-sm">📱 QR 스캔 화면 미리보기(출발 지점)</button>' +
-          '<button id="wf-sim-evac" class="btn btn-sm" style="background:#dc2626;color:#fff;border:none">🚨 대피 경로 미리보기(가장 가까운 출구)</button></div>' +
+        '<div class="dorm-actions"><button id="wf-sim-qr" class="btn btn-secondary btn-sm">QR 스캔 화면 미리보기(출발 지점)</button>' +
+          '<button id="wf-sim-evac" class="btn btn-sm" style="background:#dc2626;color:#fff;border:none">대피 경로 미리보기(가장 가까운 출구)</button></div>' +
         '<p class="dorm-muted">방문자가 실제로 보는 길찾기 화면이 새 창으로 열립니다. (출발→도착 경로가 자동 재생됩니다) · 대피 미리보기는 <b>출입구(대피)</b>로 표시한 지점 중 가장 가까운 곳으로 안내합니다.</p></div>';
     document.getElementById('wf-logout').addEventListener('click', async function () { try { await _db.auth.signOut(); } catch (e) {} _session = null; renderLogin(); });
     document.getElementById('wf-floor').addEventListener('change', function () { W.cur = this.value; W.sel = null; W.linkFrom = null; render(); });
@@ -331,7 +331,7 @@
     var sev = document.getElementById('wf-sim-evac'); if (sev) sev.addEventListener('click', function () {
       var a = val('wf-sim-from') || W.sel;
       if (!a) { toast('출발 지점을 선택(또는 도면에서 지점 클릭)하세요.', 'warning'); return; }
-      if (!W.nodes.some(function (n) { return n.exit; })) { toast('출입구(대피) 지점을 먼저 추가하세요. (지점 추가 → 🚪 출입구)', 'warning'); return; }
+      if (!W.nodes.some(function (n) { return n.exit; })) { toast('출입구(대피) 지점을 먼저 추가하세요. (지점 추가 → 출입구)', 'warning'); return; }
       window.open(portalBase() + 'wayfind.html?from=' + encodeURIComponent(a) + '&evac=1', '_blank', 'noopener');
     });
     if (f) {
@@ -481,7 +481,7 @@
     wrap.innerHTML = nodes.map(function (n) {
       var dangle = !n.name && (deg[n.id] || 0) <= 1;   // 이름 없는 허공 끝점 = 경고 표시
       var cls = 'wf-mk t-' + esc(n.type) + (n.type === '경유' ? ' wp' : '') + (n.exit ? ' exit' : '') + (dangle ? ' dangle' : '') + (n.name ? ' ' + labelPos(n) : '') + (W.sel === n.id ? ' sel' : '') + (W.alignSel.indexOf(n.id) >= 0 ? ' asel' : '') + ((W.linkFrom === n.id || W.wireFrom === n.id) ? ' linking' : '') + (n.qr ? ' qr' : '');
-      var lab = !n.name ? '' : '<span>' + esc(n.exit ? '🚪' + n.name : n.name) + '</span>';
+      var lab = !n.name ? '' : '<span>' + esc(n.exit ? '[출구] ' + n.name : n.name) + '</span>';
       return '<div class="' + cls + '" data-id="' + n.id + '" style="left:' + n.x + '%;top:' + n.y + '%" title="' + esc(n.name || '경유점') + ' — 우클릭으로 삭제">' + lab + '</div>'; }).join('');
     wrap.querySelectorAll('.wf-mk').forEach(function (m) {
       if (W.mode === 'move' || W.mode === 'node') wfDrag(m);
@@ -536,10 +536,10 @@
         '<optgroup label="층간 입출입">' + ['계단', '엘리베이터'].map(function (t) { return '<option' + (t === n.type ? ' selected' : '') + '>' + t + '</option>'; }).join('') + '</optgroup>' +
         '<optgroup label="이동선">' + ['경유'].map(function (t) { return '<option' + (t === n.type ? ' selected' : '') + '>' + t + '</option>'; }).join('') + '</optgroup>' +
         '</select></div>' +
-      '<div style="align-self:end"><label class="dorm-cb"><input type="checkbox" id="wf-n-exit"' + (n.exit ? ' checked' : '') + '> 🚪 출입구(대피)</label></div>' +
+      '<div style="align-self:end"><label class="dorm-cb"><input type="checkbox" id="wf-n-exit"' + (n.exit ? ' checked' : '') + '> 출입구(대피)</label></div>' +
       '<div style="align-self:end"><label class="dorm-cb"><input type="checkbox" id="wf-n-qr"' + (n.qr ? ' checked' : '') + '> QR 지점</label></div>' +
       '<div style="align-self:end"><button id="wf-n-del" class="btn btn-ghost btn-sm" style="color:#dc2626">지점 삭제</button></div></div>' +
-      (n.qr ? '<div class="dorm-actions" style="align-items:center"><img src="' + qrImg(link, 160) + '" style="width:160px;height:160px;border:1px solid #e5e7eb;border-radius:8px"><div><p class="dorm-muted" style="word-break:break-all">' + esc(link) + '</p><button id="wf-n-copy" class="btn btn-secondary btn-sm">링크 복사</button> <a class="btn btn-ghost btn-sm" href="' + qrImg(link, 600) + '" target="_blank">QR 크게보기</a></div></div>' : '<p class="dorm-muted">「QR 지점」을 체크하면 이 지점의 QR(현재위치 설정용)이 생성됩니다.</p>') +
+      (n.qr ? '<div class="dorm-actions" style="align-items:center"><img src="' + qrImg(link, 160) + '" style="width:160px;height:160px;border:1px solid #e5e7eb;border-radius:12px"><div><p class="dorm-muted" style="word-break:break-all">' + esc(link) + '</p><button id="wf-n-copy" class="btn btn-secondary btn-sm">링크 복사</button> <a class="btn btn-ghost btn-sm" href="' + qrImg(link, 600) + '" target="_blank">QR 크게보기</a></div></div>' : '<p class="dorm-muted">「QR 지점」을 체크하면 이 지점의 QR(현재위치 설정용)이 생성됩니다.</p>') +
       '</div>';
     document.getElementById('wf-n-name').addEventListener('input', function () { n.name = this.value; wfRenderGraph(); });
     document.getElementById('wf-n-type').addEventListener('change', function () { n.type = this.value; wfRenderGraph(); });

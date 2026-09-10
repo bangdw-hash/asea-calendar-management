@@ -11,16 +11,16 @@
   *{ box-sizing:border-box; }
   body{ font-family:"Malgun Gothic","Apple SD Gothic Neo",sans-serif; margin:0; background:#eef3f8; color:#1f2937; }
   .wrap{ max-width:640px; margin:0 auto; padding:14px 12px 80px; }
-  .hd{ background:var(--c); color:#fff; border-radius:14px; padding:16px 18px; margin-bottom:12px; }
+  .hd{ background:var(--c); color:#fff; border-radius:12px; padding:16px 18px; margin-bottom:12px; }
   .hd h1{ font-size:18px; margin:0 0 3px; } .hd p{ font-size:12px; margin:0; opacity:.85; }
-  .card{ background:#fff; border:1px solid #e5e7eb; border-radius:14px; padding:16px; margin-bottom:12px; }
+  .card{ background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding:16px; margin-bottom:12px; }
   label{ display:block; font-size:13px; font-weight:600; color:#374151; margin:8px 0 5px; }
-  input[type=text]{ width:100%; padding:12px; border:1.5px solid #d1d5db; border-radius:9px; font-size:15px; }
+  input[type=text]{ width:100%; padding:12px; border:1.5px solid #d1d5db; border-radius:12px; font-size:15px; }
   .drop{ border:2px dashed #cbd5e1; border-radius:12px; padding:26px 14px; text-align:center; color:#6b7280; font-size:14px; cursor:pointer; background:#f8fafc; }
   .drop.over{ border-color:var(--c); background:#eef4fb; color:var(--c); }
   .drop b{ color:var(--c); }
   .fname{ font-size:13px; color:#111; margin-top:8px; font-weight:600; }
-  .btn{ width:100%; background:var(--c); color:#fff; border:none; border-radius:10px; padding:14px; font-size:17px; font-weight:700; cursor:pointer; margin-top:14px; }
+  .btn{ width:100%; background:var(--c); color:#fff; border:none; border-radius:12px; padding:14px; font-size:17px; font-weight:700; cursor:pointer; margin-top:14px; }
   .btn:disabled{ opacity:.5; }
   .muted{ font-size:12px; color:#6b7280; line-height:1.7; }
   .res{ border-radius:12px; padding:16px; }
@@ -33,18 +33,18 @@
   .meta b{ color:var(--c); }
   .tlrow{ display:flex; gap:10px; font-size:13px; padding:7px 0; border-bottom:1px solid #f1f5f9; }
   .tldot{ width:10px; height:10px; border-radius:50%; background:var(--c); margin-top:5px; flex-shrink:0; }
-  .chip{ display:inline-block; font-size:11px; font-weight:700; padding:2px 8px; border-radius:999px; }
+  .chip{ display:inline-block; font-size:11px; font-weight:700; padding:2px 8px; border-radius:12px; }
   .chip.ok{ background:#dcfce7; color:#166534; } .chip.no{ background:#fee2e2; color:#991b1b; }
   .err{ color:var(--no); font-size:14px; }
 </style>
 </head>
 <body>
 <div class="wrap">
-  <div class="hd"><h1>🛡 전자계약서 진위 확인</h1><p>등록된 원본과 대조해 위·변조 여부를 확인합니다.</p></div>
+  <div class="hd"><h1>전자계약서 진위 확인</h1><p>등록된 원본과 대조해 위·변조 여부를 확인합니다.</p></div>
   <div class="card">
     <label>계약 ID</label><input type="text" id="cid" placeholder="검증할 계약 ID">
     <label>계약서 PDF 파일</label>
-    <div class="drop" id="drop">📄 여기로 <b>PDF를 끌어다 놓거나</b> 눌러서 선택하세요<div class="fname" id="fname"></div></div>
+    <div class="drop" id="drop">여기로 <b>PDF를 끌어다 놓거나</b> 눌러서 선택하세요<div class="fname" id="fname"></div></div>
     <input type="file" id="file" accept="application/pdf" hidden>
     <button class="btn" id="go">확인하기</button>
     <div class="err" id="err" style="display:none;margin-top:8px"></div>
@@ -127,16 +127,16 @@ function compare(fileHash, sub, origFileHash, orig){
 function render(res, rec){
   var html='';
   if(res.valid){
-    html+='<div class="res ok"><h2>✅ 이 계약서는 원본과 동일합니다.</h2>'+
+    html+='<div class="res ok"><h2>이 계약서는 원본과 동일합니다.</h2>'+
       '<div class="meta">등록 일시: <b>'+fmtDate(rec.registered_at)+'</b> (서버 시각 기준)<br>'+
       '전체 페이지 수: <b>'+(rec.total_pages||0)+'페이지</b> (모두 원본과 일치)<br>'+
       '무결성 해시: <b>SHA-256 일치</b></div></div>';
   } else {
-    html+='<div class="res no"><h2>⚠ 이 계약서는 원본과 다릅니다.</h2><ul>'+
+    html+='<div class="res no"><h2>이 계약서는 원본과 다릅니다.</h2><ul>'+
       res.issues.map(function(x){return '<li>'+esc(x)+'</li>';}).join('')+'</ul>'+
       '<div class="meta">원본 등록 일시: <b>'+fmtDate(rec.registered_at)+'</b><br>원본 페이지 수: <b>'+(rec.total_pages||0)+'페이지</b></div></div>';
   }
-  document.getElementById('out').innerHTML='<div class="card">'+html+'</div><div class="card"><h2 style="font-size:15px;color:var(--c);margin:0 0 8px">📜 감사 이력</h2><div id="tl" class="muted">불러오는 중…</div></div>';
+  document.getElementById('out').innerHTML='<div class="card">'+html+'</div><div class="card"><h2 style="font-size:15px;color:var(--c);margin:0 0 8px">감사 이력</h2><div id="tl" class="muted">불러오는 중…</div></div>';
 }
 
 async function logVerify(id, res){

@@ -10,44 +10,44 @@
   *{ box-sizing:border-box; }
   body{ font-family:"Malgun Gothic","Apple SD Gothic Neo",sans-serif; margin:0; background:#eef3f8; color:#1f2937; }
   .wrap{ max-width:620px; margin:0 auto; padding:14px 12px 60px; }
-  .hd{ background:var(--c); color:#fff; border-radius:14px; padding:14px 16px; margin-bottom:12px; }
+  .hd{ background:var(--c); color:#fff; border-radius:12px; padding:14px 16px; margin-bottom:12px; }
   .hd h1{ font-size:17px; margin:0 0 2px; } .hd p{ font-size:12px; margin:0; opacity:.85; }
-  .card{ background:#fff; border:1px solid #e5e7eb; border-radius:14px; padding:14px; margin-bottom:12px; }
+  .card{ background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding:14px; margin-bottom:12px; }
   label{ display:block; font-size:12px; font-weight:600; color:#374151; margin:8px 0 4px; }
-  select,input{ width:100%; padding:11px 12px; border:1.5px solid #d1d5db; border-radius:9px; font-size:15px; }
-  .btn{ width:100%; background:var(--c); color:#fff; border:none; border-radius:10px; padding:13px; font-size:16px; font-weight:700; cursor:pointer; margin-top:12px; }
+  select,input{ width:100%; padding:11px 12px; border:1.5px solid #d1d5db; border-radius:12px; font-size:15px; }
+  .btn{ width:100%; background:var(--c); color:#fff; border:none; border-radius:12px; padding:13px; font-size:16px; font-weight:700; cursor:pointer; margin-top:12px; }
   .muted{ font-size:12px; color:#6b7280; line-height:1.6; }
   .err{ color:#dc2626; font-size:13px; }
   h2{ font-size:15px; color:var(--c); margin:0 0 8px; }
-  .stage{ position:relative; width:100%; background:#f1f5f9; border:1px solid #e5e7eb; border-radius:10px; overflow:hidden; }
+  .stage{ position:relative; width:100%; background:#f1f5f9; border:1px solid #e5e7eb; border-radius:12px; overflow:hidden; }
   .stage img{ display:block; width:100%; height:auto; }
   .stage svg{ position:absolute; inset:0; width:100%; height:100%; }
   .floorttl{ font-weight:700; color:var(--c); margin:4px 0 6px; }
-  .trans{ background:#eef4fb; border:1px solid #cfe0f3; border-radius:10px; padding:10px 12px; font-size:14px; margin:10px 0; color:#1a3a5c; }
+  .trans{ background:#eef4fb; border:1px solid #cfe0f3; border-radius:12px; padding:10px 12px; font-size:14px; margin:10px 0; color:#1a3a5c; }
   .steps{ font-size:13px; line-height:1.8; }
   .dot{ position:absolute; transform:translate(-50%,-50%); width:14px; height:14px; border-radius:50%; border:2px solid #fff; box-shadow:0 1px 3px rgba(0,0,0,.4); }
   .dot.s{ background:#16a34a; } .dot.e{ background:#dc2626; }
-  .pin{ position:absolute; transform:translate(-50%,-110%); font-size:11px; font-weight:700; background:#111; color:#fff; padding:2px 6px; border-radius:6px; white-space:nowrap; }
-  .destlist{ max-height:260px; overflow-y:auto; border:1px solid #e5e7eb; border-radius:10px; margin-top:6px; padding:4px; }
+  .pin{ position:absolute; transform:translate(-50%,-110%); font-size:11px; font-weight:700; background:#111; color:#fff; padding:2px 6px; border-radius:12px; white-space:nowrap; }
+  .destlist{ max-height:260px; overflow-y:auto; border:1px solid #e5e7eb; border-radius:12px; margin-top:6px; padding:4px; }
   .dgrp{ font-size:11px; font-weight:700; color:#64748b; padding:6px 8px 2px; }
-  .destbtn{ width:100%; text-align:left; background:#fff; border:1px solid #eef1f4; border-radius:8px; padding:10px 12px; margin:3px 0; font-size:14px; cursor:pointer; display:flex; justify-content:space-between; align-items:center; }
+  .destbtn{ width:100%; text-align:left; background:#fff; border:1px solid #eef1f4; border-radius:12px; padding:10px 12px; margin:3px 0; font-size:14px; cursor:pointer; display:flex; justify-content:space-between; align-items:center; }
   .destbtn.on{ background:var(--c); color:#fff; border-color:var(--c); }
   .dty{ font-size:11px; opacity:.7; }
   .destbtn.on .dty{ opacity:.9; }
   .modes{ display:flex; gap:10px; margin:4px 0; }
-  .mode{ flex:1; display:flex; align-items:center; justify-content:center; gap:6px; border:1.5px solid #d1d5db; border-radius:9px; padding:10px; font-size:14px; cursor:pointer; }
+  .mode{ flex:1; display:flex; align-items:center; justify-content:center; gap:6px; border:1.5px solid #d1d5db; border-radius:12px; padding:10px; font-size:14px; cursor:pointer; }
   .mode input{ width:auto; }
   .simdot{ position:absolute; transform:translate(-50%,-50%); width:18px; height:18px; border-radius:50%; background:#2563eb; border:3px solid #fff; box-shadow:0 0 0 4px rgba(37,99,235,.35); animation:simpulse 1.1s infinite; }
   @keyframes simpulse{ 0%{box-shadow:0 0 0 0 rgba(37,99,235,.5);} 100%{box-shadow:0 0 0 11px rgba(37,99,235,0);} }
   .simctl{ display:flex; gap:8px; margin-top:10px; }
-  .simctl button{ flex:1; padding:11px; border:1.5px solid #cfe0f3; background:#fff; color:var(--c); border-radius:9px; font-size:15px; font-weight:700; cursor:pointer; }
+  .simctl button{ flex:1; padding:11px; border:1.5px solid #cfe0f3; background:#fff; color:var(--c); border-radius:12px; font-size:15px; font-weight:700; cursor:pointer; }
   .simctl button:disabled{ opacity:.4; cursor:default; }
   #sim-play{ background:var(--c); color:#fff; border-color:var(--c); }
 </style>
 </head>
 <body>
 <div class="wrap">
-  <div class="hd"><h1>🧭 아세아 길찾기</h1><p>QR을 찍은 지점이 현재 위치로 설정됩니다.</p></div>
+  <div class="hd"><h1>아세아 길찾기</h1><p>QR을 찍은 지점이 현재 위치로 설정됩니다.</p></div>
   <div id="app"><div class="card"><p class="muted">불러오는 중…</p></div></div>
 </div>
 <script>
@@ -100,17 +100,17 @@ function renderDestList(q){
 function renderForm(){
   var fromName=NMAP[FROM]?NMAP[FROM].name:'';
   app.innerHTML='<div class="card"><h2>현재 위치</h2>'+
-    (FROM&&NMAP[FROM]? '<p style="font-size:15px"><b>📍 '+esc(fromName)+'</b> <span class="muted">('+esc((FMAP[NMAP[FROM].floor]||{}).name||'')+')</span></p>'
+    (FROM&&NMAP[FROM]? '<p style="font-size:15px"><b>'+esc(fromName)+'</b> <span class="muted">('+esc((FMAP[NMAP[FROM].floor]||{}).name||'')+')</span></p>'
       : '<label>현재 위치 선택</label><select id="wf-from">'+nodeOptions(FROM)+'</select>')+
     '<label>이동수단</label><div class="modes">'+
-      '<label class="mode"><input type="radio" name="wf-mode" value="walk" checked> 🚶 도보(계단)</label>'+
-      '<label class="mode"><input type="radio" name="wf-mode" value="elevator"> 🛗 엘리베이터</label>'+
+      '<label class="mode"><input type="radio" name="wf-mode" value="walk" checked> 도보(계단)</label>'+
+      '<label class="mode"><input type="radio" name="wf-mode" value="elevator"> 엘리베이터</label>'+
     '</div>'+
     '<label>목적지 검색 (예: 교수실, 여자화장실, 휴게실)</label><input id="wf-q" placeholder="이름으로 검색…">'+
     '<div id="wf-dest" class="destlist"></div>'+
     '<div class="err" id="wf-err" style="display:none"></div>'+
     '<button class="btn" id="wf-go">길찾기</button>'+
-    '<button class="btn" id="wf-evac" style="background:#dc2626;margin-top:8px">🔥 가장 빠른 대피 경로</button></div>'+
+    '<button class="btn" id="wf-evac" style="background:#dc2626;margin-top:8px">가장 빠른 대피 경로</button></div>'+
     '<div id="wf-out"></div>';
   document.getElementById('wf-q').addEventListener('input',function(){ renderDestList(this.value); });
   document.getElementById('wf-go').addEventListener('click', go);
@@ -186,7 +186,7 @@ function renderRoute(path,isEvac){
   path.forEach(function(id){ var n=NMAP[id]; if(!cur||cur.floor!==n.floor){ cur={floor:n.floor,ids:[]}; segs.push(cur); } cur.ids.push(id); });
   var endName=esc(NMAP[path[path.length-1]].name);
   var html='<div id="wf-sim"></div>'+
-    '<div class="card"><h2>'+(isEvac?'🔥 대피 경로 안내':'경로 안내')+'</h2><p class="muted">📍 '+esc(NMAP[path[0]].name)+' → '+(isEvac?'🚪 '+endName+' (출구)':'🏁 '+endName)+'</p></div>';
+    '<div class="card"><h2>'+(isEvac?'대피 경로 안내':'경로 안내')+'</h2><p class="muted">'+esc(NMAP[path[0]].name)+' → '+(isEvac?endName+' (출구)':endName)+'</p></div>';
   segs.forEach(function(seg,si){
     var f=FMAP[seg.floor]||{};
     var pts=seg.ids.map(function(id){ return NMAP[id]; });
@@ -195,7 +195,7 @@ function renderRoute(path,isEvac){
     if(f.image){
       var dots='';
       if(si===0) dots+='<div class="dot s" style="left:'+pts[0].x+'%;top:'+pts[0].y+'%"></div><div class="pin" style="left:'+pts[0].x+'%;top:'+pts[0].y+'%">출발</div>';
-      if(si===segs.length-1){ var le=pts[pts.length-1]; dots+='<div class="dot e" style="left:'+le.x+'%;top:'+le.y+'%"></div><div class="pin" style="left:'+le.x+'%;top:'+le.y+'%">'+(isEvac?'🚪 대피구':'도착')+'</div>'; }
+      if(si===segs.length-1){ var le=pts[pts.length-1]; dots+='<div class="dot e" style="left:'+le.x+'%;top:'+le.y+'%"></div><div class="pin" style="left:'+le.x+'%;top:'+le.y+'%">'+(isEvac?'대피구':'도착')+'</div>'; }
       html+='<div class="stage"><img src="'+f.image+'">'+
         '<svg viewBox="0 0 100 100" preserveAspectRatio="none"><defs><marker id="ar'+si+'" markerWidth="6" markerHeight="6" refX="4" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#dc2626"/></marker></defs>'+
         '<polyline points="'+poly+'" fill="none" stroke="#dc2626" stroke-width="1.2" stroke-linejoin="round" stroke-linecap="round" marker-end="url(#ar'+si+')"/></svg>'+
@@ -208,7 +208,7 @@ function renderRoute(path,isEvac){
     if(si<segs.length-1){
       var lastNode=NMAP[seg.ids[seg.ids.length-1]];
       var nextFloor=FMAP[segs[si+1].floor]||{};
-      html+='<div class="trans">🔁 <b>'+esc(lastNode.name)+'</b>('+esc(lastNode.type)+')에서 <b>'+esc(nextFloor.name)+'</b>(으)로 이동하세요.</div>';
+      html+='<div class="trans"><b>'+esc(lastNode.name)+'</b>('+esc(lastNode.type)+')에서 <b>'+esc(nextFloor.name)+'</b>(으)로 이동하세요.</div>';
     }
   });
   document.getElementById('wf-out').innerHTML=html;
@@ -242,10 +242,10 @@ function renderSim(){
       '<div class="pin" style="left:'+cur.x+'%;top:'+cur.y+'%">'+esc(cur.name||'경유')+'</div></div>';
   } else { stage='<p class="muted">이 층 도면 이미지가 없습니다. ('+esc(f.name||'')+')</p>'; }
   var hint='';
-  if(idx<len-1){ var nx=NMAP[path[idx+1]]; if(nx&&nx.floor!==cur.floor) hint='<div class="trans">🔁 <b>'+esc(cur.name)+'</b>('+esc(cur.type||'')+')에서 <b>'+esc((FMAP[nx.floor]||{}).name||'')+'</b>(으)로 이동</div>'; }
-  else hint='<div class="trans" style="background:#ecfdf5;border-color:#a7f3d0;color:#065f46">'+(PLAY.isEvac?'🚪 대피 완료':'🏁 목적지 도착')+'</div>';
-  el.innerHTML='<div class="card"><h2>🧭 이동 시뮬레이션</h2><div class="floorttl">'+esc(f.name||'')+' · 단계 '+(idx+1)+' / '+len+'</div>'+stage+
-    '<p style="font-size:15px;margin:8px 0 2px"><b>📍 '+esc(cur.name||'경유점')+'</b></p>'+hint+
+  if(idx<len-1){ var nx=NMAP[path[idx+1]]; if(nx&&nx.floor!==cur.floor) hint='<div class="trans"><b>'+esc(cur.name)+'</b>('+esc(cur.type||'')+')에서 <b>'+esc((FMAP[nx.floor]||{}).name||'')+'</b>(으)로 이동</div>'; }
+  else hint='<div class="trans" style="background:#ecfdf5;border-color:#a7f3d0;color:#065f46">'+(PLAY.isEvac?'대피 완료':'목적지 도착')+'</div>';
+  el.innerHTML='<div class="card"><h2>이동 시뮬레이션</h2><div class="floorttl">'+esc(f.name||'')+' · 단계 '+(idx+1)+' / '+len+'</div>'+stage+
+    '<p style="font-size:15px;margin:8px 0 2px"><b>'+esc(cur.name||'경유점')+'</b></p>'+hint+
     '<div class="simctl"><button id="sim-prev"'+(idx===0?' disabled':'')+'>◀ 이전</button><button id="sim-play">'+(playing?'⏸ 일시정지':'▶ 재생')+'</button><button id="sim-next"'+(idx>=len-1?' disabled':'')+'>다음 ▶</button></div></div>';
   document.getElementById('sim-prev').addEventListener('click',simPrev);
   document.getElementById('sim-play').addEventListener('click',simTogglePlay);

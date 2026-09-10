@@ -10,29 +10,29 @@
   *{ box-sizing:border-box; }
   body{ font-family:"Malgun Gothic","Apple SD Gothic Neo",sans-serif; margin:0; background:#eef3f8; color:#1f2937; }
   .wrap{ max-width:680px; margin:0 auto; padding:14px 12px 80px; }
-  .hd{ background:var(--c); color:#fff; border-radius:14px; padding:16px 18px; margin-bottom:12px; }
+  .hd{ background:var(--c); color:#fff; border-radius:12px; padding:16px 18px; margin-bottom:12px; }
   .hd h1{ font-size:18px; margin:0 0 3px; } .hd p{ font-size:13px; margin:0; opacity:.85; }
-  .card{ background:#fff; border:1px solid #e5e7eb; border-radius:14px; padding:16px; margin-bottom:12px; }
+  .card{ background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding:16px; margin-bottom:12px; }
   label{ display:block; font-size:13px; font-weight:600; color:#374151; margin:10px 0 5px; }
   label .req{ color:#dc2626; }
-  input,textarea{ width:100%; padding:12px; border:1.5px solid #d1d5db; border-radius:9px; font-size:16px; }
+  input,textarea{ width:100%; padding:12px; border:1.5px solid #d1d5db; border-radius:12px; font-size:16px; }
   .cb{ display:flex; align-items:center; gap:8px; font-size:15px; } .cb input{ width:auto; }
-  .btn{ width:100%; background:var(--c); color:#fff; border:none; border-radius:10px; padding:14px; font-size:17px; font-weight:700; cursor:pointer; margin-top:14px; }
+  .btn{ width:100%; background:var(--c); color:#fff; border:none; border-radius:12px; padding:14px; font-size:17px; font-weight:700; cursor:pointer; margin-top:14px; }
   .muted{ font-size:12px; color:#6b7280; line-height:1.6; }
   .err{ color:#dc2626; font-size:14px; }
   h2{ font-size:15px; color:var(--c); margin:0 0 8px; }
-  .pageimg{ width:100%; border:1px solid #e5e7eb; border-radius:10px; margin-bottom:8px; }
-  .sigwrap{ border:1.5px dashed #cbd5e1; border-radius:10px; padding:8px; }
-  .sigpad{ width:100%; height:160px; background:#fff; border:1px solid #e5e7eb; border-radius:8px; touch-action:none; }
+  .pageimg{ width:100%; border:1px solid #e5e7eb; border-radius:12px; margin-bottom:8px; }
+  .sigwrap{ border:1.5px dashed #cbd5e1; border-radius:12px; padding:8px; }
+  .sigpad{ width:100%; height:160px; background:#fff; border:1px solid #e5e7eb; border-radius:12px; touch-action:none; }
   .sigbtns{ display:flex; gap:8px; margin-top:6px; }
-  .sigbtns button{ flex:1; padding:9px; border:1px solid #d1d5db; background:#fff; border-radius:8px; font-size:13px; cursor:pointer; }
+  .sigbtns button{ flex:1; padding:9px; border:1px solid #d1d5db; background:#fff; border-radius:12px; font-size:13px; cursor:pointer; }
   .ok{ text-align:center; padding:30px 12px; }
   .ok .big{ font-size:46px; }
 </style>
 </head>
 <body>
 <div class="wrap">
-  <div class="hd"><h1>📝 전자서식 작성</h1><p>아래 항목을 작성하고 제출하세요.</p></div>
+  <div class="hd"><h1>전자서식 작성</h1><p>아래 항목을 작성하고 제출하세요.</p></div>
   <div id="app"><div class="card"><p class="muted">불러오는 중…</p></div></div>
 </div>
 <script>
@@ -112,7 +112,7 @@ async function submit(){
   var btn=document.getElementById('submit'); btn.disabled=true; btn.textContent='제출 중…';
   var r=await db.rpc('form_submit',{p_template:TID,p_name:name,p_contact:(document.getElementById('sub-contact').value||'').trim(),p_values:values,p_signatures:SIGS,p_token:TOKEN||null});
   if(r.error){ btn.disabled=false; btn.textContent='제출하기'; err.textContent='제출 실패: '+esc(r.error.message); err.style.display='block'; return; }
-  app.innerHTML='<div class="card ok"><div class="big">✅</div><h2>제출이 완료되었습니다</h2><p class="muted">작성해 주셔서 감사합니다. 담당자에게 정상 접수되었습니다.</p></div>';
+  app.innerHTML='<div class="card ok"><div class="big"><svg width="46" height="46" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div><h2>제출이 완료되었습니다</h2><p class="muted">작성해 주셔서 감사합니다. 담당자에게 정상 접수되었습니다.</p></div>';
   window.scrollTo({top:0,behavior:'smooth'});
 }
 </script>
