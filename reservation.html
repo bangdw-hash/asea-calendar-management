@@ -241,8 +241,31 @@ header{
   cursor:pointer;font-weight:400;color:#fff;line-height:1.35;
 }
 .rv-pill:hover{filter:brightness(.88)}
+.rv-pill.drag-over-pill{opacity:.5}
+.day-cell.drag-target{background:var(--primary-lt)!important;outline:2px dashed var(--primary);outline-offset:-2px}
 .rv-more{font-size:var(--rv-fs)!important;color:var(--gray);padding:2px 4px;cursor:pointer;font-weight:500}
 .rv-more:hover{color:var(--primary)}
+
+/* right-click context menu */
+#rvCtxMenu{
+  position:fixed;z-index:9999;background:#fff;border:1px solid var(--border);
+  border-radius:var(--r);box-shadow:var(--sh-lg);padding:4px;min-width:160px;
+}
+#rvCtxMenu button{
+  display:block;width:100%;text-align:left;background:none;border:none;
+  padding:9px 14px;font-size:13px;color:var(--text);cursor:pointer;
+  border-radius:8px;font-family:var(--font);
+}
+#rvCtxMenu button:hover{background:var(--gray-lt)}
+#rvCtxMenu .ctx-del{color:var(--red)}
+#rvCtxMenu .ctx-sep{height:1px;background:var(--border);margin:3px 0}
+
+/* admin list: plain text action links */
+.adm-act{background:none;border:none;padding:0;font-size:12px;cursor:pointer;font-family:var(--font)}
+.adm-act-link{color:var(--primary)}.adm-act-link:hover{text-decoration:underline}
+.adm-act-del{color:var(--red)}.adm-act-del:hover{text-decoration:underline}
+.adm-act-edit{color:var(--primary)}.adm-act-edit:hover{text-decoration:underline}
+.adm-act-linked{color:var(--green);font-weight:600;font-size:11px}
 
 /* mini calendar popup: compact cells */
 #mcGrid .cal-cell{min-height:34px;padding:3px}
@@ -800,6 +823,58 @@ header{
   </div>
 </div>
 
+<!-- 우클릭 컨텍스트 메뉴 -->
+<div id="rvCtxMenu" hidden>
+  <button onclick="ctxAction('detail')">상세 보기</button>
+  <div class="ctx-sep"></div>
+  <button class="adm-act-edit" onclick="ctxAction('edit')" id="ctxEditBtn">수정</button>
+  <button onclick="ctxAction('link')" id="ctxLinkBtn">학교일정 연동</button>
+  <div class="ctx-sep" id="ctxDelSep"></div>
+  <button class="ctx-del" onclick="ctxAction('delete')" id="ctxDeleteBtn">삭제</button>
+  <div class="ctx-sep"></div>
+  <button onclick="closeCtxMenu()">닫기</button>
+</div>
+
+<!-- 배치 연동 선택 다이얼로그 -->
+<div id="batchLinkModal" class="modal" onclick="if(event.target===this)closeBatchLinkM()">
+  <div class="modal-box" style="max-width:360px">
+    <div class="modal-hdr">
+      <span id="batchLinkTitle">학교일정 연동</span>
+      <button class="modal-close" onclick="closeBatchLinkM()">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M12 4L4 12M4 4l8 8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <p id="batchLinkMsg" style="font-size:13px;color:var(--gray);margin:0 0 16px"></p>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <button class="btn btn-green" id="batchLinkAllBtn" onclick="doBatchLink(true)"></button>
+        <button class="btn btn-outline" id="batchLinkOneBtn" onclick="doBatchLink(false)"></button>
+        <button class="btn btn-outline" onclick="closeBatchLinkM()">취소</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 배치 연동해제 선택 다이얼로그 -->
+<div id="batchUnlinkModal" class="modal" onclick="if(event.target===this)closeBatchUnlinkM()">
+  <div class="modal-box" style="max-width:360px">
+    <div class="modal-hdr">
+      <span>학교일정 연동 해제</span>
+      <button class="modal-close" onclick="closeBatchUnlinkM()">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M12 4L4 12M4 4l8 8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <p id="batchUnlinkMsg" style="font-size:13px;color:var(--gray);margin:0 0 16px"></p>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <button class="btn btn-red" id="batchUnlinkAllBtn" onclick="doBatchUnlink(true)"></button>
+        <button class="btn btn-outline" id="batchUnlinkOneBtn" onclick="doBatchUnlink(false)"></button>
+        <button class="btn btn-outline" onclick="closeBatchUnlinkM()">취소</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div id="toast"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
@@ -1256,7 +1331,8 @@ function buildCell(cell, today) {
 
   const rvs = getRvsForDate(s);
   const pills = buildPills(rvs);
-  return `<div class="${cls}" data-s="${s}"><div class="day-cell-hdr"><span class="day-num">${d}</span><span class="day-dow">${_WD[dow]}</span></div><div class="rv-pills">${pills}</div></div>`;
+  const dropAttrs = isAdmin() ? ` ondragover="cellDragOver(event)" ondrop="cellDrop(event,'${s}')" ondragleave="cellDragLeave(event)"` : '';
+  return `<div class="${cls}" data-s="${s}"${dropAttrs}><div class="day-cell-hdr"><span class="day-num">${d}</span><span class="day-dow">${_WD[dow]}</span></div><div class="rv-pills">${pills}</div></div>`;
 }
 
 function getRvsForDate(dateStr) {
@@ -1274,7 +1350,11 @@ function buildPills(rvs) {
   let h = rvs.slice(0, MAX).map(rv => {
     const c = rv.classroom_color || '#1A73E8';
     const lbl = rv.formatted_label || mkLabel(rv.classroom_name, rv.time_start, rv.time_end, rv.purpose);
-    return `<div class="rv-pill" style="background:${c}" onclick="event.stopPropagation();openDetail('${rv.id}')" title="${esc(lbl)}">${esc(lbl)}</div>`;
+    const dragAttrs = isAdmin()
+      ? ` draggable="true" ondragstart="pillDragStart(event,'${rv.id}')" ondragend="pillDragEnd(event)"`
+      : '';
+    const ctxAttr = ` oncontextmenu="openCtxMenu(event,'${rv.id}')"`;
+    return `<div class="rv-pill" style="background:${c}"${dragAttrs}${ctxAttr} onclick="event.stopPropagation();openDetail('${rv.id}')" title="${esc(lbl)}">${esc(lbl)}</div>`;
   }).join('');
   if (rvs.length > MAX) h += `<div class="rv-more" onclick="event.stopPropagation()">+${rvs.length - MAX}건 더보기</div>`;
   return h;
@@ -1967,10 +2047,11 @@ async function submitRv() {
 
     let records;
     if (selMode === 'multi' && selDates.length > 1) {
-      records = selDates.map(d => mkRecord(room, color, d, d, ts, te, purp, dept, req, cont, pwHash, rentalInfo, visitorNames, vehicleNums, notes));
+      const batchId = 'batch-' + Date.now() + '-' + Math.random().toString(36).slice(2, 7);
+      records = selDates.map(d => mkRecord(room, color, d, d, ts, te, purp, dept, req, cont, pwHash, rentalInfo, visitorNames, vehicleNums, notes, batchId));
     } else {
       const dateS = selDates[0], dateE = selDates[selDates.length - 1];
-      records = [mkRecord(room, color, dateS, dateE, ts, te, purp, dept, req, cont, pwHash, rentalInfo, visitorNames, vehicleNums, notes)];
+      records = [mkRecord(room, color, dateS, dateE, ts, te, purp, dept, req, cont, pwHash, rentalInfo, visitorNames, vehicleNums, notes, null)];
     }
 
     const { error } = await sb.from('reservations').insert(records);
@@ -1990,7 +2071,7 @@ async function submitRv() {
   }
 }
 
-function mkRecord(room, color, ds, de, ts, te, purp, dept, req, cont, pwHash, rentalInfo, visitorNames, vehicleNums, notes) {
+function mkRecord(room, color, ds, de, ts, te, purp, dept, req, cont, pwHash, rentalInfo, visitorNames, vehicleNums, notes, batchId) {
   const rec = {
     classroom_name: room, classroom_color: color,
     date_start: ds, date_end: de, time_start: ts, time_end: te,
@@ -1999,6 +2080,7 @@ function mkRecord(room, color, ds, de, ts, te, purp, dept, req, cont, pwHash, re
     formatted_label: mkLabel(room, ts, te, purp, rentalInfo),
     password_hash: pwHash,
   };
+  if (batchId) rec.batch_id = batchId;
   if (visitorNames) rec.visitor_names = visitorNames;
   if (vehicleNums)  rec.vehicle_numbers = vehicleNums;
   if (notes)        rec.notes = notes;
@@ -2024,7 +2106,7 @@ async function openDetail(id) {
   if (!rv) return;
 
   const body = document.getElementById('detailBody');
-  const isLinked = rv.synced_to_schedule;
+  const isLinked = !!rv.schedule_event_id;
 
   body.innerHTML = `<div class="detail-grid">
     <div class="detail-row">
@@ -2089,12 +2171,12 @@ async function openDetail(id) {
 
   let ftr = `<button class="btn btn-outline" onclick="closeDetail()">닫기</button>`;
   if (isAdmin()) {
+    const linkedBtn = isLinked
+      ? `<button class="btn btn-green btn-sm" onclick="openScheduleAtDate('${rv.date_start}')">학교일정 연동 완료</button>`
+      : `<button class="btn btn-outline btn-sm" onclick="adminLink('${id}')">학교일정 연동</button>`;
     ftr = `<button class="btn btn-red btn-sm" onclick="adminDelRv('${id}')">삭제</button>
            <button class="btn btn-primary btn-sm" onclick="adminEditRv('${id}')">수정</button>
-           ${isLinked
-             ? `<button class="btn btn-outline btn-sm" onclick="adminUnlink('${id}')">연동 해제</button>`
-             : `<button class="btn btn-green btn-sm" onclick="adminLink('${id}')">학교일정 연동</button>`
-           }` + ftr;
+           ${linkedBtn}` + ftr;
   } else {
     ftr = `<button class="btn btn-outline btn-sm" onclick="openPwM('edit','${id}')">수정</button>
            <button class="btn btn-red btn-sm" onclick="openPwM('delete','${id}')">삭제</button>` + ftr;
@@ -2325,21 +2407,83 @@ function adminEditRv(id) {
   openEditM(id, '', true);
 }
 
+/* ── 배치 연동 다이얼로그 state ── */
+let _batchLinkId = null;
+let _batchUnlinkId = null;
+
 async function adminLink(id) {
   if (!isAdmin()) return;
-  const { data } = await sb.rpc('link_to_schedule', { p_reservation_id: id, p_admin_email: adminEmail });
+  const rv = reservations.find(r => r.id === id);
+  if (!rv) return;
+
+  if (rv.batch_id) {
+    // 배치에 속한 경우: 몇 건인지 확인 후 다이얼로그
+    const { data: bi } = await sb.rpc('get_batch_info', { p_reservation_id: id });
+    const n = bi?.count || 1;
+    _batchLinkId = id;
+    document.getElementById('batchLinkMsg').textContent =
+      `이 예약은 같은 날짜 묶음으로 일괄 등록된 ${n}건 중 하나입니다.\n어떻게 연동하시겠습니까?`;
+    document.getElementById('batchLinkAllBtn').textContent = `연동된 일정 전체 (${n}건) 연동`;
+    document.getElementById('batchLinkOneBtn').textContent = '이 일정만 연동';
+    showM('batchLinkModal');
+  } else {
+    await _doLink(id, false);
+  }
+}
+
+async function doBatchLink(linkAll) {
+  closeBatchLinkM();
+  await _doLink(_batchLinkId, linkAll);
+  _batchLinkId = null;
+}
+
+async function _doLink(id, linkAll) {
+  const { data } = await sb.rpc('link_to_schedule', {
+    p_reservation_id: id, p_admin_email: adminEmail, p_link_all: linkAll
+  });
   if (!data?.success) return toast('연동 실패: ' + (data?.error || ''), 'error');
-  toast('학교일정에 연동되었습니다', 'success');
+  const cnt = data?.linked_count || 1;
+  toast(`학교일정에 연동되었습니다 (${cnt}건)`, 'success');
   closeDetail(); await loadRvs();
 }
 
+function closeBatchLinkM() { hideM('batchLinkModal'); }
+
 async function adminUnlink(id) {
   if (!isAdmin()) return;
-  const { data } = await sb.rpc('unlink_from_schedule', { p_reservation_id: id, p_admin_email: adminEmail });
+  const rv = reservations.find(r => r.id === id);
+  if (!rv) return;
+
+  if (rv.batch_id) {
+    const { data: bi } = await sb.rpc('get_batch_info', { p_reservation_id: id });
+    const n = bi?.count || 1;
+    _batchUnlinkId = id;
+    document.getElementById('batchUnlinkMsg').textContent =
+      `이 예약은 같은 날짜 묶음으로 연동된 ${n}건 중 하나입니다.\n어떻게 해제하시겠습니까?`;
+    document.getElementById('batchUnlinkAllBtn').textContent = `전체 (${n}건) 연동 해제`;
+    document.getElementById('batchUnlinkOneBtn').textContent = '이 일정만 해제';
+    showM('batchUnlinkModal');
+  } else {
+    await _doUnlink(id, false);
+  }
+}
+
+async function doBatchUnlink(unlinkAll) {
+  closeBatchUnlinkM();
+  await _doUnlink(_batchUnlinkId, unlinkAll);
+  _batchUnlinkId = null;
+}
+
+async function _doUnlink(id, unlinkAll) {
+  const { data } = await sb.rpc('unlink_from_schedule', {
+    p_reservation_id: id, p_admin_email: adminEmail, p_unlink_all: unlinkAll
+  });
   if (!data?.success) return toast('연동 해제 실패: ' + (data?.error || ''), 'error');
   toast('연동이 해제되었습니다', 'success');
   closeDetail(); await loadRvs();
 }
+
+function closeBatchUnlinkM() { hideM('batchUnlinkModal'); }
 
 /* ── Admin panel ── */
 let admRvs = [];
@@ -2360,6 +2504,7 @@ async function renderAdminPanel() {
     ['reservations', '예약 목록'],
     ['classrooms', '강의실 관리'],
     ['companies', '대관업체 관리'],
+    ['rental', '대관 관리'],
     ['billing', '대관료 청구 관리'],
   ];
   body.innerHTML = `
@@ -2372,6 +2517,7 @@ async function renderAdminPanel() {
   if (admTab === 'reservations') await loadAdminList();
   else if (admTab === 'classrooms') await renderClassroomsTab();
   else if (admTab === 'companies') await renderCompaniesTab();
+  else if (admTab === 'rental') await renderRentalTab();
   else if (admTab === 'billing') await renderBillingTab();
 }
 
@@ -2414,20 +2560,20 @@ function renderAdmTable() {
           </tr>
         </thead>
         <tbody>
-          ${rvs.map(rv => `<tr>
+          ${rvs.map(rv => `<tr style="cursor:pointer" onclick="window.open('reservation.html#rv-${rv.id}','_blank')" title="새 탭에서 열기">
             <td style="white-space:nowrap">${rv.date_start}${rv.date_start!==rv.date_end?'<br>~'+rv.date_end:''}</td>
             <td><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${rv.classroom_color||'#1A73E8'};margin-right:4px;vertical-align:middle"></span>${esc(rv.classroom_name)}</td>
             <td style="white-space:nowrap">${rv.time_start}~${rv.time_end}</td>
-            <td style="max-width:140px;overflow:hidden">${esc(rv.purpose)}</td>
+            <td style="max-width:120px;overflow:hidden">${esc(rv.purpose)}</td>
             <td>${esc(rv.department)}</td>
             <td>${esc(rv.requester_name)}</td>
             <td>${esc(rv.contact||'')}</td>
-            <td>${rv.synced_to_schedule
-              ? `<button class="btn btn-xs btn-outline" onclick="admUnlink('${rv.id}')">연동해제</button>`
-              : `<button class="btn btn-xs btn-green" onclick="admLink('${rv.id}')">연동</button>`}</td>
-            <td style="display:flex;gap:3px">
-              <button class="btn btn-xs btn-primary" onclick="adminEditRv('${rv.id}')">수정</button>
-              <button class="btn btn-xs btn-red" onclick="adminDelRv('${rv.id}')">삭제</button>
+            <td onclick="event.stopPropagation()">${rv.schedule_event_id
+              ? `<span class="adm-act-linked">연동완료</span>`
+              : `<button class="adm-act adm-act-link" onclick="admLink('${rv.id}')">연동</button>`}</td>
+            <td onclick="event.stopPropagation()" style="display:flex;gap:8px;align-items:center">
+              <button class="adm-act adm-act-edit" onclick="adminEditRv('${rv.id}')">수정</button>
+              <button class="adm-act adm-act-del" onclick="adminDelRv('${rv.id}')">삭제</button>
             </td>
           </tr>`).join('')}
         </tbody>
@@ -2442,6 +2588,214 @@ async function admLink(id) {
 async function admUnlink(id) {
   await adminUnlink(id);
   await loadAdminList();
+}
+
+/* ── 학교일정 연동 완료 버튼 → schedule.html 해당 날짜로 열기 ── */
+function openScheduleAtDate(dateStr) {
+  window.open('schedule.html?date=' + dateStr, '_blank');
+}
+
+/* ── 우클릭 컨텍스트 메뉴 ── */
+let _ctxId = null;
+function openCtxMenu(e, id) {
+  e.preventDefault();
+  e.stopPropagation();
+  _ctxId = id;
+  const rv = reservations.find(r => r.id === id);
+  const menu = document.getElementById('rvCtxMenu');
+
+  const linkBtn = document.getElementById('ctxLinkBtn');
+  const delBtn  = document.getElementById('ctxDeleteBtn');
+  const delSep  = document.getElementById('ctxDelSep');
+  const editBtn = document.getElementById('ctxEditBtn');
+
+  if (isAdmin()) {
+    if (rv?.schedule_event_id) {
+      linkBtn.textContent = '학교일정 연동 완료';
+      linkBtn.onclick = () => { openScheduleAtDate(rv.date_start); closeCtxMenu(); };
+    } else {
+      linkBtn.textContent = '학교일정 연동';
+      linkBtn.onclick = () => { ctxAction('link'); };
+    }
+    delBtn.hidden = false; delSep.hidden = false; editBtn.hidden = false;
+  } else {
+    linkBtn.hidden = true; delBtn.hidden = true; delSep.hidden = true; editBtn.hidden = true;
+  }
+
+  menu.hidden = false;
+  const x = Math.min(e.clientX, window.innerWidth - 170);
+  const y = Math.min(e.clientY, window.innerHeight - menu.offsetHeight - 10);
+  menu.style.left = x + 'px';
+  menu.style.top  = y + 'px';
+}
+function closeCtxMenu() {
+  document.getElementById('rvCtxMenu').hidden = true;
+  _ctxId = null;
+}
+function ctxAction(action) {
+  const id = _ctxId;
+  closeCtxMenu();
+  if (!id) return;
+  if (action === 'detail') openDetail(id);
+  else if (action === 'edit') adminEditRv(id);
+  else if (action === 'link') adminLink(id);
+  else if (action === 'delete') adminDelRv(id);
+}
+document.addEventListener('click', e => {
+  const menu = document.getElementById('rvCtxMenu');
+  if (menu && !menu.hidden && !menu.contains(e.target)) closeCtxMenu();
+});
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeCtxMenu(); });
+
+/* ── 드래그로 일정 이동 (관리자 전용) ── */
+let _dragRvId = null;
+function pillDragStart(e, id) {
+  if (!isAdmin()) { e.preventDefault(); return; }
+  _dragRvId = id;
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain', id);
+  e.target.classList.add('drag-over-pill');
+}
+function pillDragEnd(e) {
+  e.target.classList.remove('drag-over-pill');
+  document.querySelectorAll('.day-cell.drag-target').forEach(c => c.classList.remove('drag-target'));
+}
+function cellDragOver(e) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  const cell = e.currentTarget;
+  if (!cell.classList.contains('drag-target')) cell.classList.add('drag-target');
+}
+function cellDragLeave(e) {
+  e.currentTarget.classList.remove('drag-target');
+}
+async function cellDrop(e, targetDate) {
+  e.preventDefault();
+  e.currentTarget.classList.remove('drag-target');
+  const id = _dragRvId;
+  _dragRvId = null;
+  if (!id || !isAdmin()) return;
+
+  const rv = reservations.find(r => r.id === id);
+  if (!rv) return;
+
+  const origStart = new Date(rv.date_start);
+  const origEnd   = new Date(rv.date_end);
+  const durDays   = Math.round((origEnd - origStart) / 86400000);
+  const newStart  = new Date(targetDate);
+  const newEnd    = new Date(newStart);
+  newEnd.setDate(newEnd.getDate() + durDays);
+
+  const fmt = d => d.toISOString().slice(0, 10);
+  if (fmt(newStart) === rv.date_start) return;
+
+  const { data } = await sb.rpc('admin_modify_reservation', {
+    p_id: id, p_admin_email: adminEmail,
+    p_date_start: fmt(newStart), p_date_end: fmt(newEnd),
+    p_time_start: rv.time_start, p_time_end: rv.time_end,
+    p_purpose: rv.purpose, p_department: rv.department,
+    p_requester_name: rv.requester_name, p_contact: rv.contact || null,
+    p_formatted_label: rv.formatted_label || null
+  });
+  if (!data?.success) return toast('이동 실패: ' + (data?.error || ''), 'error');
+  toast('일정이 이동되었습니다', 'success');
+  await loadRvs();
+}
+
+/* ── 대관 관리 탭 ── */
+let _rentalFilter = { org: '', dateFrom: '', dateTo: '' };
+let _rentalSort   = { col: 'date_start', asc: false };
+let _rentalData   = [];
+
+async function renderRentalTab() {
+  if (!isAdmin()) return;
+  const target = document.getElementById('admTabContent');
+  if (target) target.innerHTML = '<div style="display:flex;justify-content:center;padding:40px"><div class="spinner"></div></div>';
+  const { data } = await sb.from('reservations').select('*')
+    .is('deleted_at', null).eq('status', 'active').eq('is_rental', true)
+    .order('date_start', { ascending: false }).limit(500);
+  _rentalData = data || [];
+  renderRentalTable();
+}
+
+function renderRentalTable() {
+  const target = document.getElementById('admTabContent');
+  if (!target) return;
+  const today = new Date().toISOString().slice(0, 10);
+
+  let rows = [..._rentalData];
+  if (_rentalFilter.org) rows = rows.filter(r => (r.external_org_name || '').includes(_rentalFilter.org));
+  if (_rentalFilter.dateFrom) rows = rows.filter(r => r.date_end >= _rentalFilter.dateFrom);
+  if (_rentalFilter.dateTo)   rows = rows.filter(r => r.date_start <= _rentalFilter.dateTo);
+
+  const col = _rentalSort.col;
+  rows.sort((a, b) => {
+    let av = a[col] ?? '', bv = b[col] ?? '';
+    if (typeof av === 'number') return _rentalSort.asc ? av - bv : bv - av;
+    return _rentalSort.asc ? String(av).localeCompare(String(bv)) : String(bv).localeCompare(String(av));
+  });
+
+  const sortIcon = (c) => {
+    if (_rentalSort.col !== c) return '<span style="color:#ccc;font-size:9px">⇅</span>';
+    return _rentalSort.asc
+      ? '<span style="color:var(--primary);font-size:9px">▲</span>'
+      : '<span style="color:var(--primary);font-size:9px">▼</span>';
+  };
+  const th = (c, label) => `<th style="cursor:pointer;user-select:none;white-space:nowrap" onclick="rentalSort('${c}')">${label} ${sortIcon(c)}</th>`;
+
+  target.innerHTML = `
+    <div class="adm-filters" style="flex-wrap:wrap;gap:6px">
+      <input type="text" class="fi" style="width:160px" placeholder="외부기관명 검색..."
+        value="${esc(_rentalFilter.org)}" oninput="_rentalFilter.org=this.value;renderRentalTable()">
+      <label style="font-size:12px;color:var(--gray);align-self:center">날짜 범위</label>
+      <input type="date" class="fi" style="width:140px" value="${_rentalFilter.dateFrom}"
+        onchange="_rentalFilter.dateFrom=this.value;renderRentalTable()">
+      <span style="font-size:12px;color:var(--gray);align-self:center">~</span>
+      <input type="date" class="fi" style="width:140px" value="${_rentalFilter.dateTo}"
+        onchange="_rentalFilter.dateTo=this.value;renderRentalTable()">
+      <button class="btn btn-sm btn-outline" onclick="_rentalFilter={org:'',dateFrom:'',dateTo:''};renderRentalTable()">초기화</button>
+      <button class="btn btn-sm btn-primary" onclick="renderRentalTab()">새로고침</button>
+    </div>
+    <div style="font-size:12px;color:var(--gray);margin-bottom:8px">${rows.length}건</div>
+    <div class="tbl-wrap">
+      <table class="rv-tbl">
+        <thead><tr>
+          ${th('date_start','날짜')}
+          ${th('time_start','시간')}
+          ${th('external_org_name','외부기관명')}
+          ${th('classroom_name','강의실')}
+          ${th('course_name','과정명')}
+          ${th('rental_fee_daily','일 대관료')}
+          ${th('created_at','등록일')}
+          <th>예정·종료</th>
+        </tr></thead>
+        <tbody>
+          ${rows.map(rv => {
+            const status = rv.date_end >= today
+              ? '<span style="display:inline-block;padding:2px 7px;border-radius:4px;background:var(--green-lt);color:var(--green);font-size:11px;font-weight:600">예정</span>'
+              : '<span style="display:inline-block;padding:2px 7px;border-radius:4px;background:var(--gray-lt);color:var(--gray);font-size:11px;font-weight:600">종료</span>';
+            const fee = rv.rental_fee_daily ? Number(rv.rental_fee_daily).toLocaleString() + '원' : '-';
+            const createdAt = rv.created_at ? rv.created_at.slice(0, 10) : '-';
+            return `<tr style="cursor:pointer" onclick="window.open('reservation.html#rv-${rv.id}','_blank')" title="새 탭에서 열기">
+              <td style="white-space:nowrap">${rv.date_start}${rv.date_start!==rv.date_end?'~'+rv.date_end:''}</td>
+              <td style="white-space:nowrap">${rv.time_start}~${rv.time_end}</td>
+              <td>${esc(rv.external_org_name||'-')}</td>
+              <td>${esc(rv.classroom_name)}</td>
+              <td style="max-width:120px;overflow:hidden">${esc(rv.course_name||rv.purpose||'-')}</td>
+              <td style="text-align:right;font-variant-numeric:tabular-nums">${fee}</td>
+              <td>${createdAt}</td>
+              <td>${status}</td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>`;
+}
+
+function rentalSort(col) {
+  if (_rentalSort.col === col) _rentalSort.asc = !_rentalSort.asc;
+  else { _rentalSort.col = col; _rentalSort.asc = true; }
+  renderRentalTable();
 }
 
 function admLogout() {
