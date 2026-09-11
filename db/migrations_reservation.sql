@@ -258,5 +258,36 @@ begin
   return jsonb_build_object('success', true);
 end; $$;
 
+-- ============================================================================
+-- 10) rv_field_history — 사용 목적/과정명 히스토리 (크로스 디바이스)
+-- ============================================================================
+create table if not exists rv_field_history (
+  id         bigint generated always as identity primary key,
+  field_key  text not null,
+  value      text not null,
+  last_used  timestamptz default now(),
+  constraint rv_field_history_unique unique (field_key, value)
+);
+create index if not exists idx_rv_field_history_key on rv_field_history(field_key, last_used desc);
+alter table rv_field_history enable row level security;
+do $$ begin
+  if not exists (select 1 from pg_policies where tablename='rv_field_history' and policyname='rv_field_history_all') then
+    execute 'create policy rv_field_history_all on rv_field_history for all using (true) with check (true);';
+  end if;
+end $$;
+
+-- ============================================================================
+-- 11) reservations — 비고란 컬럼 추가 (방문자 이름, 차량 번호, 비고)
+-- ============================================================================
+alter table reservations add column if not exists visitor_names    text;
+alter table reservations add column if not exists vehicle_numbers  text;
+alter table reservations add column if not exists notes            text;
+
+-- ============================================================================
+-- 12) classrooms — category 컬럼 추가 (기존 DB에 NOT NULL로 추가된 경우 대비)
+-- ============================================================================
+alter table classrooms add column if not exists category text default '강의실';
+update classrooms set category = '강의실' where category is null;
+
 -- 끝. 'Success. No rows returned' 가 나오면 정상입니다. ---------------------
 -- 이후: Supabase 대시보드 → Settings → API → Reload Schema Cache 클릭.

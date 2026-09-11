@@ -422,6 +422,16 @@ header{
 .hist-val{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .hist-del{flex-shrink:0;font-size:11px;color:var(--gray);line-height:1;padding:2px 4px;border-radius:4px}
 .hist-del:hover{background:var(--red-lt);color:var(--red)}
+.hist-save-btn{font-size:10px;color:var(--gray);background:none;border:1px solid var(--border);border-radius:6px;cursor:pointer;padding:2px 7px;transition:.15s;flex-shrink:0;font-family:var(--font)}
+.hist-save-btn:hover{border-color:var(--primary);color:var(--primary);background:var(--primary-lt)}
+/* ── Notes section ── */
+.notes-section{border:1.5px dashed var(--border);border-radius:var(--r);padding:10px 12px}
+.notes-toggle{display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;-webkit-user-select:none}
+.notes-toggle-lbl{font-size:12px;font-weight:600;color:var(--gray);display:flex;align-items:center;gap:5px}
+.notes-toggle-ico{font-size:11px;color:var(--primary);background:none;border:none;cursor:pointer;padding:0;font-family:var(--font)}
+.notes-body{margin-top:10px;display:flex;flex-direction:column;gap:8px}
+/* Detail hyperlinks */
+.dv a{color:var(--primary);text-decoration:underline;word-break:break-all}
 
 </style>
 </head>
@@ -581,7 +591,10 @@ header{
 
     <div class="frow" id="fgRentalCourse" hidden>
       <div class="fg">
-        <div class="fl">과정명 <span class="req">*</span></div>
+        <div class="fl" style="display:flex;align-items:center;justify-content:space-between">
+          <span>과정명 <span class="req">*</span></span>
+          <button type="button" class="hist-save-btn" onclick="manualSaveHist('asea_rv_course','courseNameIn')">저장</button>
+        </div>
         <div class="hist-wrap">
           <input type="text" id="courseNameIn" class="fi" placeholder="예: 2026년 상반기 실무교육" autocomplete="off" value="">
           <div id="courseHistDrop" class="hist-drop" hidden></div>
@@ -594,7 +607,10 @@ header{
     </div>
 
     <div class="fg">
-      <div class="fl">사용 목적 <span class="req">*</span></div>
+      <div class="fl" style="display:flex;align-items:center;justify-content:space-between">
+        <span>사용 목적 <span class="req">*</span></span>
+        <button type="button" class="hist-save-btn" onclick="manualSaveHist('asea_rv_purpose','purposeIn')">저장</button>
+      </div>
       <div class="hist-wrap">
         <textarea id="purposeIn" class="fta" placeholder="예: 신변보호사 대면강좌, 외부 강사 특강, 자격증 시험 등"></textarea>
         <div id="purposeHistDrop" class="hist-drop" hidden></div>
@@ -640,6 +656,33 @@ header{
     </div>
 
     <div class="info-box">비밀번호는 수정·삭제 시 사용됩니다. 분실 시 관리자에게 문의해주세요.</div>
+
+    <!-- 비고 (선택) -->
+    <div class="notes-section">
+      <div class="notes-toggle" onclick="toggleNotes()">
+        <span class="notes-toggle-lbl">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          비고 <span style="font-size:10px;font-weight:400;color:var(--gray)">(선택) 관리실·출입 참고용</span>
+        </span>
+        <span id="notesToggleIco" class="notes-toggle-ico">펼치기 ▼</span>
+      </div>
+      <div id="notesBody" class="notes-body" hidden>
+        <div class="frow">
+          <div class="fg">
+            <div class="fl">출입자 이름</div>
+            <input type="text" id="visitorNamesIn" class="fi" placeholder="홍길동, 김철수 (쉼표 구분)" autocomplete="off">
+          </div>
+          <div class="fg">
+            <div class="fl">차량 번호</div>
+            <input type="text" id="vehicleNumsIn" class="fi" placeholder="12가 3456, 78나 9012" autocomplete="off">
+          </div>
+        </div>
+        <div class="fg">
+          <div class="fl">비고</div>
+          <textarea id="notesIn" class="fta" placeholder="관리실 참고사항, 링크 등&#10;예: https://..."></textarea>
+        </div>
+      </div>
+    </div>
 
     <div style="display:flex;gap:8px">
       <button class="btn btn-primary" style="flex:1" id="submitBtn" onclick="submitRv()">예약 등록</button>
@@ -831,18 +874,46 @@ function changeDensity(dir) {
 }
 
 
-/* ── Field history (사용 목적 / 과정명 자동완성) ── */
-const _HIST_MAX = 15;
-function _getHist(k) { try { return JSON.parse(localStorage.getItem(k) || '[]'); } catch(e) { return []; } }
-function _saveHist(k, v) {
-  if (!v) return;
-  let a = _getHist(k).filter(x => x !== v);
-  a.unshift(v);
-  if (a.length > _HIST_MAX) a = a.slice(0, _HIST_MAX);
-  try { localStorage.setItem(k, JSON.stringify(a)); } catch(e) {}
+/* ── Field history (사용 목적 / 과정명 — Supabase 크로스 디바이스 + localStorage 캐시) ── */
+const _HIST_MAX = 20;
+const _histCache = {};
+
+function _lsKey(k) { return 'asea_rv_' + k; }
+
+async function _fetchHist(key) {
+  try {
+    const { data } = await sb.from('rv_field_history')
+      .select('value').eq('field_key', key)
+      .order('last_used', { ascending: false }).limit(_HIST_MAX);
+    const sbVals = (data || []).map(r => r.value);
+    let lsVals = [];
+    try { lsVals = JSON.parse(localStorage.getItem(_lsKey(key)) || '[]'); } catch(e) {}
+    const merged = [...new Set([...sbVals, ...lsVals])].slice(0, _HIST_MAX);
+    _histCache[key] = merged;
+    try { localStorage.setItem(_lsKey(key), JSON.stringify(merged)); } catch(e) {}
+  } catch(e) {
+    try { _histCache[key] = JSON.parse(localStorage.getItem(_lsKey(key)) || '[]'); } catch(e2) { _histCache[key] = []; }
+  }
 }
-function _delHist(k, v) {
-  try { localStorage.setItem(k, JSON.stringify(_getHist(k).filter(x => x !== v))); } catch(e) {}
+
+function _getHistCached(key) { return _histCache[key] || []; }
+
+async function _saveHist(key, value) {
+  if (!value?.trim()) return;
+  const arr = (_histCache[key] || []).filter(v => v !== value);
+  arr.unshift(value);
+  _histCache[key] = arr.slice(0, _HIST_MAX);
+  try { localStorage.setItem(_lsKey(key), JSON.stringify(_histCache[key])); } catch(e) {}
+  try {
+    await sb.from('rv_field_history')
+      .upsert({ field_key: key, value, last_used: new Date().toISOString() }, { onConflict: 'field_key,value' });
+  } catch(e) {}
+}
+
+async function _delHist(key, value) {
+  _histCache[key] = (_histCache[key] || []).filter(v => v !== value);
+  try { localStorage.setItem(_lsKey(key), JSON.stringify(_histCache[key])); } catch(e) {}
+  try { await sb.from('rv_field_history').delete().eq('field_key', key).eq('value', value); } catch(e) {}
 }
 
 function _initFieldHist(inputId, dropId, histKey) {
@@ -851,7 +922,7 @@ function _initFieldHist(inputId, dropId, histKey) {
   if (!input || !drop) return;
 
   function render(filter) {
-    const all = _getHist(histKey);
+    const all = _getHistCached(histKey);
     const list = filter ? all.filter(v => v.toLowerCase().includes(filter.toLowerCase())) : all;
     if (!list.length) { drop.hidden = true; return; }
     drop.innerHTML = list.map(v =>
@@ -876,14 +947,46 @@ function _initFieldHist(inputId, dropId, histKey) {
     });
   }
 
-  input.addEventListener('focus', () => render(input.value));
+  input.addEventListener('focus', async () => {
+    render(input.value);
+    await _fetchHist(histKey);
+    render(input.value);
+  });
   input.addEventListener('input', () => render(input.value));
   input.addEventListener('blur', () => setTimeout(() => { drop.hidden = true; }, 200));
 }
 
-function initHistFields() {
+async function initHistFields() {
   _initFieldHist('purposeIn',    'purposeHistDrop', 'asea_rv_purpose');
   _initFieldHist('courseNameIn', 'courseHistDrop',  'asea_rv_course');
+  await Promise.all([_fetchHist('asea_rv_purpose'), _fetchHist('asea_rv_course')]);
+}
+
+async function manualSaveHist(key, inputId) {
+  const val = document.getElementById(inputId)?.value?.trim();
+  if (!val) return toast('입력 내용이 없습니다', 'warn');
+  await _saveHist(key, val);
+  toast('저장되었습니다', 'success');
+}
+
+/* ── Notes section toggle ── */
+function toggleNotes() {
+  const body = document.getElementById('notesBody');
+  const ico  = document.getElementById('notesToggleIco');
+  body.hidden = !body.hidden;
+  ico.textContent = body.hidden ? '펼치기 ▼' : '접기 ▲';
+}
+
+/* ── URL 하이퍼링크 안전 렌더링 ── */
+function linkifyEsc(text) {
+  if (!text) return '';
+  const urls = [];
+  const ph = text.replace(/https?:\/\/[^\s]+/g, u => { urls.push(u); return '\x00' + (urls.length - 1) + '\x00'; });
+  let safe = ph.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  return safe.replace(/\x00(\d+)\x00/g, (_, i) => {
+    const u = urls[+i].replace(/&/g,'&amp;');
+    return `<a href="${u}" target="_blank" rel="noopener noreferrer">${u}</a>`;
+  });
 }
 
 async function init() {
@@ -1546,12 +1649,14 @@ function setMode(mode) {
   document.getElementById('mode' + mode.charAt(0).toUpperCase() + mode.slice(1)).classList.add('on');
   updMultiBanner();
   renderCal();
+  renderDateTags();
 }
 
 function clearSel() {
   selDates = []; rangeStart = null;
   updMultiBanner();
   renderCal();
+  renderDateTags();
 }
 
 function moveMonth(d) {
@@ -1769,10 +1874,12 @@ function resetForm() {
   ['roomSel','deptSel','rentalOrgSel'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('tStart').value = '09:00';
   document.getElementById('tEnd').value = '18:00';
-  ['purposeIn','reqName','reqContact','pwIn','pwIn2','courseNameIn','dailyFeeIn'].forEach(id => document.getElementById(id).value = '');
+  ['purposeIn','reqName','reqContact','pwIn','pwIn2','courseNameIn','dailyFeeIn','visitorNamesIn','vehicleNumsIn','notesIn'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
   document.getElementById('roomDot').style.background = 'var(--primary)';
   document.getElementById('conflictBox').hidden = true;
   document.getElementById('aiBox').hidden = true;
+  const nb = document.getElementById('notesBody'); if (nb) nb.hidden = true;
+  const ni = document.getElementById('notesToggleIco'); if (ni) ni.textContent = '펼치기 ▼';
 }
 
 /* ── Room change → conflict check ── */
@@ -1815,15 +1922,18 @@ async function runCC() {
 
 /* ── Submit reservation ── */
 async function submitRv() {
-  const room = document.getElementById('roomSel').value;
-  const ts   = document.getElementById('tStart').value;
-  const te   = document.getElementById('tEnd').value;
-  const purp = document.getElementById('purposeIn').value.trim();
-  const dept = document.getElementById('deptSel').value;
-  const req  = document.getElementById('reqName').value.trim();
-  const cont = document.getElementById('reqContact').value.trim();
-  const pw   = document.getElementById('pwIn').value;
-  const pw2  = document.getElementById('pwIn2').value;
+  const room    = document.getElementById('roomSel').value;
+  const ts      = document.getElementById('tStart').value;
+  const te      = document.getElementById('tEnd').value;
+  const purp    = document.getElementById('purposeIn').value.trim();
+  const dept    = document.getElementById('deptSel').value;
+  const req     = document.getElementById('reqName').value.trim();
+  const cont    = document.getElementById('reqContact').value.trim();
+  const pw      = document.getElementById('pwIn').value;
+  const pw2     = document.getElementById('pwIn2').value;
+  const visitorNames  = document.getElementById('visitorNamesIn')?.value?.trim() || '';
+  const vehicleNums   = document.getElementById('vehicleNumsIn')?.value?.trim() || '';
+  const notes         = document.getElementById('notesIn')?.value?.trim() || '';
 
   let rentalInfo = null;
   if (drawerRentalMode) {
@@ -1857,10 +1967,10 @@ async function submitRv() {
 
     let records;
     if (selMode === 'multi' && selDates.length > 1) {
-      records = selDates.map(d => mkRecord(room, color, d, d, ts, te, purp, dept, req, cont, pwHash, rentalInfo));
+      records = selDates.map(d => mkRecord(room, color, d, d, ts, te, purp, dept, req, cont, pwHash, rentalInfo, visitorNames, vehicleNums, notes));
     } else {
       const dateS = selDates[0], dateE = selDates[selDates.length - 1];
-      records = [mkRecord(room, color, dateS, dateE, ts, te, purp, dept, req, cont, pwHash, rentalInfo)];
+      records = [mkRecord(room, color, dateS, dateE, ts, te, purp, dept, req, cont, pwHash, rentalInfo, visitorNames, vehicleNums, notes)];
     }
 
     const { error } = await sb.from('reservations').insert(records);
@@ -1880,7 +1990,7 @@ async function submitRv() {
   }
 }
 
-function mkRecord(room, color, ds, de, ts, te, purp, dept, req, cont, pwHash, rentalInfo) {
+function mkRecord(room, color, ds, de, ts, te, purp, dept, req, cont, pwHash, rentalInfo, visitorNames, vehicleNums, notes) {
   const rec = {
     classroom_name: room, classroom_color: color,
     date_start: ds, date_end: de, time_start: ts, time_end: te,
@@ -1889,6 +1999,9 @@ function mkRecord(room, color, ds, de, ts, te, purp, dept, req, cont, pwHash, re
     formatted_label: mkLabel(room, ts, te, purp, rentalInfo),
     password_hash: pwHash,
   };
+  if (visitorNames) rec.visitor_names = visitorNames;
+  if (vehicleNums)  rec.vehicle_numbers = vehicleNums;
+  if (notes)        rec.notes = notes;
   if (rentalInfo) {
     rec.is_rental = true;
     rec.rental_company_id = rentalInfo.orgId;
@@ -1955,6 +2068,15 @@ async function openDetail(id) {
       <div class="dv">${esc(rv.requester_name)}</div>
     </div>
     ${rv.contact ? `<div class="detail-row"><div class="dl">연락처</div><div class="dv">${esc(rv.contact)}</div></div>` : ''}
+    ${(rv.visitor_names || rv.vehicle_numbers || rv.notes) ? `
+    <div class="detail-row">
+      <div class="dl">비고</div>
+      <div class="dv" style="line-height:1.8">
+        ${rv.visitor_names ? `<div><span style="font-size:10px;color:var(--gray);margin-right:4px">출입자</span>${esc(rv.visitor_names)}</div>` : ''}
+        ${rv.vehicle_numbers ? `<div><span style="font-size:10px;color:var(--gray);margin-right:4px">차량번호</span>${esc(rv.vehicle_numbers)}</div>` : ''}
+        ${rv.notes ? `<div style="white-space:pre-wrap;margin-top:2px">${linkifyEsc(rv.notes)}</div>` : ''}
+      </div>
+    </div>` : ''}
     <div class="detail-row">
       <div class="dl">표시 레이블</div>
       <div class="dv label-mono">${esc(rv.formatted_label || mkLabel(rv.classroom_name, rv.time_start, rv.time_end, rv.purpose))}</div>
@@ -2356,6 +2478,7 @@ function paintClassroomsTab() {
       <div style="font-weight:700;font-size:13px;margin-bottom:8px">강의실 추가</div>
       <div class="adm-form-row">
         <input type="text" id="clsNameIn" class="fi" placeholder="강의실명 (예: 301호)">
+        <input type="text" id="clsCategoryIn" class="fi" placeholder="분류 (예: 강의실, 실습실)">
         <select id="clsFloorIn" class="fs">
           ${floorOpts.map(f => `<option value="${f}">${FLOOR_LABEL[f] || f}</option>`).join('')}
         </select>
@@ -2365,10 +2488,11 @@ function paintClassroomsTab() {
     </div>
     <div class="tbl-wrap">
       <table class="rv-tbl">
-        <thead><tr><th>강의실명</th><th>층</th><th>색상</th><th>사용여부</th><th>작업</th></tr></thead>
+        <thead><tr><th>강의실명</th><th>분류</th><th>층</th><th>색상</th><th>사용여부</th><th>작업</th></tr></thead>
         <tbody>
           ${admClassrooms.map(c => `<tr>
             <td>${c.editing ? `<input type="text" class="fi" style="width:110px" id="clsEdName_${c.id}" value="${esc(c.name)}">` : esc(c.name)}</td>
+            <td>${c.editing ? `<input type="text" class="fi" style="width:80px" id="clsEdCat_${c.id}" value="${esc(c.category||'강의실')}">` : esc(c.category||'강의실')}</td>
             <td>${c.editing ? `<select class="fs" id="clsEdFloor_${c.id}">${floorOpts.map(f => `<option value="${f}" ${f === c.floor ? 'selected' : ''}>${FLOOR_LABEL[f] || f}</option>`).join('')}</select>` : (FLOOR_LABEL[c.floor] || c.floor)}</td>
             <td>${c.editing ? `<input type="color" id="clsEdColor_${c.id}" value="${c.color || '#1A73E8'}" style="width:40px;height:28px;padding:0">` : `<span style="display:inline-block;width:14px;height:14px;border-radius:4px;background:${c.color || '#1A73E8'};vertical-align:middle"></span>`}</td>
             <td>${c.active ? '<span style="color:var(--green);font-weight:700">사용중</span>' : '<span style="color:var(--gray)">비활성</span>'}</td>
@@ -2388,11 +2512,12 @@ function paintClassroomsTab() {
 }
 
 async function addClassroom() {
-  const name = document.getElementById('clsNameIn').value.trim();
-  const floor = document.getElementById('clsFloorIn').value;
-  const color = document.getElementById('clsColorIn').value;
+  const name     = document.getElementById('clsNameIn').value.trim();
+  const category = document.getElementById('clsCategoryIn').value.trim() || '강의실';
+  const floor    = document.getElementById('clsFloorIn').value;
+  const color    = document.getElementById('clsColorIn').value;
   if (!name) return toast('강의실명을 입력해주세요', 'warn');
-  const { error } = await sb.from('classrooms').insert({ name, floor, color, active: true });
+  const { error } = await sb.from('classrooms').insert({ name, category, floor, color, active: true });
   if (error) return toast('추가 실패: ' + error.message, 'error');
   toast('강의실이 추가되었습니다', 'success');
   await renderClassroomsTab();
@@ -2408,11 +2533,12 @@ function cancelEditClassroom(id) {
   paintClassroomsTab();
 }
 async function saveClassroom(id) {
-  const name = document.getElementById(`clsEdName_${id}`).value.trim();
-  const floor = document.getElementById(`clsEdFloor_${id}`).value;
-  const color = document.getElementById(`clsEdColor_${id}`).value;
+  const name     = document.getElementById(`clsEdName_${id}`).value.trim();
+  const category = document.getElementById(`clsEdCat_${id}`)?.value?.trim() || '강의실';
+  const floor    = document.getElementById(`clsEdFloor_${id}`).value;
+  const color    = document.getElementById(`clsEdColor_${id}`).value;
   if (!name) return toast('강의실명을 입력해주세요', 'warn');
-  const { error } = await sb.from('classrooms').update({ name, floor, color }).eq('id', id);
+  const { error } = await sb.from('classrooms').update({ name, category, floor, color }).eq('id', id);
   if (error) return toast('수정 실패: ' + error.message, 'error');
   toast('수정되었습니다', 'success');
   await renderClassroomsTab();
