@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>N블로그 자동화 — ASEA</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+<script src="config.js"></script>
 <style>
 /* ── 토큰 ── */
 :root {
@@ -424,8 +425,6 @@ label{font-size:13px;font-weight:500;color:var(--ink2)}
 (function(){
 
 const SUPA_URL = 'https://zbpeyklwpotjyveipzxd.supabase.co';
-const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpicGV5a2x3cG90anl2ZWlwenhkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE1MTYxMDcsImV4cCI6MjA5NzA5MjEwN30.6JgoQ6rPRnmrbBTG68A-Y9HDQk40mnwubhXVnkZvHrQ';
-const AI_PROXY = 'https://zbpeyklwpotjyveipzxd.supabase.co/functions/v1/ai-proxy';
 
 let sb = null;
 let S = {
@@ -441,11 +440,15 @@ let S = {
 document.addEventListener('DOMContentLoaded', function() {
   // Supabase 초기화 (CDN defer 로딩 대기)
   waitSupabase(function() {
-    sb = window.supabase.createClient(SUPA_URL, SUPA_KEY, {
+    var supaKey = (window.SUPA_ANON) || '';
+    sb = window.supabase.createClient(SUPA_URL, supaKey, {
       auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false }
     });
-    document.getElementById('hdr-status').textContent = '연결됨';
+    updateProviderStatus();
   });
+
+  // 클라우드에서 AI 설정 로드 (config.js 제공)
+  if (window.loadAIProvidersFromCloud) window.loadAIProvidersFromCloud().then(updateProviderStatus).catch(function(){});
 
   // 날짜 기본값
   var today = new Date().toISOString().slice(0, 10);
@@ -457,6 +460,18 @@ document.addEventListener('DOMContentLoaded', function() {
     if (saved) document.getElementById('blog-concept').value = saved;
   } catch(e) {}
 });
+
+function updateProviderStatus() {
+  var label = 'AI 연결됨';
+  if (window.getAIProviders) {
+    var P = window.getAIProviders();
+    var active = P.active || 'proxy';
+    var map = { proxy: 'Proxy', official: 'Official', flow: 'Flow' };
+    label = 'AI: ' + (map[active] || active);
+  }
+  var el = document.getElementById('hdr-status');
+  if (el) el.textContent = label;
+}
 
 function waitSupabase(cb) {
   if (window.supabase) { cb(); return; }
@@ -486,24 +501,17 @@ window.updateWordCount = function() {
   document.getElementById('blog-result-word-count').textContent = v.length + '자';
 };
 
-/* ── AI 프록시 호출 ── */
+/* ── AI 호출 (index.html AI 설정 연동) ── */
 async function callAI(model, systemPrompt, userPrompt) {
-  var body = {
-    service: 'claude',
-    payload: {
-      model: model,
-      max_tokens: 4096,
-      system: systemPrompt,
-      messages: [{ role: 'user', content: userPrompt }]
-    }
-  };
-  var res = await fetch(AI_PROXY, {
+  if (!window.claudeFetch) throw new Error('AI 설정이 로드되지 않았습니다. 페이지를 새로고침 해주세요.');
+  var res = await window.claudeFetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body)
+    headers: { 'Content-Type': 'application/json', 'x-api-key': 'via-proxy', 'anthropic-version': '2023-06-01' },
+    body: JSON.stringify({ model: model, max_tokens: 4096, system: systemPrompt, messages: [{ role: 'user', content: userPrompt }] }),
+    keepModel: true
   });
   var data = await res.json();
-  if (data.error) throw new Error(data.error);
+  if (data.error) throw new Error(data.error.message || JSON.stringify(data.error));
   if (!data.content || !data.content[0]) throw new Error('응답 없음');
   return data.content[0].text;
 }
