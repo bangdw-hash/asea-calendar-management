@@ -662,9 +662,10 @@ async function callNaverProxy(type, params) {
   var body = (type === 'datalab')
     ? { service: 'naver', payload: { type: 'datalab', body: params } }
     : { service: 'naver', payload: Object.assign({ type: type }, params) };
+  // GAS CORS 우회: text/plain은 preflight 없이 통과 (GAS는 e.postData.contents로 동일하게 읽음)
   var res = await fetch(url, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'text/plain' },
     body: JSON.stringify(body)
   });
   return await res.json();
