@@ -875,6 +875,26 @@ header{
   </div>
 </div>
 
+<!-- 배치 이동 선택 다이얼로그 -->
+<div id="batchMoveModal" class="modal" onclick="if(event.target===this)closeBatchMoveM()">
+  <div class="modal-box" style="max-width:360px">
+    <div class="modal-hdr">
+      <span>예약 이동</span>
+      <button class="modal-close" onclick="closeBatchMoveM()">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M12 4L4 12M4 4l8 8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <p id="batchMoveMsg" style="font-size:13px;color:var(--gray);margin:0 0 16px;white-space:pre-line"></p>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <button class="btn btn-primary" id="batchMoveAllBtn" onclick="doBatchMove(true)"></button>
+        <button class="btn btn-outline" id="batchMoveOneBtn" onclick="doBatchMove(false)"></button>
+        <button class="btn btn-outline" onclick="closeBatchMoveM()">취소</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- 배치 삭제 선택 다이얼로그 -->
 <div id="batchDelModal" class="modal" onclick="if(event.target===this)closeBatchDelM()">
   <div class="modal-box" style="max-width:360px">
@@ -2732,6 +2752,9 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeCtxMenu
 
 /* ── 드래그로 일정 이동 (관리자 전용) ── */
 let _dragRvId = null;
+let _batchMoveId = null;
+let _batchMoveTargetDate = null;
+
 function pillDragStart(e, id) {
   if (!isAdmin()) { e.preventDefault(); return; }
   _dragRvId = id;
@@ -2762,16 +2785,80 @@ async function cellDrop(e, targetDate) {
   const rv = reservations.find(r => r.id === id);
   if (!rv) return;
 
-  const origStart = new Date(rv.date_start);
-  const origEnd   = new Date(rv.date_end);
-  const durDays   = Math.round((origEnd - origStart) / 86400000);
-  const newStart  = new Date(targetDate);
-  const newEnd    = new Date(newStart);
-  newEnd.setDate(newEnd.getDate() + durDays);
-
   const fmt = d => d.toISOString().slice(0, 10);
+  const newStart = new Date(targetDate);
   if (fmt(newStart) === rv.date_start) return;
 
+  if (rv.batch_id) {
+    const { data: bi } = await sb.rpc('get_batch_info', { p_reservation_id: id });
+    const n = bi?.count || 1;
+    _batchMoveId = id;
+    _batchMoveTargetDate = targetDate;
+    document.getElementById('batchMoveMsg').textContent =
+      `이 예약은 ${n}건이 묶음 등록된 일정입니다.\n어떻게 이동하시겠습니까?`;
+    document.getElementById('batchMoveAllBtn').textContent = `전체 ${n}건 모두 이동`;
+    document.getElementById('batchMoveOneBtn').textContent = '이 일정만 이동';
+    showM('batchMoveModal');
+    return;
+  }
+
+  await _doMoveRv(id, targetDate);
+}
+
+function closeBatchMoveM() { hideM('batchMoveModal'); }
+
+async function doBatchMove(moveAll) {
+  closeBatchMoveM();
+  const id = _batchMoveId;
+  const targetDate = _batchMoveTargetDate;
+  _batchMoveId = null;
+  _batchMoveTargetDate = null;
+  if (!id || !targetDate) return;
+
+  if (moveAll) {
+    const rv = reservations.find(r => r.id === id);
+    if (!rv) return;
+    const { data: allBatch, error: fetchErr } = await sb.from('reservations')
+      .select('*').eq('batch_id', rv.batch_id).is('deleted_at', null);
+    if (fetchErr || !allBatch?.length) return toast('배치 일정 조회 실패', 'error');
+
+    const origStart = new Date(rv.date_start);
+    const newStart  = new Date(targetDate);
+    const offsetMs  = newStart - origStart;
+    const fmt = d => d.toISOString().slice(0, 10);
+
+    for (const bRv of allBatch) {
+      const bStart = new Date(new Date(bRv.date_start).getTime() + offsetMs);
+      const bEnd   = new Date(new Date(bRv.date_end).getTime() + offsetMs);
+      const { data, error } = await sb.rpc('admin_modify_reservation', {
+        p_id: bRv.id, p_admin_email: adminEmail,
+        p_date_start: fmt(bStart), p_date_end: fmt(bEnd),
+        p_time_start: bRv.time_start, p_time_end: bRv.time_end,
+        p_purpose: bRv.purpose, p_department: bRv.department,
+        p_requester_name: bRv.requester_name, p_contact: bRv.contact || null,
+        p_formatted_label: bRv.formatted_label || null
+      });
+      if (error) { toast('이동 실패: ' + error.message, 'error'); await loadRvs(); return; }
+      if (!data?.success) { toast('이동 실패: ' + (data?.error || '알 수 없는 오류'), 'error'); await loadRvs(); return; }
+    }
+    toast(`전체 ${allBatch.length}건 이동되었습니다`, 'success');
+  } else {
+    await _doMoveRv(id, targetDate);
+    return;
+  }
+  await loadRvs();
+}
+
+async function _doMoveRv(id, targetDate) {
+  const rv = reservations.find(r => r.id === id);
+  if (!rv) return;
+  const origEnd = new Date(rv.date_end);
+  const origStart = new Date(rv.date_start);
+  const durDays = Math.round((origEnd - origStart) / 86400000);
+  const newStart = new Date(targetDate);
+  const newEnd = new Date(newStart);
+  newEnd.setDate(newEnd.getDate() + durDays);
+  const fmt = d => d.toISOString().slice(0, 10);
   const { data, error } = await sb.rpc('admin_modify_reservation', {
     p_id: id, p_admin_email: adminEmail,
     p_date_start: fmt(newStart), p_date_end: fmt(newEnd),
