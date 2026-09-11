@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>법인서류 다운로드</title>
+<style>
+/* ── 디자인 토큰 ──────────────────────────────────────────────── */
+:root {
+  --primary:    #1A73E8;
+  --primary-dk: #1557B0;
+  --primary-lt: #E8F0FE;
+  --green:      #16a34a;
+  --green-lt:   #dcfce7;
+  --orange:     #ea580c;
+  --orange-lt:  #ffedd5;
+  --red:        #dc2626;
+  --red-lt:     #fee2e2;
+  --r:          12px;
+  --sh:         0 1px 4px rgba(0,0,0,.08);
+  --sh-md:      0 2px 12px rgba(0,0,0,.1);
+  --sh-lg:      0 4px 24px rgba(0,0,0,.13);
+  --text:       #1f2937;
+  --sub:        #6b7280;
+  --border:     #e5e7eb;
+  --bg:         #f5f6f8;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  padding: 24px 16px;
+}
+
+/* ── 카드 ─────────────────────────────────────────────────────── */
+.card {
+  background: #fff;
+  border-radius: var(--r);
+  box-shadow: var(--sh-md);
+  max-width: 560px;
+  margin: 0 auto 20px;
+  overflow: hidden;
+}
+.card-header {
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.card-header svg { flex-shrink: 0; }
+.card-header h1 { font-size: 17px; font-weight: 700; }
+.card-header .sub { font-size: 12px; color: var(--sub); margin-top: 2px; }
+.card-body { padding: 24px; }
+
+/* ── 버튼 ─────────────────────────────────────────────────────── */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 10px 20px; border-radius: var(--r); font-size: 14px; font-weight: 600;
+  border: none; cursor: pointer; transition: background .15s, opacity .15s;
+  text-decoration: none;
+}
+.btn-primary { background: var(--primary); color: #fff; width: 100%; }
+.btn-primary:hover { background: var(--primary-dk); }
+.btn-primary:disabled { opacity: .45; cursor: not-allowed; }
+.btn-outline {
+  background: transparent; color: var(--primary);
+  border: 1.5px solid var(--primary); width: 100%;
+}
+.btn-outline:hover { background: var(--primary-lt); }
+.btn-danger { background: var(--red-lt); color: var(--red); border: none; }
+.btn-danger:hover { background: #fca5a5; }
+.btn-sm { padding: 6px 12px; font-size: 13px; }
+
+/* ── 폼 ──────────────────────────────────────────────────────── */
+.form-group { margin-bottom: 16px; }
+label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: var(--sub); }
+input[type=text] {
+  width: 100%; padding: 10px 12px; border: 1.5px solid var(--border);
+  border-radius: 8px; font-size: 14px; font-family: inherit; color: var(--text);
+  transition: border .15s;
+}
+input[type=text]:focus { outline: none; border-color: var(--primary); }
+input[type=text][readonly] { background: var(--bg); color: var(--sub); }
+
+/* ── 사용자 정보 배너 ─────────────────────────────────────────── */
+.user-banner {
+  background: var(--primary-lt);
+  border-radius: 8px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+.user-banner .avatar {
+  width: 36px; height: 36px; border-radius: 50%;
+  background: var(--primary); color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 15px; font-weight: 700; flex-shrink: 0;
+}
+.user-banner .name { font-size: 14px; font-weight: 700; }
+.user-banner .email { font-size: 12px; color: var(--sub); }
+
+/* ── 서류 선택 그리드 ─────────────────────────────────────────── */
+.doc-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+.doc-card {
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 12px;
+  cursor: pointer;
+  transition: border-color .15s, background .15s;
+  position: relative;
+}
+.doc-card:hover { border-color: var(--primary); background: var(--primary-lt); }
+.doc-card.selected { border-color: var(--primary); background: var(--primary-lt); }
+.doc-card input[type=radio] { position: absolute; opacity: 0; width: 0; height: 0; }
+.doc-card .doc-name { font-size: 13px; font-weight: 600; color: var(--text); margin-top: 6px; }
+.doc-card .doc-hint { font-size: 11px; color: var(--sub); margin-top: 2px; }
+.doc-card .check {
+  width: 18px; height: 18px; border-radius: 50%;
+  border: 2px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  transition: all .15s;
+}
+.doc-card.selected .check {
+  background: var(--primary); border-color: var(--primary);
+}
+.doc-card.selected .check::after {
+  content: ''; display: block;
+  width: 6px; height: 6px;
+  border-radius: 50%; background: #fff;
+}
+@media (max-width: 420px) { .doc-grid { grid-template-columns: 1fr; } }
+
+/* ── 타이머 ─────────────────────────────────────────────────────*/
+.timer-wrap {
+  text-align: center;
+  padding: 28px 24px;
+}
+.timer-circle {
+  width: 100px; height: 100px; border-radius: 50%;
+  border: 5px solid var(--primary-lt);
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 16px;
+  font-size: 30px; font-weight: 800;
+  color: var(--primary);
+  transition: color .3s, border-color .3s;
+}
+.timer-circle.urgent { color: var(--red); border-color: var(--red-lt); }
+.timer-label { font-size: 13px; color: var(--sub); margin-bottom: 20px; }
+.file-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: 8px; padding: 8px 14px;
+  font-size: 13px; font-weight: 600; color: var(--text);
+  margin-bottom: 20px; max-width: 100%; overflow: hidden;
+  text-overflow: ellipsis; white-space: nowrap;
+}
+
+/* ── 상태 메시지 ────────────────────────────────────────────────*/
+.msg {
+  padding: 12px 14px; border-radius: 8px;
+  font-size: 13px; margin-bottom: 16px; display: none;
+}
+.msg.error   { background: var(--red-lt);   color: var(--red); display: block; }
+.msg.info    { background: var(--primary-lt); color: var(--primary); display: block; }
+.msg.success { background: var(--green-lt); color: var(--green); display: block; }
+
+/* ── 구분선 ─────────────────────────────────────────────────────*/
+.divider { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
+
+/* ── 관리자 탭 ──────────────────────────────────────────────────*/
+.tabs { display: flex; border-bottom: 2px solid var(--border); margin-bottom: 20px; }
+.tab {
+  padding: 10px 18px; font-size: 14px; font-weight: 600; cursor: pointer;
+  color: var(--sub); border-bottom: 2px solid transparent; margin-bottom: -2px;
+  transition: color .15s, border-color .15s;
+}
+.tab.active { color: var(--primary); border-color: var(--primary); }
+
+/* ── 로그 테이블 ────────────────────────────────────────────────*/
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 12px; }
+th, td { padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--border); }
+th { font-weight: 700; color: var(--sub); background: var(--bg); }
+td { color: var(--text); }
+tr:hover td { background: #fafafa; }
+
+/* ── 카테고리 관리 리스트 ───────────────────────────────────────*/
+.cat-list { list-style: none; margin-bottom: 16px; }
+.cat-item {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border);
+  margin-bottom: 8px; background: #fff;
+}
+.cat-item .cat-name { font-size: 14px; font-weight: 600; }
+.cat-item .cat-meta { font-size: 11px; color: var(--sub); }
+
+/* ── 로그인 화면 ────────────────────────────────────────────────*/
+.login-area {
+  text-align: center; padding: 32px 24px;
+}
+.login-area .logo { margin-bottom: 16px; }
+.login-area h2 { font-size: 18px; font-weight: 800; margin-bottom: 8px; }
+.login-area p { font-size: 13px; color: var(--sub); margin-bottom: 24px; line-height: 1.6; }
+
+/* ── 로딩 스피너 ────────────────────────────────────────────────*/
+.spinner {
+  display: inline-block; width: 20px; height: 20px;
+  border: 3px solid rgba(255,255,255,.3);
+  border-top-color: #fff; border-radius: 50%;
+  animation: spin .7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading-row { text-align: center; padding: 20px; color: var(--sub); font-size: 13px; }
+
+/* ── 헤더 ───────────────────────────────────────────────────────*/
+.page-header {
+  max-width: 560px; margin: 0 auto 16px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.page-header .site-name { font-size: 13px; font-weight: 700; color: var(--sub); }
+.page-header .admin-link { font-size: 12px; color: var(--primary); cursor: pointer; text-decoration: underline; }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <span class="site-name">아세아항공직업전문학교</span>
+  <span id="adminLink" style="display:none" class="admin-link" onclick="showAdmin()">관리자</span>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     STEP 1 — 로그인 전
+══════════════════════════════════════════════════════════════ -->
+<div id="step1" class="card">
+  <div class="login-area">
+    <div class="logo">
+      <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+        <rect width="48" height="48" rx="12" fill="#E8F0FE"/>
+        <path d="M24 10L36 17V31L24 38L12 31V17L24 10Z" fill="#1A73E8" opacity=".2"/>
+        <path d="M24 14L32 18.5V27.5L24 32L16 27.5V18.5L24 14Z" fill="#1A73E8" opacity=".5"/>
+        <rect x="20" y="20" width="8" height="10" rx="2" fill="#1A73E8"/>
+        <rect x="22" y="18" width="4" height="5" rx="1" fill="#1557B0"/>
+      </svg>
+    </div>
+    <h2>법인서류 다운로드</h2>
+    <p>법인서류 다운로드는 Google 계정 로그인 후 이용 가능합니다.<br>
+       신청 내역은 자동으로 기록됩니다.</p>
+    <div id="loginMsg" class="msg"></div>
+    <button class="btn btn-primary" id="loginBtn" onclick="doLogin()">
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+        <path d="M16.51 7.62H9V10.7h4.26c-.39 1.93-2.1 3.3-4.26 3.3-2.61 0-4.73-2.12-4.73-4.73s2.12-4.73 4.73-4.73c1.15 0 2.19.4 3.01 1.06l2.28-2.28C12.93 2.08 11.07 1.27 9 1.27 4.74 1.27 1.27 4.74 1.27 9S4.74 16.73 9 16.73c4.67 0 7.76-3.28 7.76-7.9 0-.53-.05-1.05-.25-1.21z" fill="#4285F4"/>
+      </svg>
+      Google로 로그인
+    </button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     STEP 2 — 신청 폼
+══════════════════════════════════════════════════════════════ -->
+<div id="step2" class="card" style="display:none">
+  <div class="card-header">
+    <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+      <rect width="22" height="22" rx="6" fill="#E8F0FE"/>
+      <path d="M6 16V15a5 5 0 0110 0v1" stroke="#1A73E8" stroke-width="1.5" stroke-linecap="round"/>
+      <circle cx="11" cy="9" r="3" stroke="#1A73E8" stroke-width="1.5"/>
+    </svg>
+    <div>
+      <h1>서류 신청</h1>
+      <div class="sub">다운로드할 서류를 선택하세요</div>
+    </div>
+  </div>
+  <div class="card-body">
+    <div id="userBanner" class="user-banner">
+      <div class="avatar" id="avatarInitial">?</div>
+      <div>
+        <div class="name" id="userName">-</div>
+        <div class="email" id="userEmail">-</div>
+      </div>
+    </div>
+
+    <div id="step2Msg" class="msg"></div>
+
+    <div class="form-group">
+      <label>직함 <span style="color:var(--red)">*</span></label>
+      <input type="text" id="titleInput" placeholder="예: 기획처장, 담당자, 교직원" maxlength="50">
+    </div>
+    <div class="form-group">
+      <label>신청 사유 (선택)</label>
+      <input type="text" id="reasonInput" placeholder="예: 입찰서류 제출, 계약 첨부" maxlength="100">
+    </div>
+
+    <label style="margin-bottom:10px;display:block">서류 선택 <span style="color:var(--red)">*</span></label>
+    <div id="docGrid" class="doc-grid">
+      <div class="loading-row" style="grid-column:1/-1">서류 목록 로딩 중…</div>
+    </div>
+
+    <button class="btn btn-primary" id="issueBtn" onclick="doIssue()" disabled>
+      다운로드 링크 발급
+    </button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     STEP 3 — 다운로드
+══════════════════════════════════════════════════════════════ -->
+<div id="step3" class="card" style="display:none">
+  <div class="card-header">
+    <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+      <rect width="22" height="22" rx="6" fill="#dcfce7"/>
+      <path d="M11 6v7m0 0l-3-3m3 3l3-3" stroke="#16a34a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M6 16h10" stroke="#16a34a" stroke-width="1.5" stroke-linecap="round"/>
+    </svg>
+    <div>
+      <h1>다운로드</h1>
+      <div class="sub">1분 이내에 다운로드하세요</div>
+    </div>
+  </div>
+  <div class="card-body">
+    <div id="step3Msg" class="msg"></div>
+    <div class="timer-wrap">
+      <div class="timer-circle" id="timerCircle">60</div>
+      <div class="timer-label">초 이내에 다운로드하세요. 만료 후 재신청이 필요합니다.</div>
+      <div class="file-badge" id="fileBadge">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+          <path d="M3 2h5.5L11 4.5V12H3V2z" stroke="#6b7280" stroke-width="1.2" stroke-linejoin="round"/>
+          <path d="M8 2v3h3" stroke="#6b7280" stroke-width="1.2" stroke-linejoin="round"/>
+        </svg>
+        <span id="fileNameLabel">파일명</span>
+      </div>
+      <button class="btn btn-primary" id="dlBtn" onclick="doDownload()" style="margin-bottom:12px">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <path d="M8 2v8m0 0L5 7m3 3l3-3" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M2 12h12" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+        파일 다운로드
+      </button>
+      <button class="btn btn-outline" id="reapplyBtn" onclick="goStep2()" style="display:none">
+        재신청
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     ADMIN VIEW
+══════════════════════════════════════════════════════════════ -->
+<div id="adminView" class="card" style="display:none">
+  <div class="card-header">
+    <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+      <rect width="22" height="22" rx="6" fill="#ffedd5"/>
+      <path d="M11 4a2 2 0 100 4 2 2 0 000-4zm0 14c-3.31 0-6-1.34-6-3v-1c0-1.66 2.69-3 6-3s6 1.34 6 3v1c0 1.66-2.69 3-6 3z" fill="#ea580c"/>
+    </svg>
+    <div>
+      <h1>관리자</h1>
+      <div class="sub">법인서류 다운로드 관리</div>
+    </div>
+  </div>
+  <div class="card-body">
+    <div class="tabs">
+      <div class="tab active" id="tabCat" onclick="switchTab('cat')">서류 관리</div>
+      <div class="tab" id="tabLog" onclick="switchTab('log')">다운로드 로그</div>
+    </div>
+
+    <!-- 서류 관리 탭 -->
+    <div id="tabCatContent">
+      <div id="adminMsg" class="msg"></div>
+      <div style="display:flex;gap:8px;margin-bottom:16px">
+        <input type="text" id="newCatInput" placeholder="서류명 입력 (예: 법인 임원명부)" style="flex:1">
+        <button class="btn btn-primary btn-sm" onclick="addCategory()" style="width:auto;white-space:nowrap">추가</button>
+      </div>
+      <ul class="cat-list" id="catList">
+        <li class="loading-row">로딩 중…</li>
+      </ul>
+    </div>
+
+    <!-- 로그 탭 -->
+    <div id="tabLogContent" style="display:none">
+      <div id="logMsg" class="msg"></div>
+      <div class="table-wrap">
+        <table id="logTable">
+          <thead>
+            <tr>
+              <th>일시</th><th>이름</th><th>이메일</th>
+              <th>직함</th><th>서류명</th><th>사유</th><th>다운로드</th>
+            </tr>
+          </thead>
+          <tbody id="logTbody"><tr><td colspan="7" class="loading-row">로딩 중…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <hr class="divider">
+    <button class="btn btn-outline" onclick="hideAdmin()">← 신청 화면으로</button>
+  </div>
+</div>
+
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script src="config.js"></script>
+<script src="auth.js"></script>
+<script src="docgate.js"></script>
+<script>
+'use strict';
+var _profile     = null;
+var _pendingFile = null; // { fileId, fileName }
+var _timerIv     = null;
+var _dlUsed      = false;
+var _isAdmin     = false;
+var ADMIN_EMAIL  = 'bangdw@gmail.com';
+
+/* ── 초기화 ────────────────────────────────────────────────────── */
+Auth.onAuthChange(function (loggedIn) {
+  if (loggedIn) {
+    initAfterLogin();
+  } else {
+    showEl('step1');
+    hideEl('step2'); hideEl('step3'); hideEl('adminView');
+  }
+});
+
+document.addEventListener('DOMContentLoaded', function () {
+  Auth.tryRestoreSession();
+  if (location.search.includes('view=admin') || location.hash === '#admin') {
+    // 관리자 진입 시 로그인 후 자동 전환
+    window._autoAdmin = true;
+  }
+});
+
+async function initAfterLogin() {
+  try {
+    _profile = await DocGate.fetchProfile();
+  } catch (e) {
+    showMsg('loginMsg', '프로필 조회 실패: ' + e.message, 'error');
+    return;
+  }
+
+  _isAdmin = (_profile.email === ADMIN_EMAIL);
+  if (_isAdmin) showEl('adminLink');
+
+  if (window._autoAdmin && _isAdmin) {
+    window._autoAdmin = false;
+    showAdmin();
+    return;
+  }
+
+  goStep2();
+}
+
+/* ── 로그인 ─────────────────────────────────────────────────────── */
+async function doLogin() {
+  var btn = document.getElementById('loginBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>';
+  try {
+    await Auth.login({ chooseAccount: true });
+  } catch (e) {
+    showMsg('loginMsg', e.message, 'error');
+    btn.disabled = false;
+    btn.innerHTML = '<svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M16.51 7.62H9V10.7h4.26c-.39 1.93-2.1 3.3-4.26 3.3-2.61 0-4.73-2.12-4.73-4.73s2.12-4.73 4.73-4.73c1.15 0 2.19.4 3.01 1.06l2.28-2.28C12.93 2.08 11.07 1.27 9 1.27 4.74 1.27 1.27 4.74 1.27 9S4.74 16.73 9 16.73c4.67 0 7.76-3.28 7.76-7.9 0-.53-.05-1.05-.25-1.21z" fill="#4285F4"/></svg>Google로 로그인';
+  }
+}
+
+/* ── STEP 2: 신청 폼 ────────────────────────────────────────────── */
+async function goStep2() {
+  hideEl('step1'); hideEl('step3'); hideEl('adminView');
+  showEl('step2');
+  clearMsg('step2Msg');
+
+  if (_profile) {
+    document.getElementById('userName').textContent    = _profile.name  || '';
+    document.getElementById('userEmail').textContent   = _profile.email || '';
+    document.getElementById('avatarInitial').textContent = (_profile.name || '?')[0];
+  }
+
+  _pendingFile = null;
+  _dlUsed = false;
+  document.getElementById('issueBtn').disabled = true;
+
+  await loadDocGrid();
+}
+
+async function loadDocGrid() {
+  var grid = document.getElementById('docGrid');
+  grid.innerHTML = '<div class="loading-row" style="grid-column:1/-1">서류 목록 로딩 중…</div>';
+
+  var cats = await DocGate.loadCategories();
+  if (!cats || cats.length === 0) {
+    grid.innerHTML = '<div class="loading-row" style="grid-column:1/-1;color:var(--sub)">등록된 서류가 없습니다.<br>관리자에게 문의하세요.</div>';
+    return;
+  }
+
+  grid.innerHTML = '';
+  cats.forEach(function (cat) {
+    var card = document.createElement('label');
+    card.className = 'doc-card';
+    card.setAttribute('for', 'doc_' + cat.id);
+    card.innerHTML =
+      '<input type="radio" name="docChoice" id="doc_' + cat.id + '" value="' + esc(cat.name) + '">' +
+      '<div class="check"></div>' +
+      '<div class="doc-name">' + esc(cat.name) + '</div>' +
+      '<div class="doc-hint">최신 파일 자동 선택</div>';
+    card.addEventListener('click', function () {
+      document.querySelectorAll('.doc-card').forEach(function (c) { c.classList.remove('selected'); });
+      card.classList.add('selected');
+      document.getElementById('issueBtn').disabled = false;
+    });
+    grid.appendChild(card);
+  });
+}
+
+/* ── 링크 발급 ──────────────────────────────────────────────────── */
+async function doIssue() {
+  clearMsg('step2Msg');
+  var titleVal  = document.getElementById('titleInput').value.trim();
+  var reason    = document.getElementById('reasonInput').value.trim();
+  var chosen    = document.querySelector('input[name="docChoice"]:checked');
+
+  if (!titleVal) { showMsg('step2Msg', '직함을 입력하세요', 'error'); return; }
+  if (!chosen)   { showMsg('step2Msg', '서류를 선택하세요', 'error'); return; }
+
+  var keyword   = chosen.value;
+  var btn       = document.getElementById('issueBtn');
+  btn.disabled  = true;
+  btn.innerHTML = '<span class="spinner"></span> 검색 중…';
+
+  try {
+    var result = await DocGate.requestDownload(keyword, keyword, _profile, titleVal, reason);
+    _pendingFile = result;
+    _dlUsed = false;
+    goStep3();
+  } catch (e) {
+    showMsg('step2Msg', e.message, 'error');
+    btn.disabled = false;
+    btn.textContent = '다운로드 링크 발급';
+  }
+}
+
+/* ── STEP 3: 다운로드 ───────────────────────────────────────────── */
+function goStep3() {
+  hideEl('step2');
+  showEl('step3');
+  clearMsg('step3Msg');
+
+  document.getElementById('fileNameLabel').textContent = _pendingFile.fileName;
+  document.getElementById('fileBadge').title           = _pendingFile.fileName;
+
+  var dlBtn      = document.getElementById('dlBtn');
+  var reapplyBtn = document.getElementById('reapplyBtn');
+  var circle     = document.getElementById('timerCircle');
+
+  dlBtn.disabled    = false;
+  dlBtn.style.display   = '';
+  reapplyBtn.style.display = 'none';
+
+  if (_timerIv) clearInterval(_timerIv);
+
+  _timerIv = DocGate.startTimer(
+    DocGate.TOKEN_TTL,
+    function (remaining) {
+      circle.textContent = remaining;
+      if (remaining <= 10) {
+        circle.classList.add('urgent');
+      } else {
+        circle.classList.remove('urgent');
+      }
+    },
+    function () {
+      _pendingFile = null;
+      dlBtn.disabled = true;
+      dlBtn.style.display = 'none';
+      reapplyBtn.style.display = '';
+      showMsg('step3Msg', '링크가 만료되었습니다. 재신청하세요.', 'error');
+    }
+  );
+}
+
+/* ── 다운로드 실행 ──────────────────────────────────────────────── */
+async function doDownload() {
+  if (_dlUsed || !_pendingFile) return;
+  var btn = document.getElementById('dlBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> 다운로드 중…';
+
+  try {
+    var titleVal = document.getElementById('titleInput').value.trim();
+    var reason   = document.getElementById('reasonInput').value.trim();
+
+    await DocGate.downloadFile(_pendingFile.fileId, _pendingFile.fileName);
+    _dlUsed = true;
+
+    await DocGate.logDownloaded(
+      _pendingFile.fileId, _pendingFile.fileName,
+      _profile, titleVal, reason
+    );
+
+    btn.innerHTML = '다운로드 완료 ✓';
+    btn.style.background = 'var(--green)';
+    clearInterval(_timerIv);
+    showMsg('step3Msg', '다운로드가 완료되었습니다. 신청 내역이 기록되었습니다.', 'success');
+  } catch (e) {
+    btn.disabled = false;
+    btn.innerHTML = '파일 다운로드';
+    showMsg('step3Msg', '다운로드 실패: ' + e.message, 'error');
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   관리자 뷰
+══════════════════════════════════════════════════════════════════ */
+function showAdmin() {
+  if (!_isAdmin) return;
+  hideEl('step1'); hideEl('step2'); hideEl('step3');
+  showEl('adminView');
+  loadAdminCats();
+}
+
+function hideAdmin() {
+  hideEl('adminView');
+  goStep2();
+}
+
+function switchTab(name) {
+  document.getElementById('tabCat').classList.toggle('active', name === 'cat');
+  document.getElementById('tabLog').classList.toggle('active', name === 'log');
+  document.getElementById('tabCatContent').style.display  = name === 'cat' ? '' : 'none';
+  document.getElementById('tabLogContent').style.display  = name === 'log' ? '' : 'none';
+  if (name === 'log') loadAdminLogs();
+}
+
+async function loadAdminCats() {
+  var ul = document.getElementById('catList');
+  ul.innerHTML = '<li class="loading-row">로딩 중…</li>';
+  clearMsg('adminMsg');
+
+  var cats = await DocGate.loadCategories();
+  if (!cats || cats.length === 0) {
+    ul.innerHTML = '<li class="loading-row">등록된 서류가 없습니다.</li>';
+    return;
+  }
+
+  ul.innerHTML = '';
+  cats.forEach(function (cat) {
+    var li = document.createElement('li');
+    li.className = 'cat-item';
+    li.innerHTML =
+      '<div><div class="cat-name">' + esc(cat.name) + '</div>' +
+      '<div class="cat-meta">등록: ' + esc(String(cat.createdAt || '')) + '</div></div>' +
+      '<button class="btn btn-danger btn-sm" onclick="removeCategory(\'' + esc(cat.id) + '\',this)">삭제</button>';
+    ul.appendChild(li);
+  });
+}
+
+async function addCategory() {
+  var input = document.getElementById('newCatInput');
+  var name  = input.value.trim();
+  if (!name) { showMsg('adminMsg', '서류명을 입력하세요', 'error'); return; }
+
+  clearMsg('adminMsg');
+  showMsg('adminMsg', '추가 중…', 'info');
+
+  try {
+    await DocGate.addCategory(name);
+    input.value = '';
+    showMsg('adminMsg', '"' + name + '" 추가 완료. 목록을 새로고침합니다…', 'success');
+    setTimeout(loadAdminCats, 1500);
+  } catch (e) {
+    showMsg('adminMsg', e.message, 'error');
+  }
+}
+
+async function removeCategory(id, btn) {
+  if (!confirm('이 서류를 목록에서 삭제하시겠습니까?')) return;
+  btn.disabled = true;
+  clearMsg('adminMsg');
+  try {
+    await DocGate.removeCategory(id);
+    showMsg('adminMsg', '삭제 완료', 'success');
+    setTimeout(loadAdminCats, 800);
+  } catch (e) {
+    showMsg('adminMsg', e.message, 'error');
+    btn.disabled = false;
+  }
+}
+
+async function loadAdminLogs() {
+  var tbody = document.getElementById('logTbody');
+  tbody.innerHTML = '<tr><td colspan="7" class="loading-row">로딩 중…</td></tr>';
+  clearMsg('logMsg');
+
+  var logs = await DocGate.loadLogs();
+  if (!logs || logs.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="7" class="loading-row">로그가 없습니다.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = '';
+  // 최신 순
+  logs.slice().reverse().forEach(function (row) {
+    var tr = document.createElement('tr');
+    var keys = ['신청일시','이름','이메일','직함','서류명','사유','다운로드'];
+    tr.innerHTML = keys.map(function (k) {
+      return '<td>' + esc(String(row[k] || '')) + '</td>';
+    }).join('');
+    tbody.appendChild(tr);
+  });
+}
+
+/* ── 유틸 ───────────────────────────────────────────────────────── */
+function showEl(id)  { var el = document.getElementById(id); if (el) el.style.display = ''; }
+function hideEl(id)  { var el = document.getElementById(id); if (el) el.style.display = 'none'; }
+function clearMsg(id){ var el = document.getElementById(id); if (el) { el.className = 'msg'; el.textContent = ''; } }
+function showMsg(id, text, type) {
+  var el = document.getElementById(id);
+  if (!el) return;
+  el.className = 'msg ' + (type || 'info');
+  el.textContent = text;
+}
+function esc(s) {
+  return String(s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;')
+    .replace(/'/g,'&#39;');
+}
+</script>
+</body>
+</html>
