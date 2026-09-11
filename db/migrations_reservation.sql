@@ -693,13 +693,21 @@ grant execute on function get_batch_info(uuid)
   to anon, authenticated;
 
 -- ============================================================================
--- 20) BUGFIX: null password_hash 처리 + 관리자 이메일 추가 (chajungsin@gmail.com)
---     ★ 반드시 Supabase SQL Editor에서 실행 후 Settings → API → Reload Schema Cache
+-- 20) BUGFIX: bigint GRANT 누락 수정 + null password_hash 처리 + 관리자 이메일 추가
+--
+-- 근본 원인:
+--   · reservations.id 는 bigint (section 2에서 생성)
+--   · section 5의 delete_reservation(bigint,text) / modify_reservation(bigint,text) 에
+--     EXECUTE 권한이 없음 → anon 롤 실행 불가 → "비밀번호 오류"처럼 보임
+--   · section 18은 uuid 버전 함수였으므로 bigint id와 타입 불일치로 실제로 호출되지 않음
+--   · admin RPC가 bangdw@gmail.com만 허용 (chajungsin@gmail.com 누락)
+--
+-- ★ Supabase SQL Editor에서 실행 후 Settings → API → Reload Schema Cache 필수!
 -- ============================================================================
 
--- 20-a) delete_reservation (uuid 버전) — null hash 구분 처리
+-- 20-a) delete_reservation (bigint 버전) — null hash 처리 + 재생성
 create or replace function delete_reservation(
-  p_id uuid, p_password_hash text
+  p_id bigint, p_password_hash text
 ) returns jsonb language plpgsql security definer as $$
 declare v_hash text; begin
   select password_hash into v_hash from reservations where id = p_id and deleted_at is null;
@@ -714,9 +722,9 @@ declare v_hash text; begin
   return jsonb_build_object('success', true);
 end; $$;
 
--- 20-b) modify_reservation (uuid 버전) — null hash 구분 처리
+-- 20-b) modify_reservation (bigint 버전) — null hash 처리 + 재생성
 create or replace function modify_reservation(
-  p_id uuid, p_password_hash text,
+  p_id bigint, p_password_hash text,
   p_date_start date, p_date_end date,
   p_time_start time, p_time_end time,
   p_purpose text, p_department text, p_requester_name text,
@@ -740,9 +748,9 @@ declare v_hash text; begin
   return jsonb_build_object('success', true);
 end; $$;
 
--- 20-c) admin_delete_reservation — chajungsin@gmail.com 추가
+-- 20-c) admin_delete_reservation (bigint 버전) — chajungsin@gmail.com 추가
 create or replace function admin_delete_reservation(
-  p_id uuid, p_admin_email text
+  p_id bigint, p_admin_email text
 ) returns jsonb language plpgsql security definer as $$
 begin
   if p_admin_email not in ('bangdw@gmail.com', 'chajungsin@gmail.com') then
@@ -753,9 +761,9 @@ begin
   return jsonb_build_object('success', true);
 end; $$;
 
--- 20-d) admin_modify_reservation — chajungsin@gmail.com 추가
+-- 20-d) admin_modify_reservation (bigint 버전) — chajungsin@gmail.com 추가
 create or replace function admin_modify_reservation(
-  p_id uuid, p_admin_email text,
+  p_id bigint, p_admin_email text,
   p_date_start date, p_date_end date,
   p_time_start time, p_time_end time,
   p_purpose text, p_department text, p_requester_name text,
@@ -775,9 +783,9 @@ begin
   return jsonb_build_object('success', true);
 end; $$;
 
--- 20-e) link_to_schedule / unlink_from_schedule — chajungsin@gmail.com 추가
+-- 20-e) link_to_schedule / unlink_from_schedule (bigint 버전) — chajungsin@gmail.com 추가
 create or replace function link_to_schedule(
-  p_reservation_id uuid,
+  p_reservation_id bigint,
   p_admin_email    text,
   p_link_all       boolean default false
 ) returns jsonb language plpgsql security definer as $$
@@ -820,7 +828,7 @@ begin
 end; $$;
 
 create or replace function unlink_from_schedule(
-  p_reservation_id uuid,
+  p_reservation_id bigint,
   p_admin_email    text,
   p_unlink_all     boolean default false
 ) returns jsonb language plpgsql security definer as $$
@@ -848,13 +856,36 @@ begin
   return jsonb_build_object('success', true);
 end; $$;
 
--- 20-f) GRANT 재부여 (함수 재생성 시 권한이 초기화되는 경우 대비)
-grant execute on function delete_reservation(uuid, text) to anon, authenticated;
-grant execute on function modify_reservation(uuid, text, date, date, time, time, text, text, text, text, text) to anon, authenticated;
-grant execute on function admin_delete_reservation(uuid, text) to anon, authenticated;
-grant execute on function admin_modify_reservation(uuid, text, date, date, time, time, text, text, text, text, text) to anon, authenticated;
-grant execute on function link_to_schedule(uuid, text, boolean) to anon, authenticated;
-grant execute on function unlink_from_schedule(uuid, text, boolean) to anon, authenticated;
+-- 20-f) get_batch_info (bigint 버전) — chajungsin@gmail.com 추가 불필요, 권한만 재부여
+create or replace function get_batch_info(
+  p_reservation_id bigint
+) returns jsonb language plpgsql security definer as $$
+declare
+  v_batch_id text;
+  v_count    int;
+  v_dates    jsonb;
+begin
+  select batch_id into v_batch_id
+  from reservations where id = p_reservation_id and deleted_at is null;
+  if v_batch_id is null then
+    return jsonb_build_object('batch_id', null, 'count', 1, 'dates', '[]'::jsonb);
+  end if;
+  select count(*), jsonb_agg(date_start order by date_start)
+  into v_count, v_dates
+  from reservations
+  where batch_id = v_batch_id and deleted_at is null;
+  return jsonb_build_object('batch_id', v_batch_id, 'count', v_count, 'dates', coalesce(v_dates,'[]'::jsonb));
+end; $$;
+
+-- 20-g) GRANT — bigint 버전 전부 (핵심! 이게 없어서 삭제가 안 됐음)
+grant execute on function delete_reservation(bigint, text) to anon, authenticated;
+grant execute on function modify_reservation(bigint, text, date, date, time, time, text, text, text, text, text) to anon, authenticated;
+grant execute on function admin_delete_reservation(bigint, text) to anon, authenticated;
+grant execute on function admin_modify_reservation(bigint, text, date, date, time, time, text, text, text, text, text) to anon, authenticated;
+grant execute on function link_to_schedule(bigint, text, boolean) to anon, authenticated;
+grant execute on function unlink_from_schedule(bigint, text, boolean) to anon, authenticated;
+grant execute on function get_batch_info(bigint) to anon, authenticated;
+grant execute on function check_room_conflict(text, date, date, time, time, bigint) to anon, authenticated;
 
 -- ★ 실행 후: Supabase 대시보드 → Settings → API → Reload Schema Cache 클릭 필수!
 -- 끝. 'Success. No rows returned' 가 나오면 정상입니다. ---------------------
