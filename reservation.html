@@ -150,14 +150,12 @@ header{
   transition:opacity .16s,transform .16s;
 }
 .sel-bar.show{opacity:1;pointer-events:auto;transform:translateY(0) scale(1)}
-/* 위쪽 삼각 화살표 */
 .sel-bar::before{content:'';position:absolute;top:-7px;
   left:var(--aw,50%);transform:translateX(-50%);
   border:7px solid transparent;border-top:0;border-bottom-color:var(--border)}
 .sel-bar::after{content:'';position:absolute;top:-6px;
   left:var(--aw,50%);transform:translateX(-50%);
   border:6px solid transparent;border-top:0;border-bottom-color:#fff}
-/* 아래 방향(셀 위에 팝업 뜰 때) */
 .sel-bar.above::before{top:auto;bottom:-7px;border-bottom:0;border-top:7px solid var(--border)}
 .sel-bar.above::after{top:auto;bottom:-6px;border-bottom:0;border-top:6px solid #fff}
 .sel-count{font-size:13px;font-weight:700;color:var(--text)}
