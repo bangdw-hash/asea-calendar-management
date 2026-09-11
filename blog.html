@@ -654,36 +654,19 @@ function checkDatalabStatus() {
   }
 }
 
-/* ── Naver API 프록시 ── */
+/* ── Naver API 프록시 (GAS 경유) ── */
+var NAVER_PROXY_URL = 'https://script.google.com/macros/s/AKfycbzE1Th3UOUNHPrewn2l60ivRaIvYPC_hAafe5mQB6jnm5abEw4VfH4OiH3vXkJ-N4cK-w/exec';
+
 async function callNaverProxy(type, params) {
-  // 1순위: localStorage에 저장된 Flask(Railway) 프록시 URL
-  var naverProxyUrl = '';
-  try { naverProxyUrl = localStorage.getItem('asea_naver_proxy_url') || ''; } catch(e) {}
-
-  // 2순위: AI 프록시 base URL에서 /api/naver-proxy 경로 조립
-  if (!naverProxyUrl && window.getAIProxyUrl) {
-    var aiProxy = window.getAIProxyUrl() || '';
-    if (aiProxy && !aiProxy.includes('supabase.co')) {
-      naverProxyUrl = aiProxy.replace(/\/functions\/v1\/ai-proxy.*$/, '') + '/api/naver-proxy';
-    }
-  }
-
-  // 3순위: Supabase Edge Function (폴백)
-  if (!naverProxyUrl) naverProxyUrl = SUPA_URL + '/functions/v1/ai-proxy';
-
-  var isSupabase = naverProxyUrl.includes('supabase.co');
+  var url = NAVER_PROXY_URL;
   var body = (type === 'datalab')
     ? { service: 'naver', payload: { type: 'datalab', body: params } }
     : { service: 'naver', payload: Object.assign({ type: type }, params) };
-
-  var headers = { 'Content-Type': 'application/json' };
-  if (isSupabase) {
-    var supaKey = (window.SUPA_ANON) || '';
-    headers['apikey'] = supaKey;
-    headers['Authorization'] = 'Bearer ' + supaKey;
-  }
-
-  var res = await fetch(naverProxyUrl, { method: 'POST', headers: headers, body: JSON.stringify(body) });
+  var res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
   return await res.json();
 }
 
