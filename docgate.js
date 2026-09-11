@@ -138,25 +138,13 @@
     return files[0]; // modifiedTime desc 첫 번째 = 가장 최신
   };
 
-  /* ── 신청 처리: 로그 기록 → 파일 Blob 다운로드 URL 발급 ────── */
+  /* ── 신청 처리: 파일 검색 → fileId/fileName 반환 (로그는 실제 다운로드 시만 기록) */
   DocGate.requestDownload = async function (keyword, categoryLabel, profile, titleVal, reason) {
     var token = Auth.getToken();
     if (!token) throw new Error('인증이 필요합니다');
 
     var file = await DocGate.findLatestFile(keyword);
     if (!file) throw new Error('"' + categoryLabel + '" 에 해당하는 파일을 찾을 수 없습니다');
-
-    // GAS 로그 기록 (다운로드 전)
-    await DocGate._sendLog({
-      name:       profile.name,
-      email:      profile.email,
-      title:      titleVal,
-      reason:     reason,
-      fileName:   file.name,
-      fileId:     file.id,
-      ua:         navigator.userAgent,
-      downloaded: false
-    });
 
     return { fileId: file.id, fileName: file.name };
   };
