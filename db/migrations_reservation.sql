@@ -667,5 +667,30 @@ begin
   return jsonb_build_object('batch_id', v_batch_id, 'count', v_count, 'dates', coalesce(v_dates,'[]'::jsonb));
 end; $$;
 
+-- ============================================================================
+-- 19) GRANT EXECUTE: uuid 파라미터 함수들에 권한 부여
+--     (Section 18에서 추가된 uuid 버전 함수들은 기존 bigint 버전의 권한을 상속받지 않음)
+-- ============================================================================
+grant execute on function delete_reservation(uuid, text)
+  to anon, authenticated;
+
+grant execute on function modify_reservation(uuid, text, date, date, time, time, text, text, text, text, text)
+  to anon, authenticated;
+
+grant execute on function admin_modify_reservation(uuid, text, date, date, time, time, text, text, text, text, text)
+  to anon, authenticated;
+
+grant execute on function admin_delete_reservation(uuid, text)
+  to anon, authenticated;
+
+grant execute on function link_to_schedule(uuid, text, boolean)
+  to anon, authenticated;
+
+grant execute on function unlink_from_schedule(uuid, text, boolean)
+  to anon, authenticated;
+
+grant execute on function get_batch_info(uuid)
+  to anon, authenticated;
+
 -- 끝. 'Success. No rows returned' 가 나오면 정상입니다. ---------------------
 -- 이후: Supabase 대시보드 → Settings → API → Reload Schema Cache 클릭.
