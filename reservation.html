@@ -32,7 +32,7 @@ header{
 }
 .hd-logo{display:flex;align-items:center;gap:8px;flex:1;min-width:0;overflow:hidden}
 .hd-title{font-size:16px;font-weight:700;color:var(--text);letter-spacing:-.3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.hd-right{display:flex;gap:4px;align-items:center;flex-shrink:0}
+.hd-right{display:flex;gap:4px;align-items:center;flex-shrink:0;position:relative}
 /* 텍스트형 ghost 버튼 (schedule.html tb-btn 스타일) */
 .tb-btn{background:transparent;color:var(--gray);border:none;
   border-radius:var(--r);padding:0 10px;font-size:12px;font-weight:500;
@@ -58,9 +58,9 @@ header{
 .hd-more:hover{background:var(--gray-lt)}
 .hd-desktop{display:flex;gap:2px;align-items:center}
 .hd-dropdown{
-  position:absolute;top:56px;right:12px;
+  position:absolute;top:calc(100% + 6px);right:0;
   background:#fff;border:1px solid var(--border);border-radius:var(--r);
-  box-shadow:var(--sh-lg);min-width:140px;padding:4px;z-index:200;
+  box-shadow:var(--sh-lg);min-width:160px;padding:4px;z-index:200;
   display:flex;flex-direction:column;gap:1px;
 }
 .hd-dropdown a,.hd-dropdown button{
@@ -91,43 +91,55 @@ header{
 /* ── Toolbar ── */
 .toolbar{
   background:#fff;border-bottom:1px solid var(--border);
-  padding:8px 16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+  padding:0 16px;display:flex;align-items:center;gap:10px;height:48px;
+  position:sticky;top:56px;z-index:90;
 }
-.month-nav{display:flex;align-items:center;gap:6px}
+.month-nav{display:flex;align-items:center;gap:2px}
 .month-nav button{
-  width:30px;height:30px;border:1.5px solid var(--border);background:#fff;
-  border-radius:var(--r);cursor:pointer;font-size:17px;color:var(--gray);
-  box-sizing:border-box;
-  line-height:1;transition:.15s;display:flex;align-items:center;justify-content:center;
+  width:30px;height:30px;border:none;background:transparent;
+  border-radius:var(--r);cursor:pointer;font-size:18px;color:var(--gray);
+  line-height:1;transition:background .15s,color .15s;
+  display:flex;align-items:center;justify-content:center;
 }
-.month-nav button:hover{border-color:var(--primary);color:var(--primary)}
-.month-label{font-size:15px;font-weight:700;min-width:88px;text-align:center}
-.tb-sep{width:1px;height:20px;background:var(--border)}
+.month-nav button:hover{background:var(--gray-lt);color:var(--text)}
+.month-label{font-size:15px;font-weight:700;min-width:90px;text-align:center;
+  cursor:pointer;padding:4px 6px;border-radius:var(--r);transition:background .15s}
+.month-label:hover{background:var(--gray-lt)}
+.tb-sep{width:1px;height:18px;background:var(--border);flex-shrink:0}
 
-.mode-btns{display:flex;gap:3px}
-.mode-btn{
-  padding:4px 10px;border-radius:var(--r);font-size:11px;font-weight:700;cursor:pointer;
-  border:1.5px solid var(--border);background:#fff;color:var(--gray);transition:.15s;
+/* 선택 모드: view-toggle 스타일 (no border) */
+.view-toggle{display:flex;background:#f1f3f5;border-radius:var(--r);padding:2px;gap:0}
+.view-btn{
+  padding:0 10px;font-size:11px;font-weight:600;cursor:pointer;
+  background:transparent;border:none;color:var(--gray);
+  transition:background .15s,color .15s,box-shadow .15s;
+  font-family:var(--font);height:28px;box-sizing:border-box;
+  display:flex;align-items:center;border-radius:calc(var(--r) - 2px);white-space:nowrap;
 }
-.mode-btn.range.on{background:var(--green-lt);border-color:var(--green);color:var(--green)}
-.mode-btn.multi.on{background:var(--orange-lt);border-color:var(--orange);color:var(--orange)}
-.mode-btn.single.on{background:var(--primary-lt);border-color:var(--primary);color:var(--primary)}
-.mode-btn:hover:not(.on){border-color:#9ca3af;color:var(--text-sm)}
+.view-btn.on{background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.view-btn.range.on{color:var(--green)}
+.view-btn.multi.on{color:var(--orange)}
+.view-btn.single.on{color:var(--primary)}
+.view-btn:hover:not(.on){background:rgba(255,255,255,.6)}
 
-.floor-tabs{display:flex;gap:3px;flex-wrap:wrap}
+/* 층 필터: 텍스트 전용, 테두리 없음 */
+.floor-tabs{display:flex;gap:1px;align-items:center;flex-wrap:nowrap;overflow-x:auto;
+  scrollbar-width:none;-ms-overflow-style:none}
+.floor-tabs::-webkit-scrollbar{display:none}
 .floor-tab{
-  padding:4px 10px;border-radius:var(--r);font-size:11px;font-weight:700;cursor:pointer;
-  border:1.5px solid var(--border);background:#fff;color:var(--gray);transition:.15s;
+  padding:4px 9px;border-radius:var(--r);font-size:11px;font-weight:600;cursor:pointer;
+  border:none;background:transparent;color:var(--gray);transition:background .15s,color .15s;
+  white-space:nowrap;flex-shrink:0;
 }
-.floor-tab.on{background:var(--primary);border-color:var(--primary);color:#fff}
-.floor-tab:hover:not(.on){border-color:var(--primary);color:var(--primary)}
+.floor-tab.on{background:var(--primary-lt);color:var(--primary)}
+.floor-tab:hover:not(.on){background:var(--gray-lt);color:var(--text)}
 
-/* ── Multi-select banner ── */
-.multi-banner{
-  background:var(--orange-lt);border-bottom:1.5px solid var(--orange);
-  padding:7px 16px;display:flex;align-items:center;justify-content:space-between;gap:8px;
+/* ── 선택 바 (날짜 선택 시) — 오렌지 배너 대체 ── */
+.sel-bar{
+  background:#fff;border-bottom:1px solid var(--border);
+  padding:6px 16px;display:flex;align-items:center;justify-content:space-between;gap:8px;
 }
-.multi-banner span{font-size:13px;color:#9a3412;font-weight:700}
+.sel-count{font-size:12px;font-weight:600;color:var(--text)}
 
 /* ── Calendar (schedule.html 스타일 — 심리스 카드형) ── */
 .cal-wrap{padding:16px;overflow-x:auto;-webkit-overflow-scrolling:touch}
@@ -315,10 +327,15 @@ header{
 ::-webkit-scrollbar-thumb{background:#d1d5db;border-radius:9px}
 
 @media(max-width:600px){
-  .cal-cell{min-height:80px}
-  .hd-title{font-size:15px}
+  .cal-cell{min-height:76px}
+  .hd-title{font-size:14px}
   .frow{grid-template-columns:1fr}
-  .cal-wrap{padding:10px}
+  .cal-wrap{padding:8px}
+  .toolbar{gap:6px;padding:0 10px;height:44px}
+  .month-label{font-size:14px;min-width:80px}
+  .view-btn{padding:0 8px;font-size:10px}
+  .floor-tab{padding:3px 7px;font-size:10px}
+  .btn-cta-rental,.btn-cta-new{padding:5px 10px;font-size:11px}
 }
 </style>
 </head>
@@ -376,24 +393,21 @@ header{
     <button onclick="moveMonth(1)" title="다음 달">&#8250;</button>
   </div>
   <div class="tb-sep"></div>
-  <div style="display:flex;align-items:center;gap:5px">
-    <span style="font-size:11px;color:var(--gray)">선택:</span>
-    <div class="mode-btns">
-      <button class="mode-btn range on" id="modeRange" onclick="setMode('range')">범위</button>
-      <button class="mode-btn multi" id="modeMulti" onclick="setMode('multi')">다중</button>
-      <button class="mode-btn single" id="modeSingle" onclick="setMode('single')">단일</button>
-    </div>
+  <div class="view-toggle">
+    <button class="view-btn range on" id="modeRange" onclick="setMode('range')">범위</button>
+    <button class="view-btn multi" id="modeMulti" onclick="setMode('multi')">다중</button>
+    <button class="view-btn single" id="modeSingle" onclick="setMode('single')">단일</button>
   </div>
   <div class="tb-sep"></div>
   <div class="floor-tabs" id="floorTabs"></div>
 </div>
 
-<!-- Multi-select banner -->
-<div id="multiBanner" class="multi-banner" hidden>
-  <span id="multiBannerTxt">0개 날짜 선택됨</span>
+<!-- 날짜 선택 바 -->
+<div id="multiBanner" class="sel-bar" hidden>
+  <span id="multiBannerTxt" class="sel-count">0개 날짜 선택됨</span>
   <div style="display:flex;gap:6px">
-    <button class="btn btn-sm btn-outline" onclick="clearSel()">취소</button>
-    <button class="btn btn-sm btn-orange" style="background:var(--orange);color:#fff" onclick="openDrawer(null)">예약 등록</button>
+    <button class="tb-btn" onclick="clearSel()">취소</button>
+    <button class="btn btn-sm btn-primary" onclick="openDrawer(null)">예약 등록</button>
   </div>
 </div>
 
@@ -1233,7 +1247,7 @@ function mcApply() {
 
   selMode = 'multi';
   selDates = allDates;
-  document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('on'));
+  document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('on'));
   document.getElementById('modeMulti').classList.add('on');
   updMultiBanner();
   renderCal();
@@ -1247,7 +1261,7 @@ function mcApply() {
 /* ── Mode & month ── */
 function setMode(mode) {
   selMode = mode; selDates = []; rangeStart = null;
-  document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('on'));
+  document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('on'));
   document.getElementById('mode' + mode.charAt(0).toUpperCase() + mode.slice(1)).classList.add('on');
   updMultiBanner();
   renderCal();
