@@ -875,6 +875,26 @@ header{
   </div>
 </div>
 
+<!-- 배치 삭제 선택 다이얼로그 -->
+<div id="batchDelModal" class="modal" onclick="if(event.target===this)closeBatchDelM()">
+  <div class="modal-box" style="max-width:360px">
+    <div class="modal-hdr">
+      <span>예약 삭제</span>
+      <button class="modal-close" onclick="closeBatchDelM()">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M12 4L4 12M4 4l8 8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <p id="batchDelMsg" style="font-size:13px;color:var(--gray);margin:0 0 16px;white-space:pre-line"></p>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <button class="btn btn-red" id="batchDelAllBtn" onclick="doBatchDel(true)"></button>
+        <button class="btn btn-outline" id="batchDelOneBtn" onclick="doBatchDel(false)"></button>
+        <button class="btn btn-outline" onclick="closeBatchDelM()">취소</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div id="toast"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
@@ -2416,10 +2436,40 @@ function googleLogin() {
   client.requestAccessToken({ prompt: 'select_account' });
 }
 
+let _batchDelId = null;
+
 async function adminDelRv(id) {
   if (!isAdmin()) return toast('관리자 권한이 필요합니다', 'error');
-  if (!confirm('이 예약을 삭제하시겠습니까?')) return;
-  const { data, error } = await sb.rpc('admin_delete_reservation', { p_id: id, p_admin_email: adminEmail });
+  const rv = reservations.find(r => r.id === id);
+  if (!rv) return;
+
+  if (rv.batch_id) {
+    const { data: bi } = await sb.rpc('get_batch_info', { p_reservation_id: id });
+    const n = bi?.count || 1;
+    _batchDelId = id;
+    document.getElementById('batchDelMsg').textContent =
+      `이 예약은 같은 날짜 묶음으로 일괄 등록된 ${n}건 중 하나입니다.\n어떻게 삭제하시겠습니까?`;
+    document.getElementById('batchDelAllBtn').textContent = `전체 ${n}건 모두 삭제`;
+    document.getElementById('batchDelOneBtn').textContent = '이 일정만 삭제';
+    showM('batchDelModal');
+  } else {
+    if (!confirm('이 예약을 삭제하시겠습니까?')) return;
+    await _doAdminDel(id, false);
+  }
+}
+
+async function doBatchDel(deleteAll) {
+  closeBatchDelM();
+  await _doAdminDel(_batchDelId, deleteAll);
+  _batchDelId = null;
+}
+
+function closeBatchDelM() { hideM('batchDelModal'); }
+
+async function _doAdminDel(id, deleteAll) {
+  const { data, error } = await sb.rpc('admin_delete_reservation', {
+    p_id: id, p_admin_email: adminEmail, p_delete_all: deleteAll
+  });
   if (error) return toast('삭제 실패: ' + error.message, 'error');
   if (!data?.success) return toast('삭제 실패: ' + (data?.error || '알 수 없는 오류'), 'error');
   toast('삭제되었습니다', 'success');
@@ -2462,10 +2512,11 @@ async function doBatchLink(linkAll) {
 }
 
 async function _doLink(id, linkAll) {
-  const { data } = await sb.rpc('link_to_schedule', {
+  const { data, error } = await sb.rpc('link_to_schedule', {
     p_reservation_id: id, p_admin_email: adminEmail, p_link_all: linkAll
   });
-  if (!data?.success) return toast('연동 실패: ' + (data?.error || ''), 'error');
+  if (error) return toast('연동 실패: ' + error.message, 'error');
+  if (!data?.success) return toast('연동 실패: ' + (data?.error || '알 수 없는 오류'), 'error');
   const cnt = data?.linked_count || 1;
   toast(`학교일정에 연동되었습니다 (${cnt}건)`, 'success');
   closeDetail(); await loadRvs();
@@ -2499,10 +2550,11 @@ async function doBatchUnlink(unlinkAll) {
 }
 
 async function _doUnlink(id, unlinkAll) {
-  const { data } = await sb.rpc('unlink_from_schedule', {
+  const { data, error } = await sb.rpc('unlink_from_schedule', {
     p_reservation_id: id, p_admin_email: adminEmail, p_unlink_all: unlinkAll
   });
-  if (!data?.success) return toast('연동 해제 실패: ' + (data?.error || ''), 'error');
+  if (error) return toast('연동 해제 실패: ' + error.message, 'error');
+  if (!data?.success) return toast('연동 해제 실패: ' + (data?.error || '알 수 없는 오류'), 'error');
   toast('연동이 해제되었습니다', 'success');
   closeDetail(); await loadRvs();
 }
@@ -2720,7 +2772,7 @@ async function cellDrop(e, targetDate) {
   const fmt = d => d.toISOString().slice(0, 10);
   if (fmt(newStart) === rv.date_start) return;
 
-  const { data } = await sb.rpc('admin_modify_reservation', {
+  const { data, error } = await sb.rpc('admin_modify_reservation', {
     p_id: id, p_admin_email: adminEmail,
     p_date_start: fmt(newStart), p_date_end: fmt(newEnd),
     p_time_start: rv.time_start, p_time_end: rv.time_end,
@@ -2728,7 +2780,8 @@ async function cellDrop(e, targetDate) {
     p_requester_name: rv.requester_name, p_contact: rv.contact || null,
     p_formatted_label: rv.formatted_label || null
   });
-  if (!data?.success) return toast('이동 실패: ' + (data?.error || ''), 'error');
+  if (error) return toast('이동 실패: ' + error.message, 'error');
+  if (!data?.success) return toast('이동 실패: ' + (data?.error || '알 수 없는 오류'), 'error');
   toast('일정이 이동되었습니다', 'success');
   await loadRvs();
 }
