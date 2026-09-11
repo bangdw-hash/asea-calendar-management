@@ -2965,21 +2965,29 @@ async function renderAcademicTab() {
   const target = document.getElementById('admTabContent');
   if (!target) return;
   target.innerHTML = `
-    <div style="display:flex;flex-direction:column;gap:16px">
-      <!-- 업로드 영역 -->
-      <div>
-        <div class="fl" style="margin-bottom:8px;font-size:13px;font-weight:700">파일 업로드</div>
+    <div style="display:flex;flex-direction:column;gap:20px">
+      <!-- 등록 섹션 -->
+      <div style="border:1px solid var(--border);border-radius:var(--r);padding:16px">
+        <div style="font-size:13px;font-weight:700;margin-bottom:12px;color:var(--text)">새 학사과정 일정 등록</div>
+
+        <!-- 그룹명 입력 -->
+        <div style="margin-bottom:10px">
+          <label style="font-size:11px;font-weight:700;color:var(--text-sm);display:block;margin-bottom:4px">그룹명 <span style="color:var(--red)">*</span> <span style="font-weight:400;color:var(--gray)">(예: 2026-2학기, 2026년 여름학기)</span></label>
+          <input id="acadGroupName" class="fi" type="text" placeholder="그룹명을 입력하세요" style="width:100%;font-size:13px">
+        </div>
+
+        <!-- 파일 업로드 -->
         <div id="acadDropZone" style="
-          border:2px dashed var(--border);border-radius:var(--r);padding:28px 16px;
+          border:2px dashed var(--border);border-radius:var(--r);padding:24px 16px;
           text-align:center;cursor:pointer;background:var(--gray-lt);
-          transition:border-color .2s,background .2s;position:relative"
+          transition:border-color .2s,background .2s;position:relative;margin-bottom:8px"
           onclick="document.getElementById('acadFileIn').click()"
           ondragover="event.preventDefault();this.style.borderColor='var(--academic)';this.style.background='var(--academic-lt)'"
           ondragleave="this.style.borderColor='';this.style.background='var(--gray-lt)'"
           ondrop="acadHandleDrop(event)">
           <input type="file" id="acadFileIn" accept="image/*,.pdf" hidden onchange="acadHandleFile(this.files[0])">
           <div id="acadDropLabel" style="display:flex;flex-direction:column;align-items:center;gap:8px">
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--academic)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--academic)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
             <div style="font-size:13px;font-weight:600;color:var(--text-sm)">PDF 또는 이미지를 드래그하거나 클릭하여 선택</div>
             <div style="font-size:11px;color:var(--gray)">강의실 배정표, 시간표, 수업일정표 등 모든 형식 지원</div>
           </div>
@@ -2989,7 +2997,7 @@ async function renderAcademicTab() {
             <button class="btn btn-xs btn-outline" onclick="event.stopPropagation();acadClearFile()" style="color:var(--red);border-color:var(--red)">제거</button>
           </div>
         </div>
-        <div style="display:flex;gap:8px;margin-top:8px;align-items:center">
+        <div style="display:flex;gap:8px;align-items:center">
           <textarea id="acadNlpIn" class="fi" rows="2" placeholder="또는 자연어로 직접 입력: 예) 9월 1일부터 2주간 월수금 301호 09:00~12:00 데이터사이언스 김교수" style="flex:1;resize:none;font-size:12px"></textarea>
           <button class="btn btn-primary" id="acadAnalyzeBtn" onclick="acadAnalyze()" style="height:60px;padding:0 16px;flex-shrink:0">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/><path d="M11 8v6M8 11h6"/></svg><br>
@@ -3033,9 +3041,29 @@ async function renderAcademicTab() {
       <div id="acadEmptyMsg" hidden style="text-align:center;padding:32px;color:var(--gray);font-size:13px">
         분석 결과가 없습니다. 파일을 다시 확인해주세요.
       </div>
+
+      <!-- 등록된 그룹 목록 -->
+      <div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <div style="font-size:13px;font-weight:700">등록된 학사과정 그룹</div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <span style="font-size:11px;color:var(--gray)">기간 삭제:</span>
+            <input id="acadDelFrom" type="date" class="fi" style="font-size:11px;padding:3px 6px;width:130px" placeholder="시작일">
+            <span style="font-size:11px;color:var(--gray)">~</span>
+            <input id="acadDelTo" type="date" class="fi" style="font-size:11px;padding:3px 6px;width:130px" placeholder="종료일">
+            <button class="btn btn-xs btn-outline" onclick="acadDeleteByRange()" style="color:var(--red);border-color:var(--red);flex-shrink:0">기간 삭제</button>
+          </div>
+        </div>
+        <div id="acadGroupList" style="display:flex;flex-direction:column;gap:8px">
+          <div style="text-align:center;padding:24px;color:var(--gray);font-size:12px">
+            <div class="spinner" style="width:20px;height:20px;margin:0 auto 8px"></div>로딩 중...
+          </div>
+        </div>
+      </div>
     </div>`;
 
   _acadFileB64 = null; _acadFileType = null; _acadParsed = [];
+  await acadLoadGroups();
 }
 
 function acadHandleDrop(e) {
@@ -3186,11 +3214,14 @@ async function acadImport() {
 
   if (!selected.length) return toast('등록할 항목을 선택해주세요', 'warn');
 
+  const groupName = (document.getElementById('acadGroupName')?.value || '').trim();
+  if (!groupName) return toast('그룹명을 입력해주세요 (예: 2026-2학기)', 'warn');
+
   const btn = document.getElementById('acadImportBtn');
   btn.disabled = true; btn.textContent = '등록 중...';
 
   try {
-    const batchId = 'acad-' + Date.now();
+    const batchId = 'acad:' + groupName;
     const records = selected.map(r => {
       const cls = classrooms.find(c => c.name === r.classroom);
       const color = cls?.color || '#7c3aed';
@@ -3217,18 +3248,105 @@ async function acadImport() {
     const { error } = await sb.from('reservations').insert(records);
     if (error) throw error;
 
-    toast(`학사과정 일정 ${records.length}건이 등록되었습니다`, 'success');
+    toast(`학사과정 일정 ${records.length}건이 등록되었습니다 (그룹: ${groupName})`, 'success');
     _acadParsed = [];
     document.getElementById('acadPreviewWrap').hidden = true;
     document.getElementById('acadNlpIn').value = '';
     acadClearFile();
     await loadRvs();
+    await acadLoadGroups();
   } catch(e) {
     toast('등록 실패: ' + e.message, 'error');
   } finally {
     btn.disabled = false;
     btn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg> 선택 항목 등록`;
   }
+}
+
+async function acadLoadGroups() {
+  const el = document.getElementById('acadGroupList');
+  if (!el) return;
+  const { data, error } = await sb.from('reservations')
+    .select('batch_id,date_start,date_end')
+    .is('deleted_at', null)
+    .eq('label_type', 'academic')
+    .not('batch_id', 'is', null)
+    .order('date_start', { ascending: false });
+  if (error) { el.innerHTML = `<div style="color:var(--red);font-size:12px">${error.message}</div>`; return; }
+
+  if (!data || !data.length) {
+    el.innerHTML = '<div style="text-align:center;padding:24px;color:var(--gray);font-size:12px">등록된 학사과정 그룹이 없습니다</div>';
+    return;
+  }
+
+  // batch_id 별로 그룹핑 (acad: 접두어 포함)
+  const groups = {};
+  data.forEach(r => {
+    const bid = r.batch_id;
+    if (!bid) return;
+    if (!groups[bid]) groups[bid] = { count: 0, minDate: r.date_start, maxDate: r.date_end };
+    groups[bid].count++;
+    if (r.date_start < groups[bid].minDate) groups[bid].minDate = r.date_start;
+    if (r.date_end > groups[bid].maxDate) groups[bid].maxDate = r.date_end;
+  });
+
+  // acad: 접두어 그룹을 먼저, 나머지는 그다음 (레거시 acad- prefix 포함)
+  const sorted = Object.entries(groups).sort((a, b) => b[1].minDate.localeCompare(a[1].minDate));
+
+  el.innerHTML = sorted.map(([bid, g]) => {
+    const displayName = bid.startsWith('acad:') ? bid.slice(5) : bid;
+    const fmtDate = d => d ? d.replace(/-/g, '.') : '';
+    const dateRange = g.minDate === g.maxDate ? fmtDate(g.minDate) : `${fmtDate(g.minDate)} ~ ${fmtDate(g.maxDate)}`;
+    return `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border:1px solid var(--border);border-radius:var(--r);background:var(--bg)">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="display:inline-flex;align-items:center;justify-content:center;width:8px;height:8px;border-radius:50%;background:var(--academic);flex-shrink:0"></span>
+        <div>
+          <div style="font-size:13px;font-weight:700;color:var(--text)">${displayName}</div>
+          <div style="font-size:11px;color:var(--gray);margin-top:2px">${dateRange} · ${g.count}건</div>
+        </div>
+      </div>
+      <button class="btn btn-xs btn-outline" onclick="acadDeleteGroup('${bid.replace(/'/g,'\\\'')}')" style="color:var(--red);border-color:var(--red);flex-shrink:0">일괄 삭제</button>
+    </div>`;
+  }).join('');
+}
+
+async function acadDeleteGroup(batchId) {
+  const displayName = batchId.startsWith('acad:') ? batchId.slice(5) : batchId;
+  if (!confirm(`"${displayName}" 그룹의 학사과정 일정을 모두 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.`)) return;
+  const now = new Date().toISOString();
+  const { error, count } = await sb.from('reservations')
+    .update({ deleted_at: now })
+    .eq('batch_id', batchId)
+    .eq('label_type', 'academic')
+    .is('deleted_at', null);
+  if (error) return toast('삭제 실패: ' + error.message, 'error');
+  toast(`"${displayName}" 그룹 일정이 삭제되었습니다`, 'success');
+  await loadRvs();
+  await acadLoadGroups();
+}
+
+async function acadDeleteByRange() {
+  const from = document.getElementById('acadDelFrom')?.value;
+  const to = document.getElementById('acadDelTo')?.value;
+  if (!from && !to) return toast('삭제할 기간을 입력해주세요', 'warn');
+  const fmtFrom = from || '0000-01-01';
+  const fmtTo = to || '9999-12-31';
+  if (from && to && from > to) return toast('시작일이 종료일보다 늦습니다', 'warn');
+  if (!confirm(`학사과정 일정 중\n${from || '처음'} ~ ${to || '끝'} 기간의 일정을 모두 삭제하시겠습니까?`)) return;
+  const now = new Date().toISOString();
+  let q = sb.from('reservations')
+    .update({ deleted_at: now })
+    .eq('label_type', 'academic')
+    .is('deleted_at', null)
+    .lte('date_start', fmtTo)
+    .gte('date_end', fmtFrom);
+  const { error } = await q;
+  if (error) return toast('삭제 실패: ' + error.message, 'error');
+  toast('기간 내 학사과정 일정이 삭제되었습니다', 'success');
+  document.getElementById('acadDelFrom').value = '';
+  document.getElementById('acadDelTo').value = '';
+  await loadRvs();
+  await acadLoadGroups();
 }
 
 /* ── 대관 관리 탭 ── */
