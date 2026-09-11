@@ -235,6 +235,10 @@ label{font-size:13px;font-weight:500;color:var(--ink2)}
         <label for="blog-keywords">포함 키워드 <span style="color:var(--ink3);font-weight:400">(선택)</span></label>
         <input id="blog-keywords" class="form-input" type="text" placeholder="키워드1, 키워드2, ...">
       </div>
+      <div class="form-row">
+        <label for="blog-extra">추가 지시사항 <span style="color:var(--ink3);font-weight:400">(선택 — AI에게 직접 전달)</span></label>
+        <textarea id="blog-extra" class="form-textarea" style="min-height:64px" placeholder="예: 건강한 식재료를 강조해줘 / 20대 여성 독자를 타겟으로 써줘 / 마지막에 네이버 예약 링크를 언급해줘"></textarea>
+      </div>
       <div class="gen-area">
         <button class="btn btn-primary" id="btn-gen-blog" onclick="generateBlog()">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
@@ -331,6 +335,10 @@ label{font-size:13px;font-weight:500;color:var(--ink2)}
       <div class="form-row">
         <label for="food-impression">맛·분위기·서비스 느낀 점</label>
         <textarea id="food-impression" class="form-textarea" style="min-height:80px" placeholder="전체적인 후기를 자유롭게 적어주세요..."></textarea>
+      </div>
+      <div class="form-row">
+        <label for="food-extra">추가 지시사항 <span style="color:var(--ink3);font-weight:400">(선택 — AI에게 직접 전달)</span></label>
+        <textarea id="food-extra" class="form-textarea" style="min-height:64px" placeholder="예: 채식 메뉴도 있다는 걸 강조해줘 / 어린이와 함께 방문하기 좋은 점 언급 / 인스타 감성 사진 명소 포인트 넣어줘"></textarea>
       </div>
       <div class="gen-area">
         <button class="btn btn-primary" id="btn-gen-food" onclick="generateFood()">
@@ -689,7 +697,9 @@ window.generateBlog = async function() {
     btn.innerHTML = '<span class="spinner"></span> 글 작성 중...';
 
     // 2단계: 스타일별 전문 작성
+    var extra = document.getElementById('blog-extra').value.trim();
     var systemPrompt = buildBlogSystemPrompt(style, concept, length, research);
+    if (extra) systemPrompt += '\n\n[작성자 추가 지시사항 — 최우선 반영]\n' + extra;
     var userPrompt = '주제: ' + topic + '\n목표 분량: ' + length + '자 내외';
     if (keywords) userPrompt += '\n추가 포함 키워드: ' + keywords;
 
@@ -758,6 +768,9 @@ window.generateFood = async function() {
     '[태그]',
     '(태그1, 태그2, ... — 8개)',
   ].join('\n');
+
+  var extra = document.getElementById('food-extra').value.trim();
+  if (extra) systemPrompt += '\n\n[작성자 추가 지시사항 — 최우선 반영]\n' + extra;
 
   var parts = ['장소명: ' + place];
   if (date) parts.push('방문일: ' + date);
