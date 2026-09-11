@@ -15,8 +15,13 @@
  * - blog   : 블로그 검색
  */
 
-var NAVER_CLIENT_ID     = '2rpv5zhg9g';
-var NAVER_CLIENT_SECRET = '6Le9mBkkJGGEJM3E4RxNBf3j0g4t0irV8qNEcXYQ';
+// 지역 검색 / 블로그 검색 (상호명 검색 앱)
+var SEARCH_CLIENT_ID     = 'VrnrLasu5ihp4zySJ0mX';
+var SEARCH_CLIENT_SECRET = '_4kRe_DD6O';
+
+// DataLab 검색어 트렌드 (블로그자동화 앱)
+var DATALAB_CLIENT_ID     = 'AB2ycE0pXMvjEEq7OGwU';
+var DATALAB_CLIENT_SECRET = 'mOmuoZKgnD';
 
 function doPost(e) {
   try {
@@ -49,8 +54,8 @@ function _search(type, payload) {
   var res = UrlFetchApp.fetch(url, {
     method: 'get',
     headers: {
-      'X-Naver-Client-Id':     NAVER_CLIENT_ID,
-      'X-Naver-Client-Secret': NAVER_CLIENT_SECRET
+      'X-Naver-Client-Id':     SEARCH_CLIENT_ID,
+      'X-Naver-Client-Secret': SEARCH_CLIENT_SECRET
     },
     muteHttpExceptions: true
   });
@@ -63,8 +68,8 @@ function _datalab(body) {
     method: 'post',
     contentType: 'application/json',
     headers: {
-      'X-Naver-Client-Id':     NAVER_CLIENT_ID,
-      'X-Naver-Client-Secret': NAVER_CLIENT_SECRET
+      'X-Naver-Client-Id':     DATALAB_CLIENT_ID,
+      'X-Naver-Client-Secret': DATALAB_CLIENT_SECRET
     },
     payload: JSON.stringify(body),
     muteHttpExceptions: true
