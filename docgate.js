@@ -5,8 +5,7 @@
   // 상위 법인서류 폴더: 1GQGlPbIMoubRu2Au1YdbiN8c-aMu0Ndq
   var FOLDER_ID    = '18-X-AR7GqOIaY0hMU222zt4Vs9o-yhjs';
 
-  // ✏️ GAS 배포 후 이 값을 교체하세요 (가스 웹앱 URL)
-  var GAS_ENDPOINT = 'YOUR_GAS_WEB_APP_URL';
+  var GAS_ENDPOINT = 'https://script.google.com/macros/s/AKfycbyNqmJaEvB2Nkxr-wr8HxkwKnbaTewQbEhqpFKTC1u1tmyC3x6qgE10laLUn2hMuFYS/exec';
 
   var TOKEN_TTL    = 60; // 다운로드 유효 시간 (초)
 
