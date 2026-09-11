@@ -1354,16 +1354,28 @@ function buildPills(rvs) {
       ? ` draggable="true" ondragstart="pillDragStart(event,'${rv.id}')" ondragend="pillDragEnd(event)"`
       : '';
     const ctxAttr = ` oncontextmenu="openCtxMenu(event,'${rv.id}')"`;
-    return `<div class="rv-pill" style="background:${c}"${dragAttrs}${ctxAttr} onclick="event.stopPropagation();openDetail('${rv.id}')" title="${esc(lbl)}">${esc(lbl)}</div>`;
+    return `<div class="rv-pill" data-id="${rv.id}" style="background:${c}"${dragAttrs}${ctxAttr} onclick="event.stopPropagation();openDetail('${rv.id}')" title="${esc(lbl)}">${esc(lbl)}</div>`;
   }).join('');
   if (rvs.length > MAX) h += `<div class="rv-more" onclick="event.stopPropagation()">+${rvs.length - MAX}건 더보기</div>`;
   return h;
 }
 
-/* ── Long press (mobile multi-select) ── */
+/* ── Long press (mobile) ── */
 function initLongPress() {
   let lpTimer = null;
   document.addEventListener('touchstart', e => {
+    // pill 위 long-press: contextmenu 이벤트가 없는 브라우저를 위한 fallback
+    const pill = e.target.closest('.rv-pill[data-id]');
+    if (pill) {
+      const touch = e.touches[0];
+      lpTimer = setTimeout(() => {
+        navigator.vibrate && navigator.vibrate(30);
+        const fakeE = { preventDefault(){}, stopPropagation(){}, clientX: touch.clientX, clientY: touch.clientY };
+        openCtxMenu(fakeE, pill.dataset.id);
+      }, 500);
+      return;
+    }
+    // day-cell long-press: 멀티 선택
     const cell = e.target.closest('.day-cell');
     if (!cell) return;
     const s = cell.dataset.s;
@@ -2203,11 +2215,18 @@ async function doPwAction() {
   const pwHash = await sha256(pw + PW_SALT);
 
   if (action === 'delete') {
-    const { data } = await sb.rpc('delete_reservation', { p_id: id, p_password_hash: pwHash });
+    const { data, error } = await sb.rpc('delete_reservation', { p_id: id, p_password_hash: pwHash });
+    if (error) return toast('오류: ' + error.message, 'error');
     if (!data?.success) {
+      const msg = data?.error || '';
+      // 비밀번호가 없는 기존 예약인 경우 (null hash)
+      if (msg.includes('비밀번호가 설정되지 않') || msg.includes('no password')) {
+        closePwM();
+        return toast('이 예약은 비밀번호가 없습니다. 관리자에게 삭제 요청하세요.', 'warn');
+      }
       pwFails++;
       if (pwFails >= 3) { closePwM(); return toast('비밀번호 3회 오류. 잠김.', 'error'); }
-      return toast(`비밀번호 오류 (${pwFails}/3)`, 'error');
+      return toast(`비밀번호 오류 (${pwFails}/3) — ${msg || '일치하지 않음'}`, 'error');
     }
     toast('예약이 삭제되었습니다', 'success');
     closePwM(); closeDetail();
@@ -2215,6 +2234,10 @@ async function doPwAction() {
   } else {
     const rv = reservations.find(r => r.id === id);
     if (!rv) return;
+    if (rv.password_hash === null || rv.password_hash === undefined) {
+      closePwM();
+      return toast('이 예약은 비밀번호가 없습니다. 관리자에게 수정 요청하세요.', 'warn');
+    }
     if (pwHash !== rv.password_hash) {
       pwFails++;
       if (pwFails >= 3) { closePwM(); return toast('비밀번호 3회 오류. 잠김.', 'error'); }
@@ -2620,8 +2643,14 @@ function openCtxMenu(e, id) {
     }
     linkBtn.hidden = false;
     delBtn.hidden = false; delSep.hidden = false; editBtn.hidden = false;
+    editBtn.onclick = () => ctxAction('edit');
+    delBtn.onclick  = () => ctxAction('delete');
   } else {
-    linkBtn.hidden = true; delBtn.hidden = true; delSep.hidden = true; editBtn.hidden = true;
+    // 비관리자: 비밀번호 확인 후 수정·삭제
+    linkBtn.hidden = true;
+    editBtn.hidden = false; delBtn.hidden = false; delSep.hidden = false;
+    editBtn.onclick = () => { closeCtxMenu(); openPwM('edit',   id); };
+    delBtn.onclick  = () => { closeCtxMenu(); openPwM('delete', id); };
   }
 
   menu.hidden = false;

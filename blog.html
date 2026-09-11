@@ -1,0 +1,1488 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>N블로그 자동화 — ASEA</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+<script src="config.js"></script>
+<style>
+/* ── 토큰 ── */
+:root {
+  --primary:#1A73E8; --primary-dk:#1557B0; --primary-lt:#E8F0FE;
+  --green:#16a34a;   --green-lt:#dcfce7;
+  --orange:#ea580c;  --orange-lt:#ffedd5;
+  --red:#dc2626;     --red-lt:#fee2e2;
+  --r:12px;
+  --sh:0 1px 3px rgba(0,0,0,.08);
+  --sh-md:0 2px 8px rgba(0,0,0,.12);
+  --bg:#F8F9FA; --surface:#FFFFFF; --surface2:#F1F3F4;
+  --ink:#202124; --ink2:#5F6368; --ink3:#9AA0A6;
+  --border:#DADCE0; --border-dk:#BDC1C6;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#1C1C1E; --surface:#2C2C2E; --surface2:#3A3A3C;
+    --ink:#F2F2F7; --ink2:#AEAEB2; --ink3:#636366;
+    --border:#3A3A3C; --border-dk:#4A4A4C;
+    --primary-lt:#1A2E4A; --green-lt:#0D2B18; --orange-lt:#2B1700; --red-lt:#2B0A0A;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#1C1C1E; --surface:#2C2C2E; --surface2:#3A3A3C;
+  --ink:#F2F2F7; --ink2:#AEAEB2; --ink3:#636366;
+  --border:#3A3A3C; --border-dk:#4A4A4C;
+  --primary-lt:#1A2E4A; --green-lt:#0D2B18; --orange-lt:#2B1700; --red-lt:#2B0A0A;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:15px;-webkit-text-size-adjust:100%}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--ink);line-height:1.6;min-height:100vh}
+
+/* ── 헤더 ── */
+.hdr{background:var(--surface);border-bottom:1px solid var(--border);padding:0 20px;display:flex;align-items:center;gap:12px;height:56px;position:sticky;top:0;z-index:100}
+.hdr-back{display:inline-flex;align-items:center;gap:6px;text-decoration:none;color:var(--primary);font-size:13px;font-weight:500;padding:6px 10px;border-radius:8px;border:1px solid var(--border)}
+.hdr-back:hover{background:var(--primary-lt)}
+.hdr-title{font-size:16px;font-weight:600;flex:1}
+.hdr-sub{font-size:12px;color:var(--ink3)}
+
+/* ── 탭 바 ── */
+.tab-bar{background:var(--surface);border-bottom:1px solid var(--border);display:flex;padding:0 20px;gap:0}
+.tb-btn{padding:14px 18px;font-size:14px;font-weight:500;color:var(--ink2);border:none;background:none;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:color .15s,border-color .15s;display:flex;align-items:center;gap:7px}
+.tb-btn svg{width:16px;height:16px;flex-shrink:0}
+.tb-btn:hover{color:var(--ink)}
+.tb-btn.active{color:var(--primary);border-bottom-color:var(--primary)}
+
+/* ── 레이아웃 ── */
+.main{max-width:900px;margin:0 auto;padding:24px 20px 80px}
+.panel{display:none}.panel.active{display:block}
+
+/* ── 섹션 카드 ── */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--sh)}
+.card+.card{margin-top:16px}
+.card-head{padding:18px 20px 0;font-size:14px;font-weight:600;color:var(--ink);display:flex;align-items:center;gap:8px}
+.card-head svg{width:18px;height:18px;color:var(--primary)}
+.card-body{padding:16px 20px 20px}
+
+/* ── 폼 요소 ── */
+.form-row{display:flex;flex-direction:column;gap:5px;margin-bottom:14px}
+.form-row:last-child{margin-bottom:0}
+.form-row.cols{flex-direction:row;gap:12px}
+.form-row.cols>.form-row{flex:1;margin-bottom:0}
+label{font-size:13px;font-weight:500;color:var(--ink2)}
+.form-input,.form-select,.form-textarea{width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:14px;background:var(--surface);color:var(--ink);transition:border-color .15s}
+.form-input:focus,.form-select:focus,.form-textarea:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(26,115,232,.12)}
+.form-textarea{resize:vertical;min-height:90px;line-height:1.6}
+.form-select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239AA0A6' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:30px}
+.form-hint{font-size:12px;color:var(--ink3);margin-top:3px}
+.char-count{font-size:12px;color:var(--ink3);text-align:right;margin-top:4px}
+
+/* ── 버튼 ── */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border-radius:8px;font-size:14px;font-weight:500;cursor:pointer;border:1px solid transparent;transition:background .15s,opacity .15s}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn-primary{background:var(--primary);color:#fff;border-color:var(--primary)}
+.btn-primary:hover:not(:disabled){background:var(--primary-dk)}
+.btn-ghost{background:transparent;color:var(--primary);border-color:var(--border)}
+.btn-ghost:hover:not(:disabled){background:var(--primary-lt)}
+.btn-danger{background:transparent;color:var(--red);border-color:var(--border)}
+.btn-danger:hover:not(:disabled){background:var(--red-lt)}
+.btn-sm{padding:6px 12px;font-size:13px}
+.btn svg{width:15px;height:15px;flex-shrink:0}
+.btn-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+
+/* ── 생성 버튼 영역 ── */
+.gen-area{display:flex;align-items:center;gap:12px;padding-top:4px}
+.model-select{font-size:13px;padding:6px 28px 6px 10px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--ink2);cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239AA0A6' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center}
+
+/* ── 로딩 스피너 ── */
+.spinner{display:inline-block;width:18px;height:18px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0}
+@keyframes spin{to{transform:rotate(360deg)}}
+.spinner.dark{border-color:rgba(26,115,232,.2);border-top-color:var(--primary)}
+
+/* ── 결과 섹션 ── */
+.result-section{margin-top:16px}
+.result-title-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.result-label{font-size:13px;font-weight:600;color:var(--ink)}
+.result-actions{display:flex;gap:6px}
+
+/* ── 이력 카드 ── */
+.post-list{display:flex;flex-direction:column;gap:10px;margin-top:16px}
+.post-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px 18px;display:flex;align-items:flex-start;gap:14px;transition:box-shadow .15s}
+.post-card:hover{box-shadow:var(--sh-md)}
+.post-card-icon{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.post-card-icon.blog{background:var(--primary-lt)}
+.post-card-icon.food{background:var(--orange-lt)}
+.post-card-icon svg{width:18px;height:18px}
+.post-card-icon.blog svg{color:var(--primary)}
+.post-card-icon.food svg{color:var(--orange)}
+.post-card-body{flex:1;min-width:0}
+.post-card-title{font-size:14px;font-weight:600;color:var(--ink);margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.post-card-meta{font-size:12px;color:var(--ink3);display:flex;gap:10px;flex-wrap:wrap}
+.post-card-actions{display:flex;gap:6px;flex-shrink:0;align-items:center}
+
+/* ── 배지 ── */
+.badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600}
+.badge-draft{background:var(--surface2);color:var(--ink2)}
+.badge-pub{background:var(--green-lt);color:var(--green)}
+
+/* ── 필터 바 ── */
+.filter-bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:4px}
+.filter-btn{padding:5px 12px;border-radius:20px;font-size:13px;border:1px solid var(--border);background:none;color:var(--ink2);cursor:pointer;transition:all .15s}
+.filter-btn.active{background:var(--primary);color:#fff;border-color:var(--primary)}
+
+/* ── 상태 ── */
+.empty-state{padding:48px 20px;text-align:center;color:var(--ink3)}
+.empty-state svg{width:40px;height:40px;margin:0 auto 12px;display:block;opacity:.4}
+.empty-state p{font-size:14px}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 20px;border-radius:8px;font-size:13px;z-index:9999;transition:opacity .3s;pointer-events:none}
+.toast.green{background:var(--green)}
+.toast.red{background:var(--red)}
+
+/* ── 미리보기 모달 ── */
+.modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:500;display:flex;align-items:center;justify-content:center;padding:20px}
+.modal{background:var(--surface);border-radius:var(--r);width:100%;max-width:680px;max-height:90vh;overflow-y:auto;box-shadow:var(--sh-md)}
+.modal-head{padding:18px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.modal-head h3{font-size:15px;font-weight:600}
+.modal-close{background:none;border:none;cursor:pointer;color:var(--ink2);padding:4px;border-radius:6px}
+.modal-close:hover{background:var(--surface2)}
+.modal-body{padding:20px}
+.modal-content-preview{font-size:14px;line-height:1.8;color:var(--ink);white-space:pre-wrap;word-break:break-word}
+
+/* ── 정보 배너 ── */
+.info-banner{background:var(--primary-lt);border:1px solid rgba(26,115,232,.25);border-radius:var(--r);padding:14px 18px;display:flex;gap:12px;font-size:13px;color:var(--primary-dk);margin-bottom:20px}
+.info-banner svg{width:18px;height:18px;flex-shrink:0;margin-top:1px}
+
+@media(max-width:600px){
+  .form-row.cols{flex-direction:column}
+  .main{padding:16px 14px 40px}
+  .post-card-actions{flex-direction:column}
+  .tb-btn{padding:12px 10px;font-size:13px;gap:5px}
+}
+
+/* ── 트렌드 카드 ── */
+.trend-theme-section{margin-bottom:20px}
+.trend-theme-label{font-size:13px;font-weight:600;color:var(--ink2);margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.trend-theme-label svg{width:14px;height:14px}
+.trend-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
+.trend-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px;display:flex;flex-direction:column;gap:10px;transition:box-shadow .15s}
+.trend-card:hover{box-shadow:var(--sh-md)}
+.trend-card-kw{font-size:15px;font-weight:600;color:var(--ink)}
+.trend-card-badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600}
+.trend-card-badge.up{background:var(--green-lt);color:var(--green)}
+.trend-card-badge.stable{background:var(--surface2);color:var(--ink2)}
+.trend-card-badge.seasonal{background:var(--orange-lt);color:var(--orange)}
+.trend-card-reason{font-size:12px;color:var(--ink2)}
+.trend-card-angle{font-size:12px;color:var(--primary);font-weight:500;padding:8px 10px;background:var(--primary-lt);border-radius:8px;line-height:1.5}
+.trend-card-hook{font-size:12px;color:var(--ink3);font-style:italic;border-left:2px solid var(--border-dk);padding-left:8px;line-height:1.6}
+
+/* 테마 태그 */
+.theme-tag{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:20px;background:var(--primary-lt);color:var(--primary);font-size:13px;font-weight:500}
+.theme-tag button{background:none;border:none;cursor:pointer;color:var(--primary);font-size:16px;padding:0;line-height:1;opacity:.7}
+.theme-tag button:hover{opacity:1}
+
+@media(max-width:600px){.trend-grid{grid-template-columns:1fr}}
+
+/* hidden 속성 보장 — display:flex 등이 덮어쓰지 못하도록 */
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+
+<header class="hdr">
+  <a class="hdr-back" href="index.html">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><polyline points="15 18 9 12 15 6"/></svg>
+    메인으로
+  </a>
+  <span class="hdr-title">N블로그 자동화</span>
+  <span class="hdr-sub" id="hdr-status">준비 중...</span>
+</header>
+
+<nav class="tab-bar">
+  <button class="tb-btn active" id="tb-blog" onclick="switchTab('blog')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+    <span class="tab-label">블로그 글 생성</span>
+  </button>
+  <button class="tb-btn" id="tb-food" onclick="switchTab('food')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
+    <span class="tab-label">맛집 리뷰</span>
+  </button>
+  <button class="tb-btn" id="tb-history" onclick="switchTab('history')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+    <span class="tab-label">이력 관리</span>
+  </button>
+  <button class="tb-btn" id="tb-trend" onclick="switchTab('trend')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+    <span class="tab-label">트렌드</span>
+  </button>
+</nav>
+
+<main class="main">
+
+<!-- ── 블로그 글 생성 탭 ── -->
+<div id="panel-blog" class="panel active">
+  <div class="info-banner">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    <div>AI가 블로그 글을 생성합니다. 생성 후 직접 네이버 블로그에 복사·붙여넣기 하거나, 아래 <strong>HTML 복사</strong> 버튼으로 서식 포함 복사가 가능합니다.</div>
+  </div>
+
+  <div class="card">
+    <div class="card-head">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
+      생성 옵션
+    </div>
+    <div class="card-body">
+      <div class="form-row">
+        <label for="blog-concept">블로그 컨셉 <span style="color:var(--ink3);font-weight:400">(저장됩니다)</span></label>
+        <input id="blog-concept" class="form-input" type="text" placeholder="예: 30대 직장인의 서울 맛집 탐방 블로그" oninput="saveConcept()">
+      </div>
+      <div class="form-row">
+        <label for="blog-topic">주제 / 소재 <span style="color:var(--red)">*</span></label>
+        <input id="blog-topic" class="form-input" type="text" placeholder="예: 성수동 브런치 카페 추천 5곳">
+      </div>
+      <div class="form-row cols">
+        <div class="form-row">
+          <label for="blog-style">글 스타일</label>
+          <select id="blog-style" class="form-select">
+            <option value="정보형">정보형 (팁·가이드)</option>
+            <option value="감성형">감성형 (후기·에세이)</option>
+            <option value="SEO최적화형">SEO 최적화형</option>
+            <option value="리스트형">리스트형 (Top N)</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label for="blog-length">목표 분량</label>
+          <select id="blog-length" class="form-select">
+            <option value="500">500자 (짧게)</option>
+            <option value="800" selected>800자 (기본)</option>
+            <option value="1200">1200자 (상세)</option>
+            <option value="2000">2000자 (심층)</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <label for="blog-keywords">포함 키워드 <span style="color:var(--ink3);font-weight:400">(선택)</span></label>
+        <input id="blog-keywords" class="form-input" type="text" placeholder="키워드1, 키워드2, ...">
+      </div>
+      <div class="form-row">
+        <label for="blog-extra">추가 지시사항 <span style="color:var(--ink3);font-weight:400">(선택 — AI에게 직접 전달)</span></label>
+        <textarea id="blog-extra" class="form-textarea" style="min-height:64px" placeholder="예: 건강한 식재료를 강조해줘 / 20대 여성 독자를 타겟으로 써줘 / 마지막에 네이버 예약 링크를 언급해줘"></textarea>
+      </div>
+      <div class="gen-area">
+        <button class="btn btn-primary" id="btn-gen-blog" onclick="generateBlog()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+          글 생성
+        </button>
+        <select class="model-select" id="blog-model">
+          <option value="claude-haiku-4-5-20251001">Haiku (빠름)</option>
+          <option value="claude-sonnet-4-6" selected>Sonnet (균형)</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- 결과 -->
+  <div id="blog-result-section" class="result-section" hidden>
+    <div class="card">
+      <div class="card-head">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        생성된 글 <span id="blog-result-word-count" style="font-size:12px;font-weight:400;color:var(--ink3)"></span>
+      </div>
+      <div class="card-body">
+        <div class="form-row">
+          <label for="blog-result-title">제목</label>
+          <input id="blog-result-title" class="form-input" type="text" placeholder="제목">
+        </div>
+        <div class="form-row">
+          <label for="blog-result-content">본문</label>
+          <textarea id="blog-result-content" class="form-textarea" style="min-height:280px" oninput="updateWordCount()" placeholder="본문 내용"></textarea>
+        </div>
+        <div class="form-row">
+          <label for="blog-result-tags">태그 <span style="color:var(--ink3);font-weight:400">(쉼표 구분)</span></label>
+          <input id="blog-result-tags" class="form-input" type="text" placeholder="맛집, 카페, 서울">
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-primary" onclick="savePost('blog')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+            저장
+          </button>
+          <button class="btn btn-ghost" onclick="copyBlogText()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            텍스트 복사
+          </button>
+          <button class="btn btn-ghost" onclick="copyBlogHtml()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+            HTML 복사
+          </button>
+          <button class="btn btn-ghost" onclick="generateBlog()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+            재생성
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── 맛집 리뷰 탭 ── -->
+<div id="panel-food" class="panel">
+  <div class="card">
+    <div class="card-head">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
+      맛집 정보 입력
+    </div>
+    <div class="card-body">
+      <div class="form-row cols">
+        <div class="form-row" style="flex:2">
+          <label for="food-place">장소명 <span style="color:var(--red)">*</span></label>
+          <div style="position:relative">
+            <div style="display:flex;gap:6px">
+              <input id="food-place" class="form-input" type="text" placeholder="예: 오브제 브런치카페 성수점" onkeydown="if(event.key==='Enter')searchLocal()" style="flex:1">
+              <button class="btn btn-ghost btn-sm" onclick="searchLocal()" id="btn-local-search" title="네이버 지역 검색">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="14" height="14"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                검색
+              </button>
+            </div>
+            <div id="local-dropdown" hidden style="position:absolute;top:100%;left:0;right:0;z-index:200;background:var(--surface);border:1px solid var(--border);border-radius:8px;box-shadow:var(--sh-md);margin-top:2px;max-height:240px;overflow-y:auto"></div>
+          </div>
+          <div class="form-hint">상호명 입력 후 검색 버튼 → 주소·전화번호 자동 입력</div>
+        </div>
+        <div class="form-row">
+          <label for="food-date">방문일</label>
+          <input id="food-date" class="form-input" type="date">
+        </div>
+      </div>
+      <div class="form-row cols">
+        <div class="form-row">
+          <label for="food-location">주소 / 위치</label>
+          <input id="food-location" class="form-input" type="text" placeholder="서울 성동구 ...">
+        </div>
+        <div class="form-row">
+          <label for="food-rating">전체 평점</label>
+          <select id="food-rating" class="form-select">
+            <option value="5">★★★★★ 5점</option>
+            <option value="4" selected>★★★★☆ 4점</option>
+            <option value="3">★★★☆☆ 3점</option>
+            <option value="2">★★☆☆☆ 2점</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <label for="food-menu">주문한 메뉴 / 가격</label>
+        <textarea id="food-menu" class="form-textarea" style="min-height:70px" placeholder="에그베네딕트 18,000원, 아이스아메리카노 6,500원 ..."></textarea>
+      </div>
+      <div class="form-row">
+        <label for="food-impression">맛·분위기·서비스 느낀 점</label>
+        <textarea id="food-impression" class="form-textarea" style="min-height:80px" placeholder="전체적인 후기를 자유롭게 적어주세요..."></textarea>
+      </div>
+      <div class="form-row">
+        <label for="food-extra">추가 지시사항 <span style="color:var(--ink3);font-weight:400">(선택 — AI에게 직접 전달)</span></label>
+        <textarea id="food-extra" class="form-textarea" style="min-height:64px" placeholder="예: 채식 메뉴도 있다는 걸 강조해줘 / 어린이와 함께 방문하기 좋은 점 언급 / 인스타 감성 사진 명소 포인트 넣어줘"></textarea>
+      </div>
+      <div class="gen-area">
+        <button class="btn btn-primary" id="btn-gen-food" onclick="generateFood()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+          리뷰 생성
+        </button>
+        <select class="model-select" id="food-model">
+          <option value="claude-haiku-4-5-20251001">Haiku (빠름)</option>
+          <option value="claude-sonnet-4-6" selected>Sonnet (균형)</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div id="food-result-section" class="result-section" hidden>
+    <div class="card">
+      <div class="card-head">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        생성된 맛집 리뷰
+      </div>
+      <div class="card-body">
+        <div class="form-row">
+          <label for="food-result-title">제목</label>
+          <input id="food-result-title" class="form-input" type="text">
+        </div>
+        <div class="form-row">
+          <label for="food-result-content">본문</label>
+          <textarea id="food-result-content" class="form-textarea" style="min-height:260px"></textarea>
+        </div>
+        <div class="form-row">
+          <label for="food-result-tags">태그</label>
+          <input id="food-result-tags" class="form-input" type="text">
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-primary" onclick="savePost('food')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+            저장
+          </button>
+          <button class="btn btn-ghost" onclick="copyFoodText()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            텍스트 복사
+          </button>
+          <button class="btn btn-ghost" onclick="generateFood()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+            재생성
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── 이력 관리 탭 ── -->
+<div id="panel-history" class="panel">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px">
+    <div class="filter-bar">
+      <button class="filter-btn active" data-kind="all" onclick="setKindFilter(this)">전체</button>
+      <button class="filter-btn" data-kind="blog_post" onclick="setKindFilter(this)">블로그 글</button>
+      <button class="filter-btn" data-kind="food_post" onclick="setKindFilter(this)">맛집 리뷰</button>
+    </div>
+    <div class="filter-bar">
+      <button class="filter-btn active" data-status="all" onclick="setStatusFilter(this)">전체</button>
+      <button class="filter-btn" data-status="draft" onclick="setStatusFilter(this)">초안</button>
+      <button class="filter-btn" data-status="published" onclick="setStatusFilter(this)">발행</button>
+    </div>
+  </div>
+  <div id="history-list">
+    <div class="empty-state">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      <p>저장된 글이 없습니다</p>
+    </div>
+  </div>
+</div>
+
+<!-- ── 트렌드 탭 ── -->
+<div id="panel-trend" class="panel">
+
+  <!-- 데이터 소스 안내 -->
+  <div class="info-banner" style="margin-bottom:16px">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    <div>
+      <strong>복합 트렌드 분석</strong> — 네이버 DataLab 실측 검색량 + AI 블로그 각도·후킹 분석
+      <span id="datalab-status" style="margin-left:8px;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;background:var(--green-lt);color:var(--green)">DataLab 연결됨</span>
+    </div>
+  </div>
+
+  <!-- 테마 관리 -->
+  <div class="card">
+    <div class="card-head">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+      내 테마 관리
+    </div>
+    <div class="card-body">
+      <div class="form-row cols" style="align-items:flex-end">
+        <div class="form-row" style="flex:1;margin-bottom:0">
+          <label for="theme-input">테마 추가</label>
+          <input id="theme-input" class="form-input" type="text" placeholder="예: 한남동 맛집, 서울 카페, 건강식단" onkeydown="if(event.key==='Enter')addTheme()">
+        </div>
+        <button class="btn btn-primary" onclick="addTheme()" style="flex-shrink:0">추가</button>
+      </div>
+      <div id="theme-tags" style="margin-top:12px"></div>
+      <div class="form-hint" style="margin-top:8px">테마별로 AI가 트렌딩 키워드와 블로그 각도를 분석합니다</div>
+    </div>
+  </div>
+
+  <!-- 분석 실행 -->
+  <div class="card" style="margin-top:16px">
+    <div class="card-body">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+        <div>
+          <div style="font-size:14px;font-weight:600;color:var(--ink)">트렌드 분석 실행</div>
+          <div style="font-size:12px;color:var(--ink3);margin-top:3px">각 테마별 상승 키워드 5개 + 블로그 각도 + 후킹 문구 생성</div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button class="btn btn-ghost btn-sm" onclick="loadLastTrend()" id="btn-load-trend">지난 분석 불러오기</button>
+          <button class="btn btn-primary" id="btn-analyze" onclick="analyzeTrends()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            지금 분석
+          </button>
+        </div>
+      </div>
+      <div id="trend-progress" hidden style="margin-top:12px;font-size:13px;color:var(--ink2)"></div>
+    </div>
+  </div>
+
+  <!-- 결과 -->
+  <div id="trend-results" style="margin-top:16px"></div>
+</div>
+
+</main>
+
+<!-- 미리보기 모달 -->
+<div id="preview-modal" class="modal-backdrop" hidden onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <div class="modal-head">
+      <h3 id="modal-title"></h3>
+      <button class="modal-close" onclick="closeModal()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-content-preview" id="modal-content"></div>
+      <div class="btn-row" style="margin-top:20px">
+        <button class="btn btn-ghost btn-sm" onclick="copyModalContent()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="14" height="14"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          텍스트 복사
+        </button>
+        <button class="btn btn-ghost btn-sm" id="modal-toggle-btn"></button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+(function(){
+
+const SUPA_URL = 'https://zbpeyklwpotjyveipzxd.supabase.co';
+
+let sb = null;
+let S = {
+  tab: 'blog',
+  blogResult: null,
+  foodResult: null,
+  posts: [],
+  historyFilter: { kind: 'all', status: 'all' },
+  modalPost: null,
+};
+
+/* ── 초기화 ── */
+document.addEventListener('DOMContentLoaded', function() {
+  // Supabase 초기화 (CDN defer 로딩 대기)
+  waitSupabase(function() {
+    var supaKey = (window.SUPA_ANON) || '';
+    sb = window.supabase.createClient(SUPA_URL, supaKey, {
+      auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false }
+    });
+    updateProviderStatus();
+  });
+
+  // 클라우드에서 AI 설정 로드 (config.js 제공)
+  if (window.loadAIProvidersFromCloud) window.loadAIProvidersFromCloud().then(updateProviderStatus).catch(function(){});
+
+  // 날짜 기본값
+  var today = new Date().toISOString().slice(0, 10);
+  document.getElementById('food-date').value = today;
+
+  // 저장된 컨셉 로드
+  try {
+    var saved = localStorage.getItem('asea_blog_concept');
+    if (saved) document.getElementById('blog-concept').value = saved;
+  } catch(e) {}
+});
+
+function updateProviderStatus() {
+  var label = 'AI 연결됨';
+  if (window.getAIProviders) {
+    var P = window.getAIProviders();
+    var active = P.active || 'proxy';
+    var map = { proxy: 'Proxy', official: 'Official', flow: 'Flow' };
+    label = 'AI: ' + (map[active] || active);
+  }
+  var el = document.getElementById('hdr-status');
+  if (el) el.textContent = label;
+}
+
+function waitSupabase(cb) {
+  if (window.supabase) { cb(); return; }
+  var t = setInterval(function() {
+    if (window.supabase) { clearInterval(t); cb(); }
+  }, 100);
+}
+
+/* ── 탭 전환 ── */
+window.switchTab = function(tab) {
+  S.tab = tab;
+  ['blog','food','history','trend'].forEach(function(t) {
+    document.getElementById('panel-' + t).classList.toggle('active', t === tab);
+    document.getElementById('tb-' + t).classList.toggle('active', t === tab);
+  });
+  if (tab === 'history') loadHistory();
+  if (tab === 'trend') { renderThemeTags(); checkDatalabStatus(); }
+};
+
+/* ══════════════════════════════════════════════
+   트렌드 탭 — 테마 관리 + AI 분석 + 결과 표시
+   ══════════════════════════════════════════════ */
+
+var THEMES_KEY = 'asea_blog_themes';
+
+function getThemes() {
+  try { return JSON.parse(localStorage.getItem(THEMES_KEY) || '[]'); } catch(e) { return []; }
+}
+function saveThemesToStorage(themes) {
+  try { localStorage.setItem(THEMES_KEY, JSON.stringify(themes)); } catch(e) {}
+}
+
+window.addTheme = function() {
+  var input = document.getElementById('theme-input');
+  var theme = input.value.trim();
+  if (!theme) return;
+  var themes = getThemes();
+  if (themes.indexOf(theme) === -1) { themes.push(theme); saveThemesToStorage(themes); }
+  input.value = '';
+  renderThemeTags();
+};
+
+window.deleteTheme = function(theme) {
+  var themes = getThemes().filter(function(t) { return t !== theme; });
+  saveThemesToStorage(themes);
+  renderThemeTags();
+};
+
+function renderThemeTags() {
+  var themes = getThemes();
+  var el = document.getElementById('theme-tags');
+  if (!el) return;
+  if (!themes.length) {
+    el.innerHTML = '<div style="color:var(--ink3);font-size:13px">아직 추가된 테마가 없습니다. 위 입력란에 테마를 추가하세요.</div>';
+    return;
+  }
+  el.innerHTML = '<div style="display:flex;flex-wrap:wrap;gap:8px">' +
+    themes.map(function(t) {
+      return '<span class="theme-tag">' + esc(t) +
+        '<button onclick="deleteTheme(' + JSON.stringify(t) + ')" title="삭제">&times;</button>' +
+        '</span>';
+    }).join('') + '</div>';
+}
+
+function checkDatalabStatus() {
+  var el = document.getElementById('datalab-status');
+  if (el) {
+    el.textContent = 'DataLab 연결됨';
+    el.style.background = 'var(--green-lt)';
+    el.style.color = 'var(--green)';
+  }
+}
+
+/* ── Naver API 프록시 (GAS 경유) ── */
+var NAVER_PROXY_URL = 'https://script.google.com/macros/s/AKfycbwRJomyprm4HdB4POMX5ZO3IGBWbbcgHlCXKf7LciD6npS89CQOKLJuNNQG5_UHRTWQzQ/exec';
+
+async function callNaverProxy(type, params) {
+  var url = NAVER_PROXY_URL;
+  var body = (type === 'datalab')
+    ? { service: 'naver', payload: { type: 'datalab', body: params } }
+    : { service: 'naver', payload: Object.assign({ type: type }, params) };
+  // GAS CORS 우회: text/plain은 preflight 없이 통과 (GAS는 e.postData.contents로 동일하게 읽음)
+  var res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain' },
+    body: JSON.stringify(body)
+  });
+  return await res.json();
+}
+
+/* ── DataLab 트렌드 방향 계산 ── */
+function calcTrendDirection(data) {
+  if (!data || data.length < 2) return '안정';
+  var half = Math.max(1, Math.floor(data.length / 2));
+  var older = data.slice(0, half).reduce(function(s, d) { return s + d.ratio; }, 0) / half;
+  var newer = data.slice(-half).reduce(function(s, d) { return s + d.ratio; }, 0) / half;
+  var diff = newer - older;
+  if (diff > 8) return '상승중';
+  if (diff < -8) return '하락';
+  return '안정';
+}
+
+/* ── 맛집 탭 — 네이버 지역 검색 자동완성 ── */
+window.searchLocal = async function() {
+  var query = document.getElementById('food-place').value.trim();
+  if (!query) { showToast('장소명을 입력해 주세요.', 'red'); return; }
+  var btn = document.getElementById('btn-local-search');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner dark"></span>';
+  try {
+    var data = await callNaverProxy('local', { query: query, display: '5', sort: 'random' });
+    var items = data.items || [];
+    var dd = document.getElementById('local-dropdown');
+    if (!items.length) {
+      dd.innerHTML = '<div style="padding:12px 16px;font-size:13px;color:var(--ink3)">검색 결과 없음</div>';
+      dd.hidden = false;
+    } else {
+      dd.innerHTML = items.map(function(item) {
+        var name = item.title.replace(/<[^>]*>/g, '');
+        var addr = item.roadAddress || item.address || '';
+        var cat  = item.category || '';
+        var tel  = item.telephone || '';
+        return '<div onclick="selectLocal(' + JSON.stringify(name) + ',' + JSON.stringify(addr) + ',' + JSON.stringify(tel) + ')' +
+          '" style="padding:10px 16px;cursor:pointer;border-bottom:1px solid var(--border);transition:background .1s" ' +
+          'onmouseover="this.style.background=\'var(--surface2)\'" onmouseout="this.style.background=\'\'">' +
+          '<div style="font-size:13px;font-weight:600;color:var(--ink)">' + esc(name) + '</div>' +
+          '<div style="font-size:11px;color:var(--ink3);margin-top:2px">' + esc(cat) + (addr ? ' · ' + esc(addr) : '') + '</div>' +
+          (tel ? '<div style="font-size:11px;color:var(--ink2);margin-top:1px">📞 ' + esc(tel) + '</div>' : '') +
+          '</div>';
+      }).join('');
+      dd.hidden = false;
+    }
+    setTimeout(function() {
+      document.addEventListener('click', function closeDD(e) {
+        if (!dd.contains(e.target) && e.target.id !== 'food-place') {
+          dd.hidden = true;
+          document.removeEventListener('click', closeDD);
+        }
+      });
+    }, 100);
+  } catch(e) {
+    showToast('검색 실패: ' + e.message, 'red');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="14" height="14"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg> 검색';
+  }
+};
+
+window.selectLocal = function(name, addr, tel) {
+  document.getElementById('food-place').value = name;
+  if (addr) document.getElementById('food-location').value = addr;
+  document.getElementById('local-dropdown').hidden = true;
+  if (tel) showToast('📞 ' + tel, '');
+};
+
+/* ── 트렌드 분석 실행 ── */
+window.analyzeTrends = async function() {
+  var themes = getThemes();
+  if (!themes.length) { showToast('테마를 먼저 추가해주세요.', 'red'); return; }
+
+  var btn = document.getElementById('btn-analyze');
+  var prog = document.getElementById('trend-progress');
+  btn.disabled = true;
+  prog.hidden = false;
+
+  var results = [];
+  var model = 'claude-sonnet-4-6';
+
+  // DataLab 날짜 범위 (최근 8주)
+  var now = new Date();
+  var endDate = now.toISOString().slice(0, 10);
+  var startDate = new Date(now.getTime() - 56 * 24 * 3600 * 1000).toISOString().slice(0, 10);
+
+  for (var i = 0; i < themes.length; i++) {
+    var theme = themes[i];
+    prog.textContent = '(' + (i + 1) + '/' + themes.length + ') [1/2] "' + theme + '" DataLab 검색량 조회 중...';
+    btn.innerHTML = '<span class="spinner"></span> ' + (i+1) + '/' + themes.length;
+
+    // Step 1: DataLab 실측 검색량
+    var datalabData = null;
+    var trendDir = '안정';
+    var peakRatio = 0;
+    try {
+      var dlRes = await callNaverProxy('datalab', {
+        startDate: startDate,
+        endDate: endDate,
+        timeUnit: 'week',
+        keywordGroups: [{ groupName: theme, keywords: [theme] }]
+      });
+      if (dlRes.results && dlRes.results[0] && dlRes.results[0].data) {
+        datalabData = dlRes.results[0].data;
+        trendDir = calcTrendDirection(datalabData);
+        peakRatio = Math.max.apply(null, datalabData.map(function(d) { return d.ratio; }));
+      }
+    } catch(e) {}
+
+    prog.textContent = '(' + (i + 1) + '/' + themes.length + ') [2/2] "' + theme + '" AI 키워드 분석 중...';
+
+    // Step 2: AI 세부 키워드 + 블로그 각도 분석
+    var datalabCtx = '';
+    if (datalabData && datalabData.length) {
+      datalabCtx = '\n\n[네이버 DataLab 실측 데이터 (최근 8주)]\n' +
+        '트렌드 방향: ' + trendDir + '\n' +
+        '최고 검색량 지수: ' + peakRatio.toFixed(1) + '\n' +
+        '주간 데이터: ' + datalabData.map(function(d) {
+          return d.period.slice(5) + '=' + d.ratio.toFixed(0);
+        }).join(', ') + '\n(위 실측 데이터를 반드시 분석에 반영할 것)';
+    }
+
+    var sys = [
+      '당신은 한국 디지털 마케팅 전문가이자 네이버 블로그 SEO 컨설턴트입니다.',
+      '네이버 DataLab 실측 검색량 데이터를 기반으로 블로그 키워드 전략을 수립합니다.',
+      'JSON 형식으로만 응답하세요. 다른 텍스트 절대 금지.',
+      datalabCtx
+    ].join('\n');
+
+    var usr = [
+      '테마: "' + theme + '"',
+      '현재 DataLab 트렌드 방향: ' + trendDir,
+      '',
+      '이 테마에서 지금 네이버에서 실제로 검색되는 블로그 키워드 5개를 분석하여 아래 JSON으로만 출력하세요.',
+      '',
+      '{',
+      '  "theme": "' + theme + '",',
+      '  "datalab_trend": "' + trendDir + '",',
+      '  "keywords": [',
+      '    {',
+      '      "keyword": "지역+카테고리+상황 조합의 구체적 검색어",',
+      '      "trend": "상승중|안정|계절성",',
+      '      "reason": "DataLab 데이터와 연계한 주목 이유 (한 줄)",',
+      '      "angle": "이 키워드로 쓸 블로그 글의 구체적 방향과 제목 아이디어",',
+      '      "hook": "독자를 사로잡을 첫 문장 예시"',
+      '    }',
+      '  ]',
+      '}'
+    ].join('\n');
+
+    try {
+      var text = await callAI(model, sys, usr);
+      var m = text.match(/\{[\s\S]*\}/);
+      if (m) {
+        var parsed = JSON.parse(m[0]);
+        parsed._datalabRatios = datalabData;
+        results.push(parsed);
+      } else {
+        results.push({ theme: theme, keywords: [], error: '파싱 실패' });
+      }
+    } catch(e) {
+      results.push({ theme: theme, keywords: [], error: e.message });
+    }
+  }
+
+  // Supabase 저장
+  if (sb) {
+    var today = new Date().toISOString().slice(0, 10);
+    try {
+      await sb.from('app_submissions').upsert({
+        kind: 'trending',
+        ref: 'trend_' + today,
+        name: today + ' 트렌드 분석',
+        status: 'active',
+        data: { themes: results, generated_at: new Date().toISOString(), source: 'datalab+ai' }
+      }, { onConflict: 'kind,ref' });
+    } catch(e) {}
+  }
+
+  prog.hidden = true;
+  btn.disabled = false;
+  btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg> 지금 분석';
+  renderTrendResults(results);
+  showToast('분석 완료! (DataLab 실측 반영)', 'green');
+};
+
+/* ── 지난 분석 불러오기 ── */
+window.loadLastTrend = async function() {
+  if (!sb) { showToast('DB 연결 중입니다.', 'red'); return; }
+  var btn = document.getElementById('btn-load-trend');
+  btn.disabled = true; btn.textContent = '불러오는 중...';
+
+  var res = await sb.from('app_submissions')
+    .select('data,name,created_at')
+    .eq('kind', 'trending')
+    .order('created_at', { ascending: false })
+    .limit(1);
+
+  btn.disabled = false; btn.textContent = '지난 분석 불러오기';
+  if (res.error || !res.data || !res.data.length) {
+    showToast('저장된 분석이 없습니다.', 'red'); return;
+  }
+  var row = res.data[0];
+  var themes = (row.data && row.data.themes) || [];
+  var date = row.name || '';
+  renderTrendResults(themes, date);
+  showToast('불러오기 완료', 'green');
+};
+
+/* ── 결과 렌더링 ── */
+function renderTrendResults(results, dateLabel) {
+  var el = document.getElementById('trend-results');
+  if (!results || !results.length) { el.innerHTML = ''; return; }
+
+  var badgeMap = { '상승중': 'up', '안정': 'stable', '계절성': 'seasonal' };
+  var badgeText = { '상승중': '↑ 상승중', '안정': '→ 안정', '계절성': '☀ 계절성' };
+
+  var html = '';
+  if (dateLabel) html += '<div style="font-size:12px;color:var(--ink3);margin-bottom:12px">' + esc(dateLabel) + ' 기준</div>';
+
+  results.forEach(function(r) {
+    if (!r.keywords || !r.keywords.length) return;
+    html += '<div class="trend-theme-section">';
+    html += '<div class="trend-theme-label">' +
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>' +
+      esc(r.theme) + '</div>';
+    html += '<div class="trend-grid">';
+
+    // DataLab 스파크라인 생성 (테마당 1개)
+    var sparkHtml = '';
+    if (r._datalabRatios && r._datalabRatios.length >= 2) {
+      var ratios = r._datalabRatios.map(function(d) { return d.ratio; });
+      var maxR = Math.max.apply(null, ratios) || 1;
+      var minR = Math.min.apply(null, ratios);
+      var svgW = 120, svgH = 28;
+      var pts = ratios.map(function(v, idx) {
+        var x = (idx / (ratios.length - 1)) * svgW;
+        var y = svgH - ((v - minR) / (maxR - minR || 1)) * svgH;
+        return x.toFixed(1) + ',' + y.toFixed(1);
+      }).join(' ');
+      var lastRatio = ratios[ratios.length - 1];
+      sparkHtml = '<div style="display:flex;align-items:center;gap:8px;padding:4px 0">' +
+        '<svg width="' + svgW + '" height="' + svgH + '" viewBox="0 0 ' + svgW + ' ' + svgH + '">' +
+          '<polyline points="' + pts + '" fill="none" stroke="var(--primary)" stroke-width="1.5" stroke-linejoin="round"/>' +
+        '</svg>' +
+        '<span style="font-size:11px;color:var(--ink3)">DataLab ' + lastRatio.toFixed(0) + '</span>' +
+      '</div>';
+    }
+
+    r.keywords.forEach(function(kw) {
+      var bc = badgeMap[kw.trend] || 'stable';
+      var bt = badgeText[kw.trend] || kw.trend;
+      html += '<div class="trend-card">' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px">' +
+          '<div class="trend-card-kw">' + esc(kw.keyword) + '</div>' +
+          '<span class="trend-card-badge ' + bc + '">' + bt + '</span>' +
+        '</div>' +
+        sparkHtml +
+        '<div class="trend-card-reason">' + esc(kw.reason || '') + '</div>' +
+        '<div class="trend-card-angle">' + esc(kw.angle || '') + '</div>' +
+        '<div class="trend-card-hook">"' + esc(kw.hook || '') + '"</div>' +
+        '<button class="btn btn-primary btn-sm" style="width:100%;justify-content:center;margin-top:4px" ' +
+          'onclick="generateFromTrend(' + JSON.stringify(kw.keyword).replace(/"/g,'&quot;') + ',' + JSON.stringify(kw.angle).replace(/"/g,'&quot;') + ')">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="13" height="13"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>' +
+          ' 이 키워드로 글 생성' +
+        '</button>' +
+      '</div>';
+    });
+    html += '</div></div>';
+  });
+
+  el.innerHTML = html;
+}
+
+/* ── 트렌드 → 블로그 생성 연결 ── */
+window.generateFromTrend = function(keyword, angle) {
+  switchTab('blog');
+  document.getElementById('blog-topic').value = keyword;
+  document.getElementById('blog-extra').value = angle ? '글 각도: ' + angle : '';
+  document.getElementById('blog-topic').focus();
+  document.getElementById('blog-topic').scrollIntoView({ behavior: 'smooth', block: 'center' });
+  showToast('주제가 입력됐습니다. 글 생성을 눌러주세요.', '');
+};
+
+/* ── 컨셉 저장 ── */
+window.saveConcept = function() {
+  try { localStorage.setItem('asea_blog_concept', document.getElementById('blog-concept').value); } catch(e) {}
+};
+
+/* ── 글자 수 카운트 ── */
+window.updateWordCount = function() {
+  var v = document.getElementById('blog-result-content').value;
+  document.getElementById('blog-result-word-count').textContent = v.length + '자';
+};
+
+/* ── AI 호출 (index.html AI 설정 연동) ── */
+async function callAI(model, systemPrompt, userPrompt) {
+  if (!window.claudeFetch) throw new Error('AI 설정이 로드되지 않았습니다. 페이지를 새로고침 해주세요.');
+  var res = await window.claudeFetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-api-key': 'via-proxy', 'anthropic-version': '2023-06-01' },
+    body: JSON.stringify({ model: model, max_tokens: 4096, system: systemPrompt, messages: [{ role: 'user', content: userPrompt }] }),
+    keepModel: true
+  });
+  var data = await res.json();
+  if (data.error) throw new Error(data.error.message || JSON.stringify(data.error));
+  if (!data.content || !data.content[0]) throw new Error('응답 없음');
+  return data.content[0].text;
+}
+
+/* ── 마크다운 특수문자 제거 ── */
+function stripMarkdown(text) {
+  return text
+    .replace(/\*{1,3}([^*\n]+)\*{1,3}/g, '$1')
+    .replace(/_{2}([^_\n]+)_{2}/g, '$1')
+    .replace(/^#{1,6}\s+/gm, '')
+    .replace(/^-{3,}$/gm, '')
+    .replace(/^={3,}$/gm, '')
+    .replace(/`{1,3}([^`]*)`{1,3}/g, '$1')
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+    .replace(/^>\s+/gm, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
+/* ── 결과 파싱 + 마크다운 제거 ── */
+function parseResult(text) {
+  var titleM = text.match(/\[제목\]\s*\n?([\s\S]*?)(?=\[본문\])/);
+  var contentM = text.match(/\[본문\]\s*\n?([\s\S]*?)(?=\[태그\]|$)/);
+  var tagsM = text.match(/\[태그\]\s*\n?([\s\S]*)$/);
+  return {
+    title: stripMarkdown(titleM ? titleM[1].trim() : ''),
+    content: stripMarkdown(contentM ? contentM[1].trim() : text.trim()),
+    tags: (tagsM ? tagsM[1].trim() : '').replace(/[*_#`]/g, '')
+  };
+}
+
+/* ── 1단계: 리서치 (실제 상호·키워드 수집) ── */
+async function researchTopic(topic) {
+  var sys = '당신은 한국 검색 마케팅 전문가입니다. 주어진 주제에 대해 실제로 알려진 정보를 정리합니다. JSON 형식으로만 응답하세요.';
+  var usr = [
+    '주제: ' + topic,
+    '',
+    '다음 JSON을 출력하세요 (한국어, 실제 알려진 정보 기반):',
+    '{',
+    '  "businesses": ["실제 알려진 상호명 또는 대표 브랜드 3~5개 (없으면 유사 유형)"],',
+    '  "price_range": "일반적인 가격대 (예: 1인 2~5만원)",',
+    '  "location_tips": "지역 특성·교통·주차 정보 한 줄",',
+    '  "seo_keywords": ["검색량 높은 롱테일 키워드 6개"],',
+    '  "popular_items": ["대표 메뉴·아이템·특징 3개"],',
+    '  "visitor_faq": ["방문자가 자주 묻는 질문 3개"]',
+    '}'
+  ].join('\n');
+  try {
+    var text = await callAI('claude-haiku-4-5-20251001', sys, usr);
+    var m = text.match(/\{[\s\S]*\}/);
+    if (m) return JSON.parse(m[0]);
+  } catch(e) {}
+  return null;
+}
+
+/* ── 2단계: 스타일별 시스템 프롬프트 빌더 ── */
+function buildBlogSystemPrompt(style, concept, length, research) {
+  var researchCtx = '';
+  if (research) {
+    researchCtx = [
+      '',
+      '[리서치 데이터 — 반드시 활용]',
+      '실제 상호·브랜드: ' + (research.businesses || []).join(', '),
+      '가격대: ' + (research.price_range || ''),
+      '위치·교통: ' + (research.location_tips || ''),
+      '인기 아이템: ' + (research.popular_items || []).join(', '),
+      'SEO 키워드: ' + (research.seo_keywords || []).join(', '),
+      '방문자 FAQ: ' + (research.visitor_faq || []).join(' / '),
+    ].join('\n');
+  }
+
+  var common = [
+    '당신은 네이버 블로그 및 AI 검색 상위 노출 전문 작가입니다.',
+    '블로그 컨셉: ' + concept,
+    '',
+    '[절대 규칙]',
+    '1. 마크다운 특수문자 완전 금지: **, *, ##, --, ~~, _, ``` 등 사용 불가',
+    '2. 소제목은 별도 줄에 짧고 명확하게 (기호 없이)',
+    '3. 리서치 데이터의 실제 상호명·가격·위치를 본문에 자연스럽게 녹여낼 것',
+    '4. AI 검색 최적화: 주제와 지역을 조합한 핵심 키워드를 본문 전반에 자연스럽게 배치',
+    '5. 출력 형식 엄수 (아래 형식 외 다른 내용 출력 금지):',
+    '',
+    '[제목]',
+    '(제목만)',
+    '',
+    '[본문]',
+    '(본문만)',
+    '',
+    '[태그]',
+    '(태그1, 태그2, ... — 8개, 쉼표 구분)',
+    researchCtx,
+  ].join('\n');
+
+  var styleGuide = {
+    '정보형': [
+      '',
+      '[정보형 글쓰기 정책]',
+      '목표: 독자가 즉시 활용 가능한 정보 제공, 검색 상위 노출',
+      '- 첫 문장: 핵심 키워드(지역+카테고리) 포함, 독자 궁금증 직접 해소',
+      '- 소제목 구조: 장소/항목별로 구분, 각 소제목 아래 구체 정보(가격·위치·운영시간·예약·주차)',
+      '- 실제 상호명 3개 이상 소개, 각 상호별 특징 차별화',
+      '- 마지막 단락: 방문 전 체크리스트 형식으로 핵심 정보 요약',
+      '- SEO: 지역명+카테고리 조합 키워드 5회 이상, 롱테일 키워드(예: "한남동 스테이크 예약 방법") 3회 이상',
+      '- 목표 분량: ' + length + '자 내외',
+    ],
+    '감성형': [
+      '',
+      '[감성형 글쓰기 정책]',
+      '목표: 독자가 감정 이입, "나도 가고 싶다"는 욕구 자극',
+      '- 1인칭 체험 서술("이날 처음 방문했는데", "한 입 먹는 순간")',
+      '- 오감 묘사 필수: 냄새·맛·식감·분위기·소리·온도',
+      '- 스토리 구조: 방문 계기 → 첫인상 → 핵심 체험 → 감동 포인트 → 다음 방문 기대',
+      '- 실제 메뉴명·가격을 대화처럼 자연스럽게 ("OOO 메뉴를 시켰는데 1인 35,000원이었어요")',
+      '- 상호명을 주인공처럼 소개, 독자에게 강한 인상 남기기',
+      '- SEO: 감성 키워드(데이트, 분위기, 특별한 날) + 지역명 + 카테고리 제목에 조합',
+      '- 목표 분량: ' + length + '자 내외',
+    ],
+    'SEO최적화형': [
+      '',
+      '[SEO 최적화형 글쓰기 정책]',
+      '목표: 네이버·구글·AI 검색 상위 노출 극대화',
+      '- 제목: 핵심 키워드 + 연도 또는 숫자 필수 (예: "2025 한남동 스테이크 맛집 TOP5")',
+      '- 첫 문단(100자 이내): 핵심 키워드 2회, 지역명+카테고리 조합, 독자 질문 해소로 시작',
+      '- 소제목: 독자 검색 질문 형태 (예: "한남동 스테이크 가격은?", "예약 없이 갈 수 있나요?")',
+      '- 본문: 핵심 키워드 8회 이상, 관련 롱테일 키워드 6개 이상 자연 배치',
+      '- FAQ 섹션 필수: 독자 자주 묻는 질문 3개 + 명확한 답변 (AI 검색 스니펫 최적화)',
+      '- 결론 단락: 핵심 키워드로 마무리 + 방문 권유 CTA',
+      '- 태그 8개: 핵심 키워드 + 롱테일 + 연관 키워드 조합',
+      '- 목표 분량: ' + length + '자 내외',
+    ],
+    '리스트형': [
+      '',
+      '[리스트형 글쓰기 정책]',
+      '목표: 스캔하기 쉬운 구조, 공유하고 싶은 콘텐츠',
+      '- 제목: "TOP N", "BEST N", "추천 N곳" 형식, 핵심 키워드 포함',
+      '- 도입부(2~3문장): 리스트 선정 기준 설명 (가격·맛·분위기·접근성 고려)',
+      '- 각 항목 구조(5~7개): 번호. 상호명 | 핵심 한 줄 / 대표 메뉴 가격 / 위치(지하철역 도보) / 추천 포인트 1~2줄',
+      '- 마지막: "이런 분께 추천합니다" 또는 "방문 전 꼭 확인하세요" 요약',
+      '- 상호명은 SEO 앵커 역할: 상호명+지역명 조합으로 반복',
+      '- 목표 분량: ' + length + '자 내외',
+    ],
+  };
+
+  return common + (styleGuide[style] || styleGuide['정보형']).join('\n');
+}
+
+/* ── 블로그 글 생성 (2단계: 리서치 → 작성) ── */
+window.generateBlog = async function() {
+  var topic = document.getElementById('blog-topic').value.trim();
+  if (!topic) { showToast('주제를 입력해 주세요.', 'red'); return; }
+
+  var concept = document.getElementById('blog-concept').value.trim() || '일반 블로그';
+  var keywords = document.getElementById('blog-keywords').value.trim();
+  var length = document.getElementById('blog-length').value;
+  var style = document.getElementById('blog-style').value;
+  var model = document.getElementById('blog-model').value;
+
+  var btn = document.getElementById('btn-gen-blog');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> 리서치 중...';
+
+  try {
+    // 1단계: 리서치
+    var research = await researchTopic(topic);
+
+    btn.innerHTML = '<span class="spinner"></span> 글 작성 중...';
+
+    // 2단계: 스타일별 전문 작성
+    var extra = document.getElementById('blog-extra').value.trim();
+    var systemPrompt = buildBlogSystemPrompt(style, concept, length, research);
+    if (extra) systemPrompt += '\n\n[작성자 추가 지시사항 — 최우선 반영]\n' + extra;
+    var userPrompt = '주제: ' + topic + '\n목표 분량: ' + length + '자 내외';
+    if (keywords) userPrompt += '\n추가 포함 키워드: ' + keywords;
+
+    var text = await callAI(model, systemPrompt, userPrompt);
+    var result = parseResult(text);
+    S.blogResult = result;
+
+    document.getElementById('blog-result-title').value = result.title;
+    document.getElementById('blog-result-content').value = result.content;
+    document.getElementById('blog-result-tags').value = result.tags;
+    document.getElementById('blog-result-word-count').textContent = result.content.length + '자';
+    document.getElementById('blog-result-section').hidden = false;
+    document.getElementById('blog-result-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  } catch(e) {
+    showToast('생성 실패: ' + e.message, 'red');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="16" height="16"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> 글 생성';
+  }
+};
+
+/* ── 맛집 리뷰 생성 ── */
+window.generateFood = async function() {
+  var place = document.getElementById('food-place').value.trim();
+  if (!place) { showToast('장소명을 입력해 주세요.', 'red'); return; }
+
+  var date = document.getElementById('food-date').value;
+  var location = document.getElementById('food-location').value.trim();
+  var rating = document.getElementById('food-rating').value;
+  var menu = document.getElementById('food-menu').value.trim();
+  var impression = document.getElementById('food-impression').value.trim();
+  var model = document.getElementById('food-model').value;
+  var concept = document.getElementById('blog-concept').value.trim() || '일반 블로그';
+
+  var btn = document.getElementById('btn-gen-food');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> 생성 중...';
+
+  var systemPrompt = [
+    '당신은 네이버 블로그 맛집 리뷰 전문 작가이자 SEO 전문가입니다.',
+    '블로그 컨셉: ' + concept,
+    '',
+    '[절대 규칙]',
+    '1. 마크다운 특수문자 완전 금지: **, *, ##, --, ~~, _, ``` 등 사용 불가',
+    '2. 소제목은 별도 줄에 간결하게, 기호 없이',
+    '3. 실제 방문 체험을 바탕으로 한 생생한 서술',
+    '4. 가격·메뉴명·위치·주차 정보를 구체적으로 포함',
+    '5. SEO: 장소명+지역명+카테고리 조합 키워드 반복 배치',
+    '6. AI 검색 최적화: 방문자가 궁금해할 정보를 FAQ 또는 요약으로 포함',
+    '',
+    '[리뷰 구조]',
+    '- 첫 단락: 장소명+지역명+카테고리로 시작, 방문 계기와 기대감',
+    '- 분위기·인테리어: 시각적 묘사, 좌석 수, 대기 여부',
+    '- 메뉴 소개: 주문한 메뉴 이름+가격 명시, 맛·식감·향 오감 묘사',
+    '- 서비스·청결: 직원 응대, 화장실 청결도 언급',
+    '- 접근성: 위치(지하철역 도보), 주차 가능 여부',
+    '- 총평: 별점 표현 + 재방문 의향 + 추천 대상',
+    '',
+    '[출력 형식 엄수]',
+    '[제목]',
+    '(장소명+지역명+핵심 포인트 포함 제목)',
+    '',
+    '[본문]',
+    '(본문)',
+    '',
+    '[태그]',
+    '(태그1, 태그2, ... — 8개)',
+  ].join('\n');
+
+  var extra = document.getElementById('food-extra').value.trim();
+  if (extra) systemPrompt += '\n\n[작성자 추가 지시사항 — 최우선 반영]\n' + extra;
+
+  var parts = ['장소명: ' + place];
+  if (date) parts.push('방문일: ' + date);
+  if (location) parts.push('위치: ' + location);
+  parts.push('평점: ' + rating + '/5');
+  if (menu) parts.push('주문 메뉴 및 가격: ' + menu);
+  if (impression) parts.push('방문자 느낀 점: ' + impression);
+  parts.push('목표 분량: 1000~1300자');
+  var userPrompt = parts.join('\n');
+
+  try {
+    var text = await callAI(model, systemPrompt, userPrompt);
+    var result = parseResult(text);
+    S.foodResult = result;
+
+    document.getElementById('food-result-title').value = result.title;
+    document.getElementById('food-result-content').value = result.content;
+    document.getElementById('food-result-tags').value = result.tags;
+    document.getElementById('food-result-section').hidden = false;
+    document.getElementById('food-result-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  } catch(e) {
+    showToast('생성 실패: ' + e.message, 'red');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="16" height="16"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> 리뷰 생성';
+  }
+};
+
+/* ── Supabase 저장 ── */
+window.savePost = async function(type) {
+  if (!sb) { showToast('DB 연결 중입니다. 잠시 후 다시 시도해 주세요.', 'red'); return; }
+  var titleEl, contentEl, tagsEl;
+  var kind;
+  if (type === 'blog') {
+    titleEl = document.getElementById('blog-result-title');
+    contentEl = document.getElementById('blog-result-content');
+    tagsEl = document.getElementById('blog-result-tags');
+    kind = 'blog_post';
+  } else {
+    titleEl = document.getElementById('food-result-title');
+    contentEl = document.getElementById('food-result-content');
+    tagsEl = document.getElementById('food-result-tags');
+    kind = 'food_post';
+  }
+  var title = titleEl.value.trim();
+  var content = contentEl.value.trim();
+  if (!title || !content) { showToast('제목과 본문을 확인해 주세요.', 'red'); return; }
+
+  var ref = 'post_' + Date.now() + '_' + Math.random().toString(36).slice(2,7);
+  var data = {
+    content: content,
+    tags: tagsEl.value.trim(),
+    concept: document.getElementById('blog-concept').value.trim(),
+    created_ms: Date.now()
+  };
+  if (type === 'blog') {
+    data.style = document.getElementById('blog-style').value;
+    data.topic = document.getElementById('blog-topic').value.trim();
+  } else {
+    data.place = document.getElementById('food-place').value.trim();
+    data.visit_date = document.getElementById('food-date').value;
+  }
+
+  var res = await sb.from('app_submissions').insert({
+    kind: kind, ref: ref, name: title, status: 'draft', data: data
+  });
+  if (res.error) { showToast('저장 실패: ' + res.error.message, 'red'); return; }
+  showToast('저장 완료!', 'green');
+};
+
+/* ── 이력 로드 ── */
+window.loadHistory = async function() {
+  if (!sb) return;
+  var el = document.getElementById('history-list');
+  el.innerHTML = '<div style="text-align:center;padding:32px;color:var(--ink3)"><span class="spinner dark"></span></div>';
+
+  var q = sb.from('app_submissions')
+    .select('id,kind,ref,name,status,data,created_at,updated_at')
+    .in('kind', ['blog_post','food_post'])
+    .order('updated_at', { ascending: false })
+    .limit(100);
+
+  if (S.historyFilter.kind !== 'all') q = q.eq('kind', S.historyFilter.kind);
+  if (S.historyFilter.status !== 'all') q = q.eq('status', S.historyFilter.status);
+
+  var res = await q;
+  if (res.error) { el.innerHTML = '<div class="empty-state"><p>불러오기 실패: ' + res.error.message + '</p></div>'; return; }
+
+  S.posts = res.data || [];
+  renderHistory();
+};
+
+function renderHistory() {
+  var el = document.getElementById('history-list');
+  if (!S.posts.length) {
+    el.innerHTML = '<div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><p>저장된 글이 없습니다</p></div>';
+    return;
+  }
+  el.innerHTML = '<div class="post-list">' + S.posts.map(renderPostCard).join('') + '</div>';
+}
+
+function renderPostCard(p) {
+  var isFood = p.kind === 'food_post';
+  var dt = new Date(p.updated_at);
+  var dateStr = dt.getFullYear() + '.' + pad(dt.getMonth()+1) + '.' + pad(dt.getDate());
+  var badge = p.status === 'published'
+    ? '<span class="badge badge-pub">발행</span>'
+    : '<span class="badge badge-draft">초안</span>';
+  var iconSvg = isFood
+    ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>'
+    : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>';
+
+  return '<div class="post-card">' +
+    '<div class="post-card-icon ' + (isFood ? 'food' : 'blog') + '">' + iconSvg + '</div>' +
+    '<div class="post-card-body">' +
+      '<div class="post-card-title">' + esc(p.name || '(제목 없음)') + '</div>' +
+      '<div class="post-card-meta"><span>' + dateStr + '</span><span>' + (isFood ? '맛집 리뷰' : '블로그 글') + '</span>' + badge + '</div>' +
+    '</div>' +
+    '<div class="post-card-actions">' +
+      '<button class="btn btn-ghost btn-sm" onclick="openModal(' + p.id + ')">보기</button>' +
+      (p.status === 'draft'
+        ? '<button class="btn btn-ghost btn-sm" style="color:var(--green);border-color:var(--green)" onclick="toggleStatus(' + p.id + ',\'published\')">발행</button>'
+        : '<button class="btn btn-ghost btn-sm" onclick="toggleStatus(' + p.id + ',\'draft\')">초안으로</button>'
+      ) +
+      '<button class="btn btn-danger btn-sm" onclick="deletePost(' + p.id + ')">삭제</button>' +
+    '</div>' +
+  '</div>';
+}
+
+function pad(n) { return n < 10 ? '0' + n : '' + n; }
+
+/* ── 상태 토글 ── */
+window.toggleStatus = async function(id, newStatus) {
+  if (!sb) return;
+  var res = await sb.from('app_submissions').update({ status: newStatus }).eq('id', id);
+  if (res.error) { showToast('오류: ' + res.error.message, 'red'); return; }
+  S.posts = S.posts.map(function(p) { return p.id === id ? Object.assign({}, p, { status: newStatus }) : p; });
+  renderHistory();
+  showToast(newStatus === 'published' ? '발행됨' : '초안으로 변경됨', 'green');
+};
+
+/* ── 삭제 ── */
+window.deletePost = async function(id) {
+  if (!confirm('삭제하시겠습니까?')) return;
+  if (!sb) return;
+  var res = await sb.from('app_submissions').delete().eq('id', id);
+  if (res.error) { showToast('삭제 실패: ' + res.error.message, 'red'); return; }
+  S.posts = S.posts.filter(function(p) { return p.id !== id; });
+  renderHistory();
+  showToast('삭제 완료', 'green');
+};
+
+/* ── 미리보기 모달 ── */
+window.openModal = function(id) {
+  var p = S.posts.find(function(x) { return x.id === id; });
+  if (!p) return;
+  S.modalPost = p;
+  document.getElementById('modal-title').textContent = p.name || '(제목 없음)';
+  var content = (p.data && p.data.content) || '';
+  var tags = (p.data && p.data.tags) ? '\n\n태그: ' + p.data.tags : '';
+  document.getElementById('modal-content').textContent = content + tags;
+  var toggleBtn = document.getElementById('modal-toggle-btn');
+  toggleBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="14" height="14"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> HTML 복사';
+  toggleBtn.onclick = function() { copyModalHtml(content); };
+  document.getElementById('preview-modal').hidden = false;
+};
+
+window.closeModal = function() {
+  document.getElementById('preview-modal').hidden = true;
+  S.modalPost = null;
+};
+
+window.copyModalContent = function() {
+  var text = document.getElementById('modal-content').textContent;
+  copyToClipboard(text, '복사됨');
+};
+
+function copyModalHtml(content) {
+  var html = textToHtml(content);
+  copyToClipboard(html, 'HTML 복사됨');
+}
+
+/* ── 필터 ── */
+window.setKindFilter = function(btn) {
+  document.querySelectorAll('[data-kind]').forEach(function(b) { b.classList.remove('active'); });
+  btn.classList.add('active');
+  S.historyFilter.kind = btn.dataset.kind;
+  loadHistory();
+};
+
+window.setStatusFilter = function(btn) {
+  document.querySelectorAll('[data-status]').forEach(function(b) { b.classList.remove('active'); });
+  btn.classList.add('active');
+  S.historyFilter.status = btn.dataset.status;
+  loadHistory();
+};
+
+/* ── 복사 유틸 ── */
+window.copyBlogText = function() {
+  var t = document.getElementById('blog-result-title').value + '\n\n' + document.getElementById('blog-result-content').value;
+  copyToClipboard(t, '텍스트 복사됨');
+};
+
+window.copyBlogHtml = function() {
+  var title = document.getElementById('blog-result-title').value;
+  var content = document.getElementById('blog-result-content').value;
+  var tags = document.getElementById('blog-result-tags').value;
+  var html = '<h2>' + esc(title) + '</h2>\n' + textToHtml(content);
+  if (tags) html += '\n<p>' + tags.split(',').map(function(t){ return '#' + t.trim(); }).join(' ') + '</p>';
+  copyToClipboard(html, 'HTML 복사됨');
+};
+
+window.copyFoodText = function() {
+  var t = document.getElementById('food-result-title').value + '\n\n' + document.getElementById('food-result-content').value;
+  copyToClipboard(t, '텍스트 복사됨');
+};
+
+function textToHtml(text) {
+  var lines = text.split('\n');
+  var html = '';
+  for (var i = 0; i < lines.length; i++) {
+    var line = lines[i].trim();
+    if (!line) { html += '<br>\n'; continue; }
+    if (line.startsWith('## ') || line.startsWith('### ')) {
+      html += '<h3>' + esc(line.replace(/^#+\s*/, '')) + '</h3>\n';
+    } else {
+      html += '<p>' + esc(line) + '</p>\n';
+    }
+  }
+  return html;
+}
+
+function copyToClipboard(text, msg) {
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(text).then(function() { showToast(msg, 'green'); });
+  } else {
+    var ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    showToast(msg, 'green');
+  }
+}
+
+/* ── 토스트 ── */
+var _toastTimer;
+function showToast(msg, type) {
+  var t = document.querySelector('.toast');
+  if (!t) { t = document.createElement('div'); t.className = 'toast'; document.body.appendChild(t); }
+  t.textContent = msg;
+  t.className = 'toast' + (type ? ' ' + type : '');
+  t.style.opacity = '1';
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(function() { t.style.opacity = '0'; }, 2500);
+}
+
+/* ── HTML 이스케이프 ── */
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+/* ── 전역 노출 ── */
+window.switchTab = window.switchTab;
+
+})();
+</script>
+</body>
+</html>

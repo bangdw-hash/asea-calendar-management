@@ -29,7 +29,7 @@
     cal:      { label: '캘린더',    tabs: ['calendar', 'weekly-hub', 'extract', '#tasks-window-nav-btn', '#cal-share-nav-btn'] },
     work:     { label: '업무',      tabs: ['work', 'budget', 'report', 'workorder', 'draft', 'survey', 'contractgen'] },
     fac:      { label: '시설·자원', tabs: ['facility', 'vehicle', 'classroom', 'dorm', 'wayfind', 'checkinmgmt'] },
-    comm:     { label: '소통·홍보', tabs: ['board', 'email', 'sms', 'zoom', 'promo', 'qrcard', 'bizcard', 'souvenir', '#amulbo-nav-btn'] },
+    comm:     { label: '소통·홍보', tabs: ['board', 'email', 'sms', 'zoom', 'promo', 'qrcard', 'bizcard', 'souvenir', '#blog-nav-btn', '#amulbo-nav-btn'] },
     hr:       { label: '인사',      tabs: ['hr', 'retire'] },
     settings: { label: '설정',      tabs: ['settings', 'admin', 'ai-provider', 'help'] },
   };

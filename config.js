@@ -215,7 +215,7 @@ window._decodeApiKey = function(encoded) {
    · 프록시 미배포·게이트웨이 오류 시, 직접 키가 있으면 직접 호출로 폴백
 ──────────────────────────────────────────────────────────────── */
 window.SUPA_ANON = window.SUPA_ANON ||
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpicGV5a2x3cG90anl2ZWlwenhkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE1MTYxMDcsImV4cCI6MjA5NzA5MjEwN30.6JgoQ6rPRnmrbBTG68A-Y9HDQk40mnwubhXVnkZvHrQ';
+  'sb_publishable_DxtNEPtU2KktlcRQnQx9jA_szCPFzMj';
 
 window.getAIProxyUrl = function () {
   try { var v = localStorage.getItem('asea_ai_proxy_url'); if (v !== null) return v; } catch (e) {}
