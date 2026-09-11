@@ -15,13 +15,13 @@
  * - blog   : 블로그 검색
  */
 
-// 지역 검색 / 블로그 검색 (상호명 검색 앱)
+// 지역 검색 / 블로그 검색 (developers.naver.com — 상호명 검색 앱)
 var SEARCH_CLIENT_ID     = 'VrnrLasu5ihp4zySJ0mX';
 var SEARCH_CLIENT_SECRET = '_4kRe_DD6O';
 
-// DataLab 검색어 트렌드 (블로그자동화 앱)
-var DATALAB_CLIENT_ID     = 'AB2ycE0pXMvjEEq7OGwU';
-var DATALAB_CLIENT_SECRET = 'mOmuoZKgnD';
+// DataLab + 기타 검색 (NCP API Hub — BlogTrend 앱)
+var NCP_KEY_ID  = '2rpv5zhg9g';
+var NCP_KEY     = '6Le9mBkkJGGEJM3E4RxNBf3j0g4t0irV8qNEcXYQ';
 
 function doPost(e) {
   try {
@@ -62,14 +62,14 @@ function _search(type, payload) {
   return _respond(JSON.parse(res.getContentText()));
 }
 
-/* ── DataLab 검색어 트렌드 (POST) ── */
+/* ── DataLab 검색어 트렌드 (POST, NCP API Hub) ── */
 function _datalab(body) {
-  var res = UrlFetchApp.fetch('https://openapi.naver.com/v1/datalab/search', {
+  var res = UrlFetchApp.fetch('https://naveropenapi.apigw.ntruss.com/datalab/v1/search', {
     method: 'post',
     contentType: 'application/json',
     headers: {
-      'X-Naver-Client-Id':     DATALAB_CLIENT_ID,
-      'X-Naver-Client-Secret': DATALAB_CLIENT_SECRET
+      'X-NCP-APIGW-API-KEY-ID': NCP_KEY_ID,
+      'X-NCP-APIGW-API-KEY':    NCP_KEY
     },
     payload: JSON.stringify(body),
     muteHttpExceptions: true
