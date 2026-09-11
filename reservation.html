@@ -127,44 +127,28 @@ header{
 .view-btn:hover:not(.on){color:var(--text)}
 
 /* 카테고리 필터 체크박스 */
-.cat-filter{display:flex;gap:3px;align-items:center;flex-wrap:nowrap;overflow-x:auto;
+.cat-filter{display:flex;gap:0;align-items:center;flex-wrap:nowrap;overflow-x:auto;
   scrollbar-width:none;-ms-overflow-style:none}
 .cat-filter::-webkit-scrollbar{display:none}
-.cat-sep{color:var(--border);padding:0 1px;font-size:14px;user-select:none;flex-shrink:0}
+.cat-sep{color:var(--border);padding:0 7px;font-size:12px;user-select:none;flex-shrink:0;line-height:1}
 .cat-chip{
-  display:inline-flex;align-items:center;gap:5px;
-  padding:4px 10px 4px 7px;border-radius:20px;cursor:pointer;
-  font-size:11px;font-weight:600;color:var(--gray);white-space:nowrap;flex-shrink:0;
-  border:1.5px solid transparent;background:transparent;
-  transition:color .2s ease,background .2s ease,border-color .2s ease,transform .15s cubic-bezier(.2,.8,.2,1);
+  display:inline-flex;align-items:center;gap:0;
+  padding:2px 0;cursor:pointer;
+  font-size:12px;font-weight:500;color:var(--gray);white-space:nowrap;flex-shrink:0;
+  border:none;background:transparent;
+  transition:color .15s ease,font-weight .1s;
   user-select:none;font-family:var(--font);
 }
-.cat-chip:hover{transform:translateY(-1px)}
-.cat-chip:active{transform:scale(.94)}
-.cat-chip .chk{
-  width:13px;height:13px;border-radius:3px;flex-shrink:0;
-  border:1.5px solid currentColor;display:flex;align-items:center;justify-content:center;
-  transition:background .2s ease,border-color .2s ease,transform .15s cubic-bezier(.35,.9,.25,1);
-}
-.cat-chip .chk svg{opacity:0;transform:scale(0) rotate(-20deg);transition:opacity .18s,transform .18s cubic-bezier(.2,.8,.2,1)}
-.cat-chip.on .chk{transform:scale(1.1)}
-.cat-chip.on .chk svg{opacity:1;transform:scale(1) rotate(0)}
-/* all */
-.cat-chip.all{color:var(--text-sm)}
-.cat-chip.all.on{color:var(--text);background:rgba(17,24,39,.07);border-color:var(--border)}
-.cat-chip.all.on .chk{background:var(--text);border-color:var(--text)}
-/* academic */
-.cat-chip.academic{color:var(--academic)}
-.cat-chip.academic.on{background:var(--academic-lt);border-color:var(--academic)}
-.cat-chip.academic.on .chk{background:var(--academic);border-color:var(--academic)}
-/* internal */
-.cat-chip.internal{color:var(--primary)}
-.cat-chip.internal.on{background:var(--primary-lt);border-color:var(--primary)}
-.cat-chip.internal.on .chk{background:var(--primary);border-color:var(--primary)}
-/* rental */
-.cat-chip.rental{color:var(--orange)}
-.cat-chip.rental.on{background:var(--orange-lt);border-color:var(--orange)}
-.cat-chip.rental.on .chk{background:var(--orange);border-color:var(--orange)}
+.cat-chip:hover{opacity:.7}
+.cat-chip .chk{display:none}
+.cat-chip.all{color:var(--gray)}
+.cat-chip.all.on{color:var(--text);font-weight:700}
+.cat-chip.academic{color:var(--gray)}
+.cat-chip.academic.on{color:var(--academic);font-weight:700}
+.cat-chip.internal{color:var(--gray)}
+.cat-chip.internal.on{color:var(--primary);font-weight:700}
+.cat-chip.rental{color:var(--gray)}
+.cat-chip.rental.on{color:var(--orange);font-weight:700}
 
 /* ── 선택 바 (날짜 선택 시) — 오렌지 배너 대체 ── */
 .sel-bar{
@@ -480,7 +464,7 @@ header{
   .toolbar{gap:6px;padding:0 10px;height:44px}
   .month-label{font-size:14px;min-width:80px}
   .view-btn{padding:0 8px;font-size:10px}
-  .cat-chip{padding:3px 8px 3px 6px;font-size:10px}
+  .cat-chip{font-size:11px}
   .btn-cta-rental,.btn-cta-new{padding:5px 10px;font-size:11px}
 }
 
@@ -3972,8 +3956,8 @@ async function runNlpRefine() {
 async function _callNlpAI(input, prev) {
   const today = toStr(new Date());
   const prompt = prev
-    ? `오늘: ${today}\n기존 파싱 결과: ${JSON.stringify(prev)}\n추가 지시: "${input}"\n위 지시를 반영하여 JSON을 수정해주세요. 기존 값에서 언급되지 않은 필드는 유지하세요.\n\nJSON 형식:\n{"dates":["YYYY-MM-DD"],"time_start":"HH:MM","time_end":"HH:MM","purpose":"목적","dept":null,"requester_name":null,"contact_phone":null}\nJSON만 출력하세요.`
-    : `오늘: ${today}\n다음 설명에서 강의실 예약 정보를 JSON으로 추출하세요.\n설명: "${input}"\n\nJSON 형식:\n{"dates":["YYYY-MM-DD"],"time_start":"HH:MM","time_end":"HH:MM","purpose":"목적","dept":null,"requester_name":null,"contact_phone":null}\n규칙: 날짜 범위면 모든 날짜 나열, 시간 없으면 null, JSON만 출력하세요.`;
+    ? `오늘: ${today}\n기존 파싱 결과: ${JSON.stringify(prev)}\n추가 지시: "${input}"\n위 지시를 반영하여 JSON을 수정해주세요. 기존 값에서 언급되지 않은 필드는 유지하세요.\n\nJSON 형식:\n{"classroom":"강의실명","dates":["YYYY-MM-DD"],"time_start":"HH:MM","time_end":"HH:MM","purpose":"목적","dept":null,"requester_name":null,"contact_phone":null}\nJSON만 출력하세요.`
+    : `오늘: ${today}\n다음 설명에서 강의실 예약 정보를 JSON으로 추출하세요.\n설명: "${input}"\n\nJSON 형식:\n{"classroom":"강의실명(예:301호)","dates":["YYYY-MM-DD"],"time_start":"HH:MM","time_end":"HH:MM","purpose":"목적","dept":null,"requester_name":null,"contact_phone":null}\n규칙: 날짜 범위면 모든 날짜 나열, 시간 없으면 null, 강의실 언급 없으면 null, JSON만 출력하세요.`;
 
   const res = await claudeFetch({ model: 'claude-haiku-4-5-20251001', max_tokens: 600, messages: [{ role: 'user', content: prompt }] });
   if (!res.ok) throw new Error(`서버 오류 ${res.status}`);
@@ -3987,6 +3971,7 @@ async function _callNlpAI(input, prev) {
 function _showNlpPreview(d) {
   const el = document.getElementById('nlpPreview');
   const rows = [];
+  if (d.classroom) rows.push(`<div class="nlp-row"><span>강의실</span><span>${esc(d.classroom)}</span></div>`);
   if (d.dates?.length) rows.push(`<div class="nlp-row"><span>날짜</span><span>${d.dates.join(', ')}</span></div>`);
   if (d.time_start) rows.push(`<div class="nlp-row"><span>시간</span><span>${d.time_start} ~ ${d.time_end || '?'}</span></div>`);
   if (d.purpose) rows.push(`<div class="nlp-row"><span>목적</span><span>${esc(d.purpose)}</span></div>`);
@@ -4125,7 +4110,23 @@ JSON만 출력하세요. 날짜가 여러 개면 모두 포함, 기간이면 모
 }
 
 function _ocrApply(d, isRental, merge) {
-  const set = (id, val) => { const el = document.getElementById(id); if (el && (merge ? true : !el.value)) el.value = val; };
+  const set = (id, val) => { const el = document.getElementById(id); if (el && (merge ? !el.value : true)) el.value = val; };
+  // classroom
+  if (d.classroom) {
+    const roomSel = document.getElementById('roomSel');
+    if (roomSel) {
+      const keyword = d.classroom.replace(/\s/g, '').toLowerCase();
+      let matched = null;
+      for (const opt of roomSel.options) {
+        if (!opt.value) continue;
+        const optText = opt.text.replace(/\s/g, '').toLowerCase();
+        if (optText === keyword || optText.includes(keyword) || keyword.includes(optText)) {
+          matched = opt.value; break;
+        }
+      }
+      if (matched) { roomSel.value = matched; onRoomChange(); }
+    }
+  }
   // dates
   if (d.dates && d.dates.length) {
     const valid = d.dates.filter(s => /^\d{4}-\d{2}-\d{2}$/.test(s));
