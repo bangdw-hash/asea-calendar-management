@@ -1,0 +1,878 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>N블로그 자동화 — ASEA</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+<style>
+/* ── 토큰 ── */
+:root {
+  --primary:#1A73E8; --primary-dk:#1557B0; --primary-lt:#E8F0FE;
+  --green:#16a34a;   --green-lt:#dcfce7;
+  --orange:#ea580c;  --orange-lt:#ffedd5;
+  --red:#dc2626;     --red-lt:#fee2e2;
+  --r:12px;
+  --sh:0 1px 3px rgba(0,0,0,.08);
+  --sh-md:0 2px 8px rgba(0,0,0,.12);
+  --bg:#F8F9FA; --surface:#FFFFFF; --surface2:#F1F3F4;
+  --ink:#202124; --ink2:#5F6368; --ink3:#9AA0A6;
+  --border:#DADCE0; --border-dk:#BDC1C6;
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --bg:#1C1C1E; --surface:#2C2C2E; --surface2:#3A3A3C;
+    --ink:#F2F2F7; --ink2:#AEAEB2; --ink3:#636366;
+    --border:#3A3A3C; --border-dk:#4A4A4C;
+    --primary-lt:#1A2E4A; --green-lt:#0D2B18; --orange-lt:#2B1700; --red-lt:#2B0A0A;
+  }
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:15px;-webkit-text-size-adjust:100%}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--ink);line-height:1.6;min-height:100vh}
+
+/* ── 헤더 ── */
+.hdr{background:var(--surface);border-bottom:1px solid var(--border);padding:0 20px;display:flex;align-items:center;gap:12px;height:56px;position:sticky;top:0;z-index:100}
+.hdr-back{display:inline-flex;align-items:center;gap:6px;text-decoration:none;color:var(--primary);font-size:13px;font-weight:500;padding:6px 10px;border-radius:8px;border:1px solid var(--border)}
+.hdr-back:hover{background:var(--primary-lt)}
+.hdr-title{font-size:16px;font-weight:600;flex:1}
+.hdr-sub{font-size:12px;color:var(--ink3)}
+
+/* ── 탭 바 ── */
+.tab-bar{background:var(--surface);border-bottom:1px solid var(--border);display:flex;padding:0 20px;gap:0}
+.tb-btn{padding:14px 18px;font-size:14px;font-weight:500;color:var(--ink2);border:none;background:none;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:color .15s,border-color .15s;display:flex;align-items:center;gap:7px}
+.tb-btn svg{width:16px;height:16px;flex-shrink:0}
+.tb-btn:hover{color:var(--ink)}
+.tb-btn.active{color:var(--primary);border-bottom-color:var(--primary)}
+
+/* ── 레이아웃 ── */
+.main{max-width:900px;margin:0 auto;padding:24px 20px 80px}
+.panel{display:none}.panel.active{display:block}
+
+/* ── 섹션 카드 ── */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--sh)}
+.card+.card{margin-top:16px}
+.card-head{padding:18px 20px 0;font-size:14px;font-weight:600;color:var(--ink);display:flex;align-items:center;gap:8px}
+.card-head svg{width:18px;height:18px;color:var(--primary)}
+.card-body{padding:16px 20px 20px}
+
+/* ── 폼 요소 ── */
+.form-row{display:flex;flex-direction:column;gap:5px;margin-bottom:14px}
+.form-row:last-child{margin-bottom:0}
+.form-row.cols{flex-direction:row;gap:12px}
+.form-row.cols>.form-row{flex:1;margin-bottom:0}
+label{font-size:13px;font-weight:500;color:var(--ink2)}
+.form-input,.form-select,.form-textarea{width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:14px;background:var(--surface);color:var(--ink);transition:border-color .15s}
+.form-input:focus,.form-select:focus,.form-textarea:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(26,115,232,.12)}
+.form-textarea{resize:vertical;min-height:90px;line-height:1.6}
+.form-select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239AA0A6' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:30px}
+.form-hint{font-size:12px;color:var(--ink3);margin-top:3px}
+.char-count{font-size:12px;color:var(--ink3);text-align:right;margin-top:4px}
+
+/* ── 버튼 ── */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border-radius:8px;font-size:14px;font-weight:500;cursor:pointer;border:1px solid transparent;transition:background .15s,opacity .15s}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn-primary{background:var(--primary);color:#fff;border-color:var(--primary)}
+.btn-primary:hover:not(:disabled){background:var(--primary-dk)}
+.btn-ghost{background:transparent;color:var(--primary);border-color:var(--border)}
+.btn-ghost:hover:not(:disabled){background:var(--primary-lt)}
+.btn-danger{background:transparent;color:var(--red);border-color:var(--border)}
+.btn-danger:hover:not(:disabled){background:var(--red-lt)}
+.btn-sm{padding:6px 12px;font-size:13px}
+.btn svg{width:15px;height:15px;flex-shrink:0}
+.btn-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+
+/* ── 생성 버튼 영역 ── */
+.gen-area{display:flex;align-items:center;gap:12px;padding-top:4px}
+.model-select{font-size:13px;padding:6px 28px 6px 10px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--ink2);cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239AA0A6' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center}
+
+/* ── 로딩 스피너 ── */
+.spinner{display:inline-block;width:18px;height:18px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0}
+@keyframes spin{to{transform:rotate(360deg)}}
+.spinner.dark{border-color:rgba(26,115,232,.2);border-top-color:var(--primary)}
+
+/* ── 결과 섹션 ── */
+.result-section{margin-top:16px}
+.result-title-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.result-label{font-size:13px;font-weight:600;color:var(--ink)}
+.result-actions{display:flex;gap:6px}
+
+/* ── 이력 카드 ── */
+.post-list{display:flex;flex-direction:column;gap:10px;margin-top:16px}
+.post-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px 18px;display:flex;align-items:flex-start;gap:14px;transition:box-shadow .15s}
+.post-card:hover{box-shadow:var(--sh-md)}
+.post-card-icon{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.post-card-icon.blog{background:var(--primary-lt)}
+.post-card-icon.food{background:var(--orange-lt)}
+.post-card-icon svg{width:18px;height:18px}
+.post-card-icon.blog svg{color:var(--primary)}
+.post-card-icon.food svg{color:var(--orange)}
+.post-card-body{flex:1;min-width:0}
+.post-card-title{font-size:14px;font-weight:600;color:var(--ink);margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.post-card-meta{font-size:12px;color:var(--ink3);display:flex;gap:10px;flex-wrap:wrap}
+.post-card-actions{display:flex;gap:6px;flex-shrink:0;align-items:center}
+
+/* ── 배지 ── */
+.badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600}
+.badge-draft{background:var(--surface2);color:var(--ink2)}
+.badge-pub{background:var(--green-lt);color:var(--green)}
+
+/* ── 필터 바 ── */
+.filter-bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:4px}
+.filter-btn{padding:5px 12px;border-radius:20px;font-size:13px;border:1px solid var(--border);background:none;color:var(--ink2);cursor:pointer;transition:all .15s}
+.filter-btn.active{background:var(--primary);color:#fff;border-color:var(--primary)}
+
+/* ── 상태 ── */
+.empty-state{padding:48px 20px;text-align:center;color:var(--ink3)}
+.empty-state svg{width:40px;height:40px;margin:0 auto 12px;display:block;opacity:.4}
+.empty-state p{font-size:14px}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 20px;border-radius:8px;font-size:13px;z-index:9999;transition:opacity .3s;pointer-events:none}
+.toast.green{background:var(--green)}
+.toast.red{background:var(--red)}
+
+/* ── 미리보기 모달 ── */
+.modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:500;display:flex;align-items:center;justify-content:center;padding:20px}
+.modal{background:var(--surface);border-radius:var(--r);width:100%;max-width:680px;max-height:90vh;overflow-y:auto;box-shadow:var(--sh-md)}
+.modal-head{padding:18px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.modal-head h3{font-size:15px;font-weight:600}
+.modal-close{background:none;border:none;cursor:pointer;color:var(--ink2);padding:4px;border-radius:6px}
+.modal-close:hover{background:var(--surface2)}
+.modal-body{padding:20px}
+.modal-content-preview{font-size:14px;line-height:1.8;color:var(--ink);white-space:pre-wrap;word-break:break-word}
+
+/* ── 정보 배너 ── */
+.info-banner{background:var(--primary-lt);border:1px solid rgba(26,115,232,.25);border-radius:var(--r);padding:14px 18px;display:flex;gap:12px;font-size:13px;color:var(--primary-dk);margin-bottom:20px}
+.info-banner svg{width:18px;height:18px;flex-shrink:0;margin-top:1px}
+
+@media(max-width:600px){
+  .form-row.cols{flex-direction:column}
+  .main{padding:16px 14px 72px}
+  .post-card-actions{flex-direction:column}
+  .tb-btn .tab-label{display:none}
+}
+</style>
+</head>
+<body>
+
+<header class="hdr">
+  <a class="hdr-back" href="index.html">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><polyline points="15 18 9 12 15 6"/></svg>
+    메인으로
+  </a>
+  <span class="hdr-title">N블로그 자동화</span>
+  <span class="hdr-sub" id="hdr-status">준비 중...</span>
+</header>
+
+<nav class="tab-bar">
+  <button class="tb-btn active" id="tb-blog" onclick="switchTab('blog')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+    <span class="tab-label">블로그 글 생성</span>
+  </button>
+  <button class="tb-btn" id="tb-food" onclick="switchTab('food')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
+    <span class="tab-label">맛집 리뷰</span>
+  </button>
+  <button class="tb-btn" id="tb-history" onclick="switchTab('history')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+    <span class="tab-label">이력 관리</span>
+  </button>
+</nav>
+
+<main class="main">
+
+<!-- ── 블로그 글 생성 탭 ── -->
+<div id="panel-blog" class="panel active">
+  <div class="info-banner">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    <div>AI가 블로그 글을 생성합니다. 생성 후 직접 네이버 블로그에 복사·붙여넣기 하거나, 아래 <strong>HTML 복사</strong> 버튼으로 서식 포함 복사가 가능합니다.</div>
+  </div>
+
+  <div class="card">
+    <div class="card-head">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
+      생성 옵션
+    </div>
+    <div class="card-body">
+      <div class="form-row">
+        <label for="blog-concept">블로그 컨셉 <span style="color:var(--ink3);font-weight:400">(저장됩니다)</span></label>
+        <input id="blog-concept" class="form-input" type="text" placeholder="예: 30대 직장인의 서울 맛집 탐방 블로그" oninput="saveConcept()">
+      </div>
+      <div class="form-row">
+        <label for="blog-topic">주제 / 소재 <span style="color:var(--red)">*</span></label>
+        <input id="blog-topic" class="form-input" type="text" placeholder="예: 성수동 브런치 카페 추천 5곳">
+      </div>
+      <div class="form-row cols">
+        <div class="form-row">
+          <label for="blog-style">글 스타일</label>
+          <select id="blog-style" class="form-select">
+            <option value="정보형">정보형 (팁·가이드)</option>
+            <option value="감성형">감성형 (후기·에세이)</option>
+            <option value="SEO최적화형">SEO 최적화형</option>
+            <option value="리스트형">리스트형 (Top N)</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label for="blog-length">목표 분량</label>
+          <select id="blog-length" class="form-select">
+            <option value="500">500자 (짧게)</option>
+            <option value="800" selected>800자 (기본)</option>
+            <option value="1200">1200자 (상세)</option>
+            <option value="2000">2000자 (심층)</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <label for="blog-keywords">포함 키워드 <span style="color:var(--ink3);font-weight:400">(선택)</span></label>
+        <input id="blog-keywords" class="form-input" type="text" placeholder="키워드1, 키워드2, ...">
+      </div>
+      <div class="gen-area">
+        <button class="btn btn-primary" id="btn-gen-blog" onclick="generateBlog()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+          글 생성
+        </button>
+        <select class="model-select" id="blog-model">
+          <option value="claude-haiku-4-5-20251001">Haiku (빠름)</option>
+          <option value="claude-sonnet-4-6" selected>Sonnet (균형)</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- 결과 -->
+  <div id="blog-result-section" class="result-section" hidden>
+    <div class="card">
+      <div class="card-head">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        생성된 글 <span id="blog-result-word-count" style="font-size:12px;font-weight:400;color:var(--ink3)"></span>
+      </div>
+      <div class="card-body">
+        <div class="form-row">
+          <label for="blog-result-title">제목</label>
+          <input id="blog-result-title" class="form-input" type="text" placeholder="제목">
+        </div>
+        <div class="form-row">
+          <label for="blog-result-content">본문</label>
+          <textarea id="blog-result-content" class="form-textarea" style="min-height:280px" oninput="updateWordCount()" placeholder="본문 내용"></textarea>
+        </div>
+        <div class="form-row">
+          <label for="blog-result-tags">태그 <span style="color:var(--ink3);font-weight:400">(쉼표 구분)</span></label>
+          <input id="blog-result-tags" class="form-input" type="text" placeholder="맛집, 카페, 서울">
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-primary" onclick="savePost('blog')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+            저장
+          </button>
+          <button class="btn btn-ghost" onclick="copyBlogText()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            텍스트 복사
+          </button>
+          <button class="btn btn-ghost" onclick="copyBlogHtml()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+            HTML 복사
+          </button>
+          <button class="btn btn-ghost" onclick="generateBlog()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+            재생성
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── 맛집 리뷰 탭 ── -->
+<div id="panel-food" class="panel">
+  <div class="card">
+    <div class="card-head">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
+      맛집 정보 입력
+    </div>
+    <div class="card-body">
+      <div class="form-row cols">
+        <div class="form-row">
+          <label for="food-place">장소명 <span style="color:var(--red)">*</span></label>
+          <input id="food-place" class="form-input" type="text" placeholder="예: 오브제 브런치카페 성수점">
+        </div>
+        <div class="form-row">
+          <label for="food-date">방문일</label>
+          <input id="food-date" class="form-input" type="date">
+        </div>
+      </div>
+      <div class="form-row cols">
+        <div class="form-row">
+          <label for="food-location">주소 / 위치</label>
+          <input id="food-location" class="form-input" type="text" placeholder="서울 성동구 ...">
+        </div>
+        <div class="form-row">
+          <label for="food-rating">전체 평점</label>
+          <select id="food-rating" class="form-select">
+            <option value="5">★★★★★ 5점</option>
+            <option value="4" selected>★★★★☆ 4점</option>
+            <option value="3">★★★☆☆ 3점</option>
+            <option value="2">★★☆☆☆ 2점</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <label for="food-menu">주문한 메뉴 / 가격</label>
+        <textarea id="food-menu" class="form-textarea" style="min-height:70px" placeholder="에그베네딕트 18,000원, 아이스아메리카노 6,500원 ..."></textarea>
+      </div>
+      <div class="form-row">
+        <label for="food-impression">맛·분위기·서비스 느낀 점</label>
+        <textarea id="food-impression" class="form-textarea" style="min-height:80px" placeholder="전체적인 후기를 자유롭게 적어주세요..."></textarea>
+      </div>
+      <div class="gen-area">
+        <button class="btn btn-primary" id="btn-gen-food" onclick="generateFood()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+          리뷰 생성
+        </button>
+        <select class="model-select" id="food-model">
+          <option value="claude-haiku-4-5-20251001">Haiku (빠름)</option>
+          <option value="claude-sonnet-4-6" selected>Sonnet (균형)</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div id="food-result-section" class="result-section" hidden>
+    <div class="card">
+      <div class="card-head">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        생성된 맛집 리뷰
+      </div>
+      <div class="card-body">
+        <div class="form-row">
+          <label for="food-result-title">제목</label>
+          <input id="food-result-title" class="form-input" type="text">
+        </div>
+        <div class="form-row">
+          <label for="food-result-content">본문</label>
+          <textarea id="food-result-content" class="form-textarea" style="min-height:260px"></textarea>
+        </div>
+        <div class="form-row">
+          <label for="food-result-tags">태그</label>
+          <input id="food-result-tags" class="form-input" type="text">
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-primary" onclick="savePost('food')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+            저장
+          </button>
+          <button class="btn btn-ghost" onclick="copyFoodText()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            텍스트 복사
+          </button>
+          <button class="btn btn-ghost" onclick="generateFood()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+            재생성
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── 이력 관리 탭 ── -->
+<div id="panel-history" class="panel">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px">
+    <div class="filter-bar">
+      <button class="filter-btn active" data-kind="all" onclick="setKindFilter(this)">전체</button>
+      <button class="filter-btn" data-kind="blog_post" onclick="setKindFilter(this)">블로그 글</button>
+      <button class="filter-btn" data-kind="food_post" onclick="setKindFilter(this)">맛집 리뷰</button>
+    </div>
+    <div class="filter-bar">
+      <button class="filter-btn active" data-status="all" onclick="setStatusFilter(this)">전체</button>
+      <button class="filter-btn" data-status="draft" onclick="setStatusFilter(this)">초안</button>
+      <button class="filter-btn" data-status="published" onclick="setStatusFilter(this)">발행</button>
+    </div>
+  </div>
+  <div id="history-list">
+    <div class="empty-state">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      <p>저장된 글이 없습니다</p>
+    </div>
+  </div>
+</div>
+
+</main>
+
+<!-- 미리보기 모달 -->
+<div id="preview-modal" class="modal-backdrop" hidden onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <div class="modal-head">
+      <h3 id="modal-title"></h3>
+      <button class="modal-close" onclick="closeModal()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-content-preview" id="modal-content"></div>
+      <div class="btn-row" style="margin-top:20px">
+        <button class="btn btn-ghost btn-sm" onclick="copyModalContent()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="14" height="14"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          텍스트 복사
+        </button>
+        <button class="btn btn-ghost btn-sm" id="modal-toggle-btn"></button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+(function(){
+
+const SUPA_URL = 'https://zbpeyklwpotjyveipzxd.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpicGV5a2x3cG90anl2ZWlwenhkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE1MTYxMDcsImV4cCI6MjA5NzA5MjEwN30.6JgoQ6rPRnmrbBTG68A-Y9HDQk40mnwubhXVnkZvHrQ';
+const AI_PROXY = 'https://zbpeyklwpotjyveipzxd.supabase.co/functions/v1/ai-proxy';
+
+let sb = null;
+let S = {
+  tab: 'blog',
+  blogResult: null,
+  foodResult: null,
+  posts: [],
+  historyFilter: { kind: 'all', status: 'all' },
+  modalPost: null,
+};
+
+/* ── 초기화 ── */
+document.addEventListener('DOMContentLoaded', function() {
+  // Supabase 초기화 (CDN defer 로딩 대기)
+  waitSupabase(function() {
+    sb = window.supabase.createClient(SUPA_URL, SUPA_KEY, {
+      auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false }
+    });
+    document.getElementById('hdr-status').textContent = '연결됨';
+  });
+
+  // 날짜 기본값
+  var today = new Date().toISOString().slice(0, 10);
+  document.getElementById('food-date').value = today;
+
+  // 저장된 컨셉 로드
+  try {
+    var saved = localStorage.getItem('asea_blog_concept');
+    if (saved) document.getElementById('blog-concept').value = saved;
+  } catch(e) {}
+});
+
+function waitSupabase(cb) {
+  if (window.supabase) { cb(); return; }
+  var t = setInterval(function() {
+    if (window.supabase) { clearInterval(t); cb(); }
+  }, 100);
+}
+
+/* ── 탭 전환 ── */
+window.switchTab = function(tab) {
+  S.tab = tab;
+  ['blog','food','history'].forEach(function(t) {
+    document.getElementById('panel-' + t).classList.toggle('active', t === tab);
+    document.getElementById('tb-' + t).classList.toggle('active', t === tab);
+  });
+  if (tab === 'history') loadHistory();
+};
+
+/* ── 컨셉 저장 ── */
+window.saveConcept = function() {
+  try { localStorage.setItem('asea_blog_concept', document.getElementById('blog-concept').value); } catch(e) {}
+};
+
+/* ── 글자 수 카운트 ── */
+window.updateWordCount = function() {
+  var v = document.getElementById('blog-result-content').value;
+  document.getElementById('blog-result-word-count').textContent = v.length + '자';
+};
+
+/* ── AI 프록시 호출 ── */
+async function callAI(model, systemPrompt, userPrompt) {
+  var body = {
+    service: 'claude',
+    payload: {
+      model: model,
+      max_tokens: 4096,
+      system: systemPrompt,
+      messages: [{ role: 'user', content: userPrompt }]
+    }
+  };
+  var res = await fetch(AI_PROXY, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+  var data = await res.json();
+  if (data.error) throw new Error(data.error);
+  if (!data.content || !data.content[0]) throw new Error('응답 없음');
+  return data.content[0].text;
+}
+
+/* ── 결과 파싱 ── */
+function parseResult(text) {
+  var titleM = text.match(/\[제목\]\s*\n?([\s\S]*?)(?=\[본문\])/);
+  var contentM = text.match(/\[본문\]\s*\n?([\s\S]*?)(?=\[태그\]|$)/);
+  var tagsM = text.match(/\[태그\]\s*\n?([\s\S]*)$/);
+  return {
+    title: titleM ? titleM[1].trim() : '',
+    content: contentM ? contentM[1].trim() : text.trim(),
+    tags: tagsM ? tagsM[1].trim() : ''
+  };
+}
+
+/* ── 블로그 글 생성 ── */
+window.generateBlog = async function() {
+  var topic = document.getElementById('blog-topic').value.trim();
+  if (!topic) { showToast('주제를 입력해 주세요.', 'red'); return; }
+
+  var concept = document.getElementById('blog-concept').value.trim() || '일반 블로그';
+  var keywords = document.getElementById('blog-keywords').value.trim();
+  var length = document.getElementById('blog-length').value;
+  var style = document.getElementById('blog-style').value;
+  var model = document.getElementById('blog-model').value;
+
+  var btn = document.getElementById('btn-gen-blog');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> 생성 중...';
+
+  var systemPrompt = [
+    '당신은 네이버 블로그 전문 작가입니다.',
+    '블로그 컨셉: ' + concept,
+    '스타일: ' + style + '으로 작성합니다.',
+    '자연스럽고 친근한 한국어로, 독자가 끝까지 읽고 싶어지는 블로그 글을 씁니다.',
+    '반드시 아래 형식으로 출력하세요:',
+    '',
+    '[제목]',
+    '제목 작성',
+    '',
+    '[본문]',
+    '본문 작성 (소제목, 단락 포함)',
+    '',
+    '[태그]',
+    '태그1, 태그2, 태그3 (5~8개, 쉼표 구분)'
+  ].join('\n');
+
+  var userPrompt = '주제: ' + topic + '\n분량: ' + length + '자 내외';
+  if (keywords) userPrompt += '\n포함 키워드: ' + keywords;
+
+  try {
+    var text = await callAI(model, systemPrompt, userPrompt);
+    var result = parseResult(text);
+    S.blogResult = result;
+
+    document.getElementById('blog-result-title').value = result.title;
+    document.getElementById('blog-result-content').value = result.content;
+    document.getElementById('blog-result-tags').value = result.tags;
+    document.getElementById('blog-result-word-count').textContent = result.content.length + '자';
+    document.getElementById('blog-result-section').hidden = false;
+    document.getElementById('blog-result-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  } catch(e) {
+    showToast('생성 실패: ' + e.message, 'red');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="16" height="16"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> 글 생성';
+  }
+};
+
+/* ── 맛집 리뷰 생성 ── */
+window.generateFood = async function() {
+  var place = document.getElementById('food-place').value.trim();
+  if (!place) { showToast('장소명을 입력해 주세요.', 'red'); return; }
+
+  var date = document.getElementById('food-date').value;
+  var location = document.getElementById('food-location').value.trim();
+  var rating = document.getElementById('food-rating').value;
+  var menu = document.getElementById('food-menu').value.trim();
+  var impression = document.getElementById('food-impression').value.trim();
+  var model = document.getElementById('food-model').value;
+  var concept = document.getElementById('blog-concept').value.trim() || '일반 블로그';
+
+  var btn = document.getElementById('btn-gen-food');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> 생성 중...';
+
+  var systemPrompt = [
+    '당신은 네이버 블로그 맛집 리뷰 전문 작가입니다.',
+    '블로그 컨셉: ' + concept,
+    '방문자의 솔직한 경험을 바탕으로 생생하고 공감 가는 맛집 리뷰를 씁니다.',
+    '별점 표현, 메뉴 설명, 분위기, 가격 대비 만족도를 자연스럽게 포함합니다.',
+    '반드시 아래 형식으로 출력하세요:',
+    '',
+    '[제목]',
+    '제목 (장소명과 핵심 포인트 포함)',
+    '',
+    '[본문]',
+    '본문 (800~1200자, 소제목 포함)',
+    '',
+    '[태그]',
+    '태그1, 태그2, 태그3 (5~8개)'
+  ].join('\n');
+
+  var parts = ['장소명: ' + place];
+  if (date) parts.push('방문일: ' + date);
+  if (location) parts.push('위치: ' + location);
+  parts.push('평점: ' + rating + '/5');
+  if (menu) parts.push('주문 메뉴: ' + menu);
+  if (impression) parts.push('느낀 점: ' + impression);
+  var userPrompt = parts.join('\n');
+
+  try {
+    var text = await callAI(model, systemPrompt, userPrompt);
+    var result = parseResult(text);
+    S.foodResult = result;
+
+    document.getElementById('food-result-title').value = result.title;
+    document.getElementById('food-result-content').value = result.content;
+    document.getElementById('food-result-tags').value = result.tags;
+    document.getElementById('food-result-section').hidden = false;
+    document.getElementById('food-result-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  } catch(e) {
+    showToast('생성 실패: ' + e.message, 'red');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="16" height="16"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> 리뷰 생성';
+  }
+};
+
+/* ── Supabase 저장 ── */
+window.savePost = async function(type) {
+  if (!sb) { showToast('DB 연결 중입니다. 잠시 후 다시 시도해 주세요.', 'red'); return; }
+  var titleEl, contentEl, tagsEl;
+  var kind;
+  if (type === 'blog') {
+    titleEl = document.getElementById('blog-result-title');
+    contentEl = document.getElementById('blog-result-content');
+    tagsEl = document.getElementById('blog-result-tags');
+    kind = 'blog_post';
+  } else {
+    titleEl = document.getElementById('food-result-title');
+    contentEl = document.getElementById('food-result-content');
+    tagsEl = document.getElementById('food-result-tags');
+    kind = 'food_post';
+  }
+  var title = titleEl.value.trim();
+  var content = contentEl.value.trim();
+  if (!title || !content) { showToast('제목과 본문을 확인해 주세요.', 'red'); return; }
+
+  var ref = 'post_' + Date.now() + '_' + Math.random().toString(36).slice(2,7);
+  var data = {
+    content: content,
+    tags: tagsEl.value.trim(),
+    concept: document.getElementById('blog-concept').value.trim(),
+    created_ms: Date.now()
+  };
+  if (type === 'blog') {
+    data.style = document.getElementById('blog-style').value;
+    data.topic = document.getElementById('blog-topic').value.trim();
+  } else {
+    data.place = document.getElementById('food-place').value.trim();
+    data.visit_date = document.getElementById('food-date').value;
+  }
+
+  var res = await sb.from('app_submissions').insert({
+    kind: kind, ref: ref, name: title, status: 'draft', data: data
+  });
+  if (res.error) { showToast('저장 실패: ' + res.error.message, 'red'); return; }
+  showToast('저장 완료!', 'green');
+};
+
+/* ── 이력 로드 ── */
+window.loadHistory = async function() {
+  if (!sb) return;
+  var el = document.getElementById('history-list');
+  el.innerHTML = '<div style="text-align:center;padding:32px;color:var(--ink3)"><span class="spinner dark"></span></div>';
+
+  var q = sb.from('app_submissions')
+    .select('id,kind,ref,name,status,data,created_at,updated_at')
+    .in('kind', ['blog_post','food_post'])
+    .order('updated_at', { ascending: false })
+    .limit(100);
+
+  if (S.historyFilter.kind !== 'all') q = q.eq('kind', S.historyFilter.kind);
+  if (S.historyFilter.status !== 'all') q = q.eq('status', S.historyFilter.status);
+
+  var res = await q;
+  if (res.error) { el.innerHTML = '<div class="empty-state"><p>불러오기 실패: ' + res.error.message + '</p></div>'; return; }
+
+  S.posts = res.data || [];
+  renderHistory();
+};
+
+function renderHistory() {
+  var el = document.getElementById('history-list');
+  if (!S.posts.length) {
+    el.innerHTML = '<div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><p>저장된 글이 없습니다</p></div>';
+    return;
+  }
+  el.innerHTML = '<div class="post-list">' + S.posts.map(renderPostCard).join('') + '</div>';
+}
+
+function renderPostCard(p) {
+  var isFood = p.kind === 'food_post';
+  var dt = new Date(p.updated_at);
+  var dateStr = dt.getFullYear() + '.' + pad(dt.getMonth()+1) + '.' + pad(dt.getDate());
+  var badge = p.status === 'published'
+    ? '<span class="badge badge-pub">발행</span>'
+    : '<span class="badge badge-draft">초안</span>';
+  var iconSvg = isFood
+    ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>'
+    : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>';
+
+  return '<div class="post-card">' +
+    '<div class="post-card-icon ' + (isFood ? 'food' : 'blog') + '">' + iconSvg + '</div>' +
+    '<div class="post-card-body">' +
+      '<div class="post-card-title">' + esc(p.name || '(제목 없음)') + '</div>' +
+      '<div class="post-card-meta"><span>' + dateStr + '</span><span>' + (isFood ? '맛집 리뷰' : '블로그 글') + '</span>' + badge + '</div>' +
+    '</div>' +
+    '<div class="post-card-actions">' +
+      '<button class="btn btn-ghost btn-sm" onclick="openModal(' + p.id + ')">보기</button>' +
+      (p.status === 'draft'
+        ? '<button class="btn btn-ghost btn-sm" style="color:var(--green);border-color:var(--green)" onclick="toggleStatus(' + p.id + ',\'published\')">발행</button>'
+        : '<button class="btn btn-ghost btn-sm" onclick="toggleStatus(' + p.id + ',\'draft\')">초안으로</button>'
+      ) +
+      '<button class="btn btn-danger btn-sm" onclick="deletePost(' + p.id + ')">삭제</button>' +
+    '</div>' +
+  '</div>';
+}
+
+function pad(n) { return n < 10 ? '0' + n : '' + n; }
+
+/* ── 상태 토글 ── */
+window.toggleStatus = async function(id, newStatus) {
+  if (!sb) return;
+  var res = await sb.from('app_submissions').update({ status: newStatus }).eq('id', id);
+  if (res.error) { showToast('오류: ' + res.error.message, 'red'); return; }
+  S.posts = S.posts.map(function(p) { return p.id === id ? Object.assign({}, p, { status: newStatus }) : p; });
+  renderHistory();
+  showToast(newStatus === 'published' ? '발행됨' : '초안으로 변경됨', 'green');
+};
+
+/* ── 삭제 ── */
+window.deletePost = async function(id) {
+  if (!confirm('삭제하시겠습니까?')) return;
+  if (!sb) return;
+  var res = await sb.from('app_submissions').delete().eq('id', id);
+  if (res.error) { showToast('삭제 실패: ' + res.error.message, 'red'); return; }
+  S.posts = S.posts.filter(function(p) { return p.id !== id; });
+  renderHistory();
+  showToast('삭제 완료', 'green');
+};
+
+/* ── 미리보기 모달 ── */
+window.openModal = function(id) {
+  var p = S.posts.find(function(x) { return x.id === id; });
+  if (!p) return;
+  S.modalPost = p;
+  document.getElementById('modal-title').textContent = p.name || '(제목 없음)';
+  var content = (p.data && p.data.content) || '';
+  var tags = (p.data && p.data.tags) ? '\n\n태그: ' + p.data.tags : '';
+  document.getElementById('modal-content').textContent = content + tags;
+  var toggleBtn = document.getElementById('modal-toggle-btn');
+  toggleBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="14" height="14"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> HTML 복사';
+  toggleBtn.onclick = function() { copyModalHtml(content); };
+  document.getElementById('preview-modal').hidden = false;
+};
+
+window.closeModal = function() {
+  document.getElementById('preview-modal').hidden = true;
+  S.modalPost = null;
+};
+
+window.copyModalContent = function() {
+  var text = document.getElementById('modal-content').textContent;
+  copyToClipboard(text, '복사됨');
+};
+
+function copyModalHtml(content) {
+  var html = textToHtml(content);
+  copyToClipboard(html, 'HTML 복사됨');
+}
+
+/* ── 필터 ── */
+window.setKindFilter = function(btn) {
+  document.querySelectorAll('[data-kind]').forEach(function(b) { b.classList.remove('active'); });
+  btn.classList.add('active');
+  S.historyFilter.kind = btn.dataset.kind;
+  loadHistory();
+};
+
+window.setStatusFilter = function(btn) {
+  document.querySelectorAll('[data-status]').forEach(function(b) { b.classList.remove('active'); });
+  btn.classList.add('active');
+  S.historyFilter.status = btn.dataset.status;
+  loadHistory();
+};
+
+/* ── 복사 유틸 ── */
+window.copyBlogText = function() {
+  var t = document.getElementById('blog-result-title').value + '\n\n' + document.getElementById('blog-result-content').value;
+  copyToClipboard(t, '텍스트 복사됨');
+};
+
+window.copyBlogHtml = function() {
+  var title = document.getElementById('blog-result-title').value;
+  var content = document.getElementById('blog-result-content').value;
+  var tags = document.getElementById('blog-result-tags').value;
+  var html = '<h2>' + esc(title) + '</h2>\n' + textToHtml(content);
+  if (tags) html += '\n<p>' + tags.split(',').map(function(t){ return '#' + t.trim(); }).join(' ') + '</p>';
+  copyToClipboard(html, 'HTML 복사됨');
+};
+
+window.copyFoodText = function() {
+  var t = document.getElementById('food-result-title').value + '\n\n' + document.getElementById('food-result-content').value;
+  copyToClipboard(t, '텍스트 복사됨');
+};
+
+function textToHtml(text) {
+  var lines = text.split('\n');
+  var html = '';
+  for (var i = 0; i < lines.length; i++) {
+    var line = lines[i].trim();
+    if (!line) { html += '<br>\n'; continue; }
+    if (line.startsWith('## ') || line.startsWith('### ')) {
+      html += '<h3>' + esc(line.replace(/^#+\s*/, '')) + '</h3>\n';
+    } else {
+      html += '<p>' + esc(line) + '</p>\n';
+    }
+  }
+  return html;
+}
+
+function copyToClipboard(text, msg) {
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(text).then(function() { showToast(msg, 'green'); });
+  } else {
+    var ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    showToast(msg, 'green');
+  }
+}
+
+/* ── 토스트 ── */
+var _toastTimer;
+function showToast(msg, type) {
+  var t = document.querySelector('.toast');
+  if (!t) { t = document.createElement('div'); t.className = 'toast'; document.body.appendChild(t); }
+  t.textContent = msg;
+  t.className = 'toast' + (type ? ' ' + type : '');
+  t.style.opacity = '1';
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(function() { t.style.opacity = '0'; }, 2500);
+}
+
+/* ── HTML 이스케이프 ── */
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+/* ── 전역 노출 ── */
+window.switchTab = window.switchTab;
+
+})();
+</script>
+</body>
+</html>

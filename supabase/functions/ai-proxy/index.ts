@@ -105,6 +105,21 @@ Deno.serve(async (req) => {
       return json(await r.json(), r.status);
     }
 
+    // ── openai: OpenAI Chat Completions ──────────────────────────────────
+    if (service === "openai") {
+      const key = Deno.env.get("OPENAI_API_KEY");
+      if (!key) return json({ error: "OPENAI_API_KEY not set" }, 500);
+      const r = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "Authorization": `Bearer ${key}`,
+        },
+        body: JSON.stringify(payload),
+      });
+      return json(await r.json(), r.status);
+    }
+
     // ── gcal-public: Google Calendar public iCal proxy ──────────────────
     if (service === "gcal-public") {
       const calId  = String(payload.calId  || "");
