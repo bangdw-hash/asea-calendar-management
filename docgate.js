@@ -34,25 +34,23 @@
     }
   };
 
-  /* ── 카테고리 추가 (관리자) ──────────────────────────────────── */
+  /* ── 카테고리 추가 (관리자) — GET 방식으로 CORS 우회 ────────── */
   DocGate.addCategory = async function (name) {
     if (!name || !name.trim()) throw new Error('서류명을 입력하세요');
-    await fetch(GAS_ENDPOINT, {
-      method:  'POST',
-      mode:    'no-cors',
-      headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ action: 'addCategory', name: name.trim() })
-    });
+    var res = await fetch(
+      GAS_ENDPOINT + '?action=addCategory&name=' + encodeURIComponent(name.trim())
+    );
+    if (!res.ok) throw new Error('추가 요청 실패');
+    var data = await res.json();
+    if (!data.ok) throw new Error(data.error || '추가 실패');
   };
 
-  /* ── 카테고리 삭제 (관리자) ──────────────────────────────────── */
+  /* ── 카테고리 삭제 (관리자) — GET 방식으로 CORS 우회 ────────── */
   DocGate.removeCategory = async function (id) {
-    await fetch(GAS_ENDPOINT, {
-      method:  'POST',
-      mode:    'no-cors',
-      headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ action: 'removeCategory', id: id })
-    });
+    var res = await fetch(
+      GAS_ENDPOINT + '?action=removeCategory&id=' + encodeURIComponent(id)
+    );
+    if (!res.ok) throw new Error('삭제 요청 실패');
   };
 
   /* ── Drive 폴더에서 키워드 일치 최신 파일 찾기 ───────────────── */
