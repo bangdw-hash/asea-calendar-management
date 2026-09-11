@@ -88,28 +88,66 @@ function doPost(e) {
 
 function doGet(e) {
   try {
-    var type = (e.parameter && e.parameter.type) || 'logs';
+    var p    = e.parameter || {};
+    var type = p.type || 'logs';
+
+    // 카테고리 추가 (GET 방식 — no-cors POST 대신)
+    if (p.action === 'addCategory') {
+      var name = p.name || '';
+      if (!name) return _json({ok:false, error:'name required'});
+      var catSheet = _getSheet('DocCategories');
+      _ensureCatHeader(catSheet);
+      var newId = String(Date.now());
+      catSheet.appendRow([newId, name, new Date().toLocaleString('ko-KR', {timeZone:'Asia/Seoul'})]);
+      return _json({ok:true, id:newId});
+    }
+
+    // 카테고리 삭제 (GET 방식)
+    if (p.action === 'removeCategory') {
+      var id = p.id || '';
+      var catSheet = _getSheet('DocCategories');
+      var rows = catSheet.getDataRange().getValues();
+      for (var i = 1; i < rows.length; i++) {
+        if (String(rows[i][0]) === String(id)) { catSheet.deleteRow(i + 1); break; }
+      }
+      return _json({ok:true});
+    }
+
+    // 카테고리 순서 이동 (GET 방식)
+    if (p.action === 'moveCategory') {
+      var id  = p.id  || '';
+      var dir = p.dir || 'up'; // 'up' or 'down'
+      var catSheet = _getSheet('DocCategories');
+      var rows = catSheet.getDataRange().getValues();
+      var targetIdx = -1;
+      for (var i = 1; i < rows.length; i++) {
+        if (String(rows[i][0]) === String(id)) { targetIdx = i; break; }
+      }
+      if (targetIdx === -1) return _json({ok:false, error:'not found'});
+      var swapIdx = dir === 'up' ? targetIdx - 1 : targetIdx + 1;
+      if (swapIdx < 1 || swapIdx >= rows.length) return _json({ok:true}); // 이미 끝
+      // 두 행 교환
+      var rowA = rows[targetIdx];
+      var rowB = rows[swapIdx];
+      catSheet.getRange(targetIdx + 1, 1, 1, rowA.length).setValues([rowB]);
+      catSheet.getRange(swapIdx   + 1, 1, 1, rowB.length).setValues([rowA]);
+      return _json({ok:true});
+    }
 
     if (type === 'categories') {
       var sheet = _getSheet('DocCategories');
       _ensureCatHeader(sheet);
       var rows = sheet.getDataRange().getValues();
-      if (rows.length <= 1) {
-        return ContentService.createTextOutput('[]').setMimeType(ContentService.MimeType.JSON);
-      }
+      if (rows.length <= 1) return _json([]);
       var data = rows.slice(1).map(function(row) {
         return { id: row[0], name: row[1], createdAt: row[2] };
       });
-      return ContentService
-        .createTextOutput(JSON.stringify(data))
-        .setMimeType(ContentService.MimeType.JSON);
+      return _json(data);
     }
 
     // type=logs (관리자용)
     var sheet = _getSheet('DocLog');
-    if (sheet.getLastRow() <= 1) {
-      return ContentService.createTextOutput('[]').setMimeType(ContentService.MimeType.JSON);
-    }
+    if (sheet.getLastRow() <= 1) return _json([]);
     var rows   = sheet.getDataRange().getValues();
     var header = rows[0];
     var data   = rows.slice(1).map(function(row) {
@@ -117,13 +155,15 @@ function doGet(e) {
       header.forEach(function(h, i) { obj[h] = row[i]; });
       return obj;
     });
-    return ContentService
-      .createTextOutput(JSON.stringify(data))
-      .setMimeType(ContentService.MimeType.JSON);
+    return _json(data);
 
   } catch (err) {
-    return ContentService
-      .createTextOutput(JSON.stringify({error:err.message}))
-      .setMimeType(ContentService.MimeType.JSON);
+    return _json({error:err.message});
   }
+}
+
+function _json(obj) {
+  return ContentService
+    .createTextOutput(JSON.stringify(obj))
+    .setMimeType(ContentService.MimeType.JSON);
 }
