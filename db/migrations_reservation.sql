@@ -301,7 +301,7 @@ update reservations
 set batch_id = sub.assigned_batch_id
 from (
   select id,
-    'batch-' || min(id) over (
+    'batch-' || min(id::text) over (
       partition by
         classroom_name,
         time_start,
