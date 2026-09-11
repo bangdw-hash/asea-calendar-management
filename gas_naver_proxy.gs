@@ -11,12 +11,17 @@
  *
  * [지원 API]
  * - local  : 네이버 지역 검색 (맛집 탭 자동완성)
+ * - blog   : 블로그 검색 (플레이스 정보 수집)
  * - datalab: 데이터랩 검색어 트렌드 (트렌드 탭)
- * - blog   : 블로그 검색
  */
 
-var NAVER_CLIENT_ID     = '2rpv5zhg9g';
-var NAVER_CLIENT_SECRET = '6Le9mBkkJGGEJM3E4RxNBf3j0g4t0irV8qNEcXYQ';
+// 지역 검색 / 블로그 검색 (developers.naver.com — 상호명 검색 앱)
+var SEARCH_CLIENT_ID     = 'VrnrLasu5ihp4zySJ0mX';
+var SEARCH_CLIENT_SECRET = '_4kRe_DD6O';
+
+// DataLab (NCP API Hub — BlogTrend 앱)
+var NCP_KEY_ID = '2rpv5zhg9g';
+var NCP_KEY    = '6Le9mBkkJGGEJM3E4RxNBf3j0g4t0irV8qNEcXYQ';
 
 function doPost(e) {
   try {
@@ -49,8 +54,8 @@ function _search(type, payload) {
   var res = UrlFetchApp.fetch(url, {
     method: 'get',
     headers: {
-      'X-Naver-Client-Id':     NAVER_CLIENT_ID,
-      'X-Naver-Client-Secret': NAVER_CLIENT_SECRET
+      'X-Naver-Client-Id':     SEARCH_CLIENT_ID,
+      'X-Naver-Client-Secret': SEARCH_CLIENT_SECRET
     },
     muteHttpExceptions: true
   });
@@ -59,12 +64,12 @@ function _search(type, payload) {
 
 /* ── DataLab 검색어 트렌드 (POST) ── */
 function _datalab(body) {
-  var res = UrlFetchApp.fetch('https://openapi.naver.com/v1/datalab/search', {
+  var res = UrlFetchApp.fetch('https://naveropenapi.apigw.ntruss.com/datalab/v1/search', {
     method: 'post',
     contentType: 'application/json',
     headers: {
-      'X-Naver-Client-Id':     NAVER_CLIENT_ID,
-      'X-Naver-Client-Secret': NAVER_CLIENT_SECRET
+      'X-NCP-APIGW-API-KEY-ID': NCP_KEY_ID,
+      'X-NCP-APIGW-API-KEY':    NCP_KEY
     },
     payload: JSON.stringify(body),
     muteHttpExceptions: true
