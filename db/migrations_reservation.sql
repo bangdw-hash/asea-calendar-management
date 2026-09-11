@@ -888,5 +888,6 @@ grant execute on function get_batch_info(bigint) to anon, authenticated;
 grant execute on function check_room_conflict(text, date, date, time, time, bigint) to anon, authenticated;
 
 -- ★ 실행 후: Supabase 대시보드 → Settings → API → Reload Schema Cache 클릭 필수!
+
 -- 끝. 'Success. No rows returned' 가 나오면 정상입니다. ---------------------
 -- 이후: Supabase 대시보드 → Settings → API → Reload Schema Cache 클릭.
