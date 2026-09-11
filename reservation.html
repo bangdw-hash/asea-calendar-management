@@ -178,7 +178,7 @@ header{
 .month-week-row:last-child{border-bottom:none}
 /* day cell */
 .day-cell{min-height:120px;padding:5px;background:#fff;
-  transition:background .1s;cursor:pointer;user-select:none;
+  transition:background .15s,outline .1s;cursor:pointer;user-select:none;
   border-right:1px solid var(--border);position:relative;overflow:visible}
 .day-cell:last-child{border-right:none}
 .day-cell:hover{background:var(--primary-lt)}
@@ -235,13 +235,26 @@ header{
 .density-label{font-size:10px;font-weight:600;color:var(--gray);min-width:26px;text-align:center}
 
 .rv-pills{margin-top:3px;display:flex;flex-direction:column;gap:2px}
+@keyframes pill-in{from{opacity:0;transform:translateY(3px) scaleY(.85)}to{opacity:1;transform:translateY(0) scaleY(1)}}
+@keyframes pill-out{from{opacity:1;transform:scaleY(1)}to{opacity:0;transform:scaleY(.7);max-height:0;padding:0;margin:0}}
 .rv-pill{
   font-size:var(--rv-fs)!important;padding:2px 5px;border-radius:5px;
   white-space:normal;overflow-wrap:break-word;word-break:break-word;
-  cursor:pointer;font-weight:400;color:#fff;line-height:1.35;
+  cursor:pointer;font-weight:500;color:#fff;line-height:1.35;
+  box-shadow:0 1px 3px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.18);
+  transition:transform .14s cubic-bezier(.2,.8,.2,1),filter .14s,box-shadow .14s;
+  animation:pill-in .18s cubic-bezier(.2,.8,.2,1) both;
+  will-change:transform;
 }
-.rv-pill:hover{filter:brightness(.88)}
-.rv-pill.drag-over-pill{opacity:.5}
+.rv-pill:hover{
+  filter:brightness(.9);
+  box-shadow:0 3px 8px rgba(0,0,0,.32),inset 0 1px 0 rgba(255,255,255,.22);
+  transform:translateY(-1px);
+}
+.rv-pill:active{transform:scale(.96) translateY(0);filter:brightness(.82)}
+.rv-pill.drag-over-pill{opacity:.45;transform:scale(.96)}
+.rv-pill.lp-active{transform:scale(.9);filter:brightness(.75);box-shadow:0 0 0 3px rgba(255,255,255,.4),0 1px 3px rgba(0,0,0,.28)}
+.rv-pill.removing{animation:pill-out .2s ease forwards}
 .day-cell.drag-target{background:var(--primary-lt)!important;outline:2px dashed var(--primary);outline-offset:-2px}
 .rv-more{font-size:var(--rv-fs)!important;color:var(--gray);padding:2px 4px;cursor:pointer;font-weight:500}
 .rv-more:hover{color:var(--primary)}
@@ -412,6 +425,21 @@ header{
 .ocr-status{font-size:11px;color:var(--primary);margin-top:6px;text-align:center;min-height:16px}
 .ocr-status.err{color:var(--red)}
 @keyframes ocr-spin{to{transform:rotate(360deg)}}
+
+/* ── NLP 자연어 입력 ── */
+.nlp-input-wrap{display:flex;gap:6px;align-items:center}
+.nlp-input-wrap .fi{flex:1}
+.nlp-send-btn{flex-shrink:0;padding:8px 14px;border-radius:var(--r);background:var(--primary);color:#fff;border:none;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font);transition:background .13s,transform .1s,box-shadow .13s;box-shadow:0 1px 4px rgba(26,115,232,.35);white-space:nowrap}
+.nlp-send-btn:hover{background:var(--primary-dk);box-shadow:0 2px 8px rgba(26,115,232,.45)}
+.nlp-send-btn:active{transform:scale(.96)}
+.nlp-send-btn:disabled{opacity:.5;cursor:default;transform:none}
+.nlp-preview{background:var(--gray-lt);border-radius:var(--r);padding:10px 12px;display:flex;flex-direction:column;gap:6px}
+.nlp-row{display:flex;gap:8px;font-size:12px;align-items:baseline}
+.nlp-row span:first-child{font-weight:700;color:var(--text-sm);min-width:44px;flex-shrink:0}
+.nlp-row span:last-child{color:var(--text);word-break:break-all}
+.nlp-refine-wrap{display:flex;gap:6px;margin-top:2px}
+.nlp-refine-wrap .fi{flex:1;font-size:12px}
+@keyframes nlp-modal-in{from{opacity:0;transform:scale(.92) translateY(12px)}to{opacity:1;transform:scale(1) translateY(0)}}
 .ocr-spinner{display:inline-block;width:12px;height:12px;border:2px solid var(--border);
   border-top-color:var(--primary);border-radius:50%;animation:ocr-spin .7s linear infinite;vertical-align:middle;margin-right:4px}
 
@@ -517,7 +545,6 @@ header{
   <div class="view-toggle">
     <button class="view-btn range on" id="modeRange" onclick="setMode('range')">범위</button>
     <button class="view-btn multi" id="modeMulti" onclick="setMode('multi')">다중</button>
-    <button class="view-btn single" id="modeSingle" onclick="setMode('single')">단일</button>
   </div>
   <div class="tb-sep"></div>
   <div class="floor-tabs" id="floorTabs"></div>
@@ -573,6 +600,17 @@ header{
       </div>
       <input type="file" id="ocrFileIn" accept="image/*" style="display:none" onchange="ocrFile(event)">
       <div id="ocrStatus" class="ocr-status"></div>
+    </div>
+
+    <!-- 자연어 AI 입력 -->
+    <div class="fg" id="fgNlp">
+      <div class="nlp-input-wrap">
+        <input type="text" id="nlpInput" class="fi" placeholder="자연어로 일정을 설명하세요  예: 9월 15일부터 20일, 오전 9시~오후 6시, 신변보호사 교육" autocomplete="off" onkeydown="if(event.key==='Enter')runNlp()">
+        <button type="button" class="nlp-send-btn" id="nlpBtn" onclick="runNlp()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
+          AI
+        </button>
+      </div>
     </div>
 
     <div class="fg" id="fgDates">
@@ -875,21 +913,28 @@ header{
   </div>
 </div>
 
-<!-- 배치 이동 선택 다이얼로그 -->
-<div id="batchMoveModal" class="modal" onclick="if(event.target===this)closeBatchMoveM()">
-  <div class="modal-box" style="max-width:360px">
+<!-- NLP 자연어 입력 결과 미리보기 모달 -->
+<div id="nlpModal" class="modal" onclick="if(event.target===this)closeNlpModal()">
+  <div class="modal-box" style="max-width:440px;animation:nlp-modal-in .22s cubic-bezier(.2,.8,.2,1) both">
     <div class="modal-hdr">
-      <span>예약 이동</span>
-      <button class="modal-close" onclick="closeBatchMoveM()">
+      <span>AI 일정 예상 결과</span>
+      <button class="modal-close" onclick="closeNlpModal()">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M12 4L4 12M4 4l8 8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
       </button>
     </div>
     <div class="modal-body">
-      <p id="batchMoveMsg" style="font-size:13px;color:var(--gray);margin:0 0 16px;white-space:pre-line"></p>
-      <div style="display:flex;flex-direction:column;gap:8px">
-        <button class="btn btn-primary" id="batchMoveAllBtn" onclick="doBatchMove(true)"></button>
-        <button class="btn btn-outline" id="batchMoveOneBtn" onclick="doBatchMove(false)"></button>
-        <button class="btn btn-outline" onclick="closeBatchMoveM()">취소</button>
+      <div id="nlpPreview" class="nlp-preview"></div>
+      <div style="margin-top:12px">
+        <div class="fl" style="margin-bottom:5px">추가 지시 <span style="font-size:10px;color:var(--gray);font-weight:400">(수정/삭제 등)</span></div>
+        <div class="nlp-refine-wrap">
+          <input type="text" id="nlpRefineIn" class="fi" placeholder="예: 강의실을 2층으로 변경, 연락처 추가해줘" autocomplete="off" onkeydown="if(event.key==='Enter')runNlpRefine()">
+          <button class="btn btn-outline btn-sm" id="nlpRefineBtn" onclick="runNlpRefine()">적용</button>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-top:16px">
+        <button class="btn btn-primary" onclick="applyNlpResult('replace')">이 내용으로 채우기</button>
+        <button class="btn btn-outline" onclick="applyNlpResult('merge')">기존 내용에 추가</button>
+        <button class="btn btn-outline" onclick="closeNlpModal()">취소</button>
       </div>
     </div>
   </div>
@@ -1403,56 +1448,85 @@ function buildPills(rvs) {
 /* ── Long press (mobile) ── */
 function initLongPress() {
   let lpTimer = null;
+  let lpPill = null;
+
   document.addEventListener('touchstart', e => {
-    // pill 위 long-press: contextmenu 이벤트가 없는 브라우저를 위한 fallback
+    // pill 위 long-press
     const pill = e.target.closest('.rv-pill[data-id]');
     if (pill) {
       const touch = e.touches[0];
+      lpPill = pill;
+      pill.classList.add('lp-active');
       lpTimer = setTimeout(() => {
-        navigator.vibrate && navigator.vibrate(30);
+        navigator.vibrate && navigator.vibrate([30, 10, 20]);
+        pill.classList.remove('lp-active');
+        lpPill = null;
         const fakeE = { preventDefault(){}, stopPropagation(){}, clientX: touch.clientX, clientY: touch.clientY };
         openCtxMenu(fakeE, pill.dataset.id);
-      }, 500);
+      }, 480);
       return;
     }
     // day-cell long-press: 멀티 선택
     const cell = e.target.closest('.day-cell');
     if (!cell) return;
     const s = cell.dataset.s;
+    cell.style.transition = 'background .1s';
     lpTimer = setTimeout(() => {
       navigator.vibrate && navigator.vibrate(30);
       if (selMode !== 'multi') setMode('multi');
       toggleMulti(s);
       renderCal();
-    }, 500);
+    }, 480);
   }, { passive: true });
-  document.addEventListener('touchend', () => clearTimeout(lpTimer), { passive: true });
-  document.addEventListener('touchmove', () => clearTimeout(lpTimer), { passive: true });
+
+  const cancelLp = () => {
+    clearTimeout(lpTimer);
+    if (lpPill) { lpPill.classList.remove('lp-active'); lpPill = null; }
+  };
+  document.addEventListener('touchend', cancelLp, { passive: true });
+  document.addEventListener('touchmove', cancelLp, { passive: true });
+  document.addEventListener('touchcancel', cancelLp, { passive: true });
 }
 
 /* ── Cell click (no drag) ── */
-function handleCellClick(s, ctrl) {
+let _anchorDate = null;
+
+function handleCellClick(s, ctrl, shift) {
   if (ctrl) {
     if (selMode !== 'multi') setMode('multi');
     toggleMulti(s);
+    _anchorDate = s;
     renderCal();
     return;
   }
 
-  if (selMode === 'single') {
-    selDates = [s];
-    renderCal();
-    updMultiBanner();
+  if (shift && _anchorDate) {
+    const a = _anchorDate < s ? _anchorDate : s;
+    const b = _anchorDate < s ? s : _anchorDate;
+    if (selMode === 'multi') {
+      const range = [];
+      let d = new Date(a + 'T00:00:00');
+      const end = new Date(b + 'T00:00:00');
+      while (d <= end) { range.push(toStr(d)); d.setDate(d.getDate() + 1); }
+      range.forEach(r => { if (!selDates.includes(r)) selDates.push(r); });
+      selDates.sort();
+    } else {
+      selDates = [a, b]; rangeStart = null;
+      if (selMode !== 'range') { selMode = 'range'; document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('on')); const el = document.getElementById('modeRange'); if (el) el.classList.add('on'); }
+    }
+    renderCal(); updMultiBanner();
     return;
   }
 
   if (selMode === 'multi') {
     toggleMulti(s);
+    _anchorDate = s;
     renderCal();
     return;
   }
 
-  // range mode
+  // range mode (default)
+  _anchorDate = s;
   if (!rangeStart) {
     rangeStart = s; selDates = [];
     renderCal();
@@ -1471,7 +1545,7 @@ function handleCellClick(s, ctrl) {
 }
 
 /* ── Drag select (schedule.html 방식: 클릭+드래그로 범위 선택, Ctrl+드래그로 다중 선택) ── */
-let dsDown = false, dsStart = null, dsEnd = null, dsDragging = false, dsCtrl = false;
+let dsDown = false, dsStart = null, dsEnd = null, dsDragging = false, dsCtrl = false, dsShift = false;
 
 function initDragSelect() {
   const grid = document.getElementById('calGrid');
@@ -1482,6 +1556,7 @@ function initDragSelect() {
     const cell = e.target.closest('.day-cell');
     if (!cell) return;
     dsDown = true; dsCtrl = e.ctrlKey || e.metaKey;
+    dsShift = e.shiftKey;
     dsStart = cell.dataset.s; dsEnd = dsStart; dsDragging = false;
   });
 
@@ -1500,7 +1575,7 @@ function initDragSelect() {
     dsDown = false;
     if (!dsStart) return;
     if (!dsDragging) {
-      handleCellClick(dsStart, dsCtrl);
+      handleCellClick(dsStart, dsCtrl, dsShift);
     } else {
       finalizeDrag();
     }
@@ -1778,7 +1853,8 @@ function mcApply() {
 function setMode(mode) {
   selMode = mode; selDates = []; rangeStart = null;
   document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('on'));
-  document.getElementById('mode' + mode.charAt(0).toUpperCase() + mode.slice(1)).classList.add('on');
+  const modeEl = document.getElementById('mode' + mode.charAt(0).toUpperCase() + mode.slice(1));
+  if (modeEl) modeEl.classList.add('on');
   updMultiBanner();
   renderCal();
   renderDateTags();
@@ -2461,6 +2537,11 @@ async function adminDelRv(id) {
   if (rv.batch_id) {
     const { data: bi } = await sb.rpc('get_batch_info', { p_reservation_id: id });
     const n = bi?.count || 1;
+    if (n <= 1) {
+      if (!confirm('이 예약을 삭제하시겠습니까?')) return;
+      await _doAdminDel(id, false);
+      return;
+    }
     _batchDelId = id;
     document.getElementById('batchDelMsg').textContent =
       `이 예약은 같은 날짜 묶음으로 일괄 등록된 ${n}건 중 하나입니다.\n어떻게 삭제하시겠습니까?`;
@@ -2745,10 +2826,8 @@ document.addEventListener('click', e => {
 });
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeCtxMenu(); });
 
-/* ── 드래그로 일정 이동 (관리자 전용) ── */
+/* ── 드래그로 일정 이동 (관리자 전용, 항상 단건 이동) ── */
 let _dragRvId = null;
-let _batchMoveId = null;
-let _batchMoveTargetDate = null;
 
 function pillDragStart(e, id) {
   if (!isAdmin()) { e.preventDefault(); return; }
@@ -2776,72 +2855,7 @@ async function cellDrop(e, targetDate) {
   const id = _dragRvId;
   _dragRvId = null;
   if (!id || !isAdmin()) return;
-
-  const rv = reservations.find(r => r.id === id);
-  if (!rv) return;
-
-  const fmt = d => d.toISOString().slice(0, 10);
-  const newStart = new Date(targetDate);
-  if (fmt(newStart) === rv.date_start) return;
-
-  if (rv.batch_id) {
-    const { data: bi } = await sb.rpc('get_batch_info', { p_reservation_id: id });
-    const n = bi?.count || 1;
-    _batchMoveId = id;
-    _batchMoveTargetDate = targetDate;
-    document.getElementById('batchMoveMsg').textContent =
-      `이 예약은 ${n}건이 묶음 등록된 일정입니다.\n어떻게 이동하시겠습니까?`;
-    document.getElementById('batchMoveAllBtn').textContent = `전체 ${n}건 모두 이동`;
-    document.getElementById('batchMoveOneBtn').textContent = '이 일정만 이동';
-    showM('batchMoveModal');
-    return;
-  }
-
   await _doMoveRv(id, targetDate);
-}
-
-function closeBatchMoveM() { hideM('batchMoveModal'); }
-
-async function doBatchMove(moveAll) {
-  closeBatchMoveM();
-  const id = _batchMoveId;
-  const targetDate = _batchMoveTargetDate;
-  _batchMoveId = null;
-  _batchMoveTargetDate = null;
-  if (!id || !targetDate) return;
-
-  if (moveAll) {
-    const rv = reservations.find(r => r.id === id);
-    if (!rv) return;
-    const { data: allBatch, error: fetchErr } = await sb.from('reservations')
-      .select('*').eq('batch_id', rv.batch_id).is('deleted_at', null);
-    if (fetchErr || !allBatch?.length) return toast('배치 일정 조회 실패', 'error');
-
-    const origStart = new Date(rv.date_start);
-    const newStart  = new Date(targetDate);
-    const offsetMs  = newStart - origStart;
-    const fmt = d => d.toISOString().slice(0, 10);
-
-    for (const bRv of allBatch) {
-      const bStart = new Date(new Date(bRv.date_start).getTime() + offsetMs);
-      const bEnd   = new Date(new Date(bRv.date_end).getTime() + offsetMs);
-      const { data, error } = await sb.rpc('admin_modify_reservation', {
-        p_id: bRv.id, p_admin_email: adminEmail,
-        p_date_start: fmt(bStart), p_date_end: fmt(bEnd),
-        p_time_start: bRv.time_start, p_time_end: bRv.time_end,
-        p_purpose: bRv.purpose, p_department: bRv.department,
-        p_requester_name: bRv.requester_name, p_contact: bRv.contact || null,
-        p_formatted_label: bRv.formatted_label || null
-      });
-      if (error) { toast('이동 실패: ' + error.message, 'error'); await loadRvs(); return; }
-      if (!data?.success) { toast('이동 실패: ' + (data?.error || '알 수 없는 오류'), 'error'); await loadRvs(); return; }
-    }
-    toast(`전체 ${allBatch.length}건 이동되었습니다`, 'success');
-  } else {
-    await _doMoveRv(id, targetDate);
-    return;
-  }
-  await loadRvs();
 }
 
 async function _doMoveRv(id, targetDate) {
@@ -3450,6 +3464,81 @@ async function callAI(prompt) {
   return '(AI 키 미설정) 입력하신 목적을 그대로 사용합니다.';
 }
 
+/* ── 자연어 AI 일정 입력 ── */
+let _nlpParsed = null;
+
+async function runNlp() {
+  const input = document.getElementById('nlpInput').value.trim();
+  if (!input) return toast('자연어로 일정을 설명해주세요', 'warn');
+  const btn = document.getElementById('nlpBtn');
+  btn.disabled = true;
+  const origHtml = btn.innerHTML;
+  btn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg> 분석 중...';
+  try {
+    _nlpParsed = await _callNlpAI(input, null);
+    _showNlpPreview(_nlpParsed);
+    showM('nlpModal');
+  } catch (e) {
+    toast('AI 분석 실패: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false; btn.innerHTML = origHtml;
+  }
+}
+
+async function runNlpRefine() {
+  if (!_nlpParsed) return;
+  const refine = document.getElementById('nlpRefineIn').value.trim();
+  if (!refine) return;
+  const btn = document.getElementById('nlpRefineBtn');
+  btn.disabled = true; btn.textContent = '처리 중...';
+  try {
+    _nlpParsed = await _callNlpAI(refine, _nlpParsed);
+    _showNlpPreview(_nlpParsed);
+    document.getElementById('nlpRefineIn').value = '';
+  } catch (e) {
+    toast('수정 실패: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false; btn.textContent = '적용';
+  }
+}
+
+async function _callNlpAI(input, prev) {
+  const today = toStr(new Date());
+  const prompt = prev
+    ? `오늘: ${today}\n기존 파싱 결과: ${JSON.stringify(prev)}\n추가 지시: "${input}"\n위 지시를 반영하여 JSON을 수정해주세요. 기존 값에서 언급되지 않은 필드는 유지하세요.\n\nJSON 형식:\n{"dates":["YYYY-MM-DD"],"time_start":"HH:MM","time_end":"HH:MM","purpose":"목적","dept":null,"requester_name":null,"contact_phone":null}\nJSON만 출력하세요.`
+    : `오늘: ${today}\n다음 설명에서 강의실 예약 정보를 JSON으로 추출하세요.\n설명: "${input}"\n\nJSON 형식:\n{"dates":["YYYY-MM-DD"],"time_start":"HH:MM","time_end":"HH:MM","purpose":"목적","dept":null,"requester_name":null,"contact_phone":null}\n규칙: 날짜 범위면 모든 날짜 나열, 시간 없으면 null, JSON만 출력하세요.`;
+
+  const res = await claudeFetch({ model: 'claude-haiku-4-5-20251001', max_tokens: 600, messages: [{ role: 'user', content: prompt }] });
+  if (!res.ok) throw new Error(`서버 오류 ${res.status}`);
+  const d = await res.json();
+  const text = d.content?.[0]?.text || '';
+  const m = text.match(/\{[\s\S]*\}/);
+  if (!m) throw new Error('응답 파싱 실패');
+  return JSON.parse(m[0]);
+}
+
+function _showNlpPreview(d) {
+  const el = document.getElementById('nlpPreview');
+  const rows = [];
+  if (d.dates?.length) rows.push(`<div class="nlp-row"><span>날짜</span><span>${d.dates.join(', ')}</span></div>`);
+  if (d.time_start) rows.push(`<div class="nlp-row"><span>시간</span><span>${d.time_start} ~ ${d.time_end || '?'}</span></div>`);
+  if (d.purpose) rows.push(`<div class="nlp-row"><span>목적</span><span>${esc(d.purpose)}</span></div>`);
+  if (d.dept) rows.push(`<div class="nlp-row"><span>부서</span><span>${esc(d.dept)}</span></div>`);
+  if (d.requester_name) rows.push(`<div class="nlp-row"><span>신청자</span><span>${esc(d.requester_name)}</span></div>`);
+  if (d.contact_phone) rows.push(`<div class="nlp-row"><span>연락처</span><span>${esc(d.contact_phone)}</span></div>`);
+  el.innerHTML = rows.length ? rows.join('') : '<div style="color:var(--gray);font-size:12px;padding:4px 0">추출된 정보가 없습니다.</div>';
+}
+
+function applyNlpResult(mode) {
+  if (!_nlpParsed) return;
+  closeNlpModal();
+  const merge = (mode === 'merge');
+  _ocrApply(_nlpParsed, false, merge);
+  document.getElementById('nlpInput').value = '';
+}
+
+function closeNlpModal() { hideM('nlpModal'); }
+
 /* ── OCR 이미지 자동 입력 ── */
 let _ocrB64 = null, _ocrMime = null;
 
@@ -3568,30 +3657,36 @@ JSON만 출력하세요. 날짜가 여러 개면 모두 포함, 기간이면 모
   }
 }
 
-function _ocrApply(d, isRental) {
+function _ocrApply(d, isRental, merge) {
+  const set = (id, val) => { const el = document.getElementById(id); if (el && (merge ? true : !el.value)) el.value = val; };
   // dates
   if (d.dates && d.dates.length) {
     const valid = d.dates.filter(s => /^\d{4}-\d{2}-\d{2}$/.test(s));
     if (valid.length) {
-      // setMode 먼저 호출 (내부에서 selDates=[]) → 그 다음 selDates 재설정
-      if (selMode !== 'multi' && valid.length > 1) setMode('multi');
-      selDates = valid.sort();
+      if (merge && selDates.length) {
+        const merged = [...new Set([...selDates, ...valid])].sort();
+        if (selMode !== 'multi') setMode('multi');
+        selDates = merged;
+      } else {
+        if (selMode !== 'multi' && valid.length > 1) setMode('multi');
+        selDates = valid.sort();
+      }
       updMultiBanner(); renderCal(); renderDateTags();
     }
   }
   // time
-  if (d.time_start) { const el = document.getElementById('tStart'); if (el) el.value = d.time_start; }
-  if (d.time_end) { const el = document.getElementById('tEnd'); if (el) el.value = d.time_end; }
+  if (d.time_start) set('tStart', d.time_start);
+  if (d.time_end) set('tEnd', d.time_end);
   // purpose
-  if (d.purpose) { const el = document.getElementById('purposeIn'); if (el && !el.value) el.value = d.purpose; }
+  if (d.purpose) set('purposeIn', d.purpose);
   // requester
-  if (d.requester_name) { const el = document.getElementById('reqName'); if (el && !el.value) el.value = d.requester_name; }
-  if (d.contact_name) { const el = document.getElementById('reqName'); if (el && !el.value) el.value = d.contact_name; }
-  if (d.contact_phone) { const el = document.getElementById('reqContact'); if (el && !el.value) el.value = d.contact_phone; }
+  if (d.requester_name) set('reqName', d.requester_name);
+  if (d.contact_name) set('reqName', d.contact_name);
+  if (d.contact_phone) set('reqContact', d.contact_phone);
   // rental fields
   if (isRental) {
-    if (d.course_name) { const el = document.getElementById('courseNameIn'); if (el && !el.value) el.value = d.course_name; }
-    if (d.daily_fee != null) { const el = document.getElementById('dailyFeeIn'); if (el && !el.value) el.value = d.daily_fee; }
+    if (d.course_name) set('courseNameIn', d.course_name);
+    if (d.daily_fee != null) set('dailyFeeIn', d.daily_fee);
   }
   // dept
   if (d.dept) {
