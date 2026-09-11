@@ -135,6 +135,58 @@ Deno.serve(async (req) => {
       return json({ items: gcalParseIcal(icalText, tMinRaw, tMaxRaw) });
     }
 
+    // ── naver: NAVER Cloud Platform API HUB (검색 + DataLab) ───────────────
+    if (service === "naver") {
+      const NCP_ID     = "2rpv5zhg9g";
+      const NCP_SECRET = "6Le9mBkkJGGEJM3E4RxNBf3j0g4t0irV8qNEcXYQ";
+      const apiType    = String(payload.type || "blog");
+
+      // DataLab 검색어트렌드 (POST)
+      if (apiType === "datalab") {
+        const r = await fetch("https://naveropenapi.apigw.ntruss.com/datalab/1.0/search", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-NCP-APIGW-API-KEY-ID": NCP_ID,
+            "X-NCP-APIGW-API-KEY": NCP_SECRET,
+          },
+          body: JSON.stringify(payload.body || {}),
+        });
+        return json(await r.json(), r.status);
+      }
+
+      // DataLab 쇼핑인사이트 (POST)
+      if (apiType === "shopping") {
+        const r = await fetch("https://naveropenapi.apigw.ntruss.com/datalab/1.0/shopping/categories", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-NCP-APIGW-API-KEY-ID": NCP_ID,
+            "X-NCP-APIGW-API-KEY": NCP_SECRET,
+          },
+          body: JSON.stringify(payload.body || {}),
+        });
+        return json(await r.json(), r.status);
+      }
+
+      // 검색 API (GET) — blog | local | news | webkr | image | cafearticle
+      const query   = String(payload.query || "");
+      const display = String(payload.display || "10");
+      const start   = String(payload.start  || "1");
+      const sort    = String(payload.sort   || "sim");
+      if (!query) return json({ error: "query required" }, 400);
+
+      const qs  = new URLSearchParams({ query, display, start, sort });
+      const url = `https://naveropenapi.apigw.ntruss.com/v1/search/${apiType}?${qs}`;
+      const r   = await fetch(url, {
+        headers: {
+          "X-NCP-APIGW-API-KEY-ID": NCP_ID,
+          "X-NCP-APIGW-API-KEY": NCP_SECRET,
+        },
+      });
+      return json(await r.json(), r.status);
+    }
+
     return json({ error: "unknown service: " + service }, 400);
   } catch (e) {
     return json({ error: String(e) }, 502);
