@@ -800,6 +800,46 @@ header{
   </div>
 </div>
 
+<!-- 배치 연동 선택 다이얼로그 -->
+<div id="batchLinkModal" class="modal" onclick="if(event.target===this)closeBatchLinkM()">
+  <div class="modal-box" style="max-width:360px">
+    <div class="modal-hdr">
+      <span id="batchLinkTitle">학교일정 연동</span>
+      <button class="modal-close" onclick="closeBatchLinkM()">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M12 4L4 12M4 4l8 8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <p id="batchLinkMsg" style="font-size:13px;color:var(--gray);margin:0 0 16px"></p>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <button class="btn btn-green" id="batchLinkAllBtn" onclick="doBatchLink(true)"></button>
+        <button class="btn btn-outline" id="batchLinkOneBtn" onclick="doBatchLink(false)"></button>
+        <button class="btn btn-outline" onclick="closeBatchLinkM()">취소</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 배치 연동해제 선택 다이얼로그 -->
+<div id="batchUnlinkModal" class="modal" onclick="if(event.target===this)closeBatchUnlinkM()">
+  <div class="modal-box" style="max-width:360px">
+    <div class="modal-hdr">
+      <span>학교일정 연동 해제</span>
+      <button class="modal-close" onclick="closeBatchUnlinkM()">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M12 4L4 12M4 4l8 8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <p id="batchUnlinkMsg" style="font-size:13px;color:var(--gray);margin:0 0 16px"></p>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <button class="btn btn-red" id="batchUnlinkAllBtn" onclick="doBatchUnlink(true)"></button>
+        <button class="btn btn-outline" id="batchUnlinkOneBtn" onclick="doBatchUnlink(false)"></button>
+        <button class="btn btn-outline" onclick="closeBatchUnlinkM()">취소</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div id="toast"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
@@ -1967,10 +2007,11 @@ async function submitRv() {
 
     let records;
     if (selMode === 'multi' && selDates.length > 1) {
-      records = selDates.map(d => mkRecord(room, color, d, d, ts, te, purp, dept, req, cont, pwHash, rentalInfo, visitorNames, vehicleNums, notes));
+      const batchId = 'batch-' + Date.now() + '-' + Math.random().toString(36).slice(2, 7);
+      records = selDates.map(d => mkRecord(room, color, d, d, ts, te, purp, dept, req, cont, pwHash, rentalInfo, visitorNames, vehicleNums, notes, batchId));
     } else {
       const dateS = selDates[0], dateE = selDates[selDates.length - 1];
-      records = [mkRecord(room, color, dateS, dateE, ts, te, purp, dept, req, cont, pwHash, rentalInfo, visitorNames, vehicleNums, notes)];
+      records = [mkRecord(room, color, dateS, dateE, ts, te, purp, dept, req, cont, pwHash, rentalInfo, visitorNames, vehicleNums, notes, null)];
     }
 
     const { error } = await sb.from('reservations').insert(records);
@@ -1990,7 +2031,7 @@ async function submitRv() {
   }
 }
 
-function mkRecord(room, color, ds, de, ts, te, purp, dept, req, cont, pwHash, rentalInfo, visitorNames, vehicleNums, notes) {
+function mkRecord(room, color, ds, de, ts, te, purp, dept, req, cont, pwHash, rentalInfo, visitorNames, vehicleNums, notes, batchId) {
   const rec = {
     classroom_name: room, classroom_color: color,
     date_start: ds, date_end: de, time_start: ts, time_end: te,
@@ -1999,6 +2040,7 @@ function mkRecord(room, color, ds, de, ts, te, purp, dept, req, cont, pwHash, re
     formatted_label: mkLabel(room, ts, te, purp, rentalInfo),
     password_hash: pwHash,
   };
+  if (batchId) rec.batch_id = batchId;
   if (visitorNames) rec.visitor_names = visitorNames;
   if (vehicleNums)  rec.vehicle_numbers = vehicleNums;
   if (notes)        rec.notes = notes;
@@ -2024,7 +2066,7 @@ async function openDetail(id) {
   if (!rv) return;
 
   const body = document.getElementById('detailBody');
-  const isLinked = rv.synced_to_schedule;
+  const isLinked = !!rv.schedule_event_id;
 
   body.innerHTML = `<div class="detail-grid">
     <div class="detail-row">
@@ -2325,21 +2367,83 @@ function adminEditRv(id) {
   openEditM(id, '', true);
 }
 
+/* ── 배치 연동 다이얼로그 state ── */
+let _batchLinkId = null;
+let _batchUnlinkId = null;
+
 async function adminLink(id) {
   if (!isAdmin()) return;
-  const { data } = await sb.rpc('link_to_schedule', { p_reservation_id: id, p_admin_email: adminEmail });
+  const rv = reservations.find(r => r.id === id);
+  if (!rv) return;
+
+  if (rv.batch_id) {
+    // 배치에 속한 경우: 몇 건인지 확인 후 다이얼로그
+    const { data: bi } = await sb.rpc('get_batch_info', { p_reservation_id: id });
+    const n = bi?.count || 1;
+    _batchLinkId = id;
+    document.getElementById('batchLinkMsg').textContent =
+      `이 예약은 같은 날짜 묶음으로 일괄 등록된 ${n}건 중 하나입니다.\n어떻게 연동하시겠습니까?`;
+    document.getElementById('batchLinkAllBtn').textContent = `연동된 일정 전체 (${n}건) 연동`;
+    document.getElementById('batchLinkOneBtn').textContent = '이 일정만 연동';
+    showM('batchLinkModal');
+  } else {
+    await _doLink(id, false);
+  }
+}
+
+async function doBatchLink(linkAll) {
+  closeBatchLinkM();
+  await _doLink(_batchLinkId, linkAll);
+  _batchLinkId = null;
+}
+
+async function _doLink(id, linkAll) {
+  const { data } = await sb.rpc('link_to_schedule', {
+    p_reservation_id: id, p_admin_email: adminEmail, p_link_all: linkAll
+  });
   if (!data?.success) return toast('연동 실패: ' + (data?.error || ''), 'error');
-  toast('학교일정에 연동되었습니다', 'success');
+  const cnt = data?.linked_count || 1;
+  toast(`학교일정에 연동되었습니다 (${cnt}건)`, 'success');
   closeDetail(); await loadRvs();
 }
 
+function closeBatchLinkM() { hideM('batchLinkModal'); }
+
 async function adminUnlink(id) {
   if (!isAdmin()) return;
-  const { data } = await sb.rpc('unlink_from_schedule', { p_reservation_id: id, p_admin_email: adminEmail });
+  const rv = reservations.find(r => r.id === id);
+  if (!rv) return;
+
+  if (rv.batch_id) {
+    const { data: bi } = await sb.rpc('get_batch_info', { p_reservation_id: id });
+    const n = bi?.count || 1;
+    _batchUnlinkId = id;
+    document.getElementById('batchUnlinkMsg').textContent =
+      `이 예약은 같은 날짜 묶음으로 연동된 ${n}건 중 하나입니다.\n어떻게 해제하시겠습니까?`;
+    document.getElementById('batchUnlinkAllBtn').textContent = `전체 (${n}건) 연동 해제`;
+    document.getElementById('batchUnlinkOneBtn').textContent = '이 일정만 해제';
+    showM('batchUnlinkModal');
+  } else {
+    await _doUnlink(id, false);
+  }
+}
+
+async function doBatchUnlink(unlinkAll) {
+  closeBatchUnlinkM();
+  await _doUnlink(_batchUnlinkId, unlinkAll);
+  _batchUnlinkId = null;
+}
+
+async function _doUnlink(id, unlinkAll) {
+  const { data } = await sb.rpc('unlink_from_schedule', {
+    p_reservation_id: id, p_admin_email: adminEmail, p_unlink_all: unlinkAll
+  });
   if (!data?.success) return toast('연동 해제 실패: ' + (data?.error || ''), 'error');
   toast('연동이 해제되었습니다', 'success');
   closeDetail(); await loadRvs();
 }
+
+function closeBatchUnlinkM() { hideM('batchUnlinkModal'); }
 
 /* ── Admin panel ── */
 let admRvs = [];
@@ -2422,7 +2526,7 @@ function renderAdmTable() {
             <td>${esc(rv.department)}</td>
             <td>${esc(rv.requester_name)}</td>
             <td>${esc(rv.contact||'')}</td>
-            <td>${rv.synced_to_schedule
+            <td>${rv.schedule_event_id
               ? `<button class="btn btn-xs btn-outline" onclick="admUnlink('${rv.id}')">연동해제</button>`
               : `<button class="btn btn-xs btn-green" onclick="admLink('${rv.id}')">연동</button>`}</td>
             <td style="display:flex;gap:3px">

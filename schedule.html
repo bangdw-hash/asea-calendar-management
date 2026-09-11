@@ -1929,6 +1929,22 @@ html,body{height:100%;
 </div>
 
 <!-- TOAST -->
+<!-- 강의실 예약 상세 오버레이 (연동 항목 클릭 시) -->
+<div class="overlay" id="rv-detail-overlay" onclick="if(event.target===this)closeRvDetail()">
+  <div class="modal" style="max-width:420px;width:calc(100% - 32px)">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px 12px;border-bottom:1px solid var(--color-border)">
+      <span style="font-size:15px;font-weight:700;color:var(--color-text)">강의실 예약 상세</span>
+      <button onclick="closeRvDetail()" style="background:none;border:none;cursor:pointer;color:var(--color-text-sec);padding:4px;line-height:1">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M14 4L4 14M4 4l10 10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+    <div id="rv-detail-body" style="padding:16px 20px;display:flex;flex-direction:column;gap:8px;max-height:70vh;overflow-y:auto"></div>
+    <div style="padding:12px 20px 16px;display:flex;justify-content:flex-end;border-top:1px solid var(--color-border)">
+      <button onclick="closeRvDetail()" class="btn btn-secondary btn-sm">닫기</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast"></div>
 
 <!-- ════════════════════════ SCRIPTS ════════════════════════ -->
@@ -2288,7 +2304,7 @@ async function loadLinkedItems() {
   const dateE = `${last.getFullYear()}-${pad2(last.getMonth()+1)}-${pad2(last.getDate())}`;
   try {
     const r = await fetch(
-      `${SB_URL}/rest/v1/schedule_linked_items?target_date=gte.${dateS}&target_date=lte.${dateE}&unlinked_at=is.null&select=target_date,label,classroom_color&order=target_date`,
+      `${SB_URL}/rest/v1/schedule_linked_items?target_date=gte.${dateS}&target_date=lte.${dateE}&unlinked_at=is.null&select=target_date,label,classroom_color,reservation_id&order=target_date`,
       { headers: { apikey: SB_ANON, Authorization: 'Bearer ' + SB_ANON } }
     );
     if (!r.ok) return;
@@ -2613,7 +2629,7 @@ function renderMonth(wrap) {
       const visEvts = (isMob && allCellEvts.length > MAX_MOB) ? allCellEvts.slice(0, MAX_MOB) : allCellEvts;
       const moreCount = (isMob && allCellEvts.length > MAX_MOB) ? allCellEvts.length - MAX_MOB : 0;
       const dotsHtml = visEvts.map(ev => renderEvtItemHTML(ev, true)).join('');
-      const linkedHtml = (_linkedItems[dateKey]||[]).map(li=>`<span class="evt-dot-wrap"><span class="evt-dot rv-linked" style="background:${li.classroom_color||'#1A73E8'};--rv-color:${li.classroom_color||'#1A73E8'}" title="${esc(li.label)}">${esc(li.label)}</span></span>`).join('');
+      const linkedHtml = (_linkedItems[dateKey]||[]).map(li=>`<span class="evt-dot-wrap"><span class="evt-dot rv-linked" style="background:${li.classroom_color||'#1A73E8'};--rv-color:${li.classroom_color||'#1A73E8'};cursor:pointer" title="${esc(li.label)}" onclick="event.stopPropagation();openRvDetail(${li.reservation_id||'null'},'${esc(li.label)}','${li.classroom_color||'#1A73E8'}')">${esc(li.label)}</span></span>`).join('');
       const moreHtml = moreCount ? `<span class="evt-more-chip" onclick="event.stopPropagation();showDayEvts(${y},${m},${cell.d})">+${moreCount} 더보기</span>` : '';
       gridHtml += `<div class="${cell.cls}${holiday?' holiday':''}${allCellEvts.length||linkedHtml?' has-events':''}" data-y="${y}" data-m="${m}" data-d="${cell.d}">${numEl}${dotsHtml}${linkedHtml}${moreHtml}</div>`;
     }
@@ -6727,6 +6743,62 @@ function openModal(id) {
   document.addEventListener('click', hide);
   document.addEventListener('scroll', hide, true);
 })();
+
+/* ══════════════ 강의실 예약 상세 팝업 ══════════════ */
+async function openRvDetail(reservationId, fallbackLabel, color) {
+  const body = document.getElementById('rv-detail-body');
+  body.innerHTML = '<div style="text-align:center;padding:20px;color:var(--color-text-sec);font-size:13px">불러오는 중...</div>';
+  openOverlay('rv-detail-overlay');
+
+  if (!reservationId) {
+    body.innerHTML = `<div style="font-size:13px;color:var(--color-text-sec)">${esc(fallbackLabel)}</div>`;
+    return;
+  }
+
+  try {
+    const r = await fetch(
+      `${SB_URL}/rest/v1/reservations?id=eq.${reservationId}&select=*&limit=1`,
+      { headers: { apikey: SB_ANON, Authorization: 'Bearer ' + SB_ANON } }
+    );
+    const data = await r.json();
+    const rv = data?.[0];
+    if (!rv) { body.innerHTML = '<div style="font-size:13px;color:var(--color-text-sec)">예약 정보를 찾을 수 없습니다.</div>'; return; }
+
+    const fmtDate = d => { if(!d) return ''; const dt=new Date(d+'T00:00'); return `${dt.getFullYear()}.${String(dt.getMonth()+1).padStart(2,'0')}.${String(dt.getDate()).padStart(2,'0')}`; };
+    const fmtTime = t => t ? t.slice(0,5) : '';
+    const row = (label, val) => val ? `<div style="display:grid;grid-template-columns:72px 1fr;gap:6px 10px;align-items:start;font-size:13px"><span style="color:var(--color-text-sec);font-size:11px;font-weight:600;padding-top:2px">${label}</span><span style="color:var(--color-text)">${val}</span></div>` : '';
+    const dateStr = rv.date_start === rv.date_end ? fmtDate(rv.date_start) : `${fmtDate(rv.date_start)} ~ ${fmtDate(rv.date_end)}`;
+
+    let html = `<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+      <span style="background:${color};color:#fff;padding:3px 10px;border-radius:6px;font-size:13px;font-weight:700">${esc(rv.classroom_name)}</span>
+      ${rv.is_rental ? `<span style="background:#ea580c;color:#fff;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:700">대관</span>` : ''}
+    </div>
+    <div style="height:1px;background:var(--color-border);margin:8px 0"></div>`;
+
+    html += row('날짜', dateStr);
+    html += row('시간', `${fmtTime(rv.time_start)} ~ ${fmtTime(rv.time_end)}`);
+    if (rv.is_rental) {
+      html += row('외부기관', rv.rental_company_name);
+      html += row('과정명', rv.course_name);
+      if (rv.daily_fee) html += row('일 대관료', Number(rv.daily_fee).toLocaleString() + '원');
+    }
+    html += row('사용 목적', rv.purpose);
+    html += row('부서', rv.department);
+    html += row('신청자', rv.requester_name);
+    html += row('연락처', rv.contact);
+    if (rv.visitor_names || rv.vehicle_numbers || rv.notes) {
+      html += `<div style="height:1px;background:var(--color-border);margin:6px 0"></div>`;
+      html += row('출입자', rv.visitor_names);
+      html += row('차량번호', rv.vehicle_numbers);
+      if (rv.notes) html += row('비고', `<span style="white-space:pre-wrap">${esc(rv.notes)}</span>`);
+    }
+    body.innerHTML = html;
+  } catch(e) {
+    body.innerHTML = `<div style="font-size:13px;color:var(--color-text-sec)">${esc(fallbackLabel)}</div>`;
+  }
+}
+
+function closeRvDetail() { closeModal('rv-detail-overlay'); }
 
 /* ══════════════ SERVICE WORKER REGISTRATION ══════════════ */
 if ('serviceWorker' in navigator) {

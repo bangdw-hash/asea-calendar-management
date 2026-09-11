@@ -289,5 +289,195 @@ alter table reservations add column if not exists notes            text;
 alter table classrooms add column if not exists category text default '강의실';
 update classrooms set category = '강의실' where category is null;
 
+-- ============================================================================
+-- 13) reservations — batch_id 컬럼 추가 (다중 날짜 일괄 등록 그룹 식별)
+-- ============================================================================
+alter table reservations add column if not exists batch_id text;
+create index if not exists idx_reservations_batch_id on reservations(batch_id) where batch_id is not null;
+
+-- 소급 반영: 같은 (강의실+시간+목적+부서+신청자) 를 동일 시간대(1시간 이내)에 등록한 건들을 배치로 묶음
+-- (2건 이상인 그룹에만 batch_id 부여)
+update reservations
+set batch_id = sub.assigned_batch_id
+from (
+  select id,
+    'batch-' || min(id) over (
+      partition by
+        classroom_name,
+        time_start,
+        time_end,
+        coalesce(purpose,''),
+        coalesce(department,''),
+        coalesce(requester_name,''),
+        date_trunc('hour', created_at at time zone 'Asia/Seoul')
+    ) as assigned_batch_id,
+    count(*) over (
+      partition by
+        classroom_name,
+        time_start,
+        time_end,
+        coalesce(purpose,''),
+        coalesce(department,''),
+        coalesce(requester_name,''),
+        date_trunc('hour', created_at at time zone 'Asia/Seoul')
+    ) as grp_cnt
+  from reservations
+  where batch_id is null and deleted_at is null
+) sub
+where reservations.id = sub.id and sub.grp_cnt >= 2;
+
+-- ============================================================================
+-- 14) schedule_linked_items — 예약 연동 항목 테이블
+--     (기존 테이블이 있으면 컬럼만 추가, 없으면 신규 생성)
+-- ============================================================================
+create table if not exists schedule_linked_items (
+  id              bigint generated always as identity primary key,
+  target_date     date not null,
+  label           text,
+  classroom_color text,
+  reservation_id  bigint,
+  unlinked_at     timestamptz
+);
+alter table schedule_linked_items add column if not exists reservation_id bigint;
+
+-- (target_date, reservation_id) 유니크 인덱스 (중복 삽입 방지)
+create unique index if not exists idx_sli_date_resv
+  on schedule_linked_items(target_date, reservation_id)
+  where reservation_id is not null;
+
+alter table schedule_linked_items enable row level security;
+do $$ begin
+  if not exists (select 1 from pg_policies where tablename='schedule_linked_items' and policyname='sli_all') then
+    execute 'create policy sli_all on schedule_linked_items for all using (true) with check (true);';
+  end if;
+end $$;
+
+-- ============================================================================
+-- 15) RPC: link_to_schedule — 학교일정 연동 (단건 / 배치 전체)
+-- ============================================================================
+create or replace function link_to_schedule(
+  p_reservation_id bigint,
+  p_admin_email    text,
+  p_link_all       boolean default false
+) returns jsonb language plpgsql security definer as $$
+declare
+  v_batch_id   text;
+  v_batch_count int := 0;
+begin
+  if p_admin_email not in ('bangdw@gmail.com') then
+    return jsonb_build_object('success', false, 'error', '관리자 권한이 없습니다');
+  end if;
+
+  select batch_id into v_batch_id
+  from reservations where id = p_reservation_id and deleted_at is null;
+  if not found then
+    return jsonb_build_object('success', false, 'error', '예약을 찾을 수 없습니다');
+  end if;
+
+  if p_link_all and v_batch_id is not null then
+    -- 배치 전체 연동
+    update reservations
+    set schedule_event_id = 'linked-' || id::text
+    where batch_id = v_batch_id and deleted_at is null;
+    get diagnostics v_batch_count = row_count;
+
+    insert into schedule_linked_items (target_date, label, classroom_color, reservation_id)
+    select
+      gs::date,
+      r.formatted_label,
+      r.classroom_color,
+      r.id
+    from reservations r,
+    lateral generate_series(r.date_start::timestamp, r.date_end::timestamp, '1 day'::interval) gs
+    where r.batch_id = v_batch_id and r.deleted_at is null
+    on conflict (target_date, reservation_id) do nothing;
+  else
+    -- 단건 연동
+    update reservations
+    set schedule_event_id = 'linked-' || p_reservation_id::text
+    where id = p_reservation_id;
+    v_batch_count := 1;
+
+    insert into schedule_linked_items (target_date, label, classroom_color, reservation_id)
+    select
+      gs::date,
+      r.formatted_label,
+      r.classroom_color,
+      r.id
+    from reservations r,
+    lateral generate_series(r.date_start::timestamp, r.date_end::timestamp, '1 day'::interval) gs
+    where r.id = p_reservation_id
+    on conflict (target_date, reservation_id) do nothing;
+  end if;
+
+  return jsonb_build_object('success', true, 'linked_count', v_batch_count);
+end; $$;
+
+-- ============================================================================
+-- 16) RPC: unlink_from_schedule — 연동 해제 (단건 / 배치 전체)
+-- ============================================================================
+create or replace function unlink_from_schedule(
+  p_reservation_id bigint,
+  p_admin_email    text,
+  p_unlink_all     boolean default false
+) returns jsonb language plpgsql security definer as $$
+declare
+  v_batch_id text;
+begin
+  if p_admin_email not in ('bangdw@gmail.com') then
+    return jsonb_build_object('success', false, 'error', '관리자 권한이 없습니다');
+  end if;
+
+  select batch_id into v_batch_id
+  from reservations where id = p_reservation_id and deleted_at is null;
+  if not found then
+    return jsonb_build_object('success', false, 'error', '예약을 찾을 수 없습니다');
+  end if;
+
+  if p_unlink_all and v_batch_id is not null then
+    update reservations set schedule_event_id = null
+    where batch_id = v_batch_id and deleted_at is null;
+
+    update schedule_linked_items set unlinked_at = now()
+    where reservation_id in (
+      select id from reservations where batch_id = v_batch_id
+    ) and unlinked_at is null;
+  else
+    update reservations set schedule_event_id = null
+    where id = p_reservation_id;
+
+    update schedule_linked_items set unlinked_at = now()
+    where reservation_id = p_reservation_id and unlinked_at is null;
+  end if;
+
+  return jsonb_build_object('success', true);
+end; $$;
+
+-- ============================================================================
+-- 17) RPC: get_batch_info — 배치 그룹 정보 조회
+-- ============================================================================
+create or replace function get_batch_info(
+  p_reservation_id bigint
+) returns jsonb language plpgsql security definer as $$
+declare
+  v_batch_id text;
+  v_count    int;
+  v_dates    jsonb;
+begin
+  select batch_id into v_batch_id
+  from reservations where id = p_reservation_id and deleted_at is null;
+
+  if v_batch_id is null then
+    return jsonb_build_object('batch_id', null, 'count', 1, 'dates', '[]'::jsonb);
+  end if;
+
+  select count(*), jsonb_agg(date_start order by date_start)
+  into v_count, v_dates
+  from reservations
+  where batch_id = v_batch_id and deleted_at is null;
+
+  return jsonb_build_object('batch_id', v_batch_id, 'count', v_count, 'dates', coalesce(v_dates,'[]'::jsonb));
+end; $$;
+
 -- 끝. 'Success. No rows returned' 가 나오면 정상입니다. ---------------------
 -- 이후: Supabase 대시보드 → Settings → API → Reload Schema Cache 클릭.
