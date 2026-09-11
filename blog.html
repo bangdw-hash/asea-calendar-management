@@ -654,22 +654,36 @@ function checkDatalabStatus() {
   }
 }
 
-/* ── Naver API 프록시 (Supabase Edge Function 경유 — CORS 우회) ── */
+/* ── Naver API 프록시 ── */
 async function callNaverProxy(type, params) {
-  var proxyUrl = SUPA_URL + '/functions/v1/ai-proxy';
-  var supaKey = (window.SUPA_ANON) || '';
+  // 1순위: localStorage에 저장된 Flask(Railway) 프록시 URL
+  var naverProxyUrl = '';
+  try { naverProxyUrl = localStorage.getItem('asea_naver_proxy_url') || ''; } catch(e) {}
+
+  // 2순위: AI 프록시 base URL에서 /api/naver-proxy 경로 조립
+  if (!naverProxyUrl && window.getAIProxyUrl) {
+    var aiProxy = window.getAIProxyUrl() || '';
+    if (aiProxy && !aiProxy.includes('supabase.co')) {
+      naverProxyUrl = aiProxy.replace(/\/functions\/v1\/ai-proxy.*$/, '') + '/api/naver-proxy';
+    }
+  }
+
+  // 3순위: Supabase Edge Function (폴백)
+  if (!naverProxyUrl) naverProxyUrl = SUPA_URL + '/functions/v1/ai-proxy';
+
+  var isSupabase = naverProxyUrl.includes('supabase.co');
   var body = (type === 'datalab')
     ? { service: 'naver', payload: { type: 'datalab', body: params } }
     : { service: 'naver', payload: Object.assign({ type: type }, params) };
-  var res = await fetch(proxyUrl, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'apikey': supaKey,
-      'Authorization': 'Bearer ' + supaKey
-    },
-    body: JSON.stringify(body)
-  });
+
+  var headers = { 'Content-Type': 'application/json' };
+  if (isSupabase) {
+    var supaKey = (window.SUPA_ANON) || '';
+    headers['apikey'] = supaKey;
+    headers['Authorization'] = 'Bearer ' + supaKey;
+  }
+
+  var res = await fetch(naverProxyUrl, { method: 'POST', headers: headers, body: JSON.stringify(body) });
   return await res.json();
 }
 
@@ -932,7 +946,7 @@ function renderTrendResults(results, dateLabel) {
         '<div class="trend-card-angle">' + esc(kw.angle || '') + '</div>' +
         '<div class="trend-card-hook">"' + esc(kw.hook || '') + '"</div>' +
         '<button class="btn btn-primary btn-sm" style="width:100%;justify-content:center;margin-top:4px" ' +
-          'onclick="generateFromTrend(' + JSON.stringify(kw.keyword) + ',' + JSON.stringify(kw.angle) + ')">' +
+          'onclick="generateFromTrend(' + JSON.stringify(kw.keyword).replace(/"/g,'&quot;') + ',' + JSON.stringify(kw.angle).replace(/"/g,'&quot;') + ')">' +
           '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="13" height="13"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>' +
           ' 이 키워드로 글 생성' +
         '</button>' +
