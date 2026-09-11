@@ -2382,7 +2382,7 @@ function googleLogin() {
         if (ADMIN_EMAILS.includes(u.email)) {
           adminEmail = u.email;
           sessionStorage.setItem('rv_adm', adminEmail);
-          closeLoginM(); updateAdminBtn();
+          closeLoginM(); updateAdminBtn(); renderCal();
           toast(`관리자 로그인 완료 (${adminEmail})`, 'success');
         } else {
           document.getElementById('loginMsg').textContent = '관리자 계정이 아닙니다: ' + u.email;
@@ -2617,6 +2617,7 @@ function openCtxMenu(e, id) {
       linkBtn.textContent = '학교일정 연동';
       linkBtn.onclick = () => { ctxAction('link'); };
     }
+    linkBtn.hidden = false;
     delBtn.hidden = false; delSep.hidden = false; editBtn.hidden = false;
   } else {
     linkBtn.hidden = true; delBtn.hidden = true; delSep.hidden = true; editBtn.hidden = true;
