@@ -403,6 +403,25 @@ header{
   .btn-cta-rental,.btn-cta-new{padding:5px 10px;font-size:11px}
 }
 
+/* ── Field history dropdown ── */
+.hist-wrap{position:relative}
+.hist-drop{
+  position:absolute;top:100%;left:0;right:0;z-index:500;
+  background:#fff;border:1.5px solid var(--primary);border-top:none;
+  border-radius:0 0 var(--r) var(--r);
+  box-shadow:var(--sh-md);max-height:180px;overflow-y:auto;
+}
+.hist-item{
+  padding:8px 12px;font-size:13px;cursor:pointer;
+  border-bottom:1px solid var(--border);color:var(--text);
+  display:flex;justify-content:space-between;align-items:center;gap:8px;
+}
+.hist-item:last-child{border-bottom:none}
+.hist-item:hover{background:var(--primary-lt);color:var(--primary)}
+.hist-val{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hist-del{flex-shrink:0;font-size:11px;color:var(--gray);line-height:1;padding:2px 4px;border-radius:4px}
+.hist-del:hover{background:var(--red-lt);color:var(--red)}
+
 </style>
 </head>
 <body>
@@ -562,7 +581,10 @@ header{
     <div class="frow" id="fgRentalCourse" hidden>
       <div class="fg">
         <div class="fl">과정명 <span class="req">*</span></div>
-        <input type="text" id="courseNameIn" class="fi" placeholder="예: 2026년 상반기 실무교육" autocomplete="off" value="">
+        <div class="hist-wrap">
+          <input type="text" id="courseNameIn" class="fi" placeholder="예: 2026년 상반기 실무교육" autocomplete="off" value="">
+          <div id="courseHistDrop" class="hist-drop" hidden></div>
+        </div>
       </div>
       <div class="fg">
         <div class="fl">일 대관료(원) <span class="req">*</span></div>
@@ -572,7 +594,10 @@ header{
 
     <div class="fg">
       <div class="fl">사용 목적 <span class="req">*</span></div>
-      <textarea id="purposeIn" class="fta" placeholder="예: 신변보호사 대면강좌, 외부 강사 특강, 자격증 시험 등"></textarea>
+      <div class="hist-wrap">
+        <textarea id="purposeIn" class="fta" placeholder="예: 신변보호사 대면강좌, 외부 강사 특강, 자격증 시험 등"></textarea>
+        <div id="purposeHistDrop" class="hist-drop" hidden></div>
+      </div>
     </div>
 
     <div style="display:flex;align-items:center;gap:8px">
@@ -805,6 +830,61 @@ function changeDensity(dir) {
 }
 
 
+/* ── Field history (사용 목적 / 과정명 자동완성) ── */
+const _HIST_MAX = 15;
+function _getHist(k) { try { return JSON.parse(localStorage.getItem(k) || '[]'); } catch(e) { return []; } }
+function _saveHist(k, v) {
+  if (!v) return;
+  let a = _getHist(k).filter(x => x !== v);
+  a.unshift(v);
+  if (a.length > _HIST_MAX) a = a.slice(0, _HIST_MAX);
+  try { localStorage.setItem(k, JSON.stringify(a)); } catch(e) {}
+}
+function _delHist(k, v) {
+  try { localStorage.setItem(k, JSON.stringify(_getHist(k).filter(x => x !== v))); } catch(e) {}
+}
+
+function _initFieldHist(inputId, dropId, histKey) {
+  const input = document.getElementById(inputId);
+  const drop  = document.getElementById(dropId);
+  if (!input || !drop) return;
+
+  function render(filter) {
+    const all = _getHist(histKey);
+    const list = filter ? all.filter(v => v.toLowerCase().includes(filter.toLowerCase())) : all;
+    if (!list.length) { drop.hidden = true; return; }
+    drop.innerHTML = list.map(v =>
+      `<div class="hist-item" data-v="${v.replace(/&/g,'&amp;').replace(/"/g,'&quot;')}">` +
+      `<span class="hist-val">${v.replace(/&/g,'&amp;').replace(/</g,'&lt;')}</span>` +
+      `<span class="hist-del" data-del="${v.replace(/&/g,'&amp;').replace(/"/g,'&quot;')}">✕</span></div>`
+    ).join('');
+    drop.hidden = false;
+    drop.querySelectorAll('.hist-item').forEach(item => {
+      item.addEventListener('mousedown', function(e) {
+        if (e.target.classList.contains('hist-del')) {
+          e.preventDefault();
+          _delHist(histKey, item.dataset.v);
+          render(input.value);
+          return;
+        }
+        e.preventDefault();
+        input.value = item.dataset.v;
+        drop.hidden = true;
+        input.focus();
+      });
+    });
+  }
+
+  input.addEventListener('focus', () => render(input.value));
+  input.addEventListener('input', () => render(input.value));
+  input.addEventListener('blur', () => setTimeout(() => { drop.hidden = true; }, 200));
+}
+
+function initHistFields() {
+  _initFieldHist('purposeIn',    'purposeHistDrop', 'asea_rv_purpose');
+  _initFieldHist('courseNameIn', 'courseHistDrop',  'asea_rv_course');
+}
+
 async function init() {
   loadDensity();
   await loadClassrooms();
@@ -822,6 +902,7 @@ async function init() {
   initDrawerOcrPaste();
   await loadRentalCompanies();
   initOutsideClick();
+  initHistFields();
 }
 
 function initOutsideClick() {
@@ -1784,6 +1865,8 @@ async function submitRv() {
     const { error } = await sb.from('reservations').insert(records);
     if (error) throw error;
 
+    _saveHist('asea_rv_purpose', purp);
+    if (rentalInfo?.course) _saveHist('asea_rv_course', rentalInfo.course);
     toast(`예약 등록 완료 (${records.length}건)`, 'success');
     clearSel();
     closeDrawer();
@@ -2843,8 +2926,9 @@ function _ocrApply(d, isRental) {
   if (d.dates && d.dates.length) {
     const valid = d.dates.filter(s => /^\d{4}-\d{2}-\d{2}$/.test(s));
     if (valid.length) {
+      // setMode 먼저 호출 (내부에서 selDates=[]) → 그 다음 selDates 재설정
+      if (selMode !== 'multi' && valid.length > 1) setMode('multi');
       selDates = valid.sort();
-      if (selMode !== 'multi' && selDates.length > 1) setMode('multi');
       updMultiBanner(); renderCal(); renderDateTags();
     }
   }
