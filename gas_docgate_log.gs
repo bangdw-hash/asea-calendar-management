@@ -113,6 +113,27 @@ function doGet(e) {
       return _json({ok:true});
     }
 
+    // 카테고리 순서 이동 (GET 방식)
+    if (p.action === 'moveCategory') {
+      var id  = p.id  || '';
+      var dir = p.dir || 'up'; // 'up' or 'down'
+      var catSheet = _getSheet('DocCategories');
+      var rows = catSheet.getDataRange().getValues();
+      var targetIdx = -1;
+      for (var i = 1; i < rows.length; i++) {
+        if (String(rows[i][0]) === String(id)) { targetIdx = i; break; }
+      }
+      if (targetIdx === -1) return _json({ok:false, error:'not found'});
+      var swapIdx = dir === 'up' ? targetIdx - 1 : targetIdx + 1;
+      if (swapIdx < 1 || swapIdx >= rows.length) return _json({ok:true}); // 이미 끝
+      // 두 행 교환
+      var rowA = rows[targetIdx];
+      var rowB = rows[swapIdx];
+      catSheet.getRange(targetIdx + 1, 1, 1, rowA.length).setValues([rowB]);
+      catSheet.getRange(swapIdx   + 1, 1, 1, rowB.length).setValues([rowA]);
+      return _json({ok:true});
+    }
+
     if (type === 'categories') {
       var sheet = _getSheet('DocCategories');
       _ensureCatHeader(sheet);

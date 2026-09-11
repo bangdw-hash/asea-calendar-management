@@ -53,6 +53,15 @@
     if (!res.ok) throw new Error('삭제 요청 실패');
   };
 
+  /* ── 카테고리 순서 이동 (관리자) dir: -1=위, 1=아래 ─────────── */
+  DocGate.moveCategory = async function (id, dir) {
+    var res = await fetch(
+      GAS_ENDPOINT + '?action=moveCategory&id=' + encodeURIComponent(id) +
+      '&dir=' + (dir < 0 ? 'up' : 'down')
+    );
+    if (!res.ok) throw new Error('순서 변경 실패');
+  };
+
   /* ── Drive 폴더에서 키워드 일치 최신 파일 찾기 ───────────────── */
   DocGate.findLatestFile = async function (keyword) {
     var token = Auth.getToken();
