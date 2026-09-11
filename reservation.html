@@ -144,48 +144,62 @@ header{
 }
 .sel-count{font-size:12px;font-weight:600;color:var(--text)}
 
-/* ── Calendar (schedule.html 스타일 — 심리스 카드형) ── */
-.cal-wrap{padding:16px;overflow-x:auto;-webkit-overflow-scrolling:touch}
-.cal-card{
-  background:#fff;border:1px solid var(--border);border-radius:var(--r-card);
-  box-shadow:var(--sh);overflow:hidden;
-}
-.cal-wrap .cal-card{min-width:680px}
-.cal-dow{
-  display:grid;grid-template-columns:repeat(7,1fr);
-  text-align:center;border-bottom:1px solid var(--border);
-}
-.cal-dow span{font-size:12px;font-weight:600;color:var(--gray);padding:10px 0}
+/* ── Calendar (schedule.html CSS 완전 이식) ── */
+.cal-wrap{padding:12px 16px;overflow-x:auto;-webkit-overflow-scrolling:touch}
+/* cal-container: schedule.html .cal-container */
+.cal-container{background:#fff;border-radius:var(--r-card);
+  box-shadow:var(--sh);overflow:hidden;border:1px solid var(--border);min-width:560px}
+/* day-of-week label inside each cell header */
+.day-cell-hdr{display:flex;align-items:center;gap:4px;margin-bottom:3px}
+.day-dow{font-size:11px;font-weight:500;color:var(--gray)}
+.day-cell.sun .day-dow{color:var(--red)}
+.day-cell.sat .day-dow{color:var(--primary)}
+/* month grid */
+.month-grid{display:flex;flex-direction:column}
+.month-week-row{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));
+  border-bottom:1px solid var(--border)}
+.month-week-row:last-child{border-bottom:none}
+/* day cell */
+.day-cell{min-height:96px;padding:5px;background:#fff;
+  transition:background .1s;cursor:pointer;user-select:none;
+  border-right:1px solid var(--border);position:relative;overflow:visible}
+.day-cell:last-child{border-right:none}
+.day-cell:hover{background:var(--primary-lt)}
+.day-cell.other-month{background:#fafbfc}
+.day-cell.other-month .day-num{color:#ccc}
+.day-cell.other-month:hover{background:var(--gray-lt)}
+.day-cell.sun .day-num{color:var(--red)}
+.day-cell.sat .day-num{color:var(--primary)}
+/* selection states */
+.day-cell.range-start,.day-cell.range-end,.day-cell.single-sel{background:var(--primary-lt)}
+.day-cell.in-range{background:#eef4fd}
+.day-cell.multi-sel{background:var(--orange-lt)}
+.day-cell.drag-select{background:var(--primary-lt)!important;outline:2px dashed var(--primary);outline-offset:-2px}
+.day-cell.ctrl-drag-sel{background:var(--orange-lt)!important;outline:2px dashed var(--orange);outline-offset:-2px}
+/* day number circle */
+.day-num{font-size:12px;font-weight:500;width:26px;height:26px;
+  display:flex;align-items:center;justify-content:center;border-radius:50%;flex-shrink:0}
+.day-cell.today .day-num{background:var(--primary);color:#fff!important}
+.day-cell.range-start .day-num,.day-cell.range-end .day-num{color:var(--primary-dk);font-weight:800}
+/* mini calendar (popup) keeps old cal-cell style */
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr)}
+.cal-card{background:#fff;border:1px solid var(--border);border-radius:var(--r-card);overflow:hidden}
+.cal-dow{display:grid;grid-template-columns:repeat(7,1fr);text-align:center;border-bottom:1px solid var(--border)}
+.cal-dow span{font-size:12px;font-weight:600;color:var(--gray);padding:8px 0}
 .cal-dow span:first-child{color:var(--red)}
 .cal-dow span:last-child{color:var(--primary)}
-.cal-grid{display:grid;grid-template-columns:repeat(7,1fr)}
-
-.cal-cell{
-  min-height:96px;background:#fff;
-  border-right:1px solid var(--border);border-bottom:1px solid var(--border);
-  padding:5px;cursor:pointer;transition:background .12s;overflow:visible;user-select:none;
-  position:relative;
-}
+.cal-cell{min-height:34px;padding:3px;background:#fff;border-right:1px solid var(--border);
+  border-bottom:1px solid var(--border);cursor:pointer;transition:background .12s;position:relative}
 .cal-cell:nth-child(7n){border-right:none}
-.cal-grid > .cal-cell:nth-last-child(-n+7){border-bottom:none}
+.cal-grid>.cal-cell:nth-last-child(-n+7){border-bottom:none}
 .cal-cell:hover{background:var(--primary-lt)}
 .cal-cell.other-month{background:#fafbfc}
 .cal-cell.other-month .day-num{color:#ccc}
-.cal-cell.other-month:hover{background:var(--gray-lt)}
 .cal-cell.sun .day-num{color:var(--red)}
 .cal-cell.sat .day-num{color:var(--primary)}
-.cal-cell.range-start,.cal-cell.range-end,.cal-cell.single-sel{background:var(--primary-lt)}
-.cal-cell.in-range{background:#eef4fd}
-.cal-cell.multi-sel{background:var(--orange-lt)}
-.cal-cell.drag-select{background:var(--primary-lt)!important;outline:2px dashed var(--primary);outline-offset:-2px}
-.cal-cell.ctrl-drag-sel{background:var(--orange-lt)!important;outline:2px dashed var(--orange);outline-offset:-2px}
-
-.day-num{
-  font-size:13px;font-weight:600;width:26px;height:26px;
-  display:flex;align-items:center;justify-content:center;border-radius:50%;
-}
 .cal-cell.today .day-num{background:var(--primary);color:#fff}
-.cal-cell.range-start .day-num,.cal-cell.range-end .day-num{color:var(--primary-dk);font-weight:800}
+.cal-cell.single-sel{background:var(--primary-lt)}
+.cal-cell.multi-sel{background:var(--orange-lt)}
 
 /* ── Density (5단계 폰트 크기) ── */
 :root{--rv-fs:10.5px}
@@ -345,8 +359,23 @@ header{
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:#d1d5db;border-radius:9px}
 
+/* ── OCR zone ── */
+.ocr-zone{border:2px dashed var(--border);border-radius:var(--r);padding:12px;
+  text-align:center;cursor:pointer;transition:border-color .15s,background .15s;
+  background:var(--gray-lt);position:relative}
+.ocr-zone:hover,.ocr-zone.drag-over{border-color:var(--primary);background:var(--primary-lt)}
+.ocr-zone.has-img{border-style:solid;border-color:var(--primary);background:#fff;padding:6px}
+.ocr-zone .ocr-hint{font-size:11px;color:var(--gray);margin-top:4px}
+.ocr-preview{max-width:100%;max-height:140px;border-radius:8px;display:block;margin:0 auto}
+.ocr-actions{display:flex;gap:6px;margin-top:8px;justify-content:center}
+.ocr-status{font-size:11px;color:var(--primary);margin-top:6px;text-align:center;min-height:16px}
+.ocr-status.err{color:var(--red)}
+@keyframes ocr-spin{to{transform:rotate(360deg)}}
+.ocr-spinner{display:inline-block;width:12px;height:12px;border:2px solid var(--border);
+  border-top-color:var(--primary);border-radius:50%;animation:ocr-spin .7s linear infinite;vertical-align:middle;margin-right:4px}
+
 @media(max-width:600px){
-  .cal-cell{min-height:76px}
+  .day-cell{min-height:76px}
   .hd-title{font-size:14px}
   .frow{grid-template-columns:1fr}
   .cal-wrap{padding:8px}
@@ -438,15 +467,7 @@ header{
 </div>
 
 <!-- Calendar -->
-<div class="cal-wrap">
-  <div class="cal-card">
-    <div class="cal-dow">
-      <span>일</span><span>월</span><span>화</span><span>수</span>
-      <span>목</span><span>금</span><span>토</span>
-    </div>
-    <div id="calGrid" class="cal-grid"></div>
-  </div>
-</div>
+<div class="cal-wrap"><div id="calGrid"></div></div>
 
 <!-- Drawer overlay -->
 <div id="drawerOverlay" class="overlay"></div>
@@ -464,6 +485,21 @@ header{
     </div>
   </div>
   <div class="drawer-body">
+
+    <!-- AI OCR 이미지 업로드 -->
+    <div class="fg" id="fgOcr">
+      <div class="fl" style="display:flex;align-items:center;justify-content:space-between">
+        <span>이미지로 자동 입력 <span style="font-size:10px;color:var(--gray);font-weight:400">(선택)</span></span>
+        <button type="button" class="btn btn-xs" style="background:none;border:none;color:var(--gray);padding:0;font-size:11px" onclick="clearOcrZone()">지우기</button>
+      </div>
+      <div id="ocrZone" class="ocr-zone" onclick="document.getElementById('ocrFileIn').click()" ondragover="ocrDragOver(event)" ondrop="ocrDrop(event)" ondragleave="ocrDragLeave(event)">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--gray)" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M8 12l4-4 4 4"/><path d="M12 8v8"/></svg>
+        <div style="font-size:12px;color:var(--gray);margin-top:4px">이미지 붙여넣기 또는 클릭하여 업로드</div>
+        <div class="ocr-hint">강의실 예약 관련 이미지(공문, 허가서, 프로그램 일정표 등)</div>
+      </div>
+      <input type="file" id="ocrFileIn" accept="image/*" style="display:none" onchange="ocrFile(event)">
+      <div id="ocrStatus" class="ocr-status"></div>
+    </div>
 
     <div class="fg" id="fgDates">
       <div class="fl">선택 날짜 <span class="req">*</span></div>
@@ -554,13 +590,6 @@ header{
         <div class="fl">비밀번호 확인 <span class="req">*</span></div>
         <input type="password" id="pwIn2" class="fi" placeholder="동일하게 입력" value="" autocomplete="new-password">
       </div>
-    </div>
-
-    <div class="fg">
-      <div class="fl">첨부 이미지 (선택)</div>
-      <input type="file" id="imgIn" accept="image/*" class="fi" style="padding:6px" onchange="onImg(event)">
-      <img id="imgPrev" class="img-preview" hidden>
-      <div id="imgAiBox" hidden class="ai-box" style="margin-top:8px"></div>
     </div>
 
     <div class="info-box">비밀번호는 수정·삭제 시 사용됩니다. 분실 시 관리자에게 문의해주세요.</div>
@@ -768,6 +797,7 @@ async function init() {
   initDragSelect();
   initMiniCalDrag();
   initDrawerDrag();
+  initDrawerOcrPaste();
   await loadRentalCompanies();
 }
 
@@ -941,7 +971,9 @@ async function loadRvs() {
   renderCal();
 }
 
-/* ── Calendar render ── */
+/* ── Calendar render (schedule.html week-row 구조) ── */
+const _WD = ['일','월','화','수','목','금','토'];
+
 function renderCal() {
   const y = curYear, m = curMonth;
   document.getElementById('monthLabel').textContent = `${y}년 ${m+1}월`;
@@ -966,12 +998,20 @@ function renderCal() {
     cells.push({ s: toStr(new Date(nextY, nextM, d)), d, other: true, dow: new Date(nextY, nextM, d).getDay() });
   }
 
-  document.getElementById('calGrid').innerHTML = cells.map(c => buildCell(c, today)).join('');
+  let html = '<div class="cal-container"><div class="month-grid">';
+  for (let r = 0; r < 6; r++) {
+    html += '<div class="month-week-row">';
+    for (let c = 0; c < 7; c++) html += buildCell(cells[r*7+c], today);
+    html += '</div>';
+  }
+  html += '</div></div>';
+  document.getElementById('calGrid').innerHTML = html;
 }
 
 function buildCell(cell, today) {
+  if (!cell) return '';
   const { s, d, other, dow } = cell;
-  let cls = 'cal-cell';
+  let cls = 'day-cell';
   if (other) cls += ' other-month';
   if (s === today) cls += ' today';
   if (!other && dow === 0) cls += ' sun';
@@ -992,7 +1032,7 @@ function buildCell(cell, today) {
 
   const rvs = getRvsForDate(s);
   const pills = buildPills(rvs);
-  return `<div class="${cls}" data-s="${s}"><div class="day-num">${d}</div><div class="rv-pills">${pills}</div></div>`;
+  return `<div class="${cls}" data-s="${s}"><div class="day-cell-hdr"><span class="day-num">${d}</span><span class="day-dow">${_WD[dow]}</span></div><div class="rv-pills">${pills}</div></div>`;
 }
 
 function getRvsForDate(dateStr) {
@@ -1020,7 +1060,7 @@ function buildPills(rvs) {
 function initLongPress() {
   let lpTimer = null;
   document.addEventListener('touchstart', e => {
-    const cell = e.target.closest('.cal-cell');
+    const cell = e.target.closest('.day-cell');
     if (!cell) return;
     const s = cell.dataset.s;
     lpTimer = setTimeout(() => {
@@ -1082,7 +1122,7 @@ function initDragSelect() {
   grid.addEventListener('mousedown', e => {
     if (e.button !== 0) return;
     if (e.target.closest('.rv-pill,.rv-more')) return;
-    const cell = e.target.closest('.cal-cell');
+    const cell = e.target.closest('.day-cell');
     if (!cell) return;
     dsDown = true; dsCtrl = e.ctrlKey || e.metaKey;
     dsStart = cell.dataset.s; dsEnd = dsStart; dsDragging = false;
@@ -1090,7 +1130,7 @@ function initDragSelect() {
 
   document.addEventListener('mousemove', e => {
     if (!dsDown || !dsStart) return;
-    const cell = e.target.closest('.cal-cell');
+    const cell = e.target.closest('.day-cell');
     if (!cell) return;
     const s = cell.dataset.s;
     if (s === dsEnd) return;
@@ -1125,7 +1165,7 @@ function paintDragPreview() {
   clearDragPreview();
   const a = dsStart < dsEnd ? dsStart : dsEnd;
   const b = dsStart < dsEnd ? dsEnd : dsStart;
-  document.querySelectorAll('.cal-cell').forEach(c => {
+  document.querySelectorAll('#calGrid .day-cell').forEach(c => {
     const s = c.dataset.s;
     if (s >= a && s <= b) c.classList.add(dsCtrl ? 'ctrl-drag-sel' : 'drag-select');
   });
@@ -2579,30 +2619,154 @@ async function callAI(prompt) {
   return '(AI 키 미설정) 입력하신 목적을 그대로 사용합니다.';
 }
 
-/* ── Image AI ── */
-async function onImg(event) {
-  const file = event.target.files[0];
-  if (!file) return;
+/* ── OCR 이미지 자동 입력 ── */
+let _ocrB64 = null, _ocrMime = null;
+
+function ocrDragOver(e) { e.preventDefault(); document.getElementById('ocrZone').classList.add('drag-over'); }
+function ocrDragLeave(e) { document.getElementById('ocrZone').classList.remove('drag-over'); }
+function ocrDrop(e) {
+  e.preventDefault();
+  document.getElementById('ocrZone').classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file && file.type.startsWith('image/')) _ocrLoadFile(file);
+}
+function ocrFile(e) {
+  const file = e.target.files[0];
+  if (file) _ocrLoadFile(file);
+  e.target.value = '';
+}
+
+function _ocrLoadFile(file) {
   const reader = new FileReader();
-  reader.onload = async e => {
-    const prev = document.getElementById('imgPrev');
-    prev.src = e.target.result; prev.hidden = false;
-    const box = document.getElementById('imgAiBox');
-    box.hidden = false; box.textContent = '이미지 분석 중...';
-    try {
-      const b64 = e.target.result.split(',')[1];
-      const r = await claudeFetch({
-        model: 'claude-haiku-4-5-20251001', max_tokens: 250,
-        messages: [{ role: 'user', content: [
-          { type: 'image', source: { type: 'base64', media_type: file.type, data: b64 } },
-          { type: 'text', text: '이미지를 2~3문장으로 설명해주세요. 강의실 예약 목적에 참고할 정보가 있으면 알려주세요.' }
-        ]}]
-      });
-      if (r.ok) { const d = await r.json(); box.textContent = d.content[0].text; }
-      else box.textContent = '이미지 분석 실패 (관리자 → AI제공자 설정을 확인해주세요).';
-    } catch (e) { box.textContent = '오류: ' + e.message; }
+  reader.onload = ev => {
+    _ocrMime = file.type;
+    _ocrB64 = ev.target.result.split(',')[1];
+    const zone = document.getElementById('ocrZone');
+    zone.classList.add('has-img');
+    zone.innerHTML = `<img src="${ev.target.result}" class="ocr-preview" alt="업로드 이미지">
+      <div class="ocr-actions">
+        <button type="button" class="btn btn-primary btn-sm" onclick="runOcr(event)">AI OCR 정보 추출</button>
+        <button type="button" class="btn btn-outline btn-sm" onclick="clearOcrZone()">제거</button>
+      </div>`;
+    document.getElementById('ocrStatus').textContent = '';
   };
   reader.readAsDataURL(file);
+}
+
+function clearOcrZone() {
+  _ocrB64 = null; _ocrMime = null;
+  const zone = document.getElementById('ocrZone');
+  zone.className = 'ocr-zone';
+  zone.innerHTML = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--gray)" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M8 12l4-4 4 4"/><path d="M12 8v8"/></svg>
+    <div style="font-size:12px;color:var(--gray);margin-top:4px">이미지 붙여넣기 또는 클릭하여 업로드</div>
+    <div class="ocr-hint">강의실 예약 관련 이미지(공문, 허가서, 프로그램 일정표 등)</div>`;
+  zone.onclick = () => document.getElementById('ocrFileIn').click();
+  document.getElementById('ocrStatus').textContent = '';
+}
+
+function initDrawerOcrPaste() {
+  document.addEventListener('paste', e => {
+    const drawer = document.getElementById('drawer');
+    if (!drawer.classList.contains('open')) return;
+    const items = e.clipboardData && e.clipboardData.items;
+    if (!items) return;
+    for (const item of items) {
+      if (item.type.startsWith('image/')) {
+        const file = item.getAsFile();
+        if (file) { _ocrLoadFile(file); break; }
+      }
+    }
+  });
+}
+
+async function runOcr(e) {
+  if (e) e.stopPropagation();
+  if (!_ocrB64) return;
+  const status = document.getElementById('ocrStatus');
+  const isRental = document.getElementById('fgRentalOrg') && !document.getElementById('fgRentalOrg').hidden;
+
+  status.innerHTML = '<span class="ocr-spinner"></span>AI가 이미지 정보를 추출 중...';
+  status.className = 'ocr-status';
+
+  const prompt = isRental
+    ? `이 이미지는 강의실 대관 예약 관련 문서입니다. 아래 정보를 JSON으로 추출해주세요 (없으면 null):
+{
+  "dates": ["YYYY-MM-DD", ...],
+  "time_start": "HH:MM",
+  "time_end": "HH:MM",
+  "org_name": "외부기관명",
+  "course_name": "과정명/강좌명",
+  "daily_fee": 숫자(없으면 null),
+  "purpose": "사용목적",
+  "contact_name": "담당자명",
+  "contact_phone": "연락처"
+}
+JSON만 출력하세요. 날짜가 여러 개면 모두 포함, 기간이면 모든 날짜를 나열하세요.`
+    : `이 이미지는 강의실 예약 관련 문서입니다. 아래 정보를 JSON으로 추출해주세요 (없으면 null):
+{
+  "dates": ["YYYY-MM-DD", ...],
+  "time_start": "HH:MM",
+  "time_end": "HH:MM",
+  "purpose": "사용목적",
+  "dept": "부서명",
+  "requester_name": "신청자명",
+  "contact_phone": "연락처"
+}
+JSON만 출력하세요. 날짜가 여러 개면 모두 포함, 기간이면 모든 날짜를 나열하세요.`;
+
+  try {
+    const res = await claudeFetch({
+      model: 'claude-haiku-4-5-20251001', max_tokens: 512,
+      messages: [{ role: 'user', content: [
+        { type: 'image', source: { type: 'base64', media_type: _ocrMime || 'image/jpeg', data: _ocrB64 } },
+        { type: 'text', text: prompt }
+      ]}]
+    });
+    if (!res.ok) throw new Error(`서버 오류 ${res.status} (AI제공자 설정을 확인하세요)`);
+    const data = await res.json();
+    const text = (data.content && data.content[0] && data.content[0].text) || '';
+    const match = text.match(/\{[\s\S]*\}/);
+    if (!match) throw new Error('JSON 파싱 실패');
+    const parsed = JSON.parse(match[0]);
+    _ocrApply(parsed, isRental);
+    status.innerHTML = '✓ 정보가 자동 입력되었습니다. 확인 후 수정하세요.';
+    status.className = 'ocr-status';
+  } catch (err) {
+    status.innerHTML = '추출 실패: ' + (err.message || '알 수 없는 오류');
+    status.className = 'ocr-status err';
+  }
+}
+
+function _ocrApply(d, isRental) {
+  // dates
+  if (d.dates && d.dates.length) {
+    const valid = d.dates.filter(s => /^\d{4}-\d{2}-\d{2}$/.test(s));
+    if (valid.length) {
+      selDates = valid.sort();
+      if (selMode !== 'multi' && selDates.length > 1) setMode('multi');
+      updMultiBanner(); renderCal(); renderDateTags();
+    }
+  }
+  // time
+  if (d.time_start) { const el = document.getElementById('tStart'); if (el) el.value = d.time_start; }
+  if (d.time_end) { const el = document.getElementById('tEnd'); if (el) el.value = d.time_end; }
+  // purpose
+  if (d.purpose) { const el = document.getElementById('purposeIn'); if (el && !el.value) el.value = d.purpose; }
+  // requester
+  if (d.requester_name) { const el = document.getElementById('reqName'); if (el && !el.value) el.value = d.requester_name; }
+  if (d.contact_name) { const el = document.getElementById('reqName'); if (el && !el.value) el.value = d.contact_name; }
+  if (d.contact_phone) { const el = document.getElementById('reqContact'); if (el && !el.value) el.value = d.contact_phone; }
+  // rental fields
+  if (isRental) {
+    if (d.course_name) { const el = document.getElementById('courseNameIn'); if (el && !el.value) el.value = d.course_name; }
+    if (d.daily_fee != null) { const el = document.getElementById('dailyFeeIn'); if (el && !el.value) el.value = d.daily_fee; }
+  }
+  // dept
+  if (d.dept) {
+    const sel = document.getElementById('deptSel');
+    if (sel) { for (const opt of sel.options) { if (opt.text.includes(d.dept)) { sel.value = opt.value; break; } } }
+  }
+  schedCC();
 }
 
 /* ── Realtime ── */
