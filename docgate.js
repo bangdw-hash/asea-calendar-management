@@ -22,44 +22,96 @@
     return await res.json(); // { name, email, picture, ... }
   };
 
-  /* ── 서류 카테고리 목록 (GAS Sheets) ────────────────────────── */
-  DocGate.loadCategories = async function () {
+  var _CAT_CACHE_KEY = 'docgate_cats_v1';
+  var _CAT_CACHE_TTL = 120 * 1000; // 2분
+
+  function _cacheGet() {
+    try {
+      var raw = localStorage.getItem(_CAT_CACHE_KEY);
+      if (!raw) return null;
+      var obj = JSON.parse(raw);
+      if (Date.now() - obj.ts > _CAT_CACHE_TTL) return null;
+      return obj.data;
+    } catch (e) { return null; }
+  }
+
+  function _cacheSet(data) {
+    try {
+      localStorage.setItem(_CAT_CACHE_KEY, JSON.stringify({ ts: Date.now(), data: data }));
+    } catch (e) {}
+  }
+
+  function _cacheClear() {
+    try { localStorage.removeItem(_CAT_CACHE_KEY); } catch (e) {}
+  }
+
+  /* GAS에서 카테고리 fetch → 캐시 저장 → 반환 */
+  async function _fetchCategories() {
     if (!GAS_ENDPOINT || GAS_ENDPOINT === 'YOUR_GAS_WEB_APP_URL') return [];
     try {
-      var res = await fetch(GAS_ENDPOINT + '?type=categories');
-      if (!res.ok) return [];
-      return await res.json();
-    } catch (e) {
-      return [];
+      var res = await fetch(GAS_ENDPOINT + '?type=categories&_=' + Date.now());
+      if (!res.ok) return null;
+      var data = await res.json();
+      if (Array.isArray(data)) { _cacheSet(data); return data; }
+      return null;
+    } catch (e) { return null; }
+  }
+
+  /* ── 서류 카테고리 목록 ─────────────────────────────────────── */
+  /* opts.background=true 면 캐시된 데이터 즉시 반환 후 백그라운드 갱신 */
+  DocGate.loadCategories = async function (opts) {
+    var cached = _cacheGet();
+    if (cached && opts && opts.background) {
+      // 캐시 즉시 반환, 백그라운드에서 GAS 갱신
+      _fetchCategories().then(function (fresh) {
+        if (fresh && opts.onRefresh) opts.onRefresh(fresh);
+      });
+      return cached;
     }
+    // 캐시 있으면 즉시 반환하고 백그라운드 갱신도 시작
+    if (cached) {
+      _fetchCategories(); // 백그라운드 갱신 (UI는 캐시 사용)
+      return cached;
+    }
+    // 캐시 없음 → GAS 직접 대기
+    var data = await _fetchCategories();
+    return data || [];
   };
+
+  DocGate._cacheClear = _cacheClear;
 
   /* ── 카테고리 추가 (관리자) — GET 방식으로 CORS 우회 ────────── */
   DocGate.addCategory = async function (name) {
     if (!name || !name.trim()) throw new Error('서류명을 입력하세요');
+    _cacheClear(); // 추가 전 캐시 무효화
     var res = await fetch(
       GAS_ENDPOINT + '?action=addCategory&name=' + encodeURIComponent(name.trim())
     );
     if (!res.ok) throw new Error('추가 요청 실패');
     var data = await res.json();
     if (!data.ok) throw new Error(data.error || '추가 실패');
+    _cacheClear(); // 추가 성공 후 캐시 무효화
   };
 
   /* ── 카테고리 삭제 (관리자) — GET 방식으로 CORS 우회 ────────── */
   DocGate.removeCategory = async function (id) {
+    _cacheClear();
     var res = await fetch(
       GAS_ENDPOINT + '?action=removeCategory&id=' + encodeURIComponent(id)
     );
     if (!res.ok) throw new Error('삭제 요청 실패');
+    _cacheClear();
   };
 
   /* ── 카테고리 순서 이동 (관리자) dir: -1=위, 1=아래 ─────────── */
   DocGate.moveCategory = async function (id, dir) {
+    _cacheClear();
     var res = await fetch(
       GAS_ENDPOINT + '?action=moveCategory&id=' + encodeURIComponent(id) +
       '&dir=' + (dir < 0 ? 'up' : 'down')
     );
     if (!res.ok) throw new Error('순서 변경 실패');
+    _cacheClear();
   };
 
   /* ── Drive 폴더에서 키워드 일치 최신 파일 찾기 ───────────────── */

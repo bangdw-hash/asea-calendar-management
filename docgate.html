@@ -299,8 +299,8 @@ tr:hover td { background: #fafafa; }
       <input type="text" id="applicantName" placeholder="성명을 입력하세요" maxlength="30">
     </div>
     <div class="form-group">
-      <label>직함 <span style="color:var(--red)">*</span></label>
-      <input type="text" id="titleInput" placeholder="예: 기획처장, 담당자, 교직원" maxlength="50">
+      <label>부서 / 직함 <span style="color:var(--red)">*</span></label>
+      <input type="text" id="titleInput" placeholder="예: 기획처 / 기획처장, 행정팀 / 담당자" maxlength="50">
     </div>
     <div class="form-group">
       <label>신청 사유 (선택)</label>
@@ -499,23 +499,22 @@ async function goStep2() {
   await loadDocGrid();
 }
 
-async function loadDocGrid() {
+function _renderDocGrid(cats) {
   var grid = document.getElementById('docGrid');
-  grid.innerHTML = '<div class="loading-row">서류 목록 로딩 중…</div>';
-
-  var cats = await DocGate.loadCategories();
   if (!cats || cats.length === 0) {
     grid.innerHTML = '<div class="loading-row" style="color:var(--sub)">등록된 서류가 없습니다.<br>관리자에게 문의하세요.</div>';
     return;
   }
-
+  var prevChoice = (document.querySelector('input[name="docChoice"]:checked') || {}).value || '';
   grid.innerHTML = '';
   cats.forEach(function (cat) {
     var item = document.createElement('label');
     item.className = 'doc-radio-item';
     item.setAttribute('for', 'doc_' + cat.id);
+    var selected = (prevChoice === cat.name);
+    if (selected) item.classList.add('selected');
     item.innerHTML =
-      '<input type="radio" name="docChoice" id="doc_' + cat.id + '" value="' + esc(cat.name) + '">' +
+      '<input type="radio" name="docChoice" id="doc_' + cat.id + '" value="' + esc(cat.name) + '"' + (selected ? ' checked' : '') + '>' +
       '<div class="doc-radio-dot"></div>' +
       '<span class="doc-radio-name">' + esc(cat.name) + '</span>';
     item.addEventListener('click', function () {
@@ -525,6 +524,28 @@ async function loadDocGrid() {
     });
     grid.appendChild(item);
   });
+  if (prevChoice) document.getElementById('issueBtn').disabled = false;
+}
+
+async function loadDocGrid() {
+  var grid = document.getElementById('docGrid');
+
+  var cats = await DocGate.loadCategories({
+    background: true,
+    onRefresh: function (fresh) {
+      // 백그라운드 갱신 완료 → 조용히 UI 업데이트
+      _renderDocGrid(fresh);
+    }
+  });
+
+  if (!cats || cats.length === 0) {
+    grid.innerHTML = '<div class="loading-row">서류 목록 로딩 중…</div>';
+    // 캐시 없으면 GAS 응답 대기
+    var fresh = await DocGate.loadCategories();
+    _renderDocGrid(fresh);
+    return;
+  }
+  _renderDocGrid(cats);
 }
 
 /* ── 링크 발급 ──────────────────────────────────────────────────── */
@@ -651,19 +672,14 @@ function switchTab(name) {
   if (name === 'log') loadAdminLogs();
 }
 
-async function loadAdminCats() {
+function _renderAdminCats(cats) {
   var ul = document.getElementById('catList');
-  ul.innerHTML = '<li class="loading-row">로딩 중…</li>';
-  clearMsg('adminMsg');
-
-  var cats = await DocGate.loadCategories();
   if (!cats || cats.length === 0) {
     ul.innerHTML = '<li class="loading-row">등록된 서류가 없습니다.</li>';
     return;
   }
-
   ul.innerHTML = '';
-  cats.forEach(function (cat, idx) {
+  cats.forEach(function (cat) {
     var li = document.createElement('li');
     li.className = 'cat-item';
     li.setAttribute('data-id', cat.id);
@@ -685,21 +701,55 @@ async function loadAdminCats() {
   });
 }
 
+async function loadAdminCats() {
+  var ul = document.getElementById('catList');
+  clearMsg('adminMsg');
+
+  // 캐시 즉시 표시
+  var cats = await DocGate.loadCategories({
+    background: true,
+    onRefresh: function (fresh) { _renderAdminCats(fresh); }
+  });
+
+  if (!cats || cats.length === 0) {
+    ul.innerHTML = '<li class="loading-row">로딩 중…</li>';
+    var fresh = await DocGate.loadCategories();
+    _renderAdminCats(fresh);
+    return;
+  }
+  _renderAdminCats(cats);
+}
+
 async function addCategory() {
   var input = document.getElementById('newCatInput');
   var name  = input.value.trim();
   if (!name) { showMsg('adminMsg', '서류명을 입력하세요', 'error'); return; }
 
   clearMsg('adminMsg');
-  showMsg('adminMsg', '추가 중…', 'info');
+  input.value = '';
+
+  // 낙관적 업데이트: GAS 응답 전에 UI에 즉시 추가
+  var tmpId = 'tmp_' + Date.now();
+  var ul = document.getElementById('catList');
+  if (ul.querySelector('.loading-row')) ul.innerHTML = '';
+  var li = document.createElement('li');
+  li.className = 'cat-item';
+  li.setAttribute('data-id', tmpId);
+  li.style.opacity = '0.5';
+  li.innerHTML =
+    '<div class="order-btns"><button class="btn-order" disabled style="visibility:hidden">▲</button><button class="btn-order" disabled style="visibility:hidden">▼</button></div>' +
+    '<div class="cat-info"><div class="cat-name">' + esc(name) + '</div><div class="cat-meta">등록 중…</div></div>' +
+    '<button class="btn btn-danger btn-sm" disabled>삭제</button>';
+  ul.appendChild(li);
 
   try {
     await DocGate.addCategory(name);
-    input.value = '';
-    showMsg('adminMsg', '"' + name + '" 추가 완료. 목록을 새로고침합니다…', 'success');
-    setTimeout(loadAdminCats, 1500);
+    showMsg('adminMsg', '"' + name + '" 추가 완료', 'success');
+    await loadAdminCats(); // GAS 완료 후 목록 갱신
   } catch (e) {
+    li.remove();
     showMsg('adminMsg', e.message, 'error');
+    input.value = name; // 실패 시 입력값 복원
   }
 }
 
