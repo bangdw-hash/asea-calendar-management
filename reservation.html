@@ -10,6 +10,7 @@
   --green:#16a34a;   --green-lt:#dcfce7;
   --orange:#ea580c;  --orange-lt:#ffedd5;
   --red:#dc2626;     --red-lt:#fee2e2;
+  --academic:#7c3aed; --academic-lt:#ede9fe;
   --gray:#6b7280;    --gray-lt:#f3f4f6;
   --border:#e5e7eb;  --text:#111827;  --text-sm:#374151;
   --r:12px;
@@ -125,17 +126,45 @@ header{
 .view-btn.single.on{color:var(--primary)}
 .view-btn:hover:not(.on){color:var(--text)}
 
-/* 층 필터: 텍스트 전용, 테두리 없음 */
-.floor-tabs{display:flex;gap:1px;align-items:center;flex-wrap:nowrap;overflow-x:auto;
+/* 카테고리 필터 체크박스 */
+.cat-filter{display:flex;gap:3px;align-items:center;flex-wrap:nowrap;overflow-x:auto;
   scrollbar-width:none;-ms-overflow-style:none}
-.floor-tabs::-webkit-scrollbar{display:none}
-.floor-tab{
-  padding:4px 9px;border-radius:var(--r);font-size:11px;font-weight:600;cursor:pointer;
-  border:none;background:transparent;color:var(--gray);transition:background .15s,color .15s;
-  white-space:nowrap;flex-shrink:0;
+.cat-filter::-webkit-scrollbar{display:none}
+.cat-sep{color:var(--border);padding:0 1px;font-size:14px;user-select:none;flex-shrink:0}
+.cat-chip{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:4px 10px 4px 7px;border-radius:20px;cursor:pointer;
+  font-size:11px;font-weight:600;color:var(--gray);white-space:nowrap;flex-shrink:0;
+  border:1.5px solid transparent;background:transparent;
+  transition:color .2s ease,background .2s ease,border-color .2s ease,transform .15s cubic-bezier(.2,.8,.2,1);
+  user-select:none;font-family:var(--font);
 }
-.floor-tab.on{background:var(--primary-lt);color:var(--primary)}
-.floor-tab:hover:not(.on){background:var(--gray-lt);color:var(--text)}
+.cat-chip:hover{transform:translateY(-1px)}
+.cat-chip:active{transform:scale(.94)}
+.cat-chip .chk{
+  width:13px;height:13px;border-radius:3px;flex-shrink:0;
+  border:1.5px solid currentColor;display:flex;align-items:center;justify-content:center;
+  transition:background .2s ease,border-color .2s ease,transform .15s cubic-bezier(.35,.9,.25,1);
+}
+.cat-chip .chk svg{opacity:0;transform:scale(0) rotate(-20deg);transition:opacity .18s,transform .18s cubic-bezier(.2,.8,.2,1)}
+.cat-chip.on .chk{transform:scale(1.1)}
+.cat-chip.on .chk svg{opacity:1;transform:scale(1) rotate(0)}
+/* all */
+.cat-chip.all{color:var(--text-sm)}
+.cat-chip.all.on{color:var(--text);background:rgba(17,24,39,.07);border-color:var(--border)}
+.cat-chip.all.on .chk{background:var(--text);border-color:var(--text)}
+/* academic */
+.cat-chip.academic{color:var(--academic)}
+.cat-chip.academic.on{background:var(--academic-lt);border-color:var(--academic)}
+.cat-chip.academic.on .chk{background:var(--academic);border-color:var(--academic)}
+/* internal */
+.cat-chip.internal{color:var(--primary)}
+.cat-chip.internal.on{background:var(--primary-lt);border-color:var(--primary)}
+.cat-chip.internal.on .chk{background:var(--primary);border-color:var(--primary)}
+/* rental */
+.cat-chip.rental{color:var(--orange)}
+.cat-chip.rental.on{background:var(--orange-lt);border-color:var(--orange)}
+.cat-chip.rental.on .chk{background:var(--orange);border-color:var(--orange)}
 
 /* ── 선택 바 (날짜 선택 시) — 오렌지 배너 대체 ── */
 .sel-bar{
@@ -451,7 +480,7 @@ header{
   .toolbar{gap:6px;padding:0 10px;height:44px}
   .month-label{font-size:14px;min-width:80px}
   .view-btn{padding:0 8px;font-size:10px}
-  .floor-tab{padding:3px 7px;font-size:10px}
+  .cat-chip{padding:3px 8px 3px 6px;font-size:10px}
   .btn-cta-rental,.btn-cta-new{padding:5px 10px;font-size:11px}
 }
 
@@ -547,7 +576,23 @@ header{
     <button class="view-btn multi" id="modeMulti" onclick="setMode('multi')">다중</button>
   </div>
   <div class="tb-sep"></div>
-  <div class="floor-tabs" id="floorTabs"></div>
+  <div class="cat-filter" id="catFilter">
+    <button class="cat-chip all on" data-cat="all" onclick="setCatFilter('all')">
+      <span class="chk"><svg width="9" height="7" viewBox="0 0 9 7" fill="none"><path d="M1 3.5L3.5 6L8 1" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>모두
+    </button>
+    <span class="cat-sep">|</span>
+    <button class="cat-chip academic on" data-cat="academic" onclick="setCatFilter('academic')">
+      <span class="chk"><svg width="9" height="7" viewBox="0 0 9 7" fill="none"><path d="M1 3.5L3.5 6L8 1" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>학사 과정
+    </button>
+    <span class="cat-sep">|</span>
+    <button class="cat-chip internal on" data-cat="internal" onclick="setCatFilter('internal')">
+      <span class="chk"><svg width="9" height="7" viewBox="0 0 9 7" fill="none"><path d="M1 3.5L3.5 6L8 1" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>내부 사용
+    </button>
+    <span class="cat-sep">|</span>
+    <button class="cat-chip rental on" data-cat="rental" onclick="setCatFilter('rental')">
+      <span class="chk"><svg width="9" height="7" viewBox="0 0 9 7" fill="none"><path d="M1 3.5L3.5 6L8 1" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>대관
+    </button>
+  </div>
   <div class="density-wrap" title="일정 글자 크기">
     <button class="density-btn" id="densityDown" onclick="changeDensity(-1)">A−</button>
     <span class="density-label" id="densityLabel">표준</span>
@@ -990,7 +1035,7 @@ let rentalCompanies = [];
 let selMode = 'range';
 let selDates = [];
 let rangeStart = null;
-let filterFloor = 'all';
+let filterCats = new Set(['academic','internal','rental']);
 let ccTimer = null;
 let adminEmail = sessionStorage.getItem('rv_adm') || null;
 let editingId = null;
@@ -1288,19 +1333,48 @@ async function loadClassrooms() {
 
 const FLOOR_LABEL = { B1:'B1층', '1F':'1층', '2F':'2층', '3F':'3층', '4F':'4층', '5F':'5층' };
 
-function populateFloorTabs() {
-  const floors = [...new Set(classrooms.map(c => c.floor))];
-  document.getElementById('floorTabs').innerHTML =
-    ['all', ...floors].map(f =>
-      `<button class="floor-tab ${f==='all'?'on':''}" data-f="${f}" onclick="setFloor('${f}')">${f==='all'?'전체':FLOOR_LABEL[f]||f}</button>`
-    ).join('');
+/* 카테고리 필터 */
+function getCatChkSvg() {
+  return `<svg width="9" height="7" viewBox="0 0 9 7" fill="none"><path d="M1 3.5L3.5 6L8 1" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 }
 
-function setFloor(f) {
-  filterFloor = f;
-  document.querySelectorAll('.floor-tab').forEach(t => t.classList.toggle('on', t.dataset.f === f));
+function setCatFilter(cat) {
+  if (cat === 'all') {
+    const allOn = filterCats.size === 3;
+    filterCats = allOn ? new Set() : new Set(['academic','internal','rental']);
+  } else {
+    if (filterCats.has(cat)) filterCats.delete(cat);
+    else filterCats.add(cat);
+  }
+  document.querySelectorAll('.cat-chip').forEach(ch => {
+    const c = ch.dataset.cat;
+    ch.classList.toggle('on', c === 'all' ? filterCats.size === 3 : filterCats.has(c));
+  });
   renderCal();
 }
+
+function getLabelType(rv) {
+  if (rv.label_type) return rv.label_type;
+  return rv.is_rental ? 'rental' : 'internal';
+}
+
+function getPillColor(rv) {
+  const lt = getLabelType(rv);
+  if (lt === 'academic') return '#7c3aed';
+  if (lt === 'rental') return '#ea580c';
+  return rv.classroom_color || '#1A73E8';
+}
+
+function sortRvsByType(rvs) {
+  const ord = { academic:0, rental:1, internal:2 };
+  return [...rvs].sort((a, b) => {
+    const ta = ord[getLabelType(a)] ?? 2, tb = ord[getLabelType(b)] ?? 2;
+    if (ta !== tb) return ta - tb;
+    return (a.classroom_name || '').localeCompare(b.classroom_name || '', 'ko');
+  });
+}
+
+function populateFloorTabs() { /* 층 필터 제거됨 — 카테고리 필터로 대체 */ }
 
 function populateRoomSel() {
   const sel = document.getElementById('roomSel');
@@ -1422,18 +1496,15 @@ function buildCell(cell, today) {
 
 function getRvsForDate(dateStr) {
   let rvs = reservations.filter(r => r.date_start <= dateStr && r.date_end >= dateStr);
-  if (filterFloor !== 'all') {
-    const names = classrooms.filter(c => c.floor === filterFloor).map(c => c.name);
-    rvs = rvs.filter(r => names.includes(r.classroom_name));
-  }
-  return rvs;
+  if (filterCats.size < 3) rvs = rvs.filter(r => filterCats.has(getLabelType(r)));
+  return sortRvsByType(rvs);
 }
 
 function buildPills(rvs) {
   if (!rvs.length) return '';
   const MAX = 3;
   let h = rvs.slice(0, MAX).map(rv => {
-    const c = rv.classroom_color || '#1A73E8';
+    const c = getPillColor(rv);
     const lbl = rv.formatted_label || mkLabel(rv.classroom_name, rv.time_start, rv.time_end, rv.purpose);
     const dragAttrs = isAdmin()
       ? ` draggable="true" ondragstart="pillDragStart(event,'${rv.id}')" ondragend="pillDragEnd(event)"`
@@ -2209,11 +2280,14 @@ function mkRecord(room, color, ds, de, ts, te, purp, dept, req, cont, pwHash, re
   if (notes)        rec.notes = notes;
   if (rentalInfo) {
     rec.is_rental = true;
+    rec.label_type = 'rental';
     rec.rental_company_id = rentalInfo.orgId;
     rec.rental_company_name = rentalInfo.orgName;
     rec.course_name = rentalInfo.course;
     rec.daily_fee = rentalInfo.fee;
     rec.billing_status = 'pending';
+  } else {
+    rec.label_type = 'internal';
   }
   return rec;
 }
@@ -2674,6 +2748,7 @@ async function renderAdminPanel() {
   const body = document.getElementById('adminBody');
   const tabs = [
     ['reservations', '예약 목록'],
+    ['academic', '학사과정 등록'],
     ['classrooms', '강의실 관리'],
     ['companies', '대관업체 관리'],
     ['rental', '대관 관리'],
@@ -2687,6 +2762,7 @@ async function renderAdminPanel() {
     <div class="adm-tabs">${tabs.map(([k, l]) => `<button class="adm-tab-btn ${admTab === k ? 'on' : ''}" onclick="switchAdmTab('${k}')">${l}</button>`).join('')}</div>
     <div id="admTabContent"><div style="display:flex;justify-content:center;padding:40px"><div class="spinner"></div></div></div>`;
   if (admTab === 'reservations') await loadAdminList();
+  else if (admTab === 'academic') await renderAcademicTab();
   else if (admTab === 'classrooms') await renderClassroomsTab();
   else if (admTab === 'companies') await renderCompaniesTab();
   else if (admTab === 'rental') await renderRentalTab();
@@ -2880,6 +2956,279 @@ async function _doMoveRv(id, targetDate) {
   if (!data?.success) return toast('이동 실패: ' + (data?.error || '알 수 없는 오류'), 'error');
   toast('일정이 이동되었습니다', 'success');
   await loadRvs();
+}
+
+/* ── 학사과정 등록 탭 ── */
+let _acadFileB64 = null, _acadFileType = null, _acadParsed = [], _acadSelAll = true;
+
+async function renderAcademicTab() {
+  const target = document.getElementById('admTabContent');
+  if (!target) return;
+  target.innerHTML = `
+    <div style="display:flex;flex-direction:column;gap:16px">
+      <!-- 업로드 영역 -->
+      <div>
+        <div class="fl" style="margin-bottom:8px;font-size:13px;font-weight:700">파일 업로드</div>
+        <div id="acadDropZone" style="
+          border:2px dashed var(--border);border-radius:var(--r);padding:28px 16px;
+          text-align:center;cursor:pointer;background:var(--gray-lt);
+          transition:border-color .2s,background .2s;position:relative"
+          onclick="document.getElementById('acadFileIn').click()"
+          ondragover="event.preventDefault();this.style.borderColor='var(--academic)';this.style.background='var(--academic-lt)'"
+          ondragleave="this.style.borderColor='';this.style.background='var(--gray-lt)'"
+          ondrop="acadHandleDrop(event)">
+          <input type="file" id="acadFileIn" accept="image/*,.pdf" hidden onchange="acadHandleFile(this.files[0])">
+          <div id="acadDropLabel" style="display:flex;flex-direction:column;align-items:center;gap:8px">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--academic)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+            <div style="font-size:13px;font-weight:600;color:var(--text-sm)">PDF 또는 이미지를 드래그하거나 클릭하여 선택</div>
+            <div style="font-size:11px;color:var(--gray)">강의실 배정표, 시간표, 수업일정표 등 모든 형식 지원</div>
+          </div>
+          <div id="acadFileInfo" hidden style="display:flex;align-items:center;gap:8px;justify-content:center">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            <span id="acadFileName" style="font-size:13px;font-weight:600;color:var(--green)"></span>
+            <button class="btn btn-xs btn-outline" onclick="event.stopPropagation();acadClearFile()" style="color:var(--red);border-color:var(--red)">제거</button>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:8px;align-items:center">
+          <textarea id="acadNlpIn" class="fi" rows="2" placeholder="또는 자연어로 직접 입력: 예) 9월 1일부터 2주간 월수금 301호 09:00~12:00 데이터사이언스 김교수" style="flex:1;resize:none;font-size:12px"></textarea>
+          <button class="btn btn-primary" id="acadAnalyzeBtn" onclick="acadAnalyze()" style="height:60px;padding:0 16px;flex-shrink:0">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/><path d="M11 8v6M8 11h6"/></svg><br>
+            <span style="font-size:11px">AI 분석</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- 미리보기 테이블 -->
+      <div id="acadPreviewWrap" hidden>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <div class="fl" style="font-size:13px;font-weight:700">분석 결과 <span id="acadPreviewCount" style="font-size:11px;color:var(--gray);font-weight:400"></span></div>
+          <div style="display:flex;gap:6px">
+            <button class="btn btn-xs btn-outline" onclick="acadToggleAll()">전체선택/해제</button>
+            <button class="btn btn-xs btn-primary" id="acadImportBtn" onclick="acadImport()">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>
+              선택 항목 등록
+            </button>
+          </div>
+        </div>
+        <div style="overflow-x:auto;border-radius:var(--r);border:1px solid var(--border)">
+          <table id="acadPreviewTbl" style="width:100%;border-collapse:collapse;font-size:12px">
+            <thead>
+              <tr style="background:var(--gray-lt);border-bottom:1px solid var(--border)">
+                <th style="padding:8px 10px;text-align:center;width:36px">
+                  <input type="checkbox" id="acadChkAll" onchange="acadChkAllChange(this)" checked style="accent-color:var(--academic)">
+                </th>
+                <th style="padding:8px 10px;text-align:left;font-weight:700;color:var(--text-sm)">강의실</th>
+                <th style="padding:8px 10px;text-align:left;font-weight:700;color:var(--text-sm)">날짜</th>
+                <th style="padding:8px 10px;text-align:left;font-weight:700;color:var(--text-sm)">시간</th>
+                <th style="padding:8px 10px;text-align:left;font-weight:700;color:var(--text-sm)">과목/용도</th>
+                <th style="padding:8px 10px;text-align:left;font-weight:700;color:var(--text-sm)">교수/강사</th>
+                <th style="padding:8px 10px;text-align:left;font-weight:700;color:var(--text-sm)">학과/부서</th>
+                <th style="padding:8px 10px;text-align:center;font-weight:700;color:var(--text-sm)">작업</th>
+              </tr>
+            </thead>
+            <tbody id="acadPreviewBody"></tbody>
+          </table>
+        </div>
+      </div>
+      <div id="acadEmptyMsg" hidden style="text-align:center;padding:32px;color:var(--gray);font-size:13px">
+        분석 결과가 없습니다. 파일을 다시 확인해주세요.
+      </div>
+    </div>`;
+
+  _acadFileB64 = null; _acadFileType = null; _acadParsed = [];
+}
+
+function acadHandleDrop(e) {
+  e.preventDefault();
+  document.getElementById('acadDropZone').style.borderColor = '';
+  document.getElementById('acadDropZone').style.background = 'var(--gray-lt)';
+  const f = e.dataTransfer.files[0];
+  if (f) acadHandleFile(f);
+}
+
+function acadHandleFile(file) {
+  if (!file) return;
+  const maxMB = 20;
+  if (file.size > maxMB * 1024 * 1024) return toast(`파일이 너무 큽니다 (최대 ${maxMB}MB)`, 'warn');
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const b64 = ev.target.result.split(',')[1];
+    _acadFileB64 = b64;
+    _acadFileType = file.type || 'image/jpeg';
+    document.getElementById('acadDropLabel').hidden = true;
+    document.getElementById('acadFileInfo').hidden = false;
+    document.getElementById('acadFileName').textContent = file.name;
+  };
+  reader.readAsDataURL(file);
+}
+
+function acadClearFile() {
+  _acadFileB64 = null; _acadFileType = null;
+  document.getElementById('acadFileIn').value = '';
+  document.getElementById('acadDropLabel').hidden = false;
+  document.getElementById('acadFileInfo').hidden = true;
+}
+
+async function acadAnalyze() {
+  const nlp = document.getElementById('acadNlpIn')?.value.trim();
+  const hasFile = !!_acadFileB64;
+  const hasNlp = !!nlp;
+  if (!hasFile && !hasNlp) return toast('파일 또는 자연어 입력이 필요합니다', 'warn');
+
+  const btn = document.getElementById('acadAnalyzeBtn');
+  btn.disabled = true; btn.innerHTML = '<div class="spinner" style="width:18px;height:18px;margin:0 auto"></div>';
+
+  try {
+    const today = toStr(new Date());
+    const roomNames = classrooms.map(c => c.name).join(', ');
+
+    let messages;
+    if (hasFile && _acadFileType.startsWith('image/')) {
+      const prompt = `오늘: ${today}\n등록된 강의실 목록: ${roomNames || '(없음)'}\n\n이 이미지는 학교 강의실 사용 일정표입니다. 각 강의실별 일정을 추출해 JSON 배열로만 반환하세요.\n\n형식:\n[\n  {\n    "classroom": "강의실명 (등록된 강의실명과 최대한 일치시킬 것)",\n    "date": "YYYY-MM-DD",\n    "time_start": "HH:MM",\n    "time_end": "HH:MM",\n    "course_name": "과목명 또는 강의명",\n    "instructor": "교수명 (없으면 null)",\n    "department": "학과 (없으면 null)"\n  }\n]\n\n주의: 날짜가 '월/화/수' 등 요일로만 표시된 경우 가장 가까운 해당 요일 날짜로 변환하세요. 반환은 JSON 배열만, 설명 없이.`;
+      messages = [{ role:'user', content:[{ type:'image', source:{ type:'base64', media_type:_acadFileType, data:_acadFileB64 } }, { type:'text', text:prompt }] }];
+    } else {
+      const fileNote = hasFile ? `\n업로드된 파일(PDF): 이미지 분석 불가 — 아래 자연어 입력 기반으로만 파싱.` : '';
+      const textInput = hasNlp ? nlp : '파일만 업로드됨 (텍스트 없음)';
+      const prompt = `오늘: ${today}\n등록된 강의실 목록: ${roomNames || '(없음)'}${fileNote}\n\n입력: "${textInput}"\n\n위 내용에서 강의실 사용 일정을 추출해 JSON 배열로만 반환하세요.\n\n형식:\n[\n  {\n    "classroom": "강의실명",\n    "date": "YYYY-MM-DD",\n    "time_start": "HH:MM",\n    "time_end": "HH:MM",\n    "course_name": "과목명 또는 목적",\n    "instructor": "교수명 또는 null",\n    "department": "학과 또는 null"\n  }\n]\n\nJSON 배열만 반환. 설명 없이.`;
+      messages = [{ role:'user', content: prompt }];
+    }
+
+    const res = await claudeFetch({ model:'claude-haiku-4-5-20251001', max_tokens:2000, messages });
+    if (!res.ok) throw new Error(`AI 오류 ${res.status}`);
+    const d = await res.json();
+    const text = d.content?.[0]?.text || '';
+    const m = text.match(/\[[\s\S]*\]/);
+    if (!m) throw new Error('파싱 실패 — AI 응답에 JSON 배열 없음');
+    _acadParsed = JSON.parse(m[0]);
+    if (!Array.isArray(_acadParsed) || !_acadParsed.length) {
+      document.getElementById('acadPreviewWrap').hidden = true;
+      document.getElementById('acadEmptyMsg').hidden = false;
+      return;
+    }
+    _acadParsed.forEach((r, i) => r._idx = i);
+    acadRenderPreview();
+  } catch(e) {
+    toast('분석 실패: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/><path d="M11 8v6M8 11h6"/></svg><br><span style="font-size:11px">AI 분석</span>`;
+  }
+}
+
+function acadRenderPreview() {
+  const wrap = document.getElementById('acadPreviewWrap');
+  const body = document.getElementById('acadPreviewBody');
+  const emptyMsg = document.getElementById('acadEmptyMsg');
+  const cnt = document.getElementById('acadPreviewCount');
+  if (!_acadParsed.length) { wrap.hidden=true; emptyMsg.hidden=false; return; }
+  wrap.hidden = false; emptyMsg.hidden = true;
+  cnt.textContent = `— ${_acadParsed.length}건`;
+
+  // Sort: classroom name → date → time
+  const sorted = [..._acadParsed].sort((a,b) => {
+    const cn = (a.classroom||'').localeCompare(b.classroom||'', 'ko');
+    if (cn) return cn;
+    const dn = (a.date||'').localeCompare(b.date||'');
+    if (dn) return dn;
+    return (a.time_start||'').localeCompare(b.time_start||'');
+  });
+
+  const roomColor = nm => (classrooms.find(c => c.name === nm)?.color) || '#7c3aed';
+
+  body.innerHTML = sorted.map(r => {
+    const rc = roomColor(r.classroom);
+    return `<tr style="border-bottom:1px solid var(--border)" id="acadRow_${r._idx}">
+      <td style="padding:7px 10px;text-align:center">
+        <input type="checkbox" class="acad-chk" data-idx="${r._idx}" checked onchange="acadChkRow(this)" style="accent-color:var(--academic)">
+      </td>
+      <td style="padding:7px 10px">
+        <span style="background:${rc};color:#fff;border-radius:5px;padding:2px 7px;font-size:11px;font-weight:600">${esc(r.classroom||'미확인')}</span>
+      </td>
+      <td style="padding:7px 10px;font-size:12px;color:var(--text-sm);white-space:nowrap">${esc(r.date||'')}</td>
+      <td style="padding:7px 10px;font-size:12px;white-space:nowrap">${esc((r.time_start||'')+'~'+(r.time_end||''))}</td>
+      <td style="padding:7px 10px;font-size:12px">${esc(r.course_name||'')}</td>
+      <td style="padding:7px 10px;font-size:12px;color:var(--gray)">${esc(r.instructor||'')}</td>
+      <td style="padding:7px 10px;font-size:12px;color:var(--gray)">${esc(r.department||'')}</td>
+      <td style="padding:7px 10px;text-align:center">
+        <button class="adm-act adm-act-del" onclick="acadRemoveRow(${r._idx})" title="항목 제거">제거</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function acadRemoveRow(idx) {
+  _acadParsed = _acadParsed.filter(r => r._idx !== idx);
+  acadRenderPreview();
+}
+
+function acadChkRow(chk) {
+  const allChk = document.getElementById('acadChkAll');
+  const all = document.querySelectorAll('.acad-chk');
+  const checked = document.querySelectorAll('.acad-chk:checked');
+  if (allChk) allChk.indeterminate = checked.length > 0 && checked.length < all.length;
+  if (allChk) allChk.checked = checked.length === all.length;
+}
+
+function acadChkAllChange(chk) {
+  document.querySelectorAll('.acad-chk').forEach(c => c.checked = chk.checked);
+}
+
+function acadToggleAll() {
+  const allChk = document.getElementById('acadChkAll');
+  if (allChk) { allChk.checked = !allChk.checked; acadChkAllChange(allChk); }
+}
+
+async function acadImport() {
+  const selected = [...document.querySelectorAll('.acad-chk:checked')].map(c => {
+    const idx = parseInt(c.dataset.idx);
+    return _acadParsed.find(r => r._idx === idx);
+  }).filter(Boolean);
+
+  if (!selected.length) return toast('등록할 항목을 선택해주세요', 'warn');
+
+  const btn = document.getElementById('acadImportBtn');
+  btn.disabled = true; btn.textContent = '등록 중...';
+
+  try {
+    const batchId = 'acad-' + Date.now();
+    const records = selected.map(r => {
+      const cls = classrooms.find(c => c.name === r.classroom);
+      const color = cls?.color || '#7c3aed';
+      const ts = r.time_start || '09:00', te = r.time_end || '18:00';
+      const dt = r.date || toStr(new Date());
+      return {
+        classroom_name: r.classroom || '미확인',
+        classroom_color: color,
+        date_start: dt, date_end: dt,
+        time_start: ts, time_end: te,
+        purpose: r.course_name || '학사과정',
+        department: r.department || null,
+        requester_name: r.instructor || null,
+        contact: null,
+        formatted_label: mkLabel(r.classroom || '미확인', ts, te, r.course_name || '학사과정'),
+        password_hash: null,
+        batch_id: batchId,
+        label_type: 'academic',
+        is_rental: false,
+        status: 'active',
+      };
+    });
+
+    const { error } = await sb.from('reservations').insert(records);
+    if (error) throw error;
+
+    toast(`학사과정 일정 ${records.length}건이 등록되었습니다`, 'success');
+    _acadParsed = [];
+    document.getElementById('acadPreviewWrap').hidden = true;
+    document.getElementById('acadNlpIn').value = '';
+    acadClearFile();
+    await loadRvs();
+  } catch(e) {
+    toast('등록 실패: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg> 선택 항목 등록`;
+  }
 }
 
 /* ── 대관 관리 탭 ── */

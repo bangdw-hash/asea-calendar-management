@@ -1129,5 +1129,20 @@ end $$;
 
 -- ★ 실행 후: Supabase 대시보드 → Settings → API → Reload Schema Cache 클릭 필수!
 
+-- ============================================================================
+-- 23) reservations — label_type 컬럼 추가 (학사과정/내부사용/대관 구분)
+--
+-- 학사과정 = 'academic', 대관 = 'rental', 내부사용 = 'internal'
+-- 기존 데이터: is_rental=true → 'rental', 나머지 → 'internal' 으로 마이그레이션
+-- ============================================================================
+alter table reservations add column if not exists label_type text;
+
+update reservations
+  set label_type = 'rental'
+  where is_rental = true and label_type is null;
+
+update reservations
+  set label_type = 'internal'
+  where (is_rental is null or is_rental = false) and label_type is null;
+
 -- 끝. 'Success. No rows returned' 가 나오면 정상입니다. ---------------------
--- 이후: Supabase 대시보드 → Settings → API → Reload Schema Cache 클릭.
