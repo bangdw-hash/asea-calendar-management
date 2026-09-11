@@ -217,22 +217,6 @@ header{
 .density-btn:disabled{opacity:.2;cursor:default}
 .density-label{font-size:10px;font-weight:600;color:var(--gray);min-width:26px;text-align:center}
 
-/* ── Density (5단계 폰트 크기) ── */
-:root{--rv-fs:10.5px}
-:root[data-density="xs"]{--rv-fs:9px}
-:root[data-density="sm"]{--rv-fs:10px}
-:root[data-density="lg"]{--rv-fs:12px}
-:root[data-density="xl"]{--rv-fs:14px}
-/* density 버튼: schedule.html 동일 스타일 */
-.density-wrap{display:flex;align-items:center;gap:1px;margin-left:auto;flex-shrink:0}
-.density-btn{background:none;border:none;cursor:pointer;font-size:.75rem;font-weight:800;
-  color:var(--gray);padding:0 5px;border-radius:var(--r);height:28px;
-  display:flex;align-items:center;justify-content:center;
-  transition:color .12s;font-family:var(--font)}
-.density-btn:hover:not(:disabled){color:var(--text)}
-.density-btn:disabled{opacity:.2;cursor:default}
-.density-label{font-size:10px;font-weight:600;color:var(--gray);min-width:26px;text-align:center}
-
 .rv-pills{margin-top:3px;display:flex;flex-direction:column;gap:2px}
 .rv-pill{
   font-size:var(--rv-fs)!important;padding:2px 5px;border-radius:5px;

@@ -1627,6 +1627,23 @@ html,body{height:100%;
           target="_blank" rel="noopener">Google Calendar → 특정 사용자와 공유</a><br>
         <span style="font-size:.75rem;color:var(--g500)">위 링크에서 신청자 이메일을 입력하여 캘린더를 공유하세요.</span>
       </div>
+      <!-- Google OAuth 테스트 사용자 등록 -->
+      <div style="margin-top:12px;padding:12px 14px;background:var(--primary-lt);border:1px solid var(--primary);border-radius:var(--r)">
+        <div style="font-size:.8rem;font-weight:700;color:var(--primary);margin-bottom:8px">Google OAuth 테스트 사용자 등록</div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <input type="email" id="oauthUserEmail" class="form-input" placeholder="등록할 Gmail 주소"
+            style="flex:1;min-width:180px;height:32px;font-size:.82rem"
+            oninput="document.getElementById('oauthAddBtn').href='https://console.cloud.google.com/auth/audience?project=atomic-shine-456714-m2'">
+          <a id="oauthAddBtn"
+             href="https://console.cloud.google.com/auth/audience?project=atomic-shine-456714-m2"
+             target="_blank" rel="noopener"
+             class="btn btn-primary btn-sm"
+             onclick="oauthCopyEmail()"
+             style="height:32px;white-space:nowrap;display:inline-flex;align-items:center">추가</a>
+        </div>
+        <div id="oauthCopyMsg" style="font-size:.73rem;color:var(--primary);margin-top:5px;min-height:14px"></div>
+        <p style="font-size:.72rem;color:var(--g500);margin:5px 0 0">이메일을 입력 후 [추가] 클릭 → Google Cloud Console에서 테스트 사용자로 등록하세요.</p>
+      </div>
       <div class="admin-toolbar">
         <button class="btn btn-sm" onclick="loadAdminData()" style="background:var(--g100);color:var(--g700)">새로고침</button>
         <span id="admin-count" style="font-size:.8rem;color:var(--g500)"></span>
@@ -3801,6 +3818,14 @@ function checkAdminPw() {
   closeModal('admin-login-overlay');
   openOverlay('admin-overlay');
   loadAdminData();
+}
+function oauthCopyEmail() {
+  var email = (document.getElementById('oauthUserEmail').value || '').trim();
+  if (!email) return;
+  try { navigator.clipboard.writeText(email); } catch(e) {}
+  var msg = document.getElementById('oauthCopyMsg');
+  msg.textContent = '✓ ' + email + ' 복사됨 — Console에서 붙여넣기 후 저장하세요.';
+  setTimeout(function(){ msg.textContent = ''; }, 4000);
 }
 async function loadAdminData() {
   document.getElementById('admin-loading').hidden = false;
