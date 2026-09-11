@@ -158,6 +158,29 @@ label{font-size:13px;font-weight:500;color:var(--ink2)}
   .tb-btn{padding:12px 10px;font-size:13px;gap:5px}
 }
 
+/* ── 트렌드 카드 ── */
+.trend-theme-section{margin-bottom:20px}
+.trend-theme-label{font-size:13px;font-weight:600;color:var(--ink2);margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.trend-theme-label svg{width:14px;height:14px}
+.trend-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
+.trend-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px;display:flex;flex-direction:column;gap:10px;transition:box-shadow .15s}
+.trend-card:hover{box-shadow:var(--sh-md)}
+.trend-card-kw{font-size:15px;font-weight:600;color:var(--ink)}
+.trend-card-badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600}
+.trend-card-badge.up{background:var(--green-lt);color:var(--green)}
+.trend-card-badge.stable{background:var(--surface2);color:var(--ink2)}
+.trend-card-badge.seasonal{background:var(--orange-lt);color:var(--orange)}
+.trend-card-reason{font-size:12px;color:var(--ink2)}
+.trend-card-angle{font-size:12px;color:var(--primary);font-weight:500;padding:8px 10px;background:var(--primary-lt);border-radius:8px;line-height:1.5}
+.trend-card-hook{font-size:12px;color:var(--ink3);font-style:italic;border-left:2px solid var(--border-dk);padding-left:8px;line-height:1.6}
+
+/* 테마 태그 */
+.theme-tag{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:20px;background:var(--primary-lt);color:var(--primary);font-size:13px;font-weight:500}
+.theme-tag button{background:none;border:none;cursor:pointer;color:var(--primary);font-size:16px;padding:0;line-height:1;opacity:.7}
+.theme-tag button:hover{opacity:1}
+
+@media(max-width:600px){.trend-grid{grid-template-columns:1fr}}
+
 /* hidden 속성 보장 — display:flex 등이 덮어쓰지 못하도록 */
 [hidden]{display:none!important}
 </style>
@@ -185,6 +208,10 @@ label{font-size:13px;font-weight:500;color:var(--ink2)}
   <button class="tb-btn" id="tb-history" onclick="switchTab('history')">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
     <span class="tab-label">이력 관리</span>
+  </button>
+  <button class="tb-btn" id="tb-trend" onclick="switchTab('trend')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+    <span class="tab-label">트렌드</span>
   </button>
 </nav>
 
@@ -413,6 +440,61 @@ label{font-size:13px;font-weight:500;color:var(--ink2)}
   </div>
 </div>
 
+<!-- ── 트렌드 탭 ── -->
+<div id="panel-trend" class="panel">
+
+  <!-- 데이터 소스 안내 -->
+  <div class="info-banner" style="margin-bottom:16px">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    <div>
+      <strong>복합 트렌드 분석</strong> — AI 지식 기반 트렌드(기본) + 네이버 DataLab 실측 데이터(API 키 설정 시 자동 활성화)
+      <span id="datalab-status" style="margin-left:8px;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;background:var(--surface2);color:var(--ink3)">DataLab 미연결</span>
+    </div>
+  </div>
+
+  <!-- 테마 관리 -->
+  <div class="card">
+    <div class="card-head">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+      내 테마 관리
+    </div>
+    <div class="card-body">
+      <div class="form-row cols" style="align-items:flex-end">
+        <div class="form-row" style="flex:1;margin-bottom:0">
+          <label for="theme-input">테마 추가</label>
+          <input id="theme-input" class="form-input" type="text" placeholder="예: 한남동 맛집, 서울 카페, 건강식단" onkeydown="if(event.key==='Enter')addTheme()">
+        </div>
+        <button class="btn btn-primary" onclick="addTheme()" style="flex-shrink:0">추가</button>
+      </div>
+      <div id="theme-tags" style="margin-top:12px"></div>
+      <div class="form-hint" style="margin-top:8px">테마별로 AI가 트렌딩 키워드와 블로그 각도를 분석합니다</div>
+    </div>
+  </div>
+
+  <!-- 분석 실행 -->
+  <div class="card" style="margin-top:16px">
+    <div class="card-body">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+        <div>
+          <div style="font-size:14px;font-weight:600;color:var(--ink)">트렌드 분석 실행</div>
+          <div style="font-size:12px;color:var(--ink3);margin-top:3px">각 테마별 상승 키워드 5개 + 블로그 각도 + 후킹 문구 생성</div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button class="btn btn-ghost btn-sm" onclick="loadLastTrend()" id="btn-load-trend">지난 분석 불러오기</button>
+          <button class="btn btn-primary" id="btn-analyze" onclick="analyzeTrends()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            지금 분석
+          </button>
+        </div>
+      </div>
+      <div id="trend-progress" hidden style="margin-top:12px;font-size:13px;color:var(--ink2)"></div>
+    </div>
+  </div>
+
+  <!-- 결과 -->
+  <div id="trend-results" style="margin-top:16px"></div>
+</div>
+
 </main>
 
 <!-- 미리보기 모달 -->
@@ -500,11 +582,217 @@ function waitSupabase(cb) {
 /* ── 탭 전환 ── */
 window.switchTab = function(tab) {
   S.tab = tab;
-  ['blog','food','history'].forEach(function(t) {
+  ['blog','food','history','trend'].forEach(function(t) {
     document.getElementById('panel-' + t).classList.toggle('active', t === tab);
     document.getElementById('tb-' + t).classList.toggle('active', t === tab);
   });
   if (tab === 'history') loadHistory();
+  if (tab === 'trend') { renderThemeTags(); checkDatalabStatus(); }
+};
+
+/* ══════════════════════════════════════════════
+   트렌드 탭 — 테마 관리 + AI 분석 + 결과 표시
+   ══════════════════════════════════════════════ */
+
+var THEMES_KEY = 'asea_blog_themes';
+
+function getThemes() {
+  try { return JSON.parse(localStorage.getItem(THEMES_KEY) || '[]'); } catch(e) { return []; }
+}
+function saveThemesToStorage(themes) {
+  try { localStorage.setItem(THEMES_KEY, JSON.stringify(themes)); } catch(e) {}
+}
+
+window.addTheme = function() {
+  var input = document.getElementById('theme-input');
+  var theme = input.value.trim();
+  if (!theme) return;
+  var themes = getThemes();
+  if (themes.indexOf(theme) === -1) { themes.push(theme); saveThemesToStorage(themes); }
+  input.value = '';
+  renderThemeTags();
+};
+
+window.deleteTheme = function(theme) {
+  var themes = getThemes().filter(function(t) { return t !== theme; });
+  saveThemesToStorage(themes);
+  renderThemeTags();
+};
+
+function renderThemeTags() {
+  var themes = getThemes();
+  var el = document.getElementById('theme-tags');
+  if (!el) return;
+  if (!themes.length) {
+    el.innerHTML = '<div style="color:var(--ink3);font-size:13px">아직 추가된 테마가 없습니다. 위 입력란에 테마를 추가하세요.</div>';
+    return;
+  }
+  el.innerHTML = '<div style="display:flex;flex-wrap:wrap;gap:8px">' +
+    themes.map(function(t) {
+      return '<span class="theme-tag">' + esc(t) +
+        '<button onclick="deleteTheme(' + JSON.stringify(t) + ')" title="삭제">&times;</button>' +
+        '</span>';
+    }).join('') + '</div>';
+}
+
+function checkDatalabStatus() {
+  // DataLab API 슬롯 — 키 설정 시 자동 활성화 (현재 미연결)
+  var el = document.getElementById('datalab-status');
+  if (el) {
+    el.textContent = 'DataLab 미연결 (AI 분석으로 대체)';
+    el.style.background = 'var(--surface2)';
+    el.style.color = 'var(--ink3)';
+  }
+}
+
+/* ── 트렌드 분석 실행 ── */
+window.analyzeTrends = async function() {
+  var themes = getThemes();
+  if (!themes.length) { showToast('테마를 먼저 추가해주세요.', 'red'); return; }
+
+  var btn = document.getElementById('btn-analyze');
+  var prog = document.getElementById('trend-progress');
+  btn.disabled = true;
+  prog.hidden = false;
+
+  var results = [];
+  var model = 'claude-sonnet-4-6';
+
+  for (var i = 0; i < themes.length; i++) {
+    var theme = themes[i];
+    prog.textContent = '(' + (i + 1) + '/' + themes.length + ') "' + theme + '" 분석 중...';
+    btn.innerHTML = '<span class="spinner"></span> 분석 중 ' + (i+1) + '/' + themes.length;
+
+    var sys = [
+      '당신은 한국 디지털 마케팅 전문가이자 네이버 블로그 SEO 컨설턴트입니다.',
+      '주어진 테마에 대해 현재 한국에서 블로그 독자들이 실제로 검색하고 관심 갖는 키워드를 분석합니다.',
+      'JSON 형식으로만 응답하세요. 다른 텍스트 절대 금지.'
+    ].join('\n');
+
+    var usr = [
+      '테마: "' + theme + '"',
+      '',
+      '이 테마에서 지금 주목할 만한 블로그 키워드 5개를 분석하여 아래 JSON으로만 출력하세요.',
+      '(계절, 트렌드, 사회 분위기, 검색 패턴을 고려해서 현실적으로 작성)',
+      '',
+      '{',
+      '  "theme": "' + theme + '",',
+      '  "keywords": [',
+      '    {',
+      '      "keyword": "지역+카테고리+상황 조합의 구체적 검색어",',
+      '      "trend": "상승중|안정|계절성",',
+      '      "reason": "이 키워드가 지금 주목받는 이유 (한 줄)",',
+      '      "angle": "이 키워드로 쓸 블로그 글의 구체적 방향과 제목 아이디어",',
+      '      "hook": "독자를 사로잡을 첫 문장 예시"',
+      '    }',
+      '  ]',
+      '}'
+    ].join('\n');
+
+    try {
+      var text = await callAI(model, sys, usr);
+      var m = text.match(/\{[\s\S]*\}/);
+      if (m) results.push(JSON.parse(m[0]));
+      else results.push({ theme: theme, keywords: [], error: '파싱 실패' });
+    } catch(e) {
+      results.push({ theme: theme, keywords: [], error: e.message });
+    }
+  }
+
+  // Supabase 저장
+  if (sb) {
+    var today = new Date().toISOString().slice(0, 10);
+    try {
+      await sb.from('app_submissions').upsert({
+        kind: 'trending',
+        ref: 'trend_' + today,
+        name: today + ' 트렌드 분석',
+        status: 'active',
+        data: { themes: results, generated_at: new Date().toISOString(), source: 'ai' }
+      }, { onConflict: 'kind,ref' });
+    } catch(e) {}
+  }
+
+  prog.hidden = true;
+  btn.disabled = false;
+  btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg> 지금 분석';
+  renderTrendResults(results);
+  showToast('분석 완료!', 'green');
+};
+
+/* ── 지난 분석 불러오기 ── */
+window.loadLastTrend = async function() {
+  if (!sb) { showToast('DB 연결 중입니다.', 'red'); return; }
+  var btn = document.getElementById('btn-load-trend');
+  btn.disabled = true; btn.textContent = '불러오는 중...';
+
+  var res = await sb.from('app_submissions')
+    .select('data,name,created_at')
+    .eq('kind', 'trending')
+    .order('created_at', { ascending: false })
+    .limit(1);
+
+  btn.disabled = false; btn.textContent = '지난 분석 불러오기';
+  if (res.error || !res.data || !res.data.length) {
+    showToast('저장된 분석이 없습니다.', 'red'); return;
+  }
+  var row = res.data[0];
+  var themes = (row.data && row.data.themes) || [];
+  var date = row.name || '';
+  renderTrendResults(themes, date);
+  showToast('불러오기 완료', 'green');
+};
+
+/* ── 결과 렌더링 ── */
+function renderTrendResults(results, dateLabel) {
+  var el = document.getElementById('trend-results');
+  if (!results || !results.length) { el.innerHTML = ''; return; }
+
+  var badgeMap = { '상승중': 'up', '안정': 'stable', '계절성': 'seasonal' };
+  var badgeText = { '상승중': '↑ 상승중', '안정': '→ 안정', '계절성': '☀ 계절성' };
+
+  var html = '';
+  if (dateLabel) html += '<div style="font-size:12px;color:var(--ink3);margin-bottom:12px">' + esc(dateLabel) + ' 기준</div>';
+
+  results.forEach(function(r) {
+    if (!r.keywords || !r.keywords.length) return;
+    html += '<div class="trend-theme-section">';
+    html += '<div class="trend-theme-label">' +
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>' +
+      esc(r.theme) + '</div>';
+    html += '<div class="trend-grid">';
+    r.keywords.forEach(function(kw) {
+      var bc = badgeMap[kw.trend] || 'stable';
+      var bt = badgeText[kw.trend] || kw.trend;
+      html += '<div class="trend-card">' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px">' +
+          '<div class="trend-card-kw">' + esc(kw.keyword) + '</div>' +
+          '<span class="trend-card-badge ' + bc + '">' + bt + '</span>' +
+        '</div>' +
+        '<div class="trend-card-reason">' + esc(kw.reason || '') + '</div>' +
+        '<div class="trend-card-angle">' + esc(kw.angle || '') + '</div>' +
+        '<div class="trend-card-hook">"' + esc(kw.hook || '') + '"</div>' +
+        '<button class="btn btn-primary btn-sm" style="width:100%;justify-content:center;margin-top:4px" ' +
+          'onclick="generateFromTrend(' + JSON.stringify(kw.keyword) + ',' + JSON.stringify(kw.angle) + ')">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="13" height="13"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>' +
+          ' 이 키워드로 글 생성' +
+        '</button>' +
+      '</div>';
+    });
+    html += '</div></div>';
+  });
+
+  el.innerHTML = html;
+}
+
+/* ── 트렌드 → 블로그 생성 연결 ── */
+window.generateFromTrend = function(keyword, angle) {
+  switchTab('blog');
+  document.getElementById('blog-topic').value = keyword;
+  document.getElementById('blog-extra').value = angle ? '글 각도: ' + angle : '';
+  document.getElementById('blog-topic').focus();
+  document.getElementById('blog-topic').scrollIntoView({ behavior: 'smooth', block: 'center' });
+  showToast('주제가 입력됐습니다. 글 생성을 눌러주세요.', '');
 };
 
 /* ── 컨셉 저장 ── */
