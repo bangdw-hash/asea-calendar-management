@@ -1100,6 +1100,33 @@ grant execute on function link_to_schedule(uuid, text, boolean) to anon, authent
 grant execute on function unlink_from_schedule(uuid, text, boolean) to anon, authenticated;
 grant execute on function get_batch_info(uuid) to anon, authenticated;
 
+-- ============================================================================
+-- 22) BUGFIX: schedule_linked_items — ON CONFLICT constraint 인식 실패 해결
+--
+-- 원인: Section 14에서 생성한 idx_sli_date_resv 가 PARTIAL INDEX
+--       (WHERE reservation_id IS NOT NULL) 이므로
+--       link_to_schedule RPC 내 ON CONFLICT (target_date, reservation_id) 구문이
+--       해당 인덱스를 unique constraint로 인식하지 못함.
+--
+-- 수정: partial index → DROP 후 named UNIQUE CONSTRAINT 로 교체.
+--       ON CONFLICT (target_date, reservation_id) 구문은 그대로 유지됨.
+-- ============================================================================
+
+-- 기존 partial index 제거 (없어도 무시)
+drop index if exists idx_sli_date_resv;
+
+-- named unique constraint 추가 (이미 있으면 무시)
+do $$ begin
+  if not exists (
+    select 1 from pg_constraint
+    where conname = 'sli_date_resv_unique'
+      and conrelid = 'schedule_linked_items'::regclass
+  ) then
+    alter table schedule_linked_items
+      add constraint sli_date_resv_unique unique (target_date, reservation_id);
+  end if;
+end $$;
+
 -- ★ 실행 후: Supabase 대시보드 → Settings → API → Reload Schema Cache 클릭 필수!
 
 -- 끝. 'Success. No rows returned' 가 나오면 정상입니다. ---------------------
