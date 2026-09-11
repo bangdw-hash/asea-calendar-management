@@ -902,14 +902,30 @@ drop function if exists get_batch_info(bigint);
 
 create or replace function admin_delete_reservation(
   p_id           uuid,
-  p_admin_email  text
+  p_admin_email  text,
+  p_delete_all   boolean default false
 ) returns jsonb language plpgsql security definer as $$
+declare
+  v_batch_id text;
 begin
   if p_admin_email not in ('bangdw@gmail.com','chajungsin@gmail.com') then
     return jsonb_build_object('success', false, 'error', '관리자 권한이 없습니다');
   end if;
-  update reservations set status='deleted', deleted_at=now()
-  where id = p_id and deleted_at is null;
+
+  if p_delete_all then
+    select batch_id into v_batch_id from reservations where id = p_id and deleted_at is null;
+    if v_batch_id is not null then
+      update reservations set status='deleted', deleted_at=now()
+      where batch_id = v_batch_id and deleted_at is null;
+    else
+      update reservations set status='deleted', deleted_at=now()
+      where id = p_id and deleted_at is null;
+    end if;
+  else
+    update reservations set status='deleted', deleted_at=now()
+    where id = p_id and deleted_at is null;
+  end if;
+
   if not found then return jsonb_build_object('success', false, 'error', '예약을 찾을 수 없습니다'); end if;
   return jsonb_build_object('success', true);
 end; $$;
