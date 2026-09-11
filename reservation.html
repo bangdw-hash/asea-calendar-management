@@ -187,14 +187,30 @@ header{
 .cal-cell.today .day-num{background:var(--primary);color:#fff}
 .cal-cell.range-start .day-num,.cal-cell.range-end .day-num{color:var(--primary-dk);font-weight:800}
 
+/* ── Density (5단계 폰트 크기) ── */
+:root{--rv-fs:10.5px}
+:root[data-density="xs"]{--rv-fs:9px}
+:root[data-density="sm"]{--rv-fs:10px}
+:root[data-density="lg"]{--rv-fs:12px}
+:root[data-density="xl"]{--rv-fs:14px}
+/* density 버튼: schedule.html 동일 스타일 */
+.density-wrap{display:flex;align-items:center;gap:1px;margin-left:auto;flex-shrink:0}
+.density-btn{background:none;border:none;cursor:pointer;font-size:.75rem;font-weight:800;
+  color:var(--gray);padding:0 5px;border-radius:var(--r);height:28px;
+  display:flex;align-items:center;justify-content:center;
+  transition:color .12s;font-family:var(--font)}
+.density-btn:hover:not(:disabled){color:var(--text)}
+.density-btn:disabled{opacity:.2;cursor:default}
+.density-label{font-size:10px;font-weight:600;color:var(--gray);min-width:26px;text-align:center}
+
 .rv-pills{margin-top:3px;display:flex;flex-direction:column;gap:2px}
 .rv-pill{
-  font-size:10.5px;padding:3px 6px;border-radius:6px;
+  font-size:var(--rv-fs)!important;padding:2px 5px;border-radius:5px;
   white-space:normal;overflow-wrap:break-word;word-break:break-word;
-  cursor:pointer;font-weight:600;color:#fff;line-height:1.35;
+  cursor:pointer;font-weight:400;color:#fff;line-height:1.35;
 }
 .rv-pill:hover{filter:brightness(.88)}
-.rv-more{font-size:10px;color:var(--gray);padding:2px 4px;cursor:pointer;font-weight:700}
+.rv-more{font-size:var(--rv-fs)!important;color:var(--gray);padding:2px 4px;cursor:pointer;font-weight:500}
 .rv-more:hover{color:var(--primary)}
 
 /* mini calendar popup: compact cells */
@@ -405,6 +421,11 @@ header{
   </div>
   <div class="tb-sep"></div>
   <div class="floor-tabs" id="floorTabs"></div>
+  <div class="density-wrap" title="일정 글자 크기">
+    <button class="density-btn" id="densityDown" onclick="changeDensity(-1)">A−</button>
+    <span class="density-label" id="densityLabel">표준</span>
+    <button class="density-btn" id="densityUp" onclick="changeDensity(1)">A+</button>
+  </div>
 </div>
 
 <!-- 날짜 선택 바 -->
@@ -700,7 +721,41 @@ let pwFails = 0;
 let rtSub = null;
 
 /* ── Init ── */
+/* ── Density (폰트 크기 5단계) ── */
+const _DENSITY_LEVELS = ['xs','sm','md','lg','xl'];
+const _DENSITY_LABELS = ['더 작게','작게','표준','크게','더 크게'];
+let _density = 'md';
+
+function loadDensity() {
+  try {
+    const saved = localStorage.getItem('asea_rv_density');
+    if (saved && _DENSITY_LEVELS.includes(saved)) _density = saved;
+  } catch(e) {}
+  _applyDensity();
+}
+
+function _applyDensity() {
+  document.documentElement.dataset.density = _density;
+  const idx = _DENSITY_LEVELS.indexOf(_density);
+  const lbl = document.getElementById('densityLabel');
+  if (lbl) lbl.textContent = _DENSITY_LABELS[idx];
+  const btnD = document.getElementById('densityDown');
+  const btnU = document.getElementById('densityUp');
+  if (btnD) btnD.disabled = idx <= 0;
+  if (btnU) btnU.disabled = idx >= _DENSITY_LEVELS.length - 1;
+}
+
+function changeDensity(dir) {
+  const idx = _DENSITY_LEVELS.indexOf(_density);
+  const next = idx + dir;
+  if (next < 0 || next >= _DENSITY_LEVELS.length) return;
+  _density = _DENSITY_LEVELS[next];
+  _applyDensity();
+  try { localStorage.setItem('asea_rv_density', _density); } catch(e) {}
+}
+
 async function init() {
+  loadDensity();
   await loadClassrooms();
   populateFloorTabs();
   populateRoomSel();
