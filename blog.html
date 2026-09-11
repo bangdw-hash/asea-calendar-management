@@ -21,12 +21,18 @@
   --border:#DADCE0; --border-dk:#BDC1C6;
 }
 @media (prefers-color-scheme:dark){
-  :root{
+  :root:not([data-theme="light"]){
     --bg:#1C1C1E; --surface:#2C2C2E; --surface2:#3A3A3C;
     --ink:#F2F2F7; --ink2:#AEAEB2; --ink3:#636366;
     --border:#3A3A3C; --border-dk:#4A4A4C;
     --primary-lt:#1A2E4A; --green-lt:#0D2B18; --orange-lt:#2B1700; --red-lt:#2B0A0A;
   }
+}
+:root[data-theme="dark"]{
+  --bg:#1C1C1E; --surface:#2C2C2E; --surface2:#3A3A3C;
+  --ink:#F2F2F7; --ink2:#AEAEB2; --ink3:#636366;
+  --border:#3A3A3C; --border-dk:#4A4A4C;
+  --primary-lt:#1A2E4A; --green-lt:#0D2B18; --orange-lt:#2B1700; --red-lt:#2B0A0A;
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html{font-size:15px;-webkit-text-size-adjust:100%}
@@ -147,10 +153,13 @@ label{font-size:13px;font-weight:500;color:var(--ink2)}
 
 @media(max-width:600px){
   .form-row.cols{flex-direction:column}
-  .main{padding:16px 14px 72px}
+  .main{padding:16px 14px 40px}
   .post-card-actions{flex-direction:column}
-  .tb-btn .tab-label{display:none}
+  .tb-btn{padding:12px 10px;font-size:13px;gap:5px}
 }
+
+/* hidden 속성 보장 — display:flex 등이 덮어쓰지 못하도록 */
+[hidden]{display:none!important}
 </style>
 </head>
 <body>
