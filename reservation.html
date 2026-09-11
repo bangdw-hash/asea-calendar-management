@@ -139,16 +139,29 @@ header{
 
 /* ── 선택 바 (날짜 선택 시) — 오렌지 배너 대체 ── */
 .sel-bar{
-  position:fixed;bottom:0;left:0;right:0;z-index:150;
-  background:#fff;border-top:1px solid var(--border);
-  box-shadow:0 -2px 12px rgba(0,0,0,.10);
-  padding:10px 20px;display:flex;align-items:center;justify-content:space-between;gap:8px;
-  transform:translateY(100%);transition:transform .22s cubic-bezier(.32,.72,0,1);
+  position:fixed;z-index:150;
+  background:#fff;border:1px solid var(--border);
+  border-radius:var(--r);
+  box-shadow:0 6px 24px rgba(0,0,0,.14),0 1px 4px rgba(0,0,0,.06);
+  padding:10px 14px;display:flex;align-items:center;gap:12px;
+  white-space:nowrap;
+  opacity:0;pointer-events:none;
+  transform:translateY(-6px) scale(.97);
+  transition:opacity .16s,transform .16s;
 }
-.sel-bar.show{transform:translateY(0)}
-.sel-count{font-size:13px;font-weight:600;color:var(--text)}
+.sel-bar.show{opacity:1;pointer-events:auto;transform:translateY(0) scale(1)}
+/* 위쪽 삼각 화살표 */
+.sel-bar::before{content:'';position:absolute;top:-7px;
+  left:var(--aw,50%);transform:translateX(-50%);
+  border:7px solid transparent;border-top:0;border-bottom-color:var(--border)}
+.sel-bar::after{content:'';position:absolute;top:-6px;
+  left:var(--aw,50%);transform:translateX(-50%);
+  border:6px solid transparent;border-top:0;border-bottom-color:#fff}
+/* 아래 방향(셀 위에 팝업 뜰 때) */
+.sel-bar.above::before{top:auto;bottom:-7px;border-bottom:0;border-top:7px solid var(--border)}
+.sel-bar.above::after{top:auto;bottom:-6px;border-bottom:0;border-top:6px solid #fff}
+.sel-count{font-size:13px;font-weight:700;color:var(--text)}
 .sel-hint{font-size:11px;color:var(--gray);margin-top:1px}
-body.sel-open{padding-bottom:62px}
 
 /* ── Calendar (schedule.html CSS 완전 이식) ── */
 .cal-wrap{padding:12px 16px;overflow-x:auto;-webkit-overflow-scrolling:touch}
@@ -812,17 +825,19 @@ async function init() {
 }
 
 function initOutsideClick() {
+  // 버블 단계에서 처리 — 캡처 단계 사용 시 DOM 재렌더로 인한 이벤트 손실 방지
   document.addEventListener('click', function(e) {
-    // 캘린더, 플로팅바, 헤더 버튼 클릭은 무시
     if (e.target.closest('#calGrid')) return;
     if (e.target.closest('#multiBanner')) return;
-    if (e.target.closest('.btn-cta-new,.btn-cta-rental')) return;
+    if (e.target.closest('header')) return;
+    if (e.target.closest('.toolbar')) return;
     if (e.target.closest('#drawer,#drawerOverlay')) return;
-    // 그 외 영역 클릭 → 선택 초기화
-    if (selDates.length > 0 || rangeStart) {
-      clearSel();
-    }
-  }, true);
+    if (selDates.length > 0 || rangeStart) clearSel();
+  });
+  // 스크롤/리사이즈 시 팝업 위치 갱신
+  window.addEventListener('scroll', positionSelBar, {passive:true});
+  window.addEventListener('resize', positionSelBar, {passive:true});
+  document.querySelector('.cal-wrap')?.addEventListener('scroll', positionSelBar, {passive:true});
 }
 
 /* ── AI 제공자(3중 라우팅) — 메인 앱(index.html) 설정 ▾ → AI제공자 설정을 그대로 재사용
@@ -1261,11 +1276,44 @@ function updMultiBanner() {
     txt.textContent = label;
     hint.textContent = hintTxt;
     bar.classList.add('show');
-    document.body.classList.add('sel-open');
+    requestAnimationFrame(positionSelBar);
   } else {
     bar.classList.remove('show');
-    document.body.classList.remove('sel-open');
   }
+}
+
+function positionSelBar() {
+  const bar = document.getElementById('multiBanner');
+  if (!bar.classList.contains('show')) return;
+
+  // 앵커: 마지막 선택 날짜 또는 범위 시작
+  const anchor = selDates.length > 0 ? selDates[selDates.length - 1] : rangeStart;
+  if (!anchor) return;
+  const cell = document.querySelector(`[data-s="${anchor}"]`);
+  if (!cell) return;
+
+  const cr = cell.getBoundingClientRect();
+  const bw = bar.offsetWidth || 260;
+  const bh = bar.offsetHeight || 52;
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+
+  // 셀 아래 10px → 화면 아래면 위로
+  let top = cr.bottom + 10;
+  let above = false;
+  if (top + bh > vh - 8) { top = cr.top - bh - 10; above = true; }
+
+  // 셀 중심 정렬, 뷰포트 안으로 클램프
+  let left = cr.left + cr.width / 2 - bw / 2;
+  left = Math.max(8, Math.min(left, vw - bw - 8));
+
+  // 화살표 위치: 셀 중심 - 팝업 left
+  const aw = Math.max(14, Math.min((cr.left + cr.width / 2) - left, bw - 14));
+
+  bar.style.left = left + 'px';
+  bar.style.top = top + 'px';
+  bar.style.setProperty('--aw', aw + 'px');
+  if (above) bar.classList.add('above'); else bar.classList.remove('above');
 }
 
 /* ── Mini calendar popup (예약 폼에서 날짜 추가) ── */
@@ -1643,9 +1691,6 @@ function resetForm() {
   document.getElementById('roomDot').style.background = 'var(--primary)';
   document.getElementById('conflictBox').hidden = true;
   document.getElementById('aiBox').hidden = true;
-  document.getElementById('imgIn').value = '';
-  document.getElementById('imgPrev').hidden = true;
-  document.getElementById('imgAiBox').hidden = true;
 }
 
 /* ── Room change → conflict check ── */
