@@ -63,17 +63,19 @@ header{
 .hd-more:hover{background:var(--gray-lt)}
 .hd-desktop{display:flex;gap:2px;align-items:center}
 .hd-dropdown{
-  position:absolute;top:calc(100% + 6px);right:0;
+  position:absolute;top:calc(100% + 8px);right:0;
   background:#fff;border:1px solid var(--border);border-radius:var(--r);
-  box-shadow:var(--sh-lg);min-width:160px;padding:4px;z-index:200;
-  display:flex;flex-direction:column;gap:1px;
+  box-shadow:0 4px 20px rgba(0,0,0,.12),0 1px 4px rgba(0,0,0,.06);
+  min-width:230px;padding:6px;z-index:200;
+  display:flex;flex-direction:column;gap:0;
 }
 .hd-dropdown a,.hd-dropdown button{
-  background:none;border:none;width:100%;text-align:left;padding:9px 14px;
-  font-size:13px;color:var(--text);cursor:pointer;border-radius:8px;
-  display:flex;align-items:center;gap:8px;text-decoration:none;font-family:var(--font);
+  background:none;border:none;width:100%;text-align:left;padding:11px 16px;
+  font-size:14px;font-weight:500;color:var(--text);cursor:pointer;border-radius:8px;
+  display:flex;align-items:center;gap:10px;text-decoration:none;font-family:var(--font);
+  letter-spacing:-.2px;transition:background .12s,color .12s;white-space:nowrap;
 }
-.hd-dropdown a:hover,.hd-dropdown button:hover{background:var(--gray-lt)}
+.hd-dropdown a:hover,.hd-dropdown button:hover{background:var(--primary-lt);color:var(--primary)}
 @media(max-width:600px){
   .hd-desktop{display:none}
   .hd-more{display:flex}
@@ -128,7 +130,7 @@ header{
 
 /* 카테고리 필터 체크박스 */
 .cat-filter{display:flex;gap:0;align-items:center;flex-wrap:nowrap;overflow-x:auto;
-  scrollbar-width:none;-ms-overflow-style:none}
+  flex:1;min-width:0;scrollbar-width:none;-ms-overflow-style:none}
 .cat-filter::-webkit-scrollbar{display:none}
 .cat-sep{color:var(--border);padding:0 7px;font-size:12px;user-select:none;flex-shrink:0;line-height:1}
 .cat-chip{
@@ -239,6 +241,17 @@ header{
 :root[data-density="xl"]{--rv-fs:14px}
 /* density 버튼: schedule.html 동일 스타일 */
 .density-wrap{display:flex;align-items:center;gap:1px;margin-left:auto;flex-shrink:0}
+/* 모바일: 툴바 density 숨기고 ⋮ 메뉴에서만 표시 */
+@media(max-width:600px){.density-wrap{display:none}}
+/* dropdown 글자 크기 행 */
+.hd-dd-sep{height:1px;background:var(--border);margin:6px 0;opacity:.6}
+.hd-dd-density{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-radius:8px;gap:12px}
+.hd-dd-density-lbl{font-size:14px;font-weight:500;color:var(--text);display:flex;align-items:center;gap:10px;flex-shrink:0;white-space:nowrap;letter-spacing:-.2px}
+.hd-dd-density-ctrl{display:flex;align-items:center;gap:6px;flex-shrink:0}
+.hd-dd-density-ctrl button{background:none;border:1.5px solid var(--border);border-radius:7px;padding:3px 9px;font-size:13px;font-weight:700;cursor:pointer;color:var(--text);font-family:var(--font);transition:border-color .13s,color .13s;white-space:nowrap}
+.hd-dd-density-ctrl button:hover:not(:disabled){border-color:var(--primary);color:var(--primary)}
+.hd-dd-density-ctrl button:disabled{opacity:.3;cursor:not-allowed}
+.hd-dd-density-ctrl .dd-dlbl{font-size:12px;color:var(--gray);min-width:28px;text-align:center;font-weight:600;white-space:nowrap}
 .density-btn{background:none;border:none;cursor:pointer;font-size:.75rem;font-weight:800;
   color:var(--gray);padding:0 5px;border-radius:var(--r);height:28px;
   display:flex;align-items:center;justify-content:center;
@@ -382,6 +395,20 @@ header{
 }
 .modal.show .modal-box{transform:scale(1)}
 .modal-box.wide{max-width:980px}
+/* ── Admin modal → bottom sheet (mobile) / right drawer (PC) ── */
+#adminModal{align-items:flex-end;padding:0}
+#adminModal .modal-box{max-width:100%;width:100%;height:67vh;max-height:none;border-radius:16px 16px 0 0;transform:translateY(100%);display:flex;flex-direction:column;overflow:hidden}
+#adminModal .modal-body{flex:1;overflow-y:auto}
+#adminModal.show .modal-box{transform:translateY(0)}
+.adm-sheet-handle{width:44px;height:4px;background:#d1d5db;border-radius:2px;margin:10px auto 4px;cursor:grab;flex-shrink:0}
+#adminModal .modal-hdr{cursor:grab;user-select:none;background:#fff;border-radius:16px 16px 0 0}
+@media(min-width:768px){
+  #adminModal{align-items:stretch;justify-content:flex-end}
+  #adminModal .modal-box{width:480px;max-width:480px;height:100vh;max-height:none;border-radius:0;transform:translateX(100%)}
+  #adminModal.show .modal-box{transform:translateX(0) !important}
+  #adminModal .modal-hdr{border-radius:0;cursor:default;user-select:auto}
+  .adm-sheet-handle{display:none}
+}
 .modal-hdr{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid var(--border);position:sticky;top:0;background:#fff;z-index:1}
 .modal-title{font-size:15px;font-weight:700}
 .modal-body{padding:20px}
@@ -397,11 +424,12 @@ header{
 .label-mono{font-size:11px;font-family:monospace;background:var(--gray-lt);padding:5px 10px;border-radius:6px;line-height:1.5}
 
 /* ── Admin table ── */
-.adm-tabs{display:flex;gap:4px;flex-wrap:wrap;border-bottom:1.5px solid var(--border);margin-bottom:14px;padding-bottom:8px}
-.adm-tab-btn{padding:6px 12px;border-radius:var(--r);font-size:12px;font-weight:700;cursor:pointer;border:1.5px solid var(--border);background:#fff;color:var(--gray);transition:.15s}
+.adm-tabs{display:flex;gap:6px;overflow-x:auto;border-bottom:1.5px solid var(--border);margin-bottom:14px;padding-bottom:8px;-webkit-overflow-scrolling:touch;scrollbar-width:none;flex-wrap:nowrap}
+.adm-tabs::-webkit-scrollbar{display:none}
+.adm-tab-btn{padding:6px 14px;border-radius:var(--r);font-size:12px;font-weight:700;cursor:pointer;border:1.5px solid var(--border);background:#fff;color:var(--gray);transition:.15s;white-space:nowrap;flex:0 0 auto}
 .adm-tab-btn.on{background:var(--primary);border-color:var(--primary);color:#fff}
 .adm-tab-btn:hover:not(.on){border-color:var(--primary);color:var(--primary)}
-.adm-filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;align-items:center}
+.adm-filters{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;align-items:center}
 .adm-card{background:var(--gray-lt);border-radius:var(--r);padding:14px;margin-bottom:12px}
 .adm-form-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin-bottom:10px}
 .rv-tbl{width:100%;border-collapse:collapse;font-size:12px}
@@ -461,10 +489,20 @@ header{
   .hd-title{font-size:14px}
   .frow{grid-template-columns:1fr}
   .cal-wrap{padding:8px}
-  .toolbar{gap:6px;padding:0 10px;height:44px}
-  .month-label{font-size:14px;min-width:80px}
-  .view-btn{padding:0 8px;font-size:10px}
-  .cat-chip{font-size:11px}
+  /* 툴바: 2줄 레이아웃 — 1줄 월 이동, 2줄 필터 */
+  .toolbar{flex-wrap:wrap;height:auto;padding:6px 12px;gap:0;row-gap:4px;align-content:center}
+  /* 1줄: 월 이동 — 전체 너비, 양쪽 끝으로 */
+  .month-nav{width:100%;justify-content:space-between}
+  .month-nav button{width:32px;height:32px;font-size:20px}
+  .month-label{font-size:17px;font-weight:700;min-width:auto;flex:1;text-align:center;padding:0}
+  /* 구분선 모바일에서 숨김 */
+  .toolbar .tb-sep{display:none}
+  /* 2줄: 보기 모드 + 카테고리 — 전체 너비, space-between */
+  .view-toggle{flex-shrink:0}
+  .view-btn{padding:0 8px;font-size:14px;height:28px}
+  .cat-filter{flex:1;overflow-x:visible;min-width:0;justify-content:flex-end}
+  .cat-chip{font-size:14px;padding:2px 0}
+  .cat-sep{padding:0 6px;font-size:14px}
   .btn-cta-rental,.btn-cta-new{padding:5px 10px;font-size:11px}
 }
 
@@ -543,6 +581,18 @@ header{
         <svg class="tb-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
         관리자
       </button>
+      <div class="hd-dd-sep"></div>
+      <div class="hd-dd-density">
+        <span class="hd-dd-density-lbl">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>
+          글자 크기
+        </span>
+        <div class="hd-dd-density-ctrl">
+          <button id="densityDownMenu" onclick="changeDensity(-1)">A−</button>
+          <span class="dd-dlbl" id="densityLabelMenu">표준</span>
+          <button id="densityUpMenu" onclick="changeDensity(1)">A+</button>
+        </div>
+      </div>
     </div>
   </div>
 </header>
@@ -879,12 +929,12 @@ header{
   </div>
 </div>
 
-<!-- Admin panel modal -->
+<!-- Admin panel bottom sheet -->
 <div id="adminModal" class="modal" onclick="if(event.target===this)closeAdminM()">
   <div class="modal-box wide">
+    <div class="adm-sheet-handle"></div>
     <div class="modal-hdr">
       <span class="modal-title">관리자 패널</span>
-      <button class="close-btn" onclick="closeAdminM()">✕</button>
     </div>
     <div class="modal-body" id="adminBody"></div>
   </div>
@@ -1045,12 +1095,22 @@ function loadDensity() {
 function _applyDensity() {
   document.documentElement.dataset.density = _density;
   const idx = _DENSITY_LEVELS.indexOf(_density);
+  const txt = _DENSITY_LABELS[idx];
+  const isMin = idx <= 0, isMax = idx >= _DENSITY_LEVELS.length - 1;
+  // 툴바
   const lbl = document.getElementById('densityLabel');
-  if (lbl) lbl.textContent = _DENSITY_LABELS[idx];
+  if (lbl) lbl.textContent = txt;
   const btnD = document.getElementById('densityDown');
   const btnU = document.getElementById('densityUp');
-  if (btnD) btnD.disabled = idx <= 0;
-  if (btnU) btnU.disabled = idx >= _DENSITY_LEVELS.length - 1;
+  if (btnD) btnD.disabled = isMin;
+  if (btnU) btnU.disabled = isMax;
+  // ⋮ 메뉴
+  const lblM = document.getElementById('densityLabelMenu');
+  if (lblM) lblM.textContent = txt;
+  const btnDM = document.getElementById('densityDownMenu');
+  const btnUM = document.getElementById('densityUpMenu');
+  if (btnDM) btnDM.disabled = isMin;
+  if (btnUM) btnUM.disabled = isMax;
 }
 
 function changeDensity(dir) {
@@ -2717,7 +2777,7 @@ function closeBatchUnlinkM() { hideM('batchUnlinkModal'); }
 
 /* ── Admin panel ── */
 let admRvs = [];
-let admFilter = { room: '', date: '' };
+let admFilter = { room: '', date: '', text: '' };
 let admTab = 'reservations';
 
 async function openAdminM() {
@@ -2772,14 +2832,25 @@ function renderAdmTable() {
   let rvs = admRvs;
   if (admFilter.room) rvs = rvs.filter(r => r.classroom_name.includes(admFilter.room));
   if (admFilter.date) rvs = rvs.filter(r => r.date_start <= admFilter.date && r.date_end >= admFilter.date);
+  if (admFilter.text) {
+    const q = admFilter.text.toLowerCase();
+    rvs = rvs.filter(r =>
+      (r.purpose||'').toLowerCase().includes(q) ||
+      (r.renter_name||'').toLowerCase().includes(q) ||
+      (r.requester_name||'').toLowerCase().includes(q) ||
+      (r.department||'').toLowerCase().includes(q)
+    );
+  }
 
   body.innerHTML = `
     <div class="adm-filters">
-      <input type="text" class="fi" style="width:180px" placeholder="강의실 검색..."
+      <input type="text" class="fi" style="flex:1;min-width:140px" placeholder="업체명·사용목적 검색..."
+        value="${esc(admFilter.text)}" oninput="admFilter.text=this.value;renderAdmTable()">
+      <input type="text" class="fi" style="width:140px" placeholder="강의실 검색..."
         value="${esc(admFilter.room)}" oninput="admFilter.room=this.value;renderAdmTable()">
-      <input type="date" class="fi" style="width:150px"
+      <input type="date" class="fi" style="width:140px"
         value="${admFilter.date}" onchange="admFilter.date=this.value;renderAdmTable()">
-      <button class="btn btn-sm btn-outline" onclick="admFilter={room:'',date:''};renderAdmTable()">초기화</button>
+      <button class="btn btn-sm btn-outline" onclick="admFilter={room:'',date:'',text:''};renderAdmTable()">초기화</button>
       <button class="btn btn-sm btn-primary" onclick="loadAdminList()">새로고침</button>
     </div>
     <div style="font-size:12px;color:var(--gray);margin-bottom:8px">표시: ${rvs.length}건 / 전체: ${admRvs.length}건</div>
@@ -2794,16 +2865,16 @@ function renderAdmTable() {
         <tbody>
           ${rvs.map(rv => `<tr style="cursor:pointer" onclick="window.open('reservation.html#rv-${rv.id}','_blank')" title="새 탭에서 열기">
             <td style="white-space:nowrap">${rv.date_start}${rv.date_start!==rv.date_end?'<br>~'+rv.date_end:''}</td>
-            <td><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${rv.classroom_color||'#1A73E8'};margin-right:4px;vertical-align:middle"></span>${esc(rv.classroom_name)}</td>
+            <td style="white-space:nowrap"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${rv.classroom_color||'#1A73E8'};margin-right:4px;vertical-align:middle"></span>${esc(rv.classroom_name)}</td>
             <td style="white-space:nowrap">${rv.time_start}~${rv.time_end}</td>
-            <td style="max-width:120px;overflow:hidden">${esc(rv.purpose)}</td>
-            <td>${esc(rv.department)}</td>
-            <td>${esc(rv.requester_name)}</td>
-            <td>${esc(rv.contact||'')}</td>
+            <td style="white-space:nowrap;max-width:140px;overflow:hidden;text-overflow:ellipsis">${esc(rv.purpose)}</td>
+            <td style="white-space:nowrap">${esc(rv.department)}</td>
+            <td style="white-space:nowrap">${esc(rv.requester_name)}</td>
+            <td style="white-space:nowrap">${esc(rv.contact||'')}</td>
             <td onclick="event.stopPropagation()">${rv.schedule_event_id
               ? `<span class="adm-act-linked">연동완료</span>`
               : `<button class="adm-act adm-act-link" onclick="admLink('${rv.id}')">연동</button>`}</td>
-            <td onclick="event.stopPropagation()" style="display:flex;gap:8px;align-items:center">
+            <td onclick="event.stopPropagation()" style="white-space:nowrap;display:flex;gap:6px;align-items:center">
               <button class="adm-act adm-act-edit" onclick="adminEditRv('${rv.id}')">수정</button>
               <button class="adm-act adm-act-del" onclick="adminDelRv('${rv.id}')">삭제</button>
             </td>
@@ -2954,10 +3025,23 @@ async function renderAcademicTab() {
       <div style="border:1px solid var(--border);border-radius:var(--r);padding:16px">
         <div style="font-size:13px;font-weight:700;margin-bottom:12px;color:var(--text)">새 학사과정 일정 등록</div>
 
-        <!-- 그룹명 입력 -->
-        <div style="margin-bottom:10px">
-          <label style="font-size:11px;font-weight:700;color:var(--text-sm);display:block;margin-bottom:4px">그룹명 <span style="color:var(--red)">*</span> <span style="font-weight:400;color:var(--gray)">(예: 2026-2학기, 2026년 여름학기)</span></label>
-          <input id="acadGroupName" class="fi" type="text" placeholder="그룹명을 입력하세요" style="width:100%;font-size:13px">
+        <!-- 그룹명 + 학기 기간 -->
+        <div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:10px">
+          <div style="flex:1;min-width:160px">
+            <label style="font-size:11px;font-weight:700;color:var(--text-sm);display:block;margin-bottom:4px">그룹명 <span style="color:var(--red)">*</span> <span style="font-weight:400;color:var(--gray)">(예: 2026-2학기)</span></label>
+            <input id="acadGroupName" class="fi" type="text" placeholder="그룹명을 입력하세요" style="width:100%;font-size:13px">
+          </div>
+          <div style="display:flex;gap:6px;align-items:flex-end">
+            <div>
+              <label style="font-size:11px;font-weight:700;color:var(--text-sm);display:block;margin-bottom:4px">학기 시작일 <span style="color:var(--red)">*</span></label>
+              <input id="acadDateFrom" class="fi" type="date" style="font-size:13px;width:140px">
+            </div>
+            <span style="font-size:12px;color:var(--gray);padding-bottom:8px">~</span>
+            <div>
+              <label style="font-size:11px;font-weight:700;color:var(--text-sm);display:block;margin-bottom:4px">학기 종료일 <span style="color:var(--red)">*</span></label>
+              <input id="acadDateTo" class="fi" type="date" style="font-size:13px;width:140px">
+            </div>
+          </div>
         </div>
 
         <!-- 파일 업로드 -->
@@ -3028,14 +3112,14 @@ async function renderAcademicTab() {
 
       <!-- 등록된 그룹 목록 -->
       <div>
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-          <div style="font-size:13px;font-weight:700">등록된 학사과정 그룹</div>
-          <div style="display:flex;gap:8px;align-items:center">
-            <span style="font-size:11px;color:var(--gray)">기간 삭제:</span>
+        <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px">
+          <div style="font-size:13px;font-weight:700;white-space:nowrap">등록된 학사과정 그룹</div>
+          <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+            <span style="font-size:11px;color:var(--gray);white-space:nowrap">기간 삭제:</span>
             <input id="acadDelFrom" type="date" class="fi" style="font-size:11px;padding:3px 6px;width:130px" placeholder="시작일">
             <span style="font-size:11px;color:var(--gray)">~</span>
             <input id="acadDelTo" type="date" class="fi" style="font-size:11px;padding:3px 6px;width:130px" placeholder="종료일">
-            <button class="btn btn-xs btn-outline" onclick="acadDeleteByRange()" style="color:var(--red);border-color:var(--red);flex-shrink:0">기간 삭제</button>
+            <button class="btn btn-xs btn-outline" onclick="acadDeleteByRange()" style="color:var(--red);border-color:var(--red);flex-shrink:0;white-space:nowrap">기간 삭제</button>
           </div>
         </div>
         <div id="acadGroupList" style="display:flex;flex-direction:column;gap:8px">
@@ -3081,11 +3165,57 @@ function acadClearFile() {
   document.getElementById('acadFileInfo').hidden = true;
 }
 
+/* 요일 문자열에서 날짜 범위 내 해당 요일의 모든 날짜를 생성 */
+function _expandWeeklySchedule(records) {
+  const dayMap = { '월':1, '화':2, '수':3, '목':4, '금':5, '토':6, '일':0 };
+  const result = [];
+  records.forEach(r => {
+    if (r.day_of_week && r.date_from && r.date_to) {
+      const days = [...(r.day_of_week||'')].filter(ch => dayMap[ch] !== undefined).map(ch => dayMap[ch]);
+      if (!days.length) return;
+      const from = new Date(r.date_from + 'T00:00:00');
+      const to   = new Date(r.date_to   + 'T00:00:00');
+      const cur  = new Date(from);
+      while (cur <= to) {
+        if (days.includes(cur.getDay())) {
+          result.push({
+            classroom: r.classroom,
+            date: toStr(cur),
+            time_start: r.time_start,
+            time_end: r.time_end,
+            course_name: r.course_name,
+            instructor: r.instructor || null,
+            department: r.department || null,
+          });
+        }
+        cur.setDate(cur.getDate() + 1);
+      }
+    } else if (r.date) {
+      result.push({ classroom:r.classroom, date:r.date, time_start:r.time_start, time_end:r.time_end,
+                    course_name:r.course_name, instructor:r.instructor||null, department:r.department||null });
+    }
+  });
+  result.forEach((r, i) => r._idx = i);
+  return result;
+}
+
 async function acadAnalyze() {
   const nlp = document.getElementById('acadNlpIn')?.value.trim();
   const hasFile = !!_acadFileB64;
   const hasNlp = !!nlp;
   if (!hasFile && !hasNlp) return toast('파일 또는 자연어 입력이 필요합니다', 'warn');
+
+  const semFrom = document.getElementById('acadDateFrom')?.value || '';
+  const semTo   = document.getElementById('acadDateTo')?.value   || '';
+  if (!semFrom || !semTo) return toast('학기 시작일과 종료일을 먼저 입력해주세요', 'warn');
+
+  /* PDF base64 크기 체크 — Supabase Edge Function 6MB 한도 */
+  if (hasFile && _acadFileType === 'application/pdf') {
+    const approxBytes = (_acadFileB64.length * 3) / 4;
+    if (approxBytes > 4 * 1024 * 1024) {
+      return toast('PDF 파일이 너무 큽니다 (4MB 이하 권장). 파일을 압축하거나 이미지로 변환 후 다시 시도해 주세요.', 'warn');
+    }
+  }
 
   const btn = document.getElementById('acadAnalyzeBtn');
   btn.disabled = true; btn.innerHTML = '<div class="spinner" style="width:18px;height:18px;margin:0 auto"></div>';
@@ -3094,41 +3224,109 @@ async function acadAnalyze() {
     const today = toStr(new Date());
     const roomNames = classrooms.map(c => c.name).join(', ');
 
-    const extractPrompt = `오늘: ${today}\n등록된 강의실 목록: ${roomNames || '(없음)'}\n\n이 문서는 학교 강의실 사용 일정표입니다. 각 강의실별 일정을 빠짐없이 추출해 JSON 배열로만 반환하세요.\n\n형식:\n[\n  {\n    "classroom": "강의실명 (등록된 강의실명과 최대한 일치시킬 것)",\n    "date": "YYYY-MM-DD",\n    "time_start": "HH:MM",\n    "time_end": "HH:MM",\n    "course_name": "과목명 또는 강의명",\n    "instructor": "교수명 (없으면 null)",\n    "department": "학과 (없으면 null)"\n  }\n]\n\n주의: 날짜가 요일로만 표시된 경우 가장 가까운 해당 요일 날짜로 변환하세요. JSON 배열만 반환, 설명 없이.`;
+    /* 학기 기간은 관리자가 입력 → AI는 요일/시간/과목만 추출 */
+    const extractPrompt =
+`학기 기간: ${semFrom} ~ ${semTo}
+등록된 강의실 목록: ${roomNames || '(없음)'}
+
+이 문서는 대학교 학기 강의실 배정표(강의실 사용 일정)입니다.
+각 수업을 아래 형식의 JSON 배열로 추출하세요.
+date_from/date_to는 위 학기 기간을 그대로 사용하세요.
+
+【출력 형식】
+[
+  {
+    "classroom": "강의실명(등록 목록과 일치시킬 것)",
+    "day_of_week": "월수금",
+    "date_from": "${semFrom}",
+    "date_to": "${semTo}",
+    "time_start": "HH:MM",
+    "time_end": "HH:MM",
+    "course_name": "과목명",
+    "instructor": "담당교수(없으면 null)",
+    "department": "학과(없으면 null)"
+  }
+]
+
+【규칙】
+- day_of_week: 한국 요일 조합 문자열. 예) 월수금, 화목, 월, 화수목금
+- 교시→시간: 1교시 09:00~09:50, 2교시 10:00~10:50, 3교시 11:00~11:50,
+  4교시 13:00~13:50, 5교시 14:00~14:50, 6교시 15:00~15:50,
+  7교시 16:00~16:50, 8교시 17:00~17:50 (교시 범위면 첫 교시 시작~마지막 교시 종료)
+- 반드시 순수 JSON 배열만 반환. 마크다운 코드블록(\`\`\`) 없이.${hasNlp ? `\n추가 지시: ${nlp}` : ''}`;
+
+    const nlpPrompt =
+`학기 기간: ${semFrom} ~ ${semTo}
+등록된 강의실 목록: ${roomNames || '(없음)'}
+
+입력: "${nlp}"
+
+위 내용에서 강의실 사용 일정을 추출해 JSON 배열로만 반환하세요.
+날짜 범위가 명시되지 않은 경우 학기 기간을 사용하세요.
+
+【출력 형식】
+[
+  {
+    "classroom": "강의실명",
+    "day_of_week": "월수금",
+    "date_from": "${semFrom}",
+    "date_to": "${semTo}",
+    "time_start": "HH:MM",
+    "time_end": "HH:MM",
+    "course_name": "과목명 또는 목적",
+    "instructor": null,
+    "department": null
+  }
+]
+
+순수 JSON만 반환. 마크다운 없이.`;
 
     let messages;
     if (hasFile && _acadFileType === 'application/pdf') {
-      // PDF: document content block (anthropic-beta: pdfs-2024-09-25)
-      const contentBlocks = [
+      messages = [{ role: 'user', content: [
         { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: _acadFileB64 } },
-        { type: 'text', text: extractPrompt + (hasNlp ? `\n\n추가 지시: ${nlp}` : '') }
-      ];
-      messages = [{ role: 'user', content: contentBlocks }];
+        { type: 'text', text: extractPrompt }
+      ]}];
     } else if (hasFile && _acadFileType.startsWith('image/')) {
-      // 이미지: vision API
       messages = [{ role:'user', content:[
         { type:'image', source:{ type:'base64', media_type:_acadFileType, data:_acadFileB64 } },
-        { type:'text', text: extractPrompt + (hasNlp ? `\n\n추가 지시: ${nlp}` : '') }
+        { type:'text', text: extractPrompt }
       ]}];
     } else {
-      // 자연어 텍스트만
-      const prompt = `오늘: ${today}\n등록된 강의실 목록: ${roomNames || '(없음)'}\n\n입력: "${nlp}"\n\n위 내용에서 강의실 사용 일정을 추출해 JSON 배열로만 반환하세요.\n\n형식:\n[\n  {\n    "classroom": "강의실명",\n    "date": "YYYY-MM-DD",\n    "time_start": "HH:MM",\n    "time_end": "HH:MM",\n    "course_name": "과목명 또는 목적",\n    "instructor": "교수명 또는 null",\n    "department": "학과 또는 null"\n  }\n]\n\nJSON 배열만 반환. 설명 없이.`;
-      messages = [{ role:'user', content: prompt }];
+      messages = [{ role:'user', content: nlpPrompt }];
     }
 
-    const res = await claudeFetch({ model:'claude-haiku-4-5-20251001', max_tokens:2000, messages });
-    if (!res.ok) throw new Error(`AI 오류 ${res.status}`);
+    const res = await claudeFetch({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 4096,
+      system: '학교 강의실 배정표에서 일정 데이터를 추출하는 역할입니다. 반드시 JSON 배열만 반환하고, 마크다운 코드블록 없이 순수 JSON만 출력하세요.',
+      messages
+    });
+    if (!res.ok) {
+      const errTxt = await res.text().catch(() => '');
+      throw new Error(`AI 오류 ${res.status}${errTxt ? ': ' + errTxt.substring(0,100) : ''}`);
+    }
     const d = await res.json();
-    const text = d.content?.[0]?.text || '';
+    let text = d.content?.[0]?.text || '';
+    // 마크다운 코드블록 제거
+    text = text.replace(/```(?:json)?\s*/gi, '').replace(/```\s*/g, '').trim();
     const m = text.match(/\[[\s\S]*\]/);
-    if (!m) throw new Error('파싱 실패 — AI 응답에 JSON 배열 없음');
-    _acadParsed = JSON.parse(m[0]);
-    if (!Array.isArray(_acadParsed) || !_acadParsed.length) {
+    if (!m) throw new Error(`AI 응답에 JSON 배열 없음 (응답 앞부분: ${text.substring(0,120)})`);
+    let parsed;
+    try { parsed = JSON.parse(m[0]); } catch(pe) { throw new Error(`JSON 파싱 오류: ${pe.message}`); }
+    if (!Array.isArray(parsed) || !parsed.length) {
       document.getElementById('acadPreviewWrap').hidden = true;
       document.getElementById('acadEmptyMsg').hidden = false;
       return;
     }
-    _acadParsed.forEach((r, i) => r._idx = i);
+    /* day_of_week 형식이면 날짜 전개, 이미 date 형식이면 그대로 */
+    const needsExpand = parsed.some(r => r.day_of_week && r.date_from);
+    _acadParsed = needsExpand ? _expandWeeklySchedule(parsed) : parsed.map((r,i) => ({ ...r, _idx:i }));
+    if (!_acadParsed.length) {
+      document.getElementById('acadPreviewWrap').hidden = true;
+      document.getElementById('acadEmptyMsg').hidden = false;
+      return;
+    }
     acadRenderPreview();
   } catch(e) {
     toast('분석 실패: ' + e.message, 'error');
@@ -4187,10 +4385,59 @@ function subscribeRT() {
 function showM(id) {
   document.getElementById(id).classList.add('show');
   document.body.style.overflow = 'hidden';
+  _initModalSwipe(id);
 }
 function hideM(id) {
-  document.getElementById(id).classList.remove('show');
+  const el = document.getElementById(id);
+  const box = el && el.querySelector('.modal-box');
+  if (box) box.style.transform = '';
+  el.classList.remove('show');
   if (!document.querySelector('.modal.show')) document.body.style.overflow = '';
+}
+function _initModalSwipe(id) {
+  const modal = document.getElementById(id);
+  if (!modal) return;
+  const box = modal.querySelector('.modal-box');
+  if (!box || box._swipeInited) return;
+  /* PC에서 adminModal은 우측 드로어 — 스와이프 불필요 */
+  if (id === 'adminModal' && window.innerWidth >= 768) { box._swipeInited = true; return; }
+  box._swipeInited = true;
+  let startY = 0, curY = 0, dragging = false;
+
+  function attach(el, scrollEl) {
+    if (!el) return;
+    el.style.cursor = 'grab';
+    el.addEventListener('touchstart', e => {
+      // 스크롤 영역은 맨 위일 때만 드래그 시작
+      if (scrollEl && scrollEl.scrollTop > 2) return;
+      startY = e.touches[0].clientY; dragging = true; curY = 0;
+      box.style.transition = 'none';
+    }, { passive: true });
+    el.addEventListener('touchmove', e => {
+      if (!dragging) return;
+      curY = e.touches[0].clientY - startY;
+      if (curY < 0) { curY = 0; }
+      box.style.transform = `scale(1) translateY(${curY}px)`;
+    }, { passive: true });
+    el.addEventListener('touchend', () => {
+      if (!dragging) return;
+      dragging = false;
+      box.style.transition = '';
+      if (curY > 100) { box.style.transform = ''; hideM(id); }
+      else { box.style.transform = ''; }
+    });
+  }
+
+  const hdr    = box.querySelector('.modal-hdr');
+  const handle = box.querySelector('.adm-sheet-handle');
+  const body   = box.querySelector('.modal-body');
+  const tabs   = box.querySelector('.adm-tabs');
+
+  attach(hdr, null);
+  attach(handle, null);
+  // 본문·탭 영역: 스크롤이 맨 위일 때만 드래그 허용
+  attach(body, body);
+  attach(tabs, body);
 }
 
 /* ── Toast ── */

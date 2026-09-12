@@ -1,0 +1,1513 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>주차 차량 관리</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<script src="xlsx.mini.min.js"></script>
+<style>
+:root {
+  --primary: #1A73E8;
+  --primary-dk: #1557B0;
+  --primary-lt: #EEF4FD;
+  --green: #16a34a;
+  --green-lt: #dcfce7;
+  --orange: #ea580c;
+  --orange-lt: #fff7ed;
+  --red: #dc2626;
+  --red-lt: #fee2e2;
+  --g50: #f9fafb;
+  --g100: #f3f4f6;
+  --g200: #e5e7eb;
+  --g300: #d1d5db;
+  --g400: #9ca3af;
+  --g500: #6b7280;
+  --g700: #374151;
+  --g900: #111827;
+  --r: 12px;
+  --sh: 0 1px 3px rgba(0,0,0,.1);
+  --sh-md: 0 4px 12px rgba(0,0,0,.1);
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+  background: var(--g100);
+  color: var(--g900);
+  min-height: 100dvh;
+  padding-bottom: 72px;
+}
+
+/* ── Header ── */
+.app-header {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--primary);
+  height: 58px;
+  padding: 0 16px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.hdr-title {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 18px; font-weight: 800; color: #fff;
+}
+.hdr-subtitle {
+  font-size: 12px; color: rgba(255,255,255,.7); font-weight: 400;
+}
+
+/* ── Bottom Nav ── */
+.bottom-nav {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  background: #fff; border-top: 1px solid var(--g200);
+  height: 72px; display: flex; z-index: 100;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.nav-item {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 4px;
+  border: none; background: none; cursor: pointer;
+  font-family: inherit; color: var(--g400);
+  font-size: 12px; font-weight: 600;
+  padding: 8px 0; transition: color .12s;
+}
+.nav-item.active { color: var(--primary); }
+.nav-item:active { background: var(--g50); }
+
+/* ── Views ── */
+.view { display: none; padding: 16px; }
+.view.active { display: block; }
+
+/* ── Common ── */
+.card {
+  background: #fff;
+  border-radius: var(--r);
+  box-shadow: var(--sh);
+  padding: 18px;
+  margin-bottom: 12px;
+}
+.section-title {
+  font-size: 13px; font-weight: 700; color: var(--g500);
+  text-transform: uppercase; letter-spacing: .5px;
+  margin-bottom: 14px;
+}
+.field { margin-bottom: 14px; }
+.field:last-child { margin-bottom: 0; }
+.field > label {
+  display: block; font-size: 13px; font-weight: 600;
+  color: var(--g700); margin-bottom: 7px;
+}
+.field input, .field textarea, .field select {
+  width: 100%;
+  border: 1.5px solid var(--g200);
+  border-radius: 8px;
+  padding: 12px 14px;
+  font-size: 16px; color: var(--g900);
+  background: #fff; outline: none;
+  transition: border-color .15s, box-shadow .15s;
+  font-family: inherit;
+  -webkit-appearance: none; appearance: none;
+}
+.field input:focus, .field textarea:focus, .field select:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(26,115,232,.12);
+}
+.field textarea { resize: none; height: 72px; font-size: 14px; line-height: 1.5; }
+
+/* Plate input */
+.plate-row { display: flex; gap: 4px; align-items: flex-end; overflow: hidden; }
+.plate-row > div { flex: 1; min-width: 0; }
+.plate-sep { font-size: 16px; font-weight: 700; color: var(--g400); padding-bottom: 14px; flex-shrink: 0; }
+.plate-row input { font-size: 18px !important; padding: 10px 4px !important; text-align: center; min-width: 0; width: 100%; }
+
+/* Btn */
+.btn {
+  display: flex; align-items: center; justify-content: center; gap: 7px;
+  width: 100%; padding: 15px; border: none;
+  border-radius: var(--r);
+  font-size: 16px; font-weight: 700;
+  cursor: pointer; font-family: inherit;
+  transition: all .15s;
+}
+.btn:active { transform: scale(.98); }
+.btn:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+.btn-primary { background: var(--primary); color: #fff; }
+.btn-primary:active { background: var(--primary-dk); }
+.btn-green { background: var(--green); color: #fff; }
+.btn-red { background: var(--red); color: #fff; }
+.btn-ghost { background: var(--g100); color: var(--g700); border: 1.5px solid var(--g200); }
+
+/* ── SCAN VIEW ── */
+#scanView { padding: 16px; }
+
+.scan-guide {
+  background: var(--primary-lt);
+  border: 1.5px solid rgba(26,115,232,.2);
+  border-radius: var(--r);
+  padding: 14px 18px;
+  display: flex; align-items: center; gap: 12px;
+  margin-bottom: 16px;
+}
+.scan-guide-icon { color: var(--primary); flex-shrink: 0; }
+.scan-guide-text { font-size: 14px; color: var(--primary-dk); line-height: 1.5; }
+
+.camera-wrap {
+  position: relative;
+  background: #000;
+  border-radius: var(--r);
+  overflow: hidden;
+  aspect-ratio: 4/3;
+  display: none;
+  margin-bottom: 12px;
+}
+.camera-wrap.show { display: block; }
+#cameraVideo { width: 100%; height: 100%; object-fit: cover; }
+.plate-frame {
+  position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 80%; height: 28%;
+  border: 3px solid #FFD700;
+  border-radius: 8px;
+  box-shadow: 0 0 0 2000px rgba(0,0,0,.35);
+}
+.plate-frame-label {
+  position: absolute; bottom: -28px; left: 50%;
+  transform: translateX(-50%);
+  color: #FFD700; font-size: 13px; font-weight: 700;
+  white-space: nowrap; text-shadow: 0 1px 3px rgba(0,0,0,.8);
+}
+#captureCanvas { display: none; }
+
+.scan-btn-big {
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 8px;
+  background: var(--primary);
+  color: #fff;
+  border-radius: var(--r);
+  border: none;
+  width: 100%; padding: 24px;
+  font-size: 22px; font-weight: 800;
+  cursor: pointer; font-family: inherit;
+  box-shadow: var(--sh-md);
+  transition: all .15s;
+  margin-bottom: 12px;
+}
+.scan-btn-big:active { background: var(--primary-dk); transform: scale(.98); }
+.scan-btn-big small { font-size: 13px; font-weight: 500; opacity: .85; }
+
+.capture-btn {
+  display: none;
+  background: #fff;
+  border: 3px solid var(--primary);
+  color: var(--primary);
+  border-radius: var(--r);
+  width: 100%; padding: 16px;
+  font-size: 18px; font-weight: 800;
+  cursor: pointer; font-family: inherit;
+  margin-bottom: 12px;
+  transition: all .15s;
+}
+.capture-btn.show { display: flex; align-items: center; justify-content: center; gap: 8px; }
+.capture-btn:active { background: var(--primary-lt); }
+
+.stop-btn {
+  display: none;
+  background: var(--g100);
+  border: none; color: var(--g500);
+  border-radius: var(--r);
+  width: 100%; padding: 13px;
+  font-size: 14px; font-weight: 600;
+  cursor: pointer; font-family: inherit;
+  margin-bottom: 12px;
+}
+.stop-btn.show { display: block; }
+
+/* Zoom control */
+.zoom-ctrl {
+  display: none;
+  align-items: center; gap: 8px;
+  background: #fff; border-radius: var(--r);
+  padding: 10px 14px; margin-bottom: 10px;
+  box-shadow: var(--sh);
+}
+.zoom-ctrl.show { display: flex; }
+.zoom-btn {
+  width: 36px; height: 36px; flex-shrink: 0;
+  border: 1.5px solid var(--g200); background: var(--g100);
+  border-radius: 8px; font-size: 20px; font-weight: 700;
+  color: var(--g700); cursor: pointer; display: flex;
+  align-items: center; justify-content: center; line-height: 1;
+}
+.zoom-btn:active { background: var(--g200); }
+.zoom-slider {
+  flex: 1; -webkit-appearance: none; appearance: none;
+  height: 4px; border-radius: 2px;
+  background: var(--g200); outline: none; cursor: pointer;
+}
+.zoom-slider::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none;
+  width: 22px; height: 22px; border-radius: 50%;
+  background: var(--primary); cursor: pointer;
+  box-shadow: 0 1px 4px rgba(26,115,232,.3);
+}
+.zoom-label {
+  font-size: 13px; font-weight: 700; color: var(--primary);
+  min-width: 36px; text-align: right;
+}
+
+/* OCR status */
+.ocr-status {
+  display: none;
+  text-align: center; padding: 20px;
+  background: #fff; border-radius: var(--r);
+  margin-bottom: 12px;
+}
+.ocr-status.show { display: block; }
+.ocr-spinner {
+  width: 36px; height: 36px;
+  border: 3px solid var(--g200);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin .8s linear infinite;
+  margin: 0 auto 10px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.ocr-msg { font-size: 15px; font-weight: 600; color: var(--g700); }
+.ocr-sub { font-size: 13px; color: var(--g400); margin-top: 4px; }
+
+/* Scan result */
+.scan-result { display: none; margin-bottom: 12px; }
+.scan-result.show { display: block; }
+
+.result-plate {
+  text-align: center;
+  font-size: 28px; font-weight: 900;
+  letter-spacing: 2px;
+  padding: 16px;
+  background: var(--g900); color: #fff;
+  border-radius: var(--r);
+  margin-bottom: 12px;
+  font-family: 'Courier New', monospace;
+}
+.result-plate small { font-size: 13px; font-weight: 500; opacity: .6; display: block; margin-bottom: 6px; letter-spacing: 0; font-family: inherit; }
+
+/* Registered vehicle */
+.result-registered {
+  background: var(--green-lt);
+  border: 2px solid var(--green);
+  border-radius: var(--r);
+  padding: 18px;
+  margin-bottom: 12px;
+}
+.result-registered .r-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  background: var(--green); color: #fff;
+  font-size: 12px; font-weight: 700;
+  padding: 4px 10px; border-radius: 20px;
+  margin-bottom: 12px;
+}
+.result-registered .r-name {
+  font-size: 26px; font-weight: 900; color: var(--g900);
+  margin-bottom: 6px;
+}
+.result-registered .r-dept {
+  font-size: 15px; color: var(--g500); margin-bottom: 12px;
+}
+.call-btn {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  background: var(--green); color: #fff;
+  border: none; border-radius: var(--r);
+  width: 100%; padding: 16px;
+  font-size: 18px; font-weight: 800;
+  cursor: pointer; font-family: inherit;
+  text-decoration: none;
+  margin-bottom: 10px;
+  transition: all .15s;
+}
+.call-btn:active { opacity: .85; }
+.result-registered .r-meta {
+  font-size: 13px; color: var(--g500);
+  display: flex; flex-direction: column; gap: 4px;
+  margin-top: 10px;
+}
+.result-registered .r-meta span { display: flex; gap: 6px; }
+
+/* Unregistered */
+.result-unregistered {
+  background: var(--red-lt);
+  border: 2px solid var(--red);
+  border-radius: var(--r);
+  padding: 18px;
+  margin-bottom: 12px;
+  text-align: center;
+}
+.result-unregistered .u-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  background: var(--red); color: #fff;
+  font-size: 12px; font-weight: 700;
+  padding: 4px 10px; border-radius: 20px;
+  margin-bottom: 10px;
+}
+.result-unregistered .u-msg {
+  font-size: 17px; font-weight: 700; color: var(--g900);
+  margin-bottom: 4px;
+}
+.result-unregistered .u-sub {
+  font-size: 13px; color: var(--g500); margin-bottom: 14px;
+}
+
+/* Pre-approved */
+.result-preapproved {
+  background: var(--orange-lt);
+  border: 2px solid var(--orange);
+  border-radius: var(--r);
+  padding: 16px;
+  margin-bottom: 12px;
+  text-align: center;
+}
+.result-preapproved .p-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  background: var(--orange); color: #fff;
+  font-size: 12px; font-weight: 700;
+  padding: 4px 10px; border-radius: 20px;
+  margin-bottom: 10px;
+}
+
+/* ── LIST VIEW ── */
+.search-wrap {
+  display: flex; gap: 8px; margin-bottom: 14px;
+}
+.search-wrap input {
+  flex: 1; border: 1.5px solid var(--g200); border-radius: 8px;
+  padding: 11px 14px; font-size: 16px; color: var(--g900);
+  background: #fff; outline: none; font-family: inherit;
+}
+.search-wrap input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(26,115,232,.1); }
+
+.list-stats {
+  font-size: 13px; color: var(--g500); margin-bottom: 12px;
+}
+.list-stats strong { color: var(--g900); }
+
+.vehicle-card {
+  background: #fff; border-radius: var(--r);
+  box-shadow: var(--sh); padding: 14px 16px;
+  margin-bottom: 10px;
+  display: flex; align-items: center; gap: 12px;
+}
+.vc-plate {
+  background: var(--g900); color: #fff;
+  font-size: 14px; font-weight: 800;
+  padding: 6px 10px; border-radius: 6px;
+  font-family: 'Courier New', monospace;
+  white-space: nowrap; letter-spacing: 1px;
+  flex-shrink: 0;
+}
+.vc-plate.pre-approved { background: var(--orange); }
+.vc-info { flex: 1; min-width: 0; }
+.vc-name { font-size: 16px; font-weight: 700; color: var(--g900); }
+.vc-meta { font-size: 13px; color: var(--g500); margin-top: 2px; }
+.vc-phone { font-size: 13px; color: var(--primary); margin-top: 2px; font-weight: 600; }
+.vc-actions { display: flex; gap: 6px; flex-shrink: 0; }
+.vc-btn {
+  border: 1.5px solid var(--g200); background: none;
+  border-radius: 6px; padding: 7px 10px;
+  font-size: 13px; font-weight: 600; color: var(--g700);
+  cursor: pointer; font-family: inherit;
+  transition: all .12s;
+}
+.vc-btn:active { background: var(--g50); }
+.vc-btn.del { color: var(--red); border-color: #fca5a5; }
+.vc-btn.del:active { background: var(--red-lt); }
+
+.empty-msg {
+  text-align: center; padding: 48px 20px;
+  color: var(--g400); font-size: 15px;
+}
+.empty-msg svg { margin-bottom: 12px; opacity: .4; }
+
+/* ── REGISTER VIEW ── */
+.plate-hint {
+  font-size: 12px; color: var(--g400); margin-top: 5px;
+}
+.check-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 14px;
+  border: 1.5px solid var(--g200); border-radius: 8px;
+  cursor: pointer;
+}
+.check-row input[type=checkbox] {
+  width: 20px; height: 20px; cursor: pointer; accent-color: var(--primary);
+  flex-shrink: 0;
+}
+.check-row label { font-size: 15px; color: var(--g900); cursor: pointer; }
+
+/* ── UPLOAD VIEW ── */
+.upload-zone {
+  border: 2px dashed var(--g300);
+  border-radius: var(--r);
+  padding: 36px 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: all .15s;
+  margin-bottom: 14px;
+}
+.upload-zone:hover, .upload-zone.drag { border-color: var(--primary); background: var(--primary-lt); }
+.upload-zone-icon { color: var(--g300); margin-bottom: 10px; }
+.upload-zone h3 { font-size: 16px; font-weight: 700; color: var(--g700); margin-bottom: 4px; }
+.upload-zone p { font-size: 13px; color: var(--g500); }
+#xlsxInput { display: none; }
+
+.col-map {
+  background: var(--g50); border-radius: 8px; padding: 14px;
+  margin-bottom: 14px; display: none;
+}
+.col-map.show { display: block; }
+.col-map-title { font-size: 13px; font-weight: 700; color: var(--g700); margin-bottom: 10px; }
+.col-map-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.col-map-row label { font-size: 13px; color: var(--g700); width: 80px; flex-shrink: 0; }
+.col-map-row select {
+  flex: 1; border: 1.5px solid var(--g200); border-radius: 6px;
+  padding: 8px 10px; font-size: 14px; font-family: inherit;
+  background: #fff; -webkit-appearance: none; appearance: none;
+}
+
+.preview-table-wrap { overflow-x: auto; margin-bottom: 14px; }
+.preview-table {
+  width: 100%; border-collapse: collapse;
+  font-size: 13px; display: none;
+}
+.preview-table.show { display: table; }
+.preview-table th {
+  background: var(--g100); padding: 8px 10px;
+  border: 1px solid var(--g200); font-weight: 700;
+  color: var(--g700); text-align: left;
+}
+.preview-table td {
+  padding: 8px 10px;
+  border: 1px solid var(--g200); color: var(--g900);
+}
+.preview-table tr:hover td { background: var(--g50); }
+
+/* Format guide */
+.format-guide {
+  background: var(--primary-lt);
+  border: 1px solid rgba(26,115,232,.2);
+  border-radius: 8px; padding: 12px 14px;
+  font-size: 13px; color: var(--primary-dk);
+  margin-bottom: 14px;
+}
+.format-guide strong { display: block; margin-bottom: 6px; font-size: 14px; }
+.format-guide code {
+  background: rgba(26,115,232,.1); padding: 2px 6px;
+  border-radius: 4px; font-family: monospace;
+}
+
+/* ── Toast ── */
+.toast-wrap {
+  position: fixed; bottom: 84px;
+  left: 50%; transform: translateX(-50%);
+  z-index: 999; display: flex; flex-direction: column;
+  gap: 8px; align-items: center; pointer-events: none;
+}
+.toast {
+  background: var(--g900); color: #fff;
+  padding: 11px 20px; border-radius: 12px;
+  font-size: 14px; font-weight: 600;
+  opacity: 0; transition: opacity .25s; white-space: nowrap;
+  max-width: 90vw; text-align: center;
+}
+.toast.show { opacity: 1; }
+.toast.ok { background: var(--green); }
+.toast.err { background: var(--red); }
+
+/* ── Modal (edit) ── */
+.modal-bg {
+  position: fixed; inset: 0; z-index: 200;
+  background: rgba(0,0,0,.55);
+  display: none; align-items: flex-end; justify-content: center;
+}
+.modal-bg.show { display: flex; }
+.modal {
+  background: #fff; border-radius: var(--r) var(--r) 0 0;
+  padding: 20px 16px 32px; width: 100%;
+  max-width: 480px; max-height: 90dvh;
+  overflow-y: auto;
+}
+.modal-title { font-size: 18px; font-weight: 800; margin-bottom: 20px; }
+.modal-close {
+  float: right; background: none; border: none;
+  font-size: 22px; cursor: pointer; color: var(--g500);
+  line-height: 1; margin-top: -2px;
+}
+.modal-footer { display: flex; gap: 10px; margin-top: 20px; }
+.modal-footer .btn { padding: 14px; font-size: 15px; }
+</style>
+</head>
+<body>
+
+<header class="app-header">
+  <div class="hdr-title">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="1" y="3" width="15" height="13" rx="2"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/>
+      <circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/>
+    </svg>
+    주차 차량 관리
+  </div>
+  <span class="hdr-subtitle">ASEA 관리실</span>
+</header>
+
+<!-- ────────── SCAN VIEW ────────── -->
+<div class="view active" id="scanView">
+
+  <div class="scan-guide">
+    <div class="scan-guide-icon">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
+      </svg>
+    </div>
+    <div class="scan-guide-text">
+      <strong>번호판 스캔으로 차량 조회</strong><br>
+      스캔 버튼 → 카메라로 번호판 촬영 → 자동 조회
+    </div>
+  </div>
+
+  <button class="scan-btn-big" id="startScanBtn" onclick="startScan()">
+    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+      <circle cx="12" cy="13" r="4"/>
+    </svg>
+    번호판 스캔
+    <small>버튼을 누르면 카메라가 켜집니다</small>
+  </button>
+
+  <!-- 직접 입력 조회 (항상 표시) -->
+  <div class="card" id="quickSearchCard" style="margin-bottom:12px">
+    <div style="font-size:12px;font-weight:700;color:var(--g500);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">번호판 직접 조회</div>
+    <div style="display:flex;gap:6px;align-items:center">
+      <input type="text" id="msPlateInput" placeholder="123가4567 또는 서울12가3456" maxlength="12"
+        inputmode="text" autocomplete="off" autocorrect="off" autocapitalize="off"
+        onkeydown="if(event.key==='Enter')doManualSearch()"
+        style="flex:1;min-width:0;border:1.5px solid var(--g200);border-radius:8px;padding:11px 10px;font-size:16px;font-weight:700;font-family:inherit;color:var(--g900);outline:none;">
+      <button onclick="doManualSearch()"
+        style="flex-shrink:0;background:var(--primary);color:#fff;border:none;border-radius:8px;padding:11px 14px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle">
+          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        조회
+      </button>
+    </div>
+    <div style="font-size:11px;color:var(--g400);margin-top:6px">신형: 123가4567 &middot; 구형(지역): 서울12가3456 &middot; 공백·특수문자 무시</div>
+  </div>
+
+  <div class="camera-wrap" id="cameraWrap">
+    <video id="cameraVideo" playsinline muted autoplay></video>
+    <div class="plate-frame">
+      <span class="plate-frame-label">번호판을 이 안에 맞춰주세요</span>
+    </div>
+    <canvas id="captureCanvas"></canvas>
+  </div>
+
+  <!-- 줌 컨트롤 -->
+  <div class="zoom-ctrl" id="zoomCtrl">
+    <button class="zoom-btn" id="zoomOut" onclick="adjustZoom(-1)">−</button>
+    <input type="range" class="zoom-slider" id="zoomSlider" min="1" max="5" step="0.1" value="1" oninput="applyZoom(parseFloat(this.value))">
+    <button class="zoom-btn" id="zoomIn" onclick="adjustZoom(1)">+</button>
+    <span class="zoom-label" id="zoomLabel">×1.0</span>
+  </div>
+
+  <button class="capture-btn" id="captureBtn" onclick="captureAndOCR()">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4" fill="currentColor"/>
+    </svg>
+    촬영 및 인식
+  </button>
+
+  <button class="stop-btn" id="stopBtn" onclick="stopScan()">카메라 종료</button>
+
+  <div class="ocr-status" id="ocrStatus">
+    <div class="ocr-spinner"></div>
+    <div class="ocr-msg">번호판 인식 중...</div>
+    <div class="ocr-sub" id="ocrSub">잠시만 기다려 주세요</div>
+  </div>
+
+  <div class="scan-result" id="scanResult">
+    <div class="result-plate" id="resultPlate">
+      <small>인식된 번호판</small>
+      <span id="resultPlateText">-</span>
+    </div>
+
+    <!-- 등록 차량 -->
+    <div class="result-registered" id="resultRegistered" style="display:none">
+      <div class="r-badge">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="20 6 9 17 4 12"/>
+        </svg>
+        등록 차량
+      </div>
+      <div class="r-name" id="rName">-</div>
+      <div class="r-dept" id="rDept">-</div>
+      <a class="call-btn" id="rCallBtn" href="#">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.35 2 2 0 0 1 3.6 1h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 8.6a16 16 0 0 0 5.56 5.56l.96-.96a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 15.92z"/>
+        </svg>
+        <span id="rPhoneText">전화하기</span>
+      </a>
+      <div class="r-meta" id="rMeta"></div>
+    </div>
+
+    <!-- 미등록 차량 -->
+    <div class="result-unregistered" id="resultUnregistered" style="display:none">
+      <div class="u-badge">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+        미등록 차량
+      </div>
+      <div class="u-msg">등록되지 않은 번호판입니다</div>
+      <div class="u-sub">신규 등록하거나 사전 협의 차량으로 등록하세요</div>
+      <button class="btn btn-primary" onclick="goRegisterWithPlate()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+        이 번호판으로 신규 등록
+      </button>
+    </div>
+
+    <div style="margin-top:4px">
+      <button class="btn btn-ghost" style="width:100%;padding:13px;font-size:14px" onclick="resetScan()">
+        다시 스캔
+      </button>
+    </div>
+  </div>
+
+</div>
+
+<!-- ────────── LIST VIEW ────────── -->
+<div class="view" id="listView">
+  <div class="search-wrap">
+    <input type="text" id="searchInput" placeholder="번호판, 이름, 부서 검색..." oninput="filterList()">
+  </div>
+  <div class="list-stats" id="listStats"></div>
+  <div id="vehicleList"></div>
+</div>
+
+<!-- ────────── REGISTER VIEW ────────── -->
+<div class="view" id="registerView">
+  <div class="card">
+    <div class="section-title">번호판</div>
+    <div class="plate-row">
+      <div>
+        <label>앞 번호</label>
+        <input type="text" id="regPlateF" placeholder="123" maxlength="3" inputmode="numeric"
+          style="font-weight:800;">
+      </div>
+      <div class="plate-sep">-</div>
+      <div>
+        <label>한글</label>
+        <input type="text" id="regPlateH" placeholder="가" maxlength="1"
+          style="font-weight:800;">
+      </div>
+      <div class="plate-sep">-</div>
+      <div>
+        <label>뒷 번호</label>
+        <input type="text" id="regPlateB" placeholder="4567" maxlength="4" inputmode="numeric"
+          style="font-weight:800;">
+      </div>
+    </div>
+    <div class="plate-hint">예: 앞 <strong>123</strong> — 한글 <strong>가</strong> — 뒤 <strong>4567</strong> → 123가4567</div>
+  </div>
+
+  <div class="card">
+    <div class="section-title">차량 소유자 정보</div>
+    <div class="field">
+      <label>이름 <span style="color:var(--red)">*</span></label>
+      <input type="text" id="regName" placeholder="홍길동">
+    </div>
+    <div class="field">
+      <label>직함 (직위/직급)</label>
+      <input type="text" id="regTitle" placeholder="교수, 차장, 주임, 학생 등">
+    </div>
+    <div class="field">
+      <label>부서</label>
+      <select id="regDept">
+        <option value="">-- 부서 선택 --</option>
+        <option>임원</option>
+        <option>기획처</option>
+        <option>행정관리처</option>
+        <option>교육지원처</option>
+        <option>입학처</option>
+        <option>항공정비계열</option>
+        <option>스마트안전진단계열</option>
+        <option>항공관광계열</option>
+        <option>항공보안계열</option>
+        <option>국방경찰계열</option>
+        <option>기종교육원</option>
+        <option>무인항공교육원</option>
+        <option>비행교육원</option>
+        <option>온라인평생교육원</option>
+        <option>외부</option>
+        <option>학생</option>
+        <option>기타</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>연락처</label>
+      <input type="tel" id="regPhone" placeholder="010-0000-0000" inputmode="tel">
+    </div>
+    <div class="field">
+      <label>차종</label>
+      <input type="text" id="regType" placeholder="소나타, 아반떼, SUV 등">
+    </div>
+    <div class="field">
+      <label>메모</label>
+      <textarea id="regNote" placeholder="특이사항 등"></textarea>
+    </div>
+    <div class="field">
+      <div class="check-row" onclick="document.getElementById('regPre').click()">
+        <input type="checkbox" id="regPre">
+        <label for="regPre">사전 협의 차량 (방문 예약 등)</label>
+      </div>
+    </div>
+  </div>
+
+  <button class="btn btn-primary" id="regSubmitBtn" onclick="registerVehicle()">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="20 6 9 17 4 12"/>
+    </svg>
+    차량 등록
+  </button>
+</div>
+
+<!-- ────────── UPLOAD VIEW ────────── -->
+<div class="view" id="uploadView">
+  <div class="format-guide">
+    <strong>엑셀 파일 형식 안내</strong>
+    첫 행은 헤더(제목)여야 합니다.<br>
+    아래 열이 있어야 합니다:<br>
+    <code>번호판</code> · <code>이름</code> · <code>부서</code> · <code>연락처</code> · <code>차종</code>
+    <br><br>
+    번호판은 <code>123가4567</code> 형태(공백 없이) 또는<br>
+    앞뒤를 구분한 경우 자동으로 인식합니다.
+  </div>
+
+  <input type="file" id="xlsxInput" accept=".xlsx,.xls,.csv" onchange="handleXlsx(this)">
+
+  <div class="upload-zone" id="uploadZone"
+    onclick="document.getElementById('xlsxInput').click()"
+    ondragover="event.preventDefault();this.classList.add('drag')"
+    ondragleave="this.classList.remove('drag')"
+    ondrop="handleDrop(event)">
+    <div class="upload-zone-icon">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+        <polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+      </svg>
+    </div>
+    <h3>엑셀 파일 선택 또는 드래그</h3>
+    <p>.xlsx · .xls · .csv 파일 지원</p>
+  </div>
+
+  <div class="col-map" id="colMap">
+    <div class="col-map-title">열 매핑 (파일에서 어떤 열이 어떤 항목인지 지정)</div>
+    <div id="colMapRows"></div>
+  </div>
+
+  <div class="preview-table-wrap">
+    <table class="preview-table" id="previewTable">
+      <thead id="previewHead"></thead>
+      <tbody id="previewBody"></tbody>
+    </table>
+  </div>
+
+  <div id="uploadStats" style="font-size:13px;color:var(--g500);margin-bottom:12px;display:none"></div>
+
+  <button class="btn btn-primary" id="uploadBtn" onclick="doUpload()" style="display:none">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="20 6 9 17 4 12"/>
+    </svg>
+    <span id="uploadBtnText">일괄 등록</span>
+  </button>
+</div>
+
+<!-- ────────── Edit Modal ────────── -->
+<div class="modal-bg" id="editModal">
+  <div class="modal">
+    <div class="modal-title">
+      차량 정보 수정
+      <button class="modal-close" onclick="closeModal()">×</button>
+    </div>
+    <input type="hidden" id="editId">
+    <div class="field">
+      <label>번호판</label>
+      <input type="text" id="editPlate" readonly style="background:var(--g100);color:var(--g500)">
+    </div>
+    <div class="field">
+      <label>이름</label>
+      <input type="text" id="editName" placeholder="홍길동">
+    </div>
+    <div class="field">
+      <label>직함 (직위/직급)</label>
+      <input type="text" id="editTitle" placeholder="교수, 차장, 주임, 학생 등">
+    </div>
+    <div class="field">
+      <label>부서</label>
+      <select id="editDept">
+        <option value="">-- 부서 선택 --</option>
+        <option>임원</option><option>기획처</option><option>행정관리처</option>
+        <option>교육지원처</option><option>입학처</option><option>항공정비계열</option>
+        <option>스마트안전진단계열</option><option>항공관광계열</option><option>항공보안계열</option>
+        <option>국방경찰계열</option><option>기종교육원</option><option>무인항공교육원</option>
+        <option>비행교육원</option><option>온라인평생교육원</option>
+        <option>외부</option><option>학생</option><option>기타</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>연락처</label>
+      <input type="tel" id="editPhone" placeholder="010-0000-0000">
+    </div>
+    <div class="field">
+      <label>차종</label>
+      <input type="text" id="editType">
+    </div>
+    <div class="field">
+      <label>메모</label>
+      <textarea id="editNote"></textarea>
+    </div>
+    <div class="field">
+      <div class="check-row" onclick="document.getElementById('editPre').click()">
+        <input type="checkbox" id="editPre">
+        <label for="editPre">사전 협의 차량</label>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" style="flex:1" onclick="closeModal()">취소</button>
+      <button class="btn btn-primary" style="flex:2" onclick="saveEdit()">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- Bottom Nav -->
+<nav class="bottom-nav">
+  <button class="nav-item active" id="nav-scan" onclick="showView('scan')">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+      <circle cx="12" cy="13" r="4"/>
+    </svg>
+    스캔 조회
+  </button>
+  <button class="nav-item" id="nav-list" onclick="showView('list')">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/>
+      <line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>
+    </svg>
+    차량 목록
+  </button>
+  <button class="nav-item" id="nav-register" onclick="showView('register')">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>
+    </svg>
+    차량 등록
+  </button>
+  <button class="nav-item" id="nav-upload" onclick="showView('upload')">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+      <polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+    </svg>
+    일괄 등록
+  </button>
+</nav>
+
+<div class="toast-wrap" id="toastWrap"></div>
+
+<script>
+'use strict';
+
+const SUPA_URL = 'https://zbpeyklwpotjyveipzxd.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpicGV5a2x3cG90anl2ZWlwenhkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE1MTYxMDcsImV4cCI6MjA5NzA5MjEwN30.6JgoQ6rPRnmrbBTG68A-Y9HDQk40mnwubhXVnkZvHrQ';
+
+const sb = supabase.createClient(SUPA_URL, SUPA_KEY, {
+  auth: { persistSession: false, autoRefreshToken: false }
+});
+
+let allVehicles = [];
+let lastOCRPlate = '';
+let cameraStream = null;
+let zoomMin = 1, zoomMax = 5, zoomStep = 0.1, zoomCurrent = 1;
+let xlsxRows = [];
+let xlsxHeaders = [];
+
+// ── 번호판 정규화 ──
+function normalizePlate(raw) {
+  if (!raw) return null;
+  var t = raw.replace(/\s+/g, '').replace(/[^가-힣0-9a-zA-Z]/g, '');
+  // 신형: 숫자2-3자 + 한글 1자 + 숫자 4자
+  var m = t.match(/(\d{2,3})([가-힣])(\d{4})/);
+  if (m) return m[1] + m[2] + m[3];
+  // 구형: 지역명+숫자 + 한글 + 숫자4
+  m = t.match(/([가-힣]{1,3}\d{1,2})([가-힣])(\d{4})/);
+  if (m) return m[1] + m[2] + m[3];
+  return null;
+}
+
+function displayPlate(plate) {
+  if (!plate) return '-';
+  var m = plate.match(/^(\d+)([가-힣])(\d+)$/);
+  if (m) return m[1] + ' ' + m[2] + ' ' + m[3];
+  m = plate.match(/^([가-힣]+\d+)([가-힣])(\d+)$/);
+  if (m) return m[1] + ' ' + m[2] + ' ' + m[3];
+  return plate;
+}
+
+function formatPhone(ph) {
+  if (!ph) return '';
+  return ph.replace(/[^0-9]/g, '').replace(/^(\d{2,3})(\d{3,4})(\d{4})$/, '$1-$2-$3');
+}
+
+// ── Views ──
+function showView(name) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById(name + 'View').classList.add('active');
+  document.getElementById('nav-' + name).classList.add('active');
+  if (name === 'list') loadVehicleList();
+}
+
+// ── Toast ──
+function toast(msg, type) {
+  var wrap = document.getElementById('toastWrap');
+  var el = document.createElement('div');
+  el.className = 'toast' + (type ? ' ' + type : '');
+  el.textContent = msg;
+  wrap.appendChild(el);
+  requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add('show')));
+  setTimeout(() => { el.classList.remove('show'); setTimeout(() => el.remove(), 300); }, 2800);
+}
+
+// ────────── SCAN ──────────
+
+async function startScan() {
+  document.getElementById('startScanBtn').style.display = 'none';
+  document.getElementById('quickSearchCard').style.display = 'none';
+  document.getElementById('cameraWrap').classList.add('show');
+  document.getElementById('captureBtn').classList.add('show');
+  document.getElementById('stopBtn').classList.add('show');
+  document.getElementById('scanResult').classList.remove('show');
+
+  try {
+    cameraStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 960 } },
+      audio: false
+    });
+    document.getElementById('cameraVideo').srcObject = cameraStream;
+
+    // 줌 지원 여부 확인 후 컨트롤 표시
+    var track = cameraStream.getVideoTracks()[0];
+    var caps = track.getCapabilities ? track.getCapabilities() : {};
+    if (caps.zoom) {
+      zoomMin = caps.zoom.min || 1;
+      zoomMax = caps.zoom.max || 5;
+      zoomStep = caps.zoom.step || 0.1;
+      zoomCurrent = zoomMin;
+      var sl = document.getElementById('zoomSlider');
+      sl.min = zoomMin; sl.max = zoomMax; sl.step = zoomStep; sl.value = zoomMin;
+      document.getElementById('zoomLabel').textContent = '×' + zoomMin.toFixed(1);
+      document.getElementById('zoomCtrl').classList.add('show');
+    }
+  } catch (e) {
+    toast('카메라를 사용할 수 없습니다: ' + (e.message || e), 'err');
+    stopScan();
+  }
+}
+
+function stopScan() {
+  if (cameraStream) {
+    cameraStream.getTracks().forEach(t => t.stop());
+    cameraStream = null;
+  }
+  document.getElementById('cameraWrap').classList.remove('show');
+  document.getElementById('captureBtn').classList.remove('show');
+  document.getElementById('stopBtn').classList.remove('show');
+  document.getElementById('zoomCtrl').classList.remove('show');
+  document.getElementById('zoomSlider').value = 1;
+  document.getElementById('zoomLabel').textContent = '×1.0';
+  zoomCurrent = 1;
+  document.getElementById('startScanBtn').style.display = '';
+  document.getElementById('quickSearchCard').style.display = '';
+}
+
+function applyZoom(val) {
+  if (!cameraStream) return;
+  var track = cameraStream.getVideoTracks()[0];
+  var clamped = Math.min(Math.max(val, zoomMin), zoomMax);
+  zoomCurrent = clamped;
+  track.applyConstraints({ advanced: [{ zoom: clamped }] }).catch(function(){});
+  document.getElementById('zoomSlider').value = clamped;
+  document.getElementById('zoomLabel').textContent = '×' + clamped.toFixed(1);
+}
+
+function adjustZoom(dir) {
+  applyZoom(zoomCurrent + dir * zoomStep * 5);
+}
+
+async function captureAndOCR() {
+  var video = document.getElementById('cameraVideo');
+  var canvas = document.getElementById('captureCanvas');
+
+  // 번호판 영역만 크롭 (세로 중앙 28% 구간, 가로 80%)
+  var vw = video.videoWidth, vh = video.videoHeight;
+  var cropX = vw * 0.10;
+  var cropY = vh * 0.36;
+  var cropW = vw * 0.80;
+  var cropH = vh * 0.28;
+
+  canvas.width = cropW;
+  canvas.height = cropH;
+  var ctx = canvas.getContext('2d');
+  ctx.drawImage(video, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH);
+
+  stopScan();
+  document.getElementById('ocrStatus').classList.add('show');
+  document.getElementById('ocrSub').textContent = 'AI 번호판 인식 중...';
+
+  try {
+    var base64 = canvas.toDataURL('image/jpeg', 0.92).split(',')[1];
+
+    var res = await window.claudeFetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': 'via',
+        'anthropic-version': '2023-06-01'
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 30,
+        messages: [{
+          role: 'user',
+          content: [
+            { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: base64 } },
+            { type: 'text', text: '이 이미지의 자동차 번호판 번호만 읽어주세요. 한국 번호판 형식 예시: 123가4567, 서울12가3456. 번호만 답하고 다른 말은 하지 마세요. 번호판이 없거나 보이지 않으면 "없음"이라고만 답하세요.' }
+          ]
+        }]
+      })
+    });
+
+    document.getElementById('ocrStatus').classList.remove('show');
+
+    if (!res.ok) {
+      var errJson = null;
+      try { errJson = await res.json(); } catch(e) {}
+      throw new Error((errJson && errJson.error && errJson.error.message) || 'AI 응답 오류 ' + res.status);
+    }
+
+    var data = await res.json();
+    var rawText = window.claudeExtractText(data);
+
+    if (!rawText || rawText.trim() === '없음') {
+      toast('번호판을 인식하지 못했습니다. 다시 시도해 주세요.', 'err');
+      document.getElementById('startScanBtn').style.display = '';
+      document.getElementById('quickSearchCard').style.display = '';
+      return;
+    }
+
+    var plate = normalizePlate(rawText);
+    if (!plate) {
+      toast('인식 결과: "' + rawText.trim().substring(0, 20) + '"\n형식 불일치 — 직접 입력해 주세요.', 'err');
+      document.getElementById('startScanBtn').style.display = '';
+      document.getElementById('quickSearchCard').style.display = '';
+      var inp = document.getElementById('msPlateInput');
+      if (inp) { inp.value = rawText.trim().replace(/\s+/g,''); inp.focus(); }
+      return;
+    }
+
+    await showPlateResult(plate);
+
+  } catch (e) {
+    document.getElementById('ocrStatus').classList.remove('show');
+    toast('인식 오류: ' + (e.message || e), 'err');
+    document.getElementById('startScanBtn').style.display = '';
+    document.getElementById('quickSearchCard').style.display = '';
+  }
+}
+
+async function showPlateResult(plate) {
+  lastOCRPlate = plate;
+  document.getElementById('resultPlateText').textContent = displayPlate(plate);
+  document.getElementById('scanResult').classList.add('show');
+  document.getElementById('resultRegistered').style.display = 'none';
+  document.getElementById('resultUnregistered').style.display = 'none';
+
+  var { data } = await sb.from('vehicle_registry')
+    .select('*').eq('plate_number', plate).maybeSingle();
+
+  if (data) {
+    var phone = formatPhone(data.owner_phone || '');
+    var nameWithTitle = [data.owner_name, data.job_title].filter(Boolean).join(' ');
+    document.getElementById('rName').textContent = nameWithTitle || '(이름 없음)';
+    document.getElementById('rDept').textContent = [data.owner_dept, data.vehicle_type].filter(Boolean).join(' · ') || '부서 미입력';
+
+    var callBtn = document.getElementById('rCallBtn');
+    if (phone) {
+      callBtn.href = 'tel:' + phone.replace(/-/g, '');
+      document.getElementById('rPhoneText').textContent = phone + ' 전화하기';
+      callBtn.style.display = '';
+    } else {
+      callBtn.style.display = 'none';
+    }
+
+    var meta = [];
+    if (data.note) meta.push('<span><strong>메모:</strong> ' + escHtml(data.note) + '</span>');
+    if (data.pre_approved) meta.push('<span style="color:var(--orange);font-weight:700">★ 사전 협의 차량</span>');
+    document.getElementById('rMeta').innerHTML = meta.join('');
+
+    document.getElementById('resultRegistered').style.display = '';
+  } else {
+    document.getElementById('resultUnregistered').style.display = '';
+  }
+}
+
+function resetScan() {
+  document.getElementById('scanResult').classList.remove('show');
+  document.getElementById('startScanBtn').style.display = '';
+  document.getElementById('quickSearchCard').style.display = '';
+  lastOCRPlate = '';
+}
+
+async function doManualSearch() {
+  var raw = document.getElementById('msPlateInput').value.trim();
+  if (!raw) { toast('번호판을 입력하세요.'); return; }
+  var plate = normalizePlate(raw);
+  if (!plate) { toast('올바른 번호판 형식이 아닙니다.\n예) 123가4567 / 서울12가3456'); return; }
+  await showPlateResult(plate);
+}
+
+function goRegisterWithPlate() {
+  if (lastOCRPlate) {
+    var m = lastOCRPlate.match(/^(\d+)([가-힣])(\d+)$/);
+    if (m) {
+      document.getElementById('regPlateF').value = m[1];
+      document.getElementById('regPlateH').value = m[2];
+      document.getElementById('regPlateB').value = m[3];
+    }
+  }
+  showView('register');
+}
+
+// ────────── LIST ──────────
+
+async function loadVehicleList() {
+  var { data } = await sb.from('vehicle_registry')
+    .select('*').order('owner_name', { ascending: true });
+  allVehicles = data || [];
+  filterList();
+}
+
+function filterList() {
+  var q = (document.getElementById('searchInput').value || '').toLowerCase();
+  var filtered = allVehicles.filter(v =>
+    !q ||
+    (v.plate_number || '').toLowerCase().includes(q) ||
+    (v.owner_name || '').toLowerCase().includes(q) ||
+    (v.owner_dept || '').toLowerCase().includes(q) ||
+    (v.owner_phone || '').includes(q)
+  );
+  renderList(filtered);
+}
+
+function renderList(list) {
+  var total = allVehicles.length;
+  var shown = list.length;
+  document.getElementById('listStats').innerHTML =
+    '전체 <strong>' + total + '</strong>대' + (shown < total ? ' 중 <strong>' + shown + '</strong>대 표시' : '');
+
+  var container = document.getElementById('vehicleList');
+  if (list.length === 0) {
+    container.innerHTML = '<div class="empty-msg"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13" rx="2"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg><br>등록된 차량이 없습니다</div>';
+    return;
+  }
+  container.innerHTML = list.map(v => {
+    var phone = formatPhone(v.owner_phone || '');
+    var plateClass = 'vc-plate' + (v.pre_approved ? ' pre-approved' : '');
+    return '<div class="vehicle-card">' +
+      '<div class="' + plateClass + '">' + escHtml(displayPlate(v.plate_number)) + '</div>' +
+      '<div class="vc-info">' +
+        '<div class="vc-name">' + escHtml([v.owner_name, v.job_title].filter(Boolean).join(' ') || '(이름 없음)') + (v.pre_approved ? ' <small style="font-size:11px;background:var(--orange);color:#fff;padding:2px 6px;border-radius:10px;font-weight:700">협의</small>' : '') + '</div>' +
+        '<div class="vc-meta">' + escHtml([v.owner_dept, v.vehicle_type].filter(Boolean).join(' · ')) + '</div>' +
+        (phone ? '<a class="vc-phone" href="tel:' + phone.replace(/-/g, '') + '">' + phone + '</a>' : '') +
+      '</div>' +
+      '<div class="vc-actions">' +
+        '<button class="vc-btn" onclick="editVehicle(\'' + v.id + '\')">수정</button>' +
+        '<button class="vc-btn del" onclick="deleteVehicle(\'' + v.id + '\',\'' + escHtml(v.plate_number) + '\')">삭제</button>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+// ────────── REGISTER ──────────
+
+async function registerVehicle() {
+  var f = document.getElementById('regPlateF').value.trim();
+  var h = document.getElementById('regPlateH').value.trim();
+  var b = document.getElementById('regPlateB').value.trim();
+  var name = document.getElementById('regName').value.trim();
+
+  if (!f || !h || !b) { toast('번호판 앞·한글·뒤를 모두 입력하세요.'); return; }
+  if (!name) { toast('이름을 입력하세요.'); return; }
+
+  var plate = normalizePlate(f + h + b);
+  if (!plate) { toast('번호판 형식이 올바르지 않습니다.'); return; }
+
+  var btn = document.getElementById('regSubmitBtn');
+  btn.disabled = true;
+
+  var rec = {
+    plate_number: plate,
+    plate_front: f,
+    plate_back: h + b,
+    owner_name: name,
+    job_title: document.getElementById('regTitle').value.trim(),
+    owner_dept: document.getElementById('regDept').value,
+    owner_phone: formatPhone(document.getElementById('regPhone').value.trim()),
+    vehicle_type: document.getElementById('regType').value.trim(),
+    note: document.getElementById('regNote').value.trim(),
+    pre_approved: document.getElementById('regPre').checked,
+    updated_at: new Date().toISOString()
+  };
+
+  var { error } = await sb.from('vehicle_registry').upsert(rec, { onConflict: 'plate_number' });
+  btn.disabled = false;
+
+  if (error) { toast('등록 실패: ' + error.message, 'err'); return; }
+
+  toast('차량 등록 완료!', 'ok');
+  // 폼 초기화
+  ['regPlateF','regPlateH','regPlateB','regName','regTitle','regPhone','regType','regNote'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  document.getElementById('regDept').value = '';
+  document.getElementById('regPre').checked = false;
+}
+
+// ────────── EDIT / DELETE ──────────
+
+function editVehicle(id) {
+  var v = allVehicles.find(x => x.id === id);
+  if (!v) return;
+  document.getElementById('editId').value = v.id;
+  document.getElementById('editPlate').value = displayPlate(v.plate_number);
+  document.getElementById('editName').value = v.owner_name || '';
+  document.getElementById('editTitle').value = v.job_title || '';
+  document.getElementById('editDept').value = v.owner_dept || '';
+  document.getElementById('editPhone').value = v.owner_phone || '';
+  document.getElementById('editType').value = v.vehicle_type || '';
+  document.getElementById('editNote').value = v.note || '';
+  document.getElementById('editPre').checked = !!v.pre_approved;
+  document.getElementById('editModal').classList.add('show');
+}
+
+function closeModal() {
+  document.getElementById('editModal').classList.remove('show');
+}
+
+async function saveEdit() {
+  var id = document.getElementById('editId').value;
+  var name = document.getElementById('editName').value.trim();
+  if (!name) { toast('이름을 입력하세요.'); return; }
+
+  var { error } = await sb.from('vehicle_registry').update({
+    owner_name: name,
+    job_title: document.getElementById('editTitle').value.trim(),
+    owner_dept: document.getElementById('editDept').value,
+    owner_phone: formatPhone(document.getElementById('editPhone').value.trim()),
+    vehicle_type: document.getElementById('editType').value.trim(),
+    note: document.getElementById('editNote').value.trim(),
+    pre_approved: document.getElementById('editPre').checked,
+    updated_at: new Date().toISOString()
+  }).eq('id', id);
+
+  if (error) { toast('저장 실패: ' + error.message, 'err'); return; }
+  toast('수정 완료!', 'ok');
+  closeModal();
+  loadVehicleList();
+}
+
+async function deleteVehicle(id, plate) {
+  if (!confirm('"' + plate + '" 차량을 삭제하시겠습니까?')) return;
+  var { error } = await sb.from('vehicle_registry').delete().eq('id', id);
+  if (error) { toast('삭제 실패: ' + error.message, 'err'); return; }
+  toast('삭제 완료.', 'ok');
+  loadVehicleList();
+}
+
+// ────────── XLSX UPLOAD ──────────
+
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById('uploadZone').classList.remove('drag');
+  var file = e.dataTransfer.files[0];
+  if (file) processXlsx(file);
+}
+
+function handleXlsx(input) {
+  var file = input.files[0];
+  if (file) processXlsx(file);
+  input.value = '';
+}
+
+function processXlsx(file) {
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      var wb = XLSX.read(e.target.result, { type: 'array' });
+      var ws = wb.Sheets[wb.SheetNames[0]];
+      var json = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+      if (json.length < 2) { toast('데이터가 없습니다 (헤더 포함 2행 이상 필요).', 'err'); return; }
+
+      xlsxHeaders = json[0].map(String);
+      xlsxRows = json.slice(1).filter(r => r.some(c => String(c).trim()));
+
+      renderColMap();
+      renderPreview();
+      document.getElementById('uploadStats').style.display = '';
+      document.getElementById('uploadStats').textContent = '총 ' + xlsxRows.length + '행 인식됨 (헤더 제외)';
+      document.getElementById('uploadBtn').style.display = '';
+    } catch (err) {
+      toast('파일 읽기 오류: ' + err.message, 'err');
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+var FIELD_LABELS = [
+  { key: 'plate_number', label: '번호판', required: true },
+  { key: 'owner_name',   label: '이름',   required: true },
+  { key: 'job_title',    label: '직함',   required: false },
+  { key: 'owner_dept',   label: '부서',   required: false },
+  { key: 'owner_phone',  label: '연락처', required: false },
+  { key: 'vehicle_type', label: '차종',   required: false },
+  { key: 'note',         label: '메모',   required: false },
+];
+
+function guessCol(label) {
+  var keywords = {
+    plate_number: ['번호판','차량번호','플레이트','plate'],
+    owner_name:   ['이름','성명','name'],
+    job_title:    ['직함','직위','직급','title','position'],
+    owner_dept:   ['부서','소속','dept'],
+    owner_phone:  ['연락처','전화','폰','phone','tel'],
+    vehicle_type: ['차종','모델','model','type'],
+    note:         ['메모','비고','note','remark'],
+  };
+  for (var i = 0; i < xlsxHeaders.length; i++) {
+    var h = xlsxHeaders[i].toLowerCase();
+    if (keywords[label] && keywords[label].some(k => h.includes(k))) return i;
+  }
+  return -1;
+}
+
+function renderColMap() {
+  var colMapEl = document.getElementById('colMap');
+  var rowsEl   = document.getElementById('colMapRows');
+  colMapEl.classList.add('show');
+
+  rowsEl.innerHTML = FIELD_LABELS.map(fl => {
+    var guess = guessCol(fl.key);
+    var opts = xlsxHeaders.map((h, i) =>
+      '<option value="' + i + '"' + (i === guess ? ' selected' : '') + '>' + escHtml(h) + '</option>'
+    ).join('');
+    return '<div class="col-map-row">' +
+      '<label>' + fl.label + (fl.required ? ' *' : '') + '</label>' +
+      '<select id="colmap_' + fl.key + '"><option value="-1">-- 선택 --</option>' + opts + '</select>' +
+    '</div>';
+  }).join('');
+}
+
+function renderPreview() {
+  var head = document.getElementById('previewHead');
+  var body = document.getElementById('previewBody');
+  var table = document.getElementById('previewTable');
+
+  head.innerHTML = '<tr>' + xlsxHeaders.map(h => '<th>' + escHtml(h) + '</th>').join('') + '</tr>';
+  body.innerHTML = xlsxRows.slice(0, 5).map(row =>
+    '<tr>' + xlsxHeaders.map((_, i) => '<td>' + escHtml(String(row[i] || '')) + '</td>').join('') + '</tr>'
+  ).join('');
+  table.classList.add('show');
+}
+
+async function doUpload() {
+  var colIdx = {};
+  for (var fl of FIELD_LABELS) {
+    var v = parseInt(document.getElementById('colmap_' + fl.key).value, 10);
+    colIdx[fl.key] = isNaN(v) ? -1 : v;
+  }
+
+  if (colIdx.plate_number < 0) { toast('번호판 열을 선택하세요.', 'err'); return; }
+  if (colIdx.owner_name < 0) { toast('이름 열을 선택하세요.', 'err'); return; }
+
+  var records = [];
+  var skipped = 0;
+  for (var row of xlsxRows) {
+    var rawPlate = String(row[colIdx.plate_number] || '').trim();
+    var plate = normalizePlate(rawPlate);
+    var name  = String(row[colIdx.owner_name] || '').trim();
+    if (!plate || !name) { skipped++; continue; }
+    records.push({
+      plate_number: plate,
+      plate_front:  plate.replace(/[가-힣]\d+$/, ''),
+      plate_back:   plate.replace(/^\d+/, ''),
+      owner_name:   name,
+      job_title:    colIdx.job_title >= 0 ? String(row[colIdx.job_title] || '').trim() : '',
+      owner_dept:   colIdx.owner_dept >= 0 ? String(row[colIdx.owner_dept] || '').trim() : '',
+      owner_phone:  colIdx.owner_phone >= 0 ? formatPhone(String(row[colIdx.owner_phone] || '').trim()) : '',
+      vehicle_type: colIdx.vehicle_type >= 0 ? String(row[colIdx.vehicle_type] || '').trim() : '',
+      note:         colIdx.note >= 0 ? String(row[colIdx.note] || '').trim() : '',
+      pre_approved: false,
+      updated_at:   new Date().toISOString()
+    });
+  }
+
+  if (records.length === 0) { toast('등록할 유효한 데이터가 없습니다.', 'err'); return; }
+
+  var btn = document.getElementById('uploadBtn');
+  btn.disabled = true;
+  document.getElementById('uploadBtnText').textContent = '등록 중...';
+
+  // 50개씩 배치 업서트
+  var done = 0;
+  var fail = 0;
+  for (var i = 0; i < records.length; i += 50) {
+    var batch = records.slice(i, i + 50);
+    var { error } = await sb.from('vehicle_registry').upsert(batch, { onConflict: 'plate_number' });
+    if (error) { fail += batch.length; }
+    else { done += batch.length; }
+    document.getElementById('uploadBtnText').textContent = done + '/' + records.length + ' 등록 중...';
+  }
+
+  btn.disabled = false;
+  document.getElementById('uploadBtnText').textContent = '일괄 등록';
+
+  var msg = '등록 완료: ' + done + '대';
+  if (skipped) msg += ' · 번호판/이름 누락으로 건너뜀: ' + skipped + '행';
+  if (fail) msg += ' · 오류: ' + fail + '대';
+  toast(msg, done > 0 ? 'ok' : 'err');
+
+  if (done > 0) loadVehicleList();
+}
+
+// ── util ──
+function escHtml(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── 실시간 갱신 ──
+sb.channel('vehicle-registry-changes')
+  .on('postgres_changes', { event: '*', schema: 'public', table: 'vehicle_registry' }, function() {
+    if (document.getElementById('listView').classList.contains('active')) loadVehicleList();
+  })
+  .subscribe();
+
+// init
+loadVehicleList();
+</script>
+</body>
+</html>
