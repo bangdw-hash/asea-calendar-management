@@ -547,6 +547,13 @@ body {
     <small>버튼을 누르면 카메라가 켜집니다</small>
   </button>
 
+  <button class="btn btn-ghost" id="manualEntryBtn" onclick="manualSearch()" style="margin-bottom:12px;gap:8px;">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="2" y="4" width="20" height="16" rx="2"/><line x1="8" y1="9" x2="16" y2="9"/><line x1="8" y1="13" x2="13" y2="13"/>
+    </svg>
+    번호 직접 입력
+  </button>
+
   <div class="camera-wrap" id="cameraWrap">
     <video id="cameraVideo" playsinline muted autoplay></video>
     <div class="plate-frame">
@@ -961,6 +968,7 @@ async function startScan() {
   document.getElementById('stopBtn').classList.add('show');
   document.getElementById('scanResult').classList.remove('show');
   document.getElementById('manualSearchCard').style.display = 'none';
+  document.getElementById('manualEntryBtn').style.display = 'none';
 
   try {
     cameraStream = await navigator.mediaDevices.getUserMedia({
@@ -1088,6 +1096,7 @@ function resetScan() {
   document.getElementById('scanResult').classList.remove('show');
   document.getElementById('manualSearchCard').style.display = 'none';
   document.getElementById('startScanBtn').style.display = '';
+  document.getElementById('manualEntryBtn').style.display = '';
   lastOCRPlate = '';
 }
 
@@ -1095,6 +1104,8 @@ function manualSearch() {
   document.getElementById('scanResult').classList.remove('show');
   document.getElementById('manualSearchCard').style.display = 'block';
   document.getElementById('startScanBtn').style.display = 'none';
+  document.getElementById('manualEntryBtn').style.display = 'none';
+  setTimeout(function(){ document.getElementById('msPlateF').focus(); }, 100);
 }
 
 async function doManualSearch() {
@@ -1105,6 +1116,8 @@ async function doManualSearch() {
   var plate = normalizePlate(f + h + b);
   if (!plate) { toast('올바른 번호판 형식이 아닙니다.'); return; }
   document.getElementById('manualSearchCard').style.display = 'none';
+  document.getElementById('manualEntryBtn').style.display = '';
+  document.getElementById('startScanBtn').style.display = '';
   await showPlateResult(plate);
 }
 
