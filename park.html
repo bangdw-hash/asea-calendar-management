@@ -405,8 +405,8 @@ body {
 .vc-plate.pre-approved { background: var(--orange); }
 .vc-info { flex: 1; min-width: 0; }
 .vc-name { font-size: 16px; font-weight: 700; color: var(--g900); }
-.vc-meta { font-size: 13px; color: var(--g500); margin-top: 2px; }
-.vc-phone { font-size: 13px; color: var(--primary); margin-top: 2px; font-weight: 600; }
+.vc-meta { font-size: 13px; color: var(--g500); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.vc-phone { font-size: 13px; color: var(--primary); margin-top: 2px; font-weight: 600; white-space: nowrap; display: block; overflow: hidden; text-overflow: ellipsis; }
 .vc-actions { display: flex; gap: 6px; flex-shrink: 0; }
 .vc-btn {
   border: 1.5px solid var(--g200); background: none;
@@ -580,12 +580,57 @@ body {
     <small>버튼을 누르면 카메라가 켜집니다</small>
   </button>
 
-  <button class="btn btn-ghost" id="manualEntryBtn" onclick="manualSearch()" style="margin-bottom:12px;gap:8px;">
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-      <rect x="2" y="4" width="20" height="16" rx="2"/><line x1="8" y1="9" x2="16" y2="9"/><line x1="8" y1="13" x2="13" y2="13"/>
-    </svg>
-    번호 직접 입력
-  </button>
+  <!-- 직접 입력 조회 (항상 표시) -->
+  <div class="card" id="quickSearchCard" style="margin-bottom:12px">
+    <div style="font-size:12px;font-weight:700;color:var(--g500);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">번호판 직접 조회</div>
+    <div class="plate-type-tabs">
+      <button class="plate-type-tab active" id="ptabNew" onclick="switchPlateTab('new')">신형 &nbsp;123가4567</button>
+      <button class="plate-type-tab" id="ptabOld" onclick="switchPlateTab('old')">구형 &nbsp;서울12가3456</button>
+    </div>
+
+    <!-- 신형 패널 -->
+    <div id="ptabNewPanel">
+      <div style="display:flex;gap:4px;align-items:center">
+        <input type="text" id="qsNewF" placeholder="123" maxlength="3" inputmode="numeric"
+          oninput="plateAutoAdv(this,'qsNewH',3)" onkeydown="if(event.key==='Enter')doManualSearch()"
+          style="flex:3;min-width:0;border:1.5px solid var(--g200);border-radius:8px;padding:11px 4px;font-size:18px;font-weight:800;text-align:center;font-family:inherit;color:var(--g900);outline:none;">
+        <span style="font-size:15px;font-weight:700;color:var(--g400);flex-shrink:0">-</span>
+        <input type="text" id="qsNewH" placeholder="가" maxlength="1"
+          oninput="plateAutoAdv(this,'qsNewB',1,event)" oncompositionend="plateAutoAdv(this,'qsNewB',1)" onkeydown="if(event.key==='Enter')doManualSearch()"
+          style="flex:2;min-width:0;border:1.5px solid var(--g200);border-radius:8px;padding:11px 4px;font-size:18px;font-weight:800;text-align:center;font-family:inherit;color:var(--g900);outline:none;">
+        <span style="font-size:15px;font-weight:700;color:var(--g400);flex-shrink:0">-</span>
+        <input type="text" id="qsNewB" placeholder="4567" maxlength="4" inputmode="numeric"
+          onkeydown="if(event.key==='Enter')doManualSearch()"
+          style="flex:4;min-width:0;border:1.5px solid var(--g200);border-radius:8px;padding:11px 4px;font-size:18px;font-weight:800;text-align:center;font-family:inherit;color:var(--g900);outline:none;">
+        <button onclick="doManualSearch()" style="flex-shrink:0;background:var(--primary);color:#fff;border:none;border-radius:8px;padding:11px 13px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          조회
+        </button>
+      </div>
+    </div>
+
+    <!-- 구형 패널 -->
+    <div id="ptabOldPanel" style="display:none">
+      <div style="display:flex;gap:4px;align-items:center">
+        <input type="text" id="qsOldF" placeholder="서울12" maxlength="6"
+          oninput="plateAutoAdvOld(this,'qsOldH')" onkeydown="if(event.key==='Enter')doManualSearch()"
+          style="flex:4;min-width:0;border:1.5px solid var(--g200);border-radius:8px;padding:11px 4px;font-size:16px;font-weight:800;text-align:center;font-family:inherit;color:var(--g900);outline:none;">
+        <span style="font-size:15px;font-weight:700;color:var(--g400);flex-shrink:0">-</span>
+        <input type="text" id="qsOldH" placeholder="가" maxlength="1"
+          oninput="plateAutoAdv(this,'qsOldB',1,event)" oncompositionend="plateAutoAdv(this,'qsOldB',1)" onkeydown="if(event.key==='Enter')doManualSearch()"
+          style="flex:2;min-width:0;border:1.5px solid var(--g200);border-radius:8px;padding:11px 4px;font-size:18px;font-weight:800;text-align:center;font-family:inherit;color:var(--g900);outline:none;">
+        <span style="font-size:15px;font-weight:700;color:var(--g400);flex-shrink:0">-</span>
+        <input type="text" id="qsOldB" placeholder="3456" maxlength="4" inputmode="numeric"
+          onkeydown="if(event.key==='Enter')doManualSearch()"
+          style="flex:4;min-width:0;border:1.5px solid var(--g200);border-radius:8px;padding:11px 4px;font-size:18px;font-weight:800;text-align:center;font-family:inherit;color:var(--g900);outline:none;">
+        <button onclick="doManualSearch()" style="flex-shrink:0;background:var(--primary);color:#fff;border:none;border-radius:8px;padding:11px 13px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          조회
+        </button>
+      </div>
+      <div style="font-size:11px;color:var(--g400);margin-top:5px">지역명+숫자 예) 서울12, 경기23, 부산9</div>
+    </div>
+  </div>
 
   <div class="camera-wrap" id="cameraWrap">
     <video id="cameraVideo" playsinline muted autoplay></video>
@@ -702,8 +747,14 @@ body {
 
 <!-- ────────── LIST VIEW ────────── -->
 <div class="view" id="listView">
-  <div class="search-wrap">
-    <input type="text" id="searchInput" placeholder="번호판, 이름, 부서 검색..." oninput="filterList()">
+  <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px">
+    <div class="search-wrap" style="flex:1;margin-bottom:0">
+      <input type="text" id="searchInput" placeholder="번호판, 이름, 부서 검색..." oninput="filterList()">
+    </div>
+    <button onclick="openPwChange()" style="flex-shrink:0;background:var(--g100);border:1.5px solid var(--g200);border-radius:8px;padding:9px 12px;cursor:pointer;display:flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:var(--g500)">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      설정
+    </button>
   </div>
   <div class="list-stats" id="listStats"></div>
   <div id="vehicleList"></div>
@@ -723,6 +774,7 @@ body {
       <div>
         <label>한글</label>
         <input type="text" id="regPlateH" placeholder="가" maxlength="1"
+          oninput="plateAutoAdv(this,'regPlateB',1,event)" oncompositionend="plateAutoAdv(this,'regPlateB',1)"
           style="font-weight:800;">
       </div>
       <div class="plate-sep">-</div>
@@ -847,6 +899,57 @@ body {
   </button>
 </div>
 
+<!-- ────────── List Password Modal ────────── -->
+<div class="modal-bg" id="listPwModal">
+  <div class="modal" style="max-height:60vh">
+    <div class="modal-title">
+      관리자 인증
+    </div>
+    <p style="font-size:14px;color:var(--g500);margin-bottom:18px">차량 목록 조회는 관리자 비밀번호가 필요합니다.</p>
+    <div class="field">
+      <label>비밀번호</label>
+      <input type="password" id="listPwInput" placeholder="비밀번호 입력" inputmode="numeric"
+        onkeydown="if(event.key==='Enter')checkListPw()"
+        style="font-size:18px;letter-spacing:4px;text-align:center">
+    </div>
+    <div id="listPwError" style="display:none;color:var(--red);font-size:13px;font-weight:600;margin-bottom:10px">비밀번호가 올바르지 않습니다.</div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" style="flex:1" onclick="closeListPwModal()">취소</button>
+      <button class="btn btn-primary" style="flex:2" onclick="checkListPw()">확인</button>
+    </div>
+  </div>
+</div>
+
+<!-- ────────── Password Change Modal ────────── -->
+<div class="modal-bg" id="pwChangeModal">
+  <div class="modal" style="max-height:70vh">
+    <div class="modal-title">
+      비밀번호 변경
+      <button class="modal-close" onclick="closePwChange()">×</button>
+    </div>
+    <div class="field">
+      <label>현재 비밀번호</label>
+      <input type="password" id="pwCurrent" placeholder="현재 비밀번호" inputmode="numeric"
+        style="font-size:18px;letter-spacing:4px;text-align:center">
+    </div>
+    <div class="field">
+      <label>새 비밀번호</label>
+      <input type="password" id="pwNew" placeholder="새 비밀번호" inputmode="numeric"
+        style="font-size:18px;letter-spacing:4px;text-align:center">
+    </div>
+    <div class="field">
+      <label>새 비밀번호 확인</label>
+      <input type="password" id="pwNewConfirm" placeholder="새 비밀번호 재입력" inputmode="numeric"
+        style="font-size:18px;letter-spacing:4px;text-align:center">
+    </div>
+    <div id="pwChangeError" style="display:none;color:var(--red);font-size:13px;font-weight:600;margin-bottom:10px"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" style="flex:1" onclick="closePwChange()">취소</button>
+      <button class="btn btn-primary" style="flex:2" onclick="saveNewPw()">변경 저장</button>
+    </div>
+  </div>
+</div>
+
 <!-- ────────── Edit Modal ────────── -->
 <div class="modal-bg" id="editModal">
   <div class="modal">
@@ -953,6 +1056,137 @@ let cameraStream = null;
 let zoomMin = 1, zoomMax = 5, zoomStep = 0.1, zoomCurrent = 1;
 let xlsxRows = [];
 let xlsxHeaders = [];
+let currentPlateTab = 'new';
+let currentRegPlateTab = 'new';
+let listFilter = 'all';
+let currentRegType = 'perm';
+
+// ── 번호판 자동 이동 ──
+function plateAutoAdv(inp, nextId, maxLen, evt) {
+  if (evt && evt.isComposing) return; // 한글 조합 중 (초성 단계) 에는 이동 안 함
+  if (inp.value.length >= maxLen) {
+    var next = document.getElementById(nextId);
+    if (next) { next.focus(); next.select(); }
+  }
+}
+
+// 구형(지역명+숫자) 자동 이동: 한글+숫자로 끝날 때
+function plateAutoAdvOld(inp, nextId) {
+  var v = inp.value;
+  if (v.length >= 3 && /[가-힣]/.test(v) && /\d$/.test(v)) {
+    var next = document.getElementById(nextId);
+    if (next) { next.focus(); next.select(); }
+  }
+}
+
+// ── 연락처 자동 포맷 ──
+function autoFormatPhone(inp) {
+  var raw = inp.value.replace(/[^0-9]/g, '');
+  if (raw.length === 0) { inp.value = ''; return; }
+  var fmt = raw.replace(/^(\d{2,3})(\d{3,4})(\d{4})$/, '$1-$2-$3');
+  inp.value = fmt;
+}
+
+// ── 번호판 탭 전환 (스캔 조회) ──
+function switchPlateTab(tab) {
+  currentPlateTab = tab;
+  document.getElementById('ptabNew').classList.toggle('active', tab === 'new');
+  document.getElementById('ptabOld').classList.toggle('active', tab === 'old');
+  document.getElementById('ptabNewPanel').style.display = tab === 'new' ? '' : 'none';
+  document.getElementById('ptabOldPanel').style.display = tab === 'old' ? '' : 'none';
+  setTimeout(function() {
+    var el = document.getElementById(tab === 'new' ? 'qsNewF' : 'qsOldF');
+    if (el) el.focus();
+  }, 60);
+}
+
+// ── 번호판 탭 전환 (차량 등록) ──
+function switchRegPlateTab(tab) {
+  currentRegPlateTab = tab;
+  document.getElementById('regPtabNew').classList.toggle('active', tab === 'new');
+  document.getElementById('regPtabOld').classList.toggle('active', tab === 'old');
+  var fInp = document.getElementById('regPlateF');
+  var label = document.getElementById('regPlateFLabel');
+  var hint = document.getElementById('regPlateHint');
+  if (tab === 'new') {
+    fInp.maxLength = 3; fInp.placeholder = '123'; fInp.inputMode = 'numeric';
+    fInp.oninput = function(e) { plateAutoAdv(this, 'regPlateH', 3, e); };
+    if (label) label.textContent = '앞 번호';
+    if (hint) hint.innerHTML = '신형: 앞 <strong>123</strong> — 한글 <strong>가</strong> — 뒤 <strong>4567</strong> &rarr; 123가4567';
+  } else {
+    fInp.maxLength = 6; fInp.placeholder = '서울12'; fInp.inputMode = 'text';
+    fInp.oninput = function() { plateAutoAdvOld(this, 'regPlateH'); };
+    if (label) label.textContent = '지역+숫자';
+    if (hint) hint.innerHTML = '구형: <strong>서울12</strong> — 한글 <strong>가</strong> — 뒤 <strong>3456</strong> &rarr; 서울12가3456';
+  }
+  fInp.value = '';
+  fInp.focus();
+}
+
+// ── 리스트 필터 탭 ──
+function setListFilter(f) {
+  listFilter = f;
+  ['ftAll','ftNormal','ftBl','ftTemp'].forEach(function(id) {
+    document.getElementById(id).classList.remove('active');
+  });
+  var map = { all: 'ftAll', normal: 'ftNormal', blacklist: 'ftBl', temp: 'ftTemp' };
+  document.getElementById(map[f]).classList.add('active');
+  filterList();
+}
+
+// ── 등록 유형 전환 (일반/임시) ──
+function switchRegType(type) {
+  currentRegType = type;
+  document.getElementById('regTypePerm').classList.toggle('active', type === 'perm');
+  document.getElementById('regTypePerm').classList.remove('is-temp');
+  document.getElementById('regTypeTemp').classList.toggle('active', type === 'temp');
+  document.getElementById('regTypeTemp').classList.toggle('is-temp', type === 'temp');
+  var tf = document.getElementById('tempFields');
+  if (type === 'temp') {
+    tf.classList.add('show');
+    // 기본값: 오늘 23:59
+    if (!document.getElementById('regValidUntil').value) {
+      var d = new Date();
+      d.setHours(23, 59, 0, 0);
+      document.getElementById('regValidUntil').value = d.toISOString().slice(0, 16);
+    }
+  } else {
+    tf.classList.remove('show');
+  }
+}
+
+// ── 수정 모달 임시 등록 토글 ──
+function toggleEditTemp() {
+  var chk = document.getElementById('editIsTemp');
+  var tf = document.getElementById('editTempFields');
+  tf.classList.toggle('show', chk.checked);
+  if (chk.checked && !document.getElementById('editValidUntil').value) {
+    var d = new Date();
+    d.setHours(23, 59, 0, 0);
+    document.getElementById('editValidUntil').value = d.toISOString().slice(0, 16);
+  }
+}
+
+// ── 남은 시간 포맷 ──
+function formatRemaining(validUntil) {
+  var diff = new Date(validUntil) - new Date();
+  if (diff <= 0) return null;
+  var h = Math.floor(diff / 3600000);
+  var m = Math.floor((diff % 3600000) / 60000);
+  if (h >= 24) { var days = Math.floor(h / 24); return days + '일 ' + (h % 24) + '시간 남음'; }
+  if (h > 0) return h + '시간 ' + m + '분 남음';
+  return m + '분 남음';
+}
+
+// ── 임시 등록 만료된 차량으로 이동 후 재등록 ──
+function goRegisterTempWithPlate() {
+  switchRegType('temp');
+  var d = new Date();
+  d.setDate(d.getDate() + 1);
+  d.setHours(23, 59, 0, 0);
+  document.getElementById('regValidUntil').value = d.toISOString().slice(0, 16);
+  goRegisterWithPlate(false);
+}
 
 // ── 번호판 정규화 ──
 function normalizePlate(raw) {
@@ -981,13 +1215,86 @@ function formatPhone(ph) {
   return ph.replace(/[^0-9]/g, '').replace(/^(\d{2,3})(\d{3,4})(\d{4})$/, '$1-$2-$3');
 }
 
+// ── 관리자 비밀번호 (list view 잠금) ──
+var LIST_PW_KEY = 'park_admin_pw';
+function getListPw() {
+  return localStorage.getItem(LIST_PW_KEY) || '7930';
+}
+function checkListPw() {
+  var inp = document.getElementById('listPwInput');
+  if (inp.value === getListPw()) {
+    sessionStorage.setItem('listUnlocked', '1');
+    document.getElementById('listPwModal').classList.remove('show');
+    inp.value = '';
+    document.getElementById('listPwError').style.display = 'none';
+    _enterListView();
+  } else {
+    document.getElementById('listPwError').style.display = 'block';
+    inp.value = '';
+    inp.focus();
+  }
+}
+function closeListPwModal() {
+  document.getElementById('listPwModal').classList.remove('show');
+  document.getElementById('listPwInput').value = '';
+  document.getElementById('listPwError').style.display = 'none';
+}
+function openPwChange() {
+  document.getElementById('pwCurrent').value = '';
+  document.getElementById('pwNew').value = '';
+  document.getElementById('pwNewConfirm').value = '';
+  document.getElementById('pwChangeError').style.display = 'none';
+  document.getElementById('pwChangeModal').classList.add('show');
+}
+function closePwChange() {
+  document.getElementById('pwChangeModal').classList.remove('show');
+}
+function saveNewPw() {
+  var cur = document.getElementById('pwCurrent').value;
+  var nw = document.getElementById('pwNew').value;
+  var nwc = document.getElementById('pwNewConfirm').value;
+  var errEl = document.getElementById('pwChangeError');
+  if (cur !== getListPw()) {
+    errEl.textContent = '현재 비밀번호가 올바르지 않습니다.';
+    errEl.style.display = 'block'; return;
+  }
+  if (!nw || nw.length < 4) {
+    errEl.textContent = '새 비밀번호는 4자리 이상이어야 합니다.';
+    errEl.style.display = 'block'; return;
+  }
+  if (nw !== nwc) {
+    errEl.textContent = '새 비밀번호가 일치하지 않습니다.';
+    errEl.style.display = 'block'; return;
+  }
+  localStorage.setItem(LIST_PW_KEY, nw);
+  closePwChange();
+  toast('비밀번호가 변경되었습니다.', 'success');
+}
+function _enterListView() {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('listView').classList.add('active');
+  document.getElementById('nav-list').classList.add('active');
+  loadVehicleList();
+}
+
 // ── Views ──
 function showView(name) {
+  if (name === 'list') {
+    if (sessionStorage.getItem('listUnlocked') !== '1') {
+      document.getElementById('listPwInput').value = '';
+      document.getElementById('listPwError').style.display = 'none';
+      document.getElementById('listPwModal').classList.add('show');
+      setTimeout(function() { document.getElementById('listPwInput').focus(); }, 100);
+      return;
+    }
+    _enterListView();
+    return;
+  }
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById(name + 'View').classList.add('active');
   document.getElementById('nav-' + name).classList.add('active');
-  if (name === 'list') loadVehicleList();
 }
 
 // ── Toast ──
