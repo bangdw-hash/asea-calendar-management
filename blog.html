@@ -60,6 +60,10 @@ label{font-size:13px;font-weight:500;color:var(--ink2)}
 .form-textarea{resize:vertical;min-height:90px;line-height:1.6}
 .form-select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239AA0A6' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:30px}
 .form-hint{font-size:12px;color:var(--ink3);margin-top:3px}
+.src-badge{display:inline-block;font-size:10px;font-weight:600;padding:1px 6px;border-radius:4px;vertical-align:middle;margin-left:5px;letter-spacing:.2px}
+.src-badge.naver{background:#e8f5e9;color:#1b5e20}
+.src-badge.google{background:#fce8e6;color:#c5221f}
+.src-badge.ai{background:#e8f0fe;color:#1557b0}
 .char-count{font-size:12px;color:var(--ink3);text-align:right;margin-top:4px}
 
 /* ── 버튼 ── */
@@ -338,7 +342,7 @@ label{font-size:13px;font-weight:500;color:var(--ink2)}
       </div>
       <div class="form-row cols">
         <div class="form-row">
-          <label for="food-location">주소 / 위치</label>
+          <label for="food-location">주소 / 위치 <span id="src-location" class="src-badge" hidden></span></label>
           <input id="food-location" class="form-input" type="text" placeholder="서울 성동구 ...">
         </div>
         <div class="form-row">
@@ -353,30 +357,30 @@ label{font-size:13px;font-weight:500;color:var(--ink2)}
       </div>
       <div class="form-row cols">
         <div class="form-row">
-          <label for="food-category">카테고리</label>
+          <label for="food-category">카테고리 <span id="src-category" class="src-badge" hidden></span></label>
           <input id="food-category" class="form-input" type="text" placeholder="검색 후 자동 입력" readonly>
         </div>
         <div class="form-row">
-          <label for="food-tel">전화번호</label>
+          <label for="food-tel">전화번호 <span id="src-tel" class="src-badge" hidden></span></label>
           <input id="food-tel" class="form-input" type="text" placeholder="검색 후 자동 입력" readonly>
         </div>
       </div>
       <div id="food-hours-row" class="form-row" hidden>
-        <label for="food-hours">영업시간 <span style="color:var(--ink3);font-weight:400">(Google Places 자동 수집)</span></label>
+        <label for="food-hours">영업시간 <span class="src-badge google">Google</span></label>
         <textarea id="food-hours" class="form-textarea" style="min-height:60px;font-size:13px" readonly></textarea>
       </div>
       <div id="food-google-row" class="form-row cols" hidden>
         <div class="form-row">
-          <label for="food-google-rating">Google 평점</label>
+          <label for="food-google-rating">Google 평점 <span class="src-badge google">Google</span></label>
           <input id="food-google-rating" class="form-input" type="text" readonly>
         </div>
         <div class="form-row">
-          <label for="food-price-level">가격대</label>
+          <label for="food-price-level">가격대 <span class="src-badge google">Google</span></label>
           <input id="food-price-level" class="form-input" type="text" readonly>
         </div>
       </div>
       <div id="food-place-info-row" class="form-row" hidden>
-        <label for="food-place-info">플레이스 참고 정보 <span style="color:var(--ink3);font-weight:400">(블로그 리뷰에서 AI 자동 수집 — 수정 가능)</span></label>
+        <label for="food-place-info">플레이스 참고 정보 <span class="src-badge ai">AI 요약</span> <span style="color:var(--ink3);font-weight:400;font-size:12px">(수정 가능)</span></label>
         <textarea id="food-place-info" class="form-textarea" style="min-height:80px;font-size:13px"></textarea>
       </div>
       <div class="form-row">
@@ -749,6 +753,22 @@ window.searchLocal = async function() {
   }
 };
 
+/* ── 출처 배지 표시 헬퍼 ──
+   우선순위 정책:
+   · 주소/카테고리/전화 : 네이버 Local 우선, 값 없을 때 Google 폴백
+   · 영업시간           : Google Places 전용 (네이버 미제공)
+   · Google 평점/가격대 : Google Places 전용
+   · 플레이스 참고 정보 : 네이버 블로그 AI 요약 전용
+   · 내 평점            : 사용자 직접 입력 (불변)
+── */
+function _setSrc(key, source) {
+  var el = document.getElementById('src-' + key);
+  if (!el) return;
+  el.textContent = source;
+  el.className = 'src-badge ' + (source === 'Google' ? 'google' : source === 'AI 요약' ? 'ai' : 'naver');
+  el.hidden = false;
+}
+
 window.selectLocal = function(itemJson) {
   var item = typeof itemJson === 'string' ? JSON.parse(itemJson) : itemJson;
   var name = item.title.replace(/<[^>]*>/g, '');
@@ -756,9 +776,9 @@ window.selectLocal = function(itemJson) {
   var cat  = (item.category || '').replace(/>/g, ' > ');
   var tel  = item.telephone || '';
   document.getElementById('food-place').value = name;
-  if (addr) document.getElementById('food-location').value = addr;
-  if (cat)  document.getElementById('food-category').value = cat;
-  if (tel)  document.getElementById('food-tel').value = tel;
+  if (addr) { document.getElementById('food-location').value = addr; _setSrc('location', '네이버'); }
+  if (cat)  { document.getElementById('food-category').value = cat;  _setSrc('category', '네이버'); }
+  if (tel)  { document.getElementById('food-tel').value = tel;       _setSrc('tel', '네이버'); }
   document.getElementById('local-dropdown').hidden = true;
   _loadPlaceInfo(name, cat, item.description || '');
 };
@@ -766,67 +786,81 @@ window.selectLocal = function(itemJson) {
 async function _loadPlaceInfo(name, category, description) {
   var row  = document.getElementById('food-place-info-row');
   var area = document.getElementById('food-place-info');
-  area.value = '블로그 리뷰에서 정보 수집 중...';
+  area.value = '정보 수집 중...';
   row.hidden = false;
 
   var priceLabelMap = {
-    'PRICE_LEVEL_FREE': '무료',
-    'PRICE_LEVEL_INEXPENSIVE': '저렴 (₩)',
-    'PRICE_LEVEL_MODERATE': '보통 (₩₩)',
-    'PRICE_LEVEL_EXPENSIVE': '비쌈 (₩₩₩)',
+    'PRICE_LEVEL_FREE':           '무료',
+    'PRICE_LEVEL_INEXPENSIVE':    '저렴 (₩)',
+    'PRICE_LEVEL_MODERATE':       '보통 (₩₩)',
+    'PRICE_LEVEL_EXPENSIVE':      '비쌈 (₩₩₩)',
     'PRICE_LEVEL_VERY_EXPENSIVE': '매우 비쌈 (₩₩₩₩)'
   };
 
-  // Google Places + 네이버 블로그 병렬 호출
+  // ① 네이버 블로그 + Google Places 텍스트 검색 병렬 호출
   var [blogResult, gSearchResult] = await Promise.allSettled([
     callNaverProxy('blog', { query: name + ' 메뉴 가격 영업시간 주차', display: '5', sort: 'sim' }),
     callNaverProxy('gplaces_search', { query: name })
   ]);
 
-  // Google Places 상세 정보 처리
+  // ② Google Places 상세 정보
+  // · 영업시간·Google평점·가격대 → Google 전용 필드
+  // · 주소·전화·카테고리         → 네이버 값이 없을 때만 Google로 폴백
   try {
-    var places = (gSearchResult.value || {}).places || [];
+    var places = (gSearchResult.status === 'fulfilled' ? (gSearchResult.value.places || []) : []);
     if (places.length) {
-      var placeId = places[0].id;
-      var detail = await callNaverProxy('gplaces_detail', { placeId: placeId });
+      var detail = await callNaverProxy('gplaces_detail', { placeId: places[0].id });
 
-      // 영업시간
-      var hours = ((detail.regularOpeningHours || {}).weekdayDescriptions || []).join('\n');
-      if (hours) {
-        document.getElementById('food-hours').value = hours;
+      // 영업시간 (Google 전용)
+      var hrs = ((detail.regularOpeningHours || {}).weekdayDescriptions || []).join('\n');
+      if (hrs) {
+        document.getElementById('food-hours').value = hrs;
         document.getElementById('food-hours-row').hidden = false;
       }
 
-      // Google 평점
-      var gRating = detail.rating;
-      var gCount  = detail.userRatingCount;
-      if (gRating) {
-        document.getElementById('food-google-rating').value = gRating + '점 (' + (gCount || 0).toLocaleString() + '개 리뷰)';
+      // Google 평점 + 가격대 (Google 전용)
+      if (detail.rating) {
+        var cnt = (detail.userRatingCount || 0).toLocaleString();
+        document.getElementById('food-google-rating').value = detail.rating + '점 (' + cnt + '개 리뷰)';
       }
-
-      // 가격대
-      var priceLevel = detail.priceLevel;
-      if (priceLevel && priceLevel !== 'PRICE_LEVEL_UNSPECIFIED') {
-        document.getElementById('food-price-level').value = priceLabelMap[priceLevel] || priceLevel;
+      var pl = detail.priceLevel;
+      if (pl && pl !== 'PRICE_LEVEL_UNSPECIFIED') {
+        document.getElementById('food-price-level').value = priceLabelMap[pl] || pl;
       }
-
-      if (gRating || priceLevel) {
+      if (detail.rating || (pl && pl !== 'PRICE_LEVEL_UNSPECIFIED')) {
         document.getElementById('food-google-row').hidden = false;
       }
-    }
-  } catch(e) { /* Google Places 실패해도 계속 */ }
 
-  // 네이버 블로그 AI 요약
+      // 폴백: 네이버에서 값을 못 받은 필드만 Google로 보완
+      if (!document.getElementById('food-location').value.trim() && detail.formattedAddress) {
+        document.getElementById('food-location').value = detail.formattedAddress;
+        _setSrc('location', 'Google');
+      }
+      if (!document.getElementById('food-tel').value.trim() && detail.internationalPhoneNumber) {
+        document.getElementById('food-tel').value = detail.internationalPhoneNumber;
+        _setSrc('tel', 'Google');
+      }
+      if (!document.getElementById('food-category').value.trim() && detail.primaryTypeDisplayName) {
+        document.getElementById('food-category').value = detail.primaryTypeDisplayName.text || '';
+        _setSrc('category', 'Google');
+      }
+    }
+  } catch(e) { /* Google Places 실패해도 블로그 요약은 계속 */ }
+
+  // ③ 네이버 블로그 AI 요약 (메뉴·분위기·특징 — 네이버 전용)
   try {
-    var posts = ((blogResult.value || {}).items || []).slice(0, 5);
-    if (!posts.length) { area.value = description || ''; if (!area.value) row.hidden = true; return; }
+    var posts = ((blogResult.status === 'fulfilled' ? (blogResult.value.items || []) : [])).slice(0, 5);
+    if (!posts.length) {
+      area.value = description || '';
+      if (!area.value) row.hidden = true;
+      return;
+    }
     var snippets = posts.map(function(p, i) {
       return (i + 1) + '. ' + p.title.replace(/<[^>]*>/g, '') + '\n' + p.description.replace(/<[^>]*>/g, '');
     }).join('\n\n');
     var sys = '블로그 리뷰 스니펫에서 맛집 핵심 정보를 추출합니다. 한국어로 간결하게 줄글로 답하세요. 마크다운 기호 금지.';
     var usr = '장소: ' + name + ' (' + category + ')\n\n아래 블로그 리뷰 요약에서 메뉴·가격대·분위기·특징을 추출해 5~8문장으로 정리하세요:\n\n' + snippets;
-    var info = await callAI('claude-haiku-4-5-20251001', sys, usr);
-    area.value = info;
+    area.value = await callAI('claude-haiku-4-5-20251001', sys, usr);
   } catch(e) {
     area.value = description || '';
     if (!area.value) row.hidden = true;
