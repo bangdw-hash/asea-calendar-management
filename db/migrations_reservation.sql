@@ -1129,5 +1129,70 @@ end $$;
 
 -- ★ 실행 후: Supabase 대시보드 → Settings → API → Reload Schema Cache 클릭 필수!
 
+-- ============================================================================
+-- 23) reservations — label_type 컬럼 추가 (학사과정/내부사용/대관 구분)
+--
+-- 학사과정 = 'academic', 대관 = 'rental', 내부사용 = 'internal'
+-- 기존 데이터: is_rental=true → 'rental', 나머지 → 'internal' 으로 마이그레이션
+-- ============================================================================
+alter table reservations add column if not exists label_type text;
+
+update reservations
+  set label_type = 'rental'
+  where is_rental = true and label_type is null;
+
+update reservations
+  set label_type = 'internal'
+  where (is_rental is null or is_rental = false) and label_type is null;
+
+-- ============================================================================
+-- 24) BUGFIX: link_to_schedule — linked_by NOT NULL 위반 해결
+--
+-- 원인: schedule_linked_items.linked_by 컬럼이 NOT NULL 이지만
+--       기존 link_to_schedule RPC의 INSERT 구문에 linked_by가 누락되어 있음.
+-- 수정: INSERT 목록에 linked_by = p_admin_email 추가.
+-- ============================================================================
+create or replace function link_to_schedule(
+  p_reservation_id uuid,
+  p_admin_email    text,
+  p_link_all       boolean default false
+) returns jsonb language plpgsql security definer as $$
+declare
+  v_batch_id    text;
+  v_batch_count int := 0;
+begin
+  if p_admin_email not in ('bangdw@gmail.com','chajungsin@gmail.com') then
+    return jsonb_build_object('success', false, 'error', '관리자 권한이 없습니다');
+  end if;
+  select batch_id into v_batch_id
+  from reservations where id = p_reservation_id and deleted_at is null;
+  if not found then
+    return jsonb_build_object('success', false, 'error', '예약을 찾을 수 없습니다');
+  end if;
+  if p_link_all and v_batch_id is not null then
+    update reservations set schedule_event_id = 'linked-' || id::text
+    where batch_id = v_batch_id and deleted_at is null;
+    get diagnostics v_batch_count = row_count;
+    insert into schedule_linked_items (target_date, label, classroom_color, reservation_id, linked_by)
+    select gs::date, r.formatted_label, r.classroom_color, r.id, p_admin_email
+    from reservations r,
+    lateral generate_series(r.date_start::timestamp, r.date_end::timestamp, '1 day'::interval) gs
+    where r.batch_id = v_batch_id and r.deleted_at is null
+    on conflict (target_date, reservation_id) do nothing;
+  else
+    update reservations set schedule_event_id = 'linked-' || p_reservation_id::text
+    where id = p_reservation_id;
+    v_batch_count := 1;
+    insert into schedule_linked_items (target_date, label, classroom_color, reservation_id, linked_by)
+    select gs::date, r.formatted_label, r.classroom_color, r.id, p_admin_email
+    from reservations r,
+    lateral generate_series(r.date_start::timestamp, r.date_end::timestamp, '1 day'::interval) gs
+    where r.id = p_reservation_id
+    on conflict (target_date, reservation_id) do nothing;
+  end if;
+  return jsonb_build_object('success', true, 'linked_count', v_batch_count);
+end; $$;
+
+grant execute on function link_to_schedule(uuid, text, boolean) to anon, authenticated;
+
 -- 끝. 'Success. No rows returned' 가 나오면 정상입니다. ---------------------
--- 이후: Supabase 대시보드 → Settings → API → Reload Schema Cache 클릭.
