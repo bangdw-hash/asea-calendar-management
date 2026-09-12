@@ -1043,6 +1043,29 @@ header{
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="https://accounts.google.com/gsi/client" async></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.min.mjs" type="module" id="pdfjs-script"></script>
+<script>
+// PDF.js 텍스트 추출 유틸리티 (module 방식)
+window._pdfExtractText = async function(b64) {
+  try {
+    const { getDocument, GlobalWorkerOptions } = await import('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.min.mjs');
+    GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.worker.min.mjs';
+    const bin = atob(b64);
+    const arr = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+    const pdf = await getDocument({ data: arr }).promise;
+    let text = '';
+    for (let p = 1; p <= pdf.numPages; p++) {
+      const page = await pdf.getPage(p);
+      const content = await page.getTextContent();
+      text += content.items.map(i => i.str).join(' ') + '\n';
+    }
+    return text.trim();
+  } catch(e) {
+    return null;
+  }
+};
+</script>
 <script>
 'use strict';
 
@@ -3287,10 +3310,17 @@ date_from/date_to는 위 학기 기간을 그대로 사용하세요.
 
     let messages;
     if (hasFile && _acadFileType === 'application/pdf') {
-      messages = [{ role: 'user', content: [
-        { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: _acadFileB64 } },
-        { type: 'text', text: extractPrompt }
-      ]}];
+      // PDF.js로 클라이언트 측 텍스트 추출 후 텍스트로 전송 (document 블록보다 안정적)
+      const pdfText = window._pdfExtractText ? await window._pdfExtractText(_acadFileB64) : null;
+      if (pdfText && pdfText.length > 50) {
+        messages = [{ role: 'user', content: `${extractPrompt}\n\n【PDF 추출 텍스트】\n${pdfText}` }];
+      } else {
+        // 텍스트 추출 실패 시 document 블록으로 폴백
+        messages = [{ role: 'user', content: [
+          { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: _acadFileB64 } },
+          { type: 'text', text: extractPrompt }
+        ]}];
+      }
     } else if (hasFile && _acadFileType.startsWith('image/')) {
       messages = [{ role:'user', content:[
         { type:'image', source:{ type:'base64', media_type:_acadFileType, data:_acadFileB64 } },
