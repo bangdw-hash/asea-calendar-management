@@ -7,171 +7,248 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
 <script src="config.js"></script>
 <style>
-/* ── 토큰 ── */
-:root {
-  --primary:#1A73E8; --primary-dk:#1557B0; --primary-lt:#E8F0FE;
-  --green:#16a34a;   --green-lt:#dcfce7;
-  --orange:#ea580c;  --orange-lt:#ffedd5;
-  --red:#dc2626;     --red-lt:#fee2e2;
-  --r:12px;
-  --sh:0 1px 3px rgba(0,0,0,.08);
-  --sh-md:0 2px 8px rgba(0,0,0,.12);
-  --bg:#F8F9FA; --surface:#FFFFFF; --surface2:#F1F3F4;
-  --ink:#202124; --ink2:#5F6368; --ink3:#9AA0A6;
-  --border:#DADCE0; --border-dk:#BDC1C6;
+/* ── 디자인 토큰 ── */
+:root{
+  --primary:#1A73E8;--primary-dk:#1557B0;--primary-lt:#EEF4FF;
+  --green:#16a34a;--green-lt:#f0fdf4;
+  --orange:#c2410c;--orange-lt:#fff7ed;
+  --red:#dc2626;--red-lt:#fef2f2;
+  --r:8px;
+  --bg:#F7F8FA;--surface:#fff;--surface2:#F2F3F5;
+  --ink:#111827;--ink2:#4B5563;--ink3:#9CA3AF;
+  --border:#E5E7EB;--border-dk:#D1D5DB;
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-html{font-size:15px;-webkit-text-size-adjust:100%}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--ink);line-height:1.6;min-height:100vh}
+html{font-size:14px;-webkit-text-size-adjust:100%}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--ink);line-height:1.55;min-height:100vh}
 
 /* ── 헤더 ── */
-.hdr{background:var(--surface);border-bottom:1px solid var(--border);padding:0 20px;display:flex;align-items:center;gap:12px;height:56px;position:sticky;top:0;z-index:100}
-.hdr-back{display:inline-flex;align-items:center;gap:6px;text-decoration:none;color:var(--primary);font-size:13px;font-weight:500;padding:6px 10px;border-radius:8px;border:1px solid var(--border)}
-.hdr-back:hover{background:var(--primary-lt)}
-.hdr-title{font-size:16px;font-weight:600;flex:1}
-.hdr-sub{font-size:12px;color:var(--ink3)}
+.hdr{background:#fff;border-bottom:1px solid var(--border);padding:0 16px;display:flex;align-items:center;gap:10px;height:48px;position:sticky;top:0;z-index:100}
+.hdr-back{display:inline-flex;align-items:center;gap:4px;text-decoration:none;color:var(--ink2);font-size:12px;font-weight:500;padding:5px 9px;border-radius:6px;border:1px solid var(--border);white-space:nowrap;transition:background .12s}
+.hdr-back:hover{background:var(--surface2)}
+.hdr-title{font-size:14px;font-weight:600;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hdr-sub{font-size:11px;color:var(--ink3);white-space:nowrap}
 
 /* ── 탭 바 ── */
-.tab-bar{background:var(--surface);border-bottom:1px solid var(--border);display:flex;padding:0 20px;gap:0}
-.tb-btn{padding:14px 18px;font-size:14px;font-weight:500;color:var(--ink2);border:none;background:none;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:color .15s,border-color .15s;display:flex;align-items:center;gap:7px}
-.tb-btn svg{width:16px;height:16px;flex-shrink:0}
-.tb-btn:hover{color:var(--ink)}
+.tab-bar{background:#fff;border-bottom:1px solid var(--border);display:flex;gap:0;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.tab-bar::-webkit-scrollbar{display:none}
+.tb-btn{display:flex;align-items:center;justify-content:center;gap:4px;padding:0 14px;height:42px;font-size:12px;font-weight:500;color:var(--ink3);border:none;background:none;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap;flex-shrink:0;transition:color .12s,border-color .12s}
+.tb-btn svg{width:13px;height:13px;flex-shrink:0}
+.tb-btn:hover{color:var(--ink2)}
 .tb-btn.active{color:var(--primary);border-bottom-color:var(--primary)}
+@media(max-width:480px){
+  .tb-btn{padding:0 10px;gap:0}
+  .tab-label{display:none}
+}
 
 /* ── 레이아웃 ── */
-.main{max-width:900px;margin:0 auto;padding:24px 20px 80px}
-.panel{display:none}.panel.active{display:block}
+.main{max-width:860px;margin:0 auto;padding:16px 14px 72px}
+.panel{display:none}.panel.active{display:block;animation:panelFade .18s ease}
+@keyframes panelFade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
 
-/* ── 섹션 카드 ── */
-.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--sh)}
-.card+.card{margin-top:16px}
-.card-head{padding:18px 20px 0;font-size:14px;font-weight:600;color:var(--ink);display:flex;align-items:center;gap:8px}
-.card-head svg{width:18px;height:18px;color:var(--primary)}
-.card-body{padding:16px 20px 20px}
+/* ── 카드 ── */
+.card{background:#fff;border:1px solid var(--border);border-radius:var(--r)}
+.card+.card{margin-top:10px}
+.card-head{padding:13px 16px;font-size:13px;font-weight:600;color:var(--ink);display:flex;align-items:center;gap:6px;border-bottom:1px solid var(--border)}
+.card-head svg{width:14px;height:14px;color:var(--ink3);flex-shrink:0}
+.card-body{padding:14px 16px 16px}
 
-/* ── 폼 요소 ── */
-.form-row{display:flex;flex-direction:column;gap:5px;margin-bottom:14px}
+/* ── 폼 ── */
+.form-row{display:flex;flex-direction:column;gap:4px;margin-bottom:12px}
 .form-row:last-child{margin-bottom:0}
-.form-row.cols{flex-direction:row;gap:12px}
+.form-row.cols{flex-direction:row;gap:10px}
 .form-row.cols>.form-row{flex:1;margin-bottom:0}
-label{font-size:13px;font-weight:500;color:var(--ink2)}
-.form-input,.form-select,.form-textarea{width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:14px;background:var(--surface);color:var(--ink);transition:border-color .15s}
-.form-input:focus,.form-select:focus,.form-textarea:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(26,115,232,.12)}
-.form-textarea{resize:vertical;min-height:90px;line-height:1.6}
-.form-select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239AA0A6' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:30px}
-.form-hint{font-size:12px;color:var(--ink3);margin-top:3px}
-.src-badge{display:inline-block;font-size:10px;font-weight:600;padding:1px 6px;border-radius:4px;vertical-align:middle;margin-left:5px;letter-spacing:.2px}
-.src-badge.naver{background:#e8f5e9;color:#1b5e20}
-.src-badge.google{background:#fce8e6;color:#c5221f}
-.src-badge.ai{background:#e8f0fe;color:#1557b0}
+label{font-size:11.5px;font-weight:500;color:var(--ink2)}
+.form-input,.form-select,.form-textarea{width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;background:#fff;color:var(--ink);transition:border-color .12s;line-height:1.5;-webkit-appearance:none}
+.form-input:focus,.form-select:focus,.form-textarea:focus{outline:none;border-color:var(--primary)}
+.form-textarea{resize:vertical;min-height:80px;line-height:1.55}
+.form-select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%239CA3AF' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 9px center;padding-right:26px}
+.form-hint{font-size:11px;color:var(--ink3);line-height:1.4}
 .char-count{font-size:12px;color:var(--ink3);text-align:right;margin-top:4px}
+.src-badge{display:inline-block;font-size:9.5px;font-weight:600;padding:1px 5px;border-radius:3px;vertical-align:middle;margin-left:4px;letter-spacing:.1px}
+.src-badge.naver{background:#ecfdf5;color:#065f46}
+.src-badge.google{background:#fef2f2;color:#991b1b}
+.src-badge.ai{background:#eff6ff;color:#1e40af}
 
 /* ── 버튼 ── */
-.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border-radius:8px;font-size:14px;font-weight:500;cursor:pointer;border:1px solid transparent;transition:background .15s,opacity .15s}
-.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn{display:inline-flex;align-items:center;gap:5px;padding:7px 14px;border-radius:6px;font-size:13px;font-weight:500;cursor:pointer;border:1px solid transparent;transition:background .12s,opacity .12s;white-space:nowrap}
+.btn:disabled{opacity:.45;cursor:not-allowed}
 .btn-primary{background:var(--primary);color:#fff;border-color:var(--primary)}
 .btn-primary:hover:not(:disabled){background:var(--primary-dk)}
-.btn-ghost{background:transparent;color:var(--primary);border-color:var(--border)}
-.btn-ghost:hover:not(:disabled){background:var(--primary-lt)}
+.btn-ghost{background:transparent;color:var(--ink2);border-color:var(--border)}
+.btn-ghost:hover:not(:disabled){background:var(--surface2)}
 .btn-danger{background:transparent;color:var(--red);border-color:var(--border)}
 .btn-danger:hover:not(:disabled){background:var(--red-lt)}
-.btn-sm{padding:6px 12px;font-size:13px}
-.btn svg{width:15px;height:15px;flex-shrink:0}
-.btn-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+.btn-sm{padding:5px 10px;font-size:12px}
+.btn svg{width:13px;height:13px;flex-shrink:0}
+.btn-row{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px}
 
 /* ── 생성 버튼 영역 ── */
-.gen-area{display:flex;align-items:center;gap:12px;padding-top:4px}
-.model-select{font-size:13px;padding:6px 28px 6px 10px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--ink2);cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239AA0A6' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center}
+.gen-area{display:flex;align-items:center;gap:10px;padding-top:4px}
+.model-select{font-size:12px;padding:5px 24px 5px 9px;border-radius:6px;border:1px solid var(--border);background:#fff;color:var(--ink2);cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%239CA3AF' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 7px center}
 
-/* ── 로딩 스피너 ── */
-.spinner{display:inline-block;width:18px;height:18px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0}
+/* ── 스피너 ── */
+.spinner{display:inline-block;width:15px;height:15px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .65s linear infinite;flex-shrink:0}
 @keyframes spin{to{transform:rotate(360deg)}}
-.spinner.dark{border-color:rgba(26,115,232,.2);border-top-color:var(--primary)}
+.spinner.dark{border-color:rgba(26,115,232,.15);border-top-color:var(--primary)}
 
 /* ── 결과 섹션 ── */
-.result-section{margin-top:16px}
-.result-title-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
-.result-label{font-size:13px;font-weight:600;color:var(--ink)}
-.result-actions{display:flex;gap:6px}
+.result-section{margin-top:10px}
 
 /* ── 이력 카드 ── */
-.post-list{display:flex;flex-direction:column;gap:10px;margin-top:16px}
-.post-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px 18px;display:flex;align-items:flex-start;gap:14px;transition:box-shadow .15s}
-.post-card:hover{box-shadow:var(--sh-md)}
-.post-card-icon{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.post-list{display:flex;flex-direction:column;gap:1px;margin-top:12px;border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
+.post-card{background:#fff;padding:11px 14px;display:flex;align-items:center;gap:10px;transition:background .1s}
+.post-card:hover{background:var(--surface2)}
+.post-card+.post-card{border-top:1px solid var(--border)}
+.post-card-icon{width:30px;height:30px;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .post-card-icon.blog{background:var(--primary-lt)}
 .post-card-icon.food{background:var(--orange-lt)}
-.post-card-icon svg{width:18px;height:18px}
+.post-card-icon svg{width:14px;height:14px}
 .post-card-icon.blog svg{color:var(--primary)}
 .post-card-icon.food svg{color:var(--orange)}
 .post-card-body{flex:1;min-width:0}
-.post-card-title{font-size:14px;font-weight:600;color:var(--ink);margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.post-card-meta{font-size:12px;color:var(--ink3);display:flex;gap:10px;flex-wrap:wrap}
-.post-card-actions{display:flex;gap:6px;flex-shrink:0;align-items:center}
+.post-card-title{font-size:13px;font-weight:600;color:var(--ink);margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.post-card-meta{font-size:11px;color:var(--ink3);display:flex;gap:6px;flex-wrap:nowrap;white-space:nowrap;overflow:hidden}
+.post-card-actions{display:flex;gap:3px;flex-shrink:0;align-items:center}
 
 /* ── 배지 ── */
-.badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600}
-.badge-draft{background:var(--surface2);color:var(--ink2)}
+.badge{display:inline-flex;align-items:center;padding:1px 6px;border-radius:4px;font-size:10.5px;font-weight:600}
+.badge-draft{background:var(--surface2);color:var(--ink3)}
 .badge-pub{background:var(--green-lt);color:var(--green)}
 
 /* ── 필터 바 ── */
-.filter-bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:4px}
-.filter-btn{padding:5px 12px;border-radius:20px;font-size:13px;border:1px solid var(--border);background:none;color:var(--ink2);cursor:pointer;transition:all .15s}
-.filter-btn.active{background:var(--primary);color:#fff;border-color:var(--primary)}
+.filter-bar{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:4px}
+.filter-btn{padding:4px 10px;border-radius:4px;font-size:12px;border:1px solid var(--border);background:none;color:var(--ink2);cursor:pointer;transition:all .12s}
+.filter-btn.active{background:var(--ink);color:#fff;border-color:var(--ink)}
 
-/* ── 상태 ── */
-.empty-state{padding:48px 20px;text-align:center;color:var(--ink3)}
-.empty-state svg{width:40px;height:40px;margin:0 auto 12px;display:block;opacity:.4}
-.empty-state p{font-size:14px}
-.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 20px;border-radius:8px;font-size:13px;z-index:9999;transition:opacity .3s;pointer-events:none}
+/* ── 빈 상태 ── */
+.empty-state{padding:40px 20px;text-align:center;color:var(--ink3)}
+.empty-state svg{width:32px;height:32px;margin:0 auto 10px;display:block;opacity:.3}
+.empty-state p{font-size:13px}
+
+/* ── 토스트 ── */
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:8px 16px;border-radius:6px;font-size:12px;z-index:9999;transition:opacity .25s;pointer-events:none;white-space:nowrap}
 .toast.green{background:var(--green)}
 .toast.red{background:var(--red)}
 
 /* ── 미리보기 모달 ── */
-.modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:500;display:flex;align-items:center;justify-content:center;padding:20px}
-.modal{background:var(--surface);border-radius:var(--r);width:100%;max-width:680px;max-height:90vh;overflow-y:auto;box-shadow:var(--sh-md)}
-.modal-head{padding:18px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
-.modal-head h3{font-size:15px;font-weight:600}
-.modal-close{background:none;border:none;cursor:pointer;color:var(--ink2);padding:4px;border-radius:6px}
+.modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:500;display:flex;align-items:flex-end;justify-content:center;padding:0;animation:bdFadeIn .2s ease}
+@media(min-width:600px){.modal-backdrop{align-items:center;padding:20px}}
+.modal-backdrop.closing{animation:bdFadeOut .22s ease forwards}
+.modal{background:#fff;border-radius:var(--r) var(--r) 0 0;width:100%;max-width:680px;max-height:92vh;overflow-y:auto;animation:slideUp .28s cubic-bezier(.32,1,.23,1);will-change:transform}
+@media(min-width:600px){.modal{border-radius:var(--r);max-height:88vh;animation:modalFadeIn .18s ease}}
+.modal.closing{animation:slideDown .24s cubic-bezier(.4,0,1,.7) forwards}
+@media(min-width:600px){.modal.closing{animation:modalFadeOut .18s ease forwards}}
+.modal-drag-handle{width:36px;height:4px;border-radius:2px;background:var(--border-dk);margin:10px auto 0;flex-shrink:0;cursor:grab}
+@media(min-width:600px){.modal-drag-handle{display:none}}
+.modal-head{padding:12px 16px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:8px}
+.modal-head h3{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0}
+.modal-close{background:none;border:none;cursor:pointer;color:var(--ink3);padding:6px;border-radius:5px;line-height:1;flex-shrink:0;touch-action:manipulation}
 .modal-close:hover{background:var(--surface2)}
-.modal-body{padding:20px}
-.modal-content-preview{font-size:14px;line-height:1.8;color:var(--ink);white-space:pre-wrap;word-break:break-word}
+.modal-body{padding:16px}
+.modal-content-preview{font-size:13px;line-height:1.75;color:var(--ink);white-space:pre-wrap;word-break:break-word}
+@keyframes bdFadeIn{from{opacity:0}to{opacity:1}}
+@keyframes bdFadeOut{from{opacity:1}to{opacity:0}}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+@keyframes slideDown{from{transform:translateY(0)}to{transform:translateY(100%)}}
+@keyframes modalFadeIn{from{opacity:0;transform:scale(.97)}to{opacity:1;transform:scale(1)}}
+@keyframes modalFadeOut{from{opacity:1;transform:scale(1)}to{opacity:0;transform:scale(.97)}}
 
 /* ── 정보 배너 ── */
-.info-banner{background:var(--primary-lt);border:1px solid rgba(26,115,232,.25);border-radius:var(--r);padding:14px 18px;display:flex;gap:12px;font-size:13px;color:var(--primary-dk);margin-bottom:20px}
-.info-banner svg{width:18px;height:18px;flex-shrink:0;margin-top:1px}
-
-@media(max-width:600px){
-  .form-row.cols{flex-direction:column}
-  .main{padding:16px 14px 40px}
-  .post-card-actions{flex-direction:column}
-  .tb-btn{padding:12px 10px;font-size:13px;gap:5px}
-}
+.info-banner{background:var(--primary-lt);border:1px solid rgba(26,115,232,.18);border-radius:var(--r);padding:11px 14px;display:flex;gap:10px;font-size:12px;color:var(--primary-dk);margin-bottom:14px;line-height:1.55}
+.info-banner svg{width:14px;height:14px;flex-shrink:0;margin-top:1px}
 
 /* ── 트렌드 카드 ── */
-.trend-theme-section{margin-bottom:20px}
-.trend-theme-label{font-size:13px;font-weight:600;color:var(--ink2);margin-bottom:10px;display:flex;align-items:center;gap:8px}
-.trend-theme-label svg{width:14px;height:14px}
-.trend-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
-.trend-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px;display:flex;flex-direction:column;gap:10px;transition:box-shadow .15s}
-.trend-card:hover{box-shadow:var(--sh-md)}
-.trend-card-kw{font-size:15px;font-weight:600;color:var(--ink)}
-.trend-card-badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600}
+.trend-theme-section{margin-bottom:18px}
+.trend-theme-label{font-size:12px;font-weight:600;color:var(--ink2);margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.trend-theme-label svg{width:12px;height:12px}
+.trend-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px}
+@media(max-width:600px){.trend-grid{grid-template-columns:1fr}}
+.trend-card{background:#fff;border:1px solid var(--border);border-radius:var(--r);padding:13px 14px;display:flex;flex-direction:column;gap:8px}
+.trend-card-kw{font-size:14px;font-weight:600;color:var(--ink)}
+.trend-card-badge{display:inline-flex;align-items:center;gap:3px;padding:1px 7px;border-radius:4px;font-size:10.5px;font-weight:600}
 .trend-card-badge.up{background:var(--green-lt);color:var(--green)}
 .trend-card-badge.stable{background:var(--surface2);color:var(--ink2)}
 .trend-card-badge.seasonal{background:var(--orange-lt);color:var(--orange)}
-.trend-card-reason{font-size:12px;color:var(--ink2)}
-.trend-card-angle{font-size:12px;color:var(--primary);font-weight:500;padding:8px 10px;background:var(--primary-lt);border-radius:8px;line-height:1.5}
-.trend-card-hook{font-size:12px;color:var(--ink3);font-style:italic;border-left:2px solid var(--border-dk);padding-left:8px;line-height:1.6}
+.trend-card-reason{font-size:11.5px;color:var(--ink2);line-height:1.5}
+.trend-card-angle{font-size:11.5px;color:var(--primary);font-weight:500;padding:7px 9px;background:var(--primary-lt);border-radius:6px;line-height:1.5}
+.trend-card-hook{font-size:11.5px;color:var(--ink3);font-style:italic;border-left:2px solid var(--border-dk);padding-left:8px;line-height:1.55}
 
-/* 테마 태그 */
-.theme-tag{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:20px;background:var(--primary-lt);color:var(--primary);font-size:13px;font-weight:500}
-.theme-tag button{background:none;border:none;cursor:pointer;color:var(--primary);font-size:16px;padding:0;line-height:1;opacity:.7}
-.theme-tag button:hover{opacity:1}
+/* ── 테마 태그 ── */
+.theme-tag{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:4px;background:var(--surface2);color:var(--ink2);font-size:12px;font-weight:500;border:1px solid var(--border)}
+.theme-tag button{background:none;border:none;cursor:pointer;color:var(--ink3);font-size:14px;padding:0;line-height:1;transition:color .1s}
+.theme-tag button:hover{color:var(--ink)}
 
-@media(max-width:600px){.trend-grid{grid-template-columns:1fr}}
+/* ── AI 지침 탭 ── */
+.directive-card{background:#fff;border:1px solid var(--border);border-radius:var(--r);padding:12px 14px;display:flex;flex-direction:column;gap:7px;transition:background .1s}
+.directive-card.active-dir{border-color:var(--primary);background:var(--primary-lt)}
+.dir-category{display:inline-flex;padding:1px 6px;border-radius:3px;font-size:10.5px;font-weight:600;background:var(--surface2);color:var(--ink2)}
+.dir-text-preview{font-size:12px;color:var(--ink2);line-height:1.5;white-space:pre-wrap;word-break:break-word;max-height:54px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical}
+.active-dir-banner{background:var(--primary-lt);border:1px solid rgba(26,115,232,.25);border-radius:var(--r);padding:10px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;font-size:12px;color:var(--primary-dk);font-weight:500}
 
-/* hidden 속성 보장 — display:flex 등이 덮어쓰지 못하도록 */
+/* ── 트렌드 서브탭 ── */
+.stab-bar{display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:16px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.stab-bar::-webkit-scrollbar{display:none}
+.stab-btn{padding:8px 16px;font-size:12px;font-weight:500;color:var(--ink3);border:none;background:none;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap;flex-shrink:0;transition:color .12s,border-color .12s}
+.stab-btn.active{color:var(--primary);border-bottom-color:var(--primary)}
+
+/* ── 분석 이력 리스트 ── */
+.run-list{display:flex;flex-direction:column;gap:1px;border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
+.run-item{background:#fff;padding:12px 14px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:background .1s}
+.run-item:hover{background:var(--surface2)}
+.run-item+.run-item{border-top:1px solid var(--border)}
+.run-item-badge{font-size:10.5px;font-weight:600;padding:1px 6px;border-radius:3px}
+.run-item-badge.manual{background:var(--primary-lt);color:var(--primary-dk)}
+.run-item-badge.auto{background:var(--green-lt);color:var(--green)}
+
+/* ── 북마크 키워드 카드 ── */
+.bm-card{background:#fff;border:1px solid var(--border);border-radius:var(--r);padding:12px 14px;display:flex;flex-direction:column;gap:7px}
+.bm-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px}
+@media(max-width:600px){.bm-grid{grid-template-columns:1fr}}
+
+/* ── 북마크 버튼 ── */
+.bm-btn{background:none;border:none;cursor:pointer;font-size:16px;line-height:1;color:var(--ink3);padding:2px 4px;border-radius:4px;transition:color .12s}
+.bm-btn:hover{color:#f59e0b}
+.bm-btn.saved{color:#f59e0b}
+
+/* ── 자동화 설정 ── */
+.sched-row{display:flex;align-items:center;justify-content:space-between;padding:11px 0;border-bottom:1px solid var(--border)}
+.sched-row:last-child{border-bottom:none}
+.sched-label{font-size:13px;color:var(--ink);font-weight:500}
+.sched-sub{font-size:11px;color:var(--ink3);margin-top:2px}
+.toggle-wrap{display:flex;align-items:center;gap:8px}
+.toggle{position:relative;width:40px;height:22px;cursor:pointer}
+.toggle input{opacity:0;width:0;height:0}
+.toggle-track{position:absolute;inset:0;background:var(--border-dk);border-radius:11px;transition:background .2s}
+.toggle input:checked + .toggle-track{background:var(--green)}
+.toggle-thumb{position:absolute;top:3px;left:3px;width:16px;height:16px;background:#fff;border-radius:50%;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.toggle input:checked ~ .toggle-thumb{transform:translateX(18px)}
+
+/* ── 로컬 검색 드롭다운 애니메이션 ── */
+.local-dd-inner{animation:ddSlideIn .18s ease}
+@keyframes ddSlideIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── 모바일 전용 ── */
+@media(max-width:540px){
+  .form-row.cols{flex-direction:column}
+  /* 포스트 카드 액션: 아이콘만 표시 */
+  .post-card-actions .btn-label{display:none}
+  .post-card-actions .btn{padding:5px 7px;min-width:28px;justify-content:center}
+  /* 트렌드 서브탭 패널 */
+  .stab-btn{padding:8px 12px;font-size:11.5px}
+  /* 카드 head 줄바꿈 방지 */
+  .card-head{white-space:nowrap;overflow:hidden}
+  /* info-banner 모바일 압축 */
+  .info-banner{font-size:11.5px;padding:9px 12px;gap:8px}
+  /* 필터바 */
+  .filter-bar{gap:4px}
+  .filter-btn{padding:3px 8px;font-size:11.5px}
+}
+@media(max-width:400px){
+  .post-card-meta .badge{display:none}
+  .hdr-sub{display:none}
+}
+
 [hidden]{display:none!important}
 </style>
 </head>
@@ -188,20 +265,24 @@ label{font-size:13px;font-weight:500;color:var(--ink2)}
 
 <nav class="tab-bar">
   <button class="tb-btn active" id="tb-blog" onclick="switchTab('blog')">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
-    <span class="tab-label">블로그 글 생성</span>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+    <span class="tab-label">블로그</span>
   </button>
   <button class="tb-btn" id="tb-food" onclick="switchTab('food')">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
-    <span class="tab-label">맛집 리뷰</span>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
+    <span class="tab-label">맛집</span>
   </button>
   <button class="tb-btn" id="tb-history" onclick="switchTab('history')">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-    <span class="tab-label">이력 관리</span>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+    <span class="tab-label">이력</span>
   </button>
   <button class="tb-btn" id="tb-trend" onclick="switchTab('trend')">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
     <span class="tab-label">트렌드</span>
+  </button>
+  <button class="tb-btn" id="tb-directive" onclick="switchTab('directive')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+    <span class="tab-label">AI 지침</span>
   </button>
 </nav>
 
@@ -384,8 +465,15 @@ label{font-size:13px;font-weight:500;color:var(--ink2)}
         <textarea id="food-place-info" class="form-textarea" style="min-height:80px;font-size:13px"></textarea>
       </div>
       <div class="form-row">
-        <label for="food-menu">내가 주문한 메뉴 / 가격</label>
-        <textarea id="food-menu" class="form-textarea" style="min-height:70px" placeholder="에그베네딕트 18,000원, 아이스아메리카노 6,500원 ..."></textarea>
+        <label for="food-menu" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:4px">
+          <span>내가 주문한 메뉴 / 가격</span>
+          <button type="button" class="btn btn-ghost btn-sm" onclick="ocrMenu()" id="btn-ocr" title="영수증·메뉴판 사진으로 자동 입력">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="14" height="14"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            OCR 스캔
+          </button>
+        </label>
+        <input type="file" id="ocr-input" accept="image/*" capture="environment" hidden onchange="handleOcrFile(this)">
+        <textarea id="food-menu" class="form-textarea" style="min-height:70px" placeholder="에그베네딕트 18,000원, 아이스아메리카노 6,500원 ... (또는 OCR 스캔으로 자동 입력)"></textarea>
       </div>
       <div class="form-row">
         <label for="food-impression">맛·분위기·서비스 느낀 점</label>
@@ -471,66 +559,272 @@ label{font-size:13px;font-weight:500;color:var(--ink2)}
 <!-- ── 트렌드 탭 ── -->
 <div id="panel-trend" class="panel">
 
-  <!-- 데이터 소스 안내 -->
-  <div class="info-banner" style="margin-bottom:16px">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-    <div>
-      <strong>복합 트렌드 분석</strong> — 네이버 DataLab 실측 검색량 + AI 블로그 각도·후킹 분석
-      <span id="datalab-status" style="margin-left:8px;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;background:var(--green-lt);color:var(--green)">DataLab 연결됨</span>
+  <!-- 서브탭 바 -->
+  <div class="stab-bar">
+    <button class="stab-btn active" id="trend-stab-run" onclick="switchTrendTab('run')">분석 실행</button>
+    <button class="stab-btn" id="trend-stab-history" onclick="switchTrendTab('history')">이력</button>
+    <button class="stab-btn" id="trend-stab-bookmarks" onclick="switchTrendTab('bookmarks')">북마크</button>
+    <button class="stab-btn" id="trend-stab-auto" onclick="switchTrendTab('auto')">자동화</button>
+  </div>
+
+  <!-- ① 분석 실행 서브패널 -->
+  <div id="trend-panel-run">
+
+    <div class="info-banner" style="margin-bottom:16px">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      <div>
+        <strong>복합 트렌드 분석</strong> — 네이버 DataLab 실측 검색량 + AI 블로그 각도·후킹 분석
+        <span id="datalab-status" style="margin-left:8px;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;background:var(--green-lt);color:var(--green)">DataLab 연결됨</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+        내 테마 관리
+      </div>
+      <div class="card-body">
+        <div class="form-row cols" style="align-items:flex-end">
+          <div class="form-row" style="flex:1;margin-bottom:0">
+            <label for="theme-input">테마 추가</label>
+            <input id="theme-input" class="form-input" type="text" placeholder="예: 한남동 맛집, 서울 카페, 건강식단" onkeydown="if(event.key==='Enter')addTheme()">
+          </div>
+          <button class="btn btn-primary" onclick="addTheme()" style="flex-shrink:0">추가</button>
+        </div>
+        <div id="theme-tags" style="margin-top:12px"></div>
+        <div class="form-hint" style="margin-top:8px">테마별로 AI가 트렌딩 키워드와 블로그 각도를 분석합니다</div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:16px">
+      <div class="card-body">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+          <div>
+            <div style="font-size:14px;font-weight:600;color:var(--ink)">트렌드 분석 실행</div>
+            <div style="font-size:12px;color:var(--ink3);margin-top:3px">각 테마별 상승 키워드 5개 + 블로그 각도 + 후킹 문구 생성</div>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <button class="btn btn-ghost btn-sm" onclick="loadLastTrendRun()" id="btn-load-trend">마지막 분석 불러오기</button>
+            <button class="btn btn-primary" id="btn-analyze" onclick="analyzeTrends()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+              지금 분석
+            </button>
+          </div>
+        </div>
+        <div id="trend-progress" hidden style="margin-top:12px;font-size:13px;color:var(--ink2)"></div>
+      </div>
+    </div>
+
+    <div id="trend-results" style="margin-top:16px"></div>
+  </div>
+
+  <!-- ② 이력 서브패널 -->
+  <div id="trend-panel-history" hidden>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+      <div style="font-size:13px;font-weight:600;color:var(--ink)">분석 이력</div>
+      <button class="btn btn-danger btn-sm" onclick="clearTrendHistory()">전체 삭제</button>
+    </div>
+    <div id="trend-history-list">
+      <div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg><p>분석 이력이 없습니다</p></div>
+    </div>
+    <div id="trend-history-detail" hidden style="margin-top:16px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+        <div style="font-size:13px;font-weight:600;color:var(--ink)" id="history-detail-title"></div>
+        <button class="btn btn-ghost btn-sm" onclick="closeHistoryDetail()">닫기</button>
+      </div>
+      <div id="history-detail-results"></div>
     </div>
   </div>
 
-  <!-- 테마 관리 -->
+  <!-- ③ 북마크 서브패널 -->
+  <div id="trend-panel-bookmarks" hidden>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+      <div style="font-size:13px;font-weight:600;color:var(--ink)">저장된 키워드</div>
+      <button class="btn btn-danger btn-sm" onclick="clearAllBookmarks()">전체 삭제</button>
+    </div>
+    <div id="bm-list">
+      <div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg><p>북마크된 키워드가 없습니다</p></div>
+    </div>
+  </div>
+
+  <!-- ④ 자동화 서브패널 -->
+  <div id="trend-panel-auto" hidden>
+
+    <div class="info-banner" style="margin-bottom:16px">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      <div>GAS(Google Apps Script) 타임 트리거로 정해진 시간에 자동 분석을 실행합니다. 설정 저장 후 <strong>GAS 편집기</strong>에서 <code>setupAutoTrigger()</code>를 한 번 실행하세요.</div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        자동 분석 스케줄
+      </div>
+      <div class="card-body">
+        <div class="sched-row">
+          <div>
+            <div class="sched-label">자동 분석 활성화</div>
+            <div class="sched-sub">GAS 트리거와 연동됩니다</div>
+          </div>
+          <label class="toggle" id="sched-toggle-wrap">
+            <input type="checkbox" id="sched-enabled" onchange="saveScheduleConfig()">
+            <div class="toggle-track"></div>
+            <div class="toggle-thumb"></div>
+          </label>
+        </div>
+        <div class="sched-row">
+          <div class="sched-label">분석 주기</div>
+          <select class="form-select" id="sched-period" style="width:140px" onchange="saveScheduleConfig()">
+            <option value="daily">매일</option>
+            <option value="weekly" selected>매주</option>
+          </select>
+        </div>
+        <div class="sched-row" id="sched-dow-row">
+          <div class="sched-label">요일 <span style="font-size:11px;color:var(--ink3)">(주간 시)</span></div>
+          <select class="form-select" id="sched-dow" style="width:140px" onchange="saveScheduleConfig()">
+            <option value="1">월요일</option>
+            <option value="2">화요일</option>
+            <option value="3" selected>수요일</option>
+            <option value="4">목요일</option>
+            <option value="5">금요일</option>
+            <option value="6">토요일</option>
+            <option value="7">일요일</option>
+          </select>
+        </div>
+        <div class="sched-row">
+          <div class="sched-label">실행 시각</div>
+          <select class="form-select" id="sched-hour" style="width:140px" onchange="saveScheduleConfig()">
+            <option value="7">오전 7시</option>
+            <option value="8">오전 8시</option>
+            <option value="9" selected>오전 9시</option>
+            <option value="10">오전 10시</option>
+            <option value="18">오후 6시</option>
+            <option value="21">오후 9시</option>
+          </select>
+        </div>
+        <div class="sched-row">
+          <div>
+            <div class="sched-label">최소 DataLab 검색량</div>
+            <div class="sched-sub">이 수치 이상이거나 상승중인 키워드만 분석</div>
+          </div>
+          <input type="number" class="form-input" id="sched-min-ratio" style="width:80px" min="0" max="100" step="5" value="20" onchange="saveScheduleConfig()">
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:12px">
+      <div class="card-head">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        GAS 설정 가이드
+      </div>
+      <div class="card-body">
+        <div style="font-size:13px;color:var(--ink2);line-height:1.85">
+          <div style="font-weight:600;color:var(--ink);margin-bottom:6px">1단계 — Supabase SQL 실행</div>
+          <div style="background:var(--surface2);border-radius:6px;padding:10px 12px;font-size:12px;font-family:monospace;margin-bottom:12px;white-space:pre-wrap;word-break:break-all" id="sched-sql-block">-- Supabase SQL Editor에서 실행\n-- 아래 '📋 SQL 복사' 버튼을 누르세요</div>
+          <button class="btn btn-ghost btn-sm" onclick="copySupabaseSql()">📋 SQL 복사</button>
+          <div style="font-weight:600;color:var(--ink);margin:14px 0 6px">2단계 — GAS 스크립트에 키 추가</div>
+          <div style="background:var(--surface2);border-radius:6px;padding:10px 12px;font-size:12px;font-family:monospace;line-height:1.8">var SUPABASE_SVC_KEY = '<span style="color:var(--red)">(service_role key 붙여넣기)</span>';<br>var CLAUDE_API_KEY = '<span style="color:var(--red)">(Claude API 키 붙여넣기)</span>';</div>
+          <div style="font-weight:600;color:var(--ink);margin:14px 0 6px">3단계 — 트리거 등록 (1회만)</div>
+          <div style="background:var(--surface2);border-radius:6px;padding:10px 12px;font-size:12px;font-family:monospace">GAS 편집기 → 함수: <strong>setupAutoTrigger</strong> → 실행</div>
+          <div style="font-size:11px;color:var(--ink3);margin-top:8px">트리거 제거는 <code>removeAutoTrigger()</code> 실행</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<!-- ── AI 글 작성 지침 탭 ── -->
+<div id="panel-directive" class="panel">
+
+  <!-- 현재 적용 중 배너 -->
+  <div id="active-dir-banner" class="active-dir-banner" hidden>
+    <div style="display:flex;align-items:center;gap:8px">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M9 11l3 3L22 4"/></svg>
+      <span>현재 적용 중: <strong id="active-dir-name"></strong></span>
+    </div>
+    <button class="btn btn-ghost btn-sm" onclick="clearActiveDirective()">적용 해제</button>
+  </div>
+
+  <!-- 기본 AI 세팅 참고 -->
   <div class="card">
     <div class="card-head">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
-      내 테마 관리
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
+      현재 기본 AI 세팅 (참고용)
     </div>
     <div class="card-body">
-      <div class="form-row cols" style="align-items:flex-end">
-        <div class="form-row" style="flex:1;margin-bottom:0">
-          <label for="theme-input">테마 추가</label>
-          <input id="theme-input" class="form-input" type="text" placeholder="예: 한남동 맛집, 서울 카페, 건강식단" onkeydown="if(event.key==='Enter')addTheme()">
-        </div>
-        <button class="btn btn-primary" onclick="addTheme()" style="flex-shrink:0">추가</button>
+      <div style="font-size:13px;color:var(--ink2);line-height:1.7;background:var(--surface2);border-radius:8px;padding:12px 14px">
+        <div style="font-weight:600;color:var(--ink);margin-bottom:4px">블로그 글 생성</div>
+        네이버 블로그 및 AI 검색 상위 노출 전문 작가 / 마크다운 금지 / 리서치 데이터(상호명·가격·위치) 활용 / 스타일별 특화 (정보형·감성형·SEO최적화형·리스트형) / 500~2000자 선택 가능
+        <div style="font-weight:600;color:var(--ink);margin:10px 0 4px">맛집 리뷰 생성</div>
+        네이버 블로그 맛집 리뷰 전문 작가 / SEO 전문가 / 오감 묘사·가격·메뉴·위치 구체 정보 포함 / 첫 단락~총평 구조 / 1000~1300자 목표
       </div>
-      <div id="theme-tags" style="margin-top:12px"></div>
-      <div class="form-hint" style="margin-top:8px">테마별로 AI가 트렌딩 키워드와 블로그 각도를 분석합니다</div>
+      <div class="form-hint" style="margin-top:8px">아래에서 지침을 저장·적용하면 블로그/리뷰 생성 시 위 기본 세팅에 추가로 반영됩니다.</div>
     </div>
   </div>
 
-  <!-- 분석 실행 -->
+  <!-- 새 지침 작성 -->
   <div class="card" style="margin-top:16px">
+    <div class="card-head">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+      새 지침 작성
+    </div>
     <div class="card-body">
-      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
-        <div>
-          <div style="font-size:14px;font-weight:600;color:var(--ink)">트렌드 분석 실행</div>
-          <div style="font-size:12px;color:var(--ink3);margin-top:3px">각 테마별 상승 키워드 5개 + 블로그 각도 + 후킹 문구 생성</div>
+      <div class="form-row cols">
+        <div class="form-row">
+          <label for="dir-name">지침 이름</label>
+          <input id="dir-name" class="form-input" type="text" placeholder="예: 20대 여성 감성 리뷰">
         </div>
-        <div style="display:flex;gap:8px;align-items:center">
-          <button class="btn btn-ghost btn-sm" onclick="loadLastTrend()" id="btn-load-trend">지난 분석 불러오기</button>
-          <button class="btn btn-primary" id="btn-analyze" onclick="analyzeTrends()">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-            지금 분석
-          </button>
+        <div class="form-row">
+          <label for="dir-category">적용 유형</label>
+          <select id="dir-category" class="form-select">
+            <option value="공통">공통 (블로그+리뷰)</option>
+            <option value="블로그">블로그 글 전용</option>
+            <option value="맛집리뷰">맛집 리뷰 전용</option>
+            <option value="어조">어조·문체</option>
+            <option value="타겟독자">타겟 독자</option>
+            <option value="SEO">SEO 전략</option>
+          </select>
         </div>
       </div>
-      <div id="trend-progress" hidden style="margin-top:12px;font-size:13px;color:var(--ink2)"></div>
+      <div class="form-row">
+        <label for="dir-text">지침 내용 <span style="color:var(--ink3);font-weight:400">(AI에게 직접 전달할 글쓰기 지시사항)</span></label>
+        <textarea id="dir-text" class="form-textarea" style="min-height:120px" placeholder="예: 항상 20대 여성 독자를 타겟으로 써줘. 반말체(해체) 사용. 인스타 감성 표현 활용. 음식 묘사 시 비주얼·색감 강조. 해시태그는 인스타 스타일로."></textarea>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="saveDirective()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="15" height="15"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+          저장
+        </button>
+        <button class="btn btn-ghost" onclick="clearDirectiveForm()">초기화</button>
+      </div>
     </div>
   </div>
 
-  <!-- 결과 -->
-  <div id="trend-results" style="margin-top:16px"></div>
+  <!-- 저장된 지침 목록 -->
+  <div class="card" style="margin-top:16px">
+    <div class="card-head">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+      저장된 지침 이력
+    </div>
+    <div class="card-body" style="padding-bottom:16px">
+      <div id="directive-list">
+        <div class="empty-state" style="padding:28px 0"><p>저장된 지침이 없습니다</p></div>
+      </div>
+    </div>
+  </div>
 </div>
 
 </main>
 
 <!-- 미리보기 모달 -->
 <div id="preview-modal" class="modal-backdrop" hidden onclick="if(event.target===this)closeModal()">
-  <div class="modal">
+  <div class="modal" id="preview-modal-inner">
+    <div class="modal-drag-handle" id="modal-drag-handle"></div>
     <div class="modal-head">
       <h3 id="modal-title"></h3>
-      <button class="modal-close" onclick="closeModal()">
+      <button class="modal-close" onclick="closeModal()" aria-label="닫기">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
     </div>
@@ -586,7 +880,46 @@ document.addEventListener('DOMContentLoaded', function() {
     var saved = localStorage.getItem('asea_blog_concept');
     if (saved) document.getElementById('blog-concept').value = saved;
   } catch(e) {}
+
+  // 모달 스와이프 다운 닫기
+  _initModalSwipe();
 });
+
+/* ── 모달 스와이프-다운 닫기 ── */
+function _initModalSwipe() {
+  var modal = document.getElementById('preview-modal-inner');
+  if (!modal) return;
+  var startY = 0, isDragging = false, lastY = 0;
+
+  function onStart(y) {
+    startY = y; lastY = y; isDragging = true;
+    modal.style.transition = 'none';
+  }
+  function onMove(y) {
+    if (!isDragging) return;
+    var dy = y - startY;
+    lastY = y;
+    if (dy > 0) modal.style.transform = 'translateY(' + dy + 'px)';
+  }
+  function onEnd() {
+    if (!isDragging) return;
+    isDragging = false;
+    modal.style.transition = '';
+    var dy = lastY - startY;
+    if (dy > 80) { closeModal(); }
+    else { modal.style.transform = ''; }
+  }
+
+  // Touch
+  modal.addEventListener('touchstart', function(e) {
+    // 드래그 핸들 또는 modal-head 에서만
+    if (e.target.closest('.modal-drag-handle') || e.target.closest('.modal-head')) {
+      onStart(e.touches[0].clientY);
+    }
+  }, { passive: true });
+  modal.addEventListener('touchmove', function(e) { onMove(e.touches[0].clientY); }, { passive: true });
+  modal.addEventListener('touchend', function() { onEnd(); }, { passive: true });
+}
 
 function updateProviderStatus() {
   var label = 'AI 연결됨';
@@ -610,12 +943,27 @@ function waitSupabase(cb) {
 /* ── 탭 전환 ── */
 window.switchTab = function(tab) {
   S.tab = tab;
-  ['blog','food','history','trend'].forEach(function(t) {
+  ['blog','food','history','trend','directive'].forEach(function(t) {
     document.getElementById('panel-' + t).classList.toggle('active', t === tab);
     document.getElementById('tb-' + t).classList.toggle('active', t === tab);
   });
   if (tab === 'history') loadHistory();
   if (tab === 'trend') { renderThemeTags(); checkDatalabStatus(); }
+  if (tab === 'directive') { renderDirectiveList(); renderActiveBanner(); }
+};
+
+/* ── 트렌드 서브탭 전환 ── */
+var _trendTab = 'run';
+window.switchTrendTab = function(tab) {
+  _trendTab = tab;
+  ['run','history','bookmarks','auto'].forEach(function(t) {
+    document.getElementById('trend-stab-' + t).classList.toggle('active', t === tab);
+    var p = document.getElementById('trend-panel-' + t);
+    if (p) p.hidden = t !== tab;
+  });
+  if (tab === 'history') loadTrendHistory();
+  if (tab === 'bookmarks') loadSavedKeywords();
+  if (tab === 'auto') loadScheduleConfig();
 };
 
 /* ══════════════════════════════════════════════
@@ -719,10 +1067,10 @@ window.searchLocal = async function() {
     var items = data.items || [];
     var dd = document.getElementById('local-dropdown');
     if (!items.length) {
-      dd.innerHTML = '<div style="padding:12px 16px;font-size:13px;color:var(--ink3)">검색 결과 없음</div>';
+      dd.innerHTML = '<div class="local-dd-inner" style="padding:12px 16px;font-size:13px;color:var(--ink3)">검색 결과 없음</div>';
       dd.hidden = false;
     } else {
-      dd.innerHTML = items.map(function(item) {
+      dd.innerHTML = '<div class="local-dd-inner">' + items.map(function(item) {
         var name = item.title.replace(/<[^>]*>/g, '');
         var addr = item.roadAddress || item.address || '';
         var cat  = item.category || '';
@@ -734,7 +1082,7 @@ window.searchLocal = async function() {
           '<div style="font-size:11px;color:var(--ink3);margin-top:2px">' + esc(cat) + (addr ? ' · ' + esc(addr) : '') + '</div>' +
           (tel ? '<div style="font-size:11px;color:var(--ink2);margin-top:1px">' + esc(tel) + '</div>' : '') +
           '</div>';
-      }).join('');
+      }).join('') + '</div>';
       dd.hidden = false;
     }
     setTimeout(function() {
@@ -867,6 +1215,183 @@ async function _loadPlaceInfo(name, category, description) {
   }
 }
 
+/* ── OCR 메뉴 스캔 ── */
+window.ocrMenu = function() {
+  document.getElementById('ocr-input').click();
+};
+
+window.handleOcrFile = async function(input) {
+  var file = input.files[0];
+  if (!file) return;
+  var btn = document.getElementById('btn-ocr');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner dark"></span> 분석 중...';
+  try {
+    var base64 = await new Promise(function(resolve, reject) {
+      var reader = new FileReader();
+      reader.onload = function(e) { resolve(e.target.result.split(',')[1]); };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+    var mediaType = file.type || 'image/jpeg';
+    if (!window.claudeFetch) throw new Error('AI 설정이 로드되지 않았습니다.');
+    var res = await window.claudeFetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': 'via-proxy', 'anthropic-version': '2023-06-01' },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 1024,
+        system: '영수증 또는 메뉴판 이미지에서 주문 메뉴명과 가격을 추출합니다. 한국어로 "메뉴명 가격원" 형식으로 한 줄씩 출력하세요. 예: 에그베네딕트 18,000원. 메뉴와 가격만 출력하고 다른 설명은 하지 마세요.',
+        messages: [{
+          role: 'user',
+          content: [
+            { type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 } },
+            { type: 'text', text: '이 영수증/메뉴판에서 주문한 메뉴명과 가격을 추출해주세요.' }
+          ]
+        }]
+      }),
+      keepModel: true
+    });
+    var data = await res.json();
+    if (data.error) throw new Error(data.error.message || JSON.stringify(data.error));
+    var text = data.content && data.content[0] ? data.content[0].text : '';
+    if (text) {
+      document.getElementById('food-menu').value = text;
+      showToast('OCR 완료! 내용을 확인·수정하세요.', 'green');
+    } else {
+      showToast('메뉴를 인식하지 못했습니다.', 'red');
+    }
+  } catch(e) {
+    showToast('OCR 실패: ' + e.message, 'red');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="14" height="14"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg> OCR 스캔';
+    input.value = '';
+  }
+};
+
+/* ── AI 글 작성 지침 관리 ── */
+var DIRECTIVE_KEY = 'asea_ai_directives';
+var ACTIVE_DIR_KEY = 'asea_ai_active_dir';
+
+function getDirectives() {
+  try { return JSON.parse(localStorage.getItem(DIRECTIVE_KEY) || '[]'); } catch(e) { return []; }
+}
+function saveDirectivesToStorage(dirs) {
+  try { localStorage.setItem(DIRECTIVE_KEY, JSON.stringify(dirs)); } catch(e) {}
+}
+function getActiveDirectiveText() {
+  try {
+    var id = localStorage.getItem(ACTIVE_DIR_KEY);
+    if (!id) return null;
+    return getDirectives().find(function(d) { return d.id === id; }) || null;
+  } catch(e) { return null; }
+}
+
+window.saveDirective = function() {
+  var name = document.getElementById('dir-name').value.trim();
+  var category = document.getElementById('dir-category').value;
+  var text = document.getElementById('dir-text').value.trim();
+  if (!name || !text) { showToast('지침 이름과 내용을 입력해 주세요.', 'red'); return; }
+  var dirs = getDirectives();
+  dirs.unshift({ id: 'dir_' + Date.now(), name: name, category: category, text: text, createdAt: new Date().toISOString() });
+  saveDirectivesToStorage(dirs);
+  clearDirectiveForm();
+  renderDirectiveList();
+  showToast('지침이 저장되었습니다.', 'green');
+};
+
+window.clearDirectiveForm = function() {
+  document.getElementById('dir-name').value = '';
+  document.getElementById('dir-text').value = '';
+  document.getElementById('dir-category').value = '공통';
+};
+
+window.applyDirective = function(id) {
+  var dir = getDirectives().find(function(d) { return d.id === id; });
+  if (!dir) return;
+  try { localStorage.setItem(ACTIVE_DIR_KEY, id); } catch(e) {}
+  renderDirectiveList();
+  renderActiveBanner();
+  showToast('"' + dir.name + '" 지침이 적용되었습니다.', 'green');
+};
+
+window.clearActiveDirective = function() {
+  try { localStorage.removeItem(ACTIVE_DIR_KEY); } catch(e) {}
+  renderDirectiveList();
+  renderActiveBanner();
+  showToast('지침 적용이 해제되었습니다.', '');
+};
+
+window.editDirective = function(id) {
+  var dirs = getDirectives();
+  var dir = dirs.find(function(d) { return d.id === id; });
+  if (!dir) return;
+  document.getElementById('dir-name').value = dir.name;
+  document.getElementById('dir-category').value = dir.category;
+  document.getElementById('dir-text').value = dir.text;
+  saveDirectivesToStorage(dirs.filter(function(d) { return d.id !== id; }));
+  renderDirectiveList();
+  document.getElementById('dir-name').scrollIntoView({ behavior: 'smooth', block: 'center' });
+};
+
+window.deleteDirective = function(id) {
+  if (!confirm('삭제하시겠습니까?')) return;
+  saveDirectivesToStorage(getDirectives().filter(function(d) { return d.id !== id; }));
+  try { if (localStorage.getItem(ACTIVE_DIR_KEY) === id) localStorage.removeItem(ACTIVE_DIR_KEY); } catch(e) {}
+  renderDirectiveList();
+  renderActiveBanner();
+  showToast('삭제 완료', '');
+};
+
+function renderActiveBanner() {
+  var banner = document.getElementById('active-dir-banner');
+  var nameEl = document.getElementById('active-dir-name');
+  if (!banner || !nameEl) return;
+  var dir = getActiveDirectiveText();
+  if (dir) {
+    nameEl.textContent = dir.name + ' (' + dir.category + ')';
+    banner.hidden = false;
+  } else {
+    banner.hidden = true;
+  }
+}
+
+function renderDirectiveList() {
+  var el = document.getElementById('directive-list');
+  if (!el) return;
+  var dirs = getDirectives();
+  var activeId;
+  try { activeId = localStorage.getItem(ACTIVE_DIR_KEY); } catch(e) {}
+  if (!dirs.length) {
+    el.innerHTML = '<div class="empty-state" style="padding:28px 0"><p>저장된 지침이 없습니다</p></div>';
+    return;
+  }
+  el.innerHTML = '<div style="display:flex;flex-direction:column;gap:10px">' +
+    dirs.map(function(d) {
+      var isActive = d.id === activeId;
+      return '<div class="directive-card' + (isActive ? ' active-dir' : '') + '">' +
+        '<div style="display:flex;align-items:flex-start;gap:10px">' +
+          '<div style="flex:1;min-width:0">' +
+            '<div style="display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin-bottom:6px">' +
+              '<span style="font-size:14px;font-weight:600;color:var(--ink)">' + esc(d.name) + '</span>' +
+              '<span class="dir-category">' + esc(d.category) + '</span>' +
+              (isActive ? '<span class="dir-category" style="background:var(--primary);color:#fff">적용 중</span>' : '') +
+            '</div>' +
+            '<div class="dir-text-preview">' + esc(d.text) + '</div>' +
+          '</div>' +
+        '</div>' +
+        '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px">' +
+          (isActive
+            ? '<button class="btn btn-ghost btn-sm" onclick="clearActiveDirective()">적용 해제</button>'
+            : '<button class="btn btn-primary btn-sm" onclick="applyDirective(' + JSON.stringify(d.id) + ')">적용</button>') +
+          '<button class="btn btn-ghost btn-sm" onclick="editDirective(' + JSON.stringify(d.id) + ')">수정</button>' +
+          '<button class="btn btn-danger btn-sm" onclick="deleteDirective(' + JSON.stringify(d.id) + ')">삭제</button>' +
+        '</div>' +
+      '</div>';
+    }).join('') + '</div>';
+}
+
 /* ── 트렌드 분석 실행 ── */
 window.analyzeTrends = async function() {
   var themes = getThemes();
@@ -964,15 +1489,25 @@ window.analyzeTrends = async function() {
     }
   }
 
-  // Supabase 저장
+  // Supabase 저장 (trend_analyses 테이블)
+  var savedRunId = null;
   if (sb) {
-    var today = new Date().toISOString().slice(0, 10);
+    try {
+      var ins = await sb.from('trend_analyses').insert({
+        source: 'manual',
+        themes: themes,
+        results: results,
+        keyword_count: themes.length * 5,
+        filtered_count: results.reduce(function(s, r) { return s + (r.keywords ? r.keywords.length : 0); }, 0)
+      }).select('id').single();
+      if (ins.data) savedRunId = ins.data.id;
+    } catch(e) {}
+    // 기존 app_submissions 호환도 유지
+    var today2 = new Date().toISOString().slice(0, 10);
     try {
       await sb.from('app_submissions').upsert({
-        kind: 'trending',
-        ref: 'trend_' + today,
-        name: today + ' 트렌드 분석',
-        status: 'active',
+        kind: 'trending', ref: 'trend_' + today2,
+        name: today2 + ' 트렌드 분석', status: 'active',
         data: { themes: results, generated_at: new Date().toISOString(), source: 'datalab+ai' }
       }, { onConflict: 'kind,ref' });
     } catch(e) {}
@@ -981,35 +1516,53 @@ window.analyzeTrends = async function() {
   prog.hidden = true;
   btn.disabled = false;
   btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg> 지금 분석';
-  renderTrendResults(results);
+  renderTrendResults(results, null, savedRunId);
   showToast('분석 완료! (DataLab 실측 반영)', 'green');
 };
 
-/* ── 지난 분석 불러오기 ── */
-window.loadLastTrend = async function() {
+/* ── 마지막 분석 불러오기 ── */
+window.loadLastTrendRun = async function() {
   if (!sb) { showToast('DB 연결 중입니다.', 'red'); return; }
   var btn = document.getElementById('btn-load-trend');
   btn.disabled = true; btn.textContent = '불러오는 중...';
 
-  var res = await sb.from('app_submissions')
+  // trend_analyses 우선
+  var res = await sb.from('trend_analyses')
+    .select('id,run_at,results')
+    .order('run_at', { ascending: false })
+    .limit(1);
+
+  btn.disabled = false; btn.textContent = '마지막 분석 불러오기';
+
+  if (!res.error && res.data && res.data.length) {
+    var row = res.data[0];
+    var dt = new Date(row.run_at);
+    var label = dt.toLocaleDateString('ko-KR') + ' ' + dt.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+    renderTrendResults(row.results || [], label, row.id);
+    showToast('불러오기 완료', 'green');
+    return;
+  }
+
+  // 폴백: app_submissions
+  var res2 = await sb.from('app_submissions')
     .select('data,name,created_at')
     .eq('kind', 'trending')
     .order('created_at', { ascending: false })
     .limit(1);
 
-  btn.disabled = false; btn.textContent = '지난 분석 불러오기';
-  if (res.error || !res.data || !res.data.length) {
+  if (res2.error || !res2.data || !res2.data.length) {
     showToast('저장된 분석이 없습니다.', 'red'); return;
   }
-  var row = res.data[0];
-  var themes = (row.data && row.data.themes) || [];
-  var date = row.name || '';
-  renderTrendResults(themes, date);
+  var row2 = res2.data[0];
+  renderTrendResults((row2.data && row2.data.themes) || [], row2.name || '', null);
   showToast('불러오기 완료', 'green');
 };
 
+/* ── 호환성 alias ── */
+window.loadLastTrend = window.loadLastTrendRun;
+
 /* ── 결과 렌더링 ── */
-function renderTrendResults(results, dateLabel) {
+function renderTrendResults(results, dateLabel, runId) {
   var el = document.getElementById('trend-results');
   if (!results || !results.length) { el.innerHTML = ''; return; }
 
@@ -1027,7 +1580,6 @@ function renderTrendResults(results, dateLabel) {
       esc(r.theme) + '</div>';
     html += '<div class="trend-grid">';
 
-    // DataLab 스파크라인 생성 (테마당 1개)
     var sparkHtml = '';
     if (r._datalabRatios && r._datalabRatios.length >= 2) {
       var ratios = r._datalabRatios.map(function(d) { return d.ratio; });
@@ -1051,10 +1603,14 @@ function renderTrendResults(results, dateLabel) {
     r.keywords.forEach(function(kw) {
       var bc = badgeMap[kw.trend] || 'stable';
       var bt = badgeText[kw.trend] || kw.trend;
+      var bmData = JSON.stringify({ keyword: kw.keyword, theme: r.theme, trend: kw.trend, angle: kw.angle || '', hook: kw.hook || '', runId: runId || null }).replace(/"/g,'&quot;');
       html += '<div class="trend-card">' +
         '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px">' +
           '<div class="trend-card-kw">' + esc(kw.keyword) + '</div>' +
-          '<span class="trend-card-badge ' + bc + '">' + bt + '</span>' +
+          '<div style="display:flex;align-items:center;gap:6px">' +
+            '<span class="trend-card-badge ' + bc + '">' + bt + '</span>' +
+            '<button class="bm-btn" title="북마크" onclick="bookmarkKeyword(' + bmData + ', this)">★</button>' +
+          '</div>' +
         '</div>' +
         sparkHtml +
         '<div class="trend-card-reason">' + esc(kw.reason || '') + '</div>' +
@@ -1072,6 +1628,266 @@ function renderTrendResults(results, dateLabel) {
 
   el.innerHTML = html;
 }
+
+/* ══════════════════════════════════════════════
+   트렌드 이력 (trend_analyses)
+   ══════════════════════════════════════════════ */
+
+async function loadTrendHistory() {
+  if (!sb) { showToast('DB 연결 중입니다.', 'red'); return; }
+  var el = document.getElementById('trend-history-list');
+  el.innerHTML = '<div style="text-align:center;padding:24px;color:var(--ink3)"><span class="spinner dark"></span></div>';
+  var res = await sb.from('trend_analyses')
+    .select('id,run_at,source,themes,keyword_count,filtered_count')
+    .order('run_at', { ascending: false })
+    .limit(50);
+  if (res.error) { el.innerHTML = '<div class="empty-state"><p>불러오기 실패</p></div>'; return; }
+  var rows = res.data || [];
+  if (!rows.length) {
+    el.innerHTML = '<div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg><p>분석 이력이 없습니다</p></div>';
+    return;
+  }
+  el.innerHTML = '<div class="run-list">' + rows.map(function(r) {
+    var dt = new Date(r.run_at);
+    var label = dt.toLocaleDateString('ko-KR') + ' ' + dt.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+    var badgeCls = r.source === 'auto' ? 'auto' : 'manual';
+    var badgeText = r.source === 'auto' ? '자동' : '수동';
+    var themes = (r.themes || []).join(', ') || '—';
+    return '<div class="run-item" onclick="openHistoryDetail(' + r.id + ',' + JSON.stringify(label).replace(/"/g,'&quot;') + ')">' +
+      '<div style="flex:1;min-width:0">' +
+        '<div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:3px">' + esc(label) + '</div>' +
+        '<div style="font-size:11.5px;color:var(--ink3)">' + esc(themes) + '</div>' +
+      '</div>' +
+      '<div style="display:flex;align-items:center;gap:8px;flex-shrink:0">' +
+        '<span class="run-item-badge ' + badgeCls + '">' + badgeText + '</span>' +
+        '<button class="btn btn-danger btn-sm" onclick="event.stopPropagation();deleteTrendRun(' + r.id + ')" title="삭제">삭제</button>' +
+      '</div>' +
+    '</div>';
+  }).join('') + '</div>';
+}
+
+window.openHistoryDetail = async function(runId, label) {
+  if (!sb) return;
+  var detailEl = document.getElementById('trend-history-detail');
+  var titleEl = document.getElementById('history-detail-title');
+  var resultsEl = document.getElementById('history-detail-results');
+  titleEl.textContent = label + ' 결과';
+  resultsEl.innerHTML = '<div style="text-align:center;padding:24px"><span class="spinner dark"></span></div>';
+  detailEl.hidden = false;
+  detailEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  var res = await sb.from('trend_analyses').select('results').eq('id', runId).single();
+  if (res.error || !res.data) { resultsEl.innerHTML = '<div class="empty-state"><p>불러오기 실패</p></div>'; return; }
+  renderTrendResults(res.data.results || [], label, runId);
+  // copy into detail panel
+  resultsEl.innerHTML = document.getElementById('trend-results').innerHTML;
+  document.getElementById('trend-results').innerHTML = '';
+};
+
+window.closeHistoryDetail = function() {
+  document.getElementById('trend-history-detail').hidden = true;
+};
+
+window.deleteTrendRun = async function(runId) {
+  if (!confirm('이 분석 이력을 삭제하시겠습니까?')) return;
+  if (!sb) return;
+  var res = await sb.from('trend_analyses').delete().eq('id', runId);
+  if (res.error) { showToast('삭제 실패: ' + res.error.message, 'red'); return; }
+  showToast('삭제 완료', '');
+  loadTrendHistory();
+};
+
+window.clearTrendHistory = async function() {
+  if (!confirm('분석 이력 전체를 삭제하시겠습니까?')) return;
+  if (!sb) return;
+  await sb.from('trend_analyses').delete().gt('id', 0);
+  showToast('이력 전체 삭제', '');
+  loadTrendHistory();
+};
+
+/* ══════════════════════════════════════════════
+   북마크 (saved_keywords)
+   ══════════════════════════════════════════════ */
+
+window.bookmarkKeyword = async function(kwData, btn) {
+  if (!sb) { showToast('DB 연결 중입니다.', 'red'); return; }
+  btn.disabled = true;
+  try {
+    var res = await sb.from('saved_keywords').insert({
+      keyword: kwData.keyword,
+      theme: kwData.theme || '',
+      trend: kwData.trend || '',
+      angle: kwData.angle || '',
+      hook: kwData.hook || '',
+      source_run_id: kwData.runId || null
+    });
+    if (res.error) throw new Error(res.error.message);
+    btn.classList.add('saved');
+    showToast('"' + kwData.keyword + '" 북마크 저장!', 'green');
+  } catch(e) {
+    showToast('북마크 실패: ' + e.message, 'red');
+    btn.disabled = false;
+  }
+};
+
+async function loadSavedKeywords() {
+  if (!sb) { showToast('DB 연결 중입니다.', 'red'); return; }
+  var el = document.getElementById('bm-list');
+  el.innerHTML = '<div style="text-align:center;padding:24px"><span class="spinner dark"></span></div>';
+  var res = await sb.from('saved_keywords')
+    .select('id,keyword,theme,trend,angle,hook,created_at')
+    .order('created_at', { ascending: false })
+    .limit(200);
+  if (res.error) { el.innerHTML = '<div class="empty-state"><p>불러오기 실패</p></div>'; return; }
+  var rows = res.data || [];
+  if (!rows.length) {
+    el.innerHTML = '<div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg><p>북마크된 키워드가 없습니다</p></div>';
+    return;
+  }
+  var badgeMap = { '상승중': 'up', '안정': 'stable', '계절성': 'seasonal' };
+  var badgeText = { '상승중': '↑ 상승중', '안정': '→ 안정', '계절성': '☀ 계절성' };
+  el.innerHTML = '<div class="bm-grid">' + rows.map(function(r) {
+    var bc = badgeMap[r.trend] || 'stable';
+    var bt = badgeText[r.trend] || (r.trend || '');
+    return '<div class="bm-card">' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px">' +
+        '<div style="font-size:14px;font-weight:600;color:var(--ink)">' + esc(r.keyword) + '</div>' +
+        '<div style="display:flex;align-items:center;gap:6px">' +
+          (bt ? '<span class="trend-card-badge ' + bc + '">' + bt + '</span>' : '') +
+          '<button class="btn btn-danger btn-sm" onclick="deleteBookmark(' + r.id + ')">삭제</button>' +
+        '</div>' +
+      '</div>' +
+      (r.theme ? '<div style="font-size:11px;color:var(--ink3)">테마: ' + esc(r.theme) + '</div>' : '') +
+      (r.angle ? '<div class="trend-card-angle">' + esc(r.angle) + '</div>' : '') +
+      (r.hook ? '<div class="trend-card-hook">"' + esc(r.hook) + '"</div>' : '') +
+      '<button class="btn btn-primary btn-sm" style="width:100%;justify-content:center;margin-top:6px" ' +
+        'onclick="generateFromTrend(' + JSON.stringify(r.keyword).replace(/"/g,'&quot;') + ',' + JSON.stringify(r.angle || '').replace(/"/g,'&quot;') + ')">' +
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="13" height="13"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>' +
+        ' 글 생성' +
+      '</button>' +
+    '</div>';
+  }).join('') + '</div>';
+}
+
+window.deleteBookmark = async function(id) {
+  if (!confirm('삭제하시겠습니까?')) return;
+  if (!sb) return;
+  var res = await sb.from('saved_keywords').delete().eq('id', id);
+  if (res.error) { showToast('삭제 실패: ' + res.error.message, 'red'); return; }
+  showToast('삭제 완료', '');
+  loadSavedKeywords();
+};
+
+window.clearAllBookmarks = async function() {
+  if (!confirm('북마크 전체를 삭제하시겠습니까?')) return;
+  if (!sb) return;
+  await sb.from('saved_keywords').delete().gt('id', 0);
+  showToast('전체 삭제', '');
+  loadSavedKeywords();
+};
+
+/* ══════════════════════════════════════════════
+   자동화 스케줄 설정 (schedule_config)
+   ══════════════════════════════════════════════ */
+
+var _schedId = null;
+
+async function loadScheduleConfig() {
+  if (!sb) return;
+  var res = await sb.from('schedule_config').select('*').limit(1).single();
+  if (res.error || !res.data) return;
+  var c = res.data;
+  _schedId = c.id;
+  var enabledEl = document.getElementById('sched-enabled');
+  var periodEl = document.getElementById('sched-period');
+  var dowEl = document.getElementById('sched-dow');
+  var hourEl = document.getElementById('sched-hour');
+  var minRatioEl = document.getElementById('sched-min-ratio');
+  if (enabledEl) enabledEl.checked = !!c.enabled;
+  if (periodEl) { periodEl.value = c.period || 'weekly'; _toggleDowRow(c.period); }
+  if (dowEl) dowEl.value = String(c.day_of_week || 3);
+  if (hourEl) hourEl.value = String(c.hour || 9);
+  if (minRatioEl) minRatioEl.value = c.min_ratio || 20;
+}
+
+function _toggleDowRow(period) {
+  var row = document.getElementById('sched-dow-row');
+  if (row) row.style.display = period === 'daily' ? 'none' : '';
+}
+
+window.saveScheduleConfig = async function() {
+  var period = (document.getElementById('sched-period') || {}).value || 'weekly';
+  _toggleDowRow(period);
+  if (!sb) return;
+  var cfg = {
+    period: period,
+    hour: parseInt((document.getElementById('sched-hour') || {}).value || '9', 10),
+    day_of_week: parseInt((document.getElementById('sched-dow') || {}).value || '3', 10),
+    min_ratio: parseFloat((document.getElementById('sched-min-ratio') || {}).value || '20'),
+    themes: getThemes(),
+    enabled: !!((document.getElementById('sched-enabled') || {}).checked),
+    updated_at: new Date().toISOString()
+  };
+  if (_schedId) {
+    await sb.from('schedule_config').update(cfg).eq('id', _schedId);
+  } else {
+    var ins = await sb.from('schedule_config').insert(cfg).select('id').single();
+    if (ins.data) _schedId = ins.data.id;
+  }
+  showToast('설정 저장됨', 'green');
+};
+
+/* ── Supabase 설정 SQL 복사 ── */
+var SUPABASE_SETUP_SQL = `-- ① 분석 회차 기록
+create table if not exists trend_analyses (
+  id            bigserial primary key,
+  run_at        timestamptz default now(),
+  source        text    default 'manual',
+  themes        text[]  default '{}',
+  results       jsonb   default '[]',
+  keyword_count int     default 0,
+  filtered_count int    default 0
+);
+alter table trend_analyses enable row level security;
+create policy "anon select" on trend_analyses for select using (true);
+create policy "anon insert" on trend_analyses for insert with check (true);
+create policy "anon delete" on trend_analyses for delete using (true);
+
+-- ② 북마크 키워드
+create table if not exists saved_keywords (
+  id            bigserial primary key,
+  created_at    timestamptz default now(),
+  keyword       text not null,
+  theme         text default '',
+  trend         text default '',
+  angle         text default '',
+  hook          text default '',
+  source_run_id bigint references trend_analyses(id) on delete set null,
+  note          text default ''
+);
+alter table saved_keywords enable row level security;
+create policy "anon all" on saved_keywords for all using (true) with check (true);
+
+-- ③ 자동화 설정 (행 1개)
+create table if not exists schedule_config (
+  id           bigserial primary key,
+  updated_at   timestamptz default now(),
+  period       text    default 'weekly',
+  hour         int     default 9,
+  day_of_week  int     default 3,
+  min_ratio    numeric default 20,
+  themes       text[]  default '{}',
+  enabled      boolean default false
+);
+alter table schedule_config enable row level security;
+create policy "anon all" on schedule_config for all using (true) with check (true);
+insert into schedule_config default values;`;
+
+window.copySupabaseSql = function() {
+  copyToClipboard(SUPABASE_SETUP_SQL, 'SQL 복사됨! Supabase SQL Editor에 붙여넣기 하세요.');
+  var block = document.getElementById('sched-sql-block');
+  if (block) block.textContent = SUPABASE_SETUP_SQL;
+};
 
 /* ── 트렌드 → 블로그 생성 연결 ── */
 window.generateFromTrend = function(keyword, angle) {
@@ -1276,6 +2092,10 @@ window.generateBlog = async function() {
     var extra = document.getElementById('blog-extra').value.trim();
     var systemPrompt = buildBlogSystemPrompt(style, concept, length, research);
     if (extra) systemPrompt += '\n\n[작성자 추가 지시사항 — 최우선 반영]\n' + extra;
+    var _blogDir = getActiveDirectiveText();
+    if (_blogDir && ['공통','블로그','어조','타겟독자','SEO'].indexOf(_blogDir.category) !== -1) {
+      systemPrompt += '\n\n[AI 글 작성 지침 "' + _blogDir.name + '" — 최우선 반영]\n' + _blogDir.text;
+    }
     var userPrompt = '주제: ' + topic + '\n목표 분량: ' + length + '자 내외';
     if (keywords) userPrompt += '\n추가 포함 키워드: ' + keywords;
 
@@ -1353,6 +2173,10 @@ window.generateFood = async function() {
 
   var extra = document.getElementById('food-extra').value.trim();
   if (extra) systemPrompt += '\n\n[작성자 추가 지시사항 — 최우선 반영]\n' + extra;
+  var _foodDir = getActiveDirectiveText();
+  if (_foodDir && ['공통','맛집리뷰','어조','타겟독자','SEO'].indexOf(_foodDir.category) !== -1) {
+    systemPrompt += '\n\n[AI 글 작성 지침 "' + _foodDir.name + '" — 최우선 반영]\n' + _foodDir.text;
+  }
 
   var parts = ['장소명: ' + place];
   if (category) parts.push('카테고리: ' + category);
@@ -1471,19 +2295,27 @@ function renderPostCard(p) {
     ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>'
     : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>';
 
+  var publishBtn = p.status === 'draft'
+    ? '<button class="btn btn-ghost btn-sm" style="color:var(--green);border-color:var(--green)" onclick="toggleStatus(' + p.id + ',\'published\')">' +
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg>' +
+        '<span class="btn-label">발행</span></button>'
+    : '<button class="btn btn-ghost btn-sm" onclick="toggleStatus(' + p.id + ',\'draft\')">' +
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>' +
+        '<span class="btn-label">초안</span></button>';
   return '<div class="post-card">' +
     '<div class="post-card-icon ' + (isFood ? 'food' : 'blog') + '">' + iconSvg + '</div>' +
     '<div class="post-card-body">' +
       '<div class="post-card-title">' + esc(p.name || '(제목 없음)') + '</div>' +
-      '<div class="post-card-meta"><span>' + dateStr + '</span><span>' + (isFood ? '맛집 리뷰' : '블로그 글') + '</span>' + badge + '</div>' +
+      '<div class="post-card-meta"><span>' + dateStr + '</span><span>' + (isFood ? '맛집' : '블로그') + '</span>' + badge + '</div>' +
     '</div>' +
     '<div class="post-card-actions">' +
-      '<button class="btn btn-ghost btn-sm" onclick="openModal(' + p.id + ')">보기</button>' +
-      (p.status === 'draft'
-        ? '<button class="btn btn-ghost btn-sm" style="color:var(--green);border-color:var(--green)" onclick="toggleStatus(' + p.id + ',\'published\')">발행</button>'
-        : '<button class="btn btn-ghost btn-sm" onclick="toggleStatus(' + p.id + ',\'draft\')">초안으로</button>'
-      ) +
-      '<button class="btn btn-danger btn-sm" onclick="deletePost(' + p.id + ')">삭제</button>' +
+      '<button class="btn btn-ghost btn-sm" onclick="openModal(' + p.id + ')">' +
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>' +
+        '<span class="btn-label">보기</span></button>' +
+      publishBtn +
+      '<button class="btn btn-danger btn-sm" onclick="deletePost(' + p.id + ')">' +
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>' +
+        '<span class="btn-label">삭제</span></button>' +
     '</div>' +
   '</div>';
 }
@@ -1527,8 +2359,18 @@ window.openModal = function(id) {
 };
 
 window.closeModal = function() {
-  document.getElementById('preview-modal').hidden = true;
-  S.modalPost = null;
+  var backdrop = document.getElementById('preview-modal');
+  var inner = document.getElementById('preview-modal-inner');
+  if (!inner || backdrop.hidden) return;
+  inner.classList.add('closing');
+  backdrop.classList.add('closing');
+  setTimeout(function() {
+    backdrop.hidden = true;
+    backdrop.classList.remove('closing');
+    inner.classList.remove('closing');
+    inner.style.transform = '';
+    S.modalPost = null;
+  }, 240);
 };
 
 window.copyModalContent = function() {
