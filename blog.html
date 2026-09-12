@@ -173,6 +173,44 @@ label{font-size:11.5px;font-weight:500;color:var(--ink2)}
 .dir-text-preview{font-size:12px;color:var(--ink2);line-height:1.5;white-space:pre-wrap;word-break:break-word;max-height:54px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical}
 .active-dir-banner{background:var(--primary-lt);border:1px solid rgba(26,115,232,.25);border-radius:var(--r);padding:10px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;font-size:12px;color:var(--primary-dk);font-weight:500}
 
+/* ── 트렌드 서브탭 ── */
+.stab-bar{display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:16px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.stab-bar::-webkit-scrollbar{display:none}
+.stab-btn{padding:8px 16px;font-size:12px;font-weight:500;color:var(--ink3);border:none;background:none;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap;flex-shrink:0;transition:color .12s,border-color .12s}
+.stab-btn.active{color:var(--primary);border-bottom-color:var(--primary)}
+
+/* ── 분석 이력 리스트 ── */
+.run-list{display:flex;flex-direction:column;gap:1px;border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
+.run-item{background:#fff;padding:12px 14px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:background .1s}
+.run-item:hover{background:var(--surface2)}
+.run-item+.run-item{border-top:1px solid var(--border)}
+.run-item-badge{font-size:10.5px;font-weight:600;padding:1px 6px;border-radius:3px}
+.run-item-badge.manual{background:var(--primary-lt);color:var(--primary-dk)}
+.run-item-badge.auto{background:var(--green-lt);color:var(--green)}
+
+/* ── 북마크 키워드 카드 ── */
+.bm-card{background:#fff;border:1px solid var(--border);border-radius:var(--r);padding:12px 14px;display:flex;flex-direction:column;gap:7px}
+.bm-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px}
+@media(max-width:600px){.bm-grid{grid-template-columns:1fr}}
+
+/* ── 북마크 버튼 ── */
+.bm-btn{background:none;border:none;cursor:pointer;font-size:16px;line-height:1;color:var(--ink3);padding:2px 4px;border-radius:4px;transition:color .12s}
+.bm-btn:hover{color:#f59e0b}
+.bm-btn.saved{color:#f59e0b}
+
+/* ── 자동화 설정 ── */
+.sched-row{display:flex;align-items:center;justify-content:space-between;padding:11px 0;border-bottom:1px solid var(--border)}
+.sched-row:last-child{border-bottom:none}
+.sched-label{font-size:13px;color:var(--ink);font-weight:500}
+.sched-sub{font-size:11px;color:var(--ink3);margin-top:2px}
+.toggle-wrap{display:flex;align-items:center;gap:8px}
+.toggle{position:relative;width:40px;height:22px;cursor:pointer}
+.toggle input{opacity:0;width:0;height:0}
+.toggle-track{position:absolute;inset:0;background:var(--border-dk);border-radius:11px;transition:background .2s}
+.toggle input:checked + .toggle-track{background:var(--green)}
+.toggle-thumb{position:absolute;top:3px;left:3px;width:16px;height:16px;background:#fff;border-radius:50%;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.toggle input:checked ~ .toggle-thumb{transform:translateX(18px)}
+
 /* ── 모바일 cols 스태킹 ── */
 @media(max-width:540px){
   .form-row.cols{flex-direction:column}
@@ -489,56 +527,180 @@ label{font-size:11.5px;font-weight:500;color:var(--ink2)}
 <!-- ── 트렌드 탭 ── -->
 <div id="panel-trend" class="panel">
 
-  <!-- 데이터 소스 안내 -->
-  <div class="info-banner" style="margin-bottom:16px">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-    <div>
-      <strong>복합 트렌드 분석</strong> — 네이버 DataLab 실측 검색량 + AI 블로그 각도·후킹 분석
-      <span id="datalab-status" style="margin-left:8px;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;background:var(--green-lt);color:var(--green)">DataLab 연결됨</span>
-    </div>
+  <!-- 서브탭 바 -->
+  <div class="stab-bar">
+    <button class="stab-btn active" id="trend-stab-run" onclick="switchTrendTab('run')">분석 실행</button>
+    <button class="stab-btn" id="trend-stab-history" onclick="switchTrendTab('history')">이력</button>
+    <button class="stab-btn" id="trend-stab-bookmarks" onclick="switchTrendTab('bookmarks')">북마크</button>
+    <button class="stab-btn" id="trend-stab-auto" onclick="switchTrendTab('auto')">자동화</button>
   </div>
 
-  <!-- 테마 관리 -->
-  <div class="card">
-    <div class="card-head">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
-      내 테마 관리
-    </div>
-    <div class="card-body">
-      <div class="form-row cols" style="align-items:flex-end">
-        <div class="form-row" style="flex:1;margin-bottom:0">
-          <label for="theme-input">테마 추가</label>
-          <input id="theme-input" class="form-input" type="text" placeholder="예: 한남동 맛집, 서울 카페, 건강식단" onkeydown="if(event.key==='Enter')addTheme()">
-        </div>
-        <button class="btn btn-primary" onclick="addTheme()" style="flex-shrink:0">추가</button>
+  <!-- ① 분석 실행 서브패널 -->
+  <div id="trend-panel-run">
+
+    <div class="info-banner" style="margin-bottom:16px">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      <div>
+        <strong>복합 트렌드 분석</strong> — 네이버 DataLab 실측 검색량 + AI 블로그 각도·후킹 분석
+        <span id="datalab-status" style="margin-left:8px;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;background:var(--green-lt);color:var(--green)">DataLab 연결됨</span>
       </div>
-      <div id="theme-tags" style="margin-top:12px"></div>
-      <div class="form-hint" style="margin-top:8px">테마별로 AI가 트렌딩 키워드와 블로그 각도를 분석합니다</div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+        내 테마 관리
+      </div>
+      <div class="card-body">
+        <div class="form-row cols" style="align-items:flex-end">
+          <div class="form-row" style="flex:1;margin-bottom:0">
+            <label for="theme-input">테마 추가</label>
+            <input id="theme-input" class="form-input" type="text" placeholder="예: 한남동 맛집, 서울 카페, 건강식단" onkeydown="if(event.key==='Enter')addTheme()">
+          </div>
+          <button class="btn btn-primary" onclick="addTheme()" style="flex-shrink:0">추가</button>
+        </div>
+        <div id="theme-tags" style="margin-top:12px"></div>
+        <div class="form-hint" style="margin-top:8px">테마별로 AI가 트렌딩 키워드와 블로그 각도를 분석합니다</div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:16px">
+      <div class="card-body">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+          <div>
+            <div style="font-size:14px;font-weight:600;color:var(--ink)">트렌드 분석 실행</div>
+            <div style="font-size:12px;color:var(--ink3);margin-top:3px">각 테마별 상승 키워드 5개 + 블로그 각도 + 후킹 문구 생성</div>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <button class="btn btn-ghost btn-sm" onclick="loadLastTrendRun()" id="btn-load-trend">마지막 분석 불러오기</button>
+            <button class="btn btn-primary" id="btn-analyze" onclick="analyzeTrends()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+              지금 분석
+            </button>
+          </div>
+        </div>
+        <div id="trend-progress" hidden style="margin-top:12px;font-size:13px;color:var(--ink2)"></div>
+      </div>
+    </div>
+
+    <div id="trend-results" style="margin-top:16px"></div>
+  </div>
+
+  <!-- ② 이력 서브패널 -->
+  <div id="trend-panel-history" hidden>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+      <div style="font-size:13px;font-weight:600;color:var(--ink)">분석 이력</div>
+      <button class="btn btn-danger btn-sm" onclick="clearTrendHistory()">전체 삭제</button>
+    </div>
+    <div id="trend-history-list">
+      <div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg><p>분석 이력이 없습니다</p></div>
+    </div>
+    <div id="trend-history-detail" hidden style="margin-top:16px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+        <div style="font-size:13px;font-weight:600;color:var(--ink)" id="history-detail-title"></div>
+        <button class="btn btn-ghost btn-sm" onclick="closeHistoryDetail()">닫기</button>
+      </div>
+      <div id="history-detail-results"></div>
     </div>
   </div>
 
-  <!-- 분석 실행 -->
-  <div class="card" style="margin-top:16px">
-    <div class="card-body">
-      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
-        <div>
-          <div style="font-size:14px;font-weight:600;color:var(--ink)">트렌드 분석 실행</div>
-          <div style="font-size:12px;color:var(--ink3);margin-top:3px">각 테마별 상승 키워드 5개 + 블로그 각도 + 후킹 문구 생성</div>
+  <!-- ③ 북마크 서브패널 -->
+  <div id="trend-panel-bookmarks" hidden>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+      <div style="font-size:13px;font-weight:600;color:var(--ink)">저장된 키워드</div>
+      <button class="btn btn-danger btn-sm" onclick="clearAllBookmarks()">전체 삭제</button>
+    </div>
+    <div id="bm-list">
+      <div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg><p>북마크된 키워드가 없습니다</p></div>
+    </div>
+  </div>
+
+  <!-- ④ 자동화 서브패널 -->
+  <div id="trend-panel-auto" hidden>
+
+    <div class="info-banner" style="margin-bottom:16px">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      <div>GAS(Google Apps Script) 타임 트리거로 정해진 시간에 자동 분석을 실행합니다. 설정 저장 후 <strong>GAS 편집기</strong>에서 <code>setupAutoTrigger()</code>를 한 번 실행하세요.</div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        자동 분석 스케줄
+      </div>
+      <div class="card-body">
+        <div class="sched-row">
+          <div>
+            <div class="sched-label">자동 분석 활성화</div>
+            <div class="sched-sub">GAS 트리거와 연동됩니다</div>
+          </div>
+          <label class="toggle" id="sched-toggle-wrap">
+            <input type="checkbox" id="sched-enabled" onchange="saveScheduleConfig()">
+            <div class="toggle-track"></div>
+            <div class="toggle-thumb"></div>
+          </label>
         </div>
-        <div style="display:flex;gap:8px;align-items:center">
-          <button class="btn btn-ghost btn-sm" onclick="loadLastTrend()" id="btn-load-trend">지난 분석 불러오기</button>
-          <button class="btn btn-primary" id="btn-analyze" onclick="analyzeTrends()">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-            지금 분석
-          </button>
+        <div class="sched-row">
+          <div class="sched-label">분석 주기</div>
+          <select class="form-select" id="sched-period" style="width:140px" onchange="saveScheduleConfig()">
+            <option value="daily">매일</option>
+            <option value="weekly" selected>매주</option>
+          </select>
+        </div>
+        <div class="sched-row" id="sched-dow-row">
+          <div class="sched-label">요일 <span style="font-size:11px;color:var(--ink3)">(주간 시)</span></div>
+          <select class="form-select" id="sched-dow" style="width:140px" onchange="saveScheduleConfig()">
+            <option value="1">월요일</option>
+            <option value="2">화요일</option>
+            <option value="3" selected>수요일</option>
+            <option value="4">목요일</option>
+            <option value="5">금요일</option>
+            <option value="6">토요일</option>
+            <option value="7">일요일</option>
+          </select>
+        </div>
+        <div class="sched-row">
+          <div class="sched-label">실행 시각</div>
+          <select class="form-select" id="sched-hour" style="width:140px" onchange="saveScheduleConfig()">
+            <option value="7">오전 7시</option>
+            <option value="8">오전 8시</option>
+            <option value="9" selected>오전 9시</option>
+            <option value="10">오전 10시</option>
+            <option value="18">오후 6시</option>
+            <option value="21">오후 9시</option>
+          </select>
+        </div>
+        <div class="sched-row">
+          <div>
+            <div class="sched-label">최소 DataLab 검색량</div>
+            <div class="sched-sub">이 수치 이상이거나 상승중인 키워드만 분석</div>
+          </div>
+          <input type="number" class="form-input" id="sched-min-ratio" style="width:80px" min="0" max="100" step="5" value="20" onchange="saveScheduleConfig()">
         </div>
       </div>
-      <div id="trend-progress" hidden style="margin-top:12px;font-size:13px;color:var(--ink2)"></div>
     </div>
+
+    <div class="card" style="margin-top:12px">
+      <div class="card-head">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        GAS 설정 가이드
+      </div>
+      <div class="card-body">
+        <div style="font-size:13px;color:var(--ink2);line-height:1.85">
+          <div style="font-weight:600;color:var(--ink);margin-bottom:6px">1단계 — Supabase SQL 실행</div>
+          <div style="background:var(--surface2);border-radius:6px;padding:10px 12px;font-size:12px;font-family:monospace;margin-bottom:12px;white-space:pre-wrap;word-break:break-all" id="sched-sql-block">-- Supabase SQL Editor에서 실행\n-- 아래 '📋 SQL 복사' 버튼을 누르세요</div>
+          <button class="btn btn-ghost btn-sm" onclick="copySupabaseSql()">📋 SQL 복사</button>
+          <div style="font-weight:600;color:var(--ink);margin:14px 0 6px">2단계 — GAS 스크립트에 키 추가</div>
+          <div style="background:var(--surface2);border-radius:6px;padding:10px 12px;font-size:12px;font-family:monospace;line-height:1.8">var SUPABASE_SVC_KEY = '<span style="color:var(--red)">(service_role key 붙여넣기)</span>';<br>var CLAUDE_API_KEY = '<span style="color:var(--red)">(Claude API 키 붙여넣기)</span>';</div>
+          <div style="font-weight:600;color:var(--ink);margin:14px 0 6px">3단계 — 트리거 등록 (1회만)</div>
+          <div style="background:var(--surface2);border-radius:6px;padding:10px 12px;font-size:12px;font-family:monospace">GAS 편집기 → 함수: <strong>setupAutoTrigger</strong> → 실행</div>
+          <div style="font-size:11px;color:var(--ink3);margin-top:8px">트리거 제거는 <code>removeAutoTrigger()</code> 실행</div>
+        </div>
+      </div>
+    </div>
+
   </div>
 
-  <!-- 결과 -->
-  <div id="trend-results" style="margin-top:16px"></div>
 </div>
 
 <!-- ── AI 글 작성 지침 탭 ── -->
@@ -716,6 +878,20 @@ window.switchTab = function(tab) {
   if (tab === 'history') loadHistory();
   if (tab === 'trend') { renderThemeTags(); checkDatalabStatus(); }
   if (tab === 'directive') { renderDirectiveList(); renderActiveBanner(); }
+};
+
+/* ── 트렌드 서브탭 전환 ── */
+var _trendTab = 'run';
+window.switchTrendTab = function(tab) {
+  _trendTab = tab;
+  ['run','history','bookmarks','auto'].forEach(function(t) {
+    document.getElementById('trend-stab-' + t).classList.toggle('active', t === tab);
+    var p = document.getElementById('trend-panel-' + t);
+    if (p) p.hidden = t !== tab;
+  });
+  if (tab === 'history') loadTrendHistory();
+  if (tab === 'bookmarks') loadSavedKeywords();
+  if (tab === 'auto') loadScheduleConfig();
 };
 
 /* ══════════════════════════════════════════════
@@ -1241,15 +1417,25 @@ window.analyzeTrends = async function() {
     }
   }
 
-  // Supabase 저장
+  // Supabase 저장 (trend_analyses 테이블)
+  var savedRunId = null;
   if (sb) {
-    var today = new Date().toISOString().slice(0, 10);
+    try {
+      var ins = await sb.from('trend_analyses').insert({
+        source: 'manual',
+        themes: themes,
+        results: results,
+        keyword_count: themes.length * 5,
+        filtered_count: results.reduce(function(s, r) { return s + (r.keywords ? r.keywords.length : 0); }, 0)
+      }).select('id').single();
+      if (ins.data) savedRunId = ins.data.id;
+    } catch(e) {}
+    // 기존 app_submissions 호환도 유지
+    var today2 = new Date().toISOString().slice(0, 10);
     try {
       await sb.from('app_submissions').upsert({
-        kind: 'trending',
-        ref: 'trend_' + today,
-        name: today + ' 트렌드 분석',
-        status: 'active',
+        kind: 'trending', ref: 'trend_' + today2,
+        name: today2 + ' 트렌드 분석', status: 'active',
         data: { themes: results, generated_at: new Date().toISOString(), source: 'datalab+ai' }
       }, { onConflict: 'kind,ref' });
     } catch(e) {}
@@ -1258,35 +1444,53 @@ window.analyzeTrends = async function() {
   prog.hidden = true;
   btn.disabled = false;
   btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg> 지금 분석';
-  renderTrendResults(results);
+  renderTrendResults(results, null, savedRunId);
   showToast('분석 완료! (DataLab 실측 반영)', 'green');
 };
 
-/* ── 지난 분석 불러오기 ── */
-window.loadLastTrend = async function() {
+/* ── 마지막 분석 불러오기 ── */
+window.loadLastTrendRun = async function() {
   if (!sb) { showToast('DB 연결 중입니다.', 'red'); return; }
   var btn = document.getElementById('btn-load-trend');
   btn.disabled = true; btn.textContent = '불러오는 중...';
 
-  var res = await sb.from('app_submissions')
+  // trend_analyses 우선
+  var res = await sb.from('trend_analyses')
+    .select('id,run_at,results')
+    .order('run_at', { ascending: false })
+    .limit(1);
+
+  btn.disabled = false; btn.textContent = '마지막 분석 불러오기';
+
+  if (!res.error && res.data && res.data.length) {
+    var row = res.data[0];
+    var dt = new Date(row.run_at);
+    var label = dt.toLocaleDateString('ko-KR') + ' ' + dt.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+    renderTrendResults(row.results || [], label, row.id);
+    showToast('불러오기 완료', 'green');
+    return;
+  }
+
+  // 폴백: app_submissions
+  var res2 = await sb.from('app_submissions')
     .select('data,name,created_at')
     .eq('kind', 'trending')
     .order('created_at', { ascending: false })
     .limit(1);
 
-  btn.disabled = false; btn.textContent = '지난 분석 불러오기';
-  if (res.error || !res.data || !res.data.length) {
+  if (res2.error || !res2.data || !res2.data.length) {
     showToast('저장된 분석이 없습니다.', 'red'); return;
   }
-  var row = res.data[0];
-  var themes = (row.data && row.data.themes) || [];
-  var date = row.name || '';
-  renderTrendResults(themes, date);
+  var row2 = res2.data[0];
+  renderTrendResults((row2.data && row2.data.themes) || [], row2.name || '', null);
   showToast('불러오기 완료', 'green');
 };
 
+/* ── 호환성 alias ── */
+window.loadLastTrend = window.loadLastTrendRun;
+
 /* ── 결과 렌더링 ── */
-function renderTrendResults(results, dateLabel) {
+function renderTrendResults(results, dateLabel, runId) {
   var el = document.getElementById('trend-results');
   if (!results || !results.length) { el.innerHTML = ''; return; }
 
@@ -1304,7 +1508,6 @@ function renderTrendResults(results, dateLabel) {
       esc(r.theme) + '</div>';
     html += '<div class="trend-grid">';
 
-    // DataLab 스파크라인 생성 (테마당 1개)
     var sparkHtml = '';
     if (r._datalabRatios && r._datalabRatios.length >= 2) {
       var ratios = r._datalabRatios.map(function(d) { return d.ratio; });
@@ -1328,10 +1531,14 @@ function renderTrendResults(results, dateLabel) {
     r.keywords.forEach(function(kw) {
       var bc = badgeMap[kw.trend] || 'stable';
       var bt = badgeText[kw.trend] || kw.trend;
+      var bmData = JSON.stringify({ keyword: kw.keyword, theme: r.theme, trend: kw.trend, angle: kw.angle || '', hook: kw.hook || '', runId: runId || null }).replace(/"/g,'&quot;');
       html += '<div class="trend-card">' +
         '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px">' +
           '<div class="trend-card-kw">' + esc(kw.keyword) + '</div>' +
-          '<span class="trend-card-badge ' + bc + '">' + bt + '</span>' +
+          '<div style="display:flex;align-items:center;gap:6px">' +
+            '<span class="trend-card-badge ' + bc + '">' + bt + '</span>' +
+            '<button class="bm-btn" title="북마크" onclick="bookmarkKeyword(' + bmData + ', this)">★</button>' +
+          '</div>' +
         '</div>' +
         sparkHtml +
         '<div class="trend-card-reason">' + esc(kw.reason || '') + '</div>' +
@@ -1349,6 +1556,266 @@ function renderTrendResults(results, dateLabel) {
 
   el.innerHTML = html;
 }
+
+/* ══════════════════════════════════════════════
+   트렌드 이력 (trend_analyses)
+   ══════════════════════════════════════════════ */
+
+async function loadTrendHistory() {
+  if (!sb) { showToast('DB 연결 중입니다.', 'red'); return; }
+  var el = document.getElementById('trend-history-list');
+  el.innerHTML = '<div style="text-align:center;padding:24px;color:var(--ink3)"><span class="spinner dark"></span></div>';
+  var res = await sb.from('trend_analyses')
+    .select('id,run_at,source,themes,keyword_count,filtered_count')
+    .order('run_at', { ascending: false })
+    .limit(50);
+  if (res.error) { el.innerHTML = '<div class="empty-state"><p>불러오기 실패</p></div>'; return; }
+  var rows = res.data || [];
+  if (!rows.length) {
+    el.innerHTML = '<div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg><p>분석 이력이 없습니다</p></div>';
+    return;
+  }
+  el.innerHTML = '<div class="run-list">' + rows.map(function(r) {
+    var dt = new Date(r.run_at);
+    var label = dt.toLocaleDateString('ko-KR') + ' ' + dt.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+    var badgeCls = r.source === 'auto' ? 'auto' : 'manual';
+    var badgeText = r.source === 'auto' ? '자동' : '수동';
+    var themes = (r.themes || []).join(', ') || '—';
+    return '<div class="run-item" onclick="openHistoryDetail(' + r.id + ',' + JSON.stringify(label).replace(/"/g,'&quot;') + ')">' +
+      '<div style="flex:1;min-width:0">' +
+        '<div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:3px">' + esc(label) + '</div>' +
+        '<div style="font-size:11.5px;color:var(--ink3)">' + esc(themes) + '</div>' +
+      '</div>' +
+      '<div style="display:flex;align-items:center;gap:8px;flex-shrink:0">' +
+        '<span class="run-item-badge ' + badgeCls + '">' + badgeText + '</span>' +
+        '<button class="btn btn-danger btn-sm" onclick="event.stopPropagation();deleteTrendRun(' + r.id + ')" title="삭제">삭제</button>' +
+      '</div>' +
+    '</div>';
+  }).join('') + '</div>';
+}
+
+window.openHistoryDetail = async function(runId, label) {
+  if (!sb) return;
+  var detailEl = document.getElementById('trend-history-detail');
+  var titleEl = document.getElementById('history-detail-title');
+  var resultsEl = document.getElementById('history-detail-results');
+  titleEl.textContent = label + ' 결과';
+  resultsEl.innerHTML = '<div style="text-align:center;padding:24px"><span class="spinner dark"></span></div>';
+  detailEl.hidden = false;
+  detailEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  var res = await sb.from('trend_analyses').select('results').eq('id', runId).single();
+  if (res.error || !res.data) { resultsEl.innerHTML = '<div class="empty-state"><p>불러오기 실패</p></div>'; return; }
+  renderTrendResults(res.data.results || [], label, runId);
+  // copy into detail panel
+  resultsEl.innerHTML = document.getElementById('trend-results').innerHTML;
+  document.getElementById('trend-results').innerHTML = '';
+};
+
+window.closeHistoryDetail = function() {
+  document.getElementById('trend-history-detail').hidden = true;
+};
+
+window.deleteTrendRun = async function(runId) {
+  if (!confirm('이 분석 이력을 삭제하시겠습니까?')) return;
+  if (!sb) return;
+  var res = await sb.from('trend_analyses').delete().eq('id', runId);
+  if (res.error) { showToast('삭제 실패: ' + res.error.message, 'red'); return; }
+  showToast('삭제 완료', '');
+  loadTrendHistory();
+};
+
+window.clearTrendHistory = async function() {
+  if (!confirm('분석 이력 전체를 삭제하시겠습니까?')) return;
+  if (!sb) return;
+  await sb.from('trend_analyses').delete().gt('id', 0);
+  showToast('이력 전체 삭제', '');
+  loadTrendHistory();
+};
+
+/* ══════════════════════════════════════════════
+   북마크 (saved_keywords)
+   ══════════════════════════════════════════════ */
+
+window.bookmarkKeyword = async function(kwData, btn) {
+  if (!sb) { showToast('DB 연결 중입니다.', 'red'); return; }
+  btn.disabled = true;
+  try {
+    var res = await sb.from('saved_keywords').insert({
+      keyword: kwData.keyword,
+      theme: kwData.theme || '',
+      trend: kwData.trend || '',
+      angle: kwData.angle || '',
+      hook: kwData.hook || '',
+      source_run_id: kwData.runId || null
+    });
+    if (res.error) throw new Error(res.error.message);
+    btn.classList.add('saved');
+    showToast('"' + kwData.keyword + '" 북마크 저장!', 'green');
+  } catch(e) {
+    showToast('북마크 실패: ' + e.message, 'red');
+    btn.disabled = false;
+  }
+};
+
+async function loadSavedKeywords() {
+  if (!sb) { showToast('DB 연결 중입니다.', 'red'); return; }
+  var el = document.getElementById('bm-list');
+  el.innerHTML = '<div style="text-align:center;padding:24px"><span class="spinner dark"></span></div>';
+  var res = await sb.from('saved_keywords')
+    .select('id,keyword,theme,trend,angle,hook,created_at')
+    .order('created_at', { ascending: false })
+    .limit(200);
+  if (res.error) { el.innerHTML = '<div class="empty-state"><p>불러오기 실패</p></div>'; return; }
+  var rows = res.data || [];
+  if (!rows.length) {
+    el.innerHTML = '<div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg><p>북마크된 키워드가 없습니다</p></div>';
+    return;
+  }
+  var badgeMap = { '상승중': 'up', '안정': 'stable', '계절성': 'seasonal' };
+  var badgeText = { '상승중': '↑ 상승중', '안정': '→ 안정', '계절성': '☀ 계절성' };
+  el.innerHTML = '<div class="bm-grid">' + rows.map(function(r) {
+    var bc = badgeMap[r.trend] || 'stable';
+    var bt = badgeText[r.trend] || (r.trend || '');
+    return '<div class="bm-card">' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px">' +
+        '<div style="font-size:14px;font-weight:600;color:var(--ink)">' + esc(r.keyword) + '</div>' +
+        '<div style="display:flex;align-items:center;gap:6px">' +
+          (bt ? '<span class="trend-card-badge ' + bc + '">' + bt + '</span>' : '') +
+          '<button class="btn btn-danger btn-sm" onclick="deleteBookmark(' + r.id + ')">삭제</button>' +
+        '</div>' +
+      '</div>' +
+      (r.theme ? '<div style="font-size:11px;color:var(--ink3)">테마: ' + esc(r.theme) + '</div>' : '') +
+      (r.angle ? '<div class="trend-card-angle">' + esc(r.angle) + '</div>' : '') +
+      (r.hook ? '<div class="trend-card-hook">"' + esc(r.hook) + '"</div>' : '') +
+      '<button class="btn btn-primary btn-sm" style="width:100%;justify-content:center;margin-top:6px" ' +
+        'onclick="generateFromTrend(' + JSON.stringify(r.keyword).replace(/"/g,'&quot;') + ',' + JSON.stringify(r.angle || '').replace(/"/g,'&quot;') + ')">' +
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="13" height="13"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>' +
+        ' 글 생성' +
+      '</button>' +
+    '</div>';
+  }).join('') + '</div>';
+}
+
+window.deleteBookmark = async function(id) {
+  if (!confirm('삭제하시겠습니까?')) return;
+  if (!sb) return;
+  var res = await sb.from('saved_keywords').delete().eq('id', id);
+  if (res.error) { showToast('삭제 실패: ' + res.error.message, 'red'); return; }
+  showToast('삭제 완료', '');
+  loadSavedKeywords();
+};
+
+window.clearAllBookmarks = async function() {
+  if (!confirm('북마크 전체를 삭제하시겠습니까?')) return;
+  if (!sb) return;
+  await sb.from('saved_keywords').delete().gt('id', 0);
+  showToast('전체 삭제', '');
+  loadSavedKeywords();
+};
+
+/* ══════════════════════════════════════════════
+   자동화 스케줄 설정 (schedule_config)
+   ══════════════════════════════════════════════ */
+
+var _schedId = null;
+
+async function loadScheduleConfig() {
+  if (!sb) return;
+  var res = await sb.from('schedule_config').select('*').limit(1).single();
+  if (res.error || !res.data) return;
+  var c = res.data;
+  _schedId = c.id;
+  var enabledEl = document.getElementById('sched-enabled');
+  var periodEl = document.getElementById('sched-period');
+  var dowEl = document.getElementById('sched-dow');
+  var hourEl = document.getElementById('sched-hour');
+  var minRatioEl = document.getElementById('sched-min-ratio');
+  if (enabledEl) enabledEl.checked = !!c.enabled;
+  if (periodEl) { periodEl.value = c.period || 'weekly'; _toggleDowRow(c.period); }
+  if (dowEl) dowEl.value = String(c.day_of_week || 3);
+  if (hourEl) hourEl.value = String(c.hour || 9);
+  if (minRatioEl) minRatioEl.value = c.min_ratio || 20;
+}
+
+function _toggleDowRow(period) {
+  var row = document.getElementById('sched-dow-row');
+  if (row) row.style.display = period === 'daily' ? 'none' : '';
+}
+
+window.saveScheduleConfig = async function() {
+  var period = (document.getElementById('sched-period') || {}).value || 'weekly';
+  _toggleDowRow(period);
+  if (!sb) return;
+  var cfg = {
+    period: period,
+    hour: parseInt((document.getElementById('sched-hour') || {}).value || '9', 10),
+    day_of_week: parseInt((document.getElementById('sched-dow') || {}).value || '3', 10),
+    min_ratio: parseFloat((document.getElementById('sched-min-ratio') || {}).value || '20'),
+    themes: getThemes(),
+    enabled: !!((document.getElementById('sched-enabled') || {}).checked),
+    updated_at: new Date().toISOString()
+  };
+  if (_schedId) {
+    await sb.from('schedule_config').update(cfg).eq('id', _schedId);
+  } else {
+    var ins = await sb.from('schedule_config').insert(cfg).select('id').single();
+    if (ins.data) _schedId = ins.data.id;
+  }
+  showToast('설정 저장됨', 'green');
+};
+
+/* ── Supabase 설정 SQL 복사 ── */
+var SUPABASE_SETUP_SQL = `-- ① 분석 회차 기록
+create table if not exists trend_analyses (
+  id            bigserial primary key,
+  run_at        timestamptz default now(),
+  source        text    default 'manual',
+  themes        text[]  default '{}',
+  results       jsonb   default '[]',
+  keyword_count int     default 0,
+  filtered_count int    default 0
+);
+alter table trend_analyses enable row level security;
+create policy "anon select" on trend_analyses for select using (true);
+create policy "anon insert" on trend_analyses for insert with check (true);
+create policy "anon delete" on trend_analyses for delete using (true);
+
+-- ② 북마크 키워드
+create table if not exists saved_keywords (
+  id            bigserial primary key,
+  created_at    timestamptz default now(),
+  keyword       text not null,
+  theme         text default '',
+  trend         text default '',
+  angle         text default '',
+  hook          text default '',
+  source_run_id bigint references trend_analyses(id) on delete set null,
+  note          text default ''
+);
+alter table saved_keywords enable row level security;
+create policy "anon all" on saved_keywords for all using (true) with check (true);
+
+-- ③ 자동화 설정 (행 1개)
+create table if not exists schedule_config (
+  id           bigserial primary key,
+  updated_at   timestamptz default now(),
+  period       text    default 'weekly',
+  hour         int     default 9,
+  day_of_week  int     default 3,
+  min_ratio    numeric default 20,
+  themes       text[]  default '{}',
+  enabled      boolean default false
+);
+alter table schedule_config enable row level security;
+create policy "anon all" on schedule_config for all using (true) with check (true);
+insert into schedule_config default values;`;
+
+window.copySupabaseSql = function() {
+  copyToClipboard(SUPABASE_SETUP_SQL, 'SQL 복사됨! Supabase SQL Editor에 붙여넣기 하세요.');
+  var block = document.getElementById('sched-sql-block');
+  if (block) block.textContent = SUPABASE_SETUP_SQL;
+};
 
 /* ── 트렌드 → 블로그 생성 연결 ── */
 window.generateFromTrend = function(keyword, angle) {
