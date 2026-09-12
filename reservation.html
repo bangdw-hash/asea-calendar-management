@@ -63,17 +63,19 @@ header{
 .hd-more:hover{background:var(--gray-lt)}
 .hd-desktop{display:flex;gap:2px;align-items:center}
 .hd-dropdown{
-  position:absolute;top:calc(100% + 6px);right:0;
+  position:absolute;top:calc(100% + 8px);right:0;
   background:#fff;border:1px solid var(--border);border-radius:var(--r);
-  box-shadow:var(--sh-lg);min-width:160px;padding:4px;z-index:200;
-  display:flex;flex-direction:column;gap:1px;
+  box-shadow:0 4px 20px rgba(0,0,0,.12),0 1px 4px rgba(0,0,0,.06);
+  min-width:230px;padding:6px;z-index:200;
+  display:flex;flex-direction:column;gap:0;
 }
 .hd-dropdown a,.hd-dropdown button{
-  background:none;border:none;width:100%;text-align:left;padding:9px 14px;
-  font-size:13px;color:var(--text);cursor:pointer;border-radius:8px;
-  display:flex;align-items:center;gap:8px;text-decoration:none;font-family:var(--font);
+  background:none;border:none;width:100%;text-align:left;padding:11px 16px;
+  font-size:14px;font-weight:500;color:var(--text);cursor:pointer;border-radius:8px;
+  display:flex;align-items:center;gap:10px;text-decoration:none;font-family:var(--font);
+  letter-spacing:-.2px;transition:background .12s,color .12s;white-space:nowrap;
 }
-.hd-dropdown a:hover,.hd-dropdown button:hover{background:var(--gray-lt)}
+.hd-dropdown a:hover,.hd-dropdown button:hover{background:var(--primary-lt);color:var(--primary)}
 @media(max-width:600px){
   .hd-desktop{display:none}
   .hd-more{display:flex}
@@ -242,14 +244,14 @@ header{
 /* 모바일: 툴바 density 숨기고 ⋮ 메뉴에서만 표시 */
 @media(max-width:600px){.density-wrap{display:none}}
 /* dropdown 글자 크기 행 */
-.hd-dd-sep{height:1px;background:var(--border);margin:4px 0}
-.hd-dd-density{display:flex;align-items:center;justify-content:space-between;padding:7px 14px;border-radius:8px}
-.hd-dd-density-lbl{font-size:13px;color:var(--text);display:flex;align-items:center;gap:8px}
-.hd-dd-density-ctrl{display:flex;align-items:center;gap:6px}
-.hd-dd-density-ctrl button{background:none;border:1px solid var(--border);border-radius:6px;padding:2px 7px;font-size:12px;font-weight:700;cursor:pointer;color:var(--text);font-family:var(--font);transition:background .13s}
-.hd-dd-density-ctrl button:hover:not(:disabled){background:var(--gray-lt)}
-.hd-dd-density-ctrl button:disabled{opacity:.35;cursor:not-allowed}
-.hd-dd-density-ctrl .dd-dlbl{font-size:11px;color:var(--gray);min-width:26px;text-align:center;font-weight:600}
+.hd-dd-sep{height:1px;background:var(--border);margin:6px 0;opacity:.6}
+.hd-dd-density{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-radius:8px;gap:12px}
+.hd-dd-density-lbl{font-size:14px;font-weight:500;color:var(--text);display:flex;align-items:center;gap:10px;flex-shrink:0;white-space:nowrap;letter-spacing:-.2px}
+.hd-dd-density-ctrl{display:flex;align-items:center;gap:6px;flex-shrink:0}
+.hd-dd-density-ctrl button{background:none;border:1.5px solid var(--border);border-radius:7px;padding:3px 9px;font-size:13px;font-weight:700;cursor:pointer;color:var(--text);font-family:var(--font);transition:border-color .13s,color .13s;white-space:nowrap}
+.hd-dd-density-ctrl button:hover:not(:disabled){border-color:var(--primary);color:var(--primary)}
+.hd-dd-density-ctrl button:disabled{opacity:.3;cursor:not-allowed}
+.hd-dd-density-ctrl .dd-dlbl{font-size:12px;color:var(--gray);min-width:28px;text-align:center;font-weight:600;white-space:nowrap}
 .density-btn{background:none;border:none;cursor:pointer;font-size:.75rem;font-weight:800;
   color:var(--gray);padding:0 5px;border-radius:var(--r);height:28px;
   display:flex;align-items:center;justify-content:center;
