@@ -50,6 +50,9 @@ function doPost(e) {
       return _gplacesSearch(payload.query);
     } else if (type === 'gplaces_detail') {
       return _gplacesDetail(payload.placeId);
+    } else if (type === 'setup_trigger') {
+      setupAutoTrigger();
+      return _respond({ ok: true });
     } else {
       return _search(type, payload);
     }
