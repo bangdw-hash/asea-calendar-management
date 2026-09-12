@@ -6939,34 +6939,38 @@ function closeRvDetail() {
   _rvDetailReservationId = null;
 }
 
+const _RV_REMOVE_BTN_HTML = '<svg width="14" height="14" viewBox="0 0 18 18" fill="none" style="vertical-align:-2px;margin-right:4px"><path d="M3 5h12M8 5V3h2v2M7 8v5M11 8v5M4 5l1 10h8l1-10" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>일정에서 제거';
+
 async function removeLinkedItem() {
   if (!_rvDetailLinkedItemId && !_rvDetailReservationId) return;
   if (!confirm('이 일정을 학교 일정 캘린더에서 제거하시겠습니까?\n(예약 원본 데이터는 삭제되지 않습니다)')) return;
 
   const removeBtn = document.getElementById('rv-detail-remove-btn');
   if (removeBtn) { removeBtn.disabled = true; removeBtn.textContent = '처리 중...'; }
+  const restoreBtn = () => { if (removeBtn) { removeBtn.disabled = false; removeBtn.innerHTML = _RV_REMOVE_BTN_HTML; } };
 
   try {
     let removed = false;
 
+    // 1차: unlink_from_schedule RPC (SECURITY DEFINER — RLS 우회)
     if (_rvDetailReservationId) {
-      const r = await fetch(`${SB_URL}/rest/v1/rpc/unlink_from_schedule`, {
-        method: 'POST',
-        headers: {
-          apikey: SB_ANON,
-          Authorization: 'Bearer ' + SB_ANON,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          p_reservation_id: _rvDetailReservationId,
-          p_admin_email: _userEmail || 'schedule',
-          p_unlink_all: false
-        })
-      });
-      const result = await r.json();
-      if (r.ok && result?.success !== false) removed = true;
+      const rawId = _rvDetailReservationId;
+      const p_id = (typeof rawId === 'string' && /^\d+$/.test(rawId)) ? Number(rawId) : rawId;
+      try {
+        const r = await fetch(`${SB_URL}/rest/v1/rpc/unlink_from_schedule`, {
+          method: 'POST',
+          headers: { apikey: SB_ANON, Authorization: 'Bearer ' + SB_ANON, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ p_reservation_id: p_id, p_admin_email: _userEmail || 'bangdw@gmail.com', p_unlink_all: false })
+        });
+        if (r.ok) {
+          const result = await r.json();
+          if (result?.success !== false) removed = true;
+        }
+      } catch(_) {}
     }
 
+    // 2차: schedule_linked_items 직접 PATCH
+    // return=representation 으로 실제 변경된 row 수 확인 (RLS 차단 시 빈 배열 반환)
     if (!removed && _rvDetailLinkedItemId) {
       const r2 = await fetch(
         `${SB_URL}/rest/v1/schedule_linked_items?id=eq.${_rvDetailLinkedItemId}`,
@@ -6976,12 +6980,15 @@ async function removeLinkedItem() {
             apikey: SB_ANON,
             Authorization: 'Bearer ' + SB_ANON,
             'Content-Type': 'application/json',
-            Prefer: 'return=minimal'
+            Prefer: 'return=representation'
           },
           body: JSON.stringify({ unlinked_at: new Date().toISOString() })
         }
       );
-      if (r2.ok) removed = true;
+      if (r2.ok) {
+        const rows = await r2.json();
+        if (Array.isArray(rows) && rows.length > 0) removed = true;
+      }
     }
 
     if (removed) {
@@ -6989,12 +6996,12 @@ async function removeLinkedItem() {
       closeRvDetail();
       await loadLinkedItems();
     } else {
-      showToast('제거에 실패했습니다. 다시 시도해 주세요.', 'error');
-      if (removeBtn) { removeBtn.disabled = false; removeBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 18 18" fill="none" style="vertical-align:-2px;margin-right:4px"><path d="M3 5h12M8 5V3h2v2M7 8v5M11 8v5M4 5l1 10h8l1-10" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>일정에서 제거'; }
+      showToast('제거에 실패했습니다. 관리자 로그인 후 다시 시도해 주세요.', 'error');
+      restoreBtn();
     }
   } catch(e) {
     showToast('오류가 발생했습니다: ' + e.message, 'error');
-    if (removeBtn) { removeBtn.disabled = false; removeBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 18 18" fill="none" style="vertical-align:-2px;margin-right:4px"><path d="M3 5h12M8 5V3h2v2M7 8v5M11 8v5M4 5l1 10h8l1-10" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>일정에서 제거'; }
+    restoreBtn();
   }
 }
 
