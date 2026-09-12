@@ -1265,7 +1265,7 @@ async function claudeFetch(bodyObj) {
 
   const directCall = key => fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+    headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01', 'anthropic-beta': 'pdfs-2024-09-25', 'anthropic-dangerous-direct-browser-access': 'true' },
     body,
   });
 
@@ -3094,14 +3094,25 @@ async function acadAnalyze() {
     const today = toStr(new Date());
     const roomNames = classrooms.map(c => c.name).join(', ');
 
+    const extractPrompt = `오늘: ${today}\n등록된 강의실 목록: ${roomNames || '(없음)'}\n\n이 문서는 학교 강의실 사용 일정표입니다. 각 강의실별 일정을 빠짐없이 추출해 JSON 배열로만 반환하세요.\n\n형식:\n[\n  {\n    "classroom": "강의실명 (등록된 강의실명과 최대한 일치시킬 것)",\n    "date": "YYYY-MM-DD",\n    "time_start": "HH:MM",\n    "time_end": "HH:MM",\n    "course_name": "과목명 또는 강의명",\n    "instructor": "교수명 (없으면 null)",\n    "department": "학과 (없으면 null)"\n  }\n]\n\n주의: 날짜가 요일로만 표시된 경우 가장 가까운 해당 요일 날짜로 변환하세요. JSON 배열만 반환, 설명 없이.`;
+
     let messages;
-    if (hasFile && _acadFileType.startsWith('image/')) {
-      const prompt = `오늘: ${today}\n등록된 강의실 목록: ${roomNames || '(없음)'}\n\n이 이미지는 학교 강의실 사용 일정표입니다. 각 강의실별 일정을 추출해 JSON 배열로만 반환하세요.\n\n형식:\n[\n  {\n    "classroom": "강의실명 (등록된 강의실명과 최대한 일치시킬 것)",\n    "date": "YYYY-MM-DD",\n    "time_start": "HH:MM",\n    "time_end": "HH:MM",\n    "course_name": "과목명 또는 강의명",\n    "instructor": "교수명 (없으면 null)",\n    "department": "학과 (없으면 null)"\n  }\n]\n\n주의: 날짜가 '월/화/수' 등 요일로만 표시된 경우 가장 가까운 해당 요일 날짜로 변환하세요. 반환은 JSON 배열만, 설명 없이.`;
-      messages = [{ role:'user', content:[{ type:'image', source:{ type:'base64', media_type:_acadFileType, data:_acadFileB64 } }, { type:'text', text:prompt }] }];
+    if (hasFile && _acadFileType === 'application/pdf') {
+      // PDF: document content block (anthropic-beta: pdfs-2024-09-25)
+      const contentBlocks = [
+        { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: _acadFileB64 } },
+        { type: 'text', text: extractPrompt + (hasNlp ? `\n\n추가 지시: ${nlp}` : '') }
+      ];
+      messages = [{ role: 'user', content: contentBlocks }];
+    } else if (hasFile && _acadFileType.startsWith('image/')) {
+      // 이미지: vision API
+      messages = [{ role:'user', content:[
+        { type:'image', source:{ type:'base64', media_type:_acadFileType, data:_acadFileB64 } },
+        { type:'text', text: extractPrompt + (hasNlp ? `\n\n추가 지시: ${nlp}` : '') }
+      ]}];
     } else {
-      const fileNote = hasFile ? `\n업로드된 파일(PDF): 이미지 분석 불가 — 아래 자연어 입력 기반으로만 파싱.` : '';
-      const textInput = hasNlp ? nlp : '파일만 업로드됨 (텍스트 없음)';
-      const prompt = `오늘: ${today}\n등록된 강의실 목록: ${roomNames || '(없음)'}${fileNote}\n\n입력: "${textInput}"\n\n위 내용에서 강의실 사용 일정을 추출해 JSON 배열로만 반환하세요.\n\n형식:\n[\n  {\n    "classroom": "강의실명",\n    "date": "YYYY-MM-DD",\n    "time_start": "HH:MM",\n    "time_end": "HH:MM",\n    "course_name": "과목명 또는 목적",\n    "instructor": "교수명 또는 null",\n    "department": "학과 또는 null"\n  }\n]\n\nJSON 배열만 반환. 설명 없이.`;
+      // 자연어 텍스트만
+      const prompt = `오늘: ${today}\n등록된 강의실 목록: ${roomNames || '(없음)'}\n\n입력: "${nlp}"\n\n위 내용에서 강의실 사용 일정을 추출해 JSON 배열로만 반환하세요.\n\n형식:\n[\n  {\n    "classroom": "강의실명",\n    "date": "YYYY-MM-DD",\n    "time_start": "HH:MM",\n    "time_end": "HH:MM",\n    "course_name": "과목명 또는 목적",\n    "instructor": "교수명 또는 null",\n    "department": "학과 또는 null"\n  }\n]\n\nJSON 배열만 반환. 설명 없이.`;
       messages = [{ role:'user', content: prompt }];
     }
 
