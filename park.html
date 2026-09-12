@@ -221,6 +221,39 @@ body {
 }
 .stop-btn.show { display: block; }
 
+/* Zoom control */
+.zoom-ctrl {
+  display: none;
+  align-items: center; gap: 8px;
+  background: #fff; border-radius: var(--r);
+  padding: 10px 14px; margin-bottom: 10px;
+  box-shadow: var(--sh);
+}
+.zoom-ctrl.show { display: flex; }
+.zoom-btn {
+  width: 36px; height: 36px; flex-shrink: 0;
+  border: 1.5px solid var(--g200); background: var(--g100);
+  border-radius: 8px; font-size: 20px; font-weight: 700;
+  color: var(--g700); cursor: pointer; display: flex;
+  align-items: center; justify-content: center; line-height: 1;
+}
+.zoom-btn:active { background: var(--g200); }
+.zoom-slider {
+  flex: 1; -webkit-appearance: none; appearance: none;
+  height: 4px; border-radius: 2px;
+  background: var(--g200); outline: none; cursor: pointer;
+}
+.zoom-slider::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none;
+  width: 22px; height: 22px; border-radius: 50%;
+  background: var(--primary); cursor: pointer;
+  box-shadow: 0 1px 4px rgba(26,115,232,.3);
+}
+.zoom-label {
+  font-size: 13px; font-weight: 700; color: var(--primary);
+  min-width: 36px; text-align: right;
+}
+
 /* OCR status */
 .ocr-status {
   display: none;
@@ -560,6 +593,14 @@ body {
       <span class="plate-frame-label">번호판을 이 안에 맞춰주세요</span>
     </div>
     <canvas id="captureCanvas"></canvas>
+  </div>
+
+  <!-- 줌 컨트롤 -->
+  <div class="zoom-ctrl" id="zoomCtrl">
+    <button class="zoom-btn" id="zoomOut" onclick="adjustZoom(-1)">−</button>
+    <input type="range" class="zoom-slider" id="zoomSlider" min="1" max="5" step="0.1" value="1" oninput="applyZoom(parseFloat(this.value))">
+    <button class="zoom-btn" id="zoomIn" onclick="adjustZoom(1)">+</button>
+    <span class="zoom-label" id="zoomLabel">×1.0</span>
   </div>
 
   <button class="capture-btn" id="captureBtn" onclick="captureAndOCR()">
@@ -909,6 +950,7 @@ const sb = supabase.createClient(SUPA_URL, SUPA_KEY, {
 let allVehicles = [];
 let lastOCRPlate = '';
 let cameraStream = null;
+let zoomMin = 1, zoomMax = 5, zoomStep = 0.1, zoomCurrent = 1;
 let xlsxRows = [];
 let xlsxHeaders = [];
 
@@ -976,6 +1018,20 @@ async function startScan() {
       audio: false
     });
     document.getElementById('cameraVideo').srcObject = cameraStream;
+
+    // 줌 지원 여부 확인 후 컨트롤 표시
+    var track = cameraStream.getVideoTracks()[0];
+    var caps = track.getCapabilities ? track.getCapabilities() : {};
+    if (caps.zoom) {
+      zoomMin = caps.zoom.min || 1;
+      zoomMax = caps.zoom.max || 5;
+      zoomStep = caps.zoom.step || 0.1;
+      zoomCurrent = zoomMin;
+      var sl = document.getElementById('zoomSlider');
+      sl.min = zoomMin; sl.max = zoomMax; sl.step = zoomStep; sl.value = zoomMin;
+      document.getElementById('zoomLabel').textContent = '×' + zoomMin.toFixed(1);
+      document.getElementById('zoomCtrl').classList.add('show');
+    }
   } catch (e) {
     toast('카메라를 사용할 수 없습니다: ' + (e.message || e), 'err');
     stopScan();
@@ -990,7 +1046,25 @@ function stopScan() {
   document.getElementById('cameraWrap').classList.remove('show');
   document.getElementById('captureBtn').classList.remove('show');
   document.getElementById('stopBtn').classList.remove('show');
+  document.getElementById('zoomCtrl').classList.remove('show');
+  document.getElementById('zoomSlider').value = 1;
+  document.getElementById('zoomLabel').textContent = '×1.0';
+  zoomCurrent = 1;
   document.getElementById('startScanBtn').style.display = '';
+}
+
+function applyZoom(val) {
+  if (!cameraStream) return;
+  var track = cameraStream.getVideoTracks()[0];
+  var clamped = Math.min(Math.max(val, zoomMin), zoomMax);
+  zoomCurrent = clamped;
+  track.applyConstraints({ advanced: [{ zoom: clamped }] }).catch(function(){});
+  document.getElementById('zoomSlider').value = clamped;
+  document.getElementById('zoomLabel').textContent = '×' + clamped.toFixed(1);
+}
+
+function adjustZoom(dir) {
+  applyZoom(zoomCurrent + dir * zoomStep * 5);
 }
 
 async function captureAndOCR() {
