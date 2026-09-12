@@ -399,7 +399,8 @@ header{
 #adminModal{align-items:flex-end;padding:0}
 #adminModal .modal-box{max-width:100%;width:100%;max-height:67vh;border-radius:16px 16px 0 0;transform:translateY(100%)}
 #adminModal.show .modal-box{transform:translateY(0)}
-.adm-sheet-handle{width:44px;height:4px;background:#d1d5db;border-radius:2px;margin:10px auto 0;cursor:grab;flex-shrink:0}
+.adm-sheet-handle{width:44px;height:4px;background:#d1d5db;border-radius:2px;margin:10px auto 4px;cursor:grab;flex-shrink:0}
+#adminModal .modal-hdr{cursor:grab;user-select:none}
 #adminModal .modal-hdr{background:#fff;border-radius:16px 16px 0 0}
 .modal-hdr{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid var(--border);position:sticky;top:0;background:#fff;z-index:1}
 .modal-title{font-size:15px;font-weight:700}
@@ -2786,23 +2787,28 @@ function _admSheetInitSwipe() {
   if (!box || box._swipeInited) return;
   box._swipeInited = true;
   let startY = 0, curY = 0, dragging = false;
+  const hdr = box.querySelector('.modal-hdr');
   const handle = box.querySelector('.adm-sheet-handle');
-  const dragTarget = handle || box;
-  dragTarget.addEventListener('touchstart', e => {
-    startY = e.touches[0].clientY; dragging = true; curY = 0;
-    box.style.transition = 'none';
-  }, { passive: true });
-  dragTarget.addEventListener('touchmove', e => {
-    if (!dragging) return;
-    curY = e.touches[0].clientY - startY;
-    if (curY < 0) curY = 0;
-    box.style.transform = `translateY(${curY}px)`;
-  }, { passive: true });
-  dragTarget.addEventListener('touchend', () => {
-    dragging = false;
-    box.style.transition = '';
-    if (curY > 120) { closeAdminM(); }
-    else { box.style.transform = ''; }
+  // Both handle and header are drag zones; header is easier to grab
+  [handle, hdr].forEach(el => {
+    if (!el) return;
+    el.addEventListener('touchstart', e => {
+      startY = e.touches[0].clientY; dragging = true; curY = 0;
+      box.style.transition = 'none';
+    }, { passive: true });
+    el.addEventListener('touchmove', e => {
+      if (!dragging) return;
+      curY = e.touches[0].clientY - startY;
+      if (curY < 0) curY = 0;
+      box.style.transform = `translateY(${curY}px)`;
+    }, { passive: true });
+    el.addEventListener('touchend', () => {
+      if (!dragging) return;
+      dragging = false;
+      box.style.transition = '';
+      if (curY > 100) { closeAdminM(); }
+      else { box.style.transform = ''; }
+    });
   });
 }
 
