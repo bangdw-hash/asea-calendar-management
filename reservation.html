@@ -1043,28 +1043,28 @@ header{
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="https://accounts.google.com/gsi/client" async></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.min.mjs" type="module" id="pdfjs-script"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
 <script>
-// PDF.js 텍스트 추출 유틸리티 (module 방식)
-window._pdfExtractText = async function(b64) {
-  try {
-    const { getDocument, GlobalWorkerOptions } = await import('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.min.mjs');
-    GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.worker.min.mjs';
-    const bin = atob(b64);
-    const arr = new Uint8Array(bin.length);
-    for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
-    const pdf = await getDocument({ data: arr }).promise;
-    let text = '';
-    for (let p = 1; p <= pdf.numPages; p++) {
-      const page = await pdf.getPage(p);
-      const content = await page.getTextContent();
-      text += content.items.map(i => i.str).join(' ') + '\n';
+if (window.pdfjsLib) {
+  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+  window._pdfExtractText = async function(b64) {
+    try {
+      const bin = atob(b64);
+      const arr = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+      const pdf = await pdfjsLib.getDocument({ data: arr }).promise;
+      let text = '';
+      for (let p = 1; p <= pdf.numPages; p++) {
+        const page = await pdf.getPage(p);
+        const content = await page.getTextContent();
+        text += content.items.map(i => i.str).join(' ') + '\n';
+      }
+      return text.trim();
+    } catch(e) {
+      return null;
     }
-    return text.trim();
-  } catch(e) {
-    return null;
-  }
-};
+  };
+}
 </script>
 <script>
 'use strict';
@@ -4466,13 +4466,11 @@ function _initModalSwipe(id) {
   const hdr    = box.querySelector('.modal-hdr');
   const handle = box.querySelector('.adm-sheet-handle');
   const body   = box.querySelector('.modal-body');
-  const tabs   = box.querySelector('.adm-tabs');
 
   attach(hdr, null);
   attach(handle, null);
-  // 본문·탭 영역: 스크롤이 맨 위일 때만 드래그 허용
+  // 본문 영역: 스크롤이 맨 위일 때만 드래그 허용 (탭은 수평 스크롤 필요해 제외)
   attach(body, body);
-  attach(tabs, body);
 }
 
 /* ── Toast ── */
