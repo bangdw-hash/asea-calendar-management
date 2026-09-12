@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>주차 차량 관리</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@4.1.1/dist/tesseract.min.js"></script>
+<script src="config.js"></script>
 <script src="xlsx.mini.min.js"></script>
 <style>
 :root {
@@ -582,19 +582,12 @@ body {
 
   <!-- 직접 입력 조회 (항상 표시) -->
   <div class="card" id="quickSearchCard" style="margin-bottom:12px">
-    <div style="font-size:12px;font-weight:700;color:var(--g500);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">번호판 직접 조회</div>
-    <div style="display:flex;gap:4px;align-items:center">
-      <input type="text" id="msPlateF" placeholder="123" maxlength="3" inputmode="numeric"
+    <div style="font-size:12px;font-weight:700;color:var(--g500);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">번호판 직접 조회</div>
+    <div style="display:flex;gap:6px;align-items:center">
+      <input type="text" id="msPlateInput" placeholder="123가4567 또는 서울12가3456" maxlength="12"
+        inputmode="text" autocomplete="off" autocorrect="off" autocapitalize="off"
         onkeydown="if(event.key==='Enter')doManualSearch()"
-        style="flex:3;min-width:0;border:1.5px solid var(--g200);border-radius:8px;padding:11px 4px;font-size:17px;font-weight:800;text-align:center;font-family:inherit;color:var(--g900);outline:none;">
-      <span style="font-size:15px;font-weight:700;color:var(--g400);flex-shrink:0">-</span>
-      <input type="text" id="msPlateH" placeholder="가" maxlength="1"
-        onkeydown="if(event.key==='Enter')doManualSearch()"
-        style="flex:2;min-width:0;border:1.5px solid var(--g200);border-radius:8px;padding:11px 4px;font-size:17px;font-weight:800;text-align:center;font-family:inherit;color:var(--g900);outline:none;">
-      <span style="font-size:15px;font-weight:700;color:var(--g400);flex-shrink:0">-</span>
-      <input type="text" id="msPlateB" placeholder="4567" maxlength="4" inputmode="numeric"
-        onkeydown="if(event.key==='Enter')doManualSearch()"
-        style="flex:4;min-width:0;border:1.5px solid var(--g200);border-radius:8px;padding:11px 4px;font-size:17px;font-weight:800;text-align:center;font-family:inherit;color:var(--g900);outline:none;">
+        style="flex:1;min-width:0;border:1.5px solid var(--g200);border-radius:8px;padding:11px 10px;font-size:16px;font-weight:700;font-family:inherit;color:var(--g900);outline:none;">
       <button onclick="doManualSearch()"
         style="flex-shrink:0;background:var(--primary);color:#fff;border:none;border-radius:8px;padding:11px 14px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle">
@@ -603,6 +596,7 @@ body {
         조회
       </button>
     </div>
+    <div style="font-size:11px;color:var(--g400);margin-top:6px">신형: 123가4567 &middot; 구형(지역): 서울12가3456 &middot; 공백·특수문자 무시</div>
   </div>
 
   <div class="camera-wrap" id="cameraWrap">
@@ -1071,41 +1065,58 @@ async function captureAndOCR() {
   var ctx = canvas.getContext('2d');
   ctx.drawImage(video, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH);
 
-  // 전처리: 그레이스케일 + 대비 강화
-  var imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-  var data = imgData.data;
-  for (var i = 0; i < data.length; i += 4) {
-    var gray = 0.299 * data[i] + 0.587 * data[i+1] + 0.114 * data[i+2];
-    // 대비 강화
-    gray = Math.min(255, Math.max(0, (gray - 128) * 1.8 + 128));
-    data[i] = data[i+1] = data[i+2] = gray;
-  }
-  ctx.putImageData(imgData, 0, 0);
-
   stopScan();
   document.getElementById('ocrStatus').classList.add('show');
-  document.getElementById('ocrSub').textContent = '번호판 문자 인식 중...';
+  document.getElementById('ocrSub').textContent = 'AI 번호판 인식 중...';
 
   try {
-    var result = await Tesseract.recognize(canvas, 'kor+eng', {
-      logger: function(m) {
-        if (m.status === 'recognizing text' && m.progress) {
-          document.getElementById('ocrSub').textContent =
-            '인식 중... ' + Math.round(m.progress * 100) + '%';
-        }
-      }
+    var base64 = canvas.toDataURL('image/jpeg', 0.92).split(',')[1];
+
+    var res = await window.claudeFetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': 'via',
+        'anthropic-version': '2023-06-01'
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 30,
+        messages: [{
+          role: 'user',
+          content: [
+            { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: base64 } },
+            { type: 'text', text: '이 이미지의 자동차 번호판 번호만 읽어주세요. 한국 번호판 형식 예시: 123가4567, 서울12가3456. 번호만 답하고 다른 말은 하지 마세요. 번호판이 없거나 보이지 않으면 "없음"이라고만 답하세요.' }
+          ]
+        }]
+      })
     });
 
     document.getElementById('ocrStatus').classList.remove('show');
 
-    var rawText = result.data.text;
-    var plate = normalizePlate(rawText);
+    if (!res.ok) {
+      var errJson = null;
+      try { errJson = await res.json(); } catch(e) {}
+      throw new Error((errJson && errJson.error && errJson.error.message) || 'AI 응답 오류 ' + res.status);
+    }
 
-    if (!plate) {
-      // 재시도 안내
+    var data = await res.json();
+    var rawText = window.claudeExtractText(data);
+
+    if (!rawText || rawText.trim() === '없음') {
       toast('번호판을 인식하지 못했습니다. 다시 시도해 주세요.', 'err');
       document.getElementById('startScanBtn').style.display = '';
-      document.getElementById('scanResult').classList.remove('show');
+      document.getElementById('quickSearchCard').style.display = '';
+      return;
+    }
+
+    var plate = normalizePlate(rawText);
+    if (!plate) {
+      toast('인식 결과: "' + rawText.trim().substring(0, 20) + '"\n형식 불일치 — 직접 입력해 주세요.', 'err');
+      document.getElementById('startScanBtn').style.display = '';
+      document.getElementById('quickSearchCard').style.display = '';
+      var inp = document.getElementById('msPlateInput');
+      if (inp) { inp.value = rawText.trim().replace(/\s+/g,''); inp.focus(); }
       return;
     }
 
@@ -1113,8 +1124,9 @@ async function captureAndOCR() {
 
   } catch (e) {
     document.getElementById('ocrStatus').classList.remove('show');
-    toast('OCR 오류: ' + (e.message || e), 'err');
+    toast('인식 오류: ' + (e.message || e), 'err');
     document.getElementById('startScanBtn').style.display = '';
+    document.getElementById('quickSearchCard').style.display = '';
   }
 }
 
@@ -1162,12 +1174,10 @@ function resetScan() {
 }
 
 async function doManualSearch() {
-  var f = document.getElementById('msPlateF').value.trim();
-  var h = document.getElementById('msPlateH').value.trim();
-  var b = document.getElementById('msPlateB').value.trim();
-  if (!f || !h || !b) { toast('번호판을 모두 입력하세요.'); return; }
-  var plate = normalizePlate(f + h + b);
-  if (!plate) { toast('올바른 번호판 형식이 아닙니다.'); return; }
+  var raw = document.getElementById('msPlateInput').value.trim();
+  if (!raw) { toast('번호판을 입력하세요.'); return; }
+  var plate = normalizePlate(raw);
+  if (!plate) { toast('올바른 번호판 형식이 아닙니다.\n예) 123가4567 / 서울12가3456'); return; }
   await showPlateResult(plate);
 }
 
