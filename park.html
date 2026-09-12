@@ -1116,8 +1116,6 @@ async function doManualSearch() {
   var plate = normalizePlate(f + h + b);
   if (!plate) { toast('올바른 번호판 형식이 아닙니다.'); return; }
   document.getElementById('manualSearchCard').style.display = 'none';
-  document.getElementById('manualEntryBtn').style.display = '';
-  document.getElementById('startScanBtn').style.display = '';
   await showPlateResult(plate);
 }
 
