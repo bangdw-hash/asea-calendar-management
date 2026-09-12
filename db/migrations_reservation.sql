@@ -560,7 +560,7 @@ declare
   v_batch_id   text;
   v_batch_count int := 0;
 begin
-  if p_admin_email not in ('bangdw@gmail.com') then
+  if p_admin_email not in ('bangdw@gmail.com','chajungsin@gmail.com') then
     return jsonb_build_object('success', false, 'error', '관리자 권한이 없습니다');
   end if;
 
@@ -615,7 +615,7 @@ create or replace function unlink_from_schedule(
 declare
   v_batch_id text;
 begin
-  if p_admin_email not in ('bangdw@gmail.com') then
+  if p_admin_email not in ('bangdw@gmail.com','chajungsin@gmail.com') then
     return jsonb_build_object('success', false, 'error', '관리자 권한이 없습니다');
   end if;
 
@@ -667,5 +667,532 @@ begin
   return jsonb_build_object('batch_id', v_batch_id, 'count', v_count, 'dates', coalesce(v_dates,'[]'::jsonb));
 end; $$;
 
+-- ============================================================================
+-- 19) GRANT EXECUTE: uuid 파라미터 함수들에 권한 부여
+--     (Section 18에서 추가된 uuid 버전 함수들은 기존 bigint 버전의 권한을 상속받지 않음)
+-- ============================================================================
+grant execute on function delete_reservation(uuid, text)
+  to anon, authenticated;
+
+grant execute on function modify_reservation(uuid, text, date, date, time, time, text, text, text, text, text)
+  to anon, authenticated;
+
+grant execute on function admin_modify_reservation(uuid, text, date, date, time, time, text, text, text, text, text)
+  to anon, authenticated;
+
+grant execute on function admin_delete_reservation(uuid, text)
+  to anon, authenticated;
+
+grant execute on function link_to_schedule(uuid, text, boolean)
+  to anon, authenticated;
+
+grant execute on function unlink_from_schedule(uuid, text, boolean)
+  to anon, authenticated;
+
+grant execute on function get_batch_info(uuid)
+  to anon, authenticated;
+
+-- ============================================================================
+-- 20) BUGFIX: bigint GRANT 누락 수정 + null password_hash 처리 + 관리자 이메일 추가
+--
+-- 근본 원인:
+--   · reservations.id 는 bigint (section 2에서 생성)
+--   · section 5의 delete_reservation(bigint,text) / modify_reservation(bigint,text) 에
+--     EXECUTE 권한이 없음 → anon 롤 실행 불가 → "비밀번호 오류"처럼 보임
+--   · section 18은 uuid 버전 함수였으므로 bigint id와 타입 불일치로 실제로 호출되지 않음
+--   · admin RPC가 bangdw@gmail.com만 허용 (chajungsin@gmail.com 누락)
+--
+-- ★ Supabase SQL Editor에서 실행 후 Settings → API → Reload Schema Cache 필수!
+-- ============================================================================
+
+-- 20-a) delete_reservation (bigint 버전) — null hash 처리 + 재생성
+create or replace function delete_reservation(
+  p_id bigint, p_password_hash text
+) returns jsonb language plpgsql security definer as $$
+declare v_hash text; begin
+  select password_hash into v_hash from reservations where id = p_id and deleted_at is null;
+  if not found then return jsonb_build_object('success', false, 'error', '예약을 찾을 수 없습니다'); end if;
+  if v_hash is null then
+    return jsonb_build_object('success', false, 'error', '비밀번호가 설정되지 않은 예약입니다. 관리자에게 삭제를 요청하세요.');
+  end if;
+  if v_hash is distinct from p_password_hash then
+    return jsonb_build_object('success', false, 'error', '비밀번호가 일치하지 않습니다');
+  end if;
+  update reservations set deleted_at = now(), status = 'deleted' where id = p_id;
+  return jsonb_build_object('success', true);
+end; $$;
+
+-- 20-b) modify_reservation (bigint 버전) — null hash 처리 + 재생성
+create or replace function modify_reservation(
+  p_id bigint, p_password_hash text,
+  p_date_start date, p_date_end date,
+  p_time_start time, p_time_end time,
+  p_purpose text, p_department text, p_requester_name text,
+  p_contact text default null, p_formatted_label text default null
+) returns jsonb language plpgsql security definer as $$
+declare v_hash text; begin
+  select password_hash into v_hash from reservations where id = p_id and deleted_at is null;
+  if not found then return jsonb_build_object('success', false, 'error', '예약을 찾을 수 없습니다'); end if;
+  if v_hash is null then
+    return jsonb_build_object('success', false, 'error', '비밀번호가 설정되지 않은 예약입니다. 관리자에게 수정을 요청하세요.');
+  end if;
+  if v_hash is distinct from p_password_hash then
+    return jsonb_build_object('success', false, 'error', '비밀번호가 일치하지 않습니다');
+  end if;
+  update reservations set
+    date_start = p_date_start, date_end = p_date_end,
+    time_start = p_time_start, time_end = p_time_end,
+    purpose = p_purpose, department = p_department, requester_name = p_requester_name,
+    contact = p_contact, formatted_label = coalesce(p_formatted_label, formatted_label)
+  where id = p_id;
+  return jsonb_build_object('success', true);
+end; $$;
+
+-- 20-c) admin_delete_reservation (bigint 버전) — chajungsin@gmail.com 추가
+create or replace function admin_delete_reservation(
+  p_id bigint, p_admin_email text
+) returns jsonb language plpgsql security definer as $$
+begin
+  if p_admin_email not in ('bangdw@gmail.com', 'chajungsin@gmail.com') then
+    return jsonb_build_object('success', false, 'error', '관리자 권한이 없습니다');
+  end if;
+  update reservations set deleted_at = now(), status = 'deleted' where id = p_id;
+  if not found then return jsonb_build_object('success', false, 'error', '예약을 찾을 수 없습니다'); end if;
+  return jsonb_build_object('success', true);
+end; $$;
+
+-- 20-d) admin_modify_reservation (bigint 버전) — chajungsin@gmail.com 추가
+create or replace function admin_modify_reservation(
+  p_id bigint, p_admin_email text,
+  p_date_start date, p_date_end date,
+  p_time_start time, p_time_end time,
+  p_purpose text, p_department text, p_requester_name text,
+  p_contact text default null, p_formatted_label text default null
+) returns jsonb language plpgsql security definer as $$
+begin
+  if p_admin_email not in ('bangdw@gmail.com', 'chajungsin@gmail.com') then
+    return jsonb_build_object('success', false, 'error', '관리자 권한이 없습니다');
+  end if;
+  update reservations set
+    date_start = p_date_start, date_end = p_date_end,
+    time_start = p_time_start, time_end = p_time_end,
+    purpose = p_purpose, department = p_department, requester_name = p_requester_name,
+    contact = p_contact, formatted_label = coalesce(p_formatted_label, formatted_label)
+  where id = p_id and deleted_at is null;
+  if not found then return jsonb_build_object('success', false, 'error', '예약을 찾을 수 없습니다'); end if;
+  return jsonb_build_object('success', true);
+end; $$;
+
+-- 20-e) link_to_schedule / unlink_from_schedule (bigint 버전) — chajungsin@gmail.com 추가
+create or replace function link_to_schedule(
+  p_reservation_id bigint,
+  p_admin_email    text,
+  p_link_all       boolean default false
+) returns jsonb language plpgsql security definer as $$
+declare
+  v_batch_id   text;
+  v_batch_count int := 0;
+begin
+  if p_admin_email not in ('bangdw@gmail.com', 'chajungsin@gmail.com') then
+    return jsonb_build_object('success', false, 'error', '관리자 권한이 없습니다');
+  end if;
+  select batch_id into v_batch_id
+  from reservations where id = p_reservation_id and deleted_at is null;
+  if not found then
+    return jsonb_build_object('success', false, 'error', '예약을 찾을 수 없습니다');
+  end if;
+  if p_link_all and v_batch_id is not null then
+    update reservations
+    set schedule_event_id = 'linked-' || id::text
+    where batch_id = v_batch_id and deleted_at is null;
+    get diagnostics v_batch_count = row_count;
+    insert into schedule_linked_items (target_date, label, classroom_color, reservation_id)
+    select gs::date, r.formatted_label, r.classroom_color, r.id
+    from reservations r,
+    lateral generate_series(r.date_start::timestamp, r.date_end::timestamp, '1 day'::interval) gs
+    where r.batch_id = v_batch_id and r.deleted_at is null
+    on conflict (target_date, reservation_id) do nothing;
+  else
+    update reservations
+    set schedule_event_id = 'linked-' || p_reservation_id::text
+    where id = p_reservation_id;
+    v_batch_count := 1;
+    insert into schedule_linked_items (target_date, label, classroom_color, reservation_id)
+    select gs::date, r.formatted_label, r.classroom_color, r.id
+    from reservations r,
+    lateral generate_series(r.date_start::timestamp, r.date_end::timestamp, '1 day'::interval) gs
+    where r.id = p_reservation_id
+    on conflict (target_date, reservation_id) do nothing;
+  end if;
+  return jsonb_build_object('success', true, 'linked_count', v_batch_count);
+end; $$;
+
+create or replace function unlink_from_schedule(
+  p_reservation_id bigint,
+  p_admin_email    text,
+  p_unlink_all     boolean default false
+) returns jsonb language plpgsql security definer as $$
+declare v_batch_id text;
+begin
+  if p_admin_email not in ('bangdw@gmail.com', 'chajungsin@gmail.com') then
+    return jsonb_build_object('success', false, 'error', '관리자 권한이 없습니다');
+  end if;
+  select batch_id into v_batch_id
+  from reservations where id = p_reservation_id and deleted_at is null;
+  if not found then
+    return jsonb_build_object('success', false, 'error', '예약을 찾을 수 없습니다');
+  end if;
+  if p_unlink_all and v_batch_id is not null then
+    update reservations set schedule_event_id = null
+    where batch_id = v_batch_id and deleted_at is null;
+    update schedule_linked_items set unlinked_at = now()
+    where reservation_id in (select id from reservations where batch_id = v_batch_id)
+      and unlinked_at is null;
+  else
+    update reservations set schedule_event_id = null where id = p_reservation_id;
+    update schedule_linked_items set unlinked_at = now()
+    where reservation_id = p_reservation_id and unlinked_at is null;
+  end if;
+  return jsonb_build_object('success', true);
+end; $$;
+
+-- 20-f) get_batch_info (bigint 버전) — chajungsin@gmail.com 추가 불필요, 권한만 재부여
+create or replace function get_batch_info(
+  p_reservation_id bigint
+) returns jsonb language plpgsql security definer as $$
+declare
+  v_batch_id text;
+  v_count    int;
+  v_dates    jsonb;
+begin
+  select batch_id into v_batch_id
+  from reservations where id = p_reservation_id and deleted_at is null;
+  if v_batch_id is null then
+    return jsonb_build_object('batch_id', null, 'count', 1, 'dates', '[]'::jsonb);
+  end if;
+  select count(*), jsonb_agg(date_start order by date_start)
+  into v_count, v_dates
+  from reservations
+  where batch_id = v_batch_id and deleted_at is null;
+  return jsonb_build_object('batch_id', v_batch_id, 'count', v_count, 'dates', coalesce(v_dates,'[]'::jsonb));
+end; $$;
+
+-- 20-g) GRANT — bigint 버전 전부 (핵심! 이게 없어서 삭제가 안 됐음)
+grant execute on function delete_reservation(bigint, text) to anon, authenticated;
+grant execute on function modify_reservation(bigint, text, date, date, time, time, text, text, text, text, text) to anon, authenticated;
+grant execute on function admin_delete_reservation(bigint, text) to anon, authenticated;
+grant execute on function admin_modify_reservation(bigint, text, date, date, time, time, text, text, text, text, text) to anon, authenticated;
+grant execute on function link_to_schedule(bigint, text, boolean) to anon, authenticated;
+grant execute on function unlink_from_schedule(bigint, text, boolean) to anon, authenticated;
+grant execute on function get_batch_info(bigint) to anon, authenticated;
+grant execute on function check_room_conflict(text, date, date, time, time, bigint) to anon, authenticated;
+
+-- ============================================================================
+-- 21) 최종 정리: bigint 함수 제거 + uuid 함수 최종 확정판 (idempotent)
+--     reservations.id 는 UUID 타입이므로 bigint 버전은 모두 불필요.
+--     Section 20의 bigint 버전을 drop 하고 uuid 버전을 chajungsin@gmail.com 포함으로 재정의.
+-- ============================================================================
+drop function if exists admin_delete_reservation(bigint, text);
+drop function if exists admin_modify_reservation(bigint, text, date, date, time, time, text, text, text, text, text);
+drop function if exists delete_reservation(bigint, text);
+drop function if exists modify_reservation(bigint, text, date, date, time, time, text, text, text, text, text);
+drop function if exists link_to_schedule(bigint, text, boolean);
+drop function if exists unlink_from_schedule(bigint, text, boolean);
+drop function if exists get_batch_info(bigint);
+
+create or replace function admin_delete_reservation(
+  p_id           uuid,
+  p_admin_email  text,
+  p_delete_all   boolean default false
+) returns jsonb language plpgsql security definer as $$
+declare
+  v_batch_id text;
+begin
+  if p_admin_email not in ('bangdw@gmail.com','chajungsin@gmail.com') then
+    return jsonb_build_object('success', false, 'error', '관리자 권한이 없습니다');
+  end if;
+
+  if p_delete_all then
+    select batch_id into v_batch_id from reservations where id = p_id and deleted_at is null;
+    if v_batch_id is not null then
+      update reservations set status='deleted', deleted_at=now()
+      where batch_id = v_batch_id and deleted_at is null;
+    else
+      update reservations set status='deleted', deleted_at=now()
+      where id = p_id and deleted_at is null;
+    end if;
+  else
+    update reservations set status='deleted', deleted_at=now()
+    where id = p_id and deleted_at is null;
+  end if;
+
+  if not found then return jsonb_build_object('success', false, 'error', '예약을 찾을 수 없습니다'); end if;
+  return jsonb_build_object('success', true);
+end; $$;
+
+create or replace function admin_modify_reservation(
+  p_id              uuid,
+  p_admin_email     text,
+  p_date_start      date,
+  p_date_end        date,
+  p_time_start      time,
+  p_time_end        time,
+  p_purpose         text,
+  p_department      text,
+  p_requester_name  text,
+  p_contact         text,
+  p_formatted_label text
+) returns jsonb language plpgsql security definer as $$
+begin
+  if p_admin_email not in ('bangdw@gmail.com','chajungsin@gmail.com') then
+    return jsonb_build_object('success', false, 'error', '관리자 권한이 없습니다');
+  end if;
+  update reservations set
+    date_start = p_date_start, date_end = p_date_end,
+    time_start = p_time_start, time_end = p_time_end,
+    purpose = p_purpose, department = p_department,
+    requester_name = p_requester_name, contact = p_contact,
+    formatted_label = coalesce(p_formatted_label, formatted_label)
+  where id = p_id and deleted_at is null;
+  if not found then return jsonb_build_object('success', false, 'error', '예약을 찾을 수 없습니다'); end if;
+  return jsonb_build_object('success', true);
+end; $$;
+
+create or replace function delete_reservation(
+  p_id            uuid,
+  p_password_hash text
+) returns jsonb language plpgsql security definer as $$
+begin
+  if p_password_hash is null or not exists (
+    select 1 from reservations where id = p_id and password_hash = p_password_hash and deleted_at is null
+  ) then
+    return jsonb_build_object('success', false, 'error', '비밀번호가 올바르지 않습니다');
+  end if;
+  update reservations set status='deleted', deleted_at=now()
+  where id = p_id and deleted_at is null;
+  return jsonb_build_object('success', true);
+end; $$;
+
+create or replace function modify_reservation(
+  p_id              uuid,
+  p_password_hash   text,
+  p_date_start      date,
+  p_date_end        date,
+  p_time_start      time,
+  p_time_end        time,
+  p_purpose         text,
+  p_department      text,
+  p_requester_name  text,
+  p_contact         text,
+  p_formatted_label text
+) returns jsonb language plpgsql security definer as $$
+begin
+  if p_password_hash is null or not exists (
+    select 1 from reservations where id = p_id and password_hash = p_password_hash and deleted_at is null
+  ) then
+    return jsonb_build_object('success', false, 'error', '비밀번호가 올바르지 않습니다');
+  end if;
+  update reservations set
+    date_start = p_date_start, date_end = p_date_end,
+    time_start = p_time_start, time_end = p_time_end,
+    purpose = p_purpose, department = p_department,
+    requester_name = p_requester_name, contact = p_contact,
+    formatted_label = coalesce(p_formatted_label, formatted_label)
+  where id = p_id and deleted_at is null;
+  if not found then return jsonb_build_object('success', false, 'error', '예약을 찾을 수 없습니다'); end if;
+  return jsonb_build_object('success', true);
+end; $$;
+
+create or replace function link_to_schedule(
+  p_reservation_id uuid,
+  p_admin_email    text,
+  p_link_all       boolean default false
+) returns jsonb language plpgsql security definer as $$
+declare
+  v_batch_id    text;
+  v_batch_count int := 0;
+begin
+  if p_admin_email not in ('bangdw@gmail.com','chajungsin@gmail.com') then
+    return jsonb_build_object('success', false, 'error', '관리자 권한이 없습니다');
+  end if;
+  select batch_id into v_batch_id
+  from reservations where id = p_reservation_id and deleted_at is null;
+  if not found then
+    return jsonb_build_object('success', false, 'error', '예약을 찾을 수 없습니다');
+  end if;
+  if p_link_all and v_batch_id is not null then
+    update reservations set schedule_event_id = 'linked-' || id::text
+    where batch_id = v_batch_id and deleted_at is null;
+    get diagnostics v_batch_count = row_count;
+    insert into schedule_linked_items (target_date, label, classroom_color, reservation_id)
+    select gs::date, r.formatted_label, r.classroom_color, r.id
+    from reservations r,
+    lateral generate_series(r.date_start::timestamp, r.date_end::timestamp, '1 day'::interval) gs
+    where r.batch_id = v_batch_id and r.deleted_at is null
+    on conflict (target_date, reservation_id) do nothing;
+  else
+    update reservations set schedule_event_id = 'linked-' || p_reservation_id::text
+    where id = p_reservation_id;
+    v_batch_count := 1;
+    insert into schedule_linked_items (target_date, label, classroom_color, reservation_id)
+    select gs::date, r.formatted_label, r.classroom_color, r.id
+    from reservations r,
+    lateral generate_series(r.date_start::timestamp, r.date_end::timestamp, '1 day'::interval) gs
+    where r.id = p_reservation_id
+    on conflict (target_date, reservation_id) do nothing;
+  end if;
+  return jsonb_build_object('success', true, 'linked_count', v_batch_count);
+end; $$;
+
+create or replace function unlink_from_schedule(
+  p_reservation_id uuid,
+  p_admin_email    text,
+  p_unlink_all     boolean default false
+) returns jsonb language plpgsql security definer as $$
+declare v_batch_id text;
+begin
+  if p_admin_email not in ('bangdw@gmail.com','chajungsin@gmail.com') then
+    return jsonb_build_object('success', false, 'error', '관리자 권한이 없습니다');
+  end if;
+  select batch_id into v_batch_id
+  from reservations where id = p_reservation_id and deleted_at is null;
+  if not found then
+    return jsonb_build_object('success', false, 'error', '예약을 찾을 수 없습니다');
+  end if;
+  if p_unlink_all and v_batch_id is not null then
+    update reservations set schedule_event_id = null
+    where batch_id = v_batch_id and deleted_at is null;
+    update schedule_linked_items set unlinked_at = now()
+    where reservation_id in (select id from reservations where batch_id = v_batch_id)
+      and unlinked_at is null;
+  else
+    update reservations set schedule_event_id = null where id = p_reservation_id;
+    update schedule_linked_items set unlinked_at = now()
+    where reservation_id = p_reservation_id and unlinked_at is null;
+  end if;
+  return jsonb_build_object('success', true);
+end; $$;
+
+create or replace function get_batch_info(
+  p_reservation_id uuid
+) returns jsonb language plpgsql security definer as $$
+declare
+  v_batch_id text;
+  v_count    int;
+  v_dates    jsonb;
+begin
+  select batch_id into v_batch_id
+  from reservations where id = p_reservation_id and deleted_at is null;
+  if v_batch_id is null then
+    return jsonb_build_object('batch_id', null, 'count', 1, 'dates', '[]'::jsonb);
+  end if;
+  select count(*), jsonb_agg(date_start order by date_start)
+  into v_count, v_dates
+  from reservations where batch_id = v_batch_id and deleted_at is null;
+  return jsonb_build_object('batch_id', v_batch_id, 'count', v_count, 'dates', coalesce(v_dates,'[]'::jsonb));
+end; $$;
+
+grant execute on function admin_delete_reservation(uuid, text) to anon, authenticated;
+grant execute on function admin_modify_reservation(uuid, text, date, date, time, time, text, text, text, text, text) to anon, authenticated;
+grant execute on function delete_reservation(uuid, text) to anon, authenticated;
+grant execute on function modify_reservation(uuid, text, date, date, time, time, text, text, text, text, text) to anon, authenticated;
+grant execute on function link_to_schedule(uuid, text, boolean) to anon, authenticated;
+grant execute on function unlink_from_schedule(uuid, text, boolean) to anon, authenticated;
+grant execute on function get_batch_info(uuid) to anon, authenticated;
+
+-- ============================================================================
+-- 22) BUGFIX: schedule_linked_items — ON CONFLICT constraint 인식 실패 해결
+--
+-- 원인: Section 14에서 생성한 idx_sli_date_resv 가 PARTIAL INDEX
+--       (WHERE reservation_id IS NOT NULL) 이므로
+--       link_to_schedule RPC 내 ON CONFLICT (target_date, reservation_id) 구문이
+--       해당 인덱스를 unique constraint로 인식하지 못함.
+--
+-- 수정: partial index → DROP 후 named UNIQUE CONSTRAINT 로 교체.
+--       ON CONFLICT (target_date, reservation_id) 구문은 그대로 유지됨.
+-- ============================================================================
+
+-- 기존 partial index 제거 (없어도 무시)
+drop index if exists idx_sli_date_resv;
+
+-- named unique constraint 추가 (이미 있으면 무시)
+do $$ begin
+  if not exists (
+    select 1 from pg_constraint
+    where conname = 'sli_date_resv_unique'
+      and conrelid = 'schedule_linked_items'::regclass
+  ) then
+    alter table schedule_linked_items
+      add constraint sli_date_resv_unique unique (target_date, reservation_id);
+  end if;
+end $$;
+
+-- ★ 실행 후: Supabase 대시보드 → Settings → API → Reload Schema Cache 클릭 필수!
+
+-- ============================================================================
+-- 23) reservations — label_type 컬럼 추가 (학사과정/내부사용/대관 구분)
+--
+-- 학사과정 = 'academic', 대관 = 'rental', 내부사용 = 'internal'
+-- 기존 데이터: is_rental=true → 'rental', 나머지 → 'internal' 으로 마이그레이션
+-- ============================================================================
+alter table reservations add column if not exists label_type text;
+
+update reservations
+  set label_type = 'rental'
+  where is_rental = true and label_type is null;
+
+update reservations
+  set label_type = 'internal'
+  where (is_rental is null or is_rental = false) and label_type is null;
+
+-- ============================================================================
+-- 24) BUGFIX: link_to_schedule — linked_by NOT NULL 위반 해결
+--
+-- 원인: schedule_linked_items.linked_by 컬럼이 NOT NULL 이지만
+--       기존 link_to_schedule RPC의 INSERT 구문에 linked_by가 누락되어 있음.
+-- 수정: INSERT 목록에 linked_by = p_admin_email 추가.
+-- ============================================================================
+create or replace function link_to_schedule(
+  p_reservation_id uuid,
+  p_admin_email    text,
+  p_link_all       boolean default false
+) returns jsonb language plpgsql security definer as $$
+declare
+  v_batch_id    text;
+  v_batch_count int := 0;
+begin
+  if p_admin_email not in ('bangdw@gmail.com','chajungsin@gmail.com') then
+    return jsonb_build_object('success', false, 'error', '관리자 권한이 없습니다');
+  end if;
+  select batch_id into v_batch_id
+  from reservations where id = p_reservation_id and deleted_at is null;
+  if not found then
+    return jsonb_build_object('success', false, 'error', '예약을 찾을 수 없습니다');
+  end if;
+  if p_link_all and v_batch_id is not null then
+    update reservations set schedule_event_id = 'linked-' || id::text
+    where batch_id = v_batch_id and deleted_at is null;
+    get diagnostics v_batch_count = row_count;
+    insert into schedule_linked_items (target_date, label, classroom_color, reservation_id, linked_by)
+    select gs::date, r.formatted_label, r.classroom_color, r.id, p_admin_email
+    from reservations r,
+    lateral generate_series(r.date_start::timestamp, r.date_end::timestamp, '1 day'::interval) gs
+    where r.batch_id = v_batch_id and r.deleted_at is null
+    on conflict (target_date, reservation_id) do nothing;
+  else
+    update reservations set schedule_event_id = 'linked-' || p_reservation_id::text
+    where id = p_reservation_id;
+    v_batch_count := 1;
+    insert into schedule_linked_items (target_date, label, classroom_color, reservation_id, linked_by)
+    select gs::date, r.formatted_label, r.classroom_color, r.id, p_admin_email
+    from reservations r,
+    lateral generate_series(r.date_start::timestamp, r.date_end::timestamp, '1 day'::interval) gs
+    where r.id = p_reservation_id
+    on conflict (target_date, reservation_id) do nothing;
+  end if;
+  return jsonb_build_object('success', true, 'linked_count', v_batch_count);
+end; $$;
+
+grant execute on function link_to_schedule(uuid, text, boolean) to anon, authenticated;
+
 -- 끝. 'Success. No rows returned' 가 나오면 정상입니다. ---------------------
--- 이후: Supabase 대시보드 → Settings → API → Reload Schema Cache 클릭.

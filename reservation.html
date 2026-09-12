@@ -10,6 +10,7 @@
   --green:#16a34a;   --green-lt:#dcfce7;
   --orange:#ea580c;  --orange-lt:#ffedd5;
   --red:#dc2626;     --red-lt:#fee2e2;
+  --academic:#7c3aed; --academic-lt:#ede9fe;
   --gray:#6b7280;    --gray-lt:#f3f4f6;
   --border:#e5e7eb;  --text:#111827;  --text-sm:#374151;
   --r:12px;
@@ -62,17 +63,19 @@ header{
 .hd-more:hover{background:var(--gray-lt)}
 .hd-desktop{display:flex;gap:2px;align-items:center}
 .hd-dropdown{
-  position:absolute;top:calc(100% + 6px);right:0;
+  position:absolute;top:calc(100% + 8px);right:0;
   background:#fff;border:1px solid var(--border);border-radius:var(--r);
-  box-shadow:var(--sh-lg);min-width:160px;padding:4px;z-index:200;
-  display:flex;flex-direction:column;gap:1px;
+  box-shadow:0 4px 20px rgba(0,0,0,.12),0 1px 4px rgba(0,0,0,.06);
+  min-width:230px;padding:6px;z-index:200;
+  display:flex;flex-direction:column;gap:0;
 }
 .hd-dropdown a,.hd-dropdown button{
-  background:none;border:none;width:100%;text-align:left;padding:9px 14px;
-  font-size:13px;color:var(--text);cursor:pointer;border-radius:8px;
-  display:flex;align-items:center;gap:8px;text-decoration:none;font-family:var(--font);
+  background:none;border:none;width:100%;text-align:left;padding:11px 16px;
+  font-size:14px;font-weight:500;color:var(--text);cursor:pointer;border-radius:8px;
+  display:flex;align-items:center;gap:10px;text-decoration:none;font-family:var(--font);
+  letter-spacing:-.2px;transition:background .12s,color .12s;white-space:nowrap;
 }
-.hd-dropdown a:hover,.hd-dropdown button:hover{background:var(--gray-lt)}
+.hd-dropdown a:hover,.hd-dropdown button:hover{background:var(--primary-lt);color:var(--primary)}
 @media(max-width:600px){
   .hd-desktop{display:none}
   .hd-more{display:flex}
@@ -125,17 +128,29 @@ header{
 .view-btn.single.on{color:var(--primary)}
 .view-btn:hover:not(.on){color:var(--text)}
 
-/* 층 필터: 텍스트 전용, 테두리 없음 */
-.floor-tabs{display:flex;gap:1px;align-items:center;flex-wrap:nowrap;overflow-x:auto;
-  scrollbar-width:none;-ms-overflow-style:none}
-.floor-tabs::-webkit-scrollbar{display:none}
-.floor-tab{
-  padding:4px 9px;border-radius:var(--r);font-size:11px;font-weight:600;cursor:pointer;
-  border:none;background:transparent;color:var(--gray);transition:background .15s,color .15s;
-  white-space:nowrap;flex-shrink:0;
+/* 카테고리 필터 체크박스 */
+.cat-filter{display:flex;gap:0;align-items:center;flex-wrap:nowrap;overflow-x:auto;
+  flex:1;min-width:0;scrollbar-width:none;-ms-overflow-style:none}
+.cat-filter::-webkit-scrollbar{display:none}
+.cat-sep{color:var(--border);padding:0 7px;font-size:12px;user-select:none;flex-shrink:0;line-height:1}
+.cat-chip{
+  display:inline-flex;align-items:center;gap:0;
+  padding:2px 0;cursor:pointer;
+  font-size:12px;font-weight:500;color:var(--gray);white-space:nowrap;flex-shrink:0;
+  border:none;background:transparent;
+  transition:color .15s ease,font-weight .1s;
+  user-select:none;font-family:var(--font);
 }
-.floor-tab.on{background:var(--primary-lt);color:var(--primary)}
-.floor-tab:hover:not(.on){background:var(--gray-lt);color:var(--text)}
+.cat-chip:hover{opacity:.7}
+.cat-chip .chk{display:none}
+.cat-chip.all{color:var(--gray)}
+.cat-chip.all.on{color:var(--text);font-weight:700}
+.cat-chip.academic{color:var(--gray)}
+.cat-chip.academic.on{color:var(--academic);font-weight:700}
+.cat-chip.internal{color:var(--gray)}
+.cat-chip.internal.on{color:var(--primary);font-weight:700}
+.cat-chip.rental{color:var(--gray)}
+.cat-chip.rental.on{color:var(--orange);font-weight:700}
 
 /* ── 선택 바 (날짜 선택 시) — 오렌지 배너 대체 ── */
 .sel-bar{
@@ -178,7 +193,7 @@ header{
 .month-week-row:last-child{border-bottom:none}
 /* day cell */
 .day-cell{min-height:120px;padding:5px;background:#fff;
-  transition:background .1s;cursor:pointer;user-select:none;
+  transition:background .15s,outline .1s;cursor:pointer;user-select:none;
   border-right:1px solid var(--border);position:relative;overflow:visible}
 .day-cell:last-child{border-right:none}
 .day-cell:hover{background:var(--primary-lt)}
@@ -226,6 +241,17 @@ header{
 :root[data-density="xl"]{--rv-fs:14px}
 /* density 버튼: schedule.html 동일 스타일 */
 .density-wrap{display:flex;align-items:center;gap:1px;margin-left:auto;flex-shrink:0}
+/* 모바일: 툴바 density 숨기고 ⋮ 메뉴에서만 표시 */
+@media(max-width:600px){.density-wrap{display:none}}
+/* dropdown 글자 크기 행 */
+.hd-dd-sep{height:1px;background:var(--border);margin:6px 0;opacity:.6}
+.hd-dd-density{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-radius:8px;gap:12px}
+.hd-dd-density-lbl{font-size:14px;font-weight:500;color:var(--text);display:flex;align-items:center;gap:10px;flex-shrink:0;white-space:nowrap;letter-spacing:-.2px}
+.hd-dd-density-ctrl{display:flex;align-items:center;gap:6px;flex-shrink:0}
+.hd-dd-density-ctrl button{background:none;border:1.5px solid var(--border);border-radius:7px;padding:3px 9px;font-size:13px;font-weight:700;cursor:pointer;color:var(--text);font-family:var(--font);transition:border-color .13s,color .13s;white-space:nowrap}
+.hd-dd-density-ctrl button:hover:not(:disabled){border-color:var(--primary);color:var(--primary)}
+.hd-dd-density-ctrl button:disabled{opacity:.3;cursor:not-allowed}
+.hd-dd-density-ctrl .dd-dlbl{font-size:12px;color:var(--gray);min-width:28px;text-align:center;font-weight:600;white-space:nowrap}
 .density-btn{background:none;border:none;cursor:pointer;font-size:.75rem;font-weight:800;
   color:var(--gray);padding:0 5px;border-radius:var(--r);height:28px;
   display:flex;align-items:center;justify-content:center;
@@ -235,13 +261,26 @@ header{
 .density-label{font-size:10px;font-weight:600;color:var(--gray);min-width:26px;text-align:center}
 
 .rv-pills{margin-top:3px;display:flex;flex-direction:column;gap:2px}
+@keyframes pill-in{from{opacity:0;transform:translateY(3px) scaleY(.85)}to{opacity:1;transform:translateY(0) scaleY(1)}}
+@keyframes pill-out{from{opacity:1;transform:scaleY(1)}to{opacity:0;transform:scaleY(.7);max-height:0;padding:0;margin:0}}
 .rv-pill{
   font-size:var(--rv-fs)!important;padding:2px 5px;border-radius:5px;
   white-space:normal;overflow-wrap:break-word;word-break:break-word;
-  cursor:pointer;font-weight:400;color:#fff;line-height:1.35;
+  cursor:pointer;font-weight:500;color:#fff;line-height:1.35;
+  box-shadow:0 1px 3px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.18);
+  transition:transform .14s cubic-bezier(.2,.8,.2,1),filter .14s,box-shadow .14s;
+  animation:pill-in .18s cubic-bezier(.2,.8,.2,1) both;
+  will-change:transform;
 }
-.rv-pill:hover{filter:brightness(.88)}
-.rv-pill.drag-over-pill{opacity:.5}
+.rv-pill:hover{
+  filter:brightness(.9);
+  box-shadow:0 3px 8px rgba(0,0,0,.32),inset 0 1px 0 rgba(255,255,255,.22);
+  transform:translateY(-1px);
+}
+.rv-pill:active{transform:scale(.96) translateY(0);filter:brightness(.82)}
+.rv-pill.drag-over-pill{opacity:.45;transform:scale(.96)}
+.rv-pill.lp-active{transform:scale(.9);filter:brightness(.75);box-shadow:0 0 0 3px rgba(255,255,255,.4),0 1px 3px rgba(0,0,0,.28)}
+.rv-pill.removing{animation:pill-out .2s ease forwards}
 .day-cell.drag-target{background:var(--primary-lt)!important;outline:2px dashed var(--primary);outline-offset:-2px}
 .rv-more{font-size:var(--rv-fs)!important;color:var(--gray);padding:2px 4px;cursor:pointer;font-weight:500}
 .rv-more:hover{color:var(--primary)}
@@ -356,6 +395,14 @@ header{
 }
 .modal.show .modal-box{transform:scale(1)}
 .modal-box.wide{max-width:980px}
+/* ── Admin modal → bottom sheet ── */
+#adminModal{align-items:flex-end;padding:0}
+#adminModal .modal-box{max-width:100%;width:100%;height:67vh;max-height:none;border-radius:16px 16px 0 0;transform:translateY(100%);display:flex;flex-direction:column}
+#adminModal .modal-body{flex:1;overflow-y:auto}
+#adminModal.show .modal-box{transform:translateY(0)}
+.adm-sheet-handle{width:44px;height:4px;background:#d1d5db;border-radius:2px;margin:10px auto 4px;cursor:grab;flex-shrink:0}
+#adminModal .modal-hdr{cursor:grab;user-select:none}
+#adminModal .modal-hdr{background:#fff;border-radius:16px 16px 0 0}
 .modal-hdr{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid var(--border);position:sticky;top:0;background:#fff;z-index:1}
 .modal-title{font-size:15px;font-weight:700}
 .modal-body{padding:20px}
@@ -371,11 +418,12 @@ header{
 .label-mono{font-size:11px;font-family:monospace;background:var(--gray-lt);padding:5px 10px;border-radius:6px;line-height:1.5}
 
 /* ── Admin table ── */
-.adm-tabs{display:flex;gap:4px;flex-wrap:wrap;border-bottom:1.5px solid var(--border);margin-bottom:14px;padding-bottom:8px}
-.adm-tab-btn{padding:6px 12px;border-radius:var(--r);font-size:12px;font-weight:700;cursor:pointer;border:1.5px solid var(--border);background:#fff;color:var(--gray);transition:.15s}
+.adm-tabs{display:flex;gap:6px;overflow-x:auto;border-bottom:1.5px solid var(--border);margin-bottom:14px;padding-bottom:8px;-webkit-overflow-scrolling:touch;scrollbar-width:none;flex-wrap:nowrap}
+.adm-tabs::-webkit-scrollbar{display:none}
+.adm-tab-btn{padding:6px 14px;border-radius:var(--r);font-size:12px;font-weight:700;cursor:pointer;border:1.5px solid var(--border);background:#fff;color:var(--gray);transition:.15s;white-space:nowrap;flex:0 0 auto}
 .adm-tab-btn.on{background:var(--primary);border-color:var(--primary);color:#fff}
 .adm-tab-btn:hover:not(.on){border-color:var(--primary);color:var(--primary)}
-.adm-filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;align-items:center}
+.adm-filters{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;align-items:center}
 .adm-card{background:var(--gray-lt);border-radius:var(--r);padding:14px;margin-bottom:12px}
 .adm-form-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin-bottom:10px}
 .rv-tbl{width:100%;border-collapse:collapse;font-size:12px}
@@ -412,6 +460,21 @@ header{
 .ocr-status{font-size:11px;color:var(--primary);margin-top:6px;text-align:center;min-height:16px}
 .ocr-status.err{color:var(--red)}
 @keyframes ocr-spin{to{transform:rotate(360deg)}}
+
+/* ── NLP 자연어 입력 ── */
+.nlp-input-wrap{display:flex;gap:6px;align-items:center}
+.nlp-input-wrap .fi{flex:1}
+.nlp-send-btn{flex-shrink:0;padding:8px 14px;border-radius:var(--r);background:var(--primary);color:#fff;border:none;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font);transition:background .13s,transform .1s,box-shadow .13s;box-shadow:0 1px 4px rgba(26,115,232,.35);white-space:nowrap}
+.nlp-send-btn:hover{background:var(--primary-dk);box-shadow:0 2px 8px rgba(26,115,232,.45)}
+.nlp-send-btn:active{transform:scale(.96)}
+.nlp-send-btn:disabled{opacity:.5;cursor:default;transform:none}
+.nlp-preview{background:var(--gray-lt);border-radius:var(--r);padding:10px 12px;display:flex;flex-direction:column;gap:6px}
+.nlp-row{display:flex;gap:8px;font-size:12px;align-items:baseline}
+.nlp-row span:first-child{font-weight:700;color:var(--text-sm);min-width:44px;flex-shrink:0}
+.nlp-row span:last-child{color:var(--text);word-break:break-all}
+.nlp-refine-wrap{display:flex;gap:6px;margin-top:2px}
+.nlp-refine-wrap .fi{flex:1;font-size:12px}
+@keyframes nlp-modal-in{from{opacity:0;transform:scale(.92) translateY(12px)}to{opacity:1;transform:scale(1) translateY(0)}}
 .ocr-spinner{display:inline-block;width:12px;height:12px;border:2px solid var(--border);
   border-top-color:var(--primary);border-radius:50%;animation:ocr-spin .7s linear infinite;vertical-align:middle;margin-right:4px}
 
@@ -420,10 +483,20 @@ header{
   .hd-title{font-size:14px}
   .frow{grid-template-columns:1fr}
   .cal-wrap{padding:8px}
-  .toolbar{gap:6px;padding:0 10px;height:44px}
-  .month-label{font-size:14px;min-width:80px}
-  .view-btn{padding:0 8px;font-size:10px}
-  .floor-tab{padding:3px 7px;font-size:10px}
+  /* 툴바: 2줄 레이아웃 — 1줄 월 이동, 2줄 필터 */
+  .toolbar{flex-wrap:wrap;height:auto;padding:6px 12px;gap:0;row-gap:4px;align-content:center}
+  /* 1줄: 월 이동 — 전체 너비, 양쪽 끝으로 */
+  .month-nav{width:100%;justify-content:space-between}
+  .month-nav button{width:32px;height:32px;font-size:20px}
+  .month-label{font-size:17px;font-weight:700;min-width:auto;flex:1;text-align:center;padding:0}
+  /* 구분선 모바일에서 숨김 */
+  .toolbar .tb-sep{display:none}
+  /* 2줄: 보기 모드 + 카테고리 — 전체 너비, space-between */
+  .view-toggle{flex-shrink:0}
+  .view-btn{padding:0 8px;font-size:14px;height:28px}
+  .cat-filter{flex:1;overflow-x:visible;min-width:0;justify-content:flex-end}
+  .cat-chip{font-size:14px;padding:2px 0}
+  .cat-sep{padding:0 6px;font-size:14px}
   .btn-cta-rental,.btn-cta-new{padding:5px 10px;font-size:11px}
 }
 
@@ -502,6 +575,18 @@ header{
         <svg class="tb-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
         관리자
       </button>
+      <div class="hd-dd-sep"></div>
+      <div class="hd-dd-density">
+        <span class="hd-dd-density-lbl">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>
+          글자 크기
+        </span>
+        <div class="hd-dd-density-ctrl">
+          <button id="densityDownMenu" onclick="changeDensity(-1)">A−</button>
+          <span class="dd-dlbl" id="densityLabelMenu">표준</span>
+          <button id="densityUpMenu" onclick="changeDensity(1)">A+</button>
+        </div>
+      </div>
     </div>
   </div>
 </header>
@@ -517,10 +602,25 @@ header{
   <div class="view-toggle">
     <button class="view-btn range on" id="modeRange" onclick="setMode('range')">범위</button>
     <button class="view-btn multi" id="modeMulti" onclick="setMode('multi')">다중</button>
-    <button class="view-btn single" id="modeSingle" onclick="setMode('single')">단일</button>
   </div>
   <div class="tb-sep"></div>
-  <div class="floor-tabs" id="floorTabs"></div>
+  <div class="cat-filter" id="catFilter">
+    <button class="cat-chip all on" data-cat="all" onclick="setCatFilter('all')">
+      <span class="chk"><svg width="9" height="7" viewBox="0 0 9 7" fill="none"><path d="M1 3.5L3.5 6L8 1" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>모두
+    </button>
+    <span class="cat-sep">|</span>
+    <button class="cat-chip academic on" data-cat="academic" onclick="setCatFilter('academic')">
+      <span class="chk"><svg width="9" height="7" viewBox="0 0 9 7" fill="none"><path d="M1 3.5L3.5 6L8 1" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>학사 과정
+    </button>
+    <span class="cat-sep">|</span>
+    <button class="cat-chip internal on" data-cat="internal" onclick="setCatFilter('internal')">
+      <span class="chk"><svg width="9" height="7" viewBox="0 0 9 7" fill="none"><path d="M1 3.5L3.5 6L8 1" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>내부 사용
+    </button>
+    <span class="cat-sep">|</span>
+    <button class="cat-chip rental on" data-cat="rental" onclick="setCatFilter('rental')">
+      <span class="chk"><svg width="9" height="7" viewBox="0 0 9 7" fill="none"><path d="M1 3.5L3.5 6L8 1" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>대관
+    </button>
+  </div>
   <div class="density-wrap" title="일정 글자 크기">
     <button class="density-btn" id="densityDown" onclick="changeDensity(-1)">A−</button>
     <span class="density-label" id="densityLabel">표준</span>
@@ -573,6 +673,17 @@ header{
       </div>
       <input type="file" id="ocrFileIn" accept="image/*" style="display:none" onchange="ocrFile(event)">
       <div id="ocrStatus" class="ocr-status"></div>
+    </div>
+
+    <!-- 자연어 AI 입력 -->
+    <div class="fg" id="fgNlp">
+      <div class="nlp-input-wrap">
+        <input type="text" id="nlpInput" class="fi" placeholder="자연어로 일정을 설명하세요  예: 9월 15일부터 20일, 오전 9시~오후 6시, 신변보호사 교육" autocomplete="off" onkeydown="if(event.key==='Enter')runNlp()">
+        <button type="button" class="nlp-send-btn" id="nlpBtn" onclick="runNlp()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
+          AI
+        </button>
+      </div>
     </div>
 
     <div class="fg" id="fgDates">
@@ -812,12 +923,12 @@ header{
   </div>
 </div>
 
-<!-- Admin panel modal -->
+<!-- Admin panel bottom sheet -->
 <div id="adminModal" class="modal" onclick="if(event.target===this)closeAdminM()">
   <div class="modal-box wide">
+    <div class="adm-sheet-handle"></div>
     <div class="modal-hdr">
       <span class="modal-title">관리자 패널</span>
-      <button class="close-btn" onclick="closeAdminM()">✕</button>
     </div>
     <div class="modal-body" id="adminBody"></div>
   </div>
@@ -875,6 +986,53 @@ header{
   </div>
 </div>
 
+<!-- NLP 자연어 입력 결과 미리보기 모달 -->
+<div id="nlpModal" class="modal" onclick="if(event.target===this)closeNlpModal()">
+  <div class="modal-box" style="max-width:440px;animation:nlp-modal-in .22s cubic-bezier(.2,.8,.2,1) both">
+    <div class="modal-hdr">
+      <span>AI 일정 예상 결과</span>
+      <button class="modal-close" onclick="closeNlpModal()">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M12 4L4 12M4 4l8 8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div id="nlpPreview" class="nlp-preview"></div>
+      <div style="margin-top:12px">
+        <div class="fl" style="margin-bottom:5px">추가 지시 <span style="font-size:10px;color:var(--gray);font-weight:400">(수정/삭제 등)</span></div>
+        <div class="nlp-refine-wrap">
+          <input type="text" id="nlpRefineIn" class="fi" placeholder="예: 강의실을 2층으로 변경, 연락처 추가해줘" autocomplete="off" onkeydown="if(event.key==='Enter')runNlpRefine()">
+          <button class="btn btn-outline btn-sm" id="nlpRefineBtn" onclick="runNlpRefine()">적용</button>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-top:16px">
+        <button class="btn btn-primary" onclick="applyNlpResult('replace')">이 내용으로 채우기</button>
+        <button class="btn btn-outline" onclick="applyNlpResult('merge')">기존 내용에 추가</button>
+        <button class="btn btn-outline" onclick="closeNlpModal()">취소</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 배치 삭제 선택 다이얼로그 -->
+<div id="batchDelModal" class="modal" onclick="if(event.target===this)closeBatchDelM()">
+  <div class="modal-box" style="max-width:360px">
+    <div class="modal-hdr">
+      <span>예약 삭제</span>
+      <button class="modal-close" onclick="closeBatchDelM()">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M12 4L4 12M4 4l8 8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <p id="batchDelMsg" style="font-size:13px;color:var(--gray);margin:0 0 16px;white-space:pre-line"></p>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <button class="btn btn-red" id="batchDelAllBtn" onclick="doBatchDel(true)"></button>
+        <button class="btn btn-outline" id="batchDelOneBtn" onclick="doBatchDel(false)"></button>
+        <button class="btn btn-outline" onclick="closeBatchDelM()">취소</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div id="toast"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
@@ -905,7 +1063,7 @@ let rentalCompanies = [];
 let selMode = 'range';
 let selDates = [];
 let rangeStart = null;
-let filterFloor = 'all';
+let filterCats = new Set(['academic','internal','rental']);
 let ccTimer = null;
 let adminEmail = sessionStorage.getItem('rv_adm') || null;
 let editingId = null;
@@ -931,12 +1089,22 @@ function loadDensity() {
 function _applyDensity() {
   document.documentElement.dataset.density = _density;
   const idx = _DENSITY_LEVELS.indexOf(_density);
+  const txt = _DENSITY_LABELS[idx];
+  const isMin = idx <= 0, isMax = idx >= _DENSITY_LEVELS.length - 1;
+  // 툴바
   const lbl = document.getElementById('densityLabel');
-  if (lbl) lbl.textContent = _DENSITY_LABELS[idx];
+  if (lbl) lbl.textContent = txt;
   const btnD = document.getElementById('densityDown');
   const btnU = document.getElementById('densityUp');
-  if (btnD) btnD.disabled = idx <= 0;
-  if (btnU) btnU.disabled = idx >= _DENSITY_LEVELS.length - 1;
+  if (btnD) btnD.disabled = isMin;
+  if (btnU) btnU.disabled = isMax;
+  // ⋮ 메뉴
+  const lblM = document.getElementById('densityLabelMenu');
+  if (lblM) lblM.textContent = txt;
+  const btnDM = document.getElementById('densityDownMenu');
+  const btnUM = document.getElementById('densityUpMenu');
+  if (btnDM) btnDM.disabled = isMin;
+  if (btnUM) btnUM.disabled = isMax;
 }
 
 function changeDensity(dir) {
@@ -1151,7 +1319,7 @@ async function claudeFetch(bodyObj) {
 
   const directCall = key => fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+    headers: { 'Content-Type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01', 'anthropic-beta': 'pdfs-2024-09-25', 'anthropic-dangerous-direct-browser-access': 'true' },
     body,
   });
 
@@ -1203,19 +1371,48 @@ async function loadClassrooms() {
 
 const FLOOR_LABEL = { B1:'B1층', '1F':'1층', '2F':'2층', '3F':'3층', '4F':'4층', '5F':'5층' };
 
-function populateFloorTabs() {
-  const floors = [...new Set(classrooms.map(c => c.floor))];
-  document.getElementById('floorTabs').innerHTML =
-    ['all', ...floors].map(f =>
-      `<button class="floor-tab ${f==='all'?'on':''}" data-f="${f}" onclick="setFloor('${f}')">${f==='all'?'전체':FLOOR_LABEL[f]||f}</button>`
-    ).join('');
+/* 카테고리 필터 */
+function getCatChkSvg() {
+  return `<svg width="9" height="7" viewBox="0 0 9 7" fill="none"><path d="M1 3.5L3.5 6L8 1" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 }
 
-function setFloor(f) {
-  filterFloor = f;
-  document.querySelectorAll('.floor-tab').forEach(t => t.classList.toggle('on', t.dataset.f === f));
+function setCatFilter(cat) {
+  if (cat === 'all') {
+    const allOn = filterCats.size === 3;
+    filterCats = allOn ? new Set() : new Set(['academic','internal','rental']);
+  } else {
+    if (filterCats.has(cat)) filterCats.delete(cat);
+    else filterCats.add(cat);
+  }
+  document.querySelectorAll('.cat-chip').forEach(ch => {
+    const c = ch.dataset.cat;
+    ch.classList.toggle('on', c === 'all' ? filterCats.size === 3 : filterCats.has(c));
+  });
   renderCal();
 }
+
+function getLabelType(rv) {
+  if (rv.label_type) return rv.label_type;
+  return rv.is_rental ? 'rental' : 'internal';
+}
+
+function getPillColor(rv) {
+  const lt = getLabelType(rv);
+  if (lt === 'academic') return '#7c3aed';
+  if (lt === 'rental') return '#ea580c';
+  return rv.classroom_color || '#1A73E8';
+}
+
+function sortRvsByType(rvs) {
+  const ord = { academic:0, rental:1, internal:2 };
+  return [...rvs].sort((a, b) => {
+    const ta = ord[getLabelType(a)] ?? 2, tb = ord[getLabelType(b)] ?? 2;
+    if (ta !== tb) return ta - tb;
+    return (a.classroom_name || '').localeCompare(b.classroom_name || '', 'ko');
+  });
+}
+
+function populateFloorTabs() { /* 층 필터 제거됨 — 카테고리 필터로 대체 */ }
 
 function populateRoomSel() {
   const sel = document.getElementById('roomSel');
@@ -1337,70 +1534,108 @@ function buildCell(cell, today) {
 
 function getRvsForDate(dateStr) {
   let rvs = reservations.filter(r => r.date_start <= dateStr && r.date_end >= dateStr);
-  if (filterFloor !== 'all') {
-    const names = classrooms.filter(c => c.floor === filterFloor).map(c => c.name);
-    rvs = rvs.filter(r => names.includes(r.classroom_name));
-  }
-  return rvs;
+  if (filterCats.size < 3) rvs = rvs.filter(r => filterCats.has(getLabelType(r)));
+  return sortRvsByType(rvs);
 }
 
 function buildPills(rvs) {
   if (!rvs.length) return '';
   const MAX = 3;
   let h = rvs.slice(0, MAX).map(rv => {
-    const c = rv.classroom_color || '#1A73E8';
+    const c = getPillColor(rv);
     const lbl = rv.formatted_label || mkLabel(rv.classroom_name, rv.time_start, rv.time_end, rv.purpose);
     const dragAttrs = isAdmin()
       ? ` draggable="true" ondragstart="pillDragStart(event,'${rv.id}')" ondragend="pillDragEnd(event)"`
       : '';
     const ctxAttr = ` oncontextmenu="openCtxMenu(event,'${rv.id}')"`;
-    return `<div class="rv-pill" style="background:${c}"${dragAttrs}${ctxAttr} onclick="event.stopPropagation();openDetail('${rv.id}')" title="${esc(lbl)}">${esc(lbl)}</div>`;
+    return `<div class="rv-pill" data-id="${rv.id}" style="background:${c}"${dragAttrs}${ctxAttr} onclick="event.stopPropagation();openDetail('${rv.id}')" title="${esc(lbl)}">${esc(lbl)}</div>`;
   }).join('');
   if (rvs.length > MAX) h += `<div class="rv-more" onclick="event.stopPropagation()">+${rvs.length - MAX}건 더보기</div>`;
   return h;
 }
 
-/* ── Long press (mobile multi-select) ── */
+/* ── Long press (mobile) ── */
 function initLongPress() {
   let lpTimer = null;
+  let lpPill = null;
+
   document.addEventListener('touchstart', e => {
+    // pill 위 long-press
+    const pill = e.target.closest('.rv-pill[data-id]');
+    if (pill) {
+      const touch = e.touches[0];
+      lpPill = pill;
+      pill.classList.add('lp-active');
+      lpTimer = setTimeout(() => {
+        navigator.vibrate && navigator.vibrate([30, 10, 20]);
+        pill.classList.remove('lp-active');
+        lpPill = null;
+        const fakeE = { preventDefault(){}, stopPropagation(){}, clientX: touch.clientX, clientY: touch.clientY };
+        openCtxMenu(fakeE, pill.dataset.id);
+      }, 480);
+      return;
+    }
+    // day-cell long-press: 멀티 선택
     const cell = e.target.closest('.day-cell');
     if (!cell) return;
     const s = cell.dataset.s;
+    cell.style.transition = 'background .1s';
     lpTimer = setTimeout(() => {
       navigator.vibrate && navigator.vibrate(30);
       if (selMode !== 'multi') setMode('multi');
       toggleMulti(s);
       renderCal();
-    }, 500);
+    }, 480);
   }, { passive: true });
-  document.addEventListener('touchend', () => clearTimeout(lpTimer), { passive: true });
-  document.addEventListener('touchmove', () => clearTimeout(lpTimer), { passive: true });
+
+  const cancelLp = () => {
+    clearTimeout(lpTimer);
+    if (lpPill) { lpPill.classList.remove('lp-active'); lpPill = null; }
+  };
+  document.addEventListener('touchend', cancelLp, { passive: true });
+  document.addEventListener('touchmove', cancelLp, { passive: true });
+  document.addEventListener('touchcancel', cancelLp, { passive: true });
 }
 
 /* ── Cell click (no drag) ── */
-function handleCellClick(s, ctrl) {
+let _anchorDate = null;
+
+function handleCellClick(s, ctrl, shift) {
   if (ctrl) {
     if (selMode !== 'multi') setMode('multi');
     toggleMulti(s);
+    _anchorDate = s;
     renderCal();
     return;
   }
 
-  if (selMode === 'single') {
-    selDates = [s];
-    renderCal();
-    updMultiBanner();
+  if (shift && _anchorDate) {
+    const a = _anchorDate < s ? _anchorDate : s;
+    const b = _anchorDate < s ? s : _anchorDate;
+    if (selMode === 'multi') {
+      const range = [];
+      let d = new Date(a + 'T00:00:00');
+      const end = new Date(b + 'T00:00:00');
+      while (d <= end) { range.push(toStr(d)); d.setDate(d.getDate() + 1); }
+      range.forEach(r => { if (!selDates.includes(r)) selDates.push(r); });
+      selDates.sort();
+    } else {
+      selDates = [a, b]; rangeStart = null;
+      if (selMode !== 'range') { selMode = 'range'; document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('on')); const el = document.getElementById('modeRange'); if (el) el.classList.add('on'); }
+    }
+    renderCal(); updMultiBanner();
     return;
   }
 
   if (selMode === 'multi') {
     toggleMulti(s);
+    _anchorDate = s;
     renderCal();
     return;
   }
 
-  // range mode
+  // range mode (default)
+  _anchorDate = s;
   if (!rangeStart) {
     rangeStart = s; selDates = [];
     renderCal();
@@ -1419,7 +1654,7 @@ function handleCellClick(s, ctrl) {
 }
 
 /* ── Drag select (schedule.html 방식: 클릭+드래그로 범위 선택, Ctrl+드래그로 다중 선택) ── */
-let dsDown = false, dsStart = null, dsEnd = null, dsDragging = false, dsCtrl = false;
+let dsDown = false, dsStart = null, dsEnd = null, dsDragging = false, dsCtrl = false, dsShift = false;
 
 function initDragSelect() {
   const grid = document.getElementById('calGrid');
@@ -1430,6 +1665,7 @@ function initDragSelect() {
     const cell = e.target.closest('.day-cell');
     if (!cell) return;
     dsDown = true; dsCtrl = e.ctrlKey || e.metaKey;
+    dsShift = e.shiftKey;
     dsStart = cell.dataset.s; dsEnd = dsStart; dsDragging = false;
   });
 
@@ -1448,7 +1684,7 @@ function initDragSelect() {
     dsDown = false;
     if (!dsStart) return;
     if (!dsDragging) {
-      handleCellClick(dsStart, dsCtrl);
+      handleCellClick(dsStart, dsCtrl, dsShift);
     } else {
       finalizeDrag();
     }
@@ -1726,7 +1962,8 @@ function mcApply() {
 function setMode(mode) {
   selMode = mode; selDates = []; rangeStart = null;
   document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('on'));
-  document.getElementById('mode' + mode.charAt(0).toUpperCase() + mode.slice(1)).classList.add('on');
+  const modeEl = document.getElementById('mode' + mode.charAt(0).toUpperCase() + mode.slice(1));
+  if (modeEl) modeEl.classList.add('on');
   updMultiBanner();
   renderCal();
   renderDateTags();
@@ -1752,11 +1989,6 @@ let drawerRentalMode = false;
 function openDrawer(dateStr, rental) {
   rental = !!rental;
   if (dateStr) { selDates = [dateStr]; renderCal(); }
-  if (!selDates.length) {
-    const today = toStr(new Date());
-    selDates = [today];
-    renderCal();
-  }
 
   resetForm();
   drawerRentalMode = rental;
@@ -2086,11 +2318,14 @@ function mkRecord(room, color, ds, de, ts, te, purp, dept, req, cont, pwHash, re
   if (notes)        rec.notes = notes;
   if (rentalInfo) {
     rec.is_rental = true;
+    rec.label_type = 'rental';
     rec.rental_company_id = rentalInfo.orgId;
     rec.rental_company_name = rentalInfo.orgName;
     rec.course_name = rentalInfo.course;
     rec.daily_fee = rentalInfo.fee;
     rec.billing_status = 'pending';
+  } else {
+    rec.label_type = 'internal';
   }
   return rec;
 }
@@ -2203,11 +2438,18 @@ async function doPwAction() {
   const pwHash = await sha256(pw + PW_SALT);
 
   if (action === 'delete') {
-    const { data } = await sb.rpc('delete_reservation', { p_id: id, p_password_hash: pwHash });
+    const { data, error } = await sb.rpc('delete_reservation', { p_id: id, p_password_hash: pwHash });
+    if (error) return toast('오류: ' + error.message, 'error');
     if (!data?.success) {
+      const msg = data?.error || '';
+      // 비밀번호가 없는 기존 예약인 경우 (null hash)
+      if (msg.includes('비밀번호가 설정되지 않') || msg.includes('no password')) {
+        closePwM();
+        return toast('이 예약은 비밀번호가 없습니다. 관리자에게 삭제 요청하세요.', 'warn');
+      }
       pwFails++;
       if (pwFails >= 3) { closePwM(); return toast('비밀번호 3회 오류. 잠김.', 'error'); }
-      return toast(`비밀번호 오류 (${pwFails}/3)`, 'error');
+      return toast(`비밀번호 오류 (${pwFails}/3) — ${msg || '일치하지 않음'}`, 'error');
     }
     toast('예약이 삭제되었습니다', 'success');
     closePwM(); closeDetail();
@@ -2215,6 +2457,10 @@ async function doPwAction() {
   } else {
     const rv = reservations.find(r => r.id === id);
     if (!rv) return;
+    if (rv.password_hash === null || rv.password_hash === undefined) {
+      closePwM();
+      return toast('이 예약은 비밀번호가 없습니다. 관리자에게 수정 요청하세요.', 'warn');
+    }
     if (pwHash !== rv.password_hash) {
       pwFails++;
       if (pwFails >= 3) { closePwM(); return toast('비밀번호 3회 오류. 잠김.', 'error'); }
@@ -2382,7 +2628,7 @@ function googleLogin() {
         if (ADMIN_EMAILS.includes(u.email)) {
           adminEmail = u.email;
           sessionStorage.setItem('rv_adm', adminEmail);
-          closeLoginM(); updateAdminBtn();
+          closeLoginM(); updateAdminBtn(); renderCal();
           toast(`관리자 로그인 완료 (${adminEmail})`, 'success');
         } else {
           document.getElementById('loginMsg').textContent = '관리자 계정이 아닙니다: ' + u.email;
@@ -2393,11 +2639,47 @@ function googleLogin() {
   client.requestAccessToken({ prompt: 'select_account' });
 }
 
+let _batchDelId = null;
+
 async function adminDelRv(id) {
   if (!isAdmin()) return toast('관리자 권한이 필요합니다', 'error');
-  if (!confirm('이 예약을 삭제하시겠습니까?')) return;
-  const { data } = await sb.rpc('admin_delete_reservation', { p_id: id, p_admin_email: adminEmail });
-  if (!data?.success) return toast('삭제 실패: ' + (data?.error || ''), 'error');
+  const rv = reservations.find(r => r.id === id);
+  if (!rv) return;
+
+  if (rv.batch_id) {
+    const { data: bi } = await sb.rpc('get_batch_info', { p_reservation_id: id });
+    const n = bi?.count || 1;
+    if (n <= 1) {
+      if (!confirm('이 예약을 삭제하시겠습니까?')) return;
+      await _doAdminDel(id, false);
+      return;
+    }
+    _batchDelId = id;
+    document.getElementById('batchDelMsg').textContent =
+      `이 예약은 같은 날짜 묶음으로 일괄 등록된 ${n}건 중 하나입니다.\n어떻게 삭제하시겠습니까?`;
+    document.getElementById('batchDelAllBtn').textContent = `전체 ${n}건 모두 삭제`;
+    document.getElementById('batchDelOneBtn').textContent = '이 일정만 삭제';
+    showM('batchDelModal');
+  } else {
+    if (!confirm('이 예약을 삭제하시겠습니까?')) return;
+    await _doAdminDel(id, false);
+  }
+}
+
+async function doBatchDel(deleteAll) {
+  closeBatchDelM();
+  await _doAdminDel(_batchDelId, deleteAll);
+  _batchDelId = null;
+}
+
+function closeBatchDelM() { hideM('batchDelModal'); }
+
+async function _doAdminDel(id, deleteAll) {
+  const { data, error } = await sb.rpc('admin_delete_reservation', {
+    p_id: id, p_admin_email: adminEmail, p_delete_all: deleteAll
+  });
+  if (error) return toast('삭제 실패: ' + error.message, 'error');
+  if (!data?.success) return toast('삭제 실패: ' + (data?.error || '알 수 없는 오류'), 'error');
   toast('삭제되었습니다', 'success');
   closeDetail(); await loadRvs(); loadAdminList();
 }
@@ -2438,10 +2720,11 @@ async function doBatchLink(linkAll) {
 }
 
 async function _doLink(id, linkAll) {
-  const { data } = await sb.rpc('link_to_schedule', {
+  const { data, error } = await sb.rpc('link_to_schedule', {
     p_reservation_id: id, p_admin_email: adminEmail, p_link_all: linkAll
   });
-  if (!data?.success) return toast('연동 실패: ' + (data?.error || ''), 'error');
+  if (error) return toast('연동 실패: ' + error.message, 'error');
+  if (!data?.success) return toast('연동 실패: ' + (data?.error || '알 수 없는 오류'), 'error');
   const cnt = data?.linked_count || 1;
   toast(`학교일정에 연동되었습니다 (${cnt}건)`, 'success');
   closeDetail(); await loadRvs();
@@ -2475,10 +2758,11 @@ async function doBatchUnlink(unlinkAll) {
 }
 
 async function _doUnlink(id, unlinkAll) {
-  const { data } = await sb.rpc('unlink_from_schedule', {
+  const { data, error } = await sb.rpc('unlink_from_schedule', {
     p_reservation_id: id, p_admin_email: adminEmail, p_unlink_all: unlinkAll
   });
-  if (!data?.success) return toast('연동 해제 실패: ' + (data?.error || ''), 'error');
+  if (error) return toast('연동 해제 실패: ' + error.message, 'error');
+  if (!data?.success) return toast('연동 해제 실패: ' + (data?.error || '알 수 없는 오류'), 'error');
   toast('연동이 해제되었습니다', 'success');
   closeDetail(); await loadRvs();
 }
@@ -2487,7 +2771,7 @@ function closeBatchUnlinkM() { hideM('batchUnlinkModal'); }
 
 /* ── Admin panel ── */
 let admRvs = [];
-let admFilter = { room: '', date: '' };
+let admFilter = { room: '', date: '', text: '' };
 let admTab = 'reservations';
 
 async function openAdminM() {
@@ -2502,6 +2786,7 @@ async function renderAdminPanel() {
   const body = document.getElementById('adminBody');
   const tabs = [
     ['reservations', '예약 목록'],
+    ['academic', '학사과정 등록'],
     ['classrooms', '강의실 관리'],
     ['companies', '대관업체 관리'],
     ['rental', '대관 관리'],
@@ -2515,6 +2800,7 @@ async function renderAdminPanel() {
     <div class="adm-tabs">${tabs.map(([k, l]) => `<button class="adm-tab-btn ${admTab === k ? 'on' : ''}" onclick="switchAdmTab('${k}')">${l}</button>`).join('')}</div>
     <div id="admTabContent"><div style="display:flex;justify-content:center;padding:40px"><div class="spinner"></div></div></div>`;
   if (admTab === 'reservations') await loadAdminList();
+  else if (admTab === 'academic') await renderAcademicTab();
   else if (admTab === 'classrooms') await renderClassroomsTab();
   else if (admTab === 'companies') await renderCompaniesTab();
   else if (admTab === 'rental') await renderRentalTab();
@@ -2540,14 +2826,25 @@ function renderAdmTable() {
   let rvs = admRvs;
   if (admFilter.room) rvs = rvs.filter(r => r.classroom_name.includes(admFilter.room));
   if (admFilter.date) rvs = rvs.filter(r => r.date_start <= admFilter.date && r.date_end >= admFilter.date);
+  if (admFilter.text) {
+    const q = admFilter.text.toLowerCase();
+    rvs = rvs.filter(r =>
+      (r.purpose||'').toLowerCase().includes(q) ||
+      (r.renter_name||'').toLowerCase().includes(q) ||
+      (r.requester_name||'').toLowerCase().includes(q) ||
+      (r.department||'').toLowerCase().includes(q)
+    );
+  }
 
   body.innerHTML = `
     <div class="adm-filters">
-      <input type="text" class="fi" style="width:180px" placeholder="강의실 검색..."
+      <input type="text" class="fi" style="flex:1;min-width:140px" placeholder="업체명·사용목적 검색..."
+        value="${esc(admFilter.text)}" oninput="admFilter.text=this.value;renderAdmTable()">
+      <input type="text" class="fi" style="width:140px" placeholder="강의실 검색..."
         value="${esc(admFilter.room)}" oninput="admFilter.room=this.value;renderAdmTable()">
-      <input type="date" class="fi" style="width:150px"
+      <input type="date" class="fi" style="width:140px"
         value="${admFilter.date}" onchange="admFilter.date=this.value;renderAdmTable()">
-      <button class="btn btn-sm btn-outline" onclick="admFilter={room:'',date:''};renderAdmTable()">초기화</button>
+      <button class="btn btn-sm btn-outline" onclick="admFilter={room:'',date:'',text:''};renderAdmTable()">초기화</button>
       <button class="btn btn-sm btn-primary" onclick="loadAdminList()">새로고침</button>
     </div>
     <div style="font-size:12px;color:var(--gray);margin-bottom:8px">표시: ${rvs.length}건 / 전체: ${admRvs.length}건</div>
@@ -2562,16 +2859,16 @@ function renderAdmTable() {
         <tbody>
           ${rvs.map(rv => `<tr style="cursor:pointer" onclick="window.open('reservation.html#rv-${rv.id}','_blank')" title="새 탭에서 열기">
             <td style="white-space:nowrap">${rv.date_start}${rv.date_start!==rv.date_end?'<br>~'+rv.date_end:''}</td>
-            <td><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${rv.classroom_color||'#1A73E8'};margin-right:4px;vertical-align:middle"></span>${esc(rv.classroom_name)}</td>
+            <td style="white-space:nowrap"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${rv.classroom_color||'#1A73E8'};margin-right:4px;vertical-align:middle"></span>${esc(rv.classroom_name)}</td>
             <td style="white-space:nowrap">${rv.time_start}~${rv.time_end}</td>
-            <td style="max-width:120px;overflow:hidden">${esc(rv.purpose)}</td>
-            <td>${esc(rv.department)}</td>
-            <td>${esc(rv.requester_name)}</td>
-            <td>${esc(rv.contact||'')}</td>
+            <td style="white-space:nowrap;max-width:140px;overflow:hidden;text-overflow:ellipsis">${esc(rv.purpose)}</td>
+            <td style="white-space:nowrap">${esc(rv.department)}</td>
+            <td style="white-space:nowrap">${esc(rv.requester_name)}</td>
+            <td style="white-space:nowrap">${esc(rv.contact||'')}</td>
             <td onclick="event.stopPropagation()">${rv.schedule_event_id
               ? `<span class="adm-act-linked">연동완료</span>`
               : `<button class="adm-act adm-act-link" onclick="admLink('${rv.id}')">연동</button>`}</td>
-            <td onclick="event.stopPropagation()" style="display:flex;gap:8px;align-items:center">
+            <td onclick="event.stopPropagation()" style="white-space:nowrap;display:flex;gap:6px;align-items:center">
               <button class="adm-act adm-act-edit" onclick="adminEditRv('${rv.id}')">수정</button>
               <button class="adm-act adm-act-del" onclick="adminDelRv('${rv.id}')">삭제</button>
             </td>
@@ -2617,9 +2914,16 @@ function openCtxMenu(e, id) {
       linkBtn.textContent = '학교일정 연동';
       linkBtn.onclick = () => { ctxAction('link'); };
     }
+    linkBtn.hidden = false;
     delBtn.hidden = false; delSep.hidden = false; editBtn.hidden = false;
+    editBtn.onclick = () => ctxAction('edit');
+    delBtn.onclick  = () => ctxAction('delete');
   } else {
-    linkBtn.hidden = true; delBtn.hidden = true; delSep.hidden = true; editBtn.hidden = true;
+    // 비관리자: 비밀번호 확인 후 수정·삭제
+    linkBtn.hidden = true;
+    editBtn.hidden = false; delBtn.hidden = false; delSep.hidden = false;
+    editBtn.onclick = () => { closeCtxMenu(); openPwM('edit',   id); };
+    delBtn.onclick  = () => { closeCtxMenu(); openPwM('delete', id); };
   }
 
   menu.hidden = false;
@@ -2647,8 +2951,9 @@ document.addEventListener('click', e => {
 });
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeCtxMenu(); });
 
-/* ── 드래그로 일정 이동 (관리자 전용) ── */
+/* ── 드래그로 일정 이동 (관리자 전용, 항상 단건 이동) ── */
 let _dragRvId = null;
+
 function pillDragStart(e, id) {
   if (!isAdmin()) { e.preventDefault(); return; }
   _dragRvId = id;
@@ -2675,21 +2980,20 @@ async function cellDrop(e, targetDate) {
   const id = _dragRvId;
   _dragRvId = null;
   if (!id || !isAdmin()) return;
+  await _doMoveRv(id, targetDate);
+}
 
+async function _doMoveRv(id, targetDate) {
   const rv = reservations.find(r => r.id === id);
   if (!rv) return;
-
+  const origEnd = new Date(rv.date_end);
   const origStart = new Date(rv.date_start);
-  const origEnd   = new Date(rv.date_end);
-  const durDays   = Math.round((origEnd - origStart) / 86400000);
-  const newStart  = new Date(targetDate);
-  const newEnd    = new Date(newStart);
+  const durDays = Math.round((origEnd - origStart) / 86400000);
+  const newStart = new Date(targetDate);
+  const newEnd = new Date(newStart);
   newEnd.setDate(newEnd.getDate() + durDays);
-
   const fmt = d => d.toISOString().slice(0, 10);
-  if (fmt(newStart) === rv.date_start) return;
-
-  const { data } = await sb.rpc('admin_modify_reservation', {
+  const { data, error } = await sb.rpc('admin_modify_reservation', {
     p_id: id, p_admin_email: adminEmail,
     p_date_start: fmt(newStart), p_date_end: fmt(newEnd),
     p_time_start: rv.time_start, p_time_end: rv.time_end,
@@ -2697,9 +3001,412 @@ async function cellDrop(e, targetDate) {
     p_requester_name: rv.requester_name, p_contact: rv.contact || null,
     p_formatted_label: rv.formatted_label || null
   });
-  if (!data?.success) return toast('이동 실패: ' + (data?.error || ''), 'error');
+  if (error) return toast('이동 실패: ' + error.message, 'error');
+  if (!data?.success) return toast('이동 실패: ' + (data?.error || '알 수 없는 오류'), 'error');
   toast('일정이 이동되었습니다', 'success');
   await loadRvs();
+}
+
+/* ── 학사과정 등록 탭 ── */
+let _acadFileB64 = null, _acadFileType = null, _acadParsed = [], _acadSelAll = true;
+
+async function renderAcademicTab() {
+  const target = document.getElementById('admTabContent');
+  if (!target) return;
+  target.innerHTML = `
+    <div style="display:flex;flex-direction:column;gap:20px">
+      <!-- 등록 섹션 -->
+      <div style="border:1px solid var(--border);border-radius:var(--r);padding:16px">
+        <div style="font-size:13px;font-weight:700;margin-bottom:12px;color:var(--text)">새 학사과정 일정 등록</div>
+
+        <!-- 그룹명 입력 -->
+        <div style="margin-bottom:10px">
+          <label style="font-size:11px;font-weight:700;color:var(--text-sm);display:block;margin-bottom:4px">그룹명 <span style="color:var(--red)">*</span> <span style="font-weight:400;color:var(--gray)">(예: 2026-2학기, 2026년 여름학기)</span></label>
+          <input id="acadGroupName" class="fi" type="text" placeholder="그룹명을 입력하세요" style="width:100%;font-size:13px">
+        </div>
+
+        <!-- 파일 업로드 -->
+        <div id="acadDropZone" style="
+          border:2px dashed var(--border);border-radius:var(--r);padding:24px 16px;
+          text-align:center;cursor:pointer;background:var(--gray-lt);
+          transition:border-color .2s,background .2s;position:relative;margin-bottom:8px"
+          onclick="document.getElementById('acadFileIn').click()"
+          ondragover="event.preventDefault();this.style.borderColor='var(--academic)';this.style.background='var(--academic-lt)'"
+          ondragleave="this.style.borderColor='';this.style.background='var(--gray-lt)'"
+          ondrop="acadHandleDrop(event)">
+          <input type="file" id="acadFileIn" accept="image/*,.pdf" hidden onchange="acadHandleFile(this.files[0])">
+          <div id="acadDropLabel" style="display:flex;flex-direction:column;align-items:center;gap:8px">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--academic)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+            <div style="font-size:13px;font-weight:600;color:var(--text-sm)">PDF 또는 이미지를 드래그하거나 클릭하여 선택</div>
+            <div style="font-size:11px;color:var(--gray)">강의실 배정표, 시간표, 수업일정표 등 모든 형식 지원</div>
+          </div>
+          <div id="acadFileInfo" hidden style="display:flex;align-items:center;gap:8px;justify-content:center">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            <span id="acadFileName" style="font-size:13px;font-weight:600;color:var(--green)"></span>
+            <button class="btn btn-xs btn-outline" onclick="event.stopPropagation();acadClearFile()" style="color:var(--red);border-color:var(--red)">제거</button>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <textarea id="acadNlpIn" class="fi" rows="2" placeholder="또는 자연어로 직접 입력: 예) 9월 1일부터 2주간 월수금 301호 09:00~12:00 데이터사이언스 김교수" style="flex:1;resize:none;font-size:12px"></textarea>
+          <button class="btn btn-primary" id="acadAnalyzeBtn" onclick="acadAnalyze()" style="height:60px;padding:0 16px;flex-shrink:0">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/><path d="M11 8v6M8 11h6"/></svg><br>
+            <span style="font-size:11px">AI 분석</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- 미리보기 테이블 -->
+      <div id="acadPreviewWrap" hidden>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <div class="fl" style="font-size:13px;font-weight:700">분석 결과 <span id="acadPreviewCount" style="font-size:11px;color:var(--gray);font-weight:400"></span></div>
+          <div style="display:flex;gap:6px">
+            <button class="btn btn-xs btn-outline" onclick="acadToggleAll()">전체선택/해제</button>
+            <button class="btn btn-xs btn-primary" id="acadImportBtn" onclick="acadImport()">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>
+              선택 항목 등록
+            </button>
+          </div>
+        </div>
+        <div style="overflow-x:auto;border-radius:var(--r);border:1px solid var(--border)">
+          <table id="acadPreviewTbl" style="width:100%;border-collapse:collapse;font-size:12px">
+            <thead>
+              <tr style="background:var(--gray-lt);border-bottom:1px solid var(--border)">
+                <th style="padding:8px 10px;text-align:center;width:36px">
+                  <input type="checkbox" id="acadChkAll" onchange="acadChkAllChange(this)" checked style="accent-color:var(--academic)">
+                </th>
+                <th style="padding:8px 10px;text-align:left;font-weight:700;color:var(--text-sm)">강의실</th>
+                <th style="padding:8px 10px;text-align:left;font-weight:700;color:var(--text-sm)">날짜</th>
+                <th style="padding:8px 10px;text-align:left;font-weight:700;color:var(--text-sm)">시간</th>
+                <th style="padding:8px 10px;text-align:left;font-weight:700;color:var(--text-sm)">과목/용도</th>
+                <th style="padding:8px 10px;text-align:left;font-weight:700;color:var(--text-sm)">교수/강사</th>
+                <th style="padding:8px 10px;text-align:left;font-weight:700;color:var(--text-sm)">학과/부서</th>
+                <th style="padding:8px 10px;text-align:center;font-weight:700;color:var(--text-sm)">작업</th>
+              </tr>
+            </thead>
+            <tbody id="acadPreviewBody"></tbody>
+          </table>
+        </div>
+      </div>
+      <div id="acadEmptyMsg" hidden style="text-align:center;padding:32px;color:var(--gray);font-size:13px">
+        분석 결과가 없습니다. 파일을 다시 확인해주세요.
+      </div>
+
+      <!-- 등록된 그룹 목록 -->
+      <div>
+        <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px">
+          <div style="font-size:13px;font-weight:700;white-space:nowrap">등록된 학사과정 그룹</div>
+          <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+            <span style="font-size:11px;color:var(--gray);white-space:nowrap">기간 삭제:</span>
+            <input id="acadDelFrom" type="date" class="fi" style="font-size:11px;padding:3px 6px;width:130px" placeholder="시작일">
+            <span style="font-size:11px;color:var(--gray)">~</span>
+            <input id="acadDelTo" type="date" class="fi" style="font-size:11px;padding:3px 6px;width:130px" placeholder="종료일">
+            <button class="btn btn-xs btn-outline" onclick="acadDeleteByRange()" style="color:var(--red);border-color:var(--red);flex-shrink:0;white-space:nowrap">기간 삭제</button>
+          </div>
+        </div>
+        <div id="acadGroupList" style="display:flex;flex-direction:column;gap:8px">
+          <div style="text-align:center;padding:24px;color:var(--gray);font-size:12px">
+            <div class="spinner" style="width:20px;height:20px;margin:0 auto 8px"></div>로딩 중...
+          </div>
+        </div>
+      </div>
+    </div>`;
+
+  _acadFileB64 = null; _acadFileType = null; _acadParsed = [];
+  await acadLoadGroups();
+}
+
+function acadHandleDrop(e) {
+  e.preventDefault();
+  document.getElementById('acadDropZone').style.borderColor = '';
+  document.getElementById('acadDropZone').style.background = 'var(--gray-lt)';
+  const f = e.dataTransfer.files[0];
+  if (f) acadHandleFile(f);
+}
+
+function acadHandleFile(file) {
+  if (!file) return;
+  const maxMB = 20;
+  if (file.size > maxMB * 1024 * 1024) return toast(`파일이 너무 큽니다 (최대 ${maxMB}MB)`, 'warn');
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const b64 = ev.target.result.split(',')[1];
+    _acadFileB64 = b64;
+    _acadFileType = file.type || 'image/jpeg';
+    document.getElementById('acadDropLabel').hidden = true;
+    document.getElementById('acadFileInfo').hidden = false;
+    document.getElementById('acadFileName').textContent = file.name;
+  };
+  reader.readAsDataURL(file);
+}
+
+function acadClearFile() {
+  _acadFileB64 = null; _acadFileType = null;
+  document.getElementById('acadFileIn').value = '';
+  document.getElementById('acadDropLabel').hidden = false;
+  document.getElementById('acadFileInfo').hidden = true;
+}
+
+async function acadAnalyze() {
+  const nlp = document.getElementById('acadNlpIn')?.value.trim();
+  const hasFile = !!_acadFileB64;
+  const hasNlp = !!nlp;
+  if (!hasFile && !hasNlp) return toast('파일 또는 자연어 입력이 필요합니다', 'warn');
+
+  const btn = document.getElementById('acadAnalyzeBtn');
+  btn.disabled = true; btn.innerHTML = '<div class="spinner" style="width:18px;height:18px;margin:0 auto"></div>';
+
+  try {
+    const today = toStr(new Date());
+    const roomNames = classrooms.map(c => c.name).join(', ');
+
+    const extractPrompt = `오늘: ${today}\n등록된 강의실 목록: ${roomNames || '(없음)'}\n\n이 문서는 학교 강의실 사용 일정표입니다. 각 강의실별 일정을 빠짐없이 추출해 JSON 배열로만 반환하세요.\n\n형식:\n[\n  {\n    "classroom": "강의실명 (등록된 강의실명과 최대한 일치시킬 것)",\n    "date": "YYYY-MM-DD",\n    "time_start": "HH:MM",\n    "time_end": "HH:MM",\n    "course_name": "과목명 또는 강의명",\n    "instructor": "교수명 (없으면 null)",\n    "department": "학과 (없으면 null)"\n  }\n]\n\n주의: 날짜가 요일로만 표시된 경우 가장 가까운 해당 요일 날짜로 변환하세요. JSON 배열만 반환, 설명 없이.`;
+
+    let messages;
+    if (hasFile && _acadFileType === 'application/pdf') {
+      // PDF: document content block (anthropic-beta: pdfs-2024-09-25)
+      const contentBlocks = [
+        { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: _acadFileB64 } },
+        { type: 'text', text: extractPrompt + (hasNlp ? `\n\n추가 지시: ${nlp}` : '') }
+      ];
+      messages = [{ role: 'user', content: contentBlocks }];
+    } else if (hasFile && _acadFileType.startsWith('image/')) {
+      // 이미지: vision API
+      messages = [{ role:'user', content:[
+        { type:'image', source:{ type:'base64', media_type:_acadFileType, data:_acadFileB64 } },
+        { type:'text', text: extractPrompt + (hasNlp ? `\n\n추가 지시: ${nlp}` : '') }
+      ]}];
+    } else {
+      // 자연어 텍스트만
+      const prompt = `오늘: ${today}\n등록된 강의실 목록: ${roomNames || '(없음)'}\n\n입력: "${nlp}"\n\n위 내용에서 강의실 사용 일정을 추출해 JSON 배열로만 반환하세요.\n\n형식:\n[\n  {\n    "classroom": "강의실명",\n    "date": "YYYY-MM-DD",\n    "time_start": "HH:MM",\n    "time_end": "HH:MM",\n    "course_name": "과목명 또는 목적",\n    "instructor": "교수명 또는 null",\n    "department": "학과 또는 null"\n  }\n]\n\nJSON 배열만 반환. 설명 없이.`;
+      messages = [{ role:'user', content: prompt }];
+    }
+
+    const res = await claudeFetch({ model:'claude-haiku-4-5-20251001', max_tokens:2000, messages });
+    if (!res.ok) throw new Error(`AI 오류 ${res.status}`);
+    const d = await res.json();
+    const text = d.content?.[0]?.text || '';
+    const m = text.match(/\[[\s\S]*\]/);
+    if (!m) throw new Error('파싱 실패 — AI 응답에 JSON 배열 없음');
+    _acadParsed = JSON.parse(m[0]);
+    if (!Array.isArray(_acadParsed) || !_acadParsed.length) {
+      document.getElementById('acadPreviewWrap').hidden = true;
+      document.getElementById('acadEmptyMsg').hidden = false;
+      return;
+    }
+    _acadParsed.forEach((r, i) => r._idx = i);
+    acadRenderPreview();
+  } catch(e) {
+    toast('분석 실패: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/><path d="M11 8v6M8 11h6"/></svg><br><span style="font-size:11px">AI 분석</span>`;
+  }
+}
+
+function acadRenderPreview() {
+  const wrap = document.getElementById('acadPreviewWrap');
+  const body = document.getElementById('acadPreviewBody');
+  const emptyMsg = document.getElementById('acadEmptyMsg');
+  const cnt = document.getElementById('acadPreviewCount');
+  if (!_acadParsed.length) { wrap.hidden=true; emptyMsg.hidden=false; return; }
+  wrap.hidden = false; emptyMsg.hidden = true;
+  cnt.textContent = `— ${_acadParsed.length}건`;
+
+  // Sort: classroom name → date → time
+  const sorted = [..._acadParsed].sort((a,b) => {
+    const cn = (a.classroom||'').localeCompare(b.classroom||'', 'ko');
+    if (cn) return cn;
+    const dn = (a.date||'').localeCompare(b.date||'');
+    if (dn) return dn;
+    return (a.time_start||'').localeCompare(b.time_start||'');
+  });
+
+  const roomColor = nm => (classrooms.find(c => c.name === nm)?.color) || '#7c3aed';
+
+  body.innerHTML = sorted.map(r => {
+    const rc = roomColor(r.classroom);
+    return `<tr style="border-bottom:1px solid var(--border)" id="acadRow_${r._idx}">
+      <td style="padding:7px 10px;text-align:center">
+        <input type="checkbox" class="acad-chk" data-idx="${r._idx}" checked onchange="acadChkRow(this)" style="accent-color:var(--academic)">
+      </td>
+      <td style="padding:7px 10px">
+        <span style="background:${rc};color:#fff;border-radius:5px;padding:2px 7px;font-size:11px;font-weight:600">${esc(r.classroom||'미확인')}</span>
+      </td>
+      <td style="padding:7px 10px;font-size:12px;color:var(--text-sm);white-space:nowrap">${esc(r.date||'')}</td>
+      <td style="padding:7px 10px;font-size:12px;white-space:nowrap">${esc((r.time_start||'')+'~'+(r.time_end||''))}</td>
+      <td style="padding:7px 10px;font-size:12px">${esc(r.course_name||'')}</td>
+      <td style="padding:7px 10px;font-size:12px;color:var(--gray)">${esc(r.instructor||'')}</td>
+      <td style="padding:7px 10px;font-size:12px;color:var(--gray)">${esc(r.department||'')}</td>
+      <td style="padding:7px 10px;text-align:center">
+        <button class="adm-act adm-act-del" onclick="acadRemoveRow(${r._idx})" title="항목 제거">제거</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function acadRemoveRow(idx) {
+  _acadParsed = _acadParsed.filter(r => r._idx !== idx);
+  acadRenderPreview();
+}
+
+function acadChkRow(chk) {
+  const allChk = document.getElementById('acadChkAll');
+  const all = document.querySelectorAll('.acad-chk');
+  const checked = document.querySelectorAll('.acad-chk:checked');
+  if (allChk) allChk.indeterminate = checked.length > 0 && checked.length < all.length;
+  if (allChk) allChk.checked = checked.length === all.length;
+}
+
+function acadChkAllChange(chk) {
+  document.querySelectorAll('.acad-chk').forEach(c => c.checked = chk.checked);
+}
+
+function acadToggleAll() {
+  const allChk = document.getElementById('acadChkAll');
+  if (allChk) { allChk.checked = !allChk.checked; acadChkAllChange(allChk); }
+}
+
+async function acadImport() {
+  const selected = [...document.querySelectorAll('.acad-chk:checked')].map(c => {
+    const idx = parseInt(c.dataset.idx);
+    return _acadParsed.find(r => r._idx === idx);
+  }).filter(Boolean);
+
+  if (!selected.length) return toast('등록할 항목을 선택해주세요', 'warn');
+
+  const groupName = (document.getElementById('acadGroupName')?.value || '').trim();
+  if (!groupName) return toast('그룹명을 입력해주세요 (예: 2026-2학기)', 'warn');
+
+  const btn = document.getElementById('acadImportBtn');
+  btn.disabled = true; btn.textContent = '등록 중...';
+
+  try {
+    const batchId = 'acad:' + groupName;
+    const records = selected.map(r => {
+      const cls = classrooms.find(c => c.name === r.classroom);
+      const color = cls?.color || '#7c3aed';
+      const ts = r.time_start || '09:00', te = r.time_end || '18:00';
+      const dt = r.date || toStr(new Date());
+      return {
+        classroom_name: r.classroom || '미확인',
+        classroom_color: color,
+        date_start: dt, date_end: dt,
+        time_start: ts, time_end: te,
+        purpose: r.course_name || '학사과정',
+        department: r.department || null,
+        requester_name: r.instructor || null,
+        contact: null,
+        formatted_label: mkLabel(r.classroom || '미확인', ts, te, r.course_name || '학사과정'),
+        password_hash: null,
+        batch_id: batchId,
+        label_type: 'academic',
+        is_rental: false,
+        status: 'active',
+      };
+    });
+
+    const { error } = await sb.from('reservations').insert(records);
+    if (error) throw error;
+
+    toast(`학사과정 일정 ${records.length}건이 등록되었습니다 (그룹: ${groupName})`, 'success');
+    _acadParsed = [];
+    document.getElementById('acadPreviewWrap').hidden = true;
+    document.getElementById('acadNlpIn').value = '';
+    acadClearFile();
+    await loadRvs();
+    await acadLoadGroups();
+  } catch(e) {
+    toast('등록 실패: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg> 선택 항목 등록`;
+  }
+}
+
+async function acadLoadGroups() {
+  const el = document.getElementById('acadGroupList');
+  if (!el) return;
+  const { data, error } = await sb.from('reservations')
+    .select('batch_id,date_start,date_end')
+    .is('deleted_at', null)
+    .eq('label_type', 'academic')
+    .not('batch_id', 'is', null)
+    .order('date_start', { ascending: false });
+  if (error) { el.innerHTML = `<div style="color:var(--red);font-size:12px">${error.message}</div>`; return; }
+
+  if (!data || !data.length) {
+    el.innerHTML = '<div style="text-align:center;padding:24px;color:var(--gray);font-size:12px">등록된 학사과정 그룹이 없습니다</div>';
+    return;
+  }
+
+  // batch_id 별로 그룹핑 (acad: 접두어 포함)
+  const groups = {};
+  data.forEach(r => {
+    const bid = r.batch_id;
+    if (!bid) return;
+    if (!groups[bid]) groups[bid] = { count: 0, minDate: r.date_start, maxDate: r.date_end };
+    groups[bid].count++;
+    if (r.date_start < groups[bid].minDate) groups[bid].minDate = r.date_start;
+    if (r.date_end > groups[bid].maxDate) groups[bid].maxDate = r.date_end;
+  });
+
+  // acad: 접두어 그룹을 먼저, 나머지는 그다음 (레거시 acad- prefix 포함)
+  const sorted = Object.entries(groups).sort((a, b) => b[1].minDate.localeCompare(a[1].minDate));
+
+  el.innerHTML = sorted.map(([bid, g]) => {
+    const displayName = bid.startsWith('acad:') ? bid.slice(5) : bid;
+    const fmtDate = d => d ? d.replace(/-/g, '.') : '';
+    const dateRange = g.minDate === g.maxDate ? fmtDate(g.minDate) : `${fmtDate(g.minDate)} ~ ${fmtDate(g.maxDate)}`;
+    return `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border:1px solid var(--border);border-radius:var(--r);background:var(--bg)">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="display:inline-flex;align-items:center;justify-content:center;width:8px;height:8px;border-radius:50%;background:var(--academic);flex-shrink:0"></span>
+        <div>
+          <div style="font-size:13px;font-weight:700;color:var(--text)">${displayName}</div>
+          <div style="font-size:11px;color:var(--gray);margin-top:2px">${dateRange} · ${g.count}건</div>
+        </div>
+      </div>
+      <button class="btn btn-xs btn-outline" onclick="acadDeleteGroup('${bid.replace(/'/g,'\\\'')}')" style="color:var(--red);border-color:var(--red);flex-shrink:0">일괄 삭제</button>
+    </div>`;
+  }).join('');
+}
+
+async function acadDeleteGroup(batchId) {
+  const displayName = batchId.startsWith('acad:') ? batchId.slice(5) : batchId;
+  if (!confirm(`"${displayName}" 그룹의 학사과정 일정을 모두 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.`)) return;
+  const now = new Date().toISOString();
+  const { error, count } = await sb.from('reservations')
+    .update({ deleted_at: now })
+    .eq('batch_id', batchId)
+    .eq('label_type', 'academic')
+    .is('deleted_at', null);
+  if (error) return toast('삭제 실패: ' + error.message, 'error');
+  toast(`"${displayName}" 그룹 일정이 삭제되었습니다`, 'success');
+  await loadRvs();
+  await acadLoadGroups();
+}
+
+async function acadDeleteByRange() {
+  const from = document.getElementById('acadDelFrom')?.value;
+  const to = document.getElementById('acadDelTo')?.value;
+  if (!from && !to) return toast('삭제할 기간을 입력해주세요', 'warn');
+  const fmtFrom = from || '0000-01-01';
+  const fmtTo = to || '9999-12-31';
+  if (from && to && from > to) return toast('시작일이 종료일보다 늦습니다', 'warn');
+  if (!confirm(`학사과정 일정 중\n${from || '처음'} ~ ${to || '끝'} 기간의 일정을 모두 삭제하시겠습니까?`)) return;
+  const now = new Date().toISOString();
+  let q = sb.from('reservations')
+    .update({ deleted_at: now })
+    .eq('label_type', 'academic')
+    .is('deleted_at', null)
+    .lte('date_start', fmtTo)
+    .gte('date_end', fmtFrom);
+  const { error } = await q;
+  if (error) return toast('삭제 실패: ' + error.message, 'error');
+  toast('기간 내 학사과정 일정이 삭제되었습니다', 'success');
+  document.getElementById('acadDelFrom').value = '';
+  document.getElementById('acadDelTo').value = '';
+  await loadRvs();
+  await acadLoadGroups();
 }
 
 /* ── 대관 관리 탭 ── */
@@ -3284,6 +3991,82 @@ async function callAI(prompt) {
   return '(AI 키 미설정) 입력하신 목적을 그대로 사용합니다.';
 }
 
+/* ── 자연어 AI 일정 입력 ── */
+let _nlpParsed = null;
+
+async function runNlp() {
+  const input = document.getElementById('nlpInput').value.trim();
+  if (!input) return toast('자연어로 일정을 설명해주세요', 'warn');
+  const btn = document.getElementById('nlpBtn');
+  btn.disabled = true;
+  const origHtml = btn.innerHTML;
+  btn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg> 분석 중...';
+  try {
+    _nlpParsed = await _callNlpAI(input, null);
+    _showNlpPreview(_nlpParsed);
+    showM('nlpModal');
+  } catch (e) {
+    toast('AI 분석 실패: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false; btn.innerHTML = origHtml;
+  }
+}
+
+async function runNlpRefine() {
+  if (!_nlpParsed) return;
+  const refine = document.getElementById('nlpRefineIn').value.trim();
+  if (!refine) return;
+  const btn = document.getElementById('nlpRefineBtn');
+  btn.disabled = true; btn.textContent = '처리 중...';
+  try {
+    _nlpParsed = await _callNlpAI(refine, _nlpParsed);
+    _showNlpPreview(_nlpParsed);
+    document.getElementById('nlpRefineIn').value = '';
+  } catch (e) {
+    toast('수정 실패: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false; btn.textContent = '적용';
+  }
+}
+
+async function _callNlpAI(input, prev) {
+  const today = toStr(new Date());
+  const prompt = prev
+    ? `오늘: ${today}\n기존 파싱 결과: ${JSON.stringify(prev)}\n추가 지시: "${input}"\n위 지시를 반영하여 JSON을 수정해주세요. 기존 값에서 언급되지 않은 필드는 유지하세요.\n\nJSON 형식:\n{"classroom":"강의실명","dates":["YYYY-MM-DD"],"time_start":"HH:MM","time_end":"HH:MM","purpose":"목적","dept":null,"requester_name":null,"contact_phone":null}\nJSON만 출력하세요.`
+    : `오늘: ${today}\n다음 설명에서 강의실 예약 정보를 JSON으로 추출하세요.\n설명: "${input}"\n\nJSON 형식:\n{"classroom":"강의실명(예:301호)","dates":["YYYY-MM-DD"],"time_start":"HH:MM","time_end":"HH:MM","purpose":"목적","dept":null,"requester_name":null,"contact_phone":null}\n규칙: 날짜 범위면 모든 날짜 나열, 시간 없으면 null, 강의실 언급 없으면 null, JSON만 출력하세요.`;
+
+  const res = await claudeFetch({ model: 'claude-haiku-4-5-20251001', max_tokens: 600, messages: [{ role: 'user', content: prompt }] });
+  if (!res.ok) throw new Error(`서버 오류 ${res.status}`);
+  const d = await res.json();
+  const text = d.content?.[0]?.text || '';
+  const m = text.match(/\{[\s\S]*\}/);
+  if (!m) throw new Error('응답 파싱 실패');
+  return JSON.parse(m[0]);
+}
+
+function _showNlpPreview(d) {
+  const el = document.getElementById('nlpPreview');
+  const rows = [];
+  if (d.classroom) rows.push(`<div class="nlp-row"><span>강의실</span><span>${esc(d.classroom)}</span></div>`);
+  if (d.dates?.length) rows.push(`<div class="nlp-row"><span>날짜</span><span>${d.dates.join(', ')}</span></div>`);
+  if (d.time_start) rows.push(`<div class="nlp-row"><span>시간</span><span>${d.time_start} ~ ${d.time_end || '?'}</span></div>`);
+  if (d.purpose) rows.push(`<div class="nlp-row"><span>목적</span><span>${esc(d.purpose)}</span></div>`);
+  if (d.dept) rows.push(`<div class="nlp-row"><span>부서</span><span>${esc(d.dept)}</span></div>`);
+  if (d.requester_name) rows.push(`<div class="nlp-row"><span>신청자</span><span>${esc(d.requester_name)}</span></div>`);
+  if (d.contact_phone) rows.push(`<div class="nlp-row"><span>연락처</span><span>${esc(d.contact_phone)}</span></div>`);
+  el.innerHTML = rows.length ? rows.join('') : '<div style="color:var(--gray);font-size:12px;padding:4px 0">추출된 정보가 없습니다.</div>';
+}
+
+function applyNlpResult(mode) {
+  if (!_nlpParsed) return;
+  closeNlpModal();
+  const merge = (mode === 'merge');
+  _ocrApply(_nlpParsed, false, merge);
+  document.getElementById('nlpInput').value = '';
+}
+
+function closeNlpModal() { hideM('nlpModal'); }
+
 /* ── OCR 이미지 자동 입력 ── */
 let _ocrB64 = null, _ocrMime = null;
 
@@ -3402,30 +4185,52 @@ JSON만 출력하세요. 날짜가 여러 개면 모두 포함, 기간이면 모
   }
 }
 
-function _ocrApply(d, isRental) {
+function _ocrApply(d, isRental, merge) {
+  const set = (id, val) => { const el = document.getElementById(id); if (el && (merge ? !el.value : true)) el.value = val; };
+  // classroom
+  if (d.classroom) {
+    const roomSel = document.getElementById('roomSel');
+    if (roomSel) {
+      const keyword = d.classroom.replace(/\s/g, '').toLowerCase();
+      let matched = null;
+      for (const opt of roomSel.options) {
+        if (!opt.value) continue;
+        const optText = opt.text.replace(/\s/g, '').toLowerCase();
+        if (optText === keyword || optText.includes(keyword) || keyword.includes(optText)) {
+          matched = opt.value; break;
+        }
+      }
+      if (matched) { roomSel.value = matched; onRoomChange(); }
+    }
+  }
   // dates
   if (d.dates && d.dates.length) {
     const valid = d.dates.filter(s => /^\d{4}-\d{2}-\d{2}$/.test(s));
     if (valid.length) {
-      // setMode 먼저 호출 (내부에서 selDates=[]) → 그 다음 selDates 재설정
-      if (selMode !== 'multi' && valid.length > 1) setMode('multi');
-      selDates = valid.sort();
+      if (merge && selDates.length) {
+        const merged = [...new Set([...selDates, ...valid])].sort();
+        if (selMode !== 'multi') setMode('multi');
+        selDates = merged;
+      } else {
+        if (selMode !== 'multi' && valid.length > 1) setMode('multi');
+        selDates = valid.sort();
+      }
       updMultiBanner(); renderCal(); renderDateTags();
     }
   }
   // time
-  if (d.time_start) { const el = document.getElementById('tStart'); if (el) el.value = d.time_start; }
-  if (d.time_end) { const el = document.getElementById('tEnd'); if (el) el.value = d.time_end; }
+  if (d.time_start) set('tStart', d.time_start);
+  if (d.time_end) set('tEnd', d.time_end);
   // purpose
-  if (d.purpose) { const el = document.getElementById('purposeIn'); if (el && !el.value) el.value = d.purpose; }
+  if (d.purpose) set('purposeIn', d.purpose);
   // requester
-  if (d.requester_name) { const el = document.getElementById('reqName'); if (el && !el.value) el.value = d.requester_name; }
-  if (d.contact_name) { const el = document.getElementById('reqName'); if (el && !el.value) el.value = d.contact_name; }
-  if (d.contact_phone) { const el = document.getElementById('reqContact'); if (el && !el.value) el.value = d.contact_phone; }
+  if (d.requester_name) set('reqName', d.requester_name);
+  if (d.contact_name) set('reqName', d.contact_name);
+  if (d.contact_phone) set('reqContact', d.contact_phone);
   // rental fields
   if (isRental) {
-    if (d.course_name) { const el = document.getElementById('courseNameIn'); if (el && !el.value) el.value = d.course_name; }
-    if (d.daily_fee != null) { const el = document.getElementById('dailyFeeIn'); if (el && !el.value) el.value = d.daily_fee; }
+    if (d.course_name) set('courseNameIn', d.course_name);
+    if (d.daily_fee != null) set('dailyFeeIn', d.daily_fee);
   }
   // dept
   if (d.dept) {
@@ -3447,10 +4252,57 @@ function subscribeRT() {
 function showM(id) {
   document.getElementById(id).classList.add('show');
   document.body.style.overflow = 'hidden';
+  _initModalSwipe(id);
 }
 function hideM(id) {
-  document.getElementById(id).classList.remove('show');
+  const el = document.getElementById(id);
+  const box = el && el.querySelector('.modal-box');
+  if (box) box.style.transform = '';
+  el.classList.remove('show');
   if (!document.querySelector('.modal.show')) document.body.style.overflow = '';
+}
+function _initModalSwipe(id) {
+  const modal = document.getElementById(id);
+  if (!modal) return;
+  const box = modal.querySelector('.modal-box');
+  if (!box || box._swipeInited) return;
+  box._swipeInited = true;
+  let startY = 0, curY = 0, dragging = false;
+
+  function attach(el, scrollEl) {
+    if (!el) return;
+    el.style.cursor = 'grab';
+    el.addEventListener('touchstart', e => {
+      // 스크롤 영역은 맨 위일 때만 드래그 시작
+      if (scrollEl && scrollEl.scrollTop > 2) return;
+      startY = e.touches[0].clientY; dragging = true; curY = 0;
+      box.style.transition = 'none';
+    }, { passive: true });
+    el.addEventListener('touchmove', e => {
+      if (!dragging) return;
+      curY = e.touches[0].clientY - startY;
+      if (curY < 0) { curY = 0; }
+      box.style.transform = `scale(1) translateY(${curY}px)`;
+    }, { passive: true });
+    el.addEventListener('touchend', () => {
+      if (!dragging) return;
+      dragging = false;
+      box.style.transition = '';
+      if (curY > 100) { box.style.transform = ''; hideM(id); }
+      else { box.style.transform = ''; }
+    });
+  }
+
+  const hdr    = box.querySelector('.modal-hdr');
+  const handle = box.querySelector('.adm-sheet-handle');
+  const body   = box.querySelector('.modal-body');
+  const tabs   = box.querySelector('.adm-tabs');
+
+  attach(hdr, null);
+  attach(handle, null);
+  // 본문·탭 영역: 스크롤이 맨 위일 때만 드래그 허용
+  attach(body, body);
+  attach(tabs, body);
 }
 
 /* ── Toast ── */

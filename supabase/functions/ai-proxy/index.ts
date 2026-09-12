@@ -60,6 +60,7 @@ Deno.serve(async (req) => {
             "x-api-key": upstream.key,
             "authorization": "Bearer " + upstream.key,
             "anthropic-version": "2023-06-01",
+            "anthropic-beta": "pdfs-2024-09-25",
           },
           body: JSON.stringify(payload),
         });
@@ -73,6 +74,7 @@ Deno.serve(async (req) => {
           "content-type": "application/json",
           "x-api-key": key,
           "anthropic-version": "2023-06-01",
+          "anthropic-beta": "pdfs-2024-09-25",
         },
         body: JSON.stringify(payload),
       });
@@ -105,6 +107,21 @@ Deno.serve(async (req) => {
       return json(await r.json(), r.status);
     }
 
+    // ── openai: OpenAI Chat Completions ──────────────────────────────────
+    if (service === "openai") {
+      const key = Deno.env.get("OPENAI_API_KEY");
+      if (!key) return json({ error: "OPENAI_API_KEY not set" }, 500);
+      const r = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "Authorization": `Bearer ${key}`,
+        },
+        body: JSON.stringify(payload),
+      });
+      return json(await r.json(), r.status);
+    }
+
     // ── gcal-public: Google Calendar public iCal proxy ──────────────────
     if (service === "gcal-public") {
       const calId  = String(payload.calId  || "");
@@ -118,6 +135,58 @@ Deno.serve(async (req) => {
 
       const icalText = await icalRes.text();
       return json({ items: gcalParseIcal(icalText, tMinRaw, tMaxRaw) });
+    }
+
+    // ── naver: NAVER Cloud Platform API HUB (검색 + DataLab) ───────────────
+    if (service === "naver") {
+      const NCP_ID     = "2rpv5zhg9g";
+      const NCP_SECRET = "6Le9mBkkJGGEJM3E4RxNBf3j0g4t0irV8qNEcXYQ";
+      const apiType    = String(payload.type || "blog");
+
+      // DataLab 검색어트렌드 (POST)
+      if (apiType === "datalab") {
+        const r = await fetch("https://naveropenapi.apigw.ntruss.com/datalab/1.0/search", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-NCP-APIGW-API-KEY-ID": NCP_ID,
+            "X-NCP-APIGW-API-KEY": NCP_SECRET,
+          },
+          body: JSON.stringify(payload.body || {}),
+        });
+        return json(await r.json(), r.status);
+      }
+
+      // DataLab 쇼핑인사이트 (POST)
+      if (apiType === "shopping") {
+        const r = await fetch("https://naveropenapi.apigw.ntruss.com/datalab/1.0/shopping/categories", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-NCP-APIGW-API-KEY-ID": NCP_ID,
+            "X-NCP-APIGW-API-KEY": NCP_SECRET,
+          },
+          body: JSON.stringify(payload.body || {}),
+        });
+        return json(await r.json(), r.status);
+      }
+
+      // 검색 API (GET) — blog | local | news | webkr | image | cafearticle
+      const query   = String(payload.query || "");
+      const display = String(payload.display || "10");
+      const start   = String(payload.start  || "1");
+      const sort    = String(payload.sort   || "sim");
+      if (!query) return json({ error: "query required" }, 400);
+
+      const qs  = new URLSearchParams({ query, display, start, sort });
+      const url = `https://naveropenapi.apigw.ntruss.com/v1/search/${apiType}?${qs}`;
+      const r   = await fetch(url, {
+        headers: {
+          "X-NCP-APIGW-API-KEY-ID": NCP_ID,
+          "X-NCP-APIGW-API-KEY": NCP_SECRET,
+        },
+      });
+      return json(await r.json(), r.status);
     }
 
     return json({ error: "unknown service: " + service }, 400);
