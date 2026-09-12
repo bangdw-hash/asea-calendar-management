@@ -395,14 +395,20 @@ header{
 }
 .modal.show .modal-box{transform:scale(1)}
 .modal-box.wide{max-width:980px}
-/* ── Admin modal → bottom sheet ── */
+/* ── Admin modal → bottom sheet (mobile) / right drawer (PC) ── */
 #adminModal{align-items:flex-end;padding:0}
-#adminModal .modal-box{max-width:100%;width:100%;height:67vh;max-height:none;border-radius:16px 16px 0 0;transform:translateY(100%);display:flex;flex-direction:column}
+#adminModal .modal-box{max-width:100%;width:100%;height:67vh;max-height:none;border-radius:16px 16px 0 0;transform:translateY(100%);display:flex;flex-direction:column;overflow:hidden}
 #adminModal .modal-body{flex:1;overflow-y:auto}
 #adminModal.show .modal-box{transform:translateY(0)}
 .adm-sheet-handle{width:44px;height:4px;background:#d1d5db;border-radius:2px;margin:10px auto 4px;cursor:grab;flex-shrink:0}
-#adminModal .modal-hdr{cursor:grab;user-select:none}
-#adminModal .modal-hdr{background:#fff;border-radius:16px 16px 0 0}
+#adminModal .modal-hdr{cursor:grab;user-select:none;background:#fff;border-radius:16px 16px 0 0}
+@media(min-width:768px){
+  #adminModal{align-items:stretch;justify-content:flex-end}
+  #adminModal .modal-box{width:480px;max-width:480px;height:100vh;max-height:none;border-radius:0;transform:translateX(100%)}
+  #adminModal.show .modal-box{transform:translateX(0) !important}
+  #adminModal .modal-hdr{border-radius:0;cursor:default;user-select:auto}
+  .adm-sheet-handle{display:none}
+}
 .modal-hdr{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid var(--border);position:sticky;top:0;background:#fff;z-index:1}
 .modal-title{font-size:15px;font-weight:700}
 .modal-body{padding:20px}
@@ -3019,10 +3025,23 @@ async function renderAcademicTab() {
       <div style="border:1px solid var(--border);border-radius:var(--r);padding:16px">
         <div style="font-size:13px;font-weight:700;margin-bottom:12px;color:var(--text)">새 학사과정 일정 등록</div>
 
-        <!-- 그룹명 입력 -->
-        <div style="margin-bottom:10px">
-          <label style="font-size:11px;font-weight:700;color:var(--text-sm);display:block;margin-bottom:4px">그룹명 <span style="color:var(--red)">*</span> <span style="font-weight:400;color:var(--gray)">(예: 2026-2학기, 2026년 여름학기)</span></label>
-          <input id="acadGroupName" class="fi" type="text" placeholder="그룹명을 입력하세요" style="width:100%;font-size:13px">
+        <!-- 그룹명 + 학기 기간 -->
+        <div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:10px">
+          <div style="flex:1;min-width:160px">
+            <label style="font-size:11px;font-weight:700;color:var(--text-sm);display:block;margin-bottom:4px">그룹명 <span style="color:var(--red)">*</span> <span style="font-weight:400;color:var(--gray)">(예: 2026-2학기)</span></label>
+            <input id="acadGroupName" class="fi" type="text" placeholder="그룹명을 입력하세요" style="width:100%;font-size:13px">
+          </div>
+          <div style="display:flex;gap:6px;align-items:flex-end">
+            <div>
+              <label style="font-size:11px;font-weight:700;color:var(--text-sm);display:block;margin-bottom:4px">학기 시작일 <span style="color:var(--red)">*</span></label>
+              <input id="acadDateFrom" class="fi" type="date" style="font-size:13px;width:140px">
+            </div>
+            <span style="font-size:12px;color:var(--gray);padding-bottom:8px">~</span>
+            <div>
+              <label style="font-size:11px;font-weight:700;color:var(--text-sm);display:block;margin-bottom:4px">학기 종료일 <span style="color:var(--red)">*</span></label>
+              <input id="acadDateTo" class="fi" type="date" style="font-size:13px;width:140px">
+            </div>
+          </div>
         </div>
 
         <!-- 파일 업로드 -->
@@ -3186,6 +3205,18 @@ async function acadAnalyze() {
   const hasNlp = !!nlp;
   if (!hasFile && !hasNlp) return toast('파일 또는 자연어 입력이 필요합니다', 'warn');
 
+  const semFrom = document.getElementById('acadDateFrom')?.value || '';
+  const semTo   = document.getElementById('acadDateTo')?.value   || '';
+  if (!semFrom || !semTo) return toast('학기 시작일과 종료일을 먼저 입력해주세요', 'warn');
+
+  /* PDF base64 크기 체크 — Supabase Edge Function 6MB 한도 */
+  if (hasFile && _acadFileType === 'application/pdf') {
+    const approxBytes = (_acadFileB64.length * 3) / 4;
+    if (approxBytes > 4 * 1024 * 1024) {
+      return toast('PDF 파일이 너무 큽니다 (4MB 이하 권장). 파일을 압축하거나 이미지로 변환 후 다시 시도해 주세요.', 'warn');
+    }
+  }
+
   const btn = document.getElementById('acadAnalyzeBtn');
   btn.disabled = true; btn.innerHTML = '<div class="spinner" style="width:18px;height:18px;margin:0 auto"></div>';
 
@@ -3193,21 +3224,22 @@ async function acadAnalyze() {
     const today = toStr(new Date());
     const roomNames = classrooms.map(c => c.name).join(', ');
 
-    /* 반복 일정 압축 형식 — AI가 주간 반복 패턴을 하나의 객체로 반환, JS에서 날짜 전개 */
+    /* 학기 기간은 관리자가 입력 → AI는 요일/시간/과목만 추출 */
     const extractPrompt =
-`오늘: ${today}
+`학기 기간: ${semFrom} ~ ${semTo}
 등록된 강의실 목록: ${roomNames || '(없음)'}
 
 이 문서는 대학교 학기 강의실 배정표(강의실 사용 일정)입니다.
 각 수업을 아래 형식의 JSON 배열로 추출하세요.
+date_from/date_to는 위 학기 기간을 그대로 사용하세요.
 
 【출력 형식】
 [
   {
     "classroom": "강의실명(등록 목록과 일치시킬 것)",
     "day_of_week": "월수금",
-    "date_from": "YYYY-MM-DD",
-    "date_to": "YYYY-MM-DD",
+    "date_from": "${semFrom}",
+    "date_to": "${semTo}",
     "time_start": "HH:MM",
     "time_end": "HH:MM",
     "course_name": "과목명",
@@ -3221,22 +3253,24 @@ async function acadAnalyze() {
 - 교시→시간: 1교시 09:00~09:50, 2교시 10:00~10:50, 3교시 11:00~11:50,
   4교시 13:00~13:50, 5교시 14:00~14:50, 6교시 15:00~15:50,
   7교시 16:00~16:50, 8교시 17:00~17:50 (교시 범위면 첫 교시 시작~마지막 교시 종료)
-- 학기 기간이 명시되지 않으면 오늘 기준으로 추정
 - 반드시 순수 JSON 배열만 반환. 마크다운 코드블록(\`\`\`) 없이.${hasNlp ? `\n추가 지시: ${nlp}` : ''}`;
 
     const nlpPrompt =
-`오늘: ${today}
+`학기 기간: ${semFrom} ~ ${semTo}
 등록된 강의실 목록: ${roomNames || '(없음)'}
 
 입력: "${nlp}"
 
 위 내용에서 강의실 사용 일정을 추출해 JSON 배열로만 반환하세요.
+날짜 범위가 명시되지 않은 경우 학기 기간을 사용하세요.
 
 【출력 형식】
 [
   {
     "classroom": "강의실명",
-    "date": "YYYY-MM-DD",
+    "day_of_week": "월수금",
+    "date_from": "${semFrom}",
+    "date_to": "${semTo}",
     "time_start": "HH:MM",
     "time_end": "HH:MM",
     "course_name": "과목명 또는 목적",
@@ -4365,6 +4399,8 @@ function _initModalSwipe(id) {
   if (!modal) return;
   const box = modal.querySelector('.modal-box');
   if (!box || box._swipeInited) return;
+  /* PC에서 adminModal은 우측 드로어 — 스와이프 불필요 */
+  if (id === 'adminModal' && window.innerWidth >= 768) { box._swipeInited = true; return; }
   box._swipeInited = true;
   let startY = 0, curY = 0, dragging = false;
 
