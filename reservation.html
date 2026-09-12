@@ -472,18 +472,20 @@ header{
   .hd-title{font-size:14px}
   .frow{grid-template-columns:1fr}
   .cal-wrap{padding:8px}
-  /* 툴바: 3그룹이 전체 너비를 균등하게 사용 */
-  .toolbar{gap:0;padding:0 10px;height:46px;flex-wrap:nowrap;justify-content:space-between}
-  .month-nav button{width:26px;height:26px;font-size:17px}
-  .month-label{font-size:14px;min-width:auto;padding:2px 4px}
+  /* 툴바: 2줄 레이아웃 — 1줄 월 이동, 2줄 필터 */
+  .toolbar{flex-wrap:wrap;height:auto;padding:6px 12px;gap:0;row-gap:4px;align-content:center}
+  /* 1줄: 월 이동 — 전체 너비, 양쪽 끝으로 */
+  .month-nav{width:100%;justify-content:space-between}
+  .month-nav button{width:32px;height:32px;font-size:20px}
+  .month-label{font-size:17px;font-weight:700;min-width:auto;flex:1;text-align:center;padding:0}
   /* 구분선 모바일에서 숨김 */
   .toolbar .tb-sep{display:none}
-  /* 보기 모드 버튼 */
-  .view-btn{padding:0 6px;font-size:13px}
-  /* 카테고리 필터: 스와이프 제거, 우측 정렬로 나머지 공간 채우기 */
-  .cat-filter{flex:0 1 auto;overflow-x:visible;min-width:0;justify-content:flex-end}
-  .cat-chip{font-size:12px;padding:2px 0}
-  .cat-sep{padding:0 4px;font-size:12px}
+  /* 2줄: 보기 모드 + 카테고리 — 전체 너비, space-between */
+  .view-toggle{flex-shrink:0}
+  .view-btn{padding:0 8px;font-size:14px;height:28px}
+  .cat-filter{flex:1;overflow-x:visible;min-width:0;justify-content:flex-end}
+  .cat-chip{font-size:14px;padding:2px 0}
+  .cat-sep{padding:0 6px;font-size:14px}
   .btn-cta-rental,.btn-cta-new{padding:5px 10px;font-size:11px}
 }
 
