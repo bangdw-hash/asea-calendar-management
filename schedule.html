@@ -1966,8 +1966,12 @@ html,body{height:100%;
       </button>
     </div>
     <div id="rv-detail-body" style="padding:16px 20px;display:flex;flex-direction:column;gap:8px;max-height:70vh;overflow-y:auto"></div>
-    <div style="padding:12px 20px 16px;display:flex;justify-content:flex-end;border-top:1px solid var(--color-border)">
-      <button onclick="closeRvDetail()" class="btn btn-secondary btn-sm">닫기</button>
+    <div style="padding:12px 20px 16px;display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--color-border)">
+      <button id="rv-detail-remove-btn" onclick="removeLinkedItem()" class="btn btn-sm" style="background:#fee2e2;color:#dc2626;border:1px solid #fca5a5;display:none">
+        <svg width="14" height="14" viewBox="0 0 18 18" fill="none" style="vertical-align:-2px;margin-right:4px"><path d="M3 5h12M8 5V3h2v2M7 8v5M11 8v5M4 5l1 10h8l1-10" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        일정에서 제거
+      </button>
+      <button onclick="closeRvDetail()" class="btn btn-secondary btn-sm" style="margin-left:auto">닫기</button>
     </div>
   </div>
 </div>
@@ -2338,7 +2342,7 @@ async function loadLinkedItems() {
   const dateE = `${last.getFullYear()}-${pad2(last.getMonth()+1)}-${pad2(last.getDate())}`;
   try {
     const r = await fetch(
-      `${SB_URL}/rest/v1/schedule_linked_items?target_date=gte.${dateS}&target_date=lte.${dateE}&unlinked_at=is.null&select=target_date,label,classroom_color,reservation_id&order=target_date`,
+      `${SB_URL}/rest/v1/schedule_linked_items?target_date=gte.${dateS}&target_date=lte.${dateE}&unlinked_at=is.null&select=id,target_date,label,classroom_color,reservation_id&order=target_date`,
       { headers: { apikey: SB_ANON, Authorization: 'Bearer ' + SB_ANON } }
     );
     if (!r.ok) return;
@@ -2663,7 +2667,7 @@ function renderMonth(wrap) {
       const visEvts = (isMob && allCellEvts.length > MAX_MOB) ? allCellEvts.slice(0, MAX_MOB) : allCellEvts;
       const moreCount = (isMob && allCellEvts.length > MAX_MOB) ? allCellEvts.length - MAX_MOB : 0;
       const dotsHtml = visEvts.map(ev => renderEvtItemHTML(ev, true)).join('');
-      const linkedHtml = (_linkedItems[dateKey]||[]).map(li=>`<span class="evt-dot-wrap"><span class="evt-dot rv-linked" style="background:${li.classroom_color||'#1A73E8'};--rv-color:${li.classroom_color||'#1A73E8'};cursor:pointer" title="${esc(li.label)}" onclick="event.stopPropagation();openRvDetail(${li.reservation_id||'null'},'${esc(li.label)}','${li.classroom_color||'#1A73E8'}')">${esc(li.label)}</span></span>`).join('');
+      const linkedHtml = (_linkedItems[dateKey]||[]).map(li=>`<span class="evt-dot-wrap"><span class="evt-dot rv-linked" style="background:${li.classroom_color||'#1A73E8'};--rv-color:${li.classroom_color||'#1A73E8'};cursor:pointer" title="${esc(li.label)}" onclick="event.stopPropagation();openRvDetail(${li.reservation_id||'null'},'${esc(li.label)}','${li.classroom_color||'#1A73E8'}',${li.id||'null'})">${esc(li.label)}</span></span>`).join('');
       const moreHtml = moreCount ? `<span class="evt-more-chip" onclick="event.stopPropagation();showDayEvts(${y},${m},${cell.d})">+${moreCount} 더보기</span>` : '';
       gridHtml += `<div class="${cell.cls}${holiday?' holiday':''}${allCellEvts.length||linkedHtml?' has-events':''}" data-y="${y}" data-m="${m}" data-d="${cell.d}">${numEl}${dotsHtml}${linkedHtml}${moreHtml}</div>`;
     }
@@ -6805,9 +6809,21 @@ function openModal(id) {
 })();
 
 /* ══════════════ 강의실 예약 상세 팝업 ══════════════ */
-async function openRvDetail(reservationId, fallbackLabel, color) {
+let _rvDetailLinkedItemId = null;
+let _rvDetailReservationId = null;
+
+async function openRvDetail(reservationId, fallbackLabel, color, linkedItemId) {
+  _rvDetailLinkedItemId = linkedItemId || null;
+  _rvDetailReservationId = reservationId || null;
+
   const body = document.getElementById('rv-detail-body');
   body.innerHTML = '<div style="text-align:center;padding:20px;color:var(--color-text-sec);font-size:13px">불러오는 중...</div>';
+
+  const removeBtn = document.getElementById('rv-detail-remove-btn');
+  if (removeBtn) {
+    removeBtn.style.display = (_tokenHasWrite || _isAdmin) && linkedItemId ? '' : 'none';
+  }
+
   openOverlay('rv-detail-overlay');
 
   if (!reservationId) {
@@ -6858,7 +6874,70 @@ async function openRvDetail(reservationId, fallbackLabel, color) {
   }
 }
 
-function closeRvDetail() { closeModal('rv-detail-overlay'); }
+function closeRvDetail() {
+  closeModal('rv-detail-overlay');
+  _rvDetailLinkedItemId = null;
+  _rvDetailReservationId = null;
+}
+
+async function removeLinkedItem() {
+  if (!_rvDetailLinkedItemId && !_rvDetailReservationId) return;
+  if (!confirm('이 일정을 학교 일정 캘린더에서 제거하시겠습니까?\n(예약 원본 데이터는 삭제되지 않습니다)')) return;
+
+  const removeBtn = document.getElementById('rv-detail-remove-btn');
+  if (removeBtn) { removeBtn.disabled = true; removeBtn.textContent = '처리 중...'; }
+
+  try {
+    let removed = false;
+
+    if (_rvDetailReservationId) {
+      const r = await fetch(`${SB_URL}/rest/v1/rpc/unlink_from_schedule`, {
+        method: 'POST',
+        headers: {
+          apikey: SB_ANON,
+          Authorization: 'Bearer ' + SB_ANON,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          p_reservation_id: _rvDetailReservationId,
+          p_admin_email: _userEmail || 'schedule',
+          p_unlink_all: false
+        })
+      });
+      const result = await r.json();
+      if (r.ok && result?.success !== false) removed = true;
+    }
+
+    if (!removed && _rvDetailLinkedItemId) {
+      const r2 = await fetch(
+        `${SB_URL}/rest/v1/schedule_linked_items?id=eq.${_rvDetailLinkedItemId}`,
+        {
+          method: 'PATCH',
+          headers: {
+            apikey: SB_ANON,
+            Authorization: 'Bearer ' + SB_ANON,
+            'Content-Type': 'application/json',
+            Prefer: 'return=minimal'
+          },
+          body: JSON.stringify({ unlinked_at: new Date().toISOString() })
+        }
+      );
+      if (r2.ok) removed = true;
+    }
+
+    if (removed) {
+      showToast('일정에서 제거되었습니다. (예약 원본은 유지됩니다)', 'success');
+      closeRvDetail();
+      await loadLinkedItems();
+    } else {
+      showToast('제거에 실패했습니다. 다시 시도해 주세요.', 'error');
+      if (removeBtn) { removeBtn.disabled = false; removeBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 18 18" fill="none" style="vertical-align:-2px;margin-right:4px"><path d="M3 5h12M8 5V3h2v2M7 8v5M11 8v5M4 5l1 10h8l1-10" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>일정에서 제거'; }
+    }
+  } catch(e) {
+    showToast('오류가 발생했습니다: ' + e.message, 'error');
+    if (removeBtn) { removeBtn.disabled = false; removeBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 18 18" fill="none" style="vertical-align:-2px;margin-right:4px"><path d="M3 5h12M8 5V3h2v2M7 8v5M11 8v5M4 5l1 10h8l1-10" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>일정에서 제거'; }
+  }
+}
 
 /* ══════════════ SERVICE WORKER REGISTRATION ══════════════ */
 if ('serviceWorker' in navigator) {
