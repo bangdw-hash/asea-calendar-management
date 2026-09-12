@@ -1834,7 +1834,16 @@ window.saveScheduleConfig = async function() {
     var ins = await sb.from('schedule_config').insert(cfg).select('id').single();
     if (ins.data) _schedId = ins.data.id;
   }
-  showToast('설정 저장됨', 'green');
+  // GAS 트리거 자동 업데이트
+  try {
+    await fetch(NAVER_PROXY_URL, {
+      method: 'POST',
+      body: JSON.stringify({ payload: { type: 'setup_trigger' } })
+    });
+    showToast('설정 저장 + 트리거 업데이트 완료', 'green');
+  } catch(e) {
+    showToast('설정 저장됨 (트리거 업데이트 실패)', 'orange');
+  }
 };
 
 /* ── Supabase 설정 SQL 복사 ── */
