@@ -1,27 +1,33 @@
 /**
- * Naver API 프록시 — Google Apps Script 웹앱
+ * Naver / Kakao / Google Places API 프록시 — Google Apps Script 웹앱
  *
  * [배포 방법]
- * 1. https://script.google.com 에서 새 프로젝트 생성 (또는 기존 프로젝트 열기)
- * 2. 이 코드 전체를 붙여넣기
- * 3. '배포' > '새 배포' > 유형: 웹 앱
- *    - 실행 계정: 나(Me)
- *    - 액세스 권한: 모든 사용자(Anonymous)
- * 4. 배포 URL을 복사하여 blog.html의 NAVER_PROXY_URL 값으로 교체
+ * 1. https://script.google.com 에서 프로젝트 열기
+ * 2. 이 코드 전체 붙여넣기
+ * 3. '배포' > '배포 관리' > 편집(연필) > 버전: 새 버전 > 배포
  *
  * [지원 API]
- * - local  : 네이버 지역 검색 (맛집 탭 자동완성)
- * - blog   : 블로그 검색 (플레이스 정보 수집)
- * - datalab: 데이터랩 검색어 트렌드 (트렌드 탭)
+ * - local          : 네이버 지역 검색
+ * - blog           : 네이버 블로그 검색
+ * - datalab        : 네이버 DataLab 트렌드
+ * - kakao          : 카카오 로컬 키워드 검색
+ * - gplaces_search : Google Places 텍스트 검색 (place_id 획득)
+ * - gplaces_detail : Google Places 상세 정보 (영업시간·평점·가격대 등)
  */
 
-// 지역 검색 / 블로그 검색 (developers.naver.com — 상호명 검색 앱)
+// 네이버 지역/블로그 검색 (developers.naver.com — 상호명 검색 앱)
 var SEARCH_CLIENT_ID     = 'VrnrLasu5ihp4zySJ0mX';
 var SEARCH_CLIENT_SECRET = '_4kRe_DD6O';
 
-// DataLab (NCP API Hub — BlogTrend 앱)
+// 네이버 DataLab (NCP API Hub — BlogTrend 앱)
 var NCP_KEY_ID = '2rpv5zhg9g';
 var NCP_KEY    = '6Le9mBkkJGGEJM3E4RxNBf3j0g4t0irV8qNEcXYQ';
+
+// 카카오 로컬
+var KAKAO_REST_KEY = '416b98e0cf6a33bf68249c316f76ff68';
+
+// Google Places API (New)
+var GOOGLE_PLACES_KEY = 'AIzaSyAU9S5xK6QWRtC_MOD9jPEe2Qmna5t0Ecs';
 
 function doPost(e) {
   try {
@@ -31,8 +37,12 @@ function doPost(e) {
 
     if (type === 'datalab') {
       return _datalab(payload.body);
-    } else if (type === 'local') {
-      return _search('local', payload);
+    } else if (type === 'kakao') {
+      return _kakao(payload);
+    } else if (type === 'gplaces_search') {
+      return _gplacesSearch(payload.query);
+    } else if (type === 'gplaces_detail') {
+      return _gplacesDetail(payload.placeId);
     } else {
       return _search(type, payload);
     }
@@ -41,13 +51,13 @@ function doPost(e) {
   }
 }
 
-/* ── 지역 검색 / 블로그 검색 (GET) ── */
+/* ── 네이버 지역/블로그 검색 (GET) ── */
 function _search(type, payload) {
   var params = {};
   Object.keys(payload).forEach(function(k) {
     if (k !== 'type') params[k] = payload[k];
   });
-  var qs  = Object.keys(params).map(function(k) {
+  var qs = Object.keys(params).map(function(k) {
     return encodeURIComponent(k) + '=' + encodeURIComponent(params[k]);
   }).join('&');
   var url = 'https://openapi.naver.com/v1/search/' + type + '.json?' + qs;
@@ -62,7 +72,7 @@ function _search(type, payload) {
   return _respond(JSON.parse(res.getContentText()));
 }
 
-/* ── DataLab 검색어 트렌드 (POST) ── */
+/* ── 네이버 DataLab 검색어 트렌드 (POST) ── */
 function _datalab(body) {
   var res = UrlFetchApp.fetch('https://naveropenapi.apigw.ntruss.com/datalab/v1/search', {
     method: 'post',
@@ -72,6 +82,49 @@ function _datalab(body) {
       'X-NCP-APIGW-API-KEY':    NCP_KEY
     },
     payload: JSON.stringify(body),
+    muteHttpExceptions: true
+  });
+  return _respond(JSON.parse(res.getContentText()));
+}
+
+/* ── 카카오 로컬 키워드 검색 ── */
+function _kakao(payload) {
+  var qs = 'query=' + encodeURIComponent(payload.query || '') + '&size=5';
+  var res = UrlFetchApp.fetch('https://dapi.kakao.com/v2/local/search/keyword.json?' + qs, {
+    method: 'get',
+    headers: { 'Authorization': 'KakaoAK ' + KAKAO_REST_KEY },
+    muteHttpExceptions: true
+  });
+  return _respond(JSON.parse(res.getContentText()));
+}
+
+/* ── Google Places 텍스트 검색 → place_id 획득 ── */
+function _gplacesSearch(query) {
+  var body = { textQuery: query, languageCode: 'ko' };
+  var res = UrlFetchApp.fetch('https://places.googleapis.com/v1/places:searchText', {
+    method: 'post',
+    contentType: 'application/json',
+    headers: {
+      'X-Goog-Api-Key':    GOOGLE_PLACES_KEY,
+      'X-Goog-FieldMask':  'places.id,places.displayName,places.formattedAddress,places.rating,places.userRatingCount'
+    },
+    payload: JSON.stringify(body),
+    muteHttpExceptions: true
+  });
+  return _respond(JSON.parse(res.getContentText()));
+}
+
+/* ── Google Places 상세 정보 ── */
+function _gplacesDetail(placeId) {
+  var fields = [
+    'displayName', 'formattedAddress', 'internationalPhoneNumber',
+    'regularOpeningHours', 'rating', 'userRatingCount',
+    'priceLevel', 'primaryTypeDisplayName', 'websiteUri', 'editorialSummary'
+  ].join(',');
+  var url = 'https://places.googleapis.com/v1/places/' + placeId
+    + '?languageCode=ko&fields=' + fields + '&key=' + GOOGLE_PLACES_KEY;
+  var res = UrlFetchApp.fetch(url, {
+    method: 'get',
     muteHttpExceptions: true
   });
   return _respond(JSON.parse(res.getContentText()));
