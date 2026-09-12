@@ -580,12 +580,30 @@ body {
     <small>버튼을 누르면 카메라가 켜집니다</small>
   </button>
 
-  <button class="btn btn-ghost" id="manualEntryBtn" onclick="manualSearch()" style="margin-bottom:12px;gap:8px;">
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-      <rect x="2" y="4" width="20" height="16" rx="2"/><line x1="8" y1="9" x2="16" y2="9"/><line x1="8" y1="13" x2="13" y2="13"/>
-    </svg>
-    번호 직접 입력
-  </button>
+  <!-- 직접 입력 조회 (항상 표시) -->
+  <div class="card" id="quickSearchCard" style="margin-bottom:12px">
+    <div style="font-size:12px;font-weight:700;color:var(--g500);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">번호판 직접 조회</div>
+    <div style="display:flex;gap:4px;align-items:center">
+      <input type="text" id="msPlateF" placeholder="123" maxlength="3" inputmode="numeric"
+        onkeydown="if(event.key==='Enter')doManualSearch()"
+        style="flex:3;min-width:0;border:1.5px solid var(--g200);border-radius:8px;padding:11px 4px;font-size:17px;font-weight:800;text-align:center;font-family:inherit;color:var(--g900);outline:none;">
+      <span style="font-size:15px;font-weight:700;color:var(--g400);flex-shrink:0">-</span>
+      <input type="text" id="msPlateH" placeholder="가" maxlength="1"
+        onkeydown="if(event.key==='Enter')doManualSearch()"
+        style="flex:2;min-width:0;border:1.5px solid var(--g200);border-radius:8px;padding:11px 4px;font-size:17px;font-weight:800;text-align:center;font-family:inherit;color:var(--g900);outline:none;">
+      <span style="font-size:15px;font-weight:700;color:var(--g400);flex-shrink:0">-</span>
+      <input type="text" id="msPlateB" placeholder="4567" maxlength="4" inputmode="numeric"
+        onkeydown="if(event.key==='Enter')doManualSearch()"
+        style="flex:4;min-width:0;border:1.5px solid var(--g200);border-radius:8px;padding:11px 4px;font-size:17px;font-weight:800;text-align:center;font-family:inherit;color:var(--g900);outline:none;">
+      <button onclick="doManualSearch()"
+        style="flex-shrink:0;background:var(--primary);color:#fff;border:none;border-radius:8px;padding:11px 14px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle">
+          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        조회
+      </button>
+    </div>
+  </div>
 
   <div class="camera-wrap" id="cameraWrap">
     <video id="cameraVideo" playsinline muted autoplay></video>
@@ -661,41 +679,11 @@ body {
       </button>
     </div>
 
-    <div style="display:flex;gap:10px;margin-top:4px">
-      <button class="btn btn-ghost" style="flex:1;padding:13px;font-size:14px" onclick="resetScan()">
+    <div style="margin-top:4px">
+      <button class="btn btn-ghost" style="width:100%;padding:13px;font-size:14px" onclick="resetScan()">
         다시 스캔
       </button>
-      <button class="btn btn-ghost" style="flex:1;padding:13px;font-size:14px" onclick="manualSearch()">
-        번호 직접 입력
-      </button>
     </div>
-  </div>
-
-  <!-- 직접 입력 조회 -->
-  <div class="card" id="manualSearchCard" style="display:none">
-    <div class="section-title">번호판 직접 입력 조회</div>
-    <div class="plate-row">
-      <div>
-        <label style="font-size:13px;font-weight:600;color:var(--g700);display:block;margin-bottom:7px">앞 번호</label>
-        <input type="text" id="msPlateF" placeholder="123" maxlength="3" inputmode="numeric" style="font-weight:800;border:1.5px solid var(--g200);border-radius:8px;font-family:inherit;">
-      </div>
-      <div class="plate-sep">-</div>
-      <div>
-        <label style="font-size:13px;font-weight:600;color:var(--g700);display:block;margin-bottom:7px">한글</label>
-        <input type="text" id="msPlateH" placeholder="가" maxlength="1" style="font-weight:800;border:1.5px solid var(--g200);border-radius:8px;font-family:inherit;">
-      </div>
-      <div class="plate-sep">-</div>
-      <div>
-        <label style="font-size:13px;font-weight:600;color:var(--g700);display:block;margin-bottom:7px">뒷 번호</label>
-        <input type="text" id="msPlateB" placeholder="4567" maxlength="4" inputmode="numeric" style="font-weight:800;border:1.5px solid var(--g200);border-radius:8px;font-family:inherit;">
-      </div>
-    </div>
-    <button class="btn btn-primary" style="margin-top:14px" onclick="doManualSearch()">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-      </svg>
-      조회하기
-    </button>
   </div>
 
 </div>
@@ -1005,12 +993,11 @@ function toast(msg, type) {
 
 async function startScan() {
   document.getElementById('startScanBtn').style.display = 'none';
+  document.getElementById('quickSearchCard').style.display = 'none';
   document.getElementById('cameraWrap').classList.add('show');
   document.getElementById('captureBtn').classList.add('show');
   document.getElementById('stopBtn').classList.add('show');
   document.getElementById('scanResult').classList.remove('show');
-  document.getElementById('manualSearchCard').style.display = 'none';
-  document.getElementById('manualEntryBtn').style.display = 'none';
 
   try {
     cameraStream = await navigator.mediaDevices.getUserMedia({
@@ -1051,6 +1038,7 @@ function stopScan() {
   document.getElementById('zoomLabel').textContent = '×1.0';
   zoomCurrent = 1;
   document.getElementById('startScanBtn').style.display = '';
+  document.getElementById('quickSearchCard').style.display = '';
 }
 
 function applyZoom(val) {
@@ -1168,18 +1156,9 @@ async function showPlateResult(plate) {
 
 function resetScan() {
   document.getElementById('scanResult').classList.remove('show');
-  document.getElementById('manualSearchCard').style.display = 'none';
   document.getElementById('startScanBtn').style.display = '';
-  document.getElementById('manualEntryBtn').style.display = '';
+  document.getElementById('quickSearchCard').style.display = '';
   lastOCRPlate = '';
-}
-
-function manualSearch() {
-  document.getElementById('scanResult').classList.remove('show');
-  document.getElementById('manualSearchCard').style.display = 'block';
-  document.getElementById('startScanBtn').style.display = 'none';
-  document.getElementById('manualEntryBtn').style.display = 'none';
-  setTimeout(function(){ document.getElementById('msPlateF').focus(); }, 100);
 }
 
 async function doManualSearch() {
@@ -1189,7 +1168,6 @@ async function doManualSearch() {
   if (!f || !h || !b) { toast('번호판을 모두 입력하세요.'); return; }
   var plate = normalizePlate(f + h + b);
   if (!plate) { toast('올바른 번호판 형식이 아닙니다.'); return; }
-  document.getElementById('manualSearchCard').style.display = 'none';
   await showPlateResult(plate);
 }
 
