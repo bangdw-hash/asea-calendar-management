@@ -395,6 +395,12 @@ header{
 }
 .modal.show .modal-box{transform:scale(1)}
 .modal-box.wide{max-width:980px}
+/* ── Admin modal → bottom sheet ── */
+#adminModal{align-items:flex-end;padding:0}
+#adminModal .modal-box{max-width:100%;width:100%;max-height:67vh;border-radius:16px 16px 0 0;transform:translateY(100%)}
+#adminModal.show .modal-box{transform:translateY(0)}
+.adm-sheet-handle{width:44px;height:4px;background:#d1d5db;border-radius:2px;margin:10px auto 0;cursor:grab;flex-shrink:0}
+#adminModal .modal-hdr{background:#fff;border-radius:16px 16px 0 0}
 .modal-hdr{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid var(--border);position:sticky;top:0;background:#fff;z-index:1}
 .modal-title{font-size:15px;font-weight:700}
 .modal-body{padding:20px}
@@ -410,11 +416,12 @@ header{
 .label-mono{font-size:11px;font-family:monospace;background:var(--gray-lt);padding:5px 10px;border-radius:6px;line-height:1.5}
 
 /* ── Admin table ── */
-.adm-tabs{display:flex;gap:4px;flex-wrap:wrap;border-bottom:1.5px solid var(--border);margin-bottom:14px;padding-bottom:8px}
-.adm-tab-btn{padding:6px 12px;border-radius:var(--r);font-size:12px;font-weight:700;cursor:pointer;border:1.5px solid var(--border);background:#fff;color:var(--gray);transition:.15s}
+.adm-tabs{display:flex;gap:6px;overflow-x:auto;border-bottom:1.5px solid var(--border);margin-bottom:14px;padding-bottom:8px;-webkit-overflow-scrolling:touch;scrollbar-width:none;flex-wrap:nowrap}
+.adm-tabs::-webkit-scrollbar{display:none}
+.adm-tab-btn{padding:6px 14px;border-radius:var(--r);font-size:12px;font-weight:700;cursor:pointer;border:1.5px solid var(--border);background:#fff;color:var(--gray);transition:.15s;white-space:nowrap;flex:0 0 auto}
 .adm-tab-btn.on{background:var(--primary);border-color:var(--primary);color:#fff}
 .adm-tab-btn:hover:not(.on){border-color:var(--primary);color:var(--primary)}
-.adm-filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;align-items:center}
+.adm-filters{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;align-items:center}
 .adm-card{background:var(--gray-lt);border-radius:var(--r);padding:14px;margin-bottom:12px}
 .adm-form-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin-bottom:10px}
 .rv-tbl{width:100%;border-collapse:collapse;font-size:12px}
@@ -914,12 +921,12 @@ header{
   </div>
 </div>
 
-<!-- Admin panel modal -->
+<!-- Admin panel bottom sheet -->
 <div id="adminModal" class="modal" onclick="if(event.target===this)closeAdminM()">
   <div class="modal-box wide">
+    <div class="adm-sheet-handle"></div>
     <div class="modal-hdr">
       <span class="modal-title">관리자 패널</span>
-      <button class="close-btn" onclick="closeAdminM()">✕</button>
     </div>
     <div class="modal-body" id="adminBody"></div>
   </div>
@@ -2762,7 +2769,7 @@ function closeBatchUnlinkM() { hideM('batchUnlinkModal'); }
 
 /* ── Admin panel ── */
 let admRvs = [];
-let admFilter = { room: '', date: '' };
+let admFilter = { room: '', date: '', text: '' };
 let admTab = 'reservations';
 
 async function openAdminM() {
@@ -2770,8 +2777,34 @@ async function openAdminM() {
   admTab = 'reservations';
   showM('adminModal');
   await renderAdminPanel();
+  _admSheetInitSwipe();
 }
 function closeAdminM() { hideM('adminModal'); }
+
+function _admSheetInitSwipe() {
+  const box = document.querySelector('#adminModal .modal-box');
+  if (!box || box._swipeInited) return;
+  box._swipeInited = true;
+  let startY = 0, curY = 0, dragging = false;
+  const handle = box.querySelector('.adm-sheet-handle');
+  const dragTarget = handle || box;
+  dragTarget.addEventListener('touchstart', e => {
+    startY = e.touches[0].clientY; dragging = true; curY = 0;
+    box.style.transition = 'none';
+  }, { passive: true });
+  dragTarget.addEventListener('touchmove', e => {
+    if (!dragging) return;
+    curY = e.touches[0].clientY - startY;
+    if (curY < 0) curY = 0;
+    box.style.transform = `translateY(${curY}px)`;
+  }, { passive: true });
+  dragTarget.addEventListener('touchend', () => {
+    dragging = false;
+    box.style.transition = '';
+    if (curY > 120) { closeAdminM(); }
+    else { box.style.transform = ''; }
+  });
+}
 
 async function renderAdminPanel() {
   const body = document.getElementById('adminBody');
@@ -2817,14 +2850,25 @@ function renderAdmTable() {
   let rvs = admRvs;
   if (admFilter.room) rvs = rvs.filter(r => r.classroom_name.includes(admFilter.room));
   if (admFilter.date) rvs = rvs.filter(r => r.date_start <= admFilter.date && r.date_end >= admFilter.date);
+  if (admFilter.text) {
+    const q = admFilter.text.toLowerCase();
+    rvs = rvs.filter(r =>
+      (r.purpose||'').toLowerCase().includes(q) ||
+      (r.renter_name||'').toLowerCase().includes(q) ||
+      (r.requester_name||'').toLowerCase().includes(q) ||
+      (r.department||'').toLowerCase().includes(q)
+    );
+  }
 
   body.innerHTML = `
     <div class="adm-filters">
-      <input type="text" class="fi" style="width:180px" placeholder="강의실 검색..."
+      <input type="text" class="fi" style="flex:1;min-width:140px" placeholder="업체명·사용목적 검색..."
+        value="${esc(admFilter.text)}" oninput="admFilter.text=this.value;renderAdmTable()">
+      <input type="text" class="fi" style="width:140px" placeholder="강의실 검색..."
         value="${esc(admFilter.room)}" oninput="admFilter.room=this.value;renderAdmTable()">
-      <input type="date" class="fi" style="width:150px"
+      <input type="date" class="fi" style="width:140px"
         value="${admFilter.date}" onchange="admFilter.date=this.value;renderAdmTable()">
-      <button class="btn btn-sm btn-outline" onclick="admFilter={room:'',date:''};renderAdmTable()">초기화</button>
+      <button class="btn btn-sm btn-outline" onclick="admFilter={room:'',date:'',text:''};renderAdmTable()">초기화</button>
       <button class="btn btn-sm btn-primary" onclick="loadAdminList()">새로고침</button>
     </div>
     <div style="font-size:12px;color:var(--gray);margin-bottom:8px">표시: ${rvs.length}건 / 전체: ${admRvs.length}건</div>
@@ -2839,16 +2883,16 @@ function renderAdmTable() {
         <tbody>
           ${rvs.map(rv => `<tr style="cursor:pointer" onclick="window.open('reservation.html#rv-${rv.id}','_blank')" title="새 탭에서 열기">
             <td style="white-space:nowrap">${rv.date_start}${rv.date_start!==rv.date_end?'<br>~'+rv.date_end:''}</td>
-            <td><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${rv.classroom_color||'#1A73E8'};margin-right:4px;vertical-align:middle"></span>${esc(rv.classroom_name)}</td>
+            <td style="white-space:nowrap"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${rv.classroom_color||'#1A73E8'};margin-right:4px;vertical-align:middle"></span>${esc(rv.classroom_name)}</td>
             <td style="white-space:nowrap">${rv.time_start}~${rv.time_end}</td>
-            <td style="max-width:120px;overflow:hidden">${esc(rv.purpose)}</td>
-            <td>${esc(rv.department)}</td>
-            <td>${esc(rv.requester_name)}</td>
-            <td>${esc(rv.contact||'')}</td>
+            <td style="white-space:nowrap;max-width:140px;overflow:hidden;text-overflow:ellipsis">${esc(rv.purpose)}</td>
+            <td style="white-space:nowrap">${esc(rv.department)}</td>
+            <td style="white-space:nowrap">${esc(rv.requester_name)}</td>
+            <td style="white-space:nowrap">${esc(rv.contact||'')}</td>
             <td onclick="event.stopPropagation()">${rv.schedule_event_id
               ? `<span class="adm-act-linked">연동완료</span>`
               : `<button class="adm-act adm-act-link" onclick="admLink('${rv.id}')">연동</button>`}</td>
-            <td onclick="event.stopPropagation()" style="display:flex;gap:8px;align-items:center">
+            <td onclick="event.stopPropagation()" style="white-space:nowrap;display:flex;gap:6px;align-items:center">
               <button class="adm-act adm-act-edit" onclick="adminEditRv('${rv.id}')">수정</button>
               <button class="adm-act adm-act-del" onclick="adminDelRv('${rv.id}')">삭제</button>
             </td>
@@ -3073,14 +3117,14 @@ async function renderAcademicTab() {
 
       <!-- 등록된 그룹 목록 -->
       <div>
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-          <div style="font-size:13px;font-weight:700">등록된 학사과정 그룹</div>
-          <div style="display:flex;gap:8px;align-items:center">
-            <span style="font-size:11px;color:var(--gray)">기간 삭제:</span>
+        <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px">
+          <div style="font-size:13px;font-weight:700;white-space:nowrap">등록된 학사과정 그룹</div>
+          <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+            <span style="font-size:11px;color:var(--gray);white-space:nowrap">기간 삭제:</span>
             <input id="acadDelFrom" type="date" class="fi" style="font-size:11px;padding:3px 6px;width:130px" placeholder="시작일">
             <span style="font-size:11px;color:var(--gray)">~</span>
             <input id="acadDelTo" type="date" class="fi" style="font-size:11px;padding:3px 6px;width:130px" placeholder="종료일">
-            <button class="btn btn-xs btn-outline" onclick="acadDeleteByRange()" style="color:var(--red);border-color:var(--red);flex-shrink:0">기간 삭제</button>
+            <button class="btn btn-xs btn-outline" onclick="acadDeleteByRange()" style="color:var(--red);border-color:var(--red);flex-shrink:0;white-space:nowrap">기간 삭제</button>
           </div>
         </div>
         <div id="acadGroupList" style="display:flex;flex-direction:column;gap:8px">
