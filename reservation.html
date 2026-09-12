@@ -4268,18 +4268,20 @@ function _initModalSwipe(id) {
   if (!box || box._swipeInited) return;
   box._swipeInited = true;
   let startY = 0, curY = 0, dragging = false;
-  const hdr = box.querySelector('.modal-hdr');
-  const handle = box.querySelector('.adm-sheet-handle');
-  [hdr, handle].filter(Boolean).forEach(el => {
+
+  function attach(el, scrollEl) {
+    if (!el) return;
     el.style.cursor = 'grab';
     el.addEventListener('touchstart', e => {
+      // 스크롤 영역은 맨 위일 때만 드래그 시작
+      if (scrollEl && scrollEl.scrollTop > 2) return;
       startY = e.touches[0].clientY; dragging = true; curY = 0;
       box.style.transition = 'none';
     }, { passive: true });
     el.addEventListener('touchmove', e => {
       if (!dragging) return;
       curY = e.touches[0].clientY - startY;
-      if (curY < 0) curY = 0;
+      if (curY < 0) { curY = 0; }
       box.style.transform = `scale(1) translateY(${curY}px)`;
     }, { passive: true });
     el.addEventListener('touchend', () => {
@@ -4289,7 +4291,18 @@ function _initModalSwipe(id) {
       if (curY > 100) { box.style.transform = ''; hideM(id); }
       else { box.style.transform = ''; }
     });
-  });
+  }
+
+  const hdr    = box.querySelector('.modal-hdr');
+  const handle = box.querySelector('.adm-sheet-handle');
+  const body   = box.querySelector('.modal-body');
+  const tabs   = box.querySelector('.adm-tabs');
+
+  attach(hdr, null);
+  attach(handle, null);
+  // 본문·탭 영역: 스크롤이 맨 위일 때만 드래그 허용
+  attach(body, body);
+  attach(tabs, body);
 }
 
 /* ── Toast ── */
