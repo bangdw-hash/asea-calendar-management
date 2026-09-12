@@ -455,7 +455,7 @@ header{
 ::-webkit-scrollbar-thumb{background:#d1d5db;border-radius:9px}
 
 /* ── OCR zone ── */
-.ocr-zone{border:2px dashed var(--border);border-radius:var(--r);padding:12px;
+.ocr-zone{border:1.5px dashed var(--border);border-radius:var(--r);padding:12px;
   text-align:center;cursor:pointer;transition:border-color .15s,background .15s;
   background:var(--gray-lt);position:relative}
 .ocr-zone:hover,.ocr-zone.drag-over{border-color:var(--primary);background:var(--primary-lt)}
@@ -1994,7 +1994,11 @@ let drawerRentalMode = false;
 
 function openDrawer(dateStr, rental) {
   rental = !!rental;
-  if (dateStr) { selDates = [dateStr]; renderCal(); }
+  if (dateStr) {
+    selDates = [dateStr]; renderCal();
+  } else if (!selDates.length && rangeStart) {
+    selDates = [rangeStart]; rangeStart = null; renderCal();
+  }
 
   resetForm();
   drawerRentalMode = rental;
@@ -3046,7 +3050,7 @@ async function renderAcademicTab() {
 
         <!-- 파일 업로드 -->
         <div id="acadDropZone" style="
-          border:2px dashed var(--border);border-radius:var(--r);padding:24px 16px;
+          border:1.5px dashed var(--border);border-radius:var(--r);padding:24px 16px;
           text-align:center;cursor:pointer;background:var(--gray-lt);
           transition:border-color .2s,background .2s;position:relative;margin-bottom:8px"
           onclick="document.getElementById('acadFileIn').click()"
@@ -3769,7 +3773,7 @@ function paintCompaniesTab() {
   body.innerHTML = `
     <div class="adm-card">
       <div style="font-weight:700;font-size:13px;margin-bottom:8px">대관업체 등록 (사업자등록증 AI OCR 지원)</div>
-      <div id="ocrDropZone" tabindex="0" style="border:2px dashed var(--border);border-radius:var(--r);padding:16px;text-align:center;font-size:12px;color:var(--gray);cursor:pointer;margin-bottom:10px">
+      <div id="ocrDropZone" tabindex="0" style="border:1.5px dashed var(--border);border-radius:var(--r);padding:16px;text-align:center;font-size:12px;color:var(--gray);cursor:pointer;margin-bottom:10px">
         사업자등록증 이미지를 여기를 클릭한 뒤 <b>Ctrl+V</b>로 붙여넣거나, 클릭하여 파일을 선택하세요.
         <input type="file" id="ocrFileIn" accept="image/*" hidden onchange="onOcrFile(event)">
       </div>
@@ -4336,18 +4340,19 @@ function _ocrApply(d, isRental, merge) {
       if (matched) { roomSel.value = matched; onRoomChange(); }
     }
   }
-  // dates
+  // dates — setMode resets selDates, so assign AFTER switching mode
   if (d.dates && d.dates.length) {
     const valid = d.dates.filter(s => /^\d{4}-\d{2}-\d{2}$/.test(s));
     if (valid.length) {
       if (merge && selDates.length) {
         const merged = [...new Set([...selDates, ...valid])].sort();
-        if (selMode !== 'multi') setMode('multi');
+        if (selMode !== 'multi') { selMode = 'multi'; document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('on')); const me = document.getElementById('modeMulti'); if (me) me.classList.add('on'); }
         selDates = merged;
       } else {
-        if (selMode !== 'multi' && valid.length > 1) setMode('multi');
+        if (selMode !== 'multi' && valid.length > 1) { selMode = 'multi'; document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('on')); const me = document.getElementById('modeMulti'); if (me) me.classList.add('on'); }
         selDates = valid.sort();
       }
+      rangeStart = null;
       updMultiBanner(); renderCal(); renderDateTags();
     }
   }
