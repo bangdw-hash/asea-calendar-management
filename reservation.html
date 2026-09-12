@@ -2779,39 +2779,8 @@ async function openAdminM() {
   admTab = 'reservations';
   showM('adminModal');
   await renderAdminPanel();
-  _admSheetInitSwipe();
 }
 function closeAdminM() { hideM('adminModal'); }
-
-function _admSheetInitSwipe() {
-  const box = document.querySelector('#adminModal .modal-box');
-  if (!box || box._swipeInited) return;
-  box._swipeInited = true;
-  let startY = 0, curY = 0, dragging = false;
-  const hdr = box.querySelector('.modal-hdr');
-  const handle = box.querySelector('.adm-sheet-handle');
-  // Both handle and header are drag zones; header is easier to grab
-  [handle, hdr].forEach(el => {
-    if (!el) return;
-    el.addEventListener('touchstart', e => {
-      startY = e.touches[0].clientY; dragging = true; curY = 0;
-      box.style.transition = 'none';
-    }, { passive: true });
-    el.addEventListener('touchmove', e => {
-      if (!dragging) return;
-      curY = e.touches[0].clientY - startY;
-      if (curY < 0) curY = 0;
-      box.style.transform = `translateY(${curY}px)`;
-    }, { passive: true });
-    el.addEventListener('touchend', () => {
-      if (!dragging) return;
-      dragging = false;
-      box.style.transition = '';
-      if (curY > 100) { closeAdminM(); }
-      else { box.style.transform = ''; }
-    });
-  });
-}
 
 async function renderAdminPanel() {
   const body = document.getElementById('adminBody');
@@ -4283,10 +4252,44 @@ function subscribeRT() {
 function showM(id) {
   document.getElementById(id).classList.add('show');
   document.body.style.overflow = 'hidden';
+  _initModalSwipe(id);
 }
 function hideM(id) {
-  document.getElementById(id).classList.remove('show');
+  const el = document.getElementById(id);
+  const box = el && el.querySelector('.modal-box');
+  if (box) box.style.transform = '';
+  el.classList.remove('show');
   if (!document.querySelector('.modal.show')) document.body.style.overflow = '';
+}
+function _initModalSwipe(id) {
+  const modal = document.getElementById(id);
+  if (!modal) return;
+  const box = modal.querySelector('.modal-box');
+  if (!box || box._swipeInited) return;
+  box._swipeInited = true;
+  let startY = 0, curY = 0, dragging = false;
+  const hdr = box.querySelector('.modal-hdr');
+  const handle = box.querySelector('.adm-sheet-handle');
+  [hdr, handle].filter(Boolean).forEach(el => {
+    el.style.cursor = 'grab';
+    el.addEventListener('touchstart', e => {
+      startY = e.touches[0].clientY; dragging = true; curY = 0;
+      box.style.transition = 'none';
+    }, { passive: true });
+    el.addEventListener('touchmove', e => {
+      if (!dragging) return;
+      curY = e.touches[0].clientY - startY;
+      if (curY < 0) curY = 0;
+      box.style.transform = `scale(1) translateY(${curY}px)`;
+    }, { passive: true });
+    el.addEventListener('touchend', () => {
+      if (!dragging) return;
+      dragging = false;
+      box.style.transition = '';
+      if (curY > 100) { box.style.transform = ''; hideM(id); }
+      else { box.style.transform = ''; }
+    });
+  });
 }
 
 /* ── Toast ── */
