@@ -171,6 +171,17 @@ label{font-size:13px;font-weight:500;color:var(--ink2)}
 
 @media(max-width:600px){.trend-grid{grid-template-columns:1fr}}
 
+/* ── AI 글 작성 지침 탭 ── */
+.directive-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;display:flex;flex-direction:column;gap:8px;transition:box-shadow .15s}
+.directive-card:hover{box-shadow:var(--sh-md)}
+.directive-card.active-dir{border-color:var(--primary);background:var(--primary-lt)}
+.dir-category{display:inline-flex;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;background:var(--surface2);color:var(--ink2)}
+.dir-text-preview{font-size:13px;color:var(--ink2);line-height:1.5;white-space:pre-wrap;word-break:break-word;max-height:60px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical}
+.active-dir-banner{background:var(--primary-lt);border:1px solid rgba(26,115,232,.3);border-radius:var(--r);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:16px;font-size:13px;color:var(--primary-dk);font-weight:500}
+
+/* ── 탭 바 overflow ── */
+.tab-bar{overflow-x:auto;-webkit-overflow-scrolling:touch}
+
 /* hidden 속성 보장 — display:flex 등이 덮어쓰지 못하도록 */
 [hidden]{display:none!important}
 </style>
@@ -202,6 +213,10 @@ label{font-size:13px;font-weight:500;color:var(--ink2)}
   <button class="tb-btn" id="tb-trend" onclick="switchTab('trend')">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
     <span class="tab-label">트렌드</span>
+  </button>
+  <button class="tb-btn" id="tb-directive" onclick="switchTab('directive')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+    <span class="tab-label">AI 지침</span>
   </button>
 </nav>
 
@@ -384,8 +399,15 @@ label{font-size:13px;font-weight:500;color:var(--ink2)}
         <textarea id="food-place-info" class="form-textarea" style="min-height:80px;font-size:13px"></textarea>
       </div>
       <div class="form-row">
-        <label for="food-menu">내가 주문한 메뉴 / 가격</label>
-        <textarea id="food-menu" class="form-textarea" style="min-height:70px" placeholder="에그베네딕트 18,000원, 아이스아메리카노 6,500원 ..."></textarea>
+        <label for="food-menu" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:4px">
+          <span>내가 주문한 메뉴 / 가격</span>
+          <button type="button" class="btn btn-ghost btn-sm" onclick="ocrMenu()" id="btn-ocr" title="영수증·메뉴판 사진으로 자동 입력">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="14" height="14"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            OCR 스캔
+          </button>
+        </label>
+        <input type="file" id="ocr-input" accept="image/*" capture="environment" hidden onchange="handleOcrFile(this)">
+        <textarea id="food-menu" class="form-textarea" style="min-height:70px" placeholder="에그베네딕트 18,000원, 아이스아메리카노 6,500원 ... (또는 OCR 스캔으로 자동 입력)"></textarea>
       </div>
       <div class="form-row">
         <label for="food-impression">맛·분위기·서비스 느낀 점</label>
@@ -523,6 +545,87 @@ label{font-size:13px;font-weight:500;color:var(--ink2)}
   <div id="trend-results" style="margin-top:16px"></div>
 </div>
 
+<!-- ── AI 글 작성 지침 탭 ── -->
+<div id="panel-directive" class="panel">
+
+  <!-- 현재 적용 중 배너 -->
+  <div id="active-dir-banner" class="active-dir-banner" hidden>
+    <div style="display:flex;align-items:center;gap:8px">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M9 11l3 3L22 4"/></svg>
+      <span>현재 적용 중: <strong id="active-dir-name"></strong></span>
+    </div>
+    <button class="btn btn-ghost btn-sm" onclick="clearActiveDirective()">적용 해제</button>
+  </div>
+
+  <!-- 기본 AI 세팅 참고 -->
+  <div class="card">
+    <div class="card-head">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
+      현재 기본 AI 세팅 (참고용)
+    </div>
+    <div class="card-body">
+      <div style="font-size:13px;color:var(--ink2);line-height:1.7;background:var(--surface2);border-radius:8px;padding:12px 14px">
+        <div style="font-weight:600;color:var(--ink);margin-bottom:4px">블로그 글 생성</div>
+        네이버 블로그 및 AI 검색 상위 노출 전문 작가 / 마크다운 금지 / 리서치 데이터(상호명·가격·위치) 활용 / 스타일별 특화 (정보형·감성형·SEO최적화형·리스트형) / 500~2000자 선택 가능
+        <div style="font-weight:600;color:var(--ink);margin:10px 0 4px">맛집 리뷰 생성</div>
+        네이버 블로그 맛집 리뷰 전문 작가 / SEO 전문가 / 오감 묘사·가격·메뉴·위치 구체 정보 포함 / 첫 단락~총평 구조 / 1000~1300자 목표
+      </div>
+      <div class="form-hint" style="margin-top:8px">아래에서 지침을 저장·적용하면 블로그/리뷰 생성 시 위 기본 세팅에 추가로 반영됩니다.</div>
+    </div>
+  </div>
+
+  <!-- 새 지침 작성 -->
+  <div class="card" style="margin-top:16px">
+    <div class="card-head">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+      새 지침 작성
+    </div>
+    <div class="card-body">
+      <div class="form-row cols">
+        <div class="form-row">
+          <label for="dir-name">지침 이름</label>
+          <input id="dir-name" class="form-input" type="text" placeholder="예: 20대 여성 감성 리뷰">
+        </div>
+        <div class="form-row">
+          <label for="dir-category">적용 유형</label>
+          <select id="dir-category" class="form-select">
+            <option value="공통">공통 (블로그+리뷰)</option>
+            <option value="블로그">블로그 글 전용</option>
+            <option value="맛집리뷰">맛집 리뷰 전용</option>
+            <option value="어조">어조·문체</option>
+            <option value="타겟독자">타겟 독자</option>
+            <option value="SEO">SEO 전략</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <label for="dir-text">지침 내용 <span style="color:var(--ink3);font-weight:400">(AI에게 직접 전달할 글쓰기 지시사항)</span></label>
+        <textarea id="dir-text" class="form-textarea" style="min-height:120px" placeholder="예: 항상 20대 여성 독자를 타겟으로 써줘. 반말체(해체) 사용. 인스타 감성 표현 활용. 음식 묘사 시 비주얼·색감 강조. 해시태그는 인스타 스타일로."></textarea>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="saveDirective()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="15" height="15"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+          저장
+        </button>
+        <button class="btn btn-ghost" onclick="clearDirectiveForm()">초기화</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 저장된 지침 목록 -->
+  <div class="card" style="margin-top:16px">
+    <div class="card-head">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+      저장된 지침 이력
+    </div>
+    <div class="card-body" style="padding-bottom:16px">
+      <div id="directive-list">
+        <div class="empty-state" style="padding:28px 0"><p>저장된 지침이 없습니다</p></div>
+      </div>
+    </div>
+  </div>
+</div>
+
 </main>
 
 <!-- 미리보기 모달 -->
@@ -610,12 +713,13 @@ function waitSupabase(cb) {
 /* ── 탭 전환 ── */
 window.switchTab = function(tab) {
   S.tab = tab;
-  ['blog','food','history','trend'].forEach(function(t) {
+  ['blog','food','history','trend','directive'].forEach(function(t) {
     document.getElementById('panel-' + t).classList.toggle('active', t === tab);
     document.getElementById('tb-' + t).classList.toggle('active', t === tab);
   });
   if (tab === 'history') loadHistory();
   if (tab === 'trend') { renderThemeTags(); checkDatalabStatus(); }
+  if (tab === 'directive') { renderDirectiveList(); renderActiveBanner(); }
 };
 
 /* ══════════════════════════════════════════════
@@ -865,6 +969,183 @@ async function _loadPlaceInfo(name, category, description) {
     area.value = description || '';
     if (!area.value) row.hidden = true;
   }
+}
+
+/* ── OCR 메뉴 스캔 ── */
+window.ocrMenu = function() {
+  document.getElementById('ocr-input').click();
+};
+
+window.handleOcrFile = async function(input) {
+  var file = input.files[0];
+  if (!file) return;
+  var btn = document.getElementById('btn-ocr');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner dark"></span> 분석 중...';
+  try {
+    var base64 = await new Promise(function(resolve, reject) {
+      var reader = new FileReader();
+      reader.onload = function(e) { resolve(e.target.result.split(',')[1]); };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+    var mediaType = file.type || 'image/jpeg';
+    if (!window.claudeFetch) throw new Error('AI 설정이 로드되지 않았습니다.');
+    var res = await window.claudeFetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': 'via-proxy', 'anthropic-version': '2023-06-01' },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 1024,
+        system: '영수증 또는 메뉴판 이미지에서 주문 메뉴명과 가격을 추출합니다. 한국어로 "메뉴명 가격원" 형식으로 한 줄씩 출력하세요. 예: 에그베네딕트 18,000원. 메뉴와 가격만 출력하고 다른 설명은 하지 마세요.',
+        messages: [{
+          role: 'user',
+          content: [
+            { type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 } },
+            { type: 'text', text: '이 영수증/메뉴판에서 주문한 메뉴명과 가격을 추출해주세요.' }
+          ]
+        }]
+      }),
+      keepModel: true
+    });
+    var data = await res.json();
+    if (data.error) throw new Error(data.error.message || JSON.stringify(data.error));
+    var text = data.content && data.content[0] ? data.content[0].text : '';
+    if (text) {
+      document.getElementById('food-menu').value = text;
+      showToast('OCR 완료! 내용을 확인·수정하세요.', 'green');
+    } else {
+      showToast('메뉴를 인식하지 못했습니다.', 'red');
+    }
+  } catch(e) {
+    showToast('OCR 실패: ' + e.message, 'red');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="14" height="14"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg> OCR 스캔';
+    input.value = '';
+  }
+};
+
+/* ── AI 글 작성 지침 관리 ── */
+var DIRECTIVE_KEY = 'asea_ai_directives';
+var ACTIVE_DIR_KEY = 'asea_ai_active_dir';
+
+function getDirectives() {
+  try { return JSON.parse(localStorage.getItem(DIRECTIVE_KEY) || '[]'); } catch(e) { return []; }
+}
+function saveDirectivesToStorage(dirs) {
+  try { localStorage.setItem(DIRECTIVE_KEY, JSON.stringify(dirs)); } catch(e) {}
+}
+function getActiveDirectiveText() {
+  try {
+    var id = localStorage.getItem(ACTIVE_DIR_KEY);
+    if (!id) return null;
+    return getDirectives().find(function(d) { return d.id === id; }) || null;
+  } catch(e) { return null; }
+}
+
+window.saveDirective = function() {
+  var name = document.getElementById('dir-name').value.trim();
+  var category = document.getElementById('dir-category').value;
+  var text = document.getElementById('dir-text').value.trim();
+  if (!name || !text) { showToast('지침 이름과 내용을 입력해 주세요.', 'red'); return; }
+  var dirs = getDirectives();
+  dirs.unshift({ id: 'dir_' + Date.now(), name: name, category: category, text: text, createdAt: new Date().toISOString() });
+  saveDirectivesToStorage(dirs);
+  clearDirectiveForm();
+  renderDirectiveList();
+  showToast('지침이 저장되었습니다.', 'green');
+};
+
+window.clearDirectiveForm = function() {
+  document.getElementById('dir-name').value = '';
+  document.getElementById('dir-text').value = '';
+  document.getElementById('dir-category').value = '공통';
+};
+
+window.applyDirective = function(id) {
+  var dir = getDirectives().find(function(d) { return d.id === id; });
+  if (!dir) return;
+  try { localStorage.setItem(ACTIVE_DIR_KEY, id); } catch(e) {}
+  renderDirectiveList();
+  renderActiveBanner();
+  showToast('"' + dir.name + '" 지침이 적용되었습니다.', 'green');
+};
+
+window.clearActiveDirective = function() {
+  try { localStorage.removeItem(ACTIVE_DIR_KEY); } catch(e) {}
+  renderDirectiveList();
+  renderActiveBanner();
+  showToast('지침 적용이 해제되었습니다.', '');
+};
+
+window.editDirective = function(id) {
+  var dirs = getDirectives();
+  var dir = dirs.find(function(d) { return d.id === id; });
+  if (!dir) return;
+  document.getElementById('dir-name').value = dir.name;
+  document.getElementById('dir-category').value = dir.category;
+  document.getElementById('dir-text').value = dir.text;
+  saveDirectivesToStorage(dirs.filter(function(d) { return d.id !== id; }));
+  renderDirectiveList();
+  document.getElementById('dir-name').scrollIntoView({ behavior: 'smooth', block: 'center' });
+};
+
+window.deleteDirective = function(id) {
+  if (!confirm('삭제하시겠습니까?')) return;
+  saveDirectivesToStorage(getDirectives().filter(function(d) { return d.id !== id; }));
+  try { if (localStorage.getItem(ACTIVE_DIR_KEY) === id) localStorage.removeItem(ACTIVE_DIR_KEY); } catch(e) {}
+  renderDirectiveList();
+  renderActiveBanner();
+  showToast('삭제 완료', '');
+};
+
+function renderActiveBanner() {
+  var banner = document.getElementById('active-dir-banner');
+  var nameEl = document.getElementById('active-dir-name');
+  if (!banner || !nameEl) return;
+  var dir = getActiveDirectiveText();
+  if (dir) {
+    nameEl.textContent = dir.name + ' (' + dir.category + ')';
+    banner.hidden = false;
+  } else {
+    banner.hidden = true;
+  }
+}
+
+function renderDirectiveList() {
+  var el = document.getElementById('directive-list');
+  if (!el) return;
+  var dirs = getDirectives();
+  var activeId;
+  try { activeId = localStorage.getItem(ACTIVE_DIR_KEY); } catch(e) {}
+  if (!dirs.length) {
+    el.innerHTML = '<div class="empty-state" style="padding:28px 0"><p>저장된 지침이 없습니다</p></div>';
+    return;
+  }
+  el.innerHTML = '<div style="display:flex;flex-direction:column;gap:10px">' +
+    dirs.map(function(d) {
+      var isActive = d.id === activeId;
+      return '<div class="directive-card' + (isActive ? ' active-dir' : '') + '">' +
+        '<div style="display:flex;align-items:flex-start;gap:10px">' +
+          '<div style="flex:1;min-width:0">' +
+            '<div style="display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin-bottom:6px">' +
+              '<span style="font-size:14px;font-weight:600;color:var(--ink)">' + esc(d.name) + '</span>' +
+              '<span class="dir-category">' + esc(d.category) + '</span>' +
+              (isActive ? '<span class="dir-category" style="background:var(--primary);color:#fff">적용 중</span>' : '') +
+            '</div>' +
+            '<div class="dir-text-preview">' + esc(d.text) + '</div>' +
+          '</div>' +
+        '</div>' +
+        '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px">' +
+          (isActive
+            ? '<button class="btn btn-ghost btn-sm" onclick="clearActiveDirective()">적용 해제</button>'
+            : '<button class="btn btn-primary btn-sm" onclick="applyDirective(' + JSON.stringify(d.id) + ')">적용</button>') +
+          '<button class="btn btn-ghost btn-sm" onclick="editDirective(' + JSON.stringify(d.id) + ')">수정</button>' +
+          '<button class="btn btn-danger btn-sm" onclick="deleteDirective(' + JSON.stringify(d.id) + ')">삭제</button>' +
+        '</div>' +
+      '</div>';
+    }).join('') + '</div>';
 }
 
 /* ── 트렌드 분석 실행 ── */
@@ -1276,6 +1557,10 @@ window.generateBlog = async function() {
     var extra = document.getElementById('blog-extra').value.trim();
     var systemPrompt = buildBlogSystemPrompt(style, concept, length, research);
     if (extra) systemPrompt += '\n\n[작성자 추가 지시사항 — 최우선 반영]\n' + extra;
+    var _blogDir = getActiveDirectiveText();
+    if (_blogDir && ['공통','블로그','어조','타겟독자','SEO'].indexOf(_blogDir.category) !== -1) {
+      systemPrompt += '\n\n[AI 글 작성 지침 "' + _blogDir.name + '" — 최우선 반영]\n' + _blogDir.text;
+    }
     var userPrompt = '주제: ' + topic + '\n목표 분량: ' + length + '자 내외';
     if (keywords) userPrompt += '\n추가 포함 키워드: ' + keywords;
 
@@ -1353,6 +1638,10 @@ window.generateFood = async function() {
 
   var extra = document.getElementById('food-extra').value.trim();
   if (extra) systemPrompt += '\n\n[작성자 추가 지시사항 — 최우선 반영]\n' + extra;
+  var _foodDir = getActiveDirectiveText();
+  if (_foodDir && ['공통','맛집리뷰','어조','타겟독자','SEO'].indexOf(_foodDir.category) !== -1) {
+    systemPrompt += '\n\n[AI 글 작성 지침 "' + _foodDir.name + '" — 최우선 반영]\n' + _foodDir.text;
+  }
 
   var parts = ['장소명: ' + place];
   if (category) parts.push('카테고리: ' + category);
