@@ -114,9 +114,10 @@ body {
 .field textarea { resize: none; height: 72px; font-size: 14px; line-height: 1.5; }
 
 /* Plate input */
-.plate-row { display: flex; gap: 8px; align-items: flex-end; }
-.plate-row > div { flex: 1; }
-.plate-sep { font-size: 22px; font-weight: 700; color: var(--g400); padding-bottom: 12px; }
+.plate-row { display: flex; gap: 4px; align-items: flex-end; overflow: hidden; }
+.plate-row > div { flex: 1; min-width: 0; }
+.plate-sep { font-size: 16px; font-weight: 700; color: var(--g400); padding-bottom: 14px; flex-shrink: 0; }
+.plate-row input { font-size: 18px !important; padding: 10px 4px !important; text-align: center; min-width: 0; width: 100%; }
 
 /* Btn */
 .btn {
@@ -628,17 +629,17 @@ body {
     <div class="plate-row">
       <div>
         <label style="font-size:13px;font-weight:600;color:var(--g700);display:block;margin-bottom:7px">앞 번호</label>
-        <input type="text" id="msPlateF" placeholder="123" maxlength="3" inputmode="numeric" style="text-align:center;font-size:20px;font-weight:800;border:1.5px solid var(--g200);border-radius:8px;padding:12px;width:100%;font-family:inherit;">
+        <input type="text" id="msPlateF" placeholder="123" maxlength="3" inputmode="numeric" style="font-weight:800;border:1.5px solid var(--g200);border-radius:8px;font-family:inherit;">
       </div>
       <div class="plate-sep">-</div>
       <div>
         <label style="font-size:13px;font-weight:600;color:var(--g700);display:block;margin-bottom:7px">한글</label>
-        <input type="text" id="msPlateH" placeholder="가" maxlength="1" style="text-align:center;font-size:22px;font-weight:800;border:1.5px solid var(--g200);border-radius:8px;padding:12px;width:100%;font-family:inherit;">
+        <input type="text" id="msPlateH" placeholder="가" maxlength="1" style="font-weight:800;border:1.5px solid var(--g200);border-radius:8px;font-family:inherit;">
       </div>
       <div class="plate-sep">-</div>
       <div>
         <label style="font-size:13px;font-weight:600;color:var(--g700);display:block;margin-bottom:7px">뒷 번호</label>
-        <input type="text" id="msPlateB" placeholder="4567" maxlength="4" inputmode="numeric" style="text-align:center;font-size:20px;font-weight:800;border:1.5px solid var(--g200);border-radius:8px;padding:12px;width:100%;font-family:inherit;">
+        <input type="text" id="msPlateB" placeholder="4567" maxlength="4" inputmode="numeric" style="font-weight:800;border:1.5px solid var(--g200);border-radius:8px;font-family:inherit;">
       </div>
     </div>
     <button class="btn btn-primary" style="margin-top:14px" onclick="doManualSearch()">
@@ -668,19 +669,19 @@ body {
       <div>
         <label>앞 번호</label>
         <input type="text" id="regPlateF" placeholder="123" maxlength="3" inputmode="numeric"
-          style="text-align:center;font-size:22px;font-weight:800;">
+          style="font-weight:800;">
       </div>
       <div class="plate-sep">-</div>
       <div>
         <label>한글</label>
         <input type="text" id="regPlateH" placeholder="가" maxlength="1"
-          style="text-align:center;font-size:24px;font-weight:800;">
+          style="font-weight:800;">
       </div>
       <div class="plate-sep">-</div>
       <div>
         <label>뒷 번호</label>
         <input type="text" id="regPlateB" placeholder="4567" maxlength="4" inputmode="numeric"
-          style="text-align:center;font-size:22px;font-weight:800;">
+          style="font-weight:800;">
       </div>
     </div>
     <div class="plate-hint">예: 앞 <strong>123</strong> — 한글 <strong>가</strong> — 뒤 <strong>4567</strong> → 123가4567</div>
