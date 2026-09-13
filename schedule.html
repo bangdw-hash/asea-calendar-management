@@ -11,6 +11,10 @@
 <link rel="preconnect" href="https://www.googleapis.com">
 <link rel="dns-prefetch" href="https://accounts.google.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap">
+<script>
+/* 디자인 설정 즉시 적용 — FOUC 방지 (Supabase 로드 전 캐시 우선) */
+(function(){try{var v=JSON.parse(localStorage.getItem('asea_design_vars')||'null');if(v&&typeof v==='object')Object.entries(v).forEach(function(e){document.documentElement.style.setProperty(e[0],e[1]);});}catch(e){}})();
+</script>
 <link rel="manifest" href="manifest.json">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -6559,27 +6563,62 @@ function dsLiveAccent(hex) {
   document.getElementById('ds-accent-hex').textContent = hex;
 }
 
-function loadDesignVars() {
+const _DS_SB_URL = SB_URL + '/rest/v1/design_settings?id=eq.global';
+const _DS_SB_HDR = { 'apikey': SB_ANON, 'Authorization': 'Bearer ' + SB_ANON, 'Content-Type': 'application/json' };
+
+async function loadDesignVars() {
   try {
-    const saved = JSON.parse(localStorage.getItem(_DS_KEY) || 'null');
-    if (saved) applyDesignVars(saved);
+    const res = await fetch(_DS_SB_URL, { headers: _DS_SB_HDR });
+    if (res.ok) {
+      const rows = await res.json();
+      if (rows && rows[0] && Object.keys(rows[0].vars || {}).length > 0) {
+        applyDesignVars(rows[0].vars);
+        try { localStorage.setItem(_DS_KEY, JSON.stringify(rows[0].vars)); } catch(_) {}
+        return;
+      }
+    }
+  } catch(_) {}
+  // Supabase 실패 시 localStorage 캐시로 폴백
+  try {
+    const cached = JSON.parse(localStorage.getItem(_DS_KEY) || 'null');
+    if (cached) applyDesignVars(cached);
   } catch(_) {}
 }
 
-function saveDesignVars() {
-  const saved = _collectDesignVars();
-  try { localStorage.setItem(_DS_KEY, JSON.stringify(saved)); } catch(_) {}
-  applyDesignVars(saved);
+async function saveDesignVars() {
+  const vars = _collectDesignVars();
   const msg = document.getElementById('ds-save-msg');
-  if (msg) { msg.textContent = '✓ 저장됨'; setTimeout(() => { msg.textContent = ''; }, 2000); }
+  try {
+    const res = await fetch(SB_URL + '/rest/v1/design_settings', {
+      method: 'POST',
+      headers: { ..._DS_SB_HDR, 'Prefer': 'resolution=merge-duplicates' },
+      body: JSON.stringify({ id: 'global', vars, updated_at: new Date().toISOString() })
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    applyDesignVars(vars);
+    try { localStorage.setItem(_DS_KEY, JSON.stringify(vars)); } catch(_) {}
+    if (msg) { msg.textContent = '✓ 전체 반영됨'; setTimeout(() => { msg.textContent = ''; }, 2500); }
+  } catch(e) {
+    if (msg) { msg.style.color = 'var(--red)'; msg.textContent = '저장 실패: ' + e.message; setTimeout(() => { msg.textContent = ''; msg.style.color = ''; }, 3000); }
+  }
 }
 
-function resetDesignVars() {
-  try { localStorage.removeItem(_DS_KEY); } catch(_) {}
-  applyDesignVars(_DS_DEFAULTS);
-  _renderDesignPanel();
+async function resetDesignVars() {
   const msg = document.getElementById('ds-save-msg');
-  if (msg) { msg.textContent = '↺ 초기화됨'; setTimeout(() => { msg.textContent = ''; }, 2000); }
+  try {
+    const res = await fetch(SB_URL + '/rest/v1/design_settings', {
+      method: 'POST',
+      headers: { ..._DS_SB_HDR, 'Prefer': 'resolution=merge-duplicates' },
+      body: JSON.stringify({ id: 'global', vars: {}, updated_at: new Date().toISOString() })
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+  } catch(_) {}
+  try { localStorage.removeItem(_DS_KEY); } catch(_) {}
+  // 인라인 스타일 전체 제거 → CSS 기본값 복원
+  const root = document.documentElement;
+  Object.keys(_DS_DEFAULTS).forEach(k => root.style.removeProperty(k));
+  _renderDesignPanel();
+  if (msg) { msg.textContent = '↺ 전체 초기화됨'; setTimeout(() => { msg.textContent = ''; }, 2500); }
 }
 
 function _collectDesignVars() {
