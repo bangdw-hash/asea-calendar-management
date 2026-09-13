@@ -5,10 +5,11 @@
 /* ── 1. CSS 변수 ──────────────────────────────────────────────── */
 :root {
   /* 기본 색상 */
-  --color-bg:            #F0F9FF;
-  --color-accent:        #0EA5E9;
-  --color-accent-hover:  #0284C7;
-  --color-accent-light:  #E0F2FE;
+  --color-bg:            #F8F9FB;
+  --color-accent:        #1A73E8;
+  --color-accent-hover:  #1557B0;
+  --color-accent-light:  #E8F0FE;
+  --color-bg-hover:      var(--color-accent-light);
   --color-text:          #202124;
   --color-text-secondary:#5F6368;
   --color-card:          #FFFFFF;
@@ -450,7 +451,7 @@ a        { color: var(--color-accent); text-decoration: none; }
   user-select: none;
 }
 .calendar-title:hover {
-  background: var(--color-bg-hover, #f0f4ff);
+  background: var(--color-bg-hover);
 }
 .calendar-title::after {
   content: ' ▾';
@@ -2626,7 +2627,7 @@ a        { color: var(--color-accent); text-decoration: none; }
   user-select: none;
 }
 .recur-day-lbl:hover {
-  background: var(--color-bg-hover, #f0f4ff);
+  background: var(--color-bg-hover);
   border-color: var(--color-primary);
 }
 .recur-day-lbl input[type="checkbox"] {
@@ -2681,7 +2682,7 @@ a        { color: var(--color-accent); text-decoration: none; }
 .recur-preview {
   margin-top: 8px;
   padding: 6px 12px;
-  background: var(--color-bg-hover, #f0f4ff);
+  background: var(--color-bg-hover);
   border-radius: 12px;
   font-size: 12px;
   color: var(--color-primary);
@@ -2713,7 +2714,7 @@ a        { color: var(--color-accent); text-decoration: none; }
   transition: border-color .13s, background .13s;
 }
 .recur-del-opt:hover {
-  background: var(--color-bg-hover, #f0f4ff);
+  background: var(--color-bg-hover);
   border-color: var(--color-primary);
 }
 .recur-del-opt input[type="radio"] {
@@ -2725,7 +2726,7 @@ a        { color: var(--color-accent); text-decoration: none; }
 }
 .recur-del-opt:has(input:checked) {
   border-color: var(--color-primary);
-  background: #f0f4ff;
+  background: var(--color-bg-hover);
 }
 .recur-del-opt-body {
   display: flex;
@@ -2798,7 +2799,7 @@ a        { color: var(--color-accent); text-decoration: none; }
 .print-cal-check input[type="checkbox"] { display: none; }
 .print-cal-check:has(input:checked) {
   border-color: var(--color-primary);
-  background: var(--color-bg-hover, #f0f4ff);
+  background: var(--color-bg-hover);
 }
 .print-cal-dot {
   width: 10px;
@@ -2810,7 +2811,7 @@ a        { color: var(--color-accent); text-decoration: none; }
   font-size: 12px;
   color: var(--color-primary);
   padding: 7px 12px;
-  background: var(--color-bg-hover, #f0f4ff);
+  background: var(--color-bg-hover);
   border-radius: 12px;
   border-left: 3px solid var(--color-primary);
   margin-top: 4px;
