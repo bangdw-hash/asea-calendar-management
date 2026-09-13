@@ -59,7 +59,7 @@
 }
 [data-color-theme="sky"]{
   --color-accent:#1A73E8;--color-accent-dk:#1557B0;--color-accent-lt:#E8F0FE;
-  --color-bg:#F8F9FB;--color-border:#BAE6FD;
+  --color-bg:#F8F9FB;--color-border:#E8F0FE;
 }
 [data-color-theme="mint"]{
   --color-accent:#10B981;--color-accent-dk:#059669;--color-accent-lt:#D1FAE5;
@@ -113,7 +113,7 @@ html,body{height:100%;
   background:#fff;color:#3c4043;border:1.5px solid #dadce0;border-radius:var(--r);
   font-size:var(--font-sm);font-weight:600;font-family:inherit;cursor:pointer;
   box-shadow:var(--sh);transition:box-shadow .15s,border-color .15s;white-space:nowrap}
-.btn-login-google:hover{box-shadow:0 2px 8px rgba(14,165,233,.25);border-color:#1A73E8}
+.btn-login-google:hover{box-shadow:0 2px 8px rgba(26,115,232,.25);border-color:#1A73E8}
 .btn-login-google:active{box-shadow:none;background:#f8f9fa}
 
 /* icon-btn (헤더 아이콘) */
@@ -304,9 +304,9 @@ html,body{height:100%;
 /* ── FAB ── (index.html 스타일) */
 .fab{position:fixed;bottom:24px;right:20px;width:52px;height:52px;border-radius:50%;
   background:var(--color-accent);color:#fff;font-size:1.5rem;border:none;
-  box-shadow:0 4px 12px rgba(14,165,233,.4);cursor:pointer;z-index:200;
+  box-shadow:0 4px 12px rgba(26,115,232,.4);cursor:pointer;z-index:200;
   display:flex;align-items:center;justify-content:center;transition:transform .2s,box-shadow .2s}
-.fab:hover{transform:scale(1.08);box-shadow:0 6px 20px rgba(14,165,233,.55)}
+.fab:hover{transform:scale(1.08);box-shadow:0 6px 20px rgba(26,115,232,.55)}
 .fab:active{transform:scale(.95)}
 
 /* ── MODAL ── */
@@ -330,7 +330,7 @@ html,body{height:100%;
 .form-label .req{color:var(--red);margin-left:2px}
 .form-input{width:100%;padding:9px 12px;border:1.5px solid var(--g300);border-radius:var(--r);
   font-size:.875rem;color:var(--g900);transition:border-color .2s,box-shadow .2s;background:#fff}
-.form-input:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(14,165,233,.15)}
+.form-input:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(26,115,232,.15)}
 .form-input.err{border-color:var(--red)}
 .err-msg{font-size:.75rem;color:var(--red);margin-top:3px}
 .evt-title-wrap{position:relative}
@@ -440,7 +440,7 @@ html,body{height:100%;
   background:var(--color-accent);color:#fff;font-size:1.4rem;border:none;
   box-shadow:0 4px 12px rgba(124,58,237,.45);cursor:pointer;z-index:200;
   display:flex;align-items:center;justify-content:center;transition:transform .2s,box-shadow .2s}
-.ai-fab:hover{transform:scale(1.1);box-shadow:0 6px 20px rgba(14,165,233,.45)}
+.ai-fab:hover{transform:scale(1.1);box-shadow:0 6px 20px rgba(26,115,232,.45)}
 .ai-fab:active{transform:scale(.95)}
 
 .ai-panel{position:fixed;bottom:88px;right:20px;width:360px;max-width:calc(100vw - 32px);
@@ -469,7 +469,7 @@ html,body{height:100%;
 .ai-input-row{display:flex;gap:6px;padding:10px 12px;border-top:1px solid var(--g200);flex-shrink:0}
 #ai-input{flex:1;padding:8px 11px;border:1.5px solid var(--g300);border-radius:var(--r);
   font-size:.82rem;outline:none;transition:border-color .2s}
-#ai-input:focus{border-color:var(--color-accent);box-shadow:0 0 0 3px rgba(14,165,233,.1)}
+#ai-input:focus{border-color:var(--color-accent);box-shadow:0 0 0 3px rgba(26,115,232,.1)}
 #ai-send{width:34px;height:34px;border-radius:50%;background:var(--color-accent);
   color:#fff;border:none;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;
   flex-shrink:0;transition:opacity .15s}
@@ -627,7 +627,7 @@ html,body{height:100%;
 .auth-banner-btns{display:flex;gap:8px;flex-wrap:wrap;align-items:center;flex-shrink:0}
 
 /* loading spinner */
-.spinner{display:inline-block;width:18px;height:18px;border:2px solid rgba(14,165,233,.3);
+.spinner{display:inline-block;width:18px;height:18px;border:2px solid rgba(26,115,232,.3);
   border-top-color:var(--primary);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle}
 @keyframes spin{to{transform:rotate(360deg)}}
 
@@ -849,12 +849,12 @@ html,body{height:100%;
 .feat-item-title{font-size:.88rem;font-weight:700;color:var(--g900)}
 .feat-item-meta{font-size:.72rem;color:var(--g400);white-space:nowrap;flex-shrink:0}
 .feat-item-body{padding:10px 14px;font-size:.83rem;color:var(--g700);white-space:pre-wrap;line-height:1.55}
-.feat-reply-wrap{background:var(--primary-lt);border-top:1px solid rgba(14,165,233,.15);padding:10px 14px}
+.feat-reply-wrap{background:var(--primary-lt);border-top:1px solid rgba(26,115,232,.15);padding:10px 14px}
 .feat-reply-label{font-size:.72rem;font-weight:700;color:var(--primary);margin-bottom:4px}
 .feat-reply-text{font-size:.82rem;color:var(--g700);line-height:1.5;white-space:pre-wrap}
 .feat-admin-row{padding:10px 14px;border-top:1px solid var(--g200);display:flex;flex-direction:column;gap:6px}
 .feat-admin-ta{width:100%;padding:8px 10px;border:1.5px solid var(--g300);border-radius:var(--r);font-size:.82rem;resize:vertical;font-family:inherit;min-height:60px;transition:border-color .2s}
-.feat-admin-ta:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(14,165,233,.1)}
+.feat-admin-ta:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(26,115,232,.1)}
 .feat-badge{display:inline-block;padding:2px 8px;border-radius:var(--r);font-size:.68rem;font-weight:700;background:#e8f5e9;color:#2e7d32}
 
 
@@ -1105,7 +1105,7 @@ html,body{height:100%;
       </button>
       <div class="theme-picker-wrap" title="테마 선택">
         <button class="theme-swatch-btn" data-t="aurora" onclick="setColorTheme('aurora')" style="background:linear-gradient(135deg,#8B5CF6,#EC4899)" title="오로라"></button>
-        <button class="theme-swatch-btn" data-t="sky" onclick="setColorTheme('sky')" style="background:linear-gradient(135deg,#1A73E8,#38BDF8)" title="하늘색"></button>
+        <button class="theme-swatch-btn" data-t="sky" onclick="setColorTheme('sky')" style="background:linear-gradient(135deg,#1A73E8,#1A73E8)" title="하늘색"></button>
         <button class="theme-swatch-btn" data-t="mint" onclick="setColorTheme('mint')" style="background:linear-gradient(135deg,#059669,#34D399)" title="민트"></button>
       </div>
       <!-- 글자 크기 조절 -->
@@ -1155,7 +1155,7 @@ html,body{height:100%;
             <span class="swatch-label">오로라</span>
           </div>
           <div class="theme-swatch-item">
-            <button class="theme-swatch-btn" data-t="sky" onclick="setColorTheme('sky')" style="background:linear-gradient(135deg,#1A73E8,#38BDF8)"></button>
+            <button class="theme-swatch-btn" data-t="sky" onclick="setColorTheme('sky')" style="background:linear-gradient(135deg,#1A73E8,#1A73E8)"></button>
             <span class="swatch-label">하늘</span>
           </div>
           <div class="theme-swatch-item">

@@ -43,11 +43,15 @@
     r.setProperty('--color-accent-light', t.light);
     r.setProperty('--color-bg-hover',     t.light);
     r.setProperty('--color-primary',      t.accent);
-    // 개별 페이지 alias (--primary 계열)
-    r.setProperty('--primary',       t.accent);
-    r.setProperty('--primary-dark',  t.hover);
-    r.setProperty('--primary-light', t.light);
-    r.setProperty('--primary-hover', t.hover);
+    // 개별 페이지 alias (--primary 계열 — 축약형 포함)
+    r.setProperty('--primary',        t.accent);
+    r.setProperty('--primary-dark',   t.hover);
+    r.setProperty('--primary-dk',     t.hover);
+    r.setProperty('--primary-hover',  t.hover);
+    r.setProperty('--primary-light',  t.light);
+    r.setProperty('--primary-light2', t.light);
+    r.setProperty('--primary-lt',     t.light);
+    r.setProperty('--primary-l',      t.light);
     document.querySelectorAll('.theme-swatch').forEach(function (s) {
       s.classList.toggle('active', s.dataset.theme === name);
     });
