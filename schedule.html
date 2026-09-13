@@ -2093,7 +2093,11 @@ html,body{height:100%;
   </button>
   <button id="ctx-rv-remove-btn" onclick="ctxRvRemove()" style="color:#dc2626" hidden>
     <svg width="15" height="15" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5h12M8 5V3h2v2M7 8v5M11 8v5M4 5l1 10h8l1-10"/></svg>
-    일정에서 제거
+    이 날짜만 제거
+  </button>
+  <button id="ctx-rv-remove-batch-btn" onclick="ctxRvRemoveBatch()" style="color:#dc2626" hidden>
+    <svg width="15" height="15" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5h12M8 5V3h2v2M7 8v5M11 8v5M4 5l1 10h8l1-10"/><path d="M1 2h16M2 14h14" stroke-dasharray="2 1"/></svg>
+    묶음 전체 제거
   </button>
   <div class="ctx-divider" id="ctx-share-divider"></div>
   <button class="ctx-share-btn" id="ctx-share-btn" onclick="ctxShare()">
@@ -2559,7 +2563,7 @@ async function loadLinkedItems() {
   const dateE = `${last.getFullYear()}-${pad2(last.getMonth()+1)}-${pad2(last.getDate())}`;
   try {
     const r = await fetch(
-      `${SB_URL}/rest/v1/schedule_linked_items?target_date=gte.${dateS}&target_date=lte.${dateE}&unlinked_at=is.null&select=id,target_date,label,classroom_color,reservation_id&order=target_date`,
+      `${SB_URL}/rest/v1/schedule_linked_items?target_date=gte.${dateS}&target_date=lte.${dateE}&unlinked_at=is.null&select=id,target_date,label,classroom_color,reservation_id,reservations(batch_id)&order=target_date`,
       { headers: { apikey: SB_ANON, Authorization: 'Bearer ' + SB_ANON } }
     );
     if (!r.ok) return;
@@ -2884,7 +2888,7 @@ function renderMonth(wrap) {
       const visEvts = (isMob && allCellEvts.length > MAX_MOB) ? allCellEvts.slice(0, MAX_MOB) : allCellEvts;
       const moreCount = (isMob && allCellEvts.length > MAX_MOB) ? allCellEvts.length - MAX_MOB : 0;
       const dotsHtml = visEvts.map(ev => renderEvtItemHTML(ev, true)).join('');
-      const linkedHtml = (_linkedItems[dateKey]||[]).map(li=>`<span class="evt-dot-wrap"><span class="evt-dot rv-linked" style="background:${li.classroom_color||'#1A73E8'};--rv-color:${li.classroom_color||'#1A73E8'};cursor:pointer" title="${esc(li.label)}" data-linked-id="${li.id||''}" data-rv-id="${li.reservation_id||''}" onclick="event.stopPropagation();openRvDetail('${li.reservation_id||''}','${esc(li.label)}','${li.classroom_color||'#1A73E8'}','${li.id||''}')">${esc(li.label)}</span></span>`).join('');
+      const linkedHtml = (_linkedItems[dateKey]||[]).map(li=>`<span class="evt-dot-wrap"><span class="evt-dot rv-linked" style="background:${li.classroom_color||'#1A73E8'};--rv-color:${li.classroom_color||'#1A73E8'};cursor:pointer" title="${esc(li.label)}" data-linked-id="${li.id||''}" data-rv-id="${li.reservation_id||''}" data-batch-id="${li.reservations?.batch_id||''}" onclick="event.stopPropagation();openRvDetail('${li.reservation_id||''}','${esc(li.label)}','${li.classroom_color||'#1A73E8'}','${li.id||''}')">${esc(li.label)}</span></span>`).join('');
       const moreHtml = moreCount ? `<span class="evt-more-chip" onclick="event.stopPropagation();showDayEvts(${y},${m},${cell.d})">+${moreCount} 더보기</span>` : '';
       gridHtml += `<div class="${cell.cls}${holiday?' holiday':''}${allCellEvts.length||linkedHtml?' has-events':''}" data-y="${y}" data-m="${m}" data-d="${cell.d}">${numEl}${dotsHtml}${linkedHtml}${moreHtml}</div>`;
     }
@@ -6172,6 +6176,7 @@ async function loadPrivacyConsents() {
 let _ctxEvtId = null;
 let _ctxLinkedId = null;  // schedule_linked_items.id for rv-linked chips
 let _ctxRvId = null;      // reservations.id for rv-linked chips
+let _ctxBatchId = null;   // reservations.batch_id (set when chip belongs to a batch)
 let _ctxLpTimer = null;
 let _ctxOutsideHandler = null;
 let _ctxJustClosed = false;
@@ -6191,10 +6196,11 @@ function _openCtxMenuAt(cx, cy) {
   }, {once:true, capture:true}), 20);
 }
 
-function openRvCtxMenu(linkedId, rvId, cx, cy) {
+function openRvCtxMenu(linkedId, rvId, batchId, cx, cy) {
   _ctxEvtId = null;
   _ctxLinkedId = linkedId || null;
   _ctxRvId = rvId || null;
+  _ctxBatchId = batchId || null;
   document.querySelectorAll('.drag-drop-over').forEach(c => c.classList.remove('drag-drop-over'));
   document.querySelectorAll('.drag-select').forEach(c => c.classList.remove('drag-select'));
   _dragStart = null; _dragEnd = null; _dragging = false;
@@ -6204,6 +6210,7 @@ function openRvCtxMenu(linkedId, rvId, cx, cy) {
   document.getElementById('ctx-edit-btn').hidden = true;
   document.getElementById('ctx-delete-btn').hidden = true;
   document.getElementById('ctx-rv-remove-btn').hidden = !canRemove;
+  document.getElementById('ctx-rv-remove-batch-btn').hidden = !canRemove || !_ctxBatchId;
   document.getElementById('ctx-share-divider').hidden = true;
   document.getElementById('ctx-share-btn').hidden = true;
   _openCtxMenuAt(cx, cy);
@@ -6235,6 +6242,7 @@ function closeEvtCtxMenu() {
   _ctxEvtId = null;
   _ctxLinkedId = null;
   _ctxRvId = null;
+  _ctxBatchId = null;
   const grid = document.getElementById('month-grid');
   if (grid) grid.classList.remove('ctx-menu-open');
 }
@@ -6252,7 +6260,16 @@ async function ctxRvRemove() {
   if (!linkedId && !rvId) return;
   _rvDetailLinkedItemId = linkedId;
   _rvDetailReservationId = rvId;
-  await removeLinkedItem();
+  await removeLinkedItem(false);
+}
+async function ctxRvRemoveBatch() {
+  const linkedId = _ctxLinkedId, rvId = _ctxRvId;
+  closeEvtCtxMenu();
+  if (!linkedId && !rvId) return;
+  if (!confirm('같은 묶음의 대관 일정을 모두 학교 일정 캘린더에서 제거하시겠습니까?\n(예약 원본 데이터는 삭제되지 않습니다)')) return;
+  _rvDetailLinkedItemId = linkedId;
+  _rvDetailReservationId = rvId;
+  await removeLinkedItem(true);
 }
 async function ctxShare() {
   const ev = _events.find(x => x.id === _ctxEvtId);
@@ -6451,7 +6468,7 @@ function initCtxMenuListeners() {
     const rvEl = e.target.closest('[data-linked-id]');
     if (rvEl && rvEl.dataset.linkedId) {
       e.preventDefault();
-      openRvCtxMenu(rvEl.dataset.linkedId, rvEl.dataset.rvId, e.clientX, e.clientY);
+      openRvCtxMenu(rvEl.dataset.linkedId, rvEl.dataset.rvId, rvEl.dataset.batchId, e.clientX, e.clientY);
       return;
     }
     const el = e.target.closest('[data-evtid]');
@@ -6466,7 +6483,7 @@ function initCtxMenuListeners() {
       const t = e.touches[0];
       _ctxLpTimer = setTimeout(() => {
         _ctxLpTimer = null;
-        openRvCtxMenu(rvEl.dataset.linkedId, rvEl.dataset.rvId, t.clientX, t.clientY);
+        openRvCtxMenu(rvEl.dataset.linkedId, rvEl.dataset.rvId, rvEl.dataset.batchId, t.clientX, t.clientY);
       }, 600);
       return;
     }
@@ -7307,9 +7324,9 @@ function closeRvDetail() {
 
 const _RV_REMOVE_BTN_HTML = '<svg width="14" height="14" viewBox="0 0 18 18" fill="none" style="vertical-align:-2px;margin-right:4px"><path d="M3 5h12M8 5V3h2v2M7 8v5M11 8v5M4 5l1 10h8l1-10" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>일정에서 제거';
 
-async function removeLinkedItem() {
+async function removeLinkedItem(unlink_all = false) {
   if (!_rvDetailLinkedItemId && !_rvDetailReservationId) return;
-  if (!confirm('이 일정을 학교 일정 캘린더에서 제거하시겠습니까?\n(예약 원본 데이터는 삭제되지 않습니다)')) return;
+  if (!unlink_all && !confirm('이 일정을 학교 일정 캘린더에서 제거하시겠습니까?\n(예약 원본 데이터는 삭제되지 않습니다)')) return;
 
   const removeBtn = document.getElementById('rv-detail-remove-btn');
   if (removeBtn) { removeBtn.disabled = true; removeBtn.textContent = '처리 중...'; }
@@ -7326,7 +7343,7 @@ async function removeLinkedItem() {
         const r = await fetch(`${SB_URL}/rest/v1/rpc/unlink_from_schedule`, {
           method: 'POST',
           headers: { apikey: SB_ANON, Authorization: 'Bearer ' + SB_ANON, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ p_reservation_id: p_id, p_admin_email: _userEmail || 'bangdw@gmail.com', p_unlink_all: false })
+          body: JSON.stringify({ p_reservation_id: p_id, p_admin_email: _userEmail || 'bangdw@gmail.com', p_unlink_all: !!unlink_all })
         });
         if (r.ok) {
           const result = await r.json();
