@@ -53,7 +53,7 @@
     /* ── 헤더 ── */
     .pub-header {
       background: linear-gradient(135deg, #003087, #0EA5E9);
-      border-radius: 12px; padding: 24px 24px 20px;
+      border-radius:6px; padding: 24px 24px 20px;
       margin: 0 auto 20px; max-width: 680px; color: #fff;
     }
     .pub-logo { font-size: 13px; opacity: .85; margin-bottom: 8px; }
@@ -63,7 +63,7 @@
     /* ── 타입 뱃지 ── */
     .pub-type-badge {
       display: inline-flex; align-items: center; gap: 6px;
-      padding: 6px 14px; border-radius: 12px; font-size: 12px; font-weight: 700;
+      padding: 6px 14px; border-radius:6px; font-size: 12px; font-weight: 700;
       margin: 14px 0 0;
     }
     .type-external     { background: #e3f2fd; color: #0284C7; }
@@ -91,7 +91,7 @@
       margin-bottom: 5px; text-transform: uppercase; letter-spacing: .04em;
     }
     .pub-badge {
-      font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 12px;
+      font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius:6px;
     }
     .badge-tag   { background: #fef3c7; color: #92400e; }
     .badge-title { background: #ede9fe; color: #4c1d95; }
@@ -101,7 +101,7 @@
 
     input[type=text], textarea, select {
       width: 100%; padding: 9px 12px;
-      border: 1.5px solid var(--border); border-radius: 12px;
+      border: 1.5px solid var(--border); border-radius:6px;
       font-size: 14px; font-family: inherit; color: var(--text);
       background: #fff; outline: none; transition: border .15s;
     }
@@ -114,28 +114,28 @@
     .pub-font-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
     .pub-font-sample {
       font-size: 14px; padding: 6px 10px;
-      background: #f8faff; border-radius: 12px; border: 1px solid var(--border);
+      background: #f8faff; border-radius:6px; border: 1px solid var(--border);
     }
 
     /* ── 이미지 드롭 ── */
     .pub-drop {
-      border: 2px dashed var(--border); border-radius: 12px;
+      border: 2px dashed var(--border); border-radius:6px;
       padding: 18px; text-align: center; cursor: pointer;
       transition: .15s; font-size: 13px; color: var(--muted);
     }
     .pub-drop:hover, .pub-drop-over { border-color: var(--accent2); background: #f0f7ff; }
     .pub-img-preview { margin-top: 8px; }
-    .pub-img-preview img { max-height: 60px; max-width: 100%; border-radius: 12px; border: 1px solid var(--border); }
+    .pub-img-preview img { max-height: 60px; max-width: 100%; border-radius:6px; border: 1px solid var(--border); }
     .pub-ins-list { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
     .pub-ins-item { display: flex; align-items: center; gap: 6px;
-      background: #f0f7ff; border-radius: 12px; padding: 4px 8px; font-size: 12px; }
-    .pub-ins-item img { height: 32px; border-radius: 12px; }
+      background: #f0f7ff; border-radius:6px; padding: 4px 8px; font-size: 12px; }
+    .pub-ins-item img { height: 32px; border-radius:6px; }
     .pub-ins-del { background: none; border: none; color: #c00; cursor: pointer; font-size: 14px; }
 
     /* ── 미리보기 ── */
     .pub-preview-slide {
       position: relative; width: 100%; padding-bottom: 56.25%;
-      border-radius: 12px; overflow: hidden; font-size: 14px;
+      border-radius:6px; overflow: hidden; font-size: 14px;
       box-shadow: 0 2px 8px rgba(0,0,0,.12); margin-top: 4px;
     }
     .pub-preview-inner { position: absolute; inset: 0; }
@@ -157,7 +157,7 @@
     /* ── 버튼 ── */
     .pub-btn-row { display: flex; gap: 10px; justify-content: flex-end; margin-top: 16px; flex-wrap: wrap; }
     .pub-btn {
-      padding: 10px 20px; border-radius: 12px; border: none;
+      padding: 10px 20px; border-radius:6px; border: none;
       font-size: 14px; font-weight: 700; cursor: pointer; transition: .15s;
       font-family: inherit;
     }
@@ -177,7 +177,7 @@
     @keyframes pub-spin { to { transform: rotate(360deg); } }
 
     /* ── 결과 배너 ── */
-    .pub-result { border-radius: 12px; padding: 14px 18px; margin: 0 auto 14px; max-width: 680px;
+    .pub-result { border-radius:6px; padding: 14px 18px; margin: 0 auto 14px; max-width: 680px;
       font-size: 14px; display: none; }
     .pub-result-ok   { background: #dcfce7; color: #14532d; border: 1px solid #86efac; }
     .pub-result-err  { background: #fce8e6; color: #b31412; border: 1px solid #fca5a5; }
@@ -186,18 +186,18 @@
     /* ── 설정 오류 ── */
     .pub-setup-err {
       background: #fff3e0; border: 1.5px solid #fb8c00;
-      border-radius: 12px; padding: 20px 24px;
+      border-radius:6px; padding: 20px 24px;
       margin: 0 auto; max-width: 680px; font-size: 14px; color: #333;
     }
     .pub-setup-err h2 { color: #e65100; font-size: 17px; margin-bottom: 10px; }
     .pub-setup-err ol { padding-left: 20px; line-height: 2.2; }
-    .pub-setup-err code { background: #f5f5f5; padding: 1px 6px; border-radius: 12px; font-size: 12px; }
+    .pub-setup-err code { background: #f5f5f5; padding: 1px 6px; border-radius:6px; font-size: 12px; }
 
     /* ── 테마 선택 ── */
     .pub-theme-row { display: flex; gap: 8px; flex-wrap: wrap; }
     .pub-theme-label { cursor: pointer; }
     .pub-theme-chip {
-      display: inline-block; padding: 6px 14px; border-radius: 12px;
+      display: inline-block; padding: 6px 14px; border-radius:6px;
       font-size: 12px; font-weight: 700; border: 2px solid transparent;
       transition: .15s;
     }
@@ -206,7 +206,7 @@
     }
     .pub-color-row { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
     input[type=color] { width: 36px; height: 28px; border: 1px solid var(--border);
-      border-radius: 12px; padding: 2px; cursor: pointer; }
+      border-radius:6px; padding: 2px; cursor: pointer; }
 
     @media (max-width: 480px) {
       body { padding: 12px 10px 40px; }
@@ -428,7 +428,7 @@
       return '<label style="cursor:pointer">'+
         '<input type="radio" name="pub-layout" value="'+l.id+'"'+
           (l.id===_layout?' checked':'')+' hidden>'+
-        '<span id="pub-lt-'+l.id+'" style="display:inline-block;padding:6px 14px;border-radius:12px;font-size:12px;font-weight:700;border:2px solid #C8D8EF;transition:.15s;"'+
+        '<span id="pub-lt-'+l.id+'" style="display:inline-block;padding:6px 14px;border-radius:6px;font-size:12px;font-weight:700;border:2px solid #C8D8EF;transition:.15s;"'+
           (l.id===_layout?' class="pub-lt-sel"':'')+'>'+l.label+'</span>'+
         '</label>';
     }).join('');

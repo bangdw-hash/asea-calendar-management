@@ -64,7 +64,7 @@
     .header-title { font-size: 17px; font-weight: 700; flex: 1; }
     .header-user { font-size: 12px; opacity: .85; }
     .btn-logout {
-      background: rgba(255,255,255,.2); color: #fff; border-radius: 12px;
+      background: rgba(255,255,255,.2); color: #fff; border-radius:6px;
       padding: 5px 12px; font-size: 12px; font-weight: 500; margin-left: 8px;
     }
     .btn-logout:hover { background: rgba(255,255,255,.35); }
@@ -84,7 +84,7 @@
     .tab-btn .tab-icon { font-size: 18px; }
     .tab-btn.active { color: var(--color-accent); border-bottom-color: var(--color-accent); }
     .tab-badge {
-      background: var(--color-error); color: #fff; border-radius: 12px;
+      background: var(--color-error); color: #fff; border-radius:6px;
       font-size: 10px; padding: 0 5px; min-width: 16px; text-align: center; line-height: 16px;
     }
 
@@ -107,10 +107,10 @@
     }
     .wo-filters { display: flex; gap: 8px; flex: 1; flex-wrap: wrap; }
     select.form-select {
-      border: 1px solid var(--color-border); border-radius: 12px;
+      border: 1px solid var(--color-border); border-radius:6px;
       padding: 6px 10px; font-size: 13px; background: #fff;
     }
-    .btn { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: 12px; font-size: 13px; font-weight: 500; transition: background .15s; }
+    .btn { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius:6px; font-size: 13px; font-weight: 500; transition: background .15s; }
     .btn-primary { background: var(--color-accent); color: #fff; }
     .btn-primary:hover { background: var(--color-accent-hover); }
     .btn-secondary { background: #f1f3f4; color: var(--color-text); }
@@ -133,12 +133,12 @@
     .wo-card[data-priority="보통"]  { border-left-color: #4285F4; }
     .wo-card[data-priority="낮음"]  { border-left-color: #9AA0A6; }
     .wo-card-header { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-bottom: 6px; }
-    .wo-badge { color: #fff; border-radius: 12px; font-size: 11px; padding: 2px 7px; font-weight: 600; }
-    .wo-dept { font-size: 11px; color: var(--color-text-secondary); background: #f1f3f4; border-radius: 12px; padding: 2px 6px; }
+    .wo-badge { color: #fff; border-radius:6px; font-size: 11px; padding: 2px 7px; font-weight: 600; }
+    .wo-dept { font-size: 11px; color: var(--color-text-secondary); background: #f1f3f4; border-radius:6px; padding: 2px 6px; }
     .wo-date { font-size: 11px; color: var(--color-text-secondary); margin-left: auto; }
     .wo-card-title { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
     .wo-card-meta { font-size: 12px; color: var(--color-text-secondary); margin-bottom: 6px; }
-    .wo-card-content { font-size: 13px; color: var(--color-text); background: #f0f9ff; border-radius: 12px; padding: 8px 10px; margin-bottom: 8px; }
+    .wo-card-content { font-size: 13px; color: var(--color-text); background: #f0f9ff; border-radius:6px; padding: 8px 10px; margin-bottom: 8px; }
     .wo-card-actions { display: flex; gap: 6px; flex-wrap: wrap; }
     .empty-state { text-align: center; padding: 32px 16px; color: var(--color-text-secondary); }
 
@@ -161,7 +161,7 @@
     .modal-footer { display: flex; justify-content: flex-end; gap: 8px; padding: 14px 20px; border-top: 1px solid var(--color-border); }
     .form-label { display: block; font-size: 12px; font-weight: 600; margin-bottom: 4px; color: var(--color-text-secondary); }
     .form-input, .form-select, .form-textarea {
-      width: 100%; border: 1px solid var(--color-border); border-radius: 12px;
+      width: 100%; border: 1px solid var(--color-border); border-radius:6px;
       padding: 8px 10px; font-size: 13px; background: #fff;
     }
     .form-input:focus, .form-select:focus, .form-textarea:focus {
@@ -183,11 +183,11 @@
     .cal-cell.today { background: #E3F2FD; }
     .cal-day-num { font-size: 11px; font-weight: 600; color: var(--color-text-secondary); padding: 2px 4px; }
     .cal-cell.today .cal-day-num { background: var(--color-accent); color: #fff; border-radius: 50%; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; }
-    .cal-event { font-size: 10px; border-radius: 12px; padding: 1px 4px; margin-bottom: 1px; cursor: pointer; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+    .cal-event { font-size: 10px; border-radius:6px; padding: 1px 4px; margin-bottom: 1px; cursor: pointer; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 
     /* ── 토스트 ── */
     #toast-container { position: fixed; bottom: 20px; right: 20px; display: flex; flex-direction: column; gap: 8px; z-index: 9999; }
-    .toast { background: #333; color: #fff; border-radius: 12px; padding: 10px 16px; font-size: 13px; box-shadow: var(--shadow-md); max-width: 320px; }
+    .toast { background: #333; color: #fff; border-radius:6px; padding: 10px 16px; font-size: 13px; box-shadow: var(--shadow-md); max-width: 320px; }
     .toast-success { background: var(--color-success); }
     .toast-error { background: var(--color-error); }
     .toast-warning { background: var(--color-warning); }
@@ -365,7 +365,7 @@
               <button class="modal-close" id="qr-modal-close">✕</button>
             </div>
             <div class="modal-body" style="align-items:center;padding:24px">
-              <img id="qr-img" src="" alt="QR Code" style="width:260px;height:260px;border:8px solid #fff;box-shadow:0 2px 12px rgba(0,0,0,.15);border-radius:12px">
+              <img id="qr-img" src="" alt="QR Code" style="width:260px;height:260px;border:8px solid #fff;box-shadow:0 2px 12px rgba(0,0,0,.15);border-radius:6px">
               <div id="qr-room-name" style="font-size:16px;font-weight:700;margin-top:14px"></div>
               <div id="qr-room-location" style="font-size:13px;color:#5f6368;margin-top:4px"></div>
               <a id="qr-checkin-link" href="#" target="_blank" style="font-size:12px;color:#0ea5e9;margin-top:8px;word-break:break-all;display:block"></a>

@@ -10,13 +10,13 @@
   *{ box-sizing:border-box; }
   body{ font-family:"Malgun Gothic","Apple SD Gothic Neo",sans-serif; margin:0; background:#F0F9FF; color:#1f2937; }
   .wrap{ max-width:520px; margin:0 auto; padding:18px 16px 60px; }
-  .hd{ background:var(--c); color:#fff; border-radius:12px; padding:18px; margin-bottom:14px; }
+  .hd{ background:var(--c); color:#fff; border-radius:6px; padding:18px; margin-bottom:14px; }
   .hd h1{ font-size:18px; margin:0 0 4px; } .hd p{ font-size:13px; margin:0; opacity:.85; }
-  .card{ background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding:16px; margin-bottom:14px; }
+  .card{ background:#fff; border:1px solid #e5e7eb; border-radius:6px; padding:16px; margin-bottom:14px; }
   label{ display:block; font-size:12px; font-weight:600; color:#374151; margin:10px 0 4px; }
-  input,select,textarea{ width:100%; padding:10px 12px; border:1.5px solid #d1d5db; border-radius:12px; font-size:14px; font-family:inherit; }
+  input,select,textarea{ width:100%; padding:10px 12px; border:1.5px solid #d1d5db; border-radius:6px; font-size:14px; font-family:inherit; }
   textarea{ min-height:110px; resize:vertical; }
-  .btn{ width:100%; background:var(--c); color:#fff; border:none; border-radius:12px; padding:13px; font-size:15px; font-weight:700; cursor:pointer; margin-top:14px; }
+  .btn{ width:100%; background:var(--c); color:#fff; border:none; border-radius:6px; padding:13px; font-size:15px; font-weight:700; cursor:pointer; margin-top:14px; }
   .btn.sec{ background:#fff; color:var(--c); border:1.5px solid #cdd9e6; }
   .err{ color:#dc2626; font-size:13px; margin-top:8px; }
   .ok{ text-align:center; padding:18px; }
@@ -92,7 +92,7 @@ document.getElementById('q-btn').addEventListener('click', async function(){
   var r=await db.rpc('dorm_complaint_status',{p_ticket:t});
   if(r.error||!r.data){ out.innerHTML='<p class="muted">해당 접수번호를 찾을 수 없습니다.</p>'; return; }
   var d=r.data; var st={received:'접수',in_progress:'처리중',done:'완료'}[d.status]||d.status;
-  out.innerHTML='<div style="border:1px solid #e5e7eb;border-radius:12px;padding:12px">'+
+  out.innerHTML='<div style="border:1px solid #e5e7eb;border-radius:6px;padding:12px">'+
     '<b>'+esc(d.title)+'</b> <span class="muted">'+esc(d.ticket_no)+'</span><br>'+
     '<span class="muted">상태: <b>'+esc(st)+'</b> · '+esc((d.created_at||'').slice(0,10))+'</span>'+
     (d.comments&&d.comments.length? '<div style="margin-top:8px">'+d.comments.map(function(c){return '<div class="muted" style="border-top:1px dashed #e5e7eb;padding-top:6px;margin-top:6px">▸ '+esc(c.body)+'</div>';}).join('')+'</div>':'')+
