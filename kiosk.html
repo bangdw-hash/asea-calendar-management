@@ -52,7 +52,7 @@
     /* 상태 표시 */
     #status-box {
       background: rgba(0,0,0,0.65); color: #aaa;
-      border-radius: 12px; padding: 5px 12px; font-size: 11px;
+      border-radius:6px; padding: 5px 12px; font-size: 11px;
       backdrop-filter: blur(4px); text-align: right;
     }
     #status-dot {
@@ -62,14 +62,14 @@
     }
     #status-dot.polling  { background: #4caf50; }
     #status-dot.detected { background: #ff9800; animation: blink .5s infinite; }
-    #status-dot.switching{ background: #2196f3; animation: blink .3s infinite; }
+    #status-dot.switching{ background: #0ea5e9; animation: blink .3s infinite; }
     #status-dot.error    { background: #f44336; }
     @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.2} }
 
     /* 카운트다운 */
     #countdown-box {
       background: rgba(0,0,0,0.82); color: #fff;
-      border-radius: 12px; padding: 10px 18px; font-size: 12px;
+      border-radius:6px; padding: 10px 18px; font-size: 12px;
       backdrop-filter: blur(6px); text-align: center;
       display: none; min-width: 200px;
       border: 1px solid rgba(255,152,0,0.5);
@@ -82,7 +82,7 @@
     #load-btn {
       padding: 9px 18px;
       background: rgba(0,48,135,0.85); color: #fff;
-      border: 1.5px solid rgba(255,255,255,0.25); border-radius: 12px;
+      border: 1.5px solid rgba(255,255,255,0.25); border-radius:6px;
       font-size: 13px; font-weight: 700; cursor: pointer;
       backdrop-filter: blur(6px); transition: background .15s;
       font-family: inherit; white-space: nowrap;
@@ -107,7 +107,7 @@
       position: fixed; top: 14px; right: 16px; z-index: 100;
       background: rgba(0,0,0,0.55); color: #fff;
       font-size: 11px; font-weight: 700;
-      padding: 4px 12px; border-radius: 12px;
+      padding: 4px 12px; border-radius:6px;
       backdrop-filter: blur(4px); pointer-events: none;
     }
 
@@ -128,7 +128,7 @@
     }
     #setup-err h1 { font-size: 22px; color: #ff9800; }
     #setup-err p  { font-size: 14px; color: #aaa; line-height: 1.9; }
-    #setup-err code { background: #333; padding: 2px 8px; border-radius: 12px; font-size: 12px; }
+    #setup-err code { background: #333; padding: 2px 8px; border-radius:6px; font-size: 12px; }
   </style>
 </head>
 <body>

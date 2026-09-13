@@ -58,12 +58,12 @@
       .work-status-tab,
       .work-status-tab-personal,
       .personal-filter-btn {
-        border-radius: 12px !important;
+        border-radius:6px !important;
       }
       .work-status-tab.active {
-        background: var(--color-accent-light, #E8F0FE) !important;
-        color: var(--color-accent, #1A73E8) !important;
-        border-color: var(--color-accent-light, #E8F0FE) !important;
+        background: var(--color-accent-light, #E0F2FE) !important;
+        color: var(--color-accent, #0EA5E9) !important;
+        border-color: var(--color-accent-light, #E0F2FE) !important;
       }
       .work-status-tab-personal.active {
         background: #E6F4EA !important;
@@ -71,15 +71,15 @@
         border-color: #E6F4EA !important;
       }
       .personal-filter-btn.active {
-        background: var(--color-accent-light, #E8F0FE) !important;
-        color: var(--color-accent, #1A73E8) !important;
-        border-color: var(--color-accent-light, #E8F0FE) !important;
+        background: var(--color-accent-light, #E0F2FE) !important;
+        color: var(--color-accent, #0EA5E9) !important;
+        border-color: var(--color-accent-light, #E0F2FE) !important;
       }
       /* 관리자/개인설정 배지 — 꽉 찬 알약 대신 옅은 톤의 사각 배지 */
       .badge-admin {
         background: #FCE8E6 !important;
         color: #B3261E !important;
-        border-radius: 12px !important;
+        border-radius:6px !important;
       }
     }
   </style>
@@ -694,7 +694,7 @@
               <div id="pdf-file-info" class="pdf-file-info" hidden></div>
 
               <!-- API 키 인라인 입력 — AI제공자 메뉴로 일원화되어 숨김(공용 제공자 사용) -->
-              <div id="extract-api-box" style="display:none;margin-top:14px;padding:12px 14px;background:var(--color-accent-light,#E5F2FB);border:1px solid var(--color-border,#D6E4F0);border-radius:12px">
+              <div id="extract-api-box" style="display:none;margin-top:14px;padding:12px 14px;background:var(--color-accent-light,#E5F2FB);border:1px solid var(--color-border,#D6E4F0);border-radius:6px">
                 <div style="font-size:12px;font-weight:600;color:var(--color-accent,#0078D4);margin-bottom:8px">Claude API 키</div>
                 <div style="display:flex;flex-direction:column;gap:6px">
                   <input id="extract-api-key" type="password" class="form-input"
@@ -983,11 +983,11 @@
             </div>
           </div>
           <!-- QR 공개 링크 패널 -->
-          <div id="fac-qr-panel" hidden style="background:var(--color-bg-secondary);border-radius:12px;padding:16px;margin-bottom:16px;display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap">
-            <img id="fac-qr-img" src="" alt="QR Code" style="width:120px;height:120px;border-radius:12px;border:1px solid var(--color-border)">
+          <div id="fac-qr-panel" hidden style="background:var(--color-bg-secondary);border-radius:6px;padding:16px;margin-bottom:16px;display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap">
+            <img id="fac-qr-img" src="" alt="QR Code" style="width:120px;height:120px;border-radius:6px;border:1px solid var(--color-border)">
             <div style="flex:1;min-width:200px">
               <div style="font-size:13px;font-weight:600;margin-bottom:6px">외부 대관신청 공개 링크</div>
-              <div id="fac-qr-url" style="font-size:11px;word-break:break-all;color:#888;margin-bottom:8px;background:#fff;padding:6px 8px;border-radius:12px;border:1px solid var(--color-border)"></div>
+              <div id="fac-qr-url" style="font-size:11px;word-break:break-all;color:#888;margin-bottom:8px;background:#fff;padding:6px 8px;border-radius:6px;border:1px solid var(--color-border)"></div>
               <div style="display:flex;gap:6px;flex-wrap:wrap">
                 <button id="fac-qr-copy-btn" class="btn btn-primary btn-sm">URL 복사</button>
                 <a id="fac-qr-open-btn" href="#" target="_blank" class="btn btn-secondary btn-sm">↗ 열어보기</a>
@@ -1016,7 +1016,7 @@
             <div class="settings-card" style="margin-bottom:16px">
               <h3 style="margin:0 0 12px;font-size:15px;font-weight:700">외부 대관신청 링크 공유</h3>
               <p style="font-size:13px;color:#666;margin-bottom:16px">아래 URL을 대관 희망자에게 공유하면, 요금을 조회하고 신청서를 작성할 수 있습니다. 접수된 신청은 <strong>신청 관리</strong> 탭에서 확인할 수 있습니다.</p>
-              <div style="background:#f8f9fa;border-radius:12px;padding:12px 16px;font-size:12px;word-break:break-all;color:#374151;border:1px solid #e5e7eb;margin-bottom:12px" id="fac-link-url-display">로딩 중...</div>
+              <div style="background:#f8f9fa;border-radius:6px;padding:12px 16px;font-size:12px;word-break:break-all;color:#374151;border:1px solid #e5e7eb;margin-bottom:12px" id="fac-link-url-display">로딩 중...</div>
               <div style="display:flex;gap:8px;flex-wrap:wrap">
                 <button id="fac-link-copy-btn" class="btn btn-primary btn-sm">링크 복사</button>
                 <a id="fac-link-open-btn" href="#" target="_blank" class="btn btn-secondary btn-sm">↗ 미리보기</a>
@@ -1025,7 +1025,7 @@
             <div class="settings-card">
               <h4 style="margin:0 0 8px;font-size:14px;font-weight:600">QR 코드</h4>
               <p style="font-size:12px;color:#888;margin-bottom:8px">모바일 사용자를 위한 QR 코드입니다.</p>
-              <img id="fac-link-qr-img" src="" alt="QR Code" style="width:140px;height:140px;border-radius:12px;border:1px solid #e5e7eb;display:block">
+              <img id="fac-link-qr-img" src="" alt="QR Code" style="width:140px;height:140px;border-radius:6px;border:1px solid #e5e7eb;display:block">
             </div>
           </div>
         </div>
@@ -1067,7 +1067,7 @@
           </div>
 
           <!-- 일괄 조정 패널 -->
-          <div id="fac-fee-adjust-panel" hidden style="background:#fff;border:1.5px solid #E5E7EB;border-radius:12px;padding:18px;margin-bottom:14px">
+          <div id="fac-fee-adjust-panel" hidden style="background:#fff;border:1.5px solid #E5E7EB;border-radius:6px;padding:18px;margin-bottom:14px">
             <div style="font-size:14px;font-weight:700;color:#1a3a5c;margin-bottom:14px">요금 일괄 조정</div>
 
             <!-- 종합표 -->
@@ -1093,7 +1093,7 @@
             </div>
 
             <!-- 조정 컨트롤 -->
-            <div style="background:#F9FAFB;border-radius:12px;padding:14px;border:1px solid #E5E7EB">
+            <div style="background:#F9FAFB;border-radius:6px;padding:14px;border:1px solid #E5E7EB">
               <div style="font-size:12px;font-weight:700;color:#374151;margin-bottom:10px">조정 설정</div>
               <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end">
                 <div class="form-group" style="margin:0;min-width:140px">
@@ -1151,7 +1151,7 @@
               <button class="modal-close" onclick="document.getElementById('fac-review-modal').hidden=true">✕</button>
             </div>
             <div class="modal-body">
-              <div id="fac-rm-info" class="fac-rm-info" style="background:var(--color-bg-secondary);border-radius:12px;padding:12px;margin-bottom:16px;font-size:13px;line-height:1.8"></div>
+              <div id="fac-rm-info" class="fac-rm-info" style="background:var(--color-bg-secondary);border-radius:6px;padding:12px;margin-bottom:16px;font-size:13px;line-height:1.8"></div>
               <div class="form-group">
                 <label class="form-label">검토 의견 <span style="color:#888;font-weight:400">(선택)</span></label>
                 <textarea id="fac-rm-note" class="form-input" rows="3" placeholder="승인/반려 사유나 안내 메시지를 입력하세요..."></textarea>
@@ -1493,7 +1493,7 @@
                     <span id="ci-gps-toggle-label" style="font-size:13px;color:#5f6368;margin-left:6px">OFF — GPS 자유</span>
                   </label>
                 </div>
-                <div id="ci-gps-fields" hidden style="background:#f0f7ff;border:1.5px solid #90caf9;border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:10px">
+                <div id="ci-gps-fields" hidden style="background:#f0f7ff;border:1.5px solid #90caf9;border-radius:6px;padding:14px 16px;display:flex;flex-direction:column;gap:10px">
                   <p style="font-size:12px;color:#1565c0;margin:0">지정한 좌표 반경 안에서만 QR 스캔이 허용됩니다.</p>
                   <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
                     <div>
@@ -1508,8 +1508,8 @@
                   <div>
                     <label class="form-label" style="font-size:12px">허용 반경 (미터) — 실내 GPS 오차 감안 100m 이상 권장</label>
                     <div style="display:flex;align-items:center;gap:8px">
-                      <input id="ci-space-radius" type="range" min="30" max="500" step="10" value="100" style="flex:1;accent-color:#1a73e8">
-                      <span id="ci-space-radius-val" style="font-size:14px;font-weight:700;color:#1a73e8;min-width:50px">100m</span>
+                      <input id="ci-space-radius" type="range" min="30" max="500" step="10" value="100" style="flex:1;accent-color:#0ea5e9">
+                      <span id="ci-space-radius-val" style="font-size:14px;font-weight:700;color:#0ea5e9;min-width:50px">100m</span>
                     </div>
                   </div>
                   <button type="button" id="ci-gps-locate-btn" class="btn btn-secondary btn-sm" style="align-self:flex-start">
@@ -1537,7 +1537,7 @@
               <button class="modal-close" id="ci-qr-modal-close" aria-label="닫기">✕</button>
             </div>
             <div class="modal-body" style="align-items:center;text-align:center;gap:14px">
-              <div style="background:#fff;border:8px solid #f0f0f0;border-radius:12px;display:inline-block;padding:8px">
+              <div style="background:#fff;border:8px solid #f0f0f0;border-radius:6px;display:inline-block;padding:8px">
                 <img id="ci-qr-img" src="" alt="QR Code" style="width:260px;height:260px;display:block">
               </div>
               <div id="ci-qr-room-name" style="font-size:17px;font-weight:700;margin-top:4px"></div>
@@ -1912,7 +1912,7 @@
 
           <!-- API 키: 공용 AI 제공자 사용(전용 키 제거) -->
           <div class="form-group">
-            <p class="form-hint" style="margin:0;padding:10px 12px;background:#EFF6FF;border-radius:12px;border:1px solid #DBEAFE">
+            <p class="form-hint" style="margin:0;padding:10px 12px;background:#EFF6FF;border-radius:6px;border:1px solid #DBEAFE">
               ℹ️ 아물보는 이제 <b>위 「AI 제공자 설정」의 공용 API</b>(서버 프록시/공식/Flow)를 그대로 사용합니다.
               별도 전용 키가 필요 없습니다. 제공자·모델은 한 곳(AI 제공자 설정)에서 관리됩니다.
             </p>
@@ -2800,7 +2800,7 @@
         </div>
         <div class="form-group">
           <label class="form-label">색상 (달력 표시)</label>
-          <input id="fac-bm-color" type="color" value="#4285F4" style="width:60px;height:36px;padding:2px;border:1px solid #ddd;border-radius:12px;cursor:pointer">
+          <input id="fac-bm-color" type="color" value="#4285F4" style="width:60px;height:36px;padding:2px;border:1px solid #ddd;border-radius:6px;cursor:pointer">
         </div>
         <div class="form-group">
           <label class="form-label">호실 목록</label>
@@ -2831,7 +2831,7 @@
         </div>
 
         <!-- 평상 시간대 -->
-        <div style="background:#EFF6FF;border-radius:12px;padding:12px;margin-bottom:10px">
+        <div style="background:#EFF6FF;border-radius:6px;padding:12px;margin-bottom:10px">
           <div style="font-size:12px;font-weight:700;color:#1a3a5c;margin-bottom:8px">⏰ 평상 시간대</div>
           <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
             <div class="form-group"><label class="form-label">시작</label><input id="fac-fee-norm-s" type="time" step="600" class="form-input" value="09:00"></div>
@@ -2841,7 +2841,7 @@
         </div>
 
         <!-- 할증 시간대 (복수) -->
-        <div style="background:#FEF9EC;border-radius:12px;padding:12px;margin-bottom:10px">
+        <div style="background:#FEF9EC;border-radius:6px;padding:12px;margin-bottom:10px">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
             <div style="font-size:12px;font-weight:700;color:#D97706">할증 시간대 <span style="font-weight:400;color:#888;font-size:11px">(여러 구간 추가 가능)</span></div>
             <button type="button" id="fac-fee-sur-add-btn" class="btn btn-sm" style="background:#D97706;color:#fff;padding:4px 10px;font-size:11px">+ 할증 구간 추가</button>
@@ -2860,7 +2860,7 @@
         </div>
 
         <!-- 시간비례 추가항목 -->
-        <div style="border:1.5px solid #E5E7EB;border-radius:12px;padding:12px;margin-bottom:10px">
+        <div style="border:1.5px solid #E5E7EB;border-radius:6px;padding:12px;margin-bottom:10px">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
             <div>
               <span style="font-size:12px;font-weight:700;color:#1a3a5c">시간비례 추가항목</span>
@@ -2878,7 +2878,7 @@
         </div>
 
         <!-- 일괄 추가항목 -->
-        <div style="border:1.5px solid #E5E7EB;border-radius:12px;padding:12px;margin-bottom:14px">
+        <div style="border:1.5px solid #E5E7EB;border-radius:6px;padding:12px;margin-bottom:14px">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
             <div>
               <span style="font-size:12px;font-weight:700;color:#1a3a5c">일괄 추가항목</span>
@@ -2896,7 +2896,7 @@
         </div>
 
         <!-- 냉난방비 -->
-        <div style="border:1.5px solid #BAE6FD;border-radius:12px;padding:12px;margin-bottom:14px;background:#F0F9FF">
+        <div style="border:1.5px solid #BAE6FD;border-radius:6px;padding:12px;margin-bottom:14px;background:#F0F9FF">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
             <div>
               <span style="font-size:12px;font-weight:700;color:#0369A1">냉난방비</span>
@@ -2918,7 +2918,7 @@
                 <input id="fac-fee-hvac-months" type="text" class="form-input" value="1,2,3,5,6,7,8,9,11,12" placeholder="1,2,3,5,6,7,8,9,11,12">
               </div>
             </div>
-            <div style="font-size:11px;color:#0369A1;background:#E0F2FE;border-radius:12px;padding:7px 10px;line-height:1.6">
+            <div style="font-size:11px;color:#0369A1;background:#E0F2FE;border-radius:6px;padding:7px 10px;line-height:1.6">
               <strong>4월·10월 제외</strong> — 예약 날짜의 월이 위 목록에 포함되면 <strong>총 이용 시간 × 단가</strong>로 자동 산정됩니다.
             </div>
           </div>

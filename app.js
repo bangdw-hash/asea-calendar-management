@@ -723,7 +723,7 @@
   }
   function _calsToLoad() {
     var enabled = CONFIG.selectedCalendars.filter(function (c) { return c.enabled !== false; });
-    return enabled.length ? enabled : [{ id: 'primary', name: '기본 캘린더', color: '#1A73E8' }];
+    return enabled.length ? enabled : [{ id: 'primary', name: '기본 캘린더', color: '#0EA5E9' }];
   }
   // 지정 기간의 이벤트를 모든 캘린더에서 병렬 조회
   function _fetchRange(timeMin, timeMax) {
@@ -3011,7 +3011,7 @@
 
     // ── 색상 팔레트 (부서별) ───────────────────────────────────
     var DEPT_COLORS = {
-      '기획처': { bg: '#e8f0fe', text: '#1a5fbf', border: '#4285F4' },
+      '기획처': { bg: '#e0f2fe', text: '#1a5fbf', border: '#4285F4' },
       '교학처': { bg: '#e6f4ea', text: '#1e7e34', border: '#34A853' },
       '행정처': { bg: '#fef7e0', text: '#856404', border: '#FBBC04' },
       '기타':   { bg: '#fce8e6', text: '#b3261e', border: '#EA4335' },
@@ -3039,7 +3039,7 @@
       var numColor  = isOther ? '#bbb' : isSun ? '#e53935' : isSat ? '#1565C0' : '#1a1a2e';
       var cellBg    = isOther ? '#f8f9fa' : '#fff';
       var numBadge  = isToday
-        ? 'background:#1A73E8;color:#fff;border-radius:50%;width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;'
+        ? 'background:#0EA5E9;color:#fff;border-radius:50%;width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;'
         : 'font-size:13px;font-weight:' + (isOther ? '400' : '700') + ';color:' + numColor + ';';
 
       var chipsHtml = dayEvts.map(function (ev) {
@@ -3118,7 +3118,7 @@
       '  }' +
       '  .print-btn-bar { text-align:center; padding:12px 0 8px; display:flex; gap:12px; justify-content:center; }' +
       '  .pbtn { padding:9px 28px; border:none; border-radius:8px; font-size:14px; font-weight:700; cursor:pointer; font-family:inherit; }' +
-      '  .pbtn-print { background:#1A73E8; color:#fff; }' +
+      '  .pbtn-print { background:#0EA5E9; color:#fff; }' +
       '  .pbtn-close { background:#f1f3f4; color:#3c4152; }' +
       '</style>' +
       '</head><body>' +
@@ -3189,7 +3189,7 @@
       : allCals;
 
     var DEPT_COLORS = {
-      '기획처': { bg: '#e8f0fe', text: '#1a5fbf', border: '#4285F4' },
+      '기획처': { bg: '#e0f2fe', text: '#1a5fbf', border: '#4285F4' },
       '교학처': { bg: '#e6f4ea', text: '#1e7e34', border: '#34A853' },
       '행정처': { bg: '#fef7e0', text: '#856404', border: '#FBBC04' },
       '기타':   { bg: '#fce8e6', text: '#b3261e', border: '#EA4335' },
@@ -3214,7 +3214,7 @@
       var numColor = isOther ? '#bbb' : isSun ? '#e53935' : isSat ? '#1565C0' : '#1a1a2e';
       var cellBg   = isOther ? '#f8f9fa' : '#fff';
       var numStyle = isToday
-        ? 'background:#1A73E8;color:#fff;border-radius:50%;width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;'
+        ? 'background:#0EA5E9;color:#fff;border-radius:50%;width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;'
         : 'font-size:13px;font-weight:' + (isOther ? '400' : '700') + ';color:' + numColor + ';';
 
       var chipsHtml = dayEvts.map(function (ev) {
@@ -3333,7 +3333,7 @@
       '}' +
       '.btn-bar { text-align:center; padding:14px 0 8px; display:flex; gap:12px; justify-content:center; }' +
       '.pbtn { padding:9px 28px; border:none; border-radius:8px; font-size:14px; font-weight:700; cursor:pointer; font-family:inherit; }' +
-      '.pbtn-print { background:#1A73E8; color:#fff; }' +
+      '.pbtn-print { background:#0EA5E9; color:#fff; }' +
       '.pbtn-close  { background:#f1f3f4; color:#3c4152; }' +
       '</style></head><body>' +
       '<div class="btn-bar no-print">' +
@@ -4288,7 +4288,7 @@
       '<button type="button" id="extract-cal-ms-none">전체 해제</button></div>' +
       cals.map(function (cal) {
         var checked = pre ? (pre.indexOf(cal.id) !== -1) : !!cal.primary;
-        var color = cal.backgroundColor || cal.color || '#1A73E8';
+        var color = cal.backgroundColor || cal.color || '#0EA5E9';
         return '<label><input type="checkbox" class="extract-cal-cb" value="' + _esc(cal.id) + '" data-name="' + _esc(cal.summary || cal.id) + '"' + (checked ? ' checked' : '') + '>' +
           '<span class="ms-dot" style="background:' + _esc(color) + '"></span>' +
           '<span>' + _esc(cal.summary || cal.id) + (cal.primary ? ' (기본)' : '') + '</span></label>';
@@ -5232,7 +5232,7 @@
       '.ev-item:active{background:#eef3ff}\n' +
       '.ev-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;margin-top:5px}\n' +
       '.ev-body{display:flex;flex-direction:column;gap:3px;flex:1;min-width:0}\n' +
-      '.ev-title{font-size:14px;font-weight:600;color:#1a73e8;word-break:keep-all;line-height:1.4}\n' +
+      '.ev-title{font-size:14px;font-weight:600;color:#0ea5e9;word-break:keep-all;line-height:1.4}\n' +
       '.ev-time{font-size:12px;color:#888}\n' +
       '</style>\n' +
       '<script>\n' +
@@ -5578,7 +5578,7 @@
     }
 
     var pColor = { '긴급': '#EA4335', '높음': '#F57C00', '보통': '#4285F4', '낮음': '#9AA0A6' };
-    var sColor = { '대기': '#9AA0A6', '진행중': '#1A73E8', '완료': '#34A853', '취소': '#EA4335' };
+    var sColor = { '대기': '#9AA0A6', '진행중': '#0EA5E9', '완료': '#34A853', '취소': '#EA4335' };
 
     listEl.innerHTML = filtered.map(function (o) {
       var pc = pColor[o.priority] || '#9AA0A6';
@@ -5811,7 +5811,7 @@
       var staff = (await SheetsModule.getManagerStaff()) || [];
       var active = staff.filter(function (s) { return s.status !== 'inactive'; });
       if (!active.length) { listEl.innerHTML = '<p class="empty-state" style="padding:8px">등록된 인원이 없습니다.</p>'; return; }
-      var shiftColor = { '주간': '#1A73E8', '야간': '#5C6BC0', '비번': '#9AA0A6', '': '#9AA0A6' };
+      var shiftColor = { '주간': '#0EA5E9', '야간': '#5C6BC0', '비번': '#9AA0A6', '': '#9AA0A6' };
       listEl.innerHTML = active.map(function (s) {
         var sc = shiftColor[s.shift] || '#9AA0A6';
         return '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--color-border)">' +
@@ -5882,7 +5882,7 @@
     badge.style.display = 'inline-block';
     badge.textContent = label;
     badge.style.cssText = 'display:inline-block;margin-left:8px;padding:2px 8px;border-radius:12px;font-size:12px;font-weight:600;' +
-      (isAdm ? 'background:#1a73e8;color:#fff' : 'background:#e8f0fe;color:#1a73e8');
+      (isAdm ? 'background:#0ea5e9;color:#fff' : 'background:#e0f2fe;color:#0ea5e9');
   }
 
   function _applySettingsAdminVisibility() {
@@ -6311,8 +6311,8 @@
         (isSel ? ' selected' : '') + (isToday ? ' today' : '') + '" ' +
         'data-date="' + ds + '" style="' +
         'flex:1;min-width:36px;padding:6px 4px;border-radius:8px;border:1.5px solid ' +
-        (isSel ? '#1a73e8' : '#e0e4ea') + ';background:' +
-        (isSel ? '#1a73e8' : isToday ? '#e8f0fe' : '#f8f9fa') +
+        (isSel ? '#0ea5e9' : '#e0e4ea') + ';background:' +
+        (isSel ? '#0ea5e9' : isToday ? '#e0f2fe' : '#f8f9fa') +
         ';color:' + (isSel ? '#fff' : '#202124') + ';cursor:pointer;font-size:11px;text-align:center">' +
         '<div style="font-weight:700">' + days[i] + '</div>' +
         '<div>' + d.getDate() + '</div>' +

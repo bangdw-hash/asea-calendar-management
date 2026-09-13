@@ -92,7 +92,7 @@ body {
 .fr-select:focus {
   outline: none;
   border-color: #0078D4;
-  box-shadow: 0 0 0 3px rgba(26,115,232,.15);
+  box-shadow: 0 0 0 3px rgba(14,165,233,.15);
 }
 .fr-select {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23666' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
@@ -104,7 +104,7 @@ body {
 
 /* ── 달력 안내 ── */
 .fr-cal-guide {
-  background: #F8F9FB;
+  background: #F0F9FF;
   border: 1px solid #E8EAED;
   border-radius: 12px;
   padding: 8px 12px;
@@ -263,7 +263,7 @@ body {
 .fr-time-ranges { margin-top: 12px; }
 
 .fr-time-range-row {
-  background: #F8F9FB;
+  background: #F0F9FF;
   border: 1px solid #E8EAED;
   border-radius: 12px;
   padding: 12px 14px;

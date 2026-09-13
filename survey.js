@@ -368,7 +368,7 @@
 
     /* Google Forms 연동 배너 */
     var formsBanner = !formsLinked ?
-      '<div style="background:var(--color-accent-lt,#E8F0FE);border:1px solid var(--color-border);border-radius:12px;padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">' +
+      '<div style="background:var(--color-accent-lt,#E0F2FE);border:1px solid var(--color-border);border-radius:12px;padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">' +
         '<span style="display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--color-text);flex:1;min-width:200px">' +
           _ico('alert-circle', 16) +
           '<span><b>Google Forms 연동</b>이 필요해야 구글 드라이브에 설문지를 저장할 수 있습니다. ' +

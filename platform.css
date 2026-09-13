@@ -10,14 +10,14 @@
 /* ── 접근성: 건너뛰기 링크 & 포커스 링 ─────────────────────────── */
 .pf-skip-link {
   position: fixed; left: 8px; top: -48px; z-index: 100000;
-  background: var(--color-accent, #1A73E8); color: #fff;
+  background: var(--color-accent, #0EA5E9); color: #fff;
   padding: 8px 14px; border-radius: 8px; font-size: 13px; font-weight: 600;
   transition: top 140ms ease; text-decoration: none;
 }
 .pf-skip-link:focus { top: 8px; }
 
 body.pf-kbd *:focus-visible {
-  outline: 2px solid var(--color-accent, #1A73E8) !important;
+  outline: 2px solid var(--color-accent, #0EA5E9) !important;
   outline-offset: 2px !important;
   border-radius: 4px;
 }
@@ -124,7 +124,7 @@ html[data-uiscale="sm"]  .app { zoom: 0.92; }
 .pf-empty .pf-empty-title { font-size: 15px; font-weight: 700; color: var(--color-text); }
 .pf-empty .pf-empty-desc { font-size: 13px; max-width: 360px; line-height: 1.5; }
 .pf-empty .pf-empty-btn {
-  margin-top: 6px; background: var(--color-accent, #1A73E8); color: #fff; border: none;
+  margin-top: 6px; background: var(--color-accent, #0EA5E9); color: #fff; border: none;
   padding: 9px 18px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer;
 }
 
@@ -156,7 +156,7 @@ html[data-uiscale="sm"]  .app { zoom: 0.92; }
   font-size: 10.5px; color: var(--color-text-secondary); border: 1px solid var(--color-border);
   border-radius: 5px; padding: 1px 6px; flex: none;
 }
-.pf-palette-item.active, .pf-palette-item:hover { background: var(--color-accent-light, #E8F0FE); }
+.pf-palette-item.active, .pf-palette-item:hover { background: var(--color-accent-light, #E0F2FE); }
 .pf-palette-empty { padding: 26px; text-align: center; color: var(--color-text-secondary); font-size: 13px; }
 .pf-palette-foot {
   border-top: 1px solid var(--color-border); padding: 7px 14px; font-size: 11px;
@@ -183,7 +183,7 @@ html[data-uiscale="sm"]  .app { zoom: 0.92; }
   border: none; border-radius: 7px; padding: 7px 13px; font-size: 12.5px; font-weight: 600; cursor: pointer;
 }
 .pf-coach-card .pf-coach-skip { background: transparent; color: var(--color-text-secondary); }
-.pf-coach-card .pf-coach-next { background: var(--color-accent, #1A73E8); color: #fff; }
+.pf-coach-card .pf-coach-next { background: var(--color-accent, #0EA5E9); color: #fff; }
 
 /* 보기 설정 미니 메뉴 */
 .pf-view-menu {
@@ -193,4 +193,4 @@ html[data-uiscale="sm"]  .app { zoom: 0.92; }
 .pf-view-menu .pf-vm-row { display: flex; align-items: center; justify-content: space-between; padding: 7px 6px; font-size: 13px; }
 .pf-view-menu .pf-seg { display: inline-flex; border: 1px solid var(--color-border); border-radius: 8px; overflow: hidden; }
 .pf-view-menu .pf-seg button { border: none; background: transparent; padding: 5px 10px; font-size: 12px; cursor: pointer; color: var(--color-text); }
-.pf-view-menu .pf-seg button.on { background: var(--color-accent, #1A73E8); color: #fff; }
+.pf-view-menu .pf-seg button.on { background: var(--color-accent, #0EA5E9); color: #fff; }

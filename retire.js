@@ -217,11 +217,11 @@ window.RetireModule = (function () {
       var linkBox = document.createElement('div');
       linkBox.style.cssText = 'width:100%;max-width:540px;background:#EFF6FF;border:1.5px solid #93C5FD;border-radius:12px;padding:16px 18px;margin-bottom:20px;text-align:left';
       linkBox.innerHTML =
-        '<div style="font-size:12px;font-weight:700;color:#1A73E8;margin-bottom:6px;letter-spacing:.4px">📎 퇴직 신청자 공유 링크</div>' +
+        '<div style="font-size:12px;font-weight:700;color:#0EA5E9;margin-bottom:6px;letter-spacing:.4px">📎 퇴직 신청자 공유 링크</div>' +
         '<div style="font-size:12px;color:#374151;word-break:break-all;background:#fff;border:1px solid #BFDBFE;border-radius:6px;padding:8px 10px;margin-bottom:10px;font-family:monospace">' + formUrl + '</div>' +
         '<div style="display:flex;gap:8px">' +
-          '<button id="rt-home-copy-link" style="flex:1;padding:8px 0;background:#1A73E8;color:#fff;border:none;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer">📋 링크 복사</button>' +
-          '<button id="rt-home-copy-msg"  style="flex:1;padding:8px 0;background:#fff;color:#1A73E8;border:1.5px solid #93C5FD;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer">✉️ 안내 메시지 복사</button>' +
+          '<button id="rt-home-copy-link" style="flex:1;padding:8px 0;background:#0EA5E9;color:#fff;border:none;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer">📋 링크 복사</button>' +
+          '<button id="rt-home-copy-msg"  style="flex:1;padding:8px 0;background:#fff;color:#0EA5E9;border:1.5px solid #93C5FD;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer">✉️ 안내 메시지 복사</button>' +
         '</div>';
       wrap.appendChild(linkBox);
 
@@ -399,9 +399,9 @@ window.RetireModule = (function () {
       '<div style="font-size:36px;margin-bottom:8px">✅</div>' +
       '<div style="font-size:18px;font-weight:700;color:#1a3a5c;margin-bottom:6px">중간 저장 완료</div>' +
       '<div style="font-size:12px;color:#6B7280;line-height:1.7;margin-bottom:18px">아래 저장 코드를 반드시 메모해 두세요.<br>같은 링크에서 <strong>이어서 작성하기</strong> → 코드+이름 입력으로<br>언제든 이어서 작성할 수 있습니다.</div>' +
-      '<div style="background:#EFF6FF;border:2px solid #1A73E8;border-radius:10px;padding:16px;margin-bottom:16px">' +
+      '<div style="background:#EFF6FF;border:2px solid #0EA5E9;border-radius:10px;padding:16px;margin-bottom:16px">' +
         '<div style="font-size:11px;color:#6B7280;margin-bottom:6px;font-weight:600">저장 코드</div>' +
-        '<div style="font-size:30px;font-weight:900;letter-spacing:8px;color:#1A73E8;font-family:monospace">' + _esc(app.resumeCode) + '</div>' +
+        '<div style="font-size:30px;font-weight:900;letter-spacing:8px;color:#0EA5E9;font-family:monospace">' + _esc(app.resumeCode) + '</div>' +
         '<div style="font-size:12px;color:#374151;margin-top:8px">이름: <strong>' + _esc(app.form.name) + '</strong></div>' +
       '</div>' +
       '<button id="rt-ov-copy" style="display:block;width:100%;padding:10px;background:#1a3a5c;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:8px">📋 코드 복사</button>' +
@@ -813,7 +813,7 @@ window.RetireModule = (function () {
     body.appendChild(desc);
 
     var urlBox = el('div');
-    urlBox.style.cssText = 'background:#F9FAFB;border:1px solid #D1D5DB;border-radius:8px;padding:12px;font-size:13px;word-break:break-all;color:#1A73E8;margin-bottom:12px';
+    urlBox.style.cssText = 'background:#F9FAFB;border:1px solid #D1D5DB;border-radius:8px;padding:12px;font-size:13px;word-break:break-all;color:#0EA5E9;margin-bottom:12px';
     urlBox.textContent = formUrl;
     body.appendChild(urlBox);
 
@@ -878,7 +878,7 @@ window.RetireModule = (function () {
         '퇴사예정: <strong>' + (f.retireDate || '미입력') + '</strong>' +
         ' &nbsp;|&nbsp; 제출: ' + (app.submittedAt ? new Date(app.submittedAt).toLocaleDateString('ko-KR') : '미제출') +
         ' &nbsp;|&nbsp; IRP: ' + (app.irp.bank || '-') +
-        (app.resumeCode ? ' &nbsp;|&nbsp; 저장코드: <strong style="color:#1A73E8">' + _esc(app.resumeCode) + '</strong>' : '') +
+        (app.resumeCode ? ' &nbsp;|&nbsp; 저장코드: <strong style="color:#0EA5E9">' + _esc(app.resumeCode) + '</strong>' : '') +
         '</span>';
 
       var badge = el('span', statusBadge[app.status] || 'rt-badge rt-badge-draft');

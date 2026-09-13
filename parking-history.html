@@ -7,8 +7,8 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root {
-  --primary: #1A73E8;
-  --primary-dk: #1557B0;
+  --primary: #0EA5E9;
+  --primary-dk: #0284C7;
   --primary-lt: #EEF4FD;
   --green: #16a34a;
   --green-dk: #15803d;
@@ -25,14 +25,14 @@
   --g500: #6b7280;
   --g700: #374151;
   --g900: #111827;
-  --r: 12px;
+  --r:6px;
   --r-sm: 12px;
   --sh: 0 1px 3px rgba(0,0,0,.08);
 }
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
-  background: var(--g100);
+  background: #F0F9FF;
   color: var(--g900);
   min-height: 100dvh;
   display: flex; flex-direction: column;
@@ -67,7 +67,7 @@ body {
 }
 .filter-btn {
   padding: 7px 14px; border: 1.5px solid var(--g200);
-  border-radius: 12px; background: #fff;
+  border-radius:6px; background: #fff;
   font-size: 13px; font-weight: 600; color: var(--g500);
   cursor: pointer; font-family: inherit; transition: all .12s;
 }
@@ -141,7 +141,7 @@ body {
 .hist-row1 { display: flex; align-items: center; gap: 8px; margin-bottom: 3px; }
 .hist-badge {
   font-size: 11px; font-weight: 700; letter-spacing: .5px;
-  padding: 2px 8px; border-radius: 12px;
+  padding: 2px 8px; border-radius:6px;
 }
 .hist-badge.park { background: var(--green-lt); color: var(--green); border: 1px solid var(--green-bd); }
 .hist-badge.leave { background: var(--red-lt); color: var(--red); border: 1px solid var(--red-bd); }
@@ -150,7 +150,7 @@ body {
 .hist-sub { font-size: 13px; color: var(--g500); }
 .hist-notes {
   font-size: 12px; color: var(--g500); margin-top: 5px;
-  background: var(--g50); border-radius: 12px;
+  background: var(--g50); border-radius:6px;
   padding: 5px 9px; border-left: 2px solid var(--g200);
   line-height: 1.5;
 }
@@ -186,7 +186,7 @@ body {
 .skel-card:last-child { border-bottom: none; }
 .skel-circle { width: 36px; height: 36px; border-radius: 50%; background: var(--g100); flex-shrink: 0; }
 .skel-lines { flex: 1; }
-.skel-line { background: var(--g100); border-radius: 12px; margin-bottom: 6px; }
+.skel-line { background: var(--g100); border-radius:6px; margin-bottom: 6px; }
 .skel-line.w60 { width: 60%; height: 14px; }
 .skel-line.w40 { width: 40%; height: 12px; }
 .skel-line.w80 { width: 80%; height: 12px; margin-bottom: 0; }
@@ -224,7 +224,7 @@ body {
 }
 .toast {
   background: var(--g900); color: #fff;
-  padding: 9px 18px; border-radius: 12px;
+  padding: 9px 18px; border-radius:6px;
   font-size: 13px; font-weight: 600;
   opacity: 0; transition: opacity .25s; white-space: nowrap;
 }

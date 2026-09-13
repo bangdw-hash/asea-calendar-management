@@ -9,16 +9,16 @@
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root {
-    --primary: #1A73E8;
-    --primary-dk: #1557B0;
-    --primary-lt: #E8F0FE;
+    --primary: #0EA5E9;
+    --primary-dk: #0284C7;
+    --primary-lt: #E0F2FE;
     --green: #16a34a;
     --green-lt: #dcfce7;
     --orange: #ea580c;
     --orange-lt: #ffedd5;
     --red: #dc2626;
     --red-lt: #fee2e2;
-    --bg: #f8f9fa;
+    --bg: #F0F9FF;
     --card: #ffffff;
     --g100: #f1f3f4;
     --g200: #e8eaed;
@@ -28,7 +28,7 @@
     --g700: #3c4043;
     --g900: #202124;
     --text: #202124;
-    --r: 12px;
+    --r:6px;
     --sh: 0 1px 4px rgba(0,0,0,.12);
     --sh-md: 0 2px 12px rgba(0,0,0,.15);
     --sh-lg: 0 4px 24px rgba(0,0,0,.18);
@@ -96,7 +96,7 @@
   .logo-icon {
     width: 36px; height: 36px;
     background: var(--primary);
-    border-radius: 12px;
+    border-radius:6px;
     display: flex; align-items: center; justify-content: center;
     flex-shrink: 0;
   }
@@ -114,7 +114,7 @@
     height: 42px; padding: 0 12px;
     font-size: .9rem; font-family: inherit;
     border: 1.5px solid var(--g300);
-    border-radius: 12px;
+    border-radius:6px;
     background: var(--bg);
     color: var(--text);
     outline: none;
@@ -126,7 +126,7 @@
     gap: 6px;
     height: 42px; padding: 0 18px;
     font-size: .9rem; font-weight: 600; font-family: inherit;
-    border: none; border-radius: 12px;
+    border: none; border-radius:6px;
     cursor: pointer; transition: background .15s, opacity .15s;
   }
   .btn:disabled { opacity: .55; cursor: not-allowed; }
@@ -136,7 +136,7 @@
 
   .result-box {
     min-height: 48px;
-    border-radius: 12px;
+    border-radius:6px;
     padding: 12px 14px;
     font-size: .88rem;
     font-weight: 500;
@@ -159,20 +159,20 @@
   .btn-request {
     display: inline-flex; align-items: center; gap: 6px;
     margin-top: 12px;
-    height: 38px; padding: 0 16px;
+    height:32px; padding: 0 16px;
     font-size: .84rem; font-weight: 600; font-family: inherit;
     background: var(--orange); color: #fff;
-    border: none; border-radius: 12px; cursor: pointer;
+    border: none; border-radius:6px; cursor: pointer;
     transition: background .15s;
   }
   .btn-request:hover { background: #c2410c; }
   .btn-back {
     display: inline-flex; align-items: center; gap: 6px;
     margin-top: 10px;
-    height: 38px; padding: 0 16px;
+    height:32px; padding: 0 16px;
     font-size: .84rem; font-weight: 600; font-family: inherit;
     background: var(--g100); color: var(--g700);
-    border: none; border-radius: 12px; cursor: pointer;
+    border: none; border-radius:6px; cursor: pointer;
     transition: background .15s;
   }
   .btn-back:hover { background: var(--g200); }

@@ -159,7 +159,7 @@
     }
 
     var priorityColor = { '긴급': '#EA4335', '높음': '#F57C00', '보통': '#4285F4', '낮음': '#9AA0A6' };
-    var statusColor   = { '대기': '#9AA0A6', '진행중': '#1A73E8', '완료': '#34A853', '취소': '#EA4335' };
+    var statusColor   = { '대기': '#9AA0A6', '진행중': '#0EA5E9', '완료': '#34A853', '취소': '#EA4335' };
 
     list.innerHTML = filtered.map(function (o) {
       var pc = priorityColor[o.priority] || '#9AA0A6';
@@ -370,7 +370,7 @@
       });
 
       var evtHtml = dayWo.map(function (o) {
-        var col = { '대기': '#9AA0A6', '진행중': '#1A73E8', '완료': '#34A853' }[o.status] || '#9AA0A6';
+        var col = { '대기': '#9AA0A6', '진행중': '#0EA5E9', '완료': '#34A853' }[o.status] || '#9AA0A6';
         return '<div class="cal-event" style="background:' + col + ';color:#fff" title="' + esc(o.title) + '">' + esc(o.title) + '</div>';
       }).join('');
 
@@ -392,7 +392,7 @@
       $('staff-list').innerHTML = '<p class="empty-state">등록된 당직 인원이 없습니다.<br>관리자에게 문의하세요.</p>';
       return;
     }
-    var shiftColor = { '주간': '#1A73E8', '야간': '#5C6BC0', '비번': '#9AA0A6', '': '#9AA0A6' };
+    var shiftColor = { '주간': '#0EA5E9', '야간': '#5C6BC0', '비번': '#9AA0A6', '': '#9AA0A6' };
     $('staff-list').innerHTML = active.map(function (s) {
       var sc = shiftColor[s.shift] || '#9AA0A6';
       return '<div class="card" style="display:flex;align-items:center;gap:14px">' +
@@ -583,7 +583,7 @@
 
     $('ci-list').innerHTML =
       '<table style="width:100%;border-collapse:collapse;font-size:13px">' +
-      '<thead><tr style="background:#f8f9fb;font-weight:600">' +
+      '<thead><tr style="background:#f0f9ff;font-weight:600">' +
         '<th style="padding:8px;text-align:left;border-bottom:1px solid #e0e4ea">시각</th>' +
         '<th style="padding:8px;text-align:left;border-bottom:1px solid #e0e4ea">구분</th>' +
         '<th style="padding:8px;text-align:left;border-bottom:1px solid #e0e4ea">공간</th>' +
