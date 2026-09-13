@@ -172,7 +172,7 @@ html[data-uiscale="sm"]  .app { zoom: 0.92; }
 .pf-coach-hole { position: fixed; border-radius: 10px; box-shadow: 0 0 0 9999px rgba(0,0,0,.55); transition: all .2s ease; pointer-events: none; }
 .pf-coach-card {
   position: fixed; z-index: 100003; background: var(--color-card); color: var(--color-text);
-  border-radius: 12px; box-shadow: var(--shadow-overlay); padding: 16px 18px; width: min(86vw, 320px);
+  border-radius: 6px; box-shadow: var(--shadow-overlay); padding: 16px 18px; width: min(86vw, 320px);
 }
 .pf-coach-card h4 { margin: 0 0 6px; font-size: 15px; }
 .pf-coach-card p { margin: 0 0 12px; font-size: 13px; line-height: 1.5; color: var(--color-text-secondary); }
@@ -188,7 +188,7 @@ html[data-uiscale="sm"]  .app { zoom: 0.92; }
 /* 보기 설정 미니 메뉴 */
 .pf-view-menu {
   position: fixed; z-index: 100001; background: var(--color-card); border: 1px solid var(--color-border);
-  border-radius: 12px; box-shadow: var(--shadow-overlay); padding: 10px; width: 240px;
+  border-radius: 6px; box-shadow: var(--shadow-overlay); padding: 10px; width: 240px;
 }
 .pf-view-menu .pf-vm-row { display: flex; align-items: center; justify-content: space-between; padding: 7px 6px; font-size: 13px; }
 .pf-view-menu .pf-seg { display: inline-flex; border: 1px solid var(--color-border); border-radius: 8px; overflow: hidden; }

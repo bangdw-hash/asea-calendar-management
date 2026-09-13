@@ -13,7 +13,7 @@
 
 /* ── 처음 시작 박스 ── */
 .hlp-start-box { background: #fffde7; border: 1.5px solid #f9a825;
-  border-radius: 12px; padding: 18px 20px; margin-bottom: 20px; }
+  border-radius: 6px; padding: 18px 20px; margin-bottom: 20px; }
 .hlp-start-title { font-size: 15px; font-weight: 800; color: #e65100; margin-bottom: 10px; }
 .hlp-start-ol { margin: 0; padding-left: 22px; }
 .hlp-start-ol li { font-size: 13px; line-height: 2; color: #333; }
@@ -25,7 +25,7 @@
 /* ── 아코디언 카드 ── */
 .hlp-cards { display: flex; flex-direction: column; gap: 8px; margin-bottom: 32px; }
 
-.hlp-card { border: 1.5px solid #D0E4F5; border-radius: 12px;
+.hlp-card { border: 1.5px solid #D0E4F5; border-radius: 6px;
   background: #fff; overflow: hidden;
   box-shadow: 0 1px 4px rgba(0,0,0,.05); }
 
@@ -129,7 +129,7 @@ kbd { background: #f1f3f4; border: 1px solid #ccc; border-radius: 4px;
 
 /* ── 문의 ── */
 .hlp-contact { text-align: center; padding: 18px;
-  background: #f0f7ff; border-radius: 12px; font-size: 14px; color: #333; }
+  background: #f0f7ff; border-radius: 6px; font-size: 14px; color: #333; }
 .hlp-tel { color: #003087; font-weight: 900; font-size: 16px;
   text-decoration: none; margin-left: 8px; }
 .hlp-tel:hover { text-decoration: underline; }
