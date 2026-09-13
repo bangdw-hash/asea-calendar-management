@@ -6260,16 +6260,15 @@ async function ctxRvRemove() {
   if (!linkedId && !rvId) return;
   _rvDetailLinkedItemId = linkedId;
   _rvDetailReservationId = rvId;
-  await removeLinkedItem(false);
+  await removeLinkedItem(false, true);  // skipConfirm=true: 컨텍스트 메뉴 클릭 자체가 의사 확인
 }
 async function ctxRvRemoveBatch() {
   const linkedId = _ctxLinkedId, rvId = _ctxRvId;
   closeEvtCtxMenu();
   if (!linkedId && !rvId) return;
-  if (!confirm('같은 묶음의 대관 일정을 모두 학교 일정 캘린더에서 제거하시겠습니까?\n(예약 원본 데이터는 삭제되지 않습니다)')) return;
   _rvDetailLinkedItemId = linkedId;
   _rvDetailReservationId = rvId;
-  await removeLinkedItem(true);
+  await removeLinkedItem(true, true);  // skipConfirm=true (배치도 동일)
 }
 async function ctxShare() {
   const ev = _events.find(x => x.id === _ctxEvtId);
@@ -7324,9 +7323,9 @@ function closeRvDetail() {
 
 const _RV_REMOVE_BTN_HTML = '<svg width="14" height="14" viewBox="0 0 18 18" fill="none" style="vertical-align:-2px;margin-right:4px"><path d="M3 5h12M8 5V3h2v2M7 8v5M11 8v5M4 5l1 10h8l1-10" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>일정에서 제거';
 
-async function removeLinkedItem(unlink_all = false) {
+async function removeLinkedItem(unlink_all = false, skipConfirm = false) {
   if (!_rvDetailLinkedItemId && !_rvDetailReservationId) return;
-  if (!unlink_all && !confirm('이 일정을 학교 일정 캘린더에서 제거하시겠습니까?\n(예약 원본 데이터는 삭제되지 않습니다)')) return;
+  if (!skipConfirm && !unlink_all && !confirm('이 일정을 학교 일정 캘린더에서 제거하시겠습니까?\n(예약 원본 데이터는 삭제되지 않습니다)')) return;
 
   const removeBtn = document.getElementById('rv-detail-remove-btn');
   if (removeBtn) { removeBtn.disabled = true; removeBtn.textContent = '처리 중...'; }
@@ -7339,17 +7338,19 @@ async function removeLinkedItem(unlink_all = false) {
     if (_rvDetailReservationId) {
       const rawId = _rvDetailReservationId;
       const p_id = (typeof rawId === 'string' && /^\d+$/.test(rawId)) ? Number(rawId) : rawId;
-      try {
-        const r = await fetch(`${SB_URL}/rest/v1/rpc/unlink_from_schedule`, {
-          method: 'POST',
-          headers: { apikey: SB_ANON, Authorization: 'Bearer ' + SB_ANON, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ p_reservation_id: p_id, p_admin_email: _userEmail || 'bangdw@gmail.com', p_unlink_all: !!unlink_all })
-        });
-        if (r.ok) {
-          const result = await r.json();
-          if (result?.success !== false) removed = true;
-        }
-      } catch(_) {}
+      const r = await fetch(`${SB_URL}/rest/v1/rpc/unlink_from_schedule`, {
+        method: 'POST',
+        headers: { apikey: SB_ANON, Authorization: 'Bearer ' + SB_ANON, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ p_reservation_id: p_id, p_admin_email: _userEmail || 'bangdw@gmail.com', p_unlink_all: !!unlink_all })
+      });
+      if (r.ok) {
+        const result = await r.json();
+        if (result?.success === false) throw new Error(result.error || '권한 없음');
+        removed = true;
+      } else {
+        const errText = await r.text().catch(() => '');
+        throw new Error(`제거 실패 (${r.status})${errText ? ': ' + errText.substring(0, 80) : ''}`);
+      }
     }
 
     // 2차: schedule_linked_items 직접 PATCH (RPC 실패 시 fallback)

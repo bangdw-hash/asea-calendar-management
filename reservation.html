@@ -306,7 +306,7 @@ header{
 .adm-act-link{color:var(--primary)}.adm-act-link:hover{text-decoration:underline}
 .adm-act-del{color:var(--red)}.adm-act-del:hover{text-decoration:underline}
 .adm-act-edit{color:var(--primary)}.adm-act-edit:hover{text-decoration:underline}
-.adm-act-linked{color:var(--green);font-weight:600;font-size:11px}
+.adm-act-linked{color:var(--green);font-weight:600;font-size:11px;background:none;border:none;padding:0;cursor:pointer;text-decoration:underline dotted}
 
 /* mini calendar popup: compact cells */
 #mcGrid .cal-cell{min-height:34px;padding:3px}
@@ -948,6 +948,7 @@ header{
   <div class="ctx-sep"></div>
   <button class="adm-act-edit" onclick="ctxAction('edit')" id="ctxEditBtn">수정</button>
   <button onclick="ctxAction('link')" id="ctxLinkBtn">학교일정 연동</button>
+  <button onclick="ctxAction('unlink')" id="ctxUnlinkBtn" class="ctx-del" hidden>학교일정 연동 해제</button>
   <div class="ctx-sep" id="ctxDelSep"></div>
   <button class="ctx-del" onclick="ctxAction('delete')" id="ctxDeleteBtn">삭제</button>
   <div class="ctx-sep"></div>
@@ -2442,7 +2443,8 @@ async function openDetail(id) {
   let ftr = `<button class="btn btn-outline" onclick="closeDetail()">닫기</button>`;
   if (isAdmin()) {
     const linkedBtn = isLinked
-      ? `<button class="btn btn-green btn-sm" onclick="openScheduleAtDate('${rv.date_start}')">학교일정 연동 완료</button>`
+      ? `<button class="btn btn-green btn-sm" onclick="openScheduleAtDate('${rv.date_start}')">학교일정 연동 완료</button>
+         <button class="btn btn-sm" style="background:#fee2e2;color:#dc2626;border:1px solid #fca5a5" onclick="closeDetail();adminUnlink('${id}')">연동 해제</button>`
       : `<button class="btn btn-outline btn-sm" onclick="adminLink('${id}')">학교일정 연동</button>`;
     ftr = `<button class="btn btn-red btn-sm" onclick="adminDelRv('${id}')">삭제</button>
            <button class="btn btn-primary btn-sm" onclick="adminEditRv('${id}')">수정</button>
@@ -2901,7 +2903,7 @@ function renderAdmTable() {
             <td style="white-space:nowrap">${esc(rv.requester_name)}</td>
             <td style="white-space:nowrap">${esc(rv.contact||'')}</td>
             <td onclick="event.stopPropagation()">${rv.schedule_event_id
-              ? `<span class="adm-act-linked">연동완료</span>`
+              ? `<button class="adm-act adm-act-linked" onclick="admUnlink('${rv.id}')" title="클릭하여 연동 해제">연동완료</button>`
               : `<button class="adm-act adm-act-link" onclick="admLink('${rv.id}')">연동</button>`}</td>
             <td onclick="event.stopPropagation()" style="white-space:nowrap;display:flex;gap:6px;align-items:center">
               <button class="adm-act adm-act-edit" onclick="adminEditRv('${rv.id}')">수정</button>
@@ -2941,13 +2943,16 @@ function openCtxMenu(e, id) {
   const delSep  = document.getElementById('ctxDelSep');
   const editBtn = document.getElementById('ctxEditBtn');
 
+  const unlinkBtn = document.getElementById('ctxUnlinkBtn');
   if (isAdmin()) {
     if (rv?.schedule_event_id) {
-      linkBtn.textContent = '학교일정 연동 완료';
+      linkBtn.textContent = '학교일정 연동 완료 →';
       linkBtn.onclick = () => { openScheduleAtDate(rv.date_start); closeCtxMenu(); };
+      if (unlinkBtn) unlinkBtn.hidden = false;
     } else {
       linkBtn.textContent = '학교일정 연동';
       linkBtn.onclick = () => { ctxAction('link'); };
+      if (unlinkBtn) unlinkBtn.hidden = true;
     }
     linkBtn.hidden = false;
     delBtn.hidden = false; delSep.hidden = false; editBtn.hidden = false;
@@ -2956,6 +2961,7 @@ function openCtxMenu(e, id) {
   } else {
     // 비관리자: 비밀번호 확인 후 수정·삭제
     linkBtn.hidden = true;
+    if (unlinkBtn) unlinkBtn.hidden = true;
     editBtn.hidden = false; delBtn.hidden = false; delSep.hidden = false;
     editBtn.onclick = () => { closeCtxMenu(); openPwM('edit',   id); };
     delBtn.onclick  = () => { closeCtxMenu(); openPwM('delete', id); };
@@ -2978,6 +2984,7 @@ function ctxAction(action) {
   if (action === 'detail') openDetail(id);
   else if (action === 'edit') adminEditRv(id);
   else if (action === 'link') adminLink(id);
+  else if (action === 'unlink') adminUnlink(id);
   else if (action === 'delete') adminDelRv(id);
 }
 document.addEventListener('click', e => {
