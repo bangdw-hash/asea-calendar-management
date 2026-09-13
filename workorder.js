@@ -83,7 +83,7 @@ var WorkOrderModule = (function () {
     }
 
     var priorityColor = { '긴급': '#EA4335', '높음': '#FBBC05', '보통': '#4285F4', '낮음': '#9AA0A6' };
-    var statusColor   = { '대기': '#9AA0A6', '진행중': '#1A73E8', '완료': '#34A853', '취소': '#EA4335' };
+    var statusColor   = { '대기': '#9AA0A6', '진행중': '#0EA5E9', '완료': '#34A853', '취소': '#EA4335' };
 
     listEl.innerHTML = filtered.map(function (o) {
       var pc = priorityColor[o.priority] || '#9AA0A6';

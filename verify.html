@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>예산 집행 조회 — ASEA</title>
 <style>
-  :root{ --accent:#1A73E8; --bg:#f3f4f6; --card:#fff; --bd:#e5e7eb; --tx:#202124; --mut:#6b7280; --ok:#137333; --warn:#b45309; --err:#c0392b; }
+  :root{ --accent:#0EA5E9; --bg:#f3f4f6; --card:#fff; --bd:#e5e7eb; --tx:#202124; --mut:#6b7280; --ok:#137333; --warn:#b45309; --err:#c0392b; }
   *{ box-sizing:border-box; }
   body{ margin:0; font-family:'Pretendard','Noto Sans KR',-apple-system,sans-serif; background:var(--bg); color:var(--tx); padding:16px; }
   .wrap{ max-width:620px; margin:0 auto; }
@@ -14,9 +14,9 @@
   .muted{ color:var(--mut); font-size:13px; }
   h2{ font-size:18px; margin:6px 0 2px; }
   .badge{ display:inline-block; padding:2px 10px; border-radius:12px; font-size:12px; font-weight:700; }
-  .badge.reserved{ background:#e8f0fe; color:#1a56db; } .badge.executed{ background:#e6f4ea; color:var(--ok); } .badge.canceled{ background:#fde8e8; color:var(--err); }
+  .badge.reserved{ background:#e0f2fe; color:#1a56db; } .badge.executed{ background:#e6f4ea; color:var(--ok); } .badge.canceled{ background:#fde8e8; color:var(--err); }
   .stats{ display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:10px; margin:16px 0; }
-  .stat{ background:#f8f9fb; border:1px solid var(--bd); border-radius:12px; padding:12px; }
+  .stat{ background:#f0f9ff; border:1px solid var(--bd); border-radius:12px; padding:12px; }
   .stat .l{ font-size:12px; color:var(--mut); } .stat .v{ font-size:17px; font-weight:800; }
   .stat .v.neg{ color:var(--err); } .stat .v.ok{ color:var(--ok); } .stat .v.warn{ color:var(--warn); }
   table{ width:100%; border-collapse:collapse; font-size:13px; margin-top:10px; }

@@ -6,7 +6,7 @@
 <title>ASEA 강의실 예약</title>
 <style>
 :root {
-  --primary:#1A73E8; --primary-dk:#1557B0; --primary-lt:#E8F0FE;
+  --primary:#0EA5E9; --primary-dk:#0284C7; --primary-lt:#E0F2FE;
   --green:#16a34a;   --green-lt:#dcfce7;
   --orange:#ea580c;  --orange-lt:#ffedd5;
   --red:#dc2626;     --red-lt:#fee2e2;
@@ -358,7 +358,7 @@ header{
   width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:var(--r);
   font-size:13px;font-family:var(--font);outline:none;transition:.15s;background:#fff;color:var(--text);
 }
-.fi:focus,.fs:focus,.fta:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(26,115,232,.1)}
+.fi:focus,.fs:focus,.fta:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(14,165,233,.1)}
 .fta{resize:vertical;min-height:70px}
 .frow{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 
@@ -470,8 +470,8 @@ header{
 /* ── NLP 자연어 입력 ── */
 .nlp-input-wrap{display:flex;gap:6px;align-items:center}
 .nlp-input-wrap .fi{flex:1}
-.nlp-send-btn{flex-shrink:0;padding:8px 14px;border-radius:var(--r);background:var(--primary);color:#fff;border:none;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font);transition:background .13s,transform .1s,box-shadow .13s;box-shadow:0 1px 4px rgba(26,115,232,.35);white-space:nowrap}
-.nlp-send-btn:hover{background:var(--primary-dk);box-shadow:0 2px 8px rgba(26,115,232,.45)}
+.nlp-send-btn{flex-shrink:0;padding:8px 14px;border-radius:var(--r);background:var(--primary);color:#fff;border:none;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font);transition:background .13s,transform .1s,box-shadow .13s;box-shadow:0 1px 4px rgba(14,165,233,.35);white-space:nowrap}
+.nlp-send-btn:hover{background:var(--primary-dk);box-shadow:0 2px 8px rgba(14,165,233,.45)}
 .nlp-send-btn:active{transform:scale(.96)}
 .nlp-send-btn:disabled{opacity:.5;cursor:default;transform:none}
 .nlp-preview{background:var(--gray-lt);border-radius:var(--r);padding:10px 12px;display:flex;flex-direction:column;gap:6px}
@@ -1429,7 +1429,7 @@ function getPillColor(rv) {
   const lt = getLabelType(rv);
   if (lt === 'academic') return '#7c3aed';
   if (lt === 'rental') return '#ea580c';
-  return rv.classroom_color || '#1A73E8';
+  return rv.classroom_color || '#0EA5E9';
 }
 
 function sortRvsByType(rvs) {
@@ -1451,7 +1451,7 @@ function populateRoomSel() {
     g.label = FLOOR_LABEL[fl] || fl;
     classrooms.filter(c => c.floor === fl).forEach(c => {
       const o = document.createElement('option');
-      o.value = c.name; o.dataset.color = c.color || '#1A73E8'; o.textContent = c.name;
+      o.value = c.name; o.dataset.color = c.color || '#0EA5E9'; o.textContent = c.name;
       g.appendChild(o);
     });
     sel.appendChild(g);
@@ -2308,7 +2308,7 @@ async function submitRv() {
 
   try {
     const pwHash = await sha256(pw + PW_SALT);
-    const color = document.getElementById('roomSel').selectedOptions[0]?.dataset.color || '#1A73E8';
+    const color = document.getElementById('roomSel').selectedOptions[0]?.dataset.color || '#0EA5E9';
 
     let records;
     if (selMode === 'multi' && selDates.length > 1) {
@@ -2380,7 +2380,7 @@ async function openDetail(id) {
     <div class="detail-row">
       <div class="dl">강의실</div>
       <div class="dv">
-        <span class="badge" style="background:${rv.classroom_color||'#1A73E8'}">${esc(rv.classroom_name)}</span>
+        <span class="badge" style="background:${rv.classroom_color||'#0EA5E9'}">${esc(rv.classroom_name)}</span>
         ${isLinked ? '<span class="linked-badge">학교일정 연동됨</span>' : ''}
       </div>
     </div>
@@ -2892,7 +2892,7 @@ function renderAdmTable() {
         <tbody>
           ${rvs.map(rv => `<tr style="cursor:pointer" onclick="window.open('reservation.html#rv-${rv.id}','_blank')" title="새 탭에서 열기">
             <td style="white-space:nowrap">${rv.date_start}${rv.date_start!==rv.date_end?'<br>~'+rv.date_end:''}</td>
-            <td style="white-space:nowrap"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${rv.classroom_color||'#1A73E8'};margin-right:4px;vertical-align:middle"></span>${esc(rv.classroom_name)}</td>
+            <td style="white-space:nowrap"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${rv.classroom_color||'#0EA5E9'};margin-right:4px;vertical-align:middle"></span>${esc(rv.classroom_name)}</td>
             <td style="white-space:nowrap">${rv.time_start}~${rv.time_end}</td>
             <td style="white-space:nowrap;max-width:140px;overflow:hidden;text-overflow:ellipsis">${esc(rv.purpose)}</td>
             <td style="white-space:nowrap">${esc(rv.department)}</td>
@@ -3710,7 +3710,7 @@ function paintClassroomsTab() {
         <select id="clsFloorIn" class="fs">
           ${floorOpts.map(f => `<option value="${f}">${FLOOR_LABEL[f] || f}</option>`).join('')}
         </select>
-        <input type="color" id="clsColorIn" class="fi" value="#1A73E8" style="padding:2px;height:36px">
+        <input type="color" id="clsColorIn" class="fi" value="#0EA5E9" style="padding:2px;height:36px">
       </div>
       <button class="btn btn-primary btn-sm" onclick="addClassroom()">+ 강의실 추가</button>
     </div>
@@ -3722,7 +3722,7 @@ function paintClassroomsTab() {
             <td>${c.editing ? `<input type="text" class="fi" style="width:110px" id="clsEdName_${c.id}" value="${esc(c.name)}">` : esc(c.name)}</td>
             <td>${c.editing ? `<input type="text" class="fi" style="width:80px" id="clsEdCat_${c.id}" value="${esc(c.category||'강의실')}">` : esc(c.category||'강의실')}</td>
             <td>${c.editing ? `<select class="fs" id="clsEdFloor_${c.id}">${floorOpts.map(f => `<option value="${f}" ${f === c.floor ? 'selected' : ''}>${FLOOR_LABEL[f] || f}</option>`).join('')}</select>` : (FLOOR_LABEL[c.floor] || c.floor)}</td>
-            <td>${c.editing ? `<input type="color" id="clsEdColor_${c.id}" value="${c.color || '#1A73E8'}" style="width:40px;height:28px;padding:0">` : `<span style="display:inline-block;width:14px;height:14px;border-radius:4px;background:${c.color || '#1A73E8'};vertical-align:middle"></span>`}</td>
+            <td>${c.editing ? `<input type="color" id="clsEdColor_${c.id}" value="${c.color || '#0EA5E9'}" style="width:40px;height:28px;padding:0">` : `<span style="display:inline-block;width:14px;height:14px;border-radius:4px;background:${c.color || '#0EA5E9'};vertical-align:middle"></span>`}</td>
             <td>${c.active ? '<span style="color:var(--green);font-weight:700">사용중</span>' : '<span style="color:var(--gray)">비활성</span>'}</td>
             <td style="display:flex;gap:3px;flex-wrap:wrap">
               ${c.editing

@@ -67,11 +67,11 @@
 
 .ob-btns { display: flex; justify-content: flex-end; }
 .ob-btn-primary {
-  background: #1a73e8; color: #fff; border: none;
+  background: #0ea5e9; color: #fff; border: none;
   border-radius: 10px; padding: 10px 22px;
   font-size: 14px; font-weight: 700; cursor: pointer;
 }
-.ob-btn-primary:hover { background: #1557b0; }
+.ob-btn-primary:hover { background: #0284c7; }
 
 @media (max-width: 520px) {
   .ob-card { padding: 18px 16px 14px; border-radius: 14px; }
