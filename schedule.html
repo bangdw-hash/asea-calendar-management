@@ -653,6 +653,18 @@ html,body{height:100%;
 .admin-tab:hover{color:var(--g700)}
 .admin-tab.active{color:var(--primary);border-bottom-color:var(--primary)}
 .admin-section{padding:14px 16px}
+/* ── 디자인 설정 패널 ── */
+.ds-group{margin-bottom:18px}
+.ds-group-title{font-size:.75rem;font-weight:700;color:var(--g500);letter-spacing:.06em;text-transform:uppercase;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--g200)}
+.ds-row{display:flex;align-items:center;gap:10px;padding:6px 0}
+.ds-label{flex:0 0 110px;font-size:.78rem;color:var(--g700);font-weight:500}
+.ds-label small{display:block;font-size:.68rem;color:var(--g400);font-weight:400;margin-top:1px}
+.ds-slider{flex:1;min-width:0;accent-color:var(--color-accent);cursor:pointer}
+.ds-num{width:44px;text-align:center;font-size:.78rem;padding:2px 4px;border:1px solid var(--g300);border-radius:5px;background:var(--color-card);color:var(--g900)}
+.ds-color{width:36px;height:28px;border:1px solid var(--g300);border-radius:5px;cursor:pointer;padding:1px}
+.ds-unit{font-size:.73rem;color:var(--g400);min-width:20px}
+.ds-btn-row{display:flex;gap:8px;padding-top:6px;border-top:1px solid var(--g200);margin-top:4px}
+.ds-badge{display:inline-block;font-size:.68rem;padding:1px 6px;border-radius:4px;background:var(--color-accent-lt);color:var(--color-accent);font-weight:600;margin-left:6px}
 
 /* ── REQUEST STATUS BADGES ── */
 .badge-pending{background:#fef3c7;color:#92400e;padding:2px 8px;border-radius:var(--r);font-size:.72rem;font-weight:600;border:none;cursor:pointer}
@@ -1646,6 +1658,7 @@ html,body{height:100%;
       <button class="admin-tab" id="atab-access" onclick="showAdminTab('access')">권한 요청</button>
       <button class="admin-tab" id="atab-consent" onclick="showAdminTab('consent')">개인정보 동의</button>
       <button class="admin-tab" id="atab-school" onclick="showAdminTab('school')">학교일정</button>
+      <button class="admin-tab" id="atab-design" onclick="showAdminTab('design')">디자인 설정</button>
     </div>
 
     <!-- Section 1: 구독 신청 (기존) -->
@@ -1773,6 +1786,126 @@ html,body{height:100%;
         <div id="school-evt-empty" style="text-align:center;padding:24px;color:var(--g400);font-size:.82rem">저장된 학교 일정이 없습니다.</div>
       </div>
     </div>
+
+    <!-- Section 5: 디자인 설정 -->
+    <div id="admin-sec-design" class="admin-section" hidden>
+      <p style="font-size:.78rem;color:var(--g500);margin-bottom:16px;line-height:1.6">
+        페이지의 모든 UI 속성을 직접 조정할 수 있습니다.<br>변경 사항은 즉시 미리보기되며 <strong>저장</strong> 버튼을 누르면 영구 적용됩니다.
+      </p>
+
+      <!-- ① 테두리 둥글기 -->
+      <div class="ds-group">
+        <div class="ds-group-title">테두리 둥글기 (Border Radius)</div>
+        <div class="ds-row">
+          <span class="ds-label">기본<small>칩·버튼 전반</small></span>
+          <input type="range" class="ds-slider" id="ds-r" min="0" max="24" step="1" oninput="dsLive('--r',this.value+'px');document.getElementById('ds-r-v').value=this.value">
+          <input type="number" class="ds-num" id="ds-r-v" min="0" max="24" oninput="dsLive('--r',this.value+'px');document.getElementById('ds-r').value=this.value">
+          <span class="ds-unit">px</span>
+        </div>
+        <div class="ds-row">
+          <span class="ds-label">작은 요소<small>배지·태그</small></span>
+          <input type="range" class="ds-slider" id="ds-rxs" min="0" max="16" step="1" oninput="dsLive('--r-xs',this.value+'px');document.getElementById('ds-rxs-v').value=this.value">
+          <input type="number" class="ds-num" id="ds-rxs-v" min="0" max="16" oninput="dsLive('--r-xs',this.value+'px');document.getElementById('ds-rxs').value=this.value">
+          <span class="ds-unit">px</span>
+        </div>
+        <div class="ds-row">
+          <span class="ds-label">카드<small>일정 카드</small></span>
+          <input type="range" class="ds-slider" id="ds-rcard" min="0" max="28" step="1" oninput="dsLive('--r-card',this.value+'px');document.getElementById('ds-rcard-v').value=this.value">
+          <input type="number" class="ds-num" id="ds-rcard-v" min="0" max="28" oninput="dsLive('--r-card',this.value+'px');document.getElementById('ds-rcard').value=this.value">
+          <span class="ds-unit">px</span>
+        </div>
+        <div class="ds-row">
+          <span class="ds-label">패널<small>모달·팝업</small></span>
+          <input type="range" class="ds-slider" id="ds-rpanel" min="0" max="32" step="1" oninput="dsLive('--r-panel',this.value+'px');document.getElementById('ds-rpanel-v').value=this.value">
+          <input type="number" class="ds-num" id="ds-rpanel-v" min="0" max="32" oninput="dsLive('--r-panel',this.value+'px');document.getElementById('ds-rpanel').value=this.value">
+          <span class="ds-unit">px</span>
+        </div>
+        <div class="ds-row">
+          <span class="ds-label">모바일<small>모바일 전용</small></span>
+          <input type="range" class="ds-slider" id="ds-rmob" min="0" max="24" step="1" oninput="dsLive('--r-mobile',this.value+'px');document.getElementById('ds-rmob-v').value=this.value">
+          <input type="number" class="ds-num" id="ds-rmob-v" min="0" max="24" oninput="dsLive('--r-mobile',this.value+'px');document.getElementById('ds-rmob').value=this.value">
+          <span class="ds-unit">px</span>
+        </div>
+      </div>
+
+      <!-- ② 색상 -->
+      <div class="ds-group">
+        <div class="ds-group-title">색상 (Colors)</div>
+        <div class="ds-row">
+          <span class="ds-label">포인트 색상<small>버튼·강조</small></span>
+          <input type="color" class="ds-color" id="ds-accent" oninput="dsLiveAccent(this.value)">
+          <span id="ds-accent-hex" style="font-size:.76rem;color:var(--g500);font-family:monospace"></span>
+        </div>
+        <div class="ds-row">
+          <span class="ds-label">페이지 배경<small>전체 배경</small></span>
+          <input type="color" class="ds-color" id="ds-bg" oninput="dsLive('--color-bg',this.value);dsLive('--g50',this.value);document.getElementById('ds-bg-hex').textContent=this.value">
+          <span id="ds-bg-hex" style="font-size:.76rem;color:var(--g500);font-family:monospace"></span>
+        </div>
+        <div class="ds-row">
+          <span class="ds-label">카드 배경<small>셀·모달 배경</small></span>
+          <input type="color" class="ds-color" id="ds-card" oninput="dsLive('--color-card',this.value);document.getElementById('ds-card-hex').textContent=this.value">
+          <span id="ds-card-hex" style="font-size:.76rem;color:var(--g500);font-family:monospace"></span>
+        </div>
+        <div class="ds-row">
+          <span class="ds-label">테두리 색상<small>구분선·경계</small></span>
+          <input type="color" class="ds-color" id="ds-border" oninput="dsLive('--color-border',this.value);dsLive('--g200',this.value);document.getElementById('ds-border-hex').textContent=this.value">
+          <span id="ds-border-hex" style="font-size:.76rem;color:var(--g500);font-family:monospace"></span>
+        </div>
+      </div>
+
+      <!-- ③ 글자 크기 -->
+      <div class="ds-group">
+        <div class="ds-group-title">글자 크기 (Typography)</div>
+        <div class="ds-row">
+          <span class="ds-label">극소<small>--font-xs</small></span>
+          <input type="range" class="ds-slider" id="ds-fxs" min="8" max="16" step="1" oninput="dsLive('--font-xs',this.value+'px');document.getElementById('ds-fxs-v').value=this.value">
+          <input type="number" class="ds-num" id="ds-fxs-v" min="8" max="16" oninput="dsLive('--font-xs',this.value+'px');document.getElementById('ds-fxs').value=this.value">
+          <span class="ds-unit">px</span>
+        </div>
+        <div class="ds-row">
+          <span class="ds-label">소<small>--font-sm</small></span>
+          <input type="range" class="ds-slider" id="ds-fsm" min="9" max="18" step="1" oninput="dsLive('--font-sm',this.value+'px');document.getElementById('ds-fsm-v').value=this.value">
+          <input type="number" class="ds-num" id="ds-fsm-v" min="9" max="18" oninput="dsLive('--font-sm',this.value+'px');document.getElementById('ds-fsm').value=this.value">
+          <span class="ds-unit">px</span>
+        </div>
+        <div class="ds-row">
+          <span class="ds-label">기본<small>--font-base</small></span>
+          <input type="range" class="ds-slider" id="ds-fbase" min="10" max="20" step="1" oninput="dsLive('--font-base',this.value+'px');document.getElementById('ds-fbase-v').value=this.value">
+          <input type="number" class="ds-num" id="ds-fbase-v" min="10" max="20" oninput="dsLive('--font-base',this.value+'px');document.getElementById('ds-fbase').value=this.value">
+          <span class="ds-unit">px</span>
+        </div>
+        <div class="ds-row">
+          <span class="ds-label">중<small>--font-md</small></span>
+          <input type="range" class="ds-slider" id="ds-fmd" min="11" max="22" step="1" oninput="dsLive('--font-md',this.value+'px');document.getElementById('ds-fmd-v').value=this.value">
+          <input type="number" class="ds-num" id="ds-fmd-v" min="11" max="22" oninput="dsLive('--font-md',this.value+'px');document.getElementById('ds-fmd').value=this.value">
+          <span class="ds-unit">px</span>
+        </div>
+      </div>
+
+      <!-- ④ 높이 -->
+      <div class="ds-group">
+        <div class="ds-group-title">높이 (Heights)</div>
+        <div class="ds-row">
+          <span class="ds-label">헤더 높이<small>상단 바</small></span>
+          <input type="range" class="ds-slider" id="ds-hdr" min="40" max="80" step="2" oninput="dsLive('--header-h',this.value+'px');document.getElementById('ds-hdr-v').value=this.value">
+          <input type="number" class="ds-num" id="ds-hdr-v" min="40" max="80" oninput="dsLive('--header-h',this.value+'px');document.getElementById('ds-hdr').value=this.value">
+          <span class="ds-unit">px</span>
+        </div>
+        <div class="ds-row">
+          <span class="ds-label">툴바 높이<small>뷰 선택 바</small></span>
+          <input type="range" class="ds-slider" id="ds-tb" min="36" max="80" step="2" oninput="dsLive('--toolbar-h',this.value+'px');document.getElementById('ds-tb-v').value=this.value">
+          <input type="number" class="ds-num" id="ds-tb-v" min="36" max="80" oninput="dsLive('--toolbar-h',this.value+'px');document.getElementById('ds-tb').value=this.value">
+          <span class="ds-unit">px</span>
+        </div>
+      </div>
+
+      <div class="ds-btn-row">
+        <button class="btn btn-primary btn-sm" onclick="saveDesignVars()">💾 저장</button>
+        <button class="btn btn-sm" onclick="resetDesignVars()" style="background:var(--red-lt);color:var(--red)">↺ 초기화</button>
+        <span id="ds-save-msg" style="font-size:.76rem;color:var(--green);align-self:center"></span>
+      </div>
+    </div>
+
   </div>
 </div>
 
@@ -5855,13 +5988,14 @@ async function adminDirectRegister() {
 
 /* ══════════════ ADMIN TABS ══════════════ */
 function showAdminTab(tab) {
-  ['subscribe','access','consent','school'].forEach(t => {
+  ['subscribe','access','consent','school','design'].forEach(t => {
     document.getElementById('atab-' + t).classList.toggle('active', t === tab);
     document.getElementById('admin-sec-' + t).hidden = t !== tab;
   });
   if (tab === 'access') loadAccessRequests();
   if (tab === 'consent') loadPrivacyConsents();
   if (tab === 'school') _renderSchoolEvtList();
+  if (tab === 'design') _renderDesignPanel();
 }
 
 async function loadAccessRequests() {
@@ -6382,6 +6516,123 @@ function initColorTheme() {
   setColorTheme(t);
 }
 
+/* ══════════════ DESIGN SETTINGS (관리자 디자인 패널) ══════════════ */
+const _DS_KEY = 'asea_design_vars';
+const _DS_DEFAULTS = {
+  '--r':'10px','--r-xs':'6px','--r-card':'14px','--r-panel':'18px','--r-mobile':'12px',
+  '--color-accent':'#1A73E8','--color-bg':'#F8F9FB','--color-card':'#FFFFFF','--color-border':'#E8EAED',
+  '--font-xs':'11px','--font-sm':'12px','--font-base':'14px','--font-md':'15px',
+  '--header-h':'56px','--toolbar-h':'52px'
+};
+
+function _parseNum(val) { return parseInt(val) || 0; }
+function _hexToRgb(hex) {
+  const r = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return r ? [parseInt(r[1],16),parseInt(r[2],16),parseInt(r[3],16)] : null;
+}
+function _lighten(hex, pct) {
+  const rgb = _hexToRgb(hex); if (!rgb) return hex;
+  return '#' + rgb.map(c => Math.round(c + (255 - c) * pct).toString(16).padStart(2,'0')).join('');
+}
+function _darken(hex, pct) {
+  const rgb = _hexToRgb(hex); if (!rgb) return hex;
+  return '#' + rgb.map(c => Math.round(c * (1 - pct)).toString(16).padStart(2,'0')).join('');
+}
+
+function applyDesignVars(vars) {
+  const root = document.documentElement;
+  Object.entries(vars).forEach(([k, v]) => root.style.setProperty(k, v));
+}
+
+function dsLive(varName, val) {
+  document.documentElement.style.setProperty(varName, val);
+}
+
+function dsLiveAccent(hex) {
+  const root = document.documentElement;
+  root.style.setProperty('--color-accent', hex);
+  root.style.setProperty('--color-accent-dk', _darken(hex, 0.15));
+  root.style.setProperty('--color-accent-lt', _lighten(hex, 0.85));
+  root.style.setProperty('--primary', hex);
+  root.style.setProperty('--primary-dk', _darken(hex, 0.15));
+  root.style.setProperty('--primary-lt', _lighten(hex, 0.85));
+  document.getElementById('ds-accent-hex').textContent = hex;
+}
+
+function loadDesignVars() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(_DS_KEY) || 'null');
+    if (saved) applyDesignVars(saved);
+  } catch(_) {}
+}
+
+function saveDesignVars() {
+  const saved = _collectDesignVars();
+  try { localStorage.setItem(_DS_KEY, JSON.stringify(saved)); } catch(_) {}
+  applyDesignVars(saved);
+  const msg = document.getElementById('ds-save-msg');
+  if (msg) { msg.textContent = '✓ 저장됨'; setTimeout(() => { msg.textContent = ''; }, 2000); }
+}
+
+function resetDesignVars() {
+  try { localStorage.removeItem(_DS_KEY); } catch(_) {}
+  applyDesignVars(_DS_DEFAULTS);
+  _renderDesignPanel();
+  const msg = document.getElementById('ds-save-msg');
+  if (msg) { msg.textContent = '↺ 초기화됨'; setTimeout(() => { msg.textContent = ''; }, 2000); }
+}
+
+function _collectDesignVars() {
+  const root = document.documentElement;
+  const cur = {};
+  Object.keys(_DS_DEFAULTS).forEach(k => {
+    const v = root.style.getPropertyValue(k) || getComputedStyle(root).getPropertyValue(k).trim();
+    cur[k] = v || _DS_DEFAULTS[k];
+  });
+  return cur;
+}
+
+function _getVar(varName) {
+  const inline = document.documentElement.style.getPropertyValue(varName);
+  if (inline) return inline.trim();
+  return getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
+}
+
+function _renderDesignPanel() {
+  const setSlider = (id, varName) => {
+    const el = document.getElementById(id);
+    const elV = document.getElementById(id + '-v');
+    if (!el || !elV) return;
+    const val = _parseNum(_getVar(varName)) || _parseNum(_DS_DEFAULTS[varName]);
+    el.value = val; elV.value = val;
+  };
+  const setColor = (id, varName, hexId) => {
+    const el = document.getElementById(id);
+    const hex = document.getElementById(hexId);
+    if (!el) return;
+    const raw = _getVar(varName) || _DS_DEFAULTS[varName];
+    const color = raw.trim().startsWith('#') ? raw.trim() : _DS_DEFAULTS[varName];
+    el.value = color;
+    if (hex) hex.textContent = color;
+  };
+
+  setSlider('ds-r',     '--r');
+  setSlider('ds-rxs',   '--r-xs');
+  setSlider('ds-rcard', '--r-card');
+  setSlider('ds-rpanel','--r-panel');
+  setSlider('ds-rmob',  '--r-mobile');
+  setColor ('ds-accent','--color-accent',  'ds-accent-hex');
+  setColor ('ds-bg',    '--color-bg',       'ds-bg-hex');
+  setColor ('ds-card',  '--color-card',     'ds-card-hex');
+  setColor ('ds-border','--color-border',   'ds-border-hex');
+  setSlider('ds-fxs',   '--font-xs');
+  setSlider('ds-fsm',   '--font-sm');
+  setSlider('ds-fbase', '--font-base');
+  setSlider('ds-fmd',   '--font-md');
+  setSlider('ds-hdr',   '--header-h');
+  setSlider('ds-tb',    '--toolbar-h');
+}
+
 /* ══════════════ DENSITY (글자 크기 조절) ══════════════ */
 const _DENSITY_LEVELS = ['xs','sm','md','lg','xl'];
 const _DENSITY_LABELS = ['더 작게','작게','표준','크게','더 크게'];
@@ -6656,6 +6907,7 @@ async function boot() {
   renderCalendar();
 }
 initColorTheme();
+loadDesignVars();
 try { loadDensity(localStorage.getItem('asea_gtoken_email') || ''); } catch(e) { loadDensity(''); }
 initCtxMenuListeners();
 renderCalendar();
