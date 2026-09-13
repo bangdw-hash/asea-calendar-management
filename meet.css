@@ -30,7 +30,7 @@
 .mt-setup-label  { display: block; font-size: 12px; font-weight: 600; color: #374151; margin-bottom: 5px; }
 .mt-setup-input {
   width: 100%; padding: 9px 12px; border: 1px solid #D1D5DB; border-radius: 8px;
-  font-size: 13px; box-sizing: border-box; font-family: 'Pretendard', sans-serif;
+  font-size: 13px; box-sizing: border-box; font-family: 'Apple SD Gothic Neo', 'Pretendard', sans-serif;
 }
 .mt-setup-input:focus { outline: none; border-color: #3B82F6; box-shadow: 0 0 0 3px rgba(59,130,246,.12); }
 .mt-setup-hint { font-size: 11px; color: #9CA3AF; margin-top: 3px; }
@@ -64,7 +64,7 @@
 .mt-field label { font-size: 12px; font-weight: 600; color: #374151; }
 .mt-field input, .mt-field select, .mt-field textarea {
   padding: 9px 12px; border: 1px solid #D1D5DB; border-radius: 8px;
-  font-size: 13px; font-family: 'Pretendard', sans-serif; box-sizing: border-box;
+  font-size: 13px; font-family: 'Apple SD Gothic Neo', 'Pretendard', sans-serif; box-sizing: border-box;
 }
 .mt-field input:focus, .mt-field select:focus, .mt-field textarea:focus {
   outline: none; border-color: #3B82F6; box-shadow: 0 0 0 3px rgba(59,130,246,.12);

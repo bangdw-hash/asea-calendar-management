@@ -23,7 +23,7 @@
 }
 
 /* ── 전체 래퍼 ── */
-.hr-wrap { max-width: 1100px; margin: 0 auto; padding: 20px 16px 60px; font-family: 'Pretendard', sans-serif; }
+.hr-wrap { max-width: 1100px; margin: 0 auto; padding: 20px 16px 60px; font-family: 'Apple SD Gothic Neo', 'Pretendard', sans-serif; }
 
 /* ── HR 서브탭 ── */
 .hr-nav {
@@ -100,7 +100,7 @@
 .hr-btn {
   padding: 9px 20px; border-radius:12px; font-size: 13px; font-weight: 600;
   cursor: pointer; border: none; transition: background .15s, opacity .15s;
-  font-family: 'Pretendard', sans-serif;
+  font-family: 'Apple SD Gothic Neo', 'Pretendard', sans-serif;
 }
 .hr-btn-primary { background: #1a3a5c; color: #fff; }
 .hr-btn-primary:hover { background: #122840; }
@@ -198,7 +198,7 @@
 .hr-field label { font-size: 11px; font-weight: 600; color: #374151; }
 .hr-field input, .hr-field select, .hr-field textarea {
   padding: 7px 10px; border: 1px solid #D1D5DB; border-radius:12px;
-  font-size: 12px; font-family: 'Pretendard', sans-serif; box-sizing: border-box;
+  font-size: 12px; font-family: 'Apple SD Gothic Neo', 'Pretendard', sans-serif; box-sizing: border-box;
 }
 .hr-field input:focus, .hr-field select:focus, .hr-field textarea:focus {
   outline: none; border-color: #1a3a5c; box-shadow: 0 0 0 2px rgba(26,58,92,.1);
@@ -233,7 +233,7 @@
 }
 .hr-table td input, .hr-table td select {
   width: 100%; padding: 5px 6px; border: 1px solid #E5E7EB; border-radius:12px;
-  font-size: 11px; font-family: 'Pretendard', sans-serif; box-sizing: border-box; background: transparent;
+  font-size: 11px; font-family: 'Apple SD Gothic Neo', 'Pretendard', sans-serif; box-sizing: border-box; background: transparent;
 }
 .hr-table td input:focus, .hr-table td select:focus {
   outline: none; border-color: #1a3a5c;
@@ -313,7 +313,7 @@
 }
 .hr-mgr-search {
   padding: 8px 12px; border: 1px solid #D1D5DB; border-radius:12px;
-  font-size: 13px; width: 240px; font-family: 'Pretendard', sans-serif;
+  font-size: 13px; width: 240px; font-family: 'Apple SD Gothic Neo', 'Pretendard', sans-serif;
 }
 .hr-applicant-card {
   background: #fff; border: 1px solid #E5E7EB; border-radius:12px;
