@@ -6250,7 +6250,6 @@ async function ctxRvRemove() {
   const linkedId = _ctxLinkedId, rvId = _ctxRvId;
   closeEvtCtxMenu();
   if (!linkedId && !rvId) return;
-  if (!confirm('이 일정을 학교 일정 캘린더에서 제거하시겠습니까?\n(예약 원본 데이터는 삭제되지 않습니다)')) return;
   _rvDetailLinkedItemId = linkedId;
   _rvDetailReservationId = rvId;
   await removeLinkedItem();
