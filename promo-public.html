@@ -2,6 +2,7 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
+<script src="appear-head.js"></script>
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>ASEA 홍보슬라이드 등록</title>
 
@@ -35,8 +36,8 @@
 
     :root {
       --accent:  #003087;
-      --accent2: #0EA5E9;
-      --bg:      #F0F9FF;
+      --accent2: #1A73E8;
+      --bg:      #F8F9FB;
       --surface: #fff;
       --border:  #C8D8EF;
       --text:    #202124;
@@ -52,7 +53,7 @@
 
     /* ── 헤더 ── */
     .pub-header {
-      background: linear-gradient(135deg, #003087, #0EA5E9);
+      background: linear-gradient(135deg, #003087, #1A73E8);
       border-radius:6px; padding: 24px 24px 20px;
       margin: 0 auto 20px; max-width: 680px; color: #fff;
     }
@@ -66,7 +67,7 @@
       padding: 6px 14px; border-radius:6px; font-size: 12px; font-weight: 700;
       margin: 14px 0 0;
     }
-    .type-external     { background: #e3f2fd; color: #0284C7; }
+    .type-external     { background: #e3f2fd; color: #1557B0; }
     .type-event-single { background: #fce4ec; color: #880e4f; }
     .type-internal     { background: #e8f5e9; color: #2e7d32; }
     .type-general      { background: #fff3e0; color: #e65100; }
@@ -96,7 +97,7 @@
     .badge-tag   { background: #fef3c7; color: #92400e; }
     .badge-title { background: #ede9fe; color: #4c1d95; }
     .badge-body  { background: #dcfce7; color: #14532d; }
-    .badge-font  { background: #e0f2fe; color: #0c4a6e; }
+    .badge-font  { background: #E8F0FE; color: #0c4a6e; }
     .badge-bg    { background: #fef2f2; color: #991b1b; }
 
     input[type=text], textarea, select {
@@ -164,7 +165,7 @@
     .pub-btn-primary { background: #003087; color: #fff; }
     .pub-btn-primary:hover { background: #0284c7; }
     .pub-btn-primary:disabled { background: #aaa; cursor: default; }
-    .pub-btn-ghost { background: transparent; border: 1.5px solid #0EA5E9; color: #0EA5E9; }
+    .pub-btn-ghost { background: transparent; border: 1.5px solid #1A73E8; color: #1A73E8; }
     .pub-btn-ghost:hover { background: #e8f2fc; }
 
     /* ── 스피너 ── */
@@ -367,7 +368,7 @@
   ];
   var THEMES = [
     {id:'홍보', label:'홍보', bg:'#C8185A'},
-    {id:'안내', label:'안내', bg:'#0284C7'},
+    {id:'안내', label:'안내', bg:'#1557B0'},
     {id:'행사', label:'행사', bg:'#2E7D32'},
     {id:'경고', label:'경고', bg:'#E65100'},
     {id:'사용자', label:'직접', bg:'#444444'},
@@ -441,7 +442,7 @@
   function updateLayoutSel() {
     LAYOUTS.forEach(function(l){
       var el = $('pub-lt-'+l.id); if(!el) return;
-      if (l.id === _layout) { el.style.borderColor='#0EA5E9'; el.style.background='#e8f2fc'; }
+      if (l.id === _layout) { el.style.borderColor='#1A73E8'; el.style.background='#e8f2fc'; }
       else { el.style.borderColor='#C8D8EF'; el.style.background=''; }
     });
   }

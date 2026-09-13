@@ -2,6 +2,7 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
+<script src="appear-head.js"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="ASEA 설문지 자동 생성">
   <title>ASEA 설문지 자동 생성</title>
@@ -15,11 +16,11 @@
 
     /* ── 디자인 시스템 (schedule.html 동기화) ── */
     :root {
-      --color-bg:        #F0F9FF;
+      --color-bg:        #F8F9FB;
       --color-card:      #FFFFFF;
-      --color-accent:    #0EA5E9;
-      --color-accent-dk: #0284C7;
-      --color-accent-lt: #E0F2FE;
+      --color-accent:    #1A73E8;
+      --color-accent-dk: #1557B0;
+      --color-accent-lt: #E8F0FE;
       --color-text:      #202124;
       --color-text-sec:  #5F6368;
       --color-border:    #E8EAED;
@@ -37,10 +38,10 @@
       --color-border:    #C4B5FD;
     }
     [data-color-theme="sky"] {
-      --color-accent:    #0EA5E9;
-      --color-accent-dk: #0284C7;
-      --color-accent-lt: #E0F2FE;
-      --color-bg:        #F0F9FF;
+      --color-accent:    #1A73E8;
+      --color-accent-dk: #1557B0;
+      --color-accent-lt: #E8F0FE;
+      --color-bg:        #F8F9FB;
       --color-border:    #BAE6FD;
     }
     [data-color-theme="mint"] {
@@ -267,7 +268,7 @@
     <button class="sv-swatch" data-t="aurora" onclick="svSetTheme('aurora')"
             style="background:linear-gradient(135deg,#8B5CF6,#EC4899)" title="오로라"></button>
     <button class="sv-swatch" data-t="sky"    onclick="svSetTheme('sky')"
-            style="background:linear-gradient(135deg,#0EA5E9,#38BDF8)" title="하늘색"></button>
+            style="background:linear-gradient(135deg,#1A73E8,#38BDF8)" title="하늘색"></button>
     <button class="sv-swatch" data-t="mint"   onclick="svSetTheme('mint')"
             style="background:linear-gradient(135deg,#059669,#34D399)" title="민트"></button>
   </div>
