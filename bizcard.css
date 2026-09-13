@@ -255,7 +255,7 @@
 .bc-input:focus {
   outline: none;
   border-color: var(--color-accent);
-  box-shadow: 0 0 0 3px rgba(26,115,232,.12);
+  box-shadow: 0 0 0 3px rgba(14,165,233,.12);
 }
 .bc-input.ai-filled {
   border-color: var(--color-success);
@@ -289,7 +289,7 @@
 .bc-select:focus {
   outline: none;
   border-color: var(--color-accent);
-  box-shadow: 0 0 0 3px rgba(26,115,232,.12);
+  box-shadow: 0 0 0 3px rgba(14,165,233,.12);
 }
 
 .bc-textarea {
@@ -307,7 +307,7 @@
 .bc-textarea:focus {
   outline: none;
   border-color: var(--color-accent);
-  box-shadow: 0 0 0 3px rgba(26,115,232,.12);
+  box-shadow: 0 0 0 3px rgba(14,165,233,.12);
 }
 
 /* Front/Back side headers */
@@ -404,7 +404,7 @@
 }
 .bc-req-item:hover {
   border-color: var(--color-accent);
-  box-shadow: 0 2px 8px rgba(26,115,232,.1);
+  box-shadow: 0 2px 8px rgba(14,165,233,.1);
 }
 .bc-req-name  { font-size: 14px; font-weight: 600; color: var(--color-text); }
 .bc-req-meta  { font-size: 12px; color: var(--color-text-secondary); margin-top: 2px; }

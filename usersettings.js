@@ -6,14 +6,14 @@
 
   /* 기본 색상값 */
   var DEFAULTS = {
-    chipDarkBg:       '#1a73e8',  /* 진한 배경색 */
-    chipLightBg:      '#e8f0fe',  /* 연한 배경색 */
+    chipDarkBg:       '#0ea5e9',  /* 진한 배경색 */
+    chipLightBg:      '#e0f2fe',  /* 연한 배경색 */
     chipGrayText:     '#70757a',  /* 회색 글씨 */
     chipDarkText:     '#ffffff',  /* 진한 배경 위 글자색 */
-    headerBg:         '#1a73e8',  /* 헤더 배경 */
-    accentColor:      '#1a73e8',  /* 강조색 */
-    calWeekdayBg:     '#1a73e8',  /* 요일 행 배경 */
-    calTodayBg:       '#1a73e8',  /* 오늘 날짜 배경 */
+    headerBg:         '#0ea5e9',  /* 헤더 배경 */
+    accentColor:      '#0ea5e9',  /* 강조색 */
+    calWeekdayBg:     '#0ea5e9',  /* 요일 행 배경 */
+    calTodayBg:       '#0ea5e9',  /* 오늘 날짜 배경 */
     calSundayColor:   '#d32f2f',  /* 일요일 숫자 색 */
     calSaturdayColor: '#1565c0'   /* 토요일 숫자 색 */
   };
@@ -23,8 +23,8 @@
     {
       name: '기본 (파란색)',
       colors: {
-        chipDarkBg: '#1a73e8', chipLightBg: '#e8f0fe', chipGrayText: '#70757a', chipDarkText: '#ffffff',
-        headerBg: '#1a73e8', accentColor: '#1a73e8', calWeekdayBg: '#1a73e8', calTodayBg: '#1a73e8',
+        chipDarkBg: '#0ea5e9', chipLightBg: '#e0f2fe', chipGrayText: '#70757a', chipDarkText: '#ffffff',
+        headerBg: '#0ea5e9', accentColor: '#0ea5e9', calWeekdayBg: '#0ea5e9', calTodayBg: '#0ea5e9',
         calSundayColor: '#d32f2f', calSaturdayColor: '#1565c0'
       }
     },

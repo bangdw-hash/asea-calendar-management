@@ -246,7 +246,7 @@ var WorkModule = (function () {
       }
 
       // 역할 뱃지
-      var roleColors = { admin:'#1a73e8', manager:'#0b8043', staff:'#5f6368' };
+      var roleColors = { admin:'#0ea5e9', manager:'#0b8043', staff:'#5f6368' };
       var roleEl = $w('my-profile-role');
       if (roleEl) {
         roleEl.textContent = roleLabel;
@@ -756,7 +756,7 @@ var WorkModule = (function () {
               W.personalTasks.filter(function(t){ return (t.status||'예정') === f; }).length) + '</span>' +
           '</button>';
         }).join('') +
-        '<a href="#" id="personal-quick-add-link" style="margin-left:auto;font-size:12px;color:#1A73E8;text-decoration:none;align-self:center">+ 빠른 등록</a>' +
+        '<a href="#" id="personal-quick-add-link" style="margin-left:auto;font-size:12px;color:#0EA5E9;text-decoration:none;align-self:center">+ 빠른 등록</a>' +
       '</div>';
 
     if (tasks.length === 0) {
@@ -1153,7 +1153,7 @@ var WorkModule = (function () {
       item.innerHTML =
         '<span style="font-weight:600">' + _escHr(emp.name) + '</span>' +
         '<span style="color:#5f6368;font-size:12px;margin-left:6px">' + _escHr(emp.department) + ' · ' + _escHr(emp.rank) + '</span>' +
-        (emp.phone ? '<span style="color:#1a73e8;font-size:12px;margin-left:8px">📞 ' + _escHr(emp.phone) + '</span>' : '');
+        (emp.phone ? '<span style="color:#0ea5e9;font-size:12px;margin-left:8px">📞 ' + _escHr(emp.phone) + '</span>' : '');
       item.onclick = function () {
         if (!W.selectedRecipients.find(function (r) { return r.id === emp.id; })) {
           W.selectedRecipients.push({ id: emp.id, name: emp.name, department: emp.department, phone: emp.phone || '' });
@@ -1277,7 +1277,7 @@ var WorkModule = (function () {
 
     // ── 테이블 헤더
     var roleLabel = { admin:'관리자', manager:'부서장', staff:'직원' };
-    var roleColor = { admin:'#1a73e8', manager:'#0b8043', staff:'#5f6368' };
+    var roleColor = { admin:'#0ea5e9', manager:'#0b8043', staff:'#5f6368' };
 
     function _thSort(label, key, cls) {
       var arrow = _hrSortKey === key ? (_hrSortAsc ? ' ▲' : ' ▼') : ' ⇅';
@@ -1416,7 +1416,7 @@ var WorkModule = (function () {
       if (isChecked) tr.classList.add('hr-row-selected');
 
       var phoneDisplay = emp.phone
-        ? '<a href="tel:' + _escHr(emp.phone) + '" style="color:#1a73e8;text-decoration:none;font-size:11px">' + _escHr(emp.phone) + '</a>'
+        ? '<a href="tel:' + _escHr(emp.phone) + '" style="color:#0ea5e9;text-decoration:none;font-size:11px">' + _escHr(emp.phone) + '</a>'
         : '<span style="color:#ccc">-</span>';
       tr.innerHTML =
         '<td class="col-chk"><input type="checkbox" class="hr-row-chk" data-row="' + rowKey + '"' + (isChecked?' checked':'') + '></td>' +

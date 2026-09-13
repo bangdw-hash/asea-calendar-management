@@ -21,11 +21,11 @@
 [hidden]{display:none!important}
 :root{
   /* index.html 디자인 시스템 동기화 */
-  --color-bg:          #F8F9FB;
+  --color-bg:          #F0F9FF;
   --color-card:        #FFFFFF;
-  --color-accent:      #1A73E8;
-  --color-accent-dk:   #1557B0;
-  --color-accent-lt:   #E8F0FE;
+  --color-accent:      #0EA5E9;
+  --color-accent-dk:   #0284C7;
+  --color-accent-lt:   #E0F2FE;
   --color-text:        #202124;
   --color-text-sec:    #5F6368;
   --color-border:      #E8EAED;
@@ -112,7 +112,7 @@ html,body{height:100%;
   background:#fff;color:#3c4043;border:1.5px solid #dadce0;border-radius:var(--r);
   font-size:var(--font-sm);font-weight:600;font-family:inherit;cursor:pointer;
   box-shadow:var(--sh);transition:box-shadow .15s,border-color .15s;white-space:nowrap}
-.btn-login-google:hover{box-shadow:0 2px 8px rgba(66,133,244,.25);border-color:#4285F4}
+.btn-login-google:hover{box-shadow:0 2px 8px rgba(14,165,233,.25);border-color:#0EA5E9}
 .btn-login-google:active{box-shadow:none;background:#f8f9fa}
 
 /* icon-btn (헤더 아이콘) */
@@ -303,9 +303,9 @@ html,body{height:100%;
 /* ── FAB ── (index.html 스타일) */
 .fab{position:fixed;bottom:24px;right:20px;width:52px;height:52px;border-radius:50%;
   background:var(--color-accent);color:#fff;font-size:1.5rem;border:none;
-  box-shadow:0 4px 12px rgba(26,115,232,.4);cursor:pointer;z-index:200;
+  box-shadow:0 4px 12px rgba(14,165,233,.4);cursor:pointer;z-index:200;
   display:flex;align-items:center;justify-content:center;transition:transform .2s,box-shadow .2s}
-.fab:hover{transform:scale(1.08);box-shadow:0 6px 20px rgba(26,115,232,.55)}
+.fab:hover{transform:scale(1.08);box-shadow:0 6px 20px rgba(14,165,233,.55)}
 .fab:active{transform:scale(.95)}
 
 /* ── MODAL ── */
@@ -329,7 +329,7 @@ html,body{height:100%;
 .form-label .req{color:var(--red);margin-left:2px}
 .form-input{width:100%;padding:9px 12px;border:1.5px solid var(--g300);border-radius:var(--r);
   font-size:.875rem;color:var(--g900);transition:border-color .2s,box-shadow .2s;background:#fff}
-.form-input:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(26,115,232,.15)}
+.form-input:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(14,165,233,.15)}
 .form-input.err{border-color:var(--red)}
 .err-msg{font-size:.75rem;color:var(--red);margin-top:3px}
 .evt-title-wrap{position:relative}
@@ -439,7 +439,7 @@ html,body{height:100%;
   background:var(--color-accent);color:#fff;font-size:1.4rem;border:none;
   box-shadow:0 4px 12px rgba(124,58,237,.45);cursor:pointer;z-index:200;
   display:flex;align-items:center;justify-content:center;transition:transform .2s,box-shadow .2s}
-.ai-fab:hover{transform:scale(1.1);box-shadow:0 6px 20px rgba(26,115,232,.45)}
+.ai-fab:hover{transform:scale(1.1);box-shadow:0 6px 20px rgba(14,165,233,.45)}
 .ai-fab:active{transform:scale(.95)}
 
 .ai-panel{position:fixed;bottom:88px;right:20px;width:360px;max-width:calc(100vw - 32px);
@@ -458,7 +458,7 @@ html,body{height:100%;
 .ai-close:hover{opacity:1;background:rgba(255,255,255,.15)}
 .ai-msgs{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:10px;min-height:160px}
 .ai-msg{max-width:88%;font-size:.82rem;line-height:1.55;padding:8px 11px;border-radius:10px;word-break:break-word}
-.ai-msg.user{align-self:flex-end;background:#e8f0fe;color:#1a237e;border-bottom-right-radius:2px}
+.ai-msg.user{align-self:flex-end;background:#e0f2fe;color:#1a237e;border-bottom-right-radius:2px}
 .ai-msg.bot{align-self:flex-start;background:var(--g100);color:var(--g900);border-bottom-left-radius:2px}
 .ai-msg.bot.loading{color:var(--g400);font-style:italic}
 .ai-action-bar{padding:6px 12px;display:flex;gap:6px;flex-wrap:wrap;border-top:1px solid var(--g100);flex-shrink:0}
@@ -468,7 +468,7 @@ html,body{height:100%;
 .ai-input-row{display:flex;gap:6px;padding:10px 12px;border-top:1px solid var(--g200);flex-shrink:0}
 #ai-input{flex:1;padding:8px 11px;border:1.5px solid var(--g300);border-radius:var(--r);
   font-size:.82rem;outline:none;transition:border-color .2s}
-#ai-input:focus{border-color:var(--color-accent);box-shadow:0 0 0 3px rgba(26,115,232,.1)}
+#ai-input:focus{border-color:var(--color-accent);box-shadow:0 0 0 3px rgba(14,165,233,.1)}
 #ai-send{width:34px;height:34px;border-radius:50%;background:var(--color-accent);
   color:#fff;border:none;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;
   flex-shrink:0;transition:opacity .15s}
@@ -626,7 +626,7 @@ html,body{height:100%;
 .auth-banner-btns{display:flex;gap:8px;flex-wrap:wrap;align-items:center;flex-shrink:0}
 
 /* loading spinner */
-.spinner{display:inline-block;width:18px;height:18px;border:2px solid rgba(26,115,232,.3);
+.spinner{display:inline-block;width:18px;height:18px;border:2px solid rgba(14,165,233,.3);
   border-top-color:var(--primary);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle}
 @keyframes spin{to{transform:rotate(360deg)}}
 
@@ -848,12 +848,12 @@ html,body{height:100%;
 .feat-item-title{font-size:.88rem;font-weight:700;color:var(--g900)}
 .feat-item-meta{font-size:.72rem;color:var(--g400);white-space:nowrap;flex-shrink:0}
 .feat-item-body{padding:10px 14px;font-size:.83rem;color:var(--g700);white-space:pre-wrap;line-height:1.55}
-.feat-reply-wrap{background:var(--primary-lt);border-top:1px solid rgba(26,115,232,.15);padding:10px 14px}
+.feat-reply-wrap{background:var(--primary-lt);border-top:1px solid rgba(14,165,233,.15);padding:10px 14px}
 .feat-reply-label{font-size:.72rem;font-weight:700;color:var(--primary);margin-bottom:4px}
 .feat-reply-text{font-size:.82rem;color:var(--g700);line-height:1.5;white-space:pre-wrap}
 .feat-admin-row{padding:10px 14px;border-top:1px solid var(--g200);display:flex;flex-direction:column;gap:6px}
 .feat-admin-ta{width:100%;padding:8px 10px;border:1.5px solid var(--g300);border-radius:var(--r);font-size:.82rem;resize:vertical;font-family:inherit;min-height:60px;transition:border-color .2s}
-.feat-admin-ta:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(26,115,232,.1)}
+.feat-admin-ta:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(14,165,233,.1)}
 .feat-badge{display:inline-block;padding:2px 8px;border-radius:var(--r);font-size:.68rem;font-weight:700;background:#e8f5e9;color:#2e7d32}
 
 
@@ -2671,7 +2671,7 @@ function renderMonth(wrap) {
       const visEvts = (isMob && allCellEvts.length > MAX_MOB) ? allCellEvts.slice(0, MAX_MOB) : allCellEvts;
       const moreCount = (isMob && allCellEvts.length > MAX_MOB) ? allCellEvts.length - MAX_MOB : 0;
       const dotsHtml = visEvts.map(ev => renderEvtItemHTML(ev, true)).join('');
-      const linkedHtml = (_linkedItems[dateKey]||[]).map(li=>`<span class="evt-dot-wrap"><span class="evt-dot rv-linked" style="background:${li.classroom_color||'#1A73E8'};--rv-color:${li.classroom_color||'#1A73E8'};cursor:pointer" title="${esc(li.label)}" data-linked-id="${li.id||''}" data-rv-id="${li.reservation_id||''}" onclick="event.stopPropagation();openRvDetail(${li.reservation_id||'null'},'${esc(li.label)}','${li.classroom_color||'#1A73E8'}',${li.id||'null'})">${esc(li.label)}</span></span>`).join('');
+      const linkedHtml = (_linkedItems[dateKey]||[]).map(li=>`<span class="evt-dot-wrap"><span class="evt-dot rv-linked" style="background:${li.classroom_color||'#0EA5E9'};--rv-color:${li.classroom_color||'#0EA5E9'};cursor:pointer" title="${esc(li.label)}" data-linked-id="${li.id||''}" data-rv-id="${li.reservation_id||''}" onclick="event.stopPropagation();openRvDetail(${li.reservation_id||'null'},'${esc(li.label)}','${li.classroom_color||'#0EA5E9'}',${li.id||'null'})">${esc(li.label)}</span></span>`).join('');
       const moreHtml = moreCount ? `<span class="evt-more-chip" onclick="event.stopPropagation();showDayEvts(${y},${m},${cell.d})">+${moreCount} 더보기</span>` : '';
       gridHtml += `<div class="${cell.cls}${holiday?' holiday':''}${allCellEvts.length||linkedHtml?' has-events':''}" data-y="${y}" data-m="${m}" data-d="${cell.d}">${numEl}${dotsHtml}${linkedHtml}${moreHtml}</div>`;
     }
@@ -5195,9 +5195,9 @@ async function doExcelDownload() {
       const s = (rs.getPropertyValue(v) || fb).trim();
       return (s.startsWith('#') ? s.slice(1) : s).toUpperCase();
     }
-    const accent   = gc('--color-accent',    '#1A73E8');
-    const accentLt = gc('--color-accent-lt', '#E8F0FE');
-    const accentDk = gc('--color-accent-dk', '#1557B0');
+    const accent   = gc('--color-accent',    '#0EA5E9');
+    const accentLt = gc('--color-accent-lt', '#E0F2FE');
+    const accentDk = gc('--color-accent-dk', '#0284C7');
 
     // ── Fetch events if needed (same logic as before)
     const needFetch = targets.some(({y,m}) => {
