@@ -393,21 +393,17 @@ body {
   background: #fff; border-radius: var(--r);
   box-shadow: var(--sh); padding: 14px 16px;
   margin-bottom: 10px;
-  display: flex; align-items: center; gap: 12px;
 }
+.vc-card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
 .vc-plate {
-  background: var(--g900); color: #fff;
-  font-size: 14px; font-weight: 800;
-  padding: 6px 10px; border-radius: 6px;
-  font-family: 'Courier New', monospace;
-  white-space: nowrap; letter-spacing: 1px;
-  flex-shrink: 0;
+  font-size: 15px; font-weight: 800; color: var(--g900);
+  letter-spacing: 0.5px; margin-top: 3px; margin-bottom: 1px;
 }
-.vc-plate.pre-approved { background: var(--orange); }
+.vc-plate.pre-approved { color: var(--orange); }
 .vc-info { flex: 1; min-width: 0; }
-.vc-name { font-size: 16px; font-weight: 700; color: var(--g900); }
-.vc-meta { font-size: 13px; color: var(--g500); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.vc-phone { font-size: 13px; color: var(--primary); margin-top: 2px; font-weight: 600; white-space: nowrap; display: block; overflow: hidden; text-overflow: ellipsis; }
+.vc-name { font-size: 15px; font-weight: 700; color: var(--g900); }
+.vc-meta { font-size: 13px; color: var(--g500); margin-top: 2px; }
+.vc-phone { font-size: 13px; color: var(--primary); margin-top: 2px; font-weight: 600; display: block; }
 .vc-actions { display: flex; gap: 6px; flex-shrink: 0; }
 .vc-btn {
   border: 1.5px solid var(--g200); background: none;
@@ -515,15 +511,15 @@ body {
 .filter-tab.red.active { border-color: var(--red); background: var(--red-lt); color: var(--red); }
 
 /* ── 블랙리스트 ── */
-.vc-plate.blacklist { background: var(--red); }
+.vc-plate.blacklist { color: var(--red); }
 .vc-name .bl-badge { font-size: 11px; font-weight: 700; background: var(--red); color: #fff; padding: 2px 7px; border-radius: 10px; margin-left: 4px; vertical-align: middle; }
 .bl-warn-banner { background: var(--red-lt); border: 1.5px solid rgba(220,38,38,.3); border-radius: 10px; padding: 12px 14px; margin-bottom: 10px; display: flex; gap: 10px; align-items: flex-start; }
 .bl-warn-title { font-size: 14px; font-weight: 800; color: var(--red); }
 .bl-warn-sub { font-size: 12px; color: var(--red); opacity: .85; margin-top: 2px; }
 
 /* ── 임시 등록 ── */
-.vc-plate.temp-active { background: var(--orange); }
-.vc-plate.temp-expired { background: var(--g400); }
+.vc-plate.temp-active { color: var(--orange); }
+.vc-plate.temp-expired { color: var(--g400); }
 .vc-name .tmp-badge { font-size: 11px; font-weight: 700; background: var(--orange); color: #fff; padding: 2px 7px; border-radius: 10px; margin-left: 4px; vertical-align: middle; }
 .vc-name .tmp-exp-badge { font-size: 11px; font-weight: 700; background: var(--g400); color: #fff; padding: 2px 7px; border-radius: 10px; margin-left: 4px; vertical-align: middle; }
 .filter-tab.orange.active { border-color: var(--orange); background: var(--orange-lt); color: var(--orange); }
@@ -1750,16 +1746,19 @@ function renderList(list) {
     else if (isExpired) badges += '<small class="tmp-exp-badge">만료</small>';
     else if (isTemp) { var rem = formatRemaining(v.valid_until); badges += '<small class="tmp-badge">임시' + (rem ? ' · ' + rem : '') + '</small>'; }
     else if (v.pre_approved) badges += ' <small style="font-size:11px;background:var(--orange);color:#fff;padding:2px 6px;border-radius:10px;font-weight:700">협의</small>';
+    var meta = [v.owner_dept, v.vehicle_type].filter(Boolean).join(' · ');
     return '<div class="vehicle-card">' +
-      '<div class="' + plateClass + '">' + escHtml(displayPlate(v.plate_number)) + '</div>' +
-      '<div class="vc-info">' +
-        '<div class="vc-name">' + escHtml([v.owner_name, v.job_title].filter(Boolean).join(' ') || '(이름 없음)') + badges + '</div>' +
-        '<div class="vc-meta">' + escHtml([v.owner_dept, v.vehicle_type].filter(Boolean).join(' · ')) + '</div>' +
-        (phone ? '<a class="vc-phone" href="tel:' + phone.replace(/-/g, '') + '">' + phone + '</a>' : '') +
-      '</div>' +
-      '<div class="vc-actions">' +
-        '<button class="vc-btn" onclick="editVehicle(\'' + v.id + '\')">수정</button>' +
-        '<button class="vc-btn del" onclick="deleteVehicle(\'' + v.id + '\',\'' + escHtml(v.plate_number) + '\')">삭제</button>' +
+      '<div class="vc-card-top">' +
+        '<div class="vc-info">' +
+          '<div class="vc-name">' + escHtml([v.owner_name, v.job_title].filter(Boolean).join(' ') || '(이름 없음)') + badges + '</div>' +
+          '<div class="' + plateClass + '">' + escHtml(displayPlate(v.plate_number)) + '</div>' +
+          (meta ? '<div class="vc-meta">' + escHtml(meta) + '</div>' : '') +
+          (phone ? '<a class="vc-phone" href="tel:' + phone.replace(/-/g, '') + '">' + phone + '</a>' : '') +
+        '</div>' +
+        '<div class="vc-actions">' +
+          '<button class="vc-btn" onclick="editVehicle(\'' + v.id + '\')">수정</button>' +
+          '<button class="vc-btn del" onclick="deleteVehicle(\'' + v.id + '\',\'' + escHtml(v.plate_number) + '\')">삭제</button>' +
+        '</div>' +
       '</div>' +
     '</div>';
   }).join('');
