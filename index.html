@@ -83,30 +83,96 @@
       }
     }
   </style>
-  <!-- 테마 색상 조기 적용 (렌더링 전) -->
+  <!-- 외관 설정 — 조기 적용 (렌더링 전 FOUC 방지) -->
   <script>
-    (function() {
-      var themes = {
-        blue:   { accent:'#1A73E8', hover:'#1557B0', light:'#E8F0FE' },
-        green:  { accent:'#16a34a', hover:'#15803d', light:'#dcfce7' },
-        purple: { accent:'#7c3aed', hover:'#6d28d9', light:'#ede9fe' },
-        rose:   { accent:'#e11d48', hover:'#be123c', light:'#ffe4e6' },
+  (function() {
+    var THEMES = {
+      blue:   { accent:'#1A73E8', hover:'#1557B0', light:'#E8F0FE' },
+      green:  { accent:'#16a34a', hover:'#15803d', light:'#dcfce7' },
+      purple: { accent:'#7c3aed', hover:'#6d28d9', light:'#ede9fe' },
+      rose:   { accent:'#e11d48', hover:'#be123c', light:'#ffe4e6' },
+    };
+    var DEF = {
+      theme:'blue',
+      colorBg:'#F8F9FB', colorCard:'#FFFFFF', colorBorder:'#E8EAED',
+      colorText:'#202124', colorTextSec:'#5F6368',
+      fontBase:14, fontSm:12, fontLg:16,
+      radius:12, shadow:'md', spacing:1,
+      mHeaderH:56, mTabH:48,
+      pcMaxW:1280, pcFontBase:14, pcHeaderH:60,
+    };
+    function _load() { try { return JSON.parse(localStorage.getItem('app-appearance')||'{}'); } catch(e) { return {}; } }
+    function _get(k) { var d=_load(); return d[k]!==undefined ? d[k] : DEF[k]; }
+    window.AppSave = function(k,v) { var d=_load(); d[k]=v; try { localStorage.setItem('app-appearance',JSON.stringify(d)); } catch(e) {} };
+    window.AppReset = function(k) { AppSave(k,DEF[k]); AppApply(); window._AppSyncUI&&_AppSyncUI(); };
+    window.AppResetAll = function() { try { localStorage.removeItem('app-appearance'); } catch(e) {} AppApply(); window._AppSyncUI&&_AppSyncUI(); };
+    window.AppSegSave = function(btn) {
+      AppSave(btn.dataset.key, btn.dataset.val); AppApply();
+      document.querySelectorAll('.appear-seg-btn[data-key="'+btn.dataset.key+'"]').forEach(function(b){ b.classList.toggle('active',b===btn); });
+    };
+    window.applyAppTheme = function(name) {
+      var t=THEMES[name]||THEMES.blue, r=document.documentElement.style;
+      r.setProperty('--color-accent',t.accent); r.setProperty('--color-accent-hover',t.hover);
+      r.setProperty('--color-accent-light',t.light); r.setProperty('--color-bg-hover',t.light);
+      r.setProperty('--color-primary',t.accent);
+      document.querySelectorAll('.theme-swatch').forEach(function(s){ s.classList.toggle('active',s.dataset.theme===name); });
+      AppSave('theme',name);
+    };
+    window.AppApply = function() {
+      var r=document.documentElement.style;
+      r.setProperty('--color-bg',_get('colorBg')); r.setProperty('--color-card',_get('colorCard'));
+      r.setProperty('--color-border',_get('colorBorder')); r.setProperty('--color-text',_get('colorText'));
+      r.setProperty('--color-text-secondary',_get('colorTextSec'));
+      var fb=parseInt(_get('fontBase'))||14;
+      r.setProperty('--font-xs',(fb-3)+'px'); r.setProperty('--font-sm',_get('fontSm')+'px');
+      r.setProperty('--font-base',fb+'px'); r.setProperty('--font-md',(fb+1)+'px');
+      r.setProperty('--font-lg',_get('fontLg')+'px'); r.setProperty('--font-xl',(parseInt(_get('fontLg'))+2)+'px');
+      r.setProperty('--font-2xl',(parseInt(_get('fontLg'))+6)+'px');
+      var rad=parseInt(_get('radius'))||12;
+      ['--r-sm','--r-md','--r-lg','--r-xl','--r-full'].forEach(function(v){ r.setProperty(v,rad+'px'); });
+      var SH={
+        none:['none','none','none','none'],
+        sm:['0 1px 2px rgba(0,0,0,.06)','0 1px 4px rgba(0,0,0,.09)','0 2px 8px rgba(0,0,0,.12)','0 6px 20px rgba(0,0,0,.15)'],
+        md:['0 1px 3px rgba(60,64,67,.08),0 1px 2px rgba(60,64,67,.06)','0 2px 8px rgba(60,64,67,.12),0 2px 4px rgba(60,64,67,.08)','0 8px 24px rgba(60,64,67,.14),0 4px 8px rgba(60,64,67,.10)','0 12px 40px rgba(60,64,67,.22)'],
+        lg:['0 2px 6px rgba(0,0,0,.14)','0 4px 16px rgba(0,0,0,.18)','0 10px 32px rgba(0,0,0,.22)','0 16px 56px rgba(0,0,0,.28)'],
       };
-      window.applyAppTheme = function(name) {
-        var t = themes[name] || themes.blue;
-        var r = document.documentElement.style;
-        r.setProperty('--color-accent', t.accent);
-        r.setProperty('--color-accent-hover', t.hover);
-        r.setProperty('--color-accent-light', t.light);
-        r.setProperty('--color-bg-hover', t.light);
-        r.setProperty('--color-primary', t.accent);
-        document.querySelectorAll('.theme-swatch').forEach(function(s) {
-          s.classList.toggle('active', s.dataset.theme === name);
-        });
-        try { localStorage.setItem('app-theme', name); } catch(e) {}
-      };
-      try { applyAppTheme(localStorage.getItem('app-theme') || 'blue'); } catch(e) {}
-    })();
+      var sh=SH[_get('shadow')]||SH.md;
+      r.setProperty('--shadow-sm',sh[0]); r.setProperty('--shadow-md',sh[1]);
+      r.setProperty('--shadow-lg',sh[2]); r.setProperty('--shadow-overlay',sh[3]);
+      var sc=parseFloat(_get('spacing'))||1;
+      [1,2,3,4,5,6,8].forEach(function(n){ r.setProperty('--sp-'+n,Math.round(n*4*sc)+'px'); });
+      r.setProperty('--header-h',_get('mHeaderH')+'px'); r.setProperty('--tab-h',_get('mTabH')+'px');
+      var el=document.getElementById('__pc-style');
+      if(!el){ el=document.createElement('style'); el.id='__pc-style'; document.head.appendChild(el); }
+      el.textContent='@media(min-width:769px){:root{--max-content-w:'+_get('pcMaxW')+'px;--header-h:'+_get('pcHeaderH')+'px;--font-base:'+_get('pcFontBase')+'px}}';
+      applyAppTheme(_get('theme'));
+    };
+    window._AppSyncUI = function() {
+      var d=_load();
+      function get(k){ return d[k]!==undefined?d[k]:DEF[k]; }
+      function sv(id,val){ var el=document.getElementById(id); if(el) el.value=String(val); }
+      function st(id,val){ var el=document.getElementById(id); if(el) el.textContent=String(val); }
+      sv('ap-colorBg',get('colorBg'));       st('ap-colorBg-v',get('colorBg'));
+      sv('ap-colorCard',get('colorCard'));   st('ap-colorCard-v',get('colorCard'));
+      sv('ap-colorBorder',get('colorBorder'));st('ap-colorBorder-v',get('colorBorder'));
+      sv('ap-colorText',get('colorText'));   st('ap-colorText-v',get('colorText'));
+      sv('ap-colorTextSec',get('colorTextSec'));st('ap-colorTextSec-v',get('colorTextSec'));
+      sv('ap-fontBase',get('fontBase'));  st('ap-fontBase-v',get('fontBase')+'px');
+      sv('ap-fontSm',get('fontSm'));      st('ap-fontSm-v',get('fontSm')+'px');
+      sv('ap-fontLg',get('fontLg'));      st('ap-fontLg-v',get('fontLg')+'px');
+      sv('ap-radius',get('radius'));      st('ap-radius-v',get('radius')+'px');
+      sv('ap-mHeaderH',get('mHeaderH')); st('ap-mHeaderH-v',get('mHeaderH')+'px');
+      sv('ap-mTabH',get('mTabH'));        st('ap-mTabH-v',get('mTabH')+'px');
+      sv('ap-pcMaxW',get('pcMaxW'));      st('ap-pcMaxW-v',get('pcMaxW')+'px');
+      sv('ap-pcFontBase',get('pcFontBase'));st('ap-pcFontBase-v',get('pcFontBase')+'px');
+      sv('ap-pcHeaderH',get('pcHeaderH'));st('ap-pcHeaderH-v',get('pcHeaderH')+'px');
+      document.querySelectorAll('.appear-seg-btn').forEach(function(b){
+        b.classList.toggle('active',String(b.dataset.val)===String(get(b.dataset.key)));
+      });
+      applyAppTheme(get('theme'));
+    };
+    try { AppApply(); } catch(e) {}
+  })();
   </script>
 </head>
 <body>
@@ -1619,34 +1685,285 @@
           <p id="admin-bootstrap-status" class="form-hint" style="margin-top:8px;color:#4285F4"></p>
         </div>
 
-        <!-- ── 외관 ──────────────────────────────────────── -->
-        <div class="settings-group-label">외관</div>
+        <!-- ── 외관 설정 ──────────────────────────────────────── -->
+        <div class="settings-group-label">외관 설정</div>
+        <style>
+          /* ─── 외관 설정 컨트롤 공통 ─────────────────────── */
+          .appear-card-sub { font-size:11px; font-weight:700; color:var(--color-text-secondary); letter-spacing:.4px; text-transform:uppercase; margin:14px 0 8px; }
+          .appear-row { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:7px 0; border-bottom:1px solid var(--color-border); }
+          .appear-row:last-child { border-bottom:none; }
+          .appear-lbl { font-size:13px; color:var(--color-text); min-width:90px; flex-shrink:0; }
+          .appear-ctrl { display:flex; align-items:center; gap:6px; flex:1; justify-content:flex-end; }
+          .appear-val  { font-size:12px; color:var(--color-text-secondary); min-width:48px; text-align:right; font-variant-numeric:tabular-nums; }
+          .appear-range { flex:1; max-width:120px; accent-color:var(--color-accent); cursor:pointer; }
+          .appear-reset-btn { background:none; border:none; cursor:pointer; color:var(--color-text-secondary); font-size:14px; padding:0 2px; opacity:.6; transition:opacity .1s; }
+          .appear-reset-btn:hover { opacity:1; }
+          .appear-color-wrap { display:flex; align-items:center; gap:4px; }
+          .appear-color-swatch { width:22px; height:22px; border-radius:6px; border:1px solid var(--color-border); overflow:hidden; }
+          .appear-color-swatch input[type=color] { width:32px; height:32px; border:none; cursor:pointer; transform:translate(-5px,-5px); }
+          .appear-seg { display:flex; gap:4px; flex-wrap:wrap; }
+          .appear-seg-btn { padding:4px 10px; border:1px solid var(--color-border); border-radius:8px; font-size:12px; cursor:pointer; background:var(--color-card); color:var(--color-text-secondary); transition:all .12s; }
+          .appear-seg-btn.active { background:var(--color-accent); color:#fff; border-color:var(--color-accent); }
+          .theme-swatch { width:32px; height:32px; border-radius:50%; border:3px solid transparent; cursor:pointer; transition:border-color .15s,transform .12s; padding:0; }
+          .theme-swatch.active { border-color:var(--color-text); transform:scale(1.18); outline:none; }
+          .appear-preview-box { width:100%; border-radius:var(--r-md); border:1px solid var(--color-border); padding:10px 12px; background:var(--color-card); font-size:var(--font-base); color:var(--color-text); margin-top:6px; display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+          .appear-preview-badge { padding:3px 10px; border-radius:var(--r-sm); background:var(--color-accent); color:#fff; font-size:var(--font-sm); }
+          .appear-preview-shadow { box-shadow:var(--shadow-md); }
+        </style>
+        <script>
+          document.addEventListener('DOMContentLoaded', function() { try { _AppSyncUI(); } catch(e) {} });
+        </script>
 
+        <!-- ①  강조 색상 -->
         <div class="settings-card">
-          <h3 class="settings-section-title">테마 색상</h3>
-          <p class="settings-hint" style="margin-bottom:12px">앱 전체의 강조 색상과 배경 톤을 변경합니다.</p>
-          <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+          <h3 class="settings-section-title">강조 색상 (테마)</h3>
+          <p class="settings-hint" style="margin-bottom:10px">버튼, 링크, 활성 탭, 선택 항목에 적용됩니다.</p>
+          <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
             <button class="theme-swatch" data-theme="blue"   onclick="applyAppTheme('blue')"   title="블루"   style="background:#1A73E8"></button>
             <button class="theme-swatch" data-theme="green"  onclick="applyAppTheme('green')"  title="그린"   style="background:#16a34a"></button>
             <button class="theme-swatch" data-theme="purple" onclick="applyAppTheme('purple')" title="퍼플"   style="background:#7c3aed"></button>
             <button class="theme-swatch" data-theme="rose"   onclick="applyAppTheme('rose')"   title="로즈"   style="background:#e11d48"></button>
           </div>
-          <style>
-            .theme-swatch {
-              width:32px; height:32px; border-radius:50%; border:3px solid transparent;
-              cursor:pointer; transition:border-color .15s, transform .1s; padding:0;
-            }
-            .theme-swatch.active, .theme-swatch:focus {
-              border-color: var(--color-text);
-              transform: scale(1.15);
-              outline: none;
-            }
-          </style>
-          <script>
-            document.addEventListener('DOMContentLoaded', function() {
-              try { applyAppTheme(localStorage.getItem('app-theme') || 'blue'); } catch(e) {}
-            });
-          </script>
+        </div>
+
+        <!-- ②  배경 & 표면 색 -->
+        <div class="settings-card">
+          <h3 class="settings-section-title">배경 & 표면 색</h3>
+
+          <div class="appear-row">
+            <span class="appear-lbl">페이지 배경</span>
+            <div class="appear-ctrl">
+              <span class="appear-val" id="ap-colorBg-v">#F8F9FB</span>
+              <div class="appear-color-swatch">
+                <input type="color" id="ap-colorBg" value="#F8F9FB"
+                  oninput="document.getElementById('ap-colorBg-v').textContent=this.value;AppSave('colorBg',this.value);AppApply()">
+              </div>
+              <button class="appear-reset-btn" onclick="AppReset('colorBg')" title="초기화">↺</button>
+            </div>
+          </div>
+
+          <div class="appear-row">
+            <span class="appear-lbl">카드 배경</span>
+            <div class="appear-ctrl">
+              <span class="appear-val" id="ap-colorCard-v">#FFFFFF</span>
+              <div class="appear-color-swatch">
+                <input type="color" id="ap-colorCard" value="#FFFFFF"
+                  oninput="document.getElementById('ap-colorCard-v').textContent=this.value;AppSave('colorCard',this.value);AppApply()">
+              </div>
+              <button class="appear-reset-btn" onclick="AppReset('colorCard')">↺</button>
+            </div>
+          </div>
+
+          <div class="appear-row">
+            <span class="appear-lbl">경계선 색</span>
+            <div class="appear-ctrl">
+              <span class="appear-val" id="ap-colorBorder-v">#E8EAED</span>
+              <div class="appear-color-swatch">
+                <input type="color" id="ap-colorBorder" value="#E8EAED"
+                  oninput="document.getElementById('ap-colorBorder-v').textContent=this.value;AppSave('colorBorder',this.value);AppApply()">
+              </div>
+              <button class="appear-reset-btn" onclick="AppReset('colorBorder')">↺</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ③  텍스트 색 -->
+        <div class="settings-card">
+          <h3 class="settings-section-title">텍스트 색</h3>
+
+          <div class="appear-row">
+            <span class="appear-lbl">기본 텍스트</span>
+            <div class="appear-ctrl">
+              <span class="appear-val" id="ap-colorText-v">#202124</span>
+              <div class="appear-color-swatch">
+                <input type="color" id="ap-colorText" value="#202124"
+                  oninput="document.getElementById('ap-colorText-v').textContent=this.value;AppSave('colorText',this.value);AppApply()">
+              </div>
+              <button class="appear-reset-btn" onclick="AppReset('colorText')">↺</button>
+            </div>
+          </div>
+
+          <div class="appear-row">
+            <span class="appear-lbl">보조 텍스트</span>
+            <div class="appear-ctrl">
+              <span class="appear-val" id="ap-colorTextSec-v">#5F6368</span>
+              <div class="appear-color-swatch">
+                <input type="color" id="ap-colorTextSec" value="#5F6368"
+                  oninput="document.getElementById('ap-colorTextSec-v').textContent=this.value;AppSave('colorTextSec',this.value);AppApply()">
+              </div>
+              <button class="appear-reset-btn" onclick="AppReset('colorTextSec')">↺</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ④  타이포그래피 -->
+        <div class="settings-card">
+          <h3 class="settings-section-title">타이포그래피</h3>
+
+          <div class="appear-row">
+            <span class="appear-lbl">기본 글자 크기</span>
+            <div class="appear-ctrl">
+              <input type="range" id="ap-fontBase" class="appear-range" min="12" max="18" step="1" value="14"
+                oninput="document.getElementById('ap-fontBase-v').textContent=this.value+'px';AppSave('fontBase',this.value);AppApply()">
+              <span class="appear-val" id="ap-fontBase-v">14px</span>
+              <button class="appear-reset-btn" onclick="AppReset('fontBase')">↺</button>
+            </div>
+          </div>
+
+          <div class="appear-row">
+            <span class="appear-lbl">소형 글자 크기</span>
+            <div class="appear-ctrl">
+              <input type="range" id="ap-fontSm" class="appear-range" min="10" max="15" step="1" value="12"
+                oninput="document.getElementById('ap-fontSm-v').textContent=this.value+'px';AppSave('fontSm',this.value);AppApply()">
+              <span class="appear-val" id="ap-fontSm-v">12px</span>
+              <button class="appear-reset-btn" onclick="AppReset('fontSm')">↺</button>
+            </div>
+          </div>
+
+          <div class="appear-row">
+            <span class="appear-lbl">제목 글자 크기</span>
+            <div class="appear-ctrl">
+              <input type="range" id="ap-fontLg" class="appear-range" min="14" max="22" step="1" value="16"
+                oninput="document.getElementById('ap-fontLg-v').textContent=this.value+'px';AppSave('fontLg',this.value);AppApply()">
+              <span class="appear-val" id="ap-fontLg-v">16px</span>
+              <button class="appear-reset-btn" onclick="AppReset('fontLg')">↺</button>
+            </div>
+          </div>
+
+          <!-- 미리보기 -->
+          <div class="appear-preview-box appear-preview-shadow" style="margin-top:10px">
+            <span style="font-size:var(--font-lg);font-weight:700;color:var(--color-text)">제목 텍스트</span>
+            <span style="font-size:var(--font-base);color:var(--color-text)">본문 텍스트</span>
+            <span style="font-size:var(--font-sm);color:var(--color-text-secondary)">보조 텍스트</span>
+            <span class="appear-preview-badge">버튼</span>
+          </div>
+        </div>
+
+        <!-- ⑤  모서리 반경 -->
+        <div class="settings-card">
+          <h3 class="settings-section-title">모서리 반경</h3>
+          <p class="settings-hint" style="margin-bottom:8px">카드, 버튼, 입력창 등 모든 요소에 일괄 적용됩니다.</p>
+
+          <div class="appear-row">
+            <span class="appear-lbl">반경</span>
+            <div class="appear-ctrl">
+              <input type="range" id="ap-radius" class="appear-range" min="0" max="24" step="2" value="12"
+                oninput="document.getElementById('ap-radius-v').textContent=this.value+'px';AppSave('radius',this.value);AppApply()">
+              <span class="appear-val" id="ap-radius-v">12px</span>
+              <button class="appear-reset-btn" onclick="AppReset('radius')">↺</button>
+            </div>
+          </div>
+
+          <!-- 미리보기 -->
+          <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+            <div style="padding:8px 16px;background:var(--color-accent);color:#fff;border-radius:var(--r-md);font-size:var(--font-sm)">버튼</div>
+            <div style="padding:8px 14px;background:var(--color-card);border:1px solid var(--color-border);border-radius:var(--r-lg);font-size:var(--font-sm);color:var(--color-text)">카드 요소</div>
+            <div style="width:80px;height:32px;background:var(--color-bg);border:1px solid var(--color-border);border-radius:var(--r-sm)"></div>
+          </div>
+        </div>
+
+        <!-- ⑥  그림자 -->
+        <div class="settings-card">
+          <h3 class="settings-section-title">그림자 강도</h3>
+          <div class="appear-seg" style="margin-top:6px">
+            <button class="appear-seg-btn" data-key="shadow" data-val="none" onclick="AppSegSave(this)">없음</button>
+            <button class="appear-seg-btn" data-key="shadow" data-val="sm"   onclick="AppSegSave(this)">약</button>
+            <button class="appear-seg-btn active" data-key="shadow" data-val="md" onclick="AppSegSave(this)">중 (기본)</button>
+            <button class="appear-seg-btn" data-key="shadow" data-val="lg"   onclick="AppSegSave(this)">강</button>
+          </div>
+          <!-- 미리보기 -->
+          <div style="display:flex;gap:10px;margin-top:10px;flex-wrap:wrap">
+            <div style="padding:10px 14px;background:var(--color-card);border-radius:var(--r-md);box-shadow:var(--shadow-sm);font-size:var(--font-sm);color:var(--color-text-secondary)">sm</div>
+            <div style="padding:10px 14px;background:var(--color-card);border-radius:var(--r-md);box-shadow:var(--shadow-md);font-size:var(--font-sm);color:var(--color-text-secondary)">md</div>
+            <div style="padding:10px 14px;background:var(--color-card);border-radius:var(--r-md);box-shadow:var(--shadow-lg);font-size:var(--font-sm);color:var(--color-text-secondary)">lg</div>
+          </div>
+        </div>
+
+        <!-- ⑦  콘텐츠 간격 -->
+        <div class="settings-card">
+          <h3 class="settings-section-title">콘텐츠 간격</h3>
+          <p class="settings-hint" style="margin-bottom:8px">패딩, 마진 등 간격 토큰(--sp-*)에 배율로 적용됩니다.</p>
+          <div class="appear-seg">
+            <button class="appear-seg-btn" data-key="spacing" data-val="0.75" onclick="AppSegSave(this)">좁게 (×0.75)</button>
+            <button class="appear-seg-btn active" data-key="spacing" data-val="1" onclick="AppSegSave(this)">보통 (기본)</button>
+            <button class="appear-seg-btn" data-key="spacing" data-val="1.25" onclick="AppSegSave(this)">넓게 (×1.25)</button>
+            <button class="appear-seg-btn" data-key="spacing" data-val="1.5"  onclick="AppSegSave(this)">매우 넓게 (×1.5)</button>
+          </div>
+        </div>
+
+        <!-- ⑧  모바일 레이아웃 -->
+        <div class="settings-card">
+          <h3 class="settings-section-title">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+            모바일 레이아웃
+          </h3>
+          <p class="settings-hint" style="margin-bottom:8px">화면 너비 768px 이하에 적용됩니다.</p>
+
+          <div class="appear-row">
+            <span class="appear-lbl">헤더 높이</span>
+            <div class="appear-ctrl">
+              <input type="range" id="ap-mHeaderH" class="appear-range" min="44" max="80" step="4" value="56"
+                oninput="document.getElementById('ap-mHeaderH-v').textContent=this.value+'px';AppSave('mHeaderH',this.value);AppApply()">
+              <span class="appear-val" id="ap-mHeaderH-v">56px</span>
+              <button class="appear-reset-btn" onclick="AppReset('mHeaderH')">↺</button>
+            </div>
+          </div>
+
+          <div class="appear-row">
+            <span class="appear-lbl">하단 탭 높이</span>
+            <div class="appear-ctrl">
+              <input type="range" id="ap-mTabH" class="appear-range" min="40" max="72" step="4" value="48"
+                oninput="document.getElementById('ap-mTabH-v').textContent=this.value+'px';AppSave('mTabH',this.value);AppApply()">
+              <span class="appear-val" id="ap-mTabH-v">48px</span>
+              <button class="appear-reset-btn" onclick="AppReset('mTabH')">↺</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ⑨  PC 레이아웃 -->
+        <div class="settings-card">
+          <h3 class="settings-section-title">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:4px"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+            PC 레이아웃
+          </h3>
+          <p class="settings-hint" style="margin-bottom:8px">화면 너비 769px 이상일 때 별도로 적용됩니다.</p>
+
+          <div class="appear-row">
+            <span class="appear-lbl">최대 콘텐츠 너비</span>
+            <div class="appear-ctrl">
+              <input type="range" id="ap-pcMaxW" class="appear-range" min="900" max="1600" step="40" value="1280"
+                oninput="document.getElementById('ap-pcMaxW-v').textContent=this.value+'px';AppSave('pcMaxW',this.value);AppApply()">
+              <span class="appear-val" id="ap-pcMaxW-v">1280px</span>
+              <button class="appear-reset-btn" onclick="AppReset('pcMaxW')">↺</button>
+            </div>
+          </div>
+
+          <div class="appear-row">
+            <span class="appear-lbl">PC 헤더 높이</span>
+            <div class="appear-ctrl">
+              <input type="range" id="ap-pcHeaderH" class="appear-range" min="48" max="80" step="4" value="60"
+                oninput="document.getElementById('ap-pcHeaderH-v').textContent=this.value+'px';AppSave('pcHeaderH',this.value);AppApply()">
+              <span class="appear-val" id="ap-pcHeaderH-v">60px</span>
+              <button class="appear-reset-btn" onclick="AppReset('pcHeaderH')">↺</button>
+            </div>
+          </div>
+
+          <div class="appear-row">
+            <span class="appear-lbl">PC 기본 글자 크기</span>
+            <div class="appear-ctrl">
+              <input type="range" id="ap-pcFontBase" class="appear-range" min="12" max="18" step="1" value="14"
+                oninput="document.getElementById('ap-pcFontBase-v').textContent=this.value+'px';AppSave('pcFontBase',this.value);AppApply()">
+              <span class="appear-val" id="ap-pcFontBase-v">14px</span>
+              <button class="appear-reset-btn" onclick="AppReset('pcFontBase')">↺</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ⑩  전체 초기화 -->
+        <div class="settings-card" style="border:1px solid var(--color-border)">
+          <h3 class="settings-section-title">외관 설정 초기화</h3>
+          <p class="settings-hint" style="margin-bottom:10px">모든 색상·크기·간격을 기본값으로 되돌립니다.</p>
+          <button class="btn btn-danger btn-sm" onclick="if(confirm('모든 외관 설정을 초기값으로 되돌립니까?')) AppResetAll()">전체 초기화</button>
         </div>
 
         <!-- ── 인사 / 조직 관리 ────────────────────────────── -->
