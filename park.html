@@ -407,7 +407,7 @@ body {
 .vc-info { flex: 1; min-width: 0; }
 .vc-name { font-size: 16px; font-weight: 700; color: var(--g900); }
 .vc-meta { font-size: 13px; color: var(--g500); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.vc-phone { font-size: 13px; color: var(--primary); margin-top: 2px; font-weight: 600; }
+.vc-phone { font-size: 13px; color: var(--primary); margin-top: 2px; font-weight: 600; white-space: nowrap; display: block; overflow: hidden; text-overflow: ellipsis; }
 .vc-actions { display: flex; gap: 6px; flex-shrink: 0; }
 .vc-btn {
   border: 1.5px solid var(--g200); background: none;
@@ -633,7 +633,7 @@ body {
           style="flex:3;min-width:0;border:1.5px solid var(--g200);border-radius:8px;padding:11px 4px;font-size:18px;font-weight:800;text-align:center;font-family:inherit;color:var(--g900);outline:none;">
         <span style="font-size:15px;font-weight:700;color:var(--g400);flex-shrink:0">-</span>
         <input type="text" id="qsNewH" placeholder="가" maxlength="1"
-          oninput="plateAutoAdv(this,'qsNewB',1)" onkeydown="if(event.key==='Enter')doManualSearch()"
+          oninput="plateAutoAdv(this,'qsNewB',1,event)" oncompositionend="plateAutoAdv(this,'qsNewB',1)" onkeydown="if(event.key==='Enter')doManualSearch()"
           style="flex:2;min-width:0;border:1.5px solid var(--g200);border-radius:8px;padding:11px 4px;font-size:18px;font-weight:800;text-align:center;font-family:inherit;color:var(--g900);outline:none;">
         <span style="font-size:15px;font-weight:700;color:var(--g400);flex-shrink:0">-</span>
         <input type="text" id="qsNewB" placeholder="4567" maxlength="4" inputmode="numeric"
@@ -654,7 +654,7 @@ body {
           style="flex:4;min-width:0;border:1.5px solid var(--g200);border-radius:8px;padding:11px 4px;font-size:16px;font-weight:800;text-align:center;font-family:inherit;color:var(--g900);outline:none;">
         <span style="font-size:15px;font-weight:700;color:var(--g400);flex-shrink:0">-</span>
         <input type="text" id="qsOldH" placeholder="가" maxlength="1"
-          oninput="plateAutoAdv(this,'qsOldB',1)" onkeydown="if(event.key==='Enter')doManualSearch()"
+          oninput="plateAutoAdv(this,'qsOldB',1,event)" oncompositionend="plateAutoAdv(this,'qsOldB',1)" onkeydown="if(event.key==='Enter')doManualSearch()"
           style="flex:2;min-width:0;border:1.5px solid var(--g200);border-radius:8px;padding:11px 4px;font-size:18px;font-weight:800;text-align:center;font-family:inherit;color:var(--g900);outline:none;">
         <span style="font-size:15px;font-weight:700;color:var(--g400);flex-shrink:0">-</span>
         <input type="text" id="qsOldB" placeholder="3456" maxlength="4" inputmode="numeric"
@@ -796,8 +796,14 @@ body {
 
 <!-- ────────── LIST VIEW ────────── -->
 <div class="view" id="listView">
-  <div class="search-wrap">
-    <input type="text" id="searchInput" placeholder="번호판, 이름, 부서 검색..." oninput="filterList()">
+  <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px">
+    <div class="search-wrap" style="flex:1;margin-bottom:0">
+      <input type="text" id="searchInput" placeholder="번호판, 이름, 부서 검색..." oninput="filterList()">
+    </div>
+    <button onclick="openPwChange()" style="flex-shrink:0;background:var(--g100);border:1.5px solid var(--g200);border-radius:8px;padding:9px 12px;cursor:pointer;display:flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:var(--g500)">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      설정
+    </button>
   </div>
   <div class="list-filter">
     <button class="filter-tab active" id="ftAll" onclick="setListFilter('all')">전체</button>
@@ -845,7 +851,7 @@ body {
       <div>
         <label>한글</label>
         <input type="text" id="regPlateH" placeholder="가" maxlength="1"
-          oninput="plateAutoAdv(this,'regPlateB',1)"
+          oninput="plateAutoAdv(this,'regPlateB',1,event)" oncompositionend="plateAutoAdv(this,'regPlateB',1)"
           style="font-weight:800;">
       </div>
       <div class="plate-sep">-</div>
@@ -975,6 +981,57 @@ body {
     </svg>
     <span id="uploadBtnText">일괄 등록</span>
   </button>
+</div>
+
+<!-- ────────── List Password Modal ────────── -->
+<div class="modal-bg" id="listPwModal">
+  <div class="modal" style="max-height:60vh">
+    <div class="modal-title">
+      관리자 인증
+    </div>
+    <p style="font-size:14px;color:var(--g500);margin-bottom:18px">차량 목록 조회는 관리자 비밀번호가 필요합니다.</p>
+    <div class="field">
+      <label>비밀번호</label>
+      <input type="password" id="listPwInput" placeholder="비밀번호 입력" inputmode="numeric"
+        onkeydown="if(event.key==='Enter')checkListPw()"
+        style="font-size:18px;letter-spacing:4px;text-align:center">
+    </div>
+    <div id="listPwError" style="display:none;color:var(--red);font-size:13px;font-weight:600;margin-bottom:10px">비밀번호가 올바르지 않습니다.</div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" style="flex:1" onclick="closeListPwModal()">취소</button>
+      <button class="btn btn-primary" style="flex:2" onclick="checkListPw()">확인</button>
+    </div>
+  </div>
+</div>
+
+<!-- ────────── Password Change Modal ────────── -->
+<div class="modal-bg" id="pwChangeModal">
+  <div class="modal" style="max-height:70vh">
+    <div class="modal-title">
+      비밀번호 변경
+      <button class="modal-close" onclick="closePwChange()">×</button>
+    </div>
+    <div class="field">
+      <label>현재 비밀번호</label>
+      <input type="password" id="pwCurrent" placeholder="현재 비밀번호" inputmode="numeric"
+        style="font-size:18px;letter-spacing:4px;text-align:center">
+    </div>
+    <div class="field">
+      <label>새 비밀번호</label>
+      <input type="password" id="pwNew" placeholder="새 비밀번호" inputmode="numeric"
+        style="font-size:18px;letter-spacing:4px;text-align:center">
+    </div>
+    <div class="field">
+      <label>새 비밀번호 확인</label>
+      <input type="password" id="pwNewConfirm" placeholder="새 비밀번호 재입력" inputmode="numeric"
+        style="font-size:18px;letter-spacing:4px;text-align:center">
+    </div>
+    <div id="pwChangeError" style="display:none;color:var(--red);font-size:13px;font-weight:600;margin-bottom:10px"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" style="flex:1" onclick="closePwChange()">취소</button>
+      <button class="btn btn-primary" style="flex:2" onclick="saveNewPw()">변경 저장</button>
+    </div>
+  </div>
 </div>
 
 <!-- ────────── Edit Modal ────────── -->
@@ -1107,7 +1164,8 @@ let listFilter = 'all';
 let currentRegType = 'perm';
 
 // ── 번호판 자동 이동 ──
-function plateAutoAdv(inp, nextId, maxLen) {
+function plateAutoAdv(inp, nextId, maxLen, evt) {
+  if (evt && evt.isComposing) return; // 한글 조합 중 (초성 단계) 에는 이동 안 함
   if (inp.value.length >= maxLen) {
     var next = document.getElementById(nextId);
     if (next) { next.focus(); next.select(); }
@@ -1154,7 +1212,7 @@ function switchRegPlateTab(tab) {
   var hint = document.getElementById('regPlateHint');
   if (tab === 'new') {
     fInp.maxLength = 3; fInp.placeholder = '123'; fInp.inputMode = 'numeric';
-    fInp.oninput = function() { plateAutoAdv(this, 'regPlateH', 3); };
+    fInp.oninput = function(e) { plateAutoAdv(this, 'regPlateH', 3, e); };
     if (label) label.textContent = '앞 번호';
     if (hint) hint.innerHTML = '신형: 앞 <strong>123</strong> — 한글 <strong>가</strong> — 뒤 <strong>4567</strong> &rarr; 123가4567';
   } else {
@@ -1259,13 +1317,86 @@ function formatPhone(ph) {
   return ph.replace(/[^0-9]/g, '').replace(/^(\d{2,3})(\d{3,4})(\d{4})$/, '$1-$2-$3');
 }
 
+// ── 관리자 비밀번호 (list view 잠금) ──
+var LIST_PW_KEY = 'park_admin_pw';
+function getListPw() {
+  return localStorage.getItem(LIST_PW_KEY) || '7930';
+}
+function checkListPw() {
+  var inp = document.getElementById('listPwInput');
+  if (inp.value === getListPw()) {
+    sessionStorage.setItem('listUnlocked', '1');
+    document.getElementById('listPwModal').classList.remove('show');
+    inp.value = '';
+    document.getElementById('listPwError').style.display = 'none';
+    _enterListView();
+  } else {
+    document.getElementById('listPwError').style.display = 'block';
+    inp.value = '';
+    inp.focus();
+  }
+}
+function closeListPwModal() {
+  document.getElementById('listPwModal').classList.remove('show');
+  document.getElementById('listPwInput').value = '';
+  document.getElementById('listPwError').style.display = 'none';
+}
+function openPwChange() {
+  document.getElementById('pwCurrent').value = '';
+  document.getElementById('pwNew').value = '';
+  document.getElementById('pwNewConfirm').value = '';
+  document.getElementById('pwChangeError').style.display = 'none';
+  document.getElementById('pwChangeModal').classList.add('show');
+}
+function closePwChange() {
+  document.getElementById('pwChangeModal').classList.remove('show');
+}
+function saveNewPw() {
+  var cur = document.getElementById('pwCurrent').value;
+  var nw = document.getElementById('pwNew').value;
+  var nwc = document.getElementById('pwNewConfirm').value;
+  var errEl = document.getElementById('pwChangeError');
+  if (cur !== getListPw()) {
+    errEl.textContent = '현재 비밀번호가 올바르지 않습니다.';
+    errEl.style.display = 'block'; return;
+  }
+  if (!nw || nw.length < 4) {
+    errEl.textContent = '새 비밀번호는 4자리 이상이어야 합니다.';
+    errEl.style.display = 'block'; return;
+  }
+  if (nw !== nwc) {
+    errEl.textContent = '새 비밀번호가 일치하지 않습니다.';
+    errEl.style.display = 'block'; return;
+  }
+  localStorage.setItem(LIST_PW_KEY, nw);
+  closePwChange();
+  toast('비밀번호가 변경되었습니다.', 'success');
+}
+function _enterListView() {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('listView').classList.add('active');
+  document.getElementById('nav-list').classList.add('active');
+  loadVehicleList();
+}
+
 // ── Views ──
 function showView(name) {
+  if (name === 'list') {
+    if (sessionStorage.getItem('listUnlocked') !== '1') {
+      document.getElementById('listPwInput').value = '';
+      document.getElementById('listPwError').style.display = 'none';
+      document.getElementById('listPwModal').classList.add('show');
+      setTimeout(function() { document.getElementById('listPwInput').focus(); }, 100);
+      return;
+    }
+    _enterListView();
+    return;
+  }
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById(name + 'View').classList.add('active');
   document.getElementById('nav-' + name).classList.add('active');
-  if (name === 'list') loadVehicleList();
 }
 
 // ── Toast ──
@@ -1329,6 +1460,20 @@ function stopScan() {
   zoomCurrent = 1;
   document.getElementById('startScanBtn').style.display = '';
   document.getElementById('quickSearchCard').style.display = '';
+}
+
+function applyZoom(val) {
+  if (!cameraStream) return;
+  var track = cameraStream.getVideoTracks()[0];
+  var clamped = Math.min(Math.max(val, zoomMin), zoomMax);
+  zoomCurrent = clamped;
+  track.applyConstraints({ advanced: [{ zoom: clamped }] }).catch(function(){});
+  document.getElementById('zoomSlider').value = clamped;
+  document.getElementById('zoomLabel').textContent = '×' + clamped.toFixed(1);
+}
+
+function adjustZoom(dir) {
+  applyZoom(zoomCurrent + dir * zoomStep * 5);
 }
 
 function applyZoom(val) {
