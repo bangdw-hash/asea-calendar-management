@@ -2,6 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
+<script src="appear-head.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ASEA 업무 일정표</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -21,11 +22,11 @@
 [hidden]{display:none!important}
 :root{
   /* index.html 디자인 시스템 동기화 */
-  --color-bg:          #F0F9FF;
+  --color-bg:          #F8F9FB;
   --color-card:        #FFFFFF;
-  --color-accent:      #0EA5E9;
-  --color-accent-dk:   #0284C7;
-  --color-accent-lt:   #E0F2FE;
+  --color-accent:      #1A73E8;
+  --color-accent-dk:   #1557B0;
+  --color-accent-lt:   #E8F0FE;
   --color-text:        #202124;
   --color-text-sec:    #5F6368;
   --color-border:      #E8EAED;
@@ -57,8 +58,8 @@
   --color-bg:#F5F3FF;--color-border:#C4B5FD;
 }
 [data-color-theme="sky"]{
-  --color-accent:#0EA5E9;--color-accent-dk:#0284C7;--color-accent-lt:#E0F2FE;
-  --color-bg:#F0F9FF;--color-border:#BAE6FD;
+  --color-accent:#1A73E8;--color-accent-dk:#1557B0;--color-accent-lt:#E8F0FE;
+  --color-bg:#F8F9FB;--color-border:#BAE6FD;
 }
 [data-color-theme="mint"]{
   --color-accent:#10B981;--color-accent-dk:#059669;--color-accent-lt:#D1FAE5;
@@ -112,7 +113,7 @@ html,body{height:100%;
   background:#fff;color:#3c4043;border:1.5px solid #dadce0;border-radius:var(--r);
   font-size:var(--font-sm);font-weight:600;font-family:inherit;cursor:pointer;
   box-shadow:var(--sh);transition:box-shadow .15s,border-color .15s;white-space:nowrap}
-.btn-login-google:hover{box-shadow:0 2px 8px rgba(14,165,233,.25);border-color:#0EA5E9}
+.btn-login-google:hover{box-shadow:0 2px 8px rgba(14,165,233,.25);border-color:#1A73E8}
 .btn-login-google:active{box-shadow:none;background:#f8f9fa}
 
 /* icon-btn (헤더 아이콘) */
@@ -458,7 +459,7 @@ html,body{height:100%;
 .ai-close:hover{opacity:1;background:rgba(255,255,255,.15)}
 .ai-msgs{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:10px;min-height:160px}
 .ai-msg{max-width:88%;font-size:.82rem;line-height:1.55;padding:8px 11px;border-radius:10px;word-break:break-word}
-.ai-msg.user{align-self:flex-end;background:#e0f2fe;color:#1a237e;border-bottom-right-radius:2px}
+.ai-msg.user{align-self:flex-end;background:#E8F0FE;color:#1a237e;border-bottom-right-radius:2px}
 .ai-msg.bot{align-self:flex-start;background:var(--g100);color:var(--g900);border-bottom-left-radius:2px}
 .ai-msg.bot.loading{color:var(--g400);font-style:italic}
 .ai-action-bar{padding:6px 12px;display:flex;gap:6px;flex-wrap:wrap;border-top:1px solid var(--g100);flex-shrink:0}
@@ -1104,7 +1105,7 @@ html,body{height:100%;
       </button>
       <div class="theme-picker-wrap" title="테마 선택">
         <button class="theme-swatch-btn" data-t="aurora" onclick="setColorTheme('aurora')" style="background:linear-gradient(135deg,#8B5CF6,#EC4899)" title="오로라"></button>
-        <button class="theme-swatch-btn" data-t="sky" onclick="setColorTheme('sky')" style="background:linear-gradient(135deg,#0EA5E9,#38BDF8)" title="하늘색"></button>
+        <button class="theme-swatch-btn" data-t="sky" onclick="setColorTheme('sky')" style="background:linear-gradient(135deg,#1A73E8,#38BDF8)" title="하늘색"></button>
         <button class="theme-swatch-btn" data-t="mint" onclick="setColorTheme('mint')" style="background:linear-gradient(135deg,#059669,#34D399)" title="민트"></button>
       </div>
       <!-- 글자 크기 조절 -->
@@ -1154,7 +1155,7 @@ html,body{height:100%;
             <span class="swatch-label">오로라</span>
           </div>
           <div class="theme-swatch-item">
-            <button class="theme-swatch-btn" data-t="sky" onclick="setColorTheme('sky')" style="background:linear-gradient(135deg,#0EA5E9,#38BDF8)"></button>
+            <button class="theme-swatch-btn" data-t="sky" onclick="setColorTheme('sky')" style="background:linear-gradient(135deg,#1A73E8,#38BDF8)"></button>
             <span class="swatch-label">하늘</span>
           </div>
           <div class="theme-swatch-item">
@@ -2671,7 +2672,7 @@ function renderMonth(wrap) {
       const visEvts = (isMob && allCellEvts.length > MAX_MOB) ? allCellEvts.slice(0, MAX_MOB) : allCellEvts;
       const moreCount = (isMob && allCellEvts.length > MAX_MOB) ? allCellEvts.length - MAX_MOB : 0;
       const dotsHtml = visEvts.map(ev => renderEvtItemHTML(ev, true)).join('');
-      const linkedHtml = (_linkedItems[dateKey]||[]).map(li=>`<span class="evt-dot-wrap"><span class="evt-dot rv-linked" style="background:${li.classroom_color||'#0EA5E9'};--rv-color:${li.classroom_color||'#0EA5E9'};cursor:pointer" title="${esc(li.label)}" data-linked-id="${li.id||''}" data-rv-id="${li.reservation_id||''}" onclick="event.stopPropagation();openRvDetail(${li.reservation_id||'null'},'${esc(li.label)}','${li.classroom_color||'#0EA5E9'}',${li.id||'null'})">${esc(li.label)}</span></span>`).join('');
+      const linkedHtml = (_linkedItems[dateKey]||[]).map(li=>`<span class="evt-dot-wrap"><span class="evt-dot rv-linked" style="background:${li.classroom_color||'#1A73E8'};--rv-color:${li.classroom_color||'#1A73E8'};cursor:pointer" title="${esc(li.label)}" data-linked-id="${li.id||''}" data-rv-id="${li.reservation_id||''}" onclick="event.stopPropagation();openRvDetail(${li.reservation_id||'null'},'${esc(li.label)}','${li.classroom_color||'#1A73E8'}',${li.id||'null'})">${esc(li.label)}</span></span>`).join('');
       const moreHtml = moreCount ? `<span class="evt-more-chip" onclick="event.stopPropagation();showDayEvts(${y},${m},${cell.d})">+${moreCount} 더보기</span>` : '';
       gridHtml += `<div class="${cell.cls}${holiday?' holiday':''}${allCellEvts.length||linkedHtml?' has-events':''}" data-y="${y}" data-m="${m}" data-d="${cell.d}">${numEl}${dotsHtml}${linkedHtml}${moreHtml}</div>`;
     }
@@ -5195,9 +5196,9 @@ async function doExcelDownload() {
       const s = (rs.getPropertyValue(v) || fb).trim();
       return (s.startsWith('#') ? s.slice(1) : s).toUpperCase();
     }
-    const accent   = gc('--color-accent',    '#0EA5E9');
-    const accentLt = gc('--color-accent-lt', '#E0F2FE');
-    const accentDk = gc('--color-accent-dk', '#0284C7');
+    const accent   = gc('--color-accent',    '#1A73E8');
+    const accentLt = gc('--color-accent-lt', '#E8F0FE');
+    const accentDk = gc('--color-accent-dk', '#1557B0');
 
     // ── Fetch events if needed (same logic as before)
     const needFetch = targets.some(({y,m}) => {
@@ -5650,7 +5651,7 @@ const _CAL_COLORS = [
   {bg:'#FCE7F3',text:'#9D174D',border:'#EC4899'},  // pink
   {bg:'#FFEDD5',text:'#9A3412',border:'#F97316'},  // orange
   {bg:'#F0FDF4',text:'#14532D',border:'#22C55E'},  // emerald
-  {bg:'#E0F2FE',text:'#075985',border:'#0EA5E9'},  // sky
+  {bg:'#E8F0FE',text:'#075985',border:'#1A73E8'},  // sky
   {bg:'#F5F3FF',text:'#4C1D95',border:'#7C3AED'},  // purple
   {bg:'#FFF1F2',text:'#881337',border:'#F43F5E'},  // rose
 ];
