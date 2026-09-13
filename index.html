@@ -83,6 +83,31 @@
       }
     }
   </style>
+  <!-- 테마 색상 조기 적용 (렌더링 전) -->
+  <script>
+    (function() {
+      var themes = {
+        blue:   { accent:'#1A73E8', hover:'#1557B0', light:'#E8F0FE' },
+        green:  { accent:'#16a34a', hover:'#15803d', light:'#dcfce7' },
+        purple: { accent:'#7c3aed', hover:'#6d28d9', light:'#ede9fe' },
+        rose:   { accent:'#e11d48', hover:'#be123c', light:'#ffe4e6' },
+      };
+      window.applyAppTheme = function(name) {
+        var t = themes[name] || themes.blue;
+        var r = document.documentElement.style;
+        r.setProperty('--color-accent', t.accent);
+        r.setProperty('--color-accent-hover', t.hover);
+        r.setProperty('--color-accent-light', t.light);
+        r.setProperty('--color-bg-hover', t.light);
+        r.setProperty('--color-primary', t.accent);
+        document.querySelectorAll('.theme-swatch').forEach(function(s) {
+          s.classList.toggle('active', s.dataset.theme === name);
+        });
+        try { localStorage.setItem('app-theme', name); } catch(e) {}
+      };
+      try { applyAppTheme(localStorage.getItem('app-theme') || 'blue'); } catch(e) {}
+    })();
+  </script>
 </head>
 <body>
 
@@ -1592,6 +1617,36 @@
           </p>
           <button id="admin-bootstrap-btn" class="btn btn-primary btn-sm">내 계정을 관리자로 등록</button>
           <p id="admin-bootstrap-status" class="form-hint" style="margin-top:8px;color:#4285F4"></p>
+        </div>
+
+        <!-- ── 외관 ──────────────────────────────────────── -->
+        <div class="settings-group-label">외관</div>
+
+        <div class="settings-card">
+          <h3 class="settings-section-title">테마 색상</h3>
+          <p class="settings-hint" style="margin-bottom:12px">앱 전체의 강조 색상과 배경 톤을 변경합니다.</p>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+            <button class="theme-swatch" data-theme="blue"   onclick="applyAppTheme('blue')"   title="블루"   style="background:#1A73E8"></button>
+            <button class="theme-swatch" data-theme="green"  onclick="applyAppTheme('green')"  title="그린"   style="background:#16a34a"></button>
+            <button class="theme-swatch" data-theme="purple" onclick="applyAppTheme('purple')" title="퍼플"   style="background:#7c3aed"></button>
+            <button class="theme-swatch" data-theme="rose"   onclick="applyAppTheme('rose')"   title="로즈"   style="background:#e11d48"></button>
+          </div>
+          <style>
+            .theme-swatch {
+              width:32px; height:32px; border-radius:50%; border:3px solid transparent;
+              cursor:pointer; transition:border-color .15s, transform .1s; padding:0;
+            }
+            .theme-swatch.active, .theme-swatch:focus {
+              border-color: var(--color-text);
+              transform: scale(1.15);
+              outline: none;
+            }
+          </style>
+          <script>
+            document.addEventListener('DOMContentLoaded', function() {
+              try { applyAppTheme(localStorage.getItem('app-theme') || 'blue'); } catch(e) {}
+            });
+          </script>
         </div>
 
         <!-- ── 인사 / 조직 관리 ────────────────────────────── -->
