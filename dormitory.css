@@ -7,7 +7,7 @@
 .dorm-muted { font-size:13px; color:#6b7280; line-height:1.6; }
 .dorm-muted code { background:#f1f5f9; padding:1px 5px; border-radius:4px; font-size:12px; }
 
-.dorm-card { background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding:18px; margin-bottom:14px; }
+.dorm-card { background:#fff; border:1px solid #e5e7eb; border-radius:6px; padding:18px; margin-bottom:14px; }
 .dorm-label { display:block; font-size:12px; font-weight:600; color:#374151; margin:10px 0 4px; }
 .dorm-actions { display:flex; gap:8px; flex-wrap:wrap; margin-top:14px; }
 
@@ -23,7 +23,7 @@
 
 .dorm-kpis { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:14px; }
 @media (max-width:620px){ .dorm-kpis { grid-template-columns:1fr 1fr; } }
-.dorm-kpi { background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding:16px; text-align:center; }
+.dorm-kpi { background:#fff; border:1px solid #e5e7eb; border-radius:6px; padding:16px; text-align:center; }
 .dorm-kpi-num { font-size:26px; font-weight:800; color:#1a3a5c; }
 .dorm-kpi-num span { font-size:13px; font-weight:600; color:#9ca3af; margin-left:3px; }
 .dorm-kpi-label { font-size:12px; color:#6b7280; margin-top:4px; }
