@@ -669,6 +669,33 @@ html,body{height:100%;
 .ds-unit{font-size:.73rem;color:var(--g400);min-width:20px}
 .ds-btn-row{display:flex;gap:8px;padding-top:6px;border-top:1px solid var(--g200);margin-top:4px}
 .ds-badge{display:inline-block;font-size:.68rem;padding:1px 6px;border-radius:4px;background:var(--color-accent-lt);color:var(--color-accent);font-weight:600;margin-left:6px}
+/* ── 디자인 설정 라이브 미리보기 ── */
+.ds-preview-wrap{position:sticky;top:0;z-index:10;background:var(--color-bg);border-radius:var(--r-card);border:1.5px solid var(--color-border);margin-bottom:20px;overflow:hidden;box-shadow:var(--sh)}
+.ds-preview-label{font-size:.7rem;font-weight:700;color:var(--g500);letter-spacing:.08em;text-transform:uppercase;padding:6px 12px 4px;background:var(--g100);border-bottom:1px solid var(--g200);display:flex;align-items:center;gap:6px}
+.ds-preview-label .ds-live-dot{width:6px;height:6px;border-radius:50%;background:#16a34a;animation:ds-blink 1.4s infinite}
+@keyframes ds-blink{0%,100%{opacity:1}50%{opacity:.35}}
+.ds-pv-body{padding:10px}
+/* 미니 헤더 */
+.ds-pv-hdr{display:flex;align-items:center;gap:8px;background:var(--color-accent);height:var(--header-h);border-radius:var(--r);padding:0 12px;margin-bottom:6px;min-height:32px;max-height:80px}
+.ds-pv-hdr-title{color:#fff;font-weight:700;font-size:var(--font-base);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ds-pv-hdr-ico{width:26px;height:26px;border-radius:50%;background:rgba(255,255,255,.25);display:flex;align-items:center;justify-content:center}
+/* 미니 툴바 */
+.ds-pv-tb{display:flex;align-items:center;gap:6px;background:var(--color-card);height:var(--toolbar-h);border-radius:var(--r);padding:0 8px;margin-bottom:6px;min-height:28px;max-height:70px;border:1px solid var(--color-border);overflow:hidden}
+.ds-pv-chip{font-size:var(--font-xs);padding:3px 10px;border-radius:var(--r-xs);background:var(--color-accent-lt);color:var(--color-accent);font-weight:600;white-space:nowrap}
+.ds-pv-chip.active{background:var(--color-accent);color:#fff}
+/* 미니 캘린더 셀 행 */
+.ds-pv-row{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-bottom:6px}
+.ds-pv-cell{background:var(--color-card);border:1px solid var(--color-border);border-radius:var(--r-card);padding:5px 6px;min-height:52px}
+.ds-pv-date{font-size:var(--font-xs);font-weight:700;color:var(--g700);margin-bottom:3px}
+.ds-pv-evt{font-size:var(--font-xs);padding:1px 5px;border-radius:var(--r-xs);margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ds-pv-evt.blue{background:var(--color-accent-lt);color:var(--color-accent)}
+.ds-pv-evt.green{background:#dcfce7;color:#16a34a}
+.ds-pv-evt.orange{background:#ffedd5;color:#ea580c}
+/* 미니 버튼/배지 행 */
+.ds-pv-btns{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.ds-pv-btn{font-size:var(--font-sm);padding:5px 14px;border-radius:var(--r);background:var(--color-accent);color:#fff;border:none;cursor:default;font-weight:600;white-space:nowrap}
+.ds-pv-btn.out{background:transparent;color:var(--color-accent);border:1.5px solid var(--color-accent)}
+.ds-pv-panel-badge{font-size:var(--font-xs);padding:2px 8px;border-radius:var(--r-panel);background:var(--color-card);border:1px solid var(--color-border);color:var(--g700)}
 
 /* ── REQUEST STATUS BADGES ── */
 .badge-pending{background:#fef3c7;color:#92400e;padding:2px 8px;border-radius:var(--r);font-size:.72rem;font-weight:600;border:none;cursor:pointer}
@@ -1793,8 +1820,55 @@ html,body{height:100%;
 
     <!-- Section 5: 디자인 설정 -->
     <div id="admin-sec-design" class="admin-section" hidden>
+
+      <!-- 라이브 미리보기 -->
+      <div class="ds-preview-wrap">
+        <div class="ds-preview-label">
+          <span class="ds-live-dot"></span>
+          라이브 미리보기 — 슬라이더·색상 변경이 즉시 반영됩니다
+        </div>
+        <div class="ds-pv-body">
+          <!-- 헤더 -->
+          <div class="ds-pv-hdr">
+            <span class="ds-pv-hdr-title">ASEA 일정 관리</span>
+            <div class="ds-pv-hdr-ico">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+            </div>
+          </div>
+          <!-- 툴바 -->
+          <div class="ds-pv-tb">
+            <span class="ds-pv-chip active">전체</span>
+            <span class="ds-pv-chip">운영부</span>
+            <span class="ds-pv-chip">계열</span>
+            <span class="ds-pv-chip">부설</span>
+          </div>
+          <!-- 캘린더 셀 -->
+          <div class="ds-pv-row">
+            <div class="ds-pv-cell">
+              <div class="ds-pv-date">13</div>
+              <div class="ds-pv-evt blue">기획 회의</div>
+              <div class="ds-pv-evt orange">입학 설명회</div>
+            </div>
+            <div class="ds-pv-cell" style="border-color:var(--color-accent);border-width:2px">
+              <div class="ds-pv-date" style="color:var(--color-accent)">14 오늘</div>
+              <div class="ds-pv-evt green">안전 점검</div>
+            </div>
+            <div class="ds-pv-cell">
+              <div class="ds-pv-date">15</div>
+              <div class="ds-pv-evt blue">교육 세미나</div>
+            </div>
+          </div>
+          <!-- 버튼·배지 -->
+          <div class="ds-pv-btns">
+            <button class="ds-pv-btn">일정 등록</button>
+            <button class="ds-pv-btn out">취소</button>
+            <span class="ds-pv-panel-badge">모달·팝업 둥글기</span>
+          </div>
+        </div>
+      </div>
+
       <p style="font-size:.78rem;color:var(--g500);margin-bottom:16px;line-height:1.6">
-        페이지의 모든 UI 속성을 직접 조정할 수 있습니다.<br>변경 사항은 즉시 미리보기되며 <strong>저장</strong> 버튼을 누르면 영구 적용됩니다.
+        아래 속성을 조정하면 위 미리보기와 실제 페이지에 즉시 반영됩니다.<br><strong>저장</strong> 버튼을 누르면 모든 기기에 영구 적용됩니다.
       </p>
 
       <!-- ① 테두리 둥글기 -->
