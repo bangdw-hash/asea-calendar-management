@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ASEA 사이트 맵</title>
+<style>
+:root {
+  --primary:#1A73E8; --primary-dk:#1557B0; --primary-lt:#E8F0FE;
+  --green:#16a34a;   --green-lt:#dcfce7;
+  --orange:#ea580c;  --orange-lt:#ffedd5;
+  --red:#dc2626;     --red-lt:#fee2e2;
+  --gray:#6b7280;    --gray-lt:#f3f4f6;
+  --purple:#7c3aed;  --purple-lt:#ede9fe;
+  --teal:#0d9488;    --teal-lt:#ccfbf1;
+  --r:12px;
+  --sh:0 1px 3px rgba(0,0,0,.08);
+  --sh-md:0 4px 12px rgba(0,0,0,.10);
+  --sh-lg:0 8px 24px rgba(0,0,0,.12);
+  --bg:#f8f9fa; --surface:#fff; --border:#e5e7eb;
+  --text:#111827; --text-sub:#6b7280;
+}
+@media(prefers-color-scheme:dark){
+  :root{ --bg:#0f172a; --surface:#1e293b; --border:#334155; --text:#f1f5f9; --text-sub:#94a3b8; --gray-lt:#1e293b; }
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;min-height:100vh}
+.header{background:var(--surface);border-bottom:1px solid var(--border);padding:16px 20px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;position:sticky;top:0;z-index:100;box-shadow:var(--sh)}
+.header-logo{display:flex;align-items:center;gap:8px}
+.header-logo svg{color:var(--primary)}
+.header-title{font-size:18px;font-weight:700;color:var(--text)}
+.header-title span{font-size:13px;font-weight:400;color:var(--text-sub);margin-left:4px}
+.header-actions{display:flex;gap:8px;margin-left:auto;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:8px;border:none;cursor:pointer;font-size:13px;font-weight:500;transition:all .15s;white-space:nowrap}
+.btn-primary{background:var(--primary);color:#fff}.btn-primary:hover{background:var(--primary-dk)}
+.btn-outline{background:var(--surface);color:var(--text);border:1px solid var(--border)}.btn-outline:hover{background:var(--gray-lt)}
+.btn-sm{padding:5px 10px;font-size:12px;border-radius:6px}
+.btn-icon{padding:6px;border-radius:6px;background:transparent;border:1px solid var(--border);color:var(--text-sub);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:all .15s}
+.btn-icon:hover{background:var(--gray-lt);color:var(--text)}
+.btn-icon.danger:hover{background:var(--red-lt);color:var(--red);border-color:var(--red)}
+
+.toolbar{padding:14px 20px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;border-bottom:1px solid var(--border);background:var(--surface)}
+.search-wrap{position:relative;flex:1;min-width:180px;max-width:300px}
+.search-wrap svg{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text-sub);pointer-events:none}
+.search-input{width:100%;padding:7px 10px 7px 34px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:13px;outline:none}
+.search-input:focus{border-color:var(--primary);box-shadow:0 0 0 2px var(--primary-lt)}
+.cat-filter{display:flex;gap:6px;flex-wrap:wrap}
+.cat-chip{padding:4px 10px;border-radius:20px;border:1px solid var(--border);background:var(--surface);color:var(--text-sub);font-size:12px;cursor:pointer;transition:all .15s}
+.cat-chip.active{background:var(--primary);color:#fff;border-color:var(--primary)}
+.toggle-hidden{font-size:12px;color:var(--text-sub);cursor:pointer;display:flex;align-items:center;gap:4px;margin-left:auto;user-select:none}
+.toggle-hidden:hover{color:var(--text)}
+
+.main{padding:20px;max-width:900px;margin:0 auto}
+.page-list{display:flex;flex-direction:column;gap:8px}
+.page-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:12px 14px;display:flex;align-items:center;gap:10px;transition:box-shadow .15s;position:relative}
+.page-card:hover{box-shadow:var(--sh-md)}
+.page-card.hidden-card{opacity:.45}
+.page-card.dragging{opacity:.5;box-shadow:var(--sh-lg)}
+.page-card.drag-over{border-color:var(--primary);border-style:dashed}
+.card-order{font-size:12px;color:var(--text-sub);width:20px;text-align:center;flex-shrink:0}
+.card-info{flex:1;min-width:0}
+.card-name{font-size:14px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:text}
+.card-name-input{font-size:14px;font-weight:600;color:var(--text);border:none;outline:none;border-bottom:2px solid var(--primary);background:transparent;width:100%;font-family:inherit}
+.card-path{font-size:11px;color:var(--text-sub);margin-top:2px}
+.cat-badge{font-size:11px;padding:2px 8px;border-radius:20px;font-weight:500;flex-shrink:0}
+.card-actions{display:flex;gap:4px;align-items:center;flex-shrink:0}
+.move-btns{display:flex;flex-direction:column;gap:2px;flex-shrink:0}
+
+/* 카테고리 색상 */
+.cat-업무관리{background:var(--primary-lt);color:var(--primary-dk)}
+.cat-인사행정{background:var(--orange-lt);color:var(--orange)}
+.cat-캘린더공유{background:var(--green-lt);color:var(--green)}
+.cat-시설주차{background:var(--teal-lt);color:var(--teal)}
+.cat-서류문서{background:var(--purple-lt);color:var(--purple)}
+.cat-포럼소통{background:var(--primary-lt);color:var(--primary)}
+.cat-홍보기타{background:var(--orange-lt);color:var(--orange)}
+.cat-체크인{background:var(--green-lt);color:var(--green)}
+.cat-기숙사{background:var(--gray-lt);color:var(--gray)}
+.cat-관리자{background:var(--red-lt);color:var(--red)}
+.cat-기타{background:var(--gray-lt);color:var(--gray)}
+
+.empty{text-align:center;padding:60px 20px;color:var(--text-sub)}
+.empty svg{margin-bottom:12px;opacity:.4}
+
+/* 스캔 결과 모달 */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px}
+.modal{background:var(--surface);border-radius:var(--r);box-shadow:var(--sh-lg);width:100%;max-width:480px;max-height:80vh;display:flex;flex-direction:column;overflow:hidden}
+.modal-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.modal-header h2{font-size:16px;font-weight:700}
+.modal-body{padding:16px 20px;overflow-y:auto;flex:1}
+.modal-footer{padding:12px 20px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px}
+.scan-item{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)}
+.scan-item:last-child{border-bottom:none}
+.scan-item label{flex:1;font-size:13px;cursor:pointer}
+.scan-item input[type=checkbox]{width:16px;height:16px;cursor:pointer;accent-color:var(--primary)}
+.scan-empty{text-align:center;padding:20px;color:var(--text-sub);font-size:13px}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1f2937;color:#fff;padding:10px 20px;border-radius:8px;font-size:13px;z-index:300;animation:toastin .2s ease;pointer-events:none}
+@keyframes toastin{from{opacity:0;transform:translateX(-50%) translateY(8px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+.count-badge{font-size:12px;color:var(--text-sub);margin-left:auto}
+.section-title{font-size:12px;font-weight:600;color:var(--text-sub);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;margin-top:16px}
+.section-title:first-child{margin-top:0}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-logo">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
+      <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
+    </svg>
+    <span class="header-title">ASEA 사이트 맵<span>아세아항공직업전문학교</span></span>
+  </div>
+  <div class="header-actions">
+    <button class="btn btn-outline" onclick="scanNewPages()" id="scanBtn">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+        <path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 21h5v-5"/>
+      </svg>
+      새 페이지 스캔
+    </button>
+    <button class="btn btn-outline" onclick="resetOrder()">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/>
+      </svg>
+      초기화
+    </button>
+  </div>
+</div>
+
+<div class="toolbar">
+  <div class="search-wrap">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+    </svg>
+    <input class="search-input" type="text" id="searchInput" placeholder="페이지 검색..." oninput="renderList()">
+  </div>
+  <div class="cat-filter" id="catFilter"></div>
+  <span class="count-badge" id="countBadge"></span>
+  <label class="toggle-hidden" onclick="toggleShowHidden()">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" id="hiddenIcon">
+      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
+      <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
+      <line x1="1" y1="1" x2="23" y2="23"/>
+    </svg>
+    <span id="hiddenLabel">숨긴 항목 표시</span>
+  </label>
+</div>
+
+<div class="main">
+  <div class="page-list" id="pageList"></div>
+</div>
+
+<!-- 스캔 모달 -->
+<div class="modal-overlay" id="scanModal" style="display:none" onclick="if(event.target===this)closeScanModal()">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>새 페이지 발견</h2>
+      <button class="btn-icon" onclick="closeScanModal()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body" id="scanModalBody"></div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeScanModal()">취소</button>
+      <button class="btn btn-primary" onclick="addScannedPages()">선택 항목 추가</button>
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+const BASE_URL = 'https://bangdw-hash.github.io/asea-calendar-management/';
+const REPO_API = 'https://api.github.com/repos/bangdw-hash/asea-calendar-management/git/trees/main?recursive=1';
+const STORAGE_KEY = 'asea-map-pages-v2';
+const EXCLUDE_EXACT = new Set(['map.html','chrome-extension/popup.html','privacy.html']);
+const EXCLUDE_PREFIX = ['shares/','chrome-extension/'];
+
+let pages = [];
+let showHidden = false;
+let activeCategory = '전체';
+let scannedNew = [];
+
+const DEFAULT_PAGES = [
+  // 업무관리
+  {id:'index',name:'ASEA 업무 관리',path:'index.html',category:'업무관리',visible:true},
+  {id:'schedule',name:'ASEA 업무 일정표',path:'schedule.html',category:'업무관리',visible:true},
+  {id:'deadline',name:'기관 마감일 관리',path:'deadline.html',category:'업무관리',visible:true},
+  {id:'tasks-window',name:'나의 할일 작업창',path:'tasks-window.html',category:'업무관리',visible:true},
+  {id:'report',name:'기안문 AI 작성',path:'report.html',category:'업무관리',visible:true},
+  {id:'verify',name:'예산 집행 조회',path:'verify.html',category:'업무관리',visible:true},
+  // 인사행정
+  {id:'hr-form',name:'입사 서류 제출',path:'hr-form.html',category:'인사행정',visible:true},
+  {id:'retire-form',name:'퇴직 사직서 작성',path:'retire-form.html',category:'인사행정',visible:true},
+  {id:'contract-sign',name:'근로계약서 전자서명',path:'contract-sign.html',category:'인사행정',visible:true},
+  {id:'contract-verify',name:'전자계약서 진위 확인',path:'contract-verify.html',category:'인사행정',visible:true},
+  {id:'assessment',name:'직무역량 자가진단',path:'assessment.html',category:'인사행정',visible:true},
+  // 캘린더공유
+  {id:'calendar-share',name:'업무캘린더 공유 신청',path:'calendar-share.html',category:'캘린더공유',visible:true},
+  {id:'staff-calendar',name:'직원 캘린더',path:'staff-calendar.html',category:'캘린더공유',visible:true},
+  {id:'share',name:'ASEA 일정 공유',path:'share.html',category:'캘린더공유',visible:true},
+  {id:'cal-access-check',name:'캘린더 등록 확인',path:'cal-access-check.html',category:'캘린더공유',visible:true},
+  // 시설주차
+  {id:'facility-request',name:'대관 신청',path:'facility-request.html',category:'시설주차',visible:true},
+  {id:'reservation',name:'강의실 예약',path:'reservation.html',category:'시설주차',visible:true},
+  {id:'park',name:'주차 차량 관리',path:'park.html',category:'시설주차',visible:true},
+  {id:'parking',name:'주차 위치',path:'parking.html',category:'시설주차',visible:true},
+  {id:'parking-history',name:'주차 이력',path:'parking-history.html',category:'시설주차',visible:true},
+  {id:'wayfind',name:'아세아 길찾기',path:'wayfind.html',category:'시설주차',visible:true},
+  // 서류문서
+  {id:'docgate',name:'법인서류 다운로드',path:'docgate.html',category:'서류문서',visible:true},
+  {id:'form',name:'전자서식 작성',path:'form.html',category:'서류문서',visible:true},
+  // 포럼소통
+  {id:'forum',name:'AI 활용 포럼',path:'forum.html',category:'포럼소통',visible:true},
+  {id:'survey',name:'설문지 자동 생성',path:'survey.html',category:'포럼소통',visible:true},
+  {id:'amulbo',name:'아물보',path:'amulbo.html',category:'포럼소통',visible:true},
+  {id:'blog',name:'N블로그 자동화',path:'blog.html',category:'포럼소통',visible:true},
+  // 홍보기타
+  {id:'kiosk',name:'홍보슬라이드 키오스크',path:'kiosk.html',category:'홍보기타',visible:true},
+  {id:'promo-public',name:'홍보슬라이드 등록',path:'promo-public.html',category:'홍보기타',visible:true},
+  {id:'card',name:'연락처 공유',path:'card.html',category:'홍보기타',visible:true},
+  // 체크인
+  {id:'checkin',name:'입출입 체크인',path:'checkin.html',category:'체크인',visible:true},
+  // 기숙사
+  {id:'dorm-resident',name:'기숙사 입소자 포털',path:'dormitory/resident.html',category:'기숙사',visible:true},
+  {id:'dorm-complaint',name:'기숙사 민원 접수',path:'dormitory/complaint.html',category:'기숙사',visible:true},
+  {id:'dorm-contract',name:'기숙사 입소계약서 서명',path:'dormitory/contract-sign.html',category:'기숙사',visible:true},
+  // 관리자
+  {id:'manager',name:'관리실 포털',path:'manager/index.html',category:'관리자',visible:true},
+];
+
+const CAT_ORDER = ['전체','업무관리','인사행정','캘린더공유','시설주차','서류문서','포럼소통','홍보기타','체크인','기숙사','관리자','기타'];
+const CAT_CLASS = {
+  '업무관리':'cat-업무관리','인사행정':'cat-인사행정','캘린더공유':'cat-캘린더공유',
+  '시설주차':'cat-시설주차','서류문서':'cat-서류문서','포럼소통':'cat-포럼소통',
+  '홍보기타':'cat-홍보기타','체크인':'cat-체크인','기숙사':'cat-기숙사',
+  '관리자':'cat-관리자','기타':'cat-기타'
+};
+
+function load() {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      pages = JSON.parse(saved);
+    } else {
+      pages = JSON.parse(JSON.stringify(DEFAULT_PAGES));
+    }
+  } catch(e) {
+    pages = JSON.parse(JSON.stringify(DEFAULT_PAGES));
+  }
+}
+
+function save() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(pages));
+}
+
+function getCategories() {
+  const cats = new Set(pages.map(p => p.category));
+  return CAT_ORDER.filter(c => c === '전체' || cats.has(c));
+}
+
+function renderCatFilter() {
+  const el = document.getElementById('catFilter');
+  const cats = getCategories();
+  el.innerHTML = cats.map(c =>
+    `<span class="cat-chip${activeCategory===c?' active':''}" onclick="setCategory('${c}')">${c}</span>`
+  ).join('');
+}
+
+function setCategory(cat) {
+  activeCategory = cat;
+  renderCatFilter();
+  renderList();
+}
+
+function toggleShowHidden() {
+  showHidden = !showHidden;
+  document.getElementById('hiddenLabel').textContent = showHidden ? '숨긴 항목 숨기기' : '숨긴 항목 표시';
+  renderList();
+}
+
+function getFiltered() {
+  const q = document.getElementById('searchInput').value.toLowerCase().trim();
+  return pages.filter(p => {
+    if (!showHidden && !p.visible) return false;
+    if (activeCategory !== '전체' && p.category !== activeCategory) return false;
+    if (q && !p.name.toLowerCase().includes(q) && !p.path.toLowerCase().includes(q)) return false;
+    return true;
+  });
+}
+
+function renderList() {
+  const list = document.getElementById('pageList');
+  const filtered = getFiltered();
+
+  document.getElementById('countBadge').textContent = `${filtered.length}개 페이지`;
+
+  if (filtered.length === 0) {
+    list.innerHTML = `<div class="empty">
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+      </svg>
+      <div>검색 결과가 없습니다.</div>
+    </div>`;
+    return;
+  }
+
+  list.innerHTML = filtered.map((p, fi) => {
+    const globalIdx = pages.indexOf(p);
+    const isFirst = fi === 0;
+    const isLast = fi === filtered.length - 1;
+    const catCls = CAT_CLASS[p.category] || 'cat-기타';
+    return `
+    <div class="page-card${p.visible?'':' hidden-card'}" data-id="${p.id}" draggable="true"
+         ondragstart="onDragStart(event,'${p.id}')" ondragover="onDragOver(event,'${p.id}')" ondrop="onDrop(event,'${p.id}')" ondragleave="onDragLeave(event)">
+      <span class="card-order">${globalIdx + 1}</span>
+      <div class="card-info">
+        <div class="card-name" ondblclick="startEdit(this,'${p.id}')" title="더블클릭하여 이름 수정">${escHtml(p.name)}</div>
+        <div class="card-path">${p.path}</div>
+      </div>
+      <span class="cat-badge ${catCls}">${p.category}</span>
+      <div class="move-btns">
+        <button class="btn-icon" onclick="moveUp('${p.id}')" ${isFirst?'disabled':''} title="위로">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
+        </button>
+        <button class="btn-icon" onclick="moveDown('${p.id}')" ${isLast?'disabled':''} title="아래로">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+      </div>
+      <div class="card-actions">
+        <button class="btn-icon" onclick="toggleVisible('${p.id}')" title="${p.visible?'숨기기':'표시'}">
+          ${p.visible
+            ? `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`
+            : `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`
+          }
+        </button>
+        <a href="${BASE_URL}${p.path}" target="_blank" class="btn btn-primary btn-sm">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+          열기
+        </a>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function startEdit(el, id) {
+  if (el.querySelector('input')) return;
+  const current = el.textContent;
+  const input = document.createElement('input');
+  input.className = 'card-name-input';
+  input.value = current;
+  el.textContent = '';
+  el.appendChild(input);
+  input.focus();
+  input.select();
+  function finish() {
+    const val = input.value.trim() || current;
+    const p = pages.find(x => x.id === id);
+    if (p) p.name = val;
+    save();
+    renderList();
+    renderCatFilter();
+  }
+  input.addEventListener('blur', finish);
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); input.blur(); }
+    if (e.key === 'Escape') { input.value = current; input.blur(); }
+  });
+}
+
+function moveUp(id) {
+  const filtered = getFiltered();
+  const fi = filtered.findIndex(p => p.id === id);
+  if (fi <= 0) return;
+  const targetId = filtered[fi - 1].id;
+  const ai = pages.findIndex(p => p.id === id);
+  const bi = pages.findIndex(p => p.id === targetId);
+  [pages[ai], pages[bi]] = [pages[bi], pages[ai]];
+  save(); renderList();
+}
+
+function moveDown(id) {
+  const filtered = getFiltered();
+  const fi = filtered.findIndex(p => p.id === id);
+  if (fi < 0 || fi >= filtered.length - 1) return;
+  const targetId = filtered[fi + 1].id;
+  const ai = pages.findIndex(p => p.id === id);
+  const bi = pages.findIndex(p => p.id === targetId);
+  [pages[ai], pages[bi]] = [pages[bi], pages[ai]];
+  save(); renderList();
+}
+
+function toggleVisible(id) {
+  const p = pages.find(x => x.id === id);
+  if (p) { p.visible = !p.visible; save(); renderList(); }
+}
+
+// 드래그 앤 드롭
+let dragId = null;
+function onDragStart(e, id) {
+  dragId = id;
+  e.dataTransfer.effectAllowed = 'move';
+  setTimeout(() => {
+    const el = document.querySelector(`[data-id="${id}"]`);
+    if (el) el.classList.add('dragging');
+  }, 0);
+}
+function onDragOver(e, id) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  document.querySelectorAll('.page-card').forEach(c => c.classList.remove('drag-over'));
+  const el = document.querySelector(`[data-id="${id}"]`);
+  if (el && id !== dragId) el.classList.add('drag-over');
+}
+function onDragLeave(e) {
+  if (!e.currentTarget.contains(e.relatedTarget)) {
+    e.currentTarget.classList.remove('drag-over');
+  }
+}
+function onDrop(e, targetId) {
+  e.preventDefault();
+  document.querySelectorAll('.page-card').forEach(c => { c.classList.remove('drag-over'); c.classList.remove('dragging'); });
+  if (!dragId || dragId === targetId) return;
+  const ai = pages.findIndex(p => p.id === dragId);
+  const bi = pages.findIndex(p => p.id === targetId);
+  if (ai < 0 || bi < 0) return;
+  const [moved] = pages.splice(ai, 1);
+  pages.splice(bi, 0, moved);
+  save(); renderList();
+  dragId = null;
+}
+
+// 스캔 기능
+async function scanNewPages() {
+  const btn = document.getElementById('scanBtn');
+  btn.disabled = true;
+  btn.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="animation:spin 1s linear infinite"><path d="M21 12a9 9 0 1 1-6.22-8.56"/></svg> 스캔 중...`;
+  if (!document.getElementById('spinStyle')) {
+    const s = document.createElement('style');
+    s.id = 'spinStyle';
+    s.textContent = '@keyframes spin{to{transform:rotate(360deg)}}';
+    document.head.appendChild(s);
+  }
+  try {
+    const res = await fetch(REPO_API, { headers: { Accept: 'application/vnd.github.v3+json' } });
+    if (!res.ok) throw new Error('GitHub API 응답 오류: ' + res.status);
+    const data = await res.json();
+    const existing = new Set(pages.map(p => p.path));
+    scannedNew = (data.tree || [])
+      .filter(f => {
+        if (f.type !== 'blob') return false;
+        if (!f.path.endsWith('.html')) return false;
+        if (EXCLUDE_EXACT.has(f.path)) return false;
+        if (EXCLUDE_PREFIX.some(px => f.path.startsWith(px))) return false;
+        if (existing.has(f.path)) return false;
+        return true;
+      })
+      .map(f => ({ path: f.path, checked: true }));
+    openScanModal();
+  } catch(err) {
+    showToast('스캔 실패: ' + err.message);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 21h5v-5"/></svg> 새 페이지 스캔`;
+  }
+}
+
+function openScanModal() {
+  const body = document.getElementById('scanModalBody');
+  if (scannedNew.length === 0) {
+    body.innerHTML = `<div class="scan-empty">새로 추가된 HTML 페이지가 없습니다.<br>모든 페이지가 이미 목록에 등록되어 있습니다.</div>`;
+  } else {
+    body.innerHTML = `<p style="font-size:13px;color:var(--text-sub);margin-bottom:12px">${scannedNew.length}개의 새 페이지를 발견했습니다. 추가할 항목을 선택하세요.</p>` +
+      scannedNew.map((item, i) => `
+        <div class="scan-item">
+          <input type="checkbox" id="sc${i}" ${item.checked?'checked':''} onchange="scannedNew[${i}].checked=this.checked">
+          <label for="sc${i}">${item.path}</label>
+        </div>`).join('');
+  }
+  document.getElementById('scanModal').style.display = 'flex';
+}
+
+function closeScanModal() {
+  document.getElementById('scanModal').style.display = 'none';
+}
+
+function addScannedPages() {
+  const toAdd = scannedNew.filter(x => x.checked);
+  if (toAdd.length === 0) { closeScanModal(); return; }
+  toAdd.forEach(item => {
+    const pathParts = item.path.replace('.html','').split('/');
+    const id = pathParts.join('-') + '-' + Date.now();
+    const name = pathParts[pathParts.length - 1]
+      .replace(/-/g,' ')
+      .replace(/\b\w/g, c => c.toUpperCase());
+    pages.push({ id, name, path: item.path, category: '기타', visible: true });
+  });
+  save();
+  closeScanModal();
+  renderCatFilter();
+  renderList();
+  showToast(`${toAdd.length}개 페이지가 추가되었습니다.`);
+}
+
+function resetOrder() {
+  if (!confirm('목록을 초기 상태로 되돌리시겠습니까?\n사용자 지정 이름과 순서가 모두 초기화됩니다.')) return;
+  pages = JSON.parse(JSON.stringify(DEFAULT_PAGES));
+  save();
+  activeCategory = '전체';
+  renderCatFilter();
+  renderList();
+  showToast('초기화되었습니다.');
+}
+
+function showToast(msg) {
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 2400);
+}
+
+// 초기 실행
+load();
+renderCatFilter();
+renderList();
+</script>
+</body>
+</html>

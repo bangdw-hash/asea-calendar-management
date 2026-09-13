@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>주차 차량 관리</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@4.1.1/dist/tesseract.min.js"></script>
+<script src="config.js"></script>
 <script src="xlsx.mini.min.js"></script>
 <style>
 :root {
@@ -116,6 +116,7 @@ body {
 /* Plate input */
 .plate-row { display: flex; gap: 4px; align-items: flex-end; overflow: hidden; }
 .plate-row > div { flex: 1; min-width: 0; }
+.plate-row > div > label { display: block; font-size: 11px; font-weight: 600; color: var(--g500); margin-bottom: 5px; white-space: nowrap; overflow: hidden; text-overflow: clip; }
 .plate-sep { font-size: 16px; font-weight: 700; color: var(--g400); padding-bottom: 14px; flex-shrink: 0; }
 .plate-row input { font-size: 18px !important; padding: 10px 4px !important; text-align: center; min-width: 0; width: 100%; }
 
@@ -502,6 +503,42 @@ body {
   border-radius: 4px; font-family: monospace;
 }
 
+/* ── 번호판 타입 탭 ── */
+.plate-type-tabs { display: flex; gap: 6px; margin-bottom: 10px; }
+.plate-type-tab { flex: 1; padding: 8px 4px; border: 1.5px solid var(--g200); border-radius: 8px; background: none; font-size: 12px; font-weight: 700; color: var(--g500); cursor: pointer; font-family: inherit; text-align: center; }
+.plate-type-tab.active { border-color: var(--primary); background: var(--primary-lt); color: var(--primary); }
+
+/* ── 리스트 필터 탭 ── */
+.list-filter { display: flex; gap: 6px; margin-bottom: 8px; flex-wrap: wrap; }
+.filter-tab { padding: 6px 14px; border: 1.5px solid var(--g200); border-radius: 20px; background: none; font-size: 13px; font-weight: 600; color: var(--g500); cursor: pointer; font-family: inherit; }
+.filter-tab.active { border-color: var(--primary); background: var(--primary-lt); color: var(--primary); }
+.filter-tab.red.active { border-color: var(--red); background: var(--red-lt); color: var(--red); }
+
+/* ── 블랙리스트 ── */
+.vc-plate.blacklist { background: var(--red); }
+.vc-name .bl-badge { font-size: 11px; font-weight: 700; background: var(--red); color: #fff; padding: 2px 7px; border-radius: 10px; margin-left: 4px; vertical-align: middle; }
+.bl-warn-banner { background: var(--red-lt); border: 1.5px solid rgba(220,38,38,.3); border-radius: 10px; padding: 12px 14px; margin-bottom: 10px; display: flex; gap: 10px; align-items: flex-start; }
+.bl-warn-title { font-size: 14px; font-weight: 800; color: var(--red); }
+.bl-warn-sub { font-size: 12px; color: var(--red); opacity: .85; margin-top: 2px; }
+
+/* ── 임시 등록 ── */
+.vc-plate.temp-active { background: var(--orange); }
+.vc-plate.temp-expired { background: var(--g400); }
+.vc-name .tmp-badge { font-size: 11px; font-weight: 700; background: var(--orange); color: #fff; padding: 2px 7px; border-radius: 10px; margin-left: 4px; vertical-align: middle; }
+.vc-name .tmp-exp-badge { font-size: 11px; font-weight: 700; background: var(--g400); color: #fff; padding: 2px 7px; border-radius: 10px; margin-left: 4px; vertical-align: middle; }
+.filter-tab.orange.active { border-color: var(--orange); background: var(--orange-lt); color: var(--orange); }
+.result-temp-expired { background: var(--g100); border: 2px solid var(--g300); border-radius: var(--r); padding: 18px; margin-bottom: 12px; }
+.tmp-exp-badge-lg { display: inline-flex; align-items: center; gap: 5px; background: var(--g400); color: #fff; font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 20px; margin-bottom: 10px; }
+.tmp-active-banner { background: var(--orange-lt); border: 1.5px solid rgba(234,88,12,.3); border-radius: 10px; padding: 12px 14px; margin-bottom: 10px; display: flex; gap: 10px; align-items: flex-start; }
+.tmp-active-title { font-size: 14px; font-weight: 800; color: var(--orange); }
+.tmp-active-sub { font-size: 12px; color: var(--orange); opacity: .9; margin-top: 2px; }
+.reg-type-row { display: flex; gap: 0; margin-bottom: 14px; border: 1.5px solid var(--g200); border-radius: 8px; overflow: hidden; }
+.reg-type-btn { flex: 1; padding: 10px 6px; border: none; background: none; font-size: 14px; font-weight: 700; color: var(--g500); cursor: pointer; font-family: inherit; transition: all .12s; }
+.reg-type-btn.active { background: var(--primary); color: #fff; }
+.reg-type-btn.active.is-temp { background: var(--orange); }
+.temp-fields { display: none; padding-top: 4px; }
+.temp-fields.show { display: block; }
+
 /* ── Toast ── */
 .toast-wrap {
   position: fixed; bottom: 84px;
@@ -546,7 +583,7 @@ body {
 <body>
 
 <header class="app-header">
-  <div class="hdr-title">
+  <div class="hdr-title" onclick="showView('scan')" style="cursor:pointer">
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
       <rect x="1" y="3" width="15" height="13" rx="2"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/>
       <circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/>
@@ -671,7 +708,23 @@ body {
 
     <!-- 등록 차량 -->
     <div class="result-registered" id="resultRegistered" style="display:none">
-      <div class="r-badge">
+      <!-- 블랙리스트 경고 (해당 시만 표시) -->
+      <div class="bl-warn-banner" id="blWarnBanner" style="display:none">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        <div>
+          <div class="bl-warn-title">⚠ 블랙리스트 차량</div>
+          <div class="bl-warn-sub" id="blWarnSub">관리자 확인 필요 차량입니다</div>
+        </div>
+      </div>
+      <!-- 임시 등록 유효 배너 -->
+      <div class="tmp-active-banner" id="tmpActiveBanner" style="display:none">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--orange)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        <div>
+          <div class="tmp-active-title">임시 등록 차량</div>
+          <div class="tmp-active-sub" id="tmpActiveInfo">유효 기간 확인 중...</div>
+        </div>
+      </div>
+      <div class="r-badge" id="rBadge">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
           <polyline points="20 6 9 17 4 12"/>
         </svg>
@@ -688,6 +741,24 @@ body {
       <div class="r-meta" id="rMeta"></div>
     </div>
 
+    <!-- 임시 등록 만료 차량 -->
+    <div class="result-temp-expired" id="resultTempExpired" style="display:none">
+      <div class="tmp-exp-badge-lg">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        임시 등록 만료
+      </div>
+      <div style="font-size:18px;font-weight:800;color:var(--g700);margin-bottom:4px" id="tmpExpName">-</div>
+      <div style="font-size:14px;color:var(--g500);margin-bottom:10px" id="tmpExpDept">-</div>
+      <div style="font-size:12px;color:var(--g400);margin-bottom:12px" id="tmpExpInfo">-</div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-primary" style="flex:1" onclick="goRegisterWithPlate(false)">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          정식 등록
+        </button>
+        <button class="btn btn-ghost" style="flex:1;font-size:14px;padding:13px" onclick="goRegisterTempWithPlate()">임시 재연장</button>
+      </div>
+    </div>
+
     <!-- 미등록 차량 -->
     <div class="result-unregistered" id="resultUnregistered" style="display:none">
       <div class="u-badge">
@@ -697,50 +768,28 @@ body {
         미등록 차량
       </div>
       <div class="u-msg">등록되지 않은 번호판입니다</div>
-      <div class="u-sub">신규 등록하거나 사전 협의 차량으로 등록하세요</div>
-      <button class="btn btn-primary" onclick="goRegisterWithPlate()">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-        </svg>
-        이 번호판으로 신규 등록
-      </button>
+      <div class="u-sub" style="margin-bottom:12px">차량을 등록하거나 블랙리스트에 추가하세요</div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-primary" style="flex:1" onclick="goRegisterWithPlate(false)">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+          신규 등록
+        </button>
+        <button class="btn btn-red" style="flex:1" onclick="goRegisterWithPlate(true)">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+          블랙리스트 등록
+        </button>
+      </div>
     </div>
 
-    <div style="display:flex;gap:10px;margin-top:4px">
-      <button class="btn btn-ghost" style="flex:1;padding:13px;font-size:14px" onclick="resetScan()">
+    <div style="margin-top:4px">
+      <button class="btn btn-ghost" style="width:100%;padding:13px;font-size:14px" onclick="resetScan()">
         다시 스캔
       </button>
-      <button class="btn btn-ghost" style="flex:1;padding:13px;font-size:14px" onclick="manualSearch()">
-        번호 직접 입력
-      </button>
     </div>
-  </div>
-
-  <!-- 직접 입력 조회 -->
-  <div class="card" id="manualSearchCard" style="display:none">
-    <div class="section-title">번호판 직접 입력 조회</div>
-    <div class="plate-row">
-      <div>
-        <label style="font-size:13px;font-weight:600;color:var(--g700);display:block;margin-bottom:7px">앞 번호</label>
-        <input type="text" id="msPlateF" placeholder="123" maxlength="3" inputmode="numeric" style="font-weight:800;border:1.5px solid var(--g200);border-radius:8px;font-family:inherit;">
-      </div>
-      <div class="plate-sep">-</div>
-      <div>
-        <label style="font-size:13px;font-weight:600;color:var(--g700);display:block;margin-bottom:7px">한글</label>
-        <input type="text" id="msPlateH" placeholder="가" maxlength="1" style="font-weight:800;border:1.5px solid var(--g200);border-radius:8px;font-family:inherit;">
-      </div>
-      <div class="plate-sep">-</div>
-      <div>
-        <label style="font-size:13px;font-weight:600;color:var(--g700);display:block;margin-bottom:7px">뒷 번호</label>
-        <input type="text" id="msPlateB" placeholder="4567" maxlength="4" inputmode="numeric" style="font-weight:800;border:1.5px solid var(--g200);border-radius:8px;font-family:inherit;">
-      </div>
-    </div>
-    <button class="btn btn-primary" style="margin-top:14px" onclick="doManualSearch()">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-      </svg>
-      조회하기
-    </button>
   </div>
 
 </div>
@@ -756,18 +805,46 @@ body {
       설정
     </button>
   </div>
+  <div class="list-filter">
+    <button class="filter-tab active" id="ftAll" onclick="setListFilter('all')">전체</button>
+    <button class="filter-tab" id="ftNormal" onclick="setListFilter('normal')">일반</button>
+    <button class="filter-tab red" id="ftBl" onclick="setListFilter('blacklist')">블랙리스트</button>
+    <button class="filter-tab orange" id="ftTemp" onclick="setListFilter('temp')">임시 등록</button>
+  </div>
   <div class="list-stats" id="listStats"></div>
   <div id="vehicleList"></div>
 </div>
 
 <!-- ────────── REGISTER VIEW ────────── -->
 <div class="view" id="registerView">
+
+  <!-- 등록 유형 선택 -->
+  <div class="card" style="padding:14px 18px">
+    <div style="font-size:13px;font-weight:700;color:var(--g500);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">등록 유형</div>
+    <div class="reg-type-row">
+      <button class="reg-type-btn active" id="regTypePerm" onclick="switchRegType('perm')">일반 등록</button>
+      <button class="reg-type-btn" id="regTypeTemp" onclick="switchRegType('temp')">임시 등록</button>
+    </div>
+    <div class="temp-fields" id="tempFields">
+      <div class="field" style="margin-bottom:8px">
+        <label>유효 기간 (날짜·시간)</label>
+        <input type="datetime-local" id="regValidUntil" style="font-size:15px;padding:10px 12px">
+        <div style="font-size:12px;color:var(--g500);margin-top:4px">이 시간까지만 임시 등록으로 조회됩니다. 이후에는 관리실 목록에서만 확인 가능합니다.</div>
+      </div>
+    </div>
+  </div>
+
   <div class="card">
     <div class="section-title">번호판</div>
+    <div class="plate-type-tabs" style="margin-bottom:8px">
+      <button class="plate-type-tab active" id="regPtabNew" onclick="switchRegPlateTab('new')">신형 &nbsp;123가4567</button>
+      <button class="plate-type-tab" id="regPtabOld" onclick="switchRegPlateTab('old')">구형 &nbsp;서울12가3456</button>
+    </div>
     <div class="plate-row">
       <div>
-        <label>앞 번호</label>
+        <label id="regPlateFLabel">앞 번호</label>
         <input type="text" id="regPlateF" placeholder="123" maxlength="3" inputmode="numeric"
+          oninput="plateAutoAdv(this,'regPlateH',3)"
           style="font-weight:800;">
       </div>
       <div class="plate-sep">-</div>
@@ -784,7 +861,7 @@ body {
           style="font-weight:800;">
       </div>
     </div>
-    <div class="plate-hint">예: 앞 <strong>123</strong> — 한글 <strong>가</strong> — 뒤 <strong>4567</strong> → 123가4567</div>
+    <div class="plate-hint" id="regPlateHint">신형: 앞 <strong>123</strong> — 한글 <strong>가</strong> — 뒤 <strong>4567</strong> &rarr; 123가4567</div>
   </div>
 
   <div class="card">
@@ -822,7 +899,8 @@ body {
     </div>
     <div class="field">
       <label>연락처</label>
-      <input type="tel" id="regPhone" placeholder="010-0000-0000" inputmode="tel">
+      <input type="tel" id="regPhone" placeholder="010-0000-0000" inputmode="tel"
+        oninput="autoFormatPhone(this)">
     </div>
     <div class="field">
       <label>차종</label>
@@ -836,6 +914,12 @@ body {
       <div class="check-row" onclick="document.getElementById('regPre').click()">
         <input type="checkbox" id="regPre">
         <label for="regPre">사전 협의 차량 (방문 예약 등)</label>
+      </div>
+    </div>
+    <div class="field">
+      <div class="check-row" onclick="document.getElementById('regBlacklist').click()" style="border:1.5px solid rgba(220,38,38,.3);border-radius:8px;padding:10px 12px;background:var(--red-lt)">
+        <input type="checkbox" id="regBlacklist">
+        <label for="regBlacklist" style="color:var(--red);font-weight:700">블랙리스트 등록 (학생·외부인 요주의)</label>
       </div>
     </div>
   </div>
@@ -984,7 +1068,7 @@ body {
     </div>
     <div class="field">
       <label>연락처</label>
-      <input type="tel" id="editPhone" placeholder="010-0000-0000">
+      <input type="tel" id="editPhone" placeholder="010-0000-0000" oninput="autoFormatPhone(this)">
     </div>
     <div class="field">
       <label>차종</label>
@@ -998,6 +1082,24 @@ body {
       <div class="check-row" onclick="document.getElementById('editPre').click()">
         <input type="checkbox" id="editPre">
         <label for="editPre">사전 협의 차량</label>
+      </div>
+    </div>
+    <div class="field">
+      <div class="check-row" onclick="document.getElementById('editBlacklist').click()" style="border:1.5px solid rgba(220,38,38,.3);border-radius:8px;padding:10px 12px;background:var(--red-lt)">
+        <input type="checkbox" id="editBlacklist">
+        <label for="editBlacklist" style="color:var(--red);font-weight:700">블랙리스트 차량</label>
+      </div>
+    </div>
+    <div class="field">
+      <div class="check-row" onclick="toggleEditTemp()" style="border:1.5px solid rgba(234,88,12,.3);border-radius:8px;padding:10px 12px;background:var(--orange-lt)">
+        <input type="checkbox" id="editIsTemp" onchange="toggleEditTemp()">
+        <label for="editIsTemp" style="color:var(--orange);font-weight:700">임시 등록 차량</label>
+      </div>
+    </div>
+    <div class="temp-fields" id="editTempFields">
+      <div class="field">
+        <label>유효 기간</label>
+        <input type="datetime-local" id="editValidUntil" style="font-size:15px;padding:10px 12px">
       </div>
     </div>
     <div class="modal-footer">
@@ -1312,12 +1414,11 @@ function toast(msg, type) {
 
 async function startScan() {
   document.getElementById('startScanBtn').style.display = 'none';
+  document.getElementById('quickSearchCard').style.display = 'none';
   document.getElementById('cameraWrap').classList.add('show');
   document.getElementById('captureBtn').classList.add('show');
   document.getElementById('stopBtn').classList.add('show');
   document.getElementById('scanResult').classList.remove('show');
-  document.getElementById('manualSearchCard').style.display = 'none';
-  document.getElementById('manualEntryBtn').style.display = 'none';
 
   try {
     cameraStream = await navigator.mediaDevices.getUserMedia({
@@ -1358,6 +1459,21 @@ function stopScan() {
   document.getElementById('zoomLabel').textContent = '×1.0';
   zoomCurrent = 1;
   document.getElementById('startScanBtn').style.display = '';
+  document.getElementById('quickSearchCard').style.display = '';
+}
+
+function applyZoom(val) {
+  if (!cameraStream) return;
+  var track = cameraStream.getVideoTracks()[0];
+  var clamped = Math.min(Math.max(val, zoomMin), zoomMax);
+  zoomCurrent = clamped;
+  track.applyConstraints({ advanced: [{ zoom: clamped }] }).catch(function(){});
+  document.getElementById('zoomSlider').value = clamped;
+  document.getElementById('zoomLabel').textContent = '×' + clamped.toFixed(1);
+}
+
+function adjustZoom(dir) {
+  applyZoom(zoomCurrent + dir * zoomStep * 5);
 }
 
 function applyZoom(val) {
@@ -1390,41 +1506,61 @@ async function captureAndOCR() {
   var ctx = canvas.getContext('2d');
   ctx.drawImage(video, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH);
 
-  // 전처리: 그레이스케일 + 대비 강화
-  var imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-  var data = imgData.data;
-  for (var i = 0; i < data.length; i += 4) {
-    var gray = 0.299 * data[i] + 0.587 * data[i+1] + 0.114 * data[i+2];
-    // 대비 강화
-    gray = Math.min(255, Math.max(0, (gray - 128) * 1.8 + 128));
-    data[i] = data[i+1] = data[i+2] = gray;
-  }
-  ctx.putImageData(imgData, 0, 0);
-
   stopScan();
   document.getElementById('ocrStatus').classList.add('show');
-  document.getElementById('ocrSub').textContent = '번호판 문자 인식 중...';
+  document.getElementById('ocrSub').textContent = 'AI 번호판 인식 중...';
 
   try {
-    var result = await Tesseract.recognize(canvas, 'kor+eng', {
-      logger: function(m) {
-        if (m.status === 'recognizing text' && m.progress) {
-          document.getElementById('ocrSub').textContent =
-            '인식 중... ' + Math.round(m.progress * 100) + '%';
-        }
-      }
+    var base64 = canvas.toDataURL('image/jpeg', 0.92).split(',')[1];
+
+    var res = await window.claudeFetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': 'via',
+        'anthropic-version': '2023-06-01'
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 30,
+        messages: [{
+          role: 'user',
+          content: [
+            { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: base64 } },
+            { type: 'text', text: '이 이미지의 자동차 번호판 번호만 읽어주세요. 한국 번호판 형식 예시: 123가4567, 서울12가3456. 번호만 답하고 다른 말은 하지 마세요. 번호판이 없거나 보이지 않으면 "없음"이라고만 답하세요.' }
+          ]
+        }]
+      })
     });
 
     document.getElementById('ocrStatus').classList.remove('show');
 
-    var rawText = result.data.text;
-    var plate = normalizePlate(rawText);
+    if (!res.ok) {
+      var errJson = null;
+      try { errJson = await res.json(); } catch(e) {}
+      throw new Error((errJson && errJson.error && errJson.error.message) || 'AI 응답 오류 ' + res.status);
+    }
 
-    if (!plate) {
-      // 재시도 안내
+    var data = await res.json();
+    var rawText = window.claudeExtractText(data);
+
+    if (!rawText || rawText.trim() === '없음') {
       toast('번호판을 인식하지 못했습니다. 다시 시도해 주세요.', 'err');
       document.getElementById('startScanBtn').style.display = '';
-      document.getElementById('scanResult').classList.remove('show');
+      document.getElementById('quickSearchCard').style.display = '';
+      return;
+    }
+
+    var plate = normalizePlate(rawText);
+    if (!plate) {
+      toast('인식 결과: "' + rawText.trim().substring(0, 20) + '"\n형식 불일치 — 직접 입력해 주세요.', 'err');
+      document.getElementById('startScanBtn').style.display = '';
+      document.getElementById('quickSearchCard').style.display = '';
+      // 인식 텍스트를 신형 앞칸에 채워주기 (숫자 추출)
+      var digits = rawText.trim().replace(/\s+/g,'').replace(/[^0-9가-힣]/g,'');
+      var nm = digits.match(/^(\d{2,3})/);
+      if (nm) { document.getElementById('qsNewF').value = nm[1]; }
+      switchPlateTab('new');
       return;
     }
 
@@ -1432,8 +1568,9 @@ async function captureAndOCR() {
 
   } catch (e) {
     document.getElementById('ocrStatus').classList.remove('show');
-    toast('OCR 오류: ' + (e.message || e), 'err');
+    toast('인식 오류: ' + (e.message || e), 'err');
     document.getElementById('startScanBtn').style.display = '';
+    document.getElementById('quickSearchCard').style.display = '';
   }
 }
 
@@ -1443,15 +1580,54 @@ async function showPlateResult(plate) {
   document.getElementById('scanResult').classList.add('show');
   document.getElementById('resultRegistered').style.display = 'none';
   document.getElementById('resultUnregistered').style.display = 'none';
+  document.getElementById('resultTempExpired').style.display = 'none';
 
   var { data } = await sb.from('vehicle_registry')
     .select('*').eq('plate_number', plate).maybeSingle();
 
   if (data) {
+    // 임시 등록 만료 여부 확인
+    var isTemp = !!data.is_temp;
+    var validUntil = data.valid_until ? new Date(data.valid_until) : null;
+    var isExpired = isTemp && validUntil && validUntil < new Date();
+
+    if (isExpired) {
+      // 만료된 임시 등록 — 별도 섹션으로 표시
+      var nameWithTitle = [data.owner_name, data.job_title].filter(Boolean).join(' ');
+      document.getElementById('tmpExpName').textContent = nameWithTitle || '(이름 없음)';
+      document.getElementById('tmpExpDept').textContent = [data.owner_dept, data.vehicle_type].filter(Boolean).join(' · ') || '';
+      document.getElementById('tmpExpInfo').textContent = '임시 등록 만료: ' + validUntil.toLocaleString('ko-KR', { month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' });
+      document.getElementById('resultTempExpired').style.display = '';
+      return;
+    }
+
+    var isBl = !!data.is_blacklist;
     var phone = formatPhone(data.owner_phone || '');
     var nameWithTitle = [data.owner_name, data.job_title].filter(Boolean).join(' ');
     document.getElementById('rName').textContent = nameWithTitle || '(이름 없음)';
     document.getElementById('rDept').textContent = [data.owner_dept, data.vehicle_type].filter(Boolean).join(' · ') || '부서 미입력';
+
+    // 블랙리스트 경고 배너
+    var blBanner = document.getElementById('blWarnBanner');
+    if (isBl) {
+      blBanner.style.display = '';
+      var sub = data.note ? '메모: ' + data.note : '관리자 확인 필요 차량입니다';
+      document.getElementById('blWarnSub').textContent = sub;
+    } else {
+      blBanner.style.display = 'none';
+    }
+
+    // 임시 등록 유효 배너
+    var tmpBanner = document.getElementById('tmpActiveBanner');
+    if (isTemp && validUntil && !isExpired) {
+      tmpBanner.style.display = '';
+      var remaining = formatRemaining(validUntil);
+      document.getElementById('tmpActiveInfo').textContent = remaining
+        ? '임시 등록 유효 · ' + remaining
+        : '오늘 자정까지 유효';
+    } else if (tmpBanner) {
+      tmpBanner.style.display = 'none';
+    }
 
     var callBtn = document.getElementById('rCallBtn');
     if (phone) {
@@ -1463,7 +1639,7 @@ async function showPlateResult(plate) {
     }
 
     var meta = [];
-    if (data.note) meta.push('<span><strong>메모:</strong> ' + escHtml(data.note) + '</span>');
+    if (!isBl && data.note) meta.push('<span><strong>메모:</strong> ' + escHtml(data.note) + '</span>');
     if (data.pre_approved) meta.push('<span style="color:var(--orange);font-weight:700">★ 사전 협의 차량</span>');
     document.getElementById('rMeta').innerHTML = meta.join('');
 
@@ -1475,40 +1651,52 @@ async function showPlateResult(plate) {
 
 function resetScan() {
   document.getElementById('scanResult').classList.remove('show');
-  document.getElementById('manualSearchCard').style.display = 'none';
   document.getElementById('startScanBtn').style.display = '';
-  document.getElementById('manualEntryBtn').style.display = '';
+  document.getElementById('quickSearchCard').style.display = '';
   lastOCRPlate = '';
 }
 
-function manualSearch() {
-  document.getElementById('scanResult').classList.remove('show');
-  document.getElementById('manualSearchCard').style.display = 'block';
-  document.getElementById('startScanBtn').style.display = 'none';
-  document.getElementById('manualEntryBtn').style.display = 'none';
-  setTimeout(function(){ document.getElementById('msPlateF').focus(); }, 100);
-}
-
 async function doManualSearch() {
-  var f = document.getElementById('msPlateF').value.trim();
-  var h = document.getElementById('msPlateH').value.trim();
-  var b = document.getElementById('msPlateB').value.trim();
-  if (!f || !h || !b) { toast('번호판을 모두 입력하세요.'); return; }
-  var plate = normalizePlate(f + h + b);
+  var raw;
+  if (currentPlateTab === 'new') {
+    var f = document.getElementById('qsNewF').value.trim();
+    var h = document.getElementById('qsNewH').value.trim();
+    var b = document.getElementById('qsNewB').value.trim();
+    if (!f || !h || !b) { toast('번호판을 모두 입력하세요.'); return; }
+    raw = f + h + b;
+  } else {
+    var f = document.getElementById('qsOldF').value.trim();
+    var h = document.getElementById('qsOldH').value.trim();
+    var b = document.getElementById('qsOldB').value.trim();
+    if (!f || !h || !b) { toast('번호판을 모두 입력하세요.'); return; }
+    raw = f + h + b;
+  }
+  var plate = normalizePlate(raw);
   if (!plate) { toast('올바른 번호판 형식이 아닙니다.'); return; }
-  document.getElementById('manualSearchCard').style.display = 'none';
   await showPlateResult(plate);
 }
 
-function goRegisterWithPlate() {
+function goRegisterWithPlate(isBlacklist) {
   if (lastOCRPlate) {
+    // 신형 패턴
     var m = lastOCRPlate.match(/^(\d+)([가-힣])(\d+)$/);
     if (m) {
+      switchRegPlateTab('new');
       document.getElementById('regPlateF').value = m[1];
       document.getElementById('regPlateH').value = m[2];
       document.getElementById('regPlateB').value = m[3];
+    } else {
+      // 구형 패턴
+      m = lastOCRPlate.match(/^([가-힣]+\d+)([가-힣])(\d+)$/);
+      if (m) {
+        switchRegPlateTab('old');
+        document.getElementById('regPlateF').value = m[1];
+        document.getElementById('regPlateH').value = m[2];
+        document.getElementById('regPlateB').value = m[3];
+      }
     }
   }
+  document.getElementById('regBlacklist').checked = !!isBlacklist;
   showView('register');
 }
 
@@ -1523,13 +1711,20 @@ async function loadVehicleList() {
 
 function filterList() {
   var q = (document.getElementById('searchInput').value || '').toLowerCase();
-  var filtered = allVehicles.filter(v =>
-    !q ||
-    (v.plate_number || '').toLowerCase().includes(q) ||
-    (v.owner_name || '').toLowerCase().includes(q) ||
-    (v.owner_dept || '').toLowerCase().includes(q) ||
-    (v.owner_phone || '').includes(q)
-  );
+  var now = new Date();
+  var filtered = allVehicles.filter(function(v) {
+    var isTemp = !!v.is_temp;
+    var isBl = !!v.is_blacklist;
+    var isExpired = isTemp && v.valid_until && new Date(v.valid_until) < now;
+    if (listFilter === 'blacklist' && !isBl) return false;
+    if (listFilter === 'normal' && (isBl || isTemp)) return false;
+    if (listFilter === 'temp' && !isTemp) return false;
+    if (!q) return true;
+    return (v.plate_number || '').toLowerCase().includes(q) ||
+           (v.owner_name || '').toLowerCase().includes(q) ||
+           (v.owner_dept || '').toLowerCase().includes(q) ||
+           (v.owner_phone || '').includes(q);
+  });
   renderList(filtered);
 }
 
@@ -1544,13 +1739,21 @@ function renderList(list) {
     container.innerHTML = '<div class="empty-msg"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13" rx="2"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg><br>등록된 차량이 없습니다</div>';
     return;
   }
-  container.innerHTML = list.map(v => {
+  container.innerHTML = list.map(function(v) {
     var phone = formatPhone(v.owner_phone || '');
-    var plateClass = 'vc-plate' + (v.pre_approved ? ' pre-approved' : '');
+    var isBl = !!v.is_blacklist;
+    var isTemp = !!v.is_temp;
+    var isExpired = isTemp && v.valid_until && new Date(v.valid_until) < new Date();
+    var plateClass = 'vc-plate' + (isBl ? ' blacklist' : isExpired ? ' temp-expired' : isTemp ? ' temp-active' : v.pre_approved ? ' pre-approved' : '');
+    var badges = '';
+    if (isBl) badges += '<small class="bl-badge">주의</small>';
+    else if (isExpired) badges += '<small class="tmp-exp-badge">만료</small>';
+    else if (isTemp) { var rem = formatRemaining(v.valid_until); badges += '<small class="tmp-badge">임시' + (rem ? ' · ' + rem : '') + '</small>'; }
+    else if (v.pre_approved) badges += ' <small style="font-size:11px;background:var(--orange);color:#fff;padding:2px 6px;border-radius:10px;font-weight:700">협의</small>';
     return '<div class="vehicle-card">' +
       '<div class="' + plateClass + '">' + escHtml(displayPlate(v.plate_number)) + '</div>' +
       '<div class="vc-info">' +
-        '<div class="vc-name">' + escHtml([v.owner_name, v.job_title].filter(Boolean).join(' ') || '(이름 없음)') + (v.pre_approved ? ' <small style="font-size:11px;background:var(--orange);color:#fff;padding:2px 6px;border-radius:10px;font-weight:700">협의</small>' : '') + '</div>' +
+        '<div class="vc-name">' + escHtml([v.owner_name, v.job_title].filter(Boolean).join(' ') || '(이름 없음)') + badges + '</div>' +
         '<div class="vc-meta">' + escHtml([v.owner_dept, v.vehicle_type].filter(Boolean).join(' · ')) + '</div>' +
         (phone ? '<a class="vc-phone" href="tel:' + phone.replace(/-/g, '') + '">' + phone + '</a>' : '') +
       '</div>' +
@@ -1579,6 +1782,13 @@ async function registerVehicle() {
   var btn = document.getElementById('regSubmitBtn');
   btn.disabled = true;
 
+  var isBl = document.getElementById('regBlacklist').checked;
+  var isTemp = currentRegType === 'temp';
+  if (isTemp) {
+    var vu = document.getElementById('regValidUntil').value;
+    if (!vu) { toast('임시 등록 유효 기간을 지정해 주세요.'); return; }
+    if (new Date(vu) <= new Date()) { toast('유효 기간이 이미 지났습니다.'); return; }
+  }
   var rec = {
     plate_number: plate,
     plate_front: f,
@@ -1590,6 +1800,9 @@ async function registerVehicle() {
     vehicle_type: document.getElementById('regType').value.trim(),
     note: document.getElementById('regNote').value.trim(),
     pre_approved: document.getElementById('regPre').checked,
+    is_blacklist: isBl,
+    is_temp: isTemp,
+    valid_until: isTemp ? new Date(document.getElementById('regValidUntil').value).toISOString() : null,
     updated_at: new Date().toISOString()
   };
 
@@ -1598,13 +1811,15 @@ async function registerVehicle() {
 
   if (error) { toast('등록 실패: ' + error.message, 'err'); return; }
 
-  toast('차량 등록 완료!', 'ok');
+  toast(isTemp ? '임시 등록 완료!' : isBl ? '블랙리스트 등록 완료!' : '차량 등록 완료!', 'ok');
   // 폼 초기화
-  ['regPlateF','regPlateH','regPlateB','regName','regTitle','regPhone','regType','regNote'].forEach(id => {
+  ['regPlateF','regPlateH','regPlateB','regName','regTitle','regPhone','regType','regNote','regValidUntil'].forEach(function(id) {
     document.getElementById(id).value = '';
   });
   document.getElementById('regDept').value = '';
   document.getElementById('regPre').checked = false;
+  document.getElementById('regBlacklist').checked = false;
+  switchRegType('perm');
 }
 
 // ────────── EDIT / DELETE ──────────
@@ -1621,6 +1836,11 @@ function editVehicle(id) {
   document.getElementById('editType').value = v.vehicle_type || '';
   document.getElementById('editNote').value = v.note || '';
   document.getElementById('editPre').checked = !!v.pre_approved;
+  document.getElementById('editBlacklist').checked = !!v.is_blacklist;
+  var isTemp = !!v.is_temp;
+  document.getElementById('editIsTemp').checked = isTemp;
+  document.getElementById('editValidUntil').value = v.valid_until ? new Date(v.valid_until).toISOString().slice(0,16) : '';
+  document.getElementById('editTempFields').classList.toggle('show', isTemp);
   document.getElementById('editModal').classList.add('show');
 }
 
@@ -1633,6 +1853,8 @@ async function saveEdit() {
   var name = document.getElementById('editName').value.trim();
   if (!name) { toast('이름을 입력하세요.'); return; }
 
+  var isTempEdit = document.getElementById('editIsTemp').checked;
+  var vuEdit = document.getElementById('editValidUntil').value;
   var { error } = await sb.from('vehicle_registry').update({
     owner_name: name,
     job_title: document.getElementById('editTitle').value.trim(),
@@ -1641,6 +1863,9 @@ async function saveEdit() {
     vehicle_type: document.getElementById('editType').value.trim(),
     note: document.getElementById('editNote').value.trim(),
     pre_approved: document.getElementById('editPre').checked,
+    is_blacklist: document.getElementById('editBlacklist').checked,
+    is_temp: isTempEdit,
+    valid_until: isTempEdit && vuEdit ? new Date(vuEdit).toISOString() : null,
     updated_at: new Date().toISOString()
   }).eq('id', id);
 

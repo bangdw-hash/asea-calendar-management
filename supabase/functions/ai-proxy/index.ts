@@ -60,7 +60,6 @@ Deno.serve(async (req) => {
             "x-api-key": upstream.key,
             "authorization": "Bearer " + upstream.key,
             "anthropic-version": "2023-06-01",
-            "anthropic-beta": "pdfs-2024-09-25",
           },
           body: JSON.stringify(payload),
         });
@@ -74,7 +73,6 @@ Deno.serve(async (req) => {
           "content-type": "application/json",
           "x-api-key": key,
           "anthropic-version": "2023-06-01",
-          "anthropic-beta": "pdfs-2024-09-25",
         },
         body: JSON.stringify(payload),
       });
