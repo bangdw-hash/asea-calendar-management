@@ -245,7 +245,10 @@ html,body{height:100%;
 .day-cell.sun .day-num{color:var(--color-error)}
 .day-cell.sat .day-num{color:var(--color-accent)}
 .day-holiday{font-size:var(--font-sm);font-weight:600;color:var(--color-error);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;flex:1}
-.day-school-evt{font-size:var(--font-sm);font-weight:600;color:var(--primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.day-school-evt{font-size:var(--font-sm);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.school-color-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:6px}
+.school-color-sw{width:22px;height:22px;border-radius:50%;border:2px solid transparent;cursor:pointer;flex-shrink:0;transition:transform .15s,border-color .15s}
+.school-color-sw.sel{border-color:#fff;outline:2px solid var(--g400);transform:scale(1.15)}
 .day-cell.holiday .day-num{color:var(--color-error)!important}
 .day-cell.holiday .day-dow{color:var(--color-error)!important}
 .day-cell.holiday .day-holiday{color:var(--color-error)}
@@ -1782,25 +1785,34 @@ html,body{height:100%;
     <!-- Section 4: 학교 일정 관리 -->
     <div id="admin-sec-school" class="admin-section" hidden>
       <p style="font-size:.82rem;color:var(--g500);margin-bottom:12px;line-height:1.5">개교기념일 등 학교 주요 일정을 등록하고 캘린더에 반영합니다.<br>날짜는 달력으로 선택하거나 직접 입력할 수 있습니다. 저장 후 <strong>캘린더에 반영</strong> 버튼을 눌러야 실제 캘린더에 적용됩니다.</p>
-      <!-- Add form -->
-      <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;padding:12px;background:var(--g50);border-radius:var(--r);border:1px solid var(--g200);margin-bottom:14px">
-        <div style="display:flex;flex-direction:column;gap:4px;min-width:130px">
-          <label style="font-size:.75rem;font-weight:600;color:var(--g700)">날짜</label>
-          <input type="date" id="school-evt-date" class="form-input" style="padding:5px 8px;font-size:.82rem">
+      <!-- Add / Edit form -->
+      <div style="padding:12px;background:var(--g50);border-radius:var(--r);border:1px solid var(--g200);margin-bottom:14px">
+        <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap">
+          <div style="display:flex;flex-direction:column;gap:4px;min-width:130px">
+            <label style="font-size:.75rem;font-weight:600;color:var(--g700)">날짜</label>
+            <input type="date" id="school-evt-date" class="form-input" style="padding:5px 8px;font-size:.82rem">
+          </div>
+          <div style="display:flex;flex-direction:column;gap:4px;flex:1;min-width:160px">
+            <label style="font-size:.75rem;font-weight:600;color:var(--g700)">일정 명칭</label>
+            <input type="text" id="school-evt-name" class="form-input" placeholder="예: 개교기념일" style="padding:5px 8px;font-size:.82rem" onkeydown="if(event.key==='Enter')adminSaveSchoolEvt()">
+          </div>
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <label style="font-size:.75rem;font-weight:600;color:var(--g700)">반복</label>
+            <select id="school-evt-repeat" class="form-input" style="padding:5px 8px;font-size:.82rem">
+              <option value="none">반복 없음</option>
+              <option value="yearly">매년 반복</option>
+              <option value="monthly">매월 반복</option>
+            </select>
+          </div>
+          <div style="display:flex;gap:6px;align-items:flex-end">
+            <button id="school-evt-save-btn" class="btn btn-primary btn-sm" onclick="adminSaveSchoolEvt()" style="margin-bottom:1px">저장</button>
+            <button id="school-evt-cancel-btn" class="btn btn-sm" onclick="adminCancelSchoolEvtEdit()" style="margin-bottom:1px;background:var(--g100);color:var(--g600);display:none">취소</button>
+          </div>
         </div>
-        <div style="display:flex;flex-direction:column;gap:4px;flex:1;min-width:160px">
-          <label style="font-size:.75rem;font-weight:600;color:var(--g700)">일정 명칭</label>
-          <input type="text" id="school-evt-name" class="form-input" placeholder="예: 개교기념일" style="padding:5px 8px;font-size:.82rem" onkeydown="if(event.key==='Enter')adminSaveSchoolEvt()">
+        <div style="margin-top:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <span style="font-size:.75rem;font-weight:600;color:var(--g700)">색상</span>
+          <div id="school-color-picker" class="school-color-row"></div>
         </div>
-        <div style="display:flex;flex-direction:column;gap:4px">
-          <label style="font-size:.75rem;font-weight:600;color:var(--g700)">반복</label>
-          <select id="school-evt-repeat" class="form-input" style="padding:5px 8px;font-size:.82rem">
-            <option value="none">반복 없음</option>
-            <option value="yearly">매년 반복</option>
-            <option value="monthly">매월 반복</option>
-          </select>
-        </div>
-        <button class="btn btn-primary btn-sm" onclick="adminSaveSchoolEvt()" style="margin-bottom:1px">저장</button>
       </div>
       <!-- Saved list -->
       <div style="margin-bottom:12px">
@@ -2893,7 +2905,7 @@ function renderMonth(wrap) {
       const allCellEvts = (cell.evts || []);
       const schoolEvts = allCellEvts.filter(ev => ev.description && ev.description.includes('[학교일정]'));
       const regularEvts = allCellEvts.filter(ev => !(ev.description && ev.description.includes('[학교일정]')));
-      const schoolHtml = schoolEvts.map(ev => `<span class="day-school-evt">${esc(ev.summary||'')}</span>`).join('');
+      const schoolHtml = schoolEvts.map(ev => { const sc = _schoolEvtColorFromDesc(ev.description); return `<span class="day-school-evt" style="color:${sc}">${esc(ev.summary||'')}</span>`; }).join('');
       const numEl = `<div class="day-cell-hdr"><span class="day-num">${cell.d}</span><span class="day-dow">${WEEKDAYS[c]}</span>${holidayHtml}${schoolHtml}</div>`;
       const visEvts = (isMob && regularEvts.length > MAX_MOB) ? regularEvts.slice(0, MAX_MOB) : regularEvts;
       const moreCount = (isMob && regularEvts.length > MAX_MOB) ? regularEvts.length - MAX_MOB : 0;
@@ -6086,7 +6098,7 @@ function showAdminTab(tab) {
   });
   if (tab === 'access') loadAccessRequests();
   if (tab === 'consent') loadPrivacyConsents();
-  if (tab === 'school') _renderSchoolEvtList();
+  if (tab === 'school') { _renderSchoolEvtList(); _initSchoolEvtColorPicker(); }
   if (tab === 'design') _renderDesignPanel();
 }
 
@@ -6512,12 +6524,47 @@ function initCtxMenuListeners() {
 
 /* ══════════════ SCHOOL EVENTS (admin) ══════════════ */
 const SCHOOL_EVTS_KEY = 'asea_school_evts';
+const SCHOOL_EVT_COLORS = [
+  { hex: '#1A73E8', label: '파란색' },
+  { hex: '#16a34a', label: '초록색' },
+  { hex: '#ea580c', label: '주황색' },
+  { hex: '#dc2626', label: '빨간색' },
+  { hex: '#7c3aed', label: '보라색' },
+  { hex: '#0891b2', label: '하늘색' },
+  { hex: '#db2777', label: '분홍색' },
+  { hex: '#64748b', label: '회색' }
+];
+let _editingSchoolEvtId = null;
+let _schoolEvtFormColor = '#1A73E8';
 
 function _loadSchoolEvts() {
   try { return JSON.parse(localStorage.getItem(SCHOOL_EVTS_KEY) || '[]'); } catch(_) { return []; }
 }
 function _saveSchoolEvts(list) {
   try { localStorage.setItem(SCHOOL_EVTS_KEY, JSON.stringify(list)); } catch(_) {}
+}
+
+function _schoolEvtColorFromDesc(desc) {
+  if (!desc) return '#1A73E8';
+  const m = desc.match(/\[color:(#[0-9a-fA-F]{3,8})\]/);
+  return m ? m[1] : '#1A73E8';
+}
+
+function _setSchoolEvtFormColor(hex) {
+  _schoolEvtFormColor = hex;
+  const picker = document.getElementById('school-color-picker');
+  if (!picker) return;
+  picker.querySelectorAll('.school-color-sw').forEach(sw => {
+    sw.classList.toggle('sel', sw.dataset.color === hex);
+  });
+}
+
+function _initSchoolEvtColorPicker() {
+  const picker = document.getElementById('school-color-picker');
+  if (!picker) return;
+  picker.innerHTML = SCHOOL_EVT_COLORS.map(c =>
+    `<span class="school-color-sw${_schoolEvtFormColor===c.hex?' sel':''}" data-color="${c.hex}" title="${c.label}" style="background:${c.hex}" onclick="_setSchoolEvtFormColor('${c.hex}')"></span>`
+  ).join('');
 }
 
 function adminSaveSchoolEvt() {
@@ -6527,16 +6574,61 @@ function adminSaveSchoolEvt() {
   if (!date) { showToast('날짜를 입력해 주세요.', 'error'); return; }
   if (!name) { showToast('일정 명칭을 입력해 주세요.', 'error'); return; }
   const list = _loadSchoolEvts();
-  list.push({ id: Date.now().toString(36), date, name, repeat });
+  if (_editingSchoolEvtId) {
+    const idx = list.findIndex(x => x.id === _editingSchoolEvtId);
+    if (idx !== -1) list[idx] = { ...list[idx], date, name, repeat, color: _schoolEvtFormColor };
+    _editingSchoolEvtId = null;
+  } else {
+    list.push({ id: Date.now().toString(36), date, name, repeat, color: _schoolEvtFormColor });
+  }
   _saveSchoolEvts(list);
   document.getElementById('school-evt-name').value = '';
   document.getElementById('school-evt-date').value = '';
   document.getElementById('school-evt-repeat').value = 'none';
+  const saveBtn = document.getElementById('school-evt-save-btn');
+  const cancelBtn = document.getElementById('school-evt-cancel-btn');
+  if (saveBtn) saveBtn.textContent = '저장';
+  if (cancelBtn) cancelBtn.style.display = 'none';
+  _schoolEvtFormColor = '#1A73E8';
+  _initSchoolEvtColorPicker();
   _renderSchoolEvtList();
   showToast('저장되었습니다. 캘린더에 반영하려면 "캘린더에 반영" 버튼을 클릭하세요.', 'success');
 }
 
+function adminEditSchoolEvt(id) {
+  const list = _loadSchoolEvts();
+  const item = list.find(x => x.id === id);
+  if (!item) return;
+  _editingSchoolEvtId = id;
+  document.getElementById('school-evt-date').value = item.date;
+  document.getElementById('school-evt-name').value = item.name;
+  document.getElementById('school-evt-repeat').value = item.repeat || 'none';
+  _schoolEvtFormColor = item.color || '#1A73E8';
+  _initSchoolEvtColorPicker();
+  const saveBtn = document.getElementById('school-evt-save-btn');
+  const cancelBtn = document.getElementById('school-evt-cancel-btn');
+  if (saveBtn) saveBtn.textContent = '수정 저장';
+  if (cancelBtn) cancelBtn.style.display = '';
+  document.getElementById('school-evt-name').focus();
+  _renderSchoolEvtList();
+}
+
+function adminCancelSchoolEvtEdit() {
+  _editingSchoolEvtId = null;
+  document.getElementById('school-evt-date').value = '';
+  document.getElementById('school-evt-name').value = '';
+  document.getElementById('school-evt-repeat').value = 'none';
+  _schoolEvtFormColor = '#1A73E8';
+  _initSchoolEvtColorPicker();
+  const saveBtn = document.getElementById('school-evt-save-btn');
+  const cancelBtn = document.getElementById('school-evt-cancel-btn');
+  if (saveBtn) saveBtn.textContent = '저장';
+  if (cancelBtn) cancelBtn.style.display = 'none';
+  _renderSchoolEvtList();
+}
+
 function adminDeleteSchoolEvt(id) {
+  if (_editingSchoolEvtId === id) adminCancelSchoolEvtEdit();
   const list = _loadSchoolEvts().filter(x => x.id !== id);
   _saveSchoolEvts(list);
   _renderSchoolEvtList();
@@ -6544,6 +6636,7 @@ function adminDeleteSchoolEvt(id) {
 
 function adminClearSchoolEvts() {
   if (!confirm('저장된 학교 일정을 모두 삭제하시겠습니까?')) return;
+  _editingSchoolEvtId = null;
   _saveSchoolEvts([]);
   _renderSchoolEvtList();
 }
@@ -6563,14 +6656,20 @@ function _renderSchoolEvtList() {
   if (emptyEl) emptyEl.hidden = true;
   if (actionsEl) actionsEl.hidden = false;
   const repeatLabel = { none: '반복 없음', yearly: '매년', monthly: '매월' };
-  listEl.innerHTML = `<table class="admin-table"><thead><tr><th>#</th><th>날짜</th><th>일정명</th><th>반복</th><th>삭제</th></tr></thead><tbody>` +
-    list.map((item, i) => `<tr>
-      <td>${i+1}</td>
-      <td>${esc(item.date)}</td>
-      <td style="font-weight:600">${esc(item.name)}</td>
-      <td>${esc(repeatLabel[item.repeat] || '반복 없음')}</td>
-      <td><button class="btn btn-sm btn-danger" style="padding:2px 8px;font-size:.72rem" onclick="adminDeleteSchoolEvt('${esc(item.id)}')">삭제</button></td>
-    </tr>`).join('') + `</tbody></table>`;
+  listEl.innerHTML = `<table class="admin-table"><thead><tr><th>#</th><th>날짜</th><th>일정명</th><th>반복</th><th>색상</th><th>수정</th><th>삭제</th></tr></thead><tbody>` +
+    list.map((item, i) => {
+      const color = item.color || '#1A73E8';
+      const isEditing = _editingSchoolEvtId === item.id;
+      return `<tr style="${isEditing ? 'background:var(--primary-lt)' : ''}">
+        <td>${i+1}</td>
+        <td>${esc(item.date)}</td>
+        <td style="font-weight:600;color:${color}">${esc(item.name)}</td>
+        <td>${esc(repeatLabel[item.repeat] || '반복 없음')}</td>
+        <td><span style="display:inline-block;width:14px;height:14px;border-radius:50%;background:${color};vertical-align:middle"></span></td>
+        <td><button class="btn btn-sm" style="padding:2px 8px;font-size:.72rem;background:var(--primary-lt);color:var(--primary)" onclick="adminEditSchoolEvt('${esc(item.id)}')">${isEditing ? '수정 중' : '수정'}</button></td>
+        <td><button class="btn btn-sm btn-danger" style="padding:2px 8px;font-size:.72rem" onclick="adminDeleteSchoolEvt('${esc(item.id)}')">삭제</button></td>
+      </tr>`;
+    }).join('') + `</tbody></table>`;
 }
 
 async function adminApplySchoolEvts() {
@@ -6585,9 +6684,10 @@ async function adminApplySchoolEvts() {
   let success = 0, fail = 0;
   for (const item of list) {
     try {
+      const color = item.color || '#1A73E8';
       const body = {
         summary: item.name,
-        description: '[학교일정]',
+        description: `[학교일정][color:${color}]`,
         start: { date: item.date },
         end: { date: item.date }
       };
