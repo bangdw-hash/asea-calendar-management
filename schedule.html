@@ -6098,7 +6098,7 @@ function showAdminTab(tab) {
   });
   if (tab === 'access') loadAccessRequests();
   if (tab === 'consent') loadPrivacyConsents();
-  if (tab === 'school') { _renderSchoolEvtList(); _initSchoolEvtColorPicker(); }
+  if (tab === 'school') { _schoolEvtsCache = null; _renderSchoolEvtList(); _initSchoolEvtColorPicker(); }
   if (tab === 'design') _renderDesignPanel();
 }
 
@@ -6522,8 +6522,7 @@ function initCtxMenuListeners() {
   document.addEventListener('keydown', e => { if (e.key==='Escape') closeEvtCtxMenu(); });
 }
 
-/* ══════════════ SCHOOL EVENTS (admin) ══════════════ */
-const SCHOOL_EVTS_KEY = 'asea_school_evts';
+/* ══════════════ SCHOOL EVENTS (Supabase) ══════════════ */
 const SCHOOL_EVT_COLORS = [
   { hex: '#1A73E8', label: '파란색' },
   { hex: '#16a34a', label: '초록색' },
@@ -6536,12 +6535,17 @@ const SCHOOL_EVT_COLORS = [
 ];
 let _editingSchoolEvtId = null;
 let _schoolEvtFormColor = '#1A73E8';
+let _schoolEvtsCache = null;
 
-function _loadSchoolEvts() {
-  try { return JSON.parse(localStorage.getItem(SCHOOL_EVTS_KEY) || '[]'); } catch(_) { return []; }
-}
-function _saveSchoolEvts(list) {
-  try { localStorage.setItem(SCHOOL_EVTS_KEY, JSON.stringify(list)); } catch(_) {}
+async function _loadSchoolEvts() {
+  try {
+    const r = await fetch(`${SB_URL}/rest/v1/school_events?select=*&order=date.asc`, {
+      headers: { apikey: SB_ANON, Authorization: 'Bearer ' + SB_ANON }
+    });
+    if (!r.ok) return _schoolEvtsCache || [];
+    _schoolEvtsCache = await r.json();
+    return _schoolEvtsCache;
+  } catch(_) { return _schoolEvtsCache || []; }
 }
 
 function _schoolEvtColorFromDesc(desc) {
@@ -6567,36 +6571,51 @@ function _initSchoolEvtColorPicker() {
   ).join('');
 }
 
-function adminSaveSchoolEvt() {
+async function adminSaveSchoolEvt() {
   const date = document.getElementById('school-evt-date').value.trim();
   const name = document.getElementById('school-evt-name').value.trim();
   const repeat = document.getElementById('school-evt-repeat').value;
   if (!date) { showToast('날짜를 입력해 주세요.', 'error'); return; }
   if (!name) { showToast('일정 명칭을 입력해 주세요.', 'error'); return; }
-  const list = _loadSchoolEvts();
-  if (_editingSchoolEvtId) {
-    const idx = list.findIndex(x => x.id === _editingSchoolEvtId);
-    if (idx !== -1) list[idx] = { ...list[idx], date, name, repeat, color: _schoolEvtFormColor };
-    _editingSchoolEvtId = null;
-  } else {
-    list.push({ id: Date.now().toString(36), date, name, repeat, color: _schoolEvtFormColor });
-  }
-  _saveSchoolEvts(list);
-  document.getElementById('school-evt-name').value = '';
-  document.getElementById('school-evt-date').value = '';
-  document.getElementById('school-evt-repeat').value = 'none';
   const saveBtn = document.getElementById('school-evt-save-btn');
   const cancelBtn = document.getElementById('school-evt-cancel-btn');
-  if (saveBtn) saveBtn.textContent = '저장';
-  if (cancelBtn) cancelBtn.style.display = 'none';
-  _schoolEvtFormColor = '#1A73E8';
-  _initSchoolEvtColorPicker();
-  _renderSchoolEvtList();
-  showToast('저장되었습니다. 캘린더에 반영하려면 "캘린더에 반영" 버튼을 클릭하세요.', 'success');
+  if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = '저장 중...'; }
+  try {
+    if (_editingSchoolEvtId) {
+      const r = await fetch(`${SB_URL}/rest/v1/school_events?id=eq.${encodeURIComponent(_editingSchoolEvtId)}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', apikey: SB_ANON, Authorization: 'Bearer ' + SB_ANON }
+      , body: JSON.stringify({ date, name, repeat, color: _schoolEvtFormColor }) });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      _editingSchoolEvtId = null;
+    } else {
+      const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+      const r = await fetch(`${SB_URL}/rest/v1/school_events`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', apikey: SB_ANON, Authorization: 'Bearer ' + SB_ANON, Prefer: 'return=minimal' },
+        body: JSON.stringify({ id, date, name, repeat, color: _schoolEvtFormColor })
+      });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+    }
+    document.getElementById('school-evt-name').value = '';
+    document.getElementById('school-evt-date').value = '';
+    document.getElementById('school-evt-repeat').value = 'none';
+    if (saveBtn) saveBtn.textContent = '저장';
+    if (cancelBtn) cancelBtn.style.display = 'none';
+    _schoolEvtFormColor = '#1A73E8';
+    _initSchoolEvtColorPicker();
+    _schoolEvtsCache = null;
+    await _renderSchoolEvtList();
+    showToast('저장되었습니다. 캘린더에 반영하려면 "캘린더에 반영" 버튼을 클릭하세요.', 'success');
+  } catch(e) {
+    showToast('저장 실패: ' + e.message, 'error');
+  } finally {
+    if (saveBtn) { saveBtn.disabled = false; if (!_editingSchoolEvtId) saveBtn.textContent = '저장'; }
+  }
 }
 
 function adminEditSchoolEvt(id) {
-  const list = _loadSchoolEvts();
+  const list = _schoolEvtsCache || [];
   const item = list.find(x => x.id === id);
   if (!item) return;
   _editingSchoolEvtId = id;
@@ -6627,26 +6646,42 @@ function adminCancelSchoolEvtEdit() {
   _renderSchoolEvtList();
 }
 
-function adminDeleteSchoolEvt(id) {
+async function adminDeleteSchoolEvt(id) {
   if (_editingSchoolEvtId === id) adminCancelSchoolEvtEdit();
-  const list = _loadSchoolEvts().filter(x => x.id !== id);
-  _saveSchoolEvts(list);
+  const r = await fetch(`${SB_URL}/rest/v1/school_events?id=eq.${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+    headers: { apikey: SB_ANON, Authorization: 'Bearer ' + SB_ANON }
+  });
+  if (!r.ok) { showToast('삭제 실패', 'error'); return; }
+  _schoolEvtsCache = null;
   _renderSchoolEvtList();
 }
 
-function adminClearSchoolEvts() {
+async function adminClearSchoolEvts() {
   if (!confirm('저장된 학교 일정을 모두 삭제하시겠습니까?')) return;
   _editingSchoolEvtId = null;
-  _saveSchoolEvts([]);
+  const r = await fetch(`${SB_URL}/rest/v1/school_events?id=neq.''`, {
+    method: 'DELETE',
+    headers: { apikey: SB_ANON, Authorization: 'Bearer ' + SB_ANON }
+  });
+  if (!r.ok) { showToast('삭제 실패', 'error'); return; }
+  _schoolEvtsCache = null;
   _renderSchoolEvtList();
 }
 
-function _renderSchoolEvtList() {
-  const list = _loadSchoolEvts();
+async function _renderSchoolEvtList() {
   const listEl = document.getElementById('school-evt-list');
   const emptyEl = document.getElementById('school-evt-empty');
   const actionsEl = document.getElementById('school-evt-actions');
   if (!listEl) return;
+  let list;
+  if (_schoolEvtsCache) {
+    list = _schoolEvtsCache;
+  } else {
+    listEl.innerHTML = '<div style="text-align:center;padding:16px;color:var(--g400);font-size:.82rem">불러오는 중...</div>';
+    if (emptyEl) emptyEl.hidden = true;
+    list = await _loadSchoolEvts();
+  }
   if (!list.length) {
     listEl.innerHTML = '';
     if (emptyEl) emptyEl.hidden = false;
@@ -6673,7 +6708,7 @@ function _renderSchoolEvtList() {
 }
 
 async function adminApplySchoolEvts() {
-  const list = _loadSchoolEvts();
+  const list = _schoolEvtsCache || await _loadSchoolEvts();
   if (!list.length) { showToast('저장된 학교 일정이 없습니다.', 'error'); return; }
   if (!_token || !_tokenHasWrite) {
     showToast('캘린더 반영은 Google 로그인(쓰기 권한) 후 이용 가능합니다.', 'error');
