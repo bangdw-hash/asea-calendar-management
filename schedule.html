@@ -245,6 +245,7 @@ html,body{height:100%;
 .day-cell.sun .day-num{color:var(--color-error)}
 .day-cell.sat .day-num{color:var(--color-accent)}
 .day-holiday{font-size:var(--font-sm);font-weight:600;color:var(--color-error);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;flex:1}
+.day-school-evt{font-size:var(--font-sm);font-weight:600;color:var(--primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .day-cell.holiday .day-num{color:var(--color-error)!important}
 .day-cell.holiday .day-dow{color:var(--color-error)!important}
 .day-cell.holiday .day-holiday{color:var(--color-error)}
@@ -994,6 +995,7 @@ html,body{height:100%;
   .month-week-row .day-cell:last-child .day-num{color:var(--color-accent)!important}
   /* holiday labels */
   .day-holiday{color:#DC2626!important;font-size:6.5pt;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .day-school-evt{color:#1A73E8!important;font-size:6.5pt;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .day-cell.holiday .day-num{color:#DC2626!important}
   .day-cell.holiday .day-dow{color:#DC2626!important}
   /* event chips: 1-line truncation keeps cells compact on A4 */
@@ -2888,10 +2890,13 @@ function renderMonth(wrap) {
       const dateKey = `${y}-${String(m+1).padStart(2,'0')}-${String(cell.d).padStart(2,'0')}`;
       const holiday = _holidays[dateKey];
       const holidayHtml = holiday ? `<span class="day-holiday">${esc(fmtHolidayName(holiday))}</span>` : '';
-      const numEl = `<div class="day-cell-hdr"><span class="day-num">${cell.d}</span><span class="day-dow">${WEEKDAYS[c]}</span>${holidayHtml}</div>`;
       const allCellEvts = (cell.evts || []);
-      const visEvts = (isMob && allCellEvts.length > MAX_MOB) ? allCellEvts.slice(0, MAX_MOB) : allCellEvts;
-      const moreCount = (isMob && allCellEvts.length > MAX_MOB) ? allCellEvts.length - MAX_MOB : 0;
+      const schoolEvts = allCellEvts.filter(ev => ev.description && ev.description.includes('[학교일정]'));
+      const regularEvts = allCellEvts.filter(ev => !(ev.description && ev.description.includes('[학교일정]')));
+      const schoolHtml = schoolEvts.map(ev => `<span class="day-school-evt">${esc(ev.summary||'')}</span>`).join('');
+      const numEl = `<div class="day-cell-hdr"><span class="day-num">${cell.d}</span><span class="day-dow">${WEEKDAYS[c]}</span>${holidayHtml}${schoolHtml}</div>`;
+      const visEvts = (isMob && regularEvts.length > MAX_MOB) ? regularEvts.slice(0, MAX_MOB) : regularEvts;
+      const moreCount = (isMob && regularEvts.length > MAX_MOB) ? regularEvts.length - MAX_MOB : 0;
       const dotsHtml = visEvts.map(ev => renderEvtItemHTML(ev, true)).join('');
       const linkedHtml = (_linkedItems[dateKey]||[]).map(li=>`<span class="evt-dot-wrap"><span class="evt-dot rv-linked" style="background:${li.classroom_color||'#1A73E8'};--rv-color:${li.classroom_color||'#1A73E8'};cursor:pointer" title="${esc(li.label)}" data-linked-id="${li.id||''}" data-rv-id="${li.reservation_id||''}" data-batch-id="${li.reservations?.batch_id||''}" onclick="event.stopPropagation();openRvDetail('${li.reservation_id||''}','${esc(li.label)}','${li.classroom_color||'#1A73E8'}','${li.id||''}')">${esc(li.label)}</span></span>`).join('');
       const moreHtml = moreCount ? `<span class="evt-more-chip" onclick="event.stopPropagation();showDayEvts(${y},${m},${cell.d})">+${moreCount} 더보기</span>` : '';
