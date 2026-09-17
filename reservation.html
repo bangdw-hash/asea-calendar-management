@@ -367,8 +367,10 @@ header{
 .room-row{display:flex;gap:8px;align-items:center}
 .room-dot{width:12px;height:12px;border-radius:50%;flex-shrink:0}
 .date-tags{display:flex;flex-wrap:wrap;gap:4px;align-items:center}
-.date-tag{background:var(--primary-lt);color:var(--primary-dk);padding:3px 9px;border-radius:var(--r);font-size:11px;font-weight:700;cursor:pointer;user-select:none;-webkit-user-select:none;touch-action:none}
+.date-tag{background:var(--primary-lt);color:var(--primary-dk);padding:3px 6px 3px 9px;border-radius:var(--r);font-size:11px;font-weight:700;cursor:default;user-select:none;-webkit-user-select:none;touch-action:none;display:inline-flex;align-items:center;gap:4px}
 .date-tag:active{opacity:.7}
+.date-tag-del{background:none;border:none;color:var(--primary-dk);cursor:pointer;font-size:14px;line-height:1;padding:0;margin:0;display:flex;align-items:center;opacity:.6;font-family:var(--font)}
+.date-tag-del:hover{color:var(--red);opacity:1}
 .add-date-btn{padding:3px 10px;border-radius:var(--r);font-size:11px;font-weight:700;cursor:pointer;border:1.5px dashed var(--primary);background:#fff;color:var(--primary)}
 .add-date-btn:hover{background:var(--primary-lt)}
 .date-ctx{position:fixed;background:#fff;border:1px solid var(--border);border-radius:var(--r);box-shadow:0 4px 20px rgba(0,0,0,.18);padding:4px;display:flex;flex-direction:column;gap:2px;z-index:9999;min-width:100px;animation:dtCtxIn .12s ease}
@@ -470,8 +472,8 @@ header{
 @keyframes ocr-spin{to{transform:rotate(360deg)}}
 
 /* ── NLP 자연어 입력 ── */
-.nlp-input-wrap{display:flex;gap:6px;align-items:center}
-.nlp-input-wrap .fi{flex:1}
+.nlp-input-wrap{display:flex;gap:6px;align-items:flex-start}
+.nlp-input-wrap .fi,.nlp-input-wrap .fta{flex:1}
 .nlp-send-btn{flex-shrink:0;padding:8px 14px;border-radius:var(--r);background:var(--primary);color:#fff;border:none;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font);transition:background .13s,transform .1s,box-shadow .13s;box-shadow:0 1px 4px rgba(26,115,232,.35);white-space:nowrap}
 .nlp-send-btn:hover{background:var(--primary-dk);box-shadow:0 2px 8px rgba(26,115,232,.45)}
 .nlp-send-btn:active{transform:scale(.96)}
@@ -680,24 +682,35 @@ header{
         <div class="ocr-hint">강의실 예약 관련 이미지(공문, 허가서, 프로그램 일정표 등)</div>
       </div>
       <input type="file" id="ocrFileIn" accept="image/*" style="display:none" onchange="ocrFile(event)">
+      <!-- 날짜 보완 프롬프트 (이미지 로드 후 표시) -->
+      <div id="ocrDatePromptWrap" hidden style="margin-top:8px">
+        <div style="font-size:11px;color:var(--gray);margin-bottom:4px">날짜 보완 안내 <span style="font-weight:400;color:var(--gray)">(선택) — 이미지에 연도가 없거나 날짜 해석에 추가 안내가 필요한 경우</span></div>
+        <input type="text" id="ocrDatePrompt" class="fi" style="font-size:12px" placeholder="예: 이 일정은 2026년도 일정입니다. 날짜 발췌 시 이를 기반으로 해주세요." autocomplete="off">
+      </div>
       <div id="ocrStatus" class="ocr-status"></div>
     </div>
 
-    <!-- 자연어 AI 입력 -->
+    <div class="fg" id="fgDates">
+      <div class="fl" style="display:flex;align-items:center;justify-content:space-between">
+        <span>선택 날짜 <span class="req">*</span></span>
+        <button type="button" id="clearAllDatesBtn" class="btn btn-xs" style="display:none;background:none;border:none;color:var(--gray);padding:0;font-size:11px" onclick="clearAllDates()">전체 삭제</button>
+      </div>
+      <div class="date-tags" id="dateTagsArea"></div>
+      <button type="button" class="add-date-btn" onclick="openMiniCal()">+ 날짜 추가</button>
+    </div>
+
+    <!-- 예약 내용 자동 입력 (두 번째 AI 프롬프트) -->
     <div class="fg" id="fgNlp">
+      <div class="fl" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px">
+        <span>예약 내용 자동 입력 <span style="font-size:10px;color:var(--gray);font-weight:400">(텍스트 붙여넣기 후 AI 적용)</span></span>
+      </div>
       <div class="nlp-input-wrap">
-        <input type="text" id="nlpInput" class="fi" placeholder="자연어로 일정을 설명하세요  예: 9월 15일부터 20일, 오전 9시~오후 6시, 신변보호사 교육" autocomplete="off" onkeydown="if(event.key==='Enter')runNlp()">
-        <button type="button" class="nlp-send-btn" id="nlpBtn" onclick="runNlp()">
+        <textarea id="nlpInput" class="fta" rows="5" style="resize:vertical;font-size:12px;line-height:1.5" placeholder="예약 정보를 아래 형식으로 붙여넣으세요&#10;&#10;[대관/위더스] 301호 08:00~18:00&#10;대관 - 위더스원격평생교육원 (주)위더스교육&#10;301호&#10;기획처&#10;대면 평생교육과정&#10;방시원 차장&#10;대관측 담당자: 김정현 / 010-5713-0419" autocomplete="off"></textarea>
+        <button type="button" class="nlp-send-btn" id="nlpBtn" onclick="runNlp()" style="align-self:flex-end;margin-bottom:2px">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
           AI
         </button>
       </div>
-    </div>
-
-    <div class="fg" id="fgDates">
-      <div class="fl">선택 날짜 <span class="req">*</span></div>
-      <div class="date-tags" id="dateTagsArea"></div>
-      <button type="button" class="add-date-btn" onclick="openMiniCal()">+ 날짜 추가</button>
     </div>
 
     <div class="fg">
@@ -2045,13 +2058,24 @@ function openDrawer(dateStr, rental) {
 function renderDateTags() {
   const area = document.getElementById('dateTagsArea');
   area.innerHTML = '';
+  const clearAllBtn = document.getElementById('clearAllDatesBtn');
+  if (clearAllBtn) clearAllBtn.style.display = selDates.length > 0 ? '' : 'none';
   if (!selDates.length) return;
 
   const mkTag = (d, label) => {
     const sp = document.createElement('span');
     sp.className = 'date-tag';
-    sp.textContent = label;
     sp.dataset.d = d;
+    const txt = document.createElement('span');
+    txt.textContent = label;
+    sp.appendChild(txt);
+    const xBtn = document.createElement('button');
+    xBtn.type = 'button';
+    xBtn.className = 'date-tag-del';
+    xBtn.innerHTML = '&times;';
+    xBtn.title = '이 날짜 삭제';
+    xBtn.onclick = (ev) => { ev.stopPropagation(); removeSingleDate(d); };
+    sp.appendChild(xBtn);
     attachDateTagLongPress(sp);
     return sp;
   };
@@ -2072,6 +2096,13 @@ function renderDateTags() {
   } else {
     selDates.forEach(d => area.appendChild(mkTag(d, fmtD(d))));
   }
+}
+
+function clearAllDates() {
+  selDates = []; rangeStart = null;
+  renderDateTags();
+  updMultiBanner();
+  renderCal();
 }
 
 /* ── 날짜 칩 롱프레스 컨텍스트 메뉴 ── */
@@ -4208,8 +4239,25 @@ async function runNlpRefine() {
 async function _callNlpAI(input, prev) {
   const today = toStr(new Date());
   const prompt = prev
-    ? `오늘: ${today}\n기존 파싱 결과: ${JSON.stringify(prev)}\n추가 지시: "${input}"\n위 지시를 반영하여 JSON을 수정해주세요. 기존 값에서 언급되지 않은 필드는 유지하세요.\n\nJSON 형식:\n{"classroom":"강의실명","dates":["YYYY-MM-DD"],"time_start":"HH:MM","time_end":"HH:MM","purpose":"목적","dept":null,"requester_name":null,"contact_phone":null}\nJSON만 출력하세요.`
-    : `오늘: ${today}\n다음 설명에서 강의실 예약 정보를 JSON으로 추출하세요.\n설명: "${input}"\n\nJSON 형식:\n{"classroom":"강의실명(예:301호)","dates":["YYYY-MM-DD"],"time_start":"HH:MM","time_end":"HH:MM","purpose":"목적","dept":null,"requester_name":null,"contact_phone":null}\n규칙: 날짜 범위면 모든 날짜 나열, 시간 없으면 null, 강의실 언급 없으면 null, JSON만 출력하세요.`;
+    ? `오늘: ${today}\n기존 파싱 결과: ${JSON.stringify(prev)}\n추가 지시: "${input}"\n위 지시를 반영하여 JSON을 수정해주세요. 기존 값에서 언급되지 않은 필드는 유지하세요.\n\nJSON 형식:\n{"classroom":"강의실명","dates":["YYYY-MM-DD"],"time_start":"HH:MM","time_end":"HH:MM","purpose":"목적","dept":null,"requester_name":null,"contact_phone":null,"notes":null}\nJSON만 출력하세요.`
+    : `오늘: ${today}\n다음 예약 정보 텍스트에서 강의실 예약 정보를 JSON으로 추출하세요.
+
+예약 정보 텍스트:
+"${input}"
+
+JSON 형식:
+{"classroom":"강의실명(예:301호)","dates":["YYYY-MM-DD"],"time_start":"HH:MM","time_end":"HH:MM","purpose":"사용목적","dept":"부서명","requester_name":"신청자이름(직함제외)","contact_phone":"연락처","notes":"비고내용"}
+
+파싱 규칙:
+- "[대관/기관약칭] 호실 HH:MM~HH:MM" 첫 줄에서 강의실 호실과 시작/종료 시간 추출
+- "대관 - 기관전체명 (법인명)" 형식에서 기관 전체명 추출
+- purpose는 기관명 + 과정명을 조합하여 작성 (예: "위더스원격평생교육원 대면 평생교육과정")
+- 부서명은 기획처, 교학처 등 명시된 값 추출
+- requester_name에서 차장, 과장 등 직함은 제거하고 이름만
+- "대관측 담당자: 이름 / 전화번호" 또는 연락처 정보는 notes에 포함
+- 날짜가 없으면 dates는 빈 배열 []
+- 없는 필드는 null
+- JSON만 출력하세요.`;
 
   const res = await claudeFetch({ model: 'claude-haiku-4-5-20251001', max_tokens: 600, messages: [{ role: 'user', content: prompt }] });
   if (!res.ok) throw new Error(`서버 오류 ${res.status}`);
@@ -4230,6 +4278,7 @@ function _showNlpPreview(d) {
   if (d.dept) rows.push(`<div class="nlp-row"><span>부서</span><span>${esc(d.dept)}</span></div>`);
   if (d.requester_name) rows.push(`<div class="nlp-row"><span>신청자</span><span>${esc(d.requester_name)}</span></div>`);
   if (d.contact_phone) rows.push(`<div class="nlp-row"><span>연락처</span><span>${esc(d.contact_phone)}</span></div>`);
+  if (d.notes) rows.push(`<div class="nlp-row"><span>비고</span><span>${esc(d.notes)}</span></div>`);
   el.innerHTML = rows.length ? rows.join('') : '<div style="color:var(--gray);font-size:12px;padding:4px 0">추출된 정보가 없습니다.</div>';
 }
 
@@ -4238,7 +4287,8 @@ function applyNlpResult(mode) {
   closeNlpModal();
   const merge = (mode === 'merge');
   _ocrApply(_nlpParsed, false, merge);
-  document.getElementById('nlpInput').value = '';
+  const nlpEl = document.getElementById('nlpInput');
+  if (nlpEl) nlpEl.value = '';
 }
 
 function closeNlpModal() { hideM('nlpModal'); }
@@ -4272,6 +4322,8 @@ function _ocrLoadFile(file) {
         <button type="button" class="btn btn-primary btn-sm" onclick="runOcr(event)">AI OCR 정보 추출</button>
         <button type="button" class="btn btn-outline btn-sm" onclick="clearOcrZone()">제거</button>
       </div>`;
+    const promptWrap = document.getElementById('ocrDatePromptWrap');
+    if (promptWrap) promptWrap.hidden = false;
     document.getElementById('ocrStatus').textContent = '';
   };
   reader.readAsDataURL(file);
@@ -4285,6 +4337,8 @@ function clearOcrZone() {
     <div style="font-size:12px;color:var(--gray);margin-top:4px">이미지 붙여넣기 또는 클릭하여 업로드</div>
     <div class="ocr-hint">강의실 예약 관련 이미지(공문, 허가서, 프로그램 일정표 등)</div>`;
   zone.onclick = () => document.getElementById('ocrFileIn').click();
+  const promptWrap = document.getElementById('ocrDatePromptWrap');
+  if (promptWrap) { promptWrap.hidden = true; const inp = document.getElementById('ocrDatePrompt'); if (inp) inp.value = ''; }
   document.getElementById('ocrStatus').textContent = '';
 }
 
@@ -4308,35 +4362,15 @@ async function runOcr(e) {
   if (!_ocrB64) return;
   const status = document.getElementById('ocrStatus');
   const isRental = document.getElementById('fgRentalOrg') && !document.getElementById('fgRentalOrg').hidden;
+  const dateHint = (document.getElementById('ocrDatePrompt')?.value || '').trim();
+  const hintLine = dateHint ? `\n추가 안내: ${dateHint}` : '';
 
   status.innerHTML = '<span class="ocr-spinner"></span>AI가 이미지 정보를 추출 중...';
   status.className = 'ocr-status';
 
   const prompt = isRental
-    ? `이 이미지는 강의실 대관 예약 관련 문서입니다. 아래 정보를 JSON으로 추출해주세요 (없으면 null):
-{
-  "dates": ["YYYY-MM-DD", ...],
-  "time_start": "HH:MM",
-  "time_end": "HH:MM",
-  "org_name": "외부기관명",
-  "course_name": "과정명/강좌명",
-  "daily_fee": 숫자(없으면 null),
-  "purpose": "사용목적",
-  "contact_name": "담당자명",
-  "contact_phone": "연락처"
-}
-JSON만 출력하세요. 날짜가 여러 개면 모두 포함, 기간이면 모든 날짜를 나열하세요.`
-    : `이 이미지는 강의실 예약 관련 문서입니다. 아래 정보를 JSON으로 추출해주세요 (없으면 null):
-{
-  "dates": ["YYYY-MM-DD", ...],
-  "time_start": "HH:MM",
-  "time_end": "HH:MM",
-  "purpose": "사용목적",
-  "dept": "부서명",
-  "requester_name": "신청자명",
-  "contact_phone": "연락처"
-}
-JSON만 출력하세요. 날짜가 여러 개면 모두 포함, 기간이면 모든 날짜를 나열하세요.`;
+    ? `이 이미지는 강의실 대관 예약 관련 문서입니다.${hintLine}\n아래 정보를 JSON으로 추출해주세요 (없으면 null):\n{\n  "dates": ["YYYY-MM-DD", ...],\n  "time_start": "HH:MM",\n  "time_end": "HH:MM",\n  "org_name": "외부기관명",\n  "course_name": "과정명/강좌명",\n  "daily_fee": 숫자(없으면 null),\n  "purpose": "사용목적",\n  "contact_name": "담당자명",\n  "contact_phone": "연락처"\n}\nJSON만 출력하세요. 날짜가 여러 개면 모두 포함, 기간이면 모든 날짜를 나열하세요.`
+    : `이 이미지는 강의실 예약 관련 문서입니다.${hintLine}\n아래 정보를 JSON으로 추출해주세요 (없으면 null):\n{\n  "dates": ["YYYY-MM-DD", ...],\n  "time_start": "HH:MM",\n  "time_end": "HH:MM",\n  "purpose": "사용목적",\n  "dept": "부서명",\n  "requester_name": "신청자명",\n  "contact_phone": "연락처"\n}\nJSON만 출력하세요. 날짜가 여러 개면 모두 포함, 기간이면 모든 날짜를 나열하세요.`;
 
   try {
     const res = await claudeFetch({
@@ -4413,6 +4447,15 @@ function _ocrApply(d, isRental, merge) {
   if (d.dept) {
     const sel = document.getElementById('deptSel');
     if (sel) { for (const opt of sel.options) { if (opt.text.includes(d.dept)) { sel.value = opt.value; break; } } }
+  }
+  // notes → 비고란 자동 입력 및 섹션 펼치기
+  if (d.notes) {
+    const notesIn = document.getElementById('notesIn');
+    if (notesIn && (merge ? !notesIn.value : true)) {
+      notesIn.value = d.notes;
+      const notesBody = document.getElementById('notesBody');
+      if (notesBody && notesBody.hidden) toggleNotes();
+    }
   }
   schedCC();
 }
