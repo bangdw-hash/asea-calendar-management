@@ -682,10 +682,10 @@ header{
         <div class="ocr-hint">강의실 예약 관련 이미지(공문, 허가서, 프로그램 일정표 등)</div>
       </div>
       <input type="file" id="ocrFileIn" accept="image/*" style="display:none" onchange="ocrFile(event)">
-      <!-- 날짜 보완 프롬프트 (이미지 로드 후 표시) -->
-      <div id="ocrDatePromptWrap" hidden style="margin-top:8px">
-        <div style="font-size:11px;color:var(--gray);margin-bottom:4px">날짜 보완 안내 <span style="font-weight:400;color:var(--gray)">(선택) — 이미지에 연도가 없거나 날짜 해석에 추가 안내가 필요한 경우</span></div>
-        <input type="text" id="ocrDatePrompt" class="fi" style="font-size:12px" placeholder="예: 이 일정은 2026년도 일정입니다. 날짜 발췌 시 이를 기반으로 해주세요." autocomplete="off">
+      <!-- 날짜 추출 추가 지시 (항상 표시) -->
+      <div id="ocrDatePromptWrap" style="margin-top:8px">
+        <div style="font-size:11px;color:var(--gray);margin-bottom:4px">AI 추가 지시 <span style="font-weight:400;color:var(--gray)">(선택) — 날짜 조건·제외·연도 등 원하는 추출 방식을 자유롭게 입력</span></div>
+        <input type="text" id="ocrDatePrompt" class="fi" style="font-size:12px" placeholder="예: 2026년 기준으로 발췌 / 3월 5일은 제외하고 나머지만 / 월~금만 추출" autocomplete="off">
       </div>
       <div id="ocrStatus" class="ocr-status"></div>
     </div>
@@ -4322,8 +4322,6 @@ function _ocrLoadFile(file) {
         <button type="button" class="btn btn-primary btn-sm" onclick="runOcr(event)">AI OCR 정보 추출</button>
         <button type="button" class="btn btn-outline btn-sm" onclick="clearOcrZone()">제거</button>
       </div>`;
-    const promptWrap = document.getElementById('ocrDatePromptWrap');
-    if (promptWrap) promptWrap.hidden = false;
     document.getElementById('ocrStatus').textContent = '';
   };
   reader.readAsDataURL(file);
@@ -4337,8 +4335,7 @@ function clearOcrZone() {
     <div style="font-size:12px;color:var(--gray);margin-top:4px">이미지 붙여넣기 또는 클릭하여 업로드</div>
     <div class="ocr-hint">강의실 예약 관련 이미지(공문, 허가서, 프로그램 일정표 등)</div>`;
   zone.onclick = () => document.getElementById('ocrFileIn').click();
-  const promptWrap = document.getElementById('ocrDatePromptWrap');
-  if (promptWrap) { promptWrap.hidden = true; const inp = document.getElementById('ocrDatePrompt'); if (inp) inp.value = ''; }
+  const inp = document.getElementById('ocrDatePrompt'); if (inp) inp.value = '';
   document.getElementById('ocrStatus').textContent = '';
 }
 
