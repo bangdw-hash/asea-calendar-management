@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ASEA 스마트 안내데스크</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap">
+<script src="https://cdn.jsdelivr.net/npm/fuse.js@7.0.0/dist/fuse.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --color-bg:#F0F9FF;
+  --color-card:#FFFFFF;
+  --color-accent:#1A73E8;
+  --color-accent-dk:#1557B0;
+  --color-accent-lt:#E8F0FE;
+  --color-text:#202124;
+  --color-text-sec:#5F6368;
+  --color-border:#E8EAED;
+  --green:#16a34a;--green-lt:#dcfce7;
+  --orange:#ea580c;--orange-lt:#ffedd5;
+  --red:#dc2626;--red-lt:#fee2e2;
+  --g100:#F1F3F4;--g200:#E8EAED;--g300:#D2D5D9;--g500:#5F6368;
+  --r:6px;
+  --sh:0 2px 8px rgba(60,64,67,.12),0 2px 4px rgba(60,64,67,.08);
+  --sh-lg:0 8px 24px rgba(60,64,67,.14),0 4px 8px rgba(60,64,67,.10);
+  --header-h:56px;
+}
+html,body{min-height:100%;font-family:'Apple SD Gothic Neo','Noto Sans KR',-apple-system,sans-serif;
+  font-size:14px;background:var(--color-bg);color:var(--color-text);-webkit-font-smoothing:antialiased}
+
+/* ── HEADER ── */
+.hdr{height:var(--header-h);background:var(--color-card);
+  border-bottom:1px solid var(--color-border);
+  display:flex;align-items:center;padding:0 20px;
+  position:sticky;top:0;z-index:100;gap:10px}
+.hdr-logo{font-size:16px;font-weight:700;color:var(--color-text);letter-spacing:-.3px}
+.hdr-sub{font-size:11px;color:var(--color-text-sec)}
+.hdr-badge{margin-left:auto;font-size:11px;font-weight:600;
+  background:var(--color-accent-lt);color:var(--color-accent);
+  padding:3px 8px;border-radius:20px}
+
+/* ── HERO ── */
+.hero{padding:40px 20px 24px;text-align:center;max-width:680px;margin:0 auto}
+.hero-title{font-size:22px;font-weight:700;color:var(--color-text);margin-bottom:6px}
+.hero-desc{font-size:13px;color:var(--color-text-sec);margin-bottom:24px}
+
+.search-wrap{position:relative;display:flex;gap:0;box-shadow:var(--sh-lg);
+  border-radius:calc(var(--r) + 2px);overflow:hidden;background:var(--color-card);
+  border:1.5px solid var(--color-border);transition:border-color .2s,box-shadow .2s}
+.search-wrap:focus-within{border-color:var(--color-accent);box-shadow:0 0 0 3px rgba(26,115,232,.15),var(--sh-lg)}
+.search-icon{position:absolute;left:14px;top:50%;transform:translateY(-50%);
+  color:var(--g500);pointer-events:none;width:18px;height:18px}
+.search-input{flex:1;padding:14px 14px 14px 44px;font-size:15px;font-family:inherit;
+  border:none;outline:none;background:transparent;color:var(--color-text);min-width:0}
+.search-input::placeholder{color:var(--g500)}
+.search-clear{background:none;border:none;cursor:pointer;padding:0 10px;
+  color:var(--g300);display:none;align-items:center;transition:color .15s}
+.search-clear:hover{color:var(--g500)}
+.search-clear.visible{display:flex}
+.search-btn{padding:0 20px;background:var(--color-accent);color:#fff;
+  border:none;cursor:pointer;font-size:14px;font-weight:600;font-family:inherit;
+  transition:background .15s;flex-shrink:0}
+.search-btn:hover{background:var(--color-accent-dk)}
+
+/* ── EXAMPLE CHIPS ── */
+.chips-label{font-size:11px;color:var(--g500);margin:16px 0 8px;text-align:left}
+.chips{display:flex;flex-wrap:wrap;gap:7px}
+.chip{padding:6px 12px;background:var(--color-card);border:1px solid var(--color-border);
+  border-radius:20px;font-size:12px;color:var(--color-text-sec);cursor:pointer;
+  transition:background .15s,border-color .15s,color .15s;white-space:nowrap}
+.chip:hover{background:var(--color-accent-lt);border-color:var(--color-accent);color:var(--color-accent)}
+
+/* ── MAIN CONTENT ── */
+.main{max-width:680px;margin:0 auto;padding:0 20px 60px}
+
+/* ── SECTION FILTER ── */
+.filter-bar{display:flex;gap:6px;flex-wrap:wrap;padding:16px 0 8px;overflow-x:auto}
+.filter-btn{padding:5px 13px;border-radius:20px;border:1px solid var(--color-border);
+  font-size:12px;font-weight:500;background:var(--color-card);color:var(--g500);
+  cursor:pointer;transition:all .15s;white-space:nowrap;font-family:inherit}
+.filter-btn:hover{border-color:var(--color-accent);color:var(--color-accent)}
+.filter-btn.active{background:var(--color-accent);color:#fff;border-color:var(--color-accent)}
+
+/* ── RESULTS ── */
+.results-meta{font-size:12px;color:var(--g500);padding:4px 0 12px}
+
+.qa-card{background:var(--color-card);border:1px solid var(--color-border);
+  border-radius:var(--r);padding:16px;margin-bottom:10px;
+  cursor:pointer;transition:box-shadow .15s,border-color .15s}
+.qa-card:hover{box-shadow:var(--sh);border-color:var(--g300)}
+.qa-card.open{box-shadow:var(--sh);border-color:var(--color-accent)}
+
+.qa-header{display:flex;align-items:flex-start;gap:10px}
+.qa-q{font-size:14px;font-weight:600;color:var(--color-text);flex:1;line-height:1.5}
+.qa-badges{display:flex;gap:5px;flex-shrink:0;align-items:center;margin-top:1px}
+.badge{font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;white-space:nowrap}
+.badge-a{background:var(--color-accent-lt);color:var(--color-accent)}
+.badge-b{background:var(--orange-lt);color:var(--orange)}
+.badge-c{background:var(--red-lt);color:var(--red)}
+.badge-sec{background:var(--g100);color:var(--g500)}
+
+.qa-chevron{color:var(--g300);flex-shrink:0;transition:transform .2s;margin-top:2px}
+.qa-card.open .qa-chevron{transform:rotate(180deg)}
+
+.qa-answer{display:none;margin-top:12px;padding-top:12px;
+  border-top:1px solid var(--color-border);font-size:13px;line-height:1.7;
+  color:var(--color-text-sec);white-space:pre-line}
+.qa-card.open .qa-answer{display:block}
+.qa-preview{display:block}
+.qa-full{display:none}
+.qa-card.open .qa-preview{display:none}
+.qa-card.open .qa-full{display:block}
+.qa-source{font-size:11px;color:var(--g500);margin-top:8px;padding-top:8px;
+  border-top:1px solid var(--g100)}
+
+/* ── AI FALLBACK BANNER ── */
+.ai-banner{background:var(--color-card);border:1.5px dashed var(--color-border);
+  border-radius:var(--r);padding:20px;text-align:center;margin-top:8px;display:none}
+.ai-banner.visible{display:block}
+.ai-banner-title{font-size:13px;font-weight:600;color:var(--color-text);margin-bottom:6px}
+.ai-banner-desc{font-size:12px;color:var(--g500);margin-bottom:14px}
+.btn-ai{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;
+  background:var(--color-accent);color:#fff;border:none;border-radius:var(--r);
+  font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:background .15s}
+.btn-ai:hover{background:var(--color-accent-dk)}
+.btn-ai-note{font-size:11px;color:var(--g500);margin-top:8px}
+
+/* ── EMPTY STATE ── */
+.empty{text-align:center;padding:48px 0;display:none}
+.empty.visible{display:block}
+.empty-icon{width:40px;height:40px;color:var(--g300);margin:0 auto 12px}
+.empty-title{font-size:14px;font-weight:600;color:var(--g500);margin-bottom:4px}
+.empty-desc{font-size:12px;color:var(--g300)}
+
+/* ── INITIAL STATE ── */
+.initial-section{padding-top:8px;display:block}
+.initial-section.hidden{display:none}
+.section-group-title{font-size:11px;font-weight:700;color:var(--g500);
+  letter-spacing:.06em;text-transform:uppercase;margin:20px 0 8px;padding-left:2px}
+.initial-list{display:flex;flex-direction:column;gap:0}
+.initial-item{padding:11px 12px;background:var(--color-card);border:1px solid var(--color-border);
+  border-radius:var(--r);margin-bottom:6px;cursor:pointer;
+  display:flex;align-items:center;gap:10px;transition:background .15s}
+.initial-item:hover{background:var(--color-accent-lt);border-color:var(--color-accent)}
+.initial-item-text{font-size:13px;color:var(--color-text);flex:1}
+.initial-item-badge{font-size:10px;color:var(--g500)}
+
+@media(max-width:480px){
+  .hero{padding:24px 16px 16px}
+  .hero-title{font-size:18px}
+  .main{padding:0 16px 60px}
+  .search-btn{padding:0 14px;font-size:13px}
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="hdr">
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+  </svg>
+  <div>
+    <div class="hdr-logo">ASEA 스마트 안내데스크</div>
+    <div class="hdr-sub">아세아항공직업전문학교 지식 검색</div>
+  </div>
+  <div class="hdr-badge" id="total-badge">373건</div>
+</header>
+
+<!-- HERO / SEARCH -->
+<div class="hero">
+  <div class="hero-title">무엇이 궁금하신가요?</div>
+  <div class="hero-desc">학점은행제 · 국비훈련 · 등록금 · 학사 업무 등 자주 묻는 질문을 검색하세요</div>
+
+  <div class="search-wrap">
+    <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+    </svg>
+    <input class="search-input" id="q" type="text"
+      placeholder="예: 학점은행제 환불, 수강 신청, 국민내일배움카드"
+      autocomplete="off" spellcheck="false" oninput="onInput()" onkeydown="if(event.key==='Enter')doSearch()">
+    <button class="search-clear" id="clear-btn" onclick="clearSearch()" title="지우기">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <button class="search-btn" onclick="doSearch()">검색</button>
+  </div>
+
+  <div class="chips-label">빠른 검색 예시</div>
+  <div class="chips">
+    <button class="chip" onclick="setQuery('학점은행제란')">학점은행제란</button>
+    <button class="chip" onclick="setQuery('등록금 환불')">등록금 환불</button>
+    <button class="chip" onclick="setQuery('국민내일배움카드')">국민내일배움카드</button>
+    <button class="chip" onclick="setQuery('수강 신청')">수강 신청</button>
+    <button class="chip" onclick="setQuery('증명서 발급')">증명서 발급</button>
+    <button class="chip" onclick="setQuery('휴학')">휴학</button>
+    <button class="chip" onclick="setQuery('기숙사')">기숙사</button>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- FILTER BAR -->
+  <div class="filter-bar" id="filter-bar">
+    <button class="filter-btn active" onclick="setFilter('all',this)">전체</button>
+    <button class="filter-btn" onclick="setFilter(0,this)">학점은행제</button>
+    <button class="filter-btn" onclick="setFilter(1,this)">국비훈련·NCS</button>
+    <button class="filter-btn" onclick="setFilter(2,this)">특강</button>
+    <button class="filter-btn" onclick="setFilter(3,this)">일반행정</button>
+    <button class="filter-btn" onclick="setFilter(4,this)">학사업무</button>
+  </div>
+
+  <!-- INITIAL STATE (검색 전) -->
+  <div class="initial-section" id="initial-section">
+    <div class="section-group-title">섹션별 대표 질문</div>
+    <div id="initial-list"></div>
+  </div>
+
+  <!-- RESULTS -->
+  <div id="results-meta" class="results-meta" style="display:none"></div>
+  <div id="results"></div>
+
+  <!-- EMPTY STATE -->
+  <div class="empty" id="empty">
+    <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+    </svg>
+    <div class="empty-title">검색 결과가 없습니다</div>
+    <div class="empty-desc">다른 키워드로 검색하거나 AI 검색을 이용해 보세요</div>
+  </div>
+
+  <!-- AI FALLBACK BANNER (Phase 2 placeholder) -->
+  <div class="ai-banner" id="ai-banner">
+    <div class="ai-banner-title">원하는 답변을 찾지 못하셨나요?</div>
+    <div class="ai-banner-desc">AI 시맨틱 검색으로 더 정확한 답변을 찾아드립니다</div>
+    <button class="btn-ai" onclick="requestAiSearch()">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 2a10 10 0 1 0 10 10"/><path d="M12 6v6l4 2"/><polyline points="22 6 22 2 18 2"/><line x1="18" y1="6" x2="22" y2="2"/>
+      </svg>
+      AI로 더 정확하게 검색
+    </button>
+    <div class="btn-ai-note">※ AI 검색은 추가 준비 중입니다 (Phase 2)</div>
+  </div>
+
+</div>
+
+<script>
+'use strict';
+(function(){
+  var DATA = [];
+  var fuse = null;
+  var activeFilter = 'all';
+  var currentQuery = '';
+
+  var SECTION_LABELS = ['학점은행제','국비훈련·NCS','특강','일반행정','학사업무'];
+  var CLASS_META = {
+    A:{label:'AI 즉시 답변',cls:'badge-a'},
+    B:{label:'담당자 확인',cls:'badge-b'},
+    C:{label:'내방 처리',cls:'badge-c'}
+  };
+
+  // 샘플 질문 (섹션별 3건)
+  var SAMPLES = [
+    [0,'학점은행제가 무엇인지 설명해달라'],
+    [0,'학점은행제로 취득 가능한 학위 종류가 무엇인가'],
+    [1,'국민내일배움카드가 무엇인가'],
+    [1,'국민내일배움카드 발급 자격은'],
+    [2,'특강 과정이란 무엇인가'],
+    [3,'등록금 환불 기준은'],
+    [3,'재학증명서 발급 방법은'],
+    [4,'휴학·복학 신청 방법과 기간은'],
+    [4,'장학금 신청 방법과 종류는'],
+  ];
+
+  function init(){
+    fetch('helpdesk_data.json')
+      .then(function(r){return r.json();})
+      .then(function(data){
+        DATA = data;
+        document.getElementById('total-badge').textContent = data.length + '건';
+        fuse = new Fuse(data, {
+          keys:[
+            {name:'question', weight:0.7},
+            {name:'answer',   weight:0.3}
+          ],
+          threshold: 0.4,
+          includeScore: true,
+          minMatchCharLength: 2,
+          ignoreLocation: true,
+        });
+        renderInitial();
+        // 데이터 로드 전 입력된 쿼리 재실행
+        if(document.getElementById('q').value.trim()){
+          doSearch();
+        }
+      })
+      .catch(function(){
+        document.getElementById('initial-list').innerHTML =
+          '<p style="font-size:13px;color:var(--g500);padding:16px 0">데이터를 불러올 수 없습니다.</p>';
+      });
+  }
+
+  function renderInitial(){
+    var el = document.getElementById('initial-list');
+    var html = '';
+    SAMPLES.forEach(function(s){
+      html += '<div class="initial-item" onclick="setQuery(\'' + esc(s[1]) + '\')">' +
+        '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--g300)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>' +
+        '<span class="initial-item-text">' + escHtml(s[1]) + '</span>' +
+        '<span class="initial-item-badge">' + SECTION_LABELS[s[0]] + '</span>' +
+        '</div>';
+    });
+    el.innerHTML = html;
+  }
+
+  window.onInput = function(){
+    var val = document.getElementById('q').value;
+    document.getElementById('clear-btn').classList.toggle('visible', val.length > 0);
+    if(!val.trim()){
+      clearResults();
+      return;
+    }
+    // 300ms 디바운스
+    clearTimeout(window._debounce);
+    window._debounce = setTimeout(doSearch, 300);
+  };
+
+  window.doSearch = function(){
+    var q = document.getElementById('q').value.trim();
+    if(!q){clearResults();return;}
+    currentQuery = q;
+
+    var items = DATA;
+    if(activeFilter !== 'all'){
+      items = DATA.filter(function(d){return d.section_id === activeFilter;});
+    }
+
+    var results;
+    if(fuse && DATA.length > 0){
+      // 필터된 데이터로 임시 Fuse 인스턴스
+      var f = activeFilter === 'all' ? fuse : new Fuse(items, {
+        keys:[{name:'question',weight:0.7},{name:'answer',weight:0.3}],
+        threshold:0.4, includeScore:true, minMatchCharLength:2, ignoreLocation:true
+      });
+      results = f.search(q).map(function(r){return r.item;});
+    } else {
+      // 키워드 fallback
+      var lq = q.toLowerCase();
+      results = items.filter(function(d){
+        return d.question.indexOf(lq)>=0 || d.answer.indexOf(lq)>=0;
+      });
+    }
+
+    renderResults(results, q);
+  };
+
+  function renderResults(items, q){
+    document.getElementById('initial-section').classList.add('hidden');
+    var meta = document.getElementById('results-meta');
+    var resultsEl = document.getElementById('results');
+    var emptyEl = document.getElementById('empty');
+    var bannerEl = document.getElementById('ai-banner');
+    meta.style.display = 'block';
+
+    if(items.length === 0){
+      meta.textContent = '"' + q + '" 검색 결과 없음';
+      resultsEl.innerHTML = '';
+      emptyEl.classList.add('visible');
+      bannerEl.classList.add('visible');
+      return;
+    }
+
+    emptyEl.classList.remove('visible');
+    meta.textContent = '"' + q + '" 검색 결과 ' + items.length + '건';
+
+    var show = items.slice(0, 20);
+    var html = '';
+    show.forEach(function(item){
+      var cm = CLASS_META[item.class] || CLASS_META.A;
+      var answerFull = item.answer || '';
+      var answerPreview = answerFull.length > 200 ? answerFull.slice(0, 200) + '…' : answerFull;
+      var sourceHtml = item.source ? '<div class="qa-source">출처: ' + escHtml(item.source.slice(0,80)) + '</div>' : '';
+      var deptHtml = item.department ? '<div class="qa-source">' + escHtml(item.department) + '</div>' : '';
+      html += '<div class="qa-card" id="card-' + escHtml(item.id) + '" onclick="toggleCard(this)">' +
+        '<div class="qa-header">' +
+          '<div class="qa-q">' + escHtml(item.question) + '</div>' +
+          '<div class="qa-badges">' +
+            '<span class="badge ' + cm.cls + '">' + cm.label + '</span>' +
+            '<span class="badge badge-sec">' + SECTION_LABELS[item.section_id] + '</span>' +
+          '</div>' +
+          '<svg class="qa-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>' +
+        '</div>' +
+        '<div class="qa-answer">' +
+          '<div class="qa-preview">' + escHtml(answerPreview) + '</div>' +
+          '<div class="qa-full">' + escHtml(answerFull) + deptHtml + sourceHtml + '</div>' +
+        '</div>' +
+        '</div>';
+    });
+
+    if(items.length > 20){
+      html += '<div style="font-size:12px;color:var(--g500);text-align:center;padding:12px 0">' +
+        '상위 20건 표시 중 · 검색어를 구체화하면 더 정확한 결과를 얻을 수 있습니다</div>';
+    }
+
+    resultsEl.innerHTML = html;
+    // 1건이면 자동으로 열기
+    if(items.length === 1){
+      var card = document.getElementById('card-' + items[0].id);
+      if(card) card.classList.add('open');
+    }
+    // 결과 적으면 AI 배너 표시
+    bannerEl.classList.toggle('visible', items.length < 3);
+  }
+
+  window.toggleCard = function(el){
+    el.classList.toggle('open');
+  };
+
+  window.setFilter = function(val, btn){
+    activeFilter = val;
+    document.querySelectorAll('.filter-btn').forEach(function(b){b.classList.remove('active');});
+    btn.classList.add('active');
+    if(currentQuery) doSearch();
+  };
+
+  window.setQuery = function(q){
+    document.getElementById('q').value = q;
+    document.getElementById('clear-btn').classList.add('visible');
+    doSearch();
+    document.getElementById('q').focus();
+  };
+
+  window.clearSearch = function(){
+    document.getElementById('q').value = '';
+    document.getElementById('clear-btn').classList.remove('visible');
+    currentQuery = '';
+    clearResults();
+  };
+
+  function clearResults(){
+    document.getElementById('initial-section').classList.remove('hidden');
+    document.getElementById('results-meta').style.display = 'none';
+    document.getElementById('results').innerHTML = '';
+    document.getElementById('empty').classList.remove('visible');
+    document.getElementById('ai-banner').classList.remove('visible');
+  }
+
+  window.requestAiSearch = function(){
+    alert('AI 시맨틱 검색은 Phase 2에서 구현 예정입니다.\n현재 키워드 검색을 이용해 주세요.');
+  };
+
+  function escHtml(s){
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+  function esc(s){
+    return String(s).replace(/'/g,"\\'");
+  }
+
+  init();
+})();
+</script>
+</body>
+</html>
