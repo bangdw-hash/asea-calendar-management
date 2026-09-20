@@ -109,6 +109,10 @@ html,body{min-height:100%;font-family:'Apple SD Gothic Neo','Noto Sans KR',-appl
   border-top:1px solid var(--color-border);font-size:13px;line-height:1.7;
   color:var(--color-text-sec);white-space:pre-line}
 .qa-card.open .qa-answer{display:block}
+.qa-preview{display:block}
+.qa-full{display:none}
+.qa-card.open .qa-preview{display:none}
+.qa-card.open .qa-full{display:block}
 .qa-source{font-size:11px;color:var(--g500);margin-top:8px;padding-top:8px;
   border-top:1px solid var(--g100)}
 
@@ -288,6 +292,10 @@ html,body{min-height:100%;font-family:'Apple SD Gothic Neo','Noto Sans KR',-appl
           ignoreLocation: true,
         });
         renderInitial();
+        // 데이터 로드 전 입력된 쿼리 재실행
+        if(document.getElementById('q').value.trim()){
+          doSearch();
+        }
       })
       .catch(function(){
         document.getElementById('initial-list').innerHTML =
@@ -372,9 +380,10 @@ html,body{min-height:100%;font-family:'Apple SD Gothic Neo','Noto Sans KR',-appl
     var html = '';
     show.forEach(function(item){
       var cm = CLASS_META[item.class] || CLASS_META.A;
-      var answerPreview = item.answer ? item.answer.slice(0, 200) + (item.answer.length > 200 ? '…' : '') : '';
+      var answerFull = item.answer || '';
+      var answerPreview = answerFull.length > 200 ? answerFull.slice(0, 200) + '…' : answerFull;
       var sourceHtml = item.source ? '<div class="qa-source">출처: ' + escHtml(item.source.slice(0,80)) + '</div>' : '';
-      var deptHtml = item.department ? ' · ' + escHtml(item.department) : '';
+      var deptHtml = item.department ? '<div class="qa-source">' + escHtml(item.department) + '</div>' : '';
       html += '<div class="qa-card" id="card-' + escHtml(item.id) + '" onclick="toggleCard(this)">' +
         '<div class="qa-header">' +
           '<div class="qa-q">' + escHtml(item.question) + '</div>' +
@@ -384,7 +393,10 @@ html,body{min-height:100%;font-family:'Apple SD Gothic Neo','Noto Sans KR',-appl
           '</div>' +
           '<svg class="qa-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>' +
         '</div>' +
-        '<div class="qa-answer">' + escHtml(answerPreview) + deptHtml + sourceHtml + '</div>' +
+        '<div class="qa-answer">' +
+          '<div class="qa-preview">' + escHtml(answerPreview) + '</div>' +
+          '<div class="qa-full">' + escHtml(answerFull) + deptHtml + sourceHtml + '</div>' +
+        '</div>' +
         '</div>';
     });
 
