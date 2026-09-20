@@ -1370,17 +1370,33 @@ async function claudeFetch(bodyObj) {
 
   if (active === 'official' && P.official.key) return directCall(P.official.key);
 
-  if (active === 'flow' && P.flow.key && proxy) {
+  if (active === 'flow' && P.flow.key) {
+    const flowBase = (P.flow.baseUrl || 'https://aiapiflow.com').replace(/\/$/, '');
+    // 1차: 브라우저 → Flow 게이트웨이 직접 호출 (Supabase proxy 우회)
     try {
-      return await fetch(proxy, {
+      const r = await fetch(flowBase + '/v1/messages', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + SB_ANON, 'apikey': SB_ANON },
-        body: JSON.stringify({ service: 'claude', payload: bodyObj, upstream: { baseUrl: (P.flow.baseUrl || 'https://aiapiflow.com').replace(/\/$/, ''), key: P.flow.key } }),
+        headers: { 'Content-Type': 'application/json', 'x-api-key': P.flow.key, 'Authorization': 'Bearer ' + P.flow.key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+        body,
       });
-    } catch (flowErr) {
-      if (P.official.key) return directCall(P.official.key);
-      throw flowErr;
+      if (r.ok) return r;
+    } catch (_) {}
+    // 2차: Supabase proxy 경유 (기존 방식)
+    if (proxy) {
+      try {
+        const r2 = await fetch(proxy, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + SB_ANON, 'apikey': SB_ANON },
+          body: JSON.stringify({ service: 'claude', payload: bodyObj, upstream: { baseUrl: flowBase, key: P.flow.key } }),
+        });
+        if (r2.ok) return r2;
+      } catch (_) {}
     }
+    // 3차: Flow 키를 Anthropic API에 직접 시도
+    try { const r3 = await directCall(P.flow.key); if (r3.ok) return r3; } catch (_) {}
+    // 4차: 공식 키 fallback
+    if (P.official.key) return directCall(P.official.key);
+    throw new Error('Flow API 연결에 실패했습니다. AI제공자 설정을 확인하세요.');
   }
 
   if (proxy) {
