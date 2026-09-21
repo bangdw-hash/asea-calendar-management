@@ -2,11 +2,11 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>ASEA 스마트 안내데스크</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap">
 <script src="https://cdn.jsdelivr.net/npm/fuse.js@7.0.0/dist/fuse.min.js"></script>
 <script src="config.js"></script>
 <style>
@@ -24,153 +24,442 @@
   --orange:#ea580c;--orange-lt:#ffedd5;
   --red:#dc2626;--red-lt:#fee2e2;
   --g100:#F1F3F4;--g200:#E8EAED;--g300:#D2D5D9;--g500:#5F6368;
-  --r:6px;
-  --sh:0 2px 8px rgba(60,64,67,.12),0 2px 4px rgba(60,64,67,.08);
+  --r:12px;
+  --r-sm:8px;
+  --sh:0 1px 3px rgba(60,64,67,.15),0 2px 8px rgba(60,64,67,.10);
+  --sh-md:0 4px 12px rgba(60,64,67,.14),0 2px 6px rgba(60,64,67,.10);
   --sh-lg:0 8px 24px rgba(60,64,67,.14),0 4px 8px rgba(60,64,67,.10);
   --header-h:56px;
+  --safe-top:env(safe-area-inset-top,0px);
+  --safe-bot:env(safe-area-inset-bottom,0px);
 }
-html,body{min-height:100%;font-family:'Apple SD Gothic Neo','Noto Sans KR',-apple-system,sans-serif;
-  font-size:14px;background:var(--color-bg);color:var(--color-text);-webkit-font-smoothing:antialiased}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --color-bg:#0F1923;
+    --color-card:#1C2B3A;
+    --color-text:#E8EAED;
+    --color-text-sec:#9AA0A6;
+    --color-border:#2D3748;
+    --color-accent-lt:#1A3460;
+    --g100:#1E2D3D;--g200:#2D3748;--g300:#4A5568;--g500:#718096;
+  }
+}
+:root[data-theme="dark"] {
+  --color-bg:#0F1923;
+  --color-card:#1C2B3A;
+  --color-text:#E8EAED;
+  --color-text-sec:#9AA0A6;
+  --color-border:#2D3748;
+  --color-accent-lt:#1A3460;
+  --g100:#1E2D3D;--g200:#2D3748;--g300:#4A5568;--g500:#718096;
+}
+html,body{
+  min-height:100%;
+  font-family:'Noto Sans KR','Apple SD Gothic Neo',-apple-system,sans-serif;
+  font-size:14px;
+  background:var(--color-bg);
+  color:var(--color-text);
+  -webkit-font-smoothing:antialiased;
+  -webkit-text-size-adjust:100%;
+}
+body{padding-inline:0;padding-block:0}
+
+/* ── SCROLLBAR HIDE ── */
+.scroll-x{overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.scroll-x::-webkit-scrollbar{display:none}
 
 /* ── HEADER ── */
-.hdr{height:var(--header-h);background:var(--color-card);
+.hdr{
+  height:calc(var(--header-h) + var(--safe-top));
+  padding-top:var(--safe-top);
+  background:var(--color-card);
   border-bottom:1px solid var(--color-border);
-  display:flex;align-items:center;padding:0 20px;
-  position:sticky;top:0;z-index:100;gap:10px}
-.hdr-logo{font-size:16px;font-weight:700;color:var(--color-text);letter-spacing:-.3px}
-.hdr-sub{font-size:11px;color:var(--color-text-sec)}
-.hdr-badge{margin-left:auto;font-size:11px;font-weight:600;
+  display:flex;align-items:center;
+  padding-inline:16px;
+  position:sticky;top:0;z-index:100;
+  gap:10px;
+}
+.hdr-icon{
+  width:32px;height:32px;
+  background:var(--color-accent-lt);
+  border-radius:8px;
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;
+}
+.hdr-icon svg{color:var(--color-accent)}
+.hdr-body{flex:1;min-width:0}
+.hdr-logo{
+  font-size:15px;font-weight:700;color:var(--color-text);
+  letter-spacing:-.3px;line-height:1.2;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.hdr-sub{font-size:11px;color:var(--color-text-sec);line-height:1.3;margin-top:1px}
+.hdr-badge{
+  flex-shrink:0;
+  font-size:11px;font-weight:600;
+  font-variant-numeric:tabular-nums;
   background:var(--color-accent-lt);color:var(--color-accent);
-  padding:3px 8px;border-radius:20px}
+  padding:4px 10px;border-radius:20px;
+  white-space:nowrap;
+}
 
 /* ── HERO ── */
-.hero{padding:40px 20px 24px;text-align:center;max-width:680px;margin:0 auto}
-.hero-title{font-size:22px;font-weight:700;color:var(--color-text);margin-bottom:6px}
-.hero-desc{font-size:13px;color:var(--color-text-sec);margin-bottom:24px}
+.hero{
+  background:var(--color-card);
+  border-bottom:1px solid var(--color-border);
+  padding:20px 16px 16px;
+}
+.hero-title{
+  font-size:20px;font-weight:700;
+  color:var(--color-text);letter-spacing:-.4px;
+  line-height:1.3;margin-bottom:4px;
+  text-wrap:balance;
+}
+.hero-desc{
+  font-size:12px;color:var(--color-text-sec);
+  line-height:1.5;margin-bottom:16px;
+}
 
-.search-wrap{position:relative;display:flex;gap:0;box-shadow:var(--sh-lg);
-  border-radius:calc(var(--r) + 2px);overflow:hidden;background:var(--color-card);
-  border:1.5px solid var(--color-border);transition:border-color .2s,box-shadow .2s}
-.search-wrap:focus-within{border-color:var(--color-accent);box-shadow:0 0 0 3px rgba(26,115,232,.15),var(--sh-lg)}
-.search-icon{position:absolute;left:14px;top:50%;transform:translateY(-50%);
-  color:var(--g500);pointer-events:none;width:18px;height:18px}
-.search-input{flex:1;padding:14px 14px 14px 44px;font-size:15px;font-family:inherit;
-  border:none;outline:none;background:transparent;color:var(--color-text);min-width:0}
-.search-input::placeholder{color:var(--g500)}
-.search-clear{background:none;border:none;cursor:pointer;padding:0 10px;
-  color:var(--g300);display:none;align-items:center;transition:color .15s}
+/* ── SEARCH BAR ── */
+.search-wrap{
+  display:flex;align-items:stretch;
+  background:var(--color-card);
+  border:1.5px solid var(--color-border);
+  border-radius:var(--r);
+  overflow:hidden;
+  box-shadow:var(--sh);
+  transition:border-color .18s,box-shadow .18s;
+}
+.search-wrap:focus-within{
+  border-color:var(--color-accent);
+  box-shadow:0 0 0 3px rgba(26,115,232,.15),var(--sh);
+}
+.search-icon-wrap{
+  display:flex;align-items:center;justify-content:center;
+  width:44px;flex-shrink:0;color:var(--g500);pointer-events:none;
+}
+.search-input{
+  flex:1;min-width:0;
+  padding:13px 4px;
+  font-size:15px;font-family:inherit;
+  border:none;outline:none;
+  background:transparent;color:var(--color-text);
+  line-height:1.4;
+}
+.search-input::placeholder{color:var(--g300);font-size:13px}
+.search-clear{
+  display:flex;align-items:center;justify-content:center;
+  min-width:44px;min-height:44px;
+  background:none;border:none;cursor:pointer;
+  color:var(--g300);transition:color .15s;
+  visibility:hidden;
+}
+.search-clear.visible{visibility:visible}
 .search-clear:hover{color:var(--g500)}
-.search-clear.visible{display:flex}
-.search-btn{padding:0 20px;background:var(--color-accent);color:#fff;
-  border:none;cursor:pointer;font-size:14px;font-weight:600;font-family:inherit;
-  transition:background .15s;flex-shrink:0}
+.search-btn{
+  display:flex;align-items:center;justify-content:center;
+  padding:0 18px;min-height:44px;
+  background:var(--color-accent);color:#fff;
+  border:none;cursor:pointer;
+  font-size:13px;font-weight:600;font-family:inherit;
+  transition:background .15s;flex-shrink:0;
+  letter-spacing:-.2px;
+}
 .search-btn:hover{background:var(--color-accent-dk)}
+.search-btn:active{background:var(--color-accent-dk);opacity:.9}
 
-/* ── EXAMPLE CHIPS ── */
-.chips-label{font-size:11px;color:var(--g500);margin:16px 0 8px;text-align:left}
-.chips{display:flex;flex-wrap:wrap;gap:7px}
-.chip{padding:6px 12px;background:var(--color-card);border:1px solid var(--color-border);
-  border-radius:20px;font-size:12px;color:var(--color-text-sec);cursor:pointer;
-  transition:background .15s,border-color .15s,color .15s;white-space:nowrap}
+/* ── CHIPS ── */
+.chips-row{
+  display:flex;align-items:center;gap:6px;
+  padding-top:12px;
+  overflow-x:auto;-webkit-overflow-scrolling:touch;
+  scrollbar-width:none;
+}
+.chips-row::-webkit-scrollbar{display:none}
+.chips-label{
+  font-size:11px;color:var(--g500);
+  flex-shrink:0;white-space:nowrap;
+}
+.chip{
+  padding:6px 13px;min-height:32px;
+  background:var(--g100);border:1px solid var(--g200);
+  border-radius:20px;
+  font-size:12px;color:var(--color-text-sec);
+  cursor:pointer;white-space:nowrap;font-family:inherit;
+  transition:background .15s,border-color .15s,color .15s;
+  flex-shrink:0;
+}
 .chip:hover{background:var(--color-accent-lt);border-color:var(--color-accent);color:var(--color-accent)}
+.chip:active{transform:scale(.97)}
 
-/* ── MAIN CONTENT ── */
-.main{max-width:680px;margin:0 auto;padding:0 20px 60px}
+/* ── MAIN ── */
+.main{max-width:720px;margin:0 auto;padding:12px 16px calc(72px + var(--safe-bot))}
 
-/* ── SECTION FILTER ── */
-.filter-bar{display:flex;gap:6px;flex-wrap:wrap;padding:16px 0 8px;overflow-x:auto}
-.filter-btn{padding:5px 13px;border-radius:20px;border:1px solid var(--color-border);
-  font-size:12px;font-weight:500;background:var(--color-card);color:var(--g500);
-  cursor:pointer;transition:all .15s;white-space:nowrap;font-family:inherit}
+/* ── FILTER BAR ── */
+.filter-wrap{
+  display:flex;gap:6px;
+  overflow-x:auto;-webkit-overflow-scrolling:touch;
+  scrollbar-width:none;
+  padding:4px 0 10px;
+  margin:0 -16px;padding-inline:16px;
+}
+.filter-wrap::-webkit-scrollbar{display:none}
+.filter-btn{
+  display:flex;align-items:center;
+  padding:7px 15px;min-height:34px;
+  border-radius:20px;border:1px solid var(--color-border);
+  font-size:12px;font-weight:500;
+  background:var(--color-card);color:var(--g500);
+  cursor:pointer;transition:all .15s;
+  white-space:nowrap;font-family:inherit;
+  flex-shrink:0;
+}
 .filter-btn:hover{border-color:var(--color-accent);color:var(--color-accent)}
-.filter-btn.active{background:var(--color-accent);color:#fff;border-color:var(--color-accent)}
+.filter-btn.active{
+  background:var(--color-accent);color:#fff;
+  border-color:var(--color-accent);font-weight:600;
+}
 
-/* ── RESULTS ── */
-.results-meta{font-size:12px;color:var(--g500);padding:4px 0 12px}
+/* ── RESULTS META ── */
+.results-meta{
+  font-size:12px;color:var(--g500);
+  padding:2px 0 10px;
+  display:none;
+}
 
-.qa-card{background:var(--color-card);border:1px solid var(--color-border);
-  border-radius:var(--r);padding:16px;margin-bottom:10px;
-  cursor:pointer;transition:box-shadow .15s,border-color .15s}
+/* ── CARD ── */
+.qa-card{
+  background:var(--color-card);
+  border:1px solid var(--color-border);
+  border-radius:var(--r);
+  margin-bottom:8px;
+  cursor:pointer;
+  transition:box-shadow .15s,border-color .15s;
+  overflow:hidden;
+}
 .qa-card:hover{box-shadow:var(--sh);border-color:var(--g300)}
-.qa-card.open{box-shadow:var(--sh);border-color:var(--color-accent)}
+.qa-card.open{box-shadow:var(--sh-md);border-color:var(--color-accent)}
+.qa-card.open .qa-header{background:var(--color-accent-lt)}
 
-.qa-header{display:flex;align-items:flex-start;gap:10px}
-.qa-q{font-size:14px;font-weight:600;color:var(--color-text);flex:1;line-height:1.5}
-.qa-badges{display:flex;gap:5px;flex-shrink:0;align-items:center;margin-top:1px}
-.badge{font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;white-space:nowrap}
+.qa-header{
+  display:flex;align-items:flex-start;gap:8px;
+  padding:14px 14px 14px 16px;
+  transition:background .15s;
+  min-height:56px;
+}
+.qa-q-col{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}
+.qa-q{
+  font-size:14px;font-weight:600;
+  color:var(--color-text);line-height:1.45;
+  word-break:keep-all;word-wrap:break-word;
+}
+.qa-badges{display:flex;gap:4px;flex-wrap:wrap;align-items:center}
+.badge{
+  font-size:10px;font-weight:700;
+  padding:2px 7px;border-radius:4px;
+  white-space:nowrap;line-height:1.5;
+}
 .badge-a{background:var(--color-accent-lt);color:var(--color-accent)}
 .badge-b{background:var(--orange-lt);color:var(--orange)}
 .badge-c{background:var(--red-lt);color:var(--red)}
 .badge-sec{background:var(--g100);color:var(--g500)}
 
-.qa-chevron{color:var(--g300);flex-shrink:0;transition:transform .2s;margin-top:2px}
+.qa-chevron-wrap{
+  width:32px;height:32px;
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;border-radius:6px;
+  color:var(--g300);margin-top:-2px;
+  transition:background .15s;
+}
+.qa-card:hover .qa-chevron-wrap,
+.qa-card.open .qa-chevron-wrap{color:var(--color-accent)}
+.qa-chevron{transition:transform .2s}
 .qa-card.open .qa-chevron{transform:rotate(180deg)}
 
-.qa-answer{display:none;margin-top:12px;padding-top:12px;
-  border-top:1px solid var(--color-border);font-size:13px;line-height:1.7;
-  color:var(--color-text-sec);white-space:pre-line}
+.qa-answer{
+  display:none;
+  border-top:1px solid var(--color-border);
+  font-size:13px;line-height:1.75;
+  color:var(--color-text-sec);
+  white-space:pre-line;
+}
 .qa-card.open .qa-answer{display:block}
-.qa-preview{display:block}
-.qa-full{display:none}
+.qa-preview{display:block;padding:12px 16px}
+.qa-full{display:none;padding:12px 16px}
 .qa-card.open .qa-preview{display:none}
 .qa-card.open .qa-full{display:block}
-.qa-source{font-size:11px;color:var(--g500);margin-top:8px;padding-top:8px;
-  border-top:1px solid var(--g100)}
 
-/* ── AI FALLBACK BANNER ── */
-.ai-banner{background:var(--color-card);border:1.5px dashed var(--color-border);
-  border-radius:var(--r);padding:20px;text-align:center;margin-top:8px;display:none}
-.ai-banner.visible{display:block}
-.ai-banner-title{font-size:13px;font-weight:600;color:var(--color-text);margin-bottom:6px}
-.ai-banner-desc{font-size:12px;color:var(--g500);margin-bottom:14px}
-.btn-ai{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;
-  background:var(--color-accent);color:#fff;border:none;border-radius:var(--r);
-  font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:background .15s}
-.btn-ai:hover{background:var(--color-accent-dk)}
-.btn-ai-note{font-size:11px;color:var(--g500);margin-top:8px}
+.qa-source{
+  font-size:11px;color:var(--g500);
+  margin-top:10px;padding-top:10px;
+  border-top:1px solid var(--g100);
+  display:flex;gap:8px;flex-wrap:wrap;
+}
+.qa-source-item{display:flex;align-items:center;gap:3px}
 
-/* ── AI ANSWER PANEL ── */
-.ai-panel{background:var(--color-card);border:1.5px solid var(--color-accent-lt);
-  border-radius:var(--r);padding:20px;margin-top:12px;display:none}
-.ai-panel.visible{display:block}
-.ai-panel-hdr{display:flex;align-items:center;gap:8px;margin-bottom:14px}
-.ai-panel-icon{width:20px;height:20px;color:var(--color-accent);flex-shrink:0}
-.ai-panel-title{font-size:13px;font-weight:700;color:var(--color-accent);flex:1}
-.ai-panel-model{font-size:10px;color:var(--g500)}
-.ai-panel-body{font-size:13px;line-height:1.8;color:var(--color-text);white-space:pre-line;min-height:24px}
-.ai-panel-body.streaming::after{content:'▌';animation:blink .7s step-end infinite;color:var(--color-accent)}
-@keyframes blink{50%{opacity:0}}
-.ai-panel-footer{margin-top:12px;padding-top:10px;border-top:1px solid var(--g100);
-  font-size:11px;color:var(--g500)}
-.ai-setup-hint{background:var(--orange-lt);border-radius:var(--r);padding:12px 14px;
-  font-size:12px;color:var(--orange);line-height:1.6;display:none}
-.ai-setup-hint.visible{display:block}
+/* ── INITIAL STATE ── */
+.initial-section{padding-top:4px}
+.initial-section.hidden{display:none}
+.section-group-title{
+  font-size:11px;font-weight:700;color:var(--g500);
+  letter-spacing:.06em;text-transform:uppercase;
+  margin:12px 0 8px 2px;
+}
+.initial-list{display:flex;flex-direction:column;gap:6px}
+.initial-item{
+  display:flex;align-items:center;gap:10px;
+  padding:12px 14px;
+  min-height:52px;
+  background:var(--color-card);
+  border:1px solid var(--color-border);
+  border-radius:var(--r);
+  cursor:pointer;
+  transition:background .15s,border-color .15s,box-shadow .15s;
+}
+.initial-item:hover{
+  background:var(--color-accent-lt);
+  border-color:var(--color-accent);
+  box-shadow:var(--sh);
+}
+.initial-item:active{transform:scale(.99)}
+.initial-dot{
+  width:6px;height:6px;border-radius:50%;
+  background:var(--g300);flex-shrink:0;
+}
+.initial-item:hover .initial-dot{background:var(--color-accent)}
+.initial-item-text{
+  font-size:13px;color:var(--color-text);
+  flex:1;line-height:1.4;
+  word-break:keep-all;
+}
+.initial-item-badge{
+  font-size:10px;font-weight:500;color:var(--g500);
+  background:var(--g100);
+  padding:2px 7px;border-radius:4px;
+  white-space:nowrap;flex-shrink:0;
+}
 
 /* ── EMPTY STATE ── */
 .empty{text-align:center;padding:48px 0;display:none}
 .empty.visible{display:block}
-.empty-icon{width:40px;height:40px;color:var(--g300);margin:0 auto 12px}
-.empty-title{font-size:14px;font-weight:600;color:var(--g500);margin-bottom:4px}
-.empty-desc{font-size:12px;color:var(--g300)}
+.empty-icon{
+  width:48px;height:48px;color:var(--g200);
+  margin:0 auto 14px;
+}
+.empty-title{font-size:15px;font-weight:600;color:var(--g500);margin-bottom:6px}
+.empty-desc{font-size:12px;color:var(--g300);line-height:1.6}
 
-/* ── INITIAL STATE ── */
-.initial-section{padding-top:8px;display:block}
-.initial-section.hidden{display:none}
-.section-group-title{font-size:11px;font-weight:700;color:var(--g500);
-  letter-spacing:.06em;text-transform:uppercase;margin:20px 0 8px;padding-left:2px}
-.initial-list{display:flex;flex-direction:column;gap:0}
-.initial-item{padding:11px 12px;background:var(--color-card);border:1px solid var(--color-border);
-  border-radius:var(--r);margin-bottom:6px;cursor:pointer;
-  display:flex;align-items:center;gap:10px;transition:background .15s}
-.initial-item:hover{background:var(--color-accent-lt);border-color:var(--color-accent)}
-.initial-item-text{font-size:13px;color:var(--color-text);flex:1}
-.initial-item-badge{font-size:10px;color:var(--g500)}
+/* ── AI FALLBACK BANNER ── */
+.ai-banner{
+  background:var(--color-card);
+  border:1px solid var(--color-border);
+  border-radius:var(--r);
+  padding:20px 16px;
+  margin-top:4px;
+  display:none;
+}
+.ai-banner.visible{display:block}
+.ai-banner-inner{display:flex;align-items:flex-start;gap:12px}
+.ai-banner-icon{
+  width:36px;height:36px;
+  background:linear-gradient(135deg,var(--color-accent-lt),#dce8fd);
+  border-radius:10px;
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;color:var(--color-accent);
+}
+.ai-banner-body{flex:1;min-width:0}
+.ai-banner-title{font-size:13px;font-weight:600;color:var(--color-text);margin-bottom:3px}
+.ai-banner-desc{font-size:12px;color:var(--color-text-sec);line-height:1.5}
+.ai-banner-actions{margin-top:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.btn-ai{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:9px 18px;min-height:40px;
+  background:var(--color-accent);color:#fff;
+  border:none;border-radius:var(--r-sm);
+  font-size:13px;font-weight:600;font-family:inherit;
+  cursor:pointer;transition:background .15s,transform .1s;
+  letter-spacing:-.1px;
+}
+.btn-ai:hover{background:var(--color-accent-dk)}
+.btn-ai:active{transform:scale(.98)}
+.btn-ai-note{font-size:11px;color:var(--g500)}
 
+/* ── AI ANSWER PANEL ── */
+.ai-panel{
+  background:var(--color-card);
+  border:1.5px solid var(--color-accent);
+  border-radius:var(--r);
+  margin-top:8px;
+  overflow:hidden;
+  display:none;
+}
+.ai-panel.visible{display:block}
+.ai-panel-hdr{
+  display:flex;align-items:center;gap:10px;
+  padding:12px 16px;
+  background:linear-gradient(to right,var(--color-accent-lt),transparent);
+  border-bottom:1px solid var(--color-accent-lt);
+}
+.ai-panel-icon{
+  width:24px;height:24px;
+  background:var(--color-accent);
+  border-radius:6px;
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;color:#fff;
+}
+.ai-panel-title{font-size:13px;font-weight:700;color:var(--color-accent);flex:1}
+.ai-panel-model{
+  font-size:10px;font-weight:500;
+  color:var(--color-accent);opacity:.7;
+  background:rgba(26,115,232,.1);
+  padding:2px 7px;border-radius:4px;
+}
+.ai-panel-body{
+  padding:16px;
+  font-size:13px;line-height:1.85;
+  color:var(--color-text);
+  white-space:pre-line;min-height:32px;
+}
+.ai-panel-body.streaming::after{
+  content:'▌';
+  animation:blink .7s step-end infinite;
+  color:var(--color-accent);
+}
+@keyframes blink{50%{opacity:0}}
+.ai-panel-footer{
+  padding:10px 16px 12px;
+  border-top:1px solid var(--g100);
+  font-size:11px;color:var(--g500);
+  display:flex;align-items:center;gap:5px;
+}
+
+/* ── API SETUP HINT ── */
+.ai-setup-hint{
+  background:var(--orange-lt);
+  border:1px solid rgba(234,88,12,.15);
+  border-radius:var(--r);
+  padding:14px 16px;
+  font-size:12px;color:var(--orange);
+  line-height:1.65;display:none;
+  margin-top:8px;
+}
+.ai-setup-hint.visible{display:block}
+
+/* ── OVERFLOW NOTE ── */
+.more-note{
+  text-align:center;
+  padding:14px 0;
+  font-size:11px;color:var(--g500);
+}
+
+/* ── RESPONSIVE ── */
 @media(max-width:480px){
-  .hero{padding:24px 16px 16px}
   .hero-title{font-size:18px}
-  .main{padding:0 16px 60px}
-  .search-btn{padding:0 14px;font-size:13px}
+  .hdr-sub{display:none}
+}
+@media(min-width:600px){
+  .hero{padding:28px 20px 20px;max-width:720px;margin:0 auto}
+  .main{padding:16px 20px calc(72px + var(--safe-bot))}
 }
 </style>
 </head>
@@ -178,10 +467,12 @@ html,body{min-height:100%;font-family:'Apple SD Gothic Neo','Noto Sans KR',-appl
 
 <!-- HEADER -->
 <header class="hdr">
-  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-  </svg>
-  <div>
+  <div class="hdr-icon">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+    </svg>
+  </div>
+  <div class="hdr-body">
     <div class="hdr-logo">ASEA 스마트 안내데스크</div>
     <div class="hdr-sub">아세아항공직업전문학교 지식 검색</div>
   </div>
@@ -194,20 +485,23 @@ html,body{min-height:100%;font-family:'Apple SD Gothic Neo','Noto Sans KR',-appl
   <div class="hero-desc">학점은행제 · 국비훈련 · 등록금 · 학사 업무 등 자주 묻는 질문을 검색하세요</div>
 
   <div class="search-wrap">
-    <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-    </svg>
+    <div class="search-icon-wrap">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+    </div>
     <input class="search-input" id="q" type="text"
-      placeholder="예: 학점은행제 환불, 수강 신청, 국민내일배움카드"
-      autocomplete="off" spellcheck="false" oninput="onInput()" onkeydown="if(event.key==='Enter')doSearch()">
-    <button class="search-clear" id="clear-btn" onclick="clearSearch()" title="지우기">
+      placeholder="학점은행제 환불, 수강 신청, 국민내일배움카드 …"
+      autocomplete="off" spellcheck="false"
+      oninput="onInput()" onkeydown="if(event.key==='Enter')doSearch()">
+    <button class="search-clear" id="clear-btn" onclick="clearSearch()" title="지우기" aria-label="검색어 지우기">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
     </button>
     <button class="search-btn" onclick="doSearch()">검색</button>
   </div>
 
-  <div class="chips-label">빠른 검색 예시</div>
-  <div class="chips">
+  <div class="chips-row">
+    <span class="chips-label">예시</span>
     <button class="chip" onclick="setQuery('학점은행제란')">학점은행제란</button>
     <button class="chip" onclick="setQuery('등록금 환불')">등록금 환불</button>
     <button class="chip" onclick="setQuery('국민내일배움카드')">국민내일배움카드</button>
@@ -222,7 +516,7 @@ html,body{min-height:100%;font-family:'Apple SD Gothic Neo','Noto Sans KR',-appl
 <div class="main">
 
   <!-- FILTER BAR -->
-  <div class="filter-bar" id="filter-bar">
+  <div class="filter-wrap" id="filter-bar">
     <button class="filter-btn active" onclick="setFilter('all',this)">전체</button>
     <button class="filter-btn" onclick="setFilter(0,this)">학점은행제</button>
     <button class="filter-btn" onclick="setFilter(1,this)">국비훈련·NCS</button>
@@ -231,14 +525,16 @@ html,body{min-height:100%;font-family:'Apple SD Gothic Neo','Noto Sans KR',-appl
     <button class="filter-btn" onclick="setFilter(4,this)">학사업무</button>
   </div>
 
-  <!-- INITIAL STATE (검색 전) -->
+  <!-- RESULTS META -->
+  <div id="results-meta" class="results-meta"></div>
+
+  <!-- INITIAL STATE -->
   <div class="initial-section" id="initial-section">
-    <div class="section-group-title">섹션별 대표 질문</div>
-    <div id="initial-list"></div>
+    <div class="section-group-title">자주 묻는 질문</div>
+    <div class="initial-list" id="initial-list"></div>
   </div>
 
   <!-- RESULTS -->
-  <div id="results-meta" class="results-meta" style="display:none"></div>
   <div id="results"></div>
 
   <!-- EMPTY STATE -->
@@ -247,38 +543,54 @@ html,body{min-height:100%;font-family:'Apple SD Gothic Neo','Noto Sans KR',-appl
       <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
     </svg>
     <div class="empty-title">검색 결과가 없습니다</div>
-    <div class="empty-desc">다른 키워드로 검색하거나 AI 검색을 이용해 보세요</div>
+    <div class="empty-desc">다른 키워드로 검색하거나<br>아래 AI 검색을 이용해 보세요</div>
   </div>
 
   <!-- AI FALLBACK BANNER -->
   <div class="ai-banner" id="ai-banner">
-    <div class="ai-banner-title">원하는 답변을 찾지 못하셨나요?</div>
-    <div class="ai-banner-desc">AI가 질문을 이해하고 지식베이스에서 직접 답변을 찾아드립니다</div>
-    <button class="btn-ai" onclick="requestAiSearch()">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-      </svg>
-      AI 답변 받기
-    </button>
-    <div class="btn-ai-note" id="ai-key-note"></div>
+    <div class="ai-banner-inner">
+      <div class="ai-banner-icon">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+        </svg>
+      </div>
+      <div class="ai-banner-body">
+        <div class="ai-banner-title">원하는 답변을 찾지 못하셨나요?</div>
+        <div class="ai-banner-desc">AI가 질문을 이해하고 지식베이스에서 직접 답변을 찾아드립니다</div>
+        <div class="ai-banner-actions">
+          <button class="btn-ai" onclick="requestAiSearch()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+            </svg>
+            AI 답변 받기
+          </button>
+          <span class="btn-ai-note" id="ai-key-note"></span>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- AI ANSWER PANEL -->
   <div class="ai-panel" id="ai-panel">
     <div class="ai-panel-hdr">
-      <svg class="ai-panel-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-      </svg>
+      <div class="ai-panel-icon">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+        </svg>
+      </div>
       <div class="ai-panel-title">AI 답변</div>
       <div class="ai-panel-model" id="ai-model-label">claude-haiku</div>
     </div>
     <div class="ai-panel-body" id="ai-body"></div>
-    <div class="ai-panel-footer">지식베이스 기반 답변 · 공식 규정은 담당 부서에 확인하세요</div>
+    <div class="ai-panel-footer">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      지식베이스 기반 답변 · 공식 규정은 담당 부서에 확인하세요
+    </div>
   </div>
 
   <!-- API 키 미설정 안내 -->
   <div class="ai-setup-hint" id="ai-setup-hint">
-    AI 검색을 사용하려면 설정에서 Claude API 키를 등록하세요.<br>
+    AI 검색을 사용하려면 Claude API 키를 등록하세요.<br>
     index.html → 설정 탭 → AI 제공자 설정에서 등록할 수 있습니다.
   </div>
 
@@ -299,7 +611,6 @@ html,body{min-height:100%;font-family:'Apple SD Gothic Neo','Noto Sans KR',-appl
     C:{label:'내방 처리',cls:'badge-c'}
   };
 
-  // 샘플 질문 (섹션별 3건)
   var SAMPLES = [
     [0,'학점은행제가 무엇인지 설명해달라'],
     [0,'학점은행제로 취득 가능한 학위 종류가 무엇인가'],
@@ -329,7 +640,6 @@ html,body{min-height:100%;font-family:'Apple SD Gothic Neo','Noto Sans KR',-appl
           ignoreLocation: true,
         });
         renderInitial();
-        // 데이터 로드 전 입력된 쿼리 재실행
         if(document.getElementById('q').value.trim()){
           doSearch();
         }
@@ -345,7 +655,7 @@ html,body{min-height:100%;font-family:'Apple SD Gothic Neo','Noto Sans KR',-appl
     var html = '';
     SAMPLES.forEach(function(s){
       html += '<div class="initial-item" onclick="setQuery(\'' + esc(s[1]) + '\')">' +
-        '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--g300)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>' +
+        '<div class="initial-dot"></div>' +
         '<span class="initial-item-text">' + escHtml(s[1]) + '</span>' +
         '<span class="initial-item-badge">' + SECTION_LABELS[s[0]] + '</span>' +
         '</div>';
@@ -360,7 +670,6 @@ html,body{min-height:100%;font-family:'Apple SD Gothic Neo','Noto Sans KR',-appl
       clearResults();
       return;
     }
-    // 300ms 디바운스
     clearTimeout(window._debounce);
     window._debounce = setTimeout(doSearch, 300);
   };
@@ -377,14 +686,12 @@ html,body{min-height:100%;font-family:'Apple SD Gothic Neo','Noto Sans KR',-appl
 
     var results;
     if(fuse && DATA.length > 0){
-      // 필터된 데이터로 임시 Fuse 인스턴스
       var f = activeFilter === 'all' ? fuse : new Fuse(items, {
         keys:[{name:'question',weight:0.7},{name:'answer',weight:0.3}],
         threshold:0.4, includeScore:true, minMatchCharLength:2, ignoreLocation:true
       });
       results = f.search(q).map(function(r){return r.item;});
     } else {
-      // 키워드 fallback
       var lq = q.toLowerCase();
       results = items.filter(function(d){
         return d.question.indexOf(lq)>=0 || d.answer.indexOf(lq)>=0;
@@ -419,38 +726,43 @@ html,body{min-height:100%;font-family:'Apple SD Gothic Neo','Noto Sans KR',-appl
       var cm = CLASS_META[item.class] || CLASS_META.A;
       var answerFull = item.answer || '';
       var answerPreview = answerFull.length > 200 ? answerFull.slice(0, 200) + '…' : answerFull;
-      var sourceHtml = item.source ? '<div class="qa-source">출처: ' + escHtml(item.source.slice(0,80)) + '</div>' : '';
-      var deptHtml = item.department ? '<div class="qa-source">' + escHtml(item.department) + '</div>' : '';
+      var sourceHtml = '';
+      if(item.department || item.source){
+        sourceHtml = '<div class="qa-source">';
+        if(item.department) sourceHtml += '<span class="qa-source-item"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>' + escHtml(item.department) + '</span>';
+        if(item.source) sourceHtml += '<span class="qa-source-item"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>' + escHtml(item.source.slice(0,60)) + '</span>';
+        sourceHtml += '</div>';
+      }
       html += '<div class="qa-card" id="card-' + escHtml(item.id) + '" onclick="toggleCard(this)">' +
         '<div class="qa-header">' +
-          '<div class="qa-q">' + escHtml(item.question) + '</div>' +
-          '<div class="qa-badges">' +
-            '<span class="badge ' + cm.cls + '">' + cm.label + '</span>' +
-            '<span class="badge badge-sec">' + SECTION_LABELS[item.section_id] + '</span>' +
+          '<div class="qa-q-col">' +
+            '<div class="qa-q">' + escHtml(item.question) + '</div>' +
+            '<div class="qa-badges">' +
+              '<span class="badge ' + cm.cls + '">' + cm.label + '</span>' +
+              '<span class="badge badge-sec">' + SECTION_LABELS[item.section_id] + '</span>' +
+            '</div>' +
           '</div>' +
-          '<svg class="qa-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>' +
+          '<div class="qa-chevron-wrap">' +
+            '<svg class="qa-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>' +
+          '</div>' +
         '</div>' +
         '<div class="qa-answer">' +
           '<div class="qa-preview">' + escHtml(answerPreview) + '</div>' +
-          '<div class="qa-full">' + escHtml(answerFull) + deptHtml + sourceHtml + '</div>' +
+          '<div class="qa-full">' + escHtml(answerFull) + sourceHtml + '</div>' +
         '</div>' +
         '</div>';
     });
 
     if(items.length > 20){
-      html += '<div style="font-size:12px;color:var(--g500);text-align:center;padding:12px 0">' +
-        '상위 20건 표시 중 · 검색어를 구체화하면 더 정확한 결과를 얻을 수 있습니다</div>';
+      html += '<div class="more-note">상위 20건 표시 중 · 검색어를 구체화하면 더 정확한 결과를 얻을 수 있습니다</div>';
     }
 
     resultsEl.innerHTML = html;
-    // 1건이면 자동으로 열기
     if(items.length === 1){
       var card = document.getElementById('card-' + items[0].id);
       if(card) card.classList.add('open');
     }
-    // 결과 적으면 AI 배너 표시
     bannerEl.classList.toggle('visible', items.length < 3);
-    // 새 검색 시 AI 패널 초기화
     document.getElementById('ai-panel').classList.remove('visible');
     document.getElementById('ai-setup-hint').classList.remove('visible');
   }
@@ -493,14 +805,12 @@ html,body{min-height:100%;font-family:'Apple SD Gothic Neo','Noto Sans KR',-appl
     var q = currentQuery || document.getElementById('q').value.trim();
     if(!q) return;
 
-    // config.js의 getClaudeConfig() 사용 (index.html과 동일 패턴)
     var cc = window.getClaudeConfig ? window.getClaudeConfig() : null;
     if(!cc || !cc.apiKey){
       document.getElementById('ai-setup-hint').classList.add('visible');
       return;
     }
 
-    // 지식베이스 컨텍스트 구성: 현재 Fuse 결과 상위 5건 + 전체 fallback
     var contextItems = DATA;
     if(fuse && DATA.length > 0){
       var f = activeFilter === 'all' ? fuse
@@ -509,7 +819,6 @@ html,body{min-height:100%;font-family:'Apple SD Gothic Neo','Noto Sans KR',-appl
              threshold:0.5,includeScore:true,minMatchCharLength:2,ignoreLocation:true});
       var hits = f.search(q);
       contextItems = hits.slice(0,5).map(function(r){return r.item;});
-      // 결과 없으면 섹션 전체 패스
       if(!contextItems.length) contextItems = DATA.slice(0,30);
     }
 
@@ -522,7 +831,6 @@ html,body{min-height:100%;font-family:'Apple SD Gothic Neo','Noto Sans KR',-appl
       '지식베이스에 없는 내용은 "담당 부서에 직접 문의하세요"라고 안내하세요.\n' +
       '답변은 실무적으로 간결하게 작성하세요.\n\n[지식베이스]\n' + ctx;
 
-    // UI 초기화
     var panel = document.getElementById('ai-panel');
     var body  = document.getElementById('ai-body');
     document.getElementById('ai-setup-hint').classList.remove('visible');
@@ -532,7 +840,6 @@ html,body{min-height:100%;font-family:'Apple SD Gothic Neo','Noto Sans KR',-appl
     document.getElementById('ai-model-label').textContent = 'claude-haiku-4-5';
 
     try {
-      // claudeFetch: config.js window.claudeFetch 인용 (Flow/Official/Proxy 자동 라우팅)
       var res = await window.claudeFetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: {
@@ -557,7 +864,6 @@ html,body{min-height:100%;font-family:'Apple SD Gothic Neo','Noto Sans KR',-appl
         return;
       }
 
-      // SSE 스트림 파싱
       var reader = res.body.getReader();
       var decoder = new TextDecoder();
       var buf = '';
