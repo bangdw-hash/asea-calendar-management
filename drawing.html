@@ -250,6 +250,33 @@ html,body{width:100%;height:100%;overflow:hidden;background:#f0f4ff;font-family:
   position:absolute;inset:0;
   cursor:crosshair;display:none;z-index:10;
 }
+
+/* 펜 설정 패널 */
+#pen-panel{padding:5px 10px 8px;border-top:1px solid #e0e7ff}
+.pen-label{font-size:11px;font-weight:700;color:#6b7280;margin-bottom:4px}
+#pen-type-row{display:grid;grid-template-columns:repeat(4,1fr);gap:4px}
+#pen-size-row{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-top:6px}
+.penbtn{
+  padding:6px 2px;border:2px solid #e0e7ff;border-radius:9px;
+  background:#fff;font-size:10px;font-weight:700;color:#1a1a2e;
+  cursor:pointer;transition:all .13s;text-align:center;line-height:1.4;
+  -webkit-tap-highlight-color:transparent;
+}
+.penbtn .p-icon{display:block;font-size:18px;line-height:1}
+.penbtn:active,.penbtn:hover{background:var(--primary-lt);border-color:var(--primary)}
+.penbtn.active{background:var(--primary);color:#fff;border-color:var(--primary)}
+.sizebtn{
+  padding:7px 4px;border:2px solid #e0e7ff;border-radius:9px;
+  background:#fff;cursor:pointer;transition:all .13s;
+  display:flex;flex-direction:column;align-items:center;gap:3px;
+  -webkit-tap-highlight-color:transparent;
+}
+.sizebtn .s-dot{border-radius:50%;background:#1a1a2e}
+.sizebtn .s-label{font-size:9px;font-weight:700;color:#6b7280}
+.sizebtn:active,.sizebtn:hover{background:var(--primary-lt);border-color:var(--primary)}
+.sizebtn.active{background:var(--primary);border-color:var(--primary)}
+.sizebtn.active .s-dot{background:#fff}
+.sizebtn.active .s-label{color:rgba(255,255,255,.85)}
 </style>
 </head>
 <body>
@@ -305,6 +332,40 @@ html,body{width:100%;height:100%;overflow:hidden;background:#f0f4ff;font-family:
       <div id="palette-wrap">
         <div id="palette-label">🎨 색상 선택</div>
         <div id="palette"></div>
+      </div>
+
+      <!-- 펜 설정 -->
+      <div id="pen-panel">
+        <div class="pen-label">🖊️ 펜 종류</div>
+        <div id="pen-type-row">
+          <button id="ptype-pencil" class="penbtn active" onclick="DrawingApp.setPenType('pencil')">
+            <span class="p-icon">✏️</span>연필
+          </button>
+          <button id="ptype-brush" class="penbtn" onclick="DrawingApp.setPenType('brush')">
+            <span class="p-icon">🖌️</span>붓
+          </button>
+          <button id="ptype-marker" class="penbtn" onclick="DrawingApp.setPenType('marker')">
+            <span class="p-icon">🖊️</span>마커
+          </button>
+          <button id="ptype-crayon" class="penbtn" onclick="DrawingApp.setPenType('crayon')">
+            <span class="p-icon">🖍️</span>크레용
+          </button>
+        </div>
+        <div class="pen-label" style="margin-top:6px">두께</div>
+        <div id="pen-size-row">
+          <button id="psize-S" class="sizebtn" onclick="DrawingApp.setPenSize('S')">
+            <span class="s-dot" style="width:5px;height:5px"></span>
+            <span class="s-label">얇게</span>
+          </button>
+          <button id="psize-M" class="sizebtn active" onclick="DrawingApp.setPenSize('M')">
+            <span class="s-dot" style="width:9px;height:9px"></span>
+            <span class="s-label">보통</span>
+          </button>
+          <button id="psize-L" class="sizebtn" onclick="DrawingApp.setPenSize('L')">
+            <span class="s-dot" style="width:14px;height:14px"></span>
+            <span class="s-label">굵게</span>
+          </button>
+        </div>
       </div>
 
       <!-- 인라인 갤러리 -->

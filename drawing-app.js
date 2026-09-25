@@ -7,6 +7,18 @@ const COLORS = ['#FF0000','#FF6B00','#FFD600','#00C853','#00B0FF','#7C4DFF','#FF
 const COLOR_NAMES = ['빨강','주황','노랑','초록','파랑','보라','분홍','흰색','연두','하늘','살구','회색'];
 const THRESHOLD = 0.65;
 
+const PEN_TYPES = [
+  { id: 'pencil', label: '연필', icon: '✏️', cap: 'round',  alpha: 0.72, widthMul: 1.0 },
+  { id: 'brush',  label: '붓',   icon: '🖌️', cap: 'round',  alpha: 0.88, widthMul: 1.7 },
+  { id: 'marker', label: '마커', icon: '🖊️', cap: 'square', alpha: 0.92, widthMul: 2.1 },
+  { id: 'crayon', label: '크레용', icon: '🖍️', cap: 'round', alpha: 0.62, widthMul: 1.45 },
+];
+const PEN_SIZES = [
+  { id: 'S', label: '얇게', px: 3 },
+  { id: 'M', label: '보통', px: 7 },
+  { id: 'L', label: '굵게', px: 14 },
+];
+
 /* ─── 데이터 정규화 ─── */
 // drawing-data.js: DRAWING_DATA = { categories:[{id,name,icon,images:[{id,name,svg}]}] }
 const DATA = {};   // DATA['vehicles'] = [{id,name,svg},...]
@@ -37,6 +49,8 @@ let state = {
   bgmOn: true,
   voiceOn: true,
   childName: CHILD_NAME,
+  penType: 'pencil',
+  penSize: 'M',
 };
 
 /* ─── BGM ─── */
@@ -236,6 +250,7 @@ function startDrawing(categoryId, drawingId) {
 
   injectSVG(data);
   renderPalette();
+  renderPenPanel();
   updateProgress();
   updateModeButtons();
   hideCompletionModal();
@@ -416,13 +431,55 @@ function tStart(e) { if(state.mode!=='trace')return; traceDrawing=true; const p=
 function tMove(e) {
   if(!traceDrawing||state.mode!=='trace')return;
   const p=tPos(e);
-  traceCtx.strokeStyle=state.selectedColor; traceCtx.lineWidth=7;
-  traceCtx.lineCap='round'; traceCtx.lineJoin='round';
-  traceCtx.beginPath(); traceCtx.moveTo(traceLastX,traceLastY);
-  traceCtx.lineTo(p.x,p.y); traceCtx.stroke();
+  const pt = PEN_TYPES.find(t=>t.id===state.penType) || PEN_TYPES[0];
+  const ps = PEN_SIZES.find(s=>s.id===state.penSize) || PEN_SIZES[1];
+  const lw = ps.px * pt.widthMul;
+
+  traceCtx.strokeStyle = state.selectedColor;
+  traceCtx.lineWidth = lw;
+  traceCtx.lineCap = pt.cap;
+  traceCtx.lineJoin = 'round';
+  traceCtx.globalAlpha = pt.alpha;
+  traceCtx.beginPath();
+  traceCtx.moveTo(traceLastX, traceLastY);
+  traceCtx.lineTo(p.x, p.y);
+  traceCtx.stroke();
+
+  // 크레용: 텍스처 레이어
+  if (pt.id === 'crayon') {
+    traceCtx.globalAlpha = 0.18;
+    traceCtx.lineWidth = lw * 1.4;
+    traceCtx.beginPath();
+    traceCtx.moveTo(traceLastX + 1.5, traceLastY + 1.5);
+    traceCtx.lineTo(p.x + 1.5, p.y + 1.5);
+    traceCtx.stroke();
+  }
+  traceCtx.globalAlpha = 1;
   traceLastX=p.x; traceLastY=p.y;
 }
 function tEnd() { traceDrawing=false; }
+
+/* ─── 펜 설정 ─── */
+function setPenType(typeId) {
+  state.penType = typeId;
+  renderPenPanel();
+  const pt = PEN_TYPES.find(t=>t.id===typeId);
+  if (pt) VOICE.say(`${pt.label}으로 그려봐요!`);
+}
+function setPenSize(sizeId) {
+  state.penSize = sizeId;
+  renderPenPanel();
+}
+function renderPenPanel() {
+  PEN_TYPES.forEach(pt => {
+    const b = document.getElementById('ptype-' + pt.id);
+    if (b) b.classList.toggle('active', state.penType === pt.id);
+  });
+  PEN_SIZES.forEach(ps => {
+    const b = document.getElementById('psize-' + ps.id);
+    if (b) b.classList.toggle('active', state.penSize === ps.id);
+  });
+}
 
 /* ─── 힌트 ─── */
 let hintT = null;
@@ -541,6 +598,7 @@ function init() {
 window.DrawingApp = {
   showImages, showCategories, startDrawing, goToSelect,
   selectColor, setMode, undo, showHint,
+  setPenType, setPenSize,
   saveAsPNG, printDrawing,
   onComplete, hideCompletionModal,
   openParentModal, closeParentModal, saveParentSettings,
