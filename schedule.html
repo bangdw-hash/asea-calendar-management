@@ -2312,6 +2312,7 @@ let _userEmail  = null;
 let _userInitial = '';
 let _events     = [];
 let _holidays   = {}; // 'YYYY-MM-DD' → 공휴일명
+let _schoolEvtsMap = {}; // 'YYYY-MM-DD' → [{name, color}] — Supabase 직접 로드
 let _linkedItems = {}; // 'YYYY-MM-DD' → [{label, classroom_color}] from reservation.html
 let _deptFilter = { group: null, dept: null }; // group: null|'운영부'|'계열'|'부설', dept: null|string
 const _evCache  = {}; // key: 'y_m' → {items, ts}
@@ -2903,9 +2904,9 @@ function renderMonth(wrap) {
       const holiday = _holidays[dateKey];
       const holidayHtml = holiday ? `<span class="day-holiday">${esc(fmtHolidayName(holiday))}</span>` : '';
       const allCellEvts = (cell.evts || []);
-      const schoolEvts = allCellEvts.filter(ev => ev.description && ev.description.includes('[학교일정]'));
       const regularEvts = allCellEvts.filter(ev => !(ev.description && ev.description.includes('[학교일정]')));
-      const schoolHtml = schoolEvts.map(ev => { const sc = _schoolEvtColorFromDesc(ev.description); return `<span class="day-school-evt" style="color:${sc}">${esc(ev.summary||'')}</span>`; }).join('');
+      const sbSchoolEvts = _schoolEvtsMap[dateKey] || [];
+      const schoolHtml = sbSchoolEvts.map(item => `<span class="day-school-evt" style="color:${item.color||'#1A73E8'}">${esc(item.name||'')}</span>`).join('');
       const numEl = `<div class="day-cell-hdr"><span class="day-num">${cell.d}</span><span class="day-dow">${WEEKDAYS[c]}</span>${holidayHtml}${schoolHtml}</div>`;
       const visEvts = (isMob && regularEvts.length > MAX_MOB) ? regularEvts.slice(0, MAX_MOB) : regularEvts;
       const moreCount = (isMob && regularEvts.length > MAX_MOB) ? regularEvts.length - MAX_MOB : 0;
@@ -5743,6 +5744,41 @@ function printMonth() {
 }
 
 /* ══════════════ PUBLIC EVENTS (no auth) ══════════════ */
+/* Supabase school_events → _schoolEvtsMap 빌드 (반복 처리 포함) */
+async function loadSchoolEvtsForCalendar() {
+  try {
+    const r = await fetch(`${SB_URL}/rest/v1/school_events?select=*&order=date.asc`, {
+      headers: { apikey: SB_ANON, Authorization: 'Bearer ' + SB_ANON }
+    });
+    if (!r.ok) return;
+    const list = await r.json();
+    _schoolEvtsCache = list; // 관리자 패널과 공유
+    const map = {};
+    const pad = n => String(n).padStart(2, '0');
+    const addToMap = (dateKey, name, color) => {
+      (map[dateKey] = map[dateKey] || []).push({ name, color: color || '#1A73E8' });
+    };
+    for (const item of list) {
+      const color = item.color || '#1A73E8';
+      const base = item.date; // 'YYYY-MM-DD'
+      if (!base) continue;
+      const [byY, byM, byD] = base.split('-').map(Number);
+      if (item.repeat === 'yearly') {
+        for (let yr = byY - 2; yr <= byY + 15; yr++) addToMap(`${yr}-${pad(byM)}-${pad(byD)}`, item.name, color);
+      } else if (item.repeat === 'monthly') {
+        for (let yr = byY - 1; yr <= byY + 3; yr++)
+          for (let mo = 1; mo <= 12; mo++) {
+            const lastDay = new Date(yr, mo, 0).getDate();
+            if (byD <= lastDay) addToMap(`${yr}-${pad(mo)}-${pad(byD)}`, item.name, color);
+          }
+      } else {
+        addToMap(base, item.name, color);
+      }
+    }
+    _schoolEvtsMap = map;
+  } catch(_) {}
+}
+
 async function fetchPublicEvents() {
   const y = _curDate.getFullYear(), m = _curDate.getMonth();
   const timeMin = new Date(y, m - 1, 1).toISOString();
@@ -5755,6 +5791,7 @@ async function fetchPublicEvents() {
         body: JSON.stringify({ service:'gcal-public', payload:{ calId:CAL_ID, timeMin, timeMax } }),
       }),
       fetchHolidays(),
+      loadSchoolEvtsForCalendar(),
     ]);
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
     const data = await r.json();
@@ -6605,8 +6642,10 @@ async function adminSaveSchoolEvt() {
     _schoolEvtFormColor = '#1A73E8';
     _initSchoolEvtColorPicker();
     _schoolEvtsCache = null;
+    await loadSchoolEvtsForCalendar();
+    renderCalendar();
     await _renderSchoolEvtList();
-    showToast('저장되었습니다. 캘린더에 반영하려면 "캘린더에 반영" 버튼을 클릭하세요.', 'success');
+    showToast('저장되었습니다. 캘린더에 반영되었습니다.', 'success');
   } catch(e) {
     showToast('저장 실패: ' + e.message, 'error');
   } finally {
@@ -6646,19 +6685,57 @@ function adminCancelSchoolEvtEdit() {
   _renderSchoolEvtList();
 }
 
+/* Google Calendar에서 [학교일정] 태그가 달린 이벤트를 모두 삭제 */
+async function _deleteAllSchoolCalEvts() {
+  if (!_token || !_tokenHasWrite) return;
+  const timeMin = new Date(new Date().getFullYear() - 5, 0, 1).toISOString();
+  const timeMax = new Date(new Date().getFullYear() + 15, 11, 31).toISOString();
+  let pageToken = null;
+  do {
+    const qs = new URLSearchParams({ timeMin, timeMax, singleEvents: 'false', maxResults: '250' });
+    if (pageToken) qs.set('pageToken', pageToken);
+    const data = await apiFetch('GET', `/calendars/${encodeURIComponent(CAL_ID)}/events?${qs}`);
+    const items = data?.items || [];
+    for (const ev of items) {
+      if (ev.description && ev.description.includes('[학교일정]')) {
+        try { await apiFetch('DELETE', `/calendars/${encodeURIComponent(CAL_ID)}/events/${encodeURIComponent(ev.id)}`); } catch(_) {}
+      }
+    }
+    pageToken = data?.nextPageToken || null;
+  } while (pageToken);
+}
+
 async function adminDeleteSchoolEvt(id) {
   if (_editingSchoolEvtId === id) adminCancelSchoolEvtEdit();
+  const cachedList = _schoolEvtsCache || [];
+  const item = cachedList.find(x => x.id === id);
   const r = await fetch(`${SB_URL}/rest/v1/school_events?id=eq.${encodeURIComponent(id)}`, {
     method: 'DELETE',
     headers: { apikey: SB_ANON, Authorization: 'Bearer ' + SB_ANON }
   });
   if (!r.ok) { showToast('삭제 실패', 'error'); return; }
+  /* Google Calendar에서도 해당 이름/날짜 이벤트 정리 (선택적 — 로그인 시에만) */
+  if (item && _token && _tokenHasWrite) {
+    try {
+      const timeMin = new Date(item.date + 'T00:00:00').toISOString();
+      const timeMax = new Date(item.date + 'T23:59:59').toISOString();
+      const qs = new URLSearchParams({ timeMin, timeMax, singleEvents: 'false', maxResults: '100' });
+      const data = await apiFetch('GET', `/calendars/${encodeURIComponent(CAL_ID)}/events?${qs}`);
+      for (const ev of data?.items || []) {
+        if (ev.summary === item.name && ev.description && ev.description.includes('[학교일정]')) {
+          try { await apiFetch('DELETE', `/calendars/${encodeURIComponent(CAL_ID)}/events/${encodeURIComponent(ev.id)}`); } catch(_) {}
+        }
+      }
+    } catch(_) {}
+  }
   _schoolEvtsCache = null;
+  await loadSchoolEvtsForCalendar();
+  renderCalendar();
   _renderSchoolEvtList();
 }
 
 async function adminClearSchoolEvts() {
-  if (!confirm('저장된 학교 일정을 모두 삭제하시겠습니까?')) return;
+  if (!confirm('저장된 학교 일정을 모두 삭제하시겠습니까?\n\n(Google 캘린더에 반영된 학교일정도 함께 삭제됩니다.)')) return;
   _editingSchoolEvtId = null;
   const r = await fetch(`${SB_URL}/rest/v1/school_events?id=neq.''`, {
     method: 'DELETE',
@@ -6666,7 +6743,12 @@ async function adminClearSchoolEvts() {
   });
   if (!r.ok) { showToast('삭제 실패', 'error'); return; }
   _schoolEvtsCache = null;
+  _schoolEvtsMap = {};
+  renderCalendar();
   _renderSchoolEvtList();
+  showToast('학교일정이 모두 삭제되었습니다.', 'success');
+  /* Google Calendar에서도 정리 (로그인 시에만, 백그라운드) */
+  if (_token && _tokenHasWrite) _deleteAllSchoolCalEvts().catch(() => {});
 }
 
 async function _renderSchoolEvtList() {
@@ -6715,7 +6797,10 @@ async function adminApplySchoolEvts() {
     return;
   }
   const btn = document.querySelector('#admin-sec-school button[onclick="adminApplySchoolEvts()"]');
-  if (btn) { btn.disabled = true; btn.textContent = '반영 중...'; }
+  if (btn) { btn.disabled = true; btn.textContent = '기존 이벤트 정리 중...'; }
+  /* 중복 방지: 기존 [학교일정] 이벤트를 모두 삭제한 뒤 재추가 */
+  await _deleteAllSchoolCalEvts();
+  if (btn) btn.textContent = '반영 중...';
   let success = 0, fail = 0;
   for (const item of list) {
     try {
@@ -6734,7 +6819,7 @@ async function adminApplySchoolEvts() {
   }
   if (btn) { btn.disabled = false; btn.textContent = '캘린더에 반영'; }
   if (success > 0) {
-    showToast(`${success}개 학교 일정이 캘린더에 추가되었습니다.${fail > 0 ? ` (${fail}개 실패)` : ''}`, 'success');
+    showToast(`${success}개 학교 일정이 캘린더에 반영되었습니다.${fail > 0 ? ` (${fail}개 실패)` : ''}`, 'success');
     fetchEvents().then(() => renderCalendar());
   } else {
     showToast(`캘린더 반영 실패. 로그인 상태와 권한을 확인하세요.`, 'error');
