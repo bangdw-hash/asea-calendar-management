@@ -8,6 +8,20 @@ const COLOR_NAMES = ['빨강','주황','노랑','초록','파랑','보라','분�
 const COMPLETION_THRESHOLD = 0.65;
 const TRACING_TOLERANCE = 40;
 
+/* ─── 데이터 정규화: drawing-data.js의 categories 배열을 id 키 맵으로 변환 ─── */
+// DRAWING_DATA = { categories: [{id, name, icon, images:[{id,name,svg}]}] }
+// DATA['vehicles'] = [{id,name,svg}, ...]
+const DATA = {};
+const CAT_LIST = []; // [{id, name, icon}]
+(function buildDataMap() {
+  const src = typeof DRAWING_DATA !== 'undefined' ? DRAWING_DATA : {};
+  const cats = src.categories || [];
+  cats.forEach(cat => {
+    DATA[cat.id] = cat.images || [];
+    CAT_LIST.push({ id: cat.id, name: cat.name, icon: cat.icon || '🎨' });
+  });
+})();
+
 /* ─── 상태 ─── */
 let state = {
   category: 'vehicles',
@@ -474,14 +488,14 @@ function galleryView(i) {
 
 /* ─── 이미지 선택 ─── */
 function getCurrentDrawingName() {
-  if (!state.drawingId || !DRAWING_DATA[state.category]) return '그림';
-  const d = DRAWING_DATA[state.category].find(x => x.id === state.drawingId);
+  if (!state.drawingId || !DATA[state.category]) return '그림';
+  const d = DATA[state.category].find(x => x.id === state.drawingId);
   return d ? d.name : '그림';
 }
 
 function selectDrawing(categoryKey, drawingId) {
-  if (!DRAWING_DATA[categoryKey]) return;
-  const data = DRAWING_DATA[categoryKey].find(x => x.id === drawingId);
+  if (!DATA[categoryKey]) return;
+  const data = DATA[categoryKey].find(x => x.id === drawingId);
   if (!data) return;
   state.category = categoryKey;
   state.drawingId = drawingId;
@@ -500,10 +514,11 @@ function showImagePanel(categoryKey) {
   const panel = document.getElementById('image-panel');
   const title = document.getElementById('image-panel-title');
   const grid = document.getElementById('image-grid');
-  const cat = CATEGORY_META[categoryKey];
-  if (!cat || !DRAWING_DATA[categoryKey]) return;
-  title.textContent = cat.label;
-  grid.innerHTML = DRAWING_DATA[categoryKey].map(d => `
+  const images = DATA[categoryKey];
+  const catInfo = CAT_LIST.find(c => c.id === categoryKey);
+  if (!images || !images.length) return;
+  title.textContent = (catInfo ? catInfo.icon + ' ' + catInfo.name : categoryKey);
+  grid.innerHTML = images.map(d => `
     <button class="thumb-btn" onclick="window.DrawingApp.selectDrawing('${categoryKey}','${d.id}')">
       <svg viewBox="0 0 400 300" width="80" height="60" xmlns="http://www.w3.org/2000/svg">${d.svg}</svg>
       <span>${d.name}</span>
@@ -571,10 +586,10 @@ function updateModeButtons() {
 /* ─── 카테고리 탭 렌더 ─── */
 function renderCategories() {
   const wrap = document.getElementById('category-tabs');
-  wrap.innerHTML = Object.entries(CATEGORY_META).map(([k, v]) => `
-    <button class="cat-btn" onclick="window.DrawingApp.showImagePanel('${k}')" title="${v.label}">
-      <span class="cat-icon">${v.icon}</span>
-      <span class="cat-label">${v.label.split(' ')[1]}</span>
+  wrap.innerHTML = CAT_LIST.map(c => `
+    <button class="cat-btn" onclick="window.DrawingApp.showImagePanel('${c.id}')" title="${c.name}">
+      <span class="cat-icon">${c.icon}</span>
+      <span class="cat-label">${c.name}</span>
     </button>
   `).join('');
 }
