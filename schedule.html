@@ -6792,7 +6792,6 @@ async function _renderSchoolEvtList() {
           onchange="document.querySelectorAll('.school-row-cb').forEach(cb=>{cb.checked=this.checked;if(this.checked)_schoolEvtChecked.add(cb.dataset.id);else _schoolEvtChecked.delete(cb.dataset.id)})">
         전체 선택
       </label>
-      <span style="margin-left:8px;color:var(--primary)">✓ 체크된 항목만 Google Calendar에 반영됩니다</span>
     </div>
     <table class="admin-table"><thead><tr><th>반영</th><th>#</th><th>날짜</th><th>일정명</th><th>반복</th><th>색상</th><th>수정</th><th>삭제</th></tr></thead><tbody>` +
     list.map((item, i) => {
