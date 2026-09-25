@@ -187,9 +187,13 @@ const PARTICLE = (() => {
 
 /* ─── 화면 전환 ─── */
 function showScreen(id) {
-  document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
+  document.querySelectorAll('.screen').forEach(s => {
+    s.classList.add('hidden');
+    s.classList.remove('enter');
+  });
   const el = document.getElementById(id);
   el.classList.remove('hidden');
+  requestAnimationFrame(() => el.classList.add('enter'));
 }
 
 /* ─── 선택 화면 ─── */

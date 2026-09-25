@@ -1120,14 +1120,13 @@ const DRAWING_DATA = {
 </g>` },
         { id: 'snowflake', name: '눈꽃', svg: `
 <g stroke="#1a1a1a" stroke-linecap="round" stroke-linejoin="round" fill="#fafafa">
-<line class="cr" data-name="가지1" stroke-width="6" x1="200" y1="42" x2="200" y2="285"/>
-<line class="cr" data-name="가지2" stroke-width="6" x1="75" y1="115" x2="325" y2="227"/>
-<line class="cr" data-name="가지3" stroke-width="6" x1="325" y1="115" x2="75" y2="227"/>
-<line class="cr" data-name="잔가지1" stroke-width="4" x1="200" y1="88" x2="170" y2="118"/>
-<line class="cr" data-name="잔가지2" stroke-width="4" x1="200" y1="88" x2="230" y2="118"/>
-<line class="cr" data-name="잔가지3" stroke-width="4" x1="200" y1="238" x2="170" y2="208"/>
-<line class="cr" data-name="잔가지4" stroke-width="4" x1="200" y1="238" x2="230" y2="208"/>
-<circle class="cr" data-name="중심" stroke-width="4" cx="200" cy="163" r="18"/>
+<ellipse class="cr" data-name="팔위" stroke-width="4" cx="200" cy="90" rx="10" ry="55"/>
+<ellipse class="cr" data-name="팔우상" stroke-width="4" cx="200" cy="90" rx="10" ry="55" transform="rotate(60,200,163)"/>
+<ellipse class="cr" data-name="팔좌상" stroke-width="4" cx="200" cy="90" rx="10" ry="55" transform="rotate(120,200,163)"/>
+<ellipse class="cr" data-name="팔아래" stroke-width="4" cx="200" cy="236" rx="10" ry="55"/>
+<ellipse class="cr" data-name="팔우하" stroke-width="4" cx="200" cy="236" rx="10" ry="55" transform="rotate(60,200,163)"/>
+<ellipse class="cr" data-name="팔좌하" stroke-width="4" cx="200" cy="236" rx="10" ry="55" transform="rotate(120,200,163)"/>
+<circle class="cr" data-name="중심" stroke-width="5" cx="200" cy="163" r="22"/>
 </g>` },
         { id: 'volcano', name: '화산', svg: `
 <g stroke="#1a1a1a" stroke-linecap="round" stroke-linejoin="round" fill="#fafafa">
@@ -1335,9 +1334,7 @@ const DRAWING_DATA = {
 <polygon class="cr" data-name="연오른아래" stroke-width="4" points="200,148 292,148 200,275"/>
 <line stroke-width="4" x1="200" y1="42" x2="200" y2="275"/>
 <line stroke-width="4" x1="108" y1="148" x2="292" y2="148"/>
-<path class="cr" data-name="꼬리" stroke-width="4" d="M200,275 Q220,295 205,315 Q185,335 215,355 Q235,375 215,395" fill="none"/>
-<circle class="cr" data-name="꼬리장식1" stroke-width="3" cx="205" cy="315" r="10"/>
-<circle class="cr" data-name="꼬리장식2" stroke-width="3" cx="215" cy="355" r="10"/>
+<circle class="cr" data-name="가운데" stroke-width="3" cx="200" cy="148" r="14"/>
 </g>` },
         { id: 'balloon', name: '풍선', svg: `
 <g stroke="#1a1a1a" stroke-linecap="round" stroke-linejoin="round" fill="#fafafa">
@@ -1373,7 +1370,7 @@ const DRAWING_DATA = {
 <path class="cr" data-name="무늬2" stroke-width="4" d="M200,38 Q188,95 200,165 Q212,235 200,292" fill="none"/>
 <path class="cr" data-name="무늬3" stroke-width="4" d="M95,248 Q148,205 200,165 Q252,125 305,82" fill="none"/>
 </g>` },
-        { id: 'kite', name: '연', svg: `
+        { id: 'kite2', name: '마름모연', svg: `
 <g stroke="#1a1a1a" stroke-linecap="round" stroke-linejoin="round" fill="#fafafa">
 <path class="cr" data-name="왼위" stroke-width="4" d="M200,42 L88,165 L200,178 Z"/>
 <path class="cr" data-name="오른위" stroke-width="4" d="M200,42 L312,165 L200,178 Z"/>
@@ -1381,9 +1378,7 @@ const DRAWING_DATA = {
 <path class="cr" data-name="오른아래" stroke-width="4" d="M312,165 L200,178 L200,288 Z"/>
 <line stroke-width="3" x1="200" y1="42" x2="200" y2="288"/>
 <line stroke-width="3" x1="88" y1="165" x2="312" y2="165"/>
-<path stroke-width="2" d="M200,288 Q215,305 208,325 Q192,340 200,358 Q208,372 200,388" fill="none"/>
-<ellipse class="cr" data-name="리본1" stroke-width="3" cx="205" cy="310" rx="12" ry="8"/>
-<ellipse class="cr" data-name="리본2" stroke-width="3" cx="200" cy="352" rx="12" ry="8"/>
+<circle class="cr" data-name="중심점" stroke-width="3" cx="200" cy="178" r="12"/>
 </g>` },
         { id: 'top', name: '팽이', svg: `
 <g stroke="#1a1a1a" stroke-linecap="round" stroke-linejoin="round" fill="#fafafa">
@@ -1535,7 +1530,7 @@ const DRAWING_DATA = {
 <ellipse class="cr" data-name="대륙2" stroke-width="3" cx="232" cy="178" rx="32" ry="22"/>
 <ellipse class="cr" data-name="대륙3" stroke-width="3" cx="188" cy="198" rx="25" ry="18"/>
 </g>` },
-        { id: 'ufo', name: 'UFO', svg: `
+        { id: 'ufo2', name: 'UFO2', svg: `
 <g stroke="#1a1a1a" stroke-linecap="round" stroke-linejoin="round" fill="#fafafa">
 <ellipse class="cr" data-name="본체" stroke-width="5" cx="200" cy="168" rx="148" ry="52"/>
 <ellipse class="cr" data-name="돔" stroke-width="5" cx="200" cy="145" rx="78" ry="62"/>
@@ -1546,7 +1541,7 @@ const DRAWING_DATA = {
 <circle class="cr" data-name="조명4" stroke-width="3" cx="235" cy="195" r="12"/>
 <circle class="cr" data-name="조명5" stroke-width="3" cx="270" cy="185" r="12"/>
 </g>` },
-        { id: 'moon', name: '달', svg: `
+        { id: 'fullmoon', name: '보름달', svg: `
 <g stroke="#1a1a1a" stroke-linecap="round" stroke-linejoin="round" fill="#fafafa">
 <circle class="cr" data-name="달본체" stroke-width="5" cx="200" cy="165" r="118"/>
 <circle class="cr" data-name="크레이터1" stroke-width="4" cx="155" cy="128" r="32"/>
