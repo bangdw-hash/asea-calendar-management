@@ -5,7 +5,7 @@
 const CHILD_NAME = '시윤';
 const COLORS = ['#FF0000','#FF6B00','#FFD600','#00C853','#00B0FF','#7C4DFF','#FF4081','#FFFFFF','#A5D6A7','#80DEEA','#FFCC80','#B0BEC5'];
 const COLOR_NAMES = ['빨강','주황','노랑','초록','파랑','보라','분홍','흰색','연두','하늘','살구','회색'];
-const THRESHOLD = 0.65;
+const THRESHOLD = 1.0;
 
 const PEN_TYPES = [
   { id: 'pencil', label: '연필', icon: '✏️', cap: 'round',  alpha: 0.72, widthMul: 1.0 },
@@ -315,8 +315,12 @@ function undo() {
 
 function updateProgress() {
   if (!state.svgEl) return;
-  const total = state.svgEl.querySelectorAll('.cr').length;
-  const done = Object.keys(state.colored).length;
+  const regions = Array.from(state.svgEl.querySelectorAll('.cr'));
+  const total = regions.length;
+  const done = regions.filter(el => {
+    const f = el.getAttribute('fill');
+    return f && f !== '#fafafa' && f !== 'none' && f !== '';
+  }).length;
   const pct = total ? Math.min(100, Math.round(done / total * 100)) : 0;
   const bar = document.getElementById('prog-bar');
   const lbl = document.getElementById('prog-pct');
@@ -327,9 +331,14 @@ function updateProgress() {
 
 function checkCompletion() {
   if (!state.svgEl || state.completed) return;
-  const total = state.svgEl.querySelectorAll('.cr').length;
-  const done = Object.keys(state.colored).length;
-  if (total > 0 && done / total >= THRESHOLD) {
+  const regions = Array.from(state.svgEl.querySelectorAll('.cr'));
+  const total = regions.length;
+  if (total === 0) return;
+  const done = regions.filter(el => {
+    const f = el.getAttribute('fill');
+    return f && f !== '#fafafa' && f !== 'none' && f !== '';
+  }).length;
+  if (done >= total) {
     state.completed = true;
     setTimeout(() => {
       VOICE.complete();
@@ -345,9 +354,14 @@ function hideCompletionModal() {
   document.getElementById('completion-modal').classList.remove('show');
 }
 
-function onComplete() {
-  hideCompletionModal();
+function onSave() {
   saveAsPNG();
+  hideCompletionModal();
+}
+
+function onNext() {
+  hideCompletionModal();
+  goToSelect();
 }
 
 /* ─── 팔레트 ─── */
@@ -600,7 +614,7 @@ window.DrawingApp = {
   selectColor, setMode, undo, showHint,
   setPenType, setPenSize,
   saveAsPNG, printDrawing,
-  onComplete, hideCompletionModal,
+  onSave, onNext, hideCompletionModal,
   openParentModal, closeParentModal, saveParentSettings,
   toggleBGM: BGM.toggle,
 };

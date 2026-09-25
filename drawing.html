@@ -208,10 +208,17 @@ html,body{width:100%;height:100%;overflow:hidden;background:#f0f4ff;font-family:
 .cm-emoji{font-size:72px;line-height:1;margin-bottom:10px}
 .cm-title{font-size:26px;font-weight:900;color:var(--primary);margin-bottom:6px}
 .cm-sub{font-size:15px;color:#6b7280;margin-bottom:22px}
-#modal-ok{
-  background:linear-gradient(135deg,var(--primary),#a78bfa);
+.cm-btns{display:flex;gap:10px;margin-top:18px}
+#modal-save{
+  flex:1;background:#16a34a;
   color:#fff;border:none;border-radius:14px;
-  padding:14px 28px;font-size:17px;font-weight:800;
+  padding:13px;font-size:16px;font-weight:800;
+  cursor:pointer;transition:opacity .15s}
+#modal-save:hover{opacity:.88}
+#modal-next{
+  flex:1;background:linear-gradient(135deg,var(--primary),#a78bfa);
+  color:#fff;border:none;border-radius:14px;
+  padding:13px;font-size:16px;font-weight:800;
   cursor:pointer;width:100%;box-shadow:var(--sh-md);
 }
 
@@ -383,7 +390,10 @@ html,body{width:100%;height:100%;overflow:hidden;background:#f0f4ff;font-family:
     <div class="cm-emoji">🎉</div>
     <div class="cm-title">완성!</div>
     <div class="cm-sub" id="cm-sub">참 잘했어요!</div>
-    <button id="modal-ok" onclick="DrawingApp.onComplete()">저장하고 계속 그리기</button>
+    <div class="cm-btns">
+      <button id="modal-save" onclick="DrawingApp.onSave()">💾 저장하기</button>
+      <button id="modal-next" onclick="DrawingApp.onNext()">🎨 다음 그림</button>
+    </div>
   </div>
 </div>
 
