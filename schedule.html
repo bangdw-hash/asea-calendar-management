@@ -2651,8 +2651,9 @@ async function fetchEvents() {
     }));
     _events = merged;
     updateDeptFilterBar();
-    // Refresh cache in background so data doesn't get stale
+    // Refresh cache in background; always reload school events from Supabase
     _prefetchEvents(y, m);
+    loadSchoolEvtsForCalendar().then(() => renderCalendar()).catch(() => {});
     return;
   }
 
@@ -2664,6 +2665,7 @@ async function fetchEvents() {
         timeMin, timeMax, singleEvents: 'true', orderBy: 'startTime', maxResults: '500'
       })}`),
       fetchHolidays(),
+      loadSchoolEvtsForCalendar(),
     ]);
     const items = (data && data.items) ? data.items : [];
     // Store per-month slices in cache
@@ -6573,6 +6575,7 @@ const SCHOOL_EVT_COLORS = [
 let _editingSchoolEvtId = null;
 let _schoolEvtFormColor = '#1A73E8';
 let _schoolEvtsCache = null;
+let _schoolEvtChecked = new Set(); // 캘린더에 반영할 항목 id 집합
 
 async function _loadSchoolEvts() {
   try {
@@ -6751,6 +6754,11 @@ async function adminClearSchoolEvts() {
   if (_token && _tokenHasWrite) _deleteAllSchoolCalEvts().catch(() => {});
 }
 
+function _toggleSchoolEvtCheck(id) {
+  if (_schoolEvtChecked.has(id)) _schoolEvtChecked.delete(id);
+  else _schoolEvtChecked.add(id);
+}
+
 async function _renderSchoolEvtList() {
   const listEl = document.getElementById('school-evt-list');
   const emptyEl = document.getElementById('school-evt-empty');
@@ -6766,18 +6774,34 @@ async function _renderSchoolEvtList() {
   }
   if (!list.length) {
     listEl.innerHTML = '';
+    _schoolEvtChecked.clear();
     if (emptyEl) emptyEl.hidden = false;
     if (actionsEl) actionsEl.hidden = true;
     return;
   }
+  /* 새로 로드된 항목은 기본으로 체크 (기존 체크 상태 유지) */
+  list.forEach(item => { if (!_schoolEvtChecked.has('__seen__' + item.id)) _schoolEvtChecked.add(item.id); });
   if (emptyEl) emptyEl.hidden = true;
   if (actionsEl) actionsEl.hidden = false;
   const repeatLabel = { none: '반복 없음', yearly: '매년', monthly: '매월' };
-  listEl.innerHTML = `<table class="admin-table"><thead><tr><th>#</th><th>날짜</th><th>일정명</th><th>반복</th><th>색상</th><th>수정</th><th>삭제</th></tr></thead><tbody>` +
+  const checkedCount = list.filter(item => _schoolEvtChecked.has(item.id)).length;
+  listEl.innerHTML = `
+    <div style="font-size:.76rem;color:var(--g500);margin-bottom:6px">
+      <label style="cursor:pointer;user-select:none">
+        <input type="checkbox" id="school-check-all" ${checkedCount === list.length ? 'checked' : ''}
+          onchange="document.querySelectorAll('.school-row-cb').forEach(cb=>{cb.checked=this.checked;if(this.checked)_schoolEvtChecked.add(cb.dataset.id);else _schoolEvtChecked.delete(cb.dataset.id)})">
+        전체 선택
+      </label>
+      <span style="margin-left:8px;color:var(--primary)">✓ 체크된 항목만 Google Calendar에 반영됩니다</span>
+    </div>
+    <table class="admin-table"><thead><tr><th>반영</th><th>#</th><th>날짜</th><th>일정명</th><th>반복</th><th>색상</th><th>수정</th><th>삭제</th></tr></thead><tbody>` +
     list.map((item, i) => {
       const color = item.color || '#1A73E8';
       const isEditing = _editingSchoolEvtId === item.id;
+      const checked = _schoolEvtChecked.has(item.id);
       return `<tr style="${isEditing ? 'background:var(--primary-lt)' : ''}">
+        <td><input type="checkbox" class="school-row-cb" data-id="${esc(item.id)}" ${checked ? 'checked' : ''}
+          onchange="_toggleSchoolEvtCheck('${esc(item.id)}');document.getElementById('school-check-all').indeterminate=true"></td>
         <td>${i+1}</td>
         <td>${esc(item.date)}</td>
         <td style="font-weight:600;color:${color}">${esc(item.name)}</td>
@@ -6790,8 +6814,10 @@ async function _renderSchoolEvtList() {
 }
 
 async function adminApplySchoolEvts() {
-  const list = _schoolEvtsCache || await _loadSchoolEvts();
-  if (!list.length) { showToast('저장된 학교 일정이 없습니다.', 'error'); return; }
+  const allList = _schoolEvtsCache || await _loadSchoolEvts();
+  const list = allList.filter(item => _schoolEvtChecked.has(item.id));
+  if (!allList.length) { showToast('저장된 학교 일정이 없습니다.', 'error'); return; }
+  if (!list.length) { showToast('반영할 일정을 하나 이상 체크해 주세요.', 'error'); return; }
   if (!_token || !_tokenHasWrite) {
     showToast('캘린더 반영은 Google 로그인(쓰기 권한) 후 이용 가능합니다.', 'error');
     return;
