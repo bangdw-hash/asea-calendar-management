@@ -9,631 +9,348 @@
   --primary: #1A73E8;
   --primary-dk: #1557B0;
   --primary-lt: #E8F0FE;
-  --green: #16a34a;
-  --green-lt: #dcfce7;
-  --orange: #ea580c;
-  --orange-lt: #ffedd5;
-  --red: #dc2626;
-  --red-lt: #fee2e2;
   --r: 12px;
-  --sh: 0 2px 8px rgba(0,0,0,.1);
+  --sh: 0 2px 8px rgba(0,0,0,.10);
   --sh-md: 0 4px 16px rgba(0,0,0,.15);
-  --sh-lg: 0 8px 32px rgba(0,0,0,.2);
-  --bg: #f0f4ff;
-  --panel: #fff;
-  --text: #1a1a2e;
-  --muted: #6b7280;
-  --toolbar-h: 56px;
-  --palette-h: 76px;
-  --progress-h: 32px;
-  --cat-h: 72px;
+  --sh-lg: 0 8px 32px rgba(0,0,0,.20);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{width:100%;height:100%;overflow:hidden;background:#f0f4ff;font-family:'Apple SD Gothic Neo','Malgun Gothic',sans-serif;touch-action:none}
+
+/* ── 화면 전환 ── */
+.screen{position:fixed;inset:0;display:flex;flex-direction:column;transition:opacity .3s,transform .3s;will-change:transform,opacity}
+.screen.hidden{opacity:0;pointer-events:none;transform:translateY(20px)}
+
+/* ══════════════════════════════
+   선택 화면
+══════════════════════════════ */
+#screen-select{background:linear-gradient(160deg,#e8f0fe 0%,#f3e8ff 100%);overflow-y:auto}
+
+.sel-header{
+  padding:16px 18px 12px;
+  background:linear-gradient(135deg,#1A73E8,#7c3aed);
+  color:#fff;
+  border-radius:0 0 20px 20px;
+  box-shadow:var(--sh-md);
+  display:flex;align-items:center;gap:10px;
+}
+.sel-header-back{
+  background:rgba(255,255,255,.2);border:none;color:#fff;
+  width:36px;height:36px;border-radius:50%;font-size:20px;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;
+}
+.sel-title{font-size:20px;font-weight:900;flex:1}
+.sel-sub{font-size:13px;opacity:.85;margin-top:2px}
+
+/* 카테고리 그리드 */
+#cat-grid{
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:12px;
+  padding:16px;
+}
+@media(min-width:480px){#cat-grid{grid-template-columns:repeat(3,1fr)}}
+
+.cat-card{
+  background:#fff;border-radius:16px;
+  padding:20px 10px 14px;
+  display:flex;flex-direction:column;align-items:center;gap:8px;
+  cursor:pointer;border:3px solid transparent;
+  box-shadow:var(--sh);transition:all .18s;
+  -webkit-tap-highlight-color:transparent;
+}
+.cat-card:active,.cat-card:hover{border-color:var(--primary);transform:scale(1.04);box-shadow:var(--sh-md)}
+.cat-card .icon{font-size:44px;line-height:1}
+.cat-card .name{font-size:16px;font-weight:800;color:#1a1a2e}
+.cat-card .cnt{font-size:12px;color:#6b7280}
+
+/* 이미지 그리드 */
+#img-grid{
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:10px;
+  padding:14px;
+}
+@media(min-width:480px){#img-grid{grid-template-columns:repeat(3,1fr)}}
+
+.img-card{
+  background:#fff;border-radius:14px;
+  display:flex;flex-direction:column;align-items:center;
+  gap:6px;padding:10px 8px 10px;
+  cursor:pointer;border:3px solid transparent;
+  box-shadow:var(--sh);transition:all .15s;
+  -webkit-tap-highlight-color:transparent;
+}
+.img-card:active,.img-card:hover{border-color:var(--primary);transform:scale(1.04)}
+.img-card svg{width:100%;aspect-ratio:4/3;border-radius:8px;background:#fafafa}
+.img-card .name{font-size:14px;font-weight:700;color:#1a1a2e}
+
+/* ══════════════════════════════
+   그림판 화면 (전체화면)
+══════════════════════════════ */
+#screen-draw{background:#1a1a2e}
+
+/* portrait: 위=캔버스 아래=컨트롤 */
+#draw-layout{
+  display:flex;
+  flex-direction:column;
+  width:100%;height:100%;
+}
+@media(orientation:landscape){
+  #draw-layout{flex-direction:row}
 }
 
-*,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; }
-html, body { width: 100%; height: 100%; overflow: hidden; background: var(--bg); font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; }
-
-/* ── 메인 레이아웃 ── */
-#app {
-  display: flex;
-  flex-direction: column;
-  width: 100vw;
-  height: 100vh;
-  overflow: hidden;
+/* 캔버스 영역 */
+#draw-canvas-area{
+  flex:1;min-height:0;min-width:0;
+  display:flex;align-items:center;justify-content:center;
+  padding:8px;
 }
-
-/* 세로 (portrait): 위=캔버스, 아래=메뉴 */
-@media (orientation: portrait) {
-  #app { flex-direction: column; }
-  #canvas-area {
-    flex: 0 0 auto;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 8px;
+#drawing-board{
+  position:relative;
+  aspect-ratio:1/1;
+  width:100%;
+  max-width:min(calc(100vh - 200px), calc(100vw - 16px));
+  background:#fff;
+  border-radius:16px;
+  box-shadow:var(--sh-lg);
+  overflow:hidden;
+  user-select:none;-webkit-user-select:none;
+}
+@media(orientation:landscape){
+  #drawing-board{
+    max-width:min(calc(100vh - 16px), calc(100vw - 260px));
   }
-  #menu-area {
-    flex: 1;
-    min-height: 0;
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    border-top: 2px solid #e0e7ff;
-    background: var(--panel);
-    box-shadow: 0 -4px 16px rgba(0,0,0,.08);
-    overflow-y: auto;
+}
+#svg-wrap{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
+#svg-wrap svg{width:100%;height:100%}
+#svg-wrap svg .cr{cursor:pointer;touch-action:none}
+#svg-wrap svg .cr:active{filter:brightness(.88)}
+
+/* 컨트롤 패널 */
+#draw-controls{
+  background:#fff;
+  border-top:2px solid #e0e7ff;
+  display:flex;flex-direction:column;
+  flex-shrink:0;
+}
+@media(orientation:landscape){
+  #draw-controls{
+    width:248px;min-width:220px;
+    border-top:none;border-left:2px solid #e0e7ff;
+    overflow-y:auto;
   }
 }
 
-/* 가로 (landscape): 왼=캔버스, 오른=메뉴 */
-@media (orientation: landscape) {
-  #app { flex-direction: row; }
-  #canvas-area {
-    flex: 1;
-    min-width: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 8px;
-  }
-  #menu-area {
-    width: 280px;
-    min-width: 240px;
-    max-width: 320px;
-    height: 100vh;
-    display: flex;
-    flex-direction: column;
-    border-left: 2px solid #e0e7ff;
-    background: var(--panel);
-    box-shadow: -4px 0 16px rgba(0,0,0,.08);
-    overflow-y: auto;
-  }
+/* 진행률 */
+#prog-row{display:flex;align-items:center;gap:8px;padding:8px 12px 4px}
+#prog-track{flex:1;height:12px;background:#e0e7ff;border-radius:99px;overflow:hidden}
+#prog-bar{height:100%;width:0%;background:linear-gradient(90deg,var(--primary),#a78bfa);border-radius:99px;transition:width .4s}
+#prog-pct{font-size:13px;font-weight:700;color:var(--primary);min-width:34px;text-align:right}
+
+/* 툴바 */
+#draw-toolbar{
+  padding:4px 8px;
+  display:flex;align-items:center;gap:5px;flex-wrap:wrap;
+}
+.tbtn{
+  display:flex;align-items:center;gap:3px;
+  padding:6px 9px;border:2px solid #e0e7ff;border-radius:10px;
+  background:#fff;font-size:12px;font-weight:700;color:#1a1a2e;
+  cursor:pointer;transition:all .14s;white-space:nowrap;
+  -webkit-tap-highlight-color:transparent;
+}
+.tbtn:active,.tbtn:hover{background:var(--primary-lt);border-color:var(--primary)}
+.tbtn.active{background:var(--primary);color:#fff;border-color:var(--primary)}
+.tbtn.red.active{background:#dc2626;border-color:#dc2626}
+.tbtn.green.active{background:#16a34a;border-color:#16a34a}
+#btn-back-sel{background:none;border:none;font-size:22px;cursor:pointer;padding:4px 6px}
+
+/* 팔레트 */
+#palette-wrap{padding:5px 10px 8px}
+#palette-label{font-size:11px;font-weight:700;color:#6b7280;margin-bottom:5px}
+#palette{display:grid;grid-template-columns:repeat(6,1fr);gap:5px}
+@media(orientation:landscape){#palette{grid-template-columns:repeat(4,1fr)}}
+.cbtn{
+  width:100%;aspect-ratio:1/1;border-radius:9px;
+  border:3px solid transparent;cursor:pointer;
+  box-shadow:var(--sh);transition:transform .12s,border-color .12s;
+  -webkit-tap-highlight-color:transparent;
+}
+.cbtn:active,.cbtn:hover{transform:scale(1.14)}
+.cbtn.active{border-color:#1a1a2e;transform:scale(1.2);box-shadow:0 0 0 3px rgba(26,115,232,.4)}
+
+/* 갤러리 (그림판 내) */
+#draw-gallery-section{padding:6px 10px 8px;border-top:1px solid #e0e7ff}
+#draw-gallery-label{font-size:11px;font-weight:700;color:#6b7280;margin-bottom:5px}
+#draw-gallery{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;max-height:80px;overflow-y:auto}
+@media(orientation:landscape){#draw-gallery{grid-template-columns:repeat(2,1fr);max-height:120px}}
+.gitem{cursor:pointer;border-radius:6px;overflow:hidden;border:2px solid #e0e7ff}
+.gitem:hover{border-color:var(--primary)}
+.gitem img{width:100%;aspect-ratio:4/3;object-fit:cover;display:block}
+
+/* 완성 모달 */
+#completion-modal{
+  position:fixed;inset:0;z-index:500;
+  display:flex;align-items:center;justify-content:center;
+  background:rgba(0,0,0,.55);
+  opacity:0;pointer-events:none;transition:opacity .3s;
+}
+#completion-modal.show{opacity:1;pointer-events:auto}
+#completion-box{
+  background:#fff;border-radius:24px;padding:36px 28px;
+  text-align:center;max-width:320px;width:90%;
+  box-shadow:var(--sh-lg);
+  animation:popIn .4s cubic-bezier(.34,1.56,.64,1) both;
+}
+@keyframes popIn{from{transform:scale(.6);opacity:0}to{transform:scale(1);opacity:1}}
+.cm-emoji{font-size:72px;line-height:1;margin-bottom:10px}
+.cm-title{font-size:26px;font-weight:900;color:var(--primary);margin-bottom:6px}
+.cm-sub{font-size:15px;color:#6b7280;margin-bottom:22px}
+#modal-ok{
+  background:linear-gradient(135deg,var(--primary),#a78bfa);
+  color:#fff;border:none;border-radius:14px;
+  padding:14px 28px;font-size:17px;font-weight:800;
+  cursor:pointer;width:100%;box-shadow:var(--sh-md);
 }
 
-/* ── 캔버스 영역 ── */
-#drawing-board {
-  position: relative;
-  aspect-ratio: 1/1;
-  width: min(100%, calc(100vh - 260px));
-  max-width: 100%;
-  background: #fff;
-  border-radius: 16px;
-  box-shadow: var(--sh-lg);
-  overflow: hidden;
-  user-select: none;
-  -webkit-user-select: none;
+/* 부모 설정 */
+#parent-modal{
+  position:fixed;inset:0;z-index:600;
+  display:flex;align-items:center;justify-content:center;
+  background:rgba(0,0,0,.5);
+  opacity:0;pointer-events:none;transition:opacity .3s;
+}
+#parent-modal.show{opacity:1;pointer-events:auto}
+#parent-box{
+  background:#fff;border-radius:20px;padding:22px;
+  max-width:340px;width:92%;box-shadow:var(--sh-lg);
+}
+#parent-box h3{font-size:19px;font-weight:800;margin-bottom:14px}
+.srow{margin-bottom:12px;display:flex;flex-direction:column;gap:5px}
+.srow label{font-size:12px;font-weight:700;color:#6b7280}
+.srow input[type=text],.srow input[type=range]{
+  width:100%;padding:8px 11px;border:2px solid #e0e7ff;border-radius:10px;font-size:15px}
+.srow input[type=range]{padding:3px 0}
+.srow .trow{display:flex;align-items:center;justify-content:space-between}
+.pactions{display:flex;gap:8px;margin-top:14px}
+.pactions button{flex:1;padding:11px;border-radius:11px;border:none;font-size:14px;font-weight:700;cursor:pointer}
+.pbtn-cancel{background:#f1f5f9;color:#1a1a2e}
+.pbtn-save{background:var(--primary);color:#fff}
+
+/* 파티클 */
+#particle-canvas{
+  position:fixed;inset:0;z-index:999;
+  pointer-events:none;display:none;
 }
 
-@media (orientation: landscape) {
-  #drawing-board {
-    width: min(calc(100vw - 300px), calc(100vh - 16px));
-    max-width: calc(100vw - 300px);
-  }
+/* trace canvas */
+#trace-canvas{
+  position:absolute;inset:0;
+  cursor:crosshair;display:none;z-index:10;
 }
-
-#svg-wrap {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-#svg-wrap svg { width: 100%; height: 100%; }
-#svg-wrap svg .cr { cursor: pointer; touch-action: none; }
-#svg-wrap svg .cr:hover { filter: brightness(0.9); }
-
-#trace-canvas, #particle-canvas {
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 999;
-  display: none;
-}
-
-#trace-canvas { pointer-events: auto; cursor: crosshair; z-index: 50; display: none; }
-
-/* 빈 상태 안내 */
-#empty-hint {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  color: #94a3b8;
-  gap: 12px;
-  padding: 20px;
-  text-align: center;
-}
-#empty-hint .emoji { font-size: 56px; }
-#empty-hint p { font-size: 18px; font-weight: 600; }
-#empty-hint small { font-size: 14px; }
-
-/* ── 진행률 바 ── */
-#progress-section {
-  padding: 8px 14px 4px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-#progress-track {
-  flex: 1;
-  height: 14px;
-  background: #e0e7ff;
-  border-radius: 99px;
-  overflow: hidden;
-}
-#progress-bar {
-  height: 100%;
-  width: 0%;
-  background: linear-gradient(90deg, var(--primary), #a78bfa);
-  border-radius: 99px;
-  transition: width 0.4s ease;
-}
-#progress-label { font-size: 13px; font-weight: 700; color: var(--primary); min-width: 36px; text-align: right; }
-
-/* ── 툴바 ── */
-#toolbar {
-  padding: 6px 10px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-.tool-btn {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 6px 10px;
-  border: 2px solid #e0e7ff;
-  border-radius: var(--r);
-  background: #fff;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  color: var(--text);
-  transition: all 0.15s;
-  white-space: nowrap;
-}
-.tool-btn:hover { background: var(--primary-lt); border-color: var(--primary); }
-.tool-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
-.tool-btn svg { width: 16px; height: 16px; }
-#btn-bgm { font-size: 20px; padding: 6px 8px; }
-.spacer { flex: 1; }
-
-/* ── 색상 팔레트 ── */
-#palette-section {
-  padding: 6px 10px 8px;
-}
-#palette-label {
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--muted);
-  margin-bottom: 6px;
-}
-#palette {
-  display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  gap: 6px;
-}
-
-@media (orientation: landscape) {
-  #palette { grid-template-columns: repeat(4, 1fr); }
-}
-
-.color-btn {
-  width: 100%;
-  aspect-ratio: 1/1;
-  border-radius: 10px;
-  border: 3px solid transparent;
-  cursor: pointer;
-  transition: transform 0.12s, border-color 0.12s;
-  box-shadow: var(--sh);
-}
-.color-btn:hover { transform: scale(1.12); }
-.color-btn.active {
-  border-color: #1a1a2e;
-  transform: scale(1.18);
-  box-shadow: 0 0 0 3px rgba(26,115,232,0.4);
-}
-
-/* ── 카테고리 탭 ── */
-#category-section {
-  padding: 8px 10px;
-  border-top: 1px solid #e0e7ff;
-}
-#category-section-label {
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--muted);
-  margin-bottom: 6px;
-}
-#category-tabs {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 5px;
-}
-
-@media (orientation: landscape) {
-  #category-tabs { grid-template-columns: repeat(2, 1fr); }
-}
-
-.cat-btn {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 6px 2px;
-  border: 2px solid #e0e7ff;
-  border-radius: var(--r);
-  background: #fff;
-  cursor: pointer;
-  transition: all 0.15s;
-  gap: 2px;
-}
-.cat-btn:hover { background: var(--primary-lt); border-color: var(--primary); }
-.cat-icon { font-size: 20px; }
-.cat-label { font-size: 10px; font-weight: 600; color: var(--text); }
-
-/* ── 갤러리 ── */
-#gallery-section {
-  padding: 8px 10px;
-  border-top: 1px solid #e0e7ff;
-  flex-shrink: 0;
-}
-#gallery-section-label {
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--muted);
-  margin-bottom: 6px;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-#gallery-wrap {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 5px;
-  max-height: 120px;
-  overflow-y: auto;
-}
-
-@media (orientation: landscape) {
-  #gallery-wrap { grid-template-columns: repeat(2, 1fr); max-height: 160px; }
-}
-
-.gallery-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  cursor: pointer;
-  border: 2px solid #e0e7ff;
-  border-radius: 8px;
-  overflow: hidden;
-  transition: border-color 0.15s;
-}
-.gallery-item:hover { border-color: var(--primary); }
-.gallery-item img { width: 100%; aspect-ratio: 4/3; object-fit: cover; }
-.gallery-item span { font-size: 9px; font-weight: 600; padding: 2px; text-align: center; }
-.gallery-item small { font-size: 8px; color: var(--muted); padding-bottom: 2px; }
-.no-gallery { font-size: 12px; color: var(--muted); text-align: center; padding: 12px; }
-
-/* ── 이미지 선택 패널 (슬라이드업) ── */
-#image-panel {
-  position: fixed;
-  inset: 0;
-  z-index: 200;
-  background: rgba(0,0,0,0.5);
-  display: flex;
-  align-items: flex-end;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.25s;
-}
-#image-panel.show { opacity: 1; pointer-events: auto; }
-#image-panel-inner {
-  background: #fff;
-  width: 100%;
-  max-height: 80vh;
-  border-radius: 20px 20px 0 0;
-  padding: 16px;
-  display: flex;
-  flex-direction: column;
-  transform: translateY(100%);
-  transition: transform 0.3s cubic-bezier(.32,.72,0,1);
-}
-#image-panel.show #image-panel-inner { transform: translateY(0); }
-#image-panel-header {
-  display: flex;
-  align-items: center;
-  margin-bottom: 12px;
-}
-#image-panel-title { font-size: 20px; font-weight: 800; flex: 1; }
-#image-panel-close {
-  background: #f1f5f9;
-  border: none;
-  border-radius: 50%;
-  width: 36px;
-  height: 36px;
-  font-size: 20px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-#image-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-  gap: 10px;
-  overflow-y: auto;
-  flex: 1;
-  padding: 4px 2px;
-}
-.thumb-btn {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  padding: 8px;
-  border: 2px solid #e0e7ff;
-  border-radius: var(--r);
-  background: #f8faff;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-.thumb-btn:hover { border-color: var(--primary); background: var(--primary-lt); transform: scale(1.03); }
-.thumb-btn svg { border-radius: 6px; background: #fff; }
-.thumb-btn span { font-size: 12px; font-weight: 600; color: var(--text); }
-
-/* ── 완성 모달 ── */
-#completion-modal {
-  position: fixed;
-  inset: 0;
-  z-index: 300;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(0,0,0,0.5);
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.3s;
-}
-#completion-modal.show { opacity: 1; pointer-events: auto; }
-#completion-box {
-  background: #fff;
-  border-radius: 24px;
-  padding: 36px 28px;
-  text-align: center;
-  max-width: 340px;
-  width: 90%;
-  box-shadow: var(--sh-lg);
-  animation: popIn 0.4s cubic-bezier(.34,1.56,.64,1) both;
-}
-@keyframes popIn {
-  from { transform: scale(0.6); opacity: 0; }
-  to { transform: scale(1); opacity: 1; }
-}
-.completion-emoji { font-size: 72px; line-height: 1; margin-bottom: 12px; }
-.completion-title { font-size: 28px; font-weight: 900; color: var(--primary); margin-bottom: 8px; }
-.completion-sub { font-size: 16px; color: var(--muted); margin-bottom: 24px; }
-#modal-close-btn {
-  background: linear-gradient(135deg, var(--primary), #a78bfa);
-  color: #fff;
-  border: none;
-  border-radius: 14px;
-  padding: 14px 28px;
-  font-size: 18px;
-  font-weight: 800;
-  cursor: pointer;
-  width: 100%;
-  box-shadow: var(--sh-md);
-}
-
-/* ── 부모 설정 모달 ── */
-#parent-modal {
-  position: fixed;
-  inset: 0;
-  z-index: 400;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(0,0,0,0.5);
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.3s;
-}
-#parent-modal.show { opacity: 1; pointer-events: auto; }
-#parent-box {
-  background: #fff;
-  border-radius: 20px;
-  padding: 24px;
-  max-width: 360px;
-  width: 92%;
-  box-shadow: var(--sh-lg);
-}
-#parent-box h3 { font-size: 20px; font-weight: 800; margin-bottom: 16px; }
-.setting-row {
-  margin-bottom: 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-.setting-row label { font-size: 13px; font-weight: 700; color: var(--muted); }
-.setting-row input[type=text], .setting-row input[type=range] {
-  width: 100%;
-  padding: 8px 12px;
-  border: 2px solid #e0e7ff;
-  border-radius: 10px;
-  font-size: 15px;
-}
-.setting-row input[type=range] { padding: 4px 0; }
-.setting-row .toggle-row { display: flex; align-items: center; justify-content: space-between; }
-.parent-actions { display: flex; gap: 10px; margin-top: 18px; }
-.parent-actions button {
-  flex: 1;
-  padding: 12px;
-  border-radius: 12px;
-  border: none;
-  font-size: 15px;
-  font-weight: 700;
-  cursor: pointer;
-}
-.btn-cancel { background: #f1f5f9; color: var(--text); }
-.btn-save { background: var(--primary); color: #fff; }
-
-/* ── 앱 타이틀 ── */
-#app-header {
-  background: linear-gradient(135deg, var(--primary), #7c3aed);
-  color: #fff;
-  padding: 8px 14px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  border-radius: 0 0 var(--r) var(--r);
-  margin: 0 0 4px;
-  box-shadow: var(--sh);
-}
-#app-title { font-size: 17px; font-weight: 800; flex: 1; }
-#btn-parent-open {
-  background: rgba(255,255,255,0.2);
-  border: none;
-  border-radius: 8px;
-  color: #fff;
-  padding: 5px 10px;
-  font-size: 12px;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-/* 모드 버튼 색상 */
-#btn-mode-color.active { background: var(--orange); border-color: var(--orange); }
-#btn-mode-trace.active { background: var(--green); border-color: var(--green); }
 </style>
 </head>
 <body>
 
-<div id="app">
-  <!-- 캔버스 영역 -->
-  <div id="canvas-area">
-    <div id="drawing-board">
-      <div id="svg-wrap">
-        <div id="empty-hint">
-          <span class="emoji">🎨</span>
-          <p>아래에서 그림을 선택해요!</p>
-          <small>시윤아, 좋아하는 그림을 골라봐요</small>
-        </div>
-      </div>
-      <canvas id="trace-canvas"></canvas>
+<!-- ══ 선택 화면 ══ -->
+<div id="screen-select" class="screen">
+  <div class="sel-header" id="sel-header">
+    <button class="sel-header-back hidden" id="btn-back-cat" onclick="DrawingApp.showCategories()">←</button>
+    <div>
+      <div class="sel-title" id="sel-title">🎨 시윤이의 그림 그리기</div>
+      <div class="sel-sub" id="sel-sub">어떤 그림을 그릴까요?</div>
     </div>
+    <button class="tbtn" onclick="DrawingApp.openParentModal()" style="margin-left:auto">⚙️</button>
   </div>
 
-  <!-- 메뉴 영역 -->
-  <div id="menu-area">
-    <!-- 앱 헤더 -->
-    <div id="app-header">
-      <span id="app-title">🎨 시윤이의 그림판</span>
-      <button id="btn-parent-open" onclick="DrawingApp.openParentModal()">⚙️ 설정</button>
-    </div>
-
-    <!-- 진행률 -->
-    <div id="progress-section">
-      <div id="progress-track">
-        <div id="progress-bar"></div>
-      </div>
-      <span id="progress-label">0%</span>
-    </div>
-
-    <!-- 툴바 -->
-    <div id="toolbar">
-      <button class="tool-btn mode-btn active" id="btn-mode-color" onclick="DrawingApp.setMode('color')">
-        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.71 5.63l-2.34-2.34a1 1 0 00-1.41 0l-3.12 3.12-1.41-1.42-1.42 1.42 1.41 1.41-6.6 6.6A2 2 0 005 16v3h3a2 2 0 001.41-.59l6.6-6.6 1.41 1.42 1.42-1.42-1.42-1.41 3.12-3.12a1 1 0 000-1.65z"/></svg>
-        색칠
-      </button>
-      <button class="tool-btn mode-btn" id="btn-mode-trace" onclick="DrawingApp.setMode('trace')">
-        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 000-1.41l-2.34-2.34a1 1 0 00-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
-        따라 그리기
-      </button>
-      <div class="spacer"></div>
-      <button class="tool-btn" onclick="DrawingApp.undo()" title="되돌리기">
-        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z"/></svg>
-      </button>
-      <button class="tool-btn" onclick="DrawingApp.showHint()" title="힌트">💡</button>
-      <button class="tool-btn" onclick="DrawingApp.saveAsPNG()" title="저장">
-        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/></svg>
-      </button>
-      <button class="tool-btn" onclick="DrawingApp.printDrawing()" title="인쇄">🖨️</button>
-      <button class="tool-btn" id="btn-bgm" onclick="DrawingApp.toggleBGM()" title="배경음악">🎵</button>
-    </div>
-
-    <!-- 색상 팔레트 -->
-    <div id="palette-section">
-      <div id="palette-label">🎨 색상 선택</div>
-      <div id="palette"></div>
-    </div>
-
-    <!-- 카테고리 탭 -->
-    <div id="category-section">
-      <div id="category-section-label">📂 그림 선택</div>
-      <div id="category-tabs"></div>
-    </div>
-
-    <!-- 갤러리 -->
-    <div id="gallery-section">
-      <div id="gallery-section-label">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M22 16V4c0-1.1-.9-2-2-2H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2zm-11-4l2.03 2.71L16 11l4 5H8l3-4zM2 6v14c0 1.1.9 2 2 2h14v-2H4V6H2z"/></svg>
-        내 그림들
-      </div>
-      <div id="gallery-wrap"></div>
-    </div>
-  </div>
+  <!-- 카테고리 그리드 -->
+  <div id="cat-grid"></div>
+  <!-- 이미지 그리드 (카테고리 선택 후) -->
+  <div id="img-grid" class="hidden" style="display:none"></div>
 </div>
 
-<!-- 이미지 선택 패널 -->
-<div id="image-panel" onclick="DrawingApp.hideImagePanel()">
-  <div id="image-panel-inner" onclick="event.stopPropagation()">
-    <div id="image-panel-header">
-      <span id="image-panel-title"></span>
-      <button id="image-panel-close" onclick="DrawingApp.hideImagePanel()">✕</button>
+<!-- ══ 그림판 화면 ══ -->
+<div id="screen-draw" class="screen hidden">
+  <div id="draw-layout">
+    <!-- 캔버스 영역 -->
+    <div id="draw-canvas-area">
+      <div id="drawing-board">
+        <div id="svg-wrap"></div>
+        <canvas id="trace-canvas"></canvas>
+      </div>
     </div>
-    <div id="image-grid"></div>
+
+    <!-- 컨트롤 패널 -->
+    <div id="draw-controls">
+      <!-- 진행률 + 툴바 -->
+      <div id="prog-row">
+        <button id="btn-back-sel" onclick="DrawingApp.goToSelect()" title="그림 다시 고르기">🔙</button>
+        <div id="prog-track"><div id="prog-bar"></div></div>
+        <span id="prog-pct">0%</span>
+      </div>
+
+      <div id="draw-toolbar">
+        <button class="tbtn active" id="btn-mode-color" onclick="DrawingApp.setMode('color')">✏️ 색칠</button>
+        <button class="tbtn green" id="btn-mode-trace" onclick="DrawingApp.setMode('trace')">〰️ 따라그리기</button>
+        <button class="tbtn" onclick="DrawingApp.undo()" title="되돌리기">↩️</button>
+        <button class="tbtn" onclick="DrawingApp.showHint()" title="힌트">💡</button>
+        <button class="tbtn" onclick="DrawingApp.saveAsPNG()" title="저장">💾</button>
+        <button class="tbtn" onclick="DrawingApp.printDrawing()" title="인쇄">🖨️</button>
+        <button class="tbtn" id="btn-bgm" onclick="DrawingApp.toggleBGM()">🎵</button>
+      </div>
+
+      <!-- 팔레트 -->
+      <div id="palette-wrap">
+        <div id="palette-label">🎨 색상 선택</div>
+        <div id="palette"></div>
+      </div>
+
+      <!-- 인라인 갤러리 -->
+      <div id="draw-gallery-section">
+        <div id="draw-gallery-label">🖼 내 그림들</div>
+        <div id="draw-gallery"></div>
+      </div>
+    </div>
   </div>
 </div>
 
 <!-- 완성 모달 -->
 <div id="completion-modal">
   <div id="completion-box">
-    <div class="completion-emoji">🎉</div>
-    <div class="completion-title">완성!</div>
-    <div class="completion-sub">시윤아, 정말 잘했어요!<br>멋진 그림이에요! 👏</div>
-    <button id="modal-close-btn">저장하고 계속 그리기</button>
+    <div class="cm-emoji">🎉</div>
+    <div class="cm-title">완성!</div>
+    <div class="cm-sub" id="cm-sub">참 잘했어요!</div>
+    <button id="modal-ok" onclick="DrawingApp.onComplete()">저장하고 계속 그리기</button>
   </div>
 </div>
 
-<!-- 부모 설정 모달 -->
+<!-- 부모 설정 -->
 <div id="parent-modal">
   <div id="parent-box">
     <h3>⚙️ 설정</h3>
-    <div class="setting-row">
+    <div class="srow">
       <label>아이 이름</label>
-      <input type="text" id="setting-child-name" placeholder="이름 입력">
+      <input type="text" id="setting-name" placeholder="이름">
     </div>
-    <div class="setting-row">
+    <div class="srow">
       <label>배경음 볼륨</label>
-      <input type="range" id="setting-bgm-vol" min="0" max="100" value="12">
+      <input type="range" id="setting-vol" min="0" max="100" value="12">
     </div>
-    <div class="setting-row">
-      <div class="toggle-row">
+    <div class="srow">
+      <div class="trow">
         <label>음성 안내</label>
         <input type="checkbox" id="setting-voice" checked>
       </div>
     </div>
-    <div class="parent-actions">
-      <button class="btn-cancel" onclick="DrawingApp.closeParentModal()">취소</button>
-      <button class="btn-save" onclick="DrawingApp.saveParentSettings()">저장</button>
+    <div class="pactions">
+      <button class="pbtn-cancel" onclick="DrawingApp.closeParentModal()">취소</button>
+      <button class="pbtn-save" onclick="DrawingApp.saveParentSettings()">저장</button>
     </div>
   </div>
 </div>
 
-<!-- 파티클 캔버스 -->
 <canvas id="particle-canvas"></canvas>
 
 <script src="drawing-data.js"></script>
