@@ -2333,12 +2333,22 @@ const DEPT_GROUPS = {
 };
 let _curDate    = new Date();
 (function() {
+  // query param ?date=YYYY-MM-DD 우선, 없으면 URL 해시 #YYYY-MM 으로 복원
   const p = new URLSearchParams(location.search).get('date');
   if (p && /^\d{4}-\d{2}-\d{2}$/.test(p)) {
     const d = new Date(p + 'T00:00:00');
-    if (!isNaN(d)) _curDate = d;
+    if (!isNaN(d)) { _curDate = d; return; }
+  }
+  const h = location.hash.replace('#', '');
+  if (/^\d{4}-\d{2}$/.test(h)) {
+    const [hy, hm] = h.split('-').map(Number);
+    if (hy > 2000 && hm >= 1 && hm <= 12) _curDate = new Date(hy, hm - 1, 1);
   }
 })();
+function _syncHashToMonth() {
+  const y = _curDate.getFullYear(), m = String(_curDate.getMonth() + 1).padStart(2, '0');
+  history.replaceState(null, '', `#${y}-${m}`);
+}
 let _view       = 'month';
 let _editingEvt = null;
 let _detailEvt  = null;
@@ -3503,6 +3513,7 @@ async function navMonth(delta) {
 
     // 새 달 렌더 (이벤트 없이 먼저)
     _curDate.setMonth(_curDate.getMonth() + delta);
+    _syncHashToMonth();
     renderCalendar();
 
     // 새 달 슬라이드 인
@@ -3525,6 +3536,7 @@ async function navMonth(delta) {
     if (delta < 0) wrap.scrollLeft = wrap.scrollWidth - wrap.clientWidth;
   } else {
     _curDate.setMonth(_curDate.getMonth() + delta);
+    _syncHashToMonth();
     renderCalendar();
   }
 
