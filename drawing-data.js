@@ -120,6 +120,89 @@ const DRAWING_DATA = {
 <line stroke-width="4" x1="250" y1="218" x2="280" y2="250"/>
 <rect class="cr" data-name="스키드좌" stroke-width="4" x="80" y="248" width="75" height="10" rx="5"/>
 <rect class="cr" data-name="스키드우" stroke-width="4" x="245" y="248" width="75" height="10" rx="5"/>
+</g>` },
+        { id: 'bicycle', name: '자전거', svg: `
+<g stroke="#1a1a1a" stroke-linecap="round" stroke-linejoin="round" fill="#fafafa">
+<circle class="cr" data-name="앞바퀴" stroke-width="5" cx="295" cy="188" r="78"/>
+<circle class="cr" data-name="뒷바퀴" stroke-width="5" cx="105" cy="188" r="78"/>
+<circle stroke-width="3" cx="295" cy="188" r="18" fill="#fafafa"/>
+<circle stroke-width="3" cx="105" cy="188" r="18" fill="#fafafa"/>
+<path class="cr" data-name="프레임" stroke-width="6" d="M105,188 L168,112 L200,188 L105,188 Z"/>
+<path class="cr" data-name="안장대" stroke-width="6" d="M168,112 L295,188"/>
+<rect class="cr" data-name="안장" stroke-width="5" x="142" y="88" width="72" height="18" rx="9"/>
+<path class="cr" data-name="핸들" stroke-width="5" d="M272,118 Q295,112 318,118 M295,112 L295,145"/>
+<rect class="cr" data-name="페달" stroke-width="4" x="184" y="178" width="32" height="10" rx="5"/>
+</g>` },
+        { id: 'train', name: '기차', svg: `
+<g stroke="#1a1a1a" stroke-linecap="round" stroke-linejoin="round" fill="#fafafa">
+<rect class="cr" data-name="앞칸" stroke-width="5" x="42" y="105" width="148" height="110" rx="12"/>
+<rect class="cr" data-name="뒷칸" stroke-width="4" x="198" y="118" width="118" height="97" rx="10"/>
+<rect class="cr" data-name="앞창문" stroke-width="4" x="62" y="125" width="55" height="45" rx="8"/>
+<rect class="cr" data-name="뒷창문" stroke-width="4" x="215" y="135" width="45" height="38" rx="6"/>
+<circle class="cr" data-name="바퀴1" stroke-width="4" cx="82" cy="228" r="28"/>
+<circle class="cr" data-name="바퀴2" stroke-width="4" cx="158" cy="228" r="28"/>
+<circle class="cr" data-name="바퀴3" stroke-width="4" cx="248" cy="228" r="22"/>
+<path class="cr" data-name="굴뚝" stroke-width="4" d="M145,105 L145,72 L175,72 L175,105 Z"/>
+<ellipse class="cr" data-name="연기" stroke-width="3" cx="160" cy="55" rx="25" ry="15"/>
+<line stroke-width="3" x1="42" y1="215" x2="360" y2="215"/>
+</g>` },
+        { id: 'bus', name: '버스', svg: `
+<g stroke="#1a1a1a" stroke-linecap="round" stroke-linejoin="round" fill="#fafafa">
+<rect class="cr" data-name="차체" stroke-width="5" x="35" y="72" width="330" height="168" rx="14"/>
+<rect class="cr" data-name="창문1" stroke-width="4" x="55" y="95" width="65" height="55" rx="8"/>
+<rect class="cr" data-name="창문2" stroke-width="4" x="135" y="95" width="65" height="55" rx="8"/>
+<rect class="cr" data-name="창문3" stroke-width="4" x="215" y="95" width="65" height="55" rx="8"/>
+<rect class="cr" data-name="창문4" stroke-width="4" x="295" y="95" width="58" height="55" rx="8"/>
+<rect class="cr" data-name="문" stroke-width="4" x="55" y="165" width="55" height="75" rx="6"/>
+<circle class="cr" data-name="앞바퀴" stroke-width="5" cx="115" cy="258" r="38"/>
+<circle class="cr" data-name="뒷바퀴" stroke-width="5" cx="298" cy="258" r="38"/>
+</g>` },
+        { id: 'sailboat', name: '돛단배', svg: `
+<g stroke="#1a1a1a" stroke-linecap="round" stroke-linejoin="round" fill="#fafafa">
+<path class="cr" data-name="배몸통" stroke-width="5" d="M65,215 Q75,268 200,275 Q325,268 335,215 Z"/>
+<path class="cr" data-name="큰돛" stroke-width="4" d="M200,48 L200,215 L68,215 Z"/>
+<path class="cr" data-name="작은돛" stroke-width="4" d="M200,72 L200,215 L332,215 Z"/>
+<line stroke-width="4" x1="200" y1="38" x2="200" y2="225"/>
+<path class="cr" data-name="삼각기" stroke-width="3" d="M200,38 L245,58 L200,72 Z"/>
+<path class="cr" data-name="파도" stroke-width="3" d="M42,265 Q90,248 138,265 Q185,280 232,265 Q278,248 325,265 Q348,272 362,265" fill="none"/>
+</g>` },
+        { id: 'truck', name: '트럭', svg: `
+<g stroke="#1a1a1a" stroke-linecap="round" stroke-linejoin="round" fill="#fafafa">
+<rect class="cr" data-name="짐칸" stroke-width="5" x="38" y="85" width="218" height="148" rx="6"/>
+<path class="cr" data-name="운전석" stroke-width="5" d="M255,128 L255,232 L362,232 L362,165 L320,128 Z"/>
+<rect class="cr" data-name="창문" stroke-width="4" x="262" y="140" width="75" height="55" rx="6"/>
+<circle class="cr" data-name="앞바퀴" stroke-width="5" cx="312" cy="255" r="35"/>
+<circle class="cr" data-name="뒷바퀴1" stroke-width="5" cx="118" cy="255" r="35"/>
+<circle class="cr" data-name="뒷바퀴2" stroke-width="4" cx="178" cy="255" r="30"/>
+</g>` },
+        { id: 'scooter', name: '킥보드', svg: `
+<g stroke="#1a1a1a" stroke-linecap="round" stroke-linejoin="round" fill="#fafafa">
+<circle class="cr" data-name="앞바퀴" stroke-width="5" cx="305" cy="232" r="48"/>
+<circle class="cr" data-name="뒷바퀴" stroke-width="5" cx="95" cy="232" r="48"/>
+<rect class="cr" data-name="발판" stroke-width="6" x="95" y="195" width="210" height="18" rx="9"/>
+<rect class="cr" data-name="기둥" stroke-width="6" x="282" y="105" width="22" height="95" rx="8"/>
+<rect class="cr" data-name="핸들바" stroke-width="5" x="248" y="98" width="90" height="16" rx="8"/>
+<ellipse class="cr" data-name="발판무늬" stroke-width="3" cx="200" cy="195" rx="60" ry="6"/>
+</g>` },
+        { id: 'submarine', name: '잠수함', svg: `
+<g stroke="#1a1a1a" stroke-linecap="round" stroke-linejoin="round" fill="#fafafa">
+<ellipse class="cr" data-name="몸통" stroke-width="5" cx="192" cy="185" rx="160" ry="75"/>
+<rect class="cr" data-name="탑" stroke-width="4" x="155" y="112" width="80" height="55" rx="8"/>
+<circle class="cr" data-name="창문1" stroke-width="4" cx="148" cy="185" r="28"/>
+<circle class="cr" data-name="창문2" stroke-width="4" cx="228" cy="185" r="22"/>
+<path class="cr" data-name="프로펠러" stroke-width="4" d="M352,162 Q372,148 370,185 Q388,200 352,210 Z"/>
+<line stroke-width="4" x1="195" y1="95" x2="195" y2="112"/>
+<ellipse class="cr" data-name="안테나볼" stroke-width="3" cx="195" cy="88" rx="10" ry="8"/>
+</g>` },
+        { id: 'balloon', name: '열기구', svg: `
+<g stroke="#1a1a1a" stroke-linecap="round" stroke-linejoin="round" fill="#fafafa">
+<ellipse class="cr" data-name="풍선상부" stroke-width="5" cx="200" cy="148" rx="130" ry="110"/>
+<path class="cr" data-name="세로줄1" stroke-width="3" d="M200,38 Q170,95 160,258" fill="none"/>
+<path class="cr" data-name="세로줄2" stroke-width="3" d="M200,38 Q230,95 240,258" fill="none"/>
+<path class="cr" data-name="가로줄" stroke-width="3" d="M82,110 Q200,148 318,110" fill="none"/>
+<rect class="cr" data-name="바구니" stroke-width="5" x="155" y="258" width="90" height="38" rx="8"/>
+<line stroke-width="3" x1="160" y1="258" x2="125" y2="248"/>
+<line stroke-width="3" x1="240" y1="258" x2="275" y2="248"/>
 </g>` }
       ]
     },
@@ -239,6 +322,100 @@ const DRAWING_DATA = {
 <ellipse class="cr" data-name="몸통" stroke-width="4" cx="200" cy="165" rx="12" ry="70"/>
 <path stroke-width="3" d="M200,100 Q185,72 170,60" fill="none"/>
 <path stroke-width="3" d="M200,100 Q215,72 230,60" fill="none"/>
+</g>` },
+        { id: 'horse', name: '말', svg: `
+<g stroke="#1a1a1a" stroke-linecap="round" stroke-linejoin="round" fill="#fafafa">
+<ellipse class="cr" data-name="몸통" stroke-width="5" cx="200" cy="188" rx="120" ry="75"/>
+<ellipse class="cr" data-name="머리" stroke-width="5" cx="320" cy="128" rx="55" ry="48"/>
+<rect class="cr" data-name="주둥이" stroke-width="4" x="352" y="128" width="35" height="28" rx="8"/>
+<rect class="cr" data-name="앞왼다리" stroke-width="5" x="128" y="252" width="32" height="85" rx="10"/>
+<rect class="cr" data-name="앞오른다리" stroke-width="5" x="178" y="252" width="32" height="85" rx="10"/>
+<rect class="cr" data-name="뒷왼다리" stroke-width="5" x="228" y="252" width="32" height="85" rx="10"/>
+<rect class="cr" data-name="뒷오른다리" stroke-width="5" x="278" y="252" width="32" height="85" rx="10"/>
+<path class="cr" data-name="갈기" stroke-width="4" d="M288,82 Q305,60 325,55 Q345,60 355,82" fill="none"/>
+<path class="cr" data-name="꼬리" stroke-width="5" d="M82,180 Q45,165 38,215 Q42,245 62,235" fill="none"/>
+</g>` },
+        { id: 'giraffe', name: '기린', svg: `
+<g stroke="#1a1a1a" stroke-linecap="round" stroke-linejoin="round" fill="#fafafa">
+<ellipse class="cr" data-name="몸통" stroke-width="5" cx="200" cy="222" rx="88" ry="65"/>
+<rect class="cr" data-name="목" stroke-width="5" x="245" y="72" width="48" height="152" rx="20"/>
+<ellipse class="cr" data-name="머리" stroke-width="5" cx="295" cy="58" rx="42" ry="32"/>
+<rect class="cr" data-name="왼앞다리" stroke-width="5" x="148" y="275" width="30" height="75" rx="8"/>
+<rect class="cr" data-name="오른앞다리" stroke-width="5" x="195" y="275" width="30" height="75" rx="8"/>
+<rect class="cr" data-name="왼뒷다리" stroke-width="4" x="232" y="275" width="28" height="75" rx="8"/>
+<rect class="cr" data-name="오른뒷다리" stroke-width="4" x="272" y="275" width="28" height="75" rx="8"/>
+<ellipse class="cr" data-name="무늬1" stroke-width="2" cx="185" cy="210" rx="22" ry="18"/>
+<ellipse class="cr" data-name="무늬2" stroke-width="2" cx="225" cy="235" rx="18" ry="15"/>
+<ellipse class="cr" data-name="무늬3" stroke-width="2" cx="263" cy="120" rx="14" ry="18"/>
+</g>` },
+        { id: 'monkey', name: '원숭이', svg: `
+<g stroke="#1a1a1a" stroke-linecap="round" stroke-linejoin="round" fill="#fafafa">
+<circle class="cr" data-name="머리" stroke-width="5" cx="200" cy="108" r="72"/>
+<ellipse class="cr" data-name="얼굴판" stroke-width="3" cx="200" cy="115" rx="45" ry="38"/>
+<ellipse class="cr" data-name="왼귀" stroke-width="4" cx="128" cy="102" rx="22" ry="22"/>
+<ellipse class="cr" data-name="오른귀" stroke-width="4" cx="272" cy="102" rx="22" ry="22"/>
+<ellipse class="cr" data-name="몸통" stroke-width="5" cx="200" cy="222" rx="65" ry="58"/>
+<path class="cr" data-name="왼팔" stroke-width="5" d="M140,195 Q88,218 72,258 Q88,268 95,255 Q108,228 148,215"/>
+<path class="cr" data-name="오른팔" stroke-width="5" d="M260,195 Q312,218 328,258 Q312,268 305,255 Q292,228 252,215"/>
+<path class="cr" data-name="꼬리" stroke-width="5" d="M200,275 Q175,295 188,315 Q210,325 218,305" fill="none"/>
+</g>` },
+        { id: 'frog', name: '개구리', svg: `
+<g stroke="#1a1a1a" stroke-linecap="round" stroke-linejoin="round" fill="#fafafa">
+<ellipse class="cr" data-name="몸통" stroke-width="5" cx="200" cy="205" rx="108" ry="80"/>
+<ellipse class="cr" data-name="머리" stroke-width="5" cx="200" cy="132" rx="88" ry="62"/>
+<circle class="cr" data-name="왼눈" stroke-width="4" cx="148" cy="98" r="28"/>
+<circle class="cr" data-name="오른눈" stroke-width="4" cx="252" cy="98" r="28"/>
+<path class="cr" data-name="왼뒷다리" stroke-width="5" d="M100,260 Q62,278 42,265 Q38,248 58,245 Q82,258 108,245"/>
+<path class="cr" data-name="오른뒷다리" stroke-width="5" d="M300,260 Q338,278 358,265 Q362,248 342,245 Q318,258 292,245"/>
+<path stroke-width="3" d="M158,148 Q200,165 242,148" fill="none"/>
+</g>` },
+        { id: 'owl', name: '부엉이', svg: `
+<g stroke="#1a1a1a" stroke-linecap="round" stroke-linejoin="round" fill="#fafafa">
+<ellipse class="cr" data-name="몸통" stroke-width="5" cx="200" cy="195" rx="85" ry="95"/>
+<circle class="cr" data-name="왼눈" stroke-width="4" cx="168" cy="140" r="35"/>
+<circle class="cr" data-name="오른눈" stroke-width="4" cx="232" cy="140" r="35"/>
+<circle stroke-width="3" cx="168" cy="140" r="18" fill="#fafafa"/>
+<circle stroke-width="3" cx="232" cy="140" r="18" fill="#fafafa"/>
+<path class="cr" data-name="부리" stroke-width="3" d="M190,162 L200,178 L210,162 Z"/>
+<path class="cr" data-name="왼날개" stroke-width="4" d="M118,195 Q72,215 65,258 Q95,270 118,248"/>
+<path class="cr" data-name="오른날개" stroke-width="4" d="M282,195 Q328,215 335,258 Q305,270 282,248"/>
+<polygon class="cr" data-name="왼귀" stroke-width="4" points="162,108 150,72 185,100"/>
+<polygon class="cr" data-name="오른귀" stroke-width="4" points="238,108 250,72 215,100"/>
+</g>` },
+        { id: 'tiger', name: '호랑이', svg: `
+<g stroke="#1a1a1a" stroke-linecap="round" stroke-linejoin="round" fill="#fafafa">
+<ellipse class="cr" data-name="몸통" stroke-width="5" cx="200" cy="210" rx="110" ry="78"/>
+<circle class="cr" data-name="머리" stroke-width="5" cx="200" cy="112" r="75"/>
+<ellipse class="cr" data-name="주둥이" stroke-width="3" cx="200" cy="128" rx="35" ry="28"/>
+<polygon class="cr" data-name="왼귀" stroke-width="4" points="148,65 132,35 175,62"/>
+<polygon class="cr" data-name="오른귀" stroke-width="4" points="252,65 268,35 225,62"/>
+<rect class="cr" data-name="줄무늬1" stroke-width="3" x="148" y="88" width="18" height="32" rx="6"/>
+<rect class="cr" data-name="줄무늬2" stroke-width="3" x="234" y="88" width="18" height="32" rx="6"/>
+<rect class="cr" data-name="앞왼다리" stroke-width="5" x="128" y="275" width="38" height="72" rx="12"/>
+<rect class="cr" data-name="앞오른다리" stroke-width="5" x="234" y="275" width="38" height="72" rx="12"/>
+</g>` },
+        { id: 'panda', name: '판다', svg: `
+<g stroke="#1a1a1a" stroke-linecap="round" stroke-linejoin="round" fill="#fafafa">
+<circle class="cr" data-name="머리" stroke-width="5" cx="200" cy="112" r="78"/>
+<ellipse class="cr" data-name="몸통" stroke-width="5" cx="200" cy="238" rx="88" ry="78"/>
+<ellipse class="cr" data-name="왼눈반점" stroke-width="4" cx="165" cy="98" rx="28" ry="22"/>
+<ellipse class="cr" data-name="오른눈반점" stroke-width="4" cx="235" cy="98" rx="28" ry="22"/>
+<circle stroke-width="3" cx="165" cy="98" r="10" fill="#fafafa"/>
+<circle stroke-width="3" cx="235" cy="98" r="10" fill="#fafafa"/>
+<ellipse class="cr" data-name="왼귀" stroke-width="4" cx="148" cy="58" rx="25" ry="22"/>
+<ellipse class="cr" data-name="오른귀" stroke-width="4" cx="252" cy="58" rx="25" ry="22"/>
+<ellipse class="cr" data-name="왼발" stroke-width="4" cx="148" cy="295" rx="38" ry="22"/>
+<ellipse class="cr" data-name="오른발" stroke-width="4" cx="252" cy="295" rx="38" ry="22"/>
+</g>` },
+        { id: 'shark', name: '상어', svg: `
+<g stroke="#1a1a1a" stroke-linecap="round" stroke-linejoin="round" fill="#fafafa">
+<ellipse class="cr" data-name="몸통" stroke-width="5" cx="185" cy="185" rx="148" ry="65"/>
+<path class="cr" data-name="꼬리" stroke-width="5" d="M338,185 L372,145 L385,185 L372,225 Z"/>
+<path class="cr" data-name="등지느러미" stroke-width="4" d="M175,122 L215,72 L245,122 Z"/>
+<path class="cr" data-name="배지느러미" stroke-width="4" d="M165,248 L185,278 L218,248 Z"/>
+<ellipse class="cr" data-name="배" stroke-width="3" cx="172" cy="195" rx="82" ry="38"/>
+<circle stroke-width="3" cx="60" cy="175" r="12" fill="#fafafa"/>
+<path stroke-width="3" d="M55,198 Q65,208 78,198 Q88,208 95,198" fill="none"/>
 </g>` }
       ]
     },
@@ -324,6 +501,61 @@ const DRAWING_DATA = {
 <line stroke-width="3" x1="130" y1="100" x2="130" y2="130"/>
 <line stroke-width="3" x1="200" y1="100" x2="200" y2="130"/>
 <line stroke-width="3" x1="270" y1="100" x2="270" y2="130"/>
+</g>` },
+        { id: 'school', name: '학교', svg: `
+<g stroke="#1a1a1a" stroke-linecap="round" stroke-linejoin="round" fill="#fafafa">
+<rect class="cr" data-name="건물본관" stroke-width="5" x="55" y="120" width="290" height="175"/>
+<rect class="cr" data-name="탑" stroke-width="4" x="158" y="58" width="84" height="68"/>
+<polygon class="cr" data-name="지붕" stroke-width="4" points="148,65 200,30 252,65"/>
+<rect class="cr" data-name="문" stroke-width="4" x="168" y="228" width="64" height="68" rx="4"/>
+<rect class="cr" data-name="창문1" stroke-width="3" x="72" y="148" width="55" height="48" rx="4"/>
+<rect class="cr" data-name="창문2" stroke-width="3" x="152" y="148" width="55" height="48" rx="4"/>
+<rect class="cr" data-name="창문3" stroke-width="3" x="273" y="148" width="55" height="48" rx="4"/>
+<rect class="cr" data-name="국기대" stroke-width="3" x="197" y="30" width="6" height="30"/>
+</g>` },
+        { id: 'hospital', name: '병원', svg: `
+<g stroke="#1a1a1a" stroke-linecap="round" stroke-linejoin="round" fill="#fafafa">
+<rect class="cr" data-name="건물" stroke-width="5" x="48" y="88" width="304" height="208"/>
+<rect class="cr" data-name="지붕부" stroke-width="4" x="68" y="68" width="264" height="28" rx="4"/>
+<rect class="cr" data-name="큰창문1" stroke-width="4" x="68" y="115" width="80" height="72" rx="6"/>
+<rect class="cr" data-name="큰창문2" stroke-width="4" x="260" y="115" width="80" height="72" rx="6"/>
+<rect class="cr" data-name="문" stroke-width="4" x="155" y="228" width="90" height="68" rx="4"/>
+<rect class="cr" data-name="십자세로" stroke-width="6" x="190" y="42" width="20" height="52"/>
+<rect class="cr" data-name="십자가로" stroke-width="6" x="170" y="60" width="60" height="18"/>
+</g>` },
+        { id: 'castle', name: '성', svg: `
+<g stroke="#1a1a1a" stroke-linecap="round" stroke-linejoin="round" fill="#fafafa">
+<rect class="cr" data-name="중앙탑" stroke-width="5" x="148" y="72" width="104" height="225"/>
+<rect class="cr" data-name="왼탑" stroke-width="4" x="52" y="118" width="80" height="178"/>
+<rect class="cr" data-name="오른탑" stroke-width="4" x="268" y="118" width="80" height="178"/>
+<rect class="cr" data-name="중탑흉벽1" stroke-width="3" x="148" y="58" width="25" height="22"/>
+<rect class="cr" data-name="중탑흉벽2" stroke-width="3" x="188" y="58" width="25" height="22"/>
+<rect class="cr" data-name="중탑흉벽3" stroke-width="3" x="228" y="58" width="25" height="22"/>
+<rect class="cr" data-name="왼창문" stroke-width="3" x="75" y="148" width="38" height="45" rx="18"/>
+<rect class="cr" data-name="오른창문" stroke-width="3" x="287" y="148" width="38" height="45" rx="18"/>
+<rect class="cr" data-name="문" stroke-width="4" x="170" y="225" width="60" height="72" rx="28"/>
+<rect class="cr" data-name="중앙창문" stroke-width="3" x="178" y="115" width="44" height="52" rx="20"/>
+</g>` },
+        { id: 'lighthouse', name: '등대', svg: `
+<g stroke="#1a1a1a" stroke-linecap="round" stroke-linejoin="round" fill="#fafafa">
+<path class="cr" data-name="탑" stroke-width="5" d="M155,295 L172,88 L228,88 L245,295 Z"/>
+<rect class="cr" data-name="등불실" stroke-width="5" x="155" y="62" width="90" height="38" rx="8"/>
+<circle class="cr" data-name="등불" stroke-width="4" cx="200" cy="78" r="18"/>
+<polygon class="cr" data-name="지붕" stroke-width="4" points="148,62 200,28 252,62"/>
+<path class="cr" data-name="줄무늬1" stroke-width="3" d="M158,155 L242,155 L238,175 L162,175 Z"/>
+<path class="cr" data-name="줄무늬2" stroke-width="3" d="M162,218 L238,218 L234,238 L166,238 Z"/>
+<rect class="cr" data-name="문" stroke-width="4" x="180" y="248" width="40" height="47" rx="18"/>
+<path class="cr" data-name="파도" stroke-width="3" d="M42,282 Q90,265 138,282 Q185,298 232,282 Q278,265 355,282" fill="none"/>
+</g>` },
+        { id: 'library', name: '도서관', svg: `
+<g stroke="#1a1a1a" stroke-linecap="round" stroke-linejoin="round" fill="#fafafa">
+<rect class="cr" data-name="건물" stroke-width="5" x="42" y="112" width="316" height="183"/>
+<polygon class="cr" data-name="지붕삼각" stroke-width="4" points="32,118 200,45 368,118"/>
+<rect class="cr" data-name="기둥1" stroke-width="4" x="78" y="158" width="22" height="136"/>
+<rect class="cr" data-name="기둥2" stroke-width="4" x="188" y="158" width="22" height="136"/>
+<rect class="cr" data-name="기둥3" stroke-width="4" x="300" y="158" width="22" height="136"/>
+<rect class="cr" data-name="문" stroke-width="4" x="165" y="232" width="70" height="62" rx="5"/>
+<rect class="cr" data-name="현판" stroke-width="3" x="130" y="72" width="140" height="30" rx="4"/>
 </g>` }
       ]
     },
@@ -419,6 +651,82 @@ const DRAWING_DATA = {
 <ellipse class="cr" data-name="씨6" stroke-width="3" cx="232" cy="185" rx="7" ry="9"/>
 <ellipse class="cr" data-name="씨7" stroke-width="3" cx="182" cy="222" rx="7" ry="9"/>
 <ellipse class="cr" data-name="씨8" stroke-width="3" cx="218" cy="222" rx="7" ry="9"/>
+</g>` },
+        { id: 'cake', name: '케이크', svg: `
+<g stroke="#1a1a1a" stroke-linecap="round" stroke-linejoin="round" fill="#fafafa">
+<rect class="cr" data-name="아래층" stroke-width="5" x="58" y="200" width="284" height="88" rx="8"/>
+<rect class="cr" data-name="위층" stroke-width="5" x="98" y="122" width="204" height="82" rx="8"/>
+<rect class="cr" data-name="아이싱아래" stroke-width="4" x="58" y="192" width="284" height="22" rx="8"/>
+<rect class="cr" data-name="아이싱위" stroke-width="4" x="98" y="115" width="204" height="22" rx="8"/>
+<line stroke-width="3" x1="168" y1="115" x2="168" y2="122"/>
+<line stroke-width="3" x1="200" y1="105" x2="200" y2="122"/>
+<line stroke-width="3" x1="232" y1="115" x2="232" y2="122"/>
+<rect class="cr" data-name="초1" stroke-width="3" x="163" y="88" width="10" height="28" rx="3"/>
+<rect class="cr" data-name="초2" stroke-width="3" x="195" y="78" width="10" height="28" rx="3"/>
+<rect class="cr" data-name="초3" stroke-width="3" x="227" y="88" width="10" height="28" rx="3"/>
+<circle class="cr" data-name="불꽃1" stroke-width="2" cx="168" cy="85" r="6"/>
+<circle class="cr" data-name="불꽃2" stroke-width="2" cx="200" cy="75" r="6"/>
+<circle class="cr" data-name="불꽃3" stroke-width="2" cx="232" cy="85" r="6"/>
+</g>` },
+        { id: 'icecream', name: '아이스크림', svg: `
+<g stroke="#1a1a1a" stroke-linecap="round" stroke-linejoin="round" fill="#fafafa">
+<path class="cr" data-name="콘" stroke-width="5" d="M148,200 L200,295 L252,200 Z"/>
+<path class="cr" data-name="격자" stroke-width="2" d="M155,225 L245,225 M162,250 L238,250 M172,225 L165,250 M190,225 L183,250 M208,225 L201,250 M226,225 L219,250" fill="none"/>
+<ellipse class="cr" data-name="아래스쿱" stroke-width="4" cx="200" cy="165" rx="65" ry="48"/>
+<ellipse class="cr" data-name="위스쿱" stroke-width="4" cx="200" cy="120" rx="58" ry="45"/>
+<ellipse class="cr" data-name="딸기스쿱" stroke-width="4" cx="200" cy="78" rx="48" ry="40"/>
+<circle class="cr" data-name="체리" stroke-width="3" cx="200" cy="42" r="14"/>
+<line stroke-width="2" x1="200" y1="42" x2="215" y2="32"/>
+</g>` },
+        { id: 'ramen', name: '라면', svg: `
+<g stroke="#1a1a1a" stroke-linecap="round" stroke-linejoin="round" fill="#fafafa">
+<ellipse class="cr" data-name="그릇" stroke-width="5" cx="200" cy="220" rx="148" ry="72"/>
+<ellipse class="cr" data-name="국물" stroke-width="4" cx="200" cy="198" rx="132" ry="52"/>
+<path class="cr" data-name="면1" stroke-width="4" d="M100,195 Q140,175 180,195 Q220,215 260,195 Q290,180 310,195" fill="none"/>
+<path class="cr" data-name="면2" stroke-width="4" d="M90,212 Q130,195 170,212 Q210,228 250,212 Q285,198 320,212" fill="none"/>
+<ellipse class="cr" data-name="달걀" stroke-width="4" cx="155" cy="178" rx="28" ry="22"/>
+<circle stroke-width="3" cx="155" cy="178" r="12" fill="#fafafa"/>
+<rect class="cr" data-name="어묵" stroke-width="4" x="230" y="162" width="52" height="25" rx="6"/>
+<ellipse class="cr" data-name="파래기" stroke-width="3" cx="200" cy="165" rx="18" ry="8"/>
+</g>` },
+        { id: 'hamburger', name: '햄버거', svg: `
+<g stroke="#1a1a1a" stroke-linecap="round" stroke-linejoin="round" fill="#fafafa">
+<path class="cr" data-name="위번" stroke-width="5" d="M75,148 Q80,78 200,72 Q320,78 325,148 Z"/>
+<rect class="cr" data-name="야채" stroke-width="4" x="65" y="148" width="270" height="22" rx="3"/>
+<rect class="cr" data-name="패티" stroke-width="5" x="68" y="168" width="264" height="32" rx="5"/>
+<rect class="cr" data-name="치즈" stroke-width="4" x="62" y="198" width="276" height="18" rx="4"/>
+<rect class="cr" data-name="아래번" stroke-width="5" x="62" y="215" width="276" height="58" rx="14"/>
+<circle class="cr" data-name="깨1" stroke-width="2" cx="165" cy="102" r="7"/>
+<circle class="cr" data-name="깨2" stroke-width="2" cx="200" cy="88" r="7"/>
+<circle class="cr" data-name="깨3" stroke-width="2" cx="235" cy="102" r="7"/>
+</g>` },
+        { id: 'sushi', name: '초밥', svg: `
+<g stroke="#1a1a1a" stroke-linecap="round" stroke-linejoin="round" fill="#fafafa">
+<ellipse class="cr" data-name="밥1" stroke-width="5" cx="115" cy="220" rx="65" ry="40"/>
+<ellipse class="cr" data-name="밥2" stroke-width="5" cx="200" cy="220" rx="65" ry="40"/>
+<ellipse class="cr" data-name="밥3" stroke-width="5" cx="285" cy="220" rx="65" ry="40"/>
+<ellipse class="cr" data-name="연어" stroke-width="4" cx="115" cy="192" rx="52" ry="28"/>
+<ellipse class="cr" data-name="참치" stroke-width="4" cx="200" cy="192" rx="52" ry="28"/>
+<ellipse class="cr" data-name="새우" stroke-width="4" cx="285" cy="192" rx="52" ry="28"/>
+<rect class="cr" data-name="접시" stroke-width="4" x="42" y="252" width="316" height="18" rx="9"/>
+<rect class="cr" data-name="와사비" stroke-width="3" x="90" y="245" width="30" height="12" rx="4"/>
+<rect class="cr" data-name="간장" stroke-width="3" x="280" y="242" width="38" height="18" rx="6"/>
+</g>` },
+        { id: 'sandwich', name: '샌드위치', svg: `
+<g stroke="#1a1a1a" stroke-linecap="round" stroke-linejoin="round" fill="#fafafa">
+<path class="cr" data-name="위빵" stroke-width="5" d="M62,128 Q62,72 200,68 Q338,72 338,128 Z"/>
+<rect class="cr" data-name="상추" stroke-width="4" x="55" y="128" width="290" height="20" rx="3"/>
+<rect class="cr" data-name="햄" stroke-width="4" x="60" y="146" width="280" height="25" rx="4"/>
+<rect class="cr" data-name="치즈" stroke-width="4" x="58" y="169" width="284" height="20" rx="3"/>
+<rect class="cr" data-name="토마토" stroke-width="4" x="60" y="187" width="280" height="18" rx="3"/>
+<rect class="cr" data-name="아래빵" stroke-width="5" x="55" y="203" width="290" height="62" rx="12"/>
+</g>` },
+        { id: 'apple', name: '사과', svg: `
+<g stroke="#1a1a1a" stroke-linecap="round" stroke-linejoin="round" fill="#fafafa">
+<path class="cr" data-name="몸통" stroke-width="5" d="M200,95 Q280,92 315,165 Q335,215 318,260 Q300,295 262,298 Q230,302 200,298 Q170,302 138,298 Q100,295 82,260 Q65,215 85,165 Q120,92 200,95 Z"/>
+<path class="cr" data-name="잎" stroke-width="4" d="M200,95 Q215,62 245,48 Q238,78 215,90"/>
+<line stroke-width="3" x1="200" y1="55" x2="200" y2="98"/>
+<ellipse class="cr" data-name="하이라이트" stroke-width="2" cx="148" cy="148" rx="20" ry="30"/>
 </g>` }
       ]
     },
@@ -494,6 +802,69 @@ const DRAWING_DATA = {
 <path class="cr" data-name="잎6" stroke-width="4" d="M200,130 Q185,92 140,75 Q155,105 190,120"/>
 <circle class="cr" data-name="코코넛1" stroke-width="3" cx="192" cy="138" r="14"/>
 <circle class="cr" data-name="코코넛2" stroke-width="3" cx="212" cy="142" r="14"/>
+</g>` },
+        { id: 'cactus', name: '선인장', svg: `
+<g stroke="#1a1a1a" stroke-linecap="round" stroke-linejoin="round" fill="#fafafa">
+<rect class="cr" data-name="몸통" stroke-width="5" x="168" y="98" width="64" height="172" rx="28"/>
+<path class="cr" data-name="왼팔" stroke-width="5" d="M168,152 Q115,148 108,115 Q102,88 125,88 Q132,108 132,138 Q148,145 168,148"/>
+<path class="cr" data-name="오른팔" stroke-width="5" d="M232,162 Q285,158 292,128 Q298,102 275,102 Q268,118 268,148 Q252,155 232,158"/>
+<rect class="cr" data-name="화분" stroke-width="5" x="148" y="268" width="104" height="32" rx="8"/>
+<rect class="cr" data-name="화분받침" stroke-width="4" x="138" y="295" width="124" height="12" rx="6"/>
+<ellipse class="cr" data-name="꽃" stroke-width="3" cx="200" cy="88" rx="22" ry="16"/>
+</g>` },
+        { id: 'rose', name: '장미', svg: `
+<g stroke="#1a1a1a" stroke-linecap="round" stroke-linejoin="round" fill="#fafafa">
+<rect class="cr" data-name="줄기" stroke-width="5" x="193" y="172" width="14" height="118" rx="6"/>
+<path class="cr" data-name="왼잎" stroke-width="4" d="M193,225 Q158,210 148,228 Q158,252 193,240 Z"/>
+<path class="cr" data-name="오른잎" stroke-width="4" d="M207,248 Q242,232 252,250 Q242,274 207,262 Z"/>
+<circle class="cr" data-name="꽃중심" stroke-width="4" cx="200" cy="112" r="35"/>
+<path class="cr" data-name="꽃잎1" stroke-width="4" d="M200,78 Q235,65 252,88 Q248,112 225,118"/>
+<path class="cr" data-name="꽃잎2" stroke-width="4" d="M200,78 Q165,65 148,88 Q152,112 175,118"/>
+<path class="cr" data-name="꽃잎3" stroke-width="4" d="M232,128 Q260,142 255,168 Q235,175 215,158"/>
+<path class="cr" data-name="꽃잎4" stroke-width="4" d="M168,128 Q140,142 145,168 Q165,175 185,158"/>
+<path class="cr" data-name="꽃잎5" stroke-width="4" d="M185,148 Q200,162 215,148 Q220,162 200,172 Q180,162 185,148 Z"/>
+</g>` },
+        { id: 'mushroom', name: '버섯', svg: `
+<g stroke="#1a1a1a" stroke-linecap="round" stroke-linejoin="round" fill="#fafafa">
+<rect class="cr" data-name="대" stroke-width="5" x="162" y="192" width="76" height="98" rx="10"/>
+<ellipse class="cr" data-name="갓" stroke-width="5" cx="200" cy="165" rx="128" ry="90"/>
+<ellipse class="cr" data-name="주름" stroke-width="4" cx="200" cy="205" rx="112" ry="28"/>
+<circle class="cr" data-name="점1" stroke-width="3" cx="158" cy="138" r="18"/>
+<circle class="cr" data-name="점2" stroke-width="3" cx="200" cy="112" r="18"/>
+<circle class="cr" data-name="점3" stroke-width="3" cx="242" cy="138" r="18"/>
+<circle class="cr" data-name="점4" stroke-width="3" cx="132" cy="172" r="12"/>
+<circle class="cr" data-name="점5" stroke-width="3" cx="268" cy="172" r="12"/>
+</g>` },
+        { id: 'bamboo', name: '대나무', svg: `
+<g stroke="#1a1a1a" stroke-linecap="round" stroke-linejoin="round" fill="#fafafa">
+<rect class="cr" data-name="줄기1" stroke-width="5" x="155" y="42" width="38" height="248" rx="14"/>
+<rect class="cr" data-name="줄기2" stroke-width="5" x="215" y="72" width="32" height="220" rx="12"/>
+<rect class="cr" data-name="줄기3" stroke-width="4" x="95" y="95" width="28" height="195" rx="10"/>
+<line stroke-width="4" x1="155" y1="112" x2="193" y2="112"/>
+<line stroke-width="4" x1="155" y1="175" x2="193" y2="175"/>
+<line stroke-width="4" x1="155" y1="238" x2="193" y2="238"/>
+<path class="cr" data-name="잎1" stroke-width="4" d="M193,130 Q228,105 245,118 Q232,142 193,138"/>
+<path class="cr" data-name="잎2" stroke-width="4" d="M155,195 Q118,170 105,185 Q118,208 155,202"/>
+<path class="cr" data-name="잎3" stroke-width="4" d="M215,145 Q252,122 268,138 Q252,162 215,155"/>
+</g>` },
+        { id: 'tulip', name: '튤립', svg: `
+<g stroke="#1a1a1a" stroke-linecap="round" stroke-linejoin="round" fill="#fafafa">
+<rect class="cr" data-name="줄기" stroke-width="5" x="192" y="185" width="16" height="108" rx="6"/>
+<path class="cr" data-name="왼잎" stroke-width="4" d="M192,245 Q155,222 148,248 Q158,278 192,262 Z"/>
+<path class="cr" data-name="오른잎" stroke-width="4" d="M208,258 Q245,235 252,260 Q242,290 208,275 Z"/>
+<path class="cr" data-name="꽃잎왼" stroke-width="4" d="M165,185 Q148,145 168,115 Q185,108 200,115 L200,188 Z"/>
+<path class="cr" data-name="꽃잎오른" stroke-width="4" d="M235,185 Q252,145 232,115 Q215,108 200,115 L200,188 Z"/>
+<path class="cr" data-name="꽃잎중앙" stroke-width="4" d="M200,115 Q200,88 200,72 Q200,88 200,115 Z"/>
+<ellipse class="cr" data-name="꽃봉오리" stroke-width="4" cx="200" cy="118" rx="38" ry="62"/>
+</g>` },
+        { id: 'clovers', name: '클로버', svg: `
+<g stroke="#1a1a1a" stroke-linecap="round" stroke-linejoin="round" fill="#fafafa">
+<rect class="cr" data-name="줄기" stroke-width="4" x="195" y="212" width="10" height="78" rx="4"/>
+<circle class="cr" data-name="위잎" stroke-width="4" cx="200" cy="138" r="48"/>
+<circle class="cr" data-name="왼잎" stroke-width="4" cx="148" cy="185" r="48"/>
+<circle class="cr" data-name="오른잎" stroke-width="4" cx="252" cy="185" r="48"/>
+<circle class="cr" data-name="아래잎" stroke-width="4" cx="200" cy="232" r="48"/>
+<circle stroke-width="3" cx="200" cy="188" r="18" fill="#fafafa"/>
 </g>` }
       ]
     },
@@ -578,6 +949,85 @@ const DRAWING_DATA = {
 <rect class="cr" data-name="뒷왼다리" stroke-width="4" x="98" y="178" width="22" height="130" rx="6"/>
 <rect class="cr" data-name="뒷오른다리" stroke-width="4" x="280" y="178" width="22" height="130" rx="6"/>
 <line stroke-width="4" x1="88" y1="278" x2="284" y2="278"/>
+</g>` },
+        { id: 'clock', name: '시계', svg: `
+<g stroke="#1a1a1a" stroke-linecap="round" stroke-linejoin="round" fill="#fafafa">
+<circle class="cr" data-name="시계본체" stroke-width="6" cx="200" cy="168" r="122"/>
+<circle class="cr" data-name="안원" stroke-width="3" cx="200" cy="168" r="102"/>
+<rect class="cr" data-name="12시" stroke-width="4" x="194" y="75" width="12" height="22" rx="3"/>
+<rect class="cr" data-name="3시" stroke-width="4" x="283" y="162" width="22" height="12" rx="3"/>
+<rect class="cr" data-name="6시" stroke-width="4" x="194" y="247" width="12" height="22" rx="3"/>
+<rect class="cr" data-name="9시" stroke-width="4" x="95" y="162" width="22" height="12" rx="3"/>
+<line stroke-width="5" x1="200" y1="168" x2="200" y2="108"/>
+<line stroke-width="4" x1="200" y1="168" x2="248" y2="168"/>
+<circle stroke-width="3" cx="200" cy="168" r="6" fill="#1a1a1a"/>
+<rect class="cr" data-name="다리1" stroke-width="3" x="155" y="288" width="28" height="35" rx="6"/>
+<rect class="cr" data-name="다리2" stroke-width="3" x="217" y="288" width="28" height="35" rx="6"/>
+</g>` },
+        { id: 'lamp', name: '스탠드', svg: `
+<g stroke="#1a1a1a" stroke-linecap="round" stroke-linejoin="round" fill="#fafafa">
+<ellipse class="cr" data-name="받침" stroke-width="5" cx="200" cy="288" rx="95" ry="18"/>
+<rect class="cr" data-name="기둥" stroke-width="5" x="193" y="168" width="14" height="125" rx="6"/>
+<path class="cr" data-name="팔" stroke-width="5" d="M200,168 Q245,145 275,95"/>
+<path class="cr" data-name="갓" stroke-width="5" d="M248,52 Q310,48 318,98 Q310,112 248,118 Q220,115 210,105 Q205,92 248,52 Z"/>
+<ellipse class="cr" data-name="전구" stroke-width="4" cx="268" cy="90" rx="22" ry="28"/>
+<line stroke-width="3" x1="250" y1="105" x2="200" y2="168"/>
+</g>` },
+        { id: 'fridge', name: '냉장고', svg: `
+<g stroke="#1a1a1a" stroke-linecap="round" stroke-linejoin="round" fill="#fafafa">
+<rect class="cr" data-name="하단칸" stroke-width="5" x="85" y="178" width="230" height="125" rx="10"/>
+<rect class="cr" data-name="상단칸" stroke-width="5" x="85" y="42" width="230" height="140" rx="10"/>
+<line stroke-width="4" x1="85" y1="178" x2="315" y2="178"/>
+<rect class="cr" data-name="상단손잡이" stroke-width="4" x="280" y="85" width="18" height="55" rx="8"/>
+<rect class="cr" data-name="하단손잡이" stroke-width="4" x="280" y="205" width="18" height="42" rx="8"/>
+<rect class="cr" data-name="물통" stroke-width="3" x="105" y="195" width="45" height="62" rx="6"/>
+<rect class="cr" data-name="야채칸" stroke-width="3" x="155" y="258" width="140" height="28" rx="5"/>
+</g>` },
+        { id: 'backpack', name: '가방', svg: `
+<g stroke="#1a1a1a" stroke-linecap="round" stroke-linejoin="round" fill="#fafafa">
+<rect class="cr" data-name="몸통" stroke-width="5" x="75" y="88" width="250" height="215" rx="22"/>
+<rect class="cr" data-name="앞주머니" stroke-width="4" x="105" y="178" width="190" height="105" rx="14"/>
+<rect class="cr" data-name="위덮개" stroke-width="4" x="88" y="68" width="224" height="52" rx="14"/>
+<rect class="cr" data-name="왼어깨끈" stroke-width="5" x="95" y="88" width="28" height="155" rx="12"/>
+<rect class="cr" data-name="오른어깨끈" stroke-width="5" x="277" y="88" width="28" height="155" rx="12"/>
+<line stroke-width="3" x1="105" y1="228" x2="295" y2="228"/>
+<circle class="cr" data-name="지퍼링" stroke-width="3" cx="200" cy="180" r="8"/>
+</g>` },
+        { id: 'cup', name: '컵', svg: `
+<g stroke="#1a1a1a" stroke-linecap="round" stroke-linejoin="round" fill="#fafafa">
+<path class="cr" data-name="컵몸통" stroke-width="5" d="M105,72 L125,278 L275,278 L295,72 Z"/>
+<path class="cr" data-name="손잡이" stroke-width="5" d="M295,112 Q352,112 352,175 Q352,238 295,238 L295,215 Q322,215 322,175 Q322,135 295,135 Z"/>
+<path class="cr" data-name="음료" stroke-width="4" d="M108,115 L128,278 L272,278 L292,115 Z"/>
+<line stroke-width="3" x1="105" y1="72" x2="295" y2="72"/>
+</g>` },
+        { id: 'scissors', name: '가위', svg: `
+<g stroke="#1a1a1a" stroke-linecap="round" stroke-linejoin="round" fill="#fafafa">
+<circle class="cr" data-name="왼손잡이" stroke-width="4" cx="148" cy="228" r="45"/>
+<circle class="cr" data-name="오른손잡이" stroke-width="4" cx="252" cy="228" r="45"/>
+<path class="cr" data-name="왼날" stroke-width="5" d="M170,195 L200,148 L220,62"/>
+<path class="cr" data-name="오른날" stroke-width="5" d="M230,195 L200,148 L180,62"/>
+<circle stroke-width="3" cx="200" cy="148" r="10" fill="#fafafa"/>
+</g>` },
+        { id: 'telephone', name: '전화기', svg: `
+<g stroke="#1a1a1a" stroke-linecap="round" stroke-linejoin="round" fill="#fafafa">
+<rect class="cr" data-name="본체" stroke-width="5" x="68" y="75" width="264" height="195" rx="18"/>
+<rect class="cr" data-name="화면" stroke-width="4" x="92" y="100" width="216" height="120" rx="10"/>
+<circle class="cr" data-name="버튼1" stroke-width="3" cx="148" cy="245" r="12"/>
+<circle class="cr" data-name="버튼2" stroke-width="3" cx="200" cy="245" r="12"/>
+<circle class="cr" data-name="버튼3" stroke-width="3" cx="252" cy="245" r="12"/>
+<rect class="cr" data-name="카메라" stroke-width="3" x="190" y="88" width="20" height="8" rx="4"/>
+<rect class="cr" data-name="홈버튼" stroke-width="4" x="182" y="258" width="36" height="10" rx="5"/>
+</g>` },
+        { id: 'washing', name: '세탁기', svg: `
+<g stroke="#1a1a1a" stroke-linecap="round" stroke-linejoin="round" fill="#fafafa">
+<rect class="cr" data-name="본체" stroke-width="5" x="55" y="58" width="290" height="248" rx="14"/>
+<circle class="cr" data-name="문" stroke-width="5" cx="200" cy="205" r="88"/>
+<circle class="cr" data-name="드럼" stroke-width="4" cx="200" cy="205" r="68"/>
+<rect class="cr" data-name="패널" stroke-width="4" x="72" y="72" width="256" height="55" rx="8"/>
+<circle class="cr" data-name="다이얼" stroke-width="4" cx="115" cy="99" r="22"/>
+<rect class="cr" data-name="버튼1" stroke-width="3" x="175" y="88" width="22" height="14" rx="5"/>
+<rect class="cr" data-name="버튼2" stroke-width="3" x="218" y="88" width="22" height="14" rx="5"/>
+<rect class="cr" data-name="디스플레이" stroke-width="3" x="265" y="80" width="52" height="32" rx="6"/>
 </g>` }
       ]
     },
@@ -667,6 +1117,67 @@ const DRAWING_DATA = {
 <circle stroke-width="3" cx="92" cy="90" r="20" fill="#fafafa"/>
 <circle stroke-width="3" cx="118" cy="78" r="24" fill="#fafafa"/>
 <circle stroke-width="3" cx="140" cy="88" r="20" fill="#fafafa"/>
+</g>` },
+        { id: 'snowflake', name: '눈꽃', svg: `
+<g stroke="#1a1a1a" stroke-linecap="round" stroke-linejoin="round" fill="#fafafa">
+<line class="cr" data-name="가지1" stroke-width="6" x1="200" y1="42" x2="200" y2="285"/>
+<line class="cr" data-name="가지2" stroke-width="6" x1="75" y1="115" x2="325" y2="227"/>
+<line class="cr" data-name="가지3" stroke-width="6" x1="325" y1="115" x2="75" y2="227"/>
+<line class="cr" data-name="잔가지1" stroke-width="4" x1="200" y1="88" x2="170" y2="118"/>
+<line class="cr" data-name="잔가지2" stroke-width="4" x1="200" y1="88" x2="230" y2="118"/>
+<line class="cr" data-name="잔가지3" stroke-width="4" x1="200" y1="238" x2="170" y2="208"/>
+<line class="cr" data-name="잔가지4" stroke-width="4" x1="200" y1="238" x2="230" y2="208"/>
+<circle class="cr" data-name="중심" stroke-width="4" cx="200" cy="163" r="18"/>
+</g>` },
+        { id: 'volcano', name: '화산', svg: `
+<g stroke="#1a1a1a" stroke-linecap="round" stroke-linejoin="round" fill="#fafafa">
+<polygon class="cr" data-name="화산체" stroke-width="5" points="200,62 368,295 32,295"/>
+<path class="cr" data-name="용암" stroke-width="4" d="M175,62 Q185,38 200,28 Q215,38 225,62 Q215,58 200,65 Q185,58 175,62 Z"/>
+<path class="cr" data-name="용암흐름1" stroke-width="5" d="M185,75 Q178,108 182,145 Q192,165 188,195"/>
+<path class="cr" data-name="용암흐름2" stroke-width="5" d="M215,75 Q222,108 218,145 Q208,165 212,195"/>
+<ellipse class="cr" data-name="연기1" stroke-width="3" cx="178" cy="38" rx="22" ry="14"/>
+<ellipse class="cr" data-name="연기2" stroke-width="3" cx="222" cy="32" rx="18" ry="12"/>
+<path class="cr" data-name="바위" stroke-width="4" d="M58,280 Q88,262 118,278 Q148,262 178,278"/>
+</g>` },
+        { id: 'lightning', name: '번개', svg: `
+<g stroke="#1a1a1a" stroke-linecap="round" stroke-linejoin="round" fill="#fafafa">
+<ellipse class="cr" data-name="구름" stroke-width="5" cx="185" cy="108" rx="135" ry="72"/>
+<circle stroke-width="4" cx="115" cy="108" r="48" fill="#fafafa"/>
+<circle stroke-width="4" cx="165" cy="85" r="55" fill="#fafafa"/>
+<circle stroke-width="4" cx="220" cy="98" r="48" fill="#fafafa"/>
+<path class="cr" data-name="번개" stroke-width="6" d="M215,168 L175,228 L205,228 L158,295 L258,220 L218,220 Z"/>
+</g>` },
+        { id: 'rainbow', name: '무지개', svg: `
+<g stroke="#1a1a1a" stroke-linecap="round" stroke-linejoin="round" fill="#fafafa">
+<path class="cr" data-name="빨간호" stroke-width="12" d="M35,248 Q35,62 200,62 Q365,62 365,248" fill="none"/>
+<path class="cr" data-name="주황호" stroke-width="10" d="M58,248 Q58,88 200,88 Q342,88 342,248" fill="none"/>
+<path class="cr" data-name="노란호" stroke-width="10" d="M78,248 Q78,112 200,112 Q322,112 322,248" fill="none"/>
+<path class="cr" data-name="초록호" stroke-width="10" d="M98,248 Q98,135 200,135 Q302,135 302,248" fill="none"/>
+<path class="cr" data-name="파란호" stroke-width="10" d="M118,248 Q118,158 200,158 Q282,158 282,248" fill="none"/>
+<path class="cr" data-name="보라호" stroke-width="10" d="M138,248 Q138,180 200,180 Q262,180 262,248" fill="none"/>
+<ellipse class="cr" data-name="구름왼" stroke-width="4" cx="65" cy="258" rx="48" ry="28"/>
+<ellipse class="cr" data-name="구름오른" stroke-width="4" cx="335" cy="258" rx="48" ry="28"/>
+</g>` },
+        { id: 'waterfall', name: '폭포', svg: `
+<g stroke="#1a1a1a" stroke-linecap="round" stroke-linejoin="round" fill="#fafafa">
+<rect class="cr" data-name="왼절벽" stroke-width="5" x="42" y="42" width="88" height="255"/>
+<rect class="cr" data-name="오른절벽" stroke-width="5" x="270" y="42" width="88" height="255"/>
+<rect class="cr" data-name="물줄기" stroke-width="5" x="130" y="42" width="140" height="200"/>
+<ellipse class="cr" data-name="물보라" stroke-width="4" cx="200" cy="255" rx="88" ry="35"/>
+<path class="cr" data-name="물살1" stroke-width="3" d="M155,80 Q165,130 158,180 Q162,225 155,255" fill="none"/>
+<path class="cr" data-name="물살2" stroke-width="3" d="M245,80 Q235,130 242,180 Q238,225 245,255" fill="none"/>
+<rect class="cr" data-name="강물" stroke-width="4" x="42" y="278" width="316" height="25" rx="5"/>
+</g>` },
+        { id: 'leaf', name: '단풍잎', svg: `
+<g stroke="#1a1a1a" stroke-linecap="round" stroke-linejoin="round" fill="#fafafa">
+<path class="cr" data-name="중앙잎" stroke-width="4" d="M200,278 L200,145 Q200,72 200,42 Q200,72 200,145 Z"/>
+<path class="cr" data-name="왼쪽잎1" stroke-width="4" d="M200,145 Q165,128 138,95 Q118,72 115,48 Q138,65 162,95 Q185,122 200,145"/>
+<path class="cr" data-name="오른쪽잎1" stroke-width="4" d="M200,145 Q235,128 262,95 Q282,72 285,48 Q262,65 238,95 Q215,122 200,145"/>
+<path class="cr" data-name="왼쪽잎2" stroke-width="4" d="M200,175 Q155,162 118,138 Q88,118 75,95 Q105,108 138,132 Q168,155 200,175"/>
+<path class="cr" data-name="오른쪽잎2" stroke-width="4" d="M200,175 Q245,162 282,138 Q312,118 325,95 Q295,108 262,132 Q232,155 200,175"/>
+<path class="cr" data-name="왼쪽잎3" stroke-width="4" d="M200,215 Q145,205 105,185 Q72,168 58,148 Q88,155 122,175 Q162,198 200,215"/>
+<path class="cr" data-name="오른쪽잎3" stroke-width="4" d="M200,215 Q255,205 295,185 Q328,168 342,148 Q312,155 278,175 Q238,198 200,215"/>
+<line stroke-width="3" x1="200" y1="145" x2="200" y2="278"/>
 </g>` }
       ]
     },
@@ -729,6 +1240,61 @@ const DRAWING_DATA = {
 <rect class="cr" data-name="주머니오른" stroke-width="3" x="220" y="220" width="65" height="38" rx="6"/>
 <line stroke-width="4" x1="195" y1="145" x2="195" y2="295"/>
 <line stroke-width="4" x1="205" y1="145" x2="205" y2="295"/>
+</g>` },
+        { id: 'sneakers', name: '운동화', svg: `
+<g stroke="#1a1a1a" stroke-linecap="round" stroke-linejoin="round" fill="#fafafa">
+<path class="cr" data-name="신발밑창" stroke-width="5" d="M42,225 L42,258 Q88,275 200,272 Q312,270 358,258 L358,225 Z"/>
+<path class="cr" data-name="신발몸통" stroke-width="5" d="M42,225 Q45,148 80,132 L280,132 Q325,132 358,175 L358,225 Z"/>
+<path class="cr" data-name="발꿈치" stroke-width="4" d="M280,132 Q340,132 358,175 L358,225 L280,225 Z"/>
+<path class="cr" data-name="혀" stroke-width="4" d="M80,132 Q88,112 128,108 L128,132 Z"/>
+<path class="cr" data-name="끈1" stroke-width="4" d="M115,145 Q145,138 175,145"/>
+<path class="cr" data-name="끈2" stroke-width="4" d="M108,162 Q145,155 182,162"/>
+<path class="cr" data-name="끈3" stroke-width="4" d="M105,178 Q145,172 185,178"/>
+<path class="cr" data-name="줄무늬" stroke-width="5" d="M198,132 Q248,122 298,135 Q280,162 242,168 Q208,165 198,145 Z"/>
+</g>` },
+        { id: 'hat', name: '모자', svg: `
+<g stroke="#1a1a1a" stroke-linecap="round" stroke-linejoin="round" fill="#fafafa">
+<ellipse class="cr" data-name="챙" stroke-width="5" cx="200" cy="195" rx="155" ry="32"/>
+<path class="cr" data-name="모자통" stroke-width="5" d="M95,195 Q95,82 200,68 Q305,82 305,195 Z"/>
+<rect class="cr" data-name="밴드" stroke-width="4" x="98" y="178" width="204" height="18"/>
+<ellipse class="cr" data-name="장식" stroke-width="3" cx="200" cy="118" rx="25" ry="18"/>
+</g>` },
+        { id: 'glasses', name: '안경', svg: `
+<g stroke="#1a1a1a" stroke-linecap="round" stroke-linejoin="round" fill="#fafafa">
+<circle class="cr" data-name="왼렌즈" stroke-width="5" cx="138" cy="165" r="72"/>
+<circle class="cr" data-name="오른렌즈" stroke-width="5" cx="262" cy="165" r="72"/>
+<line stroke-width="5" x1="210" y1="165" x2="190" y2="165"/>
+<line stroke-width="4" x1="42" y1="148" x2="66" y2="155"/>
+<line stroke-width="4" x1="358" y1="148" x2="334" y2="155"/>
+<ellipse class="cr" data-name="왼무늬" stroke-width="3" cx="118" cy="148" rx="25" ry="20"/>
+<ellipse class="cr" data-name="오른무늬" stroke-width="3" cx="282" cy="148" rx="25" ry="20"/>
+</g>` },
+        { id: 'scarf', name: '목도리', svg: `
+<g stroke="#1a1a1a" stroke-linecap="round" stroke-linejoin="round" fill="#fafafa">
+<path class="cr" data-name="몸통" stroke-width="5" d="M72,78 Q72,148 200,148 Q328,148 328,78 Q328,42 200,38 Q72,42 72,78 Z"/>
+<path class="cr" data-name="늘어진부분" stroke-width="5" d="M148,148 Q138,195 115,248 Q105,278 108,295 L158,295 Q162,265 172,238 L200,148 Z"/>
+<path class="cr" data-name="끝단술1" stroke-width="4" d="M108,295 L102,298 L108,305 L115,298 Z"/>
+<path class="cr" data-name="끝단술2" stroke-width="4" d="M135,295 L129,298 L135,305 L142,298 Z"/>
+<path class="cr" data-name="줄무늬1" stroke-width="5" d="M72,95 Q200,110 328,95"/>
+<path class="cr" data-name="줄무늬2" stroke-width="5" d="M72,115 Q200,130 328,115"/>
+<path class="cr" data-name="줄무늬3" stroke-width="4" d="M148,175 Q148,205 132,235"/>
+</g>` },
+        { id: 'handbag', name: '핸드백', svg: `
+<g stroke="#1a1a1a" stroke-linecap="round" stroke-linejoin="round" fill="#fafafa">
+<rect class="cr" data-name="몸통" stroke-width="5" x="65" y="145" width="270" height="168" rx="18"/>
+<path class="cr" data-name="손잡이" stroke-width="5" d="M115,145 Q115,72 200,65 Q285,72 285,145"/>
+<rect class="cr" data-name="앞장식" stroke-width="4" x="155" y="210" width="90" height="48" rx="10"/>
+<rect class="cr" data-name="잠금장치" stroke-width="4" x="178" y="230" width="44" height="22" rx="8"/>
+<line stroke-width="3" x1="65" y1="200" x2="335" y2="200"/>
+</g>` },
+        { id: 'socks', name: '양말', svg: `
+<g stroke="#1a1a1a" stroke-linecap="round" stroke-linejoin="round" fill="#fafafa">
+<path class="cr" data-name="몸통" stroke-width="5" d="M135,38 L135,228 Q135,278 172,285 Q215,295 245,275 Q275,258 265,225 L238,225 Q245,248 228,258 Q208,268 188,258 Q168,248 165,225 L165,38 Z"/>
+<rect class="cr" data-name="줄무늬1" stroke-width="4" x="135" y="72" width="30" height="15"/>
+<rect class="cr" data-name="줄무늬2" stroke-width="4" x="135" y="102" width="30" height="15"/>
+<rect class="cr" data-name="줄무늬3" stroke-width="4" x="135" y="132" width="30" height="15"/>
+<path class="cr" data-name="발꿈치" stroke-width="4" d="M165,228 Q155,275 175,282 Q190,288 200,280"/>
+<path class="cr" data-name="발앞" stroke-width="4" d="M238,228 Q252,250 245,270 Q228,285 200,280"/>
 </g>` }
       ]
     },
@@ -806,6 +1372,71 @@ const DRAWING_DATA = {
 <path class="cr" data-name="무늬1" stroke-width="4" d="M82,108 Q148,148 200,165 Q258,185 318,145" fill="none"/>
 <path class="cr" data-name="무늬2" stroke-width="4" d="M200,38 Q188,95 200,165 Q212,235 200,292" fill="none"/>
 <path class="cr" data-name="무늬3" stroke-width="4" d="M95,248 Q148,205 200,165 Q252,125 305,82" fill="none"/>
+</g>` },
+        { id: 'kite', name: '연', svg: `
+<g stroke="#1a1a1a" stroke-linecap="round" stroke-linejoin="round" fill="#fafafa">
+<path class="cr" data-name="왼위" stroke-width="4" d="M200,42 L88,165 L200,178 Z"/>
+<path class="cr" data-name="오른위" stroke-width="4" d="M200,42 L312,165 L200,178 Z"/>
+<path class="cr" data-name="왼아래" stroke-width="4" d="M88,165 L200,178 L200,288 Z"/>
+<path class="cr" data-name="오른아래" stroke-width="4" d="M312,165 L200,178 L200,288 Z"/>
+<line stroke-width="3" x1="200" y1="42" x2="200" y2="288"/>
+<line stroke-width="3" x1="88" y1="165" x2="312" y2="165"/>
+<path stroke-width="2" d="M200,288 Q215,305 208,325 Q192,340 200,358 Q208,372 200,388" fill="none"/>
+<ellipse class="cr" data-name="리본1" stroke-width="3" cx="205" cy="310" rx="12" ry="8"/>
+<ellipse class="cr" data-name="리본2" stroke-width="3" cx="200" cy="352" rx="12" ry="8"/>
+</g>` },
+        { id: 'top', name: '팽이', svg: `
+<g stroke="#1a1a1a" stroke-linecap="round" stroke-linejoin="round" fill="#fafafa">
+<path class="cr" data-name="몸통" stroke-width="5" d="M82,105 Q82,48 200,42 Q318,48 318,105 L200,285 Z"/>
+<ellipse class="cr" data-name="윗면" stroke-width="4" cx="200" cy="105" rx="118" ry="35"/>
+<path class="cr" data-name="줄무늬1" stroke-width="5" d="M95,148 Q200,178 305,148"/>
+<path class="cr" data-name="줄무늬2" stroke-width="4" d="M115,198 Q200,225 285,198"/>
+<circle class="cr" data-name="꼭대기" stroke-width="4" cx="200" cy="62" r="22"/>
+<ellipse stroke-width="3" cx="200" cy="285" rx="6" ry="4" fill="#1a1a1a"/>
+</g>` },
+        { id: 'drum', name: '북', svg: `
+<g stroke="#1a1a1a" stroke-linecap="round" stroke-linejoin="round" fill="#fafafa">
+<ellipse class="cr" data-name="윗면" stroke-width="5" cx="200" cy="148" rx="138" ry="48"/>
+<path class="cr" data-name="몸통왼" stroke-width="5" d="M62,148 L62,212 Q62,265 200,265 Q338,265 338,212 L338,148"/>
+<ellipse class="cr" data-name="아랫면" stroke-width="4" cx="200" cy="212" rx="138" ry="48"/>
+<path class="cr" data-name="줄무늬1" stroke-width="4" d="M62,172 Q200,218 338,172"/>
+<path class="cr" data-name="줄무늬2" stroke-width="4" d="M65,192 Q200,240 335,192"/>
+<line stroke-width="5" x1="155" y1="95" x2="172" y2="148"/>
+<line stroke-width="5" x1="245" y1="95" x2="228" y2="148"/>
+<circle class="cr" data-name="채1" stroke-width="4" cx="148" cy="82" r="16"/>
+<circle class="cr" data-name="채2" stroke-width="4" cx="252" cy="82" r="16"/>
+</g>` },
+        { id: 'puzzle', name: '퍼즐', svg: `
+<g stroke="#1a1a1a" stroke-linecap="round" stroke-linejoin="round" fill="#fafafa">
+<rect class="cr" data-name="조각1" stroke-width="4" x="62" y="62" width="128" height="128" rx="6"/>
+<circle class="cr" data-name="연결1" stroke-width="3" cx="126" cy="190" r="16"/>
+<rect class="cr" data-name="조각2" stroke-width="4" x="210" y="62" width="128" height="128" rx="6"/>
+<circle class="cr" data-name="연결2" stroke-width="3" cx="210" cy="126" r="16"/>
+<rect class="cr" data-name="조각3" stroke-width="4" x="62" y="210" width="128" height="128" rx="6"/>
+<circle class="cr" data-name="연결3" stroke-width="3" cx="190" cy="210" r="16"/>
+<rect class="cr" data-name="조각4" stroke-width="4" x="210" y="210" width="128" height="128" rx="6"/>
+</g>` },
+        { id: 'doll', name: '인형', svg: `
+<g stroke="#1a1a1a" stroke-linecap="round" stroke-linejoin="round" fill="#fafafa">
+<circle class="cr" data-name="머리" stroke-width="5" cx="200" cy="98" r="65"/>
+<ellipse class="cr" data-name="몸통" stroke-width="5" cx="200" cy="215" rx="65" ry="78"/>
+<ellipse class="cr" data-name="왼팔" stroke-width="4" cx="128" cy="215" rx="25" ry="58" transform="rotate(-15,128,215)"/>
+<ellipse class="cr" data-name="오른팔" stroke-width="4" cx="272" cy="215" rx="25" ry="58" transform="rotate(15,272,215)"/>
+<circle class="cr" data-name="왼눈" stroke-width="4" cx="178" cy="88" r="12"/>
+<circle class="cr" data-name="오른눈" stroke-width="4" cx="222" cy="88" r="12"/>
+<path stroke-width="3" d="M180,118 Q200,132 220,118" fill="none"/>
+<path class="cr" data-name="머리카락" stroke-width="5" d="M135,62 Q145,32 200,28 Q255,32 265,62"/>
+</g>` },
+        { id: 'blocks', name: '블록', svg: `
+<g stroke="#1a1a1a" stroke-linecap="round" stroke-linejoin="round" fill="#fafafa">
+<rect class="cr" data-name="앞면" stroke-width="5" x="88" y="148" width="165" height="152" rx="8"/>
+<path class="cr" data-name="윗면" stroke-width="5" d="M88,148 L148,88 L315,88 L255,148 Z"/>
+<path class="cr" data-name="오른면" stroke-width="5" d="M255,148 L315,88 L315,238 L255,298 Z"/>
+<circle class="cr" data-name="스터드1" stroke-width="4" cx="138" cy="115" r="15"/>
+<circle class="cr" data-name="스터드2" stroke-width="4" cx="198" cy="105" r="15"/>
+<circle class="cr" data-name="스터드3" stroke-width="4" cx="258" cy="95" r="15"/>
+<circle class="cr" data-name="스터드4" stroke-width="4" cx="148" cy="175" r="12"/>
+<circle class="cr" data-name="스터드5" stroke-width="4" cx="220" cy="175" r="12"/>
 </g>` }
       ]
     },
@@ -894,6 +1525,70 @@ const DRAWING_DATA = {
 <ellipse class="cr" data-name="오른장갑" stroke-width="4" cx="301" cy="275" rx="26" ry="18"/>
 <rect class="cr" data-name="왼다리" stroke-width="5" x="148" y="290" width="44" height="80" rx="12"/>
 <rect class="cr" data-name="오른다리" stroke-width="5" x="208" y="290" width="44" height="80" rx="12"/>
+</g>` },
+        { id: 'planet', name: '행성', svg: `
+<g stroke="#1a1a1a" stroke-linecap="round" stroke-linejoin="round" fill="#fafafa">
+<circle class="cr" data-name="행성본체" stroke-width="5" cx="200" cy="165" r="105"/>
+<path class="cr" data-name="고리" stroke-width="5" d="M62,142 Q148,115 338,188" fill="none"/>
+<path class="cr" data-name="고리뒤" stroke-width="5" d="M75,178 Q165,205 325,150" fill="none"/>
+<ellipse class="cr" data-name="대륙1" stroke-width="3" cx="165" cy="138" rx="38" ry="28"/>
+<ellipse class="cr" data-name="대륙2" stroke-width="3" cx="232" cy="178" rx="32" ry="22"/>
+<ellipse class="cr" data-name="대륙3" stroke-width="3" cx="188" cy="198" rx="25" ry="18"/>
+</g>` },
+        { id: 'ufo', name: 'UFO', svg: `
+<g stroke="#1a1a1a" stroke-linecap="round" stroke-linejoin="round" fill="#fafafa">
+<ellipse class="cr" data-name="본체" stroke-width="5" cx="200" cy="168" rx="148" ry="52"/>
+<ellipse class="cr" data-name="돔" stroke-width="5" cx="200" cy="145" rx="78" ry="62"/>
+<ellipse class="cr" data-name="빛테두리" stroke-width="3" cx="200" cy="215" rx="118" ry="22"/>
+<circle class="cr" data-name="조명1" stroke-width="3" cx="130" cy="185" r="12"/>
+<circle class="cr" data-name="조명2" stroke-width="3" cx="165" cy="195" r="12"/>
+<circle class="cr" data-name="조명3" stroke-width="3" cx="200" cy="198" r="12"/>
+<circle class="cr" data-name="조명4" stroke-width="3" cx="235" cy="195" r="12"/>
+<circle class="cr" data-name="조명5" stroke-width="3" cx="270" cy="185" r="12"/>
+</g>` },
+        { id: 'moon', name: '달', svg: `
+<g stroke="#1a1a1a" stroke-linecap="round" stroke-linejoin="round" fill="#fafafa">
+<circle class="cr" data-name="달본체" stroke-width="5" cx="200" cy="165" r="118"/>
+<circle class="cr" data-name="크레이터1" stroke-width="4" cx="155" cy="128" r="32"/>
+<circle class="cr" data-name="크레이터2" stroke-width="4" cx="238" cy="188" r="25"/>
+<circle class="cr" data-name="크레이터3" stroke-width="3" cx="170" cy="215" r="18"/>
+<circle class="cr" data-name="크레이터4" stroke-width="3" cx="248" cy="138" r="15"/>
+<circle stroke-width="2" cx="155" cy="128" r="12" fill="#fafafa"/>
+<circle stroke-width="2" cx="238" cy="188" r="10" fill="#fafafa"/>
+</g>` },
+        { id: 'satellite', name: '인공위성', svg: `
+<g stroke="#1a1a1a" stroke-linecap="round" stroke-linejoin="round" fill="#fafafa">
+<rect class="cr" data-name="본체" stroke-width="5" x="155" y="128" width="90" height="68" rx="10"/>
+<rect class="cr" data-name="왼패널" stroke-width="4" x="42" y="138" width="108" height="48" rx="6"/>
+<rect class="cr" data-name="오른패널" stroke-width="4" x="250" y="138" width="108" height="48" rx="6"/>
+<line stroke-width="4" x1="150" y1="162" x2="88" y2="162"/>
+<line stroke-width="4" x1="250" y1="162" x2="312" y2="162"/>
+<rect class="cr" data-name="안테나" stroke-width="3" x="195" y="88" width="10" height="45" rx="4"/>
+<ellipse class="cr" data-name="접시" stroke-width="4" cx="200" cy="78" rx="32" ry="18"/>
+<circle class="cr" data-name="창문" stroke-width="3" cx="200" cy="162" r="18"/>
+</g>` },
+        { id: 'alien', name: '외계인', svg: `
+<g stroke="#1a1a1a" stroke-linecap="round" stroke-linejoin="round" fill="#fafafa">
+<ellipse class="cr" data-name="머리" stroke-width="5" cx="200" cy="108" rx="88" ry="78"/>
+<ellipse class="cr" data-name="몸통" stroke-width="5" cx="200" cy="232" rx="58" ry="68"/>
+<ellipse class="cr" data-name="왼눈" stroke-width="4" cx="162" cy="95" rx="32" ry="25"/>
+<ellipse class="cr" data-name="오른눈" stroke-width="4" cx="238" cy="95" rx="32" ry="25"/>
+<circle stroke-width="3" cx="165" cy="95" r="12" fill="#1a1a1a"/>
+<circle stroke-width="3" cx="238" cy="95" r="12" fill="#1a1a1a"/>
+<path class="cr" data-name="왼팔" stroke-width="4" d="M148,210 Q92,225 75,268 Q88,278 98,265 Q112,235 152,225"/>
+<path class="cr" data-name="오른팔" stroke-width="4" d="M252,210 Q308,225 325,268 Q312,278 302,265 Q288,235 248,225"/>
+<path stroke-width="3" d="M178,125 Q200,138 222,125" fill="none"/>
+</g>` },
+        { id: 'comet', name: '혜성', svg: `
+<g stroke="#1a1a1a" stroke-linecap="round" stroke-linejoin="round" fill="#fafafa">
+<circle class="cr" data-name="핵" stroke-width="5" cx="285" cy="108" r="58"/>
+<path class="cr" data-name="꼬리1" stroke-width="5" d="M238,82 Q148,95 42,72"/>
+<path class="cr" data-name="꼬리2" stroke-width="5" d="M240,108 Q148,122 38,112"/>
+<path class="cr" data-name="꼬리3" stroke-width="4" d="M242,135 Q158,155 52,162"/>
+<ellipse class="cr" data-name="코마" stroke-width="4" cx="272" cy="108" rx="42" ry="38"/>
+<ellipse class="cr" data-name="별1" stroke-width="3" cx="128" cy="58" rx="8" ry="8"/>
+<ellipse class="cr" data-name="별2" stroke-width="3" cx="85" cy="185" rx="6" ry="6"/>
+<ellipse class="cr" data-name="별3" stroke-width="3" cx="162" cy="215" rx="5" ry="5"/>
 </g>` }
       ]
     }
