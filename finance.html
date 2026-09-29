@@ -3,6 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>재무·카드 관리</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -564,6 +567,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;font-size:var(--font-size);back
                 <th onclick="sortCards('card_issuer')">카드사</th>
                 <th onclick="sortCards('card_number')">카드번호</th>
                 <th onclick="sortCards('card_suffix')">끝4자리</th>
+                <th>CVC</th>
                 <th onclick="sortCards('user_name')">소유자</th>
                 <th onclick="sortCards('department')">부서</th>
                 <th>만료월</th>
@@ -778,6 +782,16 @@ body{font-family:'Segoe UI',system-ui,sans-serif;font-size:var(--font-size);back
         <div class="form-group">
           <label class="form-label">끝 4자리</label>
           <input class="form-input" id="c-suffix" placeholder="3456" maxlength="4">
+        </div>
+        <div class="form-group">
+          <label class="form-label">CVC / CVV</label>
+          <div style="display:flex;gap:6px;align-items:center">
+            <input class="form-input" id="c-cvc" type="password" placeholder="***" maxlength="4" autocomplete="off" style="flex:1;letter-spacing:3px">
+            <button type="button" onclick="toggleCvcInput()" title="표시/숨김"
+              style="background:none;border:1px solid var(--border);border-radius:var(--r);padding:6px 8px;cursor:pointer;color:var(--text-3)">
+              <svg id="cvc-eye-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
         </div>
         <div class="form-group">
           <label class="form-label required">소유자 성명</label>
@@ -1304,7 +1318,7 @@ function renderCards() {
     return cardSortDir === 'asc' ? (va > vb ? 1:-1) : (va < vb ? 1:-1);
   });
   if (!data.length) {
-    tbody.innerHTML = `<tr><td colspan="10"><div class="empty-state"><p>등록된 카드가 없습니다</p><small>카드 등록 버튼을 눌러 등록하세요</small></div></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="11"><div class="empty-state"><p>등록된 카드가 없습니다</p><small>카드 등록 버튼을 눌러 등록하세요</small></div></td></tr>`;
     return;
   }
   tbody.innerHTML = data.map(card => {
@@ -1315,6 +1329,13 @@ function renderCards() {
       <td>${card.card_issuer||''}</td>
       <td style="font-family:monospace">${card.card_number||''}</td>
       <td style="font-family:monospace;font-weight:600">****${card.card_suffix||''}</td>
+      <td style="white-space:nowrap">
+        <span id="cvc-${card.id}" style="font-family:monospace;letter-spacing:2px">***</span>
+        <button onclick="toggleCvc(${card.id},'${(card.card_cvc||'').replace(/'/g,"\\'")}',this)" title="CVC 표시/숨김"
+          style="background:none;border:none;cursor:pointer;padding:2px 4px;color:var(--text-3)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        </button>
+      </td>
       <td>${card.user_name||''}</td>
       <td>${card.department||''}</td>
       <td>${card.expiry_year||''}/${String(card.expiry_month||'').padStart(2,'0')}</td>
@@ -1348,10 +1369,13 @@ function openCardModal(id) {
   document.getElementById('card-modal-title').textContent = id ? '카드 수정' : '카드 등록';
   document.getElementById('card-id').value = id || '';
   if (!id) {
-    ['c-institution','c-number','c-suffix','c-user-name','c-position','c-department','c-notes'].forEach(f => {
+    ['c-institution','c-number','c-suffix','c-cvc','c-user-name','c-position','c-department','c-notes'].forEach(f => {
       const el = document.getElementById(f);
+      if (!el) return;
       if (el.tagName === 'SELECT') el.selectedIndex = 0; else el.value = '';
     });
+    const cvcEl = document.getElementById('c-cvc');
+    if (cvcEl) { cvcEl.type = 'password'; }
     document.getElementById('c-exp-year').value = new Date().getFullYear() + 3;
     document.getElementById('c-exp-month').value = 12;
     document.getElementById('c-status').value = 'stored';
@@ -1377,6 +1401,8 @@ function editCard(id) {
   document.getElementById('c-status').value = card.status || 'stored';
   document.getElementById('c-account').value = card.linked_account_id || '';
   document.getElementById('c-notes').value = card.notes || '';
+  const cvcEl = document.getElementById('c-cvc');
+  if (cvcEl) { cvcEl.value = card.card_cvc || ''; cvcEl.type = 'password'; }
 }
 async function saveCard() {
   const id = document.getElementById('card-id').value;
@@ -1398,6 +1424,7 @@ async function saveCard() {
     status: document.getElementById('c-status').value,
     linked_account_id: document.getElementById('c-account').value || null,
     notes: document.getElementById('c-notes').value,
+    card_cvc: document.getElementById('c-cvc')?.value || null,
     updated_at: new Date().toISOString(),
   };
   let err;
@@ -1416,6 +1443,22 @@ async function saveCard() {
   await refreshDashboard();
 }
 
+function toggleCvc(id, cvc, btn) {
+  const span = document.getElementById('cvc-' + id);
+  if (!span) return;
+  if (span.textContent === '***') {
+    span.textContent = cvc || '(없음)';
+    btn.style.color = 'var(--primary)';
+  } else {
+    span.textContent = '***';
+    btn.style.color = 'var(--text-3)';
+  }
+}
+function toggleCvcInput() {
+  const el = document.getElementById('c-cvc');
+  if (!el) return;
+  el.type = el.type === 'password' ? 'text' : 'password';
+}
 async function toggleCardVisible(id, current) {
   const visible = current === false ? true : false;
   const action = visible ? '복원' : '폐기';
@@ -2138,10 +2181,10 @@ function exportCardsExcel() {
   XLSX.writeFile(wb, `법인카드_${today()}.xlsx`);
 }
 function downloadCardTemplate() {
-  const headers = ['기관','카드사','카드번호','끝4자리','소유자','직위','부서','한도','만료년','만료월','상태','용도','비고'];
-  const example = ['아세아항공직업전문학교','하나','5531-8440-0000-0000','999','홍길동','처장','행정관리처',3000000,2028,11,'active','','예시 데이터 - 삭제 후 입력'];
+  const headers = ['기관','카드사','카드번호','끝4자리','CVC','소유자','직위','부서','한도','만료년','만료월','상태','용도','비고'];
+  const example = ['아세아항공직업전문학교','하나','5531-8440-0000-0000','999','123','홍길동','처장','행정관리처',3000000,2028,11,'active','','예시 데이터 - 삭제 후 입력'];
   const ws = XLSX.utils.aoa_to_sheet([headers, example]);
-  ws['!cols'] = headers.map((h,i) => ({ wch: [20,8,22,8,10,10,14,10,8,8,8,10,30][i] }));
+  ws['!cols'] = headers.map((h,i) => ({ wch: [20,8,22,8,6,10,10,14,10,8,8,8,10,30][i] }));
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, '법인카드서식');
   XLSX.writeFile(wb, '법인카드_가져오기_서식.xlsx');
@@ -2213,7 +2256,8 @@ async function applyDupImport() {
     if (action === 'skip') { skipped++; continue; }
     const payload = {
       institution: r['기관']||'', card_issuer: r['카드사']||'', card_number: r['카드번호']||'',
-      card_suffix: r['끝4자리']||'', user_name: r['소유자']||'', position: r['직위']||'',
+      card_suffix: r['끝4자리']||'', card_cvc: r['CVC']?String(r['CVC']):null,
+      user_name: r['소유자']||'', position: r['직위']||'',
       department: r['부서']||'', credit_limit: r['한도']||null,
       expiry_year: r['만료년']||2027, expiry_month: r['만료월']||12,
       status: r['상태']||'stored', purpose: r['용도']||'', notes: r['비고']||'',
@@ -2232,7 +2276,8 @@ async function _doInsertRows(rows) {
   for (const r of rows) {
     const { error } = await sb.from('finance_cards').insert({
       institution: r['기관']||'', card_issuer: r['카드사']||'', card_number: r['카드번호']||'',
-      card_suffix: r['끝4자리']||'', user_name: r['소유자']||'', position: r['직위']||'',
+      card_suffix: r['끝4자리']||'', card_cvc: r['CVC']?String(r['CVC']):null,
+      user_name: r['소유자']||'', position: r['직위']||'',
       department: r['부서']||'', credit_limit: r['한도']||null,
       expiry_year: r['만료년']||2027, expiry_month: r['만료월']||12,
       status: r['상태']||'stored', purpose: r['용도']||'', notes: r['비고']||'',
