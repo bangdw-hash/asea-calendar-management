@@ -10,7 +10,6 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
 :root {
   --primary:#1A73E8; --primary-dk:#1557B0; --primary-lt:#E8F0FE;
@@ -368,10 +367,28 @@ body{font-family:'Segoe UI',system-ui,sans-serif;font-size:var(--font-size);back
 
 /* ── PRINT ── */
 @media print{
-  .sidebar,.mobile-nav,.toolbar,.page-actions,#toast-container,.modal-overlay{display:none!important}
+  .sidebar,.mobile-nav,.toolbar,.page-actions,#toast-container,.modal-overlay,.history-detail-row,#card-ctx-menu{display:none!important}
   .tab-panel{display:block!important;padding:0}
   .data-table{box-shadow:none;border:1px solid #ccc}
 }
+/* inline history panel */
+.history-detail-row td{padding:0!important;background:var(--bg)!important}
+.history-inline-panel{padding:12px 16px;border-top:2px solid var(--primary-lt)}
+.history-memo-list{display:flex;flex-direction:column;gap:6px;margin-bottom:12px;max-height:220px;overflow-y:auto}
+.history-memo-item{display:flex;gap:10px;align-items:flex-start;padding:8px 10px;background:var(--surface);border-radius:8px;border:1px solid var(--border)}
+.history-memo-date{font-size:11px;color:var(--text-3);white-space:nowrap;min-width:80px;padding-top:1px}
+.history-memo-text{font-size:13px;color:var(--text-1);white-space:pre-wrap;flex:1}
+.history-memo-del{background:none;border:none;cursor:pointer;color:var(--text-3);padding:2px 4px;border-radius:4px;flex-shrink:0}
+.history-memo-del:hover{color:var(--red);background:var(--red-lt)}
+.history-add-form{display:flex;gap:8px;align-items:flex-start}
+.history-add-form textarea{flex:1;height:60px;resize:vertical;font-size:13px;padding:8px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text-1)}
+/* context menu */
+#card-ctx-menu{position:fixed;z-index:9999;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--sh-md);padding:4px;min-width:130px;display:none}
+#card-ctx-menu button{display:block;width:100%;text-align:left;background:none;border:none;padding:8px 14px;font-size:13px;color:var(--text-1);border-radius:6px;cursor:pointer;white-space:nowrap}
+#card-ctx-menu button:hover{background:var(--primary-lt);color:var(--primary)}
+#card-ctx-menu hr{margin:3px 0;border:none;border-top:1px solid var(--border)}
+.cvc-reveal-btn{background:none;border:none;cursor:pointer;padding:2px 6px;vertical-align:middle;color:var(--text-3)}
+.cvc-reveal-btn:hover{color:var(--primary)}
 </style>
 </head>
 <body>
@@ -566,14 +583,12 @@ body{font-family:'Segoe UI',system-ui,sans-serif;font-size:var(--font-size);back
                 <th onclick="sortCards('institution')">기관</th>
                 <th onclick="sortCards('card_issuer')">카드사</th>
                 <th onclick="sortCards('card_number')">카드번호</th>
-                <th onclick="sortCards('card_suffix')">끝4자리</th>
-                <th>CVC</th>
+                <th>CVC <button class="cvc-reveal-btn" id="cvc-hdr-btn" onclick="toggleAllCvc(event)" title="CVC 전체 표시/숨김"><svg id="cvc-hdr-eye" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button></th>
                 <th onclick="sortCards('user_name')">소유자</th>
                 <th onclick="sortCards('department')">부서</th>
                 <th>만료월</th>
                 <th>상태</th>
                 <th>연결계좌</th>
-                <th>관리</th>
               </tr>
             </thead>
             <tbody id="cards-body">
@@ -592,6 +607,15 @@ body{font-family:'Segoe UI',system-ui,sans-serif;font-size:var(--font-size);back
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
               <span>엑셀 내보내기</span>
             </button>
+            <button class="btn btn-secondary btn-sm" onclick="downloadAccountTemplate()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              <span>서식 다운로드</span>
+            </button>
+            <label class="btn btn-secondary btn-sm" style="cursor:pointer">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              <span>가져오기</span>
+              <input type="file" accept=".xlsx,.xls" style="display:none" onchange="importAccountsExcel(this)">
+            </label>
             <button class="btn btn-primary btn-sm" onclick="openAccountModal()">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
               <span>계좌 등록</span>
@@ -721,6 +745,43 @@ body{font-family:'Segoe UI',system-ui,sans-serif;font-size:var(--font-size);back
 <!-- MODALS -->
 
 <!-- Duplicate Detection Modal -->
+<!-- CONTEXT MENU -->
+<div id="card-ctx-menu">
+  <button onclick="ctxHistory()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:6px;vertical-align:middle"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>이력 보기</button>
+  <button onclick="ctxEdit()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:6px;vertical-align:middle"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>수정</button>
+  <hr>
+  <button id="ctx-discard-btn" onclick="ctxDiscard()" style="color:var(--orange)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:6px;vertical-align:middle"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg><span id="ctx-discard-label">폐기</span></button>
+</div>
+
+<!-- ACCOUNT DUP MODAL -->
+<div class="modal-overlay" id="account-dup-modal">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <div class="modal-title">중복 계좌 감지</div>
+      <button class="modal-close" onclick="closeAccountDupModal()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <p style="margin-bottom:12px;color:var(--text-2)">아래 계좌가 이미 DB에 존재합니다. 처리 방식을 선택하세요.</p>
+      <div style="display:flex;gap:8px;margin-bottom:12px">
+        <button class="btn btn-sm btn-secondary" onclick="accDupSelectAll('update')">전체 업데이트</button>
+        <button class="btn btn-sm btn-secondary" onclick="accDupSelectAll('skip')">전체 건너뛰기</button>
+      </div>
+      <div style="overflow-x:auto;max-height:360px;overflow-y:auto">
+        <table class="table">
+          <thead><tr><th>계좌번호</th><th>예금주</th><th>은행</th><th>기관</th><th>처리</th></tr></thead>
+          <tbody id="account-dup-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeAccountDupModal()">취소</button>
+      <button class="btn btn-primary" onclick="applyAccountDupImport()">적용</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="dup-modal">
   <div class="modal modal-lg">
     <div class="modal-header">
@@ -1144,10 +1205,24 @@ let sb; // supabase client
 let cardsData = [], accountsData = [], companiesData = [], accountTypesData = [];
 let cardSortCol = 'card_number', cardSortDir = 'asc';
 let accountSortCol = 'institution', accountSortDir = 'asc';
-let currentCardId = null; // for history modal
+let currentCardId = null;
 let currentAccountModalTab = 'basic';
-let pendingAttachments = []; // files to upload when saving account
+let pendingAttachments = [];
 let tempAttachmentAccountId = null;
+let cvcRevealed = false;
+let ctxMenuCardId = null;
+let _accDupPending = [], _accDupInputEl = null;
+
+// cache-bust: force reload when stale version cached
+(function(){
+  var VER = 'v20260929c';
+  var k = 'fin_ver_' + VER;
+  if (!sessionStorage.getItem(k)) {
+    sessionStorage.setItem(k, '1');
+    var url = location.pathname + '?_v=' + Date.now() + location.hash;
+    location.replace(url);
+  }
+})();
 
 // ── HASH ──
 async function sha256(msg) {
@@ -1300,7 +1375,6 @@ function statusBadge(card) {
 function renderCards() {
   const tbody = document.getElementById('cards-body');
   let data = [...cardsData];
-  // filter
   const q = document.getElementById('card-search')?.value?.toLowerCase() || '';
   const inst = document.getElementById('card-filter-inst')?.value || '';
   const stat = document.getElementById('card-filter-status')?.value || '';
@@ -1312,41 +1386,33 @@ function renderCards() {
     (c.card_suffix||'').includes(q) || (c.department||'').toLowerCase().includes(q)
   );
   if (stat) data = data.filter(c => getCardStatus(c) === stat);
-  // sort
   data.sort((a,b) => {
     let va = a[cardSortCol] || '', vb = b[cardSortCol] || '';
     return cardSortDir === 'asc' ? (va > vb ? 1:-1) : (va < vb ? 1:-1);
   });
   if (!data.length) {
-    tbody.innerHTML = `<tr><td colspan="11"><div class="empty-state"><p>등록된 카드가 없습니다</p><small>카드 등록 버튼을 눌러 등록하세요</small></div></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="9"><div class="empty-state"><p>등록된 카드가 없습니다</p><small>카드 등록 버튼을 눌러 등록하세요</small></div></td></tr>`;
     return;
   }
   tbody.innerHTML = data.map(card => {
     const acc = card.finance_accounts;
     const accLabel = acc ? `${acc.finance_bank_companies?.name||''} ${acc.account_number||''}` : '-';
-    return `<tr style="${!card.is_visible?'opacity:.5':''}">
+    const cvcDisplay = cvcRevealed ? (card.card_cvc || '—') : '•••';
+    return `<tr style="cursor:pointer;${!card.is_visible?'opacity:.5':''}" onclick="toggleRowHistory(event,${card.id})" oncontextmenu="showCardCtxMenu(event,${card.id})">
       <td>${card.institution||''}</td>
       <td>${card.card_issuer||''}</td>
       <td style="font-family:monospace">${card.card_number||''}</td>
-      <td style="font-family:monospace;font-weight:600">****${card.card_suffix||''}</td>
-      <td style="white-space:nowrap">
-        <span id="cvc-${card.id}" style="font-family:monospace;letter-spacing:2px">***</span>
-        <button onclick="toggleCvc(${card.id},'${(card.card_cvc||'').replace(/'/g,"\\'")}',this)" title="CVC 표시/숨김"
-          style="background:none;border:none;cursor:pointer;padding:2px 4px;color:var(--text-3)">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-        </button>
-      </td>
+      <td style="font-family:monospace;letter-spacing:2px">${cvcDisplay}</td>
       <td>${card.user_name||''}</td>
       <td>${card.department||''}</td>
       <td>${card.expiry_year||''}/${String(card.expiry_month||'').padStart(2,'0')}</td>
       <td>${statusBadge(card)}</td>
       <td style="font-size:11px">${accLabel}</td>
-      <td>
-        <div style="display:flex;gap:4px">
-          <button class="btn btn-secondary btn-sm" onclick="openHistory(${card.id})">이력</button>
-          <button class="btn btn-secondary btn-sm" onclick="editCard(${card.id})">수정</button>
-          <button class="btn btn-sm" style="background:${card.is_visible===false?'var(--green-lt)':'var(--orange-lt)'};color:${card.is_visible===false?'var(--green)':'var(--orange)'};border:1px solid ${card.is_visible===false?'var(--green)':'var(--orange)'}"
-            onclick="toggleCardVisible(${card.id}, ${card.is_visible})">${card.is_visible===false?'복원':'폐기'}</button>
+    </tr>
+    <tr class="history-detail-row" id="hist-row-${card.id}" style="display:none">
+      <td colspan="9" style="padding:0;background:var(--bg)">
+        <div class="history-inline-panel" id="hist-panel-${card.id}">
+          <div style="color:var(--text-3);font-size:12px;padding:8px">로딩 중...</div>
         </div>
       </td>
     </tr>`;
@@ -1447,22 +1513,127 @@ async function saveCard() {
   await refreshDashboard();
 }
 
-function toggleCvc(id, cvc, btn) {
-  const span = document.getElementById('cvc-' + id);
-  if (!span) return;
-  if (span.textContent === '***') {
-    span.textContent = cvc || '(없음)';
-    btn.style.color = 'var(--primary)';
-  } else {
-    span.textContent = '***';
-    btn.style.color = 'var(--text-3)';
-  }
+function toggleAllCvc(e) {
+  if (e) e.stopPropagation();
+  cvcRevealed = !cvcRevealed;
+  const btn = document.getElementById('cvc-hdr-btn');
+  if (btn) btn.style.color = cvcRevealed ? 'var(--primary)' : '';
+  renderCards();
 }
 function toggleCvcInput() {
   const el = document.getElementById('c-cvc');
   if (!el) return;
   el.type = el.type === 'password' ? 'text' : 'password';
 }
+
+// ── ROW INLINE HISTORY ──
+let _loadedHistRows = new Set();
+function toggleRowHistory(e, cardId) {
+  // ignore clicks on interactive elements inside the row
+  if (e.target.closest('button,a,input,select,textarea')) return;
+  const row = document.getElementById('hist-row-' + cardId);
+  if (!row) return;
+  const isOpen = row.style.display !== 'none';
+  // close all others
+  document.querySelectorAll('.history-detail-row').forEach(r => { r.style.display = 'none'; });
+  if (isOpen) return;
+  row.style.display = '';
+  if (!_loadedHistRows.has(cardId)) {
+    _loadedHistRows.add(cardId);
+    loadInlineHistory(cardId);
+  }
+}
+async function loadInlineHistory(cardId) {
+  const panel = document.getElementById('hist-panel-' + cardId);
+  if (!panel) return;
+  const card = cardsData.find(c => c.id === cardId);
+  const { data } = await sb.from('finance_card_history')
+    .select('id, checkout_date, notes, user_name')
+    .eq('card_id', cardId)
+    .order('checkout_date', { ascending: false })
+    .order('created_at', { ascending: false });
+  const items = data || [];
+  panel.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <strong style="font-size:13px">이력 — ${card?.card_issuer||''} ${card?.card_number||''} (${card?.user_name||''})</strong>
+    </div>
+    <div class="history-memo-list" id="hist-list-${cardId}">
+      ${items.length ? items.map(h => `
+        <div class="history-memo-item">
+          <span class="history-memo-date">${h.checkout_date||''}</span>
+          <span class="history-memo-text">${escHtml(h.notes||'')}</span>
+          <button class="history-memo-del" onclick="deleteInlineMemo(${h.id},${cardId})" title="삭제">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>`).join('') : '<div style="color:var(--text-3);font-size:12px;padding:4px">이력 없음</div>'}
+    </div>
+    <div class="history-add-form">
+      <input type="date" id="hist-date-${cardId}" value="${new Date().toISOString().slice(0,10)}"
+        style="border:1px solid var(--border);border-radius:8px;padding:8px;font-size:12px;background:var(--surface);color:var(--text-1)">
+      <textarea id="hist-text-${cardId}" placeholder="이력 내용을 입력하세요 (예: 홍길동에게 출장 전달 / 반납 완료)"></textarea>
+      <button class="btn btn-primary btn-sm" onclick="addInlineMemo(${cardId})" style="align-self:flex-end">추가</button>
+    </div>`;
+}
+async function addInlineMemo(cardId) {
+  const date = document.getElementById('hist-date-' + cardId)?.value || new Date().toISOString().slice(0,10);
+  const text = document.getElementById('hist-text-' + cardId)?.value?.trim();
+  if (!text) { toast('내용을 입력하세요', 'warn'); return; }
+  const { error } = await sb.from('finance_card_history').insert({
+    card_id: cardId, action_type: 'memo',
+    checkout_date: date, notes: text,
+    created_at: new Date().toISOString()
+  });
+  if (error) { toast('저장 실패: ' + error.message, 'error'); return; }
+  _loadedHistRows.delete(cardId);
+  await loadInlineHistory(cardId);
+  const ta = document.getElementById('hist-text-' + cardId);
+  if (ta) ta.value = '';
+}
+async function deleteInlineMemo(histId, cardId) {
+  if (!confirm('이 이력을 삭제하시겠습니까?')) return;
+  await sb.from('finance_card_history').delete().eq('id', histId);
+  _loadedHistRows.delete(cardId);
+  await loadInlineHistory(cardId);
+}
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── CONTEXT MENU ──
+function showCardCtxMenu(e, cardId) {
+  e.preventDefault();
+  e.stopPropagation();
+  ctxMenuCardId = cardId;
+  const card = cardsData.find(c => c.id === cardId);
+  const lbl = document.getElementById('ctx-discard-label');
+  const btn = document.getElementById('ctx-discard-btn');
+  if (lbl) lbl.textContent = card?.is_visible === false ? '복원' : '폐기';
+  if (btn) btn.style.color = card?.is_visible === false ? 'var(--green)' : 'var(--orange)';
+  const menu = document.getElementById('card-ctx-menu');
+  menu.style.display = 'block';
+  menu.style.left = Math.min(e.clientX, window.innerWidth - 150) + 'px';
+  menu.style.top = Math.min(e.clientY, window.innerHeight - 140) + 'px';
+}
+function hideCardCtxMenu() {
+  document.getElementById('card-ctx-menu').style.display = 'none';
+  ctxMenuCardId = null;
+}
+function ctxHistory() {
+  hideCardCtxMenu();
+  if (!ctxMenuCardId) return;
+  const row = document.getElementById('hist-row-' + ctxMenuCardId);
+  if (row && row.style.display === 'none') {
+    row.style.display = '';
+    if (!_loadedHistRows.has(ctxMenuCardId)) {
+      _loadedHistRows.add(ctxMenuCardId);
+      loadInlineHistory(ctxMenuCardId);
+    }
+  }
+}
+function ctxEdit() { const id = ctxMenuCardId; hideCardCtxMenu(); if (id) editCard(id); }
+function ctxDiscard() { const id = ctxMenuCardId; hideCardCtxMenu(); if (id) { const c = cardsData.find(x=>x.id===id); toggleCardVisible(id, c?.is_visible); } }
+document.addEventListener('click', () => { const m = document.getElementById('card-ctx-menu'); if (m) m.style.display = 'none'; });
+document.addEventListener('keydown', e => { if (e.key==='Escape') hideCardCtxMenu(); });
 async function toggleCardVisible(id, current) {
   const visible = current === false ? true : false;
   const action = visible ? '복원' : '폐기';
@@ -2302,6 +2473,98 @@ function exportAccountsExcel() {
   const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, '은행계좌');
   XLSX.writeFile(wb, `은행계좌_${today()}.xlsx`);
 }
+function downloadAccountTemplate() {
+  const headers = ['기관','은행','계좌번호','예금주','상태','잔액','비고'];
+  const example = ['아세아항공직업전문학교','하나은행','123-456-789012','아세아항공직업전문학교','active',0,'예시 — 삭제 후 입력'];
+  const ws = XLSX.utils.aoa_to_sheet([headers, example]);
+  ws['!cols'] = headers.map((_,i)=>({wch:[22,12,18,16,10,12,30][i]}));
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, '은행계좌서식');
+  XLSX.writeFile(wb, '은행계좌_가져오기_서식.xlsx');
+  toast('서식 파일이 다운로드되었습니다', 'success');
+}
+async function importAccountsExcel(input) {
+  const file = input.files[0]; if (!file) return;
+  const ab = await file.arrayBuffer();
+  const wb = XLSX.read(ab);
+  const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
+  if (!rows.length) { toast('데이터가 없습니다', 'error'); input.value=''; return; }
+
+  const { data: existing } = await sb.from('finance_accounts').select('id,account_number');
+  const existMap = {};
+  (existing||[]).forEach(a => { existMap[a.account_number] = a.id; });
+
+  const newRows = [], dupRows = [];
+  rows.forEach(r => {
+    const num = (r['계좌번호']||'').trim();
+    if (num && existMap[num]) dupRows.push({ r, existId: existMap[num] });
+    else newRows.push(r);
+  });
+
+  if (!dupRows.length) {
+    const ok = await _doInsertAccountRows(newRows);
+    toast(`${ok}건 가져오기 완료`, 'success');
+    await loadAccounts(); input.value=''; return;
+  }
+
+  _accDupPending = { newRows, dupRows };
+  _accDupInputEl = input;
+  const tbody = document.getElementById('account-dup-tbody');
+  tbody.innerHTML = dupRows.map((d,i) => `<tr>
+    <td style="font-family:monospace">${d.r['계좌번호']||''}</td>
+    <td>${d.r['예금주']||''}</td>
+    <td>${d.r['은행']||''}</td>
+    <td>${d.r['기관']||''}</td>
+    <td><select class="form-control" id="acc-dup-${i}" style="width:110px;padding:4px 8px">
+      <option value="update">업데이트</option>
+      <option value="skip">건너뛰기</option>
+    </select></td>
+  </tr>`).join('');
+  document.getElementById('account-dup-modal').classList.add('open');
+}
+function closeAccountDupModal() {
+  document.getElementById('account-dup-modal').classList.remove('open');
+  if (_accDupInputEl) _accDupInputEl.value='';
+  _accDupPending = []; _accDupInputEl = null;
+}
+function accDupSelectAll(action) {
+  (_accDupPending.dupRows||[]).forEach((_,i) => { const el=document.getElementById(`acc-dup-${i}`); if(el) el.value=action; });
+}
+async function applyAccountDupImport() {
+  const { newRows, dupRows } = _accDupPending;
+  let ok = await _doInsertAccountRows(newRows);
+  let updated = 0, skipped = 0;
+  for (let i=0; i<dupRows.length; i++) {
+    const action = document.getElementById(`acc-dup-${i}`)?.value || 'skip';
+    const { r, existId } = dupRows[i];
+    if (action === 'skip') { skipped++; continue; }
+    const payload = {
+      institution: r['기관']||'', account_number: r['계좌번호']||'',
+      account_holder: r['예금주']||'', status: r['상태']||'active',
+      balance: parseFloat(r['잔액'])||null, notes: r['비고']||null,
+      updated_at: new Date().toISOString()
+    };
+    const { error } = await sb.from('finance_accounts').update(payload).eq('id', existId);
+    if (!error) updated++;
+  }
+  closeAccountDupModal();
+  const msg = [newRows.length?`신규 ${ok}건`:'', updated?`업데이트 ${updated}건`:'', skipped?`건너뛰기 ${skipped}건`:''].filter(Boolean).join(' / ');
+  toast(msg || '처리 완료', 'success');
+  await loadAccounts();
+}
+async function _doInsertAccountRows(rows) {
+  let ok = 0;
+  for (const r of rows) {
+    const { error } = await sb.from('finance_accounts').insert({
+      institution: r['기관']||'', account_number: r['계좌번호']||'',
+      account_holder: r['예금주']||'', status: r['상태']||'active',
+      balance: parseFloat(r['잔액'])||null, notes: r['비고']||null,
+      created_at: new Date().toISOString(), updated_at: new Date().toISOString()
+    });
+    if (!error) ok++;
+  }
+  return ok;
+}
 async function exportJSON() {
   const [cards, accounts, hist, companies, types] = await Promise.all([
     sb.from('finance_cards').select('*'),
@@ -2342,15 +2605,34 @@ async function importJSON(input) {
 }
 
 function printCards() { window.print(); }
-async function exportCardsPDF() {
-  const el = document.getElementById('cards-table');
-  const canvas = await html2canvas(el, { scale: 1.5 });
-  const { jsPDF } = window.jspdf;
-  const pdf = new jsPDF({ orientation: 'landscape', unit: 'px', format: 'a4' });
-  const w = pdf.internal.pageSize.getWidth();
-  const h = (canvas.height * w) / canvas.width;
-  pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, w, h);
-  pdf.save(`법인카드현황_${today()}.pdf`);
+function exportCardsPDF() {
+  const data = cardsData.filter(c => c.is_visible !== false);
+  const rows = data.map(c => [
+    c.institution||'', c.card_issuer||'', c.card_number||'',
+    c.user_name||'', c.position||'', c.department||'',
+    `${c.expiry_year||''}/${String(c.expiry_month||'').padStart(2,'0')}`,
+    c.status||'', c.notes||''
+  ]);
+  const hdrs = ['기관','카드사','카드번호','소유자','직위','부서','만료','상태','비고'];
+  const win = window.open('','_blank');
+  win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
+<title>법인카드현황_${today()}</title>
+<style>
+body{font-family:'Malgun Gothic','Apple SD Gothic Neo',sans-serif;font-size:10px;margin:12px}
+h3{margin:0 0 8px;font-size:13px}
+table{width:100%;border-collapse:collapse}
+th,td{border:1px solid #bbb;padding:4px 6px;text-align:left;white-space:nowrap}
+th{background:#f0f4fb;font-weight:bold}
+tr:nth-child(even){background:#f9f9f9}
+.mono{font-family:monospace}
+</style></head><body>
+<h3>법인카드 현황 (${today()}) — 총 ${rows.length}건</h3>
+<table><thead><tr>${hdrs.map(h=>`<th>${h}</th>`).join('')}</tr></thead><tbody>
+${rows.map(r=>`<tr>${r.map((v,i)=>`<td${i===2?' class="mono"':''}>${v}</td>`).join('')}</tr>`).join('')}
+</tbody></table></body></html>`);
+  win.document.close();
+  win.focus();
+  setTimeout(()=>{ win.print(); }, 500);
 }
 
 // ── UTILS ──
