@@ -1389,7 +1389,12 @@ function editCard(id) {
   if (!card) return;
   openCardModal(id);
   document.getElementById('c-institution').value = card.institution || '';
-  document.getElementById('c-issuer').value = card.card_issuer_id || '';
+  // card_issuer is text; match select option by text
+  const issuerSel = document.getElementById('c-issuer');
+  if (issuerSel) {
+    const opt = Array.from(issuerSel.options).find(o => o.text === card.card_issuer);
+    issuerSel.value = opt ? opt.value : '';
+  }
   document.getElementById('c-number').value = card.card_number || '';
   document.getElementById('c-suffix').value = card.card_suffix || '';
   document.getElementById('c-user-name').value = card.user_name || '';
@@ -1412,7 +1417,6 @@ async function saveCard() {
   const payload = {
     institution: document.getElementById('c-institution').value,
     card_issuer: issuerName,
-    card_issuer_id: issuerId,
     card_number: document.getElementById('c-number').value,
     card_suffix: document.getElementById('c-suffix').value,
     user_name: document.getElementById('c-user-name').value,
