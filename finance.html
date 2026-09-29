@@ -1222,7 +1222,12 @@ async function loadAccountTypes() {
 }
 async function loadCards() {
   const { data, error } = await sb.from('finance_cards').select('*').order('institution').order('card_number');
-  if (error) { console.error('loadCards error:', error); }
+  if (error) {
+    console.error('loadCards error:', error);
+    const tbody = document.getElementById('cards-tbody');
+    if (tbody) tbody.innerHTML = `<tr><td colspan="10"><div class="empty-state" style="color:var(--red)">⚠ DB 연결 오류: ${error.message}</div></td></tr>`;
+    return;
+  }
   cardsData = data || [];
   renderCards();
   renderLinkedCardsCheckboxes();
