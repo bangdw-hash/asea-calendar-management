@@ -830,7 +830,6 @@ body{font-family:'Segoe UI',system-ui,sans-serif;font-size:var(--font-size);back
         <div class="form-group">
           <label class="form-label required">카드번호</label>
           <input class="form-input" id="c-number" placeholder="1234-5678-9012-3456" oninput="autoFillSuffix(this)">
-        </div>
         <input type="hidden" id="c-suffix">
         <div class="form-group">
           <label class="form-label">CVC / CVV</label>
@@ -1208,7 +1207,6 @@ let institutionsData = ['아세아항공직업전문학교', '드림에듀', '�
     var prev = localStorage.getItem(lsKey);
     localStorage.setItem(lsKey, DEPLOY_VER);
     if (prev && prev !== DEPLOY_VER) {
-      // version changed — hard reload to bypass disk cache
       var newUrl = location.pathname + '?_v=' + DEPLOY_VER;
       if (location.href.indexOf(newUrl) === -1) { location.href = newUrl; }
       else { location.reload(); }
