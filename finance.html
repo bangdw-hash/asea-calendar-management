@@ -558,9 +558,6 @@ body{font-family:'Segoe UI',system-ui,sans-serif;font-size:var(--font-size);back
           </div>
           <select class="filter-select" id="card-filter-inst" onchange="filterCards()">
             <option value="">전체 기관</option>
-            <option>아세아항공직업전문학교</option>
-            <option>드림에듀</option>
-            <option>세인트</option>
           </select>
           <select class="filter-select" id="card-filter-status" onchange="filterCards()">
             <option value="">전체 상태</option>
@@ -630,9 +627,6 @@ body{font-family:'Segoe UI',system-ui,sans-serif;font-size:var(--font-size);back
           </div>
           <select class="filter-select" id="account-filter-inst" onchange="filterAccounts()">
             <option value="">전체 기관</option>
-            <option>아세아항공직업전문학교</option>
-            <option>드림에듀</option>
-            <option>세인트</option>
           </select>
           <select class="filter-select" id="account-filter-type" onchange="filterAccounts()">
             <option value="">전체 유형</option>
@@ -700,6 +694,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;font-size:var(--font-size);back
               <div class="settings-menu-item" onclick="showSettings('alerts')" data-s="alerts">알림 설정</div>
               <div class="settings-menu-item" onclick="showSettings('design')" data-s="design">디자인 설정</div>
               <div class="settings-menu-item" onclick="showSettings('backup')" data-s="backup">백업·복원</div>
+              <div class="settings-menu-item" onclick="showSettings('institutions')" data-s="institutions">기관 관리</div>
               <div class="settings-menu-item" onclick="showSettings('audit')" data-s="audit">감사 로그</div>
             </div>
             <div class="settings-content" id="settings-content">
@@ -826,11 +821,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;font-size:var(--font-size);back
       <div class="form-grid">
         <div class="form-group">
           <label class="form-label required">기관</label>
-          <select class="form-select" id="c-institution">
-            <option>아세아항공직업전문학교</option>
-            <option>드림에듀</option>
-            <option>세인트</option>
-          </select>
+          <select class="form-select" id="c-institution"></select>
         </div>
         <div class="form-group">
           <label class="form-label required">카드사</label>
@@ -1015,9 +1006,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;font-size:var(--font-size);back
         <div class="form-grid">
           <div class="form-group">
             <label class="form-label required">기관</label>
-            <select class="form-select" id="a-institution">
-              <option>아세아항공직업전문학교</option><option>드림에듀</option><option>세인트</option>
-            </select>
+            <select class="form-select" id="a-institution"></select>
           </div>
           <div class="form-group">
             <label class="form-label required">은행</label>
@@ -1212,10 +1201,11 @@ let tempAttachmentAccountId = null;
 let cvcRevealed = false;
 let ctxMenuCardId = null;
 let _accDupPending = [], _accDupInputEl = null;
+let institutionsData = ['아세아항공직업전문학교', '드림에듀', '세인트'];
 
 // cache-bust: force reload when stale version cached
 (function(){
-  var VER = 'v20260929c';
+  var VER = 'v20260929d';
   var k = 'fin_ver_' + VER;
   if (!sessionStorage.getItem(k)) {
     sessionStorage.setItem(k, '1');
@@ -1290,9 +1280,42 @@ function showTab(tab) {
 
 // ── LOAD ALL DATA ──
 async function loadAllData() {
+  await loadInstitutions();
   await Promise.all([loadCompanies(), loadAccountTypes(), loadCards(), loadAccounts()]);
   await refreshDashboard();
   populateFilters();
+}
+async function loadInstitutions() {
+  const { data } = await sb.from('finance_admin_settings').select('value').eq('key','institutions').single();
+  if (data?.value) {
+    try { institutionsData = JSON.parse(data.value); } catch(e) {}
+  }
+  populateInstitutionSelects();
+}
+function populateInstitutionSelects() {
+  const ids = ['c-institution','a-institution'];
+  ids.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const cur = el.value;
+    el.innerHTML = institutionsData.map(n => `<option value="${n}">${n}</option>`).join('');
+    if (cur && institutionsData.includes(cur)) el.value = cur;
+  });
+  // filter selects
+  ['card-filter-inst','account-filter-inst'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const cur = el.value;
+    el.innerHTML = '<option value="">전체 기관</option>' +
+      institutionsData.map(n => `<option value="${n}">${n}</option>`).join('');
+    if (cur) el.value = cur;
+  });
+}
+async function saveInstitutions() {
+  await sb.from('finance_admin_settings').upsert({
+    key: 'institutions', value: JSON.stringify(institutionsData),
+    updated_at: new Date().toISOString()
+  });
 }
 
 async function loadCompanies() {
@@ -1342,7 +1365,7 @@ function populateSelect(id, arr, valKey, labelKey, placeholder) {
     el.insertAdjacentHTML('beforeend', `<option value="${item[valKey]}">${item[labelKey]}</option>`);
   });
 }
-function populateFilters() {}
+function populateFilters() { populateInstitutionSelects(); }
 
 // ── CARD STATUS ──
 function getCardStatus(card) {
@@ -2063,6 +2086,8 @@ function showSettings(s) {
         <input type="file" accept=".json" style="display:none" onchange="importJSON(this)">
       </label>
     </div>`;
+  } else if (s === 'institutions') {
+    renderInstitutionsSettings();
   } else if (s === 'audit') {
     renderAuditLog();
   }
@@ -2086,6 +2111,44 @@ async function changePassword() {
   document.getElementById('pw-current').value = '';
   document.getElementById('pw-new').value = '';
   document.getElementById('pw-confirm').value = '';
+}
+
+function renderInstitutionsSettings() {
+  const content = document.getElementById('settings-content');
+  const rows = institutionsData.map((name, i) => `
+    <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)">
+      <span style="flex:1;font-size:13px">${name}</span>
+      <button class="btn btn-danger btn-sm" onclick="deleteInstitution(${i})">삭제</button>
+    </div>`).join('');
+  content.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <div class="section-title" style="margin:0">기관 관리</div>
+    </div>
+    <div id="inst-list" style="margin-bottom:16px">${rows || '<div style="color:var(--text3);font-size:13px;padding:8px 0">등록된 기관이 없습니다.</div>'}</div>
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:16px">
+      <input class="form-input" id="inst-new-name" type="text" placeholder="기관명 입력" style="flex:1;max-width:300px">
+      <button class="btn btn-primary btn-sm" onclick="addInstitution()">추가</button>
+    </div>
+    <button class="btn btn-primary" onclick="saveInstitutionsAndRefresh()">저장</button>`;
+}
+async function addInstitution() {
+  const input = document.getElementById('inst-new-name');
+  const name = input?.value?.trim();
+  if (!name) { toast('기관명을 입력하세요', 'error'); return; }
+  if (institutionsData.includes(name)) { toast('이미 존재하는 기관명입니다', 'error'); return; }
+  institutionsData.push(name);
+  input.value = '';
+  renderInstitutionsSettings();
+}
+function deleteInstitution(idx) {
+  if (!confirm(`"${institutionsData[idx]}" 기관을 삭제하시겠습니까?`)) return;
+  institutionsData.splice(idx, 1);
+  renderInstitutionsSettings();
+}
+async function saveInstitutionsAndRefresh() {
+  await saveInstitutions();
+  populateInstitutionSelects();
+  toast('기관 목록이 저장되었습니다', 'success');
 }
 
 function renderCompaniesSettings() {
