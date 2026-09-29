@@ -1,0 +1,2223 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>재무·카드 관리</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+:root {
+  --primary:#1A73E8; --primary-dk:#1557B0; --primary-lt:#E8F0FE;
+  --green:#16a34a; --green-lt:#dcfce7;
+  --orange:#ea580c; --orange-lt:#ffedd5;
+  --red:#dc2626; --red-lt:#fee2e2;
+  --gray:#6b7280; --gray-lt:#f3f4f6; --gray-bd:#e5e7eb;
+  --r:12px; --r-sm:8px; --r-lg:16px;
+  --sh:0 1px 3px rgba(0,0,0,.1);
+  --sh-md:0 4px 12px rgba(0,0,0,.12);
+  --sh-lg:0 8px 24px rgba(0,0,0,.15);
+  --font-size:14px;
+  --bg:#f0f2f5; --surface:#ffffff; --surface2:#f8f9fa;
+  --text:#1a1a2e; --text2:#4a5568; --text3:#9ca3af;
+  --nav-w:220px;
+  --accent-warn:#ea580c; --accent-danger:#dc2626;
+  --acrylic:rgba(255,255,255,0.85);
+  --sidebar-bg:rgba(248,249,250,0.92);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,sans-serif;font-size:var(--font-size);background:var(--bg);color:var(--text);min-height:100vh}
+
+/* ── LOGIN ── */
+#login-screen{
+  position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%);
+  z-index:9999
+}
+.login-card{
+  background:var(--acrylic);backdrop-filter:blur(20px);
+  border:1px solid rgba(255,255,255,.3);border-radius:20px;
+  padding:40px;width:360px;box-shadow:var(--sh-lg);text-align:center
+}
+.login-logo{font-size:40px;margin-bottom:12px}
+.login-title{font-size:20px;font-weight:700;color:var(--text);margin-bottom:4px}
+.login-sub{font-size:13px;color:var(--text2);margin-bottom:28px}
+.login-card input{
+  width:100%;padding:12px 16px;border:1.5px solid var(--gray-bd);
+  border-radius:var(--r-sm);font-size:15px;background:#fff;
+  outline:none;transition:border .2s;margin-bottom:12px
+}
+.login-card input:focus{border-color:var(--primary)}
+.login-btn{
+  width:100%;padding:13px;background:var(--primary);color:#fff;
+  border:none;border-radius:var(--r-sm);font-size:15px;font-weight:600;
+  cursor:pointer;transition:background .2s
+}
+.login-btn:hover{background:var(--primary-dk)}
+.login-err{color:var(--red);font-size:13px;margin-top:8px;min-height:18px}
+
+/* ── LAYOUT ── */
+#app{display:none;height:100vh;overflow:hidden}
+.layout{display:flex;height:100vh}
+
+/* ── SIDEBAR ── */
+.sidebar{
+  width:var(--nav-w);flex-shrink:0;
+  background:var(--sidebar-bg);backdrop-filter:blur(20px);
+  border-right:1px solid var(--gray-bd);
+  display:flex;flex-direction:column;
+  padding:20px 0;overflow-y:auto;z-index:100
+}
+.sidebar-header{padding:0 20px 20px;border-bottom:1px solid var(--gray-bd)}
+.sidebar-title{font-size:16px;font-weight:700;color:var(--text)}
+.sidebar-sub{font-size:11px;color:var(--text3);margin-top:2px}
+.sidebar-nav{padding:12px 0;flex:1}
+.nav-item{
+  display:flex;align-items:center;gap:10px;
+  padding:10px 20px;cursor:pointer;
+  font-size:13px;font-weight:500;color:var(--text2);
+  transition:all .15s;border-left:3px solid transparent;
+  user-select:none
+}
+.nav-item:hover{background:var(--primary-lt);color:var(--primary)}
+.nav-item.active{
+  background:var(--primary-lt);color:var(--primary);
+  border-left-color:var(--primary);font-weight:600
+}
+.nav-item svg{width:18px;height:18px;flex-shrink:0}
+.nav-badge{
+  margin-left:auto;background:var(--red);color:#fff;
+  font-size:10px;font-weight:700;padding:2px 6px;border-radius:99px
+}
+.sidebar-footer{padding:16px 20px;border-top:1px solid var(--gray-bd)}
+.logout-btn{
+  width:100%;padding:8px;background:none;border:1px solid var(--gray-bd);
+  border-radius:var(--r-sm);font-size:12px;color:var(--text2);cursor:pointer;
+  transition:all .2s
+}
+.logout-btn:hover{background:var(--red-lt);border-color:var(--red);color:var(--red)}
+
+/* ── MAIN ── */
+.main{flex:1;overflow-y:auto;display:flex;flex-direction:column}
+.tab-panel{display:none;padding:24px;flex:1}
+.tab-panel.active{display:block}
+
+/* ── PAGE HEADER ── */
+.page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;gap:12px;flex-wrap:wrap}
+.page-title{font-size:20px;font-weight:700;color:var(--text)}
+.page-actions{display:flex;gap:8px;flex-wrap:wrap}
+
+/* ── CARDS (stat) ── */
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:20px}
+.stat-card{
+  background:var(--surface);border-radius:var(--r);padding:16px;
+  box-shadow:var(--sh);border:1px solid var(--gray-bd)
+}
+.stat-label{font-size:11px;color:var(--text3);font-weight:500;text-transform:uppercase;letter-spacing:.5px}
+.stat-value{font-size:28px;font-weight:700;color:var(--text);margin:4px 0}
+.stat-sub{font-size:12px;color:var(--text2)}
+
+/* ── ALERT BANNER ── */
+.alert-banner{
+  background:var(--surface);border-radius:var(--r);padding:16px 20px;
+  box-shadow:var(--sh);border:1px solid var(--gray-bd);margin-bottom:20px
+}
+.alert-banner-title{font-size:13px;font-weight:700;color:var(--text);margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.alert-list{display:flex;flex-direction:column;gap:6px}
+.alert-item{
+  display:flex;align-items:center;gap:8px;
+  padding:8px 12px;border-radius:var(--r-sm);font-size:12px
+}
+.alert-item.warn{background:var(--orange-lt);color:#92400e}
+.alert-item.danger{background:var(--red-lt);color:#991b1b}
+.alert-item.info{background:var(--primary-lt);color:#1e40af}
+.alert-item svg{width:14px;height:14px;flex-shrink:0}
+
+/* ── TABLE ── */
+.table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:var(--r)}
+.data-table{
+  width:100%;border-collapse:collapse;background:var(--surface);
+  border-radius:var(--r);overflow:hidden;box-shadow:var(--sh);
+  font-size:13px
+}
+.data-table thead th{
+  background:var(--surface2);padding:10px 12px;text-align:left;
+  font-weight:600;font-size:12px;color:var(--text2);
+  border-bottom:1px solid var(--gray-bd);white-space:nowrap;
+  cursor:pointer;user-select:none;position:sticky;top:0;z-index:10
+}
+.data-table thead th:hover{background:var(--primary-lt);color:var(--primary)}
+.data-table thead th.sorted-asc::after{content:" ▲";font-size:10px}
+.data-table thead th.sorted-desc::after{content:" ▼";font-size:10px}
+.data-table tbody td{
+  padding:9px 12px;border-bottom:1px solid var(--gray-bd);
+  vertical-align:middle;white-space:nowrap
+}
+.data-table tbody tr:last-child td{border-bottom:none}
+.data-table tbody tr:hover{background:var(--primary-lt)!important}
+
+/* ── STATUS BADGES ── */
+.badge{
+  display:inline-flex;align-items:center;gap:4px;
+  padding:3px 8px;border-radius:99px;font-size:11px;font-weight:600
+}
+.badge-blue{background:#dbeafe;color:#1e40af}
+.badge-black{background:#e5e7eb;color:#1f2937}
+.badge-orange{background:var(--orange-lt);color:#9a3412}
+.badge-red{background:var(--red-lt);color:#991b1b}
+.badge-gray{background:var(--gray-lt);color:var(--gray)}
+.badge-green{background:var(--green-lt);color:#14532d}
+.badge-x{background:#f9fafb;color:#9ca3af;text-decoration:line-through}
+
+/* ── BUTTONS ── */
+.btn{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:7px 14px;border-radius:var(--r-sm);font-size:13px;
+  font-weight:500;cursor:pointer;border:1px solid transparent;
+  transition:all .15s;white-space:nowrap
+}
+.btn-primary{background:var(--primary);color:#fff;border-color:var(--primary)}
+.btn-primary:hover{background:var(--primary-dk)}
+.btn-secondary{background:var(--surface);color:var(--text2);border-color:var(--gray-bd)}
+.btn-secondary:hover{background:var(--gray-lt)}
+.btn-danger{background:var(--red-lt);color:var(--red);border-color:var(--red)}
+.btn-danger:hover{background:var(--red);color:#fff}
+.btn-warn{background:var(--orange-lt);color:var(--orange);border-color:var(--orange)}
+.btn-sm{padding:4px 10px;font-size:12px}
+.btn svg{width:15px;height:15px}
+
+/* ── TOOLBAR ── */
+.toolbar{display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+.search-box{
+  position:relative;flex:1;min-width:180px;max-width:300px
+}
+.search-box input{
+  width:100%;padding:7px 12px 7px 34px;border:1px solid var(--gray-bd);
+  border-radius:var(--r-sm);font-size:13px;background:var(--surface);outline:none
+}
+.search-box input:focus{border-color:var(--primary)}
+.search-box svg{
+  position:absolute;left:10px;top:50%;transform:translateY(-50%);
+  width:15px;height:15px;color:var(--text3)
+}
+.filter-select{
+  padding:7px 10px;border:1px solid var(--gray-bd);border-radius:var(--r-sm);
+  font-size:13px;background:var(--surface);color:var(--text);outline:none;cursor:pointer
+}
+.filter-select:focus{border-color:var(--primary)}
+
+/* ── MODAL ── */
+.modal-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,.45);
+  display:none;align-items:center;justify-content:center;z-index:2000;padding:16px
+}
+.modal-overlay.open{display:flex}
+.modal{
+  background:var(--surface);border-radius:var(--r-lg);
+  width:100%;max-width:600px;max-height:90vh;overflow-y:auto;
+  box-shadow:var(--sh-lg)
+}
+.modal-lg{max-width:840px}
+.modal-sm{max-width:400px}
+.modal-header{
+  padding:20px 24px 16px;border-bottom:1px solid var(--gray-bd);
+  display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;background:var(--surface);z-index:1
+}
+.modal-title{font-size:16px;font-weight:700}
+.modal-close{
+  background:none;border:none;cursor:pointer;padding:4px;
+  color:var(--text3);border-radius:var(--r-sm);transition:all .15s
+}
+.modal-close:hover{background:var(--gray-lt);color:var(--text)}
+.modal-body{padding:20px 24px}
+.modal-footer{
+  padding:16px 24px;border-top:1px solid var(--gray-bd);
+  display:flex;justify-content:flex-end;gap:8px;
+  position:sticky;bottom:0;background:var(--surface)
+}
+
+/* ── FORM ── */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.form-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+.form-full{grid-column:1/-1}
+.form-group{display:flex;flex-direction:column;gap:5px}
+.form-label{font-size:12px;font-weight:600;color:var(--text2)}
+.form-label.required::after{content:" *";color:var(--red)}
+.form-input,.form-select,.form-textarea{
+  padding:8px 12px;border:1px solid var(--gray-bd);border-radius:var(--r-sm);
+  font-size:13px;background:var(--surface);color:var(--text);outline:none;
+  transition:border .2s;width:100%
+}
+.form-input:focus,.form-select:focus,.form-textarea:focus{border-color:var(--primary)}
+.form-textarea{resize:vertical;min-height:72px}
+.form-hint{font-size:11px;color:var(--text3)}
+
+/* ── SECTION ── */
+.section-card{
+  background:var(--surface);border-radius:var(--r);padding:20px;
+  box-shadow:var(--sh);border:1px solid var(--gray-bd);margin-bottom:16px
+}
+.section-title{
+  font-size:14px;font-weight:700;color:var(--text);margin-bottom:14px;
+  padding-bottom:10px;border-bottom:1px solid var(--gray-bd);
+  display:flex;align-items:center;gap:6px
+}
+.section-title svg{width:16px;height:16px;color:var(--primary)}
+
+/* ── TABS (inner) ── */
+.inner-tabs{display:flex;gap:2px;margin-bottom:16px;border-bottom:2px solid var(--gray-bd);padding-bottom:0}
+.inner-tab{
+  padding:8px 16px;font-size:13px;font-weight:500;color:var(--text2);
+  cursor:pointer;border-radius:var(--r-sm) var(--r-sm) 0 0;
+  transition:all .15s;margin-bottom:-2px;border-bottom:2px solid transparent
+}
+.inner-tab:hover{background:var(--primary-lt);color:var(--primary)}
+.inner-tab.active{color:var(--primary);border-bottom-color:var(--primary);font-weight:600}
+
+/* ── HISTORY TABLE (small) ── */
+.hist-table{width:100%;border-collapse:collapse;font-size:12px}
+.hist-table th{background:var(--surface2);padding:7px 10px;text-align:left;font-weight:600;color:var(--text2);border-bottom:1px solid var(--gray-bd)}
+.hist-table td{padding:7px 10px;border-bottom:1px solid var(--gray-bd)}
+.hist-table tr:last-child td{border-bottom:none}
+
+/* ── EMPTY STATE ── */
+.empty-state{text-align:center;padding:48px 20px;color:var(--text3)}
+.empty-state svg{width:48px;height:48px;margin:0 auto 12px;opacity:.4}
+.empty-state p{font-size:14px;margin-bottom:4px}
+.empty-state small{font-size:12px}
+
+/* ── TOAST ── */
+#toast-container{position:fixed;bottom:24px;right:24px;z-index:9999;display:flex;flex-direction:column;gap:8px}
+.toast{
+  display:flex;align-items:center;gap:10px;
+  padding:12px 16px;border-radius:var(--r-sm);
+  background:var(--text);color:#fff;font-size:13px;
+  box-shadow:var(--sh-md);min-width:240px;max-width:360px;
+  animation:slideIn .3s ease
+}
+.toast.success{background:#16a34a}
+.toast.error{background:var(--red)}
+.toast.warn{background:var(--orange)}
+@keyframes slideIn{from{transform:translateX(100%);opacity:0}to{transform:none;opacity:1}}
+
+/* ── ADMIN SETTINGS ── */
+.settings-grid{display:grid;grid-template-columns:200px 1fr;gap:0;min-height:400px}
+.settings-menu{border-right:1px solid var(--gray-bd);padding:8px 0}
+.settings-menu-item{
+  padding:10px 16px;font-size:13px;cursor:pointer;
+  border-left:3px solid transparent;color:var(--text2);transition:all .15s
+}
+.settings-menu-item:hover{background:var(--primary-lt);color:var(--primary)}
+.settings-menu-item.active{background:var(--primary-lt);color:var(--primary);border-left-color:var(--primary);font-weight:600}
+.settings-content{padding:20px}
+
+/* ── COLOR PICKER ROW ── */
+.color-row{display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap}
+.color-row label{font-size:13px;width:150px;color:var(--text2)}
+.color-row input[type=color]{width:40px;height:32px;border:1px solid var(--gray-bd);border-radius:var(--r-sm);cursor:pointer;padding:2px}
+
+/* ── MOBILE BOTTOM NAV ── */
+.mobile-nav{
+  display:none;position:fixed;bottom:0;left:0;right:0;
+  background:var(--acrylic);backdrop-filter:blur(20px);
+  border-top:1px solid var(--gray-bd);z-index:100;
+  padding:8px 0 env(safe-area-inset-bottom)
+}
+.mobile-nav-inner{display:flex;justify-content:space-around}
+.mobile-nav-item{
+  display:flex;flex-direction:column;align-items:center;gap:3px;
+  padding:6px 12px;cursor:pointer;border-radius:var(--r-sm);
+  font-size:10px;color:var(--text3);transition:all .15s;min-width:52px
+}
+.mobile-nav-item.active{color:var(--primary)}
+.mobile-nav-item svg{width:22px;height:22px}
+.mobile-nav-badge{
+  position:absolute;top:-4px;right:-4px;background:var(--red);color:#fff;
+  font-size:9px;font-weight:700;padding:1px 5px;border-radius:99px
+}
+
+/* ── RESPONSIVE ── */
+@media(max-width:768px){
+  .sidebar{display:none}
+  .mobile-nav{display:block}
+  .tab-panel{padding:16px;padding-bottom:80px}
+  .stat-grid{grid-template-columns:repeat(2,1fr)}
+  .form-grid{grid-template-columns:1fr}
+  .form-grid-3{grid-template-columns:1fr}
+  .page-header{flex-direction:column;align-items:flex-start}
+  .settings-grid{grid-template-columns:1fr;grid-template-rows:auto 1fr}
+  .settings-menu{border-right:none;border-bottom:1px solid var(--gray-bd);display:flex;overflow-x:auto;padding:4px;gap:4px}
+  .settings-menu-item{border-left:none;border-bottom:2px solid transparent;white-space:nowrap;border-radius:var(--r-sm)}
+  .settings-menu-item.active{border-bottom-color:var(--primary)}
+  .modal{margin:0;border-radius:var(--r-lg) var(--r-lg) 0 0;position:fixed;bottom:0;max-height:92vh}
+  .modal-overlay{align-items:flex-end;padding:0}
+  .data-table{min-width:640px}
+  #toast-container{bottom:80px;right:12px;left:12px}
+  .toast{min-width:unset}
+}
+@media(max-width:480px){
+  .stat-grid{grid-template-columns:1fr 1fr}
+  .btn span{display:none}
+}
+
+/* ── PRINT ── */
+@media print{
+  .sidebar,.mobile-nav,.toolbar,.page-actions,#toast-container,.modal-overlay{display:none!important}
+  .tab-panel{display:block!important;padding:0}
+  .data-table{box-shadow:none;border:1px solid #ccc}
+}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">
+      <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="48" height="48" rx="12" fill="#1A73E8"/>
+        <rect x="10" y="14" width="28" height="20" rx="3" fill="none" stroke="white" stroke-width="2"/>
+        <path d="M10 20h28" stroke="white" stroke-width="2"/>
+        <rect x="14" y="25" width="6" height="4" rx="1" fill="white"/>
+      </svg>
+    </div>
+    <div class="login-title">재무·카드 관리 시스템</div>
+    <div class="login-sub">아세아항공직업전문학교</div>
+    <input type="password" id="pw-input" placeholder="관리자 비밀번호" autofocus>
+    <button class="login-btn" onclick="doLogin()">로그인</button>
+    <div class="login-err" id="login-err"></div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <div class="layout">
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-title">재무·카드 관리</div>
+        <div class="sidebar-sub">아세아항공직업전문학교</div>
+      </div>
+      <nav class="sidebar-nav">
+        <div class="nav-item active" onclick="showTab('dashboard')" data-tab="dashboard">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+          대시보드
+          <span class="nav-badge" id="nav-alert-badge" style="display:none">0</span>
+        </div>
+        <div class="nav-item" onclick="showTab('cards')" data-tab="cards">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+          법인카드 관리
+        </div>
+        <div class="nav-item" onclick="showTab('accounts')" data-tab="accounts">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="18" rx="2"/><path d="M16 8h-4m4 4h-4m4 4h-4M8 8h.01M8 12h.01M8 16h.01"/></svg>
+          은행계좌 관리
+        </div>
+        <div class="nav-item" onclick="showTab('search')" data-tab="search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          통합검색
+        </div>
+        <div class="nav-item" onclick="showTab('admin')" data-tab="admin">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+          관리자 설정
+        </div>
+      </nav>
+      <div class="sidebar-footer">
+        <button class="logout-btn" onclick="doLogout()">로그아웃</button>
+      </div>
+    </aside>
+
+    <!-- MAIN -->
+    <main class="main">
+
+      <!-- DASHBOARD -->
+      <div class="tab-panel active" id="tab-dashboard">
+        <div class="page-header">
+          <div class="page-title">대시보드</div>
+          <div class="page-actions">
+            <button class="btn btn-secondary btn-sm" onclick="refreshDashboard()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>
+              <span>새로고침</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Alert Banner -->
+        <div class="alert-banner" id="alert-banner" style="display:none">
+          <div class="alert-banner-title">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            주의 필요 항목
+          </div>
+          <div class="alert-list" id="alert-list"></div>
+        </div>
+
+        <!-- Stat Cards -->
+        <div class="stat-grid" id="stat-grid">
+          <div class="stat-card">
+            <div class="stat-label">전체 법인카드</div>
+            <div class="stat-value" id="stat-total-cards">-</div>
+            <div class="stat-sub">활성 카드 기준</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">현재 반출 중</div>
+            <div class="stat-value" id="stat-checkout-cards" style="color:var(--primary)">-</div>
+            <div class="stat-sub">반납 대기</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">만료 예정 (1개월)</div>
+            <div class="stat-value" id="stat-expire-1m" style="color:var(--red)">-</div>
+            <div class="stat-sub">즉시 갱신 필요</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">만료 예정 (2개월)</div>
+            <div class="stat-value" id="stat-expire-2m" style="color:var(--orange)">-</div>
+            <div class="stat-sub">갱신 준비 필요</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">등록 은행계좌</div>
+            <div class="stat-value" id="stat-total-accounts">-</div>
+            <div class="stat-sub">운용 중 계좌</div>
+          </div>
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="section-card">
+          <div class="section-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            최근 반출/반납 이력
+          </div>
+          <div class="table-wrap">
+            <table class="data-table" id="recent-history-table">
+              <thead><tr>
+                <th>카드번호(끝4자리)</th><th>소유자</th><th>구분</th><th>사용자</th><th>반출일</th><th>반납예정일</th><th>반납완료일</th><th>목적</th>
+              </tr></thead>
+              <tbody id="recent-history-body">
+                <tr><td colspan="8"><div class="empty-state"><p>데이터 로딩 중...</p></div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- CARDS TAB -->
+      <div class="tab-panel" id="tab-cards">
+        <div class="page-header">
+          <div class="page-title">법인카드 관리</div>
+          <div class="page-actions">
+            <button class="btn btn-secondary btn-sm" onclick="exportCardsExcel()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+              <span>엑셀 내보내기</span>
+            </button>
+            <label class="btn btn-secondary btn-sm" style="cursor:pointer">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              <span>엑셀 가져오기</span>
+              <input type="file" accept=".xlsx,.xls" style="display:none" onchange="importCardsExcel(this)">
+            </label>
+            <button class="btn btn-secondary btn-sm" onclick="printCards()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+              <span>인쇄</span>
+            </button>
+            <button class="btn btn-secondary btn-sm" onclick="exportCardsPDF()">PDF</button>
+            <button class="btn btn-primary btn-sm" onclick="openCardModal()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              <span>카드 등록</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="toolbar">
+          <div class="search-box">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+            <input type="text" id="card-search" placeholder="카드번호, 이름 검색..." oninput="filterCards()">
+          </div>
+          <select class="filter-select" id="card-filter-inst" onchange="filterCards()">
+            <option value="">전체 기관</option>
+            <option>아세아항공직업전문학교</option>
+            <option>드림에듀</option>
+            <option>세인트</option>
+          </select>
+          <select class="filter-select" id="card-filter-status" onchange="filterCards()">
+            <option value="">전체 상태</option>
+            <option value="active">사용중</option>
+            <option value="stored">보관중</option>
+            <option value="checkout">반출중</option>
+            <option value="expire_soon_2m">만료예정(2개월)</option>
+            <option value="expire_soon_1m">만료예정(1개월)</option>
+            <option value="expired">만료</option>
+          </select>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer">
+            <input type="checkbox" id="show-hidden" onchange="filterCards()"> 폐기 포함
+          </label>
+        </div>
+
+        <div class="table-wrap">
+          <table class="data-table" id="cards-table">
+            <thead>
+              <tr>
+                <th onclick="sortCards('institution')">기관</th>
+                <th onclick="sortCards('card_issuer')">카드사</th>
+                <th onclick="sortCards('card_number')">카드번호</th>
+                <th onclick="sortCards('card_suffix')">끝4자리</th>
+                <th onclick="sortCards('user_name')">소유자</th>
+                <th onclick="sortCards('department')">부서</th>
+                <th>만료월</th>
+                <th>상태</th>
+                <th>연결계좌</th>
+                <th>관리</th>
+              </tr>
+            </thead>
+            <tbody id="cards-body">
+              <tr><td colspan="10"><div class="empty-state"><p>데이터 로딩 중...</p></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ACCOUNTS TAB -->
+      <div class="tab-panel" id="tab-accounts">
+        <div class="page-header">
+          <div class="page-title">은행계좌 관리</div>
+          <div class="page-actions">
+            <button class="btn btn-secondary btn-sm" onclick="exportAccountsExcel()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+              <span>엑셀 내보내기</span>
+            </button>
+            <button class="btn btn-primary btn-sm" onclick="openAccountModal()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              <span>계좌 등록</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="toolbar">
+          <div class="search-box">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+            <input type="text" id="account-search" placeholder="계좌번호, 은행명 검색..." oninput="filterAccounts()">
+          </div>
+          <select class="filter-select" id="account-filter-inst" onchange="filterAccounts()">
+            <option value="">전체 기관</option>
+            <option>아세아항공직업전문학교</option>
+            <option>드림에듀</option>
+            <option>세인트</option>
+          </select>
+          <select class="filter-select" id="account-filter-type" onchange="filterAccounts()">
+            <option value="">전체 유형</option>
+          </select>
+        </div>
+
+        <div class="table-wrap">
+          <table class="data-table" id="accounts-table">
+            <thead>
+              <tr>
+                <th onclick="sortAccounts('institution')">기관</th>
+                <th onclick="sortAccounts('bank_name')">은행</th>
+                <th onclick="sortAccounts('account_number')">계좌번호</th>
+                <th onclick="sortAccounts('account_holder')">예금주</th>
+                <th>계좌유형</th>
+                <th onclick="sortAccounts('balance')">잔액</th>
+                <th>잔액기준일</th>
+                <th>연결카드</th>
+                <th>상태</th>
+                <th>관리</th>
+              </tr>
+            </thead>
+            <tbody id="accounts-body">
+              <tr><td colspan="10"><div class="empty-state"><p>데이터 로딩 중...</p></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- SEARCH TAB -->
+      <div class="tab-panel" id="tab-search">
+        <div class="page-header">
+          <div class="page-title">통합검색</div>
+        </div>
+        <div class="section-card">
+          <div style="display:flex;gap:8px;margin-bottom:16px">
+            <div class="search-box" style="max-width:100%;flex:1">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+              <input type="text" id="global-search-input" placeholder="카드번호, 이름, 계좌번호, 비고 등 전체 검색..." style="font-size:15px;padding:10px 12px 10px 36px" onkeydown="if(event.key==='Enter')doGlobalSearch()">
+            </div>
+            <button class="btn btn-primary" onclick="doGlobalSearch()">검색</button>
+          </div>
+
+          <div id="search-results">
+            <div class="empty-state">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+              <p>검색어를 입력하세요</p>
+              <small>카드번호, 이름, 계좌번호, 메모 등 모든 필드에서 검색합니다</small>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ADMIN TAB -->
+      <div class="tab-panel" id="tab-admin">
+        <div class="page-header">
+          <div class="page-title">관리자 설정</div>
+        </div>
+        <div class="section-card" style="padding:0;overflow:hidden">
+          <div class="settings-grid">
+            <div class="settings-menu" id="settings-menu">
+              <div class="settings-menu-item active" onclick="showSettings('password')" data-s="password">비밀번호 변경</div>
+              <div class="settings-menu-item" onclick="showSettings('companies')" data-s="companies">카드사·은행 정보</div>
+              <div class="settings-menu-item" onclick="showSettings('account-types')" data-s="account-types">계좌 유형 관리</div>
+              <div class="settings-menu-item" onclick="showSettings('alerts')" data-s="alerts">알림 설정</div>
+              <div class="settings-menu-item" onclick="showSettings('design')" data-s="design">디자인 설정</div>
+              <div class="settings-menu-item" onclick="showSettings('backup')" data-s="backup">백업·복원</div>
+              <div class="settings-menu-item" onclick="showSettings('audit')" data-s="audit">감사 로그</div>
+            </div>
+            <div class="settings-content" id="settings-content">
+              <!-- 동적 로드 -->
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- MOBILE BOTTOM NAV -->
+  <nav class="mobile-nav">
+    <div class="mobile-nav-inner">
+      <div class="mobile-nav-item active" onclick="showTab('dashboard')" data-tab="dashboard">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        대시보드
+      </div>
+      <div class="mobile-nav-item" onclick="showTab('cards')" data-tab="cards">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+        법인카드
+      </div>
+      <div class="mobile-nav-item" onclick="showTab('accounts')" data-tab="accounts">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="18" rx="2"/><path d="M16 8h-4m4 4h-4m4 4h-4M8 8h.01M8 12h.01M8 16h.01"/></svg>
+        계좌
+      </div>
+      <div class="mobile-nav-item" onclick="showTab('search')" data-tab="search">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+        검색
+      </div>
+      <div class="mobile-nav-item" onclick="showTab('admin')" data-tab="admin">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+        설정
+      </div>
+    </div>
+  </nav>
+</div>
+
+<!-- TOAST -->
+<div id="toast-container"></div>
+
+<!-- MODALS -->
+
+<!-- Card Modal -->
+<div class="modal-overlay" id="card-modal">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <div class="modal-title" id="card-modal-title">카드 등록</div>
+      <button class="modal-close" onclick="closeModal('card-modal')">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="card-id">
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label required">기관</label>
+          <select class="form-select" id="c-institution">
+            <option>아세아항공직업전문학교</option>
+            <option>드림에듀</option>
+            <option>세인트</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label required">카드사</label>
+          <select class="form-select" id="c-issuer"></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label required">카드번호</label>
+          <input class="form-input" id="c-number" placeholder="1234-5678-9012-3456">
+        </div>
+        <div class="form-group">
+          <label class="form-label">끝 4자리</label>
+          <input class="form-input" id="c-suffix" placeholder="3456" maxlength="4">
+        </div>
+        <div class="form-group">
+          <label class="form-label required">소유자 성명</label>
+          <input class="form-input" id="c-user-name" placeholder="홍길동">
+        </div>
+        <div class="form-group">
+          <label class="form-label">직위</label>
+          <input class="form-input" id="c-position" placeholder="차장">
+        </div>
+        <div class="form-group">
+          <label class="form-label">부서</label>
+          <input class="form-input" id="c-department" placeholder="기획처">
+        </div>
+        <div class="form-group">
+          <label class="form-label">한도 (만원)</label>
+          <input class="form-input" id="c-limit" type="number" placeholder="500">
+        </div>
+        <div class="form-group">
+          <label class="form-label required">만료 연도</label>
+          <input class="form-input" id="c-exp-year" type="number" placeholder="2027" min="2024" max="2040">
+        </div>
+        <div class="form-group">
+          <label class="form-label required">만료 월</label>
+          <select class="form-select" id="c-exp-month">
+            <option value="1">1월</option><option value="2">2월</option><option value="3">3월</option>
+            <option value="4">4월</option><option value="5">5월</option><option value="6">6월</option>
+            <option value="7">7월</option><option value="8">8월</option><option value="9">9월</option>
+            <option value="10">10월</option><option value="11">11월</option><option value="12">12월</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">상태</label>
+          <select class="form-select" id="c-status">
+            <option value="stored">보관중</option>
+            <option value="active">사용중</option>
+            <option value="checkout">반출중</option>
+            <option value="expired">만료</option>
+            <option value="discarded">폐기</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">연결 계좌</label>
+          <select class="form-select" id="c-account"></select>
+        </div>
+        <div class="form-group form-full">
+          <label class="form-label">용도·비고</label>
+          <textarea class="form-textarea" id="c-notes" placeholder="카드 용도 또는 특이사항"></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('card-modal')">취소</button>
+      <button class="btn btn-primary" onclick="saveCard()">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- Card History Modal -->
+<div class="modal-overlay" id="history-modal">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <div class="modal-title" id="history-modal-title">반출/반납 이력</div>
+      <button class="modal-close" onclick="closeModal('history-modal')">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div style="display:flex;justify-content:flex-end;margin-bottom:12px">
+        <button class="btn btn-primary btn-sm" onclick="openHistoryAddModal()">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          이력 추가
+        </button>
+      </div>
+      <div class="table-wrap">
+        <table class="hist-table" id="history-table-body-wrap">
+          <thead><tr>
+            <th>구분</th><th>사용자</th><th>반출일</th><th>반납예정일</th><th>반납완료일</th><th>목적</th><th>담당자</th><th>비고</th><th></th>
+          </tr></thead>
+          <tbody id="history-table-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- History Add Modal -->
+<div class="modal-overlay" id="history-add-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">이력 추가</div>
+      <button class="modal-close" onclick="closeModal('history-add-modal')">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="h-card-id">
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label required">구분</label>
+          <select class="form-select" id="h-action">
+            <option value="checkout">반출</option>
+            <option value="return">반납</option>
+            <option value="issue">신규발급</option>
+            <option value="renew">갱신</option>
+            <option value="suspend">정지</option>
+            <option value="cancel">해지</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label required">사용자</label>
+          <input class="form-input" id="h-user-name" placeholder="홍길동">
+        </div>
+        <div class="form-group">
+          <label class="form-label">반출일</label>
+          <input class="form-input" id="h-checkout-date" type="date">
+        </div>
+        <div class="form-group">
+          <label class="form-label">반납예정일</label>
+          <input class="form-input" id="h-expected-return" type="date">
+        </div>
+        <div class="form-group">
+          <label class="form-label">반납완료일</label>
+          <input class="form-input" id="h-actual-return" type="date">
+        </div>
+        <div class="form-group">
+          <label class="form-label">담당자</label>
+          <input class="form-input" id="h-handler" placeholder="처리 담당자">
+        </div>
+        <div class="form-group form-full">
+          <label class="form-label">목적·비고</label>
+          <textarea class="form-textarea" id="h-notes" placeholder="반출 목적 또는 비고"></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('history-add-modal')">취소</button>
+      <button class="btn btn-primary" onclick="saveHistory()">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- Account Modal -->
+<div class="modal-overlay" id="account-modal">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <div class="modal-title" id="account-modal-title">계좌 등록</div>
+      <button class="modal-close" onclick="closeModal('account-modal')">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="account-id">
+      <div class="inner-tabs">
+        <div class="inner-tab active" onclick="showAccountTab('basic')" data-at="basic">기본정보</div>
+        <div class="inner-tab" onclick="showAccountTab('banking')" data-at="banking">인터넷뱅킹</div>
+        <div class="inner-tab" onclick="showAccountTab('attachment')" data-at="attachment">통장사본</div>
+        <div class="inner-tab" onclick="showAccountTab('notes')" data-at="notes">비고</div>
+      </div>
+      <div id="at-basic">
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label required">기관</label>
+            <select class="form-select" id="a-institution">
+              <option>아세아항공직업전문학교</option><option>드림에듀</option><option>세인트</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label required">은행</label>
+            <select class="form-select" id="a-bank"></select>
+          </div>
+          <div class="form-group">
+            <label class="form-label required">계좌번호</label>
+            <input class="form-input" id="a-number" placeholder="000-000000-00-000">
+          </div>
+          <div class="form-group">
+            <label class="form-label required">예금주</label>
+            <input class="form-input" id="a-holder" placeholder="아세아항공직업전문학교">
+          </div>
+          <div class="form-group">
+            <label class="form-label">계좌 유형</label>
+            <select class="form-select" id="a-type"></select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">상태</label>
+            <select class="form-select" id="a-status">
+              <option value="active">운용중</option>
+              <option value="dormant">휴면</option>
+              <option value="closed">해지</option>
+            </select>
+          </div>
+          <div class="form-group form-full">
+            <label class="form-label">현재 잔액 (원)</label>
+            <div style="display:flex;gap:8px">
+              <input class="form-input" id="a-balance" type="number" placeholder="0" style="flex:1">
+              <button class="btn btn-secondary btn-sm" onclick="updateBalanceNow()">잔액 기준일 오늘로</button>
+            </div>
+          </div>
+          <div class="form-group form-full">
+            <label class="form-label">연결 카드 (복수 선택)</label>
+            <div id="a-linked-cards" style="display:flex;flex-wrap:wrap;gap:6px;padding:10px;border:1px solid var(--gray-bd);border-radius:var(--r-sm);min-height:40px;background:#fff"></div>
+          </div>
+        </div>
+      </div>
+      <div id="at-banking" style="display:none">
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label">인터넷뱅킹 ID</label>
+            <input class="form-input" id="a-ib-id" placeholder="로그인 ID">
+          </div>
+          <div class="form-group">
+            <label class="form-label">인터넷뱅킹 PW</label>
+            <input class="form-input" id="a-ib-pw" type="password" placeholder="비밀번호">
+          </div>
+        </div>
+        <div class="form-hint" style="margin-top:8px">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline;vertical-align:middle"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          인터넷뱅킹 계정은 Supabase에 저장됩니다. RLS 보안 정책이 적용됩니다.
+        </div>
+      </div>
+      <div id="at-attachment" style="display:none">
+        <div style="margin-bottom:12px">
+          <label class="btn btn-secondary" style="cursor:pointer;display:inline-flex">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            통장사본 업로드
+            <input type="file" accept=".jpg,.jpeg,.png,.pdf" style="display:none" onchange="uploadAttachment(this)">
+          </label>
+        </div>
+        <div id="attachment-list"></div>
+      </div>
+      <div id="at-notes" style="display:none">
+        <div class="form-group">
+          <label class="form-label">자유 메모</label>
+          <textarea class="form-textarea" id="a-notes" style="min-height:200px" placeholder="계좌 관련 자유 메모를 입력하세요..."></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('account-modal')">취소</button>
+      <button class="btn btn-primary" onclick="saveAccount()">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- Balance Update Modal -->
+<div class="modal-overlay" id="balance-modal">
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <div class="modal-title">잔액 수동 입력</div>
+      <button class="modal-close" onclick="closeModal('balance-modal')">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="bal-account-id">
+      <div class="form-group">
+        <label class="form-label">현재 잔액 (원)</label>
+        <input class="form-input" id="bal-amount" type="number" placeholder="0">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('balance-modal')">취소</button>
+      <button class="btn btn-primary" onclick="saveBalance()">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- Company Modal (카드사/은행) -->
+<div class="modal-overlay" id="company-modal">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <div class="modal-title" id="company-modal-title">카드사/은행 등록</div>
+      <button class="modal-close" onclick="closeModal('company-modal')">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="co-id">
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label required">구분</label>
+          <select class="form-select" id="co-type">
+            <option value="card_company">카드사</option>
+            <option value="bank">은행</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label required">이름</label>
+          <input class="form-input" id="co-name" placeholder="예) 농협카드">
+        </div>
+        <div class="form-group">
+          <label class="form-label">고객센터 전화</label>
+          <input class="form-input" id="co-cs-phone" placeholder="1644-4000">
+        </div>
+        <div class="form-group">
+          <label class="form-label">법인 전화</label>
+          <input class="form-input" id="co-corp-phone" placeholder="법인카드 전용번호">
+        </div>
+        <div class="form-group">
+          <label class="form-label">포털 URL</label>
+          <input class="form-input" id="co-portal-url" placeholder="https://...">
+        </div>
+        <div class="form-group">
+          <label class="form-label">포털 ID</label>
+          <input class="form-input" id="co-portal-id">
+        </div>
+        <div class="form-group">
+          <label class="form-label">포털 비밀번호</label>
+          <input class="form-input" id="co-portal-pw" type="password">
+        </div>
+        <div class="form-group">
+          <label class="form-label">결제일</label>
+          <input class="form-input" id="co-payment-date" type="number" min="1" max="31" placeholder="27">
+        </div>
+        <div class="form-group">
+          <label class="form-label">지점명</label>
+          <input class="form-input" id="co-branch">
+        </div>
+        <div class="form-group">
+          <label class="form-label">지점 담당자</label>
+          <input class="form-input" id="co-manager">
+        </div>
+        <div class="form-group">
+          <label class="form-label">지점 전화</label>
+          <input class="form-input" id="co-branch-phone">
+        </div>
+        <div class="form-group form-full">
+          <label class="form-label">비고</label>
+          <textarea class="form-textarea" id="co-notes"></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('company-modal')">취소</button>
+      <button class="btn btn-primary" onclick="saveCompany()">저장</button>
+    </div>
+  </div>
+</div>
+
+
+<script>
+'use strict';
+// ── CONFIG ──
+const SUPA_URL = 'https://zbpeyklwpotjyveipzxd.supabase.co';
+const SUPA_KEY = 'sb_publishable_DxtNEPtU2KktlcRQnQx9jA_szCPFzMj';
+const ADMIN_PW_KEY = 'finance_admin_pw_hash';
+const DEFAULT_PW = 'qkdtldnjs82!@';
+const SESSION_KEY = 'finance_session';
+
+let sb; // supabase client
+let cardsData = [], accountsData = [], companiesData = [], accountTypesData = [];
+let cardSortCol = 'card_number', cardSortDir = 'asc';
+let accountSortCol = 'institution', accountSortDir = 'asc';
+let currentCardId = null; // for history modal
+let currentAccountModalTab = 'basic';
+let pendingAttachments = []; // files to upload when saving account
+let tempAttachmentAccountId = null;
+
+// ── HASH ──
+async function sha256(msg) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(msg));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+
+// ── INIT ──
+document.addEventListener('DOMContentLoaded', async () => {
+  sb = supabase.createClient(SUPA_URL, SUPA_KEY);
+  // focus pw input
+  document.getElementById('pw-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') doLogin();
+  });
+  // check existing session
+  if (sessionStorage.getItem(SESSION_KEY) === '1') {
+    await startApp();
+  }
+});
+
+// ── AUTH ──
+async function doLogin() {
+  const pw = document.getElementById('pw-input').value;
+  if (!pw) { document.getElementById('login-err').textContent = '비밀번호를 입력하세요.'; return; }
+  const hash = await sha256(pw + 'asea-finance-v1');
+  // get stored hash from supabase or localStorage
+  let storedHash = localStorage.getItem(ADMIN_PW_KEY);
+  if (!storedHash) {
+    // first time: store default
+    const defaultHash = await sha256(DEFAULT_PW + 'asea-finance-v1');
+    // try to get from supabase
+    const { data } = await sb.from('finance_admin_settings').select('value').eq('key','admin_pw_hash').single();
+    storedHash = data ? data.value : defaultHash;
+    localStorage.setItem(ADMIN_PW_KEY, storedHash);
+  }
+  if (hash === storedHash) {
+    sessionStorage.setItem(SESSION_KEY, '1');
+    document.getElementById('login-err').textContent = '';
+    await startApp();
+  } else {
+    document.getElementById('login-err').textContent = '비밀번호가 올바르지 않습니다.';
+    document.getElementById('pw-input').value = '';
+    document.getElementById('pw-input').focus();
+  }
+}
+function doLogout() {
+  sessionStorage.removeItem(SESSION_KEY);
+  location.reload();
+}
+
+async function startApp() {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  await loadAllData();
+  showSettings('password');
+}
+
+// ── NAVIGATION ──
+function showTab(tab) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item, .mobile-nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.add('active');
+  document.querySelectorAll(`[data-tab="${tab}"]`).forEach(n => n.classList.add('active'));
+}
+
+// ── LOAD ALL DATA ──
+async function loadAllData() {
+  await Promise.all([loadCompanies(), loadAccountTypes(), loadCards(), loadAccounts()]);
+  await refreshDashboard();
+  populateFilters();
+}
+
+async function loadCompanies() {
+  const { data } = await sb.from('finance_bank_companies').select('*').order('type').order('name');
+  companiesData = data || [];
+  // populate card issuer selects
+  const cardIssuers = companiesData.filter(c => c.type === 'card_company');
+  const banks = companiesData.filter(c => c.type === 'bank');
+  populateSelect('c-issuer', cardIssuers, 'id', 'name');
+  populateSelect('a-bank', banks, 'id', 'name');
+}
+async function loadAccountTypes() {
+  const { data } = await sb.from('finance_account_types').select('*').eq('is_active', true).order('sort_order');
+  accountTypesData = data || [];
+  populateSelect('a-type', accountTypesData, 'id', 'name', '-- 선택 --');
+}
+async function loadCards() {
+  const { data } = await sb.from('finance_cards').select('*, finance_accounts(account_number, bank_company_id, finance_bank_companies(name))').order('institution').order('card_number');
+  cardsData = data || [];
+  renderCards();
+  // populate linked cards in account modal
+  renderLinkedCardsCheckboxes();
+}
+async function loadAccounts() {
+  const { data } = await sb.from('finance_accounts').select('*, finance_bank_companies(name), finance_account_types(name, color)').order('institution').order('account_number');
+  accountsData = data || [];
+  renderAccounts();
+  // populate account select in card modal
+  const opts = [{ id: '', account_number: '-- 없음 --' }, ...accountsData.map(a => ({ id: a.id, account_number: `[${a.institution?.slice(0,2)}] ${a.finance_bank_companies?.name || ''} ${a.account_number}` }))];
+  populateSelect('c-account', opts, 'id', 'account_number');
+  // populate account type filter
+  const sel = document.getElementById('account-filter-type');
+  sel.innerHTML = '<option value="">전체 유형</option>';
+  accountTypesData.forEach(t => sel.insertAdjacentHTML('beforeend', `<option value="${t.id}">${t.name}</option>`));
+}
+
+function populateSelect(id, arr, valKey, labelKey, placeholder) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.innerHTML = placeholder ? `<option value="">${placeholder}</option>` : '';
+  arr.forEach(item => {
+    el.insertAdjacentHTML('beforeend', `<option value="${item[valKey]}">${item[labelKey]}</option>`);
+  });
+}
+function populateFilters() {}
+
+// ── CARD STATUS ──
+function getCardStatus(card) {
+  if (!card.is_visible) return 'discarded';
+  const now = new Date();
+  const expDate = new Date(card.expiry_year, card.expiry_month - 1, 1);
+  const diff = (expDate - now) / (1000 * 60 * 60 * 24 * 30);
+  if (diff < 0) return 'expired';
+  if (diff <= 1) return 'expire_soon_1m';
+  if (diff <= 2) return 'expire_soon_2m';
+  return card.status || 'stored';
+}
+
+function statusBadge(card) {
+  const s = getCardStatus(card);
+  const map = {
+    active: ['badge-blue','사용중'],
+    stored: ['badge-black','보관중'],
+    checkout: ['badge-blue','반출중'],
+    expire_soon_1m: ['badge-red','만료임박'],
+    expire_soon_2m: ['badge-orange','만료예정'],
+    expired: ['badge-x','만료'],
+    discarded: ['badge-gray','폐기'],
+  };
+  const [cls, label] = map[s] || ['badge-gray', s];
+  return `<span class="badge ${cls}">${label}</span>`;
+}
+
+// ── RENDER CARDS ──
+function renderCards() {
+  const tbody = document.getElementById('cards-body');
+  let data = [...cardsData];
+  // filter
+  const q = document.getElementById('card-search')?.value?.toLowerCase() || '';
+  const inst = document.getElementById('card-filter-inst')?.value || '';
+  const stat = document.getElementById('card-filter-status')?.value || '';
+  const showHidden = document.getElementById('show-hidden')?.checked || false;
+  if (!showHidden) data = data.filter(c => c.is_visible !== false);
+  if (inst) data = data.filter(c => c.institution === inst);
+  if (q) data = data.filter(c =>
+    (c.card_number||'').includes(q) || (c.user_name||'').toLowerCase().includes(q) ||
+    (c.card_suffix||'').includes(q) || (c.department||'').toLowerCase().includes(q)
+  );
+  if (stat) data = data.filter(c => getCardStatus(c) === stat);
+  // sort
+  data.sort((a,b) => {
+    let va = a[cardSortCol] || '', vb = b[cardSortCol] || '';
+    return cardSortDir === 'asc' ? (va > vb ? 1:-1) : (va < vb ? 1:-1);
+  });
+  if (!data.length) {
+    tbody.innerHTML = `<tr><td colspan="10"><div class="empty-state"><p>등록된 카드가 없습니다</p><small>카드 등록 버튼을 눌러 등록하세요</small></div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = data.map(card => {
+    const acc = card.finance_accounts;
+    const accLabel = acc ? `${acc.finance_bank_companies?.name||''} ${acc.account_number||''}` : '-';
+    return `<tr style="${!card.is_visible?'opacity:.5':''}">
+      <td>${card.institution||''}</td>
+      <td>${card.card_issuer||''}</td>
+      <td style="font-family:monospace">${card.card_number||''}</td>
+      <td style="font-family:monospace;font-weight:600">****${card.card_suffix||''}</td>
+      <td>${card.user_name||''}</td>
+      <td>${card.department||''}</td>
+      <td>${card.expiry_year||''}/${String(card.expiry_month||'').padStart(2,'0')}</td>
+      <td>${statusBadge(card)}</td>
+      <td style="font-size:11px">${accLabel}</td>
+      <td>
+        <div style="display:flex;gap:4px">
+          <button class="btn btn-secondary btn-sm" onclick="openHistory(${card.id})">이력</button>
+          <button class="btn btn-secondary btn-sm" onclick="editCard(${card.id})">수정</button>
+          <button class="btn btn-sm" style="background:${card.is_visible===false?'var(--green-lt)':'var(--orange-lt)'};color:${card.is_visible===false?'var(--green)':'var(--orange)'};border:1px solid ${card.is_visible===false?'var(--green)':'var(--orange)'}"
+            onclick="toggleCardVisible(${card.id}, ${card.is_visible})">${card.is_visible===false?'복원':'폐기'}</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function filterCards() { renderCards(); }
+function sortCards(col) {
+  if (cardSortCol === col) cardSortDir = cardSortDir === 'asc' ? 'desc' : 'asc';
+  else { cardSortCol = col; cardSortDir = 'asc'; }
+  document.querySelectorAll('#cards-table th').forEach(th => {
+    th.classList.remove('sorted-asc','sorted-desc');
+    if (th.getAttribute('onclick') === `sortCards('${col}')`) th.classList.add('sorted-' + cardSortDir);
+  });
+  renderCards();
+}
+
+// ── CARD CRUD ──
+function openCardModal(id) {
+  document.getElementById('card-modal-title').textContent = id ? '카드 수정' : '카드 등록';
+  document.getElementById('card-id').value = id || '';
+  if (!id) {
+    ['c-institution','c-number','c-suffix','c-user-name','c-position','c-department','c-notes'].forEach(f => {
+      const el = document.getElementById(f);
+      if (el.tagName === 'SELECT') el.selectedIndex = 0; else el.value = '';
+    });
+    document.getElementById('c-exp-year').value = new Date().getFullYear() + 3;
+    document.getElementById('c-exp-month').value = 12;
+    document.getElementById('c-status').value = 'stored';
+    document.getElementById('c-limit').value = '';
+    document.getElementById('c-account').value = '';
+  }
+  openModal('card-modal');
+}
+function editCard(id) {
+  const card = cardsData.find(c => c.id === id);
+  if (!card) return;
+  openCardModal(id);
+  document.getElementById('c-institution').value = card.institution || '';
+  document.getElementById('c-issuer').value = card.card_issuer_id || '';
+  document.getElementById('c-number').value = card.card_number || '';
+  document.getElementById('c-suffix').value = card.card_suffix || '';
+  document.getElementById('c-user-name').value = card.user_name || '';
+  document.getElementById('c-position').value = card.position || '';
+  document.getElementById('c-department').value = card.department || '';
+  document.getElementById('c-limit').value = card.credit_limit || '';
+  document.getElementById('c-exp-year').value = card.expiry_year || '';
+  document.getElementById('c-exp-month').value = card.expiry_month || 12;
+  document.getElementById('c-status').value = card.status || 'stored';
+  document.getElementById('c-account').value = card.linked_account_id || '';
+  document.getElementById('c-notes').value = card.notes || '';
+}
+async function saveCard() {
+  const id = document.getElementById('card-id').value;
+  const issuerSel = document.getElementById('c-issuer');
+  const issuerName = issuerSel.options[issuerSel.selectedIndex]?.text || '';
+  const issuerId = issuerSel.value || null;
+  const payload = {
+    institution: document.getElementById('c-institution').value,
+    card_issuer: issuerName,
+    card_issuer_id: issuerId,
+    card_number: document.getElementById('c-number').value,
+    card_suffix: document.getElementById('c-suffix').value,
+    user_name: document.getElementById('c-user-name').value,
+    position: document.getElementById('c-position').value,
+    department: document.getElementById('c-department').value,
+    credit_limit: parseInt(document.getElementById('c-limit').value) || null,
+    expiry_year: parseInt(document.getElementById('c-exp-year').value),
+    expiry_month: parseInt(document.getElementById('c-exp-month').value),
+    status: document.getElementById('c-status').value,
+    linked_account_id: document.getElementById('c-account').value || null,
+    notes: document.getElementById('c-notes').value,
+    updated_at: new Date().toISOString(),
+  };
+  let err;
+  if (id) {
+    ({ error: err } = await sb.from('finance_cards').update(payload).eq('id', id));
+    await logAudit('finance_cards', id, 'update', '카드 수정', null, payload);
+  } else {
+    payload.is_visible = true;
+    ({ error: err } = await sb.from('finance_cards').insert(payload));
+    await logAudit('finance_cards', null, 'insert', '카드 등록', null, payload);
+  }
+  if (err) { toast('저장 실패: ' + err.message, 'error'); return; }
+  toast('저장되었습니다', 'success');
+  closeModal('card-modal');
+  await loadCards();
+  await refreshDashboard();
+}
+
+async function toggleCardVisible(id, current) {
+  const visible = current === false ? true : false;
+  const action = visible ? '복원' : '폐기';
+  if (!visible && !confirm(`이 카드를 폐기(숨김) 처리하시겠습니까?`)) return;
+  await sb.from('finance_cards').update({ is_visible: visible, updated_at: new Date().toISOString() }).eq('id', id);
+  await logAudit('finance_cards', id, visible ? 'restore' : 'hide', `카드 ${action}`, null, { is_visible: visible });
+  toast(`${action} 처리되었습니다`, 'success');
+  await loadCards();
+  await refreshDashboard();
+}
+
+// ── CARD HISTORY ──
+async function openHistory(cardId) {
+  currentCardId = cardId;
+  const card = cardsData.find(c => c.id === cardId);
+  document.getElementById('history-modal-title').textContent = `반출/반납 이력 — ${card?.user_name||''} (****${card?.card_suffix||''})`;
+  await loadHistory(cardId);
+  openModal('history-modal');
+}
+async function loadHistory(cardId) {
+  const { data } = await sb.from('finance_card_history').select('*').eq('card_id', cardId).order('created_at', { ascending: false });
+  const tbody = document.getElementById('history-table-body');
+  if (!data || !data.length) {
+    tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;padding:20px;color:var(--text3)">이력이 없습니다</td></tr>`;
+    return;
+  }
+  const actionMap = { checkout:'반출', return:'반납', issue:'신규발급', renew:'갱신', suspend:'정지', cancel:'해지' };
+  tbody.innerHTML = data.map(h => `<tr>
+    <td><span class="badge ${h.action_type==='checkout'?'badge-blue':'badge-green'}">${actionMap[h.action_type]||h.action_type}</span></td>
+    <td>${h.user_name||''}</td>
+    <td>${fmtDate(h.checkout_date)}</td>
+    <td>${fmtDate(h.expected_return_date)}</td>
+    <td>${h.actual_return_date?fmtDate(h.actual_return_date):'<span style="color:var(--orange)">미반납</span>'}</td>
+    <td>${h.purpose||''}</td>
+    <td>${h.handler||''}</td>
+    <td>${h.notes||''}</td>
+    <td><button class="btn btn-danger btn-sm" onclick="deleteHistory(${h.id})">삭제</button></td>
+  </tr>`).join('');
+}
+function openHistoryAddModal() {
+  document.getElementById('h-card-id').value = currentCardId;
+  document.getElementById('h-action').value = 'checkout';
+  document.getElementById('h-user-name').value = '';
+  document.getElementById('h-checkout-date').value = today();
+  document.getElementById('h-expected-return').value = '';
+  document.getElementById('h-actual-return').value = '';
+  document.getElementById('h-handler').value = '';
+  document.getElementById('h-notes').value = '';
+  openModal('history-add-modal');
+}
+async function saveHistory() {
+  const payload = {
+    card_id: parseInt(document.getElementById('h-card-id').value),
+    action_type: document.getElementById('h-action').value,
+    user_name: document.getElementById('h-user-name').value,
+    checkout_date: document.getElementById('h-checkout-date').value || null,
+    expected_return_date: document.getElementById('h-expected-return').value || null,
+    actual_return_date: document.getElementById('h-actual-return').value || null,
+    handler: document.getElementById('h-handler').value,
+    notes: document.getElementById('h-notes').value,
+  };
+  const { error } = await sb.from('finance_card_history').insert(payload);
+  if (error) { toast('저장 실패', 'error'); return; }
+  await logAudit('finance_card_history', payload.card_id, 'insert', '이력 추가', null, payload);
+  toast('이력이 추가되었습니다', 'success');
+  closeModal('history-add-modal');
+  await loadHistory(currentCardId);
+}
+async function deleteHistory(id) {
+  if (!confirm('이 이력을 삭제하시겠습니까?')) return;
+  await sb.from('finance_card_history').delete().eq('id', id);
+  toast('삭제되었습니다', 'success');
+  await loadHistory(currentCardId);
+}
+
+// ── RENDER ACCOUNTS ──
+function renderAccounts() {
+  const tbody = document.getElementById('accounts-body');
+  let data = [...accountsData];
+  const q = (document.getElementById('account-search')?.value||'').toLowerCase();
+  const inst = document.getElementById('account-filter-inst')?.value||'';
+  const typeId = document.getElementById('account-filter-type')?.value||'';
+  if (inst) data = data.filter(a => a.institution === inst);
+  if (typeId) data = data.filter(a => String(a.account_type_id) === String(typeId));
+  if (q) data = data.filter(a =>
+    (a.account_number||'').includes(q) || (a.finance_bank_companies?.name||'').toLowerCase().includes(q) ||
+    (a.account_holder||'').toLowerCase().includes(q) || (a.notes||'').toLowerCase().includes(q)
+  );
+  data.sort((a,b) => {
+    let va = a[accountSortCol] || '', vb = b[accountSortCol] || '';
+    if (accountSortCol === 'bank_name') { va = a.finance_bank_companies?.name||''; vb = b.finance_bank_companies?.name||''; }
+    if (accountSortCol === 'balance') { va = Number(a.balance||0); vb = Number(b.balance||0); }
+    return accountSortDir === 'asc' ? (va > vb ? 1:-1) : (va < vb ? 1:-1);
+  });
+  if (!data.length) {
+    tbody.innerHTML = `<tr><td colspan="10"><div class="empty-state"><p>등록된 계좌가 없습니다</p></div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = data.map(acc => {
+    const linked = Array.isArray(acc.linked_card_ids) ? acc.linked_card_ids.length : 0;
+    const typeColor = acc.finance_account_types?.color || '#6b7280';
+    const typeName = acc.finance_account_types?.name || '-';
+    const statusBadge = acc.status === 'active' ? '<span class="badge badge-green">운용중</span>' :
+                        acc.status === 'dormant' ? '<span class="badge badge-orange">휴면</span>' :
+                        '<span class="badge badge-gray">해지</span>';
+    return `<tr>
+      <td>${acc.institution||''}</td>
+      <td>${acc.finance_bank_companies?.name||''}</td>
+      <td style="font-family:monospace">${acc.account_number||''}</td>
+      <td>${acc.account_holder||''}</td>
+      <td><span class="badge" style="background:${typeColor}22;color:${typeColor}">${typeName}</span></td>
+      <td style="text-align:right;font-weight:600">${acc.balance != null ? Number(acc.balance).toLocaleString() + '원' : '-'}</td>
+      <td style="font-size:11px">${acc.balance_updated_at ? fmtDate(acc.balance_updated_at) : '-'}</td>
+      <td>${linked ? `<span class="badge badge-blue">${linked}개</span>` : '-'}</td>
+      <td>${statusBadge}</td>
+      <td>
+        <div style="display:flex;gap:4px">
+          <button class="btn btn-secondary btn-sm" onclick="openBalanceModal(${acc.id})">잔액</button>
+          <button class="btn btn-secondary btn-sm" onclick="editAccount(${acc.id})">수정</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+function filterAccounts() { renderAccounts(); }
+function sortAccounts(col) {
+  if (accountSortCol === col) accountSortDir = accountSortDir === 'asc' ? 'desc' : 'asc';
+  else { accountSortCol = col; accountSortDir = 'asc'; }
+  renderAccounts();
+}
+
+// ── ACCOUNT CRUD ──
+function openAccountModal(id) {
+  document.getElementById('account-modal-title').textContent = id ? '계좌 수정' : '계좌 등록';
+  document.getElementById('account-id').value = id || '';
+  pendingAttachments = [];
+  document.getElementById('attachment-list').innerHTML = '';
+  if (!id) {
+    ['a-number','a-holder','a-ib-id','a-ib-pw','a-notes'].forEach(f => { const el=document.getElementById(f); if(el) el.value=''; });
+    document.getElementById('a-institution').selectedIndex = 0;
+    document.getElementById('a-bank').selectedIndex = 0;
+    document.getElementById('a-type').selectedIndex = 0;
+    document.getElementById('a-status').value = 'active';
+    document.getElementById('a-balance').value = '';
+    document.querySelectorAll('#a-linked-cards input[type=checkbox]').forEach(cb => cb.checked = false);
+  }
+  showAccountTab('basic');
+  openModal('account-modal');
+  if (id) loadAccountAttachments(id);
+}
+async function editAccount(id) {
+  const acc = accountsData.find(a => a.id === id);
+  if (!acc) return;
+  openAccountModal(id);
+  document.getElementById('a-institution').value = acc.institution || '';
+  document.getElementById('a-bank').value = acc.bank_company_id || '';
+  document.getElementById('a-number').value = acc.account_number || '';
+  document.getElementById('a-holder').value = acc.account_holder || '';
+  document.getElementById('a-type').value = acc.account_type_id || '';
+  document.getElementById('a-status').value = acc.status || 'active';
+  document.getElementById('a-balance').value = acc.balance || '';
+  document.getElementById('a-ib-id').value = acc.internet_banking_id || '';
+  document.getElementById('a-ib-pw').value = acc.internet_banking_pw || '';
+  document.getElementById('a-notes').value = acc.notes || '';
+  // linked cards
+  const linkedIds = acc.linked_card_ids || [];
+  document.querySelectorAll('#a-linked-cards input[type=checkbox]').forEach(cb => {
+    cb.checked = linkedIds.includes(parseInt(cb.value));
+  });
+}
+async function saveAccount() {
+  const id = document.getElementById('account-id').value;
+  const bankSel = document.getElementById('a-bank');
+  const typeSel = document.getElementById('a-type');
+  const linkedIds = Array.from(document.querySelectorAll('#a-linked-cards input[type=checkbox]:checked')).map(cb => parseInt(cb.value));
+  const payload = {
+    institution: document.getElementById('a-institution').value,
+    bank_company_id: bankSel.value || null,
+    account_number: document.getElementById('a-number').value,
+    account_holder: document.getElementById('a-holder').value,
+    account_type_id: typeSel.value || null,
+    status: document.getElementById('a-status').value,
+    balance: parseFloat(document.getElementById('a-balance').value) || null,
+    balance_updated_at: document.getElementById('a-balance').value ? new Date().toISOString() : null,
+    internet_banking_id: document.getElementById('a-ib-id').value || null,
+    internet_banking_pw: document.getElementById('a-ib-pw').value || null,
+    linked_card_ids: linkedIds,
+    notes: document.getElementById('a-notes').value || null,
+    updated_at: new Date().toISOString(),
+  };
+  let err, savedId = id;
+  if (id) {
+    ({ error: err } = await sb.from('finance_accounts').update(payload).eq('id', id));
+  } else {
+    const { data, error } = await sb.from('finance_accounts').insert(payload).select('id').single();
+    err = error; if (data) savedId = data.id;
+  }
+  if (err) { toast('저장 실패: ' + err.message, 'error'); return; }
+  // upload pending attachments
+  for (const file of pendingAttachments) await doUploadAttachment(savedId, file);
+  await logAudit('finance_accounts', savedId, id ? 'update' : 'insert', `계좌 ${id?'수정':'등록'}`, null, payload);
+  toast('저장되었습니다', 'success');
+  closeModal('account-modal');
+  await loadAccounts();
+}
+
+// ── BALANCE ──
+function openBalanceModal(id) {
+  const acc = accountsData.find(a => a.id === id);
+  document.getElementById('bal-account-id').value = id;
+  document.getElementById('bal-amount').value = acc?.balance || '';
+  openModal('balance-modal');
+}
+async function saveBalance() {
+  const id = document.getElementById('bal-account-id').value;
+  const val = parseFloat(document.getElementById('bal-amount').value);
+  await sb.from('finance_accounts').update({ balance: val, balance_updated_at: new Date().toISOString() }).eq('id', id);
+  await logAudit('finance_accounts', id, 'balance_update', '잔액 수동 입력', null, { balance: val });
+  toast('잔액이 업데이트되었습니다', 'success');
+  closeModal('balance-modal');
+  await loadAccounts();
+}
+function updateBalanceNow() {
+  // already sets date when saving, so just hint
+  toast('저장 시 오늘 날짜로 기준일이 설정됩니다', 'info');
+}
+
+// ── ATTACHMENTS ──
+function uploadAttachment(input) {
+  const file = input.files[0];
+  if (!file) return;
+  pendingAttachments.push(file);
+  const list = document.getElementById('attachment-list');
+  list.insertAdjacentHTML('beforeend', `<div style="display:flex;align-items:center;gap:8px;padding:8px;background:var(--gray-lt);border-radius:var(--r-sm);margin-bottom:6px">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+    <span style="font-size:13px;flex:1">${file.name}</span>
+    <span style="font-size:11px;color:var(--text3)">${(file.size/1024).toFixed(0)}KB</span>
+  </div>`);
+  toast(`${file.name} 준비됨 (저장 시 업로드)`, 'success');
+  input.value = '';
+}
+async function doUploadAttachment(accountId, file) {
+  const path = `accounts/${accountId}/${Date.now()}_${file.name}`;
+  const { data, error } = await sb.storage.from('forum-files').upload(path, file);
+  if (error) { toast('파일 업로드 실패: ' + error.message, 'error'); return; }
+  const { data: urlData } = sb.storage.from('forum-files').getPublicUrl(path);
+  await sb.from('finance_account_attachments').insert({
+    account_id: accountId, file_name: file.name,
+    file_url: urlData.publicUrl, file_type: file.type, file_size: file.size
+  });
+}
+async function loadAccountAttachments(id) {
+  const { data } = await sb.from('finance_account_attachments').select('*').eq('account_id', id);
+  const list = document.getElementById('attachment-list');
+  list.innerHTML = '';
+  if (!data?.length) { list.innerHTML = '<p style="font-size:13px;color:var(--text3)">첨부된 통장사본이 없습니다</p>'; return; }
+  data.forEach(f => {
+    list.insertAdjacentHTML('beforeend', `<div style="display:flex;align-items:center;gap:8px;padding:8px;background:var(--gray-lt);border-radius:var(--r-sm);margin-bottom:6px">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      <span style="font-size:13px;flex:1">${f.file_name}</span>
+      <a href="${f.file_url}" target="_blank" class="btn btn-secondary btn-sm">다운로드</a>
+      <button class="btn btn-danger btn-sm" onclick="deleteAttachment(${f.id},'${f.file_url}')">삭제</button>
+    </div>`);
+  });
+}
+async function deleteAttachment(id, url) {
+  if (!confirm('삭제하시겠습니까?')) return;
+  await sb.from('finance_account_attachments').delete().eq('id', id);
+  toast('삭제되었습니다', 'success');
+  await loadAccountAttachments(document.getElementById('account-id').value);
+}
+
+// ── ACCOUNT MODAL TABS ──
+function showAccountTab(t) {
+  currentAccountModalTab = t;
+  ['basic','banking','attachment','notes'].forEach(tab => {
+    document.getElementById('at-' + tab).style.display = tab === t ? 'block' : 'none';
+  });
+  document.querySelectorAll('[data-at]').forEach(el => {
+    el.classList.toggle('active', el.dataset.at === t);
+  });
+}
+
+// ── RENDER LINKED CARDS CHECKBOXES ──
+function renderLinkedCardsCheckboxes() {
+  const container = document.getElementById('a-linked-cards');
+  if (!container) return;
+  container.innerHTML = cardsData.filter(c => c.is_visible !== false).map(c =>
+    `<label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer;padding:3px 8px;border:1px solid var(--gray-bd);border-radius:99px">
+      <input type="checkbox" value="${c.id}" style="width:14px;height:14px">
+      ${c.card_suffix ? `****${c.card_suffix}` : c.card_number||''} ${c.user_name||''}
+    </label>`
+  ).join('') || '<span style="font-size:12px;color:var(--text3)">등록된 카드 없음</span>';
+}
+
+// ── DASHBOARD ──
+async function refreshDashboard() {
+  // stats
+  const visible = cardsData.filter(c => c.is_visible !== false);
+  document.getElementById('stat-total-cards').textContent = visible.length;
+  const checkout = visible.filter(c => c.status === 'checkout').length;
+  document.getElementById('stat-checkout-cards').textContent = checkout;
+  const exp1m = visible.filter(c => getCardStatus(c) === 'expire_soon_1m').length;
+  const exp2m = visible.filter(c => getCardStatus(c) === 'expire_soon_2m').length;
+  document.getElementById('stat-expire-1m').textContent = exp1m;
+  document.getElementById('stat-expire-2m').textContent = exp2m;
+  document.getElementById('stat-total-accounts').textContent = accountsData.filter(a => a.status === 'active').length;
+
+  // alerts
+  const alerts = [];
+  visible.filter(c => getCardStatus(c) === 'expire_soon_1m').forEach(c =>
+    alerts.push({ type:'danger', msg:`[${c.institution}] ${c.user_name} ****${c.card_suffix||''} — 1개월 이내 만료 (${c.expiry_year}/${String(c.expiry_month).padStart(2,'0')})` }));
+  visible.filter(c => getCardStatus(c) === 'expire_soon_2m').forEach(c =>
+    alerts.push({ type:'warn', msg:`[${c.institution}] ${c.user_name} ****${c.card_suffix||''} — 2개월 이내 만료 (${c.expiry_year}/${String(c.expiry_month).padStart(2,'0')})` }));
+  // overdue returns
+  const { data: checkouts } = await sb.from('finance_card_history')
+    .select('*, finance_cards(user_name, card_suffix, institution)')
+    .eq('action_type','checkout')
+    .is('actual_return_date', null)
+    .lt('expected_return_date', today());
+  (checkouts||[]).forEach(h =>
+    alerts.push({ type:'danger', msg:`[${h.finance_cards?.institution}] ${h.finance_cards?.user_name} ****${h.finance_cards?.card_suffix||''} — 반납 기한 초과 (예정: ${fmtDate(h.expected_return_date)})` }));
+
+  const banner = document.getElementById('alert-banner');
+  const list = document.getElementById('alert-list');
+  if (alerts.length) {
+    banner.style.display = 'block';
+    list.innerHTML = alerts.map(a => `<div class="alert-item ${a.type}">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
+      ${a.msg}
+    </div>`).join('');
+    const badge = document.getElementById('nav-alert-badge');
+    badge.textContent = alerts.length; badge.style.display = 'inline';
+  } else {
+    banner.style.display = 'none';
+    document.getElementById('nav-alert-badge').style.display = 'none';
+  }
+
+  // recent history
+  const { data: recentH } = await sb.from('finance_card_history')
+    .select('*, finance_cards(user_name, card_suffix, institution)')
+    .order('created_at', { ascending: false }).limit(10);
+  const tbody = document.getElementById('recent-history-body');
+  const actionMap = { checkout:'반출', return:'반납', issue:'신규발급', renew:'갱신', suspend:'정지', cancel:'해지' };
+  tbody.innerHTML = (recentH||[]).map(h => `<tr>
+    <td style="font-family:monospace">****${h.finance_cards?.card_suffix||''}</td>
+    <td>${h.finance_cards?.user_name||''}</td>
+    <td><span class="badge ${h.action_type==='checkout'?'badge-blue':'badge-green'}">${actionMap[h.action_type]||h.action_type}</span></td>
+    <td>${h.user_name||''}</td>
+    <td>${fmtDate(h.checkout_date)}</td>
+    <td>${fmtDate(h.expected_return_date)}</td>
+    <td>${h.actual_return_date?fmtDate(h.actual_return_date):'<span style="color:var(--orange)">미반납</span>'}</td>
+    <td style="font-size:12px">${(h.purpose||h.notes||'').slice(0,20)}</td>
+  </tr>`).join('') || `<tr><td colspan="8" style="text-align:center;padding:20px;color:var(--text3)">이력 없음</td></tr>`;
+}
+
+// ── GLOBAL SEARCH ──
+async function doGlobalSearch() {
+  const q = document.getElementById('global-search-input').value.trim();
+  const results = document.getElementById('search-results');
+  if (!q) { results.innerHTML = '<div class="empty-state"><p>검색어를 입력하세요</p></div>'; return; }
+  results.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text3)">검색 중...</div>';
+  const [{ data: cards }, { data: accounts }, { data: hist }] = await Promise.all([
+    sb.from('finance_cards').select('*').or(`card_number.ilike.%${q}%,card_suffix.ilike.%${q}%,user_name.ilike.%${q}%,department.ilike.%${q}%,notes.ilike.%${q}%,card_issuer.ilike.%${q}%,institution.ilike.%${q}%`),
+    sb.from('finance_accounts').select('*, finance_bank_companies(name)').or(`account_number.ilike.%${q}%,account_holder.ilike.%${q}%,notes.ilike.%${q}%,institution.ilike.%${q}%`),
+    sb.from('finance_card_history').select('*, finance_cards(user_name,card_suffix)').or(`user_name.ilike.%${q}%,notes.ilike.%${q}%,handler.ilike.%${q}%`),
+  ]);
+  let html = '';
+  if (cards?.length) {
+    html += `<div class="section-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>법인카드 (${cards.length})</div>`;
+    html += `<div class="table-wrap"><table class="data-table"><thead><tr><th>기관</th><th>카드사</th><th>카드번호</th><th>소유자</th><th>부서</th><th>상태</th></tr></thead><tbody>`;
+    html += cards.map(c=>`<tr><td>${c.institution||''}</td><td>${c.card_issuer||''}</td><td style="font-family:monospace">${c.card_number||''}</td><td>${c.user_name||''}</td><td>${c.department||''}</td><td>${statusBadge(c)}</td></tr>`).join('');
+    html += `</tbody></table></div><br>`;
+  }
+  if (accounts?.length) {
+    html += `<div class="section-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="18" rx="2"/></svg>은행계좌 (${accounts.length})</div>`;
+    html += `<div class="table-wrap"><table class="data-table"><thead><tr><th>기관</th><th>은행</th><th>계좌번호</th><th>예금주</th><th>잔액</th></tr></thead><tbody>`;
+    html += accounts.map(a=>`<tr><td>${a.institution||''}</td><td>${a.finance_bank_companies?.name||''}</td><td style="font-family:monospace">${a.account_number||''}</td><td>${a.account_holder||''}</td><td>${a.balance!=null?Number(a.balance).toLocaleString()+'원':'-'}</td></tr>`).join('');
+    html += `</tbody></table></div><br>`;
+  }
+  if (hist?.length) {
+    html += `<div class="section-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>반출/반납 이력 (${hist.length})</div>`;
+    html += `<div class="table-wrap"><table class="data-table"><thead><tr><th>카드 소유자</th><th>사용자</th><th>구분</th><th>반출일</th><th>반납예정</th><th>비고</th></tr></thead><tbody>`;
+    const actionMap = { checkout:'반출', return:'반납', issue:'신규발급', renew:'갱신' };
+    html += hist.map(h=>`<tr><td>${h.finance_cards?.user_name||''} ****${h.finance_cards?.card_suffix||''}</td><td>${h.user_name||''}</td><td>${actionMap[h.action_type]||h.action_type}</td><td>${fmtDate(h.checkout_date)}</td><td>${fmtDate(h.expected_return_date)}</td><td>${h.notes||''}</td></tr>`).join('');
+    html += `</tbody></table></div>`;
+  }
+  if (!html) html = `<div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg><p>"${q}"에 대한 검색 결과가 없습니다</p></div>`;
+  results.innerHTML = html;
+}
+
+// ── ADMIN SETTINGS ──
+function showSettings(s) {
+  document.querySelectorAll('.settings-menu-item').forEach(el => el.classList.toggle('active', el.dataset.s === s));
+  const content = document.getElementById('settings-content');
+  if (s === 'password') {
+    content.innerHTML = `<div class="section-title">비밀번호 변경</div>
+    <div style="max-width:360px">
+      <div class="form-group" style="margin-bottom:12px"><label class="form-label required">현재 비밀번호</label><input class="form-input" id="pw-current" type="password"></div>
+      <div class="form-group" style="margin-bottom:12px"><label class="form-label required">새 비밀번호</label><input class="form-input" id="pw-new" type="password"></div>
+      <div class="form-group" style="margin-bottom:16px"><label class="form-label required">새 비밀번호 확인</label><input class="form-input" id="pw-confirm" type="password"></div>
+      <button class="btn btn-primary" onclick="changePassword()">비밀번호 변경</button>
+    </div>`;
+  } else if (s === 'companies') {
+    renderCompaniesSettings();
+  } else if (s === 'account-types') {
+    renderAccountTypesSettings();
+  } else if (s === 'alerts') {
+    content.innerHTML = `<div class="section-title">알림 색상 설정</div>
+    <div class="color-row"><label>만료임박 (1개월) 색상</label><input type="color" id="col-expire1m" value="${getComputedStyle(document.documentElement).getPropertyValue('--red').trim()||'#dc2626'}" oninput="applyAlertColor('--red', this.value)"></div>
+    <div class="color-row"><label>만료예정 (2개월) 색상</label><input type="color" id="col-expire2m" value="${getComputedStyle(document.documentElement).getPropertyValue('--orange').trim()||'#ea580c'}" oninput="applyAlertColor('--orange', this.value)"></div>
+    <div class="color-row"><label>주 색상 (Primary)</label><input type="color" id="col-primary" value="#1A73E8" oninput="applyAlertColor('--primary', this.value)"></div>
+    <button class="btn btn-primary" style="margin-top:16px" onclick="saveAlertColors()">색상 저장</button>`;
+  } else if (s === 'design') {
+    renderDesignSettings();
+  } else if (s === 'backup') {
+    content.innerHTML = `<div class="section-title">데이터 백업·복원</div>
+    <div style="display:flex;flex-direction:column;gap:12px;max-width:400px">
+      <p style="font-size:13px;color:var(--text2)">전체 데이터를 JSON 파일로 내보내거나 복원할 수 있습니다.</p>
+      <button class="btn btn-primary" onclick="exportJSON()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        JSON 내보내기
+      </button>
+      <label class="btn btn-secondary" style="cursor:pointer">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        JSON 복원 (가져오기)
+        <input type="file" accept=".json" style="display:none" onchange="importJSON(this)">
+      </label>
+    </div>`;
+  } else if (s === 'audit') {
+    renderAuditLog();
+  }
+}
+
+async function changePassword() {
+  const cur = document.getElementById('pw-current').value;
+  const nw = document.getElementById('pw-new').value;
+  const conf = document.getElementById('pw-confirm').value;
+  if (!cur||!nw||!conf) { toast('모든 항목을 입력하세요', 'error'); return; }
+  if (nw !== conf) { toast('새 비밀번호가 일치하지 않습니다', 'error'); return; }
+  if (nw.length < 8) { toast('비밀번호는 8자 이상이어야 합니다', 'error'); return; }
+  const curHash = await sha256(cur + 'asea-finance-v1');
+  const storedHash = localStorage.getItem(ADMIN_PW_KEY) || await sha256(DEFAULT_PW + 'asea-finance-v1');
+  if (curHash !== storedHash) { toast('현재 비밀번호가 올바르지 않습니다', 'error'); return; }
+  const newHash = await sha256(nw + 'asea-finance-v1');
+  localStorage.setItem(ADMIN_PW_KEY, newHash);
+  await sb.from('finance_admin_settings').upsert({ key: 'admin_pw_hash', value: newHash, updated_at: new Date().toISOString() });
+  await logAudit('admin', null, 'password_change', '관리자 비밀번호 변경', null, null);
+  toast('비밀번호가 변경되었습니다', 'success');
+  document.getElementById('pw-current').value = '';
+  document.getElementById('pw-new').value = '';
+  document.getElementById('pw-confirm').value = '';
+}
+
+function renderCompaniesSettings() {
+  const content = document.getElementById('settings-content');
+  const cards = companiesData.filter(c => c.type === 'card_company');
+  const banks = companiesData.filter(c => c.type === 'bank');
+  const companyRow = c => `<tr>
+    <td>${c.name}</td>
+    <td>${c.customer_service_phone ? `<a href="tel:${c.customer_service_phone.replace(/-/g,'')}" style="color:var(--primary)">${c.customer_service_phone}</a>` : '-'}</td>
+    <td>${c.corporate_phone ? `<a href="tel:${c.corporate_phone.replace(/-/g,'')}" style="color:var(--primary)">${c.corporate_phone}</a>` : '-'}</td>
+    <td>${c.portal_url ? `<a href="${c.portal_url}" target="_blank" style="color:var(--primary)">바로가기</a>` : '-'}</td>
+    <td>${c.payment_date ? c.payment_date + '일' : '-'}</td>
+    <td><div style="display:flex;gap:4px"><button class="btn btn-secondary btn-sm" onclick="editCompany(${c.id})">수정</button><button class="btn btn-danger btn-sm" onclick="deleteCompany(${c.id})">삭제</button></div></td>
+  </tr>`;
+  content.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <div class="section-title" style="margin:0">카드사·은행 정보</div>
+      <button class="btn btn-primary btn-sm" onclick="openCompanyModal()">+ 추가</button>
+    </div>
+    <div style="font-size:13px;font-weight:600;margin-bottom:6px;color:var(--text2)">카드사</div>
+    <div class="table-wrap" style="margin-bottom:16px">
+      <table class="data-table"><thead><tr><th>이름</th><th>고객센터</th><th>법인전용</th><th>포털</th><th>결제일</th><th>관리</th></tr></thead>
+      <tbody>${cards.map(companyRow).join('')||'<tr><td colspan="6" style="text-align:center;padding:16px;color:var(--text3)">없음</td></tr>'}</tbody></table>
+    </div>
+    <div style="font-size:13px;font-weight:600;margin-bottom:6px;color:var(--text2)">은행</div>
+    <div class="table-wrap">
+      <table class="data-table"><thead><tr><th>이름</th><th>고객센터</th><th>법인전용</th><th>포털</th><th>결제일</th><th>관리</th></tr></thead>
+      <tbody>${banks.map(companyRow).join('')||'<tr><td colspan="6" style="text-align:center;padding:16px;color:var(--text3)">없음</td></tr>'}</tbody></table>
+    </div>`;
+}
+function openCompanyModal(id) {
+  document.getElementById('company-modal-title').textContent = id ? '카드사/은행 수정' : '카드사/은행 등록';
+  document.getElementById('co-id').value = id || '';
+  if (!id) {
+    ['co-name','co-cs-phone','co-corp-phone','co-portal-url','co-portal-id','co-portal-pw','co-branch','co-manager','co-branch-phone','co-notes'].forEach(f => document.getElementById(f).value = '');
+    document.getElementById('co-type').value = 'card_company';
+    document.getElementById('co-payment-date').value = '';
+  }
+  openModal('company-modal');
+}
+function editCompany(id) {
+  const co = companiesData.find(c => c.id === id);
+  if (!co) return;
+  openCompanyModal(id);
+  document.getElementById('co-type').value = co.type;
+  document.getElementById('co-name').value = co.name||'';
+  document.getElementById('co-cs-phone').value = co.customer_service_phone||'';
+  document.getElementById('co-corp-phone').value = co.corporate_phone||'';
+  document.getElementById('co-portal-url').value = co.portal_url||'';
+  document.getElementById('co-portal-id').value = co.portal_id||'';
+  document.getElementById('co-portal-pw').value = co.portal_password||'';
+  document.getElementById('co-payment-date').value = co.payment_date||'';
+  document.getElementById('co-branch').value = co.branch_name||'';
+  document.getElementById('co-manager').value = co.branch_manager||'';
+  document.getElementById('co-branch-phone').value = co.branch_phone||'';
+  document.getElementById('co-notes').value = co.notes||'';
+}
+async function saveCompany() {
+  const id = document.getElementById('co-id').value;
+  const payload = {
+    type: document.getElementById('co-type').value,
+    name: document.getElementById('co-name').value,
+    customer_service_phone: document.getElementById('co-cs-phone').value||null,
+    corporate_phone: document.getElementById('co-corp-phone').value||null,
+    portal_url: document.getElementById('co-portal-url').value||null,
+    portal_id: document.getElementById('co-portal-id').value||null,
+    portal_password: document.getElementById('co-portal-pw').value||null,
+    payment_date: parseInt(document.getElementById('co-payment-date').value)||null,
+    branch_name: document.getElementById('co-branch').value||null,
+    branch_manager: document.getElementById('co-manager').value||null,
+    branch_phone: document.getElementById('co-branch-phone').value||null,
+    notes: document.getElementById('co-notes').value||null,
+  };
+  let err;
+  if (id) ({ error: err } = await sb.from('finance_bank_companies').update(payload).eq('id', id));
+  else ({ error: err } = await sb.from('finance_bank_companies').insert(payload));
+  if (err) { toast('저장 실패: ' + err.message, 'error'); return; }
+  toast('저장되었습니다', 'success');
+  closeModal('company-modal');
+  await loadCompanies();
+  renderCompaniesSettings();
+}
+async function deleteCompany(id) {
+  if (!confirm('삭제하시겠습니까?')) return;
+  await sb.from('finance_bank_companies').delete().eq('id', id);
+  toast('삭제되었습니다', 'success');
+  await loadCompanies();
+  renderCompaniesSettings();
+}
+
+function renderAccountTypesSettings() {
+  const content = document.getElementById('settings-content');
+  content.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <div class="section-title" style="margin:0">계좌 유형 관리</div>
+      <button class="btn btn-primary btn-sm" onclick="addAccountType()">+ 추가</button>
+    </div>
+    <div class="table-wrap">
+      <table class="data-table"><thead><tr><th>이름</th><th>색상</th><th>정렬</th><th>활성</th><th>관리</th></tr></thead>
+      <tbody>${accountTypesData.map(t=>`<tr>
+        <td>${t.name}</td>
+        <td><span class="badge" style="background:${t.color}22;color:${t.color}">${t.color}</span></td>
+        <td>${t.sort_order}</td>
+        <td>${t.is_active?'✓':'-'}</td>
+        <td><button class="btn btn-danger btn-sm" onclick="deleteAccountType(${t.id})">삭제</button></td>
+      </tr>`).join('')}</tbody></table>
+    </div>
+    <div style="margin-top:16px;padding:16px;background:var(--surface2);border-radius:var(--r);border:1px solid var(--gray-bd)">
+      <div class="form-grid">
+        <div class="form-group"><label class="form-label">이름</label><input class="form-input" id="new-at-name" placeholder="예) 보조금전용"></div>
+        <div class="form-group"><label class="form-label">색상</label><input class="form-input" id="new-at-color" type="color" value="#1A73E8"></div>
+        <div class="form-group"><label class="form-label">정렬 순서</label><input class="form-input" id="new-at-sort" type="number" value="${accountTypesData.length+1}"></div>
+        <div class="form-group" style="align-self:flex-end"><button class="btn btn-primary" onclick="addAccountType()">추가</button></div>
+      </div>
+    </div>`;
+}
+async function addAccountType() {
+  const name = document.getElementById('new-at-name')?.value;
+  const color = document.getElementById('new-at-color')?.value||'#6b7280';
+  const sort = parseInt(document.getElementById('new-at-sort')?.value)||1;
+  if (!name) { toast('이름을 입력하세요', 'error'); return; }
+  await sb.from('finance_account_types').insert({ name, color, sort_order: sort, is_active: true });
+  toast('추가되었습니다', 'success');
+  await loadAccountTypes();
+  renderAccountTypesSettings();
+}
+async function deleteAccountType(id) {
+  if (!confirm('삭제하시겠습니까?')) return;
+  await sb.from('finance_account_types').delete().eq('id', id);
+  await loadAccountTypes();
+  renderAccountTypesSettings();
+}
+
+function applyAlertColor(prop, val) {
+  document.documentElement.style.setProperty(prop, val);
+}
+async function saveAlertColors() {
+  const colors = {
+    '--red': document.getElementById('col-expire1m').value,
+    '--orange': document.getElementById('col-expire2m').value,
+    '--primary': document.getElementById('col-primary').value,
+  };
+  for (const [k,v] of Object.entries(colors)) {
+    document.documentElement.style.setProperty(k, v);
+    await sb.from('finance_admin_settings').upsert({ key: 'color_' + k.replace('--',''), value: v, updated_at: new Date().toISOString() });
+  }
+  toast('색상이 저장되었습니다', 'success');
+}
+
+function renderDesignSettings() {
+  const content = document.getElementById('settings-content');
+  content.innerHTML = `<div class="section-title">디자인 설정</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+      <div class="form-group">
+        <label class="form-label">기본 글자 크기</label>
+        <select class="form-select" id="ds-fontsize" onchange="applyDS()">
+          <option value="12px">작게 (12px)</option>
+          <option value="13px">보통 (13px)</option>
+          <option value="14px" selected>기본 (14px)</option>
+          <option value="15px">크게 (15px)</option>
+          <option value="16px">매우크게 (16px)</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">모서리 둥글기 (border-radius)</label>
+        <select class="form-select" id="ds-radius" onchange="applyDS()">
+          <option value="4px">각진 (4px)</option>
+          <option value="8px">약간 (8px)</option>
+          <option value="12px" selected>기본 (12px)</option>
+          <option value="16px">둥근 (16px)</option>
+          <option value="20px">매우 둥근 (20px)</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">사이드바 너비</label>
+        <select class="form-select" id="ds-navw" onchange="applyDS()">
+          <option value="180px">좁게 (180px)</option>
+          <option value="220px" selected>기본 (220px)</option>
+          <option value="260px">넓게 (260px)</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">배경색</label>
+        <input type="color" class="form-input" id="ds-bg" value="#f0f2f5" style="height:40px;cursor:pointer" onchange="applyDS()">
+      </div>
+    </div>
+    <button class="btn btn-primary" style="margin-top:16px" onclick="saveDesignSettings()">설정 저장</button>
+    <button class="btn btn-secondary" style="margin-left:8px" onclick="resetDesignSettings()">초기화</button>`;
+  loadDesignSettings();
+}
+function applyDS() {
+  const fs = document.getElementById('ds-fontsize')?.value;
+  const r = document.getElementById('ds-radius')?.value;
+  const nw = document.getElementById('ds-navw')?.value;
+  const bg = document.getElementById('ds-bg')?.value;
+  if (fs) document.documentElement.style.setProperty('--font-size', fs);
+  if (r) { document.documentElement.style.setProperty('--r', r); document.documentElement.style.setProperty('--r-sm', parseInt(r)-4+'px'); }
+  if (nw) document.documentElement.style.setProperty('--nav-w', nw);
+  if (bg) document.documentElement.style.setProperty('--bg', bg);
+}
+async function saveDesignSettings() {
+  const settings = {
+    ds_fontsize: document.getElementById('ds-fontsize').value,
+    ds_radius: document.getElementById('ds-radius').value,
+    ds_navw: document.getElementById('ds-navw').value,
+    ds_bg: document.getElementById('ds-bg').value,
+  };
+  for (const [k,v] of Object.entries(settings)) {
+    await sb.from('finance_admin_settings').upsert({ key: k, value: v, updated_at: new Date().toISOString() });
+  }
+  localStorage.setItem('finance_design', JSON.stringify(settings));
+  toast('디자인 설정이 저장되었습니다', 'success');
+}
+function loadDesignSettings() {
+  const saved = localStorage.getItem('finance_design');
+  if (!saved) return;
+  try {
+    const s = JSON.parse(saved);
+    if (s.ds_fontsize) document.getElementById('ds-fontsize').value = s.ds_fontsize;
+    if (s.ds_radius) document.getElementById('ds-radius').value = s.ds_radius;
+    if (s.ds_navw) document.getElementById('ds-navw').value = s.ds_navw;
+    if (s.ds_bg) document.getElementById('ds-bg').value = s.ds_bg;
+    applyDS();
+  } catch(e) {}
+}
+function resetDesignSettings() {
+  localStorage.removeItem('finance_design');
+  ['--font-size','--r','--r-sm','--nav-w','--bg'].forEach(p => document.documentElement.style.removeProperty(p));
+  renderDesignSettings();
+}
+
+async function renderAuditLog() {
+  const content = document.getElementById('settings-content');
+  const { data } = await sb.from('finance_audit_logs').select('*').order('created_at', { ascending: false }).limit(100);
+  content.innerHTML = `<div class="section-title">감사 로그 (최근 100건)</div>
+    <div class="table-wrap">
+      <table class="data-table"><thead><tr><th>일시</th><th>대상</th><th>작업</th><th>설명</th></tr></thead>
+      <tbody>${(data||[]).map(l=>`<tr>
+        <td style="font-size:11px;white-space:nowrap">${new Date(l.created_at).toLocaleString('ko-KR')}</td>
+        <td style="font-size:12px">${l.entity_type||''}</td>
+        <td><span class="badge ${l.action==='insert'?'badge-green':l.action==='delete'?'badge-red':'badge-blue'}">${l.action||''}</span></td>
+        <td style="font-size:12px">${l.description||''}</td>
+      </tr>`).join('')||'<tr><td colspan="4" style="text-align:center;padding:20px;color:var(--text3)">로그 없음</td></tr>'}
+      </tbody></table>
+    </div>`;
+}
+
+async function logAudit(entityType, entityId, action, desc, oldVal, newVal) {
+  await sb.from('finance_audit_logs').insert({
+    entity_type: entityType, entity_id: entityId ? String(entityId) : null,
+    action, description: desc,
+    old_value: oldVal || null, new_value: newVal || null,
+    created_at: new Date().toISOString()
+  });
+}
+
+// ── EXPORT ──
+function exportCardsExcel() {
+  const data = cardsData.filter(c => c.is_visible !== false).map(c => ({
+    기관: c.institution, 카드사: c.card_issuer, 카드번호: c.card_number,
+    끝4자리: c.card_suffix, 소유자: c.user_name, 직위: c.position,
+    부서: c.department, 한도: c.credit_limit,
+    만료년: c.expiry_year, 만료월: c.expiry_month, 상태: c.status, 비고: c.notes
+  }));
+  const ws = XLSX.utils.json_to_sheet(data);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, '법인카드');
+  XLSX.writeFile(wb, `법인카드_${today()}.xlsx`);
+}
+async function importCardsExcel(input) {
+  const file = input.files[0]; if (!file) return;
+  const ab = await file.arrayBuffer();
+  const wb = XLSX.read(ab);
+  const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
+  if (!rows.length) { toast('데이터가 없습니다', 'error'); return; }
+  let ok = 0;
+  for (const r of rows) {
+    const { error } = await sb.from('finance_cards').insert({
+      institution: r['기관']||'', card_issuer: r['카드사']||'', card_number: r['카드번호']||'',
+      card_suffix: r['끝4자리']||'', user_name: r['소유자']||'', position: r['직위']||'',
+      department: r['부서']||'', credit_limit: r['한도']||null,
+      expiry_year: r['만료년']||2027, expiry_month: r['만료월']||12,
+      status: r['상태']||'stored', notes: r['비고']||'', is_visible: true,
+      created_at: new Date().toISOString(), updated_at: new Date().toISOString()
+    });
+    if (!error) ok++;
+  }
+  toast(`${ok}건 가져오기 완료`, 'success');
+  await loadCards();
+  input.value = '';
+}
+function exportAccountsExcel() {
+  const data = accountsData.map(a => ({
+    기관: a.institution, 은행: a.finance_bank_companies?.name,
+    계좌번호: a.account_number, 예금주: a.account_holder,
+    유형: a.finance_account_types?.name, 잔액: a.balance,
+    잔액기준일: a.balance_updated_at, 상태: a.status, 비고: a.notes
+  }));
+  const ws = XLSX.utils.json_to_sheet(data);
+  const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, '은행계좌');
+  XLSX.writeFile(wb, `은행계좌_${today()}.xlsx`);
+}
+async function exportJSON() {
+  const [cards, accounts, hist, companies, types] = await Promise.all([
+    sb.from('finance_cards').select('*'),
+    sb.from('finance_accounts').select('*'),
+    sb.from('finance_card_history').select('*'),
+    sb.from('finance_bank_companies').select('*'),
+    sb.from('finance_account_types').select('*'),
+  ]);
+  const backup = {
+    exported_at: new Date().toISOString(),
+    finance_cards: cards.data, finance_accounts: accounts.data,
+    finance_card_history: hist.data, finance_bank_companies: companies.data,
+    finance_account_types: types.data
+  };
+  const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url;
+  a.download = `finance_backup_${today()}.json`; a.click();
+  URL.revokeObjectURL(url);
+  toast('JSON 백업이 다운로드되었습니다', 'success');
+}
+async function importJSON(input) {
+  const file = input.files[0]; if (!file) return;
+  const text = await file.text();
+  let data; try { data = JSON.parse(text); } catch(e) { toast('JSON 파싱 오류', 'error'); return; }
+  if (!confirm('기존 데이터를 모두 덮어씁니다. 계속하시겠습니까?')) return;
+  toast('복원 중...', 'info');
+  // Upsert all tables
+  for (const [tbl, rows] of Object.entries(data)) {
+    if (!Array.isArray(rows) || !rows.length) continue;
+    if (['finance_cards','finance_accounts','finance_card_history','finance_bank_companies','finance_account_types'].includes(tbl)) {
+      await sb.from(tbl).upsert(rows, { onConflict: 'id' });
+    }
+  }
+  await loadAllData();
+  toast('복원이 완료되었습니다', 'success');
+  input.value = '';
+}
+
+function printCards() { window.print(); }
+async function exportCardsPDF() {
+  const el = document.getElementById('cards-table');
+  const canvas = await html2canvas(el, { scale: 1.5 });
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF({ orientation: 'landscape', unit: 'px', format: 'a4' });
+  const w = pdf.internal.pageSize.getWidth();
+  const h = (canvas.height * w) / canvas.width;
+  pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, w, h);
+  pdf.save(`법인카드현황_${today()}.pdf`);
+}
+
+// ── UTILS ──
+function fmtDate(d) {
+  if (!d) return '';
+  return new Date(d).toLocaleDateString('ko-KR', { year:'numeric', month:'2-digit', day:'2-digit' });
+}
+function today() {
+  return new Date().toISOString().slice(0,10);
+}
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+function toast(msg, type = 'info') {
+  const el = document.createElement('div');
+  el.className = `toast ${type === 'success' ? 'success' : type === 'error' ? 'error' : type === 'warn' ? 'warn' : ''}`;
+  el.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${type==='success'?'<polyline points="20 6 9 17 4 12"/>':type==='error'?'<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>':'<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>'}</svg>
+  <span>${msg}</span>`;
+  document.getElementById('toast-container').appendChild(el);
+  setTimeout(() => el.remove(), 3000);
+}
+
+// close modals on overlay click
+document.querySelectorAll('.modal-overlay').forEach(ov => {
+  ov.addEventListener('click', e => { if (e.target === ov) ov.classList.remove('open'); });
+});
+
+// apply saved design on load
+(function() {
+  const saved = localStorage.getItem('finance_design');
+  if (!saved) return;
+  try {
+    const s = JSON.parse(saved);
+    if (s.ds_fontsize) document.documentElement.style.setProperty('--font-size', s.ds_fontsize);
+    if (s.ds_radius) { document.documentElement.style.setProperty('--r', s.ds_radius); document.documentElement.style.setProperty('--r-sm', parseInt(s.ds_radius)-4+'px'); }
+    if (s.ds_navw) document.documentElement.style.setProperty('--nav-w', s.ds_navw);
+    if (s.ds_bg) document.documentElement.style.setProperty('--bg', s.ds_bg);
+  } catch(e) {}
+})();
+</script>
+</body>
+</html>
