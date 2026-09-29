@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<title>기숙사 관리 데모</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800&display=swap">
+<style>
+:root{
+  --bg:#f1f5f9;--surface:#fff;--border:#e2e8f0;--muted:#64748b;
+  --text:#0f172a;--text2:#334155;--head:#1a3a5c;
+  --primary:#1A73E8;--primary-dk:#1557B0;--primary-lt:#e8f0fe;
+  --green:#16a34a;--green-lt:#dcfce7;
+  --orange:#ea580c;--orange-lt:#fff7ed;
+  --red:#dc2626;--red-lt:#fef2f2;
+  --r:12px;--sh:0 1px 3px rgba(0,0,0,.07);--sh-md:0 4px 16px rgba(0,0,0,.10);
+}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0f172a;--surface:#1e293b;--border:#334155;--muted:#94a3b8;
+  --text:#f1f5f9;--text2:#cbd5e1;--head:#7dd3fc;
+  --primary-lt:#1e3a5f;--green-lt:#052e16;--orange-lt:#431407;--red-lt:#450a0a;
+  color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#0f172a;--surface:#1e293b;--border:#334155;--muted:#94a3b8;
+  --text:#f1f5f9;--text2:#cbd5e1;--head:#7dd3fc;
+  --primary-lt:#1e3a5f;--green-lt:#052e16;--orange-lt:#431407;--red-lt:#450a0a;
+  color-scheme:dark;
+}
+*{box-sizing:border-box;}
+body{font-family:'Noto Sans KR',system-ui,sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.55;margin:0;}
+.app{max-width:1100px;margin:0 auto;padding-inline:16px;padding-bottom:32px;}
+.app-hd{display:flex;align-items:center;gap:10px;padding-block:14px 12px;border-bottom:2px solid var(--primary);margin-bottom:16px;}
+.app-hd h1{font-size:18px;font-weight:800;color:var(--head);margin:0;}
+.demo-badge{font-size:11px;font-weight:700;padding:2px 9px;border-radius:999px;background:var(--orange-lt);color:var(--orange);border:1px solid currentColor;}
+.app-hd .sp{flex:1;}
+.app-hd .note{font-size:12px;color:var(--muted);}
+
+.subtabs{display:flex;gap:3px;flex-wrap:wrap;margin-bottom:18px;background:var(--surface);padding:5px;border-radius:var(--r);border:1px solid var(--border);box-shadow:var(--sh);}
+.stab{padding:5px 10px;border:none;background:transparent;border-radius:8px;font-size:12.5px;font-weight:600;color:var(--muted);cursor:pointer;transition:all .15s;font-family:inherit;white-space:nowrap;}
+.stab:hover{background:var(--primary-lt);color:var(--primary);}
+.stab.active{background:var(--primary);color:#fff;}
+
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:18px;margin-bottom:14px;box-shadow:var(--sh);}
+.ct{font-size:15px;font-weight:700;color:var(--head);margin:0 0 14px;}
+.ct2{font-size:13px;font-weight:700;color:var(--head);margin:0 0 10px;}
+
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(115px,1fr));gap:10px;margin-bottom:14px;}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:13px;text-align:center;box-shadow:var(--sh);}
+.kn{font-size:22px;font-weight:800;color:var(--head);font-variant-numeric:tabular-nums;line-height:1.2;}
+.kn small{font-size:12px;font-weight:600;color:var(--muted);margin-left:2px;}
+.kl{font-size:12px;color:var(--muted);margin-top:3px;}
+
+.tbl-wrap{overflow-x:auto;min-width:0;border-radius:8px;border:1px solid var(--border);}
+table{width:100%;border-collapse:collapse;font-size:13px;}
+th,td{padding:7px 10px;border-bottom:1px solid var(--border);text-align:left;white-space:nowrap;}
+th{background:var(--bg);font-weight:700;color:var(--text2);font-size:12px;}
+tbody tr:last-child td{border-bottom:none;}
+tbody tr:hover td{background:var(--primary-lt);}
+tbody tr.clk{cursor:pointer;}
+
+.badge{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;}
+.b-g{background:var(--green-lt);color:var(--green);}
+.b-b{background:var(--primary-lt);color:var(--primary);}
+.b-r{background:var(--red-lt);color:var(--red);}
+.b-gr{background:var(--bg);color:var(--muted);border:1px solid var(--border);}
+.b-o{background:var(--orange-lt);color:var(--orange);}
+
+.btn{display:inline-flex;align-items:center;gap:5px;padding:7px 14px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;border:none;font-family:inherit;transition:all .15s;text-decoration:none;}
+.btn:disabled{opacity:.4;cursor:not-allowed;}
+.btn-p{background:var(--primary);color:#fff;}.btn-p:hover{background:var(--primary-dk);}
+.btn-s{background:var(--primary-lt);color:var(--primary);}.btn-s:hover{background:var(--primary);color:#fff;}
+.btn-g{background:transparent;color:var(--muted);border:1px solid var(--border);}.btn-g:hover{background:var(--bg);color:var(--text);}
+.btn-d{background:var(--red-lt);color:var(--red);border:1px solid transparent;}.btn-d:hover{background:var(--red);color:#fff;}
+.btn-sm{padding:4px 9px;font-size:12px;}
+.acts{display:flex;gap:7px;flex-wrap:wrap;margin-top:11px;align-items:center;}
+
+.fg{margin-bottom:10px;}
+.lbl{display:block;font-size:12px;font-weight:600;color:var(--text2);margin-bottom:4px;}
+.fi,.fs{width:100%;padding:7px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;background:var(--surface);color:var(--text);transition:border-color .15s;}
+.fi:focus,.fs:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-lt);}
+textarea.fi{resize:vertical;}
+
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;}
+@media(max-width:700px){.g2{grid-template-columns:1fr;}.g4{grid-template-columns:1fr 1fr;}}
+@media(max-width:480px){.g3{grid-template-columns:1fr 1fr;}}
+
+.muted{font-size:13px;color:var(--muted);line-height:1.6;}
+.chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:5px;}
+.chip{background:var(--bg);border:1px solid var(--border);border-radius:999px;padding:3px 10px;font-size:12px;color:var(--text2);}
+.chip b{color:var(--head);}
+
+.bar-row{display:flex;align-items:center;gap:8px;margin:5px 0;font-size:13px;}
+.bar-lbl{width:76px;flex-shrink:0;color:var(--text2);font-size:12px;}
+.bar-track{flex:1;background:var(--bg);border-radius:6px;height:13px;overflow:hidden;border:1px solid var(--border);min-width:0;}
+.bar-fill{height:100%;border-radius:6px;transition:width .5s cubic-bezier(.4,0,.2,1);}
+.bar-val{width:84px;text-align:right;flex-shrink:0;font-variant-numeric:tabular-nums;font-weight:600;font-size:12px;color:var(--head);}
+
+.modebar{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:14px;}
+.mbtn{padding:6px 12px;border:1.5px solid var(--border);background:var(--surface);border-radius:8px;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;font-family:inherit;transition:all .15s;}
+.mbtn:hover{border-color:var(--primary);color:var(--primary);}
+.mbtn.active{background:var(--head);color:#fff;border-color:var(--head);}
+
+.paybox{border:1.5px solid var(--border);border-radius:10px;padding:13px;margin-bottom:10px;background:var(--surface);}
+.payhd{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:9px;}
+
+.cm-comment{border-left:3px solid var(--primary);background:var(--bg);padding:8px 12px;border-radius:6px;font-size:13px;margin-bottom:8px;}
+.cm-content{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;font-size:14px;line-height:1.7;white-space:pre-line;margin:8px 0;}
+
+#toast-wrap{position:fixed;top:14px;right:14px;z-index:9999;display:flex;flex-direction:column;gap:7px;pointer-events:none;}
+.toast{padding:9px 14px;border-radius:10px;font-size:13px;font-weight:600;box-shadow:var(--sh-md);animation:tin .2s ease;max-width:260px;pointer-events:auto;color:#fff;background:#334155;}
+.toast.success{background:var(--green);}.toast.error{background:var(--red);}.toast.info{background:var(--primary);}
+@keyframes tin{from{transform:translateX(30px);opacity:0;}to{transform:translateX(0);opacity:1;}}
+
+.cfm-ov{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:8888;}
+.cfm-box{background:var(--surface);border-radius:var(--r);padding:22px;max-width:340px;width:92%;box-shadow:var(--sh-md);}
+.cfm-box p{margin:0 0 16px;font-size:14px;line-height:1.6;}
+.cfm-box .acts{justify-content:flex-end;}
+
+.sum-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.sum-t{font-size:12px;font-weight:700;color:var(--head);margin-bottom:5px;}
+@media(max-width:560px){.sum-grid{grid-template-columns:1fr;}}
+
+.map-stage{background:var(--bg);border:1.5px solid var(--border);border-radius:var(--r);overflow:hidden;}
+.map-floor{border-bottom:1.5px solid var(--border);padding:8px 10px;display:flex;flex-wrap:wrap;gap:6px;align-items:center;}
+.map-floor:last-child{border-bottom:none;}
+.map-flbl{font-size:11px;font-weight:700;color:var(--muted);width:28px;flex-shrink:0;}
+.map-room{display:inline-flex;flex-direction:column;align-items:center;justify-content:center;min-width:52px;padding:4px 7px;border-radius:7px;color:#fff;font-size:11px;font-weight:700;cursor:default;line-height:1.3;box-shadow:var(--sh);}
+.map-room.occ{background:var(--green);}.map-room.vac{background:var(--muted);}
+
+.nt-preview{background:var(--surface);border:2px solid var(--border);border-radius:var(--r);padding:22px;max-width:560px;margin:0 auto;}
+.nt-org{font-weight:800;color:var(--head);font-size:13px;}
+.nt-h1{text-align:center;letter-spacing:5px;font-size:17px;margin:10px 0 3px;font-weight:800;}
+.nt-meta{text-align:right;font-size:11px;color:var(--muted);margin-bottom:9px;}
+.nt-tb{width:100%;border-collapse:collapse;margin-bottom:9px;font-size:12px;}
+.nt-tb th,.nt-tb td{border:1px solid var(--border);padding:5px 8px;}
+.nt-tb th{background:var(--bg);width:78px;font-weight:700;}
+.nt-foot{font-size:11px;line-height:1.9;margin-top:9px;border-top:1px solid var(--border);padding-top:9px;color:var(--text2);}
+
+.sign-row{display:flex;align-items:center;gap:8px;padding:9px 0;border-bottom:1px solid var(--border);flex-wrap:wrap;}
+.sign-row:last-child{border-bottom:none;}
+</style>
+
+<div class="app">
+  <header class="app-hd">
+    <h1>🏢 기숙사 관리</h1>
+    <span class="demo-badge">DEMO</span>
+    <span class="sp"></span>
+    <span class="note">로그인 없는 체험 버전 · 데이터는 메모리에만 존재</span>
+  </header>
+  <nav class="subtabs" id="subtabs"></nav>
+  <div id="tab-body"></div>
+</div>
+<div id="toast-wrap"></div>
+
+<script>
+'use strict';
+(function(){
+
+/* ── Mock Data Generation ── */
+var SUR='김이박최정강조윤장임한오서신권황안송류전홍'.split('');
+var GIV='민서지현준우예수은하도윤시주연채다건정진성'.split('');
+function rn(){return SUR[ri(0,SUR.length-1)]+GIV[ri(0,GIV.length-1)]+GIV[ri(0,GIV.length-1)];}
+function ri(a,b){return a+Math.floor(Math.random()*(b-a+1));}
+function pad(n){return String(n).padStart(2,'0');}
+function today(){var d=new Date();return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());}
+
+var DEPTS=['항공정비계열','스마트안전진단계열','항공관광계열','항공보안계열','국방경찰계열'];
+var EXP_CATS=['유지보수비','관리비','인건비','보험료','행정비용','기타'];
+
+var buildings=[
+  {id:'b1',name:'1생활관',grade:'A',base_price:550000,note:'남자기숙사 A동'},
+  {id:'b2',name:'2생활관',grade:'B',base_price:480000,note:'여자기숙사 B동'},
+  {id:'b3',name:'3생활관',grade:'A',base_price:520000,note:'신관 C동'},
+];
+
+var rooms=[];
+buildings.forEach(function(b){
+  var cnt=b.id==='b1'?14:b.id==='b2'?13:12;
+  for(var i=1;i<=cnt;i++){
+    var fl=Math.ceil(i/5);
+    var rn2=fl*100+((i-1)%5+1);
+    var tp=i%3===0?'2인실':'1인실';
+    rooms.push({id:'r'+b.id+i,building_id:b.id,room_number:String(rn2),room_type:tp,
+      floor:fl,unit_price:(tp==='1인실'?ri(50,60):ri(40,50))*10000,is_vacant:false});
+  }
+});
+[5,12,20,25,30].forEach(function(i){if(rooms[i])rooms[i].is_vacant=true;});
+
+var residents=[],contracts=[];
+var MONTHS=['2025-09','2025-10','2025-11','2025-12','2026-01','2026-02'];
+var occ=rooms.filter(function(r){return !r.is_vacant;});
+occ.forEach(function(r,idx){
+  var bld=buildings.find(function(b){return b.id===r.building_id;});
+  var cnt=r.room_type==='2인실'?2:1;
+  for(var k=0;k<cnt;k++){
+    var res={id:'res'+(residents.length+1),name:rn(),
+      student_no:'2025'+pad(residents.length+1),
+      phone:'010-'+pad(ri(1000,9999))+'-'+pad(ri(1000,9999)),
+      department:DEPTS[(idx+k)%DEPTS.length],grade:(idx%2)+1};
+    residents.push(res);
+    contracts.push({id:'c'+contracts.length,resident_id:res.id,
+      resident_name:res.name,student_no:res.student_no,phone:res.phone,
+      building_id:r.building_id,building_name:bld.name,
+      room_id:r.id,room_number:r.room_number,
+      start_date:'2025-09-01',end_date:'2026-02-28',
+      contract_type:'학기별',unit_price:r.unit_price,deposit:200000,
+      department:res.department,grade:res.grade,semester:'2025-2',
+      status:'active',sign_status:['none','pending','signed'][(idx+k)%3],
+      created_at:'2025-09-01T09:00:00Z'});
+  }
+});
+
+var payments=[];
+contracts.forEach(function(c){
+  MONTHS.forEach(function(m,mi){
+    payments.push({id:'p'+payments.length,contract_id:c.id,
+      resident_name:c.resident_name,period:m,amount:c.unit_price,
+      due_date:m+'-01',
+      status:mi<3?'paid':(mi===3&&Math.random()<0.35?'paid':'pending'),
+      paid_date:mi<3?m+'-03':null});
+  });
+});
+
+var expenses=[
+  {id:'e1',expense_date:'2025-09-15',item_name:'1생활관 보일러 수리',category:'유지보수비',amount:850000,building_id:'b1'},
+  {id:'e2',expense_date:'2025-09-20',item_name:'공용 관리비 9월',category:'관리비',amount:1200000,building_id:null},
+  {id:'e3',expense_date:'2025-10-10',item_name:'기숙사 사감 인건비',category:'인건비',amount:2500000,building_id:null},
+  {id:'e4',expense_date:'2025-10-15',item_name:'2생활관 도어록 교체',category:'유지보수비',amount:650000,building_id:'b2'},
+  {id:'e5',expense_date:'2025-11-01',item_name:'시설 화재보험료',category:'보험료',amount:480000,building_id:null},
+  {id:'e6',expense_date:'2025-11-15',item_name:'행정 소모품',category:'행정비용',amount:120000,building_id:null},
+  {id:'e7',expense_date:'2025-12-01',item_name:'공용 관리비 12월',category:'관리비',amount:1200000,building_id:null},
+  {id:'e8',expense_date:'2025-12-20',item_name:'3생활관 전기 점검',category:'유지보수비',amount:380000,building_id:'b3'},
+];
+
+var complaints=[
+  {id:'cm1',ticket_no:'DRM-CM-001',resident_name:'김민서',room_label:'1생활관 101호',
+   category:'시설불량',title:'세탁기 고장 신고',
+   content:'1층 공용 세탁기 3번이 작동하지 않습니다.\n사용 중 멈추고 오류 코드(E3)가 반복 표시됩니다.',
+   status:'in_progress',assignee:'시설팀 이부장',created_at:'2025-11-10T09:30:00Z'},
+  {id:'cm2',ticket_no:'DRM-CM-002',resident_name:'이지현',room_label:'2생활관 203호',
+   category:'소음',title:'야간 소음 민원',
+   content:'같은 층 204호에서 매일 밤 11시 이후 소음이 발생합니다.\n음악 소리와 대화 소리가 공용 복도까지 들립니다.',
+   status:'received',assignee:'',created_at:'2025-11-15T14:22:00Z'},
+  {id:'cm3',ticket_no:'DRM-CM-003',resident_name:'박준우',room_label:'1생활관 305호',
+   category:'냉난방',title:'난방 미작동',
+   content:'방 난방이 제대로 작동하지 않습니다.\n온도 설정을 최대로 해도 차가운 바람만 나옵니다.',
+   status:'done',assignee:'시설팀 최기사',created_at:'2025-11-08T08:15:00Z'},
+];
+var complaint_comments=[
+  {id:'cc1',complaint_id:'cm1',author:'시설팀 이부장',body:'수리 업체 연락 완료, 12일 오전 방문 예정입니다.',created_at:'2025-11-11T10:00:00Z'},
+  {id:'cc2',complaint_id:'cm3',author:'시설팀 최기사',body:'보일러 밸브 교체 완료. 정상 작동 확인하였습니다.',created_at:'2025-11-09T15:30:00Z'},
+];
+var notices=[];
+
+var _D={buildings,rooms,residents,contracts,payments,expenses,complaints,complaint_comments,notices};
+var _st={tab:'dash',bid:null,cmode:'manual',cmf:'all',cmOpen:null};
+var _idSeq=200;
+function nid(){return 'id'+(++_idSeq);}
+
+/* ── Helpers ── */
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]);}
+function won(n){return(Number(n)||0).toLocaleString('ko-KR');}
+function num(v){return parseInt(String(v==null?'':v).replace(/[^\d-]/g,''),10)||0;}
+function val(id){var e=document.getElementById(id);return e?e.value:'';}
+function setv(id,v){var e=document.getElementById(id);if(e)e.value=v;}
+function bldName(id){var b=_D.buildings.find(function(x){return x.id===id;});return b?b.name:'-';}
+function roomNum(id){var r=_D.rooms.find(function(x){return x.id===id;});return r?r.room_number:'-';}
+
+function toast(msg,type){
+  var w=document.getElementById('toast-wrap');
+  var t=document.createElement('div');
+  t.className='toast '+(type||'');t.textContent=msg;
+  w.appendChild(t);setTimeout(function(){t.remove();},3000);
+}
+function cfm(msg,onY){
+  var ov=document.createElement('div');ov.className='cfm-ov';
+  ov.innerHTML='<div class="cfm-box"><p>'+esc(msg)+'</p><div class="acts"><button class="btn btn-g btn-sm cfm-n">취소</button><button class="btn btn-d btn-sm cfm-y">확인</button></div></div>';
+  document.body.appendChild(ov);
+  ov.querySelector('.cfm-y').onclick=function(){ov.remove();onY();};
+  ov.querySelector('.cfm-n').onclick=function(){ov.remove();};
+}
+
+/* ── Subtab nav ── */
+var SUBS=[
+  {id:'dash',label:'대시보드'},{id:'master',label:'건물·호실'},{id:'map',label:'배치도'},
+  {id:'contract',label:'계약 등록·조회'},{id:'esign',label:'전자계약'},{id:'payment',label:'기숙사비'},
+  {id:'expense',label:'지출'},{id:'price',label:'단가 역산'},{id:'notice',label:'고지서'},
+  {id:'stat',label:'수익·손익'},{id:'complaint',label:'민원'},
+];
+function renderNav(){
+  var w=document.getElementById('subtabs');
+  w.innerHTML=SUBS.map(function(s){return'<button class="stab'+(_st.tab===s.id?' active':'')+' " data-t="'+s.id+'">'+s.label+'</button>';}).join('');
+  w.querySelectorAll('[data-t]').forEach(function(b){b.onclick=function(){_st.tab=b.dataset.t;renderNav();renderBody();};});
+}
+function renderBody(){
+  var f={dash:renderDash,master:renderMaster,map:renderMap,contract:renderContract,
+    esign:renderEsign,payment:renderPayment,expense:renderExpense,price:renderPrice,
+    notice:renderNotice,stat:renderStat,complaint:renderComplaint};
+  (f[_st.tab]||renderDash)();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function setBody(html){document.getElementById('tab-body').innerHTML=html;}
+
+/* ── 대시보드 ── */
+function renderDash(){
+  var bCnt=_D.buildings.length,rCnt=_D.rooms.length;
+  var vacCnt=_D.rooms.filter(function(r){return r.is_vacant;}).length;
+  var actCnt=_D.contracts.filter(function(c){return c.status==='active';}).length;
+  var odCnt=_D.payments.filter(function(p){return p.status!=='paid'&&p.due_date&&p.due_date<today();}).length;
+  var byB={},byD={},byG={'1학년':0,'2학년':0},s1=0,s2=0;
+  _D.contracts.filter(function(c){return c.status==='active';}).forEach(function(c){
+    byB[c.building_name]=(byB[c.building_name]||0)+1;
+    if(c.department)byD[c.department]=(byD[c.department]||0)+1;
+    if(c.grade)byG[c.grade+'학년']=(byG[c.grade+'학년']||0)+1;
+    var r=_D.rooms.find(function(r){return r.id===c.room_id;});
+    if(r&&r.room_type==='1인실')s1++;else s2++;
+  });
+  function tile(m){return Object.keys(m).map(function(k){return'<span class="chip">'+esc(k)+' <b>'+m[k]+'명</b></span>';}).join('');}
+  var h='<div class="kpis">'+[['건물',bCnt,'동'],['호실',rCnt,'실'],['공실',vacCnt,'실'],['재실 인원',actCnt,'명'],['미납',odCnt,'건']].map(function(c){
+    return'<div class="kpi"><div class="kn">'+won(c[1])+'<small>'+c[2]+'</small></div><div class="kl">'+c[0]+'</div></div>';}).join('')+'</div>';
+  h+='<div class="card"><div class="ct">현황 요약 (재실 '+actCnt+'명)</div><div class="sum-grid">'
+    +'<div><div class="sum-t">건물별</div><div class="chips">'+tile(byB)+'</div></div>'
+    +'<div><div class="sum-t">계열별</div><div class="chips">'+tile(byD)+'</div></div>'
+    +'<div><div class="sum-t">학년별</div><div class="chips">'+tile(byG)+'</div></div>'
+    +'<div><div class="sum-t">실 유형</div><div class="chips"><span class="chip">독실 <b>'+s1+'명</b></span><span class="chip">2인1실 <b>'+s2+'명</b></span></div></div>'
+    +'</div></div>';
+  h+='<div class="card" style="border:2px dashed var(--primary);background:var(--primary-lt)">'
+    +'<div class="ct" style="color:var(--primary)">데모 안내</div>'
+    +'<p class="muted">로그인 없이 기숙사 관리의 모든 기능을 체험할 수 있습니다. 데이터는 브라우저 메모리에만 존재하며 새로고침 시 초기화됩니다.<br>'
+    +'상단 탭에서 원하는 메뉴를 선택해 주세요. 추가·삭제·수정이 모두 작동합니다.</p></div>';
+  setBody(h);
+}
+
+/* ── 건물·호실 ── */
+function renderMaster(){
+  var list=_D.buildings;
+  var h='<div class="g2">'
+    +'<div class="card"><div class="ct">건물 등록</div>'
+    +'<div class="fg"><label class="lbl">건물명 *</label><input id="db-name" class="fi" placeholder="예: 4생활관"></div>'
+    +'<div class="g2"><div class="fg"><label class="lbl">등급</label><input id="db-grade" class="fi" placeholder="A/B/C"></div>'
+    +'<div class="fg"><label class="lbl">기본단가(원/월)</label><input id="db-price" class="fi" type="number" placeholder="500000"></div></div>'
+    +'<div class="fg"><label class="lbl">비고</label><input id="db-note" class="fi"></div>'
+    +'<div class="acts"><button class="btn btn-p" id="db-add">건물 추가</button></div></div>'
+    +'<div class="card"><div class="ct">건물 목록 ('+list.length+'동)</div>';
+  if(list.length){
+    h+='<div class="tbl-wrap"><table><thead><tr><th>건물</th><th>등급</th><th>기본단가</th><th>호실수</th><th></th></tr></thead><tbody>'
+      +list.map(function(b){
+        var rc=_D.rooms.filter(function(r){return r.building_id===b.id;}).length;
+        return'<tr><td><b>'+esc(b.name)+'</b></td><td>'+esc(b.grade||'-')+'</td><td>'+won(b.base_price)+'</td><td>'+rc+'실</td>'
+          +'<td><button class="btn btn-s btn-sm db-rooms" data-id="'+b.id+'">호실 관리</button> '
+          +'<button class="btn btn-g btn-sm db-del" data-id="'+b.id+'">삭제</button></td></tr>';
+      }).join('')+'</tbody></table></div>';
+  }else{h+='<p class="muted">등록된 건물이 없습니다.</p>';}
+  h+='</div></div><div id="dorm-rooms"></div>';
+  setBody(h);
+  document.getElementById('db-add').onclick=function(){
+    var nm=(val('db-name')||'').trim();if(!nm){toast('건물명을 입력하세요.','error');return;}
+    _D.buildings.push({id:'b'+nid(),name:nm,grade:(val('db-grade')||'').trim(),base_price:num(val('db-price')),note:(val('db-note')||'').trim()});
+    toast('건물 등록 완료','success');renderMaster();
+  };
+  document.querySelectorAll('.db-del').forEach(function(b){b.onclick=function(){
+    var bid=b.dataset.id,rc=_D.rooms.filter(function(r){return r.building_id===bid;}).length;
+    cfm(esc(_D.buildings.find(function(x){return x.id===bid;}).name)+'('+rc+'실)을 삭제합니다. 계속할까요?',function(){
+      _D.rooms=_D.rooms.filter(function(r){return r.building_id!==bid;});
+      _D.buildings=_D.buildings.filter(function(x){return x.id!==bid;});
+      if(_st.bid===bid)_st.bid=null;toast('삭제 완료','success');renderMaster();
+    });
+  };});
+  document.querySelectorAll('.db-rooms').forEach(function(b){b.onclick=function(){
+    _st.bid=b.dataset.id;renderRooms(_D.buildings.find(function(x){return x.id===_st.bid;}));
+  };});
+  if(_st.bid){var bld=_D.buildings.find(function(x){return x.id===_st.bid;});if(bld)renderRooms(bld);}
+}
+function renderRooms(bld){
+  var rms=_D.rooms.filter(function(r){return r.building_id===bld.id;});
+  var h='<div class="card"><div class="ct">'+esc(bld.name)+' — 호실 관리 ('+rms.length+'실)</div>'
+    +'<div class="g4"><div class="fg"><label class="lbl">호실번호 *</label><input id="rm-no" class="fi" placeholder="201"></div>'
+    +'<div class="fg"><label class="lbl">유형</label><select id="rm-type" class="fs"><option>1인실</option><option>2인실</option><option>다인실</option></select></div>'
+    +'<div class="fg"><label class="lbl">층</label><input id="rm-floor" class="fi" type="number"></div>'
+    +'<div class="fg"><label class="lbl">단가(원/월)</label><input id="rm-price" class="fi" type="number" value="'+bld.base_price+'"></div></div>'
+    +'<div class="acts"><button id="rm-add" class="btn btn-p">호실 추가</button></div>';
+  if(rms.length){
+    h+='<div class="tbl-wrap" style="margin-top:12px"><table><thead><tr><th>호실</th><th>유형</th><th>층</th><th>단가</th><th>상태</th><th></th></tr></thead><tbody>'
+      +rms.map(function(r){
+        return'<tr><td>'+esc(r.room_number)+'</td><td>'+esc(r.room_type)+'</td><td>'+(r.floor!=null?r.floor+'층':'-')+'</td><td>'+won(r.unit_price)+'</td>'
+          +'<td>'+(r.is_vacant?'<span class="badge b-b">공실</span>':'<span class="badge b-g">입실</span>')+'</td>'
+          +'<td><button class="btn btn-g btn-sm rm-del" data-id="'+r.id+'">삭제</button></td></tr>';
+      }).join('')+'</tbody></table></div>';
+  }else{h+='<p class="muted" style="margin-top:12px">등록된 호실이 없습니다.</p>';}
+  h+='</div>';
+  document.getElementById('dorm-rooms').innerHTML=h;
+  document.getElementById('rm-add').onclick=function(){
+    var no=(val('rm-no')||'').trim();if(!no){toast('호실번호를 입력하세요.','error');return;}
+    if(_D.rooms.find(function(r){return r.building_id===bld.id&&r.room_number===no;})){toast('이미 존재하는 호실번호입니다.','error');return;}
+    _D.rooms.push({id:'r'+nid(),building_id:bld.id,room_number:no,room_type:val('rm-type'),floor:parseInt(val('rm-floor'),10)||null,unit_price:num(val('rm-price')),is_vacant:true});
+    toast('호실 등록 완료','success');renderRooms(bld);
+  };
+  document.querySelectorAll('.rm-del').forEach(function(b){b.onclick=function(){
+    var rid=b.dataset.id;
+    if(_D.contracts.find(function(c){return c.room_id===rid&&c.status==='active';})){toast('입실 중인 계약이 있어 삭제할 수 없습니다.','error');return;}
+    cfm('이 호실을 삭제할까요?',function(){_D.rooms=_D.rooms.filter(function(r){return r.id!==rid;});toast('삭제 완료','success');renderRooms(bld);});
+  };});
+}
+
+/* ── 배치도 ── */
+function renderMap(){
+  var selBld=_st.bid||_D.buildings[0].id;
+  var bld=_D.buildings.find(function(b){return b.id===selBld;})||_D.buildings[0];
+  var rms=_D.rooms.filter(function(r){return r.building_id===bld.id;});
+  var floors={};
+  rms.forEach(function(r){var f=r.floor||1;(floors[f]=floors[f]||[]).push(r);});
+  var h='<div class="card"><div class="ct">배치도</div>'
+    +'<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;">'
+    +_D.buildings.map(function(b){return'<button class="btn btn-sm '+(b.id===bld.id?'btn-p':'btn-s')+' map-bsel" data-id="'+b.id+'">'+esc(b.name)+'</button>';}).join('')+'</div>'
+    +'<div style="display:flex;gap:12px;margin-bottom:10px;font-size:12px;">'
+    +'<span class="badge b-g">■</span> <span class="muted">입실</span> &nbsp; '
+    +'<span class="badge b-gr">■</span> <span class="muted">공실</span></div>'
+    +'<div class="map-stage">';
+  var floorNums=Object.keys(floors).sort(function(a,b){return b-a;});
+  floorNums.forEach(function(f){
+    h+='<div class="map-floor"><span class="map-flbl">'+f+'층</span>';
+    floors[f].forEach(function(r){
+      h+='<div class="map-room '+(r.is_vacant?'vac':'occ')+'"><b>'+esc(r.room_number)+'</b><span style="font-size:10px;opacity:.85;font-weight:400">'+esc(r.room_type)+'</span></div>';
+    });
+    h+='</div>';
+  });
+  h+='</div>'
+    +'<p class="muted" style="margin-top:8px">총 '+rms.length+'실 · 입실 '+rms.filter(function(r){return !r.is_vacant;}).length+'실 · 공실 '+rms.filter(function(r){return r.is_vacant;}).length+'실</p>'
+    +'</div>';
+  setBody(h);
+  document.querySelectorAll('.map-bsel').forEach(function(b){b.onclick=function(){_st.bid=b.dataset.id;renderMap();};});
+}
+
+/* ── 계약 등록·조회 ── */
+function renderContract(){
+  var blds=_D.buildings;
+  var h='<div class="modebar">'
+    +[['manual','개별 입력'],['xlsx','xlsx 일괄(안내)'],['ocr','OCR 스캔(안내)']].map(function(m){
+      return'<button class="mbtn'+(_st.cmode===m[0]?' active':'')+' " data-cm="'+m[0]+'">'+m[1]+'</button>';
+    }).join('')+'</div><div id="ct-form"></div>'
+    +'<div class="card" id="ct-list"><p class="muted">불러오는 중…</p></div>';
+  setBody(h);
+  document.querySelectorAll('[data-cm]').forEach(function(b){b.onclick=function(){_st.cmode=b.dataset.cm;renderContract();};});
+  if(_st.cmode==='xlsx'){renderXlsxInfo();}else if(_st.cmode==='ocr'){renderOcrInfo();}else{renderManualForm(blds);}
+  loadCtList();
+}
+function renderManualForm(blds){
+  var bldOpts=blds.map(function(b){return'<option value="'+b.id+'">'+esc(b.name)+'</option>';}).join('');
+  var deptOpts=DEPTS.map(function(d){return'<option>'+d+'</option>';}).join('');
+  document.getElementById('ct-form').innerHTML='<div class="card"><div class="ct">계약 개별 등록</div>'
+    +'<div class="g4"><div class="fg"><label class="lbl">건물 *</label><select id="ct-bld" class="fs">'+bldOpts+'</select></div>'
+    +'<div class="fg"><label class="lbl">호실 *</label><select id="ct-room" class="fs"><option value="">—</option></select></div>'
+    +'<div class="fg"><label class="lbl">성명 *</label><input id="ct-name" class="fi"></div>'
+    +'<div class="fg"><label class="lbl">학번/사번</label><input id="ct-sno" class="fi"></div></div>'
+    +'<div class="g4"><div class="fg"><label class="lbl">연락처</label><input id="ct-phone" class="fi"></div>'
+    +'<div class="fg"><label class="lbl">계열</label><select id="ct-dept" class="fs"><option value="">—</option>'+deptOpts+'</select></div>'
+    +'<div class="fg"><label class="lbl">학년</label><select id="ct-grade" class="fs"><option value="">—</option><option value="1">1학년</option><option value="2">2학년</option></select></div>'
+    +'<div class="fg"><label class="lbl">계약 유형</label><select id="ct-type" class="fs"><option>학기별</option><option>월별</option><option>연간</option></select></div></div>'
+    +'<div class="g4"><div class="fg"><label class="lbl">시작일 *</label><input id="ct-start" type="date" class="fi"></div>'
+    +'<div class="fg"><label class="lbl">종료일 *</label><input id="ct-end" type="date" class="fi"></div>'
+    +'<div class="fg"><label class="lbl">단가(원/월)</label><input id="ct-price" class="fi" type="number"></div>'
+    +'<div class="fg"><label class="lbl">보증금(원)</label><input id="ct-dep" class="fi" type="number"></div></div>'
+    +'<div class="acts"><button id="ct-save" class="btn btn-p">계약 저장</button></div></div>';
+  fillRoomSel(val('ct-bld'));
+  document.getElementById('ct-bld').onchange=function(){fillRoomSel(this.value);};
+  document.getElementById('ct-save').onclick=function(){
+    var nm=(val('ct-name')||'').trim(),bid=val('ct-bld'),rid=val('ct-room'),s=val('ct-start'),e=val('ct-end');
+    if(!nm||!rid||!s||!e){toast('건물·호실·성명·기간은 필수입니다.','error');return;}
+    var bld=_D.buildings.find(function(x){return x.id===bid;});
+    var rm=_D.rooms.find(function(x){return x.id===rid;});
+    var cid='c'+nid();
+    _D.contracts.push({id:cid,resident_id:null,resident_name:nm,
+      student_no:(val('ct-sno')||'').trim(),phone:(val('ct-phone')||'').trim(),
+      building_id:bid,building_name:bld?bld.name:'',room_id:rid,room_number:rm?rm.room_number:'',
+      start_date:s,end_date:e,contract_type:val('ct-type'),
+      unit_price:num(val('ct-price'))||(rm?rm.unit_price:0),deposit:num(val('ct-dep')),
+      department:val('ct-dept')||null,grade:parseInt(val('ct-grade'))||null,
+      semester:'2025-2',status:'active',sign_status:'none',
+      created_at:new Date().toISOString()});
+    if(rm)rm.is_vacant=false;
+    toast('계약이 등록되었습니다.','success');loadCtList();
+    ['ct-name','ct-sno','ct-phone','ct-price','ct-dep'].forEach(function(id){setv(id,'');});
+  };
+}
+function fillRoomSel(bid){
+  var sel=document.getElementById('ct-room');if(!sel)return;
+  var rms=_D.rooms.filter(function(r){return r.building_id===bid;});
+  sel.innerHTML='<option value="">—</option>'+rms.map(function(r){
+    return'<option value="'+r.id+'"'+(!r.is_vacant?' data-occ="1"':'')+'>'+esc(r.room_number)+'호 ('+esc(r.room_type)+')'+(!r.is_vacant?' · 입실중':'')+'</option>';
+  }).join('');
+}
+function renderXlsxInfo(){
+  document.getElementById('ct-form').innerHTML='<div class="card"><div class="ct">xlsx 일괄 업로드</div>'
+    +'<p class="muted">실제 환경에서는 xlsx 파일을 선택하면 계약서 정보가 자동으로 파싱되어 미리보기 후 일괄 저장됩니다.</p>'
+    +'<p class="muted" style="margin-top:8px">컬럼 순서: 건물명 | 호실 | 성명 | 학번/사번 | 연락처 | 계약시작일 | 계약종료일 | 유형 | 단가 | 보증금 | 비고</p>'
+    +'<div class="acts"><button class="btn btn-s btn-sm" onclick="window._st.cmode=\'manual\';renderContract()">개별 입력으로 전환</button></div></div>';
+}
+function renderOcrInfo(){
+  document.getElementById('ct-form').innerHTML='<div class="card"><div class="ct">OCR 스캔 등록</div>'
+    +'<p class="muted">계약서 이미지를 업로드하면 Claude AI가 항목을 추출해 개별 입력 폼에 자동 채웁니다.</p>'
+    +'<p class="muted" style="margin-top:6px">지원 형식: jpg, png · 설정 탭에서 Claude API 키를 연결한 경우에만 사용 가능합니다.</p>'
+    +'<div class="acts"><button class="btn btn-s btn-sm" onclick="window._st.cmode=\'manual\';renderContract()">개별 입력으로 전환</button></div></div>';
+}
+function loadCtList(){
+  var wrap=document.getElementById('ct-list');if(!wrap)return;
+  var rows=_D.contracts.slice().reverse().slice(0,50);
+  wrap.innerHTML='<div class="ct">최근 계약 ('+rows.length+'건)</div>'+(rows.length
+    ?'<div class="tbl-wrap"><table><thead><tr><th>성명</th><th>학번</th><th>계열</th><th>건물·호실</th><th>기간</th><th>단가</th><th>상태</th><th></th></tr></thead><tbody>'
+      +rows.map(function(c){
+        return'<tr><td><b>'+esc(c.resident_name)+'</b></td><td>'+esc(c.student_no||'-')+'</td>'
+          +'<td>'+esc(c.department||'-')+'</td>'
+          +'<td>'+esc(c.building_name)+' '+esc(c.room_number)+'호</td>'
+          +'<td>'+esc(c.start_date)+'~'+esc(c.end_date)+'</td>'
+          +'<td>'+won(c.unit_price)+'</td>'
+          +'<td><span class="badge '+(c.status==='active'?'b-g':'b-gr')+'">'+esc(c.status==='active'?'활성':'종료')+'</span></td>'
+          +'<td><button class="btn btn-d btn-sm ct-del" data-id="'+c.id+'">삭제</button></td></tr>';
+      }).join('')+'</tbody></table></div>'
+    :'<p class="muted">등록된 계약이 없습니다.</p>');
+  wrap.querySelectorAll('.ct-del').forEach(function(b){b.onclick=function(){
+    var cid=b.dataset.id;
+    cfm('계약을 삭제합니다. 납부 이력도 함께 삭제됩니다.',function(){
+      _D.payments=_D.payments.filter(function(p){return p.contract_id!==cid;});
+      _D.contracts=_D.contracts.filter(function(c){return c.id!==cid;});
+      toast('계약이 삭제되었습니다.','success');loadCtList();
+    });
+  };});
+}
+
+/* ── 전자계약 ── */
+function renderEsign(){
+  var rows=_D.contracts.filter(function(c){return c.status==='active';});
+  function badge(s){var m={none:'<span class="badge b-gr">미발송</span>',pending:'<span class="badge b-o">서명대기</span>',signed:'<span class="badge b-g">서명완료</span>'};return m[s]||m.none;}
+  var h='<div class="card"><div class="ct">전자계약 발송 현황</div>'
+    +'<p class="muted" style="margin-bottom:12px">계약자별로 서명 링크를 생성·발송합니다. 데모에서는 링크 복사만 가능합니다.</p>'
+    +'<div class="tbl-wrap"><table><thead><tr><th>성명</th><th>학번</th><th>계열</th><th>건물·호실</th><th>서명 상태</th><th>서명 링크</th><th></th></tr></thead><tbody>'
+    +rows.map(function(c){
+      return'<tr><td><b>'+esc(c.resident_name)+'</b></td><td>'+esc(c.student_no||'-')+'</td>'
+        +'<td>'+esc(c.department||'-')+'</td>'
+        +'<td>'+esc(c.building_name)+' '+esc(c.room_number)+'호</td>'
+        +'<td>'+badge(c.sign_status)+'</td>'
+        +'<td><code style="font-size:11px;color:var(--muted)">…/contract-sign.html?t='+esc(c.id)+'</code></td>'
+        +'<td style="display:flex;gap:4px;align-items:center;">'
+        +'<button class="btn btn-s btn-sm es-copy" data-id="'+c.id+'">링크 복사</button>'
+        +(c.sign_status!=='signed'?'<button class="btn btn-g btn-sm es-signed" data-id="'+c.id+'">서명 완료로 표시</button>':'')+'</td></tr>';
+    }).join('')+'</tbody></table></div></div>';
+  h+='<div class="card"><div class="ct">서명 현황</div><div class="g3">'
+    +[['none','미발송'],['pending','서명대기'],['signed','서명완료']].map(function(s){
+      var cnt=rows.filter(function(c){return c.sign_status===s[0];}).length;
+      return'<div class="kpi"><div class="kn">'+cnt+'<small>명</small></div><div class="kl">'+s[1]+'</div></div>';
+    }).join('')+'</div></div>';
+  setBody(h);
+  document.querySelectorAll('.es-copy').forEach(function(b){b.onclick=function(){
+    var link=location.origin+'/dormitory/contract-sign.html?t='+b.dataset.id;
+    navigator.clipboard&&navigator.clipboard.writeText(link).then(function(){toast('링크가 복사되었습니다.','success');}).catch(function(){toast('링크: …/contract-sign.html?t='+b.dataset.id,'info');});
+    if(!navigator.clipboard)toast('링크: …/contract-sign.html?t='+b.dataset.id,'info');
+  };});
+  document.querySelectorAll('.es-signed').forEach(function(b){b.onclick=function(){
+    var c=_D.contracts.find(function(x){return x.id===b.dataset.id;});
+    if(c){c.sign_status='signed';toast('서명 완료로 표시했습니다.','success');renderEsign();}
+  };});
+}
+
+/* ── 기숙사비 ── */
+function renderPayment(){
+  var all=_D.payments;
+  var billed=0,paid=0;
+  all.forEach(function(p){billed+=p.amount||0;if(p.status==='paid')paid+=p.amount||0;});
+  var unpaid=billed-paid;
+  var h='<div class="kpis">'
+    +'<div class="kpi"><div class="kn">'+won(billed)+'<small>원</small></div><div class="kl">총 청구</div></div>'
+    +'<div class="kpi"><div class="kn" style="color:var(--green)">'+won(paid)+'<small>원</small></div><div class="kl">수납</div></div>'
+    +'<div class="kpi"><div class="kn" style="color:var(--red)">'+won(unpaid)+'<small>원</small></div><div class="kl">미납</div></div>'
+    +'</div>';
+  var cts=_D.contracts.filter(function(c){return c.status==='active';});
+  var byC={};all.forEach(function(p){(byC[p.contract_id]=byC[p.contract_id]||[]).push(p);});
+  h+='<div class="card"><div class="ct">납부 스케줄 현황</div>';
+  if(!cts.length){h+='<p class="muted">진행 중 계약이 없습니다.</p>';}
+  else{
+    h+=cts.slice(0,20).map(function(c){
+      var list=byC[c.id]||[];
+      return'<div class="paybox"><div class="payhd"><div><b>'+esc(c.resident_name)+'</b> <span class="muted">'+esc(c.student_no||'')+'</span></div>'
+        +'<span class="muted">'+won(c.unit_price)+'원/월</span>'
+        +(list.length?'':'<button class="btn btn-s btn-sm pay-gen" data-id="'+c.id+'" data-s="'+c.start_date+'" data-e="'+c.end_date+'" data-p="'+c.unit_price+'">스케줄 생성</button>')
+        +'</div>'
+        +(list.length?'<div class="tbl-wrap"><table><thead><tr><th>기간</th><th>금액</th><th>납부기한</th><th>상태</th><th></th></tr></thead><tbody>'
+          +list.map(function(p){
+            var od=p.status!=='paid'&&p.due_date&&p.due_date<today();
+            return'<tr><td>'+esc(p.period)+'</td><td>'+won(p.amount)+'</td><td>'+esc(p.due_date||'-')+'</td>'
+              +'<td>'+(p.status==='paid'?'<span class="badge b-g">완납</span>':(od?'<span class="badge b-r">연체</span>':'<span class="badge b-gr">미납</span>'))+'</td>'
+              +'<td>'+(p.status==='paid'
+                ?'<button class="btn btn-g btn-sm pay-un" data-id="'+p.id+'">취소</button>'
+                :'<button class="btn btn-p btn-sm pay-ok" data-id="'+p.id+'">수납</button>')+'</td></tr>';
+          }).join('')+'</tbody></table></div>':'')+'</div>';
+    }).join('');
+    if(cts.length>20)h+='<p class="muted">… 외 '+(cts.length-20)+'건</p>';
+  }
+  h+='</div>';
+  setBody(h);
+  document.querySelectorAll('.pay-gen').forEach(function(b){b.onclick=function(){
+    var cid=b.dataset.id,p=num(b.dataset.p);
+    MONTHS.forEach(function(m){
+      _D.payments.push({id:'pay'+nid(),contract_id:cid,period:m,amount:p,due_date:m+'-01',status:'pending',paid_date:null});
+    });
+    toast(MONTHS.length+'개월 스케줄 생성','success');renderPayment();
+  };});
+  document.querySelectorAll('.pay-ok').forEach(function(b){b.onclick=function(){
+    var p=_D.payments.find(function(x){return x.id===b.dataset.id;});
+    if(p){p.status='paid';p.paid_date=today();}renderPayment();
+  };});
+  document.querySelectorAll('.pay-un').forEach(function(b){b.onclick=function(){
+    var p=_D.payments.find(function(x){return x.id===b.dataset.id;});
+    if(p){p.status='pending';p.paid_date=null;}renderPayment();
+  };});
+}
+
+/* ── 지출 ── */
+function renderExpense(){
+  var rows=_D.expenses.slice().sort(function(a,b){return b.expense_date.localeCompare(a.expense_date);});
+  var totals={};EXP_CATS.forEach(function(c){totals[c]=0;});var sum=0;
+  rows.forEach(function(r){totals[r.category]=(totals[r.category]||0)+(r.amount||0);sum+=r.amount||0;});
+  var maxC=Math.max.apply(null,EXP_CATS.map(function(c){return totals[c];}).concat([1]));
+  var bldOpts='<option value="">전체 공통</option>'+_D.buildings.map(function(b){return'<option value="'+b.id+'">'+esc(b.name)+'</option>';}).join('');
+  var catOpts=EXP_CATS.map(function(c){return'<option>'+c+'</option>';}).join('');
+  var h='<div class="g2">'
+    +'<div class="card"><div class="ct">지출 등록</div>'
+    +'<div class="fg"><label class="lbl">지출일</label><input id="ex-date" type="date" class="fi" value="'+today()+'"></div>'
+    +'<div class="g2"><div class="fg"><label class="lbl">카테고리</label><select id="ex-cat" class="fs">'+catOpts+'</select></div>'
+    +'<div class="fg"><label class="lbl">건물 귀속</label><select id="ex-bld" class="fs">'+bldOpts+'</select></div></div>'
+    +'<div class="fg"><label class="lbl">항목명 *</label><input id="ex-item" class="fi"></div>'
+    +'<div class="fg"><label class="lbl">금액(원) *</label><input id="ex-amt" class="fi" type="number"></div>'
+    +'<div class="acts"><button id="ex-add" class="btn btn-p">지출 추가</button></div></div>'
+    +'<div class="card"><div class="ct">카테고리별 집계 (합계 '+won(sum)+'원)</div>'
+    +EXP_CATS.map(function(c){var w=Math.round(totals[c]/maxC*100);
+      return'<div class="bar-row"><span class="bar-lbl">'+esc(c)+'</span>'
+        +'<span class="bar-track"><span class="bar-fill" style="width:'+w+'%;background:var(--primary)"></span></span>'
+        +'<span class="bar-val">'+won(totals[c])+'</span></div>';
+    }).join('')+'</div></div>'
+    +'<div class="card"><div class="ct">지출 목록</div>'+(rows.length
+      ?'<div class="tbl-wrap"><table><thead><tr><th>일자</th><th>카테고리</th><th>항목</th><th>건물</th><th>금액</th><th></th></tr></thead><tbody>'
+        +rows.map(function(r){return'<tr><td>'+esc(r.expense_date)+'</td><td>'+esc(r.category)+'</td><td>'+esc(r.item_name)+'</td>'
+          +'<td>'+esc(r.building_id?bldName(r.building_id):'공통')+'</td><td>'+won(r.amount)+'</td>'
+          +'<td><button class="btn btn-d btn-sm ex-del" data-id="'+r.id+'">삭제</button></td></tr>';}).join('')+'</tbody></table></div>'
+      :'<p class="muted">지출 내역이 없습니다.</p>')+'</div>';
+  setBody(h);
+  document.getElementById('ex-add').onclick=function(){
+    var item=(val('ex-item')||'').trim(),amt=num(val('ex-amt'));
+    if(!item||!amt){toast('항목명과 금액을 입력하세요.','error');return;}
+    _D.expenses.push({id:'e'+nid(),expense_date:val('ex-date')||today(),item_name:item,category:val('ex-cat'),amount:amt,building_id:val('ex-bld')||null});
+    toast('지출 등록 완료','success');renderExpense();
+  };
+  document.querySelectorAll('.ex-del').forEach(function(b){b.onclick=function(){
+    cfm('이 지출을 삭제할까요?',function(){_D.expenses=_D.expenses.filter(function(x){return x.id!==b.dataset.id;});toast('삭제 완료','success');renderExpense();});
+  };});
+}
+
+/* ── 단가 역산 ── */
+function renderPrice(){
+  var rms=_D.rooms;
+  var income=0;_D.payments.forEach(function(p){if(p.status==='paid')income+=p.amount||0;});
+  var expense=0;_D.expenses.forEach(function(e){expense+=e.amount||0;});
+  var avgCur=rms.length?Math.round(rms.reduce(function(s,r){return s+(r.unit_price||0);},0)/rms.length):0;
+  var h='<div class="card"><div class="ct">단가 역산 계산기</div>'
+    +'<div class="g4"><div class="fg"><label class="lbl">기준 학기</label><input id="pr-sem" class="fi" value="2025-2학기"></div>'
+    +'<div class="fg"><label class="lbl">현재 총수입(수납)</label><input id="pr-inc" class="fi" type="number" value="'+income+'"></div>'
+    +'<div class="fg"><label class="lbl">현재 총지출</label><input id="pr-exp" class="fi" type="number" value="'+expense+'"></div>'
+    +'<div class="fg"><label class="lbl">학기 개월수</label><input id="pr-mon" class="fi" type="number" value="6"></div></div>'
+    +'<div class="g4"><div class="fg"><label class="lbl">목표 손익(원)</label><input id="pr-goal" class="fi" type="number" value="0"></div>'
+    +'<div class="fg"><label class="lbl">다음 학기 예상 입실(명)</label><input id="pr-head" class="fi" type="number"></div>'
+    +'<div class="fg"><label class="lbl">다음 학기 예상 지출</label><input id="pr-nexp" class="fi" type="number" value="'+expense+'"></div>'
+    +'<div class="fg" style="align-self:end"><button id="pr-calc" class="btn btn-p" style="width:100%">단가 계산</button></div></div>'
+    +'<div id="pr-result"></div></div><div id="pr-table"></div>';
+  setBody(h);
+  document.getElementById('pr-calc').onclick=function(){
+    var months=num(val('pr-mon'))||1,head=num(val('pr-head')),goal=num(val('pr-goal')),nexp=num(val('pr-nexp'));
+    if(!head){toast('예상 입실 인원을 입력하세요.','error');return;}
+    var targetIncome=nexp+goal,avgNeed=Math.round(targetIncome/head/months);
+    var rate=avgCur?((avgNeed-avgCur)/avgCur*100):0;
+    document.getElementById('pr-result').innerHTML='<div class="kpis" style="margin-top:14px">'
+      +'<div class="kpi"><div class="kn">'+won(targetIncome)+'<small>원</small></div><div class="kl">목표 수입</div></div>'
+      +'<div class="kpi"><div class="kn">'+won(avgNeed)+'<small>원</small></div><div class="kl">필요 평균 단가</div></div>'
+      +'<div class="kpi"><div class="kn">'+won(avgCur)+'<small>원</small></div><div class="kl">현재 평균 단가</div></div>'
+      +'<div class="kpi"><div class="kn" style="color:'+(rate>=0?'var(--red)':'var(--green)')+'">'+rate.toFixed(1)+'<small>%</small></div><div class="kl">필요 인상률</div></div>'
+      +'</div>';
+    renderPriceTable(rms,rate,val('pr-sem'));
+  };
+}
+function renderPriceTable(rms,rate,sem){
+  var w=document.getElementById('pr-table');
+  w.innerHTML='<div class="card"><div class="ct">건물·호실별 추천 단가</div>'
+    +'<div class="tbl-wrap"><table><thead><tr><th>건물</th><th>호실</th><th>현재</th><th>추천</th><th>최종(조정)</th></tr></thead><tbody>'
+    +rms.map(function(r){
+      var rec=Math.round((r.unit_price||0)*(1+rate/100));
+      return'<tr data-rid="'+r.id+'" data-cur="'+r.unit_price+'"><td>'+esc(bldName(r.building_id))+'</td><td>'+esc(r.room_number)+'</td>'
+        +'<td>'+won(r.unit_price)+'</td><td class="pr-rec">'+won(rec)+'</td>'
+        +'<td><input class="fi pr-fin" type="number" value="'+rec+'" style="width:120px"></td></tr>';
+    }).join('')+'</tbody></table></div>'
+    +'<p id="pr-proj" class="muted" style="margin-top:8px"></p>'
+    +'<div class="acts"><button id="pr-save" class="btn btn-p">단가 확정 저장</button></div></div>';
+  function recalc(){var s=0;document.querySelectorAll('tr[data-rid]').forEach(function(tr){s+=num(tr.querySelector('.pr-fin').value);});
+    document.getElementById('pr-proj').textContent='최종 단가 합계: '+won(s)+'원 (월 기준)';}
+  document.querySelectorAll('.pr-fin').forEach(function(i){i.oninput=recalc;});
+  recalc();
+  document.getElementById('pr-save').onclick=function(){
+    var changed=0;document.querySelectorAll('tr[data-rid]').forEach(function(tr){
+      var rid=tr.dataset.rid,cur=num(tr.dataset.cur),fin=num(tr.querySelector('.pr-fin').value);
+      var r=_D.rooms.find(function(x){return x.id===rid;});if(r&&fin&&fin!==cur){r.unit_price=fin;changed++;}
+    });
+    toast(changed+'개 호실 단가가 저장되었습니다.','success');
+  };
+}
+
+/* ── 고지서 ── */
+function renderNotice(){
+  var cts=_D.contracts.filter(function(c){return c.status==='active';});
+  var h='<div class="card"><div class="ct">고지서 발행</div>'
+    +'<div class="g4"><div class="fg"><label class="lbl">학기 표기</label><input id="nt-sem" class="fi" value="25.09~26.02"></div>'
+    +'<div class="fg"><label class="lbl">납부 마감일</label><input id="nt-due" type="date" class="fi"></div>'
+    +'<div class="fg" style="grid-column:span 2"><label class="lbl">납부 계좌</label><input id="nt-acc" class="fi" value="우리은행 1234-567-890123 (예금주: 아세아항공직업전문학교)"></div></div>'
+    +'<div class="acts"><label style="display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;cursor:pointer">'
+    +'<input type="checkbox" id="nt-all"> 전체 선택</label>'
+    +'<button id="nt-prev" class="btn btn-p">선택 고지서 미리보기</button></div>'
+    +(cts.length?'<div class="tbl-wrap" style="margin-top:12px"><table><thead><tr><th></th><th>성명</th><th>학번</th><th>건물·호실</th><th>월단가</th></tr></thead><tbody>'
+      +cts.map(function(c){return'<tr><td><input type="checkbox" class="nt-cb" value="'+c.id+'"></td><td>'+esc(c.resident_name)+'</td>'
+        +'<td>'+esc(c.student_no||'-')+'</td><td>'+esc(c.building_name)+' '+esc(c.room_number)+'호</td><td>'+won(c.unit_price)+'</td></tr>';}).join('')+'</tbody></table></div>'
+      :'<p class="muted">진행 중 계약이 없습니다.</p>')+'</div>'
+    +'<div id="nt-preview-area"></div>';
+  setBody(h);
+  document.getElementById('nt-all').onchange=function(){document.querySelectorAll('.nt-cb').forEach(function(cb){cb.checked=this.checked;}.bind(this));};
+  document.getElementById('nt-prev').onclick=function(){
+    var ids=[];document.querySelectorAll('.nt-cb:checked').forEach(function(cb){ids.push(cb.value);});
+    if(!ids.length){toast('대상을 선택하세요.','error');return;}
+    var sem=val('nt-sem'),due=val('nt-due'),acc=val('nt-acc');
+    var sel=cts.filter(function(c){return ids.indexOf(c.id)!==-1;});
+    var area=document.getElementById('nt-preview-area');
+    area.innerHTML='<div class="card"><div class="ct">고지서 미리보기 ('+sel.length+'건)</div>'
+      +'<p class="muted" style="margin-bottom:14px">※ 데모 환경에서는 인쇄 대신 미리보기로 표시합니다.</p>'
+      +sel.map(function(c,i){
+        var no='DRM-'+new Date().getFullYear()+'-'+pad(i+1);
+        var amt=c.unit_price||0,dep=c.deposit||0,tot=amt+dep;
+        return'<div class="nt-preview" style="margin-bottom:16px">'
+          +'<div class="nt-org">(재) 아세아항공직업전문학교</div>'
+          +'<div class="nt-h1">기숙사비 납부 고지서</div>'
+          +'<div class="nt-meta">발행일: '+today()+' &nbsp; 고지번호: '+esc(no)+'</div>'
+          +'<table class="nt-tb"><tr><th>성명</th><td>'+esc(c.resident_name)+'</td><th>학번</th><td>'+esc(c.student_no||'')+'</td></tr>'
+          +'<tr><th>건물·호실</th><td colspan="3">'+esc(c.building_name)+' '+esc(c.room_number)+'호</td></tr></table>'
+          +'<table class="nt-tb"><tr><th>항목</th><th>기간</th><th style="text-align:right">금액</th></tr>'
+          +'<tr><td>기숙사비</td><td>'+esc(sem)+'</td><td style="text-align:right">'+won(amt)+'원</td></tr>'
+          +(dep?'<tr><td>보증금</td><td></td><td style="text-align:right">'+won(dep)+'원</td></tr>':'')
+          +'<tr><td><b>합계</b></td><td></td><td style="text-align:right"><b>'+won(tot)+'원</b></td></tr></table>'
+          +'<div class="nt-foot">납부 마감일: <b>'+esc(due||'-')+'</b><br>납부 계좌: '+esc(acc)+'<br>입금자명: [성명+학번] 형식 입력<br>'
+          +'<span style="color:var(--muted)">기한 내 미납 시 연체료가 부과될 수 있습니다.</span></div></div>';
+      }).join('')+'</div>';
+    _D.notices.push({issued_at:today(),count:sel.length,semester:sem});
+    toast(sel.length+'건 미리보기 생성','success');
+  };
+}
+
+/* ── 수익·손익 ── */
+function renderStat(){
+  var income=0,paid_cnt=0;
+  _D.payments.forEach(function(p){if(p.status==='paid'){income+=p.amount||0;paid_cnt++;}});
+  var expense=0,cat={};
+  _D.expenses.forEach(function(e){expense+=e.amount||0;cat[e.category]=(cat[e.category]||0)+(e.amount||0);});
+  var profit=income-expense;
+  var vac=_D.rooms.filter(function(r){return r.is_vacant;});
+  var vacLoss=vac.reduce(function(s,r){return s+(r.unit_price||0);},0);
+  var maxIE=Math.max(income,expense,1);
+  var h='<div class="kpis">'
+    +'<div class="kpi"><div class="kn" style="color:var(--green)">'+won(income)+'<small>원</small></div><div class="kl">총 수입(수납)</div></div>'
+    +'<div class="kpi"><div class="kn" style="color:var(--red)">'+won(expense)+'<small>원</small></div><div class="kl">총 지출</div></div>'
+    +'<div class="kpi"><div class="kn" style="color:'+(profit>=0?'var(--green)':'var(--red)')+'">'+won(profit)+'<small>원</small></div><div class="kl">순손익</div></div>'
+    +'<div class="kpi"><div class="kn" style="color:var(--orange)">'+won(vacLoss)+'<small>원/월</small></div><div class="kl">공실 손실('+vac.length+'실)</div></div>'
+    +'</div>'
+    +'<div class="g2">'
+    +'<div class="card"><div class="ct">수입 vs 지출</div>'
+    +'<div class="bar-row"><span class="bar-lbl">수입</span><span class="bar-track"><span class="bar-fill" style="width:'+Math.round(income/maxIE*100)+'%;background:var(--green)"></span></span><span class="bar-val">'+won(income)+'</span></div>'
+    +'<div class="bar-row"><span class="bar-lbl">지출</span><span class="bar-track"><span class="bar-fill" style="width:'+Math.round(expense/maxIE*100)+'%;background:var(--red)"></span></span><span class="bar-val">'+won(expense)+'</span></div>'
+    +'</div>'
+    +'<div class="card"><div class="ct">지출 카테고리</div>'
+    +EXP_CATS.map(function(c){var v=cat[c]||0,w=expense?Math.round(v/expense*100):0;
+      return'<div class="bar-row"><span class="bar-lbl">'+esc(c)+'</span><span class="bar-track"><span class="bar-fill" style="width:'+w+'%"></span></span><span class="bar-val">'+won(v)+'</span></div>';
+    }).join('')+'</div></div>';
+  setBody(h);
+}
+
+/* ── 민원 ── */
+function renderComplaint(){
+  var filters=[['all','전체'],['received','접수'],['in_progress','처리중'],['done','완료']];
+  var rows=_D.complaints.filter(function(c){return _st.cmf==='all'||c.status===_st.cmf;});
+  function cmBadge(s){var m={received:'<span class="badge b-b">접수</span>',in_progress:'<span class="badge b-o">처리중</span>',done:'<span class="badge b-g">완료</span>'};return m[s]||'<span class="badge b-gr">?</span>';}
+  var portalBase=location.origin+location.pathname.replace(/[^/]*$/,'');
+  var h='<div class="card"><div class="ct">외부 포털 링크</div>'
+    +'<div class="acts">'
+    +'<button class="btn btn-s btn-sm" id="pt-res">입소자 포털 링크 복사</button>'
+    +'<button class="btn btn-s btn-sm" id="pt-cmp">민원 접수 링크 복사</button>'
+    +'</div><p class="muted" style="margin-top:8px">링크에는 연결 정보가 포함되어 입소자가 바로 접속할 수 있습니다.</p></div>'
+    +'<div class="card"><div class="modebar">'
+    +filters.map(function(f){return'<button class="mbtn'+(_st.cmf===f[0]?' active':'')+' " data-cmf="'+f[0]+'">'+f[1]+'</button>';}).join('')+'</div>'
+    +(rows.length?'<div class="tbl-wrap"><table><thead><tr><th>접수번호</th><th>호실</th><th>성명</th><th>제목</th><th>분류</th><th>접수일</th><th>상태</th></tr></thead><tbody>'
+      +rows.map(function(c){
+        return'<tr class="clk cm-row" data-id="'+c.id+'">'
+          +'<td>'+esc(c.ticket_no||'-')+'</td><td>'+esc(c.room_label||'-')+'</td><td>'+esc(c.resident_name||'-')+'</td>'
+          +'<td>'+esc(c.title)+'</td><td>'+esc(c.category||'-')+'</td>'
+          +'<td>'+esc((c.created_at||'').slice(0,10))+'</td><td>'+cmBadge(c.status)+'</td></tr>';
+      }).join('')+'</tbody></table></div>'
+      :'<p class="muted">민원이 없습니다.</p>')+'</div>'
+    +'<div id="cm-detail"></div>';
+  setBody(h);
+  document.querySelectorAll('[data-cmf]').forEach(function(b){b.onclick=function(){_st.cmf=b.dataset.cmf;_st.cmOpen=null;renderComplaint();};});
+  document.querySelectorAll('.cm-row').forEach(function(tr){tr.onclick=function(){openComplaint(tr.dataset.id);};});
+  document.getElementById('pt-res').onclick=function(){
+    var link=portalBase+'dormitory/resident.html';
+    navigator.clipboard&&navigator.clipboard.writeText(link).then(function(){toast('링크가 복사되었습니다.','success');}).catch(function(){toast('복사 실패','error');});
+    if(!navigator.clipboard)toast(link,'info');
+  };
+  document.getElementById('pt-cmp').onclick=function(){
+    var link=portalBase+'dormitory/complaint.html';
+    navigator.clipboard&&navigator.clipboard.writeText(link).then(function(){toast('링크가 복사되었습니다.','success');}).catch(function(){toast('복사 실패','error');});
+    if(!navigator.clipboard)toast(link,'info');
+  };
+  if(_st.cmOpen)openComplaint(_st.cmOpen);
+}
+function openComplaint(id){
+  _st.cmOpen=id;
+  var c=_D.complaints.find(function(x){return x.id===id;});if(!c)return;
+  var cms=_D.complaint_comments.filter(function(x){return x.complaint_id===id;});
+  var TPLS=['접수되었습니다. 담당자 확인 후 처리 예정입니다.','현재 처리 중에 있습니다.','처리가 완료되었습니다.'];
+  var h='<div class="card"><div class="ct">'+esc(c.title)+' <span class="muted">'+esc(c.ticket_no||'')+'</span></div>'
+    +'<p class="muted">'+esc(c.resident_name)+' · '+esc(c.room_label)+' · '+esc(c.category)+' · '+esc((c.created_at||'').slice(0,16).replace('T',' '))+'</p>'
+    +'<div class="cm-content">'+esc(c.content||'')+'</div>'
+    +'<div class="g2"><div class="fg"><label class="lbl">상태</label><select id="cm-status" class="fs">'
+    +[['received','접수'],['in_progress','처리중'],['done','완료']].map(function(s){return'<option value="'+s[0]+'"'+(c.status===s[0]?' selected':'')+'>'+s[1]+'</option>';}).join('')
+    +'</select></div><div class="fg"><label class="lbl">담당자</label><input id="cm-asgn" class="fi" value="'+esc(c.assignee||'')+'"></div></div>'
+    +'<div class="acts"><button id="cm-sv" class="btn btn-s btn-sm">상태/담당 저장</button></div>'
+    +'<h4 class="lbl" style="margin-top:16px">처리 내역</h4>'
+    +(cms.length?cms.map(function(m){return'<div class="cm-comment"><b>'+esc(m.author)+'</b> <span class="muted">'+esc((m.created_at||'').slice(0,16).replace('T',' '))+'</span><div style="margin-top:4px">'+esc(m.body)+'</div></div>';}).join(''):'<p class="muted">아직 없습니다.</p>')
+    +'<label class="lbl" style="margin-top:12px">답변 등록</label>'
+    +'<select id="cm-tpl" class="fs" style="margin-bottom:6px"><option value="">템플릿 선택…</option>'
+    +TPLS.map(function(t){return'<option>'+esc(t)+'</option>';}).join('')+'</select>'
+    +'<textarea id="cm-body" class="fi" rows="2"></textarea>'
+    +'<div class="acts"><button id="cm-add" class="btn btn-p btn-sm">답변 등록</button></div></div>';
+  document.getElementById('cm-detail').innerHTML=h;
+  document.getElementById('cm-tpl').onchange=function(){if(this.value)setv('cm-body',this.value);};
+  document.getElementById('cm-sv').onclick=function(){
+    c.status=val('cm-status');c.assignee=(val('cm-asgn')||'').trim();
+    toast('저장됨','success');renderComplaint();
+  };
+  document.getElementById('cm-add').onclick=function(){
+    var b=(val('cm-body')||'').trim();if(!b)return;
+    _D.complaint_comments.push({id:'cc'+nid(),complaint_id:id,author:'관리자',body:b,created_at:new Date().toISOString()});
+    openComplaint(id);
+  };
+}
+
+/* ── Init ── */
+renderNav();renderBody();
+window._st=_st;
+})();
+</script>
