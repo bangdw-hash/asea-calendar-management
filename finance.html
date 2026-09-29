@@ -1476,7 +1476,7 @@ function renderCards() {
     const monthOpts = Array.from({length:12},(_,i)=>`<option value="${i+1}">${i+1}월</option>`).join('');
     tbody.className = 'bulk-edit-active';
     tbody.innerHTML = data.map(card => {
-      const cvcVal = card.card_cvc || card.card_suffix || '';
+      const cvcVal = card.card_cvc || '';
       const pwdVal = card.card_password || '';
       return `<tr data-card-id="${card.id}" style="${!card.is_visible?'opacity:.5':''}">
         <td class="bulk-edit-cell"><select data-field="institution"><option value="">--</option>${instOpts}</select></td>
@@ -2284,7 +2284,7 @@ function addNewCardRow() {
     <td class="bulk-edit-cell"><input data-field="card_issuer" placeholder="카드사"></td>
     <td class="bulk-edit-cell"><input data-field="card_purpose" placeholder="사용 용도"></td>
     <td class="bulk-edit-cell"><input data-field="card_number" placeholder="카드번호 *"></td>
-    <td class="bulk-edit-cell"><input data-field="cvc" placeholder="CVC" maxlength="4"></td>
+    <td class="bulk-edit-cell"><input data-field="card_cvc" placeholder="CVC" maxlength="4"></td>
     <td class="bulk-edit-cell"><input data-field="card_password" placeholder="비밀번호" maxlength="4"></td>
     <td class="bulk-edit-cell"><input data-field="user_name" placeholder="소유자"></td>
     <td class="bulk-edit-cell"><input data-field="department" placeholder="부서"></td>
@@ -2334,7 +2334,7 @@ async function saveBulkEditAccounts() {
       const field = el.dataset.field;
       let val = el.value;
       if (field === 'balance') val = parseFloat(val) || null;
-      else if (field === 'bank_id') val = parseInt(val) || null;
+      else if (field === 'bank_company_id') val = parseInt(val) || null;
       payload[field] = val || null;
     });
     if (!payload.account_number) continue;
@@ -2358,7 +2358,7 @@ function addNewAccountRow() {
   tr.style.background = 'var(--green-lt)';
   tr.innerHTML = `
     <td class="bulk-edit-cell"><select data-field="institution" class="bulk-edit-sel"><option value="">-- 선택 --</option>${instOpts}</select></td>
-    <td class="bulk-edit-cell"><select data-field="bank_id" class="bulk-edit-sel"><option value="">-- 은행 선택 --</option>${bankOpts}</select></td>
+    <td class="bulk-edit-cell"><select data-field="bank_company_id" class="bulk-edit-sel"><option value="">-- 은행 선택 --</option>${bankOpts}</select></td>
     <td class="bulk-edit-cell"><input data-field="account_number" placeholder="계좌번호 *"></td>
     <td class="bulk-edit-cell"><input data-field="account_holder" placeholder="예금주"></td>
     <td class="bulk-edit-cell"><input data-field="account_type" placeholder="계좌유형"></td>
@@ -2495,17 +2495,19 @@ async function refreshDashboard() {
       ${a.msg}
     </div>`).join('');
     const badge = document.getElementById('nav-alert-badge');
-    badge.textContent = alerts.length; badge.style.display = 'inline';
+    if (badge) { badge.textContent = alerts.length; badge.style.display = 'inline'; }
   } else {
     banner.style.display = 'none';
-    document.getElementById('nav-alert-badge').style.display = 'none';
+    const badge = document.getElementById('nav-alert-badge');
+    if (badge) badge.style.display = 'none';
   }
 
-  // recent history
+  // recent history (dashboard tab removed — guard against missing element)
+  const tbody = document.getElementById('recent-history-body');
+  if (!tbody) return;
   const { data: recentH } = await sb.from('finance_card_history')
     .select('*, finance_cards(user_name, card_number, institution)')
     .order('created_at', { ascending: false }).limit(10);
-  const tbody = document.getElementById('recent-history-body');
   const actionMap = { checkout:'반출', return:'반납', issue:'신규발급', renew:'갱신', suspend:'정지', cancel:'해지' };
   tbody.innerHTML = (recentH||[]).map(h => `<tr>
     <td style="font-family:monospace;font-size:11px">${h.finance_cards?.card_number||'—'}</td>
