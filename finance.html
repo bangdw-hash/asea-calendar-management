@@ -511,7 +511,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;font-size:var(--font-size);back
           <div class="table-wrap">
             <table class="data-table" id="recent-history-table">
               <thead><tr>
-                <th>카드번호(끝4자리)</th><th>소유자</th><th>구분</th><th>사용자</th><th>반출일</th><th>반납예정일</th><th>반납완료일</th><th>목적</th>
+                <th>카드번호</th><th>소유자</th><th>구분</th><th>사용자</th><th>반출일</th><th>반납예정일</th><th>반납완료일</th><th>목적</th>
               </tr></thead>
               <tbody id="recent-history-body">
                 <tr><td colspan="8"><div class="empty-state"><p>데이터 로딩 중...</p></div></td></tr>
@@ -829,7 +829,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;font-size:var(--font-size);back
         </div>
         <div class="form-group">
           <label class="form-label required">카드번호</label>
-          <input class="form-input" id="c-number" placeholder="1234-5678-9012-3456">
+          <input class="form-input" id="c-number" placeholder="1234-5678-9012-3456" oninput="autoFillSuffix(this)">
         </div>
         <div class="form-group">
           <label class="form-label">끝 4자리</label>
@@ -1203,14 +1203,11 @@ let ctxMenuCardId = null;
 let _accDupPending = [], _accDupInputEl = null;
 let institutionsData = ['아세아항공직업전문학교', '드림에듀', '세인트'];
 
-// cache-bust: force reload when stale version cached
+// cache-bust: redirect bare URL to versioned URL so browser always fetches fresh HTML
 (function(){
-  var VER = 'v20260929d';
-  var k = 'fin_ver_' + VER;
-  if (!sessionStorage.getItem(k)) {
-    sessionStorage.setItem(k, '1');
-    var url = location.pathname + '?_v=' + Date.now() + location.hash;
-    location.replace(url);
+  var DEPLOY_VER = '20260929d';
+  if (location.search !== '?_v=' + DEPLOY_VER) {
+    location.replace(location.pathname + '?_v=' + DEPLOY_VER + location.hash);
   }
 })();
 
@@ -1333,11 +1330,12 @@ async function loadAccountTypes() {
   populateSelect('a-type', accountTypesData, 'id', 'name', '-- 선택 --');
 }
 async function loadCards() {
-  const { data, error } = await sb.from('finance_cards').select('*').order('institution').order('card_number');
+  const { data, error } = await sb.from('finance_cards')
+    .select('*, finance_accounts(account_number, finance_bank_companies(name))')
+    .order('institution').order('card_number');
   if (error) {
-    console.error('loadCards error:', error);
-    const tbody = document.getElementById('cards-tbody');
-    if (tbody) tbody.innerHTML = `<tr><td colspan="10"><div class="empty-state" style="color:var(--red)">⚠ DB 연결 오류: ${error.message}</div></td></tr>`;
+    const tbody = document.getElementById('cards-body');
+    if (tbody) tbody.innerHTML = `<tr><td colspan="9"><div class="empty-state" style="color:var(--red)">⚠ DB 연결 오류: ${error.message}</div></td></tr>`;
     return;
   }
   cardsData = data || [];
@@ -1542,6 +1540,10 @@ function toggleAllCvc(e) {
   const btn = document.getElementById('cvc-hdr-btn');
   if (btn) btn.style.color = cvcRevealed ? 'var(--primary)' : '';
   renderCards();
+}
+function autoFillSuffix(input) {
+  const digits = input.value.replace(/\D/g, '');
+  if (digits.length >= 4) document.getElementById('c-suffix').value = digits.slice(-4);
 }
 function toggleCvcInput() {
   const el = document.getElementById('c-cvc');
@@ -1997,12 +1999,12 @@ async function refreshDashboard() {
 
   // recent history
   const { data: recentH } = await sb.from('finance_card_history')
-    .select('*, finance_cards(user_name, card_suffix, institution)')
+    .select('*, finance_cards(user_name, card_number, institution)')
     .order('created_at', { ascending: false }).limit(10);
   const tbody = document.getElementById('recent-history-body');
   const actionMap = { checkout:'반출', return:'반납', issue:'신규발급', renew:'갱신', suspend:'정지', cancel:'해지' };
   tbody.innerHTML = (recentH||[]).map(h => `<tr>
-    <td style="font-family:monospace">****${h.finance_cards?.card_suffix||''}</td>
+    <td style="font-family:monospace;font-size:11px">${h.finance_cards?.card_number||'—'}</td>
     <td>${h.finance_cards?.user_name||''}</td>
     <td><span class="badge ${h.action_type==='checkout'?'badge-blue':'badge-green'}">${actionMap[h.action_type]||h.action_type}</span></td>
     <td>${h.user_name||''}</td>
