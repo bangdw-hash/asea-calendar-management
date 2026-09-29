@@ -375,19 +375,19 @@ body{font-family:'Segoe UI',system-ui,sans-serif;font-size:var(--font-size);back
 .history-detail-row td{padding:0!important;background:var(--bg)!important}
 .history-inline-panel{padding:12px 16px;border-top:2px solid var(--primary-lt)}
 .history-memo-list{display:flex;flex-direction:column;gap:6px;margin-bottom:12px;max-height:220px;overflow-y:auto}
-.history-memo-item{display:flex;gap:10px;align-items:flex-start;padding:8px 10px;background:var(--surface);border-radius:8px;border:1px solid var(--border)}
-.history-memo-date{font-size:11px;color:var(--text-3);white-space:nowrap;min-width:80px;padding-top:1px}
-.history-memo-text{font-size:13px;color:var(--text-1);white-space:pre-wrap;flex:1}
-.history-memo-del{background:none;border:none;cursor:pointer;color:var(--text-3);padding:2px 4px;border-radius:4px;flex-shrink:0}
+.history-memo-item{display:flex;gap:10px;align-items:flex-start;padding:8px 10px;background:var(--surface);border-radius:8px;border:1px solid var(--gray-bd)}
+.history-memo-date{font-size:11px;color:var(--text3);white-space:nowrap;min-width:80px;padding-top:1px}
+.history-memo-text{font-size:13px;color:var(--text);white-space:pre-wrap;flex:1}
+.history-memo-del{background:none;border:none;cursor:pointer;color:var(--text3);padding:2px 4px;border-radius:4px;flex-shrink:0}
 .history-memo-del:hover{color:var(--red);background:var(--red-lt)}
 .history-add-form{display:flex;gap:8px;align-items:flex-start}
-.history-add-form textarea{flex:1;height:60px;resize:vertical;font-size:13px;padding:8px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text-1)}
+.history-add-form textarea{flex:1;height:60px;resize:vertical;font-size:13px;padding:8px;border:1px solid var(--gray-bd);border-radius:8px;background:var(--surface);color:var(--text)}
 /* context menu */
-#card-ctx-menu{position:fixed;z-index:9999;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--sh-md);padding:4px;min-width:130px;display:none}
-#card-ctx-menu button{display:block;width:100%;text-align:left;background:none;border:none;padding:8px 14px;font-size:13px;color:var(--text-1);border-radius:6px;cursor:pointer;white-space:nowrap}
+#card-ctx-menu{position:fixed;z-index:9999;background:var(--surface);border:1px solid var(--gray-bd);border-radius:var(--r);box-shadow:var(--sh-md);padding:4px;min-width:130px;display:none}
+#card-ctx-menu button{display:block;width:100%;text-align:left;background:none;border:none;padding:8px 14px;font-size:13px;color:var(--text);border-radius:6px;cursor:pointer;white-space:nowrap}
 #card-ctx-menu button:hover{background:var(--primary-lt);color:var(--primary)}
-#card-ctx-menu hr{margin:3px 0;border:none;border-top:1px solid var(--border)}
-.cvc-reveal-btn{background:none;border:none;cursor:pointer;padding:2px 6px;vertical-align:middle;color:var(--text-3)}
+#card-ctx-menu hr{margin:3px 0;border:none;border-top:1px solid var(--gray-bd)}
+.cvc-reveal-btn{background:none;border:none;cursor:pointer;padding:2px 6px;vertical-align:middle;color:var(--text3)}
 .cvc-reveal-btn:hover{color:var(--primary)}
 </style>
 </head>
@@ -758,7 +758,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;font-size:var(--font-size);back
       </button>
     </div>
     <div class="modal-body">
-      <p style="margin-bottom:12px;color:var(--text-2)">아래 계좌가 이미 DB에 존재합니다. 처리 방식을 선택하세요.</p>
+      <p style="margin-bottom:12px;color:var(--text2)">아래 계좌가 이미 DB에 존재합니다. 처리 방식을 선택하세요.</p>
       <div style="display:flex;gap:8px;margin-bottom:12px">
         <button class="btn btn-sm btn-secondary" onclick="accDupSelectAll('update')">전체 업데이트</button>
         <button class="btn btn-sm btn-secondary" onclick="accDupSelectAll('skip')">전체 건너뛰기</button>
@@ -786,7 +786,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;font-size:var(--font-size);back
       </button>
     </div>
     <div class="modal-body">
-      <p style="margin-bottom:12px;color:var(--text-2)">아래 카드가 이미 DB에 존재합니다. 각 항목별로 처리 방식을 선택하거나 일괄 처리하세요.</p>
+      <p style="margin-bottom:12px;color:var(--text2)">아래 카드가 이미 DB에 존재합니다. 각 항목별로 처리 방식을 선택하거나 일괄 처리하세요.</p>
       <div style="display:flex;gap:8px;margin-bottom:12px">
         <button class="btn btn-sm btn-secondary" onclick="dupSelectAll('update')">전체 업데이트</button>
         <button class="btn btn-sm btn-secondary" onclick="dupSelectAll('skip')">전체 건너뛰기</button>
@@ -831,16 +831,13 @@ body{font-family:'Segoe UI',system-ui,sans-serif;font-size:var(--font-size);back
           <label class="form-label required">카드번호</label>
           <input class="form-input" id="c-number" placeholder="1234-5678-9012-3456" oninput="autoFillSuffix(this)">
         </div>
-        <div class="form-group">
-          <label class="form-label">끝 4자리</label>
-          <input class="form-input" id="c-suffix" placeholder="3456" maxlength="4">
-        </div>
+        <input type="hidden" id="c-suffix">
         <div class="form-group">
           <label class="form-label">CVC / CVV</label>
           <div style="display:flex;gap:6px;align-items:center">
             <input class="form-input" id="c-cvc" type="password" placeholder="***" maxlength="4" autocomplete="off" style="flex:1;letter-spacing:3px">
             <button type="button" onclick="toggleCvcInput()" title="표시/숨김"
-              style="background:none;border:1px solid var(--border);border-radius:var(--r);padding:6px 8px;cursor:pointer;color:var(--text-3)">
+              style="background:none;border:1px solid var(--gray-bd);border-radius:var(--r);padding:6px 8px;cursor:pointer;color:var(--text3)">
               <svg id="cvc-eye-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
             </button>
           </div>
@@ -1203,9 +1200,21 @@ let ctxMenuCardId = null;
 let _accDupPending = [], _accDupInputEl = null;
 let institutionsData = ['아세아항공직업전문학교', '드림에듀', '세인트'];
 
-// cache-bust: redirect bare URL to versioned URL so browser always fetches fresh HTML
+// cache-bust: force reload when version changes (fixes Chrome cached old HTML)
 (function(){
-  var DEPLOY_VER = '20260929d';
+  var DEPLOY_VER = '20260929e';
+  try {
+    var lsKey = '_fv';
+    var prev = localStorage.getItem(lsKey);
+    localStorage.setItem(lsKey, DEPLOY_VER);
+    if (prev && prev !== DEPLOY_VER) {
+      // version changed — hard reload to bypass disk cache
+      var newUrl = location.pathname + '?_v=' + DEPLOY_VER;
+      if (location.href.indexOf(newUrl) === -1) { location.href = newUrl; }
+      else { location.reload(); }
+      return;
+    }
+  } catch(e) {}
   if (location.search !== '?_v=' + DEPLOY_VER) {
     location.replace(location.pathname + '?_v=' + DEPLOY_VER + location.hash);
   }
@@ -1418,7 +1427,8 @@ function renderCards() {
   tbody.innerHTML = data.map(card => {
     const acc = card.finance_accounts;
     const accLabel = acc ? `${acc.finance_bank_companies?.name||''} ${acc.account_number||''}` : '-';
-    const cvcDisplay = cvcRevealed ? (card.card_cvc || '—') : '•••';
+    const cvcVal = card.card_cvc || card.card_suffix || '';
+    const cvcDisplay = cvcRevealed ? (cvcVal || '—') : (cvcVal ? '•••' : '—');
     return `<tr style="cursor:pointer;${!card.is_visible?'opacity:.5':''}" onclick="toggleRowHistory(event,${card.id})" oncontextmenu="showCardCtxMenu(event,${card.id})">
       <td>${card.institution||''}</td>
       <td>${card.card_issuer||''}</td>
@@ -1433,7 +1443,7 @@ function renderCards() {
     <tr class="history-detail-row" id="hist-row-${card.id}" style="display:none">
       <td colspan="9" style="padding:0;background:var(--bg)">
         <div class="history-inline-panel" id="hist-panel-${card.id}">
-          <div style="color:var(--text-3);font-size:12px;padding:8px">로딩 중...</div>
+          <div style="color:var(--text3);font-size:12px;padding:8px">로딩 중...</div>
         </div>
       </td>
     </tr>`;
@@ -1590,11 +1600,11 @@ async function loadInlineHistory(cardId) {
           <button class="history-memo-del" onclick="deleteInlineMemo(${h.id},${cardId})" title="삭제">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
           </button>
-        </div>`).join('') : '<div style="color:var(--text-3);font-size:12px;padding:4px">이력 없음</div>'}
+        </div>`).join('') : '<div style="color:var(--text3);font-size:12px;padding:4px">이력 없음</div>'}
     </div>
     <div class="history-add-form">
       <input type="date" id="hist-date-${cardId}" value="${new Date().toISOString().slice(0,10)}"
-        style="border:1px solid var(--border);border-radius:8px;padding:8px;font-size:12px;background:var(--surface);color:var(--text-1)">
+        style="border:1px solid var(--gray-bd);border-radius:8px;padding:8px;font-size:12px;background:var(--surface);color:var(--text)">
       <textarea id="hist-text-${cardId}" placeholder="이력 내용을 입력하세요 (예: 홍길동에게 출장 전달 / 반납 완료)"></textarea>
       <button class="btn btn-primary btn-sm" onclick="addInlineMemo(${cardId})" style="align-self:flex-end">추가</button>
     </div>`;
@@ -2118,7 +2128,7 @@ async function changePassword() {
 function renderInstitutionsSettings() {
   const content = document.getElementById('settings-content');
   const rows = institutionsData.map((name, i) => `
-    <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)">
+    <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--gray-bd)">
       <span style="flex:1;font-size:13px">${name}</span>
       <button class="btn btn-danger btn-sm" onclick="deleteInstitution(${i})">삭제</button>
     </div>`).join('');
