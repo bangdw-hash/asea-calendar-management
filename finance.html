@@ -1221,10 +1221,10 @@ async function loadAccountTypes() {
   populateSelect('a-type', accountTypesData, 'id', 'name', '-- 선택 --');
 }
 async function loadCards() {
-  const { data } = await sb.from('finance_cards').select('*, finance_accounts(account_number, bank_company_id, finance_bank_companies(name))').order('institution').order('card_number');
+  const { data, error } = await sb.from('finance_cards').select('*').order('institution').order('card_number');
+  if (error) { console.error('loadCards error:', error); }
   cardsData = data || [];
   renderCards();
-  // populate linked cards in account modal
   renderLinkedCardsCheckboxes();
 }
 async function loadAccounts() {
