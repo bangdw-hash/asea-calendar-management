@@ -389,6 +389,22 @@ body{font-family:'Segoe UI',system-ui,sans-serif;font-size:var(--font-size);back
 #card-ctx-menu hr{margin:3px 0;border:none;border-top:1px solid var(--gray-bd)}
 .cvc-reveal-btn{background:none;border:none;cursor:pointer;padding:2px 6px;vertical-align:middle;color:var(--text3)}
 .cvc-reveal-btn:hover{color:var(--primary)}
+/* account ctx menu */
+#account-ctx-menu{position:fixed;z-index:9999;background:var(--surface);border:1px solid var(--gray-bd);border-radius:var(--r);box-shadow:var(--sh-md);padding:4px;min-width:140px;display:none}
+#account-ctx-menu button{display:block;width:100%;text-align:left;background:none;border:none;padding:8px 14px;font-size:13px;color:var(--text);border-radius:6px;cursor:pointer;white-space:nowrap}
+#account-ctx-menu button:hover{background:var(--primary-lt);color:var(--primary)}
+#account-ctx-menu hr{margin:3px 0;border:none;border-top:1px solid var(--gray-bd)}
+/* bulk edit */
+.bulk-edit-cell input,.bulk-edit-cell select{width:100%;min-width:80px;padding:4px 6px;border:1px solid var(--primary);border-radius:6px;font-size:12px;background:var(--surface);color:var(--text);outline:none}
+.bulk-edit-active tr td{background:var(--primary-lt)!important}
+.bulk-edit-active tr:hover td{background:#d2e3fc!important}
+/* history memo actions */
+.history-memo-actions{display:flex;gap:2px;flex-shrink:0}
+.history-memo-edit,.history-memo-del{background:none;border:none;cursor:pointer;color:var(--text3);padding:2px 4px;border-radius:4px}
+.history-memo-edit:hover{color:var(--primary);background:var(--primary-lt)}
+.history-memo-del:hover{color:var(--red);background:var(--red-lt)}
+.history-memo-editing textarea{flex:1;min-height:50px;font-size:13px;padding:6px;border:1px solid var(--primary);border-radius:6px;background:var(--surface);color:var(--text);resize:vertical}
+.history-memo-editing{display:flex;flex-direction:column;gap:6px;flex:1}
 </style>
 </head>
 <body>
@@ -544,6 +560,10 @@ body{font-family:'Segoe UI',system-ui,sans-serif;font-size:var(--font-size);back
               <span>인쇄</span>
             </button>
             <button class="btn btn-secondary btn-sm" onclick="exportCardsPDF()">PDF</button>
+            <button class="btn btn-secondary btn-sm" id="bulk-edit-cards-btn" onclick="toggleBulkEditCards()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              <span id="bulk-edit-cards-label">일괄 수정</span>
+            </button>
             <button class="btn btn-primary btn-sm" onclick="openCardModal()">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
               <span>카드 등록</span>
@@ -578,9 +598,12 @@ body{font-family:'Segoe UI',system-ui,sans-serif;font-size:var(--font-size);back
             <thead>
               <tr>
                 <th onclick="sortCards('institution')">기관</th>
+                <th onclick="sortCards('card_type')">카드종류</th>
                 <th onclick="sortCards('card_issuer')">카드사</th>
+                <th onclick="sortCards('card_purpose')">카드사용용도</th>
                 <th onclick="sortCards('card_number')">카드번호</th>
                 <th>CVC <button class="cvc-reveal-btn" id="cvc-hdr-btn" onclick="toggleAllCvc(event)" title="CVC 전체 표시/숨김"><svg id="cvc-hdr-eye" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button></th>
+                <th>비밀번호 <button class="cvc-reveal-btn" id="pwd-hdr-btn" onclick="toggleAllPwd(event)" title="비밀번호 전체 표시/숨김"><svg id="pwd-hdr-eye" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button></th>
                 <th onclick="sortCards('user_name')">소유자</th>
                 <th onclick="sortCards('department')">부서</th>
                 <th>만료월</th>
@@ -589,7 +612,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;font-size:var(--font-size);back
               </tr>
             </thead>
             <tbody id="cards-body">
-              <tr><td colspan="10"><div class="empty-state"><p>데이터 로딩 중...</p></div></td></tr>
+              <tr><td colspan="13"><div class="empty-state"><p>데이터 로딩 중...</p></div></td></tr>
             </tbody>
           </table>
         </div>
@@ -613,6 +636,10 @@ body{font-family:'Segoe UI',system-ui,sans-serif;font-size:var(--font-size);back
               <span>가져오기</span>
               <input type="file" accept=".xlsx,.xls" style="display:none" onchange="importAccountsExcel(this)">
             </label>
+            <button class="btn btn-secondary btn-sm" id="bulk-edit-accounts-btn" onclick="toggleBulkEditAccounts()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              <span id="bulk-edit-accounts-label">일괄 수정</span>
+            </button>
             <button class="btn btn-primary btn-sm" onclick="openAccountModal()">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
               <span>계좌 등록</span>
@@ -742,10 +769,17 @@ body{font-family:'Segoe UI',system-ui,sans-serif;font-size:var(--font-size);back
 <!-- Duplicate Detection Modal -->
 <!-- CONTEXT MENU -->
 <div id="card-ctx-menu">
-  <button onclick="ctxHistory()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:6px;vertical-align:middle"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>이력 보기</button>
+  <button onclick="ctxHistory()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:6px;vertical-align:middle"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>이력관리</button>
   <button onclick="ctxEdit()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:6px;vertical-align:middle"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>수정</button>
+  <button onclick="ctxClipboard()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:6px;vertical-align:middle"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>클립보드 저장</button>
   <hr>
   <button id="ctx-discard-btn" onclick="ctxDiscard()" style="color:var(--orange)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:6px;vertical-align:middle"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg><span id="ctx-discard-label">폐기</span></button>
+  <button onclick="ctxDelete()" style="color:var(--red)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:6px;vertical-align:middle"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>삭제</button>
+</div>
+<div id="account-ctx-menu">
+  <button onclick="accCtxHistory()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:6px;vertical-align:middle"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>이력관리</button>
+  <button onclick="accCtxEdit()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:6px;vertical-align:middle"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>수정</button>
+  <button onclick="accCtxBalance()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:6px;vertical-align:middle"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>잔액 수정</button>
 </div>
 
 <!-- ACCOUNT DUP MODAL -->
@@ -824,8 +858,18 @@ body{font-family:'Segoe UI',system-ui,sans-serif;font-size:var(--font-size);back
           <select class="form-select" id="c-institution"></select>
         </div>
         <div class="form-group">
+          <label class="form-label">카드 종류</label>
+          <select class="form-select" id="c-card-type">
+            <option value="">-- 선택 --</option>
+          </select>
+        </div>
+        <div class="form-group">
           <label class="form-label required">카드사</label>
           <select class="form-select" id="c-issuer"></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">카드 사용 용도</label>
+          <input class="form-input" id="c-purpose" placeholder="예) 교직원 출장비, 시설운영비">
         </div>
         <div class="form-group">
           <label class="form-label required">카드번호</label>
@@ -838,6 +882,16 @@ body{font-family:'Segoe UI',system-ui,sans-serif;font-size:var(--font-size);back
             <button type="button" onclick="toggleCvcInput()" title="표시/숨김"
               style="background:none;border:1px solid var(--gray-bd);border-radius:var(--r);padding:6px 8px;cursor:pointer;color:var(--text3)">
               <svg id="cvc-eye-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">비밀번호 (4자리)</label>
+          <div style="display:flex;gap:6px;align-items:center">
+            <input class="form-input" id="c-password" type="password" placeholder="1234" maxlength="4" autocomplete="off" style="flex:1;letter-spacing:3px">
+            <button type="button" onclick="togglePwdInput()" title="표시/숨김"
+              style="background:none;border:1px solid var(--gray-bd);border-radius:var(--r);padding:6px 8px;cursor:pointer;color:var(--text3)">
+              <svg id="pwd-eye-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
             </button>
           </div>
         </div>
@@ -1194,14 +1248,17 @@ let currentCardId = null;
 let currentAccountModalTab = 'basic';
 let pendingAttachments = [];
 let tempAttachmentAccountId = null;
-let cvcRevealed = false;
-let ctxMenuCardId = null;
+let cvcRevealed = false, pwdRevealed = false;
+let ctxMenuCardId = null, ctxMenuAccountId = null;
 let _accDupPending = [], _accDupInputEl = null;
 let institutionsData = ['아세아항공직업전문학교', '드림에듀', '세인트'];
+let cardTypesData = ['일반법인카드', '주요전용카드', '사업전용카드'];
+let bulkEditModeCards = false, bulkEditModeAccounts = false;
+let _loadedAccHistRows = new Set();
 
 // cache-bust: force reload when version changes (fixes Chrome cached old HTML)
 (function(){
-  var DEPLOY_VER = '20260929e';
+  var DEPLOY_VER = '20260929f';
   try {
     var lsKey = '_fv';
     var prev = localStorage.getItem(lsKey);
@@ -1284,7 +1341,7 @@ function showTab(tab) {
 
 // ── LOAD ALL DATA ──
 async function loadAllData() {
-  await loadInstitutions();
+  await Promise.all([loadInstitutions(), loadCardTypes()]);
   await Promise.all([loadCompanies(), loadAccountTypes(), loadCards(), loadAccounts()]);
   await refreshDashboard();
   populateFilters();
@@ -1295,6 +1352,27 @@ async function loadInstitutions() {
     try { institutionsData = JSON.parse(data.value); } catch(e) {}
   }
   populateInstitutionSelects();
+}
+async function loadCardTypes() {
+  const { data } = await sb.from('finance_admin_settings').select('value').eq('key','card_types').single();
+  if (data?.value) {
+    try { cardTypesData = JSON.parse(data.value); } catch(e) {}
+  }
+  populateCardTypeSelect();
+}
+function populateCardTypeSelect() {
+  const sel = document.getElementById('c-card-type');
+  if (!sel) return;
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">-- 선택 --</option>' +
+    cardTypesData.map(t => `<option value="${t}">${t}</option>`).join('');
+  if (cur) sel.value = cur;
+}
+async function saveCardTypes() {
+  await sb.from('finance_admin_settings').upsert({
+    key: 'card_types', value: JSON.stringify(cardTypesData),
+    updated_at: new Date().toISOString()
+  });
 }
 function populateInstitutionSelects() {
   const ids = ['c-institution','a-institution'];
@@ -1342,7 +1420,7 @@ async function loadCards() {
     .order('institution').order('card_number');
   if (error) {
     const tbody = document.getElementById('cards-body');
-    if (tbody) tbody.innerHTML = `<tr><td colspan="9"><div class="empty-state" style="color:var(--red)">⚠ DB 연결 오류: ${error.message}</div></td></tr>`;
+    if (tbody) tbody.innerHTML = `<tr><td colspan="13"><div class="empty-state" style="color:var(--red)">⚠ DB 연결 오류: ${error.message}</div></td></tr>`;
     return;
   }
   cardsData = data || [];
@@ -1411,7 +1489,8 @@ function renderCards() {
   if (inst) data = data.filter(c => c.institution === inst);
   if (q) data = data.filter(c =>
     (c.card_number||'').includes(q) || (c.user_name||'').toLowerCase().includes(q) ||
-    (c.card_suffix||'').includes(q) || (c.department||'').toLowerCase().includes(q)
+    (c.card_suffix||'').includes(q) || (c.department||'').toLowerCase().includes(q) ||
+    (c.card_type||'').includes(q) || (c.card_purpose||'').toLowerCase().includes(q)
   );
   if (stat) data = data.filter(c => getCardStatus(c) === stat);
   data.sort((a,b) => {
@@ -1419,33 +1498,86 @@ function renderCards() {
     return cardSortDir === 'asc' ? (va > vb ? 1:-1) : (va < vb ? 1:-1);
   });
   if (!data.length) {
-    tbody.innerHTML = `<tr><td colspan="9"><div class="empty-state"><p>등록된 카드가 없습니다</p><small>카드 등록 버튼을 눌러 등록하세요</small></div></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="13"><div class="empty-state"><p>등록된 카드가 없습니다</p><small>카드 등록 버튼을 눌러 등록하세요</small></div></td></tr>`;
     return;
   }
+  if (bulkEditModeCards) {
+    const instOpts = institutionsData.map(n=>`<option value="${n}">${n}</option>`).join('');
+    const typeOpts = cardTypesData.map(t=>`<option value="${t}">${t}</option>`).join('');
+    const monthOpts = Array.from({length:12},(_,i)=>`<option value="${i+1}">${i+1}월</option>`).join('');
+    tbody.className = 'bulk-edit-active';
+    tbody.innerHTML = data.map(card => {
+      const cvcVal = card.card_cvc || card.card_suffix || '';
+      const pwdVal = card.card_password || '';
+      return `<tr data-card-id="${card.id}" style="${!card.is_visible?'opacity:.5':''}">
+        <td class="bulk-edit-cell"><select data-field="institution"><option value="">--</option>${instOpts}</select></td>
+        <td class="bulk-edit-cell"><select data-field="card_type"><option value="">--</option>${typeOpts}</select></td>
+        <td class="bulk-edit-cell"><input data-field="card_issuer" value="${escHtml(card.card_issuer||'')}"></td>
+        <td class="bulk-edit-cell"><input data-field="card_purpose" value="${escHtml(card.card_purpose||'')}"></td>
+        <td class="bulk-edit-cell"><input data-field="card_number" value="${escHtml(card.card_number||'')}" style="font-family:monospace"></td>
+        <td class="bulk-edit-cell"><input data-field="card_cvc" value="${escHtml(cvcVal)}" style="font-family:monospace"></td>
+        <td class="bulk-edit-cell"><input data-field="card_password" value="${escHtml(pwdVal)}" maxlength="4" style="font-family:monospace"></td>
+        <td class="bulk-edit-cell"><input data-field="user_name" value="${escHtml(card.user_name||'')}"></td>
+        <td class="bulk-edit-cell"><input data-field="department" value="${escHtml(card.department||'')}"></td>
+        <td class="bulk-edit-cell" style="display:flex;gap:2px;align-items:center">
+          <input data-field="expiry_year" value="${card.expiry_year||''}" type="number" style="width:56px">/<select data-field="expiry_month" style="width:52px">${monthOpts}</select>
+        </td>
+        <td>${statusBadge(card)}</td>
+        <td></td>
+        <td></td>
+      </tr>`;
+    }).join('');
+    // populate select values after DOM insertion
+    tbody.querySelectorAll('tr[data-card-id]').forEach(tr => {
+      const id = tr.dataset.cardId;
+      const card = data.find(c => c.id === id);
+      if (!card) return;
+      const instSel = tr.querySelector('[data-field="institution"]');
+      if (instSel) instSel.value = card.institution || '';
+      const typeSel = tr.querySelector('[data-field="card_type"]');
+      if (typeSel) typeSel.value = card.card_type || '';
+      const monSel = tr.querySelector('[data-field="expiry_month"]');
+      if (monSel) monSel.value = card.expiry_month || 12;
+    });
+    return;
+  }
+  tbody.className = '';
   tbody.innerHTML = data.map(card => {
     const acc = card.finance_accounts;
     const accLabel = acc ? `${acc.finance_bank_companies?.name||''} ${acc.account_number||''}` : '-';
     const cvcVal = card.card_cvc || card.card_suffix || '';
     const cvcDisplay = cvcRevealed ? (cvcVal || '—') : (cvcVal ? '•••' : '—');
-    return `<tr style="cursor:pointer;${!card.is_visible?'opacity:.5':''}" onclick="toggleRowHistory(event,${card.id})" oncontextmenu="showCardCtxMenu(event,${card.id})">
+    const pwdVal = card.card_password || '';
+    const pwdDisplay = pwdRevealed ? (pwdVal || '—') : (pwdVal ? '••••' : '—');
+    const cardTypeLabel = card.card_type ? `<span class="badge badge-blue" style="font-size:10px">${card.card_type}</span>` : '-';
+    return `<tr style="cursor:pointer;${!card.is_visible?'opacity:.5':''}"
+        onclick="toggleRowHistory(event,'${card.id}')"
+        oncontextmenu="showCardCtxMenu(event,'${card.id}')"
+        data-card-id="${card.id}">
       <td>${card.institution||''}</td>
+      <td>${cardTypeLabel}</td>
       <td>${card.card_issuer||''}</td>
+      <td style="font-size:11px;color:var(--text2)">${card.card_purpose||''}</td>
       <td style="font-family:monospace">${card.card_number||''}</td>
-      <td style="font-family:monospace;letter-spacing:2px">${cvcDisplay}</td>
+      <td class="pwd-cell">${cvcDisplay}</td>
+      <td class="pwd-cell">${pwdDisplay}</td>
       <td>${card.user_name||''}</td>
       <td>${card.department||''}</td>
       <td>${card.expiry_year||''}/${String(card.expiry_month||'').padStart(2,'0')}</td>
       <td>${statusBadge(card)}</td>
       <td style="font-size:11px">${accLabel}</td>
+      <td></td>
     </tr>
     <tr class="history-detail-row" id="hist-row-${card.id}" style="display:none">
-      <td colspan="9" style="padding:0;background:var(--bg)">
+      <td colspan="13" style="padding:0;background:var(--bg)">
         <div class="history-inline-panel" id="hist-panel-${card.id}">
           <div style="color:var(--text3);font-size:12px;padding:8px">로딩 중...</div>
         </div>
       </td>
     </tr>`;
   }).join('');
+  // long-press for mobile
+  setupLongPress('cards-body', showCardCtxMenuLongPress);
 }
 
 function filterCards() { renderCards(); }
@@ -1464,13 +1596,16 @@ function openCardModal(id) {
   document.getElementById('card-modal-title').textContent = id ? '카드 수정' : '카드 등록';
   document.getElementById('card-id').value = id || '';
   if (!id) {
-    ['c-institution','c-number','c-suffix','c-cvc','c-user-name','c-position','c-department','c-notes'].forEach(f => {
+    ['c-institution','c-number','c-suffix','c-cvc','c-user-name','c-position','c-department','c-notes','c-purpose'].forEach(f => {
       const el = document.getElementById(f);
       if (!el) return;
       if (el.tagName === 'SELECT') el.selectedIndex = 0; else el.value = '';
     });
     const cvcEl = document.getElementById('c-cvc');
     if (cvcEl) { cvcEl.type = 'password'; }
+    const pwdEl = document.getElementById('c-password');
+    if (pwdEl) { pwdEl.value = ''; pwdEl.type = 'password'; }
+    document.getElementById('c-card-type').value = '';
     document.getElementById('c-exp-year').value = new Date().getFullYear() + 3;
     document.getElementById('c-exp-month').value = 12;
     document.getElementById('c-status').value = 'stored';
@@ -1484,6 +1619,8 @@ function editCard(id) {
   if (!card) return;
   openCardModal(id);
   document.getElementById('c-institution').value = card.institution || '';
+  document.getElementById('c-card-type').value = card.card_type || '';
+  document.getElementById('c-purpose').value = card.card_purpose || '';
   // card_issuer is text; match select option by text
   const issuerSel = document.getElementById('c-issuer');
   if (issuerSel) {
@@ -1503,14 +1640,17 @@ function editCard(id) {
   document.getElementById('c-notes').value = card.notes || '';
   const cvcEl = document.getElementById('c-cvc');
   if (cvcEl) { cvcEl.value = card.card_cvc || ''; cvcEl.type = 'password'; }
+  const pwdEl = document.getElementById('c-password');
+  if (pwdEl) { pwdEl.value = card.card_password || ''; pwdEl.type = 'password'; }
 }
 async function saveCard() {
   const id = document.getElementById('card-id').value;
   const issuerSel = document.getElementById('c-issuer');
   const issuerName = issuerSel.options[issuerSel.selectedIndex]?.text || '';
-  const issuerId = issuerSel.value || null;
   const payload = {
     institution: document.getElementById('c-institution').value,
+    card_type: document.getElementById('c-card-type').value || null,
+    card_purpose: document.getElementById('c-purpose').value || null,
     card_issuer: issuerName,
     card_number: document.getElementById('c-number').value,
     card_suffix: document.getElementById('c-suffix').value,
@@ -1524,6 +1664,7 @@ async function saveCard() {
     linked_account_id: document.getElementById('c-account').value || null,
     notes: document.getElementById('c-notes').value,
     card_cvc: document.getElementById('c-cvc')?.value || null,
+    card_password: document.getElementById('c-password')?.value || null,
     updated_at: new Date().toISOString(),
   };
   let err;
@@ -1558,6 +1699,18 @@ function toggleCvcInput() {
   if (!el) return;
   el.type = el.type === 'password' ? 'text' : 'password';
 }
+function toggleAllPwd(e) {
+  if (e) e.stopPropagation();
+  pwdRevealed = !pwdRevealed;
+  const btn = document.getElementById('pwd-hdr-btn');
+  if (btn) btn.style.color = pwdRevealed ? 'var(--primary)' : '';
+  renderCards();
+}
+function togglePwdInput() {
+  const el = document.getElementById('c-password');
+  if (!el) return;
+  el.type = el.type === 'password' ? 'text' : 'password';
+}
 
 // ── ROW INLINE HISTORY ──
 let _loadedHistRows = new Set();
@@ -1580,10 +1733,11 @@ async function loadInlineHistory(cardId) {
   const panel = document.getElementById('hist-panel-' + cardId);
   if (!panel) return;
   const card = cardsData.find(c => c.id === cardId);
-  const { data } = await sb.from('finance_card_history')
-    .select('id, checkout_date, notes, user_name')
-    .eq('card_id', cardId)
-    .order('checkout_date', { ascending: false })
+  const { data } = await sb.from('finance_history')
+    .select('id, memo_date, memo_text')
+    .eq('entity_type', 'card')
+    .eq('entity_id', cardId)
+    .order('memo_date', { ascending: false })
     .order('created_at', { ascending: false });
   const items = data || [];
   panel.innerHTML = `
@@ -1592,41 +1746,91 @@ async function loadInlineHistory(cardId) {
     </div>
     <div class="history-memo-list" id="hist-list-${cardId}">
       ${items.length ? items.map(h => `
-        <div class="history-memo-item">
-          <span class="history-memo-date">${h.checkout_date||''}</span>
-          <span class="history-memo-text">${escHtml(h.notes||'')}</span>
-          <button class="history-memo-del" onclick="deleteInlineMemo(${h.id},${cardId})" title="삭제">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-          </button>
+        <div class="history-memo-item" id="hitem-${h.id}">
+          <span class="history-memo-date">${h.memo_date||''}</span>
+          <span class="history-memo-text">${escHtml(h.memo_text||'')}</span>
+          <div class="history-memo-actions">
+            <button class="history-memo-edit" onclick="editInlineMemo('${h.id}','card','${cardId}')" title="수정">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            </button>
+            <button class="history-memo-del" onclick="deleteInlineMemo('${h.id}','card','${cardId}')" title="삭제">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>
         </div>`).join('') : '<div style="color:var(--text3);font-size:12px;padding:4px">이력 없음</div>'}
     </div>
     <div class="history-add-form">
       <input type="date" id="hist-date-${cardId}" value="${new Date().toISOString().slice(0,10)}"
         style="border:1px solid var(--gray-bd);border-radius:8px;padding:8px;font-size:12px;background:var(--surface);color:var(--text)">
       <textarea id="hist-text-${cardId}" placeholder="이력 내용을 입력하세요 (예: 홍길동에게 출장 전달 / 반납 완료)"></textarea>
-      <button class="btn btn-primary btn-sm" onclick="addInlineMemo(${cardId})" style="align-self:flex-end">추가</button>
+      <button class="btn btn-primary btn-sm" onclick="addInlineMemo('${cardId}','card')" style="align-self:flex-end">추가</button>
     </div>`;
 }
-async function addInlineMemo(cardId) {
-  const date = document.getElementById('hist-date-' + cardId)?.value || new Date().toISOString().slice(0,10);
-  const text = document.getElementById('hist-text-' + cardId)?.value?.trim();
+async function addInlineMemo(entityId, entityType) {
+  entityType = entityType || 'card';
+  const prefix = entityType === 'card' ? '' : 'acc-';
+  const date = document.getElementById(`${prefix}hist-date-${entityId}`)?.value || new Date().toISOString().slice(0,10);
+  const text = document.getElementById(`${prefix}hist-text-${entityId}`)?.value?.trim();
   if (!text) { toast('내용을 입력하세요', 'warn'); return; }
-  const { error } = await sb.from('finance_card_history').insert({
-    card_id: cardId, action_type: 'memo',
-    checkout_date: date, notes: text,
+  const { error } = await sb.from('finance_history').insert({
+    entity_type: entityType, entity_id: entityId,
+    memo_date: date, memo_text: text,
     created_at: new Date().toISOString()
   });
   if (error) { toast('저장 실패: ' + error.message, 'error'); return; }
-  _loadedHistRows.delete(cardId);
-  await loadInlineHistory(cardId);
-  const ta = document.getElementById('hist-text-' + cardId);
-  if (ta) ta.value = '';
+  if (entityType === 'card') {
+    _loadedHistRows.delete(entityId);
+    await loadInlineHistory(entityId);
+    const ta = document.getElementById('hist-text-' + entityId);
+    if (ta) ta.value = '';
+  } else {
+    _loadedAccHistRows.delete(entityId);
+    await loadInlineHistoryAcc(entityId);
+    const ta = document.getElementById('acc-hist-text-' + entityId);
+    if (ta) ta.value = '';
+  }
 }
-async function deleteInlineMemo(histId, cardId) {
+async function deleteInlineMemo(histId, entityType, entityId) {
   if (!confirm('이 이력을 삭제하시겠습니까?')) return;
-  await sb.from('finance_card_history').delete().eq('id', histId);
-  _loadedHistRows.delete(cardId);
-  await loadInlineHistory(cardId);
+  await sb.from('finance_history').delete().eq('id', histId);
+  if (entityType === 'card') {
+    _loadedHistRows.delete(entityId);
+    await loadInlineHistory(entityId);
+  } else {
+    _loadedAccHistRows.delete(entityId);
+    await loadInlineHistoryAcc(entityId);
+  }
+}
+function editInlineMemo(histId, entityType, entityId) {
+  const item = document.getElementById('hitem-' + histId);
+  if (!item) return;
+  const textSpan = item.querySelector('.history-memo-text');
+  const curText = textSpan ? textSpan.textContent : '';
+  item.querySelector('.history-memo-actions').style.display = 'none';
+  textSpan.style.display = 'none';
+  const editing = document.createElement('div');
+  editing.className = 'history-memo-editing';
+  editing.innerHTML = `<textarea style="min-height:50px;font-size:13px;padding:6px;border:1px solid var(--primary);border-radius:6px;background:var(--surface);color:var(--text);resize:vertical;flex:1">${escHtml(curText)}</textarea>
+    <div style="display:flex;gap:6px">
+      <button class="btn btn-primary btn-sm" onclick="saveInlineMemoEdit('${histId}','${entityType}','${entityId}',this)">저장</button>
+      <button class="btn btn-secondary btn-sm" onclick="cancelInlineMemoEdit('${histId}','${entityType}','${entityId}')">취소</button>
+    </div>`;
+  item.appendChild(editing);
+}
+async function saveInlineMemoEdit(histId, entityType, entityId, btn) {
+  const item = document.getElementById('hitem-' + histId);
+  if (!item) return;
+  const ta = item.querySelector('textarea');
+  const newText = ta ? ta.value.trim() : '';
+  if (!newText) { toast('내용을 입력하세요', 'warn'); return; }
+  const { error } = await sb.from('finance_history').update({ memo_text: newText }).eq('id', histId);
+  if (error) { toast('수정 실패: ' + error.message, 'error'); return; }
+  if (entityType === 'card') { _loadedHistRows.delete(entityId); await loadInlineHistory(entityId); }
+  else { _loadedAccHistRows.delete(entityId); await loadInlineHistoryAcc(entityId); }
+}
+function cancelInlineMemoEdit(histId, entityType, entityId) {
+  if (entityType === 'card') { _loadedHistRows.delete(entityId); loadInlineHistory(entityId); }
+  else { _loadedAccHistRows.delete(entityId); loadInlineHistoryAcc(entityId); }
 }
 function escHtml(s) {
   return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -1636,6 +1840,7 @@ function escHtml(s) {
 function showCardCtxMenu(e, cardId) {
   e.preventDefault();
   e.stopPropagation();
+  hideAccountCtxMenu();
   ctxMenuCardId = cardId;
   const card = cardsData.find(c => c.id === cardId);
   const lbl = document.getElementById('ctx-discard-label');
@@ -1644,29 +1849,159 @@ function showCardCtxMenu(e, cardId) {
   if (btn) btn.style.color = card?.is_visible === false ? 'var(--green)' : 'var(--orange)';
   const menu = document.getElementById('card-ctx-menu');
   menu.style.display = 'block';
-  menu.style.left = Math.min(e.clientX, window.innerWidth - 150) + 'px';
-  menu.style.top = Math.min(e.clientY, window.innerHeight - 140) + 'px';
+  menu.style.left = Math.min(e.clientX, window.innerWidth - 160) + 'px';
+  menu.style.top = Math.min(e.clientY, window.innerHeight - 200) + 'px';
+}
+function showCardCtxMenuLongPress(cardId, x, y) {
+  if (navigator.vibrate) navigator.vibrate(50);
+  const fakeE = { preventDefault(){}, stopPropagation(){}, clientX: x, clientY: y };
+  showCardCtxMenu(fakeE, cardId);
 }
 function hideCardCtxMenu() {
   document.getElementById('card-ctx-menu').style.display = 'none';
   ctxMenuCardId = null;
 }
 function ctxHistory() {
-  hideCardCtxMenu();
-  if (!ctxMenuCardId) return;
-  const row = document.getElementById('hist-row-' + ctxMenuCardId);
-  if (row && row.style.display === 'none') {
+  const id = ctxMenuCardId; hideCardCtxMenu();
+  if (!id) return;
+  // close all others first
+  document.querySelectorAll('.history-detail-row').forEach(r => { r.style.display = 'none'; });
+  const row = document.getElementById('hist-row-' + id);
+  if (row) {
     row.style.display = '';
-    if (!_loadedHistRows.has(ctxMenuCardId)) {
-      _loadedHistRows.add(ctxMenuCardId);
-      loadInlineHistory(ctxMenuCardId);
-    }
+    if (!_loadedHistRows.has(id)) { _loadedHistRows.add(id); loadInlineHistory(id); }
   }
 }
 function ctxEdit() { const id = ctxMenuCardId; hideCardCtxMenu(); if (id) editCard(id); }
 function ctxDiscard() { const id = ctxMenuCardId; hideCardCtxMenu(); if (id) { const c = cardsData.find(x=>x.id===id); toggleCardVisible(id, c?.is_visible); } }
-document.addEventListener('click', () => { const m = document.getElementById('card-ctx-menu'); if (m) m.style.display = 'none'; });
-document.addEventListener('keydown', e => { if (e.key==='Escape') hideCardCtxMenu(); });
+async function ctxDelete() {
+  const id = ctxMenuCardId; hideCardCtxMenu();
+  if (!id) return;
+  if (!confirm('이 카드를 영구 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.')) return;
+  const { error } = await sb.from('finance_cards').delete().eq('id', id);
+  if (error) { toast('삭제 실패: ' + error.message, 'error'); return; }
+  toast('삭제되었습니다', 'success');
+  await loadCards();
+  await refreshDashboard();
+}
+async function ctxClipboard() {
+  const id = ctxMenuCardId; hideCardCtxMenu();
+  if (!id) return;
+  const card = cardsData.find(c => c.id === id);
+  if (!card) return;
+  const label = card.card_type || card.institution || '';
+  const expiry = `${card.expiry_year||''}/${String(card.expiry_month||'').padStart(2,'0')}`;
+  const cvc = card.card_cvc || card.card_suffix || '-';
+  const pwd = card.card_password || '-';
+  const text = `${label}\n${card.card_number||''}\n${expiry}\n${cvc}\n${pwd}`;
+  try {
+    await navigator.clipboard.writeText(text);
+    toast('클립보드에 복사되었습니다', 'success');
+  } catch(e) {
+    toast('복사 실패: ' + e.message, 'error');
+  }
+}
+document.addEventListener('click', () => {
+  const m = document.getElementById('card-ctx-menu'); if (m) m.style.display = 'none';
+  const am = document.getElementById('account-ctx-menu'); if (am) am.style.display = 'none';
+  ctxMenuCardId = null; ctxMenuAccountId = null;
+});
+document.addEventListener('keydown', e => { if (e.key==='Escape') { hideCardCtxMenu(); hideAccountCtxMenu(); } });
+
+// ── ACCOUNT CONTEXT MENU ──
+function showAccountCtxMenu(e, accId) {
+  e.preventDefault();
+  e.stopPropagation();
+  hideCardCtxMenu();
+  ctxMenuAccountId = accId;
+  const menu = document.getElementById('account-ctx-menu');
+  menu.style.display = 'block';
+  menu.style.left = Math.min(e.clientX, window.innerWidth - 160) + 'px';
+  menu.style.top = Math.min(e.clientY, window.innerHeight - 150) + 'px';
+}
+function showAccountCtxMenuLongPress(accId, x, y) {
+  if (navigator.vibrate) navigator.vibrate(50);
+  const fakeE = { preventDefault(){}, stopPropagation(){}, clientX: x, clientY: y };
+  showAccountCtxMenu(fakeE, accId);
+}
+function hideAccountCtxMenu() {
+  const m = document.getElementById('account-ctx-menu');
+  if (m) m.style.display = 'none';
+  ctxMenuAccountId = null;
+}
+function accCtxHistory() {
+  const id = ctxMenuAccountId; hideAccountCtxMenu();
+  if (!id) return;
+  document.querySelectorAll('.acc-history-detail-row').forEach(r => { r.style.display = 'none'; });
+  const row = document.getElementById('acc-hist-row-' + id);
+  if (row) {
+    row.style.display = '';
+    if (!_loadedAccHistRows.has(id)) { _loadedAccHistRows.add(id); loadInlineHistoryAcc(id); }
+  }
+}
+function accCtxEdit() { const id = ctxMenuAccountId; hideAccountCtxMenu(); if (id) editAccount(id); }
+function accCtxBalance() { const id = ctxMenuAccountId; hideAccountCtxMenu(); if (id) openBalanceModal(id); }
+
+// ── ACCOUNT INLINE HISTORY ──
+async function loadInlineHistoryAcc(accId) {
+  const panel = document.getElementById('acc-hist-panel-' + accId);
+  if (!panel) return;
+  const acc = accountsData.find(a => a.id === accId);
+  const { data } = await sb.from('finance_history')
+    .select('id, memo_date, memo_text')
+    .eq('entity_type', 'account')
+    .eq('entity_id', accId)
+    .order('memo_date', { ascending: false })
+    .order('created_at', { ascending: false });
+  const items = data || [];
+  panel.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <strong style="font-size:13px">이력 — ${acc?.finance_bank_companies?.name||''} ${acc?.account_number||''} (${acc?.account_holder||''})</strong>
+    </div>
+    <div class="history-memo-list" id="acc-hist-list-${accId}">
+      ${items.length ? items.map(h => `
+        <div class="history-memo-item" id="hitem-${h.id}">
+          <span class="history-memo-date">${h.memo_date||''}</span>
+          <span class="history-memo-text">${escHtml(h.memo_text||'')}</span>
+          <div class="history-memo-actions">
+            <button class="history-memo-edit" onclick="editInlineMemo('${h.id}','account','${accId}')" title="수정">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            </button>
+            <button class="history-memo-del" onclick="deleteInlineMemo('${h.id}','account','${accId}')" title="삭제">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>
+        </div>`).join('') : '<div style="color:var(--text3);font-size:12px;padding:4px">이력 없음</div>'}
+    </div>
+    <div class="history-add-form">
+      <input type="date" id="acc-hist-date-${accId}" value="${new Date().toISOString().slice(0,10)}"
+        style="border:1px solid var(--gray-bd);border-radius:8px;padding:8px;font-size:12px;background:var(--surface);color:var(--text)">
+      <textarea id="acc-hist-text-${accId}" placeholder="이력 내용을 입력하세요 (예: 잔액 확인 / 이체 완료)"></textarea>
+      <button class="btn btn-primary btn-sm" onclick="addInlineMemo('${accId}','account')" style="align-self:flex-end">추가</button>
+    </div>`;
+}
+
+// ── LONG-PRESS ──
+function setupLongPress(tbodyId, callback) {
+  const tbody = document.getElementById(tbodyId);
+  if (!tbody) return;
+  let timer = null;
+  let moved = false;
+  tbody.addEventListener('pointerdown', e => {
+    const tr = e.target.closest('tr[data-card-id],tr[data-acc-id]');
+    if (!tr) return;
+    moved = false;
+    timer = setTimeout(() => {
+      if (!moved) {
+        const id = tr.dataset.cardId || tr.dataset.accId;
+        callback(id, e.clientX, e.clientY);
+      }
+    }, 600);
+  }, { passive: true });
+  tbody.addEventListener('pointermove', () => { moved = true; clearTimeout(timer); }, { passive: true });
+  tbody.addEventListener('pointerup', () => clearTimeout(timer), { passive: true });
+  tbody.addEventListener('pointercancel', () => clearTimeout(timer), { passive: true });
+}
 async function toggleCardVisible(id, current) {
   const visible = current === false ? true : false;
   const action = visible ? '복원' : '폐기';
@@ -1765,14 +2100,38 @@ function renderAccounts() {
     tbody.innerHTML = `<tr><td colspan="10"><div class="empty-state"><p>등록된 계좌가 없습니다</p></div></td></tr>`;
     return;
   }
+  if (bulkEditModeAccounts) {
+    const instOpts = institutionsData.map(n=>`<option value="${n}">${n}</option>`).join('');
+    tbody.className = 'bulk-edit-active';
+    tbody.innerHTML = data.map(acc => {
+      return `<tr data-acc-id="${acc.id}">
+        <td class="bulk-edit-cell"><select data-field="institution"><option value="">--</option>${instOpts}</select></td>
+        <td class="bulk-edit-cell"><input data-field="account_number" value="${escHtml(acc.account_number||'')}" style="font-family:monospace"></td>
+        <td class="bulk-edit-cell"><input data-field="account_holder" value="${escHtml(acc.account_holder||'')}"></td>
+        <td><span class="badge" style="background:${(acc.finance_account_types?.color||'#6b7280')}22;color:${acc.finance_account_types?.color||'#6b7280'}">${acc.finance_account_types?.name||'-'}</span></td>
+        <td class="bulk-edit-cell"><input data-field="balance" type="number" value="${acc.balance||''}" style="width:100px"></td>
+        <td colspan="5"></td>
+      </tr>`;
+    }).join('');
+    tbody.querySelectorAll('tr[data-acc-id]').forEach(tr => {
+      const acc = data.find(a => a.id === tr.dataset.accId);
+      if (!acc) return;
+      const instSel = tr.querySelector('[data-field="institution"]');
+      if (instSel) instSel.value = acc.institution || '';
+    });
+    return;
+  }
+  tbody.className = '';
   tbody.innerHTML = data.map(acc => {
     const linked = Array.isArray(acc.linked_card_ids) ? acc.linked_card_ids.length : 0;
     const typeColor = acc.finance_account_types?.color || '#6b7280';
     const typeName = acc.finance_account_types?.name || '-';
-    const statusBadge = acc.status === 'active' ? '<span class="badge badge-green">운용중</span>' :
+    const accStatusBadge = acc.status === 'active' ? '<span class="badge badge-green">운용중</span>' :
                         acc.status === 'dormant' ? '<span class="badge badge-orange">휴면</span>' :
                         '<span class="badge badge-gray">해지</span>';
-    return `<tr>
+    return `<tr style="cursor:pointer" data-acc-id="${acc.id}"
+        onclick="toggleAccRowHistory(event,'${acc.id}')"
+        oncontextmenu="showAccountCtxMenu(event,'${acc.id}')">
       <td>${acc.institution||''}</td>
       <td>${acc.finance_bank_companies?.name||''}</td>
       <td style="font-family:monospace">${acc.account_number||''}</td>
@@ -1781,15 +2140,35 @@ function renderAccounts() {
       <td style="text-align:right;font-weight:600">${acc.balance != null ? Number(acc.balance).toLocaleString() + '원' : '-'}</td>
       <td style="font-size:11px">${acc.balance_updated_at ? fmtDate(acc.balance_updated_at) : '-'}</td>
       <td>${linked ? `<span class="badge badge-blue">${linked}개</span>` : '-'}</td>
-      <td>${statusBadge}</td>
+      <td>${accStatusBadge}</td>
       <td>
-        <div style="display:flex;gap:4px">
-          <button class="btn btn-secondary btn-sm" onclick="openBalanceModal(${acc.id})">잔액</button>
-          <button class="btn btn-secondary btn-sm" onclick="editAccount(${acc.id})">수정</button>
+        <div style="display:flex;gap:4px" onclick="event.stopPropagation()">
+          <button class="btn btn-secondary btn-sm" onclick="openBalanceModal('${acc.id}')">잔액</button>
+          <button class="btn btn-secondary btn-sm" onclick="editAccount('${acc.id}')">수정</button>
+        </div>
+      </td>
+    </tr>
+    <tr class="acc-history-detail-row" id="acc-hist-row-${acc.id}" style="display:none">
+      <td colspan="10" style="padding:0;background:var(--bg)">
+        <div class="history-inline-panel" id="acc-hist-panel-${acc.id}">
+          <div style="color:var(--text3);font-size:12px;padding:8px">로딩 중...</div>
         </div>
       </td>
     </tr>`;
   }).join('');
+  // long-press
+  setupLongPress('accounts-body', showAccountCtxMenuLongPress);
+}
+
+function toggleAccRowHistory(e, accId) {
+  if (e.target.closest('button,a,input,select,textarea')) return;
+  const row = document.getElementById('acc-hist-row-' + accId);
+  if (!row) return;
+  const isOpen = row.style.display !== 'none';
+  document.querySelectorAll('.acc-history-detail-row').forEach(r => { r.style.display = 'none'; });
+  if (isOpen) return;
+  row.style.display = '';
+  if (!_loadedAccHistRows.has(accId)) { _loadedAccHistRows.add(accId); loadInlineHistoryAcc(accId); }
 }
 function filterAccounts() { renderAccounts(); }
 function sortAccounts(col) {
@@ -1870,6 +2249,74 @@ async function saveAccount() {
   await logAudit('finance_accounts', savedId, id ? 'update' : 'insert', `계좌 ${id?'수정':'등록'}`, null, payload);
   toast('저장되었습니다', 'success');
   closeModal('account-modal');
+  await loadAccounts();
+}
+
+// ── BULK EDIT ──
+function toggleBulkEditCards() {
+  if (bulkEditModeCards) {
+    saveBulkEditCards();
+  } else {
+    bulkEditModeCards = true;
+    document.getElementById('bulk-edit-cards-label').textContent = '일괄 저장';
+    document.getElementById('bulk-edit-cards-btn').className = 'btn btn-primary btn-sm';
+    renderCards();
+  }
+}
+async function saveBulkEditCards() {
+  const rows = document.querySelectorAll('#cards-body tr[data-card-id]');
+  let count = 0;
+  for (const tr of rows) {
+    const id = tr.dataset.cardId;
+    const payload = {};
+    tr.querySelectorAll('[data-field]').forEach(el => {
+      const field = el.dataset.field;
+      let val = el.value;
+      if (field === 'expiry_year' || field === 'expiry_month') val = parseInt(val) || null;
+      else if (field === 'credit_limit') val = parseInt(val) || null;
+      payload[field] = val || null;
+    });
+    payload.updated_at = new Date().toISOString();
+    const { error } = await sb.from('finance_cards').update(payload).eq('id', id);
+    if (!error) count++;
+  }
+  toast(`${count}건 저장되었습니다`, 'success');
+  bulkEditModeCards = false;
+  document.getElementById('bulk-edit-cards-label').textContent = '일괄 수정';
+  document.getElementById('bulk-edit-cards-btn').className = 'btn btn-secondary btn-sm';
+  await loadCards();
+}
+function toggleBulkEditAccounts() {
+  if (bulkEditModeAccounts) {
+    saveBulkEditAccounts();
+  } else {
+    bulkEditModeAccounts = true;
+    document.getElementById('bulk-edit-accounts-label').textContent = '일괄 저장';
+    document.getElementById('bulk-edit-accounts-btn').className = 'btn btn-primary btn-sm';
+    renderAccounts();
+  }
+}
+async function saveBulkEditAccounts() {
+  const rows = document.querySelectorAll('#accounts-body tr[data-acc-id]');
+  let count = 0;
+  for (const tr of rows) {
+    const id = tr.dataset.accId;
+    const payload = {};
+    tr.querySelectorAll('[data-field]').forEach(el => {
+      const field = el.dataset.field;
+      let val = el.value;
+      if (field === 'balance') val = parseFloat(val) || null;
+      payload[field] = val || null;
+    });
+    payload.updated_at = new Date().toISOString();
+    if (payload.balance != null) payload.balance_updated_at = new Date().toISOString();
+    const { error } = await sb.from('finance_accounts').update(payload).eq('id', id);
+    if (!error) count++;
+  }
+  toast(`${count}건 저장되었습니다`, 'success');
+  bulkEditModeAccounts = false;
+  document.getElementById('bulk-edit-accounts-label').textContent = '일괄 수정';
+  document.getElementById('bulk-edit-accounts-btn').className = 'btn btn-secondary btn-sm';
   await loadAccounts();
 }
 
@@ -2127,19 +2574,30 @@ function renderInstitutionsSettings() {
   const content = document.getElementById('settings-content');
   const rows = institutionsData.map((name, i) => `
     <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--gray-bd)">
-      <span style="flex:1;font-size:13px">${name}</span>
+      <span style="flex:1;font-size:13px" id="inst-name-${i}">${escHtml(name)}</span>
+      <button class="btn btn-secondary btn-sm" onclick="startRenameInstitution(${i})">수정</button>
       <button class="btn btn-danger btn-sm" onclick="deleteInstitution(${i})">삭제</button>
     </div>`).join('');
+  const typeRows = cardTypesData.map((t, i) => `
+    <div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--gray-bd)">
+      <span style="flex:1;font-size:13px">${escHtml(t)}</span>
+      <button class="btn btn-danger btn-sm" onclick="deleteCardType(${i})">삭제</button>
+    </div>`).join('');
   content.innerHTML = `
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-      <div class="section-title" style="margin:0">기관 관리</div>
-    </div>
+    <div class="section-title" style="margin-bottom:12px">기관 관리</div>
     <div id="inst-list" style="margin-bottom:16px">${rows || '<div style="color:var(--text3);font-size:13px;padding:8px 0">등록된 기관이 없습니다.</div>'}</div>
-    <div style="display:flex;gap:8px;align-items:center;margin-bottom:16px">
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:24px">
       <input class="form-input" id="inst-new-name" type="text" placeholder="기관명 입력" style="flex:1;max-width:300px">
       <button class="btn btn-primary btn-sm" onclick="addInstitution()">추가</button>
+      <button class="btn btn-primary btn-sm" onclick="saveInstitutionsAndRefresh()">저장</button>
     </div>
-    <button class="btn btn-primary" onclick="saveInstitutionsAndRefresh()">저장</button>`;
+    <div class="section-title" style="margin-bottom:12px">카드 종류 관리</div>
+    <div id="card-type-list" style="margin-bottom:12px">${typeRows || '<div style="color:var(--text3);font-size:13px;padding:8px 0">등록된 카드 종류가 없습니다.</div>'}</div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <input class="form-input" id="ct-new-name" type="text" placeholder="카드 종류 입력 (예: 일반법인카드)" style="flex:1;max-width:300px">
+      <button class="btn btn-primary btn-sm" onclick="addCardType()">추가</button>
+      <button class="btn btn-primary btn-sm" onclick="saveCardTypesAndRefresh()">저장</button>
+    </div>`;
 }
 async function addInstitution() {
   const input = document.getElementById('inst-new-name');
@@ -2155,10 +2613,63 @@ function deleteInstitution(idx) {
   institutionsData.splice(idx, 1);
   renderInstitutionsSettings();
 }
+function startRenameInstitution(idx) {
+  const span = document.getElementById('inst-name-' + idx);
+  if (!span) return;
+  const oldName = institutionsData[idx];
+  const parent = span.parentElement;
+  parent.innerHTML = `
+    <input class="form-input" value="${escHtml(oldName)}" id="inst-rename-input-${idx}" style="flex:1;max-width:280px">
+    <button class="btn btn-primary btn-sm" onclick="confirmRenameInstitution(${idx})">확인</button>
+    <button class="btn btn-secondary btn-sm" onclick="renderInstitutionsSettings()">취소</button>`;
+}
+async function confirmRenameInstitution(idx) {
+  const input = document.getElementById('inst-rename-input-' + idx);
+  const newName = input?.value?.trim();
+  if (!newName) { toast('기관명을 입력하세요', 'error'); return; }
+  if (institutionsData.includes(newName) && institutionsData[idx] !== newName) {
+    toast('이미 존재하는 기관명입니다', 'error'); return;
+  }
+  const oldName = institutionsData[idx];
+  if (oldName === newName) { renderInstitutionsSettings(); return; }
+  toast('일괄 업데이트 중...', 'info');
+  // cascade update in finance_cards and finance_accounts
+  const [r1, r2] = await Promise.all([
+    sb.from('finance_cards').update({ institution: newName }).eq('institution', oldName),
+    sb.from('finance_accounts').update({ institution: newName }).eq('institution', oldName),
+  ]);
+  if (r1.error || r2.error) { toast('DB 업데이트 실패', 'error'); return; }
+  institutionsData[idx] = newName;
+  await saveInstitutions();
+  populateInstitutionSelects();
+  await loadCards();
+  await loadAccounts();
+  toast(`"${oldName}" → "${newName}" 변경 완료`, 'success');
+  renderInstitutionsSettings();
+}
 async function saveInstitutionsAndRefresh() {
   await saveInstitutions();
   populateInstitutionSelects();
   toast('기관 목록이 저장되었습니다', 'success');
+}
+function addCardType() {
+  const input = document.getElementById('ct-new-name');
+  const name = input?.value?.trim();
+  if (!name) { toast('카드 종류를 입력하세요', 'error'); return; }
+  if (cardTypesData.includes(name)) { toast('이미 존재하는 카드 종류입니다', 'error'); return; }
+  cardTypesData.push(name);
+  input.value = '';
+  renderInstitutionsSettings();
+}
+function deleteCardType(idx) {
+  if (!confirm(`"${cardTypesData[idx]}" 카드 종류를 삭제하시겠습니까?`)) return;
+  cardTypesData.splice(idx, 1);
+  renderInstitutionsSettings();
+}
+async function saveCardTypesAndRefresh() {
+  await saveCardTypes();
+  populateCardTypeSelect();
+  toast('카드 종류 목록이 저장되었습니다', 'success');
 }
 
 function renderCompaniesSettings() {
