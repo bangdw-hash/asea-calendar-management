@@ -1,5 +1,5 @@
 -- 2027년도 예산안 초기 데이터 1/6: 부서 · 코드표 · 일정 · 제출 단위
--- budget_schema.sql 실행 후, 번호 순서대로 각 파일을 한 번씩만 실행하십시오.
+-- budget_schema_1~4.sql 실행 후, 번호 순서대로 각 파일을 한 번씩만 실행하십시오.
 
 begin;
 insert into bgt.depts(dept, sort) values

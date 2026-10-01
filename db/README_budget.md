@@ -4,7 +4,12 @@
 
 ## 설치 순서 (Supabase 대시보드 → SQL Editor)
 
-1. `budget_schema.sql` 전체를 붙여넣어 실행합니다. (테이블 · RLS · RPC 함수 · 실행 권한)
+1. 스키마를 **번호 순서대로, 파일마다 새 쿼리로** 실행합니다. (용량이 커서 4개로 나누었으며, 여러 번 실행해도 안전합니다)
+   - `budget_schema_1.sql` 테이블 · RLS
+   - `budget_schema_2.sql` 내부 함수
+   - `budget_schema_3.sql` 공개 RPC (접속 · 부서)
+   - `budget_schema_4.sql` 관리자 RPC · 실행 권한
+   - 설치 확인: `select count(*) from information_schema.tables where table_schema = 'bgt';` → 10
 2. 시드 데이터를 **번호 순서대로, 파일마다 새 쿼리로 한 번씩만** 실행합니다. (용량이 커서 한 번에 붙여넣으면 잘릴 수 있어 6개로 나누었습니다)
    - `budget_seed_2027_1.sql` 부서 17 · 코드 103 · 일정 · 제출 단위 34 → 마지막 조회 결과가 `17 | 103 | 34`
    - `budget_seed_2027_2.sql` ~ `_6.sql` 2026 예산 항목 326건 → 마지막 조회의 `누적_항목수`가 66 → 132 → 198 → 264 → 326
