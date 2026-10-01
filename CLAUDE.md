@@ -61,6 +61,7 @@ Each HTML file is self-contained (CSS + JS inline or in same-name `.js`/`.css` f
 | `facility-request.html` | 시설 요청 |
 | `wayfind.html` | 교내 길찾기 |
 | `assessment.html` | 역량 평가 |
+| `budget.html` | 부서 예산안(세입·세출) 작성/검토 — Supabase `bgt` 스키마 + RPC(`db/budget_schema_1~4.sql`), 부서 비밀번호 로그인(Google 계정 불필요), 스카이 블루 토큰 |
 
 ### Design System (schedule.html → applied to forum.html)
 
