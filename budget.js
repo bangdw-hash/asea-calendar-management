@@ -440,6 +440,10 @@ var BudgetModule = (function () {
       '<div class="bdg-role">'+ roleLabel +'</div>' +
     '</div>' +
 
+    '<div class="bdg-newlink" style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:10px 0;padding:12px 16px;border:1px solid var(--color-border,#E8EAED);border-radius:12px;background:var(--color-accent-light,#E0F2FE)">' +
+      '<div><b>2027년도 세입·세출 예산안은 별도 페이지에서 작성합니다.</b><div style="font-size:12px;color:var(--color-text-secondary,#5F6368)">부서 선택 + 부서 비밀번호로 입장하며 Google 계정이 필요하지 않습니다. 아래 화면은 2026년도 집행 관리용입니다.</div></div>' +
+      '<a class="btn btn-primary btn-sm" href="budget.html" target="_blank" rel="noopener">부서 예산안 작성 열기</a>' +
+    '</div>' +
     '<div class="bdg-subtab-bar facility-subtab-bar" role="tablist">' +
       '<button class="subtab-btn'+(B.subtab==='sein'?' active':'')+'" data-bsub="sein">📥 세입예산</button>' +
       '<button class="subtab-btn'+(B.subtab==='sechul'?' active':'')+'" data-bsub="sechul">📤 세출예산</button>' +
