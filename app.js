@@ -446,7 +446,8 @@
             setTimeout(function () {
               if (window.__aseaQuickText && window.EventExt && EventExt.openFromText(window.__aseaQuickText)) {
                 window.__aseaQuickText = '';
-              } else if (typeof QuickTaskModule !== 'undefined') QuickTaskModule.open();
+              } else if (window.EventExt) { EventExt.openAi(window.__aseaQuickText, true); window.__aseaQuickText = ''; }
+              else if (typeof QuickTaskModule !== 'undefined') QuickTaskModule.open();
             }, 400);
           }
         });
@@ -556,7 +557,7 @@
   var CLOUD_HISTORY_FILE  = 'asea-history.json';
   var CLOUD_SETTINGS_KEYS = [
     'anthropicApiKey', 'geminiApiKey', 'githubToken', 'makeWebhookUrl',
-    'recipients', 'departments', 'eventDefaultCals',
+    'recipients', 'departments', 'eventDefaultCals', 'eventOrder',
   ];
   var _historyUploadTimer = null;
 
@@ -908,6 +909,7 @@
           return list;
         })();
 
+    if (window.OrderExt) cals = OrderExt.sortCals(cals);
     cals.forEach(function (cal, i) {
       var enabled = cal.enabled !== false;
       var item = document.createElement('div');
@@ -989,6 +991,7 @@
       var aAllDay = !!a.start.date && !a.start.dateTime;
       var bAllDay = !!b.start.date && !b.start.dateTime;
       if (aAllDay !== bAllDay) return aAllDay ? -1 : 1;
+      if (window.OrderExt) { var _oc = OrderExt.cmp(a, b); if (_oc) return _oc; }   // 캘린더·부서 머릿말 순서
       if (!aAllDay && !bAllDay) {
         var tA = new Date(a.start.dateTime).getTime();
         var tB = new Date(b.start.dateTime).getTime();
@@ -1823,6 +1826,7 @@
     var _qeb = $('quick-event-btn');
     if (_qeb) _qeb.addEventListener('click', function () {
       openEventModal(null, new Date());
+      if (window.EventExt) EventExt.openAi();     // 빠른 등록 = 일정창 + AI 분석 패널(통합)
     });
 
     $('print-cal-btn').addEventListener('click', function () {

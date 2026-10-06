@@ -1353,7 +1353,13 @@ var QuickTaskModule = (function () {
   ──────────────────────────────────────────────────────────── */
   return {
     init: function () { init(); initCalSub(); },
-    open: open,
+    open: function () { if (window.EventExt && EventExt.openAi) EventExt.openAi(); else open(); },   // 일정창에 통합
+    openLegacy: open,
+    extract: async function (text, img) {      // AI 추출만 수행(일정창 AI 패널에서 사용)
+      Q.pasteText = text || ''; Q.pasteImageB64 = img || null; Q.extractedTasks = [];
+      await analyzeContent();
+      return Q.extractedTasks.slice();
+    },
     close: close,
     openCalSubModal: openCalSubModal,
     renderCalSubSettings: renderCalSubSettings,
