@@ -102,6 +102,20 @@
   // work.js에서 토스트 사용
   window.aseaToast = toast;
 
+  // event-ext.js(일정 모달 확장)용 내부 기능 노출
+  window.EventHooks = {
+    S: S,
+    toast: toast,
+    openEventModal: openEventModal,
+    renderChips: renderEventCalChips,
+    renderCalendar: renderCalendar,
+    saveCloud: saveSettingsToCloud,
+    ensureCals: async function () {
+      if (!S.userCalendars.length) S.userCalendars = await CalendarModule.listCalendars();
+      return S.userCalendars;
+    },
+  };
+
   // quicktask 등록 후 캘린더 새로고침용 전역 함수
   window.aseaRefreshCalendar = function () {
     if (S.tab === 'calendar') renderCalendar();
@@ -433,7 +447,9 @@
             window.__aseaAutoOpenQuickTask = false;
             window.location.hash = '';
             setTimeout(function () {
-              if (typeof QuickTaskModule !== 'undefined') QuickTaskModule.open();
+              if (window.__aseaQuickText && window.EventExt && EventExt.openFromText(window.__aseaQuickText)) {
+                window.__aseaQuickText = '';
+              } else if (typeof QuickTaskModule !== 'undefined') QuickTaskModule.open();
             }, 400);
           }
         });
@@ -543,7 +559,7 @@
   var CLOUD_HISTORY_FILE  = 'asea-history.json';
   var CLOUD_SETTINGS_KEYS = [
     'anthropicApiKey', 'geminiApiKey', 'githubToken', 'makeWebhookUrl',
-    'recipients', 'departments',
+    'recipients', 'departments', 'eventDefaultCals',
   ];
   var _historyUploadTimer = null;
 
@@ -2190,6 +2206,7 @@
 
     renderEventCalChips();
     openModal('event-modal');
+    if (window.EventExt) { try { EventExt.onOpen(!!event); } catch (e) {} }
     // 일정을 새로 열거나 넘길 때 항상 맨 위(제목)부터 보이게
     var _mb = document.querySelector('#event-modal .modal-body');
     if (_mb) _mb.scrollTop = 0;
@@ -2548,15 +2565,33 @@
           toast('일정이 수정되었습니다.' + (calCount > 1 ? ' (' + calCount + '개 캘린더)' : ''), 'success');
 
         } else {
-          // ── 신규 등록: 선택된 모든 캘린더에 생성 ──────────────
+          // ── 신규 등록: 선택된 모든 캘린더에 생성 (캘린더별 성공/실패 개별 처리) ──
           var createCals = targetCals.length > 0 ? targetCals : [CONFIG.calendarId];
+          var createdEvs = [], failedIds = [];
           for (var ci2 = 0; ci2 < createCals.length; ci2++) {
-            try { await CalendarModule.createEvent(createCals[ci2], eventData); } catch (e3) {}
+            try {
+              var cr = await CalendarModule.createEvent(createCals[ci2], eventData);
+              createdEvs.push({ calId: createCals[ci2], id: cr && cr.id });
+            } catch (e3) { failedIds.push(createCals[ci2]); }
+          }
+          if (failedIds.length) {
+            // 실패한 캘린더만 남기고 모달 유지 → 재시도 시 중복 생성 방지
+            if (S.editCalendars.length) {
+              S.editCalendars = S.editCalendars.filter(function (c) { return failedIds.indexOf(c.id) !== -1; });
+              renderEventCalChips();
+            }
+            toast(createdEvs.length + '개 등록, ' + failedIds.length + '개 실패 — 실패한 캘린더만 남겼습니다. 다시 저장하면 재시도합니다.', 'error');
+            if (createdEvs.length) await renderCalendar();
+            return;
           }
           toast('일정이 추가되었습니다.' + (createCals.length > 1 ? ' (' + createCals.length + '개 캘린더)' : ''), 'success');
+          if (!S.editEventId) { try { S.viewDate = new Date(start); } catch (eV) {} }
+          S._justCreated = createdEvs;
         }
         closeModal('event-modal');
         await renderCalendar();
+        if (S._justCreated && window.EventExt) { try { EventExt.afterCreate(S._justCreated); } catch (eA) {} }
+        S._justCreated = null;
       } catch (e) {
         toast('저장 실패: ' + e.message, 'error');
       } finally {

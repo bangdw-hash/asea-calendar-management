@@ -20,12 +20,35 @@ chrome.action.onClicked && chrome.action.onClicked.addListener(async () => {
 });
 
 /* ── 핵심 로직 ──────────────────────────────────────────── */
+async function getSelectedText(tabId) {
+  // 단축키 호출 시 activeTab 권한이 부여되어 현재 탭의 선택 텍스트를 읽을 수 있음
+  try {
+    const r = await chrome.scripting.executeScript({
+      target: { tabId, allFrames: true },
+      func: () => String(window.getSelection ? window.getSelection() : '').trim(),
+    });
+    for (const x of r) { if (x && x.result) return x.result; }
+  } catch (e) { /* chrome:// 등 접근 불가 페이지 */ }
+  return '';
+}
+
 async function handleShortcut() {
+  try {
+    const [cur] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+    const text = (cur && cur.id != null) ? await getSelectedText(cur.id) : '';
+    await openAsea(text);
+  } catch (err) {
+    console.error('[ASEA Extension] handleShortcut error:', err);
+    chrome.tabs.create({ url: ASEA_URL });
+  }
+}
+
+async function openAsea(text) {
   try {
     // 0. 지금 보고 있는 탭이 이미 ASEA면 → 새 탭/창 없이 그 자리에서 바로 모달 오픈
     const [active] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
     if (active && active.id != null && active.url && active.url.indexOf(ASEA_URL) === 0) {
-      await injectOpenModal(active.id);
+      await injectOpenModal(active.id, text);
       return;
     }
 
@@ -39,18 +62,21 @@ async function handleShortcut() {
       await chrome.tabs.update(tab.id, { active: true });
 
       // 탭 로드 완료 후 빠른 등록 모달 오픈
-      await injectOpenModal(tab.id);
+      await injectOpenModal(tab.id, text);
 
     } else {
-      // 2. ASEA 탭 새로 열기 (hash로 자동 모달 오픈 신호 전달)
-      const newTab = await chrome.tabs.create({ url: ASEA_URL + '#quick-task' });
+      // 2. ASEA가 열려 있지 않으면 작은 팝업 창으로 열기 (hash로 자동 모달 오픈 신호 전달)
+      const win = await chrome.windows.create({
+        url: ASEA_URL + '#quick-task', type: 'popup', width: 620, height: 820, focused: true,
+      });
+      const newTab = win.tabs[0];
 
       // 탭이 완전히 로드될 때까지 대기
       chrome.tabs.onUpdated.addListener(function listener(tabId, info) {
         if (tabId === newTab.id && info.status === 'complete') {
           chrome.tabs.onUpdated.removeListener(listener);
           // 로드 완료 후 약간 대기 (JS 초기화 시간)
-          setTimeout(() => injectOpenModal(newTab.id), 800);
+          setTimeout(() => injectOpenModal(newTab.id, text), 800);
         }
       });
     }
@@ -62,11 +88,12 @@ async function handleShortcut() {
 }
 
 /* ── 탭에 스크립트 주입 → 모달 오픈 ────────────────────── */
-async function injectOpenModal(tabId) {
+async function injectOpenModal(tabId, text) {
   try {
     await chrome.scripting.executeScript({
       target: { tabId },
       func: openQuickTaskInPage,
+      args: [text || ''],
     });
   } catch (err) {
     // scripting 실패 (로딩 중 등) → 알림으로 유도
@@ -75,13 +102,20 @@ async function injectOpenModal(tabId) {
 }
 
 /* ── 페이지 내에서 실행될 함수 (serialized) ─────────────── */
-function openQuickTaskInPage() {
+function openQuickTaskInPage(selText) {
+  if (selText) window.__aseaQuickText = selText;
   // 로그인 여부 확인
   const isLoggedIn = typeof Auth !== 'undefined' && Auth.isLoggedIn && Auth.isLoggedIn();
 
   if (isLoggedIn && typeof QuickTaskModule !== 'undefined') {
-    // 이미 로그인 → 모달 바로 오픈
+    // 이미 로그인 → 선택 텍스트에 날짜가 있으면 일정 모달, 없으면 빠른 등록 모달
+    if (selText && window.EventExt && window.EventExt.openFromText(selText)) {
+      window.__aseaQuickText = '';
+      return;
+    }
     QuickTaskModule.open();
+    const ta = selText && document.getElementById('qt-paste-text');
+    if (ta) { ta.value = selText; ta.dispatchEvent(new Event('input', { bubbles: true })); }
 
   } else if (!isLoggedIn) {
     // 미로그인 → 로그인 안내 팝업
