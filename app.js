@@ -442,7 +442,7 @@
                          window.location.hash === '#quick-task';
           if (autoOpen) {
             window.__aseaAutoOpenQuickTask = false;
-            window.location.hash = '';
+            try { history.replaceState(null, '', location.pathname + location.search); } catch (eH) { window.location.hash = ''; }   // 히스토리 항목을 늘리지 않아야 팝업 창을 스크립트로 닫을 수 있음
             setTimeout(function () {
               if (window.__aseaQuickText && window.EventExt && EventExt.openFromText(window.__aseaQuickText)) {
                 window.__aseaQuickText = '';
@@ -986,6 +986,25 @@
   }
 
   /* 이벤트 정렬: ① 하루종일 먼저 ② 시작 시간 오름차순 ③ 동시간 가나다순 */
+  /* 날짜 칸 위 여백 + 날짜 숫자 + 아래 여백을 실제 CSS에서 측정(화면 크기별 값이 달라 고정값은 겹침 발생) */
+  var _dnhCache = {};
+  function _dayNumHeight() {
+    var k = window.innerWidth;
+    if (_dnhCache[k]) return _dnhCache[k];
+    var h = 36;
+    try {
+      var host = $('calendar-container') || document.body;
+      var c = document.createElement('div'); c.className = 'calendar-day';
+      c.style.cssText = 'position:absolute;visibility:hidden;min-height:0;width:80px';
+      var n = document.createElement('div'); n.className = 'day-number'; n.textContent = '1';
+      c.appendChild(n); host.appendChild(c);
+      var cs = getComputedStyle(c), ns = getComputedStyle(n);
+      h = Math.round(parseFloat(cs.paddingTop) + n.getBoundingClientRect().height + parseFloat(ns.marginBottom));
+      host.removeChild(c);
+    } catch (e) {}
+    return (_dnhCache[k] = (h >= 20 && h <= 60) ? h : 36);
+  }
+
   function sortEvents(arr) {
     return arr.slice().sort(function (a, b) {
       var aAllDay = !!a.start.date && !a.start.dateTime;
@@ -1096,7 +1115,8 @@
     var evMap = eventsGroupedByDate(singleDay);
 
     var TRACK_H   = 22; /* 트랙당 픽셀 높이 */
-    var DAY_NUM_H = 30; /* 날짜 숫자 영역 근사 높이 */
+    /* 날짜 숫자 영역 높이 = 셀 위 여백 6 + 숫자 30 + 아래 여백 2 (모바일: 4 + 26 + 2) — 오늘 표시 원과 연속 일정 막대가 겹치지 않게 */
+    var DAY_NUM_H = _dayNumHeight();
     var W7 = 100 / 7;  /* 7분의 1 너비(%) */
 
     for (var w = 0; w < 6; w++) {

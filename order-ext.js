@@ -39,6 +39,7 @@
     try { if (typeof CONFIG !== 'undefined') CONFIG.eventOrder = o; } catch (e) {}
     cache = null;
     var h = H(); if (h) h.saveCloud(true);
+    if (window.PrefsSync) PrefsSync.push('order');
   }
 
   /* ── 정렬 비교 ──────────────────────────────────────────── */
