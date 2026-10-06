@@ -90,7 +90,7 @@
   }
   function setupFloat(open) {
     var m = $('event-modal'); if (!m) return;
-    var on = open && !isMobile();
+    var on = open && !isMobile() && !window.__aseaPopup;
     m.classList.toggle('ev-float', on);
     var d = dialog(); if (!d) return;
     if (!on) { d.style.left = d.style.top = ''; return; }
@@ -133,6 +133,7 @@
       st = null; m.classList.remove('ev-dragging');
       clampToViewport();
       lsSet(posKey(), JSON.stringify(pos));
+      if (window.PrefsSync) PrefsSync.push('pos');
     }
     hdr.addEventListener('pointerup', end);
     hdr.addEventListener('pointercancel', end);
@@ -166,7 +167,7 @@
       if (t.closest('.modal-dialog') && !t.closest(CONTROL)) e.stopPropagation();
     }, true);
     document.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape' && !m.hidden && !confirmClose()) { e.stopImmediatePropagation(); e.preventDefault(); }
+      if (e.key === 'Escape' && !window.__evDoneShowing && !m.hidden && !confirmClose()) { e.stopImmediatePropagation(); e.preventDefault(); }
     }, true);
     window.addEventListener('beforeunload', function (e) { if (isDirty()) { e.preventDefault(); e.returnValue = ''; } });
   }
@@ -255,6 +256,7 @@
     lsSet(defKey(), JSON.stringify(obj));
     try { if (typeof CONFIG !== 'undefined') CONFIG.eventDefaultCals = obj; } catch (e) {}
     h.saveCloud(true);
+    if (window.PrefsSync) PrefsSync.push('defcals').then(function (r) { if (r && !r.ok) toast('서버 저장 실패: ' + r.msg + ' (이 기기에는 저장됨)', 'error'); });
     toast(list.length ? '선택한 ' + list.length + '개 캘린더를 내 기본값으로 저장했습니다.' : '기본 캘린더 설정을 비웠습니다.', 'success');
     refreshDefLabel();
   }
@@ -296,13 +298,22 @@
     clr.parentNode.insertBefore(save, clr.nextSibling);
     var row = document.createElement('div');
     row.className = 'ev-ext-row';
-    row.innerHTML = '<span id="ev-def-label"></span>' +
+    row.innerHTML = '<span id="ev-def-label"></span><button type="button" id="ev-def-reload" class="btn btn-ghost btn-sm" style="font-size:11px">다른 기기 설정 불러오기</button>' +
       '<label><input type="checkbox" id="ev-magnet"> 창 자석 맞춤</label>' +
       '<span>체크한 캘린더에만 등록 · 칩 드래그: 순서 변경 · 헤더 더블클릭: 중앙 복귀</span>';
     var chips = $('event-cal-chip-list');
     chips.parentNode.insertBefore(row, chips.nextSibling);
+    $('ev-def-reload').addEventListener('click', async function () {
+      var b = this; b.disabled = true;
+      var r = window.PrefsSync ? await PrefsSync.sync() : { ok: false, msg: '동기화 모듈 없음' };
+      b.disabled = false;
+      if (!r.ok) { toast('불러오기 실패: ' + r.msg, 'error'); return; }
+      toast(r.pulled.length ? '다른 기기의 설정을 불러왔습니다.' : '이미 최신 설정입니다.', 'success');
+      var hh = H(); if (hh && isNew()) { hh.S.editCalendars = []; applyDefaults(); }
+      refreshDefLabel();
+    });
     var cb = $('ev-magnet');
-    cb.addEventListener('change', function () { lsSet(magnetKey(), cb.checked ? '1' : '0'); });
+    cb.addEventListener('change', function () { lsSet(magnetKey(), cb.checked ? '1' : '0'); if (window.PrefsSync) PrefsSync.push('magnet'); });
   }
 
   /* ═══ 5. 선택 텍스트 → 일정 파싱 ═══════════════════════════ */
@@ -437,6 +448,7 @@
   function afterCreate(created) {
     created = (created || []).filter(function (c) { return c.id; });
     if (!created.length) return;
+    if (window.__aseaPopup) { showDone(); return; }
     created.forEach(function (c) {
       document.querySelectorAll('[data-event-id="' + c.id + '"]').forEach(function (el) {
         el.classList.add('ev-flash');
@@ -744,6 +756,66 @@
     list.addEventListener('dragend', function () { from = -1; });
   }
 
+
+  /* ═══ 9. 팝업 모드(AHK/확장으로 연 작은 창): 일정창만 표시, 저장 후 확인창, Esc로 창 닫기 ═══ */
+  css.textContent +=
+    'body.ev-popup{overflow:hidden}body.ev-popup #app{visibility:hidden}' +
+    'body.ev-popup #event-modal,body.ev-popup #event-modal *,body.ev-popup #toast-container,body.ev-popup #toast-container *{visibility:visible}' +
+    'body.ev-popup #event-modal{padding:0!important;align-items:stretch!important}' +
+    'body.ev-popup #event-modal .modal-backdrop{background:transparent!important}' +
+    'body.ev-popup #event-modal .modal-dialog{width:100%!important;max-width:none!important;max-height:100vh!important;height:100vh;border-radius:0!important;box-shadow:none!important}' +
+    'body.ev-popup #event-modal .modal-header{border-radius:0!important}' +
+    '#ev-done{position:fixed;inset:0;z-index:3000;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.35)}' +
+    '#ev-done .box{background:var(--color-card,#fff);border-radius:12px;padding:22px 24px;min-width:280px;text-align:center;box-shadow:0 12px 40px rgba(0,0,0,.3)}' +
+    '#ev-done p{margin:0 0 6px;font-size:14px}#ev-done .btns{display:flex;gap:8px;justify-content:center;margin-top:16px}';
+
+  function closePopup() {
+    try { window.close(); } catch (e) {}
+    setTimeout(function () {            // 브라우저 정책상 닫히지 않으면 일반 화면으로 전환하고 안내
+      document.body.classList.remove('ev-popup'); window.__aseaPopup = false;
+      toast('창이 자동으로 닫히지 않았습니다. 직접 닫아 주세요(Alt+F4).', 'info');
+    }, 500);
+  }
+  function showDone() {
+    if ($('ev-done')) return;
+    window.__evDoneShowing = true;
+    var o = document.createElement('div');
+    o.id = 'ev-done'; o.setAttribute('role', 'dialog'); o.setAttribute('aria-modal', 'true');
+    o.innerHTML = '<div class="box"><p>일정을 등록했습니다.</p><p><b>캘린더를 보시겠습니까?</b></p>' +
+      '<div class="btns"><button type="button" id="ev-done-ok" class="btn btn-primary">확인</button><button type="button" id="ev-done-no" class="btn btn-ghost">취소</button></div></div>';
+    document.body.appendChild(o);
+    function finish(openCal) {
+      document.removeEventListener('keydown', onKey, true);
+      o.remove(); window.__evDoneShowing = false;
+      if (openCal) window.open(location.origin + location.pathname, '_blank');
+      closePopup();
+    }
+    function onKey(e) {
+      if (e.key === 'Escape') { e.preventDefault(); e.stopImmediatePropagation(); finish(false); }
+      else if (e.key === 'Enter' && !e.isComposing) {
+        e.preventDefault(); e.stopImmediatePropagation();
+        finish(document.activeElement !== $('ev-done-no'));
+      }
+    }
+    document.addEventListener('keydown', onKey, true);
+    $('ev-done-ok').addEventListener('click', function () { finish(true); });
+    $('ev-done-no').addEventListener('click', function () { finish(false); });
+    $('ev-done-ok').focus();
+  }
+  function initPopup() {
+    if (!window.__aseaPopup) return;
+    document.body.classList.add('ev-popup');
+    var em = $('event-modal'); if (!em) return;
+    new MutationObserver(function () {   // ✕·취소·Esc로 일정창이 닫히면 팝업 창도 닫음 (저장 직후는 확인창이 처리)
+      if (!em.hidden) return;
+      setTimeout(function () {
+        var h = H();
+        if (!em.hidden || window.__evDoneShowing || (h && h.S._justCreated)) return;
+        closePopup();
+      }, 200);
+    }).observe(em, { attributes: true, attributeFilter: ['hidden'] });
+  }
+
   /* ═══ 공개 API / 초기화 ═══════════════════════════════════ */
   window.EventExt = {
     onOpen: function (isEdit) {
@@ -765,11 +837,18 @@
   };
 
   function init() {
-    initDefaultsUI(); buildAi(); initChipDrag(); initDrag(); initNoAutoClose(); initCellPick(); initAutoEnd(); initEnterSave();
+    initPopup(); initDefaultsUI(); buildAi(); initChipDrag(); initDrag(); initNoAutoClose(); initCellPick(); initAutoEnd(); initEnterSave();
     var em = $('event-modal');
     if (em) new MutationObserver(function () { if (em.hidden) { em.classList.remove('ev-float'); } }).observe(em, { attributes: true, attributeFilter: ['hidden'] });
     var ta = $('tab-admin');
     if (ta) new MutationObserver(setupAdminCard).observe(ta, { childList: true, subtree: true });
   }
+  window.addEventListener('asea-prefs-synced', function (e) {   // 다른 기기에서 저장한 설정이 도착
+    var ks = (e && e.detail) || [], h = H();
+    refreshDefLabel();
+    var cb = $('ev-magnet'); if (cb) cb.checked = magnetOn();
+    if (ks.indexOf('order') >= 0 && h) h.renderCalendar();
+    if (ks.indexOf('defcals') >= 0 && h && isNew() && !$('event-modal').hidden && !h.S.editCalendars.length) applyDefaults();
+  });
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
 })();
