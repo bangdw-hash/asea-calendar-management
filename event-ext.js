@@ -10,11 +10,14 @@
 (function () {
   /* AHK/확장이 주소 해시(#qt=글)로 전달한 선택 텍스트 — 로그인 후 일정창이 자동으로 열림 */
   (function () {
-    var h = location.hash || '';
+    var h = location.hash || '', ss = null;
+    try { ss = sessionStorage.getItem('asea_popup'); } catch (e) {}
     if (h.indexOf('#qt=') === 0) {
       try { window.__aseaQuickText = decodeURIComponent(h.slice(4)); } catch (e) {}
       window.__aseaAutoOpenQuickTask = true; window.__aseaPopup = true;
     } else if (h === '#quick-task') window.__aseaPopup = true;
+    else if (ss === '1') window.__aseaPopup = true;      // 같은 창에서 새로고침해도 팝업 모드 유지
+    if (window.__aseaPopup) { try { sessionStorage.setItem('asea_popup', '1'); } catch (e) {} }
   })();
   var MOBILE_MQ = '(max-width: 768px)';
   var SNAP = 16, MARGIN = 12;
@@ -773,6 +776,7 @@
     try { window.close(); } catch (e) {}
     setTimeout(function () {            // 브라우저 정책상 닫히지 않으면 일반 화면으로 전환하고 안내
       document.body.classList.remove('ev-popup'); window.__aseaPopup = false;
+      try { sessionStorage.removeItem('asea_popup'); } catch (e) {}
       toast('창이 자동으로 닫히지 않았습니다. 직접 닫아 주세요(Alt+F4).', 'info');
     }, 500);
   }

@@ -3,7 +3,9 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script>/* 빌드 확인: 브라우저가 10분간 보관한 오래된 화면이면 자동으로 새로 받아 다시 불러옴(build.txt와 비교) */
+(function(){var B='20261006ev8';try{if(sessionStorage.getItem('asea_bld')===B)return;fetch('build.txt',{cache:'no-cache'}).then(function(r){return r.text()}).then(function(t){t=(t||'').trim();if(t&&t!==B){sessionStorage.setItem('asea_bld',B);fetch(location.pathname+location.search,{cache:'reload'}).catch(function(){}).then(function(){location.reload()})}}).catch(function(){})}catch(e){}})();</script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="ASEA 업무 관리 — 행정업무 관리 시스템">
   <title>ASEA 업무 관리</title>
   <link rel="preload" as="style" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
@@ -3879,7 +3881,7 @@
   <script src="classroom.js?v=20260608s" defer></script>
   <script src="work.js?v=20260614r1" defer></script>
   <script src="workorder.js?v=20260608s" defer></script>
-  <script src="quicktask.js?v=20261006ev3" defer></script>
+  <script src="quicktask.js?v=20261006ev8" defer></script>
   <script src="sms.js?v=20260615a2" defer></script>
   <!-- 신규 모듈 (admin → board → usersettings → app 순서) -->
   <script src="draft.js?v=20260623ai1" defer></script>
@@ -3892,10 +3894,10 @@
   <script src="usersettings.js?v=20260610u1" defer></script>
   <script src="budget-seed-2026.js?v=20260614b1" defer></script>
   <script src="budget.js?v=20261001b1" defer></script>
-  <script src="app.js?v=20261006ev7" defer></script>
-  <script src="event-ext.js?v=20261006ev7" defer></script>
-  <script src="order-ext.js?v=20261006ev7" defer></script>
-  <script src="prefs-sync.js?v=20261006ev7" defer></script>
+  <script src="app.js?v=20261006ev8" defer></script>
+  <script src="event-ext.js?v=20261006ev8" defer></script>
+  <script src="order-ext.js?v=20261006ev8" defer></script>
+  <script src="prefs-sync.js?v=20261006ev8" defer></script>
   <script src="navgroups.js?v=20260623ng1" defer></script>
   <script src="tooltips.js?v=20260621tt1" defer></script>
   <script src="userorg.js?v=20260624uo1" defer></script>
