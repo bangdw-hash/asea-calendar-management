@@ -8,6 +8,14 @@
    · 등록 후 이동·강조·실행 취소, API 연결 점등/진단
    의존: app.js가 노출하는 window.EventHooks */
 (function () {
+  /* AHK/확장이 주소 해시(#qt=글)로 전달한 선택 텍스트 — 로그인 후 일정창이 자동으로 열림 */
+  (function () {
+    var h = location.hash || '';
+    if (h.indexOf('#qt=') === 0) {
+      try { window.__aseaQuickText = decodeURIComponent(h.slice(4)); } catch (e) {}
+      window.__aseaAutoOpenQuickTask = true; window.__aseaPopup = true;
+    } else if (h === '#quick-task') window.__aseaPopup = true;
+  })();
   var MOBILE_MQ = '(max-width: 768px)';
   var SNAP = 16, MARGIN = 12;
 
@@ -300,18 +308,36 @@
   /* ═══ 5. 선택 텍스트 → 일정 파싱 ═══════════════════════════ */
   var DATE_RE = /(?:(\d{4})\s*[.\-\/년]\s*)?(\d{1,2})\s*[.\-\/월]\s*(\d{1,2})\s*일?\.?/g;
   var TIME_RE = /(오전|오후|AM|PM|am|pm)?\s*(\d{1,2})\s*(?::\s*(\d{2})|시\s*(?:(\d{1,2})\s*분)?)/g;
-  function parseText(text) {
-    text = String(text || '');
-    var now = new Date(), used = [], m;
-    var dates = [], times = [];
+  var WD_RE = /^\s*(?:\(\s*([일월화수목금토])\s*\)|([일월화수목금토])요일)/;
+  var DAYONLY_RE = /^\s*(?:~|–|—|-|부터)\s*(\d{1,2})\s*일/;
+  var WD = '일월화수목금토';
+
+  /* 한 덩어리 텍스트 → 일정 목록 (연속=기간 1건, 구분된 날짜=개별 N건). 날짜 없으면 [] */
+  function parseBlock(text) {
+    var now = new Date(), used = [], m, dates = [], times = [];
     DATE_RE.lastIndex = 0;
     while ((m = DATE_RE.exec(text))) {
-      var y = m[1] ? +m[1] : now.getFullYear(), mo = +m[2], da = +m[3];
+      var mo = +m[2], da = +m[3], noYear = !m[1], y = m[1] ? +m[1] : now.getFullYear();
       if (mo < 1 || mo > 12 || da < 1 || da > 31) continue;
       var d = new Date(y, mo - 1, da);
       if (d.getMonth() !== mo - 1) continue;
-      dates.push({ i: m.index, d: d }); used.push([m.index, m.index + m[0].length]);
+      if (noYear && now - d > 183 * 864e5) d = new Date(y + 1, mo - 1, da);   // 6개월 넘게 지난 날짜(연도 생략)는 내년
+      var e = m.index + m[0].length, rec = { i: m.index, e: e, d: d };
+      var w = WD_RE.exec(text.slice(e));
+      if (w) { rec.wd = w[1] || w[2]; used.push([e, e + w[0].length]); rec.e2 = e + w[0].length; }
+      used.push([m.index, e]);
+      dates.push(rec);
     }
+    dates.forEach(function (a) {                        // "8월 31일~2일" 형태의 일자만 있는 종료일
+      var t = DAYONLY_RE.exec(text.slice(a.e2 || a.e));
+      if (!t) return;
+      var d2 = new Date(a.d.getFullYear(), a.d.getMonth(), +t[1]);
+      if (d2 < a.d) d2.setMonth(d2.getMonth() + 1);
+      var s0 = (a.e2 || a.e);
+      dates.push({ i: s0 + t[0].search(/\d/), e: s0 + t[0].length, d: d2, dayOnly: true });
+      used.push([s0, s0 + t[0].length]);
+    });
+    dates.sort(function (a, b) { return a.i - b.i; });
     TIME_RE.lastIndex = 0;
     while ((m = TIME_RE.exec(text))) {
       var h = +m[2], mi = +(m[3] || m[4] || 0);
@@ -323,45 +349,87 @@
       }
       times.push({ i: m.index, h: h % 24, mi: mi, ap: !!m[1] }); used.push([m.index, m.index + m[0].length]);
     }
-    if (!dates.length) return null;
-    var sd = dates[0].d, ed = dates[1] ? dates[1].d : null;
-    var st = times[0] || null, et = times[1] || null;
-    // "날짜1 시간1 ~ 날짜2 시간2" 형태에서 시간을 가까운 날짜에 귀속
-    if (dates[1] && times.length === 1 && times[0].i > dates[1].i) { st = null; et = times[0]; }
-    var res = { allDay: !st && !et };
-    if (res.allDay) {
-      res.start = sd; res.end = ed && ed >= sd ? ed : sd;
-    } else {
-      var s = new Date(sd); s.setHours(st ? st.h : 9, st ? st.mi : 0, 0, 0);
+    if (!dates.length) return [];
+    // 날짜 묶기: 사이 글이 ~ - 부터 뿐이면 하나의 기간(연속), 아니면 개별 일정
+    var groups = [];
+    dates.forEach(function (a, k) {
+      var prev = groups[groups.length - 1];
+      if (prev && !prev.de) {
+        var gap = text.slice(prev.last.e2 || prev.last.e, a.i).replace(TIME_RE, '').replace(/\s+/g, '');
+        if (a.dayOnly || /^(~|–|—|-|부터|~부터)$/.test(gap)) { prev.de = a.d; prev.last = a; prev.wdEnd = a.wd; return; }
+      }
+      groups.push({ ds: a.d, de: null, first: a, last: a, wdStart: a.wd });
+    });
+    var onlyTime = (groups.length > 1 && times.length === 1) ? times[0] : null;   // 시간 1개·날짜 여러 개 → 모두 같은 시간
+    var items = groups.map(function (g, gi) {
+      var from = gi === 0 ? 0 : g.first.i, to = gi + 1 < groups.length ? groups[gi + 1].first.i : text.length;
+      var ts = onlyTime ? [onlyTime] : times.filter(function (t) { return t.i >= from && t.i < to; });
+      var it = { warn: '' };
+      if (g.wdStart && WD.charAt(g.ds.getDay()) !== g.wdStart) it.warn = '요일 불일치: 입력 ' + g.wdStart + ' / 실제 ' + WD.charAt(g.ds.getDay());
+      if (g.de && g.wdEnd && WD.charAt(g.de.getDay()) !== g.wdEnd && !it.warn) it.warn = '종료일 요일 불일치: 입력 ' + g.wdEnd + ' / 실제 ' + WD.charAt(g.de.getDay());
+      var endDay = g.de || g.ds;
+      if (!ts.length) { it.allDay = true; it.start = g.ds; it.end = endDay; return it; }
+      var st = ts[0], et = ts[1] || null;
+      var s = new Date(g.ds); s.setHours(st.h, st.mi, 0, 0);
       var e;
       if (et) {
-        e = new Date(ed || sd); e.setHours(et.h, et.mi, 0, 0);
-        if (e <= s && !et.ap && et.h < 12 && s.getHours() >= 12) e = new Date(e.getTime() + 432e5);   // "오후 6시~8시" → 종료 오후 8시
-        if (e <= s) e = new Date(e.getTime() + (ed ? 0 : 864e5));
-      }
-      if (!e || e <= s) e = new Date(s.getTime() + 3600000);     // 종료 없음 → 기본 1시간
-      res.start = s; res.end = e;
-    }
-    // 제목 = 날짜·시간 표기를 제거한 나머지 첫 줄
+        e = new Date(endDay); e.setHours(et.h, et.mi, 0, 0);
+        if (e <= s && !et.ap && et.h < 12 && s.getHours() >= 12) e = new Date(e.getTime() + 432e5);   // "오후 6시~8시" → 오후 8시
+        if (e <= s && !g.de) e = new Date(e.getTime() + 864e5);
+      } else { e = new Date(endDay); e.setHours(st.h, st.mi, 0, 0); e = new Date(e.getTime() + 3600000); }
+      if (e <= s) e = new Date(s.getTime() + 3600000);
+      it.allDay = false; it.start = s; it.end = e;
+      return it;
+    });
     var rest = text, spans = used.slice().sort(function (a, b) { return b[0] - a[0]; });
     spans.forEach(function (r) { rest = rest.slice(0, r[0]) + ' ' + rest.slice(r[1]); });
-    var line = rest.split(/\r?\n/).map(function (l) { return l.replace(/[~\-–—]+/g, ' ').replace(/\s+/g, ' ').trim(); })
-      .filter(Boolean)[0] || '';
-    res.title = line.replace(/^[\s,.:;()\[\]]+|[\s,.:;]+$/g, '').slice(0, 80);
-    res.desc = text.trim();
-    return res;
+    var title = rest.split(/\r?\n/).map(function (l) {
+      return l.replace(/[~\-–—]+/g, ' ').replace(/부터|까지|\s및\s|[,;·\t]/g, ' ').replace(/^\s*(?:[•·\-*]|\d+[.)])\s+/, '').replace(/(^|\s)\/+(?=\s|$)/g, ' ').replace(/\s+/g, ' ').trim();
+    }).filter(Boolean)[0] || '';
+    title = title.replace(/^[\s,.:;()\[\]]+|[\s,.:;]+$/g, '').slice(0, 80);
+    items.forEach(function (it) { it.title = title; });
+    return items;
+  }
+  /* 전체 텍스트 → 일정 목록. 날짜가 있는 줄이 2줄 이상이면 줄(표의 행)마다 1건씩 처리 */
+  function parseAll(text) {
+    text = String(text || '').trim();
+    if (!text) return [];
+    var lines = text.split(/\r?\n/).map(function (l) { return l.replace(/^\s*(?:[•·\-*]|\d{1,2}[.)])\s+/, ''); }).filter(function (l) { return l.trim(); });
+    text = lines.join('\n');
+    var per = lines.map(function (l) { return parseBlock(l); }).filter(function (a) { return a.length; });
+    var items = [];
+    if (per.length > 1) per.forEach(function (a) { items = items.concat(a); });
+    else items = parseBlock(text);
+    var desc = text.slice(0, 1000);
+    items.forEach(function (it) { it.desc = desc; });
+    return items;
+  }
+  function parseText(text) { var a = parseAll(text); return a.length ? a[0] : null; }   // (호환) 첫 일정만
+
+  function ymd2(d) { return ymd(d); }
+  function hm(d) { return pad(d.getHours()) + ':' + pad(d.getMinutes()); }
+  function toTask(it) {
+    return { title: it.title || '', content: it.desc || '', warn: it.warn || '', checked: true,
+      dueDate: ymd2(it.start), endDate: ymd2(it.end),
+      dueTime: it.allDay ? '' : hm(it.start), endTime: it.allDay ? '' : hm(it.end) };
   }
   function openFromText(text) {
     var h = H(); if (!h) return false;
-    var r = parseText(text);
-    if (!r) return false;
-    h.openEventModal(null, r.start, r.allDay ? { allDay: true, endDate: r.end } : undefined);
-    $('event-title').value = r.title;
-    $('event-description').value = r.desc;
-    if (!r.allDay) { $('event-start').value = toLocal(r.start); $('event-end').value = toLocal(r.end); }
+    var items = parseAll(text);
+    if (!items.length) return false;
+    var first = items[0];
+    h.openEventModal(null, first.start, first.allDay ? { allDay: true, endDate: first.end } : undefined);
+    buildAi(); $('ev-ai').hidden = false;
+    $('ev-ai-text').value = text;
+    if (items.length === 1) {
+      loadTask(toTask(first));
+      setTimeout(function () { var t = $('event-title'); if (t) { t.focus(); t.select(); } }, 50);
+    } else {                                // 2건 이상: 항상 목록으로 확인 후 등록
+      aiTasks = items.map(toTask);
+      setAiOpen(true); renderAiList();
+      setTimeout(function () { var f = document.querySelector('#ev-ai-list .ev-r-title'); if (f) f.focus(); }, 50);
+    }
     syncTrack(); snap = snapshot();
-    var at = $('ev-ai-text'); if (at) at.value = r.desc;
-    setTimeout(function () { var t = $('event-title'); if (t) { t.focus(); t.select(); } }, 50);
     return true;
   }
 
@@ -378,11 +446,14 @@
     var box = $('toast-container'); if (!box) return;
     var el = document.createElement('div');
     el.className = 'toast toast-info';
-    el.innerHTML = '<span class="ev-undo"><span>일정을 등록했습니다.</span><button type="button">실행 취소</button></span>';
+    el.innerHTML = '<span class="ev-undo"><span>일정을 등록했습니다.</span><button type="button" class="ev-undo-btn">실행 취소</button>' +
+      (window.__aseaPopup ? '<button type="button" class="ev-all-btn">전체 일정 보기</button>' : '') + '</span>';
+    var allBtn = el.querySelector('.ev-all-btn');
+    if (allBtn) allBtn.addEventListener('click', function () { window.open(location.origin + location.pathname, '_blank'); });
     box.appendChild(el);
-    var timer = setTimeout(rm, 5000);
+    var timer = setTimeout(rm, window.__aseaPopup ? 12000 : 5000);
     function rm() { clearTimeout(timer); if (el.parentNode) el.parentNode.removeChild(el); }
-    el.querySelector('button').addEventListener('click', async function () {
+    el.querySelector('.ev-undo-btn').addEventListener('click', async function () {
       this.disabled = true;
       var h = H(), fail = 0;
       for (var i = 0; i < created.length; i++) {
@@ -491,7 +562,7 @@
     '.ev-ai-body textarea{width:100%;box-sizing:border-box;margin-bottom:6px}' +
     '.ev-ai-img{display:flex;align-items:center;gap:8px;font-size:11px;margin-bottom:6px}.ev-ai-img img{max-height:60px;border-radius:8px}' +
     '.ev-ai-row{display:flex;align-items:center;gap:8px;padding:6px 8px;margin-top:6px;border-radius:8px;background:var(--color-card,#fff);font-size:12px}' +
-    '.ev-ai-row .t{flex:1;min-width:0}.ev-ai-row .t b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ev-ai-row .t span{color:var(--color-text-muted,#6b7280)}';
+    '.ev-r-dt{display:flex;align-items:center;gap:4px;flex-wrap:wrap;margin-top:4px}.ev-r-dt input{padding:2px 4px;font-size:12px;border:1px solid var(--color-border,#cbd5e1);border-radius:8px}.ev-warn{color:#dc2626;font-size:11px}.ev-ai-row .t{flex:1;min-width:0}.ev-ai-row .t b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ev-ai-row .t span{color:var(--color-text-muted,#6b7280)}';
 
   function buildAi() {
     var body = document.querySelector('#event-modal .modal-body');
@@ -533,7 +604,6 @@
     $('ev-ai-text').value = ''; $('ev-ai-list').innerHTML = ''; setAiOpen(false);
   }
   function esc(x) { return String(x == null ? '' : x).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
-  function taskWhen(t) { return (t.dueDate || '날짜 없음') + (t.dueTime ? ' ' + t.dueTime + (t.endTime ? '~' + t.endTime : '') : ''); }
   async function runAi() {
     var text = $('ev-ai-text').value.trim();
     if (!text && !aiImg) { toast('분석할 텍스트나 이미지를 붙여넣으세요.', 'warning'); return; }
@@ -549,28 +619,68 @@
   function renderAiList() {
     var el = $('ev-ai-list');
     if (aiTasks.length < 2) { el.innerHTML = ''; return; }
-    el.innerHTML = aiTasks.map(function (t, i) {
-      return '<div class="ev-ai-row"><input type="checkbox" data-i="' + i + '" ' + (t.checked ? 'checked' : '') + '>' +
-        '<div class="t"><b>' + esc(t.title) + '</b><span>' + esc(taskWhen(t)) + '</span></div>' +
-        '<button type="button" class="btn btn-ghost btn-sm" data-load="' + i + '">불러오기</button></div>';
-    }).join('') + '<div class="ev-ext-row"><button type="button" id="ev-ai-bulk" class="btn btn-primary btn-sm">체크한 항목 모두 등록</button>' +
-      '<span>선택한 캘린더에 등록됩니다. 날짜가 없는 항목은 제외됩니다.</span></div>';
-    el.querySelectorAll('input[type=checkbox]').forEach(function (c) { c.addEventListener('change', function () { aiTasks[+c.dataset.i].checked = c.checked; }); });
+    el.innerHTML = '<div class="ev-ext-row"><label>공통 제목 <input id="ev-r-all" class="form-input" style="width:200px" placeholder="한 번에 모든 행 제목 입력"></label></div>' +
+      aiTasks.map(function (t, i) {
+        return '<div class="ev-ai-row" data-i="' + i + '"><input type="checkbox" class="ev-r-chk" ' + (t.checked ? 'checked' : '') + '>' +
+          '<div class="t"><input class="form-input ev-r-title" data-f="title" placeholder="제목" value="' + esc(t.title) + '">' +
+          '<div class="ev-r-dt"><input type="date" data-f="dueDate" value="' + esc(t.dueDate) + '"><input type="time" data-f="dueTime" value="' + esc(t.dueTime) + '" title="비우면 하루 종일">' +
+          '<span>~</span><input type="date" data-f="endDate" value="' + esc(t.endDate || t.dueDate) + '"><input type="time" data-f="endTime" value="' + esc(t.endTime) + '">' +
+          (t.warn ? '<span class="ev-warn">' + esc(t.warn) + '</span>' : '') + '</div></div>' +
+          '<button type="button" class="btn btn-ghost btn-sm" data-load="' + i + '">불러오기</button></div>';
+      }).join('') +
+      '<div class="ev-ext-row"><button type="button" id="ev-ai-bulk" class="btn btn-primary btn-sm">체크한 항목 모두 등록</button>' +
+      '<span>Tab 이동 · Ctrl+↑/↓ 행 이동 · Enter 다음 행 · Ctrl+Enter 등록 · 시간을 비우면 하루 종일</span></div>';
+    el.querySelectorAll('.ev-ai-row').forEach(function (row) {
+      var i = +row.dataset.i;
+      row.querySelector('.ev-r-chk').addEventListener('change', function () { aiTasks[i].checked = this.checked; });
+      row.querySelectorAll('[data-f]').forEach(function (inp) {
+        inp.addEventListener('input', function () { aiTasks[i][inp.dataset.f] = inp.value; });
+        inp.addEventListener('keydown', function (e) {
+          if (e.isComposing || e.keyCode === 229) return;
+          var dir = 0;
+          if (e.ctrlKey && e.key === 'ArrowUp') dir = -1; else if (e.ctrlKey && e.key === 'ArrowDown') dir = 1;
+          else if (e.key === 'Enter' && !e.ctrlKey) dir = 1;
+          if (e.key === 'Enter' && e.ctrlKey) { e.preventDefault(); bulkAi(); return; }
+          if (!dir) return;
+          e.preventDefault();
+          var nx = el.querySelectorAll('.ev-ai-row')[i + dir];
+          var f = nx && nx.querySelector('[data-f="' + inp.dataset.f + '"]');
+          if (f) { f.focus(); if (f.select) try { f.select(); } catch (x) {} }
+        });
+      });
+    });
     el.querySelectorAll('[data-load]').forEach(function (b) { b.addEventListener('click', function () { loadTask(aiTasks[+b.dataset.load]); }); });
+    $('ev-r-all').addEventListener('input', function () {
+      var v = this.value; aiTasks.forEach(function (t, i) { t.title = v; el.querySelectorAll('.ev-r-title')[i].value = v; });
+    });
     $('ev-ai-bulk').addEventListener('click', bulkAi);
+  }
+  function taskBody(t, dept, tz) {
+    var body = { summary: t.title || '(제목 없음)', description: (t.content ? t.content + '\n' : '') + '[부서:' + dept + ']' };
+    var ed = t.endDate || t.dueDate;
+    if (t.dueTime) {
+      var st = t.dueDate + 'T' + t.dueTime, e2 = ed + 'T' + (t.endTime || t.dueTime);
+      if (e2 <= st) e2 = toLocal(new Date(new Date(st).getTime() + 3600000));
+      body.start = { dateTime: new Date(st).toISOString(), timeZone: tz }; body.end = { dateTime: new Date(e2).toISOString(), timeZone: tz };
+    } else {
+      var nx = new Date(ed + 'T00:00:00'); nx.setDate(nx.getDate() + 1);
+      body.start = { date: t.dueDate }; body.end = { date: ymd(nx) };
+    }
+    return body;
   }
   function loadTask(t) {
     $('event-title').value = t.title || '';
     $('event-description').value = t.content || '';
     var cb = $('event-allday'), s = $('event-start'), en = $('event-end');
     if (t.dueDate) {
-      var allDay = !t.dueTime;
+      var allDay = !t.dueTime, ed = t.endDate || t.dueDate;
       cb.checked = allDay; cb.dispatchEvent(new Event('change', { bubbles: true }));
-      if (allDay) { s.value = t.dueDate; en.value = t.dueDate; }
+      if (allDay) { s.value = t.dueDate; en.value = ed; }
       else {
         var st = t.dueDate + 'T' + t.dueTime;
-        var e2 = t.endTime ? t.dueDate + 'T' + t.endTime : toLocal(new Date(new Date(st).getTime() + 3600000));
-        if (e2 <= st) e2 = toLocal(new Date(new Date(e2).getTime() + 864e5));
+        var e2 = ed + 'T' + (t.endTime || '');
+        if (!t.endTime) e2 = toLocal(new Date(new Date(st).getTime() + 3600000));
+        if (e2 <= st) e2 = toLocal(new Date(new Date(st).getTime() + 3600000));
         s.value = st; en.value = e2;
       }
     }
@@ -587,25 +697,18 @@
     var dept = $('event-dept') ? $('event-dept').value : '기타';
     var tz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'Asia/Seoul';
     var btn = $('ev-ai-bulk'); btn.disabled = true;
-    var ok = 0, fail = 0;
+    var ok = 0, fail = 0, created = [];
     for (var i = 0; i < picks.length; i++) {
-      var t = picks[i], body = { summary: t.title, description: (t.content ? t.content + '\n' : '') + '[부서:' + dept + ']' };
-      if (t.dueTime) {
-        var st = t.dueDate + 'T' + t.dueTime, e2 = t.endTime ? t.dueDate + 'T' + t.endTime : toLocal(new Date(new Date(st).getTime() + 3600000));
-        if (e2 <= st) e2 = toLocal(new Date(new Date(e2).getTime() + 864e5));
-        body.start = { dateTime: new Date(st).toISOString(), timeZone: tz }; body.end = { dateTime: new Date(e2).toISOString(), timeZone: tz };
-      } else {
-        var nx = new Date(t.dueDate + 'T00:00:00'); nx.setDate(nx.getDate() + 1);
-        body.start = { date: t.dueDate }; body.end = { date: ymd(nx) };
+      var body = taskBody(picks[i], dept, tz), good = true;
+      for (var c = 0; c < cals.length; c++) {
+        try { var r = await CalendarModule.createEvent(cals[c], body); created.push({ calId: cals[c], id: r && r.id }); } catch (e) { good = false; }
       }
-      var good = true;
-      for (var c = 0; c < cals.length; c++) { try { await CalendarModule.createEvent(cals[c], body); } catch (e) { good = false; } }
-      if (good) { ok++; t.checked = false; t.done = true; } else fail++;
+      if (good) { ok++; picks[i].done = true; } else fail++;
     }
     aiTasks = aiTasks.filter(function (t) { return !t.done; });
     renderAiList();
     toast(ok + '건 등록' + (fail ? ', ' + fail + '건 실패(남겨 둠)' : '') + (skipped ? ', ' + skipped + '건 날짜 없어 제외' : ''), fail ? 'error' : 'success');
-    if (ok) h.renderCalendar();
+    if (ok) { h.renderCalendar(); afterCreate(created); }
   }
   function openAi(text, auto) {
     var h = H(); if (!h) return false;
@@ -657,6 +760,7 @@
     openFromText: openFromText,
     openAi: openAi,
     parseText: parseText,
+    parseAll: parseAll,
     diagnose: diagnose,
   };
 
