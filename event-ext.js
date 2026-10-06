@@ -242,6 +242,7 @@
   function saveDefaults() {
     var h = H(); if (!h) return;
     var list = (h.S.editCalendars || []).map(function (c) { return { id: c.id, name: c.name, color: c.color }; });
+    if (window.OrderExt) OrderExt.setCalOrder(list.map(function (c) { return c.id; }));
     var obj = { t: Date.now(), list: list };
     lsSet(defKey(), JSON.stringify(obj));
     try { if (typeof CONFIG !== 'undefined') CONFIG.eventDefaultCals = obj; } catch (e) {}
@@ -286,7 +287,7 @@
     row.className = 'ev-ext-row';
     row.innerHTML = '<span id="ev-def-label"></span>' +
       '<label><input type="checkbox" id="ev-magnet"> 창 자석 맞춤</label>' +
-      '<span>헤더 더블클릭: 중앙 복귀</span>';
+      '<span>칩 드래그: 순서 변경 · 헤더 더블클릭: 중앙 복귀</span>';
     var chips = $('event-cal-chip-list');
     chips.parentNode.insertBefore(row, chips.nextSibling);
     var cb = $('ev-magnet');
@@ -352,6 +353,7 @@
     $('event-description').value = r.desc;
     if (!r.allDay) { $('event-start').value = toLocal(r.start); $('event-end').value = toLocal(r.end); }
     syncTrack(); snap = snapshot();
+    var at = $('ev-ai-text'); if (at) at.value = r.desc;
     setTimeout(function () { var t = $('event-title'); if (t) { t.focus(); t.select(); } }, 50);
     return true;
   }
@@ -425,14 +427,14 @@
   }
   var ADMIN_API_EMAIL = 'bangdw@gmail.com';
   function setupQtLed() {
-    var m = $('qt-modal'); if (!m || m.hidden) return;
+    var m = $('event-modal'); if (!m || m.hidden) return;
     var host = m.querySelector('.modal-title');
     if (!host || $('ev-led')) { refreshLed(); return; }
     var led = document.createElement('button');
     led.type = 'button'; led.id = 'ev-led'; led.className = 'ev-led';
     led.innerHTML = '<i></i><span></span>';
     led.addEventListener('click', async function () {
-      var s = led.querySelector('span'); s.textContent = '진단 중…';
+      var sp = led.querySelector('span'); sp.textContent = '진단 중…';
       var r = await diagnose();
       var bad = r.filter(function (x) { return x.c === 'bad'; }).length, warn = r.filter(function (x) { return x.c === 'warn'; }).length;
       toast(r.map(function (x) { return x.t + ': ' + x.m; }).join(' / '), bad ? 'error' : (warn ? 'info' : 'success'));
@@ -444,6 +446,7 @@
       go.type = 'button'; go.id = 'ev-led-admin'; go.className = 'ev-led ev-led-admin';
       go.innerHTML = '<span>API 설정</span>';
       go.addEventListener('click', function () {
+        if (!confirmClose()) return;
         m.hidden = true;
         var tab = document.querySelector('.tab-btn[data-tab="ai-provider"]');
         if (tab) tab.click();
@@ -473,6 +476,164 @@
     box.insertBefore(card, box.firstChild);
   }
 
+
+  /* ═══ 8. AI 분석 패널 (빠른 등록 통합) ═════════════════════ */
+  var aiImg = null, aiTasks = [];
+  css.textContent +=
+    '.ev-ai{margin-bottom:12px}.ev-ai-body{margin-top:8px;padding:10px;border:1px dashed var(--color-border,#cbd5e1);border-radius:12px;background:var(--primary-lt,#E8F0FE)}' +
+    '.ev-ai-body textarea{width:100%;box-sizing:border-box;margin-bottom:6px}' +
+    '.ev-ai-img{display:flex;align-items:center;gap:8px;font-size:11px;margin-bottom:6px}.ev-ai-img img{max-height:60px;border-radius:8px}' +
+    '.ev-ai-row{display:flex;align-items:center;gap:8px;padding:6px 8px;margin-top:6px;border-radius:8px;background:var(--color-card,#fff);font-size:12px}' +
+    '.ev-ai-row .t{flex:1;min-width:0}.ev-ai-row .t b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ev-ai-row .t span{color:var(--color-text-muted,#6b7280)}';
+
+  function buildAi() {
+    var body = document.querySelector('#event-modal .modal-body');
+    if (!body || $('ev-ai')) return;
+    var box = document.createElement('div');
+    box.id = 'ev-ai'; box.className = 'ev-ai';
+    box.innerHTML = '<button type="button" id="ev-ai-toggle" class="btn btn-secondary btn-sm">AI 분석 · 붙여넣기</button>' +
+      '<div id="ev-ai-body" class="ev-ai-body" hidden>' +
+      '<textarea id="ev-ai-text" class="form-textarea" rows="3" placeholder="텍스트를 붙여넣거나 이미지를 Ctrl+V 로 붙여넣으세요 (예: 6월 10일 오후 2시 부서 회의)"></textarea>' +
+      '<div id="ev-ai-img" class="ev-ai-img" hidden></div>' +
+      '<div class="ev-ext-row"><button type="button" id="ev-ai-run" class="btn btn-primary btn-sm">AI 분석</button>' +
+      '<span>결과가 1건이면 아래 입력란에 자동 입력됩니다.</span></div><div id="ev-ai-list"></div></div>';
+    body.insertBefore(box, body.querySelector('.form-group'));
+    $('ev-ai-toggle').addEventListener('click', function () { setAiOpen($('ev-ai-body').hidden); });
+    $('ev-ai-run').addEventListener('click', runAi);
+    $('ev-ai-text').addEventListener('paste', function (e) {
+      var items = (e.clipboardData && e.clipboardData.items) || [];
+      for (var i = 0; i < items.length; i++) {
+        if (items[i].type.indexOf('image') === 0) {
+          var f = items[i].getAsFile(), rd = new FileReader();
+          rd.onload = function () { aiImg = rd.result; showAiImg(); };
+          rd.readAsDataURL(f); e.preventDefault(); return;
+        }
+      }
+    });
+  }
+  function setAiOpen(on) { var b = $('ev-ai-body'); if (b) b.hidden = !on; }
+  function showAiImg() {
+    var el = $('ev-ai-img'); if (!el) return;
+    el.hidden = !aiImg;
+    el.innerHTML = aiImg ? '<img src="' + aiImg + '" alt="붙여넣은 이미지"><button type="button" class="btn btn-ghost btn-sm">제거</button>' : '';
+    var b = el.querySelector('button'); if (b) b.addEventListener('click', function () { aiImg = null; showAiImg(); });
+  }
+  function aiReset(isEdit) {
+    buildAi();
+    var box = $('ev-ai'); if (!box) return;
+    box.hidden = !!isEdit;
+    aiImg = null; aiTasks = []; showAiImg();
+    $('ev-ai-text').value = ''; $('ev-ai-list').innerHTML = ''; setAiOpen(false);
+  }
+  function esc(x) { return String(x == null ? '' : x).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+  function taskWhen(t) { return (t.dueDate || '날짜 없음') + (t.dueTime ? ' ' + t.dueTime + (t.endTime ? '~' + t.endTime : '') : ''); }
+  async function runAi() {
+    var text = $('ev-ai-text').value.trim();
+    if (!text && !aiImg) { toast('분석할 텍스트나 이미지를 붙여넣으세요.', 'warning'); return; }
+    if (!aiKey()) { toast('AI API 키가 없습니다. 관리자에게 AI제공자 설정을 요청하세요.', 'error'); return; }
+    if (typeof QuickTaskModule === 'undefined' || !QuickTaskModule.extract) { toast('AI 분석 모듈을 불러오지 못했습니다.', 'error'); return; }
+    var btn = $('ev-ai-run'); btn.disabled = true; btn.textContent = '분석 중…';
+    try {
+      aiTasks = (await QuickTaskModule.extract(text, aiImg)).map(function (t) { t.checked = true; return t; });
+      renderAiList();
+      if (aiTasks.length === 1) loadTask(aiTasks[0]);
+    } finally { btn.disabled = false; btn.textContent = 'AI 분석'; }
+  }
+  function renderAiList() {
+    var el = $('ev-ai-list');
+    if (aiTasks.length < 2) { el.innerHTML = ''; return; }
+    el.innerHTML = aiTasks.map(function (t, i) {
+      return '<div class="ev-ai-row"><input type="checkbox" data-i="' + i + '" ' + (t.checked ? 'checked' : '') + '>' +
+        '<div class="t"><b>' + esc(t.title) + '</b><span>' + esc(taskWhen(t)) + '</span></div>' +
+        '<button type="button" class="btn btn-ghost btn-sm" data-load="' + i + '">불러오기</button></div>';
+    }).join('') + '<div class="ev-ext-row"><button type="button" id="ev-ai-bulk" class="btn btn-primary btn-sm">체크한 항목 모두 등록</button>' +
+      '<span>선택한 캘린더에 등록됩니다. 날짜가 없는 항목은 제외됩니다.</span></div>';
+    el.querySelectorAll('input[type=checkbox]').forEach(function (c) { c.addEventListener('change', function () { aiTasks[+c.dataset.i].checked = c.checked; }); });
+    el.querySelectorAll('[data-load]').forEach(function (b) { b.addEventListener('click', function () { loadTask(aiTasks[+b.dataset.load]); }); });
+    $('ev-ai-bulk').addEventListener('click', bulkAi);
+  }
+  function loadTask(t) {
+    $('event-title').value = t.title || '';
+    $('event-description').value = t.content || '';
+    var cb = $('event-allday'), s = $('event-start'), en = $('event-end');
+    if (t.dueDate) {
+      var allDay = !t.dueTime;
+      cb.checked = allDay; cb.dispatchEvent(new Event('change', { bubbles: true }));
+      if (allDay) { s.value = t.dueDate; en.value = t.dueDate; }
+      else {
+        var st = t.dueDate + 'T' + t.dueTime;
+        var e2 = t.endTime ? t.dueDate + 'T' + t.endTime : toLocal(new Date(new Date(st).getTime() + 3600000));
+        if (e2 <= st) e2 = toLocal(new Date(new Date(e2).getTime() + 864e5));
+        s.value = st; en.value = e2;
+      }
+    }
+    syncTrack(); snap = snapshot();
+    var tt = $('event-title'); if (tt) tt.focus();
+  }
+  async function bulkAi() {
+    var h = H(); if (!h) return;
+    var picks = aiTasks.filter(function (t) { return t.checked && t.dueDate; });
+    var skipped = aiTasks.filter(function (t) { return t.checked && !t.dueDate; }).length;
+    if (!picks.length) { toast('등록할 항목이 없습니다(날짜 필요).', 'warning'); return; }
+    var cals = (h.S.editCalendars || []).map(function (c) { return c.id; });
+    if (!cals.length) { try { cals = [CONFIG.calendarId]; } catch (e) {} }
+    var dept = $('event-dept') ? $('event-dept').value : '기타';
+    var tz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'Asia/Seoul';
+    var btn = $('ev-ai-bulk'); btn.disabled = true;
+    var ok = 0, fail = 0;
+    for (var i = 0; i < picks.length; i++) {
+      var t = picks[i], body = { summary: t.title, description: (t.content ? t.content + '\n' : '') + '[부서:' + dept + ']' };
+      if (t.dueTime) {
+        var st = t.dueDate + 'T' + t.dueTime, e2 = t.endTime ? t.dueDate + 'T' + t.endTime : toLocal(new Date(new Date(st).getTime() + 3600000));
+        if (e2 <= st) e2 = toLocal(new Date(new Date(e2).getTime() + 864e5));
+        body.start = { dateTime: new Date(st).toISOString(), timeZone: tz }; body.end = { dateTime: new Date(e2).toISOString(), timeZone: tz };
+      } else {
+        var nx = new Date(t.dueDate + 'T00:00:00'); nx.setDate(nx.getDate() + 1);
+        body.start = { date: t.dueDate }; body.end = { date: ymd(nx) };
+      }
+      var good = true;
+      for (var c = 0; c < cals.length; c++) { try { await CalendarModule.createEvent(cals[c], body); } catch (e) { good = false; } }
+      if (good) { ok++; t.checked = false; t.done = true; } else fail++;
+    }
+    aiTasks = aiTasks.filter(function (t) { return !t.done; });
+    renderAiList();
+    toast(ok + '건 등록' + (fail ? ', ' + fail + '건 실패(남겨 둠)' : '') + (skipped ? ', ' + skipped + '건 날짜 없어 제외' : ''), fail ? 'error' : 'success');
+    if (ok) h.renderCalendar();
+  }
+  function openAi(text, auto) {
+    var h = H(); if (!h) return false;
+    var m = $('event-modal');
+    if (m.hidden || !isNew()) h.openEventModal(null, new Date());
+    buildAi(); $('ev-ai').hidden = false; setAiOpen(true);
+    var ta = $('ev-ai-text');
+    if (text) ta.value = text;
+    ta.focus();
+    if (text && auto && aiKey()) runAi();
+    return true;
+  }
+
+  /* 캘린더 칩 드래그로 순서 변경 */
+  function initChipDrag() {
+    var list = $('event-cal-chip-list'); if (!list) return;
+    var from = -1;
+    function chips() { return [].slice.call(list.querySelectorAll('.qt-cal-chip')); }
+    new MutationObserver(function () { chips().forEach(function (c) { c.draggable = true; }); }).observe(list, { childList: true });
+    list.addEventListener('dragstart', function (e) {
+      var c = e.target.closest('.qt-cal-chip'); if (!c) return;
+      from = chips().indexOf(c);
+      try { e.dataTransfer.setData('text/plain', 'chip'); } catch (x) {}
+    });
+    list.addEventListener('dragover', function (e) { if (from >= 0) e.preventDefault(); });
+    list.addEventListener('drop', function (e) {
+      var c = e.target.closest('.qt-cal-chip'); if (!c || from < 0) return;
+      e.preventDefault();
+      var to = chips().indexOf(c), h = H(), a = h.S.editCalendars;
+      if (to >= 0 && to !== from) { a.splice(to, 0, a.splice(from, 1)[0]); h.renderChips(); }
+      from = -1;
+    });
+    list.addEventListener('dragend', function () { from = -1; });
+  }
+
   /* ═══ 공개 API / 초기화 ═══════════════════════════════════ */
   window.EventExt = {
     onOpen: function (isEdit) {
@@ -481,20 +642,21 @@
       snap = snapshot();
       var cb = $('ev-magnet'); if (cb) cb.checked = magnetOn();
       refreshDefLabel();
+      setupQtLed();
+      aiReset(isEdit);
       if (!isEdit) applyDefaults();
     },
     afterCreate: afterCreate,
     openFromText: openFromText,
+    openAi: openAi,
     parseText: parseText,
     diagnose: diagnose,
   };
 
   function init() {
-    initDefaultsUI(); initDrag(); initNoAutoClose(); initCellPick(); initAutoEnd(); initEnterSave();
+    initDefaultsUI(); buildAi(); initChipDrag(); initDrag(); initNoAutoClose(); initCellPick(); initAutoEnd(); initEnterSave();
     var em = $('event-modal');
     if (em) new MutationObserver(function () { if (em.hidden) { em.classList.remove('ev-float'); } }).observe(em, { attributes: true, attributeFilter: ['hidden'] });
-    var qt = $('qt-modal');
-    if (qt) new MutationObserver(setupQtLed).observe(qt, { attributes: true, attributeFilter: ['hidden'] });
     var ta = $('tab-admin');
     if (ta) new MutationObserver(setupAdminCard).observe(ta, { childList: true, subtree: true });
   }

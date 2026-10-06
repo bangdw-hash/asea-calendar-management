@@ -113,9 +113,9 @@ function openQuickTaskInPage(selText) {
       window.__aseaQuickText = '';
       return;
     }
-    QuickTaskModule.open();
-    const ta = selText && document.getElementById('qt-paste-text');
-    if (ta) { ta.value = selText; ta.dispatchEvent(new Event('input', { bubbles: true })); }
+    // 날짜가 없으면 통합 일정창의 AI 분석 패널로 열기(선택 텍스트 자동 분석)
+    if (window.EventExt && window.EventExt.openAi) window.EventExt.openAi(selText, true);
+    else QuickTaskModule.open();
 
   } else if (!isLoggedIn) {
     // 미로그인 → 로그인 안내 팝업
