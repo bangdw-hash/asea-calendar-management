@@ -135,14 +135,32 @@
     window.addEventListener('resize', function () { if (m.classList.contains('ev-float')) clampToViewport(); });
   }
 
-  /* 플로팅 모드: 모달 안쪽 빈 영역/헤더 클릭(드래그 직후 포함)이 gestures.js의 '빈 곳 클릭 시 닫기'로 번지지 않게 차단 */
+  /* 일정창 닫힘 방지: 배경·빈 영역 클릭/Esc/스와이프로는 닫히지 않고, ✕·취소는 입력 내용이 있으면 확인 후 닫음 */
+  var snap = '';
+  function snapshot() {
+    var h = H(); if (!h) return '';
+    return JSON.stringify([($('event-title') || {}).value, ($('event-description') || {}).value,
+      ($('event-start') || {}).value, ($('event-end') || {}).value,
+      (h.S.editCalendars || []).map(function (c) { return c.id; })]);
+  }
+  function isDirty() { var m = $('event-modal'); return !!m && !m.hidden && snapshot() !== snap; }
+  function confirmClose() { return !isDirty() || confirm('입력 중인 내용이 있습니다. 저장하지 않고 닫으시겠습니까?'); }
   function initNoAutoClose() {
     var m = $('event-modal'); if (!m) return;
-    var CONTROL = 'input,textarea,select,button,a,label,[contenteditable],.event-cal-chip,.qt-cal-chip,.chip,.form-input,[data-close-modal],.modal-close';
+    var CONTROL = 'input,textarea,select,button,a,label,[contenteditable],.event-cal-chip,.qt-cal-chip,.chip,.form-input';
     m.addEventListener('click', function (e) {
-      if (!m.classList.contains('ev-float')) return;
-      if (e.target.closest('.modal-dialog') && !e.target.closest(CONTROL)) e.stopPropagation();
+      var t = e.target;
+      if (t === m || t.classList.contains('modal-backdrop')) { e.stopPropagation(); return; }
+      if (t.closest('.modal-close, [data-close-modal]')) {
+        if (!confirmClose()) { e.stopPropagation(); e.preventDefault(); }
+        return;
+      }
+      if (t.closest('.modal-dialog') && !t.closest(CONTROL)) e.stopPropagation();
     }, true);
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && !m.hidden && !confirmClose()) { e.stopImmediatePropagation(); e.preventDefault(); }
+    }, true);
+    window.addEventListener('beforeunload', function (e) { if (isDirty()) { e.preventDefault(); e.returnValue = ''; } });
   }
 
   /* 모달이 열린 동안 달력 날짜 칸 클릭 → 입력 중인 내용 유지, 날짜만 변경 */
@@ -253,6 +271,7 @@
     });
     h.S.editCalendars = ok;
     h.renderChips();
+    snap = snapshot();
     if (miss) toast('기본 캘린더 ' + miss + '개는 삭제되었거나 권한이 없어 제외했습니다.', 'info');
   }
   function initDefaultsUI() {
@@ -332,7 +351,7 @@
     $('event-title').value = r.title;
     $('event-description').value = r.desc;
     if (!r.allDay) { $('event-start').value = toLocal(r.start); $('event-end').value = toLocal(r.end); }
-    syncTrack();
+    syncTrack(); snap = snapshot();
     setTimeout(function () { var t = $('event-title'); if (t) { t.focus(); t.select(); } }, 50);
     return true;
   }
@@ -459,6 +478,7 @@
     onOpen: function (isEdit) {
       setupFloat(true);
       syncTrack();
+      snap = snapshot();
       var cb = $('ev-magnet'); if (cb) cb.checked = magnetOn();
       refreshDefLabel();
       if (!isEdit) applyDefaults();
