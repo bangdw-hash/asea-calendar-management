@@ -32,23 +32,37 @@ async function getSelectedText(tabId) {
   return '';
 }
 
+// 한글(HWP)·워드 등 외부 프로그램의 선택 영역은 읽을 수 없으므로, 브라우저 선택이 없으면 클립보드(Ctrl+C)를 사용
+async function readClipboard() {
+  try {
+    if (!(await chrome.offscreen.hasDocument())) {
+      await chrome.offscreen.createDocument({ url: 'offscreen.html', reasons: ['CLIPBOARD'], justification: '선택 후 복사한 텍스트를 일정으로 변환' });
+    }
+    const r = await chrome.runtime.sendMessage({ type: 'asea-read-clipboard' });
+    await chrome.offscreen.closeDocument();
+    return ((r && r.text) || '').trim().slice(0, 5000);
+  } catch (e) { return ''; }
+}
+
 async function handleShortcut() {
   try {
     const [cur] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
-    const text = (cur && cur.id != null) ? await getSelectedText(cur.id) : '';
-    await openAsea(text);
+    let text = (cur && cur.id != null) ? await getSelectedText(cur.id) : '';
+    let fromClip = false;
+    if (!text) { text = await readClipboard(); fromClip = !!text; }
+    await openAsea(text, fromClip);
   } catch (err) {
     console.error('[ASEA Extension] handleShortcut error:', err);
     chrome.tabs.create({ url: ASEA_URL });
   }
 }
 
-async function openAsea(text) {
+async function openAsea(text, fromClip) {
   try {
     // 0. 지금 보고 있는 탭이 이미 ASEA면 → 새 탭/창 없이 그 자리에서 바로 모달 오픈
     const [active] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
     if (active && active.id != null && active.url && active.url.indexOf(ASEA_URL) === 0) {
-      await injectOpenModal(active.id, text);
+      await injectOpenModal(active.id, text, fromClip);
       return;
     }
 
@@ -62,7 +76,7 @@ async function openAsea(text) {
       await chrome.tabs.update(tab.id, { active: true });
 
       // 탭 로드 완료 후 빠른 등록 모달 오픈
-      await injectOpenModal(tab.id, text);
+      await injectOpenModal(tab.id, text, fromClip);
 
     } else {
       // 2. ASEA가 열려 있지 않으면 작은 팝업 창으로 열기 (hash로 자동 모달 오픈 신호 전달)
@@ -76,7 +90,7 @@ async function openAsea(text) {
         if (tabId === newTab.id && info.status === 'complete') {
           chrome.tabs.onUpdated.removeListener(listener);
           // 로드 완료 후 약간 대기 (JS 초기화 시간)
-          setTimeout(() => injectOpenModal(newTab.id, text), 800);
+          setTimeout(() => injectOpenModal(newTab.id, text, fromClip), 800);
         }
       });
     }
@@ -88,12 +102,12 @@ async function openAsea(text) {
 }
 
 /* ── 탭에 스크립트 주입 → 모달 오픈 ────────────────────── */
-async function injectOpenModal(tabId, text) {
+async function injectOpenModal(tabId, text, fromClip) {
   try {
     await chrome.scripting.executeScript({
       target: { tabId },
       func: openQuickTaskInPage,
-      args: [text || ''],
+      args: [text || '', !!fromClip],
     });
   } catch (err) {
     // scripting 실패 (로딩 중 등) → 알림으로 유도
@@ -102,7 +116,7 @@ async function injectOpenModal(tabId, text) {
 }
 
 /* ── 페이지 내에서 실행될 함수 (serialized) ─────────────── */
-function openQuickTaskInPage(selText) {
+function openQuickTaskInPage(selText, fromClip) {
   if (selText) window.__aseaQuickText = selText;
   // 로그인 여부 확인
   const isLoggedIn = typeof Auth !== 'undefined' && Auth.isLoggedIn && Auth.isLoggedIn();
@@ -114,7 +128,7 @@ function openQuickTaskInPage(selText) {
       return;
     }
     // 날짜가 없으면 통합 일정창의 AI 분석 패널로 열기(선택 텍스트 자동 분석)
-    if (window.EventExt && window.EventExt.openAi) window.EventExt.openAi(selText, true);
+    if (window.EventExt && window.EventExt.openAi) window.EventExt.openAi(selText, !fromClip);   // 클립보드 텍스트는 자동 분석하지 않음(엉뚱한 내용 방지)
     else QuickTaskModule.open();
 
   } else if (!isLoggedIn) {
