@@ -321,7 +321,7 @@
         if ((p === '오후' || p === 'pm') && h < 12) h += 12;
         if ((p === '오전' || p === 'am') && h === 12) h = 0;
       }
-      times.push({ i: m.index, h: h % 24, mi: mi }); used.push([m.index, m.index + m[0].length]);
+      times.push({ i: m.index, h: h % 24, mi: mi, ap: !!m[1] }); used.push([m.index, m.index + m[0].length]);
     }
     if (!dates.length) return null;
     var sd = dates[0].d, ed = dates[1] ? dates[1].d : null;
@@ -334,7 +334,11 @@
     } else {
       var s = new Date(sd); s.setHours(st ? st.h : 9, st ? st.mi : 0, 0, 0);
       var e;
-      if (et) { e = new Date(ed || sd); e.setHours(et.h, et.mi, 0, 0); if (e <= s) e = new Date(e.getTime() + (ed ? 0 : 864e5)); }
+      if (et) {
+        e = new Date(ed || sd); e.setHours(et.h, et.mi, 0, 0);
+        if (e <= s && !et.ap && et.h < 12 && s.getHours() >= 12) e = new Date(e.getTime() + 432e5);   // "오후 6시~8시" → 종료 오후 8시
+        if (e <= s) e = new Date(e.getTime() + (ed ? 0 : 864e5));
+      }
       if (!e || e <= s) e = new Date(s.getTime() + 3600000);     // 종료 없음 → 기본 1시간
       res.start = s; res.end = e;
     }
