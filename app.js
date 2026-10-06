@@ -1995,12 +1995,19 @@
       return;
     }
     wrap.innerHTML = S.editCalendars.map(function (cal, i) {
-      return '<span class="qt-cal-chip">' +
+      return '<span class="qt-cal-chip" style="' + (cal.on === false ? 'opacity:.55' : '') + '">' +
+        '<input type="checkbox" class="qt-cal-chk" data-i="' + i + '" title="체크한 캘린더에만 일정이 등록됩니다" ' + (cal.on === false ? '' : 'checked') + ' style="margin:0 4px 0 0;cursor:pointer">' +
         '<span style="width:9px;height:9px;border-radius:50%;background:' + (cal.color || '#4285F4') + ';display:inline-block;flex-shrink:0"></span>' +
         '<span style="font-size:12px">' + (cal.name || cal.summary || cal.id) + '</span>' +
         '<button type="button" class="qt-cal-chip-del" data-i="' + i + '" title="제거">×</button>' +
       '</span>';
     }).join('');
+    wrap.querySelectorAll('.qt-cal-chk').forEach(function (cb) {
+      cb.addEventListener('change', function () {
+        S.editCalendars[parseInt(this.dataset.i)].on = this.checked;
+        this.closest('.qt-cal-chip').style.opacity = this.checked ? '' : '.55';
+      });
+    });
     wrap.querySelectorAll('.qt-cal-chip-del').forEach(function (btn) {
       btn.addEventListener('click', function () {
         S.editCalendars.splice(parseInt(this.dataset.i), 1);
@@ -2515,9 +2522,11 @@
       var fullDesc  = desc + (desc ? '\n' : '') + '[부서:' + dept + ']';
       // 등록/수정 대상 캘린더 목록 결정
       // editCalendars 칩 목록 우선, 없으면 기본 캘린더
+      // 체크(on)된 캘린더에만 등록 — 목록은 후보, 체크가 대상
       var targetCals = (S.editCalendars && S.editCalendars.length > 0)
-        ? S.editCalendars.map(function (c) { return c.id; })
+        ? S.editCalendars.filter(function (c) { return c.on !== false; }).map(function (c) { return c.id; })
         : [CONFIG.calendarId];
+      if (!targetCals.length) { toast('등록할 캘린더를 체크하세요.', 'error'); return; }
       var targetCal = targetCals[0]; // 단일 API 호환용 (첫 번째)
 
       // colorId 결정 (부서 인덱스 기반)

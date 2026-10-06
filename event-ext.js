@@ -241,7 +241,7 @@
   }
   function saveDefaults() {
     var h = H(); if (!h) return;
-    var list = (h.S.editCalendars || []).map(function (c) { return { id: c.id, name: c.name, color: c.color }; });
+    var list = (h.S.editCalendars || []).map(function (c) { return { id: c.id, name: c.name, color: c.color, on: c.on !== false }; });
     if (window.OrderExt) OrderExt.setCalOrder(list.map(function (c) { return c.id; }));
     var obj = { t: Date.now(), list: list };
     lsSet(defKey(), JSON.stringify(obj));
@@ -270,6 +270,9 @@
         ok.push({ id: c.id, name: c.summary || d.name || c.id, color: c.backgroundColor || d.color || '#4285F4' });
       } else miss++;
     });
+    // 저장된 체크 상태 복원 (예전 형식은 첫 캘린더만 체크)
+    var hasFlag = defs.some(function (d) { return d.on !== undefined; });
+    ok.forEach(function (c, i) { var d = defs.filter(function (x) { return x.id === c.id; })[0]; c.on = hasFlag ? !!(d && d.on) : i === 0; });
     h.S.editCalendars = ok;
     h.renderChips();
     snap = snapshot();
@@ -280,14 +283,14 @@
     if (!clr || $('ev-def-save')) return;
     var save = document.createElement('button');
     save.type = 'button'; save.id = 'ev-def-save'; save.className = 'btn btn-ghost btn-sm';
-    save.style.fontSize = '11px'; save.textContent = '현재 선택을 내 기본값으로 저장';
+    save.style.fontSize = '11px'; save.textContent = '현재 목록·체크를 내 기본값으로 저장';
     save.addEventListener('click', saveDefaults);
     clr.parentNode.insertBefore(save, clr.nextSibling);
     var row = document.createElement('div');
     row.className = 'ev-ext-row';
     row.innerHTML = '<span id="ev-def-label"></span>' +
       '<label><input type="checkbox" id="ev-magnet"> 창 자석 맞춤</label>' +
-      '<span>칩 드래그: 순서 변경 · 헤더 더블클릭: 중앙 복귀</span>';
+      '<span>체크한 캘린더에만 등록 · 칩 드래그: 순서 변경 · 헤더 더블클릭: 중앙 복귀</span>';
     var chips = $('event-cal-chip-list');
     chips.parentNode.insertBefore(row, chips.nextSibling);
     var cb = $('ev-magnet');
@@ -575,7 +578,7 @@
     var picks = aiTasks.filter(function (t) { return t.checked && t.dueDate; });
     var skipped = aiTasks.filter(function (t) { return t.checked && !t.dueDate; }).length;
     if (!picks.length) { toast('등록할 항목이 없습니다(날짜 필요).', 'warning'); return; }
-    var cals = (h.S.editCalendars || []).map(function (c) { return c.id; });
+    var cals = (h.S.editCalendars || []).filter(function (c) { return c.on !== false; }).map(function (c) { return c.id; });
     if (!cals.length) { try { cals = [CONFIG.calendarId]; } catch (e) {} }
     var dept = $('event-dept') ? $('event-dept').value : '기타';
     var tz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'Asia/Seoul';
