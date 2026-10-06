@@ -71,6 +71,7 @@
       //   현재 세션을 건드리지 않는다 — 캘린더/UI 상태 보존
       if (!_isMainLogin) {
         if (_pendingResolve) { _pendingResolve(false); _pendingResolve = null; }
+        _scheduleRetry();   // 무음 갱신 실패 → 세션은 유지하고 곧 재시도
         return;
       }
       // 메인 로그인 실패 → 토큰 초기화
@@ -92,6 +93,7 @@
 
     _clearToken();
     _accessToken = tokenResponse.access_token;
+    _refreshFails = 0;
 
     var expiresIn = ((tokenResponse.expires_in || 3600) - 60) * 1000;
     var expiresAt = Date.now() + expiresIn;
@@ -119,6 +121,27 @@
     return base;
   }
 
+  /* 갱신 실패 재시도: 15초·30초·… 최대 8회(점증). 성공하면 카운터 초기화 */
+  var _refreshFails = 0;
+  function _scheduleRetry() {
+    if (!_accessToken || _refreshFails >= 8) return;
+    _refreshFails++;
+    if (_expireTimer) clearTimeout(_expireTimer);
+    _expireTimer = setTimeout(_silentRefresh, Math.min(15000 * _refreshFails, 120000));
+  }
+
+  /* 탭 복귀·네트워크 복구·절전 해제 시 토큰이 만료됐거나 임박했으면 즉시 무음 갱신
+     (백그라운드 탭은 타이머가 지연되어 만료 후 첫 요청이 로그인 화면으로 이어지던 문제 방지) */
+  function _refreshIfStale() {
+    if (!_accessToken) return;
+    var exp = 0;
+    try { exp = parseInt(localStorage.getItem(_STORE_EXPIRES) || '0', 10); } catch (e) {}
+    if (exp - Date.now() < 180000) { _refreshFails = 0; _silentRefresh(); }
+  }
+  document.addEventListener('visibilitychange', function () { if (!document.hidden) _refreshIfStale(); });
+  window.addEventListener('online', _refreshIfStale);
+  window.addEventListener('focus', _refreshIfStale);
+
   /* 만료 직전/주기적 무음 토큰 갱신 — 실패해도 세션은 보존(로그인 화면 안 띄움) */
   function _silentRefresh() {
     _initTokenClient();
@@ -136,6 +159,9 @@
       client_id: CONFIG.googleClientId,
       scope: CONFIG.googleScopes.join(' '),
       callback: _handleTokenResponse,
+      error_callback: function (err) {
+        _handleTokenResponse({ error: (err && err.type) || 'popup_error' });
+      },
     });
   }
 

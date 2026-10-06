@@ -228,11 +228,8 @@
         var isUpward = dy < -THRESH && Math.abs(dy) > Math.abs(dx) * 1.2;
 
         if (isUpward) {
-          _flyOut('0', '-130vh', 0, function () {
-            var evModal = $('event-modal');
-            if (evModal) evModal.hidden = true;
-          });
-        } else if (dx > THRESH) {
+          _snapBack();   // 위로 스와이프해도 입력 중인 일정창을 닫지 않음
+        } else if (dx > THRESH && S.editEventId) {
           // 오른쪽 스와이프 → 다음 일정
           _flyOut('120vw', '0', 20, function () {
             if (!_navigate(1)) {
@@ -240,7 +237,7 @@
               if (evModal) evModal.hidden = true;
             }
           });
-        } else if (dx < -THRESH) {
+        } else if (dx < -THRESH && S.editEventId) {
           // 왼쪽 스와이프 → 이전 일정
           _flyOut('-120vw', '0', -20, function () {
             if (!_navigate(-1)) {
@@ -7222,19 +7219,19 @@
     // 활성 구글 세션이 있으면 클릭 없이 무음 로그인 → 바로 캘린더.
     // ★ reauth()(무음 전용)를 사용: 무음 실패해도 에러/로그아웃 없이 로그인 화면만 유지.
     //    (login()은 메인 로그인이라 무음 실패 시 토큰을 지우고 에러를 띄움 — 사용 금지)
-    var MAX_WAIT = 6000;
+    // 한 번 로그인한 기기(asea_user_email 기억)는 무음 로그인을 최대 4회 재시도 → 로그인 화면 노출 최소화
+    var MAX_WAIT = 30000;
     var started  = Date.now();
-    var done = false;
-    function attempt() {
-      if (done) return;
-      if (typeof Auth === 'undefined' || !Auth.reauth) return;          // GIS 아직 로드 전 → 다음 tick
-      if (Auth.isLoggedIn && Auth.isLoggedIn()) { done = true; return; } // 이미 복원됨
-      done = true;
-      try { Auth.reauth().catch(function () {}); } catch (e) {}          // 성공 시 onAuthChange가 앱 표시
-    }
+    var tries = 0, nextAt = 0, remembered = false;
+    try { remembered = !!localStorage.getItem('asea_user_email'); } catch (e) {}
+    var maxTries = remembered ? 4 : 1;
     var interval = setInterval(function () {
-      attempt();
-      if (done || Date.now() - started > MAX_WAIT) clearInterval(interval);
+      if (Auth.isLoggedIn && Auth.isLoggedIn()) { clearInterval(interval); return; }
+      if (tries >= maxTries || Date.now() - started > MAX_WAIT) { clearInterval(interval); return; }
+      if (typeof Auth === 'undefined' || !Auth.reauth) return;          // GIS 아직 로드 전 → 다음 tick
+      if (Date.now() < nextAt) return;
+      tries++; nextAt = Date.now() + 5000 * tries;
+      try { Auth.reauth().catch(function () {}); } catch (e) {}          // 성공 시 onAuthChange가 앱 표시
     }, 250);
   }
 

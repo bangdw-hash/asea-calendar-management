@@ -51,7 +51,9 @@
     var dialog = m.querySelector('.modal-dialog, .qt-modal-dialog') || m;
 
     m.addEventListener('click', function (e) {
+      if (id === 'event-modal' && e.target.closest('.modal-backdrop')) return;
       if (e.target.closest('[data-close-modal], .modal-close, #qt-close-btn, #qt-backdrop')) { hide(m); return; }
+      if (id === 'event-modal') return;   // 일정창은 ✕/취소/저장으로만 닫힘 (빈 곳 클릭으로 입력 내용 손실 방지)
       if (!isControl(e.target)) hide(m);
     });
 
@@ -74,7 +76,7 @@
       }
       // 위로 "빠르게 튕기는(플릭)" 동작만 닫기 — 천천히 올려 내용 보는 건 닫지 않음
       var vy = Math.abs(dy) / Math.max(dt, 1);   // px/ms
-      if (dy < -70 && Math.abs(dy) > Math.abs(dx) && !ctrlStart && dt < 300 && vy > 0.5) slideClose(m, dialog);
+      if (dy < -70 && Math.abs(dy) > Math.abs(dx) && !ctrlStart && dt < 300 && vy > 0.5 && id !== 'event-modal') slideClose(m, dialog);
     }, { passive: true });
   }
 
