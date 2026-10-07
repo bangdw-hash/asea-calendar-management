@@ -224,6 +224,13 @@
   }
 
   /* ═══ 3. Enter 저장 ═══════════════════════════════════════ */
+  function initMultiSave() {
+    var sb = $('save-event-btn'); if (!sb) return;
+    sb.addEventListener('click', function (e) {
+      if (!multiActive) return;
+      e.stopImmediatePropagation(); e.preventDefault(); bulkAi();
+    }, true);
+  }
   function initEnterSave() {
     function save() { var b = $('save-event-btn'); if (b && !b.disabled) b.click(); }
     var t = $('event-title'), d = $('event-description');
@@ -335,7 +342,6 @@
       if (mo < 1 || mo > 12 || da < 1 || da > 31) continue;
       var d = new Date(y, mo - 1, da);
       if (d.getMonth() !== mo - 1) continue;
-      if (noYear && now - d > 183 * 864e5) d = new Date(y + 1, mo - 1, da);   // 6개월 넘게 지난 날짜(연도 생략)는 내년
       var e = m.index + m[0].length, rec = { i: m.index, e: e, d: d };
       var w = WD_RE.exec(text.slice(e));
       if (w) { rec.wd = w[1] || w[2]; used.push([e, e + w[0].length]); rec.e2 = e + w[0].length; }
@@ -395,13 +401,18 @@
       it.allDay = false; it.start = s; it.end = e;
       return it;
     });
+    var todayMid = new Date(); todayMid.setHours(0, 0, 0, 0);
+    items.forEach(function (it, gi) {
+      if (groups[gi].ds < todayMid) it.warn = (it.warn ? it.warn + ' · ' : '') + '지난 날짜';
+    });
     var rest = text, spans = used.slice().sort(function (a, b) { return b[0] - a[0]; });
     spans.forEach(function (r) { rest = rest.slice(0, r[0]) + ' ' + rest.slice(r[1]); });
-    var title = rest.split(/\r?\n/).map(function (l) {
-      return l.replace(/[~\-–—]+/g, ' ').replace(/부터|까지|\s및\s|[,;·\t]/g, ' ').replace(/^\s*(?:[•·\-*]|\d+[.)])\s+/, '').replace(/(^|\s)\/+(?=\s|$)/g, ' ').replace(/\s+/g, ' ').trim();
-    }).filter(Boolean)[0] || '';
-    title = title.replace(/^[\s,.:;()\[\]]+|[\s,.:;]+$/g, '').slice(0, 80);
-    items.forEach(function (it) { it.title = title; });
+    var rl = rest.split(/\r?\n/).map(function (l) {
+      return l.replace(/[~\-–—]+/g, ' ').replace(/부터|까지|\s및\s|[,;·\t]/g, ' ').replace(/^\s*(?:[•·\-*]|\d+[.)])\s+/, '').replace(/(^|\s)\/+(?=\s|$)/g, ' ').replace(/\s+/g, ' ').trim()
+        .replace(/^[\s,.:;()\[\]]+|[\s,.:;]+$/g, '');
+    }).filter(Boolean);
+    var title = (rl[0] || '').slice(0, 80), restDesc = rl.slice(1).join('\n');
+    items.forEach(function (it) { it.title = title; it.rest = restDesc; });
     return items;
   }
   /* 전체 텍스트 → 일정 목록. 날짜가 있는 줄이 2줄 이상이면 줄(표의 행)마다 1건씩 처리 */
@@ -414,8 +425,7 @@
     var items = [];
     if (per.length > 1) per.forEach(function (a) { items = items.concat(a); });
     else items = parseBlock(text);
-    var desc = text.slice(0, 1000);
-    items.forEach(function (it) { it.desc = desc; });
+    items.forEach(function (it) { it.desc = items.length > 1 ? (it.rest || '') : text.slice(0, 1000); });   // 여러 건은 건별 나머지 글만 설명으로
     return items;
   }
   function parseText(text) { var a = parseAll(text); return a.length ? a[0] : null; }   // (호환) 첫 일정만
@@ -440,8 +450,8 @@
       setTimeout(function () { var t = $('event-title'); if (t) { t.focus(); t.select(); } }, 50);
     } else {                                // 2건 이상: 항상 목록으로 확인 후 등록
       aiTasks = items.map(toTask);
-      setAiOpen(true); renderAiList();
-      setTimeout(function () { var f = document.querySelector('#ev-ai-list .ev-r-title'); if (f) f.focus(); }, 50);
+      renderAiList();
+      setTimeout(function () { var f = document.querySelector('#ev-multi .ev-r-title'); if (f) f.focus(); }, 50);
     }
     syncTrack(); snap = snapshot();
     return true;
@@ -591,6 +601,7 @@
       '<div class="ev-ext-row"><button type="button" id="ev-ai-run" class="btn btn-primary btn-sm">AI 분석</button>' +
       '<span>결과가 1건이면 아래 입력란에 자동 입력됩니다.</span></div><div id="ev-ai-list"></div></div>';
     body.insertBefore(box, body.querySelector('.form-group'));
+    var mc = document.createElement('div'); mc.id = 'ev-multi'; box.after(mc);
     $('ev-ai-toggle').addEventListener('click', function () { setAiOpen($('ev-ai-body').hidden); });
     $('ev-ai-run').addEventListener('click', runAi);
     $('ev-ai-text').addEventListener('paste', function (e) {
@@ -615,7 +626,7 @@
     buildAi();
     var box = $('ev-ai'); if (!box) return;
     box.hidden = !!isEdit;
-    aiImg = null; aiTasks = []; showAiImg();
+    aiImg = null; aiTasks = []; showAiImg(); exitMulti();
     $('ev-ai-text').value = ''; $('ev-ai-list').innerHTML = ''; setAiOpen(false);
   }
   function esc(x) { return String(x == null ? '' : x).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
@@ -631,44 +642,94 @@
       if (aiTasks.length === 1) loadTask(aiTasks[0]);
     } finally { btn.disabled = false; btn.textContent = 'AI 분석'; }
   }
+  /* ── 복수 일정 화면: 단일 입력란을 숨기고 건별 목록(제목·시작·종료·하루 종일)만 표시, 반복 없음 고정 ── */
+  var multiActive = false;
+  css.textContent +=
+    '.ev-hide-multi{display:none!important}' +
+    '.ev-mhead{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px;font-size:13px}.ev-mhead span{color:var(--color-text-muted,#6b7280);font-size:12px}' +
+    '.ev-mhead details{font-size:12px}.ev-mhead pre{white-space:pre-wrap;margin:4px 0 0;padding:6px 8px;background:var(--color-bg,#f3f4f6);border-radius:8px;max-width:100%}' +
+    '.ev-mrow{padding:8px 10px;margin-bottom:8px;border:1px solid var(--color-border,#e5e7eb);border-radius:12px;background:var(--color-card,#fff)}' +
+    '.ev-mtop{display:flex;align-items:center;gap:6px}.ev-mn{width:18px;color:var(--color-text-muted,#6b7280);font-size:11px;text-align:center}' +
+    '.ev-mtop .form-input{flex:1;min-width:0}.ev-mrow.ev-bad .ev-r-title{border-color:#dc2626;background:#fef2f2}' +
+    '.ev-mdel{border:0;background:transparent;cursor:pointer;font-size:18px;line-height:1;color:var(--color-text-muted,#6b7280);padding:2px 6px;border-radius:8px}.ev-mdel:hover{background:var(--primary-lt,#E8F0FE);color:#dc2626}' +
+    '.ev-ad{display:inline-flex;align-items:center;gap:4px;font-size:12px;cursor:pointer}';
+
+  function multiNodes() {
+    var n = function (id, sel) { var e = $(id); return e ? (sel ? e.closest(sel) : e) : null; };
+    return [n('event-title', '.form-group'), n('event-allday', 'label'), n('event-start', '.form-row'), n('event-description', '.form-group'), n('recur-section')];
+  }
+  function enterMulti() {
+    if (!multiActive) {
+      multiActive = true;
+      multiNodes().forEach(function (e) { if (e) e.classList.add('ev-hide-multi'); });
+      var rt = $('event-recur-type');
+      if (rt) { rt.value = 'none'; rt.dispatchEvent(new Event('change', { bubbles: true })); rt.disabled = true; }
+    }
+    $('save-event-btn').textContent = aiTasks.length + '건 등록';
+  }
+  function exitMulti() {
+    var mc = $('ev-multi'); if (mc) mc.innerHTML = '';
+    if (!multiActive) return;
+    multiActive = false;
+    multiNodes().forEach(function (e) { if (e) e.classList.remove('ev-hide-multi'); });
+    var rt = $('event-recur-type'); if (rt) rt.disabled = false;
+    var sb = $('save-event-btn'); if (sb) sb.textContent = '저장';
+  }
   function renderAiList() {
-    var el = $('ev-ai-list');
-    if (aiTasks.length < 2) { el.innerHTML = ''; return; }
-    el.innerHTML = '<div class="ev-ext-row"><label>공통 제목 <input id="ev-r-all" class="form-input" style="width:200px" placeholder="한 번에 모든 행 제목 입력"></label></div>' +
+    var mc = $('ev-multi'); if (!mc) return;
+    if (!aiTasks.length || (aiTasks.length < 2 && !multiActive)) { exitMulti(); return; }
+    enterMulti();
+    var src = ($('ev-ai-text') || {}).value || '';
+    mc.innerHTML = '<div class="ev-mhead"><b>일정 ' + aiTasks.length + '건 감지</b><span>반복 없음으로 등록됩니다</span>' +
+      (src ? '<details><summary>원문 보기</summary><pre>' + esc(src) + '</pre></details>' : '') + '</div>' +
+      '<div class="ev-ext-row"><label>공통 제목 <input id="ev-r-all" class="form-input" style="width:200px" placeholder="모든 행 제목을 한 번에 입력"></label></div>' +
       aiTasks.map(function (t, i) {
-        return '<div class="ev-ai-row" data-i="' + i + '"><input type="checkbox" class="ev-r-chk" ' + (t.checked ? 'checked' : '') + '>' +
-          '<div class="t"><input class="form-input ev-r-title" data-f="title" placeholder="제목" value="' + esc(t.title) + '">' +
-          '<div class="ev-r-dt"><input type="date" data-f="dueDate" value="' + esc(t.dueDate) + '"><input type="time" data-f="dueTime" value="' + esc(t.dueTime) + '" title="비우면 하루 종일">' +
-          '<span>~</span><input type="date" data-f="endDate" value="' + esc(t.endDate || t.dueDate) + '"><input type="time" data-f="endTime" value="' + esc(t.endTime) + '">' +
-          (t.warn ? '<span class="ev-warn">' + esc(t.warn) + '</span>' : '') + '</div></div>' +
-          '<button type="button" class="btn btn-ghost btn-sm" data-load="' + i + '">불러오기</button></div>';
+        return '<div class="ev-mrow" data-i="' + i + '"><div class="ev-mtop"><span class="ev-mn">' + (i + 1) + '</span>' +
+          '<input class="form-input ev-r-title" data-f="title" placeholder="제목 (필수)" value="' + esc(t.title) + '">' +
+          '<button type="button" class="ev-mdel" title="이 일정 삭제" aria-label="이 일정 삭제">\u00d7</button></div>' +
+          '<div class="ev-r-dt"><input type="date" data-f="dueDate" value="' + esc(t.dueDate) + '"><input type="time" data-f="dueTime" value="' + esc(t.dueTime) + '" ' + (t.dueTime ? '' : 'disabled') + '>' +
+          '<span>~</span><input type="date" data-f="endDate" value="' + esc(t.endDate || t.dueDate) + '"><input type="time" data-f="endTime" value="' + esc(t.endTime) + '" ' + (t.dueTime ? '' : 'disabled') + '>' +
+          '<label class="ev-ad"><input type="checkbox" data-f="allday" ' + (t.dueTime ? '' : 'checked') + '> 하루 종일</label>' +
+          (t.warn ? '<span class="ev-warn">' + esc(t.warn) + '</span>' : '') + '</div></div>';
       }).join('') +
-      '<div class="ev-ext-row"><button type="button" id="ev-ai-bulk" class="btn btn-primary btn-sm">체크한 항목 모두 등록</button>' +
-      '<span>Tab 이동 · Ctrl+↑/↓ 행 이동 · Enter 다음 행 · Ctrl+Enter 등록 · 시간을 비우면 하루 종일</span></div>';
-    el.querySelectorAll('.ev-ai-row').forEach(function (row) {
-      var i = +row.dataset.i;
-      row.querySelector('.ev-r-chk').addEventListener('change', function () { aiTasks[i].checked = this.checked; });
+      '<div class="ev-ext-row"><span>Tab 이동 · Enter 다음 행 · Ctrl+↑/↓ 행 이동 · Ctrl+Enter 등록 · 하단 "' + aiTasks.length + '건 등록" 버튼</span></div>';
+    mc.querySelectorAll('.ev-mrow').forEach(function (row) {
+      row.querySelector('.ev-mdel').addEventListener('click', function () {
+        aiTasks.splice(+row.dataset.i, 1);
+        if (aiTasks.length === 1) { loadTask(aiTasks[0]); aiTasks = []; exitMulti(); } else renderAiList();
+      });
       row.querySelectorAll('[data-f]').forEach(function (inp) {
-        inp.addEventListener('input', function () { aiTasks[i][inp.dataset.f] = inp.value; });
+        var t = function () { return aiTasks[+row.dataset.i]; };
+        var f = inp.dataset.f;
+        if (f === 'allday') {
+          inp.addEventListener('change', function () {
+            var tk = t(), dt = row.querySelector('[data-f=dueTime]'), et = row.querySelector('[data-f=endTime]');
+            if (inp.checked) { tk.dueTime = tk.endTime = ''; dt.value = et.value = ''; dt.disabled = et.disabled = true; }
+            else { tk.dueTime = tk.dueTime || '09:00'; tk.endTime = tk.endTime || '10:00'; dt.value = tk.dueTime; et.value = tk.endTime; dt.disabled = et.disabled = false; }
+          });
+          return;
+        }
+        inp.addEventListener('input', function () {
+          t()[f] = inp.value;
+          if (f === 'title') row.classList.remove('ev-bad');
+          if (f === 'dueTime') row.querySelector('[data-f=allday]').checked = !inp.value;
+        });
         inp.addEventListener('keydown', function (e) {
           if (e.isComposing || e.keyCode === 229) return;
-          var dir = 0;
-          if (e.ctrlKey && e.key === 'ArrowUp') dir = -1; else if (e.ctrlKey && e.key === 'ArrowDown') dir = 1;
-          else if (e.key === 'Enter' && !e.ctrlKey) dir = 1;
           if (e.key === 'Enter' && e.ctrlKey) { e.preventDefault(); bulkAi(); return; }
+          var dir = (e.ctrlKey && e.key === 'ArrowUp') ? -1 : (e.ctrlKey && e.key === 'ArrowDown') ? 1 : (e.key === 'Enter' ? 1 : 0);
           if (!dir) return;
           e.preventDefault();
-          var nx = el.querySelectorAll('.ev-ai-row')[i + dir];
-          var f = nx && nx.querySelector('[data-f="' + inp.dataset.f + '"]');
-          if (f) { f.focus(); if (f.select) try { f.select(); } catch (x) {} }
+          var nx = mc.querySelectorAll('.ev-mrow')[+row.dataset.i + dir];
+          var nf = nx && nx.querySelector('[data-f="' + f + '"]');
+          if (nf && !nf.disabled) { nf.focus(); if (nf.select) try { nf.select(); } catch (x) {} }
         });
       });
     });
-    el.querySelectorAll('[data-load]').forEach(function (b) { b.addEventListener('click', function () { loadTask(aiTasks[+b.dataset.load]); }); });
     $('ev-r-all').addEventListener('input', function () {
-      var v = this.value; aiTasks.forEach(function (t, i) { t.title = v; el.querySelectorAll('.ev-r-title')[i].value = v; });
+      var v = this.value; aiTasks.forEach(function (t, i) { t.title = v; mc.querySelectorAll('.ev-r-title')[i].value = v; });
+      mc.querySelectorAll('.ev-mrow').forEach(function (r) { if (v) r.classList.remove('ev-bad'); });
     });
-    $('ev-ai-bulk').addEventListener('click', bulkAi);
   }
   function taskBody(t, dept, tz) {
     var body = { summary: t.title || '(제목 없음)', description: (t.content ? t.content + '\n' : '') + '[부서:' + dept + ']' };
@@ -703,27 +764,39 @@
     var tt = $('event-title'); if (tt) tt.focus();
   }
   async function bulkAi() {
-    var h = H(); if (!h) return;
-    var picks = aiTasks.filter(function (t) { return t.checked && t.dueDate; });
-    var skipped = aiTasks.filter(function (t) { return t.checked && !t.dueDate; }).length;
-    if (!picks.length) { toast('등록할 항목이 없습니다(날짜 필요).', 'warning'); return; }
+    var h = H(); if (!h || !aiTasks.length) return;
+    var rows = document.querySelectorAll('#ev-multi .ev-mrow'), bad = -1;
+    aiTasks.forEach(function (t, i) {                       // 제목 필수 · 날짜 필수
+      var miss = !String(t.title || '').trim() || !t.dueDate;
+      if (rows[i]) rows[i].classList.toggle('ev-bad', miss);
+      if (miss && bad < 0) bad = i;
+    });
+    if (bad >= 0) {
+      toast('제목과 날짜가 비어 있는 일정이 있습니다. 빨간 칸을 채워 주세요.', 'error');
+      var ff = rows[bad] && rows[bad].querySelector(String(aiTasks[bad].title || '').trim() ? '[data-f=dueDate]' : '.ev-r-title'); if (ff) ff.focus();
+      return;
+    }
     var cals = (h.S.editCalendars || []).filter(function (c) { return c.on !== false; }).map(function (c) { return c.id; });
     if (!cals.length) { try { cals = [CONFIG.calendarId]; } catch (e) {} }
+    if (!cals.length || !cals[0]) { toast('등록할 캘린더를 체크하세요.', 'error'); return; }
     var dept = $('event-dept') ? $('event-dept').value : '기타';
     var tz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'Asia/Seoul';
-    var btn = $('ev-ai-bulk'); btn.disabled = true;
-    var ok = 0, fail = 0, created = [];
-    for (var i = 0; i < picks.length; i++) {
-      var body = taskBody(picks[i], dept, tz), good = true;
+    var sb = $('save-event-btn'); sb.disabled = true;
+    var ok = 0, fail = 0, created = [], remain = [];
+    for (var i = 0; i < aiTasks.length; i++) {
+      var body = taskBody(aiTasks[i], dept, tz), good = true;
       for (var c = 0; c < cals.length; c++) {
         try { var r = await CalendarModule.createEvent(cals[c], body); created.push({ calId: cals[c], id: r && r.id }); } catch (e) { good = false; }
       }
-      if (good) { ok++; picks[i].done = true; } else fail++;
+      if (good) ok++; else { fail++; remain.push(aiTasks[i]); }
     }
-    aiTasks = aiTasks.filter(function (t) { return !t.done; });
-    renderAiList();
-    toast(ok + '건 등록' + (fail ? ', ' + fail + '건 실패(남겨 둠)' : '') + (skipped ? ', ' + skipped + '건 날짜 없어 제외' : ''), fail ? 'error' : 'success');
+    sb.disabled = false;
+    aiTasks = remain;
+    toast(ok + '건 등록' + (fail ? ', ' + fail + '건 실패(목록에 남김)' : ''), fail ? 'error' : 'success');
     if (ok) { h.renderCalendar(); afterCreate(created); }
+    if (fail) { renderAiList(); return; }
+    exitMulti();
+    $('event-modal').hidden = true;
   }
   function openAi(text, auto) {
     var h = H(); if (!h) return false;
@@ -841,7 +914,7 @@
   };
 
   function init() {
-    initPopup(); initDefaultsUI(); buildAi(); initChipDrag(); initDrag(); initNoAutoClose(); initCellPick(); initAutoEnd(); initEnterSave();
+    initPopup(); initMultiSave(); initDefaultsUI(); buildAi(); initChipDrag(); initDrag(); initNoAutoClose(); initCellPick(); initAutoEnd(); initEnterSave();
     var em = $('event-modal');
     if (em) new MutationObserver(function () { if (em.hidden) { em.classList.remove('ev-float'); } }).observe(em, { attributes: true, attributeFilter: ['hidden'] });
     var ta = $('tab-admin');
