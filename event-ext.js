@@ -675,54 +675,79 @@
     var rt = $('event-recur-type'); if (rt) rt.disabled = false;
     var sb = $('save-event-btn'); if (sb) sb.textContent = '저장';
   }
+  css.textContent +=
+    '.ev-mrow{padding:14px 16px 6px;margin-bottom:14px;border:1px solid var(--color-border,#e5e7eb);border-radius:12px;background:var(--color-card,#fff)}' +
+    '.ev-mhd{display:flex;align-items:center;gap:8px;margin-bottom:10px}.ev-mhd b{font-size:14px}.ev-mhd .ev-warn{margin-left:2px}.ev-mhd .ev-mdel{margin-left:auto}' +
+    '.ev-mrow .form-group{margin-bottom:12px}.ev-mrow .form-input{width:100%;box-sizing:border-box}.ev-mrow .form-row{margin-bottom:4px}' +
+    '.ev-mrow .ev-ad{margin:0 0 10px;font-weight:500;font-size:14px}.ev-mrow.ev-bad .ev-r-title{border-color:#dc2626;background:#fef2f2}' +
+    '.ev-mcommon{margin-bottom:14px}.ev-mhead{font-size:14px}';
+  function dtVal(d, tm) { return tm ? d + 'T' + tm : d; }
   function renderAiList() {
     var mc = $('ev-multi'); if (!mc) return;
     if (!aiTasks.length || (aiTasks.length < 2 && !multiActive)) { exitMulti(); return; }
     enterMulti();
     var src = ($('ev-ai-text') || {}).value || '';
-    mc.innerHTML = '<div class="ev-mhead"><b>일정 ' + aiTasks.length + '건 감지</b><span>반복 없음으로 등록됩니다</span>' +
+    mc.innerHTML = '<div class="ev-mhead ev-mcommon"><b>일정 ' + aiTasks.length + '건 감지</b><span>반복 없음으로 등록됩니다</span>' +
       (src ? '<details><summary>원문 보기</summary><pre>' + esc(src) + '</pre></details>' : '') + '</div>' +
-      '<div class="ev-ext-row"><label>공통 제목 <input id="ev-r-all" class="form-input" style="width:200px" placeholder="모든 행 제목을 한 번에 입력"></label></div>' +
+      '<div class="form-group ev-mcommon"><label class="form-label" for="ev-r-all">공통 제목</label>' +
+      '<input id="ev-r-all" class="form-input" placeholder="입력하면 모든 일정의 제목이 한 번에 채워집니다"></div>' +
       aiTasks.map(function (t, i) {
-        return '<div class="ev-mrow" data-i="' + i + '"><div class="ev-mtop"><span class="ev-mn">' + (i + 1) + '</span>' +
-          '<input class="form-input ev-r-title" data-f="title" placeholder="제목 (필수)" value="' + esc(t.title) + '">' +
-          '<button type="button" class="ev-mdel" title="이 일정 삭제" aria-label="이 일정 삭제">\u00d7</button></div>' +
-          '<div class="ev-r-dt"><input type="date" data-f="dueDate" value="' + esc(t.dueDate) + '"><input type="time" data-f="dueTime" value="' + esc(t.dueTime) + '" ' + (t.dueTime ? '' : 'disabled') + '>' +
-          '<span>~</span><input type="date" data-f="endDate" value="' + esc(t.endDate || t.dueDate) + '"><input type="time" data-f="endTime" value="' + esc(t.endTime) + '" ' + (t.dueTime ? '' : 'disabled') + '>' +
-          '<label class="ev-ad"><input type="checkbox" data-f="allday" ' + (t.dueTime ? '' : 'checked') + '> 하루 종일</label>' +
-          (t.warn ? '<span class="ev-warn">' + esc(t.warn) + '</span>' : '') + '</div></div>';
+        var ad = !t.dueTime, ed = t.endDate || t.dueDate, tp = ad ? 'date' : 'datetime-local';
+        return '<div class="ev-mrow" data-i="' + i + '"><div class="ev-mhd"><b>일정 ' + (i + 1) + '</b>' +
+          (t.warn ? '<span class="ev-warn">' + esc(t.warn) + '</span>' : '') +
+          '<button type="button" class="ev-mdel" title="이 일정 삭제" aria-label="이 일정 삭제">×</button></div>' +
+          '<div class="form-group"><label class="form-label">제목 <span class="required">*</span></label>' +
+          '<input class="form-input ev-r-title" data-f="title" placeholder="일정 제목을 입력하세요" value="' + esc(t.title) + '"></div>' +
+          '<label class="form-label ev-ad"><input type="checkbox" data-f="allday" style="width:16px;height:16px;cursor:pointer"' + (ad ? ' checked' : '') + '> 하루 종일</label>' +
+          '<div class="form-row"><div class="form-group"><label class="form-label">시작 <span class="required">*</span></label>' +
+          '<input type="' + tp + '" class="form-input" data-f="start" value="' + esc(dtVal(t.dueDate, t.dueTime)) + '"></div>' +
+          '<div class="form-group"><label class="form-label">종료 <span class="required">*</span></label>' +
+          '<input type="' + tp + '" class="form-input" data-f="end" value="' + esc(dtVal(ed, t.endTime)) + '"></div></div></div>';
       }).join('') +
-      '<div class="ev-ext-row"><span>Tab 이동 · Enter 다음 행 · Ctrl+↑/↓ 행 이동 · Ctrl+Enter 등록 · 하단 "' + aiTasks.length + '건 등록" 버튼</span></div>';
+      '<div class="ev-ext-row" style="margin-bottom:12px"><span>Tab 이동 · Enter 다음 일정 · Ctrl+↑/↓ 일정 이동 · Ctrl+Enter 등록 · 하단 "' + aiTasks.length + '건 등록" 버튼</span></div>';
     mc.querySelectorAll('.ev-mrow').forEach(function (row) {
+      var T = function () { return aiTasks[+row.dataset.i]; };
+      var sIn = row.querySelector('[data-f=start]'), eIn = row.querySelector('[data-f=end]');
+      function parse(v) { return v ? new Date(v.length === 10 ? v + 'T00:00:00' : v) : null; }
       row.querySelector('.ev-mdel').addEventListener('click', function () {
         aiTasks.splice(+row.dataset.i, 1);
         if (aiTasks.length === 1) { loadTask(aiTasks[0]); aiTasks = []; exitMulti(); } else renderAiList();
       });
-      row.querySelectorAll('[data-f]').forEach(function (inp) {
-        var t = function () { return aiTasks[+row.dataset.i]; };
-        var f = inp.dataset.f;
-        if (f === 'allday') {
-          inp.addEventListener('change', function () {
-            var tk = t(), dt = row.querySelector('[data-f=dueTime]'), et = row.querySelector('[data-f=endTime]');
-            if (inp.checked) { tk.dueTime = tk.endTime = ''; dt.value = et.value = ''; dt.disabled = et.disabled = true; }
-            else { tk.dueTime = tk.dueTime || '09:00'; tk.endTime = tk.endTime || '10:00'; dt.value = tk.dueTime; et.value = tk.endTime; dt.disabled = et.disabled = false; }
-          });
-          return;
+      row.querySelector('[data-f=title]').addEventListener('input', function () { T().title = this.value; row.classList.remove('ev-bad'); });
+      row.querySelector('[data-f=allday]').addEventListener('change', function () {
+        var t = T(), sd = (sIn.value || t.dueDate || '').slice(0, 10), ed = (eIn.value || sd).slice(0, 10);
+        if (this.checked) {
+          t.dueDate = sd; t.endDate = ed; t.dueTime = t.endTime = '';
+          sIn.type = eIn.type = 'date'; sIn.value = sd; eIn.value = ed;
+        } else {
+          t.dueDate = sd; t.endDate = ed; t.dueTime = '09:00'; t.endTime = '10:00';
+          sIn.type = eIn.type = 'datetime-local'; sIn.value = sd + 'T09:00'; eIn.value = ed + 'T10:00';
         }
-        inp.addEventListener('input', function () {
-          t()[f] = inp.value;
-          if (f === 'title') row.classList.remove('ev-bad');
-          if (f === 'dueTime') row.querySelector('[data-f=allday]').checked = !inp.value;
-        });
+      });
+      sIn.addEventListener('input', function () {      // 시작을 바꾸면 종료도 같은 길이만큼 이동(단건과 동일)
+        var t = T(), ad = sIn.type === 'date', oldS = parse(dtVal(t.dueDate, t.dueTime)), oldE = parse(dtVal(t.endDate || t.dueDate, t.endTime)), nv = sIn.value;
+        if (!nv) return;
+        var ns = parse(nv), len = (oldS && oldE && oldE >= oldS) ? oldE - oldS : (ad ? 0 : 3600000);
+        t.dueDate = nv.slice(0, 10); t.dueTime = ad ? '' : nv.slice(11, 16);
+        var ne = new Date(ns.getTime() + len), ev = ad ? ymd(ne) : toLocal(ne);
+        t.endDate = ev.slice(0, 10); t.endTime = ad ? '' : ev.slice(11, 16); eIn.value = ev;
+      });
+      eIn.addEventListener('input', function () {
+        var t = T(), nv = eIn.value; if (!nv) return;
+        t.endDate = nv.slice(0, 10); t.endTime = eIn.type === 'date' ? '' : nv.slice(11, 16);
+      });
+      row.querySelectorAll('[data-f]').forEach(function (inp) {
         inp.addEventListener('keydown', function (e) {
           if (e.isComposing || e.keyCode === 229) return;
           if (e.key === 'Enter' && e.ctrlKey) { e.preventDefault(); bulkAi(); return; }
+          var f = inp.dataset.f;
+          if (f === 'allday') return;
           var dir = (e.ctrlKey && e.key === 'ArrowUp') ? -1 : (e.ctrlKey && e.key === 'ArrowDown') ? 1 : (e.key === 'Enter' ? 1 : 0);
           if (!dir) return;
           e.preventDefault();
           var nx = mc.querySelectorAll('.ev-mrow')[+row.dataset.i + dir];
           var nf = nx && nx.querySelector('[data-f="' + f + '"]');
-          if (nf && !nf.disabled) { nf.focus(); if (nf.select) try { nf.select(); } catch (x) {} }
+          if (nf) { nf.focus(); if (nf.select) try { nf.select(); } catch (x) {} }
         });
       });
     });
@@ -773,7 +798,7 @@
     });
     if (bad >= 0) {
       toast('제목과 날짜가 비어 있는 일정이 있습니다. 빨간 칸을 채워 주세요.', 'error');
-      var ff = rows[bad] && rows[bad].querySelector(String(aiTasks[bad].title || '').trim() ? '[data-f=dueDate]' : '.ev-r-title'); if (ff) ff.focus();
+      var ff = rows[bad] && rows[bad].querySelector(String(aiTasks[bad].title || '').trim() ? '[data-f=start]' : '.ev-r-title'); if (ff) ff.focus();
       return;
     }
     var cals = (h.S.editCalendars || []).filter(function (c) { return c.on !== false; }).map(function (c) { return c.id; });
