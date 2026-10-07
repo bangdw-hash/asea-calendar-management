@@ -2051,18 +2051,19 @@
     $('next-period').addEventListener('click', function () { navigateWithAnim(1); });
 
     /* 모바일: 헤더 바를 좌우로 스와이프하면 월 이동 (캘린더 그리드 스크롤과 충돌 없음) */
-    var _swX = 0, _swY = 0;
+    var _swX = 0, _swY = 0, _swT = 0;
     var toolbar = document.querySelector('.calendar-toolbar');
     if (toolbar) {
       toolbar.addEventListener('touchstart', function (e) {
         var t = e.touches[0];
-        _swX = t.clientX; _swY = t.clientY;
+        _swX = t.clientX; _swY = t.clientY; _swT = Date.now();
       }, { passive: true });
       toolbar.addEventListener('touchend', function (e) {
         if (_navAnimating || S.calView !== 'month') return;
+        if (Date.now() - _swT < 150) return;   // 탭과 스와이프 구분 — 150ms 미만은 탭
         var t = e.changedTouches[0];
         var dx = t.clientX - _swX, dy = t.clientY - _swY;
-        if (Math.abs(dx) < 40) return;
+        if (Math.abs(dx) < 60) return;
         if (Math.abs(dy) > Math.abs(dx) * 0.8) return;
         navigateWithAnim(dx < 0 ? 1 : -1);
       }, { passive: true });

@@ -107,17 +107,19 @@
   function bindCalSwipe() {
     var cont = document.getElementById('calendar-container');
     if (!cont || cont._gSwipe) return; cont._gSwipe = true;
-    var sx = 0, sy = 0, on = false;
+    var sx = 0, sy = 0, st = 0, on = false;
     cont.addEventListener('touchstart', function (e) {
       if (e.touches.length !== 1) { on = false; return; }
-      var t = e.touches[0]; sx = t.clientX; sy = t.clientY; on = true;
+      var t = e.touches[0]; sx = t.clientX; sy = t.clientY; st = Date.now(); on = true;
     }, { passive: true });
     cont.addEventListener('touchend', function (e) {
       if (!on) return; on = false;
       if (window._calRangeSelecting) return;   // 기간 드래그 중엔 월 전환 스와이프 무시
+      var dt = Date.now() - st;
+      if (dt < 150) return;   // 탭과 스와이프 구분 — 150ms 미만은 탭으로 간주
       var t = e.changedTouches[0];
       var dx = t.clientX - sx, dy = t.clientY - sy;
-      if (Math.abs(dx) > 55 && Math.abs(dx) > Math.abs(dy) * 1.3) calSlide(dx < 0 ? -1 : 1);
+      if (Math.abs(dx) > 70 && Math.abs(dx) > Math.abs(dy) * 1.5) calSlide(dx < 0 ? -1 : 1);
     }, { passive: true });
   }
 
