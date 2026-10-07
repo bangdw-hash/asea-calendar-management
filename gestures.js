@@ -107,19 +107,35 @@
   function bindCalSwipe() {
     var cont = document.getElementById('calendar-container');
     if (!cont || cont._gSwipe) return; cont._gSwipe = true;
-    var sx = 0, sy = 0, st = 0, on = false;
+    var sx = 0, sy = 0, on = false, _hMoved = false;
     cont.addEventListener('touchstart', function (e) {
       if (e.touches.length !== 1) { on = false; return; }
-      var t = e.touches[0]; sx = t.clientX; sy = t.clientY; st = Date.now(); on = true;
+      var t = e.touches[0]; sx = t.clientX; sy = t.clientY; on = true; _hMoved = false;
+      window._calSwipeBlock = false;
+    }, { passive: true });
+    cont.addEventListener('touchmove', function (e) {
+      if (!on || e.touches.length !== 1) return;
+      var dx = e.touches[0].clientX - sx, dy = e.touches[0].clientY - sy;
+      // 가로 이동이 8px 이상 & 세로보다 크면 스와이프 의도로 판단 → 셀 클릭 차단
+      if (Math.abs(dx) > 8 && Math.abs(dx) > Math.abs(dy)) {
+        _hMoved = true;
+        window._calSwipeBlock = true;
+      }
     }, { passive: true });
     cont.addEventListener('touchend', function (e) {
       if (!on) return; on = false;
-      if (window._calRangeSelecting) return;   // 기간 드래그 중엔 월 전환 스와이프 무시
-      var dt = Date.now() - st;
-      if (dt < 150) return;   // 탭과 스와이프 구분 — 150ms 미만은 탭으로 간주
+      if (window._calRangeSelecting) { window._calSwipeBlock = false; return; }
+      if (!_hMoved) { window._calSwipeBlock = false; return; }   // 탭 → 차단 해제
       var t = e.changedTouches[0];
       var dx = t.clientX - sx, dy = t.clientY - sy;
-      if (Math.abs(dx) > 70 && Math.abs(dx) > Math.abs(dy) * 1.5) calSlide(dx < 0 ? -1 : 1);
+      if (Math.abs(dx) > 55 && Math.abs(dx) > Math.abs(dy) * 1.3) {
+        // 스와이프 확정 → 차단 유지(클릭 소멸 후 해제)
+        clearTimeout(window._calSwipeBlockTmr);
+        window._calSwipeBlockTmr = setTimeout(function () { window._calSwipeBlock = false; }, 400);
+        calSlide(dx < 0 ? -1 : 1);
+      } else {
+        window._calSwipeBlock = false;   // 거리 미달 → 탭으로 처리
+      }
     }, { passive: true });
   }
 
