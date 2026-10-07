@@ -1992,22 +1992,81 @@
   /* ═══════════════════════════════════════════════════════════
      캘린더 — 네비게이션 + 필터 패널
   ═══════════════════════════════════════════════════════════ */
-  function initCalendarNav() {
-    $('prev-period').addEventListener('click', function () {
-      var d = S.viewDate;
-      S.viewDate = S.calView === 'month'
-        ? new Date(d.getFullYear(), d.getMonth() - 1, 1)
-        : new Date(d.getTime() - 7 * 86400000);
-      renderCalendar();
-    });
+  /* ─ 슬라이드 애니메이션 + 이벤트 재로딩을 포함한 달 이동 ─ */
+  var _navAnimating = false;
+  async function navigateWithAnim(delta) {
+    if (_navAnimating) return;
+    _navAnimating = true;
+    var D = 260;
+    var container = $('calendar-container');
+    var wrap = document.querySelector('.cal-scroll-wrap');
 
-    $('next-period').addEventListener('click', function () {
-      var d = S.viewDate;
-      S.viewDate = S.calView === 'month'
-        ? new Date(d.getFullYear(), d.getMonth() + 1, 1)
-        : new Date(d.getTime() + 7 * 86400000);
-      renderCalendar();
-    });
+    if (container) {
+      var vw = (wrap && wrap.offsetWidth) || container.offsetWidth || window.innerWidth;
+      var outX = delta > 0 ? -vw : vw;
+      var inX  = delta > 0 ?  vw : -vw;
+      if (wrap) wrap.style.overflow = 'hidden';
+      container.style.transition = 'transform ' + D + 'ms cubic-bezier(.4,0,.2,1)';
+      container.style.transform  = 'translateX(' + outX + 'px)';
+      await new Promise(function (r) { setTimeout(r, D); });
+    }
+
+    if (S.calView === 'month') {
+      S.viewDate = new Date(S.viewDate.getFullYear(), S.viewDate.getMonth() + delta, 1);
+    } else {
+      S.viewDate = new Date(S.viewDate.getTime() + delta * 7 * 86400000);
+    }
+
+    updateCalendarTitle();
+    var cachedEvts = _loadCalCache();
+    if (cachedEvts) S.events = cachedEvts;
+    renderLegend();
+    if (isMobileList()) { renderList(); _showListView(); }
+    else if (S.calView === 'month') { _showGridView(); renderMonth(); }
+    else { _showGridView(); renderWeek(); }
+
+    if (container) {
+      container.style.transition = 'none';
+      container.style.transform  = 'translateX(' + inX + 'px)';
+      container.getBoundingClientRect(); // force reflow
+      container.style.transition = 'transform ' + D + 'ms cubic-bezier(.4,0,.2,1)';
+      container.style.transform  = 'translateX(0)';
+      await new Promise(function (r) { setTimeout(r, D); });
+      container.style.transition = '';
+      container.style.transform  = '';
+      if (wrap) wrap.style.overflow = '';
+    }
+
+    loadEvents().then(function () {
+      renderLegend();
+      if (isMobileList()) { renderList(); _showListView(); }
+      else if (S.calView === 'month') { _showGridView(); renderMonth(); }
+      else { _showGridView(); renderWeek(); }
+      syncMobileLegend();
+    }).catch(function () {}).finally(function () { _navAnimating = false; });
+  }
+
+  function initCalendarNav() {
+    $('prev-period').addEventListener('click', function () { navigateWithAnim(-1); });
+    $('next-period').addEventListener('click', function () { navigateWithAnim(1); });
+
+    /* 모바일: 헤더 바를 좌우로 스와이프하면 월 이동 (캘린더 그리드 스크롤과 충돌 없음) */
+    var _swX = 0, _swY = 0;
+    var toolbar = document.querySelector('.calendar-toolbar');
+    if (toolbar) {
+      toolbar.addEventListener('touchstart', function (e) {
+        var t = e.touches[0];
+        _swX = t.clientX; _swY = t.clientY;
+      }, { passive: true });
+      toolbar.addEventListener('touchend', function (e) {
+        if (_navAnimating || S.calView !== 'month') return;
+        var t = e.changedTouches[0];
+        var dx = t.clientX - _swX, dy = t.clientY - _swY;
+        if (Math.abs(dx) < 40) return;
+        if (Math.abs(dy) > Math.abs(dx) * 0.8) return;
+        navigateWithAnim(dx < 0 ? 1 : -1);
+      }, { passive: true });
+    }
 
     document.querySelectorAll('.view-btn').forEach(function (btn) {
       btn.addEventListener('click', function () {

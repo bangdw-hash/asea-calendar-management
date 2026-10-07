@@ -6970,10 +6970,10 @@ body:has(.modal:not([hidden])) .quick-fab { display: none; }
     z-index: auto !important;
   }
 
-  /* 넓은 최소폭 확보 — 셀당 ~100px */
+  /* 넓은 최소폭 확보 — 셀당 ~171px (1200/7) */
   .cal-scroll-wrap .calendar-weekdays,
   .cal-scroll-wrap #calendar-container {
-    min-width: 700px;
+    min-width: 1200px;
   }
 
   /* 기존 좌우 margin 제거 (scroll 래퍼가 대신 처리) */
