@@ -6948,3 +6948,71 @@ body:has(.modal:not([hidden])) .quick-fab { display: none; }
   }
   #bnav-fab-add .bnav-label { color: var(--color-accent) !important; font-weight: 700 !important; font-size: 10px !important; }
 }
+
+/* ── 모바일 UI v2: 캘린더 가로 스크롤 + 이벤트 모달 바텀시트 (20261007m2) ── */
+
+/* PC/tablet: 래퍼 투명하게 */
+.cal-scroll-wrap { display: contents; }
+
+@media (max-width: 600px) {
+  /* 1. 캘린더 가로 스크롤 래퍼 */
+  .cal-scroll-wrap {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .cal-scroll-wrap::-webkit-scrollbar { display: none; }
+
+  /* sticky는 overflow-x:auto 내에서 작동 안 함 → 정적으로 전환 */
+  .cal-scroll-wrap .calendar-stickyhead {
+    position: static !important;
+    z-index: auto !important;
+  }
+
+  /* 넓은 최소폭 확보 — 셀당 ~100px */
+  .cal-scroll-wrap .calendar-weekdays,
+  .cal-scroll-wrap #calendar-container {
+    min-width: 700px;
+  }
+
+  /* 기존 좌우 margin 제거 (scroll 래퍼가 대신 처리) */
+  #tab-calendar .cal-scroll-wrap .calendar-stickyhead .calendar-weekdays,
+  #tab-calendar .cal-scroll-wrap #calendar-container {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+
+  /* 2. 이벤트 모달 → 하단 바텀시트 */
+  #event-modal.modal {
+    align-items: flex-end !important;
+    padding: 0 !important;
+    background: transparent !important;
+  }
+  #event-modal .modal-dialog {
+    width: 100% !important;
+    height: 67vh !important;
+    max-height: 67vh !important;
+    border-radius: 16px 16px 0 0 !important;
+    overflow-y: auto;
+  }
+  /* 슬라이드 업 애니메이션 */
+  #event-modal:not([hidden]) .modal-dialog {
+    animation: mobile-sheet-in .3s cubic-bezier(.32,.72,0,1) both;
+  }
+  @keyframes mobile-sheet-in {
+    from { transform: translateY(100%); opacity: .6; }
+    to   { transform: translateY(0);   opacity: 1; }
+  }
+  /* 핸들 바 */
+  #event-modal .modal-dialog::before {
+    content: '';
+    display: block;
+    width: 36px;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--color-border);
+    margin: 8px auto 4px;
+    flex-shrink: 0;
+  }
+}
