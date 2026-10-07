@@ -1924,6 +1924,7 @@
 
     el.addEventListener('click', function () {
       if (S._rangeJustSelected) return;   // 드래그로 기간 선택 직후의 클릭은 무시
+      if (window._calSwipeBlock) return;  // 스와이프 중 합성 클릭 → 무시
       openEventModal(null, cellDate);
     });
     return el;
@@ -2060,10 +2061,10 @@
       }, { passive: true });
       toolbar.addEventListener('touchend', function (e) {
         if (_navAnimating || S.calView !== 'month') return;
-        if (Date.now() - _swT < 150) return;   // 탭과 스와이프 구분 — 150ms 미만은 탭
+        if (Date.now() - _swT < 80) return;   // 80ms 미만은 탭
         var t = e.changedTouches[0];
         var dx = t.clientX - _swX, dy = t.clientY - _swY;
-        if (Math.abs(dx) < 60) return;
+        if (Math.abs(dx) < 50) return;
         if (Math.abs(dy) > Math.abs(dx) * 0.8) return;
         navigateWithAnim(dx < 0 ? 1 : -1);
       }, { passive: true });
