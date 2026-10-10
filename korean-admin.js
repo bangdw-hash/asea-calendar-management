@@ -67,7 +67,13 @@
   function panel() {
     draft = KA.copy(S.settings);
     var p = S.server && S.token ? KA.rpc('kor_profiles_list', { p_token: S.token }).then(function (l) { profiles = l || []; }).catch(function () { S.server = false; S.token = null; try { sessionStorage.removeItem('kor_tok'); } catch (e) { /* 무시 */ } profiles = []; }) : Promise.resolve();
-    p.then(function () { ov().hidden = false; draw(); });
+    p.then(function () {
+      // 프로필이 하나뿐이고 아직 연결 전이면 자동으로 이 기기에 연결
+      if (S.server && !S.pid && profiles.length === 1) {
+        S.pid = profiles[0].id; KA.LS.set('kor_pid', S.pid);
+        return KA.loadProfile().then(function () { $('#whoName').textContent = S.name; draft = KA.copy(S.settings); });
+      }
+    }).then(function () { ov().hidden = false; draw(); });
   }
   function chk(name, val, on, label, type) { return '<label><input type="' + (type || 'checkbox') + '" name="' + name + '" value="' + val + '"' + (on ? ' checked' : '') + '>' + label + '</label>'; }
   function letterChips(list, key, on) { return list.map(function (c) { return chk(key, c.ch, on.indexOf(c.ch) >= 0, c.ch); }).join(''); }
