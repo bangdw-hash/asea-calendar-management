@@ -62,6 +62,7 @@ Each HTML file is self-contained (CSS + JS inline or in same-name `.js`/`.css` f
 | `wayfind.html` | 교내 길찾기 |
 | `assessment.html` | 역량 평가 |
 | `budget.html` | 부서 예산안(세입·세출) 작성/검토 — Supabase `bgt` 스키마 + RPC(`db/budget_schema_1~4.sql`), 부서 비밀번호 로그인(Google 계정 불필요), 스카이 블루 토큰 |
+| `korean.html` | 한글 학습(34개월~) — 자모 ㄱ~ㅎ·ㅏ~ㅣ, 소리 찾기/첫소리/모양 맞추기(드래그)/낱말 조립/펜 쓰기, 보호자 메뉴(PIN), Supabase `kor` 스키마 + RPC(`db/korean_schema.sql`, 미적용 시 기기 로컬 저장), 남성 신경망 음성 mp3(`audio/korean`, `tools/korean_audio_gen.py`) |
 
 ### Design System (schedule.html → applied to forum.html)
 
