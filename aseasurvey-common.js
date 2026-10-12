@@ -168,32 +168,53 @@ window.SVY = (function () {
   /* ── 설문 정의 순회 ── */
   function scaleOf(def, q) { return ((def.scales || {})[q.scale || 'likert5']) || []; }
   function allQuestions(def) {
-    var out = [];
+    var out = [], gen = def.mode === 'general';
     (def.basic || []).forEach(function (q) { out.push({ q: q, scope: 'common', basic: true, section: null }); });
     (def.sections || []).forEach(function (s) {
-      (s.questions || []).forEach(function (q) { out.push({ q: q, scope: q.scope === 'common' ? 'common' : 'course', basic: false, section: s }); });
+      (s.questions || []).forEach(function (q) { out.push({ q: q, scope: (gen || q.scope === 'common') ? 'common' : 'course', basic: false, section: s }); });
     });
     return out;
   }
-  function isCheck(q) { return !!(q.check && q.check.valid != null); }
+  function isCheck(q) { return !!((q.check && q.check.valid != null) || q.attn); }
   function exclusiveIds(def, qid) {
     var ids = [];
     allQuestions(def).forEach(function (x) { if (x.q.id === qid) (x.q.options || []).forEach(function (o) { if (o.exclusive) ids.push(o.id); }); });
     return ids;
   }
-  // showIf: 같은 범위의 다른 문항에서 '배타 선택' 외 항목이 하나라도 선택되었을 때 표시
-  function visible(def, q, ans) {
-    if (!q.showIf || !q.showIf.q) return true;
-    var v = ans && ans[q.showIf.q];
-    if (!Array.isArray(v) || !v.length) return false;
-    var ex = exclusiveIds(def, q.showIf.q);
-    return v.some(function (x) { return ex.indexOf(x) < 0; });
+  /* ── 조건 평가 (서버 svy.cond_one / svy.vis 와 같은 규칙) ──
+     cond: {q, op, v}  op = eq|ne|in|nin|has|nhas|answered|empty|gt|gte|lt|lte
+     그룹: {all:[...]} | {all/any 중첩} | 옛 형식 {q:'F1'}(복수선택에서 단독 선택 외 항목을 고른 경우) */
+  function nil(v) { return v === undefined || v === null || (typeof v === 'string' && v.trim() === '') || (Array.isArray(v) && !v.length) || (typeof v === 'object' && !Array.isArray(v) && v !== null && !Object.keys(v).length); }
+  function num(x) { return (x !== '' && x != null && isFinite(Number(x)) && typeof x !== 'boolean' && typeof x !== 'object') ? Number(x) : null; }
+  function condOne(p, a, c) {
+    var v = (a && a[p.q] !== undefined) ? a[p.q] : (c ? c[p.q] : undefined), op = p.op, x = p.v;
+    if (op === 'answered') return !nil(v);
+    if (op === 'empty') return nil(v);
+    if (nil(v)) return op === 'ne' || op === 'nin' || op === 'nhas';
+    var scalar = (typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean') ? String(v) : null, xs = String(x);
+    if (op === 'eq' || op === 'ne') { var r = (num(scalar) !== null && num(xs) !== null) ? num(scalar) === num(xs) : scalar === xs; return op === 'eq' ? r : !r; }
+    if (op === 'in' || op === 'nin') { var r2 = scalar !== null && Array.isArray(x) && x.map(String).indexOf(scalar) >= 0; return op === 'in' ? r2 : !r2; }
+    if (op === 'has' || op === 'nhas') { var r3 = Array.isArray(v) && v.map(String).indexOf(xs) >= 0; return op === 'has' ? r3 : !r3; }
+    var nv = num(scalar), nx = num(xs); if (nv === null || nx === null) return false;
+    return op === 'gt' ? nv > nx : op === 'gte' ? nv >= nx : op === 'lt' ? nv < nx : nv <= nx;
   }
+  function evalCond(cond, def, a, c) {
+    if (!cond || typeof cond !== 'object') return true;
+    if (cond.all) return cond.all.every(function (e) { return evalCond(e, def, a, c); });
+    if (cond.any) return cond.any.some(function (e) { return evalCond(e, def, a, c); });
+    if (cond.op) return condOne(cond, a, c);
+    if (cond.q) { // 옛 형식
+      var v = a && a[cond.q]; if (!Array.isArray(v) || !v.length) return false;
+      var ex = exclusiveIds(def, cond.q); return v.some(function (x) { return ex.indexOf(x) < 0; });
+    }
+    return true;
+  }
+  // 문항 표시 여부(영역 조건은 호출 측에서 evalCond 로 별도 판단)
+  function visible(def, q, ans, common) { return evalCond(q.showIf, def, ans, common); }
   function isEmpty(q, v) {
-    if (v == null) return true;
-    if (q.type === 'text') return String(v).trim() === '';
-    if (q.type === 'multi') return !Array.isArray(v) || v.length === 0;
-    return v === '';
+    if (v === undefined || v === null) return true;
+    if (q.type === 'consent') return v !== true;
+    return nil(v);
   }
   function isRequired(q) { return !!q.required || isCheck(q); }
 
@@ -207,6 +228,6 @@ window.SVY = (function () {
   return {
     SUPA_URL: SUPA_URL, rpc: rpc, errMsg: errMsg, esc: esc, uid: uid, ls: ls, cookieGet: cookieGet, cookieSet: cookieSet,
     ico: ico, DEFAULT_THEME: DEFAULT_THEME, FONTS: FONTS, applyTheme: applyTheme, themeVars: themeVars, onColor: onColor, onBtn: onBtn, contrast: contrast, mix: mix, lum: lum,
-    scaleOf: scaleOf, allQuestions: allQuestions, isCheck: isCheck, visible: visible, isEmpty: isEmpty, isRequired: isRequired, fmtDate: fmtDate
+    scaleOf: scaleOf, allQuestions: allQuestions, isCheck: isCheck, visible: visible, evalCond: evalCond, nil: nil, num: num, isEmpty: isEmpty, isRequired: isRequired, fmtDate: fmtDate
   };
 })();
