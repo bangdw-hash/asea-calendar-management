@@ -412,10 +412,17 @@
     var sc = Number(res.score || 0), mx = Number(res.max_score), pct = Math.round(sc * 100 / mx);
     return '<div class="scorecard"><small>퀴즈 점수</small><div class="score-num"><b>' + (Math.round(sc * 100) / 100) + '</b> / ' + (Math.round(mx * 100) / 100) + '점</div><div class="meter"><i style="width:' + pct + '%"></i></div>' + (qz.passScore != null ? '<div class="hint" style="margin-top:6px">' + (sc >= Number(qz.passScore) ? '통과' : '기준 미달') + ' (기준 ' + E(qz.passScore) + '점)</div>' : '') + '</div>';
   }
+  // 제출 후 안내(관리자 선택): 링크 버튼 · 참여 확인서(이미지)
+  function afterHtml(code) {
+    var a = feat('after') || {}, h = '';
+    if ((a.type === 'link' || a.type === 'both') && /^https?:\/\//i.test(a.url || '')) h += '<a class="btn btn-secondary" href="' + E(a.url) + '" target="_blank" rel="noopener">' + I('link', 16) + ' ' + E(a.label || '안내 보기') + '</a>';
+    if ((a.type === 'receipt' || a.type === 'both') && code) h += '<button class="btn btn-secondary" data-act="receipt" data-code="' + E(code) + '">' + I('download', 16) + ' 참여 확인서 저장</button>';
+    return h ? '<div class="btn-row" style="justify-content:center">' + h + '</div>' : '';
+  }
   function screenDone(code, dup, res) {
     var i = S.def.intro || {}, tk = showTicket() && code;
     var h = '<div class="card center"><div class="okmark">' + I('check', 32) + '</div><h1 class="title">' + (dup ? '이미 제출하셨습니다' : '제출이 완료되었습니다') + '</h1>' +
-      '<p class="muted" style="margin:8px 0 0">' + E(i.doneNote || '설문에 응해 주셔서 감사합니다.') + '</p>' + scoreCard(res) + (tk ? ticketCard(code) +
+      '<p class="muted" style="margin:8px 0 0">' + E(i.doneNote || '설문에 응해 주셔서 감사합니다.') + '</p>' + scoreCard(res) + afterHtml(code) + (tk ? ticketCard(code) +
       '<div class="msg warn" style="text-align:left">' + I('alert', 18) + '<div><b>이 번호는 나중에 다시 찾을 수 없습니다.</b><br>지금 <b>화면을 캡처</b>하거나 <b>「나에게 보내기」</b>로 카카오톡·문자에 꼭 보관해 주십시오. 추첨 결과 확인에 필요합니다.</div></div>' +
       '<div class="btn-row" style="justify-content:center"><button class="btn btn-primary" data-act="share" data-code="' + E(code) + '">' + I('upload', 16) + ' 나에게 보내기</button>' +
       '<button class="btn btn-secondary" data-act="saveimg" data-code="' + E(code) + '">' + I('download', 16) + ' 이미지로 저장</button>' +
@@ -547,19 +554,19 @@
       navigator.clipboard.writeText(text).then(function () { toast('복사했습니다. 카카오톡 「나와의 채팅」이나 메모에 붙여넣어 보관해 주십시오.'); }, function () { toast('공유할 수 없습니다. 화면을 캡처해 주십시오.'); });
     } else toast('공유할 수 없습니다. 화면을 캡처해 주십시오.');
   }
-  function ticketImage(code, won) {
+  function ticketImage(code, won, receipt) {
     var cv = document.createElement('canvas'); cv.width = 900; cv.height = 520; var c = cv.getContext('2d');
     var cs = getComputedStyle(document.documentElement), pri = cs.getPropertyValue('--primary').trim() || '#0EA5E9', font = cs.getPropertyValue('--font') || 'sans-serif';
     c.fillStyle = '#FFFFFF'; c.fillRect(0, 0, 900, 520);
     c.strokeStyle = pri; c.lineWidth = 6; c.setLineDash([18, 12]); c.strokeRect(30, 30, 840, 460); c.setLineDash([]);
     function draw(img) {
       if (img) { var w = 360, h = Math.round(img.height * w / img.width); c.drawImage(img, 450 - w / 2, 62, w, h); }
-      c.textAlign = 'center'; c.fillStyle = '#5F6368'; c.font = '700 28px ' + font; c.fillText(won ? '추첨 당첨 번호' : '설문 추첨번호', 450, 250);
+      c.textAlign = 'center'; c.fillStyle = '#5F6368'; c.font = '700 28px ' + font; c.fillText(receipt ? '설문 참여 확인서' : won ? '추첨 당첨 번호' : '설문 추첨번호', 450, 250);
       c.fillStyle = pri; c.font = '700 96px ' + font; c.fillText(code, 450, 360);
       c.fillStyle = '#5F6368'; c.font = '400 24px ' + font; c.fillText((S.def.intro && S.def.intro.title) || S.info.title, 450, 425);
-      c.fillText('아세아항공직업전문학교', 450, 458);
+      c.fillText('아세아항공직업전문학교' + (receipt ? ' · ' + SVY.fmtDate(new Date().toISOString()) : ''), 450, 458);
       cv.toBlob(function (b) {
-        var a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = 'ASEA-설문-추첨번호-' + code + '.png'; document.body.appendChild(a); a.click(); a.remove();
+        var a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = 'ASEA-설문-' + (receipt ? '참여확인서-' : '추첨번호-') + code + '.png'; document.body.appendChild(a); a.click(); a.remove();
         toast('이미지를 저장했습니다. 저장이 안 되면 화면을 캡처해 주십시오.');
       });
     }
@@ -602,6 +609,7 @@
     else if (act === 'nextpage') goPage(1);
     else if (act === 'submit') submit();
     else if (act === 'saveimg') ticketImage(t.getAttribute('data-code'), t.getAttribute('data-won') === '1');
+    else if (act === 'receipt') ticketImage(t.getAttribute('data-code'), false, true);
     else if (act === 'share') shareCode(t.getAttribute('data-code'));
     else if (act === 'copycode') { var cd = t.getAttribute('data-code'); (navigator.clipboard ? navigator.clipboard.writeText(cd) : Promise.reject()).then(function () { toast('번호를 복사했습니다.'); }, function () { toast('복사할 수 없습니다. 번호를 길게 눌러 복사해 주십시오.'); }); }
     else if (act === 'check') checkTicket();
