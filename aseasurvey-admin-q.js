@@ -459,7 +459,7 @@
         if (v === undefined) delete o[parts[parts.length - 1]]; else o[parts[parts.length - 1]] = v;
         if (df === 'identity') { applyIdentity(d, v); A._setOpen = true; return redraw(); }
         if (df === 'mode') { if (v === 'general') allQ(d).forEach(function (x) { x.q.scope = 'common'; }); A._setOpen = true; A.renderSurvey(); A.markDirty(); return; }
-        A._setOpen = true; return redraw();
+        A._setOpen = true; if (el.tagName === 'INPUT' && el.type === 'text' || el.getAttribute('data-k') === 'n') return A.markDirty(); return redraw();
       }
       var cm = el.getAttribute('data-cmode'); if (cm !== null) { var tg0 = target(el), pc0 = parseCond(tg0.showIf); setClauses(tg0, el.value, pc0.list); return redraw(); }
       var cf = el.getAttribute('data-cf');
