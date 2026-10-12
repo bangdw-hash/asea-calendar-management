@@ -244,24 +244,29 @@
     function chips(arr, key, cls) {
       return '<div class="opts ' + (cls || 'wide') + '">' + arr.map(function (v) { return '<button type="button" class="opt" data-act="sel" data-k="' + key + '" data-v="' + E(v) + '" aria-pressed="' + (S.sel[key] === v) + '">' + E(v) + '</button>'; }).join('') + '</div>';
     }
-    var h = '<div class="card"><div class="kicker">1단계</div><h2 class="title" style="font-size:calc(19px*var(--fs))">수강 반 선택</h2><p class="muted" style="margin:4px 0 12px">선택한 반의 수강 과목이 표시됩니다.</p>';
-    h += '<div class="chip-title">계열</div>' + chips(tracks, 'track');
-    if (S.sel.track) h += '<div class="chip-title">학년</div>' + chips(grades, 'grade');
-    if (S.sel.grade) h += '<div class="chip-title">반</div>' + chips(klasses, 'klass');
+    var LK = SVY.linkInfo(S.def || {}), unit = LK.unit, cl = LK.cols;
+    function only(arr) { return arr.length === 1 && arr[0] === '-'; }   // 사용하지 않는 단계(값이 「-」뿐)는 건너뜁니다
+    if (!S.sel.track && only(tracks)) S.sel.track = '-';
+    if (S.sel.track === '-' && !S.sel.grade && only(uniq(S.courses.filter(function (c) { return c.track === '-'; }).map(function (c) { return c.grade; })))) S.sel.grade = '-';
+    if (S.sel.grade === '-' && !S.sel.klass && only(uniq(S.courses.filter(function (c) { return c.track === S.sel.track && c.grade === '-'; }).map(function (c) { return c.klass; })))) S.sel.klass = '-';
+    var h = '<div class="card"><div class="kicker">1단계</div><h2 class="title" style="font-size:calc(19px*var(--fs))">' + E(LK.stepTitle) + '</h2><p class="muted" style="margin:4px 0 12px">' + (LK.custom ? '선택한 항목에 해당하는 ' + E(unit) + '이(가) 표시됩니다.' : '선택한 반의 수강 과목이 표시됩니다.') + '</p>';
+    if (!only(tracks)) h += '<div class="chip-title">' + E(cl.track.label) + '</div>' + chips(tracks, 'track');
+    if (S.sel.track && !only(grades)) h += '<div class="chip-title">' + E(cl.grade.label) + '</div>' + chips(grades, 'grade');
+    if (S.sel.grade && !only(klasses)) h += '<div class="chip-title">' + E(cl.klass.label) + '</div>' + chips(klasses, 'klass');
     var mc = S.sel.klass ? myCourses() : [];
-    if (mc.length) h += '<div class="msg ok">' + I('check', 18) + '<div><b>수강 과목 ' + mc.length + '개</b><br>' + mc.map(function (c) { return E(c.name); }).join(' · ') + '</div></div>';
+    if (mc.length) h += '<div class="msg ok">' + I('check', 18) + '<div><b>' + (LK.custom ? E(unit) + ' ' : '수강 과목 ') + mc.length + '개</b><br>' + mc.map(function (c) { return E(c.name); }).join(' · ') + '</div></div>';
     h += '</div>';
     var basic = qs('common', true);
     if (basic.length && mc.length) h += '<div class="card"><div class="kicker">2단계</div><h2 class="title" style="font-size:calc(19px*var(--fs))">기본 정보</h2><div data-sec="common">' + renderItems(basic, 'common', false) + '</div></div>';
-    h += '<div class="btn-row"><button class="btn btn-primary" data-act="toeval" ' + (classReady() ? '' : 'disabled') + '>과목별 설문 시작 ' + I('right', 16) + '</button></div>';
+    h += '<div class="btn-row"><button class="btn btn-primary" data-act="toeval" ' + (classReady() ? '' : 'disabled') + '>' + E(unit) + '별 설문 시작 ' + I('right', 16) + '</button></div>';
     shell(h);
   }
 
   /* ───────────── 화면: 평가(아코디언) ───────────── */
   function screenEval() {
     var list = myCourses(), cq = qs('common', false);
-    var h = '<div class="stepper"><div class="stepper-row"><span><b data-ov-done>0</b> / <span data-ov-total>0</span> 문항 응답</span><span class="muted">' + E(S.sel.track) + ' ' + E(S.sel.grade) + ' ' + E(S.sel.klass) + '</span></div><div class="meter"><i data-ov-bar></i></div></div>';
-    h += '<p class="hint" style="margin:0 0 4px">과목을 눌러 문항을 펼친 뒤 응답해 주십시오. 모든 필수 문항에 응답해야 제출할 수 있습니다.</p>';
+    var h = '<div class="stepper"><div class="stepper-row"><span><b data-ov-done>0</b> / <span data-ov-total>0</span> 문항 응답</span><span class="muted">' + [S.sel.track, S.sel.grade, S.sel.klass].filter(function (v) { return v && v !== '-'; }).map(E).join(' ') + '</span></div><div class="meter"><i data-ov-bar></i></div></div>';
+    h += '<p class="hint" style="margin:0 0 4px">' + (SVY.linkInfo(S.def || {}).custom ? '항목' : '과목') + '을 눌러 문항을 펼친 뒤 응답해 주십시오. 모든 필수 문항에 응답해야 제출할 수 있습니다.</p>';
     list.forEach(function (c, i) {
       h += '<section class="course" id="c-' + c.id + '" data-cid="' + c.id + '">' + courseHead(c, i) + '<div class="course-body"><div class="course-inner" data-inner></div></div></section>';
     });

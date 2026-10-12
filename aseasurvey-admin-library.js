@@ -74,7 +74,7 @@
     var chips = [['all', '전체']].concat(C.cats.map(function (c) { return [c.k, c.t]; })).concat([['lib', '내 양식 (' + Lib.list.length + ')']]);
     var sel = N.sel;
     return '<div class="crumb"><a data-act="tolist">설문 목록</a> / 새 설문 만들기</div><div class="pg-head"><h1>새 설문 만들기</h1><span class="sp"></span><button class="btn btn-ghost btn-sm" data-act="tpllib">' + I('copy', 14) + ' 양식 라이브러리</button></div>' +
-      '<div class="quick"><button class="qk" data-act="qk-ai"><i>' + I('sparkle', 20) + '</i><b>AI로 설계</b><span>설문지 파일·요청 글로 초안 만들기</span></button><button class="qk" data-act="qk-blank-g"><i>' + I('plus', 20) + '</i><b>빈 설문 (1인 1회)</b><span>직접 문항을 추가</span></button><button class="qk" data-act="qk-blank-c"><i>' + I('plus', 20) + '</i><b>빈 설문 (과목별 반복)</b><span>반·과목마다 응답</span></button><button class="qk" data-act="qk-clone"><i>' + I('refresh', 20) + '</i><b>이전 설문 불러오기</b><span>지난 설문을 복제</span></button></div>' +
+      '<div class="quick"><button class="qk" data-act="qk-ai"><i>' + I('sparkle', 20) + '</i><b>AI로 설계</b><span>설문지 파일·요청 글로 초안 만들기</span></button><button class="qk" data-act="qk-blank-g"><i>' + I('plus', 20) + '</i><b>빈 설문 (1인 1회)</b><span>직접 문항을 추가</span></button><button class="qk" data-act="qk-blank-c"><i>' + I('plus', 20) + '</i><b>빈 설문 (과목별 반복)</b><span>반·과목마다 응답</span></button><button class="qk" data-act="qk-link"><i>' + I('upload', 20) + '</i><b>연동 목록 설문 (일괄 업로드)</b><span>교강사·과목, 시설 등 목록을 엑셀로 연동</span></button><button class="qk" data-act="qk-clone"><i>' + I('refresh', 20) + '</i><b>이전 설문 불러오기</b><span>지난 설문을 복제</span></button></div>' +
       '<div class="row" style="margin:14px 0 6px"><div class="chipbar" id="cbar">' + chips.map(function (c) { return '<button class="cchipb' + (N.cat === c[0] ? ' on' : '') + '" data-act="tcat" data-k="' + c[0] + '">' + E(c[1]) + '</button>'; }).join('') + '</div><input class="fld" id="tq" placeholder="양식 검색" value="' + E(N.q) + '" style="max-width:220px"></div>' +
       '<div id="tcards">' + cardsHtml() + '</div>' +
       '<div class="startbar' + (sel ? ' on' : '') + '"><div class="sp"><b>' + (sel ? E(sel.label) : '양식을 선택해 주십시오') + '</b><div class="muted" style="font-size:12.5px">' + (sel ? '오른쪽 미리보기에서 학생 화면을 확인할 수 있습니다. · 문항 ' + qcount(sel.def) + '개 · ' + modeTag(sel.def) : '카드를 누르면 미리보기에 바로 표시됩니다.') + '</div></div>' +
@@ -201,6 +201,7 @@
       if (act === 'tpick') { if (e.target.closest('select')) return; return pick(t); }
       if (act === 'tcreate') return create();
       if (act === 'qk-ai') return A.ext.aiCreate({ title: (document.getElementById('nt') || {}).value || '', semester: (document.getElementById('ns') || {}).value || '' });
+      if (act === 'qk-link') { location.hash = '#/link'; return; }
       if (act === 'qk-blank-g') return blank(true);
       if (act === 'qk-blank-c') return blank(false);
       if (act === 'qk-clone') return A.newSurveyLegacy && A.newSurveyLegacy();
