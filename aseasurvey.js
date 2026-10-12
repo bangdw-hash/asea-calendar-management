@@ -283,9 +283,10 @@
     var i = S.def.intro || {};
     var h = '<div class="card center"><div class="okmark">' + I('check', 32) + '</div><h1 class="title">' + (dup ? '이미 제출하셨습니다' : '제출이 완료되었습니다') + '</h1>' +
       '<p class="muted" style="margin:8px 0 0">' + E(i.doneNote || '설문에 응해 주셔서 감사합니다.') + '</p>' + ticketCard(code) +
-      '<p class="hint" style="margin:6px 0 0">추첨 결과 확인에 필요합니다. 번호를 꼭 저장해 주십시오.</p>' +
-      '<div class="btn-row" style="justify-content:center"><button class="btn btn-primary" data-act="saveimg" data-code="' + E(code) + '">' + I('download', 16) + ' 번호 이미지로 저장</button>' +
-      '<button class="btn btn-secondary" data-act="copycode" data-code="' + E(code) + '">' + I('copy', 16) + ' 번호 복사</button></div>' +
+      '<div class="msg warn" style="text-align:left">' + I('alert', 18) + '<div><b>이 번호는 나중에 다시 찾을 수 없습니다.</b><br>지금 <b>화면을 캡처</b>하거나 <b>「나에게 보내기」</b>로 카카오톡·문자에 꼭 보관해 주십시오. 추첨 결과 확인에 필요합니다.</div></div>' +
+      '<div class="btn-row" style="justify-content:center"><button class="btn btn-primary" data-act="share" data-code="' + E(code) + '">' + I('upload', 16) + ' 나에게 보내기</button>' +
+      '<button class="btn btn-secondary" data-act="saveimg" data-code="' + E(code) + '">' + I('download', 16) + ' 이미지로 저장</button>' +
+      '<button class="btn btn-ghost" data-act="copycode" data-code="' + E(code) + '">' + I('copy', 16) + ' 번호 복사</button></div>' +
       (i.drawNotice ? '<div class="msg">' + I('info', 18) + '<div style="text-align:left">' + E(i.drawNotice) + '</div></div>' : '') +
       (S.test ? '<div class="msg warn">' + I('alert', 18) + '<div style="text-align:left">테스트 응답입니다. 정식 집계에는 포함되지 않습니다.</div></div><div class="btn-row"><button class="btn btn-ghost" data-act="fresh">테스트 한 번 더 하기</button></div>' : '') +
       '</div>';
@@ -374,6 +375,16 @@
     setTimeout(function () { q.classList.remove('missing'); }, 1800);
   }
 
+  // 「나에게 보내기」: 모바일 공유 시트(카카오톡·문자 등). 지원하지 않으면 안내 문구와 함께 복사
+  function shareCode(code) {
+    var link = location.origin + location.pathname + '?c=' + encodeURIComponent(S.code);
+    var text = '[' + ((S.def.intro && S.def.intro.title) || '교내 설문') + '] 내 추첨번호: ' + code + '\n추첨 결과 확인: ' + link;
+    if (navigator.share) {
+      navigator.share({ title: '설문 추첨번호', text: text }).catch(function () {});
+    } else if (navigator.clipboard) {
+      navigator.clipboard.writeText(text).then(function () { toast('복사했습니다. 카카오톡 「나와의 채팅」이나 메모에 붙여넣어 보관해 주십시오.'); }, function () { toast('공유할 수 없습니다. 화면을 캡처해 주십시오.'); });
+    } else toast('공유할 수 없습니다. 화면을 캡처해 주십시오.');
+  }
   function ticketImage(code, won) {
     var cv = document.createElement('canvas'); cv.width = 900; cv.height = 520; var c = cv.getContext('2d');
     var cs = getComputedStyle(document.documentElement), pri = cs.getPropertyValue('--primary').trim() || '#0EA5E9', font = cs.getPropertyValue('--font') || 'sans-serif';
@@ -423,6 +434,7 @@
     else if (act === 'pick' || act === 'single' || act === 'multi') answerClick(t, act);
     else if (act === 'submit') submit();
     else if (act === 'saveimg') ticketImage(t.getAttribute('data-code'), t.getAttribute('data-won') === '1');
+    else if (act === 'share') shareCode(t.getAttribute('data-code'));
     else if (act === 'copycode') { var cd = t.getAttribute('data-code'); (navigator.clipboard ? navigator.clipboard.writeText(cd) : Promise.reject()).then(function () { toast('번호를 복사했습니다.'); }, function () { toast('복사할 수 없습니다. 번호를 길게 눌러 복사해 주십시오.'); }); }
     else if (act === 'check') checkTicket();
   });
