@@ -172,6 +172,7 @@
   }
 
   /* ───────────── 동작 ───────────── */
+  Sl.begin = function (prompt) { S.prompt = prompt || ''; S.pick = true; S.a = S.b = null; S.err = ''; };
   Sl.start = function () { S.pick = true; S.a = S.b = null; S.err = ''; if (S.box && document.body.contains(S.box)) A.tabs.questions(S.box); };
   function stop() { S.pick = false; S.a = S.b = null; S.err = ''; if (S.box && document.body.contains(S.box)) A.tabs.questions(S.box); else bar(); }
   async function run() {
