@@ -433,5 +433,6 @@
     A.shell('<div class="crumb"><a data-act="tolist">설문 목록</a> / AI로 설계</div><div class="pg-head"><h1>AI로 새 설문 설계</h1></div><div id="aibox"></div>');
     A.renderAI(document.getElementById('aibox'), 'create', meta);
   };
+  A.ext.aiCall = callAI; A.ext.aiModels = MODELS;
   A.ext.aiParse = { docxXmlToText: docxXmlToText, readInput: readInput, normalize: A.normalizeDef, buildSystem: buildSystem, parseJson: parseJson, applyOps: applyOps, hwpxToText: hwpxToText };
 })();

@@ -510,4 +510,5 @@
       } catch (er) { A.toast(er.message, 'err'); }
     };
   };
+  A.courseHelpers = { normRow: normRow, keyOf: keyOf, parseSheetRows: parseSheetRows };
 })();
