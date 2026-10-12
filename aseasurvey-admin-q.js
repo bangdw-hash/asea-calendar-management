@@ -422,7 +422,7 @@
           var q = SVY.newQuestion(b.getAttribute('data-key'), newId('Q')); q.scope = (si < 0 || gen) ? 'common' : 'course';
           if (gen && q.type !== 'block') { /* 일반 설문: 단답·장문은 기본 선택 입력 */ }
           if (si < 0) d.basic.push(q); else (d.sections[si].questions = d.sections[si].questions || []).push(q);
-          OPEN[q.id] = true; close(); redraw();
+          OPEN[q.id] = true; close(); redraw(); if (A.pv) A.pv.focusQ(q.id);
         });
       }, 'wide');
     }

@@ -234,10 +234,12 @@
       '<button type="button" class="opt" data-v="blank" aria-pressed="false"><span class="box">' + I('check', 14) + '</span><span><b>과목별 평가 (빈 양식)</b></span></button></div>' +
       '<div id="nclone" class="hide"><label class="f">불러올 설문</label><select id="ncs" class="fld">' + (past || '<option value="">이력이 없습니다</option>') + '</select></div>' +
       '<div class="btn-row"><button class="btn btn-ghost" data-r="0">취소</button><button class="btn btn-primary" data-r="1">만들기</button></div>', function (bg, close) {
-      var src = 'tpl';
+      var src = 'tpl'; if (A.pvModalSet) A.pvModalSet('tpl');
+      bg.addEventListener('change', function (e) { if (e.target.id === 'ncs' && A.pvModalSet) A.pvModalSet('clone', e.target.value); });
+      bg.addEventListener('input', function (e) { if (e.target.id === 'nt' && (src === 'general' || src === 'blank') && A.pvModalSet) { clearTimeout(A._nt); A._nt = setTimeout(function () { A.pvModalSet(src, null, e.target.value); }, 200); } });
       bg.addEventListener('click', async function (e) {
         var o = e.target.closest('#nsrc .opt');
-        if (o) { src = o.getAttribute('data-v'); bg.querySelectorAll('#nsrc .opt').forEach(function (b) { b.setAttribute('aria-pressed', b === o); }); bg.querySelector('#nclone').classList.toggle('hide', src !== 'clone'); return; }
+        if (o) { src = o.getAttribute('data-v'); bg.querySelectorAll('#nsrc .opt').forEach(function (b) { b.setAttribute('aria-pressed', b === o); }); bg.querySelector('#nclone').classList.toggle('hide', src !== 'clone'); if (A.pvModalSet) A.pvModalSet(src, bg.querySelector('#ncs').value, bg.querySelector('#nt').value); return; }
         var b = e.target.closest('[data-r]'); if (!b) return;
         if (b.getAttribute('data-r') === '0') return close();
         var title = bg.querySelector('#nt').value.trim(), sem = bg.querySelector('#ns').value.trim();
