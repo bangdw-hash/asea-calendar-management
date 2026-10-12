@@ -206,7 +206,7 @@
   }
   async function screenList() {
     A.view = 'list'; A.cur = null; A.work = null;
-    shell('<div class="pg-head"><h1>설문 목록</h1><span class="sp"></span><button class="btn btn-primary" data-act="newsvy">' + I('plus', 16) + ' 새 설문 만들기</button></div><div id="dbban" class="msg"></div><div id="cards" class="loading">불러오는 중…</div>');
+    shell('<div class="pg-head"><h1>설문 목록</h1><span class="sp"></span><button class="btn btn-secondary" data-act="tpllib">' + I('copy', 16) + ' 양식 라이브러리</button><button class="btn btn-primary" data-act="newsvy">' + I('plus', 16) + ' 새 설문 만들기</button></div><div id="dbban" class="msg"></div><div id="cards" class="loading">불러오는 중…</div>');
     renderListBanner();
     try { await loadList(); } catch (e) { document.getElementById('cards').innerHTML = '<div class="msg err">' + E(e.message) + '</div>'; return; }
     var c = document.getElementById('cards');
@@ -253,6 +253,8 @@
       });
     });
   }
+
+  A.newSurveyLegacy = newSurvey;
 
   /* ───────────── 설문 열기 / 저장 ───────────── */
   var WORK_KEYS = ['title', 'semester', 'status', 'def', 'theme', 'draw_cfg', 'open_at', 'close_at', 'result_from', 'draw_msg', 'test_mode'];
@@ -305,6 +307,8 @@
   async function route() {
     if (!A.token) return screenLogin();
     var m = (location.hash || '').match(/^#\/s\/([0-9a-f-]{36})(?:\/(\w+))?/);
+    if (!m && /^#\/new/.test(location.hash) && A.newSurveyUI) return A.newSurveyUI();
+    if (!m && /^#\/library/.test(location.hash) && A.lib) return A.lib.showLib();
     if (!m) return screenList();
     A.tab = m[2] && TAB_DEFS.some(function (t) { return t.id === m[2]; }) ? m[2] : 'overview';
     if (A.cur && A.cur.survey.id === m[1] && A.work) return A.renderSurvey();
@@ -323,7 +327,7 @@
     else if (act === 'pw') changePw();
     else if (act === 'dbtest') dbTest();
     else if (act === 'aitest') aiTest();
-    else if (act === 'newsvy') newSurvey();
+    else if (act === 'newsvy') { if (A.newSurveyUI) location.hash = '#/new'; else newSurvey(); }
     else if (act === 'tolist') { location.hash = '#/'; }
     else if (act === 'open') location.hash = '#/s/' + id + '/overview';
     else if (act === 'results') location.hash = '#/s/' + id + '/results';

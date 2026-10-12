@@ -310,3 +310,44 @@ details.adv>summary small{font-weight:400;color:var(--text-2);margin-left:6px}
 .emptyq{text-align:center;padding:26px 16px;background:#fff;border:2px dashed var(--border-2);border-radius:var(--r);margin-bottom:14px}
 .emptyq .ei{color:var(--primary);margin-bottom:4px}
 @media (min-width:1180px){body.pvopen .qpvbox{display:none}}
+
+/* ───────── 미리보기: 폰/PC 화면 탭, 검은 테두리 없음 ───────── */
+.phone{border:1px solid var(--border-2);border-radius:var(--r);box-shadow:var(--sh)}
+.livepv .phone{border-width:1px}
+.livepv.wide{width:min(760px,100vw)}
+.phone.pcview{max-width:none}
+.phone.pcview .card{max-width:none}
+.pvdev{display:flex;gap:0;margin:8px 12px 0;border:1px solid var(--border-2);border-radius:var(--r);overflow:hidden;align-self:flex-start}
+.pvdev button{padding:5px 14px;font-size:12.5px;background:#fff;border:0}
+.pvdev button+button{border-left:1px solid var(--border-2)}
+.pvdev button.on{background:var(--primary);color:var(--on-primary);font-weight:700}
+@media (min-width:1180px){body.pvopen:has(.livepv.wide).adm .wrap{margin-right:770px}body.pvopen:has(.livepv.wide).adm .hdr-in{margin-right:770px}}
+
+/* ───────── 새 설문 만들기(카드 갤러리) · 양식 라이브러리 ───────── */
+.quick{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}
+.qk{display:flex;flex-direction:column;align-items:flex-start;gap:3px;padding:12px;border:1px solid var(--border-2);border-radius:var(--r);background:#fff;text-align:left;cursor:pointer}
+.qk:hover{border-color:var(--primary);background:var(--primary-lt)}
+.qk i{color:var(--primary)}.qk span{font-size:12.5px;color:var(--muted)}
+.chipbar{display:flex;gap:6px;flex-wrap:wrap;flex:1}
+.cchipb{padding:5px 12px;border:1px solid var(--border-2);background:#fff;border-radius:var(--r);font-size:13px;cursor:pointer}
+.cchipb.on{background:var(--primary);border-color:var(--primary);color:var(--on-primary);font-weight:700}
+.tgrid,.lgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px;margin-bottom:10px}
+.lgrid{grid-template-columns:1fr}
+.tcard{border:1px solid var(--border-2);border-radius:var(--r);background:#fff;padding:12px;cursor:pointer;display:flex;flex-direction:column;gap:6px}
+.tcard:hover{border-color:var(--primary)}
+.tcard.sel{border:2px solid var(--primary);background:var(--primary-lt)}
+.tcard h4{margin:0;font-size:14.5px}.tcard p{margin:0;font-size:12.5px;color:var(--muted)}
+.tcard .th,.tcard .tf{display:flex;gap:6px;align-items:center;justify-content:space-between;flex-wrap:wrap;font-size:12px}
+.tcard .tf.muted{flex-direction:column;align-items:flex-start;gap:2px}
+.startbar{position:sticky;bottom:0;z-index:5;display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:10px 12px;margin-top:12px;background:#fff;border:1px solid var(--border-2);border-radius:var(--r);box-shadow:var(--sh-md)}
+.startbar .sp{flex:1;min-width:200px}
+.lcard{border:1px solid var(--border-2);border-radius:var(--r);background:#fff}
+.lcard>header{display:flex;gap:10px;align-items:center;padding:10px 12px;cursor:pointer}
+.lcard>header .sp{flex:1}
+.lcard .lmeta{display:flex;flex-direction:column;align-items:flex-end;font-size:12px;color:var(--muted)}
+.lcard .lbody{padding:8px 12px 12px;border-top:1px solid var(--border)}
+.diff{display:flex;flex-direction:column;gap:6px;max-height:50vh;overflow:auto}
+.diff .dl{font-size:13px;padding:6px 8px;border-left:3px solid var(--border-2);background:var(--bg)}
+.diff .dl.add{border-color:var(--green)}.diff .dl.del{border-color:var(--red)}.diff .dl.chg{border-color:var(--primary)}
+.tebar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:10px 12px;margin-bottom:10px;border:1px solid var(--primary);background:var(--primary-lt);border-radius:var(--r)}
+.tebar .sp{flex:1;min-width:220px}
