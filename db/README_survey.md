@@ -21,13 +21,27 @@
 
 ## 2. 아래 SQL 전체를 복사해서 붙여넣고 Run
 
-- 아래 코드 블록의 **처음부터 끝까지 전부** 복사합니다. (약 12KB)
+- 아래 코드 블록의 **처음부터 끝까지 전부** 복사합니다. (약 14KB)
 - 편집기에 붙여넣고 오른쪽 아래 **Run**(또는 Ctrl+Enter)을 누릅니다.
 - 「destructive operations」 확인창이 뜨면 **Run this query**를 누릅니다. (권한 정리 구문 때문이며 데이터 삭제는 없습니다.)
 
 **기대 결과**: 결과 영역에 `Success. No rows returned` 가 표시됩니다.
 
 ```sql
+-- 학생에게 내려가는 설문 정의에서 정답(퀴즈 answer·points, 성실응답 점검 check)을 제거합니다. (점검 문항은 attn 표시만 남김)
+create or replace function svy.strip_answers(p_def jsonb)
+returns jsonb language sql immutable set search_path = svy, public as $$
+  select jsonb_set(
+    jsonb_set(p_def, '{basic}', coalesce((
+      select jsonb_agg((x - 'answer' - 'points' - 'check') || case when (x->'check'->'valid') is not null then jsonb_build_object('attn', true, 'required', true) else '{}'::jsonb end order by ord)
+        from jsonb_array_elements(coalesce(p_def->'basic', '[]'::jsonb)) with ordinality as t(x, ord)), '[]'::jsonb)),
+    '{sections}', coalesce((
+      select jsonb_agg(jsonb_set(sx, '{questions}', coalesce((
+        select jsonb_agg((x - 'answer' - 'points' - 'check') || case when (x->'check'->'valid') is not null then jsonb_build_object('attn', true, 'required', true) else '{}'::jsonb end order by ord)
+          from jsonb_array_elements(coalesce(sx->'questions', '[]'::jsonb)) with ordinality as t(x, ord)), '[]'::jsonb)) order by sord)
+        from jsonb_array_elements(coalesce(p_def->'sections', '[]'::jsonb)) with ordinality as u(sx, sord)), '[]'::jsonb));
+$$;
+
 create or replace function public.svy_public(p_code text)
 returns jsonb language plpgsql stable security definer set search_path = svy, public as $$
 declare s svy.surveys; ph text; cs jsonb := '[]'::jsonb; cnt jsonb := '{}'::jsonb;
@@ -45,7 +59,7 @@ begin
   end if;
   return jsonb_build_object('ok', true, 'code', s.code, 'title', s.title, 'phase', ph, 'version', s.version, 'test', s.test_mode,
     'theme', s.theme, 'draw_msg', case when ph = 'result' then s.draw_msg else '' end, 'mode', coalesce(s.def->>'mode', 'course'),
-    'def', case when ph = 'open' then s.def else jsonb_build_object('intro', s.def->'intro') end,
+    'def', case when ph = 'open' then svy.strip_answers(s.def) else jsonb_build_object('intro', s.def->'intro') end,
     'courses', cs, 'counts', cnt);
 end $$;
 
@@ -223,7 +237,7 @@ end $$;
 ```sql
 select
   (select count(*) from pg_proc p join pg_namespace n on n.oid = p.pronamespace
-    where n.nspname = 'svy' and p.proname in ('check_one2','check_answers2','vis','cond_one','quota_counts')) as svy_fn,
+    where n.nspname = 'svy' and p.proname in ('check_one2','check_answers2','vis','cond_one','quota_counts','strip_answers')) as svy_fn,
   (select count(*) from pg_proc p join pg_namespace n on n.oid = p.pronamespace
     where n.nspname = 'public' and p.proname in ('svy_upload','svy_file_delete','svy_a_file_get')) as pub_new_fn,
   (select count(*) from information_schema.tables where table_schema = 'svy') as tables,
@@ -235,7 +249,7 @@ select
 
 | svy_fn | pub_new_fn | tables | score_cols |
 |---|---|---|---|
-| 5 | 3 | 11 | 2 |
+| 6 | 3 | 11 | 2 |
 
 ## 4. 동작 확인 — 새 쿼리로 아래를 붙여넣고 Run
 

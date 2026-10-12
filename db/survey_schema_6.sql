@@ -387,6 +387,20 @@ begin
   return out;
 end $$;
 
+-- 학생에게 내려가는 설문 정의에서 정답(퀴즈 answer·points, 성실응답 점검 check)을 제거합니다. (점검 문항은 attn 표시만 남김)
+create or replace function svy.strip_answers(p_def jsonb)
+returns jsonb language sql immutable set search_path = svy, public as $$
+  select jsonb_set(
+    jsonb_set(p_def, '{basic}', coalesce((
+      select jsonb_agg((x - 'answer' - 'points' - 'check') || case when (x->'check'->'valid') is not null then jsonb_build_object('attn', true, 'required', true) else '{}'::jsonb end order by ord)
+        from jsonb_array_elements(coalesce(p_def->'basic', '[]'::jsonb)) with ordinality as t(x, ord)), '[]'::jsonb)),
+    '{sections}', coalesce((
+      select jsonb_agg(jsonb_set(sx, '{questions}', coalesce((
+        select jsonb_agg((x - 'answer' - 'points' - 'check') || case when (x->'check'->'valid') is not null then jsonb_build_object('attn', true, 'required', true) else '{}'::jsonb end order by ord)
+          from jsonb_array_elements(coalesce(sx->'questions', '[]'::jsonb)) with ordinality as t(x, ord)), '[]'::jsonb)) order by sord)
+        from jsonb_array_elements(coalesce(p_def->'sections', '[]'::jsonb)) with ordinality as u(sx, sord)), '[]'::jsonb));
+$$;
+
 create or replace function public.svy_public(p_code text)
 returns jsonb language plpgsql stable security definer set search_path = svy, public as $$
 declare s svy.surveys; ph text; cs jsonb := '[]'::jsonb; cnt jsonb := '{}'::jsonb;
@@ -404,7 +418,7 @@ begin
   end if;
   return jsonb_build_object('ok', true, 'code', s.code, 'title', s.title, 'phase', ph, 'version', s.version, 'test', s.test_mode,
     'theme', s.theme, 'draw_msg', case when ph = 'result' then s.draw_msg else '' end, 'mode', coalesce(s.def->>'mode', 'course'),
-    'def', case when ph = 'open' then s.def else jsonb_build_object('intro', s.def->'intro') end,
+    'def', case when ph = 'open' then svy.strip_answers(s.def) else jsonb_build_object('intro', s.def->'intro') end,
     'courses', cs, 'counts', cnt);
 end $$;
 
