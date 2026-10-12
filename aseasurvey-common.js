@@ -135,6 +135,8 @@ window.SVY = (function () {
   }
   function contrast(a, b) { var la = lum(a), lb = lum(b); return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05); }
   function onColor(bg) { return contrast(bg, '#FFFFFF') >= contrast(bg, '#202124') ? '#FFFFFF' : '#202124'; }
+  // 버튼 글자색: 저장소 공통 스카이 블루(흰 글자)를 유지하되, 흰색 대비가 너무 낮은 밝은 색상에서만 어두운 글자 사용
+  function onBtn(bg) { return contrast(bg, '#FFFFFF') >= 2.6 ? '#FFFFFF' : '#202124'; }
 
   function themeVars(t) {
     t = Object.assign({}, DEFAULT_THEME, t || {});
@@ -146,7 +148,7 @@ window.SVY = (function () {
     var f = FONTS[t.font] || FONTS.noto;
     return {
       '--primary': p, '--primary-dk': mix(p, '#000000', 0.18), '--primary-lt': mix(p, '#FFFFFF', 0.88),
-      '--on-primary': onColor(p), '--bg': bg, '--text': tx, '--text-2': mix(tx, '#FFFFFF', 0.4),
+      '--on-primary': onBtn(p), '--bg': bg, '--text': tx, '--text-2': mix(tx, '#FFFFFF', 0.4),
       '--hdr-bg': hb, '--hdr-fg': hfg, '--logo-filter': hfg === '#FFFFFF' ? 'brightness(0) invert(1)' : 'none',
       '--r': Math.max(0, Math.min(24, Number(t.radius) || 0)) + 'px', '--fs': String(Math.max(0.85, Math.min(1.3, Number(t.fontScale) || 1))),
       '--font': f.css
@@ -204,7 +206,7 @@ window.SVY = (function () {
 
   return {
     SUPA_URL: SUPA_URL, rpc: rpc, errMsg: errMsg, esc: esc, uid: uid, ls: ls, cookieGet: cookieGet, cookieSet: cookieSet,
-    ico: ico, DEFAULT_THEME: DEFAULT_THEME, FONTS: FONTS, applyTheme: applyTheme, themeVars: themeVars, onColor: onColor, contrast: contrast, mix: mix, lum: lum,
+    ico: ico, DEFAULT_THEME: DEFAULT_THEME, FONTS: FONTS, applyTheme: applyTheme, themeVars: themeVars, onColor: onColor, onBtn: onBtn, contrast: contrast, mix: mix, lum: lum,
     scaleOf: scaleOf, allQuestions: allQuestions, isCheck: isCheck, visible: visible, isEmpty: isEmpty, isRequired: isRequired, fmtDate: fmtDate
   };
 })();
