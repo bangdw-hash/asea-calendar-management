@@ -242,3 +242,28 @@ details.resp.ex{opacity:.6}.rdbody{padding:4px 14px 12px}
 blockquote{margin:6px 0;padding:6px 12px;border-left:3px solid var(--primary);background:#F7F9FB;border-radius:0 8px 8px 0;font-size:13.5px}
 .heat td{text-align:center}
 @media (prefers-reduced-motion:reduce){.hbrow .bt i,.hcol i,.donut .seg{transition:none}}
+
+/* 실시간 학생 화면 미리보기 도크 (모든 관리자 화면 공통) */
+.pvbtn{position:fixed;right:16px;bottom:16px;z-index:120;box-shadow:var(--sh-lg)}
+body.pvopen .pvbtn{display:none!important}
+.livepv{position:fixed;top:0;right:0;bottom:0;width:min(440px,100vw);z-index:110;background:#fff;border-left:1px solid var(--border);box-shadow:var(--sh-lg);display:none;flex-direction:column}
+body.pvopen .livepv{display:flex}
+.pvhead{display:flex;gap:8px;align-items:center;padding:10px 12px;border-bottom:1px solid var(--border);font-size:13.5px}
+.pvhead .sp{flex:1}.pvhead .muted{font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.livepv .pvtabs{padding:8px 12px 0;margin:0;max-height:92px;overflow:auto}
+.pvbody{flex:1;overflow:auto;padding:8px 12px;background:var(--bg)}
+.pvfoot{padding:6px 12px;font-size:11.5px;border-top:1px solid var(--border)}
+.livepv .phone{max-width:none;margin:0 auto;border-width:7px}
+.livepv .phone .preview{max-height:none;overflow:visible}
+.pvfocus{outline:2px solid var(--primary);outline-offset:3px;border-radius:var(--r);background:var(--primary-lt)}
+@media (min-width:1180px){
+  body.pvopen.adm .wrap{max-width:none;margin-left:0;margin-right:450px}
+  body.pvopen.adm .hdr-in{max-width:none;margin-right:450px}
+  body.pvopen .modal-bg{padding-right:460px}
+  body.pvopen .toast{margin-right:225px}
+  body.pvopen .aipvcol{display:none}
+  body.pvopen .grid:has(> .aipvcol){grid-template-columns:1fr!important}
+  body.pvopen .grid.g2:has(#pv){grid-template-columns:1fr}
+  body.pvopen .panel:has(> #pv){display:none}
+}
+@media (max-width:1179px){.livepv{width:min(440px,100vw)}}
