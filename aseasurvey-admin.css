@@ -395,3 +395,8 @@ table.xl td.xe{color:var(--muted);text-align:center}
 .rvpv{padding:8px;background:var(--bg);border-radius:var(--r);overflow:auto}
 body:has(.modal-bg) .aibar{display:none}
 body:has(.aibar){padding-bottom:230px}
+
+/* ───────── 배포 전 점검 ───────── */
+.afind{border:1px solid var(--border-2);border-left:4px solid var(--border-2);border-radius:var(--r);padding:10px 12px;margin-bottom:8px;background:#fff}
+.afind.err{border-left-color:var(--red)}.afind.warn{border-left-color:var(--orange)}.afind.info{border-left-color:var(--primary)}
+.qcard.aiflash{outline:3px solid var(--orange);outline-offset:-3px}

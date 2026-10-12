@@ -77,6 +77,7 @@
       [!!(d.intro && d.intro.rewardText), '참여 안내(상품 문구) 입력됨', '안내문 탭에서 참여 안내를 입력해 주십시오.']
     ];
     if (gen) checks.splice(0, 2);
+    if (A.auditChecks) checks = checks.concat(A.auditChecks());
     var msg = '[아세아항공직업전문학교] ' + (d.intro && d.intro.title || s.title) + '\n' + (d.intro && d.intro.rewardText ? d.intro.rewardText + '\n' : '') +
       '▶ 설문 링크: ' + link + (gen ? '\n- 제출 후에는 수정할 수 없습니다.' : '\n- 수강 중인 모든 과목에 응답해 주십시오. 제출 후에는 수정할 수 없습니다.\n- 제출 후 표시되는 추첨번호를 꼭 저장해 주십시오.') + (s.close_at ? '\n- 마감: ' + A.fmt(s.close_at) : '');
     box.innerHTML = '<div class="grid g2"><div>' +
