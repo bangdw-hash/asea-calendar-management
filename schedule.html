@@ -1641,14 +1641,14 @@ html,body{height:100%;
 </div>
 
 <!-- Desktop Shortcut Modal -->
-<div class="overlay" id="shortcut-overlay" onclick="if(event.target===this&&Date.now()-_lastModalOpen>350)closeModal('shortcut-overlay')">
+<div class="overlay" id="shortcut-overlay" onclick="if(event.target===this&&Date.now()-_lastModalOpen>350)scClose()">
   <div class="modal" style="max-width:440px">
     <div class="modal-hdr">
       <h2>
         <svg style="width:18px;height:18px;vertical-align:-3px;margin-right:6px;color:var(--color-accent)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
         바탕화면 바로가기
       </h2>
-      <button class="modal-close" onclick="closeModal('shortcut-overlay')">&times;</button>
+      <button class="modal-close" onclick="scClose()">&times;</button>
     </div>
     <div class="modal-body" id="shortcut-modal-body">
       <!-- Filled dynamically by openShortcutModal() -->
@@ -7400,36 +7400,164 @@ function _getPlatform() {
   return 'other';
 }
 
+/* 바로가기 만들기: 1단계(PC/모바일) → 모바일은 2단계(안드로이드/아이폰). 바로가기 이름은 모든 단계 상단에서 입력 */
+const _SC_URL = 'https://bangdw-hash.github.io/asea-calendar-management/schedule.html';
+const _SC_DEFAULT_NAME = '아세아 업무일정';
+let _scOrigTitle = null;
+const _SC_ICO = {
+  pc: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>',
+  mobile: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2" width="12" height="20" rx="2"/><path d="M11 18h2"/></svg>',
+  android: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="3"/><path d="M10 19h4"/></svg>',
+  ios: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M8 7l4-4 4 4"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg>',
+  back: '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><path d="M15 18l-6-6 6-6"/></svg>',
+  dl: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>'
+};
+
+function _scName() {
+  const el = document.getElementById('sc-name');
+  const v = ((el && el.value) || '').replace(/[\\\/:*?"<>|\r\n]/g, '').trim().slice(0, 30);
+  return v || _SC_DEFAULT_NAME;
+}
+function _scOption(ico, title, desc, fn) {
+  return '<button type="button" class="sub-option" onclick="' + fn + '">' +
+    '<div class="sub-option-icon">' + _SC_ICO[ico] + '</div>' +
+    '<div class="sub-option-text"><strong>' + title + '</strong><span>' + desc + '</span></div></button>';
+}
+function _scStep(n, html) {
+  return '<div class="sc-step"><div class="sc-step-num">' + n + '</div><div class="sc-step-text">' + html + '</div></div>';
+}
+function _scBack(to) {
+  return '<button type="button" class="mycal-deselect" style="margin-bottom:10px" onclick="scGo(\'' + to + '\')">' + _SC_ICO.back + ' 이전</button>';
+}
+function _scInApp() { return /KAKAOTALK|NAVER\(inapp|Line\/|FBAN|FBAV|Instagram|; wv\)/i.test(navigator.userAgent || ''); }
+
 function openShortcutModal() {
-  const plat = _getPlatform();
-  if (plat === 'windows') {
-    _downloadShortcutWindows();
-  } else if (plat === 'mac') {
-    _downloadShortcutMac();
-  } else if (plat === 'android') {
-    if (_deferredInstallPrompt) {
-      _triggerPwaInstall();
-    } else {
-      showToast('Chrome 우상단 ⋮ 메뉴 → 홈 화면에 추가를 탭하세요');
-    }
-  } else if (plat === 'ios') {
-    showToast('Safari 하단 공유(□↑) → 홈 화면에 추가를 탭하세요');
+  _lastModalOpen = Date.now();
+  const body = document.getElementById('shortcut-modal-body');
+  const prev = document.getElementById('sc-name');
+  const keep = prev ? prev.value : _SC_DEFAULT_NAME;
+  body.innerHTML =
+    '<div style="margin-bottom:12px">' +
+      '<label for="sc-name" style="display:block;font-size:.75rem;font-weight:700;color:var(--color-text-sec);margin-bottom:5px">바로가기 이름</label>' +
+      '<input id="sc-name" type="text" maxlength="30" autocomplete="off" style="width:100%;box-sizing:border-box;padding:9px 11px;font-size:.9rem;border:1.5px solid var(--color-border);border-radius:var(--r-xs);font-family:inherit;color:var(--color-text);background:#fff" oninput="_scApplyTitle()">' +
+    '</div><div id="sc-view"></div>';
+  document.getElementById('sc-name').value = keep;
+  scGo('home');
+  document.getElementById('shortcut-overlay').classList.add('show');
+  document.body.style.overflow = 'hidden';
+}
+
+function scClose() {
+  if (_scOrigTitle !== null) { document.title = _scOrigTitle; _scOrigTitle = null; }
+  closeModal('shortcut-overlay');
+}
+
+/* 아이폰 '홈 화면에 추가' 기본 이름이 입력값으로 채워지도록 title/meta를 임시 변경 */
+function _scApplyTitle() {
+  if (_scOrigTitle === null) return;
+  const n = _scName();
+  document.title = n;
+  const m = document.querySelector('meta[name="apple-mobile-web-app-title"]');
+  if (m) m.setAttribute('content', n);
+}
+
+function scGo(step) {
+  const v = document.getElementById('sc-view');
+  if (!v) return;
+  if (step !== 'ios' && step !== 'android' && _scOrigTitle !== null) { document.title = _scOrigTitle; _scOrigTitle = null; }
+  let h = '';
+  if (step === 'home') {
+    h = '<div class="sub-label">사용 기기를 선택하세요</div><div class="sub-options">' +
+      _scOption('pc', 'PC (Windows / Mac)', '바탕화면에 바로가기 아이콘을 만듭니다.', "scGo('pc')") +
+      _scOption('mobile', '모바일 (스마트폰 / 태블릿)', '홈 화면에 앱 아이콘처럼 추가합니다.', "scGo('mobile')") +
+      '</div>';
+  } else if (step === 'pc') {
+    h = _scBack('home') +
+      '<div class="sc-platform">' +
+      _scStep(1, '아래 <strong>다운로드</strong> 버튼을 눌러 파일을 저장합니다.') +
+      _scStep(2, '다운로드한 <strong>ASEA_바로가기.vbs</strong>를 더블클릭합니다.') +
+      _scStep(3, '바탕화면에 <strong id="sc-pc-name"></strong> 아이콘이 생성됩니다.') +
+      '<div class="sc-action-row">' +
+      '<button type="button" class="sc-dl-btn" onclick="_downloadShortcutWindows()">' + _SC_ICO.dl + ' Windows용 (.vbs) 다운로드</button>' +
+      '<button type="button" class="sc-dl-btn" style="background:var(--color-accent-lt);color:var(--color-accent);border:1.5px solid var(--color-accent)" onclick="_downloadShortcutMac()">Mac용 (.webloc)</button>' +
+      '</div></div>' +
+      '<div class="sc-note">보안 경고가 표시되면 \'유지\' 또는 \'실행\'을 선택하십시오. 회사 보안 정책으로 .vbs 실행이 차단된 PC에서는 브라우저 주소창 왼쪽 아이콘을 바탕화면으로 끌어다 놓아 만들 수 있습니다.</div>';
+  } else if (step === 'mobile') {
+    h = _scBack('home') + '<div class="sub-label">휴대폰 종류를 선택하세요</div><div class="sub-options">' +
+      _scOption('android', '안드로이드 (갤럭시 등)', 'Chrome 또는 삼성 인터넷', "scGo('android')") +
+      _scOption('ios', '아이폰 / 아이패드', 'Safari', "scGo('ios')") +
+      '</div>';
+  } else if (step === 'android') {
+    if (_scOrigTitle === null) _scOrigTitle = document.title;
+    h = _scBack('mobile') + '<div class="sc-platform">' +
+      (_scInApp() ? '<div class="sc-note" style="margin:0;color:var(--color-red)">카카오톡 등 앱 내부 브라우저에서는 추가할 수 없습니다. 아래 링크 복사 후 Chrome에서 열어 주십시오.</div>' : '') +
+      _scStep(1, '아래 <strong>홈 화면에 추가</strong> 버튼을 누릅니다.') +
+      _scStep(2, '이름 입력란에 <strong id="sc-and-name"></strong>을(를) 입력하고 <strong>설치/추가</strong>를 누릅니다.') +
+      '<div class="sc-action-row">' +
+      '<button type="button" class="sc-dl-btn" onclick="scAndroidAdd()">홈 화면에 추가</button>' +
+      '<button type="button" class="sc-dl-btn" style="background:var(--color-accent-lt);color:var(--color-accent);border:1.5px solid var(--color-accent)" onclick="scCopy(_SC_URL,\'링크를 복사했습니다.\')">링크 복사</button>' +
+      '</div></div>' +
+      '<div class="sc-note">버튼이 동작하지 않으면 Chrome 우측 상단 메뉴(점 3개) → <strong>홈 화면에 추가</strong>를 선택하십시오. 삼성 인터넷은 하단 메뉴(三) → <strong>현재 페이지 추가</strong> → <strong>홈 화면</strong>입니다.</div>';
+  } else if (step === 'ios') {
+    if (_scOrigTitle === null) _scOrigTitle = document.title;
+    h = _scBack('mobile') + '<div class="sc-platform">' +
+      (_scInApp() ? '<div class="sc-note" style="margin:0;color:var(--color-red)">카카오톡 등 앱 내부 브라우저에서는 추가할 수 없습니다. 아래 링크 복사 후 Safari에서 열어 주십시오.</div>' : '') +
+      _scStep(1, 'Safari 하단(아이패드는 상단)의 <strong>공유</strong> 버튼(네모에 위쪽 화살표)을 누릅니다.') +
+      _scStep(2, '목록을 내려 <strong>홈 화면에 추가</strong>를 선택합니다.') +
+      _scStep(3, '이름 칸에 <strong id="sc-ios-name"></strong>이(가) 입력되어 있는지 확인하고 <strong>추가</strong>를 누릅니다.') +
+      '<div class="sc-action-row"><button type="button" class="sc-dl-btn" onclick="scCopy(_SC_URL,\'링크를 복사했습니다.\')">링크 복사</button></div></div>' +
+      '<div class="sc-note">아이폰은 웹에서 홈 화면 추가를 자동 실행할 수 없어 위 순서대로 직접 진행해야 합니다. Chrome 등 타 브라우저가 아닌 Safari에서 진행하십시오.</div>';
+  }
+  v.innerHTML = h;
+  ['sc-pc-name', 'sc-and-name', 'sc-ios-name'].forEach(id => {
+    const e = document.getElementById(id);
+    if (e) e.textContent = '"' + _scName() + '"';
+  });
+  if (step === 'ios' || step === 'android') _scApplyTitle();
+  const inp = document.getElementById('sc-name');
+  if (inp) inp.oninput = () => {
+    _scApplyTitle();
+    ['sc-pc-name', 'sc-and-name', 'sc-ios-name'].forEach(id => {
+      const e = document.getElementById(id);
+      if (e) e.textContent = '"' + _scName() + '"';
+    });
+  };
+}
+
+function scCopy(text, msg) {
+  const done = () => showToast(msg, 'success');
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(done).catch(() => { _scCopyFallback(text); done(); });
+  } else { _scCopyFallback(text); done(); }
+}
+function _scCopyFallback(text) {
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  document.body.appendChild(ta);
+  ta.select();
+  try { document.execCommand('copy'); } catch (e) {}
+  document.body.removeChild(ta);
+}
+
+function scAndroidAdd() {
+  if (_deferredInstallPrompt) {
+    _triggerPwaInstall();
   } else {
-    _downloadShortcutWindows();
+    showToast('Chrome 메뉴(점 3개) → 홈 화면에 추가를 선택하십시오.');
   }
 }
 
 function _downloadShortcutWindows() {
-  const url = 'https://bangdw-hash.github.io/asea-calendar-management/schedule.html';
+  const name = _scName();
   const vbs =
     'Set oWS = WScript.CreateObject("WScript.Shell")\r\n' +
-    'sLink = oWS.SpecialFolders("Desktop") & "\\아세아 업무일정.lnk"\r\n' +
+    'sLink = oWS.SpecialFolders("Desktop") & "\\' + name + '.lnk"\r\n' +
     'Set oSC = oWS.CreateShortcut(sLink)\r\n' +
     'oSC.TargetPath = "C:\\Windows\\System32\\rundll32.exe"\r\n' +
-    'oSC.Arguments = "url.dll,FileProtocolHandler ' + url + '"\r\n' +
+    'oSC.Arguments = "url.dll,FileProtocolHandler ' + _SC_URL + '"\r\n' +
     'oSC.Description = "ASEA 업무 일정 관리"\r\n' +
     'oSC.Save\r\n' +
-    'MsgBox "바탕화면에 \'아세아 업무일정\' 바로가기가 생성되었습니다.", 64, "ASEA 일정"\r\n';
+    'MsgBox "바탕화면에 \'' + name + '\' 바로가기가 생성되었습니다.", 64, "ASEA 일정"\r\n';
   const buf = new ArrayBuffer(2 + vbs.length * 2);
   const view = new DataView(buf);
   view.setUint16(0, 0xFEFF, true);
@@ -7441,12 +7569,11 @@ function _downloadShortcutWindows() {
   document.body.appendChild(a);
   a.click();
   setTimeout(() => { URL.revokeObjectURL(a.href); document.body.removeChild(a); }, 1000);
-  showToast('ASEA_바로가기.vbs 다운로드 완료 — 더블클릭하면 바탕화면에 바로가기가 생성됩니다.', 'success');
+  showToast('ASEA_바로가기.vbs 다운로드 완료 — 더블클릭하면 바탕화면에 "' + name + '" 바로가기가 생성됩니다.', 'success');
 }
 function _downloadShortcutMac() {
-  const url = location.href.split('?')[0];
-  const content = '<?xml version="1.0" encoding="UTF-8"?>\n<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">\n<plist version="1.0">\n<dict>\n\t<key>URL</key>\n\t<string>' + url + '</string>\n</dict>\n</plist>';
-  _triggerDownload(new Blob([content], {type:'application/xml'}), '아세아 업무일정.webloc');
+  const content = '<?xml version="1.0" encoding="UTF-8"?>\n<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">\n<plist version="1.0">\n<dict>\n\t<key>URL</key>\n\t<string>' + _SC_URL + '</string>\n</dict>\n</plist>';
+  _triggerDownload(new Blob([content], {type:'application/xml'}), _scName() + '.webloc');
 }
 function _triggerDownload(blob, name) {
   const a = document.createElement('a');
@@ -7456,7 +7583,7 @@ function _triggerDownload(blob, name) {
   a.click();
   setTimeout(() => { URL.revokeObjectURL(a.href); document.body.removeChild(a); }, 1000);
   showToast(name + ' 파일을 다운로드했습니다.', 'success');
-  closeModal('shortcut-overlay');
+  scClose();
 }
 function _triggerPwaInstall() {
   if (!_deferredInstallPrompt) return;
@@ -7464,7 +7591,7 @@ function _triggerPwaInstall() {
   _deferredInstallPrompt.userChoice.then(r => {
     if (r.outcome === 'accepted') showToast('홈 화면에 추가되었습니다.', 'success');
     _deferredInstallPrompt = null;
-    closeModal('shortcut-overlay');
+    scClose();
   });
 }
 
