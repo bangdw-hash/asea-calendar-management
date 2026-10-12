@@ -71,7 +71,7 @@
     var gen = d.mode === 'general';
     var checks = [
       [nCourses > 0, '등록 과목 ' + nCourses + '개 · 반 ' + Object.keys(classes).length + '개', '과목·교수 탭에서 과목을 등록해 주십시오.'],
-      [head > 0, '배포 인원 ' + head + '명 등록', '배포 인원 탭에서 계열·학년별 인원을 등록하면 응답률이 계산됩니다.'],
+      [head > 0, '대상 인원 ' + head + '명 등록', '대상 인원 탭에서 계열·학년별 인원을 등록하면 응답률이 계산됩니다.'],
       [nq > 0 && !lint.errs.length, '문항 ' + nq + '개 · 점검 통과', lint.errs.length ? '문항 탭의 오류 ' + lint.errs.length + '건을 해결해 주십시오.' : '문항을 등록해 주십시오.'],
       [!lint.warns.length, gen ? '점검 경고 없음' : '성실응답 점검 문항 포함', lint.warns[0] || ''],
       [!!(d.intro && d.intro.rewardText), '참여 안내(상품 문구) 입력됨', '안내문 탭에서 참여 안내를 입력해 주십시오.']
@@ -430,7 +430,7 @@
     if (A.ext.tgId !== A.cur.survey.id) { A.ext.tgId = A.cur.survey.id; rows = A.ext.tg = A.cur.targets.map(function (t) { return { track: t.track, grade: t.grade, headcount: t.headcount }; }); }
     var total = rows.reduce(function (a, r) { return a + (Number(r.headcount) || 0); }, 0);
     box.innerHTML = '<div class="row" style="margin-bottom:12px"><div><b style="font-size:15px">배포 대상 ' + total + '명</b> <span class="muted">· ' + rows.length + '개 계열·학년</span></div><span class="sp"></span><button class="btn btn-secondary btn-sm" data-act="tgfill">과목 기준으로 행 자동 생성</button><button class="btn btn-secondary btn-sm" data-act="tgadd">' + I('plus', 14) + ' 행 추가</button><button class="btn btn-primary btn-sm" data-act="tgsave">' + I('check', 14) + ' 배포 인원 저장</button></div>' +
-      '<div class="panel"><p class="panel-sub" style="margin:0">계열·학년별 배포(대상) 인원을 입력하면 결과 대시보드에서 응답률이 산출됩니다. 엑셀 일괄 등록 양식의 「배포인원」 시트로도 등록할 수 있습니다. 이 탭의 저장은 우측 상단 「저장」과 별개로 즉시 반영됩니다.</p></div>' +
+      '<div class="panel"><p class="panel-sub" style="margin:0">계열·학년별 배포(대상) 인원을 입력하면 결과 보기에서 응답률이 산출됩니다. 엑셀 일괄 등록 양식의 「배포인원」 시트로도 등록할 수 있습니다. 이 탭의 저장은 우측 상단 「저장」과 별개로 즉시 반영됩니다.</p></div>' +
       '<div class="tbl-wrap" style="margin-top:12px"><table class="t"><thead><tr><th>계열</th><th>학년</th><th class="num">배포 인원(명)</th><th></th></tr></thead><tbody>' +
       (rows.length ? rows.map(function (r, i) { return '<tr data-i="' + i + '"><td><input class="fld" data-tf="track" value="' + E(r.track) + '"></td><td><input class="fld" data-tf="grade" value="' + E(r.grade) + '"></td><td class="num"><input class="fld fld-sm" type="number" min="0" data-tf="headcount" value="' + (r.headcount || 0) + '"></td><td><button class="btn btn-ghost btn-sm" data-act="tgdel" style="color:var(--red)">' + I('trash', 14) + '</button></td></tr>'; }).join('') : '<tr><td colspan="4" class="t-empty">행이 없습니다. 「과목 기준으로 행 자동 생성」을 눌러 주십시오.</td></tr>') + '</tbody></table></div>';
     box.oninput = function (e) { var el = e.target.closest('[data-tf]'); if (!el) return; var i = Number(el.closest('[data-i]').getAttribute('data-i')), f = el.getAttribute('data-tf'); rows[i][f] = f === 'headcount' ? Math.max(parseInt(el.value, 10) || 0, 0) : el.value; };
