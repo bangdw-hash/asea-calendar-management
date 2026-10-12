@@ -15,7 +15,7 @@
   var S = {
     code: '', info: null, def: null, courses: [], test: false, mode: 'course', counts: {}, qmap: {}, deps: {}, seed: 1, token: '',
     step: 'load', sel: { track: '', grade: '', klass: '' }, ans: { common: {}, course: {} },
-    open: '', pageId: '', pageIdx: 0, active: 0, times: {}, lastTick: 0, busy: false, ticket: '', rendered: {}, result: null, checkInput: '', vsig: {}
+    open: '', pageId: '', pageIdx: 0, editing: false, active: 0, times: {}, lastTick: 0, busy: false, ticket: '', rendered: {}, result: null, checkInput: '', vsig: {}
   };
   function K(s) { return 'svy_' + S.code + '_' + s; }
   function feat(k) { return ((S.def && S.def.features) || {})[k]; }
@@ -46,7 +46,7 @@
   function header() {
     return '<header class="hdr"><div class="hdr-in"><img class="logo" src="aseasurvey-logo.png" alt="아세아항공직업전문학교">' +
       '<span class="hdr-sp"></span>' +
-      (S.step === 'eval' || S.step === 'class' || S.step === 'page' ? '<button class="hdr-btn" data-act="restart">처음부터</button>' : '') +
+      (S.editing ? '<button class="hdr-btn" data-act="editcancel">수정 취소</button>' : S.step === 'eval' || S.step === 'class' || S.step === 'page' ? '<button class="hdr-btn" data-act="restart">처음부터</button>' : '') +
       '</div></header>' + (S.test ? '<div class="testbar">테스트 모드입니다. 이 응답은 정식 집계에 포함되지 않으며 시작 전에 초기화됩니다.</div>' : '');
   }
   function shell(inner, extra) { $app.innerHTML = header() + '<main class="wrap">' + inner + '</main>' + (extra || ''); if ($app._initSigs) $app._initSigs(); }
@@ -66,7 +66,7 @@
   // 첨부 미리보기(blob URL)는 새로고침 후 무효이므로 저장하지 않음
   function slim(ans) { return JSON.parse(JSON.stringify(ans, function (k, v) { return k === 'preview' ? undefined : v; })); }
   function saveDraft() {
-    clearTimeout(saveT);
+    clearTimeout(saveT); if (S.editing) return;
     saveT = setTimeout(function () {
       SVY.ls.setJSON(K('draft'), { sel: S.sel, ans: slim(S.ans), open: S.open, pageId: S.pageId, active: S.active, times: S.times, step: S.step, v: S.info && S.info.version, at: Date.now() });
     }, 250);
@@ -266,7 +266,7 @@
       h += '<section class="course" id="c-' + c.id + '" data-cid="' + c.id + '">' + courseHead(c, i) + '<div class="course-body"><div class="course-inner" data-inner></div></div></section>';
     });
     if (cq.length) h += '<section class="card" id="c-common" style="margin-top:14px">' + commonHtml() + '</section>';
-    var bar = '<div class="bar"><div class="bar-in"><div class="bar-info" data-bar-info></div><button class="btn btn-primary" data-act="submit">제출하기</button></div></div>';
+    var bar = '<div class="bar"><div class="bar-in"><div class="bar-info" data-bar-info></div><button class="btn btn-primary" data-act="submit">' + (S.editing ? '수정 저장' : '제출하기') + '</button></div></div>';
     shell(h, bar);
     S.rendered = {};
     S.vsig.common = visSig('common'); list.forEach(function (c) { S.vsig[c.id] = visSig(c.id); });
@@ -339,11 +339,11 @@
     var last = i >= list.length - 1;
     return '<div class="bar"><div class="bar-in">' + (i > 0 ? '<button class="btn btn-ghost" data-act="prev">' + I('left', 16) + ' 이전</button>' : '<span class="bar-info"></span>') +
       '<div class="bar-info" data-bar-info style="text-align:center"></div>' +
-      (last ? '<button class="btn btn-primary" data-act="submit">제출하기</button>' : '<button class="btn btn-primary" data-act="nextpage">다음 ' + I('right', 16) + '</button>') + '</div></div>';
+      (last ? '<button class="btn btn-primary" data-act="submit">' + (S.editing ? '수정 저장' : '제출하기') + '</button>' : '<button class="btn btn-primary" data-act="nextpage">다음 ' + I('right', 16) + '</button>') + '</div></div>';
   }
   function screenPage() {
     var list = pages();
-    if (!list.length) { shell('<div class="card center"><p class="muted">표시할 문항이 없습니다.</p></div><div class="bar"><div class="bar-in"><button class="btn btn-primary" data-act="submit">제출하기</button></div></div>'); return; }
+    if (!list.length) { shell('<div class="card center"><p class="muted">표시할 문항이 없습니다.</p></div><div class="bar"><div class="bar-in"><button class="btn btn-primary" data-act="submit">' + (S.editing ? '수정 저장' : '제출하기') + '</button></div></div>'); return; }
     var i = curPage(list), p = list[i]; S.pageId = p.id; S.pageIdx = i;
     var h = '<div class="stepper"><div class="stepper-row"><span>' + (list.length > 1 ? '<b>' + (i + 1) + '</b> / ' + list.length + ' 단계' : '설문 응답') + '</span><span class="muted" data-pg-left></span></div><div class="meter"><i style="width:' + Math.round((i + 1) * 100 / list.length) + '%"></i></div></div>' +
       '<div id="pgbody">' + pageHtml(p) + '</div>';
@@ -419,9 +419,9 @@
     if ((a.type === 'receipt' || a.type === 'both') && code) h += '<button class="btn btn-secondary" data-act="receipt" data-code="' + E(code) + '">' + I('download', 16) + ' 참여 확인서 저장</button>';
     return h ? '<div class="btn-row" style="justify-content:center">' + h + '</div>' : '';
   }
-  function screenDone(code, dup, res) {
+  function screenDone(code, dup, res, edited) {
     var i = S.def.intro || {}, tk = showTicket() && code;
-    var h = '<div class="card center"><div class="okmark">' + I('check', 32) + '</div><h1 class="title">' + (dup ? '이미 제출하셨습니다' : '제출이 완료되었습니다') + '</h1>' +
+    var h = '<div class="card center"><div class="okmark">' + I('check', 32) + '</div><h1 class="title">' + (edited ? '수정이 완료되었습니다' : dup ? '이미 제출하셨습니다' : '제출이 완료되었습니다') + '</h1>' +
       '<p class="muted" style="margin:8px 0 0">' + E(i.doneNote || '설문에 응해 주셔서 감사합니다.') + '</p>' + scoreCard(res) + afterHtml(code) + (tk ? ticketCard(code) +
       '<div class="msg warn" style="text-align:left">' + I('alert', 18) + '<div><b>이 번호는 나중에 다시 찾을 수 없습니다.</b><br>지금 <b>화면을 캡처</b>하거나 <b>「나에게 보내기」</b>로 카카오톡·문자에 꼭 보관해 주십시오. 추첨 결과 확인에 필요합니다.</div></div>' +
       '<div class="btn-row" style="justify-content:center"><button class="btn btn-primary" data-act="share" data-code="' + E(code) + '">' + I('upload', 16) + ' 나에게 보내기</button>' +
@@ -429,8 +429,26 @@
       '<button class="btn btn-ghost" data-act="copycode" data-code="' + E(code) + '">' + I('copy', 16) + ' 번호 복사</button></div>' +
       (i.drawNotice ? '<div class="msg">' + I('info', 18) + '<div style="text-align:left">' + E(i.drawNotice) + '</div></div>' : '') : '') +
       (S.test ? '<div class="msg warn">' + I('alert', 18) + '<div style="text-align:left">테스트 응답입니다. 정식 집계에는 포함되지 않습니다.</div></div><div class="btn-row"><button class="btn btn-ghost" data-act="fresh">테스트 한 번 더 하기</button></div>' : '') +
-      '</div>';
-    shell(h);
+      '<div id="editbox"></div></div>';
+    shell(h); checkEdit();
+  }
+  // 제출 후 수정(관리자가 허용한 설문만): 서버에서 허용 시간 확인 후 버튼 표시
+  async function checkEdit() {
+    if (!feat('edit')) return;
+    try {
+      var r = await SVY.rpc('svy_edit_get', { p_code: S.code, p_token: getToken() }), box = document.getElementById('editbox'); if (!box || !r.can_edit) return;
+      var hrs = Number((feat('edit') || {}).hours);
+      box.innerHTML = '<div class="msg">' + I('info', 18) + '<div style="text-align:left">' + (hrs > 0 ? '제출 후 ' + hrs + '시간 이내에' : '설문이 마감되기 전까지') + ' 같은 기기에서 응답을 수정할 수 있습니다.</div></div><div class="btn-row" style="justify-content:center"><button class="btn btn-secondary" data-act="editstart">' + I('edit', 16) + ' 응답 수정하기</button></div>';
+    } catch (e) { /* 7단계 DB 미설치 등: 수정 버튼을 표시하지 않음 */ }
+  }
+  async function startEdit() {
+    try {
+      var r = await SVY.rpc('svy_edit_get', { p_code: S.code, p_token: getToken() });
+      if (!r.can_edit) { toast('수정할 수 있는 시간이 지났습니다.'); return; }
+      var a = r.answers || {}; S.ans = { common: a.common || {}, course: a.course || {} }; S.sel = { track: r.track, grade: r.grade, klass: r.klass };
+      S.editing = true; S.open = ''; S.pageId = ''; S.pageIdx = 0; S.active = 0; S.times = a._t || {}; S.lastTick = Date.now(); S.vsig = {};
+      go(isGen() ? 'page' : 'eval'); if (!isGen()) { var f = myCourses()[0]; if (f) openCourse(f.id, true); }
+    } catch (e) { toast(e.message); }
   }
   function screenResult() {
     var r = S.result, h = '<div class="card center"><div class="okmark" style="background:var(--primary-lt);color:var(--primary-dk)">' + I('trophy', 28) + '</div><h1 class="title">추첨 결과 확인</h1>' +
@@ -517,14 +535,16 @@
         toast('응답하지 않은 문항이 있습니다.'); return;
       }
     }
-    var ok = await confirmBox('제출하시겠습니까?', '제출 후에는 <b>수정할 수 없습니다.</b><br>응답 내용을 다시 확인하셨다면 제출해 주십시오.', '제출', '돌아가기');
+    var ok = await confirmBox(S.editing ? '수정 내용을 저장할까요?' : '제출하시겠습니까?', S.editing ? '저장하면 이전 응답이 이 내용으로 바뀝니다.' : (feat('edit') ? '제출 후에도 허용된 시간 안에는 같은 기기에서 수정할 수 있습니다.<br>응답 내용을 다시 확인하셨다면 제출해 주십시오.' : '제출 후에는 <b>수정할 수 없습니다.</b><br>응답 내용을 다시 확인하셨다면 제출해 주십시오.'), S.editing ? '저장' : '제출', '돌아가기');
     if (!ok) return;
     S.busy = true; tick();
-    var btn = $app.querySelector('[data-act="submit"]'); if (btn) { btn.disabled = true; btn.textContent = '제출 중…'; }
+    var btn = $app.querySelector('[data-act="submit"]'); if (btn) { btn.disabled = true; btn.textContent = S.editing ? '저장 중…' : '제출 중…'; }
     try {
       var payload = { duration: Math.round(S.active / 1000), answers: cleanAnswers() };
       if (!isGen()) { payload.track = S.sel.track; payload.grade = S.sel.grade; payload.klass = S.sel.klass; }
-      var res = await SVY.rpc('svy_submit', { p_code: S.code, p_token: getToken(), p_payload: payload });
+      var wasEdit = S.editing;
+      var res = await SVY.rpc(wasEdit ? 'svy_edit_save' : 'svy_submit', { p_code: S.code, p_token: getToken(), p_payload: payload });
+      if (wasEdit) { S.editing = false; S.step = 'done'; if (!S.test) SVY.ls.setJSON(K('done'), { ticket: res.ticket, score: res.score, max_score: res.max_score, quiz: res.quiz, at: Date.now() }); screenDone(res.ticket, true, res, true); window.scrollTo(0, 0); S.busy = false; return; }
       if (!S.test) { SVY.ls.setJSON(K('done'), { ticket: res.ticket, score: res.score, max_score: res.max_score, quiz: res.quiz, at: Date.now() }); SVY.cookieSet('svyd_' + S.code, res.ticket); }
       clearDraft(); S.ticket = res.ticket; S.step = 'done'; screenDone(res.ticket, res.duplicate, res); window.scrollTo(0, 0);
     } catch (e) {
@@ -533,7 +553,7 @@
       if (e.code === 'FULL') { msgScreen('마감', '정원이 마감되었습니다', '선착순 정원이 모두 찼습니다. 참여해 주셔서 감사합니다.', 'lock'); return; }
       toast(e.message);
       if (e.code && e.code.indexOf('OPTION_FULL:') === 0) { await refreshCounts(); render(); }
-      else if (btn) { btn.disabled = false; btn.textContent = '제출하기'; }
+      else if (btn) { btn.disabled = false; btn.textContent = S.editing ? '수정 저장' : '제출하기'; }
       return;
     }
     S.busy = false;
@@ -581,6 +601,8 @@
     var act = t.getAttribute('data-act'); tick();
     var cid = t.getAttribute('data-cid');
     if (act === 'start') begin();
+    else if (act === 'editstart') startEdit();
+    else if (act === 'editcancel') { S.editing = false; var dn0 = doneRec(); S.step = 'done'; screenDone((dn0 && dn0.ticket) || S.ticket, true, dn0); window.scrollTo(0, 0); }
     else if (act === 'resume') {
       var d = loadDraft(); S.sel = d.sel || S.sel; S.ans = d.ans; if (!S.ans.common) S.ans.common = {}; if (!S.ans.course) S.ans.course = {}; S.open = d.open || ''; S.pageId = d.pageId || ''; S.active = d.active || 0; S.times = d.times || {}; S.lastTick = Date.now();
       go(isGen() ? 'page' : (d.step === 'eval' && myCourses().length ? 'eval' : 'class'));
