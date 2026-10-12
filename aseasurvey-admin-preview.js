@@ -7,13 +7,15 @@
  */
 (function () {
   var A = window.SVYA, E = SVY.esc, I = SVY.ico;
-  var P = A.pv = { open: false, page: 'intro', focus: '', scratch: {}, timer: 0, modal: null, tick: 0 };
+  var P = A.pv = { open: false, page: 'intro', focus: '', scratch: {}, timer: 0, modal: null, tick: 0, ext: null, device: 'phone' };
   try { var saved = localStorage.getItem('svya_pv'); P.open = saved == null ? window.innerWidth >= 1280 : saved === '1'; } catch (e) { P.open = window.innerWidth >= 1280; }
+  try { if (localStorage.getItem('svya_pvdev') === 'pc') P.device = 'pc'; } catch (e) {}
   var env = { busy: {}, toast: function (m) { A.toast(m); }, counts: {}, seed: 1, onChange: function () {}, getAns: function () { return P.scratch; }, getCommon: function () { return P.scratch; } };
 
   /* ───────────── 미리보기 대상(source) ───────────── */
   function source() {
     if (P.modal) return P.modal;
+    if ((A.view === 'new' || A.view === 'library') && P.ext) return P.ext;
     var ai = A.ext && A.ext.ai;
     if ((A.view === 'ai-create' || (A.view === 'survey' && A.tab === 'ai')) && ai && ai.step === 'review' && ai.p) return { def: ai.p.def, why: ai.p.why, label: 'AI 제안', courses: [] };
     if (A.view === 'survey' && A.work && A.work.def) return { def: A.work.def, theme: A.work.theme, courses: (A.cur && A.cur.courses) || [], title: A.work.title, test: A.work.test_mode, label: '현재 설문' };
@@ -38,7 +40,7 @@
   /* ───────────── 화면 조각 ───────────── */
   function frame(inner, theme, note) {
     var v = SVY.themeVars(theme || {}), style = Object.keys(v).map(function (k) { return k + ':' + v[k]; }).join(';');
-    return '<div class="phone"><div class="preview pvscroll" style="' + style + '"><div class="hdr"><div class="hdr-in"><img class="logo" src="aseasurvey-logo.png" alt=""></div></div>' + (note || '') + '<div style="padding:12px">' + inner + '</div></div></div>';
+    return '<div class="phone' + (P.device === 'pc' ? ' pcview' : '') + '"><div class="preview pvscroll" style="' + style + '"><div class="hdr"><div class="hdr-in"><img class="logo" src="aseasurvey-logo.png" alt=""></div></div>' + (note || '') + '<div style="padding:12px">' + inner + '</div></div></div>';
   }
   function qhtml(q, d, why) {
     var cap = '<div class="aicap"><span class="tag blue">' + E(SVY.typeLabel(q)) + '</span>' + (q.showIf ? ' <span class="tag">조건부</span>' : '') + (q.answer != null ? ' <span class="tag">정답 ' + (q.points || 1) + '점</span>' : '') + (why && why[q.id] ? ' <span class="muted">' + E(why[q.id]) + '</span>' : '') + '</div>';
@@ -87,11 +89,11 @@
   function dock() {
     var el = document.getElementById('livepv'); if (el) return el;
     el = document.createElement('aside'); el.id = 'livepv'; el.className = 'livepv'; el.setAttribute('aria-label', '학생 화면 미리보기');
-    el.innerHTML = '<div class="pvhead"><b>' + I('eye', 16) + ' 학생 화면 미리보기</b><span class="pvlabel muted"></span><span class="sp"></span><button class="btn btn-ghost btn-sm" data-pv="close" aria-label="닫기">' + I('x', 14) + '</button></div><div class="pvtabs" id="pvt"></div><div class="pvbody" id="pvb"></div><div class="pvfoot muted">입력하면 바로 반영됩니다 · 눌러서 입력해 볼 수 있습니다(저장되지 않음)</div>';
+    el.innerHTML = '<div class="pvhead"><b>' + I('eye', 16) + ' 학생 화면 미리보기</b><span class="pvlabel muted"></span><span class="sp"></span><button class="btn btn-ghost btn-sm" data-pv="close" aria-label="닫기">' + I('x', 14) + '</button></div><div class="pvdev" id="pvd"><button data-pv="dev" data-k="phone">폰 화면</button><button data-pv="dev" data-k="pc">PC 화면</button></div><div class="pvtabs" id="pvt"></div><div class="pvbody" id="pvb"></div><div class="pvfoot muted">입력하면 바로 반영됩니다 · 눌러서 입력해 볼 수 있습니다(저장되지 않음)</div>';
     document.body.appendChild(el);
     var b = document.createElement('button'); b.id = 'pvbtn'; b.className = 'pvbtn btn btn-primary'; b.setAttribute('data-pv', 'toggle'); b.innerHTML = I('eye', 16) + ' 미리보기'; document.body.appendChild(b);
     document.addEventListener('click', function (e) {
-      var t = e.target.closest('[data-pv]'); if (t) { var a = t.getAttribute('data-pv'); if (a === 'toggle') P.set(!P.open); else if (a === 'close') P.set(false); else if (a === 'page') { P.page = t.getAttribute('data-k'); P.focus = ''; P.render(); } return; }
+      var t = e.target.closest('[data-pv]'); if (t) { var a = t.getAttribute('data-pv'); if (a === 'toggle') P.set(!P.open); else if (a === 'close') P.set(false); else if (a === 'dev') { P.device = t.getAttribute('data-k'); try { localStorage.setItem('svya_pvdev', P.device); } catch (e2) {} P.render(); } else if (a === 'page') { P.page = t.getAttribute('data-k'); P.focus = ''; P.render(); } return; }
     });
     return el;
   }
@@ -101,6 +103,7 @@
     var show = !!A.token && A.view !== 'login';
     btn.style.display = show ? '' : 'none'; document.body.classList.toggle('pvopen', P.open && show);
     if (!P.open || !show) return;
+    el.classList.toggle('wide', P.device === 'pc'); el.querySelectorAll('#pvd button').forEach(function (b) { b.classList.toggle('on', b.getAttribute('data-k') === P.device); });
     var tabs = el.querySelector('#pvt'), body = el.querySelector('#pvb');
     if (!src) { tabs.innerHTML = ''; body.innerHTML = '<div class="t-empty" style="padding:30px 12px">설문을 만들거나 열면 학생 화면이<br>여기에 실시간으로 표시됩니다.</div>'; el.querySelector('.pvlabel').textContent = ''; return; }
     var d = fullDef(src.def), pages = pagesOf(d), cur = pages.filter(function (p) { return p.k === P.page; })[0] || pages[0]; P.page = cur.k;
@@ -115,6 +118,7 @@
     body.scrollTop = y;
     if (P.focus) { var q = holder.querySelector('.q[data-q="' + P.focus + '"]'); if (q) { q.classList.add('pvfocus'); var sc = holder.querySelector('.pvscroll'); try { q.scrollIntoView({ block: 'center', behavior: 'auto' }); } catch (e) {} } }
   };
+  P.setSource = function (s) { P.ext = s; P.page = 'intro'; P.focus = ''; P.update(); };
   P.update = function () { clearTimeout(P.timer); P.timer = setTimeout(P.render, 120); };
   P.focusQ = function (qid) { var src = source(); if (!src) return; var k = locate(fullDef(src.def), qid); if (k) { P.page = k; P.focus = qid; P.update(); } };
   P.focusPage = function (k) { P.page = k; P.focus = ''; P.update(); };
