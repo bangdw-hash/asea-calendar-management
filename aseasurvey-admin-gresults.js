@@ -7,7 +7,7 @@
 (function () {
   var A = window.SVYA, E = SVY.esc, I = SVY.ico, N = SVY.num;
   var orig = A.tabs.results;
-  var G = { sid: '', rows: [], maxSeq: 0, timer: 0, live: true, last: 0, polls: 0, err: '', data: 'real', sub: 'sum', page: 1, kw: '' };
+  var G = { sid: '', rows: [], maxSeq: 0, timer: 0, live: true, last: 0, polls: 0, err: '', data: 'real', sub: 'rep', page: 1, kw: '', x: {} };
   var BLUE = '#3987e5', GRAY = '#d9d8d0', GREEN = '#1E8E3E', RED = '#D93025';
 
   /* ───────────── 적재 · 실시간 ───────────── */
@@ -112,6 +112,105 @@
     return '<span class="tag blue">정답률 ' + pct(c.filter(Boolean).length, c.length) + '% (' + c.filter(Boolean).length + '/' + c.length + ')</span>';
   }
 
+  /* ───────────── 리포트(교차 필터 · 눌러서 바로 보는 보고서) ───────────── */
+  var CAT = ['#2a78d6', '#eb6834', '#1baf7a', '#eda100', '#e87ba4', '#6250d6'], SOFT = '#cfe0f7', INK = '#52514e';
+  var CLICKABLE = ['single', 'multi', 'scale', 'linear', 'rating', 'slider', 'nps'];
+  function keyOf(q, v) { if (q.type === 'nps') return v >= 9 ? 'pro' : v >= 7 ? 'pas' : 'det'; return String(v); }
+  function rowMatch(r, q, keys) {
+    var v = val(r, q); if (SVY.isEmpty(q, v)) return false;
+    if (q.type === 'multi') return [].concat(v).some(function (x) { return keys.indexOf(String(x)) >= 0; });
+    if (q.type === 'text' && q.format === 'number') return keys.indexOf(String(Number(v))) >= 0;
+    return keys.indexOf(keyOf(q, v)) >= 0;
+  }
+  function rowsFor(skipId) {
+    var qm = {}; qlist().forEach(function (x) { qm[x.q.id] = x.q; });
+    return pick().filter(function (r) { return Object.keys(G.x).every(function (id) { return id === skipId || !G.x[id].length || !qm[id] || rowMatch(r, qm[id], G.x[id]); }); });
+  }
+  function isOn(q, k) { return (G.x[q.id] || []).indexOf(String(k)) >= 0; }
+  function dim(q, k) { return (G.x[q.id] || []).length && !isOn(q, k) ? ' dim' : ''; }
+  function btn(q, k, inner, cls, tip) { return '<button type="button" class="gx ' + (cls || '') + (isOn(q, k) ? ' on' : '') + dim(q, k) + '" data-act="gx" data-q="' + E(q.id) + '" data-k="' + E(k) + '" title="' + E(tip || '눌러서 이 응답만 모아 보기') + '" aria-pressed="' + isOn(q, k) + '">' + inner + '</button>'; }
+  function donut(q, items, n) {
+    var R = 46, C = 2 * Math.PI * R, off = 0, svg = '<svg viewBox="0 0 120 120" class="donut" role="img" aria-label="' + E(q.label) + ' 비율"><circle cx="60" cy="60" r="' + R + '" fill="none" stroke="#eee" stroke-width="16"/>';
+    items.forEach(function (it, i) { var len = n ? it.n / n * C : 0; svg += '<circle class="seg gx' + (isOn(q, it.k) ? ' on' : '') + dim(q, it.k) + '" data-act="gx" data-q="' + E(q.id) + '" data-k="' + E(it.k) + '" cx="60" cy="60" r="' + R + '" fill="none" stroke="' + CAT[i % CAT.length] + '" stroke-width="16" stroke-dasharray="' + Math.max(len - 2, 0) + ' ' + (C - Math.max(len - 2, 0)) + '" stroke-dashoffset="' + (-off) + '" transform="rotate(-90 60 60)"><title>' + E(it.label) + ' ' + it.n + '명 (' + pct(it.n, n) + '%)</title></circle>'; off += len; });
+    return svg + '<text x="60" y="58" text-anchor="middle" class="dn">' + n + '</text><text x="60" y="74" text-anchor="middle" class="dl2">명 응답</text></svg>';
+  }
+  function legend(q, items, n) { return '<div class="lg">' + items.map(function (it, i) { return btn(q, it.k, '<i style="background:' + CAT[i % CAT.length] + '"></i><span class="t">' + E(it.label) + '</span><b>' + it.n + '</b><span class="m">' + pct(it.n, n) + '%</span>', 'lgrow'); }).join('') + '</div>'; }
+  function hbars(q, items, n) { var mx = Math.max.apply(null, items.map(function (i) { return i.n; }).concat([1])); return '<div class="hb">' + items.map(function (it) { return btn(q, it.k, '<span class="t">' + E(it.label) + '</span><span class="bt"><i style="width:' + (it.n / mx * 100) + '%"></i></span><b>' + it.n + '</b><span class="m">' + pct(it.n, n) + '%</span>', 'hbrow'); }).join('') + '</div>'; }
+  function histo(q, items, n, mean) {
+    var mx = Math.max.apply(null, items.map(function (i) { return i.n; }).concat([1]));
+    return (mean != null ? '<div class="big">' + r2(mean) + '<small> 평균</small></div>' : '') + '<div class="hist">' + items.map(function (it) { return btn(q, it.k, '<b>' + it.n + '</b><i style="height:' + Math.max(it.n / mx * 100, it.n ? 4 : 0) + '%"></i><span>' + E(it.label) + '</span>', 'hcol'); }).join('') + '</div>';
+  }
+  function words(texts) {
+    var stop = { '그리고': 1, '하지만': 1, '있습니다': 1, '합니다': 1, '입니다': 1, '있는': 1, '있어서': 1, '같습니다': 1, '좋았습니다': 0, '너무': 1, '정말': 1, '조금': 1, '더': 1 }, c = {};
+    texts.forEach(function (t) { (String(t).match(/[가-힣A-Za-z0-9]{2,}/g) || []).forEach(function (w) { w = w.replace(/(은|는|이|가|을|를|에|의|도|로|과|와)$/, function (m, a, off, str) { return str.length - 1 > 2 ? '' : m; }); if (w.length >= 2 && !stop[w]) c[w] = (c[w] || 0) + 1; }); });
+    return Object.keys(c).filter(function (w) { return c[w] >= 2; }).sort(function (a, b) { return c[b] - c[a]; }).slice(0, 10).map(function (w) { return { w: w, n: c[w] }; });
+  }
+  function reportCard(x) {
+    var q = x.q, rows = rowsFor(q.id), t = q.type, vals = rows.map(function (r) { return val(r, q); }).filter(function (v) { return !SVY.isEmpty(q, v); }), n = vals.length, body = '', wide = false;
+    if (!n) body = '<p class="muted">해당하는 응답이 없습니다.</p>';
+    else if (t === 'single' || t === 'multi' || t === 'scale') {
+      var lst = t === 'scale' ? SVY.scaleOf(def(), q).slice().sort(function (a, b) { return a.v - b.v; }).map(function (o) { return { k: String(o.v), label: o.label }; }) : (q.options || []).map(function (o) { return { k: o.id, label: o.label }; }).concat(q.other ? [{ k: '__other', label: '기타' }] : []), c = {};
+      vals.forEach(function (v) { [].concat(v).forEach(function (id) { c[id] = (c[id] || 0) + 1; }); }); var items = lst.map(function (o) { return { k: o.k, label: o.label, n: c[o.k] || 0 }; });
+      if (t === 'single' && items.length <= 6) body = '<div class="dwrap">' + donut(q, items, n) + legend(q, items, n) + '</div>';
+      else if (t === 'scale') body = histo(q, items, n, mean(vals.map(Number)));
+      else body = hbars(q, items.sort(function (a, b) { return b.n - a.n; }), n);
+    } else if (t === 'rating' || t === 'linear' || t === 'slider' || (t === 'text' && q.format === 'number')) {
+      var nums = vals.map(Number).filter(isFinite), d = {}; nums.forEach(function (v) { d[v] = (d[v] || 0) + 1; }); var ks = Object.keys(d).map(Number).sort(function (a, b) { return a - b; });
+      if (t === 'rating') { var mxr = N(q.max) || 5; ks = []; for (var i = 1; i <= mxr; i++) ks.push(i); } else if (t === 'linear') { var lo = N(q.min) != null ? N(q.min) : 1, hi = N(q.max) != null ? N(q.max) : 5; ks = []; for (var j = lo; j <= hi; j++) ks.push(j); }
+      body = ks.length <= 12 ? histo(q, ks.map(function (k) { return { k: String(k), label: String(k), n: d[k] || 0 }; }), nums.length, mean(nums)) : '<div class="big">' + r2(mean(nums)) + '<small> 평균 · 중앙 ' + r2(median(nums)) + ' · ' + Math.min.apply(null, nums) + '~' + Math.max.apply(null, nums) + '</small></div>';
+    } else if (t === 'nps') {
+      var pro = vals.filter(function (v) { return v >= 9; }).length, pas = vals.filter(function (v) { return v >= 7 && v <= 8; }).length, det = n - pro - pas, sc = Math.round(pct(pro, n) - pct(det, n));
+      body = '<div class="big ' + (sc >= 0 ? 'pos' : 'neg') + '">' + (sc > 0 ? '+' : '') + sc + '<small> NPS</small></div><div class="npsr">' + [['det', det, RED, '비추천 0~6'], ['pas', pas, '#c9c8c0', '중립 7~8'], ['pro', pro, CAT[0], '추천 9~10']].map(function (z) { return btn(q, z[0], '<i style="background:' + z[2] + '"></i><span class="t">' + z[3] + '</span><b>' + z[1] + '</b><span class="m">' + pct(z[1], n) + '%</span>', 'lgrow'); }).join('') + '</div><div class="stack">' + [['det', det, RED], ['pas', pas, '#c9c8c0'], ['pro', pro, CAT[0]]].map(function (z) { return '<i style="width:' + pct(z[1], n) + '%;background:' + z[2] + '"></i>'; }).join('') + '</div>';
+    } else if (t === 'grid') {
+      wide = true; var mxg = 1, cells = {}; (q.rows || []).forEach(function (rw) { cells[rw.id] = {}; vals.forEach(function (v) { var z = (v || {})[rw.id]; [].concat(z == null ? [] : z).forEach(function (cid) { cells[rw.id][cid] = (cells[rw.id][cid] || 0) + 1; mxg = Math.max(mxg, cells[rw.id][cid]); }); }); });
+      body = '<div class="tbl-wrap"><table class="t heat"><thead><tr><th></th>' + (q.cols || []).map(function (c2) { return '<th class="num">' + E(c2.label) + '</th>'; }).join('') + '</tr></thead><tbody>' + (q.rows || []).map(function (rw) { return '<tr><td>' + E(rw.label) + '</td>' + (q.cols || []).map(function (c2) { var m = cells[rw.id][c2.id] || 0; return '<td class="num" style="background:rgba(42,120,214,' + (m / mxg * 0.75).toFixed(2) + ');color:' + (m / mxg > 0.55 ? '#fff' : 'inherit') + '" title="' + m + '명">' + m + '</td>'; }).join('') + '</tr>'; }).join('') + '</tbody></table></div>';
+    } else if (t === 'ranking') {
+      var st = {}; (q.options || []).forEach(function (o) { st[o.id] = 0; }); var L = (q.options || []).length; vals.forEach(function (v) { v.forEach(function (id, i) { if (st[id] != null) st[id] += L - i; }); });
+      body = hbars(q, (q.options || []).map(function (o) { return { k: o.id, label: o.label, n: st[o.id] }; }).sort(function (a, b) { return b.n - a.n; }), n).replace(/<b>(\d+)<\/b><span class="m">[^<]*<\/span>/g, '<b>$1점</b>');
+    } else if (t === 'constsum') {
+      body = hbars(q, (q.options || []).map(function (o) { return { k: o.id, label: o.label, n: Math.round(mean(vals.map(function (v) { return Number((v || {})[o.id]) || 0; }))) }; }), 1).replace(/<span class="m">[^<]*<\/span>/g, '<span class="m">' + E(q.unit || '') + '</span>');
+    } else if (t === 'address') {
+      var ac = {}; vals.forEach(function (v) { var a = String(v.road || v.jibun || '').split(/\s+/).slice(0, 2).join(' ') || '(미상)'; ac[a] = (ac[a] || 0) + 1; }); body = hbars(q, Object.keys(ac).sort(function (a, b) { return ac[b] - ac[a]; }).slice(0, 8).map(function (k) { return { k: k, label: k, n: ac[k] }; }), n).replace(/class="gx hbrow/g, 'class="gx static hbrow').replace(/data-act="gx"/g, '');
+    } else if (t === 'date' || t === 'time') {
+      var dc = {}; vals.forEach(function (v) { var k = String(v).slice(0, t === 'date' ? 10 : 2); dc[k] = (dc[k] || 0) + 1; }); body = hbars(q, Object.keys(dc).sort().slice(0, 14).map(function (k) { return { k: k, label: t === 'time' ? k + '시' : k, n: dc[k] }; }), n).replace(/data-act="gx"/g, '');
+    } else if (t === 'file' || t === 'signature' || t === 'location' || t === 'qr' || t === 'consent') {
+      body = '<div class="big">' + n + '<small> 건 제출</small></div>' + (t === 'file' || t === 'signature' ? '<p class="muted">첨부 ' + vals.reduce(function (s2, v) { return s2 + v.length; }, 0) + '개 · 「개별 응답」에서 열람</p>' : t === 'location' ? '<p class="muted">좌표는 「개별 응답」·엑셀에서 확인</p>' : '');
+    } else {
+      wide = true; var texts = vals.map(function (v) { return String(v); }), kw = words(texts), recent = rows.filter(function (r) { return !SVY.isEmpty(q, val(r, q)); }).sort(function (a, b) { return b.seq - a.seq; }).slice(0, 3);
+      body = (kw.length ? '<div class="kws">' + kw.map(function (k) { return '<button type="button" class="kw" data-act="gtext" data-q="' + E(q.id) + '" data-w="' + E(k.w) + '">' + E(k.w) + ' <b>' + k.n + '</b></button>'; }).join('') + '</div>' : '') + recent.map(function (r) { return '<blockquote>' + E(SVY.fmtAnswer(q, val(r, q), def(), (r.answers || {}).common)) + '</blockquote>'; }).join('') + '<button class="btn btn-ghost btn-sm" data-act="gtext" data-q="' + E(q.id) + '" data-w="">' + I('list', 14) + ' 전체 ' + n + '건 보기</button>';
+    }
+    var act = (G.x[q.id] || []).length;
+    return '<section class="rc' + (wide ? ' wide' : '') + (act ? ' filtered' : '') + '"><header><span class="tag blue">' + E(SVY.typeLabel(q)) + '</span>' + quizTag(q, rows) + '<span class="sp"></span>' + (act ? '<button class="x" data-act="gxq" data-q="' + E(q.id) + '" title="이 문항 필터 해제">필터 해제 ' + I('x', 12) + '</button>' : '<span class="muted n">' + n + '명</span>') + '</header><h4>' + E(q.label) + '</h4>' + body + '</section>';
+  }
+  function insights(rows) {
+    var out = [], qs = qlist(), means = [];
+    qs.forEach(function (x) { var q = x.q; if (!(q.type === 'rating' || q.type === 'linear' || (q.type === 'scale' && !(q.check && q.check.valid != null)))) return; var v = rows.map(function (r) { return N(val(r, q)); }).filter(function (z) { return z != null; }); if (v.length >= 3) means.push({ q: q, m: mean(v), max: q.type === 'rating' ? (N(q.max) || 5) : q.type === 'linear' ? (N(q.max) != null ? N(q.max) : 5) : 5 }); });
+    if (means.length > 1) { means.sort(function (a, b) { return b.m / b.max - a.m / a.max; }); out.push(['pos', '가장 만족도가 높은 항목은 「' + String(means[0].q.label).slice(0, 24) + '」(' + r2(means[0].m) + '점)입니다.']); out.push(['neg', '가장 낮은 항목은 「' + String(means[means.length - 1].q.label).slice(0, 24) + '」(' + r2(means[means.length - 1].m) + '점)로 개선 검토 대상입니다.']); } else if (means.length) out.push(['pos', '「' + String(means[0].q.label).slice(0, 24) + '」 평균은 ' + r2(means[0].m) + '점입니다.']);
+    qs.filter(function (x) { return x.q.type === 'nps'; }).forEach(function (x) { var v = rows.map(function (r) { return N(val(r, x.q)); }).filter(function (z) { return z != null; }); if (v.length >= 3) { var p = v.filter(function (z) { return z >= 9; }).length, d = v.filter(function (z) { return z <= 6; }).length, sc = Math.round(pct(p, v.length) - pct(d, v.length)); out.push([sc >= 0 ? 'pos' : 'neg', '추천 의향 NPS는 ' + (sc > 0 ? '+' : '') + sc + '입니다. (추천 ' + pct(p, v.length) + '% · 비추천 ' + pct(d, v.length) + '%)']); } });
+    var byDay = {}; rows.forEach(function (r) { var k = String(r.created_at).slice(5, 10); byDay[k] = (byDay[k] || 0) + 1; }); var dk = Object.keys(byDay).sort(function (a, b) { return byDay[b] - byDay[a]; }); if (dk.length > 1) out.push(['info', '응답이 가장 많았던 날은 ' + dk[0] + '(' + byDay[dk[0]] + '건)입니다.']);
+    var qz = qs.filter(function (x) { return x.q.answer != null; }).map(function (x) { var c = rows.map(function (r) { return isCorrect(x.q, val(r, x.q)); }).filter(function (z) { return z !== null; }); return { q: x.q, p: c.length ? pct(c.filter(Boolean).length, c.length) : null }; }).filter(function (z) { return z.p != null; }).sort(function (a, b) { return a.p - b.p; }); if (qz.length) out.push(['info', '정답률이 가장 낮은 문항은 「' + String(qz[0].q.label).slice(0, 24) + '」(' + qz[0].p + '%)입니다.']);
+    var tq = qs.filter(function (x) { return x.q.type === 'text' && (!x.q.format || x.q.format === 'text'); }); tq.forEach(function (x) { var tx = rows.map(function (r) { return val(r, x.q); }).filter(function (v) { return !SVY.isEmpty(x.q, v); }), kw = words(tx).slice(0, 3); if (kw.length) out.push(['info', '「' + String(x.q.label).slice(0, 18) + '」에서 자주 나온 말: ' + kw.map(function (k) { return k.w + '(' + k.n + ')'; }).join(', ')]); });
+    return out.slice(0, 6);
+  }
+  function viewReport() {
+    var all = pick(), rows = rowsFor(''), d = def(), lim = d.limit && N(d.limit.max), keys = Object.keys(G.x).filter(function (k) { return G.x[k].length; }), qm = {};
+    qlist().forEach(function (x) { qm[x.q.id] = x.q; });
+    var chips = keys.map(function (id) { return G.x[id].map(function (k) { var q = qm[id], lab = q ? (q.type === 'nps' ? ({ det: '비추천', pas: '중립', pro: '추천' })[k] : q.type === 'single' || q.type === 'multi' ? ((q.options || []).filter(function (o) { return o.id === k; })[0] || { label: k === '__other' ? '기타' : k }).label : q.type === 'scale' ? ((SVY.scaleOf(d, q).filter(function (o) { return String(o.v) === k; })[0] || {}).label || k) : k) : k; return '<button class="fchip" data-act="gx" data-q="' + E(id) + '" data-k="' + E(k) + '">' + E(String((q && q.label) || id).slice(0, 14)) + ': <b>' + E(lab) + '</b> ' + I('x', 12) + '</button>'; }).join(''); }).join('');
+    var h = '<div class="fbar"><div class="fcount"><b>' + rows.length + '</b>명' + (keys.length ? ' <span class="muted">/ 전체 ' + all.length + '명 (' + pct(rows.length, all.length) + '%)</span>' : '') + '</div><div class="fchips">' + (chips || '<span class="muted">차트의 항목을 누르면 그 응답자만 모아 모든 문항을 다시 집계합니다.</span>') + '</div>' + (keys.length ? '<button class="btn btn-ghost btn-sm" data-act="gxclear">모두 해제</button>' : '') + '</div>';
+    var dur = rows.map(function (r) { return r.duration_sec; }).filter(function (v) { return v > 0; }), sc = rows.filter(function (r) { return r.max_score != null; });
+    h += '<div class="hero"><div class="tile"><div class="l">응답</div><div class="v">' + rows.length + '</div>' + (lim ? '<div class="meter"><i style="width:' + Math.min(100, pct(all.length, lim)) + '%"></i></div><div class="s">정원 ' + lim + '명 중 ' + all.length + '명 (' + pct(all.length, lim) + '%)</div>' : '<div class="s">' + (G.data === 'real' ? '정식 응답' : G.data === 'test' ? '테스트 응답' : '정식+테스트') + '</div>') + '</div>' +
+      '<div class="tile"><div class="l">중앙 소요 시간</div><div class="v">' + (dur.length ? Math.round(median(dur)) + '<small>초</small>' : '-') + '</div><div class="s">입력 화면 체류 기준</div></div>' +
+      (sc.length ? '<div class="tile"><div class="l">퀴즈 평균</div><div class="v">' + r2(mean(sc.map(function (r) { return Number(r.score); }))) + '<small> / ' + r2(Number(sc[0].max_score)) + '</small></div><div class="s">' + Math.round(mean(sc.map(function (r) { return Number(r.score) / Number(r.max_score) * 100; }))) + '점 (100점 환산)</div></div>' : '') + '</div>';
+    var ins = insights(rows); if (ins.length) h += '<div class="insights"><h3>' + I('sparkle', 15) + ' 핵심 요약</h3>' + ins.map(function (z) { return '<div class="ins ' + z[0] + '"><i></i><span>' + E(z[1]) + '</span></div>'; }).join('') + '</div>';
+    var secs = {}; qlist().forEach(function (x) { var k = x.section ? x.section.title : '기본 정보'; (secs[k] = secs[k] || []).push(x); });
+    Object.keys(secs).forEach(function (k) { h += '<h3 class="rsec">' + E(k) + '</h3><div class="rgrid">' + secs[k].map(reportCard).join('') + '</div>'; });
+    return h;
+  }
+  function textModal(qid, w) {
+    var q = qlist().filter(function (x) { return x.q.id === qid; })[0].q, rows = rowsFor(qid).filter(function (r) { var v = val(r, q); return !SVY.isEmpty(q, v) && (!w || String(v).indexOf(w) >= 0); }).sort(function (a, b) { return b.seq - a.seq; });
+    A.modal('<h3>' + E(q.label) + (w ? ' · 「' + E(w) + '」 포함' : '') + ' (' + rows.length + '건)</h3><div class="textlist" style="max-height:60vh">' + rows.map(function (r) { return '<div class="tl"><span class="muted">' + A.fmt(r.created_at) + '</span> ' + E(SVY.fmtAnswer(q, val(r, q), def(), (r.answers || {}).common)) + '</div>'; }).join('') + '</div><div class="btn-row"><button class="btn btn-primary" data-r="1">닫기</button></div>', function (bg, close) { bg.addEventListener('click', function (e) { if (e.target.closest('[data-r]')) close(); }); }, 'wide');
+  }
+
   /* ───────────── 화면 ───────────── */
   function viewSummary(rows) {
     var d = def(), lim = d.limit && N(d.limit.max), score = rows.filter(function (r) { return r.max_score != null; }), dur = rows.map(function (r) { return r.duration_sec; }).filter(function (v) { return v > 0; }), byDay = {};
@@ -160,7 +259,7 @@
   function render() {
     var body = document.getElementById('gbody'); if (!body) return;
     var rows = pick(), y = window.scrollY, focus = document.activeElement && document.activeElement.id === 'gkw';
-    body.className = ''; body.innerHTML = G.sub === 'sum' ? viewSummary(rows) : G.sub === 'q' ? viewQuestions(rows) : viewResp();
+    body.className = ''; body.innerHTML = G.sub === 'rep' ? viewReport() : G.sub === 'sum' ? viewSummary(rows) : G.sub === 'q' ? viewQuestions(rows) : viewResp();
     if (focus) { var n = document.getElementById('gkw'); if (n) { n.focus(); n.setSelectionRange(n.value.length, n.value.length); } }
     window.scrollTo(0, y); live();
   }
@@ -190,8 +289,8 @@
 
   /* ───────────── 탭 ───────────── */
   async function general(box) {
-    if (G.sid !== A.cur.survey.id) { G.sid = A.cur.survey.id; G.rows = []; G.maxSeq = 0; G.sub = 'sum'; G.page = 1; G.kw = ''; G.data = A.cur.survey.test_mode ? 'test' : 'real'; }
-    var SUBS = [['sum', '요약'], ['q', '문항별'], ['resp', '개별 응답']];
+    if (G.sid !== A.cur.survey.id) { G.sid = A.cur.survey.id; G.rows = []; G.maxSeq = 0; G.sub = 'rep'; G.page = 1; G.kw = ''; G.x = {}; G.data = A.cur.survey.test_mode ? 'test' : 'real'; }
+    var SUBS = [['rep', '리포트'], ['q', '문항 상세'], ['resp', '개별 응답']];
     box.innerHTML = '<div class="row" style="margin-bottom:12px"><div class="tabs" style="margin:0;border:0;flex:1">' + SUBS.map(function (s) { return '<button class="tab" data-act="gsub" data-s="' + s[0] + '" aria-selected="' + (G.sub === s[0]) + '">' + s[1] + '</button>'; }).join('') + '</div><span id="glive" class="live"></span><button class="btn btn-ghost btn-sm" data-act="glivetoggle">일시정지/재개</button><button class="btn btn-secondary btn-sm" data-act="greload">' + I('refresh', 14) + ' 새로고침</button><button class="btn btn-primary btn-sm" data-act="gxlsx">' + I('download', 14) + ' 엑셀 내려받기</button></div>' +
       '<div class="filters"><div><label class="f">데이터</label><select class="fld" id="gdata"><option value="real"' + (G.data === 'real' ? ' selected' : '') + '>정식 응답</option><option value="test"' + (G.data === 'test' ? ' selected' : '') + '>테스트 응답</option><option value="all"' + (G.data === 'all' ? ' selected' : '') + '>정식+테스트</option></select></div></div><div id="gbody" class="loading">불러오는 중…</div>';
     box.onchange = function (e) { if (e.target.id === 'gdata') { G.data = e.target.value; G.page = 1; render(); } };
@@ -202,6 +301,10 @@
       else if (act === 'glivetoggle') { G.live = !G.live; live(); if (G.live) poll(); }
       else if (act === 'greload') fullLoad().then(function () { render(); A.toast('새로 불러왔습니다.'); }).catch(function (er) { A.toast(er.message, 'err'); });
       else if (act === 'gxlsx') exportXlsx();
+      else if (act === 'gx') { var qid = t.getAttribute('data-q'), k = t.getAttribute('data-k'), qq = qlist().filter(function (x) { return x.q.id === qid; })[0].q, cur = G.x[qid] || [], ix = cur.indexOf(k); if (ix >= 0) cur.splice(ix, 1); else if (qq.type === 'single' || qq.type === 'scale' || qq.type === 'nps') cur = [k]; else cur.push(k); G.x[qid] = cur; render(); }
+      else if (act === 'gxq') { delete G.x[t.getAttribute('data-q')]; render(); }
+      else if (act === 'gxclear') { G.x = {}; render(); }
+      else if (act === 'gtext') textModal(t.getAttribute('data-q'), t.getAttribute('data-w'));
       else if (act === 'gpg') { G.page += Number(t.getAttribute('data-d')); render(); }
       else if (act === 'gexclude') { try { await A.rpc('svy_a_response_flag', { p_resp_id: t.getAttribute('data-id'), p_excluded: t.getAttribute('data-v') === '1' }); var r = G.rows.filter(function (x) { return x.id === t.getAttribute('data-id'); })[0]; if (r) r.excluded = t.getAttribute('data-v') === '1'; render(); } catch (er) { A.toast(er.message, 'err'); } }
       else if (act === 'gfile') {

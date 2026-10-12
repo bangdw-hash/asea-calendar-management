@@ -291,17 +291,36 @@
   A.beforeSave = function () { return A.lintDef(ensureDef()).errs; };
 
   /* ───────────── 탭 ───────────── */
+  var ID_Q = ['respName', 'respOrg', 'respConsent'];
+  // 기명 설문: 기본 정보 맨 앞에 이름·소속 + 개인정보 동의 문항을 넣고, 익명으로 되돌리면 제거
+  function applyIdentity(d, v) {
+    d.basic = d.basic || [];
+    if (v === 'named') {
+      if (!d.basic.some(function (q) { return q.id === 'respName'; })) {
+        var a = SVY.newQuestion('short', 'respName'); a.label = '이름'; a.required = true; a.maxLen = 30; a.scope = 'common';
+        var b = SVY.newQuestion('short', 'respOrg'); b.label = '소속(학과·부서 등)'; b.required = false; b.maxLen = 60; b.scope = 'common';
+        var c = SVY.newQuestion('consent', 'respConsent'); c.label = '개인정보 수집·이용 동의'; c.required = true; c.scope = 'common'; c.text = '수집 항목: 이름, 소속\n이용 목적: 설문 응답 확인 및 결과 분석\n보유 기간: 설문 종료 후 1개월(또는 안내된 기간)\n동의를 거부할 수 있으며, 거부 시 설문에 참여할 수 없습니다.'; c.checkLabel = '위 내용에 동의합니다.';
+        d.basic.unshift(a, b, c);
+      }
+      d.identity = 'named';
+    } else {
+      d.basic = d.basic.filter(function (q) { return ID_Q.indexOf(q.id) < 0; }); delete d.identity;
+    }
+  }
   var addingTo = null;
   A.tabs.questions = function (box) {
     var d = ensureDef(), lint = A.lintDef(d), gen = isGen(d), nq = A.countQuestions();
     d.limit = d.limit || {}; d.quiz = d.quiz || {}; d.features = d.features || {};
-    var tri = d.features.ticket == null ? '' : String(d.features.ticket);
+    var tri = d.features.ticket == null ? '' : String(d.features.ticket), after = d.features.after || {};
     var settings = '<details class="panel setp"' + (A._setOpen ? ' open' : '') + '><summary><b>설문 설정</b> · ' + (gen ? '일반 설문(행사·교직원 등)' : '과목별 평가') + (d.limit.max ? ' · 선착순 ' + E(d.limit.max) + '명' : '') + '</summary><div class="grid g2" style="margin-top:10px">' +
       '<div><label class="f">설문 유형</label><select class="fld" data-df="mode"><option value="course"' + (!gen ? ' selected' : '') + '>과목별 평가 (반 선택 → 과목마다 응답)</option><option value="general"' + (gen ? ' selected' : '') + '>일반 설문 (행사 만족도·교직원 설문 등, 1인 1회)</option></select></div>' +
       (gen ? '<div><label class="f">화면 구성</label><select class="fld" data-df="layout"><option value=""' + (d.layout !== 'single' ? ' selected' : '') + '>영역별로 나누어 단계 이동</option><option value="single"' + (d.layout === 'single' ? ' selected' : '') + '>한 화면에 모두 표시</option></select></div>' : '') +
       '<div><label class="f">선착순 정원 (비우면 제한 없음)</label><input class="fld" type="number" min="1" data-df="limit.max" data-k="n" value="' + E(d.limit.max == null ? '' : d.limit.max) + '"></div>' +
       '<div><label class="f">추첨번호 발급·표시</label><select class="fld" data-df="features.ticket" data-k="tri"><option value=""' + (tri === '' ? ' selected' : '') + '>기본값(' + (gen ? '표시 안 함' : '표시') + ')</option><option value="true"' + (tri === 'true' ? ' selected' : '') + '>표시함 (추첨 사용)</option><option value="false"' + (tri === 'false' ? ' selected' : '') + '>표시 안 함</option></select></div>' +
       '<div><label class="f">제출 후 점수 표시 (퀴즈)</label><select class="fld" data-df="quiz.show"><option value=""' + (!d.quiz.show ? ' selected' : '') + '>점수 표시 안 함</option><option value="score"' + (d.quiz.show === 'score' ? ' selected' : '') + '>점수 표시</option></select></div>' +
+      '<div><label class="f">응답자 식별 방식</label><select class="fld" data-df="identity"><option value=""' + (d.identity !== 'named' ? ' selected' : '') + '>익명 (이름 받지 않음)</option><option value="named"' + (d.identity === 'named' ? ' selected' : '') + '>기명 (이름·소속 문항과 개인정보 동의 자동 추가)</option></select></div>' +
+      '<div><label class="f">제출 완료 후 안내</label><select class="fld" data-df="features.after.type"><option value=""' + (!after.type ? ' selected' : '') + '>기본 (완료 문구만 표시)</option><option value="link"' + (after.type === 'link' ? ' selected' : '') + '>안내 링크 버튼 표시</option><option value="receipt"' + (after.type === 'receipt' ? ' selected' : '') + '>참여 확인서(이미지 저장) 제공</option><option value="both"' + (after.type === 'both' ? ' selected' : '') + '>링크 + 참여 확인서</option></select></div>' +
+      (after.type === 'link' || after.type === 'both' ? '<div><label class="f">링크 주소 (https://…)</label><input class="fld" data-df="features.after.url" value="' + E(after.url || '') + '"></div><div><label class="f">링크 버튼 문구</label><input class="fld" data-df="features.after.label" value="' + E(after.label || '') + '" placeholder="예: 행사 안내 보기"></div>' : '') +
       '<div><label class="f">통과 기준 점수 (선택)</label><input class="fld" type="number" min="0" data-df="quiz.passScore" data-k="n" value="' + E(d.quiz.passScore == null ? '' : d.quiz.passScore) + '"></div></div></details>';
     var secsHtml = d.sections.map(function (s, si) {
       var pv = condHtml(s, { sec: s }, 's');
@@ -438,6 +457,7 @@
         if (k === 'n') v = v === '' ? undefined : Number(v); else if (k === 'tri') v = v === '' ? undefined : v === 'true'; else if (v === '') v = undefined;
         var parts = df.split('.'), o = d; parts.slice(0, -1).forEach(function (p) { o[p] = o[p] || {}; o = o[p]; });
         if (v === undefined) delete o[parts[parts.length - 1]]; else o[parts[parts.length - 1]] = v;
+        if (df === 'identity') { applyIdentity(d, v); A._setOpen = true; return redraw(); }
         if (df === 'mode') { if (v === 'general') allQ(d).forEach(function (x) { x.q.scope = 'common'; }); A._setOpen = true; A.renderSurvey(); A.markDirty(); return; }
         A._setOpen = true; return redraw();
       }
