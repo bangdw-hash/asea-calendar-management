@@ -12,7 +12,7 @@
   var CATS = C.cats.concat([{ k: 'custom', t: '내 분류', d: '직접 만든 양식', icon: 'edit' }]);
   function catLabel(k) { var c = CATS.filter(function (x) { return x.k === k; })[0]; return c ? c.t : '내 분류'; }
   function clone(o) { return JSON.parse(JSON.stringify(o)); }
-  function modeTag(def) { return def.mode === 'general' ? '1인 1회' : '과목별 반복'; }
+  function modeTag(def) { return def.mode === 'general' ? '1인 1회' : '목록 항목별 반복'; }
   function qcount(def) { return SVY.allQuestions(def).filter(function (x) { return x.q.type !== 'block'; }).length; }
 
   Lib.load = async function () { Lib.list = await A.rpc('svy_tpl_list'); return Lib.list; };
@@ -65,7 +65,7 @@
     C.cats.forEach(function (c) {
       if (!byCat[c.k]) return;
       h += '<h3 class="rsec">' + E(c.t) + ' <small class="muted">' + E(c.d) + '</small></h3><div class="tgrid">' + byCat[c.k].map(function (m) {
-        return '<div class="tcard' + (N.sel && N.sel.key === m.k ? ' sel' : '') + '" data-act="tpick" data-key="' + m.k + '"><div class="th"><span class="tag">' + E(m.mode === 'general' ? '1인 1회' : '과목별 반복') + '</span>' + (m.named ? '<span class="tag blue">기명</span>' : '') + '</div><h4>' + E(m.t) + '</h4><p>' + E(m.p) + '</p><div class="tf muted"><span>대상 ' + E(m.aud) + '</span><span>활용 ' + E(m.u) + '</span></div></div>';
+        return '<div class="tcard' + (N.sel && N.sel.key === m.k ? ' sel' : '') + '" data-act="tpick" data-key="' + m.k + '"><div class="th"><span class="tag">' + E(m.mode === 'general' ? '1인 1회' : '목록 항목별 반복') + '</span>' + (m.named ? '<span class="tag blue">기명</span>' : '') + '</div><h4>' + E(m.t) + '</h4><p>' + E(m.p) + '</p><div class="tf muted"><span>대상 ' + E(m.aud) + '</span><span>활용 ' + E(m.u) + '</span></div></div>';
       }).join('') + '</div>';
     });
     return h;
