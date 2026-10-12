@@ -7348,7 +7348,7 @@ loadLinkedItems(); // 강의실 예약 연동 항목 로드
 })();
 
 
-checkSharedEvt();
+if (typeof checkSharedEvt === 'function') checkSharedEvt();
 
 /* ══════════════ CALENDAR SUBSCRIBE ══════════════ */
 let _lastModalOpen = 0;
