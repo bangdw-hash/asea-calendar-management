@@ -267,3 +267,4 @@ body.pvopen .livepv{display:flex}
   body.pvopen .panel:has(> #pv){display:none}
 }
 @media (max-width:1179px){.livepv{width:min(440px,100vw)}}
+.fld.bad{border-color:var(--red);background:var(--red-lt)}
