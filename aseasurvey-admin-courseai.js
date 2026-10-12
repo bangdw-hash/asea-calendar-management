@@ -8,8 +8,13 @@
   var A = window.SVYA, E = SVY.esc, I = SVY.ico, H = A.courseHelpers;
   var st = { files: [], text: '', model: '', busy: false, err: '', rows: [], notes: [], issues: [], src: '', mode: 'merge', kw: '' };
 
+  function linkNote() {
+    var lk = LKI(); if (!lk.custom) return '';
+    var m = SVY.LINK_KEYS.map(function (k) { return (lk.cols[k].use ? '' : '(사용 안 함 → 항상 「-」)') + k + ' = 「' + lk.cols[k].label + '」'; });
+    return '[이 설문의 연동 목록 지침 — 아래 규칙보다 우선합니다]\n이 목록의 단위는 「' + lk.unit + '」이며 학교 수업·교수가 아닐 수 있습니다. 출력 배열의 순서는 항상 [계열,학년,반,과목명,구분,담당교수] 자리에 다음 열을 넣습니다: ' + m.join(', ') + '. 사용하지 않는 열은 「-」, 구분·담당(kind, prof)이 사용되지 않거나 모르면 빈 문자열을 씁니다. 학년·반 표기 보정, 「이론/실습」 규칙, 교양 제외 규칙은 적용하지 않고 원문 표기를 그대로 둡니다.\n\n';
+  }
   function system(known) {
-    return '당신은 직업전문학교 교육운영팀의 데이터 정리 담당자입니다. 입력(시간표·수강편성표·교육과정표·교수 배정표 등의 엑셀/PDF/이미지/문서)에서 「반별 개설 과목과 담당교수」를 추출해 등록용 표로 만듭니다.\n' +
+    return linkNote() + '당신은 직업전문학교 교육운영팀의 데이터 정리 담당자입니다. 입력(시간표·수강편성표·교육과정표·교수 배정표 등의 엑셀/PDF/이미지/문서)에서 「반별 개설 과목과 담당교수」를 추출해 등록용 표로 만듭니다.\n' +
       '출력은 JSON 객체 하나만 작성합니다(마크다운·설명·코드펜스 금지). 형식: {"rows":[["계열","학년","반","과목명","구분","담당교수"],…],"notes":["판단 내용"],"issues":["입력의 오류·모호한 부분"]}\n' +
       '규칙:\n1. 한 행은 「한 반의 한 과목」입니다. 같은 과목이 여러 반에 개설되면 반마다 행을 만듭니다(담당교수가 같아도 펼침).\n' +
       '2. 학년은 「1학년」 형식, 반은 「A반」·「1반」처럼 입력 표기를 따르되 숫자만 있으면 「N반」으로 씁니다. 계열은 학과·전공 이름입니다.\n' +
@@ -22,7 +27,8 @@
   function parseJson(t) { var s = String(t || '').trim().replace(/^```[a-z]*\s*/i, '').replace(/\s*```$/i, '').trim(), a = s.indexOf('{'); if (a > 0) s = s.slice(a); try { return JSON.parse(s); } catch (e) { var b = s.lastIndexOf('}'); if (b > 0) return JSON.parse(s.slice(0, b + 1)); throw new Error('AI 응답을 해석하지 못했습니다. 파일을 나누어 올리거나 다시 시도해 주십시오.'); } }
 
   // 반 표기: 한 글자(A, B, 가 등)면 「반」을 붙임 — 등록 양식·기존 데이터와 맞춤
-  function normAll(r) { var n = H.normRow(r); if (/^[A-Za-z가-힣]$/.test(n.klass)) n.klass += '반'; return n; }
+  function LKI() { return H.LK(); }
+  function normAll(r) { var n = H.normRow(r); if (!LKI().custom && /^[A-Za-z가-힣]$/.test(n.klass)) n.klass += '반'; return n; }
   function existing() { var m = {}; (A.cur.courses || []).filter(function (c) { return c.active; }).forEach(function (c) { m[H.keyOf(c)] = c; }); return m; }
   function stat() {
     var ex = existing(), seen = {}, c = { new: 0, upd: 0, same: 0, bad: 0, dup: 0 };
@@ -60,10 +66,10 @@
     if (st.issues.length) h += '<div class="msg warn" style="margin:0 0 8px">' + I('alert', 16) + '<div><b>입력 파일에서 발견한 문제</b><br>' + st.issues.slice(0, 8).map(E).join('<br>') + '</div></div>';
     if (st.notes.length) h += '<div class="msg" style="margin:0 0 8px">' + I('info', 16) + '<div><b>AI 메모</b><br>' + st.notes.slice(0, 8).map(E).join('<br>') + '</div></div>';
     h += '<div class="subpanel" style="margin-bottom:8px"><div class="row"><b>일괄 변경</b><select class="fld fld-auto" id="bcol"><option value="prof">담당교수</option><option value="track">계열</option><option value="grade">학년</option><option value="klass">반</option><option value="kind">구분</option><option value="name">과목명</option></select><input class="fld" id="bfrom" placeholder="찾을 값(정확히 일치)" style="max-width:180px"><span>→</span><input class="fld" id="bto" placeholder="바꿀 값" style="max-width:180px"><button class="btn btn-secondary btn-sm" data-act="cbulk">적용</button></div></div>';
-    h += '<div class="tbl-wrap" style="max-height:340px"><table class="t"><thead><tr><th>상태</th><th>계열</th><th>학년</th><th>반</th><th>과목명</th><th>구분</th><th>담당교수</th><th></th></tr></thead><tbody>' + rows.map(function (x) {
+    h += '<div class="tbl-wrap" style="max-height:340px"><table class="t"><thead><tr><th>상태</th>' + SVY.LINK_KEYS.map(function (k) { return '<th>' + E(LKI().cols[k].label) + (LKI().cols[k].use ? '' : ' (미사용)') + '</th>'; }).join('') + '<th></th></tr></thead><tbody>' + rows.map(function (x) {
       var r = x.r, stb = STB[r._st];
       function inp(f, w) { return '<td><input class="fld' + (r._bad && !r[f] && f !== 'kind' && f !== 'prof' ? ' bad' : '') + '" data-cf="' + f + '" value="' + E(r[f]) + '" style="min-width:' + (w || 80) + 'px"></td>'; }
-      return '<tr data-i="' + x.i + '"' + (r._dup ? ' style="background:#FCE8E6"' : '') + '><td class="st">' + stb + '</td>' + inp('track', 90) + inp('grade', 64) + inp('klass', 56) + inp('name', 170) + '<td><select class="fld" data-cf="kind" style="min-width:88px">' + kinds.map(function (k) { return '<option value="' + k + '"' + (r.kind === k ? ' selected' : '') + '>' + (k || '(없음)') + '</option>'; }).join('') + '</select></td>' + inp('prof', 90) + '<td><button class="btn btn-ghost btn-sm" data-act="crdel" style="color:var(--red)" aria-label="행 삭제">' + I('trash', 13) + '</button></td></tr>'; }).join('') + '</tbody></table></div>' +
+      return '<tr data-i="' + x.i + '"' + (r._dup ? ' style="background:#FCE8E6"' : '') + '><td class="st">' + stb + '</td>' + inp('track', 90) + inp('grade', 64) + inp('klass', 56) + inp('name', 170) + (LKI().custom ? '<td><input class="fld" data-cf="kind" value="' + E(r.kind) + '" style="min-width:90px"></td>' : '<td><select class="fld" data-cf="kind" style="min-width:88px">' + kinds.map(function (k) { return '<option value="' + k + '"' + (r.kind === k ? ' selected' : '') + '>' + (k || '(없음)') + '</option>'; }).join('') + '</select></td>') + inp('prof', 90) + '<td><button class="btn btn-ghost btn-sm" data-act="crdel" style="color:var(--red)" aria-label="행 삭제">' + I('trash', 13) + '</button></td></tr>'; }).join('') + '</tbody></table></div>' +
       '<div class="row" style="margin-top:8px"><button class="btn btn-secondary btn-sm" data-act="cradd">' + I('plus', 13) + ' 행 추가</button><button class="btn btn-ghost btn-sm" data-act="cdedup">중복 행 정리</button><span class="sp"></span><button class="btn btn-ghost btn-sm" data-act="cback">' + I('left', 13) + ' 파일 다시 올리기</button></div>' +
       '<label class="f" style="margin-top:12px">등록 방식</label><div class="opts list" id="cmode"><button type="button" class="opt" data-v="merge" aria-pressed="' + (st.mode === 'merge') + '"><span class="box">' + I('check', 14) + '</span><span><b>추가·갱신</b> (같은 반·과목이 있으면 교수·구분만 갱신, 다른 과목은 그대로 둡니다)</span></button><button type="button" class="opt" data-v="replace" aria-pressed="' + (st.mode === 'replace') + '"><span class="box">' + I('check', 14) + '</span><span><b>전체 교체</b> (목록에 없는 기존 과목은 제거합니다. 응답 기록은 보존)</span></button></div>' +
       '<div class="btn-row"><button class="btn btn-ghost" data-r="0">취소</button><button class="btn btn-primary" data-act="creg" ' + (c.bad || c.dup || !st.rows.length ? 'disabled' : '') + '>' + I('check', 16) + ' ' + st.rows.length + '건 등록</button></div>';

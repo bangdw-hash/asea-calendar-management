@@ -218,6 +218,7 @@
     def.intro.notice = def.intro.notice.filter(function (n) { return n && (n.k || n.v); }).map(function (n) { return { k: String(n.k || ''), v: String(n.v || '') }; });
     if (!def.intro.title && raw && raw.title) def.intro.title = raw.title;
     if (d.layout === 'single') def.layout = 'single';
+    if (mode === 'course' && d.link && d.link.cols) def.link = A.cleanLink ? A.cleanLink(d.link) : d.link;
     if (d.limit && SVY.num(d.limit.max) >= 1) def.limit = { max: SVY.num(d.limit.max) };
     if (d.quiz && d.quiz.show) { def.quiz = { show: d.quiz.show === 'none' ? 'none' : 'score' }; if (SVY.num(d.quiz.passScore) != null) def.quiz.passScore = SVY.num(d.quiz.passScore); }
     if (d.features && d.features.ticket != null) def.features = { ticket: !!d.features.ticket };
@@ -435,5 +436,5 @@
     A.renderAI(document.getElementById('aibox'), 'create', meta);
   };
   A.ext.aiCall = callAI; A.ext.aiModels = MODELS;
-  A.ext.aiParse = { docxXmlToText: docxXmlToText, readInput: readInput, normalize: A.normalizeDef, buildSystem: buildSystem, parseJson: parseJson, applyOps: applyOps, hwpxToText: hwpxToText };
+  A.ext.aiParse = { schema: SCHEMA, docxXmlToText: docxXmlToText, readInput: readInput, normalize: A.normalizeDef, buildSystem: buildSystem, parseJson: parseJson, applyOps: applyOps, hwpxToText: hwpxToText };
 })();

@@ -399,6 +399,7 @@
         if (act === 'cadd') { var s0 = srcs[0]; if (!s0) return; var op0 = opsFor(s0)[0], c0 = { q: s0.id, op: op0 }; var v0 = defaultVal(s0, op0); if (v0 !== undefined) c0.v = v0; pc.list.push(c0); setClauses(tg, pc.mode, pc.list); return redraw(); }
         var k = Number(t.closest('[data-ci]').getAttribute('data-ci')); pc.list.splice(k, 1); setClauses(tg, pc.mode, pc.list); return redraw();
       }
+      if (!t.closest('[data-qi]')) return;
       var r = qref(t);
       if (act === 'qup' && r.qi > 0) { var x = r.list[r.qi]; r.list[r.qi] = r.list[r.qi - 1]; r.list[r.qi - 1] = x; return redraw(); }
       if (act === 'qdn' && r.qi < r.list.length - 1) { var y = r.list[r.qi]; r.list[r.qi] = r.list[r.qi + 1]; r.list[r.qi + 1] = y; return redraw(); }

@@ -15,7 +15,7 @@
   /* ───────────── 미리보기 대상(source) ───────────── */
   function source() {
     if (P.modal) return P.modal;
-    if ((A.view === 'new' || A.view === 'library') && P.ext) return P.ext;
+    if ((A.view === 'new' || A.view === 'library' || A.view === 'link') && P.ext) return P.ext;
     var ai = A.ext && A.ext.ai;
     if ((A.view === 'ai-create' || (A.view === 'survey' && A.tab === 'ai')) && ai && ai.step === 'review' && ai.p) return { def: ai.p.def, why: ai.p.why, label: 'AI 제안', courses: [] };
     if (A.view === 'survey' && A.work && A.work.def) return { def: A.work.def, theme: A.work.theme, courses: (A.cur && A.cur.courses) || [], title: A.work.title, test: A.work.test_mode, label: '현재 설문' };
@@ -73,7 +73,8 @@
       var cs = (src.courses || []).filter(function (c) { return c.active !== false; }), c0 = cs[0], h = '';
       if (!gen) {
         var tr = Array.from(new Set(cs.map(function (c) { return c.track; }))).slice(0, 4);
-        h += '<div class="card"><div class="kicker">1단계</div><h2 class="title" style="font-size:19px">수강 반 선택</h2><div class="opts wide">' + (tr.length ? tr : ['계열 예시']).map(function (t, i) { return '<span class="opt" aria-pressed="' + (i === 0) + '">' + E(t) + '</span>'; }).join('') + '</div>' +
+        var LKI = SVY.linkInfo(d), ex0 = LKI.custom ? cs[0] : null, tr2 = LKI.custom ? Array.from(new Set(cs.map(function (c) { return c.track; }))).filter(function (v) { return v && v !== '-'; }).slice(0, 4) : tr;
+        h += '<div class="card"><div class="kicker">1단계</div><h2 class="title" style="font-size:19px">' + E(LKI.stepTitle) + '</h2>' + (LKI.custom && !LKI.cols.track.use ? '' : '<div class="chip-title">' + E(LKI.cols.track.label) + '</div>') + '<div class="opts wide">' + (LKI.custom && !LKI.cols.track.use ? [] : (tr2.length ? tr2 : [LKI.cols.track.label + ' 예시'])).map(function (t, i) { return '<span class="opt" aria-pressed="' + (i === 0) + '">' + E(t) + '</span>'; }).join('') + '</div>' +
           (cs.length ? '<div class="msg ok">' + I('check', 18) + '<div><b>등록 과목 ' + cs.length + '개</b><br>' + cs.slice(0, 5).map(function (c) { return E(c.name); }).join(' · ') + (cs.length > 5 ? ' …' : '') + '</div></div>' : '<div class="msg warn">' + I('alert', 18) + '<div>등록된 과목이 없습니다. 「과목·교수」 탭에서 등록해 주십시오.</div></div>') + '</div>';
       }
       if ((d.basic || []).length) h += '<div class="card"><h2 class="title" style="font-size:19px">기본 정보</h2>' + d.basic.map(function (q) { return qhtml(q, d, why); }).join('') + '</div>';

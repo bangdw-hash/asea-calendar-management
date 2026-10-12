@@ -238,3 +238,17 @@ window.SVY = (function () {
     scaleOf: scaleOf, allQuestions: allQuestions, isCheck: isCheck, visible: visible, evalCond: evalCond, nil: nil, num: num, isEmpty: isEmpty, isRequired: isRequired, fmtDate: fmtDate
   };
 })();
+
+/* 연동 목록(일괄 업로드 목록) 열 이름 — def.link 가 없으면 기존 「과목별 평가」 용어를 그대로 씁니다. */
+SVY.LINK_KEYS = ['track', 'grade', 'klass', 'name', 'kind', 'prof'];
+SVY.linkInfo = function (def) {
+  var L = (def && def.link) || {}, C = L.cols || {}, custom = !!(def && def.link && def.link.cols);
+  var dflt = { track: '계열', grade: '학년', klass: '반', name: '과목명', kind: '구분', prof: '담당교수' };
+  var out = { custom: custom, unit: L.unit || '과목', stepTitle: L.stepTitle || (custom ? (L.unit || '대상') + ' 선택' : '수강 반 선택'), cols: {} };
+  SVY.LINK_KEYS.forEach(function (k) {
+    var c = C[k] || {}; out.cols[k] = { label: c.label || dflt[k], use: custom ? c.use !== false : true, sample: c.sample || '' };
+    if (k === 'name') out.cols[k].use = true;
+  });
+  return out;
+};
+
