@@ -151,3 +151,26 @@ pre.code{background:#F5F7FA;border:1px solid var(--border);border-radius:var(--r
 .mitem:hover{border-color:var(--primary);background:var(--primary-lt)}
 .mitem span{font-size:12px;color:var(--text-2)}
 @media (max-width:640px){.cond-row{grid-template-columns:1fr 1fr}.cond-row .btn{justify-self:end}}
+
+/* AI 설계: 제안 → 확인·수정 → 만들기 */
+.aibar{display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap}
+.wz{padding:4px 12px;border-radius:var(--r);background:var(--gray-lt);color:var(--text-2);font-size:12.5px;font-weight:700}
+.wz.done{background:var(--green-lt);color:var(--green)}.wz.on{background:var(--primary);color:var(--on-primary)}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:3px 6px 3px 10px;border-radius:var(--r);background:var(--primary-lt);color:var(--primary-dk);font-size:12.5px}
+.chip small{color:var(--text-2)}.chip button{border:0;background:transparent;padding:2px;line-height:0;color:var(--text-2)}
+.sugg{display:flex;gap:10px;align-items:center;padding:10px 12px;border:1px solid var(--border);border-radius:var(--r);margin-top:8px;background:#fff}
+.sugg.on{background:var(--green-lt);border-color:color-mix(in srgb,var(--green) 40%,#fff)}
+.aisec{display:flex;gap:6px;align-items:center;margin-top:14px}.aisec .fld{font-weight:700}
+.aiq{padding:6px 0;border-bottom:1px solid var(--gray-lt)}
+.aiq .fld{min-height:36px;padding:5px 8px;font-size:13px}
+.fld-fmt{width:128px;flex:none}
+.why{font-size:12px;color:var(--text-2);margin:2px 0 0 4px;display:flex;gap:4px;align-items:center}
+.aicap{font-size:12px;color:var(--text-2);margin:-2px 0 8px;padding:4px 8px;border-left:3px solid var(--primary);background:var(--primary-lt);border-radius:0 8px 8px 0}
+.pvtabs{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 10px}
+.pvtab{padding:4px 10px;border:1px solid var(--border-2);background:#fff;border-radius:var(--r);font-size:12.5px}
+.pvtab.on{background:var(--primary);border-color:var(--primary);color:var(--on-primary);font-weight:700}
+.phone{max-width:400px;margin:0 auto;border:8px solid #202124;border-radius:26px;overflow:hidden;background:var(--bg)}
+.phone .preview{border:0;border-radius:0;max-height:640px;overflow:auto}
+.phone .card + .card{margin-top:10px}
+.panel.final{border:2px solid var(--primary)}

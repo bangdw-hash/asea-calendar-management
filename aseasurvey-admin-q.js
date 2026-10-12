@@ -43,6 +43,8 @@
     Object.keys(q).forEach(function (k) { delete q[k]; }); Object.assign(q, nq);
   }
 
+  A.qConvert = convert; A.qMenuKey = menuKey; A.qQuizable = quizable;
+
   /* ───────────── 조건(분기) 편집 ───────────── */
   var OPLAB = { eq: '같다', ne: '다르다', has: '선택했다', nhas: '선택하지 않았다', gt: '보다 크다', gte: '이상이다', lt: '보다 작다', lte: '이하이다', answered: '응답했다', empty: '응답하지 않았다' };
   function opsFor(src) {
