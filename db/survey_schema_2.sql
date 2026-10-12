@@ -76,14 +76,14 @@ begin
       r := svy.check_one(q, p_def, coalesce(p_ans->'common', '{}'::jsonb));
       if r ? 'err' then return r; end if;
       if r ? 'tl' then tl := tl + (r->>'tl')::int; end if;
-      if r ? 'has_check' then attn_total := attn_total + 1; if not (r->>'pass')::boolean then attn_fail := attn_fail + 1; end if; end if;
+      if coalesce((r->>'has_check')::boolean, false) then attn_total := attn_total + 1; if not (r->>'pass')::boolean then attn_fail := attn_fail + 1; end if; end if;
     else
       foreach cid in array p_course_ids loop
         a := coalesce(p_ans->'course'->cid, '{}'::jsonb);
         r := svy.check_one(q, p_def, a);
         if r ? 'err' then return r; end if;
         if r ? 'tl' then tl := tl + (r->>'tl')::int; end if;
-        if r ? 'has_check' then
+        if coalesce((r->>'has_check')::boolean, false) then
           attn_total := attn_total + 1;
           if not (r->>'pass')::boolean then attn_fail := attn_fail + 1; end if;
         elsif r ? 'num' then

@@ -105,7 +105,7 @@
     var n = (A.cur.item || {}).test_responses || 0;
     var ok = silent || await A.confirm('테스트 결과 초기화', '테스트 응답 ' + n + '건과 그에 딸린 추첨·수령 기록이 삭제됩니다. 정식 응답은 삭제되지 않습니다.', '초기화', '취소', true);
     if (!ok) return false;
-    try { var r = await A.rpc('svy_a_reset', { p_id: A.cur.survey.id, p_scope: 'test' }); if (!silent) A.toast('테스트 응답 ' + r.responses + '건을 초기화했습니다.'); await A.load(A.cur.survey.id); A.renderSurvey(); return true; }
+    try { var r = await A.rpc('svy_a_reset', { p_id: A.cur.survey.id, p_scope: 'test' }); if (!silent) A.toast('테스트 응답 ' + r.responses + '건을 초기화했습니다.'); await A.refresh(); A.renderSurvey(); return true; }
     catch (e) { A.toast(e.message, 'err'); return false; }
   }
   async function launch(checks) {
@@ -347,7 +347,7 @@
         try {
           var res = await A.rpc('svy_a_courses_save', { p_id: A.cur.survey.id, p_rows: rows.map(function (r) { return { track: r.track, grade: r.grade, klass: r.klass, name: r.name, prof: r.prof, kind: r.kind }; }), p_mode: mode });
           if (targets.length) await A.rpc('svy_a_targets_save', { p_id: A.cur.survey.id, p_rows: mergeTargets(targets, mode) });
-          close(); A.toast('과목 ' + res.saved + '건을 등록했습니다.' + (res.removed ? ' (제거 ' + res.removed + '건)' : '')); await A.load(A.cur.survey.id); A.renderSurvey();
+          close(); A.toast('과목 ' + res.saved + '건을 등록했습니다.' + (res.removed ? ' (제거 ' + res.removed + '건)' : '')); await A.refresh(); A.ext.tg = null; A.renderSurvey();
         } catch (er) { A.toast(er.message, 'err'); b.disabled = false; b.textContent = '등록'; }
       });
     }, 'xl');
@@ -390,7 +390,7 @@
       else if (act === 'paste') pasteImport();
       else if (act === 'cadd') courseModal(null);
       else if (act === 'cedit') courseModal(cs.filter(function (c) { return c.id === id; })[0]);
-      else if (act === 'cdel') { var c = cs.filter(function (x) { return x.id === id; })[0]; if (await A.confirm('과목 삭제', E(c.track + ' ' + c.grade + ' ' + c.klass + ' · ' + c.name) + '<br>응답이 있는 설문은 기록 보존을 위해 목록에서만 숨겨집니다.', '삭제', '취소', true)) { try { await A.rpc('svy_a_course_delete', { p_course_id: id }); await A.load(A.cur.survey.id); A.renderSurvey(); } catch (er) { A.toast(er.message, 'err'); } } }
+      else if (act === 'cdel') { var c = cs.filter(function (x) { return x.id === id; })[0]; if (await A.confirm('과목 삭제', E(c.track + ' ' + c.grade + ' ' + c.klass + ' · ' + c.name) + '<br>응답이 있는 설문은 기록 보존을 위해 목록에서만 숨겨집니다.', '삭제', '취소', true)) { try { await A.rpc('svy_a_course_delete', { p_course_id: id }); await A.refresh(); A.renderSurvey(); } catch (er) { A.toast(er.message, 'err'); } } }
     };
   };
   function pasteImport() {
@@ -414,7 +414,7 @@
         if (!r.track || !r.grade || !r.klass || !r.name) return A.toast('계열·학년·반·과목명은 필수입니다.', 'err');
         try {
           if (c && keyOf(c) !== keyOf(r)) await A.rpc('svy_a_course_delete', { p_course_id: c.id });
-          await A.rpc('svy_a_courses_save', { p_id: A.cur.survey.id, p_rows: [r], p_mode: 'merge' }); close(); await A.load(A.cur.survey.id); A.renderSurvey();
+          await A.rpc('svy_a_courses_save', { p_id: A.cur.survey.id, p_rows: [r], p_mode: 'merge' }); close(); await A.refresh(); A.renderSurvey();
         } catch (er) { A.toast(er.message, 'err'); }
       });
     });
@@ -435,7 +435,7 @@
       if (act === 'tgadd') { rows.push({ track: '', grade: '', headcount: 0 }); A.tabs.targets(box); }
       else if (act === 'tgdel') { rows.splice(Number(t.closest('[data-i]').getAttribute('data-i')), 1); A.tabs.targets(box); }
       else if (act === 'tgfill') { var have = {}; rows.forEach(function (r) { have[r.track + '|' + r.grade] = 1; }); A.cur.courses.filter(function (c) { return c.active; }).forEach(function (c) { var k = c.track + '|' + c.grade; if (!have[k]) { have[k] = 1; rows.push({ track: c.track, grade: c.grade, headcount: 0 }); } }); A.tabs.targets(box); }
-      else if (act === 'tgsave') { try { await A.rpc('svy_a_targets_save', { p_id: A.cur.survey.id, p_rows: rows.filter(function (r) { return r.track && r.grade; }) }); await A.load(A.cur.survey.id); A.ext.tg = null; A.toast('배포 인원을 저장했습니다.'); A.renderSurvey(); } catch (er) { A.toast(er.message, 'err'); } }
+      else if (act === 'tgsave') { try { await A.rpc('svy_a_targets_save', { p_id: A.cur.survey.id, p_rows: rows.filter(function (r) { return r.track && r.grade; }) }); await A.refresh(); A.ext.tg = null; A.toast('배포 인원을 저장했습니다.'); A.renderSurvey(); } catch (er) { A.toast(er.message, 'err'); } }
     };
   };
 

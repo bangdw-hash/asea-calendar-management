@@ -259,6 +259,11 @@
     A.work = {}; WORK_KEYS.forEach(function (k) { A.work[k] = A.clone(A.cur.survey[k] == null ? null : A.cur.survey[k]); });
     A.snap = JSON.stringify(A.work);
   };
+  // 서버 데이터만 갱신하고 편집 중인 내용(A.work)은 유지
+  A.refresh = async function () {
+    var id = A.cur.survey.id, res = await Promise.all([A.rpc('svy_a_get', { p_id: id }), loadList()]);
+    A.cur = res[0]; A.cur.item = A.list.filter(function (s) { return s.id === id; })[0] || {};
+  };
   A.isDirty = function () { return !!A.work && JSON.stringify(A.work) !== A.snap; };
   A.save = async function (note) {
     var patch = {}, orig = A.cur.survey, defChanged = false;

@@ -63,6 +63,7 @@ Each HTML file is self-contained (CSS + JS inline or in same-name `.js`/`.css` f
 | `assessment.html` | 역량 평가 |
 | `budget.html` | 부서 예산안(세입·세출) 작성/검토 — Supabase `bgt` 스키마 + RPC(`db/budget_schema_1~4.sql`), 부서 비밀번호 로그인(Google 계정 불필요), 스카이 블루 토큰 |
 | `korean.html` | 한글 학습(34개월~) — 자모 ㄱ~ㅎ·ㅏ~ㅣ, 소리 찾기/첫소리/모양 맞추기(드래그)/낱말 조립/펜 쓰기, 보호자 메뉴(PIN), Supabase `kor` 스키마 + RPC(`db/korean_schema.sql`, 미적용 시 기기 로컬 저장), 남성 신경망 음성 mp3(`audio/korean`, `tools/korean_audio_gen.py`) |
+| `aseasurvey.html` · `aseasurvey-admin.html` | 교내 설문(교과목 교육과정 개선 설문 등) — 학생 응답(`aseasurvey.html?c=<코드>`, 완전 익명·과목별 아코디언·추첨번호)과 관리자(설문 설계·과목/교수 엑셀 등록·실시간 결과·교수별 현황판·엑셀 출력·성실도 가중 추첨·AI 설계·테스트 모드). Supabase `svy` 스키마 + `public.svy_*` RPC(`db/survey_schema_1~5.sql`, 설치 안내 `db/README_survey.md`), 관리자 비밀번호 로그인, 공용 `aseasurvey-common.js`/`aseasurvey.css`, 기본 양식 `aseasurvey-template.js` |
 
 ### Design System (schedule.html → applied to forum.html)
 
