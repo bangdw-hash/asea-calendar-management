@@ -13,7 +13,7 @@
   var S = {
     code: '', info: null, def: null, courses: [], test: false,
     step: 'load', sel: { track: '', grade: '', klass: '' }, ans: { common: {}, course: {} },
-    open: '', active: 0, lastTick: 0, busy: false, ticket: '', rendered: {}, result: null, checkInput: ''
+    open: '', active: 0, times: {}, lastTick: 0, busy: false, ticket: '', rendered: {}, result: null, checkInput: ''
   };
   function K(s) { return 'svy_' + S.code + '_' + s; }
 
@@ -53,11 +53,16 @@
 
   /* ───────────── 저장/복원 ───────────── */
   var saveT = 0;
-  function tick() { var n = Date.now(); if (S.lastTick) S.active += Math.min(n - S.lastTick, 60000); S.lastTick = n; }
+  // 체류 시간: 조작 사이의 간격만 합산(1회 최대 60초). 열려 있는 과목에는 과목별 시간도 함께 기록
+  function tick() {
+    var n = Date.now();
+    if (S.lastTick) { var d = Math.min(n - S.lastTick, 60000); S.active += d; if (S.step === 'eval' && S.open) S.times[S.open] = (S.times[S.open] || 0) + d; }
+    S.lastTick = n;
+  }
   function saveDraft() {
     clearTimeout(saveT);
     saveT = setTimeout(function () {
-      SVY.ls.setJSON(K('draft'), { sel: S.sel, ans: S.ans, open: S.open, active: S.active, step: S.step, v: S.info && S.info.version, at: Date.now() });
+      SVY.ls.setJSON(K('draft'), { sel: S.sel, ans: S.ans, open: S.open, active: S.active, times: S.times, step: S.step, v: S.info && S.info.version, at: Date.now() });
     }, 250);
   }
   function loadDraft() { var d = SVY.ls.getJSON(K('draft')); return d && d.ans ? d : null; }
@@ -138,7 +143,7 @@
       }).join('') + '</div>';
     } else if (q.type === 'text') {
       var max = q.maxLen || 500;
-      h += '<textarea class="fld" data-act="text" data-q="' + E(q.id) + '" maxlength="' + max + '" rows="3" placeholder="' + E(q.placeholder || '') + '">' + E(v || '') + '</textarea><div class="cnt"><span data-cnt>' + (v ? String(v).length : 0) + '</span>/' + max + '</div>';
+      h += '<textarea class="fld" data-act="text" data-q="' + E(q.id) + '" maxlength="' + max + '" rows="3" placeholder="' + E(q.placeholder || '') + '">' + E(v || '') + '</textarea><div class="cnt">' + ((S.def.intro && S.def.intro.textNudge) ? '<span class="nudge">' + E(S.def.intro.textNudge) + '</span>' : '') + '<span><span data-cnt>' + (v ? String(v).length : 0) + '</span>/' + max + '</span></div>';
     }
     return h + '</div>';
   }
@@ -168,7 +173,7 @@
   function screenIntro() {
     var i = S.def.intro || {}, draft = loadDraft();
     var h = '<div class="card"><div class="kicker">' + E(i.subtitle || '') + '</div><h1 class="title">' + E(i.title || S.info.title) + '</h1><div class="org">' + E(i.org || '') + '</div>';
-    if (i.rewardText) h += '<div class="reward">' + I('gift', 22) + '<div><b>참여 안내</b><br>' + E(i.rewardText) + '</div></div>';
+    if (i.rewardText) h += '<div class="reward">' + I('gift', 22) + '<div><b>참여 안내</b><br>' + E(i.rewardText) + (i.drawGuide ? '<div class="hint" style="margin-top:8px;color:var(--text)">' + E(i.drawGuide) + '</div>' : '') + '</div></div>';
     h += '<dl class="notice">' + (i.notice || []).map(function (n) { return '<div><dt>' + E(n.k) + '</dt><dd>' + E(n.v) + '</dd></div>'; }).join('') + '</dl>';
     if (i.timeNote) h += '<div class="timenote">' + I('info', 16) + E(i.timeNote) + '</div>';
     if (draft) {
@@ -319,7 +324,7 @@
     else if (S.step === 'class') screenClass();
     else if (S.step === 'eval') screenEval();
   }
-  function resetAnswers() { S.sel = { track: '', grade: '', klass: '' }; S.ans = { common: {}, course: {} }; S.open = ''; S.active = 0; S.lastTick = 0; }
+  function resetAnswers() { S.sel = { track: '', grade: '', klass: '' }; S.ans = { common: {}, course: {} }; S.open = ''; S.active = 0; S.times = {}; S.lastTick = 0; }
   // 같은 과목에서 이전 과목의 '척도' 응답만 복사(빈 문항만). 성실응답 점검·윤리 문항은 복사하지 않음
   function copyPrev(cid) {
     var list = myCourses(), idx = -1; list.forEach(function (c, i) { if (c.id === cid) idx = i; });
@@ -341,7 +346,8 @@
       });
     }
     pick(S.ans.common, qs('common'), out.common);
-    myCourses().forEach(function (c) { out.course[c.id] = {}; pick(courseAns(c.id), qs('course'), out.course[c.id]); });
+    out._t = {};
+    myCourses().forEach(function (c) { out.course[c.id] = {}; pick(courseAns(c.id), qs('course'), out.course[c.id]); out._t[c.id] = Math.round((S.times[c.id] || 0) / 1000); });
     return out;
   }
   async function submit() {
@@ -410,7 +416,7 @@
     var act = t.getAttribute('data-act'); tick();
     var cid = t.getAttribute('data-cid');
     if (act === 'start') { resetAnswers(); S.lastTick = Date.now(); go('class'); }
-    else if (act === 'resume') { var d = loadDraft(); S.sel = d.sel || S.sel; S.ans = d.ans; S.open = d.open || ''; S.active = d.active || 0; S.lastTick = Date.now(); go(d.step === 'eval' && myCourses().length ? 'eval' : 'class'); }
+    else if (act === 'resume') { var d = loadDraft(); S.sel = d.sel || S.sel; S.ans = d.ans; S.open = d.open || ''; S.active = d.active || 0; S.times = d.times || {}; S.lastTick = Date.now(); go(d.step === 'eval' && myCourses().length ? 'eval' : 'class'); }
     else if (act === 'fresh') { clearDraft(); resetAnswers(); S.lastTick = Date.now(); go(S.step === 'done' ? 'class' : 'class'); }
     else if (act === 'restart') { confirmBox('처음부터 다시 작성하시겠습니까?', '지금까지 입력한 내용이 모두 지워집니다.', '처음부터', '취소').then(function (ok) { if (ok) { clearDraft(); resetAnswers(); S.step = 'intro'; render(); window.scrollTo(0, 0); } }); }
     else if (act === 'sel') {
