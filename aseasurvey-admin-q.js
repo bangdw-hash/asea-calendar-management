@@ -14,6 +14,7 @@
   var NUMERIC = ['linear', 'rating', 'nps', 'slider'];
   var PERSONAL = ['address', 'location', 'signature', 'file'];
 
+  function H(t) { return A.help ? A.help(t) : ''; }
   function ensureDef() { return A.ensureDef(); }
   function isGen(d) { return (d || ensureDef()).mode === 'general'; }
   function allQ(d) { return SVY.allQuestions(d || ensureDef()); }
@@ -82,7 +83,7 @@
   }
   function condHtml(target, owner, tkey) {
     var pc = parseCond(target.showIf), srcs = condSources(owner);
-    var h = '<div class="subpanel" data-ct="' + tkey + '"><div class="row"><b>표시 조건 (분기)</b><span class="hint">조건을 만족할 때만 이 ' + (owner.sec ? '영역' : '문항') + '이 보입니다.</span></div>';
+    var h = '<div class="subpanel" data-ct="' + tkey + '"><div class="row"><b>조건에 따라 보이기</b>' + H('앞 문항의 답에 따라 이 ' + (owner.sec ? '영역' : '문항') + '을 보이게 합니다. 예: 참석 구분에서 「외부인」을 고른 사람에게만 「소속 기관」을 묻습니다. (이전 이름: 분기·표시 조건)') + '<span class="hint">조건을 만족할 때만 이 ' + (owner.sec ? '영역' : '문항') + '이 보입니다.</span></div>';
     if (pc.complex) {
       h += '<div class="msg warn" style="margin:6px 0">' + I('alert', 16) + '<div>이전 방식 또는 복합 조건입니다. 아래 「JSON 편집」에서 수정하거나, 「조건 지우기」 후 새로 설정할 수 있습니다.<br><code>' + E(JSON.stringify(target.showIf)) + '</code></div></div><button class="btn btn-ghost btn-sm" data-act="cclear">조건 지우기</button></div>';
       return h;
@@ -118,7 +119,7 @@
     list.forEach(function (it, i) {
       h += '<div class="optrow" data-oi="' + i + '"><input class="fld" data-of="label" value="' + E(it.label) + '" placeholder="' + (o.title || '선택지') + ' ' + (i + 1) + '">' +
         (o.excl ? '<label class="chk" title="이 항목을 선택하면 다른 선택이 해제됩니다(예: 없음)"><input type="checkbox" data-of="exclusive"' + (it.exclusive ? ' checked' : '') + '> 단독</label>' : '') +
-        (o.quota ? '<input class="fld fld-xs" type="number" min="1" data-of="max" value="' + E(it.max == null ? '' : it.max) + '" placeholder="정원" title="이 선택지의 선착순 정원(비우면 제한 없음)">' : '') +
+        (o.quota ? '<input class="fld fld-xs" type="number" min="1" data-of="max" value="' + E(it.max == null ? '' : it.max) + '" placeholder="인원 제한" title="이 선택지를 고를 수 있는 선착순 인원(비우면 제한 없음)">' : '') +
         (o.img ? '<input class="fld" data-of="image" value="' + E(it.image || '') + '" placeholder="이미지 주소(https://…)">' : '') +
         '<button class="btn btn-ghost btn-sm" data-act="oup" aria-label="위로">' + I('up', 14) + '</button><button class="btn btn-ghost btn-sm" data-act="odn" aria-label="아래로">' + I('down', 14) + '</button><button class="btn btn-ghost btn-sm" data-act="odel" style="color:var(--red)" aria-label="삭제">' + I('x', 14) + '</button></div>';
     });
@@ -128,9 +129,9 @@
     var t = q.type, h = '', d = ensureDef();
     if (t === 'text') {
       var f = q.format || 'text';
-      h += '<div class="row">' + fsel(q, 'format', '입력 형식', [['text', '일반 글자'], ['number', '숫자'], ['email', '이메일'], ['phone', '전화번호'], ['url', 'URL'], ['pattern', '패턴(정규식)']], 'text') + (f === 'text' ? fb(q, 'multiline', '여러 줄 입력', !q.format) : '') + fs(q, 'placeholder', '입력칸 안내 문구') + fnum(q, 'maxLen', '최대 글자 수', '500') + fnum(q, 'minLen', '최소 글자 수') + '</div>';
+      h += '<div class="row">' + fsel(q, 'format', '입력 형식', [['text', '일반 글자'], ['number', '숫자'], ['email', '이메일'], ['phone', '전화번호'], ['url', 'URL'], ['pattern', '형식 직접 지정(고급)']], 'text') + (f === 'text' ? fb(q, 'multiline', '여러 줄 입력', !q.format) : '') + fs(q, 'placeholder', '입력칸 안내 문구') + fnum(q, 'maxLen', '최대 글자 수', '500') + fnum(q, 'minLen', '최소 글자 수') + '</div>';
       if (f === 'number') h += '<div class="row">' + fnum(q, 'min', '최솟값') + fnum(q, 'max', '최댓값') + fb(q, 'integer', '정수만') + '</div>';
-      if (f === 'pattern') h += '<div class="row">' + fs(q, 'pattern', '정규식 (예: ^[0-9]{8}$)') + fs(q, 'patternMsg', '형식이 틀렸을 때 안내 문구') + '</div>';
+      if (f === 'pattern') h += '<div class="row">' + fs(q, 'pattern', '형식 규칙(고급) 예: ^[0-9]{8}$ = 숫자 8자리') + fs(q, 'patternMsg', '형식이 틀렸을 때 보여줄 안내') + '</div>';
     } else if (t === 'single') {
       h += '<div class="row">' + fsel(q, 'display', '표시 방식', [['radio', '라디오 버튼'], ['dropdown', '드롭다운'], ['image', '이미지 선택']], 'radio') + fb(q, 'other', '「기타」 직접 입력 허용') + fb(q, 'randomOptions', '선택지 순서 섞기') + '</div>' + optEd(q, 'options', { quota: true, img: q.display === 'image' });
     } else if (t === 'multi') {
@@ -138,9 +139,9 @@
     } else if (t === 'scale') {
       var sc = Object.keys(d.scales);
       h += '<div class="row"><div><label class="f">척도</label><select class="fld" data-qf="scale" data-k="s">' + sc.map(function (k) { return '<option value="' + k + '"' + ((q.scale || 'likert5') === k ? ' selected' : '') + '>' + (k === 'likert5' ? '5점 척도' : k === 'yesno' ? '예 / 아니오' : k) + '</option>'; }).join('') + '</select></div>' +
-        '<div><label class="f">성실응답 점검</label><label class="chk"><input type="checkbox" data-qz="chkon"' + (q.check && q.check.valid != null ? ' checked' : '') + '> 점검 문항으로 사용</label></div>' +
+        '<div><label class="f">성실 응답 확인</label><label class="chk"><input type="checkbox" data-qz="chkon"' + (q.check && q.check.valid != null ? ' checked' : '') + '> 확인 문항으로 사용</label></div>' +
         (q.check && q.check.valid != null ? '<div><label class="f">정답(유효값)</label><select class="fld" data-qz="chkval">' + (d.scales[q.scale || 'likert5'] || []).map(function (o) { return '<option value="' + o.v + '"' + (o.v === q.check.valid ? ' selected' : '') + '>' + E(o.label) + '</option>'; }).join('') + '</select></div>' : '') + '</div>' +
-        (q.check && q.check.valid != null ? '<p class="hint">정답과 다르게 응답하면 성실응답 점검 실패로 기록됩니다. 문항 내용에 응답 방법(예: "전혀 아니다에 표시")을 안내해 주십시오.</p>' : '');
+        (q.check && q.check.valid != null ? '<p class="hint">정답과 다르게 응답하면 성실 응답 확인 실패로 기록됩니다. 문항 내용에 응답 방법(예: "전혀 아니다에 표시")을 안내해 주십시오.</p>' : '');
     } else if (t === 'linear') {
       h += '<div class="row">' + fnum(q, 'min', '시작 값') + fnum(q, 'max', '끝 값') + fs(q, 'lowLabel', '왼쪽 끝 문구') + fs(q, 'highLabel', '오른쪽 끝 문구') + '</div>';
     } else if (t === 'rating') {
@@ -198,10 +199,10 @@
   function summaryTags(q, d) {
     var h = '';
     if (q.required && q.type !== 'block') h += '<span class="tag">필수</span>';
-    if (q.check && q.check.valid != null) h += '<span class="tag check">성실응답 점검</span>';
-    if (q.showIf) h += '<span class="tag blue">조건부</span>';
+    if (q.check && q.check.valid != null) h += '<span class="tag check">성실 응답 확인</span>';
+    if (q.showIf) h += '<span class="tag blue">조건 있음</span>';
     if (hasAnswer(q)) h += '<span class="tag blue">정답 ' + (N(q.points) != null ? q.points : 1) + '점</span>';
-    if ((q.options || []).some(function (o) { return o.max != null; })) h += '<span class="tag blue">정원</span>';
+    if ((q.options || []).some(function (o) { return o.max != null; })) h += '<span class="tag blue">인원 제한</span>';
     if (q.randomOptions) h += '<span class="tag">섞기</span>';
     return h;
   }
@@ -214,12 +215,14 @@
     if (!open) return h + '</div>';
     h += '<div class="qbody"><textarea class="fld" rows="2" data-qf="label" data-k="s" placeholder="' + (q.type === 'block' ? '제목(선택)' : '문항 내용') + '">' + E(q.label || '') + '</textarea>' +
       (q.type === 'block' ? '' : '<input class="fld" data-qf="desc" data-k="s" placeholder="보조 설명(선택)" value="' + E(q.desc || '') + '">') +
-      '<div class="row"><div><label class="f">ID</label><input class="fld fld-sm" data-qf="id" data-k="id" value="' + E(q.id) + '"></div>' +
-      '<div><label class="f">형식</label><select class="fld" data-qf="menu" data-k="menu">' + SVY.MENU.map(function (g) { return '<optgroup label="' + E(g.group) + '">' + g.items.map(function (it) { return '<option value="' + it.key + '"' + (it.key === key ? ' selected' : '') + '>' + E(it.label) + '</option>'; }).join('') + '</optgroup>'; }).join('') + '</select></div>' +
-      (!gen && !isBasic && q.type !== 'block' ? '<div><label class="f">응답 단위</label><select class="fld" data-qf="scope" data-k="s"><option value="course"' + (q.scope !== 'common' ? ' selected' : '') + '>과목별로 응답</option><option value="common"' + (q.scope === 'common' ? ' selected' : '') + '>설문 전체에서 1회 응답</option></select></div>' : '') +
+      '<div class="row"><div><label class="f">형식</label><select class="fld" data-qf="menu" data-k="menu">' + SVY.MENU.map(function (g) { return '<optgroup label="' + E(g.group) + '">' + g.items.map(function (it) { return '<option value="' + it.key + '"' + (it.key === key ? ' selected' : '') + '>' + E(it.label) + '</option>'; }).join('') + '</optgroup>'; }).join('') + '</select></div>' +
+      (!gen && !isBasic && q.type !== 'block' ? '<div><label class="f">응답 방식' + H('과목별 평가에서 이 문항을 과목마다 묻을지(과목별), 설문 전체에서 한 번만 묻을지(1회) 정합니다. 예: 수업 만족도는 과목별, 출석 정도는 1회.') + '</label><select class="fld" data-qf="scope" data-k="s"><option value="course"' + (q.scope !== 'common' ? ' selected' : '') + '>과목별로 응답</option><option value="common"' + (q.scope === 'common' ? ' selected' : '') + '>설문 전체에서 1회 응답</option></select></div>' : '') +
       (q.type === 'block' ? '' : '<div><label class="f">&nbsp;</label><label class="chk"><input type="checkbox" data-qf="required" data-k="b"' + (q.required || (q.check && q.check.valid != null) ? ' checked' : '') + ((q.check && q.check.valid != null) ? ' disabled' : '') + '> 필수</label></div>') + '</div>' +
-      propsHtml(q) + quizHtml(q) + condHtml(q, { q: q, basic: isBasic }, 'q') +
-      '<div class="subpanel"><div class="row"><b>학생 화면 미리보기</b><span class="hint">직접 눌러 볼 수 있습니다(저장되지 않음).</span></div><div class="qprev" id="pv_' + E(q.id) + '"></div></div></div></div>';
+      propsHtml(q) +
+      '<details class="adv"' + ((q.showIf || hasAnswer(q) || (q.options || []).some(function (o) { return o.max != null; })) ? ' open' : '') + '><summary>고급 설정 <small>조건에 따라 보이기 · 정답(퀴즈) · 문항 ID</small></summary><div class="advbody">' +
+      '<div class="row"><div><label class="f">문항 ID' + H('결과 엑셀과 조건 설정에서 이 문항을 가리키는 이름입니다. 보통은 바꾸지 않아도 됩니다.') + '</label><input class="fld fld-sm" data-qf="id" data-k="id" value="' + E(q.id) + '"></div></div>' +
+      quizHtml(q) + condHtml(q, { q: q, basic: isBasic }, 'q') + '</div></details>' +
+      '<div class="subpanel qpvbox"><div class="row"><b>학생 화면 미리보기</b><span class="hint">직접 눌러 볼 수 있습니다(저장되지 않음).</span></div><div class="qprev" id="pv_' + E(q.id) + '"></div></div></div></div>';
     return h;
   }
 
@@ -251,9 +254,9 @@
       if (t === 'scale') {
         var sc = (d.scales || {})[q.scale || 'likert5'];
         if (!sc || !sc.length) errs.push(w + '척도 「' + (q.scale || 'likert5') + '」가 정의되어 있지 않습니다.');
-        else if (q.check && q.check.valid != null && !sc.some(function (o) { return o.v === q.check.valid; })) errs.push(w + '성실응답 점검 정답이 척도 값에 없습니다.');
+        else if (q.check && q.check.valid != null && !sc.some(function (o) { return o.v === q.check.valid; })) errs.push(w + '성실 응답 확인 정답이 척도 값에 없습니다.');
       }
-      if (q.check && t !== 'scale') errs.push(w + '성실응답 점검은 척도 문항에서만 사용할 수 있습니다.');
+      if (q.check && t !== 'scale') errs.push(w + '성실 응답 확인은 척도 문항에서만 사용할 수 있습니다.');
       if (t === 'linear' || t === 'slider') { var lo = N(q.min), hi = N(q.max); if (lo != null && hi != null && lo >= hi) errs.push(w + '시작 값이 끝 값보다 작아야 합니다.'); if (t === 'linear' && hi != null && lo != null && hi - lo > 20) errs.push(w + '선형 배율은 21칸 이하여야 합니다.'); }
       if (t === 'rating' && q.max != null && !(N(q.max) >= 2 && N(q.max) <= 10)) errs.push(w + '별점 개수는 2~10이어야 합니다.');
       if (t === 'text') {
@@ -283,7 +286,7 @@
     });
     if (d.limit && d.limit.max != null && !(N(d.limit.max) >= 1)) errs.push('선착순 정원은 1 이상이어야 합니다.');
     var hasCheck = qs.some(function (x) { return x.q.check && x.q.check.valid != null; });
-    if (!gen && qs.length && !hasCheck) warns.push('성실응답 점검 문항이 없습니다. 추첨 시 불성실 응답을 걸러낼 수 없습니다.');
+    if (!gen && qs.length && !hasCheck) warns.push('성실 응답 확인 문항이 없습니다. 추첨 시 불성실 응답을 걸러낼 수 없습니다.');
     var personal = qs.some(function (x) { return PERSONAL.indexOf(x.q.type) >= 0 || (x.q.type === 'text' && ['email', 'phone'].indexOf(x.q.format) >= 0); });
     if (personal && !qs.some(function (x) { return x.q.type === 'consent'; })) warns.push('주소·연락처·서명·첨부·위치 등 개인정보를 받는 문항이 있으나 「동의 체크」 문항이 없습니다. (개인정보 보호법 제15조: 수집·이용 목적 등을 알리고 동의를 받아야 합니다.)');
     return { errs: errs, warns: warns };
@@ -307,20 +310,24 @@
       d.basic = d.basic.filter(function (q) { return ID_Q.indexOf(q.id) < 0; }); delete d.identity;
     }
   }
+  var QUICK = [['single', '객관식'], ['scale5', '5점 척도'], ['paragraph', '서술형'], ['rating', '별점'], ['multi', '체크박스']];
   var addingTo = null;
   A.tabs.questions = function (box) {
     var d = ensureDef(), lint = A.lintDef(d), gen = isGen(d), nq = A.countQuestions();
     d.limit = d.limit || {}; d.quiz = d.quiz || {}; d.features = d.features || {};
     var tri = d.features.ticket == null ? '' : String(d.features.ticket), after = d.features.after || {};
     var settings = '<details class="panel setp"' + (A._setOpen ? ' open' : '') + '><summary><b>설문 설정</b> · ' + (gen ? '일반 설문(행사·교직원 등)' : '과목별 평가') + (d.limit.max ? ' · 선착순 ' + E(d.limit.max) + '명' : '') + '</summary><div class="grid g2" style="margin-top:10px">' +
-      '<div><label class="f">설문 유형</label><select class="fld" data-df="mode"><option value="course"' + (!gen ? ' selected' : '') + '>과목별 평가 (반 선택 → 과목마다 응답)</option><option value="general"' + (gen ? ' selected' : '') + '>일반 설문 (행사 만족도·교직원 설문 등, 1인 1회)</option></select></div>' +
+      '<div class="setgrp">1. 기본 방식</div>' +
+      '<div><label class="f">설문 유형' + H('과목별 평가: 학생이 반을 고르면 그 반의 과목마다 같은 문항에 답합니다. 일반 설문: 행사·교직원 설문처럼 1인 1회로 답합니다.') + '</label><select class="fld" data-df="mode"><option value="course"' + (!gen ? ' selected' : '') + '>과목별 평가 (반 선택 → 과목마다 응답)</option><option value="general"' + (gen ? ' selected' : '') + '>일반 설문 (행사 만족도·교직원 설문 등, 1인 1회)</option></select></div>' +
       (gen ? '<div><label class="f">화면 구성</label><select class="fld" data-df="layout"><option value=""' + (d.layout !== 'single' ? ' selected' : '') + '>영역별로 나누어 단계 이동</option><option value="single"' + (d.layout === 'single' ? ' selected' : '') + '>한 화면에 모두 표시</option></select></div>' : '') +
-      '<div><label class="f">선착순 정원 (비우면 제한 없음)</label><input class="fld" type="number" min="1" data-df="limit.max" data-k="n" value="' + E(d.limit.max == null ? '' : d.limit.max) + '"></div>' +
-      '<div><label class="f">추첨번호 발급·표시</label><select class="fld" data-df="features.ticket" data-k="tri"><option value=""' + (tri === '' ? ' selected' : '') + '>기본값(' + (gen ? '표시 안 함' : '표시') + ')</option><option value="true"' + (tri === 'true' ? ' selected' : '') + '>표시함 (추첨 사용)</option><option value="false"' + (tri === 'false' ? ' selected' : '') + '>표시 안 함</option></select></div>' +
-      '<div><label class="f">제출 후 점수 표시 (퀴즈)</label><select class="fld" data-df="quiz.show"><option value=""' + (!d.quiz.show ? ' selected' : '') + '>점수 표시 안 함</option><option value="score"' + (d.quiz.show === 'score' ? ' selected' : '') + '>점수 표시</option></select></div>' +
-      '<div><label class="f">응답자 식별 방식</label><select class="fld" data-df="identity"><option value=""' + (d.identity !== 'named' ? ' selected' : '') + '>익명 (이름 받지 않음)</option><option value="named"' + (d.identity === 'named' ? ' selected' : '') + '>기명 (이름·소속 문항과 개인정보 동의 자동 추가)</option></select></div>' +
-      '<div><label class="f">제출 후 응답 수정</label><select class="fld" data-df="edit"><option value=""' + (!d.features.edit ? ' selected' : '') + '>허용 안 함 (제출 후 수정 불가)</option><option value="24"' + (d.features.edit && Number(d.features.edit.hours) === 24 ? ' selected' : '') + '>제출 후 24시간 이내 허용</option><option value="72"' + (d.features.edit && Number(d.features.edit.hours) === 72 ? ' selected' : '') + '>제출 후 3일 이내 허용</option><option value="0"' + (d.features.edit && Number(d.features.edit.hours) === 0 ? ' selected' : '') + '>설문 마감까지 허용</option></select><div class="hint">같은 기기에서만 수정할 수 있으며 DB 7단계 설치가 필요합니다.</div></div>' +
-      '<div><label class="f">제출 완료 후 안내</label><select class="fld" data-df="features.after.type"><option value=""' + (!after.type ? ' selected' : '') + '>기본 (완료 문구만 표시)</option><option value="link"' + (after.type === 'link' ? ' selected' : '') + '>안내 링크 버튼 표시</option><option value="receipt"' + (after.type === 'receipt' ? ' selected' : '') + '>참여 확인서(이미지 저장) 제공</option><option value="both"' + (after.type === 'both' ? ' selected' : '') + '>링크 + 참여 확인서</option></select></div>' +
+      '<div class="setgrp">2. 응답 받는 방법</div>' +
+      '<div><label class="f">선착순 인원 (비우면 제한 없음)' + H('설문 전체 응답을 이 인원까지만 받습니다. 가득 차면 학생에게 마감 안내가 나옵니다. (선택지별 인원 제한은 문항의 고급 설정에서)') + '</label><input class="fld" type="number" min="1" data-df="limit.max" data-k="n" value="' + E(d.limit.max == null ? '' : d.limit.max) + '"></div>' +
+      '<div><label class="f">응답자 식별 방식' + H('익명: 이름을 받지 않습니다. 기명: 이름·소속 문항과 개인정보 동의 문항이 기본 정보에 자동으로 들어갑니다.') + '</label><select class="fld" data-df="identity"><option value=""' + (d.identity !== 'named' ? ' selected' : '') + '>익명 (이름 받지 않음)</option><option value="named"' + (d.identity === 'named' ? ' selected' : '') + '>기명 (이름·소속 문항과 개인정보 동의 자동 추가)</option></select></div>' +
+      '<div class="setgrp">3. 제출한 뒤</div>' +
+      '<div><label class="f">추첨번호 발급·표시' + H('제출을 마친 학생에게 추첨번호를 보여 줍니다. 경품 추첨을 할 때만 켜십시오.') + '</label><select class="fld" data-df="features.ticket" data-k="tri"><option value=""' + (tri === '' ? ' selected' : '') + '>기본값(' + (gen ? '표시 안 함' : '표시') + ')</option><option value="true"' + (tri === 'true' ? ' selected' : '') + '>표시함 (추첨 사용)</option><option value="false"' + (tri === 'false' ? ' selected' : '') + '>표시 안 함</option></select></div>' +
+      '<div><label class="f">제출 후 점수 표시 (퀴즈)' + H('문항에 정답을 지정해 둔 경우, 제출 직후 학생에게 점수를 보여 줍니다.') + '</label><select class="fld" data-df="quiz.show"><option value=""' + (!d.quiz.show ? ' selected' : '') + '>점수 표시 안 함</option><option value="score"' + (d.quiz.show === 'score' ? ' selected' : '') + '>점수 표시</option></select></div>' +
+      '<div><label class="f">제출 후 응답 수정' + H('제출한 같은 기기에서 정해진 시간 안에 응답을 고칠 수 있게 합니다. 추첨번호는 그대로 유지됩니다.') + '</label><select class="fld" data-df="edit"><option value=""' + (!d.features.edit ? ' selected' : '') + '>허용 안 함 (제출 후 수정 불가)</option><option value="24"' + (d.features.edit && Number(d.features.edit.hours) === 24 ? ' selected' : '') + '>제출 후 24시간 이내 허용</option><option value="72"' + (d.features.edit && Number(d.features.edit.hours) === 72 ? ' selected' : '') + '>제출 후 3일 이내 허용</option><option value="0"' + (d.features.edit && Number(d.features.edit.hours) === 0 ? ' selected' : '') + '>설문 마감까지 허용</option></select><div class="hint">같은 기기에서만 수정할 수 있으며 DB 7단계 설치가 필요합니다.</div></div>' +
+      '<div><label class="f">제출 완료 후 안내' + H('제출 후 화면에 안내 링크 버튼이나 참여 확인서(이미지 저장) 버튼을 추가합니다.') + '</label><select class="fld" data-df="features.after.type"><option value=""' + (!after.type ? ' selected' : '') + '>기본 (완료 문구만 표시)</option><option value="link"' + (after.type === 'link' ? ' selected' : '') + '>안내 링크 버튼 표시</option><option value="receipt"' + (after.type === 'receipt' ? ' selected' : '') + '>참여 확인서(이미지 저장) 제공</option><option value="both"' + (after.type === 'both' ? ' selected' : '') + '>링크 + 참여 확인서</option></select></div>' +
       (after.type === 'link' || after.type === 'both' ? '<div><label class="f">링크 주소 (https://…)</label><input class="fld" data-df="features.after.url" value="' + E(after.url || '') + '"></div><div><label class="f">링크 버튼 문구</label><input class="fld" data-df="features.after.label" value="' + E(after.label || '') + '" placeholder="예: 행사 안내 보기"></div>' : '') +
       '<div><label class="f">통과 기준 점수 (선택)</label><input class="fld" type="number" min="0" data-df="quiz.passScore" data-k="n" value="' + E(d.quiz.passScore == null ? '' : d.quiz.passScore) + '"></div></div></details>';
     var secsHtml = d.sections.map(function (s, si) {
@@ -328,9 +335,10 @@
       return '<div class="sec-card" data-s="' + si + '"><div class="sec-head"><input class="fld" data-sf="title" value="' + E(s.title || '') + '" placeholder="영역 제목"><button class="btn btn-ghost btn-sm" data-act="sup" aria-label="위로">' + I('up', 14) + '</button><button class="btn btn-ghost btn-sm" data-act="sdn" aria-label="아래로">' + I('down', 14) + '</button><button class="btn btn-ghost btn-sm" data-act="sdel" style="color:var(--red)" aria-label="삭제">' + I('trash', 14) + '</button></div>' +
         '<div style="padding:8px 12px 0;display:grid;gap:8px"><input class="fld" data-sf="note" value="' + E(s.note || '') + '" placeholder="영역 안내 문구 (선택)">' + (s.showIf ? '' : '') + pv + '</div>' +
         (s.questions || []).map(function (q, qi) { return qCard(q, si, qi, false); }).join('') +
-        '<div class="qcard"><button class="btn btn-primary btn-sm" data-act="qadd" data-si="' + si + '">' + I('plus', 14) + ' 문항 추가</button></div></div>';
+        '<div class="qcard qadd"><button class="btn btn-primary btn-sm" data-act="qadd" data-si="' + si + '">' + I('plus', 14) + ' 문항 추가</button><span class="muted" style="font-size:12.5px">빠른 추가</span>' + QUICK.map(function (k) { return '<button class="btn btn-secondary btn-sm" data-act="qquick" data-si="' + si + '" data-key="' + k[0] + '">' + k[1] + '</button>'; }).join('') + '</div></div>';
     }).join('');
-    box.innerHTML = '<div class="row" style="margin-bottom:10px;align-items:flex-start"><div class="sp">' +
+    var empty = !nq && !(d.basic || []).length ? '<div class="emptyq"><div class="ei">' + I('list', 28) + '</div><h3>아직 문항이 없습니다</h3><p class="muted">직접 하나씩 추가하거나, 가지고 있는 설문지 파일을 올려 AI가 초안을 만들게 할 수 있습니다.</p><div class="row" style="justify-content:center"><button class="btn btn-primary" data-act="qquick" data-si="' + (d.sections.length ? 0 : -1) + '" data-key="single">' + I('plus', 15) + ' 첫 문항 추가</button><button class="btn btn-secondary" data-act="qai">' + I('sparkle', 15) + ' AI로 초안 만들기</button></div></div>' : '';
+    box.innerHTML = empty + '<div class="row" style="margin-bottom:10px;align-items:flex-start"><div class="sp">' +
       (lint.errs.length ? '<div class="msg err" style="margin:0">' + I('alert', 18) + '<div><b>오류 ' + lint.errs.length + '건</b><br>' + lint.errs.slice(0, 6).map(E).join('<br>') + '</div></div>' : '<div class="msg ok" style="margin:0">' + I('check', 18) + '<div>문항 점검 통과 · 문항 ' + nq + '개 · 영역 ' + d.sections.length + '개</div></div>') +
       (lint.warns.length ? '<div class="msg warn">' + I('alert', 18) + '<div>' + lint.warns.slice(0, 5).map(E).join('<br>') + '</div></div>' : '') + '</div>' +
       '<div class="row"><button class="btn btn-secondary btn-sm" data-act="expandall">모두 펼치기</button><button class="btn btn-secondary btn-sm" data-act="collapseall">모두 접기</button><button class="btn btn-secondary btn-sm" data-act="json">고급: JSON</button><button class="btn btn-secondary btn-sm" data-act="scales">척도 문구</button><button class="btn btn-primary btn-sm" data-act="sadd">' + I('plus', 14) + ' 영역 추가</button></div></div>' + settings +
@@ -382,6 +390,8 @@
       if (act === 'sdn' && si >= 0 && si < d.sections.length - 1) { var b = d.sections[si]; d.sections[si] = d.sections[si + 1]; d.sections[si + 1] = b; return redraw(); }
       if (act === 'sdel') { if (await A.confirm('영역 삭제', '「' + E(d.sections[si].title) + '」과(와) 영역 안의 문항 ' + (d.sections[si].questions || []).length + '개가 삭제됩니다.', '삭제', '취소', true)) { (d.sections[si].questions || []).forEach(function (q) { dropRefs(q.id); }); d.sections.splice(si, 1); redraw(); } return; }
       if (act === 'qadd') return addMenu(Number(t.getAttribute('data-si')));
+      if (act === 'qquick') return addQ(Number(t.getAttribute('data-si')), t.getAttribute('data-key'));
+      if (act === 'qai') return A.go('ai');
       // 조건 편집
       if (act === 'cadd' || act === 'cdel' || act === 'cclear') {
         var tg = target(t), pc = parseCond(tg.showIf), owner = tg.questions ? { sec: tg } : { q: tg, basic: !!(t.closest('[data-si="-1"]')) }, srcs = condSources(owner);
@@ -404,6 +414,11 @@
         if (act === 'obulk') return bulkEdit(r.q, fld, pre);
       }
     };
+    function addQ(si, key) {
+      var q = SVY.newQuestion(key, newId('Q')); q.scope = (si < 0 || gen) ? 'common' : 'course';
+      if (si < 0) d.basic.push(q); else (d.sections[si].questions = d.sections[si].questions || []).push(q);
+      OPEN[q.id] = true; redraw(); if (A.pv) A.pv.focusQ(q.id);
+    }
     function bulkEdit(q, fld, pre) {
       var arr = q[fld] || [];
       A.modal('<h3>여러 줄로 한 번에 편집</h3><p class="muted">한 줄에 하나씩 입력합니다. 기존 항목은 순서대로 ID가 유지됩니다.</p><textarea id="bk" class="fld" rows="12">' + E(arr.map(function (o) { return o.label; }).join('\n')) + '</textarea><div class="btn-row"><button class="btn btn-ghost" data-r="0">취소</button><button class="btn btn-primary" data-r="1">적용</button></div>', function (bg, close) {
@@ -419,10 +434,7 @@
       A.modal('<h3>문항 형식 선택</h3>' + SVY.MENU.map(function (g) { return '<div class="mgroup"><div class="mg-t">' + E(g.group) + '</div><div class="mgrid">' + g.items.map(function (it) { return '<button class="mitem" data-key="' + it.key + '"><b>' + E(it.label) + '</b><span>' + E(it.hint) + '</span></button>'; }).join('') + '</div></div>'; }).join(''), function (bg, close) {
         bg.addEventListener('click', function (e) {
           var b = e.target.closest('[data-key]'); if (!b) return;
-          var q = SVY.newQuestion(b.getAttribute('data-key'), newId('Q')); q.scope = (si < 0 || gen) ? 'common' : 'course';
-          if (gen && q.type !== 'block') { /* 일반 설문: 단답·장문은 기본 선택 입력 */ }
-          if (si < 0) d.basic.push(q); else (d.sections[si].questions = d.sections[si].questions || []).push(q);
-          OPEN[q.id] = true; close(); redraw(); if (A.pv) A.pv.focusQ(q.id);
+          addQ(si, b.getAttribute('data-key')); close();
         });
       }, 'wide');
     }

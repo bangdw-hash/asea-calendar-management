@@ -158,12 +158,80 @@
     return m;
   }
 
+
+  /* ───────────── B안: 반 × 과목 표로 만들기 (같은 과목을 여러 반에 한 번에 펼침) ───────────── */
+  var M = { groups: [], step: 'setup' };
+  function newGroup() { var cs = (A.cur.courses || []).filter(function (c) { return c.active; }), last = cs[cs.length - 1] || {}; return { track: last.track || '', grade: '', classes: '', subjects: '', cells: {} }; }
+  // "A~D", "1~4", "A,B,C", "1반 2반" 등을 반 이름 목록으로
+  function parseClasses(t) {
+    var out = [], s = String(t || '').trim(); if (!s) return out;
+    var m = s.match(/^([A-Za-z]|\d+)\s*[~\-]\s*([A-Za-z]|\d+)\s*반?$/);
+    if (m) { if (/\d/.test(m[1])) { for (var i = Number(m[1]); i <= Number(m[2]) && i < 60; i++) out.push(i + '반'); } else { for (var c = m[1].toUpperCase().charCodeAt(0); c <= m[2].toUpperCase().charCodeAt(0); c++) out.push(String.fromCharCode(c) + '반'); } return out; }
+    s.split(/[\s,，、/]+/).filter(Boolean).forEach(function (x) { x = /^[A-Za-z가-힣]$|^\d+$/.test(x) ? x + '반' : x; if (out.indexOf(x) < 0) out.push(x); }); return out;
+  }
+  function parseSubjects(t) {
+    return String(t || '').split(/\r?\n/).map(function (l) { return l.trim(); }).filter(Boolean).map(function (l) {
+      var p = l.split(/\s*[|\t,，]\s*/); var name = p[0], kind = '', prof = '';
+      if (p[1] && /^(이론|실습)$/.test(p[1])) { kind = p[1]; prof = p[2] || ''; } else { prof = p[1] || ''; kind = /^(이론|실습)$/.test(p[2] || '') ? p[2] : ''; }
+      var n = normAll({ name: name, kind: kind, prof: prof }); return { name: n.name, kind: n.kind, prof: n.prof };
+    }).filter(function (x) { return x.name; });
+  }
+  function matrixSetupHtml() {
+    return '<h3>' + I('list', 16) + ' 반 × 과목 표로 만들기</h3><p class="muted" style="margin:4px 0 10px">같은 학년의 <b>반 목록</b>과 <b>과목 목록</b>을 한 번만 입력하면, 모든 반에 과목이 펼쳐집니다. 다음 단계에서 반마다 개설 여부와 담당교수를 조정하고, 마지막에 한 번 더 확인한 뒤 등록합니다.</p>' +
+      M.groups.map(function (g, gi) { return '<div class="subpanel" data-g="' + gi + '" style="margin-bottom:10px"><div class="row"><b>묶음 ' + (gi + 1) + '</b><span class="sp"></span>' + (M.groups.length > 1 ? '<button class="btn btn-ghost btn-sm" data-act="mgdel" style="color:var(--red)">' + I('trash', 13) + ' 삭제</button>' : '') + '</div>' +
+        '<div class="grid g3"><div><label class="f">계열(학과)</label><input class="fld" data-gf="track" value="' + E(g.track) + '" placeholder="예: 항공정비"></div><div><label class="f">학년</label><input class="fld" data-gf="grade" value="' + E(g.grade) + '" placeholder="예: 2학년 (숫자만 써도 됩니다)"></div><div><label class="f">반 목록</label><input class="fld" data-gf="classes" value="' + E(g.classes) + '" placeholder="예: A~D 또는 1~4 또는 A,B,C"></div></div>' +
+        '<label class="f">과목 목록 (한 줄에 과목 1개 · 「과목명, 이론/실습, 담당교수」 — 구분·교수는 비워도 됩니다)</label><textarea class="fld" rows="6" data-gf="subjects" placeholder="항공역학, 이론, 김교수&#10;항공기체실습, 실습, 이교수&#10;항공법규">' + E(g.subjects) + '</textarea>' +
+        '<div class="hint" style="margin-top:4px">반 ' + parseClasses(g.classes).length + '개 × 과목 ' + parseSubjects(g.subjects).length + '개 = 최대 ' + parseClasses(g.classes).length * parseSubjects(g.subjects).length + '건</div></div>'; }).join('') +
+      '<button class="btn btn-secondary btn-sm" data-act="mgadd">' + I('plus', 13) + ' 다른 학년·계열 묶음 추가</button>' +
+      '<div class="btn-row"><button class="btn btn-ghost" data-r="0">취소</button><button class="btn btn-primary" data-act="mnext">다음: 반별 조정 ' + I('right', 16) + '</button></div>';
+  }
+  function matrixGridHtml() {
+    var h = '<h3>반별 개설 여부·담당교수 조정</h3><p class="muted" style="margin:4px 0 10px">체크를 풀면 그 반에는 과목이 개설되지 않습니다. 반마다 담당교수가 다르면 칸에 이름을 적으십시오(비워 두면 기본 교수).</p>';
+    M.groups.forEach(function (g, gi) {
+      var cl = parseClasses(g.classes), sb = parseSubjects(g.subjects);
+      h += '<div class="subpanel" style="margin-bottom:10px"><b>' + E([g.track, g.grade].join(' ')) + '</b><div class="tbl-wrap" style="margin-top:6px;max-height:320px"><table class="t"><thead><tr><th>과목</th><th>기본 교수</th>' + cl.map(function (c) { return '<th class="num">' + E(c) + '</th>'; }).join('') + '</tr></thead><tbody>' +
+        sb.map(function (x, si) { return '<tr><td>' + E(x.name) + (x.kind ? ' <span class="tag">' + x.kind + '</span>' : '') + '</td><td>' + E(x.prof || '-') + '</td>' + cl.map(function (c) { var k = gi + '|' + si + '|' + c, cell = g.cells[k] || (g.cells[k] = { on: true, prof: '' }); return '<td><label class="chk" style="gap:4px"><input type="checkbox" data-mc="' + E(k) + '"' + (cell.on ? ' checked' : '') + '></label><input class="fld" data-mp="' + E(k) + '" value="' + E(cell.prof) + '" placeholder="' + E(x.prof || '교수') + '" style="min-width:78px;min-height:30px;padding:3px 6px;font-size:12px"></td>'; }).join('') + '</tr>'; }).join('') + '</tbody></table></div></div>';
+    });
+    return h + '<div class="btn-row"><button class="btn btn-ghost" data-act="mback">' + I('left', 16) + ' 이전</button><button class="btn btn-primary" data-act="mgen">표로 만들기 (확인 단계로) ' + I('right', 16) + '</button></div>';
+  }
+  function openMatrix() {
+    M.groups = M.groups.length ? M.groups : [newGroup()]; M.step = 'setup';
+    A.modal('<div id="mbox"></div>', function (bg, close) {
+      var box = bg.querySelector('#mbox');
+      function draw() { box.innerHTML = M.step === 'grid' ? matrixGridHtml() : matrixSetupHtml(); }
+      box.addEventListener('input', function (e) {
+        var gf = e.target.getAttribute('data-gf'), mp = e.target.getAttribute('data-mp');
+        if (gf) { var gi = Number(e.target.closest('[data-g]').getAttribute('data-g')); M.groups[gi][gf] = e.target.value; var hint = e.target.closest('[data-g]').querySelector('.hint'); if (hint) { var g = M.groups[gi], a = parseClasses(g.classes).length, b = parseSubjects(g.subjects).length; hint.textContent = '반 ' + a + '개 × 과목 ' + b + '개 = 최대 ' + a * b + '건'; } }
+        if (mp) { var p = mp.split('|'); M.groups[Number(p[0])].cells[mp].prof = e.target.value; }
+      });
+      box.addEventListener('change', function (e) { var mc = e.target.getAttribute('data-mc'); if (mc) M.groups[Number(mc.split('|')[0])].cells[mc].on = e.target.checked; });
+      box.addEventListener('click', function (e) {
+        var b = e.target.closest('[data-r]'); if (b) return close();
+        var t = e.target.closest('[data-act]'); if (!t) return; var act = t.getAttribute('data-act');
+        if (act === 'mgadd') { M.groups.push(newGroup()); return draw(); }
+        if (act === 'mgdel') { M.groups.splice(Number(t.closest('[data-g]').getAttribute('data-g')), 1); return draw(); }
+        if (act === 'mback') { M.step = 'setup'; return draw(); }
+        if (act === 'mnext') {
+          for (var i = 0; i < M.groups.length; i++) { var g = M.groups[i]; if (!g.track.trim() || !g.grade.trim() || !parseClasses(g.classes).length || !parseSubjects(g.subjects).length) return A.toast('묶음 ' + (i + 1) + ': 계열·학년·반 목록·과목 목록을 모두 입력해 주십시오.', 'err'); }
+          M.step = 'grid'; return draw();
+        }
+        if (act === 'mgen') {
+          var rows = [];
+          M.groups.forEach(function (g, gi) { var cl = parseClasses(g.classes), sb = parseSubjects(g.subjects); sb.forEach(function (x, si) { cl.forEach(function (c) { var cell = g.cells[gi + '|' + si + '|' + c] || { on: true, prof: '' }; if (!cell.on) return; rows.push(normAll({ track: g.track, grade: g.grade, klass: c, name: x.name, kind: x.kind, prof: (cell.prof || x.prof || '').trim() })); }); }); });
+          if (!rows.length) return A.toast('개설된 과목이 없습니다.', 'err');
+          st.rows = rows; st.files = []; st.notes = []; st.issues = []; st.src = '반 × 과목 표 (' + rows.length + '건)'; st.kw = ''; M.groups = []; close(); open();
+        }
+      });
+      draw();
+    }, 'xl');
+  }
+
   /* 과목·교수 탭에 버튼 추가 */
   var orig = A.tabs.courses;
   var wrapped = function (box) {
     var r = orig.apply(this, arguments), tpl = box.querySelector('[data-act="tpl"]');
-    if (tpl && !box.querySelector('[data-act="cai"]')) { var b = document.createElement('button'); b.className = 'btn btn-primary btn-sm'; b.setAttribute('data-act', 'cai'); b.innerHTML = I('sparkle', 14) + ' AI로 불러오기 (엑셀·PDF·이미지)'; tpl.parentNode.insertBefore(b, tpl); }
-    if (!box._caiBound) { box._caiBound = true; box.addEventListener('click', function (e) { if (e.target.closest('[data-act="cai"]')) open(); }); }
+    if (tpl && !box.querySelector('[data-act="cai"]')) { var b = document.createElement('button'); b.className = 'btn btn-primary btn-sm'; b.setAttribute('data-act', 'cai'); b.innerHTML = I('sparkle', 14) + ' AI로 불러오기 (엑셀·PDF·이미지)'; tpl.parentNode.insertBefore(b, tpl); var b2 = document.createElement('button'); b2.className = 'btn btn-secondary btn-sm'; b2.setAttribute('data-act', 'cmat'); b2.innerHTML = I('list', 14) + ' 반 × 과목 표로 만들기'; tpl.parentNode.insertBefore(b2, tpl); }
+    if (!box._caiBound) { box._caiBound = true; box.addEventListener('click', function (e) { if (e.target.closest('[data-act="cai"]')) open(); else if (e.target.closest('[data-act="cmat"]')) openMatrix(); }); }
     return r;
   };
   Object.keys(orig).forEach(function (k) { wrapped[k] = orig[k]; });

@@ -19,7 +19,7 @@
       { key: 'email', label: '이메일', type: 'text', hint: '형식 검증', props: { format: 'email', multiline: false, maxLen: 120 } },
       { key: 'phone', label: '전화번호', type: 'text', hint: '형식 검증', props: { format: 'phone', multiline: false, maxLen: 20 } },
       { key: 'url', label: 'URL', type: 'text', hint: 'http(s):// 검증', props: { format: 'url', multiline: false, maxLen: 300 } },
-      { key: 'pattern', label: '학번·사번(패턴)', type: 'text', hint: '정규식으로 형식 지정', props: { format: 'pattern', pattern: '^[0-9]{8}$', patternMsg: '숫자 8자리로 입력해 주십시오.', multiline: false, maxLen: 20 } },
+      { key: 'pattern', label: '학번·사번 등(형식 지정)', type: 'text', hint: '자릿수·형식 직접 지정', props: { format: 'pattern', pattern: '^[0-9]{8}$', patternMsg: '숫자 8자리로 입력해 주십시오.', multiline: false, maxLen: 20 } },
       { key: 'date', label: '날짜', type: 'date', hint: '기간 제한 가능', props: { includeTime: false } },
       { key: 'datetime', label: '날짜·시간', type: 'date', hint: '일시 선택', props: { includeTime: true } },
       { key: 'time', label: '시간', type: 'time', hint: '시:분', props: {} }
@@ -33,7 +33,7 @@
       { key: 'yesno', label: '예 / 아니오', type: 'scale', hint: '두 가지 선택', props: { scale: 'yesno' } },
       { key: 'linear', label: '선형 배율', type: 'linear', hint: '1~N점, 양끝 문구', props: { min: 1, max: 5, lowLabel: '', highLabel: '' } },
       { key: 'rating', label: '별점', type: 'rating', hint: '별·하트·엄지', props: { max: 5, icon: 'star' } },
-      { key: 'nps', label: 'NPS(0~10)', type: 'nps', hint: '추천 의향', props: { lowLabel: '전혀 그렇지 않다', highLabel: '매우 그렇다' } },
+      { key: 'nps', label: '추천 의향(0~10)', type: 'nps', hint: 'NPS · 지인에게 추천할지', props: { lowLabel: '전혀 그렇지 않다', highLabel: '매우 그렇다' } },
       { key: 'slider', label: '슬라이더', type: 'slider', hint: '막대로 값 선택', props: { min: 0, max: 100, step: 1, unit: '' } }
     ] },
     { group: '표·순위', items: [
@@ -69,7 +69,7 @@
   // 저장된 문항 → 메뉴 이름
   function typeLabel(q) {
     var t = q.type, f = q.format;
-    if (t === 'text') return ({ number: '숫자', email: '이메일', phone: '전화번호', url: 'URL', pattern: '패턴' })[f] || (q.multiline ? '장문형' : '단답형');
+    if (t === 'text') return ({ number: '숫자', email: '이메일', phone: '전화번호', url: 'URL', pattern: '형식 지정' })[f] || (q.multiline ? '장문형' : '단답형');
     if (t === 'single') return q.display === 'dropdown' ? '드롭다운' : q.display === 'image' ? '이미지 선택' : '객관식';
     if (t === 'multi') return q.display === 'image' ? '이미지 선택(복수)' : '체크박스';
     if (t === 'scale') return q.scale === 'yesno' ? '예/아니오' : '척도';
@@ -77,7 +77,7 @@
     if (t === 'grid') return q.multi ? '체크박스 그리드' : '객관식 그리드';
     if (t === 'date') return q.includeTime ? '날짜·시간' : '날짜';
     if (t === 'block') return ({ text: '설명 글', image: '이미지', video: '동영상' })[q.kind] || '안내';
-    return ({ time: '시간', linear: '선형 배율', rating: '별점', nps: 'NPS', slider: '슬라이더', ranking: '순위', constsum: '합계 배분', signature: '전자서명', address: '주소', location: '위치', qr: 'QR 스캔', consent: '동의' })[t] || t;
+    return ({ time: '시간', linear: '선형 배율', rating: '별점', nps: '추천 의향(NPS)', slider: '슬라이더', ranking: '순위', constsum: '합계 배분', signature: '전자서명', address: '주소', location: '위치', qr: 'QR 스캔', consent: '동의' })[t] || t;
   }
 
   /* ── 검증 (서버 svy.check_one2 와 동일 규칙) ── 오류 문구 반환, 통과 시 '' */

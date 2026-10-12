@@ -282,8 +282,8 @@
     } catch (e) { A.toast(e.message, 'err'); return false; }
   };
   var TAB_DEFS = [
-    { id: 'overview', t: '개요·배포' }, { id: 'intro', t: '안내문' }, { id: 'questions', t: '문항' }, { id: 'courses', t: '과목·교수' },
-    { id: 'targets', t: '배포 인원' }, { id: 'design', t: '디자인' }, { id: 'results', t: '결과 대시보드' }, { id: 'draw', t: '추첨·수령' }, { id: 'versions', t: '버전' }, { id: 'ai', t: 'AI 설계' }
+    { id: 'overview', t: '시작·배포' }, { id: 'intro', t: '안내문' }, { id: 'questions', t: '문항' }, { id: 'courses', t: '과목·교수' },
+    { id: 'targets', t: '대상 인원' }, { id: 'design', t: '디자인' }, { id: 'results', t: '결과 보기' }, { id: 'draw', t: '추첨' }, { id: 'versions', t: '이전 저장본' }, { id: 'ai', t: 'AI 설계' }
   ];
   function tabsFor() { var gen = A.work && A.work.def && A.work.def.mode === 'general'; return TAB_DEFS.filter(function (t) { return !(gen && (t.id === 'courses' || t.id === 'targets')); }); }
   A.renderSurvey = function () {

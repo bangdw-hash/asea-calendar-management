@@ -268,3 +268,45 @@ body.pvopen .livepv{display:flex}
 }
 @media (max-width:1179px){.livepv{width:min(440px,100vw)}}
 .fld.bad{border-color:var(--red);background:var(--red-lt)}
+
+/* 과목·교수: 보기 전환 · 교수별 카드 */
+.cvbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px;padding:6px;background:#fff;border:1px solid var(--border);border-radius:var(--r)}
+.cvb{display:inline-flex;gap:6px;align-items:center;border:0;background:transparent;border-radius:var(--r);padding:7px 14px;font-weight:600;color:var(--text-2)}
+.cvb.on{background:var(--primary);color:var(--on-primary)}.cvb:not(.on):hover{background:var(--primary-lt);color:var(--primary-dk)}
+.pcards{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:12px;align-items:start}
+.pcard{background:#fff;border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--sh);overflow:hidden}
+.pcard>header{display:flex;gap:10px;align-items:center;padding:10px 12px;cursor:pointer}
+.pcard>header .sp{flex:1}
+.pcard .ico{transition:transform .2s;color:var(--text-2)}.pcard.open>header .ico:last-child{transform:rotate(180deg)}
+.pav{flex:none;width:34px;height:34px;border-radius:50%;background:var(--primary-lt);color:var(--primary-dk);display:inline-flex;align-items:center;justify-content:center;font-weight:700}
+.pbody{padding:0 12px 12px}
+.pgrp{margin-top:8px}.pgt{font-size:12px;font-weight:700;color:var(--text-2);margin-bottom:4px}
+.pchips{display:flex;flex-wrap:wrap;gap:6px}
+.cchip{display:inline-flex;gap:4px;align-items:baseline;background:var(--primary-lt);color:var(--text);border-radius:8px;padding:3px 9px;font-size:13px}
+.cchip b{color:var(--primary-dk)}.cchip.prac{background:var(--green-lt)}.cchip.prac b{color:var(--green)}.cchip small{color:var(--text-2)}
+
+/* 길잡이 · 도움말 · 문항 편집 단순화 */
+.guide{margin:0 0 14px}
+.gsteps{display:flex;align-items:center;gap:6px;flex-wrap:wrap;background:#fff;border:1px solid var(--border);border-radius:var(--r);padding:8px 10px}
+.gsteps .sp{flex:1}
+.gstep{display:inline-flex;align-items:center;gap:6px;border:0;background:transparent;border-radius:var(--r);padding:4px 8px;font-size:13px;color:var(--text-2);font-weight:600}
+.gstep i{font-style:normal;width:20px;height:20px;border-radius:50%;background:var(--gray-lt);display:inline-flex;align-items:center;justify-content:center;font-size:11px;color:var(--text-2)}
+.gstep.done i{background:var(--green);color:#fff}.gstep.cur{background:var(--primary-lt);color:var(--primary-dk)}.gstep.cur i{background:var(--primary);color:#fff}.gstep.bad i{background:var(--red);color:#fff}
+.gstep small{font-weight:400}.gstep:hover{background:var(--gray-lt)}
+.gline{flex:none;width:14px;height:2px;background:var(--border)}
+.gnext{display:flex;gap:12px;align-items:center;margin-top:8px;padding:10px 14px;border-radius:var(--r);background:var(--primary-lt);border:1px solid color-mix(in srgb,var(--primary) 30%,#fff)}
+.gnext .sp{flex:1}.gnext .muted{font-size:12.5px;margin-top:2px}.gnext.ok{background:var(--green-lt);border-color:color-mix(in srgb,var(--green) 35%,#fff)}
+.help{position:relative;display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;margin-left:5px;border-radius:50%;background:var(--gray-lt);color:var(--text-2);font-size:11px;font-weight:700;cursor:help;vertical-align:1px}
+.help:hover,.help:focus,.help.show{background:var(--primary);color:var(--on-primary);outline:none}
+.help:hover::after,.help:focus::after,.help.show::after{content:attr(data-help);position:absolute;left:-8px;top:22px;z-index:50;width:260px;white-space:normal;text-align:left;font-weight:400;font-size:12.5px;line-height:1.5;padding:8px 10px;border-radius:10px;background:#202124;color:#fff;box-shadow:var(--sh-lg)}
+.setgrp{grid-column:1/-1;font-weight:700;color:var(--primary-dk);font-size:13px;padding-top:8px;border-top:1px dashed var(--border-2)}
+.setgrp:first-child{border-top:0;padding-top:0}
+details.adv{border:1px dashed var(--border-2);border-radius:var(--r);background:#fff}
+details.adv>summary{cursor:pointer;padding:8px 12px;font-weight:600;font-size:13.5px}
+details.adv>summary small{font-weight:400;color:var(--text-2);margin-left:6px}
+.advbody{display:grid;gap:8px;padding:0 12px 12px}
+.advbody .subpanel{border-style:solid}
+.qcard.qadd{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.emptyq{text-align:center;padding:26px 16px;background:#fff;border:2px dashed var(--border-2);border-radius:var(--r);margin-bottom:14px}
+.emptyq .ei{color:var(--primary);margin-bottom:4px}
+@media (min-width:1180px){body.pvopen .qpvbox{display:none}}
