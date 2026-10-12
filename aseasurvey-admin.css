@@ -130,3 +130,24 @@ table.t .wrapcell{white-space:normal;min-width:200px;max-width:420px}
 .err-list{max-height:200px;overflow:auto;font-size:12.5px;color:var(--red);margin:6px 0 0;padding-left:18px}
 pre.code{background:#F5F7FA;border:1px solid var(--border);border-radius:var(--r);padding:10px;max-height:300px;overflow:auto;font-size:12px;white-space:pre-wrap;word-break:break-all}
 .diff-add{background:var(--green-lt)}.diff-del{background:var(--red-lt);text-decoration:line-through}
+
+/* 범용 문항 편집기 */
+.qcard .qhead{cursor:pointer}
+.qcard.open{background:#FBFDFF}
+.qsum{flex:1;min-width:120px;color:var(--text-2);font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.subpanel{border:1px dashed var(--border-2);border-radius:var(--r);padding:10px 12px;background:#fff}
+.optbox{display:grid;gap:6px}
+.optbox .optrow .btn{padding:4px 8px;min-height:32px}
+.fld-xs{width:84px}
+.fld-auto{width:auto;min-width:200px}
+.cond-row{display:grid;grid-template-columns:minmax(150px,1.3fr) minmax(110px,.8fr) minmax(110px,1fr) auto;gap:6px;margin:6px 0;align-items:center}
+.cond-row .fld{min-height:38px;padding:6px 10px;font-size:13.5px}
+.qprev{max-width:560px}
+.qprev .q{border-top:0}
+.setp summary{cursor:pointer}
+.mgroup{margin-top:12px}.mg-t{font-weight:700;color:var(--primary-dk);font-size:13px;margin-bottom:6px}
+.mgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:8px}
+.mitem{display:flex;flex-direction:column;gap:2px;text-align:left;padding:9px 12px;border:1px solid var(--border-2);background:#fff;border-radius:var(--r)}
+.mitem:hover{border-color:var(--primary);background:var(--primary-lt)}
+.mitem span{font-size:12px;color:var(--text-2)}
+@media (max-width:640px){.cond-row{grid-template-columns:1fr 1fr}.cond-row .btn{justify-self:end}}
