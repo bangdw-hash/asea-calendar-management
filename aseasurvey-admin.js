@@ -230,7 +230,8 @@
       '<button type="button" class="opt" data-v="tpl" aria-pressed="true"><span class="box">' + I('check', 14) + '</span><span><b>기본 양식</b> (교육과정 개선 설문, docx 기준 · 문항 24개)</span></button>' +
       '<button type="button" class="opt" data-v="clone" aria-pressed="false"><span class="box">' + I('check', 14) + '</span><span><b>이전 설문 불러오기</b> (문항·안내문·디자인·과목·배포 인원 모두 복사)</span></button>' +
       '<button type="button" class="opt" data-v="ai" aria-pressed="false"><span class="box">' + I('check', 14) + '</span><span><b>AI로 설계</b> (docx·텍스트를 입력하면 설문 구성안 생성)</span></button>' +
-      '<button type="button" class="opt" data-v="blank" aria-pressed="false"><span class="box">' + I('check', 14) + '</span><span><b>빈 설문</b></span></button></div>' +
+      '<button type="button" class="opt" data-v="general" aria-pressed="false"><span class="box">' + I('check', 14) + '</span><span><b>일반 설문 (빈 양식)</b> — 행사 만족도·교직원 설문 등 1인 1회 응답. 문항 형식은 자유롭게 추가</span></button>' +
+      '<button type="button" class="opt" data-v="blank" aria-pressed="false"><span class="box">' + I('check', 14) + '</span><span><b>과목별 평가 (빈 양식)</b></span></button></div>' +
       '<div id="nclone" class="hide"><label class="f">불러올 설문</label><select id="ncs" class="fld">' + (past || '<option value="">이력이 없습니다</option>') + '</select></div>' +
       '<div class="btn-row"><button class="btn btn-ghost" data-r="0">취소</button><button class="btn btn-primary" data-r="1">만들기</button></div>', function (bg, close) {
       var src = 'tpl';
@@ -242,7 +243,7 @@
         var title = bg.querySelector('#nt').value.trim(), sem = bg.querySelector('#ns').value.trim();
         if (src === 'ai') { close(); return A.ext.aiCreate && A.ext.aiCreate({ title: title, semester: sem }); }
         try {
-          var def = src === 'tpl' ? tpl.def : { intro: { title: title, subtitle: '', org: '아세아항공직업전문학교', notice: [] }, scales: tpl.def.scales, basic: [], sections: [] };
+          var def = src === 'tpl' ? tpl.def : src === 'general' ? { mode: 'general', intro: { title: title, subtitle: '', org: '아세아항공직업전문학교', notice: [] }, scales: tpl.def.scales, basic: [], sections: [{ id: 'S1', title: '설문 문항', note: '', questions: [] }] } : { intro: { title: title, subtitle: '', org: '아세아항공직업전문학교', notice: [] }, scales: tpl.def.scales, basic: [], sections: [] };
           var args = { p_title: title, p_semester: sem, p_def: def, p_theme: {} };
           if (src === 'clone') { var id = bg.querySelector('#ncs').value; if (!id) return A.toast('불러올 설문을 선택해 주십시오.', 'err'); args.p_clone_from = id; }
           var r = await A.rpc('svy_a_create', args); close(); A.toast('설문을 만들었습니다.'); location.hash = '#/s/' + r.id + '/overview';
@@ -282,13 +283,14 @@
     { id: 'overview', t: '개요·배포' }, { id: 'intro', t: '안내문' }, { id: 'questions', t: '문항' }, { id: 'courses', t: '과목·교수' },
     { id: 'targets', t: '배포 인원' }, { id: 'design', t: '디자인' }, { id: 'results', t: '결과 대시보드' }, { id: 'draw', t: '추첨·수령' }, { id: 'versions', t: '버전' }, { id: 'ai', t: 'AI 설계' }
   ];
+  function tabsFor() { var gen = A.work && A.work.def && A.work.def.mode === 'general'; return TAB_DEFS.filter(function (t) { return !(gen && (t.id === 'courses' || t.id === 'targets')); }); }
   A.renderSurvey = function () {
     A.view = 'survey';
     var s = A.cur.survey, dirty = A.isDirty();
     shell('<div class="crumb"><a data-act="tolist">설문 목록</a> / ' + E(s.title) + '</div><div class="pg-head"><h1>' + E(A.work.title) + '</h1>' + A.phaseBadge(A.cur.phase) +
       (s.test_mode ? '<span class="badge badge-amber">' + I('flask', 13) + ' 테스트 모드</span>' : '') + '<span class="badge badge-gray">v' + s.version + '</span><span class="sp"></span>' +
       '<span id="dirty" class="badge badge-amber ' + (dirty ? '' : 'hide') + '">저장되지 않은 변경</span><button class="btn btn-primary" data-act="savework" ' + (dirty ? '' : 'disabled') + ' id="savebtn">' + I('check', 16) + ' 저장</button></div>' +
-      '<div class="tabs" role="tablist">' + TAB_DEFS.map(function (t) { return '<button class="tab" role="tab" data-act="tab" data-tab="' + t.id + '" aria-selected="' + (A.tab === t.id) + '">' + t.t + '</button>'; }).join('') + '</div><div id="tabbody"></div>');
+      '<div class="tabs" role="tablist">' + tabsFor().map(function (t) { return '<button class="tab" role="tab" data-act="tab" data-tab="' + t.id + '" aria-selected="' + (A.tab === t.id) + '">' + t.t + '</button>'; }).join('') + '</div><div id="tabbody"></div>');
     var fn = A.tabs[A.tab]; if (fn) fn(document.getElementById('tabbody')); else document.getElementById('tabbody').innerHTML = '<div class="panel t-empty">준비 중입니다.</div>';
   };
   A.markDirty = function () {

@@ -130,3 +130,64 @@ table.t .wrapcell{white-space:normal;min-width:200px;max-width:420px}
 .err-list{max-height:200px;overflow:auto;font-size:12.5px;color:var(--red);margin:6px 0 0;padding-left:18px}
 pre.code{background:#F5F7FA;border:1px solid var(--border);border-radius:var(--r);padding:10px;max-height:300px;overflow:auto;font-size:12px;white-space:pre-wrap;word-break:break-all}
 .diff-add{background:var(--green-lt)}.diff-del{background:var(--red-lt);text-decoration:line-through}
+
+/* 범용 문항 편집기 */
+.qcard .qhead{cursor:pointer}
+.qcard.open{background:#FBFDFF}
+.qsum{flex:1;min-width:120px;color:var(--text-2);font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.subpanel{border:1px dashed var(--border-2);border-radius:var(--r);padding:10px 12px;background:#fff}
+.optbox{display:grid;gap:6px}
+.optbox .optrow .btn{padding:4px 8px;min-height:32px}
+.fld-xs{width:84px}
+.fld-auto{width:auto;min-width:200px}
+.cond-row{display:grid;grid-template-columns:minmax(150px,1.3fr) minmax(110px,.8fr) minmax(110px,1fr) auto;gap:6px;margin:6px 0;align-items:center}
+.cond-row .fld{min-height:38px;padding:6px 10px;font-size:13.5px}
+.qprev{max-width:560px}
+.qprev .q{border-top:0}
+.setp summary{cursor:pointer}
+.mgroup{margin-top:12px}.mg-t{font-weight:700;color:var(--primary-dk);font-size:13px;margin-bottom:6px}
+.mgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:8px}
+.mitem{display:flex;flex-direction:column;gap:2px;text-align:left;padding:9px 12px;border:1px solid var(--border-2);background:#fff;border-radius:var(--r)}
+.mitem:hover{border-color:var(--primary);background:var(--primary-lt)}
+.mitem span{font-size:12px;color:var(--text-2)}
+@media (max-width:640px){.cond-row{grid-template-columns:1fr 1fr}.cond-row .btn{justify-self:end}}
+
+/* AI 설계: 제안 → 확인·수정 → 만들기 */
+.aibar{display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap}
+.wz{padding:4px 12px;border-radius:var(--r);background:var(--gray-lt);color:var(--text-2);font-size:12.5px;font-weight:700}
+.wz.done{background:var(--green-lt);color:var(--green)}.wz.on{background:var(--primary);color:var(--on-primary)}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:3px 6px 3px 10px;border-radius:var(--r);background:var(--primary-lt);color:var(--primary-dk);font-size:12.5px}
+.chip small{color:var(--text-2)}.chip button{border:0;background:transparent;padding:2px;line-height:0;color:var(--text-2)}
+.sugg{display:flex;gap:10px;align-items:center;padding:10px 12px;border:1px solid var(--border);border-radius:var(--r);margin-top:8px;background:#fff}
+.sugg.on{background:var(--green-lt);border-color:color-mix(in srgb,var(--green) 40%,#fff)}
+.aisec{display:flex;gap:6px;align-items:center;margin-top:14px}.aisec .fld{font-weight:700}
+.aiq{padding:6px 0;border-bottom:1px solid var(--gray-lt)}
+.aiq .fld{min-height:36px;padding:5px 8px;font-size:13px}
+.fld-fmt{width:128px;flex:none}
+.why{font-size:12px;color:var(--text-2);margin:2px 0 0 4px;display:flex;gap:4px;align-items:center}
+.aicap{font-size:12px;color:var(--text-2);margin:-2px 0 8px;padding:4px 8px;border-left:3px solid var(--primary);background:var(--primary-lt);border-radius:0 8px 8px 0}
+.pvtabs{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 10px}
+.pvtab{padding:4px 10px;border:1px solid var(--border-2);background:#fff;border-radius:var(--r);font-size:12.5px}
+.pvtab.on{background:var(--primary);border-color:var(--primary);color:var(--on-primary);font-weight:700}
+.phone{max-width:400px;margin:0 auto;border:8px solid #202124;border-radius:26px;overflow:hidden;background:var(--bg)}
+.phone .preview{border:0;border-radius:0;max-height:640px;overflow:auto}
+.phone .card + .card{margin-top:10px}
+.panel.final{border:2px solid var(--primary)}
+
+/* 일반 설문 결과 */
+.drow{display:grid;grid-template-columns:minmax(90px,200px) 1fr minmax(110px,170px);gap:10px;align-items:center;padding:3px 0;font-size:13px}
+.dl{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dbar{height:10px;border-radius:6px;background:var(--gray-lt);overflow:hidden}.dbar i{display:block;height:100%}
+.dv{font-variant-numeric:tabular-nums;color:var(--text-2);text-align:right}
+.npsbar{display:flex;height:14px;border-radius:7px;overflow:hidden;background:var(--gray-lt);margin-top:6px}.npsbar i{display:block;height:100%}
+.kv{gap:16px;margin-bottom:6px}
+.textlist{display:grid;gap:4px;max-height:320px;overflow:auto}.tl{padding:6px 10px;border-radius:8px;background:#F7F9FB;font-size:13px}
+.spark{display:flex;gap:6px;align-items:flex-end;height:150px;overflow-x:auto;padding-top:8px}
+.sp1{flex:0 0 38px;height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;font-size:11px;color:var(--text-2)}
+.sp1 i{display:block;width:60%;background:var(--primary);border-radius:4px 4px 0 0}.sp1 b{color:var(--text)}
+details.resp{border:1px solid var(--border);border-radius:var(--r);margin-top:8px;background:#fff}
+details.resp summary{cursor:pointer;padding:9px 12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+details.resp.ex{opacity:.6}.rdbody{padding:4px 14px 12px}
+.rd{padding:6px 0;border-bottom:1px solid var(--gray-lt);font-size:13.5px}
+.kpi .v small{font-size:14px;color:var(--text-2);font-weight:500}
