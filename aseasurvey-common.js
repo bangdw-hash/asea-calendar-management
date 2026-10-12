@@ -27,11 +27,16 @@ window.SVY = (function () {
     TICKET_INVALID: '존재하지 않는 추첨번호가 포함되어 있습니다.',
     NOT_WINNER: '현재 공개된 추첨 결과의 당첨 번호가 아닙니다.',
     PUBLISHED: '공개 중인 추첨은 삭제할 수 없습니다. 먼저 공개를 해제해 주십시오.',
-    BAD_SCOPE: '초기화 범위가 올바르지 않습니다.'
+    BAD_SCOPE: '초기화 범위가 올바르지 않습니다.',
+    FULL: '정원이 마감되었습니다.',
+    BAD_FILE_TYPE: '올릴 수 없는 파일 형식입니다. 사진·PDF·문서 파일만 가능합니다.',
+    FILE_TOO_LARGE: '파일 용량이 너무 큽니다. 3MB 이하로 올려 주십시오.',
+    FILE_LIMIT: '첨부 가능한 파일 수 또는 총 용량을 초과했습니다.'
   };
   function errMsg(code, raw) {
     if (!code) return '알 수 없는 오류가 발생했습니다.';
     if (ERR[code]) return ERR[code];
+    if (code.indexOf('OPTION_FULL:') === 0) return '「' + code.slice(12) + '」 선택지는 정원이 마감되었습니다. 다른 항목을 선택해 주십시오.';
     if (code.indexOf('VALIDATION:') === 0) return '응답 검증 오류: ' + code.slice(11);
     if (code.indexOf('ROW_INVALID:') === 0) return code.slice(12) + '번째 행에 필수값(계열·학년·반·과목명)이 비어 있습니다.';
     if (/function .* does not exist|Could not find the function/i.test(raw || code)) return 'DB 함수가 아직 설치되지 않았습니다. db/README_survey.md 의 설치 순서를 확인해 주십시오.';
