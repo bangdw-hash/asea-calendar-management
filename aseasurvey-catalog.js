@@ -30,7 +30,8 @@
   // 각 양식: k, c(분야), t(이름), aud(대상), p(목적), u(활용), s(영역: [제목, [척도 문장], [추가 문항]]), b(응답자 정보 문항), nps, open, named, f(설정), mode
   var L = [
     /* 교육품질 */
-    { k: 'edu-class', c: 'edu', t: '교과목·교강사 평가 (연동 목록)', aud: '재학생', p: '교과목별 수업 품질 확인', u: '강의 개선, 교수 평가 참고', mode: 'course', base: true },
+    { k: 'edu-class', c: 'edu', t: '교과목·교강사 평가 A형 (교과목 중심형)', aud: '재학생', p: '교과목별 수업 품질 확인', u: '강의 개선, 교수 평가 참고', mode: 'course', base: true, tag: 'A형' },
+    { k: 'edu-class-b', c: 'edu', t: '교과목·교강사 평가 B형 (질문 중심형)', aud: '재학생', p: '교과목별 수업 품질 확인', u: '강의 개선, 교수 평가 참고', mode: 'course', base: true, matrix: true, tag: 'B형' },
     { k: 'edu-curr', c: 'edu', t: '교육과정 만족도 조사', aud: '재학생·졸업생', p: '전공·교양·실습 구성의 적절성 확인', u: '교육과정 개편', b: ['구분|재학생|졸업생', '전공|항공정비|항공서비스|기타'], s: [['교육과정 구성', ['전공 교육과정이 목표 진로와 연계되어 있다.', '이론과 실습의 비율이 적절하다.', '교양 과목이 학습에 도움이 된다.', '과목 간 연계와 학습 순서가 적절하다.', '교육과정 전반에 만족한다.'], ['R:더 확대되어야 할 과목 영역|전공 이론|전공 실습|자격증 대비|외국어|현장 실습']]] },
     { k: 'edu-mat', c: 'edu', t: '교재·콘텐츠 만족도 조사', aud: '재학생', p: '교재·PPT·LMS 자료 품질 확인', u: '교재 개발, 수업자료 개선', b: STU, s: [['교재·자료 품질', ['교재의 내용이 수업 목표에 맞다.', '수업 자료(PPT·유인물)가 이해하기 쉽다.', 'LMS 자료가 최신이고 접근하기 쉽다.', '예제와 문제가 실무에 도움이 된다.', '자료 전반에 만족한다.'], ['M:보완이 필요한 자료|교재|PPT|영상|문제집|실습 자료|기타']]] },
     { k: 'edu-lab', c: 'edu', t: '실습환경 만족도 조사', aud: '재학생', p: '실습실·장비·기자재·안전환경 확인', u: '시설·장비 예산 근거', b: STU, s: [['실습 환경', ['실습 장비가 수업에 충분하다.', '장비 상태가 양호하고 최신 기준에 맞다.', '실습실 공간과 인원 배정이 적절하다.', '실습 중 안전 교육과 보호구가 충분하다.'], ['R:가장 우선 개선이 필요한 항목|장비 수량|장비 노후|공간|안전|소모품']]] },
@@ -121,7 +122,7 @@
   }
   function build(s) {
     var tpl = window.SVY_TEMPLATE && window.SVY_TEMPLATE.def, sc = tpl ? tpl.scales : { likert5: [{ v: 5, label: '매우 그렇다' }, { v: 4, label: '그렇다' }, { v: 3, label: '보통이다' }, { v: 2, label: '아니다' }, { v: 1, label: '전혀 아니다' }], yesno: [{ v: 1, label: '예' }, { v: 0, label: '아니오' }] };
-    if (s.base && tpl) { var d0 = JSON.parse(JSON.stringify(tpl)); d0.link = { unit: '과목', stepTitle: '수강 반 선택', cols: { track: { label: '계열', use: true }, grade: { label: '학년', use: true }, klass: { label: '반', use: true }, name: { label: '과목명', use: true }, kind: { label: '구분(이론/실습)', use: true }, prof: { label: '담당교수', use: true } }, samples: [{ track: '항공정비', grade: '2학년', klass: 'A반', name: '항공역학', kind: '이론', prof: '홍길동' }, { track: '항공정비', grade: '2학년', klass: 'A반', name: '항공기체실습2', kind: '실습', prof: '김철수' }] }; return d0; }
+    if (s.base && tpl) { var d0 = JSON.parse(JSON.stringify(tpl)); d0.link = { unit: '과목', stepTitle: '수강 반 선택', cols: { track: { label: '계열', use: true }, grade: { label: '학년', use: true }, klass: { label: '반', use: true }, name: { label: '과목명', use: true }, kind: { label: '구분(이론/실습)', use: true }, prof: { label: '담당교수', use: true } }, samples: [{ track: '항공정비', grade: '2학년', klass: 'A반', name: '항공역학', kind: '이론', prof: '홍길동' }, { track: '항공정비', grade: '2학년', klass: 'A반', name: '항공기체실습2', kind: '실습', prof: '김철수' }] }; if (s.matrix) d0.view = 'matrix'; return d0; }
     var n = 0, gen = true, def = { mode: 'general', intro: {}, scales: JSON.parse(JSON.stringify(sc)), basic: [], sections: [] };
     (s.b || []).forEach(function (t) { n++; var p = t.split('|'), o = opt(p.slice(1)); def.basic.push({ id: 'Q' + n, type: 'single', label: p[0], options: o.opts, required: true, scope: 'common' }); });
     if (s.special === 'checkin') {
@@ -151,7 +152,7 @@
   var byKey = {}; L.forEach(function (s) { byKey[s.k] = s; });
   window.SVY_CATALOG = {
     cats: CATS,
-    list: L.map(function (s) { return { k: s.k, c: s.c, t: s.t, aud: s.aud, p: s.p, u: s.u, mode: s.mode || 'general', named: !!s.named }; }),
+    list: L.map(function (s) { return { k: s.k, c: s.c, t: s.t, aud: s.aud, p: s.p, u: s.u, mode: s.mode || 'general', named: !!s.named, tag: s.tag || '' }; }),
     get: function (k) { var s = byKey[k]; return s ? { meta: { k: s.k, c: s.c, t: s.t, aud: s.aud, p: s.p, u: s.u, mode: s.mode || 'general' }, def: build(s) } : null; },
     cat: function (k) { return CATS.filter(function (c) { return c.k === k; })[0]; }
   };
