@@ -75,7 +75,7 @@
         var tr = Array.from(new Set(cs.map(function (c) { return c.track; }))).slice(0, 4);
         var LKI = SVY.linkInfo(d), ex0 = LKI.custom ? cs[0] : null, tr2 = LKI.custom ? Array.from(new Set(cs.map(function (c) { return c.track; }))).filter(function (v) { return v && v !== '-'; }).slice(0, 4) : tr;
         h += '<div class="card"><div class="kicker">1단계</div><h2 class="title" style="font-size:19px">' + E(LKI.stepTitle) + '</h2>' + (LKI.custom && !LKI.cols.track.use ? '' : '<div class="chip-title">' + E(LKI.cols.track.label) + '</div>') + '<div class="opts wide">' + (LKI.custom && !LKI.cols.track.use ? [] : (tr2.length ? tr2 : [LKI.cols.track.label + ' 예시'])).map(function (t, i) { return '<span class="opt" aria-pressed="' + (i === 0) + '">' + E(t) + '</span>'; }).join('') + '</div>' +
-          (cs.length ? '<div class="msg ok">' + I('check', 18) + '<div><b>등록 과목 ' + cs.length + '개</b><br>' + cs.slice(0, 5).map(function (c) { return E(c.name); }).join(' · ') + (cs.length > 5 ? ' …' : '') + '</div></div>' : '<div class="msg warn">' + I('alert', 18) + '<div>등록된 과목이 없습니다. 「과목·교수」 탭에서 등록해 주십시오.</div></div>') + '</div>';
+          (cs.length ? '<div class="msg ok">' + I('check', 18) + '<div><b>등록 과목 ' + cs.length + '개</b><br>' + cs.slice(0, 5).map(function (c) { return E(c.name) + (c.prof ? ' (' + E(c.prof) + ')' : ''); }).join(' · ') + (cs.length > 5 ? ' …' : '') + '</div></div>' : '<div class="msg warn">' + I('alert', 18) + '<div>등록된 과목이 없습니다. 「과목·교수」 탭에서 등록해 주십시오.</div></div>') + '</div>';
       }
       if ((d.basic || []).length) h += '<div class="card"><h2 class="title" style="font-size:19px">기본 정보</h2>' + d.basic.map(function (q) { return qhtml(q, d, why); }).join('') + '</div>';
       return h;

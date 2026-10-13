@@ -201,11 +201,13 @@
         : '<button class="btn btn-secondary" data-act="tocommon">마지막 문항으로 ' + I('down', 16) + '</button>') + '</div>';
     return h;
   }
+  // 담당자 정보가 등록되어 있으면 학생 화면에 과목과 함께 표시합니다. (라벨에 「교수」가 있으면 「교수」를 붙임)
+  function profText(c) { if (!c.prof) return ''; var lb = ((S.def && S.def.link && S.def.link.cols || {}).prof || {}).label || '담당교수'; return c.prof + (/교수/.test(lb) ? ' 교수' : ''); }
   function courseHead(c, idx) {
     var s = courseStat(c.id), done = s.total > 0 && s.done === s.total;
     return '<button type="button" class="course-head" data-act="toggle" data-cid="' + c.id + '" aria-expanded="' + (S.open === c.id) + '">' +
       '<span class="c-num">' + (done ? I('check', 16) : (idx + 1)) + '</span>' +
-      '<span class="c-name">' + E(c.name) + (c.kind ? '<small>' + E(c.kind) + '</small>' : '') + '</span>' +
+      '<span class="c-name">' + E(c.name) + (c.kind ? '<small>' + E(c.kind) + '</small>' : '') + (profText(c) ? '<small class="cprof">' + E(profText(c)) + '</small>' : '') + '</span>' +
       '<span class="c-prog" data-prog>' + (done ? '완료' : s.done + '/' + s.total) + '</span>' + I('chevron', 18).replace('class="ico"', 'class="ico c-chev"') + '</button>';
   }
   function commonHtml() {
@@ -249,12 +251,12 @@
     if (!S.sel.track && only(tracks)) S.sel.track = '-';
     if (S.sel.track === '-' && !S.sel.grade && only(uniq(S.courses.filter(function (c) { return c.track === '-'; }).map(function (c) { return c.grade; })))) S.sel.grade = '-';
     if (S.sel.grade === '-' && !S.sel.klass && only(uniq(S.courses.filter(function (c) { return c.track === S.sel.track && c.grade === '-'; }).map(function (c) { return c.klass; })))) S.sel.klass = '-';
-    var h = '<div class="card"><div class="kicker">1단계</div><h2 class="title" style="font-size:calc(19px*var(--fs))">' + E(LK.stepTitle) + '</h2><p class="muted" style="margin:4px 0 12px">' + (LK.custom ? '선택한 항목에 해당하는 ' + E(unit) + '이(가) 표시됩니다.' : '선택한 반의 수강 과목이 표시됩니다.') + '</p>';
+    var h = '<div class="card"><div class="kicker">1단계</div><h2 class="title" style="font-size:calc(19px*var(--fs))">' + E(LK.stepTitle) + '</h2><p class="muted" style="margin:4px 0 12px">' + (LK.custom && unit !== '과목' ? '선택한 항목에 해당하는 ' + E(unit) + ' 목록이 표시됩니다.' : '선택한 반의 수강 과목이 표시됩니다.') + '</p>';
     if (!only(tracks)) h += '<div class="chip-title">' + E(cl.track.label) + '</div>' + chips(tracks, 'track');
     if (S.sel.track && !only(grades)) h += '<div class="chip-title">' + E(cl.grade.label) + '</div>' + chips(grades, 'grade');
     if (S.sel.grade && !only(klasses)) h += '<div class="chip-title">' + E(cl.klass.label) + '</div>' + chips(klasses, 'klass');
     var mc = S.sel.klass ? myCourses() : [];
-    if (mc.length) h += '<div class="msg ok">' + I('check', 18) + '<div><b>' + (LK.custom ? E(unit) + ' ' : '수강 과목 ') + mc.length + '개</b><br>' + mc.map(function (c) { return E(c.name); }).join(' · ') + '</div></div>';
+    if (mc.length) h += '<div class="msg ok">' + I('check', 18) + '<div><b>' + (LK.custom ? E(unit) + ' ' : '수강 과목 ') + mc.length + '개</b><br>' + mc.map(function (c) { return E(c.name) + (profText(c) ? ' <span class="muted">(' + E(profText(c)) + ')</span>' : ''); }).join(' · ') + '</div></div>';
     h += '</div>';
     var basic = qs('common', true);
     if (basic.length && mc.length) h += '<div class="card"><div class="kicker">2단계</div><h2 class="title" style="font-size:calc(19px*var(--fs))">기본 정보</h2><div data-sec="common">' + renderItems(basic, 'common', false) + '</div></div>';

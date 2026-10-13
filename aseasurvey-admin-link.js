@@ -72,7 +72,7 @@
     var g = ['작성 안내', '1. 「' + l.unit + '등록」 시트의 첫 행(머리글)은 수정하지 말고, 둘째 행부터 한 행에 ' + l.unit + ' 하나씩 입력합니다.',
       '2. 필수 열: ' + req.join(', ') + '. 비워 두면 등록되지 않고 오류로 표시됩니다.'];
     if (l.cols.kind.use) g.push('3. 「' + l.cols.kind.label + '」은 선택 입력입니다. 비워도 됩니다.');
-    if (l.cols.prof.use) g.push('4. 「' + l.cols.prof.label + '」은 학생에게 보이지 않고 결과 집계(담당자별 보기)에만 사용합니다. 선택 입력입니다.');
+    if (l.cols.prof.use) g.push('4. 「' + l.cols.prof.label + '」은 학생 화면에 과목과 함께 표시되고 결과 집계(담당자별 보기)에도 사용합니다. 선택 입력입니다.');
     g.push('5. 같은 [' + req.join(' + ') + '] 조합이 두 번 나오면 중복 오류로 표시됩니다. 같은 이름이라도 구분이 필요하면 다른 열 값을 다르게 입력합니다.');
     g.push('6. 「(예시)」로 시작하는 행은 등록되지 않습니다. 예시 행은 지우거나 그대로 두셔도 됩니다.');
     g.push('7. 설계 화면에서 사용하지 않기로 한 열은 양식에 포함되지 않습니다.');
@@ -102,7 +102,7 @@
     var rows = rowsAsObjects().filter(function (r) { return r.name; }).slice(0, 4);
     rows.forEach(function (r, i) { h += '<tr><th>' + (i + 2) + '</th>' + used.map(function (k, j) { return '<td>' + E((i === 0 && j === 0 ? '(예시)' : '') + (r[k] || '')) + '</td>'; }).join('') + '</tr>'; });
     h += '<tr><th>' + (rows.length + 2) + '</th>' + used.map(function () { return '<td class="xe">…</td>'; }).join('') + '</tr></tbody></table></div>' +
-      '<div class="xlreq">' + used.map(function (k) { var req = k !== 'prof' && k !== 'kind'; return '<span class="tag' + (req ? ' blue' : '') + '">' + E(l.cols[k].label) + ': ' + (req ? '필수' : '선택') + (k === 'prof' ? ' · 학생에게 안 보임' : '') + '</span>'; }).join(' ') + '</div>' +
+      '<div class="xlreq">' + used.map(function (k) { var req = k !== 'prof' && k !== 'kind'; return '<span class="tag' + (req ? ' blue' : '') + '">' + E(l.cols[k].label) + ': ' + (req ? '필수' : '선택') + (k === 'prof' ? ' · 학생 화면에도 표시' : '') + '</span>'; }).join(' ') + '</div>' +
       '<ul class="xlguide">' + guide(l, used).slice(1, 7).map(function (g) { return '<li>' + E(g.replace(/^\d+\.\s*/, '')) + '</li>'; }).join('') + '</ul></div>';
     // 학생 선택 흐름
     var steps = ['track', 'grade', 'klass'].filter(function (k) { return l.cols[k].use; }).map(function (k) { return l.cols[k].label; });
@@ -111,7 +111,7 @@
   }
   function colEditor() {
     var h = '<div class="tbl-wrap"><table class="t lk-cols"><thead><tr><th>사용</th><th>역할</th><th>열 이름(학생·엑셀에 표시)</th><th>예시 1</th><th>예시 2</th><th>예시 3</th></tr></thead><tbody>';
-    var role = { track: '1단계 선택(분류)', grade: '2단계 선택', klass: '3단계 선택', name: '평가 대상 이름 (필수)', kind: '보조 구분 (선택)', prof: '담당자 — 학생에게 안 보임 (선택)' };
+    var role = { track: '1단계 선택(분류)', grade: '2단계 선택', klass: '3단계 선택', name: '평가 대상 이름 (필수)', kind: '보조 구분 (선택)', prof: '담당자 — 학생 화면에도 표시 (선택)' };
     K.forEach(function (k) {
       var c = D.cols[k], i = ORDER.indexOf(k);
       h += '<tr data-k="' + k + '"><td><input type="checkbox" data-lk="use" ' + (c.use ? 'checked' : '') + (k === 'name' ? ' disabled' : '') + '></td><td class="muted" style="font-size:12.5px">' + role[k] + '</td><td><input class="fld" data-lk="label" value="' + E(c.label) + '" ' + (c.use ? '' : 'disabled') + ' style="min-width:140px"></td>' +
@@ -165,7 +165,7 @@
     try { return JSON.parse(s); } catch (e) { var b = s.lastIndexOf('}'); if (b > 0) return JSON.parse(s.slice(0, b + 1)); throw new Error('AI 응답을 해석하지 못했습니다. 다시 시도해 주십시오.'); }
   }
   var SYS_DESIGN = '당신은 학교 설문 설계 도우미입니다. 사용자가 올리려는 「연동 목록」(응답 대상이 되는 목록. 예: 과목·시설·프로그램·부서)에 맞춰 엑셀 열 구성과 문항을 설계합니다.\n' +
-    '목록 한 행은 평가 대상 1개이며 최대 6개 열을 쓸 수 있습니다. 열 키: track(1단계 선택 분류), grade(2단계 선택), klass(3단계 선택), name(평가 대상 이름, 필수·항상 사용), kind(보조 구분, 선택), prof(담당자, 학생에게 안 보임, 선택). 쓰지 않는 열은 use:false 로 합니다. 학생은 track→grade→klass 순으로 고른 뒤 해당 목록의 name 마다 응답하므로, 목록 크기에 맞게 필요한 단계만 쓰고 단계 수는 최소로 합니다.\n' +
+    '목록 한 행은 평가 대상 1개이며 최대 6개 열을 쓸 수 있습니다. 열 키: track(1단계 선택 분류), grade(2단계 선택), klass(3단계 선택), name(평가 대상 이름, 필수·항상 사용), kind(보조 구분, 선택), prof(담당자, 학생 화면에도 표시, 선택). 쓰지 않는 열은 use:false 로 합니다. 학생은 track→grade→klass 순으로 고른 뒤 해당 목록의 name 마다 응답하므로, 목록 크기에 맞게 필요한 단계만 쓰고 단계 수는 최소로 합니다.\n' +
     '출력은 JSON 객체 하나만 작성합니다(설명·코드펜스 금지). 형식: {"title":"설문 제목","unit":"목록 이름(예: 시설)","stepTitle":"학생 화면 첫 제목(예: 이용한 시설 선택)","cols":{"track":{"use":true,"label":"열 이름","sample":""},"grade":{…},"klass":{…},"name":{"use":true,"label":"…"},"kind":{…},"prof":{…}},"samples":[{"track":"","grade":"","klass":"","name":"","kind":"","prof":""}(실제처럼 보이는 예시 3행, 개인 실명은 「박OO」처럼 가림)],"questions":[{"type":"scale|text|single","label":"문항","options":["선택지"](single일 때)}](3~8개, 마지막은 서술 의견 1개),"notes":["설계 판단 이유와 사용자가 확인할 점"]}\n입력에 없는 사실을 지어내지 않습니다. 첨부된 엑셀·문서가 있으면 그 머리글과 값을 참고해 열 이름과 예시를 맞춥니다.';
   var SYS_SUG = '당신은 학교 설문 설계 도우미입니다. 아래 「현재 연동 목록 설문 구성」에 도움이 될 추가 기능을 3~6개 제안합니다. 제안은 반드시 다음 세 종류 중 하나로, 바로 적용 가능한 형태여야 합니다.\n' +
     '1) {"kind":"cols","title":"…","why":"이유","cols":{"prof":{"use":true,"label":"…"}}} — 열 사용 여부·이름 변경\n2) {"kind":"question","title":"…","why":"이유","question":{"type":"scale|text|single","label":"…","options":["…"]}} — 문항 추가\n3) {"kind":"ticket","title":"추첨번호 발급","why":"이유"} — 참여 독려용 추첨번호 제공\n출력은 JSON 객체 하나만: {"suggestions":[…]}. 이미 있는 문항·열과 겹치는 제안은 하지 않습니다. 데이터 업로드·결과 집계에서 실무에 도움이 되는 것(담당자별 비교, 서술 의견, 이용 빈도, 개선 우선순위 등)을 우선합니다.';
