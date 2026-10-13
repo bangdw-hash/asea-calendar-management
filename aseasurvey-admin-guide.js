@@ -13,6 +13,13 @@
     var d = A.work.def, gen = d.mode === 'general', lint = A.lintDef(d), nq = A.countQuestions(), item = A.cur.item || {}, s = A.work;
     var cs = (A.cur.courses || []).filter(function (c) { return c.active; }).length, head = (A.cur.targets || []).reduce(function (a, t) { return a + (t.headcount || 0); }, 0);
     var live = s.status === 'open' && !s.test_mode;
+    if (A.howto) {
+      var INFO = { quiz: 1, limit: 1, named: 1, media: 1, design: 1, draw: 1, res: 1 }, hd = head;
+      return A.howto.plan(d).filter(function (p) { return !/^(design|draw|res)$/.test(p.id); }).map(function (p) {
+        var done = { intro: !!(d.intro && d.intro.title && (d.intro.notice || []).length), q: nq > 0 && !lint.errs.length, c: cs > 0, h: hd > 0, t: (item.test_responses || 0) > 0 || live, audit: !!(A.audit && A.audit.ran && A.audit.ran()) || live, l: live }[p.id] || false;
+        return { id: p.id, tab: p.tab, t: p.t, done: done, bad: p.id === 'q' ? lint.errs.length : 0, optional: !!(p.optional || INFO[p.id]), why: p.id === 'q' && lint.errs.length ? '문항에 고쳐야 할 곳이 ' + lint.errs.length + '건 있습니다. 문항 탭 위쪽의 빨간 안내를 확인해 주십시오.' : p.why };
+      });
+    }
     var l = [
       { id: 'intro', tab: 'intro', t: '안내문', done: !!(d.intro && d.intro.title && (d.intro.notice || []).length), why: '학생이 설문을 시작하기 전에 처음 보는 설명 화면입니다. 제목과 안내 항목을 적어 주십시오.' },
       { id: 'q', tab: 'questions', t: '문항', done: nq > 0 && !lint.errs.length, bad: lint.errs.length, why: lint.errs.length ? '문항에 고쳐야 할 곳이 ' + lint.errs.length + '건 있습니다. 문항 탭 위쪽의 빨간 안내를 확인해 주십시오.' : '묻고 싶은 문항을 추가해 주십시오. 설문지 파일이 있으면 「AI 설계」 탭에서 초안을 만들 수 있습니다.' }

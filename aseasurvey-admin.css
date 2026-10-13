@@ -400,3 +400,15 @@ body:has(.aibar){padding-bottom:230px}
 .afind{border:1px solid var(--border-2);border-left:4px solid var(--border-2);border-radius:var(--r);padding:10px 12px;margin-bottom:8px;background:#fff}
 .afind.err{border-left-color:var(--red)}.afind.warn{border-left-color:var(--orange)}.afind.info{border-left-color:var(--primary)}
 .qcard.aiflash{outline:3px solid var(--orange);outline-offset:-3px}
+
+/* ───────── 진행 순서 · 팁박스 ───────── */
+.howline{margin-top:4px;font-size:12.5px;color:var(--primary-dk);display:flex;gap:4px;align-items:center;flex-wrap:wrap}
+.howline a{cursor:pointer;text-decoration:underline;margin-left:4px}
+.howlist{margin:0;padding:0 0 0 0;list-style:none;display:grid;gap:8px;max-height:60vh;overflow:auto}
+.howlist li{border:1px solid var(--border-2);border-radius:var(--r);padding:8px 12px;background:#fff}
+.howlist li.opt{background:var(--bg)}
+.howlist .muted{font-size:12.5px;margin-top:2px}
+.tipbox{margin:0 0 12px;padding:10px 14px;border:1px solid var(--primary);border-radius:var(--r);background:var(--primary-lt)}
+.tipbox ol{margin:6px 0 0;padding-left:20px;font-size:13px}
+.tipbox li{margin:2px 0}
+.tipbox.min{padding:2px 6px;border-style:dashed;background:#fff}

@@ -164,6 +164,7 @@
   function sig() { return JSON.stringify([A.work.def, A.work.open_at, A.work.close_at, A.work.test_mode, (A.cur.courses || []).length, (A.cur.targets || []).length]); }
   function state() { var id = A.cur.survey.id; return ST[id] || (ST[id] = { local: null, ai: null, sig: '', busy: '', err: '' }); }
   Au.run = function () { var s = state(); s.local = Au.local(); s.sig = sig(); s.at = new Date(); return s; };
+  Au.ran = function () { try { var s = ST[A.cur.survey.id]; return !!(s && s.local); } catch (e) { return false; } };
   Au.quick = function () { var f = Au.local(); return { errs: f.filter(function (x) { return x.sev === 'err'; }), warns: f.filter(function (x) { return x.sev === 'warn'; }), all: f }; };
 
   /* ───────────── 화면 ───────────── */

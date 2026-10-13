@@ -77,7 +77,7 @@
       '<div class="quick"><button class="qk" data-act="qk-ai"><i>' + I('sparkle', 20) + '</i><b>AI로 설계</b><span>설문지 파일·요청 글로 초안 만들기</span></button><button class="qk" data-act="qk-blank-g"><i>' + I('plus', 20) + '</i><b>빈 설문 (1인 1회)</b><span>직접 문항을 추가</span></button><button class="qk" data-act="qk-blank-c"><i>' + I('plus', 20) + '</i><b>빈 설문 (과목별 반복)</b><span>반·과목마다 응답</span></button><button class="qk" data-act="qk-link"><i>' + I('upload', 20) + '</i><b>연동 목록 설문 (일괄 업로드)</b><span>교강사·과목, 시설 등 목록을 엑셀로 연동</span></button><button class="qk" data-act="qk-clone"><i>' + I('refresh', 20) + '</i><b>이전 설문 불러오기</b><span>지난 설문을 복제</span></button></div>' +
       '<div class="row" style="margin:14px 0 6px"><div class="chipbar" id="cbar">' + chips.map(function (c) { return '<button class="cchipb' + (N.cat === c[0] ? ' on' : '') + '" data-act="tcat" data-k="' + c[0] + '">' + E(c[1]) + '</button>'; }).join('') + '</div><input class="fld" id="tq" placeholder="양식 검색" value="' + E(N.q) + '" style="max-width:220px"></div>' +
       '<div id="tcards">' + cardsHtml() + '</div>' +
-      '<div class="startbar' + (sel ? ' on' : '') + '"><div class="sp"><b>' + (sel ? E(sel.label) : '양식을 선택해 주십시오') + '</b><div class="muted" style="font-size:12.5px">' + (sel ? '오른쪽 미리보기에서 학생 화면을 확인할 수 있습니다. · 문항 ' + qcount(sel.def) + '개 · ' + modeTag(sel.def) : '카드를 누르면 미리보기에 바로 표시됩니다.') + '</div></div>' +
+      '<div class="startbar' + (sel ? ' on' : '') + '"><div class="sp"><b>' + (sel ? E(sel.label) : '양식을 선택해 주십시오') + '</b>' + (sel && A.howto ? '<div class="howline">' + I('info', 13) + ' 만든 뒤 진행: ' + E(A.howto.line(sel.def)) + ' <a data-act="howto">자세한 순서</a></div>' : '') + '<div class="muted" style="font-size:12.5px">' + (sel ? '오른쪽 미리보기에서 학생 화면을 확인할 수 있습니다. · 문항 ' + qcount(sel.def) + '개 · ' + modeTag(sel.def) : '카드를 누르면 미리보기에 바로 표시됩니다.') + '</div></div>' +
       '<input class="fld" id="nt" placeholder="설문 제목" value="' + E(N.title) + '" style="max-width:280px"><input class="fld" id="ns" placeholder="학기(선택) 예: 2026-2" value="' + E(N.semester) + '" style="max-width:150px"><button class="btn btn-primary" data-act="tcreate" ' + (sel ? '' : 'disabled') + '>' + I('check', 16) + ' 이 양식으로 만들기</button></div>';
   }
   async function pick(el) {
@@ -222,6 +222,7 @@
       if (act === 'qk-clone') return A.newSurveyLegacy && A.newSurveyLegacy();
       if (act === 'tolist') return;
     }
+    if (act === 'howto' && N.sel && A.howto) return A.howto.modal(N.sel.def, N.sel.label);
     if (act === 'tpllib') { location.hash = '#/library'; return; }
     if (A.view === 'library') {
       if (act === 'ltab') { LS.tab = t.getAttribute('data-k'); return repaintLib(); }
