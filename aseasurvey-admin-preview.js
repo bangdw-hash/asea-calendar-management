@@ -82,11 +82,11 @@
     }
     if (!gen && d.view === 'matrix') {
       var cs0 = (src.courses || []).filter(function (c) { return c.active !== false; }), c0 = cs0[0], same = c0 ? cs0.filter(function (c) { return c.track === c0.track && c.grade === c0.grade && c.klass === c0.klass; }) : [];
-      var rows0 = (same.length ? same.slice(0, 9).map(function (c) { return { name: c.name, sub: [c.kind, c.prof].filter(Boolean).join(' · ') }; }) : ['(과목명 예시) 1', '(과목명 예시) 2', '(과목명 예시) 3'].map(function (n) { return { name: n, sub: '' }; })).map(function (r, i) { r.id = 'pvr' + i; return r; });
+      var rows0 = (same.length ? same.slice(0, 9).map(function (c) { return { name: c.name, kind: c.kind || '', prof: c.prof || '', suffix: '교수' }; }) : ['(과목명 예시) 1', '(과목명 예시) 2', '(과목명 예시) 3'].map(function (n) { return { name: n, sub: '' }; })).map(function (r, i) { r.id = 'pvr' + i; return r; });
       var ps = page.s;
       return (ps.showIf ? '<div class="msg warn" style="margin:0 0 8px">' + I('info', 16) + '<div>조건부 영역입니다. 지정한 응답을 선택한 경우에만 보입니다.</div></div>' : '') +
         '<div class="card mxsec"><h2 class="title" style="font-size:18px">' + E(ps.title || '(영역 제목)') + '</h2>' + (ps.note ? '<p class="muted" style="margin:4px 0;white-space:pre-line">' + E(ps.note) + '</p>' : '') +
-        (ps.questions || []).map(function (q) { return SVY.Form.matrixHtml(q, rows0, function (r) { return { def: d, a: P.scratch[r.id] || (P.scratch[r.id] = {}), c: P.scratch, scopeId: r.id, counts: {}, seed: 1, busy: env.busy, badge: null }; }, { badge: false }); }).join('') + ((ps.questions || []).length ? '' : '<p class="muted">문항이 없습니다.</p>') + '</div>';
+        (function () { var n = 0; return (ps.questions || []).map(function (q) { var qi = q.type === 'block' ? n : n++; return SVY.Form.matrixHtml(q, rows0, function (r) { return { def: d, a: P.scratch[r.id] || (P.scratch[r.id] = {}), c: P.scratch, scopeId: r.id, counts: {}, seed: 1, busy: env.busy, badge: null }; }, { badge: false, no: (SVY.Form.secTag(ps.title) ? SVY.Form.secTag(ps.title) + '-' : '') + (qi + 1) + '.' }); }).join(''); })() + ((ps.questions || []).length ? '' : '<p class="muted">문항이 없습니다.</p>') + '</div>';
     }
     var s = page.s, cname = !gen ? ((src.courses || [])[0] || {}).name || '(과목명 예시)' : '';
     return (gen ? '' : '<div class="course open" style="margin-top:0"><div class="course-head"><span class="c-num">1</span><span class="c-name">' + E(cname) + '</span><span class="c-prog">과목마다 반복</span></div></div><div style="height:8px"></div>') +
