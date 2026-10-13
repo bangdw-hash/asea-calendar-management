@@ -122,15 +122,32 @@
     /* ── 표현 ── */
     real.forEach(function (x) { var l = String(lab(x.q)).trim(); if (l.length > 140) add('info', '표현', '[' + x.q.id + '] 문항 문구가 깁니다 (' + l.length + '자)', '모바일에서 읽기 어렵습니다. 보조 설명(desc)으로 나누는 것을 고려해 주십시오.', { qids: [x.q.id], tab: 'questions' }); else if (l.length && l.length < 4) add('info', '표현', '[' + x.q.id + '] 문항 문구가 너무 짧습니다', '「' + l + '」', { qids: [x.q.id], tab: 'questions' }); if (/\s{2,}|[ㅠㅜㅋㅎ]{2,}/.test(l)) add('info', '표현', '[' + x.q.id + '] 문구에 공백·자음 반복이 있습니다', '「' + short(l, 40) + '」', { qids: [x.q.id], tab: 'questions' }); });
 
-    /* ── 응답 부담 ── */
-    var minutes = 0; real.forEach(function (x) { minutes += x.q.type === 'text' ? (x.q.multiline ? 1.2 : 0.6) : x.q.type === 'file' || x.q.type === 'signature' ? 1 : 0.25; });
+    /* ── 응답 부담: 문항 형식별 평균 응답 시간(추정)을 합산 ── */
+    function qMin(q) {
+      var t = q.type;
+      if (t === 'text') return (q.required ? 0.4 : 0.2) + (q.multiline ? 0.2 : 0);
+      if (t === 'multi') return 0.2;
+      if (t === 'ranking' || t === 'constsum') return 0.4;
+      if (t === 'grid') return (q.rows ? q.rows.length : 3) * 0.1;
+      if (t === 'single') return (q.options || []).length > 6 ? 0.15 : 0.1;
+      if (t === 'scale' || t === 'rating' || t === 'nps' || t === 'linear' || t === 'slider' || t === 'date' || t === 'time') return 0.1;
+      if (t === 'consent') return 0.1;
+      return 0.4;
+    }
+    function rng(m) { return Math.max(1, Math.round(m * 0.7)) + '~' + Math.max(1, Math.round(m * 1.3)); }
+    var BASIS = '문항 형식별 평균 시간(5점 척도 약 6초, 복수선택 약 12초, 서술형 약 12~24초 등)을 합산한 추정치이며 ±30% 정도 차이가 날 수 있습니다. 실제 시간은 테스트 응답으로 확인해 주십시오.';
+    var base = 0.5, tn = String((d.intro && d.intro.timeNote) || '');
     if (C.course && C.cs.length) {
       var perClass = {}; C.cs.forEach(function (c) { var k = [c.track, c.grade, c.klass].join('|'); perClass[k] = (perClass[k] || 0) + 1; });
-      var maxItems = Math.max.apply(null, Object.keys(perClass).map(function (k) { return perClass[k]; })), pcq = real.filter(function (x) { return x.q.scope !== 'common' && x.si >= 0; });
-      var pcm = pcq.reduce(function (a, x) { return a + (x.q.type === 'text' ? 0.6 : 0.25); }, 0), cm = minutes - pcm;
-      var tot2 = Math.round(cm + pcm * maxItems);
-      add(tot2 > 25 ? 'warn' : 'info', '응답 부담', '가장 많은 선택 단위의 예상 응답 시간 약 ' + tot2 + '분 (추정)', '항목 ' + maxItems + '개 × 항목별 문항 ' + pcq.length + '개 + 공통 문항. 서술형은 시간이 더 걸립니다. 실제 시간은 테스트 응답으로 확인해 주십시오.', { tab: 'questions' });
-    } else if (real.length) add(minutes > 12 ? 'warn' : 'info', '응답 부담', '문항 ' + real.length + '개 · 예상 응답 시간 약 ' + Math.max(1, Math.round(minutes)) + '분 (추정)', minutes > 12 ? '분량이 많으면 이탈이 늘 수 있습니다.' : '', { tab: 'questions' });
+      var cnts = Object.keys(perClass).map(function (k) { return perClass[k]; }), maxItems = Math.max.apply(null, cnts), minItems = Math.min.apply(null, cnts);
+      var pcq = real.filter(function (x) { return x.q.scope !== 'common' && x.si >= 0; }), pcm = pcq.reduce(function (a, x) { return a + qMin(x.q); }, 0);
+      var cm = real.filter(function (x) { return !(x.q.scope !== 'common' && x.si >= 0); }).reduce(function (a, x) { return a + qMin(x.q); }, 0) + base;
+      var midMax = cm + pcm * maxItems, midMin = cm + pcm * minItems, ref = /(\d+)\s*[~\-]\s*(\d+)\s*분/.exec(tn);
+      add(midMax > 20 ? 'warn' : 'info', '응답 부담', '예상 응답 시간 약 ' + rng(midMax) + '분 (과목이 가장 많은 반 기준, 추정)', '과목당 약 ' + (Math.round(pcm * 10) / 10) + '분 × 최대 ' + maxItems + '개 + 공통·시작 약 ' + (Math.round(cm * 10) / 10) + '분. 반별 중간값은 약 ' + Math.round(midMin) + '~' + Math.round(midMax) + '분입니다. ' + (ref ? '안내문의 「' + ref[0] + '」은 과목당 시간이며 추정(' + (Math.round(pcm * 10) / 10) + '분)과 ' + (pcm >= Number(ref[1]) - 0.5 && pcm <= Number(ref[2]) + 0.5 ? '비슷합니다. ' : '차이가 있습니다. ') : '') + BASIS, { tab: 'questions' });
+    } else if (real.length) {
+      var mid = real.reduce(function (a, x) { return a + qMin(x.q); }, 0) + base;
+      add(mid > 15 ? 'warn' : 'info', '응답 부담', '문항 ' + real.length + '개 · 예상 응답 시간 약 ' + rng(mid) + '분 (추정)', (mid > 15 ? '분량이 많으면 이탈이 늘 수 있습니다. ' : '') + BASIS, { tab: 'questions' });
+    }
     return F;
   };
 
