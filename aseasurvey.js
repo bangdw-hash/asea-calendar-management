@@ -267,13 +267,15 @@
   /* ───────────── 화면: 평가(아코디언) ───────────── */
   /* ───────────── 화면: 평가 — B형(질문 중심 표) ───────────── */
   function isMatrix() { return !isGen() && !!S.def && S.def.view === 'matrix'; }
-  function rowOf(c) { return { id: c.id, name: c.name, sub: [c.kind, profText(c)].filter(Boolean).join(' · ') }; }
+  function rowOf(c) { var lb = ((S.def && S.def.link && S.def.link.cols || {}).prof || {}).label || '담당교수'; return { id: c.id, name: c.name, kind: c.kind || '', prof: c.prof || '', suffix: /교수/.test(lb) ? '교수' : '' }; }
   function matrixBody() {
     var list = myCourses(), h = '';
     groupBySection(qs('course', false)).forEach(function (g) {
+      var tag = F.secTag(g.s && g.s.title), no = 0;
       var inner = g.items.map(function (x) {
         var rows = list.filter(function (c) { return secVisible(g.s, c.id) && shown(x, c.id); }).map(rowOf);
-        return rows.length ? F.matrixHtml(x.q, rows, function (r) { return ctxOf(r.id, { badge: null }); }) : '';
+        if (!rows.length) return '';
+        if (x.q.type !== 'block') no++; return F.matrixHtml(x.q, rows, function (r) { return ctxOf(r.id, { badge: null }); }, { no: x.q.type === 'block' ? '' : (tag ? tag + '-' : '') + no + '.' });
       }).join('');
       if (!inner) return;
       h += '<section class="card mxsec">' + (g.s ? '<h2 class="title" style="font-size:calc(18px*var(--fs))">' + E(g.s.title) + '</h2>' + (g.s.note ? '<div class="sec-note">' + E(g.s.note) + '</div>' : '') : '') + inner + '</section>';

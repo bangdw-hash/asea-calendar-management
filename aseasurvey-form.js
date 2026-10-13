@@ -177,7 +177,16 @@
     }
     function set(i, v) { var a = env.getAns(i.scope); if (S.isEmpty(i.q, v) && i.q.type !== 'consent') delete a[i.qid]; else a[i.qid] = v; }
 
-    root.addEventListener('click', function (e) {
+    root.addEventListener('click', async function (e) {
+      var ch = e.target.closest('[data-mxsel]'); if (ch && root.contains(ch)) {
+        var wrap = ch.closest('.mxtx'), cid = ch.getAttribute('data-mxsel'), qid0 = wrap.getAttribute('data-mxq'), box = wrap.querySelector('[data-mxbox="' + cid + '"]'), on = ch.getAttribute('aria-pressed') === 'true';
+        if (!box) return;
+        if (!on) { ch.setAttribute('aria-pressed', 'true'); box.hidden = false; var ta0 = box.querySelector('textarea'); if (ta0) ta0.focus(); return; }
+        var a0 = env.getAns(cid), v0 = a0[qid0];
+        if (v0 && String(v0).trim() && !(await confirmClear())) return;
+        delete a0[qid0]; var ta1 = box.querySelector('textarea'); if (ta1) ta1.value = ''; var cn = box.querySelector('[data-cnt]'); if (cn) cn.textContent = '0';
+        box.hidden = true; ch.setAttribute('aria-pressed', 'false'); env.onChange(cid, qid0, undefined); return;
+      }
       var t = e.target.closest('[data-f]'); if (!t || t.tagName === 'INPUT' && t.type !== 'checkbox' || t.tagName === 'SELECT' || t.tagName === 'TEXTAREA' || !root.contains(t)) return;
       var i = qinfo(t); if (!i) return; var f = t.getAttribute('data-f'), q = i.q, a = env.getAns(i.scope), v = a[i.qid];
       if (f === 'pick') { set(i, Number(t.getAttribute('data-v'))); return changed(i, true); }
@@ -312,20 +321,48 @@
   /* ───────────── 질문 중심 표(B형): 질문 1개 + 수강 과목 행 ─────────────
      rows: [{ id, name, sub }]  ·  ctxFor(row) → html() 에 넘길 ctx(scopeId = row.id)
      척도·보기 5개 이하 선택형은 「과목 × 보기」 체크박스 표, 그 밖의 문항은 질문 아래에 과목별 입력칸을 나열합니다. */
+  // 영역 제목 앞의 로마 숫자(Ⅲ, III …)를 뽑아 「Ⅲ-1」 같은 문항 번호의 머리로 씁니다. 없으면 숫자만 씁니다.
+  function secTag(title) { var m = /^\s*([ⅠⅡⅢⅣⅤⅥⅦⅧⅨⅩ]+|[IVXivx]+)\s*[.)\s]/.exec(String(title || '')); return m ? m[1] : ''; }
   function matrixable(q) {
     if (q.type === 'scale') return true;
-    if ((q.type === 'single' || q.type === 'multi') && !q.other) { var o = q.options || []; return o.length >= 2 && o.length <= 5 && o.every(function (x) { return String(x.label || '').length <= 10; }); }
+    if ((q.type === 'single' || q.type === 'multi') && !q.other) { var o = q.options || []; return o.length >= 2 && o.length <= 8; }
     return false;
   }
-  function rowHead(r) { return '<b>' + E(r.name) + '</b>' + (r.sub ? '<small>' + E(r.sub) + '</small>' : ''); }
+  // 과목 행 머리: 과목명 + (구분 · 담당자). PC에서는 한 줄, 좁은 화면에서는 이름 아래 작은 글씨로 표시
+  function rowHead(r) {
+    var sub = r.kind || r.prof ? '<small>' + (r.kind ? '<span class="k">' + E(r.kind) + '</span>' : '') + (r.prof ? '<span class="p">' + E(r.prof) + (r.suffix ? '<i> ' + E(r.suffix) + '</i>' : '') + '</span>' : '') + '</small>' : (r.sub ? '<small>' + E(r.sub) + '</small>' : '');
+    return '<b title="' + E(r.name) + '">' + E(r.name) + '</b>' + sub;
+  }
+  // 선택 서술형(B형): 과목·교수가 칩으로 나열되고, 의견을 남길 과목만 눌러 입력칸을 엽니다. 작성하지 않아도 됩니다.
+  function textPicker(q, rows, ctxFor) {
+    var chips = '', boxes = '';
+    rows.forEach(function (r) {
+      var ctx = ctxFor(r), inner = html(q, ctx); if (!inner) return;
+      var has = !S.isEmpty(q, (ctx.a || {})[q.id]);
+      chips += '<button type="button" class="mxchip" data-mxsel="' + E(r.id) + '" aria-pressed="' + has + '"><span class="mxchk"></span><span class="mxnm">' + rowHead(r) + '</span></button>';
+      boxes += '<div class="mxsub" data-mxbox="' + E(r.id) + '"' + (has ? '' : ' hidden') + '><div class="mxsub-h">' + rowHead(r) + '</div>' + inner + '</div>';
+    });
+    return '<div class="mxtx" data-mxq="' + E(q.id) + '"><div class="mx-hint2">의견을 남기고 싶은 과목을 눌러 선택해 주십시오. (선택 사항 — 작성하지 않아도 제출할 수 있습니다)</div><div class="mxchips">' + chips + '</div>' + boxes + '</div>';
+  }
+  function confirmClear() {
+    return new Promise(function (res) {
+      var m = overlay('<h3>작성한 의견을 지울까요?</h3><p class="muted" style="margin:8px 0 0">선택을 해제하면 이 과목에 작성한 내용이 삭제됩니다.</p><div class="btn-row"><button class="btn btn-ghost" data-r="0">취소</button><button class="btn btn-primary" data-r="1">지우고 해제</button></div>');
+      m.el.addEventListener('click', function (e) { var b = e.target.closest('[data-r]'); if (b) { m.el.remove(); res(b.getAttribute('data-r') === '1'); } });
+    });
+  }
   function matrixHtml(q, rows, ctxFor, opt) {
     opt = opt || {}; if (!rows.length) return '';
-    var head = '<div class="mxq" data-mq="' + E(q.id) + '"><div class="q-label">' + (opt.badge ? '<span class="q-id">' + E(q.id) + '</span>' : '') + E(q.label) + reqMark(q) + '</div>' + (q.desc ? '<div class="q-desc">' + E(q.desc) + '</div>' : '');
+    if (q.type === 'block') return html(q, ctxFor(rows[0]));   // 안내 블록은 한 번만 표시
+    var head = '<div class="mxq" data-mq="' + E(q.id) + '"><div class="q-label">' + (opt.no ? '<span class="qno">' + E(opt.no) + '</span>' : '') + (opt.badge ? '<span class="q-id">' + E(q.id) + '</span>' : '') + E(q.label) + reqMark(q) + '</div>' + (q.desc ? '<div class="q-desc">' + E(q.desc) + '</div>' : '');
+    if (q.type === 'text' && !S.isRequired(q)) return head + textPicker(q, rows, ctxFor) + '</div>';   // 선택 서술형: 작성할 과목을 고르면 입력칸이 열림
     if (!matrixable(q)) {
       return head + rows.map(function (r) { var inner = html(q, ctxFor(r)); return inner ? '<div class="mxsub"><div class="mxsub-h">' + rowHead(r) + '</div>' + inner + '</div>' : ''; }).join('') + '</div>';
     }
     var cols = (q.type === 'scale' ? S.scaleOf(ctxFor(rows[0]).def || {}, q) : opts(q, ctxFor(rows[0]))).map(function (o) { return o.label; });
-    var h = head + '<div class="mx-hint">' + I('left', 12) + ' 표가 넓으면 좌우로 밀어 보세요 ' + I('right', 12) + '</div><div class="mx-scroll"><div class="mx" style="--n:' + cols.length + '"><div class="mx-head"><div class="mname">수강 과목</div><div class="mx-cols">' + cols.map(function (c) { return '<span>' + E(c) + '</span>'; }).join('') + '</div></div>';
+    // 보기가 많거나 길면 머리글은 번호로 줄이고, 번호별 보기 설명을 표 위에 나열합니다.
+    var longHead = cols.length > 5 || cols.some(function (c) { return String(c).length > 10; });
+    var legend = longHead ? '<ol class="mx-legend">' + cols.map(function (c, i) { return '<li><b>' + (i + 1) + '</b>' + E(c) + '</li>'; }).join('') + '</ol>' : '';
+    var h = head + legend + '<div class="mx-hint">' + I('left', 12) + ' 표가 넓으면 좌우로 밀어 보세요 ' + I('right', 12) + '</div><div class="mx-scroll"><div class="mx" style="--n:' + cols.length + ';--cw:' + (cols.length > 5 ? 34 : 38) + 'px"><div class="mx-head"><div class="mname">수강 과목</div><div class="mx-cols">' + cols.map(function (c, i) { return longHead ? '<span class="num">' + (i + 1) + '</span>' : '<span>' + E(c) + '</span>'; }).join('') + '</div></div>';
     rows.forEach(function (r) {
       var ctx = ctxFor(r), inner = html(q, ctx); if (!inner) return;
       var t = document.createElement('div'); t.innerHTML = inner; var body = t.querySelector('.q-body');
@@ -340,6 +377,6 @@
   }
   window.addEventListener('resize', function () { clearTimeout(mxFit._t); mxFit._t = setTimeout(function () { mxFit(document); }, 150); });
 
-  S.Form = { html: html, bodyHtml: bodyHtml, attach: attach, state: state, matrixHtml: matrixHtml, matrixable: matrixable, mxFit: mxFit };
+  S.Form = { html: html, bodyHtml: bodyHtml, attach: attach, state: state, matrixHtml: matrixHtml, matrixable: matrixable, mxFit: mxFit, secTag: secTag };
   S.questionMap = function (def) { var m = {}; S.allQuestions(def).forEach(function (x) { m[x.q.id] = x.q; }); return m; };
 })();
