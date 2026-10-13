@@ -309,6 +309,37 @@
     }
   }
 
-  S.Form = { html: html, bodyHtml: bodyHtml, attach: attach, state: state };
+  /* ───────────── 질문 중심 표(B형): 질문 1개 + 수강 과목 행 ─────────────
+     rows: [{ id, name, sub }]  ·  ctxFor(row) → html() 에 넘길 ctx(scopeId = row.id)
+     척도·보기 5개 이하 선택형은 「과목 × 보기」 체크박스 표, 그 밖의 문항은 질문 아래에 과목별 입력칸을 나열합니다. */
+  function matrixable(q) {
+    if (q.type === 'scale') return true;
+    if ((q.type === 'single' || q.type === 'multi') && !q.other) { var o = q.options || []; return o.length >= 2 && o.length <= 5 && o.every(function (x) { return String(x.label || '').length <= 10; }); }
+    return false;
+  }
+  function rowHead(r) { return '<b>' + E(r.name) + '</b>' + (r.sub ? '<small>' + E(r.sub) + '</small>' : ''); }
+  function matrixHtml(q, rows, ctxFor, opt) {
+    opt = opt || {}; if (!rows.length) return '';
+    var head = '<div class="mxq" data-mq="' + E(q.id) + '"><div class="q-label">' + (opt.badge ? '<span class="q-id">' + E(q.id) + '</span>' : '') + E(q.label) + reqMark(q) + '</div>' + (q.desc ? '<div class="q-desc">' + E(q.desc) + '</div>' : '');
+    if (!matrixable(q)) {
+      return head + rows.map(function (r) { var inner = html(q, ctxFor(r)); return inner ? '<div class="mxsub"><div class="mxsub-h">' + rowHead(r) + '</div>' + inner + '</div>' : ''; }).join('') + '</div>';
+    }
+    var cols = (q.type === 'scale' ? S.scaleOf(ctxFor(rows[0]).def || {}, q) : opts(q, ctxFor(rows[0]))).map(function (o) { return o.label; });
+    var h = head + '<div class="mx-hint">' + I('left', 12) + ' 표가 넓으면 좌우로 밀어 보세요 ' + I('right', 12) + '</div><div class="mx-scroll"><div class="mx" style="--n:' + cols.length + '"><div class="mx-head"><div class="mname">수강 과목</div><div class="mx-cols">' + cols.map(function (c) { return '<span>' + E(c) + '</span>'; }).join('') + '</div></div>';
+    rows.forEach(function (r) {
+      var ctx = ctxFor(r), inner = html(q, ctx); if (!inner) return;
+      var t = document.createElement('div'); t.innerHTML = inner; var body = t.querySelector('.q-body');
+      h += '<div class="q mrow" data-q="' + E(q.id) + '" data-scope="' + E(ctx.scopeId || '') + '" data-type="' + E(q.type) + '"><div class="mname">' + rowHead(r) + '</div><div class="q-body">' + (body ? body.innerHTML : '') + '</div><div class="q-err" role="alert"></div></div>';
+    });
+    return h + '</div></div></div>';
+  }
+
+  // 표가 화면보다 넓을 때만 「좌우로 밀어 보세요」 안내를 보입니다.
+  function mxFit(root) {
+    (root || document).querySelectorAll('.mx-scroll').forEach(function (sc) { var hint = sc.previousElementSibling; if (hint && hint.classList.contains('mx-hint')) hint.style.display = sc.scrollWidth > sc.clientWidth + 2 ? 'flex' : 'none'; });
+  }
+  window.addEventListener('resize', function () { clearTimeout(mxFit._t); mxFit._t = setTimeout(function () { mxFit(document); }, 150); });
+
+  S.Form = { html: html, bodyHtml: bodyHtml, attach: attach, state: state, matrixHtml: matrixHtml, matrixable: matrixable, mxFit: mxFit };
   S.questionMap = function (def) { var m = {}; S.allQuestions(def).forEach(function (x) { m[x.q.id] = x.q; }); return m; };
 })();

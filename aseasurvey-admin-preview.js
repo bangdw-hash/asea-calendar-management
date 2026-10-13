@@ -10,7 +10,7 @@
   var P = A.pv = { open: false, page: 'intro', focus: '', scratch: {}, timer: 0, modal: null, tick: 0, ext: null, device: 'phone' };
   try { var saved = localStorage.getItem('svya_pv'); P.open = saved == null ? window.innerWidth >= 1280 : saved === '1'; } catch (e) { P.open = window.innerWidth >= 1280; }
   try { if (localStorage.getItem('svya_pvdev') === 'pc') P.device = 'pc'; } catch (e) {}
-  var env = { busy: {}, toast: function (m) { A.toast(m); }, counts: {}, seed: 1, onChange: function () {}, getAns: function () { return P.scratch; }, getCommon: function () { return P.scratch; } };
+  var env = { busy: {}, toast: function (m) { A.toast(m); }, counts: {}, seed: 1, onChange: function () {}, getAns: function (sc) { return sc && String(sc).indexOf('pvr') === 0 ? (P.scratch[sc] = P.scratch[sc] || {}) : P.scratch; }, getCommon: function () { return P.scratch; } };
 
   /* ───────────── 미리보기 대상(source) ───────────── */
   function source() {
@@ -80,6 +80,14 @@
       if ((d.basic || []).length) h += '<div class="card"><h2 class="title" style="font-size:19px">기본 정보</h2>' + d.basic.map(function (q) { return qhtml(q, d, why); }).join('') + '</div>';
       return h;
     }
+    if (!gen && d.view === 'matrix') {
+      var cs0 = (src.courses || []).filter(function (c) { return c.active !== false; }), c0 = cs0[0], same = c0 ? cs0.filter(function (c) { return c.track === c0.track && c.grade === c0.grade && c.klass === c0.klass; }) : [];
+      var rows0 = (same.length ? same.slice(0, 9).map(function (c) { return { name: c.name, sub: [c.kind, c.prof].filter(Boolean).join(' · ') }; }) : ['(과목명 예시) 1', '(과목명 예시) 2', '(과목명 예시) 3'].map(function (n) { return { name: n, sub: '' }; })).map(function (r, i) { r.id = 'pvr' + i; return r; });
+      var ps = page.s;
+      return (ps.showIf ? '<div class="msg warn" style="margin:0 0 8px">' + I('info', 16) + '<div>조건부 영역입니다. 지정한 응답을 선택한 경우에만 보입니다.</div></div>' : '') +
+        '<div class="card mxsec"><h2 class="title" style="font-size:18px">' + E(ps.title || '(영역 제목)') + '</h2>' + (ps.note ? '<p class="muted" style="margin:4px 0;white-space:pre-line">' + E(ps.note) + '</p>' : '') +
+        (ps.questions || []).map(function (q) { return SVY.Form.matrixHtml(q, rows0, function (r) { return { def: d, a: P.scratch[r.id] || (P.scratch[r.id] = {}), c: P.scratch, scopeId: r.id, counts: {}, seed: 1, busy: env.busy, badge: null }; }, { badge: false }); }).join('') + ((ps.questions || []).length ? '' : '<p class="muted">문항이 없습니다.</p>') + '</div>';
+    }
     var s = page.s, cname = !gen ? ((src.courses || [])[0] || {}).name || '(과목명 예시)' : '';
     return (gen ? '' : '<div class="course open" style="margin-top:0"><div class="course-head"><span class="c-num">1</span><span class="c-name">' + E(cname) + '</span><span class="c-prog">과목마다 반복</span></div></div><div style="height:8px"></div>') +
       (s.showIf ? '<div class="msg warn" style="margin:0 0 8px">' + I('info', 16) + '<div>조건부 영역입니다. 지정한 응답을 선택한 경우에만 보입니다.</div></div>' : '') +
@@ -115,7 +123,7 @@
     var note = src.test ? '<div class="testbar" style="font-size:11px">테스트 모드</div>' : '';
     holder.innerHTML = frame(pageHtml(src, cur), src.theme, note);
     env.def = d; env.qmap = SVY.questionMap(d);
-    SVY.Form.attach(holder, env); if (holder._initSigs) holder._initSigs();
+    SVY.Form.attach(holder, env); if (holder._initSigs) holder._initSigs(); if (SVY.Form.mxFit) SVY.Form.mxFit(holder);
     body.scrollTop = y;
     if (P.focus) { var q = holder.querySelector('.q[data-q="' + P.focus + '"]'); if (q) { q.classList.add('pvfocus'); var sc = holder.querySelector('.pvscroll'); try { q.scrollIntoView({ block: 'center', behavior: 'auto' }); } catch (e) {} } }
   };
