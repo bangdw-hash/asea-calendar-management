@@ -335,8 +335,22 @@
     else if (act === 'copylink') A.copy(A.link(t.getAttribute('data-code')), '설문 링크를 복사했습니다.');
     else if (act === 'clone') {
       var src = A.list.filter(function (s) { return s.id === id; })[0];
-      var ok = await A.confirm('설문 복제', '「' + E(src.title) + '」의 문항·안내문·디자인·과목·배포 인원을 모두 복사해 새 설문을 만듭니다. (응답과 추첨은 복사하지 않습니다.)', '복제');
-      if (ok) { try { var r = await A.rpc('svy_a_create', { p_title: '', p_semester: '', p_def: {}, p_theme: {}, p_clone_from: id }); A.toast('복제했습니다.'); location.hash = '#/s/' + r.id + '/overview'; } catch (er) { A.toast(er.message, 'err'); } }
+      A.modal('<h3>다음 학기용으로 복제</h3><p class="muted" style="margin:2px 0 8px">「' + E(src.title) + '」의 문항·안내문·디자인·설정을 복사해 새 설문을 만듭니다. 응답과 추첨은 복사하지 않습니다.</p>' +
+        '<label class="f">새 설문 제목</label><input class="fld" id="cl_t" value="' + E(src.title) + '"><label class="f">학기 표시 (선택)</label><input class="fld" id="cl_s" placeholder="예: 2027-1">' +
+        '<label class="f">과목·교수(연동 목록)와 배포 인원</label><div class="opts list" id="cl_m"><button type="button" class="opt" data-v="clear" aria-pressed="true"><span class="box">' + I('check', 14) + '</span><span><b>비우고 새 학기 목록을 올립니다</b> (권장 — 복제 후 「목록」 탭에서 엑셀 업로드)</span></button><button type="button" class="opt" data-v="copy" aria-pressed="false"><span class="box">' + I('check', 14) + '</span><span><b>그대로 복사</b> (같은 편성으로 다시 운영할 때)</span></button></div>' +
+        '<div class="btn-row"><button class="btn btn-ghost" data-r="0">취소</button><button class="btn btn-primary" data-r="1">복제</button></div>', function (bg, close) {
+        var mode = 'clear';
+        bg.addEventListener('click', async function (e) {
+          var o = e.target.closest('#cl_m .opt'); if (o) { mode = o.getAttribute('data-v'); bg.querySelectorAll('#cl_m .opt').forEach(function (b) { b.setAttribute('aria-pressed', b === o); }); return; }
+          var b = e.target.closest('[data-r]'); if (!b) return; if (b.getAttribute('data-r') === '0') return close();
+          try {
+            var r = await A.rpc('svy_a_create', { p_title: bg.querySelector('#cl_t').value.trim(), p_semester: bg.querySelector('#cl_s').value.trim(), p_def: {}, p_theme: {}, p_clone_from: id });
+            if (mode === 'clear') { await A.rpc('svy_a_courses_save', { p_id: r.id, p_rows: [], p_mode: 'replace' }); await A.rpc('svy_a_targets_save', { p_id: r.id, p_rows: [] }); }
+            close(); A.toast(mode === 'clear' ? '복제했습니다. 이제 새 학기 목록을 올려 주십시오.' : '복제했습니다.');
+            location.hash = '#/s/' + r.id + '/' + (mode === 'clear' ? 'courses' : 'overview');
+          } catch (er) { A.toast(er.message, 'err'); }
+        });
+      });
     }
     else if (act === 'del') {
       var s = A.list.filter(function (x) { return x.id === id; })[0];
