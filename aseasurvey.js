@@ -249,7 +249,7 @@
     if (!S.sel.track && only(tracks)) S.sel.track = '-';
     if (S.sel.track === '-' && !S.sel.grade && only(uniq(S.courses.filter(function (c) { return c.track === '-'; }).map(function (c) { return c.grade; })))) S.sel.grade = '-';
     if (S.sel.grade === '-' && !S.sel.klass && only(uniq(S.courses.filter(function (c) { return c.track === S.sel.track && c.grade === '-'; }).map(function (c) { return c.klass; })))) S.sel.klass = '-';
-    var h = '<div class="card"><div class="kicker">1단계</div><h2 class="title" style="font-size:calc(19px*var(--fs))">' + E(LK.stepTitle) + '</h2><p class="muted" style="margin:4px 0 12px">' + (LK.custom ? '선택한 항목에 해당하는 ' + E(unit) + '이(가) 표시됩니다.' : '선택한 반의 수강 과목이 표시됩니다.') + '</p>';
+    var h = '<div class="card"><div class="kicker">1단계</div><h2 class="title" style="font-size:calc(19px*var(--fs))">' + E(LK.stepTitle) + '</h2><p class="muted" style="margin:4px 0 12px">' + (LK.custom && unit !== '과목' ? '선택한 항목에 해당하는 ' + E(unit) + ' 목록이 표시됩니다.' : '선택한 반의 수강 과목이 표시됩니다.') + '</p>';
     if (!only(tracks)) h += '<div class="chip-title">' + E(cl.track.label) + '</div>' + chips(tracks, 'track');
     if (S.sel.track && !only(grades)) h += '<div class="chip-title">' + E(cl.grade.label) + '</div>' + chips(grades, 'grade');
     if (S.sel.grade && !only(klasses)) h += '<div class="chip-title">' + E(cl.klass.label) + '</div>' + chips(klasses, 'klass');
