@@ -110,10 +110,25 @@
   }
 
   /* ───────────── 양식 라이브러리 화면 ───────────── */
-  var LS = { open: '' };
+  var LS = { open: '', tab: 'mine', q: '', sel: {} };
+  function selBar() {
+    var n = Object.keys(LS.sel).length;
+    return '<div class="startbar on" id="bbar"><div class="sp"><b>' + (n ? n + '개 선택됨' : '복사할 양식을 선택해 주십시오') + '</b><div class="muted" style="font-size:12.5px">카드의 체크박스로 필요한 양식만 골라 내 양식(v1)으로 복사합니다. 이미 같은 이름이 있으면 건너뜁니다.</div></div><button class="btn btn-ghost" data-act="bclear" ' + (n ? '' : 'disabled') + '>선택 해제</button><button class="btn btn-primary" data-act="bcopysel" ' + (n ? '' : 'disabled') + '>' + I('copy', 16) + ' 선택한 ' + n + '개 내 양식으로 복사</button></div>';
+  }
+  function baseHtml() {
+    var q = LS.q.trim().toLowerCase(), h = '', items = C.list.filter(function (m) { return !q || (m.t + m.p + m.aud + m.u).toLowerCase().indexOf(q) >= 0; });
+    h += '<div class="row" style="margin:0 0 8px"><span class="muted">기본 양식 ' + C.list.length + '종 — 수정할 수 없는 원본입니다. 필요한 양식만 체크해 아래 막대에서 「선택 복사」하면 내 라이브러리에 v1로 저장되어 버전을 쌓을 수 있습니다.</span><span class="sp"></span><input class="fld" id="bq" placeholder="양식 검색" value="' + E(LS.q) + '" style="max-width:220px"></div>';
+    C.cats.forEach(function (c) {
+      var l = items.filter(function (m) { return m.c === c.k; }); if (!l.length) return;
+      h += '<h3 class="rsec">' + E(c.t) + ' <small class="muted">' + E(c.d) + '</small></h3><div class="tgrid">' + l.map(function (m) { return '<div class="tcard" data-key="' + m.k + '" style="cursor:default"><div class="th"><label class="chk" style="margin:0"><input type="checkbox" data-bsel ' + (LS.sel[m.k] ? 'checked' : '') + '> 선택</label><span><span class="tag">' + E(m.mode === 'general' ? '1인 1회' : '목록 항목별 반복') + '</span>' + (m.named ? '<span class="tag blue">기명</span>' : '') + '</span></div><h4>' + E(m.t) + '</h4><p>' + E(m.p) + '</p><div class="tf muted"><span>대상 ' + E(m.aud) + '</span><span>활용 ' + E(m.u) + '</span></div><div class="row" style="margin-top:6px"><button class="btn btn-ghost btn-sm" data-act="bprev">미리보기</button><button class="btn btn-primary btn-sm" data-act="buse">새 설문</button></div></div>'; }).join('') + '</div>';
+    });
+    return (h || '<div class="panel t-empty">조건에 맞는 양식이 없습니다.</div>') + selBar();
+  }
   function libHtml() {
     var h = '<div class="crumb"><a data-act="tolist">설문 목록</a> / 양식 라이브러리</div><div class="pg-head"><h1>양식 라이브러리</h1><span class="sp"></span><button class="btn btn-primary" data-act="newsvy">' + I('plus', 16) + ' 새 설문 만들기</button></div>' +
       '<p class="muted" style="margin:0 0 12px">양식은 이름 하나에 버전이 여러 개 쌓입니다. 설문을 만들 때 선택한 버전이 설문으로 <b>복사</b>되므로, 양식을 고쳐도 이미 만든 설문에는 영향이 없습니다.</p>';
+    h += '<div class="chipbar" style="margin:0 0 10px"><button class="cchipb' + (LS.tab === 'mine' ? ' on' : '') + '" data-act="ltab" data-k="mine">내 양식 (' + Lib.list.length + ')</button><button class="cchipb' + (LS.tab === 'base' ? ' on' : '') + '" data-act="ltab" data-k="base">기본 양식 ' + C.list.length + '종</button></div>';
+    if (LS.tab === 'base') return h + baseHtml();
     if (!Lib.list.length) return h + '<div class="panel t-empty">저장된 양식이 없습니다.<br>설문 화면 위쪽의 「양식으로 저장」으로 첫 양식을 만들어 보십시오.</div>';
     return h + '<div class="lgrid">' + Lib.list.map(function (t) {
       var open = LS.open === t.id;
@@ -209,6 +224,25 @@
     }
     if (act === 'tpllib') { location.hash = '#/library'; return; }
     if (A.view === 'library') {
+      if (act === 'ltab') { LS.tab = t.getAttribute('data-k'); return repaintLib(); }
+      if (act === 'bclear') { LS.sel = {}; return repaintLib(); }
+      if (act === 'bcopysel') {
+        var keys = Object.keys(LS.sel); if (!keys.length) return;
+        if (!await A.confirm('선택한 양식 복사', '선택한 ' + keys.length + '개를 내 양식(v1)으로 복사합니다. 이미 같은 이름이 있으면 건너뜁니다.', '복사', '취소')) return;
+        try {
+          await Lib.load(); var have = {}; Lib.list.forEach(function (x) { have[x.name] = 1; }); var ok = 0, skip = 0;
+          for (var i = 0; i < keys.length; i++) { var bt2 = C.get(keys[i]); if (have[bt2.meta.t]) { skip++; continue; } await A.rpc('svy_tpl_save', { p_id: null, p_name: bt2.meta.t, p_category: bt2.meta.c, p_descr: bt2.meta.p, p_def: clone(bt2.def), p_theme: {}, p_note: '기본 양식에서 복사', p_set_default: true }); ok++; }
+          LS.sel = {}; await Lib.load(); LS.tab = 'mine'; repaintLib(); A.toast(ok + '개를 내 양식으로 복사했습니다.' + (skip ? ' (같은 이름 ' + skip + '개 건너뜀)' : ''));
+        } catch (er) { A.toast(er.message, 'err'); }
+        return;
+      }
+      var bc = t.closest('.tcard[data-key]');
+      if (bc && /^b(prev|use|copy)$/.test(act)) {
+        var key = bc.getAttribute('data-key'), bt = C.get(key);
+        if (act === 'bprev') { setPreview(bt.def, bt.meta.t, {}); if (A.pv) { A.pv.page = 'intro'; A.pv.set(true); } return; }
+        if (act === 'buse') { N.cat = 'all'; Lib.showNew().then(function () { var el = document.querySelector('.tcard[data-key="' + key + '"]'); if (el) pick(el); }); return; }
+        if (act === 'bcopy') { var r0 = await Lib.saveDialog(clone(bt.def), {}, { name: bt.meta.t, cat: bt.meta.c }); if (r0) { LS.tab = 'mine'; LS.open = r0.id; repaintLib(); } return; }
+      }
       var card = t.closest('.lcard'), id = card && card.getAttribute('data-id'), tpl = Lib.list.filter(function (x) { return x.id === id; })[0], row = t.closest('tr'), ver = row ? Number(row.getAttribute('data-ver')) : null;
       if (act === 'lopen') { LS.open = LS.open === id ? '' : id; return repaintLib(); }
       if (!tpl) return;
@@ -231,7 +265,12 @@
     if (act === 'tpledit-cancel') finishEdit(false);
   });
   document.addEventListener('change', function (e) { var s = e.target.closest('[data-act=tver]'); if (s && A.view === 'new') { var card = s.closest('.tcard'); if (card && N.sel && N.sel.lib === card.getAttribute('data-lib')) pick(card); } });
-  document.addEventListener('input', function (e) {
+  document.addEventListener('change', function (e) {
+    if (A.view !== 'library' || !e.target.matches('[data-bsel]')) return; var k = e.target.closest('.tcard[data-key]').getAttribute('data-key'); if (e.target.checked) LS.sel[k] = 1; else delete LS.sel[k];
+    var bar = document.getElementById('bbar'); if (bar) bar.outerHTML = selBar();
+  });
+document.addEventListener('input', function (e) {
+    if (A.view === 'library' && e.target.id === 'bq') { LS.q = e.target.value; clearTimeout(Lib._bt); Lib._bt = setTimeout(function () { repaintLib(); var el = document.getElementById('bq'); if (el) { el.focus(); el.setSelectionRange(el.value.length, el.value.length); } }, 200); return; }
     if (A.view !== 'new') return;
     if (e.target.id === 'tq') { N.q = e.target.value; clearTimeout(Lib._t); Lib._t = setTimeout(function () { var c = document.getElementById('tcards'); if (c) c.innerHTML = cardsHtml(); }, 150); }
     else if (e.target.id === 'nt') { N.title = e.target.value; if (N.sel && A.pv) { N.sel.def.intro = N.sel.def.intro || {}; N.sel.def.intro.title = e.target.value; setPreview(N.sel.def, N.sel.label, N.sel.theme); } }
