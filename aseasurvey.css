@@ -227,3 +227,41 @@ canvas.sig{display:block;width:100%;height:auto;aspect-ratio:600/220;touch-actio
 .pg-sec + .pg-sec{margin-top:14px}
 .pg-sec .q:first-of-type{border-top:0}
 @media (max-width:420px){.nps{grid-template-columns:repeat(6,1fr)}.sumrow{grid-template-columns:1fr 84px auto}}
+
+/* ── B형: 질문 중심 표(질문마다 수강 과목을 행으로 나열) ── */
+.mxsec{margin-top:12px}
+@media (max-width:480px){.mxsec{padding-left:12px;padding-right:12px}.mname{padding:8px 6px}}
+.mxq{padding:14px 0;border-top:1px solid var(--border)}
+.mxsec .title + .sec-note + .mxq,.mxsec .title + .mxq{border-top:0}
+.mx-hint{display:none;margin-top:6px;font-size:calc(11.5px*var(--fs));color:var(--text-2);align-items:center;gap:4px}
+.mx-scroll{margin:8px -4px 0;padding:0 4px 2px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:thin;
+  background:linear-gradient(90deg,#fff 30%,rgba(255,255,255,0)),linear-gradient(90deg,rgba(255,255,255,0),#fff 70%) 100% 0,radial-gradient(farthest-side at 0 50%,rgba(0,0,0,.18),rgba(0,0,0,0)),radial-gradient(farthest-side at 100% 50%,rgba(0,0,0,.18),rgba(0,0,0,0)) 100% 0;
+  background-repeat:no-repeat;background-size:36px 100%,36px 100%,12px 100%,12px 100%;background-attachment:local,local,scroll,scroll}
+.mx{min-width:calc(92px + var(--n)*42px);border:1px solid var(--border);border-radius:10px;overflow:hidden;background:#fff}
+.mx-head,.mrow{display:grid;grid-template-columns:92px 1fr;align-items:center}
+.mx-head{background:var(--primary-lt)}
+.mx-cols,.mrow .opts{display:grid;grid-template-columns:repeat(var(--n),1fr)}
+.mx-cols span{padding:7px 1px;text-align:center;font-size:calc(11px*var(--fs));line-height:1.25;font-weight:600;color:var(--text-2);word-break:keep-all}
+.mname{position:sticky;left:0;z-index:2;padding:8px 8px;font-size:calc(13.5px*var(--fs));line-height:1.3;background:inherit;border-right:1px solid var(--border)}
+.mname b{display:block;font-weight:600}
+.mname small{display:block;margin-top:1px;font-size:calc(11px*var(--fs));color:var(--text-2)}
+.mx-head .mname{font-weight:700;color:var(--text-2);background:var(--primary-lt)}
+.mrow{background:#fff;border-top:1px solid var(--border);margin:0;padding:0}
+.mrow:nth-of-type(even){background:#F7FAFC}
+.mrow .q-body{padding:0}
+.mrow .opts{gap:0;margin:0;padding:0}
+.mrow .opt{position:relative;display:flex!important;align-items:center!important;justify-content:center!important;text-align:center;min-height:48px;padding:0;border:0!important;border-radius:0;background:transparent!important;box-shadow:none;font-size:0;color:transparent}
+.mrow .opt>*{display:none}
+.mrow .opt::before{content:'';width:22px;height:22px;box-sizing:border-box;border:2px solid #9AA0A6;border-radius:6px;background:#fff}
+.mrow .opt[aria-pressed="true"]::before{background:var(--primary);border-color:var(--primary)}
+.mrow .opt[aria-pressed="true"]::after{content:'';position:absolute;left:50%;top:50%;width:6px;height:11px;margin:-7px 0 0 -3px;border:solid var(--on-primary,#fff);border-width:0 2.5px 2.5px 0;transform:rotate(45deg)}
+.mrow .opt:focus-visible{outline:2px solid var(--primary);outline-offset:-3px}
+.mrow .opt:disabled{opacity:.35}
+.mrow .q-err{grid-column:1/-1;padding:0 8px 6px;font-size:calc(12px*var(--fs));color:var(--red)}
+.mrow .q-err:empty{display:none}
+.mrow.bad{background:var(--red-lt)}
+.mxsub{margin-top:8px;padding:8px 10px;border:1px solid var(--border);border-radius:10px;background:#fff}
+.mxsub-h{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap;font-size:calc(13.5px*var(--fs))}
+.mxsub-h small{font-size:calc(11px*var(--fs));color:var(--text-2)}
+.mxsub .q{margin:0;padding:0}
+.mxsub .q-label,.mxsub .q-desc{display:none}

@@ -265,7 +265,38 @@
   }
 
   /* ───────────── 화면: 평가(아코디언) ───────────── */
+  /* ───────────── 화면: 평가 — B형(질문 중심 표) ───────────── */
+  function isMatrix() { return !isGen() && !!S.def && S.def.view === 'matrix'; }
+  function rowOf(c) { return { id: c.id, name: c.name, sub: [c.kind, profText(c)].filter(Boolean).join(' · ') }; }
+  function matrixBody() {
+    var list = myCourses(), h = '';
+    groupBySection(qs('course', false)).forEach(function (g) {
+      var inner = g.items.map(function (x) {
+        var rows = list.filter(function (c) { return secVisible(g.s, c.id) && shown(x, c.id); }).map(rowOf);
+        return rows.length ? F.matrixHtml(x.q, rows, function (r) { return ctxOf(r.id, { badge: null }); }) : '';
+      }).join('');
+      if (!inner) return;
+      h += '<section class="card mxsec">' + (g.s ? '<h2 class="title" style="font-size:calc(18px*var(--fs))">' + E(g.s.title) + '</h2>' + (g.s.note ? '<div class="sec-note">' + E(g.s.note) + '</div>' : '') : '') + inner + '</section>';
+    });
+    return h;
+  }
+  function rerenderMatrix() {
+    var el = document.getElementById('mxroot'); if (!el) return; var y = window.scrollY; el.innerHTML = matrixBody(); window.scrollTo(0, y);
+    myCourses().forEach(function (c) { S.vsig[c.id] = visSig(c.id); }); F.mxFit($app); updateProgress();
+  }
+  function screenMatrix() {
+    var list = myCourses(), cq = qs('common', false);
+    var h = '<div class="stepper"><div class="stepper-row"><span><b data-ov-done>0</b> / <span data-ov-total>0</span> 문항 응답</span><span class="muted">' + [S.sel.track, S.sel.grade, S.sel.klass].filter(function (v) { return v && v !== '-'; }).map(E).join(' ') + '</span></div><div class="meter"><i data-ov-bar></i></div></div>';
+    h += '<p class="hint" style="margin:0 0 4px">질문마다 수강 중인 <b>모든 과목</b>에 응답해 주십시오. 모든 필수 문항에 응답해야 제출할 수 있습니다.</p><div id="mxroot">' + matrixBody() + '</div>';
+    if (cq.length) h += '<section class="card" id="c-common" style="margin-top:14px">' + commonHtml() + '</section>';
+    var bar = '<div class="bar"><div class="bar-in"><div class="bar-info" data-bar-info></div><button class="btn btn-primary" data-act="submit">' + (S.editing ? '수정 저장' : '제출하기') + '</button></div></div>';
+    shell(h, bar);
+    S.rendered = {}; S.vsig.common = visSig('common'); list.forEach(function (c) { S.vsig[c.id] = visSig(c.id); });
+    if ($app._initSigs) $app._initSigs();
+    F.mxFit($app); updateProgress();
+  }
   function screenEval() {
+    if (isMatrix()) return screenMatrix();
     var list = myCourses(), cq = qs('common', false);
     var h = '<div class="stepper"><div class="stepper-row"><span><b data-ov-done>0</b> / <span data-ov-total>0</span> 문항 응답</span><span class="muted">' + [S.sel.track, S.sel.grade, S.sel.klass].filter(function (v) { return v && v !== '-'; }).map(E).join(' ') + '</span></div><div class="meter"><i data-ov-bar></i></div></div>';
     h += '<p class="hint" style="margin:0 0 4px">' + (SVY.linkInfo(S.def || {}).custom ? '항목' : '과목') + '을 눌러 문항을 펼친 뒤 응답해 주십시오. 모든 필수 문항에 응답해야 제출할 수 있습니다.</p>';
@@ -401,6 +432,7 @@
     }
   }
   function rerenderScope(scope) {
+    if (S.step === 'eval' && isMatrix() && scope !== 'common') return rerenderMatrix();
     if (S.step === 'page') return rerenderPage();
     if (S.step === 'class') return screenClass();
     if (scope === 'common') { var el = document.getElementById('c-common'); if (el) { el.innerHTML = commonHtml(); if ($app._initSigs) $app._initSigs(); } return; }
@@ -454,7 +486,7 @@
       if (!r.can_edit) { toast('수정할 수 있는 시간이 지났습니다.'); return; }
       var a = r.answers || {}; S.ans = { common: a.common || {}, course: a.course || {} }; S.sel = { track: r.track, grade: r.grade, klass: r.klass };
       S.editing = true; S.open = ''; S.pageId = ''; S.pageIdx = 0; S.active = 0; S.times = a._t || {}; S.lastTick = Date.now(); S.vsig = {};
-      go(isGen() ? 'page' : 'eval'); if (!isGen()) { var f = myCourses()[0]; if (f) openCourse(f.id, true); }
+      go(isGen() ? 'page' : 'eval'); if (!isGen()) { var f = myCourses()[0]; if (f && !isMatrix()) openCourse(f.id, true); }
     } catch (e) { toast(e.message); }
   }
   function screenResult() {
@@ -538,6 +570,7 @@
       var fi = firstIncomplete();
       if (fi) {
         if (fi.cid === 'common') { var el = document.getElementById('c-common') || $app.querySelector('.card'); el.scrollIntoView({ behavior: 'smooth', block: 'start' }); flash(el, fi.qid); }
+        else if (isMatrix()) { var mr = $app.querySelector('.q[data-q="' + fi.qid + '"][data-scope="' + fi.cid + '"]'); if (mr) { mr.scrollIntoView({ behavior: 'smooth', block: 'center' }); mr.classList.remove('missing'); void mr.offsetWidth; mr.classList.add('missing'); setTimeout(function () { mr.classList.remove('missing'); }, 1800); } }
         else { openCourse(fi.cid); setTimeout(function () { flash(document.getElementById('c-' + fi.cid), fi.qid); }, 380); }
         toast('응답하지 않은 문항이 있습니다.'); return;
       }
@@ -629,7 +662,7 @@
       }
       if (had && S.sel[k] !== v) confirmBox('반을 변경하시겠습니까?', '반을 바꾸면 과목이 달라져 과목별 응답이 초기화됩니다.', '변경', '취소').then(function (ok) { if (ok) apply(); }); else apply();
     }
-    else if (act === 'toeval') { if (hasUploading()) { toast('파일을 올리는 중입니다.'); return; } var bad0 = stat('common', qs('common', true)); if (bad0.firstMissing) { showBad($app, [bad0.firstMissing]); return; } S.open = ''; go('eval'); var f = myCourses()[0]; if (f) openCourse(f.id, true); }
+    else if (act === 'toeval') { if (hasUploading()) { toast('파일을 올리는 중입니다.'); return; } var bad0 = stat('common', qs('common', true)); if (bad0.firstMissing) { showBad($app, [bad0.firstMissing]); return; } S.open = ''; go('eval'); var f = myCourses()[0]; if (f && !isMatrix()) openCourse(f.id, true); }
     else if (act === 'toggle') { if (S.open === cid) closeCourse(cid); else openCourse(cid); }
     else if (act === 'next') { var l = myCourses(), ix = -1; l.forEach(function (c, i) { if (c.id === cid) ix = i; }); if (l[ix + 1]) openCourse(l[ix + 1].id); }
     else if (act === 'tocommon') { var ce = document.getElementById('c-common'); if (ce) ce.scrollIntoView({ behavior: 'smooth', block: 'start' }); else $app.querySelector('.bar').scrollIntoView(); }
