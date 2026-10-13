@@ -112,6 +112,7 @@
     if (w.test_mode) add('warn', '설정', '테스트 모드가 켜져 있습니다', '「정식 시작」으로 테스트 응답을 지우고 테스트 모드를 해제해야 실제 응답이 집계됩니다.', { tab: 'overview' });
     if (A.isDirty()) add('warn', '설정', '저장하지 않은 변경 사항이 있습니다', '점검은 현재 편집 중인 내용 기준입니다. 저장 후 배포해 주십시오.', { tab: 'overview' });
 
+    if (C.course && C.cs.some(function (c) { return c.prof; })) add('info', '개인정보', '학생 화면에 담당자(교수) 이름이 과목과 함께 표시됩니다', '등록된 담당자 이름은 학생 화면에 그대로 표시됩니다. 안내문의 익명성(응답이 담당 교수에게 개별 제공되지 않음) 설명과 어긋나지 않는지 확인해 주십시오.', { tab: 'courses' });
     /* ── 개인정보 ── */
     var PII = /(이름|성명|연락처|전화|휴대폰|핸드폰|이메일|e-?mail|주소|생년월일|주민|학번|사번)/i, hasConsent = real.some(function (x) { return x.q.type === 'consent'; });
     var pii = real.filter(function (x) { return PII.test(lab(x.q)) || x.q.type === 'address' || x.q.type === 'signature' || (x.q.type === 'text' && /phone|email/.test(x.q.format || '')); });
