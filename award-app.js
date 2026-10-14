@@ -123,6 +123,16 @@
       saving ? '저장 중…' : S.dirty ? '변경됨 · 저장 대기' : S.tpl && S.tpl.id ? AW.ic('cloud', 14) + ' 저장됨 · v' + S.tpl.ver + (S.savedAt ? ' · ' + AW.fmtTime(S.savedAt) : '') : '';
     el.innerHTML = msg; renderTabs(); var r = $('#t-retry'); if (r) r.onclick = function () { save({ note: '재시도' }); };
   }
+  // 저장에 실패한 내용은 이 브라우저에 임시 보관 → 다음에 같은 양식을 열 때 복구 안내 (배경 이미지는 서버본 사용)
+  var DRAFT = 'award_draft';
+  function draftPut(t) { try { var d = AW.lsGet(DRAFT, {}) || {}; d[t.id || 'new'] = { ts: Date.now(), name: t.name, page: t.page, elems: t.elems, fields: t.fields, rows: S.jobId ? null : t.rows }; AW.lsSet(DRAFT, d); } catch (x) {} }
+  function draftDrop(t) { try { var d = AW.lsGet(DRAFT, {}) || {}; delete d[t.id || 'new']; AW.lsSet(DRAFT, d); } catch (x) {} }
+  function draftOffer(t, updatedAt) {
+    var d = (AW.lsGet(DRAFT, {}) || {})[t.id]; if (!d || d.ts <= new Date(updatedAt).getTime() + 3000) { if (d) draftDrop(t); return; }
+    AW.confirm('저장하지 못한 편집 내용', '이 양식에 서버에 저장되지 못한 편집 내용(' + AW.fmtTime(new Date(d.ts)) + ')이 있습니다. 복구할까요? 복구하지 않으면 삭제됩니다.', '복구').then(function (ok) {
+      if (!ok) return draftDrop(t); t.page = d.page; t.elems = d.elems; t.fields = d.fields; t.name = d.name || t.name; if (d.rows) t.rows = d.rows; S.dirty = true; renderAll(curTab()); touch('elems'); AW.toast('복구했습니다. 자동으로 저장됩니다.', 'ok');
+    });
+  }
   function save(o) {
     o = o || {}; var t = S.tpl; if (!t || !S.token) return Promise.resolve();
     if (!t.id && !(t.elems.length || t.bg || t.rows.length)) return Promise.resolve();
@@ -134,10 +144,10 @@
       if (!r.ok) { if (r.error === 'CONFLICT') return conflict(r); throw new Error(r.error); }
       t.id = r.id; t.ver = r.ver;
       if (S.tpl === t) { S.savedAt = new Date(); if (rev === r0) S.dirty = false; if (bgSent) S.bgDirty = false; } else { var ot = tabOfTpl(t); if (ot) { ot.dirty = false; if (bgSent) ot.bgDirty = false; ot.savedAt = new Date(); } }
-      persistTabs();
+      persistTabs(); draftDrop(t);
       if (S.tpl === t) AW.lsSet(LAST_KEY, t.id); if (o.toast) AW.toast('저장했습니다.', 'ok');
       return AW.Job.saveRows().then(function () { if (!S.jobs.length || !t.id) AW.Job.load(); });
-    }).catch(function (e) { S.saveErr = e.message || '오류'; if (o.toast) AW.toast('저장 실패: ' + S.saveErr, 'error'); }).then(function () {
+    }).catch(function (e) { S.saveErr = e.message || '오류'; draftPut(t); if (o.toast) AW.toast('저장 실패: ' + S.saveErr, 'error'); }).then(function () {
       saving = false; setStat(); if (again || (S.dirty && !S.saveErr && rev !== r0)) { again = false; timer = setTimeout(function () { save({ note: '자동 저장' }); }, 600); }
     });
   }
@@ -162,7 +172,7 @@
   function openTpl(id) {   // 현재 탭의 내용을 서버 저장본으로 다시 불러옴
     return AW.call('award_tpl_get', { p_id: id }).then(function (r) {
       S.tpl = AW.fromServer(r); S.dirty = false; S.bgDirty = false; S.row = 0; S.saveErr = ''; S.savedAt = new Date(r.updated_at); AW.lsSet(LAST_KEY, id); var ct = curTab(); if (ct) { ct.tpl = S.tpl; ct.id = id; ct.hist = null; } renderAll();
-      return AW.Job.afterOpen().then(function () { AW.Preview.render(); steps(); renderTabs(); persistTabs(); });
+      return AW.Job.afterOpen().then(function () { AW.Preview.render(); steps(); renderTabs(); persistTabs(); draftOffer(S.tpl, r.updated_at); });
     });
   }
 
@@ -191,7 +201,7 @@
       if (!r) throw new Error('양식을 찾을 수 없습니다.');
       t.tpl = AW.fromServer(r); t.savedAt = new Date(r.updated_at); t.dirty = false; t.bgDirty = false; t.row = 0; t.name = t.tpl.name;
       cur = t.key; S.tpl = t.tpl; S.dirty = false; S.bgDirty = false; S.row = 0; S.saveErr = ''; S.savedAt = t.savedAt; AW.lsSet(LAST_KEY, t.id); renderAll();
-      return AW.Job.afterOpen().then(function () { AW.Preview.render(); steps(); renderTabs(); persistTabs(); });
+      return AW.Job.afterOpen().then(function () { AW.Preview.render(); steps(); renderTabs(); persistTabs(); draftOffer(S.tpl, r.updated_at); });
     });
   }
   function gotoTab(key) {
