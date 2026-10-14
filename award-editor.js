@@ -768,11 +768,11 @@
       s.onerror = function () { rej(new Error('PDF 처리 모듈을 불러오지 못했습니다. 네트워크를 확인하거나 PDF를 JPG로 변환해 올려 주십시오.')); }; document.head.appendChild(s);
     });
   }
-  function pdfPage(file, maxPx) {
+  function pdfPage(file, maxPx, page) {
     return loadPdfJs().then(function (lib) {
       return file.arrayBuffer().then(function (buf) { return lib.getDocument({ data: buf }).promise; });
     }).then(function (doc) {
-      if (doc.numPages === 1) return { doc: doc, n: 1 };
+      if (doc.numPages === 1 || page) return { doc: doc, n: Math.min(doc.numPages, page || 1) };
       return new Promise(function (res, rej) {
         var done = false;
         AW.modal({ title: 'PDF 페이지 선택', body: '<p style="margin-top:0">총 ' + doc.numPages + '쪽입니다. 양식으로 사용할 쪽 번호를 입력해 주십시오.</p><input class="in" id="pdf-n" type="number" min="1" max="' + doc.numPages + '" value="1">',
@@ -796,11 +796,12 @@
     });
     return best;
   }
-  E.readSource = function (file, maxPx) {   // 스캔 도우미용: JPG·PNG·PDF → 이미지 data URL
+  E.pdfCount = function (file) { return loadPdfJs().then(function (lib) { return file.arrayBuffer().then(function (buf) { return lib.getDocument({ data: buf }).promise; }); }).then(function (d) { return d.numPages; }); };
+  E.readSource = function (file, maxPx, page) {   // 스캔 도우미용: JPG·PNG·PDF → 이미지 data URL
     var isPdf = /pdf$/i.test(file.type) || /\.pdf$/i.test(file.name);
     if (!isPdf && !/^image\//.test(file.type)) return Promise.reject(new Error('JPG·PNG·PDF 파일만 올릴 수 있습니다.'));
     if (file.size > 30 * 1024 * 1024) return Promise.reject(new Error('파일이 너무 큽니다(30MB 이하).'));
-    return isPdf ? pdfPage(file, maxPx) : readImage(file, maxPx || 2480, 'image/jpeg');
+    return isPdf ? pdfPage(file, maxPx, page) : readImage(file, maxPx || 2480, 'image/jpeg');
   };
   E.loadBackgroundFile = function (file) {
     var isPdf = /pdf$/i.test(file.type) || /\.pdf$/i.test(file.name);
