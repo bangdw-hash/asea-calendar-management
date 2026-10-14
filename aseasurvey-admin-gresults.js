@@ -365,6 +365,14 @@
   }
 
   /* ───────────── 탭 ───────────── */
+  // 작업 탭이 화면 상태를 보존·복원하기 위한 접근자
+  A.ext.gstate = { get: function () { return { sub: G.sub, last: G.last, page: G.page, kw: G.kw, x: JSON.parse(JSON.stringify(G.x || {})) }; } };
+  function applyPending() {
+    var pd = A.ext.pendingState; if (!pd || !A.cur || pd.id !== A.cur.survey.id) return; A.ext.pendingState = null;
+    if (pd.g) { G.sub = pd.g.sub || 'rep'; G.last = pd.g.last; G.page = pd.g.page || 1; G.kw = pd.g.kw || ''; G.x = pd.g.x || {}; }
+    if (pd.F) { A.ext.F.data = pd.F.data; A.ext.F.sincere = pd.F.sincere; }
+    if (pd.rpt && A.ext.rpt) { var R0 = A.ext.rpt; R0.unit = pd.rpt.unit || R0.unit; R0.view = pd.rpt.view || R0.view; R0.sel = pd.rpt.sel || {}; R0.sorts = pd.rpt.sorts || []; R0.q = pd.rpt.q || ''; R0.anchor = pd.rpt.anchor || ''; if (pd.rpt.types) R0.types = pd.rpt.types; }
+  }
   var LEGSUB = { legacy: 1, cmp: 1, det: 1, same: 1, live: 1, rpt: 1, trk: 1, cls: 1, prf: 1, sbj: 1, ovr: 1, rnd: 1, thm: 1, prio: 1, act: 1 };
   // 분석 메뉴 → 리포트 모듈의 화면(view)·단위(unit)
   var RPTU = { trk: { v: 'list', u: 'track' }, cls: { v: 'list', u: 'klass' }, prf: { v: 'list', u: 'prof' }, sbj: { v: 'list', u: 'subject' }, ovr: { v: 'ovr' }, rnd: { v: 'rnd' }, thm: { v: 'thm' }, prio: { v: 'prio' }, act: { v: 'act' } };
@@ -379,6 +387,7 @@
   }
   async function general(box) {
     if (G.sid !== A.cur.survey.id) { G.sid = A.cur.survey.id; G.rows = []; G.maxSeq = 0; G.sub = 'rep'; G.page = 1; G.kw = ''; G.x = {}; G.cmp = null; G._flatFor = ''; A.ext.F.data = A.cur.survey.test_mode ? 'test' : 'real'; A.ext.F.sincere = 'all'; }
+    applyPending();
     box.innerHTML = '<div id="gtabs">' + tabsHtml() + '</div><div class="row gtools" style="margin:8px 0 12px"><span id="glive" class="live"></span><span class="sp"></span><button class="btn btn-ghost btn-sm" data-act="glivetoggle">일시정지/재개</button><button class="btn btn-secondary btn-sm" data-act="greload">' + I('refresh', 14) + ' 새로고침</button><button class="btn btn-primary btn-sm" data-act="gxlsx">' + I('download', 14) + ' 엑셀 내려받기</button><button class="btn btn-secondary btn-sm" data-act="gpdf">PDF</button><button class="btn btn-secondary btn-sm" data-act="gprint">인쇄</button></div>' +
       '<div class="filters"><div><label class="f">데이터</label><select class="fld" id="gdata"><option value="real"' + (A.ext.F.data === 'real' ? ' selected' : '') + '>정식 응답</option><option value="test"' + (A.ext.F.data === 'test' ? ' selected' : '') + '>테스트 응답</option><option value="all"' + (A.ext.F.data === 'all' ? ' selected' : '') + '>정식+테스트</option></select></div><div><label class="f">응답 범위(유효성)</label><select class="fld" id="gsinc">' + Object.keys(A.ext.SINC).map(function (k) { return '<option value="' + k + '"' + (A.ext.F.sincere === k ? ' selected' : '') + '>' + SVY.esc(A.ext.SINC[k]) + '</option>'; }).join('') + '</select></div></div><div id="gbody" class="loading">불러오는 중…</div>';
     box.onchange = function (e) { if (e.target.id === 'gsinc') { A.ext.F.sincere = e.target.value; G.page = 1; render(); } if (e.target.id === 'gdata') { A.ext.F.data = e.target.value; G.page = 1; render(); } };

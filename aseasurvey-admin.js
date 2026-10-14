@@ -58,7 +58,8 @@
     $app.innerHTML = '<header class="hdr"><div class="hdr-in"><img class="logo" src="aseasurvey-logo.png" alt="아세아항공직업전문학교"><span class="hdr-title">설문 관리자</span>' +
       '<div class="hdr-actions"><button class="btn btn-ghost btn-sm" data-act="dbtest">' + I('server', 15) + ' DB 연결 테스트</button>' +
       (A.token ? '<button class="btn btn-ghost btn-sm" data-act="aitest">' + I('sparkle', 15) + ' AI 연결 테스트</button><button class="btn btn-ghost btn-sm" data-act="pw">비밀번호</button><button class="btn btn-ghost btn-sm" data-act="logout">로그아웃</button>' : '') +
-      '</div></div></header><main class="wrap" id="main">' + inner + '</main>';
+      '</div></div></header><nav class="stabs" id="stabs" aria-label="열린 작업 탭"></nav><main class="wrap" id="main">' + inner + '</main>';
+    if (A.tabsHook) A.tabsHook.paint();
   }
   A.shell = shell;
   A.main = function () { return document.getElementById('main'); };
@@ -318,6 +319,7 @@
     var d = A.isDirty(), el = document.getElementById('dirty'), b = document.getElementById('savebtn');
     if (el) el.classList.toggle('hide', !d); if (b) b.disabled = !d;
     clearTimeout(A._dt); A._dt = setTimeout(writeDraft, 1500);
+    if (A.tabsHook && A._dirtyShown !== d) { A._dirtyShown = d; A.tabsHook.paint(); }
   };
   window.addEventListener('beforeunload', function (e) { writeDraft(); if (A.isDirty()) { e.preventDefault(); e.returnValue = ''; } });
 
@@ -328,14 +330,15 @@
     if (!m && /^#\/link/.test(location.hash) && A.linkdesign && A.linkdesign.show) return A.linkdesign.show();
     if (!m && /^#\/new/.test(location.hash) && A.newSurveyUI) return A.newSurveyUI();
     if (!m && /^#\/library/.test(location.hash) && A.lib) return A.lib.showLib();
-    if (!m) return screenList();
+    if (!m) { if (A.tabsHook) A.tabsHook.arrived(null); return screenList(); }
     A.tab = m[2] && TAB_DEFS.some(function (t) { return t.id === m[2]; }) ? m[2] : 'overview';
-    if (A.cur && A.cur.survey.id === m[1] && A.work) return A.renderSurvey();
+    if (A.cur && A.cur.survey.id === m[1] && A.work) { if (A.tabsHook) A.tabsHook.arrived(m[1]); return A.renderSurvey(); }
     shell('<div class="loading">불러오는 중…</div>');
-    try { await A.load(m[1]); A.renderSurvey(); } catch (e) { A.toast(e.message, 'err'); location.hash = '#/'; }
+    try { await A.load(m[1]); if (A.tabsHook) A.tabsHook.arrived(m[1]); A.renderSurvey(); } catch (e) { A.toast(e.message, 'err'); location.hash = '#/'; }
   }
+  A.route = route;
   A.go = function (tab) { if (A.cur) location.hash = '#/s/' + A.cur.survey.id + '/' + tab; };
-  window.addEventListener('hashchange', function () { if (A.isDirty() && !/^#\/s\//.test(location.hash)) { if (!confirm('저장하지 않은 변경 사항이 있습니다. 이동하시겠습니까?')) { history.back(); return; } A.work = null; A.cur = null; } route(); });
+  window.addEventListener('hashchange', function () { if (A.tabsHook) A.tabsHook.leaving(); if (A.isDirty() && !/^#\/s\//.test(location.hash) && !A.tabsHook) { if (!confirm('저장하지 않은 변경 사항이 있습니다. 이동하시겠습니까?')) { history.back(); return; } A.work = null; A.cur = null; } route(); });
 
   /* ───────────── 이벤트 ───────────── */
   document.addEventListener('click', async function (e) {
@@ -348,8 +351,8 @@
     else if (act === 'aitest') aiTest();
     else if (act === 'newsvy') { if (A.newSurveyUI) location.hash = '#/new'; else newSurvey(); }
     else if (act === 'tolist') { location.hash = '#/'; }
-    else if (act === 'open') location.hash = '#/s/' + id + '/overview';
-    else if (act === 'results') location.hash = '#/s/' + id + '/results';
+    else if (act === 'open') { if (A.tabsHook) A.tabsHook.open(id, 'overview'); else location.hash = '#/s/' + id + '/overview'; }
+    else if (act === 'results') { if (A.tabsHook) A.tabsHook.open(id, 'results'); else location.hash = '#/s/' + id + '/results'; }
     else if (act === 'copylink') A.copy(A.link(t.getAttribute('data-code')), '설문 링크를 복사했습니다.');
     else if (act === 'clone') {
       var src = A.list.filter(function (s) { return s.id === id; })[0];
@@ -389,6 +392,7 @@
     $app = document.getElementById('app');
     try { A.token = sessionStorage.getItem('svya_token') || ''; } catch (e) { A.token = ''; }
     if (A.token) { try { await loadList(); } catch (e) { A.token = ''; } }
+    if (A.tabsHook && A.token) A.tabsHook.init();
     route();
   };
 })();

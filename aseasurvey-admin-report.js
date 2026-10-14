@@ -9,7 +9,7 @@
  */
 (function () {
   var A = window.SVYA, E = SVY.esc, I = SVY.ico, API = function () { return A.ext.resApi; };
-  var UI = A.ext.rpt = A.ext.rpt || { unit: 'prof', types: { a: true, b: true }, sel: {}, q: '', busy: false, cancel: false, ents: [], sort: 'def', showProf: false, merge: {}, view: 'list' };
+  var UI = A.ext.rpt = A.ext.rpt || { unit: 'prof', types: { a: true, b: true }, sel: {}, q: '', busy: false, cancel: false, ents: [], sort: 'def', showProf: false, merge: {}, view: 'list', sorts: [], anchor: '' };
   var PX = { w: 794, h: 1123 };
   var UL = { prof: '교원', klass: '반', track: '계열', subject: '과목' }, ULS = { prof: '교수별', klass: '반별', track: '계열별', subject: '과목별' };   // A4 @96dpi
 
@@ -334,7 +334,7 @@
       '<details style="margin-top:10px"><summary style="cursor:pointer;font-weight:700">파일명 규칙</summary><div class="grid g2" style="margin-top:8px"><div style="grid-column:1/-1"><label class="f">조사명 문구 <code>{조사}</code></label><input class="fld" data-nm="prefix" value="' + E(ns.prefix) + '"></div>' +
       [['prof', '교수별 파일명'], ['klass', '반별 파일명'], ['track', '계열별 파일명'], ['subject', '과목별 파일명']].map(function (u) { return '<div><label class="f">' + u[1] + '</label><input class="fld" data-nm="' + u[0] + '" value="' + E(ns[u[0]]) + '"></div>'; }).join('') + '</div><div class="muted" style="font-size:12.5px;margin-top:6px">사용 가능: {조사} {계열} {교수} {반} {과목} {학기}. 두 종류를 함께 만들면 파일명 끝에 「_내부용」「_전달용」이 붙습니다. <button class="btn btn-ghost btn-sm" data-rp="nmsave">저장</button> <span id="nm-ex" class="muted"></span></div></details></div>' +
       '<div class="panel"><div class="row" style="gap:8px;flex-wrap:wrap;align-items:center"><h3 class="sp" style="margin:0">③ ' + ULS[UI.unit] + ' 목록 <span id="rpt-cnt" class="muted" style="font-weight:400"></span></h3>' +
-      '<input class="fld" data-rp="q" value="' + E(UI.q) + '" placeholder="이름·계열 검색" style="width:160px"><select class="fld" data-rp="sort" style="width:auto" title="정렬">' + [['def', '계열·이름순'], ['name', '이름순'], ['hi', '점수 높은순'], ['lo', '점수 낮은순'], ['resp', '응답자 많은순'], ['neg', '부정률 높은순']].map(function (o) { return '<option value="' + o[0] + '"' + (UI.sort === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select>' +
+      '<input class="fld" data-rp="q" value="' + E(UI.q) + '" placeholder="이름·계열 검색" style="width:160px">' +
       (UI.unit === 'subject' ? '<button class="btn btn-ghost btn-sm" data-rp="mg" title="선택한 과목을 하나로 합칩니다">선택 과목 합치기</button><button class="btn btn-ghost btn-sm" data-rp="split" title="합쳐진 과목을 다시 나눕니다">합치기 해제</button>' : '') +
       '<button class="btn btn-secondary btn-sm" data-rp="selall">전체 선택</button><button class="btn btn-secondary btn-sm" data-rp="selnone">선택 해제</button>' +
       '<button class="btn btn-primary btn-sm" data-rp="ai">' + I('sparkle', 14) + ' 선택 항목 AI 분석</button><button class="btn btn-secondary btn-sm" data-rp="rule">기본 분석(AI 없이)</button><button class="btn btn-ghost btn-sm" data-rp="stop">중단</button><select class="fld" data-rp="model" style="width:auto" title="AI 모델">' + (A.ext.aiModels || []).map(function (m) { return '<option value="' + E(m[0]) + '"' + ((UI.model || (A.ext.aiModels[0] || [])[0]) === m[0] ? ' selected' : '') + '>' + E(m[1]) + '</option>'; }).join('') + '</select><button class="btn btn-ghost btn-sm" data-rp="reload">다시 계산</button><button class="btn btn-ghost btn-sm" data-rp="bk" title="AI 분석·편집 내용을 파일로 저장">백업 저장</button><button class="btn btn-ghost btn-sm" data-rp="bkload">백업 불러오기</button><input type="file" id="rpt-bkf" accept=".json" hidden></div>' +
@@ -343,10 +343,37 @@
     drawList(); drawSummary(); nmExample(ns);
     box.onclick = onClick; box.oninput = onInput; box.onchange = onChange;
   }
+  // 열 정의: 정렬 값(null 은 항상 뒤로)
+  function statusRank(e) { var rec = getRec(e); return !rec ? 0 : rec.edit ? 3 : rec.analysis && rec.analysis.src === 'ai' ? 2 : 1; }
+  var COLS = { label: function (e) { return e.label; }, track: function (e) { return e.track; }, resp: function (e) { return e.resp; }, mean: function (e) { return e.mean; }, med: function (e) { return e.med; }, cm: function (e) { return e.comments.length; }, st: function (e) { return statusRank(e); } };
   function filtered() {
-    var q = UI.q.trim().toLowerCase(), l = UI.ents.filter(function (e) { return !q || (e.label + ' ' + e.track + ' ' + (e.sub || '')).toLowerCase().indexOf(q) >= 0; }), k = UI.sort, nv = function (v, d) { return v == null ? d : v; };
-    var cmp = { name: function (a, b) { return a.label.localeCompare(b.label, 'ko'); }, hi: function (a, b) { return nv(b.mean, -1) - nv(a.mean, -1); }, lo: function (a, b) { return nv(a.mean, 9) - nv(b.mean, 9); }, resp: function (a, b) { return b.resp - a.resp; }, neg: function (a, b) { return nv(b.negr, -1) - nv(a.negr, -1); } }[k];
-    return cmp ? l.slice().sort(cmp) : l;
+    var q = UI.q.trim().toLowerCase(), l = UI.ents.filter(function (e) { return !q || (e.label + ' ' + e.track + ' ' + (e.sub || '')).toLowerCase().indexOf(q) >= 0; });
+    if (!UI.sorts.length) return l;
+    return l.map(function (e, i) { return { e: e, i: i }; }).sort(function (a, b) {
+      for (var n = 0; n < UI.sorts.length; n++) {
+        var c = UI.sorts[n], f = COLS[c.k], x = f(a.e), y = f(b.e); if (x == null && y == null) continue; if (x == null) return 1; if (y == null) return -1;
+        var d = typeof x === 'string' ? String(x).localeCompare(String(y), 'ko') : x - y; if (d) return d * c.dir;
+      }
+      return a.i - b.i;
+    }).map(function (o) { return o.e; });
+  }
+  // 열 제목 클릭: 오름차순 → 내림차순 → 해제 순환, Shift+클릭은 2차 이상 정렬 기준을 더함
+  function headSort(c, multi) {
+    var ix = -1; UI.sorts.forEach(function (x, i) { if (x.k === c) ix = i; });
+    if (multi) { if (ix < 0) UI.sorts.push({ k: c, dir: 1 }); else if (UI.sorts[ix].dir === 1) UI.sorts[ix].dir = -1; else UI.sorts.splice(ix, 1); }
+    else if (ix >= 0 && UI.sorts.length === 1) { if (UI.sorts[0].dir === 1) UI.sorts[0].dir = -1; else UI.sorts = []; }
+    else UI.sorts = [{ k: c, dir: 1 }];
+    drawList();
+  }
+  function pref(k, d) { try { var p = JSON.parse(localStorage.getItem('svya_prefs') || '{}'); return p[k] == null ? d : p[k]; } catch (e) { return d; } }
+  // 행 선택: 클릭=그 행만(기본)·선택된 행 다시 클릭=해제, Ctrl(⌘)+클릭=추가/해제, Shift+클릭=기준 행부터 구간 선택
+  function rowSelect(k, ev) {
+    var keys = filtered().map(function (e) { return e.unit + '|' + e.key; }), i = keys.indexOf(k), a = keys.indexOf(UI.anchor), n = Object.keys(UI.sel).filter(function (x) { return UI.sel[x]; }).length;
+    if (i < 0) return;
+    if (ev.shiftKey && a >= 0) { if (!(ev.ctrlKey || ev.metaKey)) UI.sel = {}; for (var j = Math.min(a, i); j <= Math.max(a, i); j++) UI.sel[keys[j]] = true; }
+    else if (ev.ctrlKey || ev.metaKey || pref('rowClick', 'replace') === 'toggle') { if (UI.sel[k]) delete UI.sel[k]; else UI.sel[k] = true; UI.anchor = k; }
+    else { var only = UI.sel[k] && n === 1; UI.sel = {}; if (!only) UI.sel[k] = true; UI.anchor = k; }
+    drawList();
   }
   // 종합: 해당 단위 전체 요약 (현재 응답 범위 기준)
   function drawSummary() {
@@ -361,10 +388,11 @@
   function drawList() {
     var el = document.getElementById('rpt-list'); if (!el) return; var list = filtered();
     document.getElementById('rpt-cnt').textContent = '· ' + list.length + '개 중 ' + UI.ents.filter(function (e) { return UI.sel[e.unit + '|' + e.key]; }).length + '개 선택';
-    el.innerHTML = '<div class="tbl-wrap" style="max-height:420px;overflow:auto"><table class="t cmpt"><thead><tr><th></th><th>' + UL[UI.unit] + '</th><th>계열</th><th class="num">응답자</th><th class="num">평균</th><th class="num" title="응답자 한 명의 평균점수들의 중앙값(극단 응답의 영향을 보는 참고 지표)">중앙값</th><th class="num">서술 의견</th><th>분석 상태</th><th></th></tr></thead><tbody>' + (list.map(function (e) {
+    var H = function (c, label, num, tip) { var ix = -1; UI.sorts.forEach(function (x, n) { if (x.k === c) ix = n; }); return '<th class="thsort' + (num ? ' num' : '') + (ix >= 0 ? ' sorted' : '') + '" data-rp="hsort" data-c="' + c + '" role="columnheader" aria-sort="' + (ix < 0 ? 'none' : UI.sorts[ix].dir > 0 ? 'ascending' : 'descending') + '" style="cursor:pointer;user-select:none"' + (tip ? ' title="' + E(tip) + '"' : ' title="눌러서 정렬 (Shift+클릭: 여러 기준)"') + '>' + label + (ix >= 0 ? ' <span class="srt">' + (UI.sorts[ix].dir > 0 ? '▲' : '▼') + (UI.sorts.length > 1 ? '<sup>' + (ix + 1) + '</sup>' : '') + '</span>' : '') + '</th>'; };
+    el.innerHTML = '<div class="tbl-wrap" style="max-height:420px;overflow:auto"><table class="t cmpt rptsel"><thead><tr><th></th>' + H('label', UL[UI.unit]) + H('track', '계열') + H('resp', '응답자', 1) + H('mean', '평균', 1) + H('med', '중앙값', 1, '응답자 한 명의 평균점수들의 중앙값(극단 응답의 영향을 보는 참고 지표)') + H('cm', '서술 의견', 1) + H('st', '분석 상태') + '<th></th></tr></thead><tbody>' + (list.map(function (e) {
       var k = e.unit + '|' + e.key, rec = getRec(e), st = (rec && rec.fsig && rec.fsig !== fsig() ? '<span class="badge badge-orange" title="분석 당시와 응답 범위·데이터 구분이 다릅니다. 다시 분석하십시오.">필터 변경됨</span> ' : '') + (!rec ? '<span class="badge badge-gray">미분석</span>' : rec.edit ? '<span class="badge badge-blue">수정됨</span>' : rec.analysis && rec.analysis.src === 'ai' ? '<span class="badge badge-green">AI 분석</span>' : '<span class="badge badge-gray">기본 분석</span>');
-      return '<tr><td><input type="checkbox" data-rp="chk" data-k="' + E(k) + '"' + (UI.sel[k] ? ' checked' : '') + '></td><td><b>' + E(e.label) + '</b></td><td>' + E(e.track) + '</td><td class="num">' + e.resp + (e.resp < 5 ? ' <span class="badge badge-gray">참고용</span>' : '') + '</td><td class="num">' + fmt1(e.mean) + '</td><td class="num">' + fmt1(e.med) + '</td><td class="num">' + e.comments.length + '</td><td>' + st + '</td><td><button class="btn btn-ghost btn-sm" data-rp="edit" data-k="' + E(k) + '">편집·미리보기</button></td></tr>';
-    }).join('') || '<tr><td colspan="9" class="t-empty">대상이 없습니다. (응답 범위·필터를 확인하십시오)</td></tr>') + '</tbody></table></div>';
+      return '<tr class="selrow' + (UI.sel[k] ? ' sel' : '') + '" data-rp="row" data-k="' + E(k) + '" aria-selected="' + (UI.sel[k] ? 'true' : 'false') + '"><td><input type="checkbox" data-rp="chk" data-k="' + E(k) + '"' + (UI.sel[k] ? ' checked' : '') + '></td><td><b>' + E(e.label) + '</b></td><td>' + E(e.track) + '</td><td class="num">' + e.resp + (e.resp < 5 ? ' <span class="badge badge-gray">참고용</span>' : '') + '</td><td class="num">' + fmt1(e.mean) + '</td><td class="num">' + fmt1(e.med) + '</td><td class="num">' + e.comments.length + '</td><td>' + st + '</td><td><button class="btn btn-ghost btn-sm" data-rp="edit" data-k="' + E(k) + '">편집·미리보기</button></td></tr>';
+    }).join('') || '<tr><td colspan="9" class="t-empty">대상이 없습니다. (응답 범위·필터를 확인하십시오)</td></tr>') + '</tbody></table></div><div class="muted" style="font-size:12px;margin-top:4px">행을 누르면 선택, Ctrl+클릭은 여러 개, Shift+클릭은 구간 선택, 열 제목을 누르면 정렬(Shift+클릭: 여러 기준)입니다.</div>';
   }
   function nmExample(ns) { var e = UI.ents[0], el = document.getElementById('nm-ex'); if (el && e) el.textContent = '예: ' + fileName(ns, e, ''); }
   function entByKey(k) { return UI.ents.filter(function (e) { return e.unit + '|' + e.key === k; })[0]; }
@@ -377,12 +405,11 @@
   }
   async function onChange(e) {
     var t = e.target, r = t.getAttribute('data-rp');
-    if (r === 'sort') { UI.sort = t.value; drawList(); return; }
     if (r === 'sp') { UI.showProf = t.checked; return; }
     if (r === 'unit') { UI.unit = t.value; UI.sel = {}; var bx = document.getElementById('rptmount'); bx.removeAttribute('data-rpt'); A.ext.reportUI(bx); return; }
     if (r === 'model') { UI.model = t.value; return; }
     if (r === 'ta' || r === 'tb') { UI.types[r === 'ta' ? 'a' : 'b'] = t.checked; return; }
-    if (r === 'chk') { UI.sel[t.getAttribute('data-k')] = t.checked; drawList(); return; }
+    if (r === 'chk') { var ck = t.getAttribute('data-k'); if (t.checked) UI.sel[ck] = true; else delete UI.sel[ck]; UI.anchor = ck; drawList(); return; }
     if (t.getAttribute('data-nm')) { nmExample(await nameSettingsLive()); }
   }
   async function nameSettingsLive() { var ns = await nameSettings(); document.querySelectorAll('[data-nm]').forEach(function (i) { ns[i.getAttribute('data-nm')] = i.value; }); return ns; }
@@ -391,6 +418,8 @@
     if (r === 'ovsave') { var o = {}; document.querySelectorAll('[data-ov]').forEach(function (i) { o[i.getAttribute('data-ov')] = i.value; }); await dbPut(sid() + '|overview', o); A.toast('개요를 이 브라우저에 저장했습니다.'); }
     else if (r === 'ovreset') { await dbDel(sid() + '|overview'); box.removeAttribute('data-rpt'); A.ext.reportUI(box); }
     else if (r === 'nmsave') { var ns = await nameSettingsLive(); await dbPut(sid() + '|names', ns); nmExample(ns); A.toast('파일명 규칙을 저장했습니다.'); }
+    else if (r === 'hsort') { headSort(t.getAttribute('data-c'), e.shiftKey); }
+    else if (r === 'row') { rowSelect(t.getAttribute('data-k'), e); }
     else if (r === 'selall') { filtered().forEach(function (x) { UI.sel[x.unit + '|' + x.key] = true; }); drawList(); }
     else if (r === 'mg' || r === 'split') {
       var sl = selected(); if (r === 'mg' && sl.length < 2) return A.toast('합칠 과목을 2개 이상 선택해 주십시오.', 'err'); if (r === 'split' && !sl.length) return A.toast('나눌 과목을 선택해 주십시오.', 'err');
@@ -433,13 +462,13 @@
   /* ───────────── 편집기 ───────────── */
   async function openEditor(e) {
     if (!e) return; var rec = getRec(e) || { analysis: ruleAnalysis(e), edit: null }, an = JSON.parse(JSON.stringify(rec.edit || rec.analysis)), ov = await ovGet(), kind = 'a';
-    var m = A.modal('', function () {}, 'xl'), root = m.el.querySelector('.modal');
+    var m = A.modal('', function () {}, 'xxl'), root = m.el.querySelector('.modal');
     var aiNote = '';
     function paint() {
       var cls = an.cls || [];
       root.innerHTML = '<h3>' + E(e.label) + ' <span class="muted" style="font-weight:400">· ' + E(e.track) + ' · 서술 의견 ' + e.comments.length + '건</span></h3>' +
         (aiNote ? '<div class="aip done"><h4>' + I('check', 16) + '<span>AI 작성 완료</span></h4><div class="aip-msg">' + E(aiNote) + '</div><div class="aip-act"><button class="btn btn-secondary btn-sm" data-ed="prev">미리보기 갱신</button><button class="btn btn-primary btn-sm" data-ed="save">검토 후 저장</button></div></div>' : '') + '<div id="ed-aip"></div>' +
-        '<div class="row" style="gap:8px;flex-wrap:wrap"><button class="btn btn-secondary btn-sm" data-ed="ai">' + I('sparkle', 14) + ' AI로 다시 작성</button><button class="btn btn-ghost btn-sm" data-ed="rule">기본 문안으로</button><span class="sp"></span><button class="btn btn-ghost btn-sm" data-ed="kind" data-k="a"' + (kind === 'a' ? ' style="font-weight:800"' : '') + '>수치·원문 미리보기</button><button class="btn btn-ghost btn-sm" data-ed="kind" data-k="b"' + (kind === 'b' ? ' style="font-weight:800"' : '') + '>정성 리포트 미리보기</button></div>' +
+        '<div class="row" style="gap:8px;flex-wrap:wrap"><button class="btn btn-secondary btn-sm" data-ed="ai">' + I('sparkle', 14) + ' AI로 다시 작성</button><button class="btn btn-ghost btn-sm" data-ed="rule">기본 문안으로</button><span class="sp"></span><span class="muted" style="font-size:12.5px">미리보기: 왼쪽 내부용 · 오른쪽 전달용 (편집하면 두 쪽이 함께 바뀝니다)</span></div>' +
         '<div class="grid g2" style="margin-top:10px;align-items:start"><div>' +
         '<label class="f">교육처 의견 (수치·원문 리포트에 들어감)</label><textarea class="fld" rows="6" data-f="dept">' + E(an.dept || '') + '</textarea>' +
         '<label class="f">정성 리포트 본문 (전달용 · 수치 금지)</label><textarea class="fld" rows="8" data-f="soft">' + E(an.soft || '') + '</textarea><div id="ed-warn" class="muted" style="color:#b45309;font-size:12.5px">' + (/[0-9]/.test(an.soft || '') ? '본문에 숫자가 포함되어 있습니다. 전달용에서는 수치를 빼는 것이 원칙입니다.' : '') + '</div>' +
@@ -452,12 +481,16 @@
     }
     function read() { var g = function (f) { var el = root.querySelector('[data-f=' + f + ']'); return el ? el.value : ''; }; an.dept = g('dept'); an.soft = g('soft'); an.positive = g('positive').split('\n').map(function (s) { return s.trim(); }).filter(Boolean); an.negative = g('negative').split('\n').map(function (s) { return s.trim(); }).filter(Boolean);
       an.refs = g('refs').split(/[\s,]+/).filter(function (x) { return x && A.ext.theory && A.ext.theory.byId(x); }); an.actions = g('actions').split('\n').map(function (l) { var p = l.split('|').map(function (s) { return s.trim(); }); return { title: p[0] || '', detail: p[1] || '', owner: p[2] || '', when: p[3] || '' }; }).filter(function (a) { return a.title || a.detail; }); }
-    function prev() { read(); var pages = buildPages(e, an, ov, kind), el = root.querySelector('#ed-prev'); el.innerHTML = '<style>' + CSS + '</style><div style="overflow:auto;max-height:560px;background:#e5e7eb;padding:10px"><div style="display:flex;flex-direction:column;gap:12px;align-items:center">' + pages.map(function (p) { return '<div style="width:' + Math.round(PX.w * 0.7) + 'px;height:' + Math.round(PX.h * 0.7) + 'px;box-shadow:0 1px 6px rgba(0,0,0,.25)"><div style="transform:scale(.7);transform-origin:top left;width:' + PX.w + 'px">' + p + '</div></div>'; }).join('') + '</div></div>'; var w = root.querySelector('#ed-warn'); if (w) w.textContent = /[0-9]/.test(an.soft || '') ? '본문에 숫자가 포함되어 있습니다. 전달용에서는 수치를 빼는 것이 원칙입니다.' : ''; }
+    function prev() {
+      read(); var el = root.querySelector('#ed-prev'), W = el.clientWidth || 900, two = W >= 760, per = two ? (W - 16) / 2 : W - 4, sc = Math.max(0.4, Math.min(0.8, (per - 24) / PX.w));
+      var col = function (kind, title, sub) { var pages = buildPages(e, an, ov, kind); return '<div class="edcol" style="flex:1;min-width:' + Math.round(PX.w * sc + 24) + 'px"><div class="edlab"><b>' + title + '</b> <span class="muted">' + sub + ' · ' + pages.length + '쪽</span></div><div style="overflow:auto;max-height:640px;background:#e5e7eb;padding:10px"><div style="display:flex;flex-direction:column;gap:12px;align-items:center">' + pages.map(function (p) { return '<div style="width:' + Math.round(PX.w * sc) + 'px;height:' + Math.round(PX.h * sc) + 'px;box-shadow:0 1px 6px rgba(0,0,0,.25)"><div style="transform:scale(' + sc.toFixed(3) + ');transform-origin:top left;width:' + PX.w + 'px">' + p + '</div></div>'; }).join('') + '</div></div></div>'; };
+      el.innerHTML = '<style>' + CSS + '</style><div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-start">' + col('a', '내부용', '수치·원문 리포트') + col('b', '전달용', '정성 리포트 · 수치·출처 없음') + '</div>';
+      var w = root.querySelector('#ed-warn'); if (w) w.textContent = /[0-9]/.test(an.soft || '') ? '본문에 숫자가 포함되어 있습니다. 전달용에서는 수치를 빼는 것이 원칙입니다.' : '';
+    }
     paint(); root.addEventListener('click', async function (ev) {
       var t = ev.target.closest('[data-ed]'); if (!t) return; var a = t.getAttribute('data-ed');
       if (a === 'close') m.close();
       else if (a === 'prev') prev();
-      else if (a === 'kind') { read(); kind = t.getAttribute('data-k'); paint(); prev(); }
       else if (a === 'cls') { read(); var i = Number(t.getAttribute('data-i')), s = t.getAttribute('data-s'), x = (an.cls || []).filter(function (y) { return y.i === i; })[0]; if (x) x.s = s; else (an.cls = an.cls || []).push({ i: i, s: s, t: '' }); paint(); }
       else if (a === 'rule') { if (!(await A.confirm('기본 문안으로', '현재 편집 내용이 규칙 기반 기본 문안으로 바뀝니다.', '바꾸기', '취소'))) return; an = ruleAnalysis(e); paint(); }
       else if (a === 'ai') {
