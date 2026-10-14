@@ -451,6 +451,42 @@
     };
   };
 
+  /* ── 반별 재적 인원 (우수 참여 반 산출용) — def.classHead = { "계열|학년|반": 인원 } ── */
+  (function () {
+    var orig = A.tabs.targets;
+    function classes() { var m = {}; (A.cur.courses || []).filter(function (c) { return c.active; }).forEach(function (c) { m[c.track + '|' + c.grade + '|' + c.klass] = { track: c.track, grade: c.grade, klass: c.klass }; }); return Object.keys(m).sort(function (a, b) { return a.localeCompare(b, 'ko', { numeric: true }); }).map(function (k) { m[k].key = k; return m[k]; }); }
+    function section() {
+      var d = ensureDef(), heads = d.classHead || {}, cl = classes(), tot = cl.reduce(function (a, c) { return a + (Number(heads[c.key]) || 0); }, 0);
+      return '<div class="panel" style="margin-top:16px" data-chbox><div class="row"><h3 class="sp" style="margin:0">반별 재적 인원 <span class="muted" style="font-weight:400">· 합계 ' + tot + '명</span></h3><button class="btn btn-secondary btn-sm" data-act="chxl">' + I('download', 14) + ' 양식 내려받기</button><label class="btn btn-secondary btn-sm" style="cursor:pointer">' + I('upload', 14) + ' 엑셀 올리기<input type="file" accept=".xlsx,.xls,.csv" data-chfile hidden></label></div>' +
+        '<p class="panel-sub">「우수 참여 반」(반별 응답률 = 유효 응답 ÷ 재적 인원) 산출에 쓰입니다. 엑셀 열 이름은 계열 · 학년 · 반 · 재적인원(또는 인원)입니다. 입력 후 우측 상단 「저장」을 눌러 반영하십시오.</p>' +
+        '<div class="tbl-wrap"><table class="t"><thead><tr><th>계열</th><th>학년</th><th>반</th><th class="num">재적 인원(명)</th></tr></thead><tbody>' + (cl.length ? cl.map(function (c) { return '<tr><td>' + E(c.track) + '</td><td>' + E(c.grade) + '</td><td>' + E(c.klass) + '</td><td class="num"><input class="fld fld-sm" type="number" min="0" data-ch="' + E(c.key) + '" value="' + (heads[c.key] || '') + '"></td></tr>'; }).join('') : '<tr><td colspan="4" class="t-empty">등록된 과목이 없습니다. 「과목·교수」 탭에서 먼저 등록하십시오.</td></tr>') + '</tbody></table></div></div>';
+    }
+    function norm(v, suf) { v = String(v == null ? '' : v).trim(); return /^\d+(\.0+)?$/.test(v) ? parseInt(v, 10) + suf : v.replace(/\s+/g, ''); }
+    A.tabs.targets = function (box) {
+      orig(box); box.insertAdjacentHTML('beforeend', section());
+      var prevIn = box.oninput, prevClick = box.onclick;
+      box.oninput = function (e) { var el = e.target.closest('[data-ch]'); if (!el) return prevIn && prevIn(e); var d = ensureDef(); d.classHead = d.classHead || {}; var v = Math.max(parseInt(el.value, 10) || 0, 0); if (v) d.classHead[el.getAttribute('data-ch')] = v; else delete d.classHead[el.getAttribute('data-ch')]; A.markDirty(); };
+      box.onclick = function (e) {
+        var t = e.target.closest('[data-act=chxl]'); if (!t) return prevClick && prevClick(e);
+        if (!window.XLSX) return A.toast('엑셀 라이브러리를 불러오지 못했습니다.', 'err');
+        var wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([['계열', '학년', '반', '재적인원']].concat(classes().map(function (c) { return [c.track, c.grade, c.klass, (ensureDef().classHead || {})[c.key] || '']; }))), '반별 재적 인원');
+        A.download(new Blob([XLSX.write(wb, { bookType: 'xlsx', type: 'array' })], { type: 'application/octet-stream' }), '반별_재적인원_양식.xlsx');
+      };
+      var fi = box.querySelector('[data-chfile]'); if (fi) fi.onchange = async function () {
+        var f = fi.files && fi.files[0]; if (!f) return;
+        try {
+          if (!window.XLSX) throw new Error('엑셀 라이브러리를 불러오지 못했습니다.');
+          var wb = XLSX.read(new Uint8Array(await readFile(f)), { type: 'array' }), rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1, defval: '' });
+          var hi = -1, col = {}; rows.some(function (r, i) { var c = {}; r.forEach(function (h, j) { h = String(h).replace(/\s+/g, ''); if (/^계열/.test(h)) c.t = j; else if (/^학년/.test(h)) c.g = j; else if (/^반/.test(h)) c.k = j; else if (/재적|인원|정원/.test(h)) c.n = j; }); if (c.t != null && c.g != null && c.k != null && c.n != null) { hi = i; col = c; return true; } return false; });
+          if (hi < 0) throw new Error('열 이름(계열·학년·반·재적인원)을 찾지 못했습니다. 「양식 내려받기」 파일을 사용해 주십시오.');
+          var have = {}; classes().forEach(function (c) { have[c.key] = 1; }); var d = ensureDef(); d.classHead = d.classHead || {}; var ok = 0, skip = [];
+          rows.slice(hi + 1).forEach(function (r) { var k = String(r[col.t]).trim() + '|' + norm(r[col.g], '학년') + '|' + norm(r[col.k], '반'), n = Math.max(parseInt(r[col.n], 10) || 0, 0); if (!String(r[col.t]).trim()) return; if (have[k]) { if (n) d.classHead[k] = n; else delete d.classHead[k]; ok++; } else skip.push(k.replace(/\|/g, ' ')); });
+          A.markDirty(); A.tabs.targets(box); A.toast(ok + '개 반의 재적 인원을 반영했습니다. 우측 상단 「저장」을 눌러 확정하십시오.' + (skip.length ? ' (과목 목록에 없는 ' + skip.length + '건 제외: ' + skip.slice(0, 3).join(', ') + ')' : ''), skip.length ? 'warn' : undefined);
+        } catch (er) { A.toast(er.message, 'err'); }
+      };
+    };
+  })();
+
   /* ───────────── 디자인 ───────────── */
   var PRESETS = [
     { n: '스카이 블루 (기본)', t: { primary: '#0EA5E9', headerBg: '#FFFFFF', bg: '#F0F9FF', text: '#202124' } },
