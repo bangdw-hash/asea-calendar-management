@@ -473,11 +473,29 @@
       AW.toast('양식 배경을 적용했습니다 (' + pg.w + '×' + pg.h + 'mm' + (fp ? ' · ' + fp.paper : '') + ').', 'ok');
     }).catch(function (e) { if (e && e.message !== 'cancel') AW.toast(e.message || '양식 파일을 처리하지 못했습니다.', 'error'); });
   };
+  // 배경 이미지를 90도 회전(dir: 1=오른쪽, -1=왼쪽)하고 용지 가로·세로를 맞바꿈
+  E.rotateBg = function (dir) {
+    if (!T().bg) return Promise.resolve();
+    return new Promise(function (res) {
+      var im = new Image();
+      im.onload = function () {
+        var c = document.createElement('canvas'), w = im.naturalWidth, h = im.naturalHeight; c.width = h; c.height = w;
+        var g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, h, w);
+        if (dir > 0) { g.translate(h, 0); g.rotate(Math.PI / 2); } else { g.translate(0, w); g.rotate(-Math.PI / 2); }
+        g.drawImage(im, 0, 0);
+        var p = T().page; T().bg = c.toDataURL('image/jpeg', 0.9);
+        T().page = { w: p.h, h: p.w, paper: p.paper, orient: p.h >= p.w ? 'L' : 'P' };
+        E.render(); changed('bg'); res();
+      };
+      im.src = T().bg;
+    });
+  };
   E.pageDialog = function () {
     var p = T().page;
     var m = AW.modal({
       title: '용지·배경 설정',
       body: '<div class="drop" id="pd-drop"><div>' + AW.ic('upload', 28) + '</div><b>양식 파일(JPG·PNG·PDF) 올리기</b><div class="muted">끌어다 놓거나 눌러서 선택합니다. 올린 파일이 배경이 되고 용지 크기·방향이 자동으로 맞춰집니다.' + (T().bgName ? '<br>현재 배경: ' + AW.esc(T().bgName) : '') + '</div><input type="file" id="pd-file" class="hide" accept="image/*,application/pdf"></div>' +
+        (T().bg ? '<div style="display:flex;gap:6px;margin-bottom:8px"><button class="btn btn-secondary btn-sm" id="pd-rl">' + AW.ic('undo', 16) + ' 배경 왼쪽 90° 회전</button><button class="btn btn-secondary btn-sm" id="pd-rr">' + AW.ic('redo', 16) + ' 배경 오른쪽 90° 회전</button><span class="muted" style="align-self:center">가로·세로가 함께 바뀝니다</span></div>' : '') +
         '<div class="grid2"><div><label class="f">용지</label><select class="in" id="pd-paper">' + Object.keys(AW.PAPERS).map(function (k) { return '<option value="' + k + '"' + (p.paper === k ? ' selected' : '') + '>' + k + '</option>'; }).join('') + '<option value="custom"' + (p.paper === 'custom' ? ' selected' : '') + '>직접 입력</option></select></div>' +
         '<div><label class="f">방향</label><select class="in" id="pd-or"><option value="L"' + (p.w >= p.h ? ' selected' : '') + '>가로</option><option value="P"' + (p.w < p.h ? ' selected' : '') + '>세로</option></select></div>' +
         '<div><label class="f">가로(mm)</label><input class="in num" id="pd-w" type="number" step="0.1" min="50" max="1000" value="' + p.w + '"></div>' +
@@ -497,6 +515,9 @@
           if (!(w >= 50 && h >= 50)) return;
           T().page = { w: w, h: h, paper: pp, orient: w >= h ? 'L' : 'P' }; E.render(); changed('page');
         }
+        function sync() { var q = T().page; AW.$('#pd-w', el).value = q.w; AW.$('#pd-h', el).value = q.h; AW.$('#pd-or', el).value = q.w >= q.h ? 'L' : 'P'; }
+        var rl = AW.$('#pd-rl', el), rr = AW.$('#pd-rr', el);
+        if (rl) rl.onclick = function () { E.rotateBg(-1).then(sync); }; if (rr) rr.onclick = function () { E.rotateBg(1).then(sync); };
         AW.$('#pd-paper', el).onchange = function () { apply('p'); }; AW.$('#pd-or', el).onchange = function () { apply('o'); };
         AW.$('#pd-w', el).oninput = function () { apply('wh'); }; AW.$('#pd-h', el).oninput = function () { apply('wh'); };
       }
