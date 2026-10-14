@@ -146,9 +146,64 @@
   // 장마다 고유 인증번호를 만들어 서버 발급 대장에 등록 (fresh=true 면 기존 번호를 버리고 새로 발급)
   function regCodes(t, list, label, fresh) {
     list = list.map(function (x) { return { row: Object.assign({}, x.row, { _code: (!fresh && x.row._code) || newCode() }), idx: x.idx }; });
-    return AW.call('award_issue_register', { p_items: list.map(function (x) { return { code: x.row._code, serial: AW.serial(x.idx, t), tpl: t.name, holder: holderOf(x.row), award: awardOf(x.row) }; }), p_label: label }).then(function () { return { ok: true, list: list }; })
-      .catch(function (e) { return AW.confirm('인증번호 등록 실패', e.message + '\n\n등록되지 않은 인증번호는 진위 확인이 되지 않습니다. 그래도 인쇄하시겠습니까? (db/award_schema_2.sql 설치 여부를 확인하십시오)', '그래도 인쇄').then(function (ok) { return { ok: ok, list: list }; }); });
+    return AW.call('award_issue_register', { p_items: list.map(function (x) { var vi = issueInfo(t, x.row, x.idx); return { code: x.row._code, serial: AW.serial(x.idx, t), tpl: t.name, holder: holderOf(x.row), award: awardOf(x.row), data: vi.data, vis: vi.vis, phrase: vi.phrase }; }), p_label: label }).then(function () { return { ok: true, list: list }; })
+      .catch(function (e) { return AW.confirm('인증번호 등록 실패', e.message + '\n\n등록되지 않은 인증번호는 진위 확인이 되지 않습니다. 그래도 인쇄하시겠습니까? (db/award_schema_2.sql, award_schema_7.sql 설치 여부를 확인하십시오)', '그래도 인쇄').then(function (ok) { return { ok: ok, list: list }; }); });
   }
+
+  /* ───────────── 진위 확인 문구 · 항목별 공개 수준 (QR 확인 화면) ─────────────
+   *  page.verify = { org: 발행 기관명, phrase: 「{{소속}} {{성명}}님이 …」 문구, vis: {항목: 'show'|'mask'|'hide'} }
+   *  발급할 때 값을 서버 대장에 보관하고, award-verify.html 이 QR 번호로 문구를 조립해 보여 줍니다. */
+  var NAMEISH = /성명|이름|수상자|수료자|name/i, SECRET = /학번|사번|주민|생년|연락|전화|휴대|이메일|메일|주소|계좌/;
+  function mask(t) { t = String(t == null ? '' : t); var n = Array.from(t).length, a = Array.from(t); return n <= 1 ? t : n === 2 ? a[0] + '*' : a[0] + new Array(n - 1).join('*') + a[n - 1]; }
+  function vNames(t) { return AW.fieldNames(t).filter(function (n) { return n.charAt(0) !== '@'; }); }
+  function pick(names, re) { return names.filter(function (n) { return re.test(n); })[0]; }
+  function defaultVerify(t) {
+    var nm = vNames(t), who = pick(nm, NAMEISH), org = '아세아항공직업전문학교', aff = pick(nm, /소속|학과|과정|반/), dt = pick(nm, /일자|날짜|수여일|발급일/), aw = pick(nm, /상명|상\s*종류|표창|종류/);
+    var ph = '「' + org + '」에서 ' + (dt ? '{{' + dt + '}}에 ' : '{{@오늘}}에 ') + (aff ? '{{' + aff + '}} ' : '') + (who ? '{{' + who + '}}님에게 ' : '') + '수여한 ' + (aw ? '{{' + aw + '}}' : '상장') + '입니다.';
+    var vis = {}; nm.forEach(function (n) { vis[n] = SECRET.test(n) ? 'hide' : NAMEISH.test(n) ? 'mask' : 'show'; });
+    return { org: org, phrase: ph, vis: vis };
+  }
+  function getVerify(t) { var d = defaultVerify(t), v = (t.page && t.page.verify) || {}; return { org: v.org || d.org, phrase: (v.phrase || '').trim() || d.phrase, vis: Object.assign({}, d.vis, v.vis || {}) }; }
+  AW.verifyCfg = getVerify;
+  // 장 하나의 서버 등록 내용: 숨김 항목은 보내지 않고, 문구 안의 값은 미리 채움(가림 항목은 {{항목}} 그대로 두어 확인 화면에서 가려서 표시)
+  function issueInfo(t, row, idx) {
+    var c = getVerify(t), data = {}, vis = {}, jRe = new RegExp('\\{\\{\\s*([^{}]+?)\\s*\\}\\}(?:(' + AW.JOSA_RE + ')(?![가-힣]))?', 'g'), on = AW.josaOn();
+    vNames(t).forEach(function (n) { var m = c.vis[n] || 'show'; if (m === 'hide') return; data[n] = AW.val(row, n, idx, 'ko'); if (m === 'mask') vis[n] = 'mask'; });
+    var phrase = c.phrase.replace(jRe, function (m, n, pj) {
+      var v = AW.val(row, n, idx, 'ko'), md = n.charAt(0) === '@' ? 'show' : (c.vis[n] || 'show'), j = pj ? (on && v ? AW.josaPick(pj, v).text : pj) : '';
+      if (md === 'hide') return '(비공개)' + j; if (md === 'mask') return '{{' + n + '}}' + j; return v + j;
+    });
+    return { data: data, vis: vis, phrase: phrase };
+  }
+  Out.verifyDialog = function () {
+    var t = T(); if (!t) return; var c = getVerify(t), names = vNames(t), m = {};
+    var row = t.rows[S.row] || t.rows[0] || {}; names.forEach(function (n) { if (row[n] == null || row[n] === '') { var f = t.fields.filter(function (x) { return x.name === n; })[0]; row = Object.assign({}, row); row[n] = (f && (f.example || f.sample)) || n; } });
+    var body = '<p style="margin-top:0">QR을 스캔한 사람에게 보여 줄 확인 문구입니다. 검출자가 이 문장을 읽고 인쇄된 상장과 직접 대조합니다. 값은 발급할 때 서버 발급 대장에 보관됩니다.</p>' +
+      '<label class="f" for="vf-org">발행 기관명 <span class="muted">(자동 제안 문구에 사용)</span></label><input class="in" id="vf-org" maxlength="60" value="' + AW.esc(c.org) + '">' +
+      '<label class="f" for="vf-ph" style="margin-top:10px">확인 문구 <span class="muted">— 항목을 눌러 넣거나 {{항목}} 형식으로 직접 입력</span></label><textarea class="in" id="vf-ph" rows="3" maxlength="500" style="min-height:76px">' + AW.esc(c.phrase) + '</textarea>' +
+      '<div class="pp-op" id="vf-ch">' + names.concat(['@오늘', '@번호']).map(function (n) { return '<button type="button" class="btn btn-ghost btn-sm" data-i="' + AW.esc(n) + '">{{' + AW.esc(n) + '}}</button>'; }).join('') + '<button type="button" class="btn btn-secondary btn-sm" id="vf-auto">자동 제안으로 되돌리기</button></div>' +
+      '<div class="pp-sec"><b>항목별 공개 수준</b> <span class="muted">누구나 QR로 볼 수 있으므로 개인정보는 가리거나 숨기십시오</span></div>' +
+      '<div class="tbl-wrap"><table class="gt"><tbody>' + names.map(function (n, i) { return '<tr><td><b>' + AW.esc(n) + '</b></td><td><select class="in sm" data-v="' + AW.esc(n) + '"><option value="show">공개</option><option value="mask">가운데 글자 가림 (홍*동)</option><option value="hide">숨김 (서버에 저장하지 않음)</option></select></td></tr>'; }).join('') + '</tbody></table></div>' +
+      '<div class="pp-sec"><b>확인 화면 미리보기</b> <span class="muted">첫 데이터 행 기준</span></div><div class="alert info" id="vf-pv" style="margin:0"></div>';
+    AW.modal({ title: '진위 확인 문구 · 공개 항목', wide: true, body: body, actions: [{ label: '취소', cls: 'btn-ghost' }, { label: '저장', cls: 'btn-primary', onClick: function (cl) {
+      t.page.verify = { org: AW.$('#vf-org', m.el).value.trim(), phrase: AW.$('#vf-ph', m.el).value.trim(), vis: m.cur().vis }; cl(); AW.Editor.api.changed('page', false, '확인 문구 설정'); AW.toast('진위 확인 문구를 저장했습니다.', 'ok'); } }],
+      onOpen: function (el) {
+        m.el = el; names.forEach(function (n) { var s = AW.$('[data-v="' + n.replace(/"/g, '\\"') + '"]', el); if (s) s.value = c.vis[n] || 'show'; });
+        var ta = AW.$('#vf-ph', el);
+        m.cur = cur;
+        function cur() { var v = {}; AW.$$('[data-v]', el).forEach(function (s) { v[s.dataset.v] = s.value; }); return { vis: v, phrase: ta.value, org: AW.$('#vf-org', el).value }; }
+        function pv() {
+          var k = cur(), tt = Object.assign({}, t, { page: Object.assign({}, t.page, { verify: { org: k.org, phrase: k.phrase, vis: k.vis } }) }), r = issueInfo(tt, row, S.row);
+          AW.$('#vf-pv', el).innerHTML = AW.esc(r.phrase).replace(/\{\{\s*([^{}]+?)\s*\}\}/g, function (x, n) { n = n.replace(/&amp;/g, '&'); return '<b>' + AW.esc(mask(r.data[n] != null ? r.data[n] : '')) + '</b>'; });
+        }
+        el.addEventListener('input', pv); el.addEventListener('change', pv);
+        AW.$$('input,textarea,select', el).forEach(function (n) { n.addEventListener('keydown', function (k) { k.stopPropagation(); }); });
+        AW.$$('#vf-ch [data-i]', el).forEach(function (b) { b.onclick = function () { var tok = '{{' + b.dataset.i + '}}', s0 = ta.selectionStart == null ? ta.value.length : ta.selectionStart, e0 = ta.selectionEnd == null ? s0 : ta.selectionEnd; ta.value = ta.value.slice(0, s0) + tok + ta.value.slice(e0); ta.focus(); ta.selectionStart = ta.selectionEnd = s0 + tok.length; pv(); }; });
+        AW.$('#vf-auto', el).onclick = function () { var d = defaultVerify(t); d.org = AW.$('#vf-org', el).value.trim() || d.org; var d2 = defaultVerify(Object.assign({}, t)); ta.value = d.phrase.replace('아세아항공직업전문학교', d.org); pv(); };
+        pv();
+      } });
+  };
+
   function usesCode() { return T().elems.some(function (e) { return e.t === 'qr' || (e.t === 'text' && /\{\{\s*@인증번호\s*\}\}/.test((e.text || '') + (e.en || ''))); }); }
 
   // 발급번호 규칙 — page.num = {pattern, start, step, pad}
@@ -272,8 +327,8 @@
         body().innerHTML = '<div style="display:flex;gap:8px;margin-bottom:8px"><input class="in sm" id="rg-q" style="flex:1" placeholder="인증번호·발급번호·이름 검색"><button class="btn btn-secondary btn-sm" id="rg-s">검색</button></div><div id="rg-l"><div class="loading">불러오는 중…</div></div>';
         var load = function () {
           AW.call('award_issued_list', { p_q: AW.$('#rg-q', m.el).value.trim() }).then(function (l) {
-            AW.$('#rg-l', m.el).innerHTML = l.length ? '<div class="tbl-wrap"><table class="gt"><thead><tr><th>인증번호</th><th>발급번호</th><th>수여자</th><th>상명</th><th>양식</th><th>발급일</th><th>상태</th><th></th></tr></thead><tbody>' + l.map(function (x) {
-              return '<tr><td class="nowrap"><b>' + AW.esc(x.code) + '</b></td><td>' + AW.esc(x.serial) + '</td><td>' + AW.esc(x.holder) + '</td><td>' + AW.esc(x.award || '') + '</td><td>' + AW.esc(x.tpl_name) + '</td><td class="nowrap">' + dt(x.issued_at) + '</td><td>' + (x.revoked ? '<span class="badge err">폐기</span>' : '<span class="badge ok">유효</span>') + '</td><td><button class="btn btn-ghost btn-sm" data-c="' + AW.esc(x.code) + '" data-r="' + (x.revoked ? 0 : 1) + '">' + (x.revoked ? '복구' : '폐기') + '</button></td></tr>';
+            AW.$('#rg-l', m.el).innerHTML = l.length ? '<div class="tbl-wrap"><table class="gt"><thead><tr><th>인증번호</th><th>발급번호</th><th>수여자</th><th>상명</th><th>양식</th><th>발급일</th><th>조회</th><th>상태</th><th></th></tr></thead><tbody>' + l.map(function (x) {
+              return '<tr><td class="nowrap"><b>' + AW.esc(x.code) + '</b></td><td>' + AW.esc(x.serial) + '</td><td>' + AW.esc(x.holder) + '</td><td>' + AW.esc(x.award || '') + '</td><td>' + AW.esc(x.tpl_name) + '</td><td class="nowrap">' + dt(x.issued_at) + '</td><td class="nowrap" title="최초 ' + (x.first_view ? dt(x.first_view) : '-') + ' / 최근 ' + (x.last_view ? dt(x.last_view) : '-') + '">' + (x.views || 0) + '회' + ((x.flags || 0) > 0 ? ' <span class="badge err" title="검출자가 내용 불일치로 신고">신고 ' + x.flags + '</span>' : (x.views || 0) >= 15 ? ' <span class="badge warn" title="조회가 많아 복제 가능성 확인 필요">의심</span>' : '') + '</td><td>' + (x.revoked ? '<span class="badge err">폐기</span>' : '<span class="badge ok">유효</span>') + '</td><td><button class="btn btn-ghost btn-sm" data-c="' + AW.esc(x.code) + '" data-r="' + (x.revoked ? 0 : 1) + '">' + (x.revoked ? '복구' : '폐기') + '</button></td></tr>';
             }).join('') + '</tbody></table></div><p class="muted">최근 300건까지 표시합니다. 폐기하면 진위 확인 페이지에서 「폐기된 상장」으로 안내됩니다.</p>' : '<div class="empty">발급 대장이 비어 있습니다.</div>';
             AW.$$('[data-c]', m.el).forEach(function (b) { b.onclick = function () { AW.call('award_issued_revoke', { p_code: b.dataset.c, p_revoked: b.dataset.r === '1' }).then(load).catch(function (e) { AW.toast(e.message, 'error'); }); }; });
           }).catch(function (e) { AW.$('#rg-l', m.el).innerHTML = '<div class="alert warn">' + AW.esc(e.message) + '</div>'; });

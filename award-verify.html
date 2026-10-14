@@ -16,6 +16,7 @@ input:focus{outline:2px solid var(--primary);border-color:var(--primary)}
 button{width:100%;min-height:44px;border:0;border-radius:var(--r);background:var(--primary);color:#fff;font:inherit;font-weight:500;cursor:pointer}button:hover{background:var(--primary-dk)}
 .res{margin-top:16px;border-radius:var(--r);padding:14px 16px}.ok{background:var(--green-lt);color:var(--green)}.bad{background:var(--red-lt);color:var(--red)}
 .res b{display:block;font-size:16px;margin-bottom:6px}dl{margin:8px 0 0;color:var(--text)}dt{font-size:12px;color:var(--text-2)}dd{margin:0 0 6px;font-weight:500}
+.sen{font-size:16px;line-height:1.7;margin:6px 0 10px;color:var(--text);font-weight:400}.sen b{color:#0F5132}.res.warn{background:#FEF7E0;color:#B06000}.chk{margin-top:14px;border:1px solid var(--border);border-radius:var(--r);padding:12px 14px}.chk p{margin:0 0 10px}.two{display:flex;gap:8px}.ok-b{background:var(--green)}.ok-b:hover{background:#176F31}.no-b{background:var(--red)}.no-b:hover{background:#B3261E}
 </style>
 </head>
 <body>
@@ -30,6 +31,26 @@ button{width:100%;min-height:44px;border:0;border-radius:var(--r);background:var
   var URL_ = 'https://zbpeyklwpotjyveipzxd.supabase.co', KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpicGV5a2x3cG90anl2ZWlwenhkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE1MTYxMDcsImV4cCI6MjA5NzA5MjEwN30.6JgoQ6rPRnmrbBTG68A-Y9HDQk40mnwubhXVnkZvHrQ';
   var c = document.getElementById('c'), r = document.getElementById('r');
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (m) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[m]; }); }
+  // 확인 문구: 서버에 등록된 값으로 조립. 문구가 없던 예전 발급분은 이름·상명으로 대체
+  function sentence(d) {
+    var data = d.data || {}, ph = d.phrase;
+    if (!ph) return d.award ? '<b>' + esc(d.holder) + '</b>님에게 발급된 <b>' + esc(d.award) + '</b>입니다.' : '<b>' + esc(d.holder) + '</b>님에게 발급된 상장입니다.';
+    return esc(ph).replace(/\{\{\s*([^{}]+?)\s*\}\}/g, function (m, n) { n = n.replace(/&amp;/g, '&'); return '<b>' + (data[n] != null && data[n] !== '' ? esc(data[n]) : '(비공개)') + '</b>'; });
+  }
+  function show(d, code) {
+    var h = '<div class="res ok"><b>정상 발급된 상장입니다</b><div class="sen">' + sentence(d) + '</div><dl><dt>발급번호</dt><dd>' + esc(d.serial) + '</dd><dt>발급일</dt><dd>' + esc(String(d.issued_at).slice(0, 10)) + '</dd></dl></div>';
+    if ((d.flags || 0) > 0) h += '<div class="res warn"><b>주의</b>이 번호에 대해 내용 불일치 신고가 ' + d.flags + '건 접수되어 있습니다. 반드시 발급 기관에 확인하십시오.</div>';
+    else if ((d.views || 0) >= 15) h += '<div class="res warn"><b>주의</b>이 번호는 ' + d.views + '회 조회되었습니다. 상장이 복제되었을 수 있으니 아래 내용을 꼼꼼히 대조해 주십시오.</div>';
+    h += '<div class="chk"><p><b>인쇄된 상장의 이름·상명·수여일이 위 문장과 일치합니까?</b><br><span class="muted">QR이 진짜여도 상장의 글자가 바뀌었을 수 있습니다. 직접 대조해 주십시오.</span></p><div class="two"><button type="button" id="y" class="ok-b">일치합니다</button><button type="button" id="n" class="no-b">다릅니다</button></div><div id="fb" role="status"></div></div>';
+    r.innerHTML = h;
+    document.getElementById('y').onclick = function () { document.getElementById('fb').innerHTML = '<p class="muted">확인해 주셔서 감사합니다. 내용이 일치하면 정상 상장입니다.</p>'; };
+    document.getElementById('n').onclick = function () {
+      var fb = document.getElementById('fb'); fb.innerHTML = '<p class="muted">접수 중…</p>';
+      fetch(URL_ + '/rest/v1/rpc/award_verify_report', { method: 'POST', headers: { apikey: KEY, Authorization: 'Bearer ' + KEY, 'Content-Type': 'application/json' }, body: JSON.stringify({ p_code: code, p_note: '내용 불일치 신고' }) })
+        .then(function (x) { if (!x.ok) throw 0; fb.innerHTML = '<div class="res bad"><b>위조 의심으로 접수했습니다</b>이 상장을 신뢰하지 마시고 발급 기관에 문의해 주십시오.</div>'; })
+        .catch(function () { fb.innerHTML = '<div class="res bad"><b>접수하지 못했습니다</b>네트워크를 확인하거나 발급 기관에 직접 문의해 주십시오.</div>'; });
+    };
+  }
   function check(code) {
     code = String(code || '').trim(); if (!code) return;
     r.innerHTML = '<p class="muted">확인 중…</p>';
@@ -38,7 +59,7 @@ button{width:100%;min-height:44px;border:0;border-radius:var(--r);background:var
       .then(function (d) {
         if (!d || !d.ok) r.innerHTML = '<div class="res bad"><b>확인되지 않는 번호입니다</b>인증번호를 다시 확인해 주십시오. 계속 확인되지 않으면 발급 기관에 문의하십시오.</div>';
         else if (d.revoked) r.innerHTML = '<div class="res bad"><b>폐기된 상장입니다</b>발급 기관에서 효력을 정지한 번호입니다.</div>';
-        else r.innerHTML = '<div class="res ok"><b>정상 발급된 상장입니다</b><dl><dt>양식</dt><dd>' + esc(d.tpl) + '</dd><dt>발급번호</dt><dd>' + esc(d.serial) + '</dd><dt>수여자</dt><dd>' + esc(d.holder) + '</dd>' + (d.award ? '<dt>상명</dt><dd>' + esc(d.award) + '</dd>' : '') + '<dt>발급일</dt><dd>' + esc(String(d.issued_at).slice(0, 10)) + '</dd></dl></div>';
+        else show(d, code);
       }).catch(function () { r.innerHTML = '<div class="res bad"><b>확인하지 못했습니다</b>네트워크 상태를 확인한 뒤 다시 시도해 주십시오.</div>'; });
   }
   document.getElementById('f').onsubmit = function (e) { e.preventDefault(); check(c.value); };

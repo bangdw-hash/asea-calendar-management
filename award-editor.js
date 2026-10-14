@@ -274,6 +274,7 @@
     switch (a) {
       case 'add-text': return add(AW.elem('text', { text: '텍스트를 입력하세요', en: 'Enter text' }));
       case 'add-qr': return add(AW.elem('qr'));
+      case 'verify-cfg': return AW.Output.verifyDialog();
       case 'add-table': return AW.Table.insertDialog(function (el) { add(el); });
       case 'lang-ko': case 'lang-en': case 'lang-both': T().page.lang = a.slice(5); E.render(); return changed('page', true);
       case 'langcfg': return langDialog();
@@ -491,6 +492,7 @@
       '<div class="pp-op">' + CHK('pp-ratio', '너비·높이 비율 유지', st.ratio) + CHK('pp-lock', '잠금', list.every(function (e) { return e.lock; })) + CHK('pp-np', '인쇄 제외 (편집 화면에만 표시)', list.every(function (e) { return e.noprint; })) + CHK('pp-hide', '숨김', list.every(function (e) { return e.hide; })) + '</div>' +
       (list.some(function (e) { return e.t !== 'img'; }) ? '<div class="grid2 pp-g">' + NUM('pp-opa', '투명도 (%) — 100 은 불투명', Math.round((((list.filter(function (e) { return e.t !== 'img'; })[0] || {}).opacity == null ? 1 : list.filter(function (e) { return e.t !== 'img'; })[0].opacity)) * 100), 5, ' min="0" max="100"') + '</div>' : '') +
       (tx.length ? '<div class="pp-sec"><b>글자</b>' + (tx.length > 1 ? ' <span class="muted">(글상자 ' + tx.length + '개에 적용)</span>' : '') + '</div><div class="grid2 pp-g"><div><label class="f">글꼴</label><select class="in sm" id="pp-font">' + AW.fontOptions() + '</select></div>' + NUM('pp-size', '글자 크기 (pt)', f0.size || 16, 0.5, ' min="4"') + NUM('pp-lh', '줄 간격 (배)', f0.lh || 1.4, 0.05) + NUM('pp-ls', '자간 (pt)', f0.ls || 0, 0.1) + '<div><label class="f">가로 정렬</label><select class="in sm" id="pp-al"><option value="left">왼쪽</option><option value="center">가운데</option><option value="right">오른쪽</option></select></div><div><label class="f">세로 정렬</label><select class="in sm" id="pp-va"><option value="top">위</option><option value="middle">가운데</option><option value="bottom">아래</option></select></div></div><div class="pp-op">' + CHK('pp-b', '굵게', f0.bold) + CHK('pp-i', '기울임', f0.italic) + CHK('pp-u', '밑줄', f0.ul) + CHK('pp-fit', '글자 자동 맞춤(한 줄)', f0.fit) + '</div><div class="grid2 pp-g"><div><label class="f">글자 색</label>' + COL('pp-c', f0.color || '#111111') + '</div></div>' : '') +
+      (list.some(function (e) { return e.t === 'qr'; }) ? '<div class="pp-sec"><b>QR</b></div><div class="pp-op"><button class="btn btn-secondary btn-sm" id="pp-vf">진위 확인 문구·공개 항목 설정…</button></div>' : '') +
       (sh.length ? '<div class="pp-sec"><b>도형·선</b></div><div class="grid2 pp-g"><div><label class="f">채우기 색</label>' + COL('pp-f', s0.fill || '', true) + '</div><div><label class="f">선 색</label>' + COL('pp-s', s0.stroke || '#111111') + '</div>' + NUM('pp-sw', '선 두께 (mm)', s0.sw != null ? s0.sw : 0.5, 0.1, ' min="0"') + '</div>' : '') +
       (im.length ? '<div class="pp-sec"><b>이미지</b></div><div class="grid2 pp-g">' + NUM('pp-op', '투명도 (%)', Math.round((i0.opacity == null ? 1 : i0.opacity) * 100), 5, ' min="0" max="100"') + '</div><div class="pp-op">' + CHK('pp-fx', '좌우 반전', im.every(function (e) { return e.flipX; })) + CHK('pp-fy', '상하 반전', im.every(function (e) { return e.flipY; })) + '</div>' : '') + '</div>';
     var m = { el: null }, dirty = {};
@@ -500,6 +502,7 @@
         AW.$$('input,select', el).forEach(function (n) { n.addEventListener('keydown', function (k) { k.stopPropagation(); if (k.key === 'Enter' && n.tagName === 'INPUT' && n.type !== 'checkbox') { apply(true); var c = AW.$('.md-x', el); c && c.click(); } }); n.addEventListener('input', function () { dirty[n.id] = 1; }); n.addEventListener('change', function () { dirty[n.id] = 1; });
           if (n.type === 'color') n.addEventListener('input', function () { var h = AW.$('#' + n.id + '-h', el); if (h) { h.value = n.value; dirty[n.id + '-h'] = 1; } }); });
         AW.$$('[id$="-h"]', el).forEach(function (h) { h.addEventListener('input', function () { var c = AW.$('#' + h.id.replace(/-h$/, ''), el); if (c && /^#[0-9a-f]{6}$/i.test(h.value)) c.value = h.value; }); });
+        var vf = AW.$('#pp-vf', el); if (vf) vf.onclick = function () { var x = AW.$('.md-x', el); x && x.click(); AW.Output.verifyDialog(); };
         var W = AW.$('#pp-w', el), H = AW.$('#pp-h', el), rt = B.h ? B.w / B.h : 1; W.addEventListener('input', function () { if (AW.$('#pp-ratio', el).checked && H && !H.disabled && rt) { H.value = AW.round((+W.value || 0) / rt, 2); dirty['pp-h'] = 1; } }); H.addEventListener('input', function () { if (AW.$('#pp-ratio', el).checked && rt) { W.value = AW.round((+H.value || 0) * rt, 2); dirty['pp-w'] = 1; } });
       } });
     function apply(close) {
@@ -1210,6 +1213,7 @@
       it.push(SUB('정렬 · 크기 맞춤', 'gCH', al));
       var allLk = list.every(function (e) { return e.lock; }), allHd = list.every(function (e) { return e.hide; });
       it.push(SUB('순서 · 잠금 · 표시', 'layers', [I('맨 앞으로', 'front', 'Ctrl+Shift+]', 'front'), I('앞으로 한 칸', 'chevU', 'Ctrl+]', 'fwd'), I('뒤로 한 칸', 'chevD', 'Ctrl+[', 'bwd'), I('맨 뒤로', 'back', 'Ctrl+Shift+[', 'back'), { k: 'sep' }, I((list.some(function (e) { return e.grp; }) ? '그룹 ' : '선택 ') + (allLk ? '잠금 해제' : '잠금(이동·크기 고정)'), allLk ? 'unlock' : 'lock', '', 'lock'), I('전체 잠금 / 해제', 'lock', '', 'lockall'), I(allHd ? '보이기' : '숨기기', 'eye', '', 'hide'), I('인쇄에서 제외 (화면 안내용)', 'print', '', 'noprint', { on: list.every(function (e) { return e.noprint; }) })]));
+      if (list.some(function (e) { return e.t === 'qr'; })) it.push(I('QR 진위 확인 문구·공개 항목…', 'qr', '', 'verify-cfg'));
       it.push(I('개체 속성…', 'edit', 'P', 'props'));
       it.push(SUB('회전 · 반전', 'rotate', [I('왼쪽 90° 회전', 'undo', '', 'rot-l'), I('오른쪽 90° 회전', 'redo', '', 'rot-r'), I('180° 회전', 'rotate', '', 'rot-180'), { k: 'sep' }, I('좌우 대칭 (좌우 반전)', 'gCH', '', 'flip-x'), I('상하 대칭 (상하 반전)', 'gCV', '', 'flip-y'), { k: 'sep' }, I('회전 초기화', 'close', '', 'rot-0')]));
       it.push(I('그룹 만들기', 'layers', 'Ctrl+G', 'group', { disabled: list.length < 2 }), I('그룹 해제', 'layers', 'Ctrl+Shift+G', 'ungroup', { disabled: !list.some(function (e) { return e.grp; }) }));
