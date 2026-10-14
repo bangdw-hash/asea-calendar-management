@@ -116,7 +116,7 @@
   }
   function targetsFor() {
     var out = 0, by = {};
-    A.cur.targets.forEach(function (t) { if ((F.track && t.track !== F.track) || (F.grade && t.grade !== F.grade)) return; out += t.headcount; by[t.track + '|' + t.grade] = t; });
+    A.cur.targets.forEach(function (t) { if (!(t.headcount > 0)) return; if ((F.track && t.track !== F.track) || (F.grade && t.grade !== F.grade)) return; out += t.headcount; by[t.track + '|' + t.grade] = t; });
     return { total: out, by: by };
   }
 
