@@ -82,7 +82,7 @@
     }
     if (!gen && d.view === 'matrix') {
       var cs0 = (src.courses || []).filter(function (c) { return c.active !== false; }), c0 = cs0[0], same = c0 ? cs0.filter(function (c) { return c.track === c0.track && c.grade === c0.grade && c.klass === c0.klass; }) : [];
-      var rows0 = (same.length ? same.slice(0, 9).map(function (c) { return { name: c.name, kind: c.kind || '', prof: c.prof || '', suffix: '교수' }; }) : ['(과목명 예시) 1', '(과목명 예시) 2', '(과목명 예시) 3'].map(function (n) { return { name: n, sub: '' }; })).map(function (r, i) { r.id = 'pvr' + i; return r; });
+      var rows0 = (same.length ? same.slice(0, 9).map(function (c) { return { name: c.name, kind: c.kind || '', prof: (d.link && d.link.hideProf) ? '' : (c.prof || ''), suffix: '교수' }; }) : ['(과목명 예시) 1', '(과목명 예시) 2', '(과목명 예시) 3'].map(function (n) { return { name: n, sub: '' }; })).map(function (r, i) { r.id = 'pvr' + i; return r; });
       var ps = page.s;
       return (ps.showIf ? '<div class="msg warn" style="margin:0 0 8px">' + I('info', 16) + '<div>조건부 영역입니다. 지정한 응답을 선택한 경우에만 보입니다.</div></div>' : '') +
         '<div class="card mxsec"><h2 class="title" style="font-size:18px">' + E(ps.title || '(영역 제목)') + '</h2>' + (ps.note ? '<p class="muted" style="margin:4px 0;white-space:pre-line">' + E(ps.note) + '</p>' : '') +

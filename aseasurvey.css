@@ -306,3 +306,19 @@ canvas.sig{display:block;width:100%;height:auto;aspect-ratio:600/220;touch-actio
 .mxchip .mxnm small .k + .p::before{content:'·';margin:0 4px}
 .mxchip .mxnm small .p i{display:inline;font-style:normal}
 .mxsub[hidden]{display:none}
+
+/* 결과 비교 탭 */
+.cmpchart{display:flex;flex-direction:column;gap:3px;margin-top:8px}
+.cmprow{display:grid;grid-template-columns:minmax(120px,32%) 1fr 46px;gap:8px;align-items:center;font-size:12.5px}
+.cmprow .cn{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cmprow .cb{position:relative;height:12px;background:#eef1f5;border-radius:3px}
+.cmprow .cb i{position:absolute;left:0;top:0;bottom:0;background:#3987e5;border-radius:3px}
+.cmprow .cb u{position:absolute;top:-2px;bottom:-2px;width:0;border-left:2px dashed #6b7280;text-decoration:none}
+.cmprow .cv{text-align:right;font-variant-numeric:tabular-nums}
+.thsort{background:none;border:0;font:inherit;font-weight:700;color:inherit;cursor:pointer;padding:2px 0;white-space:nowrap}
+.thsort.on{color:var(--primary-dk)}
+.cmpt thead th{position:sticky;top:0;background:var(--surface,#fff);z-index:1}
+@media (max-width:600px){.cmprow{grid-template-columns:90px 1fr 40px}}
+[data-legacy=cmp] .tabs{display:none}
+.gcmp > .filters{display:none}
+[data-legacy=cmp] > .row:first-child{display:none}

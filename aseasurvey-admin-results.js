@@ -232,6 +232,65 @@
     A.modal(h + '<div class="btn-row"><button class="btn btn-primary" data-r="1">닫기</button></div>', function (bg, close) { bg.addEventListener('click', function (e) { if (e.target.closest('[data-r]')) close(); }); }, 'xl');
   }
 
+
+  /* ───────────── 비교 (계열·학년·반·교수·과목·구분) ───────────── */
+  var CMP = A.ext.cmp = { dim: 'prof', met: 'all', sort: 'met', dir: -1, q: '', zoom: 'full' };
+  var DIMS = [['track', '계열'], ['grade', '학년'], ['klass', '반'], ['prof', '교수'], ['course', '과목'], ['kind', '이론·실습']];
+  function shortSec(t) { return String(t).replace(/^[ⅠⅡⅢⅣⅤⅥⅦⅧⅨⅩ]+\.\s*/, '').slice(0, 8); }
+  function cmpGroups(D, dim) {
+    var key = { track: function (p) { return p.r.track; }, grade: function (p) { return p.r.track + ' ' + p.r.grade; }, klass: function (p) { return p.r.track + ' ' + p.r.grade + ' ' + p.r.klass; },
+      prof: function (p) { return p.c.prof || '(교수 미입력)'; }, course: function (p) { return p.c.name + ' · ' + (p.c.klass || '') + (p.c.prof ? ' · ' + p.c.prof : ''); }, kind: function (p) { return p.c.kind || '(구분 없음)'; } }[dim];
+    var secOf = {}; D.Q.scale.forEach(function (x) { secOf[x.q.id] = x.s.id; });
+    var g = {};
+    D.pairs.forEach(function (p) {
+      var k = key(p), o = g[k] || (g[k] = { name: k, n: 0, rs: {}, all: { sum: 0, n: 0 }, sec: {}, q: {} }), a = (p.r.answers.course || {})[p.c.id] || {};
+      o.n++; o.rs[p.r.id] = 1;
+      D.Q.scale.forEach(function (x) { var v = a[x.q.id]; if (v == null) return; add(o.q, x.q.id, v); add(o.sec, x.s.id, v); o.all.sum += v; o.all.n++; });
+    });
+    return Object.keys(g).map(function (k) { var o = g[k]; o.resp = Object.keys(o.rs).length; return o; });
+  }
+  function cmpVal(o, met) { if (met === 'all') return mean(o.all); if (met.indexOf('s:') === 0) return mean(o.sec[met.slice(2)]); return mean(o.q[met.slice(2)]); }
+  function viewCmp(D) {
+    var c = CMP, rows = cmpGroups(D, c.dim), secs = D.Q.sections;
+    if (!rows.length) return cmpBar(D) + '<div class="panel t-empty">표시할 응답이 없습니다.</div>';
+    var overall = D.all.n ? D.all.sum / D.all.n : null;
+    rows.forEach(function (o) { o.v = cmpVal(o, c.met); o.tot = mean(o.all); });
+    var ranked = rows.filter(function (o) { return o.v != null; }).sort(function (a, b) { return b.v - a.v; }); ranked.forEach(function (o, i) { o.rank = i + 1; });
+    var q = (c.q || '').trim().toLowerCase(); var list = rows.filter(function (o) { return !q || o.name.toLowerCase().indexOf(q) >= 0; });
+    var val = { name: function (o) { return o.name; }, resp: function (o) { return o.resp; }, rank: function (o) { return o.rank == null ? 1e9 : o.rank; }, met: function (o) { return o.v == null ? -1 : o.v; }, all: function (o) { return o.tot == null ? -1 : o.tot; } };
+    secs.forEach(function (sc) { val['s:' + sc.id] = function (o) { var m = mean(o.sec[sc.id]); return m == null ? -1 : m; }; });
+    var f = val[c.sort] || val.met, dir = c.dir;
+    list.sort(function (a, b) { var x = f(a), y = f(b); var r = typeof x === 'string' ? x.localeCompare(y, 'ko') : x - y; return r * dir || a.name.localeCompare(b.name, 'ko'); });
+    var metLabel = metName(D, c.met), dimLabel = DIMS.filter(function (d) { return d[0] === c.dim; })[0][1];
+    var top = list.slice(0, 30);
+    var lo = 0; if (c.zoom === 'zoom') { var mn = list.reduce(function (m, o) { return o.v != null && o.v < m ? o.v : m; }, 5); lo = Math.max(0, Math.floor((mn - 0.3) * 2) / 2); }
+    var chart = '<div class="panel"><h3>' + E(dimLabel) + '별 ' + E(metLabel) + ' 비교</h3><p class="panel-sub">막대 길이는 ' + (lo ? '<b>' + lo + '~5점 구간을 확대한 값</b>(차이를 키워 보여 주므로 비교용으로만 보십시오)' : '5점 만점 기준') + ', 세로선은 전체 평균(' + (overall == null ? '-' : overall.toFixed(2)) + ')입니다. 아래 표의 정렬 순서를 따르며 최대 30개까지 그립니다. (응답 5건 미만은 흐리게 표시)</p>' +
+      '<div class="cmpchart">' + top.map(function (o) {
+        var w = o.v == null ? 0 : Math.max(0, Math.min(100, (o.v - lo) / (5 - lo) * 100)), ov = overall == null ? 0 : Math.max(0, Math.min(100, (overall - lo) / (5 - lo) * 100));
+        return '<div class="cmprow" data-tip="' + E(o.name + ' · ' + metLabel + ' ' + (o.v == null ? '-' : o.v.toFixed(2)) + ' · 응답 ' + o.resp) + '"><span class="cn">' + E(o.name) + '</span><span class="cb"><i style="width:' + w + '%;' + (o.resp < 5 ? 'opacity:.45;' : '') + '"></i><u style="left:' + ov + '%"></u></span><span class="cv">' + (o.v == null ? '-' : o.v.toFixed(2)) + '</span></div>';
+      }).join('') + '</div>' + (list.length > 30 ? '<div class="muted" style="margin-top:6px">상위 30개만 그렸습니다. 전체는 표에서 확인하십시오.</div>' : '') + '</div>';
+    function th(k, label, num, title) { var on = c.sort === k; return '<th class="num' + (num ? '' : '" style="text-align:left') + '" aria-sort="' + (on ? (dir > 0 ? 'ascending' : 'descending') : 'none') + '"' + (title ? ' title="' + E(title) + '"' : '') + '><button class="thsort' + (on ? ' on' : '') + '" data-act="cmpsort" data-k="' + E(k) + '">' + E(label) + (on ? (dir > 0 ? ' ▲' : ' ▼') : '') + '</button></th>'; }
+    var tbl = '<div class="panel"><h3>' + E(dimLabel) + '별 비교표</h3><p class="panel-sub">열 제목을 누르면 그 열 기준으로 정렬되고, 다시 누르면 오름차순·내림차순이 바뀝니다. 순위는 조회 항목(' + E(metLabel) + ') 기준입니다.</p>' +
+      '<div class="tbl-wrap" style="max-height:520px;overflow:auto"><table class="t cmpt"><thead><tr>' + th('rank', '순위', true, '조회 항목 기준 순위') + th('name', dimLabel, false) + th('resp', '응답', true) + th('met', metLabel.slice(0, 10), true, '조회 항목 평균') + th('all', '종합', true) +
+      secs.map(function (sc) { return th('s:' + sc.id, shortSec(sc.title), true, sc.title); }).join('') + '</tr></thead><tbody>' +
+      (list.map(function (o) {
+        var hm = heatColor(o.v);
+        return '<tr' + (c.dim === 'prof' ? ' style="cursor:pointer" data-act="profdetail" data-p="' + E(o.name) + '"' : '') + '><td class="num">' + (o.rank == null ? '-' : o.rank) + '</td><td><b>' + E(o.name) + '</b>' + (o.resp < 5 ? ' <span class="badge badge-gray">참고용</span>' : '') + '</td><td class="num">' + o.resp + '</td><td class="hc num" style="background:' + hm.bg + ';color:' + hm.fg + '">' + (o.v == null ? '-' : o.v.toFixed(2)) + '</td><td class="num">' + (o.tot == null ? '-' : o.tot.toFixed(2)) + '</td>' +
+          secs.map(function (sc) { var m = mean(o.sec[sc.id]), h2 = heatColor(m); return '<td class="hc num" style="background:' + h2.bg + ';color:' + h2.fg + '">' + (m == null ? '-' : m.toFixed(2)) + '</td>'; }).join('') + '</tr>';
+      }).join('') || '<tr><td colspan="' + (5 + secs.length) + '" class="t-empty">검색 결과가 없습니다.</td></tr>') + '</tbody></table></div></div>';
+    return cmpBar(D) + chart + tbl;
+  }
+  function metName(D, met) {
+    if (met === 'all') return '종합 평균'; if (met.indexOf('s:') === 0) { var s = D.Q.sections.filter(function (x) { return x.id === met.slice(2); })[0]; return s ? shortSec(s.title) : met; }
+    var x = D.Q.scale.filter(function (y) { return y.q.id === met.slice(2); })[0]; return x ? x.q.id + ' ' + String(x.q.label).slice(0, 14) : met;
+  }
+  function cmpBar(D) {
+    var c = CMP, sel = function (id, opts, cur) { return '<select class="fld" data-cmp="' + id + '">' + opts + '</select>'; };
+    var dims = DIMS.map(function (d) { return '<option value="' + d[0] + '"' + (c.dim === d[0] ? ' selected' : '') + '>' + d[1] + '</option>'; }).join('');
+    var mets = '<option value="all"' + (c.met === 'all' ? ' selected' : '') + '>종합 평균</option><optgroup label="영역별">' + D.Q.sections.map(function (s) { return '<option value="s:' + E(s.id) + '"' + (c.met === 's:' + s.id ? ' selected' : '') + '>' + E(s.title) + '</option>'; }).join('') + '</optgroup><optgroup label="문항별">' + D.Q.scale.map(function (x) { return '<option value="q:' + E(x.q.id) + '"' + (c.met === 'q:' + x.q.id ? ' selected' : '') + '>' + E(x.q.id + ' ' + String(x.q.label).slice(0, 30)) + '</option>'; }).join('') + '</optgroup>';
+    return '<div class="panel"><div class="row" style="gap:12px;align-items:flex-end;flex-wrap:wrap"><div><label class="f">비교 기준</label>' + sel('dim', dims) + '</div><div style="min-width:220px;flex:1"><label class="f">조회 항목</label>' + sel('met', mets) + '</div><div><label class="f">막대 축</label>' + sel('zoom', '<option value="full"' + (c.zoom !== 'zoom' ? ' selected' : '') + '>0~5점 전체</option><option value="zoom"' + (c.zoom === 'zoom' ? ' selected' : '') + '>차이 확대(최저점~5)</option>') + '</div><div><label class="f">이름 검색</label><input class="fld" id="cmpq" data-cmp="q" value="' + E(c.q) + '" placeholder="예: 홍길동, 1반"></div></div></div>';
+  }
+
   /* ───────────── 이론·실습 비교 ───────────── */
   function viewKind(D) {
     var kinds = Object.keys(D.kindSec); if (!kinds.length) return '<div class="panel t-empty">표시할 응답이 없습니다.</div>';
@@ -290,7 +349,7 @@
   }
 
   /* ───────────── 화면 구성 ───────────── */
-  var SUBS = [['sum', '요약'], ['q', '문항별'], ['heat', '과목 히트맵'], ['prof', '교수별 현황판'], ['kind', '이론·실습'], ['text', '서술형'], ['mng', '응답 관리']];
+  var SUBS = [['sum', '요약'], ['q', '문항별'], ['heat', '과목 히트맵'], ['cmp', '비교'], ['prof', '교수별 현황판'], ['kind', '이론·실습'], ['text', '서술형'], ['mng', '응답 관리']];
   function uniqSorted(arr) { return Array.from(new Set(arr.filter(Boolean))).sort(function (a, b) { return a.localeCompare(b, 'ko'); }); }
   function filterBar() {
     var cs = A.cur.courses, opt = function (arr, cur) { return '<option value="">전체</option>' + arr.map(function (v) { return '<option' + (cur === v ? ' selected' : '') + '>' + E(v) + '</option>'; }).join(''); };
@@ -308,23 +367,24 @@
   function render(keepFilters) {
     var body = document.getElementById('rbody'); if (!body) return;
     var D = A.ext.D = compute(), sub = A.ext.rsub || 'sum';
-    var fn = { sum: viewSummary, q: viewQuestions, heat: viewHeat, prof: viewProf, kind: viewKind, text: viewText, mng: viewManage }[sub];
+    var fn = { sum: viewSummary, q: viewQuestions, heat: viewHeat, prof: viewProf, cmp: viewCmp, kind: viewKind, text: viewText, mng: viewManage }[sub];
     var y = window.scrollY; body.className = ''; body.innerHTML = fn(D); updateLive(); if (R.newCount && sub !== 'sum') { /* 새 응답 표시는 상단 라이브 표시에 반영 */ }
     window.scrollTo(0, y);
   }
   A.tabs.results = async function (box) {
-    if (R.sid !== A.cur.survey.id) { R.sid = A.cur.survey.id; R.rows = []; R.maxSeq = 0; R.newCount = 0; F.track = F.grade = F.klass = F.kind = F.prof = F.course = ''; F.sincere = 'all'; F.data = A.cur.survey.test_mode ? 'test' : 'real'; A.ext.rsub = 'sum'; }
+    if (R.sid !== A.cur.survey.id) { R.sid = A.cur.survey.id; R.rows = []; R.maxSeq = 0; R.newCount = 0; F.track = F.grade = F.klass = F.kind = F.prof = F.course = ''; F.sincere = 'all'; F.data = A.cur.survey.test_mode ? 'test' : 'real'; A.ext.rsub = A.ext.rsubInit || 'sum'; }
     var sub = A.ext.rsub || 'sum';
     box.innerHTML = '<div class="row" style="margin-bottom:12px"><div class="tabs" style="margin:0;border:0;flex:1">' + SUBS.map(function (s) { return '<button class="tab" data-act="rsub" data-s="' + s[0] + '" aria-selected="' + (sub === s[0]) + '">' + s[1] + '</button>'; }).join('') + '</div><span id="live" class="live"></span><button class="btn btn-ghost btn-sm" data-act="livetoggle">일시정지/재개</button><button class="btn btn-secondary btn-sm" data-act="reload">' + I('refresh', 14) + ' 새로고침</button><button class="btn btn-primary btn-sm" data-act="xlsx">' + I('download', 14) + ' 엑셀 내려받기</button></div>' +
       filterBar() + '<div id="rbody" class="loading">불러오는 중…</div>';
-    box.onchange = function (e) { var f = e.target.getAttribute('data-ff'); if (f) { F[f] = e.target.value; if (f === 'track') { F.grade = F.klass = F.course = ''; } if (f === 'grade') { F.klass = F.course = ''; } if (f === 'prof' || f === 'kind' || f === 'klass') F.course = ''; A.tabs.results.redraw(box); } else if (e.target.id === 'psort') { A.ext.psort = e.target.value; render(); } else if (e.target.id === 'tq') { A.ext.tq = e.target.value; A.ext.tpg = 1; render(); } };
-    box.oninput = function (e) { if (e.target.id === 'tkw') { A.ext.tkw = e.target.value; A.ext.tpg = 1; clearTimeout(A._tk); A._tk = setTimeout(function () { render(); var n = document.getElementById('tkw'); if (n) { n.focus(); n.setSelectionRange(n.value.length, n.value.length); } }, 250); } };
+    box.onchange = function (e) { var cp = e.target.getAttribute('data-cmp'); if (cp && cp !== 'q') { CMP[cp] = e.target.value; if (cp === 'dim') { CMP.sort = 'met'; CMP.dir = -1; } render(); return; } var f = e.target.getAttribute('data-ff'); if (f) { F[f] = e.target.value; if (f === 'track') { F.grade = F.klass = F.course = ''; } if (f === 'grade') { F.klass = F.course = ''; } if (f === 'prof' || f === 'kind' || f === 'klass') F.course = ''; A.tabs.results.redraw(box); } else if (e.target.id === 'psort') { A.ext.psort = e.target.value; render(); } else if (e.target.id === 'tq') { A.ext.tq = e.target.value; A.ext.tpg = 1; render(); } };
+    box.oninput = function (e) { if (e.target.id === 'cmpq') { CMP.q = e.target.value; clearTimeout(A._ck); A._ck = setTimeout(function () { render(); var n = document.getElementById('cmpq'); if (n) { n.focus(); n.setSelectionRange(n.value.length, n.value.length); } }, 250); return; } if (e.target.id === 'tkw') { A.ext.tkw = e.target.value; A.ext.tpg = 1; clearTimeout(A._tk); A._tk = setTimeout(function () { render(); var n = document.getElementById('tkw'); if (n) { n.focus(); n.setSelectionRange(n.value.length, n.value.length); } }, 250); } };
     box.onclick = function (e) {
       var t = e.target.closest('[data-act]'); if (!t) return; var act = t.getAttribute('data-act');
       if (act === 'rsub') { A.ext.rsub = t.getAttribute('data-s'); box.querySelectorAll('[data-act=rsub]').forEach(function (b) { b.setAttribute('aria-selected', b === t); }); render(); }
       else if (act === 'fclear') { F.track = F.grade = F.klass = F.kind = F.prof = F.course = ''; F.sincere = 'all'; A.tabs.results.redraw(box); }
       else if (act === 'livetoggle') { R.live = !R.live; updateLive(); if (R.live) poll(); }
       else if (act === 'reload') { R.newCount = 0; fullLoad().then(function () { render(); A.toast('새로 불러왔습니다.'); }).catch(function (er) { A.toast(er.message, 'err'); }); }
+      else if (act === 'cmpsort') { var k2 = t.getAttribute('data-k'); if (CMP.sort === k2) CMP.dir = -CMP.dir; else { CMP.sort = k2; CMP.dir = (k2 === 'name' || k2 === 'rank') ? 1 : -1; } render(); }
       else if (act === 'xlsx') exportXlsx();
       else if (act === 'profdetail') profDetail(t.getAttribute('data-p'));
       else if (act === 'tpg') { A.ext.tpg = (A.ext.tpg || 1) + Number(t.getAttribute('data-d')); render(); }
