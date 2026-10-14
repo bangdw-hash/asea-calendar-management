@@ -76,21 +76,29 @@
     g.push('5. 같은 [' + req.join(' + ') + '] 조합이 두 번 나오면 중복 오류로 표시됩니다. 같은 이름이라도 구분이 필요하면 다른 열 값을 다르게 입력합니다.');
     g.push('6. 「(예시)」로 시작하는 행은 등록되지 않습니다. 예시 행은 지우거나 그대로 두셔도 됩니다.');
     g.push('7. 설계 화면에서 사용하지 않기로 한 열은 양식에 포함되지 않습니다.');
+    if (l.cols.klass.use) g.push('9. 「재적인원(명)」은 반의 현재 재적(현원) 인원입니다. 같은 반의 첫 행에만 적어도 되고, 여러 행에 적으면 값이 같아야 합니다. 우수 참여 반·응답률 계산에 쓰이며 비워 두면 인원 미등록으로 처리됩니다. 계열·학년별 배포 인원은 반별 인원의 합으로 자동 계산됩니다.');
+    g.push('10. 다음 학기에는 「현재 내용으로 양식 받기」로 받은 파일에서 과목·교수·인원만 고쳐 올리면 AI 없이 그대로 불러옵니다. 설문 목록 설정(열 이름)이 바뀌면 이 양식을 다시 받으십시오.');
     if (l.cols.grade.use && l.cols.klass.use === false) g.push('8. 이 설문은 [' + usedKeys(l).slice(0, 2).map(function (k) { return l.cols[k].label; }).join(' → ') + '] 순으로 학생이 단계별 선택을 합니다.');
     return g.filter(function (x) { return !/\(\)/.test(x); });
   }
-  A.linkTemplate = Lk.template = function (def) {
+  A.linkTemplate = Lk.template = function (def, data) {
     if (!window.XLSX) return A.toast('엑셀 라이브러리를 불러오지 못했습니다.', 'err');
     var l = SVY.linkInfo(def), used = usedKeys(l), samples = ((def.link && def.link.samples) || []).filter(function (r) { return r.name; });
-    var head = used.map(function (k) { return l.cols[k].label; });
-    var aoa = [head];
-    samples.forEach(function (r, i) { aoa.push(used.map(function (k, j) { var v = r[k] || ''; return i === 0 && j === 0 ? '(예시)' + v : v; })); });
-    if (!samples.length) aoa.push(used.map(function (k, j) { return (j === 0 ? '(예시)' : '') + (l.cols[k].sample || '예시 값'); }));
+    if (!samples.length && !(def && def.link)) samples = [{ track: '항공정비', grade: '2학년', klass: 'A반', name: '항공역학', kind: '이론', prof: '홍길동' }, { track: '항공정비', grade: '2학년', klass: 'A반', name: '항공기체실습2', kind: '실습', prof: '김철수' }, { track: '항공정비', grade: '2학년', klass: 'B반', name: '항공역학', kind: '이론', prof: '이영희' }];
+    var cols = used.map(function (k) { return { k: k, label: l.cols[k].label }; });
+    if (l.cols.klass.use) cols.splice(cols.map(function (c) { return c.k; }).indexOf('klass') + 1, 0, { k: '@head', label: '재적인원(명)' });   // 반별 현재 재적 인원
+    var aoa = [cols.map(function (c) { return c.label; })], heads = (data && data.heads) || (def && def.classHead) || {}, seenClass = {};
+    function cell(r, c, first, ex) { if (c.k === '@head') { var kk = [r.track, r.grade, r.klass].join('|'); if (data) { if (seenClass[kk]) return ''; seenClass[kk] = 1; return heads[kk] || ''; } return first ? 30 : ''; } var v = r[c.k] || ''; return ex && first && c.k === cols[0].k ? '(예시)' + v : v; }
+    if (data && data.courses && data.courses.length) data.courses.forEach(function (r) { aoa.push(cols.map(function (c) { return cell(r, c, false, false); })); });
+    else {
+      samples.forEach(function (r, i) { aoa.push(cols.map(function (c) { return cell(r, c, i === 0, true); })); });
+      if (!samples.length) aoa.push(cols.map(function (c, j) { return c.k === '@head' ? 30 : (j === 0 ? '(예시)' : '') + (l.cols[c.k].sample || '예시 값'); }));
+    }
     var wb = XLSX.utils.book_new(), ws = XLSX.utils.aoa_to_sheet(aoa);
-    ws['!cols'] = used.map(function (k) { return { wch: k === 'name' ? 28 : 16 }; }); XLSX.utils.book_append_sheet(wb, ws, (l.unit + '등록').slice(0, 25));
+    ws['!cols'] = cols.map(function (c) { return { wch: c.k === 'name' ? 28 : 16 }; }); XLSX.utils.book_append_sheet(wb, ws, (l.unit + '등록').slice(0, 25));
     var ws2 = XLSX.utils.aoa_to_sheet(guide(l, used).map(function (x) { return [x]; })); ws2['!cols'] = [{ wch: 110 }]; XLSX.utils.book_append_sheet(wb, ws2, '작성안내');
     var out = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
-    A.download(new Blob([out], { type: 'application/octet-stream' }), '설문_' + l.unit + '등록_양식.xlsx');
+    A.download(new Blob([out], { type: 'application/octet-stream' }), '설문_' + l.unit + (data ? '_현재등록내용' : '등록_양식') + '.xlsx');
   };
 
   /* ───────────── 화면 ───────────── */
