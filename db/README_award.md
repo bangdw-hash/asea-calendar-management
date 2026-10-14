@@ -1,0 +1,39 @@
+# 상장 메일머지 출력기(award.html) DB 설치 안내
+
+대상 Supabase 프로젝트: `zbpeyklwpotjyveipzxd` (기존 테이블은 변경하지 않습니다. 새 `awd` 스키마와 `public.award_*` 함수만 추가)
+
+## 설치 순서 (Supabase 대시보드 → SQL Editor)
+
+1. `db/award_schema.sql` 전체를 새 쿼리로 실행합니다. (여러 번 실행해도 안전)
+   - 확인: `select count(*) from information_schema.tables where table_schema = 'awd';` → 6
+2. 관리자 비밀번호를 등록합니다. `<관리자 비밀번호>`만 바꿔 실행합니다. **이 값은 저장소에 두지 않습니다.**
+
+```sql
+update awd.secret
+   set admin_hash = extensions.crypt('<관리자 비밀번호>', extensions.gen_salt('bf'))
+ where id = 1;
+```
+
+3. `https://bangdw-hash.github.io/asea-calendar-management/award.html` 접속 → 관리자 비밀번호로 로그인.
+
+## 보안 구조 (budget.html 과 동일)
+
+- 테이블은 `awd` 스키마(API 비노출) + RLS 활성 + `anon`/`authenticated` 권한 회수. 브라우저는 `public.award_*` RPC(SECURITY DEFINER)만 호출합니다.
+- 로그인 후 12시간 토큰(해시 저장)을 서버가 매 호출마다 검증합니다. 5회 실패 시 15분 잠금.
+- 비밀번호는 bcrypt 해시로만 저장됩니다.
+
+## 데이터
+
+| 테이블 | 내용 |
+|--------|------|
+| `awd.tpl` | 양식(용지·요소·입력 항목 안내·작업 중 데이터·배경 이미지), `ver` 로 단말기 간 저장 충돌 감지 |
+| `awd.tpl_ver` | 양식 구조 변경 시 버전 스냅샷(최근 30개), 복원 가능 |
+| `awd.batch` | 발급(출력) 이력 — 당시 데이터·양식 보관(최근 300건), 재출력 가능 |
+| `awd.log` | 활동 기록(로그인·업로드·AI 안내 등) |
+
+## 사용 흐름
+
+1. 새 양식 → JPG·PNG·PDF 올리기(용지 크기·방향 자동 설정)
+2. 양식 창: 「기본 상장 배치」 또는 글상자·일괄 입력 항목 추가 → 배경 위 원하는 자리에 배치. 글상자 안에 `{{성명}}` 처럼 쓰면 그 자리에 엑셀 값이 들어갑니다.
+3. 데이터 창: 「엑셀 양식 받기」(입력 시트 + 작성안내 시트) → 작성 → 「엑셀 올리기」. 「AI 안내 작성」은 양식을 읽고 항목별 입력 안내를 보강합니다.
+4. 미리보기에서 장별 확인 → 「인쇄 · PDF」(범위·배경 제외·프린터 위치 보정 지원)
