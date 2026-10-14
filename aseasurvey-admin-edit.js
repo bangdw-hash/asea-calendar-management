@@ -301,11 +301,12 @@
       if (custom ? (tmp.name != null && hmap.filter(function (m) { return m[0] !== 'name' && m[0] !== 'prof' && m[0] !== 'kind'; }).every(function (m) { return tmp[m[0]] != null; })) : (tmp.track != null && tmp.name != null && tmp.klass != null)) { hi = i; cols = tmp; }
     }
     if (hi < 0) return { error: '머리글(' + (custom ? SVY.LINK_KEYS.filter(function (k) { return lk.cols[k].use; }).map(function (k) { return lk.cols[k].label; }).join(', ') : '계열, 학년, 반, 과목명, 구분, 담당교수') + ')을 찾지 못했습니다. 다운로드한 양식을 사용해 주십시오.', rows: [] };
+    var headCol = -1, usedCols = Object.keys(cols).map(function (f) { return cols[f]; }); (aoa[hi] || []).forEach(function (c, j) { if (headCol < 0 && usedCols.indexOf(j) < 0 && /^(재적|현재원|현원|총인원|인원)/.test(String(c).replace(/\s|\(.*?\)/g, ''))) headCol = j; });
     var rows = [];
     for (var k = hi + 1; k < aoa.length; k++) {
       var a = aoa[k] || []; if (a.every(function (c) { return String(c).trim() === ''; })) continue;
       if (/^\s*\(?예시\)?/.test(String(a[cols.track != null ? cols.track : cols.name]))) continue;
-      var o = {}; Object.keys(cols).forEach(function (f) { o[f] = a[cols[f]]; }); var r = normRow(o); r._line = k + 1; rows.push(r);
+      var o = {}; Object.keys(cols).forEach(function (f) { o[f] = a[cols[f]]; }); var r = normRow(o); r._line = k + 1; r.head = headCol >= 0 ? Math.max(parseInt(String(a[headCol]).replace(/[^0-9]/g, ''), 10) || 0, 0) : 0; rows.push(r);
     }
     return { rows: rows };
   }
@@ -316,34 +317,23 @@
     var out = []; for (var k = hi + 1; k < aoa.length; k++) { var a = aoa[k] || []; if (!String(a[c.track]).trim() || /^\s*\(?예시/.test(String(a[c.track]))) continue; out.push({ track: String(a[c.track]).trim(), grade: normGrade(a[c.grade]), headcount: Math.max(parseInt(a[c.n], 10) || 0, 0) }); }
     return out;
   }
-  function downloadTemplate() {
-    if (!window.XLSX) return A.toast('엑셀 라이브러리를 불러오지 못했습니다.', 'err');
-    if (LK().custom) return A.linkTemplate((A.work && A.work.def) || A.cur.survey.def);
-    var wb = XLSX.utils.book_new();
-    var ws = XLSX.utils.aoa_to_sheet([['계열', '학년', '반', '과목명', '구분(이론/실습)', '담당교수'],
-      ['(예시)항공정비', '2학년', 'A반', '항공역학', '이론', '홍길동'], ['(예시)항공정비', '2학년', 'A반', '항공기체실습2', '실습', '김철수'], ['(예시)항공정비', '2학년', 'B반', '항공역학', '이론', '이영희']]);
-    ws['!cols'] = [{ wch: 14 }, { wch: 8 }, { wch: 8 }, { wch: 26 }, { wch: 16 }, { wch: 12 }]; XLSX.utils.book_append_sheet(wb, ws, '과목등록');
-    var ws2 = XLSX.utils.aoa_to_sheet([['계열', '학년', '배포인원(명)'], ['(예시)항공정비', '2학년', 60]]); ws2['!cols'] = [{ wch: 14 }, { wch: 8 }, { wch: 14 }]; XLSX.utils.book_append_sheet(wb, ws2, '배포인원');
-    var ws3 = XLSX.utils.aoa_to_sheet([['작성 안내'], ['1. 「과목등록」 시트에 한 행에 한 과목을 입력합니다. 같은 과목이라도 반마다 담당교수가 다르면 반별로 행을 나누어 입력합니다.'],
-      ['2. 「반」은 학생이 설문에서 선택하는 반 이름입니다. (예: A반, 1반) 숫자만 입력하면 「반」이 자동으로 붙습니다.'], ['3. 「학년」에 숫자만 입력하면 「학년」이 자동으로 붙습니다.'],
-      ['4. 과목명 끝에 (이론) 또는 (실습)이 있으면 구분이 자동 입력되고 과목명에서는 제외됩니다.'], ['5. 「(예시)」로 시작하는 행은 등록되지 않습니다. 예시 행은 지우거나 그대로 두셔도 됩니다.'],
-      ['6. 「배포인원」 시트는 선택 사항이며 계열·학년별 배포 인원(응답률 분모)입니다.'], ['7. 같은 계열·학년·반·과목명이 중복되면 오류로 표시됩니다.']]);
-    ws3['!cols'] = [{ wch: 110 }]; XLSX.utils.book_append_sheet(wb, ws3, '작성안내');
-    var out = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
-    A.download(new Blob([out], { type: 'application/octet-stream' }), '설문_과목등록_양식.xlsx');
+  function downloadTemplate(withData) {
+    var def = (A.work && A.work.def) || A.cur.survey.def;
+    return A.linkTemplate(def, withData ? { courses: A.cur.courses.filter(function (c) { return c.active; }), heads: def.classHead || {} } : null);
   }
   function readFile(file) {
     return new Promise(function (res, rej) { var fr = new FileReader(); fr.onload = function () { res(fr.result); }; fr.onerror = rej; fr.readAsArrayBuffer(file); });
   }
   function importPreview(rows, targets, source) {
     var exist = {}; A.cur.courses.filter(function (c) { return c.active; }).forEach(function (c) { exist[keyOf(c)] = c; });
-    var seen = {}, errs = [], st = { new: 0, upd: 0, same: 0 }, lk = LK(), cl = lk.cols;
+    var seen = {}, errs = [], st = { new: 0, upd: 0, same: 0 }, lk = LK(), cl = lk.cols, heads = {};
     rows.forEach(function (r) {
       if (!r.track || !r.grade || !r.klass || !r.name) errs.push((r._line ? r._line + '행: ' : '') + (lk.custom ? SVY.LINK_KEYS.filter(function (k) { return cl[k].use && k !== 'prof' && k !== 'kind'; }).map(function (k) { return cl[k].label; }).join('·') : '계열·학년·반·과목명') + ' 중 비어 있는 값이 있습니다.');
       var k = keyOf(r); if (seen[k]) errs.push((r._line ? r._line + '행: ' : '') + '중복된 행입니다 (' + r.track + ' ' + r.grade + ' ' + r.klass + ' ' + r.name + ').'); seen[k] = 1;
+      if (r.head > 0) { var hk = [r.track, r.grade, r.klass].join('|'); if (heads[hk] != null && heads[hk] !== r.head) errs.push((r._line ? r._line + '행: ' : '') + '같은 반의 재적인원 값이 서로 다릅니다 (' + r.track + ' ' + r.grade + ' ' + r.klass + ': ' + heads[hk] + ' / ' + r.head + ').'); else heads[hk] = r.head; }
       var o = exist[k]; r._st = !o ? 'new' : ((o.prof !== r.prof || o.kind !== r.kind) ? 'upd' : 'same'); st[r._st]++;
     });
-    var m = A.modal('<h3>' + E(source) + ' — 등록 미리보기</h3><div class="row"><span class="badge badge-green">신규 ' + st.new + '</span><span class="badge badge-blue">갱신 ' + st.upd + '</span><span class="badge badge-gray">동일 ' + st.same + '</span>' + (targets.length ? '<span class="badge badge-amber">배포인원 ' + targets.length + '행</span>' : '') + (errs.length ? '<span class="badge badge-red">오류 ' + errs.length + '</span>' : '') + '</div>' +
+    var m = A.modal('<h3>' + E(source) + ' — 등록 미리보기</h3><div class="row"><span class="badge badge-green">신규 ' + st.new + '</span><span class="badge badge-blue">갱신 ' + st.upd + '</span><span class="badge badge-gray">동일 ' + st.same + '</span>' + (targets.length ? '<span class="badge badge-amber">배포인원 ' + targets.length + '행</span>' : '') + (Object.keys(heads).length ? '<span class="badge badge-amber">반별 재적 인원 ' + Object.keys(heads).length + '개 반</span>' : '') + (errs.length ? '<span class="badge badge-red">오류 ' + errs.length + '</span>' : '') + '</div>' +
       (errs.length ? '<ul class="err-list">' + errs.slice(0, 50).map(function (x) { return '<li>' + E(x) + '</li>'; }).join('') + '</ul>' : '') +
       '<div class="tbl-wrap" style="margin-top:10px;max-height:300px"><table class="t"><thead><tr><th>상태</th>' + SVY.LINK_KEYS.map(function (k) { return '<th' + (cl[k].use || k === 'kind' && false ? '' : ' style="opacity:.4"') + '>' + E(cl[k].label) + (cl[k].use ? '' : ' (미사용)') + '</th>'; }).join('') + '</tr></thead><tbody>' +
       rows.slice(0, 300).map(function (r) { return '<tr><td>' + ({ new: '<span class="badge badge-green">신규</span>', upd: '<span class="badge badge-blue">갱신</span>', same: '<span class="badge badge-gray">동일</span>' }[r._st]) + '</td><td>' + E(r.track) + '</td><td>' + E(r.grade) + '</td><td>' + E(r.klass) + '</td><td>' + E(r.name) + '</td><td>' + E(r.kind) + '</td><td>' + E(r.prof) + '</td></tr>'; }).join('') + '</tbody></table></div>' +
@@ -357,8 +347,12 @@
         b.disabled = true; b.textContent = '등록 중…';
         try {
           var res = await A.rpc('svy_a_courses_save', { p_id: A.cur.survey.id, p_rows: rows.map(function (r) { return { track: r.track, grade: r.grade, klass: r.klass, name: r.name, prof: r.prof, kind: r.kind }; }), p_mode: mode });
+          var hk = Object.keys(heads).length, d0 = hk ? ensureDef() : null, merged = null;
+          if (hk) { merged = mode === 'replace' ? heads : Object.assign({}, d0.classHead || {}, heads); d0.classHead = merged;
+            if (!targets.length) { var sum = {}; Object.keys(merged).forEach(function (k) { var p = k.split('|'), g = p[0] + '|' + p[1]; sum[g] = (sum[g] || 0) + merged[k]; }); targets = Object.keys(sum).map(function (g) { var p = g.split('|'); return { track: p[0], grade: p[1], headcount: sum[g] }; }); } }
           if (targets.length) await A.rpc('svy_a_targets_save', { p_id: A.cur.survey.id, p_rows: mergeTargets(targets, mode) });
-          close(); A.toast('과목 ' + res.saved + '건을 등록했습니다.' + (res.removed ? ' (제거 ' + res.removed + '건)' : '')); await A.refresh(); A.ext.tg = null; A.renderSurvey();
+          if (hk) { await A.rpc('svy_a_save', { p_id: A.cur.survey.id, p_patch: { def: d0 }, p_note: '반별 재적 인원 일괄 등록' }); }
+          close(); A.toast('과목 ' + res.saved + '건을 등록했습니다.' + (res.removed ? ' (제거 ' + res.removed + '건)' : '') + (hk ? ' 반별 재적 인원 ' + hk + '개 반을 저장했습니다.' : '')); if (hk) await A.load(A.cur.survey.id); else await A.refresh(); A.ext.tg = null; A.renderSurvey();
         } catch (er) { A.toast(er.message, 'err'); b.disabled = false; b.textContent = '등록'; }
       });
     }, 'xl');
@@ -374,7 +368,7 @@
     var list = active.filter(function (c) { return (!flt.track || c.track === flt.track) && (!flt.q || (c.name + c.prof + c.klass + c.grade).indexOf(flt.q) >= 0); });
     var profs = new Set(active.map(function (c) { return c.prof; }).filter(Boolean));
     box.innerHTML = '<div class="row" style="margin-bottom:12px"><div><b style="font-size:15px">' + (LK().custom ? '등록 ' + E(LK().unit) + ' ' : '등록 과목 ') + active.length + '건</b> <span class="muted">· ' + (LK().custom ? (LK().cols.prof.use ? E(LK().cols.prof.label) + ' ' + profs.size + '명' : '') : '반 ' + new Set(active.map(function (c) { return [c.track, c.grade, c.klass].join('|'); })).size + '개 · 담당교수 ' + profs.size + '명') + '</span></div><span class="sp"></span>' +
-      '<button class="btn btn-secondary btn-sm" data-act="tpl">' + I('download', 14) + ' 엑셀 양식 다운로드</button><button class="btn btn-secondary btn-sm" data-act="xup">' + I('upload', 14) + ' 엑셀 업로드</button><button class="btn btn-secondary btn-sm" data-act="paste">붙여넣기로 등록</button><button class="btn btn-primary btn-sm" data-act="cadd">' + I('plus', 14) + ' ' + (LK().custom ? E(LK().unit) : '과목') + ' 추가</button><input type="file" id="xf" accept=".xlsx,.xls,.csv" class="hide"></div>' +
+      '<button class="btn btn-secondary btn-sm" data-act="tpl">' + I('download', 14) + ' 엑셀 양식 다운로드</button><button class="btn btn-secondary btn-sm" data-act="tplcur">' + I('download', 14) + ' 현재 내용으로 양식 받기</button><button class="btn btn-secondary btn-sm" data-act="xup">' + I('upload', 14) + ' 엑셀 업로드</button><button class="btn btn-secondary btn-sm" data-act="paste">붙여넣기로 등록</button><button class="btn btn-primary btn-sm" data-act="cadd">' + I('plus', 14) + ' ' + (LK().custom ? E(LK().unit) : '과목') + ' 추가</button><input type="file" id="xf" accept=".xlsx,.xls,.csv" class="hide"></div>' +
       (LK().custom ? '<div class="panel"><p class="panel-sub" style="margin:0">이 설문의 연동 목록입니다. 맨 위 「엑셀 양식 다운로드」 양식에 한 행에 하나씩 입력해 올리면 학생 화면의 선택지와 결과 집계에 그대로 연동됩니다. ' + (LK().cols.prof.use ? E(LK().cols.prof.label) + '은(는) 학생 화면에 과목과 함께 표시되고 결과 집계에도 쓰입니다.' : '') + '</p></div>' : '<div class="panel"><p class="panel-sub" style="margin:0">같은 과목이라도 반마다 담당교수가 다르면 반별로 한 행씩 등록합니다. 이 정보로 교수별 결과가 집계됩니다. 학생 화면에는 과목명·구분(이론/실습)과 함께 담당 교수 이름이 표시됩니다.</p></div>') +
       '<div class="filters" style="margin-top:12px"><div><label class="f">' + E(LK().cols.track.label) + '</label><select class="fld" id="cft"><option value="">전체</option>' + tracks.map(function (t) { return '<option' + (flt.track === t ? ' selected' : '') + '>' + E(t) + '</option>'; }).join('') + '</select></div><div class="sp"><label class="f">검색 (과목·교수·반)</label><input class="fld" id="cfq" value="' + E(flt.q) + '"></div></div>' +
       '<div class="tbl-wrap"><table class="t"><thead><tr>' + SVY.LINK_KEYS.slice(0, 3).map(function (k) { return LK().cols[k].use ? '<th>' + E(LK().cols[k].label) + '</th>' : ''; }).join('') + '<th>' + E(LK().cols.name.label) + '</th>' + (LK().cols.kind.use ? '<th>' + E(LK().cols.kind.label) + '</th>' : '') + (LK().cols.prof.use ? '<th>' + E(LK().cols.prof.label) + '</th>' : '') + '<th></th></tr></thead><tbody>' +
@@ -396,7 +390,8 @@
     };
     box.onclick = async function (e) {
       var t = e.target.closest('[data-act]'); if (!t) return; var act = t.getAttribute('data-act'), id = t.getAttribute('data-id');
-      if (act === 'tpl') downloadTemplate();
+      if (act === 'tpl') downloadTemplate(false);
+      else if (act === 'tplcur') downloadTemplate(true);
       else if (act === 'xup') fi.click();
       else if (act === 'paste') pasteImport();
       else if (act === 'cadd') courseModal(null);
