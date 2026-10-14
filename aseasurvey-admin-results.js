@@ -50,8 +50,8 @@
 
   /* ───────────── 집계 ───────────── */
   function courseMap() { var m = {}; A.cur.courses.forEach(function (c) { m[c.id] = c; }); return m; }
-  function questions() {
-    var def = A.cur.survey.def, out = { scale: [], check: [], multi: [], single: [], text: [], common: [] }, sec = {};
+  function questions(d0) {
+    var def = d0 || A.cur.survey.def, out = { scale: [], check: [], multi: [], single: [], text: [], common: [] }, sec = {};
     (def.sections || []).forEach(function (s) { sec[s.id] = s; (s.questions || []).forEach(function (q) {
       var item = { q: q, s: s };
       if ((q.scope || 'course') === 'common') { out.common.push(item); return; }

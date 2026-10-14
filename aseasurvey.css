@@ -322,3 +322,5 @@ canvas.sig{display:block;width:100%;height:auto;aspect-ratio:600/220;touch-actio
 [data-legacy=cmp] .tabs,[data-legacy=det] .tabs,[data-legacy=same] .tabs,[data-legacy=live] .tabs,[data-legacy=rpt] .tabs{display:none}
 .gcmp > .filters{display:none}
 [data-legacy=cmp] > .row:first-child,[data-legacy=det] > .row:first-child,[data-legacy=same] > .row:first-child,[data-legacy=live] > .row:first-child,[data-legacy=rpt] > .row:first-child{display:none}
+/* 분석(리포트·종합·회차·주제·우선순위) 화면은 계열·학년·반·구분·교수·과목 필터를 쓰지 않으므로 숨김 (응답 범위·데이터는 유지) */
+[data-legacy=rpt] #rfilters > div:nth-child(-n+6){display:none}
