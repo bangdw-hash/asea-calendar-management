@@ -289,7 +289,8 @@
     }
     var tr = (e.rot ? 'rotate(' + e.rot + 'deg) ' : '') + ((e.flipX || e.flipY) ? 'scale(' + (e.flipX ? -1 : 1) + ',' + (e.flipY ? -1 : 1) + ')' : '');
     if (tr) d.style.transform = tr.trim();
-    if (e.hide) d.style.display = 'none';
+    if (e.hide || (e.noprint && mode !== 'edit')) d.style.display = 'none';   // 인쇄 제외 개체는 편집 화면에만 표시(미리보기·출력에서는 제외)
+    if (e.noprint && mode === 'edit') d.classList.add('np');
     return d;
   };
   // 글자 자동 맞춤(shrink): 한 줄 안에 들어가도록 폰트를 줄임. DOM 부착 후 호출.
