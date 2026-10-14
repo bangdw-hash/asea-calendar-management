@@ -256,8 +256,9 @@
   async function loadOther(id) {
     var g = await A.rpc('svy_a_get', { p_id: id }), rows = [], after = 0, guard = 0;
     for (;;) { var r = await A.rpc('svy_a_results', { p_id: id, p_after: after }); rows = rows.concat(r.rows); if (r.rows.length) after = r.rows[r.rows.length - 1].seq; if (r.rows.length < 2000 || ++guard > 20) break; }
-    return { title: g.survey.title, def: g.survey.def, rows: rows };
+    return { title: g.survey.title, def: g.survey.def, rows: rows, courses: g.courses || [], semester: g.survey.semester || '', id: id };
   }
+  A.ext.loadOther = loadOther;
   function viewHist() {
     var cur = A.cur.survey.id, list = (A.list || []).slice().sort(function (a, b) { return String(b.created_at || b.updated_at || '').localeCompare(String(a.created_at || a.updated_at || '')); });
     var h = '<div class="panel"><h3>설문 이력</h3><p class="panel-sub">다른 설문을 골라 같은 문항 ID의 평균을 비교합니다. (정식 응답만, 제외 처리 응답 제외)</p><div class="tbl-wrap"><table class="t"><thead><tr><th>설문</th><th>학기</th><th>상태</th><th class="num">응답</th><th></th></tr></thead><tbody>' + list.map(function (s2) {
@@ -325,8 +326,13 @@
     var body = document.getElementById('gbody'); if (!body) return;
     var rows = pick(), y = window.scrollY, focus = document.activeElement && document.activeElement.id === 'gkw';
     body.parentNode.classList.toggle('gcmp', !!LEGSUB[G.sub]); var gs0 = document.getElementById('gsinc'), gd0 = document.getElementById('gdata'); if (gs0) gs0.value = A.ext.F.sincere; if (gd0) gd0.value = A.ext.F.data; if (LEGSUB[G.sub]) {
-      var lk = legKey(G.sub), ru = RPTU[G.sub];
-      if (ru && A.ext.rpt && A.ext.rpt.unit !== ru) { A.ext.rpt.unit = ru; A.ext.rpt.sel = {}; A.ext.rpt.q = ''; var mt = document.getElementById('rptmount'); if (mt && body.getAttribute('data-legacy') === 'rpt') { mt.removeAttribute('data-rpt'); A.ext.reportUI(mt); return; } }
+      var lk = legKey(G.sub), ru = RPTU[G.sub], rp = A.ext.rpt;
+      if (ru && rp) {
+        var chg = (ru.u && rp.unit !== ru.u) || rp.view !== ru.v; if (ru.u) rp.unit = ru.u; rp.view = ru.v;
+        if (chg) { rp.sel = {}; rp.q = ''; }
+        var mt = document.getElementById('rptmount');
+        if (mt && body.getAttribute('data-legacy') === 'rpt') { if (chg) mt.removeAttribute('data-rpt'); A.ext.reportUI(mt); return; }
+      }
       if (body.getAttribute('data-legacy') !== lk) { body.setAttribute('data-legacy', lk); body.className = ''; body.innerHTML = ''; A.ext.rsub = A.ext.rsubInit = G.sub === 'legacy' ? 'sum' : lk; A.ext.keepShared = true; orig(body); } return;
     }
     body.removeAttribute('data-legacy'); body.className = ''; body.innerHTML = G.sub === 'hist' ? viewHist() : G.sub === 'rep' ? viewReport() : G.sub === 'sum' ? viewSummary(rows) : G.sub === 'q' ? viewQuestions(rows) : viewResp();
@@ -359,9 +365,10 @@
   }
 
   /* ───────────── 탭 ───────────── */
-  var LEGSUB = { legacy: 1, cmp: 1, det: 1, same: 1, live: 1, rpt: 1, trk: 1, cls: 1, prf: 1, sbj: 1 };
-  var RPTU = { trk: 'track', cls: 'klass', prf: 'prof', sbj: 'subject' };   // 분석 메뉴 → 리포트 단위
-  var ANA = [['trk', '계열별 분석'], ['cls', '반별 분석'], ['prf', '교수별 분석'], ['sbj', '과목별 분석'], ['cmp', '비교'], ['det', '조건 검출'], ['same', '같은 과목'], ['live', '참여 현황']];
+  var LEGSUB = { legacy: 1, cmp: 1, det: 1, same: 1, live: 1, rpt: 1, trk: 1, cls: 1, prf: 1, sbj: 1, ovr: 1, rnd: 1, thm: 1, prio: 1 };
+  // 분석 메뉴 → 리포트 모듈의 화면(view)·단위(unit)
+  var RPTU = { trk: { v: 'list', u: 'track' }, cls: { v: 'list', u: 'klass' }, prf: { v: 'list', u: 'prof' }, sbj: { v: 'list', u: 'subject' }, ovr: { v: 'ovr' }, rnd: { v: 'rnd' }, thm: { v: 'thm' }, prio: { v: 'prio' } };
+  var ANA = [['ovr', '종합 보고서'], ['trk', '계열별 분석'], ['cls', '반별 분석'], ['prf', '교수별 분석'], ['sbj', '과목별 분석'], ['rnd', '회차 비교'], ['thm', '주제 연결'], ['prio', '우선순위'], ['cmp', '비교'], ['det', '조건 검출'], ['same', '같은 과목'], ['live', '참여 현황']];
   function legKey(s) { return RPTU[s] ? 'rpt' : s; }
   function isAna(s) { return ANA.some(function (a) { return a[0] === s; }); }
   // 탭 2단: 위 줄 = 주 메뉴, 아래 줄 = 「분석」 하위 메뉴 (가로 스크롤 없이 줄바꿈)
@@ -379,7 +386,7 @@
     box.onclick = async function (e) {
       var t = e.target.closest('[data-act]'); if (!t) return; var act = t.getAttribute('data-act');
       if (act === 'gcmp') { var oid = t.getAttribute('data-id'); G.cmp = { loading: true }; G.sub = 'hist'; render(); try { var o = await loadOther(oid); G.cmp = { title: o.title, m: metricsOf(o.def, o.rows.filter(function (r) { return A.ext.sincereOk(r); }), null) }; } catch (er) { G.cmp = { err: er.message }; } render(); return; }
-      if (act === 'gsub') { var ns0 = t.getAttribute('data-s'); if (ns0 === 'ana') ns0 = isAna(G.last) ? G.last : 'trk'; if (LEGSUB[G.sub] && legKey(ns0) !== legKey(G.sub) && A.R) A.R.sid = ''; G.sub = ns0; if (isAna(ns0)) G.last = ns0; document.getElementById('gtabs').innerHTML = tabsHtml(); G.page = 1; render(); }
+      if (act === 'gsub') { var ns0 = t.getAttribute('data-s'); if (ns0 === 'ana') ns0 = isAna(G.last) ? G.last : 'ovr'; if (LEGSUB[G.sub] && legKey(ns0) !== legKey(G.sub) && A.R) A.R.sid = ''; G.sub = ns0; if (isAna(ns0)) G.last = ns0; document.getElementById('gtabs').innerHTML = tabsHtml(); G.page = 1; render(); }
       else if (act === 'glivetoggle') { G.live = !G.live; live(); if (G.live) poll(); }
       else if (act === 'greload') fullLoad().then(function () { render(); A.toast('새로 불러왔습니다.'); }).catch(function (er) { A.toast(er.message, 'err'); });
       else if (act === 'gxlsx') exportXlsx();

@@ -9,7 +9,7 @@
  */
 (function () {
   var A = window.SVYA, E = SVY.esc, I = SVY.ico, API = function () { return A.ext.resApi; };
-  var UI = A.ext.rpt = A.ext.rpt || { unit: 'prof', types: { a: true, b: true }, sel: {}, q: '', busy: false, cancel: false, ents: [], sort: 'def', showProf: false, merge: {} };
+  var UI = A.ext.rpt = A.ext.rpt || { unit: 'prof', types: { a: true, b: true }, sel: {}, q: '', busy: false, cancel: false, ents: [], sort: 'def', showProf: false, merge: {}, view: 'list' };
   var PX = { w: 794, h: 1123 };
   var UL = { prof: '교원', klass: '반', track: '계열', subject: '과목' }, ULS = { prof: '교수별', klass: '반별', track: '계열별', subject: '과목별' };   // A4 @96dpi
 
@@ -64,8 +64,8 @@
   }
 
   /* ───────────── 데이터 수집 (응답 범위·정성 필터 반영, 계열/학년/반 필터는 무시) ───────────── */
-  function collect() {
-    var Ap = API(), F = Ap.F, rows = Ap.rows(), Q = Ap.questions(), cm = {}; A.cur.courses.forEach(function (c) { cm[c.id] = c; });
+  function collect(ctx) {
+    var Ap = API(), F = Ap.F, rows = ctx ? ctx.rows : Ap.rows(), Q = ctx ? ctx.Q : Ap.questions(), cm = {}; (ctx ? ctx.courses : A.cur.courses).forEach(function (c) { cm[c.id] = c; });
     var pairs = [], texts = [], commons = [];
     rows.forEach(function (r) {
       if (F.data === 'real' && r.is_test) return; if (F.data === 'test' && !r.is_test) return; if (!A.ext.sincereOk(r)) return;
@@ -89,19 +89,19 @@
     else { e.label = parts[0]; e.sub = ''; }
     return e;
   }
-  function facts(unit) {
-    var C = collect(), Q = C.Q, ents = {}, all = { sum: 0, n: 0, pos: 0, neg: 0, sec: {} };
+  function facts(unit, ctx) {
+    var C = collect(ctx), Q = C.Q, SC = ctx && ctx.anchors ? C.Q.scale.filter(function (x) { return ctx.anchors[x.q.id]; }) : C.Q.scale, ents = {}, all = { sum: 0, n: 0, pos: 0, neg: 0, sec: {} };
     function addTo(o, v, sid0) { o.sum += v; o.n++; if (v >= 4) o.pos++; if (v <= 2) o.neg++; if (sid0) { var s = o.sec[sid0] || (o.sec[sid0] = { sum: 0, n: 0, pos: 0, neg: 0 }); s.sum += v; s.n++; if (v >= 4) s.pos++; if (v <= 2) s.neg++; } }
     function mkAgg() { return { sum: 0, n: 0, pos: 0, neg: 0, sec: {}, q: {} }; }
     C.pairs.forEach(function (p) {
-      var k = entKey(unit, p), e = ents[k] || (ents[k] = Object.assign(mk(unit, k, p), { rs: {}, agg: mkAgg(), courses: {}, comments: [] })); e.rs[p.r.id] = 1;
+      var k = entKey(unit, p), e = ents[k] || (ents[k] = Object.assign(mk(unit, k, p), { rs: {}, rm: {}, agg: mkAgg(), courses: {}, comments: [] })); e.rs[p.r.id] = 1;
       var cc = e.courses[p.c.id] || (e.courses[p.c.id] = { c: p.c, a: mkAgg(), rs: {} }); cc.rs[p.r.id] = 1;
-      Q.scale.forEach(function (x) { var v = p.a[x.q.id]; if (v == null) return; addTo(e.agg, v, x.s.id); addTo(cc.a, v, x.s.id); addTo(all, v, x.s.id); var qq = e.agg.q[x.q.id] || (e.agg.q[x.q.id] = { sum: 0, n: 0, q: x.q }); qq.sum += v; qq.n++; });
+      SC.forEach(function (x) { var v = p.a[x.q.id]; if (v == null) return; var rm = e.rm[p.r.id] || (e.rm[p.r.id] = { s: 0, n: 0 }); rm.s += v; rm.n++; addTo(e.agg, v, x.s.id); addTo(cc.a, v, x.s.id); addTo(all, v, x.s.id); var qq = e.agg.q[x.q.id] || (e.agg.q[x.q.id] = { sum: 0, n: 0, q: x.q }); qq.sum += v; qq.n++; });
     });
     C.texts.forEach(function (t) { var k = entKey(unit, t); if (ents[k]) ents[k].comments.push({ c: t.c.name, q: t.q.id, ql: String(t.q.label).replace(/\s+/g, ' ').slice(0, 40), t: t.text }); });
     if (unit !== 'prof' && unit !== 'subject') C.commons.forEach(function (t) { var k = unit === 'klass' ? t.r.track + '|' + t.r.grade + '|' + t.r.klass : t.r.track; if (ents[k]) ents[k].comments.push({ c: '', q: t.q.id, ql: String(t.q.label).replace(/\s+/g, ' ').slice(0, 40), t: t.text }); });
     var list = Object.keys(ents).map(function (k) {
-      var e = ents[k]; e.resp = Object.keys(e.rs).length; e.cnt = e.agg.n;
+      var e = ents[k]; e.resp = Object.keys(e.rs).length; e.cnt = e.agg.n; e.med = medianOf(Object.keys(e.rm).map(function (k) { return e.rm[k].s / e.rm[k].n; }));
       e.mean = e.cnt ? e.agg.sum / e.cnt : null; e.posr = e.cnt ? e.agg.pos / e.cnt * 100 : null; e.negr = e.cnt ? e.agg.neg / e.cnt * 100 : null;
       e.secs = Q.sections.map(function (s) { var x = e.agg.sec[s.id], y = all.sec[s.id]; return { id: s.id, title: s.title, mean: x && x.n ? x.sum / x.n : null, pos: x && x.n ? x.pos / x.n * 100 : null, neg: x && x.n ? x.neg / x.n * 100 : null, school: y && y.n ? y.sum / y.n : null }; });
       var qs = Object.keys(e.agg.q).map(function (id) { var x = e.agg.q[id]; return { id: id, label: String(x.q.label).replace(/\s+/g, ' '), mean: x.sum / x.n, n: x.n }; }).sort(function (a, b) { return b.mean - a.mean; });
@@ -142,6 +142,7 @@
         best: e.best.map(function (q) { return { q: q.label.slice(0, 50), mean: round2(q.mean) }; }), worst: e.worst.map(function (q) { return { q: q.label.slice(0, 50), mean: round2(q.mean) }; }), courses: e.courseList.slice(0, 12).map(function (c) { return { n: c.name, mean: round2(c.mean) }; }) },
       comments: e.comments.slice(0, 60).map(function (c, i) { return { i: i, q: c.ql, c: c.c, t: c.t.slice(0, 300) }; }) });
   }
+  function medianOf(a) { if (!a.length) return null; var b = a.slice().sort(function (x, y) { return x - y; }), m = b.length >> 1; return b.length % 2 ? b[m] : (b[m - 1] + b[m]) / 2; }
   function round2(v) { return v == null ? null : Math.round(v * 100) / 100; }
   function parseJson(text) { var s = String(text || '').trim().replace(/^```[a-z]*\s*/i, '').replace(/\s*```$/i, '').trim(), a = s.indexOf('{'); if (a > 0) s = s.slice(a); try { return JSON.parse(s); } catch (e) {} var b = s.lastIndexOf('}'); if (b > 0) { try { return JSON.parse(s.slice(0, b + 1)); } catch (e2) {} } throw new Error('AI 응답을 해석하지 못했습니다.'); }
   async function aiAnalyze(e, ov) {
@@ -192,6 +193,7 @@
       b.push({ keep: 1, h: '<div class="' + g[2] + '" style="padding:6px 10px;border-radius:10px;margin-top:4px"><b>' + g[1] + ' ' + groups[g[0]].length + '건</b></div>' });
       groups[g[0]].forEach(function (x) { b.push({ h: '<div class="rp-c">' + E(x.c.t) + '<small>' + E([x.c.c, x.t].filter(Boolean).join(' · ')) + '</small></div>' }); });
     });
+    if (A.ext.rptExtraBlocks) A.ext.rptExtraBlocks(ent).forEach(function (x) { b.push(x); });
     b.push({ keep: 1, h: '<div class="rp-h2">교육처 의견</div>' }); b.push({ h: '<div class="rp-box">' + E(an.dept || '') + '</div>' });
     if ((an.actions || []).length) { b.push({ keep: 1, h: '<div class="rp-h2">개선 과제(안)</div>' }); an.actions.forEach(function (a, i) { b.push({ h: '<div class="rp-act"><b>' + (i + 1) + '. ' + E(a.title) + '</b><div>' + E(a.detail) + '</div><div class="m">' + E([a.owner, a.when].filter(Boolean).join(' · ')) + '</div></div>' }); }); }
     return b;
@@ -313,10 +315,10 @@
   function drawList() {
     var el = document.getElementById('rpt-list'); if (!el) return; var list = filtered();
     document.getElementById('rpt-cnt').textContent = '· ' + list.length + '개 중 ' + UI.ents.filter(function (e) { return UI.sel[e.unit + '|' + e.key]; }).length + '개 선택';
-    el.innerHTML = '<div class="tbl-wrap" style="max-height:420px;overflow:auto"><table class="t cmpt"><thead><tr><th></th><th>' + UL[UI.unit] + '</th><th>계열</th><th class="num">응답자</th><th class="num">평균</th><th class="num">서술 의견</th><th>분석 상태</th><th></th></tr></thead><tbody>' + (list.map(function (e) {
+    el.innerHTML = '<div class="tbl-wrap" style="max-height:420px;overflow:auto"><table class="t cmpt"><thead><tr><th></th><th>' + UL[UI.unit] + '</th><th>계열</th><th class="num">응답자</th><th class="num">평균</th><th class="num" title="응답자 한 명의 평균점수들의 중앙값(극단 응답의 영향을 보는 참고 지표)">중앙값</th><th class="num">서술 의견</th><th>분석 상태</th><th></th></tr></thead><tbody>' + (list.map(function (e) {
       var k = e.unit + '|' + e.key, rec = getRec(e), st = (rec && rec.fsig && rec.fsig !== fsig() ? '<span class="badge badge-orange" title="분석 당시와 응답 범위·데이터 구분이 다릅니다. 다시 분석하십시오.">필터 변경됨</span> ' : '') + (!rec ? '<span class="badge badge-gray">미분석</span>' : rec.edit ? '<span class="badge badge-blue">수정됨</span>' : rec.analysis && rec.analysis.src === 'ai' ? '<span class="badge badge-green">AI 분석</span>' : '<span class="badge badge-gray">기본 분석</span>');
-      return '<tr><td><input type="checkbox" data-rp="chk" data-k="' + E(k) + '"' + (UI.sel[k] ? ' checked' : '') + '></td><td><b>' + E(e.label) + '</b></td><td>' + E(e.track) + '</td><td class="num">' + e.resp + (e.resp < 5 ? ' <span class="badge badge-gray">참고용</span>' : '') + '</td><td class="num">' + fmt1(e.mean) + '</td><td class="num">' + e.comments.length + '</td><td>' + st + '</td><td><button class="btn btn-ghost btn-sm" data-rp="edit" data-k="' + E(k) + '">편집·미리보기</button></td></tr>';
-    }).join('') || '<tr><td colspan="8" class="t-empty">대상이 없습니다. (응답 범위·필터를 확인하십시오)</td></tr>') + '</tbody></table></div>';
+      return '<tr><td><input type="checkbox" data-rp="chk" data-k="' + E(k) + '"' + (UI.sel[k] ? ' checked' : '') + '></td><td><b>' + E(e.label) + '</b></td><td>' + E(e.track) + '</td><td class="num">' + e.resp + (e.resp < 5 ? ' <span class="badge badge-gray">참고용</span>' : '') + '</td><td class="num">' + fmt1(e.mean) + '</td><td class="num">' + fmt1(e.med) + '</td><td class="num">' + e.comments.length + '</td><td>' + st + '</td><td><button class="btn btn-ghost btn-sm" data-rp="edit" data-k="' + E(k) + '">편집·미리보기</button></td></tr>';
+    }).join('') || '<tr><td colspan="9" class="t-empty">대상이 없습니다. (응답 범위·필터를 확인하십시오)</td></tr>') + '</tbody></table></div>';
   }
   function nmExample(ns) { var e = UI.ents[0], el = document.getElementById('nm-ex'); if (el && e) el.textContent = '예: ' + fileName(ns, e, ''); }
   function entByKey(k) { return UI.ents.filter(function (e) { return e.unit + '|' + e.key === k; })[0]; }
@@ -440,5 +442,13 @@
     setTimeout(function () { try { f.contentWindow.focus(); f.contentWindow.print(); } catch (e) {} setTimeout(function () { f.remove(); }, 60000); }, 900);
   };
   A.ext.rviews = A.ext.rviews || {}; A.ext.rviews.rpt = function () { setTimeout(function () { var m = document.getElementById('rptmount'); if (m) A.ext.reportUI(m); }, 0); return '<div id="rptmount"><div class="loading">불러오는 중…</div></div>'; };
-  A.ext.reportUI = function (body) { var F = API().F, sig = [F.data, F.sincere, UI.unit, sid()].join('|'); if (body.getAttribute('data-rpt') === sig && body.querySelector('#rpt-list')) return; body.setAttribute('data-rpt', sig); return show(body); };
+  A.ext.reportUI = function (body) {
+    var F = API().F, v = UI.view || 'list', sig = [F.data, F.sincere, UI.unit, v, sid()].join('|');
+    if (body.getAttribute('data-rpt') === sig && (body.querySelector('#rpt-list') || body.querySelector('#rpt-view'))) return;
+    body.setAttribute('data-rpt', sig);
+    if (v !== 'list' && A.ext.rptViews && A.ext.rptViews[v]) return A.ext.rptViews[v](body);
+    return show(body);
+  };
+  // 다른 모듈(회차 비교·종합 보고서 등)이 쓰는 공용 함수
+  A.ext.rptApi = { UI: UI, facts: facts, ruleClassify: ruleClassify, ruleAnalysis: ruleAnalysis, medianOf: medianOf, fmt1: fmt1, secShort: secShort, ovGet: ovGet, ovTable: ovTable, paginate: paginate, pageShell: pageShell, pagesToPdf: pagesToPdf, printPages: printPages, download: download, getRec: getRec, loadSaved: loadSaved, dbGet: dbGet, dbPut: dbPut, sid: sid, round2: round2, parseJson: parseJson, collect: collect, subjRaw: subjRaw, safe: safe, ensureLibs: ensureLibs, CSS: function () { return CSS; }, PX: PX };
 })();
