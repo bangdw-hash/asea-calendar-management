@@ -147,9 +147,34 @@
   function medianOf(a) { if (!a.length) return null; var b = a.slice().sort(function (x, y) { return x - y; }), m = b.length >> 1; return b.length % 2 ? b[m] : (b[m - 1] + b[m]) / 2; }
   function round2(v) { return v == null ? null : Math.round(v * 100) / 100; }
   function parseJson(text) { var s = String(text || '').trim().replace(/^```[a-z]*\s*/i, '').replace(/\s*```$/i, '').trim(), a = s.indexOf('{'); if (a > 0) s = s.slice(a); try { return JSON.parse(s); } catch (e) {} var b = s.lastIndexOf('}'); if (b > 0) { try { return JSON.parse(s.slice(0, b + 1)); } catch (e2) {} } throw new Error('AI 응답을 해석하지 못했습니다.'); }
-  async function aiAnalyze(e, ov) {
+  /* ───────────── AI 진행 표시 (진행 막대 · 단계 · 경과 시간 · 완료 안내와 다음 단계 버튼) ───────────── */
+  function progressUI(el, opt) {
+    var S = { t0: Date.now(), title: opt.title, steps: opt.steps || [], step: 0, pct: 0, ind: false, note: '', state: 'run', msg: '', actions: [], end: 0 }, timer;
+    function fmtT(ms) { var n = Math.round(ms / 1000); return n < 60 ? n + '초' : Math.floor(n / 60) + '분 ' + (n % 60) + '초'; }
+    function draw() {
+      if (!el || !document.body.contains(el)) { clearInterval(timer); return; }
+      var h = '<div class="aip' + (S.state === 'done' ? ' done' : S.state === 'err' ? ' err' : '') + '"><h4>' + (S.state === 'done' ? I('check', 16) : S.state === 'err' ? I('info', 16) : '<span class="aip-spin"></span>') + '<span>' + E(S.state === 'run' ? S.title + ' 진행 중' : S.title + (S.state === 'done' ? ' 완료' : ' 중단')) + '</span><span class="sp"></span><span class="muted aip-t">경과 ' + fmtT((S.end || Date.now()) - S.t0) + '</span></h4>' +
+        '<div class="aip-bar' + (S.ind && S.state === 'run' ? ' ind' : '') + '" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + Math.round(S.pct) + '"><i style="width:' + Math.round(S.pct) + '%"></i></div>' +
+        '<div class="aip-note">' + E(S.note) + ' <b>' + Math.round(S.pct) + '%</b></div>';
+      if (S.steps.length) h += '<div class="aip-steps">' + S.steps.map(function (x, i) { var ok = S.state === 'done' || i < S.step, on = S.state === 'run' && i === S.step; return '<span class="' + (ok ? 'ok' : on ? 'on' : '') + '">' + (ok ? I('check', 12) : on ? '<span class="aip-spin sm"></span>' : '<span class="aip-dot"></span>') + ' ' + E(x) + '</span>'; }).join('') + '</div>';
+      if (S.state !== 'run' && S.msg) h += '<div class="aip-msg">' + E(S.msg) + '</div>';
+      if (S.state !== 'run' && S.actions.length) h += '<div class="aip-act">' + S.actions.map(function (a, i) { return '<button class="btn ' + (a.primary ? 'btn-primary' : 'btn-secondary') + ' btn-sm" data-aip="' + i + '">' + E(a.label) + '</button>'; }).join('') + '</div>';
+      el.innerHTML = h + '</div>';
+    }
+    el.onclick = function (e) { var b = e.target.closest('[data-aip]'); if (b) { var a = S.actions[Number(b.getAttribute('data-aip'))]; if (a && a.fn) a.fn(); } };
+    timer = setInterval(function () { if (S.state === 'run') draw(); else clearInterval(timer); }, 500); draw();
+    return {
+      set: function (step, note, pct, ind) { S.step = step; S.note = note || ''; S.pct = Math.max(S.pct, Math.min(99, pct || 0)); S.ind = !!ind; draw(); },
+      finish: function (msg, actions) { S.state = 'done'; S.pct = 100; S.ind = false; S.step = S.steps.length; S.note = '모든 단계를 마쳤습니다.'; S.msg = msg; S.actions = actions || []; S.end = Date.now(); clearInterval(timer); draw(); try { el.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); } catch (e) {} },
+      fail: function (msg, actions) { S.state = 'err'; S.ind = false; S.msg = msg; S.actions = actions || []; S.end = Date.now(); clearInterval(timer); draw(); }
+    };
+  }
+  async function aiAnalyze(e, ov, onStage) {
+    if (onStage) onStage('pick');
     if (!A.ext.aiCall) throw new Error('AI 모듈을 불러오지 못했습니다. 새로고침해 주십시오.');
-    var model = UI.model || ((A.ext.aiModels || [])[0] || [])[0] || 'claude-sonnet-5-5', th = A.ext.theory ? A.ext.theory.pick(A.ext.theory.signals(e), e.unit + '|' + e.key, 4) : [], text = await A.ext.aiCall(SYS, aiInput(e, ov, th), model), j = parseJson(text);
+    var model = UI.model || ((A.ext.aiModels || [])[0] || [])[0] || 'claude-sonnet-5-5', th = A.ext.theory ? A.ext.theory.pick(A.ext.theory.signals(e), e.unit + '|' + e.key, 4) : [];
+    if (onStage) onStage('call');
+    var text = await A.ext.aiCall(SYS, aiInput(e, ov, th), model); if (onStage) onStage('verify'); var j = parseJson(text);
     var cls = (j.classify || []).filter(function (c) { return c && c.i >= 0 && c.i < e.comments.length; }).map(function (c) { return { i: Number(c.i), s: /^(pos|neg|neu)$/.test(c.s) ? c.s : 'neu', t: String(c.t || '').slice(0, 12) }; });
     e.comments.forEach(function (c, i) { if (!cls.some(function (x) { return x.i === i; })) cls.push({ i: i, s: ruleClassify(c.t), t: '' }); });
     var TH = A.ext.theory, clean = function (t, none) { return TH ? TH.stripCites(String(t || ''), th, none) : String(t || ''); };
@@ -263,20 +288,36 @@
     var rec = getRec(e), an = rec && (rec.edit || rec.analysis) || ruleAnalysis(e); return an;
   }
   async function runAnalysis(list, mode) {
-    var ov = await ovGet(), done = 0, fail = 0, errs = []; UI.busy = true; UI.cancel = false; drawStatus('AI 분석 준비…');
-    var queue = list.slice(), workers = [];
+    var ov = await ovGet(), done = 0, fail = 0, errs = [], failed = [], okList = [], infl = {}, isAi = mode === 'ai', label = isAi ? 'AI 분석' : '기본 분석'; UI.busy = true; UI.cancel = false; drawStatus(label + ' 준비…');
+    var P = progressUI(document.getElementById('rpt-prog'), { title: label, steps: isAi ? ['대상 준비·학술 근거 선택', 'AI 호출·응답 대기', '응답 검증·저장'] : ['대상 준비', '분석·저장'] });
+    var queue = list.slice(), workers = [], STG = { pick: [0, 0.1], call: [1, 0.25], verify: [2, 0.9], rule: [1, 0.5] };
+    function upd(cur, st) {
+      var sum = 0, step = 0, calling = false; Object.keys(infl).forEach(function (k) { sum += infl[k].f; step = Math.max(step, infl[k].s); if (infl[k].st === 'call') calling = true; });
+      P.set(step, done + ' / ' + list.length + '건 완료' + (fail ? ' (실패 ' + fail + ')' : '') + (cur ? ' · 처리 중: ' + cur + (st === 'call' ? ' (AI 응답 대기)' : '') : ''), (done + sum) / list.length * 100, isAi && calling && done === 0 && list.length === 1);
+    }
     async function worker() {
       while (queue.length && !UI.cancel) {
-        var e = queue.shift(), rec = getRec(e) || {};
+        var e = queue.shift(), k = e.unit + '|' + e.key, rec = getRec(e) || {}; infl[k] = { f: 0.05, s: 0, st: 'pick' }; upd(e.label, 'pick');
         try {
-          var an = mode === 'ai' ? await aiAnalyze(e, ov) : ruleAnalysis(e);
-          rec = { analysis: an, edit: null, updated: Date.now(), n: e.comments.length, fsig: fsig() }; UI.saved[e.unit + '|' + e.key] = rec; await dbPut(ekey(e.unit, e.key), rec);
-        } catch (er) { fail++; errs.push(e.label + ': ' + er.message); }
-        done++; drawStatus((mode === 'ai' ? 'AI 분석 ' : '기본 분석 ') + done + ' / ' + list.length + (fail ? ' (실패 ' + fail + ')' : ''));
+          var an = isAi ? await aiAnalyze(e, ov, function (st) { infl[k] = { f: STG[st][1], s: STG[st][0], st: st }; upd(e.label, st); }) : (infl[k] = { f: 0.5, s: 1, st: 'rule' }, ruleAnalysis(e));
+          rec = { analysis: an, edit: null, updated: Date.now(), n: e.comments.length, fsig: fsig() }; UI.saved[k] = rec; await dbPut(ekey(e.unit, e.key), rec); okList.push(e);
+        } catch (er) { fail++; failed.push(e); errs.push(e.label + ': ' + er.message); }
+        delete infl[k]; done++; drawStatus(label + ' ' + done + ' / ' + list.length + (fail ? ' (실패 ' + fail + ')' : '')); upd();
       }
     }
-    for (var i = 0; i < (mode === 'ai' ? 2 : 1); i++) workers.push(worker());
-    await Promise.all(workers); UI.busy = false; drawStatus(UI.cancel ? '중단했습니다.' : '완료: ' + (done - fail) + '건' + (fail ? ', 실패 ' + fail + '건' : '')); if (errs.length) A.toast(errs[0] + (errs.length > 1 ? ' 외 ' + (errs.length - 1) + '건' : ''), 'err'); drawList();
+    for (var i = 0; i < (isAi ? 2 : 1); i++) workers.push(worker());
+    await Promise.all(workers); UI.busy = false;
+    var acts = [];
+    if (okList.length) { acts.push({ label: '첫 결과 검토·편집', primary: true, fn: function () { openEditor(okList[0]); } }); acts.push({ label: 'PDF(ZIP) 내려받기', fn: function () { generate(false); } }); }
+    if (failed.length) acts.push({ label: '실패한 ' + failed.length + '건 다시 분석', fn: function () { if (!UI.busy) runAnalysis(failed, mode); } });
+    if (UI.cancel) { P.fail(label + '을 중단했습니다. 완료된 ' + okList.length + '건은 저장되었습니다.', acts); drawStatus('중단했습니다.'); }
+    else {
+      drawStatus('완료: ' + okList.length + '건' + (fail ? ', 실패 ' + fail + '건' : ''));
+      var msg = label + '을 마쳤습니다. 성공 ' + okList.length + '건' + (fail ? ', 실패 ' + fail + '건' : '') + '. ' + (okList.length ? '다음 단계: 목록의 「편집·미리보기」로 내용을 검토·수정한 뒤 「PDF(ZIP) 내려받기」를 진행하십시오.' : '실패 사유를 확인한 뒤 다시 분석해 주십시오.');
+      if (fail && !okList.length) P.fail(msg, acts); else P.finish(msg, acts);
+      A.toast(label + '을 마쳤습니다. (성공 ' + okList.length + '건' + (fail ? ', 실패 ' + fail + '건' : '') + ')', fail && !okList.length ? 'err' : undefined);
+    }
+    if (errs.length) A.toast(errs[0] + (errs.length > 1 ? ' 외 ' + (errs.length - 1) + '건' : ''), 'err'); drawList();
   }
   function drawStatus(t) { var el = document.getElementById('rpt-status'); if (el) el.textContent = t; }
 
@@ -297,7 +338,7 @@
       (UI.unit === 'subject' ? '<button class="btn btn-ghost btn-sm" data-rp="mg" title="선택한 과목을 하나로 합칩니다">선택 과목 합치기</button><button class="btn btn-ghost btn-sm" data-rp="split" title="합쳐진 과목을 다시 나눕니다">합치기 해제</button>' : '') +
       '<button class="btn btn-secondary btn-sm" data-rp="selall">전체 선택</button><button class="btn btn-secondary btn-sm" data-rp="selnone">선택 해제</button>' +
       '<button class="btn btn-primary btn-sm" data-rp="ai">' + I('sparkle', 14) + ' 선택 항목 AI 분석</button><button class="btn btn-secondary btn-sm" data-rp="rule">기본 분석(AI 없이)</button><button class="btn btn-ghost btn-sm" data-rp="stop">중단</button><select class="fld" data-rp="model" style="width:auto" title="AI 모델">' + (A.ext.aiModels || []).map(function (m) { return '<option value="' + E(m[0]) + '"' + ((UI.model || (A.ext.aiModels[0] || [])[0]) === m[0] ? ' selected' : '') + '>' + E(m[1]) + '</option>'; }).join('') + '</select><button class="btn btn-ghost btn-sm" data-rp="reload">다시 계산</button><button class="btn btn-ghost btn-sm" data-rp="bk" title="AI 분석·편집 내용을 파일로 저장">백업 저장</button><button class="btn btn-ghost btn-sm" data-rp="bkload">백업 불러오기</button><input type="file" id="rpt-bkf" accept=".json" hidden></div>' +
-      '<div id="rpt-status" class="muted" style="margin:6px 0;min-height:20px"></div><div id="rpt-list"></div>' +
+      '<div id="rpt-status" class="muted" style="margin:6px 0;min-height:20px"></div><div id="rpt-prog"></div><div id="rpt-list"></div>' +
       '<div class="btn-row" style="margin-top:10px"><button class="btn btn-primary" data-rp="zip">' + I('download', 16) + ' 선택 항목 PDF 내려받기(ZIP)</button><button class="btn btn-secondary" data-rp="print">출력</button><span id="rpt-gen" class="muted"></span></div></div>';
     drawList(); drawSummary(); nmExample(ns);
     box.onclick = onClick; box.oninput = onInput; box.onchange = onChange;
@@ -393,9 +434,11 @@
   async function openEditor(e) {
     if (!e) return; var rec = getRec(e) || { analysis: ruleAnalysis(e), edit: null }, an = JSON.parse(JSON.stringify(rec.edit || rec.analysis)), ov = await ovGet(), kind = 'a';
     var m = A.modal('', function () {}, 'xl'), root = m.el.querySelector('.modal');
+    var aiNote = '';
     function paint() {
       var cls = an.cls || [];
       root.innerHTML = '<h3>' + E(e.label) + ' <span class="muted" style="font-weight:400">· ' + E(e.track) + ' · 서술 의견 ' + e.comments.length + '건</span></h3>' +
+        (aiNote ? '<div class="aip done"><h4>' + I('check', 16) + '<span>AI 작성 완료</span></h4><div class="aip-msg">' + E(aiNote) + '</div><div class="aip-act"><button class="btn btn-secondary btn-sm" data-ed="prev">미리보기 갱신</button><button class="btn btn-primary btn-sm" data-ed="save">검토 후 저장</button></div></div>' : '') + '<div id="ed-aip"></div>' +
         '<div class="row" style="gap:8px;flex-wrap:wrap"><button class="btn btn-secondary btn-sm" data-ed="ai">' + I('sparkle', 14) + ' AI로 다시 작성</button><button class="btn btn-ghost btn-sm" data-ed="rule">기본 문안으로</button><span class="sp"></span><button class="btn btn-ghost btn-sm" data-ed="kind" data-k="a"' + (kind === 'a' ? ' style="font-weight:800"' : '') + '>수치·원문 미리보기</button><button class="btn btn-ghost btn-sm" data-ed="kind" data-k="b"' + (kind === 'b' ? ' style="font-weight:800"' : '') + '>정성 리포트 미리보기</button></div>' +
         '<div class="grid g2" style="margin-top:10px;align-items:start"><div>' +
         '<label class="f">교육처 의견 (수치·원문 리포트에 들어감)</label><textarea class="fld" rows="6" data-f="dept">' + E(an.dept || '') + '</textarea>' +
@@ -417,8 +460,12 @@
       else if (a === 'kind') { read(); kind = t.getAttribute('data-k'); paint(); prev(); }
       else if (a === 'cls') { read(); var i = Number(t.getAttribute('data-i')), s = t.getAttribute('data-s'), x = (an.cls || []).filter(function (y) { return y.i === i; })[0]; if (x) x.s = s; else (an.cls = an.cls || []).push({ i: i, s: s, t: '' }); paint(); }
       else if (a === 'rule') { if (!(await A.confirm('기본 문안으로', '현재 편집 내용이 규칙 기반 기본 문안으로 바뀝니다.', '바꾸기', '취소'))) return; an = ruleAnalysis(e); paint(); }
-      else if (a === 'ai') { t.disabled = true; t.textContent = 'AI 작성 중…'; try { an = await aiAnalyze(e, ov); paint(); A.toast('AI 초안을 불러왔습니다. 검토 후 저장하십시오.'); } catch (er) { A.toast(er.message, 'err'); paint(); } }
-      else if (a === 'save') { read(); var r0 = getRec(e) || {}; r0.edit = an; r0.analysis = r0.analysis || an; r0.updated = Date.now(); UI.saved[e.unit + '|' + e.key] = r0; await dbPut(ekey(e.unit, e.key), r0); drawList(); A.toast('이 브라우저에 저장했습니다.'); }
+      else if (a === 'ai') {
+        t.disabled = true; var P = progressUI(root.querySelector('#ed-aip'), { title: 'AI 작성', steps: ['자료·학술 근거 준비', 'AI 호출·응답 대기', '응답 검증·반영'] }); P.set(0, '대상 자료와 학술 근거를 준비하는 중', 8);
+        try { an = await aiAnalyze(e, ov, function (st) { if (st === 'call') P.set(1, 'AI 응답을 기다리는 중 (대상당 수십 초 걸릴 수 있습니다)', 30, true); else if (st === 'verify') P.set(2, '응답을 검증하고 근거 문헌을 확인하는 중', 85); }); aiNote = 'AI 초안을 불러왔습니다. 아래 내용을 검토·수정한 뒤 「검토 후 저장」을 눌러 주십시오. (저장하지 않으면 닫을 때 사라집니다)'; paint(); prev(); A.toast('AI 작성을 마쳤습니다. 검토 후 저장하십시오.'); }
+        catch (er) { P.fail('AI 작성에 실패했습니다: ' + (er.message || er)); t.disabled = false; A.toast(er.message, 'err'); }
+      }
+      else if (a === 'save') { read(); aiNote = ''; var r0 = getRec(e) || {}; r0.edit = an; r0.analysis = r0.analysis || an; r0.updated = Date.now(); UI.saved[e.unit + '|' + e.key] = r0; await dbPut(ekey(e.unit, e.key), r0); drawList(); A.toast('이 브라우저에 저장했습니다.'); }
     });
     root.setAttribute('data-ed-root', '1'); prev();
   }
@@ -456,5 +503,5 @@
     return show(body);
   };
   // 다른 모듈(회차 비교·종합 보고서 등)이 쓰는 공용 함수
-  A.ext.rptApi = { UI: UI, facts: facts, ruleClassify: ruleClassify, ruleAnalysis: ruleAnalysis, medianOf: medianOf, fmt1: fmt1, secShort: secShort, ovGet: ovGet, ovTable: ovTable, paginate: paginate, pageShell: pageShell, pagesToPdf: pagesToPdf, printPages: printPages, download: download, getRec: getRec, loadSaved: loadSaved, dbGet: dbGet, dbPut: dbPut, sid: sid, round2: round2, parseJson: parseJson, collect: collect, subjRaw: subjRaw, safe: safe, ensureLibs: ensureLibs, CSS: function () { return CSS; }, PX: PX };
+  A.ext.rptApi = { UI: UI, facts: facts, ruleClassify: ruleClassify, ruleAnalysis: ruleAnalysis, medianOf: medianOf, fmt1: fmt1, secShort: secShort, ovGet: ovGet, ovTable: ovTable, paginate: paginate, pageShell: pageShell, pagesToPdf: pagesToPdf, printPages: printPages, download: download, getRec: getRec, loadSaved: loadSaved, dbGet: dbGet, dbPut: dbPut, sid: sid, round2: round2, parseJson: parseJson, collect: collect, subjRaw: subjRaw, safe: safe, ensureLibs: ensureLibs, progress: progressUI, CSS: function () { return CSS; }, PX: PX };
 })();

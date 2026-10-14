@@ -419,3 +419,22 @@ body:has(.aibar){padding-bottom:230px}
 .pill:hover{color:var(--text)}
 .pill[aria-selected="true"]{background:var(--primary-lt);border-color:var(--primary);color:var(--primary-dk);font-weight:700}
 .gtools{flex-wrap:wrap}
+/* AI 진행 표시 (진행 막대·단계·완료 안내) */
+.aip{border:1px solid var(--border);border-radius:var(--r);background:var(--card);padding:12px 14px;margin:8px 0}
+.aip h4{margin:0 0 8px;font-size:14px;display:flex;gap:8px;align-items:center}
+.aip.done{border-color:var(--green);background:var(--green-lt)}.aip.done h4{color:var(--green)}
+.aip.err{border-color:var(--red);background:var(--red-lt)}.aip.err h4{color:var(--red)}
+.aip-bar{height:10px;background:#e5e7eb;border-radius:var(--r);overflow:hidden}
+.aip-bar i{display:block;height:100%;background:var(--primary);border-radius:var(--r);transition:width .35s}
+.aip.done .aip-bar i{background:var(--green)}.aip.err .aip-bar i{background:var(--red)}
+.aip-bar.ind i{width:35%!important;animation:aipslide 1.3s ease-in-out infinite}
+@keyframes aipslide{0%{margin-left:-35%}100%{margin-left:100%}}
+.aip-note{margin-top:6px;font-size:12.5px;color:var(--text-2)}
+.aip-steps{display:flex;gap:14px;flex-wrap:wrap;margin-top:8px;font-size:12.5px;color:var(--text-2)}
+.aip-steps span{display:inline-flex;align-items:center;gap:5px}.aip-steps .on{color:var(--primary-dk);font-weight:700}.aip-steps .ok{color:var(--green)}
+.aip-dot{width:8px;height:8px;border:2px solid #cbd5e1;border-radius:50%;display:inline-block}
+.aip-spin{width:14px;height:14px;border:2px solid #cbd5e1;border-top-color:var(--primary);border-radius:50%;display:inline-block;animation:aipspin .8s linear infinite}
+.aip-spin.sm{width:10px;height:10px;border-width:2px}
+@keyframes aipspin{to{transform:rotate(360deg)}}
+.aip-msg{margin-top:8px;font-size:13px}
+.aip-act{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
