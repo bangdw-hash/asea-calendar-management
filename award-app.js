@@ -8,6 +8,7 @@
   var PRESETS = { balance: { edit: 5, data: 3, prev: 4 }, edit: { edit: 8, data: 2, prev: 3 }, data: { edit: 3, data: 7, prev: 3 }, prev: { edit: 3, data: 2, prev: 7 } };
   var PANES = [['edit', '양식 편집'], ['data', '데이터 입력'], ['prev', '미리보기']];
   var lay = Object.assign({ w: AW.clone(PRESETS.balance), c: {} }, AW.lsGet(LAYOUT_KEY, {}));
+  var A = AW.App = {};
   var rev = 0, saving = false, again = false, timer = null, mTab = 'edit';
   var app = $('#app');
 
@@ -42,6 +43,7 @@
         '<button class="btn btn-ghost btn-sm" data-a="list">' + AW.ic('folder', 16) + '<span class="hm"> 양식 목록</span></button>' +
         '<button class="btn btn-secondary btn-sm" data-a="save">' + AW.ic('save', 16) + '<span class="hm"> 저장</span></button>' +
         '<button class="btn btn-ghost btn-sm" data-a="hist">' + AW.ic('history', 16) + '<span class="hm"> 이력</span></button>' +
+        '<button class="ai-chip" id="ai-chip" title="AI 연결 상태 — 눌러서 점검"><i></i><span>AI</span></button>' +
         '<select class="in sm hm" id="t-lay" aria-label="화면 배치" title="화면 배치"><option value="">화면 배치</option><option value="balance">균형</option><option value="edit">양식 중심</option><option value="data">데이터 중심</option><option value="prev">미리보기 중심</option></select>' +
         '<button class="icon-btn" data-a="out" aria-label="로그아웃" title="로그아웃">' + AW.ic('logout') + '</button></header>' +
       '<main class="panes" id="panes"></main>' +
@@ -58,6 +60,9 @@
     $('.shell').addEventListener('click', onShell);
     $('#t-lay').onchange = function (e) { if (e.target.value) { lay.w = AW.clone(PRESETS[e.target.value]); lay.c = {}; applyLayout(); saveLayout(); } e.target.value = ''; };
     $('#t-name').addEventListener('input', function (e) { S.tpl.name = e.target.value; touch('name'); });
+    $('#ai-chip').onclick = function () { AW.AI.test(false); };
+    if (!A.aiWired) { A.aiWired = true; AW.AI.onStatus(function (x) { var c = $('#ai-chip'); if (!c) return; c.className = 'ai-chip ' + x.st; c.title = 'AI ' + (x.st === 'ok' ? '연결 정상' : x.st === 'busy' ? '점검 중' : x.st === 'bad' ? '연결 실패' : '미점검') + (x.msg ? ' — ' + x.msg : '') + ' (눌러서 점검)'; $('span', c).textContent = x.st === 'ok' ? 'AI 연결됨' : x.st === 'busy' ? 'AI 점검 중' : x.st === 'bad' ? 'AI 연결 실패' : 'AI'; }); }
+    AW.AI.auto();
     AW.$$('.split').forEach(function (sp) { sp.addEventListener('pointerdown', splitDown); sp.addEventListener('dblclick', function () { lay.w = AW.clone(PRESETS.balance); lay.c = {}; applyLayout(); saveLayout(); }); });
   }
   function onShell(e) {
@@ -173,6 +178,7 @@
     var last = AW.lsGet(LAST_KEY, null), p = last ? openTpl(last) : Promise.reject();
     p.catch(function () { S.tpl = AW.newTpl(); renderAll(); listDialog(); });
   }
+  A.adopt = function (nt) { return save({ note: '' }).then(function () { S.tpl = nt; S.dirty = true; S.bgDirty = !!nt.bg; S.row = 0; S.saveErr = ''; renderAll(); touch('elems'); }); };
   A.init = function () {
     var t = AW.loadToken(); if (!t) return showLogin();
     AW.S.token = t;
