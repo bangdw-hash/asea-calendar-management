@@ -258,11 +258,28 @@
 
   /* ───────────── 설문 열기 / 저장 ───────────── */
   var WORK_KEYS = ['title', 'semester', 'status', 'def', 'theme', 'draw_cfg', 'open_at', 'close_at', 'result_from', 'draw_msg', 'test_mode'];
+  /* 편집 내용 브라우저 임시저장 — 서버에는 「저장」을 눌렀을 때만 반영됩니다 */
+  function dkey(id) { return 'svya_draft_' + id; }
+  function writeDraft() {
+    if (!A.work || !A.cur) return; var id = A.cur.survey.id;
+    try {
+      if (!A.isDirty()) { localStorage.removeItem(dkey(id)); return; }
+      localStorage.setItem(dkey(id), JSON.stringify({ base: A.cur.survey.updated_at || '', ver: A.cur.survey.version, at: Date.now(), work: A.work }));
+    } catch (e) {}
+  }
+  function readDraft(id) {
+    try {
+      var d = JSON.parse(localStorage.getItem(dkey(id)) || 'null'); if (!d || !d.work) return null;
+      return JSON.stringify(d.work) === A.snap ? null : d;
+    } catch (e) { return null; }
+  }
+  A.draftClear = function (id) { try { localStorage.removeItem(dkey(id || (A.cur && A.cur.survey.id))); } catch (e) {} A.draftOffer = null; };
   A.load = async function (id) {
     var res = await Promise.all([A.rpc('svy_a_get', { p_id: id }), loadList()]);
     A.cur = res[0]; A.cur.item = A.list.filter(function (s) { return s.id === id; })[0] || {};
     A.work = {}; WORK_KEYS.forEach(function (k) { A.work[k] = A.clone(A.cur.survey[k] == null ? null : A.cur.survey[k]); });
     A.snap = JSON.stringify(A.work);
+    A.draftOffer = readDraft(id);
   };
   // 서버 데이터만 갱신하고 편집 중인 내용(A.work)은 유지
   A.refresh = async function () {
@@ -280,7 +297,7 @@
     }
     try {
       var r = await A.rpc('svy_a_save', { p_id: orig.id, p_patch: patch, p_note: note || '' });
-      await A.load(orig.id); A.toast('저장했습니다. (버전 v' + r.version + ')'); return true;
+      A.draftClear(orig.id); await A.load(orig.id); A.toast('저장했습니다. (버전 v' + r.version + ')'); return true;
     } catch (e) { A.toast(e.message, 'err'); return false; }
   };
   var TAB_DEFS = [
@@ -294,14 +311,15 @@
     shell('<div class="crumb"><a data-act="tolist">설문 목록</a> / ' + E(s.title) + '</div><div class="pg-head"><h1>' + E(A.work.title) + '</h1>' + A.phaseBadge(A.cur.phase) +
       (s.test_mode ? '<span class="badge badge-amber">' + I('flask', 13) + ' 테스트 모드</span>' : '') + '<span class="badge badge-gray">v' + s.version + '</span><span class="sp"></span>' +
       '<span id="dirty" class="badge badge-amber ' + (dirty ? '' : 'hide') + '">저장되지 않은 변경</span><button class="btn btn-primary" data-act="savework" ' + (dirty ? '' : 'disabled') + ' id="savebtn">' + I('check', 16) + ' 저장</button></div>' +
-      '<div class="tabs" role="tablist">' + tabsFor().map(function (t) { return '<button class="tab" role="tab" data-act="tab" data-tab="' + t.id + '" aria-selected="' + (A.tab === t.id) + '">' + t.t + '</button>'; }).join('') + '</div><div id="tabbody"></div>');
+      (A.draftOffer ? '<div class="msg warn" id="draftbar" style="margin-bottom:12px">' + I('alert', 18) + '<div>저장하지 못한 편집 내용이 이 브라우저에 임시저장되어 있습니다. (' + E(A.fmt ? A.fmt(new Date(A.draftOffer.at).toISOString()) : '') + ')' + (A.draftOffer.base && A.draftOffer.base !== (s.updated_at || '') ? '<br><b>그 뒤 서버에 더 새로운 저장본이 있어, 복구 후 저장하면 그 저장본을 덮어씁니다.</b>' : '') + '<div class="btn-row" style="margin-top:8px"><button class="btn btn-primary btn-sm" data-act="draftrestore">복구</button><button class="btn btn-ghost btn-sm" data-act="draftdrop">버리기</button></div></div></div>' : '') + '<div class="tabs" role="tablist">' + tabsFor().map(function (t) { return '<button class="tab" role="tab" data-act="tab" data-tab="' + t.id + '" aria-selected="' + (A.tab === t.id) + '">' + t.t + '</button>'; }).join('') + '</div><div id="tabbody"></div>');
     var fn = A.tabs[A.tab]; if (fn) fn(document.getElementById('tabbody')); else document.getElementById('tabbody').innerHTML = '<div class="panel t-empty">준비 중입니다.</div>';
   };
   A.markDirty = function () {
     var d = A.isDirty(), el = document.getElementById('dirty'), b = document.getElementById('savebtn');
     if (el) el.classList.toggle('hide', !d); if (b) b.disabled = !d;
+    clearTimeout(A._dt); A._dt = setTimeout(writeDraft, 1500);
   };
-  window.addEventListener('beforeunload', function (e) { if (A.isDirty()) { e.preventDefault(); e.returnValue = ''; } });
+  window.addEventListener('beforeunload', function (e) { writeDraft(); if (A.isDirty()) { e.preventDefault(); e.returnValue = ''; } });
 
   /* ───────────── 라우팅 ───────────── */
   async function route() {
@@ -358,6 +376,8 @@
       if (ok2) { try { await A.rpc('svy_a_delete', { p_id: id, p_force: true }); A.toast('삭제했습니다.'); screenList(); } catch (er) { A.toast(er.message, 'err'); } }
     }
     else if (act === 'tab') { A.go(t.getAttribute('data-tab')); }
+    else if (act === 'draftrestore') { var dd = A.draftOffer; if (dd && dd.work) { A.work = A.clone(dd.work); A.draftOffer = null; A.renderSurvey(); A.markDirty(); A.toast('임시저장 내용을 복구했습니다. 확인 후 「저장」을 눌러 주십시오.'); } }
+    else if (act === 'draftdrop') { A.draftClear(); A.renderSurvey(); }
     else if (act === 'savework') {
       var errs = A.beforeSave ? A.beforeSave() : [];
       if (errs.length) { A.toast('문항 오류 ' + errs.length + '건이 있어 저장할 수 없습니다. 문항 탭에서 확인해 주십시오.', 'err'); A.go('questions'); return; }
