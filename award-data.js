@@ -205,27 +205,77 @@
   }
 
   /* ───────────── 엑셀 양식 내려받기 ───────────── */
+  /* ───────────── 엑셀 양식: 형식 판독·확정 → 내려받기 ─────────────
+   * 항목마다 편집창의 원문(sample)에서 숫자 덩어리를 찾아 자릿수 규칙(f.fmt.pads)을 확정한다.
+   * 규칙은 양식(fields)에 함께 저장되고, 엑셀 올리기 때 같은 규칙으로 값을 보정·점검한다.
+   */
+  var NUM = /\d+/g;
+  function runs(s) { return String(s || '').match(NUM) || []; }
+  function padTo(r, n) { return n > 0 && r.length < n ? new Array(n - r.length + 1).join('0') + r : r; }
+  D.fmtApply = function (sample, pads, val) {   // 값의 숫자 덩어리에 자릿수 규칙 적용 → {v, st:'ok'|'fixed'|'bad'}
+    val = String(val == null ? '' : val); if (!pads || !pads.length) return { v: val, st: 'ok' };
+    var n = runs(val).length; if (!n) return { v: val, st: val.trim() ? 'bad' : 'ok' }; if (n !== pads.length) return { v: val, st: 'bad' };
+    var i = 0, out = val.replace(NUM, function (r) { return padTo(r, pads[i++]); });
+    return { v: out, st: out === val ? 'ok' : 'fixed' };
+  };
+  function fmtOf(x) { return x.fmt && x.fmt.pads ? x.fmt : null; }
+  function formatSample(sample, pads) { var i = 0; return String(sample || '').replace(NUM, function (r) { return padTo(r, pads[i++] || 0); }); }
+  function runLabel(sample, idx) {   // 「1학년」 처럼 숫자와 뒤따르는 글자를 함께 보여줌
+    var n = -1, m, re = /(\d+)\s*([^\d\s]{0,3})/g; while ((m = re.exec(sample))) { if (++n === idx) return m[1] + m[2]; } return '';
+  }
+  function guessPads(sample) { return runs(sample).map(function (r) { return /^0\d/.test(r) ? Math.min(4, r.length) : 0; }); }
+  function kindOf(sample, rn) { return !sample ? '(원문 없음)' : /^\d{4}\s*[.\-년]/.test(sample) ? '날짜' : /^[가-힣]{2,4}$/.test(sample) ? '이름·짧은 낱말' : rn ? '숫자 포함 문구' : sample.length > 30 ? '긴 문장' : '문구'; }
+  function sampleFor(x) {   // 판독 기준 원문: 편집창에서 지정한 원문 > 첫 데이터 행 > 예시
+    var r0 = T().rows[0] && T().rows[0][x.name]; return (x.fmt && x.fmt.sample) || x.sample || (r0 && String(r0).trim()) || x.example || '';
+  }
   D.downloadTemplate = function () {
     var f = T().fields;
     if (!f.length) return AW.toast('양식에 입력 항목({{항목명}})이 없습니다. 먼저 일괄 입력 항목을 추가해 주십시오.', 'error');
     if (!window.XLSX) return AW.toast('엑셀 모듈을 불러오지 못했습니다.', 'error');
+    var cfg = f.map(function (x) { var sm = sampleFor(x), p = fmtOf(x) && fmtOf(x).sample === sm ? fmtOf(x).pads.slice() : guessPads(sm); return { f: x, sample: sm, pads: p }; });
+    var m = { el: null };
+    AW.modal({ title: '엑셀 양식 만들기 — 항목 형식 확인', wide: true,
+      body: '<p style="margin-top:0">편집창에 입력한 내용을 기준으로 각 항목의 형식을 판독했습니다. <b>원문과 숫자 자릿수</b>를 확인·수정하고 「양식 만들기」를 누르면 이 규칙이 현재 편집 양식에 저장되고, 엑셀 양식(예시 행·작성 안내)이 만들어집니다. 엑셀을 올릴 때도 같은 규칙으로 값을 맞추고 점검합니다.</p><div id="fx-b"></div>',
+      actions: [{ label: '취소', cls: 'btn-ghost' }, { label: AW.ic('download', 15) + ' 양식 만들기', cls: 'btn-primary', onClick: function (c) { c(); apply(cfg); } }],
+      onOpen: function (el) { m.el = el; draw(); } });
+    function draw() {
+      var b = AW.$('#fx-b', m.el), act = document.activeElement && document.activeElement.dataset ? document.activeElement.dataset.s : null;
+      b.innerHTML = '<div class="tbl-wrap"><table class="gt fx"><thead><tr><th>항목</th><th>편집창 원문(수정 가능)</th><th>판독</th><th>숫자 자릿수</th><th>엑셀 예시 행</th></tr></thead><tbody>' + cfg.map(function (c, i) {
+        var rn = runs(c.sample), sel = rn.map(function (r, k) {
+          return '<div class="fx-r"><span class="badge">' + AW.esc(runLabel(c.sample, k)) + '</span> <select class="in sm" data-i="' + i + '" data-k="' + k + '">' + [[0, '입력 그대로'], [2, '2자리 (01)'], [3, '3자리 (001)'], [4, '4자리 (0001)']].map(function (o) { return '<option value="' + o[0] + '"' + (c.pads[k] === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select>' + (r.length === 1 && !c.pads[k] ? ' <span class="muted">한 자리 — 10 이상(예: 11반)이 있으면 자릿수 고정 권장</span>' : '') + '</div>';
+        }).join('');
+        return '<tr><td class="nowrap"><b>' + AW.esc(c.f.name) + '</b></td><td><input class="in sm" data-s="' + i + '" value="' + AW.esc(c.sample) + '" style="min-width:200px"></td><td class="nowrap">' + AW.esc(kindOf(c.sample, rn.length)) + (rn.length ? ' · 숫자 ' + rn.length + '곳' : '') + '</td><td>' + (sel || '<span class="muted">숫자 없음 — 그대로 입력</span>') + '</td><td><b>' + AW.esc(formatSample(c.sample, c.pads)) + '</b></td></tr>';
+      }).join('') + '</tbody></table></div><p class="muted">예) 「항공정비계열 1학년 1반」에서 반이 10 이상일 수 있다면 두 번째 숫자를 「2자리」로 두면 01반·11반으로 통일됩니다. 엑셀 열은 서식을 「텍스트」로 지정하므로 01이 1로 바뀌지 않습니다.</p>';
+      AW.$$('input[data-s]', b).forEach(function (x) { x.oninput = function () { var c = cfg[+x.dataset.s]; c.sample = x.value; var g = guessPads(c.sample); c.pads = runs(c.sample).map(function (r, k) { return c.pads[k] != null && c.pads[k] !== undefined && k < c.pads.length ? c.pads[k] : g[k]; }); draw(); var n = AW.$('input[data-s="' + x.dataset.s + '"]', m.el); if (n) { n.focus(); n.setSelectionRange(n.value.length, n.value.length); } }; });
+      AW.$$('select[data-i]', b).forEach(function (x) { x.onchange = function () { cfg[+x.dataset.i].pads[+x.dataset.k] = +x.value; draw(); }; });
+    }
+    function apply(list) {
+      list.forEach(function (c) { var x = c.f, sm = String(c.sample || '').trim(); x.fmt = { sample: sm, pads: runs(sm).length ? c.pads.slice(0, runs(sm).length) : [] }; x.sample = sm; if (sm) x.example = formatSample(sm, x.fmt.pads); });
+      S.dirty = true; AW.emit('tplchange', 'fields'); D.refresh(true); D.buildTemplateFile();
+    }
+  };
+  D.buildTemplateFile = function () {
+    var f = T().fields;
     var wb = XLSX.utils.book_new();
     var en = useEn(), head = f.map(function (x) { return x.name; }).concat(en ? f.map(function (x) { return x.name + '(EN)'; }) : []), ex = f.map(function (x) { return x.example || ''; }).concat(en ? f.map(function () { return ''; }) : []);
     var ws = XLSX.utils.aoa_to_sheet([head, ex]);
+    for (var r = 2; r < 300; r++) for (var c = 0; c < head.length; c++) ws[XLSX.utils.encode_cell({ r: r, c: c })] = { t: 's', v: '', z: '@' };   // 3행부터 텍스트 서식(01 유지)
+    for (var c2 = 0; c2 < head.length; c2++) { var a = XLSX.utils.encode_cell({ r: 1, c: c2 }); if (ws[a]) { ws[a].t = 's'; ws[a].z = '@'; } }
+    ws['!ref'] = 'A1:' + XLSX.utils.encode_cell({ r: 299, c: head.length - 1 });
     ws['!cols'] = head.map(function (h, i) { var x = f[i % f.length]; return { wch: Math.max(12, Math.min(40, (h.length * 2) + 4, (x.example || '').length * 1.6 + 2)) }; });
     XLSX.utils.book_append_sheet(wb, ws, '입력');
-    var g = [['【작성 안내】 「입력」 시트의 1행(항목명)은 수정하지 마십시오. 2행은 예시이며, 예시와 똑같은 행은 업로드 시 자동 제외됩니다. 실제 데이터는 2행부터 덮어쓰거나 3행부터 입력하십시오.'],
+    var g = [['【작성 안내】 「입력」 시트의 1행(항목명)은 수정하지 마십시오. 2행은 예시이며, 예시와 똑같은 행은 업로드 시 자동 제외됩니다. 실제 데이터는 2행부터 덮어쓰거나 3행부터 입력하십시오. 열 서식은 「텍스트」이므로 01반처럼 앞자리 0이 유지됩니다.'],
       ['양식: ' + T().name + ' / 용지 ' + T().page.w + '×' + T().page.h + 'mm / 항목 ' + f.length + '개'], [],
-      ['열', '항목명', '양식에서의 위치', '입력 방법', '예시', '최대 글자 수', '필수']];
-    f.forEach(function (x, i) { g.push([colLetter(i), x.name, AW.whereIs(x.name), x.hint, x.example, x.max || '제한 없음', x.req !== false ? '필수' : '선택']); });
+      ['열', '항목명', '양식에서의 위치', '입력 방법', '예시', '최대 글자 수', '필수', '형식 규칙']];
+    f.forEach(function (x, i) { var p = fmtOf(x), rule = p && p.pads.some(function (n) { return n; }) ? '숫자 자릿수 고정: ' + p.pads.map(function (n, k) { return runLabel(p.sample, k) + '→' + (n ? n + '자리' : '그대로'); }).join(', ') : (p && p.pads.length ? '숫자는 입력 그대로' : ''); g.push([colLetter(i), x.name, AW.whereIs(x.name), x.hint, x.example, x.max || '제한 없음', x.req !== false ? '필수' : '선택', rule]); });
     if (en) g.push([], ['영문 열', '○○(EN)', '', '영문 버전에 들어갈 값입니다. 비워 두면 한글 값이 사용됩니다. 성명은 여권 표기(예: Hong Gildong)로 적습니다.']);
     g.push([], ['내장 항목', '{{@번호}}', '', '일련번호(1, 2, 3…)가 자동으로 들어갑니다. 엑셀 열이 필요 없습니다.'], ['', '{{@오늘}}', '', '출력한 날짜가 자동으로 들어갑니다.']);
     var ws2 = XLSX.utils.aoa_to_sheet(g);
-    ws2['!cols'] = [{ wch: 6 }, { wch: 14 }, { wch: 34 }, { wch: 50 }, { wch: 28 }, { wch: 12 }, { wch: 8 }];
+    ws2['!cols'] = [{ wch: 6 }, { wch: 14 }, { wch: 34 }, { wch: 50 }, { wch: 28 }, { wch: 12 }, { wch: 8 }, { wch: 36 }];
     XLSX.utils.book_append_sheet(wb, ws2, '작성안내');
     XLSX.writeFile(wb, '상장데이터양식_' + T().name.replace(/[\\/:*?"<>|]/g, '_') + '.xlsx');
     AW.log('xlsx_template', T().id, { fields: head });
-    AW.toast('엑셀 양식을 내려받았습니다.', 'ok');
+    AW.toast('형식을 저장하고 엑셀 양식을 내려받았습니다.', 'ok');
   };
 
   /* ───────────── 엑셀 올리기 ───────────── */
@@ -271,19 +321,19 @@
     });
     function curMap() { var mm = {}; AW.$$('select[data-n]', m.el).forEach(function (s) { if (+s.value >= 0) mm[s.dataset.n] = +s.value; }); return mm; }
     function build() {
-      var mm = curMap(), exRow = f.map(function (x) { return String(x.example || '').trim(); }), skipped = 0, out = [];
+      var mm = curMap(), exRow = f.map(function (x) { return String(x.example || '').trim(); }), skipped = 0, out = [], fixed = 0, bad = [];
       body.forEach(function (r) {
         var o = {}, any = false;
-        f.forEach(function (x) { var v = mm[x.name] != null ? String(r[mm[x.name]] == null ? '' : r[mm[x.name]]).trim() : ''; o[x.name] = v; if (v) any = true; var ei = enMap[norm(x.name)]; if (ei != null) { var ev = String(r[ei] == null ? '' : r[ei]).trim(); if (ev) o[x.name + '@en'] = ev; } });
+        f.forEach(function (x) { var v = mm[x.name] != null ? String(r[mm[x.name]] == null ? '' : r[mm[x.name]]).trim() : ''; var p = fmtOf(x); if (p && v) { var q = D.fmtApply(p.sample, p.pads, v); if (q.st === 'fixed') { fixed++; v = q.v; } else if (q.st === 'bad') bad.push(x.name + ': ' + v); } o[x.name] = v; if (v) any = true; var ei = enMap[norm(x.name)]; if (ei != null) { var ev = String(r[ei] == null ? '' : r[ei]).trim(); if (ev) o[x.name + '@en'] = ev; } });
         if (!any) return;
         if (f.every(function (x, i) { return exRow[i] && o[x.name] === exRow[i]; })) { skipped++; return; }   // 예시 행 제외
         out.push(o);
       });
-      return { rows: out, skipped: skipped, mm: mm };
+      return { rows: out, skipped: skipped, mm: mm, fixed: fixed, bad: bad };
     }
     function prev() {
       var b = build(), box = AW.$('#imp-prev', m.el), f2 = f.slice(0, 6);
-      box.innerHTML = '<div class="muted" style="margin-bottom:4px">미리보기(앞 3행) — 올릴 행 <b>' + b.rows.length + '</b>' + (b.skipped ? ' · 예시 행 ' + b.skipped + '건 제외' : '') + '</div>' +
+      box.innerHTML = '<div class="muted" style="margin-bottom:4px">미리보기(앞 3행) — 올릴 행 <b>' + b.rows.length + '</b>' + (b.skipped ? ' · 예시 행 ' + b.skipped + '건 제외' : '') + (b.fixed ? ' · 자릿수 보정 ' + b.fixed + '칸' : '') + (b.bad.length ? ' · <span style="color:var(--orange)">형식 확인 필요 ' + b.bad.length + '칸 (예: ' + AW.esc(b.bad[0]) + ')</span>' : '') + '</div>' +
         '<div class="tbl-wrap"><table class="gt"><thead><tr>' + f2.map(function (x) { return '<th>' + AW.esc(x.name) + '</th>'; }).join('') + '</tr></thead><tbody>' +
         b.rows.slice(0, 3).map(function (r) { return '<tr>' + f2.map(function (x) { return '<td>' + AW.esc(r[x.name]) + '</td>'; }).join('') + '</tr>'; }).join('') + '</tbody></table></div>';
     }

@@ -78,7 +78,7 @@
     var b = $('[data-a="usr"]').getBoundingClientRect(), I = function (label, ic, fn, key, on) { return { k: 'i', label: label, ic: ic, fn: fn, key: key, on: on }; }, E = AW.Editor;
     E.menuAt(Math.max(8, b.right - 250), b.bottom + 4, [I('단축키 · 마우스 조합 보기', 'info', function () { E.act('keys'); }), { k: 'sep' },
       I('격자 · 자석 · 이동 간격 설정…', 'cols', function () { E.act('gridcfg'); }), I('눈금자 보기/숨기기', 'cols', function () { E.act('ruler'); }, 'Alt+R'), I('격자선 보기/숨기기', 'grid', function () { E.act('gridshow'); }, 'Alt+G'), { k: 'sep' },
-      I('작업 관리 (월별·건별)…', 'cols', function () { AW.Job.manage(); }), I('발급번호 규칙…', 'edit', function () { AW.Output.numDialog(); }), I('발급 대장 · 인증번호', 'check', function () { AW.History.open('reg'); }), { k: 'sep' },
+      I('현재 양식 복제', 'copy', function () { A.duplicate(); }), I('작업 관리 (월별·건별)…', 'cols', function () { AW.Job.manage(); }), I('발급번호 규칙…', 'edit', function () { AW.Output.numDialog(); }), I('발급 대장 · 인증번호', 'check', function () { AW.History.open('reg'); }), { k: 'sep' },
       I('내 글꼴 관리 (업로드)…', 'text', function () { AW.Output.fontDialog(); }), I('번역 용어집(직급·학과)…', 'edit', function () { AW.AI.glossDialog(); }), I('AI 연결 테스트', 'sparkle', function () { AW.AI.test(false); }), { k: 'sep' }, I('로그아웃', 'logout', logout)]);
   }
   function applyLayout() {
@@ -172,7 +172,7 @@
         var b = $('#tl-body', m.el); if (!b) return;
         b.innerHTML = l.length ? '<div class="cards">' + l.map(function (x) {
           return '<div class="card' + (x.id === S.tpl.id ? ' cur' : '') + '"><div class="card-t">' + AW.esc(x.name) + '</div><div class="muted">v' + x.ver + ' · ' + AW.fmtTime(x.updated_at) + '<br>' + Math.round(x.page.w || 0) + '×' + Math.round(x.page.h || 0) + 'mm · 데이터 ' + x.rows + '행' + (x.has_bg ? ' · 배경 있음' : '') + '</div>' +
-            '<div class="card-a"><button class="btn btn-primary btn-sm" data-o="' + x.id + '">열기</button><button class="btn btn-ghost btn-sm" data-d="' + x.id + '">복사</button><button class="btn btn-ghost btn-sm" data-x="' + x.id + '">삭제</button></div></div>';
+            '<div class="card-a"><button class="btn btn-primary btn-sm" data-o="' + x.id + '">열기</button><button class="btn btn-ghost btn-sm" data-d="' + x.id + '">복제</button><button class="btn btn-ghost btn-sm" data-x="' + x.id + '">삭제</button></div></div>';
         }).join('') + '</div>' : '<div class="empty">저장된 양식이 없습니다. 「새 양식 만들기」로 시작하십시오.</div>';
         AW.$$('[data-o]', b).forEach(function (x) { x.onclick = function () { x.disabled = true; save({ note: '' }).then(function () { return openTpl(x.dataset.o); }).then(m.close).catch(function (e) { AW.toast(e.message, 'error'); x.disabled = false; }); }; });
         AW.$$('[data-d]', b).forEach(function (x) { x.onclick = function () { AW.call('award_tpl_duplicate', { p_id: x.dataset.d }).then(function (r) { m.close(); return save({ note: '' }).then(function () { return openTpl(r.id); }); }).catch(function (e) { AW.toast(e.message, 'error'); }); }; });
@@ -218,6 +218,10 @@
     if (lay.c[pane]) { lay.c[pane] = false; applyLayout(); saveLayout(); } var mt = $('[data-mt="' + pane + '"]'); if (mt && getComputedStyle($('.mtabs')).display !== 'none') mt.click();
     var tg = AW.$(s[2]); if (tg) { tg.classList.add('pulse'); try { tg.scrollIntoView({ block: 'nearest' }); } catch (x) {} } AW.toast(s[4]);
   });
+  A.duplicate = function () {   // 현재 편집 중인 양식을 저장한 뒤 사본을 만들어 바로 연다
+    if (!S.tpl) return;
+    save({ note: '복제 전 저장', force: true }).then(function () { if (!S.tpl.id) return AW.toast('저장된 양식만 복제할 수 있습니다.', 'error'); return AW.call('award_tpl_duplicate', { p_id: S.tpl.id }).then(function (r) { return openTpl(r.id).then(function () { AW.toast('양식을 복제했습니다. 지금 보는 것은 사본입니다.', 'ok'); }); }); }).catch(function (e) { AW.toast(e.message, 'error'); });
+  };
   A.adopt = function (nt) { return save({ note: '' }).then(function () { S.tpl = nt; S.dirty = true; S.bgDirty = !!nt.bg; S.row = 0; S.saveErr = ''; renderAll(); touch('elems'); }); };
   A.init = function () {
     var t = AW.loadToken(); if (!t) return showLogin();

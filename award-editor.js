@@ -428,7 +428,7 @@
         var cur = e[key] || ''; e[key] = o.whole ? tok : cur.slice(0, o.start) + tok + cur.slice(o.end);
         if (all) others.forEach(function (x) { x[key] = String(x[key]).split(o.text).join(tok); });
         var made = !T().rows.length; if (made) { T().rows = [{}]; S.sampleOnly = true; } if (!T().rows[0][name]) T().rows[0][name] = o.text;   // 예시 행만 있는 상태는 「데이터 입력」 미완료로 봄
-        AW.syncFields(); var f = T().fields.filter(function (x) { return x.name === name; })[0]; if (f && !f.example) f.example = o.text;
+        AW.syncFields(); var f = T().fields.filter(function (x) { return x.name === name; })[0]; if (f && (have.indexOf(name) < 0 || !f.example)) { f.example = o.text; f.sample = o.text; }   // 편집창에서 고른 원문이 예시·형식 판독 기준 (추천 예시보다 우선)
         E.refreshElems(); changed('elems', false, '메일머지 항목 지정'); AW.emit('datachange'); AW.toast('「' + name + '」 항목으로 지정했습니다. 노란 표시가 바뀌는 자리입니다.', 'ok');
       } }],
       onOpen: function (el) { var i = AW.$('#mg-n', el); AW.$$('.chip', el).forEach(function (b) { b.onclick = function () { i.value = b.dataset.n; }; }); i.select(); i.addEventListener('keydown', function (k) { if (k.key === 'Enter') AW.$('.btn-primary', el).click(); }); } });
