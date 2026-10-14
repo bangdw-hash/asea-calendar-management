@@ -424,12 +424,14 @@
     }
     var tr = (e.rot ? 'rotate(' + e.rot + 'deg) ' : '') + ((e.flipX || e.flipY) ? 'scale(' + (e.flipX ? -1 : 1) + ',' + (e.flipY ? -1 : 1) + ')' : '');
     if (tr) d.style.transform = tr.trim();
+    if (e.opacity != null && e.opacity < 1 && e.t !== 'img') d.style.opacity = e.opacity;
     if (e.hide || (e.noprint && mode !== 'edit')) d.style.display = 'none';   // 인쇄 제외 개체는 편집 화면에만 표시(미리보기·출력에서는 제외)
     if (e.noprint && mode === 'edit') d.classList.add('np');
     return d;
   };
   // 글자 자동 맞춤(shrink): 한 줄 안에 들어가도록 폰트를 줄임. DOM 부착 후 호출.
   AW.fitAll = function (root) {
+    if (AW.Table) AW.Table.autoFit(root, false);
     AW.$$('.el[data-fit="1"]', root).forEach(function (d) {
       var b = d.firstChild; if (!b) return;
       var fs = parseFloat(d.style.fontSize), min = fs * 0.35, n = 0, wrapW = d.clientWidth, wrapH = d.clientHeight;

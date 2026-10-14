@@ -17,7 +17,7 @@
     e.rows = R; e.cols = C; e.cw = []; e.rh = []; e.cells = []; var i, j;
     for (i = 0; i < C; i++) e.cw.push(rnd(w / C)); for (i = 0; i < R; i++) e.rh.push(rh0);
     for (i = 0; i < R; i++) { var row = []; for (j = 0; j < C; j++) row.push({ text: '' }); e.cells.push(row); }
-    e.style = { font: o.font || 'Noto Serif KR', size: o.size || 12, color: '#111111', bold: false, align: 'center', valign: 'middle', lh: 1.3, pad: 1.5 };
+    e.auto = true; e.style = { font: o.font || 'Noto Serif KR', size: o.size || 12, color: '#111111', bold: false, align: 'center', valign: 'middle', lh: 1.3, pad: 1.5 };
     e.bo = { w: o.bw != null ? o.bw : 0.4, c: '#111111', s: 'solid' }; e.bi = { w: o.iw != null ? o.iw : 0.2, c: '#111111', s: 'solid' }; e.hb = {}; e.vb = {};
     if (o.head) for (j = 0; j < C; j++) { e.cells[0][j].fill = '#EEF1F4'; e.cells[0][j].bold = true; }
     Tb.fit(e); return e;
@@ -127,18 +127,60 @@
     };
     for (r = 0; r <= e.rows; r++) for (c = 0; c < e.cols; c++) line('h', r, c);
     for (c = 0; c <= e.cols; c++) for (r = 0; r < e.rows; r++) line('v', r, c);
-    d.innerHTML = out.join('');
+    d.innerHTML = out.join(''); d._tb = { e: e, k: k, o: o, tok: tok };
+  };
+
+
+  /* ── 글이 길면 줄 높이 자동 늘림 (e.auto !== false). 편집 화면은 저장(persist), 미리보기·출력은 화면에서만 ── */
+  Tb.autoFit = function (root, persist) {
+    var any = false;
+    AW.$$('.el-table', root).forEach(function (d) {
+      var t = d._tb, e = t && t.e; if (!e || e.auto === false) return;
+      var need = e.rh.slice(), ch = false;
+      AW.$$('.tc', d).forEach(function (n) {
+        var r = +n.dataset.r, c = +n.dataset.c, kc = e.cells[r] && e.cells[r][c]; if (!kc || (kc.rs || 1) > 1 || !n.firstChild) return;
+        var h = (n.firstChild.offsetHeight + (parseFloat(n.style.paddingTop) || 0) * 2) / t.k;
+        if (h > need[r] + 0.05) { need[r] = Math.ceil(h * 10) / 10; ch = true; }
+      });
+      if (!ch) return; any = true;
+      if (persist) { e.rh = need; Tb.fit(e); }
+      else { var cl = Object.assign({}, e, { rh: need }); Tb.fit(cl); t.e = cl; Tb.render(cl, d, t.k, t.o, t.tok); d.style.height = cl.h * t.k + 'px'; }
+    });
+    return any;
+  };
+
+  /* ── 표 서식(자주 쓰는 표 모양) 저장·불러오기: 이 브라우저 + 서버 설정 ── */
+  var PK = 'award_table_presets';
+  Tb.presets = function () { return AW.lsGet(PK, []) || []; };
+  function syncPresets(list) { AW.lsSet(PK, list); try { AW.pref.set('table_presets', list).catch(function () {}); } catch (x) {} }
+  Tb.savePreset = function (e, name) {
+    var list = Tb.presets().filter(function (p) { return p.name !== name; }), c = clone(e); delete c.id; delete c.grp; delete c.lock; delete c.hide; list.unshift({ name: name, el: c }); syncPresets(list.slice(0, 30));
+  };
+  Tb.deletePreset = function (name) { syncPresets(Tb.presets().filter(function (p) { return p.name !== name; })); };
+  Tb.fromPreset = function (p) {
+    var c = clone(p.el), pg = AW.S.tpl.page; c.id = AW.uid(); c.t = 'table'; c.lock = false; Tb.fit(c); c.x = Math.max(0, AW.round((pg.w - c.w) / 2, 1)); c.y = Math.max(10, AW.round(pg.h * 0.3, 1)); return c;
+  };
+  Tb.loadServerPresets = function (done) {
+    try { AW.pref.get('table_presets').then(function (v) { if (Array.isArray(v) && v.length) { var loc = Tb.presets(), names = loc.map(function (p) { return p.name; }); v.forEach(function (p) { if (names.indexOf(p.name) < 0) loc.push(p); }); AW.lsSet(PK, loc); } done(); }).catch(done); } catch (x) { done(); }
   };
 
   /* ── 표 넣기 대화상자 ── */
   Tb.insertDialog = function (cb) {
     var pg = AW.S.tpl.page, dw = Math.round(Math.min(170, pg.w * 0.7));
-    AW.modal({ title: '표 넣기', body: '<p style="margin-top:0">가로(칸)와 세로(줄) 수를 정하면 표가 용지 가운데에 놓입니다. 이후 선·합치기·크기는 표를 선택하고 <b>P</b> 키 또는 우클릭으로 바꿀 수 있습니다.</p><div class="grid2"><div><label class="f">가로 칸 수 (열)</label><input class="in" id="tb-c" type="number" min="1" max="30" value="3"></div><div><label class="f">세로 줄 수 (행)</label><input class="in" id="tb-r" type="number" min="1" max="60" value="3"></div><div><label class="f">표 너비 (mm)</label><input class="in" id="tb-w" type="number" min="20" step="1" value="' + dw + '"></div><div><label class="f">줄 높이 (mm)</label><input class="in" id="tb-h" type="number" min="4" step="0.5" value="9"></div><div><label class="f">바깥 선 두께 (mm)</label><input class="in" id="tb-bw" type="number" min="0" step="0.1" value="0.4"></div><div><label class="f">안쪽 선 두께 (mm)</label><input class="in" id="tb-iw" type="number" min="0" step="0.1" value="0.2"></div></div><div class="radios" style="margin-top:8px"><label><input type="checkbox" id="tb-hd" checked> 첫 줄을 제목 줄로 (음영·굵게)</label></div>',
+    AW.modal({ title: '표 넣기', body: '<p style="margin-top:0">가로(칸)와 세로(줄) 수를 정하면 표가 용지 가운데에 놓입니다. 이후 선·합치기·크기는 표를 선택하고 <b>P</b> 키 또는 우클릭으로 바꿀 수 있습니다.</p><div class="grid2"><div><label class="f">가로 칸 수 (열)</label><input class="in" id="tb-c" type="number" min="1" max="30" value="3"></div><div><label class="f">세로 줄 수 (행)</label><input class="in" id="tb-r" type="number" min="1" max="60" value="3"></div><div><label class="f">표 너비 (mm)</label><input class="in" id="tb-w" type="number" min="20" step="1" value="' + dw + '"></div><div><label class="f">줄 높이 (mm)</label><input class="in" id="tb-h" type="number" min="4" step="0.5" value="9"></div><div><label class="f">바깥 선 두께 (mm)</label><input class="in" id="tb-bw" type="number" min="0" step="0.1" value="0.4"></div><div><label class="f">안쪽 선 두께 (mm)</label><input class="in" id="tb-iw" type="number" min="0" step="0.1" value="0.2"></div></div><div class="radios" style="margin-top:8px"><label><input type="checkbox" id="tb-hd" checked> 첫 줄을 제목 줄로 (음영·굵게)</label></div><div id="tb-ps"></div>',
       actions: [{ label: '취소', cls: 'btn-ghost' }, { label: '표 넣기', cls: 'btn-primary', onClick: function (c) {
         var g = function (id) { return parseFloat(AW.$('#' + id).value); }, o = { w: g('tb-w') || dw, rh: g('tb-h') || 9, bw: g('tb-bw'), iw: g('tb-iw'), head: AW.$('#tb-hd').checked }, R = g('tb-r') || 3, C = g('tb-c') || 3; c();
         o.x = Math.max(0, (pg.w - o.w) / 2); o.y = Math.max(10, pg.h * 0.3); cb(Tb.make(R, C, o));
       } }],
-      onOpen: function (el) { AW.$$('input', el).forEach(function (i) { i.addEventListener('keydown', function (k) { k.stopPropagation(); if (k.key === 'Enter') AW.$('.btn-primary', el).click(); }); }); } });
+      onOpen: function (el) {
+        AW.$$('input', el).forEach(function (i) { i.addEventListener('keydown', function (k) { k.stopPropagation(); if (k.key === 'Enter') AW.$('.btn-primary', el).click(); }); });
+        var box = AW.$('#tb-ps', el), draw = function () {
+          var l = Tb.presets(); box.innerHTML = l.length ? '<div class="pp-sec" style="margin-top:12px"><b>저장한 표 서식</b> <span class="muted">클릭하면 바로 넣습니다</span></div><div class="pp-op">' + l.map(function (p, i) { return '<span class="chip-b"><button class="btn btn-secondary btn-sm" data-pi="' + i + '">' + AW.esc(p.name) + ' (' + p.el.rows + '×' + p.el.cols + ')</button><button class="btn btn-ghost btn-sm" data-pd="' + i + '" title="삭제" aria-label="삭제">' + AW.ic('close', 13) + '</button></span>'; }).join('') + '</div>' : '';
+          AW.$$('[data-pi]', box).forEach(function (b) { b.onclick = function () { var p = Tb.presets()[+b.dataset.pi]; AW.$('.md-x', el).click(); cb(Tb.fromPreset(p)); }; });
+          AW.$$('[data-pd]', box).forEach(function (b) { b.onclick = function () { Tb.deletePreset(Tb.presets()[+b.dataset.pd].name); draw(); }; });
+        };
+        draw(); Tb.loadServerPresets(draw);
+      } });
   };
 
   /* ── 표 속성 대화상자 (P) ── */
@@ -148,7 +190,7 @@
     var COL = function (id, v, none) { return '<div style="display:flex;gap:6px;align-items:center"><input type="color" id="' + id + '" value="' + (/^#[0-9a-f]{6}$/i.test(v) ? v : '#111111') + '" style="width:38px;height:30px;padding:0;border:1px solid var(--border);border-radius:var(--r)"><input class="in sm" id="' + id + '-h" value="' + AW.esc(v || '') + '" style="width:92px" placeholder="#RRGGBB">' + (none ? '<label class="mini chk"><input type="checkbox" id="' + id + '-n"' + (!v ? ' checked' : '') + '> 없음</label>' : '') + '</div>'; };
     var STY = function (id) { return '<select class="in sm" id="' + id + '">' + Tb.STYLES.map(function (s) { return '<option value="' + s[0] + '">' + s[1] + '</option>'; }).join('') + '</select>'; };
     var cell0 = e.cells[rg.r0][rg.c0] || {}, S0 = Object.assign({}, e.style, cell0);
-    var body = '<div class="pp"><div class="pp-sec"><b>표 위치·크기</b> <span class="muted">' + e.rows + '줄 × ' + e.cols + '칸</span></div><div class="grid2 pp-g">' + N('tb-x', '가로 위치 X (mm)', rnd(e.x)) + N('tb-y', '세로 위치 Y (mm)', rnd(e.y)) + N('tb-w', '표 너비 (mm)', rnd(e.w), 0.5, ' min="10"') + N('tb-h', '표 높이 (mm)', rnd(e.h), 0.5, ' min="4"') + '</div>' +
+    var body = '<div class="pp"><div class="pp-op"><label class="chk"><input type="checkbox" id="tb-auto"' + (e.auto !== false ? ' checked' : '') + '> 글이 길면 줄 높이 자동으로 늘림</label><button class="btn btn-ghost btn-sm" data-t="preset">이 표를 서식으로 저장…</button></div><div class="pp-sec"><b>표 위치·크기</b> <span class="muted">' + e.rows + '줄 × ' + e.cols + '칸</span></div><div class="grid2 pp-g">' + N('tb-x', '가로 위치 X (mm)', rnd(e.x)) + N('tb-y', '세로 위치 Y (mm)', rnd(e.y)) + N('tb-w', '표 너비 (mm)', rnd(e.w), 0.5, ' min="10"') + N('tb-h', '표 높이 (mm)', rnd(e.h), 0.5, ' min="4"') + '</div>' +
       '<div class="pp-sec"><b>구조</b> <span class="muted" id="tb-sel"></span></div><div class="pp-op"><button class="btn btn-secondary btn-sm" data-t="rowA">줄 위에 추가</button><button class="btn btn-secondary btn-sm" data-t="rowB">줄 아래에 추가</button><button class="btn btn-secondary btn-sm" data-t="rowD">줄 삭제</button><button class="btn btn-secondary btn-sm" data-t="colA">칸 왼쪽에 추가</button><button class="btn btn-secondary btn-sm" data-t="colB">칸 오른쪽에 추가</button><button class="btn btn-secondary btn-sm" data-t="colD">칸 삭제</button><button class="btn btn-secondary btn-sm" data-t="mrg">셀 합치기</button><button class="btn btn-secondary btn-sm" data-t="umg">셀 나누기</button><button class="btn btn-secondary btn-sm" data-t="eqw">칸 너비 같게</button><button class="btn btn-secondary btn-sm" data-t="eqh">줄 높이 같게</button></div>' +
       '<div class="pp-sec"><b>선</b> <span class="muted">선택한 셀(없으면 표 전체)의 선을 방향별로 지정합니다</span></div><div class="grid2 pp-g"><div><label class="f">적용할 선</label><select class="in sm" id="tb-wh"><option value="all">모든 선</option><option value="outer">바깥 테두리</option><option value="inner">안쪽 선 전체</option><option value="innerH">안쪽 가로선</option><option value="innerV">안쪽 세로선</option><option value="top">위쪽 선</option><option value="bottom">아래쪽 선</option><option value="left">왼쪽 선</option><option value="right">오른쪽 선</option></select></div><div><label class="f">종류</label>' + STY('tb-st') + '</div>' + N('tb-lw', '두께 (mm, 0=없음)', 0.3, 0.1, ' min="0"') + '<div><label class="f">색</label>' + COL('tb-lc', '#111111') + '</div></div><div class="pp-op"><button class="btn btn-primary btn-sm" data-t="edge">선 적용</button><button class="btn btn-ghost btn-sm" data-t="edgeNone">선 모두 없애기</button></div>' +
       '<div class="pp-sec"><b>셀 서식</b> <span class="muted">선택한 셀(없으면 표 전체)</span></div><div class="grid2 pp-g"><div><label class="f">글꼴</label><select class="in sm" id="tb-font">' + AW.fontOptions() + '</select></div>' + N('tb-size', '글자 크기 (pt)', S0.size || 12, 0.5, ' min="4"') + '<div><label class="f">가로 정렬</label><select class="in sm" id="tb-al"><option value="left">왼쪽</option><option value="center">가운데</option><option value="right">오른쪽</option></select></div><div><label class="f">세로 정렬</label><select class="in sm" id="tb-va"><option value="top">위</option><option value="middle">가운데</option><option value="bottom">아래</option></select></div><div><label class="f">글자 색</label>' + COL('tb-fc', S0.color || '#111111') + '</div><div><label class="f">배경색</label>' + COL('tb-bg', cell0.fill || '', true) + '</div></div><div class="pp-op"><label class="chk"><input type="checkbox" id="tb-b"' + (S0.bold ? ' checked' : '') + '> 굵게</label><button class="btn btn-primary btn-sm" data-t="cell">서식 적용</button></div>' +
@@ -159,10 +201,12 @@
         AW.$$('input,select', el).forEach(function (n) { n.addEventListener('keydown', function (k) { k.stopPropagation(); }); });
         AW.$$('input[type=color]', el).forEach(function (n) { n.addEventListener('input', function () { var h = g(n.id + '-h'); if (h) h.value = n.value; }); }); AW.$$('[id$="-h"]', el).forEach(function (h) { h.addEventListener('input', function () { var c = g(h.id.replace(/-h$/, '')); if (c && /^#[0-9a-f]{6}$/i.test(h.value)) c.value = h.value; }); });
         var lbl = function () { g('tb-sel').textContent = rg0 || (E.tsel && E.tsel() && E.tsel().id === e.id) ? '선택 셀: ' + (rg.r0 + 1) + '줄 ' + (rg.c0 + 1) + '칸' + (rg.r1 > rg.r0 || rg.c1 > rg.c0 ? ' ~ ' + (rg.r1 + 1) + '줄 ' + (rg.c1 + 1) + '칸' : '') : '선택한 셀이 없어 표 전체에 적용합니다'; };
-        refresh = function () { Tb.fit(e); E.refreshElems(); E.drawTSel && E.drawTSel(); set('tb-x', rnd(e.x)); set('tb-y', rnd(e.y)); set('tb-w', rnd(e.w)); set('tb-h', rnd(e.h)); set('tb-cw', e.cw.map(rnd).join(', ')); set('tb-rh', e.rh.map(rnd).join(', ')); lbl(); };
+        refresh = function () { Tb.fit(e); E.refreshElems(); if (E.autoFit) E.autoFit(); E.drawTSel && E.drawTSel(); set('tb-x', rnd(e.x)); set('tb-y', rnd(e.y)); set('tb-w', rnd(e.w)); set('tb-h', rnd(e.h)); set('tb-cw', e.cw.map(rnd).join(', ')); set('tb-rh', e.rh.map(rnd).join(', ')); lbl(); };
+        g('tb-auto').addEventListener('change', function () { e.auto = g('tb-auto').checked; refresh(); E.api.changed('elems', false, '표 줄 높이 자동'); });
         lbl(); AW.$$('[data-t]', el).forEach(function (b) { b.onclick = function () { act(b.dataset.t); }; });
         function applyPos() { var nx = parseFloat(g('tb-x').value), ny = parseFloat(g('tb-y').value), nw = parseFloat(g('tb-w').value), nh = parseFloat(g('tb-h').value); if (!isNaN(nx)) e.x = rnd(nx); if (!isNaN(ny)) e.y = rnd(ny); if (nw > 0 && nh > 0 && (Math.abs(nw - e.w) > 0.01 || Math.abs(nh - e.h) > 0.01)) Tb.scaleFrom(e, { cw: e.cw.slice(), rh: e.rh.slice() }, nw, nh); refresh(); E.api.changed('elems', false, '표 위치·크기'); }
         function act(a) {
+          if (a === 'preset') { var nm = window.prompt('표 서식 이름', '내 표 ' + (Tb.presets().length + 1)); if (nm && nm.trim()) { Tb.savePreset(e, nm.trim().slice(0, 30)); AW.toast('표 서식으로 저장했습니다. 표 넣기 창에서 불러올 수 있습니다.', 'ok'); } return; }
           var done = function (label) { refresh(); E.api.changed('elems', false, label); }, ok;
           if (a === 'rowA') { Tb.insertRow(e, rg.r0); rg.r0++; rg.r1++; return done('줄 추가'); } if (a === 'rowB') { Tb.insertRow(e, rg.r1 + 1); return done('줄 추가'); }
           if (a === 'rowD') { for (var r = rg.r1; r >= rg.r0; r--) { if (!Tb.deleteRow(e, r)) break; } rg = { r0: 0, c0: rg.c0, r1: Math.min(rg.r1, e.rows - 1), c1: rg.c1 }; rg.r0 = Math.min(rg.r0, rg.r1); return done('줄 삭제'); }
