@@ -355,11 +355,11 @@
   }
 
   /* ───────────── 탭 ───────────── */
-  var LEGSUB = { legacy: 1, cmp: 1, det: 1, same: 1, live: 1 };
+  var LEGSUB = { legacy: 1, cmp: 1, det: 1, same: 1, live: 1, rpt: 1 };
   async function general(box) {
     if (G.sid !== A.cur.survey.id) { G.sid = A.cur.survey.id; G.rows = []; G.maxSeq = 0; G.sub = 'rep'; G.page = 1; G.kw = ''; G.x = {}; G.cmp = null; G._flatFor = ''; A.ext.F.data = A.cur.survey.test_mode ? 'test' : 'real'; A.ext.F.sincere = 'all'; }
-    var SUBS = [['rep', '리포트']].concat(isCourse() ? [['cmp', '비교'], ['det', '조건 검출'], ['same', '같은 과목'], ['live', '참여 현황']] : []).concat([['q', '문항 상세'], ['resp', '개별 응답']]).concat(isCourse() ? [['legacy', '과목·교수 현황판']] : []).concat([['hist', '이력 비교']]);
-    box.innerHTML = '<div class="row" style="margin-bottom:12px"><div class="tabs" style="margin:0;border:0;flex:1">' + SUBS.map(function (s) { return '<button class="tab" data-act="gsub" data-s="' + s[0] + '" aria-selected="' + (G.sub === s[0]) + '">' + s[1] + '</button>'; }).join('') + '</div><span id="glive" class="live"></span><button class="btn btn-ghost btn-sm" data-act="glivetoggle">일시정지/재개</button><button class="btn btn-secondary btn-sm" data-act="greload">' + I('refresh', 14) + ' 새로고침</button><button class="btn btn-primary btn-sm" data-act="gxlsx">' + I('download', 14) + ' 엑셀 내려받기</button></div>' +
+    var SUBS = [['rep', '리포트']].concat(isCourse() ? [['cmp', '비교'], ['det', '조건 검출'], ['same', '같은 과목'], ['live', '참여 현황'], ['rpt', '리포트 생성']] : []).concat([['q', '문항 상세'], ['resp', '개별 응답']]).concat(isCourse() ? [['legacy', '과목·교수 현황판']] : []).concat([['hist', '이력 비교']]);
+    box.innerHTML = '<div class="row" style="margin-bottom:12px"><div class="tabs" style="margin:0;border:0;flex:1">' + SUBS.map(function (s) { return '<button class="tab" data-act="gsub" data-s="' + s[0] + '" aria-selected="' + (G.sub === s[0]) + '">' + s[1] + '</button>'; }).join('') + '</div><span id="glive" class="live"></span><button class="btn btn-ghost btn-sm" data-act="glivetoggle">일시정지/재개</button><button class="btn btn-secondary btn-sm" data-act="greload">' + I('refresh', 14) + ' 새로고침</button><button class="btn btn-primary btn-sm" data-act="gxlsx">' + I('download', 14) + ' 엑셀 내려받기</button><button class="btn btn-secondary btn-sm" data-act="gpdf">PDF</button><button class="btn btn-secondary btn-sm" data-act="gprint">인쇄</button></div>' +
       '<div class="filters"><div><label class="f">데이터</label><select class="fld" id="gdata"><option value="real"' + (A.ext.F.data === 'real' ? ' selected' : '') + '>정식 응답</option><option value="test"' + (A.ext.F.data === 'test' ? ' selected' : '') + '>테스트 응답</option><option value="all"' + (A.ext.F.data === 'all' ? ' selected' : '') + '>정식+테스트</option></select></div><div><label class="f">응답 범위(유효성)</label><select class="fld" id="gsinc">' + Object.keys(A.ext.SINC).map(function (k) { return '<option value="' + k + '"' + (A.ext.F.sincere === k ? ' selected' : '') + '>' + SVY.esc(A.ext.SINC[k]) + '</option>'; }).join('') + '</select></div></div><div id="gbody" class="loading">불러오는 중…</div>';
     box.onchange = function (e) { if (e.target.id === 'gsinc') { A.ext.F.sincere = e.target.value; G.page = 1; render(); } if (e.target.id === 'gdata') { A.ext.F.data = e.target.value; G.page = 1; render(); } };
     box.oninput = function (e) { if (e.target.id === 'gkw') { G.kw = e.target.value; G.page = 1; clearTimeout(G._k); G._k = setTimeout(render, 250); } };
@@ -370,6 +370,8 @@
       else if (act === 'glivetoggle') { G.live = !G.live; live(); if (G.live) poll(); }
       else if (act === 'greload') fullLoad().then(function () { render(); A.toast('새로 불러왔습니다.'); }).catch(function (er) { A.toast(er.message, 'err'); });
       else if (act === 'gxlsx') exportXlsx();
+      else if (act === 'gpdf') { if (A.ext.viewPdf) A.ext.viewPdf(); }
+      else if (act === 'gprint') { if (A.ext.viewPrint) A.ext.viewPrint(); }
       else if (act === 'gx') { var qid = t.getAttribute('data-q'), k = t.getAttribute('data-k'), qq = qfind(qid), cur = G.x[qid] || [], ix = cur.indexOf(k); if (ix >= 0) cur.splice(ix, 1); else if (qq.type === 'single' || qq.type === 'scale' || qq.type === 'nps') cur = [k]; else cur.push(k); G.x[qid] = cur; render(); }
       else if (act === 'gxq') { delete G.x[t.getAttribute('data-q')]; render(); }
       else if (act === 'gxclear') { G.x = {}; render(); }
