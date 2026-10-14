@@ -401,7 +401,7 @@
           '<div style="font-weight:700;font-size:15px">' + esc(s.name) + '</div>' +
           '<div style="font-size:12px;color:var(--color-text-secondary)">' + esc(s.googleEmail||'') + (s.phone ? ' · ' + esc(s.phone) : '') + '</div>' +
         '</div>' +
-        (s.shift ? '<span style="background:' + sc + ';color:#fff;border-radius:12px;padding:4px 12px;font-size:12px;font-weight:600">' + esc(s.shift) + '</span>' : '') +
+        (s.shift ? '<span style="background:' + sc + ';color:#fff;border-radius:6px;padding:4px 12px;font-size:12px;font-weight:600">' + esc(s.shift) + '</span>' : '') +
       '</div>';
     }).join('');
   }
@@ -598,7 +598,7 @@
         var tStr = ts ? (String(ts.getHours()).padStart(2,'0') + ':' + String(ts.getMinutes()).padStart(2,'0')) : '';
         return '<tr style="border-bottom:1px solid #f0f2f5">' +
           '<td style="padding:8px;color:#5f6368">' + esc(tStr) + '</td>' +
-          '<td style="padding:8px"><span style="background:' + (isIn?'#e8f5e9':'#fce4ec') + ';color:' + (isIn?'#2e7d32':'#c62828') + ';border-radius:12px;padding:2px 8px;font-size:12px;font-weight:600">' + esc(l.checkType) + '</span></td>' +
+          '<td style="padding:8px"><span style="background:' + (isIn?'#e8f5e9':'#fce4ec') + ';color:' + (isIn?'#2e7d32':'#c62828') + ';border-radius:6px;padding:2px 8px;font-size:12px;font-weight:600">' + esc(l.checkType) + '</span></td>' +
           '<td style="padding:8px">' + esc(l.roomName || l.roomId) + '</td>' +
           '<td style="padding:8px;font-weight:600">' + esc(l.userName) + '</td>' +
           '<td style="padding:8px;color:#5f6368">' + esc(l.affiliation) + '</td>' +
@@ -609,7 +609,7 @@
   }
 
   function _ciSummaryCard(label, value, bg, color) {
-    return '<div style="background:' + bg + ';border-radius:12px;padding:14px 18px">' +
+    return '<div style="background:' + bg + ';border-radius:6px;padding:14px 18px">' +
       '<div style="font-size:12px;color:' + color + ';font-weight:600">' + label + '</div>' +
       '<div style="font-size:26px;font-weight:700;color:' + color + '">' + value + '</div>' +
     '</div>';

@@ -318,14 +318,14 @@ var ReservationUtil = (function () {
     modal.id = 'resutil-cal-picker';
     modal.style.cssText = 'position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.5)';
     modal.innerHTML =
-      '<div style="background:#fff;border-radius:12px;padding:24px;min-width:300px;max-width:420px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,.25)">' +
+      '<div style="background:#fff;border-radius:6px;padding:24px;min-width:300px;max-width:420px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,.25)">' +
         '<div style="font-size:16px;font-weight:700;margin-bottom:4px">📅 공유할 캘린더 선택</div>' +
         '<p style="font-size:13px;color:#666;margin-bottom:16px">예약을 등록할 Google 캘린더를 선택하세요.</p>' +
-        '<div id="resutil-cal-list" style="max-height:220px;overflow-y:auto;border:1px solid #e0e0e0;border-radius:8px;margin-bottom:16px">' +
+        '<div id="resutil-cal-list" style="max-height:220px;overflow-y:auto;border:1px solid #e0e0e0;border-radius:6px;margin-bottom:16px">' +
           '<p style="padding:12px;color:#888;font-size:13px">불러오는 중...</p>' +
         '</div>' +
         '<div style="display:flex;gap:8px;justify-content:flex-end">' +
-          '<button id="resutil-cal-cancel" style="padding:8px 20px;border:1px solid #ddd;border-radius:8px;background:#fff;cursor:pointer;font-size:14px">취소</button>' +
+          '<button id="resutil-cal-cancel" style="padding:8px 20px;border:1px solid #ddd;border-radius:6px;background:#fff;cursor:pointer;font-size:14px">취소</button>' +
         '</div>' +
       '</div>';
 

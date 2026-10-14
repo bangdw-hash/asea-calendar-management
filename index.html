@@ -99,7 +99,7 @@
       colorBg:'#F0F9FF', colorCard:'#FFFFFF', colorBorder:'#E8EAED',
       colorText:'#202124', colorTextSec:'#5F6368',
       fontBase:14, fontSm:12, fontLg:16,
-      radius:12, shadow:'md', spacing:1,
+      radius:6, shadow:'md', spacing:1,
       mHeaderH:56, mTabH:48,
       pcMaxW:1280, pcFontBase:14, pcHeaderH:60,
     };
@@ -130,7 +130,7 @@
       r.setProperty('--font-base',fb+'px'); r.setProperty('--font-md',(fb+1)+'px');
       r.setProperty('--font-lg',_get('fontLg')+'px'); r.setProperty('--font-xl',(parseInt(_get('fontLg'))+2)+'px');
       r.setProperty('--font-2xl',(parseInt(_get('fontLg'))+6)+'px');
-      var rad=parseInt(_get('radius'))||12;
+      var rad=Math.min(6,parseInt(_get('radius'))||6);
       ['--r-sm','--r-md','--r-lg','--r-xl','--r-full'].forEach(function(v){ r.setProperty(v,rad+'px'); });
       var SH={
         none:['none','none','none','none'],
@@ -1710,7 +1710,7 @@
           .appear-color-swatch { width:22px; height:22px; border-radius:6px; border:1px solid var(--color-border); overflow:hidden; }
           .appear-color-swatch input[type=color] { width:32px; height:32px; border:none; cursor:pointer; transform:translate(-5px,-5px); }
           .appear-seg { display:flex; gap:4px; flex-wrap:wrap; }
-          .appear-seg-btn { padding:4px 10px; border:1px solid var(--color-border); border-radius:8px; font-size:12px; cursor:pointer; background:var(--color-card); color:var(--color-text-secondary); transition:all .12s; }
+          .appear-seg-btn { padding:4px 10px; border:1px solid var(--color-border); border-radius:6px; font-size:12px; cursor:pointer; background:var(--color-card); color:var(--color-text-secondary); transition:all .12s; }
           .appear-seg-btn.active { background:var(--color-accent); color:#fff; border-color:var(--color-accent); }
           .theme-swatch { width:32px; height:32px; border-radius:50%; border:3px solid transparent; cursor:pointer; transition:border-color .15s,transform .12s; padding:0; }
           .theme-swatch.active { border-color:var(--color-text); transform:scale(1.18); outline:none; }
@@ -1855,9 +1855,9 @@
           <div class="appear-row">
             <span class="appear-lbl">반경</span>
             <div class="appear-ctrl">
-              <input type="range" id="ap-radius" class="appear-range" min="0" max="24" step="2" value="12"
+              <input type="range" id="ap-radius" class="appear-range" min="0" max="6" step="1" value="6"
                 oninput="document.getElementById('ap-radius-v').textContent=this.value+'px';AppSave('radius',this.value);AppApply()">
-              <span class="appear-val" id="ap-radius-v">12px</span>
+              <span class="appear-val" id="ap-radius-v">6px</span>
               <button class="appear-reset-btn" onclick="AppReset('radius')">↺</button>
             </div>
           </div>

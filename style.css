@@ -47,11 +47,11 @@
   --sp-8: 32px;
 
   /* 모서리 반경 — 디자인 토큰 통일 (12px, pill 금지) */
-  --r-sm:   12px;
-  --r-md:   12px;
-  --r-lg:   12px;
-  --r-xl:   12px;
-  --r-full: 12px;
+  --r-sm:   6px;
+  --r-md:   6px;
+  --r-lg:   6px;
+  --r-xl:   6px;
+  --r-full: 6px;
 
   /* 그림자 */
   --shadow-sm:  0 1px 3px rgba(60,64,67,.08), 0 1px 2px rgba(60,64,67,.06);
@@ -1693,7 +1693,7 @@ a        { color: var(--color-accent); text-decoration: none; }
     left: 6px;
     right: 6px;
     height: 3px;
-    border-radius: 6px 12px 0 0;
+    border-radius: 6px 6px 0 0;
     background: var(--color-accent);
   }
   /* 뱃지 위치 조정 */
@@ -1794,7 +1794,7 @@ a        { color: var(--color-accent); text-decoration: none; }
   }
   .modal-dialog {
     width: 100%;
-    border-radius: 6px 12px 0 0;
+    border-radius: 6px 6px 0 0;
     max-height: 92vh;
   }
 
@@ -4255,7 +4255,7 @@ a        { color: var(--color-accent); text-decoration: none; }
   color: #5F6368;
   border-bottom: 3px solid transparent;
   margin-bottom: -2px;
-  border-radius: 6px 12px 0 0;
+  border-radius: 6px 6px 0 0;
   transition: color .15s, border-color .15s, background .15s;
 }
 .subtab-btn:hover { color: var(--color-accent, #0EA5E9); background: #F1F3F4; }
@@ -4343,7 +4343,7 @@ a        { color: var(--color-accent); text-decoration: none; }
   align-items: center;
   gap: 8px;
   z-index: 600;
-  border-radius: 6px 12px 0 0;
+  border-radius: 6px 6px 0 0;
   transition: bottom 0.32s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 .mob-float-bar.visible {
@@ -4486,8 +4486,8 @@ a        { color: var(--color-accent); text-decoration: none; }
   --sp-5: 20px; --sp-6: 24px; --sp-8: 32px;
 
   /* 모서리 — 디자인 토큰 통일 (12px, pill 금지) */
-  --r-sm: 12px; --r-md: 12px; --r-lg: 12px; --r-xl: 12px;
-  --r-2xl: 12px; --r-full: 12px;
+  --r-sm: 6px; --r-md: 6px; --r-lg: 6px; --r-xl: 6px;
+  --r-2xl: 6px; --r-full: 6px;
 
   /* 그림자 */
   --shadow-sm:   0 2px 8px rgba(0,120,212,.07);
@@ -4847,8 +4847,8 @@ h3.settings-section-title {
 .modal-close { color: rgba(255,255,255,.8) !important; }
 .modal-close:hover { color: #fff !important; background: rgba(255,255,255,.15) !important; }
 @media (max-width: 600px) {
-  .modal-dialog { border-radius: 6px 12px 0 0 !important; }
-  .modal-header { border-radius: 6px 12px 0 0 !important; }
+  .modal-dialog { border-radius: 6px 6px 0 0 !important; }
+  .modal-header { border-radius: 6px 6px 0 0 !important; }
 }
 
 /* ── 13. 이메일 서브탭 ──────────────────────────────────────────── */
@@ -5103,7 +5103,7 @@ h3.settings-section-title {
     transform: translateX(-50%);
     width: 28px;
     height: 3px;
-    border-radius: 0 0 12px 12px;
+    border-radius: 0 0 6px 6px;
     background: var(--ha-gradient);
   }
 
@@ -5847,7 +5847,7 @@ body.is-dragging-event .day-events { pointer-events: none !important; }
   font-size: 13px;
   font-weight: 500;
   color: var(--color-text-secondary, #666);
-  border-radius: 6px 12px 0 0;
+  border-radius: 6px 6px 0 0;
   position: relative;
   bottom: -2px;
   border-bottom: 2px solid transparent;
@@ -6386,7 +6386,7 @@ summary:focus-visible,
 .bnav-btn:focus-visible {
   outline: 2px solid var(--color-accent) !important;
   outline-offset: 2px;
-  border-radius: var(--r-sm, 12px);
+  border-radius: var(--r-sm, 6px);
 }
 
 /* ──────────────────────────────────────────────────────────────
@@ -6461,7 +6461,7 @@ summary:focus-visible,
 .nav-sheet {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 1401;
   background: var(--color-card, #fff);
-  border-radius: 6px 12px 0 0;
+  border-radius: 6px 6px 0 0;
   box-shadow: 0 -8px 30px rgba(0,0,0,.2);
   max-height: 72vh; overflow-y: auto;
   padding: 6px 10px calc(14px + env(safe-area-inset-bottom));
@@ -6893,7 +6893,7 @@ body:has(.modal:not([hidden])) .quick-fab { display: none; }
     align-items: flex-start;
     gap: 8px;
     padding: 8px 10px;
-    border-radius: 10px;
+    border-radius: 6px;
     background: var(--color-card);
     border-left: 3px solid #ccc;
     cursor: pointer;
@@ -6993,7 +6993,7 @@ body:has(.modal:not([hidden])) .quick-fab { display: none; }
     width: 100% !important;
     height: 67vh !important;
     max-height: 67vh !important;
-    border-radius: 16px 16px 0 0 !important;
+    border-radius: 6px 6px 0 0 !important;
     overflow-y: auto;
   }
   /* 슬라이드 업 애니메이션 */

@@ -75,11 +75,11 @@ Use these CSS tokens for any new UI work:
 --green:#16a34a;   --green-lt:#dcfce7;
 --orange:#ea580c;  --orange-lt:#ffedd5;
 --red:#dc2626;     --red-lt:#fee2e2;
---r:12px;  /* border-radius — no pill shapes */
+--r:6px;   /* border-radius for every box/button/card/modal/input — 6px repo-wide, no pill shapes */
 --sh / --sh-md / --sh-lg  /* shadow scale */
 ```
 
-Exception: `award.html` (상장 출력기) uses `--r:6px` by the owner's request. Icons: inline SVG only — no emoji in UI. Theme picker (blue/green/orange swatches) is in the forum.html header and applies via `applyTheme()`. This `--r:12px` rounding + no-emoji rule applies to every HTML page in the repo, not just forum.html/schedule.html — enforced repo-wide as of the reservation.html/index.html design pass.
+Icons: inline SVG only — no emoji in UI. Theme picker (blue/green/orange swatches) is in the forum.html header and applies via `applyTheme()`. This `--r:6px` rounding + no-emoji rule applies to every HTML page in the repo (all boxes, buttons, inputs, cards, modals, result panels, report pages — including aseasurvey*, award*, forum, schedule, etc.), as set by the owner. Use `border-radius:var(--r)` (or 6px); never use larger values or pill shapes. Only true circles (avatars, status dots: `50%`) are exempt. New CSS must not introduce radii above 6px.
 
 ### forum.html key points
 

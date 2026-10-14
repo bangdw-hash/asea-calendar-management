@@ -11,7 +11,7 @@
     colorBg: '#F8F9FB', colorCard: '#FFFFFF', colorBorder: '#E8EAED',
     colorText: '#202124', colorTextSec: '#5F6368',
     fontBase: 14, fontSm: 12, fontLg: 16,
-    radius: 12, shadow: 'md', spacing: 1,
+    radius: 6, shadow: 'md', spacing: 1,
     mHeaderH: 56, mTabH: 48,
     pcMaxW: 1280, pcFontBase: 14, pcHeaderH: 60,
   };
@@ -80,7 +80,7 @@
     r.setProperty('--font-xl',   (parseInt(_get('fontLg')) + 2) + 'px');
     r.setProperty('--font-2xl',  (parseInt(_get('fontLg')) + 6) + 'px');
 
-    var rad = parseInt(_get('radius')) || 12;
+    var rad = Math.min(6, parseInt(_get('radius')) || 6);   // 박스·버튼 모서리는 전체 6px 상한(규칙)
     ['--r-sm', '--r-md', '--r-lg', '--r-xl', '--r-full'].forEach(function (v) { r.setProperty(v, rad + 'px'); });
     // 개별 페이지 alias
     r.setProperty('--radius', rad + 'px');

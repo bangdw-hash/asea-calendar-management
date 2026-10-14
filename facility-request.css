@@ -22,7 +22,7 @@ body {
   text-align: center;
   padding: 32px 20px 24px;
   background: linear-gradient(135deg, #0078D4 0%, #1565C0 100%);
-  border-radius: 6px 12px 0 0;
+  border-radius: 6px 6px 0 0;
   border-bottom: none;
 }
 .fr-logo  { display: flex; justify-content: center; margin-bottom: 8px; filter: drop-shadow(0 2px 6px rgba(0,0,0,.2)); }
@@ -44,7 +44,7 @@ body {
 .fr-form {
   background: #fff;
   padding: 20px;
-  border-radius: 0 0 12px 12px;
+  border-radius: 0 0 6px 6px;
 }
 
 .fr-fieldset {
@@ -217,8 +217,8 @@ body {
 }
 
 /* 구간 시작/끝 강조 */
-.fr-cal-cell.fr-cal-range-start { border-radius: 6px 12px 12px 12px; }
-.fr-cal-cell.fr-cal-range-end   { border-radius: 6px 12px 12px 12px; }
+.fr-cal-cell.fr-cal-range-start { border-radius: 6px 6px 6px 6px; }
+.fr-cal-cell.fr-cal-range-end   { border-radius: 6px 6px 6px 6px; }
 
 /* 일요일/토요일 색상 */
 .fr-cal-cell:nth-child(7n+1):not(.fr-cal-empty):not(.fr-cal-past) { color: #E53935; }
@@ -580,7 +580,7 @@ body {
   .has-share-bar { padding-bottom: 80px !important; }
   .fr-wrap { max-width: 100%; }
   .fr-header { border-radius: 0; }
-  .fr-form { border-radius: 0 0 12px 12px; padding: 16px; }
+  .fr-form { border-radius: 0 0 6px 6px; padding: 16px; }
   .fr-success { border-radius: 0; }
   .fr-cal-cell { font-size: 12px; min-height: 32px; }
   .fr-step-label { font-size: 9px; }

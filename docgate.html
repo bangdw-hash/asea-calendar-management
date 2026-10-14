@@ -82,7 +82,7 @@ body {
 label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: var(--sub); }
 input[type=text] {
   width: 100%; padding: 10px 12px; border: 1.5px solid var(--border);
-  border-radius: 8px; font-size: 14px; font-family: inherit; color: var(--text);
+  border-radius: 6px; font-size: 14px; font-family: inherit; color: var(--text);
   transition: border .15s;
 }
 input[type=text]:focus { outline: none; border-color: var(--primary); }
@@ -91,7 +91,7 @@ input[type=text][readonly] { background: var(--bg); color: var(--sub); }
 /* ── 사용자 정보 배너 ─────────────────────────────────────────── */
 .user-banner {
   background: var(--primary-lt);
-  border-radius: 8px;
+  border-radius: 6px;
   padding: 12px 14px;
   display: flex;
   align-items: center;
@@ -113,7 +113,7 @@ input[type=text][readonly] { background: var(--bg); color: var(--sub); }
   display: flex; align-items: center; gap: 12px;
   padding: 13px 14px;
   border: 1.5px solid var(--border);
-  border-radius: 10px;
+  border-radius: 6px;
   margin-bottom: 8px;
   cursor: pointer;
   transition: border-color .15s, background .15s;
@@ -155,7 +155,7 @@ input[type=text][readonly] { background: var(--bg); color: var(--sub); }
 .file-badge {
   display: inline-flex; align-items: center; gap: 6px;
   background: var(--bg); border: 1px solid var(--border);
-  border-radius: 8px; padding: 8px 14px;
+  border-radius: 6px; padding: 8px 14px;
   font-size: 13px; font-weight: 600; color: var(--text);
   margin-bottom: 20px; max-width: 100%; overflow: hidden;
   text-overflow: ellipsis; white-space: nowrap;
@@ -163,7 +163,7 @@ input[type=text][readonly] { background: var(--bg); color: var(--sub); }
 
 /* ── 상태 메시지 ────────────────────────────────────────────────*/
 .msg {
-  padding: 12px 14px; border-radius: 8px;
+  padding: 12px 14px; border-radius: 6px;
   font-size: 13px; margin-bottom: 16px; display: none;
 }
 .msg.error   { background: var(--red-lt);   color: var(--red); display: block; }
@@ -208,7 +208,7 @@ tr:hover td { background: #fafafa; }
 .cat-list { list-style: none; margin-bottom: 16px; }
 .cat-item {
   display: flex; align-items: center; gap: 8px;
-  padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border);
+  padding: 10px 12px; border-radius: 6px; border: 1px solid var(--border);
   margin-bottom: 8px; background: #fff;
 }
 .cat-item .cat-info { flex: 1; min-width: 0; }

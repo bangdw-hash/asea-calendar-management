@@ -324,11 +324,11 @@ var BudgetModule = (function () {
       '<label>집행승인번호</label><input id="ir-no" readonly value="' + esc(r.no) + '">' +
       '<label>결재자 조회 URL</label><input id="ir-url" readonly value="' + esc(url) + '">' +
       '<div style="text-align:center;margin:12px 0">' +
-        '<img id="ir-qr" src="' + qr + '" alt="조회 QR" width="180" height="180" style="border:1px solid var(--color-border);border-radius:10px;background:#fff" crossorigin="anonymous">' +
+        '<img id="ir-qr" src="' + qr + '" alt="조회 QR" width="180" height="180" style="border:1px solid var(--color-border);border-radius:6px;background:#fff" crossorigin="anonymous">' +
         '<div class="bdg-muted" style="margin-top:4px">QR을 길게 눌러(모바일)/우클릭(PC) 복사하거나 아래 버튼으로 저장</div>' +
       '</div>' +
       '<label>집행 근거 (기안문 붙여넣기용)</label>' +
-      '<textarea id="ir-basis" readonly rows="9" style="width:100%;font-size:12.5px;line-height:1.6;border:1px solid var(--color-border);border-radius:8px;padding:10px;box-sizing:border-box">' + esc(basis) + '</textarea>' +
+      '<textarea id="ir-basis" readonly rows="9" style="width:100%;font-size:12.5px;line-height:1.6;border:1px solid var(--color-border);border-radius:6px;padding:10px;box-sizing:border-box">' + esc(basis) + '</textarea>' +
       '<div class="bdg-form-actions" style="flex-wrap:wrap">' +
         '<button id="ir-copy-basis" class="btn btn-primary">📋 집행근거 복사</button>' +
         '<button id="ir-copy" class="btn btn-secondary">URL 복사</button>' +
@@ -440,7 +440,7 @@ var BudgetModule = (function () {
       '<div class="bdg-role">'+ roleLabel +'</div>' +
     '</div>' +
 
-    '<div class="bdg-newlink" style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:10px 0;padding:12px 16px;border:1px solid var(--color-border,#E8EAED);border-radius:12px;background:var(--color-accent-light,#E0F2FE)">' +
+    '<div class="bdg-newlink" style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:10px 0;padding:12px 16px;border:1px solid var(--color-border,#E8EAED);border-radius:6px;background:var(--color-accent-light,#E0F2FE)">' +
       '<div><b>2027년도 세입·세출 예산안은 별도 페이지에서 작성합니다.</b><div style="font-size:12px;color:var(--color-text-secondary,#5F6368)">부서 선택 + 부서 비밀번호로 입장하며 Google 계정이 필요하지 않습니다. 아래 화면은 2026년도 집행 관리용입니다.</div></div>' +
       '<a class="btn btn-primary btn-sm" href="budget.html" target="_blank" rel="noopener">부서 예산안 작성 열기</a>' +
     '</div>' +

@@ -134,7 +134,7 @@ window.QRCardModule = (function () {
           '<button class="btn btn-primary" onclick="QRCardModule._openMyForm(null)">+ 새 명함</button>' +
         '</div>' +
       '</div>' +
-      '<div style="font-size:12px;color:#6b7280;margin-bottom:16px;padding:8px 10px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px">' + acct + '</div>' +
+      '<div style="font-size:12px;color:#6b7280;margin-bottom:16px;padding:8px 10px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:6px">' + acct + '</div>' +
       '<div id="qrcard-list"></div>';
     _renderMyList(cards);
   }
@@ -192,7 +192,7 @@ window.QRCardModule = (function () {
         '<label style="display:block;font-size:13px;font-weight:600;color:#374151;margin-bottom:4px">' + label +
         (req ? ' <span style="color:#dc2626">*</span>' : '') + '</label>' +
         '<input id="' + fid + '" type="' + (type || 'text') + '" value="' + _h(val) + '" placeholder="' + (ph || '') + '"' +
-        ' style="width:100%;padding:9px 12px;border:1.5px solid #d1d5db;border-radius:8px;font-size:14px;outline:none;box-sizing:border-box"' +
+        ' style="width:100%;padding:9px 12px;border:1.5px solid #d1d5db;border-radius:6px;font-size:14px;outline:none;box-sizing:border-box"' +
         ' onfocus="this.style.borderColor=\'#1D4ED8\'" onblur="this.style.borderColor=\'#d1d5db\'">' +
       '</div>';
     }
@@ -200,7 +200,7 @@ window.QRCardModule = (function () {
     modal.id = 'qrcard-modal';
     modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px';
     modal.innerHTML =
-      '<div style="background:#fff;border-radius:16px;padding:28px;max-width:460px;width:100%;max-height:92vh;overflow-y:auto;box-shadow:0 20px 48px rgba(0,0,0,.2)">' +
+      '<div style="background:#fff;border-radius:6px;padding:28px;max-width:460px;width:100%;max-height:92vh;overflow-y:auto;box-shadow:0 20px 48px rgba(0,0,0,.2)">' +
         '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">' +
           '<h3 style="font-size:17px;font-weight:700">' + (id ? '명함 수정' : '새 QR 명함') + '</h3>' +
           '<button onclick="document.getElementById(\'qrcard-modal\').remove()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#9ca3af;line-height:1">✕</button>' +
@@ -308,7 +308,7 @@ window.QRCardModule = (function () {
         '<button class="btn btn-ghost"   onclick="QRCardModule._openRecvForm(null)">✍️ 직접 입력</button>' +
         '<input id="recv-search" type="text" placeholder="이름 · 회사 · 태그 검색" value="' + _h(_rvFilter.search) + '"' +
           ' oninput="QRCardModule._rvSearch(this.value)"' +
-          ' style="flex:1;min-width:160px;padding:8px 12px;border:1.5px solid #d1d5db;border-radius:8px;font-size:13px;outline:none"' +
+          ' style="flex:1;min-width:160px;padding:8px 12px;border:1.5px solid #d1d5db;border-radius:6px;font-size:13px;outline:none"' +
           ' onfocus="this.style.borderColor=\'#1D4ED8\'" onblur="this.style.borderColor=\'#d1d5db\'">' +
         '<button class="btn btn-ghost" onclick="QRCardModule._exportXlsx()" title="XLSX 내보내기">📊 내보내기</button>' +
       '</div>' +
@@ -329,7 +329,7 @@ window.QRCardModule = (function () {
 
   function _tagChip(label, val, active) {
     return '<button onclick="QRCardModule._rvTag(\'' + _h(val) + '\')"' +
-      ' style="padding:4px 14px;border-radius:20px;border:1.5px solid ' + (active ? '#1D4ED8' : '#d1d5db') + ';' +
+      ' style="padding:4px 14px;border-radius:6px;border:1.5px solid ' + (active ? '#1D4ED8' : '#d1d5db') + ';' +
       'background:' + (active ? '#EFF6FF' : '#fff') + ';color:' + (active ? '#1D4ED8' : '#6b7280') + ';' +
       'font-size:12px;cursor:pointer;transition:all .1s">' + _h(label) + '</button>';
   }
@@ -366,7 +366,7 @@ window.QRCardModule = (function () {
         var meta = [card.title, card.dept].filter(Boolean).join(' · ');
         var tags = (card.tags || []).map(function (t) {
           return '<span style="display:inline-block;padding:2px 8px;background:#EFF6FF;color:#1D4ED8;' +
-            'border-radius:12px;font-size:11px;margin:1px">' + _h(t) + '</span>';
+            'border-radius:6px;font-size:11px;margin:1px">' + _h(t) + '</span>';
         }).join('');
         return '<div class="settings-card" style="padding:16px">' +
           '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">' +
@@ -402,12 +402,12 @@ window.QRCardModule = (function () {
     modal.id = 'scan-modal';
     modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px';
     modal.innerHTML =
-      '<div style="background:#fff;border-radius:16px;padding:28px;max-width:480px;width:100%;box-shadow:0 20px 48px rgba(0,0,0,.2)">' +
+      '<div style="background:#fff;border-radius:6px;padding:28px;max-width:480px;width:100%;box-shadow:0 20px 48px rgba(0,0,0,.2)">' +
         '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">' +
           '<h3 style="font-size:17px;font-weight:700">📷 명함 스캔 (AI 인식)</h3>' +
           '<button onclick="document.getElementById(\'scan-modal\').remove()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#9ca3af">✕</button>' +
         '</div>' +
-        '<div id="scan-preview" style="width:100%;min-height:160px;border:2px dashed #d1d5db;border-radius:12px;' +
+        '<div id="scan-preview" style="width:100%;min-height:160px;border:2px dashed #d1d5db;border-radius:6px;' +
           'display:flex;align-items:center;justify-content:center;margin-bottom:16px;overflow:hidden;background:#f9fafb">' +
           '<span style="color:#9ca3af;font-size:14px;text-align:center;padding:20px">이미지를 선택하거나<br>카메라로 촬영하세요</span>' +
         '</div>' +
@@ -438,7 +438,7 @@ window.QRCardModule = (function () {
       _scanImageBase64 = e.target.result.split(',')[1];
       var preview = document.getElementById('scan-preview');
       if (preview) preview.innerHTML =
-        '<img src="' + e.target.result + '" style="max-width:100%;max-height:220px;border-radius:8px;object-fit:contain">';
+        '<img src="' + e.target.result + '" style="max-width:100%;max-height:220px;border-radius:6px;object-fit:contain">';
       var btn = document.getElementById('scan-ocr-btn');
       if (btn) btn.style.display = 'block';
       var status = document.getElementById('scan-status');
@@ -515,7 +515,7 @@ window.QRCardModule = (function () {
       return '<div style="margin-bottom:11px">' +
         '<label style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:3px">' + label + '</label>' +
         '<input id="' + fid + '" type="' + (type || 'text') + '" value="' + _h(val) + '" placeholder="' + (ph || '') + '"' +
-        ' style="width:100%;padding:8px 11px;border:1.5px solid #d1d5db;border-radius:8px;font-size:13px;box-sizing:border-box;outline:none"' +
+        ' style="width:100%;padding:8px 11px;border:1.5px solid #d1d5db;border-radius:6px;font-size:13px;box-sizing:border-box;outline:none"' +
         ' onfocus="this.style.borderColor=\'#1D4ED8\'" onblur="this.style.borderColor=\'#d1d5db\'">' +
       '</div>';
     }
@@ -524,14 +524,14 @@ window.QRCardModule = (function () {
     modal.id = 'recv-modal';
     modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px';
     modal.innerHTML =
-      '<div style="background:#fff;border-radius:16px;padding:24px;max-width:520px;width:100%;max-height:94vh;overflow-y:auto;box-shadow:0 20px 48px rgba(0,0,0,.2)">' +
+      '<div style="background:#fff;border-radius:6px;padding:24px;max-width:520px;width:100%;max-height:94vh;overflow-y:auto;box-shadow:0 20px 48px rgba(0,0,0,.2)">' +
         '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">' +
           '<h3 style="font-size:16px;font-weight:700">' +
             (fromScan ? '📷 스캔 결과 확인 · 저장' : id ? '명함 수정' : '명함 직접 입력') +
           '</h3>' +
           '<button onclick="document.getElementById(\'recv-modal\').remove()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#9ca3af">✕</button>' +
         '</div>' +
-        (fromScan ? '<div style="padding:10px 12px;background:#EFF6FF;border-radius:8px;font-size:12px;color:#1D4ED8;margin-bottom:16px">AI가 인식한 내용입니다. 수정 후 저장하세요.</div>' : '') +
+        (fromScan ? '<div style="padding:10px 12px;background:#EFF6FF;border-radius:6px;font-size:12px;color:#1D4ED8;margin-bottom:16px">AI가 인식한 내용입니다. 수정 후 저장하세요.</div>' : '') +
         '<div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px">' +
           row2('이름 *',   'rcf-name',  card.name,      'text',  '홍길동') +
           row2('기관',     'rcf-org',   card.org,       'text',  '회사명') +
@@ -548,7 +548,7 @@ window.QRCardModule = (function () {
         '</div>' +
         '<div style="margin-bottom:11px">' +
           '<label style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:3px">메모</label>' +
-          '<textarea id="rcf-memo" rows="2" placeholder="메모" style="width:100%;padding:8px 11px;border:1.5px solid #d1d5db;border-radius:8px;font-size:13px;box-sizing:border-box;resize:vertical;outline:none">' +
+          '<textarea id="rcf-memo" rows="2" placeholder="메모" style="width:100%;padding:8px 11px;border:1.5px solid #d1d5db;border-radius:6px;font-size:13px;box-sizing:border-box;resize:vertical;outline:none">' +
             _h(card.memo || '') +
           '</textarea>' +
         '</div>' +
@@ -631,7 +631,7 @@ window.QRCardModule = (function () {
     modal.id = 'share-modal';
     modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px';
     modal.innerHTML =
-      '<div style="background:#fff;border-radius:16px;padding:24px;max-width:480px;width:100%;box-shadow:0 20px 48px rgba(0,0,0,.2)">' +
+      '<div style="background:#fff;border-radius:6px;padding:24px;max-width:480px;width:100%;box-shadow:0 20px 48px rgba(0,0,0,.2)">' +
         '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">' +
           '<h3 style="font-size:16px;font-weight:700">🔗 공유 링크</h3>' +
           '<button onclick="document.getElementById(\'share-modal\').remove()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#9ca3af">✕</button>' +
@@ -641,7 +641,7 @@ window.QRCardModule = (function () {
           '링크를 받은 사람이 클릭하면 연락처를 저장할 수 있습니다.</p>' +
         '<div style="display:flex;gap:8px;margin-bottom:16px">' +
           '<input id="share-url-input" value="' + _h(url) + '" readonly' +
-            ' style="flex:1;padding:9px 12px;border:1.5px solid #d1d5db;border-radius:8px;font-size:12px;background:#f9fafb;color:#374151">' +
+            ' style="flex:1;padding:9px 12px;border:1.5px solid #d1d5db;border-radius:6px;font-size:12px;background:#f9fafb;color:#374151">' +
           '<button class="btn btn-primary" onclick="QRCardModule._copyShareUrl()">복사</button>' +
         '</div>' +
         '<button class="btn btn-ghost" style="width:100%" onclick="document.getElementById(\'share-modal\').remove()">닫기</button>' +

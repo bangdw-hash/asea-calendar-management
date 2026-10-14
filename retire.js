@@ -100,7 +100,7 @@ window.RetireModule = (function () {
     var t = el('div');
     t.textContent = msg;
     t.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:' +
-      (color || '#1a3a5c') + ';color:#fff;padding:10px 22px;border-radius:8px;font-size:14px;z-index:9999;pointer-events:none';
+      (color || '#1a3a5c') + ';color:#fff;padding:10px 22px;border-radius:6px;font-size:14px;z-index:9999;pointer-events:none';
     document.body.appendChild(t);
     setTimeout(function () { if (t.parentNode) t.parentNode.removeChild(t); }, 2500);
   }
@@ -215,13 +215,13 @@ window.RetireModule = (function () {
 
       // ── 신청자 공유 링크 박스 (상단, 입사와 동일) ──
       var linkBox = document.createElement('div');
-      linkBox.style.cssText = 'width:100%;max-width:540px;background:#EFF6FF;border:1.5px solid #93C5FD;border-radius:12px;padding:16px 18px;margin-bottom:20px;text-align:left';
+      linkBox.style.cssText = 'width:100%;max-width:540px;background:#EFF6FF;border:1.5px solid #93C5FD;border-radius:6px;padding:16px 18px;margin-bottom:20px;text-align:left';
       linkBox.innerHTML =
         '<div style="font-size:12px;font-weight:700;color:#0EA5E9;margin-bottom:6px;letter-spacing:.4px">📎 퇴직 신청자 공유 링크</div>' +
         '<div style="font-size:12px;color:#374151;word-break:break-all;background:#fff;border:1px solid #BFDBFE;border-radius:6px;padding:8px 10px;margin-bottom:10px;font-family:monospace">' + formUrl + '</div>' +
         '<div style="display:flex;gap:8px">' +
-          '<button id="rt-home-copy-link" style="flex:1;padding:8px 0;background:#0EA5E9;color:#fff;border:none;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer">📋 링크 복사</button>' +
-          '<button id="rt-home-copy-msg"  style="flex:1;padding:8px 0;background:#fff;color:#0EA5E9;border:1.5px solid #93C5FD;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer">✉️ 안내 메시지 복사</button>' +
+          '<button id="rt-home-copy-link" style="flex:1;padding:8px 0;background:#0EA5E9;color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer">📋 링크 복사</button>' +
+          '<button id="rt-home-copy-msg"  style="flex:1;padding:8px 0;background:#fff;color:#0EA5E9;border:1.5px solid #93C5FD;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer">✉️ 안내 메시지 복사</button>' +
         '</div>';
       wrap.appendChild(linkBox);
 
@@ -394,18 +394,18 @@ window.RetireModule = (function () {
     overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9990;display:flex;align-items:center;justify-content:center;padding:16px';
 
     var box = document.createElement('div');
-    box.style.cssText = 'background:#fff;border-radius:16px;padding:28px 24px;max-width:360px;width:100%;text-align:center;box-shadow:0 8px 40px rgba(0,0,0,.3)';
+    box.style.cssText = 'background:#fff;border-radius:6px;padding:28px 24px;max-width:360px;width:100%;text-align:center;box-shadow:0 8px 40px rgba(0,0,0,.3)';
     box.innerHTML =
       '<div style="font-size:36px;margin-bottom:8px">✅</div>' +
       '<div style="font-size:18px;font-weight:700;color:#1a3a5c;margin-bottom:6px">중간 저장 완료</div>' +
       '<div style="font-size:12px;color:#6B7280;line-height:1.7;margin-bottom:18px">아래 저장 코드를 반드시 메모해 두세요.<br>같은 링크에서 <strong>이어서 작성하기</strong> → 코드+이름 입력으로<br>언제든 이어서 작성할 수 있습니다.</div>' +
-      '<div style="background:#EFF6FF;border:2px solid #0EA5E9;border-radius:10px;padding:16px;margin-bottom:16px">' +
+      '<div style="background:#EFF6FF;border:2px solid #0EA5E9;border-radius:6px;padding:16px;margin-bottom:16px">' +
         '<div style="font-size:11px;color:#6B7280;margin-bottom:6px;font-weight:600">저장 코드</div>' +
         '<div style="font-size:30px;font-weight:900;letter-spacing:8px;color:#0EA5E9;font-family:monospace">' + _esc(app.resumeCode) + '</div>' +
         '<div style="font-size:12px;color:#374151;margin-top:8px">이름: <strong>' + _esc(app.form.name) + '</strong></div>' +
       '</div>' +
-      '<button id="rt-ov-copy" style="display:block;width:100%;padding:10px;background:#1a3a5c;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:8px">📋 코드 복사</button>' +
-      '<button id="rt-ov-close" style="display:block;width:100%;padding:10px;background:#F3F4F6;color:#374151;border:none;border-radius:8px;font-size:14px;cursor:pointer">계속 작성하기</button>';
+      '<button id="rt-ov-copy" style="display:block;width:100%;padding:10px;background:#1a3a5c;color:#fff;border:none;border-radius:6px;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:8px">📋 코드 복사</button>' +
+      '<button id="rt-ov-close" style="display:block;width:100%;padding:10px;background:#F3F4F6;color:#374151;border:none;border-radius:6px;font-size:14px;cursor:pointer">계속 작성하기</button>';
 
     overlay.appendChild(box);
     document.body.appendChild(overlay);
@@ -596,13 +596,13 @@ window.RetireModule = (function () {
     /* 하나은행 퇴직연금 IRP 개설 QR + 바로가기 */
     var hanaUrl = 'https://m.hanabank.com/cont/mybranch/0350/05/MYB03500152489/index.html';
     var hanaQr = el('div');
-    hanaQr.style.cssText = 'margin:14px 0;padding:14px;border:1px solid #DCE3EE;border-radius:10px;background:#F4F8FF;display:flex;gap:14px;align-items:center;flex-wrap:wrap';
+    hanaQr.style.cssText = 'margin:14px 0;padding:14px;border:1px solid #DCE3EE;border-radius:6px;background:#F4F8FF;display:flex;gap:14px;align-items:center;flex-wrap:wrap';
     hanaQr.innerHTML =
-      '<img src="https://api.qrserver.com/v1/create-qr-code/?size=140x140&margin=4&data=' + encodeURIComponent(hanaUrl) + '" alt="하나은행 IRP 개설 QR코드" style="width:118px;height:118px;border:1px solid #E5E7EB;border-radius:8px;background:#fff;flex-shrink:0">' +
+      '<img src="https://api.qrserver.com/v1/create-qr-code/?size=140x140&margin=4&data=' + encodeURIComponent(hanaUrl) + '" alt="하나은행 IRP 개설 QR코드" style="width:118px;height:118px;border:1px solid #E5E7EB;border-radius:6px;background:#fff;flex-shrink:0">' +
       '<div style="flex:1;min-width:190px">' +
         '<div style="font-size:14px;font-weight:700;color:#1a3a5c">하나은행 퇴직연금 IRP 개설하기</div>' +
         '<div style="font-size:12px;color:#5B6B7B;margin:6px 0 10px;line-height:1.7">하나은행 IRP(개인형퇴직연금) 계좌가 없으면, 휴대폰으로 <strong>QR을 스캔</strong>하거나 아래 버튼을 눌러 바로 개설하세요. <span style="color:#9AA3AB">(버튼은 안내 후 새 창으로 열립니다)</span></div>' +
-        '<a id="rt-irp-open-link" href="' + hanaUrl + '" target="_blank" rel="noopener" style="display:inline-block;background:#1a3a5c;color:#fff;font-size:13px;font-weight:600;padding:9px 16px;border-radius:8px;text-decoration:none">하나은행 IRP 개설 페이지 열기 →</a>' +
+        '<a id="rt-irp-open-link" href="' + hanaUrl + '" target="_blank" rel="noopener" style="display:inline-block;background:#1a3a5c;color:#fff;font-size:13px;font-weight:600;padding:9px 16px;border-radius:6px;text-decoration:none">하나은행 IRP 개설 페이지 열기 →</a>' +
       '</div>';
     body.appendChild(hanaQr);
     // 외부 페이지로 바로 이동하지 않고: 저장 안내 + 새 창 이동 안내 후 새 탭으로 열기(현재 작성 페이지 유지)
@@ -813,7 +813,7 @@ window.RetireModule = (function () {
     body.appendChild(desc);
 
     var urlBox = el('div');
-    urlBox.style.cssText = 'background:#F9FAFB;border:1px solid #D1D5DB;border-radius:8px;padding:12px;font-size:13px;word-break:break-all;color:#0EA5E9;margin-bottom:12px';
+    urlBox.style.cssText = 'background:#F9FAFB;border:1px solid #D1D5DB;border-radius:6px;padding:12px;font-size:13px;word-break:break-all;color:#0EA5E9;margin-bottom:12px';
     urlBox.textContent = formUrl;
     body.appendChild(urlBox);
 

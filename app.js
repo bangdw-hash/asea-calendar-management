@@ -2322,7 +2322,7 @@
     var menu = document.createElement('div');
     menu.id = '_ev-cal-picker';
     menu.style.cssText =
-      'position:fixed;z-index:10010;background:#fff;border:1px solid #ddd;border-radius:8px;' +
+      'position:fixed;z-index:10010;background:#fff;border:1px solid #ddd;border-radius:6px;' +
       'box-shadow:0 4px 20px rgba(0,0,0,.15);padding:8px 0;min-width:220px;max-height:300px;overflow-y:auto;' +
       'top:50%;left:50%;transform:translate(-50%,-50%)';
 
@@ -3445,7 +3445,7 @@
       '    table { page-break-inside:avoid; }' +
       '  }' +
       '  .print-btn-bar { text-align:center; padding:12px 0 8px; display:flex; gap:12px; justify-content:center; }' +
-      '  .pbtn { padding:9px 28px; border:none; border-radius:8px; font-size:14px; font-weight:700; cursor:pointer; font-family:inherit; }' +
+      '  .pbtn { padding:9px 28px; border:none; border-radius:6px; font-size:14px; font-weight:700; cursor:pointer; font-family:inherit; }' +
       '  .pbtn-print { background:#0EA5E9; color:#fff; }' +
       '  .pbtn-close { background:#f1f3f4; color:#3c4152; }' +
       '</style>' +
@@ -3660,7 +3660,7 @@
       '  td { break-inside:avoid; page-break-inside:avoid; }' +
       '}' +
       '.btn-bar { text-align:center; padding:14px 0 8px; display:flex; gap:12px; justify-content:center; }' +
-      '.pbtn { padding:9px 28px; border:none; border-radius:8px; font-size:14px; font-weight:700; cursor:pointer; font-family:inherit; }' +
+      '.pbtn { padding:9px 28px; border:none; border-radius:6px; font-size:14px; font-weight:700; cursor:pointer; font-family:inherit; }' +
       '.pbtn-print { background:#0EA5E9; color:#fff; }' +
       '.pbtn-close  { background:#f1f3f4; color:#3c4152; }' +
       '</style></head><body>' +
@@ -5555,8 +5555,8 @@
       'header h1{font-size:16px;font-weight:700;line-height:1.3}\n' +
       '.meta{margin-left:auto;font-size:12px;color:#999;white-space:nowrap}\n' +
       '.container{max-width:640px;margin:0 auto;padding:20px 16px 60px}\n' +
-      '.guide{font-size:14px;color:#444;line-height:1.7;margin-bottom:20px;padding:14px 16px;background:#fff;border-radius:10px;border:1px solid #e0e4ef}\n' +
-      '.ev-item{display:flex;align-items:flex-start;gap:10px;padding:12px 14px;background:#fff;border-radius:8px;border:1px solid #e0e4ef;margin-bottom:8px;text-decoration:none;color:inherit;transition:background 150ms}\n' +
+      '.guide{font-size:14px;color:#444;line-height:1.7;margin-bottom:20px;padding:14px 16px;background:#fff;border-radius:6px;border:1px solid #e0e4ef}\n' +
+      '.ev-item{display:flex;align-items:flex-start;gap:10px;padding:12px 14px;background:#fff;border-radius:6px;border:1px solid #e0e4ef;margin-bottom:8px;text-decoration:none;color:inherit;transition:background 150ms}\n' +
       '.ev-item:active{background:#eef3ff}\n' +
       '.ev-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;margin-top:5px}\n' +
       '.ev-body{display:flex;flex-direction:column;gap:3px;flex:1;min-width:0}\n' +
@@ -6209,7 +6209,7 @@
     var isAdm = role === 'admin';
     badge.style.display = 'inline-block';
     badge.textContent = label;
-    badge.style.cssText = 'display:inline-block;margin-left:8px;padding:2px 8px;border-radius:12px;font-size:12px;font-weight:600;' +
+    badge.style.cssText = 'display:inline-block;margin-left:8px;padding:2px 8px;border-radius:6px;font-size:12px;font-weight:600;' +
       (isAdm ? 'background:#0ea5e9;color:#fff' : 'background:#e0f2fe;color:#0ea5e9');
   }
 
@@ -6455,8 +6455,8 @@
         (sp.name ? '&name=' + encodeURIComponent(sp.name) : '');
       var hasGps = sp.lat && sp.lng;
       var gpsBadge = hasGps
-        ? '<span style="display:inline-flex;align-items:center;gap:3px;background:#e3f2fd;color:#1565c0;border-radius:20px;padding:2px 8px;font-size:11px;font-weight:700;margin-left:6px">📍 GPS 제한 ' + (sp.geoRadius || 100) + 'm</span>'
-        : '<span style="display:inline-flex;align-items:center;gap:3px;background:#f1f3f4;color:#888;border-radius:20px;padding:2px 8px;font-size:11px;margin-left:6px">🆓 GPS 자유</span>';
+        ? '<span style="display:inline-flex;align-items:center;gap:3px;background:#e3f2fd;color:#1565c0;border-radius:6px;padding:2px 8px;font-size:11px;font-weight:700;margin-left:6px">📍 GPS 제한 ' + (sp.geoRadius || 100) + 'm</span>'
+        : '<span style="display:inline-flex;align-items:center;gap:3px;background:#f1f3f4;color:#888;border-radius:6px;padding:2px 8px;font-size:11px;margin-left:6px">🆓 GPS 자유</span>';
       return '<div class="ci-space-card">' +
         '<div>' +
           '<div class="ci-space-card-name" style="display:flex;align-items:center;flex-wrap:wrap;gap:2px">🚪 ' + _esc(sp.name) + gpsBadge + '</div>' +
@@ -6498,7 +6498,7 @@
     modal.style.cssText = 'position:fixed;inset:0;z-index:9500;display:flex;align-items:center;justify-content:center';
     modal.innerHTML =
       '<div id="ci-logs-backdrop" style="position:absolute;inset:0;background:rgba(0,0,0,.4)"></div>' +
-      '<div style="position:relative;background:#fff;border-radius:14px;box-shadow:0 8px 40px rgba(0,0,0,.25);width:min(720px,96vw);max-height:90vh;display:flex;flex-direction:column">' +
+      '<div style="position:relative;background:#fff;border-radius:6px;box-shadow:0 8px 40px rgba(0,0,0,.25);width:min(720px,96vw);max-height:90vh;display:flex;flex-direction:column">' +
         '<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid #e0e4ea;flex-shrink:0">' +
           '<div>' +
             '<div style="font-size:16px;font-weight:700">📊 ' + _esc(roomName) + ' 입출입 현황</div>' +
@@ -6512,7 +6512,7 @@
         '<div style="padding:14px 20px;border-bottom:1px solid #f0f2f5;flex-shrink:0">' +
           '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">' +
             '<label style="font-size:13px;font-weight:600;color:#5f6368">날짜 선택</label>' +
-            '<input type="date" id="ci-logs-date" value="' + today + '" style="border:1.5px solid #dadce0;border-radius:7px;padding:6px 10px;font-size:14px;font-weight:600">' +
+            '<input type="date" id="ci-logs-date" value="' + today + '" style="border:1.5px solid #dadce0;border-radius:6px;padding:6px 10px;font-size:14px;font-weight:600">' +
             '<button id="ci-logs-prev" class="btn btn-ghost btn-xs">◀ 전날</button>' +
             '<button id="ci-logs-today" class="btn btn-secondary btn-xs">오늘</button>' +
             '<button id="ci-logs-next" class="btn btn-ghost btn-xs">다음날 ▶</button>' +
@@ -6638,7 +6638,7 @@
       html += '<button class="ci-week-day-btn' +
         (isSel ? ' selected' : '') + (isToday ? ' today' : '') + '" ' +
         'data-date="' + ds + '" style="' +
-        'flex:1;min-width:36px;padding:6px 4px;border-radius:8px;border:1.5px solid ' +
+        'flex:1;min-width:36px;padding:6px 4px;border-radius:6px;border:1.5px solid ' +
         (isSel ? '#0ea5e9' : '#e0e4ea') + ';background:' +
         (isSel ? '#0ea5e9' : isToday ? '#e0f2fe' : '#f8f9fa') +
         ';color:' + (isSel ? '#fff' : '#202124') + ';cursor:pointer;font-size:11px;text-align:center">' +
@@ -6733,9 +6733,9 @@
       }
 
       var statusBadge = lastOut
-        ? '<span style="background:#fce4ec;color:#c62828;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:700">퇴실완료</span>'
+        ? '<span style="background:#fce4ec;color:#c62828;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:700">퇴실완료</span>'
         : lastIn
-          ? '<span style="background:#e8f5e9;color:#2e7d32;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:700">입실중</span>'
+          ? '<span style="background:#e8f5e9;color:#2e7d32;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:700">입실중</span>'
           : '';
 
       return '<div class="ci-log-user-row">' +

@@ -7,7 +7,7 @@
 /* ── 상태 배너 ── */
 .mt-status-bar {
   display: flex; align-items: center; gap: 10px;
-  padding: 10px 16px; border-radius: 10px; margin-bottom: 18px;
+  padding: 10px 16px; border-radius: 6px; margin-bottom: 18px;
   font-size: 13px; font-weight: 600;
 }
 .mt-status-bar.connected    { background: #DCFCE7; color: #15803D; border: 1px solid #BBF7D0; }
@@ -29,7 +29,7 @@
 .mt-setup-field  { margin-bottom: 14px; }
 .mt-setup-label  { display: block; font-size: 12px; font-weight: 600; color: #374151; margin-bottom: 5px; }
 .mt-setup-input {
-  width: 100%; padding: 9px 12px; border: 1px solid #D1D5DB; border-radius: 8px;
+  width: 100%; padding: 9px 12px; border: 1px solid #D1D5DB; border-radius: 6px;
   font-size: 13px; box-sizing: border-box; font-family: 'Apple SD Gothic Neo', 'Pretendard', sans-serif;
 }
 .mt-setup-input:focus { outline: none; border-color: #3B82F6; box-shadow: 0 0 0 3px rgba(59,130,246,.12); }
@@ -63,7 +63,7 @@
 .mt-field { display: flex; flex-direction: column; gap: 5px; }
 .mt-field label { font-size: 12px; font-weight: 600; color: #374151; }
 .mt-field input, .mt-field select, .mt-field textarea {
-  padding: 9px 12px; border: 1px solid #D1D5DB; border-radius: 8px;
+  padding: 9px 12px; border: 1px solid #D1D5DB; border-radius: 6px;
   font-size: 13px; font-family: 'Apple SD Gothic Neo', 'Pretendard', sans-serif; box-sizing: border-box;
 }
 .mt-field input:focus, .mt-field select:focus, .mt-field textarea:focus {
@@ -74,7 +74,7 @@
 
 /* ── 버튼 ── */
 .mt-btn {
-  padding: 9px 20px; border-radius: 8px; font-size: 13px; font-weight: 600;
+  padding: 9px 20px; border-radius: 6px; font-size: 13px; font-weight: 600;
   cursor: pointer; border: none; transition: background .15s, opacity .15s;
 }
 .mt-btn-primary { background: #0B5CFF; color: #fff; }
@@ -94,14 +94,14 @@
 }
 .mt-list-count { font-size: 12px; color: #6B7280; }
 .mt-meeting-card {
-  background: #fff; border: 1px solid #E5E7EB; border-radius: 10px;
+  background: #fff; border: 1px solid #E5E7EB; border-radius: 6px;
   padding: 16px 18px; margin-bottom: 10px;
   transition: box-shadow .15s, border-color .15s;
 }
 .mt-meeting-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,.08); border-color: #BFDBFE; }
 .mt-meeting-top { display: flex; align-items: flex-start; gap: 14px; }
 .mt-meeting-icon {
-  width: 44px; height: 44px; border-radius: 10px; background: #EFF6FF;
+  width: 44px; height: 44px; border-radius: 6px; background: #EFF6FF;
   display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0;
 }
 .mt-meeting-body { flex: 1; min-width: 0; }
@@ -119,7 +119,7 @@
 .mt-links-row { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
 .mt-link-item {
   display: flex; align-items: center; gap: 8px;
-  padding: 7px 10px; border-radius: 8px; font-size: 12px;
+  padding: 7px 10px; border-radius: 6px; font-size: 12px;
 }
 .mt-link-item.host        { background: #FFFBEB; border: 1px solid #FDE68A; }
 .mt-link-item.participant { background: #EFF6FF; border: 1px solid #BFDBFE; }
@@ -150,7 +150,7 @@
 /* ── 토스트 ── */
 .mt-toast {
   position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
-  padding: 10px 20px; border-radius: 8px; font-size: 13px; z-index: 9999;
+  padding: 10px 20px; border-radius: 6px; font-size: 13px; z-index: 9999;
   animation: mt-fadein .2s ease; pointer-events: none; color: #fff; white-space: nowrap;
 }
 @keyframes mt-fadein {
@@ -164,7 +164,7 @@
   display: flex; align-items: center; justify-content: center;
 }
 .mt-modal {
-  background: #fff; border-radius: 14px; width: min(540px, 96vw);
+  background: #fff; border-radius: 6px; width: min(540px, 96vw);
   max-height: 90vh; overflow-y: auto;
   box-shadow: 0 20px 60px rgba(0,0,0,.25); padding: 24px;
 }

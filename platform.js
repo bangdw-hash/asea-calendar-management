@@ -238,7 +238,7 @@ window.Platform = window.Platform || (function () {
     var html = '';
     for (var i = 0; i < rows; i++) {
       html += '<div style="display:flex;gap:12px;align-items:center;padding:10px 0">' +
-        '<span class="pf-skll" style="width:40px;height:40px;border-radius:8px"></span>' +
+        '<span class="pf-skll" style="width:40px;height:40px;border-radius:6px"></span>' +
         '<span style="flex:1"><span class="pf-skll" style="width:' + (50 + (i % 3) * 12) + '%;height:12px;margin-bottom:7px"></span>' +
         '<span class="pf-skll" style="width:' + (28 + (i % 4) * 9) + '%;height:10px"></span></span></div>';
     }

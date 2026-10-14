@@ -1,5 +1,5 @@
 /* contractgen.css — 전자서식·계약 생성 */
-.cg-stage { position:relative; width:100%; background:#f1f5f9; border:1px solid #e5e7eb; border-radius:10px; overflow:hidden; margin-top:6px; }
+.cg-stage { position:relative; width:100%; background:#f1f5f9; border:1px solid #e5e7eb; border-radius:6px; overflow:hidden; margin-top:6px; }
 .cg-img { display:block; width:100%; height:auto; user-select:none; -webkit-user-drag:none; }
 #cg-fields { position:absolute; inset:0; }
 .cg-mk { position:absolute; box-sizing:border-box; min-width:18px; min-height:14px; border:1.5px solid #2563eb; background:rgba(37,99,235,.14); border-radius:4px; cursor:grab; overflow:hidden; }

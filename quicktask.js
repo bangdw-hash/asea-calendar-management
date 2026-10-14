@@ -165,7 +165,7 @@ var QuickTaskModule = (function () {
     if (Q.pasteImageB64) {
       preview.innerHTML =
         '<div class="qt-img-preview">' +
-          '<img src="' + Q.pasteImageB64 + '" alt="붙여넣은 이미지" style="max-width:100%;max-height:180px;border-radius:8px">' +
+          '<img src="' + Q.pasteImageB64 + '" alt="붙여넣은 이미지" style="max-width:100%;max-height:180px;border-radius:6px">' +
           '<button id="qt-clear-paste" class="qt-clear-btn">✕ 지우기</button>' +
         '</div>';
     } else if (Q.pasteText) {
@@ -666,7 +666,7 @@ var QuickTaskModule = (function () {
   function qtShowResult(kind, head, issues) {
     var el = $q('qt-result'); if (!el) return; el.hidden = false;
     var c = kind === 'ok' ? ['#ecfdf5', '#a7f3d0', '#065f46'] : kind === 'warn' ? ['#fffbeb', '#fde68a', '#92400e'] : ['#fef2f2', '#fecaca', '#991b1b'];
-    var html = '<div style="background:' + c[0] + ';border:1px solid ' + c[1] + ';border-radius:10px;padding:12px 14px;margin-top:10px;color:' + c[2] + '">' +
+    var html = '<div style="background:' + c[0] + ';border:1px solid ' + c[1] + ';border-radius:6px;padding:12px 14px;margin-top:10px;color:' + c[2] + '">' +
       '<div style="font-weight:700;font-size:14px">' + escapeHtml(head) + '</div>';
     if (issues && issues.length) html += '<ul style="margin:8px 0 0;padding-left:18px;font-size:13px;line-height:1.6">' + issues.map(function (x) { return '<li><b>' + escapeHtml(x.title) + '</b> — ' + escapeHtml(x.msg) + '</li>'; }).join('') + '</ul>';
     else if (kind === 'ok') html += '<div style="font-size:13px;margin-top:4px">모두 정상 등록되었습니다.</div>';
