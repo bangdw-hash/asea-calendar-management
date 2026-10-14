@@ -14,6 +14,7 @@ create table if not exists awd.issued (
   revoked boolean not null default false,
   revoked_at timestamptz
 );
+alter table awd.issued add column if not exists award text not null default '';   -- 상명(진위 확인 화면에 표시)
 create index if not exists issued_at_idx on awd.issued(issued_at desc);
 alter table awd.issued enable row level security;
 revoke all on awd.issued from public, anon, authenticated;
@@ -24,8 +25,8 @@ declare n int := 0; x jsonb;
 begin
   perform awd.sess(p_token);
   for x in select * from jsonb_array_elements(coalesce(p_items, '[]'::jsonb)) loop
-    insert into awd.issued(code, serial, tpl_name, holder, batch_label)
-      values (upper(x->>'code'), coalesce(x->>'serial', ''), coalesce(x->>'tpl', ''), coalesce(x->>'holder', ''), coalesce(p_label, ''))
+    insert into awd.issued(code, serial, tpl_name, holder, batch_label, award)
+      values (upper(x->>'code'), coalesce(x->>'serial', ''), coalesce(x->>'tpl', ''), coalesce(x->>'holder', ''), coalesce(p_label, ''), coalesce(x->>'award', ''))
       on conflict (code) do nothing;
     n := n + 1;
   end loop;
@@ -59,7 +60,7 @@ begin
   if not found then return jsonb_build_object('ok', false); end if;
   n := char_length(i.holder);
   m := case when n <= 1 then i.holder when n = 2 then left(i.holder, 1) || '*' else left(i.holder, 1) || repeat('*', n - 2) || right(i.holder, 1) end;
-  return jsonb_build_object('ok', true, 'serial', i.serial, 'tpl', i.tpl_name, 'holder', m, 'issued_at', i.issued_at, 'revoked', i.revoked);
+  return jsonb_build_object('ok', true, 'serial', i.serial, 'tpl', i.tpl_name, 'holder', m, 'award', i.award, 'issued_at', i.issued_at, 'revoked', i.revoked);
 end $$;
 
 revoke all on all functions in schema awd from public, anon, authenticated;

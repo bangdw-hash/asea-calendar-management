@@ -82,6 +82,7 @@
   var CODE_CH = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
   function newCode() { var a = new Uint8Array(10); (window.crypto || window.msCrypto).getRandomValues(a); return Array.prototype.map.call(a, function (x) { return CODE_CH[x % CODE_CH.length]; }).join(''); }
   function holderOf(row) { var f = T().fields, k = f.filter(function (x) { return /성명|이름|수상자|수료자|name/i.test(x.name); })[0] || f[0]; return k ? String(row[k.name] || '') : ''; }
+  function awardOf(row) { var f = T().fields.filter(function (x) { return /상명|상\s*종류|표창|종류|award/i.test(x.name); })[0]; return f ? String(row[f.name] || '') : ''; }
   function usesCode() { return T().elems.some(function (e) { return e.t === 'qr' || (e.t === 'text' && /\{\{\s*@인증번호\s*\}\}/.test((e.text || '') + (e.en || ''))); }); }
 
   // 발급번호 규칙 — page.num = {pattern, start, step, pad}
@@ -145,7 +146,7 @@
       var start = Promise.resolve(true);
       if (reg && real) {                      // 장마다 고유 인증번호를 만들어 서버 발급 대장에 먼저 등록
         list = list.map(function (x) { return { row: Object.assign({}, x.row, { _code: x.row._code || newCode() }), idx: x.idx }; });
-        start = AW.call('award_issue_register', { p_items: list.map(function (x) { return { code: x.row._code, serial: AW.serial(x.idx, t), tpl: t.name, holder: holderOf(x.row) }; }), p_label: nm }).then(function () { return true; })
+        start = AW.call('award_issue_register', { p_items: list.map(function (x) { return { code: x.row._code, serial: AW.serial(x.idx, t), tpl: t.name, holder: holderOf(x.row), award: awardOf(x.row) }; }), p_label: nm }).then(function () { return true; })
           .catch(function (e) { return AW.confirm('인증번호 등록 실패', e.message + '\n\n등록되지 않은 인증번호는 진위 확인이 되지 않습니다. 그래도 인쇄하시겠습니까? (db/award_schema_2.sql 설치 여부를 확인하십시오)', '그래도 인쇄'); });
       } else if (forced) list = list.map(function (x) { return { row: Object.assign({}, x.row, { _code: 'SAMPLE0000' }), idx: x.idx }; });
       start.then(function (ok) {
@@ -195,8 +196,8 @@
         body().innerHTML = '<div style="display:flex;gap:8px;margin-bottom:8px"><input class="in sm" id="rg-q" style="flex:1" placeholder="인증번호·발급번호·이름 검색"><button class="btn btn-secondary btn-sm" id="rg-s">검색</button></div><div id="rg-l"><div class="loading">불러오는 중…</div></div>';
         var load = function () {
           AW.call('award_issued_list', { p_q: AW.$('#rg-q', m.el).value.trim() }).then(function (l) {
-            AW.$('#rg-l', m.el).innerHTML = l.length ? '<div class="tbl-wrap"><table class="gt"><thead><tr><th>인증번호</th><th>발급번호</th><th>수여자</th><th>양식</th><th>발급일</th><th>상태</th><th></th></tr></thead><tbody>' + l.map(function (x) {
-              return '<tr><td class="nowrap"><b>' + AW.esc(x.code) + '</b></td><td>' + AW.esc(x.serial) + '</td><td>' + AW.esc(x.holder) + '</td><td>' + AW.esc(x.tpl_name) + '</td><td class="nowrap">' + dt(x.issued_at) + '</td><td>' + (x.revoked ? '<span class="badge err">폐기</span>' : '<span class="badge ok">유효</span>') + '</td><td><button class="btn btn-ghost btn-sm" data-c="' + AW.esc(x.code) + '" data-r="' + (x.revoked ? 0 : 1) + '">' + (x.revoked ? '복구' : '폐기') + '</button></td></tr>';
+            AW.$('#rg-l', m.el).innerHTML = l.length ? '<div class="tbl-wrap"><table class="gt"><thead><tr><th>인증번호</th><th>발급번호</th><th>수여자</th><th>상명</th><th>양식</th><th>발급일</th><th>상태</th><th></th></tr></thead><tbody>' + l.map(function (x) {
+              return '<tr><td class="nowrap"><b>' + AW.esc(x.code) + '</b></td><td>' + AW.esc(x.serial) + '</td><td>' + AW.esc(x.holder) + '</td><td>' + AW.esc(x.award || '') + '</td><td>' + AW.esc(x.tpl_name) + '</td><td class="nowrap">' + dt(x.issued_at) + '</td><td>' + (x.revoked ? '<span class="badge err">폐기</span>' : '<span class="badge ok">유효</span>') + '</td><td><button class="btn btn-ghost btn-sm" data-c="' + AW.esc(x.code) + '" data-r="' + (x.revoked ? 0 : 1) + '">' + (x.revoked ? '복구' : '폐기') + '</button></td></tr>';
             }).join('') + '</tbody></table></div><p class="muted">최근 300건까지 표시합니다. 폐기하면 진위 확인 페이지에서 「폐기된 상장」으로 안내됩니다.</p>' : '<div class="empty">발급 대장이 비어 있습니다.</div>';
             AW.$$('[data-c]', m.el).forEach(function (b) { b.onclick = function () { AW.call('award_issued_revoke', { p_code: b.dataset.c, p_revoked: b.dataset.r === '1' }).then(load).catch(function (e) { AW.toast(e.message, 'error'); }); }; });
           }).catch(function (e) { AW.$('#rg-l', m.el).innerHTML = '<div class="alert warn">' + AW.esc(e.message) + '</div>'; });

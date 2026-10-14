@@ -38,7 +38,7 @@ button{width:100%;min-height:44px;border:0;border-radius:var(--r);background:var
       .then(function (d) {
         if (!d || !d.ok) r.innerHTML = '<div class="res bad"><b>확인되지 않는 번호입니다</b>인증번호를 다시 확인해 주십시오. 계속 확인되지 않으면 발급 기관에 문의하십시오.</div>';
         else if (d.revoked) r.innerHTML = '<div class="res bad"><b>폐기된 상장입니다</b>발급 기관에서 효력을 정지한 번호입니다.</div>';
-        else r.innerHTML = '<div class="res ok"><b>정상 발급된 상장입니다</b><dl><dt>양식</dt><dd>' + esc(d.tpl) + '</dd><dt>발급번호</dt><dd>' + esc(d.serial) + '</dd><dt>수여자</dt><dd>' + esc(d.holder) + '</dd><dt>발급일</dt><dd>' + esc(String(d.issued_at).slice(0, 10)) + '</dd></dl></div>';
+        else r.innerHTML = '<div class="res ok"><b>정상 발급된 상장입니다</b><dl><dt>양식</dt><dd>' + esc(d.tpl) + '</dd><dt>발급번호</dt><dd>' + esc(d.serial) + '</dd><dt>수여자</dt><dd>' + esc(d.holder) + '</dd>' + (d.award ? '<dt>상명</dt><dd>' + esc(d.award) + '</dd>' : '') + '<dt>발급일</dt><dd>' + esc(String(d.issued_at).slice(0, 10)) + '</dd></dl></div>';
       }).catch(function () { r.innerHTML = '<div class="res bad"><b>확인하지 못했습니다</b>네트워크 상태를 확인한 뒤 다시 시도해 주십시오.</div>'; });
   }
   document.getElementById('f').onsubmit = function (e) { e.preventDefault(); check(c.value); };
