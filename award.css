@@ -272,3 +272,4 @@ table{border-collapse:collapse;width:100%}
 .hs-flt{margin-bottom:8px;display:flex;align-items:center;gap:6px}
 .vb-bar{display:flex;align-items:center;gap:6px;margin-bottom:8px;flex-wrap:wrap}
 .vb-st{min-height:200px;display:flex;align-items:center;justify-content:center;overflow:auto;padding:12px}
+.gt.fx td{vertical-align:top}.fx-r{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px}
