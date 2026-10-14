@@ -428,6 +428,7 @@
   }
   function render(keepFilters) {
     var body = document.getElementById('rbody'); if (!body) return;
+    if (keepFilters && A.ext.rsub === 'rpt') return;   // 리포트 생성 화면은 실시간 갱신으로 지우지 않음
     var D = A.ext.D = compute(), sub = A.ext.rsub || 'sum';
     var fn = { sum: viewSummary, q: viewQuestions, heat: viewHeat, prof: viewProf, cmp: viewCmp, kind: viewKind, text: viewText, mng: viewManage }[sub] || (A.ext.rviews || {})[sub] || viewSummary;
     var y = window.scrollY; body.className = ''; body.innerHTML = fn(D); updateLive(); if (R.newCount && sub !== 'sum') { /* 새 응답 표시는 상단 라이브 표시에 반영 */ }
