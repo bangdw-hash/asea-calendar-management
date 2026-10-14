@@ -25,8 +25,8 @@
       { id: 'q', tab: 'questions', t: '문항', done: nq > 0 && !lint.errs.length, bad: lint.errs.length, why: lint.errs.length ? '문항에 고쳐야 할 곳이 ' + lint.errs.length + '건 있습니다. 문항 탭 위쪽의 빨간 안내를 확인해 주십시오.' : '묻고 싶은 문항을 추가해 주십시오. 설문지 파일이 있으면 「AI 설계」 탭에서 초안을 만들 수 있습니다.' }
     ];
     if (!gen) {
-      l.push({ id: 'c', tab: 'courses', t: '과목·교수', done: cs > 0, why: '학생이 반을 고르면 그 반의 과목이 나옵니다. 엑셀·시간표 파일(AI)이나 「반 × 과목 표」로 한 번에 등록할 수 있습니다.' });
-      l.push({ id: 'h', tab: 'targets', t: '대상 인원', done: head > 0, optional: true, why: '계열·학년별 인원을 넣으면 응답률이 계산됩니다. (선택)' });
+      l.push({ id: 'c', tab: 'courses', t: '과목·교수', done: cs > 0, why: '학생이 반을 고르면 그 반의 과목이 나옵니다. 엑셀·시간표 파일(AI)이나 「반 × 과목 표」로 한 번에 등록할 수 있습니다. 엑셀 양식의 「재적인원(명)」까지 적어 올리면 반별 응답률 준비도 함께 끝납니다.' });
+      if (head > 0 && !Object.keys((A.work && A.work.def && A.work.def.classHead) || {}).length) l.push({ id: 'h', tab: 'targets', t: '대상 인원', done: true, optional: true, why: '계열·학년별 인원이 등록되어 있습니다.' });
     }
     l.push({ id: 't', tab: 'overview', t: '테스트', done: (item.test_responses || 0) > 0 || live, why: '「시작·배포」 탭에서 테스트 모드를 켠 뒤 학생 링크로 직접 응답해 보십시오. 결과는 정식 시작 전에 지워집니다.' });
     l.push({ id: 'l', tab: 'overview', t: '정식 시작', done: live, why: '「시작·배포」 탭의 「정식 시작」 버튼을 누르면 응답을 받기 시작합니다.' });
