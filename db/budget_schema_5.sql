@@ -332,7 +332,7 @@ begin
     perform bgt.assert_editable(v_line.year, v_line.dept, v_line.type);
   end if;
   select * into v_old from bgt.spend where id = p_id;
-  delete from bgt.spend where id = p_id;
+  if v_old.id is not null then delete from bgt.spend where id = v_old.id; end if;
   perform bgt.log_add(p_actor, 'spend_delete', v_line.dept || '/' || v_line.mok, jsonb_build_object('line', v_line.name, 'old', to_jsonb(v_old)));
   if v_old.ticket_line_id is not null then
     update bgt.ticket_lines set applied_amount = 0, spend_id = null where id = v_old.ticket_line_id returning ticket_id into v_tid;
@@ -520,7 +520,7 @@ end $$;
 -- 무효 처리(결재 취소·반려): 연결된 지출 기록을 지우고 QR을 무효로 만듭니다. 이력은 남습니다.
 create or replace function public.bgt_a_ticket_void(p_token text, p_ticket_id uuid, p_reason text)
 returns jsonb language plpgsql security definer set search_path = bgt, extensions, public as $$
-declare t bgt.tickets; reason text := btrim(coalesce(p_reason, ''));
+declare t bgt.tickets; reason text := btrim(coalesce(p_reason, '')); r record;
 begin
   perform bgt.sess(p_token, 'admin');
   if reason = '' then raise exception 'REASON_REQUIRED'; end if;
@@ -528,7 +528,9 @@ begin
   if not found then raise exception 'NOT_FOUND'; end if;
   if t.status = 'void' then raise exception 'VOIDED'; end if;
   perform bgt.ticket_ev(t.id, '관리자', 'void', reason, coalesce(t.doc_no, ''), bgt.ticket_snapshot(t.id), null);
-  delete from bgt.spend where id in (select spend_id from bgt.ticket_lines where ticket_id = t.id and spend_id is not null);
+  for r in select spend_id from bgt.ticket_lines where ticket_id = t.id and spend_id is not null loop
+    delete from bgt.spend where id = r.spend_id;
+  end loop;
   update bgt.tickets set status = 'void', void_at = now(), void_reason = reason where id = t.id;
   perform bgt.log_add('admin', 'ticket_void', t.dept || '/' || coalesce(t.doc_no, t.title), jsonb_build_object('ticket', t.id));
   return jsonb_build_object('ok', true);
