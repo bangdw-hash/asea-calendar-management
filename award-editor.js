@@ -9,7 +9,8 @@
   var AW = window.AW, S = AW.S, E = {};
   AW.Editor = E;
   var K1 = 96 / 25.4;                       // 100% = 1mm 당 3.78px
-  var st = { zoom: 0, fit: true, snap: true, hist: [], hi: -1, root: null, stage: null, pg: null, ov: null, drag: null, editing: null, clip: null };
+  var CFG0 = { grid: 1, snap: true, show: false, guides: true, th: 1.2, nudge: 0.5, big: 5 };
+  var st = { cfg: Object.assign({}, CFG0, AW.lsGet('award_ed_cfg', {})), sty: null, zoom: 0, fit: true, hist: [], hi: -1, root: null, stage: null, pg: null, ov: null, drag: null, editing: null, clip: null };
 
   function T() { return S.tpl; }
   function sel() { return S.sel.map(AW.get).filter(Boolean); }
@@ -37,10 +38,10 @@
     root.innerHTML =
       '<div class="ed-tools">' +
         '<div class="tg">' + BTN('add-text', 'text', '글상자 추가') + BTN('add-field', 'field', '일괄 입력 항목 추가 — 엑셀 데이터가 들어갈 자리') + BTN('add-line', 'line', '선 추가') + BTN('add-rect', 'rect', '사각형 추가') + BTN('add-img', 'image', '이미지(직인·로고) 추가') + '</div>' +
-        '<div class="tg">' + BTN('starter', 'wand', '기본 상장 배치 넣기') + BTN('page', 'page', '용지·배경 설정(JPG/PDF 올리기)') + '</div>' +
+        '<div class="tg">' + BTN('starter', 'wand', '기본 상장 배치 넣기') + BTN('page', 'page', '용지·배경 설정(JPG/PDF 올리기)') + '<button class="tb tb-txt" data-a="orient" title="가로·세로 전환"></button></div>' +
         '<div class="tg">' + BTN('undo', 'undo', '실행 취소 (Ctrl+Z)') + BTN('redo', 'redo', '다시 실행 (Ctrl+Y)') + '</div>' +
         '<div class="tg">' + BTN('dup', 'copy', '복제 (Ctrl+D)') + BTN('addline', 'plus', '줄 추가 — 선택한 상자 아래에 같은 서식으로 한 줄 더') + BTN('del', 'trash', '삭제 (Delete)') + '</div>' +
-        '<div class="tg">' + BTN('zout', 'zoomOut', '축소') + '<button class="tb tb-txt" data-a="zlabel" title="맞춤/100%">맞춤</button>' + BTN('zin', 'zoomIn', '확대') + BTN('zfit', 'fit', '창에 맞춤') + BTN('snap', 'grid', '격자 맞춤(1mm) 켜기/끄기') + '</div>' +
+        '<div class="tg">' + BTN('zout', 'zoomOut', '축소') + '<button class="tb tb-txt" data-a="zlabel" title="맞춤/100%">맞춤</button>' + BTN('zin', 'zoomIn', '확대') + BTN('zfit', 'fit', '창에 맞춤') + BTN('snap', 'grid', '격자 자석 켜기/끄기') + BTN('gridcfg', 'cols', '격자·자석·이동 간격 설정') + BTN('keys', 'info', '편집 단축키·마우스 조합 안내') + '</div>' +
       '</div>' +
       '<div class="ed-tools ed-fmt" data-g="fmt">' +
         '<select class="in sm" data-p="font" title="글꼴">' + AW.FONTS.map(function (f) { return '<option value="' + f[0] + '">' + f[1] + '</option>'; }).join('') + '</select>' +
@@ -68,7 +69,7 @@
   function bind() {
     var root = st.root;
     root.addEventListener('click', function (e) {
-      var b = e.target.closest('[data-a]'); if (!b || b.disabled) return; act(b.dataset.a);
+      var b = e.target.closest('[data-a]'); if (!b || b.disabled) return; st.at = null; act(b.dataset.a);
     });
     root.addEventListener('input', function (e) {
       var p = e.target.dataset.p, g = e.target.dataset.g2;
@@ -78,9 +79,11 @@
     root.addEventListener('change', function (e) { if (e.target.dataset.p || e.target.dataset.g2) { commitLive(); } if (e.target.dataset.f === 'img') pickImg(e.target); });
     st.stage.addEventListener('pointerdown', onDown);
     st.stage.addEventListener('dblclick', onDbl);
+    st.stage.addEventListener('contextmenu', onCtx);
+    st.stage.addEventListener('wheel', function (e) { if (!(e.ctrlKey || e.metaKey) || !T()) return; e.preventDefault(); st.fit = false; st.zoom = Math.max(1, Math.min(K1 * 3, scale() * (e.deltaY < 0 ? 1.1 : 1 / 1.1))); E.render(); }, { passive: false });
     st.stage.addEventListener('dragover', function (e) { e.preventDefault(); });
     st.stage.addEventListener('drop', function (e) { e.preventDefault(); var f = e.dataTransfer && e.dataTransfer.files[0]; if (f) E.loadBackgroundFile(f); });
-    if (!st.docBound) { st.docBound = true; document.addEventListener('keydown', onKey); document.addEventListener('pointermove', onMove); document.addEventListener('pointerup', onUp); }
+    if (!st.docBound) { st.docBound = true; document.addEventListener('paste', onPasteDoc); document.addEventListener('keydown', onKey); document.addEventListener('pointermove', onMove); document.addEventListener('pointerup', onUp); }
   }
 
   /* ───────────── 렌더 ───────────── */
@@ -100,7 +103,9 @@
     AW.$$('.el[data-fit="1"]', pg).forEach(function (d) { d.dataset.fit = ''; });   // 편집 중에는 자동 맞춤 미적용(원본 크기 그대로 확인)
     markSel(); updTools();
     var zl = AW.$('[data-a="zlabel"]', st.root); if (zl) zl.textContent = st.fit ? '맞춤' : Math.round(st.zoom / K1 * 100) + '%';
-    var sn = AW.$('[data-a="snap"]', st.root); if (sn) sn.classList.toggle('on', st.snap);
+    var ob = AW.$('[data-a="orient"]', st.root); if (ob) ob.innerHTML = AW.ic('rotate', 15) + ' ' + (T().page.w >= T().page.h ? '가로' : '세로');
+    var sn = AW.$('[data-a="snap"]', st.root); if (sn) sn.classList.toggle('on', st.cfg.snap);
+    drawGrid();
     updHint();
   };
   function updHint() {
@@ -183,6 +188,14 @@
       case 'add-img': return AW.$('[data-f="img"]', st.root).click();
       case 'starter': return starter();
       case 'page': return E.pageDialog();
+      case 'orient': return E.orientDialog();
+      case 'keys': return keysHelp();
+      case 'selall': return E.setSel(T().elems.map(function (e) { return e.id; }));
+      case 'copy': return copy();
+      case 'cut': copy(); return del();
+      case 'paste': return pasteClip(st.at);
+      case 'edit': var o1 = sel()[0], d1 = o1 && domOf(o1); return d1 && o1.t === 'text' && !o1.lock && setTimeout(function () { beginEdit(o1, d1); }, 0);
+      case 'fwd': return orderStep(1); case 'bwd': return orderStep(-1);
       case 'undo': return undo(-1);
       case 'redo': return undo(1);
       case 'dup': return dup();
@@ -192,7 +205,12 @@
       case 'zout': st.fit = false; st.zoom = Math.max(1, scale() / 1.2); return E.render();
       case 'zfit': st.fit = true; return E.render();
       case 'zlabel': if (st.fit) { st.fit = false; st.zoom = K1; } else st.fit = true; return E.render();
-      case 'snap': st.snap = !st.snap; return AW.$('[data-a="snap"]', st.root).classList.toggle('on', st.snap);
+      case 'snap': st.cfg.snap = !st.cfg.snap; saveCfg(); return AW.$('[data-a="snap"]', st.root).classList.toggle('on', st.cfg.snap);
+      case 'gridcfg': return gridDialog();
+      case 'cstyle': return copyStyle();
+      case 'pstyle': return pasteStyle();
+      case 'pinplace': return pasteClip(null, true);
+      case 'same-w': return sameSize('w'); case 'same-h': return sameSize('h'); case 'same-wh': return sameSize('wh');
       case 'sz-': return tx.length && T1('size', (tx[0].size || 16) - 1);
       case 'sz+': return tx.length && T1('size', (tx[0].size || 16) + 1);
       case 'bold': return tx.length && T1('bold', !tx[0].bold);
@@ -207,6 +225,7 @@
     if (a.indexOf('ag-') === 0) return align(a.slice(3));
   }
   function add(e, keepSel) {
+    if (st.at) { e.x = AW.round(Math.max(0, Math.min(T().page.w - e.w, st.at.x - e.w / 2)), 1); e.y = AW.round(Math.max(0, Math.min(T().page.h - Math.max(e.h, 0), st.at.y - e.h / 2)), 1); st.at = null; }
     T().elems.push(e); E.refreshElems(); E.setSel([e.id]); changed('elems'); return e;
   }
   function del() {
@@ -224,6 +243,70 @@
     var c = AW.clone(e); c.id = AW.uid(); c.y = AW.round(e.y + e.h, 2); c.text = '새 줄'; c.lock = false;
     if (c.y + c.h > T().page.h) c.y = AW.round(Math.max(0, T().page.h - c.h), 2);
     T().elems.push(c); E.refreshElems(); E.setSel([c.id]); changed('elems');
+  }
+  function saveCfg() { AW.lsSet('award_ed_cfg', st.cfg); }
+  function drawGrid() {
+    if (!st.ov) return; var g = AW.$('.gridl', st.pg); if (g) g.remove();
+    if (!st.cfg.show) return;
+    var s = (st.cfg.grid || 1) * st.zoom, major = s * 5; if (s < 4) { s *= Math.ceil(4 / s); major = s * 5; }
+    g = document.createElement('div'); g.className = 'gridl';
+    g.style.cssText = 'background-image:linear-gradient(rgba(14,165,233,.18) 1px,transparent 1px),linear-gradient(90deg,rgba(14,165,233,.18) 1px,transparent 1px),linear-gradient(rgba(14,165,233,.32) 1px,transparent 1px),linear-gradient(90deg,rgba(14,165,233,.32) 1px,transparent 1px);background-size:' + s + 'px ' + s + 'px,' + s + 'px ' + s + 'px,' + major + 'px ' + major + 'px,' + major + 'px ' + major + 'px';
+    st.pg.insertBefore(g, st.ov);
+  }
+  function gridDialog() {
+    var c = st.cfg, opt = [0.1, 0.25, 0.5, 1, 2, 2.5, 5, 10];
+    AW.modal({ title: '격자 · 자석 · 이동 간격', body:
+      '<label class="f">격자 간격(mm)</label><select class="in" id="gc-g">' + opt.map(function (v) { return '<option value="' + v + '"' + (c.grid === v ? ' selected' : '') + '>' + v + ' mm</option>'; }).join('') + '<option value="x"' + (opt.indexOf(c.grid) < 0 ? ' selected' : '') + '>직접 입력</option></select>' +
+      '<input class="in num" id="gc-gx" type="number" min="0.05" max="50" step="0.05" value="' + c.grid + '" style="margin-top:6px">' +
+      '<div class="radios" style="margin-top:10px"><label><input type="checkbox" id="gc-snap"' + (c.snap ? ' checked' : '') + '> 격자 자석 (끌 때 격자에 맞춤, Ctrl 누르면 일시 해제)</label>' +
+      '<label><input type="checkbox" id="gc-show"' + (c.show ? ' checked' : '') + '> 격자선 표시 (5칸마다 굵게)</label>' +
+      '<label><input type="checkbox" id="gc-gd"' + (c.guides ? ' checked' : '') + '> 스마트 가이드 (용지·다른 상자의 가장자리·중앙에 붙음)</label></div>' +
+      '<div class="grid2"><div><label class="f">가이드 붙는 거리(mm)</label><input class="in num" id="gc-th" type="number" min="0.2" max="10" step="0.1" value="' + c.th + '"></div><div></div>' +
+      '<div><label class="f">화살표 이동(mm)</label><input class="in num" id="gc-n" type="number" min="0.05" max="20" step="0.05" value="' + c.nudge + '"></div><div><label class="f">Shift+화살표(mm)</label><input class="in num" id="gc-b" type="number" min="0.1" max="100" step="0.5" value="' + c.big + '"></div></div>' +
+      '<p class="muted" style="margin-bottom:0">설정은 이 브라우저에 저장됩니다. 격자는 이동·크기 조절에 적용됩니다.</p>',
+      actions: [{ label: '기본값', cls: 'btn-ghost', onClick: function (cl) { st.cfg = Object.assign({}, CFG0); saveCfg(); cl(); E.render(); } }, { label: '적용', cls: 'btn-primary', onClick: function (cl) {
+        var sel2 = AW.$('#gc-g').value, gv = sel2 === 'x' ? parseFloat(AW.$('#gc-gx').value) : parseFloat(sel2), num = function (id, d, lo, hi) { var v = parseFloat(AW.$(id).value); return isNaN(v) ? d : Math.max(lo, Math.min(hi, v)); };
+        st.cfg = { grid: isNaN(gv) ? 1 : Math.max(0.05, Math.min(50, gv)), snap: AW.$('#gc-snap').checked, show: AW.$('#gc-show').checked, guides: AW.$('#gc-gd').checked, th: num('#gc-th', 1.2, 0.2, 10), nudge: num('#gc-n', 0.5, 0.05, 20), big: num('#gc-b', 5, 0.1, 100) };
+        saveCfg(); cl(); E.render(); } }],
+      onOpen: function (el) { var s = AW.$('#gc-g', el), x = AW.$('#gc-gx', el); s.onchange = function () { if (s.value !== 'x') x.value = s.value; }; x.oninput = function () { s.value = opt.indexOf(parseFloat(x.value)) >= 0 ? x.value : 'x'; }; } });
+  }
+  // 서식(속성) 복사·붙여넣기 — 같은 종류의 요소에 글꼴·크기·색·굵기·정렬·행간·자간 등을 적용
+  var SK = { text: ['font', 'size', 'color', 'bold', 'italic', 'ul', 'align', 'valign', 'lh', 'ls', 'fit'], rect: ['fill', 'stroke', 'sw'], line: ['stroke', 'sw'], img: ['opacity'] };
+  function copyStyle() {
+    var e = sel()[0]; if (!e) return AW.toast('서식을 복사할 요소를 먼저 선택해 주십시오.');
+    st.sty = { t: e.t, v: {} }; (SK[e.t] || []).forEach(function (k) { st.sty.v[k] = e[k]; }); AW.toast('서식을 복사했습니다. 대상을 선택하고 서식 붙여넣기(Ctrl+Alt+V)를 누르십시오.');
+  }
+  function pasteStyle() {
+    if (!st.sty) return AW.toast('복사한 서식이 없습니다. 먼저 서식 복사(Ctrl+Alt+C)를 하십시오.');
+    var n = 0; sel().forEach(function (e) {
+      var ok = e.t === st.sty.t || ((e.t === 'rect' || e.t === 'line') && (st.sty.t === 'rect' || st.sty.t === 'line'));
+      if (!ok) return; (SK[e.t] || []).forEach(function (k) { if (k in st.sty.v) e[k] = st.sty.v[k]; }); n++;
+    });
+    if (!n) return AW.toast('같은 종류의 요소에만 서식을 붙여넣을 수 있습니다.', 'error');
+    E.refreshElems(); changed('elems');
+  }
+  function sameSize(how) {                   // 첫 번째로 선택한 요소를 기준으로 크기 맞춤
+    var l = sel().filter(function (e) { return !e.lock; }); if (l.length < 2) return AW.toast('2개 이상 선택해 주십시오.');
+    var r = l[0]; l.slice(1).forEach(function (e) { if (how !== 'h') e.w = r.w; if (how !== 'w' && e.t !== 'line') e.h = r.h; });
+    E.refreshElems(); changed('elems');
+  }
+  function keysHelp() {
+    var R = [['끌어서 이동', 'Shift: 가로·세로 한 방향 고정 / Alt: 복제하며 이동 / Ctrl: 자석(격자·가이드) 끄기'], ['모서리 크기 조절', 'Shift: 비율 유지(글상자는 글자 크기도 확대) / Alt: 중심 기준 확대·축소'], ['변 크기 조절', '글상자 폭·높이만 변경'], ['선택', '클릭 / Shift·Ctrl+클릭: 추가·해제 / 빈 곳 끌기: 범위 선택 / Ctrl+A: 전체'], ['화살표', '0.5mm 이동 (Shift: 5mm)'], ['Ctrl+C / X / V', '복사 / 잘라내기 / 붙여넣기'], ['Ctrl+D', '복제'], ['Ctrl+Shift+V', '제자리에 붙여넣기'], ['Ctrl+Alt+C / V', '서식(글꼴·크기·색·정렬 등) 복사 / 붙여넣기'], ['Tab / Shift+Tab', '다음 / 이전 요소 선택'], ['Ctrl+] / [', '한 칸 앞으로 / 뒤로 (Shift 추가: 맨 앞 / 맨 뒤)'], ['Ctrl+Z / Y', '실행 취소 / 다시 실행'], ['Ctrl+휠', '확대·축소'], ['Enter / 더블클릭', '글상자 직접 편집 (Esc: 마침)'], ['오른쪽 클릭', '바로 실행 메뉴'], ['Delete', '삭제'], ['Ctrl+S', '저장']];
+    AW.modal({ title: '편집 단축키 · 마우스 조합', wide: true, body: '<div class="tbl-wrap"><table class="gt"><tbody>' + R.map(function (r) { return '<tr><td class="nowrap"><b>' + AW.esc(r[0]) + '</b></td><td>' + AW.esc(r[1]) + '</td></tr>'; }).join('') + '</tbody></table></div><p class="muted" style="margin-bottom:0">Mac 은 Ctrl 대신 Command, Alt 대신 Option 을 사용합니다.</p>', actions: [{ label: '닫기', cls: 'btn-primary' }] });
+  }
+  function copy() { var l = sel(); if (!l.length) return; st.clip = l.map(AW.clone); AW.toast(l.length + '개를 복사했습니다.'); }
+  function pasteClip(pos, inPlace) {
+    if (!st.clip || !st.clip.length) return;
+    var x0 = Infinity, y0 = Infinity; st.clip.forEach(function (c) { x0 = Math.min(x0, c.x); y0 = Math.min(y0, c.y); });
+    var dx = inPlace ? 0 : pos ? pos.x - x0 : 5, dy = inPlace ? 0 : pos ? pos.y - y0 : 5;
+    var ids = st.clip.map(function (c) { var n = AW.clone(c); n.id = AW.uid(); n.x = AW.round(Math.max(0, c.x + dx), 2); n.y = AW.round(Math.max(0, c.y + dy), 2); n.lock = false; T().elems.push(n); return n.id; });
+    E.refreshElems(); E.setSel(ids); changed('elems');
+  }
+  function orderStep(dir) {                  // 한 칸 앞으로(+1)/뒤로(-1)
+    var a = T().elems, ids = S.sel.slice(), i;
+    if (dir > 0) { for (i = a.length - 2; i >= 0; i--) if (ids.indexOf(a[i].id) >= 0 && ids.indexOf(a[i + 1].id) < 0) { var t = a[i]; a[i] = a[i + 1]; a[i + 1] = t; } }
+    else { for (i = 1; i < a.length; i++) if (ids.indexOf(a[i].id) >= 0 && ids.indexOf(a[i - 1].id) < 0) { var t2 = a[i]; a[i] = a[i - 1]; a[i - 1] = t2; } }
+    E.refreshElems(); changed('elems');
   }
   function order(front) {
     var ids = S.sel.slice(), a = T().elems.filter(function (e) { return ids.indexOf(e.id) < 0; }), b = T().elems.filter(function (e) { return ids.indexOf(e.id) >= 0; });
@@ -316,46 +399,74 @@
     var hd = ev.target.closest('.hd'), elNode = ev.target.closest('.el');
     if (hd) {
       var e0 = sel()[0]; if (!e0) return;
-      st.drag = { mode: 'rs', h: hd.dataset.h, start: toMM(ev), o: { x: e0.x, y: e0.y, w: e0.w, h: e0.h }, e: e0 }; ev.preventDefault(); return;
+      st.drag = { mode: 'rs', h: hd.dataset.h, start: toMM(ev), o: { x: e0.x, y: e0.y, w: e0.w, h: e0.h, size: e0.size }, e: e0 }; ev.preventDefault(); return;
     }
     if (elNode) {
       var id = elNode.dataset.id;
       if (ev.shiftKey || ev.ctrlKey || ev.metaKey) { var s = S.sel.slice(), i = s.indexOf(id); if (i >= 0) s.splice(i, 1); else s.push(id); E.setSel(s); }
       else if (S.sel.indexOf(id) < 0) E.setSel([id]);
       var list = sel().filter(function (e) { return !e.lock; });
-      if (list.length) st.drag = { mode: 'mv', start: toMM(ev), list: list.map(function (e) { return { e: e, x: e.x, y: e.y }; }), moved: false };
+      if (list.length) st.drag = { mode: 'mv', start: toMM(ev), list: list.map(function (e) { return { e: e, x: e.x, y: e.y }; }), moved: false, alt: ev.altKey };
       ev.preventDefault(); st.stage.focus({ preventScroll: true });
     } else if (ev.target.closest('.ed-pg')) {
-      E.setSel([]); st.stage.focus({ preventScroll: true });
+      var add = ev.shiftKey || ev.ctrlKey || ev.metaKey;
+      if (!add) E.setSel([]);
+      st.drag = { mode: 'mq', start: toMM(ev), base: add ? S.sel.slice() : [], box: null };
+      st.stage.focus({ preventScroll: true });
     }
   }
   function onMove(ev) {
     var d = st.drag; if (!d) return;
-    var p = toMM(ev), dx = p.x - d.start.x, dy = p.y - d.start.y, sn = st.snap && !ev.altKey, pg = T().page;
-    function sp(v) { return AW.round(sn ? Math.round(v) : v, 2); }
+    var p = toMM(ev), dx = p.x - d.start.x, dy = p.y - d.start.y, sn = st.cfg.snap && !(ev.ctrlKey || ev.metaKey), pg = T().page, gs = st.cfg.grid || 1;
+    function sp(v) { return AW.round(sn ? Math.round(v / gs) * gs : v, 2); }
+    if (d.mode === 'mq') {                   // 빈 곳 드래그: 범위 선택(Shift/Ctrl 로 추가)
+      if (!d.box) { if (Math.abs(dx) + Math.abs(dy) < 0.8) return; d.box = document.createElement('div'); d.box.className = 'mq'; st.ov.appendChild(d.box); }
+      var k = st.zoom, x1 = Math.min(d.start.x, p.x), y1 = Math.min(d.start.y, p.y), x2 = Math.max(d.start.x, p.x), y2 = Math.max(d.start.y, p.y);
+      d.box.style.cssText = 'left:' + x1 * k + 'px;top:' + y1 * k + 'px;width:' + (x2 - x1) * k + 'px;height:' + (y2 - y1) * k + 'px';
+      var ids = d.base.slice(); T().elems.forEach(function (e) { if (e.x < x2 && e.x + e.w > x1 && e.y - 1 < y2 && e.y + e.h + 1 > y1 && ids.indexOf(e.id) < 0) ids.push(e.id); });
+      if (ids.join() !== S.sel.join()) { S.sel = ids; var bx = d.box; markSel(); st.ov.appendChild(bx); updTools(); }
+      return;
+    }
     if (d.mode === 'mv') {
-      if (!d.moved && Math.abs(dx) + Math.abs(dy) < 0.4) return; d.moved = true;
+      if (!d.moved && Math.abs(dx) + Math.abs(dy) < 0.4) return;
+      if (!d.moved && d.alt) {              // Alt+드래그: 복제본을 끌어서 이동 (원본은 제자리)
+        var ids2 = d.list.map(function (it) { var c = AW.clone(it.e); c.id = AW.uid(); c.lock = false; T().elems.push(c); it.e = c; return c.id; });
+        E.refreshElems(); S.sel = ids2; markSel(); updTools();
+      }
+      d.moved = true;
+      if (ev.shiftKey) { if (Math.abs(dx) >= Math.abs(dy)) dy = 0; else dx = 0; }   // Shift: 가로/세로 한 방향으로만
       d.list.forEach(function (it) { it.e.x = sp(it.x + dx); it.e.y = sp(it.y + dy); });
-      showGuides(d.list.length === 1 ? d.list[0].e : null);
+      smartGuides(st.cfg.guides && d.list.length === 1 && !(ev.ctrlKey || ev.metaKey) ? d.list[0].e : null);
       liveUpdate();
     } else {
-      var e = d.e, o = d.o, h = d.h, x = o.x, y = o.y, w = o.w, hh = o.h;
-      if (h.indexOf('e') >= 0) w = o.w + dx; if (h.indexOf('s') >= 0) hh = o.h + dy;
-      if (h.indexOf('w') >= 0) { x = o.x + dx; w = o.w - dx; } if (h.indexOf('n') >= 0) { y = o.y + dy; hh = o.h - dy; }
-      if (w < 1) { if (h.indexOf('w') >= 0) x = o.x + o.w - 1; w = 1; } if (hh < 1 && e.t !== 'line') { if (h.indexOf('n') >= 0) y = o.y + o.h - 1; hh = 1; }
+      var e = d.e, o = d.o, h = d.h, cen = ev.altKey, m = cen ? 2 : 1;
+      var w = o.w + (h.indexOf('e') >= 0 ? dx : h.indexOf('w') >= 0 ? -dx : 0) * m;
+      var hh = e.t === 'line' ? o.h : o.h + (h.indexOf('s') >= 0 ? dy : h.indexOf('n') >= 0 ? -dy : 0) * m;
+      var sc = null;
+      if (ev.shiftKey && h.length === 2 && o.h > 0) { sc = Math.max(1 / o.w, Math.max(w / o.w, hh / o.h)); w = o.w * sc; hh = o.h * sc; }   // Shift+모서리: 비율 유지
+      w = Math.max(1, w); if (e.t !== 'line') hh = Math.max(1, hh);
+      var x = cen ? o.x + (o.w - w) / 2 : (h.indexOf('w') >= 0 ? o.x + o.w - w : o.x);
+      var y = cen ? o.y + (o.h - hh) / 2 : (h.indexOf('n') >= 0 ? o.y + o.h - hh : o.y);
       e.x = sp(x); e.y = sp(y); e.w = Math.max(1, sp(w)); if (e.t !== 'line') e.h = Math.max(1, sp(hh));
+      if (sc && e.t === 'text' && o.size) { e.size = Math.max(4, Math.min(300, AW.round(o.size * sc, 1))); var dn = domOf(e); if (dn) dn.style.fontSize = e.size * 25.4 / 72 * st.zoom + 'px'; }   // 글상자는 글자 크기도 함께 확대
       liveUpdate();
     }
   }
-  function showGuides(e) {
+  // 스마트 가이드: 용지·다른 요소의 왼쪽/가운데/오른쪽(위/중간/아래)에 1.2mm 이내로 다가가면 달라붙고 분홍 선을 표시
+  function smartGuides(e) {
     AW.$$('.snapg', st.ov).forEach(function (g) { g.remove(); });
-    if (!e) return; var pg = T().page, k = st.zoom;
-    if (Math.abs((e.x + e.w / 2) - pg.w / 2) < 0.6) { e.x = AW.round((pg.w - e.w) / 2, 2); var g = document.createElement('div'); g.className = 'snapg gv'; g.style.left = (pg.w / 2 * k) + 'px'; st.ov.appendChild(g); }
-    if (Math.abs((e.y + e.h / 2) - pg.h / 2) < 0.6) { e.y = AW.round((pg.h - e.h) / 2, 2); var g2 = document.createElement('div'); g2.className = 'snapg gh'; g2.style.top = (pg.h / 2 * k) + 'px'; st.ov.appendChild(g2); }
+    if (!e) return; var pg = T().page, k = st.zoom, TH = st.cfg.th || 1.2, others = T().elems.filter(function (o) { return o.id !== e.id && S.sel.indexOf(o.id) < 0; });
+    function best(lines, targets) { var r = null; lines.forEach(function (l) { targets.forEach(function (t) { var d = t - l; if (Math.abs(d) < TH && (!r || Math.abs(d) < Math.abs(r.d))) r = { d: d, at: t }; }); }); return r; }
+    var tx = [0, pg.w / 2, pg.w], ty = [0, pg.h / 2, pg.h];
+    others.forEach(function (o) { tx.push(o.x, o.x + o.w / 2, o.x + o.w); ty.push(o.y, o.y + o.h / 2, o.y + o.h); });
+    var rx = best([e.x, e.x + e.w / 2, e.x + e.w], tx), ry = best([e.y, e.y + e.h / 2, e.y + e.h], ty);
+    if (rx) { e.x = AW.round(e.x + rx.d, 2); var g = document.createElement('div'); g.className = 'snapg gv'; g.style.left = rx.at * k + 'px'; st.ov.appendChild(g); }
+    if (ry) { e.y = AW.round(e.y + ry.d, 2); var g2 = document.createElement('div'); g2.className = 'snapg gh'; g2.style.top = ry.at * k + 'px'; st.ov.appendChild(g2); }
   }
   function onUp() {
     var d = st.drag; if (!d) return; st.drag = null;
-    AW.$$('.snapg', st.ov || document).forEach(function (g) { g.remove(); });
+    AW.$$('.snapg,.mq', st.ov || document).forEach(function (g) { g.remove(); });
+    if (d.mode === 'mq') { AW.emit('selchange'); return; }
     if (d.mode === 'rs' || d.moved) { E.refreshElems(); changed('elems'); }
     if (st.pending) { st.pending = false; E.relayout(); }
   }
@@ -391,19 +502,32 @@
     if (typing) return;
     if (mod && k === 'z') { ev.preventDefault(); return undo(ev.shiftKey ? 1 : -1); }
     if (mod && k === 'y') { ev.preventDefault(); return undo(1); }
+    if (mod && (k === ']' || k === '[')) { ev.preventDefault(); return ev.shiftKey ? order(k === ']') : orderStep(k === ']' ? 1 : -1); }
     if (mod && k === 'd') { ev.preventDefault(); return dup(); }
     if (mod && k === 'a' && st.stage.contains(document.activeElement)) { ev.preventDefault(); return E.setSel(T().elems.map(function (e) { return e.id; })); }
-    if (mod && k === 'c') { st.clip = sel().map(AW.clone); return; }
+    if (mod && ev.altKey && k === 'c') { ev.preventDefault(); return copyStyle(); }
+    if (mod && ev.altKey && k === 'v') { ev.preventDefault(); return pasteStyle(); }
+    if (mod && ev.shiftKey && k === 'v' && st.clip && st.clip.length) { ev.preventDefault(); return pasteClip(null, true); }
+    if (k === 'tab' && T().elems.length) { ev.preventDefault(); var ids3 = T().elems.map(function (e) { return e.id; }), ci = ids3.indexOf(S.sel[S.sel.length - 1]); return E.setSel([ids3[(ci + (ev.shiftKey ? -1 : 1) + ids3.length) % ids3.length]]); }
+    if (mod && k === 'c') { if (sel().length) st.clip = sel().map(AW.clone); return; }
+    if (mod && k === 'x') { if (sel().length) { ev.preventDefault(); st.clip = sel().map(AW.clone); return del(); } return; }
     if (mod && k === 'v' && st.clip && st.clip.length) {
-      ev.preventDefault(); var ids = st.clip.map(function (c) { var n = AW.clone(c); n.id = AW.uid(); n.x = AW.round(n.x + 5, 2); n.y = AW.round(n.y + 5, 2); T().elems.push(n); return n.id; });
-      E.refreshElems(); E.setSel(ids); return changed('elems');
+      ev.preventDefault(); return pasteClip(null);
     }
     if (!S.sel.length) return;
     if (k === 'delete' || k === 'backspace') { ev.preventDefault(); return del(); }
     if (k === 'escape') return E.setSel([]);
-    var step = ev.shiftKey ? 5 : 0.5, dx = k === 'arrowleft' ? -step : k === 'arrowright' ? step : 0, dy = k === 'arrowup' ? -step : k === 'arrowdown' ? step : 0;
+    var step = ev.shiftKey ? st.cfg.big : st.cfg.nudge, dx = k === 'arrowleft' ? -step : k === 'arrowright' ? step : 0, dy = k === 'arrowup' ? -step : k === 'arrowdown' ? step : 0;
     if (dx || dy) { ev.preventDefault(); sel().forEach(function (e) { if (!e.lock) { e.x = AW.round(e.x + dx, 2); e.y = AW.round(e.y + dy, 2); } }); liveUpdate(); debCommit(); }
     if (k === 'enter' && sel().length === 1 && sel()[0].t === 'text') { ev.preventDefault(); var d = domOf(sel()[0]); if (d) beginEdit(sel()[0], d); }
+  }
+  function onPasteDoc(ev) {                  // 외부에서 복사한 글/이미지를 새 요소로 붙여넣기 (내부 복사본이 없을 때)
+    if (!st.root || !st.root.offsetParent || !T() || (st.clip && st.clip.length)) return;
+    var tg = ev.target; if (tg && (tg.tagName === 'INPUT' || tg.tagName === 'TEXTAREA' || tg.isContentEditable)) return;
+    var cd = ev.clipboardData; if (!cd) return;
+    var f = Array.prototype.filter.call(cd.files || [], function (x) { return /^image\//.test(x.type); })[0];
+    if (f) { ev.preventDefault(); readImage(f, 700, 'image/png').then(function (r) { var w = 40; add(AW.elem('img', { src: r.url, w: w, h: AW.round(w * r.h / r.w, 1), x: AW.round((T().page.w - w) / 2, 1), y: AW.round(T().page.h * 0.4, 1) })); }); return; }
+    var t = cd.getData('text'); if (t && t.trim()) { ev.preventDefault(); var w2 = Math.min(120, T().page.w * 0.6); add(AW.elem('text', { text: t.replace(/\r/g, '').slice(0, 2000), w: w2, h: 14, x: AW.round((T().page.w - w2) / 2, 1), y: AW.round(T().page.h * 0.4, 1), size: 20 })); }
   }
   var debCommit = AW.debounce(function () { changed('elems'); }, 400);
 
@@ -490,6 +614,120 @@
       im.src = T().bg;
     });
   };
+  function rotateImg(src, dir) {
+    return new Promise(function (res) {
+      var im = new Image();
+      im.onload = function () {
+        var c = document.createElement('canvas'), w = im.naturalWidth, h = im.naturalHeight; c.width = h; c.height = w;
+        var g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, h, w);
+        if (dir > 0) { g.translate(h, 0); g.rotate(Math.PI / 2); } else { g.translate(0, w); g.rotate(-Math.PI / 2); }
+        g.drawImage(im, 0, 0); res(c.toDataURL('image/jpeg', 0.9));
+      };
+      im.src = src;
+    });
+  }
+  // 가로↔세로 전환. o.bg: 'r' 배경 오른쪽 회전 | 'l' 왼쪽 회전 | 'keep' 배경 유지(늘어남), o.move: 글상자 위치·크기를 새 용지 비율로 이동
+  E.setOrient = function (o) {
+    var p = T().page, W = p.w, H = p.h, nw = H, nh = W, sx = nw / W, sy = nh / H;
+    var go = function (bg) {
+      if (o.move) T().elems.forEach(function (e) { e.x = AW.round(e.x * sx, 2); e.y = AW.round(e.y * sy, 2); e.w = AW.round(e.w * sx, 2); if (e.t !== 'line') e.h = AW.round(e.h * sy, 2); });
+      T().page = { w: nw, h: nh, paper: p.paper, orient: nw >= nh ? 'L' : 'P' };
+      if (bg) T().bg = bg;
+      S.sel = []; E.render(); changed(bg ? 'bg' : 'page');
+    };
+    if (T().bg && (o.bg === 'r' || o.bg === 'l')) return rotateImg(T().bg, o.bg === 'r' ? 1 : -1).then(go);
+    go(null); return Promise.resolve();
+  };
+  E.orientDialog = function () {
+    var p = T().page, toL = p.w < p.h, hasBg = !!T().bg;
+    AW.modal({
+      title: (toL ? '가로' : '세로') + '로 전환',
+      body: '<p style="margin-top:0">현재 <b>' + (toL ? '세로' : '가로') + '</b> ' + p.w + '×' + p.h + 'mm 용지를 <b>' + (toL ? '가로' : '세로') + '</b> ' + p.h + '×' + p.w + 'mm 로 바꿉니다.</p>' +
+        (hasBg ? '<label class="f">배경 양식</label><div class="radios"><label><input type="radio" name="or-bg" value="r" checked> 배경도 함께 오른쪽 90° 회전 (권장)</label><label><input type="radio" name="or-bg" value="l"> 배경도 함께 왼쪽 90° 회전</label><label><input type="radio" name="or-bg" value="keep"> 배경은 그대로 (새 용지에 맞춰 늘어남)</label></div>' : '') +
+        '<div class="radios" style="margin-top:12px"><label><input type="checkbox" id="or-mv" checked> 글상자 위치·크기도 새 용지 비율에 맞춰 이동</label></div>' +
+        '<p class="muted" style="margin-bottom:0">전환 후에도 실행 취소(Ctrl+Z)로 되돌릴 수 있습니다.</p>',
+      actions: [{ label: '취소', cls: 'btn-ghost' }, { label: '전환', cls: 'btn-primary', onClick: function (c) {
+        var r = AW.$('input[name="or-bg"]:checked'), mv = AW.$('#or-mv').checked; c(); E.setOrient({ bg: r ? r.value : 'keep', move: mv });
+      } }]
+    });
+  };
+
+  /* ───────────── 오른쪽 클릭 메뉴 ───────────── */
+  var ctxEl = null;
+  function closeCtx() { if (ctxEl) { ctxEl.remove(); ctxEl = null; document.removeEventListener('pointerdown', ctxOut, true); document.removeEventListener('keydown', ctxKey, true); window.removeEventListener('blur', closeCtx); window.removeEventListener('resize', closeCtx); st.stage && st.stage.removeEventListener('scroll', closeCtx); } }
+  function ctxOut(e) { if (ctxEl && !ctxEl.contains(e.target)) closeCtx(); }
+  function ctxKey(e) {
+    if (!ctxEl) return;
+    var bs = AW.$$('button:not(:disabled)', ctxEl), i = bs.indexOf(document.activeElement);
+    if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); closeCtx(); }
+    else if (e.key === 'ArrowDown') { e.preventDefault(); (bs[i + 1] || bs[0]).focus(); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); (bs[i - 1] || bs[bs.length - 1]).focus(); }
+  }
+  function onCtx(ev) {
+    if (!T() || !st.pg) return;
+    if (st.editing && st.editing.node.contains(ev.target)) return;        // 글 편집 중에는 브라우저 기본 메뉴(복사·붙여넣기)
+    ev.preventDefault(); endEdit();
+    var elNode = ev.target.closest('.el'), pos = toMM(ev), pg = T().page;
+    pos = { x: AW.round(Math.max(0, Math.min(pg.w, pos.x)), 1), y: AW.round(Math.max(0, Math.min(pg.h, pos.y)), 1) };
+    if (elNode) { var id = elNode.dataset.id; if (S.sel.indexOf(id) < 0) E.setSel([id]); }
+    else E.setSel([]);
+    st.at = elNode ? null : pos;
+    openCtx(ev.clientX, ev.clientY, buildCtx(!!elNode));
+  }
+  function buildCtx(onEl) {
+    var list = sel(), one = list.length === 1 ? list[0] : null, tx = list.filter(function (e) { return e.t === 'text'; }), t1 = tx[0], it = [];
+    var I = function (label, ic, key, a, o) { return Object.assign({ k: 'i', label: label, ic: ic, key: key, a: a }, o || {}); };
+    var STRIP = function (label, arr) { return { k: 's', label: label, arr: arr }; };
+    var B = function (ic, tip, a, on) { return { ic: ic, tip: tip, a: a, on: on }; };
+    var hasClip = !!(st.clip && st.clip.length);
+    if (onEl && list.length) {
+      if (one && one.t === 'text') it.push(I('글 직접 편집', 'edit', 'Enter', 'edit', { disabled: one.lock }));
+      it.push(I('잘라내기', 'cut', 'Ctrl+X', 'cut'), I('복사', 'copy', 'Ctrl+C', 'copy'), I('붙여넣기', 'paste', 'Ctrl+V', 'paste', { disabled: !hasClip }), I('제자리에 붙여넣기', 'paste', 'Ctrl+Shift+V', 'pinplace', { disabled: !hasClip }), I('복제', 'copy', 'Ctrl+D', 'dup'), I('서식 복사', 'wand', 'Ctrl+Alt+C', 'cstyle'), I('서식 붙여넣기', 'wand', 'Ctrl+Alt+V', 'pstyle', { disabled: !st.sty }));
+      if (tx.length) it.push(I('아래에 줄 추가', 'plus', '', 'addline'));
+      it.push(I('삭제', 'trash', 'Del', 'del'), { k: 'sep' });
+      it.push(STRIP(list.length > 1 ? '정렬(선택 기준)' : '정렬(용지 기준)', [B('gL', '왼쪽', 'ag-l'), B('gCH', '가로 가운데', 'ag-ch'), B('gR', '오른쪽', 'ag-r'), B('gT', '위', 'ag-t'), B('gCV', '세로 가운데', 'ag-cv'), B('gB', '아래', 'ag-b')]));
+      if (list.length >= 2) it.push(I('가로 크기 같게(첫 선택 기준)', 'dH', '', 'same-w'), I('세로 크기 같게', 'dV', '', 'same-h'), I('가로·세로 크기 같게', 'rect', '', 'same-wh'));
+      if (list.length >= 3) it.push(I('가로 간격 같게', 'dH', '', 'dist-h'), I('세로 간격 같게', 'dV', '', 'dist-v'));
+      it.push({ k: 'sep' }, I('맨 앞으로', 'front', '', 'front'), I('앞으로 한 칸', 'chevU', '', 'fwd'), I('뒤로 한 칸', 'chevD', '', 'bwd'), I('맨 뒤로', 'back', '', 'back'));
+      var allLk = list.every(function (e) { return e.lock; });
+      it.push(I(allLk ? '잠금 해제' : '잠금(이동·크기 고정)', allLk ? 'unlock' : 'lock', '', 'lock'));
+      if (tx.length) {
+        it.push({ k: 'sep' });
+        it.push(STRIP('서식', [B('bold', '굵게', 'bold', t1.bold), B('italic', '기울임', 'italic', t1.italic), B('underline', '밑줄', 'ul', t1.ul), B('alL', '왼쪽 정렬', 'al-l', t1.align === 'left'), B('alC', '가운데 정렬', 'al-c', t1.align === 'center'), B('alR', '오른쪽 정렬', 'al-r', t1.align === 'right')]));
+        it.push(STRIP('세로', [B('vT', '위쪽', 'v-t', t1.valign === 'top'), B('vM', '가운데', 'v-m', t1.valign === 'middle'), B('vB', '아래쪽', 'v-b', t1.valign === 'bottom'), B('plus', '글자 크게', 'sz+'), B('minus', '글자 작게', 'sz-')]));
+        it.push(I('글자 자동 맞춤', 'fit', '', 'fit', { on: !!t1.fit }));
+        if (one) it.push(I('입력 항목 {{ }} 삽입…', 'field', '', 'add-field'));
+      }
+    } else {
+      it.push(I('여기에 글상자 추가', 'text', '', 'add-text'), I('여기에 입력 항목 추가…', 'field', '', 'add-field'), I('선 추가', 'line', '', 'add-line'), I('사각형 추가', 'rect', '', 'add-rect'), I('이미지 추가…', 'image', '', 'add-img'),
+        { k: 'sep' }, I('붙여넣기', 'paste', 'Ctrl+V', 'paste', { disabled: !hasClip }), I('모두 선택', 'sel', 'Ctrl+A', 'selall', { disabled: !T().elems.length }),
+        { k: 'sep' }, I((T().page.w >= T().page.h ? '세로' : '가로') + '로 전환…', 'rotate', '', 'orient'), I('용지·배경 설정…', 'page', '', 'page'), I('기본 상장 배치 넣기', 'wand', '', 'starter'));
+    }
+    return it;
+  }
+  function openCtx(x, y, items) {
+    closeCtx();
+    var m = document.createElement('div'); m.className = 'ctx'; m.setAttribute('role', 'menu');
+    var run = function (a) { var at = st.at; closeCtx(); st.at = at; setTimeout(function () { if (a === 'fit') { var t = sel().filter(function (e) { return e.t === 'text'; }); if (t.length) setProp('fit', !t[0].fit); } else act(a); }, 0); };
+    items.forEach(function (o) {
+      if (o.k === 'sep') { var s = document.createElement('div'); s.className = 'cs'; m.appendChild(s); return; }
+      if (o.k === 's') {
+        var r = document.createElement('div'); r.className = 'cstrip'; r.innerHTML = '<span class="cl">' + AW.esc(o.label) + '</span>';
+        o.arr.forEach(function (b) { var bt = document.createElement('button'); bt.type = 'button'; bt.className = 'tb' + (b.on ? ' on' : ''); bt.title = b.tip; bt.setAttribute('aria-label', b.tip); bt.innerHTML = AW.ic(b.ic, 16); bt.onclick = function () { run(b.a); }; r.appendChild(bt); });
+        m.appendChild(r); return;
+      }
+      var bt2 = document.createElement('button'); bt2.type = 'button'; bt2.className = 'ci' + (o.on ? ' on' : ''); bt2.setAttribute('role', 'menuitem'); bt2.disabled = !!o.disabled;
+      bt2.innerHTML = '<span class="cic">' + AW.ic(o.ic, 16) + '</span><span>' + AW.esc(o.label) + '</span>' + (o.on ? '<span class="k">' + AW.ic('check', 14) + '</span>' : o.key ? '<span class="k">' + AW.esc(o.key) + '</span>' : '');
+      bt2.onclick = function () { run(o.a); }; m.appendChild(bt2);
+    });
+    document.body.appendChild(m); ctxEl = m;
+    var w = m.offsetWidth, h = m.offsetHeight, vw = window.innerWidth, vh = window.innerHeight;
+    m.style.left = Math.max(4, Math.min(x, vw - w - 4)) + 'px'; m.style.top = Math.max(4, Math.min(y, vh - h - 4)) + 'px';
+    document.addEventListener('pointerdown', ctxOut, true); document.addEventListener('keydown', ctxKey, true);
+    window.addEventListener('blur', closeCtx); window.addEventListener('resize', closeCtx); st.stage.addEventListener('scroll', closeCtx);
+    var f = AW.$('button:not(:disabled)', m); if (f) f.focus({ preventScroll: true });
+  }
+
   E.pageDialog = function () {
     var p = T().page;
     var m = AW.modal({
