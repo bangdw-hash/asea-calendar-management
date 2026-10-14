@@ -149,25 +149,41 @@
   function parseJson(text) { var s = String(text || '').trim().replace(/^```[a-z]*\s*/i, '').replace(/\s*```$/i, '').trim(), a = s.indexOf('{'); if (a > 0) s = s.slice(a); try { return JSON.parse(s); } catch (e) {} var b = s.lastIndexOf('}'); if (b > 0) { try { return JSON.parse(s.slice(0, b + 1)); } catch (e2) {} } throw new Error('AI 응답을 해석하지 못했습니다.'); }
   /* ───────────── AI 진행 표시 (진행 막대 · 단계 · 경과 시간 · 완료 안내와 다음 단계 버튼) ───────────── */
   function progressUI(el, opt) {
-    var S = { t0: Date.now(), title: opt.title, steps: opt.steps || [], step: 0, pct: 0, ind: false, note: '', state: 'run', msg: '', actions: [], end: 0 }, timer;
+    var S = { t0: Date.now(), title: opt.title, steps: opt.steps || [], step: 0, pct: 0, ind: false, note: '', state: 'run', msg: '', actions: [], end: 0, items: opt.items || null }, timer = null;
     function fmtT(ms) { var n = Math.round(ms / 1000); return n < 60 ? n + '초' : Math.floor(n / 60) + '분 ' + (n % 60) + '초'; }
+    function itemsHtml() {
+      if (!S.items || !S.items.length) return '';
+      var d = S.items.filter(function (x) { return x.state === 'done'; }).length, f = S.items.filter(function (x) { return x.state === 'fail'; }).length, r = S.items.filter(function (x) { return x.state === 'run'; }).length;
+      return '<details class="aip-items"' + (S.state === 'run' ? ' open' : '') + '><summary>대상별 진행 기록 · 완료 ' + d + ' · 처리 중 ' + r + ' · 대기 ' + (S.items.length - d - f - r) + (f ? ' · 실패 ' + f : '') + '</summary><div class="aip-grid">' + S.items.map(function (x) {
+        var ic = x.state === 'done' ? I('check', 12) : x.state === 'fail' ? I('x', 12) : x.state === 'run' ? '<span class="aip-spin sm"></span>' : '<span class="aip-dot"></span>';
+        return '<div class="aip-it ' + x.state + '" title="' + E(x.err || '') + '">' + ic + '<span class="n">' + E(x.label) + '</span><span class="m">' + (x.state === 'done' ? Math.round(x.ms / 1000) + '초' : x.state === 'run' ? E(x.stage || '') : x.state === 'fail' ? '실패' : '대기') + '</span></div>';
+      }).join('') + '</div></details>';
+    }
     function draw() {
-      if (!el || !document.body.contains(el)) { clearInterval(timer); return; }
+      if (!el || !document.body.contains(el)) { clearInterval(timer); timer = null; return; }
+      if (S.state === 'gone') { el.innerHTML = ''; return; }
       var h = '<div class="aip' + (S.state === 'done' ? ' done' : S.state === 'err' ? ' err' : '') + '"><h4>' + (S.state === 'done' ? I('check', 16) : S.state === 'err' ? I('info', 16) : '<span class="aip-spin"></span>') + '<span>' + E(S.state === 'run' ? S.title + ' 진행 중' : S.title + (S.state === 'done' ? ' 완료' : ' 중단')) + '</span><span class="sp"></span><span class="muted aip-t">경과 ' + fmtT((S.end || Date.now()) - S.t0) + '</span></h4>' +
         '<div class="aip-bar' + (S.ind && S.state === 'run' ? ' ind' : '') + '" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + Math.round(S.pct) + '"><i style="width:' + Math.round(S.pct) + '%"></i></div>' +
         '<div class="aip-note">' + E(S.note) + ' <b>' + Math.round(S.pct) + '%</b></div>';
       if (S.steps.length) h += '<div class="aip-steps">' + S.steps.map(function (x, i) { var ok = S.state === 'done' || i < S.step, on = S.state === 'run' && i === S.step; return '<span class="' + (ok ? 'ok' : on ? 'on' : '') + '">' + (ok ? I('check', 12) : on ? '<span class="aip-spin sm"></span>' : '<span class="aip-dot"></span>') + ' ' + E(x) + '</span>'; }).join('') + '</div>';
+      h += itemsHtml();
       if (S.state !== 'run' && S.msg) h += '<div class="aip-msg">' + E(S.msg) + '</div>';
-      if (S.state !== 'run' && S.actions.length) h += '<div class="aip-act">' + S.actions.map(function (a, i) { return '<button class="btn ' + (a.primary ? 'btn-primary' : 'btn-secondary') + ' btn-sm" data-aip="' + i + '">' + E(a.label) + '</button>'; }).join('') + '</div>';
+      if (S.state !== 'run') h += '<div class="aip-act">' + S.actions.map(function (a, i) { return '<button class="btn ' + (a.primary ? 'btn-primary' : 'btn-secondary') + ' btn-sm" data-aip="' + i + '">' + E(a.label) + '</button>'; }).join('') + '<button class="btn btn-ghost btn-sm" data-aip="x">닫기</button></div>';
       el.innerHTML = h + '</div>';
     }
-    el.onclick = function (e) { var b = e.target.closest('[data-aip]'); if (b) { var a = S.actions[Number(b.getAttribute('data-aip'))]; if (a && a.fn) a.fn(); } };
-    timer = setInterval(function () { if (S.state === 'run') draw(); else clearInterval(timer); }, 500); draw();
-    return {
-      set: function (step, note, pct, ind) { S.step = step; S.note = note || ''; S.pct = Math.max(S.pct, Math.min(99, pct || 0)); S.ind = !!ind; draw(); },
-      finish: function (msg, actions) { S.state = 'done'; S.pct = 100; S.ind = false; S.step = S.steps.length; S.note = '모든 단계를 마쳤습니다.'; S.msg = msg; S.actions = actions || []; S.end = Date.now(); clearInterval(timer); draw(); try { el.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); } catch (e) {} },
-      fail: function (msg, actions) { S.state = 'err'; S.ind = false; S.msg = msg; S.actions = actions || []; S.end = Date.now(); clearInterval(timer); draw(); }
+    function bind() {
+      el.onclick = function (e) { var b = e.target.closest('[data-aip]'); if (!b) return; var k = b.getAttribute('data-aip'); if (k === 'x') { api.dismiss(); return; } var a = S.actions[Number(k)]; if (a && a.fn) a.fn(); };
+      clearInterval(timer); timer = S.state === 'run' ? setInterval(draw, 500) : null; draw();
+    }
+    var api = {
+      set: function (step, note, pct, ind, items) { S.step = step; S.note = note || ''; S.pct = Math.max(S.pct, Math.min(99, pct || 0)); S.ind = !!ind; if (items) S.items = items; draw(); },
+      finish: function (msg, actions) { S.state = 'done'; S.pct = 100; S.ind = false; S.step = S.steps.length; S.note = '모든 단계를 마쳤습니다.'; S.msg = msg; S.actions = actions || []; S.end = Date.now(); clearInterval(timer); timer = null; draw(); try { if (el) el.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); } catch (e) {} },
+      fail: function (msg, actions) { S.state = 'err'; S.ind = false; S.msg = msg; S.actions = actions || []; S.end = Date.now(); clearInterval(timer); timer = null; draw(); },
+      attach: function (newEl) { el = newEl; bind(); },   // 화면이 다시 그려져도 같은 진행 상태를 새 자리에 붙임
+      dismiss: function () { S.state = 'gone'; clearInterval(timer); timer = null; draw(); if (opt.onDismiss) opt.onDismiss(); },
+      running: function () { return S.state === 'run'; }
     };
+    bind(); return api;
   }
   async function aiAnalyze(e, ov, onStage) {
     if (onStage) onStage('pick');
@@ -287,37 +303,42 @@
   function effective(e) {
     var rec = getRec(e), an = rec && (rec.edit || rec.analysis) || ruleAnalysis(e); return an;
   }
+  function fmtEta(n) { return n < 60 ? n + '초' : Math.round(n / 60) + '분'; }
   async function runAnalysis(list, mode) {
-    var ov = await ovGet(), done = 0, fail = 0, errs = [], failed = [], okList = [], infl = {}, isAi = mode === 'ai', label = isAi ? 'AI 분석' : '기본 분석'; UI.busy = true; UI.cancel = false; drawStatus(label + ' 준비…');
-    var P = progressUI(document.getElementById('rpt-prog'), { title: label, steps: isAi ? ['대상 준비·학술 근거 선택', 'AI 호출·응답 대기', '응답 검증·저장'] : ['대상 준비', '분석·저장'] });
-    var queue = list.slice(), workers = [], STG = { pick: [0, 0.1], call: [1, 0.25], verify: [2, 0.9], rule: [1, 0.5] };
-    function upd(cur, st) {
-      var sum = 0, step = 0, calling = false; Object.keys(infl).forEach(function (k) { sum += infl[k].f; step = Math.max(step, infl[k].s); if (infl[k].st === 'call') calling = true; });
-      P.set(step, done + ' / ' + list.length + '건 완료' + (fail ? ' (실패 ' + fail + ')' : '') + (cur ? ' · 처리 중: ' + cur + (st === 'call' ? ' (AI 응답 대기)' : '') : ''), (done + sum) / list.length * 100, isAi && calling && done === 0 && list.length === 1);
+    var SID = sid(), ov = await ovGet(), done = 0, fail = 0, errs = [], failed = [], okList = [], isAi = mode === 'ai', label = isAi ? 'AI 분석' : '기본 분석', t0 = Date.now(); UI.busy = true; UI.cancel = false; drawStatus(label + ' 준비…');
+    // 대상마다 처리 상태를 기록한다: wait → run(단계) → done(소요 시간)/fail(사유). 진행률은 완료한 건수 ÷ 전체 건수.
+    var items = list.map(function (e) { return { k: e.unit + '|' + e.key, label: e.label, state: 'wait', step: 0, stage: '', t0: 0, ms: 0, err: '' }; }), byK = {}; items.forEach(function (x) { byK[x.k] = x; });
+    if (UI.prog && UI.prog.dismiss) { try { UI.prog.dismiss(); } catch (e) {} }
+    var P = progressUI(document.getElementById('rpt-prog'), { title: label, steps: isAi ? ['대상 준비·학술 근거 선택', 'AI 호출·응답 대기', '응답 검증·저장'] : ['대상 준비', '분석·저장'], items: items, onDismiss: function () { if (UI.prog === P) UI.prog = null; } }); P.sid = SID; UI.prog = P;
+    var queue = list.slice(), workers = [], STG = { pick: [0, '준비'], call: [1, 'AI 응답 대기'], verify: [2, '검증·저장'], rule: [1, '분석'] };
+    function upd() {
+      var run = items.filter(function (x) { return x.state === 'run'; }), step = Math.max.apply(null, run.map(function (x) { return x.step; }).concat([0])), el = (Date.now() - t0) / 1000, eta = done ? Math.round(el / done * (list.length - done)) : null;
+      P.set(step, done + ' / ' + list.length + '건 완료' + (fail ? ' (실패 ' + fail + ')' : '') + (eta != null && done < list.length ? ' · 남은 시간 약 ' + fmtEta(eta) + ' (추정)' : '') + (run.length ? ' · 처리 중: ' + run.map(function (x) { return x.label; }).join(', ') : ''), done / list.length * 100, false, items);
     }
     async function worker() {
       while (queue.length && !UI.cancel) {
-        var e = queue.shift(), k = e.unit + '|' + e.key, rec = getRec(e) || {}; infl[k] = { f: 0.05, s: 0, st: 'pick' }; upd(e.label, 'pick');
+        var e = queue.shift(), k = e.unit + '|' + e.key, it = byK[k]; it.state = 'run'; it.t0 = Date.now(); it.step = 0; it.stage = '준비'; upd();
         try {
-          var an = isAi ? await aiAnalyze(e, ov, function (st) { infl[k] = { f: STG[st][1], s: STG[st][0], st: st }; upd(e.label, st); }) : (infl[k] = { f: 0.5, s: 1, st: 'rule' }, ruleAnalysis(e));
-          rec = { analysis: an, edit: null, updated: Date.now(), n: e.comments.length, fsig: fsig() }; UI.saved[k] = rec; await dbPut(ekey(e.unit, e.key), rec); okList.push(e);
-        } catch (er) { fail++; failed.push(e); errs.push(e.label + ': ' + er.message); }
-        delete infl[k]; done++; drawStatus(label + ' ' + done + ' / ' + list.length + (fail ? ' (실패 ' + fail + ')' : '')); upd();
+          var an = isAi ? await aiAnalyze(e, ov, function (st) { it.step = STG[st][0]; it.stage = STG[st][1]; upd(); }) : (it.step = 1, it.stage = '분석', ruleAnalysis(e));
+          var rec = { analysis: an, edit: null, updated: Date.now(), n: e.comments.length, fsig: fsig() }; if (sid() === SID) UI.saved[k] = rec; await dbPut(SID + '|' + e.unit + '|' + e.key, rec); okList.push(e); it.state = 'done';
+        } catch (er) { fail++; failed.push(e); errs.push(e.label + ': ' + er.message); it.state = 'fail'; it.err = er.message; }
+        it.ms = Date.now() - it.t0; done++; drawStatus(label + ' ' + done + ' / ' + list.length + (fail ? ' (실패 ' + fail + ')' : '')); if (sid() === SID) drawList(); upd();
       }
     }
     for (var i = 0; i < (isAi ? 2 : 1); i++) workers.push(worker());
     await Promise.all(workers); UI.busy = false;
     var acts = [];
-    if (okList.length) { acts.push({ label: '첫 결과 검토·편집', primary: true, fn: function () { openEditor(okList[0]); } }); acts.push({ label: 'PDF(ZIP) 내려받기', fn: function () { generate(false); } }); }
-    if (failed.length) acts.push({ label: '실패한 ' + failed.length + '건 다시 분석', fn: function () { if (!UI.busy) runAnalysis(failed, mode); } });
-    if (UI.cancel) { P.fail(label + '을 중단했습니다. 완료된 ' + okList.length + '건은 저장되었습니다.', acts); drawStatus('중단했습니다.'); }
+    if (okList.length) { acts.push({ label: '첫 결과 검토·편집', primary: true, fn: function () { if (sid() === SID) openEditor(okList[0]); } }); acts.push({ label: 'PDF(ZIP) 내려받기', fn: function () { if (sid() === SID) generate(false); } }); }
+    if (failed.length) acts.push({ label: '실패한 ' + failed.length + '건 다시 분석', fn: function () { if (!UI.busy && sid() === SID) runAnalysis(failed, mode); } });
+    if (UI.cancel) { P.fail(label + '을 중단했습니다. 완료된 ' + okList.length + '건은 저장되었고, 남은 대상은 「미분석만 선택」으로 이어서 분석할 수 있습니다.', acts); drawStatus('중단했습니다.'); }
     else {
       drawStatus('완료: ' + okList.length + '건' + (fail ? ', 실패 ' + fail + '건' : ''));
       var msg = label + '을 마쳤습니다. 성공 ' + okList.length + '건' + (fail ? ', 실패 ' + fail + '건' : '') + '. ' + (okList.length ? '다음 단계: 목록의 「편집·미리보기」로 내용을 검토·수정한 뒤 「PDF(ZIP) 내려받기」를 진행하십시오.' : '실패 사유를 확인한 뒤 다시 분석해 주십시오.');
       if (fail && !okList.length) P.fail(msg, acts); else P.finish(msg, acts);
       A.toast(label + '을 마쳤습니다. (성공 ' + okList.length + '건' + (fail ? ', 실패 ' + fail + '건' : '') + ')', fail && !okList.length ? 'err' : undefined);
     }
-    if (errs.length) A.toast(errs[0] + (errs.length > 1 ? ' 외 ' + (errs.length - 1) + '건' : ''), 'err'); drawList();
+    if (errs.length) A.toast(errs[0] + (errs.length > 1 ? ' 외 ' + (errs.length - 1) + '건' : ''), 'err');
+    if (sid() === SID) { drawList(); var mt = document.getElementById('rptmount'); if (mt) A.ext.reportUI(mt, { bg: true }); }   // 분석 중 바뀐 응답 범위가 있으면 이제 새로 그림
   }
   function drawStatus(t) { var el = document.getElementById('rpt-status'); if (el) el.textContent = t; }
 
@@ -336,11 +357,13 @@
       '<div class="panel"><div class="row" style="gap:8px;flex-wrap:wrap;align-items:center"><h3 class="sp" style="margin:0">③ ' + ULS[UI.unit] + ' 목록 <span id="rpt-cnt" class="muted" style="font-weight:400"></span></h3>' +
       '<input class="fld" data-rp="q" value="' + E(UI.q) + '" placeholder="이름·계열 검색" style="width:160px">' +
       (UI.unit === 'subject' ? '<button class="btn btn-ghost btn-sm" data-rp="mg" title="선택한 과목을 하나로 합칩니다">선택 과목 합치기</button><button class="btn btn-ghost btn-sm" data-rp="split" title="합쳐진 과목을 다시 나눕니다">합치기 해제</button>' : '') +
-      '<button class="btn btn-secondary btn-sm" data-rp="selall">전체 선택</button><button class="btn btn-secondary btn-sm" data-rp="selnone">선택 해제</button>' +
+      '<button class="btn btn-secondary btn-sm" data-rp="selall">전체 선택</button><button class="btn btn-secondary btn-sm" data-rp="selnone">선택 해제</button><button class="btn btn-secondary btn-sm" data-rp="selnew" title="아직 분석하지 않았거나 분석 후 응답 범위가 바뀐 대상만 선택">미분석만 선택</button>' +
       '<button class="btn btn-primary btn-sm" data-rp="ai">' + I('sparkle', 14) + ' 선택 항목 AI 분석</button><button class="btn btn-secondary btn-sm" data-rp="rule">기본 분석(AI 없이)</button><button class="btn btn-ghost btn-sm" data-rp="stop">중단</button><select class="fld" data-rp="model" style="width:auto" title="AI 모델">' + (A.ext.aiModels || []).map(function (m) { return '<option value="' + E(m[0]) + '"' + ((UI.model || (A.ext.aiModels[0] || [])[0]) === m[0] ? ' selected' : '') + '>' + E(m[1]) + '</option>'; }).join('') + '</select><button class="btn btn-ghost btn-sm" data-rp="reload">다시 계산</button><button class="btn btn-ghost btn-sm" data-rp="bk" title="AI 분석·편집 내용을 파일로 저장">백업 저장</button><button class="btn btn-ghost btn-sm" data-rp="bkload">백업 불러오기</button><input type="file" id="rpt-bkf" accept=".json" hidden></div>' +
       '<div id="rpt-status" class="muted" style="margin:6px 0;min-height:20px"></div><div id="rpt-prog"></div><div id="rpt-list"></div>' +
       '<div class="btn-row" style="margin-top:10px"><button class="btn btn-primary" data-rp="zip">' + I('download', 16) + ' 선택 항목 PDF 내려받기(ZIP)</button><button class="btn btn-secondary" data-rp="print">출력</button><span id="rpt-gen" class="muted"></span></div></div>';
     drawList(); drawSummary(); nmExample(ns);
+    if (UI.prog && UI.prog.sid === sid()) UI.prog.attach(document.getElementById('rpt-prog'));
+    else if (UI.busy) drawStatus('다른 설문의 AI 분석이 진행 중입니다.');
     box.onclick = onClick; box.oninput = onInput; box.onchange = onChange;
   }
   // 열 정의: 정렬 값(null 은 항상 뒤로)
@@ -430,10 +453,11 @@
     }
     else if (r === 'bk') { var all = await dbAll(sid() + '|'); var blob = new Blob([JSON.stringify({ v: 1, survey: sid(), saved: Date.now(), data: all })], { type: 'application/json' }), a2 = document.createElement('a'); a2.href = URL.createObjectURL(blob); a2.download = 'survey-report-backup_' + new Date().toISOString().slice(0, 10) + '.json'; a2.click(); setTimeout(function () { URL.revokeObjectURL(a2.href); }, 5000); }
     else if (r === 'bkload') { var fi = document.getElementById('rpt-bkf'); fi.onchange = function () { var f = fi.files[0]; if (!f) return; var rd = new FileReader(); rd.onload = async function () { try { var j = JSON.parse(rd.result), n = 0; if (!j || j.survey !== sid() || !j.data) throw new Error('이 설문의 백업 파일이 아닙니다.'); for (var k in j.data) { await dbPut(k, j.data[k]); n++; } A.toast(n + '건을 불러왔습니다.'); box.removeAttribute('data-rpt'); A.ext.reportUI(box); } catch (er) { A.toast(er.message, 'err'); } fi.value = ''; }; rd.readAsText(f); }; fi.click(); }
+    else if (r === 'selnew') { UI.sel = {}; filtered().forEach(function (x) { var rc = getRec(x); if (!rc || (rc.fsig && rc.fsig !== fsig())) UI.sel[x.unit + '|' + x.key] = true; }); drawList(); }
     else if (r === 'selnone') { UI.sel = {}; drawList(); }
     else if (r === 'stop') { UI.cancel = true; }
     else if (r === 'reload') { box.removeAttribute('data-rpt'); A.ext.reportUI(box); }
-    else if (r === 'ai' || r === 'rule') { var l = selected(); if (!l.length) return A.toast('대상을 선택해 주십시오.', 'err'); if (UI.busy) return; if (r === 'ai' && !(await A.confirm('AI 분석', l.length + '건을 AI로 분석합니다. 서술 문장과 집계 수치(이름 제외)가 AI 제공자에게 전송되며, 호출은 대상당 1회입니다. 진행하시겠습니까?', '분석 시작', '취소'))) return; runAnalysis(l, r); }
+    else if (r === 'ai' || r === 'rule') { var l = selected(); if (!l.length) return A.toast('대상을 선택해 주십시오.', 'err'); if (UI.busy) return A.toast('다른 분석이 진행 중입니다. 끝난 뒤 다시 시도해 주십시오.', 'err'); if (r === 'ai' && !(await A.confirm('AI 분석', l.length + '건을 AI로 분석합니다. 서술 문장과 집계 수치(이름 제외)가 AI 제공자에게 전송되며, 호출은 대상당 1회입니다. 진행하시겠습니까?', '분석 시작', '취소'))) return; runAnalysis(l, r); }
     else if (r === 'edit') openEditor(entByKey(t.getAttribute('data-k')));
     else if (r === 'zip' || r === 'print') generate(r === 'print');
   }
@@ -528,7 +552,8 @@
     setTimeout(function () { try { f.contentWindow.focus(); f.contentWindow.print(); } catch (e) {} setTimeout(function () { f.remove(); }, 60000); }, 900);
   };
   A.ext.rviews = A.ext.rviews || {}; A.ext.rviews.rpt = function () { setTimeout(function () { var m = document.getElementById('rptmount'); if (m) A.ext.reportUI(m); }, 0); return '<div id="rptmount"><div class="loading">불러오는 중…</div></div>'; };
-  A.ext.reportUI = function (body) {
+  A.ext.reportUI = function (body, opts) {
+    if (opts && opts.bg && UI.busy) return;   // 분석 도중에는 배경 갱신으로 화면을 다시 그리지 않음
     var F = API().F, v = UI.view || 'list', sig = [F.data, F.sincere, UI.unit, v, sid()].join('|');
     if (body.getAttribute('data-rpt') === sig && (body.querySelector('#rpt-list') || body.querySelector('#rpt-view'))) return;
     body.setAttribute('data-rpt', sig);

@@ -331,7 +331,7 @@
         var chg = (ru.u && rp.unit !== ru.u) || rp.view !== ru.v; if (ru.u) rp.unit = ru.u; rp.view = ru.v;
         if (chg) { rp.sel = {}; rp.q = ''; }
         var mt = document.getElementById('rptmount');
-        if (mt && body.getAttribute('data-legacy') === 'rpt') { if (chg) mt.removeAttribute('data-rpt'); A.ext.reportUI(mt); return; }
+        if (mt && body.getAttribute('data-legacy') === 'rpt') { if (chg) mt.removeAttribute('data-rpt'); A.ext.reportUI(mt, { bg: !chg }); return; }
       }
       if (body.getAttribute('data-legacy') !== lk) { body.setAttribute('data-legacy', lk); body.className = ''; body.innerHTML = ''; A.ext.rsub = A.ext.rsubInit = G.sub === 'legacy' ? 'sum' : lk; A.ext.keepShared = true; orig(body); } return;
     }
