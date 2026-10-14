@@ -9,7 +9,7 @@
   var A = { year: null, tab: 'overview', data: null, rDept: null, rType: '세출', logs: null, codeType: '세출' };
   var rootEl = null;
 
-  var TABS = [['overview', '현황'], ['review', '검토·승인'], ['depts', '부서·비밀번호'], ['codes', '코드표'], ['settings', '일정·한도·최종반영'], ['export', '내보내기·인쇄'], ['log', '이력']];
+  var TABS = [['overview', '현황'], ['review', '검토·승인'], ['final', '확정안'], ['depts', '부서·비밀번호'], ['tickets', '결재 QR·집행'], ['codes', '코드표'], ['settings', '일정·한도·최종반영'], ['export', '내보내기·인쇄'], ['log', '이력']];
   var STATUS_TXT = { draft: '작성 준비중', open: '작성 중', closed: '마감', finalized: '최종 확정' };
 
   function arpc(fn, args) { args = args || {}; args.p_token = W.sess.token; return W.rpc(fn, args); }
@@ -49,7 +49,7 @@
     $$('[data-ad]', rootEl).forEach(function (b) { b.onclick = function () { A.tab = b.dataset.ad; refresh(); }; });
     $('#ad-refresh', rootEl).onclick = function () { refresh(true); };
     var body = $('#ad-body', rootEl);
-    ({ overview: overview, review: review, depts: deptsTab, codes: codesTab, settings: settingsTab, export: exportTab, log: logTab })[A.tab](body);
+    ({ overview: overview, review: review, final: finalTab, depts: deptsTab, tickets: ticketsTab, codes: codesTab, settings: settingsTab, export: exportTab, log: logTab })[A.tab](body);
   }
 
   /* ───────── 현황 ───────── */
@@ -144,6 +144,16 @@
         };
       }
     });
+  }
+
+  /* ───────── 확정안 (금액 3단) ───────── */
+  function finalTab(box) {
+    BudgetFinal.show(box, { token: W.sess.token, year: A.year, data: ctxData(), settings: A.data.settings, refresh: function () { refresh(); } });
+  }
+
+  /* ───────── 결재 QR·집행 ───────── */
+  function ticketsTab(box) {
+    BudgetTicket.adminTab(box, { token: W.sess.token, year: A.year, data: ctxData(), depts: activeDepts().map(function (d) { return d.dept; }), refresh: function () { refresh(); } });
   }
 
   /* ───────── 부서·비밀번호 ───────── */
@@ -312,7 +322,9 @@
     box.innerHTML = '<div class="grid2"><div class="card"><h3>엑셀 내보내기</h3><p class="muted">시트 구성: 기초자료(2026 xlsm 열 구조 동일) · 종합 · 증감분석 · ' + (A.data.settings ? A.data.settings.base_year : A.year - 1) + ' 사용내역</p>' +
       '<div class="acts"><button class="btn btn-primary" id="ex-all">' + ico('download', 16) + ' 전체 내보내기</button><button class="btn btn-secondary" id="ex-conf">확정된 건만</button></div></div>' +
       '<div class="card"><h3>인쇄 · PDF</h3><p class="muted">브라우저 인쇄 창에서 「PDF로 저장」을 선택하면 PDF가 만들어집니다.</p>' +
-      '<div class="acts"><button class="btn btn-primary" id="pr-sum">' + ico('print', 16) + ' 종합만 인쇄</button><button class="btn btn-secondary" id="pr-all">부서별 상세 포함</button></div></div></div>';
+      '<div class="acts"><button class="btn btn-primary" id="pr-sum">' + ico('print', 16) + ' 종합만 인쇄</button><button class="btn btn-secondary" id="pr-all">부서별 상세 포함</button></div></div>' +
+      '<div class="card" id="xl-card" style="grid-column:1/-1"></div></div>';
+    BudgetXlsx.mountAdmin($('#xl-card', box), { year: A.year, lines: A.data.lines, spend: A.data.spend, codes: A.data.codes, settings: A.data.settings, depts: activeDepts().map(function (d) { return d.dept; }), onDone: function () { refresh(); } });
     box.onclick = function (e) {
       var id = (e.target.closest('button') || {}).id, c = ctxData();
       if (id === 'ex-all') BudgetExport.xlsx(c);

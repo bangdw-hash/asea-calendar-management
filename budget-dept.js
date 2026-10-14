@@ -120,13 +120,32 @@
       '<button class="btn btn-ghost btn-sm" id="pw-chg">' + ico('key', 16) + ' <span class="hide-sm">비밀번호 변경</span></button>' +
       '<button class="btn btn-ghost btn-sm" id="d-out">' + ico('logout', 16) + ' <span class="hide-sm">로그아웃</span></button></div></header>' +
       '<main class="page"><div class="period-bar"><span class="muted">작성 기간</span> <b>' + esc(periodText(s) || (s.status === 'open' ? '제한 없음' : '관리자가 정합니다')) + '</b>' + (s.note ? ' <span class="sep">·</span> ' + esc(s.note) : '') + '</div>' +
-      '<div id="ws"></div></main>';
+      '<nav class="ws-tabs" id="dp-tabs"><button class="ws-tab on" data-m="plan">예산안 작성</button><button class="ws-tab" data-m="qr">' + ico('qr', 16) + ' 결재 QR · 집행</button><button class="btn btn-secondary btn-sm dp-xl" id="dp-xl" title="엑셀에서 작성할 수 있는 부서 양식 내려받기">' + ico('download', 16) + ' 작성 양식(엑셀)</button></nav>' +
+      '<div id="ws"></div><div id="tk" class="hide"></div></main>';
     $('#d-out', root).onclick = logout;
     $('#pw-chg', root).onclick = changePw;
+    // 결재 QR 탭: 예산안 화면과 분리해 두고, QR 반영으로 지출이 바뀌면 돌아갈 때 서버에서 다시 불러옵니다.
+    var qdata = data, qDirty = false, qOpen = false;
+    function qrCtx(getData) {
+      return { token: W.sess.token, year: year, dept: dept, depts: info.depts.map(function (d) { return d.dept; }), getData: getData, onChanged: function () { qDirty = true; } };
+    }
+    function drawQr() { BudgetTicket.deptTab($('#tk', root), qrCtx(function () { return qdata; })); }
+    function showMode(m) {
+      var qr = m === 'qr';
+      if (!qr && qOpen && qDirty) { loadDept(); return; }
+      qOpen = qr;
+      $$('#dp-tabs .ws-tab', root).forEach(function (b) { b.classList.toggle('on', b.dataset.m === m); });
+      $('#ws', root).classList.toggle('hide', qr); $('#tk', root).classList.toggle('hide', !qr);
+      if (qr) W.rpc('bgt_d_load', { p_token: W.sess.token, p_year: year }).then(function (d) { qdata = d; drawQr(); }).catch(function (e) { toast(e.message, 'err'); });
+    }
+    $('#dp-tabs', root).onclick = function (e) { var b = e.target.closest('[data-m]'); if (b) showMode(b.dataset.m); };
+    $('#dp-xl', root).onclick = function () { BudgetXlsx.deptDownload({ year: year, dept: dept, lines: data.lines, spend: data.spend, codes: data.codes, settings: data.settings }); };
     var base = { p_token: W.sess.token };
     function rp(fn, extra) { return W.rpc(fn, Object.assign({}, base, extra)); }
     W.mount($('#ws', root), {
       admin: false, dept: dept, year: year, data: data,
+      // 예산 항목 줄에서 바로 「지출 요청(QR)」: 해당 항목이 채워진 발급 창을 엽니다.
+      onSpendQr: function (line) { BudgetTicket.issue(qrCtx(function () { return data; }), { line_id: line.id }); },
       api: {
         saveLine: function (line) { return rp('bgt_d_line_save', { p_year: year, p_line: line }); },
         deleteLine: function (id) { return rp('bgt_d_line_delete', { p_id: id }); },

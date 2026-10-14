@@ -30,7 +30,23 @@
     ALREADY_SET: '이미 비밀번호가 설정된 부서입니다. 비밀번호로 접속해 주십시오.',
     BAD_PASSWORD: '비밀번호가 올바르지 않습니다.',
     NO_DEPT: '부서를 찾을 수 없습니다.',
-    ADMIN_NOT_SET: '관리자 비밀번호가 아직 등록되지 않았습니다.'
+    ADMIN_NOT_SET: '관리자 비밀번호가 아직 등록되지 않았습니다.',
+    NO_YEAR: '연도 설정이 없습니다.',
+    TITLE_REQUIRED: '건명을 입력해 주십시오.',
+    LINES_REQUIRED: '집행 내역을 1줄 이상 입력해 주십시오.',
+    TOO_MANY_LINES: '한 QR에는 30줄까지 넣을 수 있습니다.',
+    AMOUNT_REQUIRED: '금액은 0보다 커야 합니다.',
+    AMOUNT_INVALID: '금액이 올바르지 않습니다.',
+    BAD_LINE: '선택한 예산 항목을 사용할 수 없습니다.',
+    BAD_MODE: '배정 방식이 올바르지 않습니다.',
+    NOT_RESERVE: '예비비(7.2.1) 항목만 선택할 수 있습니다.',
+    DOC_NO_REQUIRED: '결재(문서)번호를 입력해 주십시오.',
+    DOC_NO_TOO_LONG: '결재번호는 60자 이내로 입력해 주십시오.',
+    DOC_NO_DUP: '이미 다른 QR에 사용된 결재번호입니다. 번호를 다시 확인해 주십시오.',
+    NOT_APPLIED: '아직 반영되지 않은 QR입니다.',
+    VOIDED: '무효 처리된 QR입니다.',
+    ALREADY_APPLIED: '이미 반영된 내역입니다.',
+    EVENTS_APPEND_ONLY: '이력은 수정하거나 삭제할 수 없습니다.'
   };
 
   /* ───────────── 공용 유틸 ───────────── */
@@ -69,6 +85,7 @@
     undo: '<path d="M9 14L4 9l5-5M4 9h11a5 5 0 0 1 0 10h-3"/>',
     x: '<path d="M6 6l12 12M18 6L6 18"/>',
     building: '<path d="M4 21V5l8-2v18M12 9h8v12M7 9h2M7 13h2M7 17h2M15 13h2M15 17h2"/>',
+    qr: '<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h3v3h-3zM20 14v.01M14 20h3M20 17v4"/>',
     coins: '<ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v6c0 1.7 3.1 3 7 3s7-1.3 7-3V6M5 12v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6"/>'
   };
   function ico(n, size) {
@@ -379,7 +396,7 @@
         '<td class="num c-amt" data-l="2027 요구액">' + numIn('amount', l.amount, ed, '0') + '</td>' +
         '<td class="num c-diff" data-l="증감">' + diffHtml(l.base_amount, l.amount) + '</td>' +
         '<td class="c-reason" data-l="증감 사유"><input class="in' + (calc.needReason(l) && !String(l.reason || '').trim() ? ' need' : '') + '" data-f="reason" value="' + esc(l.reason) + '"' + (ed ? '' : ' readonly') + ' placeholder="' + (calc.needReason(l) ? '사유를 입력하십시오' : '') + '" aria-label="증감 사유"></td>' +
-        '<td class="c-act">' + (ctx.admin ? '<button class="icon-btn" data-act="edit-line" title="코드·명칭·2026 기준 수정" aria-label="항목 수정">' + ico('edit') + '</button>' : '') +
+        '<td class="c-act">' + (ctx.onSpendQr && l.type === '세출' ? '<button class="icon-btn qr-btn" data-act="spend-qr" title="지출 요청 (결재 QR 발급)" aria-label="지출 요청 QR">' + ico('qr') + '</button>' : '') + (ctx.admin ? '<button class="icon-btn" data-act="edit-line" title="코드·명칭·2026 기준 수정" aria-label="항목 수정">' + ico('edit') + '</button>' : '') +
         (canDel ? '<button class="icon-btn danger" data-act="del-line" title="삭제" aria-label="삭제">' + ico('trash') + '</button>' : '') + '</td></tr>';
     }
     function numIn(f, v, ed, ph) {
@@ -396,6 +413,7 @@
           '<td>' + (ed ? '<button class="icon-btn danger" data-act="sp-del" aria-label="내역 삭제">' + ico('trash') + '</button>' : '') + '</td></tr>';
       }).join('');
       return '<tr class="sp" data-for="' + l.id + '"><td colspan="10"><div class="sp-box"><div class="sp-hd"><b>' + esc(l.name) + '</b> 2026 ' + lab + ' 내역 <span class="muted">· 건별로 입력하면 합계가 자동 계산됩니다</span>' +
+        (ctx.onSpendQr && l.type === '세출' ? '<button class="btn btn-primary btn-sm" data-act="spend-qr" data-lid="' + l.id + '">' + ico('qr', 16) + ' 지출 요청(QR)</button>' : '') +
         (ed ? '<button class="btn btn-secondary btn-sm" data-act="sp-add">' + ico('plus', 16) + ' ' + lab + ' 추가</button>' : '') + '</div>' +
         (list.length ? '<table class="spt"><thead><tr><th>일자</th><th>적요</th><th>거래처</th><th class="num">금액(원)</th><th></th></tr></thead><tbody>' + rows + '</tbody></table>' : '<div class="muted sp-empty">입력된 내역이 없습니다.</div>') +
         '<div class="sp-sum">합계 <b>' + won(calc.used(l.id)) + '</b>원</div></div></td></tr>';
@@ -477,6 +495,7 @@
       var a = e.target.closest('[data-act]'); if (!a) return;
       var act = a.dataset.act, tr = a.closest('tr.ln'), id = tr && tr.dataset.id;
       if (act === 'toggle-spend') { ui.open[id] = !ui.open[id]; renderBody(); return; }
+      if (act === 'spend-qr') { var sl = lineById(id || a.dataset.lid); if (sl && ctx.onSpendQr) ctx.onSpendQr(sl); return; }
       if (act === 'add-line') return addLineModal(typeOf(ui.tab));
       if (act === 'fill-fc') return fillForecastModal(typeOf(ui.tab));
       if (act === 'applycalc') { var inp = $('[data-f="amount"]', tr); inp.value = won(Number(a.dataset.v)); saveField(id, { amount: Number(a.dataset.v) }, inp); return; }
