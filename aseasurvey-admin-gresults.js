@@ -60,7 +60,7 @@
     return out;
   }
   function base() { if (!isCourse()) return G.rows; if (G._flatFor !== G.rows.length + ':' + G.sid) { G._flat = flatten(G.rows, cmap()); G._flatFor = G.rows.length + ':' + G.sid; } return G._flat; }
-  function pick() { return base().filter(function (r) { return (G.data === 'all' || (G.data === 'test') === !!r.is_test) && !r.excluded; }); }
+  function pick() { return base().filter(function (r) { return (A.ext.F.data === 'all' || (A.ext.F.data === 'test') === !!r.is_test) && A.ext.sincereOk(r); }); }
   var DIMS = [['@track', '계열'], ['@grade', '학년'], ['@klass', '반'], ['@kind', '이론·실습'], ['@prof', '교수'], ['@course', '과목']];
   function dimVal(r, id) {
     var c = r._course; if (id === '@course') return c ? c.id : undefined; if (id === '@prof') return c ? (c.prof || '(교수 미입력)') : undefined; if (id === '@kind') return c ? (c.kind || undefined) : undefined;
@@ -226,7 +226,7 @@
     var chips = keys.map(function (id) { return G.x[id].map(function (k) { var q = qm[id], lab = q ? (q.type === 'nps' ? ({ det: '비추천', pas: '중립', pro: '추천' })[k] : q.type === 'single' || q.type === 'multi' ? ((q.options || []).filter(function (o) { return o.id === k; })[0] || { label: k === '__other' ? '기타' : k }).label : q.type === 'scale' ? ((SVY.scaleOf(d, q).filter(function (o) { return String(o.v) === k; })[0] || {}).label || k) : k) : k; return '<button class="fchip" data-act="gx" data-q="' + E(id) + '" data-k="' + E(k) + '">' + E(String((q && q.label) || id).slice(0, 14)) + ': <b>' + E(lab) + '</b> ' + I('x', 12) + '</button>'; }).join(''); }).join('');
     var h = '<div class="fbar"><div class="fcount"><b>' + (course ? respondents(rows) : rows.length) + '</b>명' + (course ? ' <span class="muted">· 과목 응답 ' + rows.length + '건</span>' : '') + (keys.length ? ' <span class="muted">/ 전체 ' + (course ? respondents(all) : all.length) + '명 (' + pct(rows.length, all.length) + '%)</span>' : '') + '</div><div class="fchips">' + (chips || '<span class="muted">차트의 항목을 누르면 그 응답자만 모아 모든 문항을 다시 집계합니다.</span>') + '</div>' + (keys.length ? '<button class="btn btn-ghost btn-sm" data-act="gxclear">모두 해제</button>' : '') + '</div>';
     var dur = rows.map(function (r) { return r.duration_sec; }).filter(function (v) { return v > 0; }), sc = rows.filter(function (r) { return r.max_score != null; });
-    h += '<div class="hero"><div class="tile"><div class="l">' + (course ? '응답자' : '응답') + '</div><div class="v">' + (course ? respondents(rows) : rows.length) + '</div>' + (course ? '<div class="s">과목 단위 응답 ' + rows.length + '건 · 1인당 ' + r2(respondents(rows) ? rows.length / respondents(rows) : 0) + '과목</div>' : '') + (lim ? '<div class="meter"><i style="width:' + Math.min(100, pct(all.length, lim)) + '%"></i></div><div class="s">정원 ' + lim + '명 중 ' + all.length + '명 (' + pct(all.length, lim) + '%)</div>' : '<div class="s">' + (G.data === 'real' ? '정식 응답' : G.data === 'test' ? '테스트 응답' : '정식+테스트') + '</div>') + '</div>' +
+    h += '<div class="hero"><div class="tile"><div class="l">' + (course ? '응답자' : '응답') + '</div><div class="v">' + (course ? respondents(rows) : rows.length) + '</div>' + (course ? '<div class="s">과목 단위 응답 ' + rows.length + '건 · 1인당 ' + r2(respondents(rows) ? rows.length / respondents(rows) : 0) + '과목</div>' : '') + (lim ? '<div class="meter"><i style="width:' + Math.min(100, pct(all.length, lim)) + '%"></i></div><div class="s">정원 ' + lim + '명 중 ' + all.length + '명 (' + pct(all.length, lim) + '%)</div>' : '<div class="s">' + (A.ext.F.data === 'real' ? '정식 응답' : A.ext.F.data === 'test' ? '테스트 응답' : '정식+테스트') + '</div>') + '</div>' +
       '<div class="tile"><div class="l">중앙 소요 시간</div><div class="v">' + (dur.length ? Math.round(median(dur)) + '<small>초</small>' : '-') + '</div><div class="s">입력 화면 체류 기준</div></div>' +
       (sc.length ? '<div class="tile"><div class="l">퀴즈 평균</div><div class="v">' + r2(mean(sc.map(function (r) { return Number(r.score); }))) + '<small> / ' + r2(Number(sc[0].max_score)) + '</small></div><div class="s">' + Math.round(mean(sc.map(function (r) { return Number(r.score) / Number(r.max_score) * 100; }))) + '점 (100점 환산)</div></div>' : '') + '</div>';
     var ins = insights(rows); if (ins.length) h += '<div class="insights"><h3>' + I('sparkle', 15) + ' 핵심 요약</h3>' + ins.map(function (z) { return '<div class="ins ' + z[0] + '"><i></i><span>' + E(z[1]) + '</span></div>'; }).join('') + '</div>';
@@ -281,10 +281,10 @@
     var d = def(), lim = d.limit && N(d.limit.max), score = rows.filter(function (r) { return r.max_score != null; }), dur = rows.map(function (r) { return r.duration_sec; }).filter(function (v) { return v > 0; }), byDay = {};
     rows.forEach(function (r) { var k = String(r.created_at).slice(0, 10); byDay[k] = (byDay[k] || 0) + 1; });
     var days = Object.keys(byDay).sort(), mx = Math.max.apply(null, days.map(function (k) { return byDay[k]; }).concat([1]));
-    var h = '<div class="kpis"><div class="kpi"><div class="l">응답 수</div><div class="v">' + rows.length + '</div><div class="s">' + (G.data === 'real' ? '정식' : G.data === 'test' ? '테스트' : '정식+테스트') + (lim ? ' · 정원 ' + lim + '명 (' + pct(rows.length, lim) + '%)' : '') + '</div></div>' +
+    var h = '<div class="kpis"><div class="kpi"><div class="l">응답 수</div><div class="v">' + rows.length + '</div><div class="s">' + (A.ext.F.data === 'real' ? '정식' : A.ext.F.data === 'test' ? '테스트' : '정식+테스트') + (lim ? ' · 정원 ' + lim + '명 (' + pct(rows.length, lim) + '%)' : '') + '</div></div>' +
       '<div class="kpi"><div class="l">중앙 소요 시간</div><div class="v">' + (dur.length ? Math.round(median(dur)) + '초' : '-') + '</div><div class="s">입력 화면 체류 기준</div></div>';
     if (score.length) { var sc = score.map(function (r) { return Number(r.score) / Number(r.max_score) * 100; }), pass = d.quiz && N(d.quiz.passScore) != null ? score.filter(function (r) { return Number(r.score) >= N(d.quiz.passScore); }).length : null; h += '<div class="kpi"><div class="l">퀴즈 평균 점수</div><div class="v">' + r2(mean(score.map(function (r) { return Number(r.score); }))) + '<small> / ' + r2(Number(score[0].max_score)) + '</small></div><div class="s">평균 ' + Math.round(mean(sc)) + '점(100점 환산)' + (pass != null ? ' · 통과 ' + pass + '명 (' + pct(pass, score.length) + '%)' : '') + '</div></div>'; }
-    h += '<div class="kpi"><div class="l">제외 처리</div><div class="v">' + G.rows.filter(function (r) { return r.excluded && (G.data === 'all' || (G.data === 'test') === !!r.is_test); }).length + '</div><div class="s">집계에서 빠진 응답</div></div></div>';
+    h += '<div class="kpi"><div class="l">제외 처리</div><div class="v">' + G.rows.filter(function (r) { return r.excluded && (A.ext.F.data === 'all' || (A.ext.F.data === 'test') === !!r.is_test); }).length + '</div><div class="s">집계에서 빠진 응답</div></div></div>';
     if (lim) h += '<div class="panel"><h3>정원 현황</h3><div class="meter"><i style="width:' + Math.min(100, pct(rows.length, lim)) + '%"></i></div><div class="muted" style="margin-top:4px">' + rows.length + ' / ' + lim + '명' + (rows.length >= lim ? ' · 마감' : ' · 남은 자리 ' + (lim - rows.length) + '명') + '</div></div>';
     h += '<div class="panel"><h3>일별 응답 추이</h3>' + (days.length ? '<div class="spark">' + days.map(function (k) { return '<div class="sp1" title="' + k + ' ' + byDay[k] + '건"><i style="height:' + Math.max(4, byDay[k] / mx * 100) + '%"></i><span>' + k.slice(5) + '</span><b>' + byDay[k] + '</b></div>'; }).join('') + '</div>' : '<p class="muted">응답이 없습니다.</p>') + '</div>';
     // 핵심 문항 미리보기: 척도·별점·NPS 평균
@@ -314,7 +314,7 @@
     }).join('');
   }
   function viewResp() {
-    var all = base().filter(function (r) { return G.data === 'all' || (G.data === 'test') === !!r.is_test; }).sort(function (a, b) { return b.seq - a.seq; }), kw = G.kw.trim().toLowerCase();
+    var all = base().filter(function (r) { return (A.ext.F.data === 'all' || (A.ext.F.data === 'test') === !!r.is_test) && (A.ext.F.sincere === 'all' || A.ext.sincereOk(r)); }).sort(function (a, b) { return b.seq - a.seq; }), kw = G.kw.trim().toLowerCase();
     if (kw) all = all.filter(function (r) { return (r.ticket || '').toLowerCase().indexOf(kw) >= 0 || JSON.stringify(r.answers || {}).toLowerCase().indexOf(kw) >= 0; });
     var per = 20, pages = Math.max(1, Math.ceil(all.length / per)); G.page = Math.min(G.page, pages); var rows = all.slice((G.page - 1) * per, G.page * per);
     return '<div class="panel"><div class="row"><h3 class="sp">개별 응답 (' + all.length + '건)</h3><input class="fld" id="gkw" placeholder="추첨번호·응답 내용 검색" value="' + E(G.kw) + '" style="max-width:260px"></div><p class="panel-sub">부적절한 응답은 「제외」하면 집계에서 빠집니다.</p>' + (rows.length ? rows.map(function (r) {
@@ -324,7 +324,7 @@
   function render() {
     var body = document.getElementById('gbody'); if (!body) return;
     var rows = pick(), y = window.scrollY, focus = document.activeElement && document.activeElement.id === 'gkw';
-    body.parentNode.classList.toggle('gcmp', G.sub === 'cmp'); if (G.sub === 'legacy' || G.sub === 'cmp') { if (body.getAttribute('data-legacy') !== G.sub) { body.setAttribute('data-legacy', G.sub); body.className = ''; body.innerHTML = ''; A.ext.rsub = A.ext.rsubInit = G.sub === 'cmp' ? 'cmp' : 'sum'; orig(body); } return; }
+    body.parentNode.classList.toggle('gcmp', G.sub === 'cmp' || G.sub === 'legacy'); var gs0 = document.getElementById('gsinc'), gd0 = document.getElementById('gdata'); if (gs0) gs0.value = A.ext.F.sincere; if (gd0) gd0.value = A.ext.F.data; if (G.sub === 'legacy' || G.sub === 'cmp') { if (body.getAttribute('data-legacy') !== G.sub) { body.setAttribute('data-legacy', G.sub); body.className = ''; body.innerHTML = ''; A.ext.rsub = A.ext.rsubInit = G.sub === 'cmp' ? 'cmp' : 'sum'; A.ext.keepShared = true; orig(body); } return; }
     body.removeAttribute('data-legacy'); body.className = ''; body.innerHTML = G.sub === 'hist' ? viewHist() : G.sub === 'rep' ? viewReport() : G.sub === 'sum' ? viewSummary(rows) : G.sub === 'q' ? viewQuestions(rows) : viewResp();
     if (focus) { var n = document.getElementById('gkw'); if (n) { n.focus(); n.setSelectionRange(n.value.length, n.value.length); } }
     window.scrollTo(0, y); live();
@@ -335,7 +335,7 @@
     if (!window.XLSX) return A.toast('엑셀 라이브러리를 불러오지 못했습니다.', 'err');
     var rows = pick().slice().sort(function (a, b) { return a.seq - b.seq; }), qs = qlist(), wb = XLSX.utils.book_new();
     function sheet(name, aoa, w) { var ws = XLSX.utils.aoa_to_sheet(aoa); if (w) ws['!cols'] = w.map(function (x) { return { wch: x }; }); XLSX.utils.book_append_sheet(wb, ws, name); }
-    sheet('요약', [['설문', A.cur.survey.title], ['출력 일시', A.fmt(new Date().toISOString())], ['데이터', G.data === 'real' ? '정식 응답' : G.data === 'test' ? '테스트 응답' : '정식+테스트'], ['응답 수', rows.length]].concat(isCourse() ? [['응답자 수', respondents(rows)]] : []), [16, 50]);
+    sheet('요약', [['설문', A.cur.survey.title], ['출력 일시', A.fmt(new Date().toISOString())], ['데이터', A.ext.F.data === 'real' ? '정식 응답' : A.ext.F.data === 'test' ? '테스트 응답' : '정식+테스트'], ['응답 범위(유효성)', A.ext.SINC[A.ext.F.sincere] || '전체'], ['응답 수', rows.length]].concat(isCourse() ? [['응답자 수', respondents(rows)]] : []), [16, 50]);
     var hasScore = rows.some(function (r) { return r.max_score != null; });
     var crs = isCourse(), head = ['번호', '제출일시', '소요(초)', '추첨번호'].concat(crs ? ['계열', '학년', '반', '과목', '과목 구분', '교수'] : []).concat(hasScore ? ['점수', '만점'] : []).concat(qs.map(function (x) { return x.q.id + ' ' + String(x.q.label).slice(0, 30); }));
     sheet('응답', [head].concat(rows.map(function (r) { var a = (r.answers || {}).common || {}; return [r.seq, A.fmt(r.created_at), r.duration_sec || '', r.ticket].concat(crs ? [r.track, r.grade, r.klass, r._course ? r._course.name : '', r._course ? r._course.kind : '', r._course ? r._course.prof : ''] : []).concat(hasScore ? [r.score == null ? '' : Number(r.score), r.max_score == null ? '' : Number(r.max_score)] : []).concat(qs.map(function (x) { var v = a[x.q.id]; return SVY.isEmpty(x.q, v) ? '' : (['single', 'multi', 'scale', 'grid', 'ranking', 'constsum', 'file', 'signature', 'address', 'location', 'consent'].indexOf(x.q.type) >= 0 || x.q.type === 'date' ? SVY.fmtAnswer(x.q, v, def(), a) : (N(v) != null && typeof v === 'number' ? v : String(v))); })); })), [6, 18, 8, 12].concat(crs ? [12, 8, 8, 22, 8, 12] : []).concat(hasScore ? [6, 6] : []).concat(qs.map(function () { return 22; })));
@@ -348,6 +348,7 @@
       st.push([q.id, q.label, SVY.typeLabel(q), vals.length, s]);
     });
     sheet('문항별 통계', st, [8, 50, 14, 8, 90]);
+    if (crs && A.ext.courseSheets) A.ext.courseSheets(wb, G.rows);   // 계열·반·교수·과목 비교와 평균 시트 추가
     var out = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
     A.download(new Blob([out], { type: 'application/octet-stream' }), '설문결과_' + A.cur.survey.title.replace(/[\\/:*?"<>|\s]+/g, '_') + '_' + new Date().toISOString().slice(0, 10) + '.xlsx');
     A.toast('엑셀 파일을 내려받았습니다.');
@@ -355,15 +356,15 @@
 
   /* ───────────── 탭 ───────────── */
   async function general(box) {
-    if (G.sid !== A.cur.survey.id) { G.sid = A.cur.survey.id; G.rows = []; G.maxSeq = 0; G.sub = 'rep'; G.page = 1; G.kw = ''; G.x = {}; G.cmp = null; G._flatFor = ''; G.data = A.cur.survey.test_mode ? 'test' : 'real'; }
+    if (G.sid !== A.cur.survey.id) { G.sid = A.cur.survey.id; G.rows = []; G.maxSeq = 0; G.sub = 'rep'; G.page = 1; G.kw = ''; G.x = {}; G.cmp = null; G._flatFor = ''; A.ext.F.data = A.cur.survey.test_mode ? 'test' : 'real'; A.ext.F.sincere = 'all'; }
     var SUBS = [['rep', '리포트']].concat(isCourse() ? [['cmp', '비교']] : []).concat([['q', '문항 상세'], ['resp', '개별 응답']]).concat(isCourse() ? [['legacy', '과목·교수 현황판']] : []).concat([['hist', '이력 비교']]);
     box.innerHTML = '<div class="row" style="margin-bottom:12px"><div class="tabs" style="margin:0;border:0;flex:1">' + SUBS.map(function (s) { return '<button class="tab" data-act="gsub" data-s="' + s[0] + '" aria-selected="' + (G.sub === s[0]) + '">' + s[1] + '</button>'; }).join('') + '</div><span id="glive" class="live"></span><button class="btn btn-ghost btn-sm" data-act="glivetoggle">일시정지/재개</button><button class="btn btn-secondary btn-sm" data-act="greload">' + I('refresh', 14) + ' 새로고침</button><button class="btn btn-primary btn-sm" data-act="gxlsx">' + I('download', 14) + ' 엑셀 내려받기</button></div>' +
-      '<div class="filters"><div><label class="f">데이터</label><select class="fld" id="gdata"><option value="real"' + (G.data === 'real' ? ' selected' : '') + '>정식 응답</option><option value="test"' + (G.data === 'test' ? ' selected' : '') + '>테스트 응답</option><option value="all"' + (G.data === 'all' ? ' selected' : '') + '>정식+테스트</option></select></div></div><div id="gbody" class="loading">불러오는 중…</div>';
-    box.onchange = function (e) { if (e.target.id === 'gdata') { G.data = e.target.value; G.page = 1; render(); } };
+      '<div class="filters"><div><label class="f">데이터</label><select class="fld" id="gdata"><option value="real"' + (A.ext.F.data === 'real' ? ' selected' : '') + '>정식 응답</option><option value="test"' + (A.ext.F.data === 'test' ? ' selected' : '') + '>테스트 응답</option><option value="all"' + (A.ext.F.data === 'all' ? ' selected' : '') + '>정식+테스트</option></select></div><div><label class="f">응답 범위(유효성)</label><select class="fld" id="gsinc">' + Object.keys(A.ext.SINC).map(function (k) { return '<option value="' + k + '"' + (A.ext.F.sincere === k ? ' selected' : '') + '>' + SVY.esc(A.ext.SINC[k]) + '</option>'; }).join('') + '</select></div></div><div id="gbody" class="loading">불러오는 중…</div>';
+    box.onchange = function (e) { if (e.target.id === 'gsinc') { A.ext.F.sincere = e.target.value; G.page = 1; render(); } if (e.target.id === 'gdata') { A.ext.F.data = e.target.value; G.page = 1; render(); } };
     box.oninput = function (e) { if (e.target.id === 'gkw') { G.kw = e.target.value; G.page = 1; clearTimeout(G._k); G._k = setTimeout(render, 250); } };
     box.onclick = async function (e) {
       var t = e.target.closest('[data-act]'); if (!t) return; var act = t.getAttribute('data-act');
-      if (act === 'gcmp') { var oid = t.getAttribute('data-id'); G.cmp = { loading: true }; G.sub = 'hist'; render(); try { var o = await loadOther(oid); G.cmp = { title: o.title, m: metricsOf(o.def, o.rows, null) }; } catch (er) { G.cmp = { err: er.message }; } render(); return; }
+      if (act === 'gcmp') { var oid = t.getAttribute('data-id'); G.cmp = { loading: true }; G.sub = 'hist'; render(); try { var o = await loadOther(oid); G.cmp = { title: o.title, m: metricsOf(o.def, o.rows.filter(function (r) { return A.ext.sincereOk(r); }), null) }; } catch (er) { G.cmp = { err: er.message }; } render(); return; }
       if (act === 'gsub') { if ((G.sub === 'legacy' || G.sub === 'cmp') && t.getAttribute('data-s') !== G.sub && A.R) A.R.sid = ''; G.sub = t.getAttribute('data-s'); box.querySelectorAll('[data-act=gsub]').forEach(function (b) { b.setAttribute('aria-selected', b === t); }); G.page = 1; render(); }
       else if (act === 'glivetoggle') { G.live = !G.live; live(); if (G.live) poll(); }
       else if (act === 'greload') fullLoad().then(function () { render(); A.toast('새로 불러왔습니다.'); }).catch(function (er) { A.toast(er.message, 'err'); });
