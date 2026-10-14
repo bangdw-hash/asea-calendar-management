@@ -226,3 +226,5 @@ table{border-collapse:collapse;width:100%}
 .glv{top:0;bottom:0;width:9px;margin-left:-4px;cursor:col-resize}.glv::before{left:4px;top:0;bottom:0;width:1px}
 .glh{left:0;right:0;height:9px;margin-top:-4px;cursor:row-resize}.glh::before{top:4px;left:0;right:0;height:1px}
 .ed-wrap.rul{padding:18px 0 0 18px}.rl{position:absolute;cursor:crosshair;display:block}.rl-top{left:18px;top:0}.rl-left{left:0;top:18px}
+.ed-pg .np{outline:1.5px dashed #F59E0B!important;outline-offset:-1px}
+.npb{font-size:11px;color:#B06000;background:var(--amber-lt);border-radius:8px;padding:0 6px;white-space:nowrap}
