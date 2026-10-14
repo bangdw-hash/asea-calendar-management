@@ -9,10 +9,13 @@
   var AW = window.AW, S = AW.S, E = {};
   AW.Editor = E;
   var K1 = 96 / 25.4;                       // 100% = 1mm 당 3.78px
-  var CFG0 = { grid: 1, snap: true, show: false, guides: true, th: 1.2, nudge: 0.5, big: 5 };
+  var CFG0 = { ruler: false, gshow: true, grid: 1, snap: true, show: false, guides: true, th: 1.2, nudge: 0.5, big: 5 };
   var st = { cfg: Object.assign({}, CFG0, AW.lsGet('award_ed_cfg', {})), sty: null, zoom: 0, fit: true, hist: [], hi: -1, root: null, stage: null, pg: null, ov: null, drag: null, editing: null, clip: null };
 
   function T() { return S.tpl; }
+  function LG() { return (T().page && T().page.lang) || 'ko'; }
+  function tk() { return LG() === 'en' ? 'en' : 'text'; }          // 편집 중인 언어의 글 필드
+  function keepPage(np) { return Object.assign({}, T().page, np); }   // 용지 크기를 바꿀 때 언어·번호 규칙·안내선 유지
   function sel() { return S.sel.map(AW.get).filter(Boolean); }
   function scale() { return st.zoom || K1; }
   function changed(kind, noHist) { if (!noHist) pushHist(); S.dirty = true; if (kind === 'bg') S.bgDirty = true; AW.emit('tplchange', kind); }
@@ -37,7 +40,8 @@
     st.root = root;
     root.innerHTML =
       '<div class="ed-tools">' +
-        '<div class="tg">' + BTN('add-text', 'text', '글상자 추가') + BTN('add-field', 'field', '일괄 입력 항목 추가 — 엑셀 데이터가 들어갈 자리') + BTN('add-line', 'line', '선 추가') + BTN('add-rect', 'rect', '사각형 추가') + BTN('add-img', 'image', '이미지(직인·로고) 추가') + '</div>' +
+        '<div class="tg">' + BTN('add-text', 'text', '글상자 추가') + BTN('add-field', 'field', '일괄 입력 항목 추가 — 엑셀 데이터가 들어갈 자리') + BTN('add-line', 'line', '선 추가') + BTN('add-rect', 'rect', '사각형 추가') + BTN('add-img', 'image', '이미지(직인·로고) 추가') + BTN('add-qr', 'qr', '위조 방지 인증 QR 추가') + '</div>' +
+        '<div class="tg"><button class="tb tb-txt" data-a="lang-ko" title="한글 버전 편집·보기">한글</button><button class="tb tb-txt" data-a="lang-en" title="영문 버전 편집·보기">영문</button><button class="tb tb-txt" data-a="lang-both" title="한글+영문 병기 보기(출력 기본값)">한영</button>' + BTN('langcfg', 'cols', '영문 크기·병기 순서 설정') + '</div>' +
         '<div class="tg">' + BTN('starter', 'wand', '기본 상장 배치 넣기') + BTN('page', 'page', '용지·배경 설정(JPG/PDF 올리기)') + '<button class="tb tb-txt" data-a="orient" title="가로·세로 전환"></button></div>' +
         '<div class="tg">' + BTN('undo', 'undo', '실행 취소 (Ctrl+Z)') + BTN('redo', 'redo', '다시 실행 (Ctrl+Y)') + '</div>' +
         '<div class="tg">' + BTN('dup', 'copy', '복제 (Ctrl+D)') + BTN('addline', 'plus', '줄 추가 — 선택한 상자 아래에 같은 서식으로 한 줄 더') + BTN('del', 'trash', '삭제 (Delete)') + '</div>' +
@@ -56,7 +60,7 @@
       '<div class="ed-tools ed-arr">' +
         '<div class="tg" title="선택이 1개면 용지 기준, 2개 이상이면 선택 영역 기준으로 정렬합니다">' + BTN('ag-l', 'gL', '왼쪽 맞춤') + BTN('ag-ch', 'gCH', '가로 가운데') + BTN('ag-r', 'gR', '오른쪽 맞춤') + BTN('ag-t', 'gT', '위 맞춤') + BTN('ag-cv', 'gCV', '세로 가운데') + BTN('ag-b', 'gB', '아래 맞춤') + '</div>' +
         '<div class="tg">' + BTN('dist-h', 'dH', '가로 간격 같게(3개 이상)') + BTN('dist-v', 'dV', '세로 간격 같게(3개 이상)') + BTN('front', 'front', '맨 앞으로') + BTN('back', 'back', '맨 뒤로') + BTN('lock', 'lock', '잠금/해제') + '</div>' +
-        '<div class="tg pos">' + ['x:X', 'y:Y', 'w:가로', 'h:세로'].map(function (s) { var p = s.split(':'); return '<label class="mini">' + p[1] + '<input class="in sm num" data-g2="' + p[0] + '" type="number" step="0.5" style="width:62px"></label>'; }).join('') + '<span class="mini">mm</span></div>' +
+        '<div class="tg pos">' + ['x:X', 'y:Y', 'w:가로', 'h:세로', 'rot:각도'].map(function (s) { var p = s.split(':'); return '<label class="mini">' + p[1] + '<input class="in sm num" data-g2="' + p[0] + '" type="number" step="0.5" style="width:62px"></label>'; }).join('') + '<span class="mini">mm</span></div>' +
       '</div>' +
       '<div class="ed-stage" tabindex="0" aria-label="양식 편집 영역"><div class="ed-wrap"></div><div class="ed-hint"></div></div>' +
       '<div class="ed-layers"><button class="ly-h" type="button" aria-label="레이어 창 열기/닫기"></button><div class="ly-b"></div></div>' +
@@ -75,7 +79,7 @@
     root.addEventListener('input', function (e) {
       var p = e.target.dataset.p, g = e.target.dataset.g2;
       if (p) setProp(p, e.target.type === 'checkbox' ? e.target.checked : e.target.type === 'number' ? parseFloat(e.target.value) : e.target.value, true);
-      if (g) { var v = parseFloat(e.target.value); if (!isNaN(v)) { sel().forEach(function (el) { el[g] = AW.round(g === 'w' || g === 'h' ? Math.max(0, v) : v, 2); }); liveUpdate(); } }
+      if (g) { var v = parseFloat(e.target.value); if (!isNaN(v)) { sel().forEach(function (el) { el[g] = g === 'rot' ? normRot(v) : AW.round(g === 'w' || g === 'h' ? Math.max(0, v) : v, 2); }); if (g === 'rot') E.refreshElems(); else liveUpdate(); } }
     });
     root.addEventListener('change', function (e) { if (e.target.dataset.p || e.target.dataset.g2) { commitLive(); } if (e.target.dataset.f === 'img') pickImg(e.target); });
     st.stage.addEventListener('pointerdown', onDown);
@@ -101,9 +105,12 @@
     var pg = AW.renderPage(T(), { scale: st.zoom, mode: 'edit' });
     pg.classList.add('ed-pg'); wrap.appendChild(pg); st.pg = pg;
     var ov = document.createElement('div'); ov.className = 'ed-ov'; pg.appendChild(ov); st.ov = ov;
+    wrap.classList.toggle('rul', !!st.cfg.ruler);
+    if (st.cfg.ruler) { ['top', 'left'].forEach(function (s) { var cv = document.createElement('canvas'); cv.className = 'rl rl-' + s; cv.title = '눈금자 — 여기서 끌어내면 안내선이 만들어집니다'; wrap.appendChild(cv); drawRuler(cv, s === 'top' ? T().page.w : T().page.h, s === 'top'); }); }
     AW.$$('.el[data-fit="1"]', pg).forEach(function (d) { d.dataset.fit = ''; });   // 편집 중에는 자동 맞춤 미적용(원본 크기 그대로 확인)
     markSel(); updTools();
     var zl = AW.$('[data-a="zlabel"]', st.root); if (zl) zl.textContent = st.fit ? '맞춤' : Math.round(st.zoom / K1 * 100) + '%';
+    ['ko', 'en', 'both'].forEach(function (l) { var b = AW.$('[data-a="lang-' + l + '"]', st.root); if (b) b.classList.toggle('on', LG() === l); });
     var ob = AW.$('[data-a="orient"]', st.root); if (ob) ob.innerHTML = AW.ic('rotate', 15) + ' ' + (T().page.w >= T().page.h ? '가로' : '세로');
     var sn = AW.$('[data-a="snap"]', st.root); if (sn) sn.classList.toggle('on', st.cfg.snap);
     drawGrid();
@@ -116,7 +123,7 @@
   E.refreshElems = function () {            // 요소 레이어만 다시 그림 (배경 이미지 재생성 방지)
     if (!st.pg) return E.render();
     AW.$$('.el', st.pg).forEach(function (n) { n.remove(); });
-    T().elems.forEach(function (e) { var d = AW.renderElem(e, st.zoom, { mode: 'edit' }); d.dataset.fit = ''; st.pg.insertBefore(d, st.ov); });
+    T().elems.forEach(function (e) { var d = AW.renderElem(e, st.zoom, { mode: 'edit', lang: LG() }); d.dataset.fit = ''; st.pg.insertBefore(d, st.ov); });
     markSel(); updTools(); updHint();
   };
   function markSel() {
@@ -127,20 +134,60 @@
       var b = document.createElement('div'); b.className = 'sb' + (e.lock ? ' lk' : ''); b.dataset.id = e.id;
       placeBox(b, e);
       if (single && !e.lock) {
-        (e.t === 'line' ? ['w', 'e'] : ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w']).forEach(function (h) { var hd = document.createElement('i'); hd.className = 'hd hd-' + h; hd.dataset.h = h; b.appendChild(hd); });
+        var rotated = !!(e.rot && e.rot % 360);
+        (rotated ? [] : e.t === 'line' ? ['w', 'e'] : ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w']).forEach(function (h) { var hd = document.createElement('i'); hd.className = 'hd hd-' + h; hd.dataset.h = h; b.appendChild(hd); });
+        var rh = document.createElement('i'); rh.className = 'rh'; rh.title = '끌어서 회전 (Shift: 15°, 0·90°·180°는 자동 맞춤)'; b.appendChild(rh);
       }
       st.ov.appendChild(b);
     });
+    if (list.length > 1 && list[0].grp && list.every(function (e) { return e.grp === list[0].grp; })) {   // 그룹 전체 영역
+      var x1 = Infinity, y1 = Infinity, x2 = -Infinity, y2 = -Infinity, k = st.zoom; list.forEach(function (e) { x1 = Math.min(x1, e.x); y1 = Math.min(y1, e.y); x2 = Math.max(x2, e.x + e.w); y2 = Math.max(y2, e.y + e.h); });
+      var gb = document.createElement('div'); gb.className = 'sb gb'; gb.style.cssText = 'left:' + x1 * k + 'px;top:' + y1 * k + 'px;width:' + (x2 - x1) * k + 'px;height:' + (y2 - y1) * k + 'px'; st.ov.appendChild(gb);
+    }
+    drawGuides();
   }
-  function placeBox(b, e) { var k = st.zoom; b.style.cssText = 'left:' + (e.x * k) + 'px;top:' + (e.y * k - (e.t === 'line' ? 4 : 0)) + 'px;width:' + (e.w * k) + 'px;height:' + (e.t === 'line' ? 8 : Math.max(e.h, 0.5) * k) + 'px'; }
+  function normRot(v) { v = ((v % 360) + 360) % 360; return AW.round(v > 180 ? v - 360 : v, 1); }
+  function rotBy(d) { sel().forEach(function (e) { if (!e.lock) e.rot = normRot((e.rot || 0) + d); }); E.refreshElems(); changed('elems'); }
+  function grouping(on) {
+    var l = sel(); if (on) { if (l.length < 2) return AW.toast('그룹으로 묶으려면 2개 이상 선택해 주십시오.'); var g = AW.uid('g'); l.forEach(function (e) { e.grp = g; }); AW.toast(l.length + '개를 그룹으로 묶었습니다.'); }
+    else { if (!l.some(function (e) { return e.grp; })) return AW.toast('선택한 요소 중 그룹이 없습니다.'); l.forEach(function (e) { delete e.grp; }); AW.toast('그룹을 해제했습니다.'); }
+    E.refreshElems(); changed('elems');
+  }
+  function langDialog() {
+    var p = T().page;
+    AW.modal({ title: '영문 · 한영 병기 설정', body: '<p class="muted" style="margin-top:0">글상자마다 한글과 영문을 함께 보관합니다. 위쪽 「한글 / 영문 / 한영」 버튼으로 편집·보기 언어를 바꾸고, 출력할 때도 같은 선택지가 있습니다. 한영 병기에서는 한글 아래(또는 위)에 영문이 작게 이어서 출력됩니다.</p>' +
+      '<label class="f">병기할 때 영문 글자 크기 (한글 대비)</label><input class="in num" id="lc-s" type="number" min="0.4" max="1.5" step="0.05" value="' + (p.enScale || 0.8) + '">' +
+      '<label class="f">영문 위치</label><div class="radios"><label><input type="radio" name="lc-o" value="0"' + (p.enFirst ? '' : ' checked') + '> 한글 아래에 영문</label><label><input type="radio" name="lc-o" value="1"' + (p.enFirst ? ' checked' : '') + '> 한글 위에 영문</label></div>',
+      actions: [{ label: '취소', cls: 'btn-ghost' }, { label: '적용', cls: 'btn-primary', onClick: function (c) { var s = parseFloat(AW.$('#lc-s').value); p.enScale = isNaN(s) ? 0.8 : Math.max(0.4, Math.min(1.5, s)); p.enFirst = AW.$('input[name="lc-o"]:checked').value === '1'; c(); E.render(); changed('page'); } }] });
+  }
+  // 눈금자·안내선
+  function drawRuler(cv, len, horiz) {
+    var k = st.zoom, dpr = window.devicePixelRatio || 1, W = horiz ? len * k : 18, H = horiz ? 18 : len * k;
+    cv.width = W * dpr; cv.height = H * dpr; cv.style.width = W + 'px'; cv.style.height = H + 'px';
+    var g = cv.getContext('2d'); g.scale(dpr, dpr); g.fillStyle = '#F8FBFE'; g.fillRect(0, 0, W, H); g.strokeStyle = '#94A3B8'; g.fillStyle = '#5F6368'; g.font = '9px sans-serif'; g.lineWidth = 1;
+    var step = k >= 3 ? 1 : k >= 1.5 ? 5 : 10;
+    for (var m = 0; m <= len; m += step) {
+      var pos = m * k + 0.5, big = m % 10 === 0, mid = m % 5 === 0, ln = big ? 18 : mid ? 10 : 5;
+      g.beginPath(); if (horiz) { g.moveTo(pos, 18); g.lineTo(pos, 18 - ln); } else { g.moveTo(18, pos); g.lineTo(18 - ln, pos); } g.stroke();
+      if (big && m) { if (horiz) g.fillText(m, pos + 2, 9); else { g.save(); g.translate(9, pos + 2); g.rotate(-Math.PI / 2); g.fillText(m, 0, 0); g.restore(); } }
+    }
+  }
+  function guides() { var pg = T().page; if (!pg.guides) pg.guides = { v: [], h: [] }; return pg.guides; }
+  function drawGuides() {
+    if (!st.ov) return; AW.$$('.gl', st.ov).forEach(function (n) { n.remove(); });
+    if (st.cfg.gshow === false) return; var g = T().page.guides; if (!g) return; var k = st.zoom;
+    ['v', 'h'].forEach(function (ax) { (g[ax] || []).forEach(function (pos, i) { var d = document.createElement('div'); d.className = 'gl ' + (ax === 'v' ? 'glv' : 'glh'); d.dataset.ax = ax; d.dataset.i = i; d.title = '안내선 ' + pos + 'mm — 끌어서 이동, 눈금자로 끌어내면 삭제'; d.style[ax === 'v' ? 'left' : 'top'] = pos * k + 'px'; st.ov.appendChild(d); }); });
+  }
+  function ctxFlip() {}
+  function placeBox(b, e) { var k = st.zoom; b.style.cssText = 'left:' + (e.x * k) + 'px;top:' + (e.y * k - (e.t === 'line' ? 4 : 0)) + 'px;width:' + (e.w * k) + 'px;height:' + (e.t === 'line' ? 8 : Math.max(e.h, 0.5) * k) + 'px' + (e.rot ? ';transform:rotate(' + e.rot + 'deg)' : ''); }
   function domOf(e) { return AW.$('.el[data-id="' + e.id + '"]', st.pg); }
-  function placeEl(e) { var d = domOf(e); if (!d) return; var k = st.zoom; d.style.left = e.x * k + 'px'; d.style.top = e.y * k + 'px'; d.style.width = e.w * k + 'px'; if (e.t !== 'line') d.style.height = Math.max(e.h, 1) * k + 'px'; }
+  function placeEl(e) { var d = domOf(e); if (!d) return; var k = st.zoom; d.style.left = e.x * k + 'px'; d.style.top = e.y * k + 'px'; d.style.width = e.w * k + 'px'; if (e.t !== 'line') d.style.height = Math.max(e.h, 1) * k + 'px'; var tr = (e.rot ? 'rotate(' + e.rot + 'deg) ' : '') + ((e.flipX || e.flipY) ? 'scale(' + (e.flipX ? -1 : 1) + ',' + (e.flipY ? -1 : 1) + ')' : ''); d.style.transform = tr.trim(); }
   function liveUpdate() { sel().forEach(function (e) { placeEl(e); var b = AW.$('.sb[data-id="' + e.id + '"]', st.ov); if (b) placeBox(b, e); }); updPos(); }
   function commitLive() { changed('elems'); }
 
   function updPos() {
     var list = sel(), one = list.length === 1 ? list[0] : null;
-    ['x', 'y', 'w', 'h'].forEach(function (g) { var i = AW.$('[data-g2="' + g + '"]', st.root); if (i && document.activeElement !== i) i.value = one ? AW.round(one[g], 2) : ''; if (i) i.disabled = !one; });
+    ['x', 'y', 'w', 'h', 'rot'].forEach(function (g) { var i = AW.$('[data-g2="' + g + '"]', st.root); if (i && document.activeElement !== i) i.value = one ? AW.round(one[g] || 0, 2) : ''; if (i) i.disabled = !one; });
   }
   function updTools() {
     var list = sel(), tx = list.filter(function (e) { return e.t === 'text'; }), one = tx[0];
@@ -156,12 +203,17 @@
     }
     var box = AW.$('.ed-text', st.root), ta = AW.$('[data-p="text"]', st.root);
     var one1 = list.length === 1 && list[0].t === 'text';
-    ta.disabled = !one1;
-    if (document.activeElement !== ta) ta.value = one1 ? list[0].text : '';
+    ta.disabled = !one1; ta.placeholder = '글상자를 선택하면 여기에서도 내용을 고칠 수 있습니다.' + (LG() === 'both' ? ' (한영 병기 보기에서는 한글을 편집합니다)' : LG() === 'en' ? ' (영문 편집 중)' : '');
+    if (document.activeElement !== ta) ta.value = one1 ? (list[0][tk()] || '') : '';
     var lk = AW.$('[data-a="lock"]', st.root); if (lk) { var all = list.length && list.every(function (e) { return e.lock; }); lk.classList.toggle('on', !!all); lk.innerHTML = AW.ic(all ? 'lock' : 'unlock', 17); }
     updPos(); updUndo(); updLayers();
   }
-  E.setSel = function (ids, noRender) { S.sel = ids; markSel(); updTools(); AW.emit('selchange'); };
+  function expandGrp(ids) {
+    var gs = {}; ids.forEach(function (id) { var e = AW.get(id); if (e && e.grp) gs[e.grp] = 1; });
+    if (!Object.keys(gs).length) return ids;
+    var out = ids.slice(); T().elems.forEach(function (e) { if (e.grp && gs[e.grp] && out.indexOf(e.id) < 0) out.push(e.id); }); return out;
+  }
+  E.setSel = function (ids, noRender) { S.sel = expandGrp(ids); markSel(); updTools(); AW.emit('selchange'); };
 
   /* ───────────── 속성 변경 ───────────── */
   function setProp(p, v, live) {
@@ -170,7 +222,7 @@
     if (typeof v === 'number' && isNaN(v)) return;
     tx.forEach(function (e) {
       if (p === 'size') v = Math.max(4, Math.min(300, v));
-      e[p] = v;
+      e[p === 'text' ? tk() : p] = v;
     });
     if (p === 'text' || p === 'fit') { E.refreshElems(); } else E.refreshElems();
     if (live) { S.dirty = true; AW.emit('tplchange', 'elems'); debHist(); } else changed('elems');
@@ -182,7 +234,18 @@
     var list = sel(), tx = list.filter(function (e) { return e.t === 'text'; });
     var T1 = function (p, v) { setProp(p, v); };
     switch (a) {
-      case 'add-text': return add(AW.elem('text', { text: '텍스트를 입력하세요' }));
+      case 'add-text': return add(AW.elem('text', { text: '텍스트를 입력하세요', en: 'Enter text' }));
+      case 'add-qr': return add(AW.elem('qr'));
+      case 'lang-ko': case 'lang-en': case 'lang-both': T().page.lang = a.slice(5); E.render(); return changed('page', true);
+      case 'langcfg': return langDialog();
+      case 'group': return grouping(true); case 'ungroup': return grouping(false);
+      case 'rot-l': return rotBy(-90); case 'rot-r': return rotBy(90); case 'rot-180': return rotBy(180); case 'rot-0': sel().forEach(function (e) { e.rot = 0; }); E.refreshElems(); return changed('elems');
+      case 'flip-x': case 'flip-y': sel().forEach(function (e) { e[a === 'flip-x' ? 'flipX' : 'flipY'] = !e[a === 'flip-x' ? 'flipX' : 'flipY']; }); E.refreshElems(); return changed('elems');
+      case 'ruler': st.cfg.ruler = !st.cfg.ruler; saveCfg(); return E.render();
+      case 'gridshow': st.cfg.show = !st.cfg.show; saveCfg(); return drawGrid();
+      case 'gshow': st.cfg.gshow = st.cfg.gshow === false; saveCfg(); return markSel();
+      case 'gclear': T().page.guides = { v: [], h: [] }; markSel(); return changed('page');
+      case 'usermenu': return null;
       case 'add-field': return fieldDialog();
       case 'add-line': return add(AW.elem('line', { w: T().page.w * 0.5, x: T().page.w * 0.25 }));
       case 'add-rect': return add(AW.elem('rect'));
@@ -192,7 +255,7 @@
       case 'orient': return E.orientDialog();
       case 'layers': return toggleLayers();
       case 'hide': var allH = list.length && list.every(function (e) { return e.hide; }); list.forEach(function (e) { e.hide = !allH; }); E.refreshElems(); return changed('elems');
-      case 'tr-sel': var te = tx[0]; return te && AW.AI.translateText({ text: te.text, elemId: te.id, apply: function (v) { te.text = v; E.refreshElems(); changed('elems'); } });
+      case 'tr-sel': var te = tx[0]; return te && AW.AI.translateText({ text: te.text, elemId: te.id, apply: function (v) { te.en = v; if (LG() === 'ko') { T().page.lang = 'both'; E.render(); } else E.refreshElems(); changed('elems'); AW.toast('영문 칸에 저장했습니다. 한영 병기 보기로 확인합니다.', 'ok'); } });
       case 'tr-doc': return AW.AI.translateDoc();
       case 'gloss': return AW.AI.glossDialog();
       case 'ai-test': return AW.AI.test(false);
@@ -243,7 +306,7 @@
   }
   function dup() {
     var list = sel(); if (!list.length) return;
-    var ids = list.map(function (e) { var c = AW.clone(e); c.id = AW.uid(); c.x = AW.round(c.x + 4, 2); c.y = AW.round(c.y + 4, 2); c.lock = false; T().elems.push(c); return c.id; });
+    var gm = {}, ids = list.map(function (e) { var c = AW.clone(e); c.id = AW.uid(); c.x = AW.round(c.x + 4, 2); c.y = AW.round(c.y + 4, 2); c.lock = false; if (c.grp) c.grp = gm[c.grp] = gm[c.grp] || AW.uid('g'); T().elems.push(c); return c.id; });
     E.refreshElems(); E.setSel(ids); changed('elems');
   }
   function addLine() {                       // 줄 추가: 선택한 글상자 아래에 같은 서식·크기의 상자를 한 줄 더
@@ -302,16 +365,16 @@
   function nudgeBy(dx, dy) { sel().forEach(function (e) { if (!e.lock) { e.x = AW.round(e.x + dx, 2); e.y = AW.round(e.y + dy, 2); } }); E.refreshElems(); changed('elems'); }
 
   /* ───────────── 레이어 창 (아래에서 슬라이드) ───────────── */
-  function lyName(e) { return e.name || (e.t === 'text' ? (String(e.text).replace(/\s+/g, ' ').trim().slice(0, 18) || '(빈 글상자)') : e.t === 'rect' ? '사각형' : e.t === 'line' ? '선' : '이미지'); }
+  function lyName(e) { return e.name || (e.t === 'text' ? (String(e.text).replace(/\s+/g, ' ').trim().slice(0, 18) || '(빈 글상자)') : e.t === 'rect' ? '사각형' : e.t === 'line' ? '선' : e.t === 'qr' ? '인증 QR' : '이미지'); }
   function toggleLayers() { st.lyOpen = !st.lyOpen; AW.lsSet('award_ly_open', st.lyOpen); AW.$('.ed-layers', st.root).classList.toggle('open', st.lyOpen); updLayers(); setTimeout(function () { E.relayout(); }, 260); }
   function updLayers() {
     var box = AW.$('.ed-layers', st.root); if (!box || !T()) return;
     if (st.lyOpen == null) { st.lyOpen = !!AW.lsGet('award_ly_open', false); box.classList.toggle('open', st.lyOpen); }
     var els = T().elems, h = AW.$('.ly-h', box); h.innerHTML = AW.ic('layers', 16) + ' <b>레이어</b> <span class="muted">' + els.length + '개</span><span class="sp"></span>' + AW.ic(st.lyOpen ? 'chevD' : 'chevU', 16);
     var b = AW.$('.ly-b', box); if (!st.lyOpen || (b.querySelector('input:focus'))) return;
-    var ic = { text: 'text', rect: 'rect', line: 'line', img: 'image' };
+    var ic = { text: 'text', rect: 'rect', line: 'line', img: 'image', qr: 'qr' };
     b.innerHTML = els.slice().reverse().map(function (e) {
-      return '<div class="ly' + (S.sel.indexOf(e.id) >= 0 ? ' on' : '') + (e.hide ? ' hid' : '') + '" draggable="true" data-id="' + e.id + '"><span class="li">' + AW.ic(ic[e.t] || 'text', 15) + '</span><span class="ln" title="더블클릭하여 이름 변경">' + AW.esc(lyName(e)) + '</span>' +
+      return '<div class="ly' + (S.sel.indexOf(e.id) >= 0 ? ' on' : '') + (e.hide ? ' hid' : '') + '" draggable="true" data-id="' + e.id + '"><span class="li">' + AW.ic(ic[e.t] || 'text', 15) + '</span>' + (e.grp ? '<span class="gdot" title="그룹" style="background:hsl(' + (parseInt(e.grp.slice(-4), 36) % 360) + ',65%,50%)"></span>' : '') + '<span class="ln" title="더블클릭하여 이름 변경">' + AW.esc(lyName(e)) + '</span>' +
         '<button class="icon-btn" data-ly="hide" title="' + (e.hide ? '보이기' : '숨기기') + '" aria-label="표시 전환">' + AW.ic(e.hide ? 'close' : 'eye', 15) + '</button><button class="icon-btn' + (e.lock ? ' on' : '') + '" data-ly="lock" title="잠금 전환" aria-label="잠금 전환">' + AW.ic(e.lock ? 'lock' : 'unlock', 15) + '</button></div>';
     }).join('') + (T().bg ? '<div class="ly bgrow' + (T().page.bgHide ? ' hid' : '') + '"><span class="li">' + AW.ic('image', 15) + '</span><span class="ln">배경: ' + AW.esc(T().bgName || '양식') + '</span><button class="icon-btn" data-ly="bg" title="배경 표시 전환" aria-label="배경 표시 전환">' + AW.ic(T().page.bgHide ? 'close' : 'eye', 15) + '</button></div>' : '') +
       (els.length ? '' : '<div class="empty" style="padding:10px">요소가 없습니다.</div>');
@@ -322,7 +385,7 @@
     b.addEventListener('click', function (ev) {
       var row = ev.target.closest('.ly'); if (!row) return; var id = row.dataset.id, a = ev.target.closest('[data-ly]');
       if (a) { var k = a.dataset.ly; if (k === 'bg') { T().page.bgHide = !T().page.bgHide; E.render(); return changed('page'); } var e = AW.get(id); if (!e) return; if (k === 'hide') e.hide = !e.hide; else e.lock = !e.lock; E.refreshElems(); return changed('elems'); }
-      if (!id) return; if (ev.shiftKey || ev.ctrlKey || ev.metaKey) { var s = S.sel.slice(), i = s.indexOf(id); if (i >= 0) s.splice(i, 1); else s.push(id); E.setSel(s); } else E.setSel([id]);
+      if (!id) return; if (ev.shiftKey || ev.ctrlKey || ev.metaKey) { var s = S.sel.slice(), i = s.indexOf(id), ge = AW.get(id), gm = ge && ge.grp ? T().elems.filter(function (x) { return x.grp === ge.grp; }).map(function (x) { return x.id; }) : [id]; if (i >= 0) s = s.filter(function (x) { return gm.indexOf(x) < 0; }); else s = s.concat(gm); E.setSel(s); } else E.setSel([id]);
     });
     b.addEventListener('dblclick', function (ev) {
       var n = ev.target.closest('.ln'), row = n && n.closest('.ly'); if (!row || !row.dataset.id) return; var e = AW.get(row.dataset.id);
@@ -343,7 +406,7 @@
   }
 
   function keysHelp() {
-    var R = [['끌어서 이동', 'Shift: 가로·세로 한 방향 고정 / Alt: 복제하며 이동 / Ctrl: 자석(격자·가이드) 끄기'], ['모서리 크기 조절', 'Shift: 비율 유지(글상자는 글자 크기도 확대) / Alt: 중심 기준 확대·축소'], ['변 크기 조절', '글상자 폭·높이만 변경'], ['선택', '클릭 / Shift·Ctrl+클릭: 추가·해제 / 빈 곳 끌기: 범위 선택 / Ctrl+A: 전체'], ['화살표', '0.5mm 이동 (Shift: 5mm)'], ['Ctrl+C / X / V', '복사 / 잘라내기 / 붙여넣기'], ['Ctrl+D', '복제'], ['Ctrl+Shift+V', '제자리에 붙여넣기'], ['Ctrl+Alt+C / V', '서식(글꼴·크기·색·정렬 등) 복사 / 붙여넣기'], ['Tab / Shift+Tab', '다음 / 이전 요소 선택'], ['Ctrl+] / [', '한 칸 앞으로 / 뒤로 (Shift 추가: 맨 앞 / 맨 뒤)'], ['Ctrl+Z / Y', '실행 취소 / 다시 실행'], ['모든 기능', '단축키가 겹칠 때는 오른쪽 클릭 메뉴(서브메뉴)에서 같은 기능을 실행할 수 있습니다'], ['레이어 창', '아래 「레이어」 막대를 누르면 올라옵니다 — 클릭 선택, 눈·자물쇠, 끌어서 순서 변경, 더블클릭 이름 변경'], ['Ctrl+휠', '확대·축소'], ['Enter / 더블클릭', '글상자 직접 편집 (Esc: 마침)'], ['오른쪽 클릭', '바로 실행 메뉴'], ['Delete', '삭제'], ['Ctrl+S', '저장']];
+    var R = [['끌어서 이동', 'Shift: 가로·세로 한 방향 고정 / Alt: 복제하며 이동 / Ctrl: 자석(격자·가이드) 끄기'], ['모서리 크기 조절', 'Shift: 비율 유지(글상자는 글자 크기도 확대) / Alt: 중심 기준 확대·축소'], ['변 크기 조절', '글상자 폭·높이만 변경'], ['선택', '클릭 / Shift·Ctrl+클릭: 추가·해제 / 빈 곳 끌기: 범위 선택 / Ctrl+A: 전체'], ['화살표', '0.5mm 이동 (Shift: 5mm)'], ['Ctrl+C / X / V', '복사 / 잘라내기 / 붙여넣기'], ['Ctrl+D', '복제'], ['Ctrl+G / Ctrl+Shift+G', '그룹 만들기 / 해제 (그룹은 더블클릭하면 안의 요소만 선택)'], ['Alt+R', '눈금자 보기·숨기기 — 눈금자에서 끌어내면 안내선, 안내선을 눈금자로 끌어 넣으면 삭제'], ['Alt+G', '격자선 보기·숨기기 (간격은 격자 설정에서)'], ['회전 손잡이', '선택한 요소 위쪽의 동그란 손잡이를 끌기 — Shift: 15° 단위, 0·90·180°는 자동 맞춤, Ctrl: 자동 맞춤 해제'], ['키 조합 선택 기준', 'Ctrl+R(새로고침)·Ctrl+H 같은 브라우저 예약 키를 피해 눈금자·격자는 Alt 조합으로 두었습니다'], ['Ctrl+Shift+V', '제자리에 붙여넣기'], ['Ctrl+Alt+C / V', '서식(글꼴·크기·색·정렬 등) 복사 / 붙여넣기'], ['Tab / Shift+Tab', '다음 / 이전 요소 선택'], ['Ctrl+] / [', '한 칸 앞으로 / 뒤로 (Shift 추가: 맨 앞 / 맨 뒤)'], ['Ctrl+Z / Y', '실행 취소 / 다시 실행'], ['모든 기능', '단축키가 겹칠 때는 오른쪽 클릭 메뉴(서브메뉴)에서 같은 기능을 실행할 수 있습니다'], ['레이어 창', '아래 「레이어」 막대를 누르면 올라옵니다 — 클릭 선택, 눈·자물쇠, 끌어서 순서 변경, 더블클릭 이름 변경'], ['Ctrl+휠', '확대·축소'], ['Enter / 더블클릭', '글상자 직접 편집 (Esc: 마침)'], ['오른쪽 클릭', '바로 실행 메뉴'], ['Delete', '삭제'], ['Ctrl+S', '저장']];
     AW.modal({ title: '편집 단축키 · 마우스 조합', wide: true, body: '<div class="tbl-wrap"><table class="gt"><tbody>' + R.map(function (r) { return '<tr><td class="nowrap"><b>' + AW.esc(r[0]) + '</b></td><td>' + AW.esc(r[1]) + '</td></tr>'; }).join('') + '</tbody></table></div><p class="muted" style="margin-bottom:0">Mac 은 Ctrl 대신 Command, Alt 대신 Option 을 사용합니다.</p>', actions: [{ label: '닫기', cls: 'btn-primary' }] });
   }
   function copy() { var l = sel(); if (!l.length) return; st.clip = l.map(AW.clone); AW.toast(l.length + '개를 복사했습니다.'); }
@@ -351,7 +414,7 @@
     if (!st.clip || !st.clip.length) return;
     var x0 = Infinity, y0 = Infinity; st.clip.forEach(function (c) { x0 = Math.min(x0, c.x); y0 = Math.min(y0, c.y); });
     var dx = inPlace ? 0 : pos ? pos.x - x0 : 5, dy = inPlace ? 0 : pos ? pos.y - y0 : 5;
-    var ids = st.clip.map(function (c) { var n = AW.clone(c); n.id = AW.uid(); n.x = AW.round(Math.max(0, c.x + dx), 2); n.y = AW.round(Math.max(0, c.y + dy), 2); n.lock = false; T().elems.push(n); return n.id; });
+    var gm = {}, ids = st.clip.map(function (c) { var n = AW.clone(c); n.id = AW.uid(); if (n.grp) n.grp = gm[n.grp] = gm[n.grp] || AW.uid('g'); n.x = AW.round(Math.max(0, c.x + dx), 2); n.y = AW.round(Math.max(0, c.y + dy), 2); n.lock = false; T().elems.push(n); return n.id; });
     E.refreshElems(); E.setSel(ids); changed('elems');
   }
   function orderStep(dir) {                  // 한 칸 앞으로(+1)/뒤로(-1)
@@ -448,6 +511,10 @@
   function onDown(ev) {
     if (!st.pg || ev.button > 0) return;
     if (st.editing) { if (ev.target.closest('.el') && ev.target.closest('.el').dataset.id === st.editing.id) return; endEdit(); }
+    var rh = ev.target.closest('.rh'), gl = ev.target.closest('.gl'), rl = ev.target.closest('.rl');
+    if (rh) { var er = sel()[0]; if (er) { st.drag = { mode: 'rot', e: er, start: toMM(ev) }; ev.preventDefault(); } return; }
+    if (gl) { st.drag = { mode: 'gmv', ax: gl.dataset.ax, i: +gl.dataset.i, start: toMM(ev) }; ev.preventDefault(); return; }
+    if (rl) { st.drag = { mode: 'gnew', ax: rl.classList.contains('rl-top') ? 'h' : 'v', pos: null, start: toMM(ev) }; ev.preventDefault(); return; }
     var hd = ev.target.closest('.hd'), elNode = ev.target.closest('.el');
     if (hd) {
       var e0 = sel()[0]; if (!e0) return;
@@ -471,12 +538,24 @@
     var d = st.drag; if (!d) return;
     var p = toMM(ev), dx = p.x - d.start.x, dy = p.y - d.start.y, sn = st.cfg.snap && !(ev.ctrlKey || ev.metaKey), pg = T().page, gs = st.cfg.grid || 1;
     function sp(v) { return AW.round(sn ? Math.round(v / gs) * gs : v, 2); }
+    if (d.mode === 'rot') {                  // 회전: Shift 15°, 0·90·180°에서 자동 맞춤(Ctrl 로 해제)
+      var pr = st.pg.getBoundingClientRect(), cx = pr.left + (d.e.x + d.e.w / 2) * st.zoom, cy = pr.top + (d.e.y + d.e.h / 2) * st.zoom;
+      var ang = Math.atan2(ev.clientY - cy, ev.clientX - cx) * 180 / Math.PI + 90;
+      if (ev.shiftKey) ang = Math.round(ang / 15) * 15; else if (!(ev.ctrlKey || ev.metaKey)) { var q = Math.round(ang / 90) * 90; if (Math.abs(ang - q) < 3) ang = q; }
+      d.e.rot = normRot(ang); d.moved = true; liveUpdate(); return;
+    }
+    if (d.mode === 'gnew' || d.mode === 'gmv') {
+      var gv = d.ax === 'v' ? p.x : p.y, lim = d.ax === 'v' ? pg.w : pg.h; if (sn) gv = Math.round(gv / gs) * gs; gv = AW.round(gv, 1); d.moved = true; d.pos = gv;
+      if (d.mode === 'gmv') { guides()[d.ax][d.i] = gv; drawGuides(); }
+      else { var pv = AW.$('.gl.prev', st.ov); if (!pv) { pv = document.createElement('div'); pv.className = 'gl prev ' + (d.ax === 'v' ? 'glv' : 'glh'); st.ov.appendChild(pv); } pv.style[d.ax === 'v' ? 'left' : 'top'] = gv * st.zoom + 'px'; pv.style.display = gv < 0 || gv > lim ? 'none' : ''; }
+      return;
+    }
     if (d.mode === 'mq') {                   // 빈 곳 드래그: 범위 선택(Shift/Ctrl 로 추가)
       if (!d.box) { if (Math.abs(dx) + Math.abs(dy) < 0.8) return; d.box = document.createElement('div'); d.box.className = 'mq'; st.ov.appendChild(d.box); }
       var k = st.zoom, x1 = Math.min(d.start.x, p.x), y1 = Math.min(d.start.y, p.y), x2 = Math.max(d.start.x, p.x), y2 = Math.max(d.start.y, p.y);
       d.box.style.cssText = 'left:' + x1 * k + 'px;top:' + y1 * k + 'px;width:' + (x2 - x1) * k + 'px;height:' + (y2 - y1) * k + 'px';
       var ids = d.base.slice(); T().elems.forEach(function (e) { if (e.x < x2 && e.x + e.w > x1 && e.y - 1 < y2 && e.y + e.h + 1 > y1 && ids.indexOf(e.id) < 0) ids.push(e.id); });
-      if (ids.join() !== S.sel.join()) { S.sel = ids; var bx = d.box; markSel(); st.ov.appendChild(bx); updTools(); }
+      ids = expandGrp(ids); if (ids.join() !== S.sel.join()) { S.sel = ids; var bx = d.box; markSel(); st.ov.appendChild(bx); updTools(); }
       return;
     }
     if (d.mode === 'mv') {
@@ -511,13 +590,21 @@
     function best(lines, targets) { var r = null; lines.forEach(function (l) { targets.forEach(function (t) { var d = t - l; if (Math.abs(d) < TH && (!r || Math.abs(d) < Math.abs(r.d))) r = { d: d, at: t }; }); }); return r; }
     var tx = [0, pg.w / 2, pg.w], ty = [0, pg.h / 2, pg.h];
     others.forEach(function (o) { tx.push(o.x, o.x + o.w / 2, o.x + o.w); ty.push(o.y, o.y + o.h / 2, o.y + o.h); });
+    var gd = T().page.guides; if (gd && st.cfg.gshow !== false) { (gd.v || []).forEach(function (v) { tx.push(v); }); (gd.h || []).forEach(function (h) { ty.push(h); }); }
     var rx = best([e.x, e.x + e.w / 2, e.x + e.w], tx), ry = best([e.y, e.y + e.h / 2, e.y + e.h], ty);
     if (rx) { e.x = AW.round(e.x + rx.d, 2); var g = document.createElement('div'); g.className = 'snapg gv'; g.style.left = rx.at * k + 'px'; st.ov.appendChild(g); }
     if (ry) { e.y = AW.round(e.y + ry.d, 2); var g2 = document.createElement('div'); g2.className = 'snapg gh'; g2.style.top = ry.at * k + 'px'; st.ov.appendChild(g2); }
   }
   function onUp() {
     var d = st.drag; if (!d) return; st.drag = null;
-    AW.$$('.snapg,.mq', st.ov || document).forEach(function (g) { g.remove(); });
+    AW.$$('.snapg,.mq,.gl.prev', st.ov || document).forEach(function (g) { g.remove(); });
+    if (d.mode === 'rot') { if (d.moved) { E.refreshElems(); changed('elems'); } return; }
+    if (d.mode === 'gnew' || d.mode === 'gmv') {
+      var lim2 = d.ax === 'v' ? T().page.w : T().page.h, g = guides();
+      if (d.mode === 'gnew') { if (d.moved && d.pos != null && d.pos >= 0 && d.pos <= lim2) { g[d.ax].push(d.pos); changed('page'); } }
+      else if (d.moved) { if (d.pos < 0 || d.pos > lim2) g[d.ax].splice(d.i, 1); changed('page'); }
+      markSel(); return;
+    }
     if (d.mode === 'mq') { AW.emit('selchange'); return; }
     if (d.mode === 'rs' || d.moved) { E.refreshElems(); changed('elems'); }
     if (st.pending) { st.pending = false; E.relayout(); }
@@ -527,10 +614,11 @@
   function onDbl(ev) {
     var n = ev.target.closest('.el-text'); if (!n) return;
     var e = AW.get(n.dataset.id); if (!e || e.lock) return;
+    if (e.grp && S.sel.length > 1) { S.sel = [e.id]; markSel(); updTools(); AW.emit('selchange'); return; }   // 그룹 안에서 더블클릭: 이 요소만 선택
     E.setSel([e.id]); beginEdit(e, n);
   }
   function beginEdit(e, node) {
-    var b = node.firstChild; b.textContent = e.text; b.style.outline = '2px solid #0EA5E9'; b.style.cursor = 'text'; b.style.background = 'rgba(255,255,255,.85)';
+    var b = node.firstChild; b.textContent = e[tk()] || ''; b.style.outline = '2px solid #0EA5E9'; b.style.cursor = 'text'; b.style.background = 'rgba(255,255,255,.85)';
     try { b.contentEditable = 'plaintext-only'; } catch (x) {} if (b.contentEditable !== 'plaintext-only') b.contentEditable = 'true';
     st.editing = { id: e.id, node: b };
     b.addEventListener('blur', function () { if (st.editing && st.editing.node === b) endEdit(); }, { once: true });
@@ -540,7 +628,7 @@
   }
   function endEdit() {
     var ed = st.editing; if (!ed) return; st.editing = null;
-    var e = AW.get(ed.id); if (e) { var t = ed.node.innerText.replace(/ /g, ' ').replace(/\n$/, ''); if (t !== e.text) { e.text = t; changed('elems'); } }
+    var e = AW.get(ed.id); if (e) { var t = ed.node.innerText.replace(/ /g, ' ').replace(/\n$/, ''); if (t !== (e[tk()] || '')) { e[tk()] = t; changed('elems'); } }
     E.refreshElems();
     if (st.pending) { st.pending = false; E.relayout(); }
   }
@@ -555,6 +643,9 @@
     if (mod && k === 'z') { ev.preventDefault(); return undo(ev.shiftKey ? 1 : -1); }
     if (mod && k === 'y') { ev.preventDefault(); return undo(1); }
     if (mod && (k === ']' || k === '[')) { ev.preventDefault(); return ev.shiftKey ? order(k === ']') : orderStep(k === ']' ? 1 : -1); }
+    if (ev.altKey && !mod && ev.code === 'KeyR') { ev.preventDefault(); return act('ruler'); }
+    if (ev.altKey && !mod && ev.code === 'KeyG') { ev.preventDefault(); return act('gridshow'); }
+    if (mod && k === 'g') { ev.preventDefault(); return grouping(!ev.shiftKey); }
     if (mod && k === 'd') { ev.preventDefault(); return dup(); }
     if (mod && k === 'a' && st.stage.contains(document.activeElement)) { ev.preventDefault(); return E.setSel(T().elems.map(function (e) { return e.id; })); }
     if (mod && ev.altKey && k === 'c') { ev.preventDefault(); return copyStyle(); }
@@ -643,7 +734,7 @@
       var wmm = r.w, hmm = r.h;
       if (r.px) { var A4r = 297 / 210, ir = Math.max(r.w, r.h) / Math.min(r.w, r.h); if (Math.abs(ir - A4r) / A4r < 0.04) { wmm = r.w >= r.h ? 297 : 210; hmm = r.w >= r.h ? 210 : 297; } else { wmm = r.w >= r.h ? 297 : 297 * r.w / r.h; hmm = r.w >= r.h ? 297 * r.h / r.w : 297; } }
       var fp = fitPaper(wmm, hmm), pg = fp ? { w: fp.w, h: fp.h, paper: fp.paper, orient: fp.orient } : { w: AW.round(wmm, 1), h: AW.round(hmm, 1), paper: 'custom', orient: wmm >= hmm ? 'L' : 'P' };
-      T().bg = r.url; T().bgName = file.name; T().page = pg;
+      T().bg = r.url; T().bgName = file.name; T().page = keepPage(pg);
       if (!T().name || /^새 상장/.test(T().name)) T().name = file.name.replace(/\.[^.]+$/, '');
       E.render(); changed('bg'); AW.emit('tplchange', 'name');
       AW.toast('양식 배경을 적용했습니다 (' + pg.w + '×' + pg.h + 'mm' + (fp ? ' · ' + fp.paper : '') + ').', 'ok');
@@ -660,7 +751,7 @@
         if (dir > 0) { g.translate(h, 0); g.rotate(Math.PI / 2); } else { g.translate(0, w); g.rotate(-Math.PI / 2); }
         g.drawImage(im, 0, 0);
         var p = T().page; T().bg = c.toDataURL('image/jpeg', 0.9);
-        T().page = { w: p.h, h: p.w, paper: p.paper, orient: p.h >= p.w ? 'L' : 'P' };
+        T().page = keepPage({ w: p.h, h: p.w, paper: p.paper, orient: p.h >= p.w ? 'L' : 'P' });
         E.render(); changed('bg'); res();
       };
       im.src = T().bg;
@@ -683,7 +774,7 @@
     var p = T().page, W = p.w, H = p.h, nw = H, nh = W, sx = nw / W, sy = nh / H;
     var go = function (bg) {
       if (o.move) T().elems.forEach(function (e) { e.x = AW.round(e.x * sx, 2); e.y = AW.round(e.y * sy, 2); e.w = AW.round(e.w * sx, 2); if (e.t !== 'line') e.h = AW.round(e.h * sy, 2); });
-      T().page = { w: nw, h: nh, paper: p.paper, orient: nw >= nh ? 'L' : 'P' };
+      T().page = keepPage({ w: nw, h: nh, paper: p.paper, orient: nw >= nh ? 'L' : 'P' });
       if (bg) T().bg = bg;
       S.sel = []; E.render(); changed(bg ? 'bg' : 'page');
     };
@@ -744,11 +835,12 @@
     var STRIP = function (label, arr) { return { k: 's', label: label, arr: arr }; };
     var B = function (ic, tip, a, on) { return { ic: ic, tip: tip, a: a, on: on }; };
     var AI = SUB('영문 번역 (AI)', 'sparkle', [].concat(one && one.t === 'text' ? [I('이 글상자 영문으로 바꾸기…', 'sparkle', '', 'tr-sel')] : [], [I('시안 전체 영문 번역본 만들기…', 'sparkle', '', 'tr-doc'), I('번역 용어집(직급·학과)…', 'edit', '', 'gloss'), I('AI 연결 테스트', 'check', '', 'ai-test')]));
-    var VIEW = SUB('보기', 'eye', [I('확대', 'zoomIn', 'Ctrl+휠', 'zin'), I('축소', 'zoomOut', 'Ctrl+휠', 'zout'), I('창에 맞춤', 'fit', '', 'zfit'), I('격자 자석 ' + (st.cfg.snap ? '끄기' : '켜기'), 'grid', '', 'snap'), I('격자·자석·이동 간격 설정…', 'cols', '', 'gridcfg'), I('레이어 창 열기/닫기', 'layers', '', 'layers'), I('단축키·마우스 조합 안내', 'info', '', 'keys')]);
+    var LANGM = SUB('언어 (한글·영문·한영)', 'text', [I('한글 보기·편집', 'text', '', 'lang-ko', { on: LG() === 'ko' }), I('영문 보기·편집', 'text', '', 'lang-en', { on: LG() === 'en' }), I('한영 병기 보기', 'text', '', 'lang-both', { on: LG() === 'both' }), { k: 'sep' }, I('영문 크기·병기 순서 설정…', 'cols', '', 'langcfg')]);
+    var VIEW = SUB('보기', 'eye', [I('눈금자 보기', 'cols', 'Alt+R', 'ruler', { on: !!st.cfg.ruler }), I('격자선 보기', 'grid', 'Alt+G', 'gridshow', { on: !!st.cfg.show }), I('안내선 보기', 'line', '', 'gshow', { on: st.cfg.gshow !== false }), I('안내선 모두 지우기', 'trash', '', 'gclear'), { k: 'sep' }, I('확대', 'zoomIn', 'Ctrl+휠', 'zin'), I('축소', 'zoomOut', 'Ctrl+휠', 'zout'), I('창에 맞춤', 'fit', '', 'zfit'), I('격자 자석 ' + (st.cfg.snap ? '끄기' : '켜기'), 'grid', '', 'snap'), I('격자·자석·이동 간격 설정…', 'cols', '', 'gridcfg'), I('레이어 창 열기/닫기', 'layers', '', 'layers'), I('단축키·마우스 조합 안내', 'info', '', 'keys')]);
     var EDIT = function (extra) { return SUB('편집', 'edit', (extra || []).concat([I('실행 취소', 'undo', 'Ctrl+Z', 'undo', { disabled: st.hi <= 0 }), I('다시 실행', 'redo', 'Ctrl+Y', 'redo', { disabled: st.hi >= st.hist.length - 1 }), I('붙여넣기', 'paste', 'Ctrl+V', 'paste', { disabled: !hasClip }), I('제자리에 붙여넣기', 'paste', 'Ctrl+Shift+V', 'pinplace', { disabled: !hasClip }), I('모두 선택', 'sel', 'Ctrl+A', 'selall', { disabled: !T().elems.length })])); };
     if (onEl && list.length) {
       if (one && one.t === 'text') it.push(I('글 직접 편집', 'edit', 'Enter', 'edit', { disabled: one.lock }));
-      it.push(AI, { k: 'sep' }, I('잘라내기', 'cut', 'Ctrl+X', 'cut'), I('복사', 'copy', 'Ctrl+C', 'copy'), I('붙여넣기', 'paste', 'Ctrl+V', 'paste', { disabled: !hasClip }), I('복제', 'copy', 'Ctrl+D', 'dup'), I('삭제', 'trash', 'Del', 'del'), { k: 'sep' });
+      it.push(AI, LANGM, { k: 'sep' }, I('잘라내기', 'cut', 'Ctrl+X', 'cut'), I('복사', 'copy', 'Ctrl+C', 'copy'), I('붙여넣기', 'paste', 'Ctrl+V', 'paste', { disabled: !hasClip }), I('복제', 'copy', 'Ctrl+D', 'dup'), I('삭제', 'trash', 'Del', 'del'), { k: 'sep' });
       it.push(EDIT([I('제자리에 붙여넣기 이외…', 'copy', '', 'dup')].slice(0, 0).concat([I('서식 복사', 'wand', 'Ctrl+Alt+C', 'cstyle'), I('서식 붙여넣기', 'wand', 'Ctrl+Alt+V', 'pstyle', { disabled: !st.sty })], tx.length ? [I('아래에 줄 추가', 'plus', '', 'addline')] : [])));
       var al = [STRIP(list.length > 1 ? '정렬(선택 기준)' : '정렬(용지 기준)', [B('gL', '왼쪽', 'ag-l'), B('gCH', '가로 가운데', 'ag-ch'), B('gR', '오른쪽', 'ag-r'), B('gT', '위', 'ag-t'), B('gCV', '세로 가운데', 'ag-cv'), B('gB', '아래', 'ag-b')])];
       if (list.length >= 2) al.push(I('가로 크기 같게(첫 선택 기준)', 'dH', '', 'same-w'), I('세로 크기 같게', 'dV', '', 'same-h'), I('가로·세로 크기 같게', 'rect', '', 'same-wh'));
@@ -756,6 +848,8 @@
       it.push(SUB('정렬 · 크기 맞춤', 'gCH', al));
       var allLk = list.every(function (e) { return e.lock; }), allHd = list.every(function (e) { return e.hide; });
       it.push(SUB('순서 · 잠금 · 표시', 'layers', [I('맨 앞으로', 'front', 'Ctrl+Shift+]', 'front'), I('앞으로 한 칸', 'chevU', 'Ctrl+]', 'fwd'), I('뒤로 한 칸', 'chevD', 'Ctrl+[', 'bwd'), I('맨 뒤로', 'back', 'Ctrl+Shift+[', 'back'), { k: 'sep' }, I(allLk ? '잠금 해제' : '잠금(이동·크기 고정)', allLk ? 'unlock' : 'lock', '', 'lock'), I(allHd ? '보이기' : '숨기기', 'eye', '', 'hide')]));
+      it.push(SUB('회전 · 반전', 'rotate', [I('왼쪽 90° 회전', 'undo', '', 'rot-l'), I('오른쪽 90° 회전', 'redo', '', 'rot-r'), I('180° 회전', 'rotate', '', 'rot-180'), { k: 'sep' }, I('좌우 대칭 (좌우 반전)', 'gCH', '', 'flip-x'), I('상하 대칭 (상하 반전)', 'gCV', '', 'flip-y'), { k: 'sep' }, I('회전 초기화', 'close', '', 'rot-0')]));
+      it.push(I('그룹 만들기', 'layers', 'Ctrl+G', 'group', { disabled: list.length < 2 }), I('그룹 해제', 'layers', 'Ctrl+Shift+G', 'ungroup', { disabled: !list.some(function (e) { return e.grp; }) }));
       it.push(SUB('이동', 'plus', [I('위로 (작게)', 'chevU', '↑', 'nu'), I('아래로 (작게)', 'chevD', '↓', 'nd'), I('왼쪽으로 (작게)', 'chevL', '←', 'nl'), I('오른쪽으로 (작게)', 'chevR', '→', 'nr'), { k: 'sep' }, I('위로 (크게)', 'chevU', 'Shift+↑', 'Nu'), I('아래로 (크게)', 'chevD', 'Shift+↓', 'Nd'), I('왼쪽으로 (크게)', 'chevL', 'Shift+←', 'Nl'), I('오른쪽으로 (크게)', 'chevR', 'Shift+→', 'Nr')]));
       if (tx.length) {
         it.push(SUB('서식', 'text', [STRIP('글자', [B('bold', '굵게', 'bold', t1.bold), B('italic', '기울임', 'italic', t1.italic), B('underline', '밑줄', 'ul', t1.ul), B('alL', '왼쪽 정렬', 'al-l', t1.align === 'left'), B('alC', '가운데 정렬', 'al-c', t1.align === 'center'), B('alR', '오른쪽 정렬', 'al-r', t1.align === 'right')]),
@@ -764,7 +858,7 @@
         if (one) it.push(I('입력 항목 {{ }} 삽입…', 'field', '', 'add-field'));
       }
     } else {
-      it.push(SUB('추가', 'plus', [I('여기에 글상자 추가', 'text', '', 'add-text'), I('여기에 입력 항목 추가…', 'field', '', 'add-field'), I('선 추가', 'line', '', 'add-line'), I('사각형 추가', 'rect', '', 'add-rect'), I('이미지 추가…', 'image', '', 'add-img')]), EDIT(), VIEW,
+      it.push(SUB('추가', 'plus', [I('여기에 글상자 추가', 'text', '', 'add-text'), I('여기에 입력 항목 추가…', 'field', '', 'add-field'), I('선 추가', 'line', '', 'add-line'), I('사각형 추가', 'rect', '', 'add-rect'), I('이미지 추가…', 'image', '', 'add-img'), I('위조 방지 인증 QR 추가', 'qr', '', 'add-qr')]), EDIT(), VIEW, LANGM,
         SUB('용지', 'page', [I((T().page.w >= T().page.h ? '세로' : '가로') + '로 전환…', 'rotate', '', 'orient'), I('용지·배경 설정…', 'page', '', 'page'), I('기본 상장 배치 넣기', 'wand', '', 'starter')]), AI);
     }
     return it;
@@ -827,7 +921,7 @@
           if (from !== 'wh' && pp !== 'custom') { var a = AW.PAPERS[pp]; w = o === 'L' ? a[1] : a[0]; h = o === 'L' ? a[0] : a[1]; AW.$('#pd-w', el).value = w; AW.$('#pd-h', el).value = h; }
           if (from === 'wh') { pp = 'custom'; AW.$('#pd-paper', el).value = 'custom'; }
           if (!(w >= 50 && h >= 50)) return;
-          T().page = { w: w, h: h, paper: pp, orient: w >= h ? 'L' : 'P' }; E.render(); changed('page');
+          T().page = keepPage({ w: w, h: h, paper: pp, orient: w >= h ? 'L' : 'P' }); E.render(); changed('page');
         }
         function sync() { var q = T().page; AW.$('#pd-w', el).value = q.w; AW.$('#pd-h', el).value = q.h; AW.$('#pd-or', el).value = q.w >= q.h ? 'L' : 'P'; }
         var rl = AW.$('#pd-rl', el), rr = AW.$('#pd-rr', el);
@@ -838,6 +932,8 @@
     });
   };
 
+  E.act = function (a) { act(a); };
+  E.menuAt = function (x, y, items) { openCtx(x, y, items); };
   E.getStage = function () { return st.stage; };
   E.relayout = function () {
     if (!st.fit || !T() || !st.pg) return;

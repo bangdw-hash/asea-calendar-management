@@ -41,6 +41,8 @@
   AW.$$ = function (sel, root) { return Array.prototype.slice.call((root || document).querySelectorAll(sel)); };
   AW.debounce = function (fn, ms) { var t; return function () { var a = arguments, c = this; clearTimeout(t); t = setTimeout(function () { fn.apply(c, a); }, ms); }; };
   AW.fmtTime = function (d) { d = d ? new Date(d) : new Date(); function p(n) { return n < 10 ? '0' + n : n; } return (d.getMonth() + 1) + '/' + d.getDate() + ' ' + p(d.getHours()) + ':' + p(d.getMinutes()); };
+  var MON = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  AW.fmtDateEn = function (d) { d = d || new Date(); return MON[d.getMonth()] + ' ' + d.getDate() + ', ' + d.getFullYear(); };
   AW.fmtDate = function (d) { d = d || new Date(); return d.getFullYear() + '년 ' + (d.getMonth() + 1) + '월 ' + d.getDate() + '일'; };
   AW.lsGet = function (k, def) { try { var v = localStorage.getItem(k); return v == null ? def : JSON.parse(v); } catch (e) { return def; } };
   AW.lsSet = function (k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
@@ -69,7 +71,7 @@
     sparkle: '<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8zM19 16l.8 2.2L22 19l-2.2.8L19 22l-.8-2.2L16 19l2.2-.8z"/>',
     logout: '<path d="M10 4H5v16h5M15 8l4 4-4 4M19 12H9"/>', check: '<path d="M5 12l5 5 9-10"/>', warn: '<path d="M12 4l9 16H3zM12 10v4M12 17h0"/>',
     cloud: '<path d="M7 18a4 4 0 010-8 5 5 0 019.6-1A4.5 4.5 0 0117 18z"/>', info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h0"/>',
-    rotate: '<path d="M20 12a8 8 0 11-3-6.2M20 4v4h-4"/>', cut: '<circle cx="6" cy="7" r="2.5"/><circle cx="6" cy="17" r="2.5"/><path d="M8 8.5L20 18M8 15.5L20 6"/>', paste: '<rect x="6" y="5" width="12" height="16" rx="1.5"/><path d="M9 5V3h6v2"/>', sel: '<path d="M4 4h4M16 4h4M4 20h4M16 20h4M4 8v8M20 8v8"/>', edit: '<path d="M4 20h4L19 9l-4-4L4 16z"/>',
+    qr: '<path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h2v2h-2zM18 14h2v2h-2zM14 18h2v2h-2zM18 18h2v2h-2z"/>', rotate: '<path d="M20 12a8 8 0 11-3-6.2M20 4v4h-4"/>', cut: '<circle cx="6" cy="7" r="2.5"/><circle cx="6" cy="17" r="2.5"/><path d="M8 8.5L20 18M8 15.5L20 6"/>', paste: '<rect x="6" y="5" width="12" height="16" rx="1.5"/><path d="M9 5V3h6v2"/>', sel: '<path d="M4 4h4M16 4h4M4 20h4M16 20h4M4 8v8M20 8v8"/>', edit: '<path d="M4 20h4L19 9l-4-4L4 16z"/>',
     cols: '<rect x="3" y="4" width="18" height="16" rx="1.5"/><path d="M9 4v16M15 4v16"/>', layers: '<path d="M12 4l9 5-9 5-9-5zM3 14l9 5 9-5"/>',
     wand: '<path d="M5 19L17 7M14 4l2-1 1 2M19 9l2 1-1 2M8 4h0M20 16h0"/>', tpl: '<rect x="4" y="3" width="16" height="18" rx="1.5"/><path d="M8 8h8M8 12h8M8 16h5"/>'
   };
@@ -157,13 +159,14 @@
     if (type === 'rect') Object.assign(base, { fill: '', stroke: '#111111', sw: 0.5, w: 60, h: 30 });
     if (type === 'line') Object.assign(base, { stroke: '#111111', sw: 0.5, h: 0, w: 80 });
     if (type === 'img') Object.assign(base, { src: '', opacity: 1, w: 25, h: 25 });
+    if (type === 'qr') Object.assign(base, { w: 24, h: 24 });
     return Object.assign(base, o || {});
   };
   AW.get = function (id) { var t = AW.S.tpl; if (!t) return null; for (var i = 0; i < t.elems.length; i++) if (t.elems[i].id === id) return t.elems[i]; return null; };
 
   /* ───────────── 입력 항목 {{이름}} ───────────── */
   var TK = /\{\{\s*([^{}]+?)\s*\}\}/g;
-  AW.BUILTIN = { '@번호': '일련번호(1,2,3…)', '@오늘': '출력일(예: 2026년 10월 14일)' };
+  AW.BUILTIN = { '@번호': '발급번호(번호 규칙에 따라 자동 부여)', '@오늘': '출력일(한글 2026년 10월 14일 / 영문 October 14, 2026)', '@인증번호': '위조 방지 인증번호(출력할 때 자동 부여)' };
   AW.tokensOf = function (text) {
     var out = [], m; TK.lastIndex = 0;
     while ((m = TK.exec(text || ''))) if (out.indexOf(m[1]) < 0) out.push(m[1]);
@@ -210,10 +213,21 @@
     if (changed || next.length !== t.fields.length || next.some(function (f, i) { return t.fields[i] !== f; })) { t.fields = next; return true; }
     return false;
   };
-  AW.val = function (row, name, idx) {
-    if (name === '@번호') return String(idx + 1);
-    if (name === '@오늘') return AW.fmtDate();
-    var v = row ? row[name] : ''; return v == null ? '' : String(v);
+  // 발급번호 규칙: page.num = {pattern:'제{YYYY}-{N}호', start:1, step:1, pad:3}. {YYYY} {YY} {MM} {DD} {N}
+  AW.serial = function (idx, tpl) {
+    var n = ((tpl || AW.curTpl || S.tpl || {}).page || {}).num || {}, d = new Date(), p2 = function (x) { return x < 10 ? '0' + x : '' + x; };
+    var num = (n.start == null ? 1 : +n.start) + idx * (n.step == null ? 1 : +n.step), s = String(Math.abs(num)); while (s.length < (n.pad || 0)) s = '0' + s;
+    return String(n.pattern || '{N}').replace(/\{YYYY\}/g, d.getFullYear()).replace(/\{YY\}/g, String(d.getFullYear()).slice(2)).replace(/\{MM\}/g, p2(d.getMonth() + 1)).replace(/\{DD\}/g, p2(d.getDate())).replace(/\{N\}/g, (num < 0 ? '-' : '') + s);
+  };
+  AW.val = function (row, name, idx, lang) {
+    if (name === '@번호') return AW.serial(idx);
+    if (name === '@오늘') return lang === 'en' ? AW.fmtDateEn() : AW.fmtDate();
+    if (name === '@인증번호') return (row && row._code) || '(출력 시 자동 부여)';
+    var v = row ? (lang === 'en' && row[name + '@en'] != null && row[name + '@en'] !== '' ? row[name + '@en'] : row[name]) : ''; return v == null ? '' : String(v);
+  };
+  AW.verifyUrl = function (code) { return location.href.replace(/[?#].*$/, '').replace(/[^/]*$/, '') + 'award-verify.html?c=' + encodeURIComponent(code); };
+  AW.qrSvg = function (text) {
+    try { var q = window.qrcode(0, 'M'); q.addData(text); q.make(); return q.createSvgTag({ cellSize: 1, margin: 0, scalable: true }); } catch (e) { return '<div style="font-size:10px;text-align:center">QR</div>'; }
   };
 
   /* ───────────── 페이지 렌더러 ─────────────
@@ -222,8 +236,8 @@
    */
   var PT = 25.4 / 72;
   AW.renderPage = function (tpl, o) {
-    o = o || {};
-    var k = o.scale || 3.78, pg = tpl.page, mode = o.mode || 'view';
+    o = o || {}; AW.curTpl = tpl;
+    var k = o.scale || 3.78, pg = tpl.page, mode = o.mode || 'view'; if (!o.lang) o = Object.assign({}, o, { lang: pg.lang || 'ko' });
     var el = document.createElement('div');
     el.className = 'pg pg-' + mode;
     el.style.cssText = 'position:relative;overflow:hidden;background:#fff;width:' + (pg.w * k) + 'px;height:' + (pg.h * k) + 'px;flex:none';
@@ -241,25 +255,30 @@
     d.className = 'el el-' + e.t; d.dataset.id = e.id;
     var base = 'position:absolute;left:' + ((e.x + (mode === 'print' ? dx : 0)) * k) + 'px;top:' + ((e.y + (mode === 'print' ? dy : 0)) * k) + 'px;width:' + (e.w * k) + 'px;height:' + (Math.max(e.h, e.t === 'line' ? 0 : 1) * k) + 'px;';
     if (e.t === 'text') {
-      var txt = e.text || '', inner;
-      if (mode === 'edit') {
-        inner = AW.esc(txt).replace(/\{\{\s*([^{}]+?)\s*\}\}/g, '<span class="tk">{{$1}}</span>');
-      } else {
-        inner = AW.esc(txt).replace(/\{\{\s*([^{}]+?)\s*\}\}/g, function (m, n) {
-          n = n.replace(/&amp;/g, '&'); var v = AW.val(o.row, n, o.idx || 0);
+      var lang = o.lang || 'ko', ko = e.text || '', en = e.en || '', cp = (AW.curTpl || S.tpl || {}).page || {}, blocks = [];
+      var tokH = function (src, lg) {
+        return AW.esc(src).replace(/\{\{\s*([^{}]+?)\s*\}\}/g, function (m, n) {
+          n = n.replace(/&amp;/g, '&'); if (mode === 'edit') return '<span class="tk">{{' + AW.esc(n) + '}}</span>';
+          var v = AW.val(o.row, n, o.idx || 0, lg);
           if (!v && mode === 'view' && n.charAt(0) !== '@') return '<span class="miss">' + AW.esc('{' + n + '}') + '</span>';
           return AW.esc(v);
         });
-      }
+      };
+      if (lang === 'en') blocks.push({ h: tokH(en || ko, en ? 'en' : 'ko'), dim: mode === 'edit' && !en });
+      else if (lang === 'both' && en.trim()) { var kb = { h: tokH(ko, 'ko') }, eb = { h: tokH(en, 'en'), s: cp.enScale || 0.8 }; blocks = cp.enFirst ? [eb, kb] : [kb, eb]; }
+      else blocks.push({ h: tokH(ko, 'ko') });
+      var inner = blocks.map(function (x) { return '<div' + (x.s ? ' style="font-size:' + x.s + 'em"' : '') + (x.dim ? ' class="noen"' : '') + '>' + (x.h || (mode === 'edit' ? '' : '&nbsp;')) + '</div>'; }).join('');
       var fs = (e.size || 16) * PT * k;
       d.style.cssText = base + 'display:flex;flex-direction:column;justify-content:' + (e.valign === 'top' ? 'flex-start' : e.valign === 'bottom' ? 'flex-end' : 'center') +
         ';font-family:\'' + (e.font || 'Noto Sans KR') + '\',\'Noto Sans KR\',sans-serif;font-size:' + fs + 'px;line-height:' + (e.lh || 1.4) + ';color:' + (e.color || '#111') +
         ';font-weight:' + (e.bold ? 700 : 400) + ';font-style:' + (e.italic ? 'italic' : 'normal') + ';text-decoration:' + (e.ul ? 'underline' : 'none') +
         ';text-align:' + (e.align || 'center') + ';letter-spacing:' + ((e.ls || 0) * PT * k) + 'px;white-space:' + (e.fit ? 'pre' : 'pre-wrap') + ';word-break:keep-all;overflow-wrap:anywhere;';
-      var b = document.createElement('div'); b.className = 'el-t'; b.innerHTML = inner || (mode === 'edit' ? '' : '&nbsp;');
+      var b = document.createElement('div'); b.className = 'el-t'; b.innerHTML = inner;
       b.style.cssText = 'width:100%;' + (e.fit ? 'overflow:visible;' : '');
       d.appendChild(b);
       if (e.fit) d.dataset.fit = '1';
+    } else if (e.t === 'qr') {
+      d.style.cssText = base + 'background:#fff;'; d.innerHTML = AW.qrSvg(AW.verifyUrl((o.row && o.row._code) || 'SAMPLE0000'));
     } else if (e.t === 'rect') {
       d.style.cssText = base + 'box-sizing:border-box;border:' + ((e.sw || 0) * k) + 'px solid ' + (e.stroke || 'transparent') + ';background:' + (e.fill || 'transparent') + ';';
     } else if (e.t === 'line') {
@@ -268,6 +287,8 @@
       d.style.cssText = base + 'opacity:' + (e.opacity == null ? 1 : e.opacity) + ';';
       if (e.src) { var im = document.createElement('img'); im.src = e.src; im.alt = ''; im.draggable = false; im.style.cssText = 'width:100%;height:100%;object-fit:contain;pointer-events:none;user-select:none'; d.appendChild(im); }
     }
+    var tr = (e.rot ? 'rotate(' + e.rot + 'deg) ' : '') + ((e.flipX || e.flipY) ? 'scale(' + (e.flipX ? -1 : 1) + ',' + (e.flipY ? -1 : 1) + ')' : '');
+    if (tr) d.style.transform = tr.trim();
     if (e.hide) d.style.display = 'none';
     return d;
   };

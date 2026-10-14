@@ -60,7 +60,7 @@
   D.refresh = function (full) {
     if (!st.root || !T()) return;
     AW.syncFields();
-    var sig = JSON.stringify(T().fields) + '|' + AW.fieldNames().join(',');
+    var sig = JSON.stringify(T().fields) + '|' + AW.fieldNames().join(',') + '|' + ((T().page || {}).lang || 'ko');
     if (full || sig !== st.sig) { st.sig = sig; renderGuide(); renderGrid(); } else renderStat();
     renderFoot(); renderStat();
   };
@@ -99,30 +99,34 @@
     AW.Editor.refreshElems(); AW.emit('tplchange', 'elems'); D.refresh(true);
   }
 
-  function cellState(f, v) {
+  function cellState(f, v, koVal) {
     v = v == null ? '' : String(v);
+    if (koVal !== undefined && koVal !== null) return (f.req !== false && !v.trim() && String(koVal).trim()) ? 'miss' : '';   // 영문 열: 한글 값이 있는데 영문이 비면 누락
     if (f.req !== false && !v.trim()) return 'miss';
     if (f.max && v.length > f.max) return 'long';
     return '';
   }
+  function useEn() { return ((T().page || {}).lang || 'ko') !== 'ko'; }
+  // 표의 열: 항목마다 한글 값 열, 영문/한영 모드면 영문 값 열(항목명@en)을 이어서 표시
+  function cols() { var f = T().fields, c = f.map(function (x) { return { key: x.name, f: x, label: x.name }; }); if (useEn()) f.forEach(function (x) { c.push({ key: x.name + '@en', f: x, en: true, label: x.name + ' (영문)' }); }); return c; }
   function renderGrid() {
-    var g = AW.$('#dt-grid', st.root), f = T().fields, rows = T().rows;
+    var g = AW.$('#dt-grid', st.root), f = T().fields, rows = T().rows, C = cols();
     if (!f.length) { g.innerHTML = ''; return; }
     var from = st.page * PAGE, part = rows.slice(from, from + PAGE);
-    var h = '<table class="dg"><thead><tr><th class="n">#</th>' + f.map(function (x, i) { return '<th title="' + AW.esc(x.hint) + '">' + colLetter(i) + ' · ' + AW.esc(x.name) + '</th>'; }).join('') + '<th class="n"></th></tr></thead><tbody>';
-    if (!part.length) h += '<tr><td colspan="' + (f.length + 2) + '" class="empty">입력된 행이 없습니다. 「엑셀 올리기」 또는 아래 「행 추가」를 사용하거나, 엑셀에서 복사한 범위를 첫 칸에 붙여넣으십시오.</td></tr>';
+    var h = '<table class="dg"><thead><tr><th class="n">#</th>' + C.map(function (c, i) { return '<th title="' + AW.esc(c.f.hint) + '">' + colLetter(i) + ' · ' + AW.esc(c.label) + '</th>'; }).join('') + '<th class="n"></th></tr></thead><tbody>';
+    if (!part.length) h += '<tr><td colspan="' + (C.length + 2) + '" class="empty">입력된 행이 없습니다. 「엑셀 올리기」 또는 아래 「행 추가」를 사용하거나, 엑셀에서 복사한 범위를 첫 칸에 붙여넣으십시오.</td></tr>';
     part.forEach(function (r, j) {
       var i = from + j;
       h += '<tr data-i="' + i + '"' + (i === S.row ? ' class="cur"' : '') + '><td class="n"><button class="lnk" data-a="goto" data-i="' + i + '" title="미리보기로 이동">' + (i + 1) + '</button></td>' +
-        f.map(function (x, c) { var v = r[x.name] == null ? '' : r[x.name]; return '<td class="' + cellState(x, v) + '"><textarea class="cell" rows="1" data-c="' + c + '" aria-label="' + (i + 1) + '행 ' + AW.esc(x.name) + '">' + AW.esc(v) + '</textarea></td>'; }).join('') +
+        C.map(function (cc, c) { var v = r[cc.key] == null ? '' : r[cc.key]; return '<td class="' + cellState(cc.f, v, cc.en ? r[cc.f.name] : null) + '"><textarea class="cell" rows="1" data-c="' + c + '" aria-label="' + (i + 1) + '행 ' + AW.esc(cc.label) + '">' + AW.esc(v) + '</textarea></td>'; }).join('') +
         '<td class="n"><button class="icon-btn danger" data-a="delrow" data-i="' + i + '" title="이 행 삭제" aria-label="행 삭제">' + AW.ic('close', 14) + '</button></td></tr>';
     });
     g.innerHTML = h + '</tbody></table>';
     var tb = AW.$('tbody', g);
     tb.addEventListener('input', function (e) {
       var ta = e.target; if (!ta.classList.contains('cell')) return;
-      var tr = ta.closest('tr'), i = +tr.dataset.i, fld = T().fields[+ta.dataset.c];
-      T().rows[i][fld.name] = ta.value; ta.parentNode.className = cellState(fld, ta.value); dataChanged(i); renderStat();
+      var tr = ta.closest('tr'), i = +tr.dataset.i, cc = cols()[+ta.dataset.c];
+      T().rows[i][cc.key] = ta.value; ta.parentNode.className = cellState(cc.f, ta.value, cc.en ? T().rows[i][cc.f.name] : null); dataChanged(i); renderStat();
     });
     tb.addEventListener('focusin', function (e) {
       var tr = e.target.closest('tr'); if (!tr || !tr.dataset.i) return; var i = +tr.dataset.i;
@@ -179,10 +183,10 @@
     var txt = (e.clipboardData || window.clipboardData).getData('text');
     if (!/[\t\n]/.test(txt.replace(/\n$/, ''))) return;           // 단일 칸 붙여넣기는 기본 동작
     e.preventDefault();
-    var data = parseTSV(txt), i0 = +ta.closest('tr').dataset.i, c0 = +ta.dataset.c, f = T().fields;
+    var data = parseTSV(txt), i0 = +ta.closest('tr').dataset.i, c0 = +ta.dataset.c, C = cols();
     if (i0 + data.length > MAXROWS) return AW.toast('최대 ' + MAXROWS + '행까지 가능합니다.', 'error');
     while (T().rows.length < i0 + data.length) T().rows.push({});
-    data.forEach(function (r, j) { r.forEach(function (v, c) { var fld = f[c0 + c]; if (fld) T().rows[i0 + j][fld.name] = v; }); });
+    data.forEach(function (r, j) { r.forEach(function (v, c) { var cc = C[c0 + c]; if (cc) T().rows[i0 + j][cc.key] = v; }); });
     dataChanged(); renderGrid(); renderFoot(); renderStat(); AW.emit('rowchange'); AW.toast(data.length + '행을 붙여넣었습니다.', 'ok');
   }
 
@@ -192,14 +196,15 @@
     if (!f.length) return AW.toast('양식에 입력 항목({{항목명}})이 없습니다. 먼저 일괄 입력 항목을 추가해 주십시오.', 'error');
     if (!window.XLSX) return AW.toast('엑셀 모듈을 불러오지 못했습니다.', 'error');
     var wb = XLSX.utils.book_new();
-    var head = f.map(function (x) { return x.name; }), ex = f.map(function (x) { return x.example || ''; });
+    var en = useEn(), head = f.map(function (x) { return x.name; }).concat(en ? f.map(function (x) { return x.name + '(EN)'; }) : []), ex = f.map(function (x) { return x.example || ''; }).concat(en ? f.map(function () { return ''; }) : []);
     var ws = XLSX.utils.aoa_to_sheet([head, ex]);
-    ws['!cols'] = f.map(function (x) { return { wch: Math.max(12, Math.min(40, (x.name.length * 2) + 4, (x.example || '').length * 1.6 + 2)) }; });
+    ws['!cols'] = head.map(function (h, i) { var x = f[i % f.length]; return { wch: Math.max(12, Math.min(40, (h.length * 2) + 4, (x.example || '').length * 1.6 + 2)) }; });
     XLSX.utils.book_append_sheet(wb, ws, '입력');
     var g = [['【작성 안내】 「입력」 시트의 1행(항목명)은 수정하지 마십시오. 2행은 예시이며, 예시와 똑같은 행은 업로드 시 자동 제외됩니다. 실제 데이터는 2행부터 덮어쓰거나 3행부터 입력하십시오.'],
       ['양식: ' + T().name + ' / 용지 ' + T().page.w + '×' + T().page.h + 'mm / 항목 ' + f.length + '개'], [],
       ['열', '항목명', '양식에서의 위치', '입력 방법', '예시', '최대 글자 수', '필수']];
     f.forEach(function (x, i) { g.push([colLetter(i), x.name, AW.whereIs(x.name), x.hint, x.example, x.max || '제한 없음', x.req !== false ? '필수' : '선택']); });
+    if (en) g.push([], ['영문 열', '○○(EN)', '', '영문 버전에 들어갈 값입니다. 비워 두면 한글 값이 사용됩니다. 성명은 여권 표기(예: Hong Gildong)로 적습니다.']);
     g.push([], ['내장 항목', '{{@번호}}', '', '일련번호(1, 2, 3…)가 자동으로 들어갑니다. 엑셀 열이 필요 없습니다.'], ['', '{{@오늘}}', '', '출력한 날짜가 자동으로 들어갑니다.']);
     var ws2 = XLSX.utils.aoa_to_sheet(g);
     ws2['!cols'] = [{ wch: 6 }, { wch: 14 }, { wch: 34 }, { wch: 50 }, { wch: 28 }, { wch: 12 }, { wch: 8 }];
@@ -225,9 +230,11 @@
   };
   function importDialog(aoa, fname, sheet) {
     var f = T().fields, head = aoa[0].map(function (h) { return String(h).trim(); }), body = aoa.slice(1);
-    var map = {};                                            // 항목명 → 열 index
+    var map = {}, enMap = {}, enIdx = {};                    // 항목명 → 열 index (한글 값 / 영문 값)
+    head.forEach(function (h, i) { var m = /^(.*?)\s*[\(\[（]\s*(en|eng|english|영문)\s*[\)\]）]\s*$/i.exec(h); if (m) { enIdx[i] = 1; enMap[norm(m[1])] = i; } });
+    var headKo = head.map(function (h, i) { return enIdx[i] ? '\u0000' : h; });
     f.forEach(function (x) {
-      var i = head.indexOf(x.name); if (i < 0) i = head.map(norm).indexOf(norm(x.name));
+      var i = headKo.indexOf(x.name); if (i < 0) i = headKo.map(function (h) { return h === '\u0000' ? h : norm(h); }).indexOf(norm(x.name));
       if (i >= 0) map[x.name] = i;
     });
     var matched = Object.keys(map).length, all = matched === f.length;
@@ -236,7 +243,7 @@
     AW.modal({
       title: '엑셀 올리기', wide: true,
       body: '<p style="margin-top:0"><b>' + AW.esc(fname) + '</b> · 시트 「' + AW.esc(sheet) + '」 · 데이터 <b>' + body.length + '</b>행 · 항목 매칭 <b>' + matched + '/' + f.length + '</b>' +
-        (all ? ' <span class="badge ok">모두 일치</span>' : ' <span class="badge warn">확인 필요</span>') + '</p>' +
+        (all ? ' <span class="badge ok">모두 일치</span>' : ' <span class="badge warn">확인 필요</span>') + (Object.keys(enMap).length ? ' · 영문 열 <b>' + Object.keys(enMap).length + '</b>개 자동 인식' : '') + '</p>' +
         '<details' + (all ? '' : ' open') + '><summary class="lnk">열 매칭 확인·수정</summary><div class="grid2" style="margin-top:8px">' +
         f.map(function (x) {
           return '<div><label class="f">' + AW.esc(x.name) + (x.req !== false ? ' *' : '') + '</label><select class="in" data-n="' + AW.esc(x.name) + '"><option value="-1">(사용 안 함)</option>' +
@@ -253,7 +260,7 @@
       var mm = curMap(), exRow = f.map(function (x) { return String(x.example || '').trim(); }), skipped = 0, out = [];
       body.forEach(function (r) {
         var o = {}, any = false;
-        f.forEach(function (x) { var v = mm[x.name] != null ? String(r[mm[x.name]] == null ? '' : r[mm[x.name]]).trim() : ''; o[x.name] = v; if (v) any = true; });
+        f.forEach(function (x) { var v = mm[x.name] != null ? String(r[mm[x.name]] == null ? '' : r[mm[x.name]]).trim() : ''; o[x.name] = v; if (v) any = true; var ei = enMap[norm(x.name)]; if (ei != null) { var ev = String(r[ei] == null ? '' : r[ei]).trim(); if (ev) o[x.name + '@en'] = ev; } });
         if (!any) return;
         if (f.every(function (x, i) { return exRow[i] && o[x.name] === exRow[i]; })) { skipped++; return; }   // 예시 행 제외
         out.push(o);
