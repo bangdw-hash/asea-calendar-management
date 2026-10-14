@@ -11,7 +11,7 @@
   function T() { return S.tpl; }
 
   /* ───────────── 미리보기 ───────────── */
-  var pv = { root: null, stage: null, hl: true };
+  var pv = { root: null, stage: null, hl: true, hm: AW.lsGet('award_pv_hm', true) };
   Pv.mount = function (root) {
     pv.root = root;
     root.innerHTML =
@@ -19,6 +19,7 @@
       '<div class="pv-no"><input class="in sm num" id="pv-n" type="number" min="1" value="1" aria-label="행 번호"><span id="pv-of" class="muted"></span></div>' +
       '<button class="icon-btn" data-a="next" aria-label="다음 행" title="다음 행">' + AW.ic('chevR') + '</button><span class="sp"></span>' +
       '<select class="in sm" id="pv-lg" aria-label="보기·출력 언어" title="보기·출력 언어"><option value="ko">한글</option><option value="en">영문</option><option value="both">한영 병기</option></select>' +
+      '<label class="mini chk" title="엑셀 데이터로 바뀌는 값에 노란 표시를 합니다(출력물에는 표시되지 않음)"><input type="checkbox" id="pv-hm" checked> 병합 영역 표시</label>' +
       '<label class="mini chk" title="값이 비어 있는 자리를 붉게 표시합니다(출력물에는 표시되지 않음)"><input type="checkbox" id="pv-hl" checked> 빈 항목 표시</label>' +
       '<button class="btn btn-primary btn-sm" data-a="print">' + AW.ic('print', 16) + ' 인쇄 · PDF</button></div>' +
       '<div class="pv-stage" id="pv-stage"></div><div class="pv-info" id="pv-info"></div>';
@@ -29,12 +30,13 @@
     });
     AW.$('#pv-n', root).addEventListener('change', function (e) { go((parseInt(e.target.value, 10) || 1) - 1); });
     AW.$('#pv-lg', root).addEventListener('change', function (e) { T().page.lang = e.target.value; S.dirty = true; AW.Editor.render(); AW.emit('tplchange', 'page'); });
+    AW.$('#pv-hm', root).checked = pv.hm; AW.$('#pv-hm', root).addEventListener('change', function (e) { pv.hm = e.target.checked; AW.lsSet('award_pv_hm', pv.hm); Pv.render(); });
     AW.$('#pv-hl', root).addEventListener('change', function (e) { pv.hl = e.target.checked; Pv.render(); });
     var deb = AW.debounce(function () { Pv.render(); }, 120);
     if (!pv.wired) { pv.wired = true; AW.on('tplchange', deb); AW.on('datachange', deb); AW.on('rowchange', function () { Pv.render(); }); }
     if (window.ResizeObserver) new ResizeObserver(AW.debounce(function () { Pv.render(); }, 100)).observe(pv.stage);
   };
-  function go(i) { var n = T().rows.length; if (!n) return; i = Math.max(0, Math.min(n - 1, i)); if (i === S.row) return Pv.render(); S.row = i; AW.emit('rowchange'); }
+  function go(i) { var n = T().rows.length; if (!n) return; S.seenPrev = true; AW.emit('stepchange'); i = Math.max(0, Math.min(n - 1, i)); if (i === S.row) return Pv.render(); S.row = i; AW.emit('rowchange'); }
   Pv.sampleRow = function () { var r = {}; T().fields.forEach(function (f) { r[f.name] = f.example || ''; }); return r; };
   Pv.render = function () {
     if (!pv.stage || !pv.stage.isConnected || !T()) return;
@@ -43,7 +45,7 @@
     if (w < 40 || h < 40) return;
     var k = Math.max(0.5, Math.min(w / t.page.w, h / t.page.h));
     var pg = AW.renderPage(t, { scale: k, mode: 'view', row: row, idx: has ? S.row : 0 });
-    pv.stage.innerHTML = ''; pv.stage.classList.toggle('nohl', !pv.hl);
+    pv.stage.innerHTML = ''; pv.stage.classList.toggle('nohl', !pv.hl); pv.stage.classList.toggle('hlm', !!pv.hm);
     var box = document.createElement('div'); box.className = 'pv-sheet'; box.appendChild(pg); pv.stage.appendChild(box);
     AW.fitAll(pg);
     AW.$('#pv-lg', pv.root).value = t.page.lang || 'ko';
@@ -172,7 +174,7 @@
       else list.push({ row: Pv.sampleRow(), idx: 0 });
       var dx = parseFloat(AW.$('#o-dx', m.el).value) || 0, dy = parseFloat(AW.$('#o-dy', m.el).value) || 0, bg = AW.$('#o-bg', m.el).checked, label = AW.$('#o-lb', m.el).value.trim();
       var lang = AW.$('input[name="o-l"]:checked', m.el).value, reg = forced || AW.$('#o-reg', m.el).checked;
-      AW.lsSet('award_dx', dx); AW.lsSet('award_dy', dy); close();
+      AW.lsSet('award_dx', dx); AW.lsSet('award_dy', dy); close(); S.printed = true; AW.emit('stepchange');
       if (list.length > 400 && !window.confirm(list.length + '장을 한 번에 인쇄합니다. 브라우저가 느려질 수 있습니다. 계속하시겠습니까?')) return;
       var real = mode !== 'sample', nm = label || (mode === 'all' ? '전체 출력' : mode === 'cur' ? '개별 출력' : '범위 출력');
       var start = Promise.resolve(true);

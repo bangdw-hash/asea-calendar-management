@@ -138,7 +138,7 @@
     sparkle: '<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8zM19 16l.8 2.2L22 19l-2.2.8L19 22l-.8-2.2L16 19l2.2-.8z"/>',
     logout: '<path d="M10 4H5v16h5M15 8l4 4-4 4M19 12H9"/>', check: '<path d="M5 12l5 5 9-10"/>', warn: '<path d="M12 4l9 16H3zM12 10v4M12 17h0"/>',
     cloud: '<path d="M7 18a4 4 0 010-8 5 5 0 019.6-1A4.5 4.5 0 0117 18z"/>', info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h0"/>',
-    qr: '<path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h2v2h-2zM18 14h2v2h-2zM14 18h2v2h-2zM18 18h2v2h-2z"/>', rotate: '<path d="M20 12a8 8 0 11-3-6.2M20 4v4h-4"/>', cut: '<circle cx="6" cy="7" r="2.5"/><circle cx="6" cy="17" r="2.5"/><path d="M8 8.5L20 18M8 15.5L20 6"/>', paste: '<rect x="6" y="5" width="12" height="16" rx="1.5"/><path d="M9 5V3h6v2"/>', sel: '<path d="M4 4h4M16 4h4M4 20h4M16 20h4M4 8v8M20 8v8"/>', edit: '<path d="M4 20h4L19 9l-4-4L4 16z"/>',
+    qr: '<path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h2v2h-2zM18 14h2v2h-2zM14 18h2v2h-2zM18 18h2v2h-2z"/>', palette: '<circle cx="12" cy="12" r="9"/><circle cx="8" cy="11" r="1.2"/><circle cx="12" cy="7.5" r="1.2"/><circle cx="16" cy="11" r="1.2"/><path d="M12 21c-1.5 0-2-1-1.5-2s1-1.5 0-2.5S9 15 11 15h3a4 4 0 004-4"/>', sliders: '<path d="M4 7h9M17 7h3M4 17h3M11 17h9M13 5v4M7 15v4"/>', rotate: '<path d="M20 12a8 8 0 11-3-6.2M20 4v4h-4"/>', cut: '<circle cx="6" cy="7" r="2.5"/><circle cx="6" cy="17" r="2.5"/><path d="M8 8.5L20 18M8 15.5L20 6"/>', paste: '<rect x="6" y="5" width="12" height="16" rx="1.5"/><path d="M9 5V3h6v2"/>', sel: '<path d="M4 4h4M16 4h4M4 20h4M16 20h4M4 8v8M20 8v8"/>', edit: '<path d="M4 20h4L19 9l-4-4L4 16z"/>',
     cols: '<rect x="3" y="4" width="18" height="16" rx="1.5"/><path d="M9 4v16M15 4v16"/>', layers: '<path d="M12 4l9 5-9 5-9-5zM3 14l9 5 9-5"/>',
     wand: '<path d="M5 19L17 7M14 4l2-1 1 2M19 9l2 1-1 2M8 4h0M20 16h0"/>', tpl: '<rect x="4" y="3" width="16" height="18" rx="1.5"/><path d="M8 8h8M8 12h8M8 16h5"/>'
   };
@@ -308,7 +308,7 @@
     var k = o.scale || 3.78, pg = tpl.page, mode = o.mode || 'view'; if (!o.lang) o = Object.assign({}, o, { lang: pg.lang || 'ko' });
     var el = document.createElement('div');
     el.className = 'pg pg-' + mode;
-    el.style.cssText = 'position:relative;overflow:hidden;background:#fff;width:' + (pg.w * k) + 'px;height:' + (pg.h * k) + 'px;flex:none';
+    el.style.cssText = 'position:relative;overflow:hidden;background:' + (pg.bgc || '#fff') + ';width:' + (pg.w * k) + 'px;height:' + (pg.h * k) + 'px;flex:none';
     if (tpl.bg && o.bg !== false && !(pg && pg.bgHide)) {
       var im = document.createElement('img'); im.className = 'pg-bg'; im.src = tpl.bg; im.alt = ''; im.draggable = false;
       im.style.cssText = 'position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;user-select:none';
@@ -329,7 +329,7 @@
           n = n.replace(/&amp;/g, '&'); if (mode === 'edit') return '<span class="tk">{{' + AW.esc(n) + '}}</span>';
           var v = AW.val(o.row, n, o.idx || 0, lg);
           if (!v && mode === 'view' && n.charAt(0) !== '@') return '<span class="miss">' + AW.esc('{' + n + '}') + '</span>';
-          return AW.esc(v);
+          return mode === 'view' ? '<span class="mv">' + AW.esc(v) + '</span>' : AW.esc(v);   // 미리보기에서는 바뀌는 값을 표시(인쇄에는 표시 없음)
         });
       };
       var ef = e.fontEn ? AW.fontStack(e.fontEn) : '';
@@ -346,6 +346,7 @@
       b.style.cssText = 'width:100%;' + (e.fit ? 'overflow:visible;' : '');
       d.appendChild(b);
       if (e.fit) d.dataset.fit = '1';
+      if (mode === 'edit' && /\{\{[^{}]+\}\}/.test(ko + en)) d.classList.add('has-tk');   // 메일머지 영역 표시(편집 화면 전용)
     } else if (e.t === 'qr') {
       d.style.cssText = base + 'background:#fff;'; d.innerHTML = AW.qrSvg(AW.verifyUrl((o.row && o.row._code) || 'SAMPLE0000'));
     } else if (e.t === 'rect') {
