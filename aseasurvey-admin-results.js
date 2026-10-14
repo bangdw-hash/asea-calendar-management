@@ -62,12 +62,18 @@
     return out;
   }
   function passResp(r) { return r.attn_total > 0 ? r.attn_fail === 0 : true; }
+  var SINC = { all: '전체(제외 처리한 응답만 뺌)', pass: '유효 응답만 (점검 문항 통과 · 직선 응답 제외)', fail: '점검 실패 응답만', straight: '동일 응답(직선)만', excluded: '관리자 제외 응답만' };
+  A.ext.SINC = SINC;
+  A.ext.sincereOk = function (r) {
+    var m = F.sincere;
+    if (m === 'pass') return passResp(r) && !r.straight && !r.excluded;
+    if (m === 'fail') return !passResp(r); if (m === 'straight') return !!r.straight; if (m === 'excluded') return !!r.excluded;
+    return !r.excluded;
+  };
   function respFilter(r, cm) {
     if (F.data === 'real' && r.is_test) return false; if (F.data === 'test' && !r.is_test) return false;
     if (F.track && r.track !== F.track) return false; if (F.grade && r.grade !== F.grade) return false; if (F.klass && r.klass !== F.klass) return false;
-    if (F.sincere === 'pass' && !(passResp(r) && !r.straight && !r.excluded)) return false;
-    if (F.sincere === 'fail' && passResp(r)) return false; if (F.sincere === 'straight' && !r.straight) return false; if (F.sincere === 'excluded' && !r.excluded) return false;
-    if (F.sincere === 'all' && r.excluded) return false;
+    if (!A.ext.sincereOk(r)) return false;
     return true;
   }
   function add(o, k, v) { var a = o[k] || (o[k] = { sum: 0, n: 0 }); a.sum += v; a.n++; }
@@ -319,12 +325,12 @@
   }
 
   /* ───────────── 엑셀 출력 ───────────── */
-  function exportXlsx() {
+  function exportXlsx(extWb, pre) {
     if (!window.XLSX) return A.toast('엑셀 라이브러리를 불러오지 못했습니다.', 'err');
-    var D = compute(), def = A.cur.survey.def, Q = D.Q, wb = XLSX.utils.book_new(), tg = targetsFor();
-    function sheet(name, aoa, widths) { var ws = XLSX.utils.aoa_to_sheet(aoa); if (widths) ws['!cols'] = widths.map(function (w) { return { wch: w }; }); XLSX.utils.book_append_sheet(wb, ws, name); }
+    var D = compute(), def = A.cur.survey.def, Q = D.Q, wb = extWb || XLSX.utils.book_new(), tg = targetsFor(); pre = pre || '';
+    function sheet(name, aoa, widths) { name = (pre + name).slice(0, 31); var ws = XLSX.utils.aoa_to_sheet(aoa); if (widths) ws['!cols'] = widths.map(function (w) { return { wch: w }; }); XLSX.utils.book_append_sheet(wb, ws, name); }
     var n = D.resp.length, avg = D.all.n ? D.all.sum / D.all.n : '';
-    sheet('요약', [['설문', A.cur.survey.title], ['출력 일시', A.fmt(new Date().toISOString())], ['데이터', F.data === 'real' ? '정식 응답' : F.data === 'test' ? '테스트 응답' : '정식+테스트'], ['적용 필터', ['계열', 'track', '학년', 'grade', '반', 'klass', '구분', 'kind', '교수', 'prof', '과목', 'course'].reduce(function (s, v, i, a) { return i % 2 ? s : s + (F[a[i + 1]] ? a[i] + ': ' + F[a[i + 1]] + ' ' : ''); }, '') || '없음'], [],
+    sheet('요약', [['설문', A.cur.survey.title], ['출력 일시', A.fmt(new Date().toISOString())], ['데이터', F.data === 'real' ? '정식 응답' : F.data === 'test' ? '테스트 응답' : '정식+테스트'], ['응답 범위(유효성)', SINC[F.sincere] || '전체'], ['적용 필터', ['계열', 'track', '학년', 'grade', '반', 'klass', '구분', 'kind', '교수', 'prof', '과목', 'course'].reduce(function (s, v, i, a) { return i % 2 ? s : s + (F[a[i + 1]] ? a[i] + ': ' + F[a[i + 1]] + ' ' : ''); }, '') || '없음'], [],
       ['응답 수', n], ['배포 인원', tg.total || ''], ['응답률(%)', tg.total ? Math.round(n / tg.total * 1000) / 10 : ''], ['성실 응답 수', D.pass], ['전체 평균(5점)', avg === '' ? '' : Math.round(avg * 100) / 100], [], ['계열', '학년', '배포 인원', '응답 수', '응답률(%)']].concat(
       (function () { var by = {}; D.resp.forEach(function (r) { var k = r.track + '|' + r.grade; by[k] = (by[k] || 0) + 1; }); return Object.keys(Object.assign({}, by, tg.by)).sort().map(function (k) { var p = k.split('|'), t = tg.by[k]; return [p[0], p[1], t ? t.headcount : '', by[k] || 0, t && t.headcount ? Math.round((by[k] || 0) / t.headcount * 1000) / 10 : '']; }); })()), [26, 18, 12, 10, 12]);
     var hdr = ['문항', '내용', '응답 수', '평균'].concat(def.scales.likert5.map(function (o) { return o.label + '(' + o.v + ')'; }));
@@ -343,6 +349,16 @@
     sheet('서술형', tx, [18, 30, 12, 8, 8, 22, 12, 80]);
     var pub = (A.cur.draws || []).filter(function (d) { return d.published; })[0];
     if (A.cur.draws && A.cur.draws.length) { var dr = [['회차', '추첨번호', '인원', '추첨 일시', '공개', '수령']]; var claimed = {}; (A.cur.claims || []).forEach(function (c) { claimed[c.ticket] = A.fmt(c.claimed_at); }); A.cur.draws.slice().reverse().forEach(function (d, i) { d.tickets.forEach(function (t) { dr.push([d.id, t, d.n, A.fmt(d.created_at), d.published ? '공개' : '비공개', claimed[t] || '']); }); }); sheet('추첨', dr, [8, 14, 8, 18, 8, 18]); }
+    // 비교 시트: 기준별 순위·영역 평균·문항 평균 (현재 응답 범위 기준)
+    DIMS.forEach(function (d) {
+      var gs = cmpGroups(D, d[0]); if (!gs.length) return;
+      gs.forEach(function (o) { o.tot = mean(o.all); }); gs.sort(function (x, y) { return (y.tot == null ? -1 : y.tot) - (x.tot == null ? -1 : x.tot) || x.name.localeCompare(y.name, 'ko'); });
+      sheet('비교-' + d[1], [['순위', d[1], '응답', '종합 평균'].concat(Q.sections.map(function (sc) { return sc.title; })).concat(Q.scale.map(function (x) { return x.q.id + ' ' + String(x.q.label).slice(0, 20); }))].concat(gs.map(function (o, i) {
+        function r2(m) { return m == null ? '' : Math.round(m * 100) / 100; }
+        return [o.tot == null ? '' : i + 1, o.name, o.resp, r2(o.tot)].concat(Q.sections.map(function (sc) { return r2(mean(o.sec[sc.id])); })).concat(Q.scale.map(function (x) { return r2(mean(o.q[x.q.id])); }));
+      })), [6, 34, 8, 10]);
+    });
+    if (extWb) return;
     var out = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
     A.download(new Blob([out], { type: 'application/octet-stream' }), '설문결과_' + A.cur.survey.title.replace(/[\\/:*?"<>|\s]+/g, '_') + '_' + new Date().toISOString().slice(0, 10) + '.xlsx');
     A.toast('엑셀 파일을 내려받았습니다. (현재 필터가 적용된 결과)');
@@ -360,7 +376,7 @@
       '<div><label class="f">구분</label><select class="fld" data-ff="kind">' + opt(uniqSorted(cs.map(function (c) { return c.kind; })), F.kind) + '</select></div>' +
       '<div><label class="f">교수</label><select class="fld" data-ff="prof">' + opt(uniqSorted(cs.map(function (c) { return c.prof || '(교수 미입력)'; })), F.prof) + '</select></div>' +
       '<div><label class="f">과목</label><select class="fld" data-ff="course"><option value="">전체</option>' + scope(function (c) { return (!F.prof || (c.prof || '(교수 미입력)') === F.prof) && (!F.kind || c.kind === F.kind); }).map(function (c) { return '<option value="' + c.id + '"' + (F.course === c.id ? ' selected' : '') + '>' + E(c.name + ' (' + c.klass + ')') + '</option>'; }).join('') + '</select></div>' +
-      '<div><label class="f">신뢰도 필터</label><select class="fld" data-ff="sincere"><option value="all"' + (F.sincere === 'all' ? ' selected' : '') + '>전체</option><option value="pass"' + (F.sincere === 'pass' ? ' selected' : '') + '>성실 응답만 (점검 통과)</option><option value="fail"' + (F.sincere === 'fail' ? ' selected' : '') + '>점검 실패 응답만</option><option value="straight"' + (F.sincere === 'straight' ? ' selected' : '') + '>동일 응답(직선)만</option><option value="excluded"' + (F.sincere === 'excluded' ? ' selected' : '') + '>관리자 제외 응답</option></select></div>' +
+      '<div><label class="f">응답 범위(유효성)</label><select class="fld" data-ff="sincere"><option value="all"' + (F.sincere === 'all' ? ' selected' : '') + '>전체</option><option value="pass"' + (F.sincere === 'pass' ? ' selected' : '') + '>유효 응답만 (점검 통과·직선 응답 제외)</option><option value="fail"' + (F.sincere === 'fail' ? ' selected' : '') + '>점검 실패 응답만</option><option value="straight"' + (F.sincere === 'straight' ? ' selected' : '') + '>동일 응답(직선)만</option><option value="excluded"' + (F.sincere === 'excluded' ? ' selected' : '') + '>관리자 제외 응답</option></select></div>' +
       '<div><label class="f">데이터</label><select class="fld" data-ff="data"><option value="real"' + (F.data === 'real' ? ' selected' : '') + '>정식 응답</option><option value="test"' + (F.data === 'test' ? ' selected' : '') + '>테스트 응답</option><option value="all"' + (F.data === 'all' ? ' selected' : '') + '>모두</option></select></div>' +
       '<div class="sp"></div><button class="btn btn-ghost btn-sm" data-act="fclear">필터 초기화</button></div>';
   }
@@ -371,8 +387,9 @@
     var y = window.scrollY; body.className = ''; body.innerHTML = fn(D); updateLive(); if (R.newCount && sub !== 'sum') { /* 새 응답 표시는 상단 라이브 표시에 반영 */ }
     window.scrollTo(0, y);
   }
+  A.ext.courseSheets = function (wb, rows) { var sv = { rows: R.rows, f: Object.assign({}, F), sid: R.sid }; try { R.rows = rows; F.track = F.grade = F.klass = F.kind = F.prof = F.course = ''; exportXlsx(wb, '현황-'); } finally { R.rows = sv.rows; Object.assign(F, sv.f); } };
   A.tabs.results = async function (box) {
-    if (R.sid !== A.cur.survey.id) { R.sid = A.cur.survey.id; R.rows = []; R.maxSeq = 0; R.newCount = 0; F.track = F.grade = F.klass = F.kind = F.prof = F.course = ''; F.sincere = 'all'; F.data = A.cur.survey.test_mode ? 'test' : 'real'; A.ext.rsub = A.ext.rsubInit || 'sum'; }
+    if (R.sid !== A.cur.survey.id) { R.sid = A.cur.survey.id; R.rows = []; R.maxSeq = 0; R.newCount = 0; F.track = F.grade = F.klass = F.kind = F.prof = F.course = ''; if (!A.ext.keepShared) { F.sincere = 'all'; F.data = A.cur.survey.test_mode ? 'test' : 'real'; } A.ext.rsub = A.ext.rsubInit || 'sum'; }
     var sub = A.ext.rsub || 'sum';
     box.innerHTML = '<div class="row" style="margin-bottom:12px"><div class="tabs" style="margin:0;border:0;flex:1">' + SUBS.map(function (s) { return '<button class="tab" data-act="rsub" data-s="' + s[0] + '" aria-selected="' + (sub === s[0]) + '">' + s[1] + '</button>'; }).join('') + '</div><span id="live" class="live"></span><button class="btn btn-ghost btn-sm" data-act="livetoggle">일시정지/재개</button><button class="btn btn-secondary btn-sm" data-act="reload">' + I('refresh', 14) + ' 새로고침</button><button class="btn btn-primary btn-sm" data-act="xlsx">' + I('download', 14) + ' 엑셀 내려받기</button></div>' +
       filterBar() + '<div id="rbody" class="loading">불러오는 중…</div>';
