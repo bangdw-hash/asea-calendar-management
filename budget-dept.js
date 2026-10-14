@@ -120,9 +120,27 @@
       '<button class="btn btn-ghost btn-sm" id="pw-chg">' + ico('key', 16) + ' <span class="hide-sm">비밀번호 변경</span></button>' +
       '<button class="btn btn-ghost btn-sm" id="d-out">' + ico('logout', 16) + ' <span class="hide-sm">로그아웃</span></button></div></header>' +
       '<main class="page"><div class="period-bar"><span class="muted">작성 기간</span> <b>' + esc(periodText(s) || (s.status === 'open' ? '제한 없음' : '관리자가 정합니다')) + '</b>' + (s.note ? ' <span class="sep">·</span> ' + esc(s.note) : '') + '</div>' +
-      '<div id="ws"></div></main>';
+      '<nav class="ws-tabs" id="dp-tabs"><button class="ws-tab on" data-m="plan">예산안 작성</button><button class="ws-tab" data-m="qr">' + ico('qr', 16) + ' 결재 QR · 집행</button></nav>' +
+      '<div id="ws"></div><div id="tk" class="hide"></div></main>';
     $('#d-out', root).onclick = logout;
     $('#pw-chg', root).onclick = changePw;
+    // 결재 QR 탭: 예산안 화면과 분리해 두고, QR 반영으로 지출이 바뀌면 돌아갈 때 서버에서 다시 불러옵니다.
+    var qdata = data, qDirty = false, qOpen = false;
+    function drawQr() {
+      BudgetTicket.deptTab($('#tk', root), {
+        token: W.sess.token, year: year, dept: dept, depts: info.depts.map(function (d) { return d.dept; }),
+        getData: function () { return qdata; }, onChanged: function () { qDirty = true; }
+      });
+    }
+    function showMode(m) {
+      var qr = m === 'qr';
+      if (!qr && qOpen && qDirty) { loadDept(); return; }
+      qOpen = qr;
+      $$('#dp-tabs .ws-tab', root).forEach(function (b) { b.classList.toggle('on', b.dataset.m === m); });
+      $('#ws', root).classList.toggle('hide', qr); $('#tk', root).classList.toggle('hide', !qr);
+      if (qr) W.rpc('bgt_d_load', { p_token: W.sess.token, p_year: year }).then(function (d) { qdata = d; drawQr(); }).catch(function (e) { toast(e.message, 'err'); });
+    }
+    $('#dp-tabs', root).onclick = function (e) { var b = e.target.closest('[data-m]'); if (b) showMode(b.dataset.m); };
     var base = { p_token: W.sess.token };
     function rp(fn, extra) { return W.rpc(fn, Object.assign({}, base, extra)); }
     W.mount($('#ws', root), {

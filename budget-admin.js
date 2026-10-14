@@ -9,7 +9,7 @@
   var A = { year: null, tab: 'overview', data: null, rDept: null, rType: '세출', logs: null, codeType: '세출' };
   var rootEl = null;
 
-  var TABS = [['overview', '현황'], ['review', '검토·승인'], ['depts', '부서·비밀번호'], ['codes', '코드표'], ['settings', '일정·한도·최종반영'], ['export', '내보내기·인쇄'], ['log', '이력']];
+  var TABS = [['overview', '현황'], ['review', '검토·승인'], ['depts', '부서·비밀번호'], ['tickets', '결재 QR·집행'], ['codes', '코드표'], ['settings', '일정·한도·최종반영'], ['export', '내보내기·인쇄'], ['log', '이력']];
   var STATUS_TXT = { draft: '작성 준비중', open: '작성 중', closed: '마감', finalized: '최종 확정' };
 
   function arpc(fn, args) { args = args || {}; args.p_token = W.sess.token; return W.rpc(fn, args); }
@@ -49,7 +49,7 @@
     $$('[data-ad]', rootEl).forEach(function (b) { b.onclick = function () { A.tab = b.dataset.ad; refresh(); }; });
     $('#ad-refresh', rootEl).onclick = function () { refresh(true); };
     var body = $('#ad-body', rootEl);
-    ({ overview: overview, review: review, depts: deptsTab, codes: codesTab, settings: settingsTab, export: exportTab, log: logTab })[A.tab](body);
+    ({ overview: overview, review: review, depts: deptsTab, tickets: ticketsTab, codes: codesTab, settings: settingsTab, export: exportTab, log: logTab })[A.tab](body);
   }
 
   /* ───────── 현황 ───────── */
@@ -144,6 +144,11 @@
         };
       }
     });
+  }
+
+  /* ───────── 결재 QR·집행 ───────── */
+  function ticketsTab(box) {
+    BudgetTicket.adminTab(box, { token: W.sess.token, year: A.year, data: ctxData(), depts: activeDepts().map(function (d) { return d.dept; }), refresh: function () { refresh(); } });
   }
 
   /* ───────── 부서·비밀번호 ───────── */
