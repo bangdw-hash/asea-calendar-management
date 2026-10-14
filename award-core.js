@@ -271,7 +271,8 @@
   };
   // fields 메타 동기화: 양식에서 사라진 항목은 보관(데이터 유지)하지 않고 제거, 새 항목은 추천 안내 부여
   AW.syncFields = function () {
-    var t = AW.S.tpl, names = AW.fieldNames(t), old = {}, changed = false;
+    var t = AW.S.tpl, names = AW.fieldNames(t), old = {}, changed = false, fo = (t.page && t.page.fieldOrder) || [];
+    names = names.map(function (n, i) { return [n, i]; }).sort(function (a, b) { var x = fo.indexOf(a[0]), y = fo.indexOf(b[0]); if (x < 0 && y < 0) return a[1] - b[1]; if (x < 0) return 1; if (y < 0) return -1; return x - y; }).map(function (p) { return p[0]; });   // 사용자가 정한 열 순서 우선
     t.fields.forEach(function (f) { old[f.name] = f; });
     var next = names.map(function (n) {
       if (old[n]) return old[n];
@@ -293,6 +294,8 @@
     if (name === '@인증번호') return (row && row._code) || '(출력 시 자동 부여)';
     var v = row ? (lang === 'en' && row[name + '@en'] != null && row[name + '@en'] !== '' ? row[name + '@en'] : row[name]) : ''; return v == null ? '' : String(v);
   };
+  // 서버 설정값(학교 색 등) — 모든 양식에서 공유
+  AW.pref = { cache: {}, get: function (k) { return AW.call('award_pref_get', { p_key: k }).then(function (v) { AW.pref.cache[k] = v; return v; }); }, set: function (k, v) { AW.pref.cache[k] = v; return AW.call('award_pref_set', { p_key: k, p_val: v }); } };
   AW.verifyUrl = function (code) { return location.href.replace(/[?#].*$/, '').replace(/[^/]*$/, '') + 'award-verify.html?c=' + encodeURIComponent(code); };
   AW.qrSvg = function (text) {
     try { var q = window.qrcode(0, 'M'); q.addData(text); q.make(); return q.createSvgTag({ cellSize: 1, margin: 0, scalable: true }); } catch (e) { return '<div style="font-size:10px;text-align:center">QR</div>'; }

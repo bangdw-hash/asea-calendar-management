@@ -62,14 +62,41 @@
     var fam = {}; tpl.elems.forEach(function (e) { if (e.t === 'text') { fam[e.font] = 1; } });
     return Promise.all(Object.keys(fam).map(function (f) { return document.fonts.load((fam[f] ? '700 ' : '') + '16px "' + f + '"', '가나다ABC').catch(function () {}); })).then(function () { return document.fonts.ready; });
   }
+  // 모아찍기 계획: 출력 용지(paper)·분할(nup 1/2/4)·방향(orient)·확대 여부(noEnl) → 용지 크기, 칸 수, 배율
+  function sheetPlan(tpl, o) {
+    o = o || {}; var pw = tpl.page.w, ph = tpl.page.h, n = +o.nup || 1, same = !o.paper || o.paper === 'same';
+    if (same && n === 1) return null;
+    var sheets, base = same ? null : AW.PAPERS[o.paper].slice().sort(function (a, b) { return a - b; });
+    sheets = same ? [[pw, ph]] : o.orient === 'L' ? [[base[1], base[0]]] : o.orient === 'P' ? [[base[0], base[1]]] : [[base[1], base[0]], [base[0], base[1]]];
+    var lay = n === 1 ? [[1, 1]] : n === 2 ? [[2, 1], [1, 2]] : [[2, 2]], best = null;
+    sheets.forEach(function (sh) { lay.forEach(function (l) { var cw = sh[0] / l[0], ch = sh[1] / l[1], sc = Math.min(cw / pw, ch / ph); if (o.noEnl) sc = Math.min(sc, 1); if (!best || sc > best.s + 1e-6) best = { W: sh[0], H: sh[1], cols: l[0], rows: l[1], cw: cw, ch: ch, s: sc, n: n }; }); });
+    return best;
+  }
+  Out.sheetPlan = sheetPlan;
+  function sheetOpt() { return Object.assign({ paper: 'same', nup: 1, orient: 'auto', cut: true, noEnl: true }, AW.lsGet('award_sheet', {})); }
+  Out.sheetOpt = sheetOpt;
   function build(tpl, rows, opt) {
-    var root = AW.$('#print-root'); root.innerHTML = '';
-    rows.forEach(function (r, i) {
-      var pg = AW.renderPage(tpl, { scale: 96 / 25.4, mode: 'print', row: r.row, idx: r.idx, bg: opt.bg, dx: opt.dx, dy: opt.dy, lang: opt.lang });
-      pg.classList.add('pp'); root.appendChild(pg);
-    });
+    var root = AW.$('#print-root'); root.innerHTML = ''; var k = 96 / 25.4, plan = sheetPlan(tpl, opt.sheet);
+    var mk = function (r) { return AW.renderPage(tpl, { scale: k, mode: 'print', row: r.row, idx: r.idx, bg: opt.bg, dx: opt.dx, dy: opt.dy, lang: opt.lang }); };
+    if (!plan) rows.forEach(function (r) { var pg = mk(r); pg.classList.add('pp'); root.appendChild(pg); });
+    else {
+      var pw = tpl.page.w, ph = tpl.page.h;
+      for (var si = 0; si < rows.length; si += plan.n) {
+        var sh = document.createElement('div'); sh.className = 'pp sheet'; sh.style.cssText = 'position:relative;overflow:hidden;background:#fff;flex:none;width:' + plan.W * k + 'px;height:' + plan.H * k + 'px';
+        for (var j = 0; j < plan.n && si + j < rows.length; j++) {
+          var col = j % plan.cols, rw = Math.floor(j / plan.cols), w = document.createElement('div');
+          w.style.cssText = 'position:absolute;transform-origin:0 0;left:' + (col * plan.cw + (plan.cw - pw * plan.s) / 2) * k + 'px;top:' + (rw * plan.ch + (plan.ch - ph * plan.s) / 2) * k + 'px;width:' + pw * k + 'px;height:' + ph * k + 'px;transform:scale(' + plan.s + ')';
+          w.appendChild(mk(rows[si + j])); sh.appendChild(w);
+        }
+        if (plan.n > 1 && opt.sheet.cut) {       // 자르는 선(칸 사이 점선)
+          for (var c = 1; c < plan.cols; c++) { var v = document.createElement('div'); v.style.cssText = 'position:absolute;top:0;bottom:0;width:0;border-left:0.25mm dashed #888;left:' + c * plan.cw * k + 'px'; sh.appendChild(v); }
+          for (var r2 = 1; r2 < plan.rows; r2++) { var hz = document.createElement('div'); hz.style.cssText = 'position:absolute;left:0;right:0;height:0;border-top:0.25mm dashed #888;top:' + r2 * plan.ch * k + 'px'; sh.appendChild(hz); }
+        }
+        root.appendChild(sh);
+      }
+    }
     var st = document.getElementById('print-style') || document.head.appendChild(Object.assign(document.createElement('style'), { id: 'print-style' }));
-    st.textContent = '@page{size:' + tpl.page.w + 'mm ' + tpl.page.h + 'mm;margin:0}';
+    st.textContent = '@page{size:' + (plan ? plan.W : tpl.page.w) + 'mm ' + (plan ? plan.H : tpl.page.h) + 'mm;margin:0}';
     return ensureFonts(tpl).then(function () { AW.fitAll(root); });
   }
   // rows: [{row, idx}]
@@ -116,6 +143,12 @@
   function newCode() { var a = new Uint8Array(10); (window.crypto || window.msCrypto).getRandomValues(a); return Array.prototype.map.call(a, function (x) { return CODE_CH[x % CODE_CH.length]; }).join(''); }
   function holderOf(row) { var f = T().fields, k = f.filter(function (x) { return /성명|이름|수상자|수료자|name/i.test(x.name); })[0] || f[0]; return k ? String(row[k.name] || '') : ''; }
   function awardOf(row) { var f = T().fields.filter(function (x) { return /상명|상\s*종류|표창|종류|award/i.test(x.name); })[0]; return f ? String(row[f.name] || '') : ''; }
+  // 장마다 고유 인증번호를 만들어 서버 발급 대장에 등록 (fresh=true 면 기존 번호를 버리고 새로 발급)
+  function regCodes(t, list, label, fresh) {
+    list = list.map(function (x) { return { row: Object.assign({}, x.row, { _code: (!fresh && x.row._code) || newCode() }), idx: x.idx }; });
+    return AW.call('award_issue_register', { p_items: list.map(function (x) { return { code: x.row._code, serial: AW.serial(x.idx, t), tpl: t.name, holder: holderOf(x.row), award: awardOf(x.row) }; }), p_label: label }).then(function () { return { ok: true, list: list }; })
+      .catch(function (e) { return AW.confirm('인증번호 등록 실패', e.message + '\n\n등록되지 않은 인증번호는 진위 확인이 되지 않습니다. 그래도 인쇄하시겠습니까? (db/award_schema_2.sql 설치 여부를 확인하십시오)', '그래도 인쇄').then(function (ok) { return { ok: ok, list: list }; }); });
+  }
   function usesCode() { return T().elems.some(function (e) { return e.t === 'qr' || (e.t === 'text' && /\{\{\s*@인증번호\s*\}\}/.test((e.text || '') + (e.en || ''))); }); }
 
   // 발급번호 규칙 — page.num = {pattern, start, step, pad}
@@ -139,7 +172,7 @@
   Out.dialog = function () {
     var t = T(), n = t.rows.length, v = AW.Data.validate(), forced = usesCode();
     if (!t.elems.length) return AW.toast('양식에 배치된 요소가 없습니다.', 'error');
-    var lg = t.page.lang || 'ko', m = { el: null };
+    var lg = t.page.lang || 'ko', m = { el: null }, so = sheetOpt();
     AW.modal({
       title: '인쇄 · PDF 저장',
       body: '<div class="radios"><label><input type="radio" name="o-r" value="all"' + (n ? ' checked' : ' disabled') + '> 전체 <b>' + n + '</b>장</label>' +
@@ -152,6 +185,9 @@
         '<span class="muted" style="display:block;margin-left:22px">해제하면 글자만 인쇄됩니다 — 이미 인쇄된 실물 상장용지에 출력할 때 사용합니다.</span>' +
         '<label><input type="checkbox" id="o-reg"' + (forced ? ' checked disabled' : ' checked') + '> 발급 대장에 등록하고 위조 방지 인증번호 부여</label>' +
         '<span class="muted" style="display:block;margin-left:22px">' + (forced ? '양식에 인증 QR/{{@인증번호}}가 있어 자동 적용됩니다. ' : '') + '장마다 고유 인증번호가 서버에 등록되어 award-verify.html 에서 진위를 확인할 수 있습니다.</span></div>' +
+        '<label class="f">출력 용지 · 모아찍기 <span class="muted">(양식 크기는 그대로, 출력할 때만 나눠 찍습니다)</span></label><div class="grid2"><div><select class="in" id="o-sp">' + [['same', '양식 크기 그대로']].concat(Object.keys(AW.PAPERS).map(function (k) { return [k, k + ' 용지']; })).map(function (x) { return '<option value="' + x[0] + '"' + (so.paper === x[0] ? ' selected' : '') + '>' + x[1] + '</option>'; }).join('') + '</select></div><div><select class="in" id="o-nu"><option value="1"' + (so.nup === 1 ? ' selected' : '') + '>1장씩</option><option value="2"' + (so.nup === 2 ? ' selected' : '') + '>2장 모아찍기 (용지의 1/2)</option><option value="4"' + (so.nup === 4 ? ' selected' : '') + '>4장 모아찍기 (용지의 1/4)</option></select></div></div>' +
+        '<div class="grid2" style="margin-top:6px"><div><select class="in" id="o-so"><option value="auto"' + (so.orient === 'auto' ? ' selected' : '') + '>용지 방향 자동(가장 크게)</option><option value="L"' + (so.orient === 'L' ? ' selected' : '') + '>가로</option><option value="P"' + (so.orient === 'P' ? ' selected' : '') + '>세로</option></select></div><div class="radios"><label><input type="checkbox" id="o-cut"' + (so.cut ? ' checked' : '') + '> 자르는 선 표시</label><label><input type="checkbox" id="o-ne"' + (so.noEnl ? ' checked' : '') + '> 작은 양식은 확대하지 않음</label></div></div>' +
+        '<div class="box-ro" id="o-sv" style="margin-top:6px"></div>' +
         '<div class="grid2" style="margin-top:12px"><div><label class="f">가로 보정(mm)</label><input class="in num" id="o-dx" type="number" step="0.1" value="' + (AW.lsGet('award_dx', 0)) + '"></div><div><label class="f">세로 보정(mm)</label><input class="in num" id="o-dy" type="number" step="0.1" value="' + (AW.lsGet('award_dy', 0)) + '"></div></div>' +
         '<span class="muted">프린터 인쇄 위치가 어긋날 때 사용합니다(+ 는 오른쪽·아래). 시험 인쇄 후 조정하십시오.</span>' +
         '<label class="f" style="margin-top:12px">발급 이력 이름 <span class="muted">(선택)</span></label><input class="in" id="o-lb" maxlength="60" placeholder="예: 2026학년도 졸업식 우수상">' +
@@ -159,8 +195,13 @@
         ((v.miss || v.long) ? '<div class="alert warn" style="margin-top:12px">' + AW.ic('warn', 16) + ' 필수 항목 누락 ' + v.miss + '칸 · 길이 초과 ' + v.long + '칸이 있습니다. 데이터 입력창에서 붉게 표시된 칸을 확인하십시오.</div>' : '') +
         '<p class="muted" style="margin:12px 0 0">「인쇄」를 누르면 브라우저 인쇄창이 열립니다. 대상(프린터)을 <b>PDF로 저장</b>으로 바꾸면 파일로 저장됩니다. 인쇄창에서 여백 <b>없음</b>, 배율 <b>100%</b>, 「배경 그래픽」 <b>켜기</b>를 선택하십시오.</p>',
       actions: [{ label: '취소', cls: 'btn-ghost' }, { label: AW.ic('print', 16) + ' 인쇄', cls: 'btn-primary', onClick: function (c) { go(c); } }],
-      onOpen: function (el) { m.el = el; AW.$('#o-num', el).onclick = function () { Out.numDialog(numPrev); }; AW.$$('input[name="o-r"]', el).forEach(function (r) { r.onchange = numPrev; }); AW.$('#o-a', el).oninput = AW.$('#o-b', el).oninput = numPrev; numPrev(); }
+      onOpen: function (el) { m.el = el; AW.$('#o-num', el).onclick = function () { Out.numDialog(numPrev); }; AW.$$('input[name="o-r"]', el).forEach(function (r) { r.onchange = function () { numPrev(); sumPrev(); }; }); AW.$$('#o-sp,#o-nu,#o-so,#o-cut,#o-ne', el).forEach(function (c) { c.onchange = sumPrev; }); sumPrev(); AW.$('#o-a', el).oninput = AW.$('#o-b', el).oninput = numPrev; numPrev(); }
     });
+    function readSheet() { return { paper: AW.$('#o-sp', m.el).value, nup: +AW.$('#o-nu', m.el).value, orient: AW.$('#o-so', m.el).value, cut: AW.$('#o-cut', m.el).checked, noEnl: AW.$('#o-ne', m.el).checked }; }
+    function sumPrev() {
+      var sh = readSheet(), pl = sheetPlan(t, sh), mode = (AW.$('input[name="o-r"]:checked', m.el) || {}).value, cnt = mode === 'all' ? n : mode === 'cur' || mode === 'sample' ? 1 : Math.max(0, Math.min(n, parseInt(AW.$('#o-b', m.el).value, 10) || n) - Math.max(1, parseInt(AW.$('#o-a', m.el).value, 10) || 1) + 1);
+      AW.$('#o-sv', m.el).innerHTML = pl ? '용지 <b>' + Math.round(pl.W) + '×' + Math.round(pl.H) + 'mm(' + (pl.W >= pl.H ? '가로' : '세로') + ')</b> · ' + pl.cols + '×' + pl.rows + '칸 · 각 장 <b>' + Math.round(pl.s * 100) + '%</b> · ' + cnt + '장 → <b>' + Math.ceil(cnt / pl.n) + '장</b> 출력' : '양식 1장을 용지 1장에 그대로 출력합니다. (' + cnt + '장)';
+    }
     function numPrev() {
       var mode = (AW.$('input[name="o-r"]:checked', m.el) || {}).value, a = 1, b = Math.max(1, n);
       if (mode === 'cur') a = b = S.row + 1; else if (mode === 'rng') { a = Math.max(1, parseInt(AW.$('#o-a', m.el).value, 10) || 1); b = Math.min(n, parseInt(AW.$('#o-b', m.el).value, 10) || n); } else if (mode === 'sample') a = b = 1;
@@ -174,18 +215,15 @@
       else list.push({ row: Pv.sampleRow(), idx: 0 });
       var dx = parseFloat(AW.$('#o-dx', m.el).value) || 0, dy = parseFloat(AW.$('#o-dy', m.el).value) || 0, bg = AW.$('#o-bg', m.el).checked, label = AW.$('#o-lb', m.el).value.trim();
       var lang = AW.$('input[name="o-l"]:checked', m.el).value, reg = forced || AW.$('#o-reg', m.el).checked;
-      AW.lsSet('award_dx', dx); AW.lsSet('award_dy', dy); close(); S.printed = true; AW.emit('stepchange');
+      var sheet = readSheet(); AW.lsSet('award_sheet', sheet); AW.lsSet('award_dx', dx); AW.lsSet('award_dy', dy); close(); S.printed = true; AW.emit('stepchange');
       if (list.length > 400 && !window.confirm(list.length + '장을 한 번에 인쇄합니다. 브라우저가 느려질 수 있습니다. 계속하시겠습니까?')) return;
       var real = mode !== 'sample', nm = label || (mode === 'all' ? '전체 출력' : mode === 'cur' ? '개별 출력' : '범위 출력');
       var start = Promise.resolve(true);
-      if (reg && real) {                      // 장마다 고유 인증번호를 만들어 서버 발급 대장에 먼저 등록
-        list = list.map(function (x) { return { row: Object.assign({}, x.row, { _code: x.row._code || newCode() }), idx: x.idx }; });
-        start = AW.call('award_issue_register', { p_items: list.map(function (x) { return { code: x.row._code, serial: AW.serial(x.idx, t), tpl: t.name, holder: holderOf(x.row), award: awardOf(x.row) }; }), p_label: nm }).then(function () { return true; })
-          .catch(function (e) { return AW.confirm('인증번호 등록 실패', e.message + '\n\n등록되지 않은 인증번호는 진위 확인이 되지 않습니다. 그래도 인쇄하시겠습니까? (db/award_schema_2.sql 설치 여부를 확인하십시오)', '그래도 인쇄'); });
-      } else if (forced) list = list.map(function (x) { return { row: Object.assign({}, x.row, { _code: 'SAMPLE0000' }), idx: x.idx }; });
+      if (reg && real) start = regCodes(t, list, nm, false).then(function (r) { list = r.list; return r.ok; });                 // 인증번호 부여·등록
+      else if (forced) list = list.map(function (x) { return { row: Object.assign({}, x.row, { _code: 'SAMPLE0000' }), idx: x.idx }; });
       start.then(function (ok) {
         if (!ok) return; AW.toast(list.length + '장을 준비하는 중입니다…');
-        Out.run(t, list, { bg: bg, dx: dx, dy: dy, lang: lang });
+        Out.run(t, list, { bg: bg, dx: dx, dy: dy, lang: lang, sheet: sheet });
         if (real) AW.call('award_batch_add', { p_tpl: t.id, p_name: t.name, p_kind: 'print', p_label: nm, p_rows: list.map(function (x) { return x.row; }), p_snap: { page: t.page, elems: t.elems, fields: t.fields, name: t.name } }).catch(function (e) { AW.toast('발급 이력 저장 실패: ' + e.message, 'error'); });
       });
     }
@@ -258,7 +296,14 @@
       }
       var sameTpl = b.tpl_id && b.tpl_id === T().id, tpl = sameTpl && b.snap && b.snap.elems ? Object.assign({}, T(), { page: b.snap.page, elems: b.snap.elems, fields: b.snap.fields || T().fields }) : T();
       closeModal();
-      Out.run(tpl, b.rows.map(function (r, i) { return { row: r, idx: i }; }), { bg: !!T().bg, dx: AW.lsGet('award_dx', 0), dy: AW.lsGet('award_dy', 0) });
+      var list = b.rows.map(function (r, i) { return { row: r, idx: i }; }), hasCode = list.some(function (x) { return x.row._code; });
+      var go = function (fresh) {
+        var p = fresh ? regCodes(tpl, list, (b.label || '재출력') + ' (재발급)', true) : Promise.resolve({ ok: true, list: list });
+        p.then(function (r) { if (!r.ok) return; Out.run(tpl, r.list, { bg: !!T().bg, dx: AW.lsGet('award_dx', 0), dy: AW.lsGet('award_dy', 0), lang: tpl.page.lang || 'ko', sheet: sheetOpt() });
+          if (fresh) AW.call('award_batch_add', { p_tpl: tpl.id || null, p_name: tpl.name || b.tpl_name, p_kind: 'print', p_label: (b.label || '재출력') + ' (재발급)', p_rows: r.list.map(function (x) { return x.row; }), p_snap: b.snap || {} }).catch(function () {}); });
+      };
+      if (!hasCode) return go(false);
+      AW.modal({ title: '다시 출력', body: '<p style="margin-top:0">' + b.cnt + '장을 다시 출력합니다. 인증번호를 어떻게 할까요?</p><div class="radios"><label><input type="radio" name="rp" value="same" checked> 같은 인증번호로 출력 <span class="muted">(분실·훼손으로 같은 상장을 다시 찍을 때, 추천)</span></label><label><input type="radio" name="rp" value="new"> 새 인증번호로 재발급 <span class="muted">(발급 대장에 새로 등록, 기존 번호는 유효 상태로 남음)</span></label></div>', actions: [{ label: '취소', cls: 'btn-ghost' }, { label: '출력', cls: 'btn-primary', onClick: function (c) { var f = AW.$('input[name="rp"]:checked').value === 'new'; c(); go(f); } }] });
     }).catch(function (e) { AW.toast(e.message, 'error'); });
   }
   function restore(ver, closeModal) {

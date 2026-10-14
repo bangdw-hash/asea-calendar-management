@@ -76,7 +76,7 @@
       '</div>' +
       '<div class="ed-tools ed-arr">' +
         '<div class="tg" title="선택이 1개면 용지 기준, 2개 이상이면 선택 영역 기준으로 정렬합니다">' + BTN('ag-l', 'gL', '왼쪽 맞춤') + BTN('ag-ch', 'gCH', '가로 가운데') + BTN('ag-r', 'gR', '오른쪽 맞춤') + BTN('ag-t', 'gT', '위 맞춤') + BTN('ag-cv', 'gCV', '세로 가운데') + BTN('ag-b', 'gB', '아래 맞춤') + '</div>' +
-        '<div class="tg">' + BTN('dist-h', 'dH', '가로 간격 같게(3개 이상)') + BTN('dist-v', 'dV', '세로 간격 같게(3개 이상)') + BTN('front', 'front', '맨 앞으로') + BTN('back', 'back', '맨 뒤로') + BTN('lock', 'lock', '잠금/해제') + '</div>' +
+        '<div class="tg">' + BTN('dist-h', 'dH', '가로 간격 같게(3개 이상)') + BTN('dist-v', 'dV', '세로 간격 같게(3개 이상)') + BTN('front', 'front', '맨 앞으로') + BTN('back', 'back', '맨 뒤로') + BTN('lock', 'lock', '선택 잠금/해제 (그룹은 그룹 전체)') + '<button class="tb tb-txt" data-a="lockall" title="모든 요소를 한 번에 잠금/해제">전체 잠금</button></div>' +
       '</div>' +
       '<div class="ed-main"><div class="ed-col"><div class="ed-stage" tabindex="0" aria-label="양식 편집 영역"><div class="ed-wrap"></div><div class="ed-hint"></div></div>' +
       '<div class="ed-text"><div class="muted"><b>선택한 글상자 내용</b> — <code>{{항목명}}</code>을 쓰면 엑셀 데이터가 들어갑니다. 상자를 더블클릭하면 화면에서 바로 입력할 수 있습니다.</div><textarea class="in" data-p="text" rows="2" disabled placeholder="글상자를 선택하면 여기에서도 내용을 고칠 수 있습니다."></textarea></div>' +
@@ -230,6 +230,7 @@
     var one1 = list.length === 1 && list[0].t === 'text';
     ta.disabled = !one1; ta.placeholder = '글상자를 선택하면 여기에서도 내용을 고칠 수 있습니다.' + (LG() === 'both' ? ' (한영 병기 보기에서는 한글을 편집합니다)' : LG() === 'en' ? ' (영문 편집 중)' : '');
     if (document.activeElement !== ta) ta.value = one1 ? (list[0][tk()] || '') : '';
+    var la = AW.$('[data-a="lockall"]', st.root); if (la) { var allLk2 = T().elems.length && T().elems.every(function (e) { return e.lock; }); la.textContent = allLk2 ? '전체 해제' : '전체 잠금'; la.classList.toggle('on', !!allLk2); }
     var lk = AW.$('[data-a="lock"]', st.root); if (lk) { var all = list.length && list.every(function (e) { return e.lock; }); lk.classList.toggle('on', !!all); lk.innerHTML = AW.ic(all ? 'lock' : 'unlock', 17); }
     updPos(); updUndo(); if (AW.Side) AW.Side.update();
   }
@@ -292,7 +293,8 @@
       case 'bg-toggle': T().page.bgHide = !T().page.bgHide; E.render(); return changed('page', false, T().page.bgHide ? '배경 숨기기' : '배경 보이기');
       case 'bg-del': if (!T().bg) return; T().bg = null; T().bgName = ''; S.bgDirty = true; E.render(); return changed('bg', false, '배경 삭제');
       case 'bg-replace': return AW.$('[data-f="bg"]', st.root).click();
-      case 'bg-hist': return E.bgHistDialog();
+      case 'bg-lib': return E.bgLibDialog(); case 'bg-reg': return E.bgRegister();
+      case 'lockall': var allL = T().elems.length && T().elems.every(function (e) { return e.lock; }); T().elems.forEach(function (e) { e.lock = !allL; }); E.refreshElems(); changed('elems', false, allL ? '전체 잠금 해제' : '전체 잠금'); return AW.toast(allL ? '모든 요소의 잠금을 풀었습니다.' : '모든 요소를 잠갔습니다. (이동·크기 조절·편집 불가)');
       case 'bg-rot-l': return E.rotateBg(-1); case 'bg-rot-r': return E.rotateBg(1);
       case 'mg-all': var tm = tx[0]; if (!tm) return; if (LG() === 'en') return AW.toast('한글 보기에서 지정해 주십시오.'); return mergeDialog({ text: tm.text || '', elemId: tm.id, key: 'text', whole: true });
       case 'noprint': var allN = list.length && list.every(function (e) { return e.noprint; }); list.forEach(function (e) { e.noprint = !allN; }); E.refreshElems(); changed('elems'); return AW.toast(allN ? '출력에 포함합니다.' : '화면에서만 보이고 인쇄·미리보기에서는 제외됩니다.');
@@ -555,6 +557,11 @@
     }).catch(function (e) { if (!(e && e.message === 'cancel')) AW.toast('이미지를 읽지 못했습니다' + (e && e.message ? ': ' + e.message : '.'), 'error'); });
   }
   // 드롭한 직후 안내 칩: 배경으로 쓰려면 한 번 더 선택
+  function showChip(html, fn) {
+    AW.$$('.dropchip', st.stage).forEach(function (n) { n.remove(); });
+    var c = document.createElement('div'); c.className = 'dropchip'; c.innerHTML = html; st.stage.appendChild(c); var t = setTimeout(function () { c.remove(); }, 12000);
+    c.onclick = function (e) { var k = e.target.dataset.k; if (!k) return; clearTimeout(t); c.remove(); fn(k); };
+  }
   function dropChip(file, id) {
     AW.$$('.dropchip', st.stage).forEach(function (n) { n.remove(); });
     var c = document.createElement('div'); c.className = 'dropchip'; c.innerHTML = '개체로 넣었습니다 · <button class="lnk" data-k="bg">배경으로 사용</button> · <button class="lnk" data-k="x">닫기</button>';
@@ -800,7 +807,7 @@
       T().bg = r.url; T().bgName = file.name; T().page = keepPage(pg);
       if (!T().name || /^새 상장/.test(T().name)) T().name = file.name.replace(/\.[^.]+$/, '');
       E.render(); changed('bg'); AW.emit('tplchange', 'name');
-      AW.toast('양식 배경을 적용했습니다 (' + pg.w + '×' + pg.h + 'mm' + (fp ? ' · ' + fp.paper : '') + ').', 'ok');
+      AW.toast('양식 배경을 적용했습니다 (' + pg.w + '×' + pg.h + 'mm' + (fp ? ' · ' + fp.paper : '') + ').', 'ok'); showChip('이 배경을 <b>이름을 붙여 등록</b>해 두면 다른 양식에서도 불러올 수 있습니다. <button class="lnk" data-k="reg">등록</button> · <button class="lnk" data-k="x">닫기</button>', function (k) { if (k === 'reg') E.bgRegister(); });
     }).catch(function (e) { if (e && e.message !== 'cancel') AW.toast(e.message || '양식 파일을 처리하지 못했습니다.', 'error'); });
   };
   // 배경 이미지를 90도 회전(dir: 1=오른쪽, -1=왼쪽)하고 용지 가로·세로를 맞바꿈
@@ -917,7 +924,7 @@
       if (list.length >= 3) al.push(I('가로 간격 같게', 'dH', '', 'dist-h'), I('세로 간격 같게', 'dV', '', 'dist-v'));
       it.push(SUB('정렬 · 크기 맞춤', 'gCH', al));
       var allLk = list.every(function (e) { return e.lock; }), allHd = list.every(function (e) { return e.hide; });
-      it.push(SUB('순서 · 잠금 · 표시', 'layers', [I('맨 앞으로', 'front', 'Ctrl+Shift+]', 'front'), I('앞으로 한 칸', 'chevU', 'Ctrl+]', 'fwd'), I('뒤로 한 칸', 'chevD', 'Ctrl+[', 'bwd'), I('맨 뒤로', 'back', 'Ctrl+Shift+[', 'back'), { k: 'sep' }, I(allLk ? '잠금 해제' : '잠금(이동·크기 고정)', allLk ? 'unlock' : 'lock', '', 'lock'), I(allHd ? '보이기' : '숨기기', 'eye', '', 'hide'), I('인쇄에서 제외 (화면 안내용)', 'print', '', 'noprint', { on: list.every(function (e) { return e.noprint; }) })]));
+      it.push(SUB('순서 · 잠금 · 표시', 'layers', [I('맨 앞으로', 'front', 'Ctrl+Shift+]', 'front'), I('앞으로 한 칸', 'chevU', 'Ctrl+]', 'fwd'), I('뒤로 한 칸', 'chevD', 'Ctrl+[', 'bwd'), I('맨 뒤로', 'back', 'Ctrl+Shift+[', 'back'), { k: 'sep' }, I((list.some(function (e) { return e.grp; }) ? '그룹 ' : '선택 ') + (allLk ? '잠금 해제' : '잠금(이동·크기 고정)'), allLk ? 'unlock' : 'lock', '', 'lock'), I('전체 잠금 / 해제', 'lock', '', 'lockall'), I(allHd ? '보이기' : '숨기기', 'eye', '', 'hide'), I('인쇄에서 제외 (화면 안내용)', 'print', '', 'noprint', { on: list.every(function (e) { return e.noprint; }) })]));
       it.push(SUB('회전 · 반전', 'rotate', [I('왼쪽 90° 회전', 'undo', '', 'rot-l'), I('오른쪽 90° 회전', 'redo', '', 'rot-r'), I('180° 회전', 'rotate', '', 'rot-180'), { k: 'sep' }, I('좌우 대칭 (좌우 반전)', 'gCH', '', 'flip-x'), I('상하 대칭 (상하 반전)', 'gCV', '', 'flip-y'), { k: 'sep' }, I('회전 초기화', 'close', '', 'rot-0')]));
       it.push(I('그룹 만들기', 'layers', 'Ctrl+G', 'group', { disabled: list.length < 2 }), I('그룹 해제', 'layers', 'Ctrl+Shift+G', 'ungroup', { disabled: !list.some(function (e) { return e.grp; }) }));
       it.push(SUB('이동', 'plus', [I('위로 (작게)', 'chevU', '↑', 'nu'), I('아래로 (작게)', 'chevD', '↓', 'nd'), I('왼쪽으로 (작게)', 'chevL', '←', 'nl'), I('오른쪽으로 (작게)', 'chevR', '→', 'nr'), { k: 'sep' }, I('위로 (크게)', 'chevU', 'Shift+↑', 'Nu'), I('아래로 (크게)', 'chevD', 'Shift+↓', 'Nd'), I('왼쪽으로 (크게)', 'chevL', 'Shift+←', 'Nl'), I('오른쪽으로 (크게)', 'chevR', 'Shift+→', 'Nr')]));
@@ -929,7 +936,7 @@
       }
     } else {
       it.push(SUB('추가', 'plus', [I('여기에 글상자 추가', 'text', '', 'add-text'), I('여기에 입력 항목 추가…', 'field', '', 'add-field'), I('선 추가', 'line', '', 'add-line'), I('사각형 추가', 'rect', '', 'add-rect'), I('이미지 추가…', 'image', '', 'add-img'), I('위조 방지 인증 QR 추가', 'qr', '', 'add-qr')]), EDIT(), VIEW, LANGM,
-        SUB('배경', 'image', [I(T().page.bgHide ? '배경 보이기' : '배경 숨기기', 'eye', '', 'bg-toggle', { disabled: !T().bg }), I('배경 삭제', 'trash', '', 'bg-del', { disabled: !T().bg }), I('배경 교체…', 'upload', '', 'bg-replace'), I('이전 배경 불러오기…', 'history', '', 'bg-hist'), I('배경 왼쪽 90° 회전', 'undo', '', 'bg-rot-l', { disabled: !T().bg }), I('배경 오른쪽 90° 회전', 'redo', '', 'bg-rot-r', { disabled: !T().bg })]),
+        SUB('배경', 'image', [I(T().page.bgHide ? '배경 보이기' : '배경 숨기기', 'eye', '', 'bg-toggle', { disabled: !T().bg }), I('배경 삭제', 'trash', '', 'bg-del', { disabled: !T().bg }), I('배경 교체…', 'upload', '', 'bg-replace'), I('배경 양식 등록하기…', 'save', '', 'bg-reg', { disabled: !T().bg }), I('배경 양식 불러오기…', 'folder', '', 'bg-lib'), I('배경 왼쪽 90° 회전', 'undo', '', 'bg-rot-l', { disabled: !T().bg }), I('배경 오른쪽 90° 회전', 'redo', '', 'bg-rot-r', { disabled: !T().bg })]),
         SUB('용지', 'page', [I((T().page.w >= T().page.h ? '세로' : '가로') + '로 전환…', 'rotate', '', 'orient'), I('용지·배경 설정…', 'page', '', 'page'), I('기본 상장 배치 넣기', 'wand', '', 'starter')]), AI);
     }
     return it;
@@ -1009,18 +1016,29 @@
     l.forEach(function (e) { e[key] = v; }); E.refreshElems(); if (live) { S.dirty = true; AW.emit('tplchange', 'elems'); debHist(); } else changed('elems', false, '속성 변경'); return true;
   }
   E.api = { sel: sel, T: T, setAny: setAny, setProp: setProp, changed: changed, ratio: function () { return st.ratio; }, ctxFor: function (x, y) { openCtx(x, y, buildCtx(true)); }, menuAt: function (x, y, it) { openCtx(x, y, it); }, lbl: function (l) { st.lbl = l; } };
-  // 이전 배경 불러오기(서버에 최근 3개 보관)
-  E.bgHistDialog = function () {
-    if (!T().id) return AW.toast('양식을 저장한 뒤 사용할 수 있습니다.', 'error');
-    var m = { el: null };
-    AW.modal({ title: '이전 배경 불러오기', wide: true, body: '<div id="bh-b"><div class="loading">불러오는 중…</div></div>', actions: [{ label: '닫기', cls: 'btn-ghost' }], onOpen: function (el) { m.el = el; load(); } });
-    function load() {
-      AW.call('award_bg_hist_list', { p_id: T().id }).then(function (l) {
-        var b = AW.$('#bh-b', m.el); if (!b) return;
-        b.innerHTML = l.length ? '<p class="muted" style="margin-top:0">배경을 바꿀 때마다 이전 배경을 최근 3개까지 서버에 보관합니다.</p><div class="cards">' + l.map(function (x) { return '<div class="card"><div class="bhimg" data-id="' + x.id + '"><span class="muted">미리보기 불러오는 중…</span></div><div class="muted">' + AW.fmtTime(x.created_at) + '<br>' + AW.esc(x.bg_name || '') + '</div><div class="card-a"><button class="btn btn-primary btn-sm" data-r="' + x.id + '">이 배경으로 복원</button></div></div>'; }).join('') + '</div>' : '<div class="empty">보관된 이전 배경이 없습니다.</div>';
-        l.forEach(function (x) { AW.call('award_bg_hist_get', { p_id: x.id }).then(function (r) { var n = AW.$('.bhimg[data-id="' + x.id + '"]', m.el); if (n && r) { n.innerHTML = '<img alt="" style="width:100%;max-height:120px;object-fit:contain" src="' + r.bg + '">'; n._d = r; } }); });
-        AW.$$('[data-r]', b).forEach(function (bt) { bt.onclick = function () { var n = AW.$('.bhimg[data-id="' + bt.dataset.r + '"]', m.el), r = n && n._d; if (!r) return AW.toast('미리보기가 불러와진 뒤 눌러 주십시오.'); T().bg = r.bg; T().bgName = r.bg_name || ''; S.bgDirty = true; E.render(); changed('bg', false, '이전 배경 복원'); AW.toast('이전 배경으로 복원했습니다.', 'ok'); }; });
-      }).catch(function (e) { var b = AW.$('#bh-b', m.el); if (b) b.innerHTML = '<div class="alert warn">' + AW.esc(e.message) + ' (db/award_schema_4.sql 설치 여부를 확인하십시오)</div>'; });
+  // ───── 배경 양식 라이브러리(서버 저장, 개수 제한 없음, 이름 부여) ─────
+  function makeThumb(src) {
+    return new Promise(function (res) { var im = new Image(); im.onload = function () { var r = 260 / Math.max(im.naturalWidth, im.naturalHeight), c = document.createElement('canvas'); c.width = Math.max(1, Math.round(im.naturalWidth * r)); c.height = Math.max(1, Math.round(im.naturalHeight * r)); c.getContext('2d').drawImage(im, 0, 0, c.width, c.height); res(c.toDataURL('image/jpeg', 0.72)); }; im.onerror = function () { res(''); }; im.src = src; });
+  }
+  E.bgRegister = function () {
+    if (!T().bg) return AW.toast('등록할 배경이 없습니다.', 'error');
+    AW.modal({ title: '배경 양식 등록하기', body: '<p style="margin-top:0">현재 배경을 이름을 붙여 서버에 저장합니다. 다른 양식·다른 PC에서도 「배경 양식 불러오기」로 쓸 수 있고, 개수 제한은 없습니다.</p><label class="f">이름</label><input class="in" id="bl-n" maxlength="60" value="' + AW.esc((T().bgName || T().name || '').replace(/\.[^.]+$/, '')) + '" placeholder="예: 2026 우수상 양식">',
+      actions: [{ label: '취소', cls: 'btn-ghost' }, { label: '등록', cls: 'btn-primary', onClick: function (c, b) {
+        var nm = AW.$('#bl-n').value.trim(); if (!nm) return AW.toast('이름을 입력해 주십시오.', 'error'); b.disabled = true; var pg = T().page;
+        makeThumb(T().bg).then(function (th) { return AW.call('award_bglib_add', { p_name: nm, p_bg: T().bg, p_thumb: th, p_w: pg.w, p_h: pg.h, p_paper: pg.paper || '', p_orient: pg.orient || '' }); })
+          .then(function () { c(); AW.toast('「' + nm + '」 배경 양식을 등록했습니다.', 'ok'); AW.log('bglib_add', '', { name: nm }); }).catch(function (e) { b.disabled = false; AW.toast(e.message + ' (db/award_schema_5.sql 설치 여부를 확인하십시오)', 'error'); }); } }],
+      onOpen: function (el) { var i = AW.$('#bl-n', el); i.select(); i.addEventListener('keydown', function (k) { if (k.key === 'Enter') AW.$('.btn-primary', el).click(); }); } });
+  };
+  E.bgLibDialog = function () {
+    var m = { el: null, all: [] };
+    AW.modal({ title: '배경 양식 불러오기', wide: true, body: '<div class="sp-row" style="margin-top:0"><input class="in sm" id="bl-q" placeholder="이름 검색" style="flex:1"><button class="btn btn-secondary btn-sm" id="bl-add">' + AW.ic('save', 15) + ' 현재 배경 등록</button></div><div id="bl-b"><div class="loading">불러오는 중…</div></div>', actions: [{ label: '닫기', cls: 'btn-ghost' }], onOpen: function (el, close) { m.el = el; m.close = close; AW.$('#bl-q', el).oninput = draw; AW.$('#bl-add', el).onclick = function () { E.bgRegister(); }; load(); } });
+    function load() { AW.call('award_bglib_list').then(function (l) { m.all = l || []; draw(); }).catch(function (e) { var b = AW.$('#bl-b', m.el); if (b) b.innerHTML = '<div class="alert warn">' + AW.esc(e.message) + ' (db/award_schema_5.sql 설치 여부를 확인하십시오)</div>'; }); }
+    function draw() {
+      var b = AW.$('#bl-b', m.el); if (!b) return; var q = AW.$('#bl-q', m.el).value.trim().toLowerCase(), l = m.all.filter(function (x) { return !q || x.name.toLowerCase().indexOf(q) >= 0; }), tot = m.all.reduce(function (a, x) { return a + (x.size || 0); }, 0);
+      b.innerHTML = (l.length ? '<div class="cards">' + l.map(function (x) { return '<div class="card"><div class="bhimg">' + (x.thumb ? '<img alt="" style="width:100%;max-height:130px;object-fit:contain" src="' + x.thumb + '">' : '<span class="muted">미리보기 없음</span>') + '</div><div class="card-t">' + AW.esc(x.name) + '</div><div class="muted">' + Math.round(x.w || 0) + '×' + Math.round(x.h || 0) + 'mm · ' + ((x.size || 0) / 1048576).toFixed(1) + 'MB · ' + AW.fmtTime(x.created_at) + '</div><div class="card-a"><button class="btn btn-primary btn-sm" data-u="' + x.id + '">적용</button><button class="btn btn-ghost btn-sm" data-n="' + x.id + '">이름 변경</button><button class="btn btn-ghost btn-sm" data-d="' + x.id + '">삭제</button></div></div>'; }).join('') + '</div>' : '<div class="empty">' + (m.all.length ? '검색 결과가 없습니다.' : '등록된 배경 양식이 없습니다. 「현재 배경 등록」으로 저장해 두십시오.') + '</div>') + '<p class="muted" style="margin:10px 0 0">등록 ' + m.all.length + '개 · 사용 ' + (tot / 1048576).toFixed(1) + 'MB (제한 없음, 서버 DB 용량 안에서 저장됩니다)</p>';
+      AW.$$('[data-u]', b).forEach(function (x) { x.onclick = function () { x.disabled = true; AW.call('award_bglib_get', { p_id: x.dataset.u }).then(function (r) { if (!r) throw new Error('찾을 수 없습니다.'); T().bg = r.bg; T().bgName = r.name; if (r.w && r.h) T().page = keepPage({ w: +r.w, h: +r.h, paper: r.paper || 'custom', orient: +r.w >= +r.h ? 'L' : 'P' }); S.bgDirty = true; E.render(); changed('bg', false, '배경 양식 불러오기'); AW.toast('「' + r.name + '」 배경을 적용했습니다.', 'ok'); m.close(); }).catch(function (e) { x.disabled = false; AW.toast(e.message, 'error'); }); }; });
+      AW.$$('[data-n]', b).forEach(function (x) { x.onclick = function () { var it = m.all.filter(function (y) { return y.id === x.dataset.n; })[0], nn = window.prompt('새 이름', it.name); if (nn && nn.trim()) AW.call('award_bglib_rename', { p_id: it.id, p_name: nn.trim().slice(0, 60) }).then(load).catch(function (e) { AW.toast(e.message, 'error'); }); }; });
+      AW.$$('[data-d]', b).forEach(function (x) { x.onclick = function () { AW.confirm('배경 양식 삭제', '서버에서 이 배경 양식을 삭제합니다. 이미 양식에 적용한 배경에는 영향이 없습니다.', '삭제', true).then(function (ok) { if (ok) AW.call('award_bglib_delete', { p_id: x.dataset.d }).then(load).catch(function (e) { AW.toast(e.message, 'error'); }); }); }; });
     }
   };
   E.menuAt = function (x, y, items) { openCtx(x, y, items); };
