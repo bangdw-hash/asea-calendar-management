@@ -1020,14 +1020,42 @@
   function makeThumb(src) {
     return new Promise(function (res) { var im = new Image(); im.onload = function () { var r = 260 / Math.max(im.naturalWidth, im.naturalHeight), c = document.createElement('canvas'); c.width = Math.max(1, Math.round(im.naturalWidth * r)); c.height = Math.max(1, Math.round(im.naturalHeight * r)); c.getContext('2d').drawImage(im, 0, 0, c.width, c.height); res(c.toDataURL('image/jpeg', 0.72)); }; im.onerror = function () { res(''); }; im.src = src; });
   }
+  // 배경 + 직인·이미지·도형(글상자·QR 제외)을 한 장의 그림으로 합성 — 배경의 자연 해상도 기준 JPEG
+  function flatCand() { return T().elems.filter(function (e) { return (e.t === 'img' && e.src || e.t === 'rect' || e.t === 'line') && !e.hide && !e.noprint; }); }
+  function loadImg(src) { return new Promise(function (res) { var im = new Image(); im.onload = function () { res(im); }; im.onerror = function () { res(null); }; im.src = src; }); }
+  E.flattenBg = function (list) {
+    var t = T(), pg = t.page;
+    return loadImg(t.bg).then(function (bi) {
+      var W = bi ? bi.naturalWidth : 1600, H = bi ? bi.naturalHeight : Math.round(1600 * pg.h / pg.w), mx = 3200, f = Math.min(1, mx / Math.max(W, H)); W = Math.round(W * f); H = Math.round(H * f);
+      var c = document.createElement('canvas'); c.width = W; c.height = H; var x = c.getContext('2d'), k = W / pg.w;
+      x.fillStyle = pg.bgc || '#fff'; x.fillRect(0, 0, W, H); if (bi) x.drawImage(bi, 0, 0, W, H);
+      return Promise.all(list.map(function (e) { return e.t === 'img' ? loadImg(e.src) : Promise.resolve(null); })).then(function (ims) {
+        list.forEach(function (e, n) {
+          x.save(); x.translate((e.x + e.w / 2) * k, (e.y + e.h / 2) * k); if (e.rot) x.rotate(e.rot * Math.PI / 180); x.scale(e.flipX ? -1 : 1, e.flipY ? -1 : 1);
+          var w = e.w * k, h = e.h * k;
+          if (e.t === 'img' && ims[n]) { x.globalAlpha = e.opacity == null ? 1 : e.opacity; var iw = ims[n].naturalWidth, ih = ims[n].naturalHeight, r = Math.min(w / iw, h / ih); x.drawImage(ims[n], -iw * r / 2, -ih * r / 2, iw * r, ih * r); }
+          else if (e.t === 'rect') { if (e.fill && e.fill !== 'transparent') { x.fillStyle = e.fill; x.fillRect(-w / 2, -h / 2, w, h); } if (e.sw && e.stroke && e.stroke !== 'transparent') { x.lineWidth = e.sw * k; x.strokeStyle = e.stroke; x.strokeRect(-w / 2 + x.lineWidth / 2, -h / 2 + x.lineWidth / 2, w - x.lineWidth, h - x.lineWidth); } }
+          else if (e.t === 'line') { x.lineWidth = (e.sw || 0.5) * k; x.strokeStyle = e.stroke || '#111'; x.beginPath(); x.moveTo(-w / 2, 0); x.lineTo(w / 2, 0); x.stroke(); }
+          x.restore();
+        });
+        return c.toDataURL('image/jpeg', 0.92);
+      });
+    });
+  };
   E.bgRegister = function () {
     if (!T().bg) return AW.toast('등록할 배경이 없습니다.', 'error');
-    AW.modal({ title: '배경 양식 등록하기', body: '<p style="margin-top:0">현재 배경을 이름을 붙여 서버에 저장합니다. 다른 양식·다른 PC에서도 「배경 양식 불러오기」로 쓸 수 있고, 개수 제한은 없습니다.</p><label class="f">이름</label><input class="in" id="bl-n" maxlength="60" value="' + AW.esc((T().bgName || T().name || '').replace(/\.[^.]+$/, '')) + '" placeholder="예: 2026 우수상 양식">',
+    var cand = flatCand(), imgs = cand.filter(function (e) { return e.t === 'img'; }).length;
+    AW.modal({ title: '배경 양식 등록하기', body: '<p style="margin-top:0">현재 배경을 이름을 붙여 서버에 저장합니다. 다른 양식·다른 PC에서도 「배경 양식 불러오기」로 쓸 수 있고, 개수 제한은 없습니다.</p><label class="f">이름</label><input class="in" id="bl-n" maxlength="60" value="' + AW.esc((T().bgName || T().name || '').replace(/\.[^.]+$/, '')) + '" placeholder="예: 2026 우수상 양식">' +
+      (cand.length ? '<div class="radios" style="margin-top:10px"><label><input type="checkbox" id="bl-f" checked> <b>직인·이미지·도형 ' + cand.length + '개를 배경에 합쳐서 저장</b> <span class="muted">(학교장 직인' + (imgs ? ' ' + imgs + '개' : '') + ' 포함, 한 장의 완성된 양식으로 보관 — 추천)</span></label><label style="margin-left:22px"><input type="checkbox" id="bl-a" checked> 저장 후 이 양식에도 합친 배경을 적용 <span class="muted">(합친 개체는 배경으로 옮겨지며, 되돌리기로 복구 가능)</span></label></div>' : '<p class="muted">직인·이미지 개체가 없어 배경만 저장합니다. 직인을 넣었다면 인쇄 제외로 설정하지 않았는지 확인해 주십시오.</p>'),
       actions: [{ label: '취소', cls: 'btn-ghost' }, { label: '등록', cls: 'btn-primary', onClick: function (c, b) {
-        var nm = AW.$('#bl-n').value.trim(); if (!nm) return AW.toast('이름을 입력해 주십시오.', 'error'); b.disabled = true; var pg = T().page;
-        makeThumb(T().bg).then(function (th) { return AW.call('award_bglib_add', { p_name: nm, p_bg: T().bg, p_thumb: th, p_w: pg.w, p_h: pg.h, p_paper: pg.paper || '', p_orient: pg.orient || '' }); })
-          .then(function () { c(); AW.toast('「' + nm + '」 배경 양식을 등록했습니다.', 'ok'); AW.log('bglib_add', '', { name: nm }); }).catch(function (e) { b.disabled = false; AW.toast(e.message + ' (db/award_schema_5.sql 설치 여부를 확인하십시오)', 'error'); }); } }],
-      onOpen: function (el) { var i = AW.$('#bl-n', el); i.select(); i.addEventListener('keydown', function (k) { if (k.key === 'Enter') AW.$('.btn-primary', el).click(); }); } });
+        var nm = AW.$('#bl-n').value.trim(); if (!nm) return AW.toast('이름을 입력해 주십시오.', 'error'); b.disabled = true; var pg = T().page, fl = AW.$('#bl-f') && AW.$('#bl-f').checked, ap = fl && AW.$('#bl-a').checked, bg0 = T().bg;
+        (fl ? E.flattenBg(cand) : Promise.resolve(bg0)).then(function (bg) {
+          return makeThumb(bg).then(function (th) { return AW.call('award_bglib_add', { p_name: nm, p_bg: bg, p_thumb: th, p_w: pg.w, p_h: pg.h, p_paper: pg.paper || '', p_orient: pg.orient || '' }); }).then(function () {
+            if (ap) { var ids = {}; cand.forEach(function (e) { ids[e.id] = 1; }); T().bg = bg; T().bgName = nm; T().elems = T().elems.filter(function (e) { return !ids[e.id]; }); S.sel = []; E.render(); changed('bg', false, '직인 포함 배경 적용'); }
+            c(); AW.toast('「' + nm + '」 배경 양식을 등록했습니다' + (fl ? ' (직인·도형 ' + cand.length + '개 합성)' : '') + '.', 'ok'); AW.log('bglib_add', '', { name: nm, flat: !!fl });
+          });
+        }).catch(function (e) { b.disabled = false; AW.toast(e.message + ' (db/award_schema_5.sql 설치 여부를 확인하십시오)', 'error'); }); } }],
+      onOpen: function (el) { var i = AW.$('#bl-n', el); i.select(); i.addEventListener('keydown', function (k) { if (k.key === 'Enter') AW.$('.btn-primary', el).click(); }); var f = AW.$('#bl-f', el); if (f) f.onchange = function () { AW.$('#bl-a', el).disabled = !f.checked; }; } });
   };
   E.bgLibDialog = function () {
     var m = { el: null, all: [] };

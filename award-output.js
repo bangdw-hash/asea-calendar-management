@@ -224,7 +224,7 @@
       start.then(function (ok) {
         if (!ok) return; AW.toast(list.length + '장을 준비하는 중입니다…');
         Out.run(t, list, { bg: bg, dx: dx, dy: dy, lang: lang, sheet: sheet });
-        if (real) AW.call('award_batch_add', { p_tpl: t.id, p_name: t.name, p_kind: 'print', p_label: nm, p_rows: list.map(function (x) { return x.row; }), p_snap: { page: t.page, elems: t.elems, fields: t.fields, name: t.name } }).catch(function (e) { AW.toast('발급 이력 저장 실패: ' + e.message, 'error'); });
+        if (real) AW.call('award_batch_add', { p_tpl: t.id, p_name: t.name, p_kind: 'print', p_label: nm, p_rows: list.map(function (x) { return x.row; }), p_snap: { page: t.page, elems: t.elems, fields: t.fields, name: t.name, job: S.jobId ? { id: S.jobId, name: AW.Job.name() } : null } }).catch(function (e) { AW.toast('발급 이력 저장 실패: ' + e.message, 'error'); });
       });
     }
   };
@@ -232,7 +232,7 @@
   /* ───────────── 이력관리 ───────────── */
   var LABEL = { login: '로그인', login_fail: '로그인 실패', tpl_create: '양식 생성', tpl_delete: '양식 삭제', tpl_duplicate: '양식 복사', xlsx_template: '엑셀 양식 내려받기', xlsx_import: '엑셀 올리기', ai_guide: 'AI 안내 작성', restore: '버전 복원', issue_revoke: '인증번호 폐기', issue_restore: '인증번호 복구', font_add: '글꼴 업로드', font_delete: '글꼴 삭제', ai_translate: 'AI 영문 번역' };
   Hist.open = function (tab) {
-    var m = { el: null, close: function () {} };
+    var m = { el: null, close: function () {} }, hs = { job: '' };
     AW.modal({
       title: '이력 관리', wide: true,
       body: '<div class="tabs"><button class="tab on" data-t="batch">발급(출력) 이력</button><button class="tab" data-t="ver">양식 버전</button><button class="tab" data-t="reg">발급 대장(인증번호)</button><button class="tab" data-t="log">활동 기록</button></div><div id="hs-body" class="hs-body"><div class="loading">불러오는 중…</div></div>',
@@ -248,11 +248,15 @@
       AW.$$('.tab', m.el).forEach(function (x) { x.classList.toggle('on', x.dataset.t === t); });
       body().innerHTML = '<div class="loading">불러오는 중…</div>';
       if (t === 'batch') AW.call('award_batch_list').then(function (l) {
-        body().innerHTML = l.length ? '<div class="tbl-wrap"><table class="gt"><thead><tr><th>일시</th><th>양식</th><th>이름</th><th>장수</th><th>첫 행</th><th></th></tr></thead><tbody>' + l.map(function (b) {
-          var first = b.first ? Object.keys(b.first).slice(0, 3).map(function (k) { return b.first[k]; }).join(' · ') : '';
-          return '<tr><td class="nowrap">' + dt(b.created_at) + '</td><td>' + AW.esc(b.tpl_name) + '</td><td>' + AW.esc(b.label) + '</td><td class="c">' + b.cnt + '</td><td class="where">' + AW.esc(first) + '</td>' +
-            '<td class="nowrap"><button class="btn btn-secondary btn-sm" data-b="' + b.id + '" data-m="load">데이터 불러오기</button> <button class="btn btn-ghost btn-sm" data-b="' + b.id + '" data-m="again">다시 출력</button></td></tr>';
-        }).join('') + '</tbody></table></div><p class="muted">최근 300건까지 보관합니다. 출력할 때의 양식·데이터가 그대로 저장되므로 나중에 같은 내용으로 다시 출력할 수 있습니다.</p>' : '<div class="empty">아직 발급(출력) 이력이 없습니다.</div>';
+        var jobs = {}; l.forEach(function (b) { if (b.job_name) jobs[b.job_name] = 1; }); var jn = Object.keys(jobs), flt = hs.job || '';
+        var rows = l.filter(function (b) { return !flt || (flt === '\u0001' ? !b.job_name : b.job_name === flt); });
+        body().innerHTML = (jn.length ? '<div class="hs-flt"><label class="mini" for="hs-j"><b>작업별 보기</b></label> <select class="in sm" id="hs-j"><option value="">전체</option><option value="\u0001"' + (flt === '\u0001' ? ' selected' : '') + '>작업 구분 없음</option>' + jn.map(function (n) { return '<option' + (n === flt ? ' selected' : '') + '>' + AW.esc(n) + '</option>'; }).join('') + '</select></div>' : '') +
+          (rows.length ? '<div class="tbl-wrap"><table class="gt"><thead><tr><th>일시</th><th>양식</th><th>작업</th><th>이름</th><th>장수</th><th>첫 행</th><th></th></tr></thead><tbody>' + rows.map(function (b) {
+          var first = b.first ? Object.keys(b.first).filter(function (k) { return k.charAt(0) !== '_'; }).slice(0, 3).map(function (k) { return b.first[k]; }).join(' · ') : '';
+          return '<tr><td class="nowrap">' + dt(b.created_at) + '</td><td>' + AW.esc(b.tpl_name) + '</td><td>' + (b.job_name ? '<span class="badge">' + AW.esc(b.job_name) + '</span>' : '<span class="muted">-</span>') + '</td><td>' + AW.esc(b.label) + '</td><td class="c">' + b.cnt + '</td><td class="where">' + AW.esc(first) + '</td>' +
+            '<td class="nowrap"><button class="btn btn-secondary btn-sm" data-b="' + b.id + '" data-m="view">출력 화면 보기</button> <button class="btn btn-ghost btn-sm" data-b="' + b.id + '" data-m="load">데이터 불러오기</button> <button class="btn btn-ghost btn-sm" data-b="' + b.id + '" data-m="again">다시 출력</button></td></tr>';
+        }).join('') + '</tbody></table></div><p class="muted">최근 300건까지 보관합니다. 출력할 때의 양식·데이터가 그대로 저장되므로 나중에 같은 내용으로 다시 보거나 출력할 수 있습니다.</p>' : '<div class="empty">발급(출력) 이력이 없습니다.</div>');
+        var sj = AW.$('#hs-j', body()); if (sj) sj.onchange = function () { hs.job = sj.value; show('batch'); };
         AW.$$('[data-b]', body()).forEach(function (b) { b.onclick = function () { batchAct(b.dataset.b, b.dataset.m, m.close); }; });
       }).catch(err);
       if (t === 'ver') {
@@ -285,9 +289,26 @@
     }
     function err(e) { body().innerHTML = '<div class="alert warn">' + AW.esc(e.message) + '</div>'; }
   };
+  // 발급 이력의 출력 화면 다시 보기 (저장된 양식·데이터를 그대로 렌더링, 한 장씩 보기 · 배경은 현재 양식의 배경 사용)
+  Out.viewBatch = function (b) {
+    var sameTpl = b.tpl_id && b.tpl_id === T().id, sn = b.snap || {};
+    var tpl = Object.assign({}, sameTpl ? T() : { bg: null }, { page: sn.page || T().page, elems: sn.elems || T().elems, fields: sn.fields || T().fields, rows: b.rows });
+    var i = 0, n = b.rows.length, m = { el: null };
+    AW.modal({ title: '출력 화면 — ' + AW.esc(b.label || '') + (sn.job && sn.job.name ? ' · ' + AW.esc(sn.job.name) : ''), wide: true,
+      body: '<div class="vb-bar"><button class="btn btn-secondary btn-sm" data-v="-1">이전</button> <input class="in sm" id="vb-n" type="number" min="1" max="' + n + '" value="1" style="width:64px"> / ' + n + ' <button class="btn btn-secondary btn-sm" data-v="1">다음</button><span class="muted" style="margin-left:10px">' + dt2(b.created_at) + ' 출력</span></div><div class="vb-st pv-stage" id="vb-st"></div>' + (sameTpl ? '' : '<p class="muted">다른 양식의 이력이므로 배경 이미지는 표시되지 않습니다.</p>'),
+      actions: [{ label: '닫기', cls: 'btn-ghost' }],
+      onOpen: function (el) { m.el = el; draw(); AW.$$('[data-v]', el).forEach(function (x) { x.onclick = function () { go(i + (+x.dataset.v)); }; }); AW.$('#vb-n', el).onchange = function (e) { go((parseInt(e.target.value, 10) || 1) - 1); }; } });
+    function dt2(s) { return AW.fmtTime(s); }
+    function go(k) { i = Math.max(0, Math.min(n - 1, k)); AW.$('#vb-n', m.el).value = i + 1; draw(); }
+    function draw() {
+      var st = AW.$('#vb-st', m.el); if (!st) return; var w = Math.max(240, st.clientWidth - 24), h = Math.max(200, Math.min(window.innerHeight * 0.6, 640)), k = Math.min(w / tpl.page.w, h / tpl.page.h);
+      st.innerHTML = ''; var box = document.createElement('div'); box.className = 'pv-sheet'; var pg = AW.renderPage(tpl, { scale: k, mode: 'view', row: b.rows[i], idx: i }); box.appendChild(pg); st.appendChild(box); AW.fitAll(pg);
+    }
+  };
   function batchAct(id, mode, closeModal) {
     AW.call('award_batch_get', { p_id: id }).then(function (b) {
       if (!b) throw new Error('이력을 찾을 수 없습니다.');
+      if (mode === 'view') return Out.viewBatch(b);
       if (mode === 'load') {
         var names = T().fields.map(function (f) { return f.name; }), keys = b.rows[0] ? Object.keys(b.rows[0]) : [], hit = names.filter(function (n) { return keys.indexOf(n) >= 0; }).length;
         return AW.confirm('데이터 불러오기', b.cnt + '행을 현재 양식의 데이터로 불러옵니다.\n항목 일치 ' + hit + '/' + names.length + '개. 현재 입력된 ' + T().rows.length + '행은 대체됩니다.', '불러오기').then(function (ok) {

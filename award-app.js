@@ -57,7 +57,7 @@
       s.innerHTML = '<div class="ph"><button class="ph-t" data-col="' + p[0] + '" title="접기/펼치기"><span class="ph-n">' + p[1] + '</span>' + AW.ic('chevL', 16) + '</button></div><div class="pb" id="pb-' + p[0] + '"></div>';
       pn.appendChild(s);
     });
-    AW.Editor.mount($('#pb-edit')); AW.Data.mount($('#pb-data')); AW.Preview.mount($('#pb-prev'));
+    AW.Editor.mount($('#pb-edit')); AW.Data.mount($('#pb-data')); AW.Job.mount($('#pb-data')); AW.Preview.mount($('#pb-prev'));
     applyLayout();
     $('.shell').addEventListener('click', onShell);
     $('#t-lay').onchange = function (e) { if (e.target.value) { lay.w = AW.clone(PRESETS[e.target.value]); lay.c = {}; applyLayout(); saveLayout(); } e.target.value = ''; };
@@ -78,7 +78,7 @@
     var b = $('[data-a="usr"]').getBoundingClientRect(), I = function (label, ic, fn, key, on) { return { k: 'i', label: label, ic: ic, fn: fn, key: key, on: on }; }, E = AW.Editor;
     E.menuAt(Math.max(8, b.right - 250), b.bottom + 4, [I('단축키 · 마우스 조합 보기', 'info', function () { E.act('keys'); }), { k: 'sep' },
       I('격자 · 자석 · 이동 간격 설정…', 'cols', function () { E.act('gridcfg'); }), I('눈금자 보기/숨기기', 'cols', function () { E.act('ruler'); }, 'Alt+R'), I('격자선 보기/숨기기', 'grid', function () { E.act('gridshow'); }, 'Alt+G'), { k: 'sep' },
-      I('발급번호 규칙…', 'edit', function () { AW.Output.numDialog(); }), I('발급 대장 · 인증번호', 'check', function () { AW.History.open('reg'); }), { k: 'sep' },
+      I('작업 관리 (월별·건별)…', 'cols', function () { AW.Job.manage(); }), I('발급번호 규칙…', 'edit', function () { AW.Output.numDialog(); }), I('발급 대장 · 인증번호', 'check', function () { AW.History.open('reg'); }), { k: 'sep' },
       I('내 글꼴 관리 (업로드)…', 'text', function () { AW.Output.fontDialog(); }), I('번역 용어집(직급·학과)…', 'edit', function () { AW.AI.glossDialog(); }), I('AI 연결 테스트', 'sparkle', function () { AW.AI.test(false); }), { k: 'sep' }, I('로그아웃', 'logout', logout)]);
   }
   function applyLayout() {
@@ -128,11 +128,12 @@
     if (saving) { again = true; return Promise.resolve(); }
     clearTimeout(timer); if (!S.dirty && !o.force && t.id) { if (o.toast) AW.toast('변경 사항이 없습니다.'); return Promise.resolve(); }
     saving = true; S.saveErr = ''; setStat(); var r0 = rev, bgSent = S.bgDirty;
-    return AW.call('award_tpl_save', { p_id: t.id, p_base_ver: t.ver || 0, p_force: !!o.force, p_name: t.name, p_page: t.page, p_elems: t.elems, p_fields: t.fields, p_rows: t.rows,
+    return AW.call('award_tpl_save', { p_id: t.id, p_base_ver: t.ver || 0, p_force: !!o.force, p_name: t.name, p_page: t.page, p_elems: t.elems, p_fields: t.fields, p_rows: S.jobId ? null : t.rows,
       p_bg: bgSent ? (t.bg || '') : null, p_bg_name: t.bgName || '', p_note: o.note || '' }).then(function (r) {
       if (!r.ok) { if (r.error === 'CONFLICT') return conflict(r); throw new Error(r.error); }
       t.id = r.id; t.ver = r.ver; S.savedAt = new Date(); if (rev === r0) S.dirty = false; if (bgSent) S.bgDirty = false;
       AW.lsSet(LAST_KEY, t.id); if (o.toast) AW.toast('저장했습니다.', 'ok');
+      return AW.Job.saveRows().then(function () { if (!S.jobs.length || !t.id) AW.Job.load(); });
     }).catch(function (e) { S.saveErr = e.message || '오류'; if (o.toast) AW.toast('저장 실패: ' + S.saveErr, 'error'); }).then(function () {
       saving = false; setStat(); if (again || (S.dirty && !S.saveErr && rev !== r0)) { again = false; timer = setTimeout(function () { save({ note: '자동 저장' }); }, 600); }
     });
@@ -149,13 +150,14 @@
   /* ───────────── 양식 열기·만들기·목록 ───────────── */
   function renderAll() {
     var t = S.tpl; $('#t-name').value = t.name; S.sel = []; S.row = Math.min(S.row, Math.max(0, t.rows.length - 1)); AW.syncFields();
-    S.seenPrev = false; S.printed = false; S.sampleOnly = false;
+    S.seenPrev = false; S.printed = false; S.sampleOnly = false; AW.Job.reset();
     AW.Editor.render(); AW.Editor.resetHist(); AW.Data.refresh(true); AW.Preview.render(); setStat(); steps();
     AW.ensureFontsFor(t).then(function (n) { if (n) { AW.Editor.render(); AW.Preview.render(); } });
   }
   function openTpl(id) {
     return AW.call('award_tpl_get', { p_id: id }).then(function (r) {
       S.tpl = AW.fromServer(r); S.dirty = false; S.bgDirty = false; S.row = 0; S.saveErr = ''; S.savedAt = new Date(r.updated_at); AW.lsSet(LAST_KEY, id); renderAll();
+      return AW.Job.afterOpen().then(function () { AW.Preview.render(); steps(); });
     });
   }
   function newTpl() {
