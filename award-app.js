@@ -78,7 +78,7 @@
     var b = $('[data-a="usr"]').getBoundingClientRect(), I = function (label, ic, fn, key, on) { return { k: 'i', label: label, ic: ic, fn: fn, key: key, on: on }; }, E = AW.Editor;
     E.menuAt(Math.max(8, b.right - 250), b.bottom + 4, [I('단축키 · 마우스 조합 보기', 'info', function () { E.act('keys'); }), { k: 'sep' },
       I('격자 · 자석 · 이동 간격 설정…', 'cols', function () { E.act('gridcfg'); }), I('눈금자 보기/숨기기', 'cols', function () { E.act('ruler'); }, 'Alt+R'), I('격자선 보기/숨기기', 'grid', function () { E.act('gridshow'); }, 'Alt+G'), { k: 'sep' },
-      I('현재 양식 복제', 'copy', function () { A.duplicate(); }), I('작업 관리 (월별·건별)…', 'cols', function () { AW.Job.manage(); }), I('발급번호 규칙…', 'edit', function () { AW.Output.numDialog(); }), I('발급 대장 · 인증번호', 'check', function () { AW.History.open('reg'); }), { k: 'sep' },
+      I('스캔본으로 양식 자동 만들기 (AI)', 'sparkle', function () { AW.Scan.open(); }), I('현재 양식 복제', 'copy', function () { A.duplicate(); }), I('작업 관리 (월별·건별)…', 'cols', function () { AW.Job.manage(); }), I('발급번호 규칙…', 'edit', function () { AW.Output.numDialog(); }), I('발급 대장 · 인증번호', 'check', function () { AW.History.open('reg'); }), { k: 'sep' },
       I('내 글꼴 관리 (업로드)…', 'text', function () { AW.Output.fontDialog(); }), I('번역 용어집(직급·학과)…', 'edit', function () { AW.AI.glossDialog(); }), I('AI 연결 테스트', 'sparkle', function () { AW.AI.test(false); }), { k: 'sep' }, I('로그아웃', 'logout', logout)]);
   }
   function applyLayout() {
@@ -167,7 +167,7 @@
   function listDialog() {
     var go = function () {
       var m = AW.modal({ title: '양식 목록', wide: true, body: '<div id="tl-body"><div class="loading">불러오는 중…</div></div>',
-        actions: [{ label: '닫기', cls: 'btn-ghost' }, { label: AW.ic('plus', 16) + ' 새 양식 만들기', cls: 'btn-primary', onClick: function (c) { c(); save({ note: '' }).then(newTpl); } }] });
+        actions: [{ label: '닫기', cls: 'btn-ghost' }, { label: AW.ic('sparkle', 16) + ' 스캔본으로 만들기 (AI)', cls: 'btn-secondary', onClick: function (c) { c(); AW.Scan.open(); } }, { label: AW.ic('plus', 16) + ' 새 양식 만들기', cls: 'btn-primary', onClick: function (c) { c(); save({ note: '' }).then(newTpl); } }] });
       AW.call('award_tpl_list').then(function (l) {
         var b = $('#tl-body', m.el); if (!b) return;
         b.innerHTML = l.length ? '<div class="cards">' + l.map(function (x) {

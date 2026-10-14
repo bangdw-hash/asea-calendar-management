@@ -794,6 +794,12 @@
     });
     return best;
   }
+  E.readSource = function (file, maxPx) {   // 스캔 도우미용: JPG·PNG·PDF → 이미지 data URL
+    var isPdf = /pdf$/i.test(file.type) || /\.pdf$/i.test(file.name);
+    if (!isPdf && !/^image\//.test(file.type)) return Promise.reject(new Error('JPG·PNG·PDF 파일만 올릴 수 있습니다.'));
+    if (file.size > 30 * 1024 * 1024) return Promise.reject(new Error('파일이 너무 큽니다(30MB 이하).'));
+    return isPdf ? pdfPage(file, maxPx) : readImage(file, maxPx || 2480, 'image/jpeg');
+  };
   E.loadBackgroundFile = function (file) {
     var isPdf = /pdf$/i.test(file.type) || /\.pdf$/i.test(file.name);
     if (!isPdf && !/^image\//.test(file.type)) return AW.toast('JPG·PNG·PDF 파일만 올릴 수 있습니다.', 'error');
