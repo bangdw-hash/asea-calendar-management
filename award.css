@@ -228,3 +228,6 @@ table{border-collapse:collapse;width:100%}
 .ed-wrap.rul{padding:18px 0 0 18px}.rl{position:absolute;cursor:crosshair;display:block}.rl-top{left:18px;top:0}.rl-left{left:0;top:18px}
 .ed-pg .np{outline:1.5px dashed #F59E0B!important;outline-offset:-1px}
 .npb{font-size:11px;color:#B06000;background:var(--amber-lt);border-radius:8px;padding:0 6px;white-space:nowrap}
+@font-face{font-family:'KoPubWorld Dotum';font-weight:300;src:url(fonts/KoPubWorld-Dotum-Light.ttf) format('truetype');font-display:swap}
+@font-face{font-family:'KoPubWorld Dotum';font-weight:500;src:url(fonts/KoPubWorld-Dotum-Medium.ttf) format('truetype');font-display:swap}
+@font-face{font-family:'KoPubWorld Dotum';font-weight:700;src:url(fonts/KoPubWorld-Dotum-Bold.ttf) format('truetype');font-display:swap}

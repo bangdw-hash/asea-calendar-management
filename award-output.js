@@ -122,6 +122,7 @@
         '<div class="grid2" style="margin-top:12px"><div><label class="f">가로 보정(mm)</label><input class="in num" id="o-dx" type="number" step="0.1" value="' + (AW.lsGet('award_dx', 0)) + '"></div><div><label class="f">세로 보정(mm)</label><input class="in num" id="o-dy" type="number" step="0.1" value="' + (AW.lsGet('award_dy', 0)) + '"></div></div>' +
         '<span class="muted">프린터 인쇄 위치가 어긋날 때 사용합니다(+ 는 오른쪽·아래). 시험 인쇄 후 조정하십시오.</span>' +
         '<label class="f" style="margin-top:12px">발급 이력 이름 <span class="muted">(선택)</span></label><input class="in" id="o-lb" maxlength="60" placeholder="예: 2026학년도 졸업식 우수상">' +
+        (AW.missingFonts().length ? '<div class="alert warn" style="margin-top:12px">' + AW.ic('warn', 16) + ' 이 PC에 설치되어 있지 않은 글꼴(' + AW.esc(AW.missingFonts().join(', ')) + ')이 사용되었습니다. 인쇄하면 다른 글꼴로 대체됩니다. 글꼴을 설치하거나 나눔명조·노토 세리프 등 웹 글꼴로 바꿔 주십시오.</div>' : '') +
         ((v.miss || v.long) ? '<div class="alert warn" style="margin-top:12px">' + AW.ic('warn', 16) + ' 필수 항목 누락 ' + v.miss + '칸 · 길이 초과 ' + v.long + '칸이 있습니다. 데이터 입력창에서 붉게 표시된 칸을 확인하십시오.</div>' : '') +
         '<p class="muted" style="margin:12px 0 0">「인쇄」를 누르면 브라우저 인쇄창이 열립니다. 대상(프린터)을 <b>PDF로 저장</b>으로 바꾸면 파일로 저장됩니다. 인쇄창에서 여백 <b>없음</b>, 배율 <b>100%</b>, 「배경 그래픽」 <b>켜기</b>를 선택하십시오.</p>',
       actions: [{ label: '취소', cls: 'btn-ghost' }, { label: AW.ic('print', 16) + ' 인쇄', cls: 'btn-primary', onClick: function (c) { go(c); } }],
