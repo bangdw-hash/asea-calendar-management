@@ -202,7 +202,8 @@
     return h;
   }
   // 담당자 정보가 등록되어 있으면 학생 화면에 과목과 함께 표시합니다. (라벨에 「교수」가 있으면 「교수」를 붙임)
-  function profText(c) { if (!c.prof) return ''; var lb = ((S.def && S.def.link && S.def.link.cols || {}).prof || {}).label || '담당교수'; return c.prof + (/교수/.test(lb) ? ' 교수' : ''); }
+  function hideProf() { return !!(S.def && S.def.link && S.def.link.hideProf); }
+  function profText(c) { if (!c.prof || hideProf()) return ''; var lb = ((S.def && S.def.link && S.def.link.cols || {}).prof || {}).label || '담당교수'; return c.prof + (/교수/.test(lb) ? ' 교수' : ''); }
   function courseHead(c, idx) {
     var s = courseStat(c.id), done = s.total > 0 && s.done === s.total;
     return '<button type="button" class="course-head" data-act="toggle" data-cid="' + c.id + '" aria-expanded="' + (S.open === c.id) + '">' +
@@ -267,7 +268,7 @@
   /* ───────────── 화면: 평가(아코디언) ───────────── */
   /* ───────────── 화면: 평가 — B형(질문 중심 표) ───────────── */
   function isMatrix() { return !isGen() && !!S.def && S.def.view === 'matrix'; }
-  function rowOf(c) { var lb = ((S.def && S.def.link && S.def.link.cols || {}).prof || {}).label || '담당교수'; return { id: c.id, name: c.name, kind: c.kind || '', prof: c.prof || '', suffix: /교수/.test(lb) ? '교수' : '' }; }
+  function rowOf(c) { var lb = ((S.def && S.def.link && S.def.link.cols || {}).prof || {}).label || '담당교수'; return { id: c.id, name: c.name, kind: c.kind || '', prof: hideProf() ? '' : (c.prof || ''), suffix: /교수/.test(lb) ? '교수' : '' }; }
   function matrixBody() {
     var list = myCourses(), h = '';
     groupBySection(qs('course', false)).forEach(function (g) {
