@@ -259,6 +259,7 @@ body.pvopen .livepv{display:flex}
 @media (min-width:1180px){
   body.pvopen.adm .wrap{max-width:none;margin-left:0;margin-right:450px}
   body.pvopen.adm .hdr-in{max-width:none;margin-right:450px}
+  body.pvopen.adm .stabs-in{max-width:none;margin-right:450px}
   body.pvopen .modal-bg{padding-right:460px}
   body.pvopen .toast{margin-right:225px}
   body.pvopen .aipvcol{display:none}
@@ -321,7 +322,7 @@ details.adv>summary small{font-weight:400;color:var(--text-2);margin-left:6px}
 .pvdev button{padding:5px 14px;font-size:12.5px;background:#fff;border:0}
 .pvdev button+button{border-left:1px solid var(--border-2)}
 .pvdev button.on{background:var(--primary);color:var(--on-primary);font-weight:700}
-@media (min-width:1180px){body.pvopen:has(.livepv.wide).adm .wrap{margin-right:770px}body.pvopen:has(.livepv.wide).adm .hdr-in{margin-right:770px}}
+@media (min-width:1180px){body.pvopen:has(.livepv.wide).adm .wrap{margin-right:770px}body.pvopen:has(.livepv.wide).adm .hdr-in{margin-right:770px}body.pvopen:has(.livepv.wide).adm .stabs-in{margin-right:770px}}
 
 /* ───────── 새 설문 만들기(카드 갤러리) · 양식 라이브러리 ───────── */
 .quick{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}
@@ -438,3 +439,33 @@ body:has(.aibar){padding-bottom:230px}
 @keyframes aipspin{to{transform:rotate(360deg)}}
 .aip-msg{margin-top:8px;font-size:13px}
 .aip-act{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+/* 리포트 편집기·목록 */
+.modal.xxl{max-width:min(1320px,96vw);max-height:92vh;overflow:auto}
+.edlab{margin:0 0 6px;font-size:13px}
+.rptsel tbody tr.selrow{cursor:pointer;user-select:none}
+.rptsel tbody tr.selrow:hover td{background:#f1f5f9}
+.rptsel tbody tr.selrow.sel td{background:var(--primary-lt)}
+.rptsel th.thsort:hover{background:#eef2f7}.rptsel th.sorted{color:var(--primary-dk)}
+.rptsel .srt{font-size:11px;color:var(--primary)}
+/* 작업 탭 바 (크롬 탭 방식) */
+.stabs{background:#e8edf3;border-bottom:1px solid var(--border)}
+.stabs-in{max-width:1240px;margin:0 auto;padding:6px 20px 0;display:flex;align-items:flex-end;gap:2px;overflow-x:auto;scrollbar-width:thin}
+.stab{position:relative;display:flex;align-items:center;gap:6px;flex:0 1 210px;min-width:92px;height:36px;padding:0 8px 0 12px;border-radius:var(--r) var(--r) 0 0;background:transparent;color:var(--text-2);font-size:13px;cursor:pointer;user-select:none;border:1px solid transparent;border-bottom:0;white-space:nowrap}
+.stab:hover{background:rgba(255,255,255,.6)}
+.stab.on{background:#fff;color:var(--text);font-weight:600;border-color:var(--border);box-shadow:0 -1px 0 var(--primary) inset}
+.stab.home{flex:0 0 auto;padding-right:14px}
+.stab .tt{overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0}
+.stab .sdot{width:8px;height:8px;border-radius:50%;flex:none;background:#94a3b8}.stab .sdot.open{background:var(--green)}.stab .sdot.draft{background:#94a3b8}.stab .sdot.done{background:var(--primary)}
+.stab .sdirty{color:var(--orange);font-size:11px;flex:none}
+.stab .snew{background:var(--green-lt);color:var(--green);border-radius:var(--r);padding:0 6px;font-size:11px;font-weight:700;flex:none}
+.stab .sx{border:0;background:transparent;border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;color:var(--text-2);flex:none;padding:0;cursor:pointer}
+.stab .sx:hover{background:#cbd5e1;color:var(--text)}
+.stabs .sadd,.stabs .sico{border:0;background:transparent;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--text-2);margin-bottom:3px;flex:none;cursor:pointer}
+.stabs .sadd:hover,.stabs .sico:hover{background:rgba(255,255,255,.8);color:var(--text)}
+.stabs .sp{flex:1}
+.smenu{position:fixed;z-index:3000;background:#fff;border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--sh-lg);padding:6px;min-width:240px;display:flex;flex-direction:column}
+.smenu button{border:0;background:transparent;text-align:left;padding:8px 12px;border-radius:8px;font-size:13px;cursor:pointer}
+.smenu button:hover:not(:disabled){background:var(--primary-lt)}.smenu button:disabled{color:#94a3b8;cursor:default}
+.prow{display:flex;gap:14px;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)}
+.prefs-modal{max-width:640px!important}
+@media (max-width:700px){.stab{flex-basis:140px}}
