@@ -324,7 +324,11 @@
   function render() {
     var body = document.getElementById('gbody'); if (!body) return;
     var rows = pick(), y = window.scrollY, focus = document.activeElement && document.activeElement.id === 'gkw';
-    body.parentNode.classList.toggle('gcmp', !!LEGSUB[G.sub]); var gs0 = document.getElementById('gsinc'), gd0 = document.getElementById('gdata'); if (gs0) gs0.value = A.ext.F.sincere; if (gd0) gd0.value = A.ext.F.data; if (LEGSUB[G.sub]) { if (body.getAttribute('data-legacy') !== G.sub) { body.setAttribute('data-legacy', G.sub); body.className = ''; body.innerHTML = ''; A.ext.rsub = A.ext.rsubInit = G.sub === 'legacy' ? 'sum' : G.sub; A.ext.keepShared = true; orig(body); } return; }
+    body.parentNode.classList.toggle('gcmp', !!LEGSUB[G.sub]); var gs0 = document.getElementById('gsinc'), gd0 = document.getElementById('gdata'); if (gs0) gs0.value = A.ext.F.sincere; if (gd0) gd0.value = A.ext.F.data; if (LEGSUB[G.sub]) {
+      var lk = legKey(G.sub), ru = RPTU[G.sub];
+      if (ru && A.ext.rpt && A.ext.rpt.unit !== ru) { A.ext.rpt.unit = ru; A.ext.rpt.sel = {}; A.ext.rpt.q = ''; var mt = document.getElementById('rptmount'); if (mt && body.getAttribute('data-legacy') === 'rpt') { mt.removeAttribute('data-rpt'); A.ext.reportUI(mt); return; } }
+      if (body.getAttribute('data-legacy') !== lk) { body.setAttribute('data-legacy', lk); body.className = ''; body.innerHTML = ''; A.ext.rsub = A.ext.rsubInit = G.sub === 'legacy' ? 'sum' : lk; A.ext.keepShared = true; orig(body); } return;
+    }
     body.removeAttribute('data-legacy'); body.className = ''; body.innerHTML = G.sub === 'hist' ? viewHist() : G.sub === 'rep' ? viewReport() : G.sub === 'sum' ? viewSummary(rows) : G.sub === 'q' ? viewQuestions(rows) : viewResp();
     if (focus) { var n = document.getElementById('gkw'); if (n) { n.focus(); n.setSelectionRange(n.value.length, n.value.length); } }
     window.scrollTo(0, y); live();
@@ -355,18 +359,27 @@
   }
 
   /* ───────────── 탭 ───────────── */
-  var LEGSUB = { legacy: 1, cmp: 1, det: 1, same: 1, live: 1, rpt: 1 };
+  var LEGSUB = { legacy: 1, cmp: 1, det: 1, same: 1, live: 1, rpt: 1, trk: 1, cls: 1, prf: 1, sbj: 1 };
+  var RPTU = { trk: 'track', cls: 'klass', prf: 'prof', sbj: 'subject' };   // 분석 메뉴 → 리포트 단위
+  var ANA = [['trk', '계열별 분석'], ['cls', '반별 분석'], ['prf', '교수별 분석'], ['sbj', '과목별 분석'], ['cmp', '비교'], ['det', '조건 검출'], ['same', '같은 과목'], ['live', '참여 현황']];
+  function legKey(s) { return RPTU[s] ? 'rpt' : s; }
+  function isAna(s) { return ANA.some(function (a) { return a[0] === s; }); }
+  // 탭 2단: 위 줄 = 주 메뉴, 아래 줄 = 「분석」 하위 메뉴 (가로 스크롤 없이 줄바꿈)
+  function tabsHtml() {
+    var top = [['rep', '리포트']].concat(isCourse() ? [['ana', '분석']] : []).concat([['q', '문항 상세'], ['resp', '개별 응답']]).concat(isCourse() ? [['legacy', '과목·교수 현황판']] : []).concat([['hist', '이력 비교']]), inAna = isAna(G.sub);
+    return '<div class="tabs gtabs">' + top.map(function (s) { return '<button class="tab" data-act="gsub" data-s="' + s[0] + '" aria-selected="' + (s[0] === 'ana' ? inAna : G.sub === s[0]) + '">' + s[1] + '</button>'; }).join('') + '</div>' +
+      (inAna ? '<div class="gpills">' + ANA.map(function (s) { return '<button class="pill" data-act="gsub" data-s="' + s[0] + '" aria-selected="' + (G.sub === s[0]) + '">' + s[1] + '</button>'; }).join('') + '</div>' : '');
+  }
   async function general(box) {
     if (G.sid !== A.cur.survey.id) { G.sid = A.cur.survey.id; G.rows = []; G.maxSeq = 0; G.sub = 'rep'; G.page = 1; G.kw = ''; G.x = {}; G.cmp = null; G._flatFor = ''; A.ext.F.data = A.cur.survey.test_mode ? 'test' : 'real'; A.ext.F.sincere = 'all'; }
-    var SUBS = [['rep', '리포트']].concat(isCourse() ? [['cmp', '비교'], ['det', '조건 검출'], ['same', '같은 과목'], ['live', '참여 현황'], ['rpt', '리포트 생성']] : []).concat([['q', '문항 상세'], ['resp', '개별 응답']]).concat(isCourse() ? [['legacy', '과목·교수 현황판']] : []).concat([['hist', '이력 비교']]);
-    box.innerHTML = '<div class="row" style="margin-bottom:12px"><div class="tabs" style="margin:0;border:0;flex:1">' + SUBS.map(function (s) { return '<button class="tab" data-act="gsub" data-s="' + s[0] + '" aria-selected="' + (G.sub === s[0]) + '">' + s[1] + '</button>'; }).join('') + '</div><span id="glive" class="live"></span><button class="btn btn-ghost btn-sm" data-act="glivetoggle">일시정지/재개</button><button class="btn btn-secondary btn-sm" data-act="greload">' + I('refresh', 14) + ' 새로고침</button><button class="btn btn-primary btn-sm" data-act="gxlsx">' + I('download', 14) + ' 엑셀 내려받기</button><button class="btn btn-secondary btn-sm" data-act="gpdf">PDF</button><button class="btn btn-secondary btn-sm" data-act="gprint">인쇄</button></div>' +
+    box.innerHTML = '<div id="gtabs">' + tabsHtml() + '</div><div class="row gtools" style="margin:8px 0 12px"><span id="glive" class="live"></span><span class="sp"></span><button class="btn btn-ghost btn-sm" data-act="glivetoggle">일시정지/재개</button><button class="btn btn-secondary btn-sm" data-act="greload">' + I('refresh', 14) + ' 새로고침</button><button class="btn btn-primary btn-sm" data-act="gxlsx">' + I('download', 14) + ' 엑셀 내려받기</button><button class="btn btn-secondary btn-sm" data-act="gpdf">PDF</button><button class="btn btn-secondary btn-sm" data-act="gprint">인쇄</button></div>' +
       '<div class="filters"><div><label class="f">데이터</label><select class="fld" id="gdata"><option value="real"' + (A.ext.F.data === 'real' ? ' selected' : '') + '>정식 응답</option><option value="test"' + (A.ext.F.data === 'test' ? ' selected' : '') + '>테스트 응답</option><option value="all"' + (A.ext.F.data === 'all' ? ' selected' : '') + '>정식+테스트</option></select></div><div><label class="f">응답 범위(유효성)</label><select class="fld" id="gsinc">' + Object.keys(A.ext.SINC).map(function (k) { return '<option value="' + k + '"' + (A.ext.F.sincere === k ? ' selected' : '') + '>' + SVY.esc(A.ext.SINC[k]) + '</option>'; }).join('') + '</select></div></div><div id="gbody" class="loading">불러오는 중…</div>';
     box.onchange = function (e) { if (e.target.id === 'gsinc') { A.ext.F.sincere = e.target.value; G.page = 1; render(); } if (e.target.id === 'gdata') { A.ext.F.data = e.target.value; G.page = 1; render(); } };
     box.oninput = function (e) { if (e.target.id === 'gkw') { G.kw = e.target.value; G.page = 1; clearTimeout(G._k); G._k = setTimeout(render, 250); } };
     box.onclick = async function (e) {
       var t = e.target.closest('[data-act]'); if (!t) return; var act = t.getAttribute('data-act');
       if (act === 'gcmp') { var oid = t.getAttribute('data-id'); G.cmp = { loading: true }; G.sub = 'hist'; render(); try { var o = await loadOther(oid); G.cmp = { title: o.title, m: metricsOf(o.def, o.rows.filter(function (r) { return A.ext.sincereOk(r); }), null) }; } catch (er) { G.cmp = { err: er.message }; } render(); return; }
-      if (act === 'gsub') { if (LEGSUB[G.sub] && t.getAttribute('data-s') !== G.sub && A.R) A.R.sid = ''; G.sub = t.getAttribute('data-s'); box.querySelectorAll('[data-act=gsub]').forEach(function (b) { b.setAttribute('aria-selected', b === t); }); G.page = 1; render(); }
+      if (act === 'gsub') { var ns0 = t.getAttribute('data-s'); if (ns0 === 'ana') ns0 = isAna(G.last) ? G.last : 'trk'; if (LEGSUB[G.sub] && legKey(ns0) !== legKey(G.sub) && A.R) A.R.sid = ''; G.sub = ns0; if (isAna(ns0)) G.last = ns0; document.getElementById('gtabs').innerHTML = tabsHtml(); G.page = 1; render(); }
       else if (act === 'glivetoggle') { G.live = !G.live; live(); if (G.live) poll(); }
       else if (act === 'greload') fullLoad().then(function () { render(); A.toast('새로 불러왔습니다.'); }).catch(function (er) { A.toast(er.message, 'err'); });
       else if (act === 'gxlsx') exportXlsx();

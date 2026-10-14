@@ -412,3 +412,10 @@ body:has(.aibar){padding-bottom:230px}
 .tipbox ol{margin:6px 0 0;padding-left:20px;font-size:13px}
 .tipbox li{margin:2px 0}
 .tipbox.min{padding:2px 6px;border-style:dashed;background:#fff}
+/* 결과 화면 탭: 줄바꿈(가로 스크롤 없음) + 분석 하위 메뉴 */
+.gtabs{flex-wrap:wrap;overflow-x:visible;margin-bottom:8px}
+.gpills{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 12px}
+.pill{border:1px solid var(--border);background:var(--surface,#fff);color:var(--text-2);border-radius:var(--r,12px);padding:6px 12px;font-weight:500;cursor:pointer}
+.pill:hover{color:var(--text)}
+.pill[aria-selected="true"]{background:var(--primary-lt);border-color:var(--primary);color:var(--primary-dk);font-weight:700}
+.gtools{flex-wrap:wrap}
