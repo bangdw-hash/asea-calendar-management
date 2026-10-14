@@ -322,7 +322,9 @@
     box.innerHTML = '<div class="grid2"><div class="card"><h3>엑셀 내보내기</h3><p class="muted">시트 구성: 기초자료(2026 xlsm 열 구조 동일) · 종합 · 증감분석 · ' + (A.data.settings ? A.data.settings.base_year : A.year - 1) + ' 사용내역</p>' +
       '<div class="acts"><button class="btn btn-primary" id="ex-all">' + ico('download', 16) + ' 전체 내보내기</button><button class="btn btn-secondary" id="ex-conf">확정된 건만</button></div></div>' +
       '<div class="card"><h3>인쇄 · PDF</h3><p class="muted">브라우저 인쇄 창에서 「PDF로 저장」을 선택하면 PDF가 만들어집니다.</p>' +
-      '<div class="acts"><button class="btn btn-primary" id="pr-sum">' + ico('print', 16) + ' 종합만 인쇄</button><button class="btn btn-secondary" id="pr-all">부서별 상세 포함</button></div></div></div>';
+      '<div class="acts"><button class="btn btn-primary" id="pr-sum">' + ico('print', 16) + ' 종합만 인쇄</button><button class="btn btn-secondary" id="pr-all">부서별 상세 포함</button></div></div>' +
+      '<div class="card" id="xl-card" style="grid-column:1/-1"></div></div>';
+    BudgetXlsx.mountAdmin($('#xl-card', box), { year: A.year, lines: A.data.lines, spend: A.data.spend, codes: A.data.codes, settings: A.data.settings, depts: activeDepts().map(function (d) { return d.dept; }), onDone: function () { refresh(); } });
     box.onclick = function (e) {
       var id = (e.target.closest('button') || {}).id, c = ctxData();
       if (id === 'ex-all') BudgetExport.xlsx(c);

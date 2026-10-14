@@ -120,7 +120,7 @@
       '<button class="btn btn-ghost btn-sm" id="pw-chg">' + ico('key', 16) + ' <span class="hide-sm">비밀번호 변경</span></button>' +
       '<button class="btn btn-ghost btn-sm" id="d-out">' + ico('logout', 16) + ' <span class="hide-sm">로그아웃</span></button></div></header>' +
       '<main class="page"><div class="period-bar"><span class="muted">작성 기간</span> <b>' + esc(periodText(s) || (s.status === 'open' ? '제한 없음' : '관리자가 정합니다')) + '</b>' + (s.note ? ' <span class="sep">·</span> ' + esc(s.note) : '') + '</div>' +
-      '<nav class="ws-tabs" id="dp-tabs"><button class="ws-tab on" data-m="plan">예산안 작성</button><button class="ws-tab" data-m="qr">' + ico('qr', 16) + ' 결재 QR · 집행</button></nav>' +
+      '<nav class="ws-tabs" id="dp-tabs"><button class="ws-tab on" data-m="plan">예산안 작성</button><button class="ws-tab" data-m="qr">' + ico('qr', 16) + ' 결재 QR · 집행</button><button class="btn btn-secondary btn-sm dp-xl" id="dp-xl" title="엑셀에서 작성할 수 있는 부서 양식 내려받기">' + ico('download', 16) + ' 작성 양식(엑셀)</button></nav>' +
       '<div id="ws"></div><div id="tk" class="hide"></div></main>';
     $('#d-out', root).onclick = logout;
     $('#pw-chg', root).onclick = changePw;
@@ -139,6 +139,7 @@
       if (qr) W.rpc('bgt_d_load', { p_token: W.sess.token, p_year: year }).then(function (d) { qdata = d; drawQr(); }).catch(function (e) { toast(e.message, 'err'); });
     }
     $('#dp-tabs', root).onclick = function (e) { var b = e.target.closest('[data-m]'); if (b) showMode(b.dataset.m); };
+    $('#dp-xl', root).onclick = function () { BudgetXlsx.deptDownload({ year: year, dept: dept, lines: data.lines, spend: data.spend, codes: data.codes, settings: data.settings }); };
     var base = { p_token: W.sess.token };
     function rp(fn, extra) { return W.rpc(fn, Object.assign({}, base, extra)); }
     W.mount($('#ws', root), {

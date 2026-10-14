@@ -200,6 +200,10 @@ td.acts{margin-top:0}
 .fn-rules{margin:6px 0 10px;padding-left:20px;font-size:13px}
 table.fin-t .in{min-height:30px;padding:3px 6px}table.fin-t td{vertical-align:top}table.fin-t .fin{min-width:112px}table.fin-t .fre{min-width:200px}
 .fn-views{margin:0;border-bottom:0}
+.dp-xl{margin-left:auto;align-self:center;margin-bottom:4px}
+.xi-scroll{max-height:340px;overflow:auto}
+.mdl-box table.bt{min-width:0;width:100%}.mdl-box table.bt th,.mdl-box table.bt td{padding:6px 8px}
+.xl-up{margin-top:10px;padding-top:10px;border-top:1px solid var(--border)}
 
 /* ── 모바일: 항목 표를 카드로 ── */
 @media (max-width:820px){
