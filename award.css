@@ -314,3 +314,16 @@ table{border-collapse:collapse;width:100%}
 .sc-br .sc-st{display:inline-block;min-width:150px;font-weight:600;color:#777}.sc-br.run{background:#fff8e1}.sc-br.run .sc-st{color:#b45309}.sc-br.ok .sc-st{color:#16a34a}.sc-br.bad .sc-st{color:#dc2626}.sc-br.skip{opacity:.5}
 .pv-stage .jo,.jo{border-bottom:1.5px dotted #16a34a}
 .pv-stage.nohl .jo{border-bottom:0}
+.snapg i{position:absolute;font-style:normal;font-size:10px;line-height:14px;padding:0 4px;border-radius:3px;background:#F43F5E;color:#fff;white-space:nowrap}
+.snapg.gv i{top:4px;left:4px}.snapg.gh i{left:4px;top:3px}
+.snapg.pc{background:#D946EF;z-index:6}.snapg.pc i{background:#D946EF}
+.snapg.gap{background:transparent;border:0;pointer-events:none;z-index:6}
+.snapg.gp-h{height:0;border-top:1.5px solid #F43F5E}.snapg.gp-h::before,.snapg.gp-h::after{content:"";position:absolute;top:-5px;width:1.5px;height:10px;background:#F43F5E}.snapg.gp-h::before{left:0}.snapg.gp-h::after{right:0}
+.snapg.gp-v{width:0;border-left:1.5px solid #F43F5E}.snapg.gp-v::before,.snapg.gp-v::after{content:"";position:absolute;left:-5px;height:1.5px;width:10px;background:#F43F5E}.snapg.gp-v::before{top:0}.snapg.gp-v::after{bottom:0}
+.snapg.gp-h i{left:50%;top:-18px;transform:translateX(-50%)}.snapg.gp-v i{top:50%;left:8px;transform:translateY(-50%)}
+.gdim{position:absolute;transform:translateX(-50%);font-size:10px;line-height:14px;padding:0 5px;border-radius:3px;background:#06B6D4;color:#fff;white-space:nowrap;pointer-events:none;z-index:7}
+.gdim.eq{background:#16a34a}.glh~.gdim,.gdim[style*="left:8px"]{transform:none}
+.gl.gd{position:absolute;pointer-events:none;font-size:10px;line-height:14px;padding:0 5px;border-radius:3px;background:rgba(6,182,212,.14);color:#0e7490;transform:translateX(-50%);white-space:nowrap;height:auto;width:auto;margin:0;cursor:default}
+.gl.gd::before{display:none}.gl.gd.eq{background:#dcfce7;color:#166534;font-weight:600}
+.gl.gd.hz,.gdim.hz{transform:translateY(-50%)}
+.pp-sec{margin:10px 0 4px;padding-bottom:3px;border-bottom:1px solid var(--border)}.pp-g{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px 12px}.pp-op{display:flex;gap:14px;flex-wrap:wrap;margin:8px 0}

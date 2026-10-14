@@ -78,7 +78,7 @@
       '</div>' +
       '<div class="ed-tools ed-arr">' +
         '<div class="tg" title="선택이 1개면 용지 기준, 2개 이상이면 선택 영역 기준으로 정렬합니다">' + BTN('ag-l', 'gL', '왼쪽 맞춤') + BTN('ag-ch', 'gCH', '가로 가운데') + BTN('ag-r', 'gR', '오른쪽 맞춤') + BTN('ag-t', 'gT', '위 맞춤') + BTN('ag-cv', 'gCV', '세로 가운데') + BTN('ag-b', 'gB', '아래 맞춤') + '</div>' +
-        '<div class="tg">' + BTN('dist-h', 'dH', '가로 간격 같게(3개 이상)') + BTN('dist-v', 'dV', '세로 간격 같게(3개 이상)') + BTN('front', 'front', '맨 앞으로') + BTN('back', 'back', '맨 뒤로') + BTN('lock', 'lock', '선택 잠금/해제 (그룹은 그룹 전체)') + '<button class="tb tb-txt" data-a="lockall" title="모든 요소를 한 번에 잠금/해제">전체 잠금</button></div>' +
+        '<div class="tg">' + BTN('dist-h', 'dH', '가로 간격 같게(3개 이상)') + BTN('dist-v', 'dV', '세로 간격 같게(3개 이상)') + BTN('gapdlg', 'dH', '간격 지정 배치·몰기(2개 이상)') + BTN('front', 'front', '맨 앞으로') + BTN('back', 'back', '맨 뒤로') + BTN('lock', 'lock', '선택 잠금/해제 (그룹은 그룹 전체)') + '<button class="tb tb-txt" data-a="lockall" title="모든 요소를 한 번에 잠금/해제">전체 잠금</button></div>' +
       '</div>' +
       '<div class="ed-main"><div class="ed-col"><div class="ed-stage" tabindex="0" aria-label="양식 편집 영역"><div class="ed-wrap"></div><div class="ed-hint"></div></div>' +
       '<div class="ed-text"><div class="muted"><b>선택한 글상자 내용</b> — <code>{{항목명}}</code>을 쓰면 엑셀 데이터가 들어갑니다. 상자를 더블클릭하면 화면에서 바로 입력할 수 있습니다.</div><textarea class="in" data-p="text" rows="2" disabled placeholder="글상자를 선택하면 여기에서도 내용을 고칠 수 있습니다."></textarea></div>' +
@@ -203,6 +203,7 @@
   function drawGuides() {
     if (!st.ov) return; AW.$$('.gl', st.ov).forEach(function (n) { n.remove(); });
     if (st.cfg.gshow === false) return; var g = T().page.guides; if (!g) return; var k = st.zoom;
+    ['v', 'h'].forEach(function (ax) { var srt = (g[ax] || []).slice().sort(function (a, b) { return a - b; }), gaps = []; for (var q = 0; q < srt.length - 1; q++) gaps.push(srt[q + 1] - srt[q]); gaps.forEach(function (gp, q) { if (gp < 0.5) return; var eq = (q > 0 && Math.abs(gaps[q - 1] - gp) < 0.06) || (q < gaps.length - 1 && Math.abs(gaps[q + 1] - gp) < 0.06), l = document.createElement('div'); l.className = 'gl gd ' + (eq ? 'eq ' : '') + (ax === 'h' ? 'hz' : ''); l.textContent = (eq ? '= ' : '') + AW.round(gp, 1) + ' mm'; l.style[ax === 'v' ? 'left' : 'top'] = ((srt[q] + srt[q + 1]) / 2) * k + 'px'; l.style[ax === 'v' ? 'top' : 'left'] = '24px'; st.ov.appendChild(l); }); });
     ['v', 'h'].forEach(function (ax) { (g[ax] || []).forEach(function (pos, i) { var d = document.createElement('div'); d.className = 'gl ' + (ax === 'v' ? 'glv' : 'glh'); d.dataset.ax = ax; d.dataset.i = i; d.title = '안내선 ' + pos + 'mm — 끌어서 이동, 눈금자로 끌어내면 삭제'; d.style[ax === 'v' ? 'left' : 'top'] = pos * k + 'px'; st.ov.appendChild(d); }); });
   }
   function ctxFlip() {}
@@ -339,6 +340,8 @@
       case 'front': return order(true); case 'back': return order(false);
       case 'lock': var all = list.length && list.every(function (e) { return e.lock; }); list.forEach(function (e) { e.lock = !all; }); markSel(); updTools(); return changed('elems');
       case 'dist-h': return dist('x', 'w'); case 'dist-v': return dist('y', 'h');
+      case 'pack-l': return pack('l'); case 'pack-r': return pack('r'); case 'pack-t': return pack('t'); case 'pack-b': return pack('b'); case 'gapdlg': return gapDialog();
+      case 'props': return E.propDialog();
     }
     if (a.indexOf('ag-') === 0) return align(a.slice(3));
   }
@@ -473,6 +476,60 @@
     var x1 = Infinity, y1 = Infinity, x2 = -Infinity, y2 = -Infinity;
     list.forEach(function (e) { x1 = Math.min(x1, e.x); y1 = Math.min(y1, e.y); x2 = Math.max(x2, e.x + e.w); y2 = Math.max(y2, e.y + e.h); });
     return { x: x1, y: y1, w: x2 - x1, h: y2 - y1 };
+  }
+  /* ───────────── 개체 속성 창 (P) — 한글의 「개체 속성」처럼 위치·크기·모양을 한곳에서 ───────────── */
+  E.propDialog = function () {
+    var list = sel(); if (!list.length) return AW.toast('속성을 볼 개체를 먼저 선택해 주십시오.'); var one = list.length === 1 ? list[0] : null, B = bounds(list), tx = list.filter(function (e) { return e.t === 'text'; }), sh = list.filter(function (e) { return e.t === 'rect' || e.t === 'line'; }), im = list.filter(function (e) { return e.t === 'img'; }), f0 = tx[0] || {}, s0 = sh[0] || {}, i0 = im[0] || {};
+    var NUM = function (id, label, v, st2, ex) { return '<div><label class="f" for="' + id + '">' + label + '</label><input class="in sm" id="' + id + '" type="number" step="' + (st2 || 0.1) + '" value="' + v + '"' + (ex || '') + '></div>'; };
+    var CHK = function (id, label, on) { return '<label class="chk"><input type="checkbox" id="' + id + '"' + (on ? ' checked' : '') + '> ' + label + '</label>'; };
+    var COL = function (id, v, none) { return '<div style="display:flex;gap:6px;align-items:center"><input type="color" id="' + id + '" value="' + (/^#[0-9a-f]{6}$/i.test(v) ? v : '#111111') + '" style="width:38px;height:30px;padding:0;border:1px solid var(--border);border-radius:var(--r)"><input class="in sm" id="' + id + '-h" value="' + AW.esc(v || '') + '" style="width:92px" placeholder="#RRGGBB">' + (none ? '<label class="mini chk"><input type="checkbox" id="' + id + '-n"' + (!v ? ' checked' : '') + '> 없음</label>' : '') + '</div>'; };
+    var body = '<div class="pp"><div class="pp-sec"><b>' + (one ? ({ text: '글상자', rect: '사각형', line: '선', img: '이미지', qr: 'QR' }[one.t] || '개체') : list.length + '개 개체') + '</b>' + (one ? ' <span class="muted">' + AW.esc(one.name || '') + '</span>' : '') + '</div>' +
+      '<div class="grid2 pp-g">' + NUM('pp-x', '가로 위치 X (mm)', AW.round(B.x, 2)) + NUM('pp-y', '세로 위치 Y (mm)', AW.round(B.y, 2)) + NUM('pp-w', '너비 (mm)', AW.round(B.w, 2), 0.1, one && one.t === 'line' ? '' : ' min="0.5"') + NUM('pp-h', '높이 (mm)', AW.round(B.h, 2), 0.1, one && one.t === 'line' ? ' disabled' : ' min="0.5"') + (one ? NUM('pp-r', '회전 (°)', AW.round(one.rot || 0, 1), 1) : '') + '</div>' +
+      '<div class="pp-op">' + CHK('pp-ratio', '너비·높이 비율 유지', st.ratio) + CHK('pp-lock', '잠금', list.every(function (e) { return e.lock; })) + CHK('pp-np', '인쇄 제외 (편집 화면에만 표시)', list.every(function (e) { return e.noprint; })) + CHK('pp-hide', '숨김', list.every(function (e) { return e.hide; })) + '</div>' +
+      (tx.length ? '<div class="pp-sec"><b>글자</b>' + (tx.length > 1 ? ' <span class="muted">(글상자 ' + tx.length + '개에 적용)</span>' : '') + '</div><div class="grid2 pp-g"><div><label class="f">글꼴</label><select class="in sm" id="pp-font">' + AW.fontOptions() + '</select></div>' + NUM('pp-size', '글자 크기 (pt)', f0.size || 16, 0.5, ' min="4"') + NUM('pp-lh', '줄 간격 (배)', f0.lh || 1.4, 0.05) + NUM('pp-ls', '자간 (pt)', f0.ls || 0, 0.1) + '<div><label class="f">가로 정렬</label><select class="in sm" id="pp-al"><option value="left">왼쪽</option><option value="center">가운데</option><option value="right">오른쪽</option></select></div><div><label class="f">세로 정렬</label><select class="in sm" id="pp-va"><option value="top">위</option><option value="middle">가운데</option><option value="bottom">아래</option></select></div></div><div class="pp-op">' + CHK('pp-b', '굵게', f0.bold) + CHK('pp-i', '기울임', f0.italic) + CHK('pp-u', '밑줄', f0.ul) + CHK('pp-fit', '글자 자동 맞춤(한 줄)', f0.fit) + '</div><div class="grid2 pp-g"><div><label class="f">글자 색</label>' + COL('pp-c', f0.color || '#111111') + '</div></div>' : '') +
+      (sh.length ? '<div class="pp-sec"><b>도형·선</b></div><div class="grid2 pp-g"><div><label class="f">채우기 색</label>' + COL('pp-f', s0.fill || '', true) + '</div><div><label class="f">선 색</label>' + COL('pp-s', s0.stroke || '#111111') + '</div>' + NUM('pp-sw', '선 두께 (mm)', s0.sw != null ? s0.sw : 0.5, 0.1, ' min="0"') + '</div>' : '') +
+      (im.length ? '<div class="pp-sec"><b>이미지</b></div><div class="grid2 pp-g">' + NUM('pp-op', '투명도 (%)', Math.round((i0.opacity == null ? 1 : i0.opacity) * 100), 5, ' min="0" max="100"') + '</div><div class="pp-op">' + CHK('pp-fx', '좌우 반전', im.every(function (e) { return e.flipX; })) + CHK('pp-fy', '상하 반전', im.every(function (e) { return e.flipY; })) + '</div>' : '') + '</div>';
+    var m = { el: null }, dirty = {};
+    AW.modal({ title: '개체 속성 (P)', wide: true, body: body, actions: [{ label: '취소', cls: 'btn-ghost' }, { label: '적용', cls: 'btn-secondary', onClick: function () { apply(false); return false; } }, { label: '확인', cls: 'btn-primary', onClick: function (c) { apply(true); c(); } }],
+      onOpen: function (el) {
+        m.el = el; var set = function (id, v) { var n = AW.$('#' + id, el); if (n) n.value = v; }; if (tx.length) { set('pp-font', f0.font || 'Noto Serif KR'); set('pp-al', f0.align || 'center'); set('pp-va', f0.valign || 'middle'); }
+        AW.$$('input,select', el).forEach(function (n) { n.addEventListener('keydown', function (k) { k.stopPropagation(); if (k.key === 'Enter' && n.tagName === 'INPUT' && n.type !== 'checkbox') { apply(true); var c = AW.$('.md-x', el); c && c.click(); } }); n.addEventListener('input', function () { dirty[n.id] = 1; }); n.addEventListener('change', function () { dirty[n.id] = 1; });
+          if (n.type === 'color') n.addEventListener('input', function () { var h = AW.$('#' + n.id + '-h', el); if (h) { h.value = n.value; dirty[n.id + '-h'] = 1; } }); });
+        AW.$$('[id$="-h"]', el).forEach(function (h) { h.addEventListener('input', function () { var c = AW.$('#' + h.id.replace(/-h$/, ''), el); if (c && /^#[0-9a-f]{6}$/i.test(h.value)) c.value = h.value; }); });
+        var W = AW.$('#pp-w', el), H = AW.$('#pp-h', el), rt = B.h ? B.w / B.h : 1; W.addEventListener('input', function () { if (AW.$('#pp-ratio', el).checked && H && !H.disabled && rt) { H.value = AW.round((+W.value || 0) / rt, 2); dirty['pp-h'] = 1; } }); H.addEventListener('input', function () { if (AW.$('#pp-ratio', el).checked && rt) { W.value = AW.round((+H.value || 0) * rt, 2); dirty['pp-w'] = 1; } });
+      } });
+    function apply(close) {
+      var el = m.el, g = function (id) { return AW.$('#' + id, el); }, v = function (id) { return parseFloat(g(id).value); }, d = function (id) { return dirty[id]; };
+      st.ratio = g('pp-ratio').checked;
+      if (d('pp-x') || d('pp-y') || d('pp-w') || d('pp-h')) {
+        var nx = d('pp-x') && !isNaN(v('pp-x')) ? v('pp-x') : B.x, ny = d('pp-y') && !isNaN(v('pp-y')) ? v('pp-y') : B.y, nw = d('pp-w') && v('pp-w') > 0 ? v('pp-w') : B.w, nh = d('pp-h') && v('pp-h') > 0 ? v('pp-h') : B.h;
+        if (one) { one.x = AW.round(nx, 2); one.y = AW.round(ny, 2); one.w = AW.round(nw, 2); if (one.t !== 'line') one.h = AW.round(nh, 2); }
+        else { var sx = B.w ? nw / B.w : 1, sy = B.h ? nh / B.h : 1; list.forEach(function (e) { e.x = AW.round(nx + (e.x - B.x) * sx, 2); e.y = AW.round(ny + (e.y - B.y) * sy, 2); e.w = AW.round(e.w * sx, 2); e.h = AW.round(e.h * sy, 2); }); }
+        B = bounds(list);
+      }
+      if (one && d('pp-r')) one.rot = normRot(v('pp-r') || 0);
+      if (d('pp-lock')) list.forEach(function (e) { e.lock = g('pp-lock').checked; }); if (d('pp-np')) list.forEach(function (e) { e.noprint = g('pp-np').checked; }); if (d('pp-hide')) list.forEach(function (e) { e.hide = g('pp-hide').checked; });
+      tx.forEach(function (e) {
+        if (d('pp-font')) e.font = g('pp-font').value; if (d('pp-size') && v('pp-size') > 0) e.size = v('pp-size'); if (d('pp-lh') && v('pp-lh') > 0) e.lh = v('pp-lh'); if (d('pp-ls')) e.ls = v('pp-ls') || 0; if (d('pp-al')) e.align = g('pp-al').value; if (d('pp-va')) e.valign = g('pp-va').value;
+        if (d('pp-b')) e.bold = g('pp-b').checked; if (d('pp-i')) e.italic = g('pp-i').checked; if (d('pp-u')) e.ul = g('pp-u').checked; if (d('pp-fit')) e.fit = g('pp-fit').checked; if (d('pp-c') || d('pp-c-h')) e.color = g('pp-c-h').value || g('pp-c').value;
+      });
+      sh.forEach(function (e) { if (d('pp-f') || d('pp-f-h') || d('pp-f-n')) e.fill = g('pp-f-n').checked ? '' : (g('pp-f-h').value || g('pp-f').value); if (d('pp-s') || d('pp-s-h')) e.stroke = g('pp-s-h').value || g('pp-s').value; if (d('pp-sw')) e.sw = Math.max(0, v('pp-sw') || 0); });
+      im.forEach(function (e) { if (d('pp-op')) e.opacity = Math.max(0, Math.min(100, v('pp-op'))) / 100; if (d('pp-fx')) e.flipX = g('pp-fx').checked; if (d('pp-fy')) e.flipY = g('pp-fy').checked; });
+      dirty = {}; E.refreshElems(); markSel(); updTools(); changed('elems', false, '개체 속성 변경'); if (AW.Side) AW.Side.update('props');
+    }
+  };
+  function pack(dir, gap) {   // 선택한 개체를 한쪽으로 몰아 일정 간격으로 붙임 (첫 개체 위치 유지)
+    var list = sel().filter(function (e) { return !e.lock; }); if (list.length < 2) return AW.toast('2개 이상 선택해 주십시오.');
+    var ax = dir === 'l' || dir === 'r' ? 'x' : 'y', sz = ax === 'x' ? 'w' : 'h'; gap = gap == null ? (st.cfg.packGap == null ? 2 : st.cfg.packGap) : gap; var cur, i;
+    if (dir === 'l' || dir === 't') { list.sort(function (a, b) { return a[ax] - b[ax]; }); cur = list[0][ax] + list[0][sz] + gap; for (i = 1; i < list.length; i++) { list[i][ax] = AW.round(cur, 2); cur += list[i][sz] + gap; } }
+    else { list.sort(function (a, b) { return (b[ax] + b[sz]) - (a[ax] + a[sz]); }); cur = list[0][ax] - gap; for (i = 1; i < list.length; i++) { list[i][ax] = AW.round(cur - list[i][sz], 2); cur = list[i][ax] - gap; } }
+    E.refreshElems(); changed('elems', false, '몰기 배치');
+  }
+  function gapDialog() {
+    var n = sel().filter(function (e) { return !e.lock; }).length; if (n < 2) return AW.toast('2개 이상 선택해 주십시오.');
+    AW.modal({ title: '간격 지정 배치', body: '<p style="margin-top:0">선택한 ' + n + '개를 한쪽으로 모아 <b>일정한 간격</b>으로 붙입니다. 기준이 되는 첫 개체(왼쪽·위쪽·오른쪽·아래쪽 끝)는 움직이지 않습니다.</p><label class="f">방향</label><select class="in" id="gp-d"><option value="l">왼쪽으로 몰기 (가로로 이어 붙이기)</option><option value="r">오른쪽으로 몰기</option><option value="t">위로 몰기 (세로로 이어 붙이기)</option><option value="b">아래로 몰기</option></select><label class="f">간격 (mm)</label><input class="in" id="gp-g" type="number" step="0.5" min="0" value="' + (st.cfg.packGap == null ? 2 : st.cfg.packGap) + '">',
+      actions: [{ label: '취소', cls: 'btn-ghost' }, { label: '배치', cls: 'btn-primary', onClick: function (c) { var g = Math.max(0, parseFloat(AW.$('#gp-g').value) || 0), dv = AW.$('#gp-d').value; st.cfg.packGap = g; saveCfg(); c(); pack(dv, g); } }],
+      onOpen: function (el) { var i = AW.$('#gp-g', el); i.addEventListener('keydown', function (k) { k.stopPropagation(); if (k.key === 'Enter') AW.$('.btn-primary', el).click(); }); } });
   }
   function dist(pos, size) {
     var list = sel().filter(function (e) { return !e.lock; }).sort(function (a, b) { return a[pos] - b[pos]; });
@@ -614,7 +671,8 @@
       d.e.rot = normRot(ang); d.moved = true; liveUpdate(); return;
     }
     if (d.mode === 'gnew' || d.mode === 'gmv') {
-      var gv = d.ax === 'v' ? p.x : p.y, lim = d.ax === 'v' ? pg.w : pg.h; if (sn) gv = Math.round(gv / gs) * gs; gv = AW.round(gv, 1); d.moved = true; d.pos = gv;
+      var gv = d.ax === 'v' ? p.x : p.y, lim = d.ax === 'v' ? pg.w : pg.h; if (sn) gv = Math.round(gv / gs) * gs; gv = AW.round(gv, 1); d.moved = true;
+      var gsn = (ev.ctrlKey || ev.metaKey) ? { best: null, P: [] } : guideSnap(d.ax, gv, d.mode === 'gmv' ? d.i : -1); if (gsn.best) gv = AW.round(gsn.best.v, 2); d.pos = gv; guideDims(d.ax, gv, gsn.P, !!gsn.best);
       if (d.mode === 'gmv') { guides()[d.ax][d.i] = gv; drawGuides(); }
       else { var pv = AW.$('.gl.prev', st.ov); if (!pv) { pv = document.createElement('div'); pv.className = 'gl prev ' + (d.ax === 'v' ? 'glv' : 'glh'); st.ov.appendChild(pv); } pv.style[d.ax === 'v' ? 'left' : 'top'] = gv * st.zoom + 'px'; pv.style.display = gv < 0 || gv > lim ? 'none' : ''; }
       return;
@@ -636,7 +694,7 @@
       d.moved = true;
       if (ev.shiftKey) { if (Math.abs(dx) >= Math.abs(dy)) dy = 0; else dx = 0; }   // Shift: 가로/세로 한 방향으로만
       d.list.forEach(function (it) { it.e.x = sp(it.x + dx); it.e.y = sp(it.y + dy); });
-      smartGuides(st.cfg.guides && d.list.length === 1 && !(ev.ctrlKey || ev.metaKey) ? d.list[0].e : null);
+      smartGuides(st.cfg.guides && !(ev.ctrlKey || ev.metaKey) ? d.list.map(function (it) { return it.e; }) : null);
       liveUpdate();
     } else {
       var e = d.e, o = d.o, h = d.h, cen = ev.ctrlKey || ev.metaKey, m = cen ? 2 : 1;
@@ -652,24 +710,72 @@
         var wr = e.w / o.w, hr = e.h / o.h, fr = h.length === 2 ? Math.sqrt(wr * hr) : (h === 'n' || h === 's') ? hr : 1;
         e.size = Math.max(4, Math.min(300, Math.round(o.size * fr * 2) / 2)); var dn = domOf(e); if (dn) dn.style.fontSize = e.size * 25.4 / 72 * st.zoom + 'px';
       }
+      if (!ev.shiftKey && !cen) resizeSnap(e, h);
       liveUpdate();
     }
   }
-  // 스마트 가이드: 용지·다른 요소의 왼쪽/가운데/오른쪽(위/중간/아래)에 1.2mm 이내로 다가가면 달라붙고 분홍 선을 표시
-  function smartGuides(e) {
+  // 스마트 가이드(이동·크기): 선택 전체의 왼쪽/가운데/오른쪽(위/중간/아래)을 용지·다른 개체·안내선에 붙이고 분홍 선 표시.
+  // 용지 가운데는 자주색 「가운데」 표시. 개체 사이가 같은 간격이 되면 간격(mm)을 막대로 표시하며 붙임.
+  function sgLine(ax, at, cls, label) { var g = document.createElement('div'); g.className = 'snapg ' + (ax === 'x' ? 'gv' : 'gh') + (cls ? ' ' + cls : ''); g.style[ax === 'x' ? 'left' : 'top'] = at * st.zoom + 'px'; if (label) g.innerHTML = '<i>' + label + '</i>'; st.ov.appendChild(g); }
+  function sgGap(ax, a, b, cross, val) {
+    var k = st.zoom, g = document.createElement('div'); g.className = 'snapg gap ' + (ax === 'x' ? 'gp-h' : 'gp-v');
+    g.style.cssText = ax === 'x' ? 'left:' + a * k + 'px;width:' + (b - a) * k + 'px;top:' + cross * k + 'px' : 'top:' + a * k + 'px;height:' + (b - a) * k + 'px;left:' + cross * k + 'px'; g.innerHTML = '<i>' + AW.round(val, 1) + '</i>'; st.ov.appendChild(g);
+  }
+  function guideTargets(others) {
+    var pg = T().page, tx = [{ v: 0, k: 'page' }, { v: pg.w / 2, k: 'pc' }, { v: pg.w, k: 'page' }], ty = [{ v: 0, k: 'page' }, { v: pg.h / 2, k: 'pc' }, { v: pg.h, k: 'page' }];
+    others.forEach(function (o) { tx.push({ v: o.x }, { v: o.x + o.w / 2 }, { v: o.x + o.w }); ty.push({ v: o.y }, { v: o.y + o.h / 2 }, { v: o.y + o.h }); });
+    var gd = pg.guides; if (gd && st.cfg.gshow !== false) { (gd.v || []).forEach(function (v) { tx.push({ v: v, k: 'guide' }); }); (gd.h || []).forEach(function (h) { ty.push({ v: h, k: 'guide' }); }); }
+    return { x: tx, y: ty };
+  }
+  function bestSnap(lines, targets, TH) { var r = null; lines.forEach(function (l) { targets.forEach(function (t) { var d = t.v - l; if (Math.abs(d) < TH && (!r || Math.abs(d) < Math.abs(r.d) - 1e-6 || (Math.abs(Math.abs(d) - Math.abs(r.d)) < 1e-6 && t.k === 'pc'))) r = { d: d, at: t.v, k: t.k }; }); }); return r; }
+  function spaceSnap(ax, B, others, TH) {   // 같은 간격 찾기: ① 양옆 개체와의 간격이 같음 ② 이미 있는 두 개체 사이 간격과 같음
+    var p = ax === 'x' ? 'x' : 'y', sz = ax === 'x' ? 'w' : 'h', c = ax === 'x' ? 'y' : 'x', cs = ax === 'x' ? 'h' : 'w';
+    var arr = others.filter(function (o) { return o[c] < B[c] + B[cs] && o[c] + o[cs] > B[c]; }).sort(function (a, b) { return a[p] - b[p]; }); if (!arr.length) return null;
+    var left = null, right = null; arr.forEach(function (o) { var r = o[p] + o[sz]; if (r <= B[p] + 0.01 && (!left || r > left[p] + left[sz])) left = o; if (o[p] >= B[p] + B[sz] - 0.01 && (!right || o[p] < right[p])) right = o; });
+    var cands = [], mid = function (o) { return (Math.max(o[c], B[c]) + Math.min(o[c] + o[cs], B[c] + B[cs])) / 2; };
+    if (left && right) { var gl = B[p] - (left[p] + left[sz]), gr = right[p] - (B[p] + B[sz]), d0 = (gr - gl) / 2; if (Math.abs(d0) < TH && gl > 0.3 && gr > 0.3) cands.push({ d: d0, gaps: [[left[p] + left[sz], B[p] + d0], [B[p] + B[sz] + d0, right[p]]], ref: left }); }
+    for (var i = 0; i < arr.length - 1; i++) {
+      var A = arr[i], C = arr[i + 1], g = C[p] - (A[p] + A[sz]); if (g < 0.5) continue;
+      if (B[p] >= C[p] + C[sz] - 0.01) { var t = C[p] + C[sz] + g, d1 = t - B[p]; if (Math.abs(d1) < TH) cands.push({ d: d1, gaps: [[A[p] + A[sz], C[p]], [C[p] + C[sz], t]], ref: C }); }
+      if (B[p] + B[sz] <= A[p] + 0.01) { var t2 = A[p] - g - B[sz], d2 = t2 - B[p]; if (Math.abs(d2) < TH) cands.push({ d: d2, gaps: [[t2 + B[sz], A[p]], [A[p] + A[sz], C[p]]], ref: A }); }
+    }
+    if (!cands.length) return null; cands.sort(function (a, b) { return Math.abs(a.d) - Math.abs(b.d); }); var r0 = cands[0]; r0.cross = mid(r0.ref); return r0;
+  }
+  function smartGuides(list) {
     AW.$$('.snapg', st.ov).forEach(function (g) { g.remove(); });
-    if (!e) return; var pg = T().page, k = st.zoom, TH = st.cfg.th || 1.2, others = T().elems.filter(function (o) { return o.id !== e.id && S.sel.indexOf(o.id) < 0; });
-    function best(lines, targets) { var r = null; lines.forEach(function (l) { targets.forEach(function (t) { var d = t - l; if (Math.abs(d) < TH && (!r || Math.abs(d) < Math.abs(r.d))) r = { d: d, at: t }; }); }); return r; }
-    var tx = [0, pg.w / 2, pg.w], ty = [0, pg.h / 2, pg.h];
-    others.forEach(function (o) { tx.push(o.x, o.x + o.w / 2, o.x + o.w); ty.push(o.y, o.y + o.h / 2, o.y + o.h); });
-    var gd = T().page.guides; if (gd && st.cfg.gshow !== false) { (gd.v || []).forEach(function (v) { tx.push(v); }); (gd.h || []).forEach(function (h) { ty.push(h); }); }
-    var rx = best([e.x, e.x + e.w / 2, e.x + e.w], tx), ry = best([e.y, e.y + e.h / 2, e.y + e.h], ty);
-    if (rx) { e.x = AW.round(e.x + rx.d, 2); var g = document.createElement('div'); g.className = 'snapg gv'; g.style.left = rx.at * k + 'px'; st.ov.appendChild(g); }
-    if (ry) { e.y = AW.round(e.y + ry.d, 2); var g2 = document.createElement('div'); g2.className = 'snapg gh'; g2.style.top = ry.at * k + 'px'; st.ov.appendChild(g2); }
+    if (!list || !list.length) return; var TH = st.cfg.th || 1.2, ids = {}; list.forEach(function (e) { ids[e.id] = 1; });
+    var others = T().elems.filter(function (o) { return !ids[o.id] && !o.hide; }), B = bounds(list), tg = guideTargets(others);
+    var rx = bestSnap([B.x, B.x + B.w / 2, B.x + B.w], tg.x, TH), ry = bestSnap([B.y, B.y + B.h / 2, B.y + B.h], tg.y, TH);
+    if (rx) { list.forEach(function (e) { e.x = AW.round(e.x + rx.d, 2); }); B.x += rx.d; } if (ry) { list.forEach(function (e) { e.y = AW.round(e.y + ry.d, 2); }); B.y += ry.d; }
+    var sx = rx ? null : spaceSnap('x', B, others, TH), sy = ry ? null : spaceSnap('y', B, others, TH);
+    if (sx) { list.forEach(function (e) { e.x = AW.round(e.x + sx.d, 2); }); B.x += sx.d; sx.gaps.forEach(function (g) { sgGap('x', g[0], g[1], sx.cross, g[1] - g[0]); }); }
+    if (sy) { list.forEach(function (e) { e.y = AW.round(e.y + sy.d, 2); }); B.y += sy.d; sy.gaps.forEach(function (g) { sgGap('y', g[0], g[1], sy.cross, g[1] - g[0]); }); }
+    if (rx) sgLine('x', rx.at, rx.k === 'pc' ? 'pc' : '', rx.k === 'pc' ? '가운데' : ''); if (ry) sgLine('y', ry.at, ry.k === 'pc' ? 'pc' : '', ry.k === 'pc' ? '가운데' : '');
+  }
+  function resizeSnap(e, h) {   // 크기 조절 중 움직이는 변을 용지·다른 개체·안내선에 붙임
+    AW.$$('.snapg', st.ov).forEach(function (g) { g.remove(); }); if (!st.cfg.guides) return; var TH = st.cfg.th || 1.2, others = T().elems.filter(function (o) { return o.id !== e.id && S.sel.indexOf(o.id) < 0 && !o.hide; }), tg = guideTargets(others), r;
+    if (h.indexOf('e') >= 0 && (r = bestSnap([e.x + e.w], tg.x, TH))) { e.w = AW.round(e.w + r.d, 2); sgLine('x', r.at, r.k === 'pc' ? 'pc' : '', r.k === 'pc' ? '가운데' : ''); }
+    if (h.indexOf('w') >= 0 && (r = bestSnap([e.x], tg.x, TH))) { e.x = AW.round(e.x + r.d, 2); e.w = AW.round(e.w - r.d, 2); sgLine('x', r.at, r.k === 'pc' ? 'pc' : '', r.k === 'pc' ? '가운데' : ''); }
+    if (e.t !== 'line') {
+      if (h.indexOf('s') >= 0 && (r = bestSnap([e.y + e.h], tg.y, TH))) { e.h = AW.round(e.h + r.d, 2); sgLine('y', r.at, r.k === 'pc' ? 'pc' : '', r.k === 'pc' ? '가운데' : ''); }
+      if (h.indexOf('n') >= 0 && (r = bestSnap([e.y], tg.y, TH))) { e.y = AW.round(e.y + r.d, 2); e.h = AW.round(e.h - r.d, 2); sgLine('y', r.at, r.k === 'pc' ? 'pc' : '', r.k === 'pc' ? '가운데' : ''); }
+    }
+  }
+  // 안내선 사이 간격: 끌 때 가운데·같은 간격에 붙이고 간격(mm)을 표시, 안내선이 2개 이상이면 항상 간격을 표시(같은 간격은 초록 「=」)
+  function guideSnap(ax, gv, skipI) {
+    var lim = ax === 'v' ? T().page.w : T().page.h, arr = (guides()[ax] || []).filter(function (_, j) { return j !== skipI; }), P = arr.concat([0, lim]).sort(function (a, b) { return a - b; }), TH = st.cfg.th || 1.2, best = null;
+    var a = null, b = null; P.forEach(function (q) { if (q <= gv && (a === null || q > a)) a = q; if (q >= gv && (b === null || q < b)) b = q; });
+    if (a !== null && b !== null && b - a > 1) { var m = (a + b) / 2; if (Math.abs(gv - m) < TH) best = { v: m, eq: true }; }
+    for (var i = 0; i < P.length - 1; i++) { var g = P[i + 1] - P[i]; if (g < 0.5) continue; [P[i + 1] + g, P[i] - g].forEach(function (t) { if (t >= 0 && t <= lim && Math.abs(gv - t) < TH && (!best || Math.abs(gv - t) < Math.abs(gv - best.v))) best = { v: t, eq: true }; }); }
+    return { best: best, P: P };
+  }
+  function guideDims(ax, gv, P, eq) {
+    AW.$$('.gdim', st.ov).forEach(function (n) { n.remove(); }); var a = null, b = null, k = st.zoom; P.forEach(function (q) { if (q < gv - 0.01 && (a === null || q > a)) a = q; if (q > gv + 0.01 && (b === null || q < b)) b = q; });
+    [[a, gv], [gv, b]].forEach(function (pr) { if (pr[0] === null || pr[1] === null) return; var d = document.createElement('div'); d.className = 'gdim ' + (eq ? 'eq ' : '') + (ax === 'h' ? 'hz' : ''); d.textContent = AW.round(pr[1] - pr[0], 1) + ' mm'; d.style[ax === 'v' ? 'left' : 'top'] = ((pr[0] + pr[1]) / 2) * k + 'px'; d.style[ax === 'v' ? 'top' : 'left'] = '8px'; st.ov.appendChild(d); });
   }
   function onUp() {
     var d = st.drag; if (!d) return; st.drag = null;
-    AW.$$('.snapg,.mq,.gl.prev', st.ov || document).forEach(function (g) { g.remove(); });
+    AW.$$('.snapg,.mq,.gl.prev,.gdim', st.ov || document).forEach(function (g) { g.remove(); });
     if (d.mode === 'rot') { if (d.moved) { E.refreshElems(); changed('elems', false, '회전'); } return; }
     if (d.mode === 'gnew' || d.mode === 'gmv') {
       var lim2 = d.ax === 'v' ? T().page.w : T().page.h, g = guides();
@@ -718,6 +824,7 @@
     if (ev.altKey && !mod && ev.code === 'KeyR') { ev.preventDefault(); return act('ruler'); }
     if (ev.altKey && !mod && ev.code === 'KeyG') { ev.preventDefault(); return act('gridshow'); }
     if (mod && k === 'g') { ev.preventDefault(); return grouping(!ev.shiftKey); }
+    if (!mod && !ev.altKey && !ev.shiftKey && k === 'p' && sel().length) { ev.preventDefault(); return E.propDialog(); }
     if (mod && k === 'd') { ev.preventDefault(); return dup(); }
     if (mod && k === 'a' && st.stage.contains(document.activeElement)) { ev.preventDefault(); return E.setSel(T().elems.map(function (e) { return e.id; })); }
     if (mod && ev.altKey && k === 'c') { ev.preventDefault(); return copyStyle(); }
@@ -931,9 +1038,11 @@
       var al = [STRIP(list.length > 1 ? '정렬(선택 기준)' : '정렬(용지 기준)', [B('gL', '왼쪽', 'ag-l'), B('gCH', '가로 가운데', 'ag-ch'), B('gR', '오른쪽', 'ag-r'), B('gT', '위', 'ag-t'), B('gCV', '세로 가운데', 'ag-cv'), B('gB', '아래', 'ag-b')])];
       if (list.length >= 2) al.push(I('가로 크기 같게(첫 선택 기준)', 'dH', '', 'same-w'), I('세로 크기 같게', 'dV', '', 'same-h'), I('가로·세로 크기 같게', 'rect', '', 'same-wh'));
       if (list.length >= 3) al.push(I('가로 간격 같게', 'dH', '', 'dist-h'), I('세로 간격 같게', 'dV', '', 'dist-v'));
+      if (list.length >= 2) al.push({ k: 'sep' }, I('왼쪽으로 몰기', 'gL', '', 'pack-l'), I('오른쪽으로 몰기', 'gR', '', 'pack-r'), I('위로 몰기', 'gT', '', 'pack-t'), I('아래로 몰기', 'gB', '', 'pack-b'), I('간격 지정 배치…', 'dH', '', 'gapdlg'));
       it.push(SUB('정렬 · 크기 맞춤', 'gCH', al));
       var allLk = list.every(function (e) { return e.lock; }), allHd = list.every(function (e) { return e.hide; });
       it.push(SUB('순서 · 잠금 · 표시', 'layers', [I('맨 앞으로', 'front', 'Ctrl+Shift+]', 'front'), I('앞으로 한 칸', 'chevU', 'Ctrl+]', 'fwd'), I('뒤로 한 칸', 'chevD', 'Ctrl+[', 'bwd'), I('맨 뒤로', 'back', 'Ctrl+Shift+[', 'back'), { k: 'sep' }, I((list.some(function (e) { return e.grp; }) ? '그룹 ' : '선택 ') + (allLk ? '잠금 해제' : '잠금(이동·크기 고정)'), allLk ? 'unlock' : 'lock', '', 'lock'), I('전체 잠금 / 해제', 'lock', '', 'lockall'), I(allHd ? '보이기' : '숨기기', 'eye', '', 'hide'), I('인쇄에서 제외 (화면 안내용)', 'print', '', 'noprint', { on: list.every(function (e) { return e.noprint; }) })]));
+      it.push(I('개체 속성…', 'edit', 'P', 'props'));
       it.push(SUB('회전 · 반전', 'rotate', [I('왼쪽 90° 회전', 'undo', '', 'rot-l'), I('오른쪽 90° 회전', 'redo', '', 'rot-r'), I('180° 회전', 'rotate', '', 'rot-180'), { k: 'sep' }, I('좌우 대칭 (좌우 반전)', 'gCH', '', 'flip-x'), I('상하 대칭 (상하 반전)', 'gCV', '', 'flip-y'), { k: 'sep' }, I('회전 초기화', 'close', '', 'rot-0')]));
       it.push(I('그룹 만들기', 'layers', 'Ctrl+G', 'group', { disabled: list.length < 2 }), I('그룹 해제', 'layers', 'Ctrl+Shift+G', 'ungroup', { disabled: !list.some(function (e) { return e.grp; }) }));
       it.push(SUB('이동', 'plus', [I('위로 (작게)', 'chevU', '↑', 'nu'), I('아래로 (작게)', 'chevD', '↓', 'nd'), I('왼쪽으로 (작게)', 'chevL', '←', 'nl'), I('오른쪽으로 (작게)', 'chevR', '→', 'nr'), { k: 'sep' }, I('위로 (크게)', 'chevU', 'Shift+↑', 'Nu'), I('아래로 (크게)', 'chevD', 'Shift+↓', 'Nd'), I('왼쪽으로 (크게)', 'chevL', 'Shift+←', 'Nl'), I('오른쪽으로 (크게)', 'chevR', 'Shift+→', 'Nr')]));
