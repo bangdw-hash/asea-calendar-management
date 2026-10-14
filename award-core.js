@@ -227,7 +227,7 @@
     var el = document.createElement('div');
     el.className = 'pg pg-' + mode;
     el.style.cssText = 'position:relative;overflow:hidden;background:#fff;width:' + (pg.w * k) + 'px;height:' + (pg.h * k) + 'px;flex:none';
-    if (tpl.bg && o.bg !== false) {
+    if (tpl.bg && o.bg !== false && !(pg && pg.bgHide)) {
       var im = document.createElement('img'); im.className = 'pg-bg'; im.src = tpl.bg; im.alt = ''; im.draggable = false;
       im.style.cssText = 'position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;user-select:none';
       el.appendChild(im);
@@ -268,6 +268,7 @@
       d.style.cssText = base + 'opacity:' + (e.opacity == null ? 1 : e.opacity) + ';';
       if (e.src) { var im = document.createElement('img'); im.src = e.src; im.alt = ''; im.draggable = false; im.style.cssText = 'width:100%;height:100%;object-fit:contain;pointer-events:none;user-select:none'; d.appendChild(im); }
     }
+    if (e.hide) d.style.display = 'none';
     return d;
   };
   // 글자 자동 맞춤(shrink): 한 줄 안에 들어가도록 폰트를 줄임. DOM 부착 후 호출.
