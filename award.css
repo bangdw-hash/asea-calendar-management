@@ -283,3 +283,5 @@ table{border-collapse:collapse;width:100%}
 .sc-list{max-height:52vh;overflow:auto;display:flex;flex-direction:column;gap:8px;padding-right:4px}
 .sc-row{border:1px solid var(--border);border-radius:var(--r);padding:8px;display:grid;gap:6px}
 .sc-row textarea{width:100%;resize:vertical}.sc-r2{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.sc-box.obj{border-color:#16a34a;background:rgba(22,163,74,.12)}.sc-box.obj span{background:#16a34a;white-space:nowrap}
+.sc-objs{border:1px solid var(--border);border-radius:var(--r);padding:8px;margin-bottom:8px}

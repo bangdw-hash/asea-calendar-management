@@ -80,7 +80,25 @@
     if (cols.length > 9) { var rr = [], gg = [], bb = []; for (i = 0; i < cols.length; i += 3) { rr.push(cols[i]); gg.push(cols[i + 1]); bb.push(cols[i + 2]); } color = '#' + [median(rr), median(gg), median(bb)].map(function (v) { return ('0' + Math.round(v).toString(16)).slice(-2); }).join(''); }
     return { box: nb, color: color, ink: n };
   }
-  function erase(g, W, H, b) {   // 글자 픽셀만 좌우 배경을 보간해 메움
+  function snapObj(g, W, H, b) {   // 개체 상자를 실제 색 있는 픽셀 범위로 조임
+    var p = Math.round(Math.max(b.w, b.h) * 0.08) + 2, x0 = Math.max(0, b.x - p), y0 = Math.max(0, b.y - p), x1 = Math.min(W, b.x + b.w + p), y1 = Math.min(H, b.y + b.h + p), w = x1 - x0, h = y1 - y0;
+    if (w < 6 || h < 6) return b;
+    var d = g.getImageData(x0, y0, w, h).data, bg = objBg(d, w, h), minx = w, maxx = -1, miny = h, maxy = -1, n = 0;
+    for (var y = 0; y < h; y++) for (var x = 0; x < w; x++) { var i = (y * w + x) * 4; if (dist(d, i, bg) > 60) { if (x < minx) minx = x; if (x > maxx) maxx = x; if (y < miny) miny = y; if (y > maxy) maxy = y; n++; } }
+    if (n < 30) return b; var nb = { x: x0 + minx, y: y0 + miny, w: maxx - minx + 1, h: maxy - miny + 1 }; return nb.w * nb.h < b.w * b.h * 2.2 ? nb : b;
+  }
+  function dist(d, i, c) { return Math.max(Math.abs(d[i] - c[0]), Math.abs(d[i + 1] - c[1]), Math.abs(d[i + 2] - c[2])); }
+  function objBg(d, w, h) {   // 영역 테두리 픽셀의 중앙값 = 종이 색
+    var v = [[], [], []]; for (var x = 0; x < w; x++) for (var k = 0; k < 2; k++) { var t = ((k ? h - 1 : 0) * w + x) * 4; for (var c = 0; c < 3; c++) v[c].push(d[t + c]); }
+    for (var y = 0; y < h; y++) for (var k2 = 0; k2 < 2; k2++) { var t2 = (y * w + (k2 ? w - 1 : 0)) * 4; for (var c2 = 0; c2 < 3; c2++) v[c2].push(d[t2 + c2]); }
+    return [median(v[0]), median(v[1]), median(v[2])];
+  }
+  function cutout(g, b) {   // 종이 색을 투명하게 → PNG 개체
+    var id = g.getImageData(b.x, b.y, b.w, b.h), d = id.data, bg = objBg(d, b.w, b.h);
+    for (var i = 0; i < d.length; i += 4) { var a = Math.max(0, Math.min(1, (dist(d, i, bg) - 14) / 56)); d[i + 3] = Math.round(a * 255); }
+    var c = cv(b.w, b.h); c.getContext('2d').putImageData(id, 0, 0); return c.toDataURL('image/png');
+  }
+  function erase(g, W, H, b, R) {   // 글자 픽셀만 좌우 배경을 보간해 메움
     var pad = Math.round(b.h * 0.12) + 2, m = 8, X0 = Math.max(0, b.x - pad - m), Y0 = Math.max(0, b.y - pad), X1 = Math.min(W, b.x + b.w + pad + m), Y1 = Math.min(H, b.y + b.h + pad), w = X1 - X0, h = Y1 - Y0;
     if (w < 20 || h < 4) return;
     var im = g.getImageData(X0, Y0, w, h), d = im.data, mk = new Uint8Array(w * h), fill = new Uint8ClampedArray(d.length), x, y, c;
@@ -93,15 +111,15 @@
       for (x = 0; x < w; x++) { var t = x / (w - 1); for (c = 0; c < 3; c++) fill[(y * w + x) * 4 + c] = lc[c] * (1 - t) + rc[c] * t; }
     }
     for (y = 0; y < h; y++) for (x = 0; x < w; x++) { var i = (y * w + x) * 4; if (Math.abs(lum(d[i], d[i + 1], d[i + 2]) - lum(fill[i], fill[i + 1], fill[i + 2])) > 28) mk[y * w + x] = 1; }
-    var mk2 = new Uint8Array(w * h), R = 2; for (y = 0; y < h; y++) for (x = 0; x < w; x++) if (mk[y * w + x]) for (var dy = -R; dy <= R; dy++) for (var dx = -R; dx <= R; dx++) { var yy = y + dy, xx = x + dx; if (yy >= 0 && yy < h && xx >= 0 && xx < w) mk2[yy * w + xx] = 1; }
+    var mk2 = new Uint8Array(w * h); R = R || 2; for (y = 0; y < h; y++) for (x = 0; x < w; x++) if (mk[y * w + x]) for (var dy = -R; dy <= R; dy++) for (var dx = -R; dx <= R; dx++) { var yy = y + dy, xx = x + dx; if (yy >= 0 && yy < h && xx >= 0 && xx < w) mk2[yy * w + xx] = 1; }
     for (y = 0; y < h; y++) for (x = 0; x < w; x++) if (mk2[y * w + x]) { var j = (y * w + x) * 4; d[j] = fill[j]; d[j + 1] = fill[j + 1]; d[j + 2] = fill[j + 2]; }
     g.putImageData(im, X0, Y0);
   }
 
   /* ───────────── 2) AI 판독 ───────────── */
   var SYS = '당신은 한국어 상장·증서 스캔 이미지를 분석해 편집 가능한 양식으로 복원하는 전문가입니다. 출력은 JSON 객체 하나만, 마크다운·설명 금지.\n' +
-    '형식: {"texts":[{"text":"글자 그대로","x":0,"y":0,"w":0,"h":0,"lines":1,"align":"left|center|right","bold":false,"font":"글꼴ID","variable":false,"field":"","role":"title|label|value|body|date|sign|other"}],"notes":""}\n' +
-    '규칙: 1) x,y,w,h 는 이미지 전체 폭·높이를 각각 1000으로 본 정수 좌표(좌상단 기준)이며 글자를 꼭 맞게 감쌉니다. 2) 가로쓰기 글자만 포함하고 원형 직인·학교 로고·워터마크 안의 글자, 장식 무늬는 제외합니다(배경에 그대로 둡니다). 3) 같은 문단(줄 간격이 일정한 여러 줄)은 하나의 상자로 묶고 lines 에 줄 수를 적으며 text 에는 줄바꿈(\\n)을 넣습니다. 4) 「성명 : 홍길동」처럼 라벨과 값이 함께 있으면 라벨 상자(고정)와 값 상자(variable)로 분리합니다. 5) variable=true 는 수여자마다 달라지는 값(성명, 소속·학과·반, 학번, 수여일·발급일, 상장 번호, 상 이름이 바뀔 수 있는 경우)이며 field 에 짧은 한글 항목명(성명, 소속, 학번, 수여일, 번호, 상명, 내용 등)을 적습니다. 제목(상장), 정형 문구, 라벨, 학교명, 학교장 직함·이름은 고정입니다. 6) font 는 제공된 글꼴ID 중 원본과 가장 닮은 것 하나를 고릅니다(궁서체 느낌=Gungsuh, 바탕·명조=Batang 또는 Nanum Myeongjo, 굵은 제목 고딕=Black Han Sans, 일반 고딕=Noto Sans KR, 영문 격식=Times New Roman 등). 7) 글자는 오탈자 없이 보이는 그대로 옮깁니다.';
+    '형식: {"texts":[{"text":"글자 그대로","x":0,"y":0,"w":0,"h":0,"lines":1,"align":"left|center|right","bold":false,"font":"글꼴ID","variable":false,"field":"","role":"title|label|value|body|date|sign|other"}],"objects":[{"kind":"seal|logo|signature","label":"학교장 직인","x":0,"y":0,"w":0,"h":0}],"notes":""}\n' +
+    '규칙: 1) x,y,w,h 는 이미지 전체 폭·높이를 각각 1000으로 본 정수 좌표(좌상단 기준)이며 글자를 꼭 맞게 감쌉니다. 2) 가로쓰기 글자만 포함하고 원형 직인·학교 로고·워터마크 안의 글자, 장식 무늬는 제외합니다(배경에 그대로 둡니다). 3) 같은 문단(줄 간격이 일정한 여러 줄)은 하나의 상자로 묶고 lines 에 줄 수를 적으며 text 에는 줄바꿈(\\n)을 넣습니다. 4) 「성명 : 홍길동」처럼 라벨과 값이 함께 있으면 라벨 상자(고정)와 값 상자(variable)로 분리합니다. 5) variable=true 는 수여자마다 달라지는 값(성명, 소속·학과·반, 학번, 수여일·발급일, 상장 번호, 상 이름이 바뀔 수 있는 경우)이며 field 에 짧은 한글 항목명(성명, 소속, 학번, 수여일, 번호, 상명, 내용 등)을 적습니다. 제목(상장), 정형 문구, 라벨, 학교명, 학교장 직함·이름은 고정입니다. 6) font 는 제공된 글꼴ID 중 원본과 가장 닮은 것 하나를 고릅니다(궁서체 느낌=Gungsuh, 바탕·명조=Batang 또는 Nanum Myeongjo, 굵은 제목 고딕=Black Han Sans, 일반 고딕=Noto Sans KR, 영문 격식=Times New Roman 등). 7) 글자는 오탈자 없이 보이는 그대로 옮깁니다. 8) objects 에는 원형·사각 직인(도장), 학교 로고·엠블럼, 손글씨 서명처럼 글자가 아닌 독립 이미지를 각각 꼭 맞는 상자로 적습니다(테두리 무늬·배경 장식은 제외). 직인 안의 글자는 texts 에 넣지 않습니다.';
   Sc.analyze = function (canvas) {
     var k = Math.min(1, 1600 / Math.max(canvas.width, canvas.height)), c = cv(canvas.width * k, canvas.height * k); c.getContext('2d').drawImage(canvas, 0, 0, c.width, c.height);
     var data = c.toDataURL('image/jpeg', 0.85).split(',')[1], fonts = AW.FONTS.map(function (f) { return f.id + '(' + f.label + ')'; }).join(', ');
@@ -171,16 +189,21 @@
       var b = { x: Math.round(t.x / 1000 * W), y: Math.round(t.y / 1000 * H), w: Math.round(t.w / 1000 * W), h: Math.round(t.h / 1000 * H) }, rf = refine(g, W, H, b, t.lines || String(t.text).split('\n').length), ok = AW.FONTS.some(function (f) { return f.id === t.font; });
       return { on: true, text: String(t.text).replace(/\s+$/, ''), box: rf.box, color: rf.color || '#111111', lines: Math.max(1, t.lines || String(t.text).split('\n').length), align: /^(left|right)$/.test(t.align) ? t.align : 'center', bold: !!t.bold, font: ok ? t.font : (/[A-Za-z]{4}/.test(t.text) && !/[가-힣]/.test(t.text) ? 'Times New Roman' : 'Noto Serif KR'), variable: !!t.variable, field: String(t.field || '').replace(/[{}]/g, '').trim() || (t.variable ? '항목' : '') };
     });
+    st.objs = ((r && r.objects) || []).filter(function (o) { return o && o.w > 0 && o.h > 0; }).slice(0, 12).map(function (o) {
+      var b = { x: Math.round(o.x / 1000 * W), y: Math.round(o.y / 1000 * H), w: Math.round(o.w / 1000 * W), h: Math.round(o.h / 1000 * H) }, nb = snapObj(g, W, H, b);
+      return { on: true, kind: o.kind || 'seal', label: String(o.label || (o.kind === 'logo' ? '로고' : o.kind === 'signature' ? '서명' : '직인')).slice(0, 20), box: nb };
+    });
     review(el);
   }
   function review(el) {
     var W = st.fin.canvas.width, H = st.fin.canvas.height, url = st.fin.canvas.toDataURL('image/jpeg', 0.7);
     var fo = function (cur) { return AW.FONTS.map(function (f) { return '<option value="' + AW.esc(f.id) + '"' + (f.id === cur ? ' selected' : '') + '>' + AW.esc(f.label) + '</option>'; }).join(''); };
     body(el).innerHTML = '<div class="sc-grid"><div><div class="sc-pv" style="position:relative"><img src="' + url + '" style="width:100%;display:block;border:1px solid var(--border)">' +
+      st.objs.map(function (o, i) { return '<div class="sc-box obj" data-o="' + i + '" style="left:' + (o.box.x / W * 100) + '%;top:' + (o.box.y / H * 100) + '%;width:' + (o.box.w / W * 100) + '%;height:' + (o.box.h / H * 100) + '%"><span>' + AW.esc(o.label) + '</span></div>'; }).join('') +
       st.items.map(function (t, i) { return '<div class="sc-box ' + (t.variable ? 'var' : '') + '" data-i="' + i + '" style="left:' + (t.box.x / W * 100) + '%;top:' + (t.box.y / H * 100) + '%;width:' + (t.box.w / W * 100) + '%;height:' + (t.box.h / H * 100) + '%"><span>' + (i + 1) + '</span></div>'; }).join('') + '</div>' +
       '<div class="muted" style="margin-top:6px">파란 상자=고정 글자, 주황 상자=바뀌는 자리(메일머지). 위치는 만든 뒤 편집창에서 더 다듬을 수 있습니다.</div></div>' +
       '<div><p style="margin-top:0">AI 판독 결과 ' + st.items.length + '건입니다. 틀린 글자는 고치고, 필요 없는 항목은 체크를 해제하십시오.</p>' +
-      '<div class="sc-list">' + st.items.map(function (t, i) {
+      (st.objs.length ? '<div class="sc-objs"><b>이미지 개체(직인·로고·서명)</b> <span class="muted">— 체크하면 배경에서 빼내 독립 이미지 개체로 만듭니다(지우거나 옮길 수 있음)</span>' + st.objs.map(function (o, i) { return '<label class="chk" style="display:flex;gap:6px;align-items:center;margin-top:4px"><input type="checkbox" data-o="' + i + '" ' + (o.on ? 'checked' : '') + '> <input class="in sm" data-on="' + i + '" value="' + AW.esc(o.label) + '" style="width:140px"><span class="muted">' + o.box.w + '×' + o.box.h + 'px</span></label>'; }).join('') + '</div>' : '') + '<div class="sc-list">' + st.items.map(function (t, i) {
         return '<div class="sc-row" data-i="' + i + '"><label class="chk"><input type="checkbox" data-k="on" ' + (t.on ? 'checked' : '') + '> <b>' + (i + 1) + '</b></label>' +
           '<textarea class="in sm" data-k="text" rows="' + Math.min(4, t.lines) + '">' + AW.esc(t.text) + '</textarea>' +
           '<div class="sc-r2"><select class="in sm" data-k="font">' + fo(t.font) + '</select><label class="mini chk"><input type="checkbox" data-k="variable" ' + (t.variable ? 'checked' : '') + '> 바뀌는 자리</label><input class="in sm" data-k="field" value="' + AW.esc(t.field) + '" placeholder="항목명" style="width:90px;' + (t.variable ? '' : 'display:none') + '"></div></div>';
@@ -192,6 +215,8 @@
         if (k === 'on') { var b2 = AW.$('.sc-box[data-i="' + i + '"]', el); if (b2) b2.style.opacity = t.on ? 1 : 0.2; }
       }; });
     });
+    AW.$$('input[data-o]', el).forEach(function (x) { x.onchange = function () { var o = st.objs[+x.dataset.o]; o.on = x.checked; var b = AW.$('.sc-box[data-o="' + x.dataset.o + '"]', el); if (b) b.style.opacity = o.on ? 1 : 0.2; }; });
+    AW.$$('input[data-on]', el).forEach(function (x) { x.oninput = function () { st.objs[+x.dataset.on].label = x.value; var b = AW.$('.sc-box[data-o="' + x.dataset.on + '"] span', el); if (b) b.textContent = x.value; }; });
     AW.$('[data-s="back"]', el).onclick = function () { step2(el); };
     AW.$('[data-s="make"]', el).onclick = function () { make(el); };
   }
@@ -200,6 +225,8 @@
   function make(el) {
     var cvs = st.fin.canvas, W = cvs.width, H = cvs.height, pg = st.fin.page, on = st.items.filter(function (t) { return t.on; }), bgc = cv(W, H), bg = bgc.getContext('2d');
     bg.drawImage(cvs, 0, 0);
+    var objs = (st.objs || []).filter(function (o) { return o.on; }).map(function (o) { return { o: o, src: cutout(bg, o.box) }; });   // 먼저 잘라 내고
+    objs.forEach(function (x) { erase(bg, W, H, x.o.box, 4); });                                                                         // 배경에서는 지움
     if (st.erase) on.forEach(function (t) { erase(bg, W, H, t.box); });
     var nt = AW.newTpl(st.name || '스캔 양식'); nt.page = { w: pg.w, h: pg.h, paper: pg.paper, orient: pg.orient }; nt.bg = bgc.toDataURL('image/jpeg', 0.9); nt.bgName = st.name || '스캔';
     var kx = pg.w / W, ky = pg.h / H, rows0 = {}, used = {};
@@ -210,13 +237,14 @@
       var padw = lines > 1 ? w * 0.03 : 0;
       nt.elems.push(AW.elem('text', { x: AW.round(t.box.x * kx - padw, 2), y: AW.round(t.box.y * ky - (lines > 1 ? 0 : h * 0.12), 2), w: AW.round(w + padw * 2, 2), h: AW.round(lines > 1 ? h : h * 1.24, 2), text: text, font: t.font, size: size, color: t.color || '#111111', bold: !!t.bold, align: t.align, valign: 'middle', lh: lines > 1 ? 1.5 : 1.2, fit: lines === 1 }));
     });
+    objs.forEach(function (x) { nt.elems.push(AW.elem('img', { x: AW.round(x.o.box.x * kx, 2), y: AW.round(x.o.box.y * ky, 2), w: AW.round(x.o.box.w * kx, 2), h: AW.round(x.o.box.h * ky, 2), src: x.src, name: x.o.label })); });
     var keys = Object.keys(rows0); nt.name = st.name || '스캔 양식';
     var bt = AW.$('[data-s="make"]', el); if (bt) bt.disabled = true;
     var done = function () {
       AW.$$('.aw-ov').forEach(function (o) { o.remove(); });
       AW.App.adopt(nt).then(function () {
         if (keys.length) { S.tpl.rows = [rows0]; S.sampleOnly = true; AW.syncFields(); S.tpl.fields.forEach(function (f) { if (rows0[f.name] != null) { f.example = rows0[f.name]; f.sample = rows0[f.name]; } }); AW.Data.refresh(true); AW.emit('datachange'); AW.emit('stepchange'); }
-        AW.toast('스캔본으로 새 양식을 만들었습니다. 글상자 ' + nt.elems.length + '개 · 메일머지 항목 ' + keys.length + '개. 위치와 글꼴을 확인해 다듬어 주십시오.', 'ok'); AW.log('scan_make', '', { texts: nt.elems.length, fields: keys });
+        AW.toast('스캔본으로 새 양식을 만들었습니다. 글상자 ' + on.length + '개 · 이미지 개체 ' + objs.length + '개 · 메일머지 항목 ' + keys.length + '개. 위치와 글꼴을 확인해 다듬어 주십시오.', 'ok'); AW.log('scan_make', '', { texts: nt.elems.length, fields: keys });
       });
     };
     done();
