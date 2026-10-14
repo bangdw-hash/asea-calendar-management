@@ -29,6 +29,8 @@
     st.hist = st.hist.slice(0, st.hi + 1); st.hl = st.hl.slice(0, st.hi + 1); st.hist.push(s); st.hl.push(label || st.lbl || '편집'); st.lbl = null;
     if (st.hist.length > 50) { st.hist.shift(); st.hl.shift(); } st.hi = st.hist.length - 1; updUndo();
   }
+  E.getHist = function () { return { hist: st.hist.slice(), hl: st.hl.slice(), bgs: st.bgs.slice(), hi: st.hi }; };
+  E.setHist = function (h) { st.hist = h.hist.slice(); st.hl = h.hl.slice(); st.bgs = h.bgs.slice(); st.hi = h.hi; updUndo(); };
   E.resetHist = function () { st.hist = []; st.hl = []; st.bgs = []; st.hi = -1; pushHist('시작'); };
   function jumpTo(i) {
     if (i < 0 || i >= st.hist.length) return;
@@ -444,7 +446,7 @@
     if (!st.clip || !st.clip.length) return;
     var x0 = Infinity, y0 = Infinity; st.clip.forEach(function (c) { x0 = Math.min(x0, c.x); y0 = Math.min(y0, c.y); });
     var dx = inPlace ? 0 : pos ? pos.x - x0 : 5, dy = inPlace ? 0 : pos ? pos.y - y0 : 5;
-    var gm = {}, ids = st.clip.map(function (c) { var n = AW.clone(c); n.id = AW.uid(); if (n.grp) n.grp = gm[n.grp] = gm[n.grp] || AW.uid('g'); n.x = AW.round(Math.max(0, c.x + dx), 2); n.y = AW.round(Math.max(0, c.y + dy), 2); n.lock = false; T().elems.push(n); return n.id; });
+    var gm = {}, ids = st.clip.map(function (c) { var n = AW.clone(c); n.id = AW.uid(); if (n.grp) n.grp = gm[n.grp] = gm[n.grp] || AW.uid('g'); n.x = AW.round(Math.max(0, Math.min(T().page.w - Math.min(c.w, T().page.w), c.x + dx)), 2); n.y = AW.round(Math.max(0, Math.min(T().page.h - Math.min(c.h || 0, T().page.h), c.y + dy)), 2); n.lock = false; T().elems.push(n); return n.id; });
     E.refreshElems(); E.setSel(ids); changed('elems');
   }
   function orderStep(dir) {                  // 한 칸 앞으로(+1)/뒤로(-1)
