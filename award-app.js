@@ -40,12 +40,14 @@
       '<header class="top"><div class="brand">' + AW.ic('tpl', 22) + '<span>상장 메일머지</span></div>' +
         '<input class="in tname" id="t-name" maxlength="60" aria-label="양식 이름" placeholder="양식 이름">' +
         '<div class="sstat" id="t-stat" role="status"></div><span class="sp"></span>' +
+        '<button class="icon-btn" id="h-undo" data-a="undo-h" title="되돌리기 (Ctrl+Z)" aria-label="되돌리기" disabled>' + AW.ic('undo', 18) + '</button><button class="icon-btn" id="h-redo" data-a="redo-h" title="다시 실행 (Ctrl+Y)" aria-label="다시 실행" disabled>' + AW.ic('redo', 18) + '</button><button class="icon-btn" id="h-hist" data-a="hist-h" title="작업 기록 (단계별로 돌아가기)" aria-label="작업 기록">' + AW.ic('history', 18) + '</button>' +
         '<button class="btn btn-ghost btn-sm" data-a="list">' + AW.ic('folder', 16) + '<span class="hm"> 양식 목록</span></button>' +
         '<button class="btn btn-secondary btn-sm" data-a="save">' + AW.ic('save', 16) + '<span class="hm"> 저장</span></button>' +
         '<button class="btn btn-ghost btn-sm" data-a="hist">' + AW.ic('history', 16) + '<span class="hm"> 이력</span></button>' +
         '<button class="ai-chip" id="ai-chip" title="AI 연결 상태 — 눌러서 점검"><i></i><span>AI</span></button>' +
         '<select class="in sm hm" id="t-lay" aria-label="화면 배치" title="화면 배치"><option value="">화면 배치</option><option value="balance">균형</option><option value="edit">양식 중심</option><option value="data">데이터 중심</option><option value="prev">미리보기 중심</option></select>' +
         '<button class="btn btn-ghost btn-sm" data-a="usr" aria-haspopup="menu">' + AW.ic('cols', 16) + '<span class="hm"> 사용자 메뉴</span></button></header>' +
+      '<nav class="steps" id="steps" aria-label="작업 단계"></nav>' +
       '<main class="panes" id="panes"></main>' +
       '<nav class="mtabs" aria-label="화면 전환">' + PANES.map(function (p) { return '<button data-mt="' + p[0] + '" class="' + (p[0] === mTab ? 'on' : '') + '">' + p[1] + '</button>'; }).join('') + '</nav></div>';
     var pn = $('#panes');
@@ -70,7 +72,7 @@
     var col = e.target.closest('[data-col]'); if (col) { var k = col.dataset.col; lay.c[k] = !lay.c[k]; if (PANES.every(function (p) { return lay.c[p[0]]; })) lay.c[k] = false; applyLayout(); saveLayout(); return; }
     var mt = e.target.closest('[data-mt]'); if (mt) { mTab = mt.dataset.mt; $('.shell').dataset.m = mTab; AW.$$('.mtabs button').forEach(function (b) { b.classList.toggle('on', b === mt); }); setTimeout(relayout, 30); return; }
     var b = e.target.closest('header [data-a]'); if (!b) return;
-    ({ usr: userMenu, list: listDialog, save: function () { save({ note: '수동 저장', toast: true }); }, hist: function () { AW.History.open(); }, out: logout })[b.dataset.a]();
+    ({ 'undo-h': function () { AW.Editor.act('undo'); }, 'redo-h': function () { AW.Editor.act('redo'); }, 'hist-h': function () { var r = $('#h-hist').getBoundingClientRect(); AW.Editor.histMenu(r.left, r.bottom + 4); }, usr: userMenu, list: listDialog, save: function () { save({ note: '수동 저장', toast: true }); }, hist: function () { AW.History.open(); }, out: logout })[b.dataset.a]();
   }
   function userMenu() {
     var b = $('[data-a="usr"]').getBoundingClientRect(), I = function (label, ic, fn, key, on) { return { k: 'i', label: label, ic: ic, fn: fn, key: key, on: on }; }, E = AW.Editor;
@@ -147,7 +149,8 @@
   /* ───────────── 양식 열기·만들기·목록 ───────────── */
   function renderAll() {
     var t = S.tpl; $('#t-name').value = t.name; S.sel = []; S.row = Math.min(S.row, Math.max(0, t.rows.length - 1)); AW.syncFields();
-    AW.Editor.render(); AW.Editor.resetHist(); AW.Data.refresh(true); AW.Preview.render(); setStat();
+    S.seenPrev = false; S.printed = false; S.sampleOnly = false;
+    AW.Editor.render(); AW.Editor.resetHist(); AW.Data.refresh(true); AW.Preview.render(); setStat(); steps();
     AW.ensureFontsFor(t).then(function (n) { if (n) { AW.Editor.render(); AW.Preview.render(); } });
   }
   function openTpl(id) {
@@ -187,6 +190,32 @@
     var last = AW.lsGet(LAST_KEY, null), p = last ? openTpl(last) : Promise.reject();
     p.catch(function () { S.tpl = AW.newTpl(); renderAll(); listDialog(); });
   }
+  A.revertSaved = function () {
+    if (!S.tpl || !S.tpl.id) return AW.toast('아직 저장된 적이 없는 양식입니다.');
+    AW.confirm('마지막 저장 상태로 되돌리기', '저장된 버전으로 되돌립니다. 그 이후의 변경은 사라집니다. (자동 저장은 변경 후 약 2초 뒤에 이루어집니다)', '되돌리기', true).then(function (ok) { if (!ok) return; clearTimeout(timer); S.dirty = false; openTpl(S.tpl.id).then(function () { AW.toast('마지막 저장 상태로 되돌렸습니다.', 'ok'); }).catch(function (e) { AW.toast(e.message, 'error'); }); });
+  };
+  /* ───────────── 작업 단계 표시줄 ───────────── */
+  var STEPS = [['bg', '양식 올리기', '[data-a="page"]', 'edit', '양식 파일(JPG·PNG·PDF)을 올립니다 — 「용지·배경 설정」'], ['lay', '배치', '[data-a="starter"]', 'edit', '「기본 상장 배치」를 넣거나 글상자를 추가해 양식 위에 배치합니다'],
+    ['mg', '항목 지정', '[data-a="add-field"]', 'edit', '바뀌는 문구를 더블클릭 → 드래그 → 우클릭 → 「메일머지 항목으로 만들기」'], ['data', '데이터 입력', '#dt-file ~ *, [data-a="upx"]', 'data', '「엑셀 양식 받기」로 작성한 뒤 「엑셀 올리기」를 누릅니다'],
+    ['prev', '미리보기 확인', '#pv-n', 'prev', '미리보기에서 행을 넘기며 내용을 확인합니다'], ['out', '인쇄', '#pb-prev [data-a="print"]', 'prev', '「인쇄 · PDF」로 출력합니다']];
+  function stepDone(k) { var t = S.tpl; return k === 'bg' ? !!t.bg || t.elems.length > 0 : k === 'lay' ? t.elems.length > 0 : k === 'mg' ? t.fields.length > 0 : k === 'data' ? t.rows.length > 0 && !S.sampleOnly : k === 'prev' ? !!S.seenPrev : !!S.printed; }
+  var stepsDeb = AW.debounce(function () { steps(); }, 120);
+  function steps() {
+    var nav = $('#steps'); if (!nav || !S.tpl) return; var off = AW.lsGet('award_steps_off', false), cur = -1;
+    STEPS.forEach(function (s, i) { if (cur < 0 && !stepDone(s[0])) cur = i; });
+    nav.innerHTML = STEPS.map(function (s, i) { var d = stepDone(s[0]) && i !== cur; return '<button class="stp ' + (d ? 'done' : i === cur ? 'cur' : 'todo') + '" data-s="' + i + '" title="' + AW.esc(s[4]) + '"><i>' + (d ? AW.ic('check', 12) : (i + 1)) + '</i>' + s[1] + '</button>'; }).join('<span class="stp-ar">' + AW.ic('chevR', 14) + '</span>') +
+      '<span class="stp-hint">' + (cur < 0 ? AW.ic('check', 14) + ' 모든 단계를 마쳤습니다' : off ? '' : AW.ic('chevR', 14) + ' <b>' + (cur + 1) + '단계</b> ' + AW.esc(STEPS[cur][4])) + '</span><label class="mini chk" style="margin-left:auto"><input type="checkbox" id="stp-off"' + (off ? ' checked' : '') + '> 안내 끄기</label>';
+    AW.$$('.pulse').forEach(function (n) { n.classList.remove('pulse'); });
+    if (cur >= 0 && !off) { AW.$$(STEPS[cur][2]).forEach(function (n, i) { if (i < 2) n.classList.add('pulse'); }); if (STEPS[cur][3] === 'data') AW.$$('#p-data .ph-t').forEach(function (n) { n.classList.add('pulse'); }); }
+  }
+  AW.on('tplchange', stepsDeb); AW.on('datachange', stepsDeb); AW.on('stepchange', stepsDeb);
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('#steps [data-s]'), o = e.target.id === 'stp-off' ? e.target : null;
+    if (o) { AW.lsSet('award_steps_off', o.checked); return steps(); }
+    if (!b) return; var s = STEPS[+b.dataset.s], pane = s[3];
+    if (lay.c[pane]) { lay.c[pane] = false; applyLayout(); saveLayout(); } var mt = $('[data-mt="' + pane + '"]'); if (mt && getComputedStyle($('.mtabs')).display !== 'none') mt.click();
+    var tg = AW.$(s[2]); if (tg) { tg.classList.add('pulse'); try { tg.scrollIntoView({ block: 'nearest' }); } catch (x) {} } AW.toast(s[4]);
+  });
   A.adopt = function (nt) { return save({ note: '' }).then(function () { S.tpl = nt; S.dirty = true; S.bgDirty = !!nt.bg; S.row = 0; S.saveErr = ''; renderAll(); touch('elems'); }); };
   A.init = function () {
     var t = AW.loadToken(); if (!t) return showLogin();

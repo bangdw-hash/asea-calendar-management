@@ -15,7 +15,7 @@
   function names() { return T().fields.map(function (f) { return f.name; }); }
   function colLetter(i) { var s = ''; i++; while (i > 0) { var m = (i - 1) % 26; s = String.fromCharCode(65 + m) + s; i = Math.floor((i - 1) / 26); } return s; }
   function norm(s) { return String(s == null ? '' : s).toLowerCase().replace(/\([^)]*\)|\[[^\]]*\]/g, '').replace(/[\s*:：_\-·.]/g, ''); }
-  function dataChanged(i) { S.dirty = true; AW.emit('datachange', i); }
+  function dataChanged(i) { S.dirty = true; S.sampleOnly = false; AW.emit('datachange', i); }
 
   /* ───────────── 마운트 ───────────── */
   D.mount = function (root) {
