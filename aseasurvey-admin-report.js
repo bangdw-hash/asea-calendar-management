@@ -9,8 +9,9 @@
  */
 (function () {
   var A = window.SVYA, E = SVY.esc, I = SVY.ico, API = function () { return A.ext.resApi; };
-  var UI = A.ext.rpt = A.ext.rpt || { unit: 'prof', types: { a: true, b: true }, sel: {}, q: '', busy: false, cancel: false, ents: [] };
-  var PX = { w: 794, h: 1123 };   // A4 @96dpi
+  var UI = A.ext.rpt = A.ext.rpt || { unit: 'prof', types: { a: true, b: true }, sel: {}, q: '', busy: false, cancel: false, ents: [], sort: 'def', showProf: false, merge: {} };
+  var PX = { w: 794, h: 1123 };
+  var UL = { prof: '교원', klass: '반', track: '계열', subject: '과목' }, ULS = { prof: '교수별', klass: '반별', track: '계열별', subject: '과목별' };   // A4 @96dpi
 
   /* ───────────── 로컬 저장 (IndexedDB, 서버 미사용) ───────────── */
   var DB = { db: null };
@@ -54,11 +55,11 @@
   function ovGet() { return dbGet(sid() + '|overview').then(function (v) { return Object.assign(ovDefaults(), v || {}); }); }
 
   /* ───────────── 파일명 규칙 ───────────── */
-  var NAME_DEF = { prefix: '', prof: '{조사}_{계열}_{교수}', klass: '{계열}_{반}', track: '{계열}' };
+  var NAME_DEF = { prefix: '', prof: '{조사}_{계열}_{교수}', klass: '{계열}_{반}', track: '{계열}', subject: '{조사}_{과목}' };
   function nameSettings() { return dbGet(sid() + '|names').then(function (v) { var o = Object.assign({}, NAME_DEF, v || {}); if (!o.prefix) o.prefix = ((A.cur.survey.semester || '') ? A.cur.survey.semester + '학기' : '') + '_수업개선설문조사 결과'; return o; }); }
   function safe(s) { return String(s == null ? '' : s).replace(/[\\\/:*?"<>|]/g, '').replace(/\s+/g, ' ').trim(); }
   function fileName(ns, ent, suffix) {
-    var pat = ns[ent.unit] || '{계열}', name = pat.replace(/\{조사\}/g, safe(ns.prefix)).replace(/\{계열\}/g, safe(ent.track)).replace(/\{교수\}/g, safe(ent.prof || '')).replace(/\{반\}/g, safe(ent.klassName || '')).replace(/\{학기\}/g, safe(A.cur.survey.semester || ''));
+    var pat = ns[ent.unit] || '{계열}', name = pat.replace(/\{조사\}/g, safe(ns.prefix)).replace(/\{계열\}/g, safe(ent.track)).replace(/\{교수\}/g, safe(ent.prof || '')).replace(/\{반\}/g, safe(ent.klassName || '')).replace(/\{과목\}/g, safe(ent.unit === 'subject' ? ent.label : '')).replace(/\{학기\}/g, safe(A.cur.survey.semester || ''));
     return safe(name).replace(/^_+|_+$/g, '') + (suffix || '') + '.pdf';
   }
 
@@ -77,11 +78,14 @@
     });
     return { pairs: pairs, texts: texts, commons: commons, Q: Q };
   }
-  function entKey(unit, p) { return unit === 'prof' ? p.c.track + '|' + (p.c.prof || '(교수 미입력)') : unit === 'klass' ? p.r.track + '|' + p.r.grade + '|' + p.r.klass : p.r.track; }
+  function subjRaw(n) { return String(n || '').toLowerCase().replace(/[\s()（）\[\]·.,_\-|]/g, '') || '(과목명 없음)'; }
+  function subjKey(n) { var r = subjRaw(n), g = 0; while (UI.merge[r] && UI.merge[r] !== r && g++ < 5) r = UI.merge[r]; return r; }
+  function entKey(unit, p) { return unit === 'subject' ? '*|' + subjKey(p.c.name) : unit === 'prof' ? p.c.track + '|' + (p.c.prof || '(교수 미입력)') : unit === 'klass' ? p.r.track + '|' + p.r.grade + '|' + p.r.klass : p.r.track; }
   function mk(unit, key, p) {
     var parts = key.split('|'), e = { unit: unit, key: key, track: parts[0] };
     if (unit === 'prof') { e.prof = parts[1]; e.label = parts[1]; e.sub = parts[0]; }
     else if (unit === 'klass') { e.klassName = parts[1] + parts[2]; e.label = parts[0] + ' ' + parts[1] + ' ' + parts[2]; e.sub = ''; e.grade = parts[1]; e.klass = parts[2]; }
+    else if (unit === 'subject') { e.label = parts[1]; e.sub = ''; e.track = ''; e.prof = ''; e.raw = {}; }
     else { e.label = parts[0]; e.sub = ''; }
     return e;
   }
@@ -95,7 +99,7 @@
       Q.scale.forEach(function (x) { var v = p.a[x.q.id]; if (v == null) return; addTo(e.agg, v, x.s.id); addTo(cc.a, v, x.s.id); addTo(all, v, x.s.id); var qq = e.agg.q[x.q.id] || (e.agg.q[x.q.id] = { sum: 0, n: 0, q: x.q }); qq.sum += v; qq.n++; });
     });
     C.texts.forEach(function (t) { var k = entKey(unit, t); if (ents[k]) ents[k].comments.push({ c: t.c.name, q: t.q.id, ql: String(t.q.label).replace(/\s+/g, ' ').slice(0, 40), t: t.text }); });
-    if (unit !== 'prof') C.commons.forEach(function (t) { var k = unit === 'klass' ? t.r.track + '|' + t.r.grade + '|' + t.r.klass : t.r.track; if (ents[k]) ents[k].comments.push({ c: '', q: t.q.id, ql: String(t.q.label).replace(/\s+/g, ' ').slice(0, 40), t: t.text }); });
+    if (unit !== 'prof' && unit !== 'subject') C.commons.forEach(function (t) { var k = unit === 'klass' ? t.r.track + '|' + t.r.grade + '|' + t.r.klass : t.r.track; if (ents[k]) ents[k].comments.push({ c: '', q: t.q.id, ql: String(t.q.label).replace(/\s+/g, ' ').slice(0, 40), t: t.text }); });
     var list = Object.keys(ents).map(function (k) {
       var e = ents[k]; e.resp = Object.keys(e.rs).length; e.cnt = e.agg.n;
       e.mean = e.cnt ? e.agg.sum / e.cnt : null; e.posr = e.cnt ? e.agg.pos / e.cnt * 100 : null; e.negr = e.cnt ? e.agg.neg / e.cnt * 100 : null;
@@ -103,6 +107,7 @@
       var qs = Object.keys(e.agg.q).map(function (id) { var x = e.agg.q[id]; return { id: id, label: String(x.q.label).replace(/\s+/g, ' '), mean: x.sum / x.n, n: x.n }; }).sort(function (a, b) { return b.mean - a.mean; });
       e.best = qs.slice(0, 3); e.worst = qs.slice(-3).reverse();
       e.courseList = Object.keys(e.courses).map(function (id) { var c = e.courses[id]; return { name: c.c.name, kind: c.c.kind || '', prof: c.c.prof || '', klass: c.c.track + ' ' + c.c.grade + ' ' + c.c.klass, mean: c.a.n ? c.a.sum / c.a.n : null, pos: c.a.n ? c.a.pos / c.a.n * 100 : null, resp: Object.keys(c.rs).length }; }).sort(function (a, b) { return (b.mean || 0) - (a.mean || 0); });
+      if (unit === 'subject') { var nm = {}, tk = {}; Object.keys(e.courses).forEach(function (id) { var c = e.courses[id].c; nm[c.name] = (nm[c.name] || 0) + 1; tk[c.track] = 1; e.raw[subjRaw(c.name)] = 1; }); e.label = Object.keys(nm).sort(function (a, b) { return nm[b] - nm[a]; })[0] || e.label; var tl = Object.keys(tk).sort(); e.track = tl.length > 2 ? tl[0] + ' 외 ' + (tl.length - 1) + '개 계열' : tl.join('·'); e.sub = e.track; }
       e.schoolMean = all.n ? all.sum / all.n : null; e.schoolPos = all.n ? all.pos / all.n * 100 : null;
       return e;
     }).sort(function (a, b) { return (a.track + (a.label || '')).localeCompare(b.track + (b.label || ''), 'ko'); });
@@ -132,7 +137,7 @@
     '"actions":[{"title":"개선 과제 제목","detail":"교육기획 관점의 구체적 방안 2~3문장(누가·무엇을·어떻게). 형식적 문구 금지","owner":"교원|교육처|학과","when":"즉시|이번 학기|다음 학기"}](3~5개)}\n' +
     '규칙: 모든 의견(i)을 classify에 포함. 욕설·인신공격이 있으면 soft/positive/negative에 옮기지 말고 일반화해 표현. 근거 없는 추측 금지.';
   function aiInput(e, ov) {
-    return JSON.stringify({ unit: e.unit === 'prof' ? '교원' : e.unit === 'klass' ? '반' : '계열', survey: ov.survey, basis: ov.basis,
+    return JSON.stringify({ unit: UL[e.unit], survey: ov.survey, basis: ov.basis,
       scores: { overall: { mean: round2(e.mean), pos: Math.round(e.posr || 0), neg: Math.round(e.negr || 0), school: round2(e.schoolMean) }, sections: e.secs.map(function (s) { return { n: secShort(s.title), mean: round2(s.mean), school: round2(s.school), pos: Math.round(s.pos || 0), neg: Math.round(s.neg || 0) }; }),
         best: e.best.map(function (q) { return { q: q.label.slice(0, 50), mean: round2(q.mean) }; }), worst: e.worst.map(function (q) { return { q: q.label.slice(0, 50), mean: round2(q.mean) }; }), courses: e.courseList.slice(0, 12).map(function (c) { return { n: c.name, mean: round2(c.mean) }; }) },
       comments: e.comments.slice(0, 60).map(function (c, i) { return { i: i, q: c.ql, c: c.c, t: c.t.slice(0, 300) }; }) });
@@ -173,12 +178,12 @@
   }
   function blocksA(ent, an, ov) {
     var b = [], pc = function (v) { return v == null ? '-' : Math.round(v) + '%'; };
-    var unitL = ent.unit === 'prof' ? '교원' : ent.unit === 'klass' ? '반' : '계열';
+    var unitL = UL[ent.unit];
     b.push({ h: '<div class="rp-title">' + E(ent.label) + ' 수업 개선 설문 결과</div><div class="rp-sub">' + (ent.sub ? E(ent.sub) + ' · ' : '') + unitL + '별 결과 보고 (내부 보고용)</div>' + ovTable(ov, ent, 'a') });
     b.push({ keep: 1, h: '<div class="rp-h2">핵심 지표</div><div class="rp-kpis"><div class="rp-kpi"><div class="l">종합 평균(5점)</div><div class="v">' + fmt1(ent.mean) + '</div><div class="s">학교 평균 ' + fmt1(ent.schoolMean) + '</div></div><div class="rp-kpi"><div class="l">긍정률(4·5점)</div><div class="v">' + pc(ent.posr) + '</div><div class="s">학교 평균 ' + pc(ent.schoolPos) + '</div></div><div class="rp-kpi"><div class="l">부정률(1·2점)</div><div class="v">' + pc(ent.negr) + '</div></div><div class="rp-kpi"><div class="l">응답자</div><div class="v">' + ent.resp + '</div><div class="s">과목 단위 ' + ent.courseList.reduce(function (s, c) { return s + c.resp; }, 0) + '건</div></div></div>' });
     b.push({ keep: 1, h: '<div class="rp-h2">영역별 평가 <small style="font-weight:400;color:#64748b">(점선 = 학교 평균)</small></div>' });
     ent.secs.forEach(function (s) { if (s.mean == null) return; b.push({ h: '<div class="rp-bar"><span>' + E(secShort(s.title)) + '</span><span class="b"><i style="width:' + (s.mean / 5 * 100) + '%"></i>' + (s.school != null ? '<u style="left:' + (s.school / 5 * 100) + '%"></u>' : '') + '</span><b>' + fmt1(s.mean) + '</b></div>' }); });
-    if (ent.courseList.length) b.push({ h: '<div class="rp-h2">' + (ent.unit === 'prof' ? '담당 과목별 결과' : '과목별 결과') + '</div><table class="rp-t"><thead><tr><th>과목</th><th>' + (ent.unit === 'prof' ? '반' : '담당 교원') + '</th><th class="n">평균</th><th class="n">긍정률</th><th class="n">응답</th></tr></thead><tbody>' + ent.courseList.map(function (c) { return '<tr><td>' + E(c.name) + (c.kind ? '<span class="rp-badge">' + E(c.kind) + '</span>' : '') + '</td><td>' + E(ent.unit === 'prof' ? c.klass.replace(ent.track, '').trim() : c.prof) + '</td><td class="n">' + fmt1(c.mean) + '</td><td class="n">' + pc(c.pos) + '</td><td class="n">' + c.resp + '</td></tr>'; }).join('') + '</tbody></table>' });
+    if (ent.courseList.length) b.push({ h: '<div class="rp-h2">' + (ent.unit === 'prof' ? '담당 과목별 결과' : ent.unit === 'subject' ? '반별 결과' : '과목별 결과') + '</div><table class="rp-t"><thead><tr><th>' + (ent.unit === 'subject' ? '반' : '과목') + '</th><th>' + (ent.unit === 'prof' ? '반' : ent.unit === 'subject' ? (UI.showProf ? '담당 교원' : '') : '담당 교원') + '</th><th class="n">평균</th><th class="n">긍정률</th><th class="n">응답</th></tr></thead><tbody>' + ent.courseList.map(function (c) { return '<tr><td>' + E(ent.unit === 'subject' ? c.klass : c.name) + (c.kind ? '<span class="rp-badge">' + E(c.kind) + '</span>' : '') + '</td><td>' + E(ent.unit === 'prof' ? c.klass.replace(ent.track, '').trim() : ent.unit === 'subject' ? (UI.showProf ? c.prof : '') : c.prof) + '</td><td class="n">' + fmt1(c.mean) + '</td><td class="n">' + pc(c.pos) + '</td><td class="n">' + c.resp + '</td></tr>'; }).join('') + '</tbody></table>' });
     if (ent.best.length) b.push({ keep: 0, h: '<div class="rp-h2">문항별 강점·보완</div><div class="rp-two"><div class="rp-pos"><h4>평가가 높은 문항</h4>' + ent.best.map(function (q) { return '<div class="rp-c">' + E(q.label.slice(0, 60)) + ' <b>' + fmt1(q.mean) + '</b></div>'; }).join('') + '</div><div class="rp-neg"><h4>평가가 낮은 문항</h4>' + ent.worst.map(function (q) { return '<div class="rp-c">' + E(q.label.slice(0, 60)) + ' <b>' + fmt1(q.mean) + '</b></div>'; }).join('') + '</div></div>' });
     var groups = { pos: [], neg: [], neu: [] }; (an.cls || []).forEach(function (c) { if (ent.comments[c.i]) groups[c.s].push({ c: ent.comments[c.i], t: c.t }); });
     b.push({ keep: 1, h: '<div class="rp-h2">학생 서술 의견 <small style="font-weight:400;color:#64748b">(원문 · 긍정 ' + groups.pos.length + ' / 부정 ' + groups.neg.length + ' / 기타 ' + groups.neu.length + ')</small></div>' });
@@ -192,7 +197,7 @@
     return b;
   }
   function blocksB(ent, an, ov) {
-    var b = [], unitL = ent.unit === 'prof' ? '교원' : ent.unit === 'klass' ? '반' : '계열';
+    var b = [], unitL = UL[ent.unit];
     b.push({ h: '<div class="rp-title">' + E(ent.label) + ' 수업 개선 의견 안내</div><div class="rp-sub">' + (ent.sub ? E(ent.sub) + ' · ' : '') + unitL + ' 대상 정성 리포트 (전달용)</div>' + ovTable(ov, ent, 'b') });
     b.push({ keep: 1, h: '<div class="rp-h2">학생들의 의견을 모아 본 종합 소견</div>' });
     String(an.soft || '').split(/\n{1,}/).filter(function (p) { return p.trim(); }).forEach(function (p) { b.push({ h: '<div class="rp-box" style="margin-bottom:6px">' + E(p.trim()) + '</div>' }); });
@@ -258,7 +263,7 @@
         var e = queue.shift(), rec = getRec(e) || {};
         try {
           var an = mode === 'ai' ? await aiAnalyze(e, ov) : ruleAnalysis(e);
-          rec = { analysis: an, edit: null, updated: Date.now(), n: e.comments.length }; UI.saved[e.unit + '|' + e.key] = rec; await dbPut(ekey(e.unit, e.key), rec);
+          rec = { analysis: an, edit: null, updated: Date.now(), n: e.comments.length, fsig: fsig() }; UI.saved[e.unit + '|' + e.key] = rec; await dbPut(ekey(e.unit, e.key), rec);
         } catch (er) { fail++; errs.push(e.label + ': ' + er.message); }
         done++; drawStatus((mode === 'ai' ? 'AI 분석 ' : '기본 분석 ') + done + ' / ' + list.length + (fail ? ' (실패 ' + fail + ')' : ''));
       }
@@ -271,30 +276,45 @@
   /* ───────────── 화면 ───────────── */
   async function show(box) {
     box.innerHTML = '<div class="loading">리포트 준비 중…</div>';
-    UI.ents = facts(UI.unit); await loadSaved(); var ov = await ovGet(), ns = await nameSettings();
+    UI.merge = (await dbGet(sid() + '|merge')) || {}; UI.ents = facts(UI.unit); await loadSaved(); var ov = await ovGet(), ns = await nameSettings();
     var flt = API().F;
-    box.innerHTML = '<div class="panel"><h3>리포트 생성 <span class="muted" style="font-weight:400">· 교수별 · 반별 · 계열별 PDF</span></h3>' +
+    box.innerHTML = '<div class="panel"><h3>' + ULS[UI.unit] + ' 분석 <span class="muted" style="font-weight:400">· 종합 확인 → 대상 선택 → 리포트 생성</span></h3>' +
       '<div class="msg" style="margin:8px 0">' + I('info', 18) + '<div>현재 응답 범위: <b>' + (A.ext.SINC[flt.sincere] || '전체') + '</b>, ' + (flt.data === 'real' ? '정식 응답' : flt.data === 'test' ? '테스트 응답' : '정식+테스트') + ' 기준으로 만들어집니다. 정식 보고에는 「유효 응답만」을 권장합니다.<br>AI 분석 결과·편집 내용은 <b>이 브라우저에만 저장</b>되고 서버에 올라가지 않습니다. AI에는 이름 없이 집계 수치와 서술 문장만 전송합니다.</div></div>' +
       '<details id="rpt-ov"><summary style="cursor:pointer;font-weight:700;margin:6px 0">① 리포트 개요 (교육처 기입) — 모든 리포트 첫 장에 들어갑니다</summary><div class="grid g2" style="margin-top:8px">' + OV_FIELDS.map(function (f) { var long = /notice|basis|method|target/.test(f[0]); return '<div' + (long ? ' style="grid-column:1/-1"' : '') + '><label class="f">' + E(f[1]) + ' <span class="muted" style="font-weight:400">— ' + E(f[2]) + '</span></label>' + (long ? '<textarea class="fld" rows="2" data-ov="' + f[0] + '">' + E(ov[f[0]] || '') + '</textarea>' : '<input class="fld" data-ov="' + f[0] + '" value="' + E(ov[f[0]] || '') + '">') + '</div>'; }).join('') + '</div><div class="btn-row"><button class="btn btn-primary btn-sm" data-rp="ovsave">개요 저장 (이 브라우저)</button><button class="btn btn-ghost btn-sm" data-rp="ovreset">기본값으로</button></div></details></div>' +
-      '<div class="panel"><h3>② 대상과 리포트 종류</h3><div class="row" style="gap:14px;flex-wrap:wrap;align-items:flex-end"><div><label class="f">단위</label><select class="fld" data-rp="unit">' + [['prof', '교수별'], ['klass', '반별'], ['track', '계열별']].map(function (u) { return '<option value="' + u[0] + '"' + (UI.unit === u[0] ? ' selected' : '') + '>' + u[1] + '</option>'; }).join('') + '</select></div>' +
-      '<label class="chk"><input type="checkbox" data-rp="ta"' + (UI.types.a ? ' checked' : '') + '> 수치·원문 리포트 (내부 보고용)</label><label class="chk"><input type="checkbox" data-rp="tb"' + (UI.types.b ? ' checked' : '') + '> 정성 리포트 (전달용, 수치 없음)</label>' +
-      '<div style="flex:1;min-width:160px"><label class="f">검색</label><input class="fld" data-rp="q" value="' + E(UI.q) + '" placeholder="이름·계열"></div></div>' +
+      '<div id="rpt-sum"></div><div class="panel"><h3>② 리포트 종류와 파일명</h3><div class="row" style="gap:14px;flex-wrap:wrap;align-items:flex-end"><label class="chk"><input type="checkbox" data-rp="ta"' + (UI.types.a ? ' checked' : '') + '> 수치·원문 리포트 (내부 보고용)</label><label class="chk"><input type="checkbox" data-rp="tb"' + (UI.types.b ? ' checked' : '') + '> 정성 리포트 (전달용, 수치 없음)</label>' +
+      '' + (UI.unit === 'subject' && !((A.cur.survey.def || {}).link || {}).hideProf ? '<label class="chk"><input type="checkbox" data-rp="sp"' + (UI.showProf ? ' checked' : '') + '> 리포트에 담당 교원 표시</label>' : '') + '</div>' +
       '<details style="margin-top:10px"><summary style="cursor:pointer;font-weight:700">파일명 규칙</summary><div class="grid g2" style="margin-top:8px"><div style="grid-column:1/-1"><label class="f">조사명 문구 <code>{조사}</code></label><input class="fld" data-nm="prefix" value="' + E(ns.prefix) + '"></div>' +
-      [['prof', '교수별 파일명'], ['klass', '반별 파일명'], ['track', '계열별 파일명']].map(function (u) { return '<div><label class="f">' + u[1] + '</label><input class="fld" data-nm="' + u[0] + '" value="' + E(ns[u[0]]) + '"></div>'; }).join('') + '</div><div class="muted" style="font-size:12.5px;margin-top:6px">사용 가능: {조사} {계열} {교수} {반} {학기}. 두 종류를 함께 만들면 파일명 끝에 「_내부용」「_전달용」이 붙습니다. <button class="btn btn-ghost btn-sm" data-rp="nmsave">저장</button> <span id="nm-ex" class="muted"></span></div></details></div>' +
-      '<div class="panel"><div class="row" style="gap:8px;flex-wrap:wrap;align-items:center"><h3 class="sp" style="margin:0">③ 대상 목록 <span id="rpt-cnt" class="muted" style="font-weight:400"></span></h3>' +
+      [['prof', '교수별 파일명'], ['klass', '반별 파일명'], ['track', '계열별 파일명'], ['subject', '과목별 파일명']].map(function (u) { return '<div><label class="f">' + u[1] + '</label><input class="fld" data-nm="' + u[0] + '" value="' + E(ns[u[0]]) + '"></div>'; }).join('') + '</div><div class="muted" style="font-size:12.5px;margin-top:6px">사용 가능: {조사} {계열} {교수} {반} {과목} {학기}. 두 종류를 함께 만들면 파일명 끝에 「_내부용」「_전달용」이 붙습니다. <button class="btn btn-ghost btn-sm" data-rp="nmsave">저장</button> <span id="nm-ex" class="muted"></span></div></details></div>' +
+      '<div class="panel"><div class="row" style="gap:8px;flex-wrap:wrap;align-items:center"><h3 class="sp" style="margin:0">③ ' + ULS[UI.unit] + ' 목록 <span id="rpt-cnt" class="muted" style="font-weight:400"></span></h3>' +
+      '<input class="fld" data-rp="q" value="' + E(UI.q) + '" placeholder="이름·계열 검색" style="width:160px"><select class="fld" data-rp="sort" style="width:auto" title="정렬">' + [['def', '계열·이름순'], ['name', '이름순'], ['hi', '점수 높은순'], ['lo', '점수 낮은순'], ['resp', '응답자 많은순'], ['neg', '부정률 높은순']].map(function (o) { return '<option value="' + o[0] + '"' + (UI.sort === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select>' +
+      (UI.unit === 'subject' ? '<button class="btn btn-ghost btn-sm" data-rp="mg" title="선택한 과목을 하나로 합칩니다">선택 과목 합치기</button><button class="btn btn-ghost btn-sm" data-rp="split" title="합쳐진 과목을 다시 나눕니다">합치기 해제</button>' : '') +
       '<button class="btn btn-secondary btn-sm" data-rp="selall">전체 선택</button><button class="btn btn-secondary btn-sm" data-rp="selnone">선택 해제</button>' +
-      '<button class="btn btn-primary btn-sm" data-rp="ai">' + I('sparkle', 14) + ' 선택 항목 AI 분석</button><button class="btn btn-secondary btn-sm" data-rp="rule">기본 분석(AI 없이)</button><button class="btn btn-ghost btn-sm" data-rp="stop">중단</button><select class="fld" data-rp="model" style="width:auto" title="AI 모델">' + (A.ext.aiModels || []).map(function (m) { return '<option value="' + E(m[0]) + '"' + ((UI.model || (A.ext.aiModels[0] || [])[0]) === m[0] ? ' selected' : '') + '>' + E(m[1]) + '</option>'; }).join('') + '</select><button class="btn btn-ghost btn-sm" data-rp="reload">다시 계산</button></div>' +
+      '<button class="btn btn-primary btn-sm" data-rp="ai">' + I('sparkle', 14) + ' 선택 항목 AI 분석</button><button class="btn btn-secondary btn-sm" data-rp="rule">기본 분석(AI 없이)</button><button class="btn btn-ghost btn-sm" data-rp="stop">중단</button><select class="fld" data-rp="model" style="width:auto" title="AI 모델">' + (A.ext.aiModels || []).map(function (m) { return '<option value="' + E(m[0]) + '"' + ((UI.model || (A.ext.aiModels[0] || [])[0]) === m[0] ? ' selected' : '') + '>' + E(m[1]) + '</option>'; }).join('') + '</select><button class="btn btn-ghost btn-sm" data-rp="reload">다시 계산</button><button class="btn btn-ghost btn-sm" data-rp="bk" title="AI 분석·편집 내용을 파일로 저장">백업 저장</button><button class="btn btn-ghost btn-sm" data-rp="bkload">백업 불러오기</button><input type="file" id="rpt-bkf" accept=".json" hidden></div>' +
       '<div id="rpt-status" class="muted" style="margin:6px 0;min-height:20px"></div><div id="rpt-list"></div>' +
       '<div class="btn-row" style="margin-top:10px"><button class="btn btn-primary" data-rp="zip">' + I('download', 16) + ' 선택 항목 PDF 내려받기(ZIP)</button><button class="btn btn-secondary" data-rp="print">출력</button><span id="rpt-gen" class="muted"></span></div></div>';
-    drawList(); nmExample(ns);
+    drawList(); drawSummary(); nmExample(ns);
     box.onclick = onClick; box.oninput = onInput; box.onchange = onChange;
   }
-  function filtered() { var q = UI.q.trim().toLowerCase(); return UI.ents.filter(function (e) { return !q || (e.label + ' ' + e.track + ' ' + (e.sub || '')).toLowerCase().indexOf(q) >= 0; }); }
+  function filtered() {
+    var q = UI.q.trim().toLowerCase(), l = UI.ents.filter(function (e) { return !q || (e.label + ' ' + e.track + ' ' + (e.sub || '')).toLowerCase().indexOf(q) >= 0; }), k = UI.sort, nv = function (v, d) { return v == null ? d : v; };
+    var cmp = { name: function (a, b) { return a.label.localeCompare(b.label, 'ko'); }, hi: function (a, b) { return nv(b.mean, -1) - nv(a.mean, -1); }, lo: function (a, b) { return nv(a.mean, 9) - nv(b.mean, 9); }, resp: function (a, b) { return b.resp - a.resp; }, neg: function (a, b) { return nv(b.negr, -1) - nv(a.negr, -1); } }[k];
+    return cmp ? l.slice().sort(cmp) : l;
+  }
+  // 종합: 해당 단위 전체 요약 (현재 응답 범위 기준)
+  function drawSummary() {
+    var el = document.getElementById('rpt-sum'); if (!el) return; var L = UI.ents, ok = L.filter(function (e) { return e.mean != null; }), n = L.length;
+    var best = ok.filter(function (e) { return e.resp >= 5; }).slice().sort(function (a, b) { return b.mean - a.mean; }), cm = L.reduce(function (s, e) { return s + e.comments.length; }, 0), an = L.filter(function (e) { return getRec(e); }).length, e0 = L[0];
+    var kp = function (l, v, sub) { return '<div class="kpi"><div class="l">' + l + '</div><div class="v">' + v + '</div>' + (sub ? '<div class="s" style="font-size:12px;color:var(--text-2)">' + sub + '</div>' : '') + '</div>'; };
+    el.innerHTML = '<div class="kpis">' + kp(ULS[UI.unit] + ' 대상', n + '개') + kp('종합 평균(5점)', e0 ? fmt1(e0.schoolMean) : '-', e0 && e0.schoolPos != null ? '긍정률 ' + Math.round(e0.schoolPos) + '%' : '') +
+      kp('최고 평균', best[0] ? fmt1(best[0].mean) : '-', best[0] ? E(best[0].label) : '응답 5명 이상 대상 없음') + kp('최저 평균', best.length > 1 ? fmt1(best[best.length - 1].mean) : '-', best.length > 1 ? E(best[best.length - 1].label) : '') +
+      kp('서술 의견', cm + '건') + kp('분석 완료', an + ' / ' + n) + '</div>';
+  }
+  function fsig() { var F = API().F; return F.data + '|' + F.sincere; }
   function drawList() {
     var el = document.getElementById('rpt-list'); if (!el) return; var list = filtered();
     document.getElementById('rpt-cnt').textContent = '· ' + list.length + '개 중 ' + UI.ents.filter(function (e) { return UI.sel[e.unit + '|' + e.key]; }).length + '개 선택';
-    el.innerHTML = '<div class="tbl-wrap" style="max-height:420px;overflow:auto"><table class="t cmpt"><thead><tr><th></th><th>' + (UI.unit === 'prof' ? '교원' : UI.unit === 'klass' ? '반' : '계열') + '</th><th>계열</th><th class="num">응답자</th><th class="num">평균</th><th class="num">서술 의견</th><th>분석 상태</th><th></th></tr></thead><tbody>' + (list.map(function (e) {
-      var k = e.unit + '|' + e.key, rec = getRec(e), st = !rec ? '<span class="badge badge-gray">미분석</span>' : rec.edit ? '<span class="badge badge-blue">수정됨</span>' : rec.analysis && rec.analysis.src === 'ai' ? '<span class="badge badge-green">AI 분석</span>' : '<span class="badge badge-gray">기본 분석</span>';
+    el.innerHTML = '<div class="tbl-wrap" style="max-height:420px;overflow:auto"><table class="t cmpt"><thead><tr><th></th><th>' + UL[UI.unit] + '</th><th>계열</th><th class="num">응답자</th><th class="num">평균</th><th class="num">서술 의견</th><th>분석 상태</th><th></th></tr></thead><tbody>' + (list.map(function (e) {
+      var k = e.unit + '|' + e.key, rec = getRec(e), st = (rec && rec.fsig && rec.fsig !== fsig() ? '<span class="badge badge-orange" title="분석 당시와 응답 범위·데이터 구분이 다릅니다. 다시 분석하십시오.">필터 변경됨</span> ' : '') + (!rec ? '<span class="badge badge-gray">미분석</span>' : rec.edit ? '<span class="badge badge-blue">수정됨</span>' : rec.analysis && rec.analysis.src === 'ai' ? '<span class="badge badge-green">AI 분석</span>' : '<span class="badge badge-gray">기본 분석</span>');
       return '<tr><td><input type="checkbox" data-rp="chk" data-k="' + E(k) + '"' + (UI.sel[k] ? ' checked' : '') + '></td><td><b>' + E(e.label) + '</b></td><td>' + E(e.track) + '</td><td class="num">' + e.resp + (e.resp < 5 ? ' <span class="badge badge-gray">참고용</span>' : '') + '</td><td class="num">' + fmt1(e.mean) + '</td><td class="num">' + e.comments.length + '</td><td>' + st + '</td><td><button class="btn btn-ghost btn-sm" data-rp="edit" data-k="' + E(k) + '">편집·미리보기</button></td></tr>';
     }).join('') || '<tr><td colspan="8" class="t-empty">대상이 없습니다. (응답 범위·필터를 확인하십시오)</td></tr>') + '</tbody></table></div>';
   }
@@ -309,6 +329,8 @@
   }
   async function onChange(e) {
     var t = e.target, r = t.getAttribute('data-rp');
+    if (r === 'sort') { UI.sort = t.value; drawList(); return; }
+    if (r === 'sp') { UI.showProf = t.checked; return; }
     if (r === 'unit') { UI.unit = t.value; UI.sel = {}; var bx = document.getElementById('rptmount'); bx.removeAttribute('data-rpt'); A.ext.reportUI(bx); return; }
     if (r === 'model') { UI.model = t.value; return; }
     if (r === 'ta' || r === 'tb') { UI.types[r === 'ta' ? 'a' : 'b'] = t.checked; return; }
@@ -322,6 +344,15 @@
     else if (r === 'ovreset') { await dbDel(sid() + '|overview'); box.removeAttribute('data-rpt'); A.ext.reportUI(box); }
     else if (r === 'nmsave') { var ns = await nameSettingsLive(); await dbPut(sid() + '|names', ns); nmExample(ns); A.toast('파일명 규칙을 저장했습니다.'); }
     else if (r === 'selall') { filtered().forEach(function (x) { UI.sel[x.unit + '|' + x.key] = true; }); drawList(); }
+    else if (r === 'mg' || r === 'split') {
+      var sl = selected(); if (r === 'mg' && sl.length < 2) return A.toast('합칠 과목을 2개 이상 선택해 주십시오.', 'err'); if (r === 'split' && !sl.length) return A.toast('나눌 과목을 선택해 주십시오.', 'err');
+      var mg = Object.assign({}, UI.merge);
+      if (r === 'mg') { var canon = sl[0].key.split('|')[1]; sl.forEach(function (x) { Object.keys(x.raw || {}).forEach(function (rw) { mg[rw] = canon; }); }); }
+      else sl.forEach(function (x) { var kk = x.key.split('|')[1]; Object.keys(mg).forEach(function (rw) { if (mg[rw] === kk) delete mg[rw]; }); });
+      await dbPut(sid() + '|merge', mg); UI.sel = {}; box.removeAttribute('data-rpt'); A.toast(r === 'mg' ? '과목을 합쳤습니다. (분석 결과는 합쳐진 과목 기준으로 다시 실행해 주십시오)' : '합치기를 해제했습니다.'); A.ext.reportUI(box);
+    }
+    else if (r === 'bk') { var all = await dbAll(sid() + '|'); var blob = new Blob([JSON.stringify({ v: 1, survey: sid(), saved: Date.now(), data: all })], { type: 'application/json' }), a2 = document.createElement('a'); a2.href = URL.createObjectURL(blob); a2.download = 'survey-report-backup_' + new Date().toISOString().slice(0, 10) + '.json'; a2.click(); setTimeout(function () { URL.revokeObjectURL(a2.href); }, 5000); }
+    else if (r === 'bkload') { var fi = document.getElementById('rpt-bkf'); fi.onchange = function () { var f = fi.files[0]; if (!f) return; var rd = new FileReader(); rd.onload = async function () { try { var j = JSON.parse(rd.result), n = 0; if (!j || j.survey !== sid() || !j.data) throw new Error('이 설문의 백업 파일이 아닙니다.'); for (var k in j.data) { await dbPut(k, j.data[k]); n++; } A.toast(n + '건을 불러왔습니다.'); box.removeAttribute('data-rpt'); A.ext.reportUI(box); } catch (er) { A.toast(er.message, 'err'); } fi.value = ''; }; rd.readAsText(f); }; fi.click(); }
     else if (r === 'selnone') { UI.sel = {}; drawList(); }
     else if (r === 'stop') { UI.cancel = true; }
     else if (r === 'reload') { box.removeAttribute('data-rpt'); A.ext.reportUI(box); }
