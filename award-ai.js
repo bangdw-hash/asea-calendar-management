@@ -99,7 +99,7 @@
   X.translateDoc = function () {
     var items = S.tpl.elems.filter(function (e) { return e.t === 'text' && HAN.test(e.text || ''); });
     if (!items.length) return AW.toast('번역할 한글 글상자가 없습니다.', 'error');
-    var m = AW.modal({ title: '영문 번역본 만들기', wide: true, sticky: true, body: '<div id="td-b"><div class="loading">AI가 시안 전체 맥락을 읽고 번역하는 중입니다…</div></div>', actions: [{ label: '닫기', cls: 'btn-ghost' }] });
+    var m = AW.modal({ title: '영문 번역 (시안 전체)', wide: true, sticky: true, body: '<div id="td-b"><div class="loading">AI가 시안 전체 맥락을 읽고 번역하는 중입니다…</div></div>', actions: [{ label: '닫기', cls: 'btn-ghost' }] });
     var list = items.slice().sort(function (a, b) { return a.y - b.y || a.x - b.x; });
     var prompt = '용어집:\n' + X.gloss() + '\n\n문서 전체 문구(읽는 순서):\n' + docCtx(null) + '\n\n번역 대상(id: 원문):\n' + list.map(function (e) { return e.id + ': ' + e.text.replace(/\n/g, ' ⏎ '); }).join('\n') +
       '\n\n모든 대상을 번역해 다음 JSON 으로 답하십시오(⏎ 는 줄바꿈으로 되돌려 쓰십시오): {"items":[{"id":"...","en":"권장 번역","alts":[{"en":"대안","why":"차이(한국어 한 줄)"}],"note":"확인 필요 사항(없으면 빈 문자열)"}],"doc_note":"전체 유의사항(한국어, 없으면 빈 문자열)"}';
@@ -114,34 +114,30 @@
             ((x.alts || []).slice(0, 2).map(function (a, i) { return '<div style="font-size:12px;margin-top:3px"><button class="lnk" data-alt="' + AW.esc(a.en) + '">제안 ' + (i + 1) + '</button> ' + AW.esc(a.en) + ' <span class="muted">— ' + AW.esc(a.why || '') + '</span></div>'; }).join('')) +
             (x.note ? '<div class="muted" style="font-size:12px;margin-top:3px">참고: ' + AW.esc(x.note) + '</div>' : '') + '</td></tr>';
         }).join('') + '</tbody></table></div>' +
-        '<div class="radios" style="margin-top:10px"><label><input type="radio" name="td-mode" value="new" checked> 새 양식 「' + AW.esc(S.tpl.name) + ' (EN)」으로 만들기 (원본 유지, 권장)</label><label><input type="radio" name="td-mode" value="here"> 현재 양식에 덮어쓰기 (실행 취소 가능)</label>' +
-        '<label><input type="checkbox" id="td-data"' + (S.tpl.rows.length ? ' checked' : ' disabled') + '> 입력 데이터 값도 영문으로 변환 (성명은 국어의 로마자 표기법, 소속·상명은 번역) — ' + S.tpl.rows.length + '행</label></div>' +
-        (S.tpl.bg ? '<p class="muted" style="margin:8px 0 0">배경 이미지에 인쇄된 한글은 번역되지 않습니다. 영문 배경이 있으면 새 양식에서 배경만 교체하십시오.</p>' : '');
+        '<div class="radios" style="margin-top:10px"><label><input type="checkbox" id="td-data"' + (S.tpl.rows.length ? ' checked' : ' disabled') + '> 입력 데이터의 영문 값도 만들기 (성명은 여권 표기, 소속·상명은 번역) — ' + S.tpl.rows.length + '행</label></div>' +
+        '<p class="muted" style="margin:8px 0 0">영문은 같은 양식의 각 글상자에 「영문」 칸으로 저장됩니다. 위쪽 「한글 / 영문 / 한영」 버튼과 출력 설정으로 한글만·영문만·병기를 고를 수 있습니다.' + (S.tpl.bg ? ' 배경 이미지에 인쇄된 한글은 번역되지 않습니다.' : '') + '</p>';
       AW.$$('[data-alt]', b).forEach(function (x) { x.onclick = function () { x.closest('td').querySelector('textarea').value = x.dataset.alt; }; });
       var f = AW.$('.md-f', m.el); f.innerHTML = '';
-      [['용어집', 'btn-ghost', function () { X.glossDialog(); }], ['취소', 'btn-ghost', function () { m.close(); }], ['번역본 만들기', 'btn-primary', function (bt) { apply(m, list, bt); }]].forEach(function (x) { var bt = document.createElement('button'); bt.className = 'btn ' + x[1]; bt.textContent = x[0]; bt.onclick = function () { x[2](bt); }; f.appendChild(bt); });
+      [['용어집', 'btn-ghost', function () { X.glossDialog(); }], ['취소', 'btn-ghost', function () { m.close(); }], ['영문 저장', 'btn-primary', function (bt) { apply(m, list, bt); }]].forEach(function (x) { var bt = document.createElement('button'); bt.className = 'btn ' + x[1]; bt.textContent = x[0]; bt.onclick = function () { x[2](bt); }; f.appendChild(bt); });
     }).catch(function (e) { var b = AW.$('#td-b', m.el); if (b) b.innerHTML = '<div class="alert warn">' + AW.esc(e.message) + '</div>'; });
   };
 
   function apply(m, list, btn) {
     var en = {}; AW.$$('#td-b tbody tr', m.el).forEach(function (tr) { en[tr.dataset.id] = tr.querySelector('textarea').value; });
-    var bad = 0; list.forEach(function (e) { if (en[e.id] && en[e.id].trim() && !tokOk(e.text, en[e.id])) { delete en[e.id]; bad++; } });   // {{항목}}이 깨진 번역은 원문 유지
-    var mode = AW.$('input[name="td-mode"]:checked', m.el).value, withData = AW.$('#td-data', m.el).checked;
-    btn.disabled = true; btn.textContent = '데이터 변환 중…';
-    var rows = S.tpl.rows;
-    var pr = withData ? translateRows(rows, function (n, t) { btn.textContent = '데이터 변환 중 ' + n + '/' + t; }) : Promise.resolve({ rows: rows, fail: 0 });
+    var bad = 0; list.forEach(function (e) { if (en[e.id] && en[e.id].trim() && !tokOk(e.text, en[e.id])) { delete en[e.id]; bad++; } });   // {{항목}}이 깨진 번역은 저장하지 않음
+    var withData = AW.$('#td-data', m.el).checked; btn.disabled = true; btn.textContent = '데이터 변환 중…';
+    var pr = withData ? translateRows(S.tpl.rows, function (n, t) { btn.textContent = '데이터 변환 중 ' + n + '/' + t; }) : Promise.resolve({ rows: S.tpl.rows, fail: 0 });
     pr.then(function (r) {
-      var tpl = mode === 'new' ? AW.clone({ page: S.tpl.page, elems: S.tpl.elems, fields: S.tpl.fields }) : S.tpl;
-      tpl.elems.forEach(function (e) { if (en[e.id] != null && en[e.id].trim()) e.text = en[e.id]; });
-      m.close();
-      if (mode === 'new') {
-        var nt = AW.newTpl(S.tpl.name + ' (EN)'); nt.page = tpl.page; nt.elems = tpl.elems; nt.fields = tpl.fields; nt.bg = S.tpl.bg; nt.bgName = S.tpl.bgName; nt.rows = r.rows;
-        AW.App.adopt(nt);
-      } else { S.tpl.rows = r.rows; AW.Editor.render(); AW.Data.refresh(true); S.dirty = true; AW.emit('tplchange', 'elems'); AW.emit('datachange'); }
-      AW.toast('영문 번역본을 만들었습니다.' + (bad ? ' ({{항목}} 표기가 바뀐 ' + bad + '개는 원문 유지)' : '') + (r.fail ? ' (데이터 ' + r.fail + '건은 원문 유지)' : ''), 'ok'); AW.log('ai_translate', S.tpl.id, { items: list.length, data: withData });
-    }).catch(function (e) { btn.disabled = false; btn.textContent = '번역본 만들기'; AW.toast('데이터 변환 실패: ' + e.message, 'error'); });
+      S.tpl.elems.forEach(function (e) { if (en[e.id] != null && en[e.id].trim()) e.en = en[e.id]; });
+      S.tpl.rows = r.rows; S.tpl.page.lang = 'both'; m.close();
+      AW.Editor.render(); AW.Data.refresh(true); S.dirty = true; AW.emit('tplchange', 'elems'); AW.emit('datachange'); AW.emit('rowchange');
+      AW.toast('영문을 저장했습니다. 한영 병기 보기로 전환했습니다.' + (bad ? ' ({{항목}} 표기가 바뀐 ' + bad + '개는 제외)' : '') + (r.fail ? ' (데이터 ' + r.fail + '건은 영문 값 없음)' : ''), 'ok'); AW.log('ai_translate', S.tpl.id, { items: list.length, data: withData });
+    }).catch(function (e) { btn.disabled = false; btn.textContent = '영문 저장'; AW.toast('데이터 변환 실패: ' + e.message, 'error'); });
   }
 
+  function isName(n) { return /성명|이름|수상자|수료자|name/i.test(n); }
+  // 여권 표기: 전부 대문자(HONG GILDONG)로 오면 첫 글자만 대문자(Hong Gildong)로 바꿈
+  function fixName(t) { t = String(t).trim(); return (/[A-Z]/.test(t) && t === t.toUpperCase()) ? t.toLowerCase().replace(/(^|[\s-])([a-z])/g, function (m, a, b) { return a + b.toUpperCase(); }) : t; }
   // 항목별 고유값을 모아 한 번에 번역 (최대 400개, 60개씩)
   function translateRows(rows, prog) {
     var fields = S.tpl.fields, jobs = [], done = 0, fail = 0, map = {};
@@ -149,7 +145,7 @@
       var u = []; rows.forEach(function (r) { var v = r[f.name]; if (v && HAN.test(v) && u.indexOf(v) < 0) u.push(v); });
       for (var i = 0; i < Math.min(u.length, 400); i += 60) jobs.push({ f: f, vals: u.slice(i, i + 60) });
     });
-    var sys = '한국 직업전문학교 상장 발급용 데이터 값을 영어로 변환합니다. 항목 성격에 따라: 사람 이름(성명)은 국어의 로마자 표기법에 따라 "Hong Gil-dong"(성 이름 순서 영문식) 형태로, 소속·학과·과정·상 이름·직위는 영어권 통용 명칭으로 번역, 본문 문장은 공문서체로 번역합니다. 용어집 우선. 출력은 JSON 객체 하나({"values":{"원문":"영문"}})만, 모든 원문을 키로 사용.';
+    var sys = '한국 직업전문학교 상장 발급용 데이터 값을 영어로 변환합니다. 항목 성격에 따라: 사람 이름(성명)은 여권 표기 방식으로 "성 이름" 순서, 이름의 음절은 붙여 쓰고 첫 글자만 대문자인 "Hong Gildong" 형태로(전부 대문자로 쓰지 않음), 소속·학과·과정·상 이름·직위는 영어권 통용 명칭으로 번역, 본문 문장은 공문서체로 번역합니다. 용어집 우선. 출력은 JSON 객체 하나({"values":{"원문":"영문"}})만, 모든 원문을 키로 사용.';
     var seq = Promise.resolve();
     jobs.forEach(function (j) {
       seq = seq.then(function () {
@@ -159,7 +155,7 @@
       });
     });
     return seq.then(function () {
-      return { fail: fail, rows: rows.map(function (r) { var o = Object.assign({}, r); fields.forEach(function (f) { var v = r[f.name], t = map[f.name] && map[f.name][v]; if (t) o[f.name] = t; }); return o; }) };
+      return { fail: fail, rows: rows.map(function (r) { var o = Object.assign({}, r); fields.forEach(function (f) { var v = r[f.name], t = map[f.name] && map[f.name][v]; if (t) o[f.name + '@en'] = isName(f.name) ? fixName(t) : t; }); return o; }) };
     });
   }
 })();
