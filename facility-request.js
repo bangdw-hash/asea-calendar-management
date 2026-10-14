@@ -1156,9 +1156,9 @@
         var venueStr = (r.venues && r.venues.length > 1)
           ? r.venues.map(function(v){ return v.buildingName + ' ' + v.roomName; }).join(', ')
           : (r.buildingName || '') + ' ' + (r.roomName || '');
-        return '<div style="border:1px solid #e0e0e0;border-radius:10px;padding:12px 14px;margin-bottom:10px">' +
+        return '<div style="border:1px solid #e0e0e0;border-radius:6px;padding:12px 14px;margin-bottom:10px">' +
           '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">' +
-            '<span style="background:' + sc + ';color:#fff;border-radius:20px;padding:2px 10px;font-size:12px;font-weight:600">' + r.status + '</span>' +
+            '<span style="background:' + sc + ';color:#fff;border-radius:6px;padding:2px 10px;font-size:12px;font-weight:600">' + r.status + '</span>' +
             '<strong style="font-size:13px">' + venueStr + ' — ' + (r.title||'') + '</strong>' +
           '</div>' +
           '<div style="font-size:12px;color:#666">' + formatDT(r.startAt) + ' ~ ' + formatDT(r.endAt) + '</div>' +

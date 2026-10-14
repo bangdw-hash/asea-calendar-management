@@ -49,7 +49,7 @@
   --g50:var(--color-bg);--g100:#F1F3F4;--g200:var(--color-border);
   --g300:#D2D5D9;--g400:#9AA0A6;--g500:var(--color-text-sec);
   --g700:#3C4043;--g900:var(--color-text);
-  --r:6px;--r-xs:6px;--r-card:6px;--r-panel:18px;
+  --r:6px;--r-xs:6px;--r-card:6px;--r-panel:6px;
   --sh:   0 2px 8px rgba(60,64,67,.12),0 2px 4px rgba(60,64,67,.08);
   --sh-md:0 2px 8px rgba(60,64,67,.12),0 2px 4px rgba(60,64,67,.08);
   --sh-lg:0 8px 24px rgba(60,64,67,.14),0 4px 8px rgba(60,64,67,.10);
@@ -467,7 +467,7 @@ html,body{height:100%;
   opacity:.7;transition:opacity .15s;padding:2px 6px;border-radius:var(--r-xs)}
 .ai-close:hover{opacity:1;background:rgba(255,255,255,.15)}
 .ai-msgs{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:10px;min-height:160px}
-.ai-msg{max-width:88%;font-size:.82rem;line-height:1.55;padding:8px 11px;border-radius:10px;word-break:break-word}
+.ai-msg{max-width:88%;font-size:.82rem;line-height:1.55;padding:8px 11px;border-radius:6px;word-break:break-word}
 .ai-msg.user{align-self:flex-end;background:#E8F0FE;color:#1a237e;border-bottom-right-radius:2px}
 .ai-msg.bot{align-self:flex-start;background:var(--g100);color:var(--g900);border-bottom-left-radius:2px}
 .ai-msg.bot.loading{color:var(--g400);font-style:italic}
@@ -707,7 +707,7 @@ html,body{height:100%;
 .badge-rejected{background:var(--red-lt);color:var(--red);padding:2px 8px;border-radius:var(--r);font-size:.72rem;font-weight:600;border:none;cursor:pointer}
 
 @media(max-width:600px){
-  :root{--header-h:48px;--toolbar-h:86px;--r-mobile:12px}
+  :root{--header-h:48px;--toolbar-h:86px;--r-mobile:6px}
   /* header compact */
   .hdr{height:48px;padding:0 12px}
   .hdr-sub{display:none}
@@ -1273,12 +1273,12 @@ html,body{height:100%;
         <div style="font-size:11px;font-weight:700;color:var(--color-text-sec);margin-bottom:6px;letter-spacing:.3px">이 달 바로가기 링크</div>
         <div style="display:flex;gap:6px;align-items:center">
           <input id="monthLinkUrl" readonly style="
-            flex:1;border:1px solid var(--color-border);border-radius:8px;
+            flex:1;border:1px solid var(--color-border);border-radius:6px;
             padding:6px 10px;font-size:11px;color:var(--color-text);
             background:var(--g100);font-family:monospace;outline:none;
           " onclick="this.select()">
           <button onclick="copyMonthLink()" style="
-            background:var(--color-accent);color:#fff;border:none;border-radius:8px;
+            background:var(--color-accent);color:#fff;border:none;border-radius:6px;
             padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;
             font-family:inherit;flex-shrink:0
           " id="monthLinkCopyBtn">복사</button>

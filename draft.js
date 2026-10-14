@@ -96,25 +96,25 @@
       <!-- 헤더 -->
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:8px">
         <h2 style="font-size:18px;font-weight:700;color:#1e3a8a;margin:0">📝 기안문 초안 작성</h2>
-        <div style="font-size:12px;color:#6b7280;background:#f3f4f6;padding:5px 12px;border-radius:20px">
+        <div style="font-size:12px;color:#6b7280;background:#f3f4f6;padding:5px 12px;border-radius:6px">
           오늘 사용: <b id="draft-usage-count">${usage}</b> / ${limit}회
         </div>
       </div>
 
       <!-- 규정집 안내 -->
-      <div id="draft-reg-notice" style="display:none;background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:10px 14px;font-size:13px;color:#1e40af;margin-bottom:14px">
+      <div id="draft-reg-notice" style="display:none;background:#eff6ff;border:1px solid #bfdbfe;border-radius:6px;padding:10px 14px;font-size:13px;color:#1e40af;margin-bottom:14px">
         📚 규정집 <span id="draft-reg-count">0</span>개 로드됨 — 기안문 생성 시 자동 참조됩니다.
       </div>
 
       <!-- 입력 영역 -->
-      <div style="background:#fff;border-radius:12px;box-shadow:0 1px 4px rgba(0,0,0,.08);padding:20px;margin-bottom:14px">
+      <div style="background:#fff;border-radius:6px;box-shadow:0 1px 4px rgba(0,0,0,.08);padding:20px;margin-bottom:14px">
         <label style="font-size:13px;font-weight:600;color:#374151;display:block;margin-bottom:8px">
           ✏️ 기안 요청 내용 <span style="color:#dc2626">*</span>
         </label>
         <div style="position:relative">
           <textarea id="draft-input" rows="6"
             placeholder="기안문 작성에 필요한 내용을 입력하세요.&#10;예) 교직원 하계 워크숍 개최 계획 공문 작성. 일시: 7월 15일, 장소: 제주도, 참가 인원: 전 교직원"
-            style="width:100%;border:1.5px solid #d1d5db;border-radius:8px;padding:12px;font-size:14px;line-height:1.6;resize:vertical;outline:none;font-family:inherit;transition:border .2s"
+            style="width:100%;border:1.5px solid #d1d5db;border-radius:6px;padding:12px;font-size:14px;line-height:1.6;resize:vertical;outline:none;font-family:inherit;transition:border .2s"
             onfocus="this.style.borderColor='#1D4ED8'" onblur="this.style.borderColor='#d1d5db'"
           ></textarea>
           <button id="draft-paste-btn" title="클립보드 붙여넣기"
@@ -129,7 +129,7 @@
             📎 파일 첨부 <span style="font-size:11px;font-weight:400;color:#9ca3af">(최대 ${MAX_FILES}개 · 파일당 ${fmtSize(MAX_FILE_BYTES)} · PDF/이미지)</span>
           </div>
           <div id="draft-dropzone"
-            style="border:2px dashed #d1d5db;border-radius:8px;padding:16px;text-align:center;cursor:pointer;transition:border .2s;font-size:13px;color:#9ca3af"
+            style="border:2px dashed #d1d5db;border-radius:6px;padding:16px;text-align:center;cursor:pointer;transition:border .2s;font-size:13px;color:#9ca3af"
             onclick="document.getElementById('draft-file-input').click()">
             클릭하거나 파일을 여기에 드래그하세요
           </div>
@@ -141,19 +141,19 @@
 
       <!-- 생성 버튼 -->
       <button id="draft-generate-btn"
-        style="width:100%;background:#1D4ED8;color:#fff;border:none;border-radius:10px;padding:14px;font-size:15px;font-weight:700;cursor:pointer;transition:background .2s;margin-bottom:20px"
+        style="width:100%;background:#1D4ED8;color:#fff;border:none;border-radius:6px;padding:14px;font-size:15px;font-weight:700;cursor:pointer;transition:background .2s;margin-bottom:20px"
         onmouseover="this.style.background='#1e40af'" onmouseout="this.style.background='#1D4ED8'">
         ✨ 기안문 초안 생성
       </button>
 
       <!-- 생성 중 표시 -->
-      <div id="draft-loading" style="display:none;text-align:center;padding:24px;background:#fff;border-radius:12px;box-shadow:0 1px 4px rgba(0,0,0,.08);margin-bottom:14px">
+      <div id="draft-loading" style="display:none;text-align:center;padding:24px;background:#fff;border-radius:6px;box-shadow:0 1px 4px rgba(0,0,0,.08);margin-bottom:14px">
         <div style="font-size:28px;animation:spin 1s linear infinite;display:inline-block">⚙️</div>
         <p style="margin-top:10px;font-size:14px;color:#6b7280" id="draft-loading-msg">기안문 생성 중...</p>
       </div>
 
       <!-- 출력 에디터 -->
-      <div id="draft-output-section" style="display:none;background:#fff;border-radius:12px;box-shadow:0 1px 4px rgba(0,0,0,.08);overflow:hidden">
+      <div id="draft-output-section" style="display:none;background:#fff;border-radius:6px;box-shadow:0 1px 4px rgba(0,0,0,.08);overflow:hidden">
 
         <!-- 워드프로세서 툴바 -->
         <div style="background:#f8fafc;border-bottom:1px solid #e5e7eb;padding:8px 12px;display:flex;gap:4px;flex-wrap:wrap;align-items:center">
@@ -488,7 +488,7 @@
 
     // 업로드
     html += '<div style="margin-bottom:14px">' +
-      '<label id="reg-upload-label" style="display:inline-flex;align-items:center;gap:6px;background:#1D4ED8;color:#fff;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600">' +
+      '<label id="reg-upload-label" style="display:inline-flex;align-items:center;gap:6px;background:#1D4ED8;color:#fff;padding:8px 16px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600">' +
       '📤 PDF 파일 추가<input type="file" id="reg-file-input" accept=".pdf" multiple style="display:none"></label>' +
       '<span id="reg-upload-status" style="font-size:12px;color:#6b7280;margin-left:10px"></span>' +
     '</div>';
@@ -499,7 +499,7 @@
       html += '<p style="font-size:13px;color:#9ca3af;padding:12px 0">등록된 규정집이 없습니다.</p>';
     } else {
       regs.forEach(function(r) {
-        html += '<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;margin-bottom:6px">' +
+        html += '<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:6px;margin-bottom:6px">' +
           '<span style="font-size:20px">📄</span>' +
           '<div style="flex:1;min-width:0">' +
             '<div style="font-size:13px;font-weight:600;color:#374151;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(r.name) + '</div>' +

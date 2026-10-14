@@ -33,7 +33,7 @@ body{background:var(--bg);color:var(--text);font-family:'Apple SD Gothic Neo',-a
 .header-title{font-size:18px;font-weight:700;color:var(--text)}
 .header-title span{font-size:13px;font-weight:400;color:var(--text-sub);margin-left:4px}
 .header-actions{display:flex;gap:8px;margin-left:auto;flex-wrap:wrap}
-.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:8px;border:none;cursor:pointer;font-size:13px;font-weight:500;transition:all .15s;white-space:nowrap}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:6px;border:none;cursor:pointer;font-size:13px;font-weight:500;transition:all .15s;white-space:nowrap}
 .btn-primary{background:var(--primary);color:#fff}.btn-primary:hover{background:var(--primary-dk)}
 .btn-outline{background:var(--surface);color:var(--text);border:1px solid var(--border)}.btn-outline:hover{background:var(--gray-lt)}
 .btn-sm{padding:5px 10px;font-size:12px;border-radius:6px}
@@ -44,10 +44,10 @@ body{background:var(--bg);color:var(--text);font-family:'Apple SD Gothic Neo',-a
 .toolbar{padding:14px 20px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;border-bottom:1px solid var(--border);background:var(--surface)}
 .search-wrap{position:relative;flex:1;min-width:180px;max-width:300px}
 .search-wrap svg{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text-sub);pointer-events:none}
-.search-input{width:100%;padding:7px 10px 7px 34px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);font-size:13px;outline:none}
+.search-input{width:100%;padding:7px 10px 7px 34px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);font-size:13px;outline:none}
 .search-input:focus{border-color:var(--primary);box-shadow:0 0 0 2px var(--primary-lt)}
 .cat-filter{display:flex;gap:6px;flex-wrap:wrap}
-.cat-chip{padding:4px 10px;border-radius:20px;border:1px solid var(--border);background:var(--surface);color:var(--text-sub);font-size:12px;cursor:pointer;transition:all .15s}
+.cat-chip{padding:4px 10px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--text-sub);font-size:12px;cursor:pointer;transition:all .15s}
 .cat-chip.active{background:var(--primary);color:#fff;border-color:var(--primary)}
 .toggle-hidden{font-size:12px;color:var(--text-sub);cursor:pointer;display:flex;align-items:center;gap:4px;margin-left:auto;user-select:none}
 .toggle-hidden:hover{color:var(--text)}
@@ -64,7 +64,7 @@ body{background:var(--bg);color:var(--text);font-family:'Apple SD Gothic Neo',-a
 .card-name{font-size:14px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:text}
 .card-name-input{font-size:14px;font-weight:600;color:var(--text);border:none;outline:none;border-bottom:2px solid var(--primary);background:transparent;width:100%;font-family:inherit}
 .card-path{font-size:11px;color:var(--text-sub);margin-top:2px}
-.cat-badge{font-size:11px;padding:2px 8px;border-radius:20px;font-weight:500;flex-shrink:0}
+.cat-badge{font-size:11px;padding:2px 8px;border-radius:6px;font-weight:500;flex-shrink:0}
 .card-actions{display:flex;gap:4px;align-items:center;flex-shrink:0}
 .move-btns{display:flex;flex-direction:column;gap:2px;flex-shrink:0}
 
@@ -96,7 +96,7 @@ body{background:var(--bg);color:var(--text);font-family:'Apple SD Gothic Neo',-a
 .scan-item label{flex:1;font-size:13px;cursor:pointer}
 .scan-item input[type=checkbox]{width:16px;height:16px;cursor:pointer;accent-color:var(--primary)}
 .scan-empty{text-align:center;padding:20px;color:var(--text-sub);font-size:13px}
-.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1f2937;color:#fff;padding:10px 20px;border-radius:8px;font-size:13px;z-index:300;animation:toastin .2s ease;pointer-events:none}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1f2937;color:#fff;padding:10px 20px;border-radius:6px;font-size:13px;z-index:300;animation:toastin .2s ease;pointer-events:none}
 @keyframes toastin{from{opacity:0;transform:translateX(-50%) translateY(8px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
 .count-badge{font-size:12px;color:var(--text-sub);margin-left:auto}
 .section-title{font-size:12px;font-weight:600;color:var(--text-sub);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;margin-top:16px}

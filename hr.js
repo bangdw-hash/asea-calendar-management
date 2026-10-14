@@ -272,13 +272,13 @@ window.HRModule = (function () {
 
       // ── 신청자 링크 박스 (항상 상단에 노출) ──
       var linkBox = document.createElement('div');
-      linkBox.style.cssText = 'width:100%;max-width:540px;background:#EFF6FF;border:1.5px solid #93C5FD;border-radius:12px;padding:16px 18px;margin-bottom:20px;text-align:left';
+      linkBox.style.cssText = 'width:100%;max-width:540px;background:#EFF6FF;border:1.5px solid #93C5FD;border-radius:6px;padding:16px 18px;margin-bottom:20px;text-align:left';
       linkBox.innerHTML =
         '<div style="font-size:12px;font-weight:700;color:#0EA5E9;margin-bottom:6px;letter-spacing:.4px">📎 입사 신청자 공유 링크</div>' +
         '<div style="font-size:12px;color:#374151;word-break:break-all;background:#fff;border:1px solid #BFDBFE;border-radius:6px;padding:8px 10px;margin-bottom:10px;font-family:monospace">' + formUrl + '</div>' +
         '<div style="display:flex;gap:8px">' +
-          '<button id="hr-home-copy-link" style="flex:1;padding:8px 0;background:#0EA5E9;color:#fff;border:none;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer">📋 링크 복사</button>' +
-          '<button id="hr-home-copy-msg"  style="flex:1;padding:8px 0;background:#fff;color:#0EA5E9;border:1.5px solid #93C5FD;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer">✉️ 안내 메시지 복사</button>' +
+          '<button id="hr-home-copy-link" style="flex:1;padding:8px 0;background:#0EA5E9;color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer">📋 링크 복사</button>' +
+          '<button id="hr-home-copy-msg"  style="flex:1;padding:8px 0;background:#fff;color:#0EA5E9;border:1.5px solid #93C5FD;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer">✉️ 안내 메시지 복사</button>' +
         '</div>';
       var adesc = el('div', 'hr-home-sub', '입사 예정자 서류 제출 및 채용 절차 관리 시스템');
       screen.appendChild(icon); screen.appendChild(title); screen.appendChild(adesc); screen.appendChild(linkBox);
@@ -460,18 +460,18 @@ window.HRModule = (function () {
     var overlay = document.createElement('div');
     overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9990;display:flex;align-items:center;justify-content:center;padding:16px';
     var box = document.createElement('div');
-    box.style.cssText = 'background:#fff;border-radius:16px;padding:28px 24px;max-width:360px;width:100%;text-align:center;box-shadow:0 8px 40px rgba(0,0,0,.3)';
+    box.style.cssText = 'background:#fff;border-radius:6px;padding:28px 24px;max-width:360px;width:100%;text-align:center;box-shadow:0 8px 40px rgba(0,0,0,.3)';
     box.innerHTML =
       '<div style="font-size:36px;margin-bottom:8px">✅</div>' +
       '<div style="font-size:18px;font-weight:700;color:#1a3a5c;margin-bottom:6px">중간 저장 완료</div>' +
       '<div style="font-size:12px;color:#6B7280;line-height:1.7;margin-bottom:18px">아래 저장 코드를 반드시 메모해 두세요.<br>같은 링크에서 <strong>이어서 작성하기</strong> → 코드+이름 입력으로<br>언제든 이어서 작성할 수 있습니다.</div>' +
-      '<div style="background:#EFF6FF;border:2px solid #0EA5E9;border-radius:10px;padding:16px;margin-bottom:16px">' +
+      '<div style="background:#EFF6FF;border:2px solid #0EA5E9;border-radius:6px;padding:16px;margin-bottom:16px">' +
         '<div style="font-size:11px;color:#6B7280;margin-bottom:6px;font-weight:600">저장 코드</div>' +
         '<div style="font-size:30px;font-weight:900;letter-spacing:8px;color:#0EA5E9;font-family:monospace">' + _esc(app.resumeCode) + '</div>' +
         '<div style="font-size:12px;color:#374151;margin-top:8px">이름: <strong>' + _esc(app.form1.nameKr) + '</strong></div>' +
       '</div>' +
-      '<button id="hr-ov-copy" style="display:block;width:100%;padding:10px;background:#1a3a5c;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:8px">📋 코드 복사</button>' +
-      '<button id="hr-ov-close" style="display:block;width:100%;padding:10px;background:#F3F4F6;color:#374151;border:none;border-radius:8px;font-size:14px;cursor:pointer">계속 작성하기</button>';
+      '<button id="hr-ov-copy" style="display:block;width:100%;padding:10px;background:#1a3a5c;color:#fff;border:none;border-radius:6px;font-size:14px;font-weight:700;cursor:pointer;margin-bottom:8px">📋 코드 복사</button>' +
+      '<button id="hr-ov-close" style="display:block;width:100%;padding:10px;background:#F3F4F6;color:#374151;border:none;border-radius:6px;font-size:14px;cursor:pointer">계속 작성하기</button>';
     overlay.appendChild(box);
     document.body.appendChild(overlay);
 
@@ -1033,7 +1033,7 @@ window.HRModule = (function () {
 
     // 개인정보 내용 박스
     var infoBox = el('div');
-    infoBox.style.cssText = 'background:#F8FAFF;border:1px solid #D0E4F5;border-radius:8px;padding:16px;font-size:12px;line-height:1.8;margin-bottom:16px;color:#374151';
+    infoBox.style.cssText = 'background:#F8FAFF;border:1px solid #D0E4F5;border-radius:6px;padding:16px;font-size:12px;line-height:1.8;margin-bottom:16px;color:#374151';
     infoBox.innerHTML =
       '<strong style="color:#1a3a5c;font-size:13px">[ 개인정보 수집·이용에 대한 동의 ]</strong><br><br>' +
       '<strong>수집 항목:</strong> 개인식별정보(성명, 생년월일, 사진, 주소, 핸드폰번호, 전화번호, E-mail주소), 자격사항, 근무경력사항, 자기소개 등<br>' +
@@ -1278,7 +1278,7 @@ window.HRModule = (function () {
 
     // 확인 체크박스
     var ckRow = el('div');
-    ckRow.style.cssText = 'margin-top:16px;padding:12px 16px;background:#F0FDF4;border:1px solid #BBF7D0;border-radius:8px';
+    ckRow.style.cssText = 'margin-top:16px;padding:12px 16px;background:#F0FDF4;border:1px solid #BBF7D0;border-radius:6px';
     var lbl = el('label', 'hr-cb-item');
     lbl.style.cssText = 'font-size:13px;font-weight:600;color:#15803D';
     var ck = document.createElement('input'); ck.type = 'checkbox'; ck.id = 'hr-pension-ck';
@@ -1330,7 +1330,7 @@ window.HRModule = (function () {
     if (_st.isDemo) {
       // 체험 모드: 미리보기 버튼만 제공
       var demoNotice = el('div');
-      demoNotice.style.cssText = 'background:#FEF3C7;border:1px solid #FCD34D;border-radius:8px;padding:12px 16px;margin-bottom:14px;font-size:13px;color:#92400E;text-align:center';
+      demoNotice.style.cssText = 'background:#FEF3C7;border:1px solid #FCD34D;border-radius:6px;padding:12px 16px;margin-bottom:14px;font-size:13px;color:#92400E;text-align:center';
       demoNotice.innerHTML = '✨ <strong>체험 모드</strong>입니다 — 아래에서 작성한 내용을 미리보기로 확인하세요.';
       body.appendChild(demoNotice);
 

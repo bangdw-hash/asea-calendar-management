@@ -101,7 +101,7 @@ body {
 .field input, .field textarea, .field select {
   width: 100%;
   border: 1.5px solid var(--g200);
-  border-radius: 8px;
+  border-radius: 6px;
   padding: 12px 14px;
   font-size: 16px; color: var(--g900);
   background: #fff; outline: none;
@@ -169,7 +169,7 @@ body {
   transform: translate(-50%, -50%);
   width: 80%; height: 28%;
   border: 3px solid #FFD700;
-  border-radius: 8px;
+  border-radius: 6px;
   box-shadow: 0 0 0 2000px rgba(0,0,0,.35);
   transition: border-color .3s;
 }
@@ -256,7 +256,7 @@ body {
 .zoom-btn {
   width: 36px; height: 36px; flex-shrink: 0;
   border: 1.5px solid var(--g200); background: var(--g100);
-  border-radius: 8px; font-size: 20px; font-weight: 700;
+  border-radius: 6px; font-size: 20px; font-weight: 700;
   color: var(--g700); cursor: pointer; display: flex;
   align-items: center; justify-content: center; line-height: 1;
 }
@@ -325,7 +325,7 @@ body {
   display: inline-flex; align-items: center; gap: 5px;
   background: var(--green); color: #fff;
   font-size: 12px; font-weight: 700;
-  padding: 4px 10px; border-radius: 20px;
+  padding: 4px 10px; border-radius: 6px;
   margin-bottom: 12px;
 }
 .result-registered .r-name {
@@ -367,7 +367,7 @@ body {
   display: inline-flex; align-items: center; gap: 5px;
   background: var(--red); color: #fff;
   font-size: 12px; font-weight: 700;
-  padding: 4px 10px; border-radius: 20px;
+  padding: 4px 10px; border-radius: 6px;
   margin-bottom: 10px;
 }
 .result-unregistered .u-msg {
@@ -391,7 +391,7 @@ body {
   display: inline-flex; align-items: center; gap: 5px;
   background: var(--orange); color: #fff;
   font-size: 12px; font-weight: 700;
-  padding: 4px 10px; border-radius: 20px;
+  padding: 4px 10px; border-radius: 6px;
   margin-bottom: 10px;
 }
 
@@ -400,7 +400,7 @@ body {
   display: flex; gap: 8px; margin-bottom: 14px;
 }
 .search-wrap input {
-  flex: 1; border: 1.5px solid var(--g200); border-radius: 8px;
+  flex: 1; border: 1.5px solid var(--g200); border-radius: 6px;
   padding: 11px 14px; font-size: 16px; color: var(--g900);
   background: #fff; outline: none; font-family: inherit;
 }
@@ -451,7 +451,7 @@ body {
 .check-row {
   display: flex; align-items: center; gap: 10px;
   padding: 12px 14px;
-  border: 1.5px solid var(--g200); border-radius: 8px;
+  border: 1.5px solid var(--g200); border-radius: 6px;
   cursor: pointer;
 }
 .check-row input[type=checkbox] {
@@ -477,7 +477,7 @@ body {
 #xlsxInput { display: none; }
 
 .col-map {
-  background: var(--g50); border-radius: 8px; padding: 14px;
+  background: var(--g50); border-radius: 6px; padding: 14px;
   margin-bottom: 14px; display: none;
 }
 .col-map.show { display: block; }
@@ -511,7 +511,7 @@ body {
 .format-guide {
   background: var(--primary-lt);
   border: 1px solid rgba(26,115,232,.2);
-  border-radius: 8px; padding: 12px 14px;
+  border-radius: 6px; padding: 12px 14px;
   font-size: 13px; color: var(--primary-dk);
   margin-bottom: 14px;
 }
@@ -523,34 +523,34 @@ body {
 
 /* ── 번호판 타입 탭 ── */
 .plate-type-tabs { display: flex; gap: 6px; margin-bottom: 10px; }
-.plate-type-tab { flex: 1; padding: 8px 4px; border: 1.5px solid var(--g200); border-radius: 8px; background: none; font-size: 12px; font-weight: 700; color: var(--g500); cursor: pointer; font-family: inherit; text-align: center; }
+.plate-type-tab { flex: 1; padding: 8px 4px; border: 1.5px solid var(--g200); border-radius: 6px; background: none; font-size: 12px; font-weight: 700; color: var(--g500); cursor: pointer; font-family: inherit; text-align: center; }
 .plate-type-tab.active { border-color: var(--primary); background: var(--primary-lt); color: var(--primary); }
 
 /* ── 리스트 필터 탭 ── */
 .list-filter { display: flex; gap: 6px; margin-bottom: 8px; flex-wrap: wrap; }
-.filter-tab { padding: 6px 14px; border: 1.5px solid var(--g200); border-radius: 20px; background: none; font-size: 13px; font-weight: 600; color: var(--g500); cursor: pointer; font-family: inherit; }
+.filter-tab { padding: 6px 14px; border: 1.5px solid var(--g200); border-radius: 6px; background: none; font-size: 13px; font-weight: 600; color: var(--g500); cursor: pointer; font-family: inherit; }
 .filter-tab.active { border-color: var(--primary); background: var(--primary-lt); color: var(--primary); }
 .filter-tab.red.active { border-color: var(--red); background: var(--red-lt); color: var(--red); }
 
 /* ── 블랙리스트 ── */
 .vc-plate.blacklist { color: var(--red); }
-.vc-name .bl-badge { font-size: 11px; font-weight: 700; background: var(--red); color: #fff; padding: 2px 7px; border-radius: 10px; margin-left: 4px; vertical-align: middle; }
-.bl-warn-banner { background: var(--red-lt); border: 1.5px solid rgba(220,38,38,.3); border-radius: 10px; padding: 12px 14px; margin-bottom: 10px; display: flex; gap: 10px; align-items: flex-start; }
+.vc-name .bl-badge { font-size: 11px; font-weight: 700; background: var(--red); color: #fff; padding: 2px 7px; border-radius: 6px; margin-left: 4px; vertical-align: middle; }
+.bl-warn-banner { background: var(--red-lt); border: 1.5px solid rgba(220,38,38,.3); border-radius: 6px; padding: 12px 14px; margin-bottom: 10px; display: flex; gap: 10px; align-items: flex-start; }
 .bl-warn-title { font-size: 14px; font-weight: 800; color: var(--red); }
 .bl-warn-sub { font-size: 12px; color: var(--red); opacity: .85; margin-top: 2px; }
 
 /* ── 임시 등록 ── */
 .vc-plate.temp-active { color: var(--orange); }
 .vc-plate.temp-expired { color: var(--g400); }
-.vc-name .tmp-badge { font-size: 11px; font-weight: 700; background: var(--orange); color: #fff; padding: 2px 7px; border-radius: 10px; margin-left: 4px; vertical-align: middle; }
-.vc-name .tmp-exp-badge { font-size: 11px; font-weight: 700; background: var(--g400); color: #fff; padding: 2px 7px; border-radius: 10px; margin-left: 4px; vertical-align: middle; }
+.vc-name .tmp-badge { font-size: 11px; font-weight: 700; background: var(--orange); color: #fff; padding: 2px 7px; border-radius: 6px; margin-left: 4px; vertical-align: middle; }
+.vc-name .tmp-exp-badge { font-size: 11px; font-weight: 700; background: var(--g400); color: #fff; padding: 2px 7px; border-radius: 6px; margin-left: 4px; vertical-align: middle; }
 .filter-tab.orange.active { border-color: var(--orange); background: var(--orange-lt); color: var(--orange); }
 .result-temp-expired { background: var(--g100); border: 2px solid var(--g300); border-radius: var(--r); padding: 18px; margin-bottom: 12px; }
-.tmp-exp-badge-lg { display: inline-flex; align-items: center; gap: 5px; background: var(--g400); color: #fff; font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 20px; margin-bottom: 10px; }
-.tmp-active-banner { background: var(--orange-lt); border: 1.5px solid rgba(234,88,12,.3); border-radius: 10px; padding: 12px 14px; margin-bottom: 10px; display: flex; gap: 10px; align-items: flex-start; }
+.tmp-exp-badge-lg { display: inline-flex; align-items: center; gap: 5px; background: var(--g400); color: #fff; font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 6px; margin-bottom: 10px; }
+.tmp-active-banner { background: var(--orange-lt); border: 1.5px solid rgba(234,88,12,.3); border-radius: 6px; padding: 12px 14px; margin-bottom: 10px; display: flex; gap: 10px; align-items: flex-start; }
 .tmp-active-title { font-size: 14px; font-weight: 800; color: var(--orange); }
 .tmp-active-sub { font-size: 12px; color: var(--orange); opacity: .9; margin-top: 2px; }
-.reg-type-row { display: flex; gap: 0; margin-bottom: 14px; border: 1.5px solid var(--g200); border-radius: 8px; overflow: hidden; }
+.reg-type-row { display: flex; gap: 0; margin-bottom: 14px; border: 1.5px solid var(--g200); border-radius: 6px; overflow: hidden; }
 .reg-type-btn { flex: 1; padding: 10px 6px; border: none; background: none; font-size: 14px; font-weight: 700; color: var(--g500); cursor: pointer; font-family: inherit; transition: all .12s; }
 .reg-type-btn.active { background: var(--primary); color: #fff; }
 .reg-type-btn.active.is-temp { background: var(--orange); }
@@ -648,16 +648,16 @@ body {
       <div style="display:flex;gap:4px;align-items:center">
         <input type="text" id="qsNewF" placeholder="123" maxlength="3" inputmode="numeric"
           oninput="plateAutoAdv(this,'qsNewH',3)" onkeydown="if(event.key==='Enter')doManualSearch()"
-          style="flex:3;min-width:0;border:1.5px solid var(--g200);border-radius:8px;padding:11px 4px;font-size:18px;font-weight:800;text-align:center;font-family:inherit;color:var(--g900);outline:none;">
+          style="flex:3;min-width:0;border:1.5px solid var(--g200);border-radius:6px;padding:11px 4px;font-size:18px;font-weight:800;text-align:center;font-family:inherit;color:var(--g900);outline:none;">
         <span style="font-size:15px;font-weight:700;color:var(--g400);flex-shrink:0">-</span>
         <input type="text" id="qsNewH" placeholder="가" maxlength="1"
           oninput="plateAutoAdv(this,'qsNewB',1,event)" oncompositionend="plateAutoAdv(this,'qsNewB',1)" onkeydown="if(event.key==='Enter')doManualSearch()"
-          style="flex:2;min-width:0;border:1.5px solid var(--g200);border-radius:8px;padding:11px 4px;font-size:18px;font-weight:800;text-align:center;font-family:inherit;color:var(--g900);outline:none;">
+          style="flex:2;min-width:0;border:1.5px solid var(--g200);border-radius:6px;padding:11px 4px;font-size:18px;font-weight:800;text-align:center;font-family:inherit;color:var(--g900);outline:none;">
         <span style="font-size:15px;font-weight:700;color:var(--g400);flex-shrink:0">-</span>
         <input type="text" id="qsNewB" placeholder="4567" maxlength="4" inputmode="numeric"
           onkeydown="if(event.key==='Enter')doManualSearch()"
-          style="flex:4;min-width:0;border:1.5px solid var(--g200);border-radius:8px;padding:11px 4px;font-size:18px;font-weight:800;text-align:center;font-family:inherit;color:var(--g900);outline:none;">
-        <button onclick="doManualSearch()" style="flex-shrink:0;background:var(--primary);color:#fff;border:none;border-radius:8px;padding:11px 13px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">
+          style="flex:4;min-width:0;border:1.5px solid var(--g200);border-radius:6px;padding:11px 4px;font-size:18px;font-weight:800;text-align:center;font-family:inherit;color:var(--g900);outline:none;">
+        <button onclick="doManualSearch()" style="flex-shrink:0;background:var(--primary);color:#fff;border:none;border-radius:6px;padding:11px 13px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
           조회
         </button>
@@ -669,16 +669,16 @@ body {
       <div style="display:flex;gap:4px;align-items:center">
         <input type="text" id="qsOldF" placeholder="서울12" maxlength="6"
           oninput="plateAutoAdvOld(this,'qsOldH')" onkeydown="if(event.key==='Enter')doManualSearch()"
-          style="flex:4;min-width:0;border:1.5px solid var(--g200);border-radius:8px;padding:11px 4px;font-size:16px;font-weight:800;text-align:center;font-family:inherit;color:var(--g900);outline:none;">
+          style="flex:4;min-width:0;border:1.5px solid var(--g200);border-radius:6px;padding:11px 4px;font-size:16px;font-weight:800;text-align:center;font-family:inherit;color:var(--g900);outline:none;">
         <span style="font-size:15px;font-weight:700;color:var(--g400);flex-shrink:0">-</span>
         <input type="text" id="qsOldH" placeholder="가" maxlength="1"
           oninput="plateAutoAdv(this,'qsOldB',1,event)" oncompositionend="plateAutoAdv(this,'qsOldB',1)" onkeydown="if(event.key==='Enter')doManualSearch()"
-          style="flex:2;min-width:0;border:1.5px solid var(--g200);border-radius:8px;padding:11px 4px;font-size:18px;font-weight:800;text-align:center;font-family:inherit;color:var(--g900);outline:none;">
+          style="flex:2;min-width:0;border:1.5px solid var(--g200);border-radius:6px;padding:11px 4px;font-size:18px;font-weight:800;text-align:center;font-family:inherit;color:var(--g900);outline:none;">
         <span style="font-size:15px;font-weight:700;color:var(--g400);flex-shrink:0">-</span>
         <input type="text" id="qsOldB" placeholder="3456" maxlength="4" inputmode="numeric"
           onkeydown="if(event.key==='Enter')doManualSearch()"
-          style="flex:4;min-width:0;border:1.5px solid var(--g200);border-radius:8px;padding:11px 4px;font-size:18px;font-weight:800;text-align:center;font-family:inherit;color:var(--g900);outline:none;">
-        <button onclick="doManualSearch()" style="flex-shrink:0;background:var(--primary);color:#fff;border:none;border-radius:8px;padding:11px 13px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">
+          style="flex:4;min-width:0;border:1.5px solid var(--g200);border-radius:6px;padding:11px 4px;font-size:18px;font-weight:800;text-align:center;font-family:inherit;color:var(--g900);outline:none;">
+        <button onclick="doManualSearch()" style="flex-shrink:0;background:var(--primary);color:#fff;border:none;border-radius:6px;padding:11px 13px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
           조회
         </button>
@@ -821,7 +821,7 @@ body {
     <div class="search-wrap" style="flex:1;margin-bottom:0">
       <input type="text" id="searchInput" placeholder="번호판, 이름, 부서 검색..." oninput="filterList()">
     </div>
-    <button onclick="openPwChange()" style="flex-shrink:0;background:var(--g100);border:1.5px solid var(--g200);border-radius:8px;padding:9px 12px;cursor:pointer;display:flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:var(--g500)">
+    <button onclick="openPwChange()" style="flex-shrink:0;background:var(--g100);border:1.5px solid var(--g200);border-radius:6px;padding:9px 12px;cursor:pointer;display:flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:var(--g500)">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
       설정
     </button>
@@ -938,7 +938,7 @@ body {
       </div>
     </div>
     <div class="field">
-      <div class="check-row" onclick="document.getElementById('regBlacklist').click()" style="border:1.5px solid rgba(220,38,38,.3);border-radius:8px;padding:10px 12px;background:var(--red-lt)">
+      <div class="check-row" onclick="document.getElementById('regBlacklist').click()" style="border:1.5px solid rgba(220,38,38,.3);border-radius:6px;padding:10px 12px;background:var(--red-lt)">
         <input type="checkbox" id="regBlacklist">
         <label for="regBlacklist" style="color:var(--red);font-weight:700">블랙리스트 등록 (학생·외부인 요주의)</label>
       </div>
@@ -1106,13 +1106,13 @@ body {
       </div>
     </div>
     <div class="field">
-      <div class="check-row" onclick="document.getElementById('editBlacklist').click()" style="border:1.5px solid rgba(220,38,38,.3);border-radius:8px;padding:10px 12px;background:var(--red-lt)">
+      <div class="check-row" onclick="document.getElementById('editBlacklist').click()" style="border:1.5px solid rgba(220,38,38,.3);border-radius:6px;padding:10px 12px;background:var(--red-lt)">
         <input type="checkbox" id="editBlacklist">
         <label for="editBlacklist" style="color:var(--red);font-weight:700">블랙리스트 차량</label>
       </div>
     </div>
     <div class="field">
-      <div class="check-row" onclick="toggleEditTemp()" style="border:1.5px solid rgba(234,88,12,.3);border-radius:8px;padding:10px 12px;background:var(--orange-lt)">
+      <div class="check-row" onclick="toggleEditTemp()" style="border:1.5px solid rgba(234,88,12,.3);border-radius:6px;padding:10px 12px;background:var(--orange-lt)">
         <input type="checkbox" id="editIsTemp" onchange="toggleEditTemp()">
         <label for="editIsTemp" style="color:var(--orange);font-weight:700">임시 등록 차량</label>
       </div>
@@ -1845,7 +1845,7 @@ function renderList(list) {
     if (isBl) badges += '<small class="bl-badge">주의</small>';
     else if (isExpired) badges += '<small class="tmp-exp-badge">만료</small>';
     else if (isTemp) { var rem = formatRemaining(v.valid_until); badges += '<small class="tmp-badge">임시' + (rem ? ' · ' + rem : '') + '</small>'; }
-    else if (v.pre_approved) badges += ' <small style="font-size:11px;background:var(--orange);color:#fff;padding:2px 6px;border-radius:10px;font-weight:700">협의</small>';
+    else if (v.pre_approved) badges += ' <small style="font-size:11px;background:var(--orange);color:#fff;padding:2px 6px;border-radius:6px;font-weight:700">협의</small>';
     var meta = [v.owner_dept, v.vehicle_type].filter(Boolean).join(' · ');
     return '<div class="vehicle-card">' +
       '<div class="vc-card-top">' +

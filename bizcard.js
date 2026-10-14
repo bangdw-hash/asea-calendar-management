@@ -816,11 +816,11 @@
         'th,td{padding:8px 10px;border:1px solid #e8eaed;font-size:12px;text-align:left}' +
         'th{background:#0EA5E9;color:#fff;font-weight:600}' +
         '.info-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:24px}' +
-        '.info-box{border:1px solid #e8eaed;border-radius:8px;padding:12px 14px}' +
+        '.info-box{border:1px solid #e8eaed;border-radius:6px;padding:12px 14px}' +
         '.info-label{font-size:11px;color:#5f6368;font-weight:600;text-transform:uppercase;margin-bottom:4px}' +
         '.info-val{font-size:14px;font-weight:600;color:#202124}' +
         '.section-title{font-size:14px;font-weight:600;margin:20px 0 8px;padding-bottom:6px;border-bottom:2px solid #0EA5E9}' +
-        '.total-box{background:#e0f2fe;border:1px solid #c5d8fb;border-radius:8px;padding:16px;margin-top:16px}' +
+        '.total-box{background:#e0f2fe;border:1px solid #c5d8fb;border-radius:6px;padding:16px;margin-top:16px}' +
         '.total-row{display:flex;justify-content:space-between;padding:4px 0;font-size:13px}' +
         '.total-final{font-size:16px;font-weight:700;border-top:1px solid #c5d8fb;padding-top:10px;margin-top:6px}' +
         '.campus-list{font-size:12px;color:#5f6368;line-height:1.6}' +
@@ -1250,7 +1250,7 @@
   function toast(msg) {
     var el = document.createElement('div');
     el.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);' +
-      'background:#202124;color:#fff;padding:10px 20px;border-radius:8px;font-size:13px;' +
+      'background:#202124;color:#fff;padding:10px 20px;border-radius:6px;font-size:13px;' +
       'z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,.3);pointer-events:none;';
     el.textContent = msg;
     document.body.appendChild(el);

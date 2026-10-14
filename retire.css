@@ -44,7 +44,7 @@
 .rt-section-title {
   font-size: 13px; font-weight: 700; color: #1a3a5c;
   background: #EFF6FF; border-left: 3px solid #1a3a5c;
-  padding: 6px 10px; margin: 14px 0 8px; border-radius:0 12px 12px 0;
+  padding: 6px 10px; margin: 14px 0 8px; border-radius:0 6px 6px 0;
 }
 
 /* 폼 행/필드 — hr.css 재사용 가능하나 접두사 변경 */

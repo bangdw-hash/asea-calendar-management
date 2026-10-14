@@ -7,7 +7,7 @@
 
 /* ── 헤더 ── */
 .hlp-header { background: linear-gradient(135deg,#003087,#0078D4);
-  border-radius: 14px; padding: 28px 28px 24px; margin-bottom: 20px; color: #fff; }
+  border-radius: 6px; padding: 28px 28px 24px; margin-bottom: 20px; color: #fff; }
 .hlp-header-title { font-size: 24px; font-weight: 900; margin-bottom: 6px; }
 .hlp-header-sub   { font-size: 14px; opacity: .85; }
 
@@ -61,7 +61,7 @@
 
 /* ── 팁 박스 ── */
 .hlp-tips { background: #f0fdf4; border: 1px solid #86efac;
-  border-radius: 8px; padding: 10px 14px; margin-top: 10px; }
+  border-radius: 6px; padding: 10px 14px; margin-top: 10px; }
 .hlp-tips-title { font-size: 12px; font-weight: 800; color: #15803d; margin-bottom: 6px; }
 .hlp-tips ul { margin: 0; padding-left: 18px; }
 .hlp-tips li  { font-size: 12px; color: #166534; line-height: 1.8; }
@@ -69,7 +69,7 @@
 /* ── 버튼들 ── */
 .hlp-extra-btn, .hlp-shortcut-btn {
   display: inline-block; margin-top: 12px; padding: 7px 16px;
-  border-radius: 8px; border: none; font-size: 12px; font-weight: 700;
+  border-radius: 6px; border: none; font-size: 12px; font-weight: 700;
   cursor: pointer; transition: .15s; }
 .hlp-extra-btn { background: #003087; color: #fff; margin-right: 8px; }
 .hlp-extra-btn:hover { background: #0055cc; }
@@ -81,7 +81,7 @@
    GAS 설정 가이드
 ══════════════════════════════════════════════════════════ */
 .hlp-gas-guide { background: #fff; border: 2px solid #003087;
-  border-radius: 14px; padding: 24px; margin-bottom: 24px; }
+  border-radius: 6px; padding: 24px; margin-bottom: 24px; }
 
 .hlp-gas-hd { margin-bottom: 20px; }
 .hlp-gas-main-ttl { font-size: 18px; font-weight: 900; color: #003087; margin-bottom: 6px; }
@@ -89,16 +89,16 @@
 
 /* 흐름도 */
 .hlp-gas-flow { display: flex; align-items: center; flex-wrap: wrap;
-  gap: 8px; background: #f0f7ff; border-radius: 10px;
+  gap: 8px; background: #f0f7ff; border-radius: 6px;
   padding: 14px 16px; margin-bottom: 20px; }
 .hlp-flow-box  { background: #0078D4; color: #fff; padding: 8px 14px;
-  border-radius: 8px; font-size: 12px; font-weight: 700; text-align: center;
+  border-radius: 6px; font-size: 12px; font-weight: 700; text-align: center;
   line-height: 1.4; }
 .hlp-flow-mid  { background: #e65100; }
 .hlp-flow-arrow { font-size: 20px; color: #003087; font-weight: 900; }
 
 /* STEP 카드 */
-.hlp-gas-step { border: 1.5px solid #D0E4F5; border-radius: 10px;
+.hlp-gas-step { border: 1.5px solid #D0E4F5; border-radius: 6px;
   margin-bottom: 12px; overflow: hidden; }
 .hlp-gas-num  { background: #003087; color: #fff;
   font-size: 12px; font-weight: 800; padding: 5px 14px;

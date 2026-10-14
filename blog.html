@@ -15,7 +15,7 @@
   --green:#16a34a;--green-lt:#f0fdf4;
   --orange:#c2410c;--orange-lt:#fff7ed;
   --red:#dc2626;--red-lt:#fef2f2;
-  --r:8px;
+  --r:6px;
   --bg:#F0F9FF;--surface:#fff;--surface2:#F2F3F5;
   --ink:#111827;--ink2:#4B5563;--ink3:#9CA3AF;
   --border:#E5E7EB;--border-dk:#D1D5DB;
@@ -221,7 +221,7 @@ label{font-size:11.5px;font-weight:500;color:var(--ink2)}
 .toggle-wrap{display:flex;align-items:center;gap:8px}
 .toggle{position:relative;width:40px;height:22px;cursor:pointer}
 .toggle input{opacity:0;width:0;height:0}
-.toggle-track{position:absolute;inset:0;background:var(--border-dk);border-radius:11px;transition:background .2s}
+.toggle-track{position:absolute;inset:0;background:var(--border-dk);border-radius:6px;transition:background .2s}
 .toggle input:checked + .toggle-track{background:var(--green)}
 .toggle-thumb{position:absolute;top:3px;left:3px;width:16px;height:16px;background:#fff;border-radius:50%;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
 .toggle input:checked ~ .toggle-thumb{transform:translateX(18px)}
@@ -414,7 +414,7 @@ label{font-size:11.5px;font-weight:500;color:var(--ink2)}
                 검색
               </button>
             </div>
-            <div id="local-dropdown" hidden style="position:absolute;top:100%;left:0;right:0;z-index:200;background:var(--surface);border:1px solid var(--border);border-radius:8px;box-shadow:var(--sh-md);margin-top:2px;max-height:240px;overflow-y:auto"></div>
+            <div id="local-dropdown" hidden style="position:absolute;top:100%;left:0;right:0;z-index:200;background:var(--surface);border:1px solid var(--border);border-radius:6px;box-shadow:var(--sh-md);margin-top:2px;max-height:240px;overflow-y:auto"></div>
           </div>
           <div class="form-hint">상호명 입력 후 검색 버튼 → 주소·전화번호 자동 입력</div>
         </div>
@@ -576,7 +576,7 @@ label{font-size:11.5px;font-weight:500;color:var(--ink2)}
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
       <div>
         <strong>복합 트렌드 분석</strong> — 네이버 DataLab 실측 검색량 + AI 블로그 각도·후킹 분석
-        <span id="datalab-status" style="margin-left:8px;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;background:var(--green-lt);color:var(--green)">DataLab 연결됨</span>
+        <span id="datalab-status" style="margin-left:8px;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:600;background:var(--green-lt);color:var(--green)">DataLab 연결됨</span>
       </div>
     </div>
 
@@ -756,7 +756,7 @@ label{font-size:11.5px;font-weight:500;color:var(--ink2)}
       현재 기본 AI 세팅 (참고용)
     </div>
     <div class="card-body">
-      <div style="font-size:13px;color:var(--ink2);line-height:1.7;background:var(--surface2);border-radius:8px;padding:12px 14px">
+      <div style="font-size:13px;color:var(--ink2);line-height:1.7;background:var(--surface2);border-radius:6px;padding:12px 14px">
         <div style="font-weight:600;color:var(--ink);margin-bottom:4px">블로그 글 생성</div>
         네이버 블로그 및 AI 검색 상위 노출 전문 작가 / 마크다운 금지 / 리서치 데이터(상호명·가격·위치) 활용 / 스타일별 특화 (정보형·감성형·SEO최적화형·리스트형) / 500~2000자 선택 가능
         <div style="font-weight:600;color:var(--ink);margin:10px 0 4px">맛집 리뷰 생성</div>

@@ -732,7 +732,7 @@
         '<b>manager</b> — 부서장 권한 (기능 제어에서 세부 설정)<br>' +
         '<b>staff</b> — 일반 사용자 (기본값)' +
       '</p>' +
-      '<div style="background:#eff4fb;border:1px solid #cfe0f3;border-radius:8px;padding:10px 12px;margin-bottom:12px">' +
+      '<div style="background:#eff4fb;border:1px solid #cfe0f3;border-radius:6px;padding:10px 12px;margin-bottom:12px">' +
         '<div style="font-size:13px;font-weight:700;color:#1a3a5c;margin-bottom:4px">🔑 구글 테스트 사용자 등록용 이메일</div>' +
         '<div class="form-hint" style="margin:0 0 8px">직원 이메일을 한 번에 복사 → <b>Google Cloud Console → 대상 → 테스트 사용자</b>에 붙여넣으면 등록 끝.</div>' +
         '<button id="perm-copy-emails-btn" class="btn btn-secondary btn-sm">📋 직원 이메일 전체 복사 (' +
@@ -879,7 +879,7 @@
       '<span style="color:#999">※ 관리자 본인은 항상 전체 메뉴가 보입니다.</span></p>';
 
     if (!hasToken) {
-      html += '<div style="background:#fff8e7;border:1px solid #f3d27a;border-radius:8px;padding:10px 12px;margin-bottom:12px;font-size:13px;color:#8a6406">' +
+      html += '<div style="background:#fff8e7;border:1px solid #f3d27a;border-radius:6px;padding:10px 12px;margin-bottom:12px;font-size:13px;color:#8a6406">' +
         '⚠️ 게시하려면 <b>설정 탭 → GitHub Token</b>을 먼저 저장하세요. (관리자 1회 설정)</div>';
     }
 
@@ -1512,7 +1512,7 @@
           '</div>' +
           (s.recentRows && s.recentRows.length ?
             '<div style="font-size:12px;font-weight:600;color:#6b7280;margin-bottom:6px">최근 질문 (최대 50건)</div>' +
-            '<div style="max-height:300px;overflow-y:auto;border:1px solid #e5e7eb;border-radius:8px">' +
+            '<div style="max-height:300px;overflow-y:auto;border:1px solid #e5e7eb;border-radius:6px">' +
             '<table style="width:100%;border-collapse:collapse;font-size:12px">' +
             '<thead><tr style="background:#f9fafb">' +
             '<th style="padding:6px 8px;text-align:left;border-bottom:1px solid #e5e7eb">시각</th>' +
@@ -1539,7 +1539,7 @@
   }
 
   function _amulboStatCard(label, value, icon) {
-    return '<div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;padding:12px;text-align:center">' +
+    return '<div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:6px;padding:12px;text-align:center">' +
       '<div style="font-size:22px;margin-bottom:4px">' + icon + '</div>' +
       '<div style="font-size:16px;font-weight:700;color:#111827">' + value + '</div>' +
       '<div style="font-size:11px;color:#6b7280;margin-top:2px">' + label + '</div>' +

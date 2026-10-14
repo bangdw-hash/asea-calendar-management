@@ -59,7 +59,7 @@
     popup.id = 'gps-blocked-popup';
     popup.style.cssText = 'position:fixed;inset:0;z-index:9999;display:flex;align-items:flex-end;justify-content:center;background:rgba(0,0,0,.5)';
     popup.innerHTML =
-      '<div style="background:#fff;border-radius:20px 20px 0 0;padding:28px 24px 36px;width:100%;max-width:480px;box-shadow:0 -4px 30px rgba(0,0,0,.15)">' +
+      '<div style="background:#fff;border-radius:6px 6px 0 0;padding:28px 24px 36px;width:100%;max-width:480px;box-shadow:0 -4px 30px rgba(0,0,0,.15)">' +
         '<div style="text-align:center;margin-bottom:16px">' +
           '<div style="font-size:40px;margin-bottom:8px">📍</div>' +
           '<div style="font-size:17px;font-weight:700;margin-bottom:6px">위치 접근 권한이 필요합니다</div>' +
@@ -69,7 +69,7 @@
               : '이 공간은 <b>지정 구역 내 스캔</b>만 허용합니다.<br>위치 확인을 위해 권한을 허용해 주세요.') +
           '</div>' +
         '</div>' +
-        '<div style="background:#f8f9fa;border-radius:12px;padding:16px 18px;margin-bottom:20px">' +
+        '<div style="background:#f8f9fa;border-radius:6px;padding:16px 18px;margin-bottom:20px">' +
           guideHtml +
         '</div>' +
         '<button id="gps-popup-reload" class="btn btn-primary" style="width:100%;padding:14px;font-size:15px">🔄 새로고침 후 다시 시도</button>' +

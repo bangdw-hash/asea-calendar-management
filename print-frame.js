@@ -88,7 +88,7 @@
       '.pf-lh-org{font-size:13pt;font-weight:800;color:#1a3a5c;letter-spacing:.3px;}',
       '.pf-lh-sub{font-size:8.5pt;color:#8a94a3;}',
       '.pf-lh-cat{margin-left:auto;font-size:8.5pt;color:#5b6470;border:1px solid #d4dae2;',
-      '  border-radius:999px;padding:2px 10px;white-space:nowrap;align-self:center;}',
+      '  border-radius:6px;padding:2px 10px;white-space:nowrap;align-self:center;}',
 
       /* 문서 제목 */
       '.pf-doctitle{text-align:center;font-size:22pt;font-weight:900;letter-spacing:9px;',
@@ -132,7 +132,7 @@
       /* 인쇄/닫기 액션바 */
       '.pf-actionbar{position:sticky;top:0;z-index:10;display:flex;justify-content:center;gap:10px;',
       '  padding:12px;background:rgba(236,239,243,.92);backdrop-filter:blur(4px);}',
-      '.pf-btn{font-family:inherit;font-size:13px;font-weight:600;border:none;border-radius:8px;',
+      '.pf-btn{font-family:inherit;font-size:13px;font-weight:600;border:none;border-radius:6px;',
       '  padding:10px 24px;cursor:pointer;}',
       '.pf-btn-print{background:#1a3a5c;color:#fff;}',
       '.pf-btn-print:hover{background:#152f4a;}',

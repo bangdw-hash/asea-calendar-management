@@ -111,7 +111,7 @@ var WorkModule = (function () {
 
     var form = document.createElement('div');
     form.id = 'bootstrap-self-register-form';
-    form.style.cssText = 'margin-top:12px;padding:12px;background:#fff;border:1px solid #e0e0e0;border-radius:8px';
+    form.style.cssText = 'margin-top:12px;padding:12px;background:#fff;border:1px solid #e0e0e0;border-radius:6px';
     form.innerHTML = hint +
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">' +
         '<input id="bs-name" type="text" class="form-input" placeholder="이름 *">' +
@@ -510,16 +510,16 @@ var WorkModule = (function () {
       '<meta name="viewport" content="width=device-width,initial-scale=1">',
       '<style>',
       'body{margin:0;padding:0;background:#f5f5f5;font-family:\'Noto Sans KR\',Apple SD Gothic Neo,sans-serif}',
-      '.wrap{max-width:600px;margin:24px auto;background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.1)}',
+      '.wrap{max-width:600px;margin:24px auto;background:#fff;border-radius:6px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.1)}',
       '.header{background:'+typeColor+';padding:20px 28px;color:#fff}',
-      '.header-badge{display:inline-block;background:rgba(255,255,255,.25);border-radius:20px;padding:3px 14px;font-size:13px;font-weight:700;margin-bottom:10px}',
+      '.header-badge{display:inline-block;background:rgba(255,255,255,.25);border-radius:6px;padding:3px 14px;font-size:13px;font-weight:700;margin-bottom:10px}',
       '.header-title{font-size:20px;font-weight:700;line-height:1.4;margin:0}',
       '.body{padding:24px 28px}',
       '.meta-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}',
       '.meta-chip{background:#f0f0f0;border-radius:6px;padding:4px 12px;font-size:12px;color:#555}',
       '.section-label{font-size:11px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}',
       '.content-box{background:#f8f9fa;border-left:4px solid '+typeColor+';border-radius:0 6px 6px 0;padding:14px 16px;font-size:14px;color:#333;line-height:1.7;white-space:pre-wrap;margin-bottom:18px}',
-      '.action-btn{display:block;width:fit-content;margin:0 auto 8px;background:'+typeColor+';color:#fff;text-decoration:none;padding:12px 32px;border-radius:8px;font-size:14px;font-weight:700;text-align:center}',
+      '.action-btn{display:block;width:fit-content;margin:0 auto 8px;background:'+typeColor+';color:#fff;text-decoration:none;padding:12px 32px;border-radius:6px;font-size:14px;font-weight:700;text-align:center}',
       '.footer{background:#f5f5f5;padding:14px 28px;font-size:11px;color:#888;text-align:center;border-top:1px solid #e0e0e0}',
       '.divider{height:1px;background:#eee;margin:16px 0}',
       '</style></head><body>',
@@ -1480,7 +1480,7 @@ var WorkModule = (function () {
     modal.style.cssText = 'position:fixed;inset:0;z-index:9000;display:flex;align-items:center;justify-content:center';
     modal.innerHTML =
       '<div style="position:absolute;inset:0;background:rgba(0,0,0,.35)" id="hr-edit-backdrop"></div>' +
-      '<div style="position:relative;background:#fff;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,.2);width:min(500px,96vw);max-height:90vh;overflow:auto">' +
+      '<div style="position:relative;background:#fff;border-radius:6px;box-shadow:0 8px 32px rgba(0,0,0,.2);width:min(500px,96vw);max-height:90vh;overflow:auto">' +
         '<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid #e0e4ea">' +
           '<h3 style="font-size:16px;font-weight:700;margin:0">✏️ 직원 정보 수정</h3>' +
           '<button id="hr-edit-close" style="font-size:18px;color:#888;background:none;border:none;cursor:pointer">✕</button>' +

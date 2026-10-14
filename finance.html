@@ -19,7 +19,7 @@
   --orange:#ea580c; --orange-lt:#ffedd5;
   --red:#dc2626; --red-lt:#fee2e2;
   --gray:#6b7280; --gray-lt:#f3f4f6; --gray-bd:#e5e7eb;
-  --r:12px; --r-sm:8px; --r-lg:16px;
+  --r:6px; --r-sm:6px; --r-lg:6px;
   --sh:0 1px 3px rgba(0,0,0,.1);
   --sh-md:0 4px 12px rgba(0,0,0,.12);
   --sh-lg:0 8px 24px rgba(0,0,0,.15);
@@ -42,7 +42,7 @@ body{font-family:'Pretendard','Segoe UI',system-ui,sans-serif;font-size:var(--fo
 }
 .login-card{
   background:var(--acrylic);backdrop-filter:blur(20px);
-  border:1px solid rgba(255,255,255,.3);border-radius:20px;
+  border:1px solid rgba(255,255,255,.3);border-radius:6px;
   padding:40px;width:360px;box-shadow:var(--sh-lg);text-align:center
 }
 .login-logo{font-size:40px;margin-bottom:12px}
@@ -93,7 +93,7 @@ body{font-family:'Pretendard','Segoe UI',system-ui,sans-serif;font-size:var(--fo
 .nav-item svg{width:18px;height:18px;flex-shrink:0}
 .nav-badge{
   margin-left:auto;background:var(--red);color:#fff;
-  font-size:10px;font-weight:700;padding:2px 6px;border-radius:99px
+  font-size:10px;font-weight:700;padding:2px 6px;border-radius:6px
 }
 .sidebar-footer{padding:16px 20px;border-top:1px solid var(--gray-bd)}
 .logout-btn{
@@ -165,7 +165,7 @@ body{font-family:'Pretendard','Segoe UI',system-ui,sans-serif;font-size:var(--fo
 /* ── STATUS BADGES ── */
 .badge{
   display:inline-flex;align-items:center;gap:4px;
-  padding:3px 8px;border-radius:99px;font-size:11px;font-weight:600
+  padding:3px 8px;border-radius:6px;font-size:11px;font-weight:600
 }
 .badge-blue{background:#dbeafe;color:#1e40af}
 .badge-black{background:#e5e7eb;color:#1f2937}
@@ -340,7 +340,7 @@ body{font-family:'Pretendard','Segoe UI',system-ui,sans-serif;font-size:var(--fo
 .mobile-nav-item svg{width:22px;height:22px}
 .mobile-nav-badge{
   position:absolute;top:-4px;right:-4px;background:var(--red);color:#fff;
-  font-size:9px;font-weight:700;padding:1px 5px;border-radius:99px
+  font-size:9px;font-weight:700;padding:1px 5px;border-radius:6px
 }
 
 /* ── RESPONSIVE ── */
@@ -377,13 +377,13 @@ body{font-family:'Pretendard','Segoe UI',system-ui,sans-serif;font-size:var(--fo
 .history-detail-row td{padding:0!important;background:var(--bg)!important}
 .history-inline-panel{padding:12px 16px;border-top:2px solid var(--primary-lt)}
 .history-memo-list{display:flex;flex-direction:column;gap:6px;margin-bottom:12px;max-height:220px;overflow-y:auto}
-.history-memo-item{display:flex;gap:10px;align-items:flex-start;padding:8px 10px;background:var(--surface);border-radius:8px;border:1px solid var(--gray-bd)}
+.history-memo-item{display:flex;gap:10px;align-items:flex-start;padding:8px 10px;background:var(--surface);border-radius:6px;border:1px solid var(--gray-bd)}
 .history-memo-date{font-size:11px;color:var(--text3);white-space:nowrap;min-width:80px;padding-top:1px}
 .history-memo-text{font-size:13px;color:var(--text);white-space:pre-wrap;flex:1}
 .history-memo-del{background:none;border:none;cursor:pointer;color:var(--text3);padding:2px 4px;border-radius:4px;flex-shrink:0}
 .history-memo-del:hover{color:var(--red);background:var(--red-lt)}
 .history-add-form{display:flex;gap:8px;align-items:flex-start}
-.history-add-form textarea{flex:1;height:60px;resize:vertical;font-size:13px;padding:8px;border:1px solid var(--gray-bd);border-radius:8px;background:var(--surface);color:var(--text)}
+.history-add-form textarea{flex:1;height:60px;resize:vertical;font-size:13px;padding:8px;border:1px solid var(--gray-bd);border-radius:6px;background:var(--surface);color:var(--text)}
 /* context menu */
 #card-ctx-menu{position:fixed;z-index:9999;background:var(--surface);border:1px solid var(--gray-bd);border-radius:var(--r);box-shadow:var(--sh-md);padding:4px;min-width:130px;display:none}
 #card-ctx-menu button{display:block;width:100%;text-align:left;background:none;border:none;padding:8px 14px;font-size:13px;color:var(--text);border-radius:6px;cursor:pointer;white-space:nowrap}
@@ -1729,7 +1729,7 @@ async function loadInlineHistory(cardId) {
     </div>
     <div class="history-add-form">
       <input type="date" id="hist-date-${cardId}" value="${new Date().toISOString().slice(0,10)}"
-        style="border:1px solid var(--gray-bd);border-radius:8px;padding:8px;font-size:12px;background:var(--surface);color:var(--text)">
+        style="border:1px solid var(--gray-bd);border-radius:6px;padding:8px;font-size:12px;background:var(--surface);color:var(--text)">
       <textarea id="hist-text-${cardId}" placeholder="이력 내용을 입력하세요 (예: 홍길동에게 출장 전달 / 반납 완료)"></textarea>
       <button class="btn btn-primary btn-sm" onclick="addInlineMemo('${cardId}','card')" style="align-self:flex-end">추가</button>
     </div>`;
@@ -1943,7 +1943,7 @@ async function loadInlineHistoryAcc(accId) {
     </div>
     <div class="history-add-form">
       <input type="date" id="acc-hist-date-${accId}" value="${new Date().toISOString().slice(0,10)}"
-        style="border:1px solid var(--gray-bd);border-radius:8px;padding:8px;font-size:12px;background:var(--surface);color:var(--text)">
+        style="border:1px solid var(--gray-bd);border-radius:6px;padding:8px;font-size:12px;background:var(--surface);color:var(--text)">
       <textarea id="acc-hist-text-${accId}" placeholder="이력 내용을 입력하세요 (예: 잔액 확인 / 이체 완료)"></textarea>
       <button class="btn btn-primary btn-sm" onclick="addInlineMemo('${accId}','account')" style="align-self:flex-end">추가</button>
     </div>`;
@@ -2451,7 +2451,7 @@ function renderLinkedCardsCheckboxes() {
   const container = document.getElementById('a-linked-cards');
   if (!container) return;
   container.innerHTML = cardsData.filter(c => c.is_visible !== false).map(c =>
-    `<label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer;padding:3px 8px;border:1px solid var(--gray-bd);border-radius:99px">
+    `<label style="display:flex;align-items:center;gap:4px;font-size:12px;cursor:pointer;padding:3px 8px;border:1px solid var(--gray-bd);border-radius:6px">
       <input type="checkbox" value="${c.id}" style="width:14px;height:14px">
       ${c.card_suffix ? `****${c.card_suffix}` : c.card_number||''} ${c.user_name||''}
     </label>`
@@ -2969,9 +2969,7 @@ function renderDesignSettings() {
         <label class="form-label">모서리 둥글기</label>
         <select class="form-select" id="ds-radius" onchange="applyDS()">
           <option value="4px" ${saved.ds_radius==='4px'?'selected':''}>각진 (4px)</option>
-          <option value="8px" ${saved.ds_radius==='8px'?'selected':''}>약간 (8px)</option>
-          <option value="12px" ${!saved.ds_radius||saved.ds_radius==='12px'?'selected':''}>기본 (12px)</option>
-          <option value="16px" ${saved.ds_radius==='16px'?'selected':''}>둥근 (16px)</option>
+          <option value="6px" ${!saved.ds_radius||saved.ds_radius!=='4px'?'selected':''}>기본 (6px)</option>
         </select>
       </div>
       <div class="form-group">
@@ -3029,7 +3027,7 @@ function applyDS() {
   if (density === 'compact') { document.querySelectorAll('.data-table tbody td').forEach(td => td.style.padding='4px 8px'); }
   else if (density === 'comfortable') { document.querySelectorAll('.data-table tbody td').forEach(td => td.style.padding='14px 12px'); }
   else { document.querySelectorAll('.data-table tbody td').forEach(td => td.style.padding=''); }
-  if (r) { root.style.setProperty('--r', r); root.style.setProperty('--r-sm', Math.max(2,parseInt(r)-4)+'px'); }
+  if (r) { const rr = Math.min(6, parseInt(r) || 6) + 'px'; root.style.setProperty('--r', rr); root.style.setProperty('--r-sm', Math.max(2,parseInt(rr)-2)+'px'); }
   if (nw) root.style.setProperty('--nav-w', nw);
   if (bg) root.style.setProperty('--bg', bg);
   if (dark) {
@@ -3079,7 +3077,7 @@ async function saveDesignSettings() {
     ds_fontsize: document.getElementById('ds-fontsize')?.value || '14px',
     ds_primary: document.getElementById('ds-primary')?.value || '#1A73E8',
     ds_density: document.getElementById('ds-density')?.value || 'normal',
-    ds_radius: document.getElementById('ds-radius')?.value || '12px',
+    ds_radius: document.getElementById('ds-radius')?.value || '6px',
     ds_navw: document.getElementById('ds-navw')?.value || '220px',
     ds_bg: document.getElementById('ds-bg')?.value || '#f0f2f5',
     ds_dark: String(document.getElementById('ds-dark')?.checked || false),
@@ -3098,7 +3096,7 @@ function loadDesignSettings() {
   if (saved.ds_font) { root.style.setProperty('--body-font', saved.ds_font); document.body.style.fontFamily = saved.ds_font; }
   if (saved.ds_fontsize) root.style.setProperty('--font-size', saved.ds_fontsize);
   if (saved.ds_primary) { root.style.setProperty('--primary', saved.ds_primary); root.style.setProperty('--primary-dk', shadeColor(saved.ds_primary,-20)); root.style.setProperty('--primary-lt', shadeColor(saved.ds_primary,85)); }
-  if (saved.ds_radius) { root.style.setProperty('--r', saved.ds_radius); root.style.setProperty('--r-sm', Math.max(2,parseInt(saved.ds_radius)-4)+'px'); }
+  if (saved.ds_radius) { const rr = Math.min(6, parseInt(saved.ds_radius) || 6) + 'px'; root.style.setProperty('--r', rr); root.style.setProperty('--r-sm', Math.max(2,parseInt(rr)-2)+'px'); }
   if (saved.ds_navw) root.style.setProperty('--nav-w', saved.ds_navw);
   if (saved.ds_dark === 'true') {
     root.style.setProperty('--bg','#1a1a2e'); root.style.setProperty('--surface','#16213e');
@@ -3466,7 +3464,7 @@ document.querySelectorAll('.modal-overlay').forEach(ov => {
   try {
     const s = JSON.parse(saved);
     if (s.ds_fontsize) document.documentElement.style.setProperty('--font-size', s.ds_fontsize);
-    if (s.ds_radius) { document.documentElement.style.setProperty('--r', s.ds_radius); document.documentElement.style.setProperty('--r-sm', parseInt(s.ds_radius)-4+'px'); }
+    if (s.ds_radius) { const rr = Math.min(6, parseInt(s.ds_radius) || 6); document.documentElement.style.setProperty('--r', rr + 'px'); document.documentElement.style.setProperty('--r-sm', Math.max(2, rr - 2) + 'px'); }
     if (s.ds_navw) document.documentElement.style.setProperty('--nav-w', s.ds_navw);
     if (s.ds_bg) document.documentElement.style.setProperty('--bg', s.ds_bg);
   } catch(e) {}

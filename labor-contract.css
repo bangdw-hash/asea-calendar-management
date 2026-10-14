@@ -141,7 +141,7 @@
 .lc-badge {
   display: inline-block;
   padding: 2px 9px;
-  border-radius: 10px;
+  border-radius: 6px;
   font-size: 11px;
   font-weight: 600;
   white-space: nowrap;
@@ -170,7 +170,7 @@
 /* ===================== 폼 스타일 ===================== */
 .lc-form {
   background: #fff;
-  border-radius: 8px;
+  border-radius: 6px;
   box-shadow: 0 1px 6px rgba(0,0,0,0.09);
   padding: 24px;
   max-width: 820px;
@@ -291,7 +291,7 @@
 
 .lc-preview-inner {
   background: #fff;
-  border-radius: 8px;
+  border-radius: 6px;
   width: min(95vw, 800px);
   max-height: 92vh;
   display: flex;
@@ -306,7 +306,7 @@
   padding: 12px 18px;
   border-bottom: 1px solid #e5e7eb;
   background: #f8f9fa;
-  border-radius: 8px 8px 0 0;
+  border-radius: 6px 6px 0 0;
 }
 
 .lc-preview-header h3 {
@@ -335,7 +335,7 @@
 .lc-preview-frame {
   flex: 1;
   overflow: hidden;
-  border-radius: 0 0 8px 8px;
+  border-radius: 0 0 6px 6px;
 }
 
 .lc-preview-frame iframe {
@@ -377,7 +377,7 @@
 /* ===================== 설정 패널 ===================== */
 .lc-settings {
   background: #fff;
-  border-radius: 8px;
+  border-radius: 6px;
   box-shadow: 0 1px 6px rgba(0,0,0,0.09);
   padding: 22px;
   max-width: 600px;

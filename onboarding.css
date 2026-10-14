@@ -10,7 +10,7 @@
   font-size: 12px;
   line-height: 1.45;
   padding: 7px 10px;
-  border-radius: 8px;
+  border-radius: 6px;
   box-shadow: 0 6px 20px rgba(0,0,0,.22);
   pointer-events: none;
   white-space: normal;
@@ -33,7 +33,7 @@
 .ob-card {
   position: relative;
   width: 100%; max-width: 480px;
-  background: #fff; border-radius: 16px;
+  background: #fff; border-radius: 6px;
   padding: 22px 22px 18px;
   box-shadow: 0 20px 60px rgba(0,0,0,.3);
   max-height: 88vh; overflow-y: auto;
@@ -44,7 +44,7 @@
 .ob-x {
   position: absolute; top: 12px; right: 12px;
   width: 30px; height: 30px; border: none; background: #f1f5f9;
-  border-radius: 8px; color: #475569; font-size: 15px; cursor: pointer;
+  border-radius: 6px; color: #475569; font-size: 15px; cursor: pointer;
 }
 .ob-x:hover { background: #e2e8f0; }
 
@@ -59,7 +59,7 @@
 
 .ob-opts {
   display: flex; flex-wrap: wrap; gap: 14px;
-  background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px;
+  background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px;
   padding: 10px 12px; margin-bottom: 14px;
 }
 .ob-opt { display: flex; align-items: center; gap: 7px; font-size: 13px; color: #475569; cursor: pointer; }
@@ -68,13 +68,13 @@
 .ob-btns { display: flex; justify-content: flex-end; }
 .ob-btn-primary {
   background: #0ea5e9; color: #fff; border: none;
-  border-radius: 10px; padding: 10px 22px;
+  border-radius: 6px; padding: 10px 22px;
   font-size: 14px; font-weight: 700; cursor: pointer;
 }
 .ob-btn-primary:hover { background: #0284c7; }
 
 @media (max-width: 520px) {
-  .ob-card { padding: 18px 16px 14px; border-radius: 14px; }
+  .ob-card { padding: 18px 16px 14px; border-radius: 6px; }
   .ob-title { font-size: 16px; }
   .ob-list li { font-size: 13px; }
 }
