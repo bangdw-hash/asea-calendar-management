@@ -129,20 +129,25 @@
 
   /* ───────────── AI 분석 (이름 미전송) ───────────── */
   var SYS = '당신은 전문대학 교육처의 교육기획 전문가입니다. 학생 수업 개선 설문 결과를 분석해 보고서 초안을 작성합니다.\n' +
-    '입력은 JSON입니다. scores는 5점 척도(5점이 가장 좋음) 집계, comments는 학생 서술 의견입니다. 대상의 이름은 주어지지 않으며 "해당 교원/반/계열"로 지칭하십시오.\n' +
+    '입력은 JSON입니다. scores는 5점 척도(5점이 가장 좋음) 집계, comments는 학생 서술 의견으로 [의견번호,질문번호,과목번호,의견] 배열이며 qs·cs는 질문·과목 이름 목록입니다(번호로 참조). 내용 없는 의견(「없음」 등)은 이미 제외되어 번호가 비어 있을 수 있습니다. 대상의 이름은 주어지지 않으며 "해당 교원/반/계열"로 지칭하십시오.\n' +
     '출력은 JSON 객체 하나만 작성하십시오. (설명·코드펜스 금지) 형식:\n' +
-    '{"classify":[{"i":의견번호,"s":"pos|neg|neu","t":"주제 2~6자"}],"positive":["학생들이 인정한 강점 요약 문장"(최대4)],"negative":["개선이 필요한 점 요약 문장"(최대4)],' +
+    '{"classify":[[의견번호,"p|n|u","주제 2~6자(u는 생략)"]],"positive":["학생들이 인정한 강점 요약 문장"(최대4)],"negative":["개선이 필요한 점 요약 문장"(최대4)],' +
     '"dept":"교육처 입장. 수치와 서술 의견을 함께 근거로 한 전문가 판단 4~7문장. 단정적 평가 대신 근거·해석·우선순위를 제시. 합니다체",' +
     '"soft":"전달용 정성 리포트 본문. 숫자·점수·비율·인원수를 절대 쓰지 말 것. 부드럽고 존중하는 어조로 강점을 먼저 인정하고, 부정적 사실은 조심스럽게 표현하되 숨기지 말 것. 3~4개 문단. 합니다체",' +
     '"actions":[{"title":"개선 과제 제목","detail":"교육기획 관점의 구체적 방안 2~3문장(누가·무엇을·어떻게). 형식적 문구 금지","owner":"교원|교육처|학과","when":"즉시|이번 학기|다음 학기"}](3~5개)}\n' +
-    '규칙: 모든 의견(i)을 classify에 포함. 욕설·인신공격이 있으면 soft/positive/negative에 옮기지 말고 일반화해 표현. 근거 없는 추측 금지.\n' +
+    '규칙: comments에 있는 모든 의견을 classify에 포함(p=긍정, n=부정, u=중립). 욕설·인신공격이 있으면 soft/positive/negative에 옮기지 말고 일반화해 표현. 근거 없는 추측 금지.\n' +
     '학술 근거: 입력의 theory 는 검증된 연구 근거 후보입니다(id, finding=연구 결과 요약, use=적용 해석, caution=유의). 이 대상의 상황(점수·서술 의견 주제·표본 크기·회차 변화)과 실제로 관련 있는 것만 골라 dept 와 actions 의 판단 근거로 쓰고, 관련 없으면 쓰지 마십시오. 같은 문구를 반복하지 말고 대상의 상황에 맞게 풀어 쓰십시오. ' +
     '사용한 근거는 JSON 의 "refs"(id 배열)에 반드시 적고, actions 의 각 항목에는 근거가 있으면 "ref"(id)를 적습니다. theory 에 없는 연구·저자·연도·통계 수치는 절대 언급하지 말고, 저자명·연도는 본문에 쓰지 마십시오(출처는 시스템이 각주로 붙입니다). dept 에서는 연구 결과(사실)와 이 대상에 대한 해석·판단(의견)을 구분해 쓰십시오. soft(전달용)에는 연구 인용·학술 용어를 쓰지 마십시오.';
+  var TRIV = /^(없음|없습니다|없어요|없다|특별히없음|특별히없습니다|해당없음|해당사항없음|모름|모르겠음|모르겠습니다|무응답|ㅇㅇ|ㅎㅎ|ㅋㅋ|na)$/i;
+  function trivial(t) { var n = String(t || '').replace(/[\s.,~!?\-\/]/g, ''); return n.length <= 1 || TRIV.test(n); }
+  // 토큰 절약: 내용 없는 의견은 보내지 않고(규칙 분류), 질문·과목 이름은 목록으로 한 번만 보낸다.
   function aiInput(e, ov, th) {
+    var qs = [], cs = [], cm = []; function ix(a, v) { var k = a.indexOf(v); if (k < 0) { a.push(v); k = a.length - 1; } return k; }
+    for (var i = 0; i < e.comments.length && cm.length < 60; i++) { var c = e.comments[i]; if (!trivial(c.t)) cm.push([i, ix(qs, c.ql), ix(cs, c.c), c.t.slice(0, 300)]); }
     return JSON.stringify({ theory: (A.ext.theory && th ? A.ext.theory.forAI(th) : []), unit: UL[e.unit], survey: ov.survey, basis: ov.basis,
       scores: { overall: { mean: round2(e.mean), pos: Math.round(e.posr || 0), neg: Math.round(e.negr || 0), school: round2(e.schoolMean) }, sections: e.secs.map(function (s) { return { n: secShort(s.title), mean: round2(s.mean), school: round2(s.school), pos: Math.round(s.pos || 0), neg: Math.round(s.neg || 0) }; }),
         best: e.best.map(function (q) { return { q: q.label.slice(0, 50), mean: round2(q.mean) }; }), worst: e.worst.map(function (q) { return { q: q.label.slice(0, 50), mean: round2(q.mean) }; }), courses: e.courseList.slice(0, 12).map(function (c) { return { n: c.name, mean: round2(c.mean) }; }) },
-      comments: e.comments.slice(0, 60).map(function (c, i) { return { i: i, q: c.ql, c: c.c, t: c.t.slice(0, 300) }; }) });
+      qs: qs, cs: cs, comments: cm });
   }
   function medianOf(a) { if (!a.length) return null; var b = a.slice().sort(function (x, y) { return x - y; }), m = b.length >> 1; return b.length % 2 ? b[m] : (b[m - 1] + b[m]) / 2; }
   function round2(v) { return v == null ? null : Math.round(v * 100) / 100; }
@@ -185,16 +190,19 @@
     };
     bind(); return api;
   }
-  async function aiAnalyze(e, ov, onStage) {
+  function hash(str) { var h = 5381; for (var i = 0; i < str.length; i++) h = ((h << 5) + h + str.charCodeAt(i)) | 0; return (h >>> 0).toString(36) + str.length; }
+  async function aiAnalyze(e, ov, onStage, prev) {
     if (onStage) onStage('pick');
     if (!A.ext.aiCall) throw new Error('AI 모듈을 불러오지 못했습니다. 새로고침해 주십시오.');
     var model = UI.model || ((A.ext.aiModels || [])[0] || [])[0] || 'claude-sonnet-5-5', th = A.ext.theory ? A.ext.theory.pick(A.ext.theory.signals(e), e.unit + '|' + e.key, 4) : [];
     if (onStage) onStage('call');
-    var text = await A.ext.aiCall(SYS, aiInput(e, ov, th), model); if (onStage) onStage('verify'); var j = parseJson(text);
-    var cls = (j.classify || []).filter(function (c) { return c && c.i >= 0 && c.i < e.comments.length; }).map(function (c) { return { i: Number(c.i), s: /^(pos|neg|neu)$/.test(c.s) ? c.s : 'neu', t: String(c.t || '').slice(0, 12) }; });
+    var payload = aiInput(e, ov, th), ih = hash(model + '|' + SYS.length + '|' + payload);
+    if (prev && prev.ih === ih && prev.analysis && prev.analysis.src === 'ai') return { reuse: true, ih: ih };   // 입력이 같으면 AI를 다시 부르지 않음
+    var text = await A.ext.aiCall(SYS, payload, model, { cache: true }); if (onStage) onStage('verify'); var j = parseJson(text);
+    var SM = { p: 'pos', n: 'neg', u: 'neu', pos: 'pos', neg: 'neg', neu: 'neu' }, cls = (j.classify || []).map(function (c) { return Array.isArray(c) ? { i: c[0], s: c[1], t: c[2] } : c; }).filter(function (c) { return c && c.i >= 0 && c.i < e.comments.length; }).map(function (c) { return { i: Number(c.i), s: SM[c.s] || 'neu', t: String(c.t || '').slice(0, 12) }; });
     e.comments.forEach(function (c, i) { if (!cls.some(function (x) { return x.i === i; })) cls.push({ i: i, s: ruleClassify(c.t), t: '' }); });
     var TH = A.ext.theory, clean = function (t, none) { return TH ? TH.stripCites(String(t || ''), th, none) : String(t || ''); };
-    return { src: 'ai', model: String(model), at: Date.now(), cls: cls, positive: (j.positive || []).map(function (x) { return clean(x, true); }).filter(Boolean).slice(0, 4), negative: (j.negative || []).map(function (x) { return clean(x, true); }).filter(Boolean).slice(0, 4), dept: clean(j.dept), soft: clean(j.soft, true),
+    return { src: 'ai', ih: ih, model: String(model), at: Date.now(), cls: cls, positive: (j.positive || []).map(function (x) { return clean(x, true); }).filter(Boolean).slice(0, 4), negative: (j.negative || []).map(function (x) { return clean(x, true); }).filter(Boolean).slice(0, 4), dept: clean(j.dept), soft: clean(j.soft, true),
       refs: TH ? TH.cleanRefs(j.refs, th) : [],
       actions: (j.actions || []).slice(0, 6).map(function (a) { return { title: clean(a.title), detail: clean(a.detail), owner: String(a.owner || ''), when: String(a.when || '') }; }) };
   }
@@ -305,7 +313,7 @@
   }
   function fmtEta(n) { return n < 60 ? n + '초' : Math.round(n / 60) + '분'; }
   async function runAnalysis(list, mode) {
-    var SID = sid(), ov = await ovGet(), done = 0, fail = 0, errs = [], failed = [], okList = [], isAi = mode === 'ai', label = isAi ? 'AI 분석' : '기본 분석', t0 = Date.now(); UI.busy = true; UI.cancel = false; drawStatus(label + ' 준비…');
+    var SID = sid(), ov = await ovGet(), done = 0, fail = 0, errs = [], failed = [], okList = [], reused = 0, u0 = Object.assign({ calls: 0, inp: 0, out: 0 }, A.ext.aiUsage), isAi = mode === 'ai', label = isAi ? 'AI 분석' : '기본 분석', t0 = Date.now(); UI.busy = true; UI.cancel = false; drawStatus(label + ' 준비…');
     // 대상마다 처리 상태를 기록한다: wait → run(단계) → done(소요 시간)/fail(사유). 진행률은 완료한 건수 ÷ 전체 건수.
     var items = list.map(function (e) { return { k: e.unit + '|' + e.key, label: e.label, state: 'wait', step: 0, stage: '', t0: 0, ms: 0, err: '' }; }), byK = {}; items.forEach(function (x) { byK[x.k] = x; });
     if (UI.prog && UI.prog.dismiss) { try { UI.prog.dismiss(); } catch (e) {} }
@@ -319,8 +327,9 @@
       while (queue.length && !UI.cancel) {
         var e = queue.shift(), k = e.unit + '|' + e.key, it = byK[k]; it.state = 'run'; it.t0 = Date.now(); it.step = 0; it.stage = '준비'; upd();
         try {
-          var an = isAi ? await aiAnalyze(e, ov, function (st) { it.step = STG[st][0]; it.stage = STG[st][1]; upd(); }) : (it.step = 1, it.stage = '분석', ruleAnalysis(e));
-          var rec = { analysis: an, edit: null, updated: Date.now(), n: e.comments.length, fsig: fsig() }; if (sid() === SID) UI.saved[k] = rec; await dbPut(SID + '|' + e.unit + '|' + e.key, rec); okList.push(e); it.state = 'done';
+          var prev = getRec(e), an = isAi ? await aiAnalyze(e, ov, function (st) { it.step = STG[st][0]; it.stage = STG[st][1]; upd(); }, prev) : (it.step = 1, it.stage = '분석', ruleAnalysis(e));
+          if (an.reuse) { reused++; prev.ih = an.ih; prev.fsig = fsig(); prev.n = e.comments.length; an = null; }
+          var rec = an ? { analysis: an, ih: an.ih, edit: null, updated: Date.now(), n: e.comments.length, fsig: fsig() } : prev; if (sid() === SID) UI.saved[k] = rec; await dbPut(SID + '|' + e.unit + '|' + e.key, rec); okList.push(e); it.state = 'done';
         } catch (er) { fail++; failed.push(e); errs.push(e.label + ': ' + er.message); it.state = 'fail'; it.err = er.message; }
         it.ms = Date.now() - it.t0; done++; drawStatus(label + ' ' + done + ' / ' + list.length + (fail ? ' (실패 ' + fail + ')' : '')); if (sid() === SID) drawList(); upd();
       }
@@ -333,7 +342,8 @@
     if (UI.cancel) { P.fail(label + '을 중단했습니다. 완료된 ' + okList.length + '건은 저장되었고, 남은 대상은 「미분석만 선택」으로 이어서 분석할 수 있습니다.', acts); drawStatus('중단했습니다.'); }
     else {
       drawStatus('완료: ' + okList.length + '건' + (fail ? ', 실패 ' + fail + '건' : ''));
-      var msg = label + '을 마쳤습니다. 성공 ' + okList.length + '건' + (fail ? ', 실패 ' + fail + '건' : '') + '. ' + (okList.length ? '다음 단계: 목록의 「편집·미리보기」로 내용을 검토·수정한 뒤 「PDF(ZIP) 내려받기」를 진행하십시오.' : '실패 사유를 확인한 뒤 다시 분석해 주십시오.');
+      var uu = A.ext.aiUsage ? { c: A.ext.aiUsage.calls - u0.calls, i: A.ext.aiUsage.inp - u0.inp, o: A.ext.aiUsage.out - u0.out } : null;
+      var msg = label + '을 마쳤습니다. 성공 ' + okList.length + '건' + (fail ? ', 실패 ' + fail + '건' : '') + (reused ? ' (입력이 같아 기존 결과를 재사용한 ' + reused + '건은 AI를 호출하지 않았습니다)' : '') + (uu && uu.c ? ' · AI 호출 ' + uu.c + '회, 사용 토큰 입력 ' + uu.i.toLocaleString() + ' · 출력 ' + uu.o.toLocaleString() : '') + '. ' + (okList.length ? '다음 단계: 목록의 「편집·미리보기」로 내용을 검토·수정한 뒤 「PDF(ZIP) 내려받기」를 진행하십시오.' : '실패 사유를 확인한 뒤 다시 분석해 주십시오.');
       if (fail && !okList.length) P.fail(msg, acts); else P.finish(msg, acts);
       A.toast(label + '을 마쳤습니다. (성공 ' + okList.length + '건' + (fail ? ', 실패 ' + fail + '건' : '') + ')', fail && !okList.length ? 'err' : undefined);
     }

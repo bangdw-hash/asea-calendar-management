@@ -143,15 +143,17 @@
     var b = s.lastIndexOf('}'); if (b > 0) { try { return JSON.parse(s.slice(0, b + 1)); } catch (e2) {} }
     throw new Error('AI 응답을 JSON으로 해석하지 못했습니다. 입력 분량을 줄이거나 다시 시도해 주십시오.');
   }
-  async function callAI(system, content, model) {
+  async function callAI(system, content, model, opts) {
     if (!window.claudeFetch) throw new Error('AI 설정 모듈(config.js)을 불러오지 못했습니다. 페이지를 새로고침해 주십시오.');
     try { if (window.loadAIProvidersFromCloud) await window.loadAIProvidersFromCloud(); } catch (e) {}
     var cc = window.getClaudeConfig ? window.getClaudeConfig() : { apiKey: '', endpoint: 'https://api.anthropic.com/v1/messages', isOfficial: true };
     if (!cc.apiKey) throw new Error('AI 연결 설정이 없습니다. index.html 의 「AI 제공자 설정」을 먼저 저장해 주십시오. (상단 「AI 연결 테스트」로 확인)');
     var headers = { 'Content-Type': 'application/json', 'x-api-key': cc.apiKey, 'anthropic-version': '2023-06-01' }; if (cc.isOfficial) headers['anthropic-dangerous-direct-browser-access'] = 'true';
-    var res = await window.claudeFetch(cc.endpoint, { method: 'POST', headers: headers, body: JSON.stringify({ model: model, max_tokens: 16000, system: system, messages: [{ role: 'user', content: content }] }) });
+    var res = await window.claudeFetch(cc.endpoint, { method: 'POST', headers: headers, body: JSON.stringify({ model: model, max_tokens: 16000, system: (cc.isOfficial && opts && opts.cache && String(system).length > 1500) ? [{ type: 'text', text: system, cache_control: { type: 'ephemeral' } }] : system, messages: [{ role: 'user', content: content }] }) });
     var data = await res.json().catch(function () { return {}; });
     if (data.error || !res.ok) { var e = new Error((data.error && data.error.message) || ('AI 응답 오류 (HTTP ' + res.status + ')')); e.status = res.status; throw e; }
+    var us = data.usage || (data.data && data.data.usage) || null, U = A.ext.aiUsage || (A.ext.aiUsage = { calls: 0, inp: 0, out: 0 });   // 실제 사용 토큰 누적(제공자가 알려 줄 때)
+    U.calls++; if (us) { U.inp += (us.input_tokens || 0) + (us.cache_creation_input_tokens || 0) + (us.cache_read_input_tokens || 0); U.out += us.output_tokens || 0; }
     var text = window.claudeExtractText ? window.claudeExtractText(data) : (data.content && data.content[0] && data.content[0].text);
     if (!text) throw new Error('AI 응답이 비어 있습니다.');
     return text;
