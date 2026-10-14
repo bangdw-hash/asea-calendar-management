@@ -49,12 +49,12 @@
     }).join('');
     var bg = T().bg ? '<div class="ly bgrow' + (T().page.bgHide ? ' hid' : '') + '" title="우클릭: 보이기·삭제·교체"><span class="li">' + AW.ic('image', 15) + '</span><span class="ln">배경: ' + AW.esc(T().bgName || '양식') + '</span><button class="icon-btn" data-ly="bg" title="배경 표시 전환" aria-label="배경 표시 전환">' + AW.ic(T().page.bgHide ? 'close' : 'eye', 15) + '</button></div>' : '<div class="ly bgrow muted" title="우클릭: 배경 올리기"><span class="li">' + AW.ic('image', 15) + '</span><span class="ln">배경 없음 (우클릭 → 배경 교체)</span></div>';
     return '<div class="sbx">' + head('레이어', '<span class="muted">' + els.length + '개</span><span class="sp-sp"></span>') +
-      '<div class="sp-tools"><button class="tb" data-a="dup" title="복제">' + AW.ic('copy', 16) + '</button><button class="tb" data-a="group" title="그룹 만들기 (Ctrl+G)">' + AW.ic('layers', 16) + '</button><button class="tb" data-a="ungroup" title="그룹 해제">' + AW.ic('close', 16) + '</button><button class="tb" data-a="del" title="삭제">' + AW.ic('trash', 16) + '</button></div>' +
+      '<div class="sp-tools"><button class="tb" data-a="dup" title="복제">' + AW.ic('copy', 16) + '</button><button class="tb" data-a="group" title="그룹 만들기 (Ctrl+G)">' + AW.ic('layers', 16) + '</button><button class="tb" data-a="ungroup" title="그룹 해제">' + AW.ic('close', 16) + '</button><button class="tb" data-a="lock" title="선택 잠금/해제 (그룹은 그룹 전체)">' + AW.ic('lock', 16) + '</button><button class="btn btn-ghost btn-sm" data-a="lockall" title="모든 요소를 한 번에 잠금/해제">전체 잠금</button><button class="tb" data-a="del" title="삭제">' + AW.ic('trash', 16) + '</button></div>' +
       '<div class="ly-list">' + (rows || '<div class="empty" style="padding:10px">요소가 없습니다.</div>') + bg + '</div><p class="muted" style="margin:8px 0 0">행을 끌어 순서를 바꾸고, 우클릭하면 메뉴가 나옵니다. 위쪽이 앞면입니다.</p></div>';
   }
   function bgMenu(x, y) {
     var A = function (label, ic, a, dis) { return { k: 'i', label: label, ic: ic, disabled: dis, fn: function () { E().act(a); } }; }, has = !!T().bg;
-    api().menuAt(x, y, [A(T().page.bgHide ? '배경 보이기' : '배경 숨기기', 'eye', 'bg-toggle', !has), A('배경 삭제', 'trash', 'bg-del', !has), A('배경 교체…', 'upload', 'bg-replace'), A('이전 배경 불러오기…', 'history', 'bg-hist'), { k: 'sep' }, A('배경 왼쪽 90° 회전', 'undo', 'bg-rot-l', !has), A('배경 오른쪽 90° 회전', 'redo', 'bg-rot-r', !has)]);
+    api().menuAt(x, y, [A(T().page.bgHide ? '배경 보이기' : '배경 숨기기', 'eye', 'bg-toggle', !has), A('배경 삭제', 'trash', 'bg-del', !has), A('배경 교체…', 'upload', 'bg-replace'), A('배경 양식 등록하기…', 'save', 'bg-reg', !has), A('배경 양식 불러오기…', 'folder', 'bg-lib'), { k: 'sep' }, A('배경 왼쪽 90° 회전', 'undo', 'bg-rot-l', !has), A('배경 오른쪽 90° 회전', 'redo', 'bg-rot-r', !has)]);
   }
 
   /* ───────────── 속성 · 크기 ───────────── */
@@ -101,9 +101,20 @@
       '<div class="sp-row"><input type="color" class="clr" id="cp-pick" value="' + hex + '" aria-label="색 선택"><input class="in sm" id="cp-hex" value="' + AW.esc(v) + '" placeholder="#RRGGBB 또는 rgb(…)" maxlength="40" style="flex:1" aria-label="HTML 색상 코드"></div>' +
       '<div class="sp-row">' + (ctarget === 'fill' || ctarget === '__page' ? '<button class="btn btn-ghost btn-sm" data-cnone="1">' + (ctarget === 'fill' ? '채우기 없음' : '흰색으로') + '</button>' : '') + (window.EyeDropper ? '<button class="btn btn-ghost btn-sm" data-eye="1">스포이드</button>' : '') + '</div>' +
       '<h4>상장 기본색</h4><div class="swg">' + SW.map(sw).join('') + '</div>' +
+      '<h4>학교 색 (모든 양식 공유)</h4>' + brandHtml() +
       '<h4>최근 사용</h4><div class="swg">' + (recent.length ? recent.map(sw).join('') : '<span class="muted">아직 없습니다.</span>') + '</div>' +
       '<p class="muted" style="margin:10px 0 0">HTML 색상 코드(예: <code>#B8860B</code>, <code>#B8860B80</code>, <code>rgb(31,58,104)</code>, <code>navy</code>)를 입력하고 Enter 를 누르십시오.</p></div>';
   }
+  // 학교 고유 색: 이름과 함께 서버에 저장하여 모든 양식·PC 에서 공유
+  function brandList() { return AW.pref.cache.brand_colors; }
+  function brandHtml() {
+    var b = brandList();
+    if (b === undefined) { AW.pref.get('brand_colors').then(function (v) { if (!v) AW.pref.cache.brand_colors = []; if (cur === 'color') draw(true); }).catch(function () { AW.pref.cache.brand_colors = null; if (cur === 'color') draw(true); }); return '<span class="muted">불러오는 중…</span>'; }
+    if (b === null) return '<span class="muted">서버 설정을 불러오지 못했습니다. db/award_schema_5.sql 설치 여부를 확인하십시오.</span>';
+    return '<div class="swg">' + (b.length ? b.map(function (c, i) { return '<span class="bc"><button class="swc" data-c="' + AW.esc(c.hex) + '" style="background:' + AW.esc(c.hex) + '" title="' + AW.esc(c.name + ' ' + c.hex) + '" aria-label="' + AW.esc(c.name) + '"></button><button class="bcx" data-bd="' + i + '" title="삭제" aria-label="삭제">×</button><span class="bcn">' + AW.esc(c.name) + '</span></span>'; }).join('') : '<span class="muted">등록된 색이 없습니다.</span>') + '</div>' +
+      '<div class="sp-row"><input class="in sm" id="bc-n" maxlength="20" placeholder="색 이름 (예: 교색 남색)" style="flex:1"><button class="btn btn-secondary btn-sm" data-badd="1">현재 색 등록</button></div>';
+  }
+  function brandSave(list) { AW.pref.set('brand_colors', list).then(function () { draw(true); }).catch(function (e) { AW.toast(e.message, 'error'); }); }
   function applyColor(v, live) {
     var ts = targets(), t = ts.filter(function (x) { return x[0] === ctarget; })[0] || ts[0];
     api().lbl('색상 변경');
@@ -130,6 +141,8 @@
       if (!id) return; if (e.shiftKey || e.ctrlKey || e.metaKey) { var sl = S.sel.slice(), i = sl.indexOf(id); if (i >= 0) sl.splice(i, 1); else sl.push(id); E().setSel(sl); } else E().setSel([id]);
     }
     if (cur === 'color') {
+      var bd = e.target.closest('[data-bd]'); if (bd) { var bl = (brandList() || []).slice(); bl.splice(+bd.dataset.bd, 1); return brandSave(bl); }
+      if (e.target.closest('[data-badd]')) { var nm = AW.$('#bc-n', panel).value.trim(), hx = norm(AW.$('#cp-hex', panel).value); if (!nm) return AW.toast('색 이름을 입력해 주십시오.', 'error'); if (!hx) return AW.toast('등록할 색상 코드가 올바르지 않습니다.', 'error'); var bl2 = (brandList() || []).concat([{ name: nm, hex: hx }]); return brandSave(bl2); }
       var ct = e.target.closest('[data-ct]'); if (ct) { ctarget = ct.dataset.ct; return draw(true); }
       var sw = e.target.closest('[data-c]'); if (sw) { applyColor(sw.dataset.c, false); return draw(true); }
       if (e.target.closest('[data-cnone]')) { applyColor(ctarget === 'fill' ? '' : '#ffffff', false); return draw(true); }

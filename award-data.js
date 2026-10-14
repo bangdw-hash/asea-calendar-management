@@ -69,16 +69,23 @@
   function renderGuide() {
     var box = AW.$('#dt-guide-in', st.root), f = T().fields;
     if (!f.length) { box.innerHTML = '<div class="empty">아직 입력 항목이 없습니다.<br>양식 창에서 <b>일괄 입력 항목</b> 버튼으로 항목을 추가하면, 항목별 안내와 엑셀 양식이 자동으로 만들어집니다.<br><span class="muted">예: 글상자에 <code>{{성명}}</code> 이라고 쓰면 엑셀의 「성명」 열이 그 자리에 들어갑니다.</span></div>'; return; }
-    box.innerHTML = '<div class="tbl-wrap"><table class="gt"><thead><tr><th>열</th><th>항목명</th><th>양식에서의 위치</th><th>입력 안내</th><th>예시</th><th>최대글자</th><th>필수</th></tr></thead><tbody>' +
+    box.innerHTML = '<div class="tbl-wrap"><table class="gt"><thead><tr><th title="끌어서 열 순서 변경">열</th><th>항목명</th><th>양식에서의 위치</th><th>입력 안내</th><th>예시</th><th>최대글자</th><th>필수</th></tr></thead><tbody>' +
       f.map(function (x, i) {
-        return '<tr data-i="' + i + '"><td class="c">' + colLetter(i) + '</td><td><input class="in sm" data-k="name" value="' + AW.esc(x.name) + '" aria-label="항목명"></td>' +
+        return '<tr data-i="' + i + '"><td class="c grip" draggable="true" title="끌어서 순서 변경">' + colLetter(i) + '</td><td><input class="in sm" data-k="name" value="' + AW.esc(x.name) + '" aria-label="항목명"></td>' +
           '<td class="where">' + AW.esc(AW.whereIs(x.name)) + '</td>' +
           '<td><textarea class="in sm" data-k="hint" rows="2" aria-label="입력 안내">' + AW.esc(x.hint) + '</textarea></td>' +
           '<td><textarea class="in sm" data-k="example" rows="2" aria-label="예시">' + AW.esc(x.example) + '</textarea></td>' +
           '<td><input class="in sm num" data-k="max" type="number" min="0" max="500" value="' + (x.max || '') + '" placeholder="무제한" aria-label="최대 글자 수"></td>' +
           '<td class="c"><input type="checkbox" data-k="req"' + (x.req !== false ? ' checked' : '') + ' aria-label="필수"></td></tr>';
       }).join('') + '</tbody></table></div><p class="muted" style="margin:6px 0 0">내장 항목 <code>{{@번호}}</code>(일련번호)·<code>{{@오늘}}</code>(출력일)은 엑셀 열이 필요 없습니다. 항목명을 고치면 양식의 <code>{{…}}</code>와 입력 데이터가 함께 바뀝니다.</p>';
-    var tb = AW.$('tbody', box);
+    var tb = AW.$('tbody', box), dragI = null;
+    tb.addEventListener('dragstart', function (e) { var g = e.target.closest('.grip'); if (!g) return; dragI = +g.closest('tr').dataset.i; e.dataTransfer.effectAllowed = 'move'; try { e.dataTransfer.setData('text/plain', String(dragI)); } catch (x) {} });
+    tb.addEventListener('dragover', function (e) { var tr = e.target.closest('tr'); if (!tr || dragI == null) return; e.preventDefault(); AW.$$('tr', tb).forEach(function (r) { r.classList.remove('dragover'); }); tr.classList.add('dragover'); });
+    tb.addEventListener('drop', function (e) {
+      var tr = e.target.closest('tr'); if (!tr || dragI == null) return; e.preventDefault(); var to = +tr.dataset.i, order = T().fields.map(function (f) { return f.name; }), mv = order.splice(dragI, 1)[0]; order.splice(to, 0, mv); dragI = null;
+      T().page.fieldOrder = order; AW.syncFields(); S.dirty = true; AW.emit('tplchange', 'fields'); D.refresh(true); AW.toast('열 순서를 바꿨습니다. 엑셀 양식과 표에 반영됩니다.', 'ok');
+    });
+    tb.addEventListener('dragend', function () { dragI = null; AW.$$('tr', tb).forEach(function (r) { r.classList.remove('dragover'); }); });
     tb.addEventListener('change', function (e) {
       var tr = e.target.closest('tr'), k = e.target.dataset.k; if (!tr || !k) return;
       var fld = T().fields[+tr.dataset.i];
@@ -149,8 +156,15 @@
     rows.forEach(function (r) { f.forEach(function (x) { var s = cellState(x, r[x.name]); if (s === 'miss') miss++; else if (s === 'long') long++; }); });
     AW.$('#dt-stat', st.root).innerHTML = '<b>' + f.length + '</b>개 항목 · <b>' + rows.length + '</b>행' +
       (miss ? ' <span class="badge warn" title="필수 항목이 비어 있는 칸 수">누락 ' + miss + '</span>' : '') + (long ? ' <span class="badge err" title="최대 글자 수를 넘은 칸 수">길이초과 ' + long + '</span>' : '') +
-      (rows.length && !miss && !long ? ' <span class="badge ok">검증 통과</span>' : '');
+      (D.dupCount() ? ' <span class="badge warn" title="성명·소속이 같은 행이 있습니다">중복 의심 ' + D.dupCount() + '</span>' : '') +
+      (rows.length && !miss && !long && !D.dupCount() ? ' <span class="badge ok">검증 통과</span>' : '');
   }
+  // 중복 의심: 성명·소속(없으면 모든 항목)이 같은 행
+  D.dupCount = function () {
+    var f = T().fields, pick = f.filter(function (x) { return /성명|이름|수상자|수료자|소속|학과|반$|과정/.test(x.name); }), keys = (pick.length ? pick : f).map(function (x) { return x.name; }), seen = {}, n = 0;
+    T().rows.forEach(function (r) { var k = keys.map(function (c) { return String(r[c] == null ? '' : r[c]).trim(); }).join('|'); if (!k.replace(/\|/g, '')) return; if (seen[k]) n++; else seen[k] = 1; });
+    return n;
+  };
   D.validate = function () {
     var f = T().fields, miss = 0, long = 0;
     T().rows.forEach(function (r) { f.forEach(function (x) { var s = cellState(x, r[x.name]); if (s === 'miss') miss++; else if (s === 'long') long++; }); });
@@ -283,7 +297,7 @@
       S.row = base; st.page = Math.floor(base / PAGE); dataChanged(); close(); var gd = AW.$('#dt-guide', st.root); if (gd) gd.open = false; D.refresh(true); AW.emit('rowchange');
       AW.log('xlsx_import', T().id, { file: fname, rows: b.rows.length, mode: mode });
       var v = D.validate();
-      AW.toast(b.rows.length + '행을 올렸습니다.' + (v.miss || v.long ? ' (누락 ' + v.miss + ' · 길이초과 ' + v.long + ' — 표에서 확인)' : ''), v.miss || v.long ? '' : 'ok');
+      var dc = D.dupCount(); AW.toast(b.rows.length + '행을 올렸습니다.' + (dc ? ' 중복 의심 ' + dc + '행이 있습니다(표 위 배지 확인).' : '') + (v.miss || v.long ? ' (누락 ' + v.miss + ' · 길이초과 ' + v.long + ' — 표에서 확인)' : ''), v.miss || v.long ? '' : 'ok');
     }
   }
 
