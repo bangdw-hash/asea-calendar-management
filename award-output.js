@@ -73,11 +73,42 @@
   // rows: [{row, idx}]
   Out.run = function (tpl, rows, opt) {
     opt = opt || {};
-    return build(tpl, rows, opt).then(function () {
+    return AW.ensureFontsFor(tpl).then(function () { return build(tpl, rows, opt); }).then(function () {
       var done = function () { window.removeEventListener('afterprint', done); AW.$('#print-root').innerHTML = ''; };
       window.addEventListener('afterprint', done);
       setTimeout(function () { window.print(); }, 60);
     });
+  };
+  // 내 글꼴 관리: 서버에 저장해 두면 다른 PC·브라우저에서도 자동으로 불러옴
+  Out.fontDialog = function () {
+    var m = { el: null };
+    AW.modal({ title: '내 글꼴 관리', wide: true, body: '<div id="ft-b"><div class="loading">불러오는 중…</div></div>', actions: [{ label: '닫기', cls: 'btn-primary' }], onOpen: function (el) { m.el = el; draw(); } });
+    function mb(n) { return (n / 1048576).toFixed(1) + 'MB'; }
+    function draw() {
+      AW.loadFontList().then(function (l) {
+        var b = AW.$('#ft-b', m.el); if (!b) return; var tot = l.reduce(function (a, x) { return a + x.size; }, 0);
+        b.innerHTML = '<div class="alert warn" style="margin-bottom:10px">' + AW.ic('info', 16) + ' <b>라이선스 확인</b> — 웹 게시·재배포가 허용된 글꼴만 올려 주십시오(예: 나눔, Noto, 서울서체 등). 윈도우·한컴·유료 글꼴은 올리지 마십시오. 이 화면에 올린 파일은 서버에 저장되어 접속하는 모든 단말기에서 내려받아집니다.</div>' +
+          '<div class="grid2"><div><label class="f">글꼴 이름(목록에 표시)</label><input class="in" id="ft-n" maxlength="40" placeholder="예: 학교 상장체"></div><div><label class="f">글꼴 파일 (ttf · otf · woff · woff2, 8MB 이하)</label><input class="in" id="ft-f" type="file" accept=".ttf,.otf,.woff,.woff2"></div></div>' +
+          '<div style="margin:10px 0"><button class="btn btn-primary btn-sm" id="ft-up">' + AW.ic('upload', 16) + ' 올리기</button> <span class="muted" id="ft-m"></span></div>' +
+          '<p class="muted">저장 용량 <b>' + mb(tot) + '</b> / 150MB · ' + l.length + '개. 글꼴은 양식에서 쓰는 것만 내려받고 기기에 보관하므로 두 번째부터는 다시 받지 않습니다. 한글 글꼴은 용량이 크니 woff2 형식을 권장합니다.</p>' +
+          (l.length ? '<div class="tbl-wrap"><table class="gt"><thead><tr><th>이름</th><th>형식</th><th>용량</th><th>등록일</th><th></th></tr></thead><tbody>' + l.map(function (x) { return '<tr><td><b style="font-family:\'' + x.family + '\'">' + AW.esc(x.label) + '</b></td><td>' + AW.esc(x.fmt) + '</td><td>' + mb(x.size) + '</td><td class="nowrap">' + AW.fmtTime(x.created_at) + '</td><td><button class="btn btn-ghost btn-sm" data-d="' + x.id + '">삭제</button></td></tr>'; }).join('') + '</tbody></table></div>' : '<div class="empty">올린 글꼴이 없습니다.</div>');
+        AW.$('#ft-up', m.el).onclick = up;
+        AW.$$('[data-d]', m.el).forEach(function (x) { x.onclick = function () { AW.confirm('글꼴 삭제', '삭제하면 이 글꼴을 쓰는 양식은 대체 글꼴로 표시됩니다. 계속하시겠습니까?', '삭제', true).then(function (ok) { if (ok) AW.call('award_font_delete', { p_id: x.dataset.d }).then(function () { draw(); AW.Editor.fontSelects(); }).catch(function (e) { AW.toast(e.message, 'error'); }); }); }; });
+      });
+    }
+    function up() {
+      var f = AW.$('#ft-f', m.el).files[0], nm = AW.$('#ft-n', m.el).value.trim(), msg = AW.$('#ft-m', m.el), bt = AW.$('#ft-up', m.el);
+      if (!f) return AW.toast('글꼴 파일을 선택해 주십시오.', 'error'); if (f.size > 8 * 1048576) return AW.toast('파일이 너무 큽니다(8MB 이하). woff2 로 변환하거나 글꼴을 부분 추출해 주십시오.', 'error');
+      var ext = (f.name.split('.').pop() || '').toLowerCase(), fmt = { ttf: 'truetype', otf: 'opentype', woff: 'woff', woff2: 'woff2' }[ext]; if (!fmt) return AW.toast('ttf · otf · woff · woff2 파일만 올릴 수 있습니다.', 'error');
+      nm = nm || f.name.replace(/\.[^.]+$/, ''); bt.disabled = true; msg.textContent = '검사하는 중…';
+      f.arrayBuffer().then(function (buf) {
+        return new FontFace('chk', buf).load().then(function () {                 // 올리기 전에 브라우저로 읽히는 글꼴인지 확인
+          var u = new Uint8Array(buf), s = '', k = 0x8000; for (var i = 0; i < u.length; i += k) s += String.fromCharCode.apply(null, u.subarray(i, i + k)); msg.textContent = '서버에 저장하는 중…';
+          return AW.call('award_font_add', { p_family: 'uf' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), p_label: nm, p_fmt: fmt, p_data: btoa(s), p_size: f.size });
+        });
+      }).then(function () { AW.toast('글꼴을 올렸습니다. 글꼴 목록의 「내 글꼴」에서 선택하십시오.', 'ok'); AW.log('font_add', '', { label: nm }); return AW.loadFontList(); })
+        .then(function () { AW.Editor.fontSelects(); draw(); }).catch(function (e) { bt.disabled = false; msg.textContent = ''; AW.toast(/FontFace|load/i.test(String(e && e.message)) || !e.code ? '읽을 수 없는 글꼴 파일입니다: ' + (e.message || '') : e.message, 'error'); });
+    }
   };
   var CODE_CH = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
   function newCode() { var a = new Uint8Array(10); (window.crypto || window.msCrypto).getRandomValues(a); return Array.prototype.map.call(a, function (x) { return CODE_CH[x % CODE_CH.length]; }).join(''); }
@@ -159,7 +190,7 @@
   };
 
   /* ───────────── 이력관리 ───────────── */
-  var LABEL = { login: '로그인', login_fail: '로그인 실패', tpl_create: '양식 생성', tpl_delete: '양식 삭제', tpl_duplicate: '양식 복사', xlsx_template: '엑셀 양식 내려받기', xlsx_import: '엑셀 올리기', ai_guide: 'AI 안내 작성', restore: '버전 복원', issue_revoke: '인증번호 폐기', issue_restore: '인증번호 복구', ai_translate: 'AI 영문 번역' };
+  var LABEL = { login: '로그인', login_fail: '로그인 실패', tpl_create: '양식 생성', tpl_delete: '양식 삭제', tpl_duplicate: '양식 복사', xlsx_template: '엑셀 양식 내려받기', xlsx_import: '엑셀 올리기', ai_guide: 'AI 안내 작성', restore: '버전 복원', issue_revoke: '인증번호 폐기', issue_restore: '인증번호 복구', font_add: '글꼴 업로드', font_delete: '글꼴 삭제', ai_translate: 'AI 영문 번역' };
   Hist.open = function (tab) {
     var m = { el: null, close: function () {} };
     AW.modal({

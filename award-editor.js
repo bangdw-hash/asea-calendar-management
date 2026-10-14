@@ -217,7 +217,12 @@
   E.setSel = function (ids, noRender) { S.sel = expandGrp(ids); markSel(); updTools(); AW.emit('selchange'); };
 
   /* ───────────── 속성 변경 ───────────── */
+  E.fontSelects = function () {
+    var a = AW.$('select[data-p="font"]', st.root), b = AW.$('select[data-p="fontEn"]', st.root); if (!a) return;
+    a.innerHTML = AW.fontOptions(); b.innerHTML = AW.fontOptions('영문: 한글과 같음'); updTools();
+  };
   function setProp(p, v, live) {
+    if ((p === 'font' || p === 'fontEn') && v) AW.ensureFont(v).then(function (n) { if (n) { E.refreshElems(); AW.Preview.render(); } });
     var tx = sel().filter(function (e) { return e.t === 'text'; });
     if (!tx.length) return;
     if (typeof v === 'number' && isNaN(v)) return;

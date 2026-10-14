@@ -51,6 +51,29 @@
   ];
   AW.FONTS = FT.map(function (f) { return { id: f[0], label: f[1], grp: f[2], stack: f[3], sys: !!f[4] }; });
   AW.fontStack = function (id) { for (var i = 0; i < FT.length; i++) if (FT[i][0] === id) return FT[i][3]; return "'" + (id || 'Noto Sans KR') + "','Noto Sans KR',sans-serif"; };
+  // 내 글꼴(서버 저장): 목록은 로그인 후 불러오고, 양식에서 쓰는 글꼴만 내려받아 FontFace 로 등록(기기 IndexedDB 에 캐시)
+  var CF = { list: [], loaded: {}, busy: {} };
+  AW.customFonts = CF;
+  function idb(mode, fn) { return new Promise(function (res) { try { var r = indexedDB.open('award_fonts', 1); r.onupgradeneeded = function () { r.result.createObjectStore('f'); }; r.onerror = function () { res(null); }; r.onsuccess = function () { try { var tx = r.result.transaction('f', mode), out = fn(tx.objectStore('f')); tx.oncomplete = function () { res(out && out.result !== undefined ? out.result : null); }; tx.onerror = function () { res(null); }; } catch (e) { res(null); } }; } catch (e) { res(null); } }); }
+  function syncFontTable() {
+    for (var i = AW.FONTS.length - 1; i >= 0; i--) if (AW.FONTS[i].grp === '내 글꼴') AW.FONTS.splice(i, 1);
+    CF.list.forEach(function (f) { AW.FONTS.push({ id: f.family, label: f.label, grp: '내 글꼴', stack: "'" + f.family + "','Noto Serif KR',serif", sys: false, custom: f }); });
+  }
+  AW.loadFontList = function () { return AW.call('award_font_list').then(function (l) { CF.list = l || []; syncFontTable(); AW.emit('fontlist'); return CF.list; }).catch(function () { return []; }); };
+  function b64ToBuf(b) { var s = atob(b), u = new Uint8Array(s.length); for (var i = 0; i < s.length; i++) u[i] = s.charCodeAt(i); return u.buffer; }
+  AW.ensureFont = function (family) {
+    var f = CF.list.filter(function (x) { return x.family === family; })[0]; if (!f || CF.loaded[family]) return Promise.resolve(false);
+    if (CF.busy[family]) return CF.busy[family];
+    return (CF.busy[family] = idb('readonly', function (s) { return s.get(f.id); }).then(function (buf) {
+      return buf ? buf : AW.call('award_font_get', { p_id: f.id }).then(function (r) { var b = b64ToBuf(r.data); idb('readwrite', function (s) { return s.put(b, f.id); }); return b; });
+    }).then(function (buf) { return new FontFace(family, buf).load(); }).then(function (ff) { document.fonts.add(ff); CF.loaded[family] = true; delete CF.busy[family]; return true; })
+      .catch(function () { delete CF.busy[family]; return false; }));
+  };
+  // 양식에서 쓰는 내 글꼴을 모두 준비한 뒤 true(새로 불러온 글꼴이 있으면)
+  AW.ensureFontsFor = function (tpl) {
+    var used = {}; (tpl || AW.S.tpl).elems.forEach(function (e) { if (e.t === 'text') { used[e.font] = 1; if (e.fontEn) used[e.fontEn] = 1; } });
+    return Promise.all(Object.keys(used).map(function (fm) { return AW.ensureFont(fm); })).then(function (r) { return r.some(Boolean); });
+  };
   // PC 에 설치된 글꼴인지 확인(캔버스 폭 비교)
   var hf = {};
   AW.hasFont = function (name) {
@@ -166,6 +189,7 @@
   var ERR = {
     AUTH_REQUIRED: '로그인이 만료되었습니다. 다시 로그인해 주십시오.', NOT_FOUND: '대상을 찾을 수 없습니다.',
     BAD_PASSWORD: '비밀번호가 올바르지 않습니다.', LOCKED_OUT: '로그인 시도 횟수를 초과했습니다. 잠시 후 다시 시도해 주십시오.',
+    FONT_TOO_LARGE: '글꼴 파일이 너무 큽니다(8MB 이하).', FONT_QUOTA: '글꼴 저장 한도(150MB)를 넘습니다. 쓰지 않는 글꼴을 삭제해 주십시오.',
     ADMIN_NOT_SET: '관리자 비밀번호가 아직 등록되지 않았습니다. db/README_award.md 3단계를 실행해 주십시오.'
   };
   AW.rpc = function (fn, args) {
