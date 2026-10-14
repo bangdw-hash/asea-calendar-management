@@ -1,0 +1,1108 @@
+[
+ {
+  "id": "T01",
+  "field": "edu",
+  "author": "Overall",
+  "year": 1979,
+  "title": "Midterm feedback from students: Its relationship to instructional improvement and students' cognitive and affective outcomes",
+  "journal": "Journal of Educational Psychology",
+  "volume": "71",
+  "issue": "6",
+  "pages": "856-865",
+  "topics": [
+   "midterm",
+   "feedback"
+  ]
+ },
+ {
+  "id": "T02",
+  "field": "edu",
+  "author": "Cohen",
+  "year": 1980,
+  "title": "Effectiveness of student-rating feedback for improving college instruction: A meta-analysis of findings",
+  "journal": "Research in Higher Education",
+  "volume": "13",
+  "issue": "4",
+  "pages": "321-341",
+  "topics": [
+   "feedback",
+   "midterm"
+  ]
+ },
+ {
+  "id": "T03",
+  "field": "edu",
+  "author": "Penny",
+  "year": 2004,
+  "title": "Effectiveness of consultation on student ratings feedback: A meta-analysis",
+  "journal": "Review of Educational Research",
+  "volume": "74",
+  "issue": "2",
+  "pages": "215-253",
+  "topics": [
+   "feedback",
+   "consult"
+  ]
+ },
+ {
+  "id": "T04",
+  "field": "edu",
+  "author": "Marsh",
+  "year": 1987,
+  "title": "Students' evaluations of university teaching: Research findings, methodological issues, and directions for future research",
+  "journal": "International Journal of Educational Research",
+  "volume": "11",
+  "issue": "3",
+  "pages": "253-388",
+  "topics": [
+   "validity"
+  ]
+ },
+ {
+  "id": "T05",
+  "field": "edu",
+  "author": "Marsh",
+  "year": 1997,
+  "title": "Making students' evaluations of teaching effectiveness effective: The critical issues of validity, bias, and utility",
+  "journal": "American Psychologist",
+  "volume": "52",
+  "issue": "11",
+  "pages": "1187-1197",
+  "topics": [
+   "validity",
+   "bias",
+   "utility"
+  ]
+ },
+ {
+  "id": "T06",
+  "field": "edu",
+  "author": "Spooren",
+  "year": 2013,
+  "title": "On the validity of student evaluation of teaching: The state of the art",
+  "journal": "Review of Educational Research",
+  "volume": "83",
+  "issue": "4",
+  "pages": "598-642",
+  "topics": [
+   "validity",
+   "bias"
+  ],
+  "doi": "10.3102/0034654313496870"
+ },
+ {
+  "id": "T07",
+  "field": "edu",
+  "author": "Hattie",
+  "year": 2007,
+  "title": "The power of feedback",
+  "journal": "Review of Educational Research",
+  "volume": "77",
+  "issue": "1",
+  "pages": "81-112",
+  "topics": [
+   "feedback"
+  ]
+ },
+ {
+  "id": "T08",
+  "field": "edu",
+  "author": "Black",
+  "year": 1998,
+  "title": "Assessment and classroom learning",
+  "journal": "Assessment in Education: Principles, Policy & Practice",
+  "volume": "5",
+  "issue": "1",
+  "pages": "7-74",
+  "topics": [
+   "formative"
+  ]
+ },
+ {
+  "id": "T09",
+  "field": "edu",
+  "author": "Greenwald",
+  "year": 1997,
+  "title": "Grading leniency is a removable contaminant of student ratings",
+  "journal": "American Psychologist",
+  "volume": "52",
+  "issue": "11",
+  "pages": "1209-1217",
+  "topics": [
+   "grades",
+   "bias"
+  ]
+ },
+ {
+  "id": "T10",
+  "field": "edu",
+  "author": "Centra",
+  "year": 2003,
+  "title": "Will teachers receive higher student evaluations by giving higher grades and less course work?",
+  "journal": "Research in Higher Education",
+  "volume": "44",
+  "issue": "5",
+  "pages": "495-518",
+  "topics": [
+   "grades",
+   "workload"
+  ]
+ },
+ {
+  "id": "T11",
+  "field": "edu",
+  "author": "Adams",
+  "year": 2012,
+  "title": "Nonresponse and online student evaluations of teaching: Understanding the influence of salience, fatigue, and academic environments",
+  "journal": "Research in Higher Education",
+  "volume": "53",
+  "issue": "5",
+  "pages": "576-591",
+  "topics": [
+   "nonresponse",
+   "fatigue"
+  ]
+ },
+ {
+  "id": "T12",
+  "field": "edu",
+  "author": "Porter",
+  "year": 2004,
+  "title": "Multiple surveys of students and survey fatigue",
+  "journal": "New Directions for Institutional Research",
+  "volume": "2004",
+  "issue": "121",
+  "pages": "63-73",
+  "topics": [
+   "fatigue"
+  ]
+ },
+ {
+  "id": "T13",
+  "field": "edu",
+  "author": "Nulty",
+  "year": 2008,
+  "title": "The adequacy of response rates to online and paper surveys: what can be done?",
+  "journal": "Assessment & Evaluation in Higher Education",
+  "volume": "33",
+  "issue": "3",
+  "pages": "301-314",
+  "topics": [
+   "response_rate"
+  ]
+ },
+ {
+  "id": "T14",
+  "field": "edu",
+  "author": "Brinko",
+  "year": 1993,
+  "title": "The practice of giving feedback to improve teaching: What is effective?",
+  "journal": "The Journal of Higher Education",
+  "volume": "64",
+  "issue": "5",
+  "pages": "574-593",
+  "topics": [
+   "feedback",
+   "consult"
+  ]
+ },
+ {
+  "id": "T15",
+  "field": "edu",
+  "author": "Richardson",
+  "year": 2005,
+  "title": "Instruments for obtaining student feedback: a review of the literature",
+  "journal": "Assessment & Evaluation in Higher Education",
+  "volume": "30",
+  "issue": "4",
+  "pages": "387-415",
+  "topics": [
+   "instruments"
+  ]
+ },
+ {
+  "id": "T16",
+  "field": "edu",
+  "author": "Linse",
+  "year": 2017,
+  "title": "Interpreting and using student ratings data: Guidance for faculty serving as administrators and on evaluation committees",
+  "journal": "Studies in Educational Evaluation",
+  "volume": "54",
+  "issue": "",
+  "pages": "94-106",
+  "topics": [
+   "interpretation"
+  ]
+ },
+ {
+  "id": "T17",
+  "field": "edu",
+  "author": "Uttl",
+  "year": 2017,
+  "title": "Meta-analysis of faculty's teaching effectiveness: Student evaluation of teaching ratings and student learning are not related",
+  "journal": "Studies in Educational Evaluation",
+  "volume": "54",
+  "issue": "",
+  "pages": "22-42",
+  "topics": [
+   "validity"
+  ]
+ },
+ {
+  "id": "T18",
+  "field": "edu",
+  "author": "Wachtel",
+  "year": 1998,
+  "title": "Student evaluation of college teaching effectiveness: a brief review",
+  "journal": "Assessment & Evaluation in Higher Education",
+  "volume": "23",
+  "issue": "2",
+  "pages": "191-212",
+  "topics": [
+   "review"
+  ]
+ },
+ {
+  "id": "T19",
+  "field": "edu",
+  "author": "McKeachie",
+  "year": 1997,
+  "title": "Student ratings: The validity of use",
+  "journal": "American Psychologist",
+  "volume": "52",
+  "issue": "11",
+  "pages": "1218-1225",
+  "topics": [
+   "validity",
+   "use"
+  ]
+ },
+ {
+  "id": "T20",
+  "field": "edu",
+  "author": "Ory",
+  "year": 2001,
+  "title": "How do student ratings measure up to a new validity framework?",
+  "journal": "New Directions for Institutional Research",
+  "volume": "2001",
+  "issue": "109",
+  "pages": "27-44",
+  "topics": [
+   "validity"
+  ]
+ },
+ {
+  "id": "T21",
+  "field": "edu",
+  "author": "Theall",
+  "year": 2001,
+  "title": "Looking for bias in all the wrong places: A search for truth or a witch hunt in student ratings of instruction?",
+  "journal": "New Directions for Institutional Research",
+  "volume": "2001",
+  "issue": "109",
+  "pages": "45-56",
+  "topics": [
+   "bias"
+  ]
+ },
+ {
+  "id": "T22",
+  "field": "edu",
+  "author": "Hoel",
+  "year": 2019,
+  "title": "Why bother? Student motivation to participate in student evaluations of teaching",
+  "journal": "Assessment & Evaluation in Higher Education",
+  "volume": "44",
+  "issue": "3",
+  "pages": "361-378",
+  "topics": [
+   "motivation",
+   "response_rate"
+  ]
+ },
+ {
+  "id": "T23",
+  "field": "edu",
+  "author": "Sadler",
+  "year": 1989,
+  "title": "Formative assessment and the design of instructional systems",
+  "journal": "Instructional Science",
+  "volume": "18",
+  "issue": "2",
+  "pages": "119-144",
+  "topics": [
+   "formative"
+  ]
+ },
+ {
+  "id": "T24",
+  "field": "edu",
+  "author": "Nicol",
+  "year": 2006,
+  "title": "Formative assessment and self-regulated learning: a model and seven principles of good feedback practice",
+  "journal": "Studies in Higher Education",
+  "volume": "31",
+  "issue": "2",
+  "pages": "199-218",
+  "topics": [
+   "feedback"
+  ]
+ },
+ {
+  "id": "T25",
+  "field": "edu",
+  "author": "Kluger",
+  "year": 1996,
+  "title": "The effects of feedback interventions on performance: A historical review, a meta-analysis, and a preliminary feedback intervention theory",
+  "journal": "Psychological Bulletin",
+  "volume": "119",
+  "issue": "2",
+  "pages": "254-284",
+  "topics": [
+   "feedback"
+  ]
+ },
+ {
+  "id": "T26",
+  "field": "edu",
+  "author": "Shute",
+  "year": 2008,
+  "title": "Focus on formative feedback",
+  "journal": "Review of Educational Research",
+  "volume": "78",
+  "issue": "1",
+  "pages": "153-189",
+  "topics": [
+   "feedback"
+  ]
+ },
+ {
+  "id": "T27",
+  "field": "edu",
+  "author": "Guskey",
+  "year": 2002,
+  "title": "Professional development and teacher change",
+  "journal": "Teachers and Teaching",
+  "volume": "8",
+  "issue": "3",
+  "pages": "381-391",
+  "topics": [
+   "improvement"
+  ]
+ },
+ {
+  "id": "T28",
+  "field": "edu",
+  "author": "Kreitzer",
+  "year": 2022,
+  "title": "Evaluating student evaluations of teaching: a review of measurement and equity bias in SETs and recommendations for ethical reform",
+  "journal": "Journal of Academic Ethics",
+  "volume": "20",
+  "issue": "1",
+  "pages": "73-84",
+  "topics": [
+   "bias",
+   "ethics"
+  ]
+ },
+ {
+  "id": "T29",
+  "field": "edu",
+  "author": "MacNell",
+  "year": 2015,
+  "title": "What's in a name: Exposing gender bias in student ratings of teaching",
+  "journal": "Innovative Higher Education",
+  "volume": "40",
+  "issue": "4",
+  "pages": "291-303",
+  "topics": [
+   "bias"
+  ],
+  "doi": "10.1007/s10755-014-9313-4"
+ },
+ {
+  "id": "T30",
+  "field": "edu",
+  "author": "Prince",
+  "year": 2004,
+  "title": "Does active learning work? A review of the research",
+  "journal": "Journal of Engineering Education",
+  "volume": "93",
+  "issue": "3",
+  "pages": "223-231",
+  "topics": [
+   "practice",
+   "engage"
+  ]
+ },
+ {
+  "id": "T31",
+  "field": "edu",
+  "author": "Freeman",
+  "year": 2014,
+  "title": "Active learning increases student performance in science, engineering, and mathematics",
+  "journal": "Proceedings of the National Academy of Sciences",
+  "volume": "111",
+  "issue": "23",
+  "pages": "8410-8415",
+  "topics": [
+   "practice",
+   "engage"
+  ]
+ },
+ {
+  "id": "T32",
+  "field": "edu",
+  "author": "Fredricks",
+  "year": 2004,
+  "title": "School engagement: Potential of the concept, state of the evidence",
+  "journal": "Review of Educational Research",
+  "volume": "74",
+  "issue": "1",
+  "pages": "59-109",
+  "topics": [
+   "engage"
+  ]
+ },
+ {
+  "id": "T33",
+  "field": "edu",
+  "author": "Roorda",
+  "year": 2011,
+  "title": "The influence of affective teacher-student relationships on students' school engagement and achievement: A meta-analytic approach",
+  "journal": "Review of Educational Research",
+  "volume": "81",
+  "issue": "4",
+  "pages": "493-529",
+  "topics": [
+   "rapport"
+  ],
+  "doi": "10.3102/0034654311421793"
+ },
+ {
+  "id": "T34",
+  "field": "edu",
+  "author": "Cornelius-White",
+  "year": 2007,
+  "title": "Learner-centered teacher-student relationships are effective: A meta-analysis",
+  "journal": "Review of Educational Research",
+  "volume": "77",
+  "issue": "1",
+  "pages": "113-143",
+  "topics": [
+   "rapport"
+  ]
+ },
+ {
+  "id": "T35",
+  "field": "edu",
+  "author": "Rosenshine",
+  "year": 2012,
+  "title": "Principles of instruction: Research-based strategies that all teachers should know",
+  "journal": "American Educator",
+  "volume": "36",
+  "issue": "1",
+  "pages": "12-19",
+  "topics": [
+   "explain",
+   "pace"
+  ],
+  "eric_id": "EJ1002984"
+ },
+ {
+  "id": "T36",
+  "field": "edu",
+  "author": "Boring",
+  "year": 2016,
+  "title": "Student evaluations of teaching (mostly) do not measure teaching effectiveness",
+  "journal": "ScienceOpen Research",
+  "volume": "",
+  "issue": "",
+  "pages": "1-11",
+  "topics": [
+   "validity"
+  ],
+  "doi": "10.14293/s2199-1006.1.sor-edu.aetbzc.v1"
+ },
+ {
+  "id": "T37",
+  "field": "psy",
+  "author": "Krosnick",
+  "year": 1991,
+  "title": "Response strategies for coping with the cognitive demands of attitude measures in surveys",
+  "journal": "Applied Cognitive Psychology",
+  "volume": "5",
+  "issue": "3",
+  "pages": "213-236",
+  "topics": [
+   "satisficing"
+  ]
+ },
+ {
+  "id": "T38",
+  "field": "psy",
+  "author": "Krosnick",
+  "year": 1999,
+  "title": "Survey research",
+  "journal": "Annual Review of Psychology",
+  "volume": "50",
+  "issue": "",
+  "pages": "537-567",
+  "topics": [
+   "survey"
+  ]
+ },
+ {
+  "id": "T39",
+  "field": "psy",
+  "author": "Podsakoff",
+  "year": 2003,
+  "title": "Common method biases in behavioral research: A critical review of the literature and recommended remedies",
+  "journal": "Journal of Applied Psychology",
+  "volume": "88",
+  "issue": "5",
+  "pages": "879-903",
+  "topics": [
+   "method_bias"
+  ]
+ },
+ {
+  "id": "T40",
+  "field": "psy",
+  "author": "Tourangeau",
+  "year": 2007,
+  "title": "Sensitive questions in surveys",
+  "journal": "Psychological Bulletin",
+  "volume": "133",
+  "issue": "5",
+  "pages": "859-883",
+  "topics": [
+   "social_desirability"
+  ]
+ },
+ {
+  "id": "T41",
+  "field": "psy",
+  "author": "Meade",
+  "year": 2012,
+  "title": "Identifying careless responses in survey data",
+  "journal": "Psychological Methods",
+  "volume": "17",
+  "issue": "3",
+  "pages": "437-455",
+  "topics": [
+   "careless"
+  ],
+  "doi": "10.1037/a0028085"
+ },
+ {
+  "id": "T42",
+  "field": "psy",
+  "author": "Curran",
+  "year": 2016,
+  "title": "Methods for the detection of carelessly invalid responses in survey data",
+  "journal": "Journal of Experimental Social Psychology",
+  "volume": "66",
+  "issue": "",
+  "pages": "4-19",
+  "topics": [
+   "careless"
+  ]
+ },
+ {
+  "id": "T43",
+  "field": "psy",
+  "author": "Oppenheimer",
+  "year": 2009,
+  "title": "Instructional manipulation checks: Detecting satisficing to increase statistical power",
+  "journal": "Journal of Experimental Social Psychology",
+  "volume": "45",
+  "issue": "4",
+  "pages": "867-872",
+  "topics": [
+   "attention_check"
+  ]
+ },
+ {
+  "id": "T44",
+  "field": "psy",
+  "author": "Weijters",
+  "year": 2010,
+  "title": "The effect of rating scale format on response styles: The number of response categories and response category labels",
+  "journal": "International Journal of Research in Marketing",
+  "volume": "27",
+  "issue": "3",
+  "pages": "236-247",
+  "topics": [
+   "scale_format"
+  ]
+ },
+ {
+  "id": "T45",
+  "field": "psy",
+  "author": "Greenleaf",
+  "year": 1992,
+  "title": "Measuring extreme response style",
+  "journal": "Public Opinion Quarterly",
+  "volume": "56",
+  "issue": "3",
+  "pages": "328-351",
+  "topics": [
+   "response_style"
+  ]
+ },
+ {
+  "id": "T46",
+  "field": "psy",
+  "author": "Baumgartner",
+  "year": 2001,
+  "title": "Response styles in marketing research: A cross-national investigation",
+  "journal": "Journal of Marketing Research",
+  "volume": "38",
+  "issue": "2",
+  "pages": "143-156",
+  "topics": [
+   "response_style"
+  ]
+ },
+ {
+  "id": "T47",
+  "field": "psy",
+  "author": "Schwarz",
+  "year": 1999,
+  "title": "Self-reports: How the questions shape the answers",
+  "journal": "American Psychologist",
+  "volume": "54",
+  "issue": "2",
+  "pages": "93-105",
+  "topics": [
+   "question_wording"
+  ]
+ },
+ {
+  "id": "T48",
+  "field": "psy",
+  "author": "Nisbett",
+  "year": 1977,
+  "title": "Telling more than we can know: Verbal reports on mental processes",
+  "journal": "Psychological Review",
+  "volume": "84",
+  "issue": "3",
+  "pages": "231-259",
+  "topics": [
+   "self_report"
+  ]
+ },
+ {
+  "id": "T49",
+  "field": "psy",
+  "author": "Ambady",
+  "year": 1993,
+  "title": "Half a minute: Predicting teacher evaluations from thin slices of nonverbal behavior and physical attractiveness",
+  "journal": "Journal of Personality and Social Psychology",
+  "volume": "64",
+  "issue": "3",
+  "pages": "431-441",
+  "topics": [
+   "bias",
+   "first_impression"
+  ]
+ },
+ {
+  "id": "T50",
+  "field": "psy",
+  "author": "Deci",
+  "year": 1999,
+  "title": "A meta-analytic review of experiments examining the effects of extrinsic rewards on intrinsic motivation",
+  "journal": "Psychological Bulletin",
+  "volume": "125",
+  "issue": "6",
+  "pages": "627-668",
+  "topics": [
+   "incentive"
+  ]
+ },
+ {
+  "id": "T51",
+  "field": "psy",
+  "author": "Singer",
+  "year": 2013,
+  "title": "The use and effects of incentives in surveys",
+  "journal": "The ANNALS of the American Academy of Political and Social Science",
+  "volume": "645",
+  "issue": "1",
+  "pages": "112-141",
+  "topics": [
+   "incentive"
+  ]
+ },
+ {
+  "id": "T52",
+  "field": "psy",
+  "author": "Ryan",
+  "year": 2000,
+  "title": "Self-determination theory and the facilitation of intrinsic motivation, social development, and well-being",
+  "journal": "American Psychologist",
+  "volume": "55",
+  "issue": "1",
+  "pages": "68-78",
+  "topics": [
+   "rapport",
+   "motivation"
+  ]
+ },
+ {
+  "id": "T53",
+  "field": "psy",
+  "author": "Sweller",
+  "year": 1988,
+  "title": "Cognitive load during problem solving: Effects on learning",
+  "journal": "Cognitive Science",
+  "volume": "12",
+  "issue": "2",
+  "pages": "257-285",
+  "topics": [
+   "pace",
+   "explain"
+  ]
+ },
+ {
+  "id": "T54",
+  "field": "psy",
+  "author": "Mayer",
+  "year": 2003,
+  "title": "Nine ways to reduce cognitive load in multimedia learning",
+  "journal": "Educational Psychologist",
+  "volume": "38",
+  "issue": "1",
+  "pages": "43-52",
+  "topics": [
+   "material",
+   "explain"
+  ]
+ },
+ {
+  "id": "T55",
+  "field": "psy",
+  "author": "Barnett",
+  "year": 2005,
+  "title": "Regression to the mean: what it is and how to deal with it",
+  "journal": "International Journal of Epidemiology",
+  "volume": "34",
+  "issue": "1",
+  "pages": "215-220",
+  "topics": [
+   "regression"
+  ]
+ },
+ {
+  "id": "T56",
+  "field": "psy",
+  "author": "Kahneman",
+  "year": 1993,
+  "title": "When more pain is preferred to less: Adding a better end",
+  "journal": "Psychological Science",
+  "volume": "4",
+  "issue": "6",
+  "pages": "401-405",
+  "topics": [
+   "peak_end"
+  ]
+ },
+ {
+  "id": "T57",
+  "field": "stat",
+  "author": "Norman",
+  "year": 2010,
+  "title": "Likert scales, levels of measurement and the \"laws\" of statistics",
+  "journal": "Advances in Health Sciences Education",
+  "volume": "15",
+  "issue": "5",
+  "pages": "625-632",
+  "topics": [
+   "likert"
+  ]
+ },
+ {
+  "id": "T58",
+  "field": "stat",
+  "author": "Sullivan",
+  "year": 2013,
+  "title": "Analyzing and interpreting data from Likert-type scales",
+  "journal": "Journal of Graduate Medical Education",
+  "volume": "5",
+  "issue": "4",
+  "pages": "541-542",
+  "topics": [
+   "likert"
+  ]
+ },
+ {
+  "id": "T59",
+  "field": "stat",
+  "author": "Jamieson",
+  "year": 2004,
+  "title": "Likert scales: how to (ab)use them",
+  "journal": "Medical Education",
+  "volume": "38",
+  "issue": "12",
+  "pages": "1217-1218",
+  "topics": [
+   "likert"
+  ]
+ },
+ {
+  "id": "T60",
+  "field": "stat",
+  "author": "Liddell",
+  "year": 2018,
+  "title": "Analyzing ordinal data with metric models: What could possibly go wrong?",
+  "journal": "Journal of Experimental Social Psychology",
+  "volume": "79",
+  "issue": "",
+  "pages": "328-348",
+  "topics": [
+   "ordinal"
+  ],
+  "doi": "10.1016/j.jesp.2018.08.009"
+ },
+ {
+  "id": "T61",
+  "field": "stat",
+  "author": "Wilcox",
+  "year": 2003,
+  "title": "Modern robust data analysis methods: Measures of central tendency",
+  "journal": "Psychological Methods",
+  "volume": "8",
+  "issue": "3",
+  "pages": "254-274",
+  "topics": [
+   "trimmed"
+  ]
+ },
+ {
+  "id": "T62",
+  "field": "stat",
+  "author": "Erceg-Hurn",
+  "year": 2008,
+  "title": "Modern robust statistical methods: An easy way to maximize the accuracy and power of your research",
+  "journal": "American Psychologist",
+  "volume": "63",
+  "issue": "7",
+  "pages": "591-601",
+  "topics": [
+   "robust"
+  ]
+ },
+ {
+  "id": "T63",
+  "field": "stat",
+  "author": "Leys",
+  "year": 2013,
+  "title": "Detecting outliers: Do not use standard deviation around the mean, use absolute deviation around the median",
+  "journal": "Journal of Experimental Social Psychology",
+  "volume": "49",
+  "issue": "4",
+  "pages": "764-766",
+  "topics": [
+   "outlier"
+  ]
+ },
+ {
+  "id": "T64",
+  "field": "stat",
+  "author": "Aguinis",
+  "year": 2013,
+  "title": "Best-practice recommendations for defining, identifying, and handling outliers",
+  "journal": "Organizational Research Methods",
+  "volume": "16",
+  "issue": "2",
+  "pages": "270-301",
+  "topics": [
+   "outlier"
+  ]
+ },
+ {
+  "id": "T65",
+  "field": "stat",
+  "author": "Marshall",
+  "year": 1998,
+  "title": "Reliability of league tables of in vitro fertilisation clinics: retrospective analysis of live birth rates",
+  "journal": "BMJ",
+  "volume": "316",
+  "issue": "7146",
+  "pages": "1701-1705",
+  "topics": [
+   "ranking"
+  ],
+  "doi": "10.1136/bmj.316.7146.1701"
+ },
+ {
+  "id": "T66",
+  "field": "stat",
+  "author": "Goldstein",
+  "year": 1996,
+  "title": "League tables and their limitations: Statistical issues in comparisons of institutional performance",
+  "journal": "Journal of the Royal Statistical Society: Series A",
+  "volume": "159",
+  "issue": "3",
+  "pages": "385-443",
+  "topics": [
+   "ranking"
+  ]
+ },
+ {
+  "id": "T67",
+  "field": "stat",
+  "author": "Cumming",
+  "year": 2005,
+  "title": "Inference by eye: Confidence intervals and how to read pictures of data",
+  "journal": "American Psychologist",
+  "volume": "60",
+  "issue": "2",
+  "pages": "170-180",
+  "topics": [
+   "small_n"
+  ]
+ },
+ {
+  "id": "T68",
+  "field": "stat",
+  "author": "Wasserstein",
+  "year": 2016,
+  "title": "The ASA statement on p-values: Context, process, and purpose",
+  "journal": "The American Statistician",
+  "volume": "70",
+  "issue": "2",
+  "pages": "129-133",
+  "topics": [
+   "pvalue"
+  ]
+ },
+ {
+  "id": "T69",
+  "field": "stat",
+  "author": "Tavakol",
+  "year": 2011,
+  "title": "Making sense of Cronbach's alpha",
+  "journal": "International Journal of Medical Education",
+  "volume": "2",
+  "issue": "",
+  "pages": "53-55",
+  "topics": [
+   "reliability"
+  ]
+ },
+ {
+  "id": "T70",
+  "field": "stat",
+  "author": "Fritz",
+  "year": 2012,
+  "title": "Effect size estimates: Current use, calculations, and interpretation",
+  "journal": "Journal of Experimental Psychology: General",
+  "volume": "141",
+  "issue": "1",
+  "pages": "2-18",
+  "topics": [
+   "effect_size"
+  ]
+ },
+ {
+  "id": "T71",
+  "field": "stat",
+  "author": "Lakens",
+  "year": 2013,
+  "title": "Calculating and reporting effect sizes to facilitate cumulative science: a practical primer for t-tests and ANOVAs",
+  "journal": "Frontiers in Psychology",
+  "volume": "4",
+  "issue": "",
+  "pages": "863",
+  "topics": [
+   "effect_size"
+  ]
+ },
+ {
+  "id": "T72",
+  "field": "stat",
+  "author": "Armstrong",
+  "year": 1977,
+  "title": "Estimating nonresponse bias in mail surveys",
+  "journal": "Journal of Marketing Research",
+  "volume": "14",
+  "issue": "3",
+  "pages": "396-402",
+  "topics": [
+   "nonresponse"
+  ]
+ },
+ {
+  "id": "T73",
+  "field": "stat",
+  "author": "Groves",
+  "year": 2006,
+  "title": "Nonresponse rates and nonresponse bias in household surveys",
+  "journal": "Public Opinion Quarterly",
+  "volume": "70",
+  "issue": "5",
+  "pages": "646-675",
+  "topics": [
+   "nonresponse"
+  ]
+ },
+ {
+  "id": "T74",
+  "field": "stat",
+  "author": "Groves",
+  "year": 2008,
+  "title": "The impact of nonresponse rates on nonresponse bias: A meta-analysis",
+  "journal": "Public Opinion Quarterly",
+  "volume": "72",
+  "issue": "2",
+  "pages": "167-189",
+  "topics": [
+   "nonresponse"
+  ]
+ },
+ {
+  "id": "T75",
+  "field": "stat",
+  "author": "Robinson",
+  "year": 1950,
+  "title": "Ecological correlations and the behavior of individuals",
+  "journal": "American Sociological Review",
+  "volume": "15",
+  "issue": "3",
+  "pages": "351-357",
+  "topics": [
+   "ecological"
+  ]
+ },
+ {
+  "id": "T76",
+  "field": "stat",
+  "author": "Wagner",
+  "year": 1982,
+  "title": "Simpson's paradox in real life",
+  "journal": "The American Statistician",
+  "volume": "36",
+  "issue": "1",
+  "pages": "46-48",
+  "topics": [
+   "simpson"
+  ]
+ },
+ {
+  "id": "T77",
+  "field": "stat",
+  "author": "Benjamini",
+  "year": 1995,
+  "title": "Controlling the false discovery rate: A practical and powerful approach to multiple testing",
+  "journal": "Journal of the Royal Statistical Society: Series B",
+  "volume": "57",
+  "issue": "1",
+  "pages": "289-300",
+  "topics": [
+   "multiple"
+  ]
+ }
+]

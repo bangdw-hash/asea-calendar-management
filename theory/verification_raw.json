@@ -1,0 +1,3339 @@
+{
+ "T01": {
+  "id": "T01",
+  "cand": {
+   "id": "T01",
+   "field": "edu",
+   "author": "Overall",
+   "year": 1979,
+   "title": "Midterm feedback from students: Its relationship to instructional improvement and students' cognitive and affective outcomes",
+   "journal": "Journal of Educational Psychology",
+   "volume": "71",
+   "issue": "6",
+   "pages": "856-865",
+   "topics": [
+    "midterm",
+    "feedback"
+   ]
+  },
+  "bib": {
+   "status": "match",
+   "diffs": [],
+   "doi": "10.1037/0022-0663.71.6.856",
+   "title": "Midterm feedback from students: Its relationship to instructional improvement and students' cognitive and affective outcomes.",
+   "first_author": "Overall",
+   "year": 1979,
+   "journal": "Journal of Educational Psychology",
+   "volume": "71",
+   "issue": "6",
+   "pages": "856-865",
+   "sim": 1.0,
+   "authors": [
+    {
+     "family": "Overall",
+     "initials": "J.U."
+    },
+    {
+     "family": "Marsh",
+     "initials": "H.W."
+    }
+   ]
+  },
+  "abstract": {
+   "src": "ERIC EJ226654",
+   "text": "Randomly selected instructors were given feedback from midterm student ratings and met with the authors to discuss the ratings and strategies for improvement. More favorable student ratings at the end of the term, better final examination scores, and more favorable affective outcomes resulted. (Author/RD)"
+  }
+ },
+ "T02": {
+  "id": "T02",
+  "cand": {
+   "id": "T02",
+   "field": "edu",
+   "author": "Cohen",
+   "year": 1980,
+   "title": "Effectiveness of student-rating feedback for improving college instruction: A meta-analysis of findings",
+   "journal": "Research in Higher Education",
+   "volume": "13",
+   "issue": "4",
+   "pages": "321-341",
+   "topics": [
+    "feedback",
+    "midterm"
+   ]
+  },
+  "bib": {
+   "status": "match",
+   "diffs": [],
+   "doi": "10.1007/bf00976252",
+   "title": "Effectiveness of student-rating feedback for improving college instruction: A meta-analysis of findings",
+   "first_author": "Cohen",
+   "year": 1980,
+   "journal": "Research in Higher Education",
+   "volume": "13",
+   "issue": "4",
+   "pages": "321-341",
+   "sim": 1.0,
+   "authors": [
+    {
+     "family": "Cohen",
+     "initials": "P.A."
+    }
+   ]
+  },
+  "abstract": {
+   "src": "ERIC EJ236951",
+   "text": "A meta-analytic methodology is applied to integrate findings from 22 comparisons of the effectiveness of student- rating feedback at the college level. Feedback had a modest but significant effect on improving instruction. The effects of student-rating feedback were accentuated when augmentation or consultation accompanied the ratings. (Author/MLW)"
+  }
+ },
+ "T03": {
+  "id": "T03",
+  "cand": {
+   "id": "T03",
+   "field": "edu",
+   "author": "Penny",
+   "year": 2004,
+   "title": "Effectiveness of consultation on student ratings feedback: A meta-analysis",
+   "journal": "Review of Educational Research",
+   "volume": "74",
+   "issue": "2",
+   "pages": "215-253",
+   "topics": [
+    "feedback",
+    "consult"
+   ]
+  },
+  "bib": {
+   "status": "match",
+   "diffs": [],
+   "doi": "10.3102/00346543074002215",
+   "title": "Effectiveness of Consultation on Student Ratings Feedback: A Meta-Analysis",
+   "first_author": "Penny",
+   "year": 2004,
+   "journal": "Review of Educational Research",
+   "volume": "74",
+   "issue": "2",
+   "pages": "215-253",
+   "sim": 1.0,
+   "authors": [
+    {
+     "family": "Penny",
+     "initials": "A.R."
+    },
+    {
+     "family": "Coe",
+     "initials": "R."
+    }
+   ]
+  },
+  "abstract": {
+   "src": "Crossref",
+   "text": "Consultation on student ratings is recognized as an important strategy to support university teachers in learning from student ratings feedback. However, there is little evidence to suggest which practices and strategies are most important for successful consultation. As the use of student ratings increases, such evidence becomes increasingly important. The authors of this article performed an exploratory meta-analysis to determine the effects of various consultation strategies and to identify the conditions under which consultative feedback is most effective in improving teaching effectiveness. The results indicated that the various approaches to consultation are not equally effective. The authors suggest that only with use of certain consultation strategies might the benefits of support with student ratings feedback be maximized."
+  }
+ },
+ "T04": {
+  "id": "T04",
+  "cand": {
+   "id": "T04",
+   "field": "edu",
+   "author": "Marsh",
+   "year": 1987,
+   "title": "Students' evaluations of university teaching: Research findings, methodological issues, and directions for future research",
+   "journal": "International Journal of Educational Research",
+   "volume": "11",
+   "issue": "3",
+   "pages": "253-388",
+   "topics": [
+    "validity"
+   ]
+  },
+  "bib": {
+   "status": "match",
+   "diffs": [],
+   "doi": "10.1016/0883-0355(87)90001-2",
+   "title": "Students' evaluations of University teaching: Research findings, methodological issues, and directions for future research",
+   "first_author": "Marsh",
+   "year": 1987,
+   "journal": "International Journal of Educational Research",
+   "volume": "11",
+   "issue": "3",
+   "pages": "253-388",
+   "sim": 1.0,
+   "authors": [
+    {
+     "family": "Marsh",
+     "initials": "H.W."
+    }
+   ]
+  },
+  "abstract": {
+   "src": "ERIC ED338629",
+   "text": "H. W. Marsh's monograph (1987) on students' evaluations of teaching effectiveness in higher education is summarized. The research, which emphasized the construct validity approach, led to the development of the Students' Evaluations of Educational Quality (SEEQ) instrument. Factor analysis resulted in identification of nine SEEQ factors--learning value, instructor enthusiasm, organization, individual rapport, group interaction, breadth of coverage, examinations and grading, assignments and readings, and workload difficulty. The analysis encompassed 5,000 classes conducted for five groups of courses selected to represent diverse academic disciplines at the graduate and undergraduate levels. Instructors evaluated their own teaching effectiveness on the same SEEQ form as that  completed by their students. Tertiary students from different countries evaluated teaching effectiveness with the SEEQ. Use of the instrument indicates that class-average student ratings are: (1) multidimensional; (2) reliable and stable; (3) primarily a function of the instructor rather than of course content; (4) relatively valid against a variety of indicators of effective teaching; (5) relatively unaffected by a variety of variables hypothesized as potential biases; and (6) perceived as useful feedback by faculty about their teaching, by students for use in course selection, and by administrators for use in personnel decisions. Eight data tables and one flowchart are presented. (TJH)"
+  }
+ },
+ "T05": {
+  "id": "T05",
+  "cand": {
+   "id": "T05",
+   "field": "edu",
+   "author": "Marsh",
+   "year": 1997,
+   "title": "Making students' evaluations of teaching effectiveness effective: The critical issues of validity, bias, and utility",
+   "journal": "American Psychologist",
+   "volume": "52",
+   "issue": "11",
+   "pages": "1187-1197",
+   "topics": [
+    "validity",
+    "bias",
+    "utility"
+   ]
+  },
+  "bib": {
+   "status": "match",
+   "diffs": [],
+   "doi": "10.1037/0003-066x.52.11.1187",
+   "title": "Making students' evaluations of teaching effectiveness effective: The critical issues of validity, bias, and utility.",
+   "first_author": "Marsh",
+   "year": 1997,
+   "journal": "American Psychologist",
+   "volume": "52",
+   "issue": "11",
+   "pages": "1187-1197",
+   "sim": 1.0,
+   "authors": [
+    {
+     "family": "Marsh",
+     "initials": "H.W."
+    },
+    {
+     "family": "Roche",
+     "initials": "L.A."
+    }
+   ]
+  },
+  "abstract": {
+   "src": "ERIC EJ580855",
+   "text": "Reviews research on the multidimensionality of effective teaching and student ratings. Recommends the adoption of a broad construct approach to evaluation of validity criteria and potential biases in different contexts, especially in relation to multiple criteria of effective teaching, theory, and existing knowledge. (MMU)"
+  }
+ },
+ "T06": {
+  "id": "T06",
+  "cand": {
+   "id": "T06",
+   "field": "edu",
+   "author": "Spooren",
+   "year": 2013,
+   "title": "On the validity of student evaluation of teaching: The state of the art",
+   "journal": "Review of Educational Research",
+   "volume": "83",
+   "issue": "4",
+   "pages": "598-642",
+   "topics": [
+    "validity",
+    "bias"
+   ],
+   "doi": "10.3102/0034654313496870"
+  },
+  "bib": {
+   "status": "match",
+   "diffs": [],
+   "doi": "10.3102/0034654313496870",
+   "title": "On the Validity of Student Evaluation of Teaching",
+   "first_author": "Spooren",
+   "year": 2013,
+   "journal": "Review of Educational Research",
+   "volume": "83",
+   "issue": "4",
+   "pages": "598-642",
+   "sim": 0.824,
+   "authors": [
+    {
+     "family": "Spooren",
+     "initials": "P."
+    },
+    {
+     "family": "Brockx",
+     "initials": "B."
+    },
+    {
+     "family": "Mortelmans",
+     "initials": "D."
+    }
+   ]
+  },
+  "abstract": {
+   "src": "Crossref",
+   "text": "This article provides an extensive overview of the recent literature on student evaluation of teaching (SET) in higher education. The review is based on the SET meta-validation model, drawing upon research reports published in peer-reviewed journals since 2000. Through the lens of validity, we consider both the more traditional research themes in the field of SET (i.e., the dimensionality debate, the ‘bias’ question, and questionnaire design) and some recent trends in SET research, such as online SET and bias investigations into additional teacher personal characteristics. The review provides a clear idea of the state of the art with regard to research on SET, thus allowing researchers to formulate suggestions for future research. It is argued that SET remains a current yet delicate topic in higher education, as well as in education research. Many stakeholders are not convinced of the usefulness and validity of SET for both formative and summative purposes. Research on SET has thus far failed to provide clear answers to several critical questions concerning the validity of SET."
+  }
+ },
+ "T07": {
+  "id": "T07",
+  "cand": {
+   "id": "T07",
+   "field": "edu",
+   "author": "Hattie",
+   "year": 2007,
+   "title": "The power of feedback",
+   "journal": "Review of Educational Research",
+   "volume": "77",
+   "issue": "1",
+   "pages": "81-112",
+   "topics": [
+    "feedback"
+   ]
+  },
+  "bib": {
+   "status": "match",
+   "diffs": [],
+   "doi": "10.3102/003465430298487",
+   "title": "The Power of Feedback",
+   "first_author": "Hattie",
+   "year": 2007,
+   "journal": "Review of Educational Research",
+   "volume": "77",
+   "issue": "1",
+   "pages": "81-112",
+   "sim": 1.0,
+   "authors": [
+    {
+     "family": "Hattie",
+     "initials": "J."
+    },
+    {
+     "family": "Timperley",
+     "initials": "H."
+    }
+   ]
+  },
+  "abstract": {
+   "src": "Crossref",
+   "text": "Feedback is one of the most powerful influences on learning and achievement, but this impact can be either positive or negative. Its power is frequently mentioned in articles about learning and teaching, but surprisingly few recent studies have systematically investigated its meaning. This article provides a conceptual analysis of feedback and reviews the evidence related to its impact on learning and achievement. This evidence shows that although feedback is among the major influences, the type of feedback and the way it is given can be differentially effective. A model of feedback is then proposed that identifies the particular properties and circumstances that make it effective, and some typically thorny issues are discussed, including the timing of feedback and the effects of positive and negative feedback. Finally, this analysis is used to suggest ways in which feedback can be used to enhance its effectiveness in classrooms."
+  }
+ },
+ "T08": {
+  "id": "T08",
+  "cand": {
+   "id": "T08",
+   "field": "edu",
+   "author": "Black",
+   "year": 1998,
+   "title": "Assessment and classroom learning",
+   "journal": "Assessment in Education: Principles, Policy & Practice",
+   "volume": "5",
+   "issue": "1",
+   "pages": "7-74",
+   "topics": [
+    "formative"
+   ]
+  },
+  "bib": {
+   "status": "match",
+   "diffs": [],
+   "doi": "10.1080/0969595980050102",
+   "title": "Assessment and Classroom Learning",
+   "first_author": "Black",
+   "year": 1998,
+   "journal": "Assessment in Education: Principles, Policy &amp; Practice",
+   "volume": "5",
+   "issue": "1",
+   "pages": "7-74",
+   "sim": 1.0,
+   "authors": [
+    {
+     "family": "Black",
+     "initials": "P."
+    },
+    {
+     "family": "Wiliam",
+     "initials": "D."
+    }
+   ]
+  },
+  "abstract": null
+ },
+ "T09": {
+  "id": "T09",
+  "cand": {
+   "id": "T09",
+   "field": "edu",
+   "author": "Greenwald",
+   "year": 1997,
+   "title": "Grading leniency is a removable contaminant of student ratings",
+   "journal": "American Psychologist",
+   "volume": "52",
+   "issue": "11",
+   "pages": "1209-1217",
+   "topics": [
+    "grades",
+    "bias"
+   ]
+  },
+  "bib": {
+   "status": "match",
+   "diffs": [],
+   "doi": "10.1037/0003-066x.52.11.1209",
+   "title": "Grading leniency is a removable contaminant of student ratings.",
+   "first_author": "Greenwald",
+   "year": 1997,
+   "journal": "American Psychologist",
+   "volume": "52",
+   "issue": "11",
+   "pages": "1209-1217",
+   "sim": 1.0,
+   "authors": [
+    {
+     "family": "Greenwald",
+     "initials": "A.G."
+    },
+    {
+     "family": "Gillmore",
+     "initials": "G.M."
+    }
+   ]
+  },
+  "abstract": {
+   "src": "ERIC EJ580857",
+   "text": "Identifies four additional data patterns that discriminate among five theories of students' expected grades/teacher ratings correlation. The presence of all four of these markers in student ratings data is consistent with the theory that the correlation is due to an unwanted influence of instructors' grading leniency. (MMU)"
+  }
+ },
+ "T10": {
+  "id": "T10",
+  "cand": {
+   "id": "T10",
+   "field": "edu",
+   "author": "Centra",
+   "year": 2003,
+   "title": "Will teachers receive higher student evaluations by giving higher grades and less course work?",
+   "journal": "Research in Higher Education",
+   "volume": "44",
+   "issue": "5",
+   "pages": "495-518",
+   "topics": [
+    "grades",
+    "workload"
+   ]
+  },
+  "bib": {
+   "status": "match",
+   "diffs": [],
+   "doi": "10.1023/a:1025492407752",
+   "title": "Will Teachers Receive Higher Student Evaluations by Giving Higher Grades and Less Course Work?",
+   "first_author": "Centra",
+   "year": 2003,
+   "journal": "Research in Higher Education",
+   "volume": "44",
+   "issue": "5",
+   "pages": "495-518",
+   "sim": 1.0,
+   "authors": [
+    {
+     "family": "Centra",
+     "initials": "J.A."
+    }
+   ]
+  },
+  "abstract": {
+   "src": "ERIC EJ676456",
+   "text": "Investigated whether mean expected grades and the level of difficulty/workload in courses, as related by students, unduly influence student ratings of instruction. Data for more than 50,000 courses were analyzed. Courses rated at the \"just right\" level received the highest evaluations. (SLD)"
+  }
+ },
+ "T11": {
+  "id": "T11",
+  "cand": {
+   "id": "T11",
+   "field": "edu",
+   "author": "Adams",
+   "year": 2012,
+   "title": "Nonresponse and online student evaluations of teaching: Understanding the influence of salience, fatigue, and academic environments",
+   "journal": "Research in Higher Education",
+   "volume": "53",
+   "issue": "5",
+   "pages": "576-591",
+   "topics": [
+    "nonresponse",
+    "fatigue"
+   ]
+  },
+  "bib": {
+   "status": "match",
+   "diffs": [],
+   "doi": "10.1007/s11162-011-9240-5",
+   "title": "Nonresponse and Online Student Evaluations of Teaching: Understanding the Influence of Salience, Fatigue, and Academic Environments",
+   "first_author": "Adams",
+   "year": 2011,
+   "journal": "Research in Higher Education",
+   "volume": "53",
+   "issue": "5",
+   "pages": "576-591",
+   "sim": 1.0,
+   "authors": [
+    {
+     "family": "Adams",
+     "initials": "M.J.D."
+    },
+    {
+     "family": "Umbach",
+     "initials": "P.D."
+    }
+   ]
+  },
+  "abstract": {
+   "src": "ERIC EJ971541",
+   "text": "Technological advances have enabled institutions of higher education to administer course evaluations online, forgoing the traditional paper-and-pencil methods. Consequently, many of these institutions suffer from low response rates, but little research is available on this topic. To increase understanding about course evaluation participation in the online environment, this study examined over 22,000 undergraduates to whom the university administered about 135,000 evaluations. Multilevel models were constructed to analyze the data, and several variables emerged as significant predictors of participation. The results were mostly consistent with previous research and aligned with theories of survey nonresponse. However, the integration of uncommon variables provided new perspectives about course evaluations in particular. Implications for research and practical applications for institutions are also addressed, including ways to combat survey fatigue, increase the salience of the survey, and increase participation in online course evaluations."
+  }
+ },
+ "T12": {
+  "id": "T12",
+  "cand": {
+   "id": "T12",
+   "field": "edu",
+   "author": "Porter",
+   "year": 2004,
+   "title": "Multiple surveys of students and survey fatigue",
+   "journal": "New Directions for Institutional Research",
+   "volume": "2004",
+   "issue": "121",
+   "pages": "63-73",
+   "topics": [
+    "fatigue"
+   ]
+  },
+  "bib": {
+   "status": "match",
+   "diffs": [],
+   "doi": "10.1002/ir.101",
+   "title": "Multiple surveys of students and survey fatigue",
+   "first_author": "Porter",
+   "year": 2004,
+   "journal": "New Directions for Institutional Research",
+   "volume": "2004",
+   "issue": "121",
+   "pages": "63-73",
+   "sim": 1.0,
+   "authors": [
+    {
+     "family": "Porter",
+     "initials": "S.R."
+    },
+    {
+     "family": "Whitcomb",
+     "initials": "M.E."
+    },
+    {
+     "family": "Weitzer",
+     "initials": "W.H."
+    }
+   ]
+  },
+  "abstract": {
+   "src": "Crossref",
+   "text": "Abstract This chapter reviews the literature on survey fatigue and summarizes a research project that indicates that administering multiple surveys in one academic year can significantly suppress response rates in later surveys."
+  }
+ },
+ "T13": {
+  "id": "T13",
+  "cand": {
+   "id": "T13",
+   "field": "edu",
+   "author": "Nulty",
+   "year": 2008,
+   "title": "The adequacy of response rates to online and paper surveys: what can be done?",
+   "journal": "Assessment & Evaluation in Higher Education",
+   "volume": "33",
+   "issue": "3",
+   "pages": "301-314",
+   "topics": [
+    "response_rate"
+   ]
+  },
+  "bib": {
+   "status": "match",
+   "diffs": [],
+   "doi": "10.1080/02602930701293231",
+   "title": "The adequacy of response rates to online and paper surveys: what can be done?",
+   "first_author": "Nulty",
+   "year": 2008,
+   "journal": "Assessment &amp; Evaluation in Higher Education",
+   "volume": "33",
+   "issue": "3",
+   "pages": "301-314",
+   "sim": 1.0,
+   "authors": [
+    {
+     "family": "Nulty",
+     "initials": "D.D."
+    }
+   ]
+  },
+  "abstract": {
+   "src": "ERIC EJ792201",
+   "text": "This article is about differences between, and the adequacy of, response rates to online and paper-based course and teaching evaluation surveys. Its aim is to provide practical guidance on these matters. The first part of the article gives an overview of online surveying in general, a review of data relating to survey response rates and practical advice to help boost response rates. The second part of the article discusses when a response rate may be considered large enough for the survey data to provide adequate evidence for accountability and improvement purposes. The article ends with suggestions for improving the effectiveness of evaluation strategy. These suggestions are: to seek to obtain the highest response rates possible to all surveys; to take account of probable effects of survey design and methods on the feedback obtained when interpreting that feedback; and to enhance this action by making use of data derived from multiple methods of gathering feedback. (Contains 3 tables.)"
+  }
+ },
+ "T14": {
+  "id": "T14",
+  "cand": {
+   "id": "T14",
+   "field": "edu",
+   "author": "Brinko",
+   "year": 1993,
+   "title": "The practice of giving feedback to improve teaching: What is effective?",
+   "journal": "The Journal of Higher Education",
+   "volume": "64",
+   "issue": "5",
+   "pages": "574-593",
+   "topics": [
+    "feedback",
+    "consult"
+   ]
+  },
+  "bib": {
+   "status": "match",
+   "diffs": [],
+   "doi": "10.2307/2959994",
+   "title": "The Practice of Giving Feedback to Improve Teaching: What Is Effective?",
+   "first_author": "Brinko",
+   "year": 1993,
+   "journal": "The Journal of Higher Education",
+   "volume": "64",
+   "issue": "5",
+   "pages": "574",
+   "sim": 1.0,
+   "authors": [
+    {
+     "family": "Brinko",
+     "initials": "K.T."
+    }
+   ]
+  },
+  "abstract": {
+   "src": "ERIC EJ469067",
+   "text": "A review of literature pertaining to feedback in the fields of education, psychology, and organizational behavior identified 32 practices that may be effective in helping postsecondary teachers improve teaching. Three additional practices were noted by the author, based on personal experience. A model feedback process is outlined. (MSE)"
+  }
+ },
+ "T15": {
+  "id": "T15",
+  "cand": {
+   "id": "T15",
+   "field": "edu",
+   "author": "Richardson",
+   "year": 2005,
+   "title": "Instruments for obtaining student feedback: a review of the literature",
+   "journal": "Assessment & Evaluation in Higher Education",
+   "volume": "30",
+   "issue": "4",
+   "pages": "387-415",
+   "topics": [
+    "instruments"
+   ]
+  },
+  "bib": {
+   "status": "match",
+   "diffs": [],
+   "doi": "10.1080/02602930500099193",
+   "title": "Instruments for obtaining student feedback: a review of the literature",
+   "first_author": "Richardson",
+   "year": 2005,
+   "journal": "Assessment &amp; Evaluation in Higher Education",
+   "volume": "30",
+   "issue": "4",
+   "pages": "387-415",
+   "sim": 1.0,
+   "authors": [
+    {
+     "family": "Richardson",
+     "initials": "J.T.E."
+    }
+   ]
+  },
+  "abstract": {
+   "src": "ERIC EJ690990",
+   "text": "This paper reviews the research evidence concerning the use of formal instruments to measure students' evaluations of their teachers, students' satisfaction with their programmes and students' perceptions of the quality of their programmes. These questionnaires can provide important evidence for assessing the quality of teaching, for supporting attempts to improve the quality of teaching and for informing prospective students about the quality of course units and programmes. The paper concludes by discussing several issues affecting the practical utility of the instruments that can be used to obtain student feedback. Many students and teachers believe that student feedback is useful and informative, but for a number of reasons many teachers and institutions do not take student feedback sufficiently seriously."
+  }
+ },
+ "T16": {
+  "id": "T16",
+  "cand": {
+   "id": "T16",
+   "field": "edu",
+   "author": "Linse",
+   "year": 2017,
+   "title": "Interpreting and using student ratings data: Guidance for faculty serving as administrators and on evaluation committees",
+   "journal": "Studies in Educational Evaluation",
+   "volume": "54",
+   "issue": "",
+   "pages": "94-106",
+   "topics": [
+    "interpretation"
+   ]
+  },
+  "bib": {
+   "status": "match",
+   "diffs": [],
+   "doi": "10.1016/j.stueduc.2016.12.004",
+   "title": "Interpreting and using student ratings data: Guidance for faculty serving as administrators and on evaluation committees",
+   "first_author": "Linse",
+   "year": 2017,
+   "journal": "Studies in Educational Evaluation",
+   "volume": "54",
+   "issue": null,
+   "pages": "94-106",
+   "sim": 1.0,
+   "authors": [
+    {
+     "family": "Linse",
+     "initials": "A.R."
+    }
+   ]
+  },
+  "abstract": {
+   "src": "SemanticScholar",
+   "text": "Abstract This article is about the accurate interpretation of student ratings data and the appropriate use of that data to evaluate faculty. Its aim is to make recommendations for use and interpretation based on more than 80 years of student ratings research. As more colleges and universities use student ratings data to guide personnel decisions, it is critical that administrators and faculty evaluators have access to research-based information about their use and interpretation. The article begins with an overview of common views and misconceptions about student ratings, followed by clarification of what student ratings are and are not. Next are two sections that provide advice for two audiences—administrators and faculty evaluators—to help them accurately, responsibly, and appropriately use and interpret student ratings data. A list of administrator questions is followed by a list of advice for faculty responsible for evaluating other faculty members’ records."
+  }
+ },
+ "T17": {
+  "id": "T17",
+  "cand": {
+   "id": "T17",
+   "field": "edu",
+   "author": "Uttl",
+   "year": 2017,
+   "title": "Meta-analysis of faculty's teaching effectiveness: Student evaluation of teaching ratings and student learning are not related",
+   "journal": "Studies in Educational Evaluation",
+   "volume": "54",
+   "issue": "",
+   "pages": "22-42",
+   "topics": [
+    "validity"
+   ]
+  },
+  "bib": {
+   "status": "match",
+   "diffs": [],
+   "doi": "10.1016/j.stueduc.2016.08.007",
+   "title": "Meta-analysis of faculty's teaching effectiveness: Student evaluation of teaching ratings and student learning are not related",
+   "first_author": "Uttl",
+   "year": 2017,
+   "journal": "Studies in Educational Evaluation",
+   "volume": "54",
+   "issue": null,
+   "pages": "22-42",
+   "sim": 1.0,
+   "authors": [
+    {
+     "family": "Uttl",
+     "initials": "B."
+    },
+    {
+     "family": "White",
+     "initials": "C.A."
+    },
+    {
+     "family": "Gonzalez",
+     "initials": "D.W."
+    }
+   ]
+  },
+  "abstract": null
+ },
+ "T18": {
+  "id": "T18",
+  "cand": {
+   "id": "T18",
+   "field": "edu",
+   "author": "Wachtel",
+   "year": 1998,
+   "title": "Student evaluation of college teaching effectiveness: a brief review",
+   "journal": "Assessment & Evaluation in Higher Education",
+   "volume": "23",
+   "issue": "2",
+   "pages": "191-212",
+   "topics": [
+    "review"
+   ]
+  },
+  "bib": {
+   "status": "match",
+   "diffs": [],
+   "doi": "10.1080/0260293980230207",
+   "title": "Student Evaluation of College Teaching Effectiveness: a brief review",
+   "first_author": "Wachtel",
+   "year": 1998,
+   "journal": "Assessment &amp; Evaluation in Higher Education",
+   "volume": "23",
+   "issue": "2",
+   "pages": "191-212",
+   "sim": 1.0,
+   "authors": [
+    {
+     "family": "Wachtel",
+     "initials": "H.K."
+    }
+   ]
+  },
+  "abstract": {
+   "src": "ERIC EJ570426",
+   "text": "Reviews research on student-written evaluation of college teaching performance. Arguments against such evaluations as valid indicators of performance are examined, and various background characteristics thought to influence student ratings are considered. Student and faculty reaction to use of ratings is discussed, and suggestions are made for further research. (Author/MSE)"
+  }
+ },
+ "T19": {
+  "id": "T19",
+  "cand": {
+   "id": "T19",
+   "field": "edu",
+   "author": "McKeachie",
+   "year": 1997,
+   "title": "Student ratings: The validity of use",
+   "journal": "American Psychologist",
+   "volume": "52",
+   "issue": "11",
+   "pages": "1218-1225",
+   "topics": [
+    "validity",
+    "use"
+   ]
+  },
+  "bib": {
+   "status": "match",
+   "diffs": [],
+   "doi": "10.1037/0003-066x.52.11.1218",
+   "title": "Student ratings: The validity of use.",
+   "first_author": "McKeachie",
+   "year": 1997,
+   "journal": "American Psychologist",
+   "volume": "52",
+   "issue": "11",
+   "pages": "1218-1225",
+   "sim": 1.0,
+   "authors": [
+    {
+     "family": "McKeachie",
+     "initials": "W.J."
+    }
+   ]
+  },
+  "abstract": {
+   "src": "ERIC EJ580858",
+   "text": "Concludes that there is concurrence on the validity of student ratings but that contextual variables affect the level of ratings. However, there is disagreement on the use of statistical corrections for such bias. The basic problem lies in the lack of sophistication of personnel committees who use the ratings. (MMU)"
+  }
+ },
+ "T20": {
+  "id": "T20",
+  "cand": {
+   "id": "T20",
+   "field": "edu",
+   "author": "Ory",
+   "year": 2001,
+   "title": "How do student ratings measure up to a new validity framework?",
+   "journal": "New Directions for Institutional Research",
+   "volume": "2001",
+   "issue": "109",
+   "pages": "27-44",
+   "topics": [
+    "validity"
+   ]
+  },
+  "bib": {
+   "status": "match",
+   "diffs": [],
+   "doi": "10.1002/ir.2",
+   "title": "How Do Student Ratings Measure Up to a New Validity Framework?",
+   "first_author": "Ory",
+   "year": 2001,
+   "journal": "New Directions for Institutional Research",
+   "volume": "2001",
+   "issue": "109",
+   "pages": "27-44",
+   "sim": 1.0,
+   "authors": [
+    {
+     "family": "Ory",
+     "initials": "J.C."
+    },
+    {
+     "family": "Ryan",
+     "initials": "K."
+    }
+   ]
+  },
+  "abstract": {
+   "src": "Crossref",
+   "text": "Abstract The authors examine student ratings within a new framework that emphasizes six distinct aspects of validity: content, substantive, structural, generalizability, external, and consequential. They conclude that greater attention should be directed toward consequential validity, particularly the matters of how ratings are used on today's campuses and what happens as a result."
+  }
+ },
+ "T21": {
+  "id": "T21",
+  "cand": {
+   "id": "T21",
+   "field": "edu",
+   "author": "Theall",
+   "year": 2001,
+   "title": "Looking for bias in all the wrong places: A search for truth or a witch hunt in student ratings of instruction?",
+   "journal": "New Directions for Institutional Research",
+   "volume": "2001",
+   "issue": "109",
+   "pages": "45-56",
+   "topics": [
+    "bias"
+   ]
+  },
+  "bib": {
+   "status": "match",
+   "diffs": [],
+   "doi": "10.1002/ir.3",
+   "title": "Looking for Bias in All the Wrong Places: A Search for Truth or a Witch Hunt in Student Ratings of Instruction?",
+   "first_author": "Theall",
+   "year": 2001,
+   "journal": "New Directions for Institutional Research",
+   "volume": "2001",
+   "issue": "109",
+   "pages": "45-56",
+   "sim": 1.0,
+   "authors": [
+    {
+     "family": "Theall",
+     "initials": "M."
+    },
+    {
+     "family": "Franklin",
+     "initials": "J."
+    }
+   ]
+  },
+  "abstract": {
+   "src": "Crossref",
+   "text": "Abstract Through a half‐century of research on student ratings, the constant quest has been to prove or disprove the existence of biasing factors. What have we learned, and what has happened as a result? This chapter examines some of these supposed biases and presents some guidelines for improving practice."
+  }
+ },
+ "T22": {
+  "id": "T22",
+  "cand": {
+   "id": "T22",
+   "field": "edu",
+   "author": "Hoel",
+   "year": 2019,
+   "title": "Why bother? Student motivation to participate in student evaluations of teaching",
+   "journal": "Assessment & Evaluation in Higher Education",
+   "volume": "44",
+   "issue": "3",
+   "pages": "361-378",
+   "topics": [
+    "motivation",
+    "response_rate"
+   ]
+  },
+  "bib": {
+   "status": "match",
+   "diffs": [],
+   "doi": "10.1080/02602938.2018.1511969",
+   "title": "Why bother? Student motivation to participate in student evaluations of teaching",
+   "first_author": "Hoel",
+   "year": 2018,
+   "journal": "Assessment &amp; Evaluation in Higher Education",
+   "volume": "44",
+   "issue": "3",
+   "pages": "361-378",
+   "sim": 1.0,
+   "authors": [
+    {
+     "family": "Hoel",
+     "initials": "A."
+    },
+    {
+     "family": "Dahl",
+     "initials": "T.I."
+    }
+   ]
+  },
+  "abstract": {
+   "src": "SemanticScholar",
+   "text": "Abstract When response rates on student evaluations of teaching (SETs) are low, inability to properly interpret and use responses from the students who do participate is a big problem. Where does the motivation to participate break down, and where and how does it make sense to invest efforts in rectifying that? In this study, we examined 641 university students’ reported behaviours and motivation related to their SET participation. In terms of behaviour, students who seldom or never participate in online SET tools reported a willingness to invest, at most, five minutes in the process, though the majority never even open the online evaluation links when they receive them. In terms of motivation, they significantly differed from students who always participate with distinctly lower levels of: (1) willingness to participate at all, (2) perception of autonomy and competence, (3) meaningfulness, (4) personal value, (5) engagement in others’ participation, and (6) understanding of the value of their own participation for others’ benefit. Based on these findings, we propose a strategy for increasing future response rates, particularly among recalcitrant students, in order to be able to gather sufficient and reliable results for the work of improving teaching."
+  }
+ },
+ "T23": {
+  "id": "T23",
+  "cand": {
+   "id": "T23",
+   "field": "edu",
+   "author": "Sadler",
+   "year": 1989,
+   "title": "Formative assessment and the design of instructional systems",
+   "journal": "Instructional Science",
+   "volume": "18",
+   "issue": "2",
+   "pages": "119-144",
+   "topics": [
+    "formative"
+   ]
+  },
+  "bib": {
+   "status": "match",
+   "diffs": [],
+   "doi": "10.1007/bf00117714",
+   "title": "Formative assessment and the design of instructional systems",
+   "first_author": "Sadler",
+   "year": 1989,
+   "journal": "Instructional Science",
+   "volume": "18",
+   "issue": "2",
+   "pages": "119-144",
+   "sim": 1.0,
+   "authors": [
+    {
+     "family": "Sadler",
+     "initials": "D.R."
+    }
+   ]
+  },
+  "abstract": {
+   "src": "ERIC EJ400981",
+   "text": "Discusses the nature and function of formative assessment in the development of students' expertise for evaluating the quality of their own work. Highlights include the transition from teacher-supplied feedback to learner self-monitoring; qualitative judgments; communicating standards to students; multicriterion judgments; and implications for the design of instructional systems. (39 references) (LRW)"
+  }
+ },
+ "T24": {
+  "id": "T24",
+  "cand": {
+   "id": "T24",
+   "field": "edu",
+   "author": "Nicol",
+   "year": 2006,
+   "title": "Formative assessment and self-regulated learning: a model and seven principles of good feedback practice",
+   "journal": "Studies in Higher Education",
+   "volume": "31",
+   "issue": "2",
+   "pages": "199-218",
+   "topics": [
+    "feedback"
+   ]
+  },
+  "bib": {
+   "status": "match",
+   "diffs": [],
+   "doi": "10.1080/03075070600572090",
+   "title": "Formative assessment and self‐regulated learning: a model and seven principles of good feedback practice",
+   "first_author": "Nicol",
+   "year": 2006,
+   "journal": "Studies in Higher Education",
+   "volume": "31",
+   "issue": "2",
+   "pages": "199-218",
+   "sim": 1.0,
+   "authors": [
+    {
+     "family": "Nicol",
+     "initials": "D.J."
+    },
+    {
+     "family": "Macfarlane‐Dick",
+     "initials": "D."
+    }
+   ]
+  },
+  "abstract": {
+   "src": "ERIC EJ734529",
+   "text": "The research on formative assessment and feedback is reinterpreted to show how these processes can help students take control of their own learning, i.e. become self-regulated learners. This reformulation is used to identify seven principles of good feedback practice that support self-regulation. A key argument is that students are already assessing their own work and generating their own feedback, and that higher education should build on this ability. The research underpinning each feedback principle is presented, and some examples of easy-to-implement feedback strategies are briefly described. This shift in focus, whereby students are seen as having a proactive rather than a reactive role in generating and using feedback, has profound implications for the way in which teachers organise assessments and support learning. (Contains 1 figure.)"
+  }
+ },
+ "T25": {
+  "id": "T25",
+  "cand": {
+   "id": "T25",
+   "field": "edu",
+   "author": "Kluger",
+   "year": 1996,
+   "title": "The effects of feedback interventions on performance: A historical review, a meta-analysis, and a preliminary feedback intervention theory",
+   "journal": "Psychological Bulletin",
+   "volume": "119",
+   "issue": "2",
+   "pages": "254-284",
+   "topics": [
+    "feedback"
+   ]
+  },
+  "bib": {
+   "status": "match",
+   "diffs": [],
+   "doi": "10.1037/0033-2909.119.2.254",
+   "title": "The effects of feedback interventions on performance: A historical review, a meta-analysis, and a preliminary feedback intervention theory.",
+   "first_author": "Kluger",
+   "year": 1996,
+   "journal": "Psychological Bulletin",
+   "volume": "119",
+   "issue": "2",
+   "pages": "254-284",
+   "sim": 1.0,
+   "authors": [
+    {
+     "family": "Kluger",
+     "initials": "A.N."
+    },
+    {
+     "family": "DeNisi",
+     "initials": "A."
+    }
+   ]
+  },
+  "abstract": null
+ },
+ "T26": {
+  "id": "T26",
+  "cand": {
+   "id": "T26",
+   "field": "edu",
+   "author": "Shute",
+   "year": 2008,
+   "title": "Focus on formative feedback",
+   "journal": "Review of Educational Research",
+   "volume": "78",
+   "issue": "1",
+   "pages": "153-189",
+   "topics": [
+    "feedback"
+   ]
+  },
+  "bib": {
+   "status": "match",
+   "diffs": [],
+   "doi": "10.3102/0034654307313795",
+   "title": "Focus on Formative Feedback",
+   "first_author": "Shute",
+   "year": 2008,
+   "journal": "Review of Educational Research",
+   "volume": "78",
+   "issue": "1",
+   "pages": "153-189",
+   "sim": 1.0,
+   "authors": [
+    {
+     "family": "Shute",
+     "initials": "V.J."
+    }
+   ]
+  },
+  "abstract": {
+   "src": "Crossref",
+   "text": "This article reviews the corpus of research on feedback, with a focus on formative feedback—defined as information communicated to the learner that is intended to modify his or her thinking or behavior to improve learning. According to researchers, formative feedback should be nonevaluative, supportive, timely, and specific. Formative feedback is usually presented as information to a learner in response to some action on the learner’s part. It comes in a variety of types (e.g., verification of response accuracy, explanation of the correct answer, hints, worked examples) and can be administered at various times during the learning process (e.g., immediately following an answer, after some time has elapsed). Finally, several variables have been shown to interact with formative feedback’s success at promoting learning (e.g., individual characteristics of the learner and aspects of the task). All of these issues are discussed. This review concludes with guidelines for generating formative feedback."
+  }
+ },
+ "T27": {
+  "id": "T27",
+  "cand": {
+   "id": "T27",
+   "field": "edu",
+   "author": "Guskey",
+   "year": 2002,
+   "title": "Professional development and teacher change",
+   "journal": "Teachers and Teaching",
+   "volume": "8",
+   "issue": "3",
+   "pages": "381-391",
+   "topics": [
+    "improvement"
+   ]
+  },
+  "bib": {
+   "status": "match",
+   "diffs": [],
+   "doi": "10.1080/135406002100000512",
+   "title": "Professional Development and Teacher Change",
+   "first_author": "Guskey",
+   "year": 2002,
+   "journal": "Teachers and Teaching",
+   "volume": "8",
+   "issue": "3",
+   "pages": "381-391",
+   "sim": 1.0,
+   "authors": [
+    {
+     "family": "Guskey",
+     "initials": "T.R."
+    }
+   ]
+  },
+  "abstract": null
+ },
+ "T28": {
+  "id": "T28",
+  "cand": {
+   "id": "T28",
+   "field": "edu",
+   "author": "Kreitzer",
+   "year": 2022,
+   "title": "Evaluating student evaluations of teaching: a review of measurement and equity bias in SETs and recommendations for ethical reform",
+   "journal": "Journal of Academic Ethics",
+   "volume": "20",
+   "issue": "1",
+   "pages": "73-84",
+   "topics": [
+    "bias",
+    "ethics"
+   ]
+  },
+  "bib": {
+   "status": "match",
+   "diffs": [],
+   "doi": "10.1007/s10805-021-09400-w",
+   "title": "Evaluating Student Evaluations of Teaching: a Review of Measurement and Equity Bias in SETs and Recommendations for Ethical Reform",
+   "first_author": "Kreitzer",
+   "year": 2021,
+   "journal": "Journal of Academic Ethics",
+   "volume": "20",
+   "issue": "1",
+   "pages": "73-84",
+   "sim": 1.0,
+   "authors": [
+    {
+     "family": "Kreitzer",
+     "initials": "R.J."
+    },
+    {
+     "family": "Sweet-Cushman",
+     "initials": "J."
+    }
+   ]
+  },
+  "abstract": {
+   "src": "ERIC EJ1328742",
+   "text": "Student evaluations of teaching are ubiquitous in the academe as a metric for assessing teaching and frequently used in critical personnel decisions. Yet, there is ample evidence documenting both measurement and equity bias in these assessments. Student Evaluations of Teaching (SETs) have low or no correlation with learning. Furthermore, scholars using different data and different methodologies routinely find that women faculty, faculty of color, and other marginalized groups are subject to a disadvantage in SETs. Extant research on bias on teaching evaluations tend to review only the aspect of the literature most pertinent to that study. In this paper, we review a novel dataset of over 100 articles on bias in student evaluations of teaching and provide a nuanced review of this broad but established literature. We find that women and other marginalized groups do face significant biases in standard evaluations of teaching -- however, the effect of gender is conditional upon other factors. We conclude with recommendations for the judicious use of SETs and avenues for future research."
+  }
+ },
+ "T29": {
+  "id": "T29",
+  "cand": {
+   "id": "T29",
+   "field": "edu",
+   "author": "MacNell",
+   "year": 2015,
+   "title": "What's in a name: Exposing gender bias in student ratings of teaching",
+   "journal": "Innovative Higher Education",
+   "volume": "40",
+   "issue": "4",
+   "pages": "291-303",
+   "topics": [
+    "bias"
+   ],
+   "doi": "10.1007/s10755-014-9313-4"
+  },
+  "bib": {
+   "status": "match",
+   "diffs": [],
+   "doi": "10.1007/s10755-014-9313-4",
+   "title": "What’s in a Name: Exposing Gender Bias in Student Ratings of Teaching",
+   "first_author": "MacNell",
+   "year": 2014,
+   "journal": "Innovative Higher Education",
+   "volume": "40",
+   "issue": "4",
+   "pages": "291-303",
+   "sim": 1.0,
+   "authors": [
+    {
+     "family": "MacNell",
+     "initials": "L."
+    },
+    {
+     "family": "Driscoll",
+     "initials": "A."
+    },
+    {
+     "family": "Hunt",
+     "initials": "A.N."
+    }
+   ]
+  },
+  "abstract": {
+   "src": "ERIC EJ1068677",
+   "text": "Student ratings of teaching play a significant role in career outcomes for higher education instructors. Although instructor gender has been shown to play an important role in influencing student ratings, the extent and nature of that role remains contested. While difficult to separate gender from teaching practices in person, it is possible to disguise an instructor's gender identity online. In our experiment, assistant instructors in an online class each operated under two different gender identities. Students rated the male identity significantly higher than the female identity, regardless of the instructor's actual gender, demonstrating gender bias. Given the vital role that student ratings play in academic career trajectories, this finding warrants considerable attention."
+  }
+ },
+ "T30": {
+  "id": "T30",
+  "cand": {
+   "id": "T30",
+   "field": "edu",
+   "author": "Prince",
+   "year": 2004,
+   "title": "Does active learning work? A review of the research",
+   "journal": "Journal of Engineering Education",
+   "volume": "93",
+   "issue": "3",
+   "pages": "223-231",
+   "topics": [
+    "practice",
+    "engage"
+   ]
+  },
+  "bib": {
+   "status": "match",
+   "diffs": [],
+   "doi": "10.1002/j.2168-9830.2004.tb00809.x",
+   "title": "Does Active Learning Work? A Review of the Research",
+   "first_author": "Prince",
+   "year": 2004,
+   "journal": "Journal of Engineering Education",
+   "volume": "93",
+   "issue": "3",
+   "pages": "223-231",
+   "sim": 1.0,
+   "authors": [
+    {
+     "family": "Prince",
+     "initials": "M."
+    }
+   ]
+  },
+  "abstract": {
+   "src": "Crossref",
+   "text": "Abstract This study examines the evidence for the effectiveness of active learning. It defines the common forms of active learning most relevant for engineering faculty and critically examines the core element of each method. It is found that there is broad but uneven support for the core elements of active, collaborative, cooperative and problem‐based learning."
+  }
+ },
+ "T31": {
+  "id": "T31",
+  "cand": {
+   "id": "T31",
+   "field": "edu",
+   "author": "Freeman",
+   "year": 2014,
+   "title": "Active learning increases student performance in science, engineering, and mathematics",
+   "journal": "Proceedings of the National Academy of Sciences",
+   "volume": "111",
+   "issue": "23",
+   "pages": "8410-8415",
+   "topics": [
+    "practice",
+    "engage"
+   ]
+  },
+  "bib": {
+   "status": "match",
+   "diffs": [],
+   "doi": "10.1073/pnas.1319030111",
+   "title": "Active learning increases student performance in science, engineering, and mathematics",
+   "first_author": "Freeman",
+   "year": 2014,
+   "journal": "Proceedings of the National Academy of Sciences",
+   "volume": "111",
+   "issue": "23",
+   "pages": "8410-8415",
+   "sim": 1.0,
+   "authors": [
+    {
+     "family": "Freeman",
+     "initials": "S."
+    },
+    {
+     "family": "Eddy",
+     "initials": "S.L."
+    },
+    {
+     "family": "McDonough",
+     "initials": "M."
+    },
+    {
+     "family": "Smith",
+     "initials": "M.K."
+    },
+    {
+     "family": "Okoroafor",
+     "initials": "N."
+    },
+    {
+     "family": "Jordt",
+     "initials": "H."
+    },
+    {
+     "family": "Wenderoth",
+     "initials": "M.P."
+    }
+   ]
+  },
+  "abstract": {
+   "src": "Crossref",
+   "text": "Significance The President’s Council of Advisors on Science and Technology has called for a 33% increase in the number of science, technology, engineering, and mathematics (STEM) bachelor’s degrees completed per year and recommended adoption of empirically validated teaching practices as critical to achieving that goal. The studies analyzed here document that active learning leads to increases in examination performance that would raise average grades by a half a letter, and that failure rates under traditional lecturing increase by 55% over the rates observed under active learning. The analysis supports theory claiming that calls to increase the number of students receiving STEM degrees could be answered, at least in part, by abandoning traditional lecturing in favor of active learning."
+  }
+ },
+ "T32": {
+  "id": "T32",
+  "cand": {
+   "id": "T32",
+   "field": "edu",
+   "author": "Fredricks",
+   "year": 2004,
+   "title": "School engagement: Potential of the concept, state of the evidence",
+   "journal": "Review of Educational Research",
+   "volume": "74",
+   "issue": "1",
+   "pages": "59-109",
+   "topics": [
+    "engage"
+   ]
+  },
+  "bib": {
+   "status": "match",
+   "diffs": [],
+   "doi": "10.3102/00346543074001059",
+   "title": "School Engagement: Potential of the Concept, State of the Evidence",
+   "first_author": "Fredricks",
+   "year": 2004,
+   "journal": "Review of Educational Research",
+   "volume": "74",
+   "issue": "1",
+   "pages": "59-109",
+   "sim": 1.0,
+   "authors": [
+    {
+     "family": "Fredricks",
+     "initials": "J.A."
+    },
+    {
+     "family": "Blumenfeld",
+     "initials": "P.C."
+    },
+    {
+     "family": "Paris",
+     "initials": "A.H."
+    }
+   ]
+  },
+  "abstract": {
+   "src": "Crossref",
+   "text": "The concept of school engagement has attracted increasing attention as representing a possible antidote to declining academic motivation and achievement. Engagement is presumed to be malleable, responsive to contextual features, and amenable to environmental change. Researchers describe behavioral, emotional, and cognitive engagement and recommend studying engagement as a multifaceted construct. This article reviews definitions, measures, precursors, and outcomes of engagement; discusses limitations in the existing research; and suggests improvements. The authors conclude that, although much has been learned, the potential contribution of the concept of school engagement to research on student experience has yet to be realized. They call for richer characterizations of how students behave, feel, and think—research that could aid in the development of finely tuned interventions"
+  }
+ },
+ "T33": {
+  "id": "T33",
+  "cand": {
+   "id": "T33",
+   "field": "edu",
+   "author": "Roorda",
+   "year": 2011,
+   "title": "The influence of affective teacher-student relationships on students' school engagement and achievement: A meta-analytic approach",
+   "journal": "Review of Educational Research",
+   "volume": "81",
+   "issue": "4",
+   "pages": "493-529",
+   "topics": [
+    "rapport"
+   ],
+   "doi": "10.3102/0034654311421793"
+  },
+  "bib": {
+   "status": "match",
+   "diffs": [],
+   "doi": "10.3102/0034654311421793",
+   "title": "The Influence of Affective Teacher–Student Relationships on Students’ School Engagement and Achievement",
+   "first_author": "Roorda",
+   "year": 2011,
+   "journal": "Review of Educational Research",
+   "volume": "81",
+   "issue": "4",
+   "pages": "493-529",
+   "sim": 0.891,
+   "authors": [
+    {
+     "family": "Roorda",
+     "initials": "D.L."
+    },
+    {
+     "family": "Koomen",
+     "initials": "H.M.Y."
+    },
+    {
+     "family": "Spilt",
+     "initials": "J.L."
+    },
+    {
+     "family": "Oort",
+     "initials": "F.J."
+    }
+   ]
+  },
+  "abstract": {
+   "src": "Crossref",
+   "text": "A meta-analytic approach was used to investigate the associations between affective qualities of teacher–student relationships (TSRs) and students’ school engagement and achievement. Results were based on 99 studies, including students from preschool to high school. Separate analyses were conducted for positive relationships and engagement ( k = 61 studies, N = 88,417 students), negative relationships and engagement ( k = 18, N = 5,847), positive relationships and achievement ( k = 61, N = 52,718), and negative relationships and achievement ( k = 28, N = 18,944). Overall, associations of both positive and negative relationships with engagement were medium to large, whereas associations with achievement were small to medium. Some of these associations were weaker, but still statistically significant, after correction for methodological biases. Overall, stronger effects were found in the higher grades. Nevertheless, the effects of negative relationships were stronger in primary than in secondary school."
+  }
+ },
+ "T34": {
+  "id": "T34",
+  "cand": {
+   "id": "T34",
+   "field": "edu",
+   "author": "Cornelius-White",
+   "year": 2007,
+   "title": "Learner-centered teacher-student relationships are effective: A meta-analysis",
+   "journal": "Review of Educational Research",
+   "volume": "77",
+   "issue": "1",
+   "pages": "113-143",
+   "topics": [
+    "rapport"
+   ]
+  },
+  "bib": {
+   "status": "match",
+   "diffs": [],
+   "doi": "10.3102/003465430298563",
+   "title": "Learner-Centered Teacher-Student Relationships Are Effective: A                Meta-Analysis",
+   "first_author": "Cornelius-White",
+   "year": 2007,
+   "journal": "Review of Educational Research",
+   "volume": "77",
+   "issue": "1",
+   "pages": "113-143",
+   "sim": 1.0,
+   "authors": [
+    {
+     "family": "Cornelius-White",
+     "initials": "J."
+    }
+   ]
+  },
+  "abstract": {
+   "src": "Crossref",
+   "text": "Person-centered education is a counseling-originated, educational psychology model, overripe for meta-analysis, that posits that positive teacher-student relationships are associated with optimal, holistic learning. It includes classical, humanistic education and today’s constructivist learner-centered model. The author reviewed about 1,000 articles to synthesize 119 studies from 1948 to 2004 with 1,450 findings and 355,325 students. The meta-analysis design followed Mackay, Barkham, Rees, and Stiles’s guidelines, including comprehensive search mechanisms, accuracy and bias control, and primary study validity assessment. Variables coded included 9 independent and 18 dependent variables and 39 moderators. The results showed that correlations had wide variation. Mean correlations ( r= .31) were above average compared with other educational innovations for cognitive and especially affective and behavioral outcomes. Methodological and sample features accounted for some of the variability."
+  }
+ },
+ "T35": {
+  "id": "T35",
+  "cand": {
+   "id": "T35",
+   "field": "edu",
+   "author": "Rosenshine",
+   "year": 2012,
+   "title": "Principles of instruction: Research-based strategies that all teachers should know",
+   "journal": "American Educator",
+   "volume": "36",
+   "issue": "1",
+   "pages": "12-19",
+   "topics": [
+    "explain",
+    "pace"
+   ],
+   "eric_id": "EJ1002984"
+  },
+  "bib": {
+   "status": "match",
+   "diffs": [],
+   "doi": null,
+   "url": "https://eric.ed.gov/?id=EJ1002984",
+   "title": "Principles of Instruction: Research-Based Strategies that All Teachers Should Know",
+   "first_author": "Rosenshine",
+   "year": 2012,
+   "journal": "American Educator",
+   "volume": "36",
+   "issue": "1",
+   "pages": "12-19",
+   "sim": 1.0,
+   "src": "ERIC EJ1002984 Education Digest: Essential Readings Condensed for Quick Review",
+   "authors": [
+    {
+     "family": "Rosenshine",
+     "initials": "B."
+    }
+   ]
+  },
+  "abstract": {
+   "src": "ERIC EJ1002984",
+   "text": "This article presents 10 research-based principles of instruction, along with suggestions for classroom practice. The principles come from (a) research in cognitive science, (b) research on master teachers, and (c) research on cognitive supports. The instructional principles are: (1) Begin a lesson with a short review of previous learning to strengthen previous learning and lead to fluent recall; (2) Present new material in small steps with student practice after each step; (3) Ask a large number of questions and check the responses of all students; (4) Provide models to help students learn to solve problems faster; (5) Guide student practice of new material; (6) Checking for student understanding at each point can help students learn the material with fewer errors; (7) It is important for students to achieve a high success rate during classroom instruction; (8) The teacher should provide students with temporary supports and scaffolds to assist them when they learn difficult tasks; (9) Students need extensive, successful, independent practice in order for skills and knowledge to become automatic; and (10) Engage students in weekly and monthly review to develop well-connected and automatic knowledge."
+  }
+ },
+ "T36": {
+  "id": "T36",
+  "cand": {
+   "id": "T36",
+   "field": "edu",
+   "author": "Boring",
+   "year": 2016,
+   "title": "Student evaluations of teaching (mostly) do not measure teaching effectiveness",
+   "journal": "ScienceOpen Research",
+   "volume": "",
+   "issue": "",
+   "pages": "1-11",
+   "topics": [
+    "validity"
+   ],
+   "doi": "10.14293/s2199-1006.1.sor-edu.aetbzc.v1"
+  },
+  "bib": {
+   "status": "match",
+   "diffs": [],
+   "doi": "10.14293/s2199-1006.1.sor-edu.aetbzc.v1",
+   "title": "Student evaluations of teaching (mostly) do not measure teaching effectiveness",
+   "first_author": "Boring",
+   "year": 2016,
+   "journal": "ScienceOpen Research",
+   "volume": "0",
+   "issue": "0",
+   "pages": "",
+   "sim": 1.0,
+   "authors": [
+    {
+     "family": "Boring",
+     "initials": "A."
+    },
+    {
+     "family": "Ottoboni",
+     "initials": "K."
+    },
+    {
+     "family": "Stark",
+     "initials": "P.B."
+    }
+   ]
+  },
+  "abstract": {
+   "src": "Crossref",
+   "text": "Abstract Student evaluations of teaching (SET) are widely used in academic personnel decisions as a measure of teaching effectiveness. We show: SET are biased against female instructors by an amount that is large and statistically significant. The bias affects how students rate even putatively objective aspects of teaching, such as how promptly assignments are graded. The bias varies by discipline and by student gender, among other things. It is not possible to adjust for the bias, because it depends on so many factors. SET are more sensitive to students’ gender bias and grade expectations than they are to teaching effectiveness. Gender biases can be large enough to cause more effective instructors to get lower SET than less effective instructors. These findings are based on nonparametric statistical tests applied to two datasets: 23,001 SET of 379 instructors by 4,423 students in six mandatory first-year courses in a five-year natural experiment at a French university, and 43 SET for four sections of an online course in a randomized, controlled, blind experiment at a US university."
+  }
+ },
+ "T37": {
+  "id": "T37",
+  "cand": {
+   "id": "T37",
+   "field": "psy",
+   "author": "Krosnick",
+   "year": 1991,
+   "title": "Response strategies for coping with the cognitive demands of attitude measures in surveys",
+   "journal": "Applied Cognitive Psychology",
+   "volume": "5",
+   "issue": "3",
+   "pages": "213-236",
+   "topics": [
+    "satisficing"
+   ]
+  },
+  "bib": {
+   "status": "match",
+   "diffs": [],
+   "doi": "10.1002/acp.2350050305",
+   "title": "Response strategies for coping with the cognitive demands of attitude measures in surveys",
+   "first_author": "Krosnick",
+   "year": 1991,
+   "journal": "Applied Cognitive Psychology",
+   "volume": "5",
+   "issue": "3",
+   "pages": "213-236",
+   "sim": 1.0,
+   "authors": [
+    {
+     "family": "Krosnick",
+     "initials": "J.A."
+    }
+   ]
+  },
+  "abstract": {
+   "src": "Crossref",
+   "text": "Abstract This paper proposes that when optimally answering a survey question would require substantial cognitive effort, some repondents simply provide a satisfactory answer instead. This behaviour, called satisficing , can take the form of either (1) incomplete or biased information retrieval and/or information integration, or (2) no information retrieval or integration at all. Satisficing may lead respondents to employ a variety of response strategies, including choosing the first response alternative that seems to constitute a reasonable answer, agreeing with an assertion made by a question, endorsing the status quo instead of endorsing social change, failing to differentiate among a set of diverse objects in ratings, saying ‘don't know’ instead of reporting an opinion, and randomly choosing among the response alternatives offered. This paper specifies a wide range of factors that are likely to encourage satisficing, and reviews relevant evidence evaluating these speculations. Many useful directions for future research are suggested."
+  }
+ },
+ "T38": {
+  "id": "T38",
+  "cand": {
+   "id": "T38",
+   "field": "psy",
+   "author": "Krosnick",
+   "year": 1999,
+   "title": "Survey research",
+   "journal": "Annual Review of Psychology",
+   "volume": "50",
+   "issue": "",
+   "pages": "537-567",
+   "topics": [
+    "survey"
+   ]
+  },
+  "bib": {
+   "status": "match",
+   "diffs": [],
+   "doi": "10.1146/annurev.psych.50.1.537",
+   "title": "SURVEY RESEARCH",
+   "first_author": "Krosnick",
+   "year": 1999,
+   "journal": "Annual Review of Psychology",
+   "volume": "50",
+   "issue": "1",
+   "pages": "537-567",
+   "sim": 1.0,
+   "authors": [
+    {
+     "family": "Krosnick",
+     "initials": "J.A."
+    }
+   ]
+  },
+  "abstract": {
+   "src": "Crossref",
+   "text": "▪ Abstract For the first time in decades, conventional wisdom about survey methodology is being challenged on many fronts. The insights gained can not only help psychologists do their research better but also provide useful insights into the basics of social interaction and cognition. This chapter reviews some of the many recent advances in the literature, including the following: New findings challenge a long-standing prejudice against studies with low response rates; innovative techniques for pretesting questionnaires offer opportunities for improving measurement validity; surprising effects of the verbal labels put on rating scale points have been identified, suggesting optimal approaches to scale labeling; respondents interpret questions on the basis of the norms of everyday conversation, so violations of those conventions introduce error; some measurement error thought to have been attributable to social desirability response bias now appears to be due to other factors instead, thus encouraging different approaches to fixing such problems; and a new theory of satisficing in questionnaire responding offers parsimonious explanations for a range of response patterns long recognized by psycholo-gists and survey researchers but previously not well understood."
+  }
+ },
+ "T39": {
+  "id": "T39",
+  "cand": {
+   "id": "T39",
+   "field": "psy",
+   "author": "Podsakoff",
+   "year": 2003,
+   "title": "Common method biases in behavioral research: A critical review of the literature and recommended remedies",
+   "journal": "Journal of Applied Psychology",
+   "volume": "88",
+   "issue": "5",
+   "pages": "879-903",
+   "topics": [
+    "method_bias"
+   ]
+  },
+  "bib": {
+   "status": "match",
+   "diffs": [],
+   "doi": "10.1037/0021-9010.88.5.879",
+   "title": "Common method biases in behavioral research: A critical review of the literature and recommended remedies.",
+   "first_author": "Podsakoff",
+   "year": 2003,
+   "journal": "Journal of Applied Psychology",
+   "volume": "88",
+   "issue": "5",
+   "pages": "879-903",
+   "sim": 1.0,
+   "authors": [
+    {
+     "family": "Podsakoff",
+     "initials": "P.M."
+    },
+    {
+     "family": "MacKenzie",
+     "initials": "S.B."
+    },
+    {
+     "family": "Lee",
+     "initials": "J.Y."
+    },
+    {
+     "family": "Podsakoff",
+     "initials": "N.P."
+    }
+   ]
+  },
+  "abstract": {
+   "src": "EuropePMC 14516251",
+   "text": "Interest in the problem of method biases has a long history in the behavioral sciences. Despite this, a comprehensive summary of the potential sources of method biases and how to control for them does not exist. Therefore, the purpose of this article is to examine the extent to which method biases influence behavioral research results, identify potential sources of method biases, discuss the cognitive processes through which method biases influence responses to measures, evaluate the many different procedural and statistical techniques that can be used to control method biases, and provide recommendations for how to select appropriate procedural and statistical remedies for different types of research settings."
+  }
+ },
+ "T40": {
+  "id": "T40",
+  "cand": {
+   "id": "T40",
+   "field": "psy",
+   "author": "Tourangeau",
+   "year": 2007,
+   "title": "Sensitive questions in surveys",
+   "journal": "Psychological Bulletin",
+   "volume": "133",
+   "issue": "5",
+   "pages": "859-883",
+   "topics": [
+    "social_desirability"
+   ]
+  },
+  "bib": {
+   "status": "match",
+   "diffs": [],
+   "doi": "10.1037/0033-2909.133.5.859",
+   "title": "Sensitive questions in surveys.",
+   "first_author": "Tourangeau",
+   "year": 2007,
+   "journal": "Psychological Bulletin",
+   "volume": "133",
+   "issue": "5",
+   "pages": "859-883",
+   "sim": 1.0,
+   "authors": [
+    {
+     "family": "Tourangeau",
+     "initials": "R."
+    },
+    {
+     "family": "Yan",
+     "initials": "T."
+    }
+   ]
+  },
+  "abstract": {
+   "src": "ERIC EJ774165",
+   "text": "Psychologists have worried about the distortions introduced into standardized personality measures by social desirability bias. Survey researchers have had similar concerns about the accuracy of survey reports about such topics as illicit drug use, abortion, and sexual behavior. The article reviews the research done by survey methodologists on reporting errors in surveys on sensitive topics, noting parallels and differences from the psychological literature on social desirability. The findings from the survey studies suggest that misreporting about sensitive topics is quite common and that it is largely situational. The extent of misreporting depends on whether the respondent has anything embarrassing to report and on design features of the survey. The survey evidence also indicates that misreporting on sensitive topics is a more or less motivated process in which respondents edit the information they report to avoid embarrassing themselves in the presence of an interviewer or to avoid repercussions from third parties."
+  }
+ },
+ "T41": {
+  "id": "T41",
+  "cand": {
+   "id": "T41",
+   "field": "psy",
+   "author": "Meade",
+   "year": 2012,
+   "title": "Identifying careless responses in survey data",
+   "journal": "Psychological Methods",
+   "volume": "17",
+   "issue": "3",
+   "pages": "437-455",
+   "topics": [
+    "careless"
+   ],
+   "doi": "10.1037/a0028085"
+  },
+  "bib": {
+   "status": "match",
+   "diffs": [],
+   "doi": "10.1037/a0028085",
+   "title": "Identifying careless responses in survey data.",
+   "first_author": "Meade",
+   "year": 2012,
+   "journal": "Psychological Methods",
+   "volume": "17",
+   "issue": "3",
+   "pages": "437-455",
+   "sim": 1.0,
+   "authors": [
+    {
+     "family": "Meade",
+     "initials": "A.W."
+    },
+    {
+     "family": "Craig",
+     "initials": "S.B."
+    }
+   ]
+  },
+  "abstract": {
+   "src": "ERIC EJ1004403",
+   "text": "When data are collected via anonymous Internet surveys, particularly under conditions of obligatory participation (such as with student samples), data quality can be a concern. However, little guidance exists in the published literature regarding techniques for detecting careless responses. Previously several potential approaches have been suggested for identifying careless respondents via indices computed from the data, yet almost no prior work has examined the relationships among these indicators or the types of data patterns identified by each. In 2 studies, we examined several methods for identifying careless responses, including (a) special items designed to detect careless response, (b) response consistency indices formed from responses to typical survey items, (c) multivariate outlier analysis, (d) response time, and (e) self-reported diligence. Results indicated that there are two distinct patterns of careless response (random and nonrandom) and that different indices are needed to identify these different response patterns. We also found that approximately 10%-12% of undergraduates completing a lengthy survey for course credit were identified as careless responders. In Study 2, we simulated data with known random response patterns to determine the efficacy of several indicators of careless response. We found that the nature of the data strongly influenced the efficacy of the indices to identify careless responses. Recommendations include using identified rather than anonymous responses, incorporating instructed response items before data collection, as well as computing consistency indices and multivariate outlier analysis to ensure high-quality data. (Contains 14 tables, 1 figure, and 3 footnotes.)"
+  }
+ },
+ "T42": {
+  "id": "T42",
+  "cand": {
+   "id": "T42",
+   "field": "psy",
+   "author": "Curran",
+   "year": 2016,
+   "title": "Methods for the detection of carelessly invalid responses in survey data",
+   "journal": "Journal of Experimental Social Psychology",
+   "volume": "66",
+   "issue": "",
+   "pages": "4-19",
+   "topics": [
+    "careless"
+   ]
+  },
+  "bib": {
+   "status": "match",
+   "diffs": [],
+   "doi": "10.1016/j.jesp.2015.07.006",
+   "title": "Methods for the detection of carelessly invalid responses in survey data",
+   "first_author": "Curran",
+   "year": 2016,
+   "journal": "Journal of Experimental Social Psychology",
+   "volume": "66",
+   "issue": null,
+   "pages": "4-19",
+   "sim": 1.0,
+   "authors": [
+    {
+     "family": "Curran",
+     "initials": "P.G."
+    }
+   ]
+  },
+  "abstract": {
+   "src": "SemanticScholar",
+   "text": "Self-report data collections, particularly through online measures, are ubiquitous in both experimental and non- experimental psychology. Invalid data can be present in such data collections for a number of reasons. One reason is careless or insufficient effort (C/IE) responding. The past decade has seen a rise in research on techniques to detect and remove these data before normal analysis (Huang, Curran, Keeney, Poposki, & DeShon, 2012; Johnson, 2005; Meade & Craig, 2012). The rigorous use of these techniques is valuable tool for the removal of error that can impact survey results (Huang, Liu, & Bowling, 2015). This research has encompassed a number of sub-fields of psychology, and this paper aims to integrate different perspectives into a review and assessment of current tech- niques, an introduction of new techniques, and a generation of recommendations for practical use. Concerns about C/IE responding are a factor any time self-report data are collected, and all such researchers should be well-versed on methods to detect this pattern of response."
+  }
+ },
+ "T43": {
+  "id": "T43",
+  "cand": {
+   "id": "T43",
+   "field": "psy",
+   "author": "Oppenheimer",
+   "year": 2009,
+   "title": "Instructional manipulation checks: Detecting satisficing to increase statistical power",
+   "journal": "Journal of Experimental Social Psychology",
+   "volume": "45",
+   "issue": "4",
+   "pages": "867-872",
+   "topics": [
+    "attention_check"
+   ]
+  },
+  "bib": {
+   "status": "match",
+   "diffs": [],
+   "doi": "10.1016/j.jesp.2009.03.009",
+   "title": "Instructional manipulation checks: Detecting satisficing to increase statistical power",
+   "first_author": "Oppenheimer",
+   "year": 2009,
+   "journal": "Journal of Experimental Social Psychology",
+   "volume": "45",
+   "issue": "4",
+   "pages": "867-872",
+   "sim": 1.0,
+   "authors": [
+    {
+     "family": "Oppenheimer",
+     "initials": "D.M."
+    },
+    {
+     "family": "Meyvis",
+     "initials": "T."
+    },
+    {
+     "family": "Davidenko",
+     "initials": "N."
+    }
+   ]
+  },
+  "abstract": null
+ },
+ "T44": {
+  "id": "T44",
+  "cand": {
+   "id": "T44",
+   "field": "psy",
+   "author": "Weijters",
+   "year": 2010,
+   "title": "The effect of rating scale format on response styles: The number of response categories and response category labels",
+   "journal": "International Journal of Research in Marketing",
+   "volume": "27",
+   "issue": "3",
+   "pages": "236-247",
+   "topics": [
+    "scale_format"
+   ]
+  },
+  "bib": {
+   "status": "match",
+   "diffs": [],
+   "doi": "10.1016/j.ijresmar.2010.02.004",
+   "title": "The effect of rating scale format on response styles: The number of response categories and response category labels",
+   "first_author": "Weijters",
+   "year": 2010,
+   "journal": "International Journal of Research in Marketing",
+   "volume": "27",
+   "issue": "3",
+   "pages": "236-247",
+   "sim": 1.0,
+   "authors": [
+    {
+     "family": "Weijters",
+     "initials": "B."
+    },
+    {
+     "family": "Cabooter",
+     "initials": "E."
+    },
+    {
+     "family": "Schillewaert",
+     "initials": "N."
+    }
+   ]
+  },
+  "abstract": null
+ },
+ "T45": {
+  "id": "T45",
+  "cand": {
+   "id": "T45",
+   "field": "psy",
+   "author": "Greenleaf",
+   "year": 1992,
+   "title": "Measuring extreme response style",
+   "journal": "Public Opinion Quarterly",
+   "volume": "56",
+   "issue": "3",
+   "pages": "328-351",
+   "topics": [
+    "response_style"
+   ]
+  },
+  "bib": {
+   "status": "match",
+   "diffs": [],
+   "doi": "10.1086/269326",
+   "title": "Measuring Extreme Response Style",
+   "first_author": "Greenleaf",
+   "year": 1992,
+   "journal": "Public Opinion Quarterly",
+   "volume": "56",
+   "issue": "3",
+   "pages": "328",
+   "sim": 1.0,
+   "authors": [
+    {
+     "family": "Greenleaf",
+     "initials": "E.A."
+    }
+   ]
+  },
+  "abstract": null
+ },
+ "T46": {
+  "id": "T46",
+  "cand": {
+   "id": "T46",
+   "field": "psy",
+   "author": "Baumgartner",
+   "year": 2001,
+   "title": "Response styles in marketing research: A cross-national investigation",
+   "journal": "Journal of Marketing Research",
+   "volume": "38",
+   "issue": "2",
+   "pages": "143-156",
+   "topics": [
+    "response_style"
+   ]
+  },
+  "bib": {
+   "status": "match",
+   "diffs": [],
+   "doi": "10.1509/jmkr.38.2.143.18840",
+   "title": "Response Styles in Marketing Research: A Cross-National Investigation",
+   "first_author": "Baumgartner",
+   "year": 2001,
+   "journal": "Journal of Marketing Research",
+   "volume": "38",
+   "issue": "2",
+   "pages": "143-156",
+   "sim": 1.0,
+   "authors": [
+    {
+     "family": "Baumgartner",
+     "initials": "H."
+    },
+    {
+     "family": "Steenkamp",
+     "initials": "J.B.E."
+    }
+   ]
+  },
+  "abstract": {
+   "src": "Crossref",
+   "text": "Response styles are a source of contamination in questionnaire ratings, and therefore they threaten the validity of conclusions drawn from marketing research data. In this article, the authors examine five forms of stylistic responding (acquiescence and disacquiescence response styles, extreme response style/response range, midpoint responding, and noncontingent responding) and discuss their biasing effects on scale scores and correlations between scales. Using data from large, representative samples of consumers from 11 countries of the European Union, the authors find systematic effects of response styles on scale scores as a function of two scale characteristics (the proportion of reverse-scored items and the extent of deviation of the scale mean from the midpoint of the response scale) and show that correlations between scales can be biased upward or downward depending on the correlation between the response style components. In combination with the apparent lack of concern with response styles evidenced in a secondary analysis of commonly used marketing scales, these findings suggest that marketing researchers should pay greater attention to the phenomenon of stylistic responding when constructing and using measurement instruments."
+  }
+ },
+ "T47": {
+  "id": "T47",
+  "cand": {
+   "id": "T47",
+   "field": "psy",
+   "author": "Schwarz",
+   "year": 1999,
+   "title": "Self-reports: How the questions shape the answers",
+   "journal": "American Psychologist",
+   "volume": "54",
+   "issue": "2",
+   "pages": "93-105",
+   "topics": [
+    "question_wording"
+   ]
+  },
+  "bib": {
+   "status": "match",
+   "diffs": [],
+   "doi": "10.1037/0003-066x.54.2.93",
+   "title": "Self-reports: How the questions shape the answers.",
+   "first_author": "Schwarz",
+   "year": 1999,
+   "journal": "American Psychologist",
+   "volume": "54",
+   "issue": "2",
+   "pages": "93-105",
+   "sim": 1.0,
+   "authors": [
+    {
+     "family": "Schwarz",
+     "initials": "N."
+    }
+   ]
+  },
+  "abstract": null
+ },
+ "T48": {
+  "id": "T48",
+  "cand": {
+   "id": "T48",
+   "field": "psy",
+   "author": "Nisbett",
+   "year": 1977,
+   "title": "Telling more than we can know: Verbal reports on mental processes",
+   "journal": "Psychological Review",
+   "volume": "84",
+   "issue": "3",
+   "pages": "231-259",
+   "topics": [
+    "self_report"
+   ]
+  },
+  "bib": {
+   "status": "match",
+   "diffs": [],
+   "doi": "10.1037/0033-295x.84.3.231",
+   "title": "Telling more than we can know: Verbal reports on mental processes.",
+   "first_author": "Nisbett",
+   "year": 1977,
+   "journal": "Psychological Review",
+   "volume": "84",
+   "issue": "3",
+   "pages": "231-259",
+   "sim": 1.0,
+   "authors": [
+    {
+     "family": "Nisbett",
+     "initials": "R.E."
+    },
+    {
+     "family": "Wilson",
+     "initials": "T.D."
+    }
+   ]
+  },
+  "abstract": {
+   "src": "ERIC EJ163657",
+   "text": "Evidence is reviewed which suggests that there may be little or no direct introspective access to higher order cognitive processes. It is proposed that when people attempt to report on their cognitive processes they do not do so on the basis of any true introspection. (Editor/RK)"
+  }
+ },
+ "T49": {
+  "id": "T49",
+  "cand": {
+   "id": "T49",
+   "field": "psy",
+   "author": "Ambady",
+   "year": 1993,
+   "title": "Half a minute: Predicting teacher evaluations from thin slices of nonverbal behavior and physical attractiveness",
+   "journal": "Journal of Personality and Social Psychology",
+   "volume": "64",
+   "issue": "3",
+   "pages": "431-441",
+   "topics": [
+    "bias",
+    "first_impression"
+   ]
+  },
+  "bib": {
+   "status": "match",
+   "diffs": [],
+   "doi": "10.1037/0022-3514.64.3.431",
+   "title": "Half a minute: Predicting teacher evaluations from thin slices of nonverbal behavior and physical attractiveness.",
+   "first_author": "Ambady",
+   "year": 1993,
+   "journal": "Journal of Personality and Social Psychology",
+   "volume": "64",
+   "issue": "3",
+   "pages": "431-441",
+   "sim": 1.0,
+   "authors": [
+    {
+     "family": "Ambady",
+     "initials": "N."
+    },
+    {
+     "family": "Rosenthal",
+     "initials": "R."
+    }
+   ]
+  },
+  "abstract": null
+ },
+ "T50": {
+  "id": "T50",
+  "cand": {
+   "id": "T50",
+   "field": "psy",
+   "author": "Deci",
+   "year": 1999,
+   "title": "A meta-analytic review of experiments examining the effects of extrinsic rewards on intrinsic motivation",
+   "journal": "Psychological Bulletin",
+   "volume": "125",
+   "issue": "6",
+   "pages": "627-668",
+   "topics": [
+    "incentive"
+   ]
+  },
+  "bib": {
+   "status": "match",
+   "diffs": [],
+   "doi": "10.1037/0033-2909.125.6.627",
+   "title": "A meta-analytic review of experiments examining the effects of extrinsic rewards on intrinsic motivation.",
+   "first_author": "Deci",
+   "year": 1999,
+   "journal": "Psychological Bulletin",
+   "volume": "125",
+   "issue": "6",
+   "pages": "627-668",
+   "sim": 1.0,
+   "authors": [
+    {
+     "family": "Deci",
+     "initials": "E.L."
+    },
+    {
+     "family": "Koestner",
+     "initials": "R."
+    },
+    {
+     "family": "Ryan",
+     "initials": "R.M."
+    }
+   ]
+  },
+  "abstract": {
+   "src": "EuropePMC 10589297",
+   "text": "A meta-analysis of 128 studies examined the effects of extrinsic rewards on intrinsic motivation. As predicted, engagement-contingent, completion-contingent, and performance-contingent rewards significantly undermined free-choice intrinsic motivation (d = -0.40, -0.36, and -0.28, respectively), as did all rewards, all tangible rewards, and all expected rewards. Engagement-contingent and completion-contingent rewards also significantly undermined self-reported interest (d = -0.15, and -0.17), as did all tangible rewards and all expected rewards. Positive feedback enhanced both free-choice behavior (d = 0.33) and self-reported interest (d = 0.31). Tangible rewards tended to be more detrimental for children than college students, and verbal rewards tended to be less enhancing for children than college students. The authors review 4 previous meta-analyses of this literature and detail how this study's methods, analyses, and results differed from the previous ones."
+  }
+ },
+ "T51": {
+  "id": "T51",
+  "cand": {
+   "id": "T51",
+   "field": "psy",
+   "author": "Singer",
+   "year": 2013,
+   "title": "The use and effects of incentives in surveys",
+   "journal": "The ANNALS of the American Academy of Political and Social Science",
+   "volume": "645",
+   "issue": "1",
+   "pages": "112-141",
+   "topics": [
+    "incentive"
+   ]
+  },
+  "bib": {
+   "status": "match",
+   "diffs": [],
+   "doi": "10.1177/0002716212458082",
+   "title": "The Use and Effects of Incentives in Surveys",
+   "first_author": "Singer",
+   "year": 2012,
+   "journal": "The ANNALS of the American Academy of Political and Social Science",
+   "volume": "645",
+   "issue": "1",
+   "pages": "112-141",
+   "sim": 1.0,
+   "authors": [
+    {
+     "family": "Singer",
+     "initials": "E."
+    },
+    {
+     "family": "Ye",
+     "initials": "C."
+    }
+   ]
+  },
+  "abstract": {
+   "src": "Crossref",
+   "text": "This article is intended to supplement rather than replace earlier reviews of research on survey incentives, especially those by Singer (2002); Singer and Kulka (2002); and Cantor, O’Hare, and O’Connor (2008). It is based on a systematic review of articles appearing since 2002 in major journals, supplemented by searches of the Proceedings of the American Statistical Association’s Section on Survey Methodology for unpublished papers. The article begins by drawing on responses to open-ended questions about why people are willing to participate in a hypothetical survey. It then lays out the theoretical justification for using monetary incentives and the conditions under which they are hypothesized to be particularly effective. Finally, it summarizes research on how incentives affect response rates in cross-sectional and longitudinal studies and, to the extent information is available, how they affect response quality, nonresponse error, and cost-effectiveness. A special section on incentives in Web surveys is included."
+  }
+ },
+ "T52": {
+  "id": "T52",
+  "cand": {
+   "id": "T52",
+   "field": "psy",
+   "author": "Ryan",
+   "year": 2000,
+   "title": "Self-determination theory and the facilitation of intrinsic motivation, social development, and well-being",
+   "journal": "American Psychologist",
+   "volume": "55",
+   "issue": "1",
+   "pages": "68-78",
+   "topics": [
+    "rapport",
+    "motivation"
+   ]
+  },
+  "bib": {
+   "status": "match",
+   "diffs": [],
+   "doi": "10.1037/0003-066x.55.1.68",
+   "title": "Self-determination theory and the facilitation of intrinsic motivation, social development, and well-being.",
+   "first_author": "Ryan",
+   "year": 2000,
+   "journal": "American Psychologist",
+   "volume": "55",
+   "issue": "1",
+   "pages": "68-78",
+   "sim": 1.0,
+   "authors": [
+    {
+     "family": "Ryan",
+     "initials": "R.M."
+    },
+    {
+     "family": "Deci",
+     "initials": "E.L."
+    }
+   ]
+  },
+  "abstract": {
+   "src": "PubMed 11392867",
+   "text": "Human beings can be proactive and engaged or, alternatively, passive and alienated, largely as a function of the social conditions in which they develop and function. Accordingly, research guided by self-determination theory has focused on the social-contextual conditions that facilitate versus forestall the natural processes of self-motivation and healthy psychological development. Specifically, factors have been examined that enhance versus undermine intrinsic motivation, self-regulation, and well-being. The findings have led to the postulate of three innate psychological needs--competence, autonomy, and relatedness--which when satisfied yield enhanced self-motivation and mental health and when thwarted lead to diminished motivation and well-being. Also considered is the significance of these psychological needs and processes within domains such as health care, education, work, sport, religion, and psychotherapy."
+  }
+ },
+ "T53": {
+  "id": "T53",
+  "cand": {
+   "id": "T53",
+   "field": "psy",
+   "author": "Sweller",
+   "year": 1988,
+   "title": "Cognitive load during problem solving: Effects on learning",
+   "journal": "Cognitive Science",
+   "volume": "12",
+   "issue": "2",
+   "pages": "257-285",
+   "topics": [
+    "pace",
+    "explain"
+   ]
+  },
+  "bib": {
+   "status": "match",
+   "diffs": [],
+   "doi": "10.1207/s15516709cog1202_4",
+   "title": "Cognitive Load During Problem Solving: Effects on Learning",
+   "first_author": "Sweller",
+   "year": 1988,
+   "journal": "Cognitive Science",
+   "volume": "12",
+   "issue": "2",
+   "pages": "257-285",
+   "sim": 1.0,
+   "authors": [
+    {
+     "family": "Sweller",
+     "initials": "J."
+    }
+   ]
+  },
+  "abstract": {
+   "src": "Crossref",
+   "text": "Considerable evidence indicates that domain specific knowledge in the form of schemas is the primary factor distinguishing experts from novices in problem‐solving skill. Evidence that conventional problem‐solving activity is not effective in schema acquisition is also accumulating. It is suggested that a major reason for the ineffectiveness of problem solving as a learning device, is that the cognitive processes required by the two activities overlap insufficiently, and that conventional problem solving in the form of means‐ends analysis requires a relatively large amount of cognitive processing capacity which is consequently unavailable for schema acquisition. A computational model and experimental evidence provide support for this contention. Theoretical and practical implications are discussed."
+  }
+ },
+ "T54": {
+  "id": "T54",
+  "cand": {
+   "id": "T54",
+   "field": "psy",
+   "author": "Mayer",
+   "year": 2003,
+   "title": "Nine ways to reduce cognitive load in multimedia learning",
+   "journal": "Educational Psychologist",
+   "volume": "38",
+   "issue": "1",
+   "pages": "43-52",
+   "topics": [
+    "material",
+    "explain"
+   ]
+  },
+  "bib": {
+   "status": "match",
+   "diffs": [],
+   "doi": "10.1207/s15326985ep3801_6",
+   "title": "Nine Ways to Reduce Cognitive Load in Multimedia Learning",
+   "first_author": "Mayer",
+   "year": 2003,
+   "journal": "Educational Psychologist",
+   "volume": "38",
+   "issue": "1",
+   "pages": "43-52",
+   "sim": 1.0,
+   "authors": [
+    {
+     "family": "Mayer",
+     "initials": "R.E."
+    },
+    {
+     "family": "Moreno",
+     "initials": "R."
+    }
+   ]
+  },
+  "abstract": null
+ },
+ "T55": {
+  "id": "T55",
+  "cand": {
+   "id": "T55",
+   "field": "psy",
+   "author": "Barnett",
+   "year": 2005,
+   "title": "Regression to the mean: what it is and how to deal with it",
+   "journal": "International Journal of Epidemiology",
+   "volume": "34",
+   "issue": "1",
+   "pages": "215-220",
+   "topics": [
+    "regression"
+   ]
+  },
+  "bib": {
+   "status": "match",
+   "diffs": [],
+   "doi": "10.1093/ije/dyh299",
+   "title": "Regression to the mean: what it is and how to deal with it",
+   "first_author": "Barnett",
+   "year": 2004,
+   "journal": "International Journal of Epidemiology",
+   "volume": "34",
+   "issue": "1",
+   "pages": "215-220",
+   "sim": 1.0,
+   "authors": [
+    {
+     "family": "Barnett",
+     "initials": "A.G."
+    }
+   ]
+  },
+  "abstract": {
+   "src": "EuropePMC 15333621",
+   "text": "Background Regression to the mean (RTM) is a statistical phenomenon that can make natural variation in repeated data look like real change. It happens when unusually large or small measurements tend to be followed by measurements that are closer to the mean. Methods We give some examples of the phenomenon, and discuss methods to overcome it at the design and analysis stages of a study. Results The effect of RTM in a sample becomes more noticeable with increasing measurement error and when follow-up measurements are only examined on a sub-sample selected using a baseline value. Conclusions RTM is a ubiquitous phenomenon in repeated data and should always be considered as a possible cause of an observed change. Its effect can be alleviated through better study design and use of suitable statistical methods."
+  }
+ },
+ "T56": {
+  "id": "T56",
+  "cand": {
+   "id": "T56",
+   "field": "psy",
+   "author": "Kahneman",
+   "year": 1993,
+   "title": "When more pain is preferred to less: Adding a better end",
+   "journal": "Psychological Science",
+   "volume": "4",
+   "issue": "6",
+   "pages": "401-405",
+   "topics": [
+    "peak_end"
+   ]
+  },
+  "bib": {
+   "status": "match",
+   "diffs": [],
+   "doi": "10.1111/j.1467-9280.1993.tb00589.x",
+   "title": "When More Pain Is Preferred to Less: Adding a Better End",
+   "first_author": "Kahneman",
+   "year": 1993,
+   "journal": "Psychological Science",
+   "volume": "4",
+   "issue": "6",
+   "pages": "401-405",
+   "sim": 1.0,
+   "authors": [
+    {
+     "family": "Kahneman",
+     "initials": "D."
+    },
+    {
+     "family": "Fredrickson",
+     "initials": "B.L."
+    },
+    {
+     "family": "Schreiber",
+     "initials": "C.A."
+    },
+    {
+     "family": "Redelmeier",
+     "initials": "D.A."
+    }
+   ]
+  },
+  "abstract": {
+   "src": "Crossref",
+   "text": "Subjects were exposed to two aversive experiences: in the short trial, they immersed one hand in water at 14 °C for 60 s; in the long trial, they immersed the other hand at 14 °C for 60 s, then kept the hand in the water 30 s longer as the temperature of the water was gradually raised to 15 °C, still painful but distinctly less so for most subjects. Subjects were later given a choice of which trial to repeat. A significant majority chose to repeat the long trial, apparently preferring more pain over less. The results add to other evidence suggesting that duration plays a small role in retrospective evaluations of aversive experiences; such evaluations are often dominated by the discomfort at the worst and at the final moments of episodes."
+  }
+ },
+ "T57": {
+  "id": "T57",
+  "cand": {
+   "id": "T57",
+   "field": "stat",
+   "author": "Norman",
+   "year": 2010,
+   "title": "Likert scales, levels of measurement and the \"laws\" of statistics",
+   "journal": "Advances in Health Sciences Education",
+   "volume": "15",
+   "issue": "5",
+   "pages": "625-632",
+   "topics": [
+    "likert"
+   ]
+  },
+  "bib": {
+   "status": "match",
+   "diffs": [],
+   "doi": "10.1007/s10459-010-9222-y",
+   "title": "Likert scales, levels of measurement and the “laws” of statistics",
+   "first_author": "Norman",
+   "year": 2010,
+   "journal": "Advances in Health Sciences Education",
+   "volume": "15",
+   "issue": "5",
+   "pages": "625-632",
+   "sim": 1.0,
+   "authors": [
+    {
+     "family": "Norman",
+     "initials": "G."
+    }
+   ]
+  },
+  "abstract": {
+   "src": "ERIC EJ907373",
+   "text": "Reviewers of research reports frequently criticize the choice of statistical methods. While some of these criticisms are well-founded, frequently the use of various parametric methods such as analysis of variance, regression, correlation are faulted because: (a) the sample size is too small, (b) the data may not be normally distributed, or (c) The data are from Likert scales, which are ordinal, so parametric statistics cannot be used. In this paper, I dissect these arguments, and show that many studies, dating back to the 1930s consistently show that parametric statistics are robust with respect to violations of these assumptions. Hence, challenges like those above are unfounded, and parametric methods can be utilized without concern for \"getting the wrong answer\". (Contains 1 table and 1 footnote.)"
+  }
+ },
+ "T58": {
+  "id": "T58",
+  "cand": {
+   "id": "T58",
+   "field": "stat",
+   "author": "Sullivan",
+   "year": 2013,
+   "title": "Analyzing and interpreting data from Likert-type scales",
+   "journal": "Journal of Graduate Medical Education",
+   "volume": "5",
+   "issue": "4",
+   "pages": "541-542",
+   "topics": [
+    "likert"
+   ]
+  },
+  "bib": {
+   "status": "match",
+   "diffs": [],
+   "doi": "10.4300/jgme-5-4-18",
+   "title": "Analyzing and Interpreting Data From Likert-Type Scales",
+   "first_author": "Sullivan",
+   "year": 2013,
+   "journal": "Journal of Graduate Medical Education",
+   "volume": "5",
+   "issue": "4",
+   "pages": "541-542",
+   "sim": 1.0,
+   "authors": [
+    {
+     "family": "Sullivan",
+     "initials": "G.M."
+    },
+    {
+     "family": "Artino",
+     "initials": "A.R."
+    }
+   ]
+  },
+  "abstract": null
+ },
+ "T59": {
+  "id": "T59",
+  "cand": {
+   "id": "T59",
+   "field": "stat",
+   "author": "Jamieson",
+   "year": 2004,
+   "title": "Likert scales: how to (ab)use them",
+   "journal": "Medical Education",
+   "volume": "38",
+   "issue": "12",
+   "pages": "1217-1218",
+   "topics": [
+    "likert"
+   ]
+  },
+  "bib": {
+   "status": "match",
+   "diffs": [],
+   "doi": "10.1111/j.1365-2929.2004.02012.x",
+   "title": "Likert scales: how to (ab)use them",
+   "first_author": "Jamieson",
+   "year": 2004,
+   "journal": "Medical Education",
+   "volume": "38",
+   "issue": "12",
+   "pages": "1217-1218",
+   "sim": 1.0,
+   "authors": [
+    {
+     "family": "Jamieson",
+     "initials": "S."
+    }
+   ]
+  },
+  "abstract": null
+ },
+ "T60": {
+  "id": "T60",
+  "cand": {
+   "id": "T60",
+   "field": "stat",
+   "author": "Liddell",
+   "year": 2018,
+   "title": "Analyzing ordinal data with metric models: What could possibly go wrong?",
+   "journal": "Journal of Experimental Social Psychology",
+   "volume": "79",
+   "issue": "",
+   "pages": "328-348",
+   "topics": [
+    "ordinal"
+   ],
+   "doi": "10.1016/j.jesp.2018.08.009"
+  },
+  "bib": {
+   "status": "match",
+   "diffs": [],
+   "doi": "10.1016/j.jesp.2018.08.009",
+   "title": "Analyzing ordinal data with metric models: What could possibly go wrong?",
+   "first_author": "Liddell",
+   "year": 2018,
+   "journal": "Journal of Experimental Social Psychology",
+   "volume": "79",
+   "issue": null,
+   "pages": "328-348",
+   "sim": 1.0,
+   "authors": [
+    {
+     "family": "Liddell",
+     "initials": "T.M."
+    },
+    {
+     "family": "Kruschke",
+     "initials": "J.K."
+    }
+   ]
+  },
+  "abstract": {
+   "src": "SemanticScholar",
+   "text": "Abstract We surveyed all articles in the Journal of Personality and Social Psychology (JPSP), Psychological Science (PS), and the Journal of Experimental Psychology: General (JEP:G) that mentioned the term “Likert,” and found that 100% of the articles that analyzed ordinal data did so using a metric model. We present novel evidence that analyzing ordinal data as if they were metric can systematically lead to errors. We demonstrate false alarms (i.e., detecting an effect where none exists, Type I errors) and failures to detect effects (i.e., loss of power, Type II errors). We demonstrate systematic inversions of effects, for which treating ordinal data as metric indicates the opposite ordering of means than the true ordering of means. We show the same problems — false alarms, misses, and inversions — for interactions in factorial designs and for trend analyses in regression. We demonstrate that averaging across multiple ordinal measurements does not solve or even ameliorate these problems. A central contribution is a graphical explanation of how and when the misrepresentations occur. Moreover, we point out that there is no sure-fire way to detect these problems by treating the ordinal values as metric, and instead we advocate use of ordered-probit models (or similar) because they will better describe the data. Finally, although frequentist approaches to some ordered-probit models are available, we use Bayesian methods because of their flexibility in specifying models and their richness and accuracy in providing parameter estimates. An R script is provided for running an analysis that compares ordered-probit and metric models."
+  }
+ },
+ "T61": {
+  "id": "T61",
+  "cand": {
+   "id": "T61",
+   "field": "stat",
+   "author": "Wilcox",
+   "year": 2003,
+   "title": "Modern robust data analysis methods: Measures of central tendency",
+   "journal": "Psychological Methods",
+   "volume": "8",
+   "issue": "3",
+   "pages": "254-274",
+   "topics": [
+    "trimmed"
+   ]
+  },
+  "bib": {
+   "status": "match",
+   "diffs": [],
+   "doi": "10.1037/1082-989x.8.3.254",
+   "title": "Modern Robust Data Analysis Methods: Measures of Central Tendency.",
+   "first_author": "Wilcox",
+   "year": 2003,
+   "journal": "Psychological Methods",
+   "volume": "8",
+   "issue": "3",
+   "pages": "254-274",
+   "sim": 1.0,
+   "authors": [
+    {
+     "family": "Wilcox",
+     "initials": "R.R."
+    },
+    {
+     "family": "Keselman",
+     "initials": "H.J."
+    }
+   ]
+  },
+  "abstract": {
+   "src": "EuropePMC 14596490",
+   "text": "Various statistical methods, developed after 1970, offer the opportunity to substantially improve upon the power and accuracy of the conventional t test and analysis of variance methods for a wide range of commonly occurring situations. The authors briefly review some of the more fundamental problems with conventional methods based on means; provide some indication of why recent advances, based on robust measures of location (or central tendency), have practical value; and describe why modern investigations dealing with nonnormality find practical problems when comparing means, in contrast to earlier studies. Some suggestions are made about how to proceed when using modern methods."
+  }
+ },
+ "T62": {
+  "id": "T62",
+  "cand": {
+   "id": "T62",
+   "field": "stat",
+   "author": "Erceg-Hurn",
+   "year": 2008,
+   "title": "Modern robust statistical methods: An easy way to maximize the accuracy and power of your research",
+   "journal": "American Psychologist",
+   "volume": "63",
+   "issue": "7",
+   "pages": "591-601",
+   "topics": [
+    "robust"
+   ]
+  },
+  "bib": {
+   "status": "match",
+   "diffs": [],
+   "doi": "10.1037/0003-066x.63.7.591",
+   "title": "Modern robust statistical methods: An easy way to maximize the accuracy and power of your research.",
+   "first_author": "Erceg-Hurn",
+   "year": 2008,
+   "journal": "American Psychologist",
+   "volume": "63",
+   "issue": "7",
+   "pages": "591-601",
+   "sim": 1.0,
+   "authors": [
+    {
+     "family": "Erceg-Hurn",
+     "initials": "D.M."
+    },
+    {
+     "family": "Mirosevich",
+     "initials": "V.M."
+    }
+   ]
+  },
+  "abstract": {
+   "src": "ERIC EJ814008",
+   "text": "Classic parametric statistical significance tests, such as analysis of variance and least squares regression, are widely used by researchers in many disciplines, including psychology. For classic parametric tests to produce accurate results, the assumptions underlying them (e.g., normality and homoscedasticity) must be satisfied. These assumptions are rarely met when analyzing real data. The use of classic parametric methods with violated assumptions can result in the inaccurate computation of p values, effect sizes, and confidence intervals. This may lead to substantive errors in the interpretation of data. Many modern robust statistical methods alleviate the problems inherent in using parametric methods with violated assumptions, yet modern methods are rarely used by researchers. The authors examine why this is the case, arguing that most researchers are unaware of the serious limitations of classic methods and are unfamiliar with modern alternatives. A range of modern robust and rank-based significance tests suitable for analyzing a wide range of designs is introduced. Practical advice on conducting modern analyses using software such as SPSS, SAS, and R is provided. The authors conclude by discussing robust effect size indices. (Contains 1 table.)"
+  }
+ },
+ "T63": {
+  "id": "T63",
+  "cand": {
+   "id": "T63",
+   "field": "stat",
+   "author": "Leys",
+   "year": 2013,
+   "title": "Detecting outliers: Do not use standard deviation around the mean, use absolute deviation around the median",
+   "journal": "Journal of Experimental Social Psychology",
+   "volume": "49",
+   "issue": "4",
+   "pages": "764-766",
+   "topics": [
+    "outlier"
+   ]
+  },
+  "bib": {
+   "status": "match",
+   "diffs": [],
+   "doi": "10.1016/j.jesp.2013.03.013",
+   "title": "Detecting outliers: Do not use standard deviation around the mean, use absolute deviation around the median",
+   "first_author": "Leys",
+   "year": 2013,
+   "journal": "Journal of Experimental Social Psychology",
+   "volume": "49",
+   "issue": "4",
+   "pages": "764-766",
+   "sim": 1.0,
+   "authors": [
+    {
+     "family": "Leys",
+     "initials": "C."
+    },
+    {
+     "family": "Ley",
+     "initials": "C."
+    },
+    {
+     "family": "Klein",
+     "initials": "O."
+    },
+    {
+     "family": "Bernard",
+     "initials": "P."
+    },
+    {
+     "family": "Licata",
+     "initials": "L."
+    }
+   ]
+  },
+  "abstract": null
+ },
+ "T64": {
+  "id": "T64",
+  "cand": {
+   "id": "T64",
+   "field": "stat",
+   "author": "Aguinis",
+   "year": 2013,
+   "title": "Best-practice recommendations for defining, identifying, and handling outliers",
+   "journal": "Organizational Research Methods",
+   "volume": "16",
+   "issue": "2",
+   "pages": "270-301",
+   "topics": [
+    "outlier"
+   ]
+  },
+  "bib": {
+   "status": "match",
+   "diffs": [],
+   "doi": "10.1177/1094428112470848",
+   "title": "Best-Practice Recommendations for Defining, Identifying, and Handling Outliers",
+   "first_author": "Aguinis",
+   "year": 2013,
+   "journal": "Organizational Research Methods",
+   "volume": "16",
+   "issue": "2",
+   "pages": "270-301",
+   "sim": 1.0,
+   "authors": [
+    {
+     "family": "Aguinis",
+     "initials": "H."
+    },
+    {
+     "family": "Gottfredson",
+     "initials": "R.K."
+    },
+    {
+     "family": "Joo",
+     "initials": "H."
+    }
+   ]
+  },
+  "abstract": {
+   "src": "Crossref",
+   "text": "The presence of outliers, which are data points that deviate markedly from others, is one of the most enduring and pervasive methodological challenges in organizational science research. We provide evidence that different ways of defining, identifying, and handling outliers alter substantive research conclusions. Then, we report results of a literature review of 46 methodological sources (i.e., journal articles, book chapters, and books) addressing the topic of outliers, as well as 232 organizational science journal articles mentioning issues about outliers. Our literature review uncovered (a) 14 unique and mutually exclusive outlier definitions, 39 outlier identification techniques, and 20 different ways of handling outliers; (b) inconsistencies in how outliers are defined, identified, and handled in various methodological sources; and (c) confusion and lack of transparency in how outliers are addressed by substantive researchers. We offer guidelines, including decision-making trees, that researchers can follow to define, identify, and handle error, interesting, and influential (i.e., model fit and prediction) outliers. Although our emphasis is on regression, structural equation modeling, and multilevel modeling, our general framework forms the basis for a research agenda regarding outliers in the context of other data-analytic approaches. Our recommendations can be used by authors as well as journal editors and reviewers to improve the consistency and transparency of practices regarding the treatment of outliers in organizational science research."
+  }
+ },
+ "T65": {
+  "id": "T65",
+  "cand": {
+   "id": "T65",
+   "field": "stat",
+   "author": "Marshall",
+   "year": 1998,
+   "title": "Reliability of league tables of in vitro fertilisation clinics: retrospective analysis of live birth rates",
+   "journal": "BMJ",
+   "volume": "316",
+   "issue": "7146",
+   "pages": "1701-1705",
+   "topics": [
+    "ranking"
+   ],
+   "doi": "10.1136/bmj.316.7146.1701"
+  },
+  "bib": {
+   "status": "match",
+   "diffs": [],
+   "doi": "10.1136/bmj.316.7146.1701",
+   "title": "Reliability of league tables of in vitro fertilisation clinics: retrospective analysis of live birth ratesCommentary: How robust are rankings? The implications of confidence intervals",
+   "first_author": "Marshall",
+   "year": 1998,
+   "journal": "BMJ",
+   "volume": "316",
+   "issue": "7146",
+   "pages": "1701-1705",
+   "sim": 0.737,
+   "authors": []
+  },
+  "abstract": {
+   "src": "Crossref",
+   "text": "Abstract Objective: To determine to what extent institutions carrying out in vitro fertilisation can reasonably be ranked according to their live birth rates. Design: Retrospective analysis of prospectively collected data on live birth rate after in vitro fertilisation. Setting: 52 clinics in the United Kingdom carrying out in vitro fertilisation over the period April 1994 to March 1995. Main outcome measure: Estimated adjusted live birth rate for each clinic; their rank and its associated uncertainty. Results: There were substantial and significant differences between the live birth rates of the clinics. There was great uncertainty, however, concerning the true ranks, particularly for the smaller clinics. Only one clinic could be confidently ranked in the bottom quarter according to this measure of performance. Many centres had substantial changes in rank between years, even though their live birth rate did not change significantly. Conclusions: Even when there are substantial differences between institutions, ranks are extremely unreliable statistical summaries of performance and change in performance, particularly for smaller institutions. Any performance indicator should always be associated with a measure of sampling variability. Key messages Institutional ranks are extremely unreliable statistical summaries of performance Institutions with smaller numbers of cases may be unjustifiably penalised or credited in comparison exercises Additional statistical analysis may help to identify the few institutions worthy of review Any performance indicator should always have an associated statistical sampling variability"
+  }
+ },
+ "T66": {
+  "id": "T66",
+  "cand": {
+   "id": "T66",
+   "field": "stat",
+   "author": "Goldstein",
+   "year": 1996,
+   "title": "League tables and their limitations: Statistical issues in comparisons of institutional performance",
+   "journal": "Journal of the Royal Statistical Society: Series A",
+   "volume": "159",
+   "issue": "3",
+   "pages": "385-443",
+   "topics": [
+    "ranking"
+   ]
+  },
+  "bib": {
+   "status": "match",
+   "diffs": [],
+   "doi": "10.2307/2983325",
+   "title": "League Tables and Their Limitations: Statistical Issues in Comparisons of Institutional Performance",
+   "first_author": "Goldstein",
+   "year": 1996,
+   "journal": "Journal of the Royal Statistical Society. Series A (Statistics in Society)",
+   "volume": "159",
+   "issue": "3",
+   "pages": "385",
+   "sim": 1.0,
+   "authors": [
+    {
+     "family": "Goldstein",
+     "initials": "H."
+    },
+    {
+     "family": "Spiegelhalter",
+     "initials": "D.J."
+    }
+   ]
+  },
+  "abstract": null
+ },
+ "T67": {
+  "id": "T67",
+  "cand": {
+   "id": "T67",
+   "field": "stat",
+   "author": "Cumming",
+   "year": 2005,
+   "title": "Inference by eye: Confidence intervals and how to read pictures of data",
+   "journal": "American Psychologist",
+   "volume": "60",
+   "issue": "2",
+   "pages": "170-180",
+   "topics": [
+    "small_n"
+   ]
+  },
+  "bib": {
+   "status": "match",
+   "diffs": [],
+   "doi": "10.1037/0003-066x.60.2.170",
+   "title": "Inference by Eye: Confidence Intervals and How to Read Pictures of Data.",
+   "first_author": "Cumming",
+   "year": 2005,
+   "journal": "American Psychologist",
+   "volume": "60",
+   "issue": "2",
+   "pages": "170-180",
+   "sim": 1.0,
+   "authors": [
+    {
+     "family": "Cumming",
+     "initials": "G."
+    },
+    {
+     "family": "Finch",
+     "initials": "S."
+    }
+   ]
+  },
+  "abstract": {
+   "src": "ERIC EJ684564",
+   "text": "Wider use in psychology of confidence intervals (CIs), especially as error bars in figures, is a desirable development. However, psychologists seldom use CIs and may not understand them well. The authors discuss the interpretation of figures with error bars and analyze the relationship between CIs and statistical significance testing. They propose 7 rules of eye to guide the inferential use of figures with error bars. These include general principles: Seek bars that relate directly to effects of interest, be sensitive to experimental design, and interpret the intervals. They also include guidelines for inferential interpretation of the overlap of CIs on independent group means. Wider use of interval estimation in psychology has the potential to improve research communication substantially."
+  }
+ },
+ "T68": {
+  "id": "T68",
+  "cand": {
+   "id": "T68",
+   "field": "stat",
+   "author": "Wasserstein",
+   "year": 2016,
+   "title": "The ASA statement on p-values: Context, process, and purpose",
+   "journal": "The American Statistician",
+   "volume": "70",
+   "issue": "2",
+   "pages": "129-133",
+   "topics": [
+    "pvalue"
+   ]
+  },
+  "bib": {
+   "status": "match",
+   "diffs": [],
+   "doi": "10.1080/00031305.2016.1154108",
+   "title": "The ASA Statement on\n                    <i>p</i>\n                    -Values: Context, Process, and Purpose",
+   "first_author": "Wasserstein",
+   "year": 2016,
+   "journal": "The American Statistician",
+   "volume": "70",
+   "issue": "2",
+   "pages": "129-133",
+   "sim": 0.966,
+   "authors": [
+    {
+     "family": "Wasserstein",
+     "initials": "R.L."
+    },
+    {
+     "family": "Lazar",
+     "initials": "N.A."
+    }
+   ]
+  },
+  "abstract": null
+ },
+ "T69": {
+  "id": "T69",
+  "cand": {
+   "id": "T69",
+   "field": "stat",
+   "author": "Tavakol",
+   "year": 2011,
+   "title": "Making sense of Cronbach's alpha",
+   "journal": "International Journal of Medical Education",
+   "volume": "2",
+   "issue": "",
+   "pages": "53-55",
+   "topics": [
+    "reliability"
+   ]
+  },
+  "bib": {
+   "status": "match",
+   "diffs": [],
+   "doi": "10.5116/ijme.4dfb.8dfd",
+   "title": "Making sense of Cronbach's alpha",
+   "first_author": "Tavakol",
+   "year": 2011,
+   "journal": "International Journal of Medical Education",
+   "volume": "2",
+   "issue": null,
+   "pages": "53-55",
+   "sim": 1.0,
+   "authors": [
+    {
+     "family": "Tavakol",
+     "initials": "M."
+    },
+    {
+     "family": "Dennick",
+     "initials": "R."
+    }
+   ]
+  },
+  "abstract": {
+   "src": "SemanticScholar",
+   "text": "Medical educators attempt to create reliable and valid tests and questionnaires in order to enhance the accuracy of their assessment and evaluations. Validity and reliability are two fundamental elements in the evaluation of a measurement instrument. Instruments can be conventional knowledge, skill or attitude tests, clinical simulations or survey questionnaires. Instruments can measure concepts, psychomotor skills or affective values. Validity is concerned with the extent to which an instrument measures what it is intended to measure. Reliability is concerned with the ability of an instrument to measure consistently.1 It should be noted that the reliability of an instrument is closely associated with its validity. An instrument cannot be valid unless it is reliable. However, the reliability of an instrument does not depend on its validity.2 It is possible to objectively measure the reliability of an instrument and in this paper we explain the meaning of Cronbach’s alpha, the most widely used objective measure of reliability. \n \nCalculating alpha has become common practice in medical education research when multiple-item measures of a concept or construct are employed. This is because it is easier to use in comparison to other estimates (e.g. test-retest reliability estimates)3 as it only requires one test administration. However, in spite of the widespread use of alpha in the literature the meaning, proper use and interpretation of alpha is not clearly understood. 2, 4, 5 We feel it is important, therefore, to further explain the underlying assumptions behind alpha in order to promote its more effective use. It should be emphasised that the purpose of this brief overview is just to focus on Cronbach’s alpha as an index of reliability. Alternative methods of measuring reliability based on other psychometric methods, such as generalisability theory or item-response theory, can be used for monitoring and improving the quality of OSCE examinations 6-10, but will not be discussed here. \n \nWhat is Cronbach alpha? \nAlpha was developed by Lee Cronbach in 195111 to provide a measure of the internal consistency of a test or scale; it is expressed as a number between 0 and 1. Internal consistency describes the extent to which all the items in a test measure the same concept or construct and hence it is connected to the inter-relatedness of the items within the test. Internal consistency should be determined before a test can be employed for research or examination purposes to ensure validity. In addition, reliability estimates show the amount of measurement error in a test. Put simply, this interpretation of reliability is the correlation of test with itself. Squaring this correlation and subtracting from 1.00 produces the index of measurement error. For example, if a test has a reliability of 0.80, there is 0.36 error variance (random error) in the scores (0.80×0.80 = 0.64; 1.00 – 0.64 = 0.36).12 As the estimate of reliability increases, the fraction of a test score that is attributable to error will decrease.2 It is of note that the reliability of a test reveals the effect of measurement error on the observed score of a student cohort rather than on an individual student. To calculate the effect of measurement error on the observed score of an individual student, the standard error of measurement must be calculated (SEM).13 \n \nIf the items in a test are correlated to each other, the value of alpha is increased. However, a high coefficient alpha does not always mean a high degree of internal consistency. This is because alpha is also affected by the length of the test. If the test length is too short, the value of alpha is reduced.2, 14 Thus, to increase alpha, more related items testing the same concept should be added to the test. It is also important to note that alpha is a property of the scores on a test from a specific sample of testees. Therefore investigators should not rely on published alpha estimates and should measure alpha each time the test is administered.14 \n \n \nUse of Cronbach’s alpha \nImproper use of alpha can lead to situations in which either a test or scale is wrongly discarded or the test is criticised for not generating trustworthy results. To avoid this situation an understanding of the associated concepts of internal consistency, homogeneity or unidimensionality can help to improve the use of alpha. Internal consistency is concerned with the interrelatedness of a sample of test items, whereas homogeneity refers to unidimensionality. A measure is said to be unidimensional if its items measure a single latent trait or construct. Internal consistency is a necessary but not sufficient condition for measuring homogeneity or unidimensionality in a sample of test items. 5, 15 Fundamentally, the concept of reliability assumes that unidimensionality exists in a sample of test items16 and if this assumption is violated it does cause a major underestimate of reliability. It has been well documented that a multidimensional test does not necessary have a lower alpha than a unidimensional test. Thus a more rigorous view of alpha is that it cannot simply be interpreted as an index for the internal consistency of a test. 5, 15, 17 \n \nFactor Analysis can be used to identify the dimensions of a test.18 Other reliable techniques have been used and we encourage the reader to consult the paper “Applied Dimensionality and Test Structure Assessment with the START-M Mathematics Test” and to compare methods for assessing the dimensionality and underlying structure of a test.19 \n \nAlpha, therefore, does not simply measure the unidimensionality of a set of items, but can be used to confirm whether or not a sample of items is actually unidimensional.5 On the other hand if a test has more than one concept or construct, it may not make sense to report alpha for the test as a whole as the larger number of questions will inevitable inflate the value of alpha. In principle therefore, alpha should be calculated for each of the concepts rather than for the entire test or scale. 2, 3 The implication for a summative examination containing heterogeneous, case-based questions is that alpha should be calculated for each case. \n \nMore importantly, alpha is grounded in the ‘tau equivalent model’ which assumes that each test item measures the same latent trait on the same scale. Therefore, if multiple factors/traits underlie the items on a scale, as revealed by Factor Analysis, this assumption is violated and alpha underestimates the reliability of the test.17 If the number of test items is too small it will also violate the assumption of tau-equivalence and will underestimate reliability.20 When test items meet the assumptions of the tau-equivalent model, alpha approaches a better estimate of reliability. In practice, Cronbach’s alpha is a lower-bound estimate of reliability because heterogeneous test items would violate the assumptions of the tau-equivalent model.5 If the calculation of “standardised item alpha” in SPSS is higher than “Cronbach’s alpha”, a further examination of the tau-equivalent measurement in the data may be essential. \n \n \nNumerical values of alpha \nAs pointed out earlier, the number of test items, item inter-relatedness and dimensionality affect the value of alpha.5 There are different reports about the acceptable values of alpha, ranging from 0.70 to 0.95. 2, 21, 22 A low value of alpha could be due to a low number of questions, poor inter-relatedness between items or heterogeneous constructs. For example if a low alpha is due to poor correlation between items then some should be revised or discarded. The easiest method to find them is to compute the correlation of each test item with the total score test; items with low correlations (approaching zero) are deleted. If alpha is too high it may suggest that some items are redundant as they are testing the same question but in a different guise. A maximum alpha value of 0.90 has been recommended.14 \n \n \nSummary \nHigh quality tests are important to evaluate the reliability of data supplied in an examination or a research study. Alpha is a commonly employed index of test reliability. Alpha is affected by the test length and dimensionality. Alpha as an index of reliability should follow the assumptions of the essentially tau-equivalent approach. A low alpha appears if these assumptions are not meet. Alpha does not simply measure test homogeneity or unidimensionality as test reliability is a function of test length. A longer test increases the reliability of a test regardless of whether the test is homogenous or not. A high value of alpha (> 0.90) may suggest redundancies and show that the test length should be shortened."
+  }
+ },
+ "T70": {
+  "id": "T70",
+  "cand": {
+   "id": "T70",
+   "field": "stat",
+   "author": "Fritz",
+   "year": 2012,
+   "title": "Effect size estimates: Current use, calculations, and interpretation",
+   "journal": "Journal of Experimental Psychology: General",
+   "volume": "141",
+   "issue": "1",
+   "pages": "2-18",
+   "topics": [
+    "effect_size"
+   ]
+  },
+  "bib": {
+   "status": "match",
+   "diffs": [],
+   "doi": "10.1037/a0024338",
+   "title": "Effect size estimates: Current use, calculations, and interpretation.",
+   "first_author": "Fritz",
+   "year": 2012,
+   "journal": "Journal of Experimental Psychology: General",
+   "volume": "141",
+   "issue": "1",
+   "pages": "2-18",
+   "sim": 1.0,
+   "authors": [
+    {
+     "family": "Fritz",
+     "initials": "C.O."
+    },
+    {
+     "family": "Morris",
+     "initials": "P.E."
+    },
+    {
+     "family": "Richler",
+     "initials": "J.J."
+    }
+   ]
+  },
+  "abstract": {
+   "src": "EuropePMC 21823805",
+   "text": "The Publication Manual of the American Psychological Association (American Psychological Association, 2001, American Psychological Association, 2010) calls for the reporting of effect sizes and their confidence intervals. Estimates of effect size are useful for determining the practical or theoretical importance of an effect, the relative contributions of factors, and the power of an analysis. We surveyed articles published in 2009 and 2010 in the Journal of Experimental Psychology: General, noting the statistical analyses reported and the associated reporting of effect size estimates. Effect sizes were reported for fewer than half of the analyses; no article reported a confidence interval for an effect size. The most often reported analysis was analysis of variance, and almost half of these reports were not accompanied by effect sizes. Partial η2 was the most commonly reported effect size estimate for analysis of variance. For t tests, 2/3 of the articles did not report an associated effect size estimate; Cohen's d was the most often reported. We provide a straightforward guide to understanding, selecting, calculating, and interpreting effect sizes for many types of data and to methods for calculating effect size confidence intervals and power analysis."
+  }
+ },
+ "T71": {
+  "id": "T71",
+  "cand": {
+   "id": "T71",
+   "field": "stat",
+   "author": "Lakens",
+   "year": 2013,
+   "title": "Calculating and reporting effect sizes to facilitate cumulative science: a practical primer for t-tests and ANOVAs",
+   "journal": "Frontiers in Psychology",
+   "volume": "4",
+   "issue": "",
+   "pages": "863",
+   "topics": [
+    "effect_size"
+   ]
+  },
+  "bib": {
+   "status": "match",
+   "diffs": [],
+   "doi": "10.3389/fpsyg.2013.00863",
+   "title": "Calculating and reporting effect sizes to facilitate cumulative science: a practical primer for t-tests and ANOVAs",
+   "first_author": "Lakens",
+   "year": 2013,
+   "journal": "Frontiers in Psychology",
+   "volume": "4",
+   "issue": null,
+   "pages": "",
+   "sim": 1.0,
+   "authors": [
+    {
+     "family": "Lakens",
+     "initials": "D."
+    }
+   ]
+  },
+  "abstract": {
+   "src": "SemanticScholar",
+   "text": "Effect sizes are the most important outcome of empirical studies. Most articles on effect sizes highlight their importance to communicate the practical significance of results. For scientists themselves, effect sizes are most useful because they facilitate cumulative science. Effect sizes can be used to determine the sample size for follow-up studies, or examining effects across studies. This article aims to provide a practical primer on how to calculate and report effect sizes for t-tests and ANOVA's such that effect sizes can be used in a-priori power analyses and meta-analyses. Whereas many articles about effect sizes focus on between-subjects designs and address within-subjects designs only briefly, I provide a detailed overview of the similarities and differences between within- and between-subjects designs. I suggest that some research questions in experimental psychology examine inherently intra-individual effects, which makes effect sizes that incorporate the correlation between measures the best summary of the results. Finally, a supplementary spreadsheet is provided to make it as easy as possible for researchers to incorporate effect size calculations into their workflow."
+  }
+ },
+ "T72": {
+  "id": "T72",
+  "cand": {
+   "id": "T72",
+   "field": "stat",
+   "author": "Armstrong",
+   "year": 1977,
+   "title": "Estimating nonresponse bias in mail surveys",
+   "journal": "Journal of Marketing Research",
+   "volume": "14",
+   "issue": "3",
+   "pages": "396-402",
+   "topics": [
+    "nonresponse"
+   ]
+  },
+  "bib": {
+   "status": "match",
+   "diffs": [],
+   "doi": "10.2307/3150783",
+   "title": "Estimating Nonresponse Bias in Mail Surveys",
+   "first_author": "Armstrong",
+   "year": 1977,
+   "journal": "Journal of Marketing Research",
+   "volume": "14",
+   "issue": "3",
+   "pages": "396",
+   "sim": 1.0,
+   "authors": [
+    {
+     "family": "Armstrong",
+     "initials": "J.S."
+    },
+    {
+     "family": "Overton",
+     "initials": "T.S."
+    }
+   ]
+  },
+  "abstract": null
+ },
+ "T73": {
+  "id": "T73",
+  "cand": {
+   "id": "T73",
+   "field": "stat",
+   "author": "Groves",
+   "year": 2006,
+   "title": "Nonresponse rates and nonresponse bias in household surveys",
+   "journal": "Public Opinion Quarterly",
+   "volume": "70",
+   "issue": "5",
+   "pages": "646-675",
+   "topics": [
+    "nonresponse"
+   ]
+  },
+  "bib": {
+   "status": "match",
+   "diffs": [],
+   "doi": "10.1093/poq/nfl033",
+   "title": "Nonresponse Rates and Nonresponse Bias in Household Surveys",
+   "first_author": "Groves",
+   "year": 2006,
+   "journal": "Public Opinion Quarterly",
+   "volume": "70",
+   "issue": "5",
+   "pages": "646-675",
+   "sim": 1.0,
+   "authors": [
+    {
+     "family": "Groves",
+     "initials": "R.M."
+    }
+   ]
+  },
+  "abstract": null
+ },
+ "T74": {
+  "id": "T74",
+  "cand": {
+   "id": "T74",
+   "field": "stat",
+   "author": "Groves",
+   "year": 2008,
+   "title": "The impact of nonresponse rates on nonresponse bias: A meta-analysis",
+   "journal": "Public Opinion Quarterly",
+   "volume": "72",
+   "issue": "2",
+   "pages": "167-189",
+   "topics": [
+    "nonresponse"
+   ]
+  },
+  "bib": {
+   "status": "match",
+   "diffs": [],
+   "doi": "10.1093/poq/nfn011",
+   "title": "The Impact of Nonresponse Rates on Nonresponse Bias: A Meta-Analysis",
+   "first_author": "Groves",
+   "year": 2008,
+   "journal": "Public Opinion Quarterly",
+   "volume": "72",
+   "issue": "2",
+   "pages": "167-189",
+   "sim": 1.0,
+   "authors": [
+    {
+     "family": "Groves",
+     "initials": "R.M."
+    },
+    {
+     "family": "Peytcheva",
+     "initials": "E."
+    }
+   ]
+  },
+  "abstract": null
+ },
+ "T75": {
+  "id": "T75",
+  "cand": {
+   "id": "T75",
+   "field": "stat",
+   "author": "Robinson",
+   "year": 1950,
+   "title": "Ecological correlations and the behavior of individuals",
+   "journal": "American Sociological Review",
+   "volume": "15",
+   "issue": "3",
+   "pages": "351-357",
+   "topics": [
+    "ecological"
+   ]
+  },
+  "bib": {
+   "status": "match",
+   "diffs": [],
+   "doi": "10.2307/2087176",
+   "title": "Ecological Correlations and the Behavior of Individuals",
+   "first_author": "Robinson",
+   "year": 1950,
+   "journal": "American Sociological Review",
+   "volume": "15",
+   "issue": "3",
+   "pages": "351",
+   "sim": 1.0,
+   "authors": [
+    {
+     "family": "Robinson",
+     "initials": "W.S."
+    }
+   ]
+  },
+  "abstract": null
+ },
+ "T76": {
+  "id": "T76",
+  "cand": {
+   "id": "T76",
+   "field": "stat",
+   "author": "Wagner",
+   "year": 1982,
+   "title": "Simpson's paradox in real life",
+   "journal": "The American Statistician",
+   "volume": "36",
+   "issue": "1",
+   "pages": "46-48",
+   "topics": [
+    "simpson"
+   ]
+  },
+  "bib": {
+   "status": "match",
+   "diffs": [],
+   "doi": "10.1080/00031305.1982.10482778",
+   "title": "Simpson's Paradox in Real Life",
+   "first_author": "Wagner",
+   "year": 1982,
+   "journal": "The American Statistician",
+   "volume": "36",
+   "issue": "1",
+   "pages": "46-48",
+   "sim": 1.0,
+   "authors": [
+    {
+     "family": "Wagner",
+     "initials": "C.H."
+    }
+   ]
+  },
+  "abstract": null
+ },
+ "T77": {
+  "id": "T77",
+  "cand": {
+   "id": "T77",
+   "field": "stat",
+   "author": "Benjamini",
+   "year": 1995,
+   "title": "Controlling the false discovery rate: A practical and powerful approach to multiple testing",
+   "journal": "Journal of the Royal Statistical Society: Series B",
+   "volume": "57",
+   "issue": "1",
+   "pages": "289-300",
+   "topics": [
+    "multiple"
+   ]
+  },
+  "bib": {
+   "status": "match",
+   "diffs": [],
+   "doi": "10.1111/j.2517-6161.1995.tb02031.x",
+   "title": "Controlling the False Discovery Rate: A Practical and Powerful Approach to Multiple Testing",
+   "first_author": "Benjamini",
+   "year": 1995,
+   "journal": "Journal of the Royal Statistical Society Series B: Statistical Methodology",
+   "volume": "57",
+   "issue": "1",
+   "pages": "289-300",
+   "sim": 1.0,
+   "authors": [
+    {
+     "family": "Benjamini",
+     "initials": "Y."
+    },
+    {
+     "family": "Hochberg",
+     "initials": "Y."
+    }
+   ]
+  },
+  "abstract": {
+   "src": "Crossref",
+   "text": "SUMMARY The common approach to the multiplicity problem calls for controlling the familywise error rate (FWER). This approach, though, has faults, and we point out a few. A different approach to problems of multiple significance testing is presented. It calls for controlling the expected proportion of falsely rejected hypotheses — the false discovery rate. This error rate is equivalent to the FWER when all hypotheses are true but is smaller otherwise. Therefore, in problems where the control of the false discovery rate rather than that of the FWER is desired, there is potential for a gain in power. A simple sequential Bonferronitype procedure is proved to control the false discovery rate for independent test statistics, and a simulation study shows that the gain in power is substantial. The use of the new procedure and the appropriateness of the criterion are illustrated with examples."
+  }
+ }
+}

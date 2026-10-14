@@ -126,6 +126,10 @@
     ['운영·출결', /출결|지각|휴강|보강|시간표|공지|일정|결석|수업 시간/, /수업 전/],
     ['수업 참여', /참여|토론|발표|조별|팀|활동|흥미|재미|집중|동기/, /참여형/]
   ];
+  A.ext.rptTopics = TOPICS;
+  // 회차 비교가 불러와져 있으면 대상의 증감을 제공 (이론 근거 선택 신호용)
+  A.ext.rptDelta = function (e) { try { if (!RN.other || RN.sid !== sidv()) return null; var T0 = compute(e.unit), r = T0 && T0.rows.filter(function (x) { return x.key === e.key; })[0]; return r ? r.d : null; } catch (er) { return null; } };
+  A.ext.rptRound = function () { var k = (A.cur.survey.def && A.cur.survey.def.round && A.cur.survey.def.round.kind) || ''; return k === 'mid' ? 'midterm' : k === 'final' ? 'final' : ''; };
   function themeStats(scope) {
     var ents = R().facts('track'), cm = [], scopeEnt = null, lab = {};
     ents.forEach(function (e) { if (scope && e.track !== scope) return; if (scope) scopeEnt = e; e.comments.forEach(function (c) { cm.push(c); }); });
@@ -193,11 +197,18 @@
     pr.forEach(function (e) { if (e.mean == null) return; if (e.resp < 5) { small++; return; } bins.some(function (b) { if (e.mean >= b.lo && e.mean < b.hi) { b.c++; return true; } }); });
     return { tr: tr, pr: pr, resp: resp, cnt: cnt, mean: tr[0] ? tr[0].schoolMean : null, posr: cnt ? pos / cnt * 100 : null, negr: cnt ? neg / cnt * 100 : null, med: R().medianOf(rms), secs: (tr[0] && tr[0].secs) || [], bins: bins, small: small, profN: pr.length };
   }
+  function ovrPick(D, TS) {
+    var Th = A.ext.theory; if (!Th || !Th.data) return []; var sig = ['general', 'unit:school'], keyOf = { '실습·실기': 'practice', '진도·속도': 'pace', '설명·전달': 'explain', '자료·교재': 'material', '소통·태도': 'rapport', '평가·과제': 'assess', '시설·환경': 'facility', '운영·출결': 'admin', '수업 참여': 'engage' };
+    TS.topics.forEach(function (o) { if (o.n >= 3 && o.neg / o.n >= 0.3 && keyOf[o.name]) sig.push('topic:' + keyOf[o.name]); });
+    if (RN.other && RN.sid === sidv()) { var T0 = compute('track'), d = T0.now.mean != null && T0.prev.mean != null ? T0.now.mean - T0.prev.mean : null; sig.push('has_round'); if (d != null && d <= -0.15) sig.push('decline'); if (d != null && d >= 0.15) sig.push('improve'); }
+    var rd = A.ext.rptRound(); if (rd) sig.push(rd); if (D.profN) sig.push('ranking'); if (D.small) sig.push('small_n');
+    return Th.pick(sig, 'ovr|' + sidv(), 4);
+  }
   function ovrRuleText(D, TS) {
     var s = D.secs.filter(function (x) { return x.school != null; }).slice().sort(function (a, b) { return b.school - a.school; }), hi = s.slice(0, 2), lo = s.slice(-2).reverse(), tp = TS.topics.filter(function (o) { return o.n >= 3; }).sort(function (a, b) { return b.neg / b.n - a.neg / a.n; })[0];
     var op = '전체 종합 평균은 ' + f2(D.mean) + '점(5점 만점, 5점이 가장 긍정), 긍정 응답(4·5점) 비율은 ' + pc(D.posr) + '입니다. ' + (hi.length ? '상대적으로 ' + hi.map(function (x) { return R().secShort(x.title) + '(' + f2(x.school) + ')'; }).join('·') + ' 영역이 강점이며, ' : '') + (lo.length ? lo.map(function (x) { return R().secShort(x.title) + '(' + f2(x.school) + ')'; }).join('·') + ' 영역은 상대적으로 보완이 필요합니다. ' : '') + (tp ? '서술 의견에서는 「' + tp.name + '」 관련 부정 의견 비중이 높게 나타났습니다(키워드 기반 간이 분류). ' : '') + '본 결과는 응답자 집단의 인식이며, 개별 교원의 서열이 아니라 학기 중 개선과 지원 대상 선정의 참고 자료로 활용하겠습니다.';
     var pri = lo.map(function (x, i) { return (i + 1) + '. ' + R().secShort(x.title) + ' 영역 보완 — 해당 영역 하위 문항 점검과 계열별 우수 사례 공유'; }).concat(tp ? [(lo.length + 1) + '. ' + tp.name + ' 관련 의견 확인 — 계열별 면담 시 구체 사례 수집'] : []).join('\n');
-    return { opinion: op, priorities: pri };
+    return { opinion: op, priorities: pri, refs: ovrPick(D, TS).map(function (x) { return x.id; }).slice(0, 3) };
   }
   function ovrBlocks(ov, D, TS, txt) {
     var b = [], bar = function (v) { return '<span class="b"><i style="width:' + (v / 5 * 100) + '%"></i></span>'; };
@@ -219,31 +230,34 @@
     b.push({ keep: 1, h: '<div class="rp-h2">교육처 의견</div>' });
     String(txt.opinion || '').split(/\n+/).filter(function (p) { return p.trim(); }).forEach(function (p) { b.push({ h: '<div class="rp-box" style="margin-bottom:6px">' + E(p.trim()) + '</div>' }); });
     if (String(txt.priorities || '').trim()) { b.push({ keep: 1, h: '<div class="rp-h2">우선 개선 과제</div>' }); String(txt.priorities).split(/\n+/).filter(function (p) { return p.trim(); }).forEach(function (p) { b.push({ h: '<div class="rp-act">' + E(p.trim()) + '</div>' }); }); }
+    if (A.ext.theory && (txt.refs || []).length) A.ext.theory.blocks(txt.refs).forEach(function (x) { b.push(x); });
     b.push({ h: '<div class="rp-box" style="margin-top:10px;background:#f8fafc;color:#475569;font-size:12px">' + E(ov.notice || '') + '</div>' });
     return b;
   }
   var SYS_OVR = '당신은 전문대학 교육처의 교육기획 전문가입니다. 학교 전체 수업 개선 설문 집계(JSON)를 보고 종합 보고서의 교육처 의견 초안을 작성합니다.\n' +
-    '입력에는 개인 이름이 없습니다. 5점 척도(5점이 가장 좋음)입니다. 출력은 JSON 객체 하나만(설명·코드펜스 금지): {"opinion":"교육처 의견 4~7문장. 수치와 서술 주제를 근거로 강점·보완·해석 한계(응답자 집단, 소규모 대상)를 균형 있게. 합니다체","priorities":"우선 개선 과제 3~5줄. 한 줄에 하나, \'1. 과제 — 구체 방안\' 형식"}\n' +
-    '규칙: 입력에 없는 수치·연구·사실을 만들지 말 것. 교원 개인을 평가하거나 서열화하는 표현 금지. 주제 분류는 키워드 기반 간이 분류임을 전제로 단정하지 말 것.';
+    '입력에는 개인 이름이 없습니다. 5점 척도(5점이 가장 좋음)입니다. 출력은 JSON 객체 하나만(설명·코드펜스 금지): {"refs":["사용한 theory id"],"opinion":"교육처 의견 4~7문장. 수치와 서술 주제를 근거로 강점·보완·해석 한계(응답자 집단, 소규모 대상)를 균형 있게. 합니다체","priorities":"우선 개선 과제 3~5줄. 한 줄에 하나, \'1. 과제 — 구체 방안\' 형식"}\n' +
+    '규칙: 입력에 없는 수치·연구·사실을 만들지 말 것. 교원 개인을 평가하거나 서열화하는 표현 금지. 주제 분류는 키워드 기반 간이 분류임을 전제로 단정하지 말 것.\n' +
+    '학술 근거: 입력의 theory 는 검증된 연구 근거 후보(id, finding=연구 결과 요약, use=적용 해석, caution=유의)입니다. 현재 상황과 실제로 관련 있는 것만 골라 opinion 과 priorities 의 판단 근거로 쓰고, 사용한 id 는 JSON 의 "refs" 배열에 적으십시오. theory 에 없는 연구·저자·연도·통계 수치는 절대 쓰지 말고 저자명·연도는 본문에 쓰지 마십시오(출처는 시스템이 각주로 붙입니다). 연구 결과(사실)와 해석·판단(의견)을 구분하십시오.';
   V.ovr = async function (box) {
     box.innerHTML = '<div id="rpt-view" class="loading">불러오는 중…</div>'; await ready();
-    var ov = await R().ovGet(), D = overall(), TS = themeStats(''), saved = await R().dbGet(sidv() + '|ovrtxt'); OV.txt = saved || ovrRuleText(D, TS);
+    if (A.ext.theory) await A.ext.theory.load(); var ov = await R().ovGet(), D = overall(), TS = themeStats(''), saved = await R().dbGet(sidv() + '|ovrtxt'); OV.txt = saved || ovrRuleText(D, TS); OV.txt.refs = OV.txt.refs || [];
     box.innerHTML = '<div id="rpt-view"><div class="panel"><h3>종합 보고서 <span class="muted" style="font-weight:400">· 학교 전체 A4 보고서</span></h3><div class="msg" style="margin:8px 0">' + I('info', 18) + '<div>현재 응답 범위 기준의 학교 전체 요약입니다. 개요(조사명·기간·대상 등)는 「계열별·반별·교수별 분석」 화면의 ① 개요 입력값을 사용합니다. 교육처 의견은 <b>이 브라우저에만 저장</b>됩니다. 교원 개인별 순위는 담지 않고 평균 분포만 익명으로 표시합니다.</div></div>' +
       '<label class="f">교육처 의견</label><textarea class="fld" rows="6" data-ov="opinion">' + E(OV.txt.opinion || '') + '</textarea>' +
       '<label class="f">우선 개선 과제 (한 줄에 하나)</label><textarea class="fld" rows="4" data-ov="priorities">' + E(OV.txt.priorities || '') + '</textarea>' +
+      '<label class="f">근거 문헌 ID <span class="muted" style="font-weight:400">(쉼표 구분 · 보고서 각주 · 이론 파일에 있는 ID만 유지)</span></label><input class="fld" data-ov="refs" value="' + E((OV.txt.refs || []).join(', ')) + '">' +
       '<div class="btn-row" style="margin-top:8px;flex-wrap:wrap"><button class="btn btn-secondary btn-sm" data-ov-a="rule">기본 문안으로</button><button class="btn btn-secondary btn-sm" data-ov-a="ai">' + I('sparkle', 14) + ' AI 초안</button><button class="btn btn-ghost btn-sm" data-ov-a="save">저장</button><span class="sp"></span><button class="btn btn-secondary" data-ov-a="prev">미리보기</button><button class="btn btn-primary" data-ov-a="pdf">' + I('download', 16) + ' PDF 내려받기</button><button class="btn btn-secondary" data-ov-a="print">출력</button><span id="ovr-st" class="muted"></span></div></div><div id="ovr-prev"></div></div>';
-    function read() { OV.txt = { opinion: box.querySelector('[data-ov=opinion]').value, priorities: box.querySelector('[data-ov=priorities]').value }; return OV.txt; }
+    function read() { OV.txt = { opinion: box.querySelector('[data-ov=opinion]').value, priorities: box.querySelector('[data-ov=priorities]').value, refs: box.querySelector('[data-ov=refs]').value.split(/[\s,]+/).filter(function (x) { return x && A.ext.theory && A.ext.theory.byId(x); }) }; return OV.txt; }
     async function pages() { var o2 = await R().ovGet(); return R().paginate(ovrBlocks(o2, overall(), themeStats(''), read()), o2, 'a', { label: '학교 전체 종합' }); }
     box.onclick = async function (e) {
       var t = e.target.closest('[data-ov-a]'); if (!t) return; var a = t.getAttribute('data-ov-a'), st = document.getElementById('ovr-st');
       try {
         if (a === 'save') { await R().dbPut(sidv() + '|ovrtxt', read()); A.toast('이 브라우저에 저장했습니다.'); }
-        else if (a === 'rule') { if (!(await A.confirm('기본 문안으로', '현재 내용이 수치 기반 기본 문안으로 바뀝니다.', '바꾸기', '취소'))) return; var r0 = ovrRuleText(overall(), themeStats('')); box.querySelector('[data-ov=opinion]').value = r0.opinion; box.querySelector('[data-ov=priorities]').value = r0.priorities; }
+        else if (a === 'rule') { if (!(await A.confirm('기본 문안으로', '현재 내용이 수치 기반 기본 문안으로 바뀝니다.', '바꾸기', '취소'))) return; var r0 = ovrRuleText(overall(), themeStats('')); box.querySelector('[data-ov=opinion]').value = r0.opinion; box.querySelector('[data-ov=priorities]').value = r0.priorities; box.querySelector('[data-ov=refs]').value = (r0.refs || []).join(', '); }
         else if (a === 'ai') {
           if (!A.ext.aiCall) throw new Error('AI 모듈을 불러오지 못했습니다.'); if (!(await A.confirm('AI 초안', '집계 수치와 주제 건수(이름 제외)가 AI 제공자에게 전송됩니다. 진행하시겠습니까?', '진행', '취소'))) return;
-          t.disabled = true; if (st) st.textContent = 'AI 작성 중…'; var Dd = overall(), Ts = themeStats(''), payload = JSON.stringify({ survey: ov.survey, resp: Dd.resp, mean: R().round2(Dd.mean), median: R().round2(Dd.med), pos: Math.round(Dd.posr || 0), neg: Math.round(Dd.negr || 0), sections: Dd.secs.map(function (s) { return { n: R().secShort(s.title), mean: R().round2(s.school) }; }), tracks: Dd.tr.map(function (x) { return { n: x.label, mean: R().round2(x.mean), resp: x.resp }; }), topics: Ts.topics.filter(function (o) { return o.n; }).map(function (o) { return { n: o.name, cnt: o.n, neg: o.neg, sec: R().round2(o.secMean) }; }) });
+          t.disabled = true; if (st) st.textContent = 'AI 작성 중…'; var Dd = overall(), Ts = themeStats(''), th = ovrPick(Dd, Ts), payload = JSON.stringify({ theory: (A.ext.theory ? A.ext.theory.forAI(th) : []), survey: ov.survey, resp: Dd.resp, mean: R().round2(Dd.mean), median: R().round2(Dd.med), pos: Math.round(Dd.posr || 0), neg: Math.round(Dd.negr || 0), sections: Dd.secs.map(function (s) { return { n: R().secShort(s.title), mean: R().round2(s.school) }; }), tracks: Dd.tr.map(function (x) { return { n: x.label, mean: R().round2(x.mean), resp: x.resp }; }), topics: Ts.topics.filter(function (o) { return o.n; }).map(function (o) { return { n: o.name, cnt: o.n, neg: o.neg, sec: R().round2(o.secMean) }; }) });
           var txt = await A.ext.aiCall(SYS_OVR, payload, (R().UI.model || ((A.ext.aiModels || [])[0] || [])[0] || 'claude-sonnet-5-5')), j = R().parseJson(txt);
-          box.querySelector('[data-ov=opinion]').value = String(j.opinion || ''); box.querySelector('[data-ov=priorities]').value = String(j.priorities || ''); A.toast('AI 초안을 불러왔습니다. 검토 후 저장하십시오.'); t.disabled = false; if (st) st.textContent = '';
+          var TH = A.ext.theory, cl = function (x) { return TH ? TH.stripCites(String(x || ''), th) : String(x || ''); }; var o1 = cl(j.opinion), o2 = cl(j.priorities); if (!o1 && !o2) throw new Error('AI 응답에 교육처 의견이 없어 기존 내용을 유지했습니다. 다시 시도해 주십시오.'); if (o1) box.querySelector('[data-ov=opinion]').value = o1; if (o2) box.querySelector('[data-ov=priorities]').value = o2; box.querySelector('[data-ov=refs]').value = (TH ? TH.cleanRefs(j.refs, th) : []).join(', '); A.toast('AI 초안을 불러왔습니다. 검토 후 저장하십시오.'); t.disabled = false; if (st) st.textContent = '';
         }
         else if (a === 'prev') { pagesPreview(document.getElementById('ovr-prev'), await pages()); }
         else if (a === 'pdf') { t.disabled = true; if (st) st.textContent = 'PDF 생성 중…'; var blob = await R().pagesToPdf(await pages()); R().download(blob, R().safe((ov.survey || '설문') + '_종합 보고서') + '.pdf'); if (st) st.textContent = ''; t.disabled = false; }

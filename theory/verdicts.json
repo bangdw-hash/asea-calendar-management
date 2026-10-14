@@ -1,0 +1,811 @@
+{
+ "T02": {
+  "verdict": "match",
+  "finding": "대학 수업에서 학생평가 결과를 교수에게 되돌려 준 22개 비교를 메타분석한 결과, 피드백은 수업 개선에 작지만 유의한 효과가 있었고, 결과에 보강(augmentation)이나 상담이 함께할 때 효과가 더 커졌다.",
+  "evidence": "Feedback had a modest but significant effect on improving instruction. The effects of student-rating feedback were accentuated when augmentation or consultation accompanied the ratings.",
+  "use": "결과표를 전달하는 데 그치지 말고 면담이나 개선 계획 작성과 함께 제공하면 개선 효과를 기대할 수 있습니다.",
+  "caution": "1980년 연구이며 22개 비교를 종합한 결과입니다. 효과 크기는 작은 편(\"modest\")입니다.",
+  "triggers": [
+   "midterm",
+   "decline",
+   "low_score",
+   "unit:prof",
+   "general"
+  ],
+  "note": ""
+ },
+ "T03": {
+  "verdict": "match",
+  "finding": "학생평가 피드백에 대한 상담의 효과를 탐색적으로 메타분석한 결과, 상담 방식마다 효과가 같지 않았고 특정 상담 전략을 쓸 때 지원의 이점이 극대화될 수 있다고 제안했다.",
+  "evidence": "The results indicated that the various approaches to consultation are not equally effective.",
+  "use": "면담은 형식적인 결과 전달이 아니라 결과 해석과 개선 목표 설정 같은 구체적 전략을 갖추어 진행하는 것이 바람직합니다.",
+  "caution": "초록에서는 어떤 전략이 더 효과적인지 구체적으로 확인되지 않습니다(전략 세부는 원문 확인 필요).",
+  "triggers": [
+   "low_score",
+   "decline",
+   "neg_comments",
+   "midterm",
+   "unit:prof"
+  ],
+  "note": ""
+ },
+ "T06": {
+  "verdict": "match",
+  "finding": "2000년 이후의 학생 강의평가(SET) 연구를 타당도 관점에서 개관한 결과, 많은 이해관계자가 형성·총괄 목적 모두에서 SET의 유용성과 타당도를 확신하지 못하며, 핵심 질문 여러 개에 대해 아직 명확한 답을 주지 못했다.",
+  "evidence": "Research on SET has thus far failed to provide clear answers to several critical questions concerning the validity of SET.",
+  "use": "점수는 단독 판단 근거가 아니라 다른 자료와 함께 보는 참고 자료로 활용하고, 보고서에 해석상 한계를 밝히는 것이 안전합니다.",
+  "caution": "2000년 이후 문헌 개관이며, 개별 연구의 세부 결론은 초록만으로 확인되지 않습니다.",
+  "triggers": [
+   "ranking",
+   "unit:prof",
+   "unit:school",
+   "low_score",
+   "general"
+  ],
+  "note": ""
+ },
+ "T07": {
+  "verdict": "match",
+  "finding": "피드백은 학습과 성취에 가장 큰 영향 요인 중 하나이지만 그 영향은 긍정적일 수도 부정적일 수도 있고, 피드백의 유형과 제공 방식에 따라 효과가 달라진다.",
+  "evidence": "Feedback is one of the most powerful influences on learning and achievement, but this impact can be either positive or negative.",
+  "use": "교수에게 전달하는 피드백은 무엇을 어떻게 전하느냐에 따라 역효과가 날 수 있으므로 유형과 방식을 신중히 고릅니다.",
+  "caution": "학생에게 주는 피드백 연구이며, 교수에게 주는 강의평가 피드백으로의 적용은 해석입니다.",
+  "triggers": [
+   "neg_comments",
+   "low_score",
+   "decline",
+   "topic:assess",
+   "unit:prof"
+  ],
+  "note": ""
+ },
+ "T09": {
+  "verdict": "match",
+  "finding": "기대 성적과 강의평가의 상관을 설명하는 다섯 이론을 구별하는 네 가지 자료 패턴이 모두 나타났고, 이는 그 상관이 교수의 관대한 채점이라는 원치 않는 영향 때문이라는 이론과 일치했다.",
+  "evidence": "The presence of all four of these markers in student ratings data is consistent with the theory that the correlation is due to an unwanted influence of instructors' grading leniency.",
+  "use": "성적 확정 전후 등 설문 시점과 평가 방식이 점수에 영향을 줄 수 있으므로 높은 점수를 곧바로 수업 품질로 해석하지 않습니다.",
+  "caution": "초록은 \"일치한다\"고만 말하며 인과를 단정하지 않습니다.",
+  "triggers": [
+   "high_score",
+   "topic:assess",
+   "final",
+   "general"
+  ],
+  "note": ""
+ },
+ "T10": {
+  "verdict": "match",
+  "finding": "5만 개가 넘는 과목 자료에서 학생이 응답한 기대 성적과 난이도·업무량이 강의평가에 부당한 영향을 주는지 검토했고, 난이도·업무량이 \"적절한(just right)\" 수준이라고 평가된 과목이 가장 높은 평가를 받았다.",
+  "evidence": "Courses rated at the \"just right\" level received the highest evaluations.",
+  "use": "진도·과제량 관련 낮은 점수는 너무 많거나 너무 적은 양쪽 모두에서 나올 수 있어, 서술 의견으로 방향을 확인해야 합니다.",
+  "caution": "초록에는 기대 성적의 영향 크기가 제시되지 않습니다.",
+  "triggers": [
+   "topic:pace",
+   "topic:assess",
+   "topic:practice",
+   "low_score"
+  ],
+  "note": ""
+ },
+ "T11": {
+  "verdict": "match",
+  "finding": "대학생 2만 2천여 명에게 시행된 약 13만 5천 건의 온라인 강의평가를 다층모형으로 분석해 참여를 예측하는 여러 변수를 확인했으며, 결과는 설문 무응답 이론과 대체로 일치했고 설문 피로 완화와 설문 중요성(salience) 제고를 통한 참여 증대 방안을 논의했다.",
+  "evidence": "Implications for research and practical applications for institutions are also addressed, including ways to combat survey fatigue, increase the salience of the survey, and increase participation in online course evaluations.",
+  "use": "응답률이 낮은 대상은 응답자가 전체를 대표하지 않을 수 있으므로 결과를 보수적으로 해석합니다.",
+  "caution": "초록에는 구체적 예측 변수 목록이 없습니다.",
+  "triggers": [
+   "small_n",
+   "unit:school",
+   "midterm",
+   "general"
+  ],
+  "note": ""
+ },
+ "T12": {
+  "verdict": "match",
+  "finding": "한 학년도에 여러 설문을 시행하면 뒤에 실시한 설문의 응답률이 크게 낮아질 수 있음을 보인 연구를 요약했다.",
+  "evidence": "administering multiple surveys in one academic year can significantly suppress response rates in later surveys",
+  "use": "중간·기말 등 설문 횟수를 늘릴 때는 학교의 다른 설문과 합산한 학생 부담을 함께 점검합니다.",
+  "caution": "대학 전반의 설문을 다룬 연구이며 강의평가 단독 연구는 아닙니다.",
+  "triggers": [
+   "midterm",
+   "final",
+   "unit:school",
+   "small_n",
+   "general"
+  ],
+  "note": ""
+ },
+ "T13": {
+  "verdict": "match",
+  "finding": "온라인·종이 강의평가의 응답률 차이를 검토하고, 응답률을 높이는 실무 조언과 응답률이 어느 정도여야 책무·개선 목적의 근거로 충분한지를 논의했으며, 가능한 한 높은 응답률 확보와 여러 방법의 피드백 병행을 제안했다.",
+  "evidence": "The second part of the article discusses when a response rate may be considered large enough for the survey data to provide adequate evidence for accountability and improvement purposes.",
+  "use": "응답률이 낮은 대상의 결과는 다른 자료(면담·관찰)와 함께 보조 근거로 사용합니다.",
+  "caution": "충분한 응답률의 구체적 기준은 초록에 제시되지 않습니다.",
+  "triggers": [
+   "small_n",
+   "unit:school",
+   "unit:klass",
+   "general"
+  ],
+  "note": ""
+ },
+ "T14": {
+  "verdict": "match",
+  "finding": "교육·심리·조직행동 분야의 피드백 문헌을 검토해 대학 교수의 수업 개선에 효과적일 수 있는 32가지 실천을 확인하고 모형 피드백 과정을 제시했다.",
+  "evidence": "identified 32 practices that may be effective in helping postsecondary teachers improve teaching",
+  "use": "결과 전달에서 해석, 개선 계획, 후속 점검까지 이어지는 피드백 과정을 정해 두면 도움이 될 수 있습니다.",
+  "caution": "32가지 실천의 구체 내용은 초록에 없습니다.",
+  "triggers": [
+   "midterm",
+   "low_score",
+   "decline",
+   "neg_comments",
+   "unit:prof"
+  ],
+  "note": ""
+ },
+ "T15": {
+  "verdict": "match",
+  "finding": "학생이 교사를 평가하는 공식 설문 도구에 관한 연구 증거를 검토한 결과, 이런 설문은 수업의 질을 평가하고 개선을 지원하는 중요한 근거가 될 수 있으나, 많은 교사와 기관이 학생 피드백을 충분히 진지하게 받아들이지 않는다.",
+  "evidence": "for a number of reasons many teachers and institutions do not take student feedback sufficiently seriously",
+  "use": "결과를 보고서로 끝내지 않고 개선 과제와 후속 점검으로 연결해 피드백이 실제로 활용되게 합니다.",
+  "caution": "도구의 문항 구성 세부는 초록에 없습니다.",
+  "triggers": [
+   "unit:school",
+   "low_score",
+   "decline",
+   "general"
+  ],
+  "note": ""
+ },
+ "T16": {
+  "verdict": "match",
+  "finding": "80년이 넘는 학생평가 연구를 바탕으로, 학생평가 자료를 정확히 해석하고 교원 평가에 적절히 활용하기 위한 권고를 제시했다. 평가자(행정가·동료 평가위원)에게 줄 해석 조언과 점검 질문을 포함한다.",
+  "evidence": "Its aim is to make recommendations for use and interpretation based on more than 80 years of student ratings research.",
+  "use": "교원 개인 평가에 점수를 쓸 때는 해석 원칙(한계 명시, 단일 지표 의존 금지)을 보고서에 함께 두는 것이 바람직합니다.",
+  "caution": "초록에는 개별 권고 항목이 없어 구체 내용은 원문 확인이 필요합니다.",
+  "triggers": [
+   "ranking",
+   "unit:prof",
+   "unit:school",
+   "low_score",
+   "general"
+  ],
+  "note": ""
+ },
+ "T18": {
+  "verdict": "match",
+  "finding": "학생이 서면으로 작성한 대학 수업 평가 연구를 검토하여, 이런 평가가 수행의 타당한 지표가 아니라는 반론과 평가에 영향을 준다고 여겨지는 배경 특성들, 평가 활용에 대한 학생·교수의 반응을 살펴보고 추가 연구를 제안했다.",
+  "evidence": "various background characteristics thought to influence student ratings are considered",
+  "use": "학생 평가에는 배경 특성의 영향이 있을 수 있어 점수를 해석할 때 과목 특성 등 맥락을 함께 봅니다.",
+  "caution": "어떤 배경 특성이 얼마나 영향을 주는지는 초록에 없습니다.",
+  "triggers": [
+   "ranking",
+   "unit:prof",
+   "unit:subject",
+   "general"
+  ],
+  "note": ""
+ },
+ "T19": {
+  "verdict": "match",
+  "finding": "학생평가의 타당도에는 연구자 간 의견 일치가 있으나, 맥락 변수가 평가 수준에 영향을 주며, 편향에 대한 통계적 보정을 둘러싼 의견은 갈린다. 근본 문제는 평가 결과를 사용하는 인사위원회의 해석 역량 부족에 있다고 결론지었다.",
+  "evidence": "The basic problem lies in the lack of sophistication of personnel committees who use the ratings.",
+  "use": "평가 점수를 쓰는 사람이 점수의 맥락을 충분히 이해하도록 해석 안내를 함께 제공합니다.",
+  "caution": "초록은 짧은 요약이며 통계 보정 방법의 세부는 없습니다.",
+  "triggers": [
+   "ranking",
+   "unit:prof",
+   "unit:school",
+   "general"
+  ],
+  "note": ""
+ },
+ "T20": {
+  "verdict": "match",
+  "finding": "학생평가를 내용·실질·구조·일반화·외적·결과 타당도의 여섯 측면으로 검토하고, 평가가 오늘의 대학에서 어떻게 쓰이고 그 결과 무슨 일이 일어나는가라는 결과 타당도에 더 많은 관심이 필요하다고 결론지었다.",
+  "evidence": "They conclude that greater attention should be directed toward consequential validity, particularly the matters of how ratings are used on today's campuses and what happens as a result.",
+  "use": "점수를 만드는 것만큼 점수가 어떻게 쓰이고 어떤 결과를 낳는지를 함께 점검합니다.",
+  "caution": "",
+  "triggers": [
+   "ranking",
+   "unit:prof",
+   "unit:school",
+   "general"
+  ],
+  "note": ""
+ },
+ "T21": {
+  "verdict": "match",
+  "finding": "반세기에 걸친 학생평가 연구가 편향 요인의 존재 여부를 입증하거나 반증하려는 데 집중해 왔다는 점을 짚고, 지목된 몇 가지 편향과 실무 개선 지침을 검토한다.",
+  "evidence": "the constant quest has been to prove or disprove the existence of biasing factors",
+  "use": "편향 요인 논쟁에 머무르기보다 결과를 어떻게 개선 실무에 쓰는지에 초점을 두는 접근이 필요합니다.",
+  "caution": "초록은 편향 요인의 결론을 제시하지 않습니다.",
+  "triggers": [
+   "ranking",
+   "unit:prof",
+   "general"
+  ],
+  "note": ""
+ },
+ "T22": {
+  "verdict": "match",
+  "finding": "온라인 강의평가를 거의 또는 전혀 하지 않는 학생들은 평가에 최대 5분 정도만 쓰겠다고 했고 다수는 링크를 열지도 않았으며, 늘 참여하는 학생보다 참여 의지, 자율성·유능감 인식, 의미성, 개인적 가치 등이 뚜렷이 낮았다(대학생 641명).",
+  "evidence": "students who seldom or never participate in online SET tools reported a willingness to invest, at most, five minutes in the process",
+  "use": "설문은 짧게 하고 결과가 어떻게 쓰이는지를 학생에게 알리면 참여 동기를 높이는 데 도움이 됩니다.",
+  "caution": "한 대학 641명 조사입니다. 학교 상황에 그대로 일반화하지 않습니다.",
+  "triggers": [
+   "small_n",
+   "unit:school",
+   "midterm",
+   "general"
+  ],
+  "note": ""
+ },
+ "T23": {
+  "verdict": "match",
+  "finding": "형성평가의 성격과 기능을, 학생이 자기 작업의 질을 스스로 평가하는 전문성을 기르는 관점에서 논의하고, 교사가 주는 피드백에서 학습자의 자기 점검으로의 전환과 평가 기준 전달 등을 다룬다.",
+  "evidence": "the transition from teacher-supplied feedback to learner self-monitoring",
+  "use": "중간 설문은 평가가 아니라 학습자와 교수가 기준을 공유하고 개선하는 형성평가로 운영합니다.",
+  "caution": "초록은 학생 학습 평가에 관한 것이며 교수 평가 설문에 대한 적용은 해석입니다.",
+  "triggers": [
+   "midterm",
+   "topic:assess",
+   "general"
+  ],
+  "note": ""
+ },
+ "T24": {
+  "verdict": "match",
+  "finding": "형성평가·피드백 연구를 다시 해석해, 학생이 스스로 학습을 조절하게 돕는 좋은 피드백의 일곱 원칙을 제시했다. 학생은 이미 스스로 평가하고 피드백을 만들고 있으며 고등교육은 이 능력을 기반으로 해야 한다고 주장한다.",
+  "evidence": "A key argument is that students are already assessing their own work and generating their own feedback, and that higher education should build on this ability.",
+  "use": "학생이 피드백의 수동적 수혜자가 아니라 능동적 참여자가 되도록, 중간 설문 결과를 학생에게도 환류하는 방안을 검토합니다.",
+  "caution": "일곱 원칙의 세부는 초록에 없습니다.",
+  "triggers": [
+   "midterm",
+   "topic:assess",
+   "topic:rapport",
+   "general"
+  ],
+  "note": ""
+ },
+ "T26": {
+  "verdict": "match",
+  "finding": "형성적 피드백에 관한 연구를 검토한 결과, 형성적 피드백은 비평가적이고 지지적이며 시의적절하고 구체적이어야 한다고 연구자들은 본다. 피드백 효과는 학습자 특성과 과제 특성 등 여러 변수와 상호작용한다.",
+  "evidence": "formative feedback should be nonevaluative, supportive, timely, and specific",
+  "use": "중간 설문 결과를 교수에게 전할 때는 평가·서열이 아니라 지지적이고 구체적인 문장으로 전달합니다.",
+  "caution": "학습자에 대한 피드백 연구이며 교수 대상 전달에의 적용은 해석입니다.",
+  "triggers": [
+   "midterm",
+   "neg_comments",
+   "low_score",
+   "unit:prof",
+   "general"
+  ],
+  "note": ""
+ },
+ "T28": {
+  "verdict": "match",
+  "finding": "학생 강의평가에는 측정 편향과 형평성 편향을 보여 주는 증거가 충분하다. 100편이 넘는 논문을 검토한 결과, 여성과 소수 집단은 표준 강의평가에서 상당한 편향을 겪는 것으로 나타났다.",
+  "evidence": "women and other marginalized groups do face significant biases in standard evaluations of teaching",
+  "use": "교원별 점수를 비교하거나 우선순위로 쓸 때는 교원 특성에 따른 편향 가능성을 고려해 서열화를 피하고 지원 목적으로만 사용합니다.",
+  "caution": "초록은 편향의 존재를 보고하며, 이 학교 자료에서 편향의 크기를 뜻하지 않습니다.",
+  "triggers": [
+   "ranking",
+   "unit:prof",
+   "low_score",
+   "general"
+  ],
+  "note": ""
+ },
+ "T29": {
+  "verdict": "match",
+  "finding": "온라인 수업에서 보조 교수가 각각 두 가지 성별 정체성으로 수업을 운영하게 한 실험에서, 학생들은 교수의 실제 성별과 무관하게 남성 정체성을 여성 정체성보다 유의하게 높게 평가해 성별 편향을 보였다.",
+  "evidence": "Students rated the male identity significantly higher than the female identity",
+  "use": "점수 차이를 교수법의 우열로 단정하지 않고, 개선 지원 목적의 참고 자료로만 사용합니다.",
+  "caution": "하나의 온라인 수업 실험 결과이므로 일반화에 한계가 있습니다.",
+  "triggers": [
+   "ranking",
+   "unit:prof",
+   "low_score",
+   "general"
+  ],
+  "note": ""
+ },
+ "T30": {
+  "verdict": "match",
+  "finding": "공학 교수를 위한 능동적 학습의 대표 방식들을 정리하고 핵심 요소별 근거를 검토한 결과, 능동·협력·문제 중심 학습의 핵심 요소에 대해 폭넓지만 고르지 않은 근거가 있었다.",
+  "evidence": "It is found that there is broad but uneven support for the core elements of active, collaborative, cooperative and problem",
+  "use": "실습·참여형 수업에 대한 낮은 평가는 도입 여부보다 핵심 요소를 갖춘 운영 방식 점검으로 이어지도록 합니다.",
+  "caution": "공학 교육 맥락의 검토이며 근거가 고르지 않다고 보고합니다.",
+  "triggers": [
+   "topic:practice",
+   "topic:engage",
+   "low_score",
+   "unit:prof",
+   "unit:subject"
+  ],
+  "note": ""
+ },
+ "T31": {
+  "verdict": "match",
+  "finding": "STEM 수업 자료를 종합 분석한 결과, 능동적 학습은 시험 성적을 평균 반 등급 정도 높이고 전통적 강의 방식에서는 낙제율이 능동적 학습의 경우보다 55% 높았다.",
+  "evidence": "failure rates under traditional lecturing increase by 55% over the rates observed under active learning",
+  "use": "실습·참여 활동의 비중을 늘리는 개선안을 검토할 때 근거로 삼을 수 있습니다(과학·공학·수학 대학 수업 자료 기준).",
+  "caution": "과학·공학·수학 분야 자료이며 항공정비 실습 과목에 그대로 적용된다고 확인된 것은 아닙니다.",
+  "triggers": [
+   "topic:practice",
+   "topic:engage",
+   "low_score",
+   "unit:subject",
+   "unit:prof"
+  ],
+  "note": ""
+ },
+ "T32": {
+  "verdict": "match",
+  "finding": "학업 참여(engagement)는 행동·정서·인지의 여러 측면으로 이루어진 구성 개념이며, 정의·측정·선행 요인·결과를 검토한 결과 이 개념의 잠재력은 아직 충분히 실현되지 않았다고 보았다.",
+  "evidence": "Researchers describe behavioral, emotional, and cognitive engagement and recommend studying engagement as a multifaceted construct",
+  "use": "참여도 문항의 낮은 점수는 행동·정서·인지 측면으로 나누어 원인을 살펴보는 것이 좋습니다.",
+  "caution": "K-12 학교 맥락의 개관입니다.",
+  "triggers": [
+   "topic:engage",
+   "low_score",
+   "neg_comments",
+   "unit:klass"
+  ],
+  "note": ""
+ },
+ "T33": {
+  "verdict": "match",
+  "finding": "교사-학생 관계의 정서적 특성과 학생의 학교 참여·성취의 관련성을 99개 연구로 메타분석한 결과, 긍정적·부정적 관계 모두 참여와는 중간에서 큰 연관, 성취와는 작거나 중간 정도의 연관을 보였다.",
+  "evidence": "Overall, associations of both positive and negative relationships with engagement were medium to large, whereas associations with achievement were small to medium",
+  "use": "소통·태도 관련 부정 의견은 학생의 참여에 영향을 줄 수 있는 신호로 보고 우선 확인합니다.",
+  "caution": "유치원~고등학교 학생 대상 연구이며 상관을 인과로 해석하지 않습니다.",
+  "triggers": [
+   "topic:rapport",
+   "neg_comments",
+   "low_score",
+   "unit:prof"
+  ],
+  "note": ""
+ },
+ "T34": {
+  "verdict": "match",
+  "finding": "학습자 중심 교사-학생 관계를 119개 연구, 35만 명 이상 학생으로 메타분석한 결과 평균 상관이 .31로, 다른 교육적 혁신에 비해 인지·정서·행동 결과 모두에서 평균 이상이었다.",
+  "evidence": "were above average compared with other educational innovations for cognitive and especially affective and behavioral outcomes",
+  "use": "교수-학생 소통 개선(질문·피드백 환경 조성)은 학습 성과와 정서 양쪽에 이로울 수 있는 방안입니다.",
+  "caution": "상관에 기반한 결과이며 연구 간 변동이 크다고 보고합니다.",
+  "triggers": [
+   "topic:rapport",
+   "neg_comments",
+   "low_score",
+   "improve",
+   "unit:prof"
+  ],
+  "note": ""
+ },
+ "T35": {
+  "verdict": "match",
+  "finding": "교수의 10가지 원리를 제시했다. 새 내용을 작은 단계로 나누어 제시하고 단계마다 학생 연습을 두며, 많은 질문으로 모든 학생의 응답을 확인하는 것이 포함된다.",
+  "evidence": "Present new material in small steps with student practice after each step",
+  "use": "진도·설명이 어렵다는 의견에는 내용을 작은 단계로 나누고 단계마다 이해를 확인하는 방식을 검토할 수 있습니다.",
+  "caution": "인지과학·우수 교사 관찰 연구에서 도출된 원리이며 직업교육 과목에서의 검증은 별도입니다.",
+  "triggers": [
+   "topic:pace",
+   "topic:explain",
+   "low_score",
+   "neg_comments",
+   "unit:prof",
+   "unit:subject"
+  ],
+  "note": ""
+ },
+ "T36": {
+  "verdict": "match",
+  "finding": "학생 강의평가(SET)가 여성 교수에게 불리하게 편향되어 있고 그 편향은 분야와 학생 성별 등에 따라 달라 보정이 불가능하며, SET는 교수 효과성보다 학생의 성별 편향과 성적 기대에 더 민감하다고 주장했다.",
+  "evidence": "It is not possible to adjust for the bias, because it depends on so many factors",
+  "use": "점수만으로 교원을 비교·서열화하지 않고 서술 의견·관찰 등 다른 자료와 함께 판단합니다.",
+  "caution": "특정 두 데이터셋에 기반한 분석이며 일반화에 한계가 있습니다.",
+  "triggers": [
+   "ranking",
+   "unit:prof",
+   "low_score",
+   "general"
+  ],
+  "note": ""
+ },
+ "T37": {
+  "verdict": "match",
+  "finding": "응답에 많은 인지 노력이 필요할 때 일부 응답자는 충분히 최적의 답 대신 \"만족스러운\" 답만 하는 satisficing 을 하며, 그 전략에는 평가에서 서로 다른 대상을 구별하지 않는 응답이 포함된다.",
+  "evidence": "failing to differentiate among a set of diverse objects in ratings",
+  "use": "모든 문항에 같은 점수를 매기는 응답이 많으면 응답 피로 신호일 수 있어 유효 응답 기준으로 집계하는 것이 좋습니다.",
+  "caution": "",
+  "triggers": [
+   "careless",
+   "unit:school",
+   "small_n",
+   "general"
+  ],
+  "note": ""
+ },
+ "T38": {
+  "verdict": "match",
+  "finding": "설문 방법론의 최근 연구를 개관해, 낮은 응답률의 연구에 대한 오랜 편견에 이의를 제기하는 새 발견, 척도 점수에 붙이는 언어 라벨의 뜻밖의 효과, 응답자가 일상 대화 규범으로 질문을 해석한다는 점 등을 보고했다.",
+  "evidence": "New findings challenge a long-standing prejudice against studies with low response rates",
+  "use": "응답률이 낮다는 이유만으로 결과를 무효로 보지 않되, 응답자 구성과 대표성은 별도로 확인합니다.",
+  "caution": "초록에는 구체 수치나 응답률 기준이 없습니다.",
+  "triggers": [
+   "small_n",
+   "unit:school",
+   "general"
+  ],
+  "note": ""
+ },
+ "T39": {
+  "verdict": "match",
+  "finding": "연구 결과에 방법 편향이 미치는 영향의 정도와 편향의 잠재적 원천, 응답에 영향을 주는 인지 과정, 이를 통제하는 절차적·통계적 기법과 적용 권고를 검토했다.",
+  "evidence": "identify potential sources of method biases",
+  "use": "한 사람이 한 번에 모든 문항을 평가하는 설문은 방법 편향의 영향을 받을 수 있으므로 해석에 유의사항을 둡니다.",
+  "caution": "초록에는 개별 기법의 효과가 없습니다.",
+  "triggers": [
+   "unit:school",
+   "polarized",
+   "high_score",
+   "general"
+  ],
+  "note": ""
+ },
+ "T40": {
+  "verdict": "match",
+  "finding": "민감한 주제를 다루는 설문에서는 허위·축소 보고가 꽤 흔하고 대체로 상황에 따라 달라지며, 응답자에게 밝히기 곤란한 내용이 있는지와 설문 설계 특징에 좌우된다.",
+  "evidence": "misreporting about sensitive topics is quite common and that it is largely situational",
+  "use": "교원 평가나 교육윤리처럼 민감한 문항은 익명 보장 안내를 분명히 하고, 응답이 사회적 바람직성의 영향을 받을 수 있음을 염두에 둡니다.",
+  "caution": "초록은 약물·성 행동 등 민감 주제 설문을 다루며 강의평가에의 적용은 해석입니다.",
+  "triggers": [
+   "topic:rapport",
+   "neg_comments",
+   "unit:school",
+   "general"
+  ],
+  "note": ""
+ },
+ "T41": {
+  "verdict": "match",
+  "finding": "익명 인터넷 설문, 특히 학생 표본처럼 참여가 의무적인 조건에서는 자료 품질이 문제될 수 있다. 부주의 응답 탐지 방법으로 특수 문항, 응답 일관성 지표, 다변량 이상치, 응답 시간, 자가 보고 성실도를 두 연구에서 비교했다.",
+  "evidence": "special items designed to detect careless response",
+  "use": "점검 문항과 직선 응답 제외로 유효 응답만 집계하는 현재 기준은 선행 연구가 다루는 방법과 같은 방향입니다.",
+  "caution": "초록은 탐지 방법을 비교했다고만 서술하며 최적 방법을 단정하지 않습니다.",
+  "triggers": [
+   "careless",
+   "unit:school",
+   "small_n",
+   "general"
+  ],
+  "note": ""
+ },
+ "T42": {
+  "verdict": "match",
+  "finding": "온라인 자기보고 자료에는 부주의하거나 노력이 부족한 응답이 섞일 수 있고, 이를 탐지·제거하는 기법이 자료 오류를 줄이는 데 가치가 있으며, 기존 기법의 검토와 새 기법 소개, 실무 권고를 제시했다.",
+  "evidence": "One reason is careless or insufficient effort (C/IE) responding.",
+  "use": "무성의 응답을 걸러내는 절차를 정식 집계의 기본으로 유지하는 것이 좋습니다.",
+  "caution": "",
+  "triggers": [
+   "careless",
+   "unit:school",
+   "general"
+  ],
+  "note": ""
+ },
+ "T46": {
+  "verdict": "match",
+  "finding": "응답 양식(동의 경향, 극단 응답, 중간값 응답 등)은 설문 평정을 오염시켜 결론의 타당성을 위협하며, 척도 점수와 척도 간 상관을 편향시킬 수 있다. 11개 유럽연합 국가의 대표 표본 자료에서 척도 특성에 따른 체계적 영향이 확인되었다.",
+  "evidence": "Response styles are a source of contamination in questionnaire ratings",
+  "use": "점수가 한쪽에 몰린 결과는 응답 양식의 영향일 수 있으므로 평균 하나만으로 해석하지 않고 분포를 함께 봅니다.",
+  "caution": "소비자 설문(마케팅) 자료 기반이며 학생 설문에의 적용은 해석입니다.",
+  "triggers": [
+   "polarized",
+   "high_score",
+   "unit:school",
+   "unit:track",
+   "general"
+  ],
+  "note": ""
+ },
+ "T48": {
+  "verdict": "match",
+  "finding": "사람들이 자신의 인지 과정을 보고할 때 고차 인지 과정에 대한 직접적인 내성 접근은 거의 없거나 전혀 없을 수 있으며, 진정한 내성에 근거하지 않고 보고할 수 있다.",
+  "evidence": "there may be little or no direct introspective access to higher order cognitive processes",
+  "use": "학생이 서술한 불만의 이유는 참고 자료로 보고, 출석·과제 수행 등 다른 자료와 함께 원인을 판단합니다.",
+  "caution": "1977년 인지심리학 연구이며 설문 서술형 응답에의 적용은 해석입니다.",
+  "triggers": [
+   "neg_comments",
+   "unit:school",
+   "topic:explain",
+   "general"
+  ],
+  "note": ""
+ },
+ "T50": {
+  "verdict": "match",
+  "finding": "외적 보상이 내재적 동기에 미치는 영향을 128개 연구로 메타분석한 결과, 참여·완료·성과에 연동된 보상과 유형 보상, 예상된 보상은 자유 선택 상황의 내재적 동기를 유의하게 약화시켰고, 긍정적 피드백은 자유 선택 행동과 자가 보고 흥미를 모두 높였다.",
+  "evidence": "Positive feedback enhanced both free-choice behavior (d = 0.33) and self-reported interest (d = 0.31).",
+  "use": "설문 참여 보상(추첨)은 크기와 방식을 신중히 정하고, 학생에게는 결과가 수업 개선에 쓰인다는 점을 함께 알립니다.",
+  "caution": "학습 활동에 대한 보상 연구이며 설문 응답 보상의 효과와 같다고 볼 수 없습니다.",
+  "triggers": [
+   "unit:school",
+   "small_n",
+   "midterm",
+   "general"
+  ],
+  "note": ""
+ },
+ "T51": {
+  "verdict": "match",
+  "finding": "2002년 이후 주요 학술지의 설문 인센티브 연구를 체계적으로 검토해, 인센티브 사용의 이론적 근거와 특히 효과적인 조건, 횡단·종단 조사에서 인센티브가 응답률에 미치는 영향을 정리했다.",
+  "evidence": "summarizes research on how incentives affect response rates in cross-sectional and longitudinal studies",
+  "use": "인센티브 도입 여부는 응답률 목표와 비용을 함께 보고 정하며, 효과는 조건에 따라 달라진다는 전제로 운영합니다.",
+  "caution": "초록에는 인센티브 종류별 효과 크기가 없습니다.",
+  "triggers": [
+   "small_n",
+   "unit:school",
+   "general"
+  ],
+  "note": ""
+ },
+ "T53": {
+  "verdict": "match",
+  "finding": "전문가와 초보자를 가르는 핵심 요인은 스키마 형태의 영역 지식이며, 통상적 문제 풀이는 상대적으로 큰 인지 처리 용량을 요구해 스키마 습득에 쓸 용량이 남지 않아 학습 도구로 효과적이지 않을 수 있다는 점을 모형과 실험으로 뒷받침했다.",
+  "evidence": "requires a relatively large amount of cognitive processing capacity which is consequently unavailable for schema acquisition",
+  "use": "진도가 빠르다는 의견에는 한 번에 처리하는 정보량을 조절하고 예시와 단계별 설명을 늘리는 방안을 검토합니다.",
+  "caution": "문제 풀이 학습 실험 연구이며 수업 진도에의 적용은 해석입니다.",
+  "triggers": [
+   "topic:pace",
+   "topic:explain",
+   "neg_comments",
+   "low_score",
+   "unit:prof",
+   "unit:subject"
+  ],
+  "note": ""
+ },
+ "T55": {
+  "verdict": "match",
+  "finding": "평균으로의 회귀(RTM)는 반복 측정 자료에서 자연적 변동이 실제 변화처럼 보이게 만드는 통계 현상이다. 반복 자료에서 어디서나 나타나므로 관찰된 변화의 가능한 원인으로 항상 고려해야 하며, 연구 설계와 적절한 통계 방법으로 완화할 수 있다.",
+  "evidence": "RTM is a ubiquitous phenomenon in repeated data and should always be considered as a possible cause of an observed change.",
+  "use": "중간에서 기말 사이 점수가 오르거나 내린 변화를 곧바로 개선 성과나 악화로 해석하지 않습니다. 특히 처음에 극단적으로 낮았거나 높았던 대상은 저절로 중간값 쪽으로 움직일 수 있습니다.",
+  "caution": "",
+  "triggers": [
+   "improve",
+   "decline",
+   "has_round",
+   "midterm",
+   "final",
+   "ranking"
+  ],
+  "note": ""
+ },
+ "T56": {
+  "verdict": "match",
+  "finding": "불쾌한 경험을 겪은 뒤의 회고적 평가는 지속 시간의 영향이 작고, 경험 중 가장 나빴던 순간과 마지막 순간의 불편에 좌우되는 경우가 많다는 증거를 실험으로 더했다.",
+  "evidence": "such evaluations are often dominated by the discomfort at the worst and at the final moments of episodes",
+  "use": "기말 설문은 시험·성적 같은 학기 마지막 경험의 영향을 받을 수 있으므로, 설문 시점을 성적 확정 전으로 정합니다.",
+  "caution": "찬물 실험 연구이며 수업 평가에서 같은 효과가 확인되었다는 뜻은 아닙니다.",
+  "triggers": [
+   "final",
+   "topic:assess",
+   "general"
+  ],
+  "note": ""
+ },
+ "T57": {
+  "verdict": "match",
+  "finding": "리커트 척도는 서열 자료이므로 모수 통계를 쓸 수 없다는 비판에 대해, 1930년대 이후 많은 연구가 모수 통계가 이런 가정 위반에 강건함을 일관되게 보여 주므로 그런 반론은 근거가 없다고 주장했다.",
+  "evidence": "parametric statistics are robust with respect to violations of these assumptions",
+  "use": "5점 척도 점수를 평균으로 요약하는 현재 방식을 쓸 수 있는 근거 중 하나입니다. 다만 서열 자료의 위험을 다룬 연구와 함께 분포를 병기합니다.",
+  "caution": "한쪽 입장의 주장이며, 서열 자료를 연속형으로 다루면 오류가 생길 수 있다는 반대 연구가 있습니다.",
+  "triggers": [
+   "unit:school",
+   "polarized",
+   "general"
+  ],
+  "note": ""
+ },
+ "T61": {
+  "verdict": "match",
+  "finding": "1970년 이후 개발된 통계 방법은 평균에 기반한 전통적 방법보다 검정력과 정확도를 크게 높일 수 있으며, 로버스트한 위치(중심 경향) 측도가 실용적 가치가 있음을 설명하고 현대적 방법을 쓰는 방향을 제안했다.",
+  "evidence": "recent advances, based on robust measures of location (or central tendency), have practical value",
+  "use": "평균과 함께 중앙값을 참고 지표로 보면 극단 응답의 영향을 가늠할 수 있습니다.",
+  "caution": "절사평균 등 구체 방법의 효과는 초록에 없습니다.",
+  "triggers": [
+   "polarized",
+   "small_n",
+   "unit:school",
+   "general"
+  ],
+  "note": ""
+ },
+ "T62": {
+  "verdict": "match",
+  "finding": "고전적 모수 검정은 정규성·등분산 같은 가정이 충족돼야 정확한데 실제 자료에서는 이 가정이 거의 충족되지 않고, 가정이 깨지면 p값·효과 크기·신뢰구간이 부정확해질 수 있다. 현대의 로버스트 방법은 이 문제를 줄여 준다.",
+  "evidence": "These assumptions are rarely met when analyzing real data.",
+  "use": "소규모 반이나 한쪽으로 쏠린 분포에서는 평균 비교 결과를 보수적으로 해석하고 분포를 함께 확인합니다.",
+  "caution": "",
+  "triggers": [
+   "polarized",
+   "small_n",
+   "unit:klass",
+   "unit:school",
+   "general"
+  ],
+  "note": ""
+ },
+ "T64": {
+  "verdict": "match",
+  "finding": "이상치를 정의·식별·처리하는 방식에 따라 연구의 실질적 결론이 달라질 수 있으며, 문헌 검토에서 이상치 정의 14가지, 식별 기법 39가지, 처리 방법 20가지가 확인되고 문헌 간 불일치가 있었다.",
+  "evidence": "different ways of defining, identifying, and handling outliers alter substantive research conclusions",
+  "use": "최고·최저 응답을 기계적으로 제외하는 대신, 제외 기준과 처리 방식을 보고서에 명시하고 점검 문항 같은 응답 품질 기준을 우선합니다.",
+  "caution": "조직과학 분야 문헌 검토입니다.",
+  "triggers": [
+   "polarized",
+   "small_n",
+   "unit:school",
+   "general"
+  ],
+  "note": ""
+ },
+ "T67": {
+  "verdict": "match",
+  "finding": "신뢰구간과 오차 막대를 읽는 법을 다루며, 오차 막대가 있는 그림을 추론에 쓰기 위한 7가지 눈대중 규칙과 독립 집단 평균의 신뢰구간 겹침 해석 지침을 제안했다.",
+  "evidence": "They propose 7 rules of eye to guide the inferential use of figures with error bars.",
+  "use": "소규모 대상의 평균 차이는 점수 하나만 보지 않고 불확실성을 함께 고려해 해석합니다.",
+  "caution": "7가지 규칙의 내용은 초록에 없습니다.",
+  "triggers": [
+   "small_n",
+   "ranking",
+   "unit:prof",
+   "unit:klass"
+  ],
+  "note": ""
+ },
+ "T70": {
+  "verdict": "match",
+  "finding": "효과 크기 추정치는 효과의 실용적·이론적 중요성과 요인의 상대적 기여를 판단하는 데 유용하다. 2009~2010년 한 심리학 학술지 논문 분석에서 효과 크기를 보고한 분석은 절반에 못 미쳤다.",
+  "evidence": "Estimates of effect size are useful for determining the practical or theoretical importance of an effect",
+  "use": "회차 간 점수 변화는 방향뿐 아니라 크기를 함께 제시해 실질적 의미를 판단합니다.",
+  "caution": "",
+  "triggers": [
+   "improve",
+   "decline",
+   "has_round",
+   "unit:school"
+  ],
+  "note": ""
+ },
+ "T71": {
+  "verdict": "match",
+  "finding": "효과 크기는 실증 연구의 가장 중요한 결과로, 결과의 실질적 의미를 전달하고 후속 연구의 표본 크기 결정과 연구 간 비교(메타분석)에 활용된다. t검정과 분산분석의 효과 크기 계산·보고법을 안내했다.",
+  "evidence": "Effect sizes are the most important outcome of empirical studies.",
+  "use": "증감을 보고할 때 유의성만이 아니라 크기를 함께 적어 후속 학기 비교에 쓸 수 있게 합니다.",
+  "caution": "",
+  "triggers": [
+   "improve",
+   "decline",
+   "has_round"
+  ],
+  "note": ""
+ },
+ "T69": {
+  "verdict": "partial",
+  "finding": "",
+  "evidence": "",
+  "use": "",
+  "caution": "초록이 일부만 확보되었고 설문 신뢰도 지표는 이번 범위에서 제외함",
+  "triggers": [],
+  "note": ""
+ },
+ "T01": {
+  "verdict": "match",
+  "finding": "무작위로 선정한 교수에게 학기 중간 학생평가 결과를 피드백하고 개선 전략을 논의하는 면담을 했더니, 학기 말에 학생 평가가 더 높아지고 기말시험 성적과 정서적 성과도 더 좋았다.",
+  "evidence": "More favorable student ratings at the end of the term, better final examination scores, and more favorable affective outcomes resulted.",
+  "use": "중간 설문 결과를 교수에게 전달하고 면담으로 개선 전략을 함께 논의하는 방식은 학기 말 평가 향상으로 이어질 수 있습니다.",
+  "caution": "1979년 한 대학의 실험 결과이므로 이 학교에서 같은 효과가 난다고 단정할 수 없습니다.",
+  "triggers": [
+   "midterm",
+   "decline",
+   "low_score",
+   "neg_comments",
+   "unit:prof",
+   "general"
+  ],
+  "note": ""
+ },
+ "T04": {
+  "verdict": "match",
+  "finding": "Marsh의 1987년 모노그래프는 구성 타당도 접근으로 SEEQ 설문을 개발했고, 5천 개 수업 자료의 요인분석에서 학습 가치, 교수 열의, 조직성, 개인적 친밀, 집단 상호작용, 내용 폭, 시험과 성적, 과제와 읽기, 업무량·난이도의 아홉 요인이 확인되었다.",
+  "evidence": "Factor analysis resulted in identification of nine SEEQ factors",
+  "use": "수업 효과성은 여러 차원으로 이루어져 있으므로 종합 평균 하나보다 영역별 점수를 함께 보는 것이 타당합니다.",
+  "caution": "1987년 연구이며 이 학교 설문의 영역 구성과 같다는 뜻이 아닙니다.",
+  "triggers": [
+   "unit:school",
+   "unit:prof",
+   "low_score",
+   "general"
+  ],
+  "note": ""
+ },
+ "T05": {
+  "verdict": "match",
+  "finding": "효과적 교수의 다차원성과 학생평가 연구를 개관하고, 다양한 맥락에서 타당도 기준과 잠재적 편향을 평가할 때 여러 기준과 이론, 기존 지식을 아우르는 폭넓은 구성 개념 접근을 채택하도록 권고했다.",
+  "evidence": "Recommends the adoption of a broad construct approach to evaluation of validity criteria and potential biases in different contexts",
+  "use": "교원 결과를 해석할 때 하나의 종합 점수에 의존하지 않고 영역별 프로파일과 서술 의견을 함께 봅니다.",
+  "caution": "",
+  "triggers": [
+   "unit:prof",
+   "ranking",
+   "unit:school",
+   "general"
+  ],
+  "note": ""
+ },
+ "T60": {
+  "verdict": "match",
+  "finding": "서열 자료를 연속형(metric) 모형으로 분석하면 거짓 양성, 검정력 상실, 평균 순서의 역전 같은 체계적 오류가 생길 수 있음을 보였다. 이 연구가 조사한 세 학술지에서 서열 자료를 분석한 논문은 모두 연속형 모형을 썼다.",
+  "evidence": "analyzing ordinal data as if they were metric can systematically lead to errors",
+  "use": "5점 척도 평균만으로 순위를 매기거나 집단을 비교하면 오류가 생길 수 있으므로 분포(긍정·부정 비율)를 함께 확인합니다.",
+  "caution": "연속형 모형으로 서열 자료를 분석하는 것이 늘 오류를 낳는다는 뜻은 아니며, 모형과 자료 조건에 따라 달라집니다.",
+  "triggers": [
+   "polarized",
+   "ranking",
+   "small_n",
+   "unit:school",
+   "general"
+  ],
+  "note": ""
+ },
+ "T65": {
+  "verdict": "match",
+  "finding": "영국의 체외수정 클리닉 52곳의 출산율 순위를 분석한 결과, 클리닉 간 실제 차이는 있었으나 실제 순위에는 특히 규모가 작은 클리닉에서 큰 불확실성이 있었고, 많은 센터의 순위가 해마다 크게 바뀌었다.",
+  "evidence": "There was great uncertainty, however, concerning the true ranks, particularly for the smaller clinics.",
+  "use": "응답 수가 적은 반·교원을 순위로 비교하지 않고, 평균 차이가 작으면 순위 대신 지원 필요 여부 중심으로 해석합니다.",
+  "caution": "의료 기관 자료이며 강의평가에의 적용은 해석입니다.",
+  "triggers": [
+   "ranking",
+   "small_n",
+   "unit:klass",
+   "unit:prof"
+  ],
+  "note": ""
+ },
+ "T77": {
+  "verdict": "match",
+  "finding": "다중 가설 검정에서 흔히 쓰는 가족별 오류율(FWER) 통제에는 약점이 있어, 잘못 기각된 가설의 기대 비율인 거짓 발견율(FDR)을 통제하는 다른 접근을 제시하고 검정력 이득을 시뮬레이션으로 보였다.",
+  "evidence": "It calls for controlling the expected proportion of falsely rejected hypotheses",
+  "use": "여러 대상을 한꺼번에 훑어 낮은 대상을 찾는 조건 검출 결과는 우연히 걸린 대상이 섞일 수 있으므로 확정 판단이 아니라 확인 후보로 다룹니다.",
+  "caution": "FDR 절차를 이 시스템에 적용한다는 뜻이 아니라, 다중 비교의 위험을 알리는 근거입니다.",
+  "triggers": [
+   "ranking",
+   "unit:school",
+   "small_n",
+   "unit:prof",
+   "general"
+  ],
+  "note": ""
+ },
+ "T52": {
+  "verdict": "match",
+  "finding": "자기결정이론 연구는 자기 동기와 건강한 심리 발달을 촉진하거나 가로막는 사회적 맥락 조건을 살폈고, 유능감·자율성·관계성의 세 가지 선천적 심리 욕구가 충족되면 동기와 정신 건강이 높아지고 좌절되면 낮아진다는 가설에 이르렀다. 교육을 포함한 여러 영역에서의 의의도 다룬다.",
+  "evidence": "three innate psychological needs--competence, autonomy, and relatedness",
+  "use": "수업에서 학생의 자율성·유능감·관계성을 지지하는 교수 행동(선택권, 구체적 피드백, 존중하는 소통)이 동기를 높이는 방향의 개선 과제가 될 수 있습니다.",
+  "caution": "이론 개관이며 이 학교 학생에게서 효과가 확인되었다는 뜻이 아닙니다.",
+  "triggers": [
+   "topic:rapport",
+   "topic:engage",
+   "neg_comments",
+   "low_score",
+   "unit:prof"
+  ],
+  "note": ""
+ }
+}

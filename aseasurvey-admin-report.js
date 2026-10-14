@@ -123,7 +123,7 @@
     var secs = e.secs.filter(function (s) { return s.mean != null; }).slice().sort(function (a, b) { return b.mean - a.mean; }), hi = secs[0], lo = secs[secs.length - 1];
     var np = cls.filter(function (c) { return c.s === 'pos'; }).length, nn = cls.filter(function (c) { return c.s === 'neg'; }).length;
     var dept = '종합 평균은 ' + fmt1(e.mean) + '점(학교 평균 ' + fmt1(e.schoolMean) + '점), 긍정 응답 비율은 ' + Math.round(e.posr || 0) + '%입니다.' + (hi ? ' 상대적으로 ' + secShort(hi.title) + ' 영역(' + fmt1(hi.mean) + '점)이 강점이며' : '') + (lo && lo !== hi ? ', ' + secShort(lo.title) + ' 영역(' + fmt1(lo.mean) + '점)은 보완이 필요합니다.' : '.') + ' 서술 의견은 긍정 ' + np + '건, 부정 ' + nn + '건으로 분류되었습니다. (규칙 기반 초안이며, AI 분석 또는 직접 수정으로 보완하십시오.)';
-    return { src: 'rule', cls: cls, positive: [], negative: [], dept: dept, soft: '학생들은 수업 전반에서 대체로 성실하게 참여하였으며, 수업 운영의 여러 부분에서 긍정적인 경험을 하였습니다. 다만 일부 영역에서는 학생의 이해와 참여를 더 높일 수 있는 여지가 있어, 아래 제안을 참고하여 함께 살펴보시기를 권합니다. (AI 분석 전 기본 문안입니다. 편집하여 사용하십시오.)', actions: [{ title: '수업 진행 점검', detail: '낮게 평가된 영역을 중심으로 수업 진행 방식과 자료를 점검하고, 학생 의견을 반영한 개선안을 마련합니다.', owner: '교원', when: '이번 학기' }] };
+    return { src: 'rule', refs: (A.ext.theory && A.ext.theory.data ? A.ext.theory.autoRefs(e) : []), cls: cls, positive: [], negative: [], dept: dept, soft: '학생들은 수업 전반에서 대체로 성실하게 참여하였으며, 수업 운영의 여러 부분에서 긍정적인 경험을 하였습니다. 다만 일부 영역에서는 학생의 이해와 참여를 더 높일 수 있는 여지가 있어, 아래 제안을 참고하여 함께 살펴보시기를 권합니다. (AI 분석 전 기본 문안입니다. 편집하여 사용하십시오.)', actions: [{ title: '수업 진행 점검', detail: '낮게 평가된 영역을 중심으로 수업 진행 방식과 자료를 점검하고, 학생 의견을 반영한 개선안을 마련합니다.', owner: '교원', when: '이번 학기' }] };
   }
   function secShort(t) { return String(t).replace(/^[ⅠⅡⅢⅣⅤⅥⅦⅧⅨⅩ]+\.\s*/, '').replace(/\(.*?\)/g, '').trim(); }
 
@@ -135,9 +135,11 @@
     '"dept":"교육처 입장. 수치와 서술 의견을 함께 근거로 한 전문가 판단 4~7문장. 단정적 평가 대신 근거·해석·우선순위를 제시. 합니다체",' +
     '"soft":"전달용 정성 리포트 본문. 숫자·점수·비율·인원수를 절대 쓰지 말 것. 부드럽고 존중하는 어조로 강점을 먼저 인정하고, 부정적 사실은 조심스럽게 표현하되 숨기지 말 것. 3~4개 문단. 합니다체",' +
     '"actions":[{"title":"개선 과제 제목","detail":"교육기획 관점의 구체적 방안 2~3문장(누가·무엇을·어떻게). 형식적 문구 금지","owner":"교원|교육처|학과","when":"즉시|이번 학기|다음 학기"}](3~5개)}\n' +
-    '규칙: 모든 의견(i)을 classify에 포함. 욕설·인신공격이 있으면 soft/positive/negative에 옮기지 말고 일반화해 표현. 근거 없는 추측 금지.';
-  function aiInput(e, ov) {
-    return JSON.stringify({ unit: UL[e.unit], survey: ov.survey, basis: ov.basis,
+    '규칙: 모든 의견(i)을 classify에 포함. 욕설·인신공격이 있으면 soft/positive/negative에 옮기지 말고 일반화해 표현. 근거 없는 추측 금지.\n' +
+    '학술 근거: 입력의 theory 는 검증된 연구 근거 후보입니다(id, finding=연구 결과 요약, use=적용 해석, caution=유의). 이 대상의 상황(점수·서술 의견 주제·표본 크기·회차 변화)과 실제로 관련 있는 것만 골라 dept 와 actions 의 판단 근거로 쓰고, 관련 없으면 쓰지 마십시오. 같은 문구를 반복하지 말고 대상의 상황에 맞게 풀어 쓰십시오. ' +
+    '사용한 근거는 JSON 의 "refs"(id 배열)에 반드시 적고, actions 의 각 항목에는 근거가 있으면 "ref"(id)를 적습니다. theory 에 없는 연구·저자·연도·통계 수치는 절대 언급하지 말고, 저자명·연도는 본문에 쓰지 마십시오(출처는 시스템이 각주로 붙입니다). dept 에서는 연구 결과(사실)와 이 대상에 대한 해석·판단(의견)을 구분해 쓰십시오. soft(전달용)에는 연구 인용·학술 용어를 쓰지 마십시오.';
+  function aiInput(e, ov, th) {
+    return JSON.stringify({ theory: (A.ext.theory && th ? A.ext.theory.forAI(th) : []), unit: UL[e.unit], survey: ov.survey, basis: ov.basis,
       scores: { overall: { mean: round2(e.mean), pos: Math.round(e.posr || 0), neg: Math.round(e.negr || 0), school: round2(e.schoolMean) }, sections: e.secs.map(function (s) { return { n: secShort(s.title), mean: round2(s.mean), school: round2(s.school), pos: Math.round(s.pos || 0), neg: Math.round(s.neg || 0) }; }),
         best: e.best.map(function (q) { return { q: q.label.slice(0, 50), mean: round2(q.mean) }; }), worst: e.worst.map(function (q) { return { q: q.label.slice(0, 50), mean: round2(q.mean) }; }), courses: e.courseList.slice(0, 12).map(function (c) { return { n: c.name, mean: round2(c.mean) }; }) },
       comments: e.comments.slice(0, 60).map(function (c, i) { return { i: i, q: c.ql, c: c.c, t: c.t.slice(0, 300) }; }) });
@@ -147,11 +149,13 @@
   function parseJson(text) { var s = String(text || '').trim().replace(/^```[a-z]*\s*/i, '').replace(/\s*```$/i, '').trim(), a = s.indexOf('{'); if (a > 0) s = s.slice(a); try { return JSON.parse(s); } catch (e) {} var b = s.lastIndexOf('}'); if (b > 0) { try { return JSON.parse(s.slice(0, b + 1)); } catch (e2) {} } throw new Error('AI 응답을 해석하지 못했습니다.'); }
   async function aiAnalyze(e, ov) {
     if (!A.ext.aiCall) throw new Error('AI 모듈을 불러오지 못했습니다. 새로고침해 주십시오.');
-    var model = UI.model || ((A.ext.aiModels || [])[0] || [])[0] || 'claude-sonnet-5-5', text = await A.ext.aiCall(SYS, aiInput(e, ov), model), j = parseJson(text);
+    var model = UI.model || ((A.ext.aiModels || [])[0] || [])[0] || 'claude-sonnet-5-5', th = A.ext.theory ? A.ext.theory.pick(A.ext.theory.signals(e), e.unit + '|' + e.key, 4) : [], text = await A.ext.aiCall(SYS, aiInput(e, ov, th), model), j = parseJson(text);
     var cls = (j.classify || []).filter(function (c) { return c && c.i >= 0 && c.i < e.comments.length; }).map(function (c) { return { i: Number(c.i), s: /^(pos|neg|neu)$/.test(c.s) ? c.s : 'neu', t: String(c.t || '').slice(0, 12) }; });
     e.comments.forEach(function (c, i) { if (!cls.some(function (x) { return x.i === i; })) cls.push({ i: i, s: ruleClassify(c.t), t: '' }); });
-    return { src: 'ai', model: String(model), at: Date.now(), cls: cls, positive: (j.positive || []).map(String).slice(0, 4), negative: (j.negative || []).map(String).slice(0, 4), dept: String(j.dept || ''), soft: String(j.soft || ''),
-      actions: (j.actions || []).slice(0, 6).map(function (a) { return { title: String(a.title || ''), detail: String(a.detail || ''), owner: String(a.owner || ''), when: String(a.when || '') }; }) };
+    var TH = A.ext.theory, clean = function (t, none) { return TH ? TH.stripCites(String(t || ''), th, none) : String(t || ''); };
+    return { src: 'ai', model: String(model), at: Date.now(), cls: cls, positive: (j.positive || []).map(function (x) { return clean(x, true); }).filter(Boolean).slice(0, 4), negative: (j.negative || []).map(function (x) { return clean(x, true); }).filter(Boolean).slice(0, 4), dept: clean(j.dept), soft: clean(j.soft, true),
+      refs: TH ? TH.cleanRefs(j.refs, th) : [],
+      actions: (j.actions || []).slice(0, 6).map(function (a) { return { title: clean(a.title), detail: clean(a.detail), owner: String(a.owner || ''), when: String(a.when || '') }; }) };
   }
 
   /* ───────────── 리포트 HTML (A4 페이지) ───────────── */
@@ -196,6 +200,7 @@
     if (A.ext.rptExtraBlocks) A.ext.rptExtraBlocks(ent).forEach(function (x) { b.push(x); });
     b.push({ keep: 1, h: '<div class="rp-h2">교육처 의견</div>' }); b.push({ h: '<div class="rp-box">' + E(an.dept || '') + '</div>' });
     if ((an.actions || []).length) { b.push({ keep: 1, h: '<div class="rp-h2">개선 과제(안)</div>' }); an.actions.forEach(function (a, i) { b.push({ h: '<div class="rp-act"><b>' + (i + 1) + '. ' + E(a.title) + '</b><div>' + E(a.detail) + '</div><div class="m">' + E([a.owner, a.when].filter(Boolean).join(' · ')) + '</div></div>' }); }); }
+    if (A.ext.theory && (an.refs || []).length) A.ext.theory.blocks(an.refs).forEach(function (x) { b.push(x); });
     return b;
   }
   function blocksB(ent, an, ov) {
@@ -278,7 +283,7 @@
   /* ───────────── 화면 ───────────── */
   async function show(box) {
     box.innerHTML = '<div class="loading">리포트 준비 중…</div>';
-    UI.merge = (await dbGet(sid() + '|merge')) || {}; UI.ents = facts(UI.unit); await loadSaved(); var ov = await ovGet(), ns = await nameSettings();
+    if (A.ext.theory) await A.ext.theory.load(); UI.merge = (await dbGet(sid() + '|merge')) || {}; UI.ents = facts(UI.unit); await loadSaved(); var ov = await ovGet(), ns = await nameSettings();
     var flt = API().F;
     box.innerHTML = '<div class="panel"><h3>' + ULS[UI.unit] + ' 분석 <span class="muted" style="font-weight:400">· 종합 확인 → 대상 선택 → 리포트 생성</span></h3>' +
       '<div class="msg" style="margin:8px 0">' + I('info', 18) + '<div>현재 응답 범위: <b>' + (A.ext.SINC[flt.sincere] || '전체') + '</b>, ' + (flt.data === 'real' ? '정식 응답' : flt.data === 'test' ? '테스트 응답' : '정식+테스트') + ' 기준으로 만들어집니다. 정식 보고에는 「유효 응답만」을 권장합니다.<br>AI 분석 결과·편집 내용은 <b>이 브라우저에만 저장</b>되고 서버에 올라가지 않습니다. AI에는 이름 없이 집계 수치와 서술 문장만 전송합니다.</div></div>' +
@@ -397,12 +402,13 @@
         '<label class="f">정성 리포트 본문 (전달용 · 수치 금지)</label><textarea class="fld" rows="8" data-f="soft">' + E(an.soft || '') + '</textarea><div id="ed-warn" class="muted" style="color:#b45309;font-size:12.5px">' + (/[0-9]/.test(an.soft || '') ? '본문에 숫자가 포함되어 있습니다. 전달용에서는 수치를 빼는 것이 원칙입니다.' : '') + '</div>' +
         '<label class="f">학생들이 인정한 부분 (한 줄에 하나)</label><textarea class="fld" rows="3" data-f="positive">' + E((an.positive || []).join('\n')) + '</textarea>' +
         '<label class="f">함께 살펴볼 부분 (한 줄에 하나)</label><textarea class="fld" rows="3" data-f="negative">' + E((an.negative || []).join('\n')) + '</textarea>' +
+        '<label class="f">근거 문헌 ID (쉼표로 구분 · 내부용 리포트 각주, 이론 파일에 있는 ID만 유지)</label><input class="fld" data-f="refs" value="' + E((an.refs || []).join(', ')) + '">' +
         '<label class="f">개선 과제 (한 줄에 하나: 제목 | 방안 | 담당 | 시기)</label><textarea class="fld" rows="5" data-f="actions">' + E((an.actions || []).map(function (a) { return [a.title, a.detail, a.owner, a.when].join(' | '); }).join('\n')) + '</textarea></div>' +
         '<div><label class="f">서술 의견 분류 (눌러서 바꿈)</label><div style="max-height:520px;overflow:auto">' + (e.comments.map(function (c, i) { var x = cls.filter(function (y) { return y.i === i; })[0] || { s: 'neu' }; return '<div class="rp-c" style="border:1px solid #e5e7eb;border-radius:8px;padding:6px 8px;margin:4px 0"><div style="display:flex;gap:6px;margin-bottom:3px">' + [['pos', '긍정'], ['neg', '부정'], ['neu', '기타']].map(function (s) { return '<button class="btn btn-sm ' + (x.s === s[0] ? 'btn-primary' : 'btn-ghost') + '" data-ed="cls" data-i="' + i + '" data-s="' + s[0] + '">' + s[1] + '</button>'; }).join('') + (x.t ? '<span class="badge badge-gray">' + E(x.t) + '</span>' : '') + '</div>' + E(c.t) + '<div class="muted" style="font-size:11.5px">' + E([c.c, c.ql].filter(Boolean).join(' · ')) + '</div></div>'; }).join('') || '<div class="muted">서술 의견이 없습니다.</div>') + '</div></div></div>' +
         '<div id="ed-prev" style="margin-top:10px"></div><div class="btn-row"><button class="btn btn-ghost" data-ed="close">닫기</button><button class="btn btn-secondary" data-ed="prev">미리보기 갱신</button><button class="btn btn-primary" data-ed="save">저장 (이 브라우저)</button></div>';
     }
     function read() { var g = function (f) { var el = root.querySelector('[data-f=' + f + ']'); return el ? el.value : ''; }; an.dept = g('dept'); an.soft = g('soft'); an.positive = g('positive').split('\n').map(function (s) { return s.trim(); }).filter(Boolean); an.negative = g('negative').split('\n').map(function (s) { return s.trim(); }).filter(Boolean);
-      an.actions = g('actions').split('\n').map(function (l) { var p = l.split('|').map(function (s) { return s.trim(); }); return { title: p[0] || '', detail: p[1] || '', owner: p[2] || '', when: p[3] || '' }; }).filter(function (a) { return a.title || a.detail; }); }
+      an.refs = g('refs').split(/[\s,]+/).filter(function (x) { return x && A.ext.theory && A.ext.theory.byId(x); }); an.actions = g('actions').split('\n').map(function (l) { var p = l.split('|').map(function (s) { return s.trim(); }); return { title: p[0] || '', detail: p[1] || '', owner: p[2] || '', when: p[3] || '' }; }).filter(function (a) { return a.title || a.detail; }); }
     function prev() { read(); var pages = buildPages(e, an, ov, kind), el = root.querySelector('#ed-prev'); el.innerHTML = '<style>' + CSS + '</style><div style="overflow:auto;max-height:560px;background:#e5e7eb;padding:10px"><div style="display:flex;flex-direction:column;gap:12px;align-items:center">' + pages.map(function (p) { return '<div style="width:' + Math.round(PX.w * 0.7) + 'px;height:' + Math.round(PX.h * 0.7) + 'px;box-shadow:0 1px 6px rgba(0,0,0,.25)"><div style="transform:scale(.7);transform-origin:top left;width:' + PX.w + 'px">' + p + '</div></div>'; }).join('') + '</div></div>'; var w = root.querySelector('#ed-warn'); if (w) w.textContent = /[0-9]/.test(an.soft || '') ? '본문에 숫자가 포함되어 있습니다. 전달용에서는 수치를 빼는 것이 원칙입니다.' : ''; }
     paint(); root.addEventListener('click', async function (ev) {
       var t = ev.target.closest('[data-ed]'); if (!t) return; var a = t.getAttribute('data-ed');
