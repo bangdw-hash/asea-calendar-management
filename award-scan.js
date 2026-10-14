@@ -230,20 +230,20 @@
   function body(el) { return AW.$('#sc-b', el); }
   function step1(el) {
     body(el).innerHTML = '<p style="margin-top:0">이미 출력했거나 스캔한 상장·양식 파일(JPG·PNG·PDF)을 올리면 <b>① 기울기·여백 보정 → ② AI 글자 판독 → ③ 글자를 지운 배경 생성 → ④ 글상자·메일머지 항목 자동 배치</b>까지 한 번에 진행합니다. 결과는 <b>새 양식</b>으로 만들어지며 현재 양식은 그대로 저장됩니다.</p>' +
-      '<label class="drop" id="sc-drop" style="display:block;padding:30px;text-align:center;border:2px dashed var(--border);border-radius:12px;cursor:pointer"><input type="file" id="sc-f" accept=".jpg,.jpeg,.png,.pdf,image/*,application/pdf" class="hide">' + AW.ic('upload', 22) + '<br><b>파일을 끌어 놓거나 눌러서 선택</b><br><span class="muted">PDF 는 한 쪽만 사용합니다. 사진보다 스캔본이 정확합니다.</span></label>';
+      '<label class="drop" id="sc-drop" style="display:block;padding:30px;text-align:center;border:2px dashed var(--border);border-radius:12px;cursor:pointer"><input type="file" id="sc-f" accept=".jpg,.jpeg,.png,.pdf,image/*,application/pdf" class="hide" multiple>' + AW.ic('upload', 22) + '<br><b>파일을 끌어 놓거나 눌러서 선택</b> <span class="muted">(여러 장을 한꺼번에 선택하면 일괄 처리)</span><br><span class="muted">PDF 는 한 쪽 파일은 그대로, 여러 쪽이면 쪽마다 양식 한 개씩 만들 수 있습니다. 사진보다 스캔본이 정확합니다.</span></label>';
     var f = AW.$('#sc-f', el), dz = AW.$('#sc-drop', el);
-    f.onchange = function () { if (f.files[0]) load(el, f.files[0]); };
-    dz.ondragover = function (e) { e.preventDefault(); }; dz.ondrop = function (e) { e.preventDefault(); if (e.dataTransfer.files[0]) load(el, e.dataTransfer.files[0]); };
+    f.onchange = function () { pick(el, f.files); };
+    dz.ondragover = function (e) { e.preventDefault(); }; dz.ondrop = function (e) { e.preventDefault(); pick(el, e.dataTransfer.files); };
   }
   function load(el, file) {
     body(el).innerHTML = '<div class="loading">파일을 읽는 중…</div>';
-    AW.Editor.readSource(file, 2480).then(function (r) { return loadImg(r.url).then(function (im) { var c = cv(im.naturalWidth, im.naturalHeight); c.getContext('2d').drawImage(im, 0, 0); st.src = c; st.name = file.name.replace(/\.[^.]+$/, ''); autoFit(el); }); })
+    AW.Editor.readSource(file, 2480).then(function (r) { return loadImg(r.url).then(function (im) { var c = cv(im.naturalWidth, im.naturalHeight); c.getContext('2d').drawImage(im, 0, 0); st.src = c; st.name = (file.name || '스캔').replace(/\.[^.]+$/, '') + (file.__page ? ' ' + file.__page + '쪽' : ''); autoFit(el); }); })
       .catch(function (e) { AW.toast(e.message, 'error'); step1(el); });
   }
   function autoFit(el) {
     body(el).innerHTML = '<div class="loading">기울기와 여백을 맞추는 중…</div>';
     setTimeout(function () {
-      st.angle = Sc.estimateSkew(st.src); var c = Sc.straighten(st.src, st.quarter, st.angle); st.trim = Sc.autoTrim(c); step2(el);
+      st.angle = Sc.estimateSkew(st.src); var c = Sc.straighten(st.src, st.quarter, st.angle); st.trim = Sc.autoTrim(c); if (st.auto) run(el); else step2(el);
     }, 30);
   }
   function step2(el) {
@@ -271,15 +271,77 @@
       if (a === 'rl') { st.quarter--; sync(); } else if (a === 'rr') { st.quarter++; sync(); } else if (a === 'auto') autoFit(el); else if (a === 'file') step1(el); else if (a === 'go') run(el);
     }; });
   }
+  /* ───────────── 여러 장 처리 ───────────── */
+  var OKF = /\.(jpe?g|png|pdf)$/i;
+  function expand(files) {   // 파일 → 작업 목록(PDF 는 쪽마다)
+    var tasks = [];
+    return files.reduce(function (p, f) {
+      return p.then(function () {
+        if (!/\.pdf$/i.test(f.name) && !/pdf$/i.test(f.type)) { tasks.push({ file: f, page: 0, label: f.name }); return; }
+        return AW.Editor.pdfCount(f).then(function (n) { for (var k = 1; k <= Math.min(n, 30); k++) tasks.push({ file: f, page: k, label: f.name + (n > 1 ? ' · ' + k + '쪽' : '') }); }).catch(function () { tasks.push({ file: f, page: 1, label: f.name }); });
+      });
+    }, Promise.resolve()).then(function () { return tasks.slice(0, 40); });
+  }
+  function pick(el, files) {
+    files = Array.prototype.filter.call(files || [], function (f) { return OKF.test(f.name) || /^image\//.test(f.type) || /pdf$/i.test(f.type); }); if (!files.length) return AW.toast('JPG·PNG·PDF 파일만 올릴 수 있습니다.', 'error');
+    if (files.length === 1 && !/pdf$/i.test(files[0].type) && !/\.pdf$/i.test(files[0].name)) { st.queue = []; st.auto = false; return load(el, files[0]); }
+    body(el).innerHTML = '<div class="loading">파일을 확인하는 중…</div>';
+    expand(files).then(function (tasks) {
+      if (tasks.length === 1 && !tasks[0].page) { st.queue = []; return load(el, tasks[0].file); }
+      body(el).innerHTML = '<p style="margin-top:0"><b>' + tasks.length + '장</b>을 처리합니다' + (tasks.length >= 40 ? ' (한 번에 최대 40장)' : '') + '. PDF 는 쪽마다 양식 한 개가 만들어집니다.</p><div class="sc-bl">' + tasks.map(function (t, i) { return '<div class="sc-br">' + (i + 1) + '. ' + AW.esc(t.label) + '</div>'; }).join('') + '</div>' +
+        '<div class="radios" style="margin-top:10px"><label><input type="radio" name="sc-m" value="auto" checked> <b>자동으로 모두 만들기</b> <span class="muted">(기울기·글자 판독·배경 정리·항목 지정을 장마다 자동 진행 → 양식 목록에 저장, 완료 후 열기/수정)</span></label>' +
+        '<label><input type="radio" name="sc-m" value="review"> <b>한 장씩 영역을 확인하며 만들기</b> <span class="muted">(장마다 영역 편집 화면에서 확인 후 새 탭으로 열림)</span></label>' +
+        '<label><input type="checkbox" id="sc-e2" checked> 판독한 글자를 배경에서 지우기</label></div><div style="margin-top:10px"><button class="btn btn-primary" id="sc-go">' + AW.ic('sparkle', 16) + ' 시작</button> <button class="btn btn-ghost" id="sc-bk">다시 선택</button></div>';
+      AW.$('#sc-bk', el).onclick = function () { step1(el); };
+      AW.$('#sc-go', el).onclick = function () { var mode = AW.$('input[name="sc-m"]:checked', el).value; st.erase = AW.$('#sc-e2', el).checked; if (mode === 'auto') runBatch(el, tasks); else { st.queue = tasks.slice(); st.auto = true; nextTask(el); } };
+    }).catch(function (e) { AW.toast(e.message, 'error'); step1(el); });
+  }
+  function readTask(t) {   // 작업 → {src canvas, name}
+    return AW.Editor.readSource(t.file, 2480, t.page || 0).then(function (r) { return loadImg(r.url).then(function (im) { var c = cv(im.naturalWidth, im.naturalHeight); c.getContext('2d').drawImage(im, 0, 0); return { src: c, name: (t.file.name || '스캔').replace(/\.[^.]+$/, '') + (t.page && t.label.indexOf('쪽') >= 0 ? ' ' + t.page + '쪽' : '') }; }); });
+  }
+  function nextTask(el) {   // 한 장씩 확인 모드: 대기열의 다음 파일을 불러와 영역 편집 화면까지
+    if (!st.queue || !st.queue.length) { AW.$$('.aw-ov').forEach(function (o) { o.remove(); }); return AW.toast('모든 스캔본을 처리했습니다.', 'ok'); }
+    var t = st.queue[0], n = st.queue.length; st.erase = st.erase !== false; body(el).innerHTML = '<div class="loading">' + AW.esc(t.label) + ' 를 읽는 중… (남은 ' + n + '장)</div>';
+    readTask(t).then(function (r) { st.src = r.src; st.name = r.name; st.quarter = 0; st.auto = true; st.qinfo = '남은 장수 ' + n + ' · ' + t.label; autoFit(el); }).catch(function (e) { AW.toast(t.label + ': ' + e.message, 'error'); st.queue.shift(); nextTask(el); });
+  }
+  function saveDirect(r) {   // 탭을 열지 않고 서버에 바로 저장 (일괄 처리)
+    var fields = r.keys.map(function (n) { var g = AW.guessHint(n); return { name: n, hint: g.hint, example: r.rows0[n], sample: r.rows0[n], max: 0, req: true }; });
+    return AW.call('award_tpl_save', { p_id: null, p_base_ver: 0, p_force: false, p_name: r.nt.name, p_page: r.nt.page, p_elems: r.nt.elems, p_fields: fields, p_rows: r.keys.length ? [r.rows0] : [], p_bg: r.nt.bg, p_bg_name: r.nt.bgName || '', p_note: '스캔 일괄 생성' }).then(function (x) { if (!x || !x.ok) throw new Error((x && x.error) || '저장 실패'); AW.log('scan_make', x.id, { texts: r.nTxt, objects: r.nObj, fields: r.keys, batch: true }); return x.id; });
+  }
+  function runBatch(el, tasks) {
+    var res = [], stop = false; body(el).innerHTML = '<p style="margin-top:0"><b id="sb-t">처리 중…</b></p><div class="sc-bl" id="sb-l">' + tasks.map(function (t, i) { return '<div class="sc-br" data-i="' + i + '"><span class="sc-st">대기</span> ' + AW.esc(t.label) + '</div>'; }).join('') + '</div><div style="margin-top:8px"><button class="btn btn-ghost btn-sm" id="sb-x">중단</button></div>';
+    AW.$('#sb-x', el).onclick = function () { stop = true; this.disabled = true; };
+    var row = function (i, cls, txt) { var r = AW.$('.sc-br[data-i="' + i + '"]', el); if (r) { r.className = 'sc-br ' + cls; AW.$('.sc-st', r).textContent = txt; } };
+    tasks.reduce(function (p, t, i) {
+      return p.then(function () {
+        if (stop) return row(i, 'skip', '중단됨'); row(i, 'run', '처리 중'); AW.$('#sb-t', el).textContent = (i + 1) + ' / ' + tasks.length + ' 장 처리 중…';
+        return readTask(t).then(function (r) {
+          var ang = Sc.estimateSkew(r.src), c = Sc.straighten(r.src, 0, ang), trim = Sc.autoTrim(c), fin = Sc.finalize(Sc.straighten(r.src, 0, ang), trim, 2480);
+          return analyzeFin(fin).then(function (a) {
+            if (!a.aiOk) throw new Error('AI 판독 실패 — ' + (a.err && a.err.message || '')); var any = a.items.some(function (it) { return it.kind === 'text' && it.text; }); if (!any && !a.items.some(function (it) { return it.kind === 'object'; })) throw new Error('글자를 찾지 못했습니다');
+            var asm = assemble({ fin: fin, det: a.det, items: a.items, name: r.name, erase: st.erase }); return saveDirect(asm).then(function (id) { res.push({ id: id, name: r.name, asm: asm }); row(i, 'ok', '완료 · 글상자 ' + asm.nTxt + ' · 개체 ' + asm.nObj + ' · 항목 ' + asm.keys.length); });
+          });
+        }).catch(function (e) { row(i, 'bad', '실패: ' + (e.message || '').slice(0, 60)); });
+      });
+    }, Promise.resolve()).then(function () {
+      AW.$('#sb-t', el).textContent = '완료 — 성공 ' + res.length + '장 / 전체 ' + tasks.length + '장'; AW.$('#sb-x', el).remove();
+      var cap = 12; if (res.length) { var b = AW.$('#sb-l', el); b.insertAdjacentHTML('afterend', '<div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-primary" id="sb-o">' + AW.ic('folder', 16) + ' 만든 양식 탭으로 열기 (최대 ' + cap + '개)</button><button class="btn btn-ghost" id="sb-c">닫기</button></div><p class="muted">모두 「양식 목록」에 저장되어 있습니다. 각 양식은 열어서 위치·글꼴을 다듬을 수 있습니다.</p>');
+        AW.$('#sb-c', el).onclick = function () { AW.$$('.aw-ov').forEach(function (o) { o.remove(); }); };
+        AW.$('#sb-o', el).onclick = function () { var list = res.slice(0, cap); AW.$$('.aw-ov').forEach(function (o) { o.remove(); }); list.reduce(function (p, x) { return p.then(function () { return AW.App.openId(x.id); }); }, Promise.resolve()); };
+      }
+      AW.toast('스캔 일괄 처리를 마쳤습니다. 성공 ' + res.length + '장', res.length ? 'ok' : 'error');
+    });
+  }
+  function analyzeFin(fin) {   // 검출 → AI 읽기·분류 → 항목. 실패해도 검출 결과는 돌려줌
+    var det = Sc.detect(fin.canvas), p = det.regions.length ? AW.AI.ensure().then(function () { return Sc.label(fin.canvas, det.regions); }) : Promise.resolve({});
+    return p.then(function (r) { return { det: det, items: buildItems(det, r || {}), aiOk: true }; }, function (e) { return { det: det, items: buildItems(det, {}), aiOk: false, err: e }; });
+  }
   function run(el) {
     var q = ((st.quarter % 4) + 4) % 4, c = Sc.straighten(st.src, q, st.angle), fin = Sc.finalize(c, st.trim, 2480); st.fin = fin;
-    body(el).innerHTML = '<div class="loading">글자 영역을 검출하는 중…</div>';
+    body(el).innerHTML = '<div class="loading">글자 영역을 검출하고 AI가 글자를 읽는 중입니다… (10~40초)</div>';
     setTimeout(function () {
-      var det; try { det = Sc.detect(fin.canvas); } catch (e) { AW.toast('영역 검출 실패: ' + e.message, 'error'); return step2(el); }
-      st.det = det; if (!det.regions.length) { AW.toast('글자로 보이는 영역을 찾지 못했습니다. 보정 값을 확인하거나 영역을 직접 그려 주십시오.'); }
-      body(el).innerHTML = '<div class="loading">AI가 ' + det.regions.length + '개 영역의 글자를 읽는 중입니다… (10~40초)</div>';
-      var p = det.regions.length ? AW.AI.ensure().then(function () { return Sc.label(fin.canvas, det.regions); }) : Promise.resolve({});
-      p.then(function (r) { st.aiOk = true; start(el, buildItems(det, r || {})); }).catch(function (e) { st.aiOk = false; AW.toast('AI 판독을 건너뜁니다(' + (e.message || '실패') + '). 글자는 직접 입력하거나 「글자 AI로 읽기」를 사용하십시오.', 'error'); start(el, buildItems(det, {})); });
+      var done = function (r) { st.det = r.det; st.aiOk = r.aiOk; if (!r.aiOk) AW.toast('AI 판독을 건너뜁니다(' + (r.err && r.err.message || '실패') + '). 글자는 직접 입력하거나 「글자 AI로 읽기」를 사용하십시오.', 'error'); else if (!r.det.regions.length) AW.toast('글자로 보이는 영역을 찾지 못했습니다. 보정 값을 확인하거나 영역을 직접 그려 주십시오.'); start(el, r.items); };
+      try { analyzeFin(fin).then(done); } catch (e) { AW.toast('영역 검출 실패: ' + e.message, 'error'); step2(el); }
     }, 30);
   }
   var uidn = 0;
@@ -334,7 +396,7 @@
   function start(el, items) {
     st.items = items; st.sel = {}; st.mode = 'select';
     var url = st.fin.canvas.toDataURL('image/jpeg', 0.75);
-    body(el).innerHTML = '<div class="sc-help"><b>영역 편집 안내</b><ol><li><b>선택</b>: 상자를 누르면 선택, <b>Ctrl 또는 Shift</b>를 누른 채 누르면 여러 개 선택, <b>빈 곳을 끌면</b> 범위 안의 상자가 한 번에 선택됩니다. 오른쪽 목록(레이어)에서도 선택됩니다.</li>' +
+    body(el).innerHTML = (st.queue && st.queue.length ? '<div class="alert" style="margin-bottom:8px"><b>여러 장 처리</b> — ' + AW.esc(st.qinfo || '') + ' · 「새 양식 만들기」를 누르면 다음 장으로 넘어갑니다.</div>' : '') + '<div class="sc-help"><b>영역 편집 안내</b><ol><li><b>선택</b>: 상자를 누르면 선택, <b>Ctrl 또는 Shift</b>를 누른 채 누르면 여러 개 선택, <b>빈 곳을 끌면</b> 범위 안의 상자가 한 번에 선택됩니다. 오른쪽 목록(레이어)에서도 선택됩니다.</li>' +
       '<li><b>바뀌는 자리 지정</b>: 성명·소속·날짜처럼 사람마다 달라지는 글자 상자를 선택하고 「바뀌는 자리로」를 누르면 메일머지 항목({{항목}})이 됩니다. 항목명은 아래에서 고칠 수 있습니다.</li>' +
       '<li><b>위치·크기</b>: 선택한 상자를 끌어 옮기고, 모서리·변의 점을 끌어 크기를 조절합니다. 빠진 글자는 「영역 추가」로 끌어서 그리면 AI가 글자를 읽어 줍니다.</li>' +
       '<li><b>종류 바꾸기</b>: 글자 / 이미지(직인·로고) / 배경 유지(장식 등) 중에서 고르고, 줄이 나뉜 문단은 「묶기」로 하나의 글상자로 합칩니다. 목록을 끌면 겹침 순서(레이어)가 바뀝니다.</li></ol></div>' +
@@ -476,16 +538,16 @@
   function measure(text, font, px, bold) {
     try { var g = cv(2, 2).getContext('2d'), f = AW.FONTS.filter(function (x) { return x.id === font; })[0]; g.font = (bold ? 'bold ' : '') + px + 'px ' + (f ? f.stack : 'serif'); return g.measureText(text).width; } catch (e) { return 0; }
   }
-  function make(el) {
-    var cvs = st.fin.canvas, W = cvs.width, H = cvs.height, pg = st.fin.page, det = st.det, bgc = cv(W, H), bg = bgc.getContext('2d'), kx = pg.w / W, ky = pg.h / H;
+  function assemble(ctx) {   // 화면 없이 양식(nt)과 항목 예시(rows0)를 조립 — 한 장씩·일괄 처리 공용
+    var cvs = ctx.fin.canvas, W = cvs.width, H = cvs.height, pg = ctx.fin.page, det = ctx.det, bgc = cv(W, H), bg = bgc.getContext('2d'), kx = pg.w / W, ky = pg.h / H;
     bg.drawImage(cvs, 0, 0);
-    var on = st.items.filter(function (it) { return it.on && it.kind !== 'ignore'; }), src = {};
+    var on = ctx.items.filter(function (it) { return it.on && it.kind !== 'ignore'; }), src = {};
     on.forEach(function (it) { if (it.kind === 'object') src[it.uid] = cutout(bg, it.box); });            // 먼저 잘라 내고
     on.forEach(function (it) {   // 배경에서 지움: 원본에서 검출된 자리(옮겨도 원래 자리를 지움) + 크기를 고쳐 겹치는 영역
-      if (it.kind !== 'object' && !st.erase) return; var R = it.kind === 'object' ? 6 : 4, srcs = (it.src && it.src.length ? it.src : [it.box0 || it.box]).slice(), b = it.box;
+      if (it.kind !== 'object' && !ctx.erase) return; var R = it.kind === 'object' ? 6 : 4, srcs = (it.src && it.src.length ? it.src : [it.box0 || it.box]).slice(), b = it.box;
       var hit = srcs.some(function (o) { return b.x < o.x + o.w && b.x + b.w > o.x && b.y < o.y + o.h && b.y + b.h > o.y; }); if (hit) srcs.push(b); srcs.forEach(function (o) { eraseBox(bg, det, o, R); });
     });
-    var nt = AW.newTpl(st.name || '스캔 양식'); nt.page = { w: pg.w, h: pg.h, paper: pg.paper, orient: pg.orient }; nt.bg = bgc.toDataURL('image/jpeg', 0.9); nt.bgName = st.name || '스캔';
+    var nt = AW.newTpl(ctx.name || '스캔 양식'); nt.page = { w: pg.w, h: pg.h, paper: pg.paper, orient: pg.orient }; nt.bg = bgc.toDataURL('image/jpeg', 0.9); nt.bgName = ctx.name || '스캔';
     var rows0 = {}, used = {};
     on.forEach(function (it) {
       var b = it.box;
@@ -503,13 +565,17 @@
       if (lines === 1) { eh = Math.max(b.h * 1.3, szPx * 1.3); ey = b.y + b.h / 2 - eh / 2; } else { eh = pitch * lines; ey = rows[0].cy - pitch / 2; }
       nt.elems.push(AW.elem('text', { x: AW.round(Math.max(0, ex * kx), 2), y: AW.round(Math.max(0, ey * ky), 2), w: AW.round(ew * kx, 2), h: AW.round(eh * ky, 2), text: out, font: it.font, size: Math.max(5, Math.min(150, AW.round(szPx * ky / PT, 1))), color: it.color || '#111111', bold: !!it.bold, align: align, valign: lines > 1 ? 'top' : 'middle', lh: AW.round(lh, 2), fit: lines === 1 }));
     });
-    var keys = Object.keys(rows0); nt.name = st.name || '스캔 양식';
+    var keys = Object.keys(rows0); nt.name = ctx.name || '스캔 양식'; var no = on.filter(function (i) { return i.kind === 'object'; }).length;
+    return { nt: nt, rows0: rows0, keys: keys, nObj: no, nTxt: on.length - no };
+  }
+  function make(el) {
+    var r = assemble({ fin: st.fin, det: st.det, items: st.items, name: st.name, erase: st.erase }), nt = r.nt, rows0 = r.rows0, keys = r.keys, queued = st.queue && st.queue.length > 1;
     var bt = AW.$('[data-s="make"]', el); if (bt) bt.disabled = true;
-    AW.$$('.aw-ov').forEach(function (o) { o.remove(); });
+    if (!queued) AW.$$('.aw-ov').forEach(function (o) { o.remove(); });
     AW.App.adopt(nt).then(function () {
       if (keys.length) { S.tpl.rows = [rows0]; S.sampleOnly = true; AW.syncFields(); S.tpl.fields.forEach(function (f) { if (rows0[f.name] != null) { f.example = rows0[f.name]; f.sample = rows0[f.name]; } }); AW.Data.refresh(true); AW.emit('datachange'); AW.emit('stepchange'); }
-      var no = on.filter(function (i) { return i.kind === 'object'; }).length;
-      AW.toast('스캔본으로 새 양식을 만들었습니다. 글상자 ' + (on.length - no) + '개 · 이미지 개체 ' + no + '개 · 메일머지 항목 ' + keys.length + '개. 위치와 글꼴을 확인해 다듬어 주십시오.', 'ok'); AW.log('scan_make', '', { texts: on.length - no, objects: no, fields: keys });
-    }).catch(function () {});
+      AW.toast('스캔본으로 새 양식을 만들었습니다. 글상자 ' + r.nTxt + '개 · 이미지 개체 ' + r.nObj + '개 · 메일머지 항목 ' + keys.length + '개. 위치와 글꼴을 확인해 다듬어 주십시오.', 'ok'); AW.log('scan_make', '', { texts: r.nTxt, objects: r.nObj, fields: keys });
+      if (queued) { st.queue.shift(); return nextTask(el); }
+    }).catch(function () { if (bt) bt.disabled = false; });
   }
 })();

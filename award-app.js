@@ -224,12 +224,49 @@
       renderTabs(); persistTabs();
     }).catch(function (e) { AW.toast(e.message, 'error'); });
   }
+  function closeOthers(key) {
+    var others = tabs.filter(function (t) { return t.key !== key; }), dirty = others.filter(function (t) { return t.key === cur ? S.dirty : t.dirty; }).length;
+    return AW.confirm('다른 탭 모두 닫기', '다른 ' + others.length + '개 탭을 닫습니다.' + (dirty ? ' 저장되지 않은 변경이 있는 탭 ' + dirty + '개가 있습니다.' : '') + ' 계속하시겠습니까?', '닫기', true).then(function (ok) {
+      if (!ok) return; var go = key === cur ? Promise.resolve() : gotoTab(key); return go.then(function () { tabs = tabs.filter(function (t) { return t.key === key; }); renderTabs(); persistTabs(); });
+    });
+  }
+  // 다른 탭의 양식 전체(개체·배경·항목·데이터)를 현재 탭에 합치기
+  function mergeFromTab(key) {
+    var t = tabs.filter(function (x) { return x.key === key; })[0]; if (!t || key === cur) return;
+    var load = t.tpl ? Promise.resolve(t.tpl) : AW.call('award_tpl_get', { p_id: t.id }).then(function (r) { return AW.fromServer(r); });
+    load.then(function (src) {
+      var cur0 = S.tpl, diff = Math.abs(src.page.w - cur0.page.w) > 1 || Math.abs(src.page.h - cur0.page.h) > 1;
+      AW.modal({ title: '탭의 양식 합치기', body: '<p style="margin-top:0">「' + AW.esc(src.name) + '」 탭의 내용을 현재 탭 「' + AW.esc(cur0.name) + '」 에 합칩니다. 현재 양식은 되돌리기(Ctrl+Z)로 복구할 수 있습니다.</p><div class="radios">' +
+        '<label><input type="checkbox" id="mg-e" checked> 개체 <b>' + src.elems.length + '</b>개 (글상자·이미지·도형·QR)</label>' +
+        '<label><input type="checkbox" id="mg-f" checked> 바뀌는 항목 설정(안내·예시·형식) — 합친 항목명에만 적용</label>' +
+        '<label><input type="checkbox" id="mg-b"' + (src.bg ? '' : ' disabled') + '> 배경도 가져오기 <span class="muted">(현재 배경을 바꿉니다' + (src.bg ? '' : ' · 가져올 배경 없음') + ')</span></label>' +
+        '<label><input type="checkbox" id="mg-r"' + (src.rows.length ? '' : ' disabled') + '> 입력 데이터 <b>' + src.rows.length + '</b>행도 가져오기 <span class="muted">(현재 데이터가 있으면 아래에 이어 붙임)</span></label></div>' +
+        '<label class="f">위치·크기</label><select class="in" id="mg-p"><option value="same">원본 위치·크기 그대로</option><option value="scale"' + (diff ? ' selected' : '') + '>용지 크기에 맞춰 비율 조정' + (diff ? ' (용지가 달라 권장)' : '') + '</option></select>',
+        actions: [{ label: '취소', cls: 'btn-ghost' }, { label: AW.ic('check', 15) + ' 합치기', cls: 'btn-primary', onClick: function (c) {
+          var o = { e: AW.$('#mg-e').checked, f: AW.$('#mg-f').checked, b: AW.$('#mg-b').checked, r: AW.$('#mg-r').checked, scale: AW.$('#mg-p').value === 'scale' }; c(); doMerge(src, o);
+        } }] });
+    }).catch(function (e) { AW.toast(e.message, 'error'); });
+  }
+  function doMerge(src, o) {
+    var cur0 = S.tpl, E = AW.Editor, kx = o.scale ? cur0.page.w / src.page.w : 1, ky = o.scale ? cur0.page.h / src.page.h : 1, km = Math.min(kx, ky), gm = {}, ids = [], had = {};
+    cur0.fields.forEach(function (f) { had[f.name] = 1; });
+    if (o.e) src.elems.forEach(function (e0) {
+      var n = AW.clone(e0); n.id = AW.uid(); n.lock = false; if (n.grp) n.grp = gm[n.grp] = gm[n.grp] || AW.uid('g'); n.x = AW.round(n.x * kx, 2); n.y = AW.round(n.y * ky, 2); n.w = AW.round(n.w * kx, 2); n.h = AW.round(n.h * ky, 2); if (n.size) n.size = AW.round(n.size * km, 1); cur0.elems.push(n); ids.push(n.id);
+    });
+    if (o.b && src.bg) { cur0.bg = src.bg; cur0.bgName = src.bgName; S.bgDirty = true; }
+    AW.syncFields();
+    if (o.f) cur0.fields.forEach(function (f) { if (had[f.name]) return; var sf = src.fields.filter(function (x) { return x.name === f.name; })[0]; if (sf) { ['hint', 'example', 'max', 'req', 'fmt', 'sample'].forEach(function (k) { if (sf[k] != null) f[k] = AW.clone(sf[k]); }); } });
+    if (o.r && src.rows.length) { cur0.rows = cur0.rows.concat(AW.clone(src.rows)); S.sampleOnly = false; AW.emit('datachange'); AW.Data.refresh(true); }
+    E.refreshElems(); E.setSel(ids); E.api.changed(o.b ? 'bg' : 'elems', false, '다른 탭에서 합치기'); AW.Data.refresh(true);
+    AW.toast('「' + src.name + '」 의 ' + (o.e ? '개체 ' + ids.length + '개' : '내용') + (o.b ? ' · 배경' : '') + (o.r ? ' · 데이터' : '') + ' 을(를) 합쳤습니다.', 'ok');
+  }
+  A.openId = function (id) { return openInTab(id); };
   function renderTabs() {
     var nav = $('#tabbar'); if (!nav) return;
     nav.innerHTML = tabs.map(function (t) {
       var on = t.key === cur, nm = (on && S.tpl ? S.tpl.name : t.name) || '이름 없음', dirty = on ? S.dirty : t.dirty;
-      return '<div class="tb-i' + (on ? ' on' : '') + '" data-k="' + t.key + '" role="tab" aria-selected="' + on + '" title="' + AW.esc(nm) + '"><span class="tb-n">' + AW.esc(nm) + '</span>' + (dirty ? '<i class="tb-d" title="저장 대기"></i>' : '') + '<button class="tb-x" data-x="' + t.key + '" aria-label="탭 닫기" title="탭 닫기">' + AW.ic('close', 12) + '</button></div>';
-    }).join('') + '<button class="tb-add" data-add="1" title="새 탭 (새 양식 · 양식 열기 · 스캔본)" aria-label="새 탭">' + AW.ic('plus', 16) + '</button>' + '<span class="tb-hint">탭 사이에서 개체를 Ctrl+C → Ctrl+V 로 복사할 수 있습니다</span>';
+      return '<div class="tb-i' + (on ? ' on' : '') + '" draggable="true" data-k="' + t.key + '" role="tab" aria-selected="' + on + '" title="' + AW.esc(nm) + '"><span class="tb-n">' + AW.esc(nm) + '</span>' + (dirty ? '<i class="tb-d" title="저장 대기"></i>' : '') + '<button class="tb-x" data-x="' + t.key + '" aria-label="탭 닫기" title="탭 닫기">' + AW.ic('close', 12) + '</button></div>';
+    }).join('') + '<button class="tb-add" data-add="1" title="새 탭 (새 양식 · 양식 열기 · 스캔본)" aria-label="새 탭">' + AW.ic('plus', 16) + '</button>' + '<span class="tb-hint">탭을 끌어 순서 변경 · 오른쪽 클릭: 합치기·닫기 · 개체는 Ctrl+C → Ctrl+V 로 탭 사이 복사</span>';
   }
   function wireTabs() {
     var nav = $('#tabbar'); if (!nav) return;
@@ -237,6 +274,20 @@
       var x = e.target.closest('[data-x]'); if (x) { e.stopPropagation(); return closeTab(x.dataset.x); }
       var ad = e.target.closest('[data-add]'); if (ad) { var r = ad.getBoundingClientRect(), I = function (label, ic, fn) { return { k: 'i', label: label, ic: ic, fn: fn }; }; return AW.Editor.menuAt(r.left, r.bottom + 4, [I('새 양식 (새 탭)', 'plus', newTab), I('양식 열기 (새 탭)…', 'folder', function () { listDialog(); }), I('스캔본으로 만들기 (AI)…', 'sparkle', function () { AW.Scan.open(); })]); }
       var t = e.target.closest('[data-k]'); if (t) gotoTab(t.dataset.k);
+    });
+    var dragKey = null;   // 탭 끌어서 순서 바꾸기
+    nav.addEventListener('dragstart', function (e) { var t = e.target.closest && e.target.closest('.tb-i'); if (!t) return; dragKey = t.dataset.k; e.dataTransfer.effectAllowed = 'move'; try { e.dataTransfer.setData('text/plain', dragKey); } catch (x) {} });
+    nav.addEventListener('dragover', function (e) { if (!dragKey) return; e.preventDefault(); AW.$$('.tb-i', nav).forEach(function (n) { n.classList.remove('ov-l', 'ov-r'); }); var t = e.target.closest('.tb-i'); if (t && t.dataset.k !== dragKey) { var r = t.getBoundingClientRect(); t.classList.add(e.clientX < r.left + r.width / 2 ? 'ov-l' : 'ov-r'); } });
+    nav.addEventListener('dragleave', function (e) { if (!nav.contains(e.relatedTarget)) AW.$$('.tb-i', nav).forEach(function (n) { n.classList.remove('ov-l', 'ov-r'); }); });
+    nav.addEventListener('drop', function (e) {
+      if (!dragKey) return; e.preventDefault(); var t = e.target.closest('.tb-i'), from = dragKey; dragKey = null; AW.$$('.tb-i', nav).forEach(function (n) { n.classList.remove('ov-l', 'ov-r'); });
+      if (!t || t.dataset.k === from) return renderTabs(); var r = t.getBoundingClientRect(), after = e.clientX >= r.left + r.width / 2, mv = tabs.filter(function (x) { return x.key === from; })[0]; if (!mv) return;
+      tabs = tabs.filter(function (x) { return x !== mv; }); var ti = -1; tabs.forEach(function (x, i) { if (x.key === t.dataset.k) ti = i; }); tabs.splice(after ? ti + 1 : ti, 0, mv); renderTabs(); persistTabs();
+    });
+    nav.addEventListener('dragend', function () { dragKey = null; AW.$$('.tb-i', nav).forEach(function (n) { n.classList.remove('ov-l', 'ov-r'); }); });
+    nav.addEventListener('contextmenu', function (e) {   // 탭 오른쪽 클릭 메뉴
+      var t = e.target.closest('.tb-i'); if (!t) return; e.preventDefault(); var key = t.dataset.k, isCur = key === cur, I = function (label, ic, fn, on) { return { k: 'i', label: label, ic: ic, fn: fn, on: on }; };
+      AW.Editor.menuAt(e.clientX, e.clientY, [isCur ? I('현재 탭', 'check', function () {}) : I('이 탭의 양식을 현재 탭에 합치기…', 'copy', function () { mergeFromTab(key); }), I('이 탭으로 이동', 'chevR', function () { gotoTab(key); }), { k: 'sep' }, I('탭 닫기', 'close', function () { closeTab(key); }), I('다른 탭 모두 닫기', 'close', function () { closeOthers(key); })]);
     });
     nav.addEventListener('auxclick', function (e) { if (e.button !== 1) return; var t = e.target.closest('[data-k]'); if (t) { e.preventDefault(); closeTab(t.dataset.k); } });
     document.addEventListener('keydown', function (e) {   // Ctrl+Alt+←/→ 탭 이동, Ctrl+Alt+W 탭 닫기
