@@ -324,7 +324,7 @@
   function render() {
     var body = document.getElementById('gbody'); if (!body) return;
     var rows = pick(), y = window.scrollY, focus = document.activeElement && document.activeElement.id === 'gkw';
-    body.parentNode.classList.toggle('gcmp', G.sub === 'cmp' || G.sub === 'legacy'); var gs0 = document.getElementById('gsinc'), gd0 = document.getElementById('gdata'); if (gs0) gs0.value = A.ext.F.sincere; if (gd0) gd0.value = A.ext.F.data; if (G.sub === 'legacy' || G.sub === 'cmp') { if (body.getAttribute('data-legacy') !== G.sub) { body.setAttribute('data-legacy', G.sub); body.className = ''; body.innerHTML = ''; A.ext.rsub = A.ext.rsubInit = G.sub === 'cmp' ? 'cmp' : 'sum'; A.ext.keepShared = true; orig(body); } return; }
+    body.parentNode.classList.toggle('gcmp', !!LEGSUB[G.sub]); var gs0 = document.getElementById('gsinc'), gd0 = document.getElementById('gdata'); if (gs0) gs0.value = A.ext.F.sincere; if (gd0) gd0.value = A.ext.F.data; if (LEGSUB[G.sub]) { if (body.getAttribute('data-legacy') !== G.sub) { body.setAttribute('data-legacy', G.sub); body.className = ''; body.innerHTML = ''; A.ext.rsub = A.ext.rsubInit = G.sub === 'legacy' ? 'sum' : G.sub; A.ext.keepShared = true; orig(body); } return; }
     body.removeAttribute('data-legacy'); body.className = ''; body.innerHTML = G.sub === 'hist' ? viewHist() : G.sub === 'rep' ? viewReport() : G.sub === 'sum' ? viewSummary(rows) : G.sub === 'q' ? viewQuestions(rows) : viewResp();
     if (focus) { var n = document.getElementById('gkw'); if (n) { n.focus(); n.setSelectionRange(n.value.length, n.value.length); } }
     window.scrollTo(0, y); live();
@@ -355,9 +355,10 @@
   }
 
   /* ───────────── 탭 ───────────── */
+  var LEGSUB = { legacy: 1, cmp: 1, det: 1, same: 1, live: 1 };
   async function general(box) {
     if (G.sid !== A.cur.survey.id) { G.sid = A.cur.survey.id; G.rows = []; G.maxSeq = 0; G.sub = 'rep'; G.page = 1; G.kw = ''; G.x = {}; G.cmp = null; G._flatFor = ''; A.ext.F.data = A.cur.survey.test_mode ? 'test' : 'real'; A.ext.F.sincere = 'all'; }
-    var SUBS = [['rep', '리포트']].concat(isCourse() ? [['cmp', '비교']] : []).concat([['q', '문항 상세'], ['resp', '개별 응답']]).concat(isCourse() ? [['legacy', '과목·교수 현황판']] : []).concat([['hist', '이력 비교']]);
+    var SUBS = [['rep', '리포트']].concat(isCourse() ? [['cmp', '비교'], ['det', '조건 검출'], ['same', '같은 과목'], ['live', '참여 현황']] : []).concat([['q', '문항 상세'], ['resp', '개별 응답']]).concat(isCourse() ? [['legacy', '과목·교수 현황판']] : []).concat([['hist', '이력 비교']]);
     box.innerHTML = '<div class="row" style="margin-bottom:12px"><div class="tabs" style="margin:0;border:0;flex:1">' + SUBS.map(function (s) { return '<button class="tab" data-act="gsub" data-s="' + s[0] + '" aria-selected="' + (G.sub === s[0]) + '">' + s[1] + '</button>'; }).join('') + '</div><span id="glive" class="live"></span><button class="btn btn-ghost btn-sm" data-act="glivetoggle">일시정지/재개</button><button class="btn btn-secondary btn-sm" data-act="greload">' + I('refresh', 14) + ' 새로고침</button><button class="btn btn-primary btn-sm" data-act="gxlsx">' + I('download', 14) + ' 엑셀 내려받기</button></div>' +
       '<div class="filters"><div><label class="f">데이터</label><select class="fld" id="gdata"><option value="real"' + (A.ext.F.data === 'real' ? ' selected' : '') + '>정식 응답</option><option value="test"' + (A.ext.F.data === 'test' ? ' selected' : '') + '>테스트 응답</option><option value="all"' + (A.ext.F.data === 'all' ? ' selected' : '') + '>정식+테스트</option></select></div><div><label class="f">응답 범위(유효성)</label><select class="fld" id="gsinc">' + Object.keys(A.ext.SINC).map(function (k) { return '<option value="' + k + '"' + (A.ext.F.sincere === k ? ' selected' : '') + '>' + SVY.esc(A.ext.SINC[k]) + '</option>'; }).join('') + '</select></div></div><div id="gbody" class="loading">불러오는 중…</div>';
     box.onchange = function (e) { if (e.target.id === 'gsinc') { A.ext.F.sincere = e.target.value; G.page = 1; render(); } if (e.target.id === 'gdata') { A.ext.F.data = e.target.value; G.page = 1; render(); } };
@@ -365,7 +366,7 @@
     box.onclick = async function (e) {
       var t = e.target.closest('[data-act]'); if (!t) return; var act = t.getAttribute('data-act');
       if (act === 'gcmp') { var oid = t.getAttribute('data-id'); G.cmp = { loading: true }; G.sub = 'hist'; render(); try { var o = await loadOther(oid); G.cmp = { title: o.title, m: metricsOf(o.def, o.rows.filter(function (r) { return A.ext.sincereOk(r); }), null) }; } catch (er) { G.cmp = { err: er.message }; } render(); return; }
-      if (act === 'gsub') { if ((G.sub === 'legacy' || G.sub === 'cmp') && t.getAttribute('data-s') !== G.sub && A.R) A.R.sid = ''; G.sub = t.getAttribute('data-s'); box.querySelectorAll('[data-act=gsub]').forEach(function (b) { b.setAttribute('aria-selected', b === t); }); G.page = 1; render(); }
+      if (act === 'gsub') { if (LEGSUB[G.sub] && t.getAttribute('data-s') !== G.sub && A.R) A.R.sid = ''; G.sub = t.getAttribute('data-s'); box.querySelectorAll('[data-act=gsub]').forEach(function (b) { b.setAttribute('aria-selected', b === t); }); G.page = 1; render(); }
       else if (act === 'glivetoggle') { G.live = !G.live; live(); if (G.live) poll(); }
       else if (act === 'greload') fullLoad().then(function () { render(); A.toast('새로 불러왔습니다.'); }).catch(function (er) { A.toast(er.message, 'err'); });
       else if (act === 'gxlsx') exportXlsx();
