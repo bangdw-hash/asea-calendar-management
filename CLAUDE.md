@@ -94,6 +94,7 @@ Icons: inline SVG only — no emoji in UI. Theme picker (blue/green/orange swatc
 
 - **Every survey result view must offer file output by default**: Excel (`gxlsx`), PDF of the current view (`gpdf`) and print (`gprint`) are part of the common results toolbar in `aseasurvey-admin-gresults.js` and apply to every survey type (course-linked and 1-person-1-response). Any new survey type or result tab must keep these working; do not ship a result screen without export/print.
 - Report generation (`aseasurvey-admin-report.js`): per-professor / per-class / per-track A4 PDFs (numeric internal report + qualitative delivery report), ZIP and print. AI analysis results, edits and overview text stay in the admin's browser (IndexedDB) — never save them to Supabase; send no names to the AI.
+- Academic grounding (`theory/aseasurvey-theory.json`, `aseasurvey-admin-theory.js`): only entries whose bibliography matched Crossref/ERIC **and** whose finding was checked against the public abstract (evidence sentence must appear verbatim) may be added (`tools/theory_verify.py`, `tools/theory_build.py`, `theory/VERIFICATION.md`). AI may cite only the `id`s sent with the request; strip any other author-year text; internal reports carry footnotes, delivery (qualitative) reports carry no citations.
 - In results, **5 is the best score** (positive = 4·5, negative = 1·2); "valid responses" = passed attention checks and not straight-lining.
 
 ## AI Collaboration Protocol
