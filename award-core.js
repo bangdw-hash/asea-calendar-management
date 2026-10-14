@@ -20,11 +20,55 @@
     PAPERS: {
       A4: [210, 297], A3: [297, 420], B4: [250, 353], B5: [176, 250], Letter: [215.9, 279.4]
     },
-    FONTS: [
-      ['Noto Sans KR', '노토 산스 (고딕)'], ['Noto Serif KR', '노토 세리프 (명조)'],
-      ['Nanum Myeongjo', '나눔명조'], ['Gowun Batang', '고운바탕'], ['Nanum Pen Script', '나눔손글씨 펜'],
-      ['KoPubWorld Dotum', 'KoPub 돋움'], ['Malgun Gothic', '맑은 고딕'], ['Batang', '바탕'], ['Times New Roman', 'Times New Roman']
-    ]
+    FONTS: []
+  };
+
+
+  /* ───────────── 글꼴 (상장·공문서용 분류) ─────────────
+   * [id, 표시 이름, 분류, 대체 글꼴 목록, PC 글꼴 여부]  — PC 글꼴은 인쇄하는 컴퓨터에 설치된 것만 사용됨 */
+  var FT = [
+    ['Gungsuh', '궁서체', '상장 추천', "'Gungsuh','궁서','GungSeo','Nanum Myeongjo',serif", 1],
+    ['Batang', '바탕체', '상장 추천', "'Batang','바탕','AppleMyungjo','Nanum Myeongjo',serif", 1],
+    ['Nanum Myeongjo', '나눔명조', '상장 추천', "'Nanum Myeongjo','Batang',serif"],
+    ['Noto Serif KR', '노토 세리프 (명조)', '상장 추천', "'Noto Serif KR','Nanum Myeongjo',serif"],
+    ['Hahmlet', '함렛 (현대 명조)', '상장 추천', "'Hahmlet','Noto Serif KR',serif"],
+    ['Gowun Batang', '고운바탕', '상장 추천', "'Gowun Batang','Nanum Myeongjo',serif"],
+    ['Song Myung', '송명 (붓 느낌 명조)', '붓글씨 · 서예', "'Song Myung','Nanum Myeongjo',serif"],
+    ['Nanum Brush Script', '나눔 붓글씨', '붓글씨 · 서예', "'Nanum Brush Script','Song Myung',cursive"],
+    ['Nanum Pen Script', '나눔손글씨 펜', '붓글씨 · 서예', "'Nanum Pen Script',cursive"],
+    ['Black Han Sans', '블랙한산스 (굵은 제목)', '제목 · 고딕', "'Black Han Sans','Noto Sans KR',sans-serif"],
+    ['Noto Sans KR', '노토 산스 (고딕)', '제목 · 고딕', "'Noto Sans KR','Malgun Gothic',sans-serif"],
+    ['Gowun Dodum', '고운돋움', '제목 · 고딕', "'Gowun Dodum','Noto Sans KR',sans-serif"],
+    ['Nanum Gothic', '나눔고딕', '제목 · 고딕', "'Nanum Gothic','Noto Sans KR',sans-serif"],
+    ['KoPubWorld Dotum', 'KoPub 돋움', '제목 · 고딕', "'KoPubWorld Dotum','Noto Sans KR',sans-serif"],
+    ['Malgun Gothic', '맑은 고딕', 'PC 글꼴', "'Malgun Gothic','맑은 고딕','Noto Sans KR',sans-serif", 1],
+    ['Dotum', '돋움체', 'PC 글꼴', "'Dotum','돋움','Noto Sans KR',sans-serif", 1],
+    ['Gulim', '굴림체', 'PC 글꼴', "'Gulim','굴림','Noto Sans KR',sans-serif", 1],
+    ['Playfair Display', 'Playfair Display (영문 격식)', '영문', "'Playfair Display','Times New Roman',serif"],
+    ['Cormorant Garamond', 'Cormorant Garamond (영문 고전)', '영문', "'Cormorant Garamond','Times New Roman',serif"],
+    ['Great Vibes', 'Great Vibes (영문 필기체)', '영문', "'Great Vibes',cursive"],
+    ['Times New Roman', 'Times New Roman', '영문', "'Times New Roman','Times',serif", 1]
+  ];
+  AW.FONTS = FT.map(function (f) { return { id: f[0], label: f[1], grp: f[2], stack: f[3], sys: !!f[4] }; });
+  AW.fontStack = function (id) { for (var i = 0; i < FT.length; i++) if (FT[i][0] === id) return FT[i][3]; return "'" + (id || 'Noto Sans KR') + "','Noto Sans KR',sans-serif"; };
+  // PC 에 설치된 글꼴인지 확인(캔버스 폭 비교)
+  var hf = {};
+  AW.hasFont = function (name) {
+    if (name in hf) return hf[name];
+    var c = (AW._cv = AW._cv || document.createElement('canvas').getContext('2d')), t = '가나다라ABCabc한글 0123', w = function (f) { c.font = '72px ' + f; return c.measureText(t).width; };
+    return (hf[name] = ['monospace', 'serif', 'sans-serif'].some(function (b) { return w('"' + name + '",' + b) !== w(b); }));
+  };
+  AW.fontOptions = function (sameLabel) {
+    var groups = [], by = {};
+    AW.FONTS.forEach(function (f) { if (!by[f.grp]) { by[f.grp] = []; groups.push(f.grp); } by[f.grp].push(f); });
+    return (sameLabel ? '<option value="">' + sameLabel + '</option>' : '') + groups.map(function (g) {
+      return '<optgroup label="' + g + '">' + by[g].map(function (f) { var miss = f.sys && !AW.hasFont(f.id); return '<option value="' + f.id + '">' + f.label + (miss ? ' — 이 PC에 없음' : '') + '</option>'; }).join('') + '</optgroup>';
+    }).join('');
+  };
+  // 양식에서 쓰는 PC 글꼴 중 이 PC 에 없는 것
+  AW.missingFonts = function (tpl) {
+    var used = {}; (tpl || AW.S.tpl).elems.forEach(function (e) { if (e.t === 'text') { used[e.font] = 1; if (e.fontEn) used[e.fontEn] = 1; } });
+    return AW.FONTS.filter(function (f) { return f.sys && used[f.id] && !AW.hasFont(f.id); }).map(function (f) { return f.label; });
   };
 
   /* ───────────── 이벤트 ───────────── */
@@ -215,7 +259,7 @@
   };
   // 발급번호 규칙: page.num = {pattern:'제{YYYY}-{N}호', start:1, step:1, pad:3}. {YYYY} {YY} {MM} {DD} {N}
   AW.serial = function (idx, tpl) {
-    var n = ((tpl || AW.curTpl || S.tpl || {}).page || {}).num || {}, d = new Date(), p2 = function (x) { return x < 10 ? '0' + x : '' + x; };
+    var n = ((tpl || AW.curTpl || AW.S.tpl || {}).page || {}).num || {}, d = new Date(), p2 = function (x) { return x < 10 ? '0' + x : '' + x; };
     var num = (n.start == null ? 1 : +n.start) + idx * (n.step == null ? 1 : +n.step), s = String(Math.abs(num)); while (s.length < (n.pad || 0)) s = '0' + s;
     return String(n.pattern || '{N}').replace(/\{YYYY\}/g, d.getFullYear()).replace(/\{YY\}/g, String(d.getFullYear()).slice(2)).replace(/\{MM\}/g, p2(d.getMonth() + 1)).replace(/\{DD\}/g, p2(d.getDate())).replace(/\{N\}/g, (num < 0 ? '-' : '') + s);
   };
@@ -255,7 +299,7 @@
     d.className = 'el el-' + e.t; d.dataset.id = e.id;
     var base = 'position:absolute;left:' + ((e.x + (mode === 'print' ? dx : 0)) * k) + 'px;top:' + ((e.y + (mode === 'print' ? dy : 0)) * k) + 'px;width:' + (e.w * k) + 'px;height:' + (Math.max(e.h, e.t === 'line' ? 0 : 1) * k) + 'px;';
     if (e.t === 'text') {
-      var lang = o.lang || 'ko', ko = e.text || '', en = e.en || '', cp = (AW.curTpl || S.tpl || {}).page || {}, blocks = [];
+      var lang = o.lang || 'ko', ko = e.text || '', en = e.en || '', cp = (AW.curTpl || AW.S.tpl || {}).page || {}, blocks = [];
       var tokH = function (src, lg) {
         return AW.esc(src).replace(/\{\{\s*([^{}]+?)\s*\}\}/g, function (m, n) {
           n = n.replace(/&amp;/g, '&'); if (mode === 'edit') return '<span class="tk">{{' + AW.esc(n) + '}}</span>';
@@ -264,13 +308,14 @@
           return AW.esc(v);
         });
       };
-      if (lang === 'en') blocks.push({ h: tokH(en || ko, en ? 'en' : 'ko'), dim: mode === 'edit' && !en });
-      else if (lang === 'both' && en.trim()) { var kb = { h: tokH(ko, 'ko') }, eb = { h: tokH(en, 'en'), s: cp.enScale || 0.8 }; blocks = cp.enFirst ? [eb, kb] : [kb, eb]; }
+      var ef = e.fontEn ? AW.fontStack(e.fontEn) : '';
+      if (lang === 'en') blocks.push({ h: tokH(en || ko, en ? 'en' : 'ko'), dim: mode === 'edit' && !en, f: en ? ef : '' });
+      else if (lang === 'both' && en.trim()) { var kb = { h: tokH(ko, 'ko') }, eb = { h: tokH(en, 'en'), s: cp.enScale || 0.8, f: ef }; blocks = cp.enFirst ? [eb, kb] : [kb, eb]; }
       else blocks.push({ h: tokH(ko, 'ko') });
-      var inner = blocks.map(function (x) { return '<div' + (x.s ? ' style="font-size:' + x.s + 'em"' : '') + (x.dim ? ' class="noen"' : '') + '>' + (x.h || (mode === 'edit' ? '' : '&nbsp;')) + '</div>'; }).join('');
+      var inner = blocks.map(function (x) { return '<div' + (x.s || x.f ? ' style="' + (x.s ? 'font-size:' + x.s + 'em;' : '') + (x.f ? 'font-family:' + x.f + ';' : '') + '"' : '') + (x.dim ? ' class="noen"' : '') + '>' + (x.h || (mode === 'edit' ? '' : '&nbsp;')) + '</div>'; }).join('');
       var fs = (e.size || 16) * PT * k;
       d.style.cssText = base + 'display:flex;flex-direction:column;justify-content:' + (e.valign === 'top' ? 'flex-start' : e.valign === 'bottom' ? 'flex-end' : 'center') +
-        ';font-family:\'' + (e.font || 'Noto Sans KR') + '\',\'Noto Sans KR\',sans-serif;font-size:' + fs + 'px;line-height:' + (e.lh || 1.4) + ';color:' + (e.color || '#111') +
+        ';font-family:' + AW.fontStack(e.font) + ';font-size:' + fs + 'px;line-height:' + (e.lh || 1.4) + ';color:' + (e.color || '#111') +
         ';font-weight:' + (e.bold ? 700 : 400) + ';font-style:' + (e.italic ? 'italic' : 'normal') + ';text-decoration:' + (e.ul ? 'underline' : 'none') +
         ';text-align:' + (e.align || 'center') + ';letter-spacing:' + ((e.ls || 0) * PT * k) + 'px;white-space:' + (e.fit ? 'pre' : 'pre-wrap') + ';word-break:keep-all;overflow-wrap:anywhere;';
       var b = document.createElement('div'); b.className = 'el-t'; b.innerHTML = inner;

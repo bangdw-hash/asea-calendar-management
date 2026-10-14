@@ -48,7 +48,8 @@
         '<div class="tg">' + BTN('zout', 'zoomOut', '축소') + '<button class="tb tb-txt" data-a="zlabel" title="맞춤/100%">맞춤</button>' + BTN('zin', 'zoomIn', '확대') + BTN('zfit', 'fit', '창에 맞춤') + BTN('snap', 'grid', '격자 자석 켜기/끄기') + BTN('gridcfg', 'cols', '격자·자석·이동 간격 설정') + BTN('keys', 'info', '편집 단축키·마우스 조합 안내') + '</div>' +
       '</div>' +
       '<div class="ed-tools ed-fmt" data-g="fmt">' +
-        '<select class="in sm" data-p="font" title="글꼴">' + AW.FONTS.map(function (f) { return '<option value="' + f[0] + '">' + f[1] + '</option>'; }).join('') + '</select>' +
+        '<select class="in sm" data-p="font" title="글꼴 (한글)" style="max-width:170px">' + AW.fontOptions() + '</select>' +
+        '<select class="in sm" data-p="fontEn" title="영문 글꼴 — 영문·한영 병기에서 영문에 적용" style="max-width:150px">' + AW.fontOptions('영문: 한글과 같음') + '</select>' +
         '<div class="tg"><button class="tb" data-a="sz-" title="글자 작게">' + AW.ic('minus', 15) + '</button><input class="in sm num" data-p="size" type="number" min="4" max="300" step="1" title="글자 크기(pt)" style="width:54px"><button class="tb" data-a="sz+" title="글자 크게">' + AW.ic('plus', 15) + '</button></div>' +
         '<div class="tg">' + BTN('bold', 'bold', '굵게') + BTN('italic', 'italic', '기울임') + BTN('ul', 'underline', '밑줄') + '<input type="color" class="clr" data-p="color" title="글자색" value="#111111"></div>' +
         '<div class="tg">' + BTN('al-l', 'alL', '왼쪽 정렬') + BTN('al-c', 'alC', '가운데 정렬') + BTN('al-r', 'alR', '오른쪽 정렬') + '</div>' +
@@ -196,7 +197,7 @@
     AW.$$('button', fmt).forEach(function (b) { b.disabled = !tx.length; });
     if (one) {
       var f = function (p) { return AW.$('[data-p="' + p + '"]', st.root); };
-      f('font').value = one.font; f('size').value = one.size; f('lh').value = one.lh; f('ls').value = one.ls || 0; f('color').value = /^#[0-9a-f]{6}$/i.test(one.color) ? one.color : '#111111'; f('fit').checked = !!one.fit;
+      f('font').value = one.font; f('fontEn').value = one.fontEn || ''; f('size').value = one.size; f('lh').value = one.lh; f('ls').value = one.ls || 0; f('color').value = /^#[0-9a-f]{6}$/i.test(one.color) ? one.color : '#111111'; f('fit').checked = !!one.fit;
       [['bold', one.bold], ['italic', one.italic], ['ul', one.ul], ['al-l', one.align === 'left'], ['al-c', one.align === 'center'], ['al-r', one.align === 'right'], ['v-t', one.valign === 'top'], ['v-m', one.valign === 'middle'], ['v-b', one.valign === 'bottom']].forEach(function (p) {
         var b = AW.$('[data-a="' + p[0] + '"]', fmt); if (b) b.classList.toggle('on', !!p[1]);
       });
