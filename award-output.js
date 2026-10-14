@@ -328,8 +328,9 @@
         var load = function () {
           AW.call('award_issued_list', { p_q: AW.$('#rg-q', m.el).value.trim() }).then(function (l) {
             AW.$('#rg-l', m.el).innerHTML = l.length ? '<div class="tbl-wrap"><table class="gt"><thead><tr><th>인증번호</th><th>발급번호</th><th>수여자</th><th>상명</th><th>양식</th><th>발급일</th><th>조회</th><th>상태</th><th></th></tr></thead><tbody>' + l.map(function (x) {
-              return '<tr><td class="nowrap"><b>' + AW.esc(x.code) + '</b></td><td>' + AW.esc(x.serial) + '</td><td>' + AW.esc(x.holder) + '</td><td>' + AW.esc(x.award || '') + '</td><td>' + AW.esc(x.tpl_name) + '</td><td class="nowrap">' + dt(x.issued_at) + '</td><td class="nowrap" title="최초 ' + (x.first_view ? dt(x.first_view) : '-') + ' / 최근 ' + (x.last_view ? dt(x.last_view) : '-') + '">' + (x.views || 0) + '회' + ((x.flags || 0) > 0 ? ' <span class="badge err" title="검출자가 내용 불일치로 신고">신고 ' + x.flags + '</span>' : (x.views || 0) >= 15 ? ' <span class="badge warn" title="조회가 많아 복제 가능성 확인 필요">의심</span>' : '') + '</td><td>' + (x.revoked ? '<span class="badge err">폐기</span>' : '<span class="badge ok">유효</span>') + '</td><td><button class="btn btn-ghost btn-sm" data-c="' + AW.esc(x.code) + '" data-r="' + (x.revoked ? 0 : 1) + '">' + (x.revoked ? '복구' : '폐기') + '</button></td></tr>';
+              return '<tr><td class="nowrap"><b>' + AW.esc(x.code) + '</b></td><td>' + AW.esc(x.serial) + '</td><td>' + AW.esc(x.holder) + '</td><td>' + AW.esc(x.award || '') + '</td><td>' + AW.esc(x.tpl_name) + '</td><td class="nowrap">' + dt(x.issued_at) + '</td><td class="nowrap" title="최초 ' + (x.first_view ? dt(x.first_view) : '-') + ' / 최근 ' + (x.last_view ? dt(x.last_view) : '-') + '">' + (x.views || 0) + '회' + ((x.uniq || 0) > 0 ? ' <span class="muted" title="서로 다른 접속지(IP 해시) 수">· ' + x.uniq + '곳</span>' : '') + ((x.flags || 0) > 0 ? ' <span class="badge err" title="검출자가 내용 불일치로 신고">신고 ' + x.flags + '</span>' : (x.views || 0) >= 15 || (x.uniq || 0) >= 5 ? ' <span class="badge warn" title="조회·접속지가 많아 복제 가능성 확인 필요">의심</span>' : '') + ' <button class="btn btn-ghost btn-sm" data-vw="' + AW.esc(x.code) + '">내역</button>' + '</td><td>' + (x.revoked ? '<span class="badge err">폐기</span>' : '<span class="badge ok">유효</span>') + '</td><td><button class="btn btn-ghost btn-sm" data-c="' + AW.esc(x.code) + '" data-r="' + (x.revoked ? 0 : 1) + '">' + (x.revoked ? '복구' : '폐기') + '</button></td></tr>';
             }).join('') + '</tbody></table></div><p class="muted">최근 300건까지 표시합니다. 폐기하면 진위 확인 페이지에서 「폐기된 상장」으로 안내됩니다.</p>' : '<div class="empty">발급 대장이 비어 있습니다.</div>';
+            AW.$$('[data-vw]', m.el).forEach(function (b) { b.onclick = function () { viewLog(b.dataset.vw); }; });
             AW.$$('[data-c]', m.el).forEach(function (b) { b.onclick = function () { AW.call('award_issued_revoke', { p_code: b.dataset.c, p_revoked: b.dataset.r === '1' }).then(load).catch(function (e) { AW.toast(e.message, 'error'); }); }; });
           }).catch(function (e) { AW.$('#rg-l', m.el).innerHTML = '<div class="alert warn">' + AW.esc(e.message) + '</div>'; });
         };
@@ -342,6 +343,13 @@
         }).join('') + '</tbody></table></div>' : '<div class="empty">기록이 없습니다.</div>';
       }).catch(err);
     }
+    function viewLog(code) {   // 번호별 조회 내역(최근 200건): 시각 · 접속지 구분(IP 해시 앞 6자) · 기기
+      AW.call('award_issued_views', { p_code: code }).then(function (l) {
+        var ips = {}; l.forEach(function (x) { if (x.ip) ips[x.ip] = 1; });
+        AW.modal({ title: '조회 내역 — ' + code, wide: true, body: '<p class="muted" style="margin-top:0">최근 ' + l.length + '건 · 서로 다른 접속지 ' + Object.keys(ips).length + '곳. 접속지는 IP를 되돌릴 수 없게 변환한 구분값이며 위치·개인을 식별하지 않습니다. 같은 번호가 짧은 기간에 여러 접속지·기기에서 조회되면 QR이 복제되었을 가능성이 있으나, 정상 상장도 여러 사람이 확인할 수 있어 확정 근거는 아닙니다.</p>' +
+          (l.length ? '<div class="tbl-wrap"><table class="gt"><thead><tr><th>조회 시각</th><th>접속지 구분</th><th>기기</th></tr></thead><tbody>' + l.map(function (x) { return '<tr><td class="nowrap">' + dt(x.at) + '</td><td>' + AW.esc((x.ip || '-').slice(0, 6)) + '</td><td>' + AW.esc(x.dev || '') + '</td></tr>'; }).join('') + '</tbody></table></div>' : '<div class="empty">조회 기록이 없습니다. (award_schema_8.sql 실행 후 조회부터 기록됩니다)</div>'), actions: [{ label: '닫기', cls: 'btn-primary' }] });
+      }).catch(function (e) { AW.toast(e.message + ' (db/award_schema_8.sql 설치 여부를 확인하십시오)', 'error'); });
+    }
     function err(e) { body().innerHTML = '<div class="alert warn">' + AW.esc(e.message) + '</div>'; }
   };
   // 발급 이력의 출력 화면 다시 보기 (저장된 양식·데이터를 그대로 렌더링, 한 장씩 보기 · 배경은 현재 양식의 배경 사용)
@@ -351,7 +359,7 @@
     var i = 0, n = b.rows.length, m = { el: null };
     AW.modal({ title: '출력 화면 — ' + AW.esc(b.label || '') + (sn.job && sn.job.name ? ' · ' + AW.esc(sn.job.name) : ''), wide: true,
       body: '<div class="vb-bar"><button class="btn btn-secondary btn-sm" data-v="-1">이전</button> <input class="in sm" id="vb-n" type="number" min="1" max="' + n + '" value="1" style="width:64px"> / ' + n + ' <button class="btn btn-secondary btn-sm" data-v="1">다음</button><span class="muted" style="margin-left:10px">' + dt2(b.created_at) + ' 출력</span></div><div class="vb-st pv-stage" id="vb-st"></div>' + (sameTpl ? '' : '<p class="muted">다른 양식의 이력이므로 배경 이미지는 표시되지 않습니다.</p>'),
-      actions: [{ label: '닫기', cls: 'btn-ghost' }],
+      actions: [{ label: '의심 이미지와 겹쳐 보기…', cls: 'btn-secondary', onClick: function (c) { c(); AW.Forensic.open({ tpl: tpl, row: b.rows[i], idx: i, title: '의심 이미지 대조 — ' + (b.rows[i] && b.rows[i]._code ? '인증번호 ' + b.rows[i]._code : (b.label || '')) }); } }, { label: '닫기', cls: 'btn-ghost' }],
       onOpen: function (el) { m.el = el; draw(); AW.$$('[data-v]', el).forEach(function (x) { x.onclick = function () { go(i + (+x.dataset.v)); }; }); AW.$('#vb-n', el).onchange = function (e) { go((parseInt(e.target.value, 10) || 1) - 1); }; } });
     function dt2(s) { return AW.fmtTime(s); }
     function go(k) { i = Math.max(0, Math.min(n - 1, k)); AW.$('#vb-n', m.el).value = i + 1; draw(); }
