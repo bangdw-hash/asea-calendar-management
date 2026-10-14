@@ -65,7 +65,7 @@
     $('#t-name').addEventListener('input', function (e) { S.tpl.name = e.target.value; touch('name'); });
     $('#ai-chip').onclick = function () { AW.AI.test(false); };
     if (!A.aiWired) { A.aiWired = true; AW.AI.onStatus(function (x) { var c = $('#ai-chip'); if (!c) return; c.className = 'ai-chip ' + x.st; c.title = 'AI ' + (x.st === 'ok' ? '연결 정상' : x.st === 'busy' ? '점검 중' : x.st === 'bad' ? '연결 실패' : '미점검') + (x.msg ? ' — ' + x.msg : '') + ' (눌러서 점검)'; $('span', c).textContent = x.st === 'ok' ? 'AI 연결됨' : x.st === 'busy' ? 'AI 점검 중' : x.st === 'bad' ? 'AI 연결 실패' : 'AI'; }); }
-    AW.AI.auto(); AW.loadFontList();
+    AW.AI.auto(); AW.loadFontList(); AW.josaLoad();
     if (!A.fontWired) { A.fontWired = true; AW.on('fontlist', function () { if (!S.tpl || !$('#panes')) return; AW.Editor.fontSelects(); AW.ensureFontsFor(S.tpl).then(function (n) { if (n) { AW.Editor.render(); AW.Preview.render(); } }); }); }
     AW.$$('.split').forEach(function (sp) { sp.addEventListener('pointerdown', splitDown); sp.addEventListener('dblclick', function () { lay.w = AW.clone(PRESETS.balance); lay.c = {}; applyLayout(); saveLayout(); }); });
   }

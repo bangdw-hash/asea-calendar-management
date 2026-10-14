@@ -288,6 +288,58 @@
     var num = (n.start == null ? 1 : +n.start) + idx * (n.step == null ? 1 : +n.step), s = String(Math.abs(num)); while (s.length < (n.pad || 0)) s = '0' + s;
     return String(n.pattern || '{N}').replace(/\{YYYY\}/g, d.getFullYear()).replace(/\{YY\}/g, String(d.getFullYear()).slice(2)).replace(/\{MM\}/g, p2(d.getMonth() + 1)).replace(/\{DD\}/g, p2(d.getDate())).replace(/\{N\}/g, (num < 0 ? '-' : '') + s);
   };
+  /* ───────────── 조사 자동 보정 (은/는·이/가·을/를·과/와·으로/로 …) ─────────────
+   * 값의 마지막 글자 받침으로 결정: 한글=글자 코드, 숫자=읽기(영일이삼…), 영문=글자 이름(엘·엠·엔·알만 받침). 읽기 사전(AW.josaDict)이 있으면 우선.
+   */
+  var JP = [['으로부터', '로부터', 1], ['으로서', '로서', 1], ['으로써', '로써', 1], ['이라고', '라고'], ['이라는', '라는'], ['이에요', '예요'], ['으로', '로', 1], ['이라', '라'], ['이랑', '랑'], ['이며', '며'], ['이나', '나'], ['이든', '든'], ['이고', '고'], ['이다', '다'], ['이', '가'], ['은', '는'], ['을', '를'], ['과', '와'], ['아', '야']], JMAP = {};
+  JP.forEach(function (q) { JMAP[q[0]] = q; JMAP[q[1]] = q; });
+  var JRE = '으로부터|로부터|으로서|로서|으로써|로써|이라고|라고|이라는|라는|이에요|예요|으로|이라|이랑|이며|이나|이든|이고|이다|랑|며|나|든|고|다|라|로|이|가|은|는|을|를|과|와|아|야';
+  AW.JOSA_RE = JRE;
+  var DIG = { 0: [1, 0], 1: [1, 1], 2: [0, 0], 3: [1, 0], 4: [0, 0], 5: [0, 0], 6: [1, 0], 7: [1, 1], 8: [1, 1], 9: [0, 0] };   // [받침 있음, ㄹ받침]
+  var LAT = { L: [1, 1], R: [1, 1], M: [1, 0], N: [1, 0] }, LATK = { A: '에이', B: '비', C: '씨', D: '디', E: '이', F: '에프', G: '지', H: '에이치', I: '아이', J: '제이', K: '케이', L: '엘', M: '엠', N: '엔', O: '오', P: '피', Q: '큐', R: '알', S: '에스', T: '티', U: '유', V: '브이', W: '더블유', X: '엑스', Y: '와이', Z: '제트' }, DIGK = '영일이삼사오육칠팔구';
+  AW.josaDict = AW.lsGet('award_josa_dict', {});
+  AW.josaSetDict = function (d) { AW.josaDict = d || {}; AW.lsSet('award_josa_dict', AW.josaDict); try { AW.pref.set('josa_dict', AW.josaDict).catch(function () {}); } catch (e) {} };
+  AW.josaLoad = function () { return AW.pref.get('josa_dict').then(function (v) { if (v && typeof v === 'object') { AW.josaDict = Object.assign({}, v, AW.josaDict); AW.lsSet('award_josa_dict', AW.josaDict); } }).catch(function () {}); };
+  AW.josaInfo = function (val) {   // → {b: 받침 있음, r: ㄹ받침, unsure: 읽기를 확정하기 어려움, read: 추천 읽기}
+    var v = String(val == null ? '' : val).trim(), dict = AW.josaDict[v], src = dict || v, i;
+    for (i = src.length - 1; i >= 0; i--) {
+      var ch = src.charAt(i), c = ch.charCodeAt(0);
+      if (c >= 0xAC00 && c <= 0xD7A3) { var j = (c - 0xAC00) % 28; return { b: j !== 0, r: j === 8, unsure: false, read: dict || v }; }
+      if (/[0-9]/.test(ch)) { var d = DIG[ch]; return { b: !!d[0], r: !!d[1], unsure: !dict, read: dict || guessRead(v) }; }
+      if (/[A-Za-z]/.test(ch)) { var L = LAT[ch.toUpperCase()] || [0, 0]; return { b: !!L[0], r: !!L[1], unsure: !dict, read: dict || guessRead(v) }; }
+      if (/[ㄱ-ㅎㅏ-ㅣ]/.test(ch)) continue;
+    }
+    return { b: false, r: false, unsure: !!v, read: dict || v };
+  };
+  function guessRead(v) {   // 영문·숫자 → 한글 읽기 추천 (약어는 글자 이름대로)
+    return String(v).replace(/[A-Za-z]/g, function (c) { return LATK[c.toUpperCase()] || c; }).replace(/[0-9]/g, function (c) { return DIGK.charAt(+c); });
+  }
+  AW.josaGuess = guessRead;
+  AW.josaPick = function (form, val) {   // 값에 맞는 조사 형태 → {text, changed, unsure}
+    var q = JMAP[form]; if (!q) return { text: form, changed: false, unsure: false }; var inf = AW.josaInfo(val), out;
+    if (q[2]) out = (inf.b && !inf.r) ? q[0] : q[1]; else out = inf.b ? q[0] : q[1];
+    return { text: out, changed: out !== form, unsure: inf.unsure };
+  };
+  AW.josaOn = function () { var t = AW.curTpl || AW.S.tpl; return !(t && t.page && t.page.josa === false); };
+  // 양식에서 「{{항목}}조사」 짝 찾기 → [{field, form}]
+  AW.josaTargets = function (tpl) {
+    tpl = tpl || AW.S.tpl; var out = [], seen = {}, re = new RegExp('\\{\\{\\s*([^{}]+?)\\s*\\}\\}(' + JRE + ')(?![가-힣])', 'g');
+    var scan = function (txt) { var m; re.lastIndex = 0; while ((m = re.exec(txt || ''))) { var f = m[1]; if (f.charAt(0) === '@') continue; var k = f + '|' + m[2]; if (!seen[k]) { seen[k] = 1; out.push({ field: f, form: m[2] }); } } };
+    tpl.elems.forEach(function (e) { if (e.t === 'text') { scan(e.text); } else if (e.t === 'table') { (e.cells || []).forEach(function (r) { r.forEach(function (c) { if (c && c.text) scan(c.text); }); }); } });
+    return out;
+  };
+
+  // 글자 잉크의 실제 위·아래가 상자에 맞도록 세로 보정(글꼴마다 위·아래 여백이 달라 생기는 어긋남) — px 이동량
+  var inkCache = {}, inkCtx = null;
+  AW.inkShift = function (fontId, bold, italic, sample, valign, lh, fs) {
+    try {
+      if (!inkCtx) inkCtx = document.createElement('canvas').getContext('2d'); var stack = AW.fontStack(fontId), ok = document.fonts && document.fonts.check ? document.fonts.check('16px ' + stack.split(',')[0]) : true, key = stack + '|' + bold + italic + '|' + sample + '|' + ok, m = inkCache[key];
+      if (!m) { inkCtx.font = (italic ? 'italic ' : '') + (bold ? 'bold ' : '') + '100px ' + stack; var t = inkCtx.measureText(sample); if (t.fontBoundingBoxAscent == null) return 0; m = inkCache[key] = { fa: t.fontBoundingBoxAscent / 100, fd: t.fontBoundingBoxDescent / 100, aa: t.actualBoundingBoxAscent / 100, ad: t.actualBoundingBoxDescent / 100 }; }
+      var pad = (lh - m.fa - m.fd) / 2;   // 줄 상자 안에서 글꼴 영역 위·아래 여백(em)
+      var sh = valign === 'top' ? -(pad + m.fa - m.aa) : valign === 'bottom' ? (pad + m.fd - m.ad) : -(((m.fa - m.fd) - (m.aa - m.ad)) / 2);
+      return sh * fs;
+    } catch (e) { return 0; }
+  };
   AW.val = function (row, name, idx, lang) {
     if (name === '@번호') return AW.serial(idx);
     if (name === '@오늘') return lang === 'en' ? AW.fmtDateEn() : AW.fmtDate();
@@ -327,12 +379,14 @@
     var base = 'position:absolute;left:' + ((e.x + (mode === 'print' ? dx : 0)) * k) + 'px;top:' + ((e.y + (mode === 'print' ? dy : 0)) * k) + 'px;width:' + (e.w * k) + 'px;height:' + (Math.max(e.h, e.t === 'line' ? 0 : 1) * k) + 'px;';
     if (e.t === 'text') {
       var lang = o.lang || 'ko', ko = e.text || '', en = e.en || '', cp = (AW.curTpl || AW.S.tpl || {}).page || {}, blocks = [];
+      var jOn = AW.josaOn(), jRe = new RegExp('\\{\\{\\s*([^{}]+?)\\s*\\}\\}(?:(' + AW.JOSA_RE + ')(?![가-힣]))?', 'g');
       var tokH = function (src, lg) {
-        return AW.esc(src).replace(/\{\{\s*([^{}]+?)\s*\}\}/g, function (m, n) {
-          n = n.replace(/&amp;/g, '&'); if (mode === 'edit') return '<span class="tk">{{' + AW.esc(n) + '}}</span>';
-          var v = AW.val(o.row, n, o.idx || 0, lg);
-          if (!v && mode === 'view' && n.charAt(0) !== '@') return '<span class="miss">' + AW.esc('{' + n + '}') + '</span>';
-          return mode === 'view' ? '<span class="mv">' + AW.esc(v) + '</span>' : AW.esc(v);   // 미리보기에서는 바뀌는 값을 표시(인쇄에는 표시 없음)
+        return AW.esc(src).replace(jRe, function (m, n, pj) {
+          n = n.replace(/&amp;/g, '&'); if (mode === 'edit') return '<span class="tk">{{' + AW.esc(n) + '}}</span>' + (pj || '');
+          var v = AW.val(o.row, n, o.idx || 0, lg), jo = pj || '';
+          if (!v && mode === 'view' && n.charAt(0) !== '@') return '<span class="miss">' + AW.esc('{' + n + '}') + '</span>' + jo;
+          if (pj && v && jOn && lg !== 'en') { var pk = AW.josaPick(pj, v); jo = pk.changed ? (mode === 'view' ? '<span class="jo" title="조사 자동 보정: ' + AW.esc(pj) + ' → ' + AW.esc(pk.text) + '">' + pk.text + '</span>' : pk.text) : pk.text; }
+          return (mode === 'view' ? '<span class="mv">' + AW.esc(v) + '</span>' : AW.esc(v)) + jo;   // 미리보기에서는 바뀌는 값을 표시(인쇄에는 표시 없음)
         });
       };
       var ef = e.fontEn ? AW.fontStack(e.fontEn) : '';
@@ -346,7 +400,8 @@
         ';font-weight:' + (e.bold ? 700 : 400) + ';font-style:' + (e.italic ? 'italic' : 'normal') + ';text-decoration:' + (e.ul ? 'underline' : 'none') +
         ';text-align:' + (e.align || 'center') + ';letter-spacing:' + ((e.ls || 0) * PT * k) + 'px;white-space:' + (e.fit ? 'pre' : 'pre-wrap') + ';word-break:keep-all;overflow-wrap:anywhere;';
       var b = document.createElement('div'); b.className = 'el-t'; b.innerHTML = inner;
-      b.style.cssText = 'width:100%;' + (e.fit ? 'overflow:visible;' : '');
+      var isw = AW.inkShift(e.font, !!e.bold, !!e.italic, /[가-힣]/.test(ko + en) ? '가힣' : /[A-Za-z0-9]/.test(ko + en) ? 'H0' : '가', e.valign || 'middle', e.lh || 1.4, fs);
+      b.style.cssText = 'width:100%;' + (e.fit ? 'overflow:visible;' : '') + (Math.abs(isw) > 0.05 ? 'transform:translateY(' + isw.toFixed(2) + 'px);' : '');
       d.appendChild(b);
       if (e.fit) d.dataset.fit = '1';
       if (mode === 'edit' && /\{\{[^{}]+\}\}/.test(ko + en)) d.classList.add('has-tk');   // 메일머지 영역 표시(편집 화면 전용)
