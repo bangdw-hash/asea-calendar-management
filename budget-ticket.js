@@ -76,29 +76,41 @@
   }
   function safeName(s) { return String(s || 'QR').replace(/[\\/:*?"<>|\s]+/g, '_').slice(0, 40); }
 
+  function qrCanvasOf(tk) { return qrCanvas(qrUrl(tk.ticket.token), ['결재 집행 QR', tk.ticket.title]); }
+  // 다운로드형: PNG 파일로 저장
+  function downloadQr(tk) {
+    var c; try { c = qrCanvasOf(tk); } catch (e) { return fail(e); }
+    c.toBlob(function (bl) {
+      var l = document.createElement('a'); l.href = URL.createObjectURL(bl); l.download = 'QR_' + safeName(tk.ticket.title) + '.png';
+      document.body.appendChild(l); l.click(); setTimeout(function () { URL.revokeObjectURL(l.href); l.remove(); }, 800);
+      toast('QR 이미지를 저장했습니다. 기안문에 삽입하십시오.');
+    }, 'image/png');
+  }
+  // 클립보드 복사형: 이미지를 복사해 기안문에 바로 붙여넣기
+  function copyQr(tk) {
+    var c; try { c = qrCanvasOf(tk); } catch (e) { return fail(e); }
+    if (!(navigator.clipboard && window.ClipboardItem)) return toast('이 브라우저에서는 이미지 복사를 지원하지 않습니다. 「이미지 다운로드」를 이용해 주십시오.', 'err');
+    var blobP = new Promise(function (res) { c.toBlob(res, 'image/png'); });
+    navigator.clipboard.write([new ClipboardItem({ 'image/png': blobP })]).then(function () { toast('QR 이미지를 클립보드에 복사했습니다. 기안문에 붙여넣기(Ctrl+V) 하십시오.'); },
+      function () { toast('복사하지 못했습니다. 「이미지 다운로드」를 이용해 주십시오.', 'err'); });
+  }
+
   function showQr(tk) {
     var t = tk.ticket, url = qrUrl(t.token), canvas;
-    try { canvas = qrCanvas(url, ['결재 집행 QR', t.title]); } catch (e) { return fail(e); }
+    try { canvas = qrCanvasOf(tk); } catch (e) { return fail(e); }
     var png = canvas.toDataURL('image/png');
     W.modal({
       title: '결재 QR',
       body: '<div class="qr-box"><img class="qr-img" src="' + png + '" alt="결재 집행 QR 코드"></div>' +
-        '<p class="muted">이 이미지를 기안문(결재문)에 삽입하십시오. 결재 후 누구나 스캔해 결재번호와 금액을 확인하고 한 번만 반영할 수 있습니다. 반영 후 수정은 부서·관리자 로그인이 필요합니다.</p>' +
-        '<div class="acts qr-acts"><button class="btn btn-primary btn-sm" data-q="png">' + ico('download', 16) + ' 이미지 저장</button>' +
-        '<button class="btn btn-secondary btn-sm" data-q="copy">이미지 복사</button><button class="btn btn-secondary btn-sm" data-q="link">링크 복사</button>' +
-        '<button class="btn btn-secondary btn-sm" data-q="print">' + ico('print', 16) + ' 인쇄</button></div>',
+        '<div class="acts qr-acts"><button class="btn btn-primary" data-q="copy">클립보드로 복사</button><button class="btn btn-primary" data-q="png">' + ico('download', 16) + ' 이미지 다운로드</button></div>' +
+        '<p class="muted">이미지를 기안문(결재문)에 삽입하십시오. 결재 후 누구나 스캔해 결재번호와 금액을 확인하고 한 번만 반영할 수 있습니다. 반영 후 수정은 부서·관리자 로그인이 필요합니다.</p>' +
+        '<div class="acts qr-acts"><button class="btn btn-secondary btn-sm" data-q="link">링크 복사</button><button class="btn btn-secondary btn-sm" data-q="print">' + ico('print', 16) + ' 인쇄</button></div>',
       actions: [{ label: '닫기', cls: 'btn-ghost' }],
       onMount: function (m) {
         m.el.addEventListener('click', function (e) {
           var b = e.target.closest('[data-q]'); if (!b) return; var a = b.dataset.q;
-          if (a === 'png') canvas.toBlob(function (bl) {
-            var l = document.createElement('a'); l.href = URL.createObjectURL(bl); l.download = 'QR_' + safeName(t.title) + '.png';
-            document.body.appendChild(l); l.click(); setTimeout(function () { URL.revokeObjectURL(l.href); l.remove(); }, 800);
-          });
-          if (a === 'copy') canvas.toBlob(function (bl) {
-            if (navigator.clipboard && window.ClipboardItem) navigator.clipboard.write([new ClipboardItem({ 'image/png': bl })]).then(function () { toast('이미지를 복사했습니다. 기안문에 붙여넣으십시오.'); }, function () { toast('복사하지 못했습니다. 이미지 저장을 이용해 주십시오.', 'err'); });
-            else toast('이 브라우저에서는 복사를 지원하지 않습니다. 이미지 저장을 이용해 주십시오.', 'err');
-          });
+          if (a === 'png') downloadQr(tk);
+          if (a === 'copy') copyQr(tk);
           if (a === 'link') { if (navigator.clipboard) navigator.clipboard.writeText(url).then(function () { toast('링크를 복사했습니다.'); }, function () { toast(url); }); else toast(url); }
           if (a === 'print') {
             var w = window.open('', '_blank'); if (!w) return toast('팝업이 차단되었습니다.', 'err');
@@ -309,7 +321,7 @@
       var t = tk.ticket, first = tk.lines[0], more = tk.lines.length > 1 ? ' 외 ' + (tk.lines.length - 1) + '줄' : '';
       return '<tr class="ln clk" data-i="' + list.indexOf(tk) + '"><td class="nowrap">' + W.fmtDT(t.issued_at).slice(0, 10) + '</td><td><b>' + esc(t.title) + '</b><div class="muted">' + (first ? lineTitle(first) : '') + more + '</div></td><td>' + esc(t.doc_no || '-') + '</td>' +
         '<td class="num">' + won(t.planned_total) + '</td><td class="num">' + (t.applied_total == null ? '-' : won(t.applied_total)) + '</td><td>' + statusChip(t.status) + (tk.lines.some(function (l) { return l.alloc === 'pending'; }) && t.status !== 'void' ? ' <span class="flag warn">미배정</span>' : '') + '</td>' +
-        '<td class="acts"><button class="btn btn-ghost btn-sm" data-qr="' + list.indexOf(tk) + '">' + ico('qr', 16) + ' QR</button></td></tr>';
+        '<td class="acts"><button class="btn btn-ghost btn-sm" data-qr="' + list.indexOf(tk) + '" title="QR 크게 보기">' + ico('qr', 16) + ' QR</button><button class="btn btn-ghost btn-sm" data-qc="' + list.indexOf(tk) + '" title="이미지를 클립보드로 복사">복사</button><button class="btn btn-ghost btn-sm" data-qd="' + list.indexOf(tk) + '" title="PNG 이미지 다운로드">' + ico('download', 16) + '</button></td></tr>';
     });
     box.innerHTML = '<div class="tools"><div><h3>결재 QR · 집행 내역</h3><p class="muted">기안 전에 집행 예정 내역으로 QR을 발급받아 기안문에 넣으십시오. 결재 후 스캔하면 부서 지출 기록에 한 번만 반영됩니다.</p></div>' +
       '<button class="btn btn-primary" id="tk-new">' + ico('plus', 16) + ' 새 QR 발급</button></div>' +
@@ -322,12 +334,15 @@
     $('#tk-f', box).onclick = function (e) { var b = e.target.closest('[data-f]'); if (b) { DS.filter = b.dataset.f; drawDept(box, ctx, list); } };
     box.querySelector('table.tk').onclick = function (e) {
       var q = e.target.closest('[data-qr]'); if (q) { e.stopPropagation(); return showQr(list[Number(q.dataset.qr)]); }
+      var qc = e.target.closest('[data-qc]'); if (qc) { e.stopPropagation(); return copyQr(list[Number(qc.dataset.qc)]); }
+      var qd = e.target.closest('[data-qd]'); if (qd) { e.stopPropagation(); return downloadQr(list[Number(qd.dataset.qd)]); }
       var tr = e.target.closest('tr[data-i]'); if (tr) detailModal(list[Number(tr.dataset.i)], { role: 'dept', token: ctx.token, dept: ctx.dept, depts: ctx.depts, reload: reload });
     };
   }
 
-  function issueModal(ctx, done) {
-    var data = ctx.getData(), used = usedMap(data.spend), own = sechulLines(data.lines, ctx.dept), rows = [{ kind: 'own' }];
+  function issueModal(ctx, done, pre) {
+    pre = pre || {};
+    var data = ctx.getData(), used = usedMap(data.spend), own = sechulLines(data.lines, ctx.dept), rows = [{ kind: 'own', line_id: pre.line_id || '', amount: pre.amount || 0, memo: pre.memo || '' }];
     function rowHtml(r, i) {
       return '<div class="ed-row" data-i="' + i + '"><div class="ed-t">' + (i + 1) + '번째 줄' + (rows.length > 1 ? ' <button class="lnk" data-rm="' + i + '" type="button">삭제</button>' : '') + '</div>' +
         '<div class="form"><label>귀속<select class="in" data-k="kind"><option value="own"' + (r.kind === 'own' ? ' selected' : '') + '>우리 부서 편성 항목</option><option value="other"' + (r.kind === 'other' ? ' selected' : '') + '>귀속 미정 · 다른 부서(공통 등) · 편성하지 않은 지출</option></select></label>' +
@@ -342,7 +357,7 @@
       $$('#is-rows .ed-row', m.el).forEach(function (el) { var r = rows[Number(el.dataset.i)]; $$('[data-k]', el).forEach(function (i) { r[i.dataset.k] = i.dataset.k === 'amount' ? (num(i.value) || 0) : i.value; }); });
     }
     function updTotal() { var s = 0; $$('#is-rows [data-k=amount]', m.el).forEach(function (i) { s += num(i.value) || 0; }); $('#is-total', m.el).textContent = won(s); }
-    var m = W.modal({ title: '새 결재 QR 발급', cls: 'wide', body: '<div class="form"><label>건명 (기안 제목)<input id="is-title" class="in" maxlength="200" placeholder="예: 3월 정기 소모품 구매"></label></div><div id="is-rows"></div>' +
+    var m = W.modal({ title: '새 결재 QR 발급', cls: 'wide', body: '<div class="form"><label>건명 (기안 제목)<input id="is-title" class="in" maxlength="200" placeholder="예: 3월 정기 소모품 구매" value="' + esc(pre.title || '') + '"></label></div><div id="is-rows"></div>' +
       '<button class="btn btn-secondary btn-sm" id="is-add" type="button">' + ico('plus', 16) + ' 줄 추가</button><p class="sum-line">결재 기준액 합계 <b id="is-total">0</b>원</p>' +
       '<div class="note info">' + ico('check', 16) + ' 발급 후 QR 이미지를 기안문에 삽입하십시오. 결재번호는 결재가 끝난 뒤 스캔하는 화면에서 입력합니다.</div>',
       actions: [{ label: '취소', cls: 'btn-ghost' }, { label: 'QR 발급', cls: 'btn-primary', onClick: function (mm, btn) {
@@ -366,6 +381,7 @@
     m.el.addEventListener('click', function (e) { var b = e.target.closest('[data-rm]'); if (b) { readRows(); rows.splice(Number(b.dataset.rm), 1); drawRows(); } });
     $('#is-add', m.el).onclick = function () { readRows(); rows.push({ kind: 'own' }); drawRows(); };
     drawRows();
+    if (pre.line_id) { var amt = $('#is-rows [data-k=amount]', m.el); if (amt) amt.focus(); }
   }
 
   /* ───────── 관리자 화면 ───────── */
@@ -444,7 +460,8 @@
   }
 
   window.BudgetTicket = {
-    deptTab: deptTab, adminTab: adminTab, showQr: showQr, qrUrl: qrUrl, lineTitle: lineTitle, statusChip: statusChip, STATUS: STATUS,
+    deptTab: deptTab, adminTab: adminTab, showQr: showQr, copyQr: copyQr, downloadQr: downloadQr, qrUrl: qrUrl,
+    issue: function (ctx, pre) { issueModal(ctx, ctx.onChanged || function () {}, pre); }, lineTitle: lineTitle, statusChip: statusChip, STATUS: STATUS,
     diffHtml: diffHtml, negText: negText, moneyFmt: moneyFmt, askReason: askReason, eventsModal: eventsModal
   };
 })();

@@ -126,12 +126,10 @@
     $('#pw-chg', root).onclick = changePw;
     // 결재 QR 탭: 예산안 화면과 분리해 두고, QR 반영으로 지출이 바뀌면 돌아갈 때 서버에서 다시 불러옵니다.
     var qdata = data, qDirty = false, qOpen = false;
-    function drawQr() {
-      BudgetTicket.deptTab($('#tk', root), {
-        token: W.sess.token, year: year, dept: dept, depts: info.depts.map(function (d) { return d.dept; }),
-        getData: function () { return qdata; }, onChanged: function () { qDirty = true; }
-      });
+    function qrCtx(getData) {
+      return { token: W.sess.token, year: year, dept: dept, depts: info.depts.map(function (d) { return d.dept; }), getData: getData, onChanged: function () { qDirty = true; } };
     }
+    function drawQr() { BudgetTicket.deptTab($('#tk', root), qrCtx(function () { return qdata; })); }
     function showMode(m) {
       var qr = m === 'qr';
       if (!qr && qOpen && qDirty) { loadDept(); return; }
@@ -145,6 +143,8 @@
     function rp(fn, extra) { return W.rpc(fn, Object.assign({}, base, extra)); }
     W.mount($('#ws', root), {
       admin: false, dept: dept, year: year, data: data,
+      // 예산 항목 줄에서 바로 「지출 요청(QR)」: 해당 항목이 채워진 발급 창을 엽니다.
+      onSpendQr: function (line) { BudgetTicket.issue(qrCtx(function () { return data; }), { line_id: line.id }); },
       api: {
         saveLine: function (line) { return rp('bgt_d_line_save', { p_year: year, p_line: line }); },
         deleteLine: function (id) { return rp('bgt_d_line_delete', { p_id: id }); },

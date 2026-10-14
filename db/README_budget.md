@@ -10,6 +10,7 @@
    - `budget_schema_3.sql` 공개 RPC (접속 · 부서)
    - `budget_schema_4.sql` 관리자 RPC · 실행 권한
    - 설치 확인: `select count(*) from information_schema.tables where table_schema = 'bgt';` → 10
+   - `budget_schema_6.sql` **확정안(금액 3단: 전년 → 요구 → 확정)** (선택 기능, 1~4 실행 후 추가). 설치 확인: `select count(*) from information_schema.tables where table_schema = 'bgt';` → 5·6 모두 설치 시 14
    - `budget_schema_5.sql` **결재 QR 집행 연동** (선택 기능, 1~4 실행 후 언제든 추가 가능). 설치 확인: `select count(*) from information_schema.tables where table_schema = 'bgt';` → 13
 2. 시드 데이터를 **번호 순서대로, 파일마다 새 쿼리로 한 번씩만** 실행합니다. (용량이 커서 한 번에 붙여넣으면 잘릴 수 있어 6개로 나누었습니다)
    - `budget_seed_2027_1.sql` 부서 17 · 코드 103 · 일정 · 제출 단위 34 → 마지막 조회 결과가 `17 | 103 | 34`

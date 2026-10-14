@@ -396,7 +396,7 @@
         '<td class="num c-amt" data-l="2027 요구액">' + numIn('amount', l.amount, ed, '0') + '</td>' +
         '<td class="num c-diff" data-l="증감">' + diffHtml(l.base_amount, l.amount) + '</td>' +
         '<td class="c-reason" data-l="증감 사유"><input class="in' + (calc.needReason(l) && !String(l.reason || '').trim() ? ' need' : '') + '" data-f="reason" value="' + esc(l.reason) + '"' + (ed ? '' : ' readonly') + ' placeholder="' + (calc.needReason(l) ? '사유를 입력하십시오' : '') + '" aria-label="증감 사유"></td>' +
-        '<td class="c-act">' + (ctx.admin ? '<button class="icon-btn" data-act="edit-line" title="코드·명칭·2026 기준 수정" aria-label="항목 수정">' + ico('edit') + '</button>' : '') +
+        '<td class="c-act">' + (ctx.onSpendQr && l.type === '세출' ? '<button class="icon-btn qr-btn" data-act="spend-qr" title="지출 요청 (결재 QR 발급)" aria-label="지출 요청 QR">' + ico('qr') + '</button>' : '') + (ctx.admin ? '<button class="icon-btn" data-act="edit-line" title="코드·명칭·2026 기준 수정" aria-label="항목 수정">' + ico('edit') + '</button>' : '') +
         (canDel ? '<button class="icon-btn danger" data-act="del-line" title="삭제" aria-label="삭제">' + ico('trash') + '</button>' : '') + '</td></tr>';
     }
     function numIn(f, v, ed, ph) {
@@ -413,6 +413,7 @@
           '<td>' + (ed ? '<button class="icon-btn danger" data-act="sp-del" aria-label="내역 삭제">' + ico('trash') + '</button>' : '') + '</td></tr>';
       }).join('');
       return '<tr class="sp" data-for="' + l.id + '"><td colspan="10"><div class="sp-box"><div class="sp-hd"><b>' + esc(l.name) + '</b> 2026 ' + lab + ' 내역 <span class="muted">· 건별로 입력하면 합계가 자동 계산됩니다</span>' +
+        (ctx.onSpendQr && l.type === '세출' ? '<button class="btn btn-primary btn-sm" data-act="spend-qr" data-lid="' + l.id + '">' + ico('qr', 16) + ' 지출 요청(QR)</button>' : '') +
         (ed ? '<button class="btn btn-secondary btn-sm" data-act="sp-add">' + ico('plus', 16) + ' ' + lab + ' 추가</button>' : '') + '</div>' +
         (list.length ? '<table class="spt"><thead><tr><th>일자</th><th>적요</th><th>거래처</th><th class="num">금액(원)</th><th></th></tr></thead><tbody>' + rows + '</tbody></table>' : '<div class="muted sp-empty">입력된 내역이 없습니다.</div>') +
         '<div class="sp-sum">합계 <b>' + won(calc.used(l.id)) + '</b>원</div></div></td></tr>';
@@ -494,6 +495,7 @@
       var a = e.target.closest('[data-act]'); if (!a) return;
       var act = a.dataset.act, tr = a.closest('tr.ln'), id = tr && tr.dataset.id;
       if (act === 'toggle-spend') { ui.open[id] = !ui.open[id]; renderBody(); return; }
+      if (act === 'spend-qr') { var sl = lineById(id || a.dataset.lid); if (sl && ctx.onSpendQr) ctx.onSpendQr(sl); return; }
       if (act === 'add-line') return addLineModal(typeOf(ui.tab));
       if (act === 'fill-fc') return fillForecastModal(typeOf(ui.tab));
       if (act === 'applycalc') { var inp = $('[data-f="amount"]', tr); inp.value = won(Number(a.dataset.v)); saveField(id, { amount: Number(a.dataset.v) }, inp); return; }
