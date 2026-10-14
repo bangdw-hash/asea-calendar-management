@@ -230,7 +230,7 @@
   function body(el) { return AW.$('#sc-b', el); }
   function step1(el) {
     body(el).innerHTML = '<p style="margin-top:0">이미 출력했거나 스캔한 상장·양식 파일(JPG·PNG·PDF)을 올리면 <b>① 기울기·여백 보정 → ② AI 글자 판독 → ③ 글자를 지운 배경 생성 → ④ 글상자·메일머지 항목 자동 배치</b>까지 한 번에 진행합니다. 결과는 <b>새 양식</b>으로 만들어지며 현재 양식은 그대로 저장됩니다.</p>' +
-      '<label class="drop" id="sc-drop" style="display:block;padding:30px;text-align:center;border:2px dashed var(--border);border-radius:12px;cursor:pointer"><input type="file" id="sc-f" accept=".jpg,.jpeg,.png,.pdf,image/*,application/pdf" class="hide" multiple>' + AW.ic('upload', 22) + '<br><b>파일을 끌어 놓거나 눌러서 선택</b> <span class="muted">(여러 장을 한꺼번에 선택하면 일괄 처리)</span><br><span class="muted">PDF 는 한 쪽 파일은 그대로, 여러 쪽이면 쪽마다 양식 한 개씩 만들 수 있습니다. 사진보다 스캔본이 정확합니다.</span></label>';
+      '<label class="drop" id="sc-drop" style="display:block;padding:30px;text-align:center;border:2px dashed var(--border);border-radius:var(--r);cursor:pointer"><input type="file" id="sc-f" accept=".jpg,.jpeg,.png,.pdf,image/*,application/pdf" class="hide" multiple>' + AW.ic('upload', 22) + '<br><b>파일을 끌어 놓거나 눌러서 선택</b> <span class="muted">(여러 장을 한꺼번에 선택하면 일괄 처리)</span><br><span class="muted">PDF 는 한 쪽 파일은 그대로, 여러 쪽이면 쪽마다 양식 한 개씩 만들 수 있습니다. 사진보다 스캔본이 정확합니다.</span></label>';
     var f = AW.$('#sc-f', el), dz = AW.$('#sc-drop', el);
     f.onchange = function () { pick(el, f.files); };
     dz.ondragover = function (e) { e.preventDefault(); }; dz.ondrop = function (e) { e.preventDefault(); pick(el, e.dataTransfer.files); };
@@ -562,7 +562,7 @@
       var cxs = rows.map(function (r) { return r.x + r.w / 2; }), lxs = rows.map(function (r) { return r.x; }), spread = function (a) { return Math.max.apply(null, a) - Math.min.apply(null, a); }, cx = b.x + b.w / 2;
       var centered = lines === 1 ? Math.abs(cx - W / 2) < W * 0.03 : (spread(cxs) <= W * 0.02 || spread(lxs) > W * 0.02), align = centered ? 'center' : 'left';
       var ex = align === 'center' ? cx - (b.w * 1.06) / 2 : b.x, ew = align === 'center' ? b.w * 1.06 : b.w * 1.04, ey, eh;
-      if (lines === 1) { eh = Math.max(b.h * 1.3, szPx * 1.3); ey = b.y + b.h / 2 - eh / 2; } else { eh = pitch * lines; ey = rows[0].cy - pitch / 2; }
+      if (lines === 1) { eh = b.h * 1.12; ey = b.y + b.h / 2 - eh / 2; }   // 글자 잉크에 맞춘 상자(세로 잉크 보정은 렌더러가 처리) else { eh = pitch * lines; ey = rows[0].cy - pitch / 2; }
       nt.elems.push(AW.elem('text', { x: AW.round(Math.max(0, ex * kx), 2), y: AW.round(Math.max(0, ey * ky), 2), w: AW.round(ew * kx, 2), h: AW.round(eh * ky, 2), text: out, font: it.font, size: Math.max(5, Math.min(150, AW.round(szPx * ky / PT, 1))), color: it.color || '#111111', bold: !!it.bold, align: align, valign: lines > 1 ? 'top' : 'middle', lh: AW.round(lh, 2), fit: lines === 1 }));
     });
     var keys = Object.keys(rows0); nt.name = ctx.name || '스캔 양식'; var no = on.filter(function (i) { return i.kind === 'object'; }).length;

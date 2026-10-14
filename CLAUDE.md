@@ -79,7 +79,7 @@ Use these CSS tokens for any new UI work:
 --sh / --sh-md / --sh-lg  /* shadow scale */
 ```
 
-Icons: inline SVG only — no emoji in UI. Theme picker (blue/green/orange swatches) is in the forum.html header and applies via `applyTheme()`. This `--r:12px` rounding + no-emoji rule applies to every HTML page in the repo, not just forum.html/schedule.html — enforced repo-wide as of the reservation.html/index.html design pass.
+Exception: `award.html` (상장 출력기) uses `--r:6px` by the owner's request. Icons: inline SVG only — no emoji in UI. Theme picker (blue/green/orange swatches) is in the forum.html header and applies via `applyTheme()`. This `--r:12px` rounding + no-emoji rule applies to every HTML page in the repo, not just forum.html/schedule.html — enforced repo-wide as of the reservation.html/index.html design pass.
 
 ### forum.html key points
 

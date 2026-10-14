@@ -25,6 +25,7 @@
         '<div class="dt-stat" id="dt-stat"></div>' +
         '<div class="dt-btns">' +
           '<button class="btn btn-secondary btn-sm" data-a="tplx" title="현재 양식의 입력 항목으로 엑셀 업로드용 파일을 만듭니다">' + AW.ic('download', 16) + ' 엑셀 양식 받기</button>' +
+          '<button class="btn btn-ghost btn-sm" data-a="josa" title="「{{항목}}으로」처럼 항목 뒤에 붙은 조사가 값에 맞게 바뀌는지 점검합니다">' + AW.ic('check', 16) + ' 조사 점검</button>' +
           '<button class="btn btn-primary btn-sm" data-a="upx">' + AW.ic('xls', 16) + ' 엑셀 올리기</button>' +
           '<button class="btn btn-ghost btn-sm" data-a="ai" title="AI가 양식 배경과 상자 배치를 읽고 항목별 입력 안내를 작성합니다">' + AW.ic('sparkle', 16) + ' AI 안내 작성</button>' +
           '<input type="file" class="hide" id="dt-file" accept=".xlsx,.xls,.csv">' +
@@ -46,6 +47,7 @@
     var b = e.target.closest('[data-a]'); if (!b) return;
     var a = b.dataset.a;
     if (a === 'tplx') return D.downloadTemplate();
+    if (a === 'josa') return D.josaDialog();
     if (a === 'upx') return AW.$('#dt-file', st.root).click();
     if (a === 'ai') return D.aiGuide(b);
     if (a === 'addrow') { addRows(1); return; }
@@ -157,7 +159,8 @@
     AW.$('#dt-stat', st.root).innerHTML = '<b>' + f.length + '</b>개 항목 · <b>' + rows.length + '</b>행' +
       (miss ? ' <span class="badge warn" title="필수 항목이 비어 있는 칸 수">누락 ' + miss + '</span>' : '') + (long ? ' <span class="badge err" title="최대 글자 수를 넘은 칸 수">길이초과 ' + long + '</span>' : '') +
       (D.dupCount() ? ' <span class="badge warn" title="성명·소속이 같은 행이 있습니다">중복 의심 ' + D.dupCount() + '</span>' : '') +
-      (rows.length && !miss && !long && !D.dupCount() ? ' <span class="badge ok">검증 통과</span>' : '');
+      (D.josaUnsure() ? ' <span class="badge warn" title="조사를 확정하기 어려운 값(영문·숫자 끝)이 있습니다. 「조사 점검」에서 확인하십시오">조사 확인 필요 ' + D.josaUnsure() + '</span>' : '') +
+      (rows.length && !miss && !long && !D.dupCount() && !D.josaUnsure() ? ' <span class="badge ok">검증 통과</span>' : '');
   }
   // 중복 의심: 성명·소속(없으면 모든 항목)이 같은 행
   D.dupCount = function () {
@@ -205,6 +208,42 @@
   }
 
   /* ───────────── 엑셀 양식 내려받기 ───────────── */
+  /* ───────────── 조사 점검 ───────────── */
+  D.josaItems = function () {
+    var tg = AW.josaTargets(T()), rows = T().rows, out = []; if (!tg.length) return out;
+    tg.forEach(function (g) {
+      var vals = {}; rows.forEach(function (r) { var v = String(r[g.field] == null ? '' : r[g.field]).trim(); if (v) vals[v] = (vals[v] || 0) + 1; });
+      if (!Object.keys(vals).length) { var f = T().fields.filter(function (x) { return x.name === g.field; })[0], ex = f && String(f.example || '').trim(); if (ex) vals[ex] = 0; }
+      Object.keys(vals).slice(0, 400).forEach(function (v) { var pk = AW.josaPick(g.form, v), inf = AW.josaInfo(v); out.push({ field: g.field, form: g.form, value: v, n: vals[v], result: pk.text, changed: pk.changed, unsure: inf.unsure, guess: inf.unsure ? AW.josaGuess(v) : '' }); });
+    });
+    return out;
+  };
+  D.josaUnsure = function () { try { var seen = {}; return D.josaItems().filter(function (x) { if (!x.unsure || seen[x.value]) return false; seen[x.value] = 1; return true; }).length; } catch (e) { return 0; } };
+  D.josaDialog = function (fromUpload) {
+    var items = D.josaItems(), m = { el: null }, dict = Object.assign({}, AW.josaDict), on = AW.josaOn();
+    if (!items.length) { if (!fromUpload) AW.modal({ title: '조사 점검', body: '<p style="margin-top:0">양식에 「{{항목}}으로」, 「{{항목}}이」처럼 <b>항목 바로 뒤에 붙은 조사</b>가 없어 점검할 내용이 없습니다.</p><p class="muted" style="margin-bottom:0">조사는 항목 뒤에 붙여 쓰면 값의 받침에 맞게 자동으로 바뀝니다. 예) 위촉 직위가 「교수」면 「교수로」, 「학과장」이면 「학과장으로」로 출력됩니다.</p>', actions: [{ label: '닫기', cls: 'btn-primary' }] }); return; }
+    var rank = function (x) { return x.unsure && !dict[x.value] ? 0 : x.changed ? 1 : 2; };
+    items.sort(function (a, b) { return rank(a) - rank(b) || (a.field + a.form).localeCompare(b.field + b.form) || b.n - a.n; });
+    var unsure = items.filter(function (x) { return rank(x) === 0; }).length, changed = items.filter(function (x) { return x.changed; }).length;
+    AW.modal({ title: fromUpload ? '조사 확인 필요 — 업로드한 값 점검' : '조사 점검', wide: true, sticky: !!fromUpload,
+      body: '<p style="margin-top:0">양식의 「{{항목}}조사」 짝마다 <b>데이터에 있는 값</b>이 어떻게 출력되는지 보여 줍니다. 한글로 끝나는 값은 받침으로 자동 판정됩니다. <b>영문·숫자로 끝나는 값</b>은 읽는 법을 확인해야 합니다. 아래 추천 읽기를 확인·수정하고 「확인 — 적용」을 누르면 이후 출력에 그대로 반영됩니다.</p>' +
+        '<div class="radios"><label><input type="checkbox" id="jo-on"' + (on ? ' checked' : '') + '> 조사 자동 보정 사용 <span class="muted">(끄면 양식에 적은 조사를 그대로 출력)</span></label></div>' +
+        '<p class="muted" style="margin:6px 0">전체 ' + items.length + '건 · 확인 필요 <b>' + unsure + '</b>건 · 양식의 조사와 달라져 자동 보정되는 값 <b>' + changed + '</b>건</p><div class="tbl-wrap" style="max-height:48vh;overflow:auto"><table class="gt" id="jo-t"><thead><tr><th>항목</th><th>값</th><th>양식 문구</th><th>출력 결과</th><th>상태</th><th>읽기(확인·수정)</th></tr></thead><tbody>' + items.slice(0, 300).map(function (x, i) {
+          var u = rank(x) === 0; return '<tr data-i="' + i + '" class="' + (u ? 'jo-u' : '') + '"><td class="nowrap">' + AW.esc(x.field) + '</td><td>' + AW.esc(x.value) + (x.n > 1 ? ' <span class="muted">(' + x.n + '행)</span>' : '') + '</td><td class="nowrap">{{' + AW.esc(x.field) + '}}<b>' + AW.esc(x.form) + '</b></td><td class="nowrap jo-r"><b>' + AW.esc(x.value) + AW.esc(x.result) + '</b></td><td class="jo-s nowrap">' + (u ? '<span class="badge warn">확인 필요</span>' : x.changed ? '<span class="badge ok">자동 보정</span>' : '<span class="badge">정상</span>') + '</td><td>' + (x.unsure ? '<input class="in sm jo-in" data-v="' + AW.esc(x.value) + '" value="' + AW.esc(dict[x.value] || x.guess) + '" style="width:130px"> <span class="muted">' + (dict[x.value] ? '저장됨' : '추천') + '</span>' : '<span class="muted">-</span>') + '</td></tr>';
+        }).join('') + '</tbody></table></div>' + (items.length > 300 ? '<p class="muted">앞 300건만 표시했습니다.</p>' : ''),
+      actions: [{ label: '취소', cls: 'btn-ghost' }, { label: AW.ic('check', 15) + ' 확인 — 적용', cls: 'btn-primary', onClick: function (c) {
+        var nd = Object.assign({}, AW.josaDict); AW.$$('.jo-in', m.el).forEach(function (i) { var v = i.dataset.v, r = i.value.trim(); if (r && r !== v) nd[v] = r; else delete nd[v]; });
+        AW.josaSetDict(nd); T().page.josa = AW.$('#jo-on', m.el).checked; S.dirty = true; AW.emit('tplchange', 'page'); D.refresh(true); AW.Preview.render(); c(); AW.toast('조사 설정을 적용했습니다. 출력에 반영됩니다.', 'ok');
+      } }],
+      onOpen: function (el) {
+        m.el = el;
+        AW.$$('.jo-in', el).forEach(function (inp) { inp.onkeydown = function (e) { e.stopPropagation(); }; inp.oninput = function () {   // 읽기를 바꾸면 결과를 즉시 다시 계산(입력칸은 그대로)
+          var row = inp.closest('tr'), it = items[+row.dataset.i], save = AW.josaDict, tmp = Object.assign({}, save); tmp[it.value] = inp.value.trim() || it.value; AW.josaDict = tmp; var pk = AW.josaPick(it.form, it.value); AW.josaDict = save;
+          AW.$('.jo-r b', row).textContent = it.value + pk.text; AW.$('.jo-s', row).innerHTML = '<span class="badge ok">' + (pk.changed ? '자동 보정' : '확인됨') + '</span>'; row.classList.remove('jo-u');
+        }; });
+      } });
+  };
+
   /* ───────────── 엑셀 양식: 형식 판독·확정 → 내려받기 ─────────────
    * 항목마다 편집창의 원문(sample)에서 숫자 덩어리를 찾아 자릿수 규칙(f.fmt.pads)을 확정한다.
    * 규칙은 양식(fields)에 함께 저장되고, 엑셀 올리기 때 같은 규칙으로 값을 보정·점검한다.
@@ -238,16 +277,29 @@
       body: '<p style="margin-top:0">편집창에 입력한 내용을 기준으로 각 항목의 형식을 판독했습니다. <b>원문과 숫자 자릿수</b>를 확인·수정하고 「양식 만들기」를 누르면 이 규칙이 현재 편집 양식에 저장되고, 엑셀 양식(예시 행·작성 안내)이 만들어집니다. 엑셀을 올릴 때도 같은 규칙으로 값을 맞추고 점검합니다.</p><div id="fx-b"></div>',
       actions: [{ label: '취소', cls: 'btn-ghost' }, { label: AW.ic('download', 15) + ' 양식 만들기', cls: 'btn-primary', onClick: function (c) { c(); apply(cfg); } }],
       onOpen: function (el) { m.el = el; draw(); } });
+    function padSel(c, i) {
+      var rn = runs(c.sample); return rn.map(function (r, k) {
+        return '<div class="fx-r"><span class="badge">' + AW.esc(runLabel(c.sample, k)) + '</span> <select class="in sm" data-i="' + i + '" data-k="' + k + '">' + [[0, '입력 그대로'], [2, '2자리 (01)'], [3, '3자리 (001)'], [4, '4자리 (0001)']].map(function (o) { return '<option value="' + o[0] + '"' + (c.pads[k] === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select>' + (r.length === 1 && !c.pads[k] ? ' <span class="muted">한 자리 — 10 이상(예: 11반)이 있으면 자릿수 고정 권장</span>' : '') + '</div>';
+      }).join('') || '<span class="muted">숫자 없음 — 그대로 입력</span>';
+    }
+    function kindTxt(c) { var rn = runs(c.sample); return kindOf(c.sample, rn.length) + (rn.length ? ' · 숫자 ' + rn.length + '곳' : ''); }
+    function wireSel(row, i) { AW.$$('select[data-i]', row).forEach(function (x) { x.onchange = function () { cfg[i].pads[+x.dataset.k] = +x.value; upd(i, true); }; }); }
+    function upd(i, keepSel) {   // 입력칸은 다시 그리지 않고(커서 유지) 판독·자릿수·예시 행만 갱신
+      var row = AW.$('tr[data-r="' + i + '"]', m.el), c = cfg[i]; if (!row) return;
+      AW.$('.fx-k', row).textContent = kindTxt(c); AW.$('.fx-ex', row).textContent = formatSample(c.sample, c.pads);
+      if (!keepSel) { var pc = AW.$('.fx-p', row); pc.innerHTML = padSel(c, i); wireSel(row, i); }
+      else { AW.$('.fx-ex', row).textContent = formatSample(c.sample, c.pads); }
+    }
     function draw() {
-      var b = AW.$('#fx-b', m.el), act = document.activeElement && document.activeElement.dataset ? document.activeElement.dataset.s : null;
+      var b = AW.$('#fx-b', m.el);
       b.innerHTML = '<div class="tbl-wrap"><table class="gt fx"><thead><tr><th>항목</th><th>편집창 원문(수정 가능)</th><th>판독</th><th>숫자 자릿수</th><th>엑셀 예시 행</th></tr></thead><tbody>' + cfg.map(function (c, i) {
-        var rn = runs(c.sample), sel = rn.map(function (r, k) {
-          return '<div class="fx-r"><span class="badge">' + AW.esc(runLabel(c.sample, k)) + '</span> <select class="in sm" data-i="' + i + '" data-k="' + k + '">' + [[0, '입력 그대로'], [2, '2자리 (01)'], [3, '3자리 (001)'], [4, '4자리 (0001)']].map(function (o) { return '<option value="' + o[0] + '"' + (c.pads[k] === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select>' + (r.length === 1 && !c.pads[k] ? ' <span class="muted">한 자리 — 10 이상(예: 11반)이 있으면 자릿수 고정 권장</span>' : '') + '</div>';
-        }).join('');
-        return '<tr><td class="nowrap"><b>' + AW.esc(c.f.name) + '</b></td><td><input class="in sm" data-s="' + i + '" value="' + AW.esc(c.sample) + '" style="min-width:200px"></td><td class="nowrap">' + AW.esc(kindOf(c.sample, rn.length)) + (rn.length ? ' · 숫자 ' + rn.length + '곳' : '') + '</td><td>' + (sel || '<span class="muted">숫자 없음 — 그대로 입력</span>') + '</td><td><b>' + AW.esc(formatSample(c.sample, c.pads)) + '</b></td></tr>';
+        return '<tr data-r="' + i + '"><td class="nowrap"><b>' + AW.esc(c.f.name) + '</b></td><td><input class="in sm" data-s="' + i + '" value="' + AW.esc(c.sample) + '" style="min-width:200px"></td><td class="nowrap fx-k">' + AW.esc(kindTxt(c)) + '</td><td class="fx-p">' + padSel(c, i) + '</td><td><b class="fx-ex">' + AW.esc(formatSample(c.sample, c.pads)) + '</b></td></tr>';
       }).join('') + '</tbody></table></div><p class="muted">예) 「항공정비계열 1학년 1반」에서 반이 10 이상일 수 있다면 두 번째 숫자를 「2자리」로 두면 01반·11반으로 통일됩니다. 엑셀 열은 서식을 「텍스트」로 지정하므로 01이 1로 바뀌지 않습니다.</p>';
-      AW.$$('input[data-s]', b).forEach(function (x) { x.oninput = function () { var c = cfg[+x.dataset.s]; c.sample = x.value; var g = guessPads(c.sample); c.pads = runs(c.sample).map(function (r, k) { return c.pads[k] != null && c.pads[k] !== undefined && k < c.pads.length ? c.pads[k] : g[k]; }); draw(); var n = AW.$('input[data-s="' + x.dataset.s + '"]', m.el); if (n) { n.focus(); n.setSelectionRange(n.value.length, n.value.length); } }; });
-      AW.$$('select[data-i]', b).forEach(function (x) { x.onchange = function () { cfg[+x.dataset.i].pads[+x.dataset.k] = +x.value; draw(); }; });
+      AW.$$('tr[data-r]', b).forEach(function (row) { wireSel(row, +row.dataset.r); });
+      AW.$$('input[data-s]', b).forEach(function (x) {
+        x.oninput = function () { var i = +x.dataset.s, c = cfg[i], old = c.pads.slice(); c.sample = x.value; var g = guessPads(c.sample); c.pads = runs(c.sample).map(function (r, k) { return k < old.length && old[k] != null ? old[k] : g[k]; }); upd(i, false); };   // 커서는 그대로
+        x.onkeydown = function (e) { e.stopPropagation(); };   // 화살표·Delete·Backspace 등이 바깥 단축키로 새지 않도록
+      });
     }
     function apply(list) {
       list.forEach(function (c) { var x = c.f, sm = String(c.sample || '').trim(); x.fmt = { sample: sm, pads: runs(sm).length ? c.pads.slice(0, runs(sm).length) : [] }; x.sample = sm; if (sm) x.example = formatSample(sm, x.fmt.pads); });
@@ -347,6 +399,7 @@
       S.row = base; st.page = Math.floor(base / PAGE); dataChanged(); close(); var gd = AW.$('#dt-guide', st.root); if (gd) gd.open = false; D.refresh(true); AW.emit('rowchange');
       AW.log('xlsx_import', T().id, { file: fname, rows: b.rows.length, mode: mode });
       var v = D.validate();
+      if (D.josaUnsure()) setTimeout(function () { D.josaDialog(true); }, 400);   // 영문·숫자로 끝나는 값이 있으면 조사 확인 창
       var dc = D.dupCount(); AW.toast(b.rows.length + '행을 올렸습니다.' + (dc ? ' 중복 의심 ' + dc + '행이 있습니다(표 위 배지 확인).' : '') + (v.miss || v.long ? ' (누락 ' + v.miss + ' · 길이초과 ' + v.long + ' — 표에서 확인)' : ''), v.miss || v.long ? '' : 'ok');
     }
   }
