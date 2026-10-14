@@ -22,7 +22,7 @@
     if (!gen) {
       var cols = colsText(lk), un = lk.custom ? lk.unit : '과목';
       P.push({ id: 'c', tab: 'courses', t: lk.custom ? un + ' 목록' : '과목·교수', s: un + ' 일괄 등록', why: '학생이 고를 「' + un + '」 목록을 엑셀로 한 번에 등록합니다. ① 「엑셀 양식 다운로드」 ② 한 행에 ' + (lk.custom && lk.unit !== '과목' ? '하나씩' : '한 반의 한 과목씩') + ' 작성(열: ' + cols + ') ③ 「엑셀 업로드」 → 미리보기 확인 → 「등록」. 가진 시간표·PDF가 있으면 「AI 불러오기」로 표를 자동 정리할 수 있습니다.' });
-      if (lk.cols.track.use && lk.cols.grade.use) P.push({ id: 'h', tab: 'targets', t: '대상 인원', s: '대상 인원(선택)', optional: true, why: lk.cols.track.label + '·' + lk.cols.grade.label + '별 배포 인원을 넣으면 결과에서 응답률이 계산됩니다. (선택)' });
+      if (false && lk.cols.track.use && lk.cols.grade.use) P.push({ id: 'h', tab: 'targets', t: '대상 인원', s: '대상 인원(선택)', optional: true, why: lk.cols.track.label + '·' + lk.cols.grade.label + '별 배포 인원을 넣으면 결과에서 응답률이 계산됩니다. (선택)' });
     }
     if (has(d, function (x) { return x.answer != null; }) || (d.quiz && d.quiz.show)) P.push({ id: 'quiz', tab: 'questions', t: '정답·배점', s: '정답·배점 확인', why: '퀴즈형입니다. 문항마다 정답과 배점이 맞는지 확인하고, 설문 설정에서 제출 후 점수 표시·통과 기준 점수를 정하십시오.' });
     if (d.limit && d.limit.max || has(d, function (x) { return (x.options || []).some(function (o) { return o.max != null; }); })) P.push({ id: 'limit', tab: 'questions', t: '정원', s: '정원 확인', why: '선착순 인원 또는 선택지별 정원이 설정되어 있습니다. 숫자가 맞는지 확인하십시오. 정원이 차면 학생에게 마감 안내가 나옵니다.' });

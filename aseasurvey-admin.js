@@ -287,7 +287,7 @@
     { id: 'overview', t: '시작·배포' }, { id: 'intro', t: '안내문' }, { id: 'questions', t: '문항' }, { id: 'courses', t: '과목·교수' },
     { id: 'targets', t: '대상 인원' }, { id: 'design', t: '디자인' }, { id: 'audit', t: '배포 전 점검' }, { id: 'results', t: '결과 보기' }, { id: 'draw', t: '추첨' }, { id: 'versions', t: '이전 저장본' }, { id: 'ai', t: 'AI 설계' }
   ];
-  function tabsFor() { var gen = A.work && A.work.def && A.work.def.mode === 'general', lk = SVY.linkInfo(A.work && A.work.def); return TAB_DEFS.filter(function (t) { return !(gen && (t.id === 'courses' || t.id === 'targets')); }).map(function (t) { return t.id === 'courses' && lk.custom ? { id: t.id, t: lk.unit + ' 목록' } : t; }); }
+  function tabsFor() { var gen = A.work && A.work.def && A.work.def.mode === 'general', lk = SVY.linkInfo(A.work && A.work.def); var legacyTg = (A.cur && (A.cur.targets || []).length > 0) && !Object.keys((A.work && A.work.def && A.work.def.classHead) || {}).length; return TAB_DEFS.filter(function (t) { return !(gen && (t.id === 'courses' || t.id === 'targets')) && !(t.id === 'targets' && !legacyTg); }).map(function (t) { return t.id === 'courses' && lk.custom ? { id: t.id, t: lk.unit + ' 목록' } : t; }); }
   A.renderSurvey = function () {
     A.view = 'survey';
     var s = A.cur.survey, dirty = A.isDirty();
