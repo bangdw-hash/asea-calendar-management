@@ -243,6 +243,48 @@
   var CMP = A.ext.cmp = { dim: 'prof', met: 'all', sort: 'met', dir: -1, q: '', zoom: 'full' };
   var DIMS = [['track', '계열'], ['grade', '학년'], ['klass', '반'], ['prof', '교수'], ['course', '과목'], ['kind', '이론·실습']];
   function shortSec(t) { return String(t).replace(/^[ⅠⅡⅢⅣⅤⅥⅦⅧⅨⅩ]+\.\s*/, '').slice(0, 8); }
+
+  /* ───────────── 우수 참여 반 · 최고 평가 항목 ───────────── */
+  // 기준: 유효 응답(점검 통과·직선 응답 아님·제외 아님)만 인정 → 반별 응답률(유효 응답 수 ÷ 재적 인원).
+  //       응답률을 정수 %로 반올림해 같은 구간이면 동급으로 보고, 동급이면 서술형 글자 수가 많은 반이 앞섭니다.
+  function classHeads() { var d = A.cur.survey.def; return (d && d.classHead) || {}; }
+  function honorClasses() {
+    var Q = questions(), heads = classHeads(), by = {}, hasHead = Object.keys(heads).length > 0;
+    function tl(r) {
+      var n = 0, ans = r.answers || {}; Object.keys(ans.course || {}).forEach(function (cid) { var a = ans.course[cid]; Q.text.forEach(function (x) { var v = a[x.q.id]; if (typeof v === 'string') n += v.trim().length; }); });
+      Q.common.forEach(function (x) { if (x.q.type === 'text') { var v = (ans.common || {})[x.q.id]; if (typeof v === 'string') n += v.trim().length; } }); return n;
+    }
+    R.rows.forEach(function (r) {
+      if (F.data === 'real' && r.is_test) return; if (F.data === 'test' && !r.is_test) return;
+      var k = r.track + '|' + r.grade + '|' + r.klass, o = by[k] || (by[k] = { key: k, track: r.track, grade: r.grade, klass: r.klass, all: 0, valid: 0, chars: 0 });
+      o.all++; if (passResp(r) && !r.straight && !r.excluded) { o.valid++; o.chars += tl(r); }
+    });
+    Object.keys(heads).forEach(function (k) { if (!by[k]) { var p = k.split('|'); by[k] = { key: k, track: p[0], grade: p[1], klass: p[2], all: 0, valid: 0, chars: 0 }; } });
+    var list = Object.keys(by).map(function (k) { var o = by[k], h = Number(heads[k]) || 0; o.head = h || null; o.rate = h ? o.valid / h * 100 : null; o.bucket = o.rate == null ? null : Math.round(o.rate); return o; });
+    list.sort(function (a, b) {
+      if ((a.rate == null) !== (b.rate == null)) return a.rate == null ? 1 : -1;
+      if (a.rate != null && a.bucket !== b.bucket) return b.bucket - a.bucket;
+      return b.chars - a.chars || b.valid - a.valid || a.key.localeCompare(b.key, 'ko');
+    });
+    list.forEach(function (o, i) { o.rank = i + 1; o.tie = o.bucket != null && list.some(function (z) { return z !== o && z.bucket === o.bucket; }); });
+    return { list: list, hasHead: hasHead };
+  }
+  function honorPanel(D) {
+    var H = honorClasses(), list = H.list, top = list.slice(0, 5), p = list[0];
+    var h = '<div class="panel"><h3>우수 참여 반</h3><p class="panel-sub">유효 응답(점검 문항 통과 · 직선 응답 제외)만 인정하여 <b>반별 응답률 = 유효 응답 수 ÷ 재적 인원</b>으로 순위를 매깁니다. 응답률을 정수 %로 반올림해 같으면 동급으로 보고, 동급이면 <b>서술형 총 글자 수</b>가 많은 반이 앞섭니다. (위쪽 필터와 관계없이 전체 반 기준)</p>';
+    if (!H.hasHead) h += '<div class="msg warn">' + I('alert', 18) + '<div>반별 재적 인원이 등록되어 있지 않아 응답률을 계산할 수 없습니다. 「대상 인원」 탭의 「반별 재적 인원」에서 입력하거나 엑셀로 올려 주십시오. 아래는 유효 응답 수 기준 참고 순위입니다.</div></div>';
+    if (p && p.rate != null) h += '<div class="kpis" style="margin-bottom:10px"><div class="kpi"><div class="l">최우수 참여 반</div><div class="v" style="font-size:20px">' + E(p.track + ' ' + p.grade + ' ' + p.klass) + '</div><div class="s">응답률 ' + p.rate.toFixed(1) + '% (유효 ' + p.valid + ' / 재적 ' + p.head + ') · 서술형 ' + p.chars + '자' + (p.tie ? ' · 동급 반과 서술 글자 수로 가림' : '') + '</div></div></div>';
+    h += '<div class="tbl-wrap"><table class="t"><thead><tr><th class="num">순위</th><th>반</th><th class="num">재적</th><th class="num">유효 응답</th><th class="num">전체 응답</th><th class="num">응답률</th><th class="num">서술형 글자 수</th><th>비고</th></tr></thead><tbody>' +
+      (top.map(function (o) { return '<tr><td class="num">' + o.rank + '</td><td><b>' + E(o.track + ' ' + o.grade + ' ' + o.klass) + '</b></td><td class="num">' + (o.head == null ? '-' : o.head) + '</td><td class="num">' + o.valid + '</td><td class="num">' + o.all + '</td><td class="num">' + (o.rate == null ? '-' : o.rate.toFixed(1) + '%') + '</td><td class="num">' + o.chars + '</td><td class="muted">' + (o.head == null ? '재적 인원 미등록' : o.tie ? '동급(' + o.bucket + '%) · 글자 수 비교' : '') + '</td></tr>'; }).join('') || '<tr><td colspan="8" class="t-empty">응답이 없습니다.</td></tr>') + '</tbody></table></div>' +
+      (list.length > 5 ? '<div class="muted" style="margin-top:6px">상위 5개 반만 표시합니다. 전체 순위는 엑셀의 「우수 참여 반」 시트에 있습니다.</div>' : '') + '</div>';
+    // 최고 평가 항목
+    var secs = D.Q.sections.map(function (sc) { return { n: sc.title, m: mean(D.secAgg[sc.id]), c: (D.secAgg[sc.id] || {}).n || 0 }; }).filter(function (x) { return x.m != null; }).sort(function (a, b) { return b.m - a.m; }).slice(0, 3);
+    var qs = D.Q.scale.map(function (x) { var a = D.qAgg[x.q.id]; return { n: x.q.id + ' ' + String(x.q.label).slice(0, 40), m: a && a.n ? a.sum / a.n : null, c: a ? a.n : 0 }; }).filter(function (x) { return x.m != null; }).sort(function (a, b) { return b.m - a.m; }).slice(0, 3);
+    var ps = Object.keys(D.pAgg).map(function (k) { var o = D.pAgg[k]; return { n: o.prof, m: o.cnt ? o.sum / o.cnt : null, c: o.resp }; }).filter(function (x) { return x.m != null && x.c >= 5; }).sort(function (a, b) { return b.m - a.m; }).slice(0, 3);
+    function box(t, a) { return '<div class="panel" style="flex:1;min-width:240px"><h4 style="margin:0 0 6px">' + t + '</h4>' + (a.length ? a.map(function (x, i) { return '<div class="qrow" style="display:flex;gap:8px"><b>' + (i + 1) + '</b><span style="flex:1">' + E(x.n) + '</span><b>' + x.m.toFixed(2) + '</b></div>'; }).join('') : '<div class="muted">데이터 없음</div>') + '</div>'; }
+    return h + '<div class="row" style="gap:12px;align-items:stretch;flex-wrap:wrap">' + box('최고 평가 영역', secs) + box('최고 평가 문항', qs) + box('최고 평가 교수 (응답 5건 이상)', ps) + '</div>';
+  }
+
   function cmpGroups(D, dim) {
     var key = { track: function (p) { return p.r.track; }, grade: function (p) { return p.r.track + ' ' + p.r.grade; }, klass: function (p) { return p.r.track + ' ' + p.r.grade + ' ' + p.r.klass; },
       prof: function (p) { return p.c.prof || '(교수 미입력)'; }, course: function (p) { return p.c.name + ' · ' + (p.c.klass || '') + (p.c.prof ? ' · ' + p.c.prof : ''); }, kind: function (p) { return p.c.kind || '(구분 없음)'; } }[dim];
@@ -258,7 +300,7 @@
   function cmpVal(o, met) { if (met === 'all') return mean(o.all); if (met.indexOf('s:') === 0) return mean(o.sec[met.slice(2)]); return mean(o.q[met.slice(2)]); }
   function viewCmp(D) {
     var c = CMP, rows = cmpGroups(D, c.dim), secs = D.Q.sections;
-    if (!rows.length) return cmpBar(D) + '<div class="panel t-empty">표시할 응답이 없습니다.</div>';
+    if (!rows.length) return honorPanel(D) + cmpBar(D) + '<div class="panel t-empty">표시할 응답이 없습니다.</div>';
     var overall = D.all.n ? D.all.sum / D.all.n : null;
     rows.forEach(function (o) { o.v = cmpVal(o, c.met); o.tot = mean(o.all); });
     var ranked = rows.filter(function (o) { return o.v != null; }).sort(function (a, b) { return b.v - a.v; }); ranked.forEach(function (o, i) { o.rank = i + 1; });
@@ -284,7 +326,7 @@
         return '<tr' + (c.dim === 'prof' ? ' style="cursor:pointer" data-act="profdetail" data-p="' + E(o.name) + '"' : '') + '><td class="num">' + (o.rank == null ? '-' : o.rank) + '</td><td><b>' + E(o.name) + '</b>' + (o.resp < 5 ? ' <span class="badge badge-gray">참고용</span>' : '') + '</td><td class="num">' + o.resp + '</td><td class="hc num" style="background:' + hm.bg + ';color:' + hm.fg + '">' + (o.v == null ? '-' : o.v.toFixed(2)) + '</td><td class="num">' + (o.tot == null ? '-' : o.tot.toFixed(2)) + '</td>' +
           secs.map(function (sc) { var m = mean(o.sec[sc.id]), h2 = heatColor(m); return '<td class="hc num" style="background:' + h2.bg + ';color:' + h2.fg + '">' + (m == null ? '-' : m.toFixed(2)) + '</td>'; }).join('') + '</tr>';
       }).join('') || '<tr><td colspan="' + (5 + secs.length) + '" class="t-empty">검색 결과가 없습니다.</td></tr>') + '</tbody></table></div></div>';
-    return cmpBar(D) + chart + tbl;
+    return honorPanel(D) + cmpBar(D) + chart + tbl;
   }
   function metName(D, met) {
     if (met === 'all') return '종합 평균'; if (met.indexOf('s:') === 0) { var s = D.Q.sections.filter(function (x) { return x.id === met.slice(2); })[0]; return s ? shortSec(s.title) : met; }
@@ -349,6 +391,8 @@
     sheet('서술형', tx, [18, 30, 12, 8, 8, 22, 12, 80]);
     var pub = (A.cur.draws || []).filter(function (d) { return d.published; })[0];
     if (A.cur.draws && A.cur.draws.length) { var dr = [['회차', '추첨번호', '인원', '추첨 일시', '공개', '수령']]; var claimed = {}; (A.cur.claims || []).forEach(function (c) { claimed[c.ticket] = A.fmt(c.claimed_at); }); A.cur.draws.slice().reverse().forEach(function (d, i) { d.tickets.forEach(function (t) { dr.push([d.id, t, d.n, A.fmt(d.created_at), d.published ? '공개' : '비공개', claimed[t] || '']); }); }); sheet('추첨', dr, [8, 14, 8, 18, 8, 18]); }
+    (function () { var H = honorClasses(); if (!H.list.length) return;
+      sheet('우수 참여 반', [['순위', '계열', '학년', '반', '재적 인원', '유효 응답', '전체 응답', '응답률(%)', '서술형 글자 수', '비고']].concat(H.list.map(function (o) { return [o.rank, o.track, o.grade, o.klass, o.head == null ? '' : o.head, o.valid, o.all, o.rate == null ? '' : Math.round(o.rate * 10) / 10, o.chars, o.head == null ? '재적 인원 미등록' : o.tie ? '동급(' + o.bucket + '%): 서술 글자 수로 순위' : '']; })), [6, 14, 8, 8, 10, 10, 10, 10, 14, 30]); })();
     // 비교 시트: 기준별 순위·영역 평균·문항 평균 (현재 응답 범위 기준)
     DIMS.forEach(function (d) {
       var gs = cmpGroups(D, d[0]); if (!gs.length) return;
