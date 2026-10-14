@@ -429,7 +429,7 @@
   function render(keepFilters) {
     var body = document.getElementById('rbody'); if (!body) return;
     var D = A.ext.D = compute(), sub = A.ext.rsub || 'sum';
-    var fn = { sum: viewSummary, q: viewQuestions, heat: viewHeat, prof: viewProf, cmp: viewCmp, kind: viewKind, text: viewText, mng: viewManage }[sub];
+    var fn = { sum: viewSummary, q: viewQuestions, heat: viewHeat, prof: viewProf, cmp: viewCmp, kind: viewKind, text: viewText, mng: viewManage }[sub] || (A.ext.rviews || {})[sub] || viewSummary;
     var y = window.scrollY; body.className = ''; body.innerHTML = fn(D); updateLive(); if (R.newCount && sub !== 'sum') { /* 새 응답 표시는 상단 라이브 표시에 반영 */ }
     window.scrollTo(0, y);
   }
@@ -439,9 +439,10 @@
     var sub = A.ext.rsub || 'sum';
     box.innerHTML = '<div class="row" style="margin-bottom:12px"><div class="tabs" style="margin:0;border:0;flex:1">' + SUBS.map(function (s) { return '<button class="tab" data-act="rsub" data-s="' + s[0] + '" aria-selected="' + (sub === s[0]) + '">' + s[1] + '</button>'; }).join('') + '</div><span id="live" class="live"></span><button class="btn btn-ghost btn-sm" data-act="livetoggle">일시정지/재개</button><button class="btn btn-secondary btn-sm" data-act="reload">' + I('refresh', 14) + ' 새로고침</button><button class="btn btn-primary btn-sm" data-act="xlsx">' + I('download', 14) + ' 엑셀 내려받기</button></div>' +
       filterBar() + '<div id="rbody" class="loading">불러오는 중…</div>';
-    box.onchange = function (e) { var cp = e.target.getAttribute('data-cmp'); if (cp && cp !== 'q') { CMP[cp] = e.target.value; if (cp === 'dim') { CMP.sort = 'met'; CMP.dir = -1; } render(); return; } var f = e.target.getAttribute('data-ff'); if (f) { F[f] = e.target.value; if (f === 'track') { F.grade = F.klass = F.course = ''; } if (f === 'grade') { F.klass = F.course = ''; } if (f === 'prof' || f === 'kind' || f === 'klass') F.course = ''; A.tabs.results.redraw(box); } else if (e.target.id === 'psort') { A.ext.psort = e.target.value; render(); } else if (e.target.id === 'tq') { A.ext.tq = e.target.value; A.ext.tpg = 1; render(); } };
-    box.oninput = function (e) { if (e.target.id === 'cmpq') { CMP.q = e.target.value; clearTimeout(A._ck); A._ck = setTimeout(function () { render(); var n = document.getElementById('cmpq'); if (n) { n.focus(); n.setSelectionRange(n.value.length, n.value.length); } }, 250); return; } if (e.target.id === 'tkw') { A.ext.tkw = e.target.value; A.ext.tpg = 1; clearTimeout(A._tk); A._tk = setTimeout(function () { render(); var n = document.getElementById('tkw'); if (n) { n.focus(); n.setSelectionRange(n.value.length, n.value.length); } }, 250); } };
+    box.onchange = function (e) { if (A.ext.rhook && A.ext.rhook(e, 'change')) return; var cp = e.target.getAttribute('data-cmp'); if (cp && cp !== 'q') { CMP[cp] = e.target.value; if (cp === 'dim') { CMP.sort = 'met'; CMP.dir = -1; } render(); return; } var f = e.target.getAttribute('data-ff'); if (f) { F[f] = e.target.value; if (f === 'track') { F.grade = F.klass = F.course = ''; } if (f === 'grade') { F.klass = F.course = ''; } if (f === 'prof' || f === 'kind' || f === 'klass') F.course = ''; A.tabs.results.redraw(box); } else if (e.target.id === 'psort') { A.ext.psort = e.target.value; render(); } else if (e.target.id === 'tq') { A.ext.tq = e.target.value; A.ext.tpg = 1; render(); } };
+    box.oninput = function (e) { if (A.ext.rhook && A.ext.rhook(e, 'input')) return; if (e.target.id === 'cmpq') { CMP.q = e.target.value; clearTimeout(A._ck); A._ck = setTimeout(function () { render(); var n = document.getElementById('cmpq'); if (n) { n.focus(); n.setSelectionRange(n.value.length, n.value.length); } }, 250); return; } if (e.target.id === 'tkw') { A.ext.tkw = e.target.value; A.ext.tpg = 1; clearTimeout(A._tk); A._tk = setTimeout(function () { render(); var n = document.getElementById('tkw'); if (n) { n.focus(); n.setSelectionRange(n.value.length, n.value.length); } }, 250); } };
     box.onclick = function (e) {
+      if (A.ext.rhook && A.ext.rhook(e, 'click')) return;
       var t = e.target.closest('[data-act]'); if (!t) return; var act = t.getAttribute('data-act');
       if (act === 'rsub') { A.ext.rsub = t.getAttribute('data-s'); box.querySelectorAll('[data-act=rsub]').forEach(function (b) { b.setAttribute('aria-selected', b === t); }); render(); }
       else if (act === 'fclear') { F.track = F.grade = F.klass = F.kind = F.prof = F.course = ''; F.sincere = 'all'; A.tabs.results.redraw(box); }
@@ -460,4 +461,5 @@
     render(); clearTimeout(R.timer); R.timer = setTimeout(poll, 5000);
   };
   A.tabs.results.redraw = function (box) { var sel = box.querySelector('#rfilters'); if (sel) sel.outerHTML = filterBar(); render(); };
+  A.ext.resApi = { compute: function () { return A.ext.D || (A.ext.D = compute()); }, rows: function () { return R.rows; }, F: F, passResp: passResp, heatColor: heatColor, honorClasses: honorClasses, classHeads: classHeads, mean: mean, questions: questions, render: function () { render(); } };
 })();

@@ -319,6 +319,6 @@ canvas.sig{display:block;width:100%;height:auto;aspect-ratio:600/220;touch-actio
 .thsort.on{color:var(--primary-dk)}
 .cmpt thead th{position:sticky;top:0;background:var(--surface,#fff);z-index:1}
 @media (max-width:600px){.cmprow{grid-template-columns:90px 1fr 40px}}
-[data-legacy=cmp] .tabs{display:none}
+[data-legacy=cmp] .tabs,[data-legacy=det] .tabs,[data-legacy=same] .tabs,[data-legacy=live] .tabs{display:none}
 .gcmp > .filters{display:none}
-[data-legacy=cmp] > .row:first-child{display:none}
+[data-legacy=cmp] > .row:first-child,[data-legacy=det] > .row:first-child,[data-legacy=same] > .row:first-child,[data-legacy=live] > .row:first-child{display:none}
