@@ -58,7 +58,7 @@
     st.root = root;
     root.innerHTML =
       '<div class="ed-tools">' +
-        '<div class="tg">' + BTN('add-text', 'text', '글상자 추가') + BTN('add-field', 'field', '일괄 입력 항목 추가 — 엑셀 데이터가 들어갈 자리') + BTN('add-line', 'line', '선 추가') + BTN('add-rect', 'rect', '사각형 추가') + BTN('add-img', 'image', '이미지(직인·로고) 추가') + BTN('add-qr', 'qr', '위조 방지 인증 QR 추가') + '</div>' +
+        '<div class="tg">' + BTN('add-text', 'text', '글상자 추가') + BTN('add-field', 'field', '일괄 입력 항목 추가 — 엑셀 데이터가 들어갈 자리') + BTN('add-line', 'line', '선 추가') + BTN('add-rect', 'rect', '사각형 추가') + BTN('add-table', 'table', '표 넣기 — 가로 칸 × 세로 줄') + BTN('add-img', 'image', '이미지(직인·로고) 추가') + BTN('add-qr', 'qr', '위조 방지 인증 QR 추가') + '</div>' +
         '<div class="tg"><button class="tb tb-txt" data-a="lang-ko" title="한글 버전 편집·보기">한글</button><button class="tb tb-txt" data-a="lang-en" title="영문 버전 편집·보기">영문</button><button class="tb tb-txt" data-a="lang-both" title="한글+영문 병기 보기(출력 기본값)">한영</button>' + BTN('langcfg', 'cols', '영문 크기·병기 순서 설정') + '</div>' +
         '<div class="tg">' + BTN('starter', 'wand', '기본 상장 배치 넣기') + BTN('page', 'page', '용지·배경 설정(JPG/PDF 올리기)') + '<button class="tb tb-txt" data-a="orient" title="가로·세로 전환"></button></div>' +
         '<div class="tg">' + BTN('undo', 'undo', '실행 취소 (Ctrl+Z)') + BTN('redo', 'redo', '다시 실행 (Ctrl+Y)') + '</div>' +
@@ -163,6 +163,7 @@
       if (single && !e.lock) {
         var rotated = !!(e.rot && e.rot % 360);
         (rotated ? [] : e.t === 'line' ? ['w', 'e'] : ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w']).forEach(function (h) { var hd = document.createElement('i'); hd.className = 'hd hd-' + h; hd.dataset.h = h; b.appendChild(hd); });
+        if (e.t === 'table') { var mv = document.createElement('i'); mv.className = 'tmv'; mv.title = '끌어서 표 이동'; b.appendChild(mv); }
         var rh = document.createElement('i'); rh.className = 'rh'; rh.title = '끌어서 회전 (Shift: 15°, 0·90°·180°는 자동 맞춤)'; b.appendChild(rh);
       }
       st.ov.appendChild(b);
@@ -171,7 +172,7 @@
       var x1 = Infinity, y1 = Infinity, x2 = -Infinity, y2 = -Infinity, k = st.zoom; list.forEach(function (e) { x1 = Math.min(x1, e.x); y1 = Math.min(y1, e.y); x2 = Math.max(x2, e.x + e.w); y2 = Math.max(y2, e.y + e.h); });
       var gb = document.createElement('div'); gb.className = 'sb gb'; gb.style.cssText = 'left:' + x1 * k + 'px;top:' + y1 * k + 'px;width:' + (x2 - x1) * k + 'px;height:' + (y2 - y1) * k + 'px'; st.ov.appendChild(gb);
     }
-    drawGuides();
+    drawGuides(); drawTSel();
   }
   function normRot(v) { v = ((v % 360) + 360) % 360; return AW.round(v > 180 ? v - 360 : v, 1); }
   function rotBy(d) { sel().forEach(function (e) { if (!e.lock) e.rot = normRot((e.rot || 0) + d); }); E.refreshElems(); changed('elems'); }
@@ -266,12 +267,14 @@
   /* ───────────── 동작 ───────────── */
   var LBLS = { 'add-text': '글상자 추가', 'add-line': '선 추가', 'add-rect': '사각형 추가', 'add-qr': 'QR 추가', dup: '복제', del: '삭제', addline: '줄 추가', paste: '붙여넣기', cut: '잘라내기', pinplace: '제자리 붙여넣기', front: '맨 앞으로', back: '맨 뒤로', fwd: '앞으로 한 칸', bwd: '뒤로 한 칸', lock: '잠금 전환', hide: '표시 전환', noprint: '인쇄 제외 전환', group: '그룹', ungroup: '그룹 해제', bold: '굵게', italic: '기울임', ul: '밑줄', 'sz+': '글자 크게', 'sz-': '글자 작게', starter: '기본 배치', 'rot-l': '회전', 'rot-r': '회전', 'rot-180': '회전', 'flip-x': '좌우 반전', 'flip-y': '상하 반전', 'rot-0': '회전 초기화', cstyle: '서식 복사', pstyle: '서식 붙여넣기' };
   function act(a) {
+    if (a.indexOf('t-') === 0) return tAct(a);
     var list = sel(), tx = list.filter(function (e) { return e.t === 'text'; });
     var T1 = function (p, v) { setProp(p, v); };
     st.lbl = LBLS[a] || null;
     switch (a) {
       case 'add-text': return add(AW.elem('text', { text: '텍스트를 입력하세요', en: 'Enter text' }));
       case 'add-qr': return add(AW.elem('qr'));
+      case 'add-table': return AW.Table.insertDialog(function (el) { add(el); });
       case 'lang-ko': case 'lang-en': case 'lang-both': T().page.lang = a.slice(5); E.render(); return changed('page', true);
       case 'langcfg': return langDialog();
       case 'group': return grouping(true); case 'ungroup': return grouping(false);
@@ -441,7 +444,7 @@
   function unmergeText(src) { return String(src).replace(/\{\{\s*([^{}]+?)\s*\}\}/g, function (m, n) { return n.charAt(0) === '@' ? m : sampleOf(n); }); }
 
   function keysHelp() {
-    var R = [['끌어서 이동', 'Shift: 가로·세로 한 방향 고정 / Alt: 복제하며 이동 / Ctrl: 자석(격자·가이드) 끄기'], ['크기 조절', '글상자는 글자 크기도 함께 비례 / Shift: 비율 유지 / Alt: 글자 크기 고정 / Ctrl: 중심 기준'], ['변 크기 조절', '글상자 폭·높이만 변경'], ['선택', '클릭 / Shift·Ctrl+클릭: 추가·해제 / 빈 곳 끌기: 범위 선택 / Ctrl+A: 전체'], ['화살표', '0.5mm 이동 (Shift: 5mm)'], ['Ctrl+C / X / V', '복사 / 잘라내기 / 붙여넣기'], ['Ctrl+D', '복제'], ['Ctrl+G / Ctrl+Shift+G', '그룹 만들기 / 해제 (그룹은 더블클릭하면 안의 요소만 선택)'], ['Alt+R', '눈금자 보기·숨기기 — 눈금자에서 끌어내면 안내선, 안내선을 눈금자로 끌어 넣으면 삭제'], ['Alt+G', '격자선 보기·숨기기 (간격은 격자 설정에서)'], ['회전 손잡이', '선택한 요소 위쪽의 동그란 손잡이를 끌기 — Shift: 15° 단위, 0·90·180°는 자동 맞춤, Ctrl: 자동 맞춤 해제'], ['키 조합 선택 기준', 'Ctrl+R(새로고침)·Ctrl+H 같은 브라우저 예약 키를 피해 눈금자·격자는 Alt 조합으로 두었습니다'], ['Ctrl+Shift+V', '제자리에 붙여넣기'], ['Ctrl+Alt+C / V', '서식(글꼴·크기·색·정렬 등) 복사 / 붙여넣기'], ['Tab / Shift+Tab', '다음 / 이전 요소 선택'], ['Ctrl+] / [', '한 칸 앞으로 / 뒤로 (Shift 추가: 맨 앞 / 맨 뒤)'], ['Ctrl+Z / Y', '실행 취소 / 다시 실행'], ['인쇄 제외', '우클릭 → 순서·잠금·표시 → 「인쇄에서 제외」 — 화면 안내용 개체(주황 점선)는 미리보기·인쇄에서 빠집니다. 직인은 기본적으로 출력됩니다'], ['모든 기능', '단축키가 겹칠 때는 오른쪽 클릭 메뉴(서브메뉴)에서 같은 기능을 실행할 수 있습니다'], ['오른쪽 사이드바', '오른쪽 세로 막대의 아이콘(레이어·속성·색상·기록)을 누르면 패널이 펼쳐집니다'], ['메일머지 지정', '글상자를 더블클릭 → 바뀔 문구를 드래그 → 우클릭 → 「메일머지 항목으로 만들기」(노란 표시가 바뀌는 자리)'], ['Ctrl+휠', '확대·축소'], ['Enter / 더블클릭', '글상자 직접 편집 (Esc: 마침)'], ['오른쪽 클릭', '바로 실행 메뉴'], ['Delete', '삭제'], ['Ctrl+S', '저장']];
+    var R = [['표', '표 넣기 버튼 → 칸·줄 수 입력 / F5: 셀 선택 → 한 번 더: 표 전체 → 한 번 더: 해제 / 선택된 표를 클릭·끌기: 셀 범위 선택, 칸 경계 끌기: 너비·높이, 왼쪽 위 손잡이: 표 이동 / 화살표·Tab·Enter·Del·Esc / P: 선 두께·방향별 선·합치기·서식'], ['끌어서 이동', 'Shift: 가로·세로 한 방향 고정 / Alt: 복제하며 이동 / Ctrl: 자석(격자·가이드) 끄기'], ['크기 조절', '글상자는 글자 크기도 함께 비례 / Shift: 비율 유지 / Alt: 글자 크기 고정 / Ctrl: 중심 기준'], ['변 크기 조절', '글상자 폭·높이만 변경'], ['선택', '클릭 / Shift·Ctrl+클릭: 추가·해제 / 빈 곳 끌기: 범위 선택 / Ctrl+A: 전체'], ['화살표', '0.5mm 이동 (Shift: 5mm)'], ['Ctrl+C / X / V', '복사 / 잘라내기 / 붙여넣기'], ['Ctrl+D', '복제'], ['Ctrl+G / Ctrl+Shift+G', '그룹 만들기 / 해제 (그룹은 더블클릭하면 안의 요소만 선택)'], ['Alt+R', '눈금자 보기·숨기기 — 눈금자에서 끌어내면 안내선, 안내선을 눈금자로 끌어 넣으면 삭제'], ['Alt+G', '격자선 보기·숨기기 (간격은 격자 설정에서)'], ['회전 손잡이', '선택한 요소 위쪽의 동그란 손잡이를 끌기 — Shift: 15° 단위, 0·90·180°는 자동 맞춤, Ctrl: 자동 맞춤 해제'], ['키 조합 선택 기준', 'Ctrl+R(새로고침)·Ctrl+H 같은 브라우저 예약 키를 피해 눈금자·격자는 Alt 조합으로 두었습니다'], ['Ctrl+Shift+V', '제자리에 붙여넣기'], ['Ctrl+Alt+C / V', '서식(글꼴·크기·색·정렬 등) 복사 / 붙여넣기'], ['Tab / Shift+Tab', '다음 / 이전 요소 선택'], ['Ctrl+] / [', '한 칸 앞으로 / 뒤로 (Shift 추가: 맨 앞 / 맨 뒤)'], ['Ctrl+Z / Y', '실행 취소 / 다시 실행'], ['인쇄 제외', '우클릭 → 순서·잠금·표시 → 「인쇄에서 제외」 — 화면 안내용 개체(주황 점선)는 미리보기·인쇄에서 빠집니다. 직인은 기본적으로 출력됩니다'], ['모든 기능', '단축키가 겹칠 때는 오른쪽 클릭 메뉴(서브메뉴)에서 같은 기능을 실행할 수 있습니다'], ['오른쪽 사이드바', '오른쪽 세로 막대의 아이콘(레이어·속성·색상·기록)을 누르면 패널이 펼쳐집니다'], ['메일머지 지정', '글상자를 더블클릭 → 바뀔 문구를 드래그 → 우클릭 → 「메일머지 항목으로 만들기」(노란 표시가 바뀌는 자리)'], ['Ctrl+휠', '확대·축소'], ['Enter / 더블클릭', '글상자 직접 편집 (Esc: 마침)'], ['오른쪽 클릭', '바로 실행 메뉴'], ['Delete', '삭제'], ['Ctrl+S', '저장']];
     AW.modal({ title: '편집 단축키 · 마우스 조합', wide: true, body: '<div class="tbl-wrap"><table class="gt"><tbody>' + R.map(function (r) { return '<tr><td class="nowrap"><b>' + AW.esc(r[0]) + '</b></td><td>' + AW.esc(r[1]) + '</td></tr>'; }).join('') + '</tbody></table></div><p class="muted" style="margin-bottom:0">Mac 은 Ctrl 대신 Command, Alt 대신 Option 을 사용합니다.</p>', actions: [{ label: '닫기', cls: 'btn-primary' }] });
   }
   function copy() { var l = sel(); if (!l.length) return; st.clip = l.map(AW.clone); AW.toast(l.length + '개를 복사했습니다.'); }
@@ -479,7 +482,7 @@
   }
   /* ───────────── 개체 속성 창 (P) — 한글의 「개체 속성」처럼 위치·크기·모양을 한곳에서 ───────────── */
   E.propDialog = function () {
-    var list = sel(); if (!list.length) return AW.toast('속성을 볼 개체를 먼저 선택해 주십시오.'); var one = list.length === 1 ? list[0] : null, B = bounds(list), tx = list.filter(function (e) { return e.t === 'text'; }), sh = list.filter(function (e) { return e.t === 'rect' || e.t === 'line'; }), im = list.filter(function (e) { return e.t === 'img'; }), f0 = tx[0] || {}, s0 = sh[0] || {}, i0 = im[0] || {};
+    var list = sel(); if (!list.length) return AW.toast('속성을 볼 개체를 먼저 선택해 주십시오.'); if (list.length === 1 && list[0].t === 'table') return AW.Table.dialog(list[0]); var one = list.length === 1 ? list[0] : null, B = bounds(list), tx = list.filter(function (e) { return e.t === 'text'; }), sh = list.filter(function (e) { return e.t === 'rect' || e.t === 'line'; }), im = list.filter(function (e) { return e.t === 'img'; }), f0 = tx[0] || {}, s0 = sh[0] || {}, i0 = im[0] || {};
     var NUM = function (id, label, v, st2, ex) { return '<div><label class="f" for="' + id + '">' + label + '</label><input class="in sm" id="' + id + '" type="number" step="' + (st2 || 0.1) + '" value="' + v + '"' + (ex || '') + '></div>'; };
     var CHK = function (id, label, on) { return '<label class="chk"><input type="checkbox" id="' + id + '"' + (on ? ' checked' : '') + '> ' + label + '</label>'; };
     var COL = function (id, v, none) { return '<div style="display:flex;gap:6px;align-items:center"><input type="color" id="' + id + '" value="' + (/^#[0-9a-f]{6}$/i.test(v) ? v : '#111111') + '" style="width:38px;height:30px;padding:0;border:1px solid var(--border);border-radius:var(--r)"><input class="in sm" id="' + id + '-h" value="' + AW.esc(v || '') + '" style="width:92px" placeholder="#RRGGBB">' + (none ? '<label class="mini chk"><input type="checkbox" id="' + id + '-n"' + (!v ? ' checked' : '') + '> 없음</label>' : '') + '</div>'; };
@@ -636,16 +639,18 @@
   function toMM(ev) { var r = st.pg.getBoundingClientRect(); return { x: (ev.clientX - r.left) / st.zoom, y: (ev.clientY - r.top) / st.zoom }; }
   function onDown(ev) {
     if (!st.pg || ev.button > 0) return;
-    if (st.editing) { if (ev.target.closest('.el') && ev.target.closest('.el').dataset.id === st.editing.id) return; endEdit(); }
+    if (st.editing) { var ee = ev.target.closest('.el'); if (ee && ee.dataset.id === st.editing.id && (!st.editing.cell || st.editing.node.contains(ev.target))) return; endEdit(); }
     var rh = ev.target.closest('.rh'), gl = ev.target.closest('.gl'), rl = ev.target.closest('.rl');
     if (rh) { var er = sel()[0]; if (er) { st.drag = { mode: 'rot', e: er, start: toMM(ev) }; ev.preventDefault(); } return; }
     if (gl) { st.drag = { mode: 'gmv', ax: gl.dataset.ax, i: +gl.dataset.i, start: toMM(ev) }; ev.preventDefault(); return; }
     if (rl) { st.drag = { mode: 'gnew', ax: rl.classList.contains('rl-top') ? 'h' : 'v', pos: null, start: toMM(ev) }; ev.preventDefault(); return; }
-    var hd = ev.target.closest('.hd'), elNode = ev.target.closest('.el');
+    var hd = ev.target.closest('.hd'), elNode = ev.target.closest('.el'), tmv = ev.target.closest('.tmv');
     if (hd) {
       var e0 = sel()[0]; if (!e0) return;
-      st.drag = { mode: 'rs', h: hd.dataset.h, start: toMM(ev), o: { x: e0.x, y: e0.y, w: e0.w, h: e0.h, size: e0.size }, e: e0 }; ev.preventDefault(); return;
+      st.drag = { mode: 'rs', h: hd.dataset.h, start: toMM(ev), o: { x: e0.x, y: e0.y, w: e0.w, h: e0.h, size: e0.size }, oT: e0.t === 'table' ? { cw: e0.cw.slice(), rh: e0.rh.slice() } : null, e: e0 }; ev.preventDefault(); return;
     }
+    if (tmv) { var te0 = sel()[0]; if (te0 && !te0.lock) { st.drag = { mode: 'mv', start: toMM(ev), list: [{ e: te0, x: te0.x, y: te0.y }], moved: false, alt: ev.altKey }; ev.preventDefault(); } return; }
+    if (elNode && tTableDown(ev, elNode)) return;
     if (elNode) {
       var id = elNode.dataset.id;
       if (ev.shiftKey || ev.ctrlKey || ev.metaKey) { var s = S.sel.slice(), i = s.indexOf(id); if (i >= 0) s.splice(i, 1); else s.push(id); E.setSel(s); }
@@ -669,6 +674,13 @@
       var ang = Math.atan2(ev.clientY - cy, ev.clientX - cx) * 180 / Math.PI + 90;
       if (ev.shiftKey) ang = Math.round(ang / 15) * 15; else if (!(ev.ctrlKey || ev.metaKey)) { var q = Math.round(ang / 90) * 90; if (Math.abs(ang - q) < 3) ang = q; }
       d.e.rot = normRot(ang); d.moved = true; liveUpdate(); return;
+    }
+    if (d.mode === 'tcell') { var ch = tHit(d.e, ev), cc = ch && TB().cellAt(d.e, ch.x, ch.y); if (cc && (cc.r !== d.lr || cc.c !== d.lc)) { d.lr = cc.r; d.lc = cc.c; tSet(d.e, d.ar, d.ac, cc.r, cc.c); } return; }
+    if (d.mode === 'tedge') {
+      var lo = d.o, ee = d.e, dv = d.dir === 'v' ? dx : dy; d.moved = true;
+      if (d.dir === 'v') { dv = Math.max(-(lo[0] - 3), Math.min(lo[1] - 3, dv)); ee.cw[d.i - 1] = AW.round(lo[0] + dv, 1); ee.cw[d.i] = AW.round(lo[1] - dv, 1); }
+      else { dv = Math.max(-(lo[0] - 3), dv); ee.rh[d.i - 1] = AW.round(lo[0] + dv, 1); }
+      TB().fit(ee); E.refreshElems(); updPos(); return;
     }
     if (d.mode === 'gnew' || d.mode === 'gmv') {
       var gv = d.ax === 'v' ? p.x : p.y, lim = d.ax === 'v' ? pg.w : pg.h; if (sn) gv = Math.round(gv / gs) * gs; gv = AW.round(gv, 1); d.moved = true;
@@ -706,6 +718,7 @@
       var x = cen ? o.x + (o.w - w) / 2 : (h.indexOf('w') >= 0 ? o.x + o.w - w : o.x);
       var y = cen ? o.y + (o.h - hh) / 2 : (h.indexOf('n') >= 0 ? o.y + o.h - hh : o.y);
       e.x = sp(x); e.y = sp(y); e.w = Math.max(1, sp(w)); if (e.t !== 'line') e.h = Math.max(1, sp(hh));
+      if (e.t === 'table' && d.oT) { TB().scaleFrom(e, d.oT, e.w, e.h); if (h.indexOf('w') >= 0) e.x = AW.round(o.x + o.w - e.w, 2); if (h.indexOf('n') >= 0) e.y = AW.round(o.y + o.h - e.h, 2); }
       if (e.t === 'text' && o.size && !ev.altKey && o.w > 0 && o.h > 0) {      // 크기를 바꾸면 글자 크기도 비례(모서리: 가로·세로 평균, 위·아래 변: 높이). Alt: 글자 크기 고정
         var wr = e.w / o.w, hr = e.h / o.h, fr = h.length === 2 ? Math.sqrt(wr * hr) : (h === 'n' || h === 's') ? hr : 1;
         e.size = Math.max(4, Math.min(300, Math.round(o.size * fr * 2) / 2)); var dn = domOf(e); if (dn) dn.style.fontSize = e.size * 25.4 / 72 * st.zoom + 'px';
@@ -784,12 +797,122 @@
       markSel(); return;
     }
     if (d.mode === 'mq') { AW.emit('selchange'); return; }
+    if (d.mode === 'tcell') return;
+    if (d.mode === 'tedge') { if (d.moved) changed('elems', false, d.dir === 'v' ? '표 칸 너비' : '표 줄 높이'); return; }
     if (d.mode === 'rs' || d.moved) { E.refreshElems(); changed('elems', false, d.mode === 'rs' ? '크기 조절' : '이동'); }
     if (st.pending) { st.pending = false; E.relayout(); }
   }
 
+
+  /* ───────────── 표: 셀 선택·편집 ───────────── */
+  function TB() { return AW.Table; }
+  E.tsel = function () { return st.tsel || null; };
+  E.drawTSel = function () { drawTSel(); };
+  function tTable() { var s = st.tsel, e = s && AW.get(s.id); return e && e.t === 'table' ? e : null; }
+  function tLast(e) { var s = st.tsel && st.tsel.id === e.id ? st.tsel : null; if (s) return { r: s.r0, c: s.c0 }; var l = st.tlast; return l && l.id === e.id && l.r < e.rows && l.c < e.cols ? l : { r: 0, c: 0 }; }
+  function tSet(e, ar, ac, fr, fc, all) {
+    var n = TB().norm(e, { r0: ar, c0: ac, r1: fr, c1: fc }); st.tsel = { id: e.id, ar: ar, ac: ac, fr: fr, fc: fc, r0: n.r0, c0: n.c0, r1: n.r1, c1: n.c1, all: !!all }; st.tlast = { id: e.id, r: n.r0, c: n.c0 }; drawTSel();
+  }
+  function drawTSel() {
+    if (!st.ov) return; AW.$$('.tcs', st.ov).forEach(function (n) { n.remove(); });
+    var s = st.tsel, e = s && AW.get(s.id);
+    if (!e || e.t !== 'table' || S.sel.length !== 1 || S.sel[0] !== e.id) { if (s) st.tsel = null; return; }
+    if (s.r1 >= e.rows || s.c1 >= e.cols) { st.tsel = null; return; }
+    var rc = TB().rect(e, s), g = TB().geom(e), box = document.createElement('div'); box.className = 'tcs'; placeBox(box, e);
+    var q = document.createElement('div'); q.className = 'tc-sel'; q.style.cssText = 'left:' + rc.x / g.sw * 100 + '%;top:' + rc.y / g.sh * 100 + '%;width:' + rc.w / g.sw * 100 + '%;height:' + rc.h / g.sh * 100 + '%';
+    q.innerHTML = '<i>' + (s.all ? '표 전체' : (s.r0 === s.r1 && s.c0 === s.c1 ? (s.r0 + 1) + '줄 ' + (s.c0 + 1) + '칸' : (s.r1 - s.r0 + 1) + '줄 × ' + (s.c1 - s.c0 + 1) + '칸 선택')) + '</i>';
+    box.appendChild(q); st.ov.appendChild(box);
+  }
+  function tF5() {
+    var l = sel(), e = l.length === 1 && l[0].t === 'table' ? l[0] : null; if (!e || e.lock) return false;
+    var s = st.tsel && st.tsel.id === e.id ? st.tsel : null;
+    if (!s) { var lc = tLast(e); tSet(e, lc.r, lc.c, lc.r, lc.c); }
+    else if (!s.all) tSet(e, 0, 0, e.rows - 1, e.cols - 1, true);
+    else { st.tsel = null; drawTSel(); }
+    return true;
+  }
+  function tHit(e, ev) {   // 포인터 → 표 안쪽 좌표(mm, 왼쪽 위 기준). 회전·반전 반영
+    var p = toMM(ev), dx = p.x - (e.x + e.w / 2), dy = p.y - (e.y + e.h / 2);
+    if (e.rot) { var a = -e.rot * Math.PI / 180, c = Math.cos(a), s = Math.sin(a), rx = dx * c - dy * s, ry = dx * s + dy * c; dx = rx; dy = ry; }
+    if (e.flipX) dx = -dx; if (e.flipY) dy = -dy; return { x: dx + e.w / 2, y: dy + e.h / 2 };
+  }
+  function tEdgeAt(e, h) {   // 안쪽 칸 경계 근처인지
+    var g = TB().geom(e), tol = Math.max(0.8, 4 / st.zoom), i;
+    for (i = 1; i < e.cols; i++) if (Math.abs(h.x - g.X[i]) < tol && h.y >= -tol && h.y <= g.sh + tol) return { dir: 'v', i: i };
+    for (i = 1; i < e.rows; i++) if (Math.abs(h.y - g.Y[i]) < tol && h.x >= -tol && h.x <= g.sw + tol) return { dir: 'h', i: i };
+    return null;
+  }
+  function tTableDown(ev, node) {   // 이미 선택된 표를 누르면 셀 선택·칸 경계 조절. 처음 누르면 표 선택(이동 가능)
+    var e = AW.get(node.dataset.id); if (!e || e.t !== 'table' || e.lock || ev.ctrlKey || ev.metaKey) return false;
+    var was = S.sel.length === 1 && S.sel[0] === e.id, h = tHit(e, ev), cell = TB().cellAt(e, h.x, h.y);
+    if (!was) { if (cell && !ev.shiftKey) st.tlast = { id: e.id, r: cell.r, c: cell.c }; return false; }
+    var eg = tEdgeAt(e, h);
+    if (eg) { st.drag = { mode: 'tedge', e: e, dir: eg.dir, i: eg.i, start: toMM(ev), o: eg.dir === 'v' ? [e.cw[eg.i - 1], e.cw[eg.i]] : [e.rh[eg.i - 1]], moved: false }; ev.preventDefault(); return true; }
+    if (!cell) return false;
+    var s = st.tsel && st.tsel.id === e.id ? st.tsel : null, ar = ev.shiftKey && s ? s.ar : cell.r, ac = ev.shiftKey && s ? s.ac : cell.c;
+    tSet(e, ar, ac, cell.r, cell.c); st.drag = { mode: 'tcell', e: e, ar: ar, ac: ac, lr: cell.r, lc: cell.c, start: toMM(ev) };
+    ev.preventDefault(); st.stage.focus({ preventScroll: true }); return true;
+  }
+  function tMove(e, dr, dc, ext) {
+    var s = st.tsel, own = TB().own(e), br = ext ? s.fr : s.ar, bc = ext ? s.fc : s.ac, o = own[br][bc], k = e.cells[o[0]][o[1]], r = br, c = bc;
+    if (dr > 0) r = o[0] + (k.rs || 1); else if (dr < 0) r = o[0] - 1; if (dc > 0) c = o[1] + (k.cs || 1); else if (dc < 0) c = o[1] - 1;
+    r = Math.max(0, Math.min(e.rows - 1, r)); c = Math.max(0, Math.min(e.cols - 1, c)); var o2 = own[r][c];
+    if (ext) tSet(e, s.ar, s.ac, o2[0], o2[1]); else tSet(e, o2[0], o2[1], o2[0], o2[1]);
+  }
+  function tNext(e, back) {   // Tab: 다음 칸(마지막 칸에서는 줄을 하나 더 넣음)
+    var s = st.tsel, own = TB().own(e), o = own[s.r0][s.c0], k = e.cells[o[0]][o[1]], r = o[0], c = back ? o[1] - 1 : o[1] + (k.cs || 1);
+    if (c >= e.cols) { c = 0; r = o[0] + (k.rs || 1); } if (c < 0) { c = e.cols - 1; r = o[0] - 1; } if (r < 0) return null;
+    if (r >= e.rows) { TB().insertRow(e, e.rows); changed('elems', false, '표 줄 추가'); E.refreshElems(); }
+    var o2 = TB().own(e)[r][c]; tSet(e, o2[0], o2[1], o2[0], o2[1]); return o2;
+  }
+  function tKey(ev, k, mod) {
+    var e = tTable(); if (!e || mod || ev.altKey || e.lock || S.sel.length !== 1) return false;
+    var s = st.tsel, ar = k === 'arrowdown' ? [1, 0] : k === 'arrowup' ? [-1, 0] : k === 'arrowright' ? [0, 1] : k === 'arrowleft' ? [0, -1] : null;
+    if (ar) { ev.preventDefault(); tMove(e, ar[0], ar[1], ev.shiftKey); return true; }
+    if (k === 'tab') { ev.preventDefault(); tNext(e, ev.shiftKey); return true; }
+    if (k === 'enter' || k === 'f2') { ev.preventDefault(); beginCellEdit(e, s.r0, s.c0); return true; }
+    if (k === 'delete' || k === 'backspace') { ev.preventDefault(); var own = TB().own(e), n = 0; for (var r = s.r0; r <= s.r1; r++) for (var c = s.c0; c <= s.c1; c++) { var o = own[r][c], kc = e.cells[o[0]][o[1]]; if (kc.text) { kc.text = ''; n++; } } if (n) { E.refreshElems(); changed('elems', false, '표 셀 내용 지움'); } return true; }
+    if (k === 'escape') { st.tsel = null; drawTSel(); return true; }
+    return false;
+  }
+  function beginCellEdit(e, r, c) {
+    endEdit(); var d = domOf(e), n = d && AW.$('.tc[data-r="' + r + '"][data-c="' + c + '"] .tx', d); if (!n) return;
+    tSet(e, r, c, r, c); n.textContent = e.cells[r][c].text || '';
+    var cell = n.parentNode; cell.style.outline = '2px solid #0EA5E9'; cell.style.background = 'rgba(255,255,255,.9)'; cell.style.overflow = 'visible'; n.style.cursor = 'text'; n.style.minHeight = '1em';
+    try { n.contentEditable = 'plaintext-only'; } catch (x) {} if (n.contentEditable !== 'plaintext-only') n.contentEditable = 'true';
+    st.editing = { id: e.id, node: n, cell: [r, c] };
+    n.addEventListener('blur', function () { if (st.editing && st.editing.node === n) endEdit(); }, { once: true });
+    n.focus(); var rg = document.createRange(); rg.selectNodeContents(n); rg.collapse(false); var sl = window.getSelection(); sl.removeAllRanges(); sl.addRange(rg);
+    n.addEventListener('keydown', function kd(k) {
+      if (k.key === 'Escape') { n.removeEventListener('keydown', kd); endEdit(); k.stopPropagation(); return; }
+      if (k.key === 'Tab') { k.preventDefault(); n.removeEventListener('keydown', kd); endEdit(); var o2 = tNext(e, k.shiftKey); if (o2) beginCellEdit(e, o2[0], o2[1]); }
+      k.stopPropagation();
+    });
+  }
+  function tAct(a) {
+    var e = sel()[0]; if (!e || e.t !== 'table' || sel().length !== 1) return; var Tb = TB(), l = tLast(e), s = st.tsel && st.tsel.id === e.id ? st.tsel : { r0: l.r, c0: l.c, r1: l.r, c1: l.c };
+    var rg = Tb.norm(e, s), done = function (label) { st.tsel = null; Tb.fit(e); E.refreshElems(); changed('elems', false, label); }, r, c;
+    if (a === 't-f5') return tF5(); if (a === 't-edit') return beginCellEdit(e, rg.r0, rg.c0);
+    if (a === 't-merge') { if (!Tb.merge(e, rg)) return AW.toast('합칠 셀을 2개 이상 선택해 주십시오. (F5 → Shift+화살표 또는 끌기)'); done('셀 합치기'); return tSet(e, rg.r0, rg.c0, rg.r0, rg.c0); }
+    if (a === 't-split') { var any = false, own = Tb.own(e); for (r = rg.r0; r <= rg.r1; r++) for (c = rg.c0; c <= rg.c1; c++) if (own[r][c][0] === r && own[r][c][1] === c && Tb.unmerge(e, r, c)) any = true; if (!any) return AW.toast('합쳐진 셀이 아닙니다.'); return done('셀 나누기'); }
+    if (a === 't-rowA') { Tb.insertRow(e, rg.r0); return done('줄 넣기'); } if (a === 't-rowB') { Tb.insertRow(e, rg.r1 + 1); return done('줄 넣기'); }
+    if (a === 't-colA') { Tb.insertCol(e, rg.c0); return done('칸 넣기'); } if (a === 't-colB') { Tb.insertCol(e, rg.c1 + 1); return done('칸 넣기'); }
+    if (a === 't-rowD') { for (r = rg.r1; r >= rg.r0; r--) if (!Tb.deleteRow(e, r)) break; return done('줄 지우기'); }
+    if (a === 't-colD') { for (c = rg.c1; c >= rg.c0; c--) if (!Tb.deleteCol(e, c)) break; return done('칸 지우기'); }
+    if (a === 't-eqw') { if (!Tb.equalize(e, 'w', rg.c1 > rg.c0 ? rg : null)) return AW.toast('같게 할 칸이 없습니다.'); return done('칸 너비 같게'); }
+    if (a === 't-eqh') { if (!Tb.equalize(e, 'h', rg.r1 > rg.r0 ? rg : null)) return AW.toast('같게 할 줄이 없습니다.'); return done('줄 높이 같게'); }
+  }
+  // 선택된 표의 칸 경계 위에서는 마우스 모양을 바꿔 알려 줌
+  document.addEventListener('pointermove', function (ev) {
+    if (!st.stage || st.drag || !st.pg || ev.buttons) return; var n = ev.target.closest && ev.target.closest('.el-table'), e = n && AW.get(n.dataset.id), cur = '';
+    if (e && S.sel.length === 1 && S.sel[0] === e.id && !e.lock) { var eg = tEdgeAt(e, tHit(e, ev)); if (eg) cur = eg.dir === 'v' ? 'col-resize' : 'row-resize'; }
+    if (st.stage.style.cursor !== cur) st.stage.style.cursor = cur;
+  });
+
   /* ───────────── 인라인 편집 ───────────── */
   function onDbl(ev) {
+    var tcn = ev.target.closest('.el-table .tc');
+    if (tcn) { var te = AW.get(tcn.closest('.el').dataset.id); if (te && !te.lock) { E.setSel([te.id]); beginCellEdit(te, +tcn.dataset.r, +tcn.dataset.c); } return; }
     var n = ev.target.closest('.el-text'); if (!n) return;
     var e = AW.get(n.dataset.id); if (!e || e.lock) return;
     if (e.grp && S.sel.length > 1) { S.sel = [e.id]; markSel(); updTools(); AW.emit('selchange'); return; }   // 그룹 안에서 더블클릭: 이 요소만 선택
@@ -806,7 +929,9 @@
   }
   function endEdit() {
     var ed = st.editing; if (!ed) return; st.editing = null;
-    var e = AW.get(ed.id); if (e) { var t = ed.node.innerText.replace(/ /g, ' ').replace(/\n$/, ''); if (t !== (e[tk()] || '')) { e[tk()] = t; changed('elems'); } }
+    var e = AW.get(ed.id);
+    if (e && ed.cell) { var kc = e.cells[ed.cell[0]] && e.cells[ed.cell[0]][ed.cell[1]], tt = ed.node.innerText.replace(/\u00a0/g, ' ').replace(/\n$/, ''); if (kc && tt !== (kc.text || '')) { kc.text = tt; changed('elems', false, '표 글 입력'); } }
+    else if (e) { var t = ed.node.innerText.replace(/ /g, ' ').replace(/\n$/, ''); if (t !== (e[tk()] || '')) { e[tk()] = t; changed('elems'); } }
     E.refreshElems();
     if (st.pending) { st.pending = false; E.relayout(); }
   }
@@ -818,6 +943,8 @@
     var mod = ev.ctrlKey || ev.metaKey, k = ev.key.toLowerCase();
     if (mod && k === 's') { ev.preventDefault(); AW.emit('savenow'); return; }
     if (typing) return;
+    if (k === 'f5' && !mod && !ev.altKey && tF5()) { ev.preventDefault(); return; }
+    if (tKey(ev, k, mod)) return;
     if (mod && k === 'z') { ev.preventDefault(); return undo(ev.shiftKey ? 1 : -1); }
     if (mod && k === 'y') { ev.preventDefault(); return undo(1); }
     if (mod && (k === ']' || k === '[')) { ev.preventDefault(); return ev.shiftKey ? order(k === ']') : orderStep(k === ']' ? 1 : -1); }
@@ -841,6 +968,7 @@
     if (k === 'escape') return E.setSel([]);
     var step = ev.shiftKey ? st.cfg.big : st.cfg.nudge, dx = k === 'arrowleft' ? -step : k === 'arrowright' ? step : 0, dy = k === 'arrowup' ? -step : k === 'arrowdown' ? step : 0;
     if (dx || dy) { ev.preventDefault(); sel().forEach(function (e) { if (!e.lock) { e.x = AW.round(e.x + dx, 2); e.y = AW.round(e.y + dy, 2); } }); liveUpdate(); debCommit(); }
+    if (k === 'enter' && sel().length === 1 && sel()[0].t === 'table') { ev.preventDefault(); var tq = tLast(sel()[0]); return beginCellEdit(sel()[0], tq.r, tq.c); }
     if (k === 'enter' && sel().length === 1 && sel()[0].t === 'text') { ev.preventDefault(); var d = domOf(sel()[0]); if (d) beginEdit(sel()[0], d); }
   }
   function onPasteDoc(ev) {                  // 외부에서 복사한 글/이미지를 새 요소로 붙여넣기 (내부 복사본이 없을 때)
@@ -1012,6 +1140,7 @@
       return;
     }
     ev.preventDefault(); endEdit();
+    var tcx = ev.target.closest('.el-table .tc'); if (tcx) { var tx0 = AW.get(tcx.closest('.el').dataset.id), r0 = +tcx.dataset.r, c0 = +tcx.dataset.c, ts = st.tsel; if (tx0 && !(ts && ts.id === tx0.id && r0 >= ts.r0 && r0 <= ts.r1 && c0 >= ts.c0 && c0 <= ts.c1)) { S.sel = [tx0.id]; tSet(tx0, r0, c0, r0, c0); } }
     var elNode = ev.target.closest('.el'), onHd = !elNode && !!ev.target.closest('.hd') && S.sel.length > 0;   // 선택 핸들 위에서도 요소 메뉴
     if (elNode) { var id = elNode.dataset.id; if (S.sel.indexOf(id) < 0) E.setSel([id]); } else if (!onHd) E.setSel([]);
     st.at = (elNode || onHd) ? null : pos;
@@ -1028,6 +1157,10 @@
     var VIEW = SUB('보기', 'eye', [I('눈금자 보기', 'cols', 'Alt+R', 'ruler', { on: !!st.cfg.ruler }), I('격자선 보기', 'grid', 'Alt+G', 'gridshow', { on: !!st.cfg.show }), I('안내선 보기', 'line', '', 'gshow', { on: st.cfg.gshow !== false }), I('안내선 모두 지우기', 'trash', '', 'gclear'), { k: 'sep' }, I('확대', 'zoomIn', 'Ctrl+휠', 'zin'), I('축소', 'zoomOut', 'Ctrl+휠', 'zout'), I('창에 맞춤', 'fit', '', 'zfit'), I('격자 자석 ' + (st.cfg.snap ? '끄기' : '켜기'), 'grid', '', 'snap'), I('격자·자석·이동 간격 설정…', 'cols', '', 'gridcfg'), I('레이어 창 열기/닫기', 'layers', '', 'layers'), I('단축키·마우스 조합 안내', 'info', '', 'keys')]);
     var EDIT = function (extra) { return SUB('편집', 'edit', (extra || []).concat([I('실행 취소', 'undo', 'Ctrl+Z', 'undo', { disabled: st.hi <= 0 }), I('다시 실행', 'redo', 'Ctrl+Y', 'redo', { disabled: st.hi >= st.hist.length - 1 }), I('붙여넣기', 'paste', 'Ctrl+V', 'paste', { disabled: !hasClip }), I('제자리에 붙여넣기', 'paste', 'Ctrl+Shift+V', 'pinplace', { disabled: !hasClip }), I('모두 선택', 'sel', 'Ctrl+A', 'selall', { disabled: !T().elems.length })])); };
     if (onEl && list.length) {
+      if (one && one.t === 'table') {
+        var TI = function (label, a, o) { return I(label, 'table', '', a, o); }, hs = !!(st.tsel && st.tsel.id === one.id);
+        it.push(TI('셀 글 입력', 't-edit', { key: 'Enter' }), SUB('셀 · 줄 · 칸', 'table', [TI('셀 합치기', 't-merge', { disabled: !hs }), TI('셀 나누기', 't-split', { disabled: !hs }), { k: 'sep' }, TI('위에 줄 넣기', 't-rowA'), TI('아래에 줄 넣기', 't-rowB'), TI('줄 지우기', 't-rowD'), { k: 'sep' }, TI('왼쪽에 칸 넣기', 't-colA'), TI('오른쪽에 칸 넣기', 't-colB'), TI('칸 지우기', 't-colD'), { k: 'sep' }, TI('칸 너비 같게', 't-eqw'), TI('줄 높이 같게', 't-eqh')]), I('셀 선택 · 표 전체 선택', 'sel', 'F5', 't-f5'), I('표 선·서식 속성…', 'edit', 'P', 'props'), { k: 'sep' });
+      }
       if (one && one.t === 'text') {
         it.push(I('글 직접 편집', 'edit', 'Enter', 'edit', { disabled: one.lock }));
         var mgs = [I('글상자 전체를 항목으로 만들기…', 'field', '', 'mg-all')]; AW.tokensOf(one[tk()] || '').filter(function (n) { return n.charAt(0) !== '@'; }).forEach(function (n) { mgs.push(I('항목 해제: {{' + n + '}} → 원래 문구', 'close', '', '', { fn: function () { one[tk()] = String(one[tk()]).split('{{' + n + '}}').join(sampleOf(n)); E.refreshElems(); changed('elems', false, '메일머지 항목 해제'); } })); });
@@ -1053,7 +1186,7 @@
         if (one) it.push(I('입력 항목 {{ }} 삽입…', 'field', '', 'add-field'));
       }
     } else {
-      it.push(SUB('추가', 'plus', [I('여기에 글상자 추가', 'text', '', 'add-text'), I('여기에 입력 항목 추가…', 'field', '', 'add-field'), I('선 추가', 'line', '', 'add-line'), I('사각형 추가', 'rect', '', 'add-rect'), I('이미지 추가…', 'image', '', 'add-img'), I('위조 방지 인증 QR 추가', 'qr', '', 'add-qr')]), EDIT(), VIEW, LANGM,
+      it.push(SUB('추가', 'plus', [I('여기에 글상자 추가', 'text', '', 'add-text'), I('여기에 입력 항목 추가…', 'field', '', 'add-field'), I('선 추가', 'line', '', 'add-line'), I('사각형 추가', 'rect', '', 'add-rect'), I('이미지 추가…', 'image', '', 'add-img'), I('위조 방지 인증 QR 추가', 'qr', '', 'add-qr'), I('표 넣기…', 'table', '', 'add-table')]), EDIT(), VIEW, LANGM,
         SUB('배경', 'image', [I(T().page.bgHide ? '배경 보이기' : '배경 숨기기', 'eye', '', 'bg-toggle', { disabled: !T().bg }), I('배경 삭제', 'trash', '', 'bg-del', { disabled: !T().bg }), I('배경 교체…', 'upload', '', 'bg-replace'), I('배경 양식 등록하기…', 'save', '', 'bg-reg', { disabled: !T().bg }), I('배경 양식 불러오기…', 'folder', '', 'bg-lib'), I('배경 왼쪽 90° 회전', 'undo', '', 'bg-rot-l', { disabled: !T().bg }), I('배경 오른쪽 90° 회전', 'redo', '', 'bg-rot-r', { disabled: !T().bg })]),
         SUB('용지', 'page', [I((T().page.w >= T().page.h ? '세로' : '가로') + '로 전환…', 'rotate', '', 'orient'), I('용지·배경 설정…', 'page', '', 'page'), I('기본 상장 배치 넣기', 'wand', '', 'starter')]), AI);
     }

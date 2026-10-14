@@ -59,7 +59,7 @@
   /* ───────────── 출력 ───────────── */
   var fontsDone = {};
   function ensureFonts(tpl) {
-    var fam = {}; tpl.elems.forEach(function (e) { if (e.t === 'text') { fam[e.font] = 1; } });
+    var fam = {}; tpl.elems.forEach(function (e) { if (e.t === 'text') { fam[e.font] = 1; } else if (e.t === 'table') { fam[(e.style || {}).font] = 1; (e.cells || []).forEach(function (r) { r.forEach(function (c) { if (c && c.font) fam[c.font] = 1; }); }); } });
     return Promise.all(Object.keys(fam).map(function (f) { return document.fonts.load((fam[f] ? '700 ' : '') + '16px "' + f + '"', '가나다ABC').catch(function () {}); })).then(function () { return document.fonts.ready; });
   }
   // 모아찍기 계획: 출력 용지(paper)·분할(nup 1/2/4)·방향(orient)·확대 여부(noEnl) → 용지 크기, 칸 수, 배율

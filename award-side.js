@@ -39,9 +39,9 @@
   function head(t, extra) { return '<div class="sp-h"><b>' + t + '</b>' + (extra || '') + '<button class="icon-btn" data-side="' + cur + '" aria-label="패널 닫기">' + AW.ic('close', 16) + '</button></div>'; }
 
   /* ───────────── 레이어 ───────────── */
-  function lyName(e) { return e.name || (e.t === 'text' ? (String(e.text).replace(/\s+/g, ' ').trim().slice(0, 18) || '(빈 글상자)') : e.t === 'rect' ? '사각형' : e.t === 'line' ? '선' : e.t === 'qr' ? '인증 QR' : '이미지'); }
+  function lyName(e) { return e.name || (e.t === 'text' ? (String(e.text).replace(/\s+/g, ' ').trim().slice(0, 18) || '(빈 글상자)') : e.t === 'rect' ? '사각형' : e.t === 'line' ? '선' : e.t === 'qr' ? '인증 QR' : e.t === 'table' ? '표 ' + e.rows + '×' + e.cols : '이미지'); }
   function layersHtml() {
-    var els = T().elems, ic = { text: 'text', rect: 'rect', line: 'line', img: 'image', qr: 'qr' };
+    var els = T().elems, ic = { text: 'text', rect: 'rect', line: 'line', img: 'image', qr: 'qr', table: 'table' };
     var rows = els.slice().reverse().map(function (e) {
       return '<div class="ly' + (S.sel.indexOf(e.id) >= 0 ? ' on' : '') + (e.hide ? ' hid' : '') + '" draggable="true" data-id="' + e.id + '"><span class="li">' + AW.ic(ic[e.t] || 'text', 15) + '</span>' +
         (e.grp ? '<span class="gdot" title="그룹" style="background:hsl(' + (parseInt(e.grp.slice(-4), 36) % 360) + ',65%,50%)"></span>' : '') + '<span class="ln" title="더블클릭하여 이름 변경">' + AW.esc(lyName(e)) + '</span>' + (e.noprint ? '<span class="npb" title="인쇄 제외">인쇄 제외</span>' : '') +
