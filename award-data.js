@@ -102,7 +102,7 @@
     if (nv === fld.name) return;
     if (names().indexOf(nv) >= 0) { AW.toast('이미 있는 항목명입니다.', 'error'); inp.value = fld.name; return; }
     var old = fld.name, re = new RegExp('\\{\\{\\s*' + old.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*\\}\\}', 'g');
-    T().elems.forEach(function (e) { if (e.t === 'text') e.text = e.text.replace(re, '{{' + nv + '}}'); });
+    T().elems.forEach(function (e) { if (e.t === 'text') e.text = e.text.replace(re, '{{' + nv + '}}'); else if (e.t === 'table') (e.cells || []).forEach(function (r) { r.forEach(function (c) { if (c && c.text) c.text = c.text.replace(re, '{{' + nv + '}}'); }); }); });
     T().rows.forEach(function (r) { if (old in r) { r[nv] = r[old]; delete r[old]; } });
     fld.name = nv; S.dirty = true;
     AW.Editor.refreshElems(); AW.emit('tplchange', 'elems'); D.refresh(true);

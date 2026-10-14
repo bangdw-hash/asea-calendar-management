@@ -327,3 +327,15 @@ table{border-collapse:collapse;width:100%}
 .gl.gd::before{display:none}.gl.gd.eq{background:#dcfce7;color:#166534;font-weight:600}
 .gl.gd.hz,.gdim.hz{transform:translateY(-50%)}
 .pp-sec{margin:10px 0 4px;padding-bottom:3px;border-bottom:1px solid var(--border)}.pp-g{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px 12px}.pp-op{display:flex;gap:14px;flex-wrap:wrap;margin:8px 0}
+
+/* 표 */
+.el-table{overflow:visible}
+.el-table .tc{position:absolute;display:flex;flex-direction:column;box-sizing:border-box;overflow:hidden;white-space:pre-wrap;word-break:keep-all;overflow-wrap:anywhere}
+.el-table .tx{min-width:0;width:100%}
+.el-table .tl,.el-table .tz{position:absolute;box-sizing:content-box;pointer-events:none}
+.ed-pg .el-table{cursor:default}
+.tcs{position:absolute;pointer-events:none}
+.tc-sel{position:absolute;box-sizing:border-box;border:2px solid #F97316;background:rgba(249,115,22,.14);pointer-events:none}
+.tc-sel i{position:absolute;left:-2px;top:-20px;background:#F97316;color:#fff;font:600 11px/16px system-ui,sans-serif;font-style:normal;padding:0 6px;border-radius:6px;white-space:nowrap}
+.tmv{position:absolute;left:-26px;top:-2px;width:20px;height:20px;border-radius:6px;background:#fff;border:1.5px solid var(--primary);cursor:move;pointer-events:auto;touch-action:none;display:flex;align-items:center;justify-content:center}
+.tmv::before{content:"";width:10px;height:10px;background:linear-gradient(var(--primary),var(--primary)) center/100% 1.5px no-repeat,linear-gradient(var(--primary),var(--primary)) center/1.5px 100% no-repeat}

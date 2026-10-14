@@ -71,7 +71,7 @@
   };
   // 양식에서 쓰는 내 글꼴을 모두 준비한 뒤 true(새로 불러온 글꼴이 있으면)
   AW.ensureFontsFor = function (tpl) {
-    var used = {}; (tpl || AW.S.tpl).elems.forEach(function (e) { if (e.t === 'text') { used[e.font] = 1; if (e.fontEn) used[e.fontEn] = 1; } });
+    var used = {}; (tpl || AW.S.tpl).elems.forEach(function (e) { if (e.t === 'text') { used[e.font] = 1; if (e.fontEn) used[e.fontEn] = 1; } else if (e.t === 'table') { used[(e.style || {}).font] = 1; (e.cells || []).forEach(function (r) { r.forEach(function (c) { if (c && c.font) used[c.font] = 1; }); }); } });
     return Promise.all(Object.keys(used).map(function (fm) { return AW.ensureFont(fm); })).then(function (r) { return r.some(Boolean); });
   };
   // PC 에 설치된 글꼴인지 확인(캔버스 폭 비교)
@@ -90,7 +90,7 @@
   };
   // 양식에서 쓰는 PC 글꼴 중 이 PC 에 없는 것
   AW.missingFonts = function (tpl) {
-    var used = {}; (tpl || AW.S.tpl).elems.forEach(function (e) { if (e.t === 'text') { used[e.font] = 1; if (e.fontEn) used[e.fontEn] = 1; } });
+    var used = {}; (tpl || AW.S.tpl).elems.forEach(function (e) { if (e.t === 'text') { used[e.font] = 1; if (e.fontEn) used[e.fontEn] = 1; } else if (e.t === 'table') { used[(e.style || {}).font] = 1; (e.cells || []).forEach(function (r) { r.forEach(function (c) { if (c && c.font) used[c.font] = 1; }); }); } });
     return AW.FONTS.filter(function (f) { return f.sys && used[f.id] && !AW.hasFont(f.id); }).map(function (f) { return f.label; });
   };
 
@@ -138,6 +138,7 @@
     sparkle: '<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8zM19 16l.8 2.2L22 19l-2.2.8L19 22l-.8-2.2L16 19l2.2-.8z"/>',
     logout: '<path d="M10 4H5v16h5M15 8l4 4-4 4M19 12H9"/>', check: '<path d="M5 12l5 5 9-10"/>', warn: '<path d="M12 4l9 16H3zM12 10v4M12 17h0"/>',
     cloud: '<path d="M7 18a4 4 0 010-8 5 5 0 019.6-1A4.5 4.5 0 0117 18z"/>', info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h0"/>',
+    table: '<rect x="3" y="5" width="18" height="14" rx="1.5"/><path d="M3 10h18M3 15h18M9 5v14M15 5v14"/>',
     qr: '<path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h2v2h-2zM18 14h2v2h-2zM14 18h2v2h-2zM18 18h2v2h-2z"/>', palette: '<circle cx="12" cy="12" r="9"/><circle cx="8" cy="11" r="1.2"/><circle cx="12" cy="7.5" r="1.2"/><circle cx="16" cy="11" r="1.2"/><path d="M12 21c-1.5 0-2-1-1.5-2s1-1.5 0-2.5S9 15 11 15h3a4 4 0 004-4"/>', sliders: '<path d="M4 7h9M17 7h3M4 17h3M11 17h9M13 5v4M7 15v4"/>', rotate: '<path d="M20 12a8 8 0 11-3-6.2M20 4v4h-4"/>', cut: '<circle cx="6" cy="7" r="2.5"/><circle cx="6" cy="17" r="2.5"/><path d="M8 8.5L20 18M8 15.5L20 6"/>', paste: '<rect x="6" y="5" width="12" height="16" rx="1.5"/><path d="M9 5V3h6v2"/>', sel: '<path d="M4 4h4M16 4h4M4 20h4M16 20h4M4 8v8M20 8v8"/>', edit: '<path d="M4 20h4L19 9l-4-4L4 16z"/>',
     cols: '<rect x="3" y="4" width="18" height="16" rx="1.5"/><path d="M9 4v16M15 4v16"/>', layers: '<path d="M12 4l9 5-9 5-9-5zM3 14l9 5 9-5"/>',
     wand: '<path d="M5 19L17 7M14 4l2-1 1 2M19 9l2 1-1 2M8 4h0M20 16h0"/>', tpl: '<rect x="4" y="3" width="16" height="18" rx="1.5"/><path d="M8 8h8M8 12h8M8 16h5"/>'
@@ -240,22 +241,23 @@
     while ((m = TK.exec(text || ''))) if (out.indexOf(m[1]) < 0) out.push(m[1]);
     return out;
   };
+  AW.elemText = function (e) { return e.t === 'table' && AW.Table ? AW.Table.texts(e).join('\n') : (e.text || ''); };
   // 입력 항목 목록: 위→아래, 좌→우 순으로 첫 등장 순서. 내장 항목(@…)은 제외
   AW.fieldNames = function (tpl) {
     tpl = tpl || AW.S.tpl;
-    var seen = [], list = tpl.elems.filter(function (e) { return e.t === 'text'; }).slice().sort(function (a, b) { return (Math.round(a.y / 4) - Math.round(b.y / 4)) || (a.x - b.x); });
-    list.forEach(function (e) { AW.tokensOf(e.text).forEach(function (n) { if (n.charAt(0) !== '@' && seen.indexOf(n) < 0) seen.push(n); }); });
+    var seen = [], list = tpl.elems.filter(function (e) { return e.t === 'text' || e.t === 'table'; }).slice().sort(function (a, b) { return (Math.round(a.y / 4) - Math.round(b.y / 4)) || (a.x - b.x); });
+    list.forEach(function (e) { AW.tokensOf(AW.elemText(e)).forEach(function (n) { if (n.charAt(0) !== '@' && seen.indexOf(n) < 0) seen.push(n); }); });
     return seen;
   };
   // 양식 내 위치 설명 (예: "상단 중앙 · 제 {{번호}} 호")
   AW.whereIs = function (name, tpl) {
     tpl = tpl || AW.S.tpl;
     var hit = null;
-    tpl.elems.forEach(function (e) { if (e.t === 'text' && AW.tokensOf(e.text).indexOf(name) >= 0 && (!hit || e.y < hit.y)) hit = e; });
+    tpl.elems.forEach(function (e) { if ((e.t === 'text' || e.t === 'table') && AW.tokensOf(AW.elemText(e)).indexOf(name) >= 0 && (!hit || e.y < hit.y)) hit = e; });
     if (!hit) return '';
     var cx = (hit.x + hit.w / 2) / tpl.page.w, cy = (hit.y + hit.h / 2) / tpl.page.h;
     var v = cy < 0.33 ? '상단' : cy < 0.66 ? '중단' : '하단', h = cx < 0.36 ? '좌측' : cx < 0.64 ? '중앙' : '우측';
-    var ctx = String(hit.text).replace(/\s+/g, ' ').trim(); if (ctx.length > 24) ctx = ctx.slice(0, 24) + '…';
+    var ctx = String(AW.elemText(hit)).replace(/\s+/g, ' ').trim(); if (ctx.length > 24) ctx = ctx.slice(0, 24) + '…';
     return v + ' ' + h + ' · ' + ctx;
   };
   var GUESS = [
@@ -373,14 +375,9 @@
     tpl.elems.forEach(function (e) { el.appendChild(AW.renderElem(e, k, o, dx, dy)); });
     return el;
   };
-  AW.renderElem = function (e, k, o, dx, dy) {
-    var mode = o.mode || 'view', d = document.createElement('div');
-    d.className = 'el el-' + e.t; d.dataset.id = e.id;
-    var base = 'position:absolute;left:' + ((e.x + (mode === 'print' ? dx : 0)) * k) + 'px;top:' + ((e.y + (mode === 'print' ? dy : 0)) * k) + 'px;width:' + (e.w * k) + 'px;height:' + (Math.max(e.h, e.t === 'line' ? 0 : 1) * k) + 'px;';
-    if (e.t === 'text') {
-      var lang = o.lang || 'ko', ko = e.text || '', en = e.en || '', cp = (AW.curTpl || AW.S.tpl || {}).page || {}, blocks = [];
-      var jOn = AW.josaOn(), jRe = new RegExp('\\{\\{\\s*([^{}]+?)\\s*\\}\\}(?:(' + AW.JOSA_RE + ')(?![가-힣]))?', 'g');
-      var tokH = function (src, lg) {
+  AW.makeTok = function (mode, o) {
+    var jOn = AW.josaOn(), jRe = new RegExp('\\{\\{\\s*([^{}]+?)\\s*\\}\\}(?:(' + AW.JOSA_RE + ')(?![가-힣]))?', 'g');
+    return function (src, lg) {
         return AW.esc(src).replace(jRe, function (m, n, pj) {
           n = n.replace(/&amp;/g, '&'); if (mode === 'edit') return '<span class="tk">{{' + AW.esc(n) + '}}</span>' + (pj || '');
           var v = AW.val(o.row, n, o.idx || 0, lg), jo = pj || '';
@@ -389,6 +386,14 @@
           return (mode === 'view' ? '<span class="mv">' + AW.esc(v) + '</span>' : AW.esc(v)) + jo;   // 미리보기에서는 바뀌는 값을 표시(인쇄에는 표시 없음)
         });
       };
+  };
+  AW.renderElem = function (e, k, o, dx, dy) {
+    var mode = o.mode || 'view', d = document.createElement('div');
+    d.className = 'el el-' + e.t; d.dataset.id = e.id;
+    var base = 'position:absolute;left:' + ((e.x + (mode === 'print' ? dx : 0)) * k) + 'px;top:' + ((e.y + (mode === 'print' ? dy : 0)) * k) + 'px;width:' + (e.w * k) + 'px;height:' + (Math.max(e.h, e.t === 'line' ? 0 : 1) * k) + 'px;';
+    if (e.t === 'text') {
+      var lang = o.lang || 'ko', ko = e.text || '', en = e.en || '', cp = (AW.curTpl || AW.S.tpl || {}).page || {}, blocks = [];
+      var tokH = AW.makeTok(mode, o);
       var ef = e.fontEn ? AW.fontStack(e.fontEn) : '';
       if (lang === 'en') blocks.push({ h: tokH(en || ko, en ? 'en' : 'ko'), dim: mode === 'edit' && !en, f: en ? ef : '' });
       else if (lang === 'both' && en.trim()) { var kb = { h: tokH(ko, 'ko') }, eb = { h: tokH(en, 'en'), s: cp.enScale || 0.8, f: ef }; blocks = cp.enFirst ? [eb, kb] : [kb, eb]; }
@@ -405,6 +410,8 @@
       d.appendChild(b);
       if (e.fit) d.dataset.fit = '1';
       if (mode === 'edit' && /\{\{[^{}]+\}\}/.test(ko + en)) d.classList.add('has-tk');   // 메일머지 영역 표시(편집 화면 전용)
+    } else if (e.t === 'table' && AW.Table) {
+      d.style.cssText = base; AW.Table.render(e, d, k, o, AW.makeTok(mode, o));
     } else if (e.t === 'qr') {
       d.style.cssText = base + 'background:#fff;'; d.innerHTML = AW.qrSvg(AW.verifyUrl((o.row && o.row._code) || 'SAMPLE0000'));
     } else if (e.t === 'rect') {
