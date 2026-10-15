@@ -5,7 +5,7 @@
  *  - 복사 내용은 Promise 로 받아, 클릭 직후(사용자 동작 안)에 쓰기를 시작하고 QR 발급이 끝나면 채웁니다.
  */
 (function () {
-  var FONT = "'Malgun Gothic','Noto Sans KR',sans-serif";
+  var FONT = "'바탕체',BatangChe,'바탕',Batang,serif"; // NNEditor 기본 서체(바탕체)
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
   function won(n) { return n == null ? '-' : Math.round(Number(n)).toLocaleString('ko-KR'); }
 

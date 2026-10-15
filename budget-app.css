@@ -259,3 +259,9 @@ tr.ln.selected td{background:var(--primary-lt)}
 #is-cp{position:sticky;bottom:0;background:var(--card);padding:8px 0;margin:0;border-top:1px solid var(--line,#e2e8f0)}
 
 .q-pv{overflow-x:auto;margin:12px 0}.q-in{width:84px;padding:3px 6px;border:1px solid var(--primary);border-radius:var(--r);text-align:right;font:inherit}
+.pend{font-size:11px;color:var(--orange);margin-top:2px;white-space:nowrap}
+
+/* 스캔 화면 현황표(모바일 폭에서도 5열 모두 표시) */
+.q-tbl{width:100%;border-collapse:collapse;font-size:12px}.q-tbl th,.q-tbl td{border-bottom:1px solid var(--line,#e2e8f0);padding:7px 4px;vertical-align:middle}
+.q-tbl th{color:var(--text-2);font-weight:500;text-align:left;font-size:11px}.q-tbl .num{text-align:right;white-space:nowrap}.q-tbl td:first-child{word-break:keep-all;overflow-wrap:anywhere}
+.q-tbl tr.neg td b{color:var(--red)}.q-tbl .q-amt{width:78px;padding:4px 6px;font-size:12px}

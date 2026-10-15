@@ -127,7 +127,7 @@
     // 결재 QR 탭: 예산안 화면과 분리해 두고, QR 반영으로 지출이 바뀌면 돌아갈 때 서버에서 다시 불러옵니다.
     var qdata = data, qDirty = false, qOpen = false;
     function qrCtx(getData) {
-      return { token: W.sess.token, year: year, dept: dept, depts: info.depts.map(function (d) { return d.dept; }), getData: getData, onChanged: function () { qDirty = true; } };
+      return { token: W.sess.token, year: year, dept: dept, depts: info.depts.map(function (d) { return d.dept; }), getData: getData, onChanged: function () { qDirty = true; if (window._bgtPollLocal) window._bgtPollLocal(); } };
     }
     function drawQr() { BudgetTicket.deptTab($('#tk', root), qrCtx(function () { return qdata; })); }
     function showMode(m) {
@@ -142,7 +142,7 @@
     $('#dp-xl', root).onclick = function () { BudgetXlsx.deptDownload({ year: year, dept: dept, lines: data.lines, spend: data.spend, codes: data.codes, settings: data.settings }); };
     var base = { p_token: W.sess.token };
     function rp(fn, extra) { return W.rpc(fn, Object.assign({}, base, extra)); }
-    W.mount($('#ws', root), {
+    var mt = W.mount($('#ws', root), {
       admin: false, dept: dept, year: year, data: data,
       // 예산 항목 줄에서 바로 「지출 요청(QR)」: 해당 항목이 채워진 발급 창을 엽니다.
       onSpendQrMulti: function (ids) { BudgetTicket.issue(qrCtx(function () { return data; }), { line_ids: ids }); },
@@ -156,6 +156,18 @@
         recall: function (type) { return rp('bgt_d_recall', { p_year: year, p_type: type }); }
       }
     });
+    // 승인 대기(발급됐지만 아직 스캔 승인 전) 금액을 항목 줄에 표시하고, 다른 기기에서 승인되면 돌아왔을 때 새로 불러옵니다.
+    var tsig = null;
+    function pollTickets(local) {
+      if (!W.sess.token) return;
+      W.rpc('bgt_d_tickets', { p_token: W.sess.token, p_year: year }).then(function (list) {
+        var pend = {}, sig = list.map(function (tk) { return tk.ticket.id + tk.ticket.status + tk.ticket.applied_total; }).join('|');
+        list.forEach(function (tk) { if (tk.ticket.status === 'issued') tk.lines.forEach(function (l) { if (l.target && l.target.line_id) pend[l.target.line_id] = (pend[l.target.line_id] || 0) + (Number(l.planned) || 0); }); });
+        if (tsig === null || local === true) { tsig = sig; data.pending = pend; mt.render(); return; }
+        if (sig !== tsig && !document.querySelector('.mdl') && !(document.activeElement && /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName))) loadDept();
+      }).catch(function () {});
+    }
+    window._bgtPoll = pollTickets; window._bgtPollLocal = function () { pollTickets(true); }; pollTickets();
   }
   function changePw() {
     W.modal({
@@ -188,6 +200,7 @@
     });
   }
 
+  document.addEventListener('visibilitychange', function () { if (!document.hidden && window._bgtPoll) window._bgtPoll(); });
   window.BudgetBoot = { logout: logout };
   boot();
 })();

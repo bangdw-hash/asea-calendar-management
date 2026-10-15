@@ -55,7 +55,7 @@
     h += '<main class="page qr-main"><section class="card"><div class="qr-ttl"><div><h3>' + esc(t.title) + '</h3><div class="muted">발급 부서 ' + esc(t.dept) + ' · 발급 ' + W.fmtDT(t.issued_at) + '</div></div>' + T.statusChip(t.status) + '</div>' +
       (notice ? '<div class="note ok">' + ico('check', 16) + ' ' + esc(notice) + '</div>' : '');
     if (t.status === 'void') h += '<div class="note err">' + ico('alert', 16) + ' 무효 처리된 QR입니다. 반영할 수 없습니다.' + (t.void_reason ? ' (사유: ' + esc(t.void_reason) + ')' : '') + '</div></section>';
-    else if (t.status === 'issued') h += '<div class="note info">' + ico('check', 16) + ' <span>결재가 완료된 문서의 QR인지 확인한 뒤 결재(문서)번호를 입력하고 반영하십시오. 반영은 <b>한 번만</b> 가능하며, 이후 수정은 부서·관리자 로그인이 필요합니다.</span></div></section>' + formHtml(false);
+    else if (t.status === 'issued') h += '<div class="note info">' + ico('check', 16) + ' <span>결재가 끝난 문서인지 확인하고 결재번호를 입력한 뒤 「집행 승인」을 누르십시오.</span></div></section>' + formHtml(false);
     else if (mode === 'edit' && view.can_edit) h += '<div class="note info">' + ico('edit', 16) + ' <span>수정반영 중입니다. 결재번호 ' + esc(t.doc_no || '-') + ' · 반영 ' + W.fmtDT(t.applied_at) + '</span></div></section>' + formHtml(true);
     else h += appliedHtml();
     h += '</main>';
@@ -65,7 +65,25 @@
   }
 
   /* 반영 / 수정반영 입력 */
+  // 처음 반영(승인): 기안문에 붙인 표와 같은 모양의 한 장 표에서 금액만 확인 — 적요·집행일은 자동(건명·오늘)
+  function approveHtml() {
+    var t = view.ticket, rows = view.lines.map(function (l, i) {
+      var tg = l.target, used = tg ? (Number(tg.used) || 0) : 0, code = tg ? esc(tg.mok + ' ' + tg.name) : '<span class="flag warn">미배정</span>';
+      return '<tr class="qr-line" data-id="' + l.id + '" data-lid="' + (tg ? tg.line_id : '') + '" data-budget="' + (tg ? tg.budget : 0) + '" data-used="' + used + '" data-plan="' + l.planned + '">' +
+        '<td>' + code + '</td><td class="num">' + (tg ? won(tg.budget) : '-') + '</td><td class="num">' + (tg ? won(used) : '-') + '</td>' +
+        '<td class="num"><input class="in num money q-amt" data-k="amount" inputmode="numeric" value="' + won(l.planned) + '" aria-label="이번 집행 금액">' +
+        '<input type="hidden" data-k="memo" value="' + esc(l.memo || t.title) + '"><input type="hidden" data-k="spent_on" value="' + esc(dstr(l.spent_on) || today()) + '"></td>' +
+        '<td class="num"><b data-b>' + (tg ? won((Number(tg.budget) || 0) - used - l.planned) : '-') + '</b><span data-a hidden></span></td></tr>';
+    }).join('');
+    return '<section class="card"><div class="form"><label><span>결재(문서)번호 <b class="req">필수</b></span><input id="q-doc" class="in" maxlength="60" autocomplete="off" placeholder="예: 기종교육원-2026-00062"></label></div>' +
+      '<div class="tbl-wrap"><table class="q-tbl"><thead><tr><th>예산코드</th><th class="num">연간예산</th><th class="num">기존 집행</th><th class="num">이번 집행</th><th class="num">잔여 예산</th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
+      '<p class="sum-line">이번 집행 합계 <b id="q-sum">0</b>원 <span class="muted" id="q-dif"></span></p>' +
+      '<div id="q-rwrap" class="form hide"><label><span id="q-rlab">사유 <b class="req">필수</b></span><textarea id="q-reason" class="in" rows="2" placeholder="결재 기준액과 다르게 반영하거나 예산을 넘는 경우 사유를 적어 주십시오."></textarea></label></div>' +
+      '<div class="acts"><button class="btn btn-primary block" id="q-go">' + ico('check', 16) + ' 집행 승인</button></div>' +
+      '<p class="muted">승인하면 해당 부서 예산의 「기존 집행」에 즉시 반영되며, 한 번만 가능합니다.</p></section>';
+  }
   function formHtml(edit) {
+    if (!edit) return approveHtml();
     var t = view.ticket, lines = view.lines;
     // 수정 중에는 이 QR이 이미 넣은 금액을 빼고 계산합니다.
     var own = {}; if (edit) lines.forEach(function (l) { if (l.target) own[l.target.line_id] = (own[l.target.line_id] || 0) + (Number(l.applied) || 0); });
@@ -93,7 +111,7 @@
         if (!c.dataset.lid) return;
         var a = num($('[data-k=amount]', c).value) || 0, used = Number(c.dataset.used), bal = Number(c.dataset.budget) - used - by[c.dataset.lid];
         $('[data-a]', c).textContent = won(a); $('[data-b]', c).textContent = won(bal);
-        var bx = $('.bbox', c); bx.classList.toggle('neg', bal < 0); if (bal < 0) neg = true;
+        var bx = $('.bbox', c) || c; bx.classList.toggle('neg', bal < 0); if (bal < 0) neg = true;
       });
       $('#q-sum', root).textContent = won(sum);
       $('#q-dif', root).textContent = sum === plan ? '(결재 기준액과 같음)' : '(결재 기준액 ' + won(plan) + '원 대비 ' + (sum > plan ? '+' : '') + won(sum - plan) + '원)';
@@ -133,21 +151,23 @@
 
   /* 반영 완료 화면 */
   function appliedHtml() {
-    var t = view.ticket, full = view.viewer === 'dept' || view.viewer === 'admin', diff = Number(t.applied_total) !== Number(t.planned_total);
-    var h = '<div class="note warn">' + ico('alert', 16) + ' <span><b>이미 반영된 내역입니다.</b> ' + W.fmtDT(t.applied_at) + ' · 결재번호 ' + esc(t.doc_no || '-') + '<br>중복 반영을 막기 위해 다시 반영할 수 없습니다. 수정이 필요하면 아래 [수정반영]을 이용하십시오.</span></div>' +
-      '<div class="kpis">' + kpi('결재번호', esc(t.doc_no || '-')) + kpi('결재 기준액', won(t.planned_total) + '<small>원</small>') + kpi('반영액', won(t.applied_total) + '<small>원</small>', diff ? 'warnk' : '') + '</div>' +
-      (diff ? '<div class="note warn">' + ico('alert', 16) + ' 반영액이 결재 기준액과 ' + won(Math.abs(t.applied_total - t.planned_total)) + '원 다릅니다.</div>' : '') + '</section>';
-    view.lines.forEach(function (l, i) {
-      var tg = l.target;
-      h += '<section class="card qr-line"><div class="ed-t">' + (i + 1) + '. ' + T.lineTitle(l) + '</div><div class="qr-amt"><span class="muted">' + esc(l.memo || '') + (l.vendor ? ' · ' + esc(l.vendor) : '') + (l.spent_on ? ' · ' + esc(dstr(l.spent_on)) : '') + '</span><b>' + won(l.applied == null ? l.planned : l.applied) + '원</b></div>' +
-        (tg ? '<div class="bbox' + (tg.budget - tg.used < 0 ? ' neg' : '') + '"><div><span>현재 예산</span><b>' + won(tg.budget) + '</b></div><div><span>집행 누계</span><b>' + won(tg.used) + '</b></div><div><span>잔액</span><b>' + won(tg.budget - tg.used) + '</b></div></div>' : '<div class="muted qr-pend">귀속 미정(미배정) — 기획처 확정 후 부서 집행에 반영됩니다.</div>') + histHtml(l, full) + '</section>';
-    });
-    h += '<section class="card"><div class="acts" id="q-act"></div><div id="q-login"></div></section>';
-    return h;
+    var t = view.ticket, diff = Number(t.applied_total) !== Number(t.planned_total), own = {};
+    view.lines.forEach(function (l) { if (l.target) own[l.target.line_id] = (own[l.target.line_id] || 0) + (Number(l.applied == null ? l.planned : l.applied) || 0); });
+    var rows = view.lines.map(function (l) {
+      var tg = l.target, cur = Number(l.applied == null ? l.planned : l.applied) || 0;
+      if (!tg) return '<tr><td><span class="flag warn">미배정</span> ' + esc(l.prop_dept || '') + '</td><td class="num">-</td><td class="num">-</td><td class="num"><b>' + won(cur) + '</b></td><td class="num">-</td></tr>';
+      var used = Number(tg.used) || 0, bal = (Number(tg.budget) || 0) - used;
+      return '<tr' + (bal < 0 ? ' class="neg"' : '') + '><td>' + esc(tg.mok + ' ' + tg.name) + '</td><td class="num">' + won(tg.budget) + '</td><td class="num">' + won(used - (own[tg.line_id] || 0)) + '</td><td class="num"><b>' + won(cur) + '</b></td><td class="num"><b>' + won(bal) + '</b></td></tr>';
+    }).join('');
+    return (notice ? '' : '<div class="note warn">' + ico('alert', 16) + ' <span><b>이미 반영된 내역입니다.</b> ' + W.fmtDT(t.applied_at) + ' · 결재번호 ' + esc(t.doc_no || '-') + '<br>중복 반영을 막기 위해 다시 반영할 수 없습니다.</span></div>') +
+      '<p class="sum-line">결재번호 <b>' + esc(t.doc_no || '-') + '</b> · 반영액 <b>' + won(t.applied_total) + '</b>원' + (diff ? ' <span class="flag warn">결재 기준액 ' + won(t.planned_total) + '원과 다름</span>' : '') + '</p>' +
+      '<div class="tbl-wrap"><table class="q-tbl"><thead><tr><th>예산코드</th><th class="num">연간예산</th><th class="num">기존 집행</th><th class="num">이번 집행</th><th class="num">잔여 예산</th></tr></thead><tbody>' + rows + '</tbody></table></div></section>' +
+      '<section class="card"><div class="acts" id="q-act"></div><div id="q-login"></div></section>';
   }
   function wireApplied() {
     var act = $('#q-act', root), box = $('#q-login', root), full = view.viewer === 'dept' || view.viewer === 'admin';
     var h = '';
+    h += '<a class="btn btn-secondary" href="budget.html">' + ico('list', 16) + ' 예산 현황 보기 (부서 로그인)</a>';
     if (view.can_edit) h += '<button class="btn btn-primary" id="q-edit">' + ico('edit', 16) + ' 수정반영</button>';
     else if (view.viewer === 'other') h += '<div class="note warn">' + ico('alert', 16) + ' 로그인한 부서(' + esc(W.sess.dept) + ')는 이 QR의 관련 부서가 아닙니다. 해당 부서 또는 관리자로 로그인해야 수정할 수 있습니다.</div>';
     else h += '<button class="btn btn-primary" id="q-edit">' + ico('edit', 16) + ' 수정반영 (부서·관리자 로그인)</button>';
