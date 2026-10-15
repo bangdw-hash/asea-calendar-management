@@ -1,0 +1,25 @@
+/* 부서 입력판 (budget-entry.html · 관리자 입력판 탭) */
+.page.ewide{max-width:1280px}
+.eb-wrap .etabs{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.ws-tabs.sub .ws-tab{font-size:13px}
+.etip{margin:6px 0 10px}
+.etool{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+.etool .acts{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.esum{display:flex;gap:18px;align-items:center;flex-wrap:wrap;padding:8px 12px;background:var(--primary-lt);border-radius:var(--r);margin-bottom:10px;font-size:13px}
+.esum b.neg{color:var(--red)}.esum b.warn{color:var(--orange)}.esum .inl{margin-left:auto}.eonline{display:flex;gap:4px;flex-wrap:wrap}
+.etbl{table-layout:fixed;width:100%;min-width:0}.etbl th,.etbl td{padding:5px 6px;vertical-align:top}.etbl .in.sm{padding:6px 8px;font-size:13px;width:100%}
+.etbl td.en{width:34px;text-align:center;color:var(--text-2);font-size:12px}.etbl td.ed{white-space:nowrap;font-size:12px}
+.etbl tr.eadd td{background:#f8fbff;border-bottom:2px solid var(--primary)}
+.etbl tr.dirty td{background:#fffbeb}.etbl tr.locked td{background:#f1f5f9}.etbl tr.er.chk td.ec{box-shadow:inset 3px 0 0 var(--orange)}
+.ec select{width:100%;margin-bottom:3px}.ewhy{font-size:11px;color:var(--text-2);margin-top:3px}.ewhy .alt{font-size:11px}
+.eh{white-space:nowrap;text-align:right;overflow:visible}
+.eb{display:inline-block;padding:1px 7px;border-radius:var(--r);font-size:11px;font-weight:700;white-space:nowrap}
+.eb.gr{background:#f1f5f9;color:var(--text-2)}.eb.ai{background:var(--primary-lt);color:var(--primary-dk)}.eb.ok{background:var(--green-lt);color:var(--green)}.eb.wa{background:var(--orange-lt);color:var(--orange)}.eb.lk{background:#ede9fe;color:#6d28d9}
+.etbl tr.econf td{background:var(--orange-lt);color:var(--orange);font-size:13px}
+.edept{display:flex;gap:8px;flex-wrap:wrap}.edbtn{min-width:120px}
+.eready{margin-bottom:12px}.eurl{display:flex;gap:8px;margin:6px 0 10px}.eurl .in{flex:1}
+.eguide{margin:8px 0 0;padding-left:20px;line-height:1.8}.eguide li{margin-bottom:4px}
+.elogin{max-width:440px;margin:40px auto}
+.qa-card{margin-top:10px}.qa-ex{margin:6px 0;font-size:13px;background:var(--bg);padding:6px 10px;border-radius:var(--r)}
+.eadm-win td{vertical-align:middle}.eadm-win .in{padding:5px 8px;font-size:13px}
+@media (max-width:900px){.etbl{min-width:900px}}

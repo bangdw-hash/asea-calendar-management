@@ -11,6 +11,8 @@
 
   var ERR = {
     AUTH_REQUIRED: '로그인이 만료되었습니다. 다시 접속해 주십시오.',
+    BAD_ITEMS: '입력 내용이 올바르지 않습니다.',
+    BAD_PERIOD: '종료 시각이 시작 시각보다 빠릅니다.',
     PERIOD_CLOSED: '현재 작성 기간이 아닙니다.',
     LOCKED: '제출·검토·확정 상태에서는 수정할 수 없습니다.',
     FORBIDDEN: '권한이 없습니다.',
@@ -671,7 +673,7 @@
   }
 
   window.BW = {
-    SUPA_URL: SUPA_URL, rpc: rpc, errMsg: errMsg, sess: sess, setAuthLost: function (f) { onAuthLost = f; },
+    SUPA_URL: SUPA_URL, SUPA_KEY: SUPA_KEY, rpc: rpc, errMsg: errMsg, sess: sess, setAuthLost: function (f) { onAuthLost = f; },
     $: $, $$: $$, esc: esc, won: won, num: num, pct: pct, ico: ico, toast: toast, modal: modal, confirmBox: confirmBox,
     fmtDT: fmtDT, toLocalInput: toLocalInput, fromLocalInput: fromLocalInput,
     TYPES: TYPES, STAGES: STAGES, stageLabel: stageLabel, stageIdx: stageIdx, cmpMok: cmpMok, Calc: Calc, mount: mount
