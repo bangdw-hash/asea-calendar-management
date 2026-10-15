@@ -45,10 +45,35 @@
     var d = new Date(), s = d.getFullYear() + '.' + (d.getMonth() + 1) + '.' + d.getDate();
     return '<div style="font-family:' + FONT + ';font-size:11px;color:#444;margin-top:3px">' + s + ' 기준 · 결재 후 QR을 스캔해 「반영」하면 집행으로 확정됩니다.</div>';
   }
-  // QR 왼쪽 + 표 오른쪽 (표 레이아웃: 편집기에서 가장 안전)
+  // QR 왼쪽 + 현황표 오른쪽: 표 하나(QR 칸을 세로로 합친 구조). 중첩 표·float 은 편집기에서 깨지기 쉬워
+  // 모든 서식을 속성(border·bgcolor·width·align)과 style 양쪽에 중복 지정합니다.
   function bothHtml(png, rows) {
-    return '<table border="0" cellspacing="0" cellpadding="0" style="border-collapse:collapse"><tr><td valign="top" style="padding:0 12px 0 0;width:3cm">' + qrImg(png) +
-      '</td><td valign="top" style="padding:0">' + tableHtml(rows) + caption() + '</td></tr></table><p style="margin:0">&nbsp;</p>';
+    var B = '1px solid #444', base = 'font-family:' + FONT + ';font-size:12px;';
+    var cell = function (w, al, bg, st, inner, extra) {
+      return '<td' + (w ? ' width="' + w + '"' : '') + ' align="' + al + '"' + (bg ? ' bgcolor="' + bg + '"' : '') + (extra || '') +
+        ' style="' + base + 'border:' + B + ';padding:4px 8px;' + (w ? 'width:' + w + 'px;' : '') + (bg ? 'background-color:' + bg + ';' : '') + st + '">' + inner + '</td>';
+    };
+    var head = ['예산코드', '연간예산', '기존 집행', '이번 집행', '잔여 예산'], W = [170, 96, 96, 96, 96];
+    var tot = { annual: 0, prior: 0, cur: 0, remain: 0 };
+    var d = new Date(), ds = d.getFullYear() + '.' + (d.getMonth() + 1) + '.' + d.getDate();
+    var n = rows.length + (rows.length > 1 ? 1 : 0) + 2; // 머리글 + 자료 + (합계) + 안내
+    var h = '<table border="1" cellspacing="0" cellpadding="4" width="654" bordercolor="#444444" style="width:654px;border-collapse:collapse;border:' + B + '"><tbody><tr>' +
+      cell(126, 'center', '', 'text-align:center;vertical-align:middle;padding:6px;', qrImg(png) + '<div style="font-size:10px;color:#444;margin-top:4px">결재 QR<br>스캔하여 반영</div>', ' rowspan="' + n + '" valign="middle"') +
+      head.map(function (t, i) { return cell(W[i], 'center', '#E8F0FE', 'text-align:center;font-weight:bold;white-space:nowrap;', t); }).join('') + '</tr>';
+    rows.forEach(function (r) {
+      if (r.annual != null) { tot.annual += r.annual; tot.prior += r.prior; tot.remain += r.remain; }
+      tot.cur += r.cur;
+      var neg = r.remain != null && r.remain < 0, rt = 'text-align:right;white-space:nowrap;';
+      h += '<tr>' + cell(W[0], 'left', '', '', esc(r.code)) + cell(W[1], 'right', '', rt, won(r.annual)) + cell(W[2], 'right', '', rt, won(r.prior)) +
+        cell(W[3], 'right', '#FFF7E0', rt + 'font-weight:bold;', won(r.cur)) + cell(W[4], 'right', '', rt + 'font-weight:bold;' + (neg ? 'color:#CC0000;' : ''), neg ? '<font color="#CC0000">' + won(r.remain) + '</font>' : won(r.remain)) + '</tr>';
+    });
+    if (rows.length > 1) {
+      var g = 'font-weight:bold;white-space:nowrap;', ng = tot.remain < 0;
+      h += '<tr>' + cell(W[0], 'center', '#F3F4F6', g + 'text-align:center;', '합 계') + cell(W[1], 'right', '#F3F4F6', g + 'text-align:right;', won(tot.annual)) + cell(W[2], 'right', '#F3F4F6', g + 'text-align:right;', won(tot.prior)) +
+        cell(W[3], 'right', '#F3F4F6', g + 'text-align:right;', won(tot.cur)) + cell(W[4], 'right', '#F3F4F6', g + 'text-align:right;' + (ng ? 'color:#CC0000;' : ''), ng ? '<font color="#CC0000">' + won(tot.remain) + '</font>' : won(tot.remain)) + '</tr>';
+    }
+    h += '<tr>' + cell(0, 'left', '', 'font-size:11px;color:#444;', ds + ' 기준 · 결재 후 QR을 스캔해 「반영」하면 집행으로 확정됩니다. (단위: 원)', ' colspan="5"') + '</tr></tbody></table><p style="margin:0">&nbsp;</p>';
+    return h;
   }
   function plain(rows) {
     return ['예산코드\t연간예산\t기존 집행\t이번 집행\t잔여 예산'].concat(rows.map(function (r) { return [r.code, won(r.annual), won(r.prior), won(r.cur), won(r.remain)].join('\t'); })).join('\n');
