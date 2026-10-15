@@ -258,7 +258,7 @@
   function mount(root, ctx) {
     var data = ctx.data;
     var calc = Calc(data);
-    var ui = { tab: ctx.startTab || 'sechul', open: {} };
+    var ui = { tab: ctx.startTab || 'sechul', open: {}, sel: {} };
     var typeOf = function (k) { return TYPES[k]; };
 
     function codeName(type, code) {
@@ -312,7 +312,7 @@
       var b = $('#ws-body', root);
       if (ui.tab === 'sum') b.innerHTML = summaryHtml();
       else b.innerHTML = typePanelHtml(typeOf(ui.tab));
-      if (ui.tab === 'sum') afterSummary(b);
+      if (ui.tab === 'sum') afterSummary(b); else updSel();
     }
 
     /* ── 렌더: 세출/세입 패널 ── */
@@ -351,7 +351,14 @@
         if (ui.open[l.id]) h += spendRow(l, ed, type);
       });
       h += '</tbody></table></div>';
+      if (ctx.onSpendQrMulti && type === '세출') h += '<div class="sel-bar" hidden><span><b class="sel-n">0</b>개 항목 선택됨 <small class="muted">(코드·명칭 칸을 누르면 선택/해제)</small></span><span class="acts"><button class="btn btn-ghost btn-sm" data-act="sel-clear" type="button">선택 해제</button><button class="btn btn-primary btn-sm" data-act="sel-go" type="button">' + ico('qr', 16) + ' 지출 요청(QR)</button></span></div>';
       return h;
+    }
+    function selIds() { return linesOf('세출').filter(function (l) { return ui.sel[l.id]; }).map(function (l) { return l.id; }); }
+    function updSel() {
+      var bar = $('.sel-bar', root); if (!bar) return;
+      var n = selIds().length; bar.hidden = !n; $('.sel-n', bar).textContent = n;
+      $$('tr.ln', root).forEach(function (tr) { var on = !!ui.sel[tr.dataset.id], cb = $('.sel-cb', tr); tr.classList.toggle('selected', on); if (cb) cb.checked = on; });
     }
     function kpi(label, val, cls, strong) { return '<div class="kpi' + (strong ? ' strong' : '') + '"><div class="kpi-l">' + label + '</div><div class="kpi-v ' + cls + '">' + won(val) + '<small>원</small></div></div>'; }
     function kpiDiff(sm) {
@@ -385,8 +392,9 @@
         ? '<input class="in nm" data-f="name" value="' + esc(l.name) + '" aria-label="세부명칭">'
         : '<div class="nm-t">' + esc(l.name) + (added ? ' <span class="chip c-blue">추가</span>' : '') + '</div>';
       var used = calc.used(l.id), cnt = (data.spend || []).filter(function (s) { return s.line_id === l.id; }).length;
-      return '<tr class="ln" data-id="' + l.id + '">' +
-        '<td class="c-code" data-l="코드"><span class="code">' + esc(l.mok) + '</span><div class="moknm">' + esc(codeName(l.type, l.mok)) + '</div></td>' +
+      var selOk = ctx.onSpendQrMulti && l.type === '세출';
+      return '<tr class="ln' + (selOk && ui.sel[l.id] ? ' selected' : '') + '" data-id="' + l.id + '">' +
+        '<td class="c-code' + (selOk ? ' selectable' : '') + '" data-l="코드">' + (selOk ? '<input type="checkbox" class="sel-cb" aria-label="지출 요청 항목 선택"' + (ui.sel[l.id] ? ' checked' : '') + '>' : '') + '<span class="code">' + esc(l.mok) + '</span><div class="moknm">' + esc(codeName(l.type, l.mok)) + '</div></td>' +
         '<td class="c-name" data-l="세부명칭">' + nameCell + (l.base_calc ? '<div class="bcalc">2026 산출: ' + esc(l.base_calc) + '</div>' : '') + '<div class="flags">' + flagsHtml(l, ed) + '</div></td>' +
         '<td class="num c-base" data-l="2026 예산">' + won(l.base_amount) + '</td>' +
         '<td class="num c-used" data-l="' + usedLabel(l.type) + '"><button class="usebtn' + (ui.open[l.id] ? ' on' : '') + '" data-act="toggle-spend" aria-expanded="' + !!ui.open[l.id] + '"><span class="usev">' + won(used) + '</span><span class="usec">' + cnt + '건</span>' + ico('chev', 14) + '</button></td>' +
@@ -492,8 +500,14 @@
     root.addEventListener('click', function (e) {
       var tb = e.target.closest('[data-tab]');
       if (tb) { ui.tab = tb.dataset.tab; render(); return; }
+      var sc = ctx.onSpendQrMulti && e.target.closest('td.selectable, td.c-name'), str = sc && sc.closest('tr.ln');
+      if (str && lineById(str.dataset.id) && lineById(str.dataset.id).type === '세출' && !e.target.closest('input:not(.sel-cb), button, a, select, textarea')) {
+        ui.sel[str.dataset.id] = !ui.sel[str.dataset.id]; if (!ui.sel[str.dataset.id]) delete ui.sel[str.dataset.id]; updSel(); return;
+      }
       var a = e.target.closest('[data-act]'); if (!a) return;
       var act = a.dataset.act, tr = a.closest('tr.ln'), id = tr && tr.dataset.id;
+      if (act === 'sel-clear') { ui.sel = {}; updSel(); return; }
+      if (act === 'sel-go') { var ids = selIds(); if (ids.length) ctx.onSpendQrMulti(ids); return; }
       if (act === 'toggle-spend') { ui.open[id] = !ui.open[id]; renderBody(); return; }
       if (act === 'spend-qr') { var sl = lineById(id || a.dataset.lid); if (sl && ctx.onSpendQr) ctx.onSpendQr(sl); return; }
       if (act === 'add-line') return addLineModal(typeOf(ui.tab));

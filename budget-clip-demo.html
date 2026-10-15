@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>지출 요청 시험</title>
+<link rel="stylesheet" href="budget-app.css?v=20261016a">
+</head><body>
+<div style="max-width:1100px;margin:0 auto;padding:16px">
+<div class="note info"><b>시험 화면</b> — 가상 데이터이며 서버에 아무것도 저장하지 않습니다. 코드·명칭 칸(또는 왼쪽 체크)을 눌러 여러 항목을 고르고 「지출 요청(QR)」을 누른 뒤, 복사 버튼으로 복사해 기안 편집기(NNEditor)에 붙여넣어 확인하십시오. 시험용 QR은 실제 결재 QR이 아닙니다.</div>
+<div id="app"></div>
+<h3>붙여넣기 연습 칸 <small class="muted">(이 브라우저 안에서 서식이 유지되는지 미리 확인)</small></h3>
+<div id="pad" contenteditable="true" style="min-height:140px;border:1px solid #94a3b8;border-radius:6px;padding:10px;background:#fff"></div>
+</div>
+<script src="budget-calc.js?v=20261014a"></script>
+<script src="budget-app.js?v=20261016a"></script>
+<script src="award-qr.min.js"></script>
+<script src="budget-clip.js?v=20261016a"></script>
+<script src="budget-ticket.js?v=20261016a"></script>
+<script>
+(function(){
+  var L=function(i,mok,name,base){return {id:'L'+i,dept:'교육지원처',type:'세출',mok:mok,name:name,base_amount:base,base_calc:'',forecast:null,calc:'',amount:base,reason:'',origin:'plan',sort:i};};
+  var data={settings:{status:'open'},open:true,subs:[{type:'세출',status:'draft',reject_reason:''},{type:'세입',status:'draft',reject_reason:''}],caps:[],
+    codes:[['2','공공요금·운영'],['2.4','행사·포상'],['2.4.1','행사운영비'],['2.4.3','포상·장학금'],['3.1','소모품'],['3.1.2','소모품비'],['3.2.1','교육훈련비']].map(function(c){return {type:'세출',code:c[0],name:c[1],level:c[0].split('.').length===3?'mok':'hang',active:true};}),
+    lines:[L(1,'2.4.1','행사운영비',5000000),L(2,'2.4.3','포상·장학금',3000000),L(3,'3.1.2','소모품비',600000),L(4,'3.2.1','외부 교육훈련비',2000000)],
+    spend:[{id:'S1',line_id:'L1',spent_on:'2026-05-02',memo:'체육대회',vendor:'',amount:4100000},{id:'S2',line_id:'L2',spent_on:'2026-06-10',memo:'상반기 포상',vendor:'',amount:1200000},{id:'S3',line_id:'L3',spent_on:'2026-03-02',memo:'사무용품',vendor:'',amount:620000}]};
+  var W=window.BW;
+  W.rpc=function(fn,args){ return Promise.resolve({token:'DEMO-'+Date.now().toString(36)}); };
+  var api={saveLine:function(l){return Promise.resolve(l)},saveSpend:function(a,b){return Promise.resolve(b)},deleteSpend:function(){return Promise.resolve({})},deleteLine:function(){return Promise.resolve({})},submit:function(){return Promise.resolve({ok:true})},recall:function(){return Promise.resolve({})}};
+  function qrCtx(){return {token:'demo',year:2026,dept:'교육지원처',depts:['교육지원처'],getData:function(){return data;},onChanged:function(){}};}
+  W.mount(document.getElementById('app'),{admin:false,dept:'교육지원처',year:2026,data:data,api:api,
+    onSpendQr:function(l){BudgetTicket.issue(qrCtx(),{line_id:l.id});},
+    onSpendQrMulti:function(ids){BudgetTicket.issue(qrCtx(),{line_ids:ids});}});
+  document.getElementById('pad').addEventListener('paste',function(){});
+})();
+</script></body></html>
