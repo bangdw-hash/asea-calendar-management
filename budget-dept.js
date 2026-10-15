@@ -145,6 +145,7 @@
     W.mount($('#ws', root), {
       admin: false, dept: dept, year: year, data: data,
       // 예산 항목 줄에서 바로 「지출 요청(QR)」: 해당 항목이 채워진 발급 창을 엽니다.
+      onSpendQrMulti: function (ids) { BudgetTicket.issue(qrCtx(function () { return data; }), { line_ids: ids }); },
       onSpendQr: function (line) { BudgetTicket.issue(qrCtx(function () { return data; }), { line_id: line.id }); },
       api: {
         saveLine: function (line) { return rp('bgt_d_line_save', { p_year: year, p_line: line }); },

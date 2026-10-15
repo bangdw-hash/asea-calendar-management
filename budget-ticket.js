@@ -342,46 +342,92 @@
 
   function issueModal(ctx, done, pre) {
     pre = pre || {};
-    var data = ctx.getData(), used = usedMap(data.spend), own = sechulLines(data.lines, ctx.dept), rows = [{ kind: 'own', line_id: pre.line_id || '', amount: pre.amount || 0, memo: pre.memo || '' }];
+    var data = ctx.getData(), used = usedMap(data.spend), own = sechulLines(data.lines, ctx.dept), issued = null, snap = null,
+      ids = pre.line_ids && pre.line_ids.length ? pre.line_ids : [pre.line_id || ''],
+      rows = ids.map(function (id) { return { kind: 'own', line_id: id, amount: pre.amount || 0, memo: pre.memo || '' }; });
     function rowHtml(r, i) {
       return '<div class="ed-row" data-i="' + i + '"><div class="ed-t">' + (i + 1) + '번째 줄' + (rows.length > 1 ? ' <button class="lnk" data-rm="' + i + '" type="button">삭제</button>' : '') + '</div>' +
         '<div class="form"><label>귀속<select class="in" data-k="kind"><option value="own"' + (r.kind === 'own' ? ' selected' : '') + '>우리 부서 편성 항목</option><option value="other"' + (r.kind === 'other' ? ' selected' : '') + '>귀속 미정 · 다른 부서(공통 등) · 편성하지 않은 지출</option></select></label>' +
         (r.kind === 'own' ? '<label>예산 항목<select class="in" data-k="line_id">' + lineOptions(own, used, r.line_id, '항목을 선택하십시오') + '</select></label>'
           : '<div class="form row"><label>제안 부서<select class="in" data-k="prop_dept">' + deptOptions(ctx.depts, r.prop_dept || ctx.dept) + '</select></label><label>예산 코드(목)<select class="in" data-k="prop_mok">' + codeOptions(data.codes, r.prop_mok) + '</select></label></div>' +
             '<label>비고 (왜 미정인지, 어떤 사업인지)<input class="in" data-k="prop_note" value="' + esc(r.prop_note || '') + '" maxlength="120"></label><p class="muted">기획처가 재원(부서·과목·예비비)을 확정합니다. 확정 전에는 미배정으로 반영됩니다.</p>') +
-        '<div class="form row"><label>적요 (구매·지출 내용)<input class="in" data-k="memo" value="' + esc(r.memo || '') + '"></label><label>거래처<input class="in" data-k="vendor" value="' + esc(r.vendor || '') + '"></label>' +
+        '<div class="ed-info" data-info></div><div class="form row"><label>적요 (구매·지출 내용)<input class="in" data-k="memo" value="' + esc(r.memo || '') + '"></label><label>거래처<input class="in" data-k="vendor" value="' + esc(r.vendor || '') + '"></label>' +
         '<label>집행 예정일<input class="in" type="date" data-k="spent_on" value="' + esc(r.spent_on || '') + '"></label><label>예정 금액(원)<input class="in num money" data-k="amount" inputmode="numeric" value="' + (r.amount ? won(r.amount) : '') + '"></label></div></div></div>';
     }
     function drawRows() { $('#is-rows', m.el).innerHTML = rows.map(rowHtml).join(''); updTotal(); }
+    // 항목별 연간 예산·기존 집행·이번 집행·잔여를 입력과 동시에 계산합니다 (같은 항목을 여러 줄 고르면 순서대로 누적).
+    function calcRows(list) {
+      var run = {};
+      return list.map(function (r) {
+        if (r.kind !== 'own' || !r.line_id) return { code: (r.prop_mok || '미정') + ' ' + (r.prop_note || '미배정'), annual: null, prior: null, cur: r.amount || 0, remain: null };
+        var l = data.lines.filter(function (x) { return x.id === r.line_id; })[0]; if (!l) return { code: '-', annual: null, prior: null, cur: r.amount || 0, remain: null };
+        var prior = (used[l.id] || 0) + (run[l.id] || 0), annual = Number(l.base_amount) || 0; run[l.id] = (run[l.id] || 0) + (r.amount || 0);
+        return { code: l.mok + ' ' + l.name, annual: annual, prior: prior, cur: r.amount || 0, remain: annual - prior - (r.amount || 0) };
+      });
+    }
+    function domRows() {
+      return $$('#is-rows .ed-row', m.el).map(function (el) {
+        var g = function (k) { var i = $('[data-k="' + k + '"]', el); return i ? i.value : ''; };
+        return { kind: g('kind') || 'own', line_id: g('line_id'), prop_mok: g('prop_mok'), prop_note: g('prop_note'), amount: num(g('amount')) || 0 };
+      });
+    }
+    function updInfo() {
+      var cr = calcRows(domRows());
+      $$('#is-rows .ed-row', m.el).forEach(function (el, i) {
+        var c = cr[i], box = $('[data-info]', el); if (!box) return;
+        box.innerHTML = c.annual == null ? '<span class="muted">귀속 미정 — 기획처가 재원을 확정합니다.</span>' :
+          '연간 예산 <b>' + won(c.annual) + '</b> · 기존 집행 <b>' + won(c.prior) + '</b> · 이번 <b>' + won(c.cur) + '</b> → 잔여 <b class="' + (c.remain < 0 ? 'neg' : '') + '">' + won(c.remain) + '</b>원' + (c.remain < 0 ? ' <span class="flag err">예산 초과</span>' : '');
+      });
+    }
     function readRows() {
       $$('#is-rows .ed-row', m.el).forEach(function (el) { var r = rows[Number(el.dataset.i)]; $$('[data-k]', el).forEach(function (i) { r[i.dataset.k] = i.dataset.k === 'amount' ? (num(i.value) || 0) : i.value; }); });
     }
-    function updTotal() { var s = 0; $$('#is-rows [data-k=amount]', m.el).forEach(function (i) { s += num(i.value) || 0; }); $('#is-total', m.el).textContent = won(s); }
-    var m = W.modal({ title: '새 결재 QR 발급', cls: 'wide', body: '<div class="form"><label>건명 (기안 제목)<input id="is-title" class="in" maxlength="200" placeholder="예: 3월 정기 소모품 구매" value="' + esc(pre.title || '') + '"></label></div><div id="is-rows"></div>' +
+    function updTotal() { var s = 0; $$('#is-rows [data-k=amount]', m.el).forEach(function (i) { s += num(i.value) || 0; }); $('#is-total', m.el).textContent = won(s); updInfo(); }
+    function collect() {
+      var title = $('#is-title', m.el).value.trim(); if (!title) return toast('건명을 입력해 주십시오.', 'err');
+      var lines = [];
+      for (var i = 0; i < rows.length; i++) {
+        var r = rows[i]; if (!(r.amount > 0)) return toast((i + 1) + '번째 줄의 금액을 입력해 주십시오.', 'err');
+        if (r.kind === 'own' && !r.line_id) return toast((i + 1) + '번째 줄의 예산 항목을 선택해 주십시오.', 'err');
+        lines.push(r.kind === 'own' ? { line_id: r.line_id, memo: r.memo, vendor: r.vendor, spent_on: r.spent_on, amount: r.amount }
+          : { prop_dept: r.prop_dept || ctx.dept, prop_mok: r.prop_mok, prop_note: r.prop_note, memo: r.memo, vendor: r.vendor, spent_on: r.spent_on, amount: r.amount });
+      }
+      return { title: title, lines: lines };
+    }
+    function lock(on) { $$('input,select,textarea,[data-rm],#is-add', m.el).forEach(function (e) { e.disabled = on; }); }
+    // 발급은 한 번만: 복사·발급 버튼 중 무엇을 먼저 눌러도 이 함수를 거칩니다. 발급되면 「반영 전(지출 대기)」으로 등록됩니다.
+    function issueOnce() {
+      if (issued) return issued;
+      readRows(); var c = collect(); if (!c) return null;
+      snap = calcRows(rows); lock(true);
+      issued = W.rpc('bgt_d_ticket_issue', { p_token: ctx.token, p_year: ctx.year, p_title: c.title, p_lines: c.lines }).then(function (r) {
+        done(); return { token: r.token, title: c.title, url: qrUrl(r.token), rows: snap };
+      }).catch(function (e) { issued = null; lock(false); throw e; });
+      return issued;
+    }
+    var m = W.modal({ title: ids.length > 1 ? '지출 요청 (' + ids.length + '개 항목)' : '지출 요청 · 결재 QR', cls: 'wide', body: '<div class="form"><label>건명 (기안 제목)<input id="is-title" class="in" maxlength="200" placeholder="예: 3월 정기 소모품 구매" value="' + esc(pre.title || '') + '"></label></div><div id="is-rows"></div>' +
       '<button class="btn btn-secondary btn-sm" id="is-add" type="button">' + ico('plus', 16) + ' 줄 추가</button><p class="sum-line">결재 기준액 합계 <b id="is-total">0</b>원</p>' +
+      '<div class="acts qr-acts" id="is-cp"><button class="btn btn-primary" data-cp="both" type="button">QR + 표 복사</button><button class="btn btn-secondary" data-cp="qr" type="button">QR만 복사</button><button class="btn btn-secondary" data-cp="table" type="button">표만 복사</button></div>' +
+      '<p class="muted">복사 버튼을 누르면 QR이 발급되어 「반영 전(지출 대기)」으로 등록됩니다. 기안문 본문에서 Ctrl+V 하십시오. 결재 후 QR을 스캔해 「반영」을 눌러야 집행으로 확정됩니다.</p>' +
       '<div class="note info">' + ico('check', 16) + ' 발급 후 QR 이미지를 기안문에 삽입하십시오. 결재번호는 결재가 끝난 뒤 스캔하는 화면에서 입력합니다.</div>',
-      actions: [{ label: '취소', cls: 'btn-ghost' }, { label: 'QR 발급', cls: 'btn-primary', onClick: function (mm, btn) {
-        readRows();
-        var title = $('#is-title', m.el).value.trim(); if (!title) return toast('건명을 입력해 주십시오.', 'err');
-        var lines = [];
-        for (var i = 0; i < rows.length; i++) {
-          var r = rows[i]; if (!(r.amount > 0)) return toast((i + 1) + '번째 줄의 금액을 입력해 주십시오.', 'err');
-          if (r.kind === 'own' && !r.line_id) return toast((i + 1) + '번째 줄의 예산 항목을 선택해 주십시오.', 'err');
-          lines.push(r.kind === 'own' ? { line_id: r.line_id, memo: r.memo, vendor: r.vendor, spent_on: r.spent_on, amount: r.amount }
-            : { prop_dept: r.prop_dept || ctx.dept, prop_mok: r.prop_mok, prop_note: r.prop_note, memo: r.memo, vendor: r.vendor, spent_on: r.spent_on, amount: r.amount });
-        }
+      actions: [{ label: '닫기', cls: 'btn-ghost' }, { label: 'QR 발급', cls: 'btn-primary', onClick: function (mm, btn) {
+        var ip = issueOnce(); if (!ip) return;
         btn.disabled = true;
-        W.rpc('bgt_d_ticket_issue', { p_token: ctx.token, p_year: ctx.year, p_title: title, p_lines: lines }).then(function (r) {
-          mm.close(); toast('QR을 발급했습니다.'); done(); showQr({ ticket: { title: title, token: r.token } });
-        }).catch(function (e) { btn.disabled = false; fail(e); });
+        ip.then(function (r) { mm.close(); toast('QR을 발급했습니다.'); showQr({ ticket: { title: r.title, token: r.token } }); }).catch(function (e) { btn.disabled = false; fail(e); });
       } }] });
+    m.el.addEventListener('click', function (e) {
+      var b = e.target.closest('[data-cp]'); if (!b) return;
+      var ip = issueOnce(); if (!ip) return;
+      BudgetClip.copy(b.dataset.cp, ip).then(function () { toast('복사했습니다. 기안문 본문에서 Ctrl+V 하십시오. (지출 대기로 등록됨)'); }, fail);
+    });
     moneyFmt(m.el);
     m.el.addEventListener('input', function (e) { if (e.target.dataset && e.target.dataset.k === 'amount') updTotal(); });
+    m.el.addEventListener('change', function (e) { if (e.target.dataset && e.target.dataset.k === 'line_id') updInfo(); });
     m.el.addEventListener('change', function (e) { if (e.target.dataset && e.target.dataset.k === 'kind') { readRows(); drawRows(); } });
     m.el.addEventListener('click', function (e) { var b = e.target.closest('[data-rm]'); if (b) { readRows(); rows.splice(Number(b.dataset.rm), 1); drawRows(); } });
     $('#is-add', m.el).onclick = function () { readRows(); rows.push({ kind: 'own' }); drawRows(); };
     drawRows();
-    if (pre.line_id) { var amt = $('#is-rows [data-k=amount]', m.el); if (amt) amt.focus(); }
+    if (pre.line_id || pre.line_ids) { var amt = $('#is-rows [data-k=amount]', m.el); if (amt) amt.focus(); }
   }
 
   /* ───────── 관리자 화면 ───────── */
