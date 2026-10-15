@@ -39,6 +39,7 @@
       '<form id="lg-form" autocomplete="off"><label>부서<select id="lg-dept" class="in"><option value="">부서를 선택하십시오</option>' + depts.map(function (d) { return '<option' + (d.dept === sel ? ' selected' : '') + '>' + esc(d.dept) + '</option>'; }).join('') + '</select></label><div id="lg-pw"></div>' +
       '<button class="btn btn-primary block" id="lg-go" type="submit"></button></form>' +
       '<p class="muted lg-help">부서 대표자 누구나 부서를 선택하고 비밀번호를 입력해 입장할 수 있습니다. 다른 부서의 내용은 볼 수 없습니다. 비밀번호를 잊었다면 기획처(예산관리자)에 초기화를 요청하십시오.</p>' +
+      '<a class="lnk" href="budget-entry.html">' + ico('list', 15) + ' 입력판 시작하기 (코드 몰라도 입력 · AI 코드 매칭)</a><br>' +
       '<button class="lnk adm-link" id="lg-adm" type="button">' + ico('shield', 15) + ' 예산관리자 로그인</button></div></div>';
     var form = $('#lg-form', root);
     function pwMode() {
@@ -117,6 +118,7 @@
     root.innerHTML =
       '<header class="top"><div class="brand"><span class="logo">' + ico('coins', 20) + '</span><div><div class="b-t">' + esc(dept) + '</div><div class="b-s">' + year + '년도 세입·세출 예산안</div></div></div>' +
       '<div class="top-r"><span class="chip ' + (data.open ? 'c-green' : 'c-gray') + '">' + STATUS_TXT[s.status] + '</span>' +
+      '<a class="btn btn-secondary btn-sm" href="budget-entry.html?d=' + encodeURIComponent(dept) + '" title="올해 집행·내년 계획을 한 줄씩 입력하고 AI로 코드 매칭">' + ico('list', 16) + ' <span class="hide-sm">입력판</span></a>' +
       '<button class="btn btn-ghost btn-sm" id="pw-chg">' + ico('key', 16) + ' <span class="hide-sm">비밀번호 변경</span></button>' +
       '<button class="btn btn-ghost btn-sm" id="d-out">' + ico('logout', 16) + ' <span class="hide-sm">로그아웃</span></button></div></header>' +
       '<main class="page"><div class="period-bar"><span class="muted">작성 기간</span> <b>' + esc(periodText(s) || (s.status === 'open' ? '제한 없음' : '관리자가 정합니다')) + '</b>' + (s.note ? ' <span class="sep">·</span> ' + esc(s.note) : '') + '</div>' +

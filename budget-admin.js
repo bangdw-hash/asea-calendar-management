@@ -9,7 +9,7 @@
   var A = { year: null, tab: 'overview', data: null, rDept: null, rType: '세출', logs: null, codeType: '세출' };
   var rootEl = null;
 
-  var TABS = [['overview', '현황'], ['review', '검토·승인'], ['final', '확정안'], ['depts', '부서·비밀번호'], ['tickets', '결재 QR·집행'], ['codes', '코드표'], ['settings', '일정·한도·최종반영'], ['export', '내보내기·인쇄'], ['log', '이력']];
+  var TABS = [['overview', '현황'], ['review', '검토·승인'], ['final', '확정안'], ['entry', '입력판'], ['depts', '부서·비밀번호'], ['tickets', '결재 QR·집행'], ['codes', '코드표'], ['settings', '일정·한도·최종반영'], ['export', '내보내기·인쇄'], ['log', '이력']];
   var STATUS_TXT = { draft: '작성 준비중', open: '작성 중', closed: '마감', finalized: '최종 확정' };
 
   function arpc(fn, args) { args = args || {}; args.p_token = W.sess.token; return W.rpc(fn, args); }
@@ -32,7 +32,9 @@
   // 부서가 동시에 작성·제출하므로 탭을 옮길 때마다 서버의 최신 내용을 다시 받아 그립니다.
   function refresh(notify) { return load().then(function () { draw(); if (notify === true) toast('최신 내용을 불러왔습니다.'); }).catch(fail); }
 
+  var entryBoard = null;
   function draw() {
+    if (entryBoard) { entryBoard.destroy(); entryBoard = null; }
     var d = A.data, years = d.all_settings.map(function (s) { return s.year; });
     if (years.indexOf(A.year) < 0) years.unshift(A.year);
     var st = d.settings ? d.settings.status : 'draft';
@@ -49,7 +51,7 @@
     $$('[data-ad]', rootEl).forEach(function (b) { b.onclick = function () { A.tab = b.dataset.ad; refresh(); }; });
     $('#ad-refresh', rootEl).onclick = function () { refresh(true); };
     var body = $('#ad-body', rootEl);
-    ({ overview: overview, review: review, final: finalTab, depts: deptsTab, tickets: ticketsTab, codes: codesTab, settings: settingsTab, export: exportTab, log: logTab })[A.tab](body);
+    ({ overview: overview, review: review, final: finalTab, entry: entryTab, depts: deptsTab, tickets: ticketsTab, codes: codesTab, settings: settingsTab, export: exportTab, log: logTab })[A.tab](body);
   }
 
   /* ───────── 현황 ───────── */
@@ -154,6 +156,29 @@
   /* ───────── 결재 QR·집행 ───────── */
   function ticketsTab(box) {
     BudgetTicket.adminTab(box, { token: W.sess.token, year: A.year, data: ctxData(), depts: activeDepts().map(function (d) { return d.dept; }), refresh: function () { refresh(); } });
+  }
+
+  /* ───────── 입력판 (부서가 적은 올해 집행·내년 계획 / 기간 설정 / 기획처 수정) ───────── */
+  function entryTab(box) {
+    box.innerHTML = '<div class="loading">불러오는 중…</div>';
+    arpc('bgt_ea_overview', { p_year: A.year }).then(function (ov) {
+      var fin = ov.status === 'finalized';
+      box.innerHTML = '<div class="note info">' + ico('check', 16) + ' <span>부서가 적은 내용은 코드가 정해지는 즉시 항목·지출에 반영됩니다. 기본 입력 기간은 예산 연도 상태를 따릅니다(작성 중·마감=열림, 최종 확정=닫힘). 입학처처럼 기간이 다른 부서는 아래에서 별도 기간을 지정하십시오. 기획처는 아래 입력판에서 언제든(확정 전까지) 함께 고칠 수 있습니다.</span></div>' +
+        '<div class="tools"><div><b>입력판 전체 ' + (ov.entry_open ? '열림' : '닫힘') + '</b> <span class="muted">· 연도 상태: ' + (STATUS_TXT[ov.status] || '-') + '</span></div><button class="btn ' + (ov.entry_open ? 'btn-secondary' : 'btn-primary') + ' btn-sm" id="en-tg">' + (ov.entry_open ? '모든 부서 입력 잠시 닫기' : '입력판 다시 열기') + '</button></div>' +
+        '<div class="tbl-wrap"><table class="bt eadm-win"><thead><tr><th>부서</th><th class="num">입력 건수</th><th class="num">확인 필요·미판정</th><th>지금</th><th>별도 입력 기간 (비우면 기본을 따름)</th><th></th></tr></thead><tbody>' + ov.depts.map(function (x) {
+          return '<tr data-d="' + esc(x.dept) + '"><td><b>' + esc(x.dept) + '</b></td><td class="num">' + x.n + '</td><td class="num">' + (x.n_check ? '<b class="neg">' + x.n_check + '</b>' : '0') + '</td><td>' + (x.open_now ? '<span class="chip c-green">열림</span>' : '<span class="chip c-gray">닫힘</span>') + '</td>' +
+            '<td><input type="datetime-local" class="in sm" data-w="open" value="' + esc(W.toLocalInput(x.open_at)) + '"> ~ <input type="datetime-local" class="in sm" data-w="close" value="' + esc(W.toLocalInput(x.close_at)) + '"></td>' +
+            '<td><button class="btn btn-secondary btn-sm" data-ws="1">저장</button> <button class="btn btn-ghost btn-sm" data-wr="1">기본으로</button></td></tr>'; }).join('') + '</tbody></table></div>' +
+        '<div class="tools" style="margin-top:14px"><div><label class="inl">부서 <select id="en-dept" class="in sm"><option value="">전체 부서</option>' + ov.depts.map(function (x) { return '<option>' + esc(x.dept) + '</option>'; }).join('') + '</select></label> <span class="muted">' + (fin ? '최종 확정된 연도입니다. 수정하려면 일정·한도에서 상태를 바꾸십시오.' : '고친 내용은 변경 이력에 「관리자」로 남습니다.') + '</span></div></div><div id="en-board"></div>';
+      var done = function (m) { return function () { toast(m); entryTab(box); }; };
+      $('#en-tg', box).onclick = function () { arpc('bgt_ea_toggle', { p_year: A.year, p_open: !ov.entry_open }).then(done('저장했습니다.')).catch(fail); };
+      $$('tr[data-d]', box).forEach(function (tr) {
+        $('[data-ws]', tr).onclick = function () { arpc('bgt_ea_window', { p_dept: tr.dataset.d, p_open_at: W.fromLocalInput($('[data-w=open]', tr).value) || null, p_close_at: W.fromLocalInput($('[data-w=close]', tr).value) || null }).then(done(tr.dataset.d + ' 입력 기간을 저장했습니다.')).catch(fail); };
+        $('[data-wr]', tr).onclick = function () { arpc('bgt_ea_window', { p_dept: tr.dataset.d, p_open_at: null, p_close_at: null }).then(done(tr.dataset.d + '은(는) 기본 기간을 따릅니다.')).catch(fail); };
+      });
+      entryBoard = BudgetEntry.mount($('#en-board', box), { token: W.sess.token, year: A.year, role: 'admin', dept: '', depts: ov.depts.map(function (x) { return x.dept; }) });
+      $('#en-dept', box).onchange = function () { if (entryBoard) entryBoard.setDept(this.value); };
+    }).catch(fail);
   }
 
   /* ───────── 부서·비밀번호 ───────── */
