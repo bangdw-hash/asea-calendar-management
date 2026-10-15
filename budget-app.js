@@ -339,6 +339,7 @@
         h += '<div class="empty">' + ico('list', 28) + '<p>등록된 ' + type + ' 항목이 없습니다.' + (ed ? '<br>「항목 추가」로 새 항목을 등록하십시오.' : '') + '</p></div>';
         return h;
       }
+      if (ctx.onSpendQrMulti && type === '세출') h += '<div class="sel-bar" hidden><span><b class="sel-n">0</b>개 항목 선택됨 <small class="muted">(코드·명칭 칸을 누르면 선택/해제)</small></span><span class="acts"><button class="btn btn-ghost btn-sm" data-act="sel-clear" type="button">선택 해제</button><button class="btn btn-primary btn-sm" data-act="sel-go" type="button">' + ico('qr', 16) + ' 지출 요청(QR)</button></span></div>';
       h += '<div class="tbl-wrap"><table class="bt" data-type="' + type + '"><thead><tr>' +
         '<th class="c-code">코드</th><th class="c-name">세부명칭 / 2026 산출식</th><th class="num">2026 예산</th><th class="num">' + usedLabel(type) + '</th><th class="num">연말 추정</th>' +
         '<th class="c-calc">2027 산출식</th><th class="num">2027 요구액</th><th class="num">증감</th><th class="c-reason">증감 사유</th><th class="c-act"></th></tr></thead><tbody>';
@@ -351,7 +352,6 @@
         if (ui.open[l.id]) h += spendRow(l, ed, type);
       });
       h += '</tbody></table></div>';
-      if (ctx.onSpendQrMulti && type === '세출') h += '<div class="sel-bar" hidden><span><b class="sel-n">0</b>개 항목 선택됨 <small class="muted">(코드·명칭 칸을 누르면 선택/해제)</small></span><span class="acts"><button class="btn btn-ghost btn-sm" data-act="sel-clear" type="button">선택 해제</button><button class="btn btn-primary btn-sm" data-act="sel-go" type="button">' + ico('qr', 16) + ' 지출 요청(QR)</button></span></div>';
       return h;
     }
     function selIds() { return linesOf('세출').filter(function (l) { return ui.sel[l.id]; }).map(function (l) { return l.id; }); }

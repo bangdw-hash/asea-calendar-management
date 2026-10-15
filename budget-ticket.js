@@ -430,6 +430,58 @@
     if (pre.line_id || pre.line_ids) { var amt = $('#is-rows [data-k=amount]', m.el); if (amt) amt.focus(); }
   }
 
+  /* ───────── 지출 요청(간편): 붙여넣어질 모습 그대로 보면서 금액만 입력 ───────── */
+  function quickModal(ctx, done, ids) {
+    var data = ctx.getData(), used = usedMap(data.spend), issued = null, qpng = null, focus = null;
+    var st = ids.map(function (id) { return { line_id: id, amount: 0 }; });
+    function lineOf(id) { return data.lines.filter(function (x) { return x.id === id; })[0]; }
+    function calcRows() {
+      var run = {};
+      return st.map(function (r) {
+        var l = lineOf(r.line_id); if (!l) return { code: '-', annual: null, prior: null, cur: r.amount || 0, remain: null };
+        var prior = (used[l.id] || 0) + (run[l.id] || 0), annual = Number(l.base_amount) || 0; run[l.id] = (run[l.id] || 0) + (r.amount || 0);
+        return { code: l.mok + ' ' + l.name, annual: annual, prior: prior, cur: r.amount || 0, remain: annual - prior - (r.amount || 0) };
+      });
+    }
+    var first = lineOf(ids[0]), defTitle = first ? first.name + (ids.length > 1 ? ' 외 ' + (ids.length - 1) + '건' : '') + ' 지출' : '지출 요청';
+    var m = W.modal({ title: '지출 요청', cls: 'wide', body: '<div class="form"><label>건명 (기안 제목)<input id="q-title" class="in" maxlength="200" value="' + esc(defTitle) + '"></label></div>' +
+      '<div id="q-pv" class="q-pv"></div><p class="muted q-note" id="q-note">이번 집행 금액을 표에 바로 입력하십시오. 복사하면 QR이 발급되어 「반영 전(지출 대기)」으로 등록되고, 기안문에서 Ctrl+V 하면 이 모습 그대로 붙습니다.</p>',
+      actions: [{ label: '닫기', cls: 'btn-ghost' },
+        { label: 'QR만', cls: 'btn-ghost', onClick: function () { go('qr'); } }, { label: '표만', cls: 'btn-ghost', onClick: function () { go('table'); } },
+        { label: 'QR + 표 복사', cls: 'btn-primary', onClick: function () { go('both'); } }] });
+    function draw() {
+      var rows = calcRows(), box = $('#q-pv', m.el);
+      box.innerHTML = BudgetClip.bothHtml(qpng, rows, { cur: function (i, r) {
+        return issued ? won(r.cur) : '<input class="q-in" data-i="' + i + '" inputmode="numeric" value="' + (st[i].amount ? (focus === i ? st[i].amount : won(st[i].amount)) : '') + '" placeholder="금액" aria-label="이번 집행 금액">';
+      } });
+      if (focus != null) { var inp = $('.q-in[data-i="' + focus + '"]', box); if (inp) { inp.focus(); var l = inp.value.length; inp.setSelectionRange(l, l); } }
+    }
+    function lock() { $('#q-title', m.el).disabled = true; }
+    function issueOnce() {
+      if (issued) return issued;
+      var title = $('#q-title', m.el).value.trim(); if (!title) return toast('건명을 입력해 주십시오.', 'err');
+      for (var i = 0; i < st.length; i++) if (!(st[i].amount > 0)) return toast((i + 1) + '번째 항목의 이번 집행 금액을 입력해 주십시오.', 'err');
+      var snap = calcRows(), lines = st.map(function (r) { return { line_id: r.line_id, memo: title, amount: r.amount }; });
+      lock();
+      issued = W.rpc('bgt_d_ticket_issue', { p_token: ctx.token, p_year: ctx.year, p_title: title, p_lines: lines }).then(function (r) {
+        done(); var url = qrUrl(r.token); try { qpng = BudgetClip.qrPng(url); } catch (e) { qpng = null; } focus = null; draw();
+        $('#q-note', m.el).textContent = 'QR이 발급되어 지출 대기로 등록되었습니다. 기안문에서 Ctrl+V 하십시오. 결재 후 QR을 스캔해 「반영」하면 집행으로 확정됩니다.';
+        return { token: r.token, title: title, url: url, rows: snap };
+      }).catch(function (e) { issued = null; $('#q-title', m.el).disabled = false; throw e; });
+      return issued;
+    }
+    function go(kind) {
+      var ip = issueOnce(); if (!ip) return;
+      BudgetClip.copy(kind, ip).then(function () { toast('복사했습니다. 기안문 본문에서 Ctrl+V 하십시오. (지출 대기로 등록됨)'); }, fail);
+    }
+    m.el.addEventListener('input', function (e) {
+      var t = e.target; if (!t.classList || !t.classList.contains('q-in')) return;
+      var i = Number(t.dataset.i); st[i].amount = num(t.value) || 0; focus = i; draw();
+    });
+    m.el.addEventListener('focusout', function (e) { if (e.target.classList && e.target.classList.contains('q-in')) { setTimeout(function () { if (!m.el.contains(document.activeElement) || !document.activeElement.classList.contains('q-in')) { focus = null; draw(); } }, 0); } });
+    draw(); var f = $('.q-in', m.el); if (f) { focus = 0; f.focus(); }
+  }
+
   /* ───────── 관리자 화면 ───────── */
   var AS = { sub: 'all', dept: '', status: '' };
   var SUBS = [['all', '전체 QR'], ['pending', '미배정'], ['adjust', '조정 필요'], ['diff', '결재액 불일치'], ['reserve', '예비비 사용'], ['void', '무효']];
@@ -507,7 +559,7 @@
 
   window.BudgetTicket = {
     deptTab: deptTab, adminTab: adminTab, showQr: showQr, copyQr: copyQr, downloadQr: downloadQr, qrUrl: qrUrl,
-    issue: function (ctx, pre) { issueModal(ctx, ctx.onChanged || function () {}, pre); }, lineTitle: lineTitle, statusChip: statusChip, STATUS: STATUS,
+    issue: function (ctx, pre) { var d = ctx.onChanged || function () {}; var ids = pre && (pre.line_ids || (pre.line_id ? [pre.line_id] : null)); if (ids && ids.length) quickModal(ctx, d, ids); else issueModal(ctx, d, pre); }, lineTitle: lineTitle, statusChip: statusChip, STATUS: STATUS,
     diffHtml: diffHtml, negText: negText, moneyFmt: moneyFmt, askReason: askReason, eventsModal: eventsModal
   };
 })();

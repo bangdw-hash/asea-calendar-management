@@ -47,7 +47,8 @@
   }
   // QR 왼쪽 + 현황표 오른쪽: 표 하나(QR 칸을 세로로 합친 구조). 중첩 표·float 은 편집기에서 깨지기 쉬워
   // 모든 서식을 속성(border·bgcolor·width·align)과 style 양쪽에 중복 지정합니다.
-  function bothHtml(png, rows) {
+  function bothHtml(png, rows, o) {
+    o = o || {};
     var B = '1px solid #444', base = 'font-family:' + FONT + ';font-size:12px;';
     var cell = function (w, al, bg, st, inner, extra) {
       return '<td' + (w ? ' width="' + w + '"' : '') + ' align="' + al + '"' + (bg ? ' bgcolor="' + bg + '"' : '') + (extra || '') +
@@ -58,14 +59,14 @@
     var d = new Date(), ds = d.getFullYear() + '.' + (d.getMonth() + 1) + '.' + d.getDate();
     var n = rows.length + (rows.length > 1 ? 1 : 0) + 2; // 머리글 + 자료 + (합계) + 안내
     var h = '<table border="1" cellspacing="0" cellpadding="4" width="654" bordercolor="#444444" style="width:654px;border-collapse:collapse;border:' + B + '"><tbody><tr>' +
-      cell(126, 'center', '', 'text-align:center;vertical-align:middle;padding:6px;', qrImg(png) + '<div style="font-size:10px;color:#444;margin-top:4px">결재 QR<br>스캔하여 반영</div>', ' rowspan="' + n + '" valign="middle"') +
+      cell(126, 'center', '', 'text-align:center;vertical-align:middle;padding:6px;', (png ? qrImg(png) : '<div style="width:113px;height:113px;border:1px dashed #999;font-size:11px;color:#666;text-align:center;line-height:1.5;padding-top:40px;box-sizing:border-box">QR<br>복사 시 생성</div>') + '<div style="font-size:10px;color:#444;margin-top:4px">결재 QR<br>스캔하여 반영</div>', ' rowspan="' + n + '" valign="middle"') +
       head.map(function (t, i) { return cell(W[i], 'center', '#E8F0FE', 'text-align:center;font-weight:bold;white-space:nowrap;', t); }).join('') + '</tr>';
-    rows.forEach(function (r) {
+    rows.forEach(function (r, ri) {
       if (r.annual != null) { tot.annual += r.annual; tot.prior += r.prior; tot.remain += r.remain; }
       tot.cur += r.cur;
       var neg = r.remain != null && r.remain < 0, rt = 'text-align:right;white-space:nowrap;';
       h += '<tr>' + cell(W[0], 'left', '', '', esc(r.code)) + cell(W[1], 'right', '', rt, won(r.annual)) + cell(W[2], 'right', '', rt, won(r.prior)) +
-        cell(W[3], 'right', '#FFF7E0', rt + 'font-weight:bold;', won(r.cur)) + cell(W[4], 'right', '', rt + 'font-weight:bold;' + (neg ? 'color:#CC0000;' : ''), neg ? '<font color="#CC0000">' + won(r.remain) + '</font>' : won(r.remain)) + '</tr>';
+        cell(W[3], 'right', '#FFF7E0', rt + 'font-weight:bold;', o.cur ? o.cur(ri, r) : won(r.cur)) + cell(W[4], 'right', '', rt + 'font-weight:bold;' + (neg ? 'color:#CC0000;' : ''), neg ? '<font color="#CC0000">' + won(r.remain) + '</font>' : won(r.remain)) + '</tr>';
     });
     if (rows.length > 1) {
       var g = 'font-weight:bold;white-space:nowrap;', ng = tot.remain < 0;
