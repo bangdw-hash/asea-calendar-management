@@ -32,7 +32,7 @@
     XLSX.utils.book_append_sheet(wb, g, '안내');
     SHEETS.forEach(function (sh) {
       var ws = XLSX.utils.aoa_to_sheet([[o.year + '년도 ' + o.dept + ' · ' + sh.name.replace('_', ' ')], ['※ 4번째 줄부터 한 줄에 한 건씩 적습니다. 코드는 적지 않습니다.'], sh.cols]);
-      ws['!cols'] = sh.w.map(function (w) { return { wch: w }; });
+      ws['!cols'] = sh.w.map(function (w) { return { wch: w }; }); W.xlsxMoney(ws, [String.fromCharCode(64 + sh.cols.length)], 4, 503);
       XLSX.utils.book_append_sheet(wb, ws, sh.name);
     });
     download(wb, o.year + '_' + o.dept + '_입력양식.xlsx');

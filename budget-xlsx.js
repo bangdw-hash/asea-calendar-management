@@ -75,7 +75,7 @@
       ws['M' + r] = { t: 's', f: 'IF(AND(K' + r + '="",ISNUMBER(I' + r + '),OR(AND(N(F' + r + ')>0,ABS(I' + r + '/MAX(F' + r + ',1)-1)>' + (thr / 100) + '),AND(N(F' + r + ')=0,I' + r + '>0))),"사유 필요","")' };
       ws['N' + r] = { t: 's', f: 'D' + r + '&"|"&E' + r };
     }
-    ws['!ref'] = 'A1:N' + last;
+    ws['!ref'] = 'A1:N' + last; W.xlsxMoney(ws, ['F', 'G', 'H', 'I'], HEAD_ROW + 1, last);
     ws['!cols'] = [{ hidden: true, wch: 2 }, { wch: 14 }, { wch: 6 }, { wch: 9 }, { wch: 42 }, { wch: 15 }, { wch: 17 }, { wch: 14 }, { wch: 17 }, { wch: 36 }, { wch: 36 }, { wch: 9 }, { wch: 10 }, { hidden: true, wch: 2 }];
     ws['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 8 } }, { s: { r: 1, c: 0 }, e: { r: 1, c: 12 } }, { s: { r: 2, c: 4 }, e: { r: 2, c: 7 } }, { s: { r: 2, c: 8 }, e: { r: 2, c: 12 } }];
     return { ws: ws, count: lines.length };
@@ -97,7 +97,7 @@
       ws['J' + r] = { t: 's', f: 'C' + r + '&"|"&D' + r };
       ws['I' + r] = { t: 's', f: 'IF(AND(C' + r + '="",D' + r + '="",H' + r + '=""),"",IF(ISNUMBER(MATCH(J' + r + ",'" + sn.item + "'!$N$5:$N$600,0)),IF(H" + r + '="","금액 필요",""),"항목 없음"))' };
     }
-    ws['!ref'] = 'A1:J' + last;
+    ws['!ref'] = 'A1:J' + last; W.xlsxMoney(ws, ['H'], HEAD_ROW + 1, last);
     ws['!cols'] = [{ hidden: true, wch: 2 }, { wch: 14 }, { wch: 9 }, { wch: 40 }, { wch: 12 }, { wch: 34 }, { wch: 20 }, { wch: 15 }, { wch: 12 }, { hidden: true, wch: 2 }];
     ws['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 7 } }, { s: { r: 1, c: 0 }, e: { r: 1, c: 8 } }];
     return { ws: ws, count: rows.length };
