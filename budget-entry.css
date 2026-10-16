@@ -7,7 +7,7 @@
 .etool .acts{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .esum{display:flex;gap:18px;align-items:center;flex-wrap:wrap;padding:8px 12px;background:var(--primary-lt);border-radius:var(--r);margin-bottom:10px;font-size:13px}
 .esum b.neg{color:var(--red)}.esum b.warn{color:var(--orange)}.esum .inl{margin-left:auto}.eonline{display:flex;gap:4px;flex-wrap:wrap}
-.etbl{table-layout:fixed;width:100%;min-width:0}.etbl th,.etbl td{padding:5px 6px;vertical-align:top}.etbl .in.sm{padding:6px 8px;font-size:13px;width:100%}
+table.bt.etbl{table-layout:fixed;width:100%;min-width:1060px}.etbl th,.etbl td{padding:5px 6px;vertical-align:top}.etbl .in.sm{padding:6px 8px;font-size:13px;width:100%}
 .etbl td.en{width:34px;text-align:center;color:var(--text-2);font-size:12px}.etbl td.ed{white-space:nowrap;font-size:12px}
 .etbl tr.eadd td{background:#f8fbff;border-bottom:2px solid var(--primary)}
 .etbl tr.dirty td{background:#fffbeb}.etbl tr.locked td{background:#f1f5f9}.etbl tr.er.chk td.ec{box-shadow:inset 3px 0 0 var(--orange)}
@@ -22,4 +22,11 @@
 .elogin{max-width:440px;margin:40px auto}
 .qa-card{margin-top:10px}.qa-ex{margin:6px 0;font-size:13px;background:var(--bg);padding:6px 10px;border-radius:var(--r)}
 .eadm-win td{vertical-align:middle}.eadm-win .in{padding:5px 8px;font-size:13px}
-@media (max-width:900px){.etbl{min-width:900px}}
+
+
+.eb-wrap .ws-tabs,.eb-wrap .ws-tabs .ws-tab{overflow:visible;overflow-y:visible}.eb-wrap .ws-tabs{scrollbar-width:none}.eb-wrap .ws-tabs::-webkit-scrollbar{display:none}
+.ecs{margin-top:16px;border:1px solid var(--line,#e2e8f0);border-radius:var(--r);background:#fff;padding:10px 12px}.ecs-h{margin-bottom:6px;font-size:13px}.ecs-t th,.ecs-t td{padding:5px 8px}.ecs-tot td{background:var(--primary-lt)}
+.etest{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px;padding:10px 12px;border-radius:var(--r);background:#ede9fe;color:#5b21b6;font-size:13px}.etest .acts{margin-left:auto;display:flex;gap:8px}
+.eurl2{margin-top:12px;padding-top:10px;border-top:1px dashed var(--line,#cbd5e1)}
+
+.org-h{margin:18px 0 6px;font-size:15px}.org-t td{vertical-align:middle}.org-add{margin-top:8px}.org-form{margin:6px 0 10px}
