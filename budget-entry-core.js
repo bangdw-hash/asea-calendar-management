@@ -9,6 +9,7 @@
 (function () {
   var W = window.BW, $ = W.$, $$ = W.$$, esc = W.esc, won = W.won, num = W.num, ico = W.ico, toast = W.toast;
   var PH = { actual: '올해 집행', plan: '내년 계획' };
+  var PT = [['actual', '세출', '올해 집행 · 세출'], ['actual', '세입', '올해 수납 · 세입'], ['plan', '세출', '내년 계획 · 세출'], ['plan', '세입', '내년 계획 · 세입']];
   var SRC = { none: ['미판정', 'gr'], ai: ['AI', 'ai'], manual: ['직접 선택', 'ok'], admin: ['기획처', 'ok'] };
   var KIND = { add: '입력', edit: '수정', code: '코드 변경', delete: '삭제' };
   var FIELD = { entry_date: '일자', memo: '내용', vendor: '거래처', amount: '금액', calc: '산출 근거', mok: '코드' };
@@ -117,18 +118,16 @@
       var p = counts(), dis = !canEdit();
       var h = '<div class="eb-wrap">' +
         (dis ? '<div class="note warn">' + ico('lock', 16) + ' <span>지금은 입력할 수 없는 기간입니다.' + (S.win && (S.win.open_at || S.win.close_at) ? ' 입력 가능 기간: ' + (S.win.open_at ? W.fmtDT(S.win.open_at) : '') + ' ~ ' + (S.win.close_at ? W.fmtDT(S.win.close_at) : '') : '') + ' 내용은 조회만 가능합니다.' + (o.testUrl ? ' <a href="' + esc(o.testUrl) + '">시험용 주소</a>에서는 연습으로 입력해 볼 수 있습니다.' : '') + '</span></div>' : '') +
-        '<div class="etabs"><div class="ws-tabs" id="e-ph">' + ['actual', 'plan'].map(function (k) { return '<button class="ws-tab' + (S.phase === k ? ' on' : '') + '" data-ph="' + k + '">' + PH[k] + '</button>'; }).join('') + '</div>' +
-        '<div class="ws-tabs sub" id="e-ty">' + ['세출', '세입'].map(function (k) { return '<button class="ws-tab' + (S.type === k ? ' on' : '') + '" data-ty="' + k + '">' + k + '</button>'; }).join('') + '</div></div>' +
+        '<div class="etabs c"><div class="ws-tabs" id="e-pt">' + PT.map(function (x) { return '<button class="ws-tab' + (S.phase === x[0] && S.type === x[1] ? ' on' : '') + '" data-pt="' + x[0] + '|' + x[1] + '">' + x[2] + '</button>'; }).join('') + '</div>' +
+        '<div class="acts etabs-r"><button class="btn btn-secondary btn-sm" id="e-qa" type="button">코드 질문하기</button><button class="btn btn-secondary btn-sm" id="e-xl" type="button">' + ico('download', 16) + ' 양식 받기</button>' +
+        '<button class="btn btn-secondary btn-sm" id="e-up" type="button"' + (dis ? ' disabled' : '') + '>' + ico('plus', 16) + ' 엑셀 올리기</button><input type="file" id="e-file" accept=".xlsx,.xls" hidden></div></div>' +
         '<p class="muted etip">' + (S.phase === 'actual' ? '올해 실제로 ' + (S.type === '세출' ? '쓴' : '받은') + ' 내역을 한 줄에 한 건씩 적습니다. 코드는 적지 않아도 됩니다. 다 적은 뒤 「AI로 코드 매칭하기」를 누르십시오.' : '내년에 쓸(받을) 계획을 한 줄에 하나씩 적습니다. 코드는 적지 않아도 됩니다. 다 적은 뒤 「AI로 코드 매칭하기」를 누르십시오.') + '</p>' +
-        '<div class="etool"><div class="acts"><button class="btn btn-primary" id="e-ai" type="button"' + (dis ? ' disabled' : '') + '>' + ico('check', 16) + ' AI로 코드 매칭하기' + (p.c.none ? ' <span class="cnt hot">' + p.c.none + '</span>' : '') + '</button>' +
-        '<button class="btn btn-secondary" id="e-qa" type="button">코드 질문하기</button><button class="btn btn-secondary" id="e-xl" type="button">' + ico('download', 16) + ' 양식 받기</button>' +
-        '<button class="btn btn-secondary" id="e-up" type="button"' + (dis ? ' disabled' : '') + '>' + ico('plus', 16) + ' 엑셀 올리기</button><input type="file" id="e-file" accept=".xlsx,.xls" hidden></div>' +
-        '<div class="acts"><span class="muted" id="e-stat"></span><button class="btn btn-primary" id="e-save" type="button"' + (dis ? ' disabled' : '') + '>저장</button></div></div>' +
-        '<div class="esum"><span>이 화면 <b>' + p.n + '건</b></span><span>합계 <b>' + won(p.sum) + '원</b></span><span>미판정 <b class="' + (p.c.none ? 'neg' : '') + '">' + p.c.none + '</b></span><span>확인 필요 <b class="' + (p.c.chk ? 'warn' : '') + '">' + p.c.chk + '</b></span>' +
-        '<label class="inl"><input type="checkbox" id="e-only"' + (S.only ? ' checked' : '') + '> 확인 필요·미판정만 보기</label>' +
-        '<span class="eonline" id="e-online"></span></div>' +
+        '<div class="esum"><span id="e-sumv"></span><label class="inl"><input type="checkbox" id="e-only"' + (S.only ? ' checked' : '') + '> 확인 필요·미판정만 보기</label></div>' +
         '<div class="tbl-wrap"><table class="bt etbl"><thead>' + heads() + '</thead><tbody id="e-body">' + addRowHtml() + view().map(trHtml).join('') + '</tbody></table></div>' +
-        (view().length ? '' : '<div class="empty small"><p>입력한 내용이 없습니다. 위 줄에 첫 내용을 적고 Enter를 누르십시오.</p></div>') + '<div id="e-codesum"></div></div>';
+        '<div class="empty small" id="e-empty"><p>입력한 내용이 없습니다. 위 줄에 첫 내용을 적고 Enter를 누르십시오.</p></div><div id="e-codesum"></div>' +
+
+        '<div class="ebar"><div class="acts"><button class="btn btn-primary" id="e-ai" type="button"' + (dis ? ' disabled' : '') + '>' + ico('check', 16) + ' AI로 코드 매칭하기' + (p.c.none ? ' <span class="cnt hot">' + p.c.none + '</span>' : '') + '</button>' +
+        '<span class="eonline" id="e-online"></span></div><div class="acts"><span class="muted" id="e-stat"></span><button class="btn btn-primary" id="e-save" type="button"' + (dis ? ' disabled' : '') + '>저장</button></div></div></div>';
       root.innerHTML = h;
       updStat(); updOnline(); updCodeSum();
     }
@@ -151,7 +150,14 @@
       tr.replaceWith.apply(tr, Array.prototype.slice.call(tmp.children)); updCodeSum();
     }
     // 코드별 합계: 같은 코드의 여러 줄은 한 항목으로 합쳐 예산에 반영됩니다. 그 결과를 미리 보여 줍니다.
+    function updSum() {
+      var p = counts(), v = $('#e-sumv', root); if (!v) return;
+      v.innerHTML = '<span>이 화면 <b>' + p.n + '건</b></span><span>합계 <b>' + won(p.sum) + '원</b></span><span>미판정 <b class="' + (p.c.none ? 'neg' : '') + '">' + p.c.none + '</b></span><span>확인 필요 <b class="' + (p.c.chk ? 'warn' : '') + '">' + p.c.chk + '</b></span>';
+      var em = $('#e-empty', root); if (em) em.hidden = p.n > 0;
+      var ai = $('#e-ai', root); if (ai) { var c = $('.cnt', ai); if (p.c.none) { if (!c) ai.insertAdjacentHTML('beforeend', ' <span class="cnt hot">' + p.c.none + '</span>'); else c.textContent = p.c.none; } else if (c) c.remove(); }
+    }
     function updCodeSum() {
+      updSum();
       var el = $('#e-codesum', root); if (!el) return;
       var g = {};
       list().forEach(function (r) {
@@ -360,6 +366,7 @@
     function on(type, fn) { root.addEventListener(type, fn); hs.push([type, fn]); }
     on('click', function (e) {
       var t = e.target;
+      var pt = t.closest('[data-pt]'); if (pt) { var q = pt.dataset.pt.split('|'); S.phase = q[0]; S.type = q[1]; return draw(); }
       var ph = t.closest('[data-ph]'); if (ph) { S.phase = ph.dataset.ph; return draw(); }
       var ty = t.closest('[data-ty]'); if (ty) { S.type = ty.dataset.ty; return draw(); }
       if (t.closest('#ea-add')) return addFromInputs();

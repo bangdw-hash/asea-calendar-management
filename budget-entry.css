@@ -30,3 +30,10 @@ table.bt.etbl{table-layout:fixed;width:100%;min-width:1060px}.etbl th,.etbl td{p
 .eurl2{margin-top:12px;padding-top:10px;border-top:1px dashed var(--line,#cbd5e1)}
 
 .org-h{margin:18px 0 6px;font-size:15px}.org-t td{vertical-align:middle}.org-add{margin-top:8px}.org-form{margin:6px 0 10px}
+
+/* C안: 탭 한 줄 + 아래 고정 작업 바 */
+.etabs.c{display:flex;justify-content:space-between;align-items:flex-end;gap:10px;flex-wrap:wrap}.etabs.c .ws-tabs{margin-bottom:0}.etabs-r{display:flex;gap:6px;flex-wrap:wrap;padding-bottom:4px}
+.ebar{position:sticky;bottom:0;z-index:6;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-top:12px;padding:10px 14px;background:#fff;border:1px solid var(--primary);border-radius:var(--r);box-shadow:var(--sh-lg)}
+.ebar .acts{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+table.bt.ecs-t{min-width:0}.empty.small[hidden]{display:none}
+#e-sumv{display:flex;gap:18px;flex-wrap:wrap}
