@@ -52,7 +52,7 @@
         });
       });
     });
-    var ws1 = XLSX.utils.aoa_to_sheet(rows); setCols(ws1, [10, 18, 10, 48, 36, 16]); XLSX.utils.book_append_sheet(wb, ws1, '기초자료');
+    var ws1 = XLSX.utils.aoa_to_sheet(rows); setCols(ws1, [10, 18, 10, 48, 36, 16]); W.xlsxMoney(ws1, ['F'], 2, rows.length); XLSX.utils.book_append_sheet(wb, ws1, '기초자료');
 
     // 2) 종합
     var tin = 0, tout = 0; depts.forEach(function (d) { tin += tt.get(d, '세입').amt; tout += tt.get(d, '세출').amt; });
@@ -63,7 +63,7 @@
         tt.get(d, '세입').n ? W.stageLabel(statusOf(ctx, d, '세입')) : '-', tt.get(d, '세출').n ? W.stageLabel(statusOf(ctx, d, '세출')) : '-']);
     });
     sum.push(['', '합계', tin, 100, tout, 100, tin - tout, '', '']);
-    var ws2 = XLSX.utils.aoa_to_sheet(sum); setCols(ws2, [6, 22, 16, 9, 16, 9, 18, 12, 12]); XLSX.utils.book_append_sheet(wb, ws2, '종합');
+    var ws2 = XLSX.utils.aoa_to_sheet(sum); setCols(ws2, [6, 22, 16, 9, 16, 9, 18, 12, 12]); W.xlsxMoney(ws2, ['C', 'E', 'G'], 4, sum.length); XLSX.utils.book_append_sheet(wb, ws2, '종합');
 
     // 3) 증감분석
     var an = [['부서', '구분', '코드', '코드명', '세부명칭', ctx.baseYear + ' 산출식', ctx.baseYear + ' 예산', ctx.baseYear + ' 사용(실적)', '연말 추정', Y + ' 산출식', Y + ' 요구액', '증감액', '증감률(%)', '증감 사유']];
@@ -75,13 +75,13 @@
         });
       });
     });
-    var ws3 = XLSX.utils.aoa_to_sheet(an); setCols(ws3, [16, 6, 8, 20, 40, 30, 14, 14, 14, 30, 14, 14, 10, 36]); XLSX.utils.book_append_sheet(wb, ws3, '증감분석');
+    var ws3 = XLSX.utils.aoa_to_sheet(an); setCols(ws3, [16, 6, 8, 20, 40, 30, 14, 14, 14, 30, 14, 14, 10, 36]); W.xlsxMoney(ws3, ['G', 'H', 'I', 'K', 'L'], 2, an.length); XLSX.utils.book_append_sheet(wb, ws3, '증감분석');
 
     // 4) 기준연도 사용내역
     var sp = [['부서', '구분', '코드', '세부명칭', '일자', '적요', '거래처', '금액']];
     var byId = {}; ctx.lines.forEach(function (l) { byId[l.id] = l; });
     ctx.spend.forEach(function (s) { var l = byId[s.line_id]; if (l && keep(l)) sp.push([l.dept, l.type, l.mok, l.name, s.spent_on || '', s.memo, s.vendor, Number(s.amount) || 0]); });
-    var ws4 = XLSX.utils.aoa_to_sheet(sp); setCols(ws4, [16, 6, 8, 40, 12, 30, 20, 14]); XLSX.utils.book_append_sheet(wb, ws4, ctx.baseYear + '사용내역');
+    var ws4 = XLSX.utils.aoa_to_sheet(sp); setCols(ws4, [16, 6, 8, 40, 12, 30, 20, 14]); W.xlsxMoney(ws4, ['H'], 2, sp.length); XLSX.utils.book_append_sheet(wb, ws4, ctx.baseYear + '사용내역');
 
     saveWorkbook(wb, '예산안_' + Y + (opt.confirmedOnly ? '_확정분' : '') + '.xlsx');
   }

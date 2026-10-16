@@ -452,7 +452,7 @@
     function draw() {
       var rows = calcRows(), box = $('#q-pv', m.el);
       box.innerHTML = BudgetClip.bothHtml(qpng, rows, { cur: function (i, r) {
-        return issued ? won(r.cur) : '<input class="q-in" data-i="' + i + '" inputmode="numeric" value="' + (st[i].amount ? (focus === i ? st[i].amount : won(st[i].amount)) : '') + '" placeholder="금액" aria-label="이번 집행 금액">';
+        return issued ? won(r.cur) : '<input class="q-in" data-i="' + i + '" inputmode="numeric" value="' + (st[i].amount ? won(st[i].amount) : '') + '" placeholder="금액" aria-label="이번 집행 금액">';
       } });
       if (focus != null) { var inp = $('.q-in[data-i="' + focus + '"]', box); if (inp) { inp.focus(); var l = inp.value.length; inp.setSelectionRange(l, l); } }
     }

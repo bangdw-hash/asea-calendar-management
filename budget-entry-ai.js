@@ -20,6 +20,9 @@
         return { id: r.id, type: r.type, phase: r.phase, memo: r.memo, vendor: r.vendor, amount: r.amount, calc: r.calc };
       }) }).then(function (j) { return j.results; });
     },
+    ping: function (ctx) {   // AI 접속 점검(서버 키·모델·네트워크). 20초 안에 응답이 없으면 실패로 봅니다.
+      return Promise.race([call({ token: ctx.token, year: ctx.year, dept: ctx.dept || null, mode: 'ping' }), new Promise(function (_, rej) { setTimeout(function () { rej(new Error('응답 시간이 초과되었습니다.')); }, 20000); })]);
+    },
     ask: function (ctx, q) { return call({ token: ctx.token, year: ctx.year, dept: ctx.dept || null, mode: 'qa', question: q }); }
   };
 })();

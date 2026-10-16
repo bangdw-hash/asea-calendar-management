@@ -37,3 +37,10 @@ table.bt.etbl{table-layout:fixed;width:100%;min-width:1060px}.etbl th,.etbl td{p
 .ebar .acts{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 table.bt.ecs-t{min-width:0}.empty.small[hidden]{display:none}
 #e-sumv{display:flex;gap:18px;flex-wrap:wrap}
+/* AI 접속 상태등 */
+.aist{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 8px;padding:6px 10px;border:1px solid var(--bd,#dadce0);border-radius:var(--r);background:#fff;font-size:13px}
+.aist-dot{width:10px;height:10px;border-radius:50%;background:#9aa0a6;flex:none}
+.aist.ok .aist-dot{background:var(--green)}.aist.bad .aist-dot{background:var(--red)}
+.aist.wait .aist-dot{animation:aist-p 1s infinite alternate}@keyframes aist-p{from{opacity:.3}to{opacity:1}}
+.aist-c{margin-left:auto;color:#3c4043}
+.aist-n{margin:0 0 8px}

@@ -61,6 +61,28 @@
     if (s === '' || s === '-') return null;
     var n = Number(s); return isFinite(n) ? Math.round(n) : null;
   }
+  /* 금액 입력칸: 입력하는 동안 3자리마다 쉼표(,)를 넣습니다. (모든 예산 화면 공통 — 캡처 단계에서 먼저 처리해 다른 처리기가 쉼표 있는 값을 읽도록 함) */
+  var AMT_SEL = 'input.money,input.q-in,input.fin,input[data-cap],input[data-f="amount"],input[data-f="forecast"],input[data-sf="amount"],input[data-k="price"],input[data-k="amount"],#al-amt,#el-bamt,#ea-amount';
+  function groupDigits(v) {
+    var neg = /^\s*-/.test(v), d = String(v).replace(/\D/g, '').replace(/^0+(?=\d)/, '');
+    if (d === '') return neg ? '-' : '';
+    return (neg ? '-' : '') + d.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  }
+  document.addEventListener('input', function (e) {
+    var t = e.target; if (!t || !t.matches || t.tagName !== 'INPUT' || t.readOnly || t.type === 'number' || !t.matches(AMT_SEL)) return;
+    var v = t.value, f = groupDigits(v); if (f === v) return;
+    var pos = t.selectionStart == null ? v.length : t.selectionStart, n = v.slice(0, pos).replace(/\D/g, '').length, i = 0;
+    t.value = f;
+    for (var seen = 0; i < f.length && seen < n; i++) if (/\d/.test(f[i])) seen++;
+    try { t.setSelectionRange(i, i); } catch (er) {}
+  }, true);
+  // 엑셀: 금액 열에 천 단위 쉼표 서식(#,##0)을 입힙니다. 빈 칸도 서식이 있어 나중에 숫자를 적으면 쉼표가 붙습니다.
+  function xlsxMoney(ws, cols, r1, r2) {
+    cols.forEach(function (c) {
+      for (var r = r1; r <= r2; r++) { var a = c + r; if (!ws[a]) ws[a] = { t: 's', v: '' }; ws[a].z = '#,##0'; }
+    });
+    var rg = XLSX.utils.decode_range(ws['!ref'] || 'A1:A1'); if (rg.e.r < r2 - 1) { rg.e.r = r2 - 1; ws['!ref'] = XLSX.utils.encode_range(rg); }
+  }
   function pct(a, b) { return b ? Math.round((a - b) * 1000 / b) / 10 : null; }
   function fmtDT(iso) { if (!iso) return ''; try { return new Date(iso).toLocaleString('sv-SE', { timeZone: 'Asia/Seoul' }).slice(0, 16).replace(/-/g, '.').replace(' ', ' '); } catch (e) { return ''; } }
   function toLocalInput(iso) { if (!iso) return ''; try { return new Date(iso).toLocaleString('sv-SE', { timeZone: 'Asia/Seoul' }).slice(0, 16).replace(' ', 'T'); } catch (e) { return ''; } }
@@ -674,7 +696,7 @@
 
   window.BW = {
     SUPA_URL: SUPA_URL, SUPA_KEY: SUPA_KEY, rpc: rpc, errMsg: errMsg, sess: sess, setAuthLost: function (f) { onAuthLost = f; },
-    $: $, $$: $$, esc: esc, won: won, num: num, pct: pct, ico: ico, toast: toast, modal: modal, confirmBox: confirmBox,
+    $: $, $$: $$, esc: esc, xlsxMoney: xlsxMoney, ADMIN_CONTACT: { title: '예산 관리자', text: '담당: 기획처 방시원 차장 (010-2055-5883)' }, won: won, num: num, pct: pct, ico: ico, toast: toast, modal: modal, confirmBox: confirmBox,
     fmtDT: fmtDT, toLocalInput: toLocalInput, fromLocalInput: fromLocalInput,
     TYPES: TYPES, STAGES: STAGES, stageLabel: stageLabel, stageIdx: stageIdx, cmpMok: cmpMok, Calc: Calc, mount: mount
   };

@@ -45,11 +45,12 @@
       '<button class="btn btn-ghost btn-sm" id="ad-refresh" title="서버에서 최신 내용 불러오기">' + ico('refresh', 16) + ' <span class="hide-sm">새로고침</span></button>' +
       '<button class="btn btn-ghost btn-sm" id="ad-out">' + ico('logout', 16) + ' 로그아웃</button></div></header>' +
       '<nav class="ad-tabs" role="tablist">' + TABS.map(function (t) { return '<button role="tab" class="ws-tab' + (A.tab === t[0] ? ' on' : '') + '" data-ad="' + t[0] + '" aria-selected="' + (A.tab === t[0]) + '">' + t[1] + '</button>'; }).join('') + '</nav>' +
-      '<main class="page"><div id="ad-body"></div></main>';
+      '<main class="page"><div id="ad-ai"></div><div id="ad-body"></div></main>';
     $('#ad-year', rootEl).onchange = function () { A.year = Number(this.value); A.rDept = null; show(rootEl, A.year); };
     $('#ad-out', rootEl).onclick = function () { W.rpc('bgt_logout', { p_token: W.sess.token }).catch(function () {}); window.BudgetBoot.logout(); };
     $$('[data-ad]', rootEl).forEach(function (b) { b.onclick = function () { A.tab = b.dataset.ad; refresh(); }; });
     $('#ad-refresh', rootEl).onclick = function () { refresh(true); };
+    if (A.aist) A.aist.destroy(); A.aist = BudgetAiStatus.mount($('#ad-ai', rootEl), { admin: true, ctx: function () { return { token: W.sess.token, year: A.year, dept: null }; } });
     var body = $('#ad-body', rootEl);
     ({ overview: overview, review: review, final: finalTab, entry: entryTab, org: orgTab, depts: deptsTab, tickets: ticketsTab, codes: codesTab, settings: settingsTab, export: exportTab, log: logTab })[A.tab](body);
   }
