@@ -15,6 +15,7 @@
   function sessClear() { W.sess.role = ''; W.sess.token = ''; W.sess.dept = ''; try { sessionStorage.removeItem('bgt_sess'); } catch (e) {} }
   function base() { return location.origin + location.pathname.replace(/[^\/]*$/, ''); }
   function entryUrl(d, test) { return base() + 'budget-entry.html?d=' + encodeURIComponent(d) + (test ? '&test=1' : ''); }
+  function execUrl(d) { return base() + 'budget.html?test=1&d=' + encodeURIComponent(d); }   // 편성 완료 후 사용(결재 QR·집행) 시험
   function hasPw(d) { return (info.depts.filter(function (x) { return x.dept === d; })[0] || {}).has_pw; }
 
   function copyText(t) {
@@ -40,12 +41,14 @@
     return '<div class="eready"><label>' + esc(d) + ' 입력 화면 주소</label><div class="eurl"><input class="in" id="r-url" readonly value="' + esc(u) + '"><button class="btn btn-primary" id="r-copy" type="button">주소 복사</button></div>' +
       '<div class="acts"><a class="btn btn-secondary" href="' + esc(u) + '">' + ico('list', 16) + ' 입력 화면 열기</a><button class="btn btn-secondary" id="r-sc" type="button">' + ico('download', 16) + ' 바탕화면 바로가기 만들기</button>' +
       '<button class="btn btn-secondary" id="r-xl" type="button">' + ico('download', 16) + ' 엑셀 입력 양식 받기</button></div>' +
-      '<div class="eurl2"><label>시험용(연습) 주소 <span class="muted">— 실제 예산과 분리된 연습 공간입니다. 마음껏 입력하고 지워 보십시오.</span></label><div class="eurl"><input class="in" id="r-url2" readonly value="' + esc(entryUrl(d, true)) + '"><button class="btn btn-secondary" id="r-copy2" type="button">복사</button><a class="btn btn-secondary" href="' + esc(entryUrl(d, true)) + '">시험 열기</a></div></div>' +
+      '<div class="eurl2"><label>시험 ① 작성용 주소 <span class="muted">— 예산을 작성·입력하는 연습입니다(시험용 연도 1999). 실제 예산과 분리됩니다.</span></label><div class="eurl"><input class="in" id="r-url2" readonly value="' + esc(entryUrl(d, true)) + '"><button class="btn btn-secondary" id="r-copy2" type="button">복사</button><a class="btn btn-secondary" href="' + esc(entryUrl(d, true)) + '">시험 열기</a></div></div>' +
+      '<div class="eurl2"><label>시험 ② 편성 완료 후 사용 주소 <span class="muted">— 확정된 예산으로 지출 요청 QR 발급·결재 반영을 연습합니다(시험용 연도 1998).</span></label><div class="eurl"><input class="in" id="r-url3" readonly value="' + esc(execUrl(d)) + '"><button class="btn btn-secondary" id="r-copy3" type="button">복사</button><a class="btn btn-secondary" href="' + esc(execUrl(d)) + '">시험 열기</a></div></div>' +
       '<p class="muted">바로가기: 내려받은 파일(.url)을 바탕화면으로 옮기면 더블클릭으로 열립니다. 크롬에서는 주소창 오른쪽 ⋮ 메뉴 → 「저장 및 공유」 → 「바로가기 만들기」로도 만들 수 있습니다.</p></div>' + guideHtml(d);
   }
   function wireReady(box, d) {
     var c = $('#r-copy', box); if (c) c.onclick = function () { copyText(entryUrl(d)); };
     var c2 = $('#r-copy2', box); if (c2) c2.onclick = function () { copyText(entryUrl(d, true)); };
+    var c3 = $('#r-copy3', box); if (c3) c3.onclick = function () { copyText(execUrl(d)); };
     var s = $('#r-sc', box); if (s) s.onclick = function () { shortcut(d); };
     var x = $('#r-xl', box); if (x) x.onclick = function () { BudgetEntryXlsx.template({ dept: d, year: year }); };
   }
@@ -109,8 +112,8 @@
   }
   function renderBoard(d) {
     var adm = W.sess.role === 'admin';
-    var testBar = TEST ? '<div class="etest"><b>시험 모드</b><span>실제 예산에 반영되지 않는 연습 공간입니다(시험용 연도). 입력·코드 매칭·삭제를 마음껏 해 보십시오. 기간 제한 없이 항상 열려 있습니다.</span><span class="acts">' +
-      (adm ? '' : '<button class="btn btn-secondary btn-sm" id="t-reset" type="button">시험 데이터 처음으로 (내 부서 실제 항목 복사)</button>') + '<a class="btn btn-ghost btn-sm" href="' + esc(entryUrl(d)) + '">실제 입력판으로</a></span></div>' : '';
+    var testBar = TEST ? '<div class="etest"><b>시험 ① 작성용</b><span>실제 예산에 반영되지 않는 연습 공간입니다(시험용 연도). 입력·코드 매칭·삭제를 마음껏 해 보십시오. 기간 제한 없이 항상 열려 있습니다.</span><span class="acts">' +
+      (adm ? '' : '<button class="btn btn-secondary btn-sm" id="t-reset" type="button">시험 데이터 처음으로 (내 부서 실제 항목 복사)</button>') + '<a class="btn btn-ghost btn-sm" href="' + esc(execUrl(d)) + '">② 편성 완료 후 사용 시험으로</a><a class="btn btn-ghost btn-sm" href="' + esc(entryUrl(d)) + '">실제 입력판으로</a></span></div>' : '';
     root.innerHTML = head(d + ' 입력판' + (TEST ? ' (시험)' : ''), '<span class="chip c-blue" id="h-who"></span><button class="btn btn-ghost btn-sm" id="h-url" type="button">' + ico('list', 16) + ' <span class="hide-sm">주소·바로가기</span></button>' +
       '<a class="btn btn-ghost btn-sm" href="budget.html">' + ico('edit', 16) + ' <span class="hide-sm">예산안 작성</span></a><button class="btn btn-ghost btn-sm" id="h-out" type="button">' + ico('logout', 16) + ' <span class="hide-sm">로그아웃</span></button>') +
       '<main class="page ewide">' + testBar + '<div id="board"></div></main>';

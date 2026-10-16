@@ -8,11 +8,20 @@
   var W = window.BW, $ = W.$, $$ = W.$$, esc = W.esc, ico = W.ico, toast = W.toast;
   var root = document.getElementById('app');
   var info = null, year = null;
+  var QS = new URLSearchParams(location.search), TEST = QS.get('test') === '1', QD = QS.get('d') || '';   // test=1: 편성 완료 후 사용(결재 QR·집행) 시험 — 시험용 연도 1998
+  function realYear() { var r = info.settings.filter(function (x) { return x.year > 2000; }); return r.length ? r[0].year : new Date().getFullYear() + 1; }
+  function testBar(dept) {
+    if (!TEST) return '';
+    var b = location.origin + location.pathname.replace(/[^\/]*$/, '');
+    return '<div class="etest"><b>시험 ② 편성 완료 후 사용</b><span>확정된 예산(실제 항목 복사본)으로 지출 요청 QR 발급 → 결재 반영을 연습합니다. 실제 예산·집행에는 반영되지 않습니다.</span><span class="acts">' +
+      (dept ? '<button class="btn btn-secondary btn-sm" id="t-reset2" type="button">시험 데이터 처음으로</button><a class="btn btn-ghost btn-sm" href="' + esc(b + 'budget-entry.html?test=1&d=' + encodeURIComponent(dept)) + '">① 작성용 시험으로</a>' : '') +
+      '<a class="btn btn-ghost btn-sm" href="' + esc(b + 'budget.html' + (dept ? '?d=' + encodeURIComponent(dept) : '')) + '">실제 화면으로</a></span></div>';
+  }
 
   function sessSave() { try { sessionStorage.setItem('bgt_sess', JSON.stringify(W.sess)); } catch (e) {} }
   function sessClear() { W.sess.role = ''; W.sess.token = ''; W.sess.dept = ''; try { sessionStorage.removeItem('bgt_sess'); } catch (e) {} }
   function sessRestore() { try { var s = JSON.parse(sessionStorage.getItem('bgt_sess') || 'null'); if (s && s.token) { W.sess.role = s.role; W.sess.token = s.token; W.sess.dept = s.dept || ''; return true; } } catch (e) {} return false; }
-  function lastDept() { try { return localStorage.getItem('bgt_last_dept') || ''; } catch (e) { return ''; } }
+  function lastDept() { if (QD) return QD; try { return localStorage.getItem('bgt_last_dept') || ''; } catch (e) { return ''; } }
   function setLastDept(d) { try { localStorage.setItem('bgt_last_dept', d); } catch (e) {} }
 
   var STATUS_TXT = { draft: '작성 준비중', open: '작성 중', closed: '마감', finalized: '최종 확정' };
@@ -32,7 +41,7 @@
     if (!depts.some(function (d) { return d.dept === sel; })) sel = '';
     root.innerHTML =
       '<div class="login"><div class="login-card">' +
-      '<div class="brand lg"><span class="logo">' + ico('coins', 24) + '</span><div><div class="b-t">부서 예산안 작성</div><div class="b-s">아세아항공직업전문학교 · ' + year + '년도 세입·세출</div></div></div>' +
+      (TEST ? testBar('') : '') + '<div class="brand lg"><span class="logo">' + ico('coins', 24) + '</span><div><div class="b-t">부서 예산안 작성</div><div class="b-s">아세아항공직업전문학교 · ' + year + '년도 세입·세출</div></div></div>' +
       '<div class="period"><span class="chip ' + (st === 'open' ? 'c-green' : 'c-gray') + '">' + STATUS_TXT[st] + '</span><span class="muted">' + esc(periodText(s)) + '</span></div>' +
       (s && s.note ? '<div class="note info">' + esc(s.note) + '</div>' : '') +
       (msg ? '<div class="note err">' + ico('alert', 16) + ' ' + esc(msg) + '</div>' : '') +
@@ -121,10 +130,17 @@
       '<a class="btn btn-secondary btn-sm" href="budget-entry.html?d=' + encodeURIComponent(dept) + '" title="올해 집행·내년 계획을 한 줄씩 입력하고 AI로 코드 매칭">' + ico('list', 16) + ' <span class="hide-sm">입력판</span></a>' +
       '<button class="btn btn-ghost btn-sm" id="pw-chg">' + ico('key', 16) + ' <span class="hide-sm">비밀번호 변경</span></button>' +
       '<button class="btn btn-ghost btn-sm" id="d-out">' + ico('logout', 16) + ' <span class="hide-sm">로그아웃</span></button></div></header>' +
-      '<main class="page"><div class="period-bar"><span class="muted">작성 기간</span> <b>' + esc(periodText(s) || (s.status === 'open' ? '제한 없음' : '관리자가 정합니다')) + '</b>' + (s.note ? ' <span class="sep">·</span> ' + esc(s.note) : '') + '</div>' +
+      '<main class="page">' + testBar(dept) + '<div class="period-bar"><span class="muted">작성 기간</span> <b>' + esc(periodText(s) || (s.status === 'open' ? '제한 없음' : '관리자가 정합니다')) + '</b>' + (s.note ? ' <span class="sep">·</span> ' + esc(s.note) : '') + '</div>' +
       '<nav class="ws-tabs" id="dp-tabs"><button class="ws-tab on" data-m="plan">예산안 작성</button><button class="ws-tab" data-m="qr">' + ico('qr', 16) + ' 결재 QR · 집행</button><button class="btn btn-secondary btn-sm dp-xl" id="dp-xl" title="엑셀에서 작성할 수 있는 부서 양식 내려받기">' + ico('download', 16) + ' 작성 양식(엑셀)</button></nav>' +
       '<div id="ws"></div><div id="tk" class="hide"></div></main>';
     $('#d-out', root).onclick = logout;
+    var tr2 = $('#t-reset2', root);
+    if (tr2) tr2.onclick = function () {
+      W.confirmBox('시험 데이터를 모두 지우고 처음 상태로 되돌립니다.\n(내 부서의 실제 예산 항목이 연습용으로 복사됩니다. 실제 예산은 바뀌지 않습니다.)', '처음으로', true).then(function (ok) {
+        if (!ok) return;
+        W.rpc('bgt_e_test_reset2', { p_token: W.sess.token, p_src_year: realYear(), p_year: 1998 }).then(function (r) { toast('시험 데이터를 처음 상태로 되돌렸습니다. (항목 ' + r.lines + '건)'); loadDept(); }).catch(function (e) { toast(e.message, 'err'); });
+      });
+    };
     $('#pw-chg', root).onclick = changePw;
     // 결재 QR 탭: 예산안 화면과 분리해 두고, QR 반영으로 지출이 바뀌면 돌아갈 때 서버에서 다시 불러옵니다.
     var qdata = data, qDirty = false, qOpen = false;
@@ -188,7 +204,7 @@
     return W.rpc('bgt_info').then(function (i) {
       info = i;
       var cur = new Date().getFullYear();
-      year = info.settings.length ? info.settings[0].year : cur + 1;
+      year = TEST ? 1998 : (info.settings.length ? info.settings[0].year : cur + 1);
     });
   }
   function boot() {
