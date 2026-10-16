@@ -69,9 +69,9 @@ select.in{padding-right:28px}
 .lg-help{margin:0}.adm-link{align-self:flex-start;display:inline-flex;gap:6px;align-items:center;font-size:13px}
 
 /* ── 탭 / 단계 ── */
-.ws-tabs,.ad-tabs{display:flex;gap:4px;overflow-x:auto;border-bottom:1px solid var(--border);margin:8px 0 12px;scrollbar-width:thin}
+.ws-tabs,.ad-tabs{display:flex;gap:4px;overflow-x:auto;overflow-y:hidden;box-shadow:inset 0 -1px 0 var(--border);margin:8px 0 12px;scrollbar-width:thin}
 .ad-tabs{background:var(--card);padding:0 12px;margin:0}
-.ws-tab{flex:none;border:0;background:none;padding:10px 16px;font-weight:500;color:var(--text-2);border-bottom:3px solid transparent;margin-bottom:-1px}
+.ws-tab{flex:none;border:0;background:none;padding:10px 16px;font-weight:500;color:var(--text-2);border-bottom:3px solid transparent}
 .ws-tab.on{color:var(--primary-dk);border-bottom-color:var(--primary)}
 .cnt{display:inline-block;min-width:22px;text-align:center;background:var(--gray-lt);border-radius:var(--r);font-size:12px;padding:0 6px;margin-left:4px}
 .steps{display:flex;gap:0;list-style:none;margin:12px 0;padding:0;flex-wrap:wrap}
@@ -93,7 +93,7 @@ select.in{padding-right:28px}
 /* ── 표 ── */
 .tbl-wrap{overflow-x:auto;background:var(--card);border:1px solid var(--border);border-radius:var(--r)}
 table{border-collapse:collapse;width:100%}
-table.bt{min-width:1300px}
+table.bt{min-width:1100px}
 table.bt.ov,table.bt.cd{min-width:900px}
 th,td{padding:7px 9px;text-align:left;vertical-align:top;border-bottom:1px solid var(--border)}
 th{background:#F7FAFC;color:var(--text-2);font-size:12px;font-weight:500;white-space:nowrap}
@@ -102,7 +102,7 @@ td.num{white-space:nowrap}
 tbody tr:last-child td{border-bottom:0}
 .code{display:inline-block;font-variant-numeric:tabular-nums;font-weight:700;color:var(--primary-dk)}
 .moknm{font-size:11px;color:var(--text-2);line-height:1.3}
-.c-code{width:104px}.c-name{min-width:250px}.c-calc{min-width:200px}.c-reason{min-width:170px}.c-act{width:108px;white-space:nowrap}
+.c-code{width:104px}.c-name{min-width:220px}.c-calc{min-width:180px}.c-reason{min-width:160px}.c-act{width:108px;white-space:nowrap}
 .c-base,.c-used{width:116px}.c-fc,.c-amt{width:136px}.c-diff{width:84px}
 .nm-t{font-weight:500}.bcalc{font-size:11px;color:var(--text-2);margin-top:2px}
 tr.grp td{background:#F1F5F9;font-weight:700;border-bottom:1px solid var(--border-2)}
