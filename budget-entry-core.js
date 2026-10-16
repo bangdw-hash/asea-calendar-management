@@ -116,7 +116,7 @@
     function draw() {
       var p = counts(), dis = !canEdit();
       var h = '<div class="eb-wrap">' +
-        (dis ? '<div class="note warn">' + ico('lock', 16) + ' <span>지금은 입력할 수 없는 기간입니다.' + (S.win && (S.win.open_at || S.win.close_at) ? ' 입력 가능 기간: ' + (S.win.open_at ? W.fmtDT(S.win.open_at) : '') + ' ~ ' + (S.win.close_at ? W.fmtDT(S.win.close_at) : '') : '') + ' 내용은 조회만 가능합니다.</span></div>' : '') +
+        (dis ? '<div class="note warn">' + ico('lock', 16) + ' <span>지금은 입력할 수 없는 기간입니다.' + (S.win && (S.win.open_at || S.win.close_at) ? ' 입력 가능 기간: ' + (S.win.open_at ? W.fmtDT(S.win.open_at) : '') + ' ~ ' + (S.win.close_at ? W.fmtDT(S.win.close_at) : '') : '') + ' 내용은 조회만 가능합니다.' + (o.testUrl ? ' <a href="' + esc(o.testUrl) + '">시험용 주소</a>에서는 연습으로 입력해 볼 수 있습니다.' : '') + '</span></div>' : '') +
         '<div class="etabs"><div class="ws-tabs" id="e-ph">' + ['actual', 'plan'].map(function (k) { return '<button class="ws-tab' + (S.phase === k ? ' on' : '') + '" data-ph="' + k + '">' + PH[k] + '</button>'; }).join('') + '</div>' +
         '<div class="ws-tabs sub" id="e-ty">' + ['세출', '세입'].map(function (k) { return '<button class="ws-tab' + (S.type === k ? ' on' : '') + '" data-ty="' + k + '">' + k + '</button>'; }).join('') + '</div></div>' +
         '<p class="muted etip">' + (S.phase === 'actual' ? '올해 실제로 ' + (S.type === '세출' ? '쓴' : '받은') + ' 내역을 한 줄에 한 건씩 적습니다. 코드는 적지 않아도 됩니다. 다 적은 뒤 「AI로 코드 매칭하기」를 누르십시오.' : '내년에 쓸(받을) 계획을 한 줄에 하나씩 적습니다. 코드는 적지 않아도 됩니다. 다 적은 뒤 「AI로 코드 매칭하기」를 누르십시오.') + '</p>' +
@@ -128,9 +128,9 @@
         '<label class="inl"><input type="checkbox" id="e-only"' + (S.only ? ' checked' : '') + '> 확인 필요·미판정만 보기</label>' +
         '<span class="eonline" id="e-online"></span></div>' +
         '<div class="tbl-wrap"><table class="bt etbl"><thead>' + heads() + '</thead><tbody id="e-body">' + addRowHtml() + view().map(trHtml).join('') + '</tbody></table></div>' +
-        (view().length ? '' : '<div class="empty small"><p>입력한 내용이 없습니다. 위 줄에 첫 내용을 적고 Enter를 누르십시오.</p></div>') + '</div>';
+        (view().length ? '' : '<div class="empty small"><p>입력한 내용이 없습니다. 위 줄에 첫 내용을 적고 Enter를 누르십시오.</p></div>') + '<div id="e-codesum"></div></div>';
       root.innerHTML = h;
-      updStat(); updOnline();
+      updStat(); updOnline(); updCodeSum();
     }
     function redrawBody() {
       var b = $('#e-body', root); if (!b) return draw();
@@ -139,6 +139,7 @@
       b.innerHTML = addRowHtml() + view().map(trHtml).join('');
       $$('.eadd input', root).forEach(function (i) { if (vals[i.id] != null && i.id !== 'ea-date') i.value = vals[i.id]; else if (i.id === 'ea-date' && vals[i.id]) i.value = vals[i.id]; });
       if (keep) { var e2 = $('#' + keep.id, root); if (e2) e2.focus(); }
+      updCodeSum();
     }
     function patchRow(id) {
       var r = S.rows[id], tr = root.querySelector('tr.er[data-id="' + id + '"]');
@@ -147,7 +148,25 @@
       var idx = Array.prototype.indexOf.call($('#e-body', root).querySelectorAll('tr.er'), tr);
       var cf = root.querySelector('tr.econf[data-cf="' + id + '"]'); if (cf) cf.remove();
       var tmp = document.createElement('tbody'); tmp.innerHTML = trHtml(r, idx);
-      tr.replaceWith.apply(tr, Array.prototype.slice.call(tmp.children));
+      tr.replaceWith.apply(tr, Array.prototype.slice.call(tmp.children)); updCodeSum();
+    }
+    // 코드별 합계: 같은 코드의 여러 줄은 한 항목으로 합쳐 예산에 반영됩니다. 그 결과를 미리 보여 줍니다.
+    function updCodeSum() {
+      var el = $('#e-codesum', root); if (!el) return;
+      var g = {};
+      list().forEach(function (r) {
+        if (r.type !== S.type || !r.mok || (admin && S.dept && r.dept !== S.dept)) return;
+        var k = (admin && !S.dept ? r.dept + '|' : '') + r.mok, o = g[k] || (g[k] = { dept: r.dept, mok: r.mok, a: 0, an: 0, p: 0, pn: 0 });
+        var amt = Number(val(r, 'amount')) || 0; if (r.phase === 'actual') { o.a += amt; o.an++; } else { o.p += amt; o.pn++; }
+      });
+      var keys = Object.keys(g).sort(function (x, y) { return W.cmpMok(g[x].mok, g[y].mok); });
+      if (!keys.length) { el.innerHTML = ''; return; }
+      var ta = 0, tp = 0;
+      el.innerHTML = '<div class="ecs"><div class="ecs-h"><b>코드별 합계</b> <span class="muted">같은 코드로 적은 줄은 한 항목으로 합쳐 예산에 반영됩니다. 코드는 정해진 코드표 안에서만 움직입니다.</span></div><div class="tbl-wrap"><table class="bt ecs-t"><thead><tr>' + (admin && !S.dept ? '<th>부서</th>' : '') +
+        '<th>코드(목)</th><th class="num">올해 ' + (S.type === '세출' ? '집행' : '수납') + ' 건수</th><th class="num">올해 합계(원)</th><th class="num">내년 계획 건수</th><th class="num">내년 합계(원)</th></tr></thead><tbody>' + keys.map(function (k) {
+          var o = g[k]; ta += o.a; tp += o.p;
+          return '<tr>' + (admin && !S.dept ? '<td>' + esc(o.dept) + '</td>' : '') + '<td><span class="code">' + esc(o.mok) + '</span> ' + esc(mokName(S.type, o.mok)) + '</td><td class="num">' + o.an + '</td><td class="num">' + (o.an ? won(o.a) : '-') + '</td><td class="num">' + o.pn + '</td><td class="num">' + (o.pn ? won(o.p) : '-') + '</td></tr>'; }).join('') +
+        '<tr class="ecs-tot"><td' + (admin && !S.dept ? ' colspan="2"' : '') + '><b>합계</b></td><td></td><td class="num"><b>' + won(ta) + '</b></td><td></td><td class="num"><b>' + won(tp) + '</b></td></tr></tbody></table></div></div>';
     }
     function updStat() {
       var el = $('#e-stat', root); if (!el) return;
@@ -337,7 +356,9 @@
     }
 
     /* ── 이벤트 ── */
-    root.addEventListener('click', function (e) {
+    var hs = [];
+    function on(type, fn) { root.addEventListener(type, fn); hs.push([type, fn]); }
+    on('click', function (e) {
       var t = e.target;
       var ph = t.closest('[data-ph]'); if (ph) { S.phase = ph.dataset.ph; return draw(); }
       var ty = t.closest('[data-ty]'); if (ty) { S.type = ty.dataset.ty; return draw(); }
@@ -357,20 +378,20 @@
       if (act.dataset.act === 'cf-server') { var srv = r._conf; S.rows[id] = Object.assign(srv, { _dirty: null }); patchRow(id); return; }
       if (act.dataset.act === 'cf-mine') { r.ver = r._conf.ver; r._conf = null; patchRow(id); return flush(); }
     });
-    root.addEventListener('input', function (e) {
+    on('input', function (e) {
       var i = e.target, f = i.dataset && i.dataset.f; if (!f || f === 'mok') return;
       var tr = i.closest('tr.er'); if (!tr) return; var r = S.rows[tr.dataset.id]; if (!r) return;
-      setDirty(r, f, f === 'amount' ? (num(i.value) || 0) : i.value); tr.classList.add('dirty'); scheduleFlush();
+      setDirty(r, f, f === 'amount' ? (num(i.value) || 0) : i.value); tr.classList.add('dirty'); scheduleFlush(); if (f === 'amount') updCodeSum();
     });
-    root.addEventListener('change', function (e) {
+    on('change', function (e) {
       var i = e.target;
       if (i.id === 'e-only') { S.only = i.checked; return redrawBody(); }
       if (i.id === 'e-file') { var f = i.files[0]; i.value = ''; if (f) BudgetEntryXlsx.upload(f, { dept: S.dept || o.dept, board: api0 }); return; }
       var tr = i.closest && i.closest('tr.er'), f2 = i.dataset && i.dataset.f; if (!tr || f2 !== 'mok') return;
       var r = S.rows[tr.dataset.id]; if (!r) return; setDirty(r, 'mok', i.value); r.needs_check = false; patchRow(tr.dataset.id); flush();
     });
-    root.addEventListener('focusin', function (e) { var tr = e.target.closest && e.target.closest('tr.er'); if (tr && tr.dataset.id !== S.focusId) { if (S.focusId) lockOff(S.focusId); lockOn(tr.dataset.id); } });
-    root.addEventListener('focusout', function (e) {
+    on('focusin', function (e) { var tr = e.target.closest && e.target.closest('tr.er'); if (tr && tr.dataset.id !== S.focusId) { if (S.focusId) lockOff(S.focusId); lockOn(tr.dataset.id); } });
+    on('focusout', function (e) {
       var tr = e.target.closest && e.target.closest('tr.er'); if (!tr) return;
       var rt = e.relatedTarget; if (rt && tr.contains(rt)) return;
       var id = tr.dataset.id; var r = S.rows[id];
@@ -379,10 +400,10 @@
       lockOff(id); if (r && r._dirty && Object.keys(r._dirty).length) flush();
       if (r && r._srv && !(r._dirty && Object.keys(r._dirty).length)) { S.rows[id] = Object.assign(r._srv, { _dirty: null }); patchRow(id); }
     });
-    root.addEventListener('keydown', function (e) {
+    on('keydown', function (e) {
       if (e.key === 'Enter' && e.target.closest && e.target.closest('.eadd')) { e.preventDefault(); addFromInputs(); }
     });
-    root.addEventListener('paste', function (e) {   // 엑셀·메모장에서 여러 줄 붙여넣기: 입력 줄에 붙이면 한 번에 추가
+    on('paste', function (e) {   // 엑셀·메모장에서 여러 줄 붙여넣기: 입력 줄에 붙이면 한 번에 추가
       if (!e.target.closest || !e.target.closest('.eadd')) return;
       var tx = (e.clipboardData || window.clipboardData).getData('text'); if (!tx || (tx.indexOf('\n') < 0 && tx.indexOf('\t') < 0)) return;
       e.preventDefault();
@@ -425,7 +446,7 @@
         boot();
       }).catch(function (e) { root.innerHTML = '<div class="note err">' + ico('alert', 16) + ' ' + esc(e.message) + '</div>'; });
     }
-    function destroy() { S.dead = true; Object.keys(timers).forEach(function (k) { clearInterval(timers[k]); }); window.removeEventListener('beforeunload', onUnload); }
+    function destroy() { S.dead = true; hs.forEach(function (h) { root.removeEventListener(h[0], h[1]); }); Object.keys(timers).forEach(function (k) { clearInterval(timers[k]); }); window.removeEventListener('beforeunload', onUnload); }
     start();
     return { destroy: destroy, setDept: function (d) { S.dept = d || ''; draw(); }, state: S, flush: flush, who: function () { return S.who; }, changeWho: function () { S.who = ''; ensureWho().then(updOnline); } };
   }

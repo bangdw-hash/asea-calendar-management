@@ -9,7 +9,7 @@
   var A = { year: null, tab: 'overview', data: null, rDept: null, rType: '세출', logs: null, codeType: '세출' };
   var rootEl = null;
 
-  var TABS = [['overview', '현황'], ['review', '검토·승인'], ['final', '확정안'], ['entry', '입력판'], ['depts', '부서·비밀번호'], ['tickets', '결재 QR·집행'], ['codes', '코드표'], ['settings', '일정·한도·최종반영'], ['export', '내보내기·인쇄'], ['log', '이력']];
+  var TABS = [['overview', '현황'], ['review', '검토·승인'], ['final', '확정안'], ['entry', '입력판'], ['org', '조직 개편'], ['depts', '부서·비밀번호'], ['tickets', '결재 QR·집행'], ['codes', '코드표'], ['settings', '일정·한도·최종반영'], ['export', '내보내기·인쇄'], ['log', '이력']];
   var STATUS_TXT = { draft: '작성 준비중', open: '작성 중', closed: '마감', finalized: '최종 확정' };
 
   function arpc(fn, args) { args = args || {}; args.p_token = W.sess.token; return W.rpc(fn, args); }
@@ -51,7 +51,7 @@
     $$('[data-ad]', rootEl).forEach(function (b) { b.onclick = function () { A.tab = b.dataset.ad; refresh(); }; });
     $('#ad-refresh', rootEl).onclick = function () { refresh(true); };
     var body = $('#ad-body', rootEl);
-    ({ overview: overview, review: review, final: finalTab, entry: entryTab, depts: deptsTab, tickets: ticketsTab, codes: codesTab, settings: settingsTab, export: exportTab, log: logTab })[A.tab](body);
+    ({ overview: overview, review: review, final: finalTab, entry: entryTab, org: orgTab, depts: deptsTab, tickets: ticketsTab, codes: codesTab, settings: settingsTab, export: exportTab, log: logTab })[A.tab](body);
   }
 
   /* ───────── 현황 ───────── */
@@ -164,7 +164,7 @@
     arpc('bgt_ea_overview', { p_year: A.year }).then(function (ov) {
       var fin = ov.status === 'finalized';
       box.innerHTML = '<div class="note info">' + ico('check', 16) + ' <span>부서가 적은 내용은 코드가 정해지는 즉시 항목·지출에 반영됩니다. 기본 입력 기간은 예산 연도 상태를 따릅니다(작성 중·마감=열림, 최종 확정=닫힘). 입학처처럼 기간이 다른 부서는 아래에서 별도 기간을 지정하십시오. 기획처는 아래 입력판에서 언제든(확정 전까지) 함께 고칠 수 있습니다.</span></div>' +
-        '<div class="tools"><div><b>입력판 전체 ' + (ov.entry_open ? '열림' : '닫힘') + '</b> <span class="muted">· 연도 상태: ' + (STATUS_TXT[ov.status] || '-') + '</span></div><button class="btn ' + (ov.entry_open ? 'btn-secondary' : 'btn-primary') + ' btn-sm" id="en-tg">' + (ov.entry_open ? '모든 부서 입력 잠시 닫기' : '입력판 다시 열기') + '</button></div>' +
+        (ov.status === 'draft' ? '<div class="note warn">' + ico('lock', 16) + ' <span>연도 상태가 「작성 준비중」이라 기본적으로 부서 입력이 닫혀 있습니다. 「일정·한도」 탭에서 「작성 중」으로 바꾸거나, 아래 부서별 별도 입력 기간을 지정하십시오. (시험은 부서의 시험용 주소 <b>…budget-entry.html?d=부서&amp;test=1</b> 에서 언제든 가능합니다.)</span></div>' : '') + '<div class="tools"><div><b>입력판 전체 ' + (ov.entry_open ? '열림' : '닫힘') + '</b> <span class="muted">· 연도 상태: ' + (STATUS_TXT[ov.status] || '-') + '</span></div><button class="btn ' + (ov.entry_open ? 'btn-secondary' : 'btn-primary') + ' btn-sm" id="en-tg">' + (ov.entry_open ? '모든 부서 입력 잠시 닫기' : '입력판 다시 열기') + '</button></div>' +
         '<div class="tbl-wrap"><table class="bt eadm-win"><thead><tr><th>부서</th><th class="num">입력 건수</th><th class="num">확인 필요·미판정</th><th>지금</th><th>별도 입력 기간 (비우면 기본을 따름)</th><th></th></tr></thead><tbody>' + ov.depts.map(function (x) {
           return '<tr data-d="' + esc(x.dept) + '"><td><b>' + esc(x.dept) + '</b></td><td class="num">' + x.n + '</td><td class="num">' + (x.n_check ? '<b class="neg">' + x.n_check + '</b>' : '0') + '</td><td>' + (x.open_now ? '<span class="chip c-green">열림</span>' : '<span class="chip c-gray">닫힘</span>') + '</td>' +
             '<td><input type="datetime-local" class="in sm" data-w="open" value="' + esc(W.toLocalInput(x.open_at)) + '"> ~ <input type="datetime-local" class="in sm" data-w="close" value="' + esc(W.toLocalInput(x.close_at)) + '"></td>' +
@@ -180,6 +180,8 @@
       $('#en-dept', box).onchange = function () { if (entryBoard) entryBoard.setDept(this.value); };
     }).catch(fail);
   }
+
+  function orgTab(box) { BudgetOrg.mount(box, { year: A.year, depts: A.data.depts, lines: A.data.lines, refresh: function () { refresh(); } }); }
 
   /* ───────── 부서·비밀번호 ───────── */
   function deptsTab(box) {

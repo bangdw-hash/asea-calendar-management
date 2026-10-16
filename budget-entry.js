@@ -8,13 +8,13 @@
 (function () {
   var W = window.BW, $ = W.$, $$ = W.$$, esc = W.esc, ico = W.ico, toast = W.toast;
   var root = document.getElementById('app'), info = null, year = null, board = null;
-  var qd = new URLSearchParams(location.search).get('d') || '';
+  var qd = new URLSearchParams(location.search).get('d') || '', TEST = new URLSearchParams(location.search).get('test') === '1', realYear = null;
 
   function sessSave() { try { sessionStorage.setItem('bgt_sess', JSON.stringify(W.sess)); } catch (e) {} }
   function sessRestore() { try { var s = JSON.parse(sessionStorage.getItem('bgt_sess') || 'null'); if (s && s.token) { W.sess.role = s.role; W.sess.token = s.token; W.sess.dept = s.dept || ''; return true; } } catch (e) {} return false; }
   function sessClear() { W.sess.role = ''; W.sess.token = ''; W.sess.dept = ''; try { sessionStorage.removeItem('bgt_sess'); } catch (e) {} }
   function base() { return location.origin + location.pathname.replace(/[^\/]*$/, ''); }
-  function entryUrl(d) { return base() + 'budget-entry.html?d=' + encodeURIComponent(d); }
+  function entryUrl(d, test) { return base() + 'budget-entry.html?d=' + encodeURIComponent(d) + (test ? '&test=1' : ''); }
   function hasPw(d) { return (info.depts.filter(function (x) { return x.dept === d; })[0] || {}).has_pw; }
 
   function copyText(t) {
@@ -40,10 +40,12 @@
     return '<div class="eready"><label>' + esc(d) + ' 입력 화면 주소</label><div class="eurl"><input class="in" id="r-url" readonly value="' + esc(u) + '"><button class="btn btn-primary" id="r-copy" type="button">주소 복사</button></div>' +
       '<div class="acts"><a class="btn btn-secondary" href="' + esc(u) + '">' + ico('list', 16) + ' 입력 화면 열기</a><button class="btn btn-secondary" id="r-sc" type="button">' + ico('download', 16) + ' 바탕화면 바로가기 만들기</button>' +
       '<button class="btn btn-secondary" id="r-xl" type="button">' + ico('download', 16) + ' 엑셀 입력 양식 받기</button></div>' +
+      '<div class="eurl2"><label>시험용(연습) 주소 <span class="muted">— 실제 예산과 분리된 연습 공간입니다. 마음껏 입력하고 지워 보십시오.</span></label><div class="eurl"><input class="in" id="r-url2" readonly value="' + esc(entryUrl(d, true)) + '"><button class="btn btn-secondary" id="r-copy2" type="button">복사</button><a class="btn btn-secondary" href="' + esc(entryUrl(d, true)) + '">시험 열기</a></div></div>' +
       '<p class="muted">바로가기: 내려받은 파일(.url)을 바탕화면으로 옮기면 더블클릭으로 열립니다. 크롬에서는 주소창 오른쪽 ⋮ 메뉴 → 「저장 및 공유」 → 「바로가기 만들기」로도 만들 수 있습니다.</p></div>' + guideHtml(d);
   }
   function wireReady(box, d) {
     var c = $('#r-copy', box); if (c) c.onclick = function () { copyText(entryUrl(d)); };
+    var c2 = $('#r-copy2', box); if (c2) c2.onclick = function () { copyText(entryUrl(d, true)); };
     var s = $('#r-sc', box); if (s) s.onclick = function () { shortcut(d); };
     var x = $('#r-xl', box); if (x) x.onclick = function () { BudgetEntryXlsx.template({ dept: d, year: year }); };
   }
@@ -85,7 +87,7 @@
   function renderStart() {
     root.innerHTML = head('부서 입력판 시작', '<a class="btn btn-ghost btn-sm" href="budget.html">예산안 작성 화면</a>') +
       '<main class="page"><section class="card"><h3>1. 부서를 선택하십시오</h3><div class="edept">' + info.depts.map(function (d) {
-        return '<button class="btn btn-secondary edbtn" data-d="' + esc(d.dept) + '" type="button">' + esc(d.dept) + (d.has_pw ? '' : ' <small>(처음)</small>') + '</button>'; }).join('') + '</div></section>' +
+        return '<button class="btn btn-secondary edbtn" data-d="' + esc(d.dept) + '" type="button">' + esc(d.dept) + (d.parent ? ' <small>(' + esc(d.parent) + ' 소속)</small>' : '') + (d.has_pw ? '' : ' <small>(처음)</small>') + '</button>'; }).join('') + '</div></section>' +
       '<section class="card hide" id="s-step"></section><section class="card"><h3>사용 순서</h3>' + guideHtml('') + '</section></main>';
     $$('.edbtn', root).forEach(function (b) { b.onclick = function () { pick(b.dataset.d); }; });
   }
@@ -107,17 +109,21 @@
   }
   function renderBoard(d) {
     var adm = W.sess.role === 'admin';
-    root.innerHTML = head(d + ' 입력판', '<span class="chip c-blue" id="h-who"></span><button class="btn btn-ghost btn-sm" id="h-url" type="button">' + ico('list', 16) + ' <span class="hide-sm">주소·바로가기</span></button>' +
+    var testBar = TEST ? '<div class="etest"><b>시험 모드</b><span>실제 예산에 반영되지 않는 연습 공간입니다(시험용 연도). 입력·코드 매칭·삭제를 마음껏 해 보십시오. 기간 제한 없이 항상 열려 있습니다.</span><span class="acts">' +
+      (adm ? '' : '<button class="btn btn-secondary btn-sm" id="t-reset" type="button">시험 데이터 처음으로 (내 부서 실제 항목 복사)</button>') + '<a class="btn btn-ghost btn-sm" href="' + esc(entryUrl(d)) + '">실제 입력판으로</a></span></div>' : '';
+    root.innerHTML = head(d + ' 입력판' + (TEST ? ' (시험)' : ''), '<span class="chip c-blue" id="h-who"></span><button class="btn btn-ghost btn-sm" id="h-url" type="button">' + ico('list', 16) + ' <span class="hide-sm">주소·바로가기</span></button>' +
       '<a class="btn btn-ghost btn-sm" href="budget.html">' + ico('edit', 16) + ' <span class="hide-sm">예산안 작성</span></a><button class="btn btn-ghost btn-sm" id="h-out" type="button">' + ico('logout', 16) + ' <span class="hide-sm">로그아웃</span></button>') +
-      '<main class="page ewide"><div id="board"></div></main>';
+      '<main class="page ewide">' + testBar + '<div id="board"></div></main>';
     var who = function () { var w = BudgetEntry.whoGet(); $('#h-who', root).textContent = w ? w + ' (이름 변경)' : '이름 입력'; $('#h-who', root).style.cursor = 'pointer'; };
-    board = BudgetEntry.mount($('#board', root), { token: W.sess.token, year: year, role: adm ? 'admin' : 'dept', dept: d });
+    function mountBoard() { if (board) board.destroy(); board = BudgetEntry.mount($('#board', root), { token: W.sess.token, year: year, role: adm ? 'admin' : 'dept', dept: d, testUrl: TEST ? '' : entryUrl(d, true) }); }
+    mountBoard();
+    var tr = $('#t-reset', root); if (tr) tr.onclick = function () { W.confirmBox('시험 데이터를 모두 지우고 처음 상태로 되돌립니다.\n(내 부서의 실제 예산 항목이 연습용으로 복사됩니다. 실제 예산은 바뀌지 않습니다.)', '처음으로', true).then(function (ok) { if (!ok) return; W.rpc('bgt_e_test_reset', { p_token: W.sess.token, p_src_year: realYear }).then(function () { toast('시험 데이터를 처음 상태로 되돌렸습니다.'); mountBoard(); }).catch(function (e) { toast(e.message, 'err'); }); }); };
     setTimeout(who, 600); $('#h-who', root).onclick = function () { if (board) { board.changeWho(); setTimeout(who, 400); } };
     $('#h-url', root).onclick = function () { var m = W.modal({ title: d + ' 입력 화면 주소 · 바로가기', cls: 'wide', body: readyHtml(d), actions: [{ label: '닫기', cls: 'btn-ghost' }] }); wireReady(m.el, d); };
     $('#h-out', root).onclick = function () { if (board) board.destroy(); W.rpc('bgt_logout', { p_token: W.sess.token }).catch(function () {}); sessClear(); renderGate(d); };
   }
 
-  function refresh() { return W.rpc('bgt_info').then(function (i) { info = i; year = info.settings.length ? info.settings[0].year : new Date().getFullYear() + 1; }); }
+  function refresh() { return W.rpc('bgt_info').then(function (i) { info = i; var real = info.settings.filter(function (x) { return x.year > 2000; }); realYear = real.length ? real[0].year : new Date().getFullYear() + 1; year = TEST ? 1999 : realYear; }); }
   W.setAuthLost(function () { if (board) { board.destroy(); board = null; } sessClear(); toast('로그인이 만료되었습니다. 다시 입장해 주십시오.', 'err'); if (qd) renderGate(qd); else renderStart(); });
   refresh().then(function () { if (qd) renderGate(qd); else renderStart(); }).catch(function (e) { root.innerHTML = '<div class="note err">' + ico('alert', 16) + ' ' + esc(e.message) + '</div>'; });
 })();
