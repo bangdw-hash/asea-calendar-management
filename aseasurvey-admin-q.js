@@ -285,7 +285,12 @@
       if (!(s.questions || []).length) warns.push('영역 「' + (s.title || s.id) + '」에 문항이 없습니다.');
     });
     if (d.limit && d.limit.max != null && !(N(d.limit.max) >= 1)) errs.push('선착순 정원은 1 이상이어야 합니다.');
-    var hasCheck = qs.some(function (x) { return x.q.check && x.q.check.valid != null; });
+    var ic = SVY.integ.cfg(d);
+    if (ic.on) {
+      if (!(d.scales && (d.scales[ic.scale] || []).length >= 3)) errs.push('성실 응답 확인에 쓸 척도(' + ic.scale + ')가 없거나 보기가 3개 미만입니다.');
+      if (!ic.sections.length) warns.push('영역별 무작위 성실 응답 확인이 켜져 있으나 선택된 영역이 없습니다.');
+    }
+    var hasCheck = ic.on || qs.some(function (x) { return x.q.check && x.q.check.valid != null; });
     if (!gen && qs.length && !hasCheck) warns.push('성실 응답 확인 문항이 없습니다. 추첨 시 불성실 응답을 걸러낼 수 없습니다.');
     var personal = qs.some(function (x) { return PERSONAL.indexOf(x.q.type) >= 0 || (x.q.type === 'text' && ['email', 'phone'].indexOf(x.q.format) >= 0); });
     if (personal && !qs.some(function (x) { return x.q.type === 'consent'; })) warns.push('주소·연락처·서명·첨부·위치 등 개인정보를 받는 문항이 있으나 「동의 체크」 문항이 없습니다. (개인정보 보호법 제15조: 수집·이용 목적 등을 알리고 동의를 받아야 합니다.)');
@@ -310,6 +315,33 @@
       d.basic = d.basic.filter(function (q) { return ID_Q.indexOf(q.id) < 0; }); delete d.identity;
     }
   }
+  /* 설문 설정 4. 성실 응답 확인 — 영역마다 확인 문항 1개를 붙입니다(학생마다 요구값이 다름). 계산식은 문항 수 n, 척도 값 수 v, 허용 실패 m 기준 */
+  function integChance(n, v, m) {
+    var p = 1 / v, tot = 0, f, c = 1;
+    for (f = 0; f <= m && f <= n; f++) { if (f > 0) c = c * (n - f + 1) / f; tot += c * Math.pow(1 - p, f) * Math.pow(p, n - f); }
+    return tot;
+  }
+  function integPanel(d, gen) {
+    var c = SVY.integ.cfg(d), secs = d.sections || [], sc = d.scales || {}, vals = (sc[c.scale] || []).length || 5;
+    var h = '<div class="setgrp">4. 성실 응답 확인</div>' +
+      '<div><label class="f">영역별 무작위 확인' + H('영역마다 확인 문항을 하나씩 넣고, 학생마다 표시해야 할 보기를 다르게 정합니다. 모든 문항에 같은 보기만 고르는 응답을 걸러내며, 과목별 반복 설문에서도 과목마다 묻지 않고 한 번만 묻습니다. 문항 카드의 고정 정답 방식은 그대로 쓸 수 있습니다.') + '</label>' +
+      '<select class="fld" data-ig="on"><option value=""' + (c.on ? '' : ' selected') + '>사용 안 함</option><option value="1"' + (c.on ? ' selected' : '') + '>사용 (권장)</option></select>' +
+      '<div class="hint">서버 검증에 DB 12단계(db/survey_schema_12.sql) 설치가 필요합니다.</div></div>';
+    if (!c.on) return h;
+    var n = SVY.integ.plan(d, { courses: ['x'], seed: 'a' }), cnt = Object.keys(n).length;
+    h += '<div><label class="f">확인 문항을 넣을 영역' + H('체크한 영역의 마지막에 확인 문항이 하나씩 붙습니다. 인적 사항·서술형 같은 영역은 체크하지 않아도 됩니다. 조건(표시 조건)이 걸린 영역은 숨겨질 수 있어 넣을 수 없습니다.') + '</label>' +
+      (secs.length ? secs.map(function (s) {
+        var has = (s.questions || []).some(function (q) { return q.type === 'scale' && !(q.check && q.check.valid != null); }), dis = !!s.showIf;
+        return '<label class="chk"><input type="checkbox" data-ig="sec" value="' + E(s.id) + '"' + (c.sections.indexOf(s.id) >= 0 && !dis ? ' checked' : '') + (dis ? ' disabled' : '') + '> ' + E(s.title || s.id) +
+          (dis ? ' <span class="muted">(조건부 영역 · 제외)</span>' : !has ? ' <span class="muted">(척도 문항 없음)</span>' : '') + '</label>';
+      }).join('') : '<div class="hint">영역이 없습니다.</div>') + '</div>';
+    if (!gen) h += '<div><label class="f">과목 배치' + H('돌려가며: 영역 순서대로 학생이 수강하는 과목에 하나씩 나눠 표시합니다(과목 1, 과목 2, … 순). 첫 과목에 모으기: 모든 확인 문항을 첫 과목에 표시합니다. 질문별 표 화면에서는 영역 끝에 한 번씩 표시됩니다.') + '</label><select class="fld" data-ig="place"><option value="rotate"' + (c.place === 'rotate' ? ' selected' : '') + '>수강 과목에 돌려가며 표시 (권장)</option><option value="first"' + (c.place === 'first' ? ' selected' : '') + '>첫 과목에 모아서 표시</option></select></div>';
+    h += '<div><label class="f">확인에 쓸 척도' + H('확인 문항의 보기로 쓰는 척도입니다. 기본은 5점 척도(likert5)입니다.') + '</label><select class="fld" data-ig="scale">' + Object.keys(sc).filter(function (k) { return (sc[k] || []).length >= 3; }).map(function (k) { return '<option value="' + E(k) + '"' + (k === c.scale ? ' selected' : '') + '>' + E(k) + ' (' + sc[k].length + '개 보기)</option>'; }).join('') + '</select></div>' +
+      '<div><label class="f">점검 실패 허용 횟수' + H('확인 문항을 이 횟수까지 틀려도 유효 응답으로 봅니다. 결과 화면의 유효 응답 필터와 추첨 자격의 기본값에 반영됩니다. 실수로 잘못 누른 경우를 감안해 기본 1회를 권장합니다.') + '</label><input class="fld" type="number" min="0" max="9" data-ig="maxFail" value="' + c.maxFail + '"></div>' +
+      '<div class="msg" style="grid-column:1/-1;margin:0">' + I('info', 18) + '<div style="font-size:12.5px">확인 문항 <b>' + cnt + '개</b>' + (cnt ? ' · 보기를 보지 않고 찍어서 ' + Math.max(0, cnt - c.maxFail) + '개 이상 맞힐 확률 약 <b>' + (integChance(cnt, vals, c.maxFail) * 100).toFixed(2) + '%</b>' : ' · 선택된 영역이 없습니다') +
+      '<br>학생 화면 예: “' + E(SVY.integ.question(d, '', ((sc[c.scale] || [])[2] || {}).v, 'course').label) + '”</div></div>';
+    return h;
+  }
   var QUICK = [['single', '객관식'], ['scale5', '5점 척도'], ['paragraph', '서술형'], ['rating', '별점'], ['multi', '체크박스']];
   var addingTo = null;
   A.tabs.questions = function (box) {
@@ -331,7 +363,7 @@
       '<div><label class="f">제출 후 응답 수정' + H('제출한 같은 기기에서 정해진 시간 안에 응답을 고칠 수 있게 합니다. 추첨번호는 그대로 유지됩니다.') + '</label><select class="fld" data-df="edit"><option value=""' + (!d.features.edit ? ' selected' : '') + '>허용 안 함 (제출 후 수정 불가)</option><option value="24"' + (d.features.edit && Number(d.features.edit.hours) === 24 ? ' selected' : '') + '>제출 후 24시간 이내 허용</option><option value="72"' + (d.features.edit && Number(d.features.edit.hours) === 72 ? ' selected' : '') + '>제출 후 3일 이내 허용</option><option value="0"' + (d.features.edit && Number(d.features.edit.hours) === 0 ? ' selected' : '') + '>설문 마감까지 허용</option></select><div class="hint">같은 기기에서만 수정할 수 있으며 DB 7단계 설치가 필요합니다.</div></div>' +
       '<div><label class="f">제출 완료 후 안내' + H('제출 후 화면에 안내 링크 버튼이나 참여 확인서(이미지 저장) 버튼을 추가합니다.') + '</label><select class="fld" data-df="features.after.type"><option value=""' + (!after.type ? ' selected' : '') + '>기본 (완료 문구만 표시)</option><option value="link"' + (after.type === 'link' ? ' selected' : '') + '>안내 링크 버튼 표시</option><option value="receipt"' + (after.type === 'receipt' ? ' selected' : '') + '>참여 확인서(이미지 저장) 제공</option><option value="both"' + (after.type === 'both' ? ' selected' : '') + '>링크 + 참여 확인서</option></select></div>' +
       (after.type === 'link' || after.type === 'both' ? '<div><label class="f">링크 주소 (https://…)</label><input class="fld" data-df="features.after.url" value="' + E(after.url || '') + '"></div><div><label class="f">링크 버튼 문구</label><input class="fld" data-df="features.after.label" value="' + E(after.label || '') + '" placeholder="예: 행사 안내 보기"></div>' : '') +
-      '<div><label class="f">통과 기준 점수 (선택)</label><input class="fld" type="number" min="0" data-df="quiz.passScore" data-k="n" value="' + E(d.quiz.passScore == null ? '' : d.quiz.passScore) + '"></div></div></details>';
+      '<div><label class="f">통과 기준 점수 (선택)</label><input class="fld" type="number" min="0" data-df="quiz.passScore" data-k="n" value="' + E(d.quiz.passScore == null ? '' : d.quiz.passScore) + '"></div>' + integPanel(d, gen) + '</div></details>';
     var secsHtml = d.sections.map(function (s, si) {
       var pv = condHtml(s, { sec: s }, 's');
       return '<div class="sec-card" data-s="' + si + '"><div class="sec-head"><input class="fld" data-sf="title" value="' + E(s.title || '') + '" placeholder="영역 제목"><button class="btn btn-ghost btn-sm" data-act="sup" aria-label="위로">' + I('up', 14) + '</button><button class="btn btn-ghost btn-sm" data-act="sdn" aria-label="아래로">' + I('down', 14) + '</button><button class="btn btn-ghost btn-sm" data-act="sdel" style="color:var(--red)" aria-label="삭제">' + I('trash', 14) + '</button></div>' +
@@ -467,6 +499,25 @@
     };
     box.onchange = function (e) {
       var el = e.target; if (el.closest('#qroot .qprev')) return;
+      var igk = el.getAttribute('data-ig');
+      if (igk) {
+        if (igk === 'on') {
+          if (el.value) {
+            var sk = d.scales && d.scales.likert5 ? 'likert5' : Object.keys(d.scales || {}).filter(function (k) { return (d.scales[k] || []).length >= 3; })[0];
+            if (!sk) { A.toast('확인 문항에 쓸 수 있는 척도(보기 3개 이상)가 없습니다.'); return redraw(); }
+            d.integrity = { on: true, sections: SVY.integ.defaultSections(d), place: 'rotate', scale: sk, maxFail: 1 };
+          } else delete d.integrity;
+        } else if (d.integrity) {
+          if (igk === 'place') d.integrity.place = el.value === 'first' ? 'first' : 'rotate';
+          else if (igk === 'scale') d.integrity.scale = el.value;
+          else if (igk === 'maxFail') d.integrity.maxFail = Math.max(0, Math.min(9, Math.floor(Number(el.value) || 0)));
+          else if (igk === 'sec') {
+            var cur = (d.integrity.sections || []).filter(function (x) { return x !== el.value; }); if (el.checked) cur.push(el.value);
+            d.integrity.sections = (d.sections || []).map(function (x) { return x.id; }).filter(function (id) { return cur.indexOf(id) >= 0; });
+          }
+        }
+        A._setOpen = true; return redraw();
+      }
       var df = el.getAttribute('data-df');
       if (df) {
         var k = el.getAttribute('data-k'), v = el.value;
