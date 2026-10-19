@@ -409,8 +409,8 @@
       im.src = url;
     });
   }
-  function uploadImage(blob) {
-    var path = 'req/' + rid(12) + '.jpg';
+  function uploadImage(blob, pfx) {
+    var path = (pfx || 'req') + '/' + rid(12) + '.jpg';
     return sb.storage.from(BUCKET).upload(path, blob, { contentType: 'image/jpeg', upsert: false }).then(function (r) {
       if (r.error) throw r.error;
       return sb.storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
@@ -571,6 +571,7 @@
       '<button class="btn pri hide" id="sToT">' + ic('monitor', 16) + ' <span>교수 화면으로 돌아가기</span></button>' +
       '<button class="btn hide" id="sToMine">' + ic('back', 16) + ' <span></span></button>' +
       '<button class="btn hide" id="sFree">' + ic('users', 16) + ' 내 속도로 보기</button>' +
+      '<button class="btn" id="sAct" title="실습 단계 · 결과 제출 · 투표">' + ic('check', 16) + ' <span class="lbl">수업 활동</span><i class="badge hide actBadge"></i></button>' +
       '<button class="btn pri" id="sHelp" title="질문·오류·막힘을 교수자에게 보내기">' + ic('chat', 16) + ' <span class="lbl">도움 요청</span><i class="badge hide helpBadge"></i></button>' +
       '<button class="btn" id="sCopy" title="이 쪽의 글자를 모두 복사">' + ic('copy', 16) + ' <span class="lbl">이 쪽 글자 복사</span></button>' +
       '<span class="mode" id="sMode"></span></div>' +
@@ -594,6 +595,8 @@
       '<div class="sheet" id="shNote"><div class="sh-h"><span>노트</span><span style="display:flex;gap:6px"><button class="btn sm" data-copynote>' + ic('copy', 14) + ' 복사</button><button class="btn sm icon" data-close aria-label="닫기">' + ic('x', 16) + '</button></span></div><div class="sh-b"><div class="noteBox"></div></div></div>' +
       '<div class="sheet" id="shLink"><div class="sh-h"><span>링크 · 자료</span><span style="display:flex;gap:6px"><button class="btn sm" data-savetxt>' + ic('download', 14) + ' 저장</button><button class="btn sm icon" data-close aria-label="닫기">' + ic('x', 16) + '</button></span></div><div class="sh-b"><ul class="linkList"></ul><ul class="matList"></ul></div></div>' +
       '<div class="sheet" id="shMemo"><div class="sh-h"><span class="mmt">내 메모</span><span style="display:flex;gap:6px"><button class="btn sm" data-savememo>' + ic('download', 14) + ' 저장</button><button class="btn sm icon" data-close aria-label="닫기">' + ic('x', 16) + '</button></span></div><div class="sh-b"><textarea class="memoTa" rows="4" placeholder="이 쪽에 대한 내 메모 (이 PC에만 저장됩니다)"></textarea></div></div>' +
+      '<div class="chatw hide" id="actW"><div class="ch-h"><b>수업 활동</b><span style="flex:1"></span><button class="btn sm icon" id="actX" aria-label="닫기">' + ic('x', 16) + '</button></div><div class="actTabs" id="actTabs"></div><div class="ch-b act-b" id="actB"></div></div>' +
+      '<div class="shov hide" id="shareOv"><div class="shin"><div class="sh-top"><div><b id="shT"></b> <span class="muted" id="shN"></span></div><div style="display:flex;gap:6px"><button class="btn sm" id="shCp">' + ic('copy', 14) + ' 글자 복사</button><button class="btn sm" id="shX">' + ic('x', 14) + ' 닫기</button></div></div><div class="sh-body" id="shB"></div></div></div>' +
       '<div class="chatw hide" id="chatW"><div class="ch-h"><button class="btn sm icon hide" id="chBack" aria-label="목록">' + ic('chevL', 16) + '</button><b id="chT">도움 요청</b><span style="flex:1"></span><button class="btn sm icon" id="chX" aria-label="닫기">' + ic('x', 16) + '</button></div><div class="ch-b" id="chB"></div></div>' +
       '</div>';
 
@@ -854,6 +857,7 @@
     }
     function openChat(id) {
       if (!S.name) { askName(); return; }
+      if (S.actOpen) closeAct();
       S.chatOpen = true; cw.classList.remove('hide');
       if (id) { S.view = 'thread'; S.curT = id; } else if (!S.threads.length) S.view = 'new'; else if (!(S.view === 'thread' && thr(S.curT))) S.view = 'list';
       renderChat(true);
@@ -903,6 +907,120 @@
     $('#sHelp').onclick = function () { S.chatOpen ? closeChat() : openChat(); };
     $('#tHelp').onclick = function () { S.chatOpen ? closeChat() : openChat(); };
 
+    /* 수업 활동: 실습 단계 · 결과 제출 · 투표 / 교수자가 공유한 우수 사례(전체화면) */
+    S.steps = { items: [], cur: -1 }; S.stepDone = {}; S.poll = null; S.myVote = null; S.pollRes = null; S.subs = [];
+    S.actTab = 'steps'; S.actOpen = false; S.shareSeen = ''; S.shareClosed = ''; S.pollSeen = ''; S.stepsSig = ''; S.share = null; S.subBuilt = false;
+    var aw = $('#actW');
+    function pct(n, t) { return t ? Math.round(n / t * 100) : 0; }
+    function optLabel(i) { return S.poll && S.poll.opts.length === 2 && S.poll.opts[0] === 'O' ? S.poll.opts[i] : (i + 1) + '. ' + S.poll.opts[i]; }
+    function openAct(tab) {
+      if (!S.name) { askName(); return; }
+      if (S.chatOpen) closeChat();
+      if (tab) S.actTab = tab;
+      S.actOpen = true; aw.classList.remove('hide'); S.subBuilt = false; $$('.actBadge').forEach(function (b) { b.classList.add('hide'); }); renderAct(true);
+      if (S.actTab === 'sub') fetchSubs();
+    }
+    function closeAct() { S.actOpen = false; aw.classList.add('hide'); }
+    function renderAct(full) {
+      if (!S.actOpen) return;
+      var tabs = [['steps', '실습 단계'], ['sub', '결과 제출'], ['vote', '투표']];
+      $('#actTabs').innerHTML = tabs.map(function (t) { return '<button class="kchip' + (S.actTab === t[0] ? ' on' : '') + '" data-tab="' + t[0] + '">' + t[1] + (t[0] === 'vote' && S.poll && S.poll.open ? ' <i class="udot"></i>' : '') + '</button>'; }).join('');
+      var b = $('#actB');
+      if (S.actTab === 'steps') {
+        var n = S.steps.items.length, d = S.steps.items.filter(function (i) { return S.stepDone[i.id]; }).length;
+        b.dataset.v = 'steps';
+        b.innerHTML = n ? '<div class="muted">완료 ' + d + ' / ' + n + '</div><div class="prog"><i style="width:' + pct(d, n) + '%"></i></div><ul class="stl">' + S.steps.items.map(function (it, i) {
+          var dn = !!S.stepDone[it.id];
+          return '<li class="' + (dn ? 'done' : '') + (i === S.steps.cur ? ' cur' : '') + '"><label><input type="checkbox" data-step="' + esc(it.id) + '"' + (dn ? ' checked' : '') + '> <span>' + (i + 1) + '. ' + esc(it.t) + '</span></label>' + (i === S.steps.cur ? '<span class="pill p-i">지금 단계</span>' : '') + '</li>';
+        }).join('') + '</ul>' : '<p class="muted" style="text-align:center;margin-top:20px">교수자가 실습 단계를 올리면 여기에 나타납니다.<br>단계를 마칠 때마다 체크해 주십시오.</p>';
+      } else if (S.actTab === 'sub') {
+        if (!S.subBuilt || full) {
+          S.subBuilt = true; b.dataset.v = 'sub';
+          b.innerHTML = '<div class="ch-n" style="padding:0"><div class="muted">프롬프트와 AI 결과를 제출하면 교수자가 우수 사례로 공유할 수 있습니다.</div><input id="subTitle" class="inp" maxlength="60" placeholder="제목 (선택)"><div id="subComp"></div></div><h4 class="h4">내가 제출한 것</h4><div id="subList"></div>';
+          Composer($('#subComp'), { id: 'csub', capture: true, placeholder: '프롬프트·결과·코드를 붙여 넣거나 적어 주세요', codeLabel: '코드·프롬프트 모양 그대로', onSend: function (t, bl, c) {
+            var title = $('#subTitle').value.trim();
+            return (bl ? uploadImage(bl, 'sub') : Promise.resolve(null)).then(function (img) {
+              return rpc('wb_sub_send', { p_code: code, p_cid: cid, p_name: S.name, p_title: title, p_body: t, p_img: img, p_isc: c });
+            }).then(function () { $('#subTitle').value = ''; if (S.ch) S.ch.send({ type: 'broadcast', event: 'sub', payload: { c: cid } }); toast('제출했습니다.'); return fetchSubs(); })
+              .catch(function (e) { throw new Error(e.code === 'RATE_LIMIT' ? '너무 빠르게 제출하고 있습니다. 잠시 후 다시 해 주십시오.' : (e.message || '제출하지 못했습니다.')); });
+          } });
+        }
+        $('#subList').innerHTML = S.subs.length ? S.subs.map(function (m) {
+          return '<div class="trow" style="cursor:default"><span class="tsn"><b>' + esc(m.title || '(제목 없음)') + '</b> ' + esc((m.body || '').replace(/\s+/g, ' ').slice(0, 40)) + (m.img ? ' [사진]' : '') + '</span>' + (S.share && S.share.id === m.id ? '<span class="pill p-d">공유 중</span>' : '') + '<time>' + clock(m.t) + '</time></div>';
+        }).join('') : '<p class="muted">아직 제출한 것이 없습니다.</p>';
+      } else {
+        b.dataset.v = 'vote';
+        var pl = S.poll;
+        if (!pl) { b.innerHTML = '<p class="muted" style="text-align:center;margin-top:20px">진행 중인 투표가 없습니다.</p>'; return; }
+        var tot = S.pollRes ? S.pollRes.total : 0;
+        b.innerHTML = '<div class="pq">' + esc(pl.q) + '</div><div class="muted" style="margin-bottom:8px">' + (pl.open ? (S.myVote != null ? '선택했습니다. 마감 전까지 바꿀 수 있습니다.' : '하나를 선택해 주십시오.') : '투표가 마감되었습니다.') + '</div>' +
+          pl.opts.map(function (o, i) {
+            var cnt = S.pollRes ? (S.pollRes.counts[i] || 0) : 0, ok = S.pollRes && pl.ans === i;
+            return '<button class="popt' + (S.myVote === i ? ' on' : '') + (ok ? ' ok' : '') + '" data-opt="' + i + '"' + (pl.open ? '' : ' disabled') + '>' +
+              (S.pollRes ? '<i class="pbar" style="width:' + pct(cnt, tot) + '%"></i>' : '') + '<span class="pl">' + esc(optLabel(i)) + (ok ? ' · 정답' : '') + '</span>' + (S.pollRes ? '<span class="pn">' + cnt + '명 · ' + pct(cnt, tot) + '%</span>' : '') + '</button>';
+          }).join('') + (S.pollRes ? '<div class="muted" style="margin-top:6px">총 ' + tot + '명 참여</div>' : '');
+      }
+    }
+    aw.addEventListener('click', function (e) {
+      var t = e.target; if (!t.closest) return;
+      if (t.closest('#actX')) { closeAct(); return; }
+      var tb = t.closest('[data-tab]'); if (tb) { S.actTab = tb.getAttribute('data-tab'); S.subBuilt = false; renderAct(true); if (S.actTab === 'sub') fetchSubs(); return; }
+      var op = t.closest('[data-opt]');
+      if (op && S.poll && S.poll.open) {
+        var i = +op.getAttribute('data-opt'), pid = S.poll.id, old = S.myVote; S.myVote = i; renderAct();
+        rpc('wb_vote', { p_code: code, p_cid: cid, p_name: S.name, p_pid: pid, p_choice: i }).then(function () { if (S.ch) S.ch.send({ type: 'broadcast', event: 'vote', payload: { c: cid } }); })
+          .catch(function () { S.myVote = old; renderAct(); toast('투표하지 못했습니다. 마감되었을 수 있습니다.'); });
+      }
+    });
+    aw.addEventListener('change', function (e) {
+      var cb = e.target; if (!cb.getAttribute || !cb.getAttribute('data-step')) return;
+      var id = cb.getAttribute('data-step'), on = cb.checked; S.stepDone[id] = on; renderAct();
+      rpc('wb_prog_set', { p_code: code, p_cid: cid, p_name: S.name, p_step: id, p_done: on }).then(function () { if (S.ch) S.ch.send({ type: 'broadcast', event: 'prog', payload: { c: cid } }); })
+        .catch(function () { S.stepDone[id] = !on; renderAct(); toast('저장하지 못했습니다. 연결을 확인해 주십시오.'); });
+    });
+    $('#sAct').onclick = function () { S.actOpen ? closeAct() : openAct(); };
+    function fetchSubs() { return rpc('wb_sub_mine', { p_code: code, p_cid: cid }).then(function (l) { S.subs = l || []; if (S.actOpen && S.actTab === 'sub') renderAct(); }).catch(function () {}); }
+    function fetchVote() {
+      var pl = S.poll; if (!pl) return;
+      rpc('wb_vote_mine', { p_code: code, p_cid: cid, p_pid: pl.id }).then(function (v) { if (S.poll && S.poll.id === pl.id) { S.myVote = v; renderAct(); } }).catch(function () {});
+      fetchPollRes();
+    }
+    function fetchPollRes() {
+      var pl = S.poll; if (!pl || !pl.show) { S.pollRes = null; return; }
+      rpc('wb_vote_res', { p_code: code, p_pid: pl.id }).then(function (r) { if (S.poll && S.poll.id === pl.id) { S.pollRes = r; renderAct(); } }).catch(function () {});
+    }
+    rpc('wb_prog_mine', { p_code: code, p_cid: cid }).then(function (l) { (l || []).forEach(function (id) { S.stepDone[id] = true; }); renderAct(); }).catch(function () {});
+    /* 우수 사례 전체화면 (교수자가 학생 화면에 공유했을 때) */
+    function showShare(sh) {
+      S.share = sh; S.shareSeen = sh.id; if (S.shareClosed === sh.id) return;
+      $('#shT').textContent = sh.title || '우수 사례'; $('#shN').textContent = sh.name ? '· ' + sh.name : '';
+      $('#shB').innerHTML = (sh.body ? '<div class="btxt' + (sh.c ? ' isc' : '') + '">' + esc(sh.body) + '</div>' : '') + (sh.img ? '<img class="cimg shimg" src="' + esc(sh.img) + '" alt="공유된 사진">' : '');
+      $('#shCp').classList.toggle('hide', !sh.body); $('#shareOv').classList.remove('hide');
+    }
+    function hideShare() { S.share = null; $('#shareOv').classList.add('hide'); }
+    $('#shX').onclick = function () { if (S.share) S.shareClosed = S.share.id; $('#shareOv').classList.add('hide'); };
+    $('#shCp').onclick = function () { copyText(S.share ? S.share.body : '', '복사했습니다.'); };
+    /* 서버 상태(수업방)에서 실습 단계·투표·공유 반영 */
+    function syncActivity(r) {
+      var st = r.steps && r.steps.items ? r.steps : { items: [], cur: -1 }, sg = JSON.stringify(st);
+      if (sg !== S.stepsSig) {
+        if (S.stepsSig !== '' && st.items.length) { toast(st.cur >= 0 && st.items[st.cur] ? '지금 단계: ' + st.items[st.cur].t : '실습 단계가 올라왔습니다.'); $$('.actBadge').forEach(function (b) { b.classList.remove('hide'); }); vibrate(60); }
+        S.stepsSig = sg; S.steps = st; renderAct();
+      }
+      var pl = r.poll || null;
+      if (!pl) { if (S.poll) { S.poll = null; S.pollRes = null; S.myVote = null; S.pollSeen = ''; renderAct(); } }
+      else {
+        var isNew = pl.id !== S.pollSeen, changed = JSON.stringify(pl) !== JSON.stringify(S.poll);
+        S.poll = pl;
+        if (isNew) { S.pollSeen = pl.id; S.myVote = null; S.pollRes = null; fetchVote(); if (pl.open) { toast('투표가 시작되었습니다.', '참여', function () { openAct('vote'); }); vibrate(100); openAct('vote'); } }
+        else if (changed) { fetchPollRes(); renderAct(); }
+        if (pl.show) fetchPollRes();
+      }
+      var sh = r.share || null;
+      if (sh) { if (S.shareSeen !== sh.id) { S.shareClosed = S.shareClosed === sh.id ? S.shareClosed : ''; showShare(sh); vibrate(60); } else S.share = sh; }
+      else if (S.share || S.shareSeen) { hideShare(); S.shareClosed = ''; S.shareSeen = ''; }
+    }
+
     /* 서버 상태 반영 */
     function setTeacherPos(mat, page, ts) {
       if (ts < S.pageTs) return;
@@ -932,6 +1050,7 @@
       if ((r.note_ts || 0) >= S.noteTs && sanitize(r.note) !== S.noteHtml) { S.noteTs = r.note_ts || 0; setNote(r.note); }
       addLinks(r.links || [], !S.firstDone);
       S.firstDone = true;
+      syncActivity(r);
       if (r.timer_left > 0) { var cl = S.tEnd ? (S.tEnd - Date.now()) / 1000 : -99; if (Math.abs(cl - r.timer_left) > 3) setTimer(r.timer_left, r.timer_label); }
       else if (S.tEnd && S.tEnd - Date.now() > 2000) setTimer(0);
       show();
@@ -939,7 +1058,7 @@
 
     /* 폴링 백업 */
     function poll() {
-      rpc('wb_room_get', { p_code: code, p_ver: S.ver }).then(function (r) { S.pollOk = true; applyRoom(r); paintConn(); if (S.threads.length || S.chatOpen) fetchThreads(); })
+      rpc('wb_room_get', { p_code: code, p_ver: S.ver }).then(function (r) { S.pollOk = true; applyRoom(r); paintConn(); if (S.threads.length || S.chatOpen) fetchThreads(); if (S.poll && S.poll.show) fetchPollRes(); })
         .catch(function () { S.pollOk = false; paintConn(); });
     }
     function paintConn() {
@@ -965,6 +1084,8 @@
       } else if (p.t === 'clk') { if (S.mat === p.m && S.cur === p.p) viewer.ripple(p.x, p.y); }
       else if (p.t === 'timer') setTimer(p.sec, p.label);
       else if (p.t === 'rep') { if (p.c === cid) fetchThreads(); }
+      else if (p.t === 'share') { if (p.sh) { if (S.shareSeen !== p.sh.id) S.shareClosed = ''; showShare(p.sh); vibrate(60); } }
+      else if (p.t === 'unshare') { hideShare(); S.shareClosed = ''; S.shareSeen = ''; }
       else if (p.t === 'doc' || p.t === 'links' || p.t === 'end') { S.ver = null; poll(); }
     }
     function onEvent(m) {
@@ -1060,6 +1181,7 @@
         '<div class="hdr-r"><span class="chip">수업코드 <b style="font-size:16px;letter-spacing:.1em">' + esc(C.code) + '</b></span>' +
         '<button class="btn sm pri" id="bQr">' + ic('qr', 15) + ' 입장 안내</button>' +
         '<a class="btn sm" id="bView" target="_blank" rel="noopener" href="' + esc(joinUrl + '&view=1') + '">' + ic('monitor', 15) + ' 학생 화면 보기</a>' +
+        '<button class="btn sm" id="bTools" title="실습 단계 · 투표/퀴즈 · 제출 갤러리(우수 사례 공유)">' + ic('list', 15) + ' 수업 도구 <span class="cnt hide" id="toolCnt">0</span></button>' +
         '<button class="btn sm" id="bReq" title="학생 도움 요청 보드">' + ic('chat', 15) + ' 도움 요청 <span class="cnt hide" id="reqCnt">0</span></button>' +
         '<button class="btn sm" id="bPres" title="슬라이드를 전체화면으로 크게 보며 발표">' + ic('full', 15) + ' 발표 모드</button>' +
         '<button class="btn sm" id="bEnd"></button></div></header>' +
@@ -1109,7 +1231,7 @@
         '<div class="cards" id="tCards"></div>' +
         '<div class="hud hide" id="tHud"><button class="btn icon sm" id="hTh" title="쪽 목록" aria-label="쪽 목록">' + ic('grid', 16) + '</button><button class="btn icon sm" id="hPrev" aria-label="이전 쪽">' + ic('chevL', 16) + '</button><b id="hPg">1 / 1</b><button class="btn icon sm" id="hNext" aria-label="다음 쪽">' + ic('chevR', 16) + '</button>' +
         '<span class="hs">접속 <b id="hU">0</b></span><span class="hs g">이해 <b id="hG">0</b></span><span class="hs h">어려움 <b id="hH">0</b></span><span class="hs t hide" id="hTm"></span>' +
-        '<button class="btn sm" id="hReq">' + ic('chat', 14) + ' 요청 <b id="hReqN">0</b></button><button class="btn sm" id="hNote">' + ic('note', 14) + ' 노트</button><button class="btn sm" id="hExit">' + ic('x', 14) + ' 나가기</button></div>' +
+        '<button class="btn sm" id="hTools">' + ic('list', 14) + ' 도구</button><button class="btn sm" id="hReq">' + ic('chat', 14) + ' 요청 <b id="hReqN">0</b></button><button class="btn sm" id="hNote">' + ic('note', 14) + ' 노트</button><button class="btn sm" id="hExit">' + ic('x', 14) + ' 나가기</button></div>' +
         '<div class="dropov hide" id="dropOv"><div>' + ic('upload', 40) + '<p>여기에 놓으면 올라갑니다</p><span>PDF는 수업 자료로, 그 밖의 파일은 첨부 자료로 올립니다</span></div></div></div>';
 
       var viewer = Viewer($('#tStage'), $('#tCv'));
@@ -1348,7 +1470,7 @@
         if (C.active && !confirm('수업을 종료하시겠습니까? 학생 화면에 종료 안내가 표시됩니다. (자료와 노트는 보관됩니다)')) return;
         C.active = !C.active; paintEnd(); persist({ active: C.active }, 0); Promise.resolve(flush()).then(function () { send({ t: 'end' }); });
       };
-      $('#bList').onclick = function () { if (C.ch) sb.removeChannel(C.ch); clearInterval(C.sigTimer); clearInterval(C.reqTimer); location.href = base + '?mode=teacher'; };
+      $('#bList').onclick = function () { if (C.ch) sb.removeChannel(C.ch); clearInterval(C.sigTimer); clearInterval(C.reqTimer); clearInterval(C.toolTimer); location.href = base + '?mode=teacher'; };
 
       /* 입장 안내 (QR) */
       $('#bQr').onclick = function () {
@@ -1470,6 +1592,7 @@
       };
 
       /* ── 학생 도움 요청: 알림 카드 + 칸반 보드 + 대화 ── */
+      C.roster = []; C.steps = R.steps && R.steps.items ? R.steps : { items: [], cur: -1 }; C.poll = R.poll || null; C.sharing = R.share || null;
       C.reqs = []; C.cards = {}; C.alerted = {}; C.reqFirst = true; C.board = false; C.selReq = null; C.names = C.names || [];
       function reqById(id) { return C.reqs.filter(function (t) { return t.id === id; })[0]; }
       function lastMax(t, role) { var mx = 0; t.msgs.forEach(function (m) { if (m.r === role && m.id > mx) mx = m.id; }); return mx; }
@@ -1602,6 +1725,173 @@
         document.body.appendChild(o); o.onclick = function (e) { if (e.target === o || e.target.closest('button')) o.remove(); };
       };
 
+      /* ── 수업 도구: 실습 단계 · 투표/퀴즈 · 제출 갤러리(우수 사례 공유) ── */
+      C.tools = { subs: [], prog: [], vote: null }; C.toolsOpen = false; C.tab = 'steps'; C.subSeen = Date.now(); C.onlyStar = false;
+      function unseenSubs() { return C.tools.subs.filter(function (m) { return m.t > C.subSeen; }).length; }
+      function paintToolBadge() { var n = C.toolsOpen && C.tab === 'sub' ? 0 : unseenSubs(); $('#toolCnt').textContent = n; $('#toolCnt').classList.toggle('hide', !n); }
+      var toolBusy = false;
+      function pollTools() {
+        if (toolBusy) return; toolBusy = true;
+        var jobs = [call('wb_sub_list', { p_code: C.code }).then(function (l) { C.tools.subs = l || []; })];
+        if (C.steps.items.length) jobs.push(call('wb_prog_get', { p_code: C.code }).then(function (l) { C.tools.prog = l || []; }));
+        if (C.poll) jobs.push(call('wb_vote_get', { p_code: C.code, p_pid: C.poll.id }).then(function (v) { C.tools.vote = v; }));
+        Promise.all(jobs).then(function () { toolBusy = false; if (C.toolsOpen && C.tab === 'sub') C.subSeen = Date.now(); paintToolBadge(); if (C.toolsOpen) renderTools(false); }).catch(function () { toolBusy = false; });
+      }
+      C.toolTimer = setInterval(pollTools, 3000); pollTools();
+      function pushRoom(patch) { persist(patch, 0); return Promise.resolve(flush()).then(function () { send({ t: 'doc' }); }); }
+      function openTools(tab) { C.toolsOpen = true; if (tab) C.tab = tab; renderTools(true); pollTools(); }
+      function closeTools() { C.toolsOpen = false; var o = $('#toolsM'); if (o) o.remove(); paintToolBadge(); }
+      function renderTools(full) {
+        var o = $('#toolsM');
+        if (!o) {
+          o = document.createElement('div'); o.id = 'toolsM'; o.className = 'modal'; full = true;
+          o.innerHTML = '<div class="bd card" style="height:min(720px,92vh)"><div class="mh"><b>수업 도구</b><div class="tlTabs" id="tlTabs"></div><span style="flex:1"></span><button class="btn sm icon" id="tlX" aria-label="닫기">' + ic('x', 16) + '</button></div><div class="tl-b" id="tlB"></div></div>';
+          document.body.appendChild(o);
+          o.addEventListener('mousedown', function (e) { if (e.target === o) closeTools(); });
+          $('#tlX').onclick = closeTools;
+          $('#tlB').addEventListener('click', function (e) {
+            var c = e.target.closest('[data-cur]'); if (!c) return;
+            C.steps = { items: C.steps.items, cur: +c.getAttribute('data-cur') }; pushRoom({ steps: C.steps }); renderTools(false);
+          });
+          $('#tlTabs').addEventListener('click', function (e) { var b = e.target.closest('[data-tab]'); if (b) { C.tab = b.getAttribute('data-tab'); if (C.tab === 'sub') C.subSeen = Date.now(); renderTools(true); } });
+        }
+        $('#tlTabs').innerHTML = [['steps', '실습 단계'], ['poll', '투표·퀴즈'], ['sub', '제출 갤러리']].map(function (t) { return '<button class="kchip' + (C.tab === t[0] ? ' on' : '') + '" data-tab="' + t[0] + '">' + t[1] + (t[0] === 'sub' && C.tools.subs.length ? ' (' + C.tools.subs.length + ')' : '') + '</button>'; }).join('');
+        if (C.tab === 'steps') tlSteps(full); else if (C.tab === 'poll') tlPoll(full); else tlGallery(full);
+        paintToolBadge();
+      }
+      /* 실습 단계 */
+      function doneSet(stepId) { var m = {}; C.tools.prog.forEach(function (r) { if (r.s === stepId) m[r.c] = 1; }); return m; }
+      function stepProgHtml() {
+        var items = C.steps.items, total = C.roster.length;
+        if (!items.length) return '<p class="muted">올린 단계가 없습니다.</p>';
+        return '<ul class="stp">' + items.map(function (it, i) {
+          var ds = doneSet(it.id), n = C.roster.filter(function (r) { return ds[r.cid]; }).length, miss = C.roster.filter(function (r) { return !ds[r.cid]; }).map(function (r) { return r.name || '(이름 없음)'; });
+          return '<li class="' + (i === C.steps.cur ? 'cur' : '') + '"><div class="stp-h"><b>' + (i + 1) + '. ' + esc(it.t) + '</b><span class="pill ' + (total && n === total ? 'p-d' : 'p-i') + '">' + n + ' / ' + total + '</span>' +
+            (i === C.steps.cur ? '<span class="pill p-w">지금 단계</span>' : '<button class="btn sm" data-cur="' + i + '">지금 단계로</button>') + '</div><div class="prog"><i style="width:' + pct(n, total) + '%"></i></div>' +
+            (i === C.steps.cur && miss.length ? '<div class="muted">아직 안 한 학생 ' + miss.length + '명: ' + esc(miss.join(', ')) + '</div>' : '') + '</li>';
+        }).join('') + '</ul>';
+      }
+      function pct(n, t) { return t ? Math.round(n / t * 100) : 0; }
+      function tlSteps(full) {
+        var b = $('#tlB');
+        if (full || b.dataset.v !== 'steps') {
+          b.dataset.v = 'steps';
+          b.innerHTML = '<div class="tl-grid"><div><h4 class="h4">단계 입력 (한 줄에 한 단계)</h4><textarea id="stTa" class="cp-ta" rows="10" placeholder="1단계: 사이트 접속 후 가입&#10;2단계: 첫 질문 입력&#10;3단계: 결과 저장"></textarea>' +
+            '<div class="fr" style="margin-top:8px"><button class="btn pri" id="stSave">단계 올리기</button><button class="btn red" id="stClr">모두 내리기</button></div><p class="muted">글자를 고치지 않은 단계는 학생의 완료 표시가 유지됩니다.</p></div>' +
+            '<div><h4 class="h4">진행 현황 <span class="muted" style="font-weight:400">(접속 ' + C.roster.length + '명 기준)</span></h4><div id="stProg"></div></div></div>';
+          $('#stTa').value = C.steps.items.map(function (i) { return i.t; }).join('\n');
+          $('#stSave').onclick = function () {
+            var lines = $('#stTa').value.split('\n').map(function (x) { return x.trim().slice(0, 100); }).filter(Boolean).slice(0, 30);
+            if (!lines.length) { toast('단계를 한 줄 이상 입력해 주십시오.'); return; }
+            var old = {}; C.steps.items.forEach(function (i) { old[i.t] = i.id; });
+            var curT = C.steps.cur >= 0 && C.steps.items[C.steps.cur] ? C.steps.items[C.steps.cur].t : null;
+            var items = lines.map(function (t) { return { id: old[t] || rid(3), t: t }; });
+            var cur = curT ? lines.indexOf(curT) : -1; if (cur < 0 && items.length) cur = 0;
+            C.steps = { items: items, cur: cur }; pushRoom({ steps: C.steps }).then(function () { toast('학생 화면에 단계를 올렸습니다.'); pollTools(); renderTools(true); });
+          };
+          $('#stClr').onclick = function () { if (!confirm('올린 단계를 모두 내리시겠습니까?')) return; C.steps = { items: [], cur: -1 }; pushRoom({ steps: C.steps }).then(function () { renderTools(true); }); };
+        }
+        $('#stProg').innerHTML = stepProgHtml();
+      }
+      /* 투표·퀴즈 */
+      function tlPoll(full) {
+        var b = $('#tlB'), pl = C.poll;
+        if (!full && b.dataset.v === 'poll' && !pl) return;
+        b.dataset.v = 'poll';
+        if (!pl) {
+          b.innerHTML = '<div class="tl-one"><h4 class="h4">새 투표·퀴즈</h4><input id="pqQ" class="inp" maxlength="200" placeholder="질문 (예: 방금 설명한 내용이 이해되었습니까?)">' +
+            '<div class="fr" style="margin-top:8px"><label class="chk"><input type="radio" name="pqT" value="ox" checked> O / X</label><label class="chk"><input type="radio" name="pqT" value="mc"> 객관식</label></div>' +
+            '<textarea id="pqO" class="cp-ta hide" rows="5" placeholder="보기를 한 줄에 하나씩 (2~6개)"></textarea>' +
+            '<div class="fr" style="margin-top:8px;align-items:center">정답(선택) <input id="pqA" class="inp" style="width:90px" placeholder="번호"><span class="muted">O/X는 1=O, 2=X · 정답이 있으면 결과 공개 때 표시됩니다.</span></div>' +
+            '<div class="fr" style="margin-top:10px"><button class="btn pri" id="pqGo">투표 시작</button></div></div>';
+          $$('[name="pqT"]').forEach(function (r) { r.onchange = function () { $('#pqO').classList.toggle('hide', r.value === 'ox' || !r.checked); }; });
+          $('#pqGo').onclick = function () {
+            var q = $('#pqQ').value.trim(); if (!q) { toast('질문을 입력해 주십시오.'); return; }
+            var ox = $('[name="pqT"]:checked').value === 'ox', opts = ox ? ['O', 'X'] : $('#pqO').value.split('\n').map(function (x) { return x.trim().slice(0, 80); }).filter(Boolean).slice(0, 6);
+            if (opts.length < 2) { toast('보기를 2개 이상 입력해 주십시오.'); return; }
+            var a = parseInt($('#pqA').value, 10), ans = a >= 1 && a <= opts.length ? a - 1 : -1;
+            C.poll = { id: rid(4), q: q, opts: opts, ans: ans, open: true, show: false }; C.tools.vote = null;
+            pushRoom({ poll: C.poll }).then(function () { toast('학생 화면에 투표를 띄웠습니다.'); pollTools(); renderTools(true); });
+          };
+          return;
+        }
+        var v = C.tools.vote || { total: 0, counts: [] }, tot = v.total, ro = C.roster.length;
+        b.innerHTML = '<div class="tl-one"><div class="pq">' + esc(pl.q) + '</div><div class="muted">' + (pl.open ? '진행 중' : '마감') + ' · 참여 ' + tot + '명 / 접속 ' + ro + '명 · 학생 화면 결과 ' + (pl.show ? '공개 중' : '비공개') + '</div>' +
+          pl.opts.map(function (o, i) {
+            var n = v.counts[i] || 0;
+            return '<div class="popt static' + (pl.ans === i ? ' ok' : '') + '"><i class="pbar" style="width:' + pct(n, tot) + '%"></i><span class="pl">' + (pl.opts.length === 2 && pl.opts[0] === 'O' ? esc(o) : (i + 1) + '. ' + esc(o)) + (pl.ans === i ? ' · 정답' : '') + '</span><span class="pn">' + n + '명 · ' + pct(n, tot) + '%</span></div>';
+          }).join('') +
+          '<div class="fr" style="margin-top:12px"><button class="btn" id="pqShow">' + (pl.show ? '결과 숨기기' : '결과 공개') + '</button><button class="btn" id="pqOpen">' + (pl.open ? '마감' : '다시 열기') + '</button><button class="btn red" id="pqEnd">투표 내리기</button></div></div>';
+        function upd(k, val) { C.poll = Object.assign({}, C.poll); C.poll[k] = val; pushRoom({ poll: C.poll }).then(function () { renderTools(true); }); }
+        $('#pqShow').onclick = function () { upd('show', !pl.show); };
+        $('#pqOpen').onclick = function () { upd('open', !pl.open); };
+        $('#pqEnd').onclick = function () { if (!confirm('투표를 내리시겠습니까? 학생 화면에서 사라집니다.')) return; C.poll = null; C.tools.vote = null; pushRoom({ poll: null }).then(function () { renderTools(true); }); };
+      }
+      /* 제출 갤러리 · 우수 사례 공유 */
+      function shareOverlay(sh) {
+        var o = $('#tShare'); if (o) o.remove();
+        o = document.createElement('div'); o.id = 'tShare'; o.className = 'shov';
+        o.innerHTML = '<div class="shin"><div class="sh-top"><div><b>' + esc(sh.title || '우수 사례') + '</b> <span class="muted">' + (sh.name ? '· ' + esc(sh.name) : '') + '</span></div><div style="display:flex;gap:6px">' +
+          (sh.body ? '<button class="btn sm" data-cptxt-x>' + ic('copy', 14) + ' 글자 복사</button>' : '') + '<button class="btn sm pri" id="tShEnd">' + ic('x', 14) + ' 공유 끝내기</button></div></div><div class="sh-body">' +
+          (sh.body ? '<div class="btxt' + (sh.c ? ' isc' : '') + '">' + esc(sh.body) + '</div>' : '') + (sh.img ? '<img class="cimg shimg" src="' + esc(sh.img) + '" alt="">' : '') + '</div></div>';
+        document.body.appendChild(o);
+        var cp = $('[data-cptxt-x]', o); if (cp) cp.onclick = function () { copyText(sh.body, '복사했습니다.'); };
+        $('#tShEnd').onclick = endShare;
+      }
+      function endShare() {
+        var o = $('#tShare'); if (o) o.remove();
+        if (C.sharing) { C.sharing = null; pushRoom({ share: null }).then(function () { send({ t: 'unshare' }); }); }
+        if (C.toolsOpen) renderTools(false);
+      }
+      function shareDialog(sub) {
+        var last = store('wb_sharemode') || 'students', d = document.createElement('div'); d.className = 'modal'; d.style.zIndex = 110;
+        d.innerHTML = '<div class="mbox card" style="width:min(460px,100%)"><div class="mh"><b>우수 사례 공유</b></div><div class="mb"><p class="muted" style="margin:6px 0">「' + esc(sub.title || sub.name) + '」를 어디에 크게 보여 드릴까요?</p>' +
+          [['students', '학생 화면 전체에 띄우기', '모든 학생의 화면에 전체화면으로 나타납니다. (학생은 닫기 가능)'], ['teacher', '내 화면(프로젝터)에만 크게', '교수자 화면에만 전체화면으로 나타나 프로젝터로 함께 봅니다.'], ['both', '둘 다', '학생 화면과 내 화면 모두에 띄웁니다.']].map(function (m) {
+            return '<label class="shopt"><input type="radio" name="shM" value="' + m[0] + '"' + (last === m[0] ? ' checked' : '') + '><span><b>' + m[1] + '</b><br><span class="muted">' + m[2] + '</span></span></label>';
+          }).join('') + '<label class="chk" style="margin-top:8px"><input type="checkbox" id="shNm"> 제출한 학생 이름 함께 표시</label></div><div class="mf"><button class="btn" data-x>취소</button><button class="btn pri" data-go>공유 시작</button></div></div>';
+        document.body.appendChild(d);
+        d.onclick = function (e) { if (e.target === d || e.target.closest('[data-x]')) d.remove(); };
+        $('[data-go]', d).onclick = function () {
+          var mode = $('[name="shM"]:checked', d).value, nm = $('#shNm', d).checked; store('wb_sharemode', mode); d.remove();
+          var sh = { id: sub.id, title: sub.title, body: sub.body, img: sub.img, c: sub.c, name: nm ? sub.name : '', mode: mode };
+          if (mode !== 'teacher') { C.sharing = sh; pushRoom({ share: sh }).then(function () { send({ t: 'share', sh: sh }); }); }
+          if (mode !== 'students') shareOverlay(sh);
+          toast(mode === 'students' ? '학생 화면에 공유했습니다.' : mode === 'teacher' ? '내 화면에 크게 띄웠습니다.' : '학생 화면과 내 화면에 공유했습니다.');
+          if (C.toolsOpen) renderTools(false);
+        };
+      }
+      function tlGallery(full) {
+        var b = $('#tlB'), subs = C.tools.subs.filter(function (m) { return !C.onlyStar || m.star; });
+        if (full || b.dataset.v !== 'sub') {
+          b.dataset.v = 'sub';
+          b.innerHTML = '<div class="tl-tb"><span id="gcN"></span><label class="chk" style="margin:0"><input type="checkbox" id="gcStar"> 별표한 것만</label><span style="flex:1"></span><button class="btn sm" id="gcEnd">공유 끝내기</button><button class="btn sm red" id="gcPurge">기록 지우기</button></div><div class="gal" id="gcG"></div>';
+          $('#gcStar').checked = C.onlyStar;
+          $('#gcStar').onchange = function () { C.onlyStar = this.checked; renderTools(false); };
+          $('#gcEnd').onclick = endShare;
+          $('#gcPurge').onclick = function () {
+            if (!confirm('제출물의 이름·내용·사진 연결과 단계·투표 기록의 이름을 모두 지웁니다. 계속하시겠습니까?')) return;
+            call('wb_sub_purge', { p_code: C.code }).then(function () { C.tools.subs = []; renderTools(false); toast('지웠습니다.'); }).catch(function () { toast('지우지 못했습니다.'); });
+          };
+          $('#gcG').addEventListener('click', function (e) {
+            var c = e.target.closest('.gcard'); if (!c) return;
+            var id = c.getAttribute('data-id'), sub = C.tools.subs.filter(function (m) { return m.id === id; })[0]; if (!sub) return;
+            if (e.target.closest('[data-share]')) { shareDialog(sub); return; }
+            if (e.target.closest('[data-star]')) { sub.star = !sub.star; call('wb_sub_patch', { p_code: C.code, p_id: id, p_patch: { star: sub.star } }).catch(function () {}); renderTools(false); return; }
+            if (e.target.closest('[data-hide]')) { call('wb_sub_patch', { p_code: C.code, p_id: id, p_patch: { hidden: true } }).then(pollTools); C.tools.subs = C.tools.subs.filter(function (m) { return m.id !== id; }); renderTools(false); }
+          });
+        }
+        $('#gcN').textContent = '제출 ' + C.tools.subs.length + '건' + (C.sharing ? ' · 공유 중: ' + (C.sharing.title || '우수 사례') : '');
+        $('#gcEnd').classList.toggle('hide', !C.sharing && !$('#tShare'));
+        $('#gcG').innerHTML = subs.length ? subs.map(function (m) {
+          return '<div class="gcard' + (C.sharing && C.sharing.id === m.id ? ' on' : '') + '" data-id="' + esc(m.id) + '"><div class="gc-h"><b>' + esc(m.name) + '</b><span class="muted">' + clock(m.t) + '</span><span style="flex:1"></span><button class="btn sm icon' + (m.star ? ' on' : '') + '" data-star title="별표" aria-label="별표">' + (m.star ? '★' : '☆') + '</button></div>' +
+            (m.title ? '<div class="gc-t">' + esc(m.title) + '</div>' : '') + (m.body ? '<div class="gc-b' + (m.c ? ' isc' : '') + '">' + esc(m.body) + '</div>' : '') + (m.img ? '<img class="rthumb" style="max-height:120px" src="' + esc(m.img) + '" alt="">' : '') +
+            '<div class="gc-a"><button class="btn sm pri" data-share>' + ic('monitor', 13) + ' 공유</button><button class="btn sm" data-hide>숨김</button></div></div>';
+        }).join('') : '<p class="muted" style="padding:20px">제출된 결과가 없습니다.</p>';
+      }
+      $('#bTools').onclick = function () { C.toolsOpen ? closeTools() : openTools(); };
+      $('#hTools').onclick = function () { C.toolsOpen ? closeTools() : openTools(); };
+      if (C.sharing && C.sharing.mode === 'both') { /* 새로 열었을 때는 학생 공유 상태만 이어받음 */ }
+
       /* 실시간 연결 */
       var ch = sb.channel('wb-' + C.code, { config: { broadcast: { self: false }, presence: { key: 't-' + rid(4) } } });
       C.ch = ch;
@@ -1609,11 +1899,13 @@
       ch.on('broadcast', { event: 'sig' }, function () { clearTimeout(sTimer); sTimer = setTimeout(pollSig, 250); });
       var rTimer = null;
       ch.on('broadcast', { event: 'req' }, function () { clearTimeout(rTimer); rTimer = setTimeout(pollReq, 250); });
+      var tTimer = null;
+      ['prog', 'vote', 'sub'].forEach(function (ev) { ch.on('broadcast', { event: ev }, function () { clearTimeout(tTimer); tTimer = setTimeout(pollTools, 300); }); });
       ch.on('presence', { event: 'sync' }, function () {
         var st = ch.presenceState(), n = 0;
-        var nm = [];
-        Object.keys(st).forEach(function (k) { var ms = st[k].filter(function (m) { return m.role === 's'; }); if (ms.length) { n++; nm.push(ms[0].name || ''); } });
-        C.names = nm;
+        var nm = [], ro = [];
+        Object.keys(st).forEach(function (k) { var ms = st[k].filter(function (m) { return m.role === 's'; }); if (ms.length) { n++; nm.push(ms[0].name || ''); ro.push({ cid: k, name: ms[0].name || '' }); } });
+        C.names = nm; C.roster = ro;
         C.users = n; $('#stU').textContent = n; paintHard();
       });
       ch.subscribe(function (s) { if (s === 'SUBSCRIBED') ch.track({ role: 't' }); });
