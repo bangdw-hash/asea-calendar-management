@@ -303,7 +303,7 @@ a.btn.pri { color:#fff; }
 .ch-h { display:flex; align-items:center; gap:8px; padding:10px 12px; border-bottom:1px solid var(--line); }
 .ch-b { flex:1; min-height:0; display:flex; flex-direction:column; }
 .ch-l, .ch-n { padding:12px; overflow:auto; display:flex; flex-direction:column; gap:8px; }
-.trow { display:flex; align-items:center; gap:6px; width:100%; padding:9px 10px; text-align:left; background:var(--card); border:1px solid var(--line); border-radius:var(--r); }
+.trow { display:flex; align-items:center; gap:10px; width:100%; padding:9px 10px; text-align:left; background:var(--card); border:1px solid var(--line); border-radius:var(--r); }
 .trow:hover { border-color:var(--primary); background:var(--primary-lt); }
 .trow .tsn { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:13px; color:var(--ink2); }
 .trow time, .bub time { font-size:11px; color:var(--ink3); }
@@ -314,19 +314,26 @@ a.btn.pri { color:#fff; }
 .ch-msgs { flex:1; min-height:0; overflow:auto; padding:12px; display:flex; flex-direction:column; gap:10px; background:var(--bg); }
 .ch-comp { padding:8px 10px; border-top:1px solid var(--line); background:var(--card); }
 .ch-n #chComp { border:1px solid var(--line); border-radius:var(--r); padding:8px; }
-.msg { display:flex; gap:8px; align-items:flex-end; max-width:92%; }
+.msg { display:flex; gap:8px; align-items:flex-end; max-width:90%; }
 .msg.me { align-self:flex-end; flex-direction:row-reverse; }
 .msg .av { flex:none; width:28px; height:28px; border-radius:50%; background:#c7d2fe; color:#312e81; font-size:12px; font-weight:800; display:flex; align-items:center; justify-content:center; }
 .msg .av.t { background:var(--primary); color:#fff; }
-.bub { background:var(--card); border:1px solid var(--line); border-radius:var(--r); padding:8px 10px; min-width:0; }
-.msg.me .bub { background:var(--primary); border-color:var(--primary); color:#fff; }
-.msg.me .bub time { color:rgba(255,255,255,.75); }
-.bub time { display:block; margin-top:3px; text-align:right; }
+.mcol { min-width:0; display:flex; flex-direction:column; align-items:flex-start; gap:3px; }
+.msg.me .mcol { align-items:flex-end; }
+.bub { background:#f1f3f4; border:1px solid transparent; border-radius:var(--r); padding:8px 11px; min-width:0; max-width:100%; }
+.msg.me .bub { background:var(--primary-lt); border-color:#c5d8f8; color:var(--ink); }
+.mfoot { display:flex; align-items:center; gap:6px; font-size:11px; color:var(--ink3); padding:0 2px; }
+.mfoot .seen { color:var(--primary); font-weight:600; }
+.rxb { display:inline-flex; align-items:center; border:0; background:transparent; color:var(--ink3); padding:2px; cursor:pointer; border-radius:var(--r); }
+.rxb:hover { color:var(--red); }
+.rxb.on { color:var(--red); } .rxb.on svg { fill:currentColor; }
+.typing { padding:4px 14px; font-size:12px; color:var(--ink3); background:var(--bg); }
 .btxt { white-space:pre-wrap; word-break:break-word; line-height:1.55; font-size:14px; }
 .btxt.isc, .rc-b.isc, .kk-b.isc { font-family:Consolas,'D2Coding',monospace; font-size:12.5px; background:rgba(17,24,39,.9); color:#e5e7eb; padding:6px 8px; border-radius:var(--r); }
 .cimg { display:block; max-width:100%; max-height:220px; margin-top:6px; border-radius:var(--r); cursor:zoom-in; border:1px solid var(--line); }
-.mact { display:flex; flex-wrap:wrap; gap:5px; margin-top:6px; }
-.msg.me .mact .btn { background:rgba(255,255,255,.18); border-color:rgba(255,255,255,.4); color:#fff; }
+.mact { display:flex; flex-wrap:wrap; gap:2px; }
+.mact .btn.sm { border:0; background:transparent; color:var(--ink2); min-height:22px; padding:0 6px; font-size:12px; }
+.mact .btn.sm:hover { background:var(--primary-lt); color:var(--primary); }
 .cp-prev { display:flex; align-items:center; gap:8px; margin-bottom:6px; }
 .cp-prev img { max-height:60px; border-radius:var(--r); border:1px solid var(--line); }
 .cp-ta { width:100%; resize:none; padding:8px 10px; border:1px solid var(--line); border-radius:var(--r); font:inherit; font-size:14px; line-height:1.5; background:var(--card); color:var(--ink); }
@@ -463,3 +470,11 @@ a.btn.pri { color:#fff; }
 .xmhint.fade { opacity:0; pointer-events:none; }
 #bDisp.on { background:var(--green-lt); border-color:var(--green); color:#166534; }
 @media (max-width:900px) { .t-right { overflow:auto; } .t-right .fold { max-height:none; } .t-right .noteblk { flex:none; } #ed { min-height:220px; } }
+
+/* 대화 목록(학생): 아바타 + 제목·마지막 말 + 시간·안 읽음 */
+.trow .av { flex:none; width:34px; height:34px; border-radius:50%; background:var(--primary); color:#fff; font-size:13px; font-weight:800; display:flex; align-items:center; justify-content:center; }
+.trow .tcol { flex:1; min-width:0; display:flex; flex-direction:column; gap:2px; }
+.trow .trh { display:flex; align-items:center; gap:6px; font-size:13px; }
+.trow .tr2 { display:flex; flex-direction:column; align-items:flex-end; gap:4px; }
+[data-theme="dark"] .bub { background:#1f2430; }
+[data-theme="dark"] .msg.me .bub { background:#1e3a5f; border-color:#2b5288; }

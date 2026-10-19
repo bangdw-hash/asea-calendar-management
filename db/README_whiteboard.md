@@ -74,3 +74,8 @@
 - 확장 화면은 학생 접속 수·이해도에 포함되지 않습니다(presence role `v`).
 - 우수 사례를 「내 화면(프로젝터)에만」 공유하면 확장 화면에 표시됩니다.
 - 설정은 이 PC 브라우저(localStorage `wb_disp`)에 저장됩니다.
+
+
+## 도움 요청 대화 개선 (스키마 6)
+- `db/whiteboard_schema_6.sql` 실행(운영 DB 적용 완료): 읽음 위치(`wbd.req.sr/tr`), 공감(`wbd.msg.rx`), RPC `wb_req_read`·`wb_req_tread`·`wb_msg_react`·`wb_msg_treact`.
+- 말풍선은 DM 형태, 복사·저장 버튼은 말풍선 밖에 작게 표시합니다. 내 마지막 메시지를 상대가 보면 「읽음」, 상대가 글을 쓰는 중이면 「입력 중」(서버 저장 없음), 말풍선 더블클릭 또는 하트 버튼으로 공감합니다.

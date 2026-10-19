@@ -65,6 +65,7 @@
     full: '<path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/>',
     chat: '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',
     clip: '<path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/>',
+    heart: '<path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>',
     camera: '<path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3z"/><circle cx="12" cy="13" r="3"/>'
   };
   function ic(n, sz) {
@@ -464,17 +465,32 @@
     var im = t.closest('img.cimg');
     if (im) { var o = document.createElement('div'); o.className = 'lb'; o.innerHTML = '<img src="' + esc(im.src) + '" alt="">'; o.onclick = function () { o.remove(); }; document.body.appendChild(o); return; }
     var ci = t.closest('[data-cpimg]'); if (ci) { copyImage(ci.getAttribute('data-cpimg')); return; }
-    var ct = t.closest('[data-cptxt]'); if (ct) { var bt = ct.closest('.bub').querySelector('.btxt'); copyText(bt ? bt.textContent : '', '복사했습니다.'); }
+    var ct = t.closest('[data-cptxt]'); if (ct) { var bt = ct.closest('.mcol').querySelector('.btxt'); copyText(bt ? bt.textContent : '', '복사했습니다.'); return; }
+    var rx = t.closest('[data-rx]'); if (rx) document.dispatchEvent(new CustomEvent('wbrx', { detail: { id: +rx.getAttribute('data-rx') } }));
+  });
+  document.addEventListener('dblclick', function (e) {
+    var b = e.target.closest && e.target.closest('.msg.ot .bub'); if (!b || e.target.closest('a,button,img')) return;
+    document.dispatchEvent(new CustomEvent('wbrx', { detail: { id: +b.closest('.msg').getAttribute('data-mid') } }));
   });
   /* 말풍선: 오른쪽 파랑 = 내가 보낸 것, 왼쪽 회색 = 상대. 받은 글자·이미지에는 복사 버튼 */
-  function msgHtml(m, mine, name) {
-    var av = m.r === 's' ? esc((name || '?').slice(0, 1)) : '교';
+  function msgHtml(m, mine, name, seen) {
+    var av = mine ? '' : '<span class="av ' + m.r + '">' + (m.r === 's' ? esc((name || '?').slice(0, 1)) : '교') + '</span>';
     var body = m.b ? '<div class="btxt' + (m.c ? ' isc' : '') + '">' + (m.c ? esc(m.b) : linkText(m.b)) + '</div>' : '';
     var img = m.i ? '<img class="cimg" src="' + esc(m.i) + '" alt="첨부 이미지" loading="lazy">' : '';
     var act = '';
     if (m.b) act += '<button class="btn sm" data-cptxt>' + ic('copy', 13) + ' ' + (m.c && m.r === 't' ? '프롬프트 복사' : '복사') + '</button>';
     if (m.i) act += '<button class="btn sm" data-cpimg="' + esc(m.i) + '">' + ic('copy', 13) + ' 이미지 복사</button><a class="btn sm" href="' + esc(m.i + '?download=image.jpg') + '" download>' + ic('download', 13) + ' 저장</a>';
-    return '<div class="msg ' + (mine ? 'me' : 'ot') + '"><span class="av ' + m.r + '">' + av + '</span><div class="bub">' + body + img + (act ? '<div class="mact">' + act + '</div>' : '') + '<time>' + clock(m.t) + '</time></div></div>';
+    var rcv = m.r === 't' ? 's' : 't', on = (m.x || '').indexOf(rcv) >= 0, rx = '';
+    if (!mine) rx = '<button class="rxb' + (on ? ' on' : '') + '" data-rx="' + m.id + '" title="공감" aria-label="공감">' + ic('heart', 14) + '</button>';
+    else if (on) rx = '<span class="rxb on" title="상대가 공감했습니다">' + ic('heart', 14) + '</span>';
+    return '<div class="msg ' + (mine ? 'me' : 'ot') + '" data-mid="' + m.id + '">' + av + '<div class="mcol"><div class="bub">' + body + img + '</div>' +
+      '<div class="mfoot"><time>' + clock(m.t) + '</time>' + (seen ? '<span class="seen">읽음</span>' : '') + rx + '</div>' + (act ? '<div class="mact">' + act + '</div>' : '') + '</div></div>';
+  }
+  /* 대화 목록: 내 마지막 메시지 중 상대가 읽은 것에만 「읽음」 표시 */
+  function msgList(t, viewer) {
+    var rd = viewer === 's' ? (t.tr || 0) : (t.sr || 0), last = 0;
+    t.msgs.forEach(function (m) { if (m.r === viewer && m.id <= rd) last = m.id; });
+    return t.msgs.map(function (m) { return msgHtml(m, m.r === viewer, t.name, last === m.id); }).join('');
   }
   /* 입력창: 글자 + 사진(붙여넣기·파일·끌어놓기·화면 캡처) + 코드 모양 유지 */
   function Composer(root, o) {
@@ -513,6 +529,7 @@
         .then(function () { busy = false; sendB.disabled = false; });
     }
     sendB.onclick = send;
+    if (o.onTyping) { var lt = 0; ta.addEventListener('input', function () { var n = Date.now(); if (ta.value && n - lt > 2500) { lt = n; o.onTyping(); } }); }
     ta.addEventListener('keydown', function (e) { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); send(); } });
     return { focus: function () { ta.focus(); }, setCode: function (v) { isc.checked = !!v; } };
   }
@@ -887,7 +904,7 @@
         b.innerHTML = '<div class="ch-l"><button class="btn pri" data-new style="width:100%;justify-content:center;min-height:40px">' + ic('plus', 15) + ' 새 요청 보내기</button>' +
           (S.threads.length ? S.threads.slice().reverse().map(function (t) {
             var last = t.msgs[t.msgs.length - 1] || {}, un = maxId(t, 't') > (S.seen[t.id] || 0);
-            return '<button class="trow" data-id="' + esc(t.id) + '"><span class="pill p-x">' + KIND[t.kind] + '</span> ' + stPill(t.status) + (un ? ' <i class="udot"></i>' : '') + '<span class="tsn">' + esc(last.b ? last.b.replace(/\s+/g, ' ').slice(0, 60) : '(사진)') + '</span><time>' + clock(t.upd) + '</time></button>';
+            return '<button class="trow" data-id="' + esc(t.id) + '"><span class="av t">교</span><span class="tcol"><span class="trh"><b>' + KIND[t.kind] + '</b> ' + stPill(t.status) + '</span><span class="tsn">' + esc(last.b ? last.b.replace(/\s+/g, ' ').slice(0, 60) : '(사진)') + '</span></span><span class="tr2"><time>' + clock(t.upd) + '</time>' + (un ? '<i class="udot"></i>' : '') + '</span></button>';
           }).join('') : '<p class="muted" style="text-align:center;margin-top:20px">아직 보낸 요청이 없습니다.</p>') + '</div>';
       } else if (S.view === 'new') {
         if (!full && b.dataset.v === 'new') return;
@@ -903,14 +920,26 @@
         ttl.innerHTML = KIND[t.kind] + ' ' + stPill(t.status);
         if (full || b.dataset.v !== 'thread:' + t.id) {
           b.dataset.v = 'thread:' + t.id;
-          b.innerHTML = '<div class="ch-msgs" id="chM"></div><div class="ch-comp" id="chComp"></div>';
-          comp = Composer($('#chComp'), { id: 'creply', capture: true, placeholder: '추가로 보낼 내용', codeLabel: '코드 모양 유지', onSend: function (tx, bl, c) { return sendReq(tx, bl, c, t.id, t.kind); } });
+          b.innerHTML = '<div class="ch-msgs" id="chM"></div><div class="typing hide" id="chTyp">교수자가 입력 중...</div><div class="ch-comp" id="chComp"></div>';
+          comp = Composer($('#chComp'), { id: 'creply', capture: true, onTyping: function () { if (S.ch && S.rt) S.ch.send({ type: 'broadcast', event: 'typ', payload: { c: cid, q: t.id } }); }, placeholder: '추가로 보낼 내용', codeLabel: '코드 모양 유지', onSend: function (tx, bl, c) { return sendReq(tx, bl, c, t.id, t.kind); } });
         }
         var box = $('#chM'), near = box.scrollHeight - box.scrollTop - box.clientHeight < 80 || full;
-        box.innerHTML = t.msgs.map(function (m) { return msgHtml(m, m.r === 's', t.name); }).join('');
+        box.innerHTML = msgList(t, 's');
         if (near) box.scrollTop = box.scrollHeight;
+        markRead(t); paintTyp();
       }
     }
+    function markRead(t) {
+      var mx = maxId(t, 't'); if (mx <= (t.sr || 0)) return; t.sr = mx;
+      rpc('wb_req_read', { p_code: code, p_cid: cid, p_req: t.id }).then(function () { if (S.ch && S.rt) S.ch.send({ type: 'broadcast', event: 'req', payload: { c: cid } }); }).catch(function () { t.sr = 0; });
+    }
+    function paintTyp() { var el = $('#chTyp'); if (!el) return; var on = S.typ && S.typ.q === S.curT && Date.now() - S.typ.ts < 4000; el.classList.toggle('hide', !on); if (on) { var bx = $('#chM'); if (bx) bx.scrollTop = bx.scrollHeight; } }
+    document.addEventListener('wbrx', function (e) {
+      var t = S.chatOpen && S.view === 'thread' ? thr(S.curT) : null; if (!t) return;
+      var m = t.msgs.filter(function (x) { return x.id === e.detail.id && x.r === 't'; })[0]; if (!m) return;
+      m.x = (m.x || '').indexOf('s') >= 0 ? m.x.replace('s', '') : (m.x || '') + 's'; renderChat(false);
+      rpc('wb_msg_react', { p_code: code, p_cid: cid, p_req: t.id, p_msg: m.id }).then(function () { if (S.ch && S.rt) S.ch.send({ type: 'broadcast', event: 'req', payload: { c: cid } }); }).catch(function () { fetchThreads(); });
+    });
     cw.addEventListener('click', function (e) {
       var t = e.target; if (!t.closest) return;
       if (t.closest('#chX')) { closeChat(); return; }
@@ -1033,7 +1062,7 @@
       }
       var sh = r.share || null;
       if (sh) { if (S.shareSeen !== sh.id) { S.shareClosed = S.shareClosed === sh.id ? S.shareClosed : ''; showShare(sh); vibrate(60); } else S.share = sh; }
-      else if (S.share || S.shareSeen) { hideShare(); S.shareClosed = ''; S.shareSeen = ''; }
+      else if ((S.share || S.shareSeen) && !S.bcShare) { hideShare(); S.shareClosed = ''; S.shareSeen = ''; }
     }
 
     /* 서버 상태 반영 */
@@ -1099,6 +1128,7 @@
       } else if (p.t === 'clk') { if (S.mat === p.m && S.cur === p.p) viewer.ripple(p.x, p.y); }
       else if (p.t === 'timer') setTimer(p.sec, p.label);
       else if (p.t === 'rep') { if (p.c === cid) fetchThreads(); }
+      else if (p.t === 'typ') { if (p.c === cid) { S.typ = { q: p.q, ts: Date.now() }; paintTyp(); setTimeout(paintTyp, 4200); } }
       else if (p.t === 'share') { if (p.sh) { if (S.shareSeen !== p.sh.id) S.shareClosed = ''; showShare(p.sh); vibrate(60); } }
       else if (p.t === 'unshare') { hideShare(); S.shareClosed = ''; S.shareSeen = ''; }
       else if (p.t === 'doc' || p.t === 'links' || p.t === 'end') { S.ver = null; poll(); }
@@ -1126,7 +1156,7 @@
       hint.innerHTML = '이 화면을 한 번 클릭하면 전체화면으로 전환됩니다. (Esc로 해제)'; document.body.appendChild(hint);
       document.addEventListener('click', function () { hint.remove(); var el = document.documentElement; if (!document.fullscreenElement && el.requestFullscreen) { try { el.requestFullscreen().catch(function () {}); } catch (e) {} } });
       setTimeout(function () { hint.classList.add('fade'); }, 15000);
-      try { var bc = new BroadcastChannel('wbstage-' + code); bc.onmessage = function (e) { var d = e.data || {}; if (d.t === 'share' && d.sh) { S.shareClosed = ''; showShare(d.sh); } else if (d.t === 'unshare') { hideShare(); S.shareClosed = ''; S.shareSeen = ''; } }; } catch (e) {}
+      try { var bc = new BroadcastChannel('wbstage-' + code); bc.onmessage = function (e) { var d = e.data || {}; if (d.t === 'share' && d.sh) { S.bcShare = true; S.shareClosed = ''; showShare(d.sh); } else if (d.t === 'unshare') { S.bcShare = false; hideShare(); S.shareClosed = ''; S.shareSeen = ''; } }; } catch (e) {}
     }
     if (!S.name && !beam) askName();
   }
@@ -1783,8 +1813,8 @@
         if (full || pane.dataset.id !== t.id) {
           pane.dataset.id = t.id;
           pane.innerHTML = '<div class="bt-h"><span class="av s">' + esc((t.name || '?').slice(0, 1)) + '</span><div><b>' + esc(t.name) + '</b> ' + kPill(t) + '<div class="muted" id="btM"></div></div><span style="flex:1"></span><span id="btA"></span></div>' +
-            '<div class="ch-msgs" id="btMsgs"></div><div class="ch-comp" id="btComp"></div>';
-          replyComp = Composer($('#btComp'), { id: 'trep', capture: false, placeholder: '답변 입력 (프롬프트를 보내면 학생이 버튼 한 번으로 복사합니다)', codeLabel: '프롬프트·코드 블록으로 보내기', onSend: function (tx, bl, c) {
+            '<div class="ch-msgs" id="btMsgs"></div><div class="typing hide" id="btTyp"></div><div class="ch-comp" id="btComp"></div>';
+          replyComp = Composer($('#btComp'), { id: 'trep', capture: false, onTyping: function () { send({ t: 'typ', c: t.cid, q: t.id }); }, placeholder: '답변 입력 (프롬프트를 보내면 학생이 버튼 한 번으로 복사합니다)', codeLabel: '프롬프트·코드 블록으로 보내기', onSend: function (tx, bl, c) {
             return (bl ? uploadImage(bl) : Promise.resolve(null)).then(function (img) { return call('wb_req_reply', { p_code: C.code, p_req: t.id, p_body: tx, p_img: img, p_isc: c }); })
               .then(function () { send({ t: 'rep', c: t.cid }); pollReq(); });
           } });
@@ -1795,9 +1825,19 @@
         $$('#btA [data-st]').forEach(function (b) { b.onclick = function () { setStatus(t.id, b.getAttribute('data-st')); }; });
         var pg = $('#btA [data-pg]'); if (pg) pg.onclick = function () { goPage(+pg.getAttribute('data-pg')); };
         var box = $('#btMsgs'), near = box.scrollHeight - box.scrollTop - box.clientHeight < 80 || full;
-        box.innerHTML = t.msgs.map(function (m) { return msgHtml(m, m.r === 't', t.name); }).join('');
+        box.innerHTML = msgList(t, 't');
         if (near) box.scrollTop = box.scrollHeight;
+        var mxs = lastMax(t, 's'); if (mxs > (t.tr || 0)) { t.tr = mxs; call('wb_req_tread', { p_code: C.code, p_req: t.id }).then(function () { send({ t: 'rep', c: t.cid }); }).catch(function () { t.tr = 0; }); }
+        paintTypT();
       }
+      C.typ = {};
+      function paintTypT() { var el = $('#btTyp'); if (!el) return; var q = C.selReq, on = q && C.typ[q] && Date.now() - C.typ[q] < 4000; el.classList.toggle('hide', !on); if (on) { var t = reqById(q); el.textContent = (t ? t.name : '학생') + '님이 입력 중...'; var bx = $('#btMsgs'); if (bx) bx.scrollTop = bx.scrollHeight; } }
+      document.addEventListener('wbrx', function (e) {
+        var t = C.board && C.selReq && reqById(C.selReq); if (!t) return;
+        var m = t.msgs.filter(function (x) { return x.id === e.detail.id && x.r === 's'; })[0]; if (!m) return;
+        m.x = (m.x || '').indexOf('t') >= 0 ? m.x.replace('t', '') : (m.x || '') + 't'; renderBoard(false);
+        call('wb_msg_treact', { p_code: C.code, p_req: t.id, p_msg: m.id }).then(function () { send({ t: 'rep', c: t.cid }); }).catch(function () { pollReq(); });
+      });
       function logText() {
         var d = new Date(), lines = ['[' + (ui.title.value || '수업') + '] 수업코드 ' + C.code + ' 도움 요청 기록 (' + d.toLocaleString('ko-KR') + ')', ''];
         C.reqs.forEach(function (t) {
@@ -1996,6 +2036,7 @@
       ch.on('broadcast', { event: 'sig' }, function () { clearTimeout(sTimer); sTimer = setTimeout(pollSig, 250); });
       var rTimer = null;
       ch.on('broadcast', { event: 'req' }, function () { clearTimeout(rTimer); rTimer = setTimeout(pollReq, 250); });
+      ch.on('broadcast', { event: 'typ' }, function (m) { var p = m && m.payload; if (p && p.q) { C.typ[p.q] = Date.now(); paintTypT(); setTimeout(paintTypT, 4200); } });
       var tTimer = null;
       ['prog', 'vote', 'sub'].forEach(function (ev) { ch.on('broadcast', { event: ev }, function () { clearTimeout(tTimer); tTimer = setTimeout(pollTools, 300); }); });
       ch.on('presence', { event: 'sync' }, function () {
