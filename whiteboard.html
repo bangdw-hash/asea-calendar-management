@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>실시간 수업 노트</title>
+<meta name="description" content="수업 코드로 입장해 교수자의 PDF 교안과 노트를 실시간으로 함께 보는 수업 화면">
+<link rel="stylesheet" href="whiteboard.css">
+</head>
+<body>
+<div id="root"></div>
+<div id="toasts" aria-live="polite"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="award-qr.min.js"></script>
+<script src="whiteboard.js"></script>
+</body>
+</html>
