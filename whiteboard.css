@@ -80,7 +80,7 @@ a.btn.pri { color:#fff; }
 .sec > h3 { margin:0; padding:10px 14px 6px; font-size:13px; color:var(--ink2); display:flex; align-items:center; gap:6px; }
 .sec.grow { flex:1; }
 .sec .body { padding:2px 14px 12px; overflow:auto; min-height:0; }
-.noteBox { line-height:1.7; font-size:16px; word-break:break-word; min-height:60px; }
+.noteBox { line-height:1.7; font-size:var(--fs,16px); word-break:break-word; min-height:60px; }
 .noteBox:empty::before { content:'교수자가 입력하는 노트가 여기에 실시간으로 표시됩니다.'; color:var(--ink3); }
 .noteBox h1, .noteBox h2, .noteBox h3 { margin:.4em 0 .2em; }
 .noteBox ul, .noteBox ol { margin:.3em 0; padding-left:1.4em; }
@@ -90,7 +90,7 @@ a.btn.pri { color:#fff; }
 .linkList a.lk { display:flex; align-items:center; gap:8px; padding:10px 12px; border:1px solid var(--line); border-radius:var(--r); text-decoration:none; color:var(--ink); background:#fff; }
 .linkList a.lk:hover { border-color:var(--primary); background:var(--primary-lt); }
 .linkList a.lk.new { border-color:var(--primary); background:var(--primary-lt); }
-.linkList .lt { font-weight:700; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1; min-width:0; }
+.linkList .lt { font-size:calc(var(--fs,16px) - 1px); font-weight:700; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1; min-width:0; }
 .linkList .lu { display:block; font-weight:400; font-size:12px; color:var(--ink2); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .sig { display:flex; gap:8px; padding:4px 14px 14px; }
 .sig .btn { flex:1; justify-content:center; min-height:44px; }
@@ -239,9 +239,9 @@ a.btn.pri { color:#fff; }
 .matList:empty { display:none; }
 .matList a.lk { display:flex; align-items:center; gap:8px; padding:8px 10px; border:1px solid var(--line); border-radius:var(--r); text-decoration:none; color:var(--ink); background:#fff; }
 .matList a.lk:hover { border-color:var(--primary); background:var(--primary-lt); }
-.matList .lt { flex:1; min-width:0; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.matList .lt { font-size:calc(var(--fs,16px) - 1px); flex:1; min-width:0; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .matList .lu { display:block; font-weight:400; font-size:12px; color:var(--ink2); }
-.memoTa { width:100%; resize:vertical; min-height:72px; padding:8px 10px; border:1px solid var(--line); border-radius:var(--r); font:inherit; line-height:1.5; }
+.memoTa { font-size:var(--fs,16px); width:100%; resize:vertical; min-height:72px; padding:8px 10px; border:1px solid var(--line); border-radius:var(--r); font:inherit; line-height:1.5; }
 .memoTa:focus { outline:2px solid var(--primary-lt); border-color:var(--primary); }
 .beam .sec.mm, .beam .sec .btn[data-savetxt], .beam .mtabs { display:none; }
 .s-doc { position:relative; }
@@ -251,3 +251,43 @@ a.btn.pri { color:#fff; }
   .thumbs { width:112px; padding:6px; }
   .hardbar { font-size:13px; }
 }
+
+/* 타이머·휴식 표시 (작은 표시만, 화면을 가리지 않음) */
+.tmr { display:inline-flex; align-items:center; gap:5px; height:28px; padding:0 10px; border-radius:var(--r); background:var(--green-lt); color:#166534; font-size:13px; white-space:nowrap; }
+.tmr b { font-size:15px; font-variant-numeric:tabular-nums; }
+.tmr.warn { background:var(--orange-lt); color:#9a3412; animation:wbBlink2 1s ease-in-out infinite; }
+.tmr.end { background:var(--orange); color:#fff; }
+@keyframes wbBlink2 { 50% { box-shadow:0 0 0 6px rgba(234,88,12,.25); } }
+.beam .tmr { height:44px; padding:0 16px; font-size:20px; } .beam .tmr b { font-size:28px; }
+.tm { display:flex; flex-wrap:wrap; gap:6px; }
+/* 학생 화면 설정 */
+.cfg { position:fixed; top:52px; right:10px; z-index:80; width:260px; padding:12px 14px; background:var(--card); border:1px solid var(--line); border-radius:var(--r); box-shadow:var(--sh-lg); }
+.cfg .cr { display:flex; flex-direction:column; gap:6px; margin-bottom:10px; }
+.fsb { display:flex; gap:4px; }
+.fsb button { flex:1; height:38px; background:var(--card); color:var(--ink); border:1px solid var(--line); border-radius:var(--r); font-weight:700; }
+.fsb button.on { background:var(--primary-lt); border-color:var(--primary); color:var(--primary-dk); }
+/* 교수자 발표 모드 */
+.presenting .hdr, .presenting .mtabs, .presenting .t-left > .bar, .presenting .t-right { display:none; }
+.presenting .t-main { grid-template-columns:1fr; grid-template-rows:1fr; }
+.presenting.drawer .t-right { display:flex; position:fixed; right:0; top:0; bottom:0; width:min(440px,92vw); z-index:60; box-shadow:var(--sh-lg); }
+.hud { position:fixed; left:50%; bottom:14px; transform:translateX(-50%); z-index:70; display:flex; align-items:center; gap:10px; max-width:96vw; padding:6px 12px; background:rgba(17,24,39,.9); color:#fff; border-radius:var(--r); box-shadow:var(--sh-lg); font-size:14px; }
+.hud .btn { background:transparent; color:#fff; border-color:rgba(255,255,255,.35); }
+.hud .btn:hover { background:rgba(255,255,255,.15); }
+.hud b { font-variant-numeric:tabular-nums; }
+.hud .hs { white-space:nowrap; }
+.hud .hs.g b { color:#86efac; } .hud .hs.h b { color:#fdba74; } .hud .hs.t { color:#93c5fd; }
+/* 어둡게 보기 (학생 화면) */
+:root[data-theme="dark"] { --primary-dk:#93c5fd; --primary-lt:#1e2b45; --green-lt:#12301d; --orange-lt:#3a2412; --red-lt:#3b1818; --ink:#e5e7eb; --ink2:#a1a8b5; --ink3:#6b7280; --line:#313846; --bg:#12151c; --card:#1b1f2a; }
+[data-theme="dark"] .btn:hover { background:#252b38; }
+[data-theme="dark"] .btn.pri:hover { background:#1d63c4; }
+[data-theme="dark"] .inp, [data-theme="dark"] .memoTa, [data-theme="dark"] .bar .pg input, [data-theme="dark"] #ed { background:#12151c; color:var(--ink); }
+[data-theme="dark"] .stage { background:#0d1016; }
+[data-theme="dark"] .mt { background:#232937; }
+[data-theme="dark"] .mt.on, [data-theme="dark"] .linkList a.lk, [data-theme="dark"] .matList a.lk { background:var(--card); }
+[data-theme="dark"] .linkList a.lk.new { background:var(--primary-lt); }
+[data-theme="dark"] .th { background:#232937; }
+[data-theme="dark"] .cpb { background:#232937; border-color:#4b5563; }
+[data-theme="dark"] .noteBox a { color:#93c5fd; }
+[data-theme="dark"] .sig .btn.on.got, [data-theme="dark"] .s-tabs .btn.on.got, [data-theme="dark"] .tmr { color:#86efac; }
+[data-theme="dark"] .sig .btn.on.hard, [data-theme="dark"] .s-tabs .btn.on.hard, [data-theme="dark"] .tmr.warn { color:#fdba74; }
+[data-theme="dark"] .tmr.end { color:#fff; }
