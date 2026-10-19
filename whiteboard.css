@@ -70,7 +70,8 @@ a.btn.pri { color:#fff; }
 .bar .mode.follow b { color:var(--green); }
 .bar .mode.free b { color:var(--orange); }
 .stage { flex:1; min-height:0; position:relative; display:flex; align-items:center; justify-content:center; background:#e9edf3; overflow:hidden; }
-.stage canvas { background:#fff; box-shadow:var(--sh-md); max-width:none; }
+.stage canvas { display:block; background:#fff; max-width:none; }
+.pdfwrap { position:relative; flex:none; background:#fff; box-shadow:var(--sh-md); line-height:0; }
 .stage .empty { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; text-align:center; color:var(--ink2); padding:24px; }
 .s-side { width:360px; flex:none; display:flex; flex-direction:column; border-left:1px solid var(--line); background:var(--card); min-height:0; }
 .sec { display:flex; flex-direction:column; min-height:0; border-bottom:1px solid var(--line); }
@@ -164,3 +165,20 @@ a.btn.pri { color:#fff; }
 .qrov .big { font-size:min(14vmin,120px); font-weight:800; letter-spacing:.15em; color:var(--primary-dk); line-height:1; }
 .qrov .url { font-size:min(3.4vmin,28px); color:var(--ink2); word-break:break-all; }
 .qrov .x { position:absolute; top:14px; right:14px; }
+
+/* 교수자 위치 알림: 같은 자리에서 숫자만 바뀌고 깜빡임 */
+.tpos { display:inline-block; padding:1px 6px; border-radius:var(--r); font-weight:700; }
+.tpos.flash { animation:wbBlink .7s ease-in-out 4; }
+.btn.flash { animation:wbPulse .8s ease-out 4; }
+@keyframes wbBlink { 0%,100% { background:transparent; color:inherit; } 50% { background:var(--orange); color:#fff; } }
+@keyframes wbPulse { 0% { box-shadow:0 0 0 0 rgba(26,115,232,.6); } 100% { box-shadow:0 0 0 12px rgba(26,115,232,0); } }
+@media (prefers-reduced-motion:reduce) { .tpos.flash, .btn.flash { animation:none; outline:2px solid var(--orange); } }
+
+/* PDF 글자 선택 층 (PDF.js 가 글자 위치·크기를 inline 으로 지정) */
+.textLayer { position:absolute; left:0; top:0; overflow:hidden; line-height:1; text-size-adjust:none; forced-color-adjust:none; transform-origin:0 0; }
+.textLayer span, .textLayer br { color:transparent; position:absolute; white-space:pre; cursor:text; transform-origin:0% 0%; }
+.textLayer ::selection { background:rgba(26,115,232,.35); }
+.linkList li.lkrow { display:flex; gap:6px; align-items:stretch; }
+.linkList li.lkrow a.lk { flex:1; min-width:0; }
+.linkList li.lkrow .cp { height:auto; min-height:44px; flex:none; }
+.bar #sCopy, .bar #tCopy { margin-left:2px; }
