@@ -12,6 +12,7 @@
   var POLL_MS = 4000;
   var TOKEN_KEY = 'wb_token';
   var MAX_BYTES = 50 * 1024 * 1024;
+  var HW_MAX = 20 * 1024 * 1024, HW_EXT = ['pdf', 'doc', 'docx', 'hwp', 'hwpx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt', 'csv', 'zip', 'png', 'jpg', 'jpeg', 'gif', 'webp'];
   /* 올릴 수 있는 형식 (확장자 → MIME). 저장소 버킷의 허용 목록과 같아야 함 */
   var MIME = {
     '.pdf': 'application/pdf', '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.gif': 'image/gif', '.webp': 'image/webp',
@@ -431,6 +432,19 @@
       return sb.storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
     });
   }
+  /* 과제 제출: Edge Function wb-hw (올리기·받기·지우기 주소 발급) */
+  function hwFn(body) {
+    return fetch(SUPA_URL + '/functions/v1/wb-hw', { method: 'POST', headers: { 'Content-Type': 'application/json', apikey: SUPA_KEY, Authorization: 'Bearer ' + SUPA_KEY }, body: JSON.stringify(body) })
+      .then(function (r) { return r.json().then(function (j) { if (!r.ok || j.error) throw new Error(j.error || 'FAILED'); return j; }, function () { throw new Error('FAILED'); }); });
+  }
+  function hwErr(e) {
+    var m = String((e && e.code) || '') + ' ' + String((e && e.message) || e);
+    return /HW_CLOSED/.test(m) ? '마감되었거나 닫힌 과제입니다.' : /TOO_BIG/.test(m) ? '파일이 20MB를 넘습니다.' : /BAD_TYPE/.test(m) ? '이 형식은 제출할 수 없습니다.' : /RATE_LIMIT/.test(m) ? '너무 빠르게 제출하고 있습니다. 잠시 후 다시 해 주십시오.' : /NO_FILE/.test(m) ? '파일이 올라가지 않았습니다. 다시 시도해 주십시오.' : '제출하지 못했습니다. 잠시 후 다시 시도해 주십시오.';
+  }
+  function fmtSize(n) { return n >= 1048576 ? (n / 1048576).toFixed(1) + 'MB' : Math.max(1, Math.round(n / 1024)) + 'KB'; }
+  function dueText(due) { return due ? '마감 ' + new Date(due).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '마감 시각 없음'; }
+  function safeName(x) { return String(x).replace(/[\\\/:*?"<>|\r\n]/g, '_').trim(); }
+  function saveBlob(name, blob) { var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 4000); }
   /* 이미지를 클립보드에 넣는다(붙여넣기용). 지원하지 않으면 안내 */
   function copyImage(url) {
     return fetch(url).then(function (r) { return r.blob(); }).then(function (b) { return createImageBitmap(b); }).then(function (bm) {
@@ -953,6 +967,7 @@
 
     /* 수업 활동: 실습 단계 · 결과 제출 · 투표 / 교수자가 공유한 우수 사례(전체화면) */
     S.steps = { items: [], cur: -1 }; S.stepDone = {}; S.poll = null; S.myVote = null; S.pollRes = null; S.subs = [];
+    S.hws = []; S.hwMine = []; S.hwFile = {}; S.hwBusy = {}; S.hwSig = ''; S.hwInit = false;
     S.actTab = 'steps'; S.actOpen = false; S.shareSeen = ''; S.shareClosed = ''; S.pollSeen = ''; S.stepsSig = ''; S.share = null; S.subBuilt = false;
     var aw = $('#actW');
     function pct(n, t) { return t ? Math.round(n / t * 100) : 0; }
@@ -963,12 +978,13 @@
       if (tab) S.actTab = tab;
       S.actOpen = true; aw.classList.remove('hide'); S.subBuilt = false; $$('.actBadge').forEach(function (b) { b.classList.add('hide'); }); renderAct(true);
       if (S.actTab === 'sub') fetchSubs();
+      if (S.actTab === 'hw') fetchHw();
     }
     function closeAct() { S.actOpen = false; aw.classList.add('hide'); }
     function renderAct(full) {
       if (!S.actOpen) return;
-      var tabs = [['steps', '실습 단계'], ['sub', '결과 제출'], ['vote', '투표']];
-      $('#actTabs').innerHTML = tabs.map(function (t) { return '<button class="kchip' + (S.actTab === t[0] ? ' on' : '') + '" data-tab="' + t[0] + '">' + t[1] + (t[0] === 'vote' && S.poll && S.poll.open ? ' <i class="udot"></i>' : '') + '</button>'; }).join('');
+      var tabs = [['steps', '실습 단계'], ['sub', '결과 제출'], ['hw', '과제 제출'], ['vote', '투표']];
+      $('#actTabs').innerHTML = tabs.map(function (t) { return '<button class="kchip' + (S.actTab === t[0] ? ' on' : '') + '" data-tab="' + t[0] + '">' + t[1] + (((t[0] === 'vote' && S.poll && S.poll.open) || (t[0] === 'hw' && S.hws.some(function (h) { return h.open && !hwMineOf(h.id); }))) ? ' <i class="udot"></i>' : '') + '</button>'; }).join('');
       var b = $('#actB');
       if (S.actTab === 'steps') {
         var n = S.steps.items.length, d = S.steps.items.filter(function (i) { return S.stepDone[i.id]; }).length;
@@ -977,6 +993,8 @@
           var dn = !!S.stepDone[it.id];
           return '<li class="' + (dn ? 'done' : '') + (i === S.steps.cur ? ' cur' : '') + '"><label><input type="checkbox" data-step="' + esc(it.id) + '"' + (dn ? ' checked' : '') + '> <span>' + (i + 1) + '. ' + esc(it.t) + '</span></label>' + (i === S.steps.cur ? '<span class="pill p-i">지금 단계</span>' : '') + '</li>';
         }).join('') + '</ul>' : '<p class="muted" style="text-align:center;margin-top:20px">교수자가 실습 단계를 올리면 여기에 나타납니다.<br>단계를 마칠 때마다 체크해 주십시오.</p>';
+      } else if (S.actTab === 'hw') {
+        renderHw(full);
       } else if (S.actTab === 'sub') {
         if (!S.subBuilt || full) {
           S.subBuilt = true; b.dataset.v = 'sub';
@@ -1005,10 +1023,57 @@
           }).join('') + (S.pollRes ? '<div class="muted" style="margin-top:6px">총 ' + tot + '명 참여</div>' : '');
       }
     }
+    /* 과제 제출 */
+    function hwMineOf(id) { return S.hwMine.filter(function (x) { return x.hw === id; })[0]; }
+    function fetchHw() {
+      return rpc('wb_hw_mine', { p_code: code, p_cid: cid }).then(function (r) {
+        r = r || {}; var old = {}; S.hws.forEach(function (h) { old[h.id] = h.open; });
+        S.hws = r.hws || []; S.hwMine = r.mine || [];
+        var fresh = S.hws.filter(function (h) { return h.open && old[h.id] !== true && S.hwInit && !hwMineOf(h.id); });
+        S.hwInit = true;
+        if (fresh.length) { toast('과제가 열렸습니다: ' + fresh[0].title, '제출하기', function () { openAct('hw'); }); vibrate(60); $$('.actBadge').forEach(function (b) { b.classList.remove('hide'); }); }
+        if (S.actOpen) renderAct(false);
+      }).catch(function () {});
+    }
+    function renderHw(full) {
+      var b = $('#actB'), sig = JSON.stringify([S.hws, S.hwMine, Object.keys(S.hwFile).map(function (k) { return k + ':' + S.hwFile[k].name; }), S.hwBusy]);
+      if (!full && b.dataset.v === 'hw' && S.hwSig === sig) return;
+      S.hwSig = sig; b.dataset.v = 'hw';
+      if (!S.hws.length) { b.innerHTML = '<p class="muted" style="text-align:center;margin-top:20px">교수자가 과제를 열면 여기에 나타납니다.</p>'; return; }
+      b.innerHTML = S.hws.map(function (h) {
+        var m = hwMineOf(h.id), f = S.hwFile[h.id], busy = S.hwBusy[h.id];
+        return '<div class="hwc"><div class="hwh"><b>' + esc(h.title) + '</b><span class="pill ' + (h.open ? 'p-i' : 'p-d') + '">' + (h.open ? '받는 중' : '마감') + '</span></div>' +
+          (h.note ? '<div class="hwn">' + linkText(h.note) + '</div>' : '') + '<div class="muted">' + dueText(h.due) + ' · 1개 20MB · pdf·문서·한글·엑셀·파워포인트·이미지·zip</div>' +
+          (m ? '<div class="hwm">' + ic('check', 14) + ' 제출함 · ' + esc(m.fname) + ' (' + fmtSize(m.size) + ') · ' + clock(m.t) + (m.n > 1 ? ' · ' + m.n + '번째 제출' : '') + '</div>' : '<div class="muted">아직 제출하지 않았습니다.</div>') +
+          (h.open ? '<label class="dz" data-dz="' + esc(h.id) + '"><input type="file" class="hide" data-hwf="' + esc(h.id) + '"><span>' + (f ? esc(f.name) + ' (' + fmtSize(f.size) + ')' : '파일을 끌어 놓거나 눌러서 선택하십시오') + '</span></label>' +
+            '<div class="fr"><button class="btn pri" data-hwgo="' + esc(h.id) + '"' + (f && !busy ? '' : ' disabled') + '>' + ic('upload', 15) + ' ' + (busy ? '올리는 중...' : m ? '다시 제출(교체)' : '제출하기') + '</button></div>' : '') + '</div>';
+      }).join('');
+    }
+    function setHwFile(id, f) { S.hwFile[id] = f; renderHw(true); }
+    function submitHw(id) {
+      var f = S.hwFile[id]; if (!f || S.hwBusy[id]) return;
+      if (!S.name) { askName(); return; }
+      var ext = ((f.name.match(/\.([A-Za-z0-9]{2,5})$/) || [])[1] || '').toLowerCase();
+      if (HW_EXT.indexOf(ext) < 0) { toast('이 형식은 제출할 수 없습니다. (pdf·문서·한글·엑셀·파워포인트·이미지·zip)'); return; }
+      if (!f.size) { toast('빈 파일입니다.'); return; }
+      if (f.size > HW_MAX) { toast('파일이 20MB를 넘습니다.'); return; }
+      S.hwBusy[id] = 1; renderHw(true);
+      hwFn({ action: 'prepare', code: code, cid: cid, hw: id, fname: f.name, size: f.size }).then(function (p) {
+        return sb.storage.from('wb-hw').uploadToSignedUrl(p.path, p.token, f, { contentType: f.type || MIME['.' + ext] || 'application/octet-stream' }).then(function (r) { if (r.error) throw r.error; return p.path; });
+      }).then(function (path) {
+        return rpc('wb_hw_submit', { p_code: code, p_cid: cid, p_name: S.name, p_hw: id, p_path: path, p_fname: f.name, p_size: f.size });
+      }).then(function () {
+        delete S.hwFile[id]; toast('제출했습니다.'); if (S.ch && S.rt) S.ch.send({ type: 'broadcast', event: 'hw', payload: { c: cid } }); return fetchHw();
+      }).catch(function (e) { toast(hwErr(e)); }).then(function () { delete S.hwBusy[id]; renderHw(true); });
+    }
+    aw.addEventListener('change', function (e) { var i = e.target.closest && e.target.closest('[data-hwf]'); if (i && i.files[0]) setHwFile(i.getAttribute('data-hwf'), i.files[0]); });
+    aw.addEventListener('dragover', function (e) { if (e.target.closest && e.target.closest('[data-dz]')) e.preventDefault(); });
+    aw.addEventListener('drop', function (e) { var d = e.target.closest && e.target.closest('[data-dz]'); if (d && e.dataTransfer && e.dataTransfer.files[0]) { e.preventDefault(); setHwFile(d.getAttribute('data-dz'), e.dataTransfer.files[0]); } });
+    aw.addEventListener('click', function (e) { var g = e.target.closest && e.target.closest('[data-hwgo]'); if (g) submitHw(g.getAttribute('data-hwgo')); });
     aw.addEventListener('click', function (e) {
       var t = e.target; if (!t.closest) return;
       if (t.closest('#actX')) { closeAct(); return; }
-      var tb = t.closest('[data-tab]'); if (tb) { S.actTab = tb.getAttribute('data-tab'); S.subBuilt = false; renderAct(true); if (S.actTab === 'sub') fetchSubs(); return; }
+      var tb = t.closest('[data-tab]'); if (tb) { S.actTab = tb.getAttribute('data-tab'); S.subBuilt = false; renderAct(true); if (S.actTab === 'sub') fetchSubs(); if (S.actTab === 'hw') fetchHw(); return; }
       var op = t.closest('[data-opt]');
       if (op && S.poll && S.poll.open) {
         var i = +op.getAttribute('data-opt'), pid = S.poll.id, old = S.myVote; S.myVote = i; renderAct();
@@ -1128,6 +1193,7 @@
       } else if (p.t === 'clk') { if (S.mat === p.m && S.cur === p.p) viewer.ripple(p.x, p.y); }
       else if (p.t === 'timer') setTimer(p.sec, p.label);
       else if (p.t === 'rep') { if (p.c === cid) fetchThreads(); }
+      else if (p.t === 'hw') fetchHw();
       else if (p.t === 'typ') { if (p.c === cid) { S.typ = { q: p.q, ts: Date.now() }; paintTyp(); setTimeout(paintTyp, 4200); } }
       else if (p.t === 'share') { if (p.sh) { if (S.shareSeen !== p.sh.id) S.shareClosed = ''; showShare(p.sh); vibrate(60); } }
       else if (p.t === 'unshare') { hideShare(); S.shareClosed = ''; S.shareSeen = ''; }
@@ -1149,7 +1215,7 @@
     }
     connect();
     poll();
-    if (!xm) fetchThreads();
+    if (!xm) { fetchThreads(); fetchHw(); setInterval(fetchHw, 20000); }
     if (xm) {
       document.body.appendChild($('#sTmr'));
       var hint = document.createElement('div'); hint.className = 'xmhint';
@@ -1862,7 +1928,7 @@
       };
 
       /* ── 수업 도구: 실습 단계 · 투표/퀴즈 · 제출 갤러리(우수 사례 공유) ── */
-      C.tools = { subs: [], prog: [], vote: null }; C.toolsOpen = false; C.tab = 'steps'; C.subSeen = Date.now(); C.onlyStar = false;
+      C.tools = { subs: [], prog: [], vote: null, hws: [], rows: [] }; C.hwSel = null; C.hwChk = {}; C.toolsOpen = false; C.tab = 'steps'; C.subSeen = Date.now(); C.onlyStar = false;
       function unseenSubs() { return C.tools.subs.filter(function (m) { return m.t > C.subSeen; }).length; }
       function paintToolBadge() { var n = C.toolsOpen && C.tab === 'sub' ? 0 : unseenSubs(); $('#toolCnt').textContent = n; $('#toolCnt').classList.toggle('hide', !n); }
       var toolBusy = false;
@@ -1871,6 +1937,10 @@
         var jobs = [call('wb_sub_list', { p_code: C.code }).then(function (l) { C.tools.subs = l || []; })];
         if (C.steps.items.length) jobs.push(call('wb_prog_get', { p_code: C.code }).then(function (l) { C.tools.prog = l || []; }));
         if (C.poll) jobs.push(call('wb_vote_get', { p_code: C.code, p_pid: C.poll.id }).then(function (v) { C.tools.vote = v; }));
+        if (C.toolsOpen && C.tab === 'hw') {
+          jobs.push(call('wb_hw_all', { p_code: C.code }).then(function (l) { C.tools.hws = l || []; if (!C.hwSel && C.tools.hws.length) C.hwSel = C.tools.hws[0].id; }));
+          if (C.hwSel) jobs.push(call('wb_hw_list', { p_code: C.code, p_hw: C.hwSel }).then(function (l) { C.tools.rows = l || []; }));
+        }
         Promise.all(jobs).then(function () { toolBusy = false; if (C.toolsOpen && C.tab === 'sub') C.subSeen = Date.now(); paintToolBadge(); if (C.toolsOpen) renderTools(false); }).catch(function () { toolBusy = false; });
       }
       C.toolTimer = setInterval(pollTools, 3000); pollTools();
@@ -1889,11 +1959,97 @@
             var c = e.target.closest('[data-cur]'); if (!c) return;
             C.steps = { items: C.steps.items, cur: +c.getAttribute('data-cur') }; pushRoom({ steps: C.steps }); renderTools(false);
           });
-          $('#tlTabs').addEventListener('click', function (e) { var b = e.target.closest('[data-tab]'); if (b) { C.tab = b.getAttribute('data-tab'); if (C.tab === 'sub') C.subSeen = Date.now(); renderTools(true); } });
+          $('#tlTabs').addEventListener('click', function (e) { var b = e.target.closest('[data-tab]'); if (b) { C.tab = b.getAttribute('data-tab'); if (C.tab === 'sub') C.subSeen = Date.now(); renderTools(true); if (C.tab === 'hw') pollTools(); } });
         }
-        $('#tlTabs').innerHTML = [['steps', '실습 단계'], ['poll', '투표·퀴즈'], ['sub', '제출 갤러리']].map(function (t) { return '<button class="kchip' + (C.tab === t[0] ? ' on' : '') + '" data-tab="' + t[0] + '">' + t[1] + (t[0] === 'sub' && C.tools.subs.length ? ' (' + C.tools.subs.length + ')' : '') + '</button>'; }).join('');
-        if (C.tab === 'steps') tlSteps(full); else if (C.tab === 'poll') tlPoll(full); else tlGallery(full);
+        $('#tlTabs').innerHTML = [['steps', '실습 단계'], ['poll', '투표·퀴즈'], ['sub', '제출 갤러리'], ['hw', '과제 제출']].map(function (t) { return '<button class="kchip' + (C.tab === t[0] ? ' on' : '') + '" data-tab="' + t[0] + '">' + t[1] + (t[0] === 'sub' && C.tools.subs.length ? ' (' + C.tools.subs.length + ')' : '') + '</button>'; }).join('');
+        if (C.tab === 'steps') tlSteps(full); else if (C.tab === 'poll') tlPoll(full); else if (C.tab === 'hw') tlHw(full); else tlGallery(full);
         paintToolBadge();
+      }
+      /* 과제 제출 */
+      function hwOutNames(rows) {
+        var order = {}, used = {}, out = {};
+        rows.forEach(function (r) { var k = r.name || '(이름 없음)'; (order[k] = order[k] || []); if (order[k].indexOf(r.cid) < 0) order[k].push(r.cid); });
+        rows.forEach(function (r) {
+          var k = r.name || '(이름 없음)', i = order[k].indexOf(r.cid), f = safeName(k) + (i > 0 ? '(' + (i + 1) + ')' : '') + '_' + safeName(r.fname), base = f, n = 2;
+          while (used[f]) { f = base.replace(/(\.[^.]*)?$/, '(' + n + ')$1'); n++; }
+          used[f] = 1; out[r.id] = f;
+        });
+        return out;
+      }
+      function hwSel() { return (C.tools.hws || []).filter(function (x) { return x.id === C.hwSel; })[0]; }
+      function paintHwDyn() {
+        var el = $('#hwDyn'); if (!el) return;
+        var hws = C.tools.hws || [], sel = hwSel();
+        if (!hws.length) { el.innerHTML = '<p class="muted">과제를 열면 학생 화면의 「수업 활동 › 과제 제출」에 나타납니다.</p>'; return; }
+        var rows = C.tools.rows || [], got = {}; rows.forEach(function (r) { got[r.cid] = 1; });
+        var miss = C.roster.filter(function (r) { return !got[r.cid]; }).map(function (r) { return r.name || '(이름 없음)'; });
+        var outs = hwOutNames(rows), total = rows.reduce(function (a, r) { return a + r.size; }, 0);
+        var h = '<div class="hwchips">' + hws.map(function (x) { return '<button class="kchip' + (x.id === C.hwSel ? ' on' : '') + '" data-hwsel="' + esc(x.id) + '">' + esc(x.title) + ' (' + x.n + ')' + (x.open ? '' : ' · 마감') + '</button>'; }).join('') + '</div>';
+        if (sel) {
+          h += '<div class="hwtop"><b>' + esc(sel.title) + '</b><span class="pill ' + (sel.open ? 'p-i' : 'p-d') + '">' + (sel.open ? '받는 중' : '마감') + '</span><span class="muted">' + dueText(sel.due) + ' · 제출 ' + rows.length + ' / 접속 ' + C.roster.length + '명</span><span style="flex:1"></span>' +
+            '<button class="btn sm" data-hwtog="' + (sel.open ? '0' : '1') + '">' + (sel.open ? '마감하기' : '다시 열기') + '</button>' +
+            '<button class="btn sm pri" data-hwall' + (rows.length ? '' : ' disabled') + '>' + ic('download', 14) + ' 전체 받기 (ZIP)</button>' +
+            '<button class="btn sm" data-hwpick' + (rows.length ? '' : ' disabled') + '>선택 받기</button><button class="btn sm" data-hwlog' + (rows.length ? '' : ' disabled') + '>제출 기록 저장</button><button class="btn sm red" data-hwpurge>파일 지우기</button></div>';
+          if (sel.note) h += '<div class="muted">' + linkText(sel.note) + '</div>';
+          h += rows.length ? '<table class="hwt"><thead><tr><th><input type="checkbox" data-hwchkall aria-label="전체 선택"></th><th>학생</th><th>받는 이름</th><th>크기</th><th>시각</th><th></th></tr></thead><tbody>' + rows.map(function (r) {
+            return '<tr><td><input type="checkbox" data-hwchk="' + esc(r.id) + '"' + (C.hwChk[r.id] ? ' checked' : '') + '></td><td><b>' + esc(r.name) + '</b>' + (r.n > 1 ? ' <span class="pill p-w">' + r.n + '번째 제출</span>' : '') + '</td><td class="hwo">' + esc(outs[r.id]) + '</td><td>' + fmtSize(r.size) + '</td><td>' + clock(r.t) + '</td><td><button class="btn sm" data-hwdl="' + esc(r.id) + '">받기</button></td></tr>';
+          }).join('') + '</tbody></table><div class="muted">총 ' + fmtSize(total) + (total > 400 * 1048576 ? ' · 용량이 커서 ZIP이 느릴 수 있습니다. 「선택 받기」로 나누어 받으십시오.' : '') + '</div>' : '<p class="muted">아직 제출된 파일이 없습니다.</p>';
+          h += '<div class="muted hwmiss">접속 중인 학생 중 미제출 ' + miss.length + '명' + (miss.length ? ': ' + esc(miss.join(', ')) + ' <button class="btn sm" data-hwcopy>명단 복사</button>' : '') + '</div>';
+        }
+        el.innerHTML = h;
+      }
+      function hwSigned(ids) { return hwFn({ action: 'sign', token: T.token, code: C.code, hw: C.hwSel, ids: ids }).then(function (r) { return r.urls || {}; }); }
+      function dlBlob(url) { return fetch(url).then(function (r) { if (!r.ok) throw new Error('DL'); return r.blob(); }); }
+      function downloadRows(ids) {
+        var all = C.tools.rows, rows = all.filter(function (r) { return ids.indexOf(r.id) >= 0; }), outs = hwOutNames(all), sel = hwSel();
+        if (!rows.length) { toast('받을 파일이 없습니다.'); return; }
+        if (rows.length > 1 && !window.JSZip) { toast('압축 도구를 불러오지 못했습니다. 새로 고침 후 다시 시도해 주십시오.'); return; }
+        toast(rows.length === 1 ? '받는 중입니다.' : '파일 ' + rows.length + '개를 모으는 중입니다. 잠시 기다려 주십시오.');
+        hwSigned(rows.map(function (r) { return r.id; })).then(function (urls) {
+          if (rows.length === 1) return dlBlob(urls[rows[0].id]).then(function (b) { saveBlob(outs[rows[0].id], b); });
+          var zip = new JSZip(), q = rows.slice();
+          function worker() { var r = q.shift(); if (!r) return Promise.resolve(); if (!urls[r.id]) return worker(); return dlBlob(urls[r.id]).then(function (b) { zip.file(outs[r.id], b); return worker(); }); }
+          return Promise.all([worker(), worker(), worker()]).then(function () { return zip.generateAsync({ type: 'blob', compression: 'STORE' }); })
+            .then(function (b) { saveBlob('과제_' + safeName(sel ? sel.title : '제출') + '_' + C.code + '.zip', b); toast('받았습니다.'); });
+        }).catch(function () { toast('받지 못했습니다. 잠시 후 다시 시도해 주십시오.'); });
+      }
+      function hwClick(e) {
+        var t = e.target, sel = hwSel(), q;
+        if ((q = t.closest('[data-hwsel]'))) { C.hwSel = q.getAttribute('data-hwsel'); C.tools.rows = []; C.hwChk = {}; paintHwDyn(); pollTools(); return; }
+        if ((q = t.closest('[data-hwtog]')) && sel) { call('wb_hw_state', { p_code: C.code, p_hw: sel.id, p_open: q.getAttribute('data-hwtog') === '1' }).then(function () { send({ t: 'hw' }); pollTools(); }).catch(function () { toast('바꾸지 못했습니다.'); }); return; }
+        if ((q = t.closest('[data-hwdl]'))) { downloadRows([q.getAttribute('data-hwdl')]); return; }
+        if (t.closest('[data-hwall]')) { downloadRows(C.tools.rows.map(function (r) { return r.id; })); return; }
+        if (t.closest('[data-hwpick]')) { var ids = Object.keys(C.hwChk).filter(function (k) { return C.hwChk[k]; }); if (!ids.length) { toast('받을 학생을 먼저 체크해 주십시오.'); return; } downloadRows(ids); return; }
+        if (t.closest('[data-hwlog]') && sel) {
+          var outs = hwOutNames(C.tools.rows);
+          saveText('과제제출기록_' + C.code + '.txt', ['[' + sel.title + '] 수업코드 ' + C.code + ' 제출 기록', ''].concat(C.tools.rows.map(function (r) { return '■ ' + r.name + ' · ' + outs[r.id] + ' · ' + fmtSize(r.size) + ' · ' + clock(r.t) + (r.n > 1 ? ' · ' + r.n + '번째 제출' : ''); })).join('\n'));
+          return;
+        }
+        if (t.closest('[data-hwcopy]')) { var got = {}; C.tools.rows.forEach(function (r) { got[r.cid] = 1; }); copyText(C.roster.filter(function (r) { return !got[r.cid]; }).map(function (r) { return r.name || '(이름 없음)'; }).join(', '), '명단을 복사했습니다.'); return; }
+        if (t.closest('[data-hwpurge]') && sel) {
+          if (!confirm('「' + sel.title + '」의 제출 파일을 저장소에서 모두 지우고 학생 이름·파일명을 비웁니다. 먼저 받지 않은 파일은 복구할 수 없습니다. 계속하시겠습니까?')) return;
+          hwFn({ action: 'purge', token: T.token, code: C.code, hw: sel.id }).then(function () { C.hwSel = null; C.tools.rows = []; C.hwChk = {}; send({ t: 'hw' }); toast('지웠습니다.'); pollTools(); }).catch(function () { toast('지우지 못했습니다.'); });
+        }
+      }
+      function tlHw(full) {
+        var b = $('#tlB');
+        if (full || b.dataset.v !== 'hw') {
+          b.dataset.v = 'hw';
+          b.innerHTML = '<div class="hwform"><input id="hwT" class="inp" maxlength="80" placeholder="과제 제목 (예: 3회차 실습 결과 보고서)"><input id="hwN" class="inp" maxlength="300" placeholder="안내 (선택)"><label class="muted">마감 시각 (선택) <input id="hwD" type="datetime-local" class="inp" style="width:auto"></label><button class="btn pri" id="hwNew">' + ic('plus', 15) + ' 과제 열기</button></div><div id="hwDyn"></div>';
+          $('#hwNew').onclick = function () {
+            var t = $('#hwT').value.trim(); if (!t) { toast('과제 제목을 입력해 주십시오.'); return; }
+            var d = $('#hwD').value;
+            call('wb_hw_create', { p_code: C.code, p_title: t, p_note: $('#hwN').value, p_due: d ? new Date(d).toISOString() : null }).then(function (r) {
+              C.hwSel = r.id; C.tools.rows = []; $('#hwT').value = ''; $('#hwN').value = ''; $('#hwD').value = ''; send({ t: 'hw' }); toast('과제를 열었습니다. 학생 화면에 알림이 갑니다.'); pollTools();
+            }).catch(function (e) { toast(/TOO_MANY/.test(e.message) ? '과제가 너무 많습니다.' : '만들지 못했습니다.'); });
+          };
+          $('#hwDyn').addEventListener('click', hwClick);
+          $('#hwDyn').addEventListener('change', function (e) {
+            var c = e.target.closest('[data-hwchk]'); if (c) { C.hwChk[c.getAttribute('data-hwchk')] = c.checked; return; }
+            if (e.target.closest('[data-hwchkall]')) { var on = e.target.checked; C.tools.rows.forEach(function (r) { C.hwChk[r.id] = on; }); paintHwDyn(); }
+          });
+        }
+        paintHwDyn();
       }
       /* 실습 단계 */
       function doneSet(stepId) { var m = {}; C.tools.prog.forEach(function (r) { if (r.s === stepId) m[r.c] = 1; }); return m; }
@@ -2038,7 +2194,7 @@
       ch.on('broadcast', { event: 'req' }, function () { clearTimeout(rTimer); rTimer = setTimeout(pollReq, 250); });
       ch.on('broadcast', { event: 'typ' }, function (m) { var p = m && m.payload; if (p && p.q) { C.typ[p.q] = Date.now(); paintTypT(); setTimeout(paintTypT, 4200); } });
       var tTimer = null;
-      ['prog', 'vote', 'sub'].forEach(function (ev) { ch.on('broadcast', { event: ev }, function () { clearTimeout(tTimer); tTimer = setTimeout(pollTools, 300); }); });
+      ['prog', 'vote', 'sub', 'hw'].forEach(function (ev) { ch.on('broadcast', { event: ev }, function () { clearTimeout(tTimer); tTimer = setTimeout(pollTools, 300); }); });
       ch.on('presence', { event: 'sync' }, function () {
         var st = ch.presenceState(), n = 0;
         var nm = [], ro = [];
