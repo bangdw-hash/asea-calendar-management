@@ -104,7 +104,8 @@
     } else if (gradable.length) add('warn', '설정', '정답이 지정된 문항 ' + gradable.length + '개가 있으나 점수 표시가 꺼져 있습니다', '학생에게 점수가 보이지 않습니다. 의도한 설정인지 확인해 주십시오.', { qids: gradable.slice(0, 5).map(function (x) { return x.q.id; }), tab: 'questions' });
     gradable.forEach(function (x) { var q = x.q; if (q.options && q.type === 'single' && q.options.map(function (o) { return o.id; }).indexOf(q.answer) < 0) add('err', '논리', '[' + q.id + '] 정답이 선택지에 없습니다', '정답 값 「' + q.answer + '」', { qids: [q.id], tab: 'questions' }); });
     var tk = d.features && d.features.ticket != null ? !!d.features.ticket : C.course;
-    if (tk && !real.some(function (x) { return x.q.check && x.q.check.valid != null; })) add('info', '설정', '추첨번호를 발급하지만 성실응답 점검 문항이 없습니다', '추첨 시 불성실 응답을 걸러낼 수 없습니다. (선택)', { tab: 'questions' });
+    if (SVY.integ.cfg(d).on) add('info', '설정', '영역별 무작위 성실 응답 확인이 켜져 있습니다 (' + SVY.integ.cfg(d).sections.length + '개 영역)', '서버 검증에 DB 12단계(db/survey_schema_12.sql) 설치가 필요합니다. 설치 전에는 확인 문항의 정답 여부가 집계되지 않습니다.', { tab: 'questions' });
+    if (tk && !SVY.integ.cfg(d).on && !real.some(function (x) { return x.q.check && x.q.check.valid != null; })) add('info', '설정', '추첨번호를 발급하지만 성실응답 점검 문항이 없습니다', '추첨 시 불성실 응답을 걸러낼 수 없습니다. (선택)', { tab: 'questions' });
     if (d.limit && d.limit.max) { var sumMax = 0, anyMax = false; real.forEach(function (x) { (x.q.options || []).forEach(function (o) { if (o.max != null) { anyMax = true; } }); }); if (anyMax) add('info', '설정', '선착순 인원과 선택지 정원이 함께 설정되어 있습니다', '둘 중 먼저 차는 쪽에서 마감됩니다.', { tab: 'questions' }); }
     var w = C.w; if (w.open_at && w.close_at && new Date(w.open_at) >= new Date(w.close_at)) add('err', '설정', '응답 시작 일시가 마감 일시보다 늦습니다', '일정을 확인해 주십시오.', { tab: 'overview' });
     if (w.close_at && new Date(w.close_at) < new Date() && w.status !== 'closed') add('warn', '설정', '마감 일시가 이미 지났습니다', '지금 배포해도 학생은 응답할 수 없습니다.', { tab: 'overview' });

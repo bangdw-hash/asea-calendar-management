@@ -104,6 +104,28 @@
   }
   function stateOf(x, scope) { if (!shown(x, scope)) return 'hidden'; return F.state(x.q, ansOf(scope), S.ans.common, S.def); }
 
+  /* ───────────── 영역별 무작위 성실 응답 확인 (def.integrity) ─────────────
+     영역마다 확인 문항 1개를 영역 끝에 붙입니다. 과목별 반복 설문에서는 과목 수만큼 묻지 않고 한 번만 묻습니다.
+     요구값은 기기 토큰으로 정해져(새로고침해도 같음) 학생마다 다르고, 서버(db/survey_schema_12.sql)가 chk 로 다시 검증합니다. */
+  function IP() {
+    var ids = isGen() ? [] : myCourses().map(function (c) { return c.id; });
+    var key = [S.code, getToken(), isMatrix(), ids.join(',')].join('|');
+    if (S._ik !== key) {
+      S._ik = key; S._iq = {};
+      S._ip = SVY.integ.plan(S.def, { courses: ids, seed: S.code + '|' + getToken(), matrix: isMatrix() });
+      Object.keys(S._ip).forEach(function (sid) { var e = S._ip[sid], q = SVY.integ.question(S.def, sid, e.ask, e.at === 'course' ? 'course' : 'common'); S._iq[sid] = q; S.qmap[q.id] = q; });
+    }
+    return S._ip;
+  }
+  function integX(fn) {
+    var p = IP(), out = [];
+    (S.def.sections || []).forEach(function (s) { var e = p[s.id]; if (e && fn(e, s)) out.push({ q: S._iq[s.id], scope: e.cid, basic: false, section: s, integ: true, at: e.at, cid: e.cid }); });
+    return out;
+  }
+  function integCourse(cid) { return integX(function (e) { return e.at === 'course' && e.cid === cid; }); }
+  function integSec(sid, at) { return integX(function (e, s) { return s.id === sid && e.at === at; }); }
+  function integCommon() { return integX(function (e) { return e.at !== 'course'; }); }
+
   // 한 범위의 필수 문항 현황 (잘못된 입력도 미완료로 계산)
   function stat(scope, list) {
     var total = 0, done = 0, firstMissing = '';
@@ -116,8 +138,8 @@
     });
     return { total: total, done: done, firstMissing: firstMissing };
   }
-  function courseStat(cid) { return stat(cid, qs('course')); }
-  function commonStat() { return stat('common', qs('common')); }
+  function courseStat(cid) { return stat(cid, qs('course').concat(integCourse(cid))); }
+  function commonStat() { return stat('common', qs('common').concat(integCommon())); }
   function overall() {
     var t = 0, d = 0, cs = commonStat(); t += cs.total; d += cs.done;
     myCourses().forEach(function (c) { var s = courseStat(c.id); t += s.total; d += s.done; });
@@ -179,7 +201,7 @@
   function renderItems(items, scope, badge) {
     return items.map(function (x) {
       if (!shown(x, scope)) return '';
-      return F.html(x.q, ctxOf(scope, { badge: badge ? x.q.id : null }));
+      return F.html(x.q, ctxOf(scope, { badge: badge && !x.integ ? x.q.id : null }));
     }).join('');
   }
   function groupBySection(list) {
@@ -194,7 +216,7 @@
     groupBySection(qs('course', false)).forEach(function (g) {
       if (!secVisible(g.s, c.id)) return;
       h += '<h4 class="sec">' + E(g.s.title) + '</h4>' + (g.s.note ? '<div class="sec-note">' + E(g.s.note) + '</div>' : '');
-      h += '<div data-sec="' + E(g.s.id) + '">' + renderItems(g.items, c.id, true) + '</div>';
+      h += '<div data-sec="' + E(g.s.id) + '">' + renderItems(g.items.concat(integSec(g.s.id, 'course').filter(function (x) { return x.cid === c.id; })), c.id, true) + '</div>';
     });
     h += '<div class="nav-row">' + (idx > 0 ? '<button class="btn btn-ghost" data-act="copyprev" data-cid="' + c.id + '">' + I('copy', 16) + ' 이전 과목 척도 응답 복사</button>' : '') +
       (idx < total - 1 ? '<button class="btn btn-secondary" data-act="next" data-cid="' + c.id + '">다음 과목 ' + I('right', 16) + '</button>'
@@ -215,7 +237,7 @@
     var cq = qs('common', false);
     return '<div class="kicker">공통 문항</div>' + groupBySection(cq).map(function (g) {
       if (!secVisible(g.s, 'common')) return '';
-      return (g.s ? '<div class="chip-title">' + E(g.s.title) + '</div>' : '') + '<div data-sec="common">' + renderItems(g.items, 'common', true) + '</div>';
+      return (g.s ? '<div class="chip-title">' + E(g.s.title) + '</div>' : '') + '<div data-sec="common">' + renderItems(g.items.concat(g.s ? integSec(g.s.id, 'common') : []), 'common', true) + '</div>';
     }).join('');
   }
 
@@ -279,6 +301,7 @@
         if (x.q.type !== 'block') no++; return F.matrixHtml(x.q, rows, function (r) { return ctxOf(r.id, { badge: null }); }, { no: x.q.type === 'block' ? '' : (tag ? tag + '-' : '') + no + '.' });
       }).join('');
       if (!inner) return;
+      if (g.s) inner += renderItems(integSec(g.s.id, 'matrix'), 'common', false);
       h += '<section class="card mxsec">' + (g.s ? '<h2 class="title" style="font-size:calc(18px*var(--fs))">' + E(g.s.title) + '</h2>' + (g.s.note ? '<div class="sec-note">' + E(g.s.note) + '</div>' : '') : '') + inner + '</section>';
     });
     return h;
@@ -358,7 +381,7 @@
     if (basic.some(function (x) { return shown(x, 'common'); })) secs.push({ id: '_basic', title: '기본 정보', note: '', items: basic });
     (S.def.sections || []).forEach(function (s) {
       if (!secVisible(s, 'common')) return;
-      var items = (s.questions || []).map(function (q) { return { q: q, scope: 'common', basic: false, section: s }; });
+      var items = (s.questions || []).map(function (q) { return { q: q, scope: 'common', basic: false, section: s }; }).concat(integSec(s.id, 'common'));
       if (!items.some(function (x) { return shown(x, 'common'); })) return;
       secs.push({ id: s.id, title: s.title, note: s.note, items: items });
     });
@@ -552,11 +575,21 @@
         if (a[x.q.id + '_other'] != null && (v === '__other' || (Array.isArray(v) && v.indexOf('__other') >= 0))) dst[x.q.id + '_other'] = String(a[x.q.id + '_other']).trim();
       });
     }
-    pick('common', qs('common'), out.common);
-    if (isGen()) { delete out.course; return out; }
+    // 영역별 무작위 성실 응답 확인: 답은 '_I<영역ID>' 로 저장하고, 서버가 다시 검증하도록 요구값과 위치를 chk 에 함께 보냄
+    function withChk() {
+      var chk = {};
+      integX(function () { return true; }).forEach(function (x) {
+        var dst = x.cid === 'common' ? out.common : (out.course && out.course[x.cid]);
+        if (dst && dst[x.q.id] != null) chk[x.section.id] = { cid: x.cid, ask: IP()[x.section.id].ask };
+      });
+      if (Object.keys(chk).length) out.chk = chk;
+      return out;
+    }
+    pick('common', qs('common').concat(integCommon()), out.common);
+    if (isGen()) { withChk(); delete out.course; return out; }
     out._t = {};
-    myCourses().forEach(function (c) { out.course[c.id] = {}; pick(c.id, qs('course'), out.course[c.id]); out._t[c.id] = Math.round((S.times[c.id] || 0) / 1000); });
-    return out;
+    myCourses().forEach(function (c) { out.course[c.id] = {}; pick(c.id, qs('course').concat(integCourse(c.id)), out.course[c.id]); out._t[c.id] = Math.round((S.times[c.id] || 0) / 1000); });
+    return withChk();
   }
   async function refreshCounts() { try { var p = await SVY.rpc('svy_public', { p_code: S.code }); S.counts = p.counts || {}; } catch (e) { /* 무시 */ } }
   async function submit() {
@@ -572,7 +605,7 @@
     } else {
       var fi = firstIncomplete();
       if (fi) {
-        if (fi.cid === 'common') { var el = document.getElementById('c-common') || $app.querySelector('.card'); el.scrollIntoView({ behavior: 'smooth', block: 'start' }); flash(el, fi.qid); }
+        if (fi.cid === 'common') { var el = document.getElementById('c-common') || $app.querySelector('.card'); if (/^_I/.test(fi.qid) && !el.querySelector('.q[data-q="' + fi.qid + '"]')) el = $app; else el.scrollIntoView({ behavior: 'smooth', block: 'start' }); flash(el, fi.qid); }
         else if (isMatrix()) { var mr = $app.querySelector('.q[data-q="' + fi.qid + '"][data-scope="' + fi.cid + '"]'); if (mr) { mr.scrollIntoView({ behavior: 'smooth', block: 'center' }); mr.classList.remove('missing'); void mr.offsetWidth; mr.classList.add('missing'); setTimeout(function () { mr.classList.remove('missing'); }, 1800); } }
         else { openCourse(fi.cid); setTimeout(function () { flash(document.getElementById('c-' + fi.cid), fi.qid); }, 380); }
         toast('응답하지 않은 문항이 있습니다.'); return;

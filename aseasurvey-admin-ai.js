@@ -220,6 +220,7 @@
     def.intro.notice = def.intro.notice.filter(function (n) { return n && (n.k || n.v); }).map(function (n) { return { k: String(n.k || ''), v: String(n.v || '') }; });
     if (!def.intro.title && raw && raw.title) def.intro.title = raw.title;
     if (d.layout === 'single') def.layout = 'single';
+    if (d.integrity && d.integrity.on) def.integrity = JSON.parse(JSON.stringify(d.integrity));   // 영역별 무작위 성실 응답 확인 설정 유지
     if (mode === 'course' && d.view === 'matrix') def.view = 'matrix';
     if (mode === 'course' && d.link && d.link.cols) def.link = A.cleanLink ? A.cleanLink(d.link) : d.link;
     if (d.limit && SVY.num(d.limit.max) >= 1) def.limit = { max: SVY.num(d.limit.max) };

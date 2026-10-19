@@ -61,7 +61,8 @@
     out.sections = (def.sections || []).filter(function (s) { return out.scale.some(function (x) { return x.s.id === s.id; }); });
     return out;
   }
-  function passResp(r) { return r.attn_total > 0 ? r.attn_fail === 0 : true; }
+  // 점검 실패가 허용 횟수 이하이면 유효 응답 (무작위 성실 응답 확인을 켠 설문만 허용치 적용, 그 외 0회)
+  function passResp(r) { return r.attn_total > 0 ? r.attn_fail <= SVY.maxFail(A.cur.survey.def) : true; }
   var SINC = { all: '전체(제외 처리한 응답만 뺌)', pass: '유효 응답만 (점검 문항 통과 · 직선 응답 제외)', fail: '점검 실패 응답만', straight: '동일 응답(직선)만', excluded: '관리자 제외 응답만' };
   A.ext.SINC = SINC;
   A.ext.sincereOk = function (r) {
@@ -173,7 +174,26 @@
     var fails = {}; D.Q.check.forEach(function (x) { fails[x.q.id] = { ok: 0, bad: 0 }; });
     D.pairs.forEach(function (p) { var a = (p.r.answers.course || {})[p.c.id] || {}; D.Q.check.forEach(function (x) { if (a[x.q.id] == null) return; if (a[x.q.id] === x.q.check.valid) fails[x.q.id].ok++; else fails[x.q.id].bad++; }); });
     if (D.Q.check.length) h += '<div class="panel"><h3>신뢰도 점검 문항 결과</h3><p class="panel-sub">정답(유효값)과 다르게 응답한 건수입니다. 상단 필터의 「신뢰도」에서 점검 실패 응답만 따로 볼 수 있습니다.</p><div class="tbl-wrap"><table class="t"><thead><tr><th>문항</th><th>정답</th><th class="num">정답 응답</th><th class="num">오답 응답</th><th class="num">오답률</th></tr></thead><tbody>' + D.Q.check.map(function (x) { var f = fails[x.q.id], sc = (A.cur.survey.def.scales[x.q.scale || 'likert5'] || []).filter(function (o) { return o.v === x.q.check.valid; })[0]; return '<tr><td class="wrapcell">[' + E(x.q.id) + '] ' + E(x.q.label) + '</td><td>' + E(sc ? sc.label : x.q.check.valid) + '</td><td class="num">' + f.ok + '</td><td class="num">' + f.bad + '</td><td class="num">' + pct(f.bad, f.ok + f.bad) + '%</td></tr>'; }).join('') + '</tbody></table></div></div>';
+    h += integPanel(D);
     return h;
+  }
+  // 영역별 무작위 성실 응답 확인 결과 (응답에 저장된 chk 의 요구값과 실제 응답 비교)
+  function integPanel(D) {
+    var def = A.cur.survey.def, c = SVY.integ.cfg(def); if (!c.on) return '';
+    var rows = c.sections.map(function (sid) {
+      var s = (def.sections || []).filter(function (x) { return x.id === sid; })[0], ok = 0, bad = 0;
+      D.resp.forEach(function (r) {
+        var an = r.answers || {}, ck = an.chk && an.chk[sid]; if (!ck) return;
+        var a = ck.cid === 'common' ? an.common : (an.course || {})[ck.cid], v = a && a['_I' + sid]; if (v == null) return;
+        if (v === ck.ask) ok++; else bad++;
+      });
+      return { t: s ? s.title : sid, ok: ok, bad: bad };
+    });
+    var dist = {}; D.resp.forEach(function (r) { if (r.attn_total > 0) { var k = Math.min(r.attn_fail, 3); dist[k] = (dist[k] || 0) + 1; } });
+    return '<div class="panel"><h3>영역별 무작위 성실 응답 확인 결과</h3><p class="panel-sub">학생마다 다른 요구값(예: 「보통이다에 표시」)과 실제 응답을 비교한 결과입니다. 점검 실패가 ' + SVY.maxFail(def) + '회 이하이면 유효 응답으로 처리합니다. (설문 설정 &gt; 성실 응답 확인)</p>' +
+      '<div class="tbl-wrap"><table class="t"><thead><tr><th>영역</th><th class="num">일치</th><th class="num">불일치</th><th class="num">불일치율</th></tr></thead><tbody>' +
+      rows.map(function (x) { return '<tr><td class="wrapcell">' + E(x.t) + '</td><td class="num">' + x.ok + '</td><td class="num">' + x.bad + '</td><td class="num">' + pct(x.bad, x.ok + x.bad) + '%</td></tr>'; }).join('') + '</tbody></table></div>' +
+      '<p class="hint" style="margin-top:8px">응답자별 점검 실패 횟수: ' + [0, 1, 2, 3].map(function (k) { return (k === 3 ? '3회 이상 ' : k + '회 ') + (dist[k] || 0) + '명'; }).join(' · ') + '</p></div>';
   }
 
   /* ───────────── 문항별 분포 ───────────── */

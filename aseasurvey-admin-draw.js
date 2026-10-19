@@ -10,7 +10,7 @@
   var A = window.SVYA, E = SVY.esc, I = SVY.ico;
   var DEF = { n: 10, max_fail: 0, no_straight: true, min_sec_per_course: 30, good_sec_per_course: 120, min_text: 0, text_good: 100, w_base: 1, w_time: 2, w_text: 3 };
   var S = A.ext.dr = { prev: null, excl: '', fl: 'all', more: 1, loading: false, claim: null };
-  function cfg() { return Object.assign({}, DEF, (A.work && A.work.draw_cfg) || {}); }
+  function cfg() { return Object.assign({}, DEF, { max_fail: SVY.maxFail((A.cur && A.cur.survey && A.cur.survey.def) || {}) }, (A.work && A.work.draw_cfg) || {}); }
   function exclList() { return String(S.excl || '').split(/[\s,;]+/).filter(Boolean); }
   async function refreshDraws() { await A.refresh(); }
 

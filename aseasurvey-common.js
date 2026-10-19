@@ -253,3 +253,65 @@ SVY.linkInfo = function (def) {
   return out;
 };
 
+
+/* 영역별 무작위 성실 응답 확인 (def.integrity)
+ *  def.integrity = { on:true, sections:['S2',...], place:'rotate'|'first', scale:'likert5', maxFail:1, text:'(선택) {ans} 자리에 표시할 보기가 들어갑니다' }
+ *  · 학생 화면이 각 영역 끝에 확인 문항('_I<영역ID>')을 넣고, 학생마다 다른 요구값(ask)을 만듭니다.
+ *  · 과목 평가형에서는 과목 수만큼 반복하지 않고 한 번만 묻습니다. place='rotate' 는 영역 순서대로 수강 과목에 돌려가며, 'first' 는 첫 과목에 모아서 표시합니다.
+ *  · 응답에는 chk[영역ID]={cid,ask} 가 함께 저장되고, 서버(db/survey_schema_12.sql)가 같은 규칙으로 다시 검증합니다.
+ *  · 조건(showIf)이 걸린 영역은 숨겨질 수 있어 확인 문항을 넣지 않습니다. */
+SVY.integ = (function () {
+  var DEF_TEXT = '이 문항은 응답이 성실하게 이루어지고 있는지 확인하기 위한 것입니다. 내용과 관계없이 「{ans}」에 표시해 주십시오.';
+  function cfg(def) {
+    var g = (def && def.integrity) || null, on = !!(g && g.on);
+    var exist = {}; ((def && def.sections) || []).forEach(function (s) { exist[s.id] = s; });
+    var mf = g && g.maxFail != null && isFinite(Number(g.maxFail)) ? Math.max(0, Math.floor(Number(g.maxFail))) : 1;
+    return { on: on, sections: on ? (g.sections || []).filter(function (id) { return exist[id]; }) : [], place: g && g.place === 'first' ? 'first' : 'rotate',
+      scale: (g && g.scale) || 'likert5', maxFail: mf, text: (g && g.text) || DEF_TEXT };
+  }
+  // 점검 실패를 허용하는 횟수: 무작위 확인을 켠 설문만 허용치(기본 1회)를 쓰고, 그 외에는 0회
+  function maxFail(def) { var c = cfg(def); return c.on ? c.maxFail : 0; }
+  function courseScoped(def, s) { return def.mode !== 'general' && (s.questions || []).some(function (q) { return q.scope !== 'common'; }); }
+  // 새 설문에서 처음 켤 때 기본으로 선택할 영역: 조건이 없고 척도 문항이 있는 영역
+  function defaultSections(def) {
+    return ((def && def.sections) || []).filter(function (s) { return !s.showIf && (s.questions || []).some(function (q) { return q.type === 'scale' && !(q.check && q.check.valid != null); }); }).map(function (s) { return s.id; });
+  }
+  function hashSeed(str) { var h = 1779033703 ^ str.length; for (var i = 0; i < str.length; i++) { h = Math.imul(h ^ str.charCodeAt(i), 3432918353); h = (h << 13) | (h >>> 19); } h = Math.imul(h ^ (h >>> 16), 2246822507); h = Math.imul(h ^ (h >>> 13), 3266489909); return (h ^ (h >>> 16)) >>> 0; }
+  function prng(seed) { var a = seed >>> 0; return function () { a = (a + 0x6D2B79F5) >>> 0; var t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+  function shuffle(arr, rnd) { for (var i = arr.length - 1; i > 0; i--) { var j = Math.floor(rnd() * (i + 1)), t = arr[i]; arr[i] = arr[j]; arr[j] = t; } return arr; }
+  // 요구값 배정: 척도 값(1~5)을 섞은 묶음에서 차례로 뽑아, 한 학생에게 같은 값이 겹치거나 이어지지 않게 합니다.
+  function asks(vals, n, rnd) {
+    var out = [];
+    while (out.length < n) {
+      var b = shuffle(vals.slice(), rnd);
+      if (out.length && b.length > 1 && b[0] === out[out.length - 1]) { var t = b[0]; b[0] = b[1]; b[1] = t; }
+      out = out.concat(b);
+    }
+    return out.slice(0, n);
+  }
+  /* 배치 계획: { 영역ID: { cid, ask, at } }
+   *  at = 'course'(과목 칸 안, cid=과목 ID) | 'matrix'(질문별 표 화면, cid='common') | 'common'(공통 문항·일반 설문, cid='common')
+   *  o = { courses:[과목 ID...], seed:'문자열', matrix:boolean } */
+  function plan(def, o) {
+    var c = cfg(def), out = {}; if (!c.on) return out;
+    var vals = ((def.scales || {})[c.scale] || []).map(function (x) { return x.v; });
+    if (!vals.length) return out;
+    var secs = ((def && def.sections) || []).filter(function (s) { return c.sections.indexOf(s.id) >= 0 && !s.showIf; });
+    var a = asks(vals, secs.length, prng(hashSeed(String(o.seed || 'x')))), cids = o.courses || [], j = 0;
+    secs.forEach(function (s, i) {
+      var cs = courseScoped(def, s), e = { ask: a[i] };
+      if (!cs || !cids.length && !o.matrix) { e.at = 'common'; e.cid = 'common'; }
+      else if (o.matrix) { e.at = 'matrix'; e.cid = 'common'; }
+      else { e.at = 'course'; e.cid = c.place === 'first' ? cids[0] : cids[j % cids.length]; j++; }
+      out[s.id] = e;
+    });
+    return out;
+  }
+  // 학생에게 보이는 확인 문항 (id '_I<영역ID>', 정답은 문항에 넣지 않고 chk 로 따로 관리)
+  function question(def, sid, ask, scope) {
+    var c = cfg(def), sc = ((def.scales || {})[c.scale] || []), hit = sc.filter(function (x) { return x.v === ask; })[0];
+    return { id: '_I' + sid, type: 'scale', scope: scope === 'course' ? 'course' : 'common', scale: c.scale, required: true, attn: true, label: c.text.replace('{ans}', hit ? hit.label : String(ask)) };
+  }
+  return { cfg: cfg, maxFail: maxFail, plan: plan, question: question, defaultSections: defaultSections, courseScoped: courseScoped, DEF_TEXT: DEF_TEXT };
+})();
+SVY.maxFail = SVY.integ.maxFail;
