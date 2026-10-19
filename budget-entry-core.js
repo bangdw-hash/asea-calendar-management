@@ -314,6 +314,7 @@
       var target = list().filter(function (r) { return !r._tmp && (!admin || !S.dept || r.dept === S.dept) && (all ? r.code_src !== 'manual' && r.code_src !== 'admin' : !r.mok); });
       if (!target.length) return toast(all ? '다시 매칭할 줄이 없습니다.' : '코드가 비어 있는 줄이 없습니다. (직접 고른 코드는 바꾸지 않습니다.)', 'ok');
       S.matching = true; var btn = $('#e-ai', root); if (btn) btn.disabled = true;
+      var perMap = {};
       flush().then(function () {
         var done = 0, byDept = {};
         target.forEach(function (r) { (byDept[r.dept] = byDept[r.dept] || []).push(r); });
@@ -323,13 +324,56 @@
             chain = chain.then(function () {
               toast('AI가 코드를 찾는 중… (' + done + '/' + target.length + ')');
               return BudgetEntryAI.match({ token: S.token, year: S.year, dept: d }, chunk).then(function (results) {
-                return W.rpc('bgt_e_code_apply', { p_token: S.token, p_year: S.year, p_dept: admin ? d : null, p_items: results, p_who: S.who });
+                results.forEach(function (x) { if (x.per) perMap[x.id] = x.per; });
+                var cl = results.map(function (x) { return { id: x.id, mok: x.mok, conf: x.conf, why: x.why, alt: x.alt, line: x.line }; });
+                return W.rpc('bgt_e_code_apply', { p_token: S.token, p_year: S.year, p_dept: admin ? d : null, p_items: cl, p_who: S.who });
               }).then(function (res) { (res.rows || []).forEach(function (srv) { S.rows[srv.id] = srv; }); done += chunk.length; });
             });
           })(byDept[d].slice(i, i + 25));
         });
         return chain.then(function () { toast('AI 코드 매칭을 마쳤습니다 (' + done + '건). 「확인 필요」 표시가 있는 줄을 확인하십시오.'); });
-      }).catch(function (e) { toast(e.message, 'err'); }).then(function () { S.matching = false; S.lastSaved = new Date(); draw(); });
+      }).catch(function (e) { toast(e.message, 'err'); }).then(function () {
+        S.matching = false; S.lastSaved = new Date(); draw();
+        var props = Object.keys(perMap).map(function (id) { var r = S.rows[id]; return r && !r._tmp && r.phase === 'plan' && !r._gone ? BudgetEntrySplit.build(r, perMap[id]) : null; }).filter(Boolean);
+        if (props.length) BudgetEntrySplit.review({ proposals: props, apply: applySplit });
+      });
+    }
+    // 미리보기에서 고른 정리안 반영: 원래 줄을 첫 줄로 고치고 나머지는 새 줄로 추가합니다(같은 코드·AI 판정 복사).
+    function applySplit(picks) {
+      var items = [], meta = [];
+      picks.forEach(function (pk, g) {
+        var r = S.rows[pk.p.r.id], rows = pk.c.rows; if (!r || r._gone) return;
+        var u = { id: r.id, ver: r.ver, memo: rows[0].memo, amount: rows[0].amount, calc: rows[0].calc }; if (admin) u.dept = r.dept; items.push(u); meta.push({ g: g, r: r, first: true });
+        for (var i = 1; i < rows.length; i++) {
+          var n = { phase: r.phase, type: r.type, entry_date: r.entry_date || null, memo: rows[i].memo, vendor: r.vendor, amount: rows[i].amount, calc: rows[i].calc, mok: r.mok || '' };
+          if (isFinite(Number(r.sort))) n.sort = Number(r.sort) + i;   // 원래 줄 바로 아래에 둡니다.
+          if (admin) n.dept = r.dept; items.push(n); meta.push({ g: g, r: r, first: false });
+        }
+      });
+      if (!items.length) return Promise.resolve(0);
+      return flush().then(function () { return api('bgt_e_save', { p_dept: dp(), p_items: items, p_who: S.who }); }).then(function (res) {
+        var conf = {}; (res.conflicts || []).forEach(function (c) { conf[c.id] = c; });
+        var ri = 0, applied = {}, undo = [], ai = [];
+        items.forEach(function (it, k) {
+          var m = meta[k];
+          if (it.id && conf[it.id]) { m.fail = true; return; }
+          var srv = res.rows[ri++]; if (!srv) return;
+          S.rows[srv.id] = srv; srv._dirty = null;
+          if (m.first) { applied[m.g] = true; return; }
+          m.id = srv.id; ai.push({ id: srv.id, mok: m.r.mok, conf: m.r.ai_conf, why: m.r.ai_why, alt: m.r.ai_alt, line: m.r.line_hint, _g: m.g });
+        });
+        ai.forEach(function (x) { if (!applied[x._g]) undo.push(x.id); });
+        var keep = ai.filter(function (x) { return applied[x._g]; }).map(function (x) { return { id: x.id, mok: x.mok, conf: x.conf, why: x.why, alt: x.alt, line: x.line }; });
+        var chain = Promise.resolve();
+        if (undo.length) chain = chain.then(function () { return api('bgt_e_delete', { p_dept: dp(), p_ids: undo, p_who: S.who }); }).then(function () { undo.forEach(function (id) { delete S.rows[id]; }); });
+        if (keep.length) chain = chain.then(function () { return W.rpc('bgt_e_code_apply', { p_token: S.token, p_year: S.year, p_dept: admin ? dp() : null, p_items: keep, p_who: S.who }); }).then(function (r2) { (r2.rows || []).forEach(function (srv) { S.rows[srv.id] = srv; }); });
+        return chain.then(function () {
+          S.lastSaved = new Date(); draw(); updCodeSum();
+          var okN = Object.keys(applied).length, bad = picks.length - okN;
+          if (bad) toast(bad + '건은 다른 사람이 먼저 고쳐 반영하지 못했습니다. 최신 내용을 확인한 뒤 다시 시도하십시오.', 'err');
+          return okN;
+        });
+      });
     }
     function qaModal() {
       var m = W.modal({ title: '코드 질문하기', cls: 'wide', body: '<p class="muted">어떤 목적으로 쓰려는지 적으면 알맞은 예산 코드를 알려 드립니다. 예) 학생 행사 다과비는 어떤 코드인가요?</p>' +
