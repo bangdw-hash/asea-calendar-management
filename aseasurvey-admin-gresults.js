@@ -373,10 +373,10 @@
     if (pd.F) { A.ext.F.data = pd.F.data; A.ext.F.sincere = pd.F.sincere; }
     if (pd.rpt && A.ext.rpt) { var R0 = A.ext.rpt; R0.unit = pd.rpt.unit || R0.unit; R0.view = pd.rpt.view || R0.view; R0.sel = pd.rpt.sel || {}; R0.sorts = pd.rpt.sorts || []; R0.q = pd.rpt.q || ''; R0.anchor = pd.rpt.anchor || ''; if (pd.rpt.types) R0.types = pd.rpt.types; }
   }
-  var LEGSUB = { legacy: 1, cmp: 1, det: 1, same: 1, live: 1, rpt: 1, trk: 1, cls: 1, prf: 1, sbj: 1, ovr: 1, rnd: 1, thm: 1, prio: 1, act: 1 };
+  var LEGSUB = { legacy: 1, cmp: 1, det: 1, same: 1, live: 1, lab: 1, rpt: 1, trk: 1, cls: 1, prf: 1, sbj: 1, ovr: 1, rnd: 1, thm: 1, prio: 1, act: 1 };
   // 분석 메뉴 → 리포트 모듈의 화면(view)·단위(unit)
   var RPTU = { trk: { v: 'list', u: 'track' }, cls: { v: 'list', u: 'klass' }, prf: { v: 'list', u: 'prof' }, sbj: { v: 'list', u: 'subject' }, ovr: { v: 'ovr' }, rnd: { v: 'rnd' }, thm: { v: 'thm' }, prio: { v: 'prio' }, act: { v: 'act' } };
-  var ANA = [['ovr', '종합 보고서'], ['trk', '계열별 분석'], ['cls', '반별 분석'], ['prf', '교수별 분석'], ['sbj', '과목별 분석'], ['rnd', '회차 비교'], ['thm', '주제 연결'], ['prio', '우선순위'], ['act', '개선 과제'], ['cmp', '비교'], ['det', '조건 검출'], ['same', '같은 과목'], ['live', '참여 현황']];
+  var ANA = [['ovr', '종합 보고서'], ['trk', '계열별 분석'], ['cls', '반별 분석'], ['prf', '교수별 분석'], ['sbj', '과목별 분석'], ['rnd', '회차 비교'], ['thm', '주제 연결'], ['prio', '우선순위'], ['act', '개선 과제'], ['cmp', '비교'], ['det', '조건 검출'], ['same', '같은 과목'], ['live', '참여 현황'], ['lab', '비교 분석실']];
   function legKey(s) { return RPTU[s] ? 'rpt' : s; }
   function isAna(s) { return ANA.some(function (a) { return a[0] === s; }); }
   // 탭 2단: 위 줄 = 주 메뉴, 아래 줄 = 「분석」 하위 메뉴 (가로 스크롤 없이 줄바꿈)
