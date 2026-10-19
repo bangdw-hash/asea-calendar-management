@@ -164,12 +164,26 @@
     });
     return out.join(';');
   }
+  /* 글 속 주소(http·https·www)를 누르면 새 탭으로 열리는 링크로 바꾼다 */
+  var URL_RE = /((?:https?:\/\/|www\.)[A-Za-z0-9\-._~:\/?#\[\]@!$&'()*+,;=%]+)/g;
+  function linkText(t) {
+    return String(t || '').split(URL_RE).map(function (p, i) {
+      if (i % 2 === 0) return esc(p);
+      var tail = '', m = p.match(/[.,;:!?)'\]]+$/); if (m) { tail = m[0]; p = p.slice(0, -tail.length); }
+      var h = /^www\./i.test(p) ? 'https://' + p : p;
+      return '<a href="' + esc(h) + '" target="_blank" rel="noopener noreferrer">' + esc(p) + '</a>' + esc(tail);
+    }).join('');
+  }
   function sanitize(html) {
     var doc = new DOMParser().parseFromString('<body>' + String(html || '') + '</body>', 'text/html');
     var out = document.createElement('div');
     (function walk(src, dst) {
       Array.prototype.forEach.call(src.childNodes, function (n) {
-        if (n.nodeType === 3) { dst.appendChild(document.createTextNode(n.nodeValue)); return; }
+        if (n.nodeType === 3) {
+          if (/(https?:\/\/|www\.)/i.test(n.nodeValue) && !(dst.closest && dst.closest('a,.cpb'))) { var tp = document.createElement('template'); tp.innerHTML = linkText(n.nodeValue); dst.appendChild(tp.content); }
+          else dst.appendChild(document.createTextNode(n.nodeValue));
+          return;
+        }
         if (n.nodeType !== 1) return;
         var t = n.tagName;
         if (DROP[t]) return;
@@ -455,7 +469,7 @@
   /* 말풍선: 오른쪽 파랑 = 내가 보낸 것, 왼쪽 회색 = 상대. 받은 글자·이미지에는 복사 버튼 */
   function msgHtml(m, mine, name) {
     var av = m.r === 's' ? esc((name || '?').slice(0, 1)) : '교';
-    var body = m.b ? '<div class="btxt' + (m.c ? ' isc' : '') + '">' + esc(m.b) + '</div>' : '';
+    var body = m.b ? '<div class="btxt' + (m.c ? ' isc' : '') + '">' + (m.c ? esc(m.b) : linkText(m.b)) + '</div>' : '';
     var img = m.i ? '<img class="cimg" src="' + esc(m.i) + '" alt="첨부 이미지" loading="lazy">' : '';
     var act = '';
     if (m.b) act += '<button class="btn sm" data-cptxt>' + ic('copy', 13) + ' ' + (m.c && m.r === 't' ? '프롬프트 복사' : '복사') + '</button>';
@@ -515,7 +529,7 @@
   var P = new URLSearchParams(location.search);
   var root = $('#root');
   function boot() {
-    if (P.get('r')) return Student(String(P.get('r')).replace(/\D/g, '').slice(0, 8), P.get('view') === '1');
+    if (P.get('r')) { var xm = P.get('xm') === '1' || P.get('xm') === '2' ? P.get('xm') : ''; return Student(String(P.get('r')).replace(/\D/g, '').slice(0, 8), P.get('view') === '1' || xm === '2', xm); }
     if (P.get('mode') === 'teacher') return Teacher();
     return Landing();
   }
@@ -542,7 +556,7 @@
   }
 
   /* ───────────── 학생 화면 ───────────── */
-  function Student(code, beam) {
+  function Student(code, beam, xm) {
     var S = {
       code: code, ver: null, tkHash: null, tkVerified: null, follow: true, mat: null, cur: 1, tMat: null, tPage: 1, pageTs: 0, noteTs: 0,
       saved: null, mats: [], docs: {}, own: {}, shown: null, pages: 0, seen: {}, links: [], opened: {}, sigMap: {}, rt: false, pollOk: true,
@@ -554,6 +568,7 @@
 
     document.title = '수업 ' + code;
     document.body.classList.toggle('beam', !!beam);
+    if (xm) { document.body.classList.add('xmon', 'xm' + xm); document.title = '확장 화면 · 수업 ' + code; }
     root.innerHTML =
       '<div class="s-app">' +
       '<header class="hdr"><div class="hdr-l"><span class="brand">실시간 수업 노트</span><span class="ttl" id="sTitle"></span></div>' +
@@ -994,7 +1009,7 @@
     function showShare(sh) {
       S.share = sh; S.shareSeen = sh.id; if (S.shareClosed === sh.id) return;
       $('#shT').textContent = sh.title || '우수 사례'; $('#shN').textContent = sh.name ? '· ' + sh.name : '';
-      $('#shB').innerHTML = (sh.body ? '<div class="btxt' + (sh.c ? ' isc' : '') + '">' + esc(sh.body) + '</div>' : '') + (sh.img ? '<img class="cimg shimg" src="' + esc(sh.img) + '" alt="공유된 사진">' : '');
+      $('#shB').innerHTML = (sh.body ? '<div class="btxt' + (sh.c ? ' isc' : '') + '">' + (sh.c ? esc(sh.body) : linkText(sh.body)) + '</div>' : '') + (sh.img ? '<img class="cimg shimg" src="' + esc(sh.img) + '" alt="공유된 사진">' : '');
       $('#shCp').classList.toggle('hide', !sh.body); $('#shareOv').classList.remove('hide');
     }
     function hideShare() { S.share = null; $('#shareOv').classList.add('hide'); }
@@ -1098,13 +1113,21 @@
       S.ch = ch;
       ch.on('broadcast', { event: 'ev' }, onEvent);
       ch.subscribe(function (st) {
-        if (st === 'SUBSCRIBED') { S.rt = true; ch.track({ role: 's', name: S.name }); paintConn(); }
+        if (st === 'SUBSCRIBED') { S.rt = true; ch.track({ role: xm ? 'v' : 's', name: xm ? '' : S.name }); paintConn(); }
         else if (st === 'CHANNEL_ERROR' || st === 'TIMED_OUT' || st === 'CLOSED') { S.rt = false; paintConn(); }
       });
     }
     connect();
     poll();
-    fetchThreads();
+    if (!xm) fetchThreads();
+    if (xm) {
+      document.body.appendChild($('#sTmr'));
+      var hint = document.createElement('div'); hint.className = 'xmhint';
+      hint.innerHTML = '이 화면을 한 번 클릭하면 전체화면으로 전환됩니다. (Esc로 해제)'; document.body.appendChild(hint);
+      document.addEventListener('click', function () { hint.remove(); var el = document.documentElement; if (!document.fullscreenElement && el.requestFullscreen) { try { el.requestFullscreen().catch(function () {}); } catch (e) {} } });
+      setTimeout(function () { hint.classList.add('fade'); }, 15000);
+      try { var bc = new BroadcastChannel('wbstage-' + code); bc.onmessage = function (e) { var d = e.data || {}; if (d.t === 'share' && d.sh) { S.shareClosed = ''; showShare(d.sh); } else if (d.t === 'unshare') { hideShare(); S.shareClosed = ''; S.shareSeen = ''; } }; } catch (e) {}
+    }
     if (!S.name && !beam) askName();
   }
 
@@ -1183,6 +1206,7 @@
         '<a class="btn sm" id="bView" target="_blank" rel="noopener" href="' + esc(joinUrl + '&view=1') + '">' + ic('monitor', 15) + ' 학생 화면 보기</a>' +
         '<button class="btn sm" id="bTools" title="실습 단계 · 투표/퀴즈 · 제출 갤러리(우수 사례 공유)">' + ic('list', 15) + ' 수업 도구 <span class="cnt hide" id="toolCnt">0</span></button>' +
         '<button class="btn sm" id="bReq" title="학생 도움 요청 보드">' + ic('chat', 15) + ' 도움 요청 <span class="cnt hide" id="reqCnt">0</span></button>' +
+        '<button class="btn sm" id="bDisp" title="확장 모니터(프로젝터) 화면 설정">' + ic('monitor', 15) + ' <span class="lbl">확장 화면</span></button>' +
         '<button class="btn sm" id="bPres" title="슬라이드를 전체화면으로 크게 보며 발표">' + ic('full', 15) + ' 발표 모드</button>' +
         '<button class="btn sm" id="bEnd"></button></div></header>' +
         '<div class="t-main"><section class="t-left">' +
@@ -1197,17 +1221,8 @@
         '<span class="mode" id="tFn"></span></div>' +
         '<div class="stagebox"><div class="stage" id="tStage"><canvas id="tCv"></canvas><div class="empty" id="tEmpty">PDF 교안을 올려 주십시오. 파일을 이 화면에 끌어다 놓아도 됩니다. (PPT는 PDF로 저장해 올립니다)</div></div>' +
         '<div class="thumbs hide" id="tThumbs"></div><div class="hardbar hide" id="tHard"></div></div></section>' +
-        '<aside class="t-right">' +
-        '<div class="blk"><h3>' + ic('users', 15) + ' 학생 현황 <span class="muted" style="margin-left:auto;font-weight:400">이해도는 현재 쪽 기준</span></h3><div class="stat"><button class="pill usr" id="bRoster" title="접속 학생 명단 보기" style="border:0;cursor:pointer">접속 <span id="stU">0</span>명</button>' +
-        '<span class="pill got">이해 <span id="stG">0</span></span><span class="pill hard">어려움 <span id="stH">0</span></span>' +
-        '<button class="btn sm" id="bSigR" title="현재 쪽의 이해도 신호를 모두 해제">' + ic('refresh', 14) + ' 이 쪽 초기화</button>' +
-        '<button class="btn sm" id="bStat">' + ic('chart', 14) + ' 쪽별 집계</button></div>' +
-        '<label class="chk"><input type="checkbox" id="tDl"> 학생 내려받기 허용 (PDF·첨부 자료)</label></div>' +
-        '<div class="blk"><h3>' + ic('clock', 15) + ' 타이머 · 휴식 <span class="save" id="tmSt" style="margin-left:auto"></span></h3>' +
-        '<div class="tm"><button class="btn" data-tm="5">휴식 5분</button><button class="btn" data-tm="10">10분</button><button class="btn" data-tm="15">15분</button><button class="btn" data-tm="20">20분</button><button class="btn red" id="tmOff">해제</button></div>' +
-        '<div class="fr" style="margin-top:6px"><input id="tmMin" class="inp" type="number" min="1" max="240" value="10" style="width:84px" aria-label="분"><button class="btn" id="tmGo">타이머 시작</button></div>' +
-        '<div class="muted">학생 화면 위쪽에 작은 표시만 나타나며, 학생은 보던 화면을 계속 볼 수 있습니다.</div></div>' +
-        '<div class="blk"><h3>' + ic('note', 15) + ' 노트 <span class="save" id="tSave" style="margin-left:auto"></span></h3>' +
+        '<div class="rsz" id="rsz" title="끌어서 오른쪽 패널 폭 조절"></div><aside class="t-right">' +
+        '<div class="blk noteblk"><h3>' + ic('note', 15) + ' 노트 <span class="save" id="tSave" style="margin-left:auto"></span></h3>' +
         '<div class="tools" id="tools">' +
         '<button class="btn" data-c="bold" title="굵게"><b>B</b></button><button class="btn" data-c="italic" title="기울임"><i>I</i></button>' +
         '<button class="btn" data-c="underline" title="밑줄"><u>U</u></button><button class="btn" data-c="strikeThrough" title="취소선"><s>S</s></button><span class="gap"></span>' +
@@ -1216,15 +1231,24 @@
         '<button class="btn sw" data-bg="#fef08a" style="background:#fef08a" title="노랑 형광펜" aria-label="노랑 형광펜"></button><button class="btn sw" data-bg="#bbf7d0" style="background:#bbf7d0" title="초록 형광펜" aria-label="초록 형광펜"></button>' +
         '<button class="btn sw" data-bg="#bfdbfe" style="background:#bfdbfe" title="파랑 형광펜" aria-label="파랑 형광펜"></button><span class="gap"></span>' +
         '<button class="btn" data-fs="3" title="보통">가</button><button class="btn" data-fs="5" title="크게" style="font-size:17px">가</button><button class="btn" data-fs="6" title="아주 크게" style="font-size:20px">가</button><span class="gap"></span>' +
-        '<button class="btn" data-c="insertUnorderedList" title="글머리 목록">• 목록</button><button class="btn" data-c="insertOrderedList" title="번호 목록">1. 목록</button>' +
-        '<button class="btn" data-c="removeFormat" title="서식 지우기">서식 해제</button>' +
-        '<button class="btn pri" id="tBlk" title="선택한 글(또는 빈 칸)을 학생이 한 번에 복사하는 블록으로 만듭니다">' + ic('code', 15) + ' 복사 블록</button></div>' +
+        '<button class="btn" data-c="insertUnorderedList" title="글머리 목록">•</button><button class="btn" data-c="insertOrderedList" title="번호 목록">1.</button>' +
+        '<button class="btn" data-c="removeFormat" title="서식 지우기">해제</button>' +
+        '<button class="btn pri" id="tBlk" title="선택한 글(또는 빈 칸)을 학생이 한 번에 복사하는 블록으로 만듭니다">' + ic('code', 15) + ' 블록</button></div>' +
         '<div id="ed" contenteditable="true" spellcheck="false" role="textbox" aria-multiline="true" aria-label="수업 노트"></div></div>' +
-        '<div class="blk"><h3>' + ic('link', 15) + ' 링크 보내기</h3>' +
+        '<div class="blk fold' + (store('wb_fd_st') === '1' ? '' : ' shut') + '"><h3 data-fold="st">' + ic('users', 15) + ' 학생 현황 <span class="fsum" id="fhSum"></span></h3><div class="stat"><button class="pill usr" id="bRoster" title="접속 학생 명단 보기" style="border:0;cursor:pointer">접속 <span id="stU">0</span>명</button>' +
+        '<span class="pill got">이해 <span id="stG">0</span></span><span class="pill hard">어려움 <span id="stH">0</span></span>' +
+        '<button class="btn sm" id="bSigR" title="현재 쪽의 이해도 신호를 모두 해제">' + ic('refresh', 14) + ' 이 쪽 초기화</button>' +
+        '<button class="btn sm" id="bStat">' + ic('chart', 14) + ' 쪽별 집계</button></div>' +
+        '<label class="chk"><input type="checkbox" id="tDl"> 학생 내려받기 허용 (PDF·첨부 자료)</label></div>' +
+        '<div class="blk fold' + (store('wb_fd_tm') === '1' ? '' : ' shut') + '"><h3 data-fold="tm">' + ic('clock', 15) + ' 타이머 · 휴식 <span class="save" id="tmSt" style="margin-left:auto"></span></h3>' +
+        '<div class="tm"><button class="btn" data-tm="5">휴식 5분</button><button class="btn" data-tm="10">10분</button><button class="btn" data-tm="15">15분</button><button class="btn" data-tm="20">20분</button><button class="btn red" id="tmOff">해제</button></div>' +
+        '<div class="fr" style="margin-top:6px"><input id="tmMin" class="inp" type="number" min="1" max="240" value="10" style="width:84px" aria-label="분"><button class="btn" id="tmGo">타이머 시작</button></div>' +
+        '<div class="muted">학생 화면 위쪽에 작은 표시만 나타나며, 학생은 보던 화면을 계속 볼 수 있습니다.</div></div>' +
+        '<div class="blk fold' + (store('wb_fd_lk') === '1' ? '' : ' shut') + '"><h3 data-fold="lk">' + ic('link', 15) + ' 링크 보내기</h3>' +
         '<div class="fr"><input id="lT" class="inp" placeholder="이름 (선택)" maxlength="60"></div>' +
         '<div class="fr"><input id="lU" class="inp" placeholder="https://..." inputmode="url"><button class="btn pri" id="lB">' + ic('send', 15) + ' 보내기</button></div>' +
         '<ul class="tl-list" id="lL"></ul></div>' +
-        '<div class="blk"><h3>' + ic('file', 15) + ' 첨부 자료 <label class="btn sm" for="tFile2" style="margin-left:auto">' + ic('plus', 14) + ' 파일 추가</label></h3>' +
+        '<div class="blk fold' + (store('wb_fd_at') === '1' ? '' : ' shut') + '"><h3 data-fold="at">' + ic('file', 15) + ' 첨부 자료 <label class="btn sm" for="tFile2" style="margin-left:auto">' + ic('plus', 14) + ' 파일 추가</label></h3>' +
         '<div class="muted">그림·문서·텍스트 파일 등(50MB 이하)을 올리면 학생이 내려받을 수 있습니다.</div><ul class="tl-list" id="fL"></ul></div>' +
         '</aside></div>' +
         '<input type="file" id="tFile" multiple class="hide"><input type="file" id="tFile2" multiple class="hide">' +
@@ -1522,6 +1546,7 @@
       var app = $('.t-app');
       function hudSync() {
         $('#hPg').textContent = C.page + ' / ' + (C.pages || 0); $('#hU').textContent = C.users; $('#hG').textContent = C.H.got; $('#hH').textContent = C.H.hard;
+        var fs = $('#fhSum'); if (fs) fs.innerHTML = '접속 ' + C.users + '명' + (C.H.hard ? ' <span class="bd">어려움 ' + C.H.hard + '</span>' : '');
       }
       function enterPres() {
         C.pres = true; app.classList.add('presenting'); $('#tHud').classList.remove('hide'); hudSync();
@@ -1532,6 +1557,77 @@
         if (document.fullscreenElement && document.exitFullscreen) { try { document.exitFullscreen().catch(function () {}); } catch (e) {} }
       }
       $('#bPres').onclick = function () { C.pres ? exitPres() : enterPres(); };
+
+      /* 오른쪽 패널: 접이식 구역 · 폭 조절 · 노트 주소 링크 */
+      $$('[data-fold]').forEach(function (h) { h.onclick = function (e) { if (e.target.closest('button,label,input')) return; var b = h.parentNode; b.classList.toggle('shut'); store('wb_fd_' + h.getAttribute('data-fold'), b.classList.contains('shut') ? '0' : '1'); }; });
+      var tmain = $('.t-main', root), rw = +store('wb_rw') || 460;
+      function setRw(w) { rw = Math.max(340, Math.min(Math.round(window.innerWidth * 0.5), w)); tmain.style.setProperty('--rw', rw + 'px'); }
+      setRw(rw);
+      $('#rsz').onpointerdown = function (e) {
+        e.preventDefault(); var h = $('#rsz'); h.setPointerCapture(e.pointerId); h.classList.add('on');
+        h.onpointermove = function (ev) { setRw(window.innerWidth - ev.clientX); viewer.refit && viewer.refit(); };
+        h.onpointerup = function () { h.onpointermove = null; h.onpointerup = null; h.classList.remove('on'); store('wb_rw', String(rw)); window.dispatchEvent(new Event('resize')); };
+      };
+      function linkEd() {
+        var w = document.createTreeWalker(ed, NodeFilter.SHOW_TEXT, null), arr = [], n;
+        while ((n = w.nextNode())) if (/(https?:\/\/|www\.)/i.test(n.nodeValue) && !(n.parentNode.closest && n.parentNode.closest('a,.cpb'))) arr.push(n);
+        arr.forEach(function (t) { var tp = document.createElement('template'); tp.innerHTML = linkText(t.nodeValue); t.parentNode.replaceChild(tp.content, t); });
+      }
+      ed.addEventListener('blur', linkEd); linkEd();
+      ed.addEventListener('click', function (e) { var a = e.target.closest && e.target.closest('a[href]'); if (a && (e.ctrlKey || e.metaKey)) { e.preventDefault(); window.open(a.href, '_blank', 'noopener'); } });
+      ed.title = '주소는 자동으로 링크가 되며, 학생 화면에서는 누르면 새 탭으로 열립니다. (내 화면에서는 Ctrl+클릭)';
+
+      /* 확장 모니터(프로젝터) 설정 */
+      var DK = 'wb_disp', disp = { mode: 'none', screen: '' };
+      try { var dd = JSON.parse(store(DK) || '{}'); if (dd && /^(none|1|2)$/.test(dd.mode)) disp = { mode: dd.mode, screen: dd.screen || '' }; } catch (e) {}
+      var bcS = null; try { bcS = new BroadcastChannel('wbstage-' + C.code); } catch (e) {}
+      function stageOpen() { return !!(C.stageWin && !C.stageWin.closed); }
+      function dispBtn() { var b = $('#bDisp'); b.classList.toggle('on', stageOpen()); b.querySelector('.lbl').textContent = stageOpen() ? '확장 화면 켜짐' : '확장 화면'; }
+      function openStage(sc) {
+        if (disp.mode === 'none') return;
+        var url = base + '?r=' + C.code + '&xm=' + disp.mode, f = 'popup=yes,width=1280,height=720';
+        if (sc) f = 'popup=yes,left=' + sc.availLeft + ',top=' + sc.availTop + ',width=' + sc.availWidth + ',height=' + sc.availHeight;
+        if (stageOpen()) { C.stageWin.location.href = url; C.stageWin.focus(); }
+        else C.stageWin = window.open(url, 'wbstage_' + C.code, f);
+        if (!C.stageWin) { toast('팝업이 차단되었습니다. 주소창 오른쪽의 팝업 허용을 눌러 주십시오.'); return; }
+        clearInterval(C.stageTm); C.stageTm = setInterval(dispBtn, 1500); dispBtn();
+      }
+      function dispDialog(first) {
+        var scr = null, d = document.createElement('div'); d.className = 'modal'; d.style.zIndex = 120;
+        function opt(v, t, x) { return '<label class="shopt"><input type="radio" name="dm" value="' + v + '"' + (disp.mode === v ? ' checked' : '') + '><span><b>' + t + '</b><br><span class="muted">' + x + '</span></span></label>'; }
+        d.innerHTML = '<div class="mbox card" style="width:min(560px,100%)"><div class="mh"><b>수업 화면 설정' + (first ? ' (수업 시작 전 1회)' : '') + '</b></div><div class="mb">' +
+          '<p class="muted" style="margin:4px 0 8px"><b>1단계.</b> 교수자 PC에 연결된 확장 모니터(프로젝터)에 무엇을 보여 드릴까요? 교수자 PC 화면에는 어느 경우든 자료와 오른쪽 도구함이 함께 보입니다.</p>' +
+          opt('none', '확장 모니터 사용 안 함', '교수자 PC 한 화면으로 진행합니다. 필요하면 「발표 모드」를 씁니다.') +
+          opt('1', '확장 모니터 = 자료 전체화면 (유인물 발표)', '확장 모니터에는 자료(PDF)만 전체화면으로 보입니다. 내가 넘기는 쪽을 따라가며, 포인터·타이머·우수 사례 공유도 이 화면에 나옵니다.') +
+          opt('2', '확장 모니터 = 교수자 화면과 동일', '자료와 함께 노트·링크까지 학생 화면과 같은 구성으로 보입니다. 타이머·포인터·우수 사례 공유도 같이 나옵니다.') +
+          '<p class="muted" style="margin:12px 0 6px"><b>2단계.</b> 확장 모니터를 찾아 창을 자동으로 배치합니다. (Chrome·Edge, 최초 1회 허용 필요)</p>' +
+          '<div class="fr"><button class="btn" id="dmDet">' + ic('monitor', 15) + ' 모니터 감지</button><span class="muted" id="dmMsg"></span></div><div id="dmList"></div>' +
+          '<p class="muted" style="margin:12px 0 0">3단계. 「저장하고 확장 화면 열기」를 누르면 확장 모니터에 창이 열립니다. 자동 배치가 안 되면 열린 창을 확장 모니터로 끌어 놓고 창 안을 한 번 클릭해 주십시오. 설정은 이 PC에 기억되며 「확장 화면」 버튼에서 언제든 바꿀 수 있습니다.</p>' +
+          '</div><div class="mf"><button class="btn" data-x>닫기</button><button class="btn" data-sv>저장</button><button class="btn pri" data-go>저장하고 확장 화면 열기</button></div></div>';
+        document.body.appendChild(d);
+        d.onclick = function (e) { if (e.target === d || e.target.closest('[data-x]')) d.remove(); };
+        $('#dmDet', d).onclick = function () {
+          if (!window.getScreenDetails) { $('#dmMsg', d).textContent = '이 브라우저는 자동 배치를 지원하지 않습니다. (Chrome·Edge 권장)'; return; }
+          $('#dmMsg', d).textContent = '허용 창이 뜨면 「허용」을 눌러 주십시오.';
+          window.getScreenDetails().then(function (sd) {
+            scr = sd.screens; var pick = -1;
+            scr.forEach(function (x, i) { if (pick < 0 && !x.isPrimary && x.label === disp.screen) pick = i; });
+            scr.forEach(function (x, i) { if (pick < 0 && !x.isPrimary) pick = i; });
+            $('#dmMsg', d).textContent = scr.length < 2 ? '확장 모니터가 감지되지 않았습니다. 디스플레이 설정에서 「확장」으로 연결했는지 확인해 주십시오.' : scr.length + '개 모니터를 찾았습니다.';
+            $('#dmList', d).innerHTML = scr.map(function (x, i) { return '<label class="shopt"><input type="radio" name="ds" value="' + i + '"' + (i === pick ? ' checked' : '') + '><span><b>' + esc(x.label || '모니터 ' + (i + 1)) + '</b>' + (x.isPrimary ? ' <span class="pill p-d">주 모니터(교수자)</span>' : '') + '<br><span class="muted">' + x.width + ' × ' + x.height + '</span></span></label>'; }).join('');
+          }).catch(function () { $('#dmMsg', d).textContent = '허용되지 않았습니다. 주소창 왼쪽 자물쇠에서 「창 관리」를 허용해 주십시오.'; });
+        };
+        function save() {
+          var m = $('[name="dm"]:checked', d); disp.mode = m ? m.value : 'none';
+          var si = $('[name="ds"]:checked', d), sc = si && scr ? scr[+si.value] : null; if (sc) disp.screen = sc.label || '';
+          store(DK, JSON.stringify(disp)); return sc;
+        }
+        $('[data-sv]', d).onclick = function () { save(); d.remove(); toast('저장했습니다.'); };
+        $('[data-go]', d).onclick = function () { var sc = save(); d.remove(); if (disp.mode === 'none') { if (stageOpen()) C.stageWin.close(); dispBtn(); toast('확장 모니터를 사용하지 않습니다.'); } else openStage(sc); };
+      }
+      $('#bDisp').onclick = function () { dispDialog(false); };
+      try { if (!sessionStorage.getItem('wb_dispq_' + C.code)) { sessionStorage.setItem('wb_dispq_' + C.code, '1'); dispDialog(true); } } catch (e) {}
+      window.addEventListener('beforeunload', function () { if (stageOpen()) { try { C.stageWin.close(); } catch (e) {} } });
       $('#hExit').onclick = exitPres;
       $('#hNote').onclick = function () { app.classList.toggle('drawer'); };
       $('#hPrev').onclick = function () { goPage(C.page - 1); };
@@ -1833,13 +1929,14 @@
         o = document.createElement('div'); o.id = 'tShare'; o.className = 'shov';
         o.innerHTML = '<div class="shin"><div class="sh-top"><div><b>' + esc(sh.title || '우수 사례') + '</b> <span class="muted">' + (sh.name ? '· ' + esc(sh.name) : '') + '</span></div><div style="display:flex;gap:6px">' +
           (sh.body ? '<button class="btn sm" data-cptxt-x>' + ic('copy', 14) + ' 글자 복사</button>' : '') + '<button class="btn sm pri" id="tShEnd">' + ic('x', 14) + ' 공유 끝내기</button></div></div><div class="sh-body">' +
-          (sh.body ? '<div class="btxt' + (sh.c ? ' isc' : '') + '">' + esc(sh.body) + '</div>' : '') + (sh.img ? '<img class="cimg shimg" src="' + esc(sh.img) + '" alt="">' : '') + '</div></div>';
+          (sh.body ? '<div class="btxt' + (sh.c ? ' isc' : '') + '">' + (sh.c ? esc(sh.body) : linkText(sh.body)) + '</div>' : '') + (sh.img ? '<img class="cimg shimg" src="' + esc(sh.img) + '" alt="">' : '') + '</div></div>';
         document.body.appendChild(o);
         var cp = $('[data-cptxt-x]', o); if (cp) cp.onclick = function () { copyText(sh.body, '복사했습니다.'); };
         $('#tShEnd').onclick = endShare;
       }
       function endShare() {
         var o = $('#tShare'); if (o) o.remove();
+        if (bcS) bcS.postMessage({ t: 'unshare' });
         if (C.sharing) { C.sharing = null; pushRoom({ share: null }).then(function () { send({ t: 'unshare' }); }); }
         if (C.toolsOpen) renderTools(false);
       }
@@ -1855,7 +1952,7 @@
           var mode = $('[name="shM"]:checked', d).value, nm = $('#shNm', d).checked; store('wb_sharemode', mode); d.remove();
           var sh = { id: sub.id, title: sub.title, body: sub.body, img: sub.img, c: sub.c, name: nm ? sub.name : '', mode: mode };
           if (mode !== 'teacher') { C.sharing = sh; pushRoom({ share: sh }).then(function () { send({ t: 'share', sh: sh }); }); }
-          if (mode !== 'students') shareOverlay(sh);
+          if (mode !== 'students') { if (stageOpen()) { if (bcS) bcS.postMessage({ t: 'share', sh: sh }); } else shareOverlay(sh); }
           toast(mode === 'students' ? '학생 화면에 공유했습니다.' : mode === 'teacher' ? '내 화면에 크게 띄웠습니다.' : '학생 화면과 내 화면에 공유했습니다.');
           if (C.toolsOpen) renderTools(false);
         };
