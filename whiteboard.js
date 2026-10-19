@@ -60,7 +60,9 @@
     edit: '<path d="M12 20h9"/><path d="M16.376 3.622a1 1 0 0 1 3.002 3.002L7.368 18.635a2 2 0 0 1-.855.506l-2.872.838a.5.5 0 0 1-.62-.62l.838-2.872a2 2 0 0 1 .506-.854z"/>',
     code: '<path d="m16 18 6-6-6-6"/><path d="m8 6-6 6 6 6"/>',
     chart: '<path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/>',
-    file: '<path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M13 2v7h7"/>'
+    file: '<path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M13 2v7h7"/>',
+    clock: '<circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>',
+    full: '<path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/>'
   };
   function ic(n, sz) {
     sz = sz || 18;
@@ -73,6 +75,7 @@
   var lastTs = 0;
   function tsNow() { lastTs = Math.max(lastTs + 1, Date.now()); return lastTs; }
   function store(k, v) { try { if (v === undefined) return localStorage.getItem(k); if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) {} return null; }
+  function mmss(n) { n = Math.max(0, n); var m = Math.floor(n / 60), x = n % 60; return (m < 10 ? '0' : '') + m + ':' + (x < 10 ? '0' : '') + x; }
   function sizeText(b) { return b >= 1048576 ? (Math.round(b / 104857.6) / 10) + 'MB' : Math.max(1, Math.round(b / 1024)) + 'KB'; }
   function dlUrl(m) { return m.url + '?download=' + encodeURIComponent(m.name); }
   function vibrate(ms) { try { if (navigator.vibrate) navigator.vibrate(ms); } catch (e) {} }
@@ -420,7 +423,7 @@
     var S = {
       code: code, ver: null, tkHash: null, tkVerified: null, follow: true, mat: null, cur: 1, tMat: null, tPage: 1, pageTs: 0, noteTs: 0,
       saved: null, mats: [], docs: {}, own: {}, shown: null, pages: 0, seen: {}, links: [], opened: {}, sigMap: {}, rt: false, pollOk: true,
-      ended: false, noteHtml: '', dl: true, flash: false, flashUntil: 0, modeHtml: '', firstDone: false, title: '', memo: {}
+      ended: false, noteHtml: '', dl: true, flash: false, flashUntil: 0, modeHtml: '', firstDone: false, title: '', memo: {}, tEnd: 0, tLab: '', tDone: 0
     };
     var cid = store('wb_cid'); if (!cid || cid.length < 8) { cid = rid(10); store('wb_cid', cid); }
     try { S.sigMap = JSON.parse(store('wb_sigm_' + code) || '{}') || {}; } catch (e) { S.sigMap = {}; }
@@ -431,7 +434,9 @@
     root.innerHTML =
       '<div class="s-app">' +
       '<header class="hdr"><div class="hdr-l"><span class="brand">실시간 수업 노트</span><span class="ttl" id="sTitle"></span></div>' +
-      '<div class="hdr-r"><span class="chip">수업코드 <b>' + esc(code) + '</b></span><span class="conn" id="sConn"><i class="dot"></i><span>연결 중</span></span></div></header>' +
+      '<div class="hdr-r"><span class="tmr hide" id="sTmr" aria-live="polite"></span><button class="btn sm" id="sCfg" title="화면 설정 (글자 크기·어둡게 보기)" aria-label="화면 설정">Aa</button><span class="chip">수업코드 <b>' + esc(code) + '</b></span><span class="conn" id="sConn"><i class="dot"></i><span>연결 중</span></span></div></header>' +
+      '<div class="cfg hide" id="sCfgBox"><div class="cr"><b>글자 크기</b><div class="fsb"><button data-fsz="0" style="font-size:12px">가</button><button data-fsz="1" style="font-size:14px">가</button><button data-fsz="2" style="font-size:17px">가</button><button data-fsz="3" style="font-size:20px">가</button><button data-fsz="4" style="font-size:24px">가</button></div></div>' +
+      '<label class="chk"><input type="checkbox" id="cfgDark"> 어둡게 보기</label><div class="muted" style="margin:4px 0 8px">노트·링크·메모 글자와 화면 색에 적용됩니다.</div><button class="btn sm" id="cfgReset">기본값</button></div>' +
       '<div class="s-main"><section class="s-doc">' +
       '<div class="mtabs hide" id="sTabs"></div>' +
       '<div class="bar" id="sBar">' +
@@ -464,6 +469,37 @@
       '<div class="sheet" id="shLink"><div class="sh-h"><span>링크 · 자료</span><span style="display:flex;gap:6px"><button class="btn sm" data-savetxt>' + ic('download', 14) + ' 저장</button><button class="btn sm icon" data-close aria-label="닫기">' + ic('x', 16) + '</button></span></div><div class="sh-b"><ul class="linkList"></ul><ul class="matList"></ul></div></div>' +
       '<div class="sheet" id="shMemo"><div class="sh-h"><span class="mmt">내 메모</span><span style="display:flex;gap:6px"><button class="btn sm" data-savememo>' + ic('download', 14) + ' 저장</button><button class="btn sm icon" data-close aria-label="닫기">' + ic('x', 16) + '</button></span></div><div class="sh-b"><textarea class="memoTa" rows="4" placeholder="이 쪽에 대한 내 메모 (이 PC에만 저장됩니다)"></textarea></div></div>' +
       '</div>';
+
+    /* 화면 설정: 글자 크기·어둡게 보기 (이 PC 브라우저에 기억) */
+    var FS = [14, 16, 19, 22, 26], PREF = { fs: 1, dark: false };
+    try { var pp = JSON.parse(store('wb_pref') || '{}'); if (pp && typeof pp.fs === 'number' && pp.fs >= 0 && pp.fs < FS.length) PREF.fs = pp.fs; PREF.dark = !!(pp && pp.dark); } catch (e) {}
+    function applyPref() {
+      document.documentElement.style.setProperty('--fs', FS[PREF.fs] + 'px');
+      document.documentElement.setAttribute('data-theme', PREF.dark ? 'dark' : 'light');
+      $$('[data-fsz]').forEach(function (b) { b.classList.toggle('on', +b.getAttribute('data-fsz') === PREF.fs); });
+      $('#cfgDark').checked = PREF.dark; store('wb_pref', JSON.stringify(PREF));
+    }
+    $('#sCfg').onclick = function (e) { e.stopPropagation(); $('#sCfgBox').classList.toggle('hide'); };
+    $('#sCfgBox').onclick = function (e) { e.stopPropagation(); };
+    document.addEventListener('click', function () { $('#sCfgBox').classList.add('hide'); });
+    $$('[data-fsz]').forEach(function (b) { b.onclick = function () { PREF.fs = +b.getAttribute('data-fsz'); applyPref(); }; });
+    $('#cfgDark').onchange = function () { PREF.dark = this.checked; applyPref(); };
+    $('#cfgReset').onclick = function () { PREF = { fs: 1, dark: false }; applyPref(); };
+    applyPref();
+
+    /* 타이머·휴식: 화면 위쪽 작은 표시만 나타나며 보던 화면은 그대로 쓸 수 있다 */
+    function tick() {
+      var el = $('#sTmr');
+      if (S.tEnd) {
+        var left = Math.ceil((S.tEnd - Date.now()) / 1000);
+        if (left > 0) { el.className = 'tmr' + (left <= 60 ? ' warn' : ''); el.innerHTML = ic('clock', 14) + ' ' + esc(S.tLab) + ' <b>' + mmss(left) + '</b>'; return; }
+        S.tEnd = 0; S.tDone = Date.now() + 10000; vibrate([200, 100, 200]);
+      }
+      if (S.tDone > Date.now()) { el.className = 'tmr end'; el.innerHTML = ic('clock', 14) + ' ' + esc(S.tLab) + ' 종료'; return; }
+      el.className = 'tmr hide'; el.innerHTML = '';
+    }
+    function setTimer(sec, label) { S.tEnd = sec > 0 ? Date.now() + sec * 1000 : 0; S.tLab = label || '타이머'; S.tDone = 0; tick(); }
+    setInterval(tick, 500);
 
     var viewer = Viewer($('#sStage'), $('#sCv'));
     bindZoom($('#sBar'), viewer);
@@ -682,6 +718,8 @@
       if ((r.note_ts || 0) >= S.noteTs && sanitize(r.note) !== S.noteHtml) { S.noteTs = r.note_ts || 0; setNote(r.note); }
       addLinks(r.links || [], !S.firstDone);
       S.firstDone = true;
+      if (r.timer_left > 0) { var cl = S.tEnd ? (S.tEnd - Date.now()) / 1000 : -99; if (Math.abs(cl - r.timer_left) > 3) setTimer(r.timer_left, r.timer_label); }
+      else if (S.tEnd && S.tEnd - Date.now() > 2000) setTimer(0);
       show();
     }
 
@@ -711,6 +749,7 @@
         viewer.setPtr(p.x, p.y, !!p.on && here);
         clearTimeout(ptrTimer); ptrTimer = setTimeout(function () { viewer.setPtr(0, 0, false); }, 2500);
       } else if (p.t === 'clk') { if (S.mat === p.m && S.cur === p.p) viewer.ripple(p.x, p.y); }
+      else if (p.t === 'timer') setTimer(p.sec, p.label);
       else if (p.t === 'doc' || p.t === 'links' || p.t === 'end') { S.ver = null; poll(); }
     }
     function onEvent(m) {
@@ -791,7 +830,8 @@
       var C = {
         code: R.code, tk: R.tk, mats: R.mats || [], curMat: R.cur_mat || null, page: R.page || 1, pageTs: R.page_ts || 0,
         noteTs: R.note_ts || 0, links: R.links || [], dl: R.dl !== false, active: R.active !== false, pending: {}, saving: false,
-        docs: {}, users: 0, ch: null, H: { hard: 0, got: 0, pages: [] }, lastHard: -1, ptrOn: true, shown: null, pages: 0
+        docs: {}, users: 0, ch: null, H: { hard: 0, got: 0, pages: [] }, lastHard: -1, ptrOn: true, shown: null, pages: 0, pres: false,
+        tEnd: R.timer_left > 0 ? Date.now() + R.timer_left * 1000 : 0, tLab: R.timer_label || ''
       };
       var base = location.origin + location.pathname;
       var joinUrl = base + '?r=' + C.code;
@@ -803,6 +843,7 @@
         '<div class="hdr-r"><span class="chip">수업코드 <b style="font-size:16px;letter-spacing:.1em">' + esc(C.code) + '</b></span>' +
         '<button class="btn sm pri" id="bQr">' + ic('qr', 15) + ' 입장 안내</button>' +
         '<a class="btn sm" id="bView" target="_blank" rel="noopener" href="' + esc(joinUrl + '&view=1') + '">' + ic('monitor', 15) + ' 학생 화면 보기</a>' +
+        '<button class="btn sm" id="bPres" title="슬라이드를 전체화면으로 크게 보며 발표">' + ic('full', 15) + ' 발표 모드</button>' +
         '<button class="btn sm" id="bEnd"></button></div></header>' +
         '<div class="t-main"><section class="t-left">' +
         '<div class="mtabs" id="tTabs"></div>' +
@@ -822,6 +863,10 @@
         '<button class="btn sm" id="bSigR" title="현재 쪽의 이해도 신호를 모두 해제">' + ic('refresh', 14) + ' 이 쪽 초기화</button>' +
         '<button class="btn sm" id="bStat">' + ic('chart', 14) + ' 쪽별 집계</button></div>' +
         '<label class="chk"><input type="checkbox" id="tDl"> 학생 내려받기 허용 (PDF·첨부 자료)</label></div>' +
+        '<div class="blk"><h3>' + ic('clock', 15) + ' 타이머 · 휴식 <span class="save" id="tmSt" style="margin-left:auto"></span></h3>' +
+        '<div class="tm"><button class="btn" data-tm="5">휴식 5분</button><button class="btn" data-tm="10">10분</button><button class="btn" data-tm="15">15분</button><button class="btn" data-tm="20">20분</button><button class="btn red" id="tmOff">해제</button></div>' +
+        '<div class="fr" style="margin-top:6px"><input id="tmMin" class="inp" type="number" min="1" max="240" value="10" style="width:84px" aria-label="분"><button class="btn" id="tmGo">타이머 시작</button></div>' +
+        '<div class="muted">학생 화면 위쪽에 작은 표시만 나타나며, 학생은 보던 화면을 계속 볼 수 있습니다.</div></div>' +
         '<div class="blk"><h3>' + ic('note', 15) + ' 노트 <span class="save" id="tSave" style="margin-left:auto"></span></h3>' +
         '<div class="tools" id="tools">' +
         '<button class="btn" data-c="bold" title="굵게"><b>B</b></button><button class="btn" data-c="italic" title="기울임"><i>I</i></button>' +
@@ -843,6 +888,9 @@
         '<div class="muted">그림·문서·텍스트 파일 등(50MB 이하)을 올리면 학생이 내려받을 수 있습니다.</div><ul class="tl-list" id="fL"></ul></div>' +
         '</aside></div>' +
         '<input type="file" id="tFile" multiple class="hide"><input type="file" id="tFile2" multiple class="hide">' +
+        '<div class="hud hide" id="tHud"><button class="btn icon sm" id="hTh" title="쪽 목록" aria-label="쪽 목록">' + ic('grid', 16) + '</button><button class="btn icon sm" id="hPrev" aria-label="이전 쪽">' + ic('chevL', 16) + '</button><b id="hPg">1 / 1</b><button class="btn icon sm" id="hNext" aria-label="다음 쪽">' + ic('chevR', 16) + '</button>' +
+        '<span class="hs">접속 <b id="hU">0</b></span><span class="hs g">이해 <b id="hG">0</b></span><span class="hs h">어려움 <b id="hH">0</b></span><span class="hs t hide" id="hTm"></span>' +
+        '<button class="btn sm" id="hNote">' + ic('note', 14) + ' 노트</button><button class="btn sm" id="hExit">' + ic('x', 14) + ' 나가기</button></div>' +
         '<div class="dropov hide" id="dropOv"><div>' + ic('upload', 40) + '<p>여기에 놓으면 올라갑니다</p><span>PDF는 수업 자료로, 그 밖의 파일은 첨부 자료로 올립니다</span></div></div></div>';
 
       var viewer = Viewer($('#tStage'), $('#tCv'));
@@ -886,7 +934,7 @@
       }
       function paintPage() {
         ui.pg.value = C.page; ui.tot.textContent = C.pages || 0;
-        viewer.show(C.page); thumbs.mark(C.page, C.page); paintHard();
+        viewer.show(C.page); thumbs.mark(C.page, C.page); paintHard(); hudSync();
       }
       function showMat() {
         var m = matById(C.curMat);
@@ -1110,10 +1158,51 @@
         var q = viewer.norm(e); viewer.ripple(q.x, q.y); send({ t: 'clk', m: C.curMat, p: C.page, x: q.x, y: q.y });
       });
 
+      /* 타이머·휴식 (서버가 남은 시간을 계산하므로 컴퓨터 시계가 달라도 같은 시간이 표시됨) */
+      function tickT() {
+        var left = C.tEnd ? Math.ceil((C.tEnd - Date.now()) / 1000) : 0, st = $('#tmSt'), hm = $('#hTm');
+        if (left > 0) { var t = C.tLab + ' ' + mmss(left); st.textContent = t + ' 남음'; hm.textContent = t; hm.classList.remove('hide'); }
+        else { if (C.tEnd) C.tEnd = 0; st.textContent = ''; hm.classList.add('hide'); }
+      }
+      function startTimer(min, label) {
+        var sec = Math.round(min * 60);
+        if (sec > 0 && (!(min >= 1) || min > 240)) { toast('1~240분 사이로 입력해 주십시오.'); return; }
+        C.tEnd = sec > 0 ? Date.now() + sec * 1000 : 0; C.tLab = label; tickT();
+        persist({ timer_sec: sec, timer_label: label }, 0);
+        Promise.resolve(flush()).then(function () { send({ t: 'timer', sec: sec, label: label }); });
+        toast(sec > 0 ? '학생 화면에 ' + label + ' ' + min + '분을 표시했습니다.' : '타이머를 해제했습니다.');
+      }
+      $$('[data-tm]').forEach(function (b) { b.onclick = function () { startTimer(+b.getAttribute('data-tm'), '휴식'); }; });
+      $('#tmGo').onclick = function () { startTimer(parseFloat($('#tmMin').value), '타이머'); };
+      $('#tmOff').onclick = function () { startTimer(0, ''); };
+      setInterval(tickT, 500); tickT();
+
+      /* 발표 모드: 슬라이드를 전체화면으로, 노트·현황은 아래 작은 막대와 오른쪽 서랍으로 */
+      var app = $('.t-app');
+      function hudSync() {
+        $('#hPg').textContent = C.page + ' / ' + (C.pages || 0); $('#hU').textContent = C.users; $('#hG').textContent = C.H.got; $('#hH').textContent = C.H.hard;
+      }
+      function enterPres() {
+        C.pres = true; app.classList.add('presenting'); $('#tHud').classList.remove('hide'); hudSync();
+        var el = document.documentElement; if (el.requestFullscreen) { try { el.requestFullscreen().catch(function () {}); } catch (e) {} }
+      }
+      function exitPres() {
+        C.pres = false; app.classList.remove('presenting', 'drawer'); $('#tHud').classList.add('hide');
+        if (document.fullscreenElement && document.exitFullscreen) { try { document.exitFullscreen().catch(function () {}); } catch (e) {} }
+      }
+      $('#bPres').onclick = function () { C.pres ? exitPres() : enterPres(); };
+      $('#hExit').onclick = exitPres;
+      $('#hNote').onclick = function () { app.classList.toggle('drawer'); };
+      $('#hPrev').onclick = function () { goPage(C.page - 1); };
+      $('#hNext').onclick = function () { goPage(C.page + 1); };
+      $('#hTh').onclick = function () { $('#tTh').click(); };
+      document.addEventListener('fullscreenchange', function () { if (!document.fullscreenElement && C.pres) exitPres(); });
+      document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && C.pres && !document.fullscreenElement) exitPres(); });
+
       /* 이해도 현황 · 어려움 경고 */
       function paintHard() {
         var h = C.H.hard, bar = $('#tHard');
-        $('#stG').textContent = C.H.got; $('#stH').textContent = h;
+        $('#stG').textContent = C.H.got; $('#stH').textContent = h; hudSync();
         if (h < 1) { bar.classList.add('hide'); C.lastHard = 0; thumbs.badges(hardMap()); return; }
         var strong = h >= 3 || (C.users > 0 && h / C.users >= 0.1);
         bar.className = 'hardbar ' + (strong ? 'strong' : 'mild');
