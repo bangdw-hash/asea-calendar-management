@@ -44,3 +44,6 @@ table.bt.ecs-t{min-width:0}.empty.small[hidden]{display:none}
 .aist.wait .aist-dot{animation:aist-p 1s infinite alternate}@keyframes aist-p{from{opacity:.3}to{opacity:1}}
 .aist-c{margin-left:auto;color:#3c4043}
 .aist-n{margin:0 0 8px}
+/* 학기·분기·월·회·인당 문구 정리 미리보기 */
+.spl-i{border:1px solid var(--border);border-radius:var(--r);padding:10px 12px;margin:10px 0;background:#fff}.spl-h{margin:6px 0}.spl-c{display:block;margin:8px 0 4px;font-weight:600}
+table.bt.spl-t{min-width:0;width:100%;margin:4px 0 6px}.spl-s{margin-top:4px}

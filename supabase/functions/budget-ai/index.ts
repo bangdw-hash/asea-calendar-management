@@ -48,6 +48,22 @@ function codeList(codes: any[], type: string) {
   }).join('\n');
 }
 
+// per(기간·횟수·금액 문구 읽기 결과)를 형식만 걸러서 돌려줍니다. 금액 계산은 화면(budget-entry-split.js)에서 정수로 합니다.
+const UNITS = ['학기', '분기', '반기', '월', '회', '인', '개', '주', '일'];
+function cleanPer(p: any) {
+  if (!p || typeof p !== 'object') return null;
+  const unit = UNITS.includes(String(p.unit)) ? String(p.unit) : '';
+  const n = Math.round(Number(p.n) || 0);
+  const amt = String(p.amt_text || '').slice(0, 30);
+  if (!unit && !amt) return null;
+  return {
+    unit, n: n >= 1 && n <= 60 ? n : 0, amt_text: amt,
+    basis: ['unit', 'total', 'unknown'].includes(String(p.basis)) ? String(p.basis) : 'unknown',
+    labels: (Array.isArray(p.labels) ? p.labels : []).map((x: any) => String(x).slice(0, 10)).filter(Boolean).slice(0, 4),
+    base: String(p.base || '').slice(0, 120),
+  };
+}
+
 const RULES = `규칙:
 1. 반드시 아래 코드표에 있는 코드(목)만 고릅니다. 새 코드를 만들거나 코드표에 없는 번호를 쓰지 않습니다.
 2. 맞는 항목이 없어도 가장 가까운 기존 코드를 고릅니다. 정말 무엇에도 맞지 않을 때만 세출은 7.1.1(공공·잡비), 세입은 5.3.3(잡수입)을 고르고 conf를 낮게 줍니다.
@@ -80,7 +96,7 @@ Deno.serve(async (req) => {
       const table = types.map((t) => `### ${t} 코드표 (코드 이름 [관 > 항] — 설명)\n${codeList(ctx.codes, t as string)}`).join('\n\n');
       const lines = (ctx.lines || []).map((l: any) => `${l.type} ${l.mok} ${l.name}`).slice(0, 150).join('\n');
       const hist = (ctx.hist || []).map((h: any) => `${h.type} | ${h.memo} | ${h.vendor} → ${h.mok}`).slice(0, 40).join('\n');
-      const system = `당신은 학교 법인 예산 회계 분류 전문가입니다. 부서가 적은 지출·계획 한 줄마다 예산 코드(목)를 정합니다.\n${RULES}\n6. 내년 계획(phase=plan)이 이 부서의 기존 항목 명칭과 같은 사업이면 line에 그 기존 명칭을 그대로 적고, 아니면 빈 문자열로 둡니다.\n\n${table}\n\n## 이 부서의 기존 항목(구분 코드 명칭)\n${lines || '(없음)'}\n\n## 이 부서가 이전에 확정한 사례(구분 | 적요 | 거래처 → 코드)\n${hist || '(없음)'}\n\n출력: JSON 배열만. 각 원소 {"id":"입력 id 그대로","mok":"코드","conf":정수,"why":"근거","alt":["대안코드","대안코드"],"line":"기존 항목 명칭 또는 빈 문자열"}. 설명·마크다운 금지.`;
+      const system = `당신은 학교 법인 예산 회계 분류 전문가입니다. 부서가 적은 지출·계획 한 줄마다 예산 코드(목)를 정합니다.\n${RULES}\n6. 내년 계획(phase=plan)이 이 부서의 기존 항목 명칭과 같은 사업이면 line에 그 기존 명칭을 그대로 적고, 아니면 빈 문자열로 둡니다.\n7. phase=plan 인 줄만: 적요·산출 근거에 기간·횟수·단가 문구(학기당·분기당·반기·월·회·인당 등)나 금액 문구(예: 3000만원)가 있으면 per 를 채웁니다. 금액 계산은 하지 말고 문구를 읽기만 합니다. per={"unit":"학기|분기|반기|월|회|인|개|주|일 중 하나, 단위가 없으면 빈 문자열","n":"횟수·학기 수(문구에 있으면 그 수. 하계·동계·계절학기가 함께 언급되면 포함해 센다. 학기당인데 수가 없으면 2, 분기당 4, 반기 2, 월 단위인데 기간이 없으면 12, 알 수 없으면 0)","amt_text":"문구에 적힌 금액 그대로(예 3000만원), 없으면 빈 문자열","basis":"unit(금액이 단위당) | total(총액) | unknown","labels":"문구에 기간 이름이 있으면 그 이름 배열(예 [\"1학기\",\"2학기\"]), 없으면 []","base":"기간·금액 문구를 뺀 깔끔한 세부명칭"}. 해당 문구가 없으면 per 는 null.\n\n${table}\n\n## 이 부서의 기존 항목(구분 코드 명칭)\n${lines || '(없음)'}\n\n## 이 부서가 이전에 확정한 사례(구분 | 적요 | 거래처 → 코드)\n${hist || '(없음)'}\n\n출력: JSON 배열만. 각 원소 {"id":"입력 id 그대로","mok":"코드","conf":정수,"why":"근거","alt":["대안코드","대안코드"],"line":"기존 항목 명칭 또는 빈 문자열","per":null 또는 per 객체}. 설명·마크다운 금지.`;
       const out = parse(await claude(system, JSON.stringify(items), 4096));
       const valid = new Set((ctx.codes as any[]).filter((c) => c.level === 'mok').map((c) => c.type + '|' + c.code));
       const byId: Record<string, any> = {}; (Array.isArray(out) ? out : []).forEach((o: any) => { if (o && o.id) byId[String(o.id)] = o; });
@@ -92,7 +108,7 @@ Deno.serve(async (req) => {
           mok = alt || FALLBACK[it.type]; conf = Math.min(conf, 30) || 20; why = why || '가장 가까운 기존 코드로 임시 지정';
         }
         const alts = (Array.isArray(o.alt) ? o.alt : []).map(String).filter((m: string) => m !== mok && valid.has(it.type + '|' + m)).slice(0, 3);
-        return { id: it.id, mok, conf, why, alt: alts, line: String(o.line || '').slice(0, 120) };
+        return { id: it.id, mok, conf, why, alt: alts, line: String(o.line || '').slice(0, 120), per: it.phase === 'plan' ? cleanPer(o.per) : null };
       });
       return json({ ok: true, results });
     }
