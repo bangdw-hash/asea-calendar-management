@@ -36,6 +36,7 @@
     refresh: '<path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/>',
     plus: '<path d="M5 12h14"/><path d="M12 5v14"/>',
     list: '<path d="M8 6h13"/><path d="M8 12h13"/><path d="M8 18h13"/><path d="M3 6h.01"/><path d="M3 12h.01"/><path d="M3 18h.01"/>',
+    copy: '<rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>',
     play: '<path d="m6 3 14 9-14 9z"/>',
     stop: '<rect width="14" height="14" x="5" y="5" rx="1"/>'
   };
@@ -118,13 +119,47 @@
     return out.innerHTML;
   }
 
-  /* ───────────── PDF 뷰어 (현재 쪽을 영역에 맞춰 그림) ───────────── */
+  /* ───────────── 클립보드 복사 ───────────── */
+  var copying = false;
+  function copyText(t, msg) {
+    t = String(t || '');
+    if (!t.trim()) { toast('복사할 내용이 없습니다.'); return; }
+    function done() { copying = false; toast(msg || '복사했습니다.'); }
+    function legacy() {
+      var ta = document.createElement('textarea'); ta.value = t; ta.setAttribute('readonly', '');
+      ta.style.cssText = 'position:fixed;left:-9999px;top:0;opacity:0'; document.body.appendChild(ta); ta.select();
+      var ok = false; try { ok = document.execCommand('copy'); } catch (e) {}
+      ta.remove(); copying = false;
+      if (ok) toast(msg || '복사했습니다.'); else toast('복사하지 못했습니다. 글자를 직접 선택해 복사해 주십시오.');
+    }
+    copying = true;
+    if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(t).then(done, legacy); else legacy();
+  }
+  document.addEventListener('copy', function () {
+    if (copying) return;
+    var sel = window.getSelection && String(window.getSelection());
+    if (sel && sel.trim()) toast('선택한 글자를 복사했습니다.');
+  });
+  function htmlToText(html) {
+    var d = document.createElement('div'); d.style.cssText = 'position:fixed;left:-9999px;top:0;width:600px'; d.innerHTML = sanitize(html);
+    document.body.appendChild(d); var t = d.innerText; d.remove(); return t.replace(/\n{3,}/g, '\n\n').trim();
+  }
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('[data-copy]');
+    if (b) { e.preventDefault(); copyText(b.getAttribute('data-copy'), '주소를 복사했습니다.'); }
+  });
+
+  /* ───────────── PDF 뷰어 (현재 쪽을 영역에 맞춰 그림 + 글자 선택 층) ───────────── */
   function Viewer(box, canvas) {
-    var doc = null, n = 1, seq = 0, task = null;
+    var doc = null, n = 1, seq = 0, task = null, tlTask = null;
+    var wrap = document.createElement('div'); wrap.className = 'pdfwrap';
+    canvas.parentNode.insertBefore(wrap, canvas); wrap.appendChild(canvas);
+    var tl = document.createElement('div'); tl.className = 'textLayer'; wrap.appendChild(tl);
+    function cur() { return Math.min(Math.max(n, 1), doc ? doc.numPages : 1); }
     function draw() {
       if (!doc) return;
-      var my = ++seq, pageNo = Math.min(Math.max(n, 1), doc.numPages);
-      doc.getPage(pageNo).then(function (pg) {
+      var my = ++seq;
+      doc.getPage(cur()).then(function (pg) {
         if (my !== seq) return;
         var w = box.clientWidth - 16, h = box.clientHeight - 16;
         if (w < 50 || h < 50) return;
@@ -132,14 +167,22 @@
         var sc = Math.min(w / v1.width, h / v1.height);
         var dpr = Math.min(window.devicePixelRatio || 1, 2);
         var vp = pg.getViewport({ scale: sc * dpr });
+        var cssVp = pg.getViewport({ scale: sc });
         var off = document.createElement('canvas'); off.width = Math.floor(vp.width); off.height = Math.floor(vp.height);
         if (task) { try { task.cancel(); } catch (e) {} }
         task = pg.render({ canvasContext: off.getContext('2d'), viewport: vp });
         task.promise.then(function () {
           if (my !== seq) return;
           canvas.width = off.width; canvas.height = off.height;
-          canvas.style.width = (off.width / dpr) + 'px'; canvas.style.height = (off.height / dpr) + 'px';
+          canvas.style.width = cssVp.width + 'px'; canvas.style.height = cssVp.height + 'px';
           canvas.getContext('2d').drawImage(off, 0, 0);
+          wrap.style.width = cssVp.width + 'px'; wrap.style.height = cssVp.height + 'px';
+          if (tlTask) { try { tlTask.cancel(); } catch (e) {} }
+          tl.innerHTML = ''; tl.style.width = cssVp.width + 'px'; tl.style.height = cssVp.height + 'px'; tl.style.setProperty('--scale-factor', cssVp.scale);
+          if (window.pdfjsLib.renderTextLayer) {
+            tlTask = window.pdfjsLib.renderTextLayer({ textContentSource: pg.streamTextContent(), container: tl, viewport: cssVp, textDivs: [] });
+            tlTask.promise.catch(function () {});
+          }
         }).catch(function () {});
       }).catch(function () {});
     }
@@ -149,7 +192,21 @@
     return {
       setDoc: function (d) { doc = d; draw(); },
       show: function (p) { n = p; draw(); },
-      clear: function () { doc = null; seq++; canvas.width = canvas.height = 0; canvas.style.width = canvas.style.height = '0'; }
+      clear: function () { doc = null; seq++; canvas.width = canvas.height = 0; wrap.style.width = wrap.style.height = '0'; tl.innerHTML = ''; },
+      /* 현재 쪽의 글자 전체 (줄바꿈 유지) */
+      text: function () {
+        if (!doc) return Promise.resolve('');
+        return doc.getPage(cur()).then(function (pg) { return pg.getTextContent(); }).then(function (tc) {
+          var out = '', lastY = null;
+          tc.items.forEach(function (it) {
+            if (typeof it.str !== 'string') return;
+            var y = it.transform ? it.transform[5] : 0;
+            if (lastY !== null && Math.abs(y - lastY) > 2 && out && !/\n$/.test(out)) out += '\n';
+            out += it.str; if (it.hasEOL) out += '\n'; lastY = y;
+          });
+          return out.replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
+        });
+      }
     };
   }
   function loadPdf(url) { return window.pdfjsLib.getDocument({ url: url }).promise; }
@@ -207,11 +264,12 @@
       '<button class="btn pri hide" id="sToT">' + ic('monitor', 16) + ' <span>교수 화면으로 돌아가기</span></button>' +
       '<button class="btn hide" id="sToMine">' + ic('back', 16) + ' <span></span></button>' +
       '<button class="btn hide" id="sFree">' + ic('users', 16) + ' 내 속도로 보기</button>' +
+      '<button class="btn" id="sCopy" title="이 쪽의 글자를 모두 복사">' + ic('copy', 16) + ' 이 쪽 글자 복사</button>' +
       '<span class="mode" id="sMode"></span></div>' +
       '<div class="stage" id="sStage"><canvas id="sCv"></canvas><div class="empty" id="sEmpty">교수자가 자료를 올리면 이곳에 표시됩니다.</div></div>' +
       '</section>' +
       '<aside class="s-side">' +
-      '<div class="sec grow"><h3>' + ic('note', 15) + ' 노트</h3><div class="body"><div class="noteBox"></div></div></div>' +
+      '<div class="sec grow"><h3>' + ic('note', 15) + ' 노트<button class="btn sm" data-copynote style="margin-left:auto">' + ic('copy', 14) + ' 노트 복사</button></h3><div class="body"><div class="noteBox"></div></div></div>' +
       '<div class="sec"><h3>' + ic('link', 15) + ' 링크</h3><div class="body" style="max-height:30vh"><ul class="linkList"></ul></div></div>' +
       '<div class="sec sg"><h3>' + ic('help', 15) + ' 이해도 신호</h3><div class="sig">' +
       '<button class="btn sg-got" data-v="1">' + ic('check', 16) + ' 이해했어요</button>' +
@@ -221,7 +279,7 @@
       '<button class="btn" id="tLink">' + ic('link', 16) + ' 링크<i class="badge hide" id="bLink"></i></button>' +
       '<button class="btn sg-got" data-v="1">' + ic('check', 16) + ' 이해</button>' +
       '<button class="btn sg-hard" data-v="2">' + ic('help', 16) + ' 어려움</button></nav>' +
-      '<div class="sheet" id="shNote"><div class="sh-h"><span>노트</span><button class="btn sm icon" data-close aria-label="닫기">' + ic('x', 16) + '</button></div><div class="sh-b"><div class="noteBox"></div></div></div>' +
+      '<div class="sheet" id="shNote"><div class="sh-h"><span>노트</span><span style="display:flex;gap:6px"><button class="btn sm" data-copynote>' + ic('copy', 14) + ' 복사</button><button class="btn sm icon" data-close aria-label="닫기">' + ic('x', 16) + '</button></span></div><div class="sh-b"><div class="noteBox"></div></div></div>' +
       '<div class="sheet" id="shLink"><div class="sh-h"><span>링크</span><button class="btn sm icon" data-close aria-label="닫기">' + ic('x', 16) + '</button></div><div class="sh-b"><ul class="linkList"></ul></div></div>' +
       '</div>';
 
@@ -235,15 +293,19 @@
       var p = Math.max(1, S.pages ? Math.min(S.cur, S.pages) : S.cur);
       ids.pg.value = p; ids.tot.textContent = S.pages || 0;
       viewer.show(p);
-      var behind = S.tPage !== S.cur;
-      ids.toT.classList.toggle('hide', S.follow || beam);
+            ids.toT.classList.toggle('hide', S.follow || beam);
       $('span', ids.toT).textContent = '교수 화면으로 돌아가기 (' + S.tPage + '쪽)';
       var showMine = S.follow && S.saved != null && S.saved !== S.tPage && !beam;
       ids.toMine.classList.toggle('hide', !showMine);
       if (showMine) $('span', ids.toMine).textContent = '내가 보던 ' + S.saved + '쪽으로 돌아가기';
       ids.free.classList.toggle('hide', !S.follow || beam);
       ids.mode.className = 'mode ' + (S.follow ? 'follow' : 'free');
-      ids.mode.innerHTML = S.follow ? '<b>교수자 화면을 따라가는 중</b>' : '<b>내 속도로 보는 중</b> · 교수자는 ' + S.tPage + '쪽' + (behind ? '' : '');
+      /* 교수자 위치는 같은 자리에서 숫자만 바뀌고, 따로 움직였을 때만 깜빡여 주의를 끈다 */
+      ids.mode.innerHTML = S.follow
+        ? '<b>교수자 화면을 따라가는 중</b> · <span class="tpos">교수자 ' + S.tPage + '쪽</span>'
+        : '<b>내 속도로 보는 중</b> · <span class="tpos' + (S.flash ? ' flash' : '') + '">교수자는 ' + S.tPage + '쪽</span>';
+      if (S.flash && !S.follow) { ids.toT.classList.remove('flash'); void ids.toT.offsetWidth; ids.toT.classList.add('flash'); }
+      S.flash = false;
     }
     function moveOwn(p) {
       if (!S.pages || beam) return;
@@ -270,12 +332,17 @@
     function renderLinks() {
       var h = S.links.slice().reverse().map(function (l) {
         var isNew = !S.opened || !S.opened[l.id];
-        return '<li><a class="lk' + (isNew ? ' new' : '') + '" href="' + esc(l.u) + '" target="_blank" rel="noopener noreferrer" data-id="' + esc(l.id) + '">' +
-          '<span class="lt">' + esc(l.t) + '<span class="lu">' + esc(l.u) + '</span></span>' + ic('ext', 16) + '</a></li>';
+        return '<li class="lkrow"><a class="lk' + (isNew ? ' new' : '') + '" href="' + esc(l.u) + '" target="_blank" rel="noopener noreferrer" data-id="' + esc(l.id) + '">' +
+          '<span class="lt">' + esc(l.t) + '<span class="lu">' + esc(l.u) + '</span></span>' + ic('ext', 16) + '</a>' +
+          '<button class="btn icon cp" data-copy="' + esc(l.u) + '" title="주소 복사" aria-label="주소 복사">' + ic('copy', 15) + '</button></li>';
       }).join('');
       $$('.linkList').forEach(function (u) { u.innerHTML = h; });
     }
     S.opened = {};
+    $('#sCopy').onclick = function () { viewer.text().then(function (t) { copyText(t, '이 쪽의 글자를 복사했습니다.'); }); };
+    document.addEventListener('click', function (e) {
+      if (e.target.closest && e.target.closest('[data-copynote]')) copyText(htmlToText(S.noteHtml), '노트를 복사했습니다.');
+    });
     document.addEventListener('click', function (e) {
       var a = e.target.closest && e.target.closest('a.lk'); if (a) { S.opened[a.getAttribute('data-id')] = 1; a.classList.remove('new'); }
     });
@@ -345,7 +412,7 @@
       var moved = p !== S.tPage;
       S.tPage = p; S.pageTs = ts;
       if (S.follow) S.cur = p;
-      else if (moved && !quiet) toast('교수자가 ' + p + '쪽으로 이동했습니다.', '따라가기', function () { ids.toT.click(); });
+      else if (moved) S.flash = true;
       showPage();
     }
 
@@ -464,6 +531,7 @@
         '<span class="pg"><input id="tPg" type="number" min="1" inputmode="numeric" aria-label="쪽 번호"> / <b id="tTot">0</b></span>' +
         '<button class="btn icon" id="tNext" aria-label="다음 쪽">' + ic('chevR') + '</button>' +
         '<label class="btn" for="tFile">' + ic('upload', 16) + ' PDF 올리기</label><input type="file" id="tFile" accept="application/pdf" class="hide">' +
+        '<button class="btn" id="tCopy" title="이 쪽의 글자를 모두 복사">' + ic('copy', 16) + ' 이 쪽 글자 복사</button>' +
         '<span class="mode" id="tFn"></span></div>' +
         '<div class="stage" id="tStage"><canvas id="tCv"></canvas><div class="empty" id="tEmpty">PDF 교안을 올려 주십시오. (PPT는 PDF로 저장해 올립니다)</div></div></section>' +
         '<aside class="t-right">' +
@@ -532,6 +600,8 @@
         if (e.key === 'ArrowRight' || e.key === 'PageDown') { e.preventDefault(); goPage(C.page + 1); }
         if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); goPage(C.page - 1); }
       });
+
+      $('#tCopy').onclick = function () { viewer.text().then(function (t) { copyText(t, '이 쪽의 글자를 복사했습니다.'); }); };
 
       /* 자료 불러오기 */
       function showDoc(url) {
