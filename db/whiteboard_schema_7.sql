@@ -86,7 +86,7 @@ begin
   if length(coalesce(p_cid, '')) not between 6 and 40 then raise exception 'BAD_INPUT'; end if;
   if not exists (select 1 from wbd.hw where id = p_hw and code = p_code and not hidden and open and (due is null or due > now())) then raise exception 'HW_CLOSED'; end if;
   if coalesce(p_size, 0) < 1 or p_size > 20971520 then raise exception 'TOO_BIG'; end if;
-  if e in ('html','htm','xhtml','shtml','mht','mhtml') then raise exception 'BAD_TYPE'; end if;   -- html 계열만 제외하고 모든 형식 허용
+  if e in ('__none__') then raise exception 'BAD_TYPE'; end if;   -- 차단 형식 없음(모든 형식 허용)
   if (select count(*) from wbd.hwsub where code = p_code and cid = p_cid and created_at > now() - interval '1 minute') >= 6 then raise exception 'RATE_LIMIT'; end if;
   return jsonb_build_object('path', p_code || '/' || p_hw || '/' || substr(p_cid, 1, 12) || '-' || encode(extensions.gen_random_bytes(5), 'hex') || '.' || e);
 end $$;
@@ -98,7 +98,7 @@ begin
   if length(coalesce(p_cid, '')) not between 6 and 40 or nm = '' or fn = '' then raise exception 'BAD_INPUT'; end if;
   if not exists (select 1 from wbd.hw where id = p_hw and code = p_code and not hidden and open and (due is null or due > now())) then raise exception 'HW_CLOSED'; end if;
   if p_path not like p_code || '/' || p_hw || '/' || substr(p_cid, 1, 12) || '-%' then raise exception 'BAD_PATH'; end if;
-  if wbd.hw_ext(p_path) in ('html','htm','xhtml','shtml','mht','mhtml') or wbd.hw_ext(fn) in ('html','htm','xhtml','shtml','mht','mhtml') then raise exception 'BAD_TYPE'; end if;
+  if wbd.hw_ext(p_path) in ('__none__') or wbd.hw_ext(fn) in ('__none__') then raise exception 'BAD_TYPE'; end if;
   if not exists (select 1 from storage.objects where bucket_id = 'wb-hw' and name = p_path) then raise exception 'NO_FILE'; end if;
   if exists (select 1 from wbd.hwsub where path = p_path) then raise exception 'BAD_PATH'; end if;
   select coalesce(max(n), 0) + 1 into k from wbd.hwsub where hw = p_hw and cid = p_cid;

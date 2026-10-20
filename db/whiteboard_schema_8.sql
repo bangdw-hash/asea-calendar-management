@@ -1,5 +1,5 @@
 -- ============================================================================
--- 실시간 수업 노트 스키마 8 — 도움 요청 대화 파일 첨부(비공개 저장 · html 계열 외 모든 형식 · 1개 20MB)
+-- 실시간 수업 노트 스키마 8 — 도움 요청 대화 파일 첨부(비공개 저장 · 모든 형식 · 1개 20MB)
 --  * db/whiteboard_schema_4~7 실행 후 실행합니다. 여러 번 실행해도 안전합니다.
 --  * 파일은 비공개 버킷 wb-hw 의 chat/ 아래에 저장되고, 올리기·받기 주소는 Edge Function wb-hw 가 발급합니다.
 --  * 교수자 「기록 지우기」 때 Edge Function 이 저장소 파일도 함께 지웁니다(cpurge).
@@ -23,7 +23,7 @@ create or replace function wbd.chat_ok(p_code text, p_pre text, p_fname text, p_
 language plpgsql security definer set search_path = wbd, extensions, public as $$
 begin
   if coalesce(p_fname, '') = '' or coalesce(p_size, 0) < 1 or p_size > 20971520 then raise exception 'BAD_INPUT'; end if;
-  if wbd.hw_ext(p_fname) in ('html','htm','xhtml','shtml','mht','mhtml') or wbd.hw_ext(p_path) in ('html','htm','xhtml','shtml','mht','mhtml') then raise exception 'BAD_TYPE'; end if;
+  if wbd.hw_ext(p_fname) in ('__none__') or wbd.hw_ext(p_path) in ('__none__') then raise exception 'BAD_TYPE'; end if;
   if p_path not like 'chat/' || p_code || '/' || p_pre || '-%' then raise exception 'BAD_PATH'; end if;
   if not exists (select 1 from storage.objects where bucket_id = 'wb-hw' and name = p_path) then raise exception 'NO_FILE'; end if;
   if exists (select 1 from wbd.msg where fpath = p_path) then raise exception 'BAD_PATH'; end if;
@@ -36,7 +36,7 @@ begin
   if length(coalesce(p_cid, '')) not between 6 and 40 then raise exception 'BAD_INPUT'; end if;
   if not exists (select 1 from wbd.room where code = p_code) then raise exception 'ROOM_NOT_FOUND'; end if;
   if coalesce(p_size, 0) < 1 or p_size > 20971520 then raise exception 'TOO_BIG'; end if;
-  if e in ('html','htm','xhtml','shtml','mht','mhtml') then raise exception 'BAD_TYPE'; end if;
+  if e in ('__none__') then raise exception 'BAD_TYPE'; end if;
   if (select count(*) from wbd.msg m join wbd.req r on r.id = m.req where r.code = p_code and r.cid = p_cid and m.fpath <> '' and m.created_at > now() - interval '1 minute') >= 6 then raise exception 'RATE_LIMIT'; end if;
   return jsonb_build_object('path', 'chat/' || p_code || '/' || substr(p_cid, 1, 12) || '-' || encode(extensions.gen_random_bytes(5), 'hex') || '.' || e);
 end $$;
@@ -48,7 +48,7 @@ begin
   perform wbd.sess(p_token);
   if not exists (select 1 from wbd.room where code = p_code) then raise exception 'ROOM_NOT_FOUND'; end if;
   if coalesce(p_size, 0) < 1 or p_size > 20971520 then raise exception 'TOO_BIG'; end if;
-  if e in ('html','htm','xhtml','shtml','mht','mhtml') then raise exception 'BAD_TYPE'; end if;
+  if e in ('__none__') then raise exception 'BAD_TYPE'; end if;
   return jsonb_build_object('path', 'chat/' || p_code || '/t-' || encode(extensions.gen_random_bytes(5), 'hex') || '.' || e);
 end $$;
 
