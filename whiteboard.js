@@ -12,7 +12,7 @@
   var POLL_MS = 4000;
   var TOKEN_KEY = 'wb_token';
   var MAX_BYTES = 50 * 1024 * 1024;
-  var HW_MAX = 20 * 1024 * 1024, HW_BLOCK = [];  /* 차단 형식 없음(모든 형식 허용). 필요하면 확장자를 여기에 넣으면 클라이언트에서 막힙니다. */
+  var HW_MAX = 20 * 1024 * 1024, HW_MAXN = 5, HW_TOTAL = 40 * 1024 * 1024, HW_BLOCK = [];  /* 차단 형식 없음(모든 형식 허용). 필요하면 확장자를 여기에 넣으면 클라이언트에서 막힙니다. */
   /* 올릴 수 있는 형식 (확장자 → MIME). 저장소 버킷의 허용 목록과 같아야 함 */
   var MIME = {
     '.pdf': 'application/pdf', '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.gif': 'image/gif', '.webp': 'image/webp',
@@ -443,7 +443,7 @@
   }
   function hwErr(e) {
     var m = String((e && e.code) || '') + ' ' + String((e && e.message) || e);
-    return /HW_CLOSED/.test(m) ? '마감되었거나 닫힌 과제입니다.' : /TOO_BIG/.test(m) ? '파일이 20MB를 넘습니다.' : /BAD_TYPE/.test(m) ? '이 형식은 제출할 수 없습니다.' : /RATE_LIMIT/.test(m) ? '너무 빠르게 제출하고 있습니다. 잠시 후 다시 해 주십시오.' : /NO_FILE/.test(m) ? '파일이 올라가지 않았습니다. 다시 시도해 주십시오.' : '제출하지 못했습니다. 잠시 후 다시 시도해 주십시오.';
+    return /HW_CLOSED/.test(m) ? '마감되었거나 닫힌 과제입니다.' : /TOO_BIG/.test(m) ? '파일이 20MB를 넘습니다.' : /BAD_TYPE/.test(m) ? '이 형식은 제출할 수 없습니다.' : /TOO_MANY/.test(m) ? '파일은 과제 1건에 최대 5개까지입니다.' : /TOTAL_BIG/.test(m) ? '합계 40MB를 넘습니다.' : /RATE_LIMIT/.test(m) ? '너무 빠르게 제출하고 있습니다. 잠시 후 다시 해 주십시오.' : /NO_FILE/.test(m) ? '파일이 올라가지 않았습니다. 다시 시도해 주십시오.' : '제출하지 못했습니다. 잠시 후 다시 시도해 주십시오.';
   }
   function fmtSize(n) { return n >= 1048576 ? (n / 1048576).toFixed(1) + 'MB' : Math.max(1, Math.round(n / 1024)) + 'KB'; }
   function dueText(due) { return due ? '마감 ' + new Date(due).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '마감 시각 없음'; }
@@ -523,53 +523,71 @@
     return '';
   }
   function Composer(root, o) {
+    var MAXQ = o.files ? 5 : 1;
     root.innerHTML = '<div class="cp-prev hide"></div><textarea class="cp-ta" rows="2" placeholder="' + esc(o.placeholder || '내용을 입력하세요') + '"></textarea>' +
-      '<div class="cp-row"><label class="btn sm icon" title="' + (o.files ? '파일·사진 첨부 (끌어 놓기·Ctrl+V도 됩니다)' : '사진 첨부 (Ctrl+V로 붙여 넣기도 됩니다)') + '" for="' + o.id + 'F">' + ic('clip', 15) + '</label><input type="file" id="' + o.id + 'F"' + (o.files ? '' : ' accept="image/*"') + ' class="hide">' +
+      '<div class="cp-row"><label class="btn sm icon" title="' + (o.files ? '파일·사진 첨부 (여러 개 끌어 놓기·Ctrl+V도 됩니다)' : '사진 첨부 (Ctrl+V로 붙여 넣기도 됩니다)') + '" for="' + o.id + 'F">' + ic('clip', 15) + '</label><input type="file" id="' + o.id + 'F"' + (o.files ? ' multiple' : ' accept="image/*"') + ' class="hide">' +
       (o.capture ? '<button class="btn sm" type="button" data-cap>' + ic('camera', 14) + ' 내 화면 찍기</button>' : '') +
       '<label class="chk" style="margin:0"><input type="checkbox" data-isc> ' + esc(o.codeLabel || '코드로 보내기') + '</label><span style="flex:1"></span>' +
       '<button class="btn pri sm" type="button" data-send>' + ic('send', 14) + ' 보내기</button></div>';
-    var ta = $('.cp-ta', root), prev = $('.cp-prev', root), isc = $('[data-isc]', root), sendB = $('[data-send]', root), blob = null, file = null, busy = false;
-    function clearPrev() { blob = null; file = null; prev.classList.add('hide'); prev.innerHTML = ''; }
-    function setBlob(b) {
-      clearPrev(); if (!b) return; blob = b;
-      prev.classList.remove('hide'); prev.innerHTML = '<img src="' + URL.createObjectURL(b) + '" alt="첨부 미리보기"><button class="btn sm icon" type="button" aria-label="첨부 취소">' + ic('x', 14) + '</button>';
-      $('button', prev).onclick = clearPrev;
+    var ta = $('.cp-ta', root), prev = $('.cp-prev', root), isc = $('[data-isc]', root), sendB = $('[data-send]', root), items = [], busy = false;
+    function paintPrev() {
+      if (!items.length) { prev.classList.add('hide'); prev.innerHTML = ''; return; }
+      prev.classList.remove('hide');
+      prev.innerHTML = items.map(function (it, k) {
+        var x = '<button class="btn sm icon" type="button" data-x="' + k + '" aria-label="첨부 취소">' + ic('x', 14) + '</button>';
+        return it.blob ? '<div class="cp-item"><img src="' + URL.createObjectURL(it.blob) + '" alt="첨부 미리보기">' + x + '</div>'
+          : '<div class="cp-item"><div class="cp-file">' + ic('file', 16) + '<span class="cpn">' + esc(it.file.name) + '</span><span class="muted">' + fmtSize(it.file.size) + '</span></div>' + x + '</div>';
+      }).join('');
+      $$('[data-x]', prev).forEach(function (b) { b.onclick = function () { items.splice(+b.getAttribute('data-x'), 1); paintPrev(); }; });
     }
-    function setFile(f) {
-      var er = chatFileErr(f); if (er) { toast(er); return; }
-      clearPrev(); file = f; prev.classList.remove('hide');
-      prev.innerHTML = '<div class="cp-file">' + ic('file', 16) + '<span class="cpn">' + esc(f.name) + '</span><span class="muted">' + fmtSize(f.size) + '</span></div><button class="btn sm icon" type="button" aria-label="첨부 취소">' + ic('x', 14) + '</button>';
-      $('button', prev).onclick = clearPrev;
+    function clearPrev() { items = []; paintPrev(); }
+    function setBlob(b) { items = b ? [{ blob: b }] : []; paintPrev(); }
+    function push(it) {
+      if (MAXQ === 1) items = [it]; else if (items.length >= MAXQ) { toast('한 번에 최대 ' + MAXQ + '개까지 보낼 수 있습니다.'); return; } else items.push(it);
+      paintPrev();
     }
     function take(f) {
       if (!f) return;
-      if (/^image\//.test(f.type)) { compressImage(f).then(setBlob).catch(function (e) { toast(e.message); }); return; }
-      if (o.files) setFile(f); else toast('이미지 파일만 첨부할 수 있습니다.');
+      if (/^image\//.test(f.type)) { compressImage(f).then(function (b) { push({ blob: b }); }).catch(function (e) { toast(e.message); }); return; }
+      if (!o.files) { toast('이미지 파일만 첨부할 수 있습니다.'); return; }
+      var er = chatFileErr(f); if (er) { toast(f.name + ': ' + er); return; }
+      push({ file: f });
     }
+    function takeAll(fs) { Array.prototype.forEach.call(fs || [], take); }
     ta.addEventListener('paste', function (e) {
       var it = e.clipboardData && e.clipboardData.items; if (!it) return;
-      for (var i = 0; i < it.length; i++) if (it[i].kind === 'file' && (it[i].type.indexOf('image/') === 0 || o.files)) { e.preventDefault(); take(it[i].getAsFile()); return; }
+      var got = false;
+      for (var i = 0; i < it.length; i++) if (it[i].kind === 'file' && (it[i].type.indexOf('image/') === 0 || o.files)) { take(it[i].getAsFile()); got = true; }
+      if (got) e.preventDefault();
     });
-    $('input[type=file]', root).onchange = function () { take(this.files[0]); this.value = ''; };
+    $('input[type=file]', root).onchange = function () { takeAll(this.files); this.value = ''; };
     function dropOn(el) {
       if (!el) return;
       if (el._dz) { el.removeEventListener('dragover', el._dz[0]); el.removeEventListener('dragleave', el._dz[1]); el.removeEventListener('drop', el._dz[2]); }
       var h1 = function (e) { if (e.dataTransfer && Array.prototype.indexOf.call(e.dataTransfer.types || [], 'Files') >= 0) { e.preventDefault(); el.classList.add('dragging'); } };
       var h2 = function (e) { if (!e.relatedTarget || !el.contains(e.relatedTarget)) el.classList.remove('dragging'); };
-      var h3 = function (e) { el.classList.remove('dragging'); if (e.dataTransfer && e.dataTransfer.files.length) { e.preventDefault(); e.stopPropagation(); take(e.dataTransfer.files[0]); } };
+      var h3 = function (e) { el.classList.remove('dragging'); if (e.dataTransfer && e.dataTransfer.files.length) { e.preventDefault(); e.stopPropagation(); takeAll(e.dataTransfer.files); } };
       el._dz = [h1, h2, h3]; el.addEventListener('dragover', h1); el.addEventListener('dragleave', h2); el.addEventListener('drop', h3);
     }
     dropOn(root); if (o.drop && o.drop !== root) dropOn(o.drop);
     var cap = $('[data-cap]', root);
     if (cap) cap.onclick = function () {
-      captureScreen().then(compressImage).then(setBlob).catch(function (e) { toast(e && e.name === 'NotAllowedError' ? '화면 공유를 허용하지 않아 캡처하지 않았습니다.' : ((e && e.message) || '캡처하지 못했습니다.')); });
+      captureScreen().then(compressImage).then(function (b) { push({ blob: b }); }).catch(function (e) { toast(e && e.name === 'NotAllowedError' ? '화면 공유를 허용하지 않아 캡처하지 않았습니다.' : ((e && e.message) || '캡처하지 못했습니다.')); });
     };
     function send() {
       if (busy) return;
-      var t = ta.value.trim(); if (!t && !blob && !file) { toast(o.files ? '내용이나 사진·파일을 넣어 주십시오.' : '내용이나 사진을 넣어 주십시오.'); return; }
+      var t = ta.value.trim(), list = items.slice(); if (!t && !list.length) { toast(o.files ? '내용이나 사진·파일을 넣어 주십시오.' : '내용이나 사진을 넣어 주십시오.'); return; }
       busy = true; sendB.disabled = true;
-      Promise.resolve(o.onSend(t, blob, isc.checked, file)).then(function () { ta.value = ''; clearPrev(); }, function (e) { toast((e && e.message) || '보내지 못했습니다.'); })
-        .then(function () { busy = false; sendB.disabled = false; });
+      var seq;
+      if (!list.length) seq = Promise.resolve(o.onSend(t, null, isc.checked, null)).then(function () { ta.value = ''; });
+      else {
+        seq = Promise.resolve();
+        list.forEach(function (it, i) {
+          seq = seq.then(function () { return o.onSend(i === 0 ? t : '', it.blob || null, isc.checked, it.file || null); })
+            .then(function () { items = items.filter(function (x) { return x !== it; }); paintPrev(); if (i === 0) ta.value = ''; });
+        });
+      }
+      seq.then(null, function (e) { toast((e && e.message) || '보내지 못했습니다.'); }).then(function () { busy = false; sendB.disabled = false; });
     }
     sendB.onclick = send;
     if (o.onTyping) { var lt = 0; ta.addEventListener('input', function () { var n = Date.now(); if (ta.value && n - lt > 2500) { lt = n; o.onTyping(); } }); }
@@ -585,10 +603,29 @@
     $('.btn', o).onclick = go; inp.onkeydown = function (e) { if (e.key === 'Enter' && !e.isComposing) go(); };
   }
 
+  /* ───────────── 새 버전 알림: whiteboard-ver.json 의 v 가 이 화면의 WB_VER 와 다르면 새로고침 안내 ───────────── */
+  var WB_VER = '2026-10-21.1', verDismissed = '';
+  function showVerBar(v) {
+    if ($('#verBar')) return;
+    var d = document.createElement('div'); d.id = 'verBar'; d.className = 'verbar';
+    d.innerHTML = '<span>새 버전이 있습니다. 입력 중인 내용을 마친 뒤 새로고침해 주십시오.</span><button class="btn sm pri" type="button" data-rl>새로고침</button><button class="btn sm icon" type="button" data-cl aria-label="닫기">' + ic('x', 14) + '</button>';
+    document.body.appendChild(d);
+    $('[data-rl]', d).onclick = function () { location.reload(); };
+    $('[data-cl]', d).onclick = function () { verDismissed = v; d.remove(); };
+  }
+  function watchVersion() {
+    function check() {
+      fetch('whiteboard-ver.json?_=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (j) { if (j && j.v && j.v !== WB_VER && j.v !== verDismissed) showVerBar(j.v); }).catch(function () {});
+    }
+    setTimeout(function () { check(); setInterval(check, 180000); }, 20000 + Math.random() * 40000);
+  }
+
   /* ───────────── 라우터 ───────────── */
   var P = new URLSearchParams(location.search);
   var root = $('#root');
   function boot() {
+    watchVersion();
     if (P.get('r')) { var xm = P.get('xm') === '1' || P.get('xm') === '2' ? P.get('xm') : ''; return Student(String(P.get('r')).replace(/\D/g, '').slice(0, 8), P.get('view') === '1' || xm === '2', xm); }
     if (P.get('mode') === 'teacher') return Teacher();
     return Landing();
@@ -932,7 +969,7 @@
         });
       }).then(function (r) {
         if (S.ch) S.ch.send({ type: 'broadcast', event: 'req', payload: { c: cid } });
-        return fetchThreads().then(function () { S.view = 'thread'; S.curT = r.req; renderChat(true); });
+        return fetchThreads().then(function () { S.view = 'thread'; S.curT = r.req; renderChat(true); return r.req; });
       }).catch(function (e) { throw new Error(e.code === 'RATE_LIMIT' ? '너무 빠르게 보내고 있습니다. 잠시 후 다시 보내 주십시오.' : file ? fileSendErr(e) : (e.message || '보내지 못했습니다.')); });
     }
     function openChat(id) {
@@ -960,7 +997,8 @@
         b.innerHTML = '<div class="ch-n"><div class="muted">' + esc(S.name) + ' · ' + (S.mat ? esc((function () { var m = (S.mats || []).filter(function (x) { return x.id === S.mat; })[0]; return m ? m.name.replace(/\.pdf$/i, '') + ' ' : ''; })()) : '') + S.cur + '쪽에서 보냅니다</div>' +
           '<div class="chips">' + ['error', 'stuck', 'question'].map(function (k) { return '<button class="kchip' + (S.newKind === k ? ' on' : '') + '" data-k="' + k + '">' + ({ error: '오류가 나요', stuck: '막혔어요', question: '질문' })[k] + '</button>'; }).join('') + '</div>' +
           '<div id="chComp"></div></div>';
-        comp = Composer($('#chComp'), { id: 'cnew', capture: true, files: true, drop: cw, placeholder: '어떤 상황인지 적어 주세요. 오류 문구는 그대로 붙여 넣으셔도 됩니다.', codeLabel: '코드·오류 문구 모양 그대로 보내기', onSend: function (t, bl, c, fl) { return sendReq(t, bl, c, null, S.newKind, fl); } });
+        var newRid = null;
+        comp = Composer($('#chComp'), { id: 'cnew', capture: true, files: true, drop: cw, placeholder: '어떤 상황인지 적어 주세요. 오류 문구는 그대로 붙여 넣으셔도 됩니다.', codeLabel: '코드·오류 문구 모양 그대로 보내기', onSend: function (t, bl, c, fl) { return sendReq(t, bl, c, newRid, S.newKind, fl).then(function (rid) { newRid = rid || newRid; }); } });
         comp.setCode(S.newKind === 'error'); comp.focus();
       } else {
         var t = thr(S.curT); if (!t) { S.view = 'list'; renderChat(true); return; }
@@ -1007,7 +1045,7 @@
 
     /* 수업 활동: 실습 단계 · 결과 제출 · 투표 / 교수자가 공유한 우수 사례(전체화면) */
     S.steps = { items: [], cur: -1 }; S.stepDone = {}; S.poll = null; S.myVote = null; S.pollRes = null; S.subs = [];
-    S.hws = []; S.hwMine = []; S.hwFile = {}; S.hwBusy = {}; S.hwSig = ''; S.hwInit = false;
+    S.hws = []; S.hwMine = []; S.hwQ = {}; S.hwBusy = {}; S.hwSig = ''; S.hwInit = false;
     S.actTab = 'steps'; S.actOpen = false; S.shareSeen = ''; S.shareClosed = ''; S.pollSeen = ''; S.stepsSig = ''; S.share = null; S.subBuilt = false;
     var aw = $('#actW');
     function pct(n, t) { return t ? Math.round(n / t * 100) : 0; }
@@ -1064,7 +1102,7 @@
       }
     }
     /* 과제 제출 */
-    function hwMineOf(id) { return S.hwMine.filter(function (x) { return x.hw === id; })[0]; }
+    function hwMineOf(id) { return hwFiles(id)[0]; }
     function fetchHw() {
       return rpc('wb_hw_mine', { p_code: code, p_cid: cid }).then(function (r) {
         r = r || {}; var old = {}; S.hws.forEach(function (h) { old[h.id] = h.open; });
@@ -1076,40 +1114,70 @@
       }).catch(function () {});
     }
     function renderHw(full) {
-      var b = $('#actB'), sig = JSON.stringify([S.hws, S.hwMine, Object.keys(S.hwFile).map(function (k) { return k + ':' + S.hwFile[k].name; }), S.hwBusy]);
+      var b = $('#actB'), sig = JSON.stringify([S.hws, S.hwMine, Object.keys(S.hwQ).map(function (k) { return k + ':' + S.hwQ[k].map(function (f) { return f.name + f.size; }).join(','); }), S.hwBusy]);
       if (!full && b.dataset.v === 'hw' && S.hwSig === sig) return;
       S.hwSig = sig; b.dataset.v = 'hw';
       if (!S.hws.length) { b.innerHTML = '<p class="muted" style="text-align:center;margin-top:20px">교수자가 과제를 열면 여기에 나타납니다.</p>'; return; }
       b.innerHTML = S.hws.map(function (h) {
-        var m = hwMineOf(h.id), f = S.hwFile[h.id], busy = S.hwBusy[h.id];
+        var mine = hwFiles(h.id), q = S.hwQ[h.id] || [], busy = S.hwBusy[h.id];
         return '<div class="hwc"><div class="hwh"><b>' + esc(h.title) + '</b><span class="pill ' + (h.open ? 'p-i' : 'p-d') + '">' + (h.open ? '받는 중' : '마감') + '</span></div>' +
-          (h.note ? '<div class="hwn">' + linkText(h.note) + '</div>' : '') + '<div class="muted">' + dueText(h.due) + ' · 1개 20MB · 모든 형식</div>' +
-          (m ? '<div class="hwm">' + ic('check', 14) + ' 제출함 · ' + esc(m.fname) + ' (' + fmtSize(m.size) + ') · ' + clock(m.t) + (m.n > 1 ? ' · ' + m.n + '번째 제출' : '') + '</div>' : '<div class="muted">아직 제출하지 않았습니다.</div>') +
-          (h.open ? '<label class="dz" data-dz="' + esc(h.id) + '"><input type="file" class="hide" data-hwf="' + esc(h.id) + '"><span>' + (f ? esc(f.name) + ' (' + fmtSize(f.size) + ')' : '파일을 끌어 놓거나 눌러서 선택하십시오') + '</span></label>' +
-            '<div class="fr"><button class="btn pri" data-hwgo="' + esc(h.id) + '"' + (f && !busy ? '' : ' disabled') + '>' + ic('upload', 15) + ' ' + (busy ? '올리는 중...' : m ? '다시 제출(교체)' : '제출하기') + '</button></div>' : '') + '</div>';
+          (h.note ? '<div class="hwn">' + linkText(h.note) + '</div>' : '') + '<div class="muted">' + dueText(h.due) + ' · 최대 ' + HW_MAXN + '개 · 합계 40MB · 1개 20MB · 모든 형식</div>' +
+          (mine.length ? mine.map(function (m) {
+            return '<div class="hwm">' + ic('check', 14) + '<span class="hwmn">' + esc(m.fname) + ' (' + fmtSize(m.size) + ') · ' + clock(m.t) + '</span>' + (h.open ? '<button class="btn sm red" type="button" data-hwdel="' + esc(m.id) + '">삭제</button>' : '') + '</div>';
+          }).join('') : '<div class="muted">아직 제출한 파일이 없습니다.</div>') +
+          (h.open ? '<label class="dz" data-dz="' + esc(h.id) + '"><input type="file" multiple class="hide" data-hwf="' + esc(h.id) + '"><span>파일을 끌어 놓거나 눌러서 선택하십시오 (여러 개 가능)</span></label>' +
+            (q.length ? '<div class="hwq">' + q.map(function (f, k) { return '<div class="cp-file">' + ic('file', 16) + '<span class="cpn">' + esc(f.name) + '</span><span class="muted">' + fmtSize(f.size) + '</span>' + (busy ? '' : '<button class="btn sm icon" type="button" data-hwq="' + esc(h.id) + ':' + k + '" aria-label="대기 취소">' + ic('x', 14) + '</button>') + '</div>'; }).join('') + '</div>' : '') +
+            '<div class="fr"><button class="btn pri" data-hwgo="' + esc(h.id) + '"' + (q.length && !busy ? '' : ' disabled') + '>' + ic('upload', 15) + ' ' + (busy ? '올리는 중 (' + busy.i + '/' + busy.n + ')...' : q.length ? q.length + '개 제출하기' : '제출하기') + '</button></div>' : '') + '</div>';
       }).join('');
     }
-    function setHwFile(id, f) { S.hwFile[id] = f; renderHw(true); }
-    function submitHw(id) {
-      var f = S.hwFile[id]; if (!f || S.hwBusy[id]) return;
-      if (!S.name) { askName(); return; }
-      var ext = ((f.name.match(/\.([A-Za-z0-9]{1,10})$/) || [])[1] || '').toLowerCase();
-      if (HW_BLOCK.indexOf(ext) >= 0) { toast('이 형식은 제출할 수 없습니다.'); return; }
-      if (!f.size) { toast('빈 파일입니다.'); return; }
-      if (f.size > HW_MAX) { toast('파일이 20MB를 넘습니다.'); return; }
-      S.hwBusy[id] = 1; renderHw(true);
-      hwFn({ action: 'prepare', code: code, cid: cid, hw: id, fname: f.name, size: f.size }).then(function (p) {
-        return sb.storage.from('wb-hw').uploadToSignedUrl(p.path, p.token, f, { contentType: f.type || MIME['.' + ext] || 'application/octet-stream' }).then(function (r) { if (r.error) throw r.error; return p.path; });
-      }).then(function (path) {
-        return rpc('wb_hw_submit', { p_code: code, p_cid: cid, p_name: S.name, p_hw: id, p_path: path, p_fname: f.name, p_size: f.size });
-      }).then(function () {
-        delete S.hwFile[id]; toast('제출했습니다.'); if (S.ch && S.rt) S.ch.send({ type: 'broadcast', event: 'hw', payload: { c: cid } }); return fetchHw();
-      }).catch(function (e) { toast(hwErr(e)); }).then(function () { delete S.hwBusy[id]; renderHw(true); });
+    function hwFiles(id) { return S.hwMine.filter(function (x) { return x.hw === id; }); }
+    function sumSize(a) { return a.reduce(function (n, f) { return n + (f.size || 0); }, 0); }
+    function addHwFiles(id, list) {
+      var q = S.hwQ[id] = S.hwQ[id] || [], mine = hwFiles(id), used = sumSize(mine), msgs = [];
+      Array.prototype.forEach.call(list, function (f) {
+        var er = chatFileErr(f);
+        if (er) { msgs.push(f.name + ': ' + er); return; }
+        if (mine.length + q.length >= HW_MAXN) { msgs.push('파일은 과제 1건에 최대 ' + HW_MAXN + '개까지 올릴 수 있습니다.'); return; }
+        if (used + sumSize(q) + f.size > HW_TOTAL) { msgs.push(f.name + ': 합계 40MB를 넘습니다.'); return; }
+        if (q.some(function (x) { return x.name === f.name && x.size === f.size; })) return;
+        q.push(f);
+      });
+      if (msgs.length) toast(msgs[0] + (msgs.length > 1 ? ' 외 ' + (msgs.length - 1) + '건' : ''));
+      renderHw(true);
     }
-    aw.addEventListener('change', function (e) { var i = e.target.closest && e.target.closest('[data-hwf]'); if (i && i.files[0]) setHwFile(i.getAttribute('data-hwf'), i.files[0]); });
-    aw.addEventListener('dragover', function (e) { if (e.target.closest && e.target.closest('[data-dz]')) e.preventDefault(); });
-    aw.addEventListener('drop', function (e) { var d = e.target.closest && e.target.closest('[data-dz]'); if (d && e.dataTransfer && e.dataTransfer.files[0]) { e.preventDefault(); setHwFile(d.getAttribute('data-dz'), e.dataTransfer.files[0]); } });
-    aw.addEventListener('click', function (e) { var g = e.target.closest && e.target.closest('[data-hwgo]'); if (g) submitHw(g.getAttribute('data-hwgo')); });
+    function uploadHw(id) {
+      var q = S.hwQ[id] || []; if (!q.length || S.hwBusy[id]) return;
+      if (!S.name) { askName(); return; }
+      var done = 0;
+      function finish() { delete S.hwBusy[id]; if (done) { toast(done + '개를 제출했습니다.'); if (S.ch && S.rt) S.ch.send({ type: 'broadcast', event: 'hw', payload: { c: cid } }); } return fetchHw().then(function () { renderHw(true); }); }
+      (function next() {
+        if (!q.length) { finish(); return; }
+        var f = q[0], ext = ((f.name.match(/\.([A-Za-z0-9]{1,10})$/) || [])[1] || '').toLowerCase();
+        S.hwBusy[id] = { i: done + 1, n: done + q.length }; renderHw(true);
+        hwFn({ action: 'prepare', code: code, cid: cid, hw: id, fname: f.name, size: f.size }).then(function (p) {
+          return sb.storage.from('wb-hw').uploadToSignedUrl(p.path, p.token, f, { contentType: f.type || MIME['.' + ext] || 'application/octet-stream' }).then(function (r) { if (r.error) throw r.error; return p.path; });
+        }).then(function (path) {
+          return rpc('wb_hw_submit', { p_code: code, p_cid: cid, p_name: S.name, p_hw: id, p_path: path, p_fname: f.name, p_size: f.size });
+        }).then(function () { q.shift(); done++; next(); }, function (e) { toast(f.name + ': ' + hwErr(e)); finish(); });
+      })();
+    }
+    function delHw(fid) {
+      if (!confirm('이 파일을 삭제할까요? 저장소에서도 지워지며 되돌릴 수 없습니다.')) return;
+      hwFn({ action: 'hdel', code: code, cid: cid, id: fid }).then(function () {
+        toast('삭제했습니다.'); if (S.ch && S.rt) S.ch.send({ type: 'broadcast', event: 'hw', payload: { c: cid } }); return fetchHw();
+      }).catch(function (e) { toast(hwErr(e)); });
+    }
+    aw.addEventListener('change', function (e) { var i = e.target.closest && e.target.closest('[data-hwf]'); if (i && i.files.length) { addHwFiles(i.getAttribute('data-hwf'), i.files); i.value = ''; } });
+    aw.addEventListener('dragover', function (e) { var d = e.target.closest && e.target.closest('[data-dz]'); if (d) { e.preventDefault(); d.classList.add('dragging'); } });
+    aw.addEventListener('dragleave', function (e) { var d = e.target.closest && e.target.closest('[data-dz]'); if (d) d.classList.remove('dragging'); });
+    aw.addEventListener('drop', function (e) { var d = e.target.closest && e.target.closest('[data-dz]'); if (d && e.dataTransfer && e.dataTransfer.files.length) { e.preventDefault(); d.classList.remove('dragging'); addHwFiles(d.getAttribute('data-dz'), e.dataTransfer.files); } });
+    aw.addEventListener('click', function (e) {
+      var t = e.target; if (!t.closest) return;
+      var q;
+      var g = t.closest('[data-hwgo]'); if (g) { uploadHw(g.getAttribute('data-hwgo')); return; }
+      var d = t.closest('[data-hwdel]'); if (d) { delHw(d.getAttribute('data-hwdel')); return; }
+      q = t.closest('[data-hwq]'); if (q) { var p = q.getAttribute('data-hwq').split(':'); (S.hwQ[p[0]] || []).splice(+p[1], 1); renderHw(true); }
+    });
     aw.addEventListener('click', function (e) {
       var t = e.target; if (!t.closest) return;
       if (t.closest('#actX')) { closeAct(); return; }
@@ -2040,13 +2108,13 @@
         var outs = hwOutNames(rows), total = rows.reduce(function (a, r) { return a + r.size; }, 0);
         var h = '<div class="hwchips">' + hws.map(function (x) { return '<button class="kchip' + (x.id === C.hwSel ? ' on' : '') + '" data-hwsel="' + esc(x.id) + '">' + esc(x.title) + ' (' + x.n + ')' + (x.open ? '' : ' · 마감') + '</button>'; }).join('') + '</div>';
         if (sel) {
-          h += '<div class="hwtop"><b>' + esc(sel.title) + '</b><span class="pill ' + (sel.open ? 'p-i' : 'p-d') + '">' + (sel.open ? '받는 중' : '마감') + '</span><span class="muted">' + dueText(sel.due) + ' · 제출 ' + rows.length + ' / 접속 ' + C.roster.length + '명</span><span style="flex:1"></span>' +
+          h += '<div class="hwtop"><b>' + esc(sel.title) + '</b><span class="pill ' + (sel.open ? 'p-i' : 'p-d') + '">' + (sel.open ? '받는 중' : '마감') + '</span><span class="muted">' + dueText(sel.due) + ' · 제출 ' + Object.keys(got).length + '명(파일 ' + rows.length + '개) / 접속 ' + C.roster.length + '명</span><span style="flex:1"></span>' +
             '<button class="btn sm" data-hwtog="' + (sel.open ? '0' : '1') + '">' + (sel.open ? '마감하기' : '다시 열기') + '</button>' +
             '<button class="btn sm pri" data-hwall' + (rows.length ? '' : ' disabled') + '>' + ic('download', 14) + ' 전체 받기 (ZIP)</button>' +
             '<button class="btn sm" data-hwpick' + (rows.length ? '' : ' disabled') + '>선택 받기</button><button class="btn sm" data-hwlog' + (rows.length ? '' : ' disabled') + '>제출 기록 저장</button><button class="btn sm red" data-hwpurge>파일 지우기</button></div>';
           if (sel.note) h += '<div class="muted">' + linkText(sel.note) + '</div>';
           h += rows.length ? '<table class="hwt"><thead><tr><th><input type="checkbox" data-hwchkall aria-label="전체 선택"></th><th>학생</th><th>받는 이름</th><th>크기</th><th>시각</th><th></th></tr></thead><tbody>' + rows.map(function (r) {
-            return '<tr><td><input type="checkbox" data-hwchk="' + esc(r.id) + '"' + (C.hwChk[r.id] ? ' checked' : '') + '></td><td><b>' + esc(r.name) + '</b>' + (r.n > 1 ? ' <span class="pill p-w">' + r.n + '번째 제출</span>' : '') + '</td><td class="hwo">' + esc(outs[r.id]) + '</td><td>' + fmtSize(r.size) + '</td><td>' + clock(r.t) + '</td><td><button class="btn sm" data-hwdl="' + esc(r.id) + '">받기</button></td></tr>';
+            return '<tr><td><input type="checkbox" data-hwchk="' + esc(r.id) + '"' + (C.hwChk[r.id] ? ' checked' : '') + '></td><td><b>' + esc(r.name) + '</b>' + '' + '</td><td class="hwo">' + esc(outs[r.id]) + '</td><td>' + fmtSize(r.size) + '</td><td>' + clock(r.t) + '</td><td><button class="btn sm" data-hwdl="' + esc(r.id) + '">받기</button></td></tr>';
           }).join('') + '</tbody></table><div class="muted">총 ' + fmtSize(total) + (total > 400 * 1048576 ? ' · 용량이 커서 ZIP이 느릴 수 있습니다. 「선택 받기」로 나누어 받으십시오.' : '') + '</div>' : '<p class="muted">아직 제출된 파일이 없습니다.</p>';
           h += '<div class="muted hwmiss">접속 중인 학생 중 미제출 ' + miss.length + '명' + (miss.length ? ': ' + esc(miss.join(', ')) + ' <button class="btn sm" data-hwcopy>명단 복사</button>' : '') + '</div>';
         }
@@ -2075,7 +2143,7 @@
         if (t.closest('[data-hwpick]')) { var ids = Object.keys(C.hwChk).filter(function (k) { return C.hwChk[k]; }); if (!ids.length) { toast('받을 학생을 먼저 체크해 주십시오.'); return; } downloadRows(ids); return; }
         if (t.closest('[data-hwlog]') && sel) {
           var outs = hwOutNames(C.tools.rows);
-          saveText('과제제출기록_' + C.code + '.txt', ['[' + sel.title + '] 수업코드 ' + C.code + ' 제출 기록', ''].concat(C.tools.rows.map(function (r) { return '■ ' + r.name + ' · ' + outs[r.id] + ' · ' + fmtSize(r.size) + ' · ' + clock(r.t) + (r.n > 1 ? ' · ' + r.n + '번째 제출' : ''); })).join('\n'));
+          saveText('과제제출기록_' + C.code + '.txt', ['[' + sel.title + '] 수업코드 ' + C.code + ' 제출 기록', ''].concat(C.tools.rows.map(function (r) { return '■ ' + r.name + ' · ' + outs[r.id] + ' · ' + fmtSize(r.size) + ' · ' + clock(r.t); })).join('\n'));
           return;
         }
         if (t.closest('[data-hwcopy]')) { var got = {}; C.tools.rows.forEach(function (r) { got[r.cid] = 1; }); copyText(C.roster.filter(function (r) { return !got[r.cid]; }).map(function (r) { return r.name || '(이름 없음)'; }).join(', '), '명단을 복사했습니다.'); return; }
