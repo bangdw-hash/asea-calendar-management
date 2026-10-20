@@ -125,5 +125,16 @@ Deno.serve(async (req) => {
     return json(req, { removed: paths.length });
   }
 
+  // 학생 본인 과제 파일 삭제(마감 전): 저장소 파일을 지운 뒤 DB 행을 비움
+  if (action === 'hdel') {
+    const p = await rpc('wb_hw_delpath', { p_code: b.code, p_cid: b.cid, p_id: b.id });
+    if (p.error) return json(req, { error: p.error }, 400);
+    const r = await svc('/object/' + BUCKET, { method: 'DELETE', body: JSON.stringify({ prefixes: [p.data.path] }) });
+    if (!r.ok) return json(req, { error: 'REMOVE_FAILED' }, 500);
+    const q = await rpc('wb_hw_delrow', { p_code: b.code, p_cid: b.cid, p_id: b.id });
+    if (q.error) return json(req, { error: q.error }, 400);
+    return json(req, { ok: true });
+  }
+
   return json(req, { error: 'BAD_ACTION' }, 400);
 });

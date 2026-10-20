@@ -500,3 +500,9 @@ a.btn.pri { color:#fff; }
 .fchip { display:flex; align-items:center; gap:6px; max-width:100%; margin-top:6px; padding:7px 9px; border:1px solid var(--line); border-radius:var(--r); background:var(--card); color:var(--ink); cursor:pointer; font-size:13px; text-align:left; }
 .fchip:hover { border-color:var(--primary); background:var(--primary-lt); }
 .dragging { outline:2px dashed var(--primary); outline-offset:-4px; background:var(--primary-lt); }
+
+.hwm { justify-content:space-between; gap:8px; } .hwm .hwmn { flex:1; min-width:0; }
+.hwq { display:flex; flex-direction:column; gap:4px; }
+.cp-item { display:flex; align-items:center; gap:6px; margin-bottom:4px; } .cp-item img { max-height:70px; border-radius:var(--r); border:1px solid var(--line); }
+.verbar { position:fixed; top:56px; left:50%; transform:translateX(-50%); max-width:92vw; z-index:300; display:flex; align-items:center; justify-content:center; gap:10px; padding:8px 12px; background:var(--primary); color:#fff; font-size:14px; border-radius:var(--r); box-shadow:var(--sh-lg); }
+.verbar .btn { color:var(--ink); } .verbar .btn.pri { background:#fff; color:var(--primary); border-color:#fff; }
