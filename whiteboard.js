@@ -12,7 +12,7 @@
   var POLL_MS = 4000;
   var TOKEN_KEY = 'wb_token';
   var MAX_BYTES = 50 * 1024 * 1024;
-  var HW_MAX = 20 * 1024 * 1024, HW_EXT = ['pdf', 'doc', 'docx', 'hwp', 'hwpx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt', 'csv', 'zip', 'png', 'jpg', 'jpeg', 'gif', 'webp'];
+  var HW_MAX = 20 * 1024 * 1024, HW_BLOCK = ['html', 'htm', 'xhtml', 'shtml', 'mht', 'mhtml'];  /* html 계열만 제외하고 모든 형식 제출 가능 */
   /* 올릴 수 있는 형식 (확장자 → MIME). 저장소 버킷의 허용 목록과 같아야 함 */
   var MIME = {
     '.pdf': 'application/pdf', '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.gif': 'image/gif', '.webp': 'image/webp',
@@ -439,7 +439,7 @@
   }
   function hwErr(e) {
     var m = String((e && e.code) || '') + ' ' + String((e && e.message) || e);
-    return /HW_CLOSED/.test(m) ? '마감되었거나 닫힌 과제입니다.' : /TOO_BIG/.test(m) ? '파일이 20MB를 넘습니다.' : /BAD_TYPE/.test(m) ? '이 형식은 제출할 수 없습니다.' : /RATE_LIMIT/.test(m) ? '너무 빠르게 제출하고 있습니다. 잠시 후 다시 해 주십시오.' : /NO_FILE/.test(m) ? '파일이 올라가지 않았습니다. 다시 시도해 주십시오.' : '제출하지 못했습니다. 잠시 후 다시 시도해 주십시오.';
+    return /HW_CLOSED/.test(m) ? '마감되었거나 닫힌 과제입니다.' : /TOO_BIG/.test(m) ? '파일이 20MB를 넘습니다.' : /BAD_TYPE/.test(m) ? 'html 파일은 제출할 수 없습니다.' : /RATE_LIMIT/.test(m) ? '너무 빠르게 제출하고 있습니다. 잠시 후 다시 해 주십시오.' : /NO_FILE/.test(m) ? '파일이 올라가지 않았습니다. 다시 시도해 주십시오.' : '제출하지 못했습니다. 잠시 후 다시 시도해 주십시오.';
   }
   function fmtSize(n) { return n >= 1048576 ? (n / 1048576).toFixed(1) + 'MB' : Math.max(1, Math.round(n / 1024)) + 'KB'; }
   function dueText(due) { return due ? '마감 ' + new Date(due).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '마감 시각 없음'; }
@@ -1043,7 +1043,7 @@
       b.innerHTML = S.hws.map(function (h) {
         var m = hwMineOf(h.id), f = S.hwFile[h.id], busy = S.hwBusy[h.id];
         return '<div class="hwc"><div class="hwh"><b>' + esc(h.title) + '</b><span class="pill ' + (h.open ? 'p-i' : 'p-d') + '">' + (h.open ? '받는 중' : '마감') + '</span></div>' +
-          (h.note ? '<div class="hwn">' + linkText(h.note) + '</div>' : '') + '<div class="muted">' + dueText(h.due) + ' · 1개 20MB · pdf·문서·한글·엑셀·파워포인트·이미지·zip</div>' +
+          (h.note ? '<div class="hwn">' + linkText(h.note) + '</div>' : '') + '<div class="muted">' + dueText(h.due) + ' · 1개 20MB · html 파일 외 모든 형식</div>' +
           (m ? '<div class="hwm">' + ic('check', 14) + ' 제출함 · ' + esc(m.fname) + ' (' + fmtSize(m.size) + ') · ' + clock(m.t) + (m.n > 1 ? ' · ' + m.n + '번째 제출' : '') + '</div>' : '<div class="muted">아직 제출하지 않았습니다.</div>') +
           (h.open ? '<label class="dz" data-dz="' + esc(h.id) + '"><input type="file" class="hide" data-hwf="' + esc(h.id) + '"><span>' + (f ? esc(f.name) + ' (' + fmtSize(f.size) + ')' : '파일을 끌어 놓거나 눌러서 선택하십시오') + '</span></label>' +
             '<div class="fr"><button class="btn pri" data-hwgo="' + esc(h.id) + '"' + (f && !busy ? '' : ' disabled') + '>' + ic('upload', 15) + ' ' + (busy ? '올리는 중...' : m ? '다시 제출(교체)' : '제출하기') + '</button></div>' : '') + '</div>';
@@ -1053,8 +1053,8 @@
     function submitHw(id) {
       var f = S.hwFile[id]; if (!f || S.hwBusy[id]) return;
       if (!S.name) { askName(); return; }
-      var ext = ((f.name.match(/\.([A-Za-z0-9]{2,5})$/) || [])[1] || '').toLowerCase();
-      if (HW_EXT.indexOf(ext) < 0) { toast('이 형식은 제출할 수 없습니다. (pdf·문서·한글·엑셀·파워포인트·이미지·zip)'); return; }
+      var ext = ((f.name.match(/\.([A-Za-z0-9]{1,10})$/) || [])[1] || '').toLowerCase();
+      if (HW_BLOCK.indexOf(ext) >= 0) { toast('html 파일은 제출할 수 없습니다. 압축(zip)하거나 pdf로 저장해 제출해 주십시오.'); return; }
       if (!f.size) { toast('빈 파일입니다.'); return; }
       if (f.size > HW_MAX) { toast('파일이 20MB를 넘습니다.'); return; }
       S.hwBusy[id] = 1; renderHw(true);
