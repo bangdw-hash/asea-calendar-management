@@ -492,3 +492,11 @@ a.btn.pri { color:#fff; }
 .hwt th, .hwt td { text-align:left; padding:6px 8px; border-bottom:1px solid var(--line); vertical-align:middle; }
 .hwt .hwo { word-break:break-all; color:var(--ink2); }
 .hwmiss { margin-top:8px; }
+
+/* 대화 파일 첨부 */
+.cp-file { display:flex; align-items:center; gap:6px; min-width:0; flex:1; padding:6px 8px; border:1px solid var(--line); border-radius:var(--r); background:var(--bg); }
+.cp-file .cpn, .fchip .cpn { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:600; }
+.cp-prev:has(.cp-file) { display:flex; align-items:center; gap:6px; }
+.fchip { display:flex; align-items:center; gap:6px; max-width:100%; margin-top:6px; padding:7px 9px; border:1px solid var(--line); border-radius:var(--r); background:var(--card); color:var(--ink); cursor:pointer; font-size:13px; text-align:left; }
+.fchip:hover { border-color:var(--primary); background:var(--primary-lt); }
+.dragging { outline:2px dashed var(--primary); outline-offset:-4px; background:var(--primary-lt); }

@@ -83,5 +83,47 @@ Deno.serve(async (req) => {
     return json(req, { removed: paths.length });
   }
 
+  // 도움 요청 대화 파일 첨부: 올리기 주소(학생은 cid, 교수자는 token)
+  if (action === 'cprep') {
+    const p = b.token
+      ? await rpc('wb_chat_tprepare', { p_token: b.token, p_code: b.code, p_fname: b.fname, p_size: Number(b.size) || 0 })
+      : await rpc('wb_chat_prepare', { p_code: b.code, p_cid: b.cid, p_fname: b.fname, p_size: Number(b.size) || 0 });
+    if (p.error) return json(req, { error: p.error }, 400);
+    const path = p.data.path as string;
+    const r = await svc('/object/upload/sign/' + BUCKET + '/' + path, { method: 'POST', body: '{}' });
+    if (!r.ok) return json(req, { error: 'SIGN_FAILED', status: r.status }, 500);
+    const d = await r.json();
+    const token = new URL(d.url, URL_ + '/storage/v1').searchParams.get('token');
+    if (!token) return json(req, { error: 'SIGN_FAILED' }, 500);
+    return json(req, { path, token });
+  }
+
+  // 도움 요청 대화 파일 받기 주소(5분)
+  if (action === 'cget') {
+    const p = b.token
+      ? await rpc('wb_chat_tfile', { p_token: b.token, p_code: b.code, p_req: b.req, p_msg: Number(b.msg) || 0 })
+      : await rpc('wb_chat_file', { p_code: b.code, p_cid: b.cid, p_req: b.req, p_msg: Number(b.msg) || 0 });
+    if (p.error) return json(req, { error: p.error }, 400);
+    const r = await svc('/object/sign/' + BUCKET, { method: 'POST', body: JSON.stringify({ expiresIn: 300, paths: [p.data.path] }) });
+    if (!r.ok) return json(req, { error: 'SIGN_FAILED', status: r.status }, 500);
+    const d = await r.json() as { path: string; signedURL?: string }[];
+    if (!d[0] || !d[0].signedURL) return json(req, { error: 'SIGN_FAILED' }, 500);
+    return json(req, { url: URL_ + '/storage/v1' + d[0].signedURL, fname: p.data.fname, r: p.data.r });
+  }
+
+  // 교수자 「기록 지우기」: 대화 첨부 파일을 저장소에서 지우고 DB 파일 정보를 비움
+  if (action === 'cpurge') {
+    const p = await rpc('wb_chat_paths', { p_token: b.token, p_code: b.code });
+    if (p.error) return json(req, { error: p.error }, 400);
+    const paths = (p.data || []) as string[];
+    if (paths.length) {
+      const r = await svc('/object/' + BUCKET, { method: 'DELETE', body: JSON.stringify({ prefixes: paths }) });
+      if (!r.ok) return json(req, { error: 'REMOVE_FAILED' }, 500);
+    }
+    const q = await rpc('wb_chat_clear', { p_token: b.token, p_code: b.code });
+    if (q.error) return json(req, { error: q.error }, 400);
+    return json(req, { removed: paths.length });
+  }
+
   return json(req, { error: 'BAD_ACTION' }, 400);
 });

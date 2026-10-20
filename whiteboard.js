@@ -437,6 +437,10 @@
     return fetch(SUPA_URL + '/functions/v1/wb-hw', { method: 'POST', headers: { 'Content-Type': 'application/json', apikey: SUPA_KEY, Authorization: 'Bearer ' + SUPA_KEY }, body: JSON.stringify(body) })
       .then(function (r) { return r.json().then(function (j) { if (!r.ok || j.error) throw new Error(j.error || 'FAILED'); return j; }, function () { throw new Error('FAILED'); }); });
   }
+  function fileSendErr(e) {
+    var m = String((e && e.code) || '') + ' ' + String((e && e.message) || e);
+    return /TOO_BIG/.test(m) ? '파일이 20MB를 넘습니다.' : /BAD_TYPE/.test(m) ? 'html 파일은 첨부할 수 없습니다.' : /RATE_LIMIT/.test(m) ? '너무 빠르게 보내고 있습니다. 잠시 후 다시 보내 주십시오.' : /NO_FILE|BAD_PATH/.test(m) ? '파일이 올라가지 않았습니다. 다시 시도해 주십시오.' : '파일을 보내지 못했습니다. 잠시 후 다시 시도해 주십시오.';
+  }
   function hwErr(e) {
     var m = String((e && e.code) || '') + ' ' + String((e && e.message) || e);
     return /HW_CLOSED/.test(m) ? '마감되었거나 닫힌 과제입니다.' : /TOO_BIG/.test(m) ? '파일이 20MB를 넘습니다.' : /BAD_TYPE/.test(m) ? 'html 파일은 제출할 수 없습니다.' : /RATE_LIMIT/.test(m) ? '너무 빠르게 제출하고 있습니다. 잠시 후 다시 해 주십시오.' : /NO_FILE/.test(m) ? '파일이 올라가지 않았습니다. 다시 시도해 주십시오.' : '제출하지 못했습니다. 잠시 후 다시 시도해 주십시오.';
@@ -444,6 +448,7 @@
   function fmtSize(n) { return n >= 1048576 ? (n / 1048576).toFixed(1) + 'MB' : Math.max(1, Math.round(n / 1024)) + 'KB'; }
   function dueText(due) { return due ? '마감 ' + new Date(due).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '마감 시각 없음'; }
   function safeName(x) { return String(x).replace(/[\\\/:*?"<>|\r\n]/g, '_').trim(); }
+  function dlBlob(url) { return fetch(url).then(function (r) { if (!r.ok) throw new Error('DL'); return r.blob(); }); }
   function saveBlob(name, blob) { var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 4000); }
   /* 이미지를 클립보드에 넣는다(붙여넣기용). 지원하지 않으면 안내 */
   function copyImage(url) {
@@ -481,6 +486,7 @@
     var ci = t.closest('[data-cpimg]'); if (ci) { copyImage(ci.getAttribute('data-cpimg')); return; }
     var ct = t.closest('[data-cptxt]'); if (ct) { var bt = ct.closest('.mcol').querySelector('.btxt'); copyText(bt ? bt.textContent : '', '복사했습니다.'); return; }
     var rx = t.closest('[data-rx]'); if (rx) document.dispatchEvent(new CustomEvent('wbrx', { detail: { id: +rx.getAttribute('data-rx') } }));
+    var cf = t.closest('[data-cfget]'); if (cf) document.dispatchEvent(new CustomEvent('wbcf', { detail: { id: +cf.getAttribute('data-cfget') } }));
   });
   document.addEventListener('dblclick', function (e) {
     var b = e.target.closest && e.target.closest('.msg.ot .bub'); if (!b || e.target.closest('a,button,img')) return;
@@ -491,6 +497,7 @@
     var av = mine ? '' : '<span class="av ' + m.r + '">' + (m.r === 's' ? esc((name || '?').slice(0, 1)) : '교') + '</span>';
     var body = m.b ? '<div class="btxt' + (m.c ? ' isc' : '') + '">' + (m.c ? esc(m.b) : linkText(m.b)) + '</div>' : '';
     var img = m.i ? '<img class="cimg" src="' + esc(m.i) + '" alt="첨부 이미지" loading="lazy">' : '';
+    if (m.f) img += '<button class="fchip" type="button" data-cfget="' + m.id + '" title="받기">' + ic('file', 16) + '<span class="cpn">' + esc(m.f.n) + '</span><span class="muted">' + fmtSize(m.f.s) + '</span>' + ic('download', 14) + '</button>';
     var act = '';
     if (m.b) act += '<button class="btn sm" data-cptxt>' + ic('copy', 13) + ' ' + (m.c && m.r === 't' ? '프롬프트 복사' : '복사') + '</button>';
     if (m.i) act += '<button class="btn sm" data-cpimg="' + esc(m.i) + '">' + ic('copy', 13) + ' 이미지 복사</button><a class="btn sm" href="' + esc(m.i + '?download=image.jpg') + '" download>' + ic('download', 13) + ' 저장</a>';
@@ -501,45 +508,67 @@
       '<div class="mfoot"><time>' + clock(m.t) + '</time>' + (seen ? '<span class="seen">읽음</span>' : '') + rx + '</div>' + (act ? '<div class="mact">' + act + '</div>' : '') + '</div></div>';
   }
   /* 대화 목록: 내 마지막 메시지 중 상대가 읽은 것에만 「읽음」 표시 */
+  function msgLabel(m) { return m ? (m.b ? m.b.replace(/\s+/g, ' ').slice(0, 60) : m.f ? '(파일) ' + m.f.n : '(사진)') : ''; }
   function msgList(t, viewer) {
     var rd = viewer === 's' ? (t.tr || 0) : (t.sr || 0), last = 0;
     t.msgs.forEach(function (m) { if (m.r === viewer && m.id <= rd) last = m.id; });
     return t.msgs.map(function (m) { return msgHtml(m, m.r === viewer, t.name, last === m.id); }).join('');
   }
-  /* 입력창: 글자 + 사진(붙여넣기·파일·끌어놓기·화면 캡처) + 코드 모양 유지 */
+  /* 입력창: 글자 + 사진·파일(붙여넣기·선택·끌어놓기·화면 캡처) + 코드 모양 유지. o.files 이면 html 외 모든 파일도 첨부(1개 20MB) */
+  function chatFileErr(f) {
+    var ext = ((f.name.match(/\.([A-Za-z0-9]{1,10})$/) || [])[1] || '').toLowerCase();
+    if (HW_BLOCK.indexOf(ext) >= 0) return 'html 파일은 첨부할 수 없습니다. 압축(zip)하거나 pdf로 저장해 보내 주십시오.';
+    if (!f.size) return '빈 파일입니다.';
+    if (f.size > HW_MAX) return '파일이 20MB를 넘습니다.';
+    return '';
+  }
   function Composer(root, o) {
     root.innerHTML = '<div class="cp-prev hide"></div><textarea class="cp-ta" rows="2" placeholder="' + esc(o.placeholder || '내용을 입력하세요') + '"></textarea>' +
-      '<div class="cp-row"><label class="btn sm icon" title="사진 첨부 (Ctrl+V로 붙여 넣기도 됩니다)" for="' + o.id + 'F">' + ic('clip', 15) + '</label><input type="file" id="' + o.id + 'F" accept="image/*" class="hide">' +
+      '<div class="cp-row"><label class="btn sm icon" title="' + (o.files ? '파일·사진 첨부 (끌어 놓기·Ctrl+V도 됩니다)' : '사진 첨부 (Ctrl+V로 붙여 넣기도 됩니다)') + '" for="' + o.id + 'F">' + ic('clip', 15) + '</label><input type="file" id="' + o.id + 'F"' + (o.files ? '' : ' accept="image/*"') + ' class="hide">' +
       (o.capture ? '<button class="btn sm" type="button" data-cap>' + ic('camera', 14) + ' 내 화면 찍기</button>' : '') +
       '<label class="chk" style="margin:0"><input type="checkbox" data-isc> ' + esc(o.codeLabel || '코드로 보내기') + '</label><span style="flex:1"></span>' +
       '<button class="btn pri sm" type="button" data-send>' + ic('send', 14) + ' 보내기</button></div>';
-    var ta = $('.cp-ta', root), prev = $('.cp-prev', root), isc = $('[data-isc]', root), sendB = $('[data-send]', root), blob = null, busy = false;
+    var ta = $('.cp-ta', root), prev = $('.cp-prev', root), isc = $('[data-isc]', root), sendB = $('[data-send]', root), blob = null, file = null, busy = false;
+    function clearPrev() { blob = null; file = null; prev.classList.add('hide'); prev.innerHTML = ''; }
     function setBlob(b) {
-      blob = b;
-      if (!b) { prev.classList.add('hide'); prev.innerHTML = ''; return; }
+      clearPrev(); if (!b) return; blob = b;
       prev.classList.remove('hide'); prev.innerHTML = '<img src="' + URL.createObjectURL(b) + '" alt="첨부 미리보기"><button class="btn sm icon" type="button" aria-label="첨부 취소">' + ic('x', 14) + '</button>';
-      $('button', prev).onclick = function () { setBlob(null); };
+      $('button', prev).onclick = clearPrev;
     }
-    function addFile(f) {
-      if (!f || !/^image\//.test(f.type)) { toast('이미지 파일만 첨부할 수 있습니다.'); return; }
-      compressImage(f).then(setBlob).catch(function (e) { toast(e.message); });
+    function setFile(f) {
+      var er = chatFileErr(f); if (er) { toast(er); return; }
+      clearPrev(); file = f; prev.classList.remove('hide');
+      prev.innerHTML = '<div class="cp-file">' + ic('file', 16) + '<span class="cpn">' + esc(f.name) + '</span><span class="muted">' + fmtSize(f.size) + '</span></div><button class="btn sm icon" type="button" aria-label="첨부 취소">' + ic('x', 14) + '</button>';
+      $('button', prev).onclick = clearPrev;
+    }
+    function take(f) {
+      if (!f) return;
+      if (/^image\//.test(f.type)) { compressImage(f).then(setBlob).catch(function (e) { toast(e.message); }); return; }
+      if (o.files) setFile(f); else toast('이미지 파일만 첨부할 수 있습니다.');
     }
     ta.addEventListener('paste', function (e) {
       var it = e.clipboardData && e.clipboardData.items; if (!it) return;
-      for (var i = 0; i < it.length; i++) if (it[i].type.indexOf('image/') === 0) { e.preventDefault(); addFile(it[i].getAsFile()); return; }
+      for (var i = 0; i < it.length; i++) if (it[i].kind === 'file' && (it[i].type.indexOf('image/') === 0 || o.files)) { e.preventDefault(); take(it[i].getAsFile()); return; }
     });
-    $('input[type=file]', root).onchange = function () { addFile(this.files[0]); this.value = ''; };
-    root.addEventListener('dragover', function (e) { e.preventDefault(); });
-    root.addEventListener('drop', function (e) { if (e.dataTransfer && e.dataTransfer.files.length) { e.preventDefault(); e.stopPropagation(); addFile(e.dataTransfer.files[0]); } });
+    $('input[type=file]', root).onchange = function () { take(this.files[0]); this.value = ''; };
+    function dropOn(el) {
+      if (!el) return;
+      if (el._dz) { el.removeEventListener('dragover', el._dz[0]); el.removeEventListener('dragleave', el._dz[1]); el.removeEventListener('drop', el._dz[2]); }
+      var h1 = function (e) { if (e.dataTransfer && Array.prototype.indexOf.call(e.dataTransfer.types || [], 'Files') >= 0) { e.preventDefault(); el.classList.add('dragging'); } };
+      var h2 = function (e) { if (!e.relatedTarget || !el.contains(e.relatedTarget)) el.classList.remove('dragging'); };
+      var h3 = function (e) { el.classList.remove('dragging'); if (e.dataTransfer && e.dataTransfer.files.length) { e.preventDefault(); e.stopPropagation(); take(e.dataTransfer.files[0]); } };
+      el._dz = [h1, h2, h3]; el.addEventListener('dragover', h1); el.addEventListener('dragleave', h2); el.addEventListener('drop', h3);
+    }
+    dropOn(root); if (o.drop && o.drop !== root) dropOn(o.drop);
     var cap = $('[data-cap]', root);
     if (cap) cap.onclick = function () {
       captureScreen().then(compressImage).then(setBlob).catch(function (e) { toast(e && e.name === 'NotAllowedError' ? '화면 공유를 허용하지 않아 캡처하지 않았습니다.' : ((e && e.message) || '캡처하지 못했습니다.')); });
     };
     function send() {
       if (busy) return;
-      var t = ta.value.trim(); if (!t && !blob) { toast('내용이나 사진을 넣어 주십시오.'); return; }
+      var t = ta.value.trim(); if (!t && !blob && !file) { toast(o.files ? '내용이나 사진·파일을 넣어 주십시오.' : '내용이나 사진을 넣어 주십시오.'); return; }
       busy = true; sendB.disabled = true;
-      Promise.resolve(o.onSend(t, blob, isc.checked)).then(function () { ta.value = ''; setBlob(null); }, function (e) { toast((e && e.message) || '보내지 못했습니다.'); })
+      Promise.resolve(o.onSend(t, blob, isc.checked, file)).then(function () { ta.value = ''; clearPrev(); }, function (e) { toast((e && e.message) || '보내지 못했습니다.'); })
         .then(function () { busy = false; sendB.disabled = false; });
     }
     sendB.onclick = send;
@@ -893,13 +922,18 @@
         paintBadge();
       }).catch(function () {});
     }
-    function sendReq(text, blob, isc, reqId, kind) {
+    function sendReq(text, blob, isc, reqId, kind, file) {
       return (blob ? uploadImage(blob) : Promise.resolve(null)).then(function (img) {
-        return rpc('wb_req_send', { p_code: code, p_cid: cid, p_name: S.name, p_kind: kind || 'question', p_body: text, p_img: img, p_isc: isc, p_mat: S.mat || '', p_page: S.cur || 0, p_req: reqId || null });
+        if (!file) return rpc('wb_req_send', { p_code: code, p_cid: cid, p_name: S.name, p_kind: kind || 'question', p_body: text, p_img: img, p_isc: isc, p_mat: S.mat || '', p_page: S.cur || 0, p_req: reqId || null });
+        return hwFn({ action: 'cprep', code: code, cid: cid, fname: file.name, size: file.size }).then(function (p) {
+          return sb.storage.from('wb-hw').uploadToSignedUrl(p.path, p.token, file, { contentType: file.type || 'application/octet-stream' }).then(function (u) { if (u.error) throw u.error; return p.path; });
+        }).then(function (path) {
+          return rpc('wb_req_sendf', { p_code: code, p_cid: cid, p_name: S.name, p_kind: kind || 'question', p_body: text, p_img: img, p_isc: isc, p_mat: S.mat || '', p_page: S.cur || 0, p_req: reqId || null, p_fpath: path, p_fname: file.name, p_fsize: file.size });
+        });
       }).then(function (r) {
         if (S.ch) S.ch.send({ type: 'broadcast', event: 'req', payload: { c: cid } });
         return fetchThreads().then(function () { S.view = 'thread'; S.curT = r.req; renderChat(true); });
-      }).catch(function (e) { throw new Error(e.code === 'RATE_LIMIT' ? '너무 빠르게 보내고 있습니다. 잠시 후 다시 보내 주십시오.' : (e.message || '보내지 못했습니다.')); });
+      }).catch(function (e) { throw new Error(e.code === 'RATE_LIMIT' ? '너무 빠르게 보내고 있습니다. 잠시 후 다시 보내 주십시오.' : file ? fileSendErr(e) : (e.message || '보내지 못했습니다.')); });
     }
     function openChat(id) {
       if (!S.name) { askName(); return; }
@@ -918,7 +952,7 @@
         b.innerHTML = '<div class="ch-l"><button class="btn pri" data-new style="width:100%;justify-content:center;min-height:40px">' + ic('plus', 15) + ' 새 요청 보내기</button>' +
           (S.threads.length ? S.threads.slice().reverse().map(function (t) {
             var last = t.msgs[t.msgs.length - 1] || {}, un = maxId(t, 't') > (S.seen[t.id] || 0);
-            return '<button class="trow" data-id="' + esc(t.id) + '"><span class="av t">교</span><span class="tcol"><span class="trh"><b>' + KIND[t.kind] + '</b> ' + stPill(t.status) + '</span><span class="tsn">' + esc(last.b ? last.b.replace(/\s+/g, ' ').slice(0, 60) : '(사진)') + '</span></span><span class="tr2"><time>' + clock(t.upd) + '</time>' + (un ? '<i class="udot"></i>' : '') + '</span></button>';
+            return '<button class="trow" data-id="' + esc(t.id) + '"><span class="av t">교</span><span class="tcol"><span class="trh"><b>' + KIND[t.kind] + '</b> ' + stPill(t.status) + '</span><span class="tsn">' + esc(msgLabel(last)) + '</span></span><span class="tr2"><time>' + clock(t.upd) + '</time>' + (un ? '<i class="udot"></i>' : '') + '</span></button>';
           }).join('') : '<p class="muted" style="text-align:center;margin-top:20px">아직 보낸 요청이 없습니다.</p>') + '</div>';
       } else if (S.view === 'new') {
         if (!full && b.dataset.v === 'new') return;
@@ -926,7 +960,7 @@
         b.innerHTML = '<div class="ch-n"><div class="muted">' + esc(S.name) + ' · ' + (S.mat ? esc((function () { var m = (S.mats || []).filter(function (x) { return x.id === S.mat; })[0]; return m ? m.name.replace(/\.pdf$/i, '') + ' ' : ''; })()) : '') + S.cur + '쪽에서 보냅니다</div>' +
           '<div class="chips">' + ['error', 'stuck', 'question'].map(function (k) { return '<button class="kchip' + (S.newKind === k ? ' on' : '') + '" data-k="' + k + '">' + ({ error: '오류가 나요', stuck: '막혔어요', question: '질문' })[k] + '</button>'; }).join('') + '</div>' +
           '<div id="chComp"></div></div>';
-        comp = Composer($('#chComp'), { id: 'cnew', capture: true, placeholder: '어떤 상황인지 적어 주세요. 오류 문구는 그대로 붙여 넣으셔도 됩니다.', codeLabel: '코드·오류 문구 모양 그대로 보내기', onSend: function (t, bl, c) { return sendReq(t, bl, c, null, S.newKind); } });
+        comp = Composer($('#chComp'), { id: 'cnew', capture: true, files: true, drop: cw, placeholder: '어떤 상황인지 적어 주세요. 오류 문구는 그대로 붙여 넣으셔도 됩니다.', codeLabel: '코드·오류 문구 모양 그대로 보내기', onSend: function (t, bl, c, fl) { return sendReq(t, bl, c, null, S.newKind, fl); } });
         comp.setCode(S.newKind === 'error'); comp.focus();
       } else {
         var t = thr(S.curT); if (!t) { S.view = 'list'; renderChat(true); return; }
@@ -935,7 +969,7 @@
         if (full || b.dataset.v !== 'thread:' + t.id) {
           b.dataset.v = 'thread:' + t.id;
           b.innerHTML = '<div class="ch-msgs" id="chM"></div><div class="typing hide" id="chTyp">교수자가 입력 중...</div><div class="ch-comp" id="chComp"></div>';
-          comp = Composer($('#chComp'), { id: 'creply', capture: true, onTyping: function () { if (S.ch && S.rt) S.ch.send({ type: 'broadcast', event: 'typ', payload: { c: cid, q: t.id } }); }, placeholder: '추가로 보낼 내용', codeLabel: '코드 모양 유지', onSend: function (tx, bl, c) { return sendReq(tx, bl, c, t.id, t.kind); } });
+          comp = Composer($('#chComp'), { id: 'creply', capture: true, files: true, drop: cw, onTyping: function () { if (S.ch && S.rt) S.ch.send({ type: 'broadcast', event: 'typ', payload: { c: cid, q: t.id } }); }, placeholder: '추가로 보낼 내용', codeLabel: '코드 모양 유지', onSend: function (tx, bl, c, fl) { return sendReq(tx, bl, c, t.id, t.kind, fl); } });
         }
         var box = $('#chM'), near = box.scrollHeight - box.scrollTop - box.clientHeight < 80 || full;
         box.innerHTML = msgList(t, 's');
@@ -943,6 +977,12 @@
         markRead(t); paintTyp();
       }
     }
+    document.addEventListener('wbcf', function (e) {
+      var t = S.chatOpen && S.view === 'thread' ? thr(S.curT) : null; if (!t) return;
+      toast('받는 중입니다.');
+      hwFn({ action: 'cget', code: code, cid: cid, req: t.id, msg: e.detail.id }).then(function (r) { return dlBlob(r.url).then(function (b) { saveBlob(r.fname, b); }); })
+        .catch(function () { toast('받지 못했습니다. 잠시 후 다시 시도해 주십시오.'); });
+    });
     function markRead(t) {
       var mx = maxId(t, 't'); if (mx <= (t.sr || 0)) return; t.sr = mx;
       rpc('wb_req_read', { p_code: code, p_cid: cid, p_req: t.id }).then(function () { if (S.ch && S.rt) S.ch.send({ type: 'broadcast', event: 'req', payload: { c: cid } }); }).catch(function () { t.sr = 0; });
@@ -1792,7 +1832,7 @@
       function matName(id) { var m = matById(id); return m ? m.name.replace(/\.pdf$/i, '') : ''; }
       function kPill(t) { return '<span class="pill p-x">' + KIND[t.kind] + '</span>'; }
       function sLab(x) { return x === 'done' ? '해결됨' : x === 'doing' ? '확인 중' : '대기'; }
-      function snip(t) { var m = lastMsg(t, 's'); return m ? (m.b ? m.b.replace(/\s+/g, ' ').slice(0, 90) : '(사진)') : ''; }
+      function snip(t) { var m = lastMsg(t, 's'); return m ? (m.b ? m.b.replace(/\s+/g, ' ').slice(0, 90) : m.f ? '(파일) ' + m.f.n : '(사진)') : ''; }
       function paintReqCount() {
         var w = C.reqs.filter(function (t) { return t.status === 'wait'; }).length;
         $('#reqCnt').textContent = w; $('#reqCnt').classList.toggle('hide', !w); $('#hReqN').textContent = w;
@@ -1880,9 +1920,13 @@
           pane.dataset.id = t.id;
           pane.innerHTML = '<div class="bt-h"><span class="av s">' + esc((t.name || '?').slice(0, 1)) + '</span><div><b>' + esc(t.name) + '</b> ' + kPill(t) + '<div class="muted" id="btM"></div></div><span style="flex:1"></span><span id="btA"></span></div>' +
             '<div class="ch-msgs" id="btMsgs"></div><div class="typing hide" id="btTyp"></div><div class="ch-comp" id="btComp"></div>';
-          replyComp = Composer($('#btComp'), { id: 'trep', capture: false, onTyping: function () { send({ t: 'typ', c: t.cid, q: t.id }); }, placeholder: '답변 입력 (프롬프트를 보내면 학생이 버튼 한 번으로 복사합니다)', codeLabel: '프롬프트·코드 블록으로 보내기', onSend: function (tx, bl, c) {
-            return (bl ? uploadImage(bl) : Promise.resolve(null)).then(function (img) { return call('wb_req_reply', { p_code: C.code, p_req: t.id, p_body: tx, p_img: img, p_isc: c }); })
-              .then(function () { send({ t: 'rep', c: t.cid }); pollReq(); });
+          replyComp = Composer($('#btComp'), { id: 'trep', capture: false, files: true, drop: $('#bdT'), onTyping: function () { send({ t: 'typ', c: t.cid, q: t.id }); }, placeholder: '답변 입력 (프롬프트를 보내면 학생이 버튼 한 번으로 복사합니다)', codeLabel: '프롬프트·코드 블록으로 보내기', onSend: function (tx, bl, c, fl) {
+            return (bl ? uploadImage(bl) : Promise.resolve(null)).then(function (img) {
+              if (!fl) return call('wb_req_reply', { p_code: C.code, p_req: t.id, p_body: tx, p_img: img, p_isc: c });
+              return hwFn({ action: 'cprep', token: T.token, code: C.code, fname: fl.name, size: fl.size }).then(function (p) {
+                return sb.storage.from('wb-hw').uploadToSignedUrl(p.path, p.token, fl, { contentType: fl.type || 'application/octet-stream' }).then(function (u) { if (u.error) throw u.error; return p.path; });
+              }).then(function (path) { return call('wb_req_replyf', { p_code: C.code, p_req: t.id, p_body: tx, p_img: img, p_isc: c, p_fpath: path, p_fname: fl.name, p_fsize: fl.size }); });
+            }).then(function () { send({ t: 'rep', c: t.cid }); pollReq(); }, function (e) { throw new Error(fl ? fileSendErr(e) : ((e && e.message) || '보내지 못했습니다.')); });
           } });
         }
         $('#btM').textContent = (t.page ? (matName(t.mat) ? matName(t.mat) + ' ' : '') + t.page + '쪽 · ' : '') + sLab(t.status);
@@ -1898,7 +1942,9 @@
       }
       C.typ = {};
       function paintTypT() { var el = $('#btTyp'); if (!el) return; var q = C.selReq, on = q && C.typ[q] && Date.now() - C.typ[q] < 4000; el.classList.toggle('hide', !on); if (on) { var t = reqById(q); el.textContent = (t ? t.name : '학생') + '님이 입력 중...'; var bx = $('#btMsgs'); if (bx) bx.scrollTop = bx.scrollHeight; } }
+      window.__wbC = C;
       document.addEventListener('wbrx', function (e) {
+        if (window.__wbC !== C) return;
         var t = C.board && C.selReq && reqById(C.selReq); if (!t) return;
         var m = t.msgs.filter(function (x) { return x.id === e.detail.id && x.r === 's'; })[0]; if (!m) return;
         m.x = (m.x || '').indexOf('t') >= 0 ? m.x.replace('t', '') : (m.x || '') + 't'; renderBoard(false);
@@ -1908,15 +1954,23 @@
         var d = new Date(), lines = ['[' + (ui.title.value || '수업') + '] 수업코드 ' + C.code + ' 도움 요청 기록 (' + d.toLocaleString('ko-KR') + ')', ''];
         C.reqs.forEach(function (t) {
           lines.push('■ ' + t.name + ' · ' + KIND[t.kind] + ' · ' + (t.page ? (matName(t.mat) ? matName(t.mat) + ' ' : '') + t.page + '쪽 · ' : '') + sLab(t.status) + ' · ' + clock(t.created));
-          t.msgs.forEach(function (m) { lines.push('  [' + clock(m.t) + '] ' + (m.r === 's' ? t.name : '교수자') + ': ' + (m.b || '') + (m.i ? ' [사진]' : '')); });
+          t.msgs.forEach(function (m) { lines.push('  [' + clock(m.t) + '] ' + (m.r === 's' ? t.name : '교수자') + ': ' + (m.b || '') + (m.i ? ' [사진]' : '') + (m.f ? ' [파일: ' + m.f.n + ']' : '')); });
           lines.push('');
         });
         return lines.join('\n');
       }
       function saveLog() { if (!C.reqs.length) { toast('저장할 기록이 없습니다.'); return; } saveText('도움요청기록_' + C.code + '.txt', logText()); }
+      document.addEventListener('wbcf', function (e) {
+        if (window.__wbC !== C) return;
+        var t = C.board && C.selReq && reqById(C.selReq); if (!t) return;
+        var m = t.msgs.filter(function (x) { return x.id === e.detail.id; })[0]; if (!m || !m.f) return;
+        toast('받는 중입니다.');
+        hwFn({ action: 'cget', token: T.token, code: C.code, req: t.id, msg: m.id }).then(function (r) { return dlBlob(r.url).then(function (b) { saveBlob(m.r === 's' ? safeName(t.name) + '_' + r.fname : r.fname, b); }); })
+          .catch(function () { toast('받지 못했습니다. 잠시 후 다시 시도해 주십시오.'); });
+      });
       function purgeLog() {
-        if (!confirm('모든 도움 요청의 학생 이름·내용·사진 연결을 지웁니다. 저장하지 않은 기록은 복구할 수 없습니다. 계속하시겠습니까?')) return;
-        call('wb_req_purge', { p_code: C.code }).then(function () { C.selReq = null; C.cards = {}; pollReq(); toast('기록을 지웠습니다.'); }).catch(function () { toast('지우지 못했습니다.'); });
+        if (!confirm('모든 도움 요청의 학생 이름·내용·사진 연결과 첨부 파일을 지웁니다. 저장하지 않은 기록은 복구할 수 없습니다. 계속하시겠습니까?')) return;
+        hwFn({ action: 'cpurge', token: T.token, code: C.code }).then(function () { return call('wb_req_purge', { p_code: C.code }); }).then(function () { C.selReq = null; C.cards = {}; pollReq(); toast('기록을 지웠습니다.'); }).catch(function () { toast('지우지 못했습니다.'); });
       }
       $('#bReq').onclick = function () { openBoard(); };
       $('#hReq').onclick = function () { openBoard(); };
@@ -1999,7 +2053,6 @@
         el.innerHTML = h;
       }
       function hwSigned(ids) { return hwFn({ action: 'sign', token: T.token, code: C.code, hw: C.hwSel, ids: ids }).then(function (r) { return r.urls || {}; }); }
-      function dlBlob(url) { return fetch(url).then(function (r) { if (!r.ok) throw new Error('DL'); return r.blob(); }); }
       function downloadRows(ids) {
         var all = C.tools.rows, rows = all.filter(function (r) { return ids.indexOf(r.id) >= 0; }), outs = hwOutNames(all), sel = hwSel();
         if (!rows.length) { toast('받을 파일이 없습니다.'); return; }
