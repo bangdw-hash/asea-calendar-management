@@ -420,7 +420,7 @@ async function initAuth() {
   var mt = params.get('master');
   if (mt) {
     var r = await db.rpc('dorm_verify_master_token', { p_token: mt });
-    if (!r.error && r.data && r.data.ok) {
+    if (!r.error && r.data === true) {
       sessionStorage.setItem('dorm_master', mt);
       isMaster = true;
       showApp('마스터');
@@ -431,7 +431,7 @@ async function initAuth() {
   var stored = sessionStorage.getItem('dorm_master');
   if (stored) {
     var r2 = await db.rpc('dorm_verify_master_token', { p_token: stored });
-    if (!r2.error && r2.data && r2.data.ok) {
+    if (!r2.error && r2.data === true) {
       isMaster = true;
       showApp('마스터');
       return;
@@ -470,7 +470,7 @@ function showLogin() {
     this.disabled = true;
     var r = await db.rpc('dorm_verify_master_token', { p_token: tok });
     this.disabled = false;
-    if (r.error || !r.data || !r.data.ok) {
+    if (r.error || r.data !== true) {
       err.textContent = '유효하지 않은 토큰입니다.'; err.style.display = 'block'; return;
     }
     sessionStorage.setItem('dorm_master', tok);
