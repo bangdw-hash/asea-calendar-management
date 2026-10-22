@@ -276,18 +276,29 @@ tr:hover td{background:#f8fbff}
 
 <!-- Context Menu -->
 <div id="ctx-menu">
-  <div class="ctx-label" id="ctx-label">메뉴 항목</div>
-  <div class="ctx-item blue" onclick="ctxFeedback('restrict')">
-    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6.5"/><path d="M5 8h6"/></svg>기능 제한하기
+  <div id="ctx-step1">
+    <div class="ctx-label" id="ctx-label">메뉴 항목</div>
+    <div class="ctx-item blue" onclick="ctxStep2('restrict')">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6.5"/><path d="M5 8h6"/></svg>기능 제한하기
+    </div>
+    <div class="ctx-item red" onclick="ctxStep2('inconvenient')">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1a7 7 0 100 14A7 7 0 008 1zm.75 10.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm-.75-7.5a.75.75 0 01.75.75v4a.75.75 0 01-1.5 0v-4a.75.75 0 01.75-.75z"/></svg>불편해서 하기
+    </div>
+    <div class="ctx-item" onclick="ctxStep2('improve')">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 2v12M2 8h12"/></svg>개선 요청 등록
+    </div>
+    <hr class="ctx-sep">
+    <div class="ctx-item" style="font-size:12px;color:var(--muted)" onclick="closeCtx()">닫기</div>
   </div>
-  <div class="ctx-item red" onclick="ctxFeedback('inconvenient')">
-    <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1a7 7 0 100 14A7 7 0 008 1zm.75 10.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm-.75-7.5a.75.75 0 01.75.75v4a.75.75 0 01-1.5 0v-4a.75.75 0 01.75-.75z"/></svg>불편해서 하기
+  <div id="ctx-step2" style="display:none;padding:12px">
+    <div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:6px" id="ctx-step2-title">어떤 점이 불편한지 설명해 주세요</div>
+    <textarea id="ctx-desc" rows="4" placeholder="예: 버튼 위치가 너무 아래 있어서 스크롤해야 합니다. 상단으로 이동하면 좋겠습니다." style="width:100%;padding:8px;border:1px solid var(--border);border-radius:var(--r);font-size:12px;font-family:inherit;resize:vertical;outline:none;line-height:1.6"></textarea>
+    <div style="font-size:11px;color:var(--muted);margin-top:4px">설명이 길수록 개선에 도움이 됩니다 (선택)</div>
+    <div style="display:flex;gap:6px;margin-top:8px">
+      <button class="btn btn-outline btn-sm" style="flex:1;font-size:12px" onclick="ctxBackStep()">← 뒤로</button>
+      <button class="btn btn-primary btn-sm" style="flex:2;font-size:12px" onclick="ctxSubmit()" id="ctx-submit-btn">등록하기</button>
+    </div>
   </div>
-  <div class="ctx-item" onclick="ctxFeedback('improve')">
-    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 2v12M2 8h12"/></svg>개선 요청 등록
-  </div>
-  <hr class="ctx-sep">
-  <div class="ctx-item" style="font-size:12px;color:var(--muted)" onclick="closeCtx()">닫기</div>
 </div>
 
 <!-- Notification Panel -->
@@ -551,7 +562,7 @@ function nav(p){
     case 'utility':c.innerHTML=pgUtility();break;
     case 'realestate':c.innerHTML=pgRE();break;
     case 'pl':c.innerHTML=pgPL();break;
-    case 'devlog':c.innerHTML=pgDevlog();break;
+    case 'devlog':c.innerHTML='<div class="empty" style="padding:40px">불러오는 중…</div>';pgDevlogAsync().then(html=>{c.innerHTML=html;});break;
     case 'settings':c.innerHTML=pgSettings();if(S.staff.role==='admin')loadStaffTable();break;
   }
 }
@@ -1103,44 +1114,89 @@ function renderFBList(list){
   if(!list.length)return'<div class="card"><div class="empty">등록된 피드백 없음<br><span style="font-size:12px;margin-top:4px;display:block">메뉴·버튼을 우클릭하면 바로 등록됩니다.</span></div></div>';
   return list.map(f=>{
     const ft=FTYPE[f.type]||{cls:'badge-gray',lbl:f.type};
-    const fs=FSTATUS[f.status]||{cls:'badge-gray',lbl:f.status};
+    const createdStr=f.created_at||f.created;
     return`<div class="devlog-item">
-      <div class="devlog-item-hdr">
-        <span class="badge ${ft.cls}">${ft.lbl}</span>
-        <span class="devlog-item-body" style="flex:1">${f.label}</span>
-        <select class="btn btn-sm btn-outline" style="padding:3px 6px;font-size:11px" onchange="updateFBStatus('${f.id}',this.value)">
+      <div class="devlog-item-hdr" style="gap:8px">
+        <span class="badge ${ft.cls}" style="flex-shrink:0">${ft.lbl}</span>
+        <span style="font-size:13px;font-weight:600;flex:1">${f.label}</span>
+        <select class="btn btn-sm btn-outline" style="padding:3px 6px;font-size:11px;flex-shrink:0" onchange="updateFBStatus('${f.id}',this.value)">
           ${Object.entries(FSTATUS).map(([k,v])=>`<option value="${k}" ${f.status===k?'selected':''}>${v.lbl}</option>`).join('')}
         </select>
       </div>
-      <div class="devlog-item-meta">화면: ${f.page||'—'} &nbsp;·&nbsp; ${fdt(f.created)}</div>
+      ${f.description?`<div style="margin-top:8px;padding:8px 10px;background:var(--bg);border-radius:var(--r);font-size:12px;color:var(--text);line-height:1.7;white-space:pre-wrap">${f.description}</div>`:''}
+      <div class="devlog-item-meta">화면: ${f.page||'—'} &nbsp;·&nbsp; ${fdt(createdStr)}</div>
     </div>`;
   }).join('');
 }
-function dlTab(t,el){
+let DL_CURRENT_TAB='all';
+async function dlTab(t,el){
+  DL_CURRENT_TAB=t;
   document.querySelectorAll('.devlog-tab').forEach(e=>e.classList.remove('active'));
   el.classList.add('active');
-  const all=getFeedback();
+  const listEl=document.getElementById('dl-list');
+  listEl.innerHTML='<div class="empty">불러오는 중…</div>';
+  const all=await loadFeedbackFromSupabase();
   const list=t==='all'?all:all.filter(f=>f.status===t);
-  document.getElementById('dl-list').innerHTML=renderFBList(list);
+  listEl.innerHTML=renderFBList(list);
 }
-function updateFBStatus(id,status){
-  const list=getFeedback().map(f=>f.id==id?{...f,status}:f);
+async function updateFBStatus(id,status){
+  await rpc('dorm_set_feedback_status',{p_id:Number(id),p_status:status}).catch(()=>{});
+  const list=getFeedback().map(f=>`${f.id}`===`${id}`?{...f,status}:f);
   saveFeedback(list);
-  if(document.querySelector('.sb-item.active[data-page="devlog"]'))nav('devlog');
+}
+async function loadFeedbackFromSupabase(){
+  try{
+    const d=await rpc('dorm_list_feedback',{p_status:null});
+    if(Array.isArray(d)){saveFeedback(d);return d;}
+  }catch(e){}
+  return getFeedback();
+}
+async function pgDevlogAsync(){
+  const all=await loadFeedbackFromSupabase();
+  const tabs=['all','open','planned','done'];
+  const tlbl={all:'전체',open:'접수',planned:'예정',done:'완료'};
+  const betaUrl=location.origin+location.pathname.replace('staff.html','beta.html');
+  return `<div class="page-header"><div class="page-title">개발 현황 (베타 피드백)</div>
+    <div class="page-desc">메뉴·버튼 우클릭 → 유형 선택 → 설명 입력 → 등록. 누구나 <a href="${betaUrl}" target="_blank" style="color:var(--accent);font-weight:600">베타 현황판</a>에서 전체 이력을 볼 수 있습니다.</div></div>
+  <div class="devlog-tabs" id="dl-tabs">
+    ${tabs.map((t,i)=>`<div class="devlog-tab ${i===0?'active':''}" onclick="dlTab('${t}',this)">${tlbl[t]} <span style="margin-left:4px;font-weight:400">${t==='all'?all.length:all.filter(f=>f.status===t).length}</span></div>`).join('')}
+    <div class="spacer"></div>
+    <a href="${betaUrl}" target="_blank" class="btn btn-outline btn-sm">🔗 공개 현황판 열기</a>
+  </div>
+  <div id="dl-list">${renderFBList(all)}</div>
+  <div class="card" style="margin-top:16px;padding:14px 18px;background:var(--accent-lt);border-color:var(--border)">
+    <div style="font-size:13px;font-weight:600;margin-bottom:6px">💡 사용 방법</div>
+    <div style="font-size:12px;color:var(--accent-text);line-height:1.9">
+      어느 화면에서든 <b>메뉴 항목</b>, <b>버튼</b>, <b>표 칸</b>에 마우스 오른쪽 버튼을 클릭합니다.<br>
+      ① 유형 선택 → ② 설명 입력(선택, 길게 쓸수록 도움됨) → ③ 「등록하기」<br>
+      • <b>기능 제한하기</b> — 특정 기능의 사용을 제한하고 싶을 때<br>
+      • <b>불편해서 하기</b> — 현재 UI·흐름·위치가 불편하다고 신고할 때<br>
+      • <b>개선 요청 등록</b> — 더 나은 방법·아이디어를 제안할 때
+    </div>
+  </div>`;
 }
 
 /* ── CONTEXT MENU ── */
-let CTX_TARGET=null;
+let CTX_TARGET=null,CTX_TYPE=null;
+const CTX_TITLES={
+  restrict:'어떤 기능을 제한하고 싶으신지 설명해 주세요',
+  inconvenient:'어떤 점이 불편하신지 설명해 주세요',
+  improve:'어떤 개선을 원하시는지 설명해 주세요'
+};
 document.addEventListener('contextmenu',function(e){
-  const t=e.target.closest('.sb-item,.btn,th,td,.card-title,.notif-btn,[onclick]');
+  const t=e.target.closest('.sb-item,.btn,th,td,.card-title,.notif-btn,.stat-card,[onclick]');
   if(!t||t.closest('#ctx-menu'))return;
   e.preventDefault();
-  CTX_TARGET=t;
-  const lbl=t.textContent?.trim().replace(/\s+/g,' ').slice(0,40)||'항목';
+  CTX_TARGET=t;CTX_TYPE=null;
+  const lbl=t.textContent?.trim().replace(/\s+/g,' ').slice(0,50)||'항목';
   document.getElementById('ctx-label').textContent=lbl;
+  document.getElementById('ctx-step1').style.display='';
+  document.getElementById('ctx-step2').style.display='none';
+  document.getElementById('ctx-desc').value='';
   const m=document.getElementById('ctx-menu');
   m.classList.add('open');
-  const mw=180,mh=140;
+  m.style.minWidth='220px';
+  const mw=240,mh=180;
   const x=Math.min(e.clientX,window.innerWidth-mw-8);
   const y=Math.min(e.clientY,window.innerHeight-mh-8);
   m.style.left=x+'px';m.style.top=y+'px';
@@ -1149,17 +1205,41 @@ document.addEventListener('click',function(e){
   if(!e.target.closest('#ctx-menu'))closeCtx();
 });
 document.addEventListener('keydown',function(e){if(e.key==='Escape')closeCtx();});
-function closeCtx(){document.getElementById('ctx-menu').classList.remove('open');CTX_TARGET=null;}
-function ctxFeedback(type){
+function closeCtx(){document.getElementById('ctx-menu').classList.remove('open');CTX_TARGET=null;CTX_TYPE=null;}
+function ctxStep2(type){
+  CTX_TYPE=type;
+  document.getElementById('ctx-step1').style.display='none';
+  document.getElementById('ctx-step2').style.display='';
+  document.getElementById('ctx-step2-title').textContent=CTX_TITLES[type]||'설명을 입력해 주세요';
+  document.getElementById('ctx-desc').focus();
+}
+function ctxBackStep(){
+  document.getElementById('ctx-step1').style.display='';
+  document.getElementById('ctx-step2').style.display='none';
+}
+async function ctxSubmit(){
   const lbl=document.getElementById('ctx-label').textContent;
   const page=document.getElementById('topbar-title')?.textContent||'—';
-  addFeedback(type,lbl,page);
+  const desc=document.getElementById('ctx-desc').value.trim();
+  const btn=document.getElementById('ctx-submit-btn');
+  btn.textContent='등록 중…';btn.disabled=true;
+  await addFeedback(CTX_TYPE,lbl,page,desc);
+  btn.textContent='등록하기';btn.disabled=false;
   closeCtx();
-  const msg={restrict:'기능 제한 요청이 등록되었습니다.',inconvenient:'불편 신고가 등록되었습니다.',improve:'개선 요청이 등록되었습니다.'}[type];
+  showToast({restrict:'기능 제한 요청 등록됨',inconvenient:'불편 신고 등록됨',improve:'개선 요청 등록됨'}[CTX_TYPE]||'등록됨');
+  if(document.querySelector('.sb-item.active[data-page="devlog"]'))nav('devlog');
+}
+async function addFeedback(type,label,page,description){
+  try{await rpc('dorm_add_feedback',{p_type:type,p_label:label,p_page:page,p_description:description||null});}catch(e){}
+  const list=getFeedback();
+  list.unshift({id:Date.now(),type,label,page,description,status:'open',created_at:new Date().toISOString()});
+  saveFeedback(list.slice(0,200));
+}
+function showToast(msg){
   const toast=document.createElement('div');
-  toast.style.cssText='position:fixed;bottom:20px;right:20px;background:var(--text);color:#fff;padding:10px 18px;border-radius:var(--r);font-size:13px;z-index:1000;transition:opacity .4s';
+  toast.style.cssText='position:fixed;bottom:20px;right:20px;background:var(--text);color:#fff;padding:10px 18px;border-radius:var(--r);font-size:13px;z-index:1000;opacity:1;transition:opacity .4s;pointer-events:none';
   toast.textContent=msg;document.body.appendChild(toast);
-  setTimeout(()=>{toast.style.opacity='0';setTimeout(()=>toast.remove(),400);},2000);
+  setTimeout(()=>{toast.style.opacity='0';setTimeout(()=>toast.remove(),400);},2500);
 }
 
 /* ── HELPERS ── */
