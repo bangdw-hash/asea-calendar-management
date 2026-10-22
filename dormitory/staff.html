@@ -136,6 +136,26 @@ tr:hover td{background:#f8fbff}
 .empty{text-align:center;padding:32px;color:var(--muted);font-size:13px}
 .pl-pos{color:var(--ok);font-weight:700}
 .pl-neg{color:var(--danger);font-weight:700}
+/* DEMO BANNER */
+.demo-banner{background:#fef3c7;border-bottom:2px solid #f59e0b;padding:6px 16px;font-size:12px;font-weight:600;color:#92400e;display:flex;align-items:center;gap:8px;position:sticky;top:52px;z-index:49}
+.demo-banner svg{width:14px;height:14px;flex-shrink:0}
+/* CONTEXT MENU */
+#ctx-menu{position:fixed;z-index:999;background:var(--card);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--sh-md);min-width:180px;display:none;overflow:hidden}
+#ctx-menu.open{display:block}
+.ctx-item{padding:9px 14px;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:8px;transition:.1s}
+.ctx-item:hover{background:var(--bg)}
+.ctx-item.red:hover{background:#fee2e2;color:var(--danger)}
+.ctx-item.blue:hover{background:var(--accent-lt);color:var(--accent-text)}
+.ctx-sep{border:none;border-top:1px solid var(--border);margin:2px 0}
+.ctx-label{padding:5px 14px;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+/* DEVLOG */
+.devlog-item{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;margin-bottom:10px}
+.devlog-item-hdr{display:flex;align-items:flex-start;gap:10px}
+.devlog-item-body{font-size:13px;color:var(--text);margin-top:4px}
+.devlog-item-meta{font-size:11px;color:var(--muted);margin-top:4px}
+.devlog-tabs{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.devlog-tab{padding:5px 14px;border-radius:var(--r);font-size:12px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:var(--card);color:var(--muted)}
+.devlog-tab.active{background:var(--accent-lt);color:var(--accent-text);border-color:var(--accent)}
 </style>
 </head>
 <body>
@@ -156,6 +176,7 @@ tr:hover td{background:#f8fbff}
     <div class="form-group"><label>아이디</label><input id="l-user" type="text" placeholder="아이디" autocomplete="username"></div>
     <div class="form-group"><label>비밀번호</label><input id="l-pass" type="password" placeholder="비밀번호" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"></div>
     <button class="btn btn-primary btn-full" onclick="doLogin()">로그인</button>
+    <button class="btn btn-full" style="margin-top:8px;background:var(--accent-lt);color:var(--accent-text);border:1px solid var(--border)" onclick="startDemo()">🔍 데모 모드로 보기 (로그인 불필요)</button>
   </div>
   <div id="register-form" style="display:none">
     <div id="reg-alert"></div>
@@ -218,6 +239,9 @@ tr:hover td{background:#f8fbff}
   </div>
   <div class="sb-section">
     <div class="sb-section-label">시스템</div>
+    <div class="sb-item" data-page="devlog" onclick="nav('devlog')">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1.5" y="1.5" width="13" height="13" rx="1.5"/><path d="M4 5.5h8M4 8h6M4 10.5h4"/></svg>개발 현황
+    </div>
     <div class="sb-item" data-page="settings" id="settings-nav" style="display:none" onclick="nav('settings')">
       <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="2.5"/><path d="M8 1.5v2M8 12.5v2M1.5 8h2M12.5 8h2M3.4 3.4l1.4 1.4M11.2 11.2l1.4 1.4M3.4 12.6l1.4-1.4M11.2 4.8l1.4-1.4"/></svg>설정
     </div>
@@ -232,6 +256,11 @@ tr:hover td{background:#f8fbff}
 </div>
 
 <div id="main">
+  <div id="demo-banner" class="demo-banner" style="display:none">
+    <svg viewBox="0 0 14 14" fill="currentColor"><path d="M7 1a6 6 0 100 12A6 6 0 007 1zm0 9.5a.75.75 0 110-1.5.75.75 0 010 1.5zm.75-3.25a.75.75 0 01-1.5 0V4.5a.75.75 0 011.5 0v2.75z"/></svg>
+    데모 모드 — 실제 DB 연결 없이 샘플 데이터로 화면을 탐색 중입니다. 메뉴·버튼 우클릭으로 개발 피드백을 등록할 수 있습니다.
+    <span style="margin-left:auto;cursor:pointer;text-decoration:underline" onclick="doLogout()">로그인으로 돌아가기</span>
+  </div>
   <div id="topbar">
     <div class="topbar-title" id="topbar-title">현황판</div>
     <div style="display:flex;align-items:center;gap:12px">
@@ -243,6 +272,22 @@ tr:hover td{background:#f8fbff}
   </div>
   <div id="content"></div>
 </div>
+</div>
+
+<!-- Context Menu -->
+<div id="ctx-menu">
+  <div class="ctx-label" id="ctx-label">메뉴 항목</div>
+  <div class="ctx-item blue" onclick="ctxFeedback('restrict')">
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6.5"/><path d="M5 8h6"/></svg>기능 제한하기
+  </div>
+  <div class="ctx-item red" onclick="ctxFeedback('inconvenient')">
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1a7 7 0 100 14A7 7 0 008 1zm.75 10.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm-.75-7.5a.75.75 0 01.75.75v4a.75.75 0 01-1.5 0v-4a.75.75 0 01.75-.75z"/></svg>불편해서 하기
+  </div>
+  <div class="ctx-item" onclick="ctxFeedback('improve')">
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 2v12M2 8h12"/></svg>개선 요청 등록
+  </div>
+  <hr class="ctx-sep">
+  <div class="ctx-item" style="font-size:12px;color:var(--muted)" onclick="closeCtx()">닫기</div>
 </div>
 
 <!-- Notification Panel -->
@@ -491,7 +536,7 @@ function toggleNotif(){document.getElementById('notif-panel').classList.toggle('
 function markAllRead(){C.notifs.forEach(n=>n.is_read=true);renderNotifList();document.getElementById('notif-badge').style.display='none';}
 
 /* ── NAV ── */
-const TITLES={dashboard:'현황판',residents:'입소자 관리',payments:'납부 관리',contracts:'계약·서약서',ot:'OT·벌점 관리',utility:'공과금 관리',realestate:'부동산 계약',pl:'손익 현황',settings:'설정'};
+const TITLES={dashboard:'현황판',residents:'입소자 관리',payments:'납부 관리',contracts:'계약·서약서',ot:'OT·벌점 관리',utility:'공과금 관리',realestate:'부동산 계약',pl:'손익 현황',devlog:'개발 현황',settings:'설정'};
 function nav(p){
   document.querySelectorAll('.sb-item').forEach(el=>el.classList.toggle('active',el.dataset.page===p));
   document.getElementById('topbar-title').textContent=TITLES[p]||p;
@@ -506,6 +551,7 @@ function nav(p){
     case 'utility':c.innerHTML=pgUtility();break;
     case 'realestate':c.innerHTML=pgRE();break;
     case 'pl':c.innerHTML=pgPL();break;
+    case 'devlog':c.innerHTML=pgDevlog();break;
     case 'settings':c.innerHTML=pgSettings();if(S.staff.role==='admin')loadStaffTable();break;
   }
 }
@@ -981,6 +1027,141 @@ async function saveRealEstate(){
   else alert('저장 실패');
 }
 
+/* ── DEMO MODE ── */
+const DEMO_RESIDENTS=[
+  {id:'d1',name:'김지수',student_no:'20240101',class_name:'항공서비스과 1반',type:'regular',phone:'010-1111-2222',building_name:'진수빌딩',building_id:2,room_no:'301호',entry_date:'2026-03-02',exit_date:'2026-08-31',unit_price:350000,deposit:500000,penalty_count:0,paid_total:700000},
+  {id:'d2',name:'박서연',student_no:'20240202',class_name:'항공서비스과 2반',type:'regular',phone:'010-3333-4444',building_name:'비버하우스',building_id:3,room_no:'205호',entry_date:'2026-03-02',exit_date:'2026-08-31',unit_price:320000,deposit:400000,penalty_count:2,paid_total:320000},
+  {id:'d3',name:'이민준',student_no:'20240303',class_name:'항공정비과 1반',type:'consign',phone:'010-5555-6666',building_name:'부경기숙사',building_id:1,room_no:'115호',entry_date:'2026-03-02',exit_date:'2026-08-31',unit_price:0,deposit:0,penalty_count:0,paid_total:0},
+  {id:'d4',name:'최예린',student_no:'20230101',class_name:'항공서비스과 3반',type:'regular',phone:'010-7777-8888',building_name:'진수빌딩',building_id:2,room_no:'402호',entry_date:'2025-09-01',exit_date:'2026-08-31',unit_price:350000,deposit:500000,penalty_count:1,paid_total:1050000},
+  {id:'d5',name:'정하늘',student_no:'20240404',class_name:'항공운항과',type:'regular',phone:'010-9999-0000',building_name:'소호모텔',building_id:4,room_no:'302호',entry_date:'2026-03-02',exit_date:'2026-08-31',unit_price:300000,deposit:300000,penalty_count:0,paid_total:300000},
+];
+const DEMO_PAYMENTS=[
+  {id:'p1',resident_name:'김지수',student_no:'20240101',building_short:'진수',room_no:'301호',resident_type:'regular',period:'2026년 1학기',amount:350000,method:'transfer',paid_at:'2026-03-05',status:'paid',is_installment:false},
+  {id:'p2',resident_name:'김지수',student_no:'20240101',building_short:'진수',room_no:'301호',resident_type:'regular',period:'2026년 2학기 1개월',amount:350000,method:'card',paid_at:'2026-04-05',status:'paid',is_installment:true},
+  {id:'p3',resident_name:'박서연',student_no:'20240202',building_short:'비버',room_no:'205호',resident_type:'regular',period:'2026년 1학기',amount:320000,method:'transfer',paid_at:'2026-03-10',status:'paid',is_installment:false},
+  {id:'p4',resident_name:'박서연',student_no:'20240202',building_short:'비버',room_no:'205호',resident_type:'regular',period:'2026년 1학기 2차',amount:320000,method:'',paid_at:null,status:'pending',is_installment:false},
+  {id:'p5',resident_name:'최예린',student_no:'20230101',building_short:'진수',room_no:'402호',resident_type:'regular',period:'2026년 1학기',amount:350000,method:'transfer',paid_at:'2026-03-03',status:'paid',is_installment:false},
+  {id:'p6',resident_name:'정하늘',student_no:'20240404',building_short:'소호',room_no:'302호',resident_type:'regular',period:'2026년 1학기',amount:300000,method:'',paid_at:null,status:'pending',is_installment:false},
+];
+const DEMO_RE=[
+  {id:'r1',building_name:'부경기숙사',landlord_name:'부경개발(주)',address:'부산 남구 대연동 100',deposit:50000000,monthly_rent:3500000,area_sqm:580,contract_start:'2025-01-01',contract_end:'2026-12-31',special_terms:'층별 안전 점검 연 2회 임대인 부담'},
+  {id:'r2',building_name:'진수빌딩',landlord_name:'진수부동산(주)',address:'부산 남구 용호동 200',deposit:30000000,monthly_rent:2200000,area_sqm:420,contract_start:'2025-03-01',contract_end:'2026-05-31',special_terms:'주차 5대 포함'},
+  {id:'r3',building_name:'비버하우스',landlord_name:'홍길동',address:'부산 남구 문현동 55',deposit:20000000,monthly_rent:1800000,area_sqm:310,contract_start:'2024-09-01',contract_end:'2026-08-31',special_terms:''},
+  {id:'r4',building_name:'소호모텔',landlord_name:'소호개발',address:'부산 남구 대연동 88',deposit:15000000,monthly_rent:1500000,area_sqm:260,contract_start:'2025-06-01',contract_end:'2027-05-31',special_terms:''},
+  {id:'r5',building_name:'한주빌딩',landlord_name:'한주부동산',address:'부산 남구 용당동 12',deposit:10000000,monthly_rent:1200000,area_sqm:180,contract_start:'2026-01-01',contract_end:'2026-06-30',special_terms:''},
+];
+let IS_DEMO=false;
+function startDemo(){
+  IS_DEMO=true;
+  S={token:'demo',staff:{username:'demo',display_name:'데모 관리자',role:'admin'}};
+  C.residents=DEMO_RESIDENTS;C.payments=DEMO_PAYMENTS;C.re=DEMO_RE;
+  C.buildings=[{id:1,name:'부경기숙사'},{id:2,name:'진수빌딩'},{id:3,name:'비버하우스'},{id:4,name:'소호모텔'},{id:5,name:'한주빌딩'}];
+  C.notifs=[];
+  document.getElementById('login-wrap').style.display='none';
+  document.getElementById('app').style.display='flex';
+  document.getElementById('demo-banner').style.display='flex';
+  document.getElementById('sb-name').textContent='데모 관리자';
+  document.getElementById('sb-role').textContent='관리자 (데모)';
+  document.getElementById('settings-nav').style.display='flex';
+  nav('dashboard');
+}
+
+/* ── DEVLOG / FEEDBACK ── */
+const FB_KEY='dorm_feedback';
+function getFeedback(){try{return JSON.parse(localStorage.getItem(FB_KEY)||'[]');}catch(e){return[];}}
+function saveFeedback(list){try{localStorage.setItem(FB_KEY,JSON.stringify(list));}catch(e){}}
+function addFeedback(type,label,page){
+  const list=getFeedback();
+  list.unshift({id:Date.now(),type,label,page,status:'open',created:new Date().toISOString()});
+  saveFeedback(list);
+  if(document.querySelector('.sb-item.active[data-page="devlog"]'))nav('devlog');
+}
+const FTYPE={restrict:{cls:'badge-danger',lbl:'기능 제한'},inconvenient:{cls:'badge-warn',lbl:'불편'},improve:{cls:'badge-info',lbl:'개선 요청'}};
+const FSTATUS={open:{cls:'badge-warn',lbl:'접수'},planned:{cls:'badge-info',lbl:'예정'},done:{cls:'badge-ok',lbl:'완료'},wontfix:{cls:'badge-gray',lbl:'보류'}};
+function pgDevlog(){
+  const all=getFeedback();
+  const tabs=['all','open','planned','done'];
+  const tlbl={all:'전체',open:'접수',planned:'예정',done:'완료'};
+  return `<div class="page-header"><div class="page-title">개발 현황</div><div class="page-desc">메뉴·버튼 우클릭으로 피드백을 등록합니다. 관리자는 상태를 변경할 수 있습니다.</div></div>
+  <div class="devlog-tabs" id="dl-tabs">
+    ${tabs.map((t,i)=>`<div class="devlog-tab ${i===0?'active':''}" onclick="dlTab('${t}',this)">${tlbl[t]} <span style="margin-left:4px;font-weight:400">${t==='all'?all.length:all.filter(f=>f.status===t).length}</span></div>`).join('')}
+    <div class="spacer"></div>
+    <button class="btn btn-outline btn-sm" onclick="if(confirm('전체 피드백을 삭제할까요?')){saveFeedback([]);nav('devlog');}">초기화</button>
+  </div>
+  <div id="dl-list">${renderFBList(all)}</div>
+  <div class="card" style="margin-top:16px;padding:14px 18px;background:var(--accent-lt);border-color:var(--border)">
+    <div style="font-size:13px;font-weight:600;margin-bottom:6px">💡 사용 방법</div>
+    <div style="font-size:12px;color:var(--accent-text);line-height:1.8">
+      어느 화면에서든 <b>메뉴 항목</b>, <b>버튼</b>, <b>표 칸</b>에 마우스 우클릭하면 피드백 메뉴가 나타납니다.<br>
+      • <b>기능 제한하기</b> — 해당 기능을 제한/비활성화 요청<br>
+      • <b>불편해서 하기</b> — 현재 UI/동작이 불편하다고 신고<br>
+      • <b>개선 요청 등록</b> — 개선 아이디어 등록
+    </div>
+  </div>`;
+}
+function renderFBList(list){
+  if(!list.length)return'<div class="card"><div class="empty">등록된 피드백 없음<br><span style="font-size:12px;margin-top:4px;display:block">메뉴·버튼을 우클릭하면 바로 등록됩니다.</span></div></div>';
+  return list.map(f=>{
+    const ft=FTYPE[f.type]||{cls:'badge-gray',lbl:f.type};
+    const fs=FSTATUS[f.status]||{cls:'badge-gray',lbl:f.status};
+    return`<div class="devlog-item">
+      <div class="devlog-item-hdr">
+        <span class="badge ${ft.cls}">${ft.lbl}</span>
+        <span class="devlog-item-body" style="flex:1">${f.label}</span>
+        <select class="btn btn-sm btn-outline" style="padding:3px 6px;font-size:11px" onchange="updateFBStatus('${f.id}',this.value)">
+          ${Object.entries(FSTATUS).map(([k,v])=>`<option value="${k}" ${f.status===k?'selected':''}>${v.lbl}</option>`).join('')}
+        </select>
+      </div>
+      <div class="devlog-item-meta">화면: ${f.page||'—'} &nbsp;·&nbsp; ${fdt(f.created)}</div>
+    </div>`;
+  }).join('');
+}
+function dlTab(t,el){
+  document.querySelectorAll('.devlog-tab').forEach(e=>e.classList.remove('active'));
+  el.classList.add('active');
+  const all=getFeedback();
+  const list=t==='all'?all:all.filter(f=>f.status===t);
+  document.getElementById('dl-list').innerHTML=renderFBList(list);
+}
+function updateFBStatus(id,status){
+  const list=getFeedback().map(f=>f.id==id?{...f,status}:f);
+  saveFeedback(list);
+  if(document.querySelector('.sb-item.active[data-page="devlog"]'))nav('devlog');
+}
+
+/* ── CONTEXT MENU ── */
+let CTX_TARGET=null;
+document.addEventListener('contextmenu',function(e){
+  const t=e.target.closest('.sb-item,.btn,th,td,.card-title,.notif-btn,[onclick]');
+  if(!t||t.closest('#ctx-menu'))return;
+  e.preventDefault();
+  CTX_TARGET=t;
+  const lbl=t.textContent?.trim().replace(/\s+/g,' ').slice(0,40)||'항목';
+  document.getElementById('ctx-label').textContent=lbl;
+  const m=document.getElementById('ctx-menu');
+  m.classList.add('open');
+  const mw=180,mh=140;
+  const x=Math.min(e.clientX,window.innerWidth-mw-8);
+  const y=Math.min(e.clientY,window.innerHeight-mh-8);
+  m.style.left=x+'px';m.style.top=y+'px';
+});
+document.addEventListener('click',function(e){
+  if(!e.target.closest('#ctx-menu'))closeCtx();
+});
+document.addEventListener('keydown',function(e){if(e.key==='Escape')closeCtx();});
+function closeCtx(){document.getElementById('ctx-menu').classList.remove('open');CTX_TARGET=null;}
+function ctxFeedback(type){
+  const lbl=document.getElementById('ctx-label').textContent;
+  const page=document.getElementById('topbar-title')?.textContent||'—';
+  addFeedback(type,lbl,page);
+  closeCtx();
+  const msg={restrict:'기능 제한 요청이 등록되었습니다.',inconvenient:'불편 신고가 등록되었습니다.',improve:'개선 요청이 등록되었습니다.'}[type];
+  const toast=document.createElement('div');
+  toast.style.cssText='position:fixed;bottom:20px;right:20px;background:var(--text);color:#fff;padding:10px 18px;border-radius:var(--r);font-size:13px;z-index:1000;transition:opacity .4s';
+  toast.textContent=msg;document.body.appendChild(toast);
+  setTimeout(()=>{toast.style.opacity='0';setTimeout(()=>toast.remove(),400);},2000);
+}
+
 /* ── HELPERS ── */
 function won(n){if(n==null||isNaN(n))return'—';return Math.round(n).toLocaleString('ko-KR')+'원';}
 function fdt(d){if(!d)return'—';const dt=new Date(d);return`${dt.getMonth()+1}/${dt.getDate()} ${String(dt.getHours()).padStart(2,'0')}:${String(dt.getMinutes()).padStart(2,'0')}`;}
@@ -995,6 +1176,7 @@ document.addEventListener('click',e=>{
 
 (async()=>{
   loadTheme();
+  if(new URLSearchParams(location.search).get('demo')==='1'){startDemo();return;}
   if(await tryAutoLogin())startApp();
 })();
 </script>
