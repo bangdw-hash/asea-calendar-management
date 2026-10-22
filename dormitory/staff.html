@@ -232,6 +232,15 @@ tbody tr:last-child td { border-bottom: none; }
 /* ─── EMPTY STATE ─── */
 .empty { text-align: center; padding: 40px 16px; color: var(--gray); font-size: 13px; }
 
+/* ─── SEMESTER SELECT ─── */
+#semester-select {
+  padding: 6px 10px; border: 1.5px solid var(--border); border-radius: var(--r);
+  font-size: 13px; font-weight: 600; font-family: inherit;
+  background: #fff; color: var(--navy); cursor: pointer;
+  min-width: 140px;
+}
+#semester-select:focus { outline: none; border-color: var(--primary); }
+
 /* ─── MOBILE ─── */
 @media (max-width: 768px) {
   #sidebar { transform: translateX(-100%); }
@@ -242,6 +251,7 @@ tbody tr:last-child td { border-bottom: none; }
   #content { padding: 16px; }
   .kpi-grid { grid-template-columns: 1fr 1fr; }
   .field-row { grid-template-columns: 1fr; }
+  #semester-select { min-width: 110px; font-size: 12px; }
 }
 </style>
 </head>
@@ -337,6 +347,9 @@ tbody tr:last-child td { border-bottom: none; }
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--navy)" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
     </button>
     <span id="page-title">대시보드</span>
+    <select id="semester-select" title="학기 선택" style="display:none">
+      <option value="">학기 로딩 중…</option>
+    </select>
   </div>
   <div id="content"></div>
 </div>
@@ -358,6 +371,8 @@ var BUILDINGS = [
 var db = null;
 var currentPage = 'dashboard';
 var isMaster = false;
+var semesterList = [];
+var currentSemesterId = null;
 
 function esc(s) {
   return String(s == null ? '' : s).replace(/[&<>"']/g, function(c) {
@@ -408,6 +423,45 @@ function openModal(html) {
     var cl = bg.querySelector('.modal-close');
     if (cl) cl.addEventListener('click', closeModal);
   }
+}
+
+// ─── SEMESTER ─────────────────────────────────────────
+
+async function loadSemesters() {
+  try {
+    var r = await db.rpc('dorm_staff_dashboard');
+    if (!r.error && r.data && Array.isArray(r.data.semesters) && r.data.semesters.length) {
+      semesterList = r.data.semesters;
+    } else {
+      var r2 = await db.from('dorm.semesters').select('id,name,year,term,is_active').order('year', { ascending: false }).order('term', { ascending: false });
+      if (!r2.error && r2.data) semesterList = r2.data;
+    }
+  } catch(e) {}
+
+  var sel = document.getElementById('semester-select');
+  if (!sel) return;
+
+  if (!semesterList.length) { sel.style.display = 'none'; return; }
+
+  sel.innerHTML = semesterList.map(function(s) {
+    return '<option value="' + s.id + '"' + (s.is_active ? ' data-active="1"' : '') + '>' +
+      esc(s.name) + (s.is_active ? ' ★' : '') + '</option>';
+  }).join('');
+
+  var activeSemester = semesterList.find(function(s) { return s.is_active; });
+  if (activeSemester) {
+    sel.value = activeSemester.id;
+    currentSemesterId = activeSemester.id;
+  } else if (semesterList.length) {
+    sel.value = semesterList[0].id;
+    currentSemesterId = semesterList[0].id;
+  }
+
+  sel.style.display = 'block';
+  sel.onchange = function() {
+    currentSemesterId = this.value ? parseInt(this.value) : null;
+    navigate(currentPage);
+  };
 }
 
 // ─── AUTH ────────────────────────────────────────────
@@ -524,7 +578,7 @@ function showApp(userName) {
     this.classList.remove('show');
   };
 
-  navigate('dashboard');
+  loadSemesters().then(function() { navigate('dashboard'); });
 }
 
 function navigate(page) {
@@ -558,7 +612,7 @@ async function renderDashboard() {
   var recentComplaints = [];
 
   try {
-    var r = await db.rpc('dorm_staff_dashboard');
+    var r = await db.rpc('dorm_staff_dashboard', { p_semester_id: currentSemesterId || null });
     if (!r.error && r.data) kpis = r.data;
   } catch(e) {}
   try {
@@ -569,8 +623,11 @@ async function renderDashboard() {
   } catch(e) {}
 
   var rate = parseFloat(kpis.payment_rate) || 0;
+  var activeSem = semesterList.find(function(s) { return s.id === currentSemesterId; });
+  var semLabel = activeSem ? activeSem.name : (semesterList.length ? semesterList[0].name : '');
 
   c.innerHTML =
+    (semLabel ? '<div style="display:flex;align-items:center;gap:8px;margin-bottom:16px"><span style="font-size:13px;color:var(--gray)">현재 학기:</span><span style="font-size:13px;font-weight:700;color:var(--navy)">' + esc(semLabel) + '</span></div>' : '') +
     '<div class="kpi-grid">' +
       kpiCard('현재 입소자', kpis.total_residents, '명', 'var(--primary)') +
       kpiCard('미납자', kpis.overdue_count, '명', 'var(--red)') +
@@ -621,7 +678,7 @@ var residentData = [];
 async function renderResidents() {
   var c = document.getElementById('content');
   try {
-    var r = await db.rpc('dorm_staff_residents', { p_semester_id: null, p_building_id: null });
+    var r = await db.rpc('dorm_staff_residents', { p_semester_id: currentSemesterId || null, p_building_id: null });
     if (r.error) throw r.error;
     residentData = Array.isArray(r.data) ? r.data : [];
   } catch(e) {
@@ -785,7 +842,7 @@ var paymentData = [];
 async function renderPayments() {
   var c = document.getElementById('content');
   try {
-    var r = await db.rpc('dorm_staff_residents', { p_semester_id: null, p_building_id: null });
+    var r = await db.rpc('dorm_staff_residents', { p_semester_id: currentSemesterId || null, p_building_id: null });
     if (r.error) throw r.error;
     paymentData = [];
     if (Array.isArray(r.data)) {
@@ -846,7 +903,7 @@ function renderPaymentTable(statusFilter, buildingFilter) {
 async function openPaymentModal() {
   var residents = residentData.length ? residentData : [];
   if (!residents.length) {
-    var r = await db.rpc('dorm_staff_residents', { p_semester_id: null, p_building_id: null });
+    var r = await db.rpc('dorm_staff_residents', { p_semester_id: currentSemesterId || null, p_building_id: null });
     if (!r.error && Array.isArray(r.data)) residents = r.data;
   }
   openModal(
@@ -1046,7 +1103,7 @@ function addNewSignLinkButton(c) {
   btn.onclick = async function() {
     var residents = residentData.length ? residentData : [];
     if (!residents.length) {
-      var r = await db.rpc('dorm_staff_residents', { p_semester_id: null, p_building_id: null });
+      var r = await db.rpc('dorm_staff_residents', { p_semester_id: currentSemesterId || null, p_building_id: null });
       if (!r.error && Array.isArray(r.data)) residents = r.data;
     }
     openModal(
