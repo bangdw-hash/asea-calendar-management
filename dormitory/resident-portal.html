@@ -4,735 +4,842 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>생활관 입소자 포털</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root {
   color-scheme: light;
-  --navy: #1a3a5c;
-  --navy-dk: #122845;
-  --bg: #F0F9FF;
   --primary: #1A73E8;
+  --primary-dk: #1557B0;
   --primary-lt: #E8F0FE;
-  --green: #16a34a;
-  --green-lt: #dcfce7;
-  --orange: #ea580c;
-  --orange-lt: #ffedd5;
-  --red: #dc2626;
-  --red-lt: #fee2e2;
-  --border: #e5e7eb;
-  --text: #1f2937;
+  --bg: #F0F9FF;
+  --fg: #1f2937;
   --muted: #6b7280;
+  --border: #e2e8f0;
+  --card: #ffffff;
+  --green: #16a34a; --green-lt: #dcfce7;
+  --orange: #ea580c; --orange-lt: #ffedd5;
+  --red: #dc2626; --red-lt: #fee2e2;
   --r: 6px;
-  --sh: 0 1px 3px rgba(0,0,0,.10);
-  --sh-md: 0 4px 12px rgba(0,0,0,.10);
+  --sh: 0 1px 4px rgba(0,0,0,.08);
+  --sh-md: 0 2px 10px rgba(0,0,0,.10);
 }
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
 body {
-  font-family: 'Noto Sans KR', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+  font-family: 'Noto Sans KR', 'Apple SD Gothic Neo', sans-serif;
   background: var(--bg);
-  color: var(--text);
-  font-size: 14px;
-  line-height: 1.5;
+  color: var(--fg);
   min-height: 100vh;
 }
-a { color: var(--primary); text-decoration: none; }
-button { font-family: inherit; cursor: pointer; }
 
-/* ── Header ── */
-.hd {
-  background: var(--navy);
-  color: #fff;
-  padding: 0 16px;
-  height: 56px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  position: sticky;
-  top: 0;
-  z-index: 100;
-}
-.hd-title { font-size: 15px; font-weight: 700; flex: 1; }
-.hd-badge {
-  background: rgba(255,255,255,.18);
-  border-radius: var(--r);
-  padding: 3px 9px;
-  font-size: 12px;
-  font-weight: 600;
-  white-space: nowrap;
-}
-.hd-logout {
-  background: rgba(255,255,255,.15);
-  border: 1px solid rgba(255,255,255,.25);
-  color: #fff;
-  border-radius: var(--r);
-  padding: 5px 11px;
-  font-size: 12px;
-  font-weight: 600;
-}
-.hd-logout:hover { background: rgba(255,255,255,.25); }
-
-/* ── Main container ── */
-.wrap {
-  max-width: 640px;
-  margin: 0 auto;
-  padding: 20px 14px 60px;
-}
-
-/* ── Card ── */
-.card {
-  background: #fff;
-  border: 1px solid var(--border);
-  border-radius: var(--r);
-  padding: 18px;
-  margin-bottom: 14px;
-  box-shadow: var(--sh);
-}
-
-/* ── Feature card grid ── */
-.card-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-}
-@media(min-width:520px) { .card-grid { grid-template-columns: 1fr 1fr 1fr; } }
-.feat-card {
-  background: #fff;
-  border: 1px solid var(--border);
-  border-radius: var(--r);
-  padding: 16px 14px 14px;
+/* ── 로그인 / PIN 화면 ─────────────────────── */
+.auth-wrap {
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  cursor: pointer;
-  box-shadow: var(--sh);
-  transition: box-shadow .15s, transform .12s;
-  position: relative;
-}
-.feat-card:hover { box-shadow: var(--sh-md); transform: translateY(-1px); }
-.feat-card:active { transform: translateY(0); }
-.feat-card .icon-wrap {
-  width: 40px; height: 40px;
-  border-radius: var(--r);
-  background: var(--primary-lt);
-  display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0;
-}
-.feat-card .icon-wrap.green { background: var(--green-lt); }
-.feat-card .icon-wrap.orange { background: var(--orange-lt); }
-.feat-card .icon-wrap.red { background: var(--red-lt); }
-.feat-card .icon-wrap.navy { background: #e8eef4; }
-.feat-card h3 { font-size: 13px; font-weight: 700; color: var(--text); }
-.feat-card p { font-size: 11px; color: var(--muted); line-height: 1.4; }
-.feat-card .arrow {
-  position: absolute; top: 12px; right: 12px;
-  color: var(--muted);
-}
-
-/* ── Section header ── */
-.sec-hd {
-  display: flex;
   align-items: center;
-  gap: 10px;
+  justify-content: center;
+  padding: 24px 20px;
+  background: linear-gradient(160deg, #e8f4ff 0%, #f0f9ff 60%);
+}
+.auth-logo {
+  text-align: center;
+  margin-bottom: 28px;
+}
+.auth-logo .icon-wrap {
+  width: 64px; height: 64px;
+  background: var(--primary);
+  border-radius: 16px;
+  display: inline-flex; align-items: center; justify-content: center;
+  margin-bottom: 12px;
+  box-shadow: 0 4px 16px rgba(26,115,232,.35);
+}
+.auth-logo h1 { font-size: 20px; font-weight: 700; color: var(--fg); }
+.auth-logo p  { font-size: 13px; color: var(--muted); margin-top: 3px; }
+
+.auth-card {
+  width: 100%; max-width: 380px;
+  background: var(--card);
+  border-radius: 12px;
+  padding: 28px 24px;
+  box-shadow: var(--sh-md);
+}
+.auth-card h2 { font-size: 16px; font-weight: 700; margin-bottom: 20px; color: var(--fg); }
+
+.field { margin-bottom: 14px; }
+.field label { display: block; font-size: 12px; font-weight: 600; color: #374151; margin-bottom: 5px; }
+.field input {
+  width: 100%; padding: 11px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--r);
+  font-size: 15px; font-family: inherit;
+  transition: border-color .15s;
+  background: #fff;
+}
+.field input:focus { outline: none; border-color: var(--primary); }
+
+.btn-primary {
+  width: 100%; padding: 13px;
+  background: var(--primary); color: #fff;
+  border: none; border-radius: var(--r);
+  font-size: 15px; font-weight: 700;
+  cursor: pointer; font-family: inherit;
+  transition: background .15s;
+}
+.btn-primary:hover { background: var(--primary-dk); }
+.btn-primary:disabled { opacity: .5; cursor: default; }
+
+.btn-ghost {
+  background: none; border: none;
+  color: var(--primary); font-size: 13px;
+  cursor: pointer; font-family: inherit;
+  text-decoration: underline; padding: 4px 0;
+}
+.err-msg { color: var(--red); font-size: 13px; margin-top: 8px; }
+.muted { font-size: 12px; color: var(--muted); }
+
+/* PIN 입력 */
+.pin-dots {
+  display: flex; justify-content: center; gap: 14px;
+  margin: 20px 0;
+}
+.pin-dot {
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  border: 2.5px solid var(--border);
+  transition: all .15s;
+}
+.pin-dot.filled { background: var(--primary); border-color: var(--primary); }
+.pin-keypad {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 10px; margin-top: 4px;
+}
+.pin-key {
+  padding: 14px 0;
+  background: #f8fafc; border: 1px solid var(--border);
+  border-radius: var(--r); font-size: 20px; font-weight: 600;
+  cursor: pointer; font-family: inherit; text-align: center;
+  transition: background .1s;
+}
+.pin-key:active, .pin-key:hover { background: var(--primary-lt); color: var(--primary); }
+.pin-key.del { font-size: 18px; }
+.pin-save-ask {
+  background: var(--primary-lt);
+  border: 1px solid #c5d9f7;
+  border-radius: var(--r); padding: 14px;
+  margin-bottom: 18px; font-size: 13px;
+}
+.pin-save-ask strong { color: var(--primary); display: block; margin-bottom: 4px; }
+.pin-save-btns { display: flex; gap: 8px; margin-top: 10px; }
+.pin-save-btns button {
+  flex: 1; padding: 9px;
+  border-radius: var(--r); font-size: 13px; font-weight: 600;
+  cursor: pointer; font-family: inherit; border: none;
+}
+.btn-yes { background: var(--primary); color: #fff; }
+.btn-no  { background: #f1f5f9; color: var(--fg); }
+
+/* ── 홈 (카드 그리드) ─────────────────────── */
+.portal-wrap { max-width: 640px; margin: 0 auto; padding-bottom: 40px; }
+
+.portal-hd {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dk) 100%);
+  color: #fff;
+  padding: 20px 20px 28px;
+}
+.portal-hd-top {
+  display: flex; align-items: center; justify-content: space-between;
   margin-bottom: 14px;
 }
-.back-btn {
-  background: #fff;
-  border: 1px solid var(--border);
-  border-radius: var(--r);
-  padding: 6px 12px;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--navy);
-  display: flex; align-items: center; gap: 5px;
+.portal-hd-title { font-size: 14px; font-weight: 500; opacity: .9; }
+.btn-logout {
+  background: rgba(255,255,255,.18); color: #fff;
+  border: 1px solid rgba(255,255,255,.35);
+  border-radius: var(--r); padding: 6px 12px;
+  font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit;
 }
-.sec-title { font-size: 16px; font-weight: 700; color: var(--navy); }
-
-/* ── Table ── */
-.tbl-wrap { overflow-x: auto; }
-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-th, td { border-bottom: 1px solid #eef1f4; padding: 8px 9px; text-align: left; }
-th { background: #f8fafc; color: #475569; font-size: 12px; font-weight: 600; }
-tr:last-child td { border-bottom: none; }
-
-/* ── Badge ── */
-.badge {
-  display: inline-block;
-  font-size: 11px; font-weight: 700;
-  padding: 2px 8px;
-  border-radius: var(--r);
-  background: var(--primary-lt);
-  color: var(--primary);
-}
-.badge.green { background: var(--green-lt); color: var(--green); }
-.badge.orange { background: var(--orange-lt); color: var(--orange); }
-.badge.red { background: var(--red-lt); color: var(--red); }
-.badge.navy { background: #e8eef4; color: var(--navy); }
-
-/* ── Form ── */
-label { display: block; font-size: 12px; font-weight: 600; color: #374151; margin: 12px 0 4px; }
-label:first-child { margin-top: 0; }
-input, select, textarea {
-  width: 100%;
-  padding: 10px 12px;
-  border: 1.5px solid #d1d5db;
-  border-radius: var(--r);
-  font-size: 14px;
-  font-family: inherit;
-  color: var(--text);
-  background: #fff;
-}
-input:focus, select:focus, textarea:focus {
-  outline: none;
-  border-color: var(--primary);
-}
-textarea { resize: vertical; min-height: 90px; }
-
-/* ── Buttons ── */
-.btn {
-  display: block;
-  width: 100%;
-  background: var(--navy);
-  color: #fff;
-  border: none;
-  border-radius: var(--r);
-  padding: 13px;
-  font-size: 15px;
-  font-weight: 700;
-  margin-top: 14px;
-}
-.btn:hover { background: var(--navy-dk); }
-.btn:disabled { opacity: .5; cursor: not-allowed; }
-.btn.primary { background: var(--primary); }
-.btn.primary:hover { background: #1557B0; }
-.btn.danger { background: var(--red); }
-.btn.sec {
-  background: #fff;
-  color: var(--navy);
-  border: 1.5px solid #cdd9e6;
+.portal-hd-user { font-size: 22px; font-weight: 700; margin-bottom: 8px; }
+.hd-badges { display: flex; gap: 8px; flex-wrap: wrap; }
+.hd-badge {
+  background: rgba(255,255,255,.22);
+  border: 1px solid rgba(255,255,255,.35);
+  border-radius: 99px; padding: 4px 12px; font-size: 12px; font-weight: 600;
 }
 
-/* ── Error / muted ── */
-.err { color: var(--red); font-size: 13px; margin-top: 8px; }
-.muted { font-size: 12px; color: var(--muted); line-height: 1.6; }
-.empty { text-align: center; color: var(--muted); font-size: 13px; padding: 24px 0; }
-
-/* ── Login ── */
-#login-screen {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 100vh;
-  padding: 20px 14px;
-  background: var(--bg);
-}
-.login-box {
-  background: #fff;
-  border: 1px solid var(--border);
-  border-radius: var(--r);
-  padding: 28px 22px;
-  width: 100%;
-  max-width: 400px;
-  box-shadow: var(--sh-md);
-}
-.login-logo {
-  background: var(--navy);
-  border-radius: var(--r);
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
   padding: 16px;
-  text-align: center;
-  color: #fff;
-  margin-bottom: 20px;
+  margin-top: -16px;
 }
-.login-logo h1 { font-size: 17px; font-weight: 700; margin-bottom: 3px; }
-.login-logo p { font-size: 12px; opacity: .8; }
+@media (min-width: 480px) { .card-grid { grid-template-columns: repeat(3, 1fr); } }
 
-/* ── Notice accordion ── */
-.notice-item {
+.menu-card {
+  background: var(--card);
+  border-radius: 10px;
+  padding: 18px 14px 14px;
+  box-shadow: var(--sh);
+  cursor: pointer;
+  border: 1px solid var(--border);
+  transition: box-shadow .15s, transform .1s;
+  display: flex; flex-direction: column; align-items: flex-start;
+}
+.menu-card:hover { box-shadow: var(--sh-md); transform: translateY(-1px); }
+.menu-card .card-icon {
+  width: 40px; height: 40px;
+  background: var(--primary-lt);
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 10px;
+}
+.menu-card .card-icon svg { color: var(--primary); }
+.menu-card .card-name { font-size: 14px; font-weight: 700; color: var(--fg); }
+.menu-card .card-desc { font-size: 11px; color: var(--muted); margin-top: 3px; line-height: 1.4; }
+.menu-card .card-badge {
+  margin-top: 8px; font-size: 11px; font-weight: 700;
+  padding: 2px 8px; border-radius: 4px;
+}
+
+/* ── 섹션 공통 ─────────────────────── */
+.section-wrap { padding: 0 16px 20px; }
+.section-hd {
+  display: flex; align-items: center; gap: 10px;
+  padding: 14px 16px; cursor: pointer;
+  background: var(--card);
   border-bottom: 1px solid var(--border);
-  padding: 12px 0;
+  position: sticky; top: 0; z-index: 10;
+}
+.section-hd h2 { font-size: 15px; font-weight: 700; color: var(--fg); }
+.back-btn {
+  background: none; border: none; cursor: pointer;
+  display: flex; align-items: center; gap: 4px;
+  color: var(--primary); font-size: 13px; font-weight: 600; font-family: inherit;
+}
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 16px; margin-top: 12px;
+}
+.card h3 { font-size: 14px; font-weight: 700; color: var(--primary); margin-bottom: 12px; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th, td { border-bottom: 1px solid var(--border); padding: 8px 6px; text-align: left; }
+th { background: #f8fafc; color: #475569; font-size: 12px; font-weight: 600; }
+.badge {
+  display: inline-block; font-size: 11px; font-weight: 700;
+  padding: 2px 8px; border-radius: 4px;
+}
+.badge-green  { background: var(--green-lt);  color: var(--green); }
+.badge-red    { background: var(--red-lt);    color: var(--red); }
+.badge-blue   { background: var(--primary-lt); color: var(--primary); }
+.badge-orange { background: var(--orange-lt); color: var(--orange); }
+.badge-gray   { background: #f1f5f9; color: #475569; }
+
+.info-row { display: flex; padding: 8px 0; border-bottom: 1px solid #f1f5f9; font-size: 13px; }
+.info-row:last-child { border-bottom: none; }
+.info-label { color: var(--muted); width: 90px; flex-shrink: 0; }
+.info-val   { font-weight: 600; }
+
+.form-field { margin-bottom: 14px; }
+.form-field label { display: block; font-size: 12px; font-weight: 600; color: #374151; margin-bottom: 5px; }
+.form-field select, .form-field input, .form-field textarea {
+  width: 100%; padding: 10px 12px;
+  border: 1.5px solid var(--border); border-radius: var(--r);
+  font-size: 14px; font-family: inherit;
+  background: #fff;
+}
+.form-field textarea { min-height: 100px; resize: vertical; }
+.form-field select:focus, .form-field input:focus, .form-field textarea:focus {
+  outline: none; border-color: var(--primary);
+}
+
+.notice-item {
+  padding: 12px 0; border-bottom: 1px solid var(--border); cursor: pointer;
 }
 .notice-item:last-child { border-bottom: none; }
-.notice-hd {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  cursor: pointer;
-  gap: 10px;
-}
-.notice-hd h3 { font-size: 13px; font-weight: 600; flex: 1; }
-.notice-hd .nd { font-size: 11px; color: var(--muted); white-space: nowrap; }
-.notice-body { display: none; margin-top: 8px; font-size: 13px; white-space: pre-wrap; color: #374151; line-height: 1.7; }
-.notice-body.open { display: block; }
+.notice-title { font-size: 14px; font-weight: 600; }
+.notice-date  { font-size: 12px; color: var(--muted); margin-top: 3px; }
+.notice-body  { font-size: 13px; margin-top: 8px; line-height: 1.7; display: none; }
 
-/* ── Info rows ── */
-.info-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  padding: 8px 0;
-  border-bottom: 1px solid #f1f5f9;
-  font-size: 13px;
-  gap: 8px;
+.success-box {
+  text-align: center; padding: 32px 16px;
 }
-.info-row:last-child { border-bottom: none; }
-.info-row .lbl { color: var(--muted); font-size: 12px; flex-shrink: 0; }
-.info-row .val { font-weight: 600; text-align: right; }
+.success-box svg { color: var(--green); margin-bottom: 12px; }
+.success-box h3  { font-size: 17px; font-weight: 700; margin-bottom: 6px; }
+.success-box p   { font-size: 13px; color: var(--muted); }
 
-/* ── Success screen ── */
-.success-box { text-align: center; padding: 28px 0; }
-.success-box svg { color: var(--green); margin-bottom: 10px; }
-.success-box h2 { font-size: 16px; color: var(--navy); margin-bottom: 6px; }
-.success-box p { font-size: 13px; color: var(--muted); }
-.success-ticket { font-size: 22px; font-weight: 700; color: var(--primary); margin: 10px 0; }
-
-/* ── Confirm dialog ── */
-.confirm-overlay {
-  display: none;
-  position: fixed; inset: 0;
-  background: rgba(0,0,0,.45);
-  z-index: 200;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-}
-.confirm-overlay.open { display: flex; }
-.confirm-box {
-  background: #fff;
-  border-radius: var(--r);
-  padding: 24px 20px;
-  max-width: 340px;
-  width: 100%;
-  box-shadow: var(--sh-md);
-}
-.confirm-box h3 { font-size: 15px; font-weight: 700; margin-bottom: 8px; color: var(--navy); }
-.confirm-box p { font-size: 13px; color: var(--muted); margin-bottom: 16px; }
-.confirm-btns { display: flex; gap: 8px; }
-.confirm-btns button { flex: 1; padding: 11px; border-radius: var(--r); font-size: 14px; font-weight: 700; border: none; }
-.confirm-btns .cancel { background: #f1f5f9; color: var(--text); }
-.confirm-btns .ok { background: var(--navy); color: #fff; }
+.overflow-x { overflow-x: auto; }
 </style>
 </head>
 <body>
-
-<!-- Login Screen -->
-<div id="login-screen">
-  <div class="login-box">
-    <div class="login-logo">
-      <h1>생활관 입소자 포털</h1>
-      <p>아세아항공직업전문학교 기숙사</p>
-    </div>
-    <label>학번 / 사번</label>
-    <input type="text" id="li-sno" placeholder="학번 또는 사번을 입력하세요" autocomplete="off">
-    <label>성명</label>
-    <input type="text" id="li-name" placeholder="이름을 입력하세요">
-    <div class="err" id="li-err" style="display:none"></div>
-    <button class="btn primary" id="li-btn" style="margin-top:16px">확인</button>
-    <p class="muted" style="margin-top:12px;text-align:center">등록된 학번과 성명으로 본인 계약·납부·고지서를 조회합니다.</p>
-  </div>
-</div>
-
-<!-- Main Portal (hidden until login) -->
-<div id="portal" style="display:none">
-  <header class="hd">
-    <span class="hd-title">생활관 입소자 포털</span>
-    <span class="hd-badge" id="hd-room"></span>
-    <button class="hd-logout" id="hd-logout">로그아웃</button>
-  </header>
-  <div class="wrap" id="main-wrap"></div>
-</div>
-
-<!-- Confirm Dialog -->
-<div class="confirm-overlay" id="confirm-overlay">
-  <div class="confirm-box">
-    <h3 id="confirm-title"></h3>
-    <p id="confirm-msg"></p>
-    <div class="confirm-btns">
-      <button class="cancel" id="confirm-cancel">취소</button>
-      <button class="ok" id="confirm-ok">확인</button>
-    </div>
-  </div>
-</div>
+<div id="root"></div>
 
 <script>
 'use strict';
-var SUPA_URL = 'https://zbpeyklwpotjyveipzxd.supabase.co';
-var SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpicGV5a2x3cG90anl2ZWlwenhkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE1MTYxMDcsImV4cCI6MjA5NzA5MjEwN30.6JgoQ6rPRnmrbBTG68A-Y9HDQk40mnwubhXVnkZvHrQ';
-var db = window.supabase ? window.supabase.createClient(SUPA_URL, SUPA_KEY) : null;
+var SB_URL = 'https://zbpeyklwpotjyveipzxd.supabase.co';
+var SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpicGV5a2x3cG90anl2ZWlwenhkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE1MTYxMDcsImV4cCI6MjA5NzA5MjEwN30.6JgoQ6rPRnmrbBTG68A-Y9HDQk40mnwubhXVnkZvHrQ';
+var LS_KEY  = 'dorm_resident_v1';
+var PIN_KEY = 'dorm_pin_v1';
 
-var ME = null; // resident data
+var db = window.supabase ? window.supabase.createClient(SB_URL, SB_KEY) : null;
+var root = document.getElementById('root');
+var ME = null;   // resident data from RPC
+var VIEW = 'login'; // login | pin-save-ask | pin-setup | pin-verify | home | section:<name>
+var PIN_BUF = '';
+var PIN_CONFIRM_BUF = '';
+var PIN_STEP = 'enter'; // enter | confirm
+var SECTION_DATA = {};
 
+// ── 유틸 ──────────────────────────────────────
 function esc(s) {
   return String(s == null ? '' : s).replace(/[&<>"']/g, function(c) {
-    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+    return { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c];
   });
 }
-function won(n) { return (Number(n)||0).toLocaleString('ko-KR'); }
-function fmtDate(s) { return s ? String(s).slice(0,10) : '-'; }
-
-// ── Confirm dialog ──
-function confirm(title, msg) {
-  return new Promise(function(resolve) {
-    var ov = document.getElementById('confirm-overlay');
-    document.getElementById('confirm-title').textContent = title;
-    document.getElementById('confirm-msg').textContent = msg;
-    ov.classList.add('open');
-    function cleanup() { ov.classList.remove('open'); }
-    document.getElementById('confirm-ok').onclick = function() { cleanup(); resolve(true); };
-    document.getElementById('confirm-cancel').onclick = function() { cleanup(); resolve(false); };
-  });
+function won(n) { return (Number(n) || 0).toLocaleString('ko-KR'); }
+function fmtDate(s) { return s ? s.slice(0, 10) : '-'; }
+function normPhone(s) { return (s || '').replace(/[^0-9]/g, ''); }
+function fmtPhone(s) {
+  var d = normPhone(s);
+  if (d.length <= 3) return d;
+  if (d.length <= 7) return d.slice(0,3) + '-' + d.slice(3);
+  return d.slice(0,3) + '-' + d.slice(3,7) + '-' + d.slice(7,11);
 }
 
-// ── Init ──
-(async function init() {
-  if (!db) { showErr('Supabase 연결 실패. 관리자에게 문의하세요.'); return; }
+function savedSession() {
+  try { return JSON.parse(localStorage.getItem(LS_KEY) || 'null'); } catch(e) { return null; }
+}
+function savedPin() {
+  try { return localStorage.getItem(PIN_KEY) || ''; } catch(e) { return ''; }
+}
+function saveSession(data) {
+  try { localStorage.setItem(LS_KEY, JSON.stringify(data)); } catch(e) {}
+}
+function clearSession() {
+  try { localStorage.removeItem(LS_KEY); localStorage.removeItem(PIN_KEY); } catch(e) {}
+}
 
-  // Check URL token auto-login
-  var params = new URLSearchParams(location.search);
-  var rt = params.get('rt');
-  if (rt) {
-    try {
-      var r = await db.rpc('dorm_resident_token_login', { p_token: rt });
-      if (!r.error && r.data) {
-        ME = r.data;
-        showPortal();
-        return;
-      }
-    } catch(e) {}
+// ── 진입 ──────────────────────────────────────
+(function init() {
+  if (!db) { root.innerHTML = '<div style="padding:40px;text-align:center;color:#dc2626">연결 오류: 관리자에게 문의하세요.</div>'; return; }
+
+  // 토큰 자동 로그인 (?rt=UUID)
+  var rt = new URLSearchParams(location.search).get('rt');
+  if (rt) { tokenLogin(rt); return; }
+
+  // localStorage 세션 존재 시 PIN 확인
+  var sess = savedSession();
+  if (sess && savedPin()) {
+    ME = sess;
+    showPinVerify();
+    return;
   }
 
-  // Check sessionStorage
-  try {
-    var stored = sessionStorage.getItem('dorm_resident');
-    if (stored) { ME = JSON.parse(stored); showPortal(); return; }
-  } catch(e) {}
-
-  // Show login
-  document.getElementById('login-screen').style.display = 'flex';
-  setupLogin();
+  showLogin();
 })();
 
-function showErr(msg) {
-  document.getElementById('login-screen').style.display = 'flex';
-  document.getElementById('li-err').textContent = msg;
-  document.getElementById('li-err').style.display = 'block';
+async function tokenLogin(token) {
+  root.innerHTML = '<div style="padding:60px;text-align:center;color:var(--muted)">불러오는 중…</div>';
+  try {
+    var r = await db.rpc('dorm_resident_token_login', { p_token: token });
+    if (r.error || !r.data) { showLogin('링크가 만료되었거나 유효하지 않습니다.'); return; }
+    ME = r.data;
+    showHome();
+  } catch(e) { showLogin('오류가 발생했습니다. 관리자에게 문의하세요.'); }
 }
 
-function setupLogin() {
-  document.getElementById('li-btn').addEventListener('click', async function() {
-    var sno = (document.getElementById('li-sno').value || '').trim();
-    var name = (document.getElementById('li-name').value || '').trim();
-    var errEl = document.getElementById('li-err');
-    errEl.style.display = 'none';
-    if (!sno || !name) { errEl.textContent = '학번과 성명을 입력하세요.'; errEl.style.display = 'block'; return; }
-    this.disabled = true; this.textContent = '조회 중…';
-    try {
-      var r = await db.rpc('dorm_resident_lookup_v2', { p_student_no: sno, p_name: name });
-      if (r.error) throw new Error(r.error.message);
-      if (!r.data) { errEl.textContent = '일치하는 정보가 없습니다. 학번과 성명을 확인하세요.'; errEl.style.display = 'block'; return; }
-      ME = r.data;
-      try { sessionStorage.setItem('dorm_resident', JSON.stringify(ME)); } catch(e) {}
-      showPortal();
-    } catch(e) {
-      errEl.textContent = '조회 실패: ' + e.message;
-      errEl.style.display = 'block';
-    } finally {
-      this.disabled = false; this.textContent = '확인';
+// ── 로그인 화면 ───────────────────────────────
+function showLogin(errMsg) {
+  VIEW = 'login';
+  root.innerHTML =
+    '<div class="auth-wrap">' +
+      '<div class="auth-logo">' +
+        '<div class="icon-wrap">' +
+          '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>' +
+        '</div>' +
+        '<h1>생활관 입소자 포털</h1>' +
+        '<p>아세아항공직업전문학교 기숙사</p>' +
+      '</div>' +
+      '<div class="auth-card">' +
+        '<h2>본인 확인</h2>' +
+        '<div class="field"><label>성명</label><input id="li-name" placeholder="홍길동" autocomplete="name"></div>' +
+        '<div class="field"><label>전화번호</label><input id="li-phone" placeholder="010-1234-5678" inputmode="numeric" maxlength="13"></div>' +
+        (errMsg ? '<p class="err-msg">' + esc(errMsg) + '</p>' : '') +
+        '<div id="li-err" class="err-msg" style="display:none"></div>' +
+        '<button class="btn-primary" id="li-btn" style="margin-top:6px">조회하기</button>' +
+        '<p class="muted" style="margin-top:12px;text-align:center">등록된 성명과 전화번호로 본인 정보를 조회합니다.</p>' +
+      '</div>' +
+    '</div>';
+
+  var phoneInput = document.getElementById('li-phone');
+  phoneInput.addEventListener('input', function() {
+    var raw = normPhone(this.value);
+    if (raw.length > 11) raw = raw.slice(0, 11);
+    this.value = fmtPhone(raw);
+  });
+
+  document.getElementById('li-btn').addEventListener('click', doLogin);
+  document.getElementById('li-name').addEventListener('keydown', function(e) { if(e.key==='Enter') document.getElementById('li-phone').focus(); });
+  document.getElementById('li-phone').addEventListener('keydown', function(e) { if(e.key==='Enter') doLogin(); });
+}
+
+async function doLogin() {
+  var name  = (document.getElementById('li-name').value || '').trim();
+  var phone = normPhone(document.getElementById('li-phone').value || '');
+  var err   = document.getElementById('li-err');
+  err.style.display = 'none';
+  if (!name)  { err.textContent = '성명을 입력하세요.'; err.style.display = 'block'; return; }
+  if (phone.length < 9) { err.textContent = '전화번호를 올바르게 입력하세요.'; err.style.display = 'block'; return; }
+
+  var btn = document.getElementById('li-btn');
+  btn.disabled = true; btn.textContent = '조회 중…';
+  try {
+    var r = await db.rpc('dorm_resident_phone_login', { p_phone: phone, p_name: name });
+    if (r.error) throw new Error(r.error.message);
+    if (!r.data) { err.textContent = '일치하는 정보가 없습니다. 성명과 전화번호를 확인하세요.'; err.style.display = 'block'; btn.disabled=false; btn.textContent='조회하기'; return; }
+    ME = r.data;
+    showPinSaveAsk();
+  } catch(e) {
+    err.textContent = '오류: ' + e.message; err.style.display = 'block';
+    btn.disabled = false; btn.textContent = '조회하기';
+  }
+}
+
+// ── PIN 저장 여부 묻기 ────────────────────────
+function showPinSaveAsk() {
+  VIEW = 'pin-save-ask';
+  root.innerHTML =
+    '<div class="auth-wrap">' +
+      '<div class="auth-logo">' +
+        '<div class="icon-wrap">' +
+          '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>' +
+        '</div>' +
+        '<h1>이 기기에 저장</h1>' +
+        '<p>' + esc(ME.name) + ' 님, 반갑습니다</p>' +
+      '</div>' +
+      '<div class="auth-card">' +
+        '<div class="pin-save-ask">' +
+          '<strong>이 기기를 자주 사용하시나요?</strong>' +
+          '저장하면 다음부터 PIN 4자리만 입력하면 바로 로그인됩니다. 다른 사람과 공유하는 기기라면 저장하지 마세요.' +
+          '<div class="pin-save-btns">' +
+            '<button class="btn-yes" id="ps-yes">저장하기</button>' +
+            '<button class="btn-no"  id="ps-no">저장 안 함</button>' +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+
+  document.getElementById('ps-yes').addEventListener('click', function() { showPinSetup(); });
+  document.getElementById('ps-no').addEventListener('click', function() { showHome(); });
+}
+
+// ── PIN 설정 ──────────────────────────────────
+function showPinSetup() {
+  VIEW = 'pin-setup';
+  PIN_BUF = ''; PIN_CONFIRM_BUF = ''; PIN_STEP = 'enter';
+  renderPinScreen('PIN 설정', 'PIN 4자리를 입력하세요', null);
+}
+
+function renderPinScreen(title, subtitle, err) {
+  root.innerHTML =
+    '<div class="auth-wrap">' +
+      '<div class="auth-logo">' +
+        '<div class="icon-wrap">' +
+          '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>' +
+        '</div>' +
+        '<h1>' + esc(title) + '</h1>' +
+        '<p>' + esc(subtitle) + '</p>' +
+      '</div>' +
+      '<div class="auth-card">' +
+        '<div class="pin-dots" id="pin-dots">' +
+          '<div class="pin-dot" id="pd0"></div><div class="pin-dot" id="pd1"></div>' +
+          '<div class="pin-dot" id="pd2"></div><div class="pin-dot" id="pd3"></div>' +
+        '</div>' +
+        (err ? '<p class="err-msg" style="text-align:center;margin-bottom:8px">' + esc(err) + '</p>' : '') +
+        '<div class="pin-keypad" id="pin-pad">' +
+          [1,2,3,4,5,6,7,8,9,'','0','⌫'].map(function(k) {
+            return '<button class="pin-key' + (k===''?' pin-empty':'') + (k==='⌫'?' del':'') +
+              '" data-k="' + k + '">' + (k===''?'':k) + '</button>';
+          }).join('') +
+        '</div>' +
+        '<div style="text-align:center;margin-top:14px">' +
+          '<button class="btn-ghost" id="pin-cancel">취소</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+
+  document.getElementById('pin-pad').addEventListener('click', function(e) {
+    var k = e.target.closest('.pin-key');
+    if (!k || k.classList.contains('pin-empty')) return;
+    var val = k.dataset.k;
+    if (val === '⌫') { onPinBack(); }
+    else { onPinDigit(val); }
+  });
+  document.getElementById('pin-cancel').addEventListener('click', function() {
+    if (VIEW === 'pin-setup') { showHome(); }
+    else { clearSession(); showLogin(); }
+  });
+}
+
+function updatePinDots(len) {
+  for (var i = 0; i < 4; i++) {
+    document.getElementById('pd' + i).classList.toggle('filled', i < len);
+  }
+}
+
+function onPinDigit(d) {
+  if (VIEW === 'pin-setup') {
+    if (PIN_STEP === 'enter') {
+      if (PIN_BUF.length < 4) { PIN_BUF += d; updatePinDots(PIN_BUF.length); }
+      if (PIN_BUF.length === 4) {
+        setTimeout(function() { PIN_STEP = 'confirm'; renderPinScreen('PIN 확인', 'PIN을 한 번 더 입력하세요', null); }, 250);
+      }
+    } else {
+      if (PIN_CONFIRM_BUF.length < 4) { PIN_CONFIRM_BUF += d; updatePinDots(PIN_CONFIRM_BUF.length); }
+      if (PIN_CONFIRM_BUF.length === 4) {
+        setTimeout(function() {
+          if (PIN_BUF === PIN_CONFIRM_BUF) {
+            try { localStorage.setItem(PIN_KEY, PIN_BUF); saveSession(ME); } catch(e) {}
+            showHome();
+          } else {
+            PIN_BUF = ''; PIN_CONFIRM_BUF = ''; PIN_STEP = 'enter';
+            renderPinScreen('PIN 설정', 'PIN이 일치하지 않습니다. 다시 입력하세요', 'PIN이 일치하지 않아요.');
+          }
+        }, 250);
+      }
     }
-  });
-
-  ['li-sno','li-name'].forEach(function(id) {
-    document.getElementById(id).addEventListener('keydown', function(e) {
-      if (e.key === 'Enter') document.getElementById('li-btn').click();
-    });
-  });
+  } else if (VIEW === 'pin-verify') {
+    if (PIN_BUF.length < 4) { PIN_BUF += d; updatePinDots(PIN_BUF.length); }
+    if (PIN_BUF.length === 4) {
+      setTimeout(function() {
+        if (PIN_BUF === savedPin()) { showHome(); }
+        else { PIN_BUF = ''; renderPinVerifyScreen('PIN이 틀렸습니다. 다시 입력하세요'); }
+      }, 200);
+    }
+  }
+}
+function onPinBack() {
+  if (VIEW === 'pin-setup') {
+    if (PIN_STEP === 'confirm') { PIN_CONFIRM_BUF = PIN_CONFIRM_BUF.slice(0,-1); updatePinDots(PIN_CONFIRM_BUF.length); }
+    else { PIN_BUF = PIN_BUF.slice(0,-1); updatePinDots(PIN_BUF.length); }
+  } else {
+    PIN_BUF = PIN_BUF.slice(0,-1); updatePinDots(PIN_BUF.length);
+  }
 }
 
-function showPortal() {
-  document.getElementById('login-screen').style.display = 'none';
-  document.getElementById('portal').style.display = 'block';
-  var room = (ME.building || '') + (ME.room ? ' ' + ME.room + '호' : '');
-  document.getElementById('hd-room').textContent = (ME.name || '') + (room ? ' · ' + room : '');
-  document.getElementById('hd-logout').addEventListener('click', function() {
-    try { sessionStorage.removeItem('dorm_resident'); } catch(e) {}
-    ME = null;
-    document.getElementById('portal').style.display = 'none';
-    document.getElementById('login-screen').style.display = 'flex';
-    document.getElementById('li-sno').value = '';
-    document.getElementById('li-name').value = '';
-    setupLogin();
+// ── PIN 확인 (재방문) ─────────────────────────
+function showPinVerify() {
+  VIEW = 'pin-verify'; PIN_BUF = '';
+  renderPinVerifyScreen(null);
+}
+function renderPinVerifyScreen(err) {
+  root.innerHTML =
+    '<div class="auth-wrap">' +
+      '<div class="auth-logo">' +
+        '<div class="icon-wrap">' +
+          '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>' +
+        '</div>' +
+        '<h1>' + esc(ME.name) + ' 님</h1>' +
+        '<p>PIN 4자리를 입력하세요</p>' +
+      '</div>' +
+      '<div class="auth-card">' +
+        '<div class="pin-dots" id="pin-dots">' +
+          '<div class="pin-dot" id="pd0"></div><div class="pin-dot" id="pd1"></div>' +
+          '<div class="pin-dot" id="pd2"></div><div class="pin-dot" id="pd3"></div>' +
+        '</div>' +
+        (err ? '<p class="err-msg" style="text-align:center;margin-bottom:8px">' + esc(err) + '</p>' : '') +
+        '<div class="pin-keypad" id="pin-pad">' +
+          [1,2,3,4,5,6,7,8,9,'','0','⌫'].map(function(k) {
+            return '<button class="pin-key' + (k===''?' pin-empty':'') + (k==='⌫'?' del':'') +
+              '" data-k="' + k + '">' + (k===''?'':k) + '</button>';
+          }).join('') +
+        '</div>' +
+        '<div style="text-align:center;margin-top:14px">' +
+          '<button class="btn-ghost" id="pin-other">내 기기 아님 (다른 계정)</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+
+  document.getElementById('pin-pad').addEventListener('click', function(e) {
+    var k = e.target.closest('.pin-key');
+    if (!k || k.classList.contains('pin-empty')) return;
+    var val = k.dataset.k;
+    if (val === '⌫') { onPinBack(); } else { onPinDigit(val); }
   });
-  renderHome();
+  document.getElementById('pin-other').addEventListener('click', function() { clearSession(); showLogin(); });
 }
 
-// ── SVG Icons ──
-var ICONS = {
-  contract: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1A73E8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10,9 9,9 8,9"/></svg>',
-  payment: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1A73E8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>',
-  bill: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9,11 12,14 22,4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>',
-  complaint: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ea580c" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>',
-  notice: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1A73E8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>',
-  moveout: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ea580c" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16,17 21,12 16,7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>',
-  sign: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1a3a5c" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>',
-  penalty: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
-  back: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15,18 9,12 15,6"/></svg>',
-  arrow: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9,18 15,12 9,6"/></svg>'
-};
+// ── 홈 화면 ───────────────────────────────────
+function showHome() {
+  VIEW = 'home';
+  var bldg = ME.building_name || ME.building_short || '';
+  var room = ME.room ? ME.room + '호' : '';
 
-// ── Home (card grid) ──
-function renderHome() {
-  var w = document.getElementById('main-wrap');
   var cards = [
-    { id:'contract', icon:'contract', iconColor:'', title:'내 계약 정보', desc:'입소 계약 및 호실 확인' },
-    { id:'payment',  icon:'payment',  iconColor:'', title:'납부 내역',    desc:'기숙사비 납부 현황' },
-    { id:'bill',     icon:'bill',     iconColor:'green', title:'고지서',  desc:'납부 고지서 조회' },
-    { id:'complaint',icon:'complaint',iconColor:'orange', title:'민원 접수', desc:'시설·생활 민원 신청' },
-    { id:'notice',   icon:'notice',   iconColor:'', title:'공지사항',    desc:'생활관 공지 확인' },
-    { id:'moveout',  icon:'moveout',  iconColor:'orange', title:'퇴실 신청', desc:'퇴실 일자 및 사유 신청' },
-    { id:'sign',     icon:'sign',     iconColor:'navy', title:'계약서 서명', desc:'전자서명 계약 체결' },
-    { id:'penalty',  icon:'penalty',  iconColor:'red', title:'벌점 내역',   desc:'누적 벌점 조회' }
+    { id:'contract', icon: iconDoc(),    name:'내 계약',     desc:'입소 계약 정보 확인' },
+    { id:'payment',  icon: iconCard(),   name:'납부 내역',   desc:'월별 납부 현황' },
+    { id:'bill',     icon: iconReceipt(),name:'고지서',      desc:'수도·전기 고지서' },
+    { id:'complaint',icon: iconChat(),   name:'민원 접수',   desc:'시설·생활 불편 신고' },
+    { id:'notice',   icon: iconBell(),   name:'공지사항',    desc:'생활관 공지' },
+    { id:'moveout',  icon: iconExit(),   name:'퇴실 신청',   desc:'퇴실 희망일 신청' },
+    { id:'sign',     icon: iconPen(),    name:'계약서 서명', desc:'전자서명 대기 확인' },
+    { id:'penalty',  icon: iconShield(), name:'벌점 내역',   desc:'누적 벌점 조회' }
   ];
-  w.innerHTML = '<div class="card-grid">' +
-    cards.map(function(c) {
-      return '<div class="feat-card" data-sec="' + c.id + '">' +
-        '<div class="icon-wrap ' + c.iconColor + '">' + ICONS[c.icon] + '</div>' +
-        '<h3>' + esc(c.title) + '</h3>' +
-        '<p>' + esc(c.desc) + '</p>' +
-        '<span class="arrow">' + ICONS.arrow + '</span>' +
+
+  // 계약서 서명 뱃지
+  var pendingSigns = (ME.doc_signs || []).filter(function(s) { return s.status === 'pending'; }).length;
+
+  root.innerHTML =
+    '<div class="portal-wrap">' +
+      '<div class="portal-hd">' +
+        '<div class="portal-hd-top">' +
+          '<span class="portal-hd-title">생활관 입소자 포털</span>' +
+          '<button class="btn-logout" id="logout-btn">로그아웃</button>' +
+        '</div>' +
+        '<div class="portal-hd-user">' + esc(ME.name) + ' 님</div>' +
+        '<div class="hd-badges">' +
+          (bldg ? '<span class="hd-badge">' + esc(bldg) + '</span>' : '') +
+          (room ? '<span class="hd-badge">' + esc(room) + '</span>' : '') +
+          '<span class="hd-badge">' + (ME.status === 'active' ? '입소 중' : esc(ME.status || '')) + '</span>' +
+        '</div>' +
+      '</div>' +
+      '<div class="card-grid">' +
+        cards.map(function(c) {
+          var badge = (c.id === 'sign' && pendingSigns > 0)
+            ? '<div class="card-badge badge-orange">서명 대기 ' + pendingSigns + '</div>' : '';
+          return '<div class="menu-card" data-s="' + c.id + '">' +
+            '<div class="card-icon">' + c.icon + '</div>' +
+            '<div class="card-name">' + c.name + '</div>' +
+            '<div class="card-desc">' + c.desc + '</div>' +
+            badge +
+          '</div>';
+        }).join('') +
+      '</div>' +
+    '</div>';
+
+  document.getElementById('logout-btn').addEventListener('click', function() {
+    clearSession(); ME = null; showLogin();
+  });
+  document.querySelectorAll('.menu-card').forEach(function(el) {
+    el.addEventListener('click', function() { showSection(this.dataset.s); });
+  });
+}
+
+// ── 섹션 ─────────────────────────────────────
+function showSection(name) {
+  VIEW = 'section:' + name;
+  var titles = { contract:'내 계약', payment:'납부 내역', bill:'고지서',
+    complaint:'민원 접수', notice:'공지사항', moveout:'퇴실 신청',
+    sign:'계약서 서명', penalty:'벌점 내역' };
+
+  root.innerHTML =
+    '<div class="portal-wrap">' +
+      '<div class="section-hd">' +
+        '<button class="back-btn" id="back-btn">' +
+          '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>홈으로' +
+        '</button>' +
+        '<h2>' + esc(titles[name] || name) + '</h2>' +
+      '</div>' +
+      '<div class="section-wrap" id="section-content"></div>' +
+    '</div>';
+
+  document.getElementById('back-btn').addEventListener('click', showHome);
+  var sc = document.getElementById('section-content');
+
+  if (name === 'contract')   renderContract(sc);
+  else if (name === 'payment')  renderPayment(sc);
+  else if (name === 'bill')     renderBill(sc);
+  else if (name === 'complaint') renderComplaint(sc);
+  else if (name === 'notice')   renderNotice(sc);
+  else if (name === 'moveout')  renderMoveout(sc);
+  else if (name === 'sign')     renderSign(sc);
+  else if (name === 'penalty')  renderPenalty(sc);
+}
+
+function renderContract(c) {
+  var cs = ME.contracts || [];
+  if (!cs.length) { c.innerHTML = '<div class="card"><p class="muted">계약 정보가 없습니다.</p></div>'; return; }
+  c.innerHTML = cs.map(function(ct) {
+    var statusBadge = ct.status === 'active' ? '<span class="badge badge-green">진행 중</span>'
+      : ct.status === 'expired' ? '<span class="badge badge-gray">만료</span>'
+      : '<span class="badge badge-blue">' + esc(ct.status) + '</span>';
+    return '<div class="card">' +
+      '<h3>' + esc(ct.building || '') + ' ' + esc(ct.room || '') + '호 ' + statusBadge + '</h3>' +
+      '<div class="info-row"><span class="info-label">입소 기간</span><span class="info-val">' + fmtDate(ct.start) + ' ~ ' + fmtDate(ct.end) + '</span></div>' +
+      '<div class="info-row"><span class="info-label">월 기숙사비</span><span class="info-val">' + won(ct.unit_price) + '원</span></div>' +
+      (ct.deposit ? '<div class="info-row"><span class="info-label">보증금</span><span class="info-val">' + won(ct.deposit) + '원</span></div>' : '') +
+      '<div class="info-row"><span class="info-label">계약 유형</span><span class="info-val">' + esc(ct.type || '-') + '</span></div>' +
+    '</div>';
+  }).join('');
+}
+
+function renderPayment(c) {
+  var ps = ME.payments || [];
+  if (!ps.length) { c.innerHTML = '<div class="card"><p class="muted">납부 내역이 없습니다.</p></div>'; return; }
+  var today = new Date().toISOString().slice(0,10);
+  c.innerHTML = '<div class="card"><div class="overflow-x"><table>' +
+    '<thead><tr><th>기간</th><th>금액</th><th>납부기한</th><th>상태</th></tr></thead><tbody>' +
+    ps.map(function(p) {
+      var od = p.status !== 'paid' && p.due_date && p.due_date < today;
+      var badge = p.status === 'paid' ? '<span class="badge badge-green">완납</span>'
+        : od ? '<span class="badge badge-red">연체</span>' : '<span class="badge badge-blue">미납</span>';
+      return '<tr><td>' + esc(p.period||'-') + '</td><td>' + won(p.amount) + '원</td><td>' + fmtDate(p.due_date) + '</td><td>' + badge + '</td></tr>';
+    }).join('') +
+    '</tbody></table></div></div>';
+}
+
+function renderBill(c) {
+  var bs = ME.utility_bills || [];
+  if (!bs.length) { c.innerHTML = '<div class="card"><p class="muted">발행된 고지서가 없습니다.</p></div>'; return; }
+  c.innerHTML = '<div class="card"><div class="overflow-x"><table>' +
+    '<thead><tr><th>학기</th><th>금액</th><th>마감</th><th>상태</th></tr></thead><tbody>' +
+    bs.map(function(b) {
+      return '<tr><td>' + esc(b.semester||'-') + '</td><td>' + won(b.amount) + '원</td><td>' + fmtDate(b.due_date) + '</td><td>' + esc(b.status||'-') + '</td></tr>';
+    }).join('') +
+    '</tbody></table></div></div>';
+}
+
+function renderComplaint(c) {
+  c.innerHTML =
+    '<div class="card">' +
+      '<h3>민원 접수</h3>' +
+      '<div class="form-field"><label>분류</label><select id="mc-cat">' +
+        ['시설 하자 (누수·파손·고장)','생활 환경 (냄새·소음·위생)','냉·난방','인터넷·전기','동료 입소자 관련','기타'].map(function(o) {
+          return '<option>' + o + '</option>';
+        }).join('') +
+      '</select></div>' +
+      '<div class="form-field"><label>제목</label><input id="mc-title" placeholder="민원 제목을 입력하세요"></div>' +
+      '<div class="form-field"><label>내용</label><textarea id="mc-content" placeholder="구체적인 내용을 입력하세요" maxlength="500"></textarea></div>' +
+      '<div class="err-msg" id="mc-err" style="display:none"></div>' +
+      '<button class="btn-primary" id="mc-btn">접수하기</button>' +
+    '</div>';
+
+  document.getElementById('mc-btn').addEventListener('click', async function() {
+    var title   = (document.getElementById('mc-title').value || '').trim();
+    var content = (document.getElementById('mc-content').value || '').trim();
+    var err = document.getElementById('mc-err'); err.style.display = 'none';
+    if (!title || !content) { err.textContent = '제목과 내용을 입력하세요.'; err.style.display = 'block'; return; }
+    this.disabled = true; this.textContent = '접수 중…';
+    try {
+      var r = await db.rpc('dorm_complaint_submit', {
+        p_resident_id: ME.resident_id,
+        p_category: document.getElementById('mc-cat').value,
+        p_title: title, p_content: content
+      });
+      if (r.error) throw new Error(r.error.message);
+      var ticket = (r.data && r.data.ticket_no) || '';
+      c.innerHTML = '<div class="card success-box">' +
+        '<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>' +
+        '<h3>민원이 접수되었습니다</h3>' +
+        (ticket ? '<p>접수번호: <strong>' + esc(ticket) + '</strong></p>' : '') +
+        '<p>담당자 검토 후 처리 결과를 안내드립니다.</p>' +
+      '</div>';
+    } catch(e) { err.textContent = '접수 실패: ' + e.message; err.style.display = 'block'; this.disabled = false; this.textContent = '접수하기'; }
+  });
+}
+
+function renderNotice(c) {
+  c.innerHTML = '<div class="card"><p class="muted">불러오는 중…</p></div>';
+  db.from('dorm.notices').select('id,title,content,created_at').order('created_at', {ascending:false}).limit(30)
+    .then(function(r) {
+      var ns = r.data || [];
+      if (!ns.length) { c.innerHTML = '<div class="card"><p class="muted">등록된 공지가 없습니다.</p></div>'; return; }
+      c.innerHTML = '<div class="card">' +
+        ns.map(function(n) {
+          return '<div class="notice-item" data-id="' + n.id + '">' +
+            '<div class="notice-title">' + esc(n.title) + '</div>' +
+            '<div class="notice-date">' + fmtDate(n.created_at) + '</div>' +
+            '<div class="notice-body" id="nb-' + n.id + '">' + esc(n.content || '') + '</div>' +
+          '</div>';
+        }).join('') +
+      '</div>';
+      c.querySelectorAll('.notice-item').forEach(function(el) {
+        el.addEventListener('click', function() {
+          var body = document.getElementById('nb-' + this.dataset.id);
+          body.style.display = body.style.display === 'block' ? 'none' : 'block';
+        });
+      });
+    });
+}
+
+function renderMoveout(c) {
+  c.innerHTML =
+    '<div class="card">' +
+      '<h3>퇴실 신청</h3>' +
+      '<p class="muted" style="margin-bottom:14px">희망 퇴실일을 선택하고 사유를 입력하면 관리자 검토 후 처리됩니다.</p>' +
+      '<div class="form-field"><label>희망 퇴실일</label><input id="mo-date" type="date"></div>' +
+      '<div class="form-field"><label>퇴실 사유</label><textarea id="mo-reason" placeholder="퇴실 사유를 입력하세요" maxlength="300"></textarea></div>' +
+      '<div class="err-msg" id="mo-err" style="display:none"></div>' +
+      '<button class="btn-primary" id="mo-btn">퇴실 신청</button>' +
+    '</div>';
+
+  document.getElementById('mo-btn').addEventListener('click', async function() {
+    var date   = document.getElementById('mo-date').value;
+    var reason = (document.getElementById('mo-reason').value || '').trim();
+    var err = document.getElementById('mo-err'); err.style.display = 'none';
+    if (!date) { err.textContent = '희망 퇴실일을 선택하세요.'; err.style.display = 'block'; return; }
+    this.disabled = true; this.textContent = '신청 중…';
+    try {
+      var r = await db.rpc('dorm_complaint_submit', {
+        p_resident_id: ME.resident_id,
+        p_category: '퇴실신청',
+        p_title: '퇴실 신청 (' + date + ')',
+        p_content: '희망 퇴실일: ' + date + '\n사유: ' + reason
+      });
+      if (r.error) throw new Error(r.error.message);
+      c.innerHTML = '<div class="card success-box">' +
+        '<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>' +
+        '<h3>퇴실 신청이 완료되었습니다</h3>' +
+        '<p>관리자 승인 후 처리됩니다. 감사합니다.</p>' +
+      '</div>';
+    } catch(e) { err.textContent = '신청 실패: ' + e.message; err.style.display = 'block'; this.disabled = false; this.textContent = '퇴실 신청'; }
+  });
+}
+
+function renderSign(c) {
+  var signs = ME.doc_signs || [];
+  if (!signs.length) { c.innerHTML = '<div class="card"><p class="muted">서명 요청이 없습니다.</p></div>'; return; }
+  var base = location.origin + location.pathname.replace('resident-portal.html','') + 'contract-sign.html';
+  c.innerHTML = '<div class="card">' +
+    signs.map(function(s) {
+      var badge = s.status === 'signed' ? '<span class="badge badge-green">서명 완료</span>' : '<span class="badge badge-orange">서명 대기</span>';
+      return '<div style="padding:12px 0;border-bottom:1px solid var(--border)">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center">' +
+          '<span style="font-size:13px;font-weight:600">' + esc(s.type || '입소계약서') + '</span>' + badge +
+        '</div>' +
+        (s.signed_at ? '<p class="muted" style="margin-top:4px">서명일: ' + fmtDate(s.signed_at) + '</p>' : '') +
+        (s.status !== 'signed' && s.token ? '<a href="' + esc(base) + '?t=' + esc(s.token) + '" style="display:inline-block;margin-top:8px;color:var(--primary);font-size:13px;font-weight:600">서명하러 가기 →</a>' : '') +
       '</div>';
     }).join('') +
   '</div>';
-
-  w.querySelectorAll('.feat-card').forEach(function(el) {
-    el.addEventListener('click', function() {
-      var sec = this.dataset.sec;
-      SECTIONS[sec] && SECTIONS[sec]();
-    });
-  });
 }
 
-function secHeader(title) {
-  return '<div class="sec-hd"><button class="back-btn" id="back-btn">' + ICONS.back + ' 홈</button><span class="sec-title">' + esc(title) + '</span></div>';
+function renderPenalty(c) {
+  var ps = ME.penalties || [];
+  if (!ps.length) { c.innerHTML = '<div class="card"><div style="text-align:center;padding:24px"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg><p style="margin-top:8px;font-weight:600">벌점 내역이 없습니다</p><p class="muted">생활 규정을 잘 지키고 계십니다.</p></div></div>'; return; }
+  var total = ps.reduce(function(acc, p) { return acc + (p.points || 0); }, 0);
+  c.innerHTML = '<div class="card">' +
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">' +
+      '<h3 style="margin:0">벌점 내역</h3>' +
+      '<span class="badge ' + (total >= 15 ? 'badge-red' : total >= 8 ? 'badge-orange' : 'badge-blue') + '">누적 ' + total + '점</span>' +
+    '</div>' +
+    '<div class="overflow-x"><table><thead><tr><th>날짜</th><th>규칙</th><th>점수</th></tr></thead><tbody>' +
+    ps.map(function(p) {
+      return '<tr><td>' + fmtDate(p.issued_at) + '</td><td>' + esc(p.rule_name||'-') + '</td><td style="color:var(--red);font-weight:700">+' + (p.points||0) + '</td></tr>';
+    }).join('') +
+    '</tbody></table></div></div>';
 }
-function setWrap(html) {
-  var w = document.getElementById('main-wrap');
-  w.innerHTML = html;
-  var bb = document.getElementById('back-btn');
-  if (bb) bb.addEventListener('click', renderHome);
-}
 
-// ── Sections ──
-var SECTIONS = {
-
-  contract: function() {
-    var cs = (ME.contracts) || [];
-    var rows = cs.length ? cs.map(function(c) {
-      var statusMap = {active:'<span class="badge green">입소 중</span>', ended:'<span class="badge navy">퇴실</span>', pending:'<span class="badge orange">대기</span>'};
-      var badge = statusMap[c.status] || '<span class="badge">' + esc(c.status||'-') + '</span>';
-      return '<div class="card">' +
-        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">' +
-          '<b style="font-size:15px">' + esc((c.building||'') + ' ' + (c.room||'') + '호') + '</b>' + badge +
-        '</div>' +
-        '<div class="info-row"><span class="lbl">입소 기간</span><span class="val">' + fmtDate(c.start) + ' ~ ' + fmtDate(c.end) + '</span></div>' +
-        '<div class="info-row"><span class="lbl">계약 유형</span><span class="val">' + esc(c.type||'-') + '</span></div>' +
-        '<div class="info-row"><span class="lbl">월 기숙사비</span><span class="val">' + won(c.unit_price) + '원</span></div>' +
-        (c.deposit ? '<div class="info-row"><span class="lbl">보증금</span><span class="val">' + won(c.deposit) + '원</span></div>' : '') +
-        (c.attachment ? '<div style="margin-top:10px"><a href="' + esc(c.attachment) + '" target="_blank" style="font-size:13px;color:var(--primary)">계약서 보기 →</a></div>' : '') +
-      '</div>';
-    }).join('') : '<div class="card"><p class="empty">등록된 계약 정보가 없습니다.</p></div>';
-    setWrap(secHeader('내 계약 정보') + rows);
-  },
-
-  payment: function() {
-    var ps = (ME.payments) || [];
-    var today = new Date().toISOString().slice(0,10);
-    var rows = ps.length ? ps.map(function(p) {
-      var od = p.status !== 'paid' && p.due_date && p.due_date < today;
-      var badge = p.status === 'paid'
-        ? '<span class="badge green">완납</span>'
-        : (od ? '<span class="badge red">연체</span>' : '<span class="badge">미납</span>');
-      return '<tr><td>' + esc(p.period||'-') + '</td><td>' + won(p.amount) + '원</td><td>' + fmtDate(p.due_date) + '</td><td>' + badge + '</td></tr>';
-    }).join('') : '<tr><td colspan="4" class="empty">납부 내역이 없습니다.</td></tr>';
-    setWrap(secHeader('납부 내역') +
-      '<div class="card"><div class="tbl-wrap"><table>' +
-        '<thead><tr><th>기간</th><th>금액</th><th>납부기한</th><th>상태</th></tr></thead>' +
-        '<tbody>' + rows + '</tbody>' +
-      '</table></div></div>');
-  },
-
-  bill: function() {
-    var bs = (ME.utility_bills) || (ME.notices_bill) || [];
-    var rows = bs.length ? bs.map(function(b) {
-      var badge = b.status === 'paid' ? '<span class="badge green">완납</span>' : '<span class="badge">미납</span>';
-      return '<tr><td>' + esc(b.notice_no||'-') + '</td><td>' + esc(b.semester||'-') + '</td><td>' + won(b.amount) + '원</td><td>' + fmtDate(b.due_date) + '</td><td>' + badge + '</td></tr>';
-    }).join('') : '<tr><td colspan="5" class="empty">발행된 고지서가 없습니다.</td></tr>';
-    setWrap(secHeader('고지서') +
-      '<div class="card"><div class="tbl-wrap"><table>' +
-        '<thead><tr><th>고지번호</th><th>학기</th><th>금액</th><th>마감</th><th>상태</th></tr></thead>' +
-        '<tbody>' + rows + '</tbody>' +
-      '</table></div></div>');
-  },
-
-  complaint: function() {
-    setWrap(secHeader('민원 접수') +
-      '<div class="card" id="complaint-wrap">' +
-        '<label>분류</label>' +
-        '<select id="mc-cat">' +
-          '<option>시설 하자(누수·파손·고장)</option>' +
-          '<option>생활 환경(냄새·소음·위생)</option>' +
-          '<option>냉·난방</option>' +
-          '<option>인터넷·전기</option>' +
-          '<option>동료 입소자 관련</option>' +
-          '<option>기타</option>' +
-        '</select>' +
-        '<label>제목</label><input id="mc-title" placeholder="민원 제목을 입력하세요">' +
-        '<label>내용</label><textarea id="mc-content" placeholder="구체적인 상황을 입력하세요 (최대 500자)" maxlength="500"></textarea>' +
-        '<div class="err" id="mc-err" style="display:none"></div>' +
-        '<button class="btn primary" id="mc-btn">접수하기</button>' +
-      '</div>');
-
-    document.getElementById('mc-btn').addEventListener('click', async function() {
-      var title = (document.getElementById('mc-title').value||'').trim();
-      var content = (document.getElementById('mc-content').value||'').trim();
-      var errEl = document.getElementById('mc-err');
-      errEl.style.display = 'none';
-      if (!title || !content) { errEl.textContent = '제목과 내용을 모두 입력하세요.'; errEl.style.display = 'block'; return; }
-      this.disabled = true; this.textContent = '접수 중…';
-      try {
-        var r = await db.rpc('dorm_complaint_submit', {
-          p_resident_id: ME.resident_id,
-          p_category: document.getElementById('mc-cat').value,
-          p_title: title,
-          p_content: content
-        });
-        if (r.error) throw new Error(r.error.message);
-        var ticket = r.data && (r.data.ticket_no || r.data);
-        document.getElementById('complaint-wrap').innerHTML =
-          '<div class="success-box">' +
-            '<svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>' +
-            '<h2>민원이 접수되었습니다</h2>' +
-            (ticket ? '<div class="success-ticket">접수번호: ' + esc(ticket) + '</div>' : '') +
-            '<p>처리 현황은 담당자가 확인 후 연락드립니다.</p>' +
-          '</div>';
-      } catch(e) {
-        errEl.textContent = '접수 실패: ' + e.message;
-        errEl.style.display = 'block';
-        this.disabled = false; this.textContent = '접수하기';
-      }
-    });
-  },
-
-  notice: async function() {
-    setWrap(secHeader('공지사항') + '<div class="card" id="notice-list"><p class="muted">불러오는 중…</p></div>');
-    try {
-      var r = await db.from('dorm.notices').select('id,title,content,created_at').order('created_at', {ascending:false}).limit(20);
-      var list = document.getElementById('notice-list');
-      if (r.error) throw new Error(r.error.message);
-      var items = r.data || [];
-      if (!items.length) { list.innerHTML = '<p class="empty">등록된 공지사항이 없습니다.</p>'; return; }
-      list.innerHTML = items.map(function(n, i) {
-        return '<div class="notice-item">' +
-          '<div class="notice-hd" data-i="' + i + '">' +
-            '<h3>' + esc(n.title) + '</h3>' +
-            '<span class="nd">' + fmtDate(n.created_at) + '</span>' +
-          '</div>' +
-          '<div class="notice-body" id="nb-' + i + '">' + esc(n.content||'') + '</div>' +
-        '</div>';
-      }).join('');
-      list.querySelectorAll('.notice-hd').forEach(function(hd) {
-        hd.addEventListener('click', function() {
-          var b = document.getElementById('nb-' + this.dataset.i);
-          if (b) b.classList.toggle('open');
-        });
-      });
-    } catch(e) {
-      document.getElementById('notice-list').innerHTML = '<p class="err">불러오기 실패: ' + esc(e.message) + '</p>';
-    }
-  },
-
-  moveout: function() {
-    setWrap(secHeader('퇴실 신청') +
-      '<div class="card">' +
-        '<p class="muted" style="margin-bottom:14px">희망 퇴실일과 사유를 입력하면 관리자 검토 후 처리됩니다.</p>' +
-        '<label>희망 퇴실일</label><input type="date" id="mo-date">' +
-        '<label>사유</label><textarea id="mo-reason" placeholder="퇴실 사유를 입력하세요" maxlength="500"></textarea>' +
-        '<div class="err" id="mo-err" style="display:none"></div>' +
-        '<button class="btn danger" id="mo-btn" style="margin-top:16px">퇴실 신청</button>' +
-      '</div>');
-
-    document.getElementById('mo-btn').addEventListener('click', async function() {
-      var date = document.getElementById('mo-date').value;
-      var reason = (document.getElementById('mo-reason').value||'').trim();
-      var errEl = document.getElementById('mo-err');
-      errEl.style.display = 'none';
-      if (!date) { errEl.textContent = '희망 퇴실일을 선택하세요.'; errEl.style.display = 'block'; return; }
-      var ok = await confirm('퇴실 신청 확인', '희망 퇴실일 ' + date + '로 퇴실을 신청하시겠습니까? 관리자 승인 후 처리됩니다.');
-      if (!ok) return;
-      this.disabled = true; this.textContent = '신청 중…';
-      try {
-        var r = await db.rpc('dorm_complaint_submit', {
-          p_resident_id: ME.resident_id,
-          p_category: '퇴실신청',
-          p_title: '퇴실 신청 (' + date + ')',
-          p_content: '희망 퇴실일: ' + date + '\n사유: ' + (reason||'(미입력)')
-        });
-        if (r.error) throw new Error(r.error.message);
-        var ticket = r.data && (r.data.ticket_no || r.data);
-        document.querySelector('#main-wrap .card').innerHTML =
-          '<div class="success-box">' +
-            '<svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>' +
-            '<h2>퇴실 신청 완료</h2>' +
-            (ticket ? '<div class="success-ticket">접수번호: ' + esc(ticket) + '</div>' : '') +
-            '<p>관리자 승인 후 처리됩니다. 이의가 있을 경우 담당자에게 문의하세요.</p>' +
-          '</div>';
-      } catch(e) {
-        errEl.textContent = '신청 실패: ' + e.message;
-        errEl.style.display = 'block';
-        this.disabled = false; this.textContent = '퇴실 신청';
-      }
-    });
-  },
-
-  sign: function() {
-    var signToken = ME.sign_token;
-    var signStatus = ME.sign_status;
-    var html = secHeader('계약서 서명');
-    if (signStatus === 'signed') {
-      html += '<div class="card"><div class="success-box">' +
-        '<svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>' +
-        '<h2>서명이 완료되었습니다</h2>' +
-        '<p>입소 계약서 전자서명이 정상 처리되었습니다.</p>' +
-      '</div></div>';
-    } else if (signToken) {
-      var signUrl = 'contract-sign.html?t=' + encodeURIComponent(signToken);
-      html += '<div class="card">' +
-        '<p style="margin-bottom:14px">입소 계약서 전자서명이 필요합니다. 아래 버튼을 눌러 서명을 완료하세요.</p>' +
-        '<a href="' + esc(signUrl) + '" class="btn primary" style="display:block;text-align:center;text-decoration:none;line-height:1.5;padding:13px">계약서 서명하기</a>' +
-      '</div>';
-    } else {
-      html += '<div class="card"><p class="empty">서명 대기 중인 계약서가 없습니다.<br>관리자에게 문의하세요.</p></div>';
-    }
-    setWrap(html);
-  },
-
-  penalty: function() {
-    var ps = (ME.penalties) || [];
-    var total = ps.reduce(function(s, p) { return s + (Number(p.points)||0); }, 0);
-    var rows = ps.length ? ps.map(function(p) {
-      return '<tr><td>' + fmtDate(p.date||p.created_at) + '</td><td>' + esc(p.rule||p.description||'-') + '</td><td style="color:var(--red);font-weight:700">+' + esc(p.points||0) + '점</td></tr>';
-    }).join('') : '<tr><td colspan="3" class="empty">벌점 내역이 없습니다.</td></tr>';
-    setWrap(secHeader('벌점 내역') +
-      '<div class="card">' +
-        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">' +
-          '<span class="muted">누적 벌점</span>' +
-          '<span style="font-size:22px;font-weight:700;color:' + (total >= 10 ? 'var(--red)' : total >= 5 ? 'var(--orange)' : 'var(--text)') + '">' + total + '점</span>' +
-        '</div>' +
-        '<div class="tbl-wrap"><table>' +
-          '<thead><tr><th>일자</th><th>규칙</th><th>점수</th></tr></thead>' +
-          '<tbody>' + rows + '</tbody>' +
-        '</table></div>' +
-      '</div>');
-  }
-};
+// ── SVG 아이콘 ────────────────────────────────
+function iconDoc()     { return '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>'; }
+function iconCard()    { return '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>'; }
+function iconReceipt() { return '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16l4-2 4 2 4-2 4 2V8z"/><line x1="9" y1="9" x2="15" y2="9"/><line x1="9" y1="13" x2="15" y2="13"/></svg>'; }
+function iconChat()    { return '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>'; }
+function iconBell()    { return '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>'; }
+function iconExit()    { return '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>'; }
+function iconPen()     { return '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>'; }
+function iconShield()  { return '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>'; }
 </script>
 </body>
 </html>
