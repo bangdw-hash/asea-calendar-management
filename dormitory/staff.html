@@ -7,9 +7,9 @@
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root{
-  --bg:#F0F9FF;--card:#fff;--sidebar:#fff;
-  --accent:#0EA5E9;--accent-dk:#0284C7;--accent-lt:#E0F2FE;--accent-text:#0369A1;
-  --border:#BAE6FD;--active:#E0F2FE;--active-text:#0369A1;
+  --bg:#F2F4F8;--card:#fff;--sidebar:#fff;
+  --accent:#4F46E5;--accent-dk:#4338CA;--accent-lt:#EEF2FF;--accent-text:#4338CA;
+  --border:#E2E8F0;--active:#EEF2FF;--active-text:#4338CA;
   --text:#1e293b;--muted:#64748b;--danger:#dc2626;--warn:#ea580c;--ok:#16a34a;
   --r:6px;--sidebar-w:220px;
   --sh:0 1px 3px rgba(0,0,0,.08);--sh-md:0 4px 12px rgba(0,0,0,.10);
@@ -195,7 +195,16 @@ tr:hover td{background:#f8fbff}
   .page-title{font-size:16px}
   .toolbar{gap:6px}
   .toolbar input,.toolbar select{font-size:12px;padding:6px 9px}
+  /* C style — mobile card list */
+  #rs-mob{display:block}
+  .ms-hd{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;padding:6px 2px 3px;margin-top:6px}
+  .mc{background:var(--card);border-radius:var(--r);padding:10px 12px;display:flex;gap:9px;align-items:center;margin-bottom:4px;border:1px solid var(--border);cursor:pointer}
+  .mc:active{opacity:.75}
+  .mc-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-top:3px}
+  .mc-nm{font-size:13px;font-weight:700}
+  .mc-sb{font-size:11px;color:var(--muted);margin-top:1px}
 }
+@media(min-width:768px){#rs-mob{display:none!important}}
 @media(min-width:768px){
   #mb-hamburger{display:none}
 }
@@ -749,7 +758,8 @@ function pgResidents(){
     <div class="spacer"></div>
     <button class="btn btn-primary btn-sm" onclick="openResModal()">+ 입소자 등록</button>
   </div>
-  <div class="card" style="padding:0"><div class="tbl-outer"><table><thead><tr>
+  <div id="rs-mob"></div>
+  <div id="rs-tbl-card" class="card" style="padding:0"><div class="tbl-outer"><table><thead><tr>
     <th>이름</th><th>학번</th><th>학과</th><th>건물</th><th>호실</th><th>구분</th><th class="text-right">납부액</th><th>벌점</th><th>입소일</th><th>작업</th>
   </tr></thead><tbody id="rs-body"></tbody></table></div></div>`;
 }
@@ -763,6 +773,23 @@ function filterRes(){
     if(ft&&r.type!==ft)return false;
     return true;
   });
+  const mob=document.getElementById('rs-mob');
+  const tbl=document.getElementById('rs-tbl-card');
+  if(mob&&window.innerWidth<768){
+    if(tbl)tbl.style.display='none';
+    mob.style.display='block';
+    const grp={};f.forEach(r=>{const k=r.building_name||'기타';(grp[k]||(grp[k]=[])).push(r)});
+    mob.innerHTML=Object.keys(grp).length?Object.entries(grp).map(([bld,rows])=>
+      `<div class="ms-hd">${bld} — ${rows.length}명</div>`+rows.map(r=>{
+        const sc=r.paid_total>0&&r.penalty_count===0?'#16a34a':r.penalty_count>0?'#dc2626':'#94a3b8';
+        const bdg=r.paid_total>0?`<span class="badge badge-ok">수납</span>`:`<span class="badge badge-danger">미납</span>`;
+        return `<div class="mc" onclick="openDetailPanel('${r.id}')"><div class="mc-dot" style="background:${sc}"></div><div style="flex:1;min-width:0"><div class="mc-nm">${r.name}</div><div class="mc-sb">${r.room_no||'호 미배정'} · ${r.student_no||''}</div></div>${bdg}</div>`;
+      }).join('')
+    ).join(''):'<p style="color:var(--muted);padding:16px 4px;font-size:13px">검색 결과 없음</p>';
+    return;
+  }
+  if(mob)mob.style.display='none';
+  if(tbl)tbl.style.display='';
   const b=document.getElementById('rs-body');if(!b)return;
   b.innerHTML=f.map(r=>`<tr class="cr" onclick="openDetailPanel('${r.id}')">
     <td><b class="cf">${r.name}</b></td><td>${r.student_no||'—'}</td><td>${r.class_name||'—'}</td>
