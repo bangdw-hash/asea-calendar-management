@@ -120,7 +120,19 @@
   }
 
   /* ── 렌더 ──────────────────────────────────────────────────────── */
-  function renderAll() { renderTree(); renderAddr(); renderRows(); renderToolbar(); renderSecSel(); }
+  var SEC_COLORS = ['#1A73E8', '#16a34a', '#ea580c', '#7c3aed', '#0891b2', '#be185d'];
+  var EXT_COLORS = { hwp: '#2563eb', hwpx: '#2563eb', xlsx: '#16a34a', xls: '#16a34a', docx: '#1d4ed8', doc: '#1d4ed8', pdf: '#dc2626', pptx: '#ea580c', ppt: '#ea580c' };
+  function secColor(id) { var i = A.sections.map(function (s) { return s.id; }).indexOf(id); return SEC_COLORS[(i < 0 ? 0 : i) % SEC_COLORS.length]; }
+  function renderStats() {
+    var docs = A.items.filter(function (i) { return i.type === 'doc' && i.status !== 'trash'; });
+    var dl = docs.reduce(function (n, i) { return n + (i.dl || 0); }, 0);
+    var trash = A.items.filter(function (i) { return i.status === 'trash'; }).length;
+    var cards = [['#1A73E8', docs.length, '전체 서식'], ['#16a34a', A.sections.length, '섹션'], ['#ea580c', dl, '누적 받은 수'], ['#7c3aed', trash, '휴지통']];
+    $('stats').innerHTML = cards.map(function (c) {
+      return '<div class="stat"><i style="background:' + c[0] + '">' + IC.file + '</i><div><b>' + Number(c[1]).toLocaleString() + '</b><span>' + c[2] + '</span></div></div>';
+    }).join('');
+  }
+  function renderAll() { renderStats(); renderTree(); renderAddr(); renderRows(); renderToolbar(); renderSecSel(); }
 
   function renderSecSel() {
     var s = $('secSel');
@@ -150,7 +162,7 @@
       var has = A.items.some(function (i) { return i.sectionId === s.id && i.parentId === '' && i.type === 'folder' && i.status !== 'trash'; });
       h += '<div class="tn sect' + (!cur.trash && cur.sec === s.id && !cur.folder ? ' cur' : '') + '" data-ts="' + esc(s.id) + '">' +
         '<span class="tg' + (has ? (open ? ' open' : '') : ' none') + '" data-tg="s' + esc(s.id) + '">' + IC.chev + '</span>' +
-        '<span class="ic">' + IC.folder + '</span><span class="nm">' + esc(s.name) + '</span>' +
+        '<span class="ic sdot" style="--sc:' + secColor(s.id) + '"></span><span class="nm">' + esc(s.name) + '</span>' +
         (s.access === 'restricted' ? '<span class="lk" title="허용 목록만 열람">' + IC.lock + '</span>' : '') + '</div>';
       if (open && has) h += treeKids(s.id, '', 1);
     });
@@ -171,12 +183,15 @@
     list.forEach(function (it) {
       var isF = it.type === 'folder';
       var link = isF ? '' : (it.hasFile ? it.fileName : (it.keyword ? '폴더 검색: ' + it.keyword : '미연결'));
+      var ext = it.hasFile ? (String(it.fileName).split('.').pop() || '').toLowerCase() : '';
+      var badge = !isF && ext && String(it.fileName).indexOf('.') > 0 ? '<span class="badge2" style="background:' + (EXT_COLORS[ext] || '#6b7280') + '">' + esc(ext.toUpperCase().slice(0, 4)) + '</span>' : '';
+      var linkCell = isF ? '' : (it.hasFile || it.keyword ? esc(link) : '<span class="tag2 no">미연결</span>');
       var where = cur.trash ? ' <span style="color:var(--mute)">(' + esc(pathOf(it.parentId).map(function (p) { return p.name; }).concat('').join(' / ')) + ')</span>' : '';
       h += '<div class="row2' + (sel.has(it.id) ? ' sel' : '') + (focusId === it.id ? ' foc' : '') + '" data-id="' + esc(it.id) + '"' + (renaming === it.id || cur.trash ? '' : ' draggable="true"') + '>' +
-        '<div class="c-nm"><span class="ic">' + (isF ? IC.folder : IC.file) + '</span>' +
+        '<div class="c-nm"><span class="ic">' + (isF ? IC.folder : IC.file) + '</span>' + badge +
         (renaming === it.id ? '<input class="rn" id="rnInput" value="' + esc(it.name) + '" maxlength="100">' : '<span class="t" title="' + esc(it.name) + '">' + esc(it.name) + '</span>' + where) + '</div>' +
         '<span class="m">' + (isF ? '폴더' : '서식') + '</span><span class="m">' + esc(fmtDate(it.updatedAt)) + '</span>' +
-        '<span class="m" title="' + esc(link) + '">' + esc(link) + '</span>' +
+        '<span class="m" title="' + esc(link) + '">' + linkCell + '</span>' +
         '<span class="m">' + (isF ? '' : (it.versions || 0)) + '</span><span class="m">' + (isF ? '' : it.dl) + '</span>' +
         '<button class="more" type="button" data-more="' + esc(it.id) + '" aria-label="메뉴">&#8942;</button></div>';
     });
