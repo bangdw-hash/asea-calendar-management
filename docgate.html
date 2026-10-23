@@ -312,7 +312,7 @@ tr:hover td { background: #fafafa; }
 
     <div class="form-group">
       <label>신청자명 <span style="color:var(--red)">*</span></label>
-      <input type="text" id="applicantName" placeholder="성명을 입력하세요" maxlength="30">
+      <input type="text" id="applicantName" placeholder="실명으로 입력해 주세요" maxlength="30" autocomplete="off">
     </div>
     <div class="form-group">
       <label>부서 / 직함 <span style="color:var(--red)">*</span></label>
@@ -514,9 +514,6 @@ async function goStep2() {
     document.getElementById('userName').textContent      = _profile.name  || '';
     document.getElementById('userEmail').textContent     = _profile.email || '';
     document.getElementById('avatarInitial').textContent = (_profile.name || '?')[0];
-    // 신청자명 자동 채우기 (편집 가능)
-    var nameEl = document.getElementById('applicantName');
-    if (nameEl && !nameEl.value) nameEl.value = _profile.name || '';
   }
 
   _pendingFile = null;
