@@ -26,6 +26,12 @@
   .muted{ font-size:12px; color:#6b7280; line-height:1.6; }
   .row2{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
   h2{ font-size:15px; color:var(--c); margin:0 0 10px; }
+  .tbl-outer{ overflow-x:auto; -webkit-overflow-scrolling:touch; }
+  @media(max-width:540px){
+    .row2{ grid-template-columns:1fr; }
+    table{ min-width:400px; }
+    td,th{ white-space:nowrap; }
+  }
 </style>
 </head>
 <body>
