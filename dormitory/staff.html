@@ -199,6 +199,38 @@ tr:hover td{background:#f8fbff}
 @media(min-width:768px){
   #mb-hamburger{display:none}
 }
+/* ── DETAIL PANEL ── */
+#detail-overlay{position:fixed;inset:0;background:rgba(0,0,0,.3);z-index:399;display:none}
+#detail-overlay.open{display:block}
+#detail-panel{position:fixed;top:0;right:0;height:100vh;width:420px;max-width:100vw;background:var(--card);border-left:1px solid var(--border);z-index:400;transform:translateX(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);box-shadow:-4px 0 24px rgba(0,0,0,.12);display:flex;flex-direction:column;overflow:hidden}
+#detail-panel.open{transform:translateX(0)}
+@media(max-width:767px){
+  #detail-panel{width:100%;height:74vh;top:auto;bottom:0;transform:translateY(100%);border-left:none;border-top:1px solid var(--border);border-radius:12px 12px 0 0}
+  #detail-panel.open{transform:translateY(0)}
+}
+.dp-header{padding:14px 16px 10px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-shrink:0}
+.dp-avatar{width:34px;height:34px;border-radius:50%;background:var(--accent-lt);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:var(--accent-dk);flex-shrink:0}
+.dp-info{flex:1;min-width:0}
+.dp-name{font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dp-sub{font-size:11px;color:var(--muted);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dp-close{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--bg);cursor:pointer;font-size:14px;color:var(--muted);flex-shrink:0}
+.dp-close:hover{background:var(--border)}
+.dp-tabs{display:flex;border-bottom:1px solid var(--border);flex-shrink:0;overflow-x:auto}
+.dp-tab{padding:8px 12px;font-size:12px;font-weight:600;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap;transition:.15s}
+.dp-tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.dp-body{flex:1;overflow-y:auto;padding:14px}
+.dp-empty{text-align:center;padding:28px;color:var(--muted);font-size:13px}
+.dp-stat-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.dp-stat{border-radius:var(--r);padding:10px 12px;text-align:center}
+.dp-stat-val{font-size:16px;font-weight:700;line-height:1}
+.dp-stat-lbl{font-size:10px;color:var(--muted);margin-top:3px}
+/* CLICKABLE ROW + FIELD */
+tr.cr{cursor:pointer}
+tr.cr:hover td{background:var(--accent-lt)!important}
+.cf{cursor:pointer;text-decoration-line:underline;text-decoration-color:var(--border);text-underline-offset:2px;transition:.12s}
+.cf:hover{color:var(--accent);text-decoration-color:var(--accent)}
+.stat-card.cf{transition:.12s}
+.stat-card.cf:hover{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-lt)}
 </style>
 </head>
 <body>
@@ -512,6 +544,27 @@ tr:hover td{background:#f8fbff}
 </div>
 </div>
 
+<!-- Detail Panel Overlay -->
+<div id="detail-overlay" onclick="closeDetailPanel()"></div>
+<!-- Detail Panel -->
+<div id="detail-panel">
+  <div class="dp-header">
+    <div class="dp-avatar" id="dp-avatar">?</div>
+    <div class="dp-info">
+      <div class="dp-name" id="dp-name">—</div>
+      <div class="dp-sub" id="dp-sub">—</div>
+    </div>
+    <div class="dp-close" onclick="closeDetailPanel()">✕</div>
+  </div>
+  <div class="dp-tabs" id="dp-tabs">
+    <div class="dp-tab active" data-dptab="pay" onclick="dpTab('pay',this)">납부 내역</div>
+    <div class="dp-tab" data-dptab="contract" onclick="dpTab('contract',this)">계약·서명</div>
+    <div class="dp-tab" data-dptab="penalty" onclick="dpTab('penalty',this)">벌점</div>
+    <div class="dp-tab" data-dptab="complaint" onclick="dpTab('complaint',this)">민원</div>
+  </div>
+  <div class="dp-body" id="dp-body"><div class="dp-empty">불러오는 중…</div></div>
+</div>
+
 <script>
 'use strict';
 const SB='https://zbpeyklwpotjyveipzxd.supabase.co';
@@ -658,16 +711,16 @@ function pgDash(){
   const byB={};C.residents.forEach(r=>{const b=r.building_name||'미배정';byB[b]=(byB[b]||0)+1;});
   return `<div class="page-header"><div class="page-title">2026학년도 생활관 현황판</div><div class="page-desc">전체 입소자 및 운영 현황을 한눈에 확인합니다.</div></div>
   <div class="stats-grid">
-    <div class="stat-card"><div class="stat-val">${total}</div><div class="stat-label">전체 입소자</div><div class="stat-sub">위탁 ${consign}명 포함</div></div>
-    <div class="stat-card"><div class="stat-val green">${won(paidSum)}</div><div class="stat-label">수납 완료 (누계)</div></div>
-    <div class="stat-card"><div class="stat-val red">${won(pendSum)}</div><div class="stat-label">미납 잔액</div></div>
+    <div class="stat-card cf" onclick="nav('residents')" title="전체 입소자 목록으로 이동"><div class="stat-val">${total}</div><div class="stat-label">전체 입소자</div><div class="stat-sub">위탁 ${consign}명 포함</div></div>
+    <div class="stat-card cf" onclick="navPayFilter('paid')" title="수납 완료 목록으로 이동"><div class="stat-val green">${won(paidSum)}</div><div class="stat-label">수납 완료 (누계)</div></div>
+    <div class="stat-card cf" onclick="navPayFilter('pending')" title="미납자 목록으로 이동"><div class="stat-val red">${won(pendSum)}</div><div class="stat-label">미납 잔액</div></div>
     <div class="stat-card"><div class="stat-val">${won(rentSum)}</div><div class="stat-label">월 임대료 합계</div></div>
-    <div class="stat-card"><div class="stat-val ${expiring.length?'red':'green'}">${expiring.length}</div><div class="stat-label">6개월 내 만료 계약</div></div>
+    <div class="stat-card cf" onclick="nav('realestate')" title="부동산 계약 관리로 이동"><div class="stat-val ${expiring.length?'red':'green'}">${expiring.length}</div><div class="stat-label">6개월 내 만료 계약</div></div>
   </div>
   <div class="grid-2" style="margin-bottom:16px">
     <div class="card"><div class="card-title">건물별 입소 현황</div>
       ${Object.keys(byB).length?`<table><thead><tr><th>건물</th><th class="text-right">입소자</th></tr></thead><tbody>
-      ${Object.entries(byB).map(([b,n])=>`<tr><td>${b}</td><td class="text-right"><b>${n}</b>명</td></tr>`).join('')}
+      ${Object.entries(byB).map(([b,n])=>`<tr class="cr" onclick="navResFilter('${esc(b)}')" title="${esc(b)} 입소자만 보기"><td class="cf">${b}</td><td class="text-right"><b>${n}</b>명</td></tr>`).join('')}
       </tbody></table>`:'<div class="empty">입소자 없음</div>'}
     </div>
     <div class="card"><div class="card-title">부동산 계약 만료 현황</div>
@@ -711,13 +764,14 @@ function filterRes(){
     return true;
   });
   const b=document.getElementById('rs-body');if(!b)return;
-  b.innerHTML=f.map(r=>`<tr>
-    <td><b>${r.name}</b></td><td>${r.student_no||'—'}</td><td>${r.class_name||'—'}</td>
-    <td>${r.building_name||'—'}</td><td>${r.room_no||'—'}</td><td>${tbadge(r.type)}</td>
-    <td class="text-right">${r.paid_total?won(r.paid_total):'—'}</td>
-    <td>${r.penalty_count>0?`<span class="badge badge-danger">${r.penalty_count}점</span>`:'0'}</td>
+  b.innerHTML=f.map(r=>`<tr class="cr" onclick="openDetailPanel('${r.id}')">
+    <td><b class="cf">${r.name}</b></td><td>${r.student_no||'—'}</td><td>${r.class_name||'—'}</td>
+    <td><span class="cf" onclick="event.stopPropagation();navResFilter('${esc(r.building_name||'')}')">${r.building_name||'—'}</span></td>
+    <td>${r.room_no||'—'}</td><td>${tbadge(r.type)}</td>
+    <td class="text-right"><span class="cf" onclick="event.stopPropagation();openDetailPanel('${r.id}','pay')">${r.paid_total?won(r.paid_total):'—'}</span></td>
+    <td>${r.penalty_count>0?`<span class="badge badge-danger cf" onclick="event.stopPropagation();openDetailPanel('${r.id}','penalty')">${r.penalty_count}점</span>`:'0'}</td>
     <td>${r.entry_date||'—'}</td>
-    <td><button class="btn btn-outline btn-sm" onclick="openResModal('${r.id}')">수정</button></td>
+    <td><button class="btn btn-outline btn-sm" onclick="event.stopPropagation();openResModal('${r.id}')">수정</button></td>
   </tr>`).join('')||'<tr><td colspan="10" class="empty">검색 결과 없음</td></tr>';
 }
 
@@ -752,11 +806,12 @@ function filterPay(){
   });
   const b=document.getElementById('py-body');if(!b)return;
   b.innerHTML=f.map(p=>`<tr>
-    <td><b>${p.resident_name||'—'}</b></td><td>${p.student_no||'—'}</td>
+    <td><b class="cf" onclick="openDetailPanelByName('${esc(p.resident_name||'')}')">${p.resident_name||'—'}</b></td><td>${p.student_no||'—'}</td>
     <td>${p.building_short||'—'} ${p.room_no||''}</td><td>${tbadge(p.resident_type)}</td>
     <td>${p.period||'—'}</td>
     <td class="text-right"><b>${won(p.amount)}</b>${p.is_installment?'<span class="badge badge-info" style="margin-left:4px">분할</span>':''}</td>
-    <td>${mlbl(p.method)}</td><td>${p.paid_at||'—'}</td><td>${sbadge(p.status)}</td>
+    <td>${mlbl(p.method)}</td><td>${p.paid_at||'—'}</td>
+    <td><span class="cf" onclick="openDetailPanelByName('${esc(p.resident_name||'')}')">${sbadge(p.status)}</span></td>
   </tr>`).join('')||'<tr><td colspan="9" class="empty">데이터 없음</td></tr>';
 }
 
@@ -1463,6 +1518,151 @@ function showToast(msg){
   toast.textContent=msg;document.body.appendChild(toast);
   setTimeout(()=>{toast.style.opacity='0';setTimeout(()=>toast.remove(),400);},2500);
 }
+
+/* ── CROSS-LINK NAV ── */
+function navPayFilter(status){
+  nav('payments');
+  setTimeout(function(){var el=document.getElementById('py-fs');if(el){el.value=status;filterPay();}},50);
+}
+function navResFilter(building){
+  nav('residents');
+  setTimeout(function(){
+    var el=document.getElementById('rs-fb');
+    if(el){
+      var found=Array.from(el.options).some(o=>o.value===building);
+      if(!found){var o=document.createElement('option');o.value=building;o.textContent=building;el.appendChild(o);}
+      el.value=building;filterRes();
+    }
+  },50);
+}
+function openDetailPanelByName(name){
+  var r=C.residents.find(function(x){return x.name===name;});
+  if(r)openDetailPanel(r.id);
+}
+
+/* ── DETAIL PANEL ── */
+var DP_RID=null,DP_TAB='pay',DP_PENALTIES=null;
+
+function openDetailPanel(rid,tab){
+  DP_RID=rid;DP_TAB=tab||'pay';DP_PENALTIES=null;
+  var r=C.residents.find(function(x){return x.id===rid;});
+  if(!r)return;
+  document.getElementById('dp-avatar').textContent=(r.name||'?').charAt(0);
+  document.getElementById('dp-name').textContent=r.name;
+  document.getElementById('dp-sub').textContent=[r.student_no,r.building_name,r.room_no?r.room_no+'호':''].filter(Boolean).join(' · ');
+  document.querySelectorAll('.dp-tab').forEach(function(el){el.classList.toggle('active',el.dataset.dptab===DP_TAB);});
+  renderDpTab(DP_TAB);
+  document.getElementById('detail-panel').classList.add('open');
+  document.getElementById('detail-overlay').classList.add('open');
+}
+function closeDetailPanel(){
+  document.getElementById('detail-panel').classList.remove('open');
+  document.getElementById('detail-overlay').classList.remove('open');
+  DP_RID=null;
+}
+function dpTab(tab,el){
+  DP_TAB=tab;
+  document.querySelectorAll('.dp-tab').forEach(function(e){e.classList.remove('active');});
+  el.classList.add('active');
+  renderDpTab(tab);
+}
+function renderDpTab(tab){
+  var body=document.getElementById('dp-body');
+  var r=C.residents.find(function(x){return x.id===DP_RID;});
+  if(!r){body.innerHTML='<div class="dp-empty">입소자 정보 없음</div>';return;}
+  if(tab==='pay'){
+    var pays=C.payments.filter(function(p){return p.resident_id===r.id||p.resident_name===r.name;});
+    var paid=pays.filter(function(p){return p.status==='paid';}).reduce(function(s,p){return s+(p.amount||0);},0);
+    var pend=pays.filter(function(p){return p.status==='pending';}).reduce(function(s,p){return s+(p.amount||0);},0);
+    body.innerHTML='<div class="dp-stat-row">'+
+      '<div class="dp-stat" style="background:#dcfce7"><div class="dp-stat-val" style="color:var(--ok)">'+won(paid)+'</div><div class="dp-stat-lbl">수납 완료</div></div>'+
+      '<div class="dp-stat" style="background:#fee2e2"><div class="dp-stat-val" style="color:var(--danger)">'+won(pend)+'</div><div class="dp-stat-lbl">미납</div></div>'+
+    '</div>'+
+    (pays.length?'<table><thead><tr><th>기간</th><th class="text-right">금액</th><th>상태</th></tr></thead><tbody>'+
+      pays.map(function(p){return'<tr><td>'+esc(p.period||'—')+'</td><td class="text-right">'+won(p.amount)+(p.is_installment?'<span class="badge badge-info" style="margin-left:4px">분할</span>':'')+'</td><td>'+sbadge(p.status)+'</td></tr>';}).join('')+
+      '</tbody></table>':'<div class="dp-empty">납부 내역 없음</div>')+
+    '<div style="margin-top:12px"><button class="btn btn-primary btn-sm" onclick="openPayModalForResident(\''+esc(r.id)+'\')">+ 납부 등록</button></div>';
+  } else if(tab==='contract'){
+    var ct=CONTRACT_ROWS.find(function(x){return x.resident_id===r.id;});
+    if(CONTRACT_ROWS.length>0){
+      if(ct){
+        body.innerHTML='<div style="margin-bottom:12px">'+
+          (ct.sign_status==='signed'?'<span class="badge badge-ok">서명 완료</span>':ct.sign_status==='sent'?'<span class="badge badge-info">링크 발송됨</span>':'<span class="badge badge-gray">미서명</span>')+
+        '</div>'+
+        (ct.signed_at?'<div style="font-size:12px;color:var(--muted);margin-bottom:8px">서명일: '+esc(ct.signed_at)+'</div>':'')+
+        (ct.sign_token?'<div style="margin-bottom:8px"><a href="'+SIGN_BASE+'?t='+esc(ct.sign_token)+'" target="_blank" class="btn btn-outline btn-sm">서명 링크 열기</a></div>':'')+
+        '<div style="margin-top:10px"><button class="btn btn-primary btn-sm" onclick="createLink(\''+esc(r.id)+'\')">서명 링크 생성/재발송</button></div>';
+      } else {
+        body.innerHTML='<div class="dp-empty">계약 정보 없음</div>'+
+          '<div style="margin-top:8px;text-align:center"><button class="btn btn-primary btn-sm" onclick="createLink(\''+esc(r.id)+'\')">서명 링크 생성</button></div>';
+      }
+    } else {
+      body.innerHTML='<div class="dp-empty">불러오는 중…</div>';
+      dpLoadContract(r);
+    }
+  } else if(tab==='penalty'){
+    if(DP_PENALTIES!==null){renderDpPenalties(DP_PENALTIES,r);}
+    else{body.innerHTML='<div class="dp-empty">벌점 기록 불러오는 중…</div>';dpLoadPenalties(r);}
+  } else if(tab==='complaint'){
+    body.innerHTML='<div class="dp-empty">민원 접수 내역은<br>complaint.html 에서 확인할 수 있습니다.<br><br><a href="complaint.html" target="_blank" class="btn btn-outline btn-sm">민원 관리 열기</a></div>';
+  }
+}
+async function dpLoadContract(r){
+  var body=document.getElementById('dp-body');
+  if(DP_RID!==r.id)return;
+  var rows=await rpc('dorm_admin_contracts_list',{p_token:S.token});
+  if(DP_RID!==r.id)return;
+  if(Array.isArray(rows)&&rows.length)CONTRACT_ROWS=rows;
+  renderDpTab('contract');
+}
+async function dpLoadPenalties(r){
+  var body=document.getElementById('dp-body');
+  if(DP_RID!==r.id)return;
+  var d=null;
+  if(IS_DEMO){
+    d=r.id==='d2'?[{score:1,reason:'무단 외출',created_at:'2026-04-10T09:00:00Z'},{score:1,reason:'소등 위반',created_at:'2026-05-01T22:30:00Z'}]:
+      r.id==='d4'?[{score:1,reason:'규칙 위반',created_at:'2026-03-20T10:00:00Z'}]:[];
+  } else {
+    d=await rpc('dorm_get_resident_penalties',{p_token:S.token,p_resident_id:r.id});
+  }
+  if(DP_RID!==r.id)return;
+  DP_PENALTIES=Array.isArray(d)?d:[];
+  renderDpPenalties(DP_PENALTIES,r);
+}
+function renderDpPenalties(list,r){
+  var body=document.getElementById('dp-body');
+  var total=list.reduce(function(s,p){return s+(p.score||1);},0);
+  var html='<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">'+
+    '<span style="font-size:20px;font-weight:700;color:var(--danger)">'+total+'점</span>'+
+    '<span style="font-size:12px;color:var(--muted)">누적 벌점</span>'+
+    '<div style="margin-left:auto"><button class="btn btn-danger btn-sm" onclick="openPenaltyModalForResident(\''+esc(r.id)+'\')">+ 벌점 부과</button></div>'+
+  '</div>';
+  if(list.length){
+    html+='<table><thead><tr><th>점수</th><th>사유</th><th>일시</th></tr></thead><tbody>'+
+      list.map(function(p){return'<tr><td><span class="badge badge-danger">'+(p.score||1)+'점</span></td><td>'+esc(p.reason||'—')+'</td><td>'+fdt(p.created_at)+'</td></tr>';}).join('')+
+      '</tbody></table>';
+  } else {
+    html+='<div class="dp-empty">벌점 기록 없음</div>';
+  }
+  body.innerHTML=html;
+}
+function openPayModalForResident(rid){
+  closeDetailPanel();
+  populateResSel('pm-resident');
+  document.getElementById('pm-resident').value=rid;
+  document.getElementById('pm-date').value=new Date().toISOString().slice(0,10);
+  ['pm-amount','pm-period','pm-notes'].forEach(function(id){var e=document.getElementById(id);if(e)e.value='';});
+  document.getElementById('pm-install').checked=false;
+  document.getElementById('pm-alert').innerHTML='';
+  openModal('payment-modal');
+}
+function openPenaltyModalForResident(rid){
+  closeDetailPanel();
+  openModal('penalty-modal');
+  populateResSel('pen-resident');
+  setTimeout(function(){document.getElementById('pen-resident').value=rid;},10);
+}
+document.addEventListener('keydown',function(e){if(e.key==='Escape')closeDetailPanel();});
 
 /* ── HELPERS ── */
 function won(n){if(n==null||isNaN(n))return'—';return Math.round(n).toLocaleString('ko-KR')+'원';}
