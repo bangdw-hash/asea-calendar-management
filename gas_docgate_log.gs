@@ -188,7 +188,7 @@ var ACTIONS = {
   adminData: function (me) {
     var secs = _sorted(_rows(T.SEC)).filter(function (s) { return _canManage(me, s); });
     var ok = {}; secs.forEach(function (s) { ok[s.id] = 1; });
-    if (!secs.length) throw _err('관리 권한이 없습니다', 'PERM');
+    if (!secs.length && !me.isSuper) throw _err('관리 권한이 없습니다', 'PERM');   // 전체 관리자는 섹션이 없어도 입장(첫 섹션 생성용)
     var items = _rows(T.ITEM).filter(function (x) { return ok[x.sectionId]; }).map(function (x) {
       var p = _pub(x); p.status = x.status; p.keyword = x.keyword; p.fileName = x.fileName; p.note = x.note;
       p.updatedBy = x.updatedBy; p.hasFile = !!x.fileId; return p;
