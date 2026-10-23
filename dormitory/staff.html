@@ -209,7 +209,7 @@ tr:hover td{background:#f8fbff}
   #mb-hamburger{display:none}
 }
 /* ── DETAIL PANEL ── */
-#detail-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:399;display:none}
+#detail-overlay{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:399;display:none}
 #detail-overlay.open{display:block}
 #detail-panel{position:fixed;top:0;right:0;height:100vh;width:420px;max-width:100vw;background:var(--card);border-left:1px solid var(--border);z-index:400;transform:translateX(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);box-shadow:-4px 0 24px rgba(0,0,0,.12);display:flex;flex-direction:column;overflow:hidden}
 #detail-panel.open{transform:translateX(0)}
@@ -1594,6 +1594,7 @@ function openDetailPanel(rid,tab){
   renderDpTab(DP_TAB);
   document.getElementById('detail-panel').classList.add('open');
   document.getElementById('detail-overlay').classList.add('open');
+  if(window.innerWidth<768)document.body.style.overflow='hidden';
   dpUpdateNav();
 }
 function closeDetailPanel(){
@@ -1601,6 +1602,7 @@ function closeDetailPanel(){
   panel.style.transform='';
   panel.classList.remove('open');
   document.getElementById('detail-overlay').classList.remove('open');
+  document.body.style.overflow='';
   DP_RID=null;
 }
 function dpUpdateNav(){
@@ -1699,19 +1701,23 @@ function renderDpPenalties(list,r){
 }
 function openPayModalForResident(rid){
   closeDetailPanel();
-  populateResSel('pm-resident');
-  document.getElementById('pm-resident').value=rid;
-  document.getElementById('pm-date').value=new Date().toISOString().slice(0,10);
-  ['pm-amount','pm-period','pm-notes'].forEach(function(id){var e=document.getElementById(id);if(e)e.value='';});
-  document.getElementById('pm-install').checked=false;
-  document.getElementById('pm-alert').innerHTML='';
-  openModal('payment-modal');
+  setTimeout(function(){
+    populateResSel('pm-resident');
+    document.getElementById('pm-resident').value=rid;
+    document.getElementById('pm-date').value=new Date().toISOString().slice(0,10);
+    ['pm-amount','pm-period','pm-notes'].forEach(function(id){var e=document.getElementById(id);if(e)e.value='';});
+    document.getElementById('pm-install').checked=false;
+    document.getElementById('pm-alert').innerHTML='';
+    openModal('payment-modal');
+  },300);
 }
 function openPenaltyModalForResident(rid){
   closeDetailPanel();
-  openModal('penalty-modal');
-  populateResSel('pen-resident');
-  setTimeout(function(){document.getElementById('pen-resident').value=rid;},10);
+  setTimeout(function(){
+    openModal('penalty-modal');
+    populateResSel('pen-resident');
+    setTimeout(function(){document.getElementById('pen-resident').value=rid;},10);
+  },300);
 }
 document.addEventListener('keydown',function(e){if(e.key==='Escape')closeDetailPanel();});
 (function(){
