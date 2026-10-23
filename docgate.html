@@ -91,7 +91,7 @@
 <div class="actbar" id="actbar">
   <div class="in">
     <div class="sel-name" id="selName"></div>
-    <input type="text" id="reason" placeholder="신청 사유 (선택) 예: 입찰서류 제출" maxlength="100" aria-label="신청 사유">
+    <input type="text" id="reason" placeholder="사용 목적 (필수) 예: 입찰서류 제출" maxlength="100" aria-label="사용 목적 (필수)" required>
     <button class="btn btn-primary" id="issueBtn" type="button">다운로드 링크 발급</button>
   </div>
 </div>
@@ -304,22 +304,32 @@ function updateBar() {
   var it = SEL && IDX.byId[SEL];
   if (!it) { $('actbar').classList.remove('show'); return; }
   $('selName').textContent = it.name;
-  $('issueBtn').disabled = false; $('issueBtn').textContent = '다운로드 링크 발급';
+  $('issueBtn').textContent = '다운로드 링크 발급';
+  syncIssue();
   $('actbar').classList.add('show');
 }
+function syncIssue() {                        // 사용 목적이 비어 있으면 발급 불가
+  var ok = $('reason').value.trim().length > 0;
+  $('issueBtn').disabled = !ok;
+  $('reason').classList.toggle('need', !ok);
+}
+$('reason').addEventListener('input', syncIssue);
+$('reason').addEventListener('keydown', function (e) { if (e.key === 'Enter' && !$('issueBtn').disabled) $('issueBtn').click(); });
 
 /* ── 링크 발급 → 다운로드 ──────────────────────────────────────── */
 $('issueBtn').addEventListener('click', async function () {
   if (!SEL) return;
   clr('mainMsg');
+  var reason = $('reason').value.trim();
+  if (!reason) { $('reason').focus(); return; }
   var b = $('issueBtn'); b.disabled = true; b.innerHTML = '<span class="spinner"></span> 확인 중…';
   try {
-    var r = await DocGate.issue(SEL, { name: SAVED.name, title: SAVED.dept + ' / ' + SAVED.title }, $('reason').value.trim());
+    var r = await DocGate.issue(SEL, { name: SAVED.name, title: SAVED.dept + ' / ' + SAVED.title }, reason);
     ticket = r.ticket; dlUsed = false;
     showDownload(r.fileName, r.ttl || DocGate.TOKEN_TTL);
   } catch (e) {
     if (e.code === 'AUTH') { Auth.logout(); return; }
-    msg('mainMsg', e.message, 'error'); b.disabled = false; b.textContent = '다운로드 링크 발급';
+    msg('mainMsg', e.message, 'error'); b.textContent = '다운로드 링크 발급'; syncIssue();
     window.scrollTo(0, 0);
   }
 });
@@ -343,7 +353,7 @@ $('dlBtn').addEventListener('click', async function () {
   var b = $('dlBtn'); b.disabled = true; b.innerHTML = '<span class="spinner"></span> 다운로드 중…';
   try {
     await DocGate.downloadFile(ticket);
-    dlUsed = true; clearInterval(timerIv); ticket = null;
+    dlUsed = true; clearInterval(timerIv); ticket = null; $('reason').value = '';
     b.innerHTML = IC.check + ' 다운로드 완료'; b.style.background = 'var(--green)';
     msg('dlMsg', '다운로드가 완료되었습니다. 신청 내역이 기록되었습니다.', 'success');
   } catch (e) {
@@ -353,7 +363,7 @@ $('dlBtn').addEventListener('click', async function () {
 });
 $('backBtn').addEventListener('click', function () {
   if (timerIv) clearInterval(timerIv);
-  ticket = null; SEL = null; go('stepMain'); render();
+  ticket = null; SEL = null; $('reason').value = ''; go('stepMain'); render();
 });
 </script>
 </body>

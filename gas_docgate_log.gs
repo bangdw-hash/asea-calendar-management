@@ -211,10 +211,11 @@ var ACTIONS = {
     var it = _item(b.itemId), sec = _sec(it.sectionId);
     if (it.type !== 'doc' || _isTrash(it)) throw _err('서류를 찾을 수 없습니다');
     if (!_canView(me, sec)) throw _err('열람 권한이 없습니다', 'PERM');
+    if (!String(b.reason || '').trim()) throw _err('사용 목적을 입력하세요');
     var file = _resolveFile(it, sec);
     var p = b.profile || {}, tid = _id() + _id();
     CacheService.getScriptCache().put('t:' + tid,
-      JSON.stringify({ fileId: file.getId(), itemId: it.id, email: me.email, title: p.title || '', reason: b.reason || '',
+      JSON.stringify({ fileId: file.getId(), itemId: it.id, email: me.email, title: p.title || '', reason: String(b.reason || '').trim().slice(0, 100),
                        name: p.name || '', ua: String(b.ua || '').slice(0, 200) }), TICKET_TTL + 30);
     _logRow(me, p, file.getName(), file.getId(), b.reason, '링크발급', it, b.ua);
     return { ticket: tid, fileName: file.getName(), ttl: TICKET_TTL };
