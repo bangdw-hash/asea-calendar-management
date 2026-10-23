@@ -70,7 +70,7 @@
         '<select class="in sm" data-p="fontEn" title="영문 글꼴 — 영문·한영 병기에서 영문에 적용" style="max-width:150px">' + AW.fontOptions('영문: 한글과 같음') + '</select>' +
         '<div class="tg"><button class="tb" data-a="sz-" title="글자 작게">' + AW.ic('minus', 15) + '</button><input class="in sm num" data-p="size" type="number" min="4" max="300" step="1" title="글자 크기(pt)" style="width:54px"><button class="tb" data-a="sz+" title="글자 크게">' + AW.ic('plus', 15) + '</button></div>' +
         '<div class="tg">' + BTN('bold', 'bold', '굵게') + BTN('italic', 'italic', '기울임') + BTN('ul', 'underline', '밑줄') + '<input type="color" class="clr" data-p="color" title="글자색" value="#111111"></div>' +
-        '<div class="tg">' + BTN('al-l', 'alL', '왼쪽 정렬') + BTN('al-c', 'alC', '가운데 정렬') + BTN('al-r', 'alR', '오른쪽 정렬') + '</div>' +
+        '<div class="tg">' + BTN('al-l', 'alL', '왼쪽 정렬') + BTN('al-c', 'alC', '가운데 정렬') + BTN('al-r', 'alR', '오른쪽 정렬') + BTN('al-j', 'alJ', '양쪽 정렬 — 좌우 폭을 채우고 마지막 줄은 왼쪽(한글의 양쪽 정렬)') + BTN('al-d', 'alD', '균등 분배 — 마지막 줄까지 좌우 폭을 채움(한글의 배분 정렬)') + '</div>' +
         '<div class="tg">' + BTN('v-t', 'vT', '위쪽 맞춤') + BTN('v-m', 'vM', '세로 가운데') + BTN('v-b', 'vB', '아래쪽 맞춤') + '</div>' +
         '<label class="mini" title="줄 간격(배)">행간<input class="in sm num" data-p="lh" type="number" min="0.8" max="4" step="0.1" style="width:56px"></label>' +
         '<label class="mini" title="글자 간격(pt)">자간<input class="in sm num" data-p="ls" type="number" min="-5" max="60" step="0.5" style="width:56px"></label>' +
@@ -210,7 +210,16 @@
     ['v', 'h'].forEach(function (ax) { (g[ax] || []).forEach(function (pos, i) { var d = document.createElement('div'); d.className = 'gl ' + (ax === 'v' ? 'glv' : 'glh'); d.dataset.ax = ax; d.dataset.i = i; d.title = '안내선 ' + pos + 'mm — 끌어서 이동, 눈금자로 끌어내면 삭제'; d.style[ax === 'v' ? 'left' : 'top'] = pos * k + 'px'; st.ov.appendChild(d); }); });
   }
   function ctxFlip() {}
-  function placeBox(b, e) { var k = st.zoom; b.style.cssText = 'left:' + (e.x * k) + 'px;top:' + (e.y * k - (e.t === 'line' ? 4 : 0)) + 'px;width:' + (e.w * k) + 'px;height:' + (e.t === 'line' ? 8 : Math.max(e.h, 0.5) * k) + 'px' + (e.rot ? ';transform:rotate(' + e.rot + 'deg)' : ''); }
+  function placeBox(b, e) {
+    var k = st.zoom, top = e.y * k - (e.t === 'line' ? 4 : 0), h = e.t === 'line' ? 8 : Math.max(e.h, 0.5) * k, off = 0;
+    AW.$$('.sbin', b).forEach(function (n) { n.remove(); });
+    if (e.t === 'text' && !e.rot) {            // 글이 상자보다 길면 선택 영역을 글 전체로 넓혀 보여줌(상자 원래 크기는 안쪽 점선)
+      var d = domOf(e), c = d && d.firstChild;
+      if (c) { var dr = d.getBoundingClientRect(), cr = c.getBoundingClientRect(), t0 = Math.min(0, cr.top - dr.top), t1 = Math.max(dr.height, cr.bottom - dr.top); if (t1 - t0 > dr.height + 1.5) { off = -t0; top += t0; h = t1 - t0; } }
+    }
+    b.style.cssText = 'left:' + (e.x * k) + 'px;top:' + top + 'px;width:' + (e.w * k) + 'px;height:' + h + 'px' + (e.rot ? ';transform:rotate(' + e.rot + 'deg)' : '');
+    if (off || h > Math.max(e.h, 0.5) * k + 1.5) { var bi = document.createElement('i'); bi.className = 'sbin'; bi.title = '글상자 크기(글이 이보다 길면 밖으로 넘칩니다)'; bi.style.cssText = 'top:' + off + 'px;height:' + Math.max(e.h, 0.5) * k + 'px'; b.appendChild(bi); }
+  }
   function domOf(e) { return AW.$('.el[data-id="' + e.id + '"]', st.pg); }
   function placeEl(e) { var d = domOf(e); if (!d) return; var k = st.zoom; d.style.left = e.x * k + 'px'; d.style.top = e.y * k + 'px'; d.style.width = e.w * k + 'px'; if (e.t !== 'line') d.style.height = Math.max(e.h, 1) * k + 'px'; var tr = (e.rot ? 'rotate(' + e.rot + 'deg) ' : '') + ((e.flipX || e.flipY) ? 'scale(' + (e.flipX ? -1 : 1) + ',' + (e.flipY ? -1 : 1) + ')' : ''); d.style.transform = tr.trim(); }
   function liveUpdate() { sel().forEach(function (e) { placeEl(e); var b = AW.$('.sb[data-id="' + e.id + '"]', st.ov); if (b) placeBox(b, e); }); updPos(); if (AW.Plate && T().page.plate) AW.Plate.decorate(st.pg, T(), st.zoom, { mode: 'edit', lang: LG(), scale: st.zoom }, 'edit'); }
@@ -228,7 +237,7 @@
     if (one) {
       var f = function (p) { return AW.$('[data-p="' + p + '"]', st.root); };
       f('font').value = one.font; f('fontEn').value = one.fontEn || ''; f('size').value = one.size; f('lh').value = one.lh; f('ls').value = one.ls || 0; f('color').value = /^#[0-9a-f]{6}$/i.test(one.color) ? one.color : '#111111'; f('fit').checked = !!one.fit;
-      [['bold', one.bold], ['italic', one.italic], ['ul', one.ul], ['al-l', one.align === 'left'], ['al-c', one.align === 'center'], ['al-r', one.align === 'right'], ['v-t', one.valign === 'top'], ['v-m', one.valign === 'middle'], ['v-b', one.valign === 'bottom']].forEach(function (p) {
+      [['bold', one.bold], ['italic', one.italic], ['ul', one.ul], ['al-l', one.align === 'left'], ['al-c', one.align === 'center'], ['al-r', one.align === 'right'], ['al-j', one.align === 'justify'], ['al-d', one.align === 'dist'], ['v-t', one.valign === 'top'], ['v-m', one.valign === 'middle'], ['v-b', one.valign === 'bottom']].forEach(function (p) {
         var b = AW.$('[data-a="' + p[0] + '"]', fmt); if (b) b.classList.toggle('on', !!p[1]);
       });
     }
@@ -342,7 +351,7 @@
       case 'bold': return tx.length && T1('bold', !tx[0].bold);
       case 'italic': return tx.length && T1('italic', !tx[0].italic);
       case 'ul': return tx.length && T1('ul', !tx[0].ul);
-      case 'al-l': return T1('align', 'left'); case 'al-c': return T1('align', 'center'); case 'al-r': return T1('align', 'right');
+      case 'al-l': return T1('align', 'left'); case 'al-c': return T1('align', 'center'); case 'al-r': return T1('align', 'right'); case 'al-j': return T1('align', 'justify'); case 'al-d': return T1('align', 'dist');
       case 'v-t': return T1('valign', 'top'); case 'v-m': return T1('valign', 'middle'); case 'v-b': return T1('valign', 'bottom');
       case 'front': return order(true); case 'back': return order(false);
       case 'lock': var all = list.length && list.every(function (e) { return e.lock; }); list.forEach(function (e) { e.lock = !all; }); markSel(); updTools(); return changed('elems');
@@ -1225,7 +1234,7 @@
       it.push(I('그룹 만들기', 'layers', 'Ctrl+G', 'group', { disabled: list.length < 2 }), I('그룹 해제', 'layers', 'Ctrl+Shift+G', 'ungroup', { disabled: !list.some(function (e) { return e.grp; }) }));
       it.push(SUB('이동', 'plus', [I('위로 (작게)', 'chevU', '↑', 'nu'), I('아래로 (작게)', 'chevD', '↓', 'nd'), I('왼쪽으로 (작게)', 'chevL', '←', 'nl'), I('오른쪽으로 (작게)', 'chevR', '→', 'nr'), { k: 'sep' }, I('위로 (크게)', 'chevU', 'Shift+↑', 'Nu'), I('아래로 (크게)', 'chevD', 'Shift+↓', 'Nd'), I('왼쪽으로 (크게)', 'chevL', 'Shift+←', 'Nl'), I('오른쪽으로 (크게)', 'chevR', 'Shift+→', 'Nr')]));
       if (tx.length) {
-        it.push(SUB('서식', 'text', [STRIP('글자', [B('bold', '굵게', 'bold', t1.bold), B('italic', '기울임', 'italic', t1.italic), B('underline', '밑줄', 'ul', t1.ul), B('alL', '왼쪽 정렬', 'al-l', t1.align === 'left'), B('alC', '가운데 정렬', 'al-c', t1.align === 'center'), B('alR', '오른쪽 정렬', 'al-r', t1.align === 'right')]),
+        it.push(SUB('서식', 'text', [STRIP('글자', [B('bold', '굵게', 'bold', t1.bold), B('italic', '기울임', 'italic', t1.italic), B('underline', '밑줄', 'ul', t1.ul), B('alL', '왼쪽 정렬', 'al-l', t1.align === 'left'), B('alC', '가운데 정렬', 'al-c', t1.align === 'center'), B('alR', '오른쪽 정렬', 'al-r', t1.align === 'right'), B('alJ', '양쪽 정렬(마지막 줄 왼쪽)', 'al-j', t1.align === 'justify'), B('alD', '균등 분배(마지막 줄도 채움)', 'al-d', t1.align === 'dist')]),
           STRIP('세로·크기', [B('vT', '위쪽', 'v-t', t1.valign === 'top'), B('vM', '가운데', 'v-m', t1.valign === 'middle'), B('vB', '아래쪽', 'v-b', t1.valign === 'bottom'), B('plus', '글자 크게', 'sz+'), B('minus', '글자 작게', 'sz-')]),
           I('글자 자동 맞춤', 'fit', '', 'fit', { on: !!t1.fit }), I('서식 복사', 'wand', 'Ctrl+Alt+C', 'cstyle'), I('서식 붙여넣기', 'wand', 'Ctrl+Alt+V', 'pstyle', { disabled: !st.sty })]));
         if (one) it.push(I('입력 항목 {{ }} 삽입…', 'field', '', 'add-field'));
