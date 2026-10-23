@@ -103,7 +103,7 @@
     });
     root.addEventListener('change', function (e) {
       var t = e.target;
-      if (t.dataset.p === 'size') { var v = parseFloat(t.value); if (isNaN(v)) return updTools(); setProp('size', Math.round(Math.max(4, Math.min(300, v)) * 2) / 2); return; }
+      if (t.dataset.p === 'size') { var v = parseFloat(t.value); if (isNaN(v)) return updTools(); if (st.editing && st.editing.runs && applyRunSize(Math.max(4, Math.min(300, v)))) return; setProp('size', Math.round(Math.max(4, Math.min(300, v)) * 2) / 2); return; }
       if (t.dataset.p || t.dataset.g2) { commitLive(); }
       if (t.dataset.f === 'img') pickImg(t);
       if (t.dataset.f === 'bg') { var f = t.files[0]; t.value = ''; if (f) E.loadBackgroundFile(f); }
@@ -134,7 +134,7 @@
     var ov = document.createElement('div'); ov.className = 'ed-ov'; pg.appendChild(ov); st.ov = ov;
     wrap.classList.toggle('rul', !!st.cfg.ruler);
     if (st.cfg.ruler) { ['top', 'left'].forEach(function (s) { var cv = document.createElement('canvas'); cv.className = 'rl rl-' + s; cv.title = '눈금자 — 여기서 끌어내면 안내선이 만들어집니다'; wrap.appendChild(cv); drawRuler(cv, s === 'top' ? T().page.w : T().page.h, s === 'top'); }); }
-    AW.$$('.el[data-fit="1"]', pg).forEach(function (d) { d.dataset.fit = ''; });   // 편집 중에는 자동 맞춤 미적용(원본 크기 그대로 확인)
+    if (T().page.plate) AW.fitAll(pg); else AW.$$('.el[data-fit="1"]', pg).forEach(function (d) { d.dataset.fit = ''; });   // 편집 중에는 자동 맞춤 미적용(원본 크기 그대로 확인)
     markSel(); updTools();
     var zl = AW.$('[data-a="zlabel"]', st.root); if (zl) zl.textContent = st.fit ? '맞춤' : Math.round(st.zoom / K1 * 100) + '%';
     ['ko', 'en', 'both'].forEach(function (l) { var b = AW.$('[data-a="lang-' + l + '"]', st.root); if (b) b.classList.toggle('on', LG() === l); });
@@ -151,7 +151,8 @@
   E.refreshElems = function () {            // 요소 레이어만 다시 그림 (배경 이미지 재생성 방지)
     if (!st.pg) return E.render();
     AW.$$('.el', st.pg).forEach(function (n) { n.remove(); });
-    T().elems.forEach(function (e) { var d = AW.renderElem(e, st.zoom, { mode: 'edit', lang: LG() }); d.dataset.fit = ''; st.pg.insertBefore(d, st.ov); });
+    T().elems.forEach(function (e) { var d = AW.renderElem(e, st.zoom, { mode: 'edit', lang: LG() }); if (!T().page.plate) d.dataset.fit = ''; st.pg.insertBefore(d, st.ov); });
+    if (T().page.plate) AW.fitAll(st.pg);
     markSel(); updTools(); updHint();
     if (AW.Plate && T().page.plate) AW.Plate.refresh(st.pg, T(), st.zoom, LG());
   };
@@ -222,7 +223,7 @@
   }
   function domOf(e) { return AW.$('.el[data-id="' + e.id + '"]', st.pg); }
   function placeEl(e) { var d = domOf(e); if (!d) return; var k = st.zoom; d.style.left = e.x * k + 'px'; d.style.top = e.y * k + 'px'; d.style.width = e.w * k + 'px'; if (e.t !== 'line') d.style.height = Math.max(e.h, 1) * k + 'px'; var tr = (e.rot ? 'rotate(' + e.rot + 'deg) ' : '') + ((e.flipX || e.flipY) ? 'scale(' + (e.flipX ? -1 : 1) + ',' + (e.flipY ? -1 : 1) + ')' : ''); d.style.transform = tr.trim(); }
-  function liveUpdate() { sel().forEach(function (e) { placeEl(e); var b = AW.$('.sb[data-id="' + e.id + '"]', st.ov); if (b) placeBox(b, e); }); updPos(); if (AW.Plate && T().page.plate) AW.Plate.decorate(st.pg, T(), st.zoom, { mode: 'edit', lang: LG(), scale: st.zoom }, 'edit'); }
+  function liveUpdate() { sel().forEach(function (e) { placeEl(e); var b = AW.$('.sb[data-id="' + e.id + '"]', st.ov); if (b) placeBox(b, e); }); updPos(); if (AW.Plate && T().page.plate) AW.Plate.decorate(st.pg, T(), st.zoom, { mode: 'edit', lang: LG(), scale: st.zoom }, 'edit'); AW.fitAll(st.pg); }
   function commitLive() { changed('elems'); }
 
   function updPos() {
@@ -236,7 +237,7 @@
     AW.$$('button', fmt).forEach(function (b) { b.disabled = !tx.length; });
     if (one) {
       var f = function (p) { return AW.$('[data-p="' + p + '"]', st.root); };
-      f('font').value = one.font; f('fontEn').value = one.fontEn || ''; f('size').value = one.size; f('lh').value = one.lh; f('ls').value = one.ls || 0; f('color').value = /^#[0-9a-f]{6}$/i.test(one.color) ? one.color : '#111111'; f('fit').checked = !!one.fit;
+      f('font').value = one.font; f('fontEn').value = one.fontEn || ''; if (!(st.editing && st.editing.runs)) f('size').value = one.size; f('lh').value = one.lh; f('ls').value = one.ls || 0; f('color').value = /^#[0-9a-f]{6}$/i.test(one.color) ? one.color : '#111111'; f('fit').checked = !!one.fit;
       [['bold', one.bold], ['italic', one.italic], ['ul', one.ul], ['al-l', one.align === 'left'], ['al-c', one.align === 'center'], ['al-r', one.align === 'right'], ['al-j', one.align === 'justify'], ['al-d', one.align === 'dist'], ['v-t', one.valign === 'top'], ['v-m', one.valign === 'middle'], ['v-b', one.valign === 'bottom']].forEach(function (p) {
         var b = AW.$('[data-a="' + p[0] + '"]', fmt); if (b) b.classList.toggle('on', !!p[1]);
       });
@@ -346,8 +347,8 @@
       case 'pstyle': return pasteStyle();
       case 'pinplace': return pasteClip(null, true);
       case 'same-w': return sameSize('w'); case 'same-h': return sameSize('h'); case 'same-wh': return sameSize('wh');
-      case 'sz-': return tx.length && T1('size', (tx[0].size || 16) - 1);
-      case 'sz+': return tx.length && T1('size', (tx[0].size || 16) + 1);
+      case 'sz-': if (st.editing && st.editing.runs) return applyRunSize(Math.max(4, runSizeNow() - 1)); return tx.length && T1('size', (tx[0].size || 16) - 1);
+      case 'sz+': if (st.editing && st.editing.runs) return applyRunSize(Math.min(300, runSizeNow() + 1)); return tx.length && T1('size', (tx[0].size || 16) + 1);
       case 'bold': return tx.length && T1('bold', !tx[0].bold);
       case 'italic': return tx.length && T1('italic', !tx[0].italic);
       case 'ul': return tx.length && T1('ul', !tx[0].ul);
@@ -965,20 +966,74 @@
     if (e.grp && S.sel.length > 1) { S.sel = [e.id]; markSel(); updTools(); AW.emit('selchange'); return; }   // 그룹 안에서 더블클릭: 이 요소만 선택
     E.setSel([e.id]); beginEdit(e, n);
   }
+  /* 글상자 안 부분 글자 크기(워드 방식): 더블클릭 → 줄일 글자를 드래그 → 글자 크기 칸 입력/±.
+   * 저장 형식은 [s=N]글[/s](N = 상자 글자 크기 대비 %). 편집 중에는 실제 크기로 보이고, 끝나면 다시 표기로 저장. */
+  function runsOf(text) {
+    var out = [], re = /\[s=(\d{2,3})\]([\s\S]*?)\[\/s\]/g, i = 0, m;
+    while ((m = re.exec(text))) { if (m.index > i) out.push({ t: text.slice(i, m.index), p: 100 }); out.push({ t: m[2], p: +m[1] }); i = re.lastIndex; }
+    if (i < text.length) out.push({ t: text.slice(i), p: 100 }); return out;
+  }
+  function mergeRuns(rs) { var o = []; rs.forEach(function (r) { if (!r.t) return; var l = o[o.length - 1]; if (l && l.p === r.p) l.t += r.t; else o.push({ t: r.t, p: r.p }); }); return o; }
+  function runsText(rs) { return mergeRuns(rs).map(function (r) { return r.p === 100 ? r.t : '[s=' + r.p + ']' + r.t + '[/s]'; }).join(''); }
+  function runsHtml(rs) { return rs.map(function (r) { return r.p === 100 ? AW.esc(r.t) : '<span data-p="' + r.p + '" style="font-size:' + r.p + '%">' + AW.esc(r.t) + '</span>'; }).join(''); }
+  function domRuns(b) {
+    var out = []; (function walk(n, p) { Array.prototype.forEach.call(n.childNodes, function (c) { if (c.nodeType === 3) out.push({ t: c.nodeValue.replace(/ /g, ' '), p: p }); else if (c.nodeName === 'BR') out.push({ t: '\n', p: p }); else if (c.nodeType === 1) walk(c, c.dataset && c.dataset.p ? +c.dataset.p : p); }); })(b, 100); return out;
+  }
+  function selOffsets(b) {
+    var s = window.getSelection(); if (!s.rangeCount) return null; var r = s.getRangeAt(0); if (!b.contains(r.startContainer) || !b.contains(r.endContainer)) return null;
+    var off = function (node, o) { var pr = document.createRange(); pr.selectNodeContents(b); pr.setEnd(node, o); return pr.cloneContents().textContent.length; };
+    return [off(r.startContainer, r.startOffset), off(r.endContainer, r.endOffset)];
+  }
+  function setOffsets(b, s, e) {
+    var pos = 0, r = document.createRange(), got = false; r.selectNodeContents(b); r.collapse(false);
+    (function walk(n) {
+      for (var i = 0; i < n.childNodes.length; i++) {
+        var c = n.childNodes[i];
+        if (c.nodeType === 3) { var l = c.nodeValue.length; if (!got && s <= pos + l) { r.setStart(c, s - pos); r.setEnd(c, s - pos); got = true; } if (got && e <= pos + l) { r.setEnd(c, e - pos); return true; } pos += l; }
+        else if (c.nodeType === 1 && walk(c)) return true;
+      }
+      return false;
+    })(b);
+    var sl = window.getSelection(); sl.removeAllRanges(); sl.addRange(r);
+  }
+  function runSizeAt(ed, sel) {   // 선택(또는 커서)에 걸린 글자의 크기(pt). 크기가 섞여 있으면 null
+    var e = AW.get(ed.id), base = e ? e.size || 16 : 16, rs = domRuns(ed.node), s = sel ? sel[0] : 0, en = sel ? Math.max(sel[1], s + 1) : 0, pos = 0, ps = {};
+    rs.forEach(function (r) { var a = pos, b = pos + r.t.length; pos = b; if (b > s && a < en) ps[r.p] = 1; });
+    var k = Object.keys(ps); return k.length === 1 ? AW.round(base * k[0] / 100, 1) : k.length ? null : base;
+  }
+  function runSizeNow() { var ed = st.editing, v = ed && runSizeAt(ed, ed.sel); return v == null ? (AW.get(ed.id).size || 16) : v; }
+  function applyRunSize(pt) {
+    var ed = st.editing; if (!ed || !ed.runs) return false;
+    var e = AW.get(ed.id), base = e.size || 16, pct = Math.max(10, Math.min(999, Math.round(pt / base * 100))), s = ed.sel && ed.sel[0], en = ed.sel && ed.sel[1];
+    if (s == null || s === en) { AW.toast('크기를 바꿀 글자를 먼저 드래그해 선택해 주십시오. (상자 전체 크기는 글상자를 선택만 한 상태에서 바꿉니다)'); ed.node.focus(); return true; }
+    var out = [], pos = 0;
+    domRuns(ed.node).forEach(function (r) {
+      var a = pos, b = pos + r.t.length; pos = b; if (b <= s || a >= en) { out.push(r); return; }
+      var i0 = Math.max(s, a) - a, i1 = Math.min(en, b) - a;
+      if (i0 > 0) out.push({ t: r.t.slice(0, i0), p: r.p }); out.push({ t: r.t.slice(i0, i1), p: pct }); if (i1 < r.t.length) out.push({ t: r.t.slice(i1), p: r.p });
+    });
+    ed.node.innerHTML = runsHtml(mergeRuns(out)); ed.node.focus(); setOffsets(ed.node, s, en); ed.sel = [s, en]; syncRunSize(ed); return true;
+  }
+  function syncRunSize(ed) { var i = AW.$('[data-p="size"]', st.root); if (i && document.activeElement !== i) { var v = runSizeAt(ed, ed.sel); i.value = v == null ? '' : v; i.placeholder = v == null ? '여러 크기' : ''; } }
+  document.addEventListener('selectionchange', function () { var ed = st.editing; if (!ed || !ed.runs) return; var o = selOffsets(ed.node); if (o) { ed.sel = o; syncRunSize(ed); } });
   function beginEdit(e, node) {
-    var b = node.firstChild; b.textContent = e[tk()] || ''; b.style.outline = '2px solid #0EA5E9'; b.style.cursor = 'text'; b.style.background = 'rgba(255,255,255,.85)';
+    var b = node.firstChild; b.innerHTML = runsHtml(runsOf(e[tk()] || '')); b.style.outline = '2px solid #0EA5E9'; b.style.cursor = 'text'; b.style.background = 'rgba(255,255,255,.85)'; b.style.whiteSpace = 'pre-wrap';
     try { b.contentEditable = 'plaintext-only'; } catch (x) {} if (b.contentEditable !== 'plaintext-only') b.contentEditable = 'true';
-    st.editing = { id: e.id, node: b };
-    b.addEventListener('blur', function () { if (st.editing && st.editing.node === b) endEdit(); }, { once: true });
+    var ed = st.editing = { id: e.id, node: b, runs: true, sel: null };
+    var keepOn = function (t) { return t && t.dataset && (t.dataset.p === 'size' || t.dataset.a === 'sz-' || t.dataset.a === 'sz+'); };
+    ed.onBlur = function (ev) { if (st.editing === ed && !keepOn(ev.relatedTarget)) endEdit(); };      // 글자 크기 칸·± 로 옮길 때는 편집 유지
+    ed.onDown = function (ev) { if (st.editing === ed && !b.contains(ev.target) && !(ev.target.closest && ev.target.closest('[data-p="size"],[data-a="sz-"],[data-a="sz+"]'))) endEdit(); };
+    b.addEventListener('blur', ed.onBlur); document.addEventListener('mousedown', ed.onDown, true);
     b.focus();
     var r = document.createRange(); r.selectNodeContents(b); r.collapse(false); var s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
     b.addEventListener('keydown', function kd(k) { if (k.key === 'Escape') { b.removeEventListener('keydown', kd); endEdit(); } k.stopPropagation(); });
   }
   function endEdit() {
     var ed = st.editing; if (!ed) return; st.editing = null;
+    if (ed.onBlur) { ed.node.removeEventListener('blur', ed.onBlur); document.removeEventListener('mousedown', ed.onDown, true); }
     var e = AW.get(ed.id);
     if (e && ed.cell) { var kc = e.cells[ed.cell[0]] && e.cells[ed.cell[0]][ed.cell[1]], tt = ed.node.innerText.replace(/\u00a0/g, ' ').replace(/\n$/, ''); if (kc && tt !== (kc.text || '')) { kc.text = tt; changed('elems', false, '표 글 입력'); } }
-    else if (e) { var t = ed.node.innerText.replace(/ /g, ' ').replace(/\n$/, ''); if (t !== (e[tk()] || '')) { e[tk()] = t; changed('elems'); } }
+    else if (e) { var t = (ed.runs ? runsText(domRuns(ed.node)) : ed.node.innerText.replace(/\u00a0/g, ' ')).replace(/\n$/, ''); if (t !== (e[tk()] || '')) { e[tk()] = t; changed('elems'); } }
     E.refreshElems(); if (ed.cell && E.autoFit()) changed('elems', false, '표 줄 높이 자동');
     if (st.pending) { st.pending = false; E.relayout(); }
   }
