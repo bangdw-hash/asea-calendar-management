@@ -156,6 +156,49 @@ tr:hover td{background:#f8fbff}
 .devlog-tabs{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
 .devlog-tab{padding:5px 14px;border-radius:var(--r);font-size:12px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:var(--card);color:var(--muted)}
 .devlog-tab.active{background:var(--accent-lt);color:var(--accent-text);border-color:var(--accent)}
+/* ── MOBILE ── */
+#bottom-nav{display:none}
+#sb-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:299}
+#sb-overlay.open{display:block}
+@media(max-width:767px){
+  #sidebar{transform:translateX(-100%);transition:transform .25s;z-index:300}
+  #sidebar.open{transform:translateX(0)}
+  #main{margin-left:0}
+  #topbar{padding:0 12px}
+  #content{padding:14px 12px 72px}
+  .stats-grid{grid-template-columns:repeat(2,1fr);gap:10px}
+  .grid-2,.grid-3{grid-template-columns:1fr}
+  .tbl-outer{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .card{overflow-x:auto}
+  table td,table th{white-space:nowrap}
+  .modal-bg{padding:0;align-items:flex-end}
+  .modal{max-width:100%;border-radius:12px 12px 0 0;max-height:88vh}
+  #notif-panel{width:calc(100vw - 24px);right:12px}
+  #bottom-nav{
+    display:flex;position:fixed;bottom:0;left:0;right:0;
+    background:var(--card);border-top:1px solid var(--border);z-index:200;
+    padding-bottom:env(safe-area-inset-bottom,0px);
+  }
+  .bn-item{
+    flex:1;display:flex;flex-direction:column;align-items:center;
+    justify-content:center;gap:2px;font-size:10px;font-weight:600;
+    color:var(--muted);cursor:pointer;padding:8px 0;transition:.15s;
+  }
+  .bn-item.active{color:var(--accent)}
+  .bn-item svg{width:20px;height:20px;flex-shrink:0}
+  #mb-hamburger{
+    display:flex;align-items:center;justify-content:center;
+    width:36px;height:36px;border-radius:var(--r);
+    background:var(--bg);border:1px solid var(--border);cursor:pointer;flex-shrink:0;
+  }
+  .topbar-title{font-size:14px}
+  .page-title{font-size:16px}
+  .toolbar{gap:6px}
+  .toolbar input,.toolbar select{font-size:12px;padding:6px 9px}
+}
+@media(min-width:768px){
+  #mb-hamburger{display:none}
+}
 </style>
 </head>
 <body>
@@ -262,8 +305,13 @@ tr:hover td{background:#f8fbff}
     <span style="margin-left:auto;cursor:pointer;text-decoration:underline" onclick="doLogout()">로그인으로 돌아가기</span>
   </div>
   <div id="topbar">
-    <div class="topbar-title" id="topbar-title">현황판</div>
-    <div style="display:flex;align-items:center;gap:12px">
+    <div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0">
+      <div id="mb-hamburger" onclick="toggleMobileSidebar()" title="메뉴">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="currentColor"><rect y="2" width="18" height="2" rx="1"/><rect y="8" width="18" height="2" rx="1"/><rect y="14" width="18" height="2" rx="1"/></svg>
+      </div>
+      <div class="topbar-title" id="topbar-title" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">현황판</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px;flex-shrink:0">
       <div class="notif-btn" onclick="toggleNotif()" id="notif-btn">
         <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1a5 5 0 00-5 5v3l-1.5 2h13L13 9V6a5 5 0 00-5-5zm0 13a2 2 0 01-2-2h4a2 2 0 01-2 2z"/></svg>
         <span class="notif-badge" id="notif-badge" style="display:none">0</span>
@@ -272,6 +320,28 @@ tr:hover td{background:#f8fbff}
   </div>
   <div id="content"></div>
 </div>
+</div>
+
+<!-- 모바일 사이드바 오버레이 -->
+<div id="sb-overlay" onclick="toggleMobileSidebar()"></div>
+
+<!-- 모바일 하단 탭바 -->
+<div id="bottom-nav">
+  <div class="bn-item active" data-bnpage="dashboard" onclick="bnNav('dashboard')">
+    <svg viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="1" width="6" height="6" rx="1"/><rect x="9" y="1" width="6" height="6" rx="1"/><rect x="1" y="9" width="6" height="6" rx="1"/><rect x="9" y="9" width="6" height="6" rx="1"/></svg>현황판
+  </div>
+  <div class="bn-item" data-bnpage="residents" onclick="bnNav('residents')">
+    <svg viewBox="0 0 16 16" fill="currentColor"><circle cx="6" cy="5" r="3"/><path d="M0 14c0-3.3 2.7-6 6-6s6 2.7 6 6H0z"/><circle cx="12.5" cy="5" r="2.5"/><path d="M11 14h5c0-2.8-2-5-4.5-5"/></svg>입소자
+  </div>
+  <div class="bn-item" data-bnpage="payments" onclick="bnNav('payments')">
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="3" width="14" height="10" rx="1.5"/><path d="M1 7h14"/></svg>납부
+  </div>
+  <div class="bn-item" data-bnpage="contracts" onclick="bnNav('contracts')">
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 2h7l3 3v9a1 1 0 01-1 1H3a1 1 0 01-1-1V3a1 1 0 011-1z"/><path d="M10 2v4h4M5 8h6M5 11h4"/></svg>계약
+  </div>
+  <div class="bn-item" data-bnpage="__more" onclick="toggleMobileSidebar()">
+    <svg viewBox="0 0 16 16" fill="currentColor"><circle cx="2" cy="8" r="1.5"/><circle cx="8" cy="8" r="1.5"/><circle cx="14" cy="8" r="1.5"/></svg>더보기
+  </div>
 </div>
 
 <!-- Context Menu -->
@@ -548,10 +618,20 @@ function markAllRead(){C.notifs.forEach(n=>n.is_read=true);renderNotifList();doc
 
 /* ── NAV ── */
 const TITLES={dashboard:'현황판',residents:'입소자 관리',payments:'납부 관리',contracts:'계약·서약서',ot:'OT·벌점 관리',utility:'공과금 관리',realestate:'부동산 계약',pl:'손익 현황',devlog:'개발 현황',settings:'설정'};
+function toggleMobileSidebar(){
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('sb-overlay').classList.toggle('open');
+}
+function bnNav(p){
+  if(document.getElementById('sidebar').classList.contains('open')) toggleMobileSidebar();
+  nav(p);
+}
 function nav(p){
   document.querySelectorAll('.sb-item').forEach(el=>el.classList.toggle('active',el.dataset.page===p));
+  document.querySelectorAll('.bn-item').forEach(el=>el.classList.toggle('active',el.dataset.bnpage===p));
   document.getElementById('topbar-title').textContent=TITLES[p]||p;
   document.getElementById('notif-panel').classList.remove('open');
+  if(document.getElementById('sidebar').classList.contains('open')) toggleMobileSidebar();
   const c=document.getElementById('content');
   switch(p){
     case 'dashboard':c.innerHTML=pgDash();break;
@@ -616,9 +696,9 @@ function pgResidents(){
     <div class="spacer"></div>
     <button class="btn btn-primary btn-sm" onclick="openResModal()">+ 입소자 등록</button>
   </div>
-  <div class="card" style="padding:0;overflow:hidden"><table><thead><tr>
+  <div class="card" style="padding:0"><div class="tbl-outer"><table><thead><tr>
     <th>이름</th><th>학번</th><th>학과</th><th>건물</th><th>호실</th><th>구분</th><th class="text-right">납부액</th><th>벌점</th><th>입소일</th><th>작업</th>
-  </tr></thead><tbody id="rs-body"></tbody></table></div>`;
+  </tr></thead><tbody id="rs-body"></tbody></table></div></div>`;
 }
 function filterRes(){
   const q=(document.getElementById('rs-q')||{}).value?.toLowerCase()||'';
@@ -658,9 +738,9 @@ function pgPayments(){
     <div class="alert alert-info" style="margin:0;padding:6px 12px;font-size:12px">계좌: 기업은행 025-049131-04-074</div>
     <button class="btn btn-primary btn-sm" onclick="openPayModal()">+ 납부 등록</button>
   </div>
-  <div class="card" style="padding:0;overflow:hidden"><table><thead><tr>
+  <div class="card" style="padding:0"><div class="tbl-outer"><table><thead><tr>
     <th>이름</th><th>학번</th><th>건물/호</th><th>구분</th><th>기간</th><th class="text-right">금액</th><th>방법</th><th>납부일</th><th>상태</th>
-  </tr></thead><tbody id="py-body"></tbody></table></div>`;
+  </tr></thead><tbody id="py-body"></tbody></table></div></div>`;
 }
 function filterPay(){
   const q=(document.getElementById('py-q')||{}).value?.toLowerCase()||'';
@@ -702,14 +782,14 @@ function pgContracts(){
       </div>
     </div>
   </div>
-  <div class="card" style="padding:0;overflow:hidden"><table><thead><tr>
+  <div class="card" style="padding:0"><div class="tbl-outer"><table><thead><tr>
     <th>이름</th><th>학번</th><th>건물</th><th>입소 계약서</th><th>생활관 서약서</th><th>개인정보동의</th><th>작업</th>
   </tr></thead><tbody>
-  ${C.residents.map(r=>`<tr><td><b>${r.name}</b></td><td>${r.student_no||'—'}</td><td>${r.building_name||'—'}</td>
+  ${C.residents.map(r=>`<tr><td><b>${r.name}</b></td><td>${r.student_no||'—'}</td><td style="white-space:nowrap">${r.building_name||'—'}</td>
     <td><span class="badge badge-gray">미서명</span></td><td><span class="badge badge-gray">미서명</span></td><td><span class="badge badge-gray">미서명</span></td>
     <td><button class="btn btn-outline btn-sm" onclick="alert('SMS 연동 후 발송 가능')">발송</button></td></tr>`).join('')}
   ${!C.residents.length?'<tr><td colspan="7" class="empty">입소자 없음</td></tr>':''}
-  </tbody></table></div>`;
+  </tbody></table></div></div>`;
 }
 
 /* ── OT ── */

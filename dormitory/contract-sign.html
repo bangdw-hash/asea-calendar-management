@@ -16,8 +16,10 @@
   .hd h1{ font-size:17px; margin:0 0 3px; } .hd p{ font-size:12px; margin:0; opacity:.85; }
   .card{ background:#fff; border:1px solid #e5e7eb; border-radius:6px; padding:16px; margin-bottom:12px; }
   h2{ font-size:14px; color:var(--c); margin:0 0 10px; }
-  table{ width:100%; border-collapse:collapse; font-size:13px; }
-  th,td{ border:1px solid #e5e7eb; padding:7px 9px; text-align:left; } th{ background:#f8fafc; width:34%; color:#475569; }
+  .tbl-outer{ overflow-x:auto; -webkit-overflow-scrolling:touch; }
+  table{ width:100%; border-collapse:collapse; font-size:13px; min-width:280px; }
+  th,td{ border:1px solid #e5e7eb; padding:7px 9px; text-align:left; word-break:keep-all; }
+  th{ background:#f8fafc; width:34%; color:#475569; white-space:nowrap; }
   .terms{ white-space:pre-wrap; font-size:13px; line-height:1.7; max-height:300px; overflow-y:auto; border:1px solid #eef1f4; border-radius:6px; padding:12px; background:#fafbfc; }
   label.chk{ display:flex; gap:8px; align-items:flex-start; font-size:13px; margin:10px 0; cursor:pointer; }
   label.chk input{ width:18px; height:18px; margin-top:1px; flex-shrink:0; }
@@ -56,13 +58,13 @@ async function load(){
   var d=r.data;
   if(d.status==='signed'){ app.innerHTML='<div class="card" style="text-align:center"><div><svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div><h2>이미 서명이 완료된 계약입니다.</h2><p class="muted">감사합니다.</p></div>'; return; }
   app.innerHTML=
-    '<div class="card"><h2>계약 정보</h2><table>'+
+    '<div class="card"><h2>계약 정보</h2><div class="tbl-outer"><table>'+
       '<tr><th>성명</th><td>'+esc(d.name)+'</td></tr>'+
       '<tr><th>학번/사번</th><td>'+esc(d.student_no||'-')+'</td></tr>'+
       '<tr><th>건물·호실</th><td>'+esc((d.building||'')+' '+(d.room?d.room+'호':''))+'</td></tr>'+
       '<tr><th>입소 기간</th><td>'+esc(d.start)+' ~ '+esc(d.end)+'</td></tr>'+
       '<tr><th>월 기숙사비</th><td>'+won(d.unit_price)+'원'+(d.deposit?(' (보증금 '+won(d.deposit)+'원)'):'')+'</td></tr>'+
-    '</table></div>'+
+    '</table></div></div>'+
     '<div class="card"><h2>계약 약관</h2><div class="terms">'+esc(d.template||'(약관 내용이 등록되지 않았습니다. 관리자에게 문의하세요.)')+'</div>'+
       '<label class="chk"><input type="checkbox" id="ag-terms"> 위 계약 내용을 모두 확인하였으며 이에 동의합니다.</label>'+
       '<label class="chk"><input type="checkbox" id="ag-privacy"> [필수] 개인정보 수집·이용에 동의합니다. (입소 관리 목적, 보관기간: 재학/입소 기간)</label>'+

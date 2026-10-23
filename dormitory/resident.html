@@ -31,6 +31,12 @@
   .tabs button.active{ background:var(--c); color:#fff; border-color:var(--c); }
   .badge{ font-size:11px; font-weight:700; padding:2px 8px; border-radius:6px; background:#eef2ff; color:#4f46e5; }
   .badge.paid{ background:#ecfdf5; color:#059669; } .badge.od{ background:#fef2f2; color:#dc2626; }
+  .tbl-outer{ overflow-x:auto; -webkit-overflow-scrolling:touch; }
+  .tbl-outer table{ min-width:420px; }
+  @media(max-width:480px){
+    .row2{ grid-template-columns:1fr; }
+    td,th{ white-space:nowrap; }
+  }
 </style>
 </head>
 <body>
@@ -101,17 +107,17 @@ function tabContract(){
 function tabPayment(){
   var ps=DATA.payments||[]; if(!ps.length) return '<div class="card"><p class="muted">납부 내역이 없습니다.</p></div>';
   var today=new Date().toISOString().slice(0,10);
-  return '<div class="card"><h2>납부 내역</h2><table><thead><tr><th>기간</th><th>금액</th><th>기한</th><th>상태</th></tr></thead><tbody>'+
+  return '<div class="card"><h2>납부 내역</h2><div class="tbl-outer"><table><thead><tr><th>기간</th><th>금액</th><th>기한</th><th>상태</th></tr></thead><tbody>'+
     ps.map(function(p){ var od=p.status!=='paid'&&p.due_date&&p.due_date<today;
       var b=p.status==='paid'?'<span class="badge paid">완납</span>':(od?'<span class="badge od">연체</span>':'<span class="badge">미납</span>');
       return '<tr><td>'+esc(p.period)+'</td><td>'+won(p.amount)+'</td><td>'+esc(p.due_date||'-')+'</td><td>'+b+'</td></tr>'; }).join('')+
-    '</tbody></table></div>';
+    '</tbody></table></div></div>';
 }
 function tabNotice(){
   var ns=DATA.notices||[]; if(!ns.length) return '<div class="card"><p class="muted">발행된 고지서가 없습니다.</p></div>';
-  return '<div class="card"><h2>고지서</h2><table><thead><tr><th>고지번호</th><th>학기</th><th>금액</th><th>마감</th><th>상태</th></tr></thead><tbody>'+
+  return '<div class="card"><h2>고지서</h2><div class="tbl-outer"><table><thead><tr><th>고지번호</th><th>학기</th><th>금액</th><th>마감</th><th>상태</th></tr></thead><tbody>'+
     ns.map(function(n){ return '<tr><td>'+esc(n.notice_no||'-')+'</td><td>'+esc(n.semester||'')+'</td><td>'+won(n.amount)+'</td><td>'+esc(n.due_date||'-')+'</td><td>'+esc(n.status)+'</td></tr>'; }).join('')+
-    '</tbody></table></div>';
+    '</tbody></table></div></div>';
 }
 function renderComplaintForm(c){
   var room=(DATA.contracts&&DATA.contracts[0])?(DATA.contracts[0].building+' '+DATA.contracts[0].room+'호'):'';
