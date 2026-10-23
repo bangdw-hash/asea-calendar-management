@@ -373,6 +373,7 @@
     }
     var dx = o.dx || 0, dy = o.dy || 0;
     tpl.elems.forEach(function (e) { el.appendChild(AW.renderElem(e, k, o, dx, dy)); });
+    if (pg.plate && AW.Plate) AW.Plate.decorate(el, tpl, k, o, mode);   // 명패: 3칸 → 2칸 반전 복제 + 접는 선 안내
     return el;
   };
   AW.makeTok = function (mode, o) {
@@ -384,7 +385,7 @@
           if (!v && mode === 'view' && n.charAt(0) !== '@') return '<span class="miss">' + AW.esc('{' + n + '}') + '</span>' + jo;
           if (pj && v && jOn && lg !== 'en') { var pk = AW.josaPick(pj, v); jo = pk.changed ? (mode === 'view' ? '<span class="jo" title="조사 자동 보정: ' + AW.esc(pj) + ' → ' + AW.esc(pk.text) + '">' + pk.text + '</span>' : pk.text) : pk.text; }
           return (mode === 'view' ? '<span class="mv">' + AW.esc(v) + '</span>' : AW.esc(v)) + jo;   // 미리보기에서는 바뀌는 값을 표시(인쇄에는 표시 없음)
-        });
+        }).replace(/\[s=(\d{2,3})\]/g, '<span style="font-size:$1%">').replace(/\[\/s\]/g, '</span>');   // [s=45]작은 글[/s] — 한 줄 안에서 글자 크기 비율 변경(명패 소속·직책)
       };
   };
   AW.renderElem = function (e, k, o, dx, dy) {
@@ -403,7 +404,7 @@
       d.style.cssText = base + 'display:flex;flex-direction:column;justify-content:' + (e.valign === 'top' ? 'flex-start' : e.valign === 'bottom' ? 'flex-end' : 'center') +
         ';font-family:' + AW.fontStack(e.font) + ';font-size:' + fs + 'px;line-height:' + (e.lh || 1.4) + ';color:' + (e.color || '#111') +
         ';font-weight:' + (e.bold ? 700 : 400) + ';font-style:' + (e.italic ? 'italic' : 'normal') + ';text-decoration:' + (e.ul ? 'underline' : 'none') +
-        ';text-align:' + (e.align || 'center') + ';letter-spacing:' + ((e.ls || 0) * PT * k) + 'px;white-space:' + (e.fit ? 'pre' : 'pre-wrap') + ';word-break:keep-all;overflow-wrap:anywhere;';
+        ';text-align:' + (e.align || 'center') + (e.align === 'justify' ? ';text-align-last:justify' : '') + ';letter-spacing:' + ((e.ls || 0) * PT * k) + 'px;white-space:' + (e.fit ? 'pre' : 'pre-wrap') + ';word-break:keep-all;overflow-wrap:anywhere;';
       var b = document.createElement('div'); b.className = 'el-t'; b.innerHTML = inner;
       var isw = AW.inkShift(e.font, !!e.bold, !!e.italic, /[가-힣]/.test(ko + en) ? '가힣' : /[A-Za-z0-9]/.test(ko + en) ? 'H0' : '가', e.valign || 'middle', e.lh || 1.4, fs);
       b.style.cssText = 'width:100%;' + (e.fit ? 'overflow:visible;' : '') + (Math.abs(isw) > 0.05 ? 'transform:translateY(' + isw.toFixed(2) + 'px);' : '');
