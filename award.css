@@ -363,3 +363,4 @@ table{border-collapse:collapse;width:100%}
 .pl-mir .el::before,.pl-mir .el::after{display:none!important}
 .sb .sbin{position:absolute;left:0;right:0;border:1px dashed rgba(26,115,232,.55);pointer-events:none}
 .pl-sz{display:inline-flex;align-items:center;gap:4px;font-size:13px}.pl-sz input{width:62px}
+.pl-sz label{display:inline-flex;align-items:center;gap:3px;margin-left:6px}.pl-sz input{width:56px}

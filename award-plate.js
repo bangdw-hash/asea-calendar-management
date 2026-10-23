@@ -80,26 +80,47 @@
     if (d) list.forEach(function (e) { e.x = AW.round(e.x + d, 2); });
   };
 
+  /* ───────────── 소속·직책·이름 한 줄: 항목마다 크기(pt) ───────────── */
+  // 예전 형식 「[s=45]{{소속}} {{직책}}[/s] {{이름}}」을 항목별 「[s=N]{{항목}}[/s]」로 바꿈(N = 상자 글자 크기 대비 %)
+  function norm(e) {
+    e.text = e.text.replace(/\[s=(\d+)\]\{\{소속\}\}\s+\{\{직책\}\}\[\/s\]/, '[s=$1]{{소속}}[/s] [s=$1]{{직책}}[/s]');
+    ['소속', '직책', '이름'].forEach(function (n) { if (e.text.indexOf('{{' + n + '}}') >= 0 && !new RegExp('\\[s=\\d+\\]\\{\\{' + n + '\\}\\}\\[/s\\]').test(e.text)) e.text = e.text.replace('{{' + n + '}}', '[s=100]{{' + n + '}}[/s]'); });
+  }
+  function nameLine(t, p) {
+    var has = function (e) { return e.t === 'text' && /\{\{(소속|직책|이름)\}\}/.test(e.text || ''); }, sl = AW.S.sel.map(AW.get).filter(Boolean).filter(has)[0];
+    return sl || t.elems.filter(function (e) { return has(e) && front(e, p); })[0] || null;
+  }
+  P.syncSizes = function () {
+    var bar = $('.pl-bar'); if (!bar || !P.is()) return; var line = nameLine(S.tpl, cfg()); if (!line) return;
+    var tx = line.text, base = line.size || 36, legacy = /\[s=(\d+)\]\{\{소속\}\}\s+\{\{직책\}\}\[\/s\]/.exec(tx);
+    AW.$$('[data-sz]', bar).forEach(function (i) {
+      if (document.activeElement === i) return; var m = new RegExp('\\[s=(\\d+)\\]\\{\\{' + i.dataset.sz + '\\}\\}\\[/s\\]').exec(tx), pc = m ? +m[1] : (legacy && i.dataset.sz !== '이름' ? +legacy[1] : 100);
+      i.value = AW.round(base * pc / 100, 1);
+    });
+  };
+  AW.on('selchange', function () { P.syncSizes(); });
+  AW.on('tplchange', function () { P.syncSizes(); });
+
   /* ───────────── 편집기 상단 명패 도구줄 ───────────── */
   P.onRender = function (root, tpl) {
     if (!root) return;
     var bar = $('.pl-bar', root), on = P.is(tpl);
     var dbtn = $('[data-a="roster"]', document); if (dbtn) dbtn.classList.toggle('hide', !on);
     if (!on) { if (bar) bar.remove(); return; }
-    var cur = null; tpl.elems.forEach(function (e) { var m = e.t === 'text' && /\[s=(\d+)\]/.exec(e.text || ''); if (m && cur == null) cur = m[1]; });
+
     if (!bar) {
       bar = document.createElement('div'); bar.className = 'pl-bar';
       var B = function (a, ic, t, tip) { return '<button class="btn btn-secondary btn-sm" data-pl="' + a + '" title="' + esc(tip) + '">' + AW.ic(ic, 15) + ' ' + t + '</button>'; };
       bar.innerHTML = '<b class="pl-t">명패</b>' + B('pl-logo', 'image', '로고 불러오기', '파일에서 로고를 불러옵니다. Ctrl+V 로 복사한 이미지를 붙여 넣어도 됩니다.') + B('pl-line', 'line', '빨간 중간선', '빨간 구분선을 3칸에 넣습니다.') +
         B('pl-center', 'gCV', '3칸 가운데 맞춤', '3칸의 개체 묶음을 세로·가로 가운데로 맞춥니다.') + B('pl-justify', 'alC', '균등 정렬', '선택한 글상자를 균등 분배(한 줄도 좌우 폭을 꽉 채움)로 바꾸거나 되돌립니다.') +
-        '<label class="pl-sz" title="소속·직책(작은 글)의 크기를 이름(큰 글) 대비 몇 %로 할지 정합니다. 값을 바꾸면 바로 적용됩니다.">직함 크기 <input class="in sm num" id="pl-sz" type="number" min="20" max="100" step="5" value="45">%</label>' + B('pl-cfg', 'cols', '접는 선·여백 설정', '접는 선 위치, 좌우 인쇄 불가 여백, 반전 복제 등을 실물 출력과 대조하며 조정합니다.') + B('pl-new', 'plus', '새 명패 양식', '아세아 직원 / 외부 기관 명패 양식을 새 탭으로 만듭니다.') +
-        '<input type="file" class="hide" id="pl-file" accept="image/*"><span class="pl-hint muted">③칸에 입력하면 ②칸에 180° 반전되어 자동 반영됩니다 · 글상자에서 <code>[s=45]작은 글[/s]</code> 로 한 줄 안에서 크기를 바꿀 수 있습니다.</span>';
+        '<span class="pl-sz" title="한 줄 안에서 소속·직책·이름 글자 크기(pt)를 각각 정합니다. 값을 바꾸면 바로 적용됩니다. 비어 있는 항목은 자동으로 빠집니다.">크기(pt) ' + ['소속', '직책', '이름'].map(function (n) { return '<label>' + n + ' <input class="in sm num" data-sz="' + n + '" type="number" min="6" max="200" step="1"></label>'; }).join('') + '</span>' + B('pl-cfg', 'cols', '접는 선·여백 설정', '접는 선 위치, 좌우 인쇄 불가 여백, 반전 복제 등을 실물 출력과 대조하며 조정합니다.') + B('pl-new', 'plus', '새 명패 양식', '아세아 / 외부 기관 명패 양식을 새 탭으로 만듭니다.') +
+        '<input type="file" class="hide" id="pl-file" accept="image/*"><span class="pl-hint muted">③칸에 입력하면 ②칸에 180° 반전되어 자동 반영됩니다 · 소속·직책·이름 크기는 위 「크기(pt)」에서 각각 정합니다(비어 있는 항목은 자동 제외).</span>';
       root.insertBefore(bar, root.firstChild);
       bar.addEventListener('click', function (e) { var b = e.target.closest('[data-pl]'); if (b) AW.Editor.act(b.dataset.pl); });
-      $('#pl-sz', bar).onchange = function () { AW.Editor.act('pl-size'); };
+      AW.$$('[data-sz]', bar).forEach(function (i) { i.onchange = function () { AW.Editor.act('pl-size'); }; i.onkeydown = function (e) { e.stopPropagation(); }; });
       $('#pl-file', bar).onchange = function (e) { var f = e.target.files[0]; e.target.value = ''; if (f) AW.Editor.addImageFile(f, null, false); };
     }
-    var zi = $('#pl-sz', bar); if (zi && cur != null && document.activeElement !== zi) zi.value = cur;
+    P.syncSizes();
   };
   // 로고 이미지를 자리 표시(ph)나 기본 로고 영역에 맞춰 배치
   P.placeLogo = function (tpl, el) {
@@ -132,9 +153,15 @@
       E.refreshElems(); return api.changed('elems', false, '3칸 가운데 맞춤');
     }
     if (a === 'pl-size') {
-      var sv = parseInt($('#pl-sz').value, 10); if (!(sv >= 20 && sv <= 100)) return AW.toast('직함 글자 크기는 20~100% 사이로 입력해 주십시오.', 'error');
-      var tg = t.elems.filter(function (e) { return e.t === 'text' && /\[s=\d+\]/.test(e.text || '') && front(e, p); }); if (!tg.length) return AW.toast('작은 글 표기([s=45]…[/s])가 있는 글상자가 없습니다.');
-      tg.forEach(function (e) { e.text = e.text.replace(/\[s=\d+\]/g, '[s=' + sv + ']'); }); E.refreshElems(); return api.changed('elems', false, '직함 글자 크기 ' + sv + '%');
+      var line = nameLine(t, p); if (!line) return AW.toast('{{소속}} {{직책}} {{이름}} 항목이 있는 글상자가 없습니다.');
+      norm(line); var base = line.size || 36, bad = false;
+      AW.$$('[data-sz]', $('.pl-bar')).forEach(function (i) {
+        var v = parseFloat(i.value); if (i.value === '') return; if (!(v >= 6 && v <= 200)) { bad = true; return; }
+        var pc = Math.max(10, Math.min(999, Math.round(v / base * 100))), re = new RegExp('\\[s=\\d+\\](\\{\\{' + i.dataset.sz + '\\}\\})\\[/s\\]');
+        line.text = line.text.replace(re, '[s=' + pc + ']$1[/s]');
+      });
+      if (bad) return AW.toast('글자 크기는 6~200pt 사이로 입력해 주십시오.', 'error');
+      E.refreshElems(); P.syncSizes(); return api.changed('elems', false, '소속·직책·이름 크기');
     }
     if (a === 'pl-justify') {
       var tx = api.sel().filter(function (e) { return e.t === 'text' && !e.lock; }); if (!tx.length) return AW.toast('균등 정렬할 글상자를 먼저 선택해 주십시오.');
@@ -193,7 +220,7 @@
       ex = { 기관명: '○○기관', 소속: '○○부', 직책: '과장', 이름: '홍길동' };
     }
     t.elems.push(AW.elem('line', { x: 24, y: AW.round(y0 + 44, 2), w: W - 48, h: 0, stroke: '#FF0000', sw: 0.7, rl: true }));
-    t.elems.push(AW.elem('text', { text: '[s=45]{{소속}} {{직책}}[/s] {{이름}}', x: 12, y: AW.round(y0 + 51.5, 2), w: W - 24, h: 20, font: 'Black Han Sans', size: 36, color: '#111111', align: 'center', valign: 'middle', lh: 1.2, ls: 0, fit: true }));
+    t.elems.push(AW.elem('text', { text: '[s=45]{{소속}}[/s] [s=45]{{직책}}[/s] [s=100]{{이름}}[/s]', x: 12, y: AW.round(y0 + 51.5, 2), w: W - 24, h: 20, font: 'Black Han Sans', size: 36, color: '#111111', align: 'center', valign: 'middle', lh: 1.2, ls: 0, fit: true }));
     t.fields = AW.fieldNames(t).map(function (n) { var g = AW.guessHint(n); return { name: n, hint: g.hint, example: ex[n] || g.example, max: 0, req: n !== '소속' && n !== '직책' }; });
     t.rows = [ex];
     return t;
