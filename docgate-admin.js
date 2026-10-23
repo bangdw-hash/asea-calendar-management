@@ -57,8 +57,12 @@
     $('who2').textContent = A.me.email + (A.me.isSuper ? ' (전체 관리자)' : ' (섹션 담당자)');
     $('tabSettings').style.display = A.me.isSuper ? '' : 'none';
     index();
-    if (!cur.sec || !X.secs[cur.sec]) cur = { sec: A.sections[0].id, folder: '', trash: false };
+    if (!cur.sec || !X.secs[cur.sec]) cur = { sec: A.sections[0] ? A.sections[0].id : '', folder: '', trash: false };
     renderAll();
+    if (!A.sections.length) {            // 첫 사용: 섹션이 없으면 설정 탭으로 안내
+      var t = document.querySelector('[data-tab=settings]'); if (t) t.click();
+      msg('setMsg', '아직 섹션이 없습니다. 「섹션 추가」로 Drive 폴더를 연결하거나, 아래 「기존 법인서류 가져오기」를 실행하세요.', 'info');
+    }
   }
   async function reload(keep) {
     var d = await api('adminData'); A = d; index();
@@ -192,7 +196,7 @@
 
   function renderToolbar() {
     var one = sel.size === 1, any = sel.size > 0, t = cur.trash;
-    $('bFolder').disabled = $('bDoc').disabled = $('bUpload').disabled = t;
+    $('bFolder').disabled = $('bDoc').disabled = $('bUpload').disabled = t || !cur.sec;
     $('bRename').disabled = !one || t;
     $('bDel').disabled = !any;
     $('bDel').firstChild.nodeValue = t ? '영구 삭제 ' : '삭제 ';
@@ -314,14 +318,14 @@
     return r.id;
   }
   async function newFolder() {
-    if (cur.trash) return;
+    if (cur.trash || !cur.sec) return;
     var name = uniqueName('새 폴더', cur.sec, cur.folder), id;
     var ok = await run('새 폴더 만들기', null, async function () { id = await create('folder', name); await reload(true); return id; },
       function (nid) { return function () { return doTrash([nid], true); }; });
     if (ok && id) { sel.clear(); sel.add(id); focusId = id; renaming = id; renderRows(); renderToolbar(); }
   }
   async function newDoc() {
-    if (cur.trash) return;
+    if (cur.trash || !cur.sec) return;
     var name = uniqueName('새 서식', cur.sec, cur.folder), id;
     var ok = await run('서식 추가', null, async function () { id = await create('doc', name); await reload(true); return id; },
       function (nid) { return function () { return doTrash([nid], true); }; });
