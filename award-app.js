@@ -283,7 +283,7 @@
     var nav = $('#tabbar'); if (!nav) return;
     nav.addEventListener('click', function (e) {
       var x = e.target.closest('[data-x]'); if (x) { e.stopPropagation(); return closeTab(x.dataset.x); }
-      var ad = e.target.closest('[data-add]'); if (ad) { var r = ad.getBoundingClientRect(), I = function (label, ic, fn) { return { k: 'i', label: label, ic: ic, fn: fn }; }; return AW.Editor.menuAt(r.left, r.bottom + 4, [I('새 양식 (새 탭)', 'plus', newTab), I('양식 열기 (새 탭)…', 'folder', function () { listDialog(); }), I('스캔본으로 만들기 (AI)…', 'sparkle', function () { AW.Scan.open(); })]); }
+      var ad = e.target.closest('[data-add]'); if (ad) { var r = ad.getBoundingClientRect(), I = function (label, ic, fn) { return { k: 'i', label: label, ic: ic, fn: fn }; }; return AW.Editor.menuAt(r.left, r.bottom + 4, [I('새 양식 (새 탭)', 'plus', newTab), I('양식 열기 (새 탭)…', 'folder', function () { listDialog(); }), I('명패 양식 만들기 (아세아·외부 기관)…', 'tpl', function () { AW.Plate.newDialog(); }), I('스캔본으로 만들기 (AI)…', 'sparkle', function () { AW.Scan.open(); })]); }
       var t = e.target.closest('[data-k]'); if (t) gotoTab(t.dataset.k);
     });
     var dragKey = null;   // 탭 끌어서 순서 바꾸기
