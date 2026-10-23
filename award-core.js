@@ -408,15 +408,20 @@
       else if (lang === 'both' && en.trim()) { var kb = { h: tokH(ko, 'ko') }, eb = { h: tokH(en, 'en'), s: cp.enScale || 0.8, f: ef }; blocks = cp.enFirst ? [eb, kb] : [kb, eb]; }
       else blocks.push({ h: tokH(ko, 'ko') });
       var inner = blocks.map(function (x) { return '<div' + (x.s || x.f ? ' style="' + (x.s ? 'font-size:' + x.s + 'em;' : '') + (x.f ? 'font-family:' + x.f + ';' : '') + '"' : '') + (x.dim ? ' class="noen"' : '') + '>' + (x.h || (mode === 'edit' ? '' : '&nbsp;')) + '</div>'; }).join('');
-      var fs = (e.size || 16) * PT * k;
+      var fs = (e.size || 16) * PT * k, lsPt = e.ls || 0, lsC = false;
+      if (cp.plate && AW.Plate && /\{\{\s*(이름|성명)\s*\}\}/.test(ko + en)) {   // 명패 이름 줄: 이름 글자 수별 규칙표 / 명부의 개인별 자간
+        var prow = o.row || (mode === 'edit' ? ((AW.S.tpl || {}).rows || [])[AW.S.row || 0] : null), sp = AW.Plate.spacing(prow, cp.plate);
+        if (sp != null) lsPt = sp;
+      }
+      if (cp.plate && lsPt > 0 && (e.align || 'center') === 'center') lsC = true;   // 마지막 글자 뒤 자간만큼 오른쪽으로 쏠리는 것을 보정
       d.style.cssText = base + 'display:flex;flex-direction:column;justify-content:' + (e.valign === 'top' ? 'flex-start' : e.valign === 'bottom' ? 'flex-end' : 'center') +
         ';font-family:' + AW.fontStack(e.font) + ';font-size:' + fs + 'px;line-height:' + (e.lh || 1.4) + ';color:' + (e.color || '#111') +
         ';font-weight:' + (e.bold ? 700 : 400) + ';font-style:' + (e.italic ? 'italic' : 'normal') + ';text-decoration:' + (e.ul ? 'underline' : 'none') +
-        ';text-align:' + (e.align === 'dist' ? 'justify' : (e.align || 'center')) + (e.align === 'dist' ? ';text-align:justify;text-align-last:justify' : '') + ';letter-spacing:' + ((e.ls || 0) * PT * k) + 'px;white-space:' + (e.fit ? 'pre' : 'pre-wrap') + ';word-break:keep-all;overflow-wrap:anywhere;';
+        ';text-align:' + (e.align === 'dist' ? 'justify' : (e.align || 'center')) + (e.align === 'dist' ? ';text-align:justify;text-align-last:justify' : '') + ';letter-spacing:' + (lsPt * PT * k) + 'px;white-space:' + (e.fit ? 'pre' : 'pre-wrap') + ';word-break:keep-all;overflow-wrap:anywhere;';
       var b = document.createElement('div'); b.className = 'el-t'; b.innerHTML = inner;
       var isw = AW.inkShift(e.font, !!e.bold, !!e.italic, /[가-힣]/.test(ko + en) ? '가힣' : /[A-Za-z0-9]/.test(ko + en) ? 'H0' : '가', e.valign || 'middle', e.lh || 1.4, fs);
-      b.style.cssText = 'width:100%;' + (e.fit ? 'overflow:visible;' : '') + (Math.abs(isw) > 0.05 ? 'transform:translateY(' + isw.toFixed(2) + 'px);' : '');
-      d.appendChild(b);
+      b.style.cssText = 'width:100%;' + (lsC ? 'box-sizing:border-box;padding-left:' + (lsPt * PT * k) + 'px;' : '') + (e.fit ? 'overflow:visible;' : '') + (Math.abs(isw) > 0.05 ? 'transform:translateY(' + isw.toFixed(2) + 'px);' : '');
+      d.appendChild(b); if (lsC) b.dataset.lsc = '1';
       if (e.fit) d.dataset.fit = '1';
       if (mode === 'edit' && /\{\{[^{}]+\}\}/.test(ko + en)) d.classList.add('has-tk');   // 메일머지 영역 표시(편집 화면 전용)
     } else if (e.t === 'table' && AW.Table) {
@@ -445,6 +450,9 @@
       var b = d.firstChild; if (!b) return;
       var fs = parseFloat(d.style.fontSize), min = fs * 0.35, n = 0, wrapW = d.clientWidth, wrapH = d.clientHeight;
       b.style.width = 'max-content';
+      var ls = parseFloat(d.style.letterSpacing) || 0, m = 0;
+      while (ls > 0.05 && b.offsetWidth > wrapW + 0.5 && m++ < 60) { ls *= 0.9; d.style.letterSpacing = ls + 'px'; if (b.dataset.lsc) b.style.paddingLeft = ls + 'px'; }   // 1단계: 자간 줄임
+      if (ls > 0 && ls <= 0.05) { d.style.letterSpacing = '0px'; if (b.dataset.lsc) b.style.paddingLeft = '0px'; }
       while ((b.offsetWidth > wrapW + 0.5 || b.offsetHeight > wrapH + 0.5) && fs > min && n++ < 80) { fs *= 0.96; d.style.fontSize = fs + 'px'; }
       b.style.width = '100%';
     });
