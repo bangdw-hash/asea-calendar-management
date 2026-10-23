@@ -637,7 +637,7 @@ function nav(p){
     case 'dashboard':c.innerHTML=pgDash();break;
     case 'residents':c.innerHTML=pgResidents();setTimeout(filterRes,0);break;
     case 'payments':c.innerHTML=pgPayments();setTimeout(filterPay,0);break;
-    case 'contracts':c.innerHTML=pgContracts();break;
+    case 'contracts':c.innerHTML='<div class="empty" style="padding:40px">불러오는 중…</div>';pgContractsAsync(c);break;
     case 'ot':c.innerHTML=pgOT();break;
     case 'utility':c.innerHTML=pgUtility();break;
     case 'realestate':c.innerHTML=pgRE();break;
@@ -761,35 +761,177 @@ function filterPay(){
 }
 
 /* ── CONTRACTS ── */
-function pgContracts(){
-  return `<div class="page-header"><div class="page-title">계약·서약서 관리</div><div class="page-desc">입소 계약서, 생활관 서약서, 개인정보동의서를 온라인 서명으로 처리합니다.</div></div>
+var CONTRACT_ROWS=[], CONTRACT_TPL='';
+var SIGN_BASE=location.origin+location.pathname.replace('staff.html','contract-sign.html');
+
+async function pgContractsAsync(c){
+  const [rows, tplR] = await Promise.all([
+    rpc('dorm_admin_contracts_list',{p_token:S.token}),
+    rpc('dorm_admin_template_get',{p_token:S.token})
+  ]);
+  CONTRACT_ROWS=Array.isArray(rows)?rows:[];
+  CONTRACT_TPL=(tplR&&tplR.template)||'';
+  c.innerHTML=renderContractsPage();
+}
+
+function renderContractsPage(){
+  const total=CONTRACT_ROWS.length;
+  const signed=CONTRACT_ROWS.filter(r=>r.sign_status==='signed').length;
+  const sent=CONTRACT_ROWS.filter(r=>r.sign_status==='sent').length;
+  const unsigned=total-signed;
+  return `<div class="page-header"><div class="page-title">계약·서약서 관리</div>
+    <div class="page-desc">입소 계약서를 온라인 서명으로 처리합니다. 서명 링크를 생성하여 입소자에게 공유하세요.</div></div>
   <div class="grid-2" style="margin-bottom:16px">
     <div class="card"><div class="card-title">서명 현황</div>
-      <div style="font-size:13px;color:var(--muted);line-height:2">
-        <div>입소 계약서: <b style="color:var(--ok)">0</b> / ${C.residents.length}명 서명</div>
-        <div>생활관 서약서: <b style="color:var(--ok)">0</b> / ${C.residents.length}명 서명</div>
-        <div>개인정보동의서: <b style="color:var(--ok)">0</b> / ${C.residents.length}명 서명</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px;text-align:center">
+        <div style="background:var(--bg);border-radius:var(--r);padding:12px">
+          <div style="font-size:22px;font-weight:700;color:var(--ok)">${signed}</div>
+          <div style="font-size:11px;color:var(--muted)">서명완료</div>
+        </div>
+        <div style="background:var(--bg);border-radius:var(--r);padding:12px">
+          <div style="font-size:22px;font-weight:700;color:var(--accent)">${sent}</div>
+          <div style="font-size:11px;color:var(--muted)">링크발송</div>
+        </div>
+        <div style="background:var(--bg);border-radius:var(--r);padding:12px">
+          <div style="font-size:22px;font-weight:700;color:var(--muted)">${total-signed-sent}</div>
+          <div style="font-size:11px;color:var(--muted)">미발송</div>
+        </div>
       </div>
-      <hr class="divider">
-      <button class="btn btn-primary btn-sm" onclick="alert('SMS/카카오 연동 후 활성화됩니다.')">전체 서명 요청 발송</button>
+      <div style="background:var(--bg);border-radius:var(--r);height:10px;overflow:hidden;margin-bottom:14px">
+        <div style="height:100%;width:${total?Math.round(signed/total*100):0}%;background:var(--ok);transition:.5s"></div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-primary btn-sm" onclick="bulkCreateLinks()" id="bulk-btn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+          미서명 전체 링크 생성 (${unsigned}명)
+        </button>
+        <button class="btn btn-outline btn-sm" onclick="copyAllLinks()">
+          전체 링크 복사
+        </button>
+      </div>
+      <div id="bulk-alert" style="margin-top:10px"></div>
     </div>
-    <div class="card"><div class="card-title">서식 관리</div>
-      <div style="font-size:13px;color:var(--muted);margin-bottom:12px">관리자가 서식 내용을 편집할 수 있습니다.</div>
-      <div style="display:flex;flex-direction:column;gap:8px">
-        <button class="btn btn-outline btn-sm" onclick="alert('서식 편집 기능 준비 중')">입소 계약서 편집</button>
-        <button class="btn btn-outline btn-sm" onclick="alert('서식 편집 기능 준비 중')">생활관 서약서 편집</button>
-        <button class="btn btn-outline btn-sm" onclick="alert('서식 편집 기능 준비 중')">개인정보동의서 편집</button>
+    <div class="card"><div class="card-title">계약서 양식</div>
+      <div style="font-size:13px;color:var(--muted);margin-bottom:8px">아래 내용이 서명 링크에서 약관으로 표시됩니다.</div>
+      <textarea id="tpl-body" style="width:100%;height:200px;border:1.5px solid var(--border);border-radius:var(--r);padding:10px;font-size:12px;font-family:inherit;resize:vertical">${esc(CONTRACT_TPL)}</textarea>
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <button class="btn btn-primary btn-sm" onclick="saveTemplate()">저장</button>
+        <div id="tpl-alert" style="flex:1;display:flex;align-items:center"></div>
       </div>
     </div>
   </div>
-  <div class="card" style="padding:0"><div class="tbl-outer"><table><thead><tr>
-    <th>이름</th><th>학번</th><th>건물</th><th>입소 계약서</th><th>생활관 서약서</th><th>개인정보동의</th><th>작업</th>
-  </tr></thead><tbody>
-  ${C.residents.map(r=>`<tr><td><b>${r.name}</b></td><td>${r.student_no||'—'}</td><td style="white-space:nowrap">${r.building_name||'—'}</td>
-    <td><span class="badge badge-gray">미서명</span></td><td><span class="badge badge-gray">미서명</span></td><td><span class="badge badge-gray">미서명</span></td>
-    <td><button class="btn btn-outline btn-sm" onclick="alert('SMS 연동 후 발송 가능')">발송</button></td></tr>`).join('')}
-  ${!C.residents.length?'<tr><td colspan="7" class="empty">입소자 없음</td></tr>':''}
+  <div class="toolbar" style="margin-bottom:10px">
+    <b style="font-size:14px">입소자별 서명 현황</b>
+    <div class="spacer"></div>
+    <input id="ct-search" placeholder="이름·학번 검색" style="padding:6px 10px;border:1px solid var(--border);border-radius:var(--r);font-size:13px;width:160px" oninput="filterContracts()">
+  </div>
+  <div class="card" style="padding:0"><div class="tbl-outer"><table id="ct-tbl"><thead><tr>
+    <th>이름</th><th>학번</th><th>건물</th><th>호실</th><th>상태</th><th>서명일</th><th>링크</th>
+  </tr></thead><tbody id="ct-body">
+  ${renderContractRows(CONTRACT_ROWS)}
   </tbody></table></div></div>`;
+}
+
+function renderContractRows(rows){
+  if(!rows.length) return '<tr><td colspan="7" class="empty">입소자 없음</td></tr>';
+  return rows.map(r=>{
+    var badge='<span class="badge badge-gray">미발송</span>';
+    if(r.sign_status==='signed') badge='<span class="badge badge-ok">서명완료</span>';
+    else if(r.sign_status==='sent') badge='<span class="badge badge-info">링크발송</span>';
+    var sigDate=r.signed_at?fdt(r.signed_at):'—';
+    var linkCell;
+    if(r.sign_token){
+      var url=SIGN_BASE+'?t='+r.sign_token;
+      linkCell=`<div style="display:flex;gap:4px;align-items:center">
+        <button class="btn btn-outline btn-sm" onclick="copyLink('${esc(url)}')" title="링크 복사">복사</button>
+        <button class="btn btn-outline btn-sm" onclick="createLink('${r.id}')" title="링크 재생성">재생성</button>
+      </div>`;
+    } else {
+      linkCell=`<button class="btn btn-outline btn-sm" onclick="createLink('${r.id}')">링크 생성</button>`;
+    }
+    return `<tr data-name="${esc(r.name)}" data-sno="${esc(r.student_no||'')}">
+      <td><b>${esc(r.name)}</b></td>
+      <td>${esc(r.student_no||'—')}</td>
+      <td style="white-space:nowrap">${esc(r.building_name||'—')}</td>
+      <td>${esc(r.room_no||'—')}</td>
+      <td>${badge}</td>
+      <td>${sigDate}</td>
+      <td>${linkCell}</td>
+    </tr>`;
+  }).join('');
+}
+
+function filterContracts(){
+  var q=(document.getElementById('ct-search').value||'').toLowerCase();
+  var rows=CONTRACT_ROWS.filter(r=>!q||(r.name||'').toLowerCase().includes(q)||(r.student_no||'').toLowerCase().includes(q));
+  document.getElementById('ct-body').innerHTML=renderContractRows(rows);
+}
+
+async function createLink(resId){
+  var tpl=document.getElementById('tpl-body')?document.getElementById('tpl-body').value:CONTRACT_TPL;
+  var r=await rpc('dorm_admin_contract_create_link',{p_token:S.token,p_resident_id:resId,p_contract_type:'admission',p_template:tpl||null});
+  if(r&&r.ok){
+    var url=SIGN_BASE+'?t='+r.token;
+    copyLink(url);
+    // refresh row list
+    var rows2=await rpc('dorm_admin_contracts_list',{p_token:S.token});
+    CONTRACT_ROWS=Array.isArray(rows2)?rows2:[];
+    var c=document.getElementById('ct-body');
+    if(c) c.innerHTML=renderContractRows(CONTRACT_ROWS);
+    showAlert('bulk-alert','링크가 생성되어 클립보드에 복사되었습니다.','ok');
+  } else {
+    showAlert('bulk-alert','링크 생성 실패.','err');
+  }
+}
+
+async function bulkCreateLinks(){
+  var btn=document.getElementById('bulk-btn');
+  btn.disabled=true;
+  var tpl=document.getElementById('tpl-body')?document.getElementById('tpl-body').value:CONTRACT_TPL;
+  var r=await rpc('dorm_admin_contract_bulk_create',{p_token:S.token,p_contract_type:'admission',p_template:tpl||null});
+  btn.disabled=false;
+  if(r&&r.ok){
+    showAlert('bulk-alert',r.count+'명의 링크가 생성되었습니다.','ok');
+    var rows2=await rpc('dorm_admin_contracts_list',{p_token:S.token});
+    CONTRACT_ROWS=Array.isArray(rows2)?rows2:[];
+    var c=document.getElementById('ct-body');
+    if(c) c.innerHTML=renderContractRows(CONTRACT_ROWS);
+    // Update button label
+    var unsigned=CONTRACT_ROWS.filter(x=>x.sign_status!=='signed').length;
+    btn.innerHTML='미서명 전체 링크 생성 ('+unsigned+'명)';
+  } else {
+    showAlert('bulk-alert','일괄 생성 실패: '+(r&&r.error||'오류'),'err');
+  }
+}
+
+async function saveTemplate(){
+  var body=document.getElementById('tpl-body').value;
+  var r=await rpc('dorm_admin_template_save',{p_token:S.token,p_template:body});
+  if(r&&r.ok){ CONTRACT_TPL=body; showAlert('tpl-alert','저장되었습니다.','ok'); }
+  else showAlert('tpl-alert','저장 실패.','err');
+}
+
+async function copyAllLinks(){
+  var links=CONTRACT_ROWS.filter(r=>r.sign_token).map(r=>r.name+'\t'+SIGN_BASE+'?t='+r.sign_token).join('\n');
+  if(!links){ showAlert('bulk-alert','생성된 링크가 없습니다. 먼저 링크를 생성하세요.','err'); return; }
+  try{
+    await navigator.clipboard.writeText(links);
+    showAlert('bulk-alert','전체 링크(이름+URL)를 클립보드에 복사했습니다.','ok');
+  }catch(e){
+    var ta=document.createElement('textarea'); ta.value=links; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
+    showAlert('bulk-alert','전체 링크를 클립보드에 복사했습니다.','ok');
+  }
+}
+
+async function copyLink(url){
+  try{ await navigator.clipboard.writeText(url); }
+  catch(e){ var ta=document.createElement('textarea'); ta.value=url; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); }
+}
+
+function showAlert(id, msg, type){
+  var el=document.getElementById(id); if(!el) return;
+  el.innerHTML='<div class="alert alert-'+(type==='ok'?'ok':'err')+'" style="margin:0;font-size:12px">'+esc(msg)+'</div>';
+  setTimeout(function(){if(el)el.innerHTML='';},4000);
 }
 
 /* ── OT ── */
@@ -1325,6 +1467,7 @@ function showToast(msg){
 /* ── HELPERS ── */
 function won(n){if(n==null||isNaN(n))return'—';return Math.round(n).toLocaleString('ko-KR')+'원';}
 function fdt(d){if(!d)return'—';const dt=new Date(d);return`${dt.getMonth()+1}/${dt.getDate()} ${String(dt.getHours()).padStart(2,'0')}:${String(dt.getMinutes()).padStart(2,'0')}`;}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function tbadge(t){const m={regular:['badge-info','일반'],consign:['badge-gov','위탁(정부지원)'],staff:['badge-gray','교직원']};const[cls,lbl]=m[t]||['badge-gray','—'];return`<span class="badge ${cls}">${lbl}</span>`;}
 function sbadge(s){const m={paid:['badge-ok','납부완료'],pending:['badge-warn','미납'],partial:['badge-info','일부'],waived:['badge-gray','면제']};const[cls,lbl]=m[s]||['badge-gray',s];return`<span class="badge ${cls}">${lbl}</span>`;}
 function mlbl(m){return{transfer:'계좌이체',card:'카드',cash:'현금'}[m]||m||'—';}

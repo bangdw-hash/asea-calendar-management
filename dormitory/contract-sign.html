@@ -53,7 +53,11 @@ if(!token||!db){ app.innerHTML='<div class="card"><p class="err">잘못된 접�
 else load();
 
 async function load(){
-  var r=await db.rpc('dorm_sign_get',{p_token:token});
+  var r=await db.rpc('dorm_contract_sign_get',{p_token:token});
+  if(r.error||!r.data){
+    var r2=await db.rpc('dorm_sign_get',{p_token:token});
+    if(!r2.error&&r2.data) r=r2;
+  }
   if(r.error||!r.data){ app.innerHTML='<div class="card"><p class="err">계약 정보를 찾을 수 없습니다.</p></div>'; return; }
   var d=r.data;
   if(d.status==='signed'){ app.innerHTML='<div class="card" style="text-align:center"><div><svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div><h2>이미 서명이 완료된 계약입니다.</h2><p class="muted">감사합니다.</p></div>'; return; }
@@ -108,7 +112,8 @@ async function submit(){
   var gname=(document.getElementById('g-name').value||'').trim();
   if(gname && sigGuardian.isEmpty()){ err.textContent='보호자 성명을 입력한 경우 보호자 서명도 해주세요.'; err.style.display='block'; return; }
   var btn=document.getElementById('submit'); btn.disabled=true; btn.textContent='제출 중…';
-  var r=await db.rpc('dorm_sign_submit',{ p_token:token, p_student:sigStudent.data(), p_agree:true, p_gname:gname, p_gsign:sigGuardian.data() });
+  var r=await db.rpc('dorm_contract_sign_submit',{ p_token:token, p_student:sigStudent.data(), p_agree:true, p_gname:gname, p_gsign:sigGuardian.data() });
+  if(r.error){ r=await db.rpc('dorm_sign_submit',{ p_token:token, p_student:sigStudent.data(), p_agree:true, p_gname:gname, p_gsign:sigGuardian.data() }); }
   if(r.error||(r.data&&r.data.ok===false)){ err.textContent='제출 실패: '+((r.data&&r.data.error)||(r.error&&r.error.message)||'오류'); err.style.display='block'; btn.disabled=false; btn.textContent='서명 제출 (계약 체결)'; return; }
   app.innerHTML='<div class="card" style="text-align:center"><div><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div><h2>계약이 체결되었습니다</h2><p class="muted">전자서명이 정상 접수되었습니다. 감사합니다.</p></div>';
 }
