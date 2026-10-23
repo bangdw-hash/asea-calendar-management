@@ -90,7 +90,7 @@
       bar = document.createElement('div'); bar.className = 'pl-bar';
       var B = function (a, ic, t, tip) { return '<button class="btn btn-secondary btn-sm" data-pl="' + a + '" title="' + esc(tip) + '">' + AW.ic(ic, 15) + ' ' + t + '</button>'; };
       bar.innerHTML = '<b class="pl-t">명패</b>' + B('pl-logo', 'image', '로고 불러오기', '파일에서 로고를 불러옵니다. Ctrl+V 로 복사한 이미지를 붙여 넣어도 됩니다.') + B('pl-line', 'line', '빨간 중간선', '빨간 구분선을 3칸에 넣습니다.') +
-        B('pl-center', 'gCV', '3칸 가운데 맞춤', '3칸의 개체 묶음을 세로·가로 가운데로 맞춥니다.') + B('pl-justify', 'alC', '균등 정렬', '선택한 글상자를 좌우 균등 정렬(양끝 맞춤)로 바꾸거나 되돌립니다.') +
+        B('pl-center', 'gCV', '3칸 가운데 맞춤', '3칸의 개체 묶음을 세로·가로 가운데로 맞춥니다.') + B('pl-justify', 'alC', '균등 정렬', '선택한 글상자를 균등 분배(한 줄도 좌우 폭을 꽉 채움)로 바꾸거나 되돌립니다.') +
         B('pl-cfg', 'cols', '접는 선·여백 설정', '접는 선 위치, 좌우 인쇄 불가 여백, 반전 복제 등을 실물 출력과 대조하며 조정합니다.') + B('pl-new', 'plus', '새 명패 양식', '아세아 직원 / 외부 기관 명패 양식을 새 탭으로 만듭니다.') +
         '<input type="file" class="hide" id="pl-file" accept="image/*"><span class="pl-hint muted">③칸에 입력하면 ②칸에 180° 반전되어 자동 반영됩니다 · 글상자에서 <code>[s=45]작은 글[/s]</code> 로 한 줄 안에서 크기를 바꿀 수 있습니다.</span>';
       root.insertBefore(bar, root.firstChild);
@@ -130,7 +130,7 @@
     }
     if (a === 'pl-justify') {
       var tx = api.sel().filter(function (e) { return e.t === 'text' && !e.lock; }); if (!tx.length) return AW.toast('균등 정렬할 글상자를 먼저 선택해 주십시오.');
-      var on = !tx.every(function (e) { return e.align === 'justify'; }); tx.forEach(function (e) { e.align = on ? 'justify' : 'center'; e.fit = on ? false : e.fit; });
+      var on = !tx.every(function (e) { return e.align === 'dist'; }); tx.forEach(function (e) { e.align = on ? 'dist' : 'center'; e.fit = on ? false : e.fit; });
       E.refreshElems(); return api.changed('elems', false, on ? '균등 정렬' : '가운데 정렬');
     }
   };

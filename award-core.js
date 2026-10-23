@@ -119,6 +119,7 @@
     text: '<path d="M5 6V4h14v2M12 4v16M9 20h6"/>', field: '<path d="M8 4H5v16h3M16 4h3v16h-3M9 9h6M9 12h6M9 15h4"/>',
     line: '<path d="M4 12h16"/>', rect: '<rect x="4" y="6" width="16" height="12" rx="1"/>', image: '<rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="M21 16l-5-5-8 8"/>',
     bold: '<path d="M7 5h6a3.5 3.5 0 010 7H7zM7 12h7a3.5 3.5 0 010 7H7z"/>', italic: '<path d="M10 5h8M6 19h8M14 5l-4 14"/>', underline: '<path d="M7 5v7a5 5 0 0010 0V5M5 20h14"/>',
+    alJ: '<path d="M4 6h16M4 10h16M4 14h16M4 18h10"/>', alD: '<path d="M4 6h16M4 10h16M4 14h16M4 18h16"/>',
     alL: '<path d="M4 6h16M4 10h10M4 14h16M4 18h10"/>', alC: '<path d="M4 6h16M7 10h10M4 14h16M7 18h10"/>', alR: '<path d="M4 6h16M10 10h10M4 14h16M10 18h10"/>',
     vT: '<path d="M4 4h16M12 8v12M9 11l3-3 3 3"/>', vM: '<path d="M4 12h16M12 4v5M12 15v5M9 6l3 3 3-3M9 18l3-3 3 3"/>', vB: '<path d="M4 20h16M12 4v12M9 13l3 3 3-3"/>',
     gL: '<path d="M4 3v18M8 7h12M8 14h8"/>', gCH: '<path d="M12 3v18M5 7h14M7 14h10"/>', gR: '<path d="M20 3v18M4 7h12M8 14h8"/>',
@@ -404,7 +405,7 @@
       d.style.cssText = base + 'display:flex;flex-direction:column;justify-content:' + (e.valign === 'top' ? 'flex-start' : e.valign === 'bottom' ? 'flex-end' : 'center') +
         ';font-family:' + AW.fontStack(e.font) + ';font-size:' + fs + 'px;line-height:' + (e.lh || 1.4) + ';color:' + (e.color || '#111') +
         ';font-weight:' + (e.bold ? 700 : 400) + ';font-style:' + (e.italic ? 'italic' : 'normal') + ';text-decoration:' + (e.ul ? 'underline' : 'none') +
-        ';text-align:' + (e.align || 'center') + (e.align === 'justify' ? ';text-align-last:justify' : '') + ';letter-spacing:' + ((e.ls || 0) * PT * k) + 'px;white-space:' + (e.fit ? 'pre' : 'pre-wrap') + ';word-break:keep-all;overflow-wrap:anywhere;';
+        ';text-align:' + (e.align === 'dist' ? 'justify' : (e.align || 'center')) + (e.align === 'dist' ? ';text-align:justify;text-align-last:justify' : '') + ';letter-spacing:' + ((e.ls || 0) * PT * k) + 'px;white-space:' + (e.fit ? 'pre' : 'pre-wrap') + ';word-break:keep-all;overflow-wrap:anywhere;';
       var b = document.createElement('div'); b.className = 'el-t'; b.innerHTML = inner;
       var isw = AW.inkShift(e.font, !!e.bold, !!e.italic, /[가-힣]/.test(ko + en) ? '가힣' : /[A-Za-z0-9]/.test(ko + en) ? 'H0' : '가', e.valign || 'middle', e.lh || 1.4, fs);
       b.style.cssText = 'width:100%;' + (e.fit ? 'overflow:visible;' : '') + (Math.abs(isw) > 0.05 ? 'transform:translateY(' + isw.toFixed(2) + 'px);' : '');

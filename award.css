@@ -361,3 +361,4 @@ table{border-collapse:collapse;width:100%}
 .pl-rt{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-bottom:8px}.pl-rt .sp{flex:1}.pl-rf{display:flex;justify-content:space-between;gap:10px;margin-top:8px;font-size:13px}
 .pl-rtb tr[data-id]{cursor:pointer}.pl-rtb tr.pl-on td{background:#E8F0FE}.pl-rtb input.in{min-width:80px}
 .pl-mir .el::before,.pl-mir .el::after{display:none!important}
+.sb .sbin{position:absolute;left:0;right:0;border:1px dashed rgba(26,115,232,.55);pointer-events:none}
