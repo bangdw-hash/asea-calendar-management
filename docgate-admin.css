@@ -78,6 +78,8 @@ body { background: #f5f7fb; padding: 14px 16px; height: 100vh; min-height: 0; ov
 .pane.filedrag .dropzone { display: flex; }
 .status { display: flex; gap: 12px; padding: 6px 12px; border-top: 1px solid var(--border); font-size: 12px; color: var(--sub); background: #fafbfc; min-height: 30px; align-items: center; }
 .status .st { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.status .hint2 { color: var(--mute); white-space: nowrap; }
+@media (max-width: 1000px) { .status .hint2 { display: none; } }
 .status .st.err { color: var(--red); font-weight: 600; }
 .status .st.ok { color: var(--green); }
 
