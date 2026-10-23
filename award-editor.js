@@ -142,6 +142,7 @@
     var sn = AW.$('[data-a="snap"]', st.root); if (sn) sn.classList.toggle('on', st.cfg.snap);
     drawGrid();
     updHint();
+    if (AW.Plate) AW.Plate.onRender(st.root, T());
   };
   function updHint() {
     var hint = AW.$('.ed-hint', st.stage);
@@ -152,6 +153,7 @@
     AW.$$('.el', st.pg).forEach(function (n) { n.remove(); });
     T().elems.forEach(function (e) { var d = AW.renderElem(e, st.zoom, { mode: 'edit', lang: LG() }); d.dataset.fit = ''; st.pg.insertBefore(d, st.ov); });
     markSel(); updTools(); updHint();
+    if (AW.Plate && T().page.plate) AW.Plate.refresh(st.pg, T(), st.zoom, LG());
   };
   function markSel() {
     if (!st.ov) return;
@@ -211,7 +213,7 @@
   function placeBox(b, e) { var k = st.zoom; b.style.cssText = 'left:' + (e.x * k) + 'px;top:' + (e.y * k - (e.t === 'line' ? 4 : 0)) + 'px;width:' + (e.w * k) + 'px;height:' + (e.t === 'line' ? 8 : Math.max(e.h, 0.5) * k) + 'px' + (e.rot ? ';transform:rotate(' + e.rot + 'deg)' : ''); }
   function domOf(e) { return AW.$('.el[data-id="' + e.id + '"]', st.pg); }
   function placeEl(e) { var d = domOf(e); if (!d) return; var k = st.zoom; d.style.left = e.x * k + 'px'; d.style.top = e.y * k + 'px'; d.style.width = e.w * k + 'px'; if (e.t !== 'line') d.style.height = Math.max(e.h, 1) * k + 'px'; var tr = (e.rot ? 'rotate(' + e.rot + 'deg) ' : '') + ((e.flipX || e.flipY) ? 'scale(' + (e.flipX ? -1 : 1) + ',' + (e.flipY ? -1 : 1) + ')' : ''); d.style.transform = tr.trim(); }
-  function liveUpdate() { sel().forEach(function (e) { placeEl(e); var b = AW.$('.sb[data-id="' + e.id + '"]', st.ov); if (b) placeBox(b, e); }); updPos(); }
+  function liveUpdate() { sel().forEach(function (e) { placeEl(e); var b = AW.$('.sb[data-id="' + e.id + '"]', st.ov); if (b) placeBox(b, e); }); updPos(); if (AW.Plate && T().page.plate) AW.Plate.decorate(st.pg, T(), st.zoom, { mode: 'edit', lang: LG(), scale: st.zoom }, 'edit'); }
   function commitLive() { changed('elems'); }
 
   function updPos() {
@@ -268,6 +270,7 @@
   var LBLS = { 'add-text': '글상자 추가', 'add-line': '선 추가', 'add-rect': '사각형 추가', 'add-qr': 'QR 추가', dup: '복제', del: '삭제', addline: '줄 추가', paste: '붙여넣기', cut: '잘라내기', pinplace: '제자리 붙여넣기', front: '맨 앞으로', back: '맨 뒤로', fwd: '앞으로 한 칸', bwd: '뒤로 한 칸', lock: '잠금 전환', hide: '표시 전환', noprint: '인쇄 제외 전환', group: '그룹', ungroup: '그룹 해제', bold: '굵게', italic: '기울임', ul: '밑줄', 'sz+': '글자 크게', 'sz-': '글자 작게', starter: '기본 배치', 'rot-l': '회전', 'rot-r': '회전', 'rot-180': '회전', 'flip-x': '좌우 반전', 'flip-y': '상하 반전', 'rot-0': '회전 초기화', cstyle: '서식 복사', pstyle: '서식 붙여넣기' };
   function act(a) {
     if (a.indexOf('t-') === 0) return tAct(a);
+    if (a.indexOf('pl-') === 0) return AW.Plate.act(a, { changed: changed, sel: sel });
     var list = sel(), tx = list.filter(function (e) { return e.t === 'text'; });
     var T1 = function (p, v) { setProp(p, v); };
     st.lbl = LBLS[a] || null;
@@ -611,6 +614,7 @@
         w = AW.round(w, 1); h = AW.round(h, 1);
         var cx = pos ? pos.x : pg.w / 2, cy = pos ? pos.y : pg.h * 0.5;
         var el = AW.elem('img', { src: r.url, w: w, h: h, x: AW.round(Math.max(0, Math.min(pg.w - w, cx - w / 2)), 1), y: AW.round(Math.max(0, Math.min(pg.h - h, cy - h / 2)), 1), nat: nat, px: { w: r.px, h: AW.round(r.px * r.mh / r.mw, 0) } });
+        if (!pos && AW.Plate && pg.plate) AW.Plate.placeLogo(T(), el);
         st.lbl = '이미지 삽입'; add(el);
         if (fromDrop) dropChip(file, el.id);
       };
@@ -713,6 +717,7 @@
       d.moved = true;
       if (ev.shiftKey) { if (Math.abs(dx) >= Math.abs(dy)) dy = 0; else dx = 0; }   // Shift: 가로/세로 한 방향으로만
       d.list.forEach(function (it) { it.e.x = sp(it.x + dx); it.e.y = sp(it.y + dy); });
+      if (AW.Plate && pg.plate) AW.Plate.clampMove(d.list.map(function (it) { return it.e; }), pg);
       smartGuides(st.cfg.guides && !(ev.ctrlKey || ev.metaKey) ? d.list.map(function (it) { return it.e; }) : null);
       liveUpdate();
     } else {
@@ -744,6 +749,7 @@
   function guideTargets(others) {
     var pg = T().page, tx = [{ v: 0, k: 'page' }, { v: pg.w / 2, k: 'pc' }, { v: pg.w, k: 'page' }], ty = [{ v: 0, k: 'page' }, { v: pg.h / 2, k: 'pc' }, { v: pg.h, k: 'page' }];
     others.forEach(function (o) { tx.push({ v: o.x }, { v: o.x + o.w / 2 }, { v: o.x + o.w }); ty.push({ v: o.y }, { v: o.y + o.h / 2 }, { v: o.y + o.h }); });
+    if (AW.Plate && pg.plate) AW.Plate.targets(pg, tx, ty);
     var gd = pg.guides; if (gd && st.cfg.gshow !== false) { (gd.v || []).forEach(function (v) { tx.push({ v: v, k: 'guide' }); }); (gd.h || []).forEach(function (h) { ty.push({ v: h, k: 'guide' }); }); }
     return { x: tx, y: ty };
   }

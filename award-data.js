@@ -24,6 +24,7 @@
       '<div class="dt-top">' +
         '<div class="dt-stat" id="dt-stat"></div>' +
         '<div class="dt-btns">' +
+          '<button class="btn btn-primary btn-sm hide" data-a="roster" title="미리 등록한 직원 명부에서 클릭해 선택한 직원만 데이터로 넣습니다(엑셀 일괄 업로드 포함)">' + AW.ic('xls', 16) + ' 직원 명부</button>' +
           '<button class="btn btn-secondary btn-sm" data-a="tplx" title="현재 양식의 입력 항목으로 엑셀 업로드용 파일을 만듭니다">' + AW.ic('download', 16) + ' 엑셀 양식 받기</button>' +
           '<button class="btn btn-ghost btn-sm" data-a="josa" title="「{{항목}}으로」처럼 항목 뒤에 붙은 조사가 값에 맞게 바뀌는지 점검합니다">' + AW.ic('check', 16) + ' 조사 점검</button>' +
           '<button class="btn btn-primary btn-sm" data-a="upx">' + AW.ic('xls', 16) + ' 엑셀 올리기</button>' +
@@ -46,6 +47,7 @@
   function onClick(e) {
     var b = e.target.closest('[data-a]'); if (!b) return;
     var a = b.dataset.a;
+    if (a === 'roster') return AW.Plate.rosterDialog();
     if (a === 'tplx') return D.downloadTemplate();
     if (a === 'josa') return D.josaDialog();
     if (a === 'upx') return AW.$('#dt-file', st.root).click();
