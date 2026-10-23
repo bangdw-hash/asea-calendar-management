@@ -377,16 +377,23 @@
     if (pg.plate && AW.Plate) AW.Plate.decorate(el, tpl, k, o, mode);   // 명패: 3칸 → 2칸 반전 복제 + 접는 선 안내
     return el;
   };
+  // 명패 한 줄: 비어 있는 항목 때문에 생긴 빈 작은 글·앞뒤·중복 공백을 없애 남은 글만 가운데로 모이게 함
+  function tidy(h) {
+    return h.replace(/(<span style="font-size:\d+%">)[ \t]+/g, '$1').replace(/[ \t]+<\/span>/g, '</span>').replace(/<span style="font-size:\d+%"><\/span>/g, '')
+      .replace(/[ \t]{2,}/g, ' ').replace(/^[ \t]+|[ \t]+$/gm, '');
+  }
   AW.makeTok = function (mode, o) {
-    var jOn = AW.josaOn(), jRe = new RegExp('\\{\\{\\s*([^{}]+?)\\s*\\}\\}(?:(' + AW.JOSA_RE + ')(?![가-힣]))?', 'g');
+    var jOn = AW.josaOn(), plate = !!((AW.curTpl || AW.S.tpl || {}).page || {}).plate, jRe = new RegExp('\\{\\{\\s*([^{}]+?)\\s*\\}\\}(?:(' + AW.JOSA_RE + ')(?![가-힣]))?', 'g');
     return function (src, lg) {
         return AW.esc(src).replace(jRe, function (m, n, pj) {
           n = n.replace(/&amp;/g, '&'); if (mode === 'edit') return '<span class="tk">{{' + AW.esc(n) + '}}</span>' + (pj || '');
           var v = AW.val(o.row, n, o.idx || 0, lg), jo = pj || '';
+          if (!v && plate && mode !== 'edit') return jo;   // 명패: 비어 있는 항목(예: 소속 없는 직함)은 흔적 없이 빼고 아래에서 공백 정리
           if (!v && mode === 'view' && n.charAt(0) !== '@') return '<span class="miss">' + AW.esc('{' + n + '}') + '</span>' + jo;
           if (pj && v && jOn && lg !== 'en') { var pk = AW.josaPick(pj, v); jo = pk.changed ? (mode === 'view' ? '<span class="jo" title="조사 자동 보정: ' + AW.esc(pj) + ' → ' + AW.esc(pk.text) + '">' + pk.text + '</span>' : pk.text) : pk.text; }
           return (mode === 'view' ? '<span class="mv">' + AW.esc(v) + '</span>' : AW.esc(v)) + jo;   // 미리보기에서는 바뀌는 값을 표시(인쇄에는 표시 없음)
-        }).replace(/\[s=(\d{2,3})\]/g, '<span style="font-size:$1%">').replace(/\[\/s\]/g, '</span>');   // [s=45]작은 글[/s] — 한 줄 안에서 글자 크기 비율 변경(명패 소속·직책)
+        }).replace(/\[s=(\d{2,3})\]/g, '<span style="font-size:$1%">').replace(/\[\/s\]/g, '</span>')   // [s=45]작은 글[/s] — 한 줄 안에서 글자 크기 비율 변경(명패 소속·직책)
+          .replace(/^[\s\S]*$/, function (h) { return plate && mode !== 'edit' ? tidy(h) : h; });
       };
   };
   AW.renderElem = function (e, k, o, dx, dy) {

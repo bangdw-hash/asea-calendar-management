@@ -86,17 +86,20 @@
     var bar = $('.pl-bar', root), on = P.is(tpl);
     var dbtn = $('[data-a="roster"]', document); if (dbtn) dbtn.classList.toggle('hide', !on);
     if (!on) { if (bar) bar.remove(); return; }
+    var cur = null; tpl.elems.forEach(function (e) { var m = e.t === 'text' && /\[s=(\d+)\]/.exec(e.text || ''); if (m && cur == null) cur = m[1]; });
     if (!bar) {
       bar = document.createElement('div'); bar.className = 'pl-bar';
       var B = function (a, ic, t, tip) { return '<button class="btn btn-secondary btn-sm" data-pl="' + a + '" title="' + esc(tip) + '">' + AW.ic(ic, 15) + ' ' + t + '</button>'; };
       bar.innerHTML = '<b class="pl-t">명패</b>' + B('pl-logo', 'image', '로고 불러오기', '파일에서 로고를 불러옵니다. Ctrl+V 로 복사한 이미지를 붙여 넣어도 됩니다.') + B('pl-line', 'line', '빨간 중간선', '빨간 구분선을 3칸에 넣습니다.') +
         B('pl-center', 'gCV', '3칸 가운데 맞춤', '3칸의 개체 묶음을 세로·가로 가운데로 맞춥니다.') + B('pl-justify', 'alC', '균등 정렬', '선택한 글상자를 균등 분배(한 줄도 좌우 폭을 꽉 채움)로 바꾸거나 되돌립니다.') +
-        B('pl-cfg', 'cols', '접는 선·여백 설정', '접는 선 위치, 좌우 인쇄 불가 여백, 반전 복제 등을 실물 출력과 대조하며 조정합니다.') + B('pl-new', 'plus', '새 명패 양식', '아세아 직원 / 외부 기관 명패 양식을 새 탭으로 만듭니다.') +
+        '<label class="pl-sz" title="소속·직책(작은 글)의 크기를 이름(큰 글) 대비 몇 %로 할지 정합니다. 값을 바꾸면 바로 적용됩니다.">직함 크기 <input class="in sm num" id="pl-sz" type="number" min="20" max="100" step="5" value="45">%</label>' + B('pl-cfg', 'cols', '접는 선·여백 설정', '접는 선 위치, 좌우 인쇄 불가 여백, 반전 복제 등을 실물 출력과 대조하며 조정합니다.') + B('pl-new', 'plus', '새 명패 양식', '아세아 직원 / 외부 기관 명패 양식을 새 탭으로 만듭니다.') +
         '<input type="file" class="hide" id="pl-file" accept="image/*"><span class="pl-hint muted">③칸에 입력하면 ②칸에 180° 반전되어 자동 반영됩니다 · 글상자에서 <code>[s=45]작은 글[/s]</code> 로 한 줄 안에서 크기를 바꿀 수 있습니다.</span>';
       root.insertBefore(bar, root.firstChild);
       bar.addEventListener('click', function (e) { var b = e.target.closest('[data-pl]'); if (b) AW.Editor.act(b.dataset.pl); });
+      $('#pl-sz', bar).onchange = function () { AW.Editor.act('pl-size'); };
       $('#pl-file', bar).onchange = function (e) { var f = e.target.files[0]; e.target.value = ''; if (f) AW.Editor.addImageFile(f, null, false); };
     }
+    var zi = $('#pl-sz', bar); if (zi && cur != null && document.activeElement !== zi) zi.value = cur;
   };
   // 로고 이미지를 자리 표시(ph)나 기본 로고 영역에 맞춰 배치
   P.placeLogo = function (tpl, el) {
@@ -127,6 +130,11 @@
       var dx = (t.page.w - (x1 + x2)) / 2, dy = (p.f[1] + p.f[2]) / 2 - (y1 + y2) / 2;
       L.forEach(function (e) { e.x = AW.round(e.x + dx, 2); e.y = AW.round(e.y + dy, 2); });
       E.refreshElems(); return api.changed('elems', false, '3칸 가운데 맞춤');
+    }
+    if (a === 'pl-size') {
+      var sv = parseInt($('#pl-sz').value, 10); if (!(sv >= 20 && sv <= 100)) return AW.toast('직함 글자 크기는 20~100% 사이로 입력해 주십시오.', 'error');
+      var tg = t.elems.filter(function (e) { return e.t === 'text' && /\[s=\d+\]/.test(e.text || '') && front(e, p); }); if (!tg.length) return AW.toast('작은 글 표기([s=45]…[/s])가 있는 글상자가 없습니다.');
+      tg.forEach(function (e) { e.text = e.text.replace(/\[s=\d+\]/g, '[s=' + sv + ']'); }); E.refreshElems(); return api.changed('elems', false, '직함 글자 크기 ' + sv + '%');
     }
     if (a === 'pl-justify') {
       var tx = api.sel().filter(function (e) { return e.t === 'text' && !e.lock; }); if (!tx.length) return AW.toast('균등 정렬할 글상자를 먼저 선택해 주십시오.');
