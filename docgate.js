@@ -1,17 +1,20 @@
 'use strict';
 (function () {
 
-  // 법인서류 폴더(아세아항공직업전문학교) — G:\내 드라이브\기획처\법인서류\아세아항공직업전문학교
-  // 상위 법인서류 폴더: 1GQGlPbIMoubRu2Au1YdbiN8c-aMu0Ndq
-  var FOLDER_ID    = '18-X-AR7GqOIaY0hMU222zt4Vs9o-yhjs';
+  // 기존 법인서류 폴더(아세아항공직업전문학교) — G:\내 드라이브\기획처\법인서류\아세아항공직업전문학교
+  // 관리자 설정의 「기존 법인서류 가져오기」 기본값으로만 사용
+  var LEGACY_FOLDER_ID = '18-X-AR7GqOIaY0hMU222zt4Vs9o-yhjs';
 
   var GAS_ENDPOINT = 'https://script.google.com/macros/s/AKfycbyNqmJaEvB2Nkxr-wr8HxkwKnbaTewQbEhqpFKTC1u1tmyC3x6qgE10laLUn2hMuFYS/exec';
 
-  var TOKEN_TTL    = 60; // 다운로드 유효 시간 (초)
+  var TOKEN_TTL = 60; // 다운로드 유효 시간 (초)
+  var DEFAULT_DEPTS = '기획처\n교육처\n학생처\n입학처\n총무처\n산학협력처\n기타';
 
   var DocGate = {};
+  DocGate.LEGACY_FOLDER_ID = LEGACY_FOLDER_ID;
+  DocGate.TOKEN_TTL = TOKEN_TTL;
 
-  /* ── 사용자 프로필 조회 ───────────────────────────────────────── */
+  /* ── 사용자 프로필(Google) ─────────────────────────────────────── */
   DocGate.fetchProfile = async function () {
     var token = Auth.getToken();
     if (!token) throw new Error('인증이 필요합니다');
@@ -22,196 +25,99 @@
     return await res.json(); // { name, email, picture, ... }
   };
 
-  var _CAT_CACHE_KEY = 'docgate_cats_v1';
-  var _CAT_CACHE_TTL = 120 * 1000; // 2분
-
-  function _cacheGet() {
-    try {
-      var raw = localStorage.getItem(_CAT_CACHE_KEY);
-      if (!raw) return null;
-      var obj = JSON.parse(raw);
-      if (Date.now() - obj.ts > _CAT_CACHE_TTL) return null;
-      return obj.data;
-    } catch (e) { return null; }
-  }
-
-  function _cacheSet(data) {
-    try {
-      localStorage.setItem(_CAT_CACHE_KEY, JSON.stringify({ ts: Date.now(), data: data }));
-    } catch (e) {}
-  }
-
-  function _cacheClear() {
-    try { localStorage.removeItem(_CAT_CACHE_KEY); } catch (e) {}
-  }
-
-  /* GAS에서 카테고리 fetch → 캐시 저장 → 반환 */
-  async function _fetchCategories() {
-    if (!GAS_ENDPOINT || GAS_ENDPOINT === 'YOUR_GAS_WEB_APP_URL') return [];
-    try {
-      var res = await fetch(GAS_ENDPOINT + '?type=categories&_=' + Date.now());
-      if (!res.ok) return null;
-      var data = await res.json();
-      if (Array.isArray(data)) { _cacheSet(data); return data; }
-      return null;
-    } catch (e) { return null; }
-  }
-
-  /* ── 서류 카테고리 목록 ─────────────────────────────────────── */
-  /* opts.background=true 면 캐시된 데이터 즉시 반환 후 백그라운드 갱신 */
-  DocGate.loadCategories = async function (opts) {
-    var cached = _cacheGet();
-    if (cached && opts && opts.background) {
-      // 캐시 즉시 반환, 백그라운드에서 GAS 갱신
-      _fetchCategories().then(function (fresh) {
-        if (fresh && opts.onRefresh) opts.onRefresh(fresh);
-      });
-      return cached;
-    }
-    // 캐시 있으면 즉시 반환하고 백그라운드 갱신도 시작
-    if (cached) {
-      _fetchCategories(); // 백그라운드 갱신 (UI는 캐시 사용)
-      return cached;
-    }
-    // 캐시 없음 → GAS 직접 대기
-    var data = await _fetchCategories();
-    return data || [];
-  };
-
-  DocGate._cacheClear = _cacheClear;
-
-  /* ── 카테고리 추가 (관리자) — GET 방식으로 CORS 우회 ────────── */
-  DocGate.addCategory = async function (name) {
-    if (!name || !name.trim()) throw new Error('서류명을 입력하세요');
-    _cacheClear(); // 추가 전 캐시 무효화
-    var res = await fetch(
-      GAS_ENDPOINT + '?action=addCategory&name=' + encodeURIComponent(name.trim())
-    );
-    if (!res.ok) throw new Error('추가 요청 실패');
-    var data = await res.json();
-    if (!data.ok) throw new Error(data.error || '추가 실패');
-    _cacheClear(); // 추가 성공 후 캐시 무효화
-  };
-
-  /* ── 카테고리 삭제 (관리자) — GET 방식으로 CORS 우회 ────────── */
-  DocGate.removeCategory = async function (id) {
-    _cacheClear();
-    var res = await fetch(
-      GAS_ENDPOINT + '?action=removeCategory&id=' + encodeURIComponent(id)
-    );
-    if (!res.ok) throw new Error('삭제 요청 실패');
-    _cacheClear();
-  };
-
-  /* ── 카테고리 순서 이동 (관리자) dir: -1=위, 1=아래 ─────────── */
-  DocGate.moveCategory = async function (id, dir) {
-    _cacheClear();
-    var res = await fetch(
-      GAS_ENDPOINT + '?action=moveCategory&id=' + encodeURIComponent(id) +
-      '&dir=' + (dir < 0 ? 'up' : 'down')
-    );
-    if (!res.ok) throw new Error('순서 변경 실패');
-    _cacheClear();
-  };
-
-  /* ── Drive 폴더에서 키워드 일치 최신 파일 찾기 ───────────────── */
-  DocGate.findLatestFile = async function (keyword) {
+  /* ── 서버 호출: 모든 요청은 POST(text/plain) + 토큰은 본문에만 ──── */
+  DocGate.api = async function (action, params) {
     var token = Auth.getToken();
-    if (!token) throw new Error('인증이 필요합니다');
-
-    // name contains 'keyword' AND parentId in folder
-    var q = "'" + FOLDER_ID + "' in parents and name contains '" +
-            keyword.replace(/'/g, "\\'") + "' and mimeType != 'application/vnd.google-apps.folder'";
-
-    var res = await fetch(
-      'https://www.googleapis.com/drive/v3/files' +
-      '?q=' + encodeURIComponent(q) +
-      '&fields=files(id,name,modifiedTime,size)' +
-      '&orderBy=modifiedTime+desc' +
-      '&pageSize=10',
-      { headers: { Authorization: 'Bearer ' + token } }
-    );
-    if (!res.ok) throw new Error('파일 검색 실패 (' + res.status + ')');
-    var data = await res.json();
-    var files = data.files || [];
-    if (files.length === 0) return null;
-    return files[0]; // modifiedTime desc 첫 번째 = 가장 최신
-  };
-
-  /* ── 신청 처리: 파일 검색 → fileId/fileName 반환 (로그는 실제 다운로드 시만 기록) */
-  DocGate.requestDownload = async function (keyword, categoryLabel, profile, titleVal, reason) {
-    var token = Auth.getToken();
-    if (!token) throw new Error('인증이 필요합니다');
-
-    var file = await DocGate.findLatestFile(keyword);
-    if (!file) throw new Error('"' + categoryLabel + '" 에 해당하는 파일을 찾을 수 없습니다');
-
-    return { fileId: file.id, fileName: file.name };
-  };
-
-  /* ── 실제 파일 Blob 다운로드 ────────────────────────────────── */
-  DocGate.downloadFile = async function (fileId, fileName) {
-    var token = Auth.getToken();
-    if (!token) throw new Error('인증이 필요합니다');
-
-    // OAuth 토큰으로 비공개 파일 다운로드
-    var res = await fetch(
-      'https://www.googleapis.com/drive/v3/files/' + fileId + '?alt=media',
-      { headers: { Authorization: 'Bearer ' + token } }
-    );
-    if (!res.ok) throw new Error('파일 다운로드 실패 (' + res.status + ')');
-
-    var blob = await res.blob();
-    var url  = URL.createObjectURL(blob);
-
-    var a       = document.createElement('a');
-    a.href      = url;
-    a.download  = fileName;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    setTimeout(function () { URL.revokeObjectURL(url); }, 60000);
-
-    return true;
-  };
-
-  /* ── GAS 로그 전송 ───────────────────────────────────────────── */
-  DocGate._sendLog = async function (payload) {
-    if (!GAS_ENDPOINT || GAS_ENDPOINT === 'YOUR_GAS_WEB_APP_URL') return;
+    if (!token) { var e0 = new Error('로그인이 필요합니다'); e0.code = 'AUTH'; throw e0; }
+    var body = Object.assign({ action: action, token: token }, params || {});
+    var res;
     try {
-      await fetch(GAS_ENDPOINT, {
-        method:  'POST',
-        mode:    'no-cors',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify(payload)
-      });
-    } catch (e) {}
-  };
-
-  /* ── 다운로드 완료 로그 업데이트 ─────────────────────────────── */
-  DocGate.logDownloaded = async function (fileId, fileName, profile, titleVal, reason) {
-    await DocGate._sendLog({
-      name:       profile.name,
-      email:      profile.email,
-      title:      titleVal,
-      reason:     reason,
-      fileName:   fileName,
-      fileId:     fileId,
-      ua:         navigator.userAgent,
-      downloaded: true
-    });
-  };
-
-  /* ── 관리자: 다운로드 로그 조회 ──────────────────────────────── */
-  DocGate.loadLogs = async function () {
-    if (!GAS_ENDPOINT || GAS_ENDPOINT === 'YOUR_GAS_WEB_APP_URL') return [];
-    try {
-      var res = await fetch(GAS_ENDPOINT + '?type=logs');
-      if (!res.ok) return [];
-      return await res.json();
+      res = await fetch(GAS_ENDPOINT, { method: 'POST', body: JSON.stringify(body) });
     } catch (e) {
-      return [];
+      throw new Error('서버에 연결할 수 없습니다. 네트워크를 확인하세요');
     }
+    if (!res.ok) throw new Error('서버 응답 오류 (' + res.status + ')');
+    var j;
+    try { j = await res.json(); } catch (e) { throw new Error('서버 응답을 읽을 수 없습니다'); }
+    if (!j.ok) { var er = new Error(j.error || '요청 실패'); er.code = j.code; throw er; }
+    return j.data;
+  };
+
+  /* ── 저장된 신상(이 브라우저, 계정별) ──────────────────────────── */
+  function _pk(email) { return 'docgate_profile_v2:' + String(email || '').toLowerCase(); }
+  DocGate.getSaved = function (email) {
+    try { return JSON.parse(localStorage.getItem(_pk(email)) || 'null'); } catch (e) { return null; }
+  };
+  DocGate.setSaved = function (email, p) {
+    try { localStorage.setItem(_pk(email), JSON.stringify(p)); } catch (e) {}
+  };
+  DocGate.deptList = function (raw) {
+    var l = String(raw || DEFAULT_DEPTS).split(/[\n,]+/).map(function (s) { return s.trim(); }).filter(Boolean);
+    return l.length ? l : DEFAULT_DEPTS.split('\n');
+  };
+
+  /* ── 다운로드: 서버가 권한 확인 후 1회용 티켓으로 전달 ─────────── */
+  DocGate.issue = function (itemId, profile, reason) {
+    return DocGate.api('issue', { itemId: itemId, profile: profile, reason: reason || '', ua: navigator.userAgent });
+  };
+  DocGate.downloadFile = async function (ticket) {
+    var d = await DocGate.api('fetch', { ticket: ticket });
+    var bin = atob(d.b64), len = bin.length, bytes = new Uint8Array(len);
+    for (var i = 0; i < len; i++) bytes[i] = bin.charCodeAt(i);
+    var blob = new Blob([bytes], { type: d.mime || 'application/octet-stream' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url; a.download = d.name;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(url); }, 60000);
+    return d.name;
+  };
+
+  /* ── 한글 유사 검색 (초성·부분 일치·오타 허용·별칭) ───────────── */
+  var CHO = 'ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ';
+  function norm(s) { return String(s || '').toLowerCase().replace(/[\s\-_.,()\[\]/·]+/g, ''); }
+  function cho(s) {
+    return String(s).split('').map(function (c) {
+      var n = c.charCodeAt(0) - 0xAC00;
+      return n >= 0 && n < 11172 ? CHO[Math.floor(n / 588)] : c;
+    }).join('');
+  }
+  function isCho(s) { return s.length > 0 && s.split('').every(function (c) { return CHO.indexOf(c) >= 0; }); }
+  function bigrams(s) { var o = []; for (var i = 0; i < s.length - 1; i++) o.push(s.substr(i, 2)); return o; }
+
+  function scoreText(text, nq, qCho) {
+    var nt = norm(text);
+    if (!nt) return 0;
+    if (nt === nq) return 100;
+    if (nt.indexOf(nq) >= 0) return 90 - Math.min(20, (nt.length - nq.length) / 2);
+    if (qCho && cho(nt).indexOf(nq) >= 0) return 75;
+    if (nq.length >= 2) {
+      var qb = bigrams(nq), tb = bigrams(nt), hit = 0;
+      qb.forEach(function (b) { if (tb.indexOf(b) >= 0) hit++; });
+      var cov = hit / qb.length;
+      if (cov >= 0.5) return 35 + cov * 35;
+    }
+    return 0;
+  }
+  // items: [{id,name,aliases,...}] → 점수 내림차순 일치 항목
+  DocGate.search = function (items, query) {
+    var tokens = String(query || '').trim().split(/\s+/).filter(Boolean);
+    if (!tokens.length) return [];
+    var out = [];
+    items.forEach(function (it) {
+      if (it.type !== 'doc') return;
+      var fields = [it.name].concat(String(it.aliases || '').split(/[,\n]+/));
+      var total = 0, okAll = true;
+      tokens.forEach(function (t) {
+        var nq = norm(t), qc = isCho(nq), best = 0;
+        fields.forEach(function (f) { best = Math.max(best, scoreText(f, nq, qc)); });
+        if (!best) okAll = false;
+        total += best;
+      });
+      if (okAll) out.push({ item: it, score: total / tokens.length });
+    });
+    out.sort(function (a, b) { return b.score - a.score || String(a.item.name).localeCompare(String(b.item.name), 'ko'); });
+    return out.map(function (o) { return o.item; });
   };
 
   /* ── 카운트다운 타이머 ───────────────────────────────────────── */
@@ -221,15 +127,27 @@
     var iv = setInterval(function () {
       remaining--;
       onTick(remaining);
-      if (remaining <= 0) {
-        clearInterval(iv);
-        onExpire();
-      }
+      if (remaining <= 0) { clearInterval(iv); onExpire(); }
     }, 1000);
     return iv;
   };
 
-  DocGate.TOKEN_TTL = TOKEN_TTL;
+  /* ── 공통 유틸 ───────────────────────────────────────────────── */
+  DocGate.esc = function (s) {
+    return String(s === undefined || s === null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  };
+  DocGate.ICON = {
+    folder: '<svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M2 4.5h5l1.6 1.8H16V14H2z"/></svg>',
+    file: '<svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M4 2h6l4 4v10H4z"/><path d="M10 2v4h4"/></svg>',
+    search: '<svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="8" cy="8" r="5.5"/><path d="M12.5 12.5L16 16"/></svg>',
+    lock: '<svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"><rect x="2.5" y="6" width="9" height="6" rx="1.5"/><path d="M4.5 6V4.5a2.5 2.5 0 015 0V6"/></svg>',
+    chev: '<svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2.5L7.5 6 4 9.5"/></svg>',
+    check: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8.5l3.2 3L13 4.5"/></svg>',
+    upload: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 11V3m0 0L5 6m3-3l3 3M2.5 13h11"/></svg>',
+    download: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v8m0 0L5 7m3 3l3-3M2.5 13h11"/></svg>'
+  };
 
   window.DocGate = DocGate;
 })();

@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<script src="appear-head.js"></script>
+<script src="site-admin.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>서식 관리</title>
+<link rel="stylesheet" href="docgate.css">
+<link rel="stylesheet" href="docgate-admin.css">
+</head>
+<body>
+<div class="wrap wide">
+
+  <div class="topbar">
+    <h1>서식 관리</h1>
+    <span class="who2" id="who2"></span>
+    <span class="sp"></span>
+    <a class="link" href="docgate.html">서류 신청 화면으로</a>
+  </div>
+
+  <!-- 로그인 -->
+  <div id="gate" class="card narrow">
+    <div class="login-area">
+      <h2>서식 관리</h2>
+      <p>섹션 담당자 또는 전체 관리자만 이용할 수 있습니다.<br>Google 계정으로 로그인하세요.</p>
+      <div id="gateMsg" class="msg"></div>
+      <button class="btn btn-primary" id="loginBtn" type="button">Google로 로그인</button>
+    </div>
+  </div>
+
+  <div id="app" style="display:none">
+    <div class="tabs" role="tablist">
+      <button class="tab active" data-tab="files" type="button">서식 관리</button>
+      <button class="tab" data-tab="logs" type="button">다운로드 로그</button>
+      <button class="tab" data-tab="audit" type="button">변경 이력</button>
+      <button class="tab" data-tab="settings" type="button" id="tabSettings" style="display:none">설정</button>
+    </div>
+
+    <!-- 탐색기 -->
+    <div id="p-files">
+      <div class="explorer">
+        <div class="tb" id="tb">
+          <select id="secSel" aria-label="섹션 선택"></select>
+          <button class="b" id="bFolder" type="button"><span data-i="folder"></span>새 폴더</button>
+          <button class="b" id="bDoc" type="button"><span data-i="file"></span>서식 추가</button>
+          <button class="b" id="bUpload" type="button"><span data-i="upload"></span>파일 올리기</button>
+          <span class="sep"></span>
+          <button class="b" id="bRename" type="button">이름 바꾸기 <kbd>F2</kbd></button>
+          <button class="b" id="bDel" type="button">삭제 <kbd>Del</kbd></button>
+          <button class="b" id="bUndo" type="button">실행 취소 <kbd>Ctrl+Z</kbd></button>
+          <button class="b" id="bRefresh" type="button">새로고침</button>
+          <input type="text" class="flt" id="flt" placeholder="이 폴더에서 찾기" aria-label="이 폴더에서 찾기">
+        </div>
+        <div class="addr" id="addr"></div>
+        <div class="body">
+          <div class="tree" id="tree"></div>
+          <div class="pane" id="pane">
+            <div class="head2"><span>이름</span><span>구분</span><span>수정일</span><span>연결 파일</span><span>버전</span><span>받은 수</span></div>
+            <div class="rows" id="rows" tabindex="0"></div>
+            <div class="dropzone" id="dz"></div>
+          </div>
+        </div>
+        <div class="status"><span class="st" id="st"></span><span id="cnt"></span></div>
+      </div>
+      <input type="file" id="fileIn" multiple hidden>
+      <input type="file" id="verIn" hidden>
+    </div>
+
+    <!-- 로그 -->
+    <div id="p-logs" style="display:none">
+      <div class="panel">
+        <div id="logMsg" class="msg"></div>
+        <div class="log-toolbar">
+          <input type="text" id="logQ" placeholder="이름·이메일·서류명 검색" aria-label="로그 검색">
+          <button class="btn btn-outline btn-sm btn-auto" id="logCsv" type="button">CSV 내려받기</button>
+        </div>
+        <div class="table-wrap"><table><thead><tr><th>일시</th><th>이름</th><th>이메일</th><th>부서/직함</th><th>서류명</th><th>사유</th><th>구분</th></tr></thead><tbody id="logBody"></tbody></table></div>
+        <div class="hint" id="logCnt" style="text-align:right"></div>
+      </div>
+    </div>
+
+    <!-- 변경 이력 -->
+    <div id="p-audit" style="display:none">
+      <div class="panel">
+        <div id="audMsg" class="msg"></div>
+        <div class="table-wrap"><table><thead><tr><th>일시</th><th>담당자</th><th>작업</th><th>대상</th><th>내용</th></tr></thead><tbody id="audBody"></tbody></table></div>
+      </div>
+    </div>
+
+    <!-- 설정(전체 관리자) -->
+    <div id="p-settings" style="display:none">
+      <div class="panel">
+        <h2>섹션</h2>
+        <div id="setMsg" class="msg"></div>
+        <div id="secList"></div>
+        <div style="margin-top:14px"><button class="btn btn-primary btn-auto" id="secNew" type="button">섹션 추가</button></div>
+        <div class="hint">섹션 하나는 Drive 폴더 하나와 연결됩니다. 담당자가 올린 파일은 이 폴더에 저장됩니다.</div>
+      </div>
+      <div class="panel">
+        <h2>부서 목록 (신청자 선택용)</h2>
+        <textarea id="deptTxt" placeholder="한 줄에 부서 하나씩"></textarea>
+        <div class="hint">비워 두면 기본 목록이 사용됩니다. 신청자는 목록에 없으면 직접 입력할 수 있습니다.</div>
+        <div style="margin-top:12px"><button class="btn btn-outline btn-auto" id="deptSave" type="button">부서 목록 저장</button></div>
+      </div>
+      <div class="panel">
+        <h2>전체 관리자 추가</h2>
+        <textarea id="superTxt" placeholder="이메일을 줄바꿈 또는 쉼표로 구분"></textarea>
+        <div class="hint">기본 전체 관리자(bangdw@gmail.com)는 코드에 고정되어 있어 여기서 지울 수 없습니다. 전체 관리자는 모든 섹션을 관리하고 섹션 설정을 바꿀 수 있습니다.</div>
+        <div style="margin-top:12px"><button class="btn btn-outline btn-auto" id="superSave" type="button">저장</button></div>
+      </div>
+      <div class="panel">
+        <h2>기존 법인서류 가져오기</h2>
+        <p class="hint" style="margin:0 0 12px">이전 방식으로 등록했던 서류 목록(법인 임원명부 등)을 「법인 서류」 섹션으로 옮깁니다. 이미 있는 항목은 건너뛰므로 여러 번 실행해도 안전합니다. 섹션은 허용 목록 방식(전체 관리자만 열람)으로 만들어지니, 만든 뒤 열람 범위를 지정하세요.</p>
+        <button class="btn btn-outline btn-auto" id="migrate" type="button">가져오기 실행</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="ctx" id="ctx" role="menu"></div>
+
+<!-- 속성 -->
+<dialog id="dProp">
+  <div class="dh" id="dpTitle">속성</div>
+  <div class="db">
+    <div id="dpMsg" class="msg"></div>
+    <div class="kv" id="dpInfo"></div>
+    <div class="form-group"><label for="dpName">이름</label><input type="text" id="dpName" maxlength="100"></div>
+    <div class="form-group"><label for="dpAlias">별칭 (검색용, 쉼표로 구분)</label><input type="text" id="dpAlias" maxlength="300" placeholder="예: 퇴직금, 퇴직금 신청"><div class="hint">별칭으로도 검색되어 사용자가 정확한 이름을 몰라도 찾을 수 있습니다.</div></div>
+    <div class="form-group" id="dpKwWrap"><label for="dpKw">폴더 검색어 (파일을 올리지 않은 경우)</label><input type="text" id="dpKw" maxlength="100"><div class="hint">섹션 Drive 폴더에서 이 글자가 들어간 가장 최근 파일을 자동으로 제공합니다. 파일을 올리면 올린 파일이 우선합니다.</div></div>
+    <div class="form-group"><label for="dpNote">메모 (관리자용)</label><input type="text" id="dpNote" maxlength="300"></div>
+  </div>
+  <div class="df" id="dpBtns">
+    <button class="btn btn-outline" id="dpVer" type="button">버전 이력</button>
+    <button class="btn btn-outline" id="dpUp" type="button">새 버전 올리기</button>
+    <span style="flex:1"></span>
+    <button class="btn btn-outline" id="dpCancel" type="button">닫기</button>
+    <button class="btn btn-primary" id="dpSave" type="button">저장</button>
+  </div>
+</dialog>
+
+<!-- 버전 -->
+<dialog id="dVer">
+  <div class="dh" id="dvTitle">버전 이력</div>
+  <div class="db" id="dvBody"></div>
+  <div class="df"><button class="btn btn-outline" id="dvClose" type="button">닫기</button></div>
+</dialog>
+
+<!-- 섹션 -->
+<dialog id="dSec">
+  <div class="dh" id="dsTitle">섹션</div>
+  <div class="db">
+    <div id="dsMsg" class="msg"></div>
+    <div class="form-group"><label for="dsName">섹션 이름 <span class="req">*</span></label><input type="text" id="dsName" maxlength="50" placeholder="예: 학사 서식"></div>
+    <div class="form-group"><label for="dsFolder">Drive 폴더 ID 또는 링크 <span class="req">*</span></label><input type="text" id="dsFolder" placeholder="https://drive.google.com/drive/folders/..."><div class="hint">이 폴더는 스크립트 소유자 계정이 접근할 수 있어야 합니다.</div></div>
+    <div class="form-group"><label>열람 범위</label>
+      <div class="radio-row">
+        <label><input type="radio" name="dsAcc" value="restricted"> 허용 목록만</label>
+        <label><input type="radio" name="dsAcc" value="all"> 로그인한 모든 Google 계정</label>
+      </div>
+    </div>
+    <div class="form-group"><label for="dsAllowed">허용 목록 (이메일 · @도메인 · *)</label><textarea id="dsAllowed" placeholder="예: @asea.ac.kr&#10;kim@gmail.com"></textarea><div class="hint">* 는 로그인한 모든 사람. 담당자는 목록과 관계없이 항상 열람합니다.</div></div>
+    <div class="form-group"><label for="dsMgr">담당자 (등록·수정·삭제 권한)</label><textarea id="dsMgr" placeholder="이메일을 줄바꿈 또는 쉼표로 구분"></textarea></div>
+    <div class="radio-row"><label><input type="checkbox" id="dsHidden"> 담당자에게만 보이기(사용자 화면에서 숨김)</label></div>
+  </div>
+  <div class="df">
+    <button class="btn btn-danger" id="dsDel" type="button" style="margin-right:auto">삭제</button>
+    <button class="btn btn-outline" id="dsCancel" type="button">취소</button>
+    <button class="btn btn-primary" id="dsSave" type="button">저장</button>
+  </div>
+</dialog>
+
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script src="config.js"></script>
+<script src="auth.js"></script>
+<script src="docgate.js"></script>
+<script src="docgate-admin.js"></script>
+</body>
+</html>

@@ -58,6 +58,7 @@ Each HTML file is self-contained (CSS + JS inline or in same-name `.js`/`.css` f
 | `schedule.html` | 일정 관리 — design reference for color system and icons |
 | `checkin.html` | 체크인 — GAS proxy backend |
 | `dormitory/` | 기숙사 관리 — resident, complaint, contract-sign pages |
+| `docgate.html` · `docgate-admin.html` | 전사 서류 다운로드·서식 관리 — 섹션(법인·인사·학교 서식·총무 등)별 Drive 폴더 연결, 사용자 화면(`docgate.html`: 첫 진입 1회 신상 입력(실명·부서 목록·직함, 구글 이름 자동 입력 안 함)·검색(초성·오타·별칭)·섹션 타일·폴더 탐색·전체 목록·1회용 60초 다운로드 티켓)과 관리 화면(`docgate-admin.html`·`docgate-admin.js`·`docgate-admin.css`: 윈도우 탐색기형 — 트리·주소줄·다중 선택·우클릭 메뉴·F2 이름 변경·Del 휴지통·Ctrl+Z·드래그앤드롭 이동·정렬·PC 파일 끌어다 놓아 업로드(새 버전 자동)·버전 이력·복원·영구 삭제·로그·변경 이력·설정). 백엔드 `gas_docgate_log.gs`(GAS, 모든 요청에 Google 토큰을 서버에서 검증, 섹션별 열람 `access/allowed`·담당자 `managers`·전체 관리자 `SUPERS`, 시트 `DocSections/DocItems/DocVersions/DocAudit/DocConfig/DocLog`, 서식 단위=서식명→최신 파일 자동(`keyword`) 또는 업로드 파일(`fileId`), 이름 변경은 화면 표시명만 — Drive 원본 불변). 파일 `docgate.js`(API·검색·공용)·`docgate.css`. **GAS 코드를 고치면 배포 관리에서 새 버전으로 재배포해야 반영됨** |
 | `facility-request.html` | 시설 요청 |
 | `wayfind.html` | 교내 길찾기 |
 | `assessment.html` | 역량 평가 |
