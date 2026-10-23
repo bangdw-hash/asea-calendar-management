@@ -237,6 +237,16 @@
     else if (n.dataset.ts) nav(n.dataset.ts, '', false);
     else if (n.dataset.tf) nav(X.byId[n.dataset.tf].sectionId, n.dataset.tf, false);
   });
+  // 트리 우클릭: 폴더는 행 메뉴(열기·이름 바꾸기·삭제), 섹션은 빈 곳 메뉴(새 폴더·서식 추가)
+  $('tree').addEventListener('contextmenu', function (e) {
+    var n = e.target.closest('.tn'); if (!n || n.dataset.trash) return;
+    e.preventDefault();
+    if (n.dataset.tf) {
+      var f = X.byId[n.dataset.tf]; if (!f) return;
+      nav(f.sectionId, f.parentId, false); sel.clear(); sel.add(f.id); focusId = anchor = f.id; updateSel();
+      showCtx(e.clientX, e.clientY, 'row');
+    } else if (n.dataset.ts) { nav(n.dataset.ts, '', false); showCtx(e.clientX, e.clientY, 'bg'); }
+  });
   $('addr').addEventListener('click', function (e) {
     var b = e.target.closest('button'); if (!b || b.disabled) return;
     if (b.dataset.asec) nav(b.dataset.asec, '', false); else if (b.dataset.af) nav(cur.sec, b.dataset.af, false);
