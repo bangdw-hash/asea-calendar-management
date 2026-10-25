@@ -121,6 +121,36 @@
     return { total: out, by: by };
   }
 
+  /* ───────────── 반별 재적 인원(db/survey_schema_13.sql) · 반별 응답률 ───────────── */
+  var TRACK_ORDER = ['항공정비계열', '스마트안전진단계열', '항공관광계열', '항공보안계열', '국방경찰계열'];
+  function natKey(s) { var m = String(s).match(/\d+/); return m ? Number(m[0]) : 0; }
+  async function loadCT() {
+    try { var rows = await A.rpc('svy_a_class_targets', { p_id: R.sid }); A.ext.ct = { sid: R.sid, rows: Array.isArray(rows) ? rows : [] }; }
+    catch (e) { A.ext.ct = { sid: R.sid, rows: [], err: e.message || String(e) }; }   // DB 13단계 미설치 등: 반별 응답률만 표시하지 않음
+  }
+  // 응답한 학생 수(현재 필터·응답 범위 기준) ÷ 반별 재적 인원. 계열 순서는 항공정비·스마트안전진단·항공관광·항공보안·국방경찰, 그 안에서 학년·반 순
+  function classRates(D) {
+    var ct = A.ext.ct && A.ext.ct.sid === R.sid ? A.ext.ct.rows : [], by = {}, out = [];
+    D.resp.forEach(function (r) { var k = r.track + '|' + r.grade + '|' + r.klass; by[k] = (by[k] || 0) + 1; });
+    var seen = {};
+    ct.forEach(function (t) {
+      if ((F.track && t.track !== F.track) || (F.grade && t.grade !== F.grade) || (F.klass && t.klass !== F.klass)) return;
+      var k = t.track + '|' + t.grade + '|' + t.klass; seen[k] = 1; out.push({ key: k, track: t.track, grade: t.grade, klass: t.klass, head: t.headcount, n: by[k] || 0 });
+    });
+    Object.keys(by).forEach(function (k) { if (seen[k]) return; var p = k.split('|'); out.push({ key: k, track: p[0], grade: p[1], klass: p[2], head: 0, n: by[k] }); });
+    out.forEach(function (o) { o.rate = o.head > 0 ? o.n / o.head * 100 : null; });
+    out.sort(function (a, b) { var x = TRACK_ORDER.indexOf(a.track), y = TRACK_ORDER.indexOf(b.track); x = x < 0 ? 99 : x; y = y < 0 ? 99 : y; return x - y || a.track.localeCompare(b.track, 'ko') || natKey(a.grade) - natKey(b.grade) || natKey(a.klass) - natKey(b.klass) || a.klass.localeCompare(b.klass, 'ko'); });
+    return out;
+  }
+  function classRatePanel(D) {
+    var rows = classRates(D); if (!rows.length || !(A.ext.ct && A.ext.ct.rows.length)) return '';
+    var head = rows.reduce(function (a, o) { return a + o.head; }, 0), n = rows.reduce(function (a, o) { return a + (o.head > 0 ? Math.min(o.n, o.head) : 0); }, 0);
+    return '<div class="panel"><h3>응답률 (반별) <span class="muted" style="font-weight:400">· ' + rows.length + '개 반 · 재적 ' + head + '명 · 전체 ' + (head ? (n / head * 100).toFixed(1) + '%' : '-') + '</span></h3><p class="panel-sub">막대 길이는 반별 재적 인원 대비 응답한 학생 수입니다. 위쪽 응답 범위·필터를 따릅니다. (재적 인원 기준일은 설문 등록 시 입력한 값)</p>' + rows.map(function (o) {
+      var p = o.head > 0 ? Math.min(o.n / o.head * 100, 100) : 0, nm = o.track + ' ' + o.grade + ' ' + o.klass;
+      return '<div class="meter-row"><div>' + E(nm) + '</div><div class="bar-bg" data-tip="' + E(nm + ': 응답 ' + o.n + '명' + (o.head ? ' / 재적 ' + o.head + '명' : ' (재적 인원 미등록)')) + '"><div class="bar-fg" style="width:' + p.toFixed(1) + '%"></div></div><div class="num">' + o.n + (o.head ? ' / ' + o.head + ' (' + (o.n / o.head * 100).toFixed(1) + '%)' : '명') + '</div></div>';
+    }).join('') + '</div>';
+  }
+
   /* ───────────── 색·차트 도우미 ───────────── */
   function scaleColors(sc) {
     var s = sc.slice().sort(function (a, b) { return b.v - a.v; }), n = s.length, out = {};
@@ -168,6 +198,7 @@
       var t = tg.by[k], c = byTG[k] || 0, p = t && t.headcount ? Math.min(c / t.headcount * 100, 100) : 0, nm = k.replace('|', ' ');
       return '<div class="meter-row"><div>' + E(nm) + '</div><div class="bar-bg" data-tip="' + E(nm + ': 응답 ' + c + '명' + (t ? ' / 배포 ' + t.headcount + '명' : '')) + '"><div class="bar-fg" style="width:' + p.toFixed(1) + '%"></div></div><div class="num">' + c + (t && t.headcount ? ' / ' + t.headcount + ' (' + (c / t.headcount * 100).toFixed(1) + '%)' : '명') + '</div></div>';
     }).join('') : '<div class="t-empty">응답이 없습니다.</div>') + '</div>';
+    h += classRatePanel(D);
     // 영역별 평균
     h += '<div class="panel"><h3>영역별 평균 (5점 만점)</h3>' + (D.Q.sections.length ? D.Q.sections.map(function (s) { var a = D.secAgg[s.id], m = mean(a); return '<div class="meter-row"><div>' + E(s.title) + '</div><div class="bar-bg" data-tip="' + E(s.title + ' 평균 ' + (m == null ? '-' : m.toFixed(2)) + ' (' + (a ? a.n : 0) + '건)') + '"><div class="bar-fg" style="width:' + (m ? (m / 5 * 100).toFixed(1) : 0) + '%"></div></div><div class="num"><b>' + (m == null ? '-' : m.toFixed(2)) + '</b></div></div>'; }).join('') : '<div class="t-empty">척도 문항이 없습니다.</div>') + '</div>';
     // 신뢰도 점검 요약
@@ -397,6 +428,7 @@
     sheet('요약', [['설문', A.cur.survey.title], ['출력 일시', A.fmt(new Date().toISOString())], ['데이터', F.data === 'real' ? '정식 응답' : F.data === 'test' ? '테스트 응답' : '정식+테스트'], ['응답 범위(유효성)', SINC[F.sincere] || '전체'], ['적용 필터', ['계열', 'track', '학년', 'grade', '반', 'klass', '구분', 'kind', '교수', 'prof', '과목', 'course'].reduce(function (s, v, i, a) { return i % 2 ? s : s + (F[a[i + 1]] ? a[i] + ': ' + F[a[i + 1]] + ' ' : ''); }, '') || '없음'], [],
       ['응답 수', n], ['배포 인원', tg.total || ''], ['응답률(%)', tg.total ? Math.round(n / tg.total * 1000) / 10 : ''], ['성실 응답 수', D.pass], ['전체 평균(5점)', avg === '' ? '' : Math.round(avg * 100) / 100], [], ['계열', '학년', '배포 인원', '응답 수', '응답률(%)']].concat(
       (function () { var by = {}; D.resp.forEach(function (r) { var k = r.track + '|' + r.grade; by[k] = (by[k] || 0) + 1; }); return Object.keys(Object.assign({}, by, tg.by)).sort().map(function (k) { var p = k.split('|'), t = tg.by[k]; return [p[0], p[1], t ? t.headcount : '', by[k] || 0, t && t.headcount ? Math.round((by[k] || 0) / t.headcount * 1000) / 10 : '']; }); })()), [26, 18, 12, 10, 12]);
+    if (A.ext.ct && A.ext.ct.sid === R.sid && A.ext.ct.rows.length) sheet('반별 응답률', [['계열', '학년', '반', '재적 인원', '응답 수', '응답률(%)']].concat(classRates(D).map(function (o) { return [o.track, o.grade, o.klass, o.head || '', o.n, o.head ? Math.round(o.n / o.head * 1000) / 10 : '']; })), [20, 10, 8, 12, 10, 12]);
     var hdr = ['문항', '내용', '응답 수', '평균'].concat(def.scales.likert5.map(function (o) { return o.label + '(' + o.v + ')'; }));
     sheet('문항별 통계', [hdr].concat(Q.scale.map(function (x) { var a = D.qAgg[x.q.id] || { cnt: {}, n: 0, sum: 0 }; return [x.q.id, x.q.label, a.n, a.n ? Math.round(a.sum / a.n * 100) / 100 : ''].concat(def.scales.likert5.map(function (o) { return a.cnt[o.v] || 0; })); })), [8, 60, 10, 8, 12, 12, 12, 12, 12]);
     var cs = Object.keys(D.cAll).map(function (id) { return D.cm[id]; }).sort(function (a, b) { return (a.track + a.grade + a.klass + a.name).localeCompare(b.track + b.grade + b.klass + b.name, 'ko'); });
@@ -479,8 +511,9 @@
     var tip = null; box.onmousemove = function (e) { var el = e.target.closest('[data-tip]'); if (!el) { if (tip) { tip.remove(); tip = null; } return; } if (!tip) { tip = document.createElement('div'); tip.className = 'tip'; document.body.appendChild(tip); } tip.textContent = el.getAttribute('data-tip'); tip.style.left = Math.min(e.clientX + 14, window.innerWidth - 300) + 'px'; tip.style.top = (e.clientY + 16) + 'px'; };
     box.onmouseleave = function () { if (tip) { tip.remove(); tip = null; } };
     try { await fullLoad(); } catch (e) { document.getElementById('rbody').innerHTML = '<div class="msg err">' + E(e.message) + '</div>'; return; }
+    await loadCT();
     render(); clearTimeout(R.timer); R.timer = setTimeout(poll, 5000);
   };
   A.tabs.results.redraw = function (box) { var sel = box.querySelector('#rfilters'); if (sel) sel.outerHTML = filterBar(); render(); };
-  A.ext.resApi = { compute: function () { return A.ext.D || (A.ext.D = compute()); }, rows: function () { return R.rows; }, F: F, passResp: passResp, heatColor: heatColor, honorClasses: honorClasses, classHeads: classHeads, mean: mean, questions: questions, render: function () { render(); } };
+  A.ext.resApi = { compute: function () { return A.ext.D || (A.ext.D = compute()); }, rows: function () { return R.rows; }, F: F, passResp: passResp, heatColor: heatColor, honorClasses: honorClasses, classHeads: classHeads, mean: mean, questions: questions, classRates: classRates, render: function () { render(); } };
 })();
