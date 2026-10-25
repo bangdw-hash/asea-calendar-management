@@ -69,6 +69,7 @@
     var head = A.cur.targets.reduce(function (a, t) { return a + t.headcount; }, 0);
     var lint = A.lintDef(d), nq = A.countQuestions();
     var gen = d.mode === 'general';
+    var tkOn = d.features && d.features.ticket != null ? !!d.features.ticket : !gen;   // 추첨번호를 발급·표시하는 설문에만 안내문에 추첨번호 문구를 넣습니다
     var checks = [
       [nCourses > 0, '등록 과목 ' + nCourses + '개 · 반 ' + Object.keys(classes).length + '개', '과목·교수 탭에서 과목을 등록해 주십시오.'],
       [head > 0, '대상 인원 ' + head + '명 등록', '대상 인원 탭에서 계열·학년별 인원을 등록하면 응답률이 계산됩니다.'],
@@ -79,7 +80,7 @@
     if (gen) checks.splice(0, 2);
     if (A.auditChecks) checks = checks.concat(A.auditChecks());
     var msg = '[아세아항공직업전문학교] ' + (d.intro && d.intro.title || s.title) + '\n' + (d.intro && d.intro.rewardText ? d.intro.rewardText + '\n' : '') +
-      '▶ 설문 링크: ' + link + (gen ? '\n- 제출 후에는 수정할 수 없습니다.' : '\n- 수강 중인 모든 과목에 응답해 주십시오. 제출 후에는 수정할 수 없습니다.\n- 제출 후 표시되는 추첨번호를 꼭 저장해 주십시오.') + (s.close_at ? '\n- 마감: ' + A.fmt(s.close_at) : '');
+      '▶ 설문 링크: ' + link + (gen ? '\n- 제출 후에는 수정할 수 없습니다.' : '\n- 수강 중인 모든 과목에 응답해 주십시오. 제출 후에는 수정할 수 없습니다.' + (tkOn ? '\n- 제출 후 표시되는 추첨번호를 꼭 저장해 주십시오.' : '')) + (s.close_at ? '\n- 마감: ' + A.fmt(s.close_at) : '');
     box.innerHTML = '<div class="grid g2"><div>' +
       '<div class="panel"><h3>기본 정보</h3><label class="f">설문 제목</label><input class="fld" data-path="title"><label class="f">학기 표시</label><input class="fld" data-path="semester" placeholder="예: 2026-2"><label class="f">회차 <span class="muted" style="font-weight:400">— 중간·기말 설문을 서로 비교할 때 지정합니다</span></label><select class="fld" data-path="def.round.kind"><option value="">지정 안 함</option><option value="mid">중간 평가</option><option value="final">기말 평가</option></select></div>' +
       '<div class="panel"><h3>공개 설정</h3><label class="f">상태</label><select class="fld" data-path="status"><option value="draft">준비 중 (학생이 접속해도 응답 불가)</option><option value="open">응답 받는 중</option><option value="closed">마감</option></select>' +
