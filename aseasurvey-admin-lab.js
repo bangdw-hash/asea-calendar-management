@@ -266,6 +266,14 @@
     var tg = {}; (A.cur.targets || []).forEach(function (t) { if (t.headcount > 0) tg[t.track + '|' + t.grade] = t.headcount; });
     var rg = groupBy(Object.keys(P.resp).map(function (id) { return P.resp[id]; }), function (R) { return R.r.track + '|' + R.r.grade; });
     if (Object.keys(tg).length) h += '<div class="panel"><h3>계열·학년별 응답률</h3><div class="tbl-wrap"><table class="t"><thead><tr><th>계열·학년</th><th class="num">재적</th><th class="num">응답 학생</th><th class="num">응답률</th><th class="num">평균</th></tr></thead><tbody>' + rg.filter(function (g) { return tg[g.name]; }).map(function (g) { var pr = []; g.a.forEach(function (R) { pr = pr.concat(R.pairs); }); var s = pairStat(pr); aoa.push(['응답률', g.name.replace('|', ' '), tg[g.name], g.a.length, g.a.length / tg[g.name] * 100, s.mean]); return '<tr><td>' + E(g.name.replace('|', ' ')) + '</td><td class="num">' + tg[g.name] + '</td><td class="num">' + g.a.length + '</td><td class="num">' + pc(g.a.length / tg[g.name] * 100) + '</td><td class="num">' + f2(s.mean) + '</td></tr>'; }).join('') + '</tbody></table></div><p class="muted" style="font-size:12.5px;margin-top:6px">응답률이 낮은 단위의 평균이 극단적이면 자발 응답 편향(불만이 큰 학생만 응답)을 의심합니다. 단위가 적어 상관계수는 계산하지 않습니다.</p></div>';
+    var cr = API().classRates ? API().classRates(ST.D) : [];
+    if (cr.length && A.ext.ct && A.ext.ct.rows.length) {
+      var cm = {}; P.pairs.forEach(function (o) { var k = o.r.track + '|' + o.r.grade + '|' + o.r.klass; var e = cm[k] || (cm[k] = { s: 0, n: 0 }); e.s += o.s; e.n += o.n; });
+      aoa.push([], ['반별 응답률', '재적', '응답 학생', '응답률(%)', '평균']);
+      h += '<div class="panel"><h3>반별 응답률</h3><div class="tbl-wrap" style="max-height:420px;overflow:auto"><table class="t"><thead><tr><th>반</th><th class="num">재적</th><th class="num">응답 학생</th><th class="num">응답률</th><th class="num">평균</th></tr></thead><tbody>' + cr.map(function (o) {
+        var e = cm[o.key], m = e && e.n ? e.s / e.n : null; aoa.push([o.track + ' ' + o.grade + ' ' + o.klass, o.head, o.n, o.rate, m]);
+        return '<tr><td>' + E(o.track + ' ' + o.grade + ' ' + o.klass) + '</td><td class="num">' + (o.head || '-') + '</td><td class="num">' + o.n + '</td><td class="num"><b>' + pc(o.rate) + '</b></td><td class="num">' + f2(m) + '</td></tr>'; }).join('') + '</tbody></table></div><p class="muted" style="font-size:12.5px;margin-top:6px">응답률이 낮은 반의 평균이 극단적이면 자발 응답 편향(불만이 큰 학생만 응답)을 의심합니다. 재적 인원은 설문 등록 시 입력한 반별 값입니다.</p></div>';
+    }
     return { h: h, x: aoa };
   }
 
