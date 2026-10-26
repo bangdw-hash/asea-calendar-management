@@ -100,9 +100,9 @@
   };
   // 여백 초과 개체 목록 패널 (도구줄 아래, 없으면 숨김)
   P.updateWarnPanel = function (bad, p) {
-    var bar = AW.$('.pl-bar'); if (!bar) return;
     var panel = AW.$('.pl-warn-panel');
     if (!bad || !bad.length) { if (panel) panel.remove(); return; }
+    var bar = AW.$('.pl-bar'); if (!bar) { if (panel) panel.remove(); return; }
     if (!panel) { panel = document.createElement('div'); panel.className = 'pl-warn-panel'; bar.parentNode.insertBefore(panel, bar.nextSibling); }
     var TYPE = { text: '글상자', img: '이미지', rect: '도형', line: '선', table: '표', qr: 'QR' };
     var rows = bad.map(function (e) {
@@ -145,7 +145,7 @@
     if (!root) return;
     var bar = $('.pl-bar', root), on = P.is(tpl);
     var dbtn = $('[data-a="roster"]', document); if (dbtn) dbtn.classList.toggle('hide', !on);
-    if (!on) { if (bar) bar.remove(); return; }
+    if (!on) { if (bar) bar.remove(); P.updateWarnPanel([], null); return; }
 
     if (!bar) {
       bar = document.createElement('div'); bar.className = 'pl-bar';
