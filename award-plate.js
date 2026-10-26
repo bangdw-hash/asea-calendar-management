@@ -24,7 +24,7 @@
     return e.x < p.sl - 0.05 || e.x + e.w > W - p.sr + 0.05;
   }
 
-  /* ───────────── 이름 자간: 글자 수별 규칙표 + 명부 개인별 값 ───────────── */
+  /* ─────────────── 이름 자간: 글자 수별 규칙표 + 명부 개인별 값 ─────────────── */
   // 개인별 값(row._sp, pt) > 규칙표(page.plate.sp: c2·c3·c4 = 이름 2자·3자·4자 이상) > 글상자 기본 자간. 없으면 null
   P.spacing = function (row, p) {
     if (row && row._sp !== undefined && row._sp !== null && String(row._sp).trim() !== '' && !isNaN(+row._sp)) return Math.max(0, +row._sp);
@@ -50,7 +50,7 @@
     });
   }
 
-  /* ───────────── 렌더러 연동 ───────────── */
+  /* ─────────────── 렌더러 연동 ─────────────── */
   // 페이지 DOM 에 반전 복제 레이어·접는 선 안내를 넣음 (여러 번 호출해도 기존 것을 교체)
   P.decorate = function (pg, tpl, k, o, mode) {
     var p = tpl.page.plate; if (!p) return;
@@ -100,9 +100,9 @@
   };
   // 여백 초과 개체 목록 패널 (도구줄 아래, 없으면 숨김)
   P.updateWarnPanel = function (bad, p) {
-    var bar = AW.$('.pl-bar'); if (!bar) return;
     var panel = AW.$('.pl-warn-panel');
     if (!bad || !bad.length) { if (panel) panel.remove(); return; }
+    var bar = AW.$('.pl-bar'); if (!bar) { if (panel) panel.remove(); return; }
     if (!panel) { panel = document.createElement('div'); panel.className = 'pl-warn-panel'; bar.parentNode.insertBefore(panel, bar.nextSibling); }
     var TYPE = { text: '글상자', img: '이미지', rect: '도형', line: '선', table: '표', qr: 'QR' };
     var rows = bad.map(function (e) {
@@ -140,12 +140,12 @@
     }
   };
 
-  /* ───────────── 편집기 상단 명패 도구줄 ───────────── */
+  /* ─────────────── 편집기 상단 명패 도구줄 ─────────────── */
   P.onRender = function (root, tpl) {
     if (!root) return;
     var bar = $('.pl-bar', root), on = P.is(tpl);
     var dbtn = $('[data-a="roster"]', document); if (dbtn) dbtn.classList.toggle('hide', !on);
-    if (!on) { if (bar) bar.remove(); return; }
+    if (!on) { if (bar) bar.remove(); P.updateWarnPanel([], null); return; }
 
     if (!bar) {
       bar = document.createElement('div'); bar.className = 'pl-bar';
@@ -169,7 +169,7 @@
     tpl.elems = tpl.elems.filter(function (e) { return !e.ph; });
   };
 
-  /* ───────────── 동작 (편집기 act 에서 호출) ───────────── */
+  /* ─────────────── 동작 (편집기 act 에서 호출) ─────────────── */
   P.act = function (a, api) {
     var t = S.tpl, E = AW.Editor;
     if (a === 'pl-new') return P.newDialog();
@@ -224,7 +224,7 @@
     });
   }
 
-  /* ───────────── 양식 만들기 ───────────── */
+  /* ─────────────── 양식 만들기 ─────────────── */
   function logoData() {
     if (P._logo) return Promise.resolve(P._logo);
     return fetch('award-plate-logo.png').then(function (r) { if (!r.ok) throw new Error('로고 파일을 찾지 못했습니다.'); return r.blob(); }).then(function (b) { return new Promise(function (res, rej) { var fr = new FileReader(); fr.onload = function () { res(P._logo = fr.result); }; fr.onerror = rej; fr.readAsDataURL(b); }); });
@@ -274,7 +274,7 @@
     });
   };
 
-  /* ───────────── 직원 명부 ───────────── */
+  /* ─────────────── 직원 명부 ─────────────── */
   var R = { list: null, sel: {}, q: '', dept: '', saveT: null, state: '' };
   function loadRoster() {
     if (R.list) return Promise.resolve(R.list);
