@@ -75,11 +75,17 @@
       h += '<i class="pl-mid" style="top:' + ((f[1] + f[2]) / 2 * k) + 'px"><b>③ 세로 가운데</b></i>';
       g.innerHTML = h; nodes.push(g);
     }
-    if (mode !== 'edit' && p.tick) {   // 접는 위치 확인용 작은 눈금(인쇄 가능 영역 안쪽 좌·우)
-      var t = document.createElement('div'); t.className = 'pl-g';
-      t.style.cssText = 'position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none';
-      var th = ''; f.forEach(function (y) { [p.sl + 0.5, W - p.sr - 4.5].forEach(function (x) { th += '<i style="position:absolute;left:' + ((x + dx) * k) + 'px;top:' + ((y + dy) * k) + 'px;width:' + 4 * k + 'px;border-top:' + Math.max(0.5, 0.2 * k) + 'px solid #888"></i>'; }); });
-      t.innerHTML = th; nodes.push(t);
+    // 미리보기에서도 접는 선 표시 (화면 전용 — 인쇄 시 숨김)
+    if (mode !== 'edit') {
+      var pv = document.createElement('div'); pv.className = 'pl-g pl-g-pv'; var pvh = '';
+      f.forEach(function (y, i) { pvh += '<i class="pl-fold pl-fold-pv" style="top:' + (y + dy) * k + 'px"><b>접는 선 ' + (i + 1) + '</b></i>'; });
+      pv.innerHTML = pvh; nodes.push(pv);
+      if (p.tick) {   // 접는 위치 확인용 작은 눈금(인쇄 가능 영역 안쪽 좌·우)
+        var t = document.createElement('div'); t.className = 'pl-g';
+        t.style.cssText = 'position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none';
+        var th = ''; f.forEach(function (y) { [p.sl + 0.5, W - p.sr - 4.5].forEach(function (x) { th += '<i style="position:absolute;left:' + ((x + dx) * k) + 'px;top:' + ((y + dy) * k) + 'px;width:' + 4 * k + 'px;border-top:' + Math.max(0.5, 0.2 * k) + 'px solid #888"></i>'; }); });
+        t.innerHTML = th; nodes.push(t);
+      }
     }
     nodes.forEach(function (n) { pg.insertBefore(n, ref); });
   };
@@ -97,13 +103,14 @@
     tx.push({ v: p.sl, k: 'plate' }, { v: pg.w - p.sr, k: 'plate' });
     p.f.forEach(function (y) { ty.push({ v: y, k: 'plate' }); }); ty.push({ v: (p.f[1] + p.f[2]) / 2, k: 'pc' });
   };
-  // 이동 중 좌우 여백 밖으로 나가지 않게 선택 전체를 안쪽으로 맞춤
+  // 이동 중 좌우 여백 밖으로 나가면 경고 — 실제 이동은 막지 않음(clamp=true 여도 경고만)
+  var _clampWarnAt = 0;
   P.clampMove = function (list, pg) {
-    var p = pg.plate; if (!p || p.clamp === false || !list.length) return;
+    var p = pg.plate; if (!p || !list.length) return;
     var x1 = Infinity, x2 = -Infinity; list.forEach(function (e) { x1 = Math.min(x1, e.x); x2 = Math.max(x2, e.x + e.w); });
-    if (x2 - x1 > pg.w - p.sl - p.sr) return;
-    var d = 0; if (x1 < p.sl) d = p.sl - x1; else if (x2 > pg.w - p.sr) d = pg.w - p.sr - x2;
-    if (d) list.forEach(function (e) { e.x = AW.round(e.x + d, 2); });
+    if (x1 < p.sl - 0.5 || x2 > pg.w - p.sr + 0.5) {
+      if (Date.now() - _clampWarnAt > 5000) { _clampWarnAt = Date.now(); AW.toast('좌우 인쇄 불가 영역(' + p.sl + 'mm)에 가까워졌습니다. 잘릴 수 있으니 안쪽으로 옮기는 것을 권장합니다.', 'warn'); }
+    }
   };
 
   /* ───────────── 편집기 상단 명패 도구줄 ───────────── */
@@ -118,7 +125,7 @@
       var B = function (a, ic, t, tip) { return '<button class="btn btn-secondary btn-sm" data-pl="' + a + '" title="' + esc(tip) + '">' + AW.ic(ic, 15) + ' ' + t + '</button>'; };
       bar.innerHTML = '<b class="pl-t">명패</b>' + B('pl-logo', 'image', '로고 불러오기', '파일에서 로고를 불러옵니다. Ctrl+V 로 복사한 이미지를 붙여 넣어도 됩니다.') + B('pl-line', 'line', '빨간 중간선', '빨간 구분선을 3칸에 넣습니다.') +
         B('pl-center', 'gCV', '3칸 가운데 맞춤', '3칸의 개체 묶음을 세로·가로 가운데로 맞춥니다.') + B('pl-justify', 'alC', '균등 정렬', '선택한 글상자를 균등 분배(한 줄도 좌우 폭을 꽉 채움)로 바꾸거나 되돌립니다.') +
-        B('pl-sp', 'cols', '이름 자간 규칙', '이름 글자 수별로 글자 사이를 자동으로 넓힙니다(짧은 이름 보정). 개인별 값은 직원 명부의 자간 열.') + B('pl-cfg', 'cols', '접는 선·여백 설정', '접는 선 위치, 좌우 인쇄 불가 여백, 반전 복제 등을 실물 출력과 대조하며 조정합니다.') + B('pl-new', 'plus', '새 명패 양식', '아세아 / 외부 기관 명패 양식을 새 탭으로 만듭니다.') +
+        B('pl-sp', 'cols', '이름 자간 규칙', '이름 글자 수별로 글자 사이를 자동으로 넓힙니다(짧은 이름 보정). 개인별 값은 직원 명부의 자간 열.') + B('pl-cfg', 'cols', '접는 선·여백 설정', '접는 선 위치, 좌우 인쇄 불가 여백, 반전 복제 등을 실물 출력과 대조하며 조정합니다.') + B('pl-font', 'text', '내 글꼴 올리기', '컴퓨터에 있는 서체를 서버에 등록합니다. 등록된 글꼴은 다른 단말기에서도 「내 글꼴」 목록에 표시됩니다.') + B('pl-new', 'plus', '새 명패 양식', '아세아 / 외부 기관 명패 양식을 새 탭으로 만듭니다.') +
         '<input type="file" class="hide" id="pl-file" accept="image/*"><span class="pl-hint muted">③칸에 입력하면 ②칸에 180° 반전되어 자동 반영됩니다 · 글자 크기는 워드처럼: 글상자를 더블클릭 → 줄일 글자를 드래그 → 위 글자 크기 칸에 입력(±도 가능). 길면 한 줄에 맞게 자동 줄임.</span>';
       root.insertBefore(bar, root.firstChild);
       bar.addEventListener('click', function (e) { var b = e.target.closest('[data-pl]'); if (b) AW.Editor.act(b.dataset.pl); });
@@ -140,6 +147,7 @@
     var t = S.tpl, E = AW.Editor;
     if (a === 'pl-new') return P.newDialog();
     if (a === 'pl-roster') return P.rosterDialog();
+    if (a === 'pl-font') return AW.Output.fontDialog();
     if (!P.is(t)) return AW.toast('명패 양식에서만 사용할 수 있습니다. 「새 명패 양식」으로 만들어 주십시오.');
     var p = cfg(t);
     if (a === 'pl-logo') return $('#pl-file').click();

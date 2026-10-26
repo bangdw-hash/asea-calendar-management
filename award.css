@@ -168,6 +168,7 @@ table{border-collapse:collapse;width:100%}
   body>*:not(#print-root){display:none!important}
   #print-root{position:static;width:auto;height:auto;display:block}
   #print-root *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .pl-g-pv,.pl-fold-pv{display:none!important}
 }
 
 /* 반응형 */
@@ -353,6 +354,7 @@ table{border-collapse:collapse;width:100%}
 .pl-side b{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) rotate(90deg);white-space:nowrap;font:500 10px/1 sans-serif;color:#64748B;font-style:normal}
 .pl-front{position:absolute;left:0;right:0;background:rgba(26,115,232,.045);box-shadow:inset 0 0 0 1px rgba(26,115,232,.25)}
 .pl-fold{position:absolute;left:0;right:0;height:0;border-top:1.5px dashed #64748B}.pl-fold b{position:absolute;right:6px;top:2px;font:500 10px/1 sans-serif;color:#64748B;background:rgba(255,255,255,.85);padding:1px 4px;border-radius:var(--r);font-style:normal}
+.pl-fold-pv{border-top-color:#94a3b8;border-top-style:dashed;opacity:.7}.pl-g-pv{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none}
 .pl-mid{position:absolute;left:0;right:0;height:0;border-top:1px dotted rgba(26,115,232,.5)}.pl-mid b{position:absolute;right:6px;top:2px;font:500 10px/1 sans-serif;color:var(--primary-dk);font-style:normal}
 .pl-lb{position:absolute;font:500 10.5px/1.2 sans-serif;color:#64748B;background:rgba(255,255,255,.8);padding:1px 5px;border-radius:var(--r)}.pl-lb.on{color:var(--primary-dk);background:#E8F0FE}
 .pl-mir .el{outline:none!important}.pl-mir{opacity:.9}
