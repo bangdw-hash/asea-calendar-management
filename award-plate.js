@@ -93,9 +93,36 @@
   P.refresh = function (pg, tpl, k, lang) {
     if (!pg || !tpl || !tpl.page.plate) return;
     P.decorate(pg, tpl, k, { mode: 'edit', lang: lang, scale: k }, 'edit'); AW.fitAll(pg);
-    var p = tpl.page.plate, W = tpl.page.w, n = 0;
-    tpl.elems.forEach(function (e) { var d = AW.$('.el[data-id="' + e.id + '"]', pg); if (!d) return; var bad = outSafe(e, W, p); d.classList.toggle('pl-warn', bad); if (bad) n++; });
-    if (n && Date.now() - warnAt > 8000) { warnAt = Date.now(); AW.toast('좌우 ' + p.sl + 'mm 인쇄 불가 영역에 걸친 개체가 있습니다(붉은 점선). 안쪽으로 옮겨 주십시오.', 'error'); }
+    var p = tpl.page.plate, W = tpl.page.w, bad = [];
+    tpl.elems.forEach(function (e) { var d = AW.$('.el[data-id="' + e.id + '"]', pg); if (!d) return; var b = outSafe(e, W, p); d.classList.toggle('pl-warn', b); if (b) bad.push(e); });
+    P.updateWarnPanel(bad, p);
+    if (bad.length && Date.now() - warnAt > 8000) { warnAt = Date.now(); AW.toast('좌우 ' + p.sl + 'mm 인쇄 불가 영역에 걸친 개체가 있습니다(붉은 점선). 목록을 확인하십시오.', 'error'); }
+  };
+  // 여백 초과 개체 목록 패널 (도구줄 아래, 없으면 숨김)
+  P.updateWarnPanel = function (bad, p) {
+    var bar = AW.$('.pl-bar'); if (!bar) return;
+    var panel = AW.$('.pl-warn-panel');
+    if (!bad || !bad.length) { if (panel) panel.remove(); return; }
+    if (!panel) { panel = document.createElement('div'); panel.className = 'pl-warn-panel'; bar.parentNode.insertBefore(panel, bar.nextSibling); }
+    var TYPE = { text: '글상자', img: '이미지', rect: '도형', line: '선', table: '표', qr: 'QR' };
+    var rows = bad.map(function (e) {
+      var label = AW.elemText ? (AW.elemText(e) || '').replace(/\{\{[^}]+\}\}/g, '…').replace(/\s+/g, ' ').trim().slice(0, 30) : '';
+      var side = (e.x < (p.sl || 0) - 0.05) ? '왼쪽' : '오른쪽';
+      return '<li><button class="pl-warn-go" data-id="' + e.id + '" title="개체 선택">' +
+        AW.ic('alert', 14) + ' <b>' + (TYPE[e.t] || e.t) + '</b>' + (label ? ' · ' + AW.esc(label) : '') +
+        ' <span class="muted">(' + side + ' 여백 침범)</span></button></li>';
+    }).join('');
+    panel.innerHTML = AW.ic('alert', 14) + ' <b>인쇄 불가 영역 침범 ' + bad.length + '개</b> — 잘릴 수 있습니다. 클릭하면 해당 개체로 이동합니다. <ul class="pl-warn-list">' + rows + '</ul>';
+    AW.$$('.pl-warn-go', panel).forEach(function (btn) {
+      btn.onclick = function () {
+        var id = btn.dataset.id;
+        if (AW.Editor && AW.Editor.setSel) {
+          AW.Editor.setSel([id]);
+          var el = AW.$('.el[data-id="' + id + '"]');
+          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      };
+    });
   };
   // 편집기 자석: 접는 선 · 3칸 세로 가운데 · 좌우 여백선
   P.targets = function (pg, tx, ty) {
