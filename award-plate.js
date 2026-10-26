@@ -24,8 +24,8 @@
     return e.x < p.sl - 0.05 || e.x + e.w > W - p.sr + 0.05;
   }
 
-  /* ───────────────────────── 이름 자간: 글자 수별 규칙표 + 명부 개인별 값 ───────────────────────── */
-  // 개인별 값(row._sp, pt) > 규칙표(page.plate.sp: c2·c3·c4 = 이름 2자·이름 3자·4자 이상) > 글상자 기본 자간. 없으면 null
+  /* ─────────────── 이름 자간: 글자 수별 규칙표 + 명부 개인별 값 ─────────────── */
+  // 개인별 값(row._sp, pt) > 규칙표(page.plate.sp: c2·c3·c4 = 이름 2자·3자·4자 이상) > 글상자 기본 자간. 없으면 null
   P.spacing = function (row, p) {
     if (row && row._sp !== undefined && row._sp !== null && String(row._sp).trim() !== '' && !isNaN(+row._sp)) return Math.max(0, +row._sp);
     if (!p || !p.sp || !row) return null;
@@ -39,7 +39,7 @@
         '<p class="muted" style="margin-top:0">이름 글자 수에 따라 <b>한 줄 전체</b>의 글자 사이(자간, pt)를 자동으로 넓힙니다. 짧은 이름(예: 두 글자)일수록 크게 두면 폭이 비어 보이지 않습니다. 비워 두면 그 경우는 글상자 기본 자간을 씁니다.</p>' +
         '<div class="grid2"><div><label class="f">이름 2자 (예: 이현)</label>' + N('ps-2', sp.c2) + '</div><div><label class="f">이름 3자 (예: 권오건)</label>' + N('ps-3', sp.c3) + '</div>' +
         '<div><label class="f">이름 4자 이상</label>' + N('ps-4', sp.c4) + '</div></div>' +
-        '<p class="muted" style="margin-bottom:0">· 사람마다 다르게 하려면 직원 명부의 「자간」 열에 값을 넣으십시오(규칙표보다 우선).<br>· 폭이 모자라면 <b>자간을 먼저 줄이고</b>, 그래도 넘칠 때 글자 크기를 줄여 한 줄에 맞추면 됨니다.</p>',
+        '<p class="muted" style="margin-bottom:0">· 사람마다 다르게 하려면 직원 명부의 「자간」 열에 값을 넣으십시오(규칙표보다 우선).<br>· 폭이 모자라면 <b>자간을 먼저 줄이고</b>, 그래도 넘칠 때 글자 크기를 줄여 한 줄에 맞춥니다.</p>',
       actions: [{ label: '취소', cls: 'btn-ghost' }, { label: '규칙 지우기', cls: 'btn-ghost', onClick: function (c) { delete p.sp; c(); AW.Editor.render(); api.changed('page'); AW.Preview && AW.Preview.render(); } }, {
         label: '적용', cls: 'btn-primary', onClick: function (c) {
           var g = function (id) { var v = $(id).value.trim(); return v === '' ? null : Math.max(0, Math.min(80, parseFloat(v))); }, r = { c2: g('#ps-2'), c3: g('#ps-3'), c4: g('#ps-4') };
@@ -50,7 +50,7 @@
     });
   }
 
-  /* ───────────────────────── 렌더러 연동 ───────────────────────── */
+  /* ─────────────── 렌더러 연동 ─────────────── */
   // 페이지 DOM 에 반전 복제 레이어·접는 선 안내를 넣음 (여러 번 호출해도 기존 것을 교체)
   P.decorate = function (pg, tpl, k, o, mode) {
     var p = tpl.page.plate; if (!p) return;
@@ -112,7 +112,7 @@
         AW.ic('alert', 14) + ' <b>' + (TYPE[e.t] || e.t) + '</b>' + (label ? ' · ' + AW.esc(label) : '') +
         ' <span class="muted">(' + side + ' 여백 침범)</span></button></li>';
     }).join('');
-    panel.innerHTML = AW.ic('alert', 14) + ' <b>인쇄 불가 영역 침범 ' + bad.length + '개</b> — 잊릴 수 있습니다. 클릭하면 해당 개체로 이동합니다. <ul class="pl-warn-list">' + rows + '</ul>';
+    panel.innerHTML = AW.ic('alert', 14) + ' <b>인쇄 불가 영역 침범 ' + bad.length + '개</b> — 잘릴 수 있습니다. 클릭하면 해당 개체로 이동합니다. <ul class="pl-warn-list">' + rows + '</ul>';
     AW.$$('.pl-warn-go', panel).forEach(function (btn) {
       btn.onclick = function () {
         var id = btn.dataset.id;
@@ -136,11 +136,11 @@
     var p = pg.plate; if (!p || !list.length) return;
     var x1 = Infinity, x2 = -Infinity; list.forEach(function (e) { x1 = Math.min(x1, e.x); x2 = Math.max(x2, e.x + e.w); });
     if (x1 < p.sl - 0.5 || x2 > pg.w - p.sr + 0.5) {
-      if (Date.now() - _clampWarnAt > 5000) { _clampWarnAt = Date.now(); AW.toast('좌우 인쇄 불가 영역(' + p.sl + 'mm)에 가까워졌습니다. 잊릴 수 있으니 안쪽으로 옵기는 것을 권장합니다.', 'warn'); }
+      if (Date.now() - _clampWarnAt > 5000) { _clampWarnAt = Date.now(); AW.toast('좌우 인쇄 불가 영역(' + p.sl + 'mm)에 가까워졌습니다. 잘릴 수 있으니 안쪽으로 옮기는 것을 권장합니다.', 'warn'); }
     }
   };
 
-  /* ───────────────────────── 편집기 상단 명패 도구줄 ───────────────────────── */
+  /* ─────────────── 편집기 상단 명패 도구줄 ─────────────── */
   P.onRender = function (root, tpl) {
     if (!root) return;
     var bar = $('.pl-bar', root), on = P.is(tpl);
@@ -151,9 +151,9 @@
       bar = document.createElement('div'); bar.className = 'pl-bar';
       var B = function (a, ic, t, tip) { return '<button class="btn btn-secondary btn-sm" data-pl="' + a + '" title="' + esc(tip) + '">' + AW.ic(ic, 15) + ' ' + t + '</button>'; };
       bar.innerHTML = '<b class="pl-t">명패</b>' + B('pl-logo', 'image', '로고 불러오기', '파일에서 로고를 불러옵니다. Ctrl+V 로 복사한 이미지를 붙여 넣어도 됩니다.') + B('pl-line', 'line', '빨간 중간선', '빨간 구분선을 3칸에 넣습니다.') +
-        B('pl-center', 'gCV', '3칸 가운데 맞춤', '3칸의 개체 묶음을 세로·가로 가운데로 맞춤니다.') + B('pl-justify', 'alC', '균등 정렬', '선택한 글상자를 균등 분배(한 줄도 좌우 폭을 꽉 채움)로 바꾸거나 되돌립니다.') +
+        B('pl-center', 'gCV', '3칸 가운데 맞춤', '3칸의 개체 묶음을 세로·가로 가운데로 맞춥니다.') + B('pl-justify', 'alC', '균등 정렬', '선택한 글상자를 균등 분배(한 줄도 좌우 폭을 꽉 채움)로 바꾸거나 되돌립니다.') +
         B('pl-sp', 'cols', '이름 자간 규칙', '이름 글자 수별로 글자 사이를 자동으로 넓힙니다(짧은 이름 보정). 개인별 값은 직원 명부의 자간 열.') + B('pl-cfg', 'cols', '접는 선·여백 설정', '접는 선 위치, 좌우 인쇄 불가 여백, 반전 복제 등을 실물 출력과 대조하며 조정합니다.') + B('pl-font', 'text', '내 글꼴 올리기', '컴퓨터에 있는 서체를 서버에 등록합니다. 등록된 글꼴은 다른 단말기에서도 「내 글꼴」 목록에 표시됩니다.') + B('pl-new', 'plus', '새 명패 양식', '아세아 / 외부 기관 명패 양식을 새 탭으로 만듭니다.') +
-        '<input type="file" class="hide" id="pl-file" accept="image/*"><span class="pl-hint muted">③칸에 입력하면 ②칸에 180° 반전되어 자동 반영됩니다 · 글자 크기는 워드잘: 글상자를 더블클릭 → 줄일 글자를 드래그 → 위 글자 크기 칸에 입력(±도 가능). 길면 한 줄에 맞게 자동 줄임.</span>';
+        '<input type="file" class="hide" id="pl-file" accept="image/*"><span class="pl-hint muted">③칸에 입력하면 ②칸에 180° 반전되어 자동 반영됩니다 · 글자 크기는 워드처럼: 글상자를 더블클릭 → 줄일 글자를 드래그 → 위 글자 크기 칸에 입력(±도 가능). 길면 한 줄에 맞게 자동 줄임.</span>';
       root.insertBefore(bar, root.firstChild);
       bar.addEventListener('click', function (e) { var b = e.target.closest('[data-pl]'); if (b) AW.Editor.act(b.dataset.pl); });
       $('#pl-file', bar).onchange = function (e) { var f = e.target.files[0]; e.target.value = ''; if (f) AW.Editor.addImageFile(f, null, false); };
@@ -169,7 +169,7 @@
     tpl.elems = tpl.elems.filter(function (e) { return !e.ph; });
   };
 
-  /* ───────────────────────── 동작 (편집기 act 에서 호출) ───────────────────────── */
+  /* ─────────────── 동작 (편집기 act 에서 호출) ─────────────── */
   P.act = function (a, api) {
     var t = S.tpl, E = AW.Editor;
     if (a === 'pl-new') return P.newDialog();
@@ -201,7 +201,7 @@
     var p = cfg(S.tpl), H = S.tpl.page.h, N = function (id, v, st) { return '<input class="in num" id="' + id + '" type="number" step="' + (st || 0.05) + '" value="' + v + '">'; };
     AW.modal({
       title: '접는 선 · 인쇄 여백 설정', body:
-        '<p class="muted" style="margin-top:0">기본은 A4 세로를 가로선 3개로 4등분(칸 74.25mm)한 값입니다. 실물을 출력해 접어 보고 어긋나면 값을 조금씩 바쿐 대조해 주십시오.</p>' +
+        '<p class="muted" style="margin-top:0">기본은 A4 세로를 가로선 3개로 4등분(칸 74.25mm)한 값입니다. 실물을 출력해 접어 보고 어긋나면 값을 조금씩 바꿔 대조해 주십시오.</p>' +
         '<div class="grid2"><div><label class="f">접는 선 1 (①|② 경계) mm</label>' + N('pc-f0', p.f[0]) + '</div><div><label class="f">접는 선 2 (②|③ 경계 · 반전 기준) mm</label>' + N('pc-f1', p.f[1]) + '</div>' +
         '<div><label class="f">접는 선 3 (③|④ 경계) mm</label>' + N('pc-f2', p.f[2]) + '</div><div><label class="f">&nbsp;</label><button class="btn btn-ghost btn-sm" id="pc-eq">4등분 기본값으로</button></div>' +
         '<div><label class="f">왼쪽 인쇄 불가 여백 mm</label>' + N('pc-sl', p.sl, 0.1) + '</div><div><label class="f">오른쪽 인쇄 불가 여백 mm</label>' + N('pc-sr', p.sr, 0.1) + '</div></div>' +
@@ -210,7 +210,7 @@
         '<label><input type="checkbox" id="pc-g"' + (p.guide !== false ? ' checked' : '') + '> 편집 화면에 접는 선·인쇄 불가 여백 표시</label>' +
         '<label><input type="checkbox" id="pc-c"' + (p.clamp !== false ? ' checked' : '') + '> 개체를 끌 때 좌우 인쇄 불가 여백 밖으로 나가지 않게 제한</label>' +
         '<label><input type="checkbox" id="pc-t"' + (p.tick ? ' checked' : '') + '> 미리보기·인쇄에 접는 위치 작은 눈금 표시(실물과 대조용)</label></div>' +
-        '<p class="muted" style="margin-bottom:0">출력 위치 자체의 미세 보정(프린터 오차)는 인쇄 창의 가로·세로 보정값을 사용합니다.</p>',
+        '<p class="muted" style="margin-bottom:0">출력 위치 자체의 미세 보정(프린터 오차)은 인쇄 창의 가로·세로 보정값을 사용합니다.</p>',
       actions: [{ label: '취소', cls: 'btn-ghost' }, {
         label: '적용', cls: 'btn-primary', onClick: function (c) {
           var f = [0, 1, 2].map(function (i) { return parseFloat($('#pc-f' + i).value); }), sl = parseFloat($('#pc-sl').value), sr = parseFloat($('#pc-sr').value);
@@ -224,7 +224,7 @@
     });
   }
 
-  /* ───────────────────────── 양식 만들기 ───────────────────────── */
+  /* ─────────────── 양식 만들기 ─────────────── */
   function logoData() {
     if (P._logo) return Promise.resolve(P._logo);
     return fetch('award-plate-logo.png').then(function (r) { if (!r.ok) throw new Error('로고 파일을 찾지 못했습니다.'); return r.blob(); }).then(function (b) { return new Promise(function (res, rej) { var fr = new FileReader(); fr.onload = function () { res(P._logo = fr.result); }; fr.onerror = rej; fr.readAsDataURL(b); }); });
@@ -238,31 +238,31 @@
     };
     if (kind === 'asea') {
       t.elems.push(AW.elem('img', { src: logo, x: 30, y: AW.round(y0 + 7.5, 2), w: 150, h: 29, nat: { w: 150, h: 29 }, px: { w: 1400, h: 271 } }));
-      ex = { '소속': '스마트안전진단계열', '직책': '장학생', '이름': '정장환' };
+      ex = { 소속: '스마트안전진단계열', 직책: '장학생', 이름: '정장환' };
     } else if (kind === 'ext1') {
       ph(30, AW.round(y0 + 5.5, 2), 150, 34, '여기에 기관 로고(타이틀 포함)\nCtrl+V 로 붙여 넣거나 「로고 불러오기」');
-      ex = { '소속': '○○부', '직책': '과장', '이름': '홍길동' };
+      ex = { 소속: '○○부', 직책: '과장', 이름: '홍길동' };
     } else {
       ph(30, AW.round(y0 + 7, 2), 30, 30, '로고\nCtrl+V');
       t.elems.push(AW.elem('text', { text: '{{기관명}}', x: 64, y: AW.round(y0 + 7, 2), w: 116, h: 30, font: 'Noto Sans KR', size: 26, bold: true, align: 'left', valign: 'middle', lh: 1.2, fit: true }));
-      ex = { '기관명': '○○기관', '소속': '○○부', '직책': '과장', '이름': '홍길동' };
+      ex = { 기관명: '○○기관', 소속: '○○부', 직책: '과장', 이름: '홍길동' };
     }
     t.elems.push(AW.elem('line', { x: 24, y: AW.round(y0 + 44, 2), w: W - 48, h: 0, stroke: '#FF0000', sw: 0.7, rl: true }));
-    t.elems.push(AW.elem('text', { text: '{{소속}} {{직악}} {{이름}}', x: 12, y: AW.round(y0 + 51.5, 2), w: W - 24, h: 20, font: 'Black Han Sans', size: 36, color: '#111111', align: 'center', valign: 'middle', lh: 1.2, ls: 0, fit: true }));
-    t.fields = AW.fieldNames(t).map(function (n) { var g = AW.guessHint(n); return { name: n, hint: g.hint, example: ex[n] || g.example, max: 0, req: n !== '소속' && n !== '직악' }; });
+    t.elems.push(AW.elem('text', { text: '{{소속}} {{직책}} {{이름}}', x: 12, y: AW.round(y0 + 51.5, 2), w: W - 24, h: 20, font: 'Black Han Sans', size: 36, color: '#111111', align: 'center', valign: 'middle', lh: 1.2, ls: 0, fit: true }));
+    t.fields = AW.fieldNames(t).map(function (n) { var g = AW.guessHint(n); return { name: n, hint: g.hint, example: ex[n] || g.example, max: 0, req: n !== '소속' && n !== '직책' }; });
     t.rows = [ex];
     return t;
   }
   P.build = build;
   P.newDialog = function () {
     var kinds = ['asea', 'ext1', 'ext2'], desc = {
-      asea: '업로드하신 아세아 로고를 3칸 기본 위치에 배치합니다. 이름·직책(소속)만 바쿐 출력하며, 직원 명부에서 골라 일괄 출력할 수 있습니다.',
+      asea: '업로드하신 아세아 로고를 3칸 기본 위치에 배치합니다. 이름·직책(소속)만 바꿔 출력하며, 직원 명부에서 골라 일괄 출력할 수 있습니다.',
       ext1: '타이틀이 함께 들어 있는 기관 로고 한 장을 불러오는 방식입니다. Ctrl+V(클립보드) 또는 파일로 불러옵니다.',
-      ext2: '로고(심볼)만 불러오고 기관명은 입력 항목({{기관명}})으로 적는 방식입니다.'
+      ext2: '로고(심벌)만 불러오고 기관명은 입력 항목({{기관명}})으로 적는 방식입니다.'
     };
     AW.modal({
       title: '새 명패 양식 만들기',
-      body: '<p class="muted" style="margin-top:0">A4 세로를 가로선 3개로 4등분합니다. ③칸에 입력하면 ②칸에 180° 반전 반영되고, ①·④칸은 비워 됩니다. 만들어 내는 먼저 입력하여도 자동 저장되도 다음부터는 양식 목록에서 불러와 이름·직첩만 바꾸면 됩니다.</p>' +
+      body: '<p class="muted" style="margin-top:0">A4 세로를 가로선 3개로 4등분합니다. ③칸에 입력하면 ②칸에 180° 반전 반영되고, ①·④칸은 비워 둡니다. 만든 뒤 자동 저장되므로 다음부터는 양식 목록에서 불러와 이름·직책만 바꾸면 됩니다.</p>' +
         kinds.map(function (k, i) { return '<label class="pl-opt"><input type="radio" name="pl-k" value="' + k + '"' + (i ? '' : ' checked') + '><span><b>' + KIND[k] + '</b><br><span class="muted">' + desc[k] + '</span></span></label>'; }).join(''),
       actions: [{ label: '취소', cls: 'btn-ghost' }, {
         label: '새 탭에서 만들기', cls: 'btn-primary', onClick: function (c) {
@@ -274,7 +274,7 @@
     });
   };
 
-  /* ───────────────────────── 직원 명부 ───────────────────────── */
+  /* ─────────────── 직원 명부 ─────────────── */
   var R = { list: null, sel: {}, q: '', dept: '', saveT: null, state: '' };
   function loadRoster() {
     if (R.list) return Promise.resolve(R.list);
@@ -334,11 +334,11 @@
     }).join('') || '<tr><td colspan="8" class="muted" style="padding:18px;text-align:center">등록된 직원이 없습니다. 「엑셀 서식 받기」로 서식을 받아 작성한 뒤 올리거나, 「직원 추가」로 직접 입력해 주십시오.</td></tr>';
     var all = $('#pr-all'); if (all) all.checked = list.length > 0 && list.every(function (r) { return R.sel[r.id]; });
     var n = Object.keys(R.sel).filter(function (i) { return R.list.some(function (r) { return r.id === i; }); }).length, ln = $('#pr-n');
-    if (ln) ln.innerHTML = '전체 ' + R.list.length + '명 · 보이는 ' + list.length + '명' + (list.length > cap ? '(앞 ' + cap + '명만 표시 — 검색으로 좌혀 주십시오)' : '') + ' · <b>선택 ' + n + '명</b>';
+    if (ln) ln.innerHTML = '전체 ' + R.list.length + '명 · 보이는 ' + list.length + '명' + (list.length > cap ? '(앞 ' + cap + '명만 표시 — 검색으로 좁혀 주십시오)' : '') + ' · <b>선택 ' + n + '명</b>';
   }
   function selected() { return R.list.filter(function (r) { return R.sel[r.id] && (r.n || '').trim(); }); }
   function toRows(list, t) {
-    var map = { '소속': 'd', '학과': 'd', '부서': 'd', '직책': 't', '직위': 't', '직급': 't', '이름': 'n', '성명': 'n', '영문이름': 'e', '영문': 'e', '비고': 'o' };
+    var map = { 소속: 'd', 학과: 'd', 부서: 'd', 직책: 't', 직위: 't', 직급: 't', 이름: 'n', 성명: 'n', 영문이름: 'e', 영문: 'e', 비고: 'o' };
     return list.map(function (r) { var o = {}; t.fields.forEach(function (f) { var k = map[String(f.name).replace(/\s/g, '')]; o[f.name] = k ? (r[k] || '') : ''; }); if (r.sp !== undefined && String(r.sp).trim() !== '' && !isNaN(+r.sp)) o._sp = +r.sp; return o; });
   }
   function apply(replace, close) {
@@ -349,7 +349,7 @@
       t.rows = replace ? rows : t.rows.concat(rows); S.row = 0; S.sampleOnly = false; S.dirty = true; AW.emit('datachange'); AW.Data.refresh(true);
       close(); AW.toast('직원 ' + rows.length + '명을 데이터 영역에 ' + (replace ? '넣었습니다' : '추가했습니다') + '. 미리보기에서 확인한 뒤 인쇄해 주십시오.', 'ok');
     };
-    if (t.rows.length > 1 && replace) AW.confirm('데이터 바꾸기', '현재 입력된 ' + t.rows.length + '행이 선택한 ' + rows.length + '명으로 바됀니다. 계속하시겠습니까?', '바꾸기').then(function (ok) { if (ok) go(); });
+    if (t.rows.length > 1 && replace) AW.confirm('데이터 바꾸기', '현재 입력된 ' + t.rows.length + '행이 선택한 ' + rows.length + '명으로 바뀝니다. 계속하시겠습니까?', '바꾸기').then(function (ok) { if (ok) go(); });
     else go();
   }
   function xlsxOut(rows, name, noEx) {
@@ -359,7 +359,7 @@
     for (var r2 = 1; r2 < aoa.length; r2++) for (var c2 = 0; c2 < 6; c2++) { var a = XLSX.utils.encode_cell({ r: r2, c: c2 }); if (ws[a]) { ws[a].t = 's'; ws[a].z = '@'; } }
     ws['!ref'] = 'A1:F' + Math.max(500, aoa.length); ws['!cols'] = [{ wch: 22 }, { wch: 12 }, { wch: 14 }, { wch: 22 }, { wch: 24 }, { wch: 10 }];
     XLSX.utils.book_append_sheet(wb, ws, '직원명부');
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([['「작성 안내」'], ['1. 「직원명부」 시트 1행(소속·직책·이름·영문이름·비고)은 수정하지 마십시오.'], ['2. 이름은 필수입니다. 나머지 열은 비워 두어도 됩니다.'], ['3. 예시 행(홍길동)은 올릴 때 자동 제외됩니다.'], ['4. 올리면 같은 소속·이름은 내용이 갱신되고, 새 직원은 추가됩니다. 기존 직원은 삭제되지 않습니다.'], ['   「자간(pt)」은 선택입니다. 비워 두면 양식의 이름 자간 규칙(글자 수별)을 쓰고, 숫자를 넣으면 그 사람만 그 값으로 글자 사이를 넓힙니다.'], ['5. 명패 양식의 {{소속}} {{직악}} {{이름}} 항목에 위 열이 연결됩니다. 영문이름은 영문·한영 병기 양식에서 {{영문이름}}으로 사용합니다.']]), '작성안내');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([['【작성 안내】'], ['1. 「직원명부」 시트 1행(소속·직책·이름·영문이름·비고)은 수정하지 마십시오.'], ['2. 이름은 필수입니다. 나머지 열은 비워 두어도 됩니다.'], ['3. 예시 행(홍길동)은 올릴 때 자동 제외됩니다.'], ['4. 올리면 같은 소속·이름은 내용이 갱신되고, 새 직원은 추가됩니다. 기존 직원은 삭제되지 않습니다.'], ['   「자간(pt)」은 선택입니다. 비워 두면 양식의 이름 자간 규칙(글자 수별)을 쓰고, 숫자를 넣으면 그 사람만 그 값으로 글자 사이를 넓힙니다.'], ['5. 명패 양식의 {{소속}} {{직책}} {{이름}} 항목에 위 열이 연결됩니다. 영문이름은 영문·한영 병기 양식에서 {{영문이름}}으로 사용합니다.']]), '작성안내');
     XLSX.writeFile(wb, name); AW.toast('엑셀 파일을 내려받았습니다.', 'ok');
   }
   function importFile(file) {
