@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>창공제 2026 — 진행 현황</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root { --gold:#FFD700; --green:#22C55E; --r:6px; }
+*,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
+html,body { width:100%; height:100%; background:#050B1A; font-family:'Noto Sans KR',-apple-system,sans-serif; color:#fff; overflow:hidden; }
+
+canvas#starfield { position:fixed; inset:0; z-index:0; pointer-events:none; }
+.bg-glow { position:fixed; inset:0; z-index:0; pointer-events:none; transition:background 2s; }
+
+/* Announce bar */
+.announce-bar {
+  position:fixed; top:0; left:0; right:0; z-index:20;
+  background:rgba(26,115,232,.94); backdrop-filter:blur(8px);
+  padding:14px 40px; font-size:clamp(14px,2vw,22px); font-weight:700;
+  text-align:center; letter-spacing:.02em;
+  transform:translateY(-100%); transition:transform .4s cubic-bezier(.22,1,.36,1);
+  border-bottom:1px solid rgba(255,255,255,.12);
+}
+.announce-bar.show { transform:translateY(0); }
+
+/* Stage wrapper */
+.stage { position:relative; z-index:1; width:100%; height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:clamp(24px,4vw,80px); }
+
+/* ── IDLE ── */
+.idle-wrap { text-align:center; }
+.idle-title {
+  font-size:clamp(36px,8vw,110px); font-weight:800; letter-spacing:-.03em; line-height:1.05;
+  background:linear-gradient(135deg,#fff 0%,#93C5FD 45%,#6EE7B7 100%);
+  -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+  background-clip:text;
+}
+.idle-en { font-size:clamp(13px,2vw,26px); letter-spacing:.15em; opacity:.45; margin-top:clamp(8px,1.5vw,16px); font-weight:600; }
+.idle-announce { margin-top:clamp(20px,3vw,40px); font-size:clamp(14px,2.2vw,28px); opacity:.65; font-weight:600; }
+
+/* ── PERFORMING ── */
+.perf-wrap { text-align:center; width:100%; }
+.now-tag {
+  display:inline-flex; align-items:center; gap:8px;
+  font-size:clamp(10px,1.3vw,16px); font-weight:700; letter-spacing:.15em; text-transform:uppercase;
+  opacity:.55; margin-bottom:clamp(10px,1.5vw,20px);
+}
+.live-dot { width:8px; height:8px; background:var(--green); border-radius:50%; animation:lp 1.5s ease-in-out infinite; }
+@keyframes lp { 0%,100%{box-shadow:0 0 0 0 rgba(34,197,94,.5)}50%{box-shadow:0 0 0 8px rgba(34,197,94,0)} }
+.perf-name { font-size:clamp(44px,10vw,130px); font-weight:800; letter-spacing:-.03em; line-height:1; }
+.perf-divider { width:clamp(60px,8vw,120px); height:3px; background:linear-gradient(90deg,transparent,#1A73E8,transparent); margin:clamp(12px,2vw,28px) auto; }
+.perf-song { font-size:clamp(18px,3.5vw,50px); opacity:.7; font-weight:600; }
+.next-row {
+  display:inline-flex; align-items:center; gap:clamp(8px,1.5vw,16px);
+  margin-top:clamp(20px,3vw,40px);
+  background:rgba(255,255,255,.07); border-radius:50px;
+  padding:clamp(8px,1vw,14px) clamp(18px,3vw,40px);
+  font-size:clamp(12px,1.8vw,22px);
+}
+.next-lbl { opacity:.45; font-weight:700; letter-spacing:.08em; text-transform:uppercase; font-size:.85em; }
+.next-name { font-weight:700; }
+.next-song { opacity:.55; }
+
+/* ── VOTING ── */
+.vote-wrap {
+  display:grid; grid-template-columns:1fr auto;
+  gap:clamp(24px,5vw,80px); width:100%; max-width:1400px; align-items:center;
+}
+.vote-left {}
+.vote-badge {
+  display:inline-flex; align-items:center; gap:8px;
+  background:rgba(34,197,94,.15); border:1.5px solid var(--green);
+  border-radius:50px; padding:6px 18px;
+  font-size:clamp(11px,1.4vw,16px); font-weight:700; color:#86EFAC;
+  margin-bottom:clamp(12px,2vw,24px);
+}
+.vote-name { font-size:clamp(40px,8vw,110px); font-weight:800; letter-spacing:-.03em; line-height:1; margin-bottom:clamp(6px,1vw,14px); }
+.vote-song { font-size:clamp(16px,2.5vw,36px); opacity:.65; font-weight:600; }
+.vote-next { margin-top:clamp(12px,2vw,24px); opacity:.4; font-size:clamp(12px,1.6vw,20px); font-weight:700; }
+.vote-right { text-align:center; flex-shrink:0; }
+.vote-timer { font-size:clamp(80px,15vw,200px); font-weight:800; color:var(--gold); text-shadow:0 0 40px rgba(255,215,0,.3); line-height:1; font-variant-numeric:tabular-nums; transition:color .3s; }
+.vote-timer.red { color:#EF4444; text-shadow:0 0 40px rgba(239,68,68,.35); }
+.vote-timer-lbl { opacity:.4; font-size:clamp(12px,1.8vw,22px); margin-bottom:clamp(12px,2vw,20px); }
+.qr-box { background:#fff; border-radius:var(--r); padding:12px; display:inline-block; }
+.qr-cap { margin-top:10px; font-size:clamp(11px,1.4vw,16px); color:#93C5FD; font-weight:700; }
+
+/* ── INFO screens ── */
+.info-wrap { text-align:center; }
+.info-icon { font-size:clamp(48px,11vw,130px); line-height:1; margin-bottom:clamp(12px,2vw,24px); }
+.info-title { font-size:clamp(30px,7vw,96px); font-weight:800; margin-bottom:clamp(8px,1.5vw,16px); }
+.info-sub { font-size:clamp(14px,2.2vw,30px); opacity:.45; }
+
+@media (max-aspect-ratio:16/10) {
+  .vote-wrap { grid-template-columns:1fr; text-align:center; }
+  .vote-timer { font-size:clamp(64px,18vw,120px); }
+}
+</style>
+</head>
+<body>
+<canvas id="starfield"></canvas>
+<div class="bg-glow" id="bgGlow"></div>
+<div class="announce-bar" id="announceBar"></div>
+<div class="stage" id="stage"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+<script>
+'use strict';
+(function(){
+var SB_URL = 'https://zbpeyklwpotjyveipzxd.supabase.co';
+var SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpicGV5a2x3cG90anl2ZWlwenhkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE1MTYxMDcsImV4cCI6MjA5NzA5MjEwN30.6JgoQ6rPRnmrbBTG68A-Y9HDQk40mnwubhXVnkZvHrQ';
+var sb = supabase.createClient(SB_URL, SB_KEY, {db:{schema:'cgf'}});
+var VOTE_URL = location.origin + location.pathname.replace('changong-stage.html','changong-vote.html');
+
+var state = null, contestants = [], timerInterval = null;
+
+async function init() {
+  initStarfield();
+  var s = await sb.from('state').select('*').eq('id',1).single();
+  state = s.data;
+  var c = await sb.from('contestants').select('id,name,song_title,song_artist,seq,status,phase').order('seq',{ascending:true,nullsFirst:false}).order('created_at',{ascending:true});
+  contestants = c.data || [];
+  render();
+  sb.channel('cgf-stage')
+    .on('postgres_changes',{event:'*',schema:'cgf',table:'state'},function(p){ state=p.new; render(); })
+    .on('postgres_changes',{event:'*',schema:'cgf',table:'contestants'},async function(){
+      var r = await sb.from('contestants').select('id,name,song_title,song_artist,seq,status,phase').order('seq',{ascending:true,nullsFirst:false}).order('created_at',{ascending:true});
+      contestants = r.data || []; render();
+    })
+    .subscribe();
+}
+
+function render() {
+  if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+  var st = document.getElementById('stage');
+  var ab = document.getElementById('announceBar');
+  var aText = (state && (state.announce_text||'').trim()) || '';
+  ab.textContent = aText;
+  ab.classList.toggle('show', !!aText);
+
+  if (!state) { st.innerHTML = renderIdle(); setGlow('50%','40%','rgba(26,115,232,.2)'); return; }
+  var aType = state.announce_type || 'idle';
+
+  if (aType === 'break') { st.innerHTML = renderInfo('⏸', '잠시 휴식 중', '다음 공연까지 잠시 기다려 주세요'); setGlow('50%','50%','rgba(99,102,241,.2)'); return; }
+  if (aType === 'scoring') { st.innerHTML = renderInfo('⚖️', '심사 집계 중', '잠시 후 결과를 발표합니다'); setGlow('50%','50%','rgba(217,119,6,.2)'); return; }
+  if (aType === 'awards') { st.innerHTML = renderInfo('🏆', '시상식', '수상자를 발표합니다'); setGlow('50%','40%','rgba(217,119,6,.3)'); return; }
+  if (aType === 'safety') { st.innerHTML = renderInfo('🦺', '안전 안내', aText || '비상구: 좌측 · 우측 · 무대 뒤 비상계단'); setGlow('50%','50%','rgba(239,68,68,.15)'); return; }
+
+  var current = state.current_contestant_id ? contestants.find(function(c){return c.id===state.current_contestant_id;}) : null;
+  if (!current) { st.innerHTML = renderIdle(); setGlow('50%','40%','rgba(26,115,232,.2)'); return; }
+
+  var next = getNext(current);
+
+  if (state.voting_open) {
+    st.innerHTML = renderVoting(current, next);
+    setGlow('30%','40%','rgba(34,197,94,.18)');
+    startVoteTimer();
+    return;
+  }
+  st.innerHTML = renderPerforming(current, next);
+  setGlow('50%','35%','rgba(26,115,232,.25)');
+}
+
+function getNext(cur) {
+  var phase = state.phase || 'prelim';
+  var pool = contestants.filter(function(c){ return c.status==='active' && c.phase===phase; });
+  var i = pool.findIndex(function(c){ return c.id===cur.id; });
+  return (i >= 0 && i < pool.length-1) ? pool[i+1] : null;
+}
+
+function renderIdle() {
+  var aText = (state && (state.announce_text||'').trim());
+  return '<div class="idle-wrap">'
+    +'<div class="idle-title">2026 창공제<br>노래 콘테스트</div>'
+    +'<div class="idle-en">ASEA Song Contest 2026</div>'
+    +(aText?'<div class="idle-announce">'+esc(aText)+'</div>':'')
+    +'</div>';
+}
+
+function renderInfo(icon, title, sub) {
+  return '<div class="info-wrap">'
+    +'<div class="info-icon">'+icon+'</div>'
+    +'<div class="info-title">'+esc(title)+'</div>'
+    +'<div class="info-sub">'+esc(sub)+'</div>'
+    +'</div>';
+}
+
+function renderPerforming(c, next) {
+  return '<div class="perf-wrap">'
+    +'<div class="now-tag"><span class="live-dot"></span> NOW PERFORMING</div>'
+    +'<div class="perf-name">'+esc(c.name)+'</div>'
+    +'<div class="perf-divider"></div>'
+    +'<div class="perf-song">🎵 '+esc(c.song_title||'')+(c.song_artist?' — '+esc(c.song_artist):'')+'</div>'
+    +(next?'<div><div class="next-row"><span class="next-lbl">NEXT</span><span class="next-name">'+esc(next.name)+'</span>'+(next.song_title?'<span class="next-song">'+esc(next.song_title)+'</span>':'')+'</div></div>':'')
+    +'</div>';
+}
+
+function renderVoting(c, next) {
+  var elapsed = state.voting_opened_at ? (Date.now()-new Date(state.voting_opened_at).getTime())/1000 : 0;
+  var rem = Math.max(0, Math.round(30-elapsed));
+  return '<div class="vote-wrap">'
+    +'<div class="vote-left">'
+    +'<div class="vote-badge"><span style="width:8px;height:8px;background:#22C55E;border-radius:50%;display:inline-block"></span> 관객 투표 진행 중</div>'
+    +'<div class="vote-name">'+esc(c.name)+'</div>'
+    +'<div class="vote-song">🎵 '+esc(c.song_title||'')+(c.song_artist?' — '+esc(c.song_artist):'')+'</div>'
+    +(next?'<div class="vote-next">다음 ▸ '+esc(next.name)+'</div>':'')
+    +'</div>'
+    +'<div class="vote-right">'
+    +'<div class="vote-timer" id="stageTimer">'+rem+'</div>'
+    +'<div class="vote-timer-lbl">초 남음</div>'
+    +'<div class="qr-box"><canvas id="qrCanvas"></canvas></div>'
+    +'<div class="qr-cap">QR 코드로 투표하세요</div>'
+    +'</div>'
+    +'</div>';
+}
+
+function startVoteTimer() {
+  var elapsed = state.voting_opened_at ? (Date.now()-new Date(state.voting_opened_at).getTime())/1000 : 0;
+  var sec = Math.max(0, Math.round(30-elapsed));
+  setTimeout(function(){
+    var canvas = document.getElementById('qrCanvas');
+    if (canvas && window.QRCode) { QRCode.toCanvas(canvas, VOTE_URL, {width:Math.min(180,window.innerHeight*.16), margin:1}, function(){}); }
+  }, 60);
+  timerInterval = setInterval(function(){
+    sec--;
+    var el = document.getElementById('stageTimer');
+    if (el) { el.textContent = Math.max(0,sec); el.classList.toggle('red', sec<=10); }
+    if (sec<=0) { clearInterval(timerInterval); timerInterval=null; }
+  }, 1000);
+}
+
+function setGlow(x, y, color) {
+  document.getElementById('bgGlow').style.background =
+    'radial-gradient(ellipse 80% 60% at '+x+' '+y+', '+color+', transparent 70%)';
+}
+
+function initStarfield() {
+  var canvas = document.getElementById('starfield');
+  var ctx = canvas.getContext('2d');
+  function resize() {
+    canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    for (var i=0;i<220;i++) {
+      ctx.beginPath(); ctx.arc(Math.random()*canvas.width, Math.random()*canvas.height, Math.random()*1.6+.2, 0, Math.PI*2);
+      ctx.fillStyle = 'rgba(255,255,255,'+(Math.random()*.45+.07)+')'; ctx.fill();
+    }
+  }
+  window.addEventListener('resize', resize); resize();
+}
+
+function esc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+init();
+})();
+</script>
+</body>
+</html>
