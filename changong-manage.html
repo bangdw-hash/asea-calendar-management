@@ -173,6 +173,24 @@ tr.drag-over td{background:var(--primary-lt);outline:2px solid rgba(26,115,232,.
 .spin-sm{width:16px;height:16px;border:2px solid var(--border);border-top-color:var(--primary);border-radius:50%;animation:spin .7s linear infinite;display:inline-block;}
 @keyframes spin{to{transform:rotate(360deg)}}
 .empty-state{text-align:center;padding:40px;color:var(--fg-muted);font-size:13px;}
+
+/* ── 실시간 통계 바 ── */
+.stats-bar{background:#1557B0;display:flex;overflow-x:auto;flex-shrink:0;padding:0 4px;}
+.stats-bar::-webkit-scrollbar{display:none;}
+.stat-pill{display:flex;align-items:center;gap:5px;padding:4px 11px;font-size:11px;font-weight:600;color:rgba(255,255,255,.78);white-space:nowrap;border-right:1px solid rgba(255,255,255,.1);cursor:default;}
+.stat-pill:last-child{border-right:none;}
+.stat-pill .sv{color:#fff;font-weight:800;}
+.sdot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
+.sdot-gn{background:#86EFAC;animation:sdping 2s infinite;}
+.sdot-or{background:#FCD34D;}
+.sdot-rd{background:#FCA5A5;}
+.sdot-wt{background:rgba(255,255,255,.35);}
+@keyframes sdping{0%{box-shadow:0 0 0 0 rgba(134,239,172,.5)}70%{box-shadow:0 0 0 5px rgba(134,239,172,0)}100%{box-shadow:0 0 0 0 rgba(134,239,172,0)}}
+/* 탭 카운트 뱃지 */
+.tab-count{display:inline-flex;align-items:center;justify-content:center;min-width:17px;height:17px;padding:0 4px;background:var(--primary-lt);border-radius:4px;font-size:10px;font-weight:700;color:var(--primary);margin-left:5px;vertical-align:middle;transition:all .2s;}
+.tab-count.new-flag{background:var(--red-lt);color:var(--red);animation:tcbounce .5s ease 5;}
+@keyframes tcbounce{0%,100%{transform:scale(1)}40%{transform:scale(1.25)}}
+.tab-count:empty{display:none;}
 </style>
 </head>
 <body>
@@ -201,11 +219,16 @@ tr.drag-over td{background:var(--primary-lt);outline:2px solid rgba(26,115,232,.
     </div>
   </div>
 
+  <!-- 실시간 통계 바 -->
+  <div class="stats-bar" id="statsBar">
+    <div class="stat-pill"><span class="sdot sdot-wt"></span>로딩 중…</div>
+  </div>
+
   <div class="tab-bar">
-    <button class="tab-btn active" onclick="switchTab('contestants')">참가자관리</button>
-    <button class="tab-btn" onclick="switchTab('live')">진행 모드</button>
-    <button class="tab-btn" onclick="switchTab('judges')">심사위원</button>
-    <button class="tab-btn" onclick="switchTab('results')">결과</button>
+    <button class="tab-btn active" onclick="switchTab('contestants')">참가자<span class="tab-count" id="tc-contestants"></span></button>
+    <button class="tab-btn" onclick="switchTab('live')">진행 모드<span class="tab-count" id="tc-live"></span></button>
+    <button class="tab-btn" onclick="switchTab('judges')">심사위원<span class="tab-count" id="tc-judges"></span></button>
+    <button class="tab-btn" onclick="switchTab('results')">결과<span class="tab-count" id="tc-results"></span></button>
     <button class="tab-btn" onclick="switchTab('notices')">공지</button>
   </div>
 
@@ -370,6 +393,7 @@ var judges = [];
 var results = [];
 var phaseFilter = 'all';
 var pendingXlsx = [];
+var newContestantsCount = 0;
 
 // ─── Login ──────────────────────────────────────────
 window.tryLogin = function() {
@@ -399,6 +423,8 @@ async function initApp() {
   renderContestantsTab();
   renderJudgesTab();
   updateTopBar();
+  updateStatsBar();
+  updateTabBadges();
   subscribeRealtime();
 }
 
@@ -422,22 +448,40 @@ function subscribeRealtime() {
     .on('postgres_changes',{event:'*',schema:'cgf',table:'state'},async function(p){
       state = p.new;
       updateTopBar();
+      updateStatsBar();
+      updateTabBadges();
       if (activeTab()==='live') updateLiveTab();
     })
-    .on('postgres_changes',{event:'*',schema:'cgf',table:'contestants'},async function(){
+    .on('postgres_changes',{event:'*',schema:'cgf',table:'contestants'},async function(p){
+      var wasOnTab = activeTab()==='contestants';
       await loadContestants();
-      if (activeTab()==='contestants') renderContestantsTab();
+      if (wasOnTab) {
+        renderContestantsTab();
+      } else if (p.eventType==='INSERT') {
+        newContestantsCount++;
+        var nc = contestants.find(function(c){return c.id===p.new.id;});
+        toast('신규 신청: '+(nc?nc.name:p.new.name||'신청자'));
+      }
       if (activeTab()==='live') updateLiveTab();
+      updateStatsBar();
+      updateTabBadges();
     })
     .on('postgres_changes',{event:'*',schema:'cgf',table:'scores'},async function(){
       if (activeTab()==='live') updateLiveTab();
+      if (activeTab()==='results') loadResults();
+      updateTabBadges();
     })
     .on('postgres_changes',{event:'*',schema:'cgf',table:'votes'},async function(){
       if (activeTab()==='live') renderVoteStat();
+      if (activeTab()==='results') loadResults();
+      updateStatsBar();
+      updateTabBadges();
     })
     .on('postgres_changes',{event:'*',schema:'cgf',table:'judges'},async function(){
       await loadJudges();
       if (activeTab()==='judges') renderJudgesTab();
+      updateStatsBar();
+      updateTabBadges();
     })
     .subscribe();
 }
@@ -445,6 +489,61 @@ function subscribeRealtime() {
 function activeTab() {
   var p = document.querySelector('.tab-pane.active');
   return p ? p.id.replace('tab-','') : '';
+}
+
+// ─── Stats bar ───────────────────────────────────────
+function updateStatsBar() {
+  var bar = document.getElementById('statsBar');
+  if (!bar) return;
+  var total = contestants.length;
+  var active = contestants.filter(function(c){return c.status==='active';}).length;
+  var done   = contestants.filter(function(c){return c.status==='done';}).length;
+  var absent = contestants.filter(function(c){return c.status==='absent';}).length;
+  var judgeConnected = judges.filter(function(j){return j.active && j.claimed_at;}).length;
+  var judgeTotal = judges.filter(function(j){return j.active;}).length;
+  var votingOpen = state && state.voting_open;
+  var phase = state ? state.phase : 'prelim';
+  var phaseNames = {prelim:'예선',semi:'본선',final:'결선',awards:'시상식'};
+
+  var pills = [
+    '<div class="stat-pill"><span class="sdot '+(phase==='awards'?'sdot-gn':'sdot-or')+'"></span>'+
+      '<span class="sv">'+(phaseNames[phase]||phase)+'</span></div>',
+    '<div class="stat-pill">참가자 <span class="sv">'+total+'</span>명</div>',
+    '<div class="stat-pill">대기 <span class="sv">'+active+'</span> / 완료 <span class="sv">'+done+'</span>'+(absent?' / 불참 <span class="sv">'+absent+'</span>':'')+'</div>',
+    '<div class="stat-pill">심사위원 <span class="sv">'+judgeConnected+'/'+judgeTotal+'</span> <span class="sdot '+(judgeConnected===judgeTotal&&judgeTotal>0?'sdot-gn':'sdot-or')+'"></span></div>',
+    '<div class="stat-pill">관객투표 <span class="sdot '+(votingOpen?'sdot-gn':'sdot-rd')+'"></span><span class="sv">'+(votingOpen?'진행 중':'대기')+'</span></div>'
+  ];
+  bar.innerHTML = pills.join('');
+}
+
+function updateTabBadges() {
+  var tcC = document.getElementById('tc-contestants');
+  var tcJ = document.getElementById('tc-judges');
+  var tcL = document.getElementById('tc-live');
+  var tcR = document.getElementById('tc-results');
+
+  if (tcC) {
+    tcC.textContent = contestants.length > 0 ? contestants.length : '';
+    if (newContestantsCount > 0) {
+      tcC.classList.add('new-flag');
+    }
+  }
+  if (tcJ) {
+    var connected = judges.filter(function(j){return j.active && j.claimed_at;}).length;
+    tcJ.textContent = judges.filter(function(j){return j.active;}).length > 0 ?
+      connected+'/'+judges.filter(function(j){return j.active;}).length : '';
+  }
+  if (tcL) {
+    var cur = state && state.current_contestant_id ?
+      contestants.find(function(c){return c.id===state.current_contestant_id;}) : null;
+    tcL.textContent = cur ? '●' : '';
+  }
+  if (tcR) {
+    var scored = contestants.filter(function(c){
+      return c.status==='done';
+    }).length;
+    tcR.textContent = scored > 0 ? scored : '';
+  }
 }
 
 // ─── Top bar ────────────────────────────────────────
@@ -476,6 +575,11 @@ window.toggleRegistration = async function() {
 window.switchTab = function(id) {
   document.querySelectorAll('.tab-btn').forEach(function(b,i){b.classList.toggle('active',i===['contestants','live','judges','results','notices'].indexOf(id));});
   document.querySelectorAll('.tab-pane').forEach(function(p){p.classList.toggle('active',p.id==='tab-'+id);});
+  if (id==='contestants') {
+    newContestantsCount = 0;
+    var tc = document.getElementById('tc-contestants');
+    if (tc) tc.classList.remove('new-flag');
+  }
   if (id==='live') updateLiveTab();
   if (id==='results') loadResults();
   if (id==='judges') renderJudgesTab();
