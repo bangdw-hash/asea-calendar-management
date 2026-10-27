@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>2026 창공제 노래 콘테스트 참가 신청</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800&display=swap">
+<style>
+/* Layout: sky-blue festival form — aviation school palette */
+:root {
+  --bg: #e8f4fd;
+  --bg2: #d0eaf9;
+  --card: #ffffff;
+  --fg: #0a2540;
+  --fg-sub: #1e4a72;
+  --fg-muted: #6a96b8;
+  --border: #b8d8ef;
+  --primary: #0ea5e9;
+  --primary-dk: #0284c7;
+  --primary-lt: #e0f2fe;
+  --accent: #f59e0b;
+  --accent-lt: #fef9ec;
+  --accent-dk: #d97706;
+  --red: #dc2626;
+  --red-lt: #fee2e2;
+  --green: #059669;
+  --green-lt: #d1fae5;
+  --r: 6px;
+  --sh: 0 1px 4px rgba(14,165,233,.10);
+  --sh-md: 0 4px 16px rgba(14,165,233,.15);
+  --font: 'Noto Sans KR', -apple-system, 'Apple SD Gothic Neo', sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #071e30;
+    --bg2: #0c2d45;
+    --card: #0f3350;
+    --fg: #e0f2fe;
+    --fg-sub: #7dd3fc;
+    --fg-muted: #38627a;
+    --border: #1a4a68;
+    --primary: #38bdf8;
+    --primary-dk: #0ea5e9;
+    --primary-lt: #082f49;
+    --accent: #fbbf24;
+    --accent-lt: #1a1200;
+    --red-lt: #1f0a0a;
+    --green-lt: #052215;
+    --sh: 0 1px 4px rgba(0,0,0,.3);
+    --sh-md: 0 4px 16px rgba(0,0,0,.4);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #071e30;
+  --bg2: #0c2d45;
+  --card: #0f3350;
+  --fg: #e0f2fe;
+  --fg-sub: #7dd3fc;
+  --fg-muted: #38627a;
+  --border: #1a4a68;
+  --primary: #38bdf8;
+  --primary-dk: #0ea5e9;
+  --primary-lt: #082f49;
+  --accent: #fbbf24;
+  --accent-lt: #1a1200;
+  --red-lt: #1f0a0a;
+  --green-lt: #052215;
+  --sh: 0 1px 4px rgba(0,0,0,.3);
+  --sh-md: 0 4px 16px rgba(0,0,0,.4);
+  color-scheme: dark;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--fg);
+  font-size: 15px;
+  line-height: 1.6;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-bottom: 40px;
+  background-image:
+    radial-gradient(ellipse 120% 60% at 50% -10%, rgba(14,165,233,.18) 0%, transparent 70%),
+    radial-gradient(ellipse 80% 40% at 90% 110%, rgba(56,189,248,.12) 0%, transparent 60%);
+  min-height: 100vh;
+}
+
+/* Header */
+.page-header {
+  background: linear-gradient(150deg, #0369a1 0%, #0ea5e9 45%, #38bdf8 80%, #7dd3fc 100%);
+  margin-left: calc(-1 * max(16px, env(safe-area-inset-left, 0px)));
+  margin-right: calc(-1 * max(16px, env(safe-area-inset-right, 0px)));
+  padding: 40px max(20px, env(safe-area-inset-left, 0px)) 36px;
+  position: relative;
+  overflow: hidden;
+}
+.page-header::before {
+  content: '';
+  position: absolute;
+  top: -40px; right: -60px;
+  width: 260px; height: 260px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.08);
+  pointer-events: none;
+}
+.page-header::after {
+  content: '';
+  position: absolute;
+  bottom: -60px; left: -30px;
+  width: 200px; height: 200px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.06);
+  pointer-events: none;
+}
+.header-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  border-radius: 4px;
+  padding: 4px 10px;
+  margin-bottom: 14px;
+}
+.header-eyebrow {
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: .06em;
+  color: rgba(255,255,255,.8);
+  margin-bottom: 6px;
+}
+.header-title {
+  font-size: clamp(22px, 5.5vw, 30px);
+  font-weight: 800;
+  color: #fff;
+  line-height: 1.25;
+  letter-spacing: -.01em;
+  text-shadow: 0 2px 12px rgba(2,132,199,.3);
+}
+.header-sub {
+  margin-top: 8px;
+  font-size: 13.5px;
+  color: rgba(255,255,255,.82);
+  line-height: 1.6;
+}
+.header-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  margin-top: 22px;
+}
+.meta-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #fff;
+  background: rgba(255,255,255,.16);
+  border: 1px solid rgba(255,255,255,.28);
+  border-radius: 4px;
+  padding: 5px 11px;
+}
+.meta-chip svg { flex-shrink: 0; opacity: .9; }
+
+/* Progress bar */
+.progress-bar {
+  height: 4px;
+  background: rgba(14,165,233,.15);
+  margin-left: calc(-1 * max(16px, env(safe-area-inset-left, 0px)));
+  margin-right: calc(-1 * max(16px, env(safe-area-inset-right, 0px)));
+}
+.progress-fill {
+  width: 0%;
+  height: 100%;
+  background: linear-gradient(90deg, #0ea5e9, #38bdf8, var(--accent));
+  transition: width .4s ease;
+}
+
+/* Form wrapper */
+.form-wrap {
+  max-width: 560px;
+  margin: 0 auto;
+  padding-top: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Section card */
+.section {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  box-shadow: var(--sh);
+  padding: 20px;
+}
+.section-label {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--primary-dk);
+  margin-bottom: 10px;
+  letter-spacing: .01em;
+}
+.section-label .req {
+  color: var(--red);
+  font-size: 14px;
+  line-height: 1;
+}
+.section-hint {
+  font-size: 12px;
+  color: var(--fg-muted);
+  margin-bottom: 10px;
+  line-height: 1.5;
+}
+
+/* Text input */
+.text-input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font);
+  font-size: 15px;
+  transition: border-color .15s, box-shadow .15s;
+  outline: none;
+  -webkit-appearance: none;
+}
+.text-input::placeholder { color: var(--fg-muted); }
+.text-input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(14,165,233,.15);
+}
+
+/* Phone row */
+.phone-row { display: flex; align-items: center; gap: 8px; }
+.phone-seg { width: 1px; flex: 1; min-width: 0; }
+.phone-dot { color: var(--fg-muted); font-size: 18px; font-weight: 300; flex-shrink: 0; }
+
+/* Button grid (소속) */
+.btn-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 8px;
+}
+.btn-choice {
+  padding: 9px 10px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--r);
+  background: var(--bg);
+  color: var(--fg-sub);
+  font-family: var(--font);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  text-align: center;
+  transition: border-color .15s, background .15s, color .15s, box-shadow .15s;
+  -webkit-appearance: none;
+  line-height: 1.4;
+}
+.btn-choice:hover {
+  border-color: var(--primary);
+  color: var(--primary-dk);
+  background: var(--primary-lt);
+  box-shadow: 0 0 0 3px rgba(14,165,233,.12);
+}
+.btn-choice.selected {
+  border-color: var(--primary);
+  background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%);
+  color: var(--primary-dk);
+  font-weight: 700;
+  box-shadow: 0 0 0 2px rgba(14,165,233,.25);
+}
+
+/* Radio group (참가부문) */
+.radio-group { display: flex; gap: 10px; flex-wrap: wrap; }
+.radio-card {
+  flex: 1;
+  min-width: 100px;
+  padding: 12px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--r);
+  background: var(--bg);
+  cursor: pointer;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  transition: border-color .15s, background .15s, box-shadow .15s;
+}
+.radio-card.selected {
+  border-color: var(--primary);
+  background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%);
+  box-shadow: 0 0 0 2px rgba(14,165,233,.2);
+}
+.radio-card input[type=radio] { display: none; }
+.radio-dot {
+  width: 18px; height: 18px;
+  border: 2px solid var(--border);
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-top: 1px;
+  transition: border-color .15s, background .15s;
+  display: flex; align-items: center; justify-content: center;
+}
+.radio-card.selected .radio-dot {
+  border-color: var(--primary);
+  background: var(--primary);
+}
+.radio-card.selected .radio-dot::after {
+  content: '';
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: #fff;
+}
+.radio-label-main { font-size: 14px; font-weight: 600; color: var(--fg); }
+.radio-label-sub { font-size: 11px; color: var(--fg-muted); margin-top: 1px; line-height: 1.4; }
+.radio-card.selected .radio-label-main { color: var(--primary-dk); font-weight: 700; }
+
+/* Song fields */
+.song-group { display: flex; flex-direction: column; gap: 10px; }
+.song-field label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--fg-sub);
+  margin-bottom: 5px;
+  letter-spacing: .03em;
+}
+
+/* Privacy */
+.privacy-box {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 14px;
+  font-size: 12px;
+  color: var(--fg-sub);
+  line-height: 1.7;
+  max-height: 140px;
+  overflow-y: auto;
+}
+.privacy-box h4 { font-size: 12px; font-weight: 700; color: var(--fg); margin-bottom: 6px; }
+.privacy-box p { margin-bottom: 4px; }
+.privacy-agree {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+  cursor: pointer;
+  padding: 10px 12px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--r);
+  background: var(--bg);
+  transition: border-color .15s, background .15s;
+}
+.privacy-agree.checked { border-color: var(--green); background: var(--green-lt); }
+.check-box {
+  width: 20px; height: 20px;
+  border: 2px solid var(--border);
+  border-radius: 4px;
+  flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  transition: background .15s, border-color .15s;
+}
+.privacy-agree.checked .check-box { background: var(--green); border-color: var(--green); }
+.check-text { font-size: 13px; font-weight: 600; color: var(--fg-sub); }
+.privacy-agree.checked .check-text { color: var(--green); }
+
+/* Submit */
+.submit-btn {
+  width: 100%;
+  padding: 15px;
+  background: linear-gradient(135deg, #0284c7 0%, #0ea5e9 60%, #38bdf8 100%);
+  color: #fff;
+  font-family: var(--font);
+  font-size: 16px;
+  font-weight: 700;
+  border: none;
+  border-radius: var(--r);
+  cursor: pointer;
+  transition: filter .15s, transform .1s, box-shadow .15s;
+  letter-spacing: .04em;
+  box-shadow: 0 4px 16px rgba(14,165,233,.38);
+}
+.submit-btn:hover { filter: brightness(1.06); box-shadow: 0 6px 20px rgba(14,165,233,.48); }
+.submit-btn:active { transform: scale(.99); }
+.submit-btn:disabled {
+  background: var(--border);
+  color: var(--fg-muted);
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+  filter: none;
+}
+
+/* Error message */
+.err-msg {
+  font-size: 12px;
+  color: var(--red);
+  margin-top: 6px;
+  display: none;
+}
+.err-msg.show { display: block; }
+
+/* Success */
+.success-card {
+  text-align: center;
+  padding: 48px 24px;
+  display: none;
+}
+.success-icon {
+  width: 64px; height: 64px;
+  background: var(--green-lt);
+  border-radius: 50%;
+  margin: 0 auto 20px;
+  display: flex; align-items: center; justify-content: center;
+}
+.success-title { font-size: 20px; font-weight: 700; color: var(--fg); margin-bottom: 8px; }
+.success-sub { font-size: 14px; color: var(--fg-sub); line-height: 1.6; }
+
+/* Notice */
+.notice {
+  display: flex; align-items: flex-start; gap: 8px;
+  background: rgba(14,165,233,.08);
+  border: 1px solid rgba(14,165,233,.25);
+  border-radius: var(--r);
+  padding: 12px 14px;
+  font-size: 12.5px;
+  color: var(--fg-sub);
+  line-height: 1.6;
+}
+.notice svg { flex-shrink: 0; margin-top: 1px; color: var(--primary); }
+
+@media (max-width: 460px) {
+  .btn-grid { grid-template-columns: repeat(2, 1fr); }
+}
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="page-header">
+  <div class="header-badge">
+    <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/></svg>
+    2026 창공제
+  </div>
+  <p class="header-eyebrow">아세아항공직업전문학교</p>
+  <h1 class="header-title">노래 콘테스트<br>참가 신청서</h1>
+  <p class="header-sub">숨겨진 끼와 열정을 마음껏 펼쳐줄 참가자를 모집합니다.</p>
+  <div class="header-meta">
+    <span class="meta-chip">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      2026년 10월 28일(수)
+    </span>
+    <span class="meta-chip">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      10:00 ~ 17:00
+    </span>
+    <span class="meta-chip">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+      B2층 무대 · 당일 예선 후 본선
+    </span>
+  </div>
+</div>
+<div class="progress-bar"><div class="progress-fill" id="progress"></div></div>
+
+<!-- Form -->
+<div class="form-wrap">
+
+  <div class="notice">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    신청 기간: 2026.10.16(목) 13:10 ~ 2026.10.28(수) 16:30 · 기재하신 연락처로 세부 일정 및 안내 사항이 전달됩니다.
+  </div>
+
+  <form id="regForm" novalidate>
+
+    <!-- 1. 성함 -->
+    <div class="section">
+      <div class="section-label"><span class="req">*</span> 1. 성함</div>
+      <input class="text-input" id="inp-name" type="text" placeholder="이름을 입력해 주세요." autocomplete="name">
+      <p class="err-msg" id="err-name">성함을 입력해 주세요.</p>
+    </div>
+
+    <!-- 2. 소속 -->
+    <div class="section">
+      <div class="section-label"><span class="req">*</span> 2. 소속</div>
+      <div class="btn-grid" id="dept-grid">
+        <button type="button" class="btn-choice" data-val="항공정비계열">항공정비계열</button>
+        <button type="button" class="btn-choice" data-val="스마트안전진단계열">스마트안전진단계열</button>
+        <button type="button" class="btn-choice" data-val="항공관광계열">항공관광계열</button>
+        <button type="button" class="btn-choice" data-val="항공보안계열">항공보안계열</button>
+        <button type="button" class="btn-choice" data-val="국방경찰계열">국방경찰계열</button>
+        <button type="button" class="btn-choice" data-val="직업계고">직업계고</button>
+        <button type="button" class="btn-choice" data-val="기종교육">기종교육</button>
+        <button type="button" class="btn-choice" data-val="고교위탁">고교위탁</button>
+        <button type="button" class="btn-choice" data-val="교직원">교직원</button>
+        <button type="button" class="btn-choice" data-val="기타">기타</button>
+      </div>
+      <input type="hidden" id="inp-dept">
+      <p class="err-msg" id="err-dept">소속을 선택해 주세요.</p>
+    </div>
+
+    <!-- 3. 연락처 -->
+    <div class="section">
+      <div class="section-label"><span class="req">*</span> 3. 연락처</div>
+      <p class="section-hint">하이픈(-) 없이 숫자만 입력하면 자동으로 형식이 완성됩니다.</p>
+      <div class="phone-row">
+        <input class="text-input phone-seg" id="ph1" type="tel" maxlength="3" placeholder="010" inputmode="numeric" pattern="[0-9]*">
+        <span class="phone-dot">-</span>
+        <input class="text-input phone-seg" id="ph2" type="tel" maxlength="4" placeholder="0000" inputmode="numeric" pattern="[0-9]*">
+        <span class="phone-dot">-</span>
+        <input class="text-input phone-seg" id="ph3" type="tel" maxlength="4" placeholder="0000" inputmode="numeric" pattern="[0-9]*">
+      </div>
+      <input type="hidden" id="inp-phone">
+      <p class="err-msg" id="err-phone">올바른 연락처를 입력해 주세요. (예: 010-1234-5678)</p>
+    </div>
+
+    <!-- 4. 참가 부문 -->
+    <div class="section">
+      <div class="section-label"><span class="req">*</span> 4. 참가 부문</div>
+      <p class="section-hint">팀 부문 선택 시, 함께 참가하는 팀원의 정보를 입력하는 페이지로 넘어갑니다.</p>
+      <div class="radio-group">
+        <label class="radio-card" id="rc-solo">
+          <input type="radio" name="cat" value="개인">
+          <div class="radio-dot"></div>
+          <div>
+            <div class="radio-label-main">개인</div>
+            <div class="radio-label-sub">혼자 참가합니다.</div>
+          </div>
+        </label>
+        <label class="radio-card" id="rc-team">
+          <input type="radio" name="cat" value="팀">
+          <div class="radio-dot"></div>
+          <div>
+            <div class="radio-label-main">팀 (2인 이상)</div>
+            <div class="radio-label-sub">팀원 정보 추가 입력 필요</div>
+          </div>
+        </label>
+      </div>
+      <input type="hidden" id="inp-cat">
+      <p class="err-msg" id="err-cat">참가 부문을 선택해 주세요.</p>
+    </div>
+
+    <!-- 5. 참가곡 정보 -->
+    <div class="section">
+      <div class="section-label"><span class="req">*</span> 5. 참가곡 정보</div>
+      <p class="section-hint">곡 제목과 가수 두 가지 모두 정확히 입력해 주시기 바랍니다.</p>
+      <div class="song-group">
+        <div class="song-field">
+          <label for="inp-stitle">참가곡 제목</label>
+          <input class="text-input" id="inp-stitle" type="text" placeholder="예: 봄날">
+          <p class="err-msg" id="err-stitle">참가곡 제목을 입력해 주세요.</p>
+        </div>
+        <div class="song-field">
+          <label for="inp-sartist">가수</label>
+          <input class="text-input" id="inp-sartist" type="text" placeholder="예: BTS">
+          <p class="err-msg" id="err-sartist">가수를 입력해 주세요.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 6. 정보 확인 -->
+    <div class="section">
+      <div class="section-label"><span class="req">*</span> 6. 정보 확인</div>
+      <p class="section-hint">원활한 행사 진행을 위해 입력한 정보가 정확한지 한 번 더 확인해 주시기 바랍니다.</p>
+      <label class="radio-card" id="rc-confirm">
+        <input type="radio" name="confirm" value="확인">
+        <div class="radio-dot"></div>
+        <div>
+          <div class="radio-label-main">확인했습니다.</div>
+          <div class="radio-label-sub">입력한 정보가 정확합니다.</div>
+        </div>
+      </label>
+      <input type="hidden" id="inp-confirm">
+      <p class="err-msg" id="err-confirm">정보 확인에 동의해 주세요.</p>
+    </div>
+
+    <!-- 7. 개인정보 동의 -->
+    <div class="section">
+      <div class="section-label"><span class="req">*</span> 7. 개인정보 수집·이용 동의</div>
+      <div class="privacy-box">
+        <h4>개인정보 수집·이용에 관한 안내</h4>
+        <p><strong>수집 항목:</strong> 성명, 소속 계열, 연락처, 참가곡 정보</p>
+        <p><strong>수집 목적:</strong> 2026 창공제 노래 콘테스트 참가 신청 접수, 행사 진행 관련 안내 연락(일정·장소·예선 결과 등), 참가자 명단 관리</p>
+        <p><strong>보유 및 이용 기간:</strong> 행사 종료 후 30일 이내 파기. 단, 관계 법령에 따라 보존이 필요한 경우 해당 기간 동안 보유합니다.</p>
+        <p><strong>제3자 제공:</strong> 수집된 개인정보는 행사 운영 목적 외에 제3자에게 제공하지 않습니다.</p>
+        <p>위의 개인정보 수집·이용에 대한 동의를 거부할 권리가 있으며, 동의를 거부하실 경우 콘테스트 참가 신청이 제한될 수 있습니다.</p>
+      </div>
+      <div class="privacy-agree" id="privacy-toggle">
+        <div class="check-box" id="chk-box">
+          <svg id="chk-icon" width="12" height="12" viewBox="0 0 12 12" fill="none" style="display:none"><polyline points="2,6 5,9 10,3" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <span class="check-text">개인정보 수집·이용에 동의합니다. (필수)</span>
+      </div>
+      <input type="hidden" id="inp-privacy" value="N">
+      <p class="err-msg" id="err-privacy">개인정보 수집·이용에 동의해 주세요.</p>
+    </div>
+
+    <button class="submit-btn" type="submit" id="submit-btn" disabled>신청서 제출하기</button>
+
+  </form>
+
+  <!-- Success -->
+  <div class="section success-card" id="success-card">
+    <div class="success-icon">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+    </div>
+    <p class="success-title">신청이 완료되었습니다!</p>
+    <p class="success-sub">참가 신청해 주셔서 감사합니다.<br>기재하신 연락처로 세부 일정 및 안내 사항을 전달드릴 예정입니다.<br><br><strong>2026년 10월 28일(수) B2층 무대</strong>에서 만나요!</p>
+  </div>
+
+</div>
+
+<script>
+'use strict';
+(function () {
+
+  // 소속 버튼
+  var deptGrid = document.getElementById('dept-grid');
+  var inpDept = document.getElementById('inp-dept');
+  deptGrid.querySelectorAll('.btn-choice').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      deptGrid.querySelectorAll('.btn-choice').forEach(function (b) { b.classList.remove('selected'); });
+      btn.classList.add('selected');
+      inpDept.value = btn.dataset.val;
+      updateProgress();
+    });
+  });
+
+  // 연락처 자동 포커스 이동
+  var ph1 = document.getElementById('ph1');
+  var ph2 = document.getElementById('ph2');
+  var ph3 = document.getElementById('ph3');
+  var inpPhone = document.getElementById('inp-phone');
+
+  function onlyDigits(str) { return str.replace(/\D/g, ''); }
+
+  function phoneUpdate() {
+    var v1 = onlyDigits(ph1.value);
+    var v2 = onlyDigits(ph2.value);
+    var v3 = onlyDigits(ph3.value);
+    inpPhone.value = (v1 && v2 && v3) ? (v1 + '-' + v2 + '-' + v3) : '';
+    updateProgress();
+  }
+
+  ph1.addEventListener('input', function () {
+    this.value = onlyDigits(this.value);
+    if (this.value.length >= 3) ph2.focus();
+    phoneUpdate();
+  });
+  ph2.addEventListener('input', function () {
+    this.value = onlyDigits(this.value);
+    if (this.value.length >= 4) ph3.focus();
+    phoneUpdate();
+  });
+  ph3.addEventListener('input', function () {
+    this.value = onlyDigits(this.value);
+    phoneUpdate();
+  });
+
+  // 연락처 전체 붙여넣기 처리
+  ph1.addEventListener('paste', function (e) {
+    var pasted = onlyDigits((e.clipboardData || window.clipboardData).getData('text'));
+    if (pasted.length >= 9) {
+      e.preventDefault();
+      ph1.value = pasted.slice(0, 3);
+      ph2.value = pasted.slice(3, 7);
+      ph3.value = pasted.slice(7, 11);
+      phoneUpdate();
+      ph3.focus();
+    }
+  });
+
+  // 참가 부문
+  var inpCat = document.getElementById('inp-cat');
+  ['rc-solo', 'rc-team'].forEach(function (id) {
+    document.getElementById(id).addEventListener('click', function () {
+      ['rc-solo', 'rc-team'].forEach(function (i) { document.getElementById(i).classList.remove('selected'); });
+      this.classList.add('selected');
+      inpCat.value = this.querySelector('input').value;
+      updateProgress();
+    });
+  });
+
+  // 정보 확인
+  var inpConfirm = document.getElementById('inp-confirm');
+  document.getElementById('rc-confirm').addEventListener('click', function () {
+    this.classList.add('selected');
+    inpConfirm.value = '확인';
+    updateProgress();
+  });
+
+  // 개인정보 동의
+  var inpPrivacy = document.getElementById('inp-privacy');
+  document.getElementById('privacy-toggle').addEventListener('click', function () {
+    var checked = inpPrivacy.value === 'Y';
+    inpPrivacy.value = checked ? 'N' : 'Y';
+    this.classList.toggle('checked', !checked);
+    document.getElementById('chk-icon').style.display = checked ? 'none' : 'block';
+    updateProgress();
+  });
+
+  // 진행률 계산
+  function getFields() {
+    var v1 = onlyDigits(ph1.value), v2 = onlyDigits(ph2.value), v3 = onlyDigits(ph3.value);
+    return [
+      !!document.getElementById('inp-name').value.trim(),
+      !!inpDept.value,
+      v1.length === 3 && v2.length === 4 && v3.length === 4,
+      !!inpCat.value,
+      !!document.getElementById('inp-stitle').value.trim(),
+      !!document.getElementById('inp-sartist').value.trim(),
+      inpConfirm.value === '확인',
+      inpPrivacy.value === 'Y'
+    ];
+  }
+  function updateProgress() {
+    var fields = getFields();
+    var done = fields.filter(Boolean).length;
+    document.getElementById('progress').style.width = (done / fields.length * 100) + '%';
+    document.getElementById('submit-btn').disabled = done < fields.length;
+  }
+
+  ['inp-name', 'inp-stitle', 'inp-sartist'].forEach(function (id) {
+    document.getElementById(id).addEventListener('input', updateProgress);
+  });
+
+  // 제출
+  document.getElementById('regForm').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var ok = true;
+
+    function setErr(id, show) {
+      var el = document.getElementById('err-' + id);
+      if (el) el.classList.toggle('show', show);
+    }
+    function val(id) { return document.getElementById('inp-' + id).value.trim(); }
+
+    setErr('name', !val('name'));       if (!val('name')) ok = false;
+    setErr('dept', !val('dept'));       if (!val('dept')) ok = false;
+    var v1 = onlyDigits(ph1.value), v2 = onlyDigits(ph2.value), v3 = onlyDigits(ph3.value);
+    var phoneOk = v1.length === 3 && v2.length === 4 && v3.length === 4;
+    setErr('phone', !phoneOk);          if (!phoneOk) ok = false;
+    setErr('cat', !val('cat'));         if (!val('cat')) ok = false;
+    setErr('stitle', !val('stitle'));   if (!val('stitle')) ok = false;
+    setErr('sartist', !val('sartist')); if (!val('sartist')) ok = false;
+    setErr('confirm', val('confirm') !== '확인'); if (val('confirm') !== '확인') ok = false;
+    setErr('privacy', inpPrivacy.value !== 'Y'); if (inpPrivacy.value !== 'Y') ok = false;
+
+    if (!ok) return;
+
+    document.getElementById('regForm').style.display = 'none';
+    document.getElementById('success-card').style.display = 'block';
+    document.getElementById('progress').style.width = '100%';
+  });
+
+})();
+</script>
+</body>
+</html>
