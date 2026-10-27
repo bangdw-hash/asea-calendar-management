@@ -4,328 +4,240 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>창공제 관객 투표</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600;700;800&display=swap">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
 :root {
-  --primary:#1A73E8; --primary-dk:#1557B0; --primary-lt:#EEF2FF;
-  --bg:#F8FAFF; --card:#ffffff; --fg:#202124; --fg-sub:#1A73E8;
-  --fg-muted:#5F6368; --border:#E1E5EA;
+  --gold:#D97706; --gold-lt:#FEF3C7; --gold-glow:#F59E0B;
   --green:#16A34A; --green-lt:#DCFCE7;
-  --gold:#D97706; --gold-lt:#FEF3C7;
+  --primary:#1A73E8; --primary-dk:#1557B0;
   --r:6px;
-  --sh:0 1px 3px rgba(60,64,67,.08),0 1px 2px rgba(60,64,67,.06);
-  --sh-md:0 4px 16px rgba(60,64,67,.12);
 }
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-body{
+*,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
+html { height:100%; }
+body {
   font-family:'Noto Sans KR',-apple-system,sans-serif;
-  background:var(--bg);color:var(--fg);
-  min-height:100vh;
-  display:flex;flex-direction:column;align-items:center;justify-content:flex-start;
-  padding:0 16px 40px;
-  background-image:radial-gradient(ellipse 120% 50% at 50% -5%,rgba(14,165,233,.15) 0%,transparent 70%);
-}
-.page-header{
-  width:100%;max-width:480px;
-  background:linear-gradient(135deg,#1E3A5F,#1A73E8);
-  margin:0 -16px;width:calc(100% + 32px);
-  padding:32px 24px 28px;
-  text-align:center;color:#fff;
-  position:relative;overflow:hidden;
-}
-.page-header::before{
-  content:'';position:absolute;inset:0;
-  background:url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='20' cy='20' r='1.5' fill='rgba(255,255,255,.08)'/%3E%3C/svg%3E");
-}
-.header-eyebrow{font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;opacity:.7;margin-bottom:8px;}
-.header-title{font-size:22px;font-weight:800;letter-spacing:-.01em;margin-bottom:4px;}
-.header-sub{font-size:13px;opacity:.8;}
-.wrap{width:100%;max-width:400px;margin-top:24px;display:flex;flex-direction:column;gap:16px;}
-
-/* State card */
-.state-card{
-  background:var(--card);border-radius:var(--r);
-  box-shadow:var(--sh);padding:20px;text-align:center;
-}
-.state-icon{font-size:40px;margin-bottom:12px;}
-.state-title{font-size:17px;font-weight:700;margin-bottom:6px;}
-.state-sub{font-size:13px;color:var(--fg-muted);}
-
-/* Performer card */
-.performer-card{
-  background:linear-gradient(135deg,#1E3A5F 0%,#1A73E8 100%);
-  color:#fff;border-radius:var(--r);
-  box-shadow:0 4px 20px rgba(26,115,232,.35);padding:24px;text-align:center;
-  position:relative;overflow:hidden;
-}
-.performer-card::before{
-  content:'';position:absolute;inset:0;opacity:.06;
-  background:repeating-linear-gradient(45deg,transparent,transparent 10px,rgba(255,255,255,1) 10px,rgba(255,255,255,1) 11px);
-}
-.performer-label{font-size:11px;font-weight:700;letter-spacing:.1em;opacity:.7;margin-bottom:12px;text-transform:uppercase;}
-.performer-name{font-size:28px;font-weight:800;margin-bottom:8px;position:relative;}
-.performer-song{font-size:14px;opacity:.85;position:relative;}
-.performer-badge{
-  display:inline-flex;align-items:center;gap:4px;
-  background:rgba(255,255,255,.2);border-radius:var(--r);
-  padding:3px 10px;font-size:11px;font-weight:600;margin-bottom:12px;
+  min-height:100vh; min-height:100dvh;
+  background:#050B1A;
+  color:#fff;
+  display:flex; flex-direction:column; align-items:center;
+  overflow-x:hidden;
 }
 
-/* Timer */
-.timer-wrap{text-align:center;}
-.timer-ring-svg{transform:rotate(-90deg);}
-.timer-circle-bg{fill:none;stroke:var(--border);stroke-width:6;}
-.timer-circle{fill:none;stroke:var(--primary);stroke-width:6;stroke-linecap:round;transition:stroke-dashoffset .9s linear;}
-.timer-text{font-size:24px;font-weight:800;fill:var(--fg);}
-.timer-sub{font-size:11px;fill:var(--fg-muted);}
-
-/* Star rating */
-.star-section{background:var(--card);border-radius:var(--r);box-shadow:var(--sh);padding:24px;text-align:center;}
-.star-label{font-size:14px;font-weight:600;color:var(--fg-sub);margin-bottom:16px;}
-.stars{display:flex;justify-content:center;gap:8px;margin-bottom:20px;}
-.star{
-  width:52px;height:52px;cursor:pointer;
-  transition:transform .15s,filter .15s;
-  color:var(--border);
+/* ── Header ── */
+.v-header {
+  width:100%; padding:env(safe-area-inset-top) 0 0;
+  background:linear-gradient(180deg,rgba(5,11,26,1) 0%,rgba(5,11,26,0) 100%);
+  text-align:center; padding-top:max(16px,env(safe-area-inset-top));
+  padding-bottom:8px; position:relative; z-index:2;
 }
-.star:hover,.star.active{color:var(--gold);filter:drop-shadow(0 0 6px rgba(245,158,11,.5));}
-.star:hover{transform:scale(1.18);}
-.star.active{transform:scale(1.12);}
-.star svg{width:100%;height:100%;}
-.vote-btn{
-  width:100%;padding:14px;
-  background:linear-gradient(135deg,#1E3A5F,#1A73E8);
-  color:#fff;font-family:inherit;font-size:15px;font-weight:700;
-  border:none;border-radius:var(--r);cursor:pointer;
-  box-shadow:0 4px 14px rgba(26,115,232,.35);
-  transition:filter .15s,transform .1s;
+.v-header-eyebrow { font-size:11px; font-weight:700; letter-spacing:.14em; opacity:.45; text-transform:uppercase; margin-bottom:4px; }
+.v-header-title { font-size:20px; font-weight:800; }
+
+/* ── Performer hero ── */
+.v-hero {
+  width:100%; padding:28px 24px 24px;
+  background:linear-gradient(160deg,#0F2344 0%,#1A3A6E 60%,#1042A3 100%);
+  text-align:center; position:relative; overflow:hidden;
+  border-bottom:1px solid rgba(255,255,255,.08);
 }
-.vote-btn:hover{filter:brightness(1.07);}
-.vote-btn:active{transform:scale(.98);}
-.vote-btn:disabled{background:var(--border);color:var(--fg-muted);cursor:not-allowed;box-shadow:none;transform:none;filter:none;}
+.v-hero::before {
+  content:''; position:absolute; inset:0;
+  background:radial-gradient(ellipse 120% 80% at 50% 120%,rgba(26,115,232,.3),transparent 65%);
+}
+.v-hero-content { position:relative; z-index:1; }
+.v-hero-badge {
+  display:inline-flex; align-items:center; gap:6px;
+  background:rgba(34,197,94,.18); border:1.5px solid rgba(34,197,94,.5); border-radius:50px;
+  padding:4px 14px; font-size:11px; font-weight:700; color:#86EFAC;
+  letter-spacing:.05em; margin-bottom:14px;
+}
+.v-hero-dot { width:7px; height:7px; background:#22C55E; border-radius:50%; animation:vdot 1.5s infinite; }
+@keyframes vdot { 0%,100%{box-shadow:0 0 0 0 rgba(34,197,94,.5)}50%{box-shadow:0 0 0 6px rgba(34,197,94,0)} }
+.v-hero-name { font-size:clamp(26px,8vw,42px); font-weight:800; letter-spacing:-.02em; line-height:1.1; margin-bottom:8px; }
+.v-hero-song { font-size:14px; opacity:.7; font-weight:600; }
 
-/* Done card */
-.done-card{background:var(--green-lt);border:1.5px solid var(--green);border-radius:var(--r);padding:20px;text-align:center;}
-.done-icon{width:52px;height:52px;background:var(--green);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;}
-.done-title{font-size:16px;font-weight:700;color:var(--green);margin-bottom:4px;}
-.done-sub{font-size:13px;color:var(--fg-sub);}
+/* ── Waiting state ── */
+.v-wait {
+  flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
+  padding:48px 24px; text-align:center; gap:16px;
+}
+.v-wait-icon { font-size:56px; opacity:.4; }
+.v-wait-title { font-size:20px; font-weight:700; opacity:.75; }
+.v-wait-sub { font-size:13px; opacity:.4; }
 
-/* Footer */
-.footer-note{font-size:11px;color:var(--fg-muted);text-align:center;}
+/* ── Vote body ── */
+.v-body { width:100%; max-width:440px; padding:24px 20px 40px; display:flex; flex-direction:column; align-items:center; gap:24px; }
 
-/* Loader */
-.loader{display:flex;justify-content:center;padding:40px;}
-.spin{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--primary);border-radius:50%;animation:spin .8s linear infinite;}
-@keyframes spin{to{transform:rotate(360deg)}}
+/* Timer ring */
+.v-timer-wrap { position:relative; display:flex; align-items:center; justify-content:center; }
+.v-timer-svg { transform:rotate(-90deg); }
+.v-tc-bg { fill:none; stroke:rgba(255,255,255,.08); stroke-width:7; }
+.v-tc { fill:none; stroke:var(--gold-glow); stroke-width:7; stroke-linecap:round; transition:stroke-dashoffset 1s linear, stroke .3s; }
+.v-tc.red-stroke { stroke:#EF4444; }
+.v-timer-inner { position:absolute; text-align:center; }
+.v-timer-num { font-size:42px; font-weight:800; font-variant-numeric:tabular-nums; line-height:1; }
+.v-timer-sec { font-size:12px; opacity:.5; margin-top:2px; }
+
+/* Stars */
+.v-star-section { width:100%; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08); border-radius:12px; padding:24px 20px; text-align:center; }
+.v-star-label { font-size:15px; font-weight:700; opacity:.75; margin-bottom:20px; }
+.v-stars { display:flex; justify-content:center; gap:12px; margin-bottom:24px; }
+.v-star {
+  width:56px; height:56px; cursor:pointer;
+  transition:transform .15s, filter .15s, color .1s;
+  color:rgba(255,255,255,.15);
+}
+.v-star svg { width:100%; height:100%; }
+.v-star:hover, .v-star.on { color:var(--gold-glow); filter:drop-shadow(0 0 8px rgba(245,158,11,.55)); }
+.v-star.on { transform:scale(1.15); }
+.v-star:hover:not(.on) { transform:scale(1.1); }
+.v-star-hint { font-size:12px; opacity:.35; min-height:18px; transition:opacity .2s; }
+.v-star-hint.visible { opacity:.7; }
+
+.v-vote-btn {
+  width:100%; padding:16px; font-family:inherit;
+  font-size:16px; font-weight:800; letter-spacing:.01em;
+  background:linear-gradient(135deg,#1557B0,#1A73E8);
+  color:#fff; border:none; border-radius:var(--r); cursor:pointer;
+  box-shadow:0 4px 20px rgba(26,115,232,.4);
+  transition:filter .15s, transform .1s, opacity .2s;
+}
+.v-vote-btn:not(:disabled):hover { filter:brightness(1.1); }
+.v-vote-btn:not(:disabled):active { transform:scale(.98); }
+.v-vote-btn:disabled { opacity:.4; cursor:not-allowed; }
+
+/* Done */
+.v-done {
+  width:100%; background:rgba(22,163,74,.12); border:1.5px solid rgba(22,163,74,.4);
+  border-radius:12px; padding:28px 20px; text-align:center;
+}
+.v-done-check { width:56px; height:56px; background:#16A34A; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 16px; }
+.v-done-title { font-size:18px; font-weight:800; color:#86EFAC; margin-bottom:6px; }
+.v-done-sub { font-size:13px; opacity:.55; }
+
+/* Expired */
+.v-expired { width:100%; background:rgba(239,68,68,.1); border:1.5px solid rgba(239,68,68,.3); border-radius:12px; padding:24px; text-align:center; }
+.v-expired-title { font-size:16px; font-weight:700; color:#FCA5A5; margin-bottom:6px; }
+.v-expired-sub { font-size:13px; opacity:.45; }
 </style>
 </head>
 <body>
-<div class="page-header">
-  <p class="header-eyebrow">2026 창공제 노래 콘테스트</p>
-  <h1 class="header-title">관객 투표</h1>
-  <p class="header-sub">지금 공연 중인 참가자에게 별점을 주세요</p>
+<div class="v-header">
+  <div class="v-header-eyebrow">2026 창공제 노래 콘테스트</div>
+  <div class="v-header-title">관객 투표</div>
 </div>
 
-<div class="wrap" id="app">
-  <div class="loader"><div class="spin"></div></div>
+<div id="app" style="width:100%;display:flex;flex-direction:column;align-items:center;flex:1;">
+  <div class="v-wait"><div class="v-wait-icon">⌛</div><div class="v-wait-title">연결 중…</div></div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 'use strict';
 (function(){
+var SB_URL='https://zbpeyklwpotjyveipzxd.supabase.co';
+var SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpicGV5a2x3cG90anl2ZWlwenhkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE1MTYxMDcsImV4cCI6MjA5NzA5MjEwN30.6JgoQ6rPRnmrbBTG68A-Y9HDQk40mnwubhXVnkZvHrQ';
+var sb=supabase.createClient(SB_URL,SB_KEY,{db:{schema:'cgf'}});
+var app=document.getElementById('app');
+var state=null, contestant=null, hasVoted=false, selectedStar=0, timerInterval=null;
+var STAR_HINTS=['','😐 아쉬워요','🙂 괜찮아요','😊 좋아요','😄 훌륭해요','🤩 최고예요!'];
+var voterId=(function(){ var id=localStorage.getItem('cgf_voter_id'); if(!id){id=Math.random().toString(36).slice(2,18);localStorage.setItem('cgf_voter_id',id);} return id; })();
 
-var SB_URL = 'https://zbpeyklwpotjyveipzxd.supabase.co';
-var SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpicGV5a2x3cG90anl2ZWlwenhkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE1MTYxMDcsImV4cCI6MjA5NzA5MjEwN30.6JgoQ6rPRnmrbBTG68A-Y9HDQk40mnwubhXVnkZvHrQ';
-var sb = supabase.createClient(SB_URL, SB_KEY, {db:{schema:'cgf'}});
-
-var app = document.getElementById('app');
-var state = null;
-var contestant = null;
-var voterId = getVoterId();
-var selectedStar = 0;
-var timerInterval = null;
-var hasVoted = false;
-
-function getVoterId() {
-  var id = localStorage.getItem('cgf_voter_id');
-  if (!id) { id = Math.random().toString(36).slice(2,18); localStorage.setItem('cgf_voter_id', id); }
-  return id;
-}
-
-async function init() {
-  var {data} = await sb.from('state').select('*').eq('id',1).single();
-  state = data;
-  if (state && state.current_contestant_id) {
-    var {data:c} = await sb.from('contestants').select('id,name,song_title,song_artist,category').eq('id',state.current_contestant_id).single();
-    contestant = c;
-  }
-  if (state && state.current_contestant_id) {
-    var {data:v} = await sb.from('votes').select('id').eq('contestant_id',state.current_contestant_id).eq('cookie_id',voterId).eq('phase',state.phase||'prelim').maybeSingle();
-    hasVoted = !!v;
+async function init(){
+  var s=await sb.from('state').select('*').eq('id',1).single(); state=s.data;
+  if(state&&state.current_contestant_id){
+    var c=await sb.from('contestants').select('id,name,song_title,song_artist').eq('id',state.current_contestant_id).single(); contestant=c.data;
+    var v=await sb.from('votes').select('id').eq('contestant_id',state.current_contestant_id).eq('cookie_id',voterId).eq('phase',state.phase||'prelim').maybeSingle(); hasVoted=!!v.data;
   }
   render();
-  subscribeRealtime();
-}
-
-function subscribeRealtime() {
-  sb.channel('cgf-vote-state')
-    .on('postgres_changes',{event:'*',schema:'cgf',table:'state'},async function(payload){
-      var prev = state ? state.current_contestant_id : null;
-      state = payload.new;
-      if (state.current_contestant_id !== prev) {
-        if (state.current_contestant_id) {
-          var {data:c} = await sb.from('contestants').select('id,name,song_title,song_artist,category').eq('id',state.current_contestant_id).single();
-          contestant = c;
-        } else { contestant = null; }
-        hasVoted = false;
-        selectedStar = 0;
-        // Check if already voted for new performer
-        if (state.current_contestant_id) {
-          var {data:v} = await sb.from('votes').select('id').eq('contestant_id',state.current_contestant_id).eq('cookie_id',voterId).eq('phase',state.phase||'prelim').maybeSingle();
-          hasVoted = !!v;
-        }
+  sb.channel('cgf-vote-rt')
+    .on('postgres_changes',{event:'*',schema:'cgf',table:'state'},async function(p){
+      var prev=state?state.current_contestant_id:null;
+      state=p.new;
+      if(state.current_contestant_id!==prev){
+        if(state.current_contestant_id){
+          var c=await sb.from('contestants').select('id,name,song_title,song_artist').eq('id',state.current_contestant_id).single(); contestant=c.data;
+          var v=await sb.from('votes').select('id').eq('contestant_id',state.current_contestant_id).eq('cookie_id',voterId).eq('phase',state.phase||'prelim').maybeSingle(); hasVoted=!!v.data;
+        } else { contestant=null; }
+        hasVoted=hasVoted||false; selectedStar=0;
       }
       render();
     })
     .subscribe();
 }
 
-function render() {
-  if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
-
-  if (!state) { app.innerHTML = '<div class="state-card"><div class="state-title">연결 중…</div></div>'; return; }
-  if (!state.current_contestant_id || !contestant) {
-    app.innerHTML = '<div class="state-card">'
-      +'<div class="state-icon"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#6a96b8" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>'
-      +'<div class="state-title">공연 대기 중</div>'
-      +'<div class="state-sub">다음 참가자 공연 시작 시 투표가 열립니다</div>'
-      +'</div>';
-    return;
+function render(){
+  if(timerInterval){clearInterval(timerInterval);timerInterval=null;}
+  if(!state){ app.innerHTML='<div class="v-wait"><div class="v-wait-icon">📡</div><div class="v-wait-title">연결 중…</div></div>'; return; }
+  if(!state.current_contestant_id||!contestant){
+    app.innerHTML='<div class="v-wait"><div class="v-wait-icon" style="font-size:64px;opacity:.3">🎤</div><div class="v-wait-title">공연 대기 중</div><div class="v-wait-sub">다음 참가자 공연 시작 시 투표가 열립니다</div></div>'; return;
   }
-
-  var html = '';
-  // Performer card
-  html += '<div class="performer-card">'
-    +'<div class="performer-badge"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M9 18V5l12-2v13M9 18c0 1.1-.9 2-2 2s-2-.9-2-2 .9-2 2-2 2 .9 2 2zm12-2c0 1.1-.9 2-2 2s-2-.9-2-2 .9-2 2-2 2 .9 2 2z"/></svg> 공연 중</div>'
-    +'<div class="performer-name">'+esc(contestant.name)+'</div>'
-    +'<div class="performer-song">🎵 '+esc(contestant.song_title||'')+(contestant.song_artist?' — '+esc(contestant.song_artist):'')+'</div>'
-    +'</div>';
-
-  if (!state.voting_open) {
-    html += '<div class="state-card">'
-      +'<div class="state-icon"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#6a96b8" stroke-width="1.5"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>'
-      +'<div class="state-title">투표 준비 중</div>'
-      +'<div class="state-sub">사회자 안내 후 투표가 시작됩니다</div>'
-      +'</div>';
-    app.innerHTML = html;
-    return;
+  var heroHtml='<div class="v-hero"><div class="v-hero-content">'
+    +'<div class="v-hero-badge"><span class="v-hero-dot"></span> 공연 중</div>'
+    +'<div class="v-hero-name">'+esc(contestant.name)+'</div>'
+    +'<div class="v-hero-song">🎵 '+esc(contestant.song_title||'')+(contestant.song_artist?' — '+esc(contestant.song_artist):'')+'</div>'
+    +'</div></div>';
+  if(!state.voting_open){
+    app.innerHTML=heroHtml+'<div class="v-body"><div class="v-wait" style="padding:32px 0"><div class="v-wait-icon" style="font-size:52px;opacity:.35">🔒</div><div class="v-wait-title">투표 준비 중</div><div class="v-wait-sub">사회자 안내 후 투표가 시작됩니다</div></div></div>'; return;
   }
-
-  if (hasVoted) {
-    html += renderDone();
-    app.innerHTML = html;
-    return;
+  if(hasVoted){
+    app.innerHTML=heroHtml+'<div class="v-body"><div class="v-done"><div class="v-done-check"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div><div class="v-done-title">투표 완료!</div><div class="v-done-sub">'+esc(contestant.name)+'님의 공연에<br>투표해 주셔서 감사합니다 🎉</div></div></div>'; return;
   }
-
-  // Timer
-  var remaining = 30;
-  if (state.voting_opened_at) {
-    var elapsed = (Date.now() - new Date(state.voting_opened_at).getTime()) / 1000;
-    remaining = Math.max(0, Math.round(30 - elapsed));
-  }
-
-  html += '<div class="timer-wrap" id="timer-wrap">'
-    +buildTimerSvg(remaining)
-    +'</div>';
-
-  html += '<div class="star-section">'
-    +'<div class="star-label">별점을 선택해 주세요</div>'
-    +'<div class="stars" id="stars">'
-    +[1,2,3,4,5].map(function(i){ return '<div class="star" data-star="'+i+'" onclick="pickStar('+i+')"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg></div>'; }).join('')
+  var elapsed=state.voting_opened_at?(Date.now()-new Date(state.voting_opened_at).getTime())/1000:0;
+  var rem=Math.max(0,Math.round(30-elapsed));
+  if(rem<=0){ app.innerHTML=heroHtml+'<div class="v-body"><div class="v-expired"><div class="v-expired-title">투표 시간이 종료되었습니다</div><div class="v-expired-sub">다음 투표 기회를 기다려 주세요</div></div></div>'; return; }
+  var r=54, circ=2*Math.PI*r, dashFill=circ*(rem/30);
+  app.innerHTML=heroHtml
+    +'<div class="v-body">'
+    +'<div class="v-timer-wrap"><svg class="v-timer-svg" width="140" height="140" viewBox="0 0 140 140"><circle class="v-tc-bg" cx="70" cy="70" r="'+r+'"/><circle class="v-tc '+(rem<=10?'red-stroke':'')+'" id="vtc" cx="70" cy="70" r="'+r+'" stroke-dasharray="'+circ+'" stroke-dashoffset="'+(circ-dashFill)+'"/></svg><div class="v-timer-inner"><div class="v-timer-num" id="vtnum">'+rem+'</div><div class="v-timer-sec">초</div></div></div>'
+    +'<div class="v-star-section">'
+    +'<div class="v-star-label">별점을 선택해 주세요</div>'
+    +'<div class="v-stars" id="vstars">'
+    +[1,2,3,4,5].map(function(i){ return '<div class="v-star'+(selectedStar>=i?' on':'')+'" data-n="'+i+'" onclick="VS('+i+')"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg></div>'; }).join('')
     +'</div>'
-    +'<button class="vote-btn" id="vote-btn" onclick="submitVote()" disabled>별점 선택 후 투표하기</button>'
+    +'<div class="v-star-hint'+(selectedStar?' visible':'')+'" id="vhint">'+(selectedStar?STAR_HINTS[selectedStar]:'')+'</div>'
+    +'<button class="v-vote-btn" id="vbtn" onclick="doVote()" '+(selectedStar?'':'disabled')+'>'+( selectedStar?'★'.repeat(selectedStar)+' 점 투표하기':'별점 선택 후 투표') +'</button>'
+    +'</div>'
     +'</div>';
-
-  app.innerHTML = html;
-
-  if (remaining <= 0) {
-    showExpired();
-    return;
-  }
-
-  startTimer(remaining);
+  startTimer(rem);
 }
 
-function buildTimerSvg(sec) {
-  var r = 36, circ = 2*Math.PI*r;
-  var dash = circ * (sec/30);
-  return '<svg class="timer-ring-svg" width="96" height="96" viewBox="0 0 96 96">'
-    +'<circle class="timer-circle-bg" cx="48" cy="48" r="'+r+'"/>'
-    +'<circle class="timer-circle" id="timer-circle" cx="48" cy="48" r="'+r+'" stroke-dasharray="'+circ+'" stroke-dashoffset="'+(circ-dash)+'"/>'
-    +'<text class="timer-text" x="48" y="50" text-anchor="middle" dominant-baseline="middle" id="timer-num">'+sec+'</text>'
-    +'<text class="timer-sub" x="48" y="64" text-anchor="middle">초</text>'
-    +'</svg>';
-}
-
-function startTimer(initial) {
-  var sec = initial;
-  var r = 36, circ = 2*Math.PI*r;
-  timerInterval = setInterval(function(){
+function startTimer(initial){
+  var sec=initial, r=54, circ=2*Math.PI*r;
+  timerInterval=setInterval(function(){
     sec--;
-    var numEl = document.getElementById('timer-num');
-    var circEl = document.getElementById('timer-circle');
-    if (numEl) numEl.textContent = Math.max(0,sec);
-    if (circEl) {
-      var dash = circ * (Math.max(0,sec)/30);
-      circEl.style.strokeDashoffset = circ - dash;
-      if (sec <= 5) circEl.style.stroke = '#dc2626';
+    var numEl=document.getElementById('vtnum'), circEl=document.getElementById('vtc');
+    if(numEl) numEl.textContent=Math.max(0,sec);
+    if(circEl){
+      circEl.style.strokeDashoffset=circ-circ*(Math.max(0,sec)/30);
+      circEl.classList.toggle('red-stroke',sec<=10);
     }
-    if (sec <= 0) { clearInterval(timerInterval); showExpired(); }
-  }, 1000);
+    if(sec<=0){clearInterval(timerInterval);timerInterval=null;
+      var vs=document.querySelector('.v-star-section');
+      if(vs) vs.innerHTML='<div class="v-expired-title" style="color:#FCA5A5;font-size:16px;font-weight:700">투표 시간이 종료되었습니다</div><div class="v-expired-sub" style="font-size:13px;opacity:.45;margin-top:4px">다음 투표 기회를 기다려 주세요</div>';
+    }
+  },1000);
 }
 
-function showExpired() {
-  var ss = document.querySelector('.star-section');
-  if (ss) ss.innerHTML = '<div class="state-title" style="color:#dc2626">투표 시간이 종료되었습니다</div>'
-    +'<div class="state-sub" style="color:#6a96b8;margin-top:6px;">다음 투표 기회를 기다려 주세요</div>';
-}
-
-window.pickStar = function(n) {
-  selectedStar = n;
-  document.querySelectorAll('.star').forEach(function(el,i){ el.classList.toggle('active',i<n); });
-  var btn = document.getElementById('vote-btn');
-  if (btn) { btn.disabled = false; btn.textContent = '★'.repeat(n)+' 점 투표하기'; }
+window.VS=function(n){
+  selectedStar=n;
+  document.querySelectorAll('.v-star').forEach(function(el,i){ el.classList.toggle('on',i<n); });
+  var hint=document.getElementById('vhint'); if(hint){hint.textContent=STAR_HINTS[n];hint.classList.add('visible');}
+  var btn=document.getElementById('vbtn'); if(btn){btn.disabled=false;btn.textContent='★'.repeat(n)+' 점 투표하기';}
 };
 
-window.submitVote = async function() {
-  if (!selectedStar || !state || !contestant) return;
-  var btn = document.getElementById('vote-btn');
-  if (btn) { btn.disabled = true; btn.textContent = '전송 중…'; }
-  var {error} = await sb.from('votes').insert({
-    contestant_id: contestant.id,
-    phase: state.phase||'prelim',
-    stars: selectedStar,
-    cookie_id: voterId
-  });
-  if (error && error.code === '23505') {
-    hasVoted = true; render(); return;
-  }
-  hasVoted = true; render();
+window.doVote=async function(){
+  if(!selectedStar||!state||!contestant) return;
+  var btn=document.getElementById('vbtn'); if(btn){btn.disabled=true;btn.textContent='전송 중…';}
+  var {error}=await sb.from('votes').insert({contestant_id:contestant.id,phase:state.phase||'prelim',stars:selectedStar,cookie_id:voterId});
+  if(error&&error.code==='23505'){hasVoted=true;render();return;}
+  if(!error){hasVoted=true;render();}
+  else{if(btn){btn.disabled=false;btn.textContent='다시 시도';}}
 };
 
-function renderDone() {
-  return '<div class="done-card">'
-    +'<div class="done-icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>'
-    +'<div class="done-title">투표 완료!</div>'
-    +'<div class="done-sub">'+esc(contestant?contestant.name:'')+'님의 공연에 투표해 주셔서 감사합니다.</div>'
-    +'</div>';
-}
-
-function esc(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-
+function esc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 init();
-
 })();
 </script>
 </body>
