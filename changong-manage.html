@@ -1,0 +1,955 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>창공제 노래 콘테스트 관리자</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800&display=swap">
+<style>
+:root{
+  --bg:#0d1b2a;--bg2:#142133;--bg3:#1a2d42;
+  --card:#1e3450;--card2:#243d5a;
+  --fg:#e0f2fe;--fg-sub:#7dd3fc;--fg-muted:#38627a;
+  --border:#1a4a68;--border2:#2d5f82;
+  --primary:#00d4ff;--primary-dk:#00a8cc;--primary-lt:rgba(0,212,255,.1);
+  --green:#22c55e;--green-lt:rgba(34,197,94,.1);
+  --orange:#f59e0b;--orange-lt:rgba(245,158,11,.1);
+  --red:#f87171;--red-lt:rgba(248,113,113,.1);
+  --r:6px;--sh:0 2px 8px rgba(0,0,0,.4);--sh-md:0 6px 20px rgba(0,0,0,.5);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--bg);}
+body{font-family:'Noto Sans KR',-apple-system,sans-serif;color:var(--fg);font-size:14px;display:flex;flex-direction:column;min-height:100vh;}
+
+/* Login */
+.login-overlay{position:fixed;inset:0;background:var(--bg);z-index:999;display:flex;align-items:center;justify-content:center;padding:20px;}
+.login-box{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:36px;width:100%;max-width:360px;text-align:center;box-shadow:var(--sh-md);}
+.login-icon{width:52px;height:52px;background:var(--primary-lt);border-radius:50%;margin:0 auto 16px;display:flex;align-items:center;justify-content:center;}
+.login-title{font-size:18px;font-weight:800;margin-bottom:4px;}
+.login-sub{font-size:13px;color:var(--fg-muted);margin-bottom:24px;}
+.login-input{width:100%;background:var(--bg3);border:1px solid var(--border);color:var(--fg);font-family:inherit;font-size:15px;border-radius:var(--r);padding:12px 14px;text-align:center;letter-spacing:.1em;outline:none;transition:border-color .15s;}
+.login-input:focus{border-color:var(--primary);}
+.login-btn{margin-top:12px;width:100%;padding:13px;background:linear-gradient(135deg,#0099cc,#00d4ff);color:#fff;font-family:inherit;font-size:15px;font-weight:700;border:none;border-radius:var(--r);cursor:pointer;transition:filter .15s;}
+.login-btn:hover{filter:brightness(1.08);}
+.login-err{margin-top:8px;font-size:12px;color:var(--red);min-height:18px;}
+
+/* App layout */
+#appWrap{display:none;flex-direction:column;height:100vh;}
+.top-bar{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 20px;display:flex;align-items:center;justify-content:space-between;height:52px;flex-shrink:0;}
+.top-logo{font-size:14px;font-weight:800;color:var(--fg-sub);}
+.top-actions{display:flex;gap:8px;}
+.top-chip{padding:5px 12px;border-radius:100px;font-size:12px;font-weight:600;border:1px solid;cursor:pointer;transition:all .15s;}
+.top-chip.cyan{background:var(--primary-lt);border-color:rgba(0,212,255,.25);color:var(--primary);}
+.top-chip.green{background:var(--green-lt);border-color:rgba(34,197,94,.25);color:var(--green);}
+.top-chip.orange{background:var(--orange-lt);border-color:rgba(245,158,11,.25);color:var(--orange);}
+
+/* Tabs */
+.tab-bar{background:var(--bg2);border-bottom:1px solid var(--border);display:flex;padding:0 20px;overflow-x:auto;flex-shrink:0;}
+.tab-bar::-webkit-scrollbar{display:none;}
+.tab-btn{padding:12px 16px;font-family:inherit;font-size:13px;font-weight:600;background:none;border:none;color:var(--fg-muted);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;transition:all .15s;}
+.tab-btn.active{color:var(--primary);border-bottom-color:var(--primary);}
+.tab-btn:hover:not(.active){color:var(--fg-sub);}
+.tab-content{flex:1;overflow-y:auto;padding:20px;}
+.tab-pane{display:none;}
+.tab-pane.active{display:block;}
+
+/* Toolbar */
+.toolbar{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center;}
+.btn{padding:8px 14px;border-radius:var(--r);font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;border:1px solid;transition:all .15s;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;}
+.btn-primary{background:var(--primary-lt);border-color:rgba(0,212,255,.25);color:var(--primary);}
+.btn-primary:hover{background:rgba(0,212,255,.18);}
+.btn-green{background:var(--green-lt);border-color:rgba(34,197,94,.25);color:var(--green);}
+.btn-green:hover{background:rgba(34,197,94,.18);}
+.btn-orange{background:var(--orange-lt);border-color:rgba(245,158,11,.25);color:var(--orange);}
+.btn-orange:hover{background:rgba(245,158,11,.18);}
+.btn-red{background:var(--red-lt);border-color:rgba(248,113,113,.25);color:var(--red);}
+.btn-red:hover{background:rgba(248,113,113,.18);}
+.btn-ghost{background:transparent;border-color:var(--border);color:var(--fg-sub);}
+.btn-ghost:hover{background:var(--bg3);}
+.btn:disabled{opacity:.4;cursor:not-allowed;}
+.search-input{flex:1;min-width:160px;background:var(--bg3);border:1px solid var(--border);color:var(--fg);font-family:inherit;font-size:13px;border-radius:var(--r);padding:8px 12px;outline:none;transition:border-color .15s;}
+.search-input:focus{border-color:var(--primary);}
+.search-input::placeholder{color:var(--fg-muted);}
+
+/* Table */
+.tbl-wrap{overflow-x:auto;border-radius:var(--r);border:1px solid var(--border);}
+table{width:100%;border-collapse:collapse;font-size:13px;}
+th{background:var(--bg3);color:var(--fg-sub);font-weight:600;padding:10px 12px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap;}
+td{padding:10px 12px;border-bottom:1px solid var(--border2);color:var(--fg);vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:rgba(255,255,255,.02);}
+.td-badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:100px;font-size:11px;font-weight:600;border:1px solid;}
+.badge-pre{background:rgba(0,212,255,.1);border-color:rgba(0,212,255,.2);color:var(--primary);}
+.badge-form{background:rgba(34,197,94,.1);border-color:rgba(34,197,94,.2);color:var(--green);}
+.badge-manual{background:rgba(245,158,11,.1);border-color:rgba(245,158,11,.2);color:var(--orange);}
+.badge-active{background:rgba(34,197,94,.08);border-color:rgba(34,197,94,.2);color:var(--green);}
+.badge-absent{background:rgba(248,113,113,.08);border-color:rgba(248,113,113,.2);color:var(--red);}
+.badge-done{background:rgba(148,163,184,.08);border-color:rgba(148,163,184,.2);color:#94a3b8;}
+.drag-handle{cursor:grab;color:var(--fg-muted);padding:0 4px;}
+.drag-handle:active{cursor:grabbing;}
+tr.dragging{opacity:.4;}
+tr.drag-over td{background:rgba(0,212,255,.06);outline:2px solid rgba(0,212,255,.3);}
+.action-btns{display:flex;gap:4px;}
+.act-btn{padding:4px 8px;border-radius:4px;font-family:inherit;font-size:11px;font-weight:600;cursor:pointer;border:1px solid;transition:all .12s;}
+
+/* Phase bar */
+.phase-bar{display:flex;gap:0;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:16px;width:fit-content;}
+.phase-step{padding:8px 18px;font-size:13px;font-weight:600;color:var(--fg-muted);border-right:1px solid var(--border);cursor:pointer;transition:all .15s;}
+.phase-step:last-child{border-right:none;}
+.phase-step.active{background:var(--primary-lt);color:var(--primary);}
+
+/* Progress mode */
+.live-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+@media(max-width:700px){.live-grid{grid-template-columns:1fr;}}
+.section-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;}
+.sc-header{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.sc-title{font-size:13px;font-weight:700;color:var(--fg-sub);}
+.sc-body{padding:16px;}
+.perf-name{font-size:22px;font-weight:800;color:#fff;margin-bottom:4px;}
+.perf-song{font-size:13px;color:var(--fg-muted);}
+.score-mini{display:grid;grid-template-columns:1fr auto auto;gap:4px 12px;font-size:12px;}
+.score-mini .sh{color:var(--fg-muted);font-weight:600;}
+.score-mini .sv{font-weight:700;color:var(--fg);text-align:right;}
+.score-mini .st{font-weight:800;color:var(--primary);text-align:right;}
+.queue-row{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:4px;cursor:pointer;transition:background .12s;}
+.queue-row:hover{background:var(--bg3);}
+.queue-num{width:24px;height:24px;border-radius:50%;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--fg-muted);flex-shrink:0;}
+.queue-name{font-size:13px;font-weight:600;color:var(--fg);flex:1;}
+.queue-song{font-size:11px;color:var(--fg-muted);}
+.vote-stat{display:flex;align-items:center;gap:16px;}
+.vote-num{font-size:28px;font-weight:800;color:var(--primary);}
+.vote-label{font-size:12px;color:var(--fg-muted);}
+.star-mini{color:var(--orange);}
+
+/* Judge cards */
+.judge-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;}
+.judge-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:16px;display:flex;flex-direction:column;gap:10px;}
+.judge-name{font-size:15px;font-weight:700;color:var(--fg);}
+.judge-status{display:flex;align-items:center;gap:6px;font-size:12px;}
+.status-dot{width:8px;height:8px;border-radius:50%;}
+.dot-green{background:var(--green);box-shadow:0 0 6px rgba(34,197,94,.5);}
+.dot-gray{background:var(--fg-muted);}
+.judge-url{font-size:11px;color:var(--fg-muted);word-break:break-all;background:var(--bg3);border-radius:4px;padding:6px 8px;font-family:monospace;}
+
+/* Results */
+.results-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+@media(max-width:700px){.results-grid{grid-template-columns:1fr;}}
+.rank-table td:nth-child(1){font-size:16px;font-weight:800;color:var(--primary);}
+.score-bar{height:4px;background:var(--bg3);border-radius:2px;margin-top:4px;}
+.score-fill{height:4px;background:var(--primary);border-radius:2px;transition:width .5s ease;}
+.award-assign{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-bottom:12px;}
+.award-type-label{font-size:12px;font-weight:700;color:var(--fg-sub);margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;}
+.award-select{width:100%;background:var(--bg3);border:1px solid var(--border);color:var(--fg);font-family:inherit;font-size:13px;border-radius:var(--r);padding:8px 10px;outline:none;}
+.award-note-input{width:100%;margin-top:6px;background:var(--bg3);border:1px solid var(--border);color:var(--fg);font-family:inherit;font-size:13px;border-radius:var(--r);padding:7px 10px;outline:none;}
+.reveal-status{font-size:11px;padding:2px 8px;border-radius:100px;border:1px solid;}
+.rs-hidden{background:rgba(148,163,184,.08);border-color:rgba(148,163,184,.2);color:#94a3b8;}
+.rs-revealed{background:var(--green-lt);border-color:rgba(34,197,94,.2);color:var(--green);}
+
+/* Notices */
+.notice-compose{display:flex;gap:8px;margin-bottom:16px;}
+.notice-textarea{flex:1;background:var(--bg3);border:1px solid var(--border);color:var(--fg);font-family:inherit;font-size:13px;border-radius:var(--r);padding:10px 12px;resize:none;outline:none;min-height:60px;transition:border-color .15s;}
+.notice-textarea:focus{border-color:var(--primary);}
+.notice-item{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:12px 14px;margin-bottom:8px;}
+.notice-text{font-size:13px;color:var(--fg);margin-bottom:6px;}
+.notice-meta{font-size:11px;color:var(--fg-muted);}
+
+/* Modal */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:99;display:flex;align-items:center;justify-content:center;padding:20px;}
+.modal-box{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:24px;width:100%;max-width:400px;box-shadow:var(--sh-md);}
+.modal-title{font-size:16px;font-weight:700;margin-bottom:16px;}
+.modal-label{font-size:12px;font-weight:600;color:var(--fg-sub);margin-bottom:6px;}
+.modal-input{width:100%;background:var(--bg3);border:1px solid var(--border);color:var(--fg);font-family:inherit;font-size:14px;border-radius:var(--r);padding:10px 12px;outline:none;transition:border-color .15s;margin-bottom:12px;}
+.modal-input:focus{border-color:var(--primary);}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;}
+
+/* Toast */
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--card2);border:1px solid var(--primary);color:var(--fg);padding:10px 20px;border-radius:var(--r);font-size:13px;font-weight:600;z-index:999;box-shadow:var(--sh-md);animation:fadeUp .3s ease;}
+@keyframes fadeUp{from{opacity:0;transform:translateX(-50%) translateY(8px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+.spin-sm{width:16px;height:16px;border:2px solid var(--border);border-top-color:var(--primary);border-radius:50%;animation:spin .7s linear infinite;display:inline-block;}
+@keyframes spin{to{transform:rotate(360deg)}}
+.empty-state{text-align:center;padding:40px;color:var(--fg-muted);font-size:13px;}
+</style>
+</head>
+<body>
+
+<!-- Login -->
+<div class="login-overlay" id="loginOverlay">
+  <div class="login-box">
+    <div class="login-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
+    <div class="login-title">관리자 로그인</div>
+    <div class="login-sub">창공제 노래 콘테스트 관리자 패널</div>
+    <input class="login-input" type="password" id="pwInput" placeholder="비밀번호 입력" onkeydown="if(event.key==='Enter')tryLogin()">
+    <button class="login-btn" onclick="tryLogin()">로그인</button>
+    <div class="login-err" id="loginErr"></div>
+  </div>
+</div>
+
+<!-- App -->
+<div id="appWrap" style="display:none;flex-direction:column;height:100vh;">
+
+  <div class="top-bar">
+    <span class="top-logo">창공제 콘테스트 관리자</span>
+    <div class="top-actions" id="topActions">
+      <span class="top-chip cyan" id="phaseChip">예선</span>
+      <span class="top-chip" id="voteChip" onclick="toggleVote()" style="cursor:pointer">투표 닫힘</span>
+      <span class="top-chip" id="regChip" onclick="toggleRegistration()" style="cursor:pointer">신청 열림</span>
+    </div>
+  </div>
+
+  <div class="tab-bar">
+    <button class="tab-btn active" onclick="switchTab('contestants')">참가자관리</button>
+    <button class="tab-btn" onclick="switchTab('live')">진행 모드</button>
+    <button class="tab-btn" onclick="switchTab('judges')">심사위원</button>
+    <button class="tab-btn" onclick="switchTab('results')">결과</button>
+    <button class="tab-btn" onclick="switchTab('notices')">공지</button>
+  </div>
+
+  <div class="tab-content">
+
+    <!-- Tab 1: Contestants -->
+    <div class="tab-pane active" id="tab-contestants">
+      <div class="toolbar">
+        <button class="btn btn-primary" onclick="openXlsxImport()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> xlsx 가져오기</button>
+        <button class="btn btn-green" onclick="showAddModal()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> 수동 추가</button>
+        <input class="search-input" type="text" id="searchInput" placeholder="이름 또는 곡명 검색…" oninput="filterContestants()">
+      </div>
+      <div class="phase-bar" id="phaseTabs">
+        <div class="phase-step active" onclick="filterPhase('all',this)">전체</div>
+        <div class="phase-step" onclick="filterPhase('prelim',this)">예선</div>
+        <div class="phase-step" onclick="filterPhase('semi',this)">본선</div>
+        <div class="phase-step" onclick="filterPhase('final',this)">결선</div>
+      </div>
+      <div class="tbl-wrap" id="contestantTable">
+        <div class="empty-state"><span class="spin-sm"></span></div>
+      </div>
+    </div>
+
+    <!-- Tab 2: Live mode -->
+    <div class="tab-pane" id="tab-live">
+      <div class="phase-bar" style="margin-bottom:16px;">
+        <div class="phase-step" id="ps-prelim" onclick="setPhase('prelim')">예선전</div>
+        <div class="phase-step" id="ps-semi" onclick="setPhase('semi')">본선</div>
+        <div class="phase-step" id="ps-final" onclick="setPhase('final')">결선</div>
+        <div class="phase-step" id="ps-awards" onclick="setPhase('awards')">시상식</div>
+      </div>
+      <div class="live-grid">
+        <!-- Current performer -->
+        <div class="section-card">
+          <div class="sc-header">
+            <span class="sc-title">현재 공연</span>
+            <div style="display:flex;gap:6px;">
+              <button class="btn btn-orange" id="voteToggleBtn" onclick="toggleVote()" style="padding:5px 10px;font-size:12px;">투표 열기</button>
+              <button class="btn btn-red" onclick="endPerformance()" style="padding:5px 10px;font-size:12px;" id="endPerfBtn">공연 종료</button>
+            </div>
+          </div>
+          <div class="sc-body" id="currentPerfBody"><div class="empty-state" style="padding:20px">대기 중</div></div>
+        </div>
+        <!-- Judge scores -->
+        <div class="section-card">
+          <div class="sc-header"><span class="sc-title">실시간 채점</span><span id="scoreCount" style="font-size:11px;color:var(--fg-muted)"></span></div>
+          <div class="sc-body" id="scoresBody"><div class="empty-state" style="padding:20px">공연 시작 후 표시됩니다</div></div>
+        </div>
+        <!-- Queue -->
+        <div class="section-card">
+          <div class="sc-header"><span class="sc-title">대기 순서</span><span id="queueCount" style="font-size:11px;color:var(--fg-muted)"></span></div>
+          <div class="sc-body" id="queueBody" style="max-height:300px;overflow-y:auto"><div class="empty-state" style="padding:20px">참가자 없음</div></div>
+        </div>
+        <!-- Vote stats -->
+        <div class="section-card">
+          <div class="sc-header"><span class="sc-title">관객 투표 현황</span></div>
+          <div class="sc-body" id="voteBody"><div class="empty-state" style="padding:20px">투표 시작 전</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab 3: Judges -->
+    <div class="tab-pane" id="tab-judges">
+      <div class="toolbar">
+        <button class="btn btn-green" onclick="showJudgeModal()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> 심사위원 추가</button>
+        <span style="font-size:12px;color:var(--fg-muted);align-self:center">최대 15명까지 추가 가능</span>
+      </div>
+      <div class="judge-grid" id="judgeGrid"><div class="empty-state"><span class="spin-sm"></span></div></div>
+    </div>
+
+    <!-- Tab 4: Results -->
+    <div class="tab-pane" id="tab-results">
+      <div class="toolbar">
+        <button class="btn btn-primary" onclick="loadResults()">결과 새로고침</button>
+        <button class="btn btn-green" onclick="autoAssignAwards()">점수별 자동 배정</button>
+        <button class="btn btn-orange" onclick="saveAllAwards()">수상자 저장 및 결과 발표 준비</button>
+      </div>
+      <div class="results-grid">
+        <div>
+          <div style="font-size:13px;font-weight:700;color:var(--fg-sub);margin-bottom:10px;">종합 순위</div>
+          <div class="tbl-wrap" id="rankTable"><div class="empty-state"><span class="spin-sm"></span></div></div>
+        </div>
+        <div>
+          <div style="font-size:13px;font-weight:700;color:var(--fg-sub);margin-bottom:10px;">수상자 지정</div>
+          <div id="awardAssignArea"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab 5: Notices -->
+    <div class="tab-pane" id="tab-notices">
+      <div class="notice-compose">
+        <textarea class="notice-textarea" id="noticeText" rows="3" placeholder="공지 내용을 입력하세요…"></textarea>
+        <button class="btn btn-primary" onclick="sendNotice()" style="align-self:flex-end">저장</button>
+      </div>
+      <div id="noticeList"><div class="empty-state"><span class="spin-sm"></span></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- Modals -->
+<div class="modal-overlay" id="addModal" style="display:none">
+  <div class="modal-box">
+    <div class="modal-title">참가자 추가</div>
+    <div class="modal-label">성함 *</div><input class="modal-input" id="m-name" placeholder="이름">
+    <div class="modal-label">소속</div><input class="modal-input" id="m-dept" placeholder="계열/부서">
+    <div class="modal-label">참가곡 제목 *</div><input class="modal-input" id="m-title" placeholder="곡 제목">
+    <div class="modal-label">가수</div><input class="modal-input" id="m-artist" placeholder="가수명">
+    <div class="modal-label">연락처</div><input class="modal-input" id="m-phone" placeholder="010-0000-0000">
+    <div class="modal-label">부문</div>
+    <select class="modal-input" id="m-cat"><option value="개인">개인</option><option value="팀">팀</option></select>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('addModal')">취소</button>
+      <button class="btn btn-green" onclick="confirmAdd()">추가</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="judgeModal" style="display:none">
+  <div class="modal-box">
+    <div class="modal-title">심사위원 추가</div>
+    <div class="modal-label">심사위원 이름 *</div>
+    <input class="modal-input" id="j-name" placeholder="심사위원 성함">
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('judgeModal')">취소</button>
+      <button class="btn btn-green" onclick="confirmAddJudge()">추가</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="xlsxModal" style="display:none">
+  <div class="modal-box">
+    <div class="modal-title">xlsx 사전신청자 가져오기</div>
+    <input type="file" id="xlsxFile" accept=".xlsx,.xls,.csv" style="display:none" onchange="parseXlsx(this.files[0])">
+    <button class="btn btn-primary" onclick="document.getElementById('xlsxFile').click()" style="width:100%;justify-content:center;margin-bottom:12px;">파일 선택</button>
+    <div id="xlsxPreview" style="max-height:200px;overflow-y:auto;margin-bottom:12px;font-size:12px;color:var(--fg-muted);">구글 폼 응답 xlsx 파일을 선택하세요.</div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('xlsxModal')">취소</button>
+      <button class="btn btn-green" id="xlsxConfirmBtn" disabled onclick="confirmXlsxImport()">가져오기</button>
+    </div>
+  </div>
+</div>
+
+<input type="file" id="xlsxFile" accept=".xlsx,.xls" style="display:none">
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+'use strict';
+(function(){
+
+var SB_URL = 'https://zbpeyklwpotjyveipzxd.supabase.co';
+var SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpicGV5a2x3cG90anl2ZWlwenhkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE1MTYxMDcsImV4cCI6MjA5NzA5MjEwN30.6JgoQ6rPRnmrbBTG68A-Y9HDQk40mnwubhXVnkZvHrQ';
+var ADMIN_PW = 'dktpdk2026!';
+var BASE_URL = 'https://bangdw-hash.github.io/asea-calendar-management/';
+
+var sb = supabase.createClient(SB_URL, SB_KEY, {db:{schema:'cgf'}});
+
+var state = null;
+var contestants = [];
+var judges = [];
+var results = [];
+var phaseFilter = 'all';
+var pendingXlsx = [];
+
+// ─── Login ──────────────────────────────────────────
+window.tryLogin = function() {
+  var pw = document.getElementById('pwInput').value;
+  if (pw === ADMIN_PW) {
+    sessionStorage.setItem('cgf_admin','1');
+    document.getElementById('loginOverlay').style.display = 'none';
+    document.getElementById('appWrap').style.display = 'flex';
+    initApp();
+  } else {
+    document.getElementById('loginErr').textContent = '비밀번호가 올바르지 않습니다.';
+    document.getElementById('pwInput').value = '';
+  }
+};
+
+if (sessionStorage.getItem('cgf_admin')==='1') {
+  document.getElementById('loginOverlay').style.display = 'none';
+  document.getElementById('appWrap').style.display = 'flex';
+  initApp();
+}
+
+// ─── App init ───────────────────────────────────────
+async function initApp() {
+  await loadState();
+  await loadContestants();
+  await loadJudges();
+  renderContestantsTab();
+  renderJudgesTab();
+  updateTopBar();
+  subscribeRealtime();
+}
+
+async function loadState() {
+  var {data} = await sb.from('state').select('*').eq('id',1).single();
+  state = data || {phase:'prelim',voting_open:false,registration_open:true};
+}
+
+async function loadContestants() {
+  var {data} = await sb.from('contestants').select('*').order('seq',{ascending:true,nullsFirst:false}).order('created_at',{ascending:true});
+  contestants = data || [];
+}
+
+async function loadJudges() {
+  var {data} = await sb.from('judges').select('*').eq('active',true).order('created_at',{ascending:true});
+  judges = data || [];
+}
+
+function subscribeRealtime() {
+  sb.channel('cgf-manage')
+    .on('postgres_changes',{event:'*',schema:'cgf',table:'state'},async function(p){
+      state = p.new;
+      updateTopBar();
+      if (activeTab()==='live') updateLiveTab();
+    })
+    .on('postgres_changes',{event:'*',schema:'cgf',table:'contestants'},async function(){
+      await loadContestants();
+      if (activeTab()==='contestants') renderContestantsTab();
+      if (activeTab()==='live') updateLiveTab();
+    })
+    .on('postgres_changes',{event:'*',schema:'cgf',table:'scores'},async function(){
+      if (activeTab()==='live') updateLiveTab();
+    })
+    .on('postgres_changes',{event:'*',schema:'cgf',table:'votes'},async function(){
+      if (activeTab()==='live') renderVoteStat();
+    })
+    .on('postgres_changes',{event:'*',schema:'cgf',table:'judges'},async function(){
+      await loadJudges();
+      if (activeTab()==='judges') renderJudgesTab();
+    })
+    .subscribe();
+}
+
+function activeTab() {
+  var p = document.querySelector('.tab-pane.active');
+  return p ? p.id.replace('tab-','') : '';
+}
+
+// ─── Top bar ────────────────────────────────────────
+function updateTopBar() {
+  if (!state) return;
+  var phaseNames = {prelim:'예선',semi:'본선',final:'결선',awards:'시상식'};
+  var pc = document.getElementById('phaseChip');
+  if (pc) pc.textContent = phaseNames[state.phase]||state.phase;
+  var vc = document.getElementById('voteChip');
+  if (vc) { vc.textContent = state.voting_open?'투표 열림':'투표 닫힘'; vc.className = 'top-chip '+(state.voting_open?'green':'orange'); }
+  var rc = document.getElementById('regChip');
+  if (rc) { rc.textContent = state.registration_open?'신청 열림':'신청 마감'; rc.className = 'top-chip '+(state.registration_open?'green':'red'); }
+  updateLivePhaseBtns();
+}
+
+window.toggleVote = async function() {
+  var open = !state.voting_open;
+  var upd = {voting_open:open, updated_at:new Date().toISOString()};
+  if (open) upd.voting_opened_at = new Date().toISOString();
+  await sb.from('state').update(upd).eq('id',1);
+  toast(open?'관객 투표가 열렸습니다':'관객 투표가 닫혔습니다');
+};
+
+window.toggleRegistration = async function() {
+  await sb.from('state').update({registration_open:!state.registration_open,updated_at:new Date().toISOString()}).eq('id',1);
+};
+
+// ─── Tab switching ───────────────────────────────────
+window.switchTab = function(id) {
+  document.querySelectorAll('.tab-btn').forEach(function(b,i){b.classList.toggle('active',i===['contestants','live','judges','results','notices'].indexOf(id));});
+  document.querySelectorAll('.tab-pane').forEach(function(p){p.classList.toggle('active',p.id==='tab-'+id);});
+  if (id==='live') updateLiveTab();
+  if (id==='results') loadResults();
+  if (id==='judges') renderJudgesTab();
+  if (id==='notices') loadNotices();
+};
+
+// ─── Phase ──────────────────────────────────────────
+window.setPhase = async function(p) {
+  if (!confirm('단계를 ' + {prelim:'예선',semi:'본선',final:'결선',awards:'시상식'}[p] + '으로 변경하시겠습니까?')) return;
+  await sb.from('state').update({phase:p,updated_at:new Date().toISOString()}).eq('id',1);
+  toast('단계 변경: '+(p));
+};
+
+window.filterPhase = function(p, el) {
+  phaseFilter = p;
+  document.querySelectorAll('#phaseTabs .phase-step').forEach(function(s){ s.classList.toggle('active', s===el); });
+  renderContestantsTab();
+};
+
+function updateLivePhaseBtns() {
+  ['prelim','semi','final','awards'].forEach(function(p){
+    var btn = document.getElementById('ps-'+p);
+    if (btn) btn.classList.toggle('active', state && state.phase === p);
+  });
+}
+
+// ─── Contestants Tab ─────────────────────────────────
+function renderContestantsTab() {
+  var search = (document.getElementById('searchInput')||{value:''}).value.toLowerCase();
+  var list = contestants.filter(function(c){
+    if (phaseFilter !== 'all' && c.phase !== phaseFilter) return false;
+    if (search && !(c.name||'').toLowerCase().includes(search) && !(c.song_title||'').toLowerCase().includes(search)) return false;
+    return true;
+  });
+  var tbl = document.getElementById('contestantTable');
+  if (!list.length) { tbl.innerHTML = '<div class="empty-state">참가자가 없습니다</div>'; return; }
+  var html = '<table><thead><tr>'
+    +'<th style="width:32px"></th><th>#</th><th>이름</th><th>소속</th><th>부문</th>'
+    +'<th>참가곡</th><th>연락처</th><th>상태</th><th>구분</th><th>작업</th>'
+    +'</tr></thead><tbody>';
+  list.forEach(function(c,i){
+    var srcBadge = c.is_pre_registered?'badge-pre':c.source==='form'?'badge-form':'badge-manual';
+    var srcLabel = c.is_pre_registered?'사전신청':c.source==='form'?'현장신청':'수동등록';
+    var stBadge = c.status==='absent'?'badge-absent':c.status==='done'?'badge-done':'badge-active';
+    var stLabel = c.status==='absent'?'미참석':c.status==='done'?'완료':'대기';
+    html += '<tr draggable="true" data-id="'+c.id+'" data-idx="'+i+'" ondragstart="dragStart(event,this)" ondragover="dragOver(event,this)" ondrop="dragDrop(event,this)" ondragleave="dragLeave(this)">'
+      +'<td><span class="drag-handle">⠿</span></td>'
+      +'<td style="color:var(--fg-muted)">'+(c.seq||i+1)+'</td>'
+      +'<td style="font-weight:700">'+esc(c.name)+'</td>'
+      +'<td>'+esc(c.affiliation||'—')+'</td>'
+      +'<td>'+esc(c.category||'개인')+'</td>'
+      +'<td>'+esc(c.song_title||'—')+(c.song_artist?'<span style="color:var(--fg-muted)"> / '+esc(c.song_artist)+'</span>':'')+'</td>'
+      +'<td style="font-size:12px;color:var(--fg-muted)">'+esc(c.phone||'—')+'</td>'
+      +'<td><span class="td-badge '+stBadge+'">'+stLabel+'</span></td>'
+      +'<td><span class="td-badge '+srcBadge+'">'+srcLabel+'</span></td>'
+      +'<td><div class="action-btns">'
+      +'<button class="act-btn btn-primary" onclick="startPerf(\''+c.id+'\')">공연시작</button>'
+      +(c.status!=='absent'?'<button class="act-btn btn-orange" onclick="markAbsent(\''+c.id+'\')">미참석</button>':'<button class="act-btn btn-green" onclick="markActive(\''+c.id+'\')">복귀</button>')
+      +'<button class="act-btn btn-red" onclick="delContestant(\''+c.id+'\')">삭제</button>'
+      +'</div></td>'
+      +'</tr>';
+  });
+  html += '</tbody></table>';
+  tbl.innerHTML = html;
+}
+
+window.filterContestants = function() { renderContestantsTab(); };
+
+// Drag-to-reorder
+var dragSrcIdx = null;
+window.dragStart = function(e, row) { dragSrcIdx = parseInt(row.dataset.idx); row.classList.add('dragging'); e.dataTransfer.effectAllowed='move'; };
+window.dragOver = function(e, row) { e.preventDefault(); e.dataTransfer.dropEffect='move'; row.classList.add('drag-over'); };
+window.dragLeave = function(row) { row.classList.remove('drag-over'); };
+window.dragDrop = async function(e, row) {
+  e.preventDefault(); row.classList.remove('drag-over');
+  var destIdx = parseInt(row.dataset.idx);
+  if (dragSrcIdx === null || dragSrcIdx === destIdx) return;
+  var src = contestants[dragSrcIdx];
+  var dest = contestants[destIdx];
+  if (!src || !dest) return;
+  // Swap seq
+  var seqA = dest.seq || destIdx+1;
+  var seqB = src.seq || dragSrcIdx+1;
+  await sb.from('contestants').update({seq:seqA}).eq('id',src.id);
+  await sb.from('contestants').update({seq:seqB}).eq('id',dest.id);
+  await loadContestants();
+  renderContestantsTab();
+};
+
+window.startPerf = async function(id) {
+  var c = contestants.find(function(x){return x.id===id;});
+  if (!c) return;
+  await sb.from('state').update({current_contestant_id:id,voting_open:false,updated_at:new Date().toISOString()}).eq('id',1);
+  toast('공연 시작: '+c.name);
+  switchTab('live');
+};
+
+window.markAbsent = async function(id) {
+  await sb.from('contestants').update({status:'absent'}).eq('id',id);
+  toast('미참석 처리');
+};
+window.markActive = async function(id) {
+  await sb.from('contestants').update({status:'active'}).eq('id',id);
+};
+window.delContestant = async function(id) {
+  if (!confirm('참가자를 삭제하시겠습니까?')) return;
+  await sb.from('contestants').delete().eq('id',id);
+};
+
+// Manual add
+window.showAddModal = function() { document.getElementById('addModal').style.display='flex'; };
+window.confirmAdd = async function() {
+  var name = document.getElementById('m-name').value.trim();
+  if (!name) return;
+  var maxSeq = contestants.length ? Math.max.apply(null, contestants.map(function(c){return c.seq||0;})) : 0;
+  await sb.from('contestants').insert({
+    name:name, affiliation:document.getElementById('m-dept').value.trim(),
+    song_title:document.getElementById('m-title').value.trim(),
+    song_artist:document.getElementById('m-artist').value.trim(),
+    phone:document.getElementById('m-phone').value.trim(),
+    category:document.getElementById('m-cat').value,
+    source:'manual', seq:maxSeq+1, status:'active'
+  });
+  closeModal('addModal');
+  toast('참가자 추가 완료');
+};
+
+// xlsx import
+window.openXlsxImport = function() {
+  document.getElementById('xlsxModal').style.display='flex';
+  document.getElementById('xlsxPreview').textContent='구글 폼 응답 xlsx 파일을 선택하세요.';
+  document.getElementById('xlsxConfirmBtn').disabled=true;
+  pendingXlsx=[];
+};
+
+window.parseXlsx = function(file) {
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var wb = XLSX.read(e.target.result, {type:'array'});
+    var ws = wb.Sheets[wb.SheetNames[0]];
+    var rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:''});
+    if (rows.length < 2) { document.getElementById('xlsxPreview').textContent='데이터가 없습니다.'; return; }
+    var headers = rows[0].map(function(h){return (h||'').toString().trim();});
+    function col(row, keyword) {
+      var idx = headers.findIndex(function(h){return h.includes(keyword);});
+      return idx>=0?(row[idx]||'').toString().trim():'';
+    }
+    pendingXlsx = rows.slice(1).filter(function(r){return r.length>2 && (r[2]||r[1]||'').toString().trim();}).map(function(row) {
+      var songRaw = col(row,'참가곡');
+      var parts = songRaw.split(' - ');
+      var title = parts[0]?parts[0].trim():'';
+      var artist = parts.length>1?parts[parts.length-1].trim():'';
+      var members = [];
+      for (var i=1;i<=2;i++) {
+        var mn = col(row,'팀 참가자 '+i+' 성함');
+        if (mn) members.push({name:mn,affiliation:col(row,'팀 참가자 '+i+' 계열'),phone:col(row,'팀 참가자 '+i+' 연락처')});
+      }
+      return {
+        name:col(row,'성함')||col(row,'이름'),
+        affiliation:col(row,'계열')||col(row,'소속'),
+        phone:col(row,'연락처')||col(row,'전화'),
+        category:(col(row,'부문')||'').includes('팀')?'팀':'개인',
+        song_title:title, song_artist:artist,
+        team_members:members, source:'xlsx', is_pre_registered:true, status:'active'
+      };
+    }).filter(function(r){return r.name;});
+    var prev = document.getElementById('xlsxPreview');
+    if (!pendingXlsx.length) { prev.textContent='인식된 행이 없습니다.'; return; }
+    prev.innerHTML = '<b style="color:var(--green)">'+pendingXlsx.length+'명 인식됨:</b><br><br>'
+      +pendingXlsx.map(function(r,i){return (i+1)+'. '+esc(r.name)+' — '+esc(r.song_title||'미입력');}).join('<br>');
+    document.getElementById('xlsxConfirmBtn').disabled=false;
+  };
+  reader.readAsArrayBuffer(file);
+};
+
+window.confirmXlsxImport = async function() {
+  if (!pendingXlsx.length) return;
+  var maxSeq = contestants.length ? Math.max.apply(null,contestants.map(function(c){return c.seq||0;})) : 0;
+  var rows = pendingXlsx.map(function(r,i){
+    r.seq = maxSeq+i+1; return r;
+  });
+  var {error} = await sb.from('contestants').insert(rows);
+  if (error) { toast('오류: '+error.message); return; }
+  closeModal('xlsxModal');
+  toast(rows.length+'명 가져오기 완료');
+};
+
+// ─── Live Tab ───────────────────────────────────────
+async function updateLiveTab() {
+  if (!state) return;
+  updateLivePhaseBtns();
+  var vBtn = document.getElementById('voteToggleBtn');
+  if (vBtn) vBtn.textContent = state.voting_open?'투표 닫기':'투표 열기';
+
+  // Current performer
+  var body = document.getElementById('currentPerfBody');
+  if (state.current_contestant_id) {
+    var c = contestants.find(function(x){return x.id===state.current_contestant_id;});
+    if (!c) { var {data:cd} = await sb.from('contestants').select('*').eq('id',state.current_contestant_id).single(); c=cd; }
+    if (c) {
+      body.innerHTML = '<div class="perf-name">'+esc(c.name)+'</div>'
+        +'<div class="perf-song">'+esc(c.song_title||'')+(c.song_artist?' — '+esc(c.song_artist):'')+'</div>'
+        +(state.voting_open?'<div style="margin-top:10px;font-size:12px;color:var(--green);font-weight:600">● 투표 중</div>':'');
+    }
+  } else {
+    body.innerHTML = '<div style="color:var(--fg-muted);font-size:13px">대기 중 — 참가자 탭에서 「공연시작」</div>';
+  }
+
+  // Judge scores
+  if (state.current_contestant_id) {
+    var {data:scores} = await sb.from('scores')
+      .select('*, judge:judge_id(name)')
+      .eq('contestant_id', state.current_contestant_id)
+      .eq('phase', state.phase||'prelim');
+    renderScores(scores||[]);
+    renderVoteStat();
+  }
+
+  // Queue
+  renderQueue();
+}
+
+function renderScores(scores) {
+  var body = document.getElementById('scoresBody');
+  var cnt = document.getElementById('scoreCount');
+  if (cnt) cnt.textContent = scores.length + '/' + judges.length + ' 제출';
+  if (!scores.length) { body.innerHTML = '<div style="color:var(--fg-muted);font-size:13px">채점 대기 중</div>'; return; }
+  var avg = scores.length ? Math.round(scores.reduce(function(s,x){return s+x.total;},0)/scores.length) : 0;
+  var html = '<div class="score-mini">'
+    +'<span class="sh">심사위원</span><span class="sh" style="text-align:right">채점</span><span class="sh" style="text-align:right">점수</span>';
+  scores.forEach(function(s){
+    var jn = s.judge ? s.judge.name : '—';
+    html += '<span>'+esc(jn)+'</span>'
+      +'<span class="sv" style="font-size:11px;color:var(--fg-muted)">'+s.vocal+'/'+s.showmanship+'/'+s.audience_response+'</span>'
+      +'<span class="st">'+s.total+'</span>';
+  });
+  html += '</div>';
+  if (scores.length > 1) html += '<div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;color:var(--fg-muted)">전문가 평균</span><span style="font-size:20px;font-weight:800;color:var(--primary)">'+avg+'점</span></div>';
+  body.innerHTML = html;
+}
+
+async function renderVoteStat() {
+  if (!state || !state.current_contestant_id) return;
+  var {data:votes} = await sb.from('votes').select('stars').eq('contestant_id',state.current_contestant_id).eq('phase',state.phase||'prelim');
+  var body = document.getElementById('voteBody');
+  if (!votes||!votes.length) { body.innerHTML = '<div style="color:var(--fg-muted);font-size:13px">투표 없음</div>'; return; }
+  var avg = votes.reduce(function(s,v){return s+v.stars;},0)/votes.length;
+  body.innerHTML = '<div class="vote-stat">'
+    +'<div><div class="vote-num">'+votes.length+'</div><div class="vote-label">명 투표</div></div>'
+    +'<div><div class="vote-num star-mini">'+avg.toFixed(1)+'</div><div class="vote-label">평균 별점</div></div>'
+    +'<div><div class="vote-num" style="font-size:18px;color:var(--green)">'+(avg*8).toFixed(1)+'</div><div class="vote-label">관객 환산점수</div></div>'
+    +'</div>';
+}
+
+function renderQueue() {
+  var active = contestants.filter(function(c){return c.status==='active' && c.id !== (state&&state.current_contestant_id);});
+  var cnt = document.getElementById('queueCount');
+  if (cnt) cnt.textContent = active.length + '명 대기';
+  var body = document.getElementById('queueBody');
+  if (!active.length) { body.innerHTML = '<div style="color:var(--fg-muted);font-size:13px;padding:12px">대기 중인 참가자 없음</div>'; return; }
+  body.innerHTML = active.slice(0,15).map(function(c,i){
+    return '<div class="queue-row" onclick="startPerf(\''+c.id+'\')">'
+      +'<div class="queue-num">'+(i+1)+'</div>'
+      +'<div><div class="queue-name">'+esc(c.name)+'</div><div class="queue-song">'+esc(c.song_title||'')+'</div></div>'
+      +'</div>';
+  }).join('');
+}
+
+window.endPerformance = async function() {
+  if (!state||!state.current_contestant_id) return;
+  await sb.from('contestants').update({status:'done',phase:state.phase||'prelim'}).eq('id',state.current_contestant_id);
+  await sb.from('state').update({current_contestant_id:null,voting_open:false,updated_at:new Date().toISOString()}).eq('id',1);
+  toast('공연 종료');
+};
+
+// ─── Judges Tab ─────────────────────────────────────
+function renderJudgesTab() {
+  var grid = document.getElementById('judgeGrid');
+  if (!judges.length) { grid.innerHTML = '<div class="empty-state">심사위원이 없습니다.<br>「심사위원 추가」를 클릭하세요.</div>'; return; }
+  grid.innerHTML = judges.map(function(j){
+    var url = BASE_URL + 'changong-judge.html?t=' + j.token;
+    var connected = !!j.device_fp;
+    return '<div class="judge-card">'
+      +'<div class="judge-name">'+esc(j.name)+'</div>'
+      +'<div class="judge-status"><span class="status-dot '+(connected?'dot-green':'dot-gray')+'"></span><span style="font-size:12px;color:var(--fg-muted)">'+(connected?'기기 연결됨':'연결 대기')+'</span></div>'
+      +'<div class="judge-url">'+esc(url)+'</div>'
+      +'<div style="display:flex;gap:6px;">'
+      +'<button class="btn btn-primary" style="flex:1;justify-content:center;font-size:12px" onclick="copyUrl(\''+encodeURIComponent(url)+'\')">URL 복사</button>'
+      +'<button class="btn btn-red" style="font-size:12px" onclick="delJudge(\''+j.id+'\')">삭제</button>'
+      +'</div>'
+      +'</div>';
+  }).join('');
+}
+
+window.copyUrl = function(encoded) {
+  navigator.clipboard.writeText(decodeURIComponent(encoded)).then(function(){toast('URL 복사됨');}).catch(function(){});
+};
+window.showJudgeModal = function() {
+  if (judges.length >= 15) { toast('최대 15명까지 추가 가능합니다'); return; }
+  document.getElementById('judgeModal').style.display='flex';
+  document.getElementById('j-name').value='';
+};
+window.confirmAddJudge = async function() {
+  var name = document.getElementById('j-name').value.trim();
+  if (!name) return;
+  var arr = new Uint8Array(12); crypto.getRandomValues(arr);
+  var token = Array.from(arr).map(function(b){return b.toString(16).padStart(2,'0');}).join('');
+  await sb.from('judges').insert({name:name,token:token});
+  closeModal('judgeModal');
+  toast('심사위원 추가: '+name);
+};
+window.delJudge = async function(id) {
+  if (!confirm('심사위원을 삭제하시겠습니까?')) return;
+  await sb.from('judges').update({active:false}).eq('id',id);
+  await loadJudges(); renderJudgesTab();
+};
+
+// ─── Results Tab ────────────────────────────────────
+var awardAssignments = {};
+
+window.loadResults = async function() {
+  var {data:scores} = await sb.from('scores').select('contestant_id,total,phase').eq('phase',state?state.phase:'prelim');
+  var {data:votes} = await sb.from('votes').select('contestant_id,stars,phase').eq('phase',state?state.phase:'prelim');
+  var {data:awards} = await sb.from('awards').select('*');
+
+  // Aggregate
+  var scoreMap = {};
+  (scores||[]).forEach(function(s){
+    if (!scoreMap[s.contestant_id]) scoreMap[s.contestant_id] = [];
+    scoreMap[s.contestant_id].push(s.total);
+  });
+  var voteMap = {};
+  (votes||[]).forEach(function(v){
+    if (!voteMap[v.contestant_id]) voteMap[v.contestant_id] = [];
+    voteMap[v.contestant_id].push(v.stars);
+  });
+
+  results = contestants.map(function(c){
+    var sc = scoreMap[c.id] || [];
+    var vc = voteMap[c.id] || [];
+    var judgeAvg = sc.length ? sc.reduce(function(a,b){return a+b;},0)/sc.length : 0;
+    var voteAvg = vc.length ? vc.reduce(function(a,b){return a+b;},0)/vc.length : 0;
+    var final = judgeAvg*0.6 + voteAvg*8;
+    return {id:c.id,name:c.name,song:c.song_title,judgeAvg:judgeAvg,voteAvg:voteAvg,voteCount:vc.length,final:final};
+  }).sort(function(a,b){return b.final-a.final;});
+
+  awardAssignments = {};
+  (awards||[]).forEach(function(a){ awardAssignments[a.award_type] = {contestant_id:a.contestant_id,note:a.note,revealed:a.revealed,id:a.id}; });
+
+  renderRankTable();
+  renderAwardAssign();
+};
+
+function renderRankTable() {
+  var tbl = document.getElementById('rankTable');
+  if (!results.length) { tbl.innerHTML = '<div class="empty-state">채점 데이터 없음</div>'; return; }
+  var html = '<table class="rank-table"><thead><tr><th>#</th><th>이름</th><th>참가곡</th><th>전문가</th><th>관객</th><th>최종</th></tr></thead><tbody>';
+  var maxFinal = results.length ? results[0].final : 1;
+  results.forEach(function(r,i){
+    html += '<tr><td>'+(i+1)+'</td><td style="font-weight:700">'+esc(r.name)+'</td><td>'+esc(r.song||'—')+'</td>'
+      +'<td>'+r.judgeAvg.toFixed(1)+'</td>'
+      +'<td>'+r.voteAvg.toFixed(1)+' <span style="font-size:11px;color:var(--fg-muted)">('+r.voteCount+'명)</span></td>'
+      +'<td><div style="font-weight:800;color:var(--primary)">'+r.final.toFixed(1)+'</div>'
+      +'<div class="score-bar"><div class="score-fill" style="width:'+(r.final/maxFinal*100).toFixed(0)+'%"></div></div>'
+      +'</td></tr>';
+  });
+  html += '</tbody></table>';
+  tbl.innerHTML = html;
+}
+
+function renderAwardAssign() {
+  var AWARD_TYPES = [
+    {type:'merit',label:'우수상',auto:true,rank:2},
+    {type:'excellence',label:'최우수상',auto:true,rank:1},
+    {type:'grand',label:'대상',auto:true,rank:0},
+    {type:'popularity',label:'인기상',auto:'votes'},
+    {type:'judge_special',label:'심사위원 특별상',auto:false},
+    {type:'mc_special',label:'MC 특별상',auto:false}
+  ];
+  var html = '';
+  AWARD_TYPES.forEach(function(at){
+    var cur = awardAssignments[at.type] || {};
+    var revClass = cur.revealed ? 'rs-revealed' : 'rs-hidden';
+    var revLabel = cur.revealed ? '발표됨' : '미발표';
+    html += '<div class="award-assign">'
+      +'<div class="award-type-label"><span>'+at.label+'</span><span class="reveal-status '+revClass+'">'+revLabel+'</span></div>'
+      +'<select class="award-select" id="as-'+at.type+'" onchange="awardPick(\''+at.type+'\',this.value)">'
+      +'<option value="">— 미지정 —</option>'
+      +contestants.map(function(c){return '<option value="'+c.id+'"'+(cur.contestant_id===c.id?' selected':'')+'>'+esc(c.name)+' ('+esc(c.song_title||'')+')</option>';}).join('')
+      +'</select>'
+      +'<input class="award-note-input" id="an-'+at.type+'" placeholder="비고 (선택사항)" value="'+esc(cur.note||'')+'">'
+      +'</div>';
+  });
+  document.getElementById('awardAssignArea').innerHTML = html;
+}
+
+window.awardPick = function(type, cid) {
+  if (!awardAssignments[type]) awardAssignments[type] = {};
+  awardAssignments[type].contestant_id = cid || null;
+};
+
+window.autoAssignAwards = function() {
+  if (!results.length) { toast('먼저 결과를 새로고침하세요'); return; }
+  // Top 3 → 대상/최우우상/우수상
+  var RANK = ['grand','excellence','merit'];
+  results.slice(0,3).forEach(function(r,i){
+    if (RANK[i]) {
+      if (!awardAssignments[RANK[i]]) awardAssignments[RANK[i]] = {};
+      awardAssignments[RANK[i]].contestant_id = r.id;
+      var sel = document.getElementById('as-'+RANK[i]);
+      if (sel) sel.value = r.id;
+    }
+  });
+  // Popularity → highest voteCount
+  var byVotes = results.slice().sort(function(a,b){return b.voteCount-a.voteCount;});
+  if (byVotes.length) {
+    if (!awardAssignments['popularity']) awardAssignments['popularity'] = {};
+    awardAssignments['popularity'].contestant_id = byVotes[0].id;
+    var ps = document.getElementById('as-popularity');
+    if (ps) ps.value = byVotes[0].id;
+  }
+  toast('자동 배정 완료 — 저장하려면 「수상자 저장」 클릭');
+};
+
+window.saveAllAwards = async function() {
+  var TYPES = ['merit','excellence','grand','popularity','judge_special','mc_special'];
+  var order = {merit:1,excellence:2,grand:3,popularity:4,judge_special:5,mc_special:6};
+  for (var i=0;i<TYPES.length;i++) {
+    var t = TYPES[i];
+    var cid = awardAssignments[t] ? awardAssignments[t].contestant_id : null;
+    if (!cid) continue;
+    var note = (document.getElementById('an-'+t)||{value:''}).value.trim();
+    var {data:ex} = await sb.from('awards').select('id').eq('award_type',t).maybeSingle();
+    if (ex) {
+      await sb.from('awards').update({contestant_id:cid,note:note||null,reveal_order:order[t]}).eq('award_type',t);
+    } else {
+      await sb.from('awards').insert({award_type:t,contestant_id:cid,note:note||null,reveal_order:order[t],revealed:false});
+    }
+  }
+  toast('수상자 저장 완료');
+  await loadResults();
+};
+
+// ─── Notices Tab ────────────────────────────────────
+async function loadNotices() {
+  var {data} = await sb.from('notices').select('*').order('created_at',{ascending:false}).limit(30);
+  var list = document.getElementById('noticeList');
+  if (!data||!data.length) { list.innerHTML = '<div class="empty-state">공지 내역 없음</div>'; return; }
+  list.innerHTML = data.map(function(n){
+    return '<div class="notice-item">'
+      +'<div class="notice-text">'+esc(n.content)+'</div>'
+      +'<div class="notice-meta">'+new Date(n.created_at).toLocaleString('ko-KR')+'</div>'
+      +'</div>';
+  }).join('');
+}
+
+window.sendNotice = async function() {
+  var txt = document.getElementById('noticeText').value.trim();
+  if (!txt) return;
+  await sb.from('notices').insert({content:txt});
+  document.getElementById('noticeText').value = '';
+  toast('공지 저장');
+  await loadNotices();
+};
+
+// ─── Utilities ─────────────────────────────────────
+window.closeModal = function(id) { document.getElementById(id).style.display='none'; };
+
+function toast(msg) {
+  var el = document.createElement('div');
+  el.className = 'toast'; el.textContent = msg;
+  document.body.appendChild(el);
+  setTimeout(function(){el.remove();},3000);
+}
+
+function esc(s){return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>창공제 심사위원 채점</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600;700;800&display=swap">
+<style>
+:root{
+  --bg:#0d1b2a; --bg2:#142133; --bg3:#1a2d42;
+  --card:#1e3450; --card2:#243d5a;
+  --fg:#e0f2fe; --fg-sub:#7dd3fc; --fg-muted:#38627a;
+  --border:#1a4a68; --border2:#2d5f82;
+  --primary:#00d4ff; --primary-dk:#00a8cc; --primary-lt:rgba(0,212,255,.1);
+  --green:#22c55e; --green-lt:rgba(34,197,94,.12);
+  --orange:#f59e0b; --orange-lt:rgba(245,158,11,.12);
+  --red:#f87171; --red-lt:rgba(248,113,113,.12);
+  --r:6px;
+  --sh:0 2px 8px rgba(0,0,0,.35);
+  --sh-md:0 6px 20px rgba(0,0,0,.5);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--bg);}
+body{
+  font-family:'Noto Sans KR',-apple-system,sans-serif;
+  color:var(--fg);font-size:15px;
+  min-height:100vh;
+  display:flex;flex-direction:column;
+  padding:0 0 32px;
+}
+.top-bar{
+  background:var(--bg2);border-bottom:1px solid var(--border);
+  padding:14px 20px;
+  display:flex;align-items:center;justify-content:space-between;
+  gap:12px;
+}
+.top-title{font-size:14px;font-weight:700;color:var(--fg-sub);}
+.top-badge{
+  display:flex;align-items:center;gap:6px;
+  font-size:12px;font-weight:600;
+  background:var(--primary-lt);color:var(--primary);
+  border:1px solid rgba(0,212,255,.2);
+  border-radius:100px;padding:4px 10px;
+}
+.top-dot{width:7px;height:7px;border-radius:50%;background:var(--primary);animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.6;transform:scale(.85)}}
+
+.main{flex:1;padding:16px;max-width:480px;width:100%;margin:0 auto;display:flex;flex-direction:column;gap:14px;}
+
+/* Status */
+.status-card{
+  background:var(--card);border-radius:var(--r);
+  border:1px solid var(--border);
+  padding:16px 18px;
+}
+.status-row{display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.status-label{font-size:12px;color:var(--fg-muted);}
+.status-val{font-size:13px;font-weight:600;color:var(--fg);}
+.status-ok{color:var(--green);}
+.status-err{color:var(--red);}
+
+/* Performer card */
+.perf-card{
+  background:linear-gradient(135deg,rgba(0,100,160,.6),rgba(0,212,255,.15));
+  border:1px solid rgba(0,212,255,.25);border-radius:var(--r);
+  padding:20px;text-align:center;position:relative;overflow:hidden;
+  box-shadow:var(--sh-md);
+}
+.perf-waiting{color:var(--fg-muted);font-size:14px;padding:16px 0;}
+.perf-label{font-size:11px;font-weight:700;letter-spacing:.1em;color:var(--primary);opacity:.8;margin-bottom:10px;text-transform:uppercase;}
+.perf-name{font-size:26px;font-weight:800;color:#fff;margin-bottom:6px;text-shadow:0 0 20px rgba(0,212,255,.4);}
+.perf-song{font-size:13px;color:var(--fg-sub);}
+.perf-phase{
+  position:absolute;top:12px;right:14px;
+  font-size:11px;font-weight:600;color:var(--primary);
+  background:rgba(0,212,255,.12);border-radius:100px;padding:3px 8px;
+}
+
+/* Score inputs */
+.score-card{
+  background:var(--card);border-radius:var(--r);
+  border:1px solid var(--border);overflow:hidden;
+}
+.score-header{
+  padding:14px 18px 10px;
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+}
+.score-header-title{font-size:13px;font-weight:700;color:var(--fg-sub);}
+.total-badge{
+  font-size:18px;font-weight:800;color:var(--primary);
+  background:var(--primary-lt);border-radius:var(--r);
+  padding:4px 12px;min-width:60px;text-align:center;
+}
+.score-row{
+  padding:16px 18px;
+  display:flex;flex-direction:column;gap:8px;
+  border-bottom:1px solid var(--border);
+}
+.score-row:last-of-type{border-bottom:none;}
+.score-top{display:flex;align-items:center;justify-content:space-between;}
+.score-cat{font-size:13px;font-weight:600;color:var(--fg);}
+.score-max{font-size:11px;color:var(--fg-muted);}
+.score-val-display{
+  font-size:20px;font-weight:800;color:var(--primary);
+  background:var(--primary-lt);border-radius:var(--r);
+  padding:2px 10px;min-width:50px;text-align:center;
+}
+.slider{
+  -webkit-appearance:none;appearance:none;
+  width:100%;height:8px;border-radius:4px;
+  background:var(--bg3);outline:none;cursor:pointer;
+}
+.slider::-webkit-slider-thumb{
+  -webkit-appearance:none;appearance:none;
+  width:22px;height:22px;border-radius:50%;
+  background:var(--primary);
+  box-shadow:0 0 8px rgba(0,212,255,.5);cursor:pointer;
+}
+.slider::-moz-range-thumb{
+  width:22px;height:22px;border-radius:50%;
+  background:var(--primary);border:none;cursor:pointer;
+}
+
+/* Special award */
+.special-toggle{
+  display:flex;align-items:center;gap:10px;
+  padding:14px 18px;cursor:pointer;user-select:none;
+}
+.special-toggle input{display:none;}
+.toggle-box{
+  width:44px;height:24px;border-radius:12px;
+  background:var(--bg3);border:1px solid var(--border2);
+  position:relative;transition:background .2s;
+  flex-shrink:0;
+}
+.toggle-box::after{
+  content:'';position:absolute;top:3px;left:3px;
+  width:16px;height:16px;border-radius:50%;
+  background:#fff;transition:transform .2s;
+}
+.special-toggle.on .toggle-box{background:var(--orange);border-color:var(--orange);}
+.special-toggle.on .toggle-box::after{transform:translateX(20px);}
+.special-label{font-size:13px;font-weight:600;color:var(--fg);}
+.special-sub{font-size:11px;color:var(--fg-muted);}
+
+/* Note input */
+.note-wrap{padding:0 18px 14px;}
+.note-input{
+  width:100%;background:var(--bg3);border:1px solid var(--border);
+  color:var(--fg);font-family:inherit;font-size:13px;
+  border-radius:var(--r);padding:10px 12px;resize:none;
+  transition:border-color .15s;
+}
+.note-input:focus{outline:none;border-color:var(--primary);}
+.note-input::placeholder{color:var(--fg-muted);}
+
+/* Submit */
+.submit-btn{
+  margin:0 16px;
+  padding:15px;background:linear-gradient(135deg,#0099cc,#00d4ff);
+  color:#fff;font-family:inherit;font-size:15px;font-weight:700;
+  border:none;border-radius:var(--r);cursor:pointer;
+  box-shadow:0 4px 16px rgba(0,212,255,.3);
+  transition:filter .15s,transform .1s;
+}
+.submit-btn:hover{filter:brightness(1.08);}
+.submit-btn:active{transform:scale(.99);}
+.submit-btn:disabled{background:var(--bg3);color:var(--fg-muted);cursor:not-allowed;box-shadow:none;transform:none;filter:none;}
+
+/* History */
+.hist-card{background:var(--card);border-radius:var(--r);border:1px solid var(--border);}
+.hist-title{padding:12px 18px;font-size:12px;font-weight:700;color:var(--fg-sub);border-bottom:1px solid var(--border);}
+.hist-list{padding:0;}
+.hist-item{
+  padding:12px 18px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
+}
+.hist-item:last-child{border-bottom:none;}
+.hist-name{font-size:13px;font-weight:600;color:var(--fg);}
+.hist-detail{font-size:11px;color:var(--fg-muted);}
+.hist-score{font-size:16px;font-weight:800;color:var(--primary);}
+.hist-empty{padding:16px 18px;text-align:center;font-size:13px;color:var(--fg-muted);}
+
+/* Error */
+.err-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;gap:12px;padding:32px;}
+.err-icon{color:var(--red);}
+.err-title{font-size:16px;font-weight:700;color:var(--fg);}
+.err-sub{font-size:13px;color:var(--fg-muted);text-align:center;}
+
+.loader{display:flex;justify-content:center;padding:48px;}
+.spin{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--primary);border-radius:50%;animation:spin .8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+.msg-toast{
+  position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
+  background:#1a3a52;border:1px solid var(--primary);border-radius:var(--r);
+  color:var(--fg);padding:10px 20px;font-size:13px;font-weight:600;
+  box-shadow:var(--sh-md);z-index:99;
+  animation:fadeUp .3s ease;
+}
+@keyframes fadeUp{from{opacity:0;transform:translateX(-50%) translateY(8px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+</style>
+</head>
+<body>
+
+<div class="top-bar">
+  <span class="top-title">창공제 심사위원 채점판</span>
+  <span class="top-badge" id="connect-badge">
+    <span class="top-dot"></span>
+    <span id="connect-label">연결 중…</span>
+  </span>
+</div>
+
+<div class="main" id="app">
+  <div class="loader"><div class="spin"></div></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+'use strict';
+(function(){
+
+var SB_URL = 'https://zbpeyklwpotjyveipzxd.supabase.co';
+var SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpicGV5a2x3cG90anl2ZWlwenhkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE1MTYxMDcsImV4cCI6MjA5NzA5MjEwN30.6JgoQ6rPRnmrbBTG68A-Y9HDQk40mnwubhXVnkZvHrQ';
+var sb = supabase.createClient(SB_URL, SB_KEY, {db:{schema:'cgf'}});
+
+var app = document.getElementById('app');
+var judge = null;
+var state = null;
+var contestant = null;
+var history = [];
+var wantSpecial = false;
+
+var vals = {vocal:25, showmanship:15, audienceResponse:10};
+var MAXES = {vocal:50, showmanship:30, audienceResponse:20};
+
+// Extract token
+var token = new URLSearchParams(location.search).get('t');
+if (!token) { showError('토큰 없음','URL에 ?t=TOKEN 이 없습니다. 관리자에게 올바른 링크를 요청하세요.'); return; }
+
+var deviceFp = getDeviceFp();
+
+function getDeviceFp() {
+  var fp = localStorage.getItem('cgf_device_fp');
+  if (!fp) {
+    fp = btoa([navigator.userAgent,screen.width,screen.height,navigator.language].join('|')).slice(0,32);
+    localStorage.setItem('cgf_device_fp', fp);
+  }
+  return fp;
+}
+
+async function init() {
+  // Load judge by token
+  var {data:j, error} = await sb.from('judges').select('*').eq('token',token).eq('active',true).maybeSingle();
+  if (error || !j) { showError('유효하지 않은 토큰','이 링크는 사용할 수 없습니다. 관리자에게 문의하세요.'); return; }
+
+  // Claim device
+  if (!j.device_fp) {
+    var {data:claimed} = await sb.from('judges').update({device_fp:deviceFp, claimed_at:new Date().toISOString()}).eq('id',j.id).eq('token',token).is('device_fp',null).select().single();
+    judge = claimed || j;
+    judge.device_fp = deviceFp;
+  } else if (j.device_fp !== deviceFp) {
+    showError('다른 기기에서 사용 중','이 심사위원 채점판은 이미 다른 기기에서 열려 있습니다.<br>처음 접속한 기기에서만 채점할 수 있습니다.');
+    return;
+  } else {
+    judge = j;
+  }
+
+  document.getElementById('connect-label').textContent = judge.name + ' 님';
+  document.getElementById('connect-badge').style.background = 'rgba(34,197,94,.12)';
+  document.getElementById('connect-badge').style.color = 'var(--green)';
+  document.getElementById('connect-badge').style.borderColor = 'rgba(34,197,94,.25)';
+  document.getElementById('connect-badge').querySelector('.top-dot').style.background = 'var(--green)';
+
+  // Load state
+  var {data:st} = await sb.from('state').select('*').eq('id',1).single();
+  state = st;
+  if (state && state.current_contestant_id) {
+    var {data:c} = await sb.from('contestants').select('*').eq('id',state.current_contestant_id).single();
+    contestant = c;
+  }
+
+  // Load history
+  await loadHistory();
+  render();
+  subscribeRealtime();
+}
+
+async function loadHistory() {
+  var {data:scores} = await sb.from('scores')
+    .select('*, contestant:contestant_id(name,song_title)')
+    .eq('judge_id', judge.id)
+    .order('created_at',{ascending:false})
+    .limit(10);
+  history = scores || [];
+}
+
+function subscribeRealtime() {
+  sb.channel('cgf-judge-state')
+    .on('postgres_changes',{event:'*',schema:'cgf',table:'state'},async function(payload){
+      var prev = state ? state.current_contestant_id : null;
+      state = payload.new;
+      if (state.current_contestant_id !== prev) {
+        if (state.current_contestant_id) {
+          var {data:c} = await sb.from('contestants').select('*').eq('id',state.current_contestant_id).single();
+          contestant = c;
+        } else { contestant = null; }
+        vals = {vocal:25, showmanship:15, audienceResponse:10};
+        wantSpecial = false;
+      }
+      render();
+    })
+    .subscribe();
+}
+
+function render() {
+  var hasPerformer = !!(state && state.current_contestant_id && contestant);
+  var alreadyScored = false;
+  if (hasPerformer && history.length) {
+    alreadyScored = history.some(function(h){ return h.contestant_id === contestant.id && h.phase === (state.phase||'prelim'); });
+  }
+
+  var html = '';
+
+  // Status card
+  html += '<div class="status-card">'
+    +'<div class="status-row"><span class="status-label">심사위원</span><span class="status-val status-ok">'
+    +esc(judge?judge.name:'—')+'</span></div>'
+    +'<div class="status-row" style="margin-top:6px"><span class="status-label">진행 단계</span><span class="status-val">'
+    +(phaseLabel(state?state.phase:'prelim'))+'</span></div>'
+    +'</div>';
+
+  // Performer card
+  html += '<div class="perf-card">';
+  if (!hasPerformer) {
+    html += '<div class="perf-waiting">공연 대기 중 — 관리자가 다음 참가자를 지정하면 자동으로 표시됩니다</div>';
+  } else {
+    html += '<div class="perf-phase">'+phaseLabel(state.phase)+'</div>'
+      +'<div class="perf-label">지금 공연 중</div>'
+      +'<div class="perf-name">'+esc(contestant.name)+'</div>'
+      +'<div class="perf-song">'+esc(contestant.song_title||'')+(contestant.song_artist?' — '+esc(contestant.song_artist):'')+'</div>';
+  }
+  html += '</div>';
+
+  // Score form
+  var total = vals.vocal + vals.showmanship + vals.audienceResponse;
+  html += '<div class="score-card">'
+    +'<div class="score-header"><span class="score-header-title">채점</span><span class="total-badge" id="total-badge">'+total+'점</span></div>';
+
+  [
+    {key:'vocal',label:'가창력',max:50,desc:'음정·리듬·발성'},
+    {key:'showmanship',label:'쇼맨십',max:30,desc:'무대 표현·퍼포먼스'},
+    {key:'audienceResponse',label:'관객호응',max:20,desc:'현장 반응·분위기'}
+  ].forEach(function(cat){
+    html += '<div class="score-row">'
+      +'<div class="score-top">'
+      +'<div><div class="score-cat">'+cat.label+'</div><div style="font-size:11px;color:var(--fg-muted)">'+cat.desc+'</div></div>'
+      +'<span class="score-val-display" id="val-'+cat.key+'">'+vals[cat.key]+'</span>'
+      +'</div>'
+      +'<input type="range" class="slider" id="sl-'+cat.key+'" min="0" max="'+cat.max+'" value="'+vals[cat.key]+'"'
+      +' oninput="onSlider(\''+cat.key+'\',this.value)">'
+      +'<div style="display:flex;justify-content:space-between;font-size:11px;color:var(--fg-muted);margin-top:2px">'
+      +'<span>0</span><span class="score-max">최대 '+cat.max+'점</span></div>'
+      +'</div>';
+  });
+  html += '</div>';
+
+  // Special award toggle
+  html += '<div class="score-card">'
+    +'<div class="special-toggle'+(wantSpecial?' on':'')+'" id="special-toggle" onclick="toggleSpecial()">'
+    +'<div class="toggle-box"></div>'
+    +'<div><div class="special-label">심사위원 특별상 추천</div>'
+    +'<div class="special-sub">이 참가자를 특별상 후보로 추천합니다</div></div>'
+    +'</div>'
+    +(wantSpecial?'<div class="note-wrap"><textarea class="note-input" id="special-note" rows="2" placeholder="추천 이유 (선택사항)">'+esc(vals.specialNote||'')+'</textarea></div>':'')
+    +'</div>';
+
+  if (alreadyScored) {
+    html += '<div style="background:var(--green-lt);border:1px solid rgba(34,197,94,.3);border-radius:var(--r);padding:14px 18px;text-align:center;color:var(--green);font-size:14px;font-weight:600;">이 공연 채점 완료 ✓<br><span style="font-size:12px;font-weight:400;color:var(--fg-muted)">관리자가 다음 참가자로 넘기면 새 채점이 활성화됩니다</span></div>';
+  } else {
+    html += '<button class="submit-btn" '+(hasPerformer?'':'disabled')+' onclick="submitScore()">채점 제출</button>';
+  }
+
+  // History
+  html += '<div class="hist-card"><div class="hist-title">제출한 채점</div>';
+  if (!history.length) {
+    html += '<div class="hist-empty">아직 제출한 채점이 없습니다</div>';
+  } else {
+    html += '<div class="hist-list">';
+    history.slice(0,8).forEach(function(h){
+      var c = h.contestant || {};
+      html += '<div class="hist-item">'
+        +'<div><div class="hist-name">'+esc(c.name||'—')+'</div>'
+        +'<div class="hist-detail">가창 '+h.vocal+' · 쇼 '+h.showmanship+' · 호응 '+h.audience_response+'</div></div>'
+        +'<div class="hist-score">'+h.total+'</div>'
+        +'</div>';
+    });
+    html += '</div>';
+  }
+  html += '</div>';
+
+  app.innerHTML = html;
+}
+
+window.onSlider = function(key, v) {
+  vals[key] = parseInt(v);
+  var el = document.getElementById('val-'+key);
+  if (el) el.textContent = v;
+  var t = vals.vocal + vals.showmanship + vals.audienceResponse;
+  var tb = document.getElementById('total-badge');
+  if (tb) tb.textContent = t + '점';
+};
+
+window.toggleSpecial = function() {
+  wantSpecial = !wantSpecial;
+  render();
+};
+
+window.submitScore = async function() {
+  if (!state || !contestant || !judge) return;
+  var noteEl = document.getElementById('special-note');
+  var note = wantSpecial && noteEl ? noteEl.value.trim() : null;
+  var btn = document.querySelector('.submit-btn');
+  if (btn) { btn.disabled = true; btn.textContent = '제출 중…'; }
+  var {error} = await sb.from('scores').upsert({
+    contestant_id: contestant.id,
+    judge_id: judge.id,
+    phase: state.phase || 'prelim',
+    vocal: vals.vocal,
+    showmanship: vals.showmanship,
+    audience_response: vals.audienceResponse,
+    special_award_note: note,
+    updated_at: new Date().toISOString()
+  }, {onConflict:'contestant_id,judge_id,phase'});
+  if (error) { toast('제출 실패: ' + (error.message||'')); if(btn){btn.disabled=false;btn.textContent='채점 제출';} return; }
+  toast('채점이 제출되었습니다!');
+  await loadHistory();
+  render();
+};
+
+function phaseLabel(p) {
+  return p==='prelim'?'예선':p==='semi'?'본선':p==='final'?'결선':p==='awards'?'시상식':p||'예선';
+}
+
+function showError(title, sub) {
+  app.innerHTML = '<div class="err-screen">'
+    +'<div class="err-icon"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg></div>'
+    +'<div class="err-title">'+esc(title)+'</div>'
+    +'<div class="err-sub">'+sub+'</div>'
+    +'</div>';
+}
+
+function toast(msg) {
+  var el = document.createElement('div');
+  el.className = 'msg-toast';
+  el.textContent = msg;
+  document.body.appendChild(el);
+  setTimeout(function(){ el.remove(); }, 3000);
+}
+
+function esc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+init();
+
+})();
+</script>
+</body>
+</html>
