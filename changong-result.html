@@ -4,244 +4,299 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>2026 창공제 노래 콘테스트 결과 발표</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;800;900&display=swap">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-html,body{height:100%;width:100%;overflow:hidden;}
+html{height:100%;background:#000;}
 body{
   font-family:'Noto Sans KR',-apple-system,sans-serif;
   background:#000;color:#fff;
-  position:relative;
-  display:flex;flex-direction:column;
   min-height:100vh;
+  overflow:hidden;
+  position:relative;
 }
 
-/* Animated EDM background */
-.bg-canvas{position:fixed;inset:0;z-index:0;pointer-events:none;}
-.laser{
-  position:absolute;width:2px;height:100%;
-  background:linear-gradient(to bottom,transparent,rgba(0,212,255,.4),transparent);
-  animation:laserMove 4s ease-in-out infinite;
-  transform-origin:center;
+/* ── 16:9 stage ── */
+.stage-wrap{
+  position:fixed;inset:0;
+  display:flex;align-items:center;justify-content:center;
+  background:#000;
 }
-@keyframes laserMove{0%,100%{opacity:.3;transform:scaleX(1) rotateZ(var(--a,0deg)) translateX(var(--tx,0))}50%{opacity:.8;transform:scaleX(1.5) rotateZ(var(--a,0deg)) translateX(var(--tx,0))}}
-.glow-orb{
-  position:absolute;border-radius:50%;
-  filter:blur(60px);opacity:.15;
-  animation:orbFloat 6s ease-in-out infinite;
-}
-@keyframes orbFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-30px)}}
-.floor-line{
-  position:fixed;bottom:0;left:0;right:0;height:2px;
-  background:linear-gradient(90deg,transparent,rgba(0,212,255,.6) 30%,rgba(0,212,255,.6) 70%,transparent);
-  box-shadow:0 0 20px rgba(0,212,255,.4);
-  z-index:1;
-}
-
-/* Header */
-.event-header{
-  position:relative;z-index:5;
-  text-align:center;
-  padding:28px 20px 16px;
-}
-.event-eyebrow{
-  font-size:11px;font-weight:700;letter-spacing:.18em;
-  color:rgba(0,212,255,.7);text-transform:uppercase;margin-bottom:8px;
-}
-.event-title{
-  font-size:clamp(20px,4vw,32px);font-weight:900;
-  background:linear-gradient(135deg,#fff 0%,rgba(0,212,255,.8) 50%,#fff 100%);
-  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
-  letter-spacing:-.01em;
-}
-.event-divider{
-  width:80px;height:2px;margin:14px auto;
-  background:linear-gradient(90deg,transparent,#00d4ff,transparent);
-}
-
-/* Main stage */
-.stage{
-  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
-  position:relative;z-index:5;padding:20px;
-  gap:24px;
-}
-.stage-prompt{
-  font-size:14px;color:rgba(255,255,255,.5);letter-spacing:.1em;
-  text-transform:uppercase;margin-bottom:8px;text-align:center;
-}
-
-/* Award card */
-.award-reveal{
-  display:flex;flex-direction:column;align-items:center;gap:16px;
-  width:100%;max-width:540px;
-}
-.award-card{
+.stage-16x9{
+  position:relative;
   width:100%;
-  background:linear-gradient(135deg,rgba(0,40,60,.9),rgba(0,20,40,.95));
-  border:1.5px solid rgba(0,212,255,.3);
-  border-radius:8px;
-  padding:28px 24px;
+  aspect-ratio:16/9;
+  max-height:100vh;
+  max-width:calc(100vh * 16/9);
+  overflow:hidden;
+}
+
+/* ── Animated starfield BG ── */
+canvas.starfield{position:absolute;inset:0;width:100%;height:100%;z-index:0;}
+.bg-glow{
+  position:absolute;inset:0;z-index:1;pointer-events:none;
+  background:
+    radial-gradient(ellipse 60% 80% at 20% 50%, rgba(0,40,120,.55) 0%, transparent 65%),
+    radial-gradient(ellipse 50% 60% at 80% 50%, rgba(40,0,100,.4) 0%, transparent 65%),
+    radial-gradient(ellipse 100% 40% at 50% 100%, rgba(0,212,255,.12) 0%, transparent 60%);
+}
+
+/* ── Header strip ── */
+.r-header{
+  position:absolute;top:0;left:0;right:0;
+  padding:1.6% 3% 1%;
+  display:flex;align-items:center;justify-content:space-between;
+  z-index:10;
+  background:linear-gradient(180deg,rgba(0,0,0,.7) 0%,transparent 100%);
+}
+.r-logo{
+  font-size:clamp(11px,1.3vw,18px);font-weight:800;letter-spacing:.16em;
+  text-transform:uppercase;color:rgba(0,212,255,.75);
+}
+.r-title{
+  font-size:clamp(14px,1.8vw,24px);font-weight:900;letter-spacing:-.01em;
+  background:linear-gradient(135deg,#fff 30%,rgba(0,212,255,.85));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+.r-phase{
+  font-size:clamp(10px,1.1vw,15px);font-weight:700;letter-spacing:.12em;
+  color:rgba(255,255,255,.4);text-align:right;
+}
+
+/* ── Main layout: left card + right list ── */
+.r-body{
+  position:absolute;
+  top:12%;bottom:14%;left:3%;right:3%;
+  z-index:10;
+  display:grid;
+  grid-template-columns:1fr 340px;
+  gap:2%;
+  align-items:center;
+}
+@media (max-width:900px){.r-body{grid-template-columns:1fr;}}
+
+/* ── Current award: big center card ── */
+.award-stage{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  height:100%;
+}
+.award-type-label{
+  font-size:clamp(10px,1.1vw,15px);font-weight:700;letter-spacing:.2em;text-transform:uppercase;
+  opacity:.65;margin-bottom:1.2%;text-align:center;
+}
+.award-main-card{
+  width:100%;max-width:660px;
+  background:linear-gradient(145deg,rgba(0,30,60,.92) 0%,rgba(0,10,30,.95) 100%);
+  border:1.5px solid rgba(0,212,255,.28);
+  border-radius:10px;
+  padding:5% 6%;
   text-align:center;
   position:relative;overflow:hidden;
-  box-shadow:0 0 40px rgba(0,212,255,.15),0 8px 32px rgba(0,0,0,.6);
-  animation:cardReveal .6s cubic-bezier(.34,1.56,.64,1) both;
+  box-shadow:0 0 60px rgba(0,212,255,.18),0 20px 60px rgba(0,0,0,.7);
+  animation:cardIn .7s cubic-bezier(.34,1.56,.64,1) both;
 }
-@keyframes cardReveal{from{opacity:0;transform:scale(.85) translateY(30px)}to{opacity:1;transform:scale(1) translateY(0)}}
-.award-card::before{
+@keyframes cardIn{from{opacity:0;transform:scale(.82) translateY(5%)}to{opacity:1;transform:scale(1) translateY(0)}}
+.award-main-card::before{
   content:'';position:absolute;inset:0;
-  background:radial-gradient(ellipse 80% 60% at 50% 0%,rgba(0,212,255,.08),transparent 70%);
+  background:radial-gradient(ellipse 90% 50% at 50% 0%,rgba(0,212,255,.09),transparent 65%);
 }
-.award-glow{
-  position:absolute;inset:-1px;border-radius:8px;
-  background:transparent;border:1px solid rgba(0,212,255,.5);
-  box-shadow:0 0 20px rgba(0,212,255,.2),inset 0 0 30px rgba(0,212,255,.04);
-  pointer-events:none;animation:glowPulse 2s ease-in-out infinite;
+.card-glow{
+  position:absolute;inset:0;border-radius:10px;pointer-events:none;
+  border:1px solid rgba(0,212,255,.5);
+  box-shadow:0 0 30px rgba(0,212,255,.25),inset 0 0 40px rgba(0,212,255,.04);
+  animation:glowPulse 2.2s ease-in-out infinite;
 }
-@keyframes glowPulse{0%,100%{box-shadow:0 0 20px rgba(0,212,255,.2)}50%{box-shadow:0 0 40px rgba(0,212,255,.5),0 0 60px rgba(0,212,255,.15)}}
+@keyframes glowPulse{0%,100%{box-shadow:0 0 20px rgba(0,212,255,.2),inset 0 0 30px rgba(0,212,255,.03)}50%{box-shadow:0 0 50px rgba(0,212,255,.55),inset 0 0 50px rgba(0,212,255,.07)}}
 
-.award-crown{margin:0 auto 12px;display:block;animation:crownSpin 1.2s ease-out both;}
-@keyframes crownSpin{from{transform:rotateY(90deg) scale(.5);opacity:0}to{transform:rotateY(0) scale(1);opacity:1}}
-.award-label{
-  font-size:13px;font-weight:700;letter-spacing:.12em;color:rgba(0,212,255,.8);
-  text-transform:uppercase;margin-bottom:12px;position:relative;
+.award-crown-wrap{margin-bottom:3%;animation:crownIn 1s cubic-bezier(.34,1.56,.64,1) .15s both;}
+@keyframes crownIn{from{transform:scale(0) rotate(-30deg);opacity:0}to{transform:scale(1) rotate(0);opacity:1}}
+.award-winner-name{
+  font-size:clamp(28px,5.5vw,72px);font-weight:900;line-height:1.05;
+  color:#fff;letter-spacing:-.02em;position:relative;
+  animation:nameSlide .7s cubic-bezier(.34,1.56,.64,1) .25s both;
+  text-shadow:0 0 40px rgba(0,212,255,.5);
 }
-.award-name{
-  font-size:clamp(28px,6vw,52px);font-weight:900;
-  color:#fff;line-height:1.1;margin-bottom:8px;position:relative;
-  text-shadow:0 0 30px rgba(0,212,255,.5);
-  animation:nameGlow 2s ease-in-out infinite;
+@keyframes nameSlide{from{opacity:0;transform:translateY(15px)}to{opacity:1;transform:translateY(0)}}
+.award-winner-song{
+  font-size:clamp(12px,1.5vw,20px);color:rgba(255,255,255,.65);margin-top:1%;
+  animation:nameSlide .7s .4s both;
 }
-@keyframes nameGlow{0%,100%{text-shadow:0 0 30px rgba(0,212,255,.3)}50%{text-shadow:0 0 50px rgba(0,212,255,.8),0 0 80px rgba(0,212,255,.4)}}
-.award-song{font-size:14px;color:rgba(255,255,255,.65);position:relative;margin-bottom:8px;}
-.award-score{
-  display:inline-block;
-  font-size:13px;font-weight:700;
-  background:rgba(0,212,255,.12);border:1px solid rgba(0,212,255,.2);
-  border-radius:100px;padding:4px 14px;color:rgba(0,212,255,.9);
-  position:relative;
+.award-score-badge{
+  display:inline-flex;align-items:center;gap:6px;
+  margin-top:2.5%;
+  background:rgba(0,212,255,.1);border:1px solid rgba(0,212,255,.22);
+  border-radius:100px;padding:.4em 1.2em;
+  font-size:clamp(11px,1.2vw,15px);font-weight:700;color:rgba(0,212,255,.9);
+  animation:nameSlide .7s .5s both;
 }
-.award-note{font-size:12px;color:rgba(255,255,255,.45);margin-top:8px;position:relative;}
+.award-note-text{
+  font-size:clamp(10px,1vw,13px);color:rgba(255,255,255,.38);margin-top:1.5%;
+  animation:nameSlide .7s .55s both;
+}
 
-/* Award type colors */
-.award-grand .award-card{
-  border-color:rgba(251,191,36,.5);
-  box-shadow:0 0 60px rgba(251,191,36,.2),0 8px 40px rgba(0,0,0,.7);
+/* Gold override */
+.is-grand .award-main-card{
+  border-color:rgba(251,191,36,.45);
+  box-shadow:0 0 80px rgba(251,191,36,.25),0 20px 60px rgba(0,0,0,.7);
 }
-.award-grand .award-glow{border-color:rgba(251,191,36,.6);box-shadow:0 0 30px rgba(251,191,36,.3),inset 0 0 40px rgba(251,191,36,.05);}
-.award-grand .award-name{text-shadow:0 0 30px rgba(251,191,36,.6);}
-.award-grand .award-label{color:rgba(251,191,36,.9);}
-.award-grand .award-score{background:rgba(251,191,36,.12);border-color:rgba(251,191,36,.2);color:rgba(251,191,36,.9);}
-@keyframes glowPulseGold{0%,100%{box-shadow:0 0 30px rgba(251,191,36,.3)}50%{box-shadow:0 0 60px rgba(251,191,36,.6)}}
-.award-grand .award-glow{animation:glowPulseGold 2s ease-in-out infinite;}
+.is-grand .card-glow{border-color:rgba(251,191,36,.55);box-shadow:0 0 40px rgba(251,191,36,.3),inset 0 0 50px rgba(251,191,36,.06);}
+@keyframes glowPulseGold{0%,100%{box-shadow:0 0 30px rgba(251,191,36,.25)}50%{box-shadow:0 0 70px rgba(251,191,36,.65)}}
+.is-grand .card-glow{animation:glowPulseGold 2s ease-in-out infinite;}
+.is-grand .award-winner-name{text-shadow:0 0 40px rgba(251,191,36,.6);}
+.is-grand .award-main-card::before{background:radial-gradient(ellipse 90% 50% at 50% 0%,rgba(251,191,36,.1),transparent 65%);}
+.is-grand .award-score-badge{background:rgba(251,191,36,.1);border-color:rgba(251,191,36,.25);color:rgba(251,191,36,.95);}
 
-.award-popularity .award-card{border-color:rgba(244,63,94,.4);}
-.award-popularity .award-label{color:rgba(244,63,94,.9);}
-.award-popularity .award-score{background:rgba(244,63,94,.1);border-color:rgba(244,63,94,.2);color:rgba(244,63,94,.9);}
+/* Red (popularity) override */
+.is-pop .award-main-card{border-color:rgba(244,63,94,.4);}
+.is-pop .card-glow{border-color:rgba(244,63,94,.5);}
+.is-pop .award-score-badge{background:rgba(244,63,94,.1);border-color:rgba(244,63,94,.25);color:rgba(244,63,94,.95);}
 
-.award-special .award-card{border-color:rgba(168,85,247,.4);}
-.award-special .award-label{color:rgba(168,85,247,.9);}
-.award-special .award-score{background:rgba(168,85,247,.1);border-color:rgba(168,85,247,.2);color:rgba(168,85,247,.9);}
+/* Purple (special) override */
+.is-special .award-main-card{border-color:rgba(168,85,247,.4);}
+.is-special .card-glow{border-color:rgba(168,85,247,.5);}
+.is-special .award-score-badge{background:rgba(168,85,247,.1);border-color:rgba(168,85,247,.25);color:rgba(168,85,247,.95);}
 
-/* Revealed list */
-.revealed-list{
-  display:flex;flex-direction:column;gap:8px;width:100%;max-width:540px;
+/* ── Right: revealed history ── */
+.award-history{
+  height:100%;display:flex;flex-direction:column;gap:1.5%;
+  overflow:hidden;
 }
-.revealed-item{
-  display:flex;align-items:center;gap:12px;
+.history-label{
+  font-size:clamp(9px,1vw,13px);font-weight:700;letter-spacing:.14em;
+  color:rgba(255,255,255,.3);text-transform:uppercase;margin-bottom:1%;
+}
+.history-item{
   background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);
-  border-radius:6px;padding:10px 16px;
+  border-radius:6px;padding:3% 4%;
+  animation:histIn .5s cubic-bezier(.34,1.56,.64,1) both;
+  flex-shrink:0;
 }
-.ri-badge{
-  font-size:11px;font-weight:700;letter-spacing:.08em;
-  padding:3px 8px;border-radius:100px;white-space:nowrap;
+@keyframes histIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
+.hi-badge{
+  display:inline-block;font-size:clamp(8px,.9vw,11px);font-weight:700;letter-spacing:.08em;
+  padding:2px 8px;border-radius:100px;margin-bottom:3px;
 }
-.ri-badge.cyan{background:rgba(0,212,255,.12);color:rgba(0,212,255,.9);border:1px solid rgba(0,212,255,.2);}
-.ri-badge.gold{background:rgba(251,191,36,.12);color:rgba(251,191,36,.9);border:1px solid rgba(251,191,36,.2);}
-.ri-badge.red{background:rgba(244,63,94,.1);color:rgba(244,63,94,.9);border:1px solid rgba(244,63,94,.2);}
-.ri-badge.purple{background:rgba(168,85,247,.1);color:rgba(168,85,247,.9);border:1px solid rgba(168,85,247,.2);}
-.ri-name{font-size:14px;font-weight:700;color:#fff;flex:1;}
-.ri-song{font-size:12px;color:rgba(255,255,255,.4);}
+.hi-badge.cyan{background:rgba(0,212,255,.12);color:rgba(0,212,255,.9);border:1px solid rgba(0,212,255,.2);}
+.hi-badge.gold{background:rgba(251,191,36,.12);color:rgba(251,191,36,.95);border:1px solid rgba(251,191,36,.2);}
+.hi-badge.red{background:rgba(244,63,94,.1);color:rgba(244,63,94,.95);border:1px solid rgba(244,63,94,.2);}
+.hi-badge.purple{background:rgba(168,85,247,.1);color:rgba(168,85,247,.95);border:1px solid rgba(168,85,247,.2);}
+.hi-name{font-size:clamp(12px,1.4vw,18px);font-weight:800;color:#fff;line-height:1.2;}
+.hi-song{font-size:clamp(9px,.9vw,12px);color:rgba(255,255,255,.38);margin-top:1px;}
 
-/* Waiting */
-.waiting-wrap{text-align:center;padding:48px 24px;}
-.waiting-title{font-size:18px;font-weight:700;color:rgba(0,212,255,.8);margin-bottom:8px;}
-.waiting-sub{font-size:13px;color:rgba(255,255,255,.4);}
+/* ── Bottom: rank bar ── */
+.rank-bar{
+  position:absolute;bottom:0;left:0;right:0;
+  height:14%;z-index:10;
+  background:linear-gradient(0deg,rgba(0,0,0,.85) 0%,rgba(0,0,0,.4) 80%,transparent 100%);
+  display:flex;align-items:center;padding:0 3%;gap:1.5%;
+  overflow:hidden;
+}
+.rank-item{
+  display:flex;align-items:center;gap:.5%;white-space:nowrap;
+  flex-shrink:0;
+}
+.rank-num{
+  font-size:clamp(9px,.9vw,13px);font-weight:900;
+  width:1.6em;text-align:center;
+}
+.rank-num.r1{color:#fbbf24;}
+.rank-num.r2{color:#94a3b8;}
+.rank-num.r3{color:#cd7f32;}
+.rank-num.rn{color:rgba(255,255,255,.35);}
+.rank-name{font-size:clamp(10px,1vw,14px);font-weight:700;color:rgba(255,255,255,.85);}
+.rank-score{font-size:clamp(9px,.9vw,12px);font-weight:600;color:rgba(0,212,255,.7);margin-left:.3%;}
+.rank-sep{width:1px;height:60%;background:rgba(255,255,255,.1);flex-shrink:0;}
 
-/* Admin controls */
+/* ── Waiting state ── */
+.waiting-state{
+  position:absolute;inset:0;z-index:10;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2%;
+}
+.waiting-pulse{
+  width:clamp(60px,8vw,90px);height:clamp(60px,8vw,90px);border-radius:50%;
+  background:rgba(0,212,255,.08);border:2px solid rgba(0,212,255,.25);
+  display:flex;align-items:center;justify-content:center;
+  animation:waitPulse 2s ease-in-out infinite;
+}
+@keyframes waitPulse{0%,100%{box-shadow:0 0 0 0 rgba(0,212,255,.3)}50%{box-shadow:0 0 0 20px rgba(0,212,255,0)}}
+.waiting-title{font-size:clamp(16px,2vw,28px);font-weight:800;color:rgba(0,212,255,.75);}
+.waiting-sub{font-size:clamp(11px,1.2vw,16px);color:rgba(255,255,255,.35);}
+
+/* ── Admin bar ── */
 .admin-bar{
-  position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
-  display:flex;gap:10px;z-index:99;
+  position:fixed;top:12px;right:12px;z-index:200;
+  display:flex;gap:8px;
   background:rgba(0,0,0,.85);border:1px solid rgba(0,212,255,.25);
-  border-radius:8px;padding:10px 14px;
+  border-radius:8px;padding:8px 12px;
   box-shadow:0 4px 24px rgba(0,0,0,.6);
-  flex-wrap:wrap;justify-content:center;
 }
 .admin-btn{
-  padding:9px 20px;
+  padding:7px 16px;
   background:rgba(0,212,255,.1);border:1px solid rgba(0,212,255,.25);
-  color:rgba(0,212,255,.9);font-family:inherit;font-size:13px;font-weight:700;
+  color:rgba(0,212,255,.9);font-family:inherit;font-size:12px;font-weight:700;
   border-radius:6px;cursor:pointer;transition:all .15s;white-space:nowrap;
 }
 .admin-btn:hover{background:rgba(0,212,255,.2);border-color:rgba(0,212,255,.5);}
 .admin-btn:disabled{opacity:.3;cursor:not-allowed;}
-.admin-btn.danger{color:rgba(248,113,113,.9);border-color:rgba(248,113,113,.25);background:rgba(248,113,113,.08);}
-.admin-btn.danger:hover{background:rgba(248,113,113,.15);}
 
-/* Confetti particles */
-.confetti{position:fixed;top:0;left:50%;pointer-events:none;z-index:10;}
+/* ── Confetti ── */
+.confetti{position:absolute;top:0;left:50%;pointer-events:none;z-index:20;}
 .confetto{
   position:absolute;width:8px;height:8px;border-radius:2px;
   animation:confettoFall 2.5s ease-in both;
 }
-@keyframes confettoFall{
-  from{transform:translateY(-20px) rotate(0);opacity:1;}
-  to{transform:translateY(100vh) rotate(720deg);opacity:0;}
-}
+@keyframes confettoFall{from{transform:translateY(-20px) rotate(0);opacity:1}to{transform:translateY(100vh) rotate(720deg);opacity:0}}
 
-/* Fullscreen btn */
+/* ── Fullscreen btn ── */
 .fs-btn{
-  position:fixed;top:16px;right:16px;z-index:99;
-  background:rgba(0,212,255,.1);border:1px solid rgba(0,212,255,.2);
-  color:rgba(0,212,255,.7);font-family:inherit;font-size:12px;
-  border-radius:6px;padding:6px 12px;cursor:pointer;
-  transition:all .15s;
+  position:fixed;bottom:12px;right:12px;z-index:200;
+  background:rgba(0,212,255,.08);border:1px solid rgba(0,212,255,.18);
+  color:rgba(0,212,255,.55);font-family:inherit;font-size:11px;
+  border-radius:6px;padding:5px 10px;cursor:pointer;transition:all .15s;
 }
-.fs-btn:hover{background:rgba(0,212,255,.2);}
+.fs-btn:hover{background:rgba(0,212,255,.18);}
 </style>
 </head>
 <body>
 
-<!-- Background effects -->
-<div class="bg-canvas" id="bgCanvas"></div>
-<div class="floor-line"></div>
+<div class="stage-wrap">
+  <div class="stage-16x9" id="stage16">
+    <canvas class="starfield" id="starfield"></canvas>
+    <div class="bg-glow"></div>
 
-<!-- Fullscreen button -->
-<button class="fs-btn" onclick="toggleFullscreen()">
-  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
-  전체화면
-</button>
+    <div class="r-header">
+      <div class="r-logo">ASEA 2026</div>
+      <div class="r-title">창공제 노래 콘테스트 결과 발표</div>
+      <div class="r-phase" id="phaseLabel"></div>
+    </div>
 
-<!-- Header -->
-<div class="event-header">
-  <p class="event-eyebrow">2026 창공제</p>
-  <h1 class="event-title">노래 콘테스트 결과 발표</h1>
-  <div class="event-divider"></div>
-</div>
+    <div class="r-body" id="rBody" style="display:none">
+      <div class="award-stage" id="awardStage"></div>
+      <div class="award-history" id="awardHistory"></div>
+    </div>
 
-<!-- Stage -->
-<div class="stage" id="stage">
-  <div class="waiting-wrap">
-    <div class="waiting-title">결과 발표 대기 중</div>
-    <div class="waiting-sub">관리자가 결과를 발표하면 이 화면에 표시됩니다</div>
+    <div class="waiting-state" id="waitingState">
+      <div class="waiting-pulse">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="rgba(0,212,255,.7)" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      </div>
+      <div class="waiting-title">결과 발표 대기 중</div>
+      <div class="waiting-sub">관리자가 결과를 발표하면 이 화면에 표시됩니다</div>
+    </div>
+
+    <div class="rank-bar" id="rankBar" style="display:none"></div>
   </div>
 </div>
 
-<!-- Admin bar (shown only in admin mode) -->
 <div class="admin-bar" id="adminBar" style="display:none">
-  <span style="font-size:11px;color:rgba(0,212,255,.5);align-self:center">관리자 모드</span>
+  <span style="font-size:11px;color:rgba(0,212,255,.45);align-self:center">관리자</span>
   <button class="admin-btn" id="nextBtn" onclick="revealNext()">다음 발표</button>
   <button class="admin-btn" onclick="location.href='changong-manage.html'">관리자 패널</button>
 </div>
+
+<button class="fs-btn" onclick="toggleFullscreen()">
+  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
+  전체화면
+</button>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
@@ -252,201 +307,223 @@ var SB_URL = 'https://zbpeyklwpotjyveipzxd.supabase.co';
 var SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpicGV5a2x3cG90anl2ZWlwenhkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE1MTYxMDcsImV4cCI6MjA5NzA5MjEwN30.6JgoQ6rPRnmrbBTG68A-Y9HDQk40mnwubhXVnkZvHrQ';
 var sb = supabase.createClient(SB_URL, SB_KEY, {db:{schema:'cgf'}});
 
-var stage = document.getElementById('stage');
-var adminBar = document.getElementById('adminBar');
 var isAdmin = new URLSearchParams(location.search).get('admin') === '1'
   || sessionStorage.getItem('cgf_admin') === '1';
 
 var awards = [];
-var currentReveal = -1; // index of last revealed
+var contestants = [];
+var scores = [];
+var votes = [];
+var currentReveal = -1;
 
 var AWARD_ORDER = [
-  {type:'merit',label:'우수상',color:'cyan'},
-  {type:'excellence',label:'최우수상',color:'cyan'},
-  {type:'grand',label:'대상',color:'gold'},
-  {type:'popularity',label:'인기상',color:'red'},
-  {type:'judge_special',label:'심사위원 특별상',color:'purple'},
-  {type:'mc_special',label:'MC 특별상',color:'purple'}
+  {type:'merit',       label:'우수상',         color:'cyan'},
+  {type:'excellence',  label:'최우수상',        color:'cyan'},
+  {type:'grand',       label:'대상',            color:'gold'},
+  {type:'popularity',  label:'인기상',          color:'red'},
+  {type:'judge_special',label:'심사위원 특별상', color:'purple'},
+  {type:'mc_special',  label:'MC 특별상',        color:'purple'}
 ];
 
-if (isAdmin) adminBar.style.display = 'flex';
+if (isAdmin) document.getElementById('adminBar').style.display = 'flex';
 
-buildBackground();
+initStarfield();
 init();
 
-function buildBackground() {
-  var canvas = document.getElementById('bgCanvas');
-  var angles = [-20,-10,0,10,20];
-  var positions = [10,25,50,75,90];
-  angles.forEach(function(a,i){
-    var l = document.createElement('div');
-    l.className = 'laser';
-    l.style.cssText='left:'+positions[i]+'%;--a:'+a+'deg;--tx:'+((i%2)*10-5)+'px;animation-delay:'+(i*.7)+'s';
-    canvas.appendChild(l);
-  });
-  [{c:'rgba(0,212,255,.2)',w:'300px',h:'300px',t:'10%',l:'5%',d:'0s'},
-   {c:'rgba(0,100,180,.2)',w:'400px',h:'400px',t:'60%',r:'5%',d:'2s'},
-   {c:'rgba(80,0,200,.15)',w:'250px',h:'250px',t:'30%',l:'40%',d:'1s'}
-  ].forEach(function(o){
-    var orb = document.createElement('div');
-    orb.className = 'glow-orb';
-    orb.style.cssText='background:'+o.c+';width:'+o.w+';height:'+o.h+';top:'+o.t+';'
-      +(o.l?'left:'+o.l:o.r?'right:'+o.r:'')+';animation-delay:'+o.d;
-    canvas.appendChild(orb);
-  });
-}
-
 async function init() {
-  var {data} = await sb.from('awards')
-    .select('*, contestant:contestant_id(id,name,song_title,song_artist)')
-    .order('reveal_order',{ascending:true,nullsFirst:false});
-  awards = data || [];
+  var [awRes, cRes, sRes, vRes, stRes] = await Promise.all([
+    sb.from('awards').select('*, contestant:contestant_id(id,name,song_title,song_artist)').order('reveal_order',{ascending:true,nullsFirst:false}),
+    sb.from('contestants').select('*').order('seq',{ascending:true,nullsFirst:false}),
+    sb.from('scores').select('*'),
+    sb.from('votes').select('contestant_id,phase,stars'),
+    sb.from('state').select('*').eq('id',1).single()
+  ]);
+  awards = awRes.data || [];
+  contestants = cRes.data || [];
+  scores = sRes.data || [];
+  votes = vRes.data || [];
   currentReveal = awards.filter(function(a){return a.revealed;}).length - 1;
+  var phase = (stRes.data && stRes.data.phase) || 'prelim';
+  var phaseNames = {prelim:'예선',semi:'본선',final:'결선',awards:'시상식'};
+  document.getElementById('phaseLabel').textContent = phaseNames[phase] || phase;
   render();
   subscribeRealtime();
 }
 
 function subscribeRealtime() {
-  sb.channel('cgf-result-awards')
+  sb.channel('cgf-result-rt')
     .on('postgres_changes',{event:'*',schema:'cgf',table:'awards'},async function(){
-      var {data} = await sb.from('awards')
-        .select('*, contestant:contestant_id(id,name,song_title,song_artist)')
-        .order('reveal_order',{ascending:true,nullsFirst:false});
+      var {data} = await sb.from('awards').select('*, contestant:contestant_id(id,name,song_title,song_artist)').order('reveal_order',{ascending:true,nullsFirst:false});
       awards = data || [];
-      var newReveal = awards.filter(function(a){return a.revealed;}).length - 1;
-      if (newReveal > currentReveal) {
-        currentReveal = newReveal;
-        renderWithAnimation();
+      var nr = awards.filter(function(a){return a.revealed;}).length - 1;
+      if (nr > currentReveal) {
+        currentReveal = nr;
+        render(true);
+        if (awards[currentReveal] && awards[currentReveal].award_type === 'grand') spawnConfetti();
       } else {
-        render();
+        render(false);
       }
+    })
+    .on('postgres_changes',{event:'*',schema:'cgf',table:'scores'},async function(){
+      var {data} = await sb.from('scores').select('*');
+      scores = data || [];
+      renderRankBar();
+    })
+    .on('postgres_changes',{event:'*',schema:'cgf',table:'votes'},async function(){
+      var {data} = await sb.from('votes').select('contestant_id,phase,stars');
+      votes = data || [];
+      renderRankBar();
     })
     .subscribe();
 }
 
-function render() {
+function render(animated) {
   var revealed = awards.filter(function(a){return a.revealed;});
+  var waiting = document.getElementById('waitingState');
+  var body = document.getElementById('rBody');
+
   if (!revealed.length) {
-    stage.innerHTML = '<div class="waiting-wrap">'
-      +'<div class="waiting-title">결과 발표 대기 중</div>'
-      +'<div class="waiting-sub">관리자가 결과를 발표하면 이 화면에 표시됩니다</div>'
-      +'</div>';
+    waiting.style.display = 'flex';
+    body.style.display = 'none';
+    document.getElementById('rankBar').style.display = 'none';
     return;
   }
 
-  // Latest revealed is the big card, rest in the revealed list
+  waiting.style.display = 'none';
+  body.style.display = 'grid';
+
   var latest = revealed[revealed.length - 1];
   var prev = revealed.slice(0, -1);
 
-  var aType = AWARD_ORDER.find(function(o){return o.type===latest.award_type;}) || {label:latest.award_type,color:'cyan'};
-  var c = latest.contestant || {};
-
-  var isGrand = latest.award_type === 'grand';
-  var isPopularity = latest.award_type === 'popularity';
-  var isSpecial = latest.award_type === 'judge_special' || latest.award_type === 'mc_special';
-
-  var html = '<div class="award-reveal">';
-  html += '<div class="stage-prompt">'+esc(aType.label)+' 발표</div>';
-
-  var cardClass = 'award-card '+(isGrand?'award-grand-inner':isPopularity?'award-pop-inner':isSpecial?'award-special-inner':'');
-  var wrapClass = 'award-card-wrap '+(isGrand?'award-grand':isPopularity?'award-popularity':isSpecial?'award-special':'');
-
-  html += '<div class="'+wrapClass+'">'
-    +'<div class="'+cardClass+'">'
-    +'<div class="award-glow"></div>'
-    +awardCrown(latest.award_type)
-    +'<div class="award-label">'+esc(aType.label)+'</div>'
-    +'<div class="award-name">'+esc(c.name||'—')+'</div>'
-    +(c.song_title?'<div class="award-song">'+esc(c.song_title)+(c.song_artist?' — '+esc(c.song_artist):'')+'</div>':'')
-    +(latest.note?'<div class="award-note">'+esc(latest.note)+'</div>':'')
-    +'</div>'
-    +'</div>';
-  html += '</div>';
-
-  if (prev.length) {
-    html += '<div class="revealed-list">';
-    prev.slice().reverse().forEach(function(a){
-      var at = AWARD_ORDER.find(function(o){return o.type===a.award_type;})||{label:a.award_type,color:'cyan'};
-      var ac = a.contestant || {};
-      html += '<div class="revealed-item">'
-        +'<span class="ri-badge '+at.color+'">'+esc(at.label)+'</span>'
-        +'<div>'
-        +'<div class="ri-name">'+esc(ac.name||'—')+'</div>'
-        +(ac.song_title?'<div class="ri-song">'+esc(ac.song_title)+'</div>':'')
-        +'</div>'
-        +'</div>';
-    });
-    html += '</div>';
-  }
-
-  stage.innerHTML = html;
-
-  if (isAdmin) {
-    var nextBtn = document.getElementById('nextBtn');
-    if (nextBtn) {
-      var allRevealed = revealed.length >= awards.filter(function(a){return a.contestant_id;}).length;
-      nextBtn.disabled = allRevealed;
-      nextBtn.textContent = allRevealed ? '모두 발표됨' : '다음 발표';
-    }
-  }
+  renderAwardCard(latest, animated);
+  renderHistory(prev);
+  renderRankBar();
+  updateAdminBtn(revealed);
 }
 
-function renderWithAnimation() {
-  render();
-  if (currentReveal >= 0 && awards[currentReveal]) {
-    var a = awards[currentReveal];
-    if (a.award_type === 'grand') { spawnConfetti(); }
+function renderAwardCard(award, animated) {
+  var aType = AWARD_ORDER.find(function(o){return o.type===award.award_type;}) || {label:award.award_type,color:'cyan'};
+  var c = award.contestant || {};
+  var isGrand = award.award_type === 'grand';
+  var isPop = award.award_type === 'popularity';
+  var isSpecial = award.award_type === 'judge_special' || award.award_type === 'mc_special';
+
+  var wrapClass = 'award-stage-inner'+(isGrand?' is-grand':isPop?' is-pop':isSpecial?' is-special':'');
+  var html = '<div class="award-type-label" style="color:'+(aType.color==='gold'?'rgba(251,191,36,.8)':aType.color==='red'?'rgba(244,63,94,.8)':aType.color==='purple'?'rgba(168,85,247,.8)':'rgba(0,212,255,.75)')+'">'
+    +esc(aType.label)+' 발표</div>';
+
+  html += '<div class="'+wrapClass+'">';
+  html += '<div class="award-main-card'+(animated?'':' static')+'">';
+  html += '<div class="card-glow"></div>';
+  html += '<div class="award-crown-wrap">'+awardCrown(award.award_type, aType.color)+'</div>';
+  html += '<div class="award-winner-name">'+esc(c.name||'—')+'</div>';
+  if (c.song_title) {
+    html += '<div class="award-winner-song">♪ '+esc(c.song_title)+(c.song_artist?' · '+esc(c.song_artist):'')+'</div>';
   }
+  var score = calcScore(c.id);
+  if (score !== null) {
+    html += '<div class="award-score-badge">'+score.toFixed(1)+' pts</div>';
+  }
+  if (award.note) {
+    html += '<div class="award-note-text">'+esc(award.note)+'</div>';
+  }
+  html += '</div></div>';
+
+  document.getElementById('awardStage').innerHTML = html;
 }
 
-function awardCrown(type) {
-  var gold = type === 'grand';
-  var silver = type === 'excellence';
-  var bronze = type === 'merit';
-  var pop = type === 'popularity';
-  if (gold || silver || bronze) {
-    var c = gold ? '#fbbf24' : silver ? '#94a3b8' : '#cd7f32';
-    return '<svg class="award-crown" width="56" height="40" viewBox="0 0 56 40" fill="none">'
-      +'<path d="M4 32L10 14L22 24L28 6L34 24L46 14L52 32H4Z" fill="'+c+'" opacity=".9"/>'
-      +'<rect x="4" y="32" width="48" height="6" rx="2" fill="'+c+'"/>'
-      +'<circle cx="28" cy="6" r="3" fill="'+c+'"/>'
-      +'<circle cx="10" cy="14" r="2.5" fill="'+c+'"/>'
-      +'<circle cx="46" cy="14" r="2.5" fill="'+c+'"/>'
+function renderHistory(prev) {
+  var el = document.getElementById('awardHistory');
+  if (!prev.length) { el.innerHTML = ''; return; }
+  var html = '<div class="history-label">발표 완료</div>';
+  prev.slice().reverse().forEach(function(a){
+    var at = AWARD_ORDER.find(function(o){return o.type===a.award_type;})||{label:a.award_type,color:'cyan'};
+    var ac = a.contestant || {};
+    html += '<div class="history-item">'
+      +'<div class="hi-badge '+at.color+'">'+esc(at.label)+'</div>'
+      +'<div class="hi-name">'+esc(ac.name||'—')+'</div>'
+      +(ac.song_title?'<div class="hi-song">♪ '+esc(ac.song_title)+'</div>':'')
+      +'</div>';
+  });
+  el.innerHTML = html;
+}
+
+function renderRankBar() {
+  var bar = document.getElementById('rankBar');
+  if (!contestants.length) { bar.style.display = 'none'; return; }
+  var ranked = contestants.map(function(c){
+    return {name:c.name, final:calcScore(c.id)};
+  }).filter(function(c){return c.final !== null;})
+    .sort(function(a,b){return b.final - a.final;});
+  if (!ranked.length) { bar.style.display = 'none'; return; }
+  bar.style.display = 'flex';
+  var numClass = ['r1','r2','r3'];
+  var html = ranked.slice(0,12).map(function(r,i){
+    var nc = numClass[i] || 'rn';
+    var sep = i > 0 ? '<div class="rank-sep"></div>' : '';
+    return sep+'<div class="rank-item">'
+      +'<div class="rank-num '+nc+'">'+(i+1)+'</div>'
+      +'<div class="rank-name">'+esc(r.name)+'</div>'
+      +'<div class="rank-score">'+r.final.toFixed(1)+'</div>'
+      +'</div>';
+  }).join('');
+  bar.innerHTML = html;
+}
+
+function calcScore(cid) {
+  if (!cid) return null;
+  var cScores = scores.filter(function(s){return s.contestant_id===cid;});
+  var cVotes  = votes.filter(function(v){return v.contestant_id===cid;});
+  if (!cScores.length && !cVotes.length) return null;
+  var judgeAvg = cScores.length
+    ? cScores.reduce(function(s,x){return s+(x.total||0);},0) / cScores.length
+    : 0;
+  var voteAvg = cVotes.length
+    ? cVotes.reduce(function(s,x){return s+(x.stars||0);},0) / cVotes.length
+    : 0;
+  return judgeAvg * 0.6 + voteAvg * 8;
+}
+
+function updateAdminBtn(revealed) {
+  var nextBtn = document.getElementById('nextBtn');
+  if (!nextBtn) return;
+  var assigned = awards.filter(function(a){return !!a.contestant_id;});
+  var allDone = revealed.length >= assigned.length;
+  nextBtn.disabled = allDone;
+  nextBtn.textContent = allDone ? '모두 발표됨' : '다음 발표';
+}
+
+function awardCrown(type, color) {
+  var isGrand = type === 'grand';
+  var isSilver = type === 'excellence';
+  var isBronze = type === 'merit';
+  var isPop = type === 'popularity';
+  var sz = 'clamp(36px,5vw,64px)';
+  if (isGrand || isSilver || isBronze) {
+    var cl = isGrand ? '#fbbf24' : isSilver ? '#94a3b8' : '#cd7f32';
+    var glow = isGrand ? 'rgba(251,191,36,.6)' : isSilver ? 'rgba(148,163,184,.4)' : 'rgba(205,127,50,.4)';
+    return '<svg style="width:'+sz+';height:auto;filter:drop-shadow(0 0 10px '+glow+')" viewBox="0 0 56 40" fill="none">'
+      +'<path d="M4 32L10 14L22 24L28 6L34 24L46 14L52 32H4Z" fill="'+cl+'" opacity=".9"/>'
+      +'<rect x="4" y="32" width="48" height="6" rx="2" fill="'+cl+'"/>'
+      +'<circle cx="28" cy="6" r="3" fill="'+cl+'"/>'
+      +'<circle cx="10" cy="14" r="2.5" fill="'+cl+'"/>'
+      +'<circle cx="46" cy="14" r="2.5" fill="'+cl+'"/>'
       +'</svg>';
   }
-  if (pop) {
-    return '<svg class="award-crown" width="48" height="48" viewBox="0 0 24 24" fill="rgba(244,63,94,.8)">'
+  if (isPop) {
+    return '<svg style="width:'+sz+';height:auto;filter:drop-shadow(0 0 10px rgba(244,63,94,.5))" viewBox="0 0 24 24" fill="rgba(244,63,94,.85)">'
       +'<path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>'
       +'</svg>';
   }
-  return '<svg class="award-crown" width="48" height="48" viewBox="0 0 24 24" fill="rgba(168,85,247,.8)">'
+  return '<svg style="width:'+sz+';height:auto;filter:drop-shadow(0 0 10px rgba(168,85,247,.5))" viewBox="0 0 24 24" fill="rgba(168,85,247,.85)">'
     +'<path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>'
     +'</svg>';
 }
 
-function spawnConfetti() {
-  var colors = ['#00d4ff','#fbbf24','#f87171','#a78bfa','#34d399'];
-  var container = document.createElement('div');
-  container.className = 'confetti';
-  for (var i = 0; i < 80; i++) {
-    var el = document.createElement('div');
-    el.className = 'confetto';
-    el.style.cssText = 'left:'+(Math.random()*600-300)+'px;background:'+colors[Math.floor(Math.random()*colors.length)]
-      +';animation-delay:'+(Math.random()*1)+'s;animation-duration:'+(2+Math.random())+'s'
-      +';width:'+(6+Math.random()*6)+'px;height:'+(6+Math.random()*6)+'px';
-    container.appendChild(el);
-  }
-  document.body.appendChild(container);
-  setTimeout(function(){container.remove();},4000);
-}
-
 window.revealNext = async function() {
-  // Find first unrevealed award that has a contestant assigned
   var assigned = awards.filter(function(a){return !!a.contestant_id;});
   var unrevealed = assigned.filter(function(a){return !a.revealed;});
   if (!unrevealed.length) return;
-
-  // Reveal in AWARD_ORDER sequence
   var next = null;
   for (var i = 0; i < AWARD_ORDER.length; i++) {
     var t = AWARD_ORDER[i].type;
@@ -454,20 +531,70 @@ window.revealNext = async function() {
     if (next) break;
   }
   if (!next) next = unrevealed[0];
-
   var revCount = awards.filter(function(a){return a.revealed;}).length;
   await sb.from('awards').update({revealed:true, reveal_order:revCount+1}).eq('id',next.id);
 };
 
 window.toggleFullscreen = function() {
-  if (!document.fullscreenElement) {
-    document.documentElement.requestFullscreen();
-  } else {
-    document.exitFullscreen();
-  }
+  if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+  else document.exitFullscreen();
 };
 
+function spawnConfetti() {
+  var colors = ['#00d4ff','#fbbf24','#f87171','#a78bfa','#34d399'];
+  var stage = document.getElementById('stage16');
+  var container = document.createElement('div');
+  container.className = 'confetti';
+  for (var i = 0; i < 100; i++) {
+    var el = document.createElement('div');
+    el.className = 'confetto';
+    el.style.cssText='left:'+(Math.random()*800-400)+'px;background:'+colors[Math.floor(Math.random()*5)]
+      +';animation-delay:'+(Math.random()*1.2)+'s;animation-duration:'+(2+Math.random()*1.5)+'s'
+      +';width:'+(5+Math.random()*8)+'px;height:'+(5+Math.random()*8)+'px';
+    container.appendChild(el);
+  }
+  stage.appendChild(container);
+  setTimeout(function(){container.remove();},5000);
+}
+
 function esc(s){return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+/* ── Starfield ── */
+function initStarfield() {
+  var canvas = document.getElementById('starfield');
+  var ctx = canvas.getContext('2d');
+  var stars = [];
+  function resize() {
+    canvas.width = canvas.offsetWidth;
+    canvas.height = canvas.offsetHeight;
+  }
+  resize();
+  new ResizeObserver(resize).observe(canvas);
+  for (var i = 0; i < 220; i++) {
+    stars.push({
+      x: Math.random(), y: Math.random(),
+      r: Math.random() * 1.4,
+      a: Math.random(),
+      spd: 0.003 + Math.random() * 0.012,
+      ph: Math.random() * Math.PI * 2
+    });
+  }
+  var t = 0;
+  (function loop() {
+    requestAnimationFrame(loop);
+    t += 0.016;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#03060F';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    stars.forEach(function(s) {
+      var alpha = s.a * (0.4 + 0.6 * Math.sin(t * s.spd * 40 + s.ph));
+      ctx.beginPath();
+      ctx.arc(s.x * canvas.width, s.y * canvas.height, s.r, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(180,210,255,' + alpha + ')';
+      ctx.fill();
+    });
+  })();
+}
 
 })();
 </script>
