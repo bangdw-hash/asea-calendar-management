@@ -441,6 +441,27 @@ body {
 }
 .notice svg { flex-shrink: 0; margin-top: 1px; color: var(--primary); }
 
+.kakao-banner {
+  display: flex; align-items: center; gap: 10px;
+  background: #fef3c7; border: 1.5px solid #fcd34d;
+  border-radius: var(--r); padding: 12px 16px;
+  color: #78350f; font-size: 13px; font-weight: 600;
+  text-decoration: none; line-height: 1.45;
+  margin-bottom: 0; transition: background .15s;
+}
+.kakao-banner:hover { background: #fde68a; }
+.kakao-banner svg:first-child { flex-shrink: 0; color: #d97706; }
+.kakao-banner svg:last-child { flex-shrink: 0; margin-left: auto; color: #d97706; }
+
+.kakao-success-btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  margin-top: 18px; padding: 12px 24px;
+  background: #fbbf24; border-radius: var(--r);
+  color: #78350f; font-size: 14px; font-weight: 700;
+  text-decoration: none; transition: background .15s;
+}
+.kakao-success-btn:hover { background: #f59e0b; }
+
 @media (max-width: 460px) {
   .btn-grid { grid-template-columns: repeat(2, 1fr); }
 }
@@ -481,6 +502,13 @@ body {
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
     신청 기간: 2026.10.16(목) 13:10 ~ 2026.10.28(수) 16:30 · 기재하신 연락처로 세부 일정 및 안내 사항이 전달됩니다.
   </div>
+
+  <!-- Kakao open chat banner -->
+  <a href="https://open.kakao.com/o/gGNqynUi" target="_blank" rel="noopener" class="kakao-banner">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 5.678 2 10.25c0 2.917 1.827 5.487 4.592 6.986-.202.713-.73 2.58-.836 2.979-.13.497.182.49.383.357.158-.104 2.5-1.698 3.515-2.389.438.062.89.097 1.346.097 5.523 0 10-3.678 10-8.25C22 5.678 17.523 2 12 2"/></svg>
+    창공제 노래 콘테스트 카카오 오픈채팅에 참여하세요! 일정·공지·실시간 정보를 확인하실 수 있습니다.
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+  </a>
 
   <form id="regForm" novalidate>
 
@@ -617,13 +645,42 @@ body {
     </div>
     <p class="success-title">신청이 완료되었습니다!</p>
     <p class="success-sub">참가 신청해 주셔서 감사합니다.<br>기재하신 연락처로 세부 일정 및 안내 사항을 전달드릴 예정입니다.<br><br><strong>2026년 10월 28일(수) B2층 무대</strong>에서 만나요!</p>
+    <a href="https://open.kakao.com/o/gGNqynUi" target="_blank" rel="noopener" class="kakao-success-btn">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 5.678 2 10.25c0 2.917 1.827 5.487 4.592 6.986-.202.713-.73 2.58-.836 2.979-.13.497.182.49.383.357.158-.104 2.5-1.698 3.515-2.389.438.062.89.097 1.346.097 5.523 0 10-3.678 10-8.25C22 5.678 17.523 2 12 2"/></svg>
+      카카오 오픈채팅 참여하기
+    </a>
   </div>
 
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 'use strict';
 (function () {
+
+  var _sb = supabase.createClient(
+    'https://zbpeyklwpotjyveipzxd.supabase.co',
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpicGV5a2x3cG90anl2ZWlwenhkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE1MTYxMDcsImV4cCI6MjA5NzA5MjEwN30.6JgoQ6rPRnmrbBTG68A-Y9HDQk40mnwubhXVnkZvHrQ',
+    {db:{schema:'cgf'}}
+  );
+
+  async function saveToSupabase(data) {
+    try {
+      await _sb.from('contestants').insert({
+        name: data.name,
+        affiliation: data.dept,
+        phone: data.phone,
+        category: data.cat,
+        song_title: data.songTitle,
+        song_artist: data.songArtist,
+        source: 'form',
+        is_pre_registered: false,
+        status: 'active'
+      });
+    } catch(e) {
+      // Silent fail — form UX is not blocked by DB error
+    }
+  }
 
   // 소속 버튼
   var deptGrid = document.getElementById('dept-grid');
@@ -759,9 +816,22 @@ body {
 
     if (!ok) return;
 
-    document.getElementById('regForm').style.display = 'none';
-    document.getElementById('success-card').style.display = 'block';
-    document.getElementById('progress').style.width = '100%';
+    var submitBtn = document.getElementById('submit-btn');
+    submitBtn.disabled = true;
+    submitBtn.textContent = '저장 중…';
+
+    saveToSupabase({
+      name: val('name'),
+      dept: val('dept'),
+      phone: inpPhone.value,
+      cat: val('cat'),
+      songTitle: val('stitle'),
+      songArtist: val('sartist')
+    }).then(function() {
+      document.getElementById('regForm').style.display = 'none';
+      document.getElementById('success-card').style.display = 'block';
+      document.getElementById('progress').style.width = '100%';
+    });
   });
 
 })();

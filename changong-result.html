@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>2026 창공제 노래 콘테스트 결과 발표</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;800;900&display=swap">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;width:100%;overflow:hidden;}
+body{
+  font-family:'Noto Sans KR',-apple-system,sans-serif;
+  background:#000;color:#fff;
+  position:relative;
+  display:flex;flex-direction:column;
+  min-height:100vh;
+}
+
+/* Animated EDM background */
+.bg-canvas{position:fixed;inset:0;z-index:0;pointer-events:none;}
+.laser{
+  position:absolute;width:2px;height:100%;
+  background:linear-gradient(to bottom,transparent,rgba(0,212,255,.4),transparent);
+  animation:laserMove 4s ease-in-out infinite;
+  transform-origin:center;
+}
+@keyframes laserMove{0%,100%{opacity:.3;transform:scaleX(1) rotateZ(var(--a,0deg)) translateX(var(--tx,0))}50%{opacity:.8;transform:scaleX(1.5) rotateZ(var(--a,0deg)) translateX(var(--tx,0))}}
+.glow-orb{
+  position:absolute;border-radius:50%;
+  filter:blur(60px);opacity:.15;
+  animation:orbFloat 6s ease-in-out infinite;
+}
+@keyframes orbFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-30px)}}
+.floor-line{
+  position:fixed;bottom:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,transparent,rgba(0,212,255,.6) 30%,rgba(0,212,255,.6) 70%,transparent);
+  box-shadow:0 0 20px rgba(0,212,255,.4);
+  z-index:1;
+}
+
+/* Header */
+.event-header{
+  position:relative;z-index:5;
+  text-align:center;
+  padding:28px 20px 16px;
+}
+.event-eyebrow{
+  font-size:11px;font-weight:700;letter-spacing:.18em;
+  color:rgba(0,212,255,.7);text-transform:uppercase;margin-bottom:8px;
+}
+.event-title{
+  font-size:clamp(20px,4vw,32px);font-weight:900;
+  background:linear-gradient(135deg,#fff 0%,rgba(0,212,255,.8) 50%,#fff 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  letter-spacing:-.01em;
+}
+.event-divider{
+  width:80px;height:2px;margin:14px auto;
+  background:linear-gradient(90deg,transparent,#00d4ff,transparent);
+}
+
+/* Main stage */
+.stage{
+  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  position:relative;z-index:5;padding:20px;
+  gap:24px;
+}
+.stage-prompt{
+  font-size:14px;color:rgba(255,255,255,.5);letter-spacing:.1em;
+  text-transform:uppercase;margin-bottom:8px;text-align:center;
+}
+
+/* Award card */
+.award-reveal{
+  display:flex;flex-direction:column;align-items:center;gap:16px;
+  width:100%;max-width:540px;
+}
+.award-card{
+  width:100%;
+  background:linear-gradient(135deg,rgba(0,40,60,.9),rgba(0,20,40,.95));
+  border:1.5px solid rgba(0,212,255,.3);
+  border-radius:8px;
+  padding:28px 24px;
+  text-align:center;
+  position:relative;overflow:hidden;
+  box-shadow:0 0 40px rgba(0,212,255,.15),0 8px 32px rgba(0,0,0,.6);
+  animation:cardReveal .6s cubic-bezier(.34,1.56,.64,1) both;
+}
+@keyframes cardReveal{from{opacity:0;transform:scale(.85) translateY(30px)}to{opacity:1;transform:scale(1) translateY(0)}}
+.award-card::before{
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse 80% 60% at 50% 0%,rgba(0,212,255,.08),transparent 70%);
+}
+.award-glow{
+  position:absolute;inset:-1px;border-radius:8px;
+  background:transparent;border:1px solid rgba(0,212,255,.5);
+  box-shadow:0 0 20px rgba(0,212,255,.2),inset 0 0 30px rgba(0,212,255,.04);
+  pointer-events:none;animation:glowPulse 2s ease-in-out infinite;
+}
+@keyframes glowPulse{0%,100%{box-shadow:0 0 20px rgba(0,212,255,.2)}50%{box-shadow:0 0 40px rgba(0,212,255,.5),0 0 60px rgba(0,212,255,.15)}}
+
+.award-crown{margin:0 auto 12px;display:block;animation:crownSpin 1.2s ease-out both;}
+@keyframes crownSpin{from{transform:rotateY(90deg) scale(.5);opacity:0}to{transform:rotateY(0) scale(1);opacity:1}}
+.award-label{
+  font-size:13px;font-weight:700;letter-spacing:.12em;color:rgba(0,212,255,.8);
+  text-transform:uppercase;margin-bottom:12px;position:relative;
+}
+.award-name{
+  font-size:clamp(28px,6vw,52px);font-weight:900;
+  color:#fff;line-height:1.1;margin-bottom:8px;position:relative;
+  text-shadow:0 0 30px rgba(0,212,255,.5);
+  animation:nameGlow 2s ease-in-out infinite;
+}
+@keyframes nameGlow{0%,100%{text-shadow:0 0 30px rgba(0,212,255,.3)}50%{text-shadow:0 0 50px rgba(0,212,255,.8),0 0 80px rgba(0,212,255,.4)}}
+.award-song{font-size:14px;color:rgba(255,255,255,.65);position:relative;margin-bottom:8px;}
+.award-score{
+  display:inline-block;
+  font-size:13px;font-weight:700;
+  background:rgba(0,212,255,.12);border:1px solid rgba(0,212,255,.2);
+  border-radius:100px;padding:4px 14px;color:rgba(0,212,255,.9);
+  position:relative;
+}
+.award-note{font-size:12px;color:rgba(255,255,255,.45);margin-top:8px;position:relative;}
+
+/* Award type colors */
+.award-grand .award-card{
+  border-color:rgba(251,191,36,.5);
+  box-shadow:0 0 60px rgba(251,191,36,.2),0 8px 40px rgba(0,0,0,.7);
+}
+.award-grand .award-glow{border-color:rgba(251,191,36,.6);box-shadow:0 0 30px rgba(251,191,36,.3),inset 0 0 40px rgba(251,191,36,.05);}
+.award-grand .award-name{text-shadow:0 0 30px rgba(251,191,36,.6);}
+.award-grand .award-label{color:rgba(251,191,36,.9);}
+.award-grand .award-score{background:rgba(251,191,36,.12);border-color:rgba(251,191,36,.2);color:rgba(251,191,36,.9);}
+@keyframes glowPulseGold{0%,100%{box-shadow:0 0 30px rgba(251,191,36,.3)}50%{box-shadow:0 0 60px rgba(251,191,36,.6)}}
+.award-grand .award-glow{animation:glowPulseGold 2s ease-in-out infinite;}
+
+.award-popularity .award-card{border-color:rgba(244,63,94,.4);}
+.award-popularity .award-label{color:rgba(244,63,94,.9);}
+.award-popularity .award-score{background:rgba(244,63,94,.1);border-color:rgba(244,63,94,.2);color:rgba(244,63,94,.9);}
+
+.award-special .award-card{border-color:rgba(168,85,247,.4);}
+.award-special .award-label{color:rgba(168,85,247,.9);}
+.award-special .award-score{background:rgba(168,85,247,.1);border-color:rgba(168,85,247,.2);color:rgba(168,85,247,.9);}
+
+/* Revealed list */
+.revealed-list{
+  display:flex;flex-direction:column;gap:8px;width:100%;max-width:540px;
+}
+.revealed-item{
+  display:flex;align-items:center;gap:12px;
+  background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);
+  border-radius:6px;padding:10px 16px;
+}
+.ri-badge{
+  font-size:11px;font-weight:700;letter-spacing:.08em;
+  padding:3px 8px;border-radius:100px;white-space:nowrap;
+}
+.ri-badge.cyan{background:rgba(0,212,255,.12);color:rgba(0,212,255,.9);border:1px solid rgba(0,212,255,.2);}
+.ri-badge.gold{background:rgba(251,191,36,.12);color:rgba(251,191,36,.9);border:1px solid rgba(251,191,36,.2);}
+.ri-badge.red{background:rgba(244,63,94,.1);color:rgba(244,63,94,.9);border:1px solid rgba(244,63,94,.2);}
+.ri-badge.purple{background:rgba(168,85,247,.1);color:rgba(168,85,247,.9);border:1px solid rgba(168,85,247,.2);}
+.ri-name{font-size:14px;font-weight:700;color:#fff;flex:1;}
+.ri-song{font-size:12px;color:rgba(255,255,255,.4);}
+
+/* Waiting */
+.waiting-wrap{text-align:center;padding:48px 24px;}
+.waiting-title{font-size:18px;font-weight:700;color:rgba(0,212,255,.8);margin-bottom:8px;}
+.waiting-sub{font-size:13px;color:rgba(255,255,255,.4);}
+
+/* Admin controls */
+.admin-bar{
+  position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
+  display:flex;gap:10px;z-index:99;
+  background:rgba(0,0,0,.85);border:1px solid rgba(0,212,255,.25);
+  border-radius:8px;padding:10px 14px;
+  box-shadow:0 4px 24px rgba(0,0,0,.6);
+  flex-wrap:wrap;justify-content:center;
+}
+.admin-btn{
+  padding:9px 20px;
+  background:rgba(0,212,255,.1);border:1px solid rgba(0,212,255,.25);
+  color:rgba(0,212,255,.9);font-family:inherit;font-size:13px;font-weight:700;
+  border-radius:6px;cursor:pointer;transition:all .15s;white-space:nowrap;
+}
+.admin-btn:hover{background:rgba(0,212,255,.2);border-color:rgba(0,212,255,.5);}
+.admin-btn:disabled{opacity:.3;cursor:not-allowed;}
+.admin-btn.danger{color:rgba(248,113,113,.9);border-color:rgba(248,113,113,.25);background:rgba(248,113,113,.08);}
+.admin-btn.danger:hover{background:rgba(248,113,113,.15);}
+
+/* Confetti particles */
+.confetti{position:fixed;top:0;left:50%;pointer-events:none;z-index:10;}
+.confetto{
+  position:absolute;width:8px;height:8px;border-radius:2px;
+  animation:confettoFall 2.5s ease-in both;
+}
+@keyframes confettoFall{
+  from{transform:translateY(-20px) rotate(0);opacity:1;}
+  to{transform:translateY(100vh) rotate(720deg);opacity:0;}
+}
+
+/* Fullscreen btn */
+.fs-btn{
+  position:fixed;top:16px;right:16px;z-index:99;
+  background:rgba(0,212,255,.1);border:1px solid rgba(0,212,255,.2);
+  color:rgba(0,212,255,.7);font-family:inherit;font-size:12px;
+  border-radius:6px;padding:6px 12px;cursor:pointer;
+  transition:all .15s;
+}
+.fs-btn:hover{background:rgba(0,212,255,.2);}
+</style>
+</head>
+<body>
+
+<!-- Background effects -->
+<div class="bg-canvas" id="bgCanvas"></div>
+<div class="floor-line"></div>
+
+<!-- Fullscreen button -->
+<button class="fs-btn" onclick="toggleFullscreen()">
+  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
+  전체화면
+</button>
+
+<!-- Header -->
+<div class="event-header">
+  <p class="event-eyebrow">2026 창공제</p>
+  <h1 class="event-title">노래 콘테스트 결과 발표</h1>
+  <div class="event-divider"></div>
+</div>
+
+<!-- Stage -->
+<div class="stage" id="stage">
+  <div class="waiting-wrap">
+    <div class="waiting-title">결과 발표 대기 중</div>
+    <div class="waiting-sub">관리자가 결과를 발표하면 이 화면에 표시됩니다</div>
+  </div>
+</div>
+
+<!-- Admin bar (shown only in admin mode) -->
+<div class="admin-bar" id="adminBar" style="display:none">
+  <span style="font-size:11px;color:rgba(0,212,255,.5);align-self:center">관리자 모드</span>
+  <button class="admin-btn" id="nextBtn" onclick="revealNext()">다음 발표</button>
+  <button class="admin-btn" onclick="location.href='changong-manage.html'">관리자 패널</button>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+'use strict';
+(function(){
+
+var SB_URL = 'https://zbpeyklwpotjyveipzxd.supabase.co';
+var SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpicGV5a2x3cG90anl2ZWlwenhkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE1MTYxMDcsImV4cCI6MjA5NzA5MjEwN30.6JgoQ6rPRnmrbBTG68A-Y9HDQk40mnwubhXVnkZvHrQ';
+var sb = supabase.createClient(SB_URL, SB_KEY, {db:{schema:'cgf'}});
+
+var stage = document.getElementById('stage');
+var adminBar = document.getElementById('adminBar');
+var isAdmin = new URLSearchParams(location.search).get('admin') === '1'
+  || sessionStorage.getItem('cgf_admin') === '1';
+
+var awards = [];
+var currentReveal = -1; // index of last revealed
+
+var AWARD_ORDER = [
+  {type:'merit',label:'우수상',color:'cyan'},
+  {type:'excellence',label:'최우수상',color:'cyan'},
+  {type:'grand',label:'대상',color:'gold'},
+  {type:'popularity',label:'인기상',color:'red'},
+  {type:'judge_special',label:'심사위원 특별상',color:'purple'},
+  {type:'mc_special',label:'MC 특별상',color:'purple'}
+];
+
+if (isAdmin) adminBar.style.display = 'flex';
+
+buildBackground();
+init();
+
+function buildBackground() {
+  var canvas = document.getElementById('bgCanvas');
+  var angles = [-20,-10,0,10,20];
+  var positions = [10,25,50,75,90];
+  angles.forEach(function(a,i){
+    var l = document.createElement('div');
+    l.className = 'laser';
+    l.style.cssText='left:'+positions[i]+'%;--a:'+a+'deg;--tx:'+((i%2)*10-5)+'px;animation-delay:'+(i*.7)+'s';
+    canvas.appendChild(l);
+  });
+  [{c:'rgba(0,212,255,.2)',w:'300px',h:'300px',t:'10%',l:'5%',d:'0s'},
+   {c:'rgba(0,100,180,.2)',w:'400px',h:'400px',t:'60%',r:'5%',d:'2s'},
+   {c:'rgba(80,0,200,.15)',w:'250px',h:'250px',t:'30%',l:'40%',d:'1s'}
+  ].forEach(function(o){
+    var orb = document.createElement('div');
+    orb.className = 'glow-orb';
+    orb.style.cssText='background:'+o.c+';width:'+o.w+';height:'+o.h+';top:'+o.t+';'
+      +(o.l?'left:'+o.l:o.r?'right:'+o.r:'')+';animation-delay:'+o.d;
+    canvas.appendChild(orb);
+  });
+}
+
+async function init() {
+  var {data} = await sb.from('awards')
+    .select('*, contestant:contestant_id(id,name,song_title,song_artist)')
+    .order('reveal_order',{ascending:true,nullsFirst:false});
+  awards = data || [];
+  currentReveal = awards.filter(function(a){return a.revealed;}).length - 1;
+  render();
+  subscribeRealtime();
+}
+
+function subscribeRealtime() {
+  sb.channel('cgf-result-awards')
+    .on('postgres_changes',{event:'*',schema:'cgf',table:'awards'},async function(){
+      var {data} = await sb.from('awards')
+        .select('*, contestant:contestant_id(id,name,song_title,song_artist)')
+        .order('reveal_order',{ascending:true,nullsFirst:false});
+      awards = data || [];
+      var newReveal = awards.filter(function(a){return a.revealed;}).length - 1;
+      if (newReveal > currentReveal) {
+        currentReveal = newReveal;
+        renderWithAnimation();
+      } else {
+        render();
+      }
+    })
+    .subscribe();
+}
+
+function render() {
+  var revealed = awards.filter(function(a){return a.revealed;});
+  if (!revealed.length) {
+    stage.innerHTML = '<div class="waiting-wrap">'
+      +'<div class="waiting-title">결과 발표 대기 중</div>'
+      +'<div class="waiting-sub">관리자가 결과를 발표하면 이 화면에 표시됩니다</div>'
+      +'</div>';
+    return;
+  }
+
+  // Latest revealed is the big card, rest in the revealed list
+  var latest = revealed[revealed.length - 1];
+  var prev = revealed.slice(0, -1);
+
+  var aType = AWARD_ORDER.find(function(o){return o.type===latest.award_type;}) || {label:latest.award_type,color:'cyan'};
+  var c = latest.contestant || {};
+
+  var isGrand = latest.award_type === 'grand';
+  var isPopularity = latest.award_type === 'popularity';
+  var isSpecial = latest.award_type === 'judge_special' || latest.award_type === 'mc_special';
+
+  var html = '<div class="award-reveal">';
+  html += '<div class="stage-prompt">'+esc(aType.label)+' 발표</div>';
+
+  var cardClass = 'award-card '+(isGrand?'award-grand-inner':isPopularity?'award-pop-inner':isSpecial?'award-special-inner':'');
+  var wrapClass = 'award-card-wrap '+(isGrand?'award-grand':isPopularity?'award-popularity':isSpecial?'award-special':'');
+
+  html += '<div class="'+wrapClass+'">'
+    +'<div class="'+cardClass+'">'
+    +'<div class="award-glow"></div>'
+    +awardCrown(latest.award_type)
+    +'<div class="award-label">'+esc(aType.label)+'</div>'
+    +'<div class="award-name">'+esc(c.name||'—')+'</div>'
+    +(c.song_title?'<div class="award-song">'+esc(c.song_title)+(c.song_artist?' — '+esc(c.song_artist):'')+'</div>':'')
+    +(latest.note?'<div class="award-note">'+esc(latest.note)+'</div>':'')
+    +'</div>'
+    +'</div>';
+  html += '</div>';
+
+  if (prev.length) {
+    html += '<div class="revealed-list">';
+    prev.slice().reverse().forEach(function(a){
+      var at = AWARD_ORDER.find(function(o){return o.type===a.award_type;})||{label:a.award_type,color:'cyan'};
+      var ac = a.contestant || {};
+      html += '<div class="revealed-item">'
+        +'<span class="ri-badge '+at.color+'">'+esc(at.label)+'</span>'
+        +'<div>'
+        +'<div class="ri-name">'+esc(ac.name||'—')+'</div>'
+        +(ac.song_title?'<div class="ri-song">'+esc(ac.song_title)+'</div>':'')
+        +'</div>'
+        +'</div>';
+    });
+    html += '</div>';
+  }
+
+  stage.innerHTML = html;
+
+  if (isAdmin) {
+    var nextBtn = document.getElementById('nextBtn');
+    if (nextBtn) {
+      var allRevealed = revealed.length >= awards.filter(function(a){return a.contestant_id;}).length;
+      nextBtn.disabled = allRevealed;
+      nextBtn.textContent = allRevealed ? '모두 발표됨' : '다음 발표';
+    }
+  }
+}
+
+function renderWithAnimation() {
+  render();
+  if (currentReveal >= 0 && awards[currentReveal]) {
+    var a = awards[currentReveal];
+    if (a.award_type === 'grand') { spawnConfetti(); }
+  }
+}
+
+function awardCrown(type) {
+  var gold = type === 'grand';
+  var silver = type === 'excellence';
+  var bronze = type === 'merit';
+  var pop = type === 'popularity';
+  if (gold || silver || bronze) {
+    var c = gold ? '#fbbf24' : silver ? '#94a3b8' : '#cd7f32';
+    return '<svg class="award-crown" width="56" height="40" viewBox="0 0 56 40" fill="none">'
+      +'<path d="M4 32L10 14L22 24L28 6L34 24L46 14L52 32H4Z" fill="'+c+'" opacity=".9"/>'
+      +'<rect x="4" y="32" width="48" height="6" rx="2" fill="'+c+'"/>'
+      +'<circle cx="28" cy="6" r="3" fill="'+c+'"/>'
+      +'<circle cx="10" cy="14" r="2.5" fill="'+c+'"/>'
+      +'<circle cx="46" cy="14" r="2.5" fill="'+c+'"/>'
+      +'</svg>';
+  }
+  if (pop) {
+    return '<svg class="award-crown" width="48" height="48" viewBox="0 0 24 24" fill="rgba(244,63,94,.8)">'
+      +'<path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>'
+      +'</svg>';
+  }
+  return '<svg class="award-crown" width="48" height="48" viewBox="0 0 24 24" fill="rgba(168,85,247,.8)">'
+    +'<path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>'
+    +'</svg>';
+}
+
+function spawnConfetti() {
+  var colors = ['#00d4ff','#fbbf24','#f87171','#a78bfa','#34d399'];
+  var container = document.createElement('div');
+  container.className = 'confetti';
+  for (var i = 0; i < 80; i++) {
+    var el = document.createElement('div');
+    el.className = 'confetto';
+    el.style.cssText = 'left:'+(Math.random()*600-300)+'px;background:'+colors[Math.floor(Math.random()*colors.length)]
+      +';animation-delay:'+(Math.random()*1)+'s;animation-duration:'+(2+Math.random())+'s'
+      +';width:'+(6+Math.random()*6)+'px;height:'+(6+Math.random()*6)+'px';
+    container.appendChild(el);
+  }
+  document.body.appendChild(container);
+  setTimeout(function(){container.remove();},4000);
+}
+
+window.revealNext = async function() {
+  // Find first unrevealed award that has a contestant assigned
+  var assigned = awards.filter(function(a){return !!a.contestant_id;});
+  var unrevealed = assigned.filter(function(a){return !a.revealed;});
+  if (!unrevealed.length) return;
+
+  // Reveal in AWARD_ORDER sequence
+  var next = null;
+  for (var i = 0; i < AWARD_ORDER.length; i++) {
+    var t = AWARD_ORDER[i].type;
+    next = unrevealed.find(function(a){return a.award_type===t;});
+    if (next) break;
+  }
+  if (!next) next = unrevealed[0];
+
+  var revCount = awards.filter(function(a){return a.revealed;}).length;
+  await sb.from('awards').update({revealed:true, reveal_order:revCount+1}).eq('id',next.id);
+};
+
+window.toggleFullscreen = function() {
+  if (!document.fullscreenElement) {
+    document.documentElement.requestFullscreen();
+  } else {
+    document.exitFullscreen();
+  }
+};
+
+function esc(s){return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+})();
+</script>
+</body>
+</html>
