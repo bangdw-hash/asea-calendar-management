@@ -6,70 +6,31 @@
 <title>2026 창공제 노래 콘테스트 참가 신청</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800&display=swap">
 <style>
-/* Layout: sky-blue festival form — aviation school palette */
 :root {
-  --bg: #e8f4fd;
-  --bg2: #d0eaf9;
+  --bg: #F8FAFF;
+  --bg2: #F0F4FF;
   --card: #ffffff;
-  --fg: #0a2540;
-  --fg-sub: #1e4a72;
-  --fg-muted: #6a96b8;
-  --border: #b8d8ef;
-  --primary: #0ea5e9;
-  --primary-dk: #0284c7;
-  --primary-lt: #e0f2fe;
-  --accent: #f59e0b;
-  --accent-lt: #fef9ec;
-  --accent-dk: #d97706;
-  --red: #dc2626;
-  --red-lt: #fee2e2;
-  --green: #059669;
-  --green-lt: #d1fae5;
+  --fg: #202124;
+  --fg-sub: #1A73E8;
+  --fg-muted: #5F6368;
+  --border: #E1E5EA;
+  --border2: #CBD5DF;
+  --primary: #1A73E8;
+  --primary-dk: #1557B0;
+  --primary-lt: #EEF2FF;
+  --accent: #D97706;
+  --accent-lt: #FEF3C7;
+  --accent-dk: #B45309;
+  --red: #DC2626;
+  --red-lt: #FEE2E2;
+  --green: #16A34A;
+  --green-lt: #DCFCE7;
   --r: 6px;
-  --sh: 0 1px 4px rgba(14,165,233,.10);
-  --sh-md: 0 4px 16px rgba(14,165,233,.15);
+  --sh: 0 1px 3px rgba(60,64,67,.08),0 1px 2px rgba(60,64,67,.06);
+  --sh-md: 0 4px 16px rgba(60,64,67,.12);
   --font: 'Noto Sans KR', -apple-system, 'Apple SD Gothic Neo', sans-serif;
 }
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --bg: #071e30;
-    --bg2: #0c2d45;
-    --card: #0f3350;
-    --fg: #e0f2fe;
-    --fg-sub: #7dd3fc;
-    --fg-muted: #38627a;
-    --border: #1a4a68;
-    --primary: #38bdf8;
-    --primary-dk: #0ea5e9;
-    --primary-lt: #082f49;
-    --accent: #fbbf24;
-    --accent-lt: #1a1200;
-    --red-lt: #1f0a0a;
-    --green-lt: #052215;
-    --sh: 0 1px 4px rgba(0,0,0,.3);
-    --sh-md: 0 4px 16px rgba(0,0,0,.4);
-    color-scheme: dark;
-  }
-}
-:root[data-theme="dark"] {
-  --bg: #071e30;
-  --bg2: #0c2d45;
-  --card: #0f3350;
-  --fg: #e0f2fe;
-  --fg-sub: #7dd3fc;
-  --fg-muted: #38627a;
-  --border: #1a4a68;
-  --primary: #38bdf8;
-  --primary-dk: #0ea5e9;
-  --primary-lt: #082f49;
-  --accent: #fbbf24;
-  --accent-lt: #1a1200;
-  --red-lt: #1f0a0a;
-  --green-lt: #052215;
-  --sh: 0 1px 4px rgba(0,0,0,.3);
-  --sh-md: 0 4px 16px rgba(0,0,0,.4);
-  color-scheme: dark;
-}
+/* Dark mode disabled — contest pages use fixed B안 light theme for consistency */
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { height: 100%; }
@@ -83,14 +44,14 @@ body {
   padding-right: max(16px, env(safe-area-inset-right, 0px));
   padding-bottom: 40px;
   background-image:
-    radial-gradient(ellipse 120% 60% at 50% -10%, rgba(14,165,233,.18) 0%, transparent 70%),
-    radial-gradient(ellipse 80% 40% at 90% 110%, rgba(56,189,248,.12) 0%, transparent 60%);
+    radial-gradient(ellipse 120% 60% at 50% -10%, rgba(26,115,232,.12) 0%, transparent 70%),
+    radial-gradient(ellipse 80% 40% at 90% 110%, rgba(26,115,232,.06) 0%, transparent 60%);
   min-height: 100vh;
 }
 
 /* Header */
 .page-header {
-  background: linear-gradient(150deg, #0369a1 0%, #0ea5e9 45%, #38bdf8 80%, #7dd3fc 100%);
+  background: linear-gradient(135deg, #1E3A5F 0%, #1A73E8 100%);
   margin-left: calc(-1 * max(16px, env(safe-area-inset-left, 0px)));
   margin-right: calc(-1 * max(16px, env(safe-area-inset-right, 0px)));
   padding: 40px max(20px, env(safe-area-inset-left, 0px)) 36px;
@@ -178,7 +139,7 @@ body {
 .progress-fill {
   width: 0%;
   height: 100%;
-  background: linear-gradient(90deg, #0ea5e9, #38bdf8, var(--accent));
+  background: linear-gradient(90deg, #1A73E8, #1A73E8, var(--accent));
   transition: width .4s ease;
 }
 
@@ -276,10 +237,10 @@ body {
 }
 .btn-choice.selected {
   border-color: var(--primary);
-  background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%);
+  background: var(--primary-lt);
   color: var(--primary-dk);
   font-weight: 700;
-  box-shadow: 0 0 0 2px rgba(14,165,233,.25);
+  box-shadow: 0 0 0 2px rgba(26,115,232,.2);
 }
 
 /* Radio group (참가부문) */
@@ -299,8 +260,8 @@ body {
 }
 .radio-card.selected {
   border-color: var(--primary);
-  background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%);
-  box-shadow: 0 0 0 2px rgba(14,165,233,.2);
+  background: var(--primary-lt);
+  box-shadow: 0 0 0 2px rgba(26,115,232,.15);
 }
 .radio-card input[type=radio] { display: none; }
 .radio-dot {
@@ -380,7 +341,7 @@ body {
 .submit-btn {
   width: 100%;
   padding: 15px;
-  background: linear-gradient(135deg, #0284c7 0%, #0ea5e9 60%, #38bdf8 100%);
+  background: linear-gradient(135deg, #1E3A5F 0%, #1A73E8 100%);
   color: #fff;
   font-family: var(--font);
   font-size: 16px;
