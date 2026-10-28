@@ -502,14 +502,8 @@ body {
     <!-- 3. 연락처 -->
     <div class="section">
       <div class="section-label"><span class="req">*</span> 3. 연락처</div>
-      <p class="section-hint">하이픈(-) 없이 숫자만 입력하면 자동으로 형식이 완성됩니다.</p>
-      <div class="phone-row">
-        <input class="text-input phone-seg" id="ph1" type="tel" maxlength="3" placeholder="010" inputmode="numeric" pattern="[0-9]*">
-        <span class="phone-dot">-</span>
-        <input class="text-input phone-seg" id="ph2" type="tel" maxlength="4" placeholder="0000" inputmode="numeric" pattern="[0-9]*">
-        <span class="phone-dot">-</span>
-        <input class="text-input phone-seg" id="ph3" type="tel" maxlength="4" placeholder="0000" inputmode="numeric" pattern="[0-9]*">
-      </div>
+      <p class="section-hint">숫자만 입력하면 자동으로 형식이 완성됩니다. (예: 01012345678)</p>
+      <input class="text-input" id="inp-phone-display" type="tel" maxlength="13" placeholder="010-0000-0000" inputmode="numeric" autocomplete="tel">
       <input type="hidden" id="inp-phone">
       <p class="err-msg" id="err-phone">올바른 연락처를 입력해 주세요. (예: 010-1234-5678)</p>
     </div>
@@ -655,68 +649,34 @@ body {
     });
   });
 
-  // 연락처 자동 포커스 이동
-  var ph1 = document.getElementById('ph1');
-  var ph2 = document.getElementById('ph2');
-  var ph3 = document.getElementById('ph3');
+  // 연락처 단일 입력 + 자동 하이픈 포맷
+  var phoneDisplay = document.getElementById('inp-phone-display');
   var inpPhone = document.getElementById('inp-phone');
 
   function onlyDigits(str) { return str.replace(/\D/g, ''); }
 
-  function phoneUpdate() {
-    var v1 = onlyDigits(ph1.value);
-    var v2 = onlyDigits(ph2.value);
-    var v3 = onlyDigits(ph3.value);
-    inpPhone.value = (v1 && v2 && v3) ? (v1 + '-' + v2 + '-' + v3) : '';
+  function formatPhone(raw) {
+    var d = onlyDigits(raw).slice(0, 11);
+    if (d.length <= 3) return d;
+    if (d.length <= 7) return d.slice(0, 3) + '-' + d.slice(3);
+    return d.slice(0, 3) + '-' + d.slice(3, 7) + '-' + d.slice(7);
+  }
+
+  function phoneValid(str) {
+    return /^\d{3}-\d{4}-\d{4}$/.test(str);
+  }
+
+  phoneDisplay.addEventListener('input', function () {
+    var cursor = this.selectionStart;
+    var old = this.value;
+    var formatted = formatPhone(old);
+    this.value = formatted;
+    // 커서 보정: 하이픈 자동 삽입으로 길이가 늘었을 때 뒤로 밀기
+    var diff = formatted.length - old.length;
+    if (diff > 0) cursor += diff;
+    try { this.setSelectionRange(cursor, cursor); } catch(e) {}
+    inpPhone.value = phoneValid(formatted) ? formatted : '';
     updateProgress();
-  }
-
-  function splitPhoneDigits(digits) {
-    ph1.value = digits.slice(0, 3);
-    ph2.value = digits.slice(3, 7);
-    ph3.value = digits.slice(7, 11);
-    phoneUpdate();
-  }
-
-  ph1.addEventListener('input', function () {
-    var v = onlyDigits(this.value);
-    if (v.length > 3) {
-      splitPhoneDigits(v);
-      ph3.focus();
-      return;
-    }
-    this.value = v;
-    if (v.length >= 3) ph2.focus();
-    phoneUpdate();
-  });
-  ph2.addEventListener('input', function () {
-    var v = onlyDigits(this.value);
-    if (v.length > 4) {
-      ph2.value = v.slice(0, 4);
-      ph3.value = v.slice(4, 8);
-      ph3.focus();
-      phoneUpdate();
-      return;
-    }
-    this.value = v;
-    if (v.length >= 4) ph3.focus();
-    phoneUpdate();
-  });
-  ph3.addEventListener('input', function () {
-    this.value = onlyDigits(this.value).slice(0, 4);
-    phoneUpdate();
-  });
-
-  // 연락처 붙여넣기 — 전체 칸 공통 처리
-  [ph1, ph2, ph3].forEach(function(el) {
-    el.addEventListener('paste', function (e) {
-      var pasted = onlyDigits((e.clipboardData || window.clipboardData).getData('text'));
-      if (pasted.length >= 9) {
-        e.preventDefault();
-        splitPhoneDigits(pasted);
-        ph3.focus();
-      }
-    });
   });
 
   // 참가 부문
@@ -750,11 +710,10 @@ body {
 
   // 진행률 계산
   function getFields() {
-    var v1 = onlyDigits(ph1.value), v2 = onlyDigits(ph2.value), v3 = onlyDigits(ph3.value);
     return [
       !!document.getElementById('inp-name').value.trim(),
       !!inpDept.value,
-      v1.length === 3 && v2.length === 4 && v3.length === 4,
+      phoneValid(phoneDisplay.value),
       !!inpCat.value,
       !!document.getElementById('inp-stitle').value.trim(),
       !!document.getElementById('inp-sartist').value.trim(),
@@ -786,8 +745,8 @@ body {
 
     setErr('name', !val('name'));       if (!val('name')) ok = false;
     setErr('dept', !val('dept'));       if (!val('dept')) ok = false;
-    var v1 = onlyDigits(ph1.value), v2 = onlyDigits(ph2.value), v3 = onlyDigits(ph3.value);
-    var phoneOk = v1.length === 3 && v2.length === 4 && v3.length === 4;
+    var phoneOk = phoneValid(phoneDisplay.value);
+    inpPhone.value = phoneOk ? phoneDisplay.value : '';
     setErr('phone', !phoneOk);          if (!phoneOk) ok = false;
     setErr('cat', !val('cat'));         if (!val('cat')) ok = false;
     setErr('stitle', !val('stitle'));   if (!val('stitle')) ok = false;
