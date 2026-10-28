@@ -76,9 +76,9 @@ body{font-family:var(--font);color:var(--fg);font-size:14px;display:flex;flex-di
 
 /* Table */
 .tbl-wrap{overflow-x:auto;border-radius:var(--r);border:1px solid var(--border);box-shadow:var(--sh);}
-table{width:100%;border-collapse:collapse;font-size:13px;}
+table{width:100%;border-collapse:collapse;font-size:13px;min-width:700px;}
 th{background:var(--bg3);color:var(--fg-muted);font-weight:700;padding:9px 12px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap;font-size:12px;}
-td{padding:10px 12px;border-bottom:1px solid var(--border);color:var(--fg);vertical-align:middle;}
+td{padding:10px 12px;border-bottom:1px solid var(--border);color:var(--fg);vertical-align:middle;white-space:nowrap;}
 tr:last-child td{border-bottom:none;}
 tr:hover td{background:var(--bg2);}
 .td-badge{display:inline-flex;align-items:center;gap:4px;padding:2px 7px;border-radius:4px;font-size:11px;font-weight:600;border:1px solid;}
@@ -94,6 +94,23 @@ tr.dragging{opacity:.4;}
 tr.drag-over td{background:var(--primary-lt);outline:2px solid rgba(26,115,232,.3);}
 .action-btns{display:flex;gap:4px;}
 .act-btn{padding:4px 8px;border-radius:4px;font-family:inherit;font-size:11px;font-weight:600;cursor:pointer;border:1px solid;transition:all .12s;}
+
+/* Mobile card layout */
+.c-cards{display:none;flex-direction:column;gap:8px;}
+.c-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:12px 14px;box-shadow:var(--sh);}
+.c-card-top{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
+.c-card-seq{font-size:12px;color:var(--fg-muted);min-width:22px;font-weight:600;}
+.c-card-name{font-size:15px;font-weight:700;flex:1;}
+.c-card-row{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--fg-muted);margin-bottom:3px;flex-wrap:wrap;}
+.c-card-song{font-size:13px;font-weight:600;color:var(--fg);}
+.c-card-btns{display:flex;gap:6px;margin-top:10px;}
+.c-card-btns .act-btn{flex:1;text-align:center;justify-content:center;}
+@media(max-width:700px){
+  .tbl-wrap{display:none;}
+  .c-cards{display:flex;}
+  .phase-bar{width:100%;overflow-x:auto;}
+  .phase-step{flex:1;text-align:center;padding:7px 10px;font-size:12px;}
+}
 
 /* Phase bar */
 .phase-bar{display:flex;gap:0;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:14px;width:fit-content;}
@@ -251,6 +268,7 @@ tr.drag-over td{background:var(--primary-lt);outline:2px solid rgba(26,115,232,.
       <div class="tbl-wrap" id="contestantTable">
         <div class="empty-state"><span class="spin-sm"></span></div>
       </div>
+      <div class="c-cards" id="contestantCards"></div>
     </div>
 
     <!-- Tab 2: Live mode -->
@@ -652,19 +670,27 @@ function renderContestantsTab() {
     return true;
   });
   var tbl = document.getElementById('contestantTable');
-  if (!list.length) { tbl.innerHTML = '<div class="empty-state">참가자가 없습니다</div>'; return; }
+  var cards = document.getElementById('contestantCards');
+  if (!list.length) {
+    tbl.innerHTML = '<div class="empty-state">참가자가 없습니다</div>';
+    cards.innerHTML = '<div class="empty-state">참가자가 없습니다</div>';
+    return;
+  }
   var html = '<table><thead><tr>'
     +'<th style="width:32px"></th><th>#</th><th>이름</th><th>소속</th><th>부문</th>'
     +'<th>참가곡</th><th>연락처</th><th>상태</th><th>구분</th><th>작업</th>'
     +'</tr></thead><tbody>';
+  var cardHtml = '';
   list.forEach(function(c,i){
     var srcBadge = c.is_pre_registered?'badge-pre':c.source==='form'?'badge-form':'badge-manual';
     var srcLabel = c.is_pre_registered?'사전신청':c.source==='form'?'현장신청':'수동등록';
     var stBadge = c.status==='absent'?'badge-absent':c.status==='done'?'badge-done':'badge-active';
     var stLabel = c.status==='absent'?'미참석':c.status==='done'?'완료':'대기';
+    var seq = c.seq||i+1;
+    // 테이블 행
     html += '<tr draggable="true" data-id="'+c.id+'" data-idx="'+i+'" ondragstart="dragStart(event,this)" ondragover="dragOver(event,this)" ondrop="dragDrop(event,this)" ondragleave="dragLeave(this)">'
       +'<td><span class="drag-handle">⠿</span></td>'
-      +'<td style="color:var(--fg-muted)">'+(c.seq||i+1)+'</td>'
+      +'<td style="color:var(--fg-muted)">'+seq+'</td>'
       +'<td style="font-weight:700">'+esc(c.name)+'</td>'
       +'<td>'+esc(c.affiliation||'—')+'</td>'
       +'<td>'+esc(c.category||'개인')+'</td>'
@@ -678,9 +704,27 @@ function renderContestantsTab() {
       +'<button class="act-btn btn-red" onclick="delContestant(\''+c.id+'\')">삭제</button>'
       +'</div></td>'
       +'</tr>';
+    // 카드 (모바일)
+    cardHtml += '<div class="c-card">'
+      +'<div class="c-card-top">'
+      +'<span class="c-card-seq">'+seq+'</span>'
+      +'<span class="c-card-name">'+esc(c.name)+'</span>'
+      +'<span class="td-badge '+stBadge+'">'+stLabel+'</span>'
+      +'<span class="td-badge '+srcBadge+'">'+srcLabel+'</span>'
+      +'</div>'
+      +'<div class="c-card-row"><span>'+esc(c.affiliation||'—')+'</span><span>·</span><span>'+esc(c.category||'개인')+'</span></div>'
+      +'<div class="c-card-row"><span class="c-card-song">'+esc(c.song_title||'—')+'</span>'+(c.song_artist?'<span> / '+esc(c.song_artist)+'</span>':'')+'</div>'
+      +'<div class="c-card-row">'+esc(c.phone||'연락처 없음')+'</div>'
+      +'<div class="c-card-btns">'
+      +'<button class="act-btn btn-primary" onclick="startPerf(\''+c.id+'\')">공연시작</button>'
+      +(c.status!=='absent'?'<button class="act-btn btn-orange" onclick="markAbsent(\''+c.id+'\')">미참석</button>':'<button class="act-btn btn-green" onclick="markActive(\''+c.id+'\')">복귀</button>')
+      +'<button class="act-btn btn-red" onclick="delContestant(\''+c.id+'\')">삭제</button>'
+      +'</div>'
+      +'</div>';
   });
   html += '</tbody></table>';
   tbl.innerHTML = html;
+  cards.innerHTML = cardHtml;
 }
 
 window.filterContestants = function() { renderContestantsTab(); };
