@@ -671,32 +671,52 @@ body {
     updateProgress();
   }
 
+  function splitPhoneDigits(digits) {
+    ph1.value = digits.slice(0, 3);
+    ph2.value = digits.slice(3, 7);
+    ph3.value = digits.slice(7, 11);
+    phoneUpdate();
+  }
+
   ph1.addEventListener('input', function () {
-    this.value = onlyDigits(this.value);
-    if (this.value.length >= 3) ph2.focus();
+    var v = onlyDigits(this.value);
+    if (v.length > 3) {
+      splitPhoneDigits(v);
+      ph3.focus();
+      return;
+    }
+    this.value = v;
+    if (v.length >= 3) ph2.focus();
     phoneUpdate();
   });
   ph2.addEventListener('input', function () {
-    this.value = onlyDigits(this.value);
-    if (this.value.length >= 4) ph3.focus();
+    var v = onlyDigits(this.value);
+    if (v.length > 4) {
+      ph2.value = v.slice(0, 4);
+      ph3.value = v.slice(4, 8);
+      ph3.focus();
+      phoneUpdate();
+      return;
+    }
+    this.value = v;
+    if (v.length >= 4) ph3.focus();
     phoneUpdate();
   });
   ph3.addEventListener('input', function () {
-    this.value = onlyDigits(this.value);
+    this.value = onlyDigits(this.value).slice(0, 4);
     phoneUpdate();
   });
 
-  // 연락처 전체 붙여넣기 처리
-  ph1.addEventListener('paste', function (e) {
-    var pasted = onlyDigits((e.clipboardData || window.clipboardData).getData('text'));
-    if (pasted.length >= 9) {
-      e.preventDefault();
-      ph1.value = pasted.slice(0, 3);
-      ph2.value = pasted.slice(3, 7);
-      ph3.value = pasted.slice(7, 11);
-      phoneUpdate();
-      ph3.focus();
-    }
+  // 연락처 붙여넣기 — 전체 칸 공통 처리
+  [ph1, ph2, ph3].forEach(function(el) {
+    el.addEventListener('paste', function (e) {
+      var pasted = onlyDigits((e.clipboardData || window.clipboardData).getData('text'));
+      if (pasted.length >= 9) {
+        e.preventDefault();
+        splitPhoneDigits(pasted);
+        ph3.focus();
+      }
+    });
   });
 
   // 참가 부문
