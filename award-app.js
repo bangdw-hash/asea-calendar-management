@@ -17,7 +17,7 @@
     clearTimeout(timer);
     app.innerHTML = '<div class="login"><form class="lg-card" id="lg-f" autocomplete="off">' +
       '<div class="lg-logo">' + AW.ic('tpl', 30) + '</div><h1>상장 메일머지 출력기</h1><p class="muted">아세아항공직업전문학교 · 관리자 전용</p>' +
-      '<label class="f" for="lg-pw">관리자 비밀번호</label><input class="in" id="lg-pw" type="password" autocomplete="current-password" required autofocus>' +
+      '<label class="f" for="lg-pw">관리자 비밀번호</label><input class="in" id="lg-pw" type="password" autocomplete="new-password" required autofocus>' +
       '<div class="lg-err" id="lg-err" role="alert">' + AW.esc(msg || '') + '</div>' +
       '<button class="btn btn-primary block" id="lg-btn" type="submit">로그인</button></form></div>';
     $('#lg-f').onsubmit = function (e) {

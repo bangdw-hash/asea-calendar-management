@@ -72,8 +72,9 @@
         '<div class="tg">' + BTN('bold', 'bold', '굵게') + BTN('italic', 'italic', '기울임') + BTN('ul', 'underline', '밑줄') + '<input type="color" class="clr" data-p="color" title="글자색" value="#111111"></div>' +
         '<div class="tg">' + BTN('al-l', 'alL', '왼쪽 정렬') + BTN('al-c', 'alC', '가운데 정렬') + BTN('al-r', 'alR', '오른쪽 정렬') + BTN('al-j', 'alJ', '양쪽 정렬 — 좌우 폭을 채우고 마지막 줄은 왼쪽(한글의 양쪽 정렬)') + BTN('al-d', 'alD', '균등 분배 — 마지막 줄까지 좌우 폭을 채움(한글의 배분 정렬)') + '</div>' +
         '<div class="tg">' + BTN('v-t', 'vT', '위쪽 맞춤') + BTN('v-m', 'vM', '세로 가운데') + BTN('v-b', 'vB', '아래쪽 맞춤') + '</div>' +
-        '<label class="mini" title="줄 간격(배)">행간<input class="in sm num" data-p="lh" type="number" min="0.8" max="4" step="0.1" style="width:56px"></label>' +
+        '<label class="mini" title="줄 간격(배) — 최소 0.2까지 줄여 글이 겹치게 할 수 있습니다">행간<input class="in sm num" data-p="lh" type="number" min="0.2" max="4" step="0.1" style="width:56px"></label>' +
         '<label class="mini" title="글자 간격(pt)">자간<input class="in sm num" data-p="ls" type="number" min="-5" max="60" step="0.5" style="width:56px"></label>' +
+        '<label class="mini" title="단락 간격(pt) — 줄 바꿈 뒤 다음 단락 앞 여백. 한글의 단락 뒤 간격과 동일">단락↕<input class="in sm num" data-p="pb" type="number" min="0" max="200" step="1" style="width:56px"></label>' +
         '<label class="mini chk" title="긴 이름이 상자 안에 한 줄로 들어가도록 글자 크기를 자동으로 줄입니다"><input type="checkbox" data-p="fit"> 글자 자동 맞춤</label>' +
       '</div>' +
       '<div class="ed-tools ed-arr">' +
@@ -160,7 +161,7 @@
   function growToText(e) {
     if (!e || e.t !== 'text' || e.lock || e.fit || (e.rot && e.rot % 360) || st.editing) return;
     var d = domOf(e), c = d && d.firstChild; if (!c) return; var over = c.offsetHeight - d.clientHeight; if (over < 2) return;
-    var dh = AW.round(over / st.zoom + 0.4, 1); e.h = AW.round(e.h + dh, 1);
+    var dh = AW.round(over / st.zoom + 0.4, 1); var maxH = T() ? AW.round(Math.max(1, T().page.h - Math.max(0, e.y)), 1) : 9999; e.h = AW.round(Math.min(e.h + dh, maxH), 1);
     if (e.valign === 'bottom') e.y = AW.round(e.y - dh, 1); else if (e.valign !== 'top') e.y = AW.round(e.y - dh / 2, 1);
     placeEl(e); changed('elems', false, '상자 높이를 글에 맞춤');
   }
@@ -237,7 +238,7 @@
     AW.$$('button', fmt).forEach(function (b) { b.disabled = !tx.length; });
     if (one) {
       var f = function (p) { return AW.$('[data-p="' + p + '"]', st.root); };
-      f('font').value = one.font; f('fontEn').value = one.fontEn || ''; if (!(st.editing && st.editing.runs)) f('size').value = one.size; f('lh').value = one.lh; f('ls').value = one.ls || 0; f('color').value = /^#[0-9a-f]{6}$/i.test(one.color) ? one.color : '#111111'; f('fit').checked = !!one.fit;
+      f('font').value = one.font; f('fontEn').value = one.fontEn || ''; if (!(st.editing && st.editing.runs)) f('size').value = one.size; f('lh').value = one.lh; f('ls').value = one.ls || 0; var fpb = f('pb'); if (fpb) fpb.value = one.pb || 0; f('color').value = /^#[0-9a-f]{6}$/i.test(one.color) ? one.color : '#111111'; f('fit').checked = !!one.fit;
       [['bold', one.bold], ['italic', one.italic], ['ul', one.ul], ['al-l', one.align === 'left'], ['al-c', one.align === 'center'], ['al-r', one.align === 'right'], ['al-j', one.align === 'justify'], ['al-d', one.align === 'dist'], ['v-t', one.valign === 'top'], ['v-m', one.valign === 'middle'], ['v-b', one.valign === 'bottom']].forEach(function (p) {
         var b = AW.$('[data-a="' + p[0] + '"]', fmt); if (b) b.classList.toggle('on', !!p[1]);
       });
@@ -409,7 +410,7 @@
       onOpen: function (el) { var s = AW.$('#gc-g', el), x = AW.$('#gc-gx', el); s.onchange = function () { if (s.value !== 'x') x.value = s.value; }; x.oninput = function () { s.value = opt.indexOf(parseFloat(x.value)) >= 0 ? x.value : 'x'; }; } });
   }
   // 서식(속성) 복사·붙여넣기 — 같은 종류의 요소에 글꼴·크기·색·굵기·정렬·행간·자간 등을 적용
-  var SK = { text: ['font', 'size', 'color', 'bold', 'italic', 'ul', 'align', 'valign', 'lh', 'ls', 'fit'], rect: ['fill', 'stroke', 'sw'], line: ['stroke', 'sw'], img: ['opacity'] };
+  var SK = { text: ['font', 'size', 'color', 'bold', 'italic', 'ul', 'align', 'valign', 'lh', 'ls', 'pb', 'fit'], rect: ['fill', 'stroke', 'sw'], line: ['stroke', 'sw'], img: ['opacity'] };
   function copyStyle() {
     var e = sel()[0]; if (!e) return AW.toast('서식을 복사할 요소를 먼저 선택해 주십시오.');
     st.sty = { t: e.t, v: {} }; (SK[e.t] || []).forEach(function (k) { st.sty.v[k] = e[k]; }); AW.toast('서식을 복사했습니다. 대상을 선택하고 서식 붙여넣기(Ctrl+Alt+V)를 누르십시오.');

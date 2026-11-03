@@ -420,7 +420,7 @@
         ';text-align:' + (e.align === 'dist' ? 'justify' : (e.align || 'center')) + (e.align === 'dist' ? ';text-align:justify;text-align-last:justify' : '') + ';letter-spacing:' + (lsPt * PT * k) + 'px;white-space:' + (e.fit ? 'pre' : 'pre-wrap') + ';word-break:keep-all;overflow-wrap:anywhere;';
       var b = document.createElement('div'); b.className = 'el-t'; b.innerHTML = inner;
       var isw = AW.inkShift(e.font, !!e.bold, !!e.italic, /[가-힣]/.test(ko + en) ? '가힣' : /[A-Za-z0-9]/.test(ko + en) ? 'H0' : '가', e.valign || 'middle', e.lh || 1.4, fs);
-      b.style.cssText = 'width:100%;' + (lsC ? 'box-sizing:border-box;padding-left:' + (lsPt * PT * k) + 'px;' : '') + (e.fit ? 'overflow:visible;' : '') + (Math.abs(isw) > 0.05 ? 'transform:translateY(' + isw.toFixed(2) + 'px);' : '');
+      b.style.cssText = 'width:100%;' + (lsC ? 'box-sizing:border-box;padding-left:' + (lsPt * PT * k) + 'px;' : '') + (e.fit ? 'overflow:visible;' : '') + (Math.abs(isw) > 0.05 ? 'transform:translateY(' + isw.toFixed(2) + 'px);' : '') + (e.pb ? '--pb:' + AW.round(e.pb * PT * k, 2) + 'px;' : '');
       d.appendChild(b); if (lsC) b.dataset.lsc = '1';
       if (e.fit) d.dataset.fit = '1';
       if (mode === 'edit' && /\{\{[^{}]+\}\}/.test(ko + en)) d.classList.add('has-tk');   // 메일머지 영역 표시(편집 화면 전용)
