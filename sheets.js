@@ -65,8 +65,10 @@ var SheetsModule = (function () {
      기본 API 헬퍼
   ────────────────────────────────────────────────── */
   var _403shown = false;
+  var _accessDenied = false;  // initSheets가 403 확인 후 세팅 → 이후 중복 배너 차단
   function _handle403(status) {
     if (status !== 403) return;
+    _accessDenied = true;
     if (_403shown) return;
     _403shown = true;
     setTimeout(function () { _403shown = false; }, 10000);
@@ -110,6 +112,7 @@ var SheetsModule = (function () {
   }
 
   async function apiGet(range) {
+    if (_accessDenied) throw new Error('Sheets 접근 불가 (403 — 배너 이미 표시됨)');
     var res = await _sfetch(
       BASE + '/values/' + encodeURIComponent(range) + '?valueRenderOption=UNFORMATTED_VALUE',
       { headers: authHeader() }
@@ -119,6 +122,7 @@ var SheetsModule = (function () {
   }
 
   async function apiAppend(sheetName, rows) {
+    if (_accessDenied) throw new Error('Sheets 접근 불가 (403)');
     var res = await _sfetch(
       BASE + '/values/' + encodeURIComponent(sheetName + '!A1') + ':append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS',
       {
@@ -132,6 +136,7 @@ var SheetsModule = (function () {
   }
 
   async function apiUpdate(range, rows) {
+    if (_accessDenied) throw new Error('Sheets 접근 불가 (403)');
     var res = await _sfetch(
       BASE + '/values/' + encodeURIComponent(range) + '?valueInputOption=USER_ENTERED',
       {
@@ -145,6 +150,7 @@ var SheetsModule = (function () {
   }
 
   async function batchUpdate(requests) {
+    if (_accessDenied) throw new Error('Sheets 접근 불가 (403)');
     var res = await _sfetch(BASE + ':batchUpdate', {
       method: 'POST',
       headers: Object.assign({ 'Content-Type': 'application/json' }, authHeader()),
@@ -161,6 +167,7 @@ var SheetsModule = (function () {
     // 현재 시트 목록 조회 (fields 파라미터 없이 전체 메타 조회)
     var res = await _sfetch(BASE, { headers: authHeader() });
     if (!res.ok) {
+      _handle403(res.status);  // 403이면 배너 표시 + _accessDenied 세팅
       var errBody = '';
       try { errBody = await res.text(); } catch (e) {}
       throw new Error('스프레드시트 조회 실패 (' + res.status + ')' + (errBody ? ': ' + errBody.slice(0, 200) : ''));
