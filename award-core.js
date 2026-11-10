@@ -465,8 +465,11 @@
       while (ls > 0.05 && measW() > wrapW + 0.5 && m++ < 60) { ls *= 0.9; d.style.letterSpacing = ls + 'px'; if (b.dataset.lsc) b.style.paddingLeft = ls + 'px'; }   // 1단계: 자간 줄임
       if (ls > 0 && ls <= 0.05) { d.style.letterSpacing = '0px'; if (b.dataset.lsc) b.style.paddingLeft = '0px'; }
       var bW = measW();
-      if (bW > wrapW + 0.5) { b.style.transformOrigin = 'left top'; b.style.transform = 'scaleX(' + (wrapW / bW).toFixed(4) + ')'; }   // 2단계: 가로 scaleX 압축 (글자 높이 유지, 반드시 맞춤)
-      else { b.style.width = '100%'; }
+      // inkShift translateY가 이미 적용된 경우 보존하면서 scaleX만 추가
+      var existTY = (b.style.transform || '').match(/translateY\([^)]+\)/);
+      var tyPart = existTY ? existTY[0] + ' ' : '';
+      if (bW > wrapW + 0.5) { b.style.transformOrigin = 'left top'; b.style.transform = tyPart + 'scaleX(' + (wrapW / bW).toFixed(4) + ')'; }   // 2단계: 가로 scaleX 압축 (글자 높이 유지, 반드시 맞춤)
+      else { b.style.transform = tyPart ? tyPart.trim() : ''; b.style.width = '100%'; }   // 이전 scaleX 초기화, inkShift translateY는 보존
     });
   };
 })();
