@@ -453,8 +453,8 @@
       var ls = parseFloat(d.style.letterSpacing) || 0, m = 0;
       while (ls > 0.05 && b.offsetWidth > wrapW + 0.5 && m++ < 60) { ls *= 0.9; d.style.letterSpacing = ls + 'px'; if (b.dataset.lsc) b.style.paddingLeft = ls + 'px'; }   // 1단계: 자간 줄임
       if (ls > 0 && ls <= 0.05) { d.style.letterSpacing = '0px'; if (b.dataset.lsc) b.style.paddingLeft = '0px'; }
-      while ((b.offsetWidth > wrapW + 0.5 || b.offsetHeight > wrapH + 0.5) && fs > min && n++ < 80) { fs *= 0.96; d.style.fontSize = fs + 'px'; }
-      b.style.width = '100%';
+      if (b.offsetWidth > wrapW + 0.5) { b.style.transformOrigin = 'left top'; b.style.transform = 'scaleX(' + (wrapW / b.offsetWidth).toFixed(4) + ')'; }   // 2단계: 가로 scaleX 압축 (글자 높이 유지, 반드시 맞춤)
+      else { b.style.width = '100%'; }
     });
   };
 })();
