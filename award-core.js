@@ -443,17 +443,29 @@
     if (e.noprint && mode === 'edit') d.classList.add('np');
     return d;
   };
-  // 글자 자동 맞춤(shrink): 한 줄 안에 들어가도록 폰트를 줄임. DOM 부착 후 호출.
+  // 글자 자동 맞춤(shrink): 한 줄 안에 들어가도록 처리. DOM 부착 전후 모두 동작.
   AW.fitAll = function (root) {
     if (AW.Table) AW.Table.autoFit(root, false);
     AW.$$('.el[data-fit="1"]', root).forEach(function (d) {
       var b = d.firstChild; if (!b) return;
-      var fs = parseFloat(d.style.fontSize), min = fs * 0.35, n = 0, wrapW = d.clientWidth, wrapH = d.clientHeight;
+      var fs = parseFloat(d.style.fontSize);
+      // clientWidth 가 0(미리보기 등 레이아웃 미계산)이면 CSS 스타일 값으로 대체
+      var wrapW = d.clientWidth || parseFloat(d.style.width) || 0;
+      if (!wrapW) return;
       b.style.width = 'max-content';
+      // b.offsetWidth 가 0이면 canvas measureText 로 대체
+      function measW() {
+        if (b.offsetWidth) return b.offsetWidth;
+        var ctx = AW._cv; if (!ctx || !fs) return 0;
+        ctx.font = (d.style.fontWeight || 'normal') + ' ' + fs + 'px ' + (d.style.fontFamily || 'sans-serif');
+        var lsPx = parseFloat(d.style.letterSpacing) || 0, txt = b.textContent || '';
+        return ctx.measureText(txt).width + lsPx * Math.max(0, txt.length - 1);
+      }
       var ls = parseFloat(d.style.letterSpacing) || 0, m = 0;
-      while (ls > 0.05 && b.offsetWidth > wrapW + 0.5 && m++ < 60) { ls *= 0.9; d.style.letterSpacing = ls + 'px'; if (b.dataset.lsc) b.style.paddingLeft = ls + 'px'; }   // 1단계: 자간 줄임
+      while (ls > 0.05 && measW() > wrapW + 0.5 && m++ < 60) { ls *= 0.9; d.style.letterSpacing = ls + 'px'; if (b.dataset.lsc) b.style.paddingLeft = ls + 'px'; }   // 1단계: 자간 줄임
       if (ls > 0 && ls <= 0.05) { d.style.letterSpacing = '0px'; if (b.dataset.lsc) b.style.paddingLeft = '0px'; }
-      if (b.offsetWidth > wrapW + 0.5) { b.style.transformOrigin = 'left top'; b.style.transform = 'scaleX(' + (wrapW / b.offsetWidth).toFixed(4) + ')'; }   // 2단계: 가로 scaleX 압축 (글자 높이 유지, 반드시 맞춤)
+      var bW = measW();
+      if (bW > wrapW + 0.5) { b.style.transformOrigin = 'left top'; b.style.transform = 'scaleX(' + (wrapW / bW).toFixed(4) + ')'; }   // 2단계: 가로 scaleX 압축 (글자 높이 유지, 반드시 맞춤)
       else { b.style.width = '100%'; }
     });
   };
