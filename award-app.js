@@ -140,7 +140,7 @@
     if (saving) { again = true; return Promise.resolve(); }
     clearTimeout(timer); if (!S.dirty && !o.force && t.id) { if (o.toast) AW.toast('변경 사항이 없습니다.'); return Promise.resolve(); }
     saving = true; S.saveErr = ''; setStat(); var r0 = rev, bgSent = S.bgDirty;
-    return AW.call('award_tpl_save', { p_id: t.id, p_base_ver: t.ver || 0, p_force: !!o.force, p_name: t.name, p_page: t.page, p_elems: t.elems, p_fields: t.fields, p_rows: S.jobId ? null : t.rows,
+    return AW.call('award_tpl_save', { p_id: t.id, p_base_ver: t.ver || 0, p_force: !!o.force, p_name: t.name, p_page: t.page, p_elems: S.rowEdit ? S.rowEdit.baseElems : t.elems, p_fields: t.fields, p_rows: S.jobId ? null : t.rows,
       p_bg: bgSent ? (t.bg || '') : null, p_bg_name: t.bgName || '', p_note: o.note || '' }).then(function (r) {
       if (!r.ok) { if (r.error === 'CONFLICT') return conflict(r); throw new Error(r.error); }
       t.id = r.id; t.ver = r.ver;
@@ -283,7 +283,7 @@
     var nav = $('#tabbar'); if (!nav) return;
     nav.addEventListener('click', function (e) {
       var x = e.target.closest('[data-x]'); if (x) { e.stopPropagation(); return closeTab(x.dataset.x); }
-      var ad = e.target.closest('[data-add]'); if (ad) { var r = ad.getBoundingClientRect(), I = function (label, ic, fn) { return { k: 'i', label: label, ic: ic, fn: fn }; }; return AW.Editor.menuAt(r.left, r.bottom + 4, [I('새 양식 (새 탭)', 'plus', newTab), I('양식 열기 (새 탭)…', 'folder', function () { listDialog(); }), I('명패 양식 만들기 (아세아·외부 기관)…', 'tpl', function () { AW.Plate.newDialog(); }), I('스캔본으로 만들기 (AI)…', 'sparkle', function () { AW.Scan.open(); })]); }
+      var ad = e.target.closest('[data-add]'); if (ad) { var r = ad.getBoundingClientRect(), I = function (label, ic, fn) { return { k: 'i', label: label, ic: ic, fn: fn }; }; return AW.Editor.menuAt(r.left, r.bottom + 4, [I('새 양식 (새 탭)', 'plus', newTab), I('양식 열기 (새 탭)…', 'folder', function () { listDialog(); }), I('명패 양식 만들기 (아세아·외부 기관)…', 'tpl', function () { AW.Plate.newDialog(); }), I('명패양식 만들기 · 개별행 자율 작성…', 'tpl', function () { AW.Plate.newFreeDialog(); }), I('스캔본으로 만들기 (AI)…', 'sparkle', function () { AW.Scan.open(); })]); }
       var t = e.target.closest('[data-k]'); if (t) gotoTab(t.dataset.k);
     });
     var dragKey = null;   // 탭 끌어서 순서 바꾸기
