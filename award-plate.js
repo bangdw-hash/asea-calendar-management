@@ -145,6 +145,19 @@
     if (!root) return;
     var bar = $('.pl-bar', root), on = P.is(tpl);
     var dbtn = $('[data-a="roster"]', document); if (dbtn) dbtn.classList.toggle('hide', !on);
+
+    // 행 편집 배너
+    var rebar = AW.$('.pl-re-bar', root);
+    var re = AW.S.rowEdit;
+    if (re) {
+      if (!rebar) { rebar = document.createElement('div'); rebar.className = 'pl-re-bar'; root.insertBefore(rebar, root.firstChild); }
+      rebar.innerHTML = AW.ic('edit', 16) + ' <b>' + (re.rowIdx + 1) + '행 개별 편집 중</b> — 여기서 편집한 개체는 이 행에만 적용됩니다. 기본 양식을 편집하려면 먼저 완료 또는 취소하십시오.' +
+        '<span style="margin-left:auto;display:flex;gap:6px"><button class="btn btn-primary btn-sm" data-pl="re-commit">편집 완료 · 저장</button><button class="btn btn-ghost btn-sm" data-pl="re-cancel">취소</button></span>';
+      if (!rebar._wired) { rebar._wired = true; rebar.addEventListener('click', function (ev) { var b = ev.target.closest('[data-pl]'); if (b) AW.Editor.act(b.dataset.pl); }); }
+    } else {
+      if (rebar) rebar.remove();
+    }
+
     if (!on) { if (bar) bar.remove(); P.updateWarnPanel([], null); return; }
 
     if (!bar) {
@@ -173,6 +186,9 @@
   P.act = function (a, api) {
     var t = S.tpl, E = AW.Editor;
     if (a === 'pl-new') return P.newDialog();
+    if (a === 'pl-free') return P.newFreeDialog();
+    if (a === 're-commit') return P.commitRowEdit();
+    if (a === 're-cancel') return P.cancelRowEdit();
     if (a === 'pl-roster') return P.rosterDialog();
     if (a === 'pl-font') return AW.Output.fontDialog();
     if (!P.is(t)) return AW.toast('명패 양식에서만 사용할 수 있습니다. 「새 명패 양식」으로 만들어 주십시오.');
@@ -272,6 +288,78 @@
         }
       }]
     });
+  };
+
+  /* ─────────────── 개별행 자율 작성 ─────────────── */
+  P.buildFree = function (kind, logo) {
+    var t = build(kind, logo);
+    t.name = t.name.replace('명패 —', '명패(자유) —');
+    t.page.plate.free = true;
+    return t;
+  };
+
+  P.newFreeDialog = function () {
+    var kinds = ['asea', 'ext1', 'ext2'], desc = {
+      asea: '아세아 로고를 기본 위치에 배치합니다. 각 행마다 로고·글자 크기·개체를 개별적으로 편집할 수 있습니다.',
+      ext1: '타이틀 포함 로고를 기본으로 배치합니다. 각 행마다 다른 기관 로고·글자 크기 등을 개별 편집할 수 있습니다.',
+      ext2: '로고(심벌)+기관명 방식을 기본으로 배치합니다. 각 행마다 완전히 다른 레이아웃으로 편집할 수 있습니다.'
+    };
+    AW.modal({
+      title: '명패양식 만들기 · 개별행 자율 작성',
+      body: '<p class="muted" style="margin-top:0">행마다 로고·글자 크기·개체를 각각 다르게 편집할 수 있는 명패 양식을 만듭니다. 먼저 기본 레이아웃을 선택하고, 데이터 창의 각 행 「개별 편집」 버튼으로 그 행만의 디자인을 편집하십시오.</p>' +
+        kinds.map(function (k, i) { return '<label class="pl-opt"><input type="radio" name="plf-k" value="' + k + '"' + (i ? '' : ' checked') + '><span><b>' + KIND[k] + '</b><br><span class="muted">' + desc[k] + '</span></span></label>'; }).join(''),
+      actions: [{ label: '취소', cls: 'btn-ghost' }, {
+        label: '새 탭에서 만들기', cls: 'btn-primary', onClick: function (c) {
+          var k = $('input[name="plf-k"]:checked').value; c();
+          (k === 'asea' ? logoData() : Promise.resolve(null)).then(function (lg) { return AW.App.adopt(P.buildFree(k, lg)); }).then(function () { AW.toast('개별행 자율 작성 명패 양식을 만들었습니다. 데이터 창에서 각 행 「개별 편집」으로 행마다 디자인을 바꾸십시오.', 'ok'); })
+            .catch(function (e) { if (e && e.message !== 'tabs') AW.toast('양식을 만들지 못했습니다: ' + (e && e.message || e), 'error'); });
+        }
+      }]
+    });
+  };
+
+  P.startRowEdit = function (rowIdx) {
+    var Sx = AW.S, t = Sx.tpl;
+    if (Sx.rowEdit) { P.cancelRowEdit(true); }
+    var row = t.rows[rowIdx];
+    if (!row) return AW.toast('행을 찾을 수 없습니다.', 'error');
+    Sx.rowEdit = { rowIdx: rowIdx, baseElems: t.elems };
+    t.elems = (row._plate && row._plate.elems) ? AW.clone(row._plate.elems) : AW.clone(t.elems);
+    if (AW.Editor.resetHist) AW.Editor.resetHist();
+    AW.Editor.render();
+    var plRoot = AW.$('.pl-bar'); if (plRoot && plRoot.parentNode) P.onRender(plRoot.parentNode, t);
+    AW.toast('행 ' + (rowIdx + 1) + ' 개별 편집 중 — 위 [편집 완료 · 저장] 버튼을 누르면 이 행에만 반영됩니다.', 'ok');
+  };
+
+  P.commitRowEdit = function () {
+    var Sx = AW.S, re = Sx.rowEdit;
+    if (!re) return;
+    var t = Sx.tpl;
+    t.rows[re.rowIdx]._plate = { elems: AW.clone(t.elems) };
+    t.elems = re.baseElems;
+    Sx.rowEdit = null;
+    if (AW.Editor.resetHist) AW.Editor.resetHist();
+    AW.Editor.render();
+    var plRoot = AW.$('.pl-bar'); if (plRoot && plRoot.parentNode) P.onRender(plRoot.parentNode, t);
+    Sx.dirty = true;
+    AW.emit('tplchange', 'elems');
+    AW.emit('datachange', re.rowIdx);
+    AW.Data && AW.Data.refresh(false);
+    AW.toast('행 ' + (re.rowIdx + 1) + ' 개별 편집을 완료했습니다.', 'ok');
+  };
+
+  P.cancelRowEdit = function (silent) {
+    var Sx = AW.S, re = Sx.rowEdit;
+    if (!re) return;
+    var t = Sx.tpl;
+    t.elems = re.baseElems;
+    Sx.rowEdit = null;
+    if (AW.Editor.resetHist) AW.Editor.resetHist();
+    AW.Editor.render();
+    var plRoot = AW.$('.pl-bar'); if (plRoot && plRoot.parentNode) P.onRender(plRoot.parentNode, t);
+    AW.emit('tplchange', 'elems');
+    AW.Data && AW.Data.refresh(false);
+    if (!silent) AW.toast('행 편집을 취소했습니다.', 'ok');
   };
 
   /* ─────────────── 직원 명부 ─────────────── */

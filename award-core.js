@@ -373,8 +373,13 @@
       el.appendChild(im);
     }
     var dx = o.dx || 0, dy = o.dy || 0;
+    var origElems;
+    if (o.row && o.row._plate && o.row._plate.elems && mode !== 'edit') {
+      origElems = tpl.elems; tpl.elems = o.row._plate.elems;
+    }
     tpl.elems.forEach(function (e) { el.appendChild(AW.renderElem(e, k, o, dx, dy)); });
     if (pg.plate && AW.Plate) AW.Plate.decorate(el, tpl, k, o, mode);   // 명패: 3칸 → 2칸 반전 복제 + 접는 선 안내
+    if (origElems !== undefined) tpl.elems = origElems;
     return el;
   };
   // 명패 한 줄: 비어 있는 항목 때문에 생긴 빈 작은 글·앞뒤·중복 공백을 없애 남은 글만 가운데로 모이게 함

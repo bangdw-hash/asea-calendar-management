@@ -57,6 +57,7 @@
     if (a === 'delrow') { var i = +b.dataset.i; T().rows.splice(i, 1); if (S.row >= T().rows.length) S.row = Math.max(0, T().rows.length - 1); dataChanged(); D.refresh(true); AW.emit('rowchange'); return; }
     if (a === 'pg') { st.page = Math.max(0, Math.min(pages() - 1, st.page + (+b.dataset.d))); renderGrid(); renderFoot(); return; }
     if (a === 'goto') { S.row = +b.dataset.i; markRow(); AW.emit('rowchange'); }
+    if (a === 'row-edit') { AW.Plate && AW.Plate.startRowEdit(+b.dataset.i); return; }
   }
 
   /* ───────────── 렌더 ───────────── */
@@ -124,12 +125,16 @@
     var g = AW.$('#dt-grid', st.root), f = T().fields, rows = T().rows, C = cols();
     if (!f.length) { g.innerHTML = ''; return; }
     var from = st.page * PAGE, part = rows.slice(from, from + PAGE);
-    var h = '<table class="dg"><thead><tr><th class="n">#</th>' + C.map(function (c, i) { return '<th title="' + AW.esc(c.f.hint) + '">' + colLetter(i) + ' · ' + AW.esc(c.label) + '</th>'; }).join('') + '<th class="n"></th></tr></thead><tbody>';
-    if (!part.length) h += '<tr><td colspan="' + (C.length + 2) + '" class="empty">입력된 행이 없습니다. 「엑셀 올리기」 또는 아래 「행 추가」를 사용하거나, 엑셀에서 복사한 범위를 첫 칸에 붙여넣으십시오.</td></tr>';
+    var isFree = !!(T().page && T().page.plate && T().page.plate.free);
+    var freeCol = isFree ? '<th class="n" title="행 개별 편집">편집</th>' : '';
+    var h = '<table class="dg"><thead><tr><th class="n">#</th>' + C.map(function (c, i) { return '<th title="' + AW.esc(c.f.hint) + '">' + colLetter(i) + ' · ' + AW.esc(c.label) + '</th>'; }).join('') + freeCol + '<th class="n"></th></tr></thead><tbody>';
+    if (!part.length) h += '<tr><td colspan="' + (C.length + 2 + (isFree ? 1 : 0)) + '" class="empty">입력된 행이 없습니다. 「엑셀 올리기」 또는 아래 「행 추가」를 사용하거나, 엑셀에서 복사한 범위를 첫 칸에 붙여넣으십시오.</td></tr>';
     part.forEach(function (r, j) {
       var i = from + j;
+      var editCell = isFree ? '<td class="n">' + (r._plate ? '<span class="pl-free-dot" title="개별 편집됨">●</span>' : '') + '<button class="btn btn-ghost btn-xs" data-a="row-edit" data-i="' + i + '" title="이 행만 개별 편집">개별 편집</button></td>' : '';
       h += '<tr data-i="' + i + '"' + (i === S.row ? ' class="cur"' : '') + '><td class="n"><button class="lnk" data-a="goto" data-i="' + i + '" title="미리보기로 이동">' + (i + 1) + '</button></td>' +
         C.map(function (cc, c) { var v = r[cc.key] == null ? '' : r[cc.key]; return '<td class="' + cellState(cc.f, v, cc.en ? r[cc.f.name] : null) + '"><textarea class="cell" rows="1" data-c="' + c + '" aria-label="' + (i + 1) + '행 ' + AW.esc(cc.label) + '">' + AW.esc(v) + '</textarea></td>'; }).join('') +
+        editCell +
         '<td class="n"><button class="icon-btn danger" data-a="delrow" data-i="' + i + '" title="이 행 삭제" aria-label="행 삭제">' + AW.ic('close', 14) + '</button></td></tr>';
     });
     g.innerHTML = h + '</tbody></table>';
