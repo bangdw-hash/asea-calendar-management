@@ -1,0 +1,17 @@
+:root {
+  --color-bg: #F0F9FF;
+  --color-card: #FFFFFF;
+  --color-accent: #1A73E8;
+  --color-accent-dk: #1557B0;
+  --color-accent-lt: #E8F0FE;
+  --color-text: #202124;
+  --color-text-sec: #5F6368;
+  --color-border: #E8EAED;
+  --color-success: #34A853;
+  --color-warning: #FBBC05;
+  --color-error: #EA4335;
+  --font-base: 14px;
+  --radius: 6px;
+  --header-height: 56px;
+}
+body { font-family: 'Noto Sans KR', 'Apple SD Gothic Neo', system-ui, sans-serif; font-size: var(--font-base); color: var(--color-text); background: var(--color-bg); }
