@@ -1,35 +1,31 @@
-# 교직원 10명 실습 저장소 개설 및 포럼 게시 작업표
-작성일: 2026-11-13
+# ASEA 교직원 공동 개발 저장소 운영 계획
+2026-11-13 개정: 기존 '10개 독립 저장소' 계획은 폐기하고 단일 저장소 방식으로 변경.
+
+## 대상
+학교 소유 GitHub 계정의 별도 저장소 `asea-develop` 하나에 교직원 10명을 공동 작업자로 초대한다.
+기존 `asea-calendar-management`는 운영용으로 유지하고 코드 변경을 하지 않는다.
+
+## 저장소 권장 구조
+- README.md: 이용 안내 및 작업 규칙
+- common/DESIGN_SYSTEM.md: 공통 디자인 기준
+- common/AGENTS.md: AI 개발 지침
+- common/css/tokens.css: 공통 CSS 변수
+- training/week-01/LEARNER_GUIDE.md: 1차 교육 자료
+- projects/staff-01/ ~ projects/staff-10/: 개인별 실습 공간 (각 폴더 README.md로 초기화)
+
+## 협업 규칙
+1. 교직원 10명의 GitHub 사용자명을 확인하여 공동 작업자로 초대한다.
+2. 각자 배정된 폴더만 수정한다. 일반 GitHub collaborator 권한은 폴더 단위로 제한되지 않는다.
+3. 각자 개인 브랜치에서 작업하고 Pull Request로 main에 병합한다.
+4. API 키, 비밀번호, 학생·교직원 개인정보는 저장소에 넣지 않는다.
+5. 공개 여부는 관리자와 협의하여 정한다. GitHub Pages는 별도 배포 설정이 필요하다.
 
 ## 진행 상태
-공통 교육자료 5개는 이 저장소 training/ai-vibe-coding-01/에 등록 완료.
-교직원별 독립 GitHub 저장소 10개는 아직 생성되지 않음.
-공동 작업자 초대 및 AI 포럼 게시도 아직 진행되지 않음.
+- 기존 운영 저장소의 공통 디자인 및 1차 교육자료 작성: 완료
+- 단일 `asea-develop` 저장소 생성: 미완료 (현재 연결된 GitHub 도구에 생성 기능 없음)
+- 공동 작업자 10명 초대: 미완료
+- 교육자료를 신규 저장소에 복사: 미완료
+- AI 활용 포럼 공지 게시: 미완료
 
-## 개설 규칙
-학교 GitHub 개인 계정 소유로 아래 저장소를 각각 별도로 개설한다. 기존 운영 저장소는 수정하지 않는다.
-- asea-ai-training-01
-- asea-ai-training-02
-- asea-ai-training-03
-- asea-ai-training-04
-- asea-ai-training-05
-- asea-ai-training-06
-- asea-ai-training-07
-- asea-ai-training-08
-- asea-ai-training-09
-- asea-ai-training-10
-
-각 저장소에 README.md, DESIGN_SYSTEM.md, AGENTS.md, css/tokens.css, LEARNER_GUIDE.md를 복사한다. 초기에는 private으로 두고 GitHub Pages가 필요한 시점에 공개 여부와 배포 정책을 확인한다. 학생 개인정보, API 키, 비밀번호는 업로드하지 않는다.
-
-## 참여자 배정
-교직원 GitHub 사용자명 10개를 받은 후 저장소 번호와 1:1 대응시키고 각 저장소에 해당 사용자를 collaborator로 초대한다. 초대 수락을 확인한다.
-
-## 포럼 게시 순서
-1. 10개 저장소 생성 및 초기 파일 등록 확인
-2. 교직원별 공동 작업자 초대 확인
-3. 저장소별 URL을 학습자 안내문에 반영
-4. 학교 AI 포럼에 1차 교육 공지 게시
-5. 게시글 URL 확인
-
-## 안내문 요지
-2026년 11월 13일 1차 교육에서는 ChatGPT·Codex와 Claude·Claude Code를 활용한 바이브 코딩, GitHub 실습, 공통 디자인 기준 및 메모 웹앱 제작을 진행합니다. 공통 교육자료는 학교 GitHub 저장소의 training/ai-vibe-coding-01/에서 확인할 수 있습니다. 개인별 저장소 링크는 배정 후 별도 안내합니다. 다음 시간에는 개인정보 없는 테스트 화면에서 AI 브라우저 업무 자동화를 소개합니다.
+## 포럼 공지 반영 문장
+이번 교육의 공통 개발 공간은 학교 GitHub 계정의 `asea-develop` 저장소로 통일합니다. 공통 디자인 및 AI 개발 지침은 `common` 폴더, 주차별 교육자료는 `training` 폴더에서 확인할 수 있도록 준비할 예정입니다. 교직원별 실습은 `projects/staff-01`부터 `staff-10`까지 배정된 폴더에서 진행합니다. 저장소가 개설되고 초대가 완료되면 접속 주소를 안내하겠습니다.
