@@ -625,7 +625,17 @@
         w = AW.round(w, 1); h = AW.round(h, 1);
         var cx = pos ? pos.x : pg.w / 2, cy = pos ? pos.y : pg.h * 0.5;
         var el = AW.elem('img', { src: r.url, w: w, h: h, x: AW.round(Math.max(0, Math.min(pg.w - w, cx - w / 2)), 1), y: AW.round(Math.max(0, Math.min(pg.h - h, cy - h / 2)), 1), nat: nat, px: { w: r.px, h: AW.round(r.px * r.mh / r.mw, 0) } });
-        if (!pos && AW.Plate && pg.plate) AW.Plate.placeLogo(T(), el);
+        if (!pos && AW.Plate && pg.plate) {
+          AW.Plate.placeLogo(T(), el);
+          if (pg.plate.kind !== 'asea' && !AW.S.rowEdit) {
+            if (!T().rows.length) T().rows.push({});
+            if (!T().rows[AW.S.row]) T().rows[AW.S.row] = {};
+            T().rows[AW.S.row]._logo = el.src;
+            AW.emit('datachange', AW.S.row);
+            AW.Data && AW.Data.refresh && AW.Data.refresh(false);
+            AW.toast((AW.S.row + 1) + '행 로고로 저장됐습니다. 다른 행 선택 후 붙여넣으면 그 행에만 적용됩니다.', 'ok');
+          }
+        }
         st.lbl = '이미지 삽입'; add(el);
         if (fromDrop) dropChip(file, el.id);
       };

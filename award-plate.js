@@ -159,6 +159,7 @@
     }
 
     if (!on) { if (bar) bar.remove(); P.updateWarnPanel([], null); return; }
+    P.syncLogoToEditor();
 
     if (!bar) {
       bar = document.createElement('div'); bar.className = 'pl-bar';
@@ -173,6 +174,24 @@
     }
   };
   // 로고 이미지를 자리 표시(ph)나 기본 로고 영역에 맞춰 배치
+  // 외부기관 명패: 현재 행의 _logo를 편집기 캔버스에 반영
+  P.syncLogoToEditor = function () {
+    var Sx = AW.S, t = Sx.tpl;
+    if (!t || !t.page || !t.page.plate || t.page.plate.kind === 'asea' || Sx.rowEdit) return;
+    var row = t.rows && t.rows[Sx.row];
+    if (!row || !row._logo) return;
+    var pf = cfg(t);
+    var logoEl = t.elems.filter(function (e) {
+      if (e.t !== 'img' || e.ph || e.hide) return false;
+      return (e.y + e.h / 2) >= pf.f[1] && (e.y + e.h / 2) < pf.f[2];
+    })[0];
+    if (logoEl && logoEl.src !== row._logo) {
+      logoEl.src = row._logo;
+      if (AW.Editor && AW.Editor.refreshElems) AW.Editor.refreshElems();
+    }
+  };
+  AW.on('rowchange', P.syncLogoToEditor);
+
   P.placeLogo = function (tpl, el) {
     var p = cfg(tpl), W = tpl.page.w, ph = tpl.elems.filter(function (e) { return e.ph && e.t === 'rect'; })[0];
     if (!ph && tpl.elems.some(function (e) { return e.t === 'img' && front(e, p); })) return;
