@@ -298,11 +298,36 @@
     AW.modal({
       title: '새 명패 양식 만들기',
       body: '<p class="muted" style="margin-top:0">A4 세로를 가로선 3개로 4등분합니다. ③칸에 입력하면 ②칸에 180° 반전 반영되고, ①·④칸은 비워 둡니다. 만든 뒤 자동 저장되므로 다음부터는 양식 목록에서 불러와 이름·직책만 바꾸면 됩니다.</p>' +
-        kinds.map(function (k, i) { return '<label class="pl-opt"><input type="radio" name="pl-k" value="' + k + '"' + (i ? '' : ' checked') + '><span><b>' + KIND[k] + '</b><br><span class="muted">' + desc[k] + '</span></span></label>'; }).join(''),
+        kinds.map(function (k, i) { return '<label class="pl-opt"><input type="radio" name="pl-k" value="' + k + '"' + (i ? '' : ' checked') + '><span><b>' + KIND[k] + '</b><br><span class="muted">' + desc[k] + '</span></span></label>'; }).join('') +
+        '<div id="pl-pre" style="display:none;margin-top:12px;padding:10px 12px;background:var(--bg2,#f8f9fa);border-radius:var(--r,6px)">' +
+        '<p style="margin:0 0 8px;font-size:13px;font-weight:600">첫 번째 행 미리 채우기 <span class="muted">(선택)</span></p>' +
+        '<div class="pl-pre-row"><label style="font-size:12px;color:var(--muted)">이름</label><input class="in sm" id="pl-pre-name" placeholder="홍길동" style="width:100%;margin-top:2px"></div>' +
+        '<div class="pl-pre-row" style="margin-top:6px"><label style="font-size:12px;color:var(--muted)">직책 / 소속</label><input class="in sm" id="pl-pre-role" placeholder="교수 · 항공정비과" style="width:100%;margin-top:2px"></div>' +
+        '</div>',
+      onOpen: function (el) {
+        AW.$$('input[name="pl-k"]', el).forEach(function (r) {
+          r.addEventListener('change', function () {
+            var pre = AW.$('#pl-pre', el);
+            if (pre) pre.style.display = r.value === 'asea' ? '' : 'none';
+          });
+        });
+      },
       actions: [{ label: '취소', cls: 'btn-ghost' }, {
         label: '새 탭에서 만들기', cls: 'btn-primary', onClick: function (c) {
-          var k = $('input[name="pl-k"]:checked').value; c();
-          (k === 'asea' ? logoData() : Promise.resolve(null)).then(function (lg) { return AW.App.adopt(build(k, lg)); }).then(function () { AW.toast('명패 양식을 만들었습니다. 로고와 글자를 확인해 주십시오.', 'ok'); })
+          var k = $('input[name="pl-k"]:checked').value;
+          var preName = (AW.$('#pl-pre-name') || {}).value || '';
+          var preRole = (AW.$('#pl-pre-role') || {}).value || '';
+          c();
+          (k === 'asea' ? logoData() : Promise.resolve(null)).then(function (lg) {
+            var t = build(k, lg);
+            if (k === 'asea' && (preName || preRole)) {
+              if (!t.rows.length) t.rows.push({});
+              var r0 = t.rows[0];
+              if (preName) r0['이름'] = preName;
+              if (preRole) r0['직책'] = preRole;
+            }
+            return AW.App.adopt(t);
+          }).then(function () { AW.toast('명패 양식을 만들었습니다. 로고와 글자를 확인해 주십시오.', 'ok'); })
             .catch(function (e) { if (e && e.message !== 'tabs') AW.toast('양식을 만들지 못했습니다: ' + (e && e.message || e), 'error'); });
         }
       }]

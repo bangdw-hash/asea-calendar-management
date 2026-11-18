@@ -10,6 +10,8 @@
   var lay = Object.assign({ w: AW.clone(PRESETS.balance), c: {} }, AW.lsGet(LAYOUT_KEY, {}));
   var A = AW.App = {};
   var rev = 0, saving = false, again = false, timer = null, mTab = 'edit';
+  function relTime(d) { if (!d) return ''; var sec = Math.floor((Date.now() - new Date(d)) / 1000); if (sec < 90) return '방금 저장됨'; var m = Math.floor(sec / 60); if (m < 60) return m + '분 전 저장됨'; var h = Math.floor(m / 60); if (h < 24) return h + '시간 전 저장됨'; return AW.fmtTime(d) + ' 저장됨'; }
+  setInterval(function () { if (!S.dirty && !saving && S.savedAt) setStat(); }, 30000);
   var app = $('#app');
 
   /* ───────────── 로그인 ───────────── */
@@ -121,7 +123,7 @@
   function setStat() {
     var el = $('#t-stat'); if (!el) return;
     var msg = S.saveErr ? '<span class="bad">저장 실패 — ' + AW.esc(S.saveErr) + ' <button class="lnk" id="t-retry">다시 시도</button></span>' :
-      saving ? '저장 중…' : S.dirty ? '변경됨 · 저장 대기' : S.tpl && S.tpl.id ? AW.ic('cloud', 14) + ' 저장됨 · v' + S.tpl.ver + (S.savedAt ? ' · ' + AW.fmtTime(S.savedAt) : '') : '';
+      saving ? '저장 중…' : S.dirty ? '변경됨 · 저장 대기' : S.tpl && S.tpl.id ? AW.ic('cloud', 14) + ' v' + S.tpl.ver + (S.savedAt ? ' · ' + relTime(S.savedAt) : '') : '';
     el.innerHTML = msg; renderTabs(); var r = $('#t-retry'); if (r) r.onclick = function () { save({ note: '재시도' }); };
   }
   // 저장에 실패한 내용은 이 브라우저에 임시 보관 → 다음에 같은 양식을 열 때 복구 안내 (배경 이미지는 서버본 사용)
