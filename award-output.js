@@ -17,7 +17,9 @@
     root.innerHTML =
       '<div class="pv-bar"><button class="icon-btn" data-a="prev" aria-label="이전 행" title="이전 행">' + AW.ic('chevL') + '</button>' +
       '<div class="pv-no"><input class="in sm num" id="pv-n" type="number" min="1" value="1" aria-label="행 번호"><span id="pv-of" class="muted"></span></div>' +
-      '<button class="icon-btn" data-a="next" aria-label="다음 행" title="다음 행">' + AW.ic('chevR') + '</button><span class="sp"></span>' +
+      '<button class="icon-btn" data-a="next" aria-label="다음 행" title="다음 행">' + AW.ic('chevR') + '</button>' +
+      '<input type="range" id="pv-sl" min="1" max="1" value="1" class="pv-slider" title="행 슬라이더" aria-label="행 슬라이더" disabled>' +
+      '<span class="sp"></span>' +
       '<select class="in sm" id="pv-lg" aria-label="보기·출력 언어" title="보기·출력 언어"><option value="ko">한글</option><option value="en">영문</option><option value="both">한영 병기</option></select>' +
       '<label class="mini chk" title="엑셀 데이터로 바뀌는 값에 노란 표시를 합니다(출력물에는 표시되지 않음)"><input type="checkbox" id="pv-hm" checked> 병합 영역 표시</label>' +
       '<label class="mini chk" title="값이 비어 있는 자리를 붉게 표시합니다(출력물에는 표시되지 않음)"><input type="checkbox" id="pv-hl" checked> 빈 항목 표시</label>' +
@@ -29,6 +31,7 @@
       if (b.dataset.a === 'prev') go(S.row - 1); if (b.dataset.a === 'next') go(S.row + 1); if (b.dataset.a === 'print') Out.dialog();
     });
     AW.$('#pv-n', root).addEventListener('change', function (e) { go((parseInt(e.target.value, 10) || 1) - 1); });
+    AW.$('#pv-sl', root).addEventListener('input', function (e) { go((parseInt(e.target.value, 10) || 1) - 1); });
     AW.$('#pv-lg', root).addEventListener('change', function (e) { T().page.lang = e.target.value; S.dirty = true; AW.Editor.render(); AW.emit('tplchange', 'page'); });
     AW.$('#pv-hm', root).checked = pv.hm; AW.$('#pv-hm', root).addEventListener('change', function (e) { pv.hm = e.target.checked; AW.lsSet('award_pv_hm', pv.hm); Pv.render(); });
     AW.$('#pv-hl', root).addEventListener('change', function (e) { pv.hl = e.target.checked; Pv.render(); });
@@ -51,6 +54,7 @@
     AW.$('#pv-lg', pv.root).value = t.page.lang || 'ko';
     var n = AW.$('#pv-n', pv.root); if (document.activeElement !== n) n.value = has ? S.row + 1 : '';
     n.max = rows.length || 1; n.disabled = !has;
+    var sl = AW.$('#pv-sl', pv.root); if (sl) { sl.max = rows.length || 1; sl.value = has ? S.row + 1 : 1; sl.disabled = !has; }
     AW.$('#pv-of', pv.root).textContent = has ? '/ ' + rows.length : '데이터 없음';
     AW.$$('[data-a="prev"],[data-a="next"]', pv.root).forEach(function (b) { b.disabled = !has; });
     AW.$('#pv-info', pv.root).textContent = has ? '' : '데이터가 없어 항목별 예시값으로 표시 중입니다. 데이터 입력창에서 엑셀을 올리면 실제 내용이 표시됩니다.';
@@ -250,7 +254,7 @@
         ((v.miss || v.long) ? '<div class="alert warn" style="margin-top:12px">' + AW.ic('warn', 16) + ' 필수 항목 누락 ' + v.miss + '칸 · 길이 초과 ' + v.long + '칸이 있습니다. 데이터 입력창에서 붉게 표시된 칸을 확인하십시오.</div>' : '') +
         '<p class="muted" style="margin:12px 0 0">「인쇄」를 누르면 브라우저 인쇄창이 열립니다. 대상(프린터)을 <b>PDF로 저장</b>으로 바꾸면 파일로 저장됩니다. 인쇄창에서 여백 <b>없음</b>, 배율 <b>100%</b>, 「배경 그래픽」 <b>켜기</b>를 선택하십시오.</p>',
       actions: [{ label: '취소', cls: 'btn-ghost' }, { label: AW.ic('print', 16) + ' 인쇄', cls: 'btn-primary', onClick: function (c) { go(c); } }],
-      onOpen: function (el) { m.el = el; AW.$('#o-num', el).onclick = function () { Out.numDialog(numPrev); }; AW.$$('input[name="o-r"]', el).forEach(function (r) { r.onchange = function () { numPrev(); sumPrev(); }; }); AW.$$('#o-sp,#o-nu,#o-so,#o-cut,#o-ne', el).forEach(function (c) { c.onchange = sumPrev; }); sumPrev(); AW.$('#o-a', el).oninput = AW.$('#o-b', el).oninput = numPrev; numPrev(); }
+      onOpen: function (el) { m.el = el; AW.$('#o-num', el).onclick = function () { Out.numDialog(numPrev); }; AW.$$('input[name="o-r"]', el).forEach(function (r) { r.onchange = function () { numPrev(); sumPrev(); }; }); AW.$$('#o-sp,#o-nu,#o-so,#o-cut,#o-ne', el).forEach(function (c) { c.onchange = sumPrev; }); sumPrev(); AW.$('#o-a', el).oninput = AW.$('#o-b', el).oninput = numPrev; AW.$('#o-a', el).onfocus = AW.$('#o-b', el).onfocus = function () { var rng = AW.$('input[name="o-r"][value="rng"]', el); if (rng && !rng.disabled) { rng.checked = true; numPrev(); sumPrev(); } }; numPrev(); }
     });
     function readSheet() { return { paper: AW.$('#o-sp', m.el).value, nup: +AW.$('#o-nu', m.el).value, orient: AW.$('#o-so', m.el).value, cut: AW.$('#o-cut', m.el).checked, noEnl: AW.$('#o-ne', m.el).checked }; }
     function sumPrev() {

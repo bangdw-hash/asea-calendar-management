@@ -42,6 +42,7 @@
     root.addEventListener('dragover', function (e) { e.preventDefault(); });
     root.addEventListener('drop', function (e) { var f = e.dataTransfer && e.dataTransfer.files[0]; if (f && /\.(xlsx|xls|csv)$/i.test(f.name)) { e.preventDefault(); D.importFile(f); } });
     if (!st.wired) { st.wired = true; AW.on('tplchange', function (k) { if (k !== 'fields' && st.root && st.root.isConnected) D.refresh(false); }); AW.on('rowchange', function () { if (st.root && st.root.isConnected) markRow(); }); }
+    if (!st.keyWired) { st.keyWired = true; document.addEventListener('keydown', function (e) { if (!st.root || !st.root.isConnected || !T()) return; if (e.altKey && !e.ctrlKey && !e.shiftKey && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) { var n = T().rows.length; if (!n) return; e.preventDefault(); var next = Math.max(0, Math.min(n - 1, S.row + (e.key === 'ArrowDown' ? 1 : -1))); if (next !== S.row) { S.row = next; markRow(); AW.emit('rowchange'); } } }); }
   };
 
   function onClick(e) {
@@ -67,6 +68,7 @@
       }; linp.click(); return;
     }
     if (a === 'row-logo-del') { var ldi = +b.dataset.i; delete T().rows[ldi]._logo; dataChanged(ldi); renderGrid(); renderStat(); return; }
+    if (a === 'duprow') { var di = +b.dataset.i; var clone = JSON.parse(JSON.stringify(T().rows[di])); delete clone._plate; T().rows.splice(di + 1, 0, clone); S.row = di + 1; dataChanged(); renderGrid(); renderFoot(); renderStat(); AW.emit('rowchange'); return; }
   }
 
   /* ───────────── 렌더 ───────────── */
@@ -149,11 +151,11 @@
         '<button class="btn btn-ghost btn-xs" data-a="row-logo" data-i="' + i + '" style="font-size:11px">' + (r._logo ? '변경' : '+ 로고') + '</button>' +
         (r._logo ? ' <button class="btn btn-ghost btn-xs danger" data-a="row-logo-del" data-i="' + i + '" style="font-size:11px" title="이 행 로고 삭제">×</button>' : '') +
         '</td>' : '';
-      h += '<tr data-i="' + i + '"' + (i === S.row ? ' class="cur"' : '') + '><td class="n"><button class="lnk" data-a="goto" data-i="' + i + '" title="미리보기로 이동">' + (i + 1) + '</button></td>' +
+      h += '<tr data-i="' + i + '"' + (i === S.row ? ' class="cur"' : '') + '><td class="n dt-nc"><span class="row-grip" draggable="true" data-di="' + i + '" title="끌어서 순서 변경">⠿</span><button class="lnk" data-a="goto" data-i="' + i + '" title="미리보기로 이동">' + (i + 1) + '</button>' + (isPlateExt && r._logo ? '<img class="row-logo-th" src="' + r._logo + '" alt="">' : '') + (isPlateExt && !r._logo ? '<span class="row-logo-warn" title="로고 없음">⚠</span>' : '') + '</td>' +
         C.map(function (cc, c) { var v = r[cc.key] == null ? '' : r[cc.key]; return '<td class="' + cellState(cc.f, v, cc.en ? r[cc.f.name] : null) + '"><textarea class="cell" rows="1" data-c="' + c + '" aria-label="' + (i + 1) + '행 ' + AW.esc(cc.label) + '">' + AW.esc(v) + '</textarea></td>'; }).join('') +
         logoCell +
         editCell +
-        '<td class="n"><button class="icon-btn danger" data-a="delrow" data-i="' + i + '" title="이 행 삭제" aria-label="행 삭제">' + AW.ic('close', 14) + '</button></td></tr>';
+        '<td class="n"><button class="icon-btn" data-a="duprow" data-i="' + i + '" title="이 행 복제" aria-label="행 복제">' + AW.ic('copy', 14) + '</button> <button class="icon-btn danger" data-a="delrow" data-i="' + i + '" title="이 행 삭제" aria-label="행 삭제">' + AW.ic('close', 14) + '</button></td></tr>';
     });
     g.innerHTML = h + '</tbody></table>';
     var tb = AW.$('tbody', g);
@@ -167,6 +169,11 @@
       if (i !== S.row) { S.row = i; markRow(); AW.emit('rowchange'); }
     });
     tb.addEventListener('paste', onPaste);
+    var dri = null;
+    tb.addEventListener('dragstart', function (e) { var grip = e.target.closest('.row-grip'); if (!grip) return; dri = +grip.dataset.di; AW.$$('tr', tb).forEach(function (r) { r.classList.remove('dt-drag-src'); }); grip.closest('tr').classList.add('dt-drag-src'); e.dataTransfer.effectAllowed = 'move'; try { e.dataTransfer.setData('text/plain', String(dri)); } catch (x) {} });
+    tb.addEventListener('dragend', function () { dri = null; AW.$$('tr', tb).forEach(function (r) { r.classList.remove('dt-drag-src', 'dt-drag-over'); }); });
+    tb.addEventListener('dragover', function (e) { if (dri == null) return; var tr = e.target.closest('tr[data-i]'); if (!tr) return; e.preventDefault(); AW.$$('tr', tb).forEach(function (r) { r.classList.remove('dt-drag-over'); }); tr.classList.add('dt-drag-over'); e.dataTransfer.dropEffect = 'move'; });
+    tb.addEventListener('drop', function (e) { var tr = e.target.closest('tr[data-i]'); if (!tr || dri == null) return; e.preventDefault(); var to = +tr.dataset.i; if (dri === to) { dri = null; return; } var rows = T().rows, mv = rows.splice(dri, 1)[0]; rows.splice(to > dri ? to - 1 : to, 0, mv); S.row = to > dri ? to - 1 : to; dri = null; dataChanged(); renderGrid(); renderFoot(); renderStat(); AW.emit('rowchange'); AW.toast('행 순서를 변경했습니다.', 'ok'); });
   }
   function markRow() {
     AW.$$('#dt-grid tbody tr', st.root).forEach(function (tr) { tr.classList.toggle('cur', +tr.dataset.i === S.row); });

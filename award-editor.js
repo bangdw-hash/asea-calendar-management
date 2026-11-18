@@ -610,6 +610,23 @@
     if (T().elems.length) AW.confirm('기본 배치 추가', '현재 양식에 기본 상장 배치(8개 상자)를 추가합니다. 계속하시겠습니까?', '추가').then(function (ok) { if (ok) go(); }); else go();
   }
   function pickImg(inp) { var f = inp.files[0]; inp.value = ''; if (f) addImageFile(f, null, false); }
+  function trimAlphaLogo(url) {
+    return new Promise(function (resolve) {
+      var img = new Image(); img.onload = function () {
+        var c = document.createElement('canvas'); c.width = img.width; c.height = img.height;
+        var ctx = c.getContext('2d'); ctx.drawImage(img, 0, 0);
+        var d = ctx.getImageData(0, 0, c.width, c.height).data;
+        var top = c.height, left = c.width, right = 0, bottom = 0;
+        for (var y = 0; y < c.height; y++) { for (var x = 0; x < c.width; x++) { if (d[(y * c.width + x) * 4 + 3] > 10) { if (y < top) top = y; if (y > bottom) bottom = y; if (x < left) left = x; if (x > right) right = x; } } }
+        if (top > bottom || left > right) { resolve(url); return; }
+        var pad = 2, cx = Math.max(0, left - pad), cy = Math.max(0, top - pad), cw = Math.min(c.width, right + pad + 1) - cx, ch = Math.min(c.height, bottom + pad + 1) - cy;
+        if (cw <= 0 || ch <= 0) { resolve(url); return; }
+        var c2 = document.createElement('canvas'); c2.width = cw; c2.height = ch;
+        c2.getContext('2d').drawImage(c, cx, cy, cw, ch, 0, 0, cw, ch);
+        resolve(c2.toDataURL('image/png'));
+      }; img.onerror = function () { resolve(url); }; img.src = url;
+    });
+  }
   // 이미지·PDF 를 개체로 삽입. 용지보다 크면 맞춤 여부를 묻고, 긴 변 1600px 로 압축 저장
   function addImageFile(file, pos, fromDrop) {
     var isPdf = /pdf$/i.test(file.type) || /\.pdf$/i.test(file.name);
@@ -630,10 +647,17 @@
           if (pg.plate.kind !== 'asea' && !AW.S.rowEdit) {
             if (!T().rows.length) T().rows.push({});
             if (!T().rows[AW.S.row]) T().rows[AW.S.row] = {};
-            T().rows[AW.S.row]._logo = el.src;
-            AW.emit('datachange', AW.S.row);
-            AW.Data && AW.Data.refresh && AW.Data.refresh(false);
-            AW.toast((AW.S.row + 1) + '행 로고로 저장됐습니다. 다른 행 선택 후 붙여넣으면 그 행에만 적용됩니다.', 'ok');
+            var logoSrc = el.src;
+            var saveLogo = function (src) {
+              T().rows[AW.S.row]._logo = src;
+              el.src = src;
+              AW.emit('datachange', AW.S.row);
+              AW.Data && AW.Data.refresh && AW.Data.refresh(false);
+              AW.toast((AW.S.row + 1) + '행 로고로 저장됐습니다. 다른 행 선택 후 붙여넣으면 그 행에만 적용됩니다.', 'ok');
+            };
+            if (/\.png$/i.test(file.name) || (file.type === 'image/png')) {
+              trimAlphaLogo(logoSrc).then(saveLogo);
+            } else { saveLogo(logoSrc); }
           }
         }
         st.lbl = '이미지 삽입'; add(el);
