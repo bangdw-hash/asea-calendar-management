@@ -377,6 +377,25 @@
     if (o.row && o.row._plate && o.row._plate.elems && mode !== 'edit') {
       origElems = tpl.elems; tpl.elems = o.row._plate.elems;
     }
+    // 행별 로고(_logo): ext1·ext2 명패에서 각 행의 기관 로고를 개별 적용
+    if (o.row && o.row._logo && pg.plate && pg.plate.kind !== 'asea' && mode !== 'edit') {
+      var pf = pg.plate, _p = false, _src = tpl.elems;
+      var _pat = _src.map(function (e) {
+        if (!_p && e.t === 'img' && !e.ph && !e.hide) {
+          var cy = e.y + e.h / 2;
+          if (cy >= pf.f[1] && cy < pf.f[2]) { _p = true; return Object.assign({}, e, { src: o.row._logo }); }
+        }
+        return e;
+      });
+      if (!_p) {
+        // 아직 로고 없이 ph 자리 표시만 있는 경우 — ph 위치에 행 로고를 합성
+        var phR = _src.filter(function (e) { return e.ph && e.t === 'rect'; })[0];
+        var bx = phR ? phR.x : 30, by = phR ? phR.y : pf.f[1] + 5.5, bw = phR ? phR.w : pg.w - 60, bh = phR ? phR.h : 35;
+        var syn = AW.elem('img', { src: o.row._logo, x: bx, y: by, w: bw, h: bh, opacity: 1 });
+        _pat = _src.filter(function (e) { return !e.ph; }).concat([syn]); _p = true;
+      }
+      if (_p) { if (!origElems) origElems = _src; tpl.elems = _pat; }
+    }
     tpl.elems.forEach(function (e) { el.appendChild(AW.renderElem(e, k, o, dx, dy)); });
     if (pg.plate && AW.Plate) AW.Plate.decorate(el, tpl, k, o, mode);   // 명패: 3칸 → 2칸 반전 복제 + 접는 선 안내
     if (origElems !== undefined) tpl.elems = origElems;

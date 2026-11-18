@@ -58,6 +58,15 @@
     if (a === 'pg') { st.page = Math.max(0, Math.min(pages() - 1, st.page + (+b.dataset.d))); renderGrid(); renderFoot(); return; }
     if (a === 'goto') { S.row = +b.dataset.i; markRow(); AW.emit('rowchange'); }
     if (a === 'row-edit') { AW.Plate && AW.Plate.startRowEdit(+b.dataset.i); return; }
+    if (a === 'row-logo') {
+      var li = +b.dataset.i, linp = document.createElement('input'); linp.type = 'file'; linp.accept = 'image/*';
+      linp.onchange = function (ev) {
+        var lf = ev.target.files[0]; if (!lf) return;
+        if (lf.size > 5 * 1024 * 1024) return AW.toast('로고 파일이 너무 큽니다(5MB 이하).', 'error');
+        var fr = new FileReader(); fr.onload = function () { T().rows[li]._logo = fr.result; dataChanged(li); renderGrid(); renderStat(); }; fr.readAsDataURL(lf);
+      }; linp.click(); return;
+    }
+    if (a === 'row-logo-del') { var ldi = +b.dataset.i; delete T().rows[ldi]._logo; dataChanged(ldi); renderGrid(); renderStat(); return; }
   }
 
   /* ───────────── 렌더 ───────────── */
@@ -126,14 +135,23 @@
     if (!f.length) { g.innerHTML = ''; return; }
     var from = st.page * PAGE, part = rows.slice(from, from + PAGE);
     var isFree = !!(T().page && T().page.plate && T().page.plate.free);
+    var isPlateExt = !!(T().page && T().page.plate && T().page.plate.kind && T().page.plate.kind !== 'asea');
     var freeCol = isFree ? '<th class="n" title="행 개별 편집">편집</th>' : '';
-    var h = '<table class="dg"><thead><tr><th class="n">#</th>' + C.map(function (c, i) { return '<th title="' + AW.esc(c.f.hint) + '">' + colLetter(i) + ' · ' + AW.esc(c.label) + '</th>'; }).join('') + freeCol + '<th class="n"></th></tr></thead><tbody>';
-    if (!part.length) h += '<tr><td colspan="' + (C.length + 2 + (isFree ? 1 : 0)) + '" class="empty">입력된 행이 없습니다. 「엑셀 올리기」 또는 아래 「행 추가」를 사용하거나, 엑셀에서 복사한 범위를 첫 칸에 붙여넣으십시오.</td></tr>';
+    var logoCol = isPlateExt ? '<th class="n" title="행별 기관 로고 — 행마다 다른 로고를 지정합니다">로고</th>' : '';
+    var extraCols = (isFree ? 1 : 0) + (isPlateExt ? 1 : 0);
+    var h = '<table class="dg"><thead><tr><th class="n">#</th>' + C.map(function (c, i) { return '<th title="' + AW.esc(c.f.hint) + '">' + colLetter(i) + ' · ' + AW.esc(c.label) + '</th>'; }).join('') + logoCol + freeCol + '<th class="n"></th></tr></thead><tbody>';
+    if (!part.length) h += '<tr><td colspan="' + (C.length + 2 + extraCols) + '" class="empty">입력된 행이 없습니다. 「엑셀 올리기」 또는 아래 「행 추가」를 사용하거나, 엑셀에서 복사한 범위를 첫 칸에 붙여넣으십시오.</td></tr>';
     part.forEach(function (r, j) {
       var i = from + j;
       var editCell = isFree ? '<td class="n">' + (r._plate ? '<span class="pl-free-dot" title="개별 편집됨">●</span>' : '') + '<button class="btn btn-ghost btn-xs" data-a="row-edit" data-i="' + i + '" title="이 행만 개별 편집">개별 편집</button></td>' : '';
+      var logoCell = isPlateExt ? '<td class="n" style="text-align:center;min-width:80px">' +
+        (r._logo ? '<img src="' + r._logo + '" alt="로고" style="max-width:64px;max-height:28px;display:block;margin:0 auto 2px;object-fit:contain;border:1px solid #e0e0e0;border-radius:3px">' : '') +
+        '<button class="btn btn-ghost btn-xs" data-a="row-logo" data-i="' + i + '" style="font-size:11px">' + (r._logo ? '변경' : '+ 로고') + '</button>' +
+        (r._logo ? ' <button class="btn btn-ghost btn-xs danger" data-a="row-logo-del" data-i="' + i + '" style="font-size:11px" title="이 행 로고 삭제">×</button>' : '') +
+        '</td>' : '';
       h += '<tr data-i="' + i + '"' + (i === S.row ? ' class="cur"' : '') + '><td class="n"><button class="lnk" data-a="goto" data-i="' + i + '" title="미리보기로 이동">' + (i + 1) + '</button></td>' +
         C.map(function (cc, c) { var v = r[cc.key] == null ? '' : r[cc.key]; return '<td class="' + cellState(cc.f, v, cc.en ? r[cc.f.name] : null) + '"><textarea class="cell" rows="1" data-c="' + c + '" aria-label="' + (i + 1) + '행 ' + AW.esc(cc.label) + '">' + AW.esc(v) + '</textarea></td>'; }).join('') +
+        logoCell +
         editCell +
         '<td class="n"><button class="icon-btn danger" data-a="delrow" data-i="' + i + '" title="이 행 삭제" aria-label="행 삭제">' + AW.ic('close', 14) + '</button></td></tr>';
     });
@@ -183,7 +201,12 @@
   function addRows(n) {
     if (!T().fields.length) return AW.toast('먼저 양식에 입력 항목({{항목명}})을 추가해 주십시오.', 'error');
     if (T().rows.length + n > MAXROWS) return AW.toast('한 양식에는 ' + MAXROWS + '행까지 입력할 수 있습니다.', 'error');
-    for (var i = 0; i < n; i++) T().rows.push({});
+    for (var i = 0; i < n; i++) {
+      var prev = T().rows.length ? T().rows[T().rows.length - 1] : null;
+      var nr = {};
+      if (prev && prev._logo) nr._logo = prev._logo;   // 이전 행 로고를 새 행에 복사
+      T().rows.push(nr);
+    }
     S.row = T().rows.length - 1; st.page = pages() - 1; dataChanged(); renderGrid(); renderFoot(); renderStat(); AW.emit('rowchange');
     var ta = AW.$('#dt-grid tbody tr:last-child textarea', st.root); if (ta) ta.focus();
   }
