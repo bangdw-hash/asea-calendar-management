@@ -1,0 +1,22 @@
+# asea-ui
+> ASEA 공용 UI/UX/CSS 키트. 정적 HTML 페이지용(빌드 없음). 접두사 ux-, 모서리 6px, 이모지 금지, 인라인 SVG.
+
+## 먼저 읽기
+- AGENTS.md: 사용 순서·금지·필수 규칙
+- ui/gallery.html: 모든 컴포넌트의 실제 마크업과 동작
+
+## 코드
+- css/ui-kit.css: 스타일 전체 (토큰은 :root --ux-*)
+- css/tokens.json: 색·테마(sky/aurora/mint)·그림자·글자·모션·z-index
+- ux/ui-kit.js: window.UX — toast, undoToast, modal, confirm, drawer, tabs, collapse, accordion, theme, dark, uiscale, autosave, saveState, bookmarks, dragSort, copy, busy
+
+## 설명
+- ui/components.md: 헤더·버튼·입력·칩·알림·탭·카드·편집 카드·로그인·상태 화면
+- ui/data-display.md: 표·KPI·막대·누적·히스토그램·도넛·결과 도구(엑셀/PDF/인쇄)
+- ui/page-patterns.md: 상단 영역 7종 분류와 적용법, 새 페이지 체크리스트
+- ux/interaction-motion.md: 버튼 상태·저장·책갈피·되돌리기·드래그·오버레이·키보드
+- docs/foundations.md: 색·글자·간격·모션·z-index·접근성
+- docs/page-inventory.md: 64개 페이지 실측 표 / docs/token-audit.md: 불일치 점검
+
+## 도구
+- tools/check.js: node tools/check.js <파일|폴더> — 반지름·이모지·임의 색·포커스 제거 검사
