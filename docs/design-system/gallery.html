@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ASEA UI Kit 갤러리</title>
+<link rel="stylesheet" href="ui-kit.css">
+<style>
+  body{margin:0}
+  .demo{display:flex;flex-direction:column;gap:18px}
+  .lbl{font-size:12px;font-weight:700;color:var(--ux-text-2);margin:0 0 6px}
+  code.k{background:var(--ux-gray-lt);padding:1px 6px;border-radius:6px;font-size:12px}
+</style>
+</head>
+<body class="ux">
+<header class="ux-header">
+  <svg class="ux-ico lg" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M8 4v4M16 4v4"/></svg>
+  <span class="logo">UI Kit 갤러리</span><span class="sub">survey.html 기준</span>
+  <div class="right">
+    <span class="ux-savestate saved" id="ss">저장됨</span>
+    <div class="ux-swatches">
+      <button class="ux-swatch on" data-theme="sky" style="background:#1A73E8" aria-label="스카이"></button>
+      <button class="ux-swatch" data-theme="aurora" style="background:#8B5CF6" aria-label="오로라"></button>
+      <button class="ux-swatch" data-theme="mint" style="background:#10B981" aria-label="민트"></button>
+    </div>
+    <button class="ux-btn ghost sm" id="dk">다크</button>
+  </div>
+</header>
+
+<main class="ux-main">
+  <div class="ux-tabs" id="tabs" style="margin-bottom:16px">
+    <button class="ux-tab" data-tab="btn">버튼·입력</button>
+    <button class="ux-tab" data-tab="card">카드·KPI·알림</button>
+    <button class="ux-tab" data-tab="data">표·그래프</button>
+    <button class="ux-tab" data-tab="edit">편집 카드(드래그·접기)</button>
+    <button class="ux-tab" data-tab="over">모달·토스트·도움말</button>
+    <button class="ux-tab" data-tab="save">저장·책갈피</button>
+  </div>
+
+  <section data-panel="btn" class="demo">
+    <h2 class="ux-title"><svg class="ux-ico" viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="8" rx="2"/></svg>버튼</h2>
+    <div class="ux-card"><p class="lbl">종류 · 크기 · 상태</p>
+      <div class="ux-row">
+        <button class="ux-btn primary">기본</button><button class="ux-btn secondary">보조</button><button class="ux-btn ghost">고스트</button>
+        <button class="ux-btn danger">삭제</button><button class="ux-btn danger-o">삭제(외곽)</button><button class="ux-btn primary" disabled>비활성</button>
+        <button class="ux-btn primary sm">작게</button><button class="ux-btn primary touch">터치 44</button>
+        <button class="ux-btn primary" id="busyBtn">처리중 표시</button>
+        <button class="ux-ibtn" aria-label="편집"><svg class="ux-ico" viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5l4 4L8 20l-5 1 1-5z"/></svg></button>
+        <button class="ux-ibtn danger" aria-label="삭제"><svg class="ux-ico" viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg></button>
+        <button class="ux-link">링크 버튼</button><button class="ux-add">+ 항목 추가</button>
+      </div></div>
+    <div class="ux-card"><p class="lbl">분할 버튼 · 선택지</p>
+      <div class="ux-row"><div class="ux-seg" id="seg"><button class="on">칸반</button><button>타임라인</button><button>표</button></div></div>
+      <div class="ux-choices" id="choices" style="margin-top:10px"><button class="ux-choice" aria-pressed="false">1</button><button class="ux-choice" aria-pressed="false">2</button><button class="ux-choice" aria-pressed="true">3</button><button class="ux-choice" aria-pressed="false">4</button><button class="ux-choice" aria-pressed="false">5</button></div></div>
+    <div class="ux-card"><p class="lbl">입력</p>
+      <div class="ux-grid">
+        <label class="ux-field">이름<input class="ux-input" value="방시원"></label>
+        <label class="ux-field">금액(만원)<input class="ux-input num" value="1,250"></label>
+        <label class="ux-field">오류 상태<input class="ux-input err" value="필수 항목"><span class="ux-hint" style="color:var(--ux-red)">필수 입력입니다</span></label>
+        <label class="ux-field">선택<select class="ux-select"><option>학과 선택</option><option>항공정비</option></select></label>
+        <label class="ux-field" style="grid-column:1/-1">설명<textarea class="ux-textarea">포커스를 주면 테두리와 3px 링이 나타납니다.</textarea><span class="ux-hint">보조 안내는 11px, 보조 글자색</span></label>
+      </div><label class="ux-check" style="margin-top:10px"><input type="checkbox" checked> 필수 응답</label></div>
+  </section>
+
+  <section data-panel="card" class="demo ux-hide">
+    <div class="ux-kpis">
+      <div class="ux-kpi"><small>응답 수</small><b>248</b></div><div class="ux-kpi"><small>응답률</small><b>71.9%</b></div>
+      <div class="ux-kpi strong"><small>유효 응답</small><b>231</b></div><div class="ux-kpi"><small>평균(5점)</small><b>4.21</b></div>
+    </div>
+    <div class="ux-grid">
+      <div class="ux-card hover"><h3 class="ux-section-title">기본 카드 (hover 그림자)</h3>카드는 흰 배경·1px 테두리·6px 모서리·얕은 그림자입니다.</div>
+      <div class="ux-card soft"><h3 class="ux-section-title">설정 카드(soft)</h3>테두리 없이 큰 확산 그림자.</div>
+      <div class="ux-card edit"><h3 class="ux-section-title">제목 카드(edit)</h3>상단 4px 강조선.</div>
+    </div>
+    <div class="ux-card section">섹션 카드 — 왼쪽 4px 강조선, 연한 파랑 배경</div>
+    <div class="ux-card note"><span class="ux-tag note">설명</span> 안내 카드 — 연한 노랑 배경</div>
+    <div class="ux-stack">
+      <div class="ux-alert"><svg class="ux-ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg>안내</div>
+      <div class="ux-alert warn">주의</div><div class="ux-alert err">오류</div><div class="ux-alert ok">완료</div>
+    </div>
+    <div class="ux-row"><span class="ux-chip blue">진행</span><span class="ux-chip green">완료</span><span class="ux-chip orange">임박</span><span class="ux-chip red">지연</span><span class="ux-chip gray">대기</span><span class="ux-tag accent">섹션</span><span class="ux-count">3</span></div>
+    <ol class="ux-steps ux-card"><li class="done"><span class="dot">1</span>준비</li><li class="done"><span class="dot">2</span>설계</li><li class="cur"><span class="dot">3</span>진행</li><li><span class="dot">4</span>종료</li></ol>
+  </section>
+
+  <section data-panel="data" class="demo ux-hide">
+    <div class="ux-table-wrap"><table class="ux-table"><thead><tr><th class="sort">반 ▾</th><th class="num sort">재적</th><th class="num">응답</th><th class="num">응답률</th><th>상태</th></tr></thead><tbody>
+      <tr class="grp"><td colspan="5">항공정비</td></tr>
+      <tr class="clk"><td>1학년 1반</td><td class="num">32</td><td class="num">29</td><td class="num">90.6%</td><td><span class="ux-chip green">우수</span></td></tr>
+      <tr class="clk"><td>1학년 2반</td><td class="num">31</td><td class="num">20</td><td class="num">64.5%</td><td><span class="ux-chip orange">보통</span></td></tr>
+      <tr class="clk saved"><td>2학년 1반</td><td class="num">25</td><td class="num">9</td><td class="num">36.0%</td><td><span class="ux-chip red">낮음</span></td></tr>
+    </tbody></table></div>
+    <div class="ux-card"><p class="lbl">가로 막대 · 미터</p>
+      <div class="ux-bars"><div class="ux-bar"><span>항공정비</span><div class="track"><i class="fill" style="width:82%"></i></div><span class="v">82%</span></div>
+      <div class="ux-bar"><span>항공보안</span><div class="track"><i class="fill" style="width:61%"></i></div><span class="v">61%</span></div></div>
+      <div class="ux-meter" style="margin-top:12px"><i style="width:68%"></i></div></div>
+    <div class="ux-card"><p class="lbl">누적 막대 · 히스토그램</p>
+      <div class="ux-stack-bar"><i style="width:55%;background:var(--ux-green)"></i><i style="width:30%;background:var(--ux-accent)"></i><i style="width:15%;background:var(--ux-orange)"></i></div>
+      <div class="ux-hist" style="margin-top:14px"><div><i style="height:12%"></i>1</div><div><i style="height:20%"></i>2</div><div><i style="height:45%"></i>3</div><div><i style="height:90%"></i>4</div><div><i style="height:100%"></i>5</div></div></div>
+    <div class="ux-card"><p class="lbl">도넛(SVG)</p>
+      <svg width="120" height="120" viewBox="0 0 42 42"><circle cx="21" cy="21" r="15.9" fill="none" stroke="var(--ux-gray-lt)" stroke-width="6"/><circle cx="21" cy="21" r="15.9" fill="none" stroke="var(--ux-accent)" stroke-width="6" stroke-dasharray="72 28" stroke-dashoffset="25"/><text x="21" y="23" text-anchor="middle" font-size="8" font-weight="700" fill="var(--ux-text)">72%</text></svg></div>
+  </section>
+
+  <section data-panel="edit" class="demo ux-hide">
+    <div class="ux-card edit ux-stack"><input class="ux-inline-edit" value="설문 제목(인라인 편집)"><span class="ux-muted">카드를 끌어 순서를 바꾸고, 섹션 머리를 눌러 접습니다. 접힘 상태는 기억됩니다.</span></div>
+    <div id="list" class="ux-stack">
+      <div class="ux-ed-card ux-collapse" data-id="a"><span class="ux-grip">⋮⋮</span><div class="head"><svg class="ux-ico chev" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg><span class="ux-tag accent">섹션</span><b>I. 기본 정보</b></div><div class="body" style="margin-top:8px">본문 — 접으면 숨겨집니다.</div><button class="ux-del" aria-label="삭제">×</button></div>
+      <div class="ux-ed-card ux-collapse" data-id="b"><span class="ux-grip">⋮⋮</span><div class="head"><svg class="ux-ico chev" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg><span class="ux-tag accent">섹션</span><b>II. 강의 평가</b></div><div class="body" style="margin-top:8px">두 번째 카드</div><button class="ux-del" aria-label="삭제">×</button></div>
+      <div class="ux-ed-card"><span class="ux-grip">⋮⋮</span><b>3. 문항 카드</b><button class="ux-del" aria-label="삭제">×</button></div>
+    </div>
+    <div class="ux-card"><button class="ux-btn secondary" id="accBtn" aria-expanded="false">아코디언 열기</button><div class="ux-acc" id="acc"><div><p style="margin:10px 0 0">grid-template-rows 0fr→1fr, .32s로 높이 애니메이션</p></div></div></div>
+  </section>
+
+  <section data-panel="over" class="demo ux-hide">
+    <div class="ux-card ux-row">
+      <button class="ux-btn primary" id="mBtn">모달</button><button class="ux-btn secondary" id="dBtn">서랍</button>
+      <button class="ux-btn secondary" id="cBtn">확인창</button><button class="ux-btn secondary" id="tBtn">토스트</button><button class="ux-btn secondary" id="uBtn">되돌리기 토스트</button>
+      <span class="ux-tip"><button class="ux-ibtn" aria-label="도움말"><svg class="ux-ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 015 .5c0 1.5-2.5 2-2.5 3.5M12 17h.01"/></svg></button><span class="ux-tipbox">마우스를 올리거나 포커스하면 설명이 나타납니다.</span></span>
+    </div>
+    <div class="ux-card"><div class="ux-loading"><div class="ux-spinner"></div>불러오는 중…</div></div>
+    <div class="ux-card"><div class="ux-empty">표시할 항목이 없습니다.</div></div>
+    <div class="ux-card ux-stack"><div class="ux-skel" style="height:18px;width:40%"></div><div class="ux-skel" style="height:14px"></div><div class="ux-skel" style="height:14px;width:80%"></div></div>
+  </section>
+
+  <section data-panel="save" class="demo ux-hide">
+    <div class="ux-card"><p class="lbl">자동 저장(1.2초 디바운스) + 상태 표시</p>
+      <textarea class="ux-textarea" id="auto" placeholder="입력하면 상단 '저장 중 → 저장됨' 으로 바뀝니다"></textarea></div>
+    <div class="ux-card"><p class="lbl">책갈피(즐겨찾기) — 새로고침해도 유지(localStorage)</p>
+      <div class="ux-stack" id="bm"></div><p class="ux-hint" id="bmList"></p></div>
+  </section>
+</main>
+<div class="ux-bottombar"><span class="ux-muted">하단 고정 작업 바</span><span style="margin-left:auto"></span><button class="ux-btn ghost">취소</button><button class="ux-btn primary">저장</button></div>
+
+<script src="ui-kit.js"></script>
+<script>
+UX.restore();
+UX.tabs(UX.$('#tabs'), 'ux-gallery-tab');
+UX.collapse(document, 'ux-gallery');
+UX.dragSort(UX.$('#list'), '.ux-ed-card', function(){ UX.toast('순서를 바꿨습니다'); });
+UX.accordion(UX.$('#accBtn'), UX.$('#acc'));
+UX.$$('.ux-swatch').forEach(function(s){ s.onclick=function(){ UX.theme(s.dataset.theme); }; });
+UX.$('#dk').onclick=function(){ UX.dark(document.documentElement.getAttribute('data-theme')!=='dark'); };
+UX.$$('#seg button').forEach(function(b){ b.onclick=function(){ UX.$$('#seg button').forEach(function(x){x.classList.remove('on')}); b.classList.add('on'); }; });
+UX.$$('#choices .ux-choice').forEach(function(b){ b.onclick=function(){ UX.$$('#choices .ux-choice').forEach(function(x){x.setAttribute('aria-pressed','false')}); b.setAttribute('aria-pressed','true'); }; });
+UX.$('#busyBtn').onclick=function(){ UX.busy(this,function(){ return new Promise(function(r){setTimeout(r,1200)}); }); };
+UX.$('#mBtn').onclick=function(){ UX.modal({title:'모달 제목',body:'<p style="margin:0">ESC, 바깥 클릭, X 로 닫힙니다.</p>',buttons:[{label:'취소',cls:'ghost',value:false},{label:'확인',cls:'primary',value:true}]}).then(function(v){ if(v) UX.toast('확인했습니다','ok'); }); };
+UX.$('#dBtn').onclick=function(){ UX.drawer({title:'서랍',body:'<p>오른쪽에서 .25s 로 들어옵니다.</p>'}); };
+UX.$('#cBtn').onclick=function(){ UX.confirm('삭제하시겠습니까?','삭제',true).then(function(v){ if(v) UX.toast('삭제했습니다'); }); };
+UX.$('#tBtn').onclick=function(){ UX.toast('저장했습니다','ok'); };
+UX.$('#uBtn').onclick=function(){ UX.undoToast('항목을 삭제했습니다',function(){ UX.toast('되돌렸습니다','ok'); }); };
+var ss=UX.autosave(function(){ return new Promise(function(r){setTimeout(r,500)}); }, UX.$('#ss'));
+UX.$('#auto').oninput=ss;
+var bm=UX.bookmarks('ux-gallery-bm'), items=['예산안 작성 가이드','설문 설계 체크리스트','계약서 서식'];
+function renderBm(){ UX.$('#bmList').textContent='즐겨찾기: '+(bm.list().map(function(i){return items[i]}).join(', ')||'없음'); }
+items.forEach(function(t,i){ var r=document.createElement('div'); r.className='ux-row'; r.innerHTML='<button class="ux-bookmark" aria-label="즐겨찾기"><svg class="ux-ico lg" viewBox="0 0 24 24"><path d="M6 3h12v18l-6-4-6 4z"/></svg></button><span>'+UX.esc(t)+'</span>'; UX.$('#bm').appendChild(r); var b=UX.$('.ux-bookmark',r); bm.bind(b,i); var o=b.onclick; b.onclick=function(e){o(e);renderBm();}; });
+renderBm();
+</script>
+</body>
+</html>
