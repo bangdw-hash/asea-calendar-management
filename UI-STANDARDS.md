@@ -1,5 +1,8 @@
 # ASEA Calendar Management — UI / CSS 기준서
 
+> **안내(2026-11-20)**: 이 문서의 반지름(12px)·주색(#0EA5E9) 등은 현행 코드와 다릅니다. 현행 기준은 `docs/design-system/`(README.md)입니다. 차이는 `docs/design-system/07-token-audit.md` 참조.
+
+
 > 이 문서는 모든 HTML 페이지에 적용되는 디자인 토큰·컴포넌트 규칙·작업 원칙을 정의합니다.  
 > 새 페이지 또는 기능을 추가할 때 반드시 이 기준을 따릅니다.
 

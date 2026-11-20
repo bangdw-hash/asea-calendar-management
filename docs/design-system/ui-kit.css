@@ -1,0 +1,224 @@
+/* ============================================================================
+   ASEA UI Kit — survey.html 기준 디자인 총집합의 실행 코드
+   사용: <link rel="stylesheet" href="docs/design-system/ui-kit.css"> (또는 파일 복사)
+   규칙: 모서리 6px(원형만 50%) · 이모지 금지(인라인 SVG) · 모든 상호작용 .12~.32s
+   접두사 ux- 를 쓰므로 기존 페이지 CSS와 충돌하지 않습니다.
+   값 출처: survey.html / style.css(.sv-*) 실측(Playwright computed style, 2026-11-20)
+   ============================================================================ */
+
+/* 1. 토큰 ------------------------------------------------------------------ */
+:root{
+  --ux-bg:#F8F9FB; --ux-card:#fff; --ux-text:#202124; --ux-text-2:#5F6368; --ux-text-3:#9AA3AB;
+  --ux-border:#E8EAED; --ux-border-2:#CBD5DF; --ux-field:#FAFBFE;
+  --ux-accent:#1A73E8; --ux-accent-dk:#1557B0; --ux-accent-lt:#E8F0FE; --ux-accent-hover:#1869D4;
+  --ux-green:#16a34a; --ux-green-lt:#dcfce7; --ux-orange:#ea580c; --ux-orange-lt:#ffedd5;
+  --ux-red:#dc2626; --ux-red-lt:#fee2e2; --ux-amber:#B06000; --ux-amber-lt:#FEF7E0; --ux-gray-lt:#EEF1F4;
+  --ux-section-bg:#F2F7FE; --ux-section-bd:#C9DEF8; --ux-note-bg:#FFFBEC; --ux-note-bd:#FCE9B5; --ux-note-tag:#F6C344; --ux-note-tag-fg:#5b4708;
+  --ux-r:6px;
+  --ux-sh:0 1px 3px rgba(60,64,67,.08),0 1px 2px rgba(60,64,67,.06);
+  --ux-sh-md:0 2px 8px rgba(60,64,67,.12),0 2px 4px rgba(60,64,67,.08);
+  --ux-sh-lg:0 12px 40px rgba(60,64,67,.22);
+  --ux-sh-card:0 2px 16px rgba(0,0,0,.06),0 1px 4px rgba(0,0,0,.04);
+  --ux-ring:0 0 0 3px rgba(26,115,232,.15);
+  --ux-font:'Apple SD Gothic Neo','Pretendard Variable',Pretendard,'Noto Sans KR',-apple-system,sans-serif;
+  --ux-fs:1; /* 화면 글자 배율(data-uiscale) */
+  --ux-t-fast:.12s; --ux-t:.15s; --ux-t-btn:.18s; --ux-t-slow:.25s; --ux-t-acc:.32s; --ux-ease:cubic-bezier(.22,1,.36,1);
+}
+[data-ux-theme="aurora"]{--ux-accent:#8B5CF6;--ux-accent-dk:#7C3AED;--ux-accent-lt:#EDE9FE;--ux-bg:#F5F3FF;--ux-border:#C4B5FD;--ux-accent-hover:#7C3AED}
+[data-ux-theme="mint"]{--ux-accent:#10B981;--ux-accent-dk:#059669;--ux-accent-lt:#D1FAE5;--ux-bg:#ECFDF5;--ux-border:#A7F3D0;--ux-accent-hover:#059669;--ux-ring:0 0 0 3px rgba(16,185,129,.18)}
+html[data-theme="dark"]{--ux-bg:#0f1115;--ux-card:#1a1d24;--ux-text:#e8eaed;--ux-text-2:#9aa0a6;--ux-border:#2c313a;--ux-border-2:#3a404b;--ux-field:#14171c;--ux-accent-lt:#1e2a44;--ux-section-bg:#16202f;--ux-section-bd:#2a3b5a;--ux-gray-lt:#242830}
+
+/* 2. 베이스 ----------------------------------------------------------------- */
+.ux, .ux *, .ux *::before, .ux *::after{box-sizing:border-box}
+.ux{font-family:var(--ux-font);font-size:calc(14px*var(--ux-fs));line-height:1.5;color:var(--ux-text);background:var(--ux-bg);-webkit-text-size-adjust:100%}
+.ux h1,.ux h2,.ux h3,.ux h4{margin:0;line-height:1.35;text-wrap:balance}
+.ux-hide{display:none!important}
+.ux-muted{color:var(--ux-text-2)}
+.ux-ico{width:1em;height:1em;flex:none;vertical-align:-.15em;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.ux-ico.lg{width:22px;height:22px}
+.ux-num{font-variant-numeric:tabular-nums}
+.ux :focus-visible{outline:2px solid var(--ux-accent);outline-offset:2px}
+
+/* 3. 헤더 · 레이아웃 ---------------------------------------------------------- */
+.ux-header{background:var(--ux-card);border-bottom:1px solid var(--ux-border);height:56px;padding:0 20px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:100;box-shadow:var(--ux-sh)}
+.ux-header .logo{font-size:16px;font-weight:700;letter-spacing:-.3px;white-space:nowrap}
+.ux-header .sub{font-size:12px;color:var(--ux-text-2);margin-left:2px}
+.ux-header .ico{color:var(--ux-accent)}
+.ux-header .right{margin-left:auto;display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ux-text-2)}
+.ux-swatches{display:flex;align-items:center;gap:5px;padding:0 6px}
+.ux-swatch{width:20px;height:20px;border-radius:var(--ux-r);border:0;padding:0;cursor:pointer;transition:transform var(--ux-t),box-shadow var(--ux-t);flex:none}
+.ux-swatch:hover{transform:scale(1.15)}
+.ux-swatch.on{box-shadow:0 0 0 2px var(--ux-card),0 0 0 3.5px var(--ux-text)}
+.ux-main{max-width:1100px;margin:0 auto;padding:24px 16px 80px}
+.ux-stack{display:flex;flex-direction:column;gap:12px}
+.ux-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.ux-grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
+.ux-title{font-size:20px;font-weight:800;display:flex;align-items:center;gap:8px;margin:0 0 14px}
+.ux-title .ux-ico{color:var(--ux-accent)}
+.ux-section-title{font-size:15px;font-weight:700;padding-bottom:6px;border-bottom:1px solid var(--ux-border);margin:0 0 12px}
+
+/* 4. 카드 · 패널 -------------------------------------------------------------- */
+.ux-card{background:var(--ux-card);border:1px solid var(--ux-border);border-radius:var(--ux-r);padding:16px;box-shadow:var(--ux-sh)}
+.ux-card.soft{border:0;box-shadow:var(--ux-sh-card);padding:20px}
+.ux-card.hover{transition:box-shadow var(--ux-t)}.ux-card.hover:hover{box-shadow:var(--ux-sh-md)}
+.ux-card.edit{border-top:4px solid var(--ux-accent)}
+.ux-card.section{background:var(--ux-section-bg);border-color:var(--ux-section-bd);border-left:4px solid var(--ux-accent)}
+.ux-card.note{background:var(--ux-note-bg);border-color:var(--ux-note-bd)}
+.ux-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.ux-kpi{background:var(--ux-card);border:1px solid var(--ux-border);border-radius:var(--ux-r);padding:10px 14px}
+.ux-kpi small{display:block;font-size:12px;color:var(--ux-text-2)}
+.ux-kpi b{font-size:22px;font-variant-numeric:tabular-nums}
+.ux-kpi.strong{border-color:var(--ux-accent);background:var(--ux-accent-lt)}
+
+/* 5. 버튼 --------------------------------------------------------------------- */
+.ux-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1px solid transparent;border-radius:var(--ux-r);padding:8px 16px;font:600 14px/1.3 var(--ux-font);cursor:pointer;min-height:37px;transition:background var(--ux-t-btn),border-color var(--ux-t-btn),color var(--ux-t-btn),transform .06s,box-shadow var(--ux-t-btn);white-space:nowrap}
+.ux-btn:active:not(:disabled){transform:translateY(1px)}
+.ux-btn:disabled{opacity:.5;cursor:not-allowed}
+.ux-btn.primary{background:var(--ux-accent);color:#fff}.ux-btn.primary:hover:not(:disabled){background:var(--ux-accent-dk)}
+.ux-btn.secondary{background:var(--ux-card);color:var(--ux-accent);border-color:var(--ux-border)}.ux-btn.secondary:hover:not(:disabled){background:var(--ux-accent-lt);border-color:var(--ux-accent)}
+.ux-btn.ghost{background:transparent;color:var(--ux-text-2)}.ux-btn.ghost:hover:not(:disabled){background:var(--ux-accent-lt);color:var(--ux-accent)}
+.ux-btn.danger{background:var(--ux-red);color:#fff}.ux-btn.danger:hover:not(:disabled){filter:brightness(.92)}
+.ux-btn.danger-o{background:var(--ux-card);color:var(--ux-red);border-color:var(--ux-red)}.ux-btn.danger-o:hover:not(:disabled){background:var(--ux-red-lt)}
+.ux-btn.sm{padding:6px 14px;font-size:12px;min-height:30px}
+.ux-btn.touch{min-height:44px}
+.ux-btn.block{display:flex;width:100%}
+.ux-btn.busy{pointer-events:none;opacity:.75}
+.ux-btn.busy::before{content:"";width:14px;height:14px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:ux-spin .8s linear infinite}
+.ux-ibtn{display:inline-grid;place-items:center;width:32px;height:32px;border:0;border-radius:var(--ux-r);background:transparent;color:var(--ux-text-2);cursor:pointer;transition:background var(--ux-t),color var(--ux-t)}
+.ux-ibtn:hover{background:var(--ux-gray-lt);color:var(--ux-text)}.ux-ibtn.danger:hover{background:var(--ux-red-lt);color:var(--ux-red)}
+.ux-link{background:none;border:0;padding:0;color:var(--ux-accent-dk);text-decoration:underline;cursor:pointer;font:inherit}
+.ux-add{background:none;border:0;color:var(--ux-accent);font:600 12.5px var(--ux-font);cursor:pointer;padding:4px 2px}
+.ux-seg{display:inline-flex;border:1px solid var(--ux-border);border-radius:var(--ux-r);overflow:hidden}
+.ux-seg button{border:0;background:var(--ux-card);padding:6px 12px;font:13px var(--ux-font);cursor:pointer;color:var(--ux-text);transition:background var(--ux-t)}
+.ux-seg button+button{border-left:1px solid var(--ux-border)}
+.ux-seg button.on{background:var(--ux-accent);color:#fff}
+
+/* 6. 입력 --------------------------------------------------------------------- */
+.ux-field{display:flex;flex-direction:column;gap:4px;font-size:12px;font-weight:500;color:var(--ux-text-2)}
+.ux-input,.ux-select,.ux-textarea{width:100%;font:14px var(--ux-font);color:var(--ux-text);background:var(--ux-field);border:1px solid var(--ux-border);border-radius:var(--ux-r);padding:8px 12px;transition:border-color var(--ux-t),box-shadow var(--ux-t),background var(--ux-t)}
+.ux-textarea{resize:vertical;min-height:82px}
+.ux-input:focus,.ux-select:focus,.ux-textarea:focus{outline:2px solid var(--ux-accent);outline-offset:0;border-color:var(--ux-accent);box-shadow:var(--ux-ring);background:var(--ux-card)}
+.ux-input.err{border-color:var(--ux-red);background:var(--ux-red-lt)}
+.ux-input.num{text-align:right;font-variant-numeric:tabular-nums}
+.ux-hint{font-size:11px;color:var(--ux-text-2)}
+.ux-inline-edit{border:0;border-bottom:1px solid transparent;padding:4px 2px;font:700 18px var(--ux-font);background:transparent;outline:none;width:100%}
+.ux-inline-edit:focus{border-bottom-color:var(--ux-accent)}
+.ux-check{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:#555;cursor:pointer}
+.ux-choice{display:flex;align-items:center;min-height:48px;padding:6px 10px;border:1.5px solid var(--ux-border-2);background:var(--ux-card);border-radius:var(--ux-r);cursor:pointer;font:13px var(--ux-font);transition:background var(--ux-t),border-color var(--ux-t),transform .06s}
+.ux-choice:active{transform:scale(.97)}
+.ux-choice[aria-pressed="true"]{background:var(--ux-accent);border-color:var(--ux-accent);color:#fff;font-weight:700}
+.ux-choices{display:grid;gap:8px;grid-template-columns:repeat(auto-fit,minmax(90px,1fr))}
+
+/* 7. 칩 · 배지 · 알림 ---------------------------------------------------------- */
+.ux-chip,.ux-tag{display:inline-flex;align-items:center;border-radius:var(--ux-r);font-size:11px;font-weight:700;padding:2px 7px;line-height:1.4;white-space:nowrap}
+.ux-tag.accent{background:var(--ux-accent);color:#fff}.ux-tag.note{background:var(--ux-note-tag);color:var(--ux-note-tag-fg)}
+.ux-chip.blue{background:var(--ux-accent-lt);color:var(--ux-accent-dk)}.ux-chip.green{background:var(--ux-green-lt);color:var(--ux-green)}
+.ux-chip.orange{background:var(--ux-orange-lt);color:var(--ux-orange)}.ux-chip.red{background:var(--ux-red-lt);color:var(--ux-red)}.ux-chip.gray{background:var(--ux-gray-lt);color:var(--ux-text-2)}
+.ux-count{background:var(--ux-red);color:#fff;font-size:10px;min-width:16px;height:16px;border-radius:50%;display:inline-grid;place-items:center;padding:0 4px}
+.ux-alert{display:flex;gap:8px;align-items:flex-start;border-radius:var(--ux-r);padding:10px 14px;font-size:13px;background:var(--ux-accent-lt);color:var(--ux-accent-dk)}
+.ux-alert.warn{background:var(--ux-amber-lt);color:var(--ux-amber)}.ux-alert.err{background:var(--ux-red-lt);color:var(--ux-red)}.ux-alert.ok{background:var(--ux-green-lt);color:var(--ux-green)}
+
+/* 8. 탭 · 단계 · 목차 --------------------------------------------------------- */
+.ux-tabs{display:flex;gap:4px;overflow-x:auto;box-shadow:inset 0 -1px 0 var(--ux-border);scrollbar-width:thin}
+.ux-tab{flex:none;border:0;background:none;padding:10px 16px;font:500 14px var(--ux-font);color:var(--ux-text-2);border-bottom:3px solid transparent;cursor:pointer;transition:color var(--ux-t),border-color var(--ux-t)}
+.ux-tab:hover{color:var(--ux-accent)}
+.ux-tab.on{color:var(--ux-accent-dk);border-bottom-color:var(--ux-accent);font-weight:700}
+.ux-steps{display:flex;list-style:none;margin:0;padding:0;flex-wrap:wrap}
+.ux-steps li{flex:1 1 120px;display:flex;align-items:center;gap:8px;color:var(--ux-text-2);font-size:13px;padding:6px 0}
+.ux-steps .dot{width:24px;height:24px;border-radius:50%;background:var(--ux-gray-lt);display:inline-grid;place-items:center;font-size:12px;font-weight:700}
+.ux-steps li.done{color:var(--ux-green)}.ux-steps li.done .dot{background:var(--ux-green-lt);color:var(--ux-green)}
+.ux-steps li.cur{color:var(--ux-accent-dk);font-weight:700}.ux-steps li.cur .dot{background:var(--ux-accent);color:#fff}
+
+/* 9. 표 ----------------------------------------------------------------------- */
+.ux-table-wrap{overflow:auto;background:var(--ux-card);border:1px solid var(--ux-border);border-radius:var(--ux-r);max-height:60vh}
+.ux-table{border-collapse:collapse;width:100%}
+.ux-table th,.ux-table td{padding:8px 10px;text-align:left;vertical-align:middle;border-bottom:1px solid var(--ux-border);font-size:13px}
+.ux-table th{background:#F7FAFC;color:var(--ux-text-2);font-size:12px;font-weight:600;white-space:nowrap;position:sticky;top:0;z-index:1}
+.ux-table th.sort{cursor:pointer}.ux-table th.sort:hover{color:var(--ux-accent)}
+.ux-table td.num,.ux-table th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.ux-table tbody tr:last-child td{border-bottom:0}
+.ux-table tr.clk{cursor:pointer}.ux-table tr.clk:hover td{background:var(--ux-accent-lt)}
+.ux-table tr.grp td{background:#F1F5F9;font-weight:700}
+.ux-table tr.saving td{background:#FFFBEB}.ux-table tr.saved td{background:var(--ux-green-lt);transition:background .6s}
+html[data-theme="dark"] .ux-table th{background:#1d2129}
+
+/* 10. 그래프(HTML/CSS 막대·미터·분포) ------------------------------------------ */
+.ux-meter{height:10px;border-radius:var(--ux-r);background:var(--ux-gray-lt);overflow:hidden}
+.ux-meter i{display:block;height:100%;background:var(--ux-accent);transition:width var(--ux-t-slow)}
+.ux-meter.over i{background:var(--ux-red)}.ux-meter.ok i{background:var(--ux-green)}
+.ux-bars{display:flex;flex-direction:column;gap:6px}
+.ux-bar{display:grid;grid-template-columns:110px 1fr 44px;gap:8px;align-items:center;font-size:13px}
+.ux-bar .track{height:14px;background:var(--ux-gray-lt);border-radius:var(--ux-r);overflow:hidden}
+.ux-bar .fill{display:block;height:100%;background:var(--ux-accent);border-radius:var(--ux-r) 0 0 var(--ux-r);transition:width var(--ux-t-slow)}
+.ux-bar .v{text-align:right;font-variant-numeric:tabular-nums;color:var(--ux-text-2)}
+.ux-stack-bar{display:flex;height:18px;border-radius:var(--ux-r);overflow:hidden;background:var(--ux-gray-lt)}
+.ux-stack-bar i{display:block;height:100%}
+.ux-hist{display:flex;align-items:flex-end;gap:6px;height:120px}
+.ux-hist>div{flex:1;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:4px;font-size:11px;color:var(--ux-text-2)}
+.ux-hist i{display:block;width:100%;background:var(--ux-accent);border-radius:var(--ux-r) var(--ux-r) 0 0;min-height:2px;transition:height var(--ux-t-slow)}
+.ux-heat{display:grid;gap:2px}
+.ux-heat>div{aspect-ratio:1;border-radius:var(--ux-r);display:grid;place-items:center;font-size:11px;font-weight:700;color:#fff}
+
+/* 11. 편집 카드(드래그·접기·핸들) -------------------------------------------- */
+.ux-ed-card{position:relative;background:var(--ux-card);border:1px solid var(--ux-border);border-radius:var(--ux-r);padding:12px 38px 12px 26px;transition:box-shadow var(--ux-t)}
+.ux-ed-card:hover{box-shadow:var(--ux-sh)}
+.ux-ed-card.dragging{opacity:.45}
+.ux-ed-card.drop-before::before,.ux-ed-card.drop-after::after{content:"";position:absolute;left:8px;right:8px;height:3px;border-radius:var(--ux-r);background:var(--ux-accent)}
+.ux-ed-card.drop-before::before{top:-5px}.ux-ed-card.drop-after::after{bottom:-5px}
+.ux-grip{position:absolute;left:7px;top:50%;transform:translateY(-50%);color:#B6BDC8;cursor:grab;user-select:none}
+.ux-del{position:absolute;right:8px;top:10px;background:none;border:0;cursor:pointer;opacity:.55;color:var(--ux-text-2)}
+.ux-del:hover{opacity:1;color:var(--ux-red)}
+.ux-collapse .chev{transition:transform .18s ease;color:var(--ux-text-2)}
+.ux-collapse.collapsed .chev{transform:rotate(-90deg)}
+.ux-collapse.collapsed .body{display:none}
+.ux-collapse>.head{display:flex;align-items:center;gap:8px;border-radius:var(--ux-r);padding:4px 6px;cursor:pointer;user-select:none;transition:background var(--ux-t-fast)}
+.ux-collapse>.head:hover{background:var(--ux-accent-lt)}.ux-collapse>.head:hover .chev{color:var(--ux-accent)}
+.ux-acc{display:grid;grid-template-rows:0fr;transition:grid-template-rows var(--ux-t-acc) ease}
+.ux-acc.open{grid-template-rows:1fr}.ux-acc>div{overflow:hidden}
+
+/* 12. 오버레이: 모달 · 서랍 · 토스트 · 도움말 ------------------------------------ */
+.ux-shade{position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:1000;display:flex;align-items:center;justify-content:center;padding:16px;animation:ux-fade .15s ease}
+.ux-shade.right{justify-content:flex-end;padding:0;align-items:stretch}
+.ux-modal{background:var(--ux-card);width:min(620px,100%);max-height:100%;display:flex;flex-direction:column;border-radius:var(--ux-r);box-shadow:var(--ux-sh-lg);animation:ux-pop .2s var(--ux-ease)}
+.ux-drawer{background:var(--ux-card);width:min(520px,100%);height:100%;display:flex;flex-direction:column;box-shadow:var(--ux-sh-lg);animation:ux-slide .25s var(--ux-ease)}
+.ux-pn-h{padding:14px 16px;border-bottom:1px solid var(--ux-border);display:flex;gap:10px;align-items:flex-start}.ux-pn-h h3{font-size:16px;flex:1}
+.ux-pn-b{padding:14px 16px;overflow:auto;flex:1}
+.ux-pn-f{padding:10px 16px;border-top:1px solid var(--ux-border);display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+.ux-toasts{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:1100;display:flex;flex-direction:column;gap:6px;align-items:center;pointer-events:none}
+.ux-toast{background:#1B2433;color:#fff;padding:8px 14px;border-radius:var(--ux-r);font-size:13px;box-shadow:var(--ux-sh-md);max-width:90vw;animation:ux-rise .2s var(--ux-ease);pointer-events:auto;display:flex;gap:12px;align-items:center}
+.ux-toast.err{background:var(--ux-red)}.ux-toast.ok{background:#15803d}
+.ux-toast button{background:none;border:0;color:#9DC1FF;font-weight:700;cursor:pointer}
+.ux-tip{position:relative;display:inline-flex}
+.ux-tip>.ux-tipbox{position:absolute;left:50%;top:calc(100% + 6px);transform:translateX(-50%);background:#1B2433;color:#fff;font-size:12px;line-height:1.5;padding:8px 10px;border-radius:var(--ux-r);width:max-content;max-width:260px;opacity:0;pointer-events:none;transition:opacity var(--ux-t);z-index:50;box-shadow:var(--ux-sh-md)}
+.ux-tip:hover>.ux-tipbox,.ux-tip:focus-within>.ux-tipbox{opacity:1}
+.ux-savestate{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--ux-text-2)}
+.ux-savestate::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--ux-text-3)}
+.ux-savestate.saving::before{background:var(--ux-orange);animation:ux-pulse 1s infinite}
+.ux-savestate.saved::before{background:var(--ux-green)}.ux-savestate.fail::before{background:var(--ux-red)}
+.ux-bottombar{position:sticky;bottom:0;background:var(--ux-card);border-top:1px solid var(--ux-border);padding:10px 16px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;box-shadow:0 -4px 16px rgba(60,64,67,.1);z-index:60}
+.ux-bookmark{width:32px;height:32px;border:0;background:transparent;border-radius:var(--ux-r);color:var(--ux-text-3);cursor:pointer;display:inline-grid;place-items:center;transition:color var(--ux-t),background var(--ux-t),transform var(--ux-t)}
+.ux-bookmark:hover{background:var(--ux-accent-lt);color:var(--ux-accent)}
+.ux-bookmark[aria-pressed="true"]{color:var(--ux-orange)}.ux-bookmark[aria-pressed="true"] svg{fill:currentColor}
+.ux-bookmark:active{transform:scale(.88)}
+
+/* 13. 상태: 로딩 · 빈 화면 · 스켈레톤 ------------------------------------------ */
+.ux-spinner{width:36px;height:36px;border:3px solid var(--ux-border);border-top-color:var(--ux-accent);border-radius:50%;animation:ux-spin .8s linear infinite;margin:0 auto}
+.ux-loading{display:grid;place-items:center;gap:12px;padding:48px 16px;color:var(--ux-text-2);font-size:15px}
+.ux-empty{text-align:center;color:var(--ux-text-2);padding:24px 16px;font-weight:500}
+.ux-skel{background:linear-gradient(90deg,var(--ux-gray-lt) 25%,#f6f7f9 37%,var(--ux-gray-lt) 63%);background-size:400% 100%;animation:ux-shim 1.4s ease infinite;border-radius:var(--ux-r);min-height:14px}
+
+/* 14. 키프레임 ---------------------------------------------------------------- */
+@keyframes ux-spin{to{transform:rotate(360deg)}}
+@keyframes ux-fade{from{opacity:0}to{opacity:1}}
+@keyframes ux-pop{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:none}}
+@keyframes ux-slide{from{transform:translateX(24px);opacity:0}to{transform:none;opacity:1}}
+@keyframes ux-rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes ux-pulse{50%{opacity:.35}}
+@keyframes ux-shim{0%{background-position:100% 50%}100%{background-position:0 50%}}
+@keyframes ux-flash{0%{background:var(--ux-accent-lt)}100%{background:transparent}}
+.ux-flash{animation:ux-flash 1.6s ease}
+
+/* 15. 반응형 · 접근성 · 인쇄 --------------------------------------------------- */
+@media (max-width:640px){.ux-header{padding:0 12px}.ux-main{padding:16px 12px 80px}.ux-bar{grid-template-columns:80px 1fr 40px}.ux-btn{min-height:44px}.ux-shade{padding:0;align-items:flex-end}.ux-modal{width:100%;border-radius:var(--ux-r) var(--ux-r) 0 0}}
+@media (prefers-reduced-motion:reduce){.ux *,.ux *::before,.ux *::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+@media print{.ux-header,.ux-bottombar,.ux-toasts,.ux-shade{display:none!important}.ux-card{box-shadow:none;break-inside:avoid}}
